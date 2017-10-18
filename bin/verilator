@@ -2466,6 +2466,13 @@ lint_restore*/.  For example:
 If SOME_WARNING was on before the lint_off, it will now be restored to on,
 and if it was off before the lint_off it will remain off.
 
+=item /*verilator no_inline_module*/
+
+Specifies the module the comment appears in should not be inlined into any
+modules that use this module.  This is useful especially at the top level
+module to reduce the size of the interface class, to aid compile time at a
+small performance loss.
+
 =item /*verilator no_inline_task*/
 
 Used in a function or task variable definition section to specify the
@@ -3898,6 +3905,12 @@ to compile on parallel machines and avoid compilations altogether.  See the
 packages. ccache will skip GCC runs between identical source builds, even
 across different users.  You can use the OBJCACHE environment variable to
 use these CC wrappers.
+
+To reduce the compile time of classes that use a Verilated module (e.g. a
+top CPP file) you may wish to add /*verilator no_inline_module*/ to your
+top level module. This will decrease the amount of code in the model's
+Verilated class, improving compile times of any instantiating top level C++
+code, at a relatively small cost of execution performance.
 
 =item Why do so many files need to recompile when I add a signal?
 
