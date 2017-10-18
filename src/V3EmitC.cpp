@@ -27,6 +27,7 @@
 #include <map>
 #include <vector>
 #include <algorithm>
+#include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Global.h"
 #include "V3String.h"
@@ -1881,9 +1882,14 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
     // Declare foreign instances up front to make C++ happy
     puts("class "+symClassName()+";\n");
+    VL_UNORDERED_SET<string> didClassName;
     for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
 	if (AstCell* cellp=nodep->castCell()) {
-	    puts("class "+modClassName(cellp->modp())+";\n");
+	    string className = modClassName(cellp->modp());
+	    if (didClassName.find(className)==didClassName.end()) {
+		puts("class "+className+";\n");
+		didClassName.insert(className);
+	    }
 	}
     }
     if (v3Global.opt.trace()) {

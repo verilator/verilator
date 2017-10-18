@@ -339,7 +339,7 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n// CREATORS\n");
     puts(symClassName()+"("+topClassName()+"* topp, const char* namep);\n");
-    puts((string)"~"+symClassName()+"() {};\n");
+    puts((string)"~"+symClassName()+"() {}\n");
 
     puts("\n// METHODS\n");
     puts("inline const char* name() { return __Vm_namep; }\n");

@@ -111,13 +111,18 @@
 #if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__)
 # define VL_HAS_UNIQUE_PTR
 # define VL_HAS_UNORDERED_MAP
+# define VL_HAS_UNORDERED_SET
 # define VL_UNIQUE_PTR std::unique_ptr
 # define VL_UNORDERED_MAP std::unordered_map
+# define VL_UNORDERED_SET std::unordered_set
 # define VL_INCLUDE_UNORDERED_MAP <unordered_map>
+# define VL_INCLUDE_UNORDERED_SET <unordered_set>
 #else
 # define VL_UNIQUE_PTR std::auto_ptr
 # define VL_UNORDERED_MAP std::map
+# define VL_UNORDERED_SET std::set
 # define VL_INCLUDE_UNORDERED_MAP <map>
+# define VL_INCLUDE_UNORDERED_SET <set>
 #endif
 
 //=========================================================================
