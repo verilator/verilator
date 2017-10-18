@@ -35,6 +35,7 @@
 #include <map>
 #include <algorithm>
 #include <vector>
+#include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Global.h"
 #include "V3LinkCells.h"
@@ -105,7 +106,7 @@ private:
     LinkCellsGraph	m_graph;	// Linked graph of all cell interconnects
     LibraryVertex*	m_libVertexp;	// Vertex at root of all libraries
     V3GraphVertex*	m_topVertexp;	// Vertex of top module
-    set<string>		m_declfnWarned;	// Files we issued DECLFILENAME on
+    vl_unordered_set<string> m_declfnWarned;  // Files we issued DECLFILENAME on
 
     static int debug() {
 	static int level = -1;
@@ -311,7 +312,7 @@ private:
 	}
 	if (nodep->modp()) {
 	    // Note what pins exist
-	    set<string> ports;	// Symbol table of all connected port names
+	    vl_unordered_set<string> ports;  // Symbol table of all connected port names
 	    for (AstPin* pinp = nodep->pinsp(); pinp; pinp=pinp->nextp()->castPin()) {
 		if (pinp->name()=="") pinp->v3error("Connect by position is illegal in .* connected cells");
 		if (!pinp->exprp()) {

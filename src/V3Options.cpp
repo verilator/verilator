@@ -1047,7 +1047,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     // Read the specified -f filename and process as arguments
     UINFO(1,"Reading Options File "<<filename<<endl);
 
-    const VL_UNIQUE_PTR<ifstream> ifp (V3File::new_ifstream(filename));
+    const vl_unique_ptr<ifstream> ifp (V3File::new_ifstream(filename));
     if (ifp->fail()) {
 	fl->v3error("Cannot open -f command file: "+filename);
 	return;

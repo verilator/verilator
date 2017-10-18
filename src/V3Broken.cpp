@@ -47,7 +47,7 @@ class BrokenTable : public AstNVisitor {
 private:
     // MEMBERS
     //   For each node, we keep if it exists or not.
-    typedef VL_UNORDERED_MAP<const AstNode*,int> NodeMap;  // Performance matters (when --debug)
+    typedef vl_unordered_map<const AstNode*,int> NodeMap;  // Performance matters (when --debug)
     static NodeMap s_nodes;	// Set of all nodes that exist
     // BITMASK
     enum { FLAG_ALLOCATED	= 0x01 };	// new() and not delete()ed

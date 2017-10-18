@@ -1037,7 +1037,7 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump) {
     if (doDump) {
 	{   // Write log & close
 	    UINFO(2,"Dumping "<<filename<<endl);
-	    const VL_UNIQUE_PTR<ofstream> logsp (V3File::new_ofstream(filename, append));
+	    const vl_unique_ptr<ofstream> logsp (V3File::new_ofstream(filename, append));
 	    if (logsp->fail()) v3fatalSrc("Can't write "<<filename);
 	    *logsp<<"Verilator Tree Dump (format 0x3900) from <e"<<dec<<editCountLast()<<">";
 	    *logsp<<" to <e"<<dec<<editCountGbl()<<">"<<endl;

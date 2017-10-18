@@ -112,15 +112,15 @@
 # define VL_HAS_UNIQUE_PTR
 # define VL_HAS_UNORDERED_MAP
 # define VL_HAS_UNORDERED_SET
-# define VL_UNIQUE_PTR std::unique_ptr
-# define VL_UNORDERED_MAP std::unordered_map
-# define VL_UNORDERED_SET std::unordered_set
+# define vl_unique_ptr std::unique_ptr
+# define vl_unordered_map std::unordered_map
+# define vl_unordered_set std::unordered_set
 # define VL_INCLUDE_UNORDERED_MAP <unordered_map>
 # define VL_INCLUDE_UNORDERED_SET <unordered_set>
 #else
-# define VL_UNIQUE_PTR std::auto_ptr
-# define VL_UNORDERED_MAP std::map
-# define VL_UNORDERED_SET std::set
+# define vl_unique_ptr std::auto_ptr
+# define vl_unordered_map std::map
+# define vl_unordered_set std::set
 # define VL_INCLUDE_UNORDERED_MAP <map>
 # define VL_INCLUDE_UNORDERED_SET <set>
 #endif

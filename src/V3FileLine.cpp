@@ -18,10 +18,13 @@
 //
 //*************************************************************************
 
+#include "config_build.h"
+#include "verilatedos.h"
 #include <cstdio>
 #include <cstdarg>
 #include <cstring>
-#include <set>
+#include VL_INCLUDE_UNORDERED_SET
+
 #include "V3Error.h"
 #include "V3FileLine.h"
 #ifndef _V3ERROR_NO_GLOBAL_
@@ -254,7 +257,7 @@ string FileLine::warnMore() const {
 }
 
 #ifdef VL_LEAK_CHECKS
-typedef set<FileLine*> FileLineCheckSet;
+typedef vl_unordered_set<FileLine*> FileLineCheckSet;
 FileLineCheckSet fileLineLeakChecks;
 
 void* FileLine::operator new(size_t size) {

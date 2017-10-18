@@ -134,7 +134,7 @@ V3FileDependImp  dependImp;	// Depend implementation class
 // V3FileDependImp
 
 inline void V3FileDependImp::writeDepend(const string& filename) {
-    const VL_UNIQUE_PTR<ofstream> ofp (V3File::new_ofstream(filename));
+    const vl_unique_ptr<ofstream> ofp (V3File::new_ofstream(filename));
     if (ofp->fail()) v3fatalSrc("Can't write "<<filename);
 
     for (set<DependFile>::iterator iter=m_filenameList.begin();
@@ -170,7 +170,7 @@ inline void V3FileDependImp::writeDepend(const string& filename) {
 }
 
 inline void V3FileDependImp::writeTimes(const string& filename, const string& cmdlineIn) {
-    const VL_UNIQUE_PTR<ofstream> ofp (V3File::new_ofstream(filename));
+    const vl_unique_ptr<ofstream> ofp (V3File::new_ofstream(filename));
     if (ofp->fail()) v3fatalSrc("Can't write "<<filename);
 
     string cmdline = stripQuotes(cmdlineIn);
@@ -200,7 +200,7 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
 }
 
 inline bool V3FileDependImp::checkTimes(const string& filename, const string& cmdlineIn) {
-    const VL_UNIQUE_PTR<ifstream> ifp (V3File::new_ifstream_nodepend(filename));
+    const vl_unique_ptr<ifstream> ifp (V3File::new_ifstream_nodepend(filename));
     if (ifp->fail()) {
 	UINFO(2,"   --check-times failed: no input "<<filename<<endl);
 	return false;

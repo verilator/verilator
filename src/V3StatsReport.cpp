@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <map>
 #include <iomanip>
+#include VL_INCLUDE_UNORDERED_MAP
 
 #include "V3Global.h"
 #include "V3Stats.h"
@@ -122,7 +123,7 @@ class StatsReport {
 	size_t maxWidth = 0;
 	typedef vector<string> Stages;
 	Stages stages;
-	map<string,int> stageInt;
+	vl_unordered_map<string,int> stageInt;
 	typedef multimap<string,const V3Statistic*> ByName;
 	ByName byName;
 	// * is always first

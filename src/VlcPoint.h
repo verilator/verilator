@@ -24,9 +24,9 @@
 #include "config_build.h"
 #include "verilatedos.h"
 #include "verilated_cov_key.h"
-#include <map>
 #include <vector>
 #include <iomanip>
+#include VL_INCLUDE_UNORDERED_MAP
 
 //********************************************************************
 // VlcPoint - A coverage point (across all tests)
@@ -98,7 +98,7 @@ public:
 class VlcPoints {
 private:
     // MEMBERS
-    typedef std::map<string,vluint64_t> NameMap;
+    typedef vl_unordered_map<string,vluint64_t> NameMap;
     NameMap		m_nameMap;	//< Name to point-number
     vector<VlcPoint>	m_points;	//< List of all points
     vluint64_t		m_numPoints;	//< Total unique points

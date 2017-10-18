@@ -26,6 +26,7 @@
 #include <iomanip>
 #include <vector>
 #include <algorithm>
+#include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Ast.h"
 #include "V3File.h"
@@ -69,7 +70,7 @@ void AstNodeClassDType::repairMemberCache() {
 }
 
 const char* AstNodeClassDType::broken() const {
-    set<AstMemberDType*> exists;
+    vl_unordered_set<AstMemberDType*> exists;
     for (AstMemberDType* itemp = membersp(); itemp; itemp=itemp->nextp()->castMemberDType()) {
 	exists.insert(itemp);
     }

@@ -35,6 +35,7 @@
 #include <vector>
 #include <list>
 #include <map>
+#include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Global.h"
 #include "V3Gate.h"
@@ -668,7 +669,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
 bool GateVisitor::elimLogicOkOutputs(GateLogicVertex* consumeVertexp, const GateOkVisitor& okVisitor) {
     // Return true if can optimize
     // Return false if the consuming logic has an output signal that the replacement logic has as an input
-    typedef set<AstVarScope*> VarScopeSet;
+    typedef vl_unordered_set<AstVarScope*> VarScopeSet;
     // Use map to find duplicates between two lists
     VarScopeSet varscopes;
     // Replacement logic usually has shorter input list, so faster to build list based on it

@@ -1882,7 +1882,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
     // Declare foreign instances up front to make C++ happy
     puts("class "+symClassName()+";\n");
-    VL_UNORDERED_SET<string> didClassName;
+    vl_unordered_set<string> didClassName;
     for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
 	if (AstCell* cellp=nodep->castCell()) {
 	    string className = modClassName(cellp->modp());

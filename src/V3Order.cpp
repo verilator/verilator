@@ -1286,7 +1286,7 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
 void OrderVisitor::processEdgeReport() {
     // Make report of all signal names and what clock edges they have
     string filename = v3Global.debugFilename("order_edges.txt");
-    const VL_UNIQUE_PTR<ofstream> logp (V3File::new_ofstream(filename));
+    const vl_unique_ptr<ofstream> logp (V3File::new_ofstream(filename));
     if (logp->fail()) v3fatalSrc("Can't write "<<filename);
     //Testing emitter: V3EmitV::verilogForTree(v3Global.rootp(), *logp);
 
@@ -1605,7 +1605,7 @@ void OrderVisitor::process() {
     m_graph.dumpDotFilePrefixed("orderg_done");
     if (0 && debug()) {
 	string dfilename = v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"_INT_order";
-	const VL_UNIQUE_PTR<ofstream> logp (V3File::new_ofstream(dfilename));
+	const vl_unique_ptr<ofstream> logp (V3File::new_ofstream(dfilename));
 	if (logp->fail()) v3fatalSrc("Can't write "<<dfilename);
 	m_graph.dump(*logp);
     }
