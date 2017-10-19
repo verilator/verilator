@@ -78,13 +78,13 @@ public: // But only for verilated*.cpp
     }
     ~VerilatedImp() {}
     static void internalsDump() {
-	VL_PRINTF("internalsDump:\n");
-	VL_PRINTF("  Argv:");
+	VL_PRINTF_MT("internalsDump:\n");
+	VL_PRINTF_MT("  Argv:");
 	for (ArgVec::const_iterator it=s_s.m_argVec.begin(); it!=s_s.m_argVec.end(); ++it) {
-	    VL_PRINTF(" %s",it->c_str());
+	    VL_PRINTF_MT(" %s",it->c_str());
 	}
-	VL_PRINTF("\n");
-	VL_PRINTF("  Version: %s %s\n", Verilated::productName(), Verilated::productVersion());
+	VL_PRINTF_MT("\n");
+	VL_PRINTF_MT("  Version: %s %s\n", Verilated::productName(), Verilated::productVersion());
 	scopesDump();
 	exportsDump();
 	userDump();
@@ -105,9 +105,9 @@ public: // But only for verilated*.cpp
 	size_t len = strlen(prefixp);
 	if (VL_UNLIKELY(!s_s.m_argVecLoaded)) {
 	    s_s.m_argVecLoaded = true;  // Complain only once
-	    vl_fatal("unknown",0,"",
-		     "%Error: Verilog called $test$plusargs or $value$plusargs without"
-		     " testbench C first calling Verilated::commandArgs(argc,argv).");
+	    VL_FATAL_MT("unknown",0,"",
+			"%Error: Verilog called $test$plusargs or $value$plusargs without"
+			" testbench C first calling Verilated::commandArgs(argc,argv).");
 	}
 	for (ArgVec::const_iterator it=s_s.m_argVec.begin(); it!=s_s.m_argVec.end(); ++it) {
 	    if ((*it)[0]=='+') {
@@ -147,8 +147,8 @@ private:
     static void userDump() {
 	bool first = true;
 	for (UserMap::const_iterator it=s_s.m_userMap.begin(); it!=s_s.m_userMap.end(); ++it) {
-	    if (first) { VL_PRINTF("  userDump:\n"); first=false; }
-	    VL_PRINTF("    DPI_USER_DATA scope %p key %p: %p\n",
+	    if (first) { VL_PRINTF_MT("  userDump:\n"); first=false; }
+	    VL_PRINTF_MT("    DPI_USER_DATA scope %p key %p: %p\n",
 		      it->first.first, it->first.second, it->second);
 	}
     }
@@ -174,12 +174,12 @@ public: // But only for verilated*.cpp
 	if (it != s_s.m_nameMap.end()) s_s.m_nameMap.erase(it);
     }
     static void scopesDump() {
-	VL_PRINTF("  scopesDump:\n");
+	VL_PRINTF_MT("  scopesDump:\n");
 	for (VerilatedScopeNameMap::const_iterator it=s_s.m_nameMap.begin(); it!=s_s.m_nameMap.end(); ++it) {
 	    const VerilatedScope* scopep = it->second;
 	    scopep->scopeDump();
 	}
-	VL_PRINTF("\n");
+	VL_PRINTF_MT("\n");
     }
     static const VerilatedScopeNameMap* scopeNameMap() {
         return &s_s.m_nameMap;
@@ -209,7 +209,7 @@ public: // But only for verilated*.cpp
 	if (VL_LIKELY(it != s_s.m_exportMap.end())) return it->second;
 	std::string msg = (std::string("%Error: Testbench C called ")+namep
 			   +" but no such DPI export function name exists in ANY model");
-	vl_fatal("unknown",0,"", msg.c_str());
+	VL_FATAL_MT("unknown",0,"", msg.c_str());
 	return -1;
     }
     static const char* exportName(int funcnum) {
@@ -222,8 +222,8 @@ public: // But only for verilated*.cpp
     static void exportsDump() {
 	bool first = true;
 	for (ExportNameMap::const_iterator it=s_s.m_exportMap.begin(); it!=s_s.m_exportMap.end(); ++it) {
-	    if (first) { VL_PRINTF("  exportDump:\n"); first=false; }
-	    VL_PRINTF("    DPI_EXPORT_NAME %05d: %s\n", it->second, it->first);
+	    if (first) { VL_PRINTF_MT("  exportDump:\n"); first=false; }
+	    VL_PRINTF_MT("    DPI_EXPORT_NAME %05d: %s\n", it->second, it->first);
 	}
     }
     // We don't free up m_exportMap until the end, because we can't be sure

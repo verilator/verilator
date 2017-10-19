@@ -76,7 +76,7 @@ public:
 	// We reserve word zero for the next pointer, as that's safer in case a
 	// dangling reference to the original remains around.
 	static size_t chunk = 96;
-	if (VL_UNLIKELY(size>chunk)) vl_fatal(__FILE__,__LINE__,"", "increase chunk");
+	if (VL_UNLIKELY(size>chunk)) VL_FATAL_MT(__FILE__,__LINE__,"", "increase chunk");
 	if (VL_LIKELY(s_freeHead)) {
 	    vluint8_t* newp = s_freeHead;
 	    s_freeHead = *((vluint8_t**)newp);
@@ -337,7 +337,7 @@ public:
 		varop->createPrevDatap();
 	    }
 	}
-	if (VL_UNLIKELY(vop->reason() >= CB_ENUM_MAX_VALUE)) vl_fatal(__FILE__,__LINE__,"", "vpi bb reason too large");
+	if (VL_UNLIKELY(vop->reason() >= CB_ENUM_MAX_VALUE)) VL_FATAL_MT(__FILE__,__LINE__,"", "vpi bb reason too large");
 	s_s.m_cbObjLists[vop->reason()].push_back(vop);
     }
     static void cbTimedAdd(VerilatedVpioCb* vop) {
@@ -363,7 +363,7 @@ public:
 	    if (VL_UNLIKELY(it->first <= time)) {
 		VerilatedVpioCb* vop = it->second;
 		++it;  // iterator may be deleted by callback
-		VL_DEBUG_IF_PLI(VL_PRINTF("-vltVpi:  timed_callback %p\n",vop););
+		VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:  timed_callback %p\n",vop););
 		(vop->cb_rtnp()) (vop->cb_datap());
 	    }
 	    else { ++it; }
@@ -385,7 +385,7 @@ public:
 		continue;
 	    }
 	    VerilatedVpioCb* vop = *it++;
-	    VL_DEBUG_IF_PLI(VL_PRINTF("-vltVpi:  reason_callback %d %p\n",reason,vop););
+	    VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:  reason_callback %d %p\n",reason,vop););
 	    (vop->cb_rtnp()) (vop->cb_datap());
 	}
     }
@@ -402,12 +402,12 @@ public:
 	    if (VerilatedVpioVar* varop = VerilatedVpioVar::castp(vop->cb_datap()->obj)) {
 		void* newDatap = varop->varDatap();
 		void* prevDatap = varop->prevDatap();  // Was malloced when we added the callback
-		VL_DEBUG_IF_PLI(VL_PRINTF("-vltVpi:  value_test %s v[0]=%d/%d %p %p\n",
-					  varop->fullname(), *((CData*)newDatap), *((CData*)prevDatap),
-					  newDatap, prevDatap););
+		VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:  value_test %s v[0]=%d/%d %p %p\n",
+					     varop->fullname(), *((CData*)newDatap), *((CData*)prevDatap),
+					     newDatap, prevDatap););
 		if (memcmp(prevDatap, newDatap, varop->entSize())) {
-		    VL_DEBUG_IF_PLI(VL_PRINTF("-vltVpi:  value_callback %p %s v[0]=%d\n",
-					      vop,varop->fullname(), *((CData*)newDatap)););
+		    VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:  value_callback %p %s v[0]=%d\n",
+						 vop,varop->fullname(), *((CData*)newDatap)););
                     update.insert(varop);
 		    vpi_get_value(vop->cb_datap()->obj, vop->cb_datap()->value);
 		    (vop->cb_rtnp()) (vop->cb_datap());
@@ -483,10 +483,10 @@ public:
 	// Not supported yet
 	p_vpi_error_info error_info_p = VerilatedVpi::error_info()->getError();
 	if (error_info_p) {
-	    vl_fatal(error_info_p->file, error_info_p->line, "", error_info_p->message);
+	    VL_FATAL_MT(error_info_p->file, error_info_p->line, "", error_info_p->message);
 	    return;
 	}
-        vl_fatal(__FILE__, __LINE__, "", "vpi_unsupported called without error info set");
+        VL_FATAL_MT(__FILE__, __LINE__, "", "vpi_unsupported called without error info set");
     }
     static const char* strFromVpiVal(PLI_INT32 vpiVal);
     static const char* strFromVpiObjType(PLI_INT32 vpiVal);

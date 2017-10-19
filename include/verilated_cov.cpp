@@ -208,14 +208,14 @@ private:
     }
     static void selftest() {
 	// Little selftest
-	if (combineHier ("a.b.c","a.b.c")	!="a.b.c") vl_fatal(__FILE__,__LINE__,"","%Error: selftest\n");
-	if (combineHier ("a.b.c","a.b")		!="a.b*") vl_fatal(__FILE__,__LINE__,"","%Error: selftest\n");
-	if (combineHier ("a.x.c","a.y.c")	!="a.*.c") vl_fatal(__FILE__,__LINE__,"","%Error: selftest\n");
-	if (combineHier ("a.z.z.z.c","a.b.c")	!="a.*.c") vl_fatal(__FILE__,__LINE__,"","%Error: selftest\n");
-	if (combineHier ("z","a")		!="*") vl_fatal(__FILE__,__LINE__,"","%Error: selftest\n");
-	if (combineHier ("q.a","q.b")		!="q.*") vl_fatal(__FILE__,__LINE__,"","%Error: selftest\n");
-	if (combineHier ("q.za","q.zb")		!="q.z*") vl_fatal(__FILE__,__LINE__,"","%Error: selftest\n");
-	if (combineHier ("1.2.3.a","9.8.7.a")	!="*.a") vl_fatal(__FILE__,__LINE__,"","%Error: selftest\n");
+	if (combineHier ("a.b.c","a.b.c")	!="a.b.c") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
+	if (combineHier ("a.b.c","a.b")		!="a.b*") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
+	if (combineHier ("a.x.c","a.y.c")	!="a.*.c") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
+	if (combineHier ("a.z.z.z.c","a.b.c")	!="a.*.c") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
+	if (combineHier ("z","a")		!="*") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
+	if (combineHier ("q.a","q.b")		!="q.*") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
+	if (combineHier ("q.za","q.zb")		!="q.z*") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
+	if (combineHier ("1.2.3.a","9.8.7.a")	!="*.a") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
     }
 
 public:
@@ -303,7 +303,7 @@ public:
 		addKeynum++;
 		if (!legalKey(key)) {
 		    std::string msg = "%Error: Coverage keys of one character, or letter+digit are illegal: "+key;
-		    vl_fatal("",0,"",msg.c_str());
+		    VL_FATAL_MT("",0,"",msg.c_str());
 		}
 	    }
 	}
@@ -314,14 +314,14 @@ public:
 
     void write (const char* filename) {
 #ifndef VM_COVERAGE
-	vl_fatal("",0,"","%Error: Called VerilatedCov::write when VM_COVERAGE disabled\n");
+	VL_FATAL_MT("",0,"","%Error: Called VerilatedCov::write when VM_COVERAGE disabled\n");
 #endif
 	selftest();
 
 	std::ofstream os (filename);
 	if (os.fail()) {
 	    std::string msg = std::string("%Error: Can't write '")+filename+"'";
-	    vl_fatal("",0,"",msg.c_str());
+	    VL_FATAL_MT("",0,"",msg.c_str());
 	    return;
 	}
 	os << "# SystemC::Coverage-3\n";

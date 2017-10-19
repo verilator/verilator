@@ -314,7 +314,7 @@ void VerilatedVcd::printTime (vluint64_t timeui) {
 	static bool backTime = false;
 	if (!backTime) {
 	    backTime = true;
-	    VL_PRINTF("VCD time is moving backwards, wave file may be incorrect.\n");
+	    VL_PRINTF_MT("VCD time is moving backwards, wave file may be incorrect.\n");
 	}
     }
     m_timeLastDump = timeui;
@@ -353,7 +353,7 @@ void VerilatedVcd::bufferFlush () {
 	    if (errno != EAGAIN && errno != EINTR) {
 		// write failed, presume error (perhaps out of disk space)
 		std::string msg = std::string("VerilatedVcd::bufferFlush: ")+strerror(errno);
-		vl_fatal("",0,"",msg.c_str());
+		VL_FATAL_MT("",0,"",msg.c_str());
 		closeErr();
 		break;
 	    }
@@ -504,7 +504,7 @@ void VerilatedVcd::module (const std::string& name) {
 
 void VerilatedVcd::declare (vluint32_t code, const char* name, const char* wirep,
 			    int arraynum, bool tri, bool bussed, int msb, int lsb) {
-    if (!code) { vl_fatal(__FILE__,__LINE__,"","Internal: internal trace problem, code 0 is illegal"); }
+    if (!code) { VL_FATAL_MT(__FILE__,__LINE__,"","Internal: internal trace problem, code 0 is illegal"); }
 
     int bits = ((msb>lsb)?(msb-lsb):(lsb-msb))+1;
     int codesNeeded = 1+int(bits/32);
@@ -623,7 +623,7 @@ void VerilatedVcd::addCallback (
 {
     if (VL_UNLIKELY(isOpen())) {
 	std::string msg = std::string("Internal: ")+__FILE__+"::"+__FUNCTION__+" called with already open file";
-	vl_fatal(__FILE__,__LINE__,"",msg.c_str());
+	VL_FATAL_MT(__FILE__,__LINE__,"",msg.c_str());
     }
     VerilatedVcdCallInfo* vci = new VerilatedVcdCallInfo(initcb, fullcb, changecb, userthis, nextCode());
     m_callbacks.push_back(vci);

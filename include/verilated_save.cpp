@@ -62,7 +62,7 @@ VerilatedDeserialize& VerilatedDeserialize::readAssert (const void* __restrict d
     if (VL_UNLIKELY(readDiffers(datap,size))) {
 	std::string fn = filename();
 	std::string msg = std::string("Can't deserialize save-restore file as was made from different model");
-	vl_fatal(fn.c_str(), 0, "", msg.c_str());
+	VL_FATAL_MT(fn.c_str(), 0, "", msg.c_str());
 	close();
     }
     return *this;  // For function chaining
@@ -83,7 +83,7 @@ void VerilatedDeserialize::header() {
     if (VL_UNLIKELY(os.readDiffers(VLTSAVE_HEADER_STR, strlen(VLTSAVE_HEADER_STR)))) {
 	std::string fn = filename();
 	std::string msg = std::string("Can't deserialize; file has wrong header signature");
-	vl_fatal(fn.c_str(), 0, "", msg.c_str());
+	VL_FATAL_MT(fn.c_str(), 0, "", msg.c_str());
 	close();
     }
     os.read(Verilated::serializedPtr(), Verilated::serializedSize());
@@ -100,7 +100,7 @@ void VerilatedDeserialize::trailer() {
     if (VL_UNLIKELY(os.readDiffers(VLTSAVE_TRAILER_STR, strlen(VLTSAVE_TRAILER_STR)))) {
 	std::string fn = filename();
 	std::string msg = std::string("Can't deserialize; file has wrong end-of-file signature");
-	vl_fatal(fn.c_str(), 0, "", msg.c_str());
+	VL_FATAL_MT(fn.c_str(), 0, "", msg.c_str());
 	close();
     }
 }
@@ -112,7 +112,7 @@ void VerilatedDeserialize::trailer() {
 
 void VerilatedSave::open (const char* filenamep) {
     if (isOpen()) return;
-    VL_DEBUG_IF(VL_PRINTF("-vltSave: opening save file %s\n",filenamep););
+    VL_DEBUG_IF(VL_PRINTF_MT("-vltSave: opening save file %s\n",filenamep););
 
     if (filenamep[0]=='|') {
 	assert(0);	// Not supported yet.
@@ -134,7 +134,7 @@ void VerilatedSave::open (const char* filenamep) {
 
 void VerilatedRestore::open (const char* filenamep) {
     if (isOpen()) return;
-    VL_DEBUG_IF(VL_PRINTF("-vltRestore: opening restore file %s\n",filenamep););
+    VL_DEBUG_IF(VL_PRINTF_MT("-vltRestore: opening restore file %s\n",filenamep););
 
     if (filenamep[0]=='|') {
 	assert(0);	// Not supported yet.
@@ -188,7 +188,7 @@ void VerilatedSave::flush() {
 	    if (errno != EAGAIN && errno != EINTR) {
 		// write failed, presume error (perhaps out of disk space)
 		std::string msg = std::string(__FUNCTION__)+": "+strerror(errno);
-		vl_fatal("",0,"",msg.c_str());
+		VL_FATAL_MT("",0,"",msg.c_str());
 		close();
 		break;
 	    }
@@ -216,7 +216,7 @@ void VerilatedRestore::fill() {
 	    if (errno != EAGAIN && errno != EINTR) {
 		// write failed, presume error (perhaps out of disk space)
 		std::string msg = std::string(__FUNCTION__)+": "+strerror(errno);
-		vl_fatal("",0,"",msg.c_str());
+		VL_FATAL_MT("",0,"",msg.c_str());
 		close();
 		break;
 	    }

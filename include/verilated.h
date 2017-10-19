@@ -159,16 +159,6 @@ public:
 
 #endif
 
-//=========================================================================
-// Functions overridable by user defines
-
-#ifndef VL_PRINTF
-# define VL_PRINTF printf	///< Print ala printf; may redefine if desired
-#endif
-#ifndef VL_VPRINTF
-# define VL_VPRINTF vprintf	///< Print ala vprintf; may redefine if desired
-#endif
-
 //===========================================================================
 /// Verilator symbol table base class
 
@@ -329,16 +319,41 @@ public:
 //=========================================================================
 // Extern functions -- User may override -- See verilated.cpp
 
+#ifndef VL_PRINTF
+# define VL_PRINTF printf	///< Print ala printf; may redefine if desired
+#endif
+#ifndef VL_VPRINTF
+# define VL_VPRINTF vprintf	///< Print ala vprintf; may redefine if desired
+#endif
+
 /// Routine to call for $finish
+/// User code may wish to replace this function, to do so, define VL_USER_FINISH.
+/// Verilator internal code must call VL_FINISH_MT instead, which eventually calls this.
 extern void vl_finish (const char* filename, int linenum, const char* hier);
+
 /// Routine to call for $stop
+/// User code may wish to replace this function, to do so, define VL_USER_STOP.
+/// Verilator internal code must call VL_FINISH_MT instead, which eventually calls this.
 extern void vl_stop   (const char* filename, int linenum, const char* hier);
+
 /// Routine to call for a couple of fatal messages
+/// User code may wish to replace this function, to do so, define VL_USER_FATAL.
+/// Verilator internal code must call VL_FINISH_MT instead, which eventually calls this.
 extern void vl_fatal  (const char* filename, int linenum, const char* hier,
 		       const char* msg);
 
 //=========================================================================
 // Extern functions -- Slow path
+
+/// Multithread safe wrapper for calls to $finish
+extern void VL_FINISH_MT (const char* filename, int linenum, const char* hier);
+/// Multithread safe wrapper for calls to $stop
+extern void VL_STOP_MT   (const char* filename, int linenum, const char* hier);
+/// Multithread safe wrapper to call for a couple of fatal messages
+extern void VL_FATAL_MT  (const char* filename, int linenum, const char* hier,
+			  const char* msg);
+/// Print a string, multithread safe. Eventually VL_PRINTF will get called.
+#define VL_PRINTF_MT VL_PRINTF
 
 extern IData  VL_RANDOM_I(int obits);	///< Randomize a signal
 extern QData  VL_RANDOM_Q(int obits);	///< Randomize a signal

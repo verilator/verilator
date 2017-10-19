@@ -82,6 +82,21 @@ void vl_fatal (const char* filename, int linenum, const char* hier, const char* 
 #endif
 
 //===========================================================================
+// Non-user overridable wrapper to call user-overridable functions
+
+void VL_FINISH_MT (const char* filename, int linenum, const char* hier) {
+    vl_finish(filename, linenum, hier);
+}
+
+void VL_STOP_MT (const char* filename, int linenum, const char* hier) {
+    vl_stop(filename, linenum, hier);
+}
+
+void VL_FATAL_MT (const char* filename, int linenum, const char* hier, const char* msg) {
+    vl_fatal(filename, linenum, hier, msg);
+}
+
+//===========================================================================
 // Overall class init
 
 Verilated::Serialized::Serialized() {
@@ -165,9 +180,9 @@ WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) {
 // Debug
 
 void _VL_DEBUG_PRINT_W(int lbits, WDataInP iwp) {
-    VL_PRINTF("  Data: w%d: ", lbits);
-    for (int i=VL_WORDS_I(lbits)-1; i>=0; --i) { VL_PRINTF("%08x ",iwp[i]); }
-    VL_PRINTF("\n");
+    VL_PRINTF_MT("  Data: w%d: ", lbits);
+    for (int i=VL_WORDS_I(lbits)-1; i>=0; --i) { VL_PRINTF_MT("%08x ",iwp[i]); }
+    VL_PRINTF_MT("\n");
 }
 
 //===========================================================================
@@ -502,7 +517,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) {
                                        static_cast<QData>(ld/VL_TIME_MULTIPLIER),
                                        static_cast<QData>(ld%VL_TIME_MULTIPLIER));
 		    } else {
-			vl_fatal(__FILE__,__LINE__,"","Unsupported VL_TIME_MULTIPLIER");
+			VL_FATAL_MT(__FILE__,__LINE__,"","Unsupported VL_TIME_MULTIPLIER");
 		    }
 		    int needmore = width-digits;
 		    if (needmore>0) output.append(needmore,' '); // Pre-pad spaces
@@ -561,7 +576,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) {
 		    break;
 		default:
 		    std::string msg = std::string("Unknown _vl_vsformat code: ")+pos[0];
-		    vl_fatal(__FILE__,__LINE__,"",msg.c_str());
+		    VL_FATAL_MT(__FILE__,__LINE__,"",msg.c_str());
 		    break;
 		} // switch
 	    }
@@ -616,7 +631,7 @@ static inline void _vl_vsss_read(FILE* fp, int& floc, WDataInP fromp, const std:
 	_vl_vsss_advance(fp, floc);
     }
     *cp++ = '\0';
-    //VL_PRINTF("\t_read got='%s'\n", tmpp);
+    //VL_PRINTF_MT("\t_read got='%s'\n", tmpp);
 }
 static inline void _vl_vsss_setbit(WDataOutP owp, int obits, int lsb, int nbits, IData ld) {
     for (; nbits && lsb<obits; nbits--, lsb++, ld>>=1) {
@@ -663,7 +678,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
     bool inPct = false;
     const char* pos = formatp;
     for (; *pos && !_vl_vsss_eof(fp,floc); ++pos) {
-	//VL_PRINTF("_vlscan fmt='%c' floc=%d file='%c'\n", pos[0], floc, _vl_vsss_peek(fp,floc,fromp,fstr));
+	//VL_PRINTF_MT("_vlscan fmt='%c' floc=%d file='%c'\n", pos[0], floc, _vl_vsss_peek(fp,floc,fromp,fstr));
 	if (!inPct && pos[0]=='%') {
 	    inPct = true;
 	} else if (!inPct && isspace(pos[0])) {   // Format spaces
@@ -768,7 +783,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		}
 		default:
 		    std::string msg = std::string("Unknown _vl_vsscanf code: ")+pos[0];
-		    vl_fatal(__FILE__,__LINE__,"",msg.c_str());
+		    VL_FATAL_MT(__FILE__,__LINE__,"",msg.c_str());
 		    break;
 		} // switch
 
@@ -836,7 +851,7 @@ IData VL_FGETS_IXI(int obits, void* destp, IData fpi) {
     char buffer[VL_TO_STRING_MAX_WORDS*VL_WORDSIZE+1];
     // V3Emit has static check that bytes < VL_TO_STRING_MAX_WORDS, but be safe
     if (VL_UNLIKELY(bytes > VL_TO_STRING_MAX_WORDS*VL_WORDSIZE)) {
-	vl_fatal(__FILE__,__LINE__,"","Internal: fgets buffer overrun");
+	VL_FATAL_MT(__FILE__,__LINE__,"","Internal: fgets buffer overrun");
     }
 
     // We don't use fgets, as we must read \0s.
@@ -963,8 +978,7 @@ void VL_WRITEF(const char* formatp, ...) {
     _vl_vsformat(output, formatp, ap);
     va_end(ap);
 
-    // Users can redefine VL_PRINTF if they wish.
-    VL_PRINTF("%s", output.c_str());
+    VL_PRINTF_MT("%s", output.c_str());
 }
 
 void VL_FWRITEF(IData fpi, const char* formatp, ...) {
@@ -1045,7 +1059,7 @@ void VL_READMEM_N(bool hex, int width, int depth, int array_lsb, int fnwords,
     FILE* fp = fopen(ofilenamep.c_str(), "r");
     if (VL_UNLIKELY(!fp)) {
         // We don't report the Verilog source filename as it slow to have to pass it down
-        vl_fatal (ofilenamep.c_str(), 0, "", "$readmem file not found");
+        VL_FATAL_MT (ofilenamep.c_str(), 0, "", "$readmem file not found");
         return;
     }
     // Prep for reading
@@ -1091,7 +1105,7 @@ void VL_READMEM_N(bool hex, int width, int depth, int array_lsb, int fnwords,
                     //printf(" Value width=%d  @%x = %c\n", width, addr, c);
                     if (VL_UNLIKELY(addr >= static_cast<IData>(depth+array_lsb)
                                     || addr < static_cast<IData>(array_lsb))) {
-                        vl_fatal (ofilenamep.c_str(), linenum, "", "$readmem file address beyond bounds of array");
+                        VL_FATAL_MT (ofilenamep.c_str(), linenum, "", "$readmem file address beyond bounds of array");
                     } else {
                         int entry = addr - array_lsb;
                         QData shift = hex ? VL_ULL(4) : VL_ULL(1);
@@ -1120,14 +1134,14 @@ void VL_READMEM_N(bool hex, int width, int depth, int array_lsb, int fnwords,
                             datap[0] |= value;
                         }
                         if (VL_UNLIKELY(value>=(1<<shift))) {
-                            vl_fatal (ofilenamep.c_str(), linenum, "", "$readmemb (binary) file contains hex characters");
+                            VL_FATAL_MT (ofilenamep.c_str(), linenum, "", "$readmemb (binary) file contains hex characters");
                         }
                     }
                 }
                 innum = true;
             }
             else {
-                vl_fatal (ofilenamep.c_str(), linenum, "", "$readmem file syntax error");
+                VL_FATAL_MT (ofilenamep.c_str(), linenum, "", "$readmem file syntax error");
             }
         }
         lastc = c;
@@ -1137,7 +1151,7 @@ void VL_READMEM_N(bool hex, int width, int depth, int array_lsb, int fnwords,
     // Final checks
     fclose(fp);
     if (VL_UNLIKELY(end != VL_UL(0xffffffff) && addr != (end+1))) {
-        vl_fatal (ofilenamep.c_str(), linenum, "", "$readmem file ended before specified ending-address");
+        VL_FATAL_MT (ofilenamep.c_str(), linenum, "", "$readmem file ended before specified ending-address");
     }
 }
 
@@ -1303,7 +1317,7 @@ void Verilated::flushCb(VerilatedVoidCb cb) {
     else if (!s_flushCb) { s_flushCb=cb; }
     else {
 	// Someday we may allow multiple callbacks ala atexit(), but until then
-	vl_fatal("unknown",0,"", "Verilated::flushCb called twice with different callbacks");
+	VL_FATAL_MT("unknown",0,"", "Verilated::flushCb called twice with different callbacks");
     }
 }
 
@@ -1412,7 +1426,7 @@ void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) {
 	if (funcnum >= m_funcnumMax) { m_funcnumMax = funcnum+1; }
     } else {
 	if (VL_UNLIKELY(funcnum >= m_funcnumMax)) {
-	    vl_fatal(__FILE__,__LINE__,"","Internal: Bad funcnum vs. pre-finalize maximum");
+	    VL_FATAL_MT(__FILE__,__LINE__,"","Internal: Bad funcnum vs. pre-finalize maximum");
 	}
 	if (VL_UNLIKELY(!m_callbacksp)) { // First allocation
 	    m_callbacksp = new void* [m_funcnumMax];
@@ -1445,7 +1459,7 @@ void VerilatedScope::varInsert(int finalize, const char* namep, void* datap,
 	} else {
 	    // We could have a linked list of ranges, but really this whole thing needs
 	    // to be generalized to support structs and unions, etc.
-	    vl_fatal(__FILE__,__LINE__,"",(std::string("Unsupported multi-dimensional public varInsert: ")+namep).c_str());
+	    VL_FATAL_MT(__FILE__,__LINE__,"",(std::string("Unsupported multi-dimensional public varInsert: ")+namep).c_str());
 	}
     }
     va_end(ap);
@@ -1469,7 +1483,7 @@ void* VerilatedScope::exportFindNullError(int funcnum) {
     std::string msg = (std::string("Testbench C called '")
 		       +VerilatedImp::exportName(funcnum)
 		       +"' but scope wasn't set, perhaps due to dpi import call without 'context'");
-    vl_fatal("unknown",0,"", msg.c_str());
+    VL_FATAL_MT("unknown",0,"", msg.c_str());
     return NULL;
 }
 
@@ -1479,22 +1493,22 @@ void* VerilatedScope::exportFindError(int funcnum) const {
 		       +VerilatedImp::exportName(funcnum)
 		       +"' but this DPI export function exists only in other scopes, not scope '"
 		       +name()+"'");
-    vl_fatal("unknown",0,"", msg.c_str());
+    VL_FATAL_MT("unknown",0,"", msg.c_str());
     return NULL;
 }
 
 void VerilatedScope::scopeDump() const {
-    VL_PRINTF("    SCOPE %p: %s\n", this, name());
+    VL_PRINTF_MT("    SCOPE %p: %s\n", this, name());
     for (int i=0; i<m_funcnumMax; ++i) {
 	if (m_callbacksp && m_callbacksp[i]) {
-	    VL_PRINTF("       DPI-EXPORT %p: %s\n",
-		      m_callbacksp[i], VerilatedImp::exportName(i));
+	    VL_PRINTF_MT("       DPI-EXPORT %p: %s\n",
+			 m_callbacksp[i], VerilatedImp::exportName(i));
 	}
     }
     if (VerilatedVarNameMap* varsp = this->varsp()) {
 	for (VerilatedVarNameMap::const_iterator it = varsp->begin();
 	     it != varsp->end(); ++it) {
-	    VL_PRINTF("       VAR %p: %s\n", &(it->second), it->first);
+	    VL_PRINTF_MT("       VAR %p: %s\n", &(it->second), it->first);
 	}
     }
 }

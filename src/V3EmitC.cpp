@@ -434,14 +434,14 @@ public:
 	puts("}\n");
     }
     virtual void visit(AstStop* nodep) {
-	puts("vl_stop(");
+	puts("VL_STOP_MT(");
 	putsQuoted(nodep->fileline()->filename());
 	puts(",");
 	puts(cvtToStr(nodep->fileline()->lineno()));
 	puts(",\"\");\n");
     }
     virtual void visit(AstFinish* nodep) {
-	puts("vl_finish(");
+	puts("VL_FINISH_MT(");
 	putsQuoted(nodep->fileline()->filename());
 	puts(",");
 	puts(cvtToStr(nodep->fileline()->lineno()));
@@ -877,7 +877,7 @@ class EmitCImp : EmitCStmts {
 	puts(modClassName(m_modp)+"::"+nodep->name()
 	     +"("+cFuncArgs(nodep)+") {\n");
 
-	puts("VL_DEBUG_IF(VL_PRINTF(\"  ");
+	puts("VL_DEBUG_IF(VL_PRINTF_MT(\"  ");
 	for (int i=0;i<m_modp->level();i++) { puts("  "); }
 	puts(modClassName(m_modp)+"::"+nodep->name()
 	     +"\\n\"); );\n");
@@ -938,7 +938,7 @@ class EmitCImp : EmitCStmts {
 		    if (nodep->lhsp()->castVarRef()) {
 			varname = ": "+nodep->lhsp()->castVarRef()->varp()->prettyName();
 		    }
-		    puts(")) VL_PRINTF(\"\tCHANGE: "+nodep->fileline()->ascii()
+		    puts(")) VL_PRINTF_MT(\"\tCHANGE: "+nodep->fileline()->ascii()
 			 +varname+"\\n\"); );\n");
 		}
 	    }
@@ -1738,18 +1738,18 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
 	puts("if (VL_UNLIKELY(__Vm_inhibitSim)) return;\n");
     }
     putsDecoration("// Evaluate till stable\n");
-    puts("VL_DEBUG_IF(VL_PRINTF(\"\\n----TOP Evaluate "+modClassName(modp)+"::eval\\n\"); );\n");
+    puts("VL_DEBUG_IF(VL_PRINTF_MT(\"\\n----TOP Evaluate "+modClassName(modp)+"::eval\\n\"); );\n");
     puts("int __VclockLoop = 0;\n");
     puts("QData __Vchange = 1;\n");
     puts("while (VL_LIKELY(__Vchange)) {\n");
-    puts(    "VL_DEBUG_IF(VL_PRINTF(\" Clock loop\\n\"););\n");
+    puts(    "VL_DEBUG_IF(VL_PRINTF_MT(\" Clock loop\\n\"););\n");
     if (v3Global.opt.trace()) {
 	puts("vlSymsp->__Vm_activity = true;\n");
     }
     puts(    "_eval(vlSymsp);\n");
     puts(    "__Vchange = _change_request(vlSymsp);\n");
     puts(    "if (VL_UNLIKELY(++__VclockLoop > "+cvtToStr(v3Global.opt.convergeLimit())
-	     +")) vl_fatal(__FILE__,__LINE__,__FILE__,\"Verilated model didn't converge\");\n");
+	     +")) VL_FATAL_MT(__FILE__,__LINE__,__FILE__,\"Verilated model didn't converge\");\n");
     puts("}\n");
     puts("}\n");
     splitSizeInc(10);
@@ -1768,7 +1768,7 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     puts(        "_eval(vlSymsp);\n");
     puts(	 "__Vchange = _change_request(vlSymsp);\n");
     puts(        "if (VL_UNLIKELY(++__VclockLoop > "+cvtToStr(v3Global.opt.convergeLimit())
-		 +")) vl_fatal(__FILE__,__LINE__,__FILE__,\"Verilated model didn't DC converge\");\n");
+		 +")) VL_FATAL_MT(__FILE__,__LINE__,__FILE__,\"Verilated model didn't DC converge\");\n");
     puts(    "}\n");
     puts("}\n");
     splitSizeInc(10);
@@ -2211,7 +2211,7 @@ class EmitCTrace : EmitCStmts {
 	putsDecoration("// Callback from vcd->open()\n");
 	puts(topClassName()+"* t=("+topClassName()+"*)userthis;\n");
 	puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp;  // Setup global symbol table\n");
-	puts("if (!Verilated::calcUnusedSigs()) vl_fatal(__FILE__,__LINE__,__FILE__,\"Turning on wave traces requires Verilated::traceEverOn(true) call before time 0.\");\n");
+	puts("if (!Verilated::calcUnusedSigs()) VL_FATAL_MT(__FILE__,__LINE__,__FILE__,\"Turning on wave traces requires Verilated::traceEverOn(true) call before time 0.\");\n");
 
 	puts("vcdp->scopeEscape(' ');\n");
 	puts("t->traceInitThis (vlSymsp, vcdp, code);\n");
