@@ -562,7 +562,7 @@ int mon_check() {
     if (int status = _mon_check_putget_str(NULL)) return status;
     if (int status = _mon_check_vlog_info()) return status;
 #ifndef IS_VPI
-    VerilatedVpiError::selfTest();
+    VerilatedVpi::selfTest();
 #endif
     return 0; // Ok
 }
