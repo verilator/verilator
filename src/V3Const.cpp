@@ -1943,6 +1943,8 @@ private:
             || !prevp->filep()->sameTree(nodep->filep())) return false;
         if (!prevp->fmtp() || prevp->fmtp()->nextp()
             || !nodep->fmtp() || nodep->fmtp()->nextp()) return false;
+        // We don't merge scopeNames as might be different scopes (late in process)
+        // We don't merge arguments as might need to later print warnings with right line numbers
         AstSFormatF* pformatp = prevp->fmtp();
         if (!pformatp || pformatp->exprsp() || pformatp->scopeNamep()) return false;
         AstSFormatF* nformatp = nodep->fmtp();

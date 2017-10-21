@@ -2397,7 +2397,7 @@ public:
     virtual bool hasDType() const { return true; }
     virtual bool same(AstNode* samep) const { return text()==samep->castSFormatF()->text(); }
     virtual string verilogKwd() const { return "$sformatf"; }
-    void exprsp(AstNode* nodep)	{ addOp1p(nodep); }	// op1 = Expressions to output
+    void addExprsp(AstNode* nodep) { addOp1p(nodep); }  // op1 = Expressions to output
     AstNode* exprsp() const { return op1p(); }	// op1 = Expressions to output
     string text() const { return m_text; }		// * = Text to display
     void text(const string& text) { m_text=text; }

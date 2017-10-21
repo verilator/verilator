@@ -67,7 +67,7 @@ private:
 	    timesp->unlinkFrBackWithNext();
 	    timenewp->addNext(timesp);
 	}
-	nodep->fmtp()->exprsp(timenewp);
+	nodep->fmtp()->addExprsp(timenewp);
 	if (!nodep->fmtp()->scopeNamep() && nodep->fmtp()->formatScopeTracking()) {
 	    nodep->fmtp()->scopeNamep(new AstScopeName(nodep->fileline()));
 	}
