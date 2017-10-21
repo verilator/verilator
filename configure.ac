@@ -190,6 +190,7 @@ AC_SUBST(CFG_CXXFLAGS_STD_OLDEST)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_WEXTRA,-Wextra)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_WEXTRA,-Wfloat-conversion)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_WEXTRA,-Wlogical-op)
+_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_WEXTRA,-Wthread-safety)
 AC_SUBST(CFG_CXXFLAGS_WEXTRA)
 
 # Flags for compiling Verilator internals including parser always

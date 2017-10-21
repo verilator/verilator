@@ -110,6 +110,14 @@ ifeq ($(VM_SC),1)
 endif
 
 #######################################################################
+##### Threaded builds
+
+ifneq ($(VM_THREADS),0)
+  # Need C++11 at least, so always default to newest
+  CPPFLAGS += -DVM_THREADED $(CFG_CXXFLAGS_STD_NEWEST)
+endif
+
+#######################################################################
 ##### Stub
 
 preproc:

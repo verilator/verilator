@@ -984,6 +984,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		shift; m_prefix = argv[i];
 		if (m_modPrefix=="") m_modPrefix = m_prefix;
 	    }
+	    else if ( !strcmp (sw, "-no-threads") ) { m_threads = 0; }  // Undocumented until functional
+	    else if ( !strcmp (sw, "-threads") && (i+1)<argc ) {  // Undocumented until functional
+		shift; m_threads = atoi(argv[i]);
+		if (m_threads < 0) fl->v3fatal("--threads must be >= 0: "<<argv[i]);
+	    }
 	    else if ( !strcmp (sw, "-top-module") && (i+1)<argc ) {
 		shift; m_topModule = argv[i];
 	    }
@@ -1218,6 +1223,7 @@ V3Options::V3Options() {
     m_stats = false;
     m_statsVars = false;
     m_systemC = false;
+    m_threads = 0;
     m_trace = false;
     m_traceDups = false;
     m_traceParams = true;
