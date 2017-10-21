@@ -219,7 +219,7 @@ void VerilatedVcd::makeNameMap() {
     m_namemapp = new NameMap;
     for (vluint32_t ent = 0; ent< m_callbacks.size(); ent++) {
 	VerilatedVcdCallInfo *cip = m_callbacks[ent];
-	cip->m_code = nextCode();
+	cip->m_code = m_nextCode;
 	(cip->m_initcb) (this, cip->m_userthis, cip->m_code);
     }
 
@@ -265,6 +265,7 @@ VerilatedVcd::~VerilatedVcd() {
 }
 
 void VerilatedVcd::closePrev () {
+    // This function is on the flush() call path
     if (!isOpen()) return;
 
     bufferFlush();
@@ -275,6 +276,7 @@ void VerilatedVcd::closePrev () {
 void VerilatedVcd::closeErr () {
     // Close due to an error.  We might abort before even getting here,
     // depending on the definition of vl_fatal.
+    // This function is on the flush() call path
     if (!isOpen()) return;
 
     // No buffer flush, just fclose
@@ -283,6 +285,7 @@ void VerilatedVcd::closeErr () {
 }
 
 void VerilatedVcd::close() {
+    // This function is on the flush() call path
     if (!isOpen()) return;
     if (m_evcd) {
 	printStr("$vcdclose ");
@@ -311,7 +314,7 @@ void VerilatedVcd::printTime (vluint64_t timeui) {
     // Dinotrace doesn't mind, but Cadence vvision seems to choke
     if (VL_UNLIKELY(timeui < m_timeLastDump)) {
 	timeui = m_timeLastDump;
-	static bool backTime = false;
+	static VL_THREAD_LOCAL bool backTime = false;
 	if (!backTime) {
 	    backTime = true;
 	    VL_PRINTF_MT("VCD time is moving backwards, wave file may be incorrect.\n");
@@ -336,6 +339,7 @@ void VerilatedVcd::bufferResize(vluint64_t minsize) {
 }
 
 void VerilatedVcd::bufferFlush () {
+    // This function is on the flush() call path
     // We add output data to m_writep.
     // When it gets nearly full we dump it using this routine which calls write()
     // This is much faster than using buffered I/O
@@ -511,7 +515,7 @@ void VerilatedVcd::declare (vluint32_t code, const char* name, const char* wirep
     if (tri) codesNeeded *= 2;   // Space in change array for __en signals
 
     // Make sure array is large enough
-    m_nextCode = std::max(nextCode(), code+codesNeeded);
+    m_nextCode = std::max(m_nextCode, code+codesNeeded);
     if (m_sigs.capacity() <= m_nextCode) {
 	m_sigs.reserve(m_nextCode*2);	// Power-of-2 allocation speeds things up
     }
@@ -625,7 +629,7 @@ void VerilatedVcd::addCallback (
 	std::string msg = std::string("Internal: ")+__FILE__+"::"+__FUNCTION__+" called with already open file";
 	VL_FATAL_MT(__FILE__,__LINE__,"",msg.c_str());
     }
-    VerilatedVcdCallInfo* vci = new VerilatedVcdCallInfo(initcb, fullcb, changecb, userthis, nextCode());
+    VerilatedVcdCallInfo* vci = new VerilatedVcdCallInfo(initcb, fullcb, changecb, userthis, m_nextCode);
     m_callbacks.push_back(vci);
 }
 
@@ -638,7 +642,6 @@ void VerilatedVcd::dumpFull (vluint64_t timeui) {
 	VerilatedVcdCallInfo *cip = m_callbacks[ent];
 	(cip->m_fullcb) (this, cip->m_userthis, cip->m_code);
     }
-    dumpDone ();
 }
 
 void VerilatedVcd::dump (vluint64_t timeui) {
@@ -657,16 +660,12 @@ void VerilatedVcd::dump (vluint64_t timeui) {
 	VerilatedVcdCallInfo *cip = m_callbacks[ent];
 	(cip->m_changecb) (this, cip->m_userthis, cip->m_code);
     }
-    dumpDone();
 }
 
 void VerilatedVcd::dumpPrep (vluint64_t timeui) {
     printStr("#");
     printTime(timeui);
     printStr("\n");
-}
-
-void VerilatedVcd::dumpDone () {
 }
 
 //======================================================================

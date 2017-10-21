@@ -140,7 +140,7 @@ class OrderEitherVertex : public V3GraphVertex {
     AstScope*	m_scopep;	// Scope the vertex is in
     AstSenTree*	m_domainp;	// Clock domain (NULL = to be computed as we iterate)
     OrderLoopId	m_inLoop;	// Loop number vertex is in
-    bool	m_isFromInput;	// From input, or derrived therefrom (conservatively false)
+    bool	m_isFromInput;	// From input, or derived therefrom (conservatively false)
 protected:
     OrderEitherVertex(V3Graph* graphp, const OrderEitherVertex& old)
 	: V3GraphVertex(graphp, old), m_scopep(old.m_scopep), m_domainp(old.m_domainp)

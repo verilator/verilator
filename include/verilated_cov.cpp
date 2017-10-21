@@ -111,7 +111,7 @@ private:
 	m_insertLineno = 0;
     }
 public:
-    ~VerilatedCovImp() { clear(); }
+    ~VerilatedCovImp() { clearGuts(); }
     static VerilatedCovImp& imp() {
 	static VerilatedCovImp s_singleton;
 	return s_singleton;
@@ -217,10 +217,7 @@ private:
 	if (combineHier ("q.za","q.zb")		!="q.z*") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
 	if (combineHier ("1.2.3.a","9.8.7.a")	!="*.a") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
     }
-
-public:
-    // PUBLIC METHODS
-    void clear() {
+    void clearGuts() {
 	for (ItemList::const_iterator it=m_items.begin(); it!=m_items.end(); ++it) {
 	    VerilatedCovImpItem* itemp = *(it);
 	    delete itemp;
@@ -228,6 +225,12 @@ public:
 	m_items.clear();
 	m_indexValues.clear();
 	m_valueIndexes.clear();
+    }
+
+public:
+    // PUBLIC METHODS
+    void clear() {
+        clearGuts();
     }
     void clearNonMatch (const char* matchp) {
 	if (matchp && matchp[0]) {

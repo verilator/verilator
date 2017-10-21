@@ -24,6 +24,7 @@
 #define _VERILATED_VCD_C_H_ 1
 
 #include "verilatedos.h"
+#include "verilated.h"
 
 #include <string>
 #include <vector>
@@ -128,8 +129,6 @@ private:
     void dumpHeader();
     void dumpPrep (vluint64_t timeui);
     void dumpFull (vluint64_t timeui);
-    // cppcheck-suppress functionConst
-    void dumpDone ();
     inline void printCode (vluint32_t code) {
 	if (code>=(94*94*94)) *m_writep++ = static_cast<char>((code/94/94/94)%94+33);
 	if (code>=(94*94))    *m_writep++ = static_cast<char>((code/94/94)%94+33);
@@ -156,8 +155,6 @@ public:
     ~VerilatedVcd();
 
     // ACCESSORS
-    /// Inside dumping routines, return next VCD signal code
-    vluint32_t nextCode() const {return m_nextCode;}
     /// Set size in megabytes after which new file should be created
     void rolloverMB(vluint64_t rolloverMB) { m_rolloverMB=rolloverMB; };
     /// Is file open?
@@ -170,9 +167,11 @@ public:
     // METHODS
     void open (const char* filename);	///< Open the file; call isOpen() to see if errors
     void openNext (bool incFilename);	///< Open next data-only file
-    void flush() { bufferFlush(); }	///< Flush any remaining data
-    static void flush_all();		///< Flush any remaining data from all files
     void close ();			///< Close the file
+    /// Flush any remaining data to this file
+    void flush() { bufferFlush(); }
+    /// Flush any remaining data from all files
+    static void flush_all();
 
     void set_time_unit (const char* unit); ///< Set time units (s/ms, defaults to ns)
     void set_time_unit (const std::string& unit) { set_time_unit(unit.c_str()); }
