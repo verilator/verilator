@@ -8,15 +8,7 @@
 #include <verilated.h>
 #include <verilated_vcd_c.h>
 
-#if defined(T_TRACE_CAT)
-# include "Vt_trace_cat.h"
-#elif defined(T_TRACE_CAT_REOPEN)
-# include "Vt_trace_cat_reopen.h"
-#elif defined(T_TRACE_CAT_RENEW)
-# include "Vt_trace_cat_renew.h"
-#else
-# error "Unknown test"
-#endif
+#include VM_PREFIX_INCLUDE
 
 unsigned long long main_time = 0;
 double sc_time_stamp() {

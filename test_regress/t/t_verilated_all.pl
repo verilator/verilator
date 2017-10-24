@@ -36,7 +36,7 @@ foreach my $dfile (glob("$Self->{obj_dir}/*.d")) {
 foreach my $file (sort keys %hit) {
     if (!$hit{$file}
         && $file !~ /_sc/) {
-        $Self->error("Include file not covered by t_include_all test: ",$file);
+        $Self->error("Include file not covered by t_verilated_all test: ",$file);
     }
 }
 

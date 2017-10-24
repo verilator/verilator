@@ -14,12 +14,19 @@ my $Debug;
 my %files = %{get_manifest_files($root)};
 
 foreach my $file (sort keys %files) {
-    my $contents = file_contents("$root/$file");
+    my $filename = "$root/$file";
+    my $contents = file_contents($filename);
     if ($file =~ /\.out$/) {
 	# Ignore golden files
     } elsif ($contents =~ /[\001\002\003\004\005\006]/) {
 	# Ignore binrary files
     } elsif ($contents =~ /[ \t]\n/) {
+	if ($ENV{HARNESS_UPDATE_GOLDEN}) {
+	    $contents =~ s/[ \t]+\n/\n/g;
+	    $warns{$file} = "Updated whitespace at $file";
+	    write_wholefile($filename, $contents);
+	    next;
+	}
         my @lines = split(/\n/, $contents);
         my $line_no = 0;
         foreach my $line (@lines) {
@@ -37,7 +44,13 @@ foreach my $file (sort keys %files) {
 
 if (keys %warns) {
     # First warning lists everything as that's shown in the driver summary
-    $Self->error("Files have whitespace errors: ",join(' ',sort keys %warns));
+    if ($ENV{HARNESS_UPDATE_GOLDEN}) {
+	$Self->error("Updated files with whitespace errors: ",join(' ',sort keys %warns));
+	$Self->error("To auto-fix: HARNESS_UPDATE_GOLDEN=1 {command} or --golden");
+    } else {
+	$Self->error("Files have whitespace errors: ",join(' ',sort keys %warns));
+	$Self->error("To auto-fix: HARNESS_UPDATE_GOLDEN=1 {command} or --golden");
+    }
     foreach my $file (sort keys %warns) {
 	$Self->error($warns{$file});
     }

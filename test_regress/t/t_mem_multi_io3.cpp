@@ -3,13 +3,7 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty.
 
-#if defined(T_MEM_MULTI_IO3_CC)
-# include "Vt_mem_multi_io3_cc.h"
-#elif defined(T_MEM_MULTI_IO3_SC)
-# include "Vt_mem_multi_io3_sc.h"
-#else
-# error "Unknown test"
-#endif
+#include VM_PREFIX_INCLUDE
 
 VM_PREFIX* tb = NULL;
 bool pass = true;

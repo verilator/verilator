@@ -3,13 +3,7 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2008 by Lane Brooks
 
-#if defined(T_MEM_MULTI_IO2_CC)
-# include "Vt_mem_multi_io2_cc.h"
-#elif defined(T_MEM_MULTI_IO2_SC)
-# include "Vt_mem_multi_io2_sc.h"
-#else
-# error "Unknown test"
-#endif
+#include VM_PREFIX_INCLUDE
 
 VM_PREFIX* tb = NULL;
 bool pass = true;

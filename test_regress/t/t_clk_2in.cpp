@@ -6,11 +6,7 @@
 // without warranty, 2010 by Wilson Snyder.
 
 #include <verilated.h>
-#ifdef T_CLK_2IN_VEC
-# include "Vt_clk_2in_vec.h"
-#else
-# include "Vt_clk_2in.h"
-#endif
+#include VM_PREFIX_INCLUDE
 
 unsigned int main_time = false;
 

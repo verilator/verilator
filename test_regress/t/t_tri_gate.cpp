@@ -3,23 +3,7 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2008 by Lane Brooks
 
-#ifdef T_COND
-# include "Vt_tri_gate_cond.h"
-#elif defined(T_BUFIF0)
-# include "Vt_tri_gate_bufif0.h"
-#elif defined(T_BUFIF1)
-# include "Vt_tri_gate_bufif1.h"
-#elif defined(T_NOTIF0)
-# include "Vt_tri_gate_notif0.h"
-#elif defined(T_NOTIF1)
-# include "Vt_tri_gate_notif1.h"
-#elif defined(T_PMOS)
-# include "Vt_tri_gate_pmos.h"
-#elif defined(T_NMOS)
-# include "Vt_tri_gate_nmos.h"
-#else
-# error "Unknown test"
-#endif
+#include VM_PREFIX_INCLUDE
 
 VM_PREFIX* tb = NULL;
 

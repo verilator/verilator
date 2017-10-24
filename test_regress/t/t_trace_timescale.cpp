@@ -8,11 +8,7 @@
 #include <verilated.h>
 #include <verilated_vcd_c.h>
 
-#if defined(T_TRACE_TIMESCALE)
-# include "Vt_trace_timescale.h"
-#else
-# error "Unknown test"
-#endif
+#include VM_PREFIX_INCLUDE
 
 unsigned long long main_time = 0;
 double sc_time_stamp() {
