@@ -317,7 +317,7 @@ void VerilatedVcd::printTime (vluint64_t timeui) {
 	static VL_THREAD_LOCAL bool backTime = false;
 	if (!backTime) {
 	    backTime = true;
-	    VL_PRINTF_MT("VCD time is moving backwards, wave file may be incorrect.\n");
+	    VL_PRINTF_MT("%%Warning: VCD time is moving backwards, wave file may be incorrect.\n");
 	}
     }
     m_timeLastDump = timeui;

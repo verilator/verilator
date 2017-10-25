@@ -877,7 +877,8 @@ class EmitCImp : EmitCStmts {
 	puts(modClassName(m_modp)+"::"+nodep->name()
 	     +"("+cFuncArgs(nodep)+") {\n");
 
-	puts("VL_DEBUG_IF(VL_PRINTF_MT(\"  ");
+	// "+" in the debug indicates a print from the model
+	puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+  ");
 	for (int i=0;i<m_modp->level();i++) { puts("  "); }
 	puts(modClassName(m_modp)+"::"+nodep->name()
 	     +"\\n\"); );\n");
@@ -938,7 +939,7 @@ class EmitCImp : EmitCStmts {
 		    if (nodep->lhsp()->castVarRef()) {
 			varname = ": "+nodep->lhsp()->castVarRef()->varp()->prettyName();
 		    }
-		    puts(")) VL_PRINTF_MT(\"\tCHANGE: "+nodep->fileline()->ascii()
+		    puts(")) VL_DBG_MSGF(\"        CHANGE: "+nodep->fileline()->ascii()
 			 +varname+"\\n\"); );\n");
 		}
 	    }
@@ -1738,11 +1739,11 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
 	puts("if (VL_UNLIKELY(__Vm_inhibitSim)) return;\n");
     }
     putsDecoration("// Evaluate till stable\n");
-    puts("VL_DEBUG_IF(VL_PRINTF_MT(\"\\n----TOP Evaluate "+modClassName(modp)+"::eval\\n\"); );\n");
+    puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+++++TOP Evaluate "+modClassName(modp)+"::eval\\n\"); );\n");
     puts("int __VclockLoop = 0;\n");
     puts("QData __Vchange = 1;\n");
     puts("while (VL_LIKELY(__Vchange)) {\n");
-    puts(    "VL_DEBUG_IF(VL_PRINTF_MT(\" Clock loop\\n\"););\n");
+    puts(    "VL_DEBUG_IF(VL_DBG_MSGF(\"+ Clock loop\\n\"););\n");
     if (v3Global.opt.trace()) {
 	puts("vlSymsp->__Vm_activity = true;\n");
     }

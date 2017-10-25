@@ -97,6 +97,37 @@ void VL_FATAL_MT (const char* filename, int linenum, const char* hier, const cha
 }
 
 //===========================================================================
+// Debug prints
+
+/// sprintf but return as string (this isn't fast, for print messages only)
+std::string _vl_string_vprintf(const char* formatp, va_list ap) {
+    int len = VL_VSNPRINTF(NULL, 0, formatp, ap);
+    if (VL_UNLIKELY(len < 1)) return "";
+    char* bufp = new char[len+1];
+    VL_VSNPRINTF(bufp, len+1, formatp, ap);
+    std::string out = std::string(bufp, len);
+    delete bufp;
+    return out;
+}
+
+vluint64_t _vl_dbg_sequence_number() {
+    static vluint64_t sequence = 0;
+    return ++sequence;
+}
+
+vluint32_t _vl_dbg_thread_number() {
+    return 0;
+}
+
+void VL_DBG_MSGF(const char* formatp, ...) {
+    va_list ap;
+    va_start(ap, formatp);
+    std::string out = _vl_string_vprintf(formatp, ap);
+    va_end(ap);
+    VL_PRINTF_MT("-V{t%d,%" VL_PRI64 "d}%s", _vl_dbg_thread_number(), _vl_dbg_sequence_number(), out.c_str());
+}
+
+//===========================================================================
 // Overall class init
 
 Verilated::Serialized::Serialized() {
@@ -631,7 +662,7 @@ static inline void _vl_vsss_read(FILE* fp, int& floc, WDataInP fromp, const std:
 	_vl_vsss_advance(fp, floc);
     }
     *cp++ = '\0';
-    //VL_PRINTF_MT("\t_read got='%s'\n", tmpp);
+    //VL_DBG_MSG("\t_read got='"<<tmpp<<"'\n");
 }
 static inline void _vl_vsss_setbit(WDataOutP owp, int obits, int lsb, int nbits, IData ld) {
     for (; nbits && lsb<obits; nbits--, lsb++, ld>>=1) {
@@ -678,7 +709,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
     bool inPct = false;
     const char* pos = formatp;
     for (; *pos && !_vl_vsss_eof(fp,floc); ++pos) {
-	//VL_PRINTF_MT("_vlscan fmt='%c' floc=%d file='%c'\n", pos[0], floc, _vl_vsss_peek(fp,floc,fromp,fstr));
+	//VL_DBG_MSG("_vlscan fmt='"<<pos[0]<<"' floc="<<floc<<" file='"<<_vl_vsss_peek(fp,floc,fromp,fstr)<<"'"<<endl);
 	if (!inPct && pos[0]=='%') {
 	    inPct = true;
 	} else if (!inPct && isspace(pos[0])) {   // Format spaces
@@ -1294,6 +1325,17 @@ std::string VL_CVT_PACK_STR_NW(int lwords, WDataInP lwp) {
 
 //===========================================================================
 // Verilated:: Methods
+
+void Verilated::debug(int val) {
+    s_s.s_debug = val;
+    if (val) {
+#ifdef VL_DEBUG
+	VL_DEBUG_IF(VL_DBG_MSGF("- Verilated::debug is on. Message prefix indicates {<thread>,<sequence_number>}.\n"););
+#else
+	VL_PRINTF_MT("- Verilated::debug attempted, but compiled without VL_DEBUG, so messages suppressed.\n");
+#endif
+    }
+}
 
 const char* Verilated::catName(const char* n1, const char* n2) {
     // Returns new'ed data

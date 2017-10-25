@@ -112,7 +112,7 @@ void VerilatedDeserialize::trailer() {
 
 void VerilatedSave::open (const char* filenamep) {
     if (isOpen()) return;
-    VL_DEBUG_IF(VL_PRINTF_MT("-vltSave: opening save file %s\n",filenamep););
+    VL_DEBUG_IF(VL_DBG_MSGF("- save: opening save file %s\n",filenamep););
 
     if (filenamep[0]=='|') {
 	assert(0);	// Not supported yet.
@@ -134,7 +134,7 @@ void VerilatedSave::open (const char* filenamep) {
 
 void VerilatedRestore::open (const char* filenamep) {
     if (isOpen()) return;
-    VL_DEBUG_IF(VL_PRINTF_MT("-vltRestore: opening restore file %s\n",filenamep););
+    VL_DEBUG_IF(VL_DBG_MSGF("- restore: opening restore file %s\n",filenamep););
 
     if (filenamep[0]=='|') {
 	assert(0);	// Not supported yet.

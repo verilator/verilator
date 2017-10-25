@@ -248,7 +248,7 @@ public:
     static int  randReset() { return s_s.s_randReset; }	///< Return randReset value
 
     /// Enable debug of internal verilated code
-    static inline void debug(int level) { s_s.s_debug = level; }
+    static void debug(int level);
 #ifdef VL_DEBUG
     static inline int  debug() { return s_s.s_debug; }	///< Return debug value
 #else
@@ -354,6 +354,8 @@ extern void VL_FATAL_MT  (const char* filename, int linenum, const char* hier,
 			  const char* msg);
 /// Print a string, multithread safe. Eventually VL_PRINTF will get called.
 #define VL_PRINTF_MT VL_PRINTF
+/// Print a debug message from internals with standard prefix, with printf style format
+extern void VL_DBG_MSGF(const char* formatp, ...);
 
 extern IData  VL_RANDOM_I(int obits);	///< Randomize a signal
 extern QData  VL_RANDOM_Q(int obits);	///< Randomize a signal

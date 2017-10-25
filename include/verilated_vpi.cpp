@@ -361,7 +361,7 @@ public:
             if (VL_UNLIKELY(it->first <= time)) {
                 VerilatedVpioCb* vop = it->second;
                 ++it;  // iterator may be deleted by callback
-                VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:  timed_callback %p\n",vop););
+                VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: timed_callback %p\n",vop););
                 (vop->cb_rtnp()) (vop->cb_datap());
             }
             else { ++it; }
@@ -383,7 +383,7 @@ public:
                 continue;
             }
             VerilatedVpioCb* vop = *it++;
-            VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:  reason_callback %d %p\n",reason,vop););
+            VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: reason_callback %d %p\n",reason,vop););
             (vop->cb_rtnp()) (vop->cb_datap());
         }
     }
@@ -400,11 +400,11 @@ public:
             if (VerilatedVpioVar* varop = VerilatedVpioVar::castp(vop->cb_datap()->obj)) {
                 void* newDatap = varop->varDatap();
                 void* prevDatap = varop->prevDatap();  // Was malloced when we added the callback
-                VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:  value_test %s v[0]=%d/%d %p %p\n",
+                VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: value_test %s v[0]=%d/%d %p %p\n",
                                              varop->fullname(), *((CData*)newDatap), *((CData*)prevDatap),
                                              newDatap, prevDatap););
                 if (memcmp(prevDatap, newDatap, varop->entSize())) {
-                    VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:  value_callback %p %s v[0]=%d\n",
+                    VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: value_callback %p %s v[0]=%d\n",
                                                  vop,varop->fullname(), *((CData*)newDatap)););
                     update.insert(varop);
                     vpi_get_value(vop->cb_datap()->obj, vop->cb_datap()->value);
@@ -913,7 +913,7 @@ vpiHandle vpi_register_cb(p_cb_data cb_data_p) {
 	QData time = 0;
 	if (cb_data_p->time) time = _VL_SET_QII(cb_data_p->time->high, cb_data_p->time->low);
 	VerilatedVpioCb* vop = new VerilatedVpioCb(cb_data_p, VL_TIME_Q()+time);
-	VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:  vpi_register_cb %d %p delay=%" VL_PRI64 "u\n",cb_data_p->reason,vop,time););
+	VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_register_cb %d %p delay=%" VL_PRI64 "u\n",cb_data_p->reason,vop,time););
 	VerilatedVpiImp::cbTimedAdd(vop);
 	return vop->castVpiHandle();
     }
@@ -928,7 +928,7 @@ vpiHandle vpi_register_cb(p_cb_data cb_data_p) {
     case cbExitInteractive:		// FALLTHRU // NOP, but need to return handle, so make object
     case cbInteractiveScopeChange: {	// FALLTHRU // NOP, but need to return handle, so make object
 	VerilatedVpioCb* vop = new VerilatedVpioCb(cb_data_p, 0);
-	VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:  vpi_register_cb %d %p\n",cb_data_p->reason,vop););
+	VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_register_cb %d %p\n",cb_data_p->reason,vop););
 	VerilatedVpiImp::cbReasonAdd(vop);
 	return vop->castVpiHandle();
     }
@@ -940,7 +940,7 @@ vpiHandle vpi_register_cb(p_cb_data cb_data_p) {
 }
 
 PLI_INT32 vpi_remove_cb(vpiHandle object) {
-    VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:  vpi_remove_cb %p\n",object););
+    VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_remove_cb %p\n",object););
     VerilatedVpioCb* vop = VerilatedVpioCb::castp(object);
     _VL_VPI_ERROR_RESET(); // reset vpi error status
     if (VL_UNLIKELY(!vop)) return 0;
@@ -967,7 +967,7 @@ void vpi_get_systf_info(vpiHandle object, p_vpi_systf_data systf_data_p) {
 vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
     _VL_VPI_ERROR_RESET(); // reset vpi error status
     if (VL_UNLIKELY(!namep)) return NULL;
-    VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:  vpi_handle_by_name %s %p\n",namep,scope););
+    VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_handle_by_name %s %p\n",namep,scope););
     VerilatedVpioScope* voScopep = VerilatedVpioScope::castp(scope);
     const VerilatedVar* varp;
     const VerilatedScope* scopep;
@@ -999,7 +999,7 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
 
 vpiHandle vpi_handle_by_index(vpiHandle object, PLI_INT32 indx) {
     // Used to get array entries
-    VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:  vpi_handle_by_index %p %d\n",object, indx););
+    VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_handle_by_index %p %d\n",object, indx););
     VerilatedVpioVar* varop = VerilatedVpioVar::castp(object);
     _VL_VPI_ERROR_RESET(); // reset vpi error status
     if (VL_LIKELY(varop)) {
@@ -1024,7 +1024,7 @@ vpiHandle vpi_handle_by_index(vpiHandle object, PLI_INT32 indx) {
 // for traversing relationships
 
 vpiHandle vpi_handle(PLI_INT32 type, vpiHandle object) {
-    VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:  vpi_handle %d %p\n",type,object););
+    VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_handle %d %p\n",type,object););
     _VL_VPI_ERROR_RESET(); // reset vpi error status
     switch (type) {
     case vpiLeftRange: {
@@ -1066,7 +1066,7 @@ vpiHandle vpi_handle_multi(PLI_INT32 type, vpiHandle refHandle1, vpiHandle refHa
 }
 
 vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
-    VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:  vpi_iterate %d %p\n",type,object););
+    VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_iterate %d %p\n",type,object););
     _VL_VPI_ERROR_RESET(); // reset vpi error status
     switch (type) {
     case vpiMemoryWord: {
@@ -1103,7 +1103,7 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
     }
 }
 vpiHandle vpi_scan(vpiHandle object) {
-    VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:  vpi_scan %p\n",object););
+    VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_scan %p\n",object););
     _VL_VPI_ERROR_RESET(); // reset vpi error status
     VerilatedVpio* vop = VerilatedVpio::castp(object);
     if (VL_UNLIKELY(!vop)) return NULL;
@@ -1114,7 +1114,7 @@ vpiHandle vpi_scan(vpiHandle object) {
 
 PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
     // Leave this in the header file - in many cases the compiler can constant propagate "object"
-    VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:  vpi_get %d %p\n",property,object););
+    VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_get %d %p\n",property,object););
     _VL_VPI_ERROR_RESET(); // reset vpi error status
     switch (property) {
     case vpiTimePrecision: {
@@ -1155,7 +1155,7 @@ PLI_INT64 vpi_get64(PLI_INT32 property, vpiHandle object) {
 }
 
 PLI_BYTE8 *vpi_get_str(PLI_INT32 property, vpiHandle object) {
-    VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:  vpi_get_str %d %p\n",property,object););
+    VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_get_str %d %p\n",property,object););
     VerilatedVpio* vop = VerilatedVpio::castp(object);
     _VL_VPI_ERROR_RESET(); // reset vpi error status
     if (VL_UNLIKELY(!vop)) return NULL;
@@ -1193,7 +1193,7 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
     static VL_THREAD_LOCAL char outStr[1+VL_MULS_MAX_WORDS*32]; // Maximum required size is for binary string, one byte per bit plus null termination
     // cppcheck-suppress variableScope
     static VL_THREAD_LOCAL int outStrSz = sizeof(outStr)-1;
-    VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:  vpi_get_value %p\n",object););
+    VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_get_value %p\n",object););
     _VL_VPI_ERROR_RESET(); // reset vpi error status
     if (VL_UNLIKELY(!value_p)) return;
     if (VerilatedVpioVar* vop = VerilatedVpioVar::castp(object)) {
@@ -1448,16 +1448,16 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
 
 vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
 			p_vpi_time time_p, PLI_INT32 flags) {
-    VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:  vpi_put_value %p %p\n",object, value_p););
+    VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_put_value %p %p\n",object, value_p););
     _VL_VPI_ERROR_RESET(); // reset vpi error status
     if (VL_UNLIKELY(!value_p)) {
       _VL_VPI_WARNING(__FILE__, __LINE__, "Ignoring vpi_put_value with NULL value pointer");
       return 0;
     }
     if (VerilatedVpioVar* vop = VerilatedVpioVar::castp(object)) {
-	VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:    vpi_put_value name=%s fmt=%d vali=%d\n",
+	VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi:   vpi_put_value name=%s fmt=%d vali=%d\n",
 				     vop->fullname(), value_p->format, value_p->value.integer);
-			VL_PRINTF_MT("-vltVpi:    varp=%p  putatp=%p\n",
+			VL_DBG_MSGF("- vpi:   varp=%p  putatp=%p\n",
 				     vop->varp()->datap(), vop->varDatap()););
 	if (VL_UNLIKELY(!vop->varp()->isPublicRW())) {
             _VL_VPI_WARNING(__FILE__, __LINE__, "Ignoring vpi_put_value to signal marked read-only, use public_flat_rw instead: ", vop->fullname());
@@ -1822,7 +1822,7 @@ PLI_INT32 vpi_free_object(vpiHandle object) {
 }
 
 PLI_INT32 vpi_release_handle (vpiHandle object) {
-    VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:  vpi_release_handle %p\n",object););
+    VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_release_handle %p\n",object););
     VerilatedVpio* vop = VerilatedVpio::castp(object);
     _VL_VPI_ERROR_RESET(); // reset vpi error status
     if (VL_UNLIKELY(!vop)) return 0;
@@ -1856,7 +1856,7 @@ PLI_INT32 vpi_put_userdata(vpiHandle obj, void *userdata) {
 }
 
 PLI_INT32 vpi_control(PLI_INT32 operation, ...) {
-    VL_DEBUG_IF_PLI(VL_PRINTF_MT("-vltVpi:  vpi_control %d\n",operation););
+    VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_control %d\n",operation););
     _VL_VPI_ERROR_RESET(); // reset vpi error status
     switch (operation) {
     case vpiFinish: {
