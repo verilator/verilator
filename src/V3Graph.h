@@ -65,7 +65,7 @@ public:
     V3Graph();
     virtual ~V3Graph();
     static void debug(int level) { s_debug = level; }
-    virtual string dotRankDir() { return "TB"; }	// rankdir for dot plotting
+    virtual string dotRankDir() const { return "TB"; }	// rankdir for dot plotting
 
     // METHODS
     void clear();	// Empty it of all vertices/edges, as if making a new object
@@ -127,9 +127,9 @@ public:
 
     /// Debugging
     void dump(ostream& os=cout);
-    void dumpDotFile(const string& filename, bool colorAsSubgraph);
-    void dumpDotFilePrefixed(const string& nameComment, bool colorAsSubgraph=false);
-    void dumpDotFilePrefixedAlways(const string& nameComment, bool colorAsSubgraph=false);
+    void dumpDotFile(const string& filename, bool colorAsSubgraph) const;
+    void dumpDotFilePrefixed(const string& nameComment, bool colorAsSubgraph=false) const;
+    void dumpDotFilePrefixedAlways(const string& nameComment, bool colorAsSubgraph=false) const;
     void userClearVertices();
     void userClearEdges();
     static void test();

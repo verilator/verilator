@@ -274,18 +274,18 @@ void V3Graph::dumpEdge(ostream& os, V3GraphVertex* vertexp, V3GraphEdge* edgep) 
     }
 }
 
-void V3Graph::dumpDotFilePrefixed(const string& nameComment, bool colorAsSubgraph) {
+void V3Graph::dumpDotFilePrefixed(const string& nameComment, bool colorAsSubgraph) const {
     if (v3Global.opt.dumpTree()) {
 	dumpDotFile(v3Global.debugFilename(nameComment)+".dot", colorAsSubgraph);
     }
 }
 
 //! Variant of dumpDotFilePrefixed without --dump option check
-void V3Graph::dumpDotFilePrefixedAlways(const string& nameComment, bool colorAsSubgraph) {
+void V3Graph::dumpDotFilePrefixedAlways(const string& nameComment, bool colorAsSubgraph) const {
     dumpDotFile(v3Global.debugFilename(nameComment)+".dot", colorAsSubgraph);
 }
 
-void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) {
+void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     // This generates a file used by graphviz, http://www.graphviz.org
     // "hardcoded" parameters:
     const vl_unique_ptr<ofstream> logp (V3File::new_ofstream(filename));
