@@ -109,7 +109,7 @@ std::string _vl_string_vprintf(const char* formatp, va_list ap) {
     char* bufp = new char[len+1];
     VL_VSNPRINTF(bufp, len+1, formatp, ap);
     std::string out = std::string(bufp, len);
-    delete bufp;
+    delete[] bufp;
     return out;
 }
 
