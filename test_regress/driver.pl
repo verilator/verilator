@@ -3,14 +3,17 @@
 ######################################################################
 
 require 5.006_001;
+use Cwd;
 BEGIN {
     if ($ENV{DIRPROJECT} && $ENV{DIRPROJECT_PERL_BOOT}) {
 	# Magic to allow author testing of perl packages in local directory
 	require $ENV{DIRPROJECT}."/".$ENV{DIRPROJECT_PERL_BOOT};
     }
+    if (!$ENV{VERILATOR_ROOT} && -x "../bin/verilator") {
+        $ENV{VERILATOR_ROOT} = Cwd::getcwd()."/..";
+    }
 }
 
-use Cwd;
 use Getopt::Long;
 use IO::File;
 use Pod::Usage;
