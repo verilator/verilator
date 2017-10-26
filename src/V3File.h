@@ -77,7 +77,7 @@ class V3InFilterImp;
 
 class V3InFilter {
     V3InFilterImp* m_impp;
-    V3InFilter(const V3InFilter&); ///< N/A, no copy constructor
+    V3InFilter(const V3InFilter&) VL_EQ_DELETE;  ///< N/A, no copy constructor
 public:
     // TYPES
     typedef list<string> StrList;

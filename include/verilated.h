@@ -102,8 +102,8 @@ enum VerilatedVarFlags {
 class VerilatedModule {
 private:
     const char*		m_namep;	///< Module name
-    VerilatedModule();				///< N/A, always use named constructor below
-    VerilatedModule(const VerilatedModule& );	///< N/A, no copy constructor
+    VerilatedModule() VL_EQ_DELETE;  ///< N/A, always use named constructor below
+    VerilatedModule(const VerilatedModule& ) VL_EQ_DELETE;  ///< N/A, no copy constructor
 public:
     explicit VerilatedModule(const char* namep);	///< Create module with given hierarchy name
     ~VerilatedModule();

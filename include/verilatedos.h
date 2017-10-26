@@ -109,6 +109,7 @@
 // C++-2011
 
 #if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__)
+# define VL_EQ_DELETE = delete
 # define VL_HAS_UNIQUE_PTR
 # define VL_HAS_UNORDERED_MAP
 # define VL_HAS_UNORDERED_SET
@@ -118,6 +119,7 @@
 # define VL_INCLUDE_UNORDERED_MAP <unordered_map>
 # define VL_INCLUDE_UNORDERED_SET <unordered_set>
 #else
+# define VL_EQ_DELETE
 # define vl_unique_ptr std::auto_ptr
 # define vl_unordered_map std::map
 # define vl_unordered_set std::set

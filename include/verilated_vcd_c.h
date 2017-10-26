@@ -143,7 +143,7 @@ private:
 	return out + static_cast<char>((code)%94+33);
     }
 
-    VerilatedVcd(const VerilatedVcd& );	///< N/A, no copy constructor
+    VerilatedVcd(const VerilatedVcd&) VL_EQ_DELETE;  ///< N/A, no copy constructor
 
 protected:
     // METHODS

@@ -250,7 +250,7 @@ private:
     VSymEnt*	m_symRootp;		// Root symbol table
     SymStack	m_symsp;		// All symbol tables, to cleanup
 
-    VSymGraph(const VSymGraph&);	///< N/A, no copy constructor
+    VSymGraph(const VSymGraph&) VL_EQ_DELETE;  ///< N/A, no copy constructor
 
 protected:
     friend class VSymEnt;

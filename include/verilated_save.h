@@ -71,7 +71,7 @@ public:
 	return *this;  // For function chaining
     }
 private:
-    VerilatedSerialize(const VerilatedSerialize& );	///< N/A, no copy constructor
+    VerilatedSerialize(const VerilatedSerialize&) VL_EQ_DELETE;  ///< N/A, no copy constructor
     VerilatedSerialize& bufferCheck() {
 	// Flush the write buffer if there's not enough space left for new information
 	// We only call this once per vector, so we need enough slop for a very wide "b###" line
@@ -134,7 +134,7 @@ public:
     VerilatedDeserialize& readAssert (const void* __restrict datap, size_t size);
     VerilatedDeserialize& readAssert (vluint64_t data) { return readAssert(&data, sizeof(data)); }
 private:
-    VerilatedDeserialize(const VerilatedDeserialize& );	///< N/A, no copy constructor
+    VerilatedDeserialize(const VerilatedDeserialize&) VL_EQ_DELETE;  ///< N/A, no copy constructor
     VerilatedDeserialize& bufferCheck() {
 	// Flush the write buffer if there's not enough space left for new information
 	// We only call this once per vector, so we need enough slop for a very wide "b###" line
