@@ -101,8 +101,11 @@ void VL_FATAL_MT (const char* filename, int linenum, const char* hier, const cha
 
 /// sprintf but return as string (this isn't fast, for print messages only)
 std::string _vl_string_vprintf(const char* formatp, va_list ap) {
-    int len = VL_VSNPRINTF(NULL, 0, formatp, ap);
+    va_list aq;
+    va_copy(aq, ap);
+    int len = VL_VSNPRINTF(NULL, 0, formatp, aq);
     if (VL_UNLIKELY(len < 1)) return "";
+
     char* bufp = new char[len+1];
     VL_VSNPRINTF(bufp, len+1, formatp, ap);
     std::string out = std::string(bufp, len);
@@ -115,16 +118,18 @@ vluint64_t _vl_dbg_sequence_number() {
     return ++sequence;
 }
 
-vluint32_t _vl_dbg_thread_number() {
+vluint32_t VL_THREAD_ID() {
     return 0;
 }
 
 void VL_DBG_MSGF(const char* formatp, ...) {
+    // We're still using c printf formats instead of operator<< so we can avoid the heavy
+    // includes that otherwise would be required in every Verilated module
     va_list ap;
     va_start(ap, formatp);
     std::string out = _vl_string_vprintf(formatp, ap);
     va_end(ap);
-    VL_PRINTF_MT("-V{t%d,%" VL_PRI64 "d}%s", _vl_dbg_thread_number(), _vl_dbg_sequence_number(), out.c_str());
+    VL_PRINTF_MT("-V{t%d,%" VL_PRI64 "d}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(), out.c_str());
 }
 
 //===========================================================================

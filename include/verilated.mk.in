@@ -114,7 +114,7 @@ endif
 
 ifneq ($(VM_THREADS),0)
   # Need C++11 at least, so always default to newest
-  CPPFLAGS += -DVM_THREADED $(CFG_CXXFLAGS_STD_NEWEST)
+  CPPFLAGS += -DVL_THREADED $(CFG_CXXFLAGS_STD_NEWEST)
 endif
 
 #######################################################################
