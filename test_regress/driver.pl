@@ -1506,6 +1506,12 @@ sub _vcd_read {
     return $data;
 }
 
+our $_Cxx_Version;
+sub cxx_version {
+    $_Cxx_Version ||= `make -f Makefile print-cxx-version`;
+    return $_Cxx_Version;
+}
+
 sub file_grep_not {
     my $self = (ref $_[0]? shift : $Self);
     my $filename = shift;

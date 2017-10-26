@@ -14,9 +14,14 @@ compile (
     verilator_flags2 => ["-O0"],
     );
 
-execute (
-	 check_finished=>1,
-     );
+if ($Self->cxx_version =~ /clang version 3.8/) {
+    $Self->skip("Known clang bug");
+    #Here:   if (VL_UNLIKELY(VL_NEQ_W(12, __Vtemp1, vlSymsp->TOP__t.__PVT__str)))
+} else{
+    execute (
+        check_finished=>1,
+        );
+}
 
 ok(1);
 1;

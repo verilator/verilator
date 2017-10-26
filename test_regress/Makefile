@@ -73,6 +73,12 @@ random_forever:
 		echo ; \
 	done
 
+#######################################################################
+# Informational - used by some tests
+
+print-cxx-version:
+	$(CXX) --version
+
 ######################################################################
 maintainer-copy::
 clean mostlyclean distclean maintainer-clean::
