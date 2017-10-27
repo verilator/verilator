@@ -227,6 +227,23 @@ _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-Wno-unused-variable)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-Wno-shadow)
 AC_SUBST(CFG_CXXFLAGS_NO_UNUSED)
 
+# Set CFG_WITH_THREADED if can support threading
+AC_MSG_CHECKING(whether $CXX supports Verilated threads)
+ACO_SAVE_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="$CXXFLAGS $CFG_CXXFLAGS_STD_NEWEST $CFG_CXXFLAGS_NO_UNUSED"
+AC_LINK_IFELSE(
+     [AC_LANG_PROGRAM([#include <thread>], [[ ]])],
+     [_my_result=yes
+      if test -s conftest.err; then
+        if grep -e "$1" conftest.err >/dev/null; then
+          _my_result=no
+        fi
+      fi],
+     [_my_result=no])
+CFG_WITH_THREADED=$_my_result
+AC_SUBST(CFG_WITH_THREADED)
+AC_MSG_RESULT($CFG_WITH_THREADED)
+
 # Checks for library functions.
 AC_CHECK_MEMBER([struct stat.st_mtim.tv_nsec],
     [AC_DEFINE([HAVE_STAT_NSEC],[1],[Defined if struct stat has st_mtim.tv_nsec])],

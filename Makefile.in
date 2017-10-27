@@ -92,6 +92,7 @@ datarootdir = @datarootdir@
 CFG_WITH_CCWARN = @CFG_WITH_CCWARN@
 CFG_WITH_DEFENV = @CFG_WITH_DEFENV@
 CFG_WITH_LONGTESTS = @CFG_WITH_LONGTESTS@
+CFG_WITH_THREADED = @CFG_WITH_THREADED@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 
 #### End of system configuration section. ####
@@ -504,6 +505,9 @@ dist-file-list:
 	@echo "begin-dist-file-list:";  # Scripts look for this
 	@echo $(wildcard $(DISTFILES))
 	@echo "end-dist-file-list:";  # Scripts look for this
+
+print-cfg-with-threaded:
+	@echo $(CFG_WITH_THREADED)
 
 ######################################################################
 # Distributions

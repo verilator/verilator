@@ -9,10 +9,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 $Self->skip("No thread support") if !$Self->cfg_with_threaded;
 
-top_filename("t/t_threads_counter.v");
+top_filename("t/t_verilated_all.v");
+
+my $root = "..";
 
 compile (
-    verilator_flags2 => ['--cc --threads 1'],
+    # Can't use --coverage and --savable together, so cheat and compile inline
+    verilator_flags2 => ['--cc --coverage-toggle --coverage-line --coverage-user --trace --threads 1 --vpi $root/include/verilated_save.cpp'],
     );
 
 execute (

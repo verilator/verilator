@@ -1512,6 +1512,12 @@ sub cxx_version {
     return $_Cxx_Version;
 }
 
+our $_Cfg_With_Threaded;
+sub cfg_with_threaded {
+    my $out = `make -f ../Makefile print-cfg-with-threaded`;
+    return ($out =~ /yes/i) ? 1:0;
+}
+
 sub file_grep_not {
     my $self = (ref $_[0]? shift : $Self);
     my $filename = shift;

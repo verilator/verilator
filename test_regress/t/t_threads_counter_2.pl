@@ -7,6 +7,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+$Self->skip("No thread support") if !$Self->cfg_with_threaded;
+
 top_filename("t/t_threads_counter.v");
 
 compile (
