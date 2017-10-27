@@ -63,12 +63,6 @@ VLCOVGEN_ITEM("name=>'row2',        short=>'r2', group=>0, default=>undef, ")
 VLCOVGEN_ITEM("name=>'row3',        short=>'r3', group=>0, default=>undef, ")
 VLCOVGEN_ITEM("name=>'weight',      short=>'w',  group=>0, default=>undef, descr=>'For totaling items, weight of this item'")
 
-//=============================================================================
-//  VerilatedCovKey
-///  Verilator coverage global class
-////
-/// Global class with methods affecting all coverage data.
-
 // VLCOVGEN_CIK_AUTO_EDIT_BEGIN
 #define VL_CIK_COL0 "c0"
 #define VL_CIK_COL0_NAME "C0"
@@ -102,9 +96,14 @@ VLCOVGEN_ITEM("name=>'weight',      short=>'w',  group=>0, default=>undef, descr
 #define VL_CIK_WEIGHT "w"
 // VLCOVGEN_CIK_AUTO_EDIT_END
 
+//=============================================================================
+// VerilatedCovKey
+/// Verilator coverage global class.
+/// This class is thread safe.
+
 class VerilatedCovKey {
 public:
-    static std::string shortKey(const std::string& key) {
+    static std::string shortKey(const std::string& key) VL_PURE {
 	// VLCOVGEN_SHORT_AUTO_EDIT_BEGIN
 	if (key == "col0") return VL_CIK_COL0;
 	if (key == "col0_name") return VL_CIK_COL0_NAME;

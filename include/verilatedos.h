@@ -90,6 +90,12 @@
 #define VL_THREAD			///< Deprecated
 #define VL_STATIC_OR_THREAD static	///< Deprecated
 
+#define VL_PURE  ///< Comment tag that Function is pure (and thus also VL_MT_SAFE)
+#define VL_MT_SAFE  ///< Comment tag that function is threadsafe when VL_THREADED
+#define VL_MT_SAFE_POSTINIT  ///< Comment tag that function is threadsafe when VL_THREADED, only during normal operation (post-init)
+#define VL_MT_UNSAFE  ///< Comment tag that function is not threadsafe when VL_THREADED
+#define VL_MT_UNSAFE_ONE  ///< Comment tag that function is not threadsafe when VL_THREADED, protected to make sure single-caller
+
 #ifdef _MSC_VER
 # define VL_ULL(c) (c##ui64)	///< Add appropriate suffix to 64-bit constant
 #else

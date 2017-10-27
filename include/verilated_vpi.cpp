@@ -517,7 +517,7 @@ VerilatedVpiError* VerilatedVpiImp::error_info() {
 //======================================================================
 // VerilatedVpiError Methods
 
-const char* VerilatedVpiError::strFromVpiVal(PLI_INT32 vpiVal) {
+const char* VerilatedVpiError::strFromVpiVal(PLI_INT32 vpiVal) VL_MT_SAFE {
     static const char* const names[] = {
         "*undefined*",
         "vpiBinStrVal",
@@ -542,7 +542,7 @@ const char* VerilatedVpiError::strFromVpiVal(PLI_INT32 vpiVal) {
     if (vpiVal < 0) return names[0];
     return names[(vpiVal<=vpiRawFourStateVal)?vpiVal:0];
 }
-const char* VerilatedVpiError::strFromVpiObjType(PLI_INT32 vpiVal) {
+const char* VerilatedVpiError::strFromVpiObjType(PLI_INT32 vpiVal) VL_MT_SAFE {
     static const char* const names[] = {
         "*undefined*",
         "vpiAlways",
@@ -684,7 +684,7 @@ const char* VerilatedVpiError::strFromVpiObjType(PLI_INT32 vpiVal) {
     if (vpiVal < 0) return names[0];
     return names[(vpiVal<=vpiGenVar)?vpiVal:0];
 }
-const char* VerilatedVpiError::strFromVpiMethod(PLI_INT32 vpiVal) {
+const char* VerilatedVpiError::strFromVpiMethod(PLI_INT32 vpiVal) VL_MT_SAFE {
     static const char* const names[] = {
         "vpiCondition",
         "vpiDelay",
@@ -727,7 +727,7 @@ const char* VerilatedVpiError::strFromVpiMethod(PLI_INT32 vpiVal) {
     return names[vpiVal-vpiCondition];
 }
 
-const char* VerilatedVpiError::strFromVpiCallbackReason(PLI_INT32 vpiVal) {
+const char* VerilatedVpiError::strFromVpiCallbackReason(PLI_INT32 vpiVal) VL_MT_SAFE {
     static const char* const names[] = {
         "*undefined*",
         "cbValueChange",
@@ -766,7 +766,7 @@ const char* VerilatedVpiError::strFromVpiCallbackReason(PLI_INT32 vpiVal) {
     return names[(vpiVal<=cbAtEndOfSimTime)?vpiVal:0];
 }
 
-const char* VerilatedVpiError::strFromVpiProp(PLI_INT32 vpiVal) {
+const char* VerilatedVpiError::strFromVpiProp(PLI_INT32 vpiVal) VL_MT_SAFE {
     static const char* const names[] = {
         "*undefined or other*",
         "vpiType",

@@ -48,11 +48,11 @@ VerilatedImp  VerilatedImp::s_s;
 // User definable functions
 
 #ifndef VL_USER_FINISH		// Define this to override this function
-void vl_finish (const char* filename, int linenum, const char* hier) {
+void vl_finish (const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
     if (0 && hier) {}
-    VL_PRINTF("- %s:%d: Verilog $finish\n", filename, linenum);
+    VL_PRINTF("- %s:%d: Verilog $finish\n", filename, linenum);  // Not VL_PRINTF_MT, already on main thread
     if (Verilated::gotFinish()) {
-	VL_PRINTF("- %s:%d: Second verilog $finish, exiting\n", filename, linenum);
+	VL_PRINTF("- %s:%d: Second verilog $finish, exiting\n", filename, linenum);  // Not VL_PRINTF_MT, already on main thread
 	Verilated::flushCall();
 	exit(0);
     }
@@ -61,7 +61,7 @@ void vl_finish (const char* filename, int linenum, const char* hier) {
 #endif
 
 #ifndef VL_USER_STOP		// Define this to override this function
-void vl_stop (const char* filename, int linenum, const char* hier) {
+void vl_stop (const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
     Verilated::gotFinish(true);
     Verilated::flushCall();
     vl_fatal (filename,linenum,hier,"Verilog $stop");
@@ -69,20 +69,20 @@ void vl_stop (const char* filename, int linenum, const char* hier) {
 #endif
 
 #ifndef VL_USER_FATAL	// Define this to override this function
-void vl_fatal (const char* filename, int linenum, const char* hier, const char* msg) {
+void vl_fatal (const char* filename, int linenum, const char* hier, const char* msg) VL_MT_UNSAFE {
     if (0 && hier) {}
     Verilated::gotFinish(true);
-    VL_PRINTF("%%Error: %s:%d: %s\n", filename, linenum, msg);
+    VL_PRINTF("%%Error: %s:%d: %s\n", filename, linenum, msg);  // Not VL_PRINTF_MT, already on main thread
     Verilated::flushCall();
 
-    VL_PRINTF("Aborting...\n");
+    VL_PRINTF("Aborting...\n");  // Not VL_PRINTF_MT, already on main thread
     Verilated::flushCall();  // Second flush in case VL_PRINTF does something needing a flush
     abort();
 }
 #endif
 
 //===========================================================================
-// Non-user overridable wrapper to call user-overridable functions
+// Wrapper to call certain functions via messages when multithreaded
 
 void VL_FINISH_MT (const char* filename, int linenum, const char* hier) {
     vl_finish(filename, linenum, hier);
@@ -100,7 +100,7 @@ void VL_FATAL_MT (const char* filename, int linenum, const char* hier, const cha
 // Debug prints
 
 /// sprintf but return as string (this isn't fast, for print messages only)
-std::string _vl_string_vprintf(const char* formatp, va_list ap) {
+std::string _vl_string_vprintf(const char* formatp, va_list ap) VL_MT_SAFE {
     va_list aq;
     va_copy(aq, ap);
     int len = VL_VSNPRINTF(NULL, 0, formatp, aq);
@@ -122,13 +122,14 @@ vluint32_t VL_THREAD_ID() {
     return 0;
 }
 
-void VL_DBG_MSGF(const char* formatp, ...) {
+void VL_DBG_MSGF(const char* formatp, ...) VL_MT_SAFE {
     // We're still using c printf formats instead of operator<< so we can avoid the heavy
     // includes that otherwise would be required in every Verilated module
     va_list ap;
     va_start(ap, formatp);
     std::string out = _vl_string_vprintf(formatp, ap);
     va_end(ap);
+    // printf("-imm-V{t%d,%" VL_PRI64 "d}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(), out.c_str());
     VL_PRINTF_MT("-V{t%d,%" VL_PRI64 "d}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(), out.c_str());
 }
 
@@ -207,7 +208,7 @@ WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp) {
     return outwp;
 }
 
-WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) {
+WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     for (int i=0; i<VL_WORDS_I(obits); ++i) outwp[i] = 0;
     return outwp;
 }
@@ -215,7 +216,7 @@ WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) {
 //===========================================================================
 // Debug
 
-void _VL_DEBUG_PRINT_W(int lbits, WDataInP iwp) {
+void _VL_DEBUG_PRINT_W(int lbits, WDataInP iwp) VL_MT_SAFE {
     VL_PRINTF_MT("  Data: w%d: ", lbits);
     for (int i=VL_WORDS_I(lbits)-1; i>=0; --i) { VL_PRINTF_MT("%08x ",iwp[i]); }
     VL_PRINTF_MT("\n");
@@ -224,7 +225,7 @@ void _VL_DEBUG_PRINT_W(int lbits, WDataInP iwp) {
 //===========================================================================
 // Slow math
 
-WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, bool is_modulus) {
+WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, bool is_modulus) VL_MT_SAFE {
     // See Knuth Algorithm D.  Computes u/v = q.r
     // This isn't massively tuned, as wide division is rare
     // for debug see V3Number version
@@ -333,7 +334,7 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, boo
     }
 }
 
-WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, WDataInP rwp) {
+WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
     // obits==lbits, rbits can be different
     owp[0] = 1;
     for (int i=1; i < VL_WORDS_I(obits); i++) owp[i] = 0;
@@ -355,11 +356,11 @@ WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, WDa
     }
     return owp;
 }
-WDataOutP VL_POW_WWQ(int obits, int lbits, int rbits, WDataOutP owp, WDataInP lwp, QData rhs) {
+WDataOutP VL_POW_WWQ(int obits, int lbits, int rbits, WDataOutP owp, WDataInP lwp, QData rhs) VL_MT_SAFE {
     WData rhsw[2];  VL_SET_WQ(rhsw, rhs);
     return VL_POW_WWW(obits,lbits,rbits,owp,lwp,rhsw);
 }
-QData VL_POW_QQW(int, int, int rbits, QData lhs, WDataInP rwp) {
+QData VL_POW_QQW(int, int, int rbits, QData lhs, WDataInP rwp) VL_MT_SAFE {
     // Skip check for rhs == 0, as short-circuit doesn't save time
     if (VL_UNLIKELY(lhs==0)) return 0;
     QData power = lhs;
@@ -371,7 +372,7 @@ QData VL_POW_QQW(int, int, int rbits, QData lhs, WDataInP rwp) {
     return out;
 }
 
-WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, bool lsign, bool rsign) {
+WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, bool lsign, bool rsign) VL_MT_SAFE {
     // obits==lbits, rbits can be different
     if (rsign && VL_SIGN_W(rbits, rwp)) {
 	int words = VL_WORDS_I(obits);
@@ -391,11 +392,11 @@ WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, W
     }
     return VL_POW_WWW(obits, rbits, rbits, owp, lwp, rwp);
 }
-WDataOutP VL_POWSS_WWQ(int obits, int lbits, int rbits, WDataOutP owp, WDataInP lwp, QData rhs, bool lsign, bool rsign) {
+WDataOutP VL_POWSS_WWQ(int obits, int lbits, int rbits, WDataOutP owp, WDataInP lwp, QData rhs, bool lsign, bool rsign) VL_MT_SAFE {
     WData rhsw[2];  VL_SET_WQ(rhsw, rhs);
     return VL_POWSS_WWW(obits,lbits,rbits,owp,lwp,rhsw,lsign,rsign);
 }
-QData VL_POWSS_QQW(int obits, int, int rbits, QData lhs, WDataInP rwp, bool lsign, bool rsign) {
+QData VL_POWSS_QQW(int obits, int, int rbits, QData lhs, WDataInP rwp, bool lsign, bool rsign) VL_MT_SAFE {
     // Skip check for rhs == 0, as short-circuit doesn't save time
     if (rsign && VL_SIGN_W(rbits, rwp)) {
 	if (lhs==0) return 0;	// "X"
@@ -415,7 +416,7 @@ QData VL_POWSS_QQW(int obits, int, int rbits, QData lhs, WDataInP rwp, bool lsig
 // Do a va_arg returning a quad, assuming input argument is anything less than wide
 #define _VL_VA_ARG_Q(ap, bits) (((bits) <= VL_WORDSIZE) ? va_arg(ap,IData) : va_arg(ap,QData))
 
-void _vl_vsformat(std::string& output, const char* formatp, va_list ap) {
+void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SAFE {
     // Format a Verilog $write style format into the output list
     // The format must be pre-processed (and lower cased) by Verilator
     // Arguments are in "width, arg-value (or WDataIn* if wide)" form
@@ -621,15 +622,15 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) {
     }
 }
 
-static inline bool _vl_vsss_eof(FILE* fp, int& floc) {
+static inline bool _vl_vsss_eof(FILE* fp, int& floc) VL_MT_SAFE {
     if (fp) return feof(fp) ? 1 : 0;  // 1:0 to prevent MSVC++ warning
     else return (floc<0);
 }
-static inline void _vl_vsss_advance(FILE* fp, int& floc) {
+static inline void _vl_vsss_advance(FILE* fp, int& floc) VL_MT_SAFE {
     if (fp) fgetc(fp);
     else floc -= 8;
 }
-static inline int  _vl_vsss_peek(FILE* fp, int& floc, WDataInP fromp, const std::string& fstr) {
+static inline int  _vl_vsss_peek(FILE* fp, int& floc, WDataInP fromp, const std::string& fstr) VL_MT_SAFE {
     // Get a character without advancing
     if (fp) {
 	int data = fgetc(fp);
@@ -646,7 +647,7 @@ static inline int  _vl_vsss_peek(FILE* fp, int& floc, WDataInP fromp, const std:
 	}
     }
 }
-static inline void _vl_vsss_skipspace(FILE* fp, int& floc, WDataInP fromp, const std::string& fstr) {
+static inline void _vl_vsss_skipspace(FILE* fp, int& floc, WDataInP fromp, const std::string& fstr) VL_MT_SAFE {
     while (1) {
 	int c = _vl_vsss_peek(fp, floc, fromp, fstr);
 	if (c==EOF || !isspace(c)) return;
@@ -654,7 +655,7 @@ static inline void _vl_vsss_skipspace(FILE* fp, int& floc, WDataInP fromp, const
     }
 }
 static inline void _vl_vsss_read(FILE* fp, int& floc, WDataInP fromp, const std::string& fstr,
-				 char* tmpp, const char* acceptp) {
+				 char* tmpp, const char* acceptp) VL_MT_SAFE {
     // Read into tmp, consisting of characters from acceptp list
     char* cp = tmpp;
     while (1) {
@@ -667,14 +668,15 @@ static inline void _vl_vsss_read(FILE* fp, int& floc, WDataInP fromp, const std:
 	_vl_vsss_advance(fp, floc);
     }
     *cp++ = '\0';
-    //VL_DBG_MSG("\t_read got='"<<tmpp<<"'\n");
+    //VL_DBG_MSGF("\t_read got='"<<tmpp<<"'\n");
 }
-static inline void _vl_vsss_setbit(WDataOutP owp, int obits, int lsb, int nbits, IData ld) {
+static inline void _vl_vsss_setbit(WDataOutP owp, int obits, int lsb, int nbits, IData ld) VL_MT_SAFE {
     for (; nbits && lsb<obits; nbits--, lsb++, ld>>=1) {
 	VL_ASSIGNBIT_WI(0, lsb, owp, ld & 1);
     }
 }
-static inline void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const char* strp, size_t posstart, size_t posend) {
+static inline void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2,
+				  const char* strp, size_t posstart, size_t posend) VL_MT_SAFE {
     // Read in base "2^^baseLog2" digits from strp[posstart..posend-1] into owp of size obits.
     int lsb = 0;
     for (int i=0, pos=static_cast<int>(posend)-1; i<obits && pos>=static_cast<int>(posstart); --pos) {
@@ -704,7 +706,7 @@ static inline void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const 
 IData _vl_vsscanf(FILE* fp,  // If a fscanf
 		  int fbits, WDataInP fromp,  // Else if a sscanf
 		  const std::string& fstr,  // if a sscanf to string
-		  const char* formatp, va_list ap) {
+		  const char* formatp, va_list ap) VL_MT_SAFE {
     // Read a Verilog $sscanf/$fscanf style format into the output list
     // The format must be pre-processed (and lower cased) by Verilator
     // Arguments are in "width, arg-value (or WDataIn* if wide)" form
@@ -714,7 +716,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
     bool inPct = false;
     const char* pos = formatp;
     for (; *pos && !_vl_vsss_eof(fp,floc); ++pos) {
-	//VL_DBG_MSG("_vlscan fmt='"<<pos[0]<<"' floc="<<floc<<" file='"<<_vl_vsss_peek(fp,floc,fromp,fstr)<<"'"<<endl);
+	//VL_DBG_MSGF("_vlscan fmt='"<<pos[0]<<"' floc="<<floc<<" file='"<<_vl_vsss_peek(fp,floc,fromp,fstr)<<"'"<<endl);
 	if (!inPct && pos[0]=='%') {
 	    inPct = true;
 	} else if (!inPct && isspace(pos[0])) {   // Format spaces
@@ -845,11 +847,11 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
 //===========================================================================
 // File I/O
 
-FILE* VL_CVT_I_FP(IData lhs) {
+FILE* VL_CVT_I_FP(IData lhs) VL_MT_SAFE {
     return VerilatedImp::fdToFp(lhs);
 }
 
-void _VL_VINT_TO_STRING(int obits, char* destoutp, WDataInP sourcep) {
+void _VL_VINT_TO_STRING(int obits, char* destoutp, WDataInP sourcep) VL_MT_SAFE {
     // See also VL_DATA_TO_STRING_NW
     int lsb=obits-1;
     bool start=true;
@@ -866,7 +868,7 @@ void _VL_VINT_TO_STRING(int obits, char* destoutp, WDataInP sourcep) {
     if (!start) while (isspace(*(destp-1)) && destp>destoutp) *--destp = '\0';  // Drop trailing spaces
 }
 
-void _VL_STRING_TO_VINT(int obits, void* destp, size_t srclen, const char* srcp) {
+void _VL_STRING_TO_VINT(int obits, void* destp, size_t srclen, const char* srcp) VL_MT_SAFE {
     // Convert C string to Verilog format
     size_t bytes = VL_BYTES_I(obits);
     char* op = reinterpret_cast<char*>(destp);
@@ -876,7 +878,8 @@ void _VL_STRING_TO_VINT(int obits, void* destp, size_t srclen, const char* srcp)
     for (; i<bytes; ++i) { *op++ = 0; }
 }
 
-IData VL_FGETS_IXI(int obits, void* destp, IData fpi) {
+IData VL_FGETS_IXI(int obits, void* destp, IData fpi) VL_MT_SAFE {
+    // While threadsafe, each thread can only access different file handles
     FILE* fp = VL_CVT_I_FP(fpi);
     if (VL_UNLIKELY(!fp)) return 0;
 
@@ -894,7 +897,7 @@ IData VL_FGETS_IXI(int obits, void* destp, IData fpi) {
     IData got = 0;
     char* cp = buffer;
     while (got < bytes) {
-	int c = getc(fp);
+	int c = getc(fp);  // getc() is threadsafe
 	if (c==EOF) break;
 	*cp++ = c;  got++;
 	if (c=='\n') break;
@@ -904,34 +907,38 @@ IData VL_FGETS_IXI(int obits, void* destp, IData fpi) {
     return got;
 }
 
-IData VL_FOPEN_NI(const std::string& filename, IData mode) {
+IData VL_FOPEN_NI(const std::string& filename, IData mode) VL_MT_SAFE {
+    // While threadsafe, each thread can only access different file handles
     char modez[5];
     _VL_VINT_TO_STRING(VL_WORDSIZE, modez, &mode);
     return VL_FOPEN_S(filename.c_str(), modez);
 }
-IData VL_FOPEN_QI(QData filename, IData mode) {
+IData VL_FOPEN_QI(QData filename, IData mode) VL_MT_SAFE {
+    // While threadsafe, each thread can only access different file handles
     WData fnw[2];  VL_SET_WQ(fnw, filename);
     return VL_FOPEN_WI(2, fnw, mode);
 }
-IData VL_FOPEN_WI(int fnwords, WDataInP filenamep, IData mode) {
+IData VL_FOPEN_WI(int fnwords, WDataInP filenamep, IData mode) VL_MT_SAFE {
+    // While threadsafe, each thread can only access different file handles
     char filenamez[VL_TO_STRING_MAX_WORDS*VL_WORDSIZE+1];
     _VL_VINT_TO_STRING(fnwords*VL_WORDSIZE, filenamez, filenamep);
     char modez[5];
     _VL_VINT_TO_STRING(VL_WORDSIZE, modez, &mode);
     return VL_FOPEN_S(filenamez,modez);
 }
-IData VL_FOPEN_S(const char* filenamep, const char* modep) {
+IData VL_FOPEN_S(const char* filenamep, const char* modep) VL_MT_SAFE {
     return VerilatedImp::fdNew(fopen(filenamep,modep));
 }
 
-void VL_FCLOSE_I(IData fdi) {
+void VL_FCLOSE_I(IData fdi) VL_MT_SAFE {
+    // While threadsafe, each thread can only access different file handles
     FILE* fp = VL_CVT_I_FP(fdi);
     if (VL_UNLIKELY(!fp)) return;
     fclose(fp);
     VerilatedImp::fdDelete(fdi);
 }
 
-void VL_SFORMAT_X(int obits, CData& destr, const char* formatp, ...) {
+void VL_SFORMAT_X(int obits, CData& destr, const char* formatp, ...) VL_MT_SAFE {
     static VL_THREAD_LOCAL std::string output;  // static only for speed
     output = "";
     va_list ap;
@@ -942,7 +949,7 @@ void VL_SFORMAT_X(int obits, CData& destr, const char* formatp, ...) {
     _VL_STRING_TO_VINT(obits, &destr, output.length(), output.c_str());
 }
 
-void VL_SFORMAT_X(int obits, SData& destr, const char* formatp, ...) {
+void VL_SFORMAT_X(int obits, SData& destr, const char* formatp, ...) VL_MT_SAFE {
     static VL_THREAD_LOCAL std::string output;  // static only for speed
     output = "";
     va_list ap;
@@ -953,7 +960,7 @@ void VL_SFORMAT_X(int obits, SData& destr, const char* formatp, ...) {
     _VL_STRING_TO_VINT(obits, &destr, output.length(), output.c_str());
 }
 
-void VL_SFORMAT_X(int obits, IData& destr, const char* formatp, ...) {
+void VL_SFORMAT_X(int obits, IData& destr, const char* formatp, ...) VL_MT_SAFE {
     static VL_THREAD_LOCAL std::string output;  // static only for speed
     output = "";
     va_list ap;
@@ -964,7 +971,7 @@ void VL_SFORMAT_X(int obits, IData& destr, const char* formatp, ...) {
     _VL_STRING_TO_VINT(obits, &destr, output.length(), output.c_str());
 }
 
-void VL_SFORMAT_X(int obits, QData& destr, const char* formatp, ...) {
+void VL_SFORMAT_X(int obits, QData& destr, const char* formatp, ...) VL_MT_SAFE {
     static VL_THREAD_LOCAL std::string output;  // static only for speed
     output = "";
     va_list ap;
@@ -975,7 +982,7 @@ void VL_SFORMAT_X(int obits, QData& destr, const char* formatp, ...) {
     _VL_STRING_TO_VINT(obits, &destr, output.length(), output.c_str());
 }
 
-void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...) {
+void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...) VL_MT_SAFE {
     static VL_THREAD_LOCAL std::string output;  // static only for speed
     output = "";
     va_list ap;
@@ -986,7 +993,7 @@ void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...) {
     _VL_STRING_TO_VINT(obits, destp, output.length(), output.c_str());
 }
 
-void VL_SFORMAT_X(int obits_ignored, std::string &output, const char* formatp, ...) {
+void VL_SFORMAT_X(int obits_ignored, std::string &output, const char* formatp, ...) VL_MT_SAFE {
     if (obits_ignored) {}
     output = "";
     va_list ap;
@@ -995,7 +1002,7 @@ void VL_SFORMAT_X(int obits_ignored, std::string &output, const char* formatp, .
     va_end(ap);
 }
 
-std::string VL_SFORMATF_NX(const char* formatp, ...) {
+std::string VL_SFORMATF_NX(const char* formatp, ...) VL_MT_SAFE {
     static VL_THREAD_LOCAL std::string output;  // static only for speed
     output = "";
     va_list ap;
@@ -1006,7 +1013,7 @@ std::string VL_SFORMATF_NX(const char* formatp, ...) {
     return output;
 }
 
-void VL_WRITEF(const char* formatp, ...) {
+void VL_WRITEF(const char* formatp, ...) VL_MT_SAFE {
     static VL_THREAD_LOCAL std::string output;  // static only for speed
     output = "";
     va_list ap;
@@ -1017,7 +1024,8 @@ void VL_WRITEF(const char* formatp, ...) {
     VL_PRINTF_MT("%s", output.c_str());
 }
 
-void VL_FWRITEF(IData fpi, const char* formatp, ...) {
+void VL_FWRITEF(IData fpi, const char* formatp, ...) VL_MT_SAFE {
+    // While threadsafe, each thread can only access different file handles
     static VL_THREAD_LOCAL std::string output;  // static only for speed
     output = "";
     FILE* fp = VL_CVT_I_FP(fpi);
@@ -1031,7 +1039,8 @@ void VL_FWRITEF(IData fpi, const char* formatp, ...) {
     fputs(output.c_str(), fp);
 }
 
-IData VL_FSCANF_IX(IData fpi, const char* formatp, ...) {
+IData VL_FSCANF_IX(IData fpi, const char* formatp, ...) VL_MT_SAFE {
+    // While threadsafe, each thread can only access different file handles
     FILE* fp = VL_CVT_I_FP(fpi);
     if (VL_UNLIKELY(!fp)) return 0;
 
@@ -1042,7 +1051,7 @@ IData VL_FSCANF_IX(IData fpi, const char* formatp, ...) {
     return got;
 }
 
-IData VL_SSCANF_IIX(int lbits, IData ld, const char* formatp, ...) {
+IData VL_SSCANF_IIX(int lbits, IData ld, const char* formatp, ...) VL_MT_SAFE {
     WData fnw[2];  VL_SET_WI(fnw, ld);
 
     va_list ap;
@@ -1051,7 +1060,7 @@ IData VL_SSCANF_IIX(int lbits, IData ld, const char* formatp, ...) {
     va_end(ap);
     return got;
 }
-IData VL_SSCANF_IQX(int lbits, QData ld, const char* formatp, ...) {
+IData VL_SSCANF_IQX(int lbits, QData ld, const char* formatp, ...) VL_MT_SAFE {
     WData fnw[2];  VL_SET_WQ(fnw, ld);
 
     va_list ap;
@@ -1060,14 +1069,14 @@ IData VL_SSCANF_IQX(int lbits, QData ld, const char* formatp, ...) {
     va_end(ap);
     return got;
 }
-IData VL_SSCANF_IWX(int lbits, WDataInP lwp, const char* formatp, ...) {
+IData VL_SSCANF_IWX(int lbits, WDataInP lwp, const char* formatp, ...) VL_MT_SAFE {
     va_list ap;
     va_start(ap,formatp);
     IData got = _vl_vsscanf(NULL, lbits, lwp, "", formatp, ap);
     va_end(ap);
     return got;
 }
-IData VL_SSCANF_INX(int, const std::string& ld, const char* formatp, ...) {
+IData VL_SSCANF_INX(int, const std::string& ld, const char* formatp, ...) VL_MT_SAFE {
     va_list ap;
     va_start(ap,formatp);
     IData got = _vl_vsscanf(NULL, ld.length()*8, NULL, ld, formatp, ap);
@@ -1076,13 +1085,13 @@ IData VL_SSCANF_INX(int, const std::string& ld, const char* formatp, ...) {
 }
 
 void VL_READMEM_Q(bool hex, int width, int depth, int array_lsb, int,
-		  QData ofilename, void* memp, IData start, IData end) {
+		  QData ofilename, void* memp, IData start, IData end) VL_MT_SAFE {
     WData fnw[2];  VL_SET_WQ(fnw, ofilename);
     return VL_READMEM_W(hex,width,depth,array_lsb,2, fnw,memp,start,end);
 }
 
 void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
-		  WDataInP ofilenamep, void* memp, IData start, IData end) {
+		  WDataInP ofilenamep, void* memp, IData start, IData end) VL_MT_SAFE {
     char ofilenamez[VL_TO_STRING_MAX_WORDS*VL_WORDSIZE+1];
     _VL_VINT_TO_STRING(fnwords*VL_WORDSIZE, ofilenamez, ofilenamep);
     std::string ofilenames(ofilenamez);
@@ -1090,7 +1099,7 @@ void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
 }
 
 void VL_READMEM_N(bool hex, int width, int depth, int array_lsb, int fnwords,
-		  const std::string& ofilenamep, void* memp, IData start, IData end) {
+		  const std::string& ofilenamep, void* memp, IData start, IData end) VL_MT_SAFE {
     if (fnwords) {}
     FILE* fp = fopen(ofilenamep.c_str(), "r");
     if (VL_UNLIKELY(!fp)) {
@@ -1191,24 +1200,24 @@ void VL_READMEM_N(bool hex, int width, int depth, int array_lsb, int fnwords,
     }
 }
 
-IData VL_SYSTEM_IQ(QData lhs) {
+IData VL_SYSTEM_IQ(QData lhs) VL_MT_SAFE {
     WData lhsw[2];  VL_SET_WQ(lhsw, lhs);
     return VL_SYSTEM_IW(2, lhsw);
 }
-IData VL_SYSTEM_IW(int lhswords, WDataInP filenamep) {
+IData VL_SYSTEM_IW(int lhswords, WDataInP filenamep) VL_MT_SAFE {
     char filenamez[VL_TO_STRING_MAX_WORDS*VL_WORDSIZE+1];
     _VL_VINT_TO_STRING(lhswords*VL_WORDSIZE, filenamez, filenamep);
-    int code = system(filenamez);
+    int code = system(filenamez);  // Yes, system() is threadsafe
     return code >> 8;  // Want exit status
 }
 
-IData VL_TESTPLUSARGS_I(const char* formatp) {
+IData VL_TESTPLUSARGS_I(const char* formatp) VL_MT_SAFE {
     const std::string& match = VerilatedImp::argPlusMatch(formatp);
     if (match == "") return 0;
     else return 1;
 }
 
-IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) {
+IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_MT_SAFE {
     std::string prefix;
     bool inPct = false;
     bool done = false;
@@ -1267,7 +1276,7 @@ IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) {
     _VL_CLEAN_INPLACE_W(rbits,rwp);
     return 1;
 }
-IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) {
+IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) VL_MT_SAFE {
     std::string prefix;
     bool inPct = false;
     bool done = false;
@@ -1295,7 +1304,7 @@ IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) {
     return 1;
 }
 
-const char* vl_mc_scan_plusargs(const char* prefixp) {
+const char* vl_mc_scan_plusargs(const char* prefixp) VL_MT_SAFE {
     const std::string& match = VerilatedImp::argPlusMatch(prefixp);
     static VL_THREAD_LOCAL char outstr[VL_VALUE_STRING_MAX_WIDTH];
     if (match == "") return NULL;
@@ -1308,7 +1317,7 @@ const char* vl_mc_scan_plusargs(const char* prefixp) {
 //===========================================================================
 // Heavy functions
 
-std::string VL_CVT_PACK_STR_NW(int lwords, WDataInP lwp) {
+std::string VL_CVT_PACK_STR_NW(int lwords, WDataInP lwp) VL_MT_SAFE {
     // See also _VL_VINT_TO_STRING
     char destout[VL_TO_STRING_MAX_WORDS*VL_WORDSIZE+1];
     int obits = lwords * VL_WORDSIZE;
@@ -1342,7 +1351,7 @@ void Verilated::debug(int val) {
     }
 }
 
-const char* Verilated::catName(const char* n1, const char* n2) {
+const char* Verilated::catName(const char* n1, const char* n2) VL_MT_SAFE {
     // Returns new'ed data
     // Used by symbol table creation to make module names
     static char* strp = NULL;
@@ -1411,6 +1420,7 @@ VerilatedModule::VerilatedModule(const char* namep)
 }
 
 VerilatedModule::~VerilatedModule() {
+    // Memory cleanup - not called during normal operation
     if (m_namep) { free((void*)m_namep); m_namep=NULL; }
 }
 
@@ -1444,6 +1454,7 @@ VerilatedScope::VerilatedScope() {
 }
 
 VerilatedScope::~VerilatedScope() {
+    // Memory cleanup - not called during normal operation
     VerilatedImp::scopeErase(this);
     if (m_namep) { delete [] m_namep; m_namep = NULL; }
     if (m_callbacksp) { delete [] m_callbacksp; m_callbacksp = NULL; }
@@ -1451,7 +1462,7 @@ VerilatedScope::~VerilatedScope() {
     m_funcnumMax = 0;  // Force callback table to empty
 }
 
-void VerilatedScope::configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp) {
+void VerilatedScope::configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp) VL_MT_UNSAFE {
     // Slowpath - called once/scope at construction
     // We don't want the space and reference-count access overhead of strings.
     m_symsp = symsp;
@@ -1463,7 +1474,7 @@ void VerilatedScope::configure(VerilatedSyms* symsp, const char* prefixp, const 
     VerilatedImp::scopeInsert(this);
 }
 
-void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) {
+void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE {
     // Slowpath - called once/scope*export at construction
     // Insert a exported function into scope table
     int funcnum = VerilatedImp::exportInsert(namep);
@@ -1484,7 +1495,7 @@ void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) {
 }
 
 void VerilatedScope::varInsert(int finalize, const char* namep, void* datap,
-			       VerilatedVarType vltype, int vlflags, int dims, ...) {
+			       VerilatedVarType vltype, int vlflags, int dims, ...) VL_MT_UNSAFE {
     // Grab dimensions
     // In the future we may just create a large table at emit time and statically construct from that.
     if (!finalize) return;
@@ -1515,7 +1526,7 @@ void VerilatedScope::varInsert(int finalize, const char* namep, void* datap,
 }
 
 // cppcheck-suppress unusedFunction  // Used by applications
-VerilatedVar* VerilatedScope::varFind(const char* namep) const {
+VerilatedVar* VerilatedScope::varFind(const char* namep) const VL_MT_SAFE_POSTINIT {
     if (VL_LIKELY(m_varsp)) {
 	VerilatedVarNameMap::iterator it = m_varsp->find(namep);
 	if (VL_LIKELY(it != m_varsp->end())) {
@@ -1525,7 +1536,7 @@ VerilatedVar* VerilatedScope::varFind(const char* namep) const {
     return NULL;
 }
 
-void* VerilatedScope::exportFindNullError(int funcnum) {
+void* VerilatedScope::exportFindNullError(int funcnum) VL_MT_SAFE {
     // Slowpath - Called only when find has failed
     std::string msg = (std::string("Testbench C called '")
 		       +VerilatedImp::exportName(funcnum)

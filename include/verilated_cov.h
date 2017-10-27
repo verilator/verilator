@@ -73,7 +73,7 @@
 //=============================================================================
 /// Convert VL_COVER_INSERT value arguments to strings
 
-template< class T> std::string vlCovCvtToStr (const T& t) {
+template< class T> std::string vlCovCvtToStr (const T& t) VL_PURE {
     std::ostringstream os; os<<t; return os.str();
 }
 
@@ -87,7 +87,7 @@ class VerilatedCov {
 public:
     // GLOBAL METHODS
     /// Return default filename
-    static const char* defaultFilename() { return "coverage.dat"; }
+    static const char* defaultFilename() VL_PURE { return "coverage.dat"; }
     /// Write all coverage data to a file
     static void write (const char* filenamep = defaultFilename());
     /// Insert a coverage item

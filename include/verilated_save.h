@@ -28,6 +28,7 @@
 
 //=============================================================================
 // VerilatedSerialize - convert structures to a stream representation
+// This class is not thread safe, it must be called by a single thread
 
 class VerilatedSerialize {
 protected:
@@ -84,6 +85,7 @@ private:
 
 //=============================================================================
 // VerilatedDeserial - load structures from a stream representation
+// This class is not thread safe, it must be called by a single thread
 
 class VerilatedDeserialize {
 protected:

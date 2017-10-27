@@ -17,6 +17,8 @@
 /// \file
 /// \brief Verilator tracing in VCD format
 ///
+/// This class is not threadsafe, as the SystemC kernel is not threadsafe.
+///
 //=============================================================================
 // SPDIFF_OFF
 

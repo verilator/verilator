@@ -128,7 +128,7 @@ private:
 	m_indexValues.insert(std::make_pair(nextIndex, value));
 	return nextIndex;
     }
-    static std::string dequote(const std::string& text) {
+    static std::string dequote(const std::string& text) VL_PURE {
 	// Quote any special characters
 	std::string rtn;
 	for (const char* pos = text.c_str(); *pos; ++pos) {
@@ -141,7 +141,7 @@ private:
 	}
 	return rtn;
     }
-    static bool legalKey(const std::string& key) {
+    static bool legalKey(const std::string& key) VL_PURE {
 	// Because we compress long keys to a single letter, and
 	// don't want applications to either get confused if they use
 	// a letter differently, nor want them to rely on our compression...
@@ -150,7 +150,7 @@ private:
 	if (key.length()==2 && isdigit(key[1])) return false;
 	return true;
     }
-    static std::string keyValueFormatter (const std::string& key, const std::string& value) {
+    static std::string keyValueFormatter(const std::string& key, const std::string& value) VL_PURE {
 	std::string name;
 	if (key.length()==1 && isalpha(key[0])) {
 	    name += std::string("\001")+key;
@@ -160,7 +160,7 @@ private:
 	name += std::string("\002")+dequote(value);
 	return name;
     }
-    static std::string combineHier (const std::string& old, const std::string& add) {
+    static std::string combineHier(const std::string& old, const std::string& add) VL_PURE {
 	// (foo.a.x, foo.b.x) => foo.*.x
 	// (foo.a.x, foo.b.y) => foo.*
 	// (foo.a.x, foo.b)   => foo.*
@@ -206,7 +206,7 @@ private:
 	}
 	return false;
     }
-    static void selftest() {
+    static void selftest() VL_MT_SAFE {
 	// Little selftest
 	if (combineHier ("a.b.c","a.b.c")	!="a.b.c") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
 	if (combineHier ("a.b.c","a.b")		!="a.b*") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");

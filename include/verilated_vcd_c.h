@@ -135,7 +135,7 @@ private:
 	if (code>=(94))       *m_writep++ = static_cast<char>((code/94)%94+33);
 	*m_writep++ = static_cast<char>((code)%94+33);
     }
-    static std::string stringCode (vluint32_t code) {
+    static std::string stringCode (vluint32_t code) VL_PURE {
 	std::string out;
 	if (code>=(94*94*94)) out += static_cast<char>((code/94/94/94)%94+33);
 	if (code>=(94*94))    out += static_cast<char>((code/94/94)%94+33);

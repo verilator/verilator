@@ -20,6 +20,9 @@
 ///	the symbol table.  It is not included in verilated.h
 ///	as it requires some heavyweight C++ classes.
 ///
+///     These classes are thread safe on read only. It is constructed
+///     only when a model is built (from the main thread).
+///
 /// Code available from: http://www.veripool.org/verilator
 ///
 //*************************************************************************
@@ -34,6 +37,7 @@
 
 //===========================================================================
 /// Verilator range
+/// Thread safety: Assume is constructed only with model, then any number of readers
 
 // See also V3Ast::VNumRange
 class VerilatedRange {
@@ -53,6 +57,7 @@ public:
 
 //===========================================================================
 /// Verilator variable
+/// Thread safety: Assume is constructed only with model, then any number of readers
 
 class VerilatedVar {
     void*		m_datap;	// Location of data
