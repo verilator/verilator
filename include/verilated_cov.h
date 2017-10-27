@@ -82,6 +82,7 @@ template< class T> std::string vlCovCvtToStr (const T& t) VL_PURE {
 ///  Verilator coverage global class
 ////
 /// Global class with methods affecting all coverage data.
+/// All public methods in this class are thread safe.
 
 class VerilatedCov {
 public:
@@ -89,16 +90,16 @@ public:
     /// Return default filename
     static const char* defaultFilename() VL_PURE { return "coverage.dat"; }
     /// Write all coverage data to a file
-    static void write (const char* filenamep = defaultFilename());
+    static void write (const char* filenamep = defaultFilename()) VL_MT_SAFE;
     /// Insert a coverage item
     /// We accept from 1-30 key/value pairs, all as strings.
     /// Call _insert1, followed by _insert2 and _insert3
     /// Do not call directly; use VL_COVER_INSERT or higher level macros instead
     // _insert1: Remember item pointer with count.  (Not const, as may add zeroing function)
-    static void _inserti (vluint32_t* itemp);
-    static void _inserti (vluint64_t* itemp);
+    static void _inserti (vluint32_t* itemp) VL_MT_SAFE;
+    static void _inserti (vluint64_t* itemp) VL_MT_SAFE;
     // _insert2: Set default filename and line number
-    static void _insertf (const char* filename, int lineno);
+    static void _insertf (const char* filename, int lineno) VL_MT_SAFE;
     // _insert3: Set parameters
     // We could have just the maximum argument version, but this compiles
     // much slower (nearly 2x) than having smaller versions also.  However
@@ -120,11 +121,11 @@ public:
 #undef A
 #undef D
     /// Clear coverage points (and call delete on all items)
-    static void clear();
+    static void clear() VL_MT_SAFE;
     /// Clear items not matching the provided string
-    static void clearNonMatch (const char* matchp);
+    static void clearNonMatch (const char* matchp) VL_MT_SAFE;
     /// Zero coverage points
-    static void zero();
+    static void zero() VL_MT_SAFE;
 };
 
 #endif // guard

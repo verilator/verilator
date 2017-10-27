@@ -55,18 +55,24 @@ class VerilatedVcdSingleton {
 private:
     typedef std::vector<VerilatedVcd*> VcdVec;
     struct Singleton {
-	VcdVec		s_vcdVecp;	///< List of all created traces
+        VerilatedMutex  s_vcdMutex;  ///< Protect the singleton
+        VcdVec          s_vcdVecp VL_GUARDED_BY(s_vcdMutex);  ///< List of all created traces
     };
     static Singleton& singleton() { static Singleton s;	return s; }
 public:
-    static void pushVcd(VerilatedVcd* vcdp) {
+    static void pushVcd(VerilatedVcd* vcdp) VL_EXCLUDES(singleton().s_vcdMutex) {
+	VerilatedLockGuard guard(singleton().s_vcdMutex);
 	singleton().s_vcdVecp.push_back(vcdp);
     }
-    static void removeVcd(const VerilatedVcd* vcdp) {
+    static void removeVcd(const VerilatedVcd* vcdp) VL_EXCLUDES(singleton().s_vcdMutex) {
+	VerilatedLockGuard guard(singleton().s_vcdMutex);
 	VcdVec::iterator pos = find(singleton().s_vcdVecp.begin(), singleton().s_vcdVecp.end(), vcdp);
 	if (pos != singleton().s_vcdVecp.end()) { singleton().s_vcdVecp.erase(pos); }
     }
-    static void flush_all() {
+    static void flush_all() VL_EXCLUDES(singleton().s_vcdMutex) VL_MT_UNSAFE_ONE {
+	// Thread safety: Although this function is protected by a mutex so perhaps
+	// in the future we can allow tracing in separate threads, vcdp->flush() assumes call from single thread
+	VerilatedLockGuard guard(singleton().s_vcdMutex);
 	for (VcdVec::const_iterator it=singleton().s_vcdVecp.begin(); it!=singleton().s_vcdVecp.end(); ++it) {
 	    VerilatedVcd* vcdp = *it;
 	    vcdp->flush();
@@ -103,16 +109,16 @@ protected:
 //=============================================================================
 // VerilatedVcdFile
 
-bool VerilatedVcdFile::open(const std::string& name) {
+bool VerilatedVcdFile::open(const std::string& name) VL_MT_UNSAFE {
     m_fd = ::open(name.c_str(), O_CREAT|O_WRONLY|O_TRUNC|O_LARGEFILE|O_NONBLOCK, 0666);
     return (m_fd>=0);
 }
 
-void VerilatedVcdFile::close() {
+void VerilatedVcdFile::close() VL_MT_UNSAFE {
     ::close(m_fd);
 }
 
-ssize_t VerilatedVcdFile::write(const char* bufp, ssize_t len) {
+ssize_t VerilatedVcdFile::write(const char* bufp, ssize_t len) VL_MT_UNSAFE {
     return ::write(m_fd, bufp, len);
 }
 
@@ -141,6 +147,7 @@ VerilatedVcd::VerilatedVcd(VerilatedVcdFile* filep)
 }
 
 void VerilatedVcd::open (const char* filename) {
+    m_assertOne.check();
     if (isOpen()) return;
 
     // Set member variables
@@ -171,6 +178,7 @@ void VerilatedVcd::open (const char* filename) {
 void VerilatedVcd::openNext (bool incFilename) {
     // Open next filename in concat sequence, mangle filename if
     // incFilename is true.
+    m_assertOne.check();
     closePrev(); // Close existing
     if (incFilename) {
 	// Find _0000.{ext} in filename
@@ -274,9 +282,9 @@ void VerilatedVcd::closePrev () {
 }
 
 void VerilatedVcd::closeErr () {
+    // This function is on the flush() call path
     // Close due to an error.  We might abort before even getting here,
     // depending on the definition of vl_fatal.
-    // This function is on the flush() call path
     if (!isOpen()) return;
 
     // No buffer flush, just fclose
@@ -286,6 +294,7 @@ void VerilatedVcd::closeErr () {
 
 void VerilatedVcd::close() {
     // This function is on the flush() call path
+    m_assertOne.check();
     if (!isOpen()) return;
     if (m_evcd) {
 	printStr("$vcdclose ");
@@ -338,11 +347,12 @@ void VerilatedVcd::bufferResize(vluint64_t minsize) {
     }
 }
 
-void VerilatedVcd::bufferFlush () {
+void VerilatedVcd::bufferFlush () VL_MT_UNSAFE_ONE {
     // This function is on the flush() call path
     // We add output data to m_writep.
     // When it gets nearly full we dump it using this routine which calls write()
     // This is much faster than using buffered I/O
+    m_assertOne.check();
     if (VL_UNLIKELY(!isOpen())) return;
     char* wp = m_wrBufp;
     while (1) {
@@ -503,6 +513,7 @@ void VerilatedVcd::dumpHeader () {
 }
 
 void VerilatedVcd::module (const std::string& name) {
+    m_assertOne.check();
     m_modName = name;
 }
 
@@ -621,10 +632,11 @@ void VerilatedVcd::fullFloat (vluint32_t code, const float newval) {
 //=============================================================================
 // Callbacks
 
-void VerilatedVcd::addCallback (
+void VerilatedVcd::addCallback VL_MT_UNSAFE_ONE (
     VerilatedVcdCallback_t initcb, VerilatedVcdCallback_t fullcb, VerilatedVcdCallback_t changecb,
     void* userthis)
 {
+    m_assertOne.check();
     if (VL_UNLIKELY(isOpen())) {
 	std::string msg = std::string("Internal: ")+__FILE__+"::"+__FUNCTION__+" called with already open file";
 	VL_FATAL_MT(__FILE__,__LINE__,"",msg.c_str());
@@ -637,7 +649,9 @@ void VerilatedVcd::addCallback (
 // Dumping
 
 void VerilatedVcd::dumpFull (vluint64_t timeui) {
+    m_assertOne.check();
     dumpPrep (timeui);
+    Verilated::quiesce();
     for (vluint32_t ent = 0; ent< m_callbacks.size(); ent++) {
 	VerilatedVcdCallInfo *cip = m_callbacks[ent];
 	(cip->m_fullcb) (this, cip->m_userthis, cip->m_code);
@@ -645,6 +659,7 @@ void VerilatedVcd::dumpFull (vluint64_t timeui) {
 }
 
 void VerilatedVcd::dump (vluint64_t timeui) {
+    m_assertOne.check();
     if (!isOpen()) return;
     if (VL_UNLIKELY(m_fullDump)) {
 	m_fullDump = false;	// No need for more full dumps
@@ -656,6 +671,7 @@ void VerilatedVcd::dump (vluint64_t timeui) {
 	if (!isOpen()) return;
     }
     dumpPrep (timeui);
+    Verilated::quiesce();
     for (vluint32_t ent = 0; ent< m_callbacks.size(); ent++) {
 	VerilatedVcdCallInfo *cip = m_callbacks[ent];
 	(cip->m_changecb) (this, cip->m_userthis, cip->m_code);
@@ -671,7 +687,7 @@ void VerilatedVcd::dumpPrep (vluint64_t timeui) {
 //======================================================================
 // Static members
 
-void VerilatedVcd::flush_all() {
+void VerilatedVcd::flush_all() VL_MT_UNSAFE_ONE {
     VerilatedVcdSingleton::flush_all();
 }
 

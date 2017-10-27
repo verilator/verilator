@@ -35,11 +35,12 @@
 // We want to get a pointer to m_data in the sc_bv_base class,
 // but it is protected.  So make an exposing class, then use
 // cast magic to get at it.  Saves patching get_datap in SystemC.
+// This class is thread safe (though most of SystemC is not).
 
 #define VL_SC_BV_DATAP(bv) (VlScBvExposer::sp_datap(bv))
 class VlScBvExposer : public sc_bv_base {
 public:
-    static const vluint32_t* sp_datap(const sc_bv_base& base) {
+    static const vluint32_t* sp_datap(const sc_bv_base& base) VL_MT_SAFE {
         return static_cast<const VlScBvExposer*>(&base)->sp_datatp(); }
     const vluint32_t* sp_datatp() const { return reinterpret_cast<vluint32_t*>(m_data); }
     // Above reads this protected element in sc_bv_base:

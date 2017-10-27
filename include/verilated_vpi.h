@@ -40,12 +40,12 @@ class VerilatedVpi {
 public:
     /// Call timed callbacks
     /// Users should call this from their main loops
-    static void callTimedCbs();
+    static void callTimedCbs() VL_MT_UNSAFE_ONE;
     /// Call value based callbacks
     /// Users should call this from their main loops
-    static void callValueCbs();
+    static void callValueCbs() VL_MT_UNSAFE_ONE;
     /// Self test, for internal use only
-    static void selfTest();
+    static void selfTest() VL_MT_UNSAFE_ONE;
 };
 
 

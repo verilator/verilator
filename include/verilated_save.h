@@ -38,12 +38,13 @@ protected:
     vluint8_t*		m_bufp;		///< Output buffer
     bool 		m_isOpen;	///< True indicates open file/stream
     std::string		m_filename;	///< Filename, for error messages
+    VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
 
     inline static size_t bufferSize() { return 256*1024; }  // See below for slack calculation
     inline static size_t bufferInsertSize() { return 16*1024; }
 
-    void header();
-    void trailer();
+    void header() VL_MT_UNSAFE_ONE;
+    void trailer() VL_MT_UNSAFE_ONE;
 public:
     // CREATORS
     VerilatedSerialize() {
@@ -58,9 +59,9 @@ public:
     // METHODS
     bool isOpen() const { return m_isOpen; }
     std::string filename() const { return m_filename; }
-    virtual void close() { flush(); }
-    virtual void flush() {}
-    inline VerilatedSerialize& write (const void* __restrict datap, size_t size) {
+    virtual void close() VL_MT_UNSAFE_ONE { flush(); }
+    virtual void flush() VL_MT_UNSAFE_ONE {}
+    inline VerilatedSerialize& write(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
 	const vluint8_t* __restrict dp = (const vluint8_t* __restrict)datap;
 	while (size) {
 	    bufferCheck();
@@ -73,7 +74,7 @@ public:
     }
 private:
     VerilatedSerialize(const VerilatedSerialize&) VL_EQ_DELETE;  ///< N/A, no copy constructor
-    VerilatedSerialize& bufferCheck() {
+    VerilatedSerialize& bufferCheck() VL_MT_UNSAFE_ONE {
 	// Flush the write buffer if there's not enough space left for new information
 	// We only call this once per vector, so we need enough slop for a very wide "b###" line
 	if (VL_UNLIKELY(m_cp > (m_bufp+(bufferSize()-bufferInsertSize())))) {
@@ -96,13 +97,14 @@ protected:
     vluint8_t*		m_endp;		///< Last valid byte in m_bufp buffer
     bool 		m_isOpen;	///< True indicates open file/stream
     std::string		m_filename;	///< Filename, for error messages
+    VerilatedAssertOneThread m_assertOne;	///< Assert only called from single thread
 
     inline static size_t bufferSize() { return 256*1024; }  // See below for slack calculation
     inline static size_t bufferInsertSize() { return 16*1024; }
 
     virtual void fill() = 0;
-    void header();
-    void trailer();
+    void header() VL_MT_UNSAFE_ONE;
+    void trailer() VL_MT_UNSAFE_ONE;
 public:
     // CREATORS
     VerilatedDeserialize() {
@@ -118,9 +120,9 @@ public:
     // METHODS
     bool isOpen() const { return m_isOpen; }
     std::string filename() const { return m_filename; }
-    virtual void close() { flush(); }
-    virtual void flush() {}
-    inline VerilatedDeserialize& read (void* __restrict datap, size_t size) {
+    virtual void close() VL_MT_UNSAFE_ONE { flush(); }
+    virtual void flush() VL_MT_UNSAFE_ONE {}
+    inline VerilatedDeserialize& read(void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
 	vluint8_t* __restrict dp = (vluint8_t* __restrict)datap;
 	while (size) {
 	    bufferCheck();
@@ -132,12 +134,12 @@ public:
 	return *this;  // For function chaining
     }
     // Read a datum and compare with expected value
-    bool readDiffers (const void* __restrict datap, size_t size);
-    VerilatedDeserialize& readAssert (const void* __restrict datap, size_t size);
-    VerilatedDeserialize& readAssert (vluint64_t data) { return readAssert(&data, sizeof(data)); }
+    VerilatedDeserialize& readAssert(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE;
+    VerilatedDeserialize& readAssert(vluint64_t data) VL_MT_UNSAFE_ONE { return readAssert(&data, sizeof(data)); }
 private:
     VerilatedDeserialize(const VerilatedDeserialize&) VL_EQ_DELETE;  ///< N/A, no copy constructor
-    VerilatedDeserialize& bufferCheck() {
+    bool readDiffers(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE;
+    VerilatedDeserialize& bufferCheck() VL_MT_UNSAFE_ONE {
 	// Flush the write buffer if there's not enough space left for new information
 	// We only call this once per vector, so we need enough slop for a very wide "b###" line
 	if (VL_UNLIKELY((m_cp+bufferInsertSize()) > m_endp)) {
@@ -149,6 +151,7 @@ private:
 
 //=============================================================================
 // VerilatedSave - serialize to a file
+// This class is not thread safe, it must be called by a single thread
 
 class VerilatedSave : public VerilatedSerialize {
 private:
@@ -159,14 +162,15 @@ public:
     VerilatedSave() { m_fd=-1; }
     virtual ~VerilatedSave() { close(); }
     // METHODS
-    void open(const char* filenamep);	///< Open the file; call isOpen() to see if errors
-    void open(const std::string& filename) { open(filename.c_str()); }
-    virtual void close();
-    virtual void flush();
+    void open(const char* filenamep) VL_MT_UNSAFE_ONE;  ///< Open the file; call isOpen() to see if errors
+    void open(const std::string& filename) VL_MT_UNSAFE_ONE { open(filename.c_str()); }
+    virtual void close() VL_MT_UNSAFE_ONE;
+    virtual void flush() VL_MT_UNSAFE_ONE;
 };
 
 //=============================================================================
 // VerilatedRestore - deserialize from a file
+// This class is not thread safe, it must be called by a single thread
 
 class VerilatedRestore : public VerilatedDeserialize {
 private:
@@ -178,11 +182,11 @@ public:
     virtual ~VerilatedRestore() { close(); }
 
     // METHODS
-    void open(const char* filenamep);	///< Open the file; call isOpen() to see if errors
-    void open(const std::string& filename) { open(filename.c_str()); }
-    virtual void close();
-    virtual void flush() {}
-    virtual void fill();
+    void open(const char* filenamep) VL_MT_UNSAFE_ONE;  ///< Open the file; call isOpen() to see if errors
+    void open(const std::string& filename) VL_MT_UNSAFE_ONE { open(filename.c_str()); }
+    virtual void close() VL_MT_UNSAFE_ONE;
+    virtual void flush() VL_MT_UNSAFE_ONE {}
+    virtual void fill() VL_MT_UNSAFE_ONE;
 };
 
 //=============================================================================

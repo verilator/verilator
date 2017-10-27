@@ -45,9 +45,9 @@ public:
     // METHODS
     VerilatedVcdFile() : m_fd(0) {}
     virtual ~VerilatedVcdFile() {}
-    virtual bool open(const std::string& name);
-    virtual void close();
-    virtual ssize_t write(const char* bufp, ssize_t len);
+    virtual bool open(const std::string& name) VL_MT_UNSAFE;
+    virtual void close() VL_MT_UNSAFE;
+    virtual ssize_t write(const char* bufp, ssize_t len) VL_MT_UNSAFE;
 };
 
 //=============================================================================
@@ -105,8 +105,10 @@ private:
     typedef std::map<std::string,std::string>  NameMap;
     NameMap*		m_namemapp;	///< List of names for the header
 
+    VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
+
     void bufferResize(vluint64_t minsize);
-    void bufferFlush();
+    void bufferFlush() VL_MT_UNSAFE_ONE;
     inline void bufferCheck() {
 	// Flush the write buffer if there's not enough space left for new information
 	// We only call this once per vector, so we need enough slop for a very wide "b###" line
@@ -129,6 +131,8 @@ private:
     void dumpHeader();
     void dumpPrep (vluint64_t timeui);
     void dumpFull (vluint64_t timeui);
+    // cppcheck-suppress functionConst
+    void dumpDone ();
     inline void printCode (vluint32_t code) {
 	if (code>=(94*94*94)) *m_writep++ = static_cast<char>((code/94/94/94)%94+33);
 	if (code>=(94*94))    *m_writep++ = static_cast<char>((code/94/94)%94+33);
@@ -165,13 +169,13 @@ public:
     inline bool isScopeEscape(char c) { return isspace(c) || c==m_scopeEscape; }
 
     // METHODS
-    void open (const char* filename);	///< Open the file; call isOpen() to see if errors
+    void open(const char* filename) VL_MT_UNSAFE_ONE;  ///< Open the file; call isOpen() to see if errors
     void openNext (bool incFilename);	///< Open next data-only file
-    void close ();			///< Close the file
+    void close() VL_MT_UNSAFE_ONE;  ///< Close the file
     /// Flush any remaining data to this file
-    void flush() { bufferFlush(); }
+    void flush() VL_MT_UNSAFE_ONE { bufferFlush(); }
     /// Flush any remaining data from all files
-    static void flush_all();
+    static void flush_all() VL_MT_UNSAFE_ONE;
 
     void set_time_unit (const char* unit); ///< Set time units (s/ms, defaults to ns)
     void set_time_unit (const std::string& unit) { set_time_unit(unit.c_str()); }
@@ -190,7 +194,7 @@ public:
     /// Inside dumping routines, declare callbacks for tracings
     void addCallback (VerilatedVcdCallback_t init, VerilatedVcdCallback_t full,
 		      VerilatedVcdCallback_t change,
-		      void* userthis);
+		      void* userthis) VL_MT_UNSAFE_ONE;
 
     /// Inside dumping routines, declare a module
     void module (const std::string& name);
@@ -397,6 +401,8 @@ public:
 //=============================================================================
 // VerilatedVcdC
 /// Create a VCD dump file in C standalone (no SystemC) simulations.
+/// Also derived for use in SystemC simulations.
+/// Thread safety: Unless otherwise indicated, every function is VL_MT_UNSAFE_ONE
 
 class VerilatedVcdC {
     VerilatedVcd		m_sptrace;	///< Trace file being created
@@ -411,17 +417,17 @@ public:
     /// Open a new VCD file
     /// This includes a complete header dump each time it is called,
     /// just as if this object was deleted and reconstructed.
-    void open (const char* filename) { m_sptrace.open(filename); }
+    void open(const char* filename) VL_MT_UNSAFE_ONE { m_sptrace.open(filename); }
     /// Continue a VCD dump by rotating to a new file name
     /// The header is only in the first file created, this allows
     /// "cat" to be used to combine the header plus any number of data files.
-    void openNext (bool incFilename=true) { m_sptrace.openNext(incFilename); }
+    void openNext(bool incFilename=true) VL_MT_UNSAFE_ONE { m_sptrace.openNext(incFilename); }
     /// Set size in megabytes after which new file should be created
     void rolloverMB(size_t rolloverMB) { m_sptrace.rolloverMB(rolloverMB); };
     /// Close dump
-    void close() { m_sptrace.close(); }
+    void close() VL_MT_UNSAFE_ONE { m_sptrace.close(); }
     /// Flush dump
-    void flush() { m_sptrace.flush(); }
+    void flush() VL_MT_UNSAFE_ONE { m_sptrace.flush(); }
     /// Write one cycle of dump data
     void dump (vluint64_t timeui) { m_sptrace.dump(timeui); }
     /// Write one cycle of dump data - backward compatible and to reduce

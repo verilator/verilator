@@ -42,43 +42,84 @@
 # else
 #  define VL_ATTR_PRINTF(fmtArgNum) __attribute__ ((format (printf, fmtArgNum, fmtArgNum+1)))
 # endif
+# define VL_ATTR_PURE __attribute__ ((pure))
 # define VL_ATTR_UNUSED __attribute__ ((unused))
 # define VL_FUNC  __func__
+# if defined(__clang__) && defined(VL_THREADED)
+#  define VL_ACQUIRE(...) __attribute__ ((acquire_capability(__VA_ARGS__)))
+#  define VL_ACQUIRE_SHARED(...) __attribute__ ((acquire_shared_capability(__VA_ARGS__)))
+#  define VL_RELEASE(...) __attribute__ ((release_capability(__VA_ARGS__)))
+#  define VL_RELEASE_SHARED(...) __attribute__ ((release_shared_capability(__VA_ARGS__)))
+#  define VL_TRY_ACQUIRE(...) __attribute__ ((try_acquire_capability(__VA_ARGS__)))
+#  define VL_TRY_ACQUIRE_SHARED(...) __attribute__ ((try_acquire_shared_capability(__VA_ARGS__)))
+#  define VL_CAPABILITY(x) __attribute__ ((capability(x)))
+#  define VL_REQUIRES(x) __attribute__ ((requires_capability(x)))
+#  define VL_GUARDED_BY(x) __attribute__ ((guarded_by(x)))
+#  define VL_EXCLUDES(x) __attribute__ ((locks_excluded(x)))
+#  define VL_SCOPED_CAPABILITY __attribute__ ((scoped_lockable))
+# endif
 # define VL_LIKELY(x)	__builtin_expect(!!(x), 1)
 # define VL_UNLIKELY(x)	__builtin_expect(!!(x), 0)
 # define VL_UNREACHABLE __builtin_unreachable();
 # define VL_PREFETCH_RD(p) __builtin_prefetch((p),0)
 # define VL_PREFETCH_RW(p) __builtin_prefetch((p),1)
 #elif defined(_MSC_VER)
-# define VL_ATTR_ALIGNED(alignment)
-# define VL_ATTR_ALWINLINE
-# define VL_ATTR_NORETURN
-# define VL_ATTR_PRINTF(fmtArgNum)
-# define VL_ATTR_UNUSED
 # define VL_FUNC  __FUNCTION__
-# define VL_LIKELY(x)	(!!(x))
-# define VL_UNLIKELY(x)	(!!(x))
-# define VL_UNREACHABLE
-# define VL_PREFETCH_RD(p)
-# define VL_PREFETCH_RW(p)
-#else
+#endif
+
+// Defaults for unsupported compiler features
+#ifndef VL_ATTR_ALIGNED
 # define VL_ATTR_ALIGNED(alignment)	///< Align structure to specified byte alignment
+#endif
+#ifndef VL_ATTR_ALWINLINE
 # define VL_ATTR_ALWINLINE		///< Inline, even when not optimizing
+#endif
+#ifndef VL_ATTR_NORETURN
 # define VL_ATTR_NORETURN		///< Function does not ever return
+#endif
+#ifndef VL_ATTR_PRINTF
 # define VL_ATTR_PRINTF(fmtArgNum)	///< Function with printf format checking
+#endif
+#ifndef VL_ATTR_PURE
+# define VL_ATTR_PURE			///< Function is pure (and thus also VL_MT_SAFE)
+#endif
+#ifndef VL_ATTR_UNUSED
 # define VL_ATTR_UNUSED			///< Function that may be never used
+#endif
+#ifndef VL_FUNC
 # define VL_FUNC "__func__"		///< Name of current function for error macros
+#endif
+#ifndef VL_CAPABILITY
+# define VL_ACQUIRE(...)		///< Function requires a capability/lock (-fthread-safety)
+# define VL_ACQUIRE_SHARED(...)		///< Function aquires a shared capability/lock (-fthread-safety)
+# define VL_RELEASE(...)		///< Function releases a capability/lock (-fthread-safety)
+# define VL_RELEASE_SHARED(...)		///< Function releases a shared capability/lock (-fthread-safety)
+# define VL_TRY_ACQUIRE(...)		///< Function returns bool if aquired a capability (-fthread-safety)
+# define VL_TRY_ACQUIRE_SHARED(...)	///< Function returns bool if aquired a shared capability (-fthread-safety)
+# define VL_REQUIRES(x)			///< Function requires a capability inbound (-fthread-safety)
+# define VL_EXCLUDES(x)			///< Function requires not having a capability inbound (-fthread-safety)
+# define VL_CAPABILITY(x)		///< Name of capability/lock (-fthread-safety)
+# define VL_GUARDED_BY(x)		///< Name of mutex protecting this variable (-fthread-safety)
+# define VL_SCOPED_CAPABILITY		///< Scoped threaded capability/lock (-fthread-safety)
+#endif
+#ifndef VL_LIKELY
 # define VL_LIKELY(x)	(!!(x))		///< Boolean expression more often true than false
 # define VL_UNLIKELY(x)	(!!(x))		///< Boolean expression more often false than true
+#endif
+#ifndef VL_UNREACHABLE
 # define VL_UNREACHABLE			///< Point that may never be reached
+#endif
+#ifndef VL_PREFETCH_RD
 # define VL_PREFETCH_RD(p)		///< Prefetch data with read intent
+#endif
+#ifndef VL_PREFETCH_RW
 # define VL_PREFETCH_RW(p)		///< Prefetch data with read/write intent
 #endif
 
 #ifdef VL_THREADED
 # ifdef __GNUC__
 #  if (__cplusplus < 201103L) && !defined(VL_THREADED_NO_C11_WARNING)
-#    error "VL_THREADED support plans to move to C++-11 and later only; use newer --std to be ready"
+#    error "VL_THREADED/--threads support requires C++-11 or newer only; use newer compiler"
 #  endif
 # else
 #  error "Unsupported compiler for VL_THREADED: No thread-local declarator"

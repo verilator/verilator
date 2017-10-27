@@ -48,7 +48,7 @@ static const char* const VLTSAVE_TRAILER_STR = "vltsaved";	///< Value of last by
 //=============================================================================
 // Searalization
 
-bool VerilatedDeserialize::readDiffers (const void* __restrict datap, size_t size) {
+bool VerilatedDeserialize::readDiffers (const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
     bufferCheck();
     const vluint8_t* __restrict dp = (const vluint8_t* __restrict)datap;
     vluint8_t miss = 0;
@@ -58,7 +58,7 @@ bool VerilatedDeserialize::readDiffers (const void* __restrict datap, size_t siz
     return (miss!=0);
 }
 
-VerilatedDeserialize& VerilatedDeserialize::readAssert (const void* __restrict datap, size_t size) {
+VerilatedDeserialize& VerilatedDeserialize::readAssert (const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
     if (VL_UNLIKELY(readDiffers(datap,size))) {
 	std::string fn = filename();
 	std::string msg = std::string("Can't deserialize save-restore file as was made from different model");
@@ -68,7 +68,7 @@ VerilatedDeserialize& VerilatedDeserialize::readAssert (const void* __restrict d
     return *this;  // For function chaining
 }
 
-void VerilatedSerialize::header() {
+void VerilatedSerialize::header() VL_MT_UNSAFE_ONE {
     VerilatedSerialize& os = *this;  // So can cut and paste standard << code below
     assert((strlen(VLTSAVE_HEADER_STR) & 7) == 0);  // Keep aligned
     os.write(VLTSAVE_HEADER_STR, strlen(VLTSAVE_HEADER_STR));
@@ -78,7 +78,7 @@ void VerilatedSerialize::header() {
     os.write(Verilated::serializedPtr(), Verilated::serializedSize());
 }
 
-void VerilatedDeserialize::header() {
+void VerilatedDeserialize::header() VL_MT_UNSAFE_ONE {
     VerilatedDeserialize& os = *this;  // So can cut and paste standard >> code below
     if (VL_UNLIKELY(os.readDiffers(VLTSAVE_HEADER_STR, strlen(VLTSAVE_HEADER_STR)))) {
 	std::string fn = filename();
@@ -89,13 +89,13 @@ void VerilatedDeserialize::header() {
     os.read(Verilated::serializedPtr(), Verilated::serializedSize());
 }
 
-void VerilatedSerialize::trailer() {
+void VerilatedSerialize::trailer() VL_MT_UNSAFE_ONE {
     VerilatedSerialize& os = *this;  // So can cut and paste standard << code below
     assert((strlen(VLTSAVE_TRAILER_STR) & 7) == 0);  // Keep aligned
     os.write(VLTSAVE_TRAILER_STR, strlen(VLTSAVE_TRAILER_STR));
 }
 
-void VerilatedDeserialize::trailer() {
+void VerilatedDeserialize::trailer() VL_MT_UNSAFE_ONE {
     VerilatedDeserialize& os = *this;  // So can cut and paste standard >> code below
     if (VL_UNLIKELY(os.readDiffers(VLTSAVE_TRAILER_STR, strlen(VLTSAVE_TRAILER_STR)))) {
 	std::string fn = filename();
@@ -110,7 +110,8 @@ void VerilatedDeserialize::trailer() {
 //=============================================================================
 // Opening/Closing
 
-void VerilatedSave::open (const char* filenamep) {
+void VerilatedSave::open(const char* filenamep) VL_MT_UNSAFE_ONE {
+    m_assertOne.check();
     if (isOpen()) return;
     VL_DEBUG_IF(VL_DBG_MSGF("- save: opening save file %s\n",filenamep););
 
@@ -132,7 +133,8 @@ void VerilatedSave::open (const char* filenamep) {
     header();
 }
 
-void VerilatedRestore::open (const char* filenamep) {
+void VerilatedRestore::open(const char* filenamep) VL_MT_UNSAFE_ONE {
+    m_assertOne.check();
     if (isOpen()) return;
     VL_DEBUG_IF(VL_DBG_MSGF("- restore: opening restore file %s\n",filenamep););
 
@@ -155,7 +157,7 @@ void VerilatedRestore::open (const char* filenamep) {
     header();
 }
 
-void VerilatedSave::close () {
+void VerilatedSave::close() VL_MT_UNSAFE_ONE {
     if (!isOpen()) return;
     trailer();
     flush();
@@ -163,7 +165,7 @@ void VerilatedSave::close () {
     ::close(m_fd);  // May get error, just ignore it
 }
 
-void VerilatedRestore::close () {
+void VerilatedRestore::close() VL_MT_UNSAFE_ONE {
     if (!isOpen()) return;
     trailer();
     flush();
@@ -174,7 +176,8 @@ void VerilatedRestore::close () {
 //=============================================================================
 // Buffer management
 
-void VerilatedSave::flush() {
+void VerilatedSave::flush() VL_MT_UNSAFE_ONE {
+    m_assertOne.check();
     if (VL_UNLIKELY(!isOpen())) return;
     vluint8_t* wp = m_bufp;
     while (1) {
@@ -197,7 +200,8 @@ void VerilatedSave::flush() {
     m_cp = m_bufp; // Reset buffer
 }
 
-void VerilatedRestore::fill() {
+void VerilatedRestore::fill() VL_MT_UNSAFE_ONE {
+    m_assertOne.check();
     if (VL_UNLIKELY(!isOpen())) return;
     // Move remaining characters down to start of buffer.  (No memcpy, overlaps allowed)
     vluint8_t* rp = m_bufp;

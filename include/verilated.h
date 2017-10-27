@@ -37,6 +37,11 @@
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
+#ifdef VL_THREADED
+# include <atomic>
+# include <mutex>
+# include <thread>
+#endif
 // <iostream> avoided to reduce compile time
 // <map> avoided and instead in verilated_heavy.h to reduce compile time
 // <string> avoided and instead in verilated_heavy.h to reduce compile time
@@ -68,6 +73,7 @@ typedef void (*VerilatedVoidCb)(void);
 
 class SpTraceVcd;
 class SpTraceVcdCFile;
+class VerilatedEvalMsgQueue;
 class VerilatedScopeNameMap;
 class VerilatedVar;
 class VerilatedVarNameMap;
@@ -94,6 +100,82 @@ enum VerilatedVarFlags {
     // Flags
     VLVF_PUB_RD=(1<<8),	// Public readable
     VLVF_PUB_RW=(1<<9)	// Public writable
+};
+
+//=========================================================================
+/// Mutex and threading support
+
+/// Return current thread ID (or 0), not super fast, cache if needed
+extern vluint32_t VL_THREAD_ID() VL_MT_SAFE;
+
+#if VL_THREADED
+
+/// Mutex, wrapped to allow -fthread_safety checks
+class VL_CAPABILITY("mutex") VerilatedMutex {
+  private:
+    std::mutex m_mutex;  // Mutex
+  public:
+    VerilatedMutex() {}
+    ~VerilatedMutex() {}
+    /// Acquire/lock mutex
+    void lock() VL_ACQUIRE() { m_mutex.lock(); }
+    /// Release/unlock mutex
+     void unlock() VL_RELEASE() { m_mutex.unlock(); }
+    /// Try to acquire mutex.  Returns true on success, and false on failure.
+    bool try_lock() VL_TRY_ACQUIRE(true) { return m_mutex.try_lock(); }
+};
+
+/// Lock guard for mutex (ala std::lock_guard), wrapped to allow -fthread_safety checks
+class VL_SCOPED_CAPABILITY VerilatedLockGuard {
+    VerilatedLockGuard();  ///< N/A, always use named constructor below
+    VerilatedLockGuard(const VerilatedLockGuard&);  ///< N/A, no copy constructor
+  private:
+    VerilatedMutex& m_mutexr;
+  public:
+    VerilatedLockGuard(VerilatedMutex& mutexr) VL_ACQUIRE(mutexr) : m_mutexr(mutexr) {
+        m_mutexr.lock();
+    }
+    ~VerilatedLockGuard() VL_RELEASE() {
+        m_mutexr.unlock();
+    }
+};
+
+#else // !VL_THREADED
+
+// Empty classes to avoid #ifdefs everywhere
+class VerilatedMutex {};
+class VerilatedLockGuard {
+public:
+    VerilatedLockGuard(VerilatedMutex&) {}
+    ~VerilatedLockGuard() {}
+};
+#endif // VL_THREADED
+
+/// Remember the calling thread at construction time, and make sure later calls use same thread
+class VerilatedAssertOneThread {
+    // MEMBERS
+#if defined(VL_THREADED) && defined(VL_DEBUG)
+    vluint32_t m_threadid;  /// Thread that is legal
+public:
+    // CONSTRUCTORS
+    /// The constructor establishes the thread id for all later calls.
+    /// If necessary, a different class could be made that inits it otherwise.
+    VerilatedAssertOneThread() : m_threadid(VL_THREAD_ID()) { }
+    ~VerilatedAssertOneThread() { check(); }
+    // METHODS
+    /// Check that the current thread ID is the same as the construction thread ID
+    void check() VL_MT_UNSAFE_ONE {
+	// Memoize results in local thread, to prevent slow get_id() call
+	VL_THREAD_LOCAL bool t_okThread = (m_threadid == VL_THREAD_ID());
+	if (!VL_LIKELY(t_okThread)) {
+	    fatal_different();
+	}
+    }
+    static void fatal_different() VL_MT_SAFE;
+#else // !VL_THREADED || !VL_DEBUG
+public:
+    void check() {}
+#endif
 };
 
 //=========================================================================
@@ -159,15 +241,32 @@ public:
 
 #endif
 
+//=========================================================================
+// Functions overridable by user defines
+// (Internals however must use VL_PRINTF_MT, which calls these.)
+
+#ifndef VL_PRINTF
+# define VL_PRINTF printf  ///< Print ala printf, called from main thread; may redefine if desired
+#endif
+#ifndef VL_VPRINTF
+# define VL_VPRINTF vprintf  ///< Print ala vprintf, called from main thread; may redefine if desired
+#endif
+
 //===========================================================================
 /// Verilator symbol table base class
 
 class VerilatedSyms {
-    // VerilatedSyms base class exists just so symbol tables have a common pointer type
+public:  // But for internal use only
+#ifdef VL_THREADED
+    VerilatedEvalMsgQueue* __Vm_evalMsgQp;
+#endif
+    VerilatedSyms();
+    ~VerilatedSyms();
 };
 
 //===========================================================================
-/// Verilator global static information class
+/// Verilator global class information class
+/// This class is initialized by main thread only. Reading post-init is thread safe.
 
 class VerilatedScope {
     // Fastpath:
@@ -181,19 +280,19 @@ class VerilatedScope {
 public:  // But internals only - called from VerilatedModule's
     VerilatedScope();
     ~VerilatedScope();
-    void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp);
-    void exportInsert(int finalize, const char* namep, void* cb);
+    void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp) VL_MT_UNSAFE;
+    void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
     void varInsert(int finalize, const char* namep, void* datap,
-		   VerilatedVarType vltype, int vlflags, int dims, ...);
+		   VerilatedVarType vltype, int vlflags, int dims, ...) VL_MT_UNSAFE;
     // ACCESSORS
     const char* name() const { return m_namep; }
     inline VerilatedSyms* symsp() const { return m_symsp; }
-    VerilatedVar* varFind(const char* namep) const;
-    VerilatedVarNameMap* varsp() const { return m_varsp; }
+    VerilatedVar* varFind(const char* namep) const VL_MT_SAFE_POSTINIT;
+    VerilatedVarNameMap* varsp() const VL_MT_SAFE_POSTINIT { return m_varsp; }
     void scopeDump() const;
     void* exportFindError(int funcnum) const;
-    static void* exportFindNullError(int funcnum);
-    static inline void* exportFind(const VerilatedScope* scopep, int funcnum) {
+    static void* exportFindNullError(int funcnum) VL_MT_SAFE;
+    static inline void* exportFind(const VerilatedScope* scopep, int funcnum) VL_MT_SAFE {
 	if (VL_UNLIKELY(!scopep)) return exportFindNullError(funcnum);
 	if (VL_LIKELY(funcnum < scopep->m_funcnumMax)) {
 	    // m_callbacksp must be declared, as Max'es are > 0
@@ -210,6 +309,8 @@ public:  // But internals only - called from VerilatedModule's
 class Verilated {
     // MEMBERS
     // Slow path variables
+    static VerilatedMutex m_mutex;  ///< Mutex for all static members, when VL_THREADED
+
     static VerilatedVoidCb  s_flushCb;		///< Flush callback function
 
     static struct Serialized {   // All these members serialized/deserialized
@@ -224,16 +325,26 @@ class Verilated {
 	Serialized();
     } s_s;
 
-    static VL_THREAD_LOCAL const VerilatedScope* t_dpiScopep;	///< DPI context scope
-    static VL_THREAD_LOCAL const char*	t_dpiFilename;	///< DPI context filename
-    static VL_THREAD_LOCAL int		t_dpiLineno;	///< DPI context line number
-
     // no need to be save-restored (serialized) the
     // assumption is that the restore is allowed to pass different arguments
     static struct CommandArgValues {
 	int          argc;
 	const char** argv;
     } s_args;
+
+    // Not covered by mutex, as per-thread
+    static VL_THREAD_LOCAL struct ThreadLocal {
+#ifdef VL_THREADED
+	vluint32_t t_trainId;  ///< Current train# executing on this thread
+	vluint32_t t_endOfEvalReqd;  ///< Messages may be pending, thread needs endOf-eval calls
+#endif
+	const VerilatedScope* t_dpiScopep;  ///< DPI context scope
+	const char* t_dpiFilename;  ///< DPI context filename
+	int t_dpiLineno;  ///< DPI context line number
+
+	ThreadLocal();
+	~ThreadLocal();
+    } t_s;
 
 public:
 
@@ -244,87 +355,117 @@ public:
     /// 0 = Set to zeros
     /// 1 = Set all bits to one
     /// 2 = Randomize all bits
-    static void randReset(int val) { s_s.s_randReset=val; }
-    static int  randReset() { return s_s.s_randReset; }	///< Return randReset value
+    static void randReset(int val) VL_MT_SAFE;
+    static int  randReset() VL_MT_SAFE { return s_s.s_randReset; }  ///< Return randReset value
 
     /// Enable debug of internal verilated code
-    static void debug(int level);
+    static void debug(int level) VL_MT_SAFE;
 #ifdef VL_DEBUG
-    static inline int  debug() { return s_s.s_debug; }	///< Return debug value
+    /// Return debug level
+    /// When multithreaded this may not immediately react to another thread changing the level (no mutex)
+    static inline int  debug() VL_MT_SAFE { return s_s.s_debug; }
 #else
-    static inline int  debug() { return 0; }		///< Constant 0 debug, so C++'s optimizer rips up
+    static inline int  debug() VL_PURE { return 0; }  ///< Return constant 0 debug level, so C++'s optimizer rips up
 #endif
     /// Enable calculation of unused signals
-    static void calcUnusedSigs(bool flag) { s_s.s_calcUnusedSigs=flag; }
-    static bool calcUnusedSigs() { return s_s.s_calcUnusedSigs; }	///< Return calcUnusedSigs value
+    static void calcUnusedSigs(bool flag) VL_MT_SAFE;
+    static bool calcUnusedSigs() VL_MT_SAFE { return s_s.s_calcUnusedSigs; }  ///< Return calcUnusedSigs value
     /// Did the simulation $finish?
-    static void gotFinish(bool flag) { s_s.s_gotFinish=flag; }
-    static bool gotFinish() { return s_s.s_gotFinish; }	///< Return if got a $finish
+    static void gotFinish(bool flag) VL_MT_SAFE;
+    static bool gotFinish() VL_MT_SAFE { return s_s.s_gotFinish; }  ///< Return if got a $finish
     /// Allow traces to at some point be enabled (disables some optimizations)
-    static void traceEverOn(bool flag) {
+    static void traceEverOn(bool flag) VL_MT_SAFE {
 	if (flag) { calcUnusedSigs(flag); }
     }
     /// Enable/disable assertions
-    static void assertOn(bool flag) { s_s.s_assertOn=flag; }
-    static bool assertOn() { return s_s.s_assertOn; }
+    static void assertOn(bool flag) VL_MT_SAFE;
+    static bool assertOn() VL_MT_SAFE { return s_s.s_assertOn; }
     /// Enable/disable vpi fatal
-    static void fatalOnVpiError(bool flag) { s_s.s_fatalOnVpiError=flag; }
-    static bool fatalOnVpiError() { return s_s.s_fatalOnVpiError; }
+    static void fatalOnVpiError(bool flag) VL_MT_SAFE;
+    static bool fatalOnVpiError() VL_MT_SAFE { return s_s.s_fatalOnVpiError; }
     /// Flush callback for VCD waves
-    static void flushCb(VerilatedVoidCb cb);
-    static void flushCall() { if (s_flushCb) (*s_flushCb)(); }
+    static void flushCb(VerilatedVoidCb cb) VL_MT_SAFE;
+    static void flushCall() VL_MT_SAFE;
 
     /// Record command line arguments, for retrieval by $test$plusargs/$value$plusargs
-    static void commandArgs(int argc, const char** argv);
-    static void commandArgs(int argc, char** argv) { commandArgs(argc, const_cast<const char**>(argv)); }
+    static void commandArgs(int argc, const char** argv) VL_MT_SAFE;
+    static void commandArgs(int argc, char** argv) VL_MT_SAFE { commandArgs(argc, const_cast<const char**>(argv)); }
     static void commandArgsAdd(int argc, const char** argv);
-    static CommandArgValues* getCommandArgs() {return &s_args;}
+    static CommandArgValues* getCommandArgs() VL_MT_SAFE { return &s_args; }
     /// Match plusargs with a given prefix. Returns static char* valid only for a single call
-    static const char* commandArgsPlusMatch(const char* prefixp);
+    static const char* commandArgsPlusMatch(const char* prefixp) VL_MT_SAFE;
 
     /// Produce name & version for (at least) VPI
     static const char* productName() VL_PURE { return VERILATOR_PRODUCT; }
     static const char* productVersion() VL_PURE { return VERILATOR_VERSION; }
 
+    /// When multithreaded, quiesce the model to prepare for trace/saves/coverage
+    /// This may only be called when no locks are held.
+    static void quiesce() VL_MT_SAFE;
+
     /// For debugging, print much of the Verilator internal state.
     /// The output of this function may change in future
     /// releases - contact the authors before production use.
-    static void internalsDump();
+    static void internalsDump() VL_MT_SAFE;
 
     /// For debugging, print text list of all scope names with
     /// dpiImport/Export context.  This function may change in future
     /// releases - contact the authors before production use.
-    static void scopesDump();
+    static void scopesDump() VL_MT_SAFE;
 
-    // METHODS - INTERNAL USE ONLY
+    /// Set the number of threads to execute on.
+    /// 0x0 = use all available CPU threads, or 1 if no support compiled in
+    /// Ignored after spawnThreads() has been called
+    static void numThreads(unsigned threads) VL_MT_SAFE;
+    static unsigned numThreads() VL_MT_SAFE;
+    /// Spawn child threads, using numThreads() as # of threads
+    /// Verilator calls this automatically on the first eval() call
+    /// User code may call it earlier if desired
+    /// Once called the first time, later calls are ignored
+    static void spawnThreads() VL_MT_SAFE;
+
+public:
+    // METHODS - INTERNAL USE ONLY (but public due to what uses it)
     // Internal: Create a new module name by concatenating two strings
-    static const char* catName(const char* n1, const char* n2); // Returns new'ed data
+    static const char* catName(const char* n1, const char* n2); // Returns static data
     // Internal: Find scope
-    static const VerilatedScope* scopeFind(const char* namep);
-    static const VerilatedScopeNameMap* scopeNameMap();
+    static const VerilatedScope* scopeFind(const char* namep) VL_MT_SAFE;
+    static const VerilatedScopeNameMap* scopeNameMap() VL_MT_SAFE;
     // Internal: Get and set DPI context
-    static const VerilatedScope* dpiScope() { return t_dpiScopep; }
-    static void dpiScope(const VerilatedScope* scopep) { t_dpiScopep=scopep; }
-    static void dpiContext(const VerilatedScope* scopep, const char* filenamep, int lineno) {
-	t_dpiScopep=scopep; t_dpiFilename=filenamep; t_dpiLineno=lineno; }
-    static void dpiClearContext() { t_dpiScopep = NULL; }
-    static bool dpiInContext() { return t_dpiScopep != NULL; }
-    static const char* dpiFilenamep() { return t_dpiFilename; }
-    static int dpiLineno() { return t_dpiLineno; }
-    static int exportFuncNum(const char* namep);
+    static const VerilatedScope* dpiScope() VL_MT_SAFE { return t_s.t_dpiScopep; }
+    static void dpiScope(const VerilatedScope* scopep) VL_MT_SAFE { t_s.t_dpiScopep=scopep; }
+    static void dpiContext(const VerilatedScope* scopep, const char* filenamep, int lineno) VL_MT_SAFE {
+	t_s.t_dpiScopep = scopep; t_s.t_dpiFilename = filenamep; t_s.t_dpiLineno = lineno; }
+    static void dpiClearContext() VL_MT_SAFE { t_s.t_dpiScopep = NULL; }
+    static bool dpiInContext() VL_MT_SAFE { return t_s.t_dpiScopep != NULL; }
+    static const char* dpiFilenamep() VL_MT_SAFE { return t_s.t_dpiFilename; }
+    static int dpiLineno() VL_MT_SAFE { return t_s.t_dpiLineno; }
+    static int exportFuncNum(const char* namep) VL_MT_SAFE;
     static size_t serializedSize() VL_PURE { return sizeof(s_s); }
-    static void* serializedPtr() VL_MT_UNSAFE { return &s_s; }
+    static void* serializedPtr() VL_MT_UNSAFE { return &s_s; } // Unsafe, for Serialize only
+#ifdef VL_THREADED
+    /// Set the trainId, called when a train starts
+    static void trainId(vluint32_t id) VL_MT_SAFE { t_s.t_trainId = id; }
+    static vluint32_t trainId() VL_MT_SAFE { return t_s.t_trainId; }
+    static void endOfEvalReqdInc() VL_MT_SAFE { ++t_s.t_endOfEvalReqd; }
+    static void endOfEvalReqdDec() VL_MT_SAFE { --t_s.t_endOfEvalReqd; }
+    /// Called at end of each thread train, before finishing eval
+    static void endOfThreadTrain(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
+	if (VL_UNLIKELY(t_s.t_endOfEvalReqd)) { endOfThreadTrainGuts(evalMsgQp); } }
+    /// Called at end of eval loop
+    static void endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
+	if (VL_UNLIKELY(t_s.t_endOfEvalReqd)) { endOfEvalGuts(evalMsgQp); } }
+#endif
+
+private:
+#ifdef VL_THREADED
+    static void endOfThreadTrainGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
+    static void endOfEvalGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
+#endif
 };
 
 //=========================================================================
 // Extern functions -- User may override -- See verilated.cpp
-
-#ifndef VL_PRINTF
-# define VL_PRINTF printf	///< Print ala printf; may redefine if desired
-#endif
-#ifndef VL_VPRINTF
-# define VL_VPRINTF vprintf	///< Print ala vprintf; may redefine if desired
-#endif
 
 /// Routine to call for $finish
 /// User code may wish to replace this function, to do so, define VL_USER_FINISH.
@@ -349,14 +490,19 @@ extern void vl_fatal  (const char* filename, int linenum, const char* hier,
 // Extern functions -- Slow path
 
 /// Multithread safe wrapper for calls to $finish
-extern void VL_FINISH_MT (const char* filename, int linenum, const char* hier);
+extern void VL_FINISH_MT (const char* filename, int linenum, const char* hier) VL_MT_SAFE;
 /// Multithread safe wrapper for calls to $stop
-extern void VL_STOP_MT   (const char* filename, int linenum, const char* hier);
+extern void VL_STOP_MT   (const char* filename, int linenum, const char* hier) VL_MT_SAFE;
 /// Multithread safe wrapper to call for a couple of fatal messages
 extern void VL_FATAL_MT  (const char* filename, int linenum, const char* hier,
-			  const char* msg);
+			  const char* msg) VL_MT_SAFE;
+
 /// Print a string, multithread safe. Eventually VL_PRINTF will get called.
-#define VL_PRINTF_MT VL_PRINTF
+#ifdef VL_THREADED
+extern void VL_PRINTF_MT(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
+#else
+# define VL_PRINTF_MT VL_PRINTF  // The following parens will take care of themselves
+#endif
 /// Print a debug message from internals with standard prefix, with printf style format
 extern void VL_DBG_MSGF(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
 

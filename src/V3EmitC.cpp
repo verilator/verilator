@@ -1738,8 +1738,16 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     if (v3Global.opt.inhibitSim()) {
 	puts("if (VL_UNLIKELY(__Vm_inhibitSim)) return;\n");
     }
-    putsDecoration("// Evaluate till stable\n");
     puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+++++TOP Evaluate "+modClassName(modp)+"::eval\\n\"); );\n");
+
+    if (v3Global.opt.threads()) {  // THREADED-TODO move to per-train
+	uint32_t trainId = 0;
+	putsDecoration("// Train "+cvtToStr(trainId)+" start\n");
+	puts("VL_DEBUG_IF(VL_DBG_MSGF(\"Train starting, trainId="+cvtToStr(trainId)+"\\n\"););\n");
+	puts("Verilated::trainId("+cvtToStr(trainId)+");\n");
+    }
+
+    putsDecoration("// Evaluate till stable\n");
     puts("int __VclockLoop = 0;\n");
     puts("QData __Vchange = 1;\n");
     puts("while (VL_LIKELY(__Vchange)) {\n");
@@ -1752,6 +1760,12 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     puts(    "if (VL_UNLIKELY(++__VclockLoop > "+cvtToStr(v3Global.opt.convergeLimit())
 	     +")) VL_FATAL_MT(__FILE__,__LINE__,__FILE__,\"Verilated model didn't converge\");\n");
     puts("}\n");
+    if (v3Global.opt.threads()) {  // THREADED-TODO move to end of all trains on thread
+	puts("Verilated::endOfThreadTrain(vlSymsp->__Vm_evalMsgQp);\n");
+    }
+    if (v3Global.opt.threads()) {
+	puts("Verilated::endOfEval(vlSymsp->__Vm_evalMsgQp);\n");
+    }
     puts("}\n");
     splitSizeInc(10);
 
@@ -2053,8 +2067,10 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
     // Save/restore
     if (v3Global.opt.savable() && modp->isTop()) {
-	puts("inline VerilatedSerialize&   operator<<(VerilatedSerialize& os,   "+modClassName(modp)+"& rhs) { rhs.__Vserialize(os); return os; }\n");
-	puts("inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, "+modClassName(modp)+"& rhs) { rhs.__Vdeserialize(os); return os; }\n");
+	puts("inline VerilatedSerialize&   operator<<(VerilatedSerialize& os,   "+modClassName(modp)+"& rhs) {\n"
+	     "Verilated::quiesce(); rhs.__Vserialize(os); return os; }\n");
+	puts("inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, "+modClassName(modp)+"& rhs) {\n"
+	     "Verilated::quiesce(); rhs.__Vdeserialize(os); return os; }\n");
 	puts("\n");
     }
 
