@@ -208,14 +208,37 @@ public:
 	    "COMBO","INITIAL","SETTLE","NEVER"
 	};
 	return names[m_e];
-    };
+    }
     const char* verilogKwd() const {
 	static const char* const names[] = {
 	    "%E-edge", "[any]", "edge", "posedge", "negedge", "[high]","[low]",
 	    "*","[initial]","[settle]","[never]"
 	};
 	return names[m_e];
-    };
+    }
+    // Return true iff this and the other have mutually exclusive transitions
+    bool exclusiveEdge(const AstEdgeType& other) const {
+        switch (m_e) {
+        case AstEdgeType::ET_POSEDGE:
+            switch (other.m_e) {
+            case AstEdgeType::ET_NEGEDGE:  // FALLTHRU
+            case AstEdgeType::ET_LOWEDGE:
+                return true;
+            default: {}
+            }
+            break;
+        case AstEdgeType::ET_NEGEDGE:
+            switch (other.m_e) {
+            case AstEdgeType::ET_POSEDGE:  // FALLTHRU
+            case AstEdgeType::ET_HIGHEDGE:
+                return true;
+            default: {}
+            }
+            break;
+        default: {}
+        }
+        return false;
+    }
     inline AstEdgeType () : m_e(ET_ILLEGAL) {}
     // cppcheck-suppress noExplicitConstructor
     inline AstEdgeType (en _e) : m_e(_e) {}

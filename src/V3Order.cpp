@@ -562,6 +562,7 @@ private:
     void processMoveReadyOne(OrderMoveVertex* vertexp);
     void processMoveDoneOne(OrderMoveVertex* vertexp);
     void processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* domScopep, int level);
+    static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top);
 
     string cfuncName(AstNodeModule* modp, AstSenTree* domainp, AstScope* scopep, AstNode* forWhatp) {
 	modp->user3Inc();
@@ -1350,21 +1351,76 @@ void OrderVisitor::processMoveBuildGraph() {
     }
 }
 
+bool OrderVisitor::domainsExclusive(const AstSenTree* fromp,
+                                    const AstSenTree* top) {
+    // Return 'true' if we can prove that both 'from' and 'to' cannot both
+    // be active on the same eval pass, or false if we can't prove this.
+    //
+    // For now, this only detects the case of 'always @(posedge clk)'
+    // and 'always @(negedge clk)' being exclusive.
+    //
+    // Are there any other cases we need to handle? Maybe not,
+    // because these are not exclusive:
+    //   always @(posedge A or posedge B)
+    //   always @(negedge A)
+    //
+    // ... unless you know more about A and B, which sounds hard.
+    const AstSenItem* fromSenListp = fromp->sensesp()->castSenItem();
+    const AstSenItem* toSenListp = top->sensesp()->castSenItem();
+    // If clk gating is ever reenabled, we may need to update this to handle
+    // AstSenGate also.
+    if (!fromSenListp) fromp->v3fatalSrc("sensitivity list item is not an AstSenItem");
+    if (!toSenListp) top->v3fatalSrc("sensitivity list item is not an AstSenItem");
+
+    if (fromSenListp->nextp()) return false;
+    if (toSenListp->nextp()) return false;
+
+    const AstNodeVarRef* fromVarrefp = fromSenListp->varrefp();
+    const AstNodeVarRef* toVarrefp = toSenListp->varrefp();
+    if (!fromVarrefp || !toVarrefp) return false;
+
+    // We know nothing about the relationship between different clocks here,
+    // so give up on proving anything.
+    if (fromVarrefp->varScopep() != toVarrefp->varScopep()) return false;
+
+    return fromSenListp->edgeType().exclusiveEdge(toSenListp->edgeType());
+}
+
 void OrderVisitor::processMoveBuildGraphIterate (OrderMoveVertex* moveVxp, V3GraphVertex* vertexp, int weightmin) {
     // Search forward from given logic vertex, making new edges based on moveVxp
     for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
-	if (edgep->weight()!=0) { // was cut
-	    int weight = weightmin;
-	    if (weight==0 || weight>edgep->weight()) weight=edgep->weight();
-	    if (OrderLogicVertex* toLVertexp = dynamic_cast<OrderLogicVertex*>(edgep->top())) {
-		// Path from vertexp to a logic vertex; new edge
-		// Note we use the last edge's weight, not some function of multiple edges
-		new OrderEdge(&m_pomGraph, moveVxp, toLVertexp->moveVxp(), weight);
-	    }
-	    else { // Keep hunting forward for a logic node
-		processMoveBuildGraphIterate(moveVxp, edgep->top(), weight);
-	    }
-	}
+        if (edgep->weight()!=0) { // was cut
+            int weight = weightmin;
+            if (weight==0 || weight>edgep->weight()) weight=edgep->weight();
+            if (OrderLogicVertex* toLVertexp = dynamic_cast<OrderLogicVertex*>(edgep->top())) {
+                //  "Initial" and "settle" domains run at time 0 and never
+                //  again. Everything else runs at time >0 and never before.
+                //  Ignore deps that cross the time-zero/nonzero boundary.
+                //  We'll never run both vertices in the same eval() pass
+                //  so there's no need to order them.
+                bool toInitial = (toLVertexp->domainp()->hasInitial()
+                                  || toLVertexp->domainp()->hasSettle());
+                bool fromInitial = (moveVxp->logicp()->domainp()->hasInitial()
+                                    || moveVxp->logicp()->domainp()->hasSettle());
+                if (toInitial != fromInitial) {
+                    continue;
+                }
+                // Sometimes we get deps between 'always @(posedge clk)' and
+                // 'always @(negedge clk)' domains. Discard these. We'll never
+                // evaluate both logic vertices on the same eval() pass so
+                // there's no need to order them.
+                if (domainsExclusive(moveVxp->logicp()->domainp(),
+                                     toLVertexp->domainp())) {
+                    continue;
+                }
+                // Path from vertexp to a logic vertex; new edge
+                // Note we use the last edge's weight, not some function of multiple edges
+                new OrderEdge(&m_pomGraph, moveVxp, toLVertexp->moveVxp(), weight);
+            }
+            else { // Keep hunting forward for a logic node
+                processMoveBuildGraphIterate(moveVxp, edgep->top(), weight);
+            }
+        }
     }
 }
 
