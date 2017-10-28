@@ -2204,7 +2204,7 @@ private:
     // This visit function here must allow for short-circuiting.
     TREEOPS("AstCond {$lhsp.isZero}",		"replaceWIteratedThs(nodep)");
     TREEOPS("AstCond {$lhsp.isNeqZero}",	"replaceWIteratedRhs(nodep)");
-    TREEOP ("AstCond{$condp->castNot(),       $expr1p, $expr2p}", "AstCond{$condp->op1p(), $expr2p, $expr1p}");
+    TREEOP ("AstCond{$condp.castNot,       $expr1p, $expr2p}", "AstCond{$condp->op1p(), $expr2p, $expr1p}");
     TREEOP ("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p.isAllOnes, $expr2p}", "AstLogOr {$condp, $expr2p}");  // a?1:b == a||b
     TREEOP ("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p,    $expr2p.isZero}", "AstLogAnd{$condp, $expr1p}");  // a?b:0 == a&&b
     TREEOP ("AstNodeCond{$condp.width1, $expr1p.width1,   $expr1p, $expr2p.isAllOnes}", "AstLogOr {AstNot{$condp}, $expr1p}");  // a?b:1 == ~a||b
@@ -2344,12 +2344,12 @@ private:
     TREEOPV("AstRedAnd{$lhsp, $lhsp.width1}",	"replaceWLhs(nodep)");
     TREEOPV("AstRedOr {$lhsp, $lhsp.width1}",	"replaceWLhs(nodep)");
     TREEOPV("AstRedXor{$lhsp, $lhsp.width1}",	"replaceWLhs(nodep)");
-    TREEOPV("AstRedAnd{$lhsp->castConcat()}",	"AstAnd{AstRedAnd{$lhsp->castConcat()->lhsp()}, AstRedAnd{$lhsp->castConcat()->rhsp()}}");    // &{a,b} => {&a}&{&b}
-    TREEOPV("AstRedOr {$lhsp->castConcat()}",	"AstOr {AstRedOr {$lhsp->castConcat()->lhsp()}, AstRedOr {$lhsp->castConcat()->rhsp()}}");    // |{a,b} => {|a}|{|b}
-    TREEOPV("AstRedXor{$lhsp->castConcat()}",	"AstXor{AstRedXor{$lhsp->castConcat()->lhsp()}, AstRedXor{$lhsp->castConcat()->rhsp()}}");    // ^{a,b} => {^a}^{^b}
-    TREEOPV("AstRedAnd{$lhsp->castExtend(), $lhsp->width()>$lhsp->castExtend()->lhsp()->width()}",	"replaceZero(nodep)");	// &{0,...} => 0    Prevents compiler limited range error
-    TREEOPV("AstRedOr {$lhsp->castExtend()}",	"AstRedOr {$lhsp->castExtend()->lhsp()}");
-    TREEOPV("AstRedXor{$lhsp->castExtend()}",	"AstRedXor{$lhsp->castExtend()->lhsp()}");
+    TREEOPV("AstRedAnd{$lhsp.castConcat}",	"AstAnd{AstRedAnd{$lhsp->castConcat()->lhsp()}, AstRedAnd{$lhsp->castConcat()->rhsp()}}");    // &{a,b} => {&a}&{&b}
+    TREEOPV("AstRedOr {$lhsp.castConcat}",	"AstOr {AstRedOr {$lhsp->castConcat()->lhsp()}, AstRedOr {$lhsp->castConcat()->rhsp()}}");    // |{a,b} => {|a}|{|b}
+    TREEOPV("AstRedXor{$lhsp.castConcat}",	"AstXor{AstRedXor{$lhsp->castConcat()->lhsp()}, AstRedXor{$lhsp->castConcat()->rhsp()}}");    // ^{a,b} => {^a}^{^b}
+    TREEOPV("AstRedAnd{$lhsp.castExtend, $lhsp->width() > $lhsp->castExtend()->lhsp()->width()}",	"replaceZero(nodep)");	// &{0,...} => 0    Prevents compiler limited range error
+    TREEOPV("AstRedOr {$lhsp.castExtend}",	"AstRedOr {$lhsp->castExtend()->lhsp()}");
+    TREEOPV("AstRedXor{$lhsp.castExtend}",	"AstRedXor{$lhsp->castExtend()->lhsp()}");
     TREEOPV("AstOneHot{$lhsp.width1}",		"replaceWLhs(nodep)");
     TREEOPV("AstOneHot0{$lhsp.width1}",		"replaceNum(nodep,1)");
     // Binary AND/OR is faster than logical and/or (usually)
@@ -2361,7 +2361,7 @@ private:
     TREEOPV("AstConcat{operandConcatMove(nodep)}",	"moveConcat(nodep)");
     TREEOPV("AstConcat{$lhsp.isZero, $rhsp}",		"replaceExtend(nodep, nodep->rhsp())");
     // CONCAT(a[1],a[0]) -> a[1:0]
-    TREEOPV("AstConcat{$lhsp->castSel(), $rhsp->castSel(), ifAdjacentSel($lhsp->castSel(),,$rhsp->castSel())}",  "replaceConcatSel(nodep)");
+    TREEOPV("AstConcat{$lhsp.castSel, $rhsp.castSel, ifAdjacentSel($lhsp->castSel(),,$rhsp->castSel())}",  "replaceConcatSel(nodep)");
     TREEOPV("AstConcat{ifConcatMergeableBiop($lhsp), concatMergeable($lhsp,,$rhsp)}", "replaceConcatMerge(nodep)");
     // Common two-level operations that can be simplified
     TREEOP ("AstAnd {$lhsp.castOr, $rhsp.castOr, operandAndOrSame(nodep)}",	"replaceAndOr(nodep)");

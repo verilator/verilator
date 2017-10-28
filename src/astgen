@@ -211,6 +211,7 @@ sub write_report {
 
 sub write_classes {
     my $fh = open_file(@_);
+    printf $fh "class AstNode;\n";
     foreach my $type (sort (keys %Classes)) {
 	printf $fh "class %-20s // ", "Ast${type};";
 	foreach my $subclass (subclasses_of($type)) {
@@ -450,7 +451,7 @@ sub _exec_syms_recurse {
 	if (ref $sym) { _exec_syms_recurse($sym); }
 	elsif ($sym =~ /^\$.*/) {
 	    if (!defined $_Exec_Syms{$sym}) {
-		$_Exec_Syms{$sym} = "arg".($_Exec_Nsyms++)."p";
+		$_Exec_Syms{$sym} = "arg".(++$_Exec_Nsyms)."p";
 	    }
 	}
     }
