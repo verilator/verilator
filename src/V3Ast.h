@@ -1287,7 +1287,7 @@ public:
     virtual bool isUnlikely() const { return false; }	// Else $stop or similar statement which means an above IF statement is unlikely to be taken
     virtual int  instrCount() const { return 0; }
     virtual V3Hash sameHash() const { return V3Hash(V3Hash::Illegal()); }  // Not a node that supports it
-    virtual bool same(AstNode* otherp) const { return true; }
+    virtual bool same(const AstNode*) const { return true; }
     virtual bool hasDType() const { return false; }	// Iff has a data type; dtype() must be non null
     virtual AstNodeDType* getChildDTypep() const { return NULL; } // Iff has a non-null childDTypep(), as generic node function
     virtual bool maybePointedTo() const { return false; }  // Another AstNode* may have a pointer into this node, other then normal front/back/etc.
@@ -1369,7 +1369,7 @@ public:
     virtual bool stringFlavor() const { return false; }	// N flavor of nodes with both flavors?
     virtual int instrCount()	const { return widthInstrs(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
-    virtual bool same(AstNode*) const { return true; }
+    virtual bool same(const AstNode*) const { return true; }
 };
 
 class AstNodeBiop : public AstNodeMath {
@@ -1396,7 +1396,7 @@ public:
     virtual bool stringFlavor() const { return false; }	// N flavor of nodes with both flavors?
     virtual int instrCount()	const { return widthInstrs(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
-    virtual bool same(AstNode*) const { return true; }
+    virtual bool same(const AstNode*) const { return true; }
 };
 
 class AstNodeTriop : public AstNodeMath {
@@ -1422,7 +1422,7 @@ public:
     virtual bool sizeMattersThs() = 0; // True if output result depends on ths size
     virtual int instrCount()	const { return widthInstrs(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
-    virtual bool same(AstNode*) const { return true; }
+    virtual bool same(const AstNode*) const { return true; }
 };
 
 class AstNodeBiCom : public AstNodeBiop {
@@ -1482,7 +1482,7 @@ public:
     void	attrp(AstAttrOf* nodep)  { return setOp4p((AstNode*)nodep); }
     // METHODS
     virtual V3Hash sameHash() const { return V3Hash(); }
-    virtual bool same(AstNode*) const { return true; }
+    virtual bool same(const AstNode*) const { return true; }
 };
 
 class AstNodeStmt : public AstNode {
@@ -1514,7 +1514,7 @@ public:
     virtual bool cleanRhs() { return true; }
     virtual int  instrCount() const { return widthInstrs(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
-    virtual bool same(AstNode*) const { return true; }
+    virtual bool same(const AstNode*) const { return true; }
     virtual string verilogKwd() const { return "="; }
     virtual bool brokeLhsMustBeLvalue() const = 0;
 };
@@ -1534,7 +1534,7 @@ public:
     virtual bool isGateOptimizable() const { return false; }
     virtual int  instrCount() const { return instrCountBranch(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
-    virtual bool same(AstNode* samep) const { return true; }
+    virtual bool same(const AstNode* samep) const { return true; }
 };
 
 class AstNodeIf : public AstNodeStmt {
@@ -1556,7 +1556,7 @@ public:
     virtual bool isGateDedupable() const { return true; }
     virtual int  instrCount() const { return instrCountBranch(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
-    virtual bool same(AstNode* samep) const { return true; }
+    virtual bool same(const AstNode* samep) const { return true; }
     void    branchPred(AstBranchPred flag) { m_branchPred = flag; }
     AstBranchPred branchPred() const { return m_branchPred; }
 };
@@ -1648,8 +1648,9 @@ public:
     ASTNODE_BASE_FUNCS(NodeText)
     virtual void dump(ostream& str=cout);
     virtual V3Hash sameHash() const { return V3Hash(text()); }
-    virtual bool same(AstNode* samep) const {
-	return text()==samep->castNodeText()->text(); }
+    virtual bool same(const AstNode* samep) const {
+	const AstNodeText* asamep = static_cast<const AstNodeText*>(samep);
+	return text() == asamep->text(); }
     const string& text() const { return m_text; }
 };
 
@@ -1770,18 +1771,18 @@ public:
     virtual void cloneRelink() { if (m_refDTypep && m_refDTypep->clonep()) {
 	m_refDTypep = m_refDTypep->clonep();
     }}
-    virtual bool same(AstNode* samep) const {
-	AstNodeArrayDType* sp = samep->castNodeArrayDType();
-	return (msb()==sp->msb()
-		&& subDTypep()==sp->subDTypep()
-		&& rangenp()->sameTree(sp->rangenp())); }  // HashedDT doesn't recurse, so need to check children
+    virtual bool same(const AstNode* samep) const {
+	const AstNodeArrayDType* asamep = static_cast<const AstNodeArrayDType*>(samep);
+	return (msb()==asamep->msb()
+		&& subDTypep()==asamep->subDTypep()
+		&& rangenp()->sameTree(asamep->rangenp())); }  // HashedDT doesn't recurse, so need to check children
     virtual bool similarDType(AstNodeDType* samep) const {
-	AstNodeArrayDType* sp = samep->castNodeArrayDType();
-	return (sp
+	const AstNodeArrayDType* asamep = static_cast<const AstNodeArrayDType*>(samep);
+	return (asamep
 		&& type() == samep->type()
-		&& msb() == sp->msb()
-		&& rangenp()->sameTree(sp->rangenp())
-		&& subDTypep()->skipRefp()->similarDType(sp->subDTypep()->skipRefp()));
+		&& msb() == asamep->msb()
+		&& rangenp()->sameTree(asamep->rangenp())
+		&& subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
     }
     virtual V3Hash sameHash() const { return V3Hash(V3Hash(m_refDTypep),V3Hash(msb()),V3Hash(lsb())); }
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
