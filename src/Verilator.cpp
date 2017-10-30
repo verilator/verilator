@@ -585,8 +585,8 @@ int main(int argc, char** argv, char** env) {
 
     // Internal tests (after option parsing as need debug() setting)
     VHashSha1::selfTest();
-    AstBasicDTypeKwd::test();
-    V3Graph::test();
+    AstBasicDTypeKwd::selfTest();
+    V3Graph::selfTest();
 
     //--FRONTEND------------------
 

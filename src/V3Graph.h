@@ -132,7 +132,7 @@ public:
     void dumpDotFilePrefixedAlways(const string& nameComment, bool colorAsSubgraph=false) const;
     void userClearVertices();
     void userClearEdges();
-    static void test();
+    static void selfTest();
 
     // CALLBACKS
     virtual void loopsMessageCb(V3GraphVertex* vertexp) { v3fatalSrc("Loops detected in graph: "<<vertexp); }

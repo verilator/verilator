@@ -351,7 +351,7 @@ void V3GraphTestImport::dotImport() {
 
 //======================================================================
 
-void V3Graph::test() {
+void V3Graph::selfTest() {
     // Execute all of the tests
     UINFO(2,__FUNCTION__<<": "<<endl);
     { V3GraphTestStrong test; test.run(); }

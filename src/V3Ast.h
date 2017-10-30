@@ -363,7 +363,7 @@ public:
 	};
 	return names[m_e];
     };
-    static void test() {
+    static void selfTest() {
 	UASSERT(0==strcmp(AstBasicDTypeKwd(_ENUM_MAX).ascii()," MAX"),"Enum array mismatch");
 	UASSERT(0==strcmp(AstBasicDTypeKwd(_ENUM_MAX).dpiType()," MAX"),"Enum array mismatch");
     }
