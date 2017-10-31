@@ -45,18 +45,20 @@ private:
 
     // STATE
     string	m_stage;		// Name of the stage we are scanning
-    bool	m_fast;			// Counting only fastpath
+    /// m_fast = true:  Counting only critical branch of fastpath
+    /// m_fast = false:  Counting every node, ignoring structure of program
+    bool	m_fast;
 
     AstCFunc*	m_cfuncp;		// Current CFUNC
     V3Double0	m_statInstrLong;	// Instruction count
     bool	m_counting;		// Currently counting
-    double	m_instrs;		// Current instr count
+    double	m_instrs;		// Current instr count (for determining branch direction)
 
     vector<V3Double0>	m_statTypeCount;	// Nodes of given type
     V3Double0		m_statAbove[AstType::_ENUM_END][AstType::_ENUM_END];	// Nodes of given type
     V3Double0		m_statPred[AstBranchPred::_ENUM_END];	// Nodes of given type
     V3Double0		m_statInstr;		// Instruction count
-    V3Double0		m_statInstrFast;	// Instruction count
+    V3Double0		m_statInstrFast;	// Instruction count, non-slow() eval functions only
     vector<V3Double0>	m_statVarWidths;	// Variables of given width
     vector<NameMap>	m_statVarWidthNames;	// Var names of given width
     V3Double0		m_statVarArray;		// Statistic tracking
@@ -65,6 +67,12 @@ private:
     V3Double0		m_statVarScpBytes;	// Statistic tracking
 
     // METHODS
+    static int debug() {
+	static int level = -1;
+	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
+	return level;
+    }
+
     void allNodes(AstNode* nodep) {
 	m_instrs += nodep->instrCount();
 	if (m_counting) {
@@ -128,48 +136,52 @@ private:
 	}
     }
     virtual void visit(AstNodeIf* nodep) {
-	UINFO(4,"   IF "<<nodep<<endl);
+	UINFO(4,"   IF i="<<m_instrs<<" "<<nodep<<endl);
 	allNodes(nodep);
-	// Condition is part of PREVIOUS block
+	// Condition is part of cost allocated to PREVIOUS block
 	nodep->condp()->iterateAndNextConst(*this);
 	// Track prediction
 	if (m_counting) {
 	    ++m_statPred[nodep->branchPred()];
 	}
 	if (!m_fast) {
+	    // Count everything
 	    nodep->iterateChildrenConst(*this);
 	} else {
 	    // See which path we want to take
-	    bool takeElse = false;
-	    if (!nodep->elsesp() || (nodep->branchPred()==AstBranchPred::BP_LIKELY)) {
-		// Always take the if
-	    } else if (!nodep->ifsp() || (nodep->branchPred()==AstBranchPred::BP_UNLIKELY)) {
-		// Always take the else
-	    } else {
-		// Take the longer path
-		bool prevCounting = m_counting;
+	    // Need to do even if !m_counting because maybe determining upstream if/else
+	    double ifInstrs = 0.0;
+	    double elseInstrs = 0.0;
+	    if (nodep->branchPred() != AstBranchPred::BP_UNLIKELY) { // Check if
 		double prevInstr = m_instrs;
-		m_counting = false;
-		// Check if
-		m_instrs = 0;
-		nodep->ifsp()->iterateAndNextConst(*this);
-		double instrIf = m_instrs;
-		// Check else
-		m_instrs = 0;
-		nodep->elsesp()->iterateAndNextConst(*this);
-		double instrElse = m_instrs;
-		// Max of if or else condition
-		takeElse = (instrElse > instrIf);
-		// Restore
-		m_counting = prevCounting;
-		m_instrs = prevInstr + (takeElse?instrElse:instrIf);
-	    }
-	    // Count the block
-	    if (m_counting) {
-		if (takeElse) {
-		    nodep->elsesp()->iterateAndNextConst(*this);
-		} else {
+		bool prevCounting = m_counting;
+		{
+		    m_counting = false;
+		    m_instrs = 0.0;
 		    nodep->ifsp()->iterateAndNextConst(*this);
+		    ifInstrs = m_instrs;
+		}
+		m_instrs = prevInstr;
+		m_counting = prevCounting;
+	    }
+	    if (nodep->branchPred() != AstBranchPred::BP_LIKELY) { // Check else
+		double prevInstr = m_instrs;
+		bool prevCounting = m_counting;
+		{
+		    m_counting = false;
+		    m_instrs = 0.0;
+		    nodep->elsesp()->iterateAndNextConst(*this);
+		    elseInstrs = m_instrs;
+		}
+		m_instrs = prevInstr;
+		m_counting = prevCounting;
+	    }
+	    // Now collect the stats
+	    if (m_counting) {
+		if (ifInstrs >= elseInstrs) {
+		    nodep->ifsp()->iterateAndNextConst(*this);
+		} else {
+		    nodep->elsesp()->iterateAndNextConst(*this);
 		}
 	    }
 	}
@@ -178,7 +190,6 @@ private:
     //virtual void visit(AstWhile* nodep) {
 
     virtual void visit(AstCCall* nodep) {
-	//UINFO(4,"  CCALL "<<nodep<<endl);
 	allNodes(nodep);
 	nodep->iterateChildrenConst(*this);
 	if (m_fast) {
@@ -199,8 +210,8 @@ private:
 public:
     // CONSTRUCTORS
     StatsVisitor(AstNetlist* nodep, const string& stage, bool fast)
-	: m_stage(stage), m_fast(fast)
-	{
+	: m_stage(stage), m_fast(fast) {
+	UINFO(9,"Starting stats, fast="<<fast<<endl);
 	m_cfuncp = NULL;
 	m_counting = !m_fast;
 	m_instrs = 0;
@@ -212,7 +223,7 @@ public:
     virtual ~StatsVisitor() {
 	// Done. Publish statistics
 	V3Stats::addStat(m_stage, "Instruction count, TOTAL", m_statInstr);
-	V3Stats::addStat(m_stage, "Instruction count, fast",  m_statInstrFast);
+	V3Stats::addStat(m_stage, "Instruction count, fast critical",  m_statInstrFast);
 	// Vars
 	V3Stats::addStat(m_stage, "Vars, unpacked arrayed", m_statVarArray);
 	V3Stats::addStat(m_stage, "Vars, clock attribute", m_statVarClock);
