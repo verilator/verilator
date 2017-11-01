@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 compile (
      fails=>1,
      expect=>
-'%Error: Internal Error: t/t_param_default_bad.v:6: ../V3Param.cpp:269: Parameter without initial value
+'%Error: Internal Error: t/t_param_default_bad.v:6: ../V3Param.cpp:\d+: Parameter without initial value
 %Error: Internal Error: See the manual and http://www.veripool.org/verilator for more assistance.
 .*%Error: Command Failed.*',
      );
