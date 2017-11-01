@@ -29,7 +29,7 @@
 
 class V3CoverageJoin {
 public:
-    // CREATORS
+    // CONSTRUCTORS
     static void coverageJoin(AstNetlist* rootp);
 };
 

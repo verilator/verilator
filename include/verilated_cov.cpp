@@ -111,6 +111,7 @@ private:
 	m_insertFilenamep = NULL;
 	m_insertLineno = 0;
     }
+    VL_UNCOPYABLE(VerilatedCovImp);
 public:
     ~VerilatedCovImp() { clearGuts(); }
     static VerilatedCovImp& imp() VL_MT_SAFE {

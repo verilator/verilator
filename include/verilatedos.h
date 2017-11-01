@@ -312,6 +312,14 @@ typedef unsigned long long	vluint64_t;	///< 64-bit unsigned type
 #define VL_WORDS_I(nbits) (((nbits)+(VL_WORDSIZE-1))/VL_WORDSIZE)
 
 //=========================================================================
+// Class definition helpers
+
+// Used to declare a class as uncopyable; put after a private:
+#define VL_UNCOPYABLE(Type)  \
+    Type(const Type& other) VL_EQ_DELETE;  \
+    Type& operator= (const Type&) VL_EQ_DELETE
+
+//=========================================================================
 // Verilated function size macros
 
 #define VL_MULS_MAX_WORDS 16		///< Max size in words of MULS operation

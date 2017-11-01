@@ -43,6 +43,17 @@ private:
     VSymEnt*	m_symCurrentp;		// Active symbol table for additions/lookups
     SymStack	m_sympStack;		// Stack of upper nodes with pending symbol tables
 
+public:
+    // CONSTRUCTORS
+    explicit V3ParseSym(AstNetlist* rootp)
+	: m_syms(rootp) {
+	s_anonNum = 0;		// Number of next anonymous object
+	pushScope(findNewTable(rootp));
+	m_symTableNextId = NULL;
+	m_symCurrentp = symCurrentp();
+    }
+    ~V3ParseSym() {}
+
 private:
     // METHODS
     static VSymEnt* getTable(AstNode* nodep) {
@@ -146,16 +157,6 @@ public:
 	// Export *::* from remote packages
 	symCurrentp()->exportStarStar(&m_syms);
     }
-public:
-    // CREATORS
-    explicit V3ParseSym(AstNetlist* rootp)
-	: m_syms(rootp) {
-	s_anonNum = 0;		// Number of next anonymous object
-	pushScope(findNewTable(rootp));
-	m_symTableNextId = NULL;
-	m_symCurrentp = symCurrentp();
-    }
-    ~V3ParseSym() {}
 };
 
 #endif // Guard

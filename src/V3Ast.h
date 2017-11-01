@@ -942,7 +942,7 @@ public:
     inline bool operator== (const V3Hash& rh) const { return m_both==rh.m_both; }
     inline bool operator!= (const V3Hash& rh) const { return m_both!=rh.m_both; }
     inline bool operator< (const V3Hash& rh) const { return m_both<rh.m_both; }
-    // CREATORS
+    // CONSTRUCTORS
     class Illegal {};		// for creator type-overload selection
     class FullValue {};		// for creator type-overload selection
     explicit V3Hash(Illegal) { m_both=0; }

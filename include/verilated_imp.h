@@ -86,8 +86,8 @@ public:
     // CONSTRUCTORS
     VerilatedEvalMsgQueue() : m_depth(0) { }
     ~VerilatedEvalMsgQueue() { }
-    VerilatedEvalMsgQueue(const VerilatedEvalMsgQueue&) = delete;
-    VerilatedEvalMsgQueue& operator=(const VerilatedEvalMsgQueue&) = delete;
+private:
+    VL_UNCOPYABLE(VerilatedEvalMsgQueue);
 public:
     // METHODS
     //// Add message to queue (called by producer)
@@ -133,9 +133,8 @@ public:
 	// The only call of this with a non-empty queue is a fatal error.
 	// So this does not flush the queue, as the destination queue is not known to this class.
     }
-    VerilatedThreadMsgQueue(const VerilatedThreadMsgQueue&) = delete;
-    VerilatedThreadMsgQueue& operator=(const VerilatedThreadMsgQueue&) = delete;
 private:
+    VL_UNCOPYABLE(VerilatedThreadMsgQueue);
     // METHODS
     static VerilatedThreadMsgQueue& threadton() {
 	static VL_THREAD_LOCAL VerilatedThreadMsgQueue t_s;
@@ -207,6 +206,9 @@ public: // But only for verilated*.cpp
 	m_fdps[2] = stderr;
     }
     ~VerilatedImp() {}
+private:
+    VL_UNCOPYABLE(VerilatedImp);
+public:
     static void internalsDump() VL_MT_SAFE {
 	VerilatedLockGuard guard(s_s.m_argMutex);
 	VL_PRINTF_MT("internalsDump:\n");

@@ -127,8 +127,7 @@ class VL_CAPABILITY("mutex") VerilatedMutex {
 
 /// Lock guard for mutex (ala std::lock_guard), wrapped to allow -fthread_safety checks
 class VL_SCOPED_CAPABILITY VerilatedLockGuard {
-    VerilatedLockGuard();  ///< N/A, always use named constructor below
-    VerilatedLockGuard(const VerilatedLockGuard&);  ///< N/A, no copy constructor
+    VL_UNCOPYABLE(VerilatedLockGuard);
   private:
     VerilatedMutex& m_mutexr;
   public:
@@ -182,10 +181,9 @@ public:
 /// Base class for all Verilated module classes
 
 class VerilatedModule {
+    VL_UNCOPYABLE(VerilatedModule);
 private:
     const char*		m_namep;	///< Module name
-    VerilatedModule() VL_EQ_DELETE;  ///< N/A, always use named constructor below
-    VerilatedModule(const VerilatedModule& ) VL_EQ_DELETE;  ///< N/A, no copy constructor
 public:
     explicit VerilatedModule(const char* namep);	///< Create module with given hierarchy name
     ~VerilatedModule();
@@ -346,8 +344,11 @@ class Verilated {
 	~ThreadLocal();
     } t_s;
 
-public:
+private:
+    // CONSTRUCTORS
+    VL_UNCOPYABLE(Verilated);
 
+public:
     // METHODS - User called
 
     /// Select initial value of otherwise uninitialized signals.

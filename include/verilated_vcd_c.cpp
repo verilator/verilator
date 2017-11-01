@@ -96,7 +96,7 @@ protected:
     VerilatedVcdCallback_t	m_changecb;	///< Incremental Dumping Callback function
     void*		m_userthis;	///< Fake "this" for caller
     vluint32_t		m_code;		///< Starting code number
-    // CREATORS
+    // CONSTRUCTORS
     VerilatedVcdCallInfo (VerilatedVcdCallback_t icb, VerilatedVcdCallback_t fcb,
 			  VerilatedVcdCallback_t changecb,
 			  void* ut, vluint32_t code)

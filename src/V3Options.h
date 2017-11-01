@@ -180,10 +180,9 @@ class V3Options {
     bool parseLangExt(const char* swp, const char* langswp, const V3LangCode& lc);
     string filePathCheckOneDir(const string& modname, const string& dirname);
 
-    V3Options(const V3Options&) VL_EQ_DELETE;  ///< N/A, no copy constructor
-
+    // CONSTRUCTORS
+    VL_UNCOPYABLE(V3Options);
   public:
-    // CREATORS
     V3Options();
     ~V3Options();
     void setDebugMode(int level);

@@ -29,7 +29,7 @@
 
 class V3Branch {
 public:
-    // CREATORS
+    // CONSTRUCTORS
     static void branchAll(AstNetlist* rootp);
 };
 

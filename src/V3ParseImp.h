@@ -210,7 +210,7 @@ public:
     V3ParseSym* symp() { return m_symp; }
 
 public:
-    // CREATORS
+    // CONSTRUCTORS
     V3ParseImp(AstNetlist* rootp, V3InFilter* filterp, V3ParseSym* parserSymp)
 	: m_rootp(rootp), m_filterp(filterp), m_symp(parserSymp) {
 	m_fileline = NULL;

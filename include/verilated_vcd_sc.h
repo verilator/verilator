@@ -39,6 +39,8 @@ class VerilatedVcdSc
     : sc_trace_file
     , public VerilatedVcdC
 {
+    // CONSTRUCTORS
+    VL_UNCOPYABLE(VerilatedVcdSc);
 public:
     VerilatedVcdSc() {
 	sc_get_curr_simcontext()->add_trace_file(this);
@@ -58,8 +60,9 @@ public:
 	spTrace()->set_time_resolution(sc_get_time_resolution().to_string());
 # endif
     }
-
     virtual ~VerilatedVcdSc() {}
+
+    // METHODS
     /// Called by SystemC simulate()
     virtual void cycle (bool delta_cycle) {
 # if (SYSTEMC_VERSION>20011000)

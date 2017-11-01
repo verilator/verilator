@@ -215,7 +215,7 @@ class V3Error {
     V3Error() { cerr<<("Static class"); abort(); }
 
   public:
-    // CREATORS
+    // CONSTRUCTORS
     // ACCESSORS
     static void		debugDefault(int level) { s_debugDefault = level; }
     static int		debugDefault() { return s_debugDefault; }

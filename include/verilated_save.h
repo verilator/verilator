@@ -45,8 +45,10 @@ protected:
 
     void header() VL_MT_UNSAFE_ONE;
     void trailer() VL_MT_UNSAFE_ONE;
+
+    // CONSTRUCTORS
+    VL_UNCOPYABLE(VerilatedSerialize);
 public:
-    // CREATORS
     VerilatedSerialize() {
 	m_isOpen = false;
 	m_bufp = new vluint8_t [bufferSize()];
@@ -73,7 +75,6 @@ public:
 	return *this;  // For function chaining
     }
 private:
-    VerilatedSerialize(const VerilatedSerialize&) VL_EQ_DELETE;  ///< N/A, no copy constructor
     VerilatedSerialize& bufferCheck() VL_MT_UNSAFE_ONE {
 	// Flush the write buffer if there's not enough space left for new information
 	// We only call this once per vector, so we need enough slop for a very wide "b###" line
@@ -105,8 +106,10 @@ protected:
     virtual void fill() = 0;
     void header() VL_MT_UNSAFE_ONE;
     void trailer() VL_MT_UNSAFE_ONE;
+
+    // CONSTRUCTORS
+    VL_UNCOPYABLE(VerilatedDeserialize);
 public:
-    // CREATORS
     VerilatedDeserialize() {
 	m_isOpen = false;
 	m_bufp = new vluint8_t [bufferSize()];
@@ -137,7 +140,6 @@ public:
     VerilatedDeserialize& readAssert(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE;
     VerilatedDeserialize& readAssert(vluint64_t data) VL_MT_UNSAFE_ONE { return readAssert(&data, sizeof(data)); }
 private:
-    VerilatedDeserialize(const VerilatedDeserialize&) VL_EQ_DELETE;  ///< N/A, no copy constructor
     bool readDiffers(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE;
     VerilatedDeserialize& bufferCheck() VL_MT_UNSAFE_ONE {
 	// Flush the write buffer if there's not enough space left for new information
@@ -158,7 +160,7 @@ private:
     int			m_fd;		///< File descriptor we're writing to
 
 public:
-    // CREATORS
+    // CONSTRUCTORS
     VerilatedSave() { m_fd=-1; }
     virtual ~VerilatedSave() { close(); }
     // METHODS
@@ -177,7 +179,7 @@ private:
     int			m_fd;		///< File descriptor we're writing to
 
 public:
-    // CREATORS
+    // CONSTRUCTORS
     VerilatedRestore() { m_fd=-1; }
     virtual ~VerilatedRestore() { close(); }
 

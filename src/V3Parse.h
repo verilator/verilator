@@ -36,9 +36,9 @@ class V3Parse {
 private:
     V3ParseImp*	m_impp;
 
-    V3Parse(const V3Parse&) VL_EQ_DELETE;  ///< N/A, no copy constructor
-public:
     // CONSTRUCTORS
+    VL_UNCOPYABLE(V3Parse);
+public:
     // We must allow reading multiple files into one parser
     V3Parse(AstNetlist* rootp, V3InFilter* filterp, V3ParseSym* symp);
     ~V3Parse();

@@ -96,7 +96,7 @@ public:
     }
     ~V3CCtorsVisitor() {}
 private:
-    explicit V3CCtorsVisitor(const V3CCtorsVisitor&) VL_EQ_DELETE;  ///< N/A, no copy constructor
+    VL_UNCOPYABLE(V3CCtorsVisitor);
 };
 
 //######################################################################

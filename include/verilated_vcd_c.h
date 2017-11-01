@@ -147,14 +147,9 @@ private:
 	return out + static_cast<char>((code)%94+33);
     }
 
-    VerilatedVcd(const VerilatedVcd&) VL_EQ_DELETE;  ///< N/A, no copy constructor
-
-protected:
-    // METHODS
-    void evcd(bool flag) { m_evcd = flag; }
-
+    // CONSTRUCTORS
+    VL_UNCOPYABLE(VerilatedVcd);
 public:
-    // CREATORS
     explicit VerilatedVcd(VerilatedVcdFile* filep=NULL);
     ~VerilatedVcd();
 
@@ -396,6 +391,10 @@ public:
 	    fullFloat (code, newval);
 	}
     }
+
+protected:
+    // METHODS
+    void evcd(bool flag) { m_evcd = flag; }
 };
 
 //=============================================================================
@@ -406,10 +405,13 @@ public:
 
 class VerilatedVcdC {
     VerilatedVcd		m_sptrace;	///< Trace file being created
-public:
+
     // CONSTRUCTORS
+    VL_UNCOPYABLE(VerilatedVcdC);
+public:
     explicit VerilatedVcdC(VerilatedVcdFile* filep=NULL) : m_sptrace(filep) {}
     ~VerilatedVcdC() {}
+public:
     // ACCESSORS
     /// Is file open?
     bool isOpen() const { return m_sptrace.isOpen(); }

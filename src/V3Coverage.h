@@ -29,7 +29,7 @@
 
 class V3Coverage {
 public:
-    // CREATORS
+    // CONSTRUCTORS
     static void coverage(AstNetlist* rootp);
 };
 

@@ -52,7 +52,7 @@ private:
     bool onoff(const char* sw, const char* arg, bool& flag);
 
 public:
-    // CREATORS
+    // CONSTRUCTORS
     VlcOptions() {
 	m_annotateAll = false;
 	m_annotateMin = 10;

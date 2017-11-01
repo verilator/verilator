@@ -75,7 +75,7 @@ public:
     V3Options	opt;		// All options; let user see them directly
 
   public:
-    // CREATORS
+    // CONSTRUCTORS
     V3Global() {
 	m_debugFileNumber = 0;
 	m_widthMinUsage = VWidthMinUsage::LINT_WIDTH;

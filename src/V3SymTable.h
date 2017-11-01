@@ -245,18 +245,24 @@ class VSymGraph {
     // TYPES
     typedef vector<VSymEnt*>	SymStack;
 
-private:
     // MEMBERS
     VSymEnt*	m_symRootp;		// Root symbol table
     SymStack	m_symsp;		// All symbol tables, to cleanup
 
-    VSymGraph(const VSymGraph&) VL_EQ_DELETE;  ///< N/A, no copy constructor
-
-protected:
-    friend class VSymEnt;
-    void pushNewEnt(VSymEnt* entp) { m_symsp.push_back(entp); }
+    // CONSTRUCTORS
+    VL_UNCOPYABLE(VSymGraph);
+public:
+    explicit VSymGraph(AstNetlist* nodep) {
+	m_symRootp = new VSymEnt(this, nodep);
+    }
+    ~VSymGraph() {
+	for (SymStack::iterator it = m_symsp.begin(); it != m_symsp.end(); ++it) {
+	    delete (*it);
+	}
+    }
 
 public:
+    // METHODS
     VSymEnt* rootp() const { return m_symRootp; }
     // Debug
     void dump(ostream& os, const string& indent="") {
@@ -280,16 +286,10 @@ public:
 	    dump(*logp, "");
 	}
     }
-public:
-    // CREATORS
-    explicit VSymGraph(AstNetlist* nodep) {
-	m_symRootp = new VSymEnt(this, nodep);
-    }
-    ~VSymGraph() {
-	for (SymStack::iterator it = m_symsp.begin(); it != m_symsp.end(); ++it) {
-	    delete (*it);
-	}
-    }
+
+protected:
+    friend class VSymEnt;
+    void pushNewEnt(VSymEnt* entp) { m_symsp.push_back(entp); }
 };
 
 //######################################################################

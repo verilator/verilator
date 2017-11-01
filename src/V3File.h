@@ -76,19 +76,22 @@ public:
 class V3InFilterImp;
 
 class V3InFilter {
-    V3InFilterImp* m_impp;
-    V3InFilter(const V3InFilter&) VL_EQ_DELETE;  ///< N/A, no copy constructor
 public:
     // TYPES
     typedef list<string> StrList;
 
+private:
+    V3InFilterImp* m_impp;
+
+    // CONSTRUCTORS
+    VL_UNCOPYABLE(V3InFilter);
+public:
+    explicit V3InFilter(const string& command);
+    ~V3InFilter();
+
     // METHODS
     // Read file contents and return it.  Return true on success.
     bool readWholefile(const string& filename, StrList& outl);
-
-    // CONSTRUCTORS
-    explicit V3InFilter(const string& command);
-    ~V3InFilter();
 };
 
 //============================================================================
