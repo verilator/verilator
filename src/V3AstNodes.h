@@ -2015,10 +2015,10 @@ public:
     void addSensesp(AstNodeSenItem* nodep) { addOp1p(nodep); }
     void multi(bool flag) { m_multi = true; }
     // METHODS
-    bool hasClocked();	// Includes a clocked statement
-    bool hasSettle();	// Includes a SETTLE SenItem
-    bool hasInitial();	// Includes a INITIAL SenItem
-    bool hasCombo();	// Includes a COMBO SenItem
+    bool hasClocked() const;	// Includes a clocked statement
+    bool hasSettle() const;	// Includes a SETTLE SenItem
+    bool hasInitial() const;	// Includes a INITIAL SenItem
+    bool hasCombo() const;	// Includes a COMBO SenItem
 };
 
 class AstAlways : public AstNode {

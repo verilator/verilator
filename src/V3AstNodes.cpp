@@ -549,28 +549,28 @@ string AstScopeName::scopeNameFormatter(AstText* scopeTextp) const {
     return out;
 }
 
-bool AstSenTree::hasClocked() {
+bool AstSenTree::hasClocked() const {
     if (!sensesp()) this->v3fatalSrc("SENTREE without any SENITEMs under it");
     for (AstNodeSenItem* senp = sensesp(); senp; senp=senp->nextp()->castNodeSenItem()) {
 	if (senp->isClocked()) return true;
     }
     return false;
 }
-bool AstSenTree::hasSettle() {
+bool AstSenTree::hasSettle() const {
     if (!sensesp()) this->v3fatalSrc("SENTREE without any SENITEMs under it");
     for (AstNodeSenItem* senp = sensesp(); senp; senp=senp->nextp()->castNodeSenItem()) {
 	if (senp->isSettle()) return true;
     }
     return false;
 }
-bool AstSenTree::hasInitial() {
+bool AstSenTree::hasInitial() const {
     if (!sensesp()) this->v3fatalSrc("SENTREE without any SENITEMs under it");
     for (AstNodeSenItem* senp = sensesp(); senp; senp=senp->nextp()->castNodeSenItem()) {
 	if (senp->isInitial()) return true;
     }
     return false;
 }
-bool AstSenTree::hasCombo() {
+bool AstSenTree::hasCombo() const {
     if (!sensesp()) this->v3fatalSrc("SENTREE without any SENITEMs under it");
     for (AstNodeSenItem* senp = sensesp(); senp; senp=senp->nextp()->castNodeSenItem()) {
 	if (senp->isCombo()) return true;
