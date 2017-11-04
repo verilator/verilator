@@ -403,14 +403,25 @@ public:
 	return new OrderMoveVertex(graphp, *this);
     }
     virtual OrderVEdgeType type() const { return OrderVEdgeType::VERTEX_MOVE; }
-    virtual string dotColor() const { return logicp()->dotColor(); }
+    virtual string dotColor() const {
+        if (logicp()) {
+            return logicp()->dotColor();
+        } else {
+            return "";
+        }
+    }
     virtual string name() const {
-	string nm = logicp()->name();
-	nm += (string("\\nMV:")
-	       +" lp="+cvtToStr(logicp()->inLoop())
-	       +" d="+cvtToStr((void*)logicp()->domainp())
-	       +" s="+cvtToStr((void*)logicp()->scopep()));
-	return nm;
+        string nm;
+        if (logicp()) {
+            nm = logicp()->name();
+            nm += (string("\\nMV:")
+                   +" lp="+cvtToStr(logicp()->inLoop())
+                   +" d="+cvtToStr((void*)logicp()->domainp())
+                   +" s="+cvtToStr((void*)logicp()->scopep()));
+        } else {
+            nm = "nul";
+        }
+        return nm;
     }
     // ACCESSORS
     OrderLogicVertex* logicp() const { return m_logicp; }
