@@ -41,14 +41,19 @@ int main(int argc, char** argv, char** env) {
     // Construct the Verilated model, from Vtop.h generated from Verilating "top.v"
     Vtop* top = new Vtop; // Or use a const unique_ptr, or the VL_UNIQUE_PTR wrapper
 
-    // If verilator was invoked with --trace, open trace
 #if VM_TRACE
-    Verilated::traceEverOn(true);  // Verilator must compute traced signals
-    VL_PRINTF("Enabling waves into logs/vlt_dump.vcd...\n");
-    VerilatedVcdC* tfp = new VerilatedVcdC;
-    top->trace(tfp, 99);  // Trace 99 levels of hierarchy
-    mkdir("logs", 0777);
-    tfp->open("logs/vlt_dump.vcd");  // Open the dump file
+    // If verilator was invoked with --trace argument,
+    // and if at run time passed the +trace argument, turn on tracing
+    VerilatedVcdC* tfp = NULL;
+    const char* flag = Verilated::commandArgsPlusMatch("trace");
+    if (flag && 0==strcmp(flag, "+trace")) {
+        Verilated::traceEverOn(true);  // Verilator must compute traced signals
+        VL_PRINTF("Enabling waves into logs/vlt_dump.vcd...\n");
+        tfp = new VerilatedVcdC;
+        top->trace(tfp, 99);  // Trace 99 levels of hierarchy
+        mkdir("logs", 0777);
+        tfp->open("logs/vlt_dump.vcd");  // Open the dump file
+    }
 #endif
 
     // Set some inputs

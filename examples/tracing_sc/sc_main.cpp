@@ -87,13 +87,18 @@ int sc_main(int argc, char* argv[]) {
     sc_start(1);
 #endif
 
-    // Turn on waves
 #if VM_TRACE
-    cout << "Enabling waves into logs/vlt_dump.vcd...\n";
-    VerilatedVcdSc* tfp = new VerilatedVcdSc;
-    top->trace (tfp, 99);
-    mkdir("logs", 0777);
-    tfp->open ("logs/vlt_dump.vcd");
+    // If verilator was invoked with --trace argument,
+    // and if at run time passed the +trace argument, turn on tracing
+    VerilatedVcdSc* tfp = NULL;
+    const char* flag = Verilated::commandArgsPlusMatch("trace");
+    if (flag && 0==strcmp(flag, "+trace")) {
+        cout << "Enabling waves into logs/vlt_dump.vcd...\n";
+        VerilatedVcdSc* tfp = new VerilatedVcdSc;
+        top->trace (tfp, 99);
+        mkdir("logs", 0777);
+        tfp->open ("logs/vlt_dump.vcd");
+    }
 #endif
 
     // Simulate until $finish
