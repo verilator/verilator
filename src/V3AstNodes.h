@@ -2878,7 +2878,7 @@ private:
     bool	m_unique0Pragma;	// unique0 case
     bool	m_priorityPragma;	// priority case
 public:
-    AstIf(FileLine* fileline, AstNode* condp, AstNode* ifsp, AstNode* elsesp)
+    AstIf(FileLine* fileline, AstNode* condp, AstNode* ifsp, AstNode* elsesp=NULL)
 	: AstNodeIf(fileline, condp, ifsp, elsesp) {
 	m_uniquePragma=false; m_unique0Pragma=false; m_priorityPragma=false;
     }
@@ -5153,6 +5153,7 @@ private:
     string	m_cname;		// C name, for dpiExports
     string	m_rtnType;		// void, bool, or other return type
     string	m_argTypes;
+    string	m_ifdef;		// #ifdef symbol around this function
     bool	m_dontCombine:1;	// V3Combine shouldn't compare this func tree, it's special
     bool	m_skipDecl:1;		// Don't declare it
     bool	m_declPrivate:1;	// Declare it private
@@ -5225,6 +5226,8 @@ public:
     void	funcPublic(bool flag) { m_funcPublic = flag; }
     void	argTypes(const string& str) { m_argTypes = str; }
     string	argTypes() const { return m_argTypes; }
+    void	ifdef(const string& str) { m_ifdef = str; }
+    string	ifdef() const { return m_ifdef; }
     void	funcType(AstCFuncType flag) { m_funcType = flag; }
     AstCFuncType funcType() const { return m_funcType; }
     bool	isInline() const { return m_isInline; }

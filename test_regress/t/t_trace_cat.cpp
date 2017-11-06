@@ -43,7 +43,7 @@ int main(int argc, char **argv, char **env) {
     top->clk = 0;
 
     while (main_time < 190) {  // Creates 2 files
-	top->clk   = ~top->clk;
+        top->clk = !top->clk;
 	top->eval();
 
 	if ((main_time % 100) == 0) {

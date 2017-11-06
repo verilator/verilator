@@ -23,6 +23,8 @@
 //	for all AstCoverDecl, move the declaration into a _configure_coverage AstCFunc.
 //	For each variable that needs reset, add a AstCReset node.
 //
+//	For primary inputs, add _eval_debug_assertions.
+//
 //	This transformation honors outputSplitCFuncs.
 //*************************************************************************
 #include "config_build.h"
@@ -101,8 +103,46 @@ private:
 
 //######################################################################
 
+void V3CCtors::evalAsserts() {
+    AstNodeModule* modp = v3Global.rootp()->modulesp();  // Top module
+    AstCFunc* funcp = new AstCFunc(modp->fileline(), "_eval_debug_assertions", NULL, "void");
+    funcp->declPrivate(true);
+    funcp->isStatic(false);
+    funcp->slow(false);
+    funcp->ifdef("VL_DEBUG");
+    modp->addStmtp(funcp);
+    for (AstNode* np = modp->stmtsp(); np; np = np->nextp()) {
+	if (AstVar* varp = np->castVar()) {
+	    if (varp->isPrimaryIn() && !varp->isSc()) {
+		if (AstBasicDType* basicp = varp->dtypeSkipRefp()->castBasicDType()) {
+		    int storedWidth = basicp->widthAlignBytes() * 8;
+		    int lastWordWidth = varp->width() % storedWidth;
+		    if (lastWordWidth != 0) {
+			// if (signal & CONST(upper_non_clean_mask)) { fail; }
+			AstNode* newp = new AstVarRef(varp->fileline(), varp, false);
+			if (varp->isWide()) {
+			    newp = new AstWordSel(varp->fileline(), newp,
+						  new AstConst(varp->fileline(), varp->widthWords()-1));
+			}
+			uint64_t value = VL_MASK_Q(storedWidth) & ~VL_MASK_Q(lastWordWidth);
+			V3Number num (varp->fileline(), storedWidth, value);
+			newp = new AstAnd(varp->fileline(), newp,
+					  new AstConst(varp->fileline(), num));
+			AstNodeIf* ifp = new AstIf(varp->fileline(), newp,
+						   new AstCStmt(varp->fileline(), "Verilated::overWidthError(\""+varp->prettyName()+"\");"));
+			ifp->branchPred(AstBranchPred::BP_UNLIKELY);
+			newp = ifp;
+			funcp->addStmtsp(newp);
+		    }
+		}
+	    }
+	}
+    }
+}
+
 void V3CCtors::cctorsAll() {
     UINFO(2,__FUNCTION__<<": "<<endl);
+    evalAsserts();
     for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp; modp=modp->nextp()->castNodeModule()) {
         // Process each module in turn
         {

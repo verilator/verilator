@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix MacOS portability, bug1232. [Jeff Bush]
 
+****  Detect MSB overflow when under VL_DEBUG, bug1238. [Junyi Xi]
+
 
 * Verilator 3.914 2017-10-14
 

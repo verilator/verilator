@@ -429,9 +429,14 @@ public:
     // METHODS - INTERNAL USE ONLY (but public due to what uses it)
     // Internal: Create a new module name by concatenating two strings
     static const char* catName(const char* n1, const char* n2); // Returns static data
+
+    // Internal: Throw signal assertion
+    static void overWidthError(const char* signame) VL_MT_SAFE;
+
     // Internal: Find scope
     static const VerilatedScope* scopeFind(const char* namep) VL_MT_SAFE;
     static const VerilatedScopeNameMap* scopeNameMap() VL_MT_SAFE;
+
     // Internal: Get and set DPI context
     static const VerilatedScope* dpiScope() VL_MT_SAFE { return t_s.t_dpiScopep; }
     static void dpiScope(const VerilatedScope* scopep) VL_MT_SAFE { t_s.t_dpiScopep=scopep; }
@@ -442,6 +447,7 @@ public:
     static const char* dpiFilenamep() VL_MT_SAFE { return t_s.t_dpiFilename; }
     static int dpiLineno() VL_MT_SAFE { return t_s.t_dpiLineno; }
     static int exportFuncNum(const char* namep) VL_MT_SAFE;
+
     static size_t serializedSize() VL_PURE { return sizeof(s_s); }
     static void* serializedPtr() VL_MT_UNSAFE { return &s_s; } // Unsafe, for Serialize only
 #ifdef VL_THREADED

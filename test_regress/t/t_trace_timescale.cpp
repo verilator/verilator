@@ -32,7 +32,7 @@ int main(int argc, char **argv, char **env) {
     top->clk = 0;
 
     while (main_time < 190*VL_TIME_MULTIPLIER) {
-	top->clk   = ~top->clk;
+        top->clk = !top->clk;
 	top->eval();
 	tfp->dump((unsigned int)(main_time));
 	// Advance by 0.5 time units, to make sure our fractional

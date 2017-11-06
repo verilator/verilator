@@ -1488,6 +1488,14 @@ const char* Verilated::commandArgsPlusMatch(const char* prefixp) VL_MT_SAFE {
     return outstr;
 }
 
+void Verilated::overWidthError(const char* signame) VL_MT_SAFE {
+    // Slowpath - Called only when signal sets too high of a bit
+    std::string msg = (std::string("Testbench C set input '")
+                       + signame
+                       + "' to value that overflows what the signal's width can fit");
+    VL_FATAL_MT("unknown",0,"", msg.c_str());
+}
+
 void Verilated::quiesce() VL_MT_SAFE {
 #ifdef VL_THREADED
     // Wait until all threads under this evaluation are quiet

@@ -872,6 +872,7 @@ class EmitCImp : EmitCStmts {
 	splitSizeInc(nodep);
 
 	puts("\n");
+	if (nodep->ifdef()!="") puts("#ifdef "+nodep->ifdef()+"\n");
 	if (nodep->isInline()) puts("VL_INLINE_OPT ");
 	puts(nodep->rtnTypeVoid()); puts(" ");
 	puts(modClassName(m_modp)+"::"+nodep->name()
@@ -908,6 +909,7 @@ class EmitCImp : EmitCStmts {
 
 	//puts("__Vm_activity = true;\n");
 	puts("}\n");
+	if (nodep->ifdef()!="") puts("#endif // "+nodep->ifdef()+"\n");
     }
 
     void emitChangeDet() {
@@ -1731,14 +1733,18 @@ void EmitCImp::emitSensitives() {
 
 void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     puts("\nvoid "+modClassName(modp)+"::eval() {\n");
+    puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+++++TOP Evaluate "+modClassName(modp)+"::eval\\n\"); );\n");
     puts(EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp;  // Setup global symbol table\n");
     puts(EmitCBaseVisitor::symTopAssign()+"\n");
+    puts("#ifdef VL_DEBUG\n");
+    putsDecoration("// Debug assertions\n");
+    puts("_eval_debug_assertions();\n");
+    puts("#endif // VL_DEBUG\n");
     putsDecoration("// Initialize\n");
     puts("if (VL_UNLIKELY(!vlSymsp->__Vm_didInit)) _eval_initial_loop(vlSymsp);\n");
     if (v3Global.opt.inhibitSim()) {
 	puts("if (VL_UNLIKELY(__Vm_inhibitSim)) return;\n");
     }
-    puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+++++TOP Evaluate "+modClassName(modp)+"::eval\\n\"); );\n");
 
     if (v3Global.opt.threads()) {  // THREADED-TODO move to per-train
 	uint32_t trainId = 0;
@@ -1859,9 +1865,11 @@ void EmitCImp::emitIntFuncDecls(AstNodeModule* modp) {
 	AstCFunc* funcp = *it;
 	if (!funcp->dpiImport()) {  // DPI is prototyped in __Dpi.h
 	    ofp()->putsPrivate(funcp->declPrivate());
+	    if (funcp->ifdef()!="") puts("#ifdef "+funcp->ifdef()+"\n");
 	    if (funcp->isStatic()) puts("static ");
 	    puts(funcp->rtnTypeVoid()); puts(" ");
 	    puts(funcp->name()); puts("("+cFuncArgs(funcp)+");\n");
+	    if (funcp->ifdef()!="") puts("#endif // "+funcp->ifdef()+"\n");
 	}
     }
 }
