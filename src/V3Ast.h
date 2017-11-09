@@ -1708,6 +1708,7 @@ public:
     virtual AstNodeDType* virtRefDTypep() const { return NULL; } // Iff has a non-null refDTypep(), as generic node function
     virtual void virtRefDTypep(AstNodeDType* nodep) { }	// Iff has refDTypep(), set as generic node function
     virtual bool similarDType(AstNodeDType* samep) const = 0;  // Assignable equivalence.  Call skipRefp() on this and samep before calling
+    virtual AstNodeDType* subDTypep() const { return NULL; }  // Iff has a non-null subDTypep(), as generic node function
     //
     // Changing the width may confuse the data type resolution, so must clear TypeTable cache after use.
     void widthForce(int width, int sized) { m_width=width; m_widthMin=sized; }
@@ -1811,7 +1812,7 @@ public:
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
     void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
-    AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); }
+    virtual AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     virtual AstNodeDType* virtRefDTypep() const { return m_refDTypep; }
     virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }

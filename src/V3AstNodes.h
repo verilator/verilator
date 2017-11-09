@@ -179,7 +179,7 @@ public:
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Type assigning to
     void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
-    AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
+    virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
     virtual AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type
     virtual AstNodeDType* skipRefp() const { return subDTypep()->skipRefp(); }
     virtual AstNodeDType* skipRefToConstp() const { return subDTypep()->skipRefToConstp(); }
@@ -217,7 +217,7 @@ public:
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Type assigning to
     void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
-    AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
+    virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
     void	addAttrsp(AstNode* nodep) { addNOp4p(nodep); }
     AstNode*	attrsp() const { return op4p(); }	// op4 = Attributes during early parse
     // METHODS
@@ -267,7 +267,7 @@ public:
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
     void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
-    AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
+    virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
     void*	containerp() const { return m_containerp; }
     // METHODS
     AstNodeDType* dtypeSkipRefp() const { return dtypep()->skipRefp(); }	// op1 = Range of variable
@@ -478,7 +478,7 @@ public:
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
-    AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); } // op1 = Range of variable
+    virtual AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); } // op1 = Range of variable
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     virtual AstNodeDType* virtRefDTypep() const { return m_refDTypep; }
     virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
@@ -588,7 +588,7 @@ public:
     void refDTypep(AstNodeDType* nodep) { m_refDTypep=nodep; }
     virtual AstNodeDType* virtRefDTypep() const { return refDTypep(); }
     virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
-    AstNodeDType* subDTypep() const { return m_refDTypep; }
+    virtual AstNodeDType* subDTypep() const { return m_refDTypep; }
     AstPackage* packagep() const { return m_packagep; }
     void packagep(AstPackage* nodep) { m_packagep=nodep; }
 };
@@ -642,7 +642,7 @@ public:
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); }	// op1 = Range of variable
     void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
-    AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); }
+    virtual AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     virtual AstNodeDType* virtRefDTypep() const { return m_refDTypep; }
     virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
@@ -738,7 +738,7 @@ public:
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Data type
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
-    AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); } // op1 = Range of variable
+    virtual AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); } // op1 = Range of variable
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     virtual AstNodeDType* virtRefDTypep() const { return m_refDTypep; }
     virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
@@ -1103,7 +1103,7 @@ public:
     void	addAttrsp(AstNode* nodep) { addNOp4p(nodep); }
     AstNode*	attrsp() const { return op4p(); }	// op4 = Attributes during early parse
     void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
-    AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
+    virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
     void	attrClockEn(bool flag) { m_attrClockEn = flag; }
     void	attrClocker(AstVarAttrClocker flag) { m_attrClocker = flag; }
     void	attrFileDescr(bool flag) { m_fileDescr = flag; }
@@ -4911,7 +4911,7 @@ public:
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Type assigning to
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
-    AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
+    virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
     AstNode* itemsp() const { return op2p(); } // op2 = AstPatReplicate, AstPatMember, etc
 };
 class AstPatMember : public AstNodeMath {

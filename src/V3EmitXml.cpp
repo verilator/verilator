@@ -80,9 +80,9 @@ class EmitXmlFileVisitor : public AstNVisitor {
 	if (nodep->name()!="") { puts(" name="); putsQuoted(nodep->prettyName()); }
 	if (nodep->tag()!="") { puts(" tag="); putsQuoted(nodep->tag()); }
 	if (AstNodeDType* dtp = nodep->castNodeDType()) {
-	    if (dtp->skipRefp() && dtp->skipRefp()!=dtp) { puts(" sub_dtype_id="); outputId(dtp->skipRefp()); }
+	    if (dtp->subDTypep()) { puts(" sub_dtype_id="); outputId(dtp->subDTypep()->skipRefp()); }
 	} else {
-	    if (nodep->dtypep()) { puts(" dtype_id="); outputId(nodep->dtypep()); }
+	    if (nodep->dtypep()) { puts(" dtype_id="); outputId(nodep->dtypep()->skipRefp()); }
 	}
     }
     void outputChildrenEnd(AstNode* nodep, string tag) {
@@ -127,7 +127,7 @@ class EmitXmlFileVisitor : public AstNVisitor {
     }
     virtual void visit(AstAssignW* nodep) {
 	outputTag(nodep, "contassign");	// IEEE: vpiContAssign
-	outputChildrenEnd(nodep, "contAssign");
+	outputChildrenEnd(nodep, "contassign");
     }
 
     // Data types

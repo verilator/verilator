@@ -16,7 +16,6 @@ compile (
     verilator_make_gcc => 0,
     );
 
-file_grep ($out_filename, qr/<verilator_xml>/);
-ok(1);
+ok(files_identical("$out_filename", "t/$Self->{name}.out"));
 
 1;

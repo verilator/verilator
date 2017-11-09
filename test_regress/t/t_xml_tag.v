@@ -20,6 +20,6 @@ module m
 
    // This is a comment
 
-   my_struct this_struct;
+   my_struct this_struct [2];
 
 endmodule
