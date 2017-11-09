@@ -155,12 +155,13 @@ ostream& operator<<(ostream& str, const WidthVP* vup) {
 class WidthClearVisitor {
     // Rather than a AstNVisitor, can just quickly touch every node
     void clearWidthRecurse(AstNode* nodep) {
-	nodep->didWidth(false);
-	if (nodep->op1p()) clearWidthRecurse(nodep->op1p());
-	if (nodep->op2p()) clearWidthRecurse(nodep->op2p());
-	if (nodep->op3p()) clearWidthRecurse(nodep->op3p());
-	if (nodep->op4p()) clearWidthRecurse(nodep->op4p());
-	if (nodep->nextp()) clearWidthRecurse(nodep->nextp());
+        for (; nodep; nodep = nodep->nextp()) {
+            nodep->didWidth(false);
+            if (nodep->op1p()) clearWidthRecurse(nodep->op1p());
+            if (nodep->op2p()) clearWidthRecurse(nodep->op2p());
+            if (nodep->op3p()) clearWidthRecurse(nodep->op3p());
+            if (nodep->op4p()) clearWidthRecurse(nodep->op4p());
+        }
     }
 public:
     // CONSTUCTORS
