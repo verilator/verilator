@@ -37,8 +37,13 @@
 // Emit statements and math operators
 
 class EmitXmlFileVisitor : public AstNVisitor {
+    // NODE STATE
+    //Entire netlist:
+    // AstNode::user1           -> uint64_t, number to connect crossrefs
+
     // MEMBERS
     V3OutFile*	m_ofp;
+    uint64_t	m_id;
 
     // METHODS
     static int debug() {
@@ -64,11 +69,21 @@ class EmitXmlFileVisitor : public AstNVisitor {
     }
 
     // XML methods
+    void outputId(AstNode* nodep) {
+	if (!nodep->user1()) { nodep->user1(++m_id); }
+	puts("\""+cvtToStr(nodep->user1())+"\"");
+    }
     void outputTag(AstNode* nodep, string tag) {
 	if (tag=="") tag = VString::downcase(nodep->typeName());
 	puts("<"+tag+" "+nodep->fileline()->xml());
+	if (nodep->castNodeDType()) { puts(" id="); outputId(nodep); }
 	if (nodep->name()!="") { puts(" name="); putsQuoted(nodep->prettyName()); }
 	if (nodep->tag()!="") { puts(" tag="); putsQuoted(nodep->tag()); }
+	if (AstNodeDType* dtp = nodep->castNodeDType()) {
+	    if (dtp->skipRefp() && dtp->skipRefp()!=dtp) { puts(" sub_dtype_id="); outputId(dtp->skipRefp()); }
+	} else {
+	    if (nodep->dtypep()) { puts(" dtype_id="); outputId(nodep->dtypep()); }
+	}
     }
     void outputChildrenEnd(AstNode* nodep, string tag) {
 	if (tag=="") tag = VString::downcase(nodep->typeName());
@@ -111,13 +126,13 @@ class EmitXmlFileVisitor : public AstNVisitor {
 	outputChildrenEnd(nodep, "port");
     }
     virtual void visit(AstAssignW* nodep) {
-	outputTag(nodep, "contAssign");	// IEEE: vpiContAssign
+	outputTag(nodep, "contassign");	// IEEE: vpiContAssign
 	outputChildrenEnd(nodep, "contAssign");
     }
 
     // Data types
     virtual void visit(AstBasicDType* nodep) {
-	outputTag(nodep, "basicDType ");
+	outputTag(nodep, "basicdtype ");
 	if (nodep->isRanged()) {
 	    puts(" left=\""+cvtToStr(nodep->left())+"\"");
 	    puts(" right=\""+cvtToStr(nodep->right())+"\"");
@@ -133,48 +148,10 @@ class EmitXmlFileVisitor : public AstNVisitor {
 public:
     EmitXmlFileVisitor(AstNode* nodep, V3OutFile* ofp) {
 	m_ofp = ofp;
+	m_id = 0;
 	nodep->accept(*this);
     }
     virtual ~EmitXmlFileVisitor() {}
-};
-
-//######################################################################
-// Emit to a stream (perhaps stringstream)
-
-class EmitXmlPrefixedFormatter : public V3OutFormatter {
-    ostream&	m_os;
-    string	m_prefix;	// What to print at beginning of each line
-    int		m_flWidth;	// Padding of fileline
-    int		m_column;	// Rough location; need just zero or non-zero
-    FileLine*	m_prefixFl;
-    // METHODS
-    virtual void putcOutput(char chr) {
-	if (chr == '\n') {
-	    m_column = 0;
-	    m_os<<chr;
-	} else {
-	    if (m_column == 0) {
-		m_column = 10;
-		m_os<<m_prefixFl->ascii()+":";
-		m_os<<V3OutFile::indentSpaces(m_flWidth-(m_prefixFl->ascii().length()+1));
-		m_os<<" ";
-		m_os<<m_prefix;
-	    }
-	    m_column++;
-	    m_os<<chr;
-	}
-    }
-public:
-    void prefixFl(FileLine* fl) { m_prefixFl = fl; }
-    FileLine* prefixFl() const { return m_prefixFl; }
-    int column() const { return m_column; }
-    EmitXmlPrefixedFormatter(ostream& os, const string& prefix, int flWidth)
-	: V3OutFormatter("__STREAM", V3OutFormatter::LA_VERILOG)
-	, m_os(os), m_prefix(prefix), m_flWidth(flWidth) {
-	m_column = 0;
-	m_prefixFl = v3Global.rootp()->fileline();  // NETLIST's fileline instead of NULL to avoid NULL checks
-    }
-    virtual ~EmitXmlPrefixedFormatter() {}
 };
 
 //######################################################################
