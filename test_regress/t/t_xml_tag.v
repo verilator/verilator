@@ -16,10 +16,10 @@ module m
       logic 	  k;      /* verilator lint_off UNUSED */
       logic 	  enable; // verilator tag enable
       logic 	  data;   // verilator tag data
-   } my_struct;
+   } my_struct;  // verilator tag my_struct
 
    // This is a comment
 
-   my_struct this_struct [2];
+   my_struct this_struct [2];  // verilator tag this_struct
 
 endmodule

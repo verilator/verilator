@@ -204,6 +204,7 @@ class AstTypedef : public AstNode {
 private:
     string	m_name;
     bool	m_attrPublic;
+    string	m_tag;  // Holds the string of the verilator tag -- used in XML output.
 public:
     AstTypedef(FileLine* fl, const string& name, AstNode* attrsp, VFlagChildDType, AstNodeDType* dtp)
 	: AstNode(fl), m_name(name) {
@@ -227,6 +228,8 @@ public:
     void name(const string& flag) { m_name = flag; }
     bool attrPublic() const { return m_attrPublic; }
     void attrPublic(bool flag) { m_attrPublic = flag; }
+    virtual void tag(const string& text) { m_tag = text;}
+    virtual string tag() const { return m_tag; }
 };
 
 class AstTypedefFwd : public AstNode {

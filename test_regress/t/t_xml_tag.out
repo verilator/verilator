@@ -13,8 +13,8 @@
       <var fl="e8" name="clk_ip" tag="clk_ip" dtype_id="1"/>
       <var fl="e9" name="rst_ip" dtype_id="1"/>
       <var fl="e10" name="foo_op" tag="foo_op" dtype_id="1"/>
-      <typedef fl="e14" name="my_struct" dtype_id="2"/>
-      <var fl="e23" name="this_struct" dtype_id="3"/>
+      <typedef fl="e14" name="my_struct" tag="my_struct" dtype_id="2"/>
+      <var fl="e23" name="this_struct" tag="this_struct" dtype_id="3"/>
     </module>
     <typetable fl="a0">
       <basicdtype  fl="e23" id="4" name="logic" left="31" right="0"/>
