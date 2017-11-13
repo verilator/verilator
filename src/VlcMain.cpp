@@ -144,7 +144,7 @@ int main(int argc, char** argv, char** env) {
     top.opt.parseOptsList(argc-1, argv+1);
 
     if (top.opt.readFiles().empty()) {
-	top.opt.addReadFile("vlt_coverage.pl");
+	top.opt.addReadFile("vlt_coverage.dat");
     }
 
     {

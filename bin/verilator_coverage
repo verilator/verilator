@@ -173,7 +173,7 @@ additional points.
 Additional Verilog-standard arguments specify the search paths necessary to
 find the source code that the coverage analysis was performed on.
 
-To get correct coverage percentages, you may wish to read logs/coverage.pl
+To get correct coverage percentages, you may wish to read logs/coverage.dat
 into Emacs and do a M-x keep-lines to include only those statistics of
 interest.
 

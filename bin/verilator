@@ -547,7 +547,7 @@ Coverage analysis adds statements at each code flow change point, which are
 the branches of IF and CASE statements, a super-set of normal Verilog Line
 Coverage.  At each such branch a unique counter is incremented.  At the end
 of a test, the counters along with the filename and line number
-corresponding to each counter are written into logs/coverage.pl.
+corresponding to each counter are written into logs/coverage.dat.
 
 Verilator automatically disables coverage of branches that have a $stop in
 them, as it is assumed $stop branches contain an error check that should
@@ -3816,10 +3816,10 @@ At the end of your test, call VerilatedCov::write passing the name of the
 coverage data file (typically "logs/coverage.dat").
 
 Run each of your tests in different directories.  Each test will create a
-logs/coverage.pl file.
+logs/coverage.dat file.
 
 After running all of your tests, verilator_coverage is executed.
-Verilator_coverage reads the logs/coverage.pl file(s), and creates an
+Verilator_coverage reads the logs/coverage.dat file(s), and creates an
 annotated source code listing showing code coverage details.
 
 For an example, after running 'make test' in the Verilator distribution,
