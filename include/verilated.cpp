@@ -726,7 +726,7 @@ static inline void _vl_vsss_read(FILE* fp, int& floc, WDataInP fromp, const std:
 	_vl_vsss_advance(fp, floc);
     }
     *cp++ = '\0';
-    //VL_DBG_MSGF("\t_read got='"<<tmpp<<"'\n");
+    //VL_DBG_MSGF(" _read got='"<<tmpp<<"'\n");
 }
 static inline void _vl_vsss_setbit(WDataOutP owp, int obits, int lsb, int nbits, IData ld) VL_MT_SAFE {
     for (; nbits && lsb<obits; nbits--, lsb++, ld>>=1) {

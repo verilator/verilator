@@ -15,26 +15,26 @@
       <var fl="e14" name="q" dtype_id="2"/>
       <var fl="e16" name="between" dtype_id="2"/>
       <instance fl="e18" name="cell1" defName="mod1">
-	<port fl="e18" name="q" direction="out" portIndex="1">
-	  <varref fl="e18" name="between" dtype_id="2"/>
-	</port>
-	<port fl="e21" name="clk" direction="in" portIndex="2">
-	  <varref fl="e21" name="clk" dtype_id="1"/>
-	</port>
-	<port fl="e22" name="d" direction="in" portIndex="3">
-	  <varref fl="e22" name="d" dtype_id="2"/>
-	</port>
+        <port fl="e18" name="q" direction="out" portIndex="1">
+          <varref fl="e18" name="between" dtype_id="2"/>
+        </port>
+        <port fl="e21" name="clk" direction="in" portIndex="2">
+          <varref fl="e21" name="clk" dtype_id="1"/>
+        </port>
+        <port fl="e22" name="d" direction="in" portIndex="3">
+          <varref fl="e22" name="d" dtype_id="2"/>
+        </port>
       </instance>
       <instance fl="e24" name="cell2" defName="mod2">
-	<port fl="e24" name="d" direction="in" portIndex="1">
-	  <varref fl="e24" name="between" dtype_id="2"/>
-	</port>
-	<port fl="e27" name="q" direction="out" portIndex="2">
-	  <varref fl="e27" name="q" dtype_id="2"/>
-	</port>
-	<port fl="e29" name="clk" direction="in" portIndex="3">
-	  <varref fl="e29" name="clk" dtype_id="1"/>
-	</port>
+        <port fl="e24" name="d" direction="in" portIndex="1">
+          <varref fl="e24" name="between" dtype_id="2"/>
+        </port>
+        <port fl="e27" name="q" direction="out" portIndex="2">
+          <varref fl="e27" name="q" dtype_id="2"/>
+        </port>
+        <port fl="e29" name="clk" direction="in" portIndex="3">
+          <varref fl="e29" name="clk" dtype_id="1"/>
+        </port>
       </instance>
     </module>
     <module fl="e33" name="mod1">
@@ -42,15 +42,15 @@
       <var fl="e36" name="d" dtype_id="2"/>
       <var fl="e37" name="q" dtype_id="2"/>
       <always fl="e39">
-	<sentree fl="e39">
-	  <senitem fl="e39">
-	    <varref fl="e39" name="clk" dtype_id="1"/>
-	  </senitem>
-	</sentree>
-	<assigndly fl="e40" dtype_id="2">
-	  <varref fl="e40" name="d" dtype_id="2"/>
-	  <varref fl="e40" name="q" dtype_id="2"/>
-	</assigndly>
+        <sentree fl="e39">
+          <senitem fl="e39">
+            <varref fl="e39" name="clk" dtype_id="1"/>
+          </senitem>
+        </sentree>
+        <assigndly fl="e40" dtype_id="2">
+          <varref fl="e40" name="d" dtype_id="2"/>
+          <varref fl="e40" name="q" dtype_id="2"/>
+        </assigndly>
       </always>
     </module>
     <module fl="e44" name="mod2">
@@ -58,8 +58,8 @@
       <var fl="e47" name="d" dtype_id="2"/>
       <var fl="e48" name="q" dtype_id="2"/>
       <contassign fl="e51" dtype_id="2">
-	<varref fl="e51" name="d" dtype_id="2"/>
-	<varref fl="e51" name="q" dtype_id="2"/>
+        <varref fl="e51" name="d" dtype_id="2"/>
+        <varref fl="e51" name="q" dtype_id="2"/>
       </contassign>
     </module>
     <typetable fl="a0">

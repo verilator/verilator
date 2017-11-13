@@ -1003,7 +1003,7 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 	if (nodep->isSc()) {
 	    m_ctorVarsVec.push_back(nodep);
 	    if (nodep->attrScClocked() && nodep->isInput()) {
-		puts("sc_in_clk\t");
+		puts("sc_in_clk ");
 	    } else {
 		if (nodep->isInout()) puts("sc_inout<");
 		else if (nodep->isInput()) puts("sc_in<");
@@ -1011,7 +1011,7 @@ void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
 		else nodep->v3fatalSrc("Unknown type");
 
 		puts(nodep->scType());
-		puts(">\t");
+		puts("> ");
 	    }
 	    puts(nodep->name());
 	    emitDeclArrayBrackets(nodep);
