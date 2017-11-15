@@ -12,6 +12,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Add error when driving input-only modport.
 
+****  Fix false unused warning on interfaces, bug1241. [Laurens van Dam]
+
 
 * Verilator 3.914 2017-10-14
 

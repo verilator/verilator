@@ -175,7 +175,11 @@ public:
 	    if (allU) m_usedWhole = true;
 	    if (allD) m_drivenWhole = true;
 	    // Test results
-	    if (allU && allD) {
+	    if (nodep->isIfaceRef()) {
+		// For interface top level we don't do any tracking
+		// Ideally we'd report unused instance cells, but presumably a signal inside one
+		// would get reported as unused
+	    } else if (allU && allD) {
 		// It's fine
 	    } else if (!anyD && !anyU) {
 		// UNDRIVEN is considered more serious - as is more likely a bug,
@@ -258,7 +262,7 @@ private:
 	}
     }
 
-    void warnAlwCombOrder(AstVarRef* nodep) {
+    void warnAlwCombOrder(AstNodeVarRef* nodep) {
 	AstVar* varp = nodep->varp();
 	if (!varp->isParam() && !varp->isGenVar() && !varp->isUsedLoopIdx()
 	    && !m_inBBox   // We may have falsely considered a SysIgnore as a driver
@@ -292,7 +296,7 @@ private:
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstSel* nodep) {
-	AstVarRef* varrefp = nodep->fromp()->castVarRef();
+	AstNodeVarRef* varrefp = nodep->fromp()->castNodeVarRef();
 	AstConst* constp = nodep->lsbp()->castConst();
 	if (varrefp && constp && !constp->num().isFourState()) {
 	    for (int usr=1; usr<(m_alwaysp?3:2); ++usr) {
@@ -313,7 +317,7 @@ private:
 	    nodep->iterateChildren(*this);
 	}
     }
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstNodeVarRef* nodep) {
 	// Any variable
 	for (int usr=1; usr<(m_alwaysp?3:2); ++usr) {
 	    UndrivenVarEntry* entryp = getEntryp (nodep->varp(), usr);
