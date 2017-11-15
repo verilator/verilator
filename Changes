@@ -10,6 +10,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Add data types to --xml. [Rui Terra]
 
+****  Add error when driving input-only modport.
+
 
 * Verilator 3.914 2017-10-14
 

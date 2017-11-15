@@ -19,7 +19,7 @@
 //*************************************************************************
 // V3Undriven's Transformations:
 //
-// Each module:
+// Netlist:
 //      Make vector for all variables
 //	SEL(VARREF(...))) mark only some bits as used/driven
 //	else VARREF(...) mark all bits as used/driven
@@ -223,8 +223,11 @@ public:
 class UndrivenVisitor : public AstNVisitor {
 private:
     // NODE STATE
-    // AstVar::user1p		-> UndrivenVar* for usage var, 0=not set yet
+    // Netlist:
+    //  AstVar::user1p		-> UndrivenVar* for usage var, 0=not set yet
     AstUser1InUse	m_inuser1;
+    // Each always:
+    //  AstNode::user2p		-> UndrivenVar* for usage var, 0=not set yet
     AstUser2InUse	m_inuser2;
 
     // STATE

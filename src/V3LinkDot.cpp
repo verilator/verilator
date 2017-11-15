@@ -1394,9 +1394,10 @@ class LinkDotIfaceVisitor : public AstNVisitor {
 	if (!symp) {
 	    nodep->v3error("Modport item not found: "<<nodep->prettyName());
 	} else if (AstVar* varp = symp->nodep()->castVar()) {
-	    // Make symbol under modport that points at the _interface_'s var, not the modport.
+	    // Make symbol under modport that points at the _interface_'s var via the modport.
+	    // (Need modport still to test input/output markings)
 	    nodep->varp(varp);
-	    m_statep->insertSym(m_curSymp, nodep->name(), varp, NULL/*package*/);
+	    m_statep->insertSym(m_curSymp, nodep->name(), nodep, NULL/*package*/);
 	} else if (AstVarScope* vscp = symp->nodep()->castVarScope()) {
 	    // Make symbol under modport that points at the _interface_'s var, not the modport.
 	    nodep->varp(vscp->varp());
@@ -1513,6 +1514,23 @@ private:
 	    // Link it to signal list, must add the variable under the module; current scope might be lower now
 	    m_statep->insertSym(moduleSymp, newp->name(), newp, NULL/*packagep*/);
 	}
+    }
+    AstVar* foundToVarp(const VSymEnt* symp, AstNode* nodep, bool lvalue) {
+        // Return a variable if possible, auto converting a modport to variable
+        if (!symp) {
+            return NULL;
+        } else if (symp->nodep()->castVar()) {
+            return symp->nodep()->castVar();
+        } else if (symp->nodep()->castModportVarRef()) {
+            AstModportVarRef* snodep = symp->nodep()->castModportVarRef();
+            AstVar* varp = snodep->varp();
+            if (lvalue && snodep->isInput()) {
+                nodep->v3error("Attempt to drive input-only modport: "<<nodep->prettyName());
+            } // else other simulators don't warn about reading, and IEEE doesn't say illegal
+	    return varp;
+        } else {
+            return NULL;
+        }
     }
     void taskFuncSwapCheck(AstNodeFTaskRef* nodep) {
 	if (nodep->taskp() && nodep->taskp()->castTask()
@@ -1805,7 +1823,7 @@ private:
                     }
                 }
 	    }
-	    else if (AstVar* varp = foundp->nodep()->castVar()) {
+	    else if (AstVar* varp = foundToVarp(foundp, nodep, false)) {
 		AstIfaceRefDType* ifacerefp = LinkDotState::ifaceRefFromArray(varp->subDTypep());
 		if (ifacerefp) {
 		    if (!ifacerefp->ifaceViaCellp()) ifacerefp->v3fatalSrc("Unlinked interface");
@@ -1926,7 +1944,7 @@ private:
 	    UINFO(9," linkVarRef se"<<(void*)m_curSymp<<"  n="<<nodep<<endl);
 	    if (!m_curSymp) nodep->v3fatalSrc("NULL lookup symbol table");
 	    VSymEnt* foundp = m_curSymp->findIdFallback(nodep->name());
-	    if (AstVar* varp = foundp ? foundp->nodep()->castVar() : NULL) {
+	    if (AstVar* varp = foundp ? foundToVarp(foundp, nodep, nodep->lvalue()) : NULL) {
 		nodep->varp(varp);
 		nodep->packagep(foundp->packagep());  // Generally set by parse, but might be an import
 	    }
@@ -1960,7 +1978,7 @@ private:
 	    dotSymp = m_statep->findDotted(dotSymp, nodep->dotted(), baddot, okSymp); // Maybe NULL
 	    if (!m_statep->forScopeCreation()) {
 		VSymEnt* foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot);
-		AstVar* varp = foundp ? foundp->nodep()->castVar() : NULL;
+		AstVar* varp = foundp ? foundToVarp(foundp, nodep, nodep->lvalue()) : NULL;
 		nodep->varp(varp);
 		UINFO(7,"         Resolved "<<nodep<<endl);  // Also prints varp
 		if (!nodep->varp()) {
