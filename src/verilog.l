@@ -783,6 +783,9 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "+:"			{ FL; return yP_PLUSCOLON; }
   "-:"			{ FL; return yP_MINUSCOLON; }
   ".*"			{ FL; return yP_DOTSTAR; }
+  ":+"			{ FL; yyless(1);
+                          PARSEP->fileline()->v3warn(COLONPLUS, "Perhaps instead of ':+' the intent was '+:'?");
+                          return ':'; }
 }
 
   /* SystemVerilog Operators */

@@ -1251,11 +1251,11 @@ directives in the source, i.e. the warning will still not be printed.
 =item -Wno-lint
 
 Disable all lint related warning messages, and all style warnings.  This is
-equivalent to "-Wno-ALWCOMBORDER -Wno-CASEINCOMPLETE -Wno-CASEOVERLAP
--Wno-CASEX -Wno-CASEWITHX -Wno-CMPCONST -Wno-ENDLABEL -Wno-IMPLICIT
--Wno-LITENDIAN -Wno-PINCONNECTEMPTY -Wno-PINMISSING -Wno-SYNCASYNCNET
--Wno-UNDRIVEN -Wno-UNSIGNED -Wno-UNUSED -Wno-WIDTH" plus the list shown for
-Wno-style.
+equivalent to "-Wno-ALWCOMBORDER -Wno-BSSPACE -Wno-CASEINCOMPLETE
+-Wno-CASEOVERLAP -Wno-CASEX -Wno-CASEWITHX -Wno-CMPCONST -Wno-COLONPLUS
+-Wno-ENDLABEL -Wno-IMPLICIT -Wno-LITENDIAN -Wno-PINCONNECTEMPTY
+-Wno-PINMISSING -Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNSIGNED -Wno-UNUSED
+-Wno-WIDTH" plus the list shown for Wno-style.
 
 It is strongly recommended you cleanup your code rather than using this
 option, it is only intended to be use when running test-cases of code
@@ -1284,10 +1284,10 @@ Enables the specified warning message.
 
 Enable all lint related warning messages (note by default they are already
 enabled), but do not affect style messages.  This is equivalent to
-"-Wwarn-ALWCOMBORDER -Wwarn-CASEINCOMPLETE -Wwarn-CASEOVERLAP -Wwarn-CASEX
--Wwarn-CASEWITHX -Wwarn-CMPCONST -Wwarn-ENDLABEL -Wwarn-IMPLICIT
--Wwarn-LITENDIAN -Wwarn-PINMISSING -Wwarn-REALCVT -Wwarn-UNSIGNED
--Wwarn-WIDTH".
+"-Wwarn-ALWCOMBORDER -Wwarn-BSSPACE -Wwarn-CASEINCOMPLETE
+-Wwarn-CASEOVERLAP -Wwarn-CASEX -Wwarn-CASEWITHX -Wwarn-CMPCONST
+-Wwarn-COLONPLUS -Wwarn-ENDLABEL -Wwarn-IMPLICIT -Wwarn-LITENDIAN
+-Wwarn-PINMISSING -Wwarn-REALCVT -Wwarn-UNSIGNED -Wwarn-WIDTH".
 
 =item -Wwarn-style
 
@@ -3081,6 +3081,17 @@ generally unrolls small loops.  You may want to try increasing
 --unroll-count (and occasionally --unroll-stmts) which will raise the small
 loop bar to avoid this error.
 
+=item BSSPACE
+
+Warns that a backslash is followed by a space then a newline. Likely the
+intent was to have a backslash directly followed by a newline (e.g. when
+making a `define) and there's accidentally whitespace at the end of the
+line.  If the space is not accidental, suggest removing the backslash in
+the code as it serves no function.
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
+
 =item CASEINCOMPLETE
 
 Warns that inside a case statement there is a stimulus pattern for which
@@ -3116,6 +3127,15 @@ Warns that a case statement contains a constant with a C<x>.  Verilator is
 two-state so interpret such items as always false.  Note a common error is
 to use a C<X> in a case or casez statement item; often what the user
 instead intended is to use a casez with C<?>.
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
+
+=item COLONPLUS
+
+Warns that a :+ is seen. Likely the intent was to use +: to select a range
+of bits. If the intent was a range that is explicitly positive, suggest
+adding a space, e.g. use ": +".
 
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.

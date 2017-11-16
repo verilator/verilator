@@ -61,6 +61,7 @@ public:
 	BLKANDNBLK,	// Blocked and non-blocking assignments to same variable
 	BLKLOOPINIT,	// Delayed assignment to array inside for loops
 	BLKSEQ,		// Blocking assignments in sequential block
+	BSSPACE,	// Backslash space
 	CASEINCOMPLETE,	// Case statement has missing values
 	CASEOVERLAP,	// Case statements overlap
 	CASEWITHX,	// Case with X values
@@ -68,6 +69,7 @@ public:
 	CDCRSTLOGIC,	// Logic in async reset path
 	CLKDATA,        // Clock used as data
 	CMPCONST,	// Comparison is constant due to limited range
+	COLONPLUS,	// :+ instead of +:
 	COMBDLY,	// Combinatorial delayed assignment
 	DEFPARAM,	// Style: Defparam
 	DECLFILENAME,	// Declaration doesn't match filename
@@ -125,9 +127,9 @@ public:
 	    // Warnings
 	    " EC_FIRST_WARN",
 	    "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN",
-	    "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ",
+	    "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CLKDATA",
-	    "CMPCONST", "COMBDLY", "DEFPARAM", "DECLFILENAME",
+	    "CMPCONST", "COLONPLUS", "COMBDLY", "DEFPARAM", "DECLFILENAME",
 	    "ENDLABEL", "GENCLK",
 	    "IFDEPTH", "IMPERFECTSCH", "IMPLICIT", "IMPURE",
 	    "INCABSPATH", "INITIALDLY",
@@ -158,9 +160,11 @@ public:
 
     // Warnings that are lint only
     bool lintError() const { return ( m_e==ALWCOMBORDER
+				      || m_e==BSSPACE
 				      || m_e==CASEINCOMPLETE || m_e==CASEOVERLAP
 				      || m_e==CASEWITHX || m_e==CASEX
 				      || m_e==CMPCONST
+				      || m_e==COLONPLUS
 				      || m_e==ENDLABEL
 				      || m_e==IMPLICIT
 				      || m_e==LITENDIAN

@@ -70,7 +70,6 @@ wsn		[ \t\f]
 crnl		[\r]*[\n]
 quote		[\"]
 tickquote	[`][\"]
-backslash	[\\]
 /* Where we use symb/symbdef, we must also look for a `` join */
 /* Note in the preprocessor \ESCaped is *not* always special; mantis1537/bug441 */
 symb		([a-zA-Z_][a-zA-Z0-9_$]*|\\[^ \t\f\r\n]+)
@@ -110,8 +109,9 @@ drop		[\032]
 <STRMODE>{crnl}		{ linenoInc(); yyerrorf("Unterminated string"); BEGIN(INITIAL); }
 <STRMODE>{word}		{ yymore(); }
 <STRMODE>[^\"\\]	{ yymore(); }
-<STRMODE>{backslash}{crnl}	{ linenoInc(); yymore(); }
-<STRMODE>{backslash}.	{ yymore(); }
+<STRMODE>[\\]{crnl}	{ linenoInc(); yymore(); }
+<STRMODE>[\\]{wsn}+{crnl}  { yyless(1); LEXP->curFilelinep()->v3warn(BSSPACE, "Backslash followed by whitespace, perhaps the whitespace is accidental?"); }
+<STRMODE>[\\].		{ yymore(); }
 <STRMODE>{quote} 	{ yy_pop_state();
 			  if (LEXP->m_parenLevel || LEXP->m_defQuote) { LEXP->m_defQuote=false; appendDefValue(yytext,yyleng); yyleng=0; }
 			  else return (VP_STRING); }
@@ -144,7 +144,7 @@ drop		[\032]
 <INCMODE><<EOF>>	{ linenoInc(); yyerrorf("EOF in unterminated include filename"); yyleng=0; yyterminate(); }
 <INCMODE>{crnl}		{ linenoInc(); yyerrorf("Unterminated include filename"); BEGIN(INITIAL); }
 <INCMODE>[^\>\\]	{ yymore(); }
-<INCMODE>{backslash}.	{ yymore(); }
+<INCMODE>[\\].		{ yymore(); }
 <INCMODE>[\>]	 	{ yy_pop_state(); return VP_STRING; }
 
 	/* Reading definition formal parenthesis (or not) to begin formal arguments */
@@ -162,6 +162,7 @@ drop		[\032]
 <DEFFORM>{drop}		{ }
 <DEFFORM><<EOF>>	{ linenoInc(); yy_pop_state(); yyerrorf("Unterminated ( in define formal arguments."); yyleng=0; return VP_DEFFORM; }
 <DEFFORM>{crnl}		{ linenoInc(); appendDefValue((char*)"\n",1); } /* Include return so can maintain output line count */
+<DEFFORM>[\\]{wsn}+{crnl}  { yyless(1); LEXP->curFilelinep()->v3warn(BSSPACE, "Backslash followed by whitespace, perhaps the whitespace is accidental?"); }
 <DEFFORM>[\\]{crnl}	{ linenoInc(); appendDefValue((char*)"\\\n",2); } /* Include return so can maintain output line count */
 <DEFFORM>{quote}	{ LEXP->m_defQuote=true; yy_push_state(STRMODE); yymore(); }  /* Legal only in default values */
 <DEFFORM>"`\\`\""	{ appendDefValue(yytext,yyleng); }  /* Maybe illegal, otherwise in default value */
@@ -179,6 +180,7 @@ drop		[\032]
 <DEFVAL>{drop}		{ }
 <DEFVAL><<EOF>>		{ linenoInc(); yy_pop_state(); yytext=(char*)"\n"; yyleng=1; return (VP_DEFVALUE); } /* Technically illegal, but people complained */
 <DEFVAL>{crnl}		{ linenoInc(); yy_pop_state(); yytext=(char*)"\n"; yyleng=1; return (VP_DEFVALUE); }
+<DEFVAL>[\\]{wsn}+{crnl}  { yyless(1); LEXP->curFilelinep()->v3warn(BSSPACE, "Backslash followed by whitespace, perhaps the whitespace is accidental?"); }
 <DEFVAL>[\\]{crnl}	{ linenoInc(); appendDefValue((char*)"\\\n",2); } /* Return, AND \ is part of define value */
 <DEFVAL>{quote}		{ LEXP->m_defQuote=true; yy_push_state(STRMODE); yymore(); }
 <DEFVAL>[^\/\*\n\r\\\"]+	|
@@ -189,6 +191,7 @@ drop		[\032]
 	/* - if no \{crnl} ending then the comment belongs to the next line, as a non-embedded comment */
 	/* - if all but (say) 3rd line is missing \ then it's indeterminate */
 <DEFCMT>"*/"		{ yy_pop_state(); appendDefValue(yytext,yyleng); }
+<DEFCMT>[\\]{wsn}+{crnl}  { yyless(1); LEXP->curFilelinep()->v3warn(BSSPACE, "Backslash followed by whitespace, perhaps the whitespace is accidental?"); }
 <DEFCMT>[\\]{crnl}	{ linenoInc(); LEXP->m_defCmtSlash=true;
 	 		  appendDefValue(yytext,yyleng-2); appendDefValue((char*)"\n",1); }  /* Return but not \ */
 <DEFCMT>{crnl}		{ linenoInc(); yymore(); if (LEXP->m_defCmtSlash) yyerrorf("One line of /* ... */ is missing \\ before newline");
