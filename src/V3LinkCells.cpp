@@ -54,7 +54,6 @@ public:
     virtual void loopsMessageCb(V3GraphVertex* vertexp);
 };
 
-
 class LinkCellsVertex : public V3GraphVertex {
     AstNodeModule* m_modp;
 public:
@@ -250,7 +249,7 @@ private:
 	// this move to post param, which would mean we do not auto-read modules
 	// and means we cannot compute module levels until later.
 	UINFO(4,"Link Bind: "<<nodep<<endl);
-	AstNodeModule* modp = resolveModule(nodep,nodep->name());
+	AstNodeModule* modp = resolveModule(nodep, nodep->name());
 	if (modp) {
 	    AstNode* cellsp = nodep->cellsp()->unlinkFrBackWithNext();
 	    // Module may have already linked, so need to pick up these new cells
@@ -272,11 +271,11 @@ private:
 	    UINFO(4,"Link Cell: "<<nodep<<endl);
 	    // Use findIdFallback instead of findIdFlat; it doesn't matter for now
 	    // but we might support modules-under-modules someday.
-	    AstNodeModule* modp = resolveModule(nodep,nodep->modName());
-	    if (modp) {
-		nodep->modp(modp);
+	    AstNodeModule* cellmodp = resolveModule(nodep, nodep->modName());
+	    if (cellmodp) {
+		nodep->modp(cellmodp);
 		// Track module depths, so can sort list from parent down to children
-		new V3GraphEdge(&m_graph, vertex(m_modp), vertex(modp), 1, false);
+		new V3GraphEdge(&m_graph, vertex(m_modp), vertex(cellmodp), 1, false);
 	    }
 	}
 	// Remove AstCell(AstPin("",NULL)), it's a side effect of how we parse "()"

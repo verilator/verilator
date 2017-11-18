@@ -248,7 +248,7 @@ private:
 	} else if (nodep->level() <= 2  // Haven't added top yet, so level 2 is the top
 		   || nodep->castPackage()) {	// Likewise haven't done wrapTopPackages yet
 	    // Add request to END of modules left to process
-	    m_todoModps.insert(make_pair(nodep->level(),nodep));
+	    m_todoModps.insert(make_pair(nodep->level(), nodep));
 	    visitModules();
 	} else if (nodep->user5()) {
 	    UINFO(4," MOD-done   "<<nodep<<endl);  // Already did it
@@ -524,19 +524,20 @@ void ParamVisitor::visitCell(AstCell* nodep) {
     // Cell: Check for parameters in the instantiation.
     nodep->iterateChildren(*this);
     if (!nodep->modp()) nodep->v3fatalSrc("Not linked?");
-    if (nodep->paramsp()
-	|| 1  // Need to look for interfaces; could track when one exists, but should be harmless to always do this
-	) {
+    // We always run this, even if no parameters, as need to look for interfaces,
+    // and remove any recursive references
+    {
 	UINFO(4,"De-parameterize: "<<nodep<<endl);
 	// Create new module name with _'s between the constants
 	if (debug()>=10) nodep->dumpTree(cout,"-cell:\t");
 	// Evaluate all module constants
 	V3Const::constifyParamsEdit(nodep);
+	AstNodeModule* srcModp = nodep->modp();
 
 	// Make sure constification worked
 	// Must be a separate loop, as constant conversion may have changed some pointers.
 	//if (debug()) nodep->dumpTree(cout,"-cel2:\t");
-	string longname = nodep->modp()->name();
+	string longname = srcModp->name();
 	bool any_overrides = false;
 	longname += "_";
 	if (debug()>8) nodep->paramsp()->dumpTreeAndNext(cout,"-cellparams:\t");
@@ -549,7 +550,7 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 			   && modvarp->subDTypep()->castUnpackArrayDType()) {
 		    // Array assigned to array
 		    AstNode* exprp = pinp->exprp();
-		    longname += "_" + paramSmallName(nodep->modp(),modvarp)+paramValueNumber(exprp);
+		    longname += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp);
 		    any_overrides = true;
 		} else {
 		    AstConst* exprp = pinp->exprp()->castConst();
@@ -565,10 +566,10 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 		    } else if (exprp->num().isDouble()
 			       || exprp->num().isString()
 			       ||  exprp->num().isFourState()) {
-			longname += "_" + paramSmallName(nodep->modp(),modvarp)+paramValueNumber(exprp);
+			longname += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp);
 			any_overrides = true;
 		    } else {
-			longname += "_" + paramSmallName(nodep->modp(),modvarp)+exprp->num().ascii(false);
+			longname += "_" + paramSmallName(srcModp, modvarp) + exprp->num().ascii(false);
 			any_overrides = true;
 		    }
 		}
@@ -586,7 +587,7 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 			// This prevents making additional modules, and makes coverage more
 			// obvious as it won't show up under a unique module page name.
 		    } else {
-			longname += "_" + paramSmallName(nodep->modp(),modvarp)+paramValueNumber(exprp);
+			longname += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp);
 			any_overrides = true;
 		    }
 		}
@@ -639,7 +640,7 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 		    UINFO(9,"     pinIfaceRef "<<pinIrefp<<endl);
 		    if (portIrefp->ifaceViaCellp() != pinIrefp->ifaceViaCellp()) {
 			UINFO(9,"     IfaceRefDType needs reconnect  "<<pinIrefp<<endl);
-			longname += "_" + paramSmallName(nodep->modp(),pinp->modVarp())+paramValueNumber(pinIrefp);
+			longname += "_" + paramSmallName(srcModp, pinp->modVarp()) + paramValueNumber(pinIrefp);
 			any_overrides = true;
 			ifaceRefRefs.push_back(make_pair(portIrefp,pinIrefp));
 		    }
@@ -659,35 +660,35 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 		if (iter != m_longMap.end()) {
 		    newname = iter->second;
 		} else {
-		    newname = nodep->modp()->name();
+		    newname = srcModp->name();
 		    newname += "__pi"+cvtToStr(++m_longId);  // We use all upper case above, so lower here can't conflict
 		    m_longMap.insert(make_pair(longname, newname));
 		}
 	    }
-	    UINFO(4,"Name: "<<nodep->modp()->name()<<"->"<<longname<<"->"<<newname<<endl);
+	    UINFO(4,"Name: "<<srcModp->name()<<"->"<<longname<<"->"<<newname<<endl);
 
 	    //
 	    // Already made this flavor?
-	    AstNodeModule* modp = NULL;
+	    AstNodeModule* cellmodp = NULL;
 	    ModNameMap::iterator iter = m_modNameMap.find(newname);
-	    if (iter != m_modNameMap.end()) modp = iter->second.m_modp;
-	    if (!modp) {
+	    if (iter != m_modNameMap.end()) cellmodp = iter->second.m_modp;
+	    if (!cellmodp) {
 		// Deep clone of new module
 		// Note all module internal variables will be re-linked to the new modules by clone
 		// However links outside the module (like on the upper cells) will not.
-		modp = nodep->modp()->cloneTree(false);
-		modp->name(newname);
-		modp->user5(false); // We need to re-recurse this module once changed
-		nodep->modp()->addNextHere(modp);  // Keep tree sorted by cell occurrences
+		cellmodp = srcModp->cloneTree(false);
+		cellmodp->name(newname);
+		cellmodp->user5(false); // We need to re-recurse this module once changed
+		srcModp->addNextHere(cellmodp);  // Keep tree sorted by cell occurrences
 
-		m_modNameMap.insert(make_pair(modp->name(), ModInfo(modp)));
+		m_modNameMap.insert(make_pair(cellmodp->name(), ModInfo(cellmodp)));
 		iter = m_modNameMap.find(newname);
 		CloneMap* clonemapp = &(iter->second.m_cloneMap);
-		UINFO(4,"     De-parameterize to new: "<<modp<<endl);
+		UINFO(4,"     De-parameterize to new: "<<cellmodp<<endl);
 
 		// Grab all I/O so we can remap our pins later
 		// Note we allow multiple users of a parameterized model, thus we need to stash this info.
-		collectPins(clonemapp, modp);
+		collectPins(clonemapp, cellmodp);
 		// Relink parameter vars to the new module
 		relinkPins(clonemapp, nodep->paramsp());
 
@@ -728,17 +729,17 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 		}
 
 	    } else {
-		UINFO(4,"     De-parameterize to old: "<<modp<<endl);
+		UINFO(4,"     De-parameterize to old: "<<cellmodp<<endl);
 	    }
 
 	    // Have child use this module instead.
-	    nodep->modp(modp);
+	    nodep->modp(cellmodp);
 	    nodep->modName(newname);
 
 	    // We need to relink the pins to the new module
 	    CloneMap* clonemapp = &(iter->second.m_cloneMap);
 	    relinkPins(clonemapp, nodep->pinsp());
-	    UINFO(8,"     Done with "<<modp<<endl);
+	    UINFO(8,"     Done with "<<cellmodp<<endl);
 	} // if any_overrides
 
 	// Delete the parameters from the cell; they're not relevant any longer.
@@ -748,7 +749,7 @@ void ParamVisitor::visitCell(AstCell* nodep) {
     }
 
     // Now remember to process the child module at the end of the module
-    m_todoModps.insert(make_pair(nodep->modp()->level(),nodep->modp()));
+    m_todoModps.insert(make_pair(nodep->modp()->level(), nodep->modp()));
 }
 
 //######################################################################
