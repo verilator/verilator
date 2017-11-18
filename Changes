@@ -12,7 +12,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Add data types to --xml. [Rui Terra]
 
-****  Add error when driving input-only modport.
+****  Add error when driving input-only modport, bug1110. [Trevor Elbourne]
 
 ****  Add BSSPACE and COLONPLUS lint warnings.
 
