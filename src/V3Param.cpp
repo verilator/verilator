@@ -108,6 +108,8 @@ private:
     typedef deque<AstCell*> CellList;
     CellList	m_cellps;	// Cells left to process (in this module)
 
+    AstNodeModule* m_modp;  // Current module being processed
+
     string m_unlinkedTxt;	// Text for AstUnlinkedRef
 
     // METHODS
@@ -218,6 +220,7 @@ private:
 	    AstNodeModule* nodep = it->second;
 	    m_todoModps.erase(it);
 	    if (!nodep->user5SetOnce()) {  // Process once; note clone() must clear so we do it again
+		m_modp = nodep;
 		UINFO(4," MOD   "<<nodep<<endl);
 		nodep->iterateChildren(*this);
 		// Note above iterate may add to m_todoModps
@@ -233,6 +236,7 @@ private:
 		    }
 		}
 		m_cellps.clear();
+		m_modp = NULL;
 	    }
 	}
     }
@@ -245,6 +249,9 @@ private:
     virtual void visit(AstNodeModule* nodep) {
 	if (nodep->dead()) {
 	    UINFO(4," MOD-dead.  "<<nodep<<endl);  // Marked by LinkDot
+	} else if (nodep->recursiveClone()) {
+	    UINFO(4," MOD-recursive-dead.  "<<nodep<<endl);  // Fake, made for recursive elimination
+	    nodep->dead(true);  // So Dead checks won't count references to it
 	} else if (nodep->level() <= 2  // Haven't added top yet, so level 2 is the top
 		   || nodep->castPackage()) {	// Likewise haven't done wrapTopPackages yet
 	    // Add request to END of modules left to process
@@ -511,6 +518,7 @@ public:
     // CONSTUCTORS
     explicit ParamVisitor(AstNetlist* nodep) {
 	m_longId = 0;
+	m_modp = NULL;
 	//
 	nodep->accept(*this);
     }
@@ -539,6 +547,7 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 	//if (debug()) nodep->dumpTree(cout,"-cel2:\t");
 	string longname = srcModp->name();
 	bool any_overrides = false;
+	if (nodep->recursive()) any_overrides = true;  // Must always clone __Vrcm (recursive modules)
 	longname += "_";
 	if (debug()>8) nodep->paramsp()->dumpTreeAndNext(cout,"-cellparams:\t");
 	for (AstPin* pinp = nodep->paramsp(); pinp; pinp=pinp->nextp()->castPin()) {
@@ -679,7 +688,21 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 		cellmodp = srcModp->cloneTree(false);
 		cellmodp->name(newname);
 		cellmodp->user5(false); // We need to re-recurse this module once changed
-		srcModp->addNextHere(cellmodp);  // Keep tree sorted by cell occurrences
+		cellmodp->recursive(false);
+		cellmodp->recursiveClone(false);
+		nodep->recursive(false);
+		// Recursion may need level cleanups
+		if (cellmodp->level() <= m_modp->level()) cellmodp->level(m_modp->level()+1);
+		if ((cellmodp->level() - srcModp->level()) >= (v3Global.opt.moduleRecursionDepth() - 2)) {
+		    nodep->v3error("Exceeded maximum --module-recursion-depth of "<<v3Global.opt.moduleRecursionDepth());
+		}
+		// Keep tree sorted by level
+		AstNodeModule* insertp = srcModp;
+		while (insertp->nextp()->castNodeModule()
+		       && insertp->nextp()->castNodeModule()->level() < cellmodp->level()) {
+		    insertp = insertp->nextp()->castNodeModule();
+		}
+		insertp->addNextHere(cellmodp);
 
 		m_modNameMap.insert(make_pair(cellmodp->name(), ModInfo(cellmodp)));
 		iter = m_modNameMap.find(newname);
@@ -741,6 +764,8 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 	    relinkPins(clonemapp, nodep->pinsp());
 	    UINFO(8,"     Done with "<<cellmodp<<endl);
 	} // if any_overrides
+
+	nodep->recursive(false);
 
 	// Delete the parameters from the cell; they're not relevant any longer.
 	if (nodep->paramsp()) nodep->paramsp()->unlinkFrBackWithNext()->deleteTree();

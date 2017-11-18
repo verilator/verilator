@@ -25,7 +25,7 @@ module t (/*AUTOARG*/
    pe (.out(valid), .outN(value[2:0]), .tripline(tripline));
 
    // Aggregate outputs into a single result vector
-   wire [63:0] result = {59'h0, valid, value};
+   wire [63:0] result = {60'h0, valid, value};
 
    // Test loop
    always @ (posedge clk) begin
@@ -77,9 +77,9 @@ module PriorityChoice (out, outN, tripline);
 	 assign right = tripline[0];
 
 	 always @(*) begin
-	    out  <= left || right ;
-	    if(right) begin outN <= {1'b0}; end
-	    else  begin outN <= {1'b1}; end
+	    out = left || right ;
+	    if(right) begin outN = {1'b0}; end
+	    else  begin outN = {1'b1}; end
 	 end
       end else begin
 	 PriorityChoice #(.OCODEWIDTH(OCODEWIDTH-1))
@@ -98,11 +98,11 @@ module PriorityChoice (out, outN, tripline);
 	    );
 	 always @(*) begin
 	    if(right) begin
-               out  <= right;
-               outN <= {1'b0, rightN[OCODEWIDTH-2:0]};
+               out  = right;
+               outN = {1'b0, rightN[OCODEWIDTH-2:0]};
 	    end else begin
-               out  <= left;
-               outN <= {1'b1, leftN[OCODEWIDTH-2:0]};
+               out  = left;
+               outN = {1'b1, leftN[OCODEWIDTH-2:0]};
 	    end
 	 end
       end

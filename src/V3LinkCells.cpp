@@ -62,6 +62,8 @@ public:
     virtual ~LinkCellsVertex() {}
     AstNodeModule* modp() const { return m_modp; }
     virtual string name() const { return modp()->name(); }
+    // Recursive modules get space for maximum recursion
+    virtual uint32_t rankAdder() const { return m_modp->recursiveClone() ? (1+v3Global.opt.moduleRecursionDepth()) : 1; }
 };
 
 class LibraryVertex : public V3GraphVertex {
@@ -74,8 +76,9 @@ public:
 
 void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp) {
     if (LinkCellsVertex* vvertexp = dynamic_cast<LinkCellsVertex*>(vertexp)) {
-	vvertexp->modp()->v3error("Recursive module (module instantiates itself): "
+	vvertexp->modp()->v3error("Unsupported: Recursive multiple modules (module instantiates something leading back to itself): "
 				  <<vvertexp->modp()->prettyName());
+	vvertexp->modp()->v3error("Note self-recursion (module instantiating itself directly) is supported.");
 	V3Error::abortIfErrors();
     } else {  // Everything should match above, but...
 	v3fatalSrc("Recursive instantiations");
@@ -90,10 +93,13 @@ private:
     // NODE STATE
     //  Entire netlist:
     //   AstNodeModule::user1p()	// V3GraphVertex*    Vertex describing this module
-    //   AstCell::user1()		// bool			Did it.
+    //   AstNodeModule::user2p()	// AstNodeModule*    clone used for de-recursing
+    //   AstCell::user1p()		// ==V3NodeModule* if done, != if unprocessed
+    //   AstCell::user2()		// bool   clone renaming completed
     //  Allocated across all readFiles in V3Global::readFiles:
     //   AstNode::user4p()	// VSymEnt*    Package and typedef symbol names
     AstUser1InUse	m_inuser1;
+    AstUser2InUse	m_inuser2;
 
     // STATE
     V3InFilter*		m_filterp;	// Parser filter
@@ -249,7 +255,7 @@ private:
 	// this move to post param, which would mean we do not auto-read modules
 	// and means we cannot compute module levels until later.
 	UINFO(4,"Link Bind: "<<nodep<<endl);
-	AstNodeModule* modp = resolveModule(nodep, nodep->name());
+	AstNodeModule* modp = resolveModule(nodep,nodep->name());
 	if (modp) {
 	    AstNode* cellsp = nodep->cellsp()->unlinkFrBackWithNext();
 	    // Module may have already linked, so need to pick up these new cells
@@ -266,16 +272,58 @@ private:
 
     virtual void visit(AstCell* nodep) {
 	// Cell: Resolve its filename.  If necessary, parse it.
-	if (nodep->user1SetOnce()) return;  // AstBind and AstNodeModule may call a cell twice
-	if (!nodep->modp()) {
+	// Execute only once.  Complication is that cloning may result in user1 being set (for pre-clone)
+	// so check if user1() matches the m_mod, if 0 never did it, if !=, it is an unprocessed clone
+	bool cloned = (nodep->user1p() && nodep->user1p()!=m_modp);
+	if (nodep->user1p()==m_modp) return;  // AstBind and AstNodeModule may call a cell twice
+	nodep->user1p(m_modp);
+	//
+	if (!nodep->modp() || cloned) {
 	    UINFO(4,"Link Cell: "<<nodep<<endl);
 	    // Use findIdFallback instead of findIdFlat; it doesn't matter for now
 	    // but we might support modules-under-modules someday.
 	    AstNodeModule* cellmodp = resolveModule(nodep, nodep->modName());
 	    if (cellmodp) {
-		nodep->modp(cellmodp);
-		// Track module depths, so can sort list from parent down to children
-		new V3GraphEdge(&m_graph, vertex(m_modp), vertex(cellmodp), 1, false);
+		if (cellmodp == m_modp
+		    || cellmodp->user2p() == m_modp) {
+		    UINFO(1,"Self-recursive module "<<cellmodp<<endl);
+		    cellmodp->recursive(true);
+		    nodep->recursive(true);
+		    if (!cellmodp->recursiveClone()) {
+			// In the non-Vrcm, which needs to point to Vrcm flavor
+			//
+			// Make a clone which this cell points to
+			// Later, the clone's cells will also point clone'd name
+			// This lets us link the XREFs between the (uncloned) children so
+			// they don't point to the same module which would
+			// break parameter resolution.
+			AstNodeModule* otherModp = cellmodp->user2p()->castNodeModule();
+			if (!otherModp) {
+			    otherModp = cellmodp->cloneTree(false);
+			    otherModp->name(otherModp->name()+"__Vrcm");
+			    otherModp->user1p(NULL);  // Need new vertex
+			    otherModp->user2p(cellmodp);
+			    otherModp->recursiveClone(true);
+			    // user1 etc will retain its pre-clone value
+			    cellmodp->user2p(otherModp);
+			    v3Global.rootp()->addModulep(otherModp);
+			    new V3GraphEdge(&m_graph, vertex(cellmodp), vertex(otherModp), 1, false);
+			}
+			cellmodp = otherModp;
+			nodep->modp(cellmodp);
+		    }
+		    else {
+			// In the Vrcm, which needs to point back to Vrcm flavor
+			// The cell already has the correct resolution (to Vrcm)
+			nodep->modp(cellmodp);
+			// We don't create a V3GraphEdge (as it would be circular)
+		    }
+		}
+		else { // Non-recursive
+		    // Track module depths, so can sort list from parent down to children
+		    nodep->modp(cellmodp);
+		    new V3GraphEdge(&m_graph, vertex(m_modp), vertex(cellmodp), 1, false);
+		}
 	    }
 	}
 	// Remove AstCell(AstPin("",NULL)), it's a side effect of how we parse "()"
@@ -310,6 +358,7 @@ private:
 	    if (pinp->name()=="") pinp->name("__paramNumber"+cvtToStr(pinp->pinNum()));
 	}
 	if (nodep->modp()) {
+	    nodep->modName(nodep->modp()->name());
 	    // Note what pins exist
 	    vl_unordered_set<string> ports;  // Symbol table of all connected port names
 	    for (AstPin* pinp = nodep->pinsp(); pinp; pinp=pinp->nextp()->castPin()) {

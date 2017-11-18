@@ -779,6 +779,7 @@ void AstCCast::dump(ostream& str) {
 }
 void AstCell::dump(ostream& str) {
     this->AstNode::dump(str);
+    if (recursive()) str<<" [RECURSIVE]";
     if (modp()) { str<<" -> "; modp()->dump(str); }
     else { str<<" ->UNLINKED:"<<modName(); }
 }
@@ -887,6 +888,8 @@ void AstNodeModule::dump(ostream& str) {
     if (modPublic()) str<<" [P]";
     if (inLibrary()) str<<" [LIB]";
     if (dead()) str<<" [DEAD]";
+    if (recursiveClone()) str<<" [RECURSIVE-CLONE]";
+    else if (recursive()) str<<" [RECURSIVE]";
 }
 void AstPackageExport::dump(ostream& str) {
     this->AstNode::dump(str);

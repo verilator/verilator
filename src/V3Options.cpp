@@ -1238,6 +1238,7 @@ V3Options::V3Options() {
     m_dumpTree = 0;
     m_ifDepth = 0;
     m_inlineMult = 2000;
+    m_moduleRecursion = 100;
     m_outputSplit = 0;
     m_outputSplitCFuncs = 0;
     m_outputSplitCTrace = 0;

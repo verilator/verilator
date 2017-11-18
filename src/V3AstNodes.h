@@ -1639,13 +1639,14 @@ private:
     string	m_modName;	// Module the cell instances
     AstNodeModule* m_modp;	// [AfterLink] Pointer to module instanced
     bool	m_hasIfaceVar:1; // True if a Var has been created for this cell
+    bool	m_recursive:1;	// Self-recursive module
     bool	m_trace:1;	// Trace this cell
 public:
     AstCell(FileLine* fl, const string& instName, const string& modName,
 	    AstPin* pinsp, AstPin* paramsp, AstRange* rangep)
 	: AstNode(fl)
 	, m_name(instName), m_origName(instName), m_modName(modName)
-	, m_modp(NULL), m_hasIfaceVar(false), m_trace(true) {
+	, m_modp(NULL), m_hasIfaceVar(false), m_recursive(false), m_trace(true) {
 	addNOp1p(pinsp); addNOp2p(paramsp); setNOp3p(rangep); }
     ASTNODE_NODE_FUNCS(Cell)
     // No cloneRelink, we presume cloneee's want the same module linkages
@@ -1670,6 +1671,8 @@ public:
     void hasIfaceVar(bool flag) { m_hasIfaceVar = flag; }
     void trace(bool flag) { m_trace=flag; }
     bool isTrace() const { return m_trace; }
+    void recursive(bool flag) { m_recursive = flag; }
+    bool recursive() const { return m_recursive; }
 };
 
 class AstCellInline : public AstNode {

@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 3.915 devel
 
+***   Support self-recursive modules, bug659. [Sean Moore, et al]
+
 ****  Fix MacOS portability, bug1232. [Jeff Bush]
 
 ****  Detect MSB overflow when under VL_DEBUG, bug1238. [Junyi Xi]

@@ -181,6 +181,7 @@ public:
     virtual string dotShape() const { return ""; }
     virtual string dotStyle() const { return ""; }
     virtual string dotName() const { return ""; }
+    virtual uint32_t rankAdder() const { return 1; }
     virtual int sortCmp(const V3GraphVertex* rhsp) const {
 	// LHS goes first if of lower rank, or lower fanout
 	if (m_rank < rhsp->m_rank) return -1;

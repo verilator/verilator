@@ -87,6 +87,7 @@ private:
     // NODE STATE
     // Cleared on Netlist
     //  AstNodeModule::user1p()		// VSymEnt*.      Last symbol created for this node
+    //  AstNodeModule::user2()		// bool.          Currently processing for recursion check
     //	...				      Note maybe more than one, as can be multiple hierarchy places
     //  AstVarScope::user2p()		// AstVarScope*.  Base alias for AstInline of this signal
     //  AstVar::user2p()		// AstFTask*.     If a function variable, the task that links to the variable
@@ -595,6 +596,7 @@ class LinkDotFindVisitor : public AstNVisitor {
     AstBegin*		m_beginp;	// Current Begin/end block
     AstNodeFTask*	m_ftaskp;	// Current function/task
     bool		m_inGenerate;	// Inside a generate
+    bool		m_inRecursion;	// Inside a recursive module
     int			m_paramNum;	// Parameter number, for position based connection
     int			m_beginNum;	// Begin block number, 0=none seen
     int			m_modBeginNum;	// Begin block number in module, 0=none seen
@@ -682,7 +684,10 @@ class LinkDotFindVisitor : public AstNVisitor {
         int      oldParamNum    = m_paramNum;
         int      oldBeginNum    = m_beginNum;
         int      oldModBeginNum = m_modBeginNum;
-	if (doit) {
+	if (doit && nodep->user2()) {
+	    nodep->v3error("Unsupported: Identically recursive module (module instantiates itself, without changing parameters): "
+			   <<AstNode::prettyName(nodep->origName()));
+	} else if (doit) {
 	    UINFO(2,"     Link Module: "<<nodep<<endl);
 	    if (nodep->dead()) nodep->v3fatalSrc("Module in cell tree mislabeled as dead?");
 	    VSymEnt* upperSymp = m_curSymp ? m_curSymp : m_statep->rootEntp();
@@ -703,7 +708,9 @@ class LinkDotFindVisitor : public AstNVisitor {
 	    m_modBeginNum = 0;
 	    // m_modSymp/m_curSymp for non-packages set by AstCell above this module
 	    // Iterate
+	    nodep->user2(true);
 	    nodep->iterateChildren(*this);
+	    nodep->user2(false);
 	    nodep->user4(true);
 	    // Interfaces need another pass when signals are resolved
 	    if (AstIface* ifacep = nodep->castIface()) {
@@ -730,6 +737,7 @@ class LinkDotFindVisitor : public AstNVisitor {
     virtual void visit(AstCell* nodep) {
 	UINFO(5,"   CELL under "<<m_scope<<" is "<<nodep<<endl);
 	// Process XREFs/etc inside pins
+	if (nodep->recursive() && m_inRecursion) return;
 	nodep->iterateChildren(*this);
 	// Recurse in, preserving state
 	string oldscope = m_scope;
@@ -737,6 +745,7 @@ class LinkDotFindVisitor : public AstNVisitor {
 	VSymEnt* oldModSymp = m_modSymp;
 	VSymEnt* oldCurSymp = m_curSymp;
 	int oldParamNum = m_paramNum;
+	bool oldRecursion = m_inRecursion;
 	// Where do we add it?
 	VSymEnt* aboveSymp = m_curSymp;
 	string origname = AstNode::dedotName(nodep->name());
@@ -755,6 +764,7 @@ class LinkDotFindVisitor : public AstNVisitor {
 	    m_scope = m_scope+"."+nodep->name();
 	    m_curSymp = m_modSymp = m_statep->insertCell(aboveSymp, m_modSymp, nodep, m_scope);
 	    m_beginp = NULL;
+	    m_inRecursion = nodep->recursive();
 	    // We don't report NotFoundModule, as may be a unused module in a generate
 	    if (nodep->modp()) nodep->modp()->accept(*this);
 	}
@@ -763,6 +773,7 @@ class LinkDotFindVisitor : public AstNVisitor {
 	m_modSymp = oldModSymp;
 	m_curSymp = oldCurSymp;
 	m_paramNum = oldParamNum;
+	m_inRecursion = oldRecursion;
     }
     virtual void visit(AstCellInline* nodep) {
 	UINFO(5,"   CELLINLINE under "<<m_scope<<" is "<<nodep<<endl);
@@ -1051,6 +1062,7 @@ public:
 	m_beginp = NULL;
 	m_ftaskp = NULL;
 	m_inGenerate = false;
+	m_inRecursion = false;
 	m_paramNum = 0;
 	m_beginNum = 0;
 	m_modBeginNum = 0;

@@ -109,6 +109,7 @@ class V3Options {
     int		m_dumpTree;	// main switch: --dump-tree
     int		m_ifDepth;	// main switch: --if-depth
     int		m_inlineMult;	// main switch: --inline-mult
+    int		m_moduleRecursion;// main switch: --module-recursion-depth
     int		m_outputSplit;	// main switch: --output-split
     int		m_outputSplitCFuncs;// main switch: --output-split-cfuncs
     int		m_outputSplitCTrace;// main switch: --output-split-ctrace
@@ -254,6 +255,7 @@ class V3Options {
     int    dumpTree() const { return m_dumpTree; }
     int	   ifDepth() const { return m_ifDepth; }
     int	   inlineMult() const { return m_inlineMult; }
+    int	   moduleRecursionDepth() const { return m_moduleRecursion; }
     int	   outputSplit() const { return m_outputSplit; }
     int	   outputSplitCFuncs() const { return m_outputSplitCFuncs; }
     int	   outputSplitCTrace() const { return m_outputSplitCTrace; }

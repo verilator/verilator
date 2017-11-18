@@ -10,8 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 compile (
     fails=>1,
     expect=>
-'.*%Error: t/t_inst_recurse_bad.v:\d+: Unsupported: Recursive multiple modules \(module instantiates something leading back to itself\): looped
-%Error: t/t_inst_recurse_bad.v:\d+: Note self-recursion \(module instantiating itself directly\) is supported.
+'.*%Error: t/t_inst_recurse2_bad.v:\d+: Unsupported: Identically recursive module \(module instantiates itself, without changing parameters\): looped
 %Error: Exiting due to.*',
     );
 

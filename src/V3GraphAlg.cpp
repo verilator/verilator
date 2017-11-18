@@ -300,7 +300,7 @@ private:
 	vertexp->rank(currentRank);
 	for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
 	    if (followEdge(edgep)) {
-		vertexIterate(edgep->top(),currentRank+1);
+		vertexIterate(edgep->top(), currentRank + vertexp->rankAdder());
 	    }
 	}
 	vertexp->user(2);

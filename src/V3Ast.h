@@ -1977,6 +1977,8 @@ private:
     bool	m_inLibrary:1;	// From a library, no error if not used, never top level
     bool	m_dead:1;	// LinkDot believes is dead; will remove in Dead visitors
     bool	m_internal:1;	// Internally created
+    bool	m_recursive:1;	// Recursive module
+    bool	m_recursiveClone:1;  // If recursive, what module it clones, otherwise NULL
     int		m_level;	// 1=top module, 2=cell off top module, ...
     int		m_varNum;	// Incrementing variable number
     int		m_typeNum;	// Incrementing implicit type number
@@ -1984,7 +1986,8 @@ public:
     AstNodeModule(FileLine* fl, const string& name)
 	: AstNode (fl)
 	,m_name(name), m_origName(name)
-	,m_modPublic(false), m_modTrace(false), m_inLibrary(false), m_dead(false), m_internal(false)
+	,m_modPublic(false), m_modTrace(false), m_inLibrary(false), m_dead(false)
+	,m_internal(false), m_recursive(false), m_recursiveClone(false)
 	,m_level(0), m_varNum(0), m_typeNum(0) { }
     ASTNODE_BASE_FUNCS(NodeModule)
     virtual void dump(ostream& str);
@@ -2014,6 +2017,10 @@ public:
     bool dead() const	 	{ return m_dead; }
     void internal(bool flag) 	{ m_internal = flag; }
     bool internal() const	{ return m_internal; }
+    void recursive(bool flag) { m_recursive = flag; }
+    bool recursive() const { return m_recursive; }
+    void recursiveClone(bool flag) { m_recursiveClone = flag; }
+    bool recursiveClone() const { return m_recursiveClone; }
 };
 
 //######################################################################

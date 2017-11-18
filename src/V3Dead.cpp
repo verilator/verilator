@@ -137,8 +137,10 @@ private:
     // VISITORS
     virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
-	nodep->iterateChildren(*this);
-	checkAll(nodep);
+	if (!nodep->dead()) {
+	    nodep->iterateChildren(*this);
+	    checkAll(nodep);
+	}
 	m_modp = NULL;
     }
     virtual void visit(AstCFunc* nodep) {
@@ -280,12 +282,14 @@ private:
 	    AstNodeModule* nextmodp;
 	    for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp; modp=nextmodp) {
 		nextmodp = modp->nextp()->castNodeModule();
-		if (modp->level()>2	&& modp->user1()==0 && !modp->internal()) {
+		if (modp->dead() || (modp->level()>2 && modp->user1()==0 && !modp->internal())) {
 		    // > 2 because L1 is the wrapper, L2 is the top user module
 		    UINFO(4,"  Dead module "<<modp<<endl);
 		    // And its children may now be killable too; correct counts
 		    // Recurse, as cells may not be directly under the module but in a generate
-		    DeadModVisitor visitor(modp);
+		    if (!modp->dead()) {  // If was dead didn't increment user1's
+			DeadModVisitor visitor(modp);
+		    }
 		    modp->unlinkFrBack()->deleteTree(); VL_DANGLING(modp);
 		    retry = true;
 		}
