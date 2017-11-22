@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support self-recursive modules, bug659. [Sean Moore, et al]
 
+***   Support $error/$warning in elaboration time blocks.
+
 ****  Fix MacOS portability, bug1232. [Jeff Bush]
 
 ****  Detect MSB overflow when under VL_DEBUG, bug1238. [Junyi Xi]
