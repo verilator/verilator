@@ -688,7 +688,7 @@ class LinkDotFindVisitor : public AstNVisitor {
 	    nodep->v3error("Unsupported: Identically recursive module (module instantiates itself, without changing parameters): "
 			   <<AstNode::prettyName(nodep->origName()));
 	} else if (doit) {
-	    UINFO(2,"     Link Module: "<<nodep<<endl);
+	    UINFO(4,"     Link Module: "<<nodep<<endl);
 	    if (nodep->dead()) nodep->v3fatalSrc("Module in cell tree mislabeled as dead?");
 	    VSymEnt* upperSymp = m_curSymp ? m_curSymp : m_statep->rootEntp();
 	    m_packagep = nodep->castPackage();
@@ -1016,7 +1016,7 @@ class LinkDotFindVisitor : public AstNVisitor {
 	}
     }
     virtual void visit(AstPackageImport* nodep) {
-	UINFO(2,"  Link: "<<nodep<<endl);
+	UINFO(4,"  Link: "<<nodep<<endl);
 	VSymEnt* srcp = m_statep->getNodeSym(nodep->packagep());
 	if (nodep->name()!="*") {
 	    VSymEnt* impp = srcp->findIdFlat(nodep->name());
@@ -1042,7 +1042,7 @@ class LinkDotFindVisitor : public AstNVisitor {
 	// No longer needed, but can't delete until any multi-instantiated modules are expanded
     }
     virtual void visit(AstPackageExportStarStar* nodep) {
-	UINFO(2,"  Link: "<<nodep<<endl);
+	UINFO(4,"  Link: "<<nodep<<endl);
 	m_curSymp->exportStarStar(m_statep->symsp());
 	// No longer needed, but can't delete until any multi-instantiated modules are expanded
     }
