@@ -123,12 +123,15 @@ protected:
     bool preprocOpen (FileLine* fl, V3InFilter* filterp, const string& modname, const string& lastpath,
 		      const string& errmsg) {  // Error message or "" to suppress
 	// Returns true if successful
-	// Allow user to put `defined names on the command line instead of filenames,
-	// then convert them properly.
-	string ppmodname = s_preprocp->removeDefines (modname);
+	// Try a pure name in case user has a bogus `filename they don't expect
+	string filename = v3Global.opt.filePath (fl, modname, lastpath, errmsg);
+	if (filename=="") {
+	    // Allow user to put `defined names on the command line instead of filenames,
+	    // then convert them properly.
+	    string ppmodname = s_preprocp->removeDefines (modname);
 
-	// Open include or master file
-	string filename = v3Global.opt.filePath (fl, ppmodname, lastpath, errmsg);
+	    filename = v3Global.opt.filePath (fl, ppmodname, lastpath, errmsg);
+	}
 	if (filename=="") return false;  // Not found
 
 	UINFO(2,"    Reading "<<filename<<endl);
