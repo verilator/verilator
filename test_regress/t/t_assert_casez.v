@@ -20,6 +20,9 @@ module t;
         2'b01 : ;
         2'b1? : ;
       endcase
+      unique casez (1'b1)
+        default: ;
+      endcase
       $write("*-* All Finished *-*\n");
       $finish;
    end

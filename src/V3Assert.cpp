@@ -202,6 +202,9 @@ private:
 	    AstNode *newifp = nodep->cloneTree(false);
 	    bool allow_none = nodep->unique0Pragma();
 
+	    // Empty case means no property
+	    if (!propp) propp = new AstConst(nodep->fileline(), AstConst::LogicFalse());
+
 	    // Note: if this ends with an 'else', then we don't need to validate that one of the
 	    // predicates evaluates to true.
 	    AstNode* ohot = ((allow_none || hasDefaultElse)
@@ -259,6 +262,9 @@ private:
 			    else propp = onep;
 			}
 		    }
+		    // Empty case means no property
+		    if (!propp) propp = new AstConst(nodep->fileline(), AstConst::LogicFalse());
+
 		    bool allow_none = has_default || nodep->unique0Pragma();
 		    AstNode* ohot = (allow_none
 				     ? static_cast<AstNode*>(new AstOneHot0(nodep->fileline(), propp))
