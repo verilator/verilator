@@ -258,7 +258,6 @@ drop		[\032]
 	/* symbdef prevents normal lex rules from making `\`"foo a symbol {`"foo} instead of a BACKQUOTE */
 <INITIAL>"`"{symbdef}	{ return (VP_DEFREF); }
 <INITIAL>"`"{symbdef}`` { yyleng-=2; return (VP_DEFREF_JOIN); }
-<INITIAL>``             { yyleng-=2; return (VP_JOIN); }
 
 	/* Generics */
 <INITIAL>{crnl}		{ linenoInc(); yytext=(char*)"\n"; yyleng=1; return(VP_WHITE); }
