@@ -336,7 +336,7 @@ private:
 	AstNode* lastVarsp = firstVarsp;
 	while (lastVarsp->nextp()) { lastVarsp = lastVarsp->nextp(); dimension++; }
 	for (AstNode* varsp = lastVarsp; varsp; varsp=varsp->backp()) {
-	    UINFO(0,"foreachVar "<<varsp<<endl);
+	    UINFO(9,"foreachVar "<<varsp<<endl);
 	    FileLine* fl = varsp->fileline();
 	    AstNode* varp = new AstVar(fl, AstVarType::BLOCKTEMP,
 				       varsp->name(), nodep->findSigned32DType());
