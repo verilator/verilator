@@ -149,9 +149,10 @@ private:
     AstUser1InUse	m_inuser1;
 
     // STATE
-    AstActive*	m_activep;		// Inside activate statement
-    AstNodeAssign* m_assignp;		// Inside assigndly statement
-    AstNodeModule*	m_topModp;	// Top module
+    AstActive* m_activep;       // Inside activate statement
+    AstCFunc* m_tracingCallp;   // Currently tracing a call to this cfunc
+    AstNodeAssign* m_assignp;   // Inside assigndly statement
+    AstNodeModule* m_topModp;   // Top module
 
     // VISITORS
     virtual void visit(AstTopScope* nodep) {
@@ -173,7 +174,19 @@ private:
     virtual void visit(AstCCall* nodep) {
 	nodep->iterateChildren(*this);
 	// Enter the function and trace it
+
+        m_tracingCallp = nodep->funcp();
 	nodep->funcp()->accept(*this);
+    }
+    virtual void visit(AstCFunc* nodep) {
+        if (m_tracingCallp != nodep) {
+            // Only consider logic within a CFunc when looking
+            // at the call to it, and not when scanning whatever
+            // scope it happens to live beneath.
+            return;
+        }
+        m_tracingCallp = NULL;
+        nodep->iterateChildren(*this);
     }
     //----
 
@@ -213,11 +226,12 @@ private:
     }
 public:
     // CONSTRUCTORS
-    explicit GenClkReadVisitor(AstNetlist* nodep) {
-	m_activep = NULL;
-	m_assignp = NULL;
-	m_topModp = NULL;
-	nodep->accept(*this);
+    explicit GenClkReadVisitor(AstNetlist* nodep)
+        : m_activep(NULL)
+        , m_tracingCallp(NULL)
+        , m_assignp(NULL)
+        , m_topModp(NULL) {
+        nodep->accept(*this);
     }
     virtual ~GenClkReadVisitor() {}
 };
