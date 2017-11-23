@@ -131,7 +131,8 @@ class VL_SCOPED_CAPABILITY VerilatedLockGuard {
   private:
     VerilatedMutex& m_mutexr;
   public:
-    VerilatedLockGuard(VerilatedMutex& mutexr) VL_ACQUIRE(mutexr) : m_mutexr(mutexr) {
+    explicit VerilatedLockGuard(VerilatedMutex& mutexr) VL_ACQUIRE(mutexr)
+        : m_mutexr(mutexr) {
         m_mutexr.lock();
     }
     ~VerilatedLockGuard() VL_RELEASE() {
@@ -144,8 +145,9 @@ class VL_SCOPED_CAPABILITY VerilatedLockGuard {
 // Empty classes to avoid #ifdefs everywhere
 class VerilatedMutex {};
 class VerilatedLockGuard {
+    VL_UNCOPYABLE(VerilatedLockGuard);
 public:
-    VerilatedLockGuard(VerilatedMutex&) {}
+    explicit VerilatedLockGuard(VerilatedMutex&) {}
     ~VerilatedLockGuard() {}
 };
 #endif // VL_THREADED
@@ -164,11 +166,11 @@ public:
     // METHODS
     /// Check that the current thread ID is the same as the construction thread ID
     void check() VL_MT_UNSAFE_ONE {
-	// Memoize results in local thread, to prevent slow get_id() call
-	VL_THREAD_LOCAL bool t_okThread = (m_threadid == VL_THREAD_ID());
-	if (!VL_LIKELY(t_okThread)) {
-	    fatal_different();
-	}
+        // Memoize results in local thread, to prevent slow get_id() call
+        VL_THREAD_LOCAL bool t_okThread = (m_threadid == VL_THREAD_ID());
+        if (!VL_LIKELY(t_okThread)) {
+            fatal_different();
+        }
     }
     static void fatal_different() VL_MT_SAFE;
 #else // !VL_THREADED || !VL_DEBUG

@@ -518,15 +518,6 @@ private:
 	return varVxp;
     }
 
-    bool isClkAssign(AstNodeAssign* nodep) {
-	if (AstVarRef* varrefp = nodep->lhsp()->castVarRef()) {
-	    if (varrefp->varp()->attrClocker() == AstVarAttrClocker::CLOCKER_YES) {
-		return true;
-	    }
-	}
-	return false;
-    }
-
     void process();
     void processCircular();
     typedef deque<OrderEitherVertex*> VertexVec;

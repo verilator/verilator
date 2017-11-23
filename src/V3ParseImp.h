@@ -223,7 +223,7 @@ public:
 	m_ahead = false;
 	m_curBisonVal.token = 0;
 	m_prevBisonVal.token = 0;
-	// m_aheadVal not used as m_ahead = false
+	// m_aheadVal not used as m_ahead = false, and not all compilers support initing it
         m_tagNodep = NULL;
     }
     ~V3ParseImp();

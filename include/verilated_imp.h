@@ -199,7 +199,8 @@ class VerilatedImp {
 
 public: // But only for verilated*.cpp
     // CONSTRUCTORS
-    VerilatedImp() : m_argVecLoaded(false), m_exportNext(0) {
+    VerilatedImp()
+	: m_argVecLoaded(false), m_exportNext(0), m_spawned(false), m_numThreads(0) {
 	m_fdps.resize(3);
 	m_fdps[0] = stdin;
 	m_fdps[1] = stdout;

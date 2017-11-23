@@ -1738,8 +1738,8 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p,
 // time processing
 
 void vpi_get_time(vpiHandle object, p_vpi_time time_p) {
-    // cppcheck-suppress nullPointer
     VerilatedVpiImp::assertOneCheck();
+    // cppcheck-suppress nullPointer
     if (VL_UNLIKELY(!time_p)) {
 	_VL_VPI_WARNING(__FILE__, __LINE__, "Ignoring vpi_get_time with NULL value pointer");
 	return;
