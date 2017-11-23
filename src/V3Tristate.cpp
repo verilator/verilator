@@ -303,6 +303,11 @@ class TristatePinVisitor : public TristateBaseVisitor {
 	if (m_lvalue) nodep->v3fatalSrc("ArraySel conversion to output, under tristate node");
 	nodep->iterateChildren(*this);
     }
+    virtual void visit(AstSliceSel* nodep) {
+        // Doesn't work because we'd set lvalue on the array index's var
+        if (m_lvalue) nodep->v3fatalSrc("SliceSel conversion to output, under tristate node");
+        nodep->iterateChildren(*this);
+    }
     virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
     }

@@ -906,6 +906,12 @@ void AstSel::dump(ostream& str) {
 	if (declElWidth()!=1) str<<"/"<<declElWidth();
     }
 }
+void AstSliceSel::dump(ostream& str) {
+    this->AstNode::dump(str);
+    if (declRange().ranged()) {
+        str<<" decl"<<declRange();
+    }
+}
 void AstTypeTable::dump(ostream& str) {
     this->AstNode::dump(str);
     for (int i=0; i<(int)(AstBasicDTypeKwd::_ENUM_MAX); ++i) {

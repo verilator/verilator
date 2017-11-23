@@ -493,6 +493,10 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	}
 	puts("]");
     }
+    virtual void visit(AstSliceSel* nodep) {
+        nodep->fromp()->iterateAndNext(*this);
+        puts(cvtToStr(nodep->declRange()));
+    }
     virtual void visit(AstTypedef* nodep) {
 	putfs(nodep,"typedef ");
 	nodep->dtypep()->iterateAndNext(*this); puts(" ");

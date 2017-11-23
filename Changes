@@ -10,19 +10,21 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support $size/$bits/etc on type references.
 
-****  Fix MacOS portability, bug1232. [Jeff Bush]
+***   Add error when driving input-only modport, bug1110. [Trevor Elbourne]
+
+***   Add BSSPACE and COLONPLUS lint warnings.
 
 ****  Detect MSB overflow when under VL_DEBUG, bug1238. [Junyi Xi]
 
 ****  Add data types to --xml. [Rui Terra]
 
-****  Add error when driving input-only modport, bug1110. [Trevor Elbourne]
-
-****  Add BSSPACE and COLONPLUS lint warnings.
+****  Fix partial slicing with pattern assignments, bug991. [Johan Bjork]
 
 ****  Fix false unused warning on interfaces, bug1241. [Laurens van Dam]
 
 ****  Fix error on "unique case" with no cases.
+
+****  Fix MacOS portability, bug1232. [Jeff Bush]
 
 
 * Verilator 3.914 2017-10-14

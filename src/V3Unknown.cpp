@@ -375,6 +375,9 @@ private:
 	}
     }
 
+    // visit(AstSliceSel) not needed as its bounds are constant and checked
+    // in V3Width.
+
     virtual void visit(AstArraySel* nodep) {
 	nodep->iterateChildren(*this);
 	if (!nodep->user1SetOnce()) {

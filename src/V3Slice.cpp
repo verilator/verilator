@@ -34,6 +34,9 @@
 //	        Clone and iterate the clone:
 //		  ARRAYSEL
 //		    Modify bitp() for the new value and set ->length(1)
+//
+// TODO: This code was written before SLICESEL was a type it might be
+// simplified to look primarily for SLICESELs.
 //*************************************************************************
 
 #include "config_build.h"
@@ -101,6 +104,12 @@ class SliceVisitor : public AstNVisitor {
 				     cloneAndSel(snodep->expr1p(), elements, offset),
 				     cloneAndSel(snodep->expr2p(), elements, offset));
 	}
+        else if (AstSliceSel* snodep = nodep->castSliceSel()) {
+            UINFO(9,"  cloneSliceSel("<<elements<<","<<offset<<") "<<nodep<<endl);
+            int leOffset = (snodep->declRange().lo()
+                            + (!snodep->declRange().littleEndian() ? snodep->declRange().elements()-1-offset : offset));
+            newp = new AstArraySel(nodep->fileline(), snodep->fromp()->cloneTree(false), leOffset);
+        }
 	else if (nodep->castArraySel()
 		 || nodep->castNodeVarRef()
 		 || nodep->castNodeSel()) {
@@ -137,8 +146,8 @@ class SliceVisitor : public AstNVisitor {
 		    if (debug()>=9) { newp->dumpTree(cout,"-new "); }
 		    newlistp = AstNode::addNextNull(newlistp, newp);
 		}
-		nodep->replaceWith(newlistp); nodep->deleteTree(); VL_DANGLING(nodep);
 		if (debug()>=9) { cout<<endl; nodep->dumpTree(cout," Deslice-Dn: "); }
+		nodep->replaceWith(newlistp); nodep->deleteTree(); VL_DANGLING(nodep);
 		// Normal edit iterator will now iterate on all of the expansion assignments
 		// This will potentially call this function again to resolve next level of slicing
 		return;

@@ -700,6 +700,43 @@ private:
 	}
     }
 
+    virtual void visit(AstSliceSel* nodep) {
+        // Always creates as output an unpacked array
+        if (m_vup->prelim()) {
+            userIterateAndNext(nodep->fromp(), WidthVP(SELF,BOTH).p());
+            //
+            // Array indices are always constant
+            AstNodeDType* fromDtp = nodep->fromp()->dtypep()->skipRefp();
+            AstUnpackArrayDType* adtypep = fromDtp->castUnpackArrayDType();
+            if (!adtypep) {
+                UINFO(1,"    Related dtype: "<<fromDtp<<endl);
+                nodep->v3fatalSrc("Packed array reference exceeds dimension of array");
+            }
+            // Build new array Dtype based on the original's base type, but with new bounds
+            AstNodeDType* newDtp = new AstUnpackArrayDType(nodep->fileline(),
+                                                           adtypep->subDTypep(),
+                                                           new AstRange(nodep->fileline(),
+                                                                        nodep->declRange()));
+            v3Global.rootp()->typeTablep()->addTypesp(newDtp);
+            nodep->dtypeFrom(newDtp);
+
+            if (!m_doGenerate) {
+                // Must check bounds before adding a select that truncates the bound
+                // Note we've already subtracted off LSB
+                if ((nodep->declRange().hi() > adtypep->declRange().hi())
+                    || nodep->declRange().lo() < adtypep->declRange().lo()) {
+                    // Other simulators warn too
+                    nodep->v3error("Slice selection index '"<< nodep->declRange() << "'"
+                                   <<" outside data type's '"<< adtypep->declRange() << "'");
+                }
+                else if ((nodep->declRange().littleEndian() != adtypep->declRange().littleEndian())) {
+                    nodep->v3error("Slice selection '"<< nodep->declRange() << "'"
+                                   <<" has backward indexing versus data type's '"<< adtypep->declRange() << "'");
+                }
+            }
+        }
+    }
+
     virtual void visit(AstSelBit* nodep) {
 	// Just a quick check as after V3Param these nodes instead are AstSel's
 	userIterateAndNext(nodep->fromp(), WidthVP(CONTEXT,PRELIM).p()); //FINAL in AstSel

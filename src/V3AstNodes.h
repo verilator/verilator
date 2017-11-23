@@ -931,6 +931,40 @@ public:
     void declElWidth(int flag) { m_declElWidth = flag; }
 };
 
+class AstSliceSel : public AstNodeTriop {
+    // Multiple array element extraction
+    // Parents: math|stmt
+    // Children: varref|arraysel, math, constant math
+private:
+    VNumRange m_declRange;  // Range of the 'from' array if isRanged() is set, else invalid
+public:
+    AstSliceSel(FileLine* fl, AstNode* fromp, const VNumRange& declRange)
+        : AstNodeTriop(fl, fromp,
+                       new AstConst(fl, declRange.lo()),
+                       new AstConst(fl, declRange.elements()))
+        , m_declRange(declRange) { }
+    ASTNODE_NODE_FUNCS(SliceSel)
+    virtual void dump(ostream& str);
+    virtual void numberOperate(V3Number& out, const V3Number& from, const V3Number& lo, const V3Number& width) {
+        V3ERROR_NA; }
+    virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
+    virtual string emitC() { V3ERROR_NA; return ""; }  // Removed before EmitC
+    virtual bool cleanOut() { return false; }
+    virtual bool cleanLhs() { return false; }
+    virtual bool cleanRhs() { return true; }
+    virtual bool cleanThs() { return true; }
+    virtual bool sizeMattersLhs() { return false; }
+    virtual bool sizeMattersRhs() { return false; }
+    virtual bool sizeMattersThs() { return false; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode*) const { return true; }
+    virtual int instrCount() const { return 10; }  // Removed before matters
+    AstNode* fromp() const { return op1p(); }  // op1 = Extracting what (NULL=TBD during parsing)
+    // For widthConst()/loConst etc, see declRange().elements() and other VNumRange methods
+    VNumRange& declRange() { return m_declRange; }
+    void declRange(const VNumRange& flag) { m_declRange = flag; }
+};
+
 class AstMemberSel : public AstNodeMath {
     // Parents: math|stmt
     // Children: varref|arraysel, math

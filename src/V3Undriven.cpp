@@ -295,6 +295,10 @@ private:
 	// Arrays are rarely constant assigned, so for now we punt and do all entries
 	nodep->iterateChildren(*this);
     }
+    virtual void visit(AstSliceSel* nodep) {
+        // Arrays are rarely constant assigned, so for now we punt and do all entries
+        nodep->iterateChildren(*this);
+    }
     virtual void visit(AstSel* nodep) {
 	AstNodeVarRef* varrefp = nodep->fromp()->castNodeVarRef();
 	AstConst* constp = nodep->lsbp()->castConst();

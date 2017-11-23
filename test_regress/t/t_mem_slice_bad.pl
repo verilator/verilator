@@ -13,10 +13,11 @@ compile (
 	 v_flags2 => ["--lint-only"],
 	 fails=>1,
 	 expect=>
-'%Error: t/t_mem_slice_bad.v:\d+: Slices of arrays in assignments have different unpacked dimensions, 9 versus 8
-%Error: t/t_mem_slice_bad.v:\d+: Slices of arrays in assignments have different unpacked dimensions, 4 versus 3
-%Error: t/t_mem_slice_bad.v:\d+: Slices of arrays in assignments have different unpacked dimensions, 9 versus 8
-%Error: Exiting due to.*',
+q{%Error: t/t_mem_slice_bad.v:\d+: Slice selection index '\[2:0\]' outside data type's '\[1:0\]'
+%Error: t/t_mem_slice_bad.v:\d+: Slice selection index '\[3:0\]' outside data type's '\[2:0\]'
+%Error: t/t_mem_slice_bad.v:\d+: Slice selection index '\[3:0\]' outside data type's '\[1:0\]'
+%Error: t/t_mem_slice_bad.v:\d+: Slice selection index '\[8:0\]' outside data type's '\[7:0\]'
+%Error: Exiting due to.*},
     );
 
 ok(1);

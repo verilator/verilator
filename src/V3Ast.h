@@ -681,10 +681,14 @@ struct VNumRange {
 	return false;
     }
     //
+    class LeftRight {};
     VNumRange() : m_hi(0), m_lo(0), mu_flags(0) {}
     VNumRange(int hi, int lo, bool littleEndian)
 	: m_hi(0), m_lo(0), mu_flags(0)
 	{ init(hi,lo,littleEndian); }
+    VNumRange(LeftRight, int left, int right)
+        : m_hi(0), m_lo(0), mu_flags(0)
+        { init((right>left)?right:left, (right>left)?left:right, (right>left)); }
     ~VNumRange() {}
     // MEMBERS
     void init(int hi, int lo, bool littleEndian) {

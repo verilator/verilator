@@ -294,19 +294,24 @@ private:
 	AstNode* lsbp = nodep->thsp()->unlinkFrBack();
 	vlsint32_t msb = msbp->castConst()->toSInt();
 	vlsint32_t lsb = lsbp->castConst()->toSInt();
+	vlsint32_t elem = (msb>lsb) ? (msb-lsb+1) : (lsb-msb+1);
 	FromData fromdata = fromDataForArray(nodep, fromp, false);
 	AstNodeDType* ddtypep = fromdata.m_dtypep;
 	VNumRange fromRange = fromdata.m_fromRange;
 	if (ddtypep->castUnpackArrayDType()) {
 	    // Slice extraction
-	    if (fromRange.elements() == (msb-lsb+1)
+	    if (fromRange.elements() == elem
 		&& fromRange.lo() == lsb) { // Extracting whole of original array
 		nodep->replaceWith(fromp); pushDeletep(nodep); VL_DANGLING(nodep);
-	    } else {
-		// TODO when unpacked arrays fully supported probably need new data type here
-		AstArraySel* newp = new AstArraySel (nodep->fileline(), fromp, lsbp);
-		nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
-	    }
+            } else if (fromRange.elements() == 1) {  // Extracting single element
+                AstArraySel* newp = new AstArraySel(nodep->fileline(), fromp, lsbp);
+                nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+            } else {  // Slice
+                AstSliceSel* newp = new AstSliceSel(nodep->fileline(), fromp,
+                                                    VNumRange(VNumRange::LeftRight(),
+                                                              msb, lsb));
+                nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+            }
 	}
 	else if (AstPackArrayDType* adtypep = ddtypep->castPackArrayDType()) {
 	    // SELEXTRACT(array, msb, lsb) -> SEL(array, lsb*width-of-subindex, width-of-subindex*(msb-lsb))
