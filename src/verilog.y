@@ -2686,34 +2686,32 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	|	yaD_DPI parenE				{ $$ = new AstFuncRef($<fl>1,*$1,NULL); }
 	|	yaD_DPI '(' exprList ')'		{ $$ = new AstFuncRef($2,*$1,$3); GRAMMARP->argWrapList($$->castFuncRef()); }
 	//
-	|	yD_BITS '(' data_type ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3); }
-	|	yD_BITS '(' data_type ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3,$5); }
-	|	yD_BITS '(' expr ')'			{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3); }
-	|	yD_BITS '(' expr ',' expr ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3,$5); }
+	|	yD_BITS '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3); }
+	|	yD_BITS '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3,$5); }
 	|	yD_BITSTOREAL '(' expr ')'		{ $$ = new AstBitsToRealD($1,$3); }
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCFunc($1,$3)); }
 	|	yD_CEIL '(' expr ')'			{ $$ = new AstCeilD($1,$3); }
 	|	yD_CLOG2 '(' expr ')'			{ $$ = new AstCLog2($1,$3); }
 	|	yD_COUNTONES '(' expr ')'		{ $$ = new AstCountOnes($1,$3); }
-	|	yD_DIMENSIONS '(' expr ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_DIMENSIONS,$3); }
+	|	yD_DIMENSIONS '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_DIMENSIONS,$3); }
 	|	yD_EXP '(' expr ')'			{ $$ = new AstExpD($1,$3); }
 	|	yD_FEOF '(' expr ')'			{ $$ = new AstFEof($1,$3); }
 	|	yD_FGETC '(' expr ')'			{ $$ = new AstFGetC($1,$3); }
 	|	yD_FGETS '(' idClassSel ',' expr ')'	{ $$ = new AstFGetS($1,$3,$5); }
 	|	yD_FLOOR '(' expr ')'			{ $$ = new AstFloorD($1,$3); }
 	|	yD_FSCANF '(' expr ',' str commaVRDListE ')'	{ $$ = new AstFScanF($1,*$5,$3,$6); }
-	|	yD_HIGH '(' expr ')'			{ $$ = new AstAttrOf($1,AstAttrType::DIM_HIGH,$3,NULL); }
-	|	yD_HIGH '(' expr ',' expr ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_HIGH,$3,$5); }
-	|	yD_INCREMENT '(' expr ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_INCREMENT,$3,NULL); }
-	|	yD_INCREMENT '(' expr ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_INCREMENT,$3,$5); }
+	|	yD_HIGH '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_HIGH,$3,NULL); }
+	|	yD_HIGH '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_HIGH,$3,$5); }
+	|	yD_INCREMENT '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_INCREMENT,$3,NULL); }
+	|	yD_INCREMENT '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_INCREMENT,$3,$5); }
 	|	yD_ISUNKNOWN '(' expr ')'		{ $$ = new AstIsUnknown($1,$3); }
 	|	yD_ITOR '(' expr ')'			{ $$ = new AstIToRD($1,$3); }
-	|	yD_LEFT '(' expr ')'			{ $$ = new AstAttrOf($1,AstAttrType::DIM_LEFT,$3,NULL); }
-	|	yD_LEFT '(' expr ',' expr ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_LEFT,$3,$5); }
+	|	yD_LEFT '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_LEFT,$3,NULL); }
+	|	yD_LEFT '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_LEFT,$3,$5); }
 	|	yD_LN '(' expr ')'			{ $$ = new AstLogD($1,$3); }
 	|	yD_LOG10 '(' expr ')'			{ $$ = new AstLog10D($1,$3); }
-	|	yD_LOW '(' expr ')'			{ $$ = new AstAttrOf($1,AstAttrType::DIM_LOW,$3,NULL); }
-	|	yD_LOW '(' expr ',' expr ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_LOW,$3,$5); }
+	|	yD_LOW '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_LOW,$3,NULL); }
+	|	yD_LOW '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_LOW,$3,$5); }
 	|	yD_ONEHOT '(' expr ')'			{ $$ = new AstOneHot($1,$3); }
 	|	yD_ONEHOT0 '(' expr ')'			{ $$ = new AstOneHot0($1,$3); }
 	|	yD_POW '(' expr ',' expr ')'		{ $$ = new AstPowD($1,$3,$5); }
@@ -2721,20 +2719,20 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	|	yD_RANDOM parenE			{ $$ = new AstRand($1); }
 	|	yD_REALTIME parenE			{ $$ = new AstTimeD($1); }
 	|	yD_REALTOBITS '(' expr ')'		{ $$ = new AstRealToBits($1,$3); }
-	|	yD_RIGHT '(' expr ')'			{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,NULL); }
-	|	yD_RIGHT '(' expr ',' expr ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,$5); }
+	|	yD_RIGHT '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,NULL); }
+	|	yD_RIGHT '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,$5); }
 	|	yD_RTOI '(' expr ')'			{ $$ = new AstRToIS($1,$3); }
 	|	yD_SFORMATF '(' str commaEListE ')'	{ $$ = new AstSFormatF($1,*$3,false,$4); }
 	|	yD_SIGNED '(' expr ')'			{ $$ = new AstSigned($1,$3); }
-	|	yD_SIZE '(' expr ')'			{ $$ = new AstAttrOf($1,AstAttrType::DIM_SIZE,$3,NULL); }
-	|	yD_SIZE '(' expr ',' expr ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_SIZE,$3,$5); }
+	|	yD_SIZE '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_SIZE,$3,NULL); }
+	|	yD_SIZE '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_SIZE,$3,$5); }
 	|	yD_SQRT '(' expr ')'			{ $$ = new AstSqrtD($1,$3); }
 	|	yD_SSCANF '(' expr ',' str commaVRDListE ')'	{ $$ = new AstSScanF($1,*$5,$3,$6); }
 	|	yD_STIME parenE				{ $$ = new AstSel($1,new AstTime($1),0,32); }
 	|	yD_SYSTEM  '(' expr ')'			{ $$ = new AstSystemF($1,$3); }
 	|	yD_TESTPLUSARGS '(' str ')'		{ $$ = new AstTestPlusArgs($1,*$3); }
 	|	yD_TIME	parenE				{ $$ = new AstTime($1); }
-	|	yD_UNPACKED_DIMENSIONS '(' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_UNPK_DIMENSIONS,$3); }
+	|	yD_UNPACKED_DIMENSIONS '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_UNPK_DIMENSIONS,$3); }
 	|	yD_UNSIGNED '(' expr ')'		{ $$ = new AstUnsigned($1,$3); }
 	|	yD_VALUEPLUSARGS '(' expr ',' expr ')'	{ $$ = new AstValuePlusArgs($1,$3,$5); }
 	;
@@ -2761,6 +2759,8 @@ exprOrDataType<nodep>:		// expr | data_type: combined to prevent conflicts
 		expr					{ $$ = $1; }
 	//			// data_type includes id that overlaps expr, so special flavor
 	|	data_type				{ $$ = $1; }
+	//			// not in spec, but needed for $past(sig,1,,@(posedge clk))
+	//UNSUP	event_control				{ }
 	;
 
 list_of_argumentsE<nodep>:	// IEEE: [list_of_arguments]

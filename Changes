@@ -8,6 +8,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support $error/$warning in elaboration time blocks.
 
+***   Support $size/$bits/etc on type references.
+
 ****  Fix MacOS portability, bug1232. [Jeff Bush]
 
 ****  Detect MSB overflow when under VL_DEBUG, bug1238. [Junyi Xi]
