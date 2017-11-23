@@ -127,21 +127,19 @@ public:
     V3List<OrderMoveVertex*>	m_readyVertices;	// Ready vertices with same domain & scope
 private:
     bool			m_onReadyList;		// True if DomScope is already on list of ready dom/scopes
-    AstSenTree*			m_domainp;		// Domain all vertices belong to
-    AstScope*			m_scopep;		// Scope all vertices belong to
-    OrderLoopId			m_inLoop;		// Loop member of
+    const AstSenTree*		m_domainp;		// Domain all vertices belong to
+    const AstScope*	        m_scopep;		// Scope all vertices belong to
 
-    typedef pair<pair<OrderLoopId, AstSenTree*>, AstScope*> DomScopeKey;
+    typedef pair<const AstSenTree*, const AstScope*> DomScopeKey;
     typedef std::map<DomScopeKey, OrderMoveDomScope*> DomScopeMap;
     static DomScopeMap	s_dsMap;	// Structure registered for each dom/scope pairing
 
 public:
-    OrderMoveDomScope(OrderLoopId inLoop, AstSenTree* domainp, AstScope* scopep)
-	: m_onReadyList(false), m_domainp(domainp), m_scopep(scopep), m_inLoop(inLoop) {}
+    OrderMoveDomScope(const AstSenTree* domainp, const AstScope* scopep)
+	: m_onReadyList(false), m_domainp(domainp), m_scopep(scopep) {}
     OrderMoveDomScope* readyDomScopeNextp() const { return m_readyDomScopeE.nextp(); }
-    OrderLoopId inLoop() const { return m_inLoop; }
-    AstSenTree* domainp() const { return m_domainp; }
-    AstScope*   scopep() const { return m_scopep; }
+    const AstSenTree* domainp() const { return m_domainp; }
+    const AstScope* scopep() const { return m_scopep; }
     void ready(OrderVisitor* ovp);	// Check the domScope is on ready list, add if not
     void movedVertex(OrderVisitor* ovp, OrderMoveVertex* vertexp);	// Mark one vertex as finished, remove from ready list if done
     // STATIC MEMBERS (for lookup)
@@ -152,20 +150,20 @@ public:
 	s_dsMap.clear();
     }
     V3List<OrderMoveVertex*>& readyVertices() { return m_readyVertices; }
-    static OrderMoveDomScope* findCreate (OrderLoopId inLoop, AstSenTree* domainp, AstScope* scopep) {
-	const DomScopeKey key = make_pair(make_pair(inLoop,domainp),scopep);
+    static OrderMoveDomScope* findCreate(const AstSenTree* domainp,
+                                         const AstScope* scopep) {
+	const DomScopeKey key = make_pair(domainp,scopep);
 	DomScopeMap::iterator iter = s_dsMap.find(key);
 	if (iter != s_dsMap.end()) {
 	    return iter->second;
 	} else {
-	    OrderMoveDomScope* domScopep = new OrderMoveDomScope(inLoop, domainp, scopep);
+	    OrderMoveDomScope* domScopep = new OrderMoveDomScope(domainp, scopep);
 	    s_dsMap.insert(make_pair(key, domScopep));
 	    return domScopep;
 	}
     }
     string name() const {
 	return (string("MDS:")
-		+" lp="+cvtToStr(inLoop())
 		+" d="+cvtToStr((void*)domainp())
 		+" s="+cvtToStr((void*)scopep()));
     }
@@ -518,19 +516,6 @@ private:
 	OrderUser* up = (OrderUser*)(varscp->user1p());
 	OrderVarVertex* varVxp = up->newVarUserVertex(&m_graph, m_scopep, varscp, type, createdp);
 	return varVxp;
-    }
-
-    V3GraphEdge* findEndEdge(V3GraphVertex* vertexp, AstNode* errnodep, OrderLoopEndVertex*& evertexpr) {
-	// Given a vertex, find the end block corresponding to it
-	// Every vertex should have a pointer to the end block (one hopes)
-	for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
-	    if (OrderLoopEndVertex* evertexp = dynamic_cast<OrderLoopEndVertex*>(edgep->top())) {
-		evertexpr = evertexp;
-		return edgep;
-	    }
-	}
-	errnodep->v3fatalSrc("Loop-broken vertex doesn't have pointer to LoopEndVertex: "<<vertexp);
-	return NULL;
     }
 
     bool isClkAssign(AstNodeAssign* nodep) {
@@ -922,7 +907,7 @@ private:
     }
     virtual void visit(AstSenTree* nodep) {
 	// Having a node derived from the sentree isn't required for
-	// correctness, it mearly makes the graph better connected
+	// correctness, it merely makes the graph better connected
 	// and improves graph algorithmic performance
 	if (m_scopep) {	// Else TOPSCOPE's SENTREE list
 	    m_inSenTree = true;
@@ -1198,7 +1183,6 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
     //     Combo logic may be pushed into a seq domain if all its inputs are the same domain,
     //     else, if all inputs are from flops, it's end-of-sequential code
     //     else, it's full combo code
-    if (!vertexp->inLoop()) vertexp->inLoop(LOOPID_NOTLOOPED);
     if (vertexp->domainp()) return;	// Already processed, or sequential logic
     UINFO(5,"    pdi: "<<vertexp<<endl);
     OrderVarVertex* vvertexp = dynamic_cast<OrderVarVertex*>(vertexp);
@@ -1481,9 +1465,8 @@ void OrderVisitor::processMovePrepScopes() {
     for (OrderMoveVertex* vertexp = m_pomWaiting.begin(); vertexp; vertexp=vertexp->pomWaitingNextp()) {
 	AstSenTree* domainp = vertexp->logicp()->domainp();
 	AstScope* scopep = vertexp->logicp()->scopep();
-	OrderLoopId inLoop = vertexp->logicp()->inLoop();
 	// Create the dom pairing for later lookup
-	OrderMoveDomScope* domScopep = OrderMoveDomScope::findCreate(inLoop, domainp, scopep);
+	OrderMoveDomScope* domScopep = OrderMoveDomScope::findCreate(domainp, scopep);
 	vertexp->domScopep(domScopep);
     }
 }
@@ -1595,7 +1578,6 @@ void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
 inline void OrderMoveDomScope::ready(OrderVisitor* ovp) {	// Check the domScope is on ready list, add if not
     if (!m_onReadyList) {
 	m_onReadyList = true;
-	UASSERT (inLoop()!=0, "Loop# 0 is illegal, perhaps should be LOOPID_NOTLOOPED?");
 	m_readyDomScopeE.pushBack(ovp->m_pomReadyDomScope, this);
     }
 }

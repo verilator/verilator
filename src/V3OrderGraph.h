@@ -25,8 +25,6 @@
 //	    OrderInputsVertex
 //	    OrderSettleVertex
 //	    OrderLogicVertex
-//	      OrderLoopBeginVertex
-//	      OrderLoopEndVertex
 //	    OrderVarVertex
 //	      OrderVarStdVertex
 //	      OrderVarPreVertex
@@ -36,12 +34,15 @@
 //
 //	V3GraphEdge
 //	  OrderEdge
-//	    OrderChangeDetEdge
 //	    OrderComboCutEdge
 //	    OrderPostCutEdge
 //	    OrderPreCutEdge
 //*************************************************************************
 
+
+#ifndef _V3ORDERGRAPH_H_
+#define _V3ORDERGRAPH_H_
+
 #include "config_build.h"
 #include "verilatedos.h"
 #include "V3Ast.h"
@@ -62,13 +63,6 @@ enum OrderWeights {
     WEIGHT_MEDIUM = 8,	// Medium weight just so dot graph looks nice
     WEIGHT_NORMAL = 32 };	// High   weight just so dot graph looks nice
 
-enum OrderLoopId {
-    LOOPID_UNKNOWN = 0,	// Not assigned yet
-    LOOPID_NOTLOOPED=1,	// Not looped
-    LOOPID_FIRST = 2,	// First assigned id (numbers increment from here)
-    LOOPID_MAX = (1<<30)
-};
-
 struct OrderVEdgeType {
     enum en {
 	VERTEX_UNKNOWN = 0,
@@ -80,8 +74,6 @@ struct OrderVEdgeType {
 	VERTEX_VARPOST,
 	VERTEX_VARPORD,
 	VERTEX_VARSETTLE,
-	VERTEX_LOOPBEGIN,
-	VERTEX_LOOPEND,
 	VERTEX_MOVE,
 	EDGE_STD,
 	EDGE_CHANGEDET,
@@ -94,11 +86,9 @@ struct OrderVEdgeType {
 	static const char* const names[] = {
 	    "%E-vedge", "VERTEX_INPUTS", "VERTEX_SETTLE", "VERTEX_LOGIC",
 	    "VERTEX_VARSTD", "VERTEX_VARPRE", "VERTEX_VARPOST",
-	    "VERTEX_VARPORD", "VERTEX_VARSETTLE", "VERTEX_LOOPBEGIN",
-	    "VERTEX_LOOPEND", "VERTEX_MOVE",
+	    "VERTEX_VARPORD", "VERTEX_VARSETTLE", "VERTEX_MOVE",
 	    "EDGE_STD", "EDGE_CHANGEDET", "EDGE_COMBOCUT",
 	    "EDGE_PRECUT", "EDGE_POSTCUT", "_ENUM_END"
-
 	};
 	return names[m_e];
     }
@@ -139,16 +129,15 @@ public:
 class OrderEitherVertex : public V3GraphVertex {
     AstScope*	m_scopep;	// Scope the vertex is in
     AstSenTree*	m_domainp;	// Clock domain (NULL = to be computed as we iterate)
-    OrderLoopId	m_inLoop;	// Loop number vertex is in
     bool	m_isFromInput;	// From input, or derived therefrom (conservatively false)
 protected:
     OrderEitherVertex(V3Graph* graphp, const OrderEitherVertex& old)
 	: V3GraphVertex(graphp, old), m_scopep(old.m_scopep), m_domainp(old.m_domainp)
-	, m_inLoop(old.m_inLoop), m_isFromInput(old.m_isFromInput) {}
+	, m_isFromInput(old.m_isFromInput) {}
 public:
     OrderEitherVertex(V3Graph* graphp, AstScope* scopep, AstSenTree* domainp)
 	: V3GraphVertex(graphp), m_scopep(scopep), m_domainp(domainp)
-	, m_inLoop(LOOPID_UNKNOWN), m_isFromInput(false) {}
+	, m_isFromInput(false) {}
     virtual ~OrderEitherVertex() {}
     virtual OrderEitherVertex* clone(V3Graph* graphp) const = 0;
     // Methods
@@ -159,8 +148,6 @@ public:
     void domainp(AstSenTree* domainp) { m_domainp = domainp; }
     AstScope* scopep() const { return m_scopep; }
     AstSenTree* domainp() const { return m_domainp; }
-    OrderLoopId	inLoop() const { return m_inLoop; }
-    void inLoop(OrderLoopId inloop) { m_inLoop = inloop; }
     void isFromInput(bool flag) { m_isFromInput=flag; }
     bool isFromInput() const { return m_isFromInput; }
 };
@@ -320,62 +307,6 @@ public:
 };
 
 //######################################################################
-//--- Looping constructs
-
-class OrderLoopBeginVertex : public OrderLogicVertex {
-    // A vertex can never be under two loops...
-    // However, a LoopBeginVertex is not "under" the loop per se, and it may be under another loop.
-    OrderLoopId	m_loopId;		// Arbitrary # to ID this loop
-    uint32_t	m_loopColor;		// Color # of loop (for debug)
-    OrderLoopBeginVertex(V3Graph* graphp, const OrderLoopBeginVertex& old)
-	: OrderLogicVertex(graphp, *this)
-	, m_loopId(old.m_loopId), m_loopColor(old.m_loopColor) {}
-public:
-    OrderLoopBeginVertex(V3Graph* graphp, AstScope* scopep, AstSenTree* domainp, AstUntilStable* nodep,
-			 OrderLoopId loopId, uint32_t loopColor)
-	: OrderLogicVertex(graphp, scopep, domainp, nodep)
-	, m_loopId(loopId), m_loopColor(loopColor) {}
-    virtual ~OrderLoopBeginVertex() {}
-    virtual OrderLoopBeginVertex* clone(V3Graph* graphp) const {
-	return new OrderLoopBeginVertex(graphp, *this);
-    }
-    // Methods
-    virtual OrderVEdgeType type() const { return OrderVEdgeType::VERTEX_LOOPBEGIN; }
-    virtual string name() const { return "LoopBegin_"+cvtToStr(loopId())+"_c"+cvtToStr(loopColor()); }
-    virtual bool domainMatters() { return true; }
-    virtual string dotColor() const { return "blue"; }
-    AstUntilStable* untilp() const { return nodep()->castUntilStable(); }
-    OrderLoopId loopId() const { return m_loopId; }
-    uint32_t loopColor() const { return m_loopColor; }
-};
-
-class OrderLoopEndVertex : public OrderLogicVertex {
-    // A end vertex points to the *same nodep* as the Begin, as we need it to
-    // be a logic vertex for moving, but don't need a permanent node.  We
-    // won't add to the output graph though, so it shouldn't matter.
-    OrderLoopBeginVertex*  m_beginVertexp;	// Corresponding loop begin
-    OrderLoopEndVertex(V3Graph* graphp, const OrderLoopEndVertex& old)
-	: OrderLogicVertex(graphp, old), m_beginVertexp(old.m_beginVertexp) {}
-public:
-    OrderLoopEndVertex(V3Graph* graphp, OrderLoopBeginVertex* beginVertexp)
-	: OrderLogicVertex(graphp, beginVertexp->scopep(),
-			   beginVertexp->domainp(), beginVertexp->nodep())
-	, m_beginVertexp(beginVertexp) {
-	inLoop(beginVertexp->loopId());
-    }
-    virtual ~OrderLoopEndVertex() {}
-    virtual OrderLoopEndVertex* clone(V3Graph* graphp) const {
-	return new OrderLoopEndVertex(graphp, *this); }
-    // Methods
-    virtual OrderVEdgeType type() const { return OrderVEdgeType::VERTEX_LOOPEND; }
-    virtual string name() const { return "LoopEnd_"+cvtToStr(inLoop())+"_c"+cvtToStr(loopColor()); }
-    virtual bool domainMatters() { return false; }
-    virtual string dotColor() const { return "blue"; }
-    OrderLoopBeginVertex*  beginVertexp() const { return m_beginVertexp; }
-    uint32_t loopColor() const { return beginVertexp()->loopColor(); }
-};
-
-//######################################################################
 //--- Following only under the move graph, not the main graph
 
 class OrderMoveVertex : public V3GraphVertex {
@@ -415,7 +346,6 @@ public:
         if (logicp()) {
             nm = logicp()->name();
             nm += (string("\\nMV:")
-                   +" lp="+cvtToStr(logicp()->inLoop())
                    +" d="+cvtToStr((void*)logicp()->domainp())
                    +" s="+cvtToStr((void*)logicp()->scopep()));
         } else {
@@ -469,23 +399,6 @@ public:
 	if (!oedgep) v3fatalSrc("Following edge of non-OrderEdge type");
 	return (oedgep->followSequentConnected());
     }
-};
-
-class OrderChangeDetEdge : public OrderEdge {
-    // Edge created from variable to OrderLoopEndVertex
-    // Indicates a change detect will be required for this loop construct
-    OrderChangeDetEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top,
-		       const OrderChangeDetEdge& old)
-	: OrderEdge(graphp, fromp, top, old) {}
-public:
-    OrderChangeDetEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top)
-	: OrderEdge(graphp, fromp, top, WEIGHT_MEDIUM, false) {}
-    virtual OrderVEdgeType type() const { return OrderVEdgeType::EDGE_CHANGEDET; }
-    virtual ~OrderChangeDetEdge() {}
-    virtual OrderChangeDetEdge* clone(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top) const {
-	return new OrderChangeDetEdge(graphp, fromp, top, *this);
-    }
-    virtual string dotColor() const { return "blue"; }
 };
 
 class OrderComboCutEdge : public OrderEdge {
@@ -547,3 +460,5 @@ public:
     virtual bool followComboConnected() const { return false; }
     virtual bool followSequentConnected() const { return false; }
 };
+
+#endif  // _V3ORDERGRAPH_H_
