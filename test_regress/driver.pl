@@ -681,8 +681,9 @@ sub compile {
 	if (!$param{fails} && $param{verilator_make_gcc}) {
 	    $self->oprint("GCC\n");
 	    $self->_run(logfile=>"$self->{obj_dir}/vlt_gcc.log",
-			cmd=>["cd $self->{obj_dir} && ",
-			      "make", "-f".getcwd()."/Makefile_obj",
+                       cmd=>["make",
+                             "-C ".$self->{obj_dir},
+                             "-f ".getcwd()."/Makefile_obj",
 			      "VM_PREFIX=$self->{VM_PREFIX}",
 			      "CPPFLAGS_DRIVER=-D".uc($self->{name}),
 			      ($opt_verbose ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1":""),
@@ -1256,7 +1257,7 @@ sub _make_top_v {
     print $fh "    t t (\n";
     my $comma="";
     foreach my $inp (sort (keys %{$self->{inputs}})) {
-	print $fh "\t${comma}.${inp} (${inp})\n";
+	print $fh "      ${comma}.${inp} (${inp})\n";
 	$comma=",";
     }
     print $fh "    );\n";
@@ -1307,7 +1308,7 @@ sub _make_top_vhdl {
 	print $fh "       port(\n";
 	my $semi = "";
 	foreach my $inp (@ports) {
-	    print $fh "\t${semi}${inp} : in std_logic\n";
+	    print $fh "        ${semi}${inp} : in std_logic\n";
 	    $semi=";";
 	}
 	print $fh "    );\n";
@@ -1321,7 +1322,7 @@ sub _make_top_vhdl {
     print $fh "architecture t_beh of t_ent is\n";
     if ($#ports >= 0) {
 	foreach my $inp (@ports) {
-	    print $fh "\tsignal ${inp} : std_logic := '0';\n";
+	    print $fh "      signal ${inp} : std_logic := '0';\n";
 	}
     }
     print $fh "   begin\n";
