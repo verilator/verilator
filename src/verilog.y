@@ -3780,11 +3780,23 @@ int V3ParseImp::bisonParse() {
 
 const char* V3ParseImp::tokenName(int token) {
 #if YYDEBUG || YYERROR_VERBOSE
-    if (token >= 255)
-	return yytname[token-255];
-    else {
-	static char ch[2];  ch[0]=token; ch[1]='\0';
-	return ch;
+    static const char** nameTablep = NULL;
+    if (!nameTablep) {
+        int size;
+        for (size=0; yytname[size]; ++size) ;
+        nameTablep = new const char* [size];
+        // Workaround bug in bison's which have '!' in yytname but not token values
+        int iout = 0;
+        for (int i=0; yytname[i]; ++i) {
+            if (yytname[i][0] == '\'') continue;
+            nameTablep[iout++] = yytname[i];
+        }
+    }
+    if (token >= 255) {
+        return nameTablep[token-255];
+    } else {
+        static char ch[2];  ch[0]=token; ch[1]='\0';
+        return ch;
     }
 #else
     return "";
