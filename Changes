@@ -2,7 +2,7 @@ Revision history for Verilator
 
 The contributors that suggested a given feature are shown in []. Thanks!
 
-* Verilator 3.915 devel
+* Verilator 3.916 2017-11-25
 
 ***   Support self-recursive modules, bug659. [Sean Moore, et al]
 
