@@ -214,7 +214,7 @@ test_regress: all_nomsg
 
 examples: all_nomsg
 	for p in examples/* ; do \
-	  $(MAKE) -C $$p VERILATOR_ROOT=`pwd` ; \
+	  $(MAKE) -C $$p VERILATOR_ROOT=`pwd` || exit 10; \
 	done
 
 info: $(INFOS)
@@ -429,6 +429,14 @@ CPPCHECK_INC = -I$(srcdir)/include -I$(srcdir)/src/obj_dbg -I$(srcdir)/src
 cppcheck: $(CPPCHECK_DEP)
 %.cppcheck: %.cpp
 	$(CPPCHECK) $(CPPCHECK_FLAGS) -DVL_DEBUG=1 -DVL_CPPCHECK=1 $(CPPCHECK_INC) $<
+
+analyzer-src:
+	-rm -rf src/obj_dbg
+	scan-build $(MAKE) -k verilator_coverage_bin_dbg verilator_bin_dbg
+
+analyzer-include:
+	-rm -rf examples/*/obj*
+	scan-build $(MAKE) -k examples
 
 ftp: info
 

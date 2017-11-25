@@ -621,7 +621,7 @@ class GaterVisitor : public GaterBaseVisitor {
 		}
 		// Top level we could choose to make multiple gaters, or ORs under the gater
 		// Right now we'll put OR lower down and let other optimizations deal
-		if (nodep) nodep = new AstOr(eqnp->fileline(),nodep,eqnp);
+		if (nodep) nodep = new AstOr(nodep->fileline(), nodep, eqnp);
 		else nodep = eqnp;
 		//if (debug()>=9) nodep->dumpTree(cout,"      followExpr: ");
 	    }

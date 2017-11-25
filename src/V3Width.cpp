@@ -1727,7 +1727,7 @@ private:
 		    }
 		    if (patp) {
 			// Determine initial values
-			vdtypep = memp;
+			vdtypep = memp;  if (vdtypep) {}
 			patp->dtypep(memp);
 			userIterate(patp, WidthVP(memp,BOTH).p());  // See visit(AstPatMember*
 
@@ -3058,9 +3058,9 @@ private:
 	// Underp is used in a self-determined but boolean context, reduce a multibit number to one bit
 	// stage is always BOTH so not passed as argument
 	// underp may change as a result of replacement
-	if (!underp) underp->v3fatalSrc("Node has no type");
+	if (!underp) nodep->v3fatalSrc("Node has no type");
 	underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF,BOTH).p());
-	if (!underp || !underp->dtypep()) underp->v3fatalSrc("Node has no type"); // Perhaps forgot to do a prelim visit on it?
+	if (!underp || !underp->dtypep()) nodep->v3fatalSrc("Node has no type"); // Perhaps forgot to do a prelim visit on it?
 	//
 	// For DOUBLE under a logical op, add implied test against zero, never a warning
 	if (underp && underp->isDouble()) {
@@ -3101,7 +3101,7 @@ private:
 	// Returns the new underp
 	// Conversion to/from doubles and integers are before iterating.
 	if (stage != FINAL) nodep->v3fatalSrc("Bad state to iterateCheck");
-	if (!underp || !underp->dtypep()) underp->v3fatalSrc("Node has no type"); // Perhaps forgot to do a prelim visit on it?
+	if (!underp || !underp->dtypep()) nodep->v3fatalSrc("Node has no type"); // Perhaps forgot to do a prelim visit on it?
 	if (expDTypep == underp->dtypep()) {  // Perfect
 	    underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF,FINAL).p());
 	} else if (expDTypep->isDouble() && underp->isDouble()) {  // Also good
