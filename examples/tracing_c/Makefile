@@ -73,7 +73,7 @@ run:
 	@echo
 	@echo "-- RUN ---------------------"
 	@mkdir -p logs
-	obj_dir/Vtop +trace | tee logs/sim.log
+	obj_dir/Vtop +trace
 
 	@echo
 	@echo "-- COVERAGE ----------------"

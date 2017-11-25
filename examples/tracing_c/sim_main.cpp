@@ -62,9 +62,9 @@ int main(int argc, char** argv, char** env) {
     top->clk = 0;
     top->in_small = 1;
     top->in_quad = 0x1234;
-    top->in_wide[0] = 0x1;
+    top->in_wide[0] = 0x11111111;
     top->in_wide[1] = 0x22222222;
-    top->in_wide[2] = 0x33333333;
+    top->in_wide[2] = 0x3;
 
     // Simulate until $finish
     while (!Verilated::gotFinish()) {
