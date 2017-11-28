@@ -62,15 +62,12 @@ private:
     AstNodeModule*	m_modp;		// Current module
     AstTopScope*	m_topScopep;	// Current top scope
     AstScope*		m_scopep;	// Current scope
-    AstActive*		m_activep;	// Current block
-    AstUntilStable*	m_untilp;	// Current until
     AstCFunc*		m_evalFuncp;	// Top eval function we are creating
     AstCFunc*		m_initFuncp;	// Top initial function we are creating
     AstCFunc*		m_finalFuncp;	// Top final function we are creating
     AstCFunc*		m_settleFuncp;	// Top settlement function we are creating
     AstSenTree*		m_lastSenp;	// Last sensitivity match, so we can detect duplicates.
     AstIf*		m_lastIfp;	// Last sensitivity if active to add more under
-    int			m_stableNum;	// Number of each untilstable
 
     // METHODS
     static int debug() {
@@ -252,7 +249,6 @@ private:
     virtual void visit(AstNodeModule* nodep) {
 	//UINFO(4," MOD   "<<nodep<<endl);
 	m_modp = nodep;
-	m_stableNum = 0;
 	nodep->iterateChildren(*this);
 	m_modp= NULL;
     }
@@ -330,16 +326,13 @@ private:
 	pushDeletep(nodep);
     }
     void addToEvalLoop(AstNode* stmtsp) {
-	if (m_untilp) m_untilp->addBodysp(stmtsp);  // In a until loop, add to body
-	else m_evalFuncp->addStmtsp(stmtsp);  // else add to top level function
+       m_evalFuncp->addStmtsp(stmtsp);  // add to top level function
     }
     void addToSettleLoop(AstNode* stmtsp) {
-	if (m_untilp) m_untilp->addBodysp(stmtsp);  // In a until loop, add to body
-	else m_settleFuncp->addStmtsp(stmtsp);  // else add to top level function
+       m_settleFuncp->addStmtsp(stmtsp);  // add to top level function
     }
     void addToInitial(AstNode* stmtsp) {
-	if (m_untilp) m_untilp->addBodysp(stmtsp);  // In a until loop, add to body
-	else m_initFuncp->addStmtsp(stmtsp);  // else add to top level function
+       m_initFuncp->addStmtsp(stmtsp);  // add to top level function
     }
     virtual void visit(AstActive* nodep) {
 	// Careful if adding variables here, ACTIVES can be under other ACTIVES
@@ -393,14 +386,12 @@ private:
 public:
     // CONSTUCTORS
     explicit ClockVisitor(AstNetlist* nodep) {
-	m_modp=NULL; m_activep=NULL;
+	m_modp=NULL;
 	m_evalFuncp = NULL;
 	m_topScopep=NULL;
 	m_lastSenp=NULL;
 	m_lastIfp = NULL;
 	m_scopep = NULL;
-	m_stableNum = 0;
-	m_untilp = NULL;
 	//
 	nodep->accept(*this);
     }
