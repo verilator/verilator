@@ -881,14 +881,18 @@ public:
 
 class AstNVisitor {
 private:
-    vector<AstNode*>	m_deleteps;	// Nodes to delete when we are finished
+    vector<AstNode*> m_deleteps;  // Nodes to delete when doDeletes() called
 protected:
     friend class AstNode;
 public:
-    // Cleaning
+    /// At the end of the visitor (or doDeletes()), delete this pushed node
+    /// along with all children and next(s). This is often better to use
+    /// than an immediate deleteTree, as any pointers into this node will
+    /// persist for the lifetime of the visitor
     void pushDeletep(AstNode* nodep) {
 	m_deleteps.push_back(nodep);
     }
+    /// Call deleteTree on all previously pushDeletep()'ed nodes
     void doDeletes();
 public:
     virtual ~AstNVisitor() {
