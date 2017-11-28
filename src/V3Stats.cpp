@@ -53,6 +53,7 @@ private:
     V3Double0	m_statInstrLong;	// Instruction count
     bool	m_counting;		// Currently counting
     double	m_instrs;		// Current instr count (for determining branch direction)
+    bool	m_tracingCall;          // Iterating into a CCall to a CFunc
 
     vector<V3Double0>	m_statTypeCount;	// Nodes of given type
     V3Double0		m_statAbove[AstType::_ENUM_END][AstType::_ENUM_END];	// Nodes of given type
@@ -192,12 +193,17 @@ private:
     virtual void visit(AstCCall* nodep) {
 	allNodes(nodep);
 	nodep->iterateChildrenConst(*this);
-	if (m_fast) {
+        if (m_fast && !nodep->funcp()->entryPoint()) {
 	    // Enter the function and trace it
-	    nodep->funcp()->accept(*this);
-	}
+            m_tracingCall = true;
+            nodep->funcp()->accept(*this);
+        }
     }
     virtual void visit(AstCFunc* nodep) {
+        if (m_fast) {
+            if (!m_tracingCall && !nodep->entryPoint()) return;
+            m_tracingCall = false;
+        }
 	m_cfuncp = nodep;
 	allNodes(nodep);
 	nodep->iterateChildrenConst(*this);
@@ -215,6 +221,7 @@ public:
 	m_cfuncp = NULL;
 	m_counting = !m_fast;
 	m_instrs = 0;
+        m_tracingCall = false;
 	// Initialize arrays
 	m_statTypeCount.resize(AstType::_ENUM_END);
 	// Process

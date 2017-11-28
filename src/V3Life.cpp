@@ -288,6 +288,7 @@ private:
     LifeState*	m_statep;	// Current state
     bool	m_sideEffect;	// Side effects discovered in assign RHS
     bool	m_noopt;	// Disable optimization of variables in this block
+    bool	m_tracingCall;  // Iterating into a CCall to a CFunc
 
     // LIFE MAP
     //  For each basic block, we'll make a new map of what variables that if/else is changing
@@ -423,11 +424,14 @@ private:
 	nodep->iterateChildren(*this);
 	// Enter the function and trace it
 	if (!nodep->funcp()->entryPoint()) {  // else is non-inline or public function we optimize separately
-	    nodep->funcp()->accept(*this);
+            m_tracingCall = true;
+            nodep->funcp()->accept(*this);
 	}
     }
     virtual void visit(AstCFunc* nodep) {
 	//UINFO(4,"  CCALL "<<nodep<<endl);
+        if (!m_tracingCall && !nodep->entryPoint()) return;
+        m_tracingCall = false;
 	if (nodep->dpiImport() && !nodep->pure()) {
 	    m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
 	}
@@ -454,6 +458,7 @@ public:
 	m_statep = statep;
 	m_sideEffect = false;
 	m_noopt = false;
+        m_tracingCall = false;
 	{
 	    m_lifep = new LifeBlock (NULL, m_statep);
 	    nodep->accept(*this);

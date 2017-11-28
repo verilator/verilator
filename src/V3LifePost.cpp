@@ -56,6 +56,8 @@ protected:
 
 class LifePostElimVisitor : public LifePostBaseVisitor {
 private:
+    bool        m_tracingCall;  // Iterating into a CCall to a CFunc
+
     // NODE STATE
     // INPUT:
     //  AstVarScope::user4p()	-> AstVarScope*, If set, replace this varscope with specified new one
@@ -77,8 +79,16 @@ private:
     }
     virtual void visit(AstCCall* nodep) {
 	nodep->iterateChildren(*this);
-	// Enter the function and trace it
-	nodep->funcp()->accept(*this);
+        if (!nodep->funcp()->entryPoint()) {
+            // Enter the function and trace it
+            m_tracingCall = true;
+            nodep->funcp()->accept(*this);
+        }
+    }
+    virtual void visit(AstCFunc* nodep) {
+        if (!m_tracingCall && !nodep->entryPoint()) return;
+        m_tracingCall = false;
+        nodep->iterateChildren(*this);
     }
     virtual void visit(AstVar*) {}	// Don't want varrefs under it
     virtual void visit(AstNode* nodep) {
@@ -86,7 +96,8 @@ private:
     }
 public:
     // CONSTRUCTORS
-    explicit LifePostElimVisitor(AstTopScope* nodep) {
+    explicit LifePostElimVisitor(AstTopScope* nodep)
+        : m_tracingCall(false) {
 	nodep->accept(*this);
     }
     virtual ~LifePostElimVisitor() {}
@@ -109,6 +120,7 @@ private:
     // STATE
     uint32_t		m_sequence;	// Sequence number of assignments/varrefs
     V3Double0		m_statAssnDel;	// Statistic tracking
+    bool		m_tracingCall;  // Tracing a CCall to a CFunc
 
     // VISITORS
     virtual void visit(AstTopScope* nodep) {
@@ -167,8 +179,16 @@ private:
     }
     virtual void visit(AstCCall* nodep) {
 	nodep->iterateChildren(*this);
-	// Enter the function and trace it
-	nodep->funcp()->accept(*this);
+        if (!nodep->funcp()->entryPoint()) {
+            // Enter the function and trace it
+            m_tracingCall = true;
+            nodep->funcp()->accept(*this);
+        }
+    }
+    virtual void visit(AstCFunc* nodep) {
+        if (!m_tracingCall && !nodep->entryPoint()) return;
+        m_tracingCall = false;
+        nodep->iterateChildren(*this);
     }
 
     //-----
@@ -178,7 +198,8 @@ private:
     }
 public:
     // CONSTRUCTORS
-    explicit LifePostDlyVisitor(AstNetlist* nodep) {
+    explicit LifePostDlyVisitor(AstNetlist* nodep)
+        : m_tracingCall(false) {
 	nodep->accept(*this);
     }
     virtual ~LifePostDlyVisitor() {
