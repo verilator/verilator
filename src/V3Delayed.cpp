@@ -289,7 +289,7 @@ private:
 	//
 	// Create ALWAYSPOST for delayed variable
 	// We add all logic to the same block if it's for the same memory
-	// This insures that multiple assignments to the same memory will result
+	// This ensures that multiple assignments to the same memory will result
 	// in correctly ordered code - the last assignment must be last.
 	// It also has the nice side effect of assisting cache locality.
 	AstNode* selectsp = varrefp;

@@ -76,7 +76,7 @@ public:
 	, m_srcDomainSet(false), m_dstDomainSet(false)
 	, m_asyncPath(false) {}
     virtual ~CdcEitherVertex() {}
-    // Accessors
+    // ACCESSORS
     AstScope* scopep() const { return m_scopep; }
     AstNode* nodep() const { return m_nodep; }
     AstSenTree* srcDomainp() const { return m_srcDomainp; }
@@ -99,7 +99,7 @@ public:
     CdcVarVertex(V3Graph* graphp, AstScope* scopep, AstVarScope* varScp)
 	: CdcEitherVertex(graphp, scopep, varScp), m_varScp(varScp), m_cntAsyncRst(0), m_fromFlop(false) {}
     virtual ~CdcVarVertex() {}
-    // Accessors
+    // ACCESSORS
     AstVarScope* varScp() const { return m_varScp; }
     virtual string name() const { return (cvtToStr((void*)m_varScp)+" "+varScp()->name()); }
     virtual string dotColor() const { return fromFlop() ? "green" : cntAsyncRst() ? "red" : "blue"; }
@@ -118,7 +118,7 @@ public:
 	, m_hazard(false), m_isFlop(false)
 	{ srcDomainp(sensenodep); dstDomainp(sensenodep); }
     virtual ~CdcLogicVertex() {}
-    // Accessors
+    // ACCESSORS
     virtual string name() const { return (cvtToStr((void*)nodep())+"@"+scopep()->prettyName()); }
     virtual string dotColor() const { return hazard() ? "black" : "yellow"; }
     bool hazard() const { return m_hazard; }

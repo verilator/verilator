@@ -99,7 +99,7 @@ public:
 	: V3GraphVertex(graphp)
 	, m_nodep(nodep), m_isTristate(false), m_feedsTri(false), m_processed(false) {}
     virtual ~TristateVertex() {}
-    // Accessors
+    // ACCESSORS
     AstNode* nodep() const { return m_nodep; }
     AstVar* varp() const { return nodep()->castVar(); }
     virtual string name() const {

@@ -44,7 +44,7 @@
 //		Add vertex for this logic
 //		    Add edge logic_sensitive_vertex->logic_vertex
 //		    Add edge logic_generated_var_PREORDER->logic_vertex
-//			This insures the AssignPre gets scheduled before this logic
+//			This ensures the AssignPre gets scheduled before this logic
 //		    Add edge logic_vertex->consumed_var_PREVAR
 //		    Add edge logic_vertex->consumed_var_POSTVAR
 //		    Add edge logic_vertex->logic_generated_var (same as if comb)

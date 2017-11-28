@@ -82,7 +82,7 @@ protected:
     SplitNodeVertex(V3Graph* graphp, AstNode* nodep)
 	: V3GraphVertex(graphp), m_nodep(nodep) {}
     virtual ~SplitNodeVertex() {}
-    // Accessors
+    // ACCESSORS
     // Do not make accessor for nodep(),  It may change due to
     // reordering a lower block, but we don't repair it
     virtual string name() const {
@@ -257,7 +257,7 @@ private:
 
     void scoreboardPli() {
 	// Order all PLI statements with other PLI statements
-	// This insures $display's and such remain in proper order
+	// This ensures $display's and such remain in proper order
 	// We don't prevent splitting out other non-pli statements, however.
 	if (!m_pliVertexp) {
 	    m_pliVertexp = new SplitPliVertex(&m_graph);  // m_graph.clear() will delete it

@@ -38,7 +38,7 @@ module t (/*AUTOARG*/
    end
 
    // This forms a "loop" where we keep going through the always till runner=0
-   // This isn't "regular" beh code, but insures our change detection is working properly
+   // This isn't "regular" beh code, but ensures our change detection is working properly
    always @ (/*AS*/runner) begin
       runnerm1 = runner - 32'd1;
    end

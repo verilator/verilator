@@ -373,7 +373,7 @@ class GaterVisitor : public GaterBaseVisitor {
     }
     void scoreboardPli(AstNode* nodep) {
 	// Order all PLI statements with other PLI statements
-	// This insures $display's and such remain in proper order
+	// This ensures $display's and such remain in proper order
 	// We don't prevent splitting out other non-pli statements, however,
 	// because it is common to have $uasserts sprinkled about.
 	if (!m_pliVertexp) {

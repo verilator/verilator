@@ -433,7 +433,7 @@ Enable all assertions.
 
 =item --autoflush
 
-After every $display or $fdisplay, flush the output stream.  This insures
+After every $display or $fdisplay, flush the output stream.  This ensures
 that messages will appear immediately but may reduce performance; for best
 performance call "fflush(stdout)" occasionally in the main C loop.
 Defaults off, which will buffer output as provided by the normal C stdio
@@ -1113,7 +1113,7 @@ Creates a dump file with statistics on the design in {prefix}__stats.txt.
 
 =item --stats-vars
 
-Creates more detailed statistics including a list of all the variables by
+Creates more detailed statistics, including a list of all the variables by
 size (plain --stats just gives a count).  See --stats, which is implied by
 this.
 
@@ -1140,8 +1140,8 @@ Adds waveform tracing code to the model.  Verilator will generate
 additional {prefix}__Trace*.cpp files that will need to be compiled.  In
 addition verilated_vcd_sc.cpp (for SystemC traces) or verilated_vcd_c.cpp
 (for both) must be compiled and linked in.  If using the Verilator
-generated Makefiles, these will be added as source targets for you.  If
-you're not using the Verilator makefiles, you will need to add these to
+generated Makefiles, these files will be added as source targets for you.
+If you're not using the Verilator makefiles, you will need to add these to
 your Makefile manually.
 
 Having tracing compiled in may result in some small performance losses,
@@ -1569,7 +1569,7 @@ fast path, mostly code that is executed every cycle.  OPT_SLOW specifies
 optimizations for slow-path files (plus tracing), which execute only
 rarely, yet take a long time to compile with optimization on.  OPT
 specifies overall optimization and affects all compiles, including those
-OPT_FAST and OPT_SLOW affect.  For best results, use OPT="-O2", and link
+OPT_FAST and OPT_SLOW control.  For best results, use OPT="-O2", and link
 with "-static".  Nearly the same results can be had with much better
 compile times with OPT_FAST="-O1 -fstrict-aliasing".  Higher optimization
 such as "-O3" may help, but gcc compile times may be excessive under O3 on

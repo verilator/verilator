@@ -144,7 +144,7 @@ public:
     virtual OrderVEdgeType type() const = 0;
     virtual bool domainMatters() = 0;	// Must be in same domain when cross edge to this vertex
     virtual string dotName() const { return cvtToStr((void*)m_scopep)+"_"; }
-    // Accessors
+    // ACCESSORS
     void domainp(AstSenTree* domainp) { m_domainp = domainp; }
     AstScope* scopep() const { return m_scopep; }
     AstSenTree* domainp() const { return m_domainp; }
@@ -200,7 +200,7 @@ public:
 	return new OrderLogicVertex(graphp, *this); }
     virtual OrderVEdgeType type() const { return OrderVEdgeType::VERTEX_LOGIC; }
     virtual bool domainMatters() { return true; }
-    // Accessors
+    // ACCESSORS
     virtual string name() const { return (cvtToStr((void*)m_nodep)+"\\n "+cvtToStr(nodep()->typeName())); }
     AstNode* nodep() const { return m_nodep; }
     virtual string dotColor() const { return "yellow"; }
@@ -225,7 +225,7 @@ public:
     virtual ~OrderVarVertex() {}
     virtual OrderVarVertex* clone (V3Graph* graphp) const = 0;
     virtual OrderVEdgeType type() const = 0;
-    // Accessors
+    // ACCESSORS
     AstVarScope* varScp() const { return m_varScp; }
     void isClock(bool flag) { m_isClock=flag; }
     bool isClock() const { return m_isClock; }

@@ -74,7 +74,7 @@ class V3GraphTestVertex : public V3GraphVertex {
 public:
     V3GraphTestVertex(V3Graph* graphp, const string& name) : V3GraphVertex(graphp), m_name(name) {}
     virtual ~V3GraphTestVertex() {}
-    // Accessors
+    // ACCESSORS
     virtual string name() const { return m_name; }
 };
 
@@ -82,7 +82,7 @@ class V3GraphTestVarVertex : public V3GraphTestVertex {
 public:
     V3GraphTestVarVertex(V3Graph* graphp, const string& name) : V3GraphTestVertex(graphp, name) {}
     virtual ~V3GraphTestVarVertex() {}
-    // Accessors
+    // ACCESSORS
     virtual string dotColor() const { return "blue"; }
 };
 
@@ -272,7 +272,7 @@ class DfaTestVertex : public DfaVertex {
 public:
     DfaTestVertex(DfaGraph* graphp, const string& name) : DfaVertex(graphp), m_name(name) {}
     virtual ~DfaTestVertex() {}
-    // Accessors
+    // ACCESSORS
     virtual string name() const { return m_name; }
 };
 

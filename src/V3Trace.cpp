@@ -86,7 +86,7 @@ public:
 	m_slow = false;
     }
     virtual ~TraceActivityVertex() {}
-    // Accessors
+    // ACCESSORS
     AstNode* insertp() const {
 	if (!m_insertp) v3fatalSrc("Null insertp; probably called on a special always/slow.");
 	return m_insertp;
@@ -111,7 +111,7 @@ public:
 	: V3GraphVertex(graphp), m_nodep(nodep) {
     }
     virtual ~TraceCFuncVertex() {}
-    // Accessors
+    // ACCESSORS
     AstCFunc* nodep() const { return m_nodep; }
     virtual string name() const { return nodep()->name(); }
     virtual string dotColor() const { return "yellow"; }
@@ -124,7 +124,7 @@ public:
     TraceTraceVertex(V3Graph* graphp, AstTraceInc* nodep)
 	: V3GraphVertex(graphp), m_nodep(nodep), m_duplicatep(NULL) {}
     virtual ~TraceTraceVertex() {}
-    // Accessors
+    // ACCESSORS
     AstTraceInc* nodep() const { return m_nodep; }
     virtual string name() const { return nodep()->declp()->name(); }
     virtual string dotColor() const { return "red"; }
@@ -140,7 +140,7 @@ public:
     TraceVarVertex(V3Graph* graphp, AstVarScope* nodep)
 	: V3GraphVertex(graphp), m_nodep(nodep) {}
     virtual ~TraceVarVertex() {}
-    // Accessors
+    // ACCESSORS
     AstVarScope* nodep() const { return m_nodep; }
     virtual string name() const { return nodep()->name(); }
     virtual string dotColor() const { return "skyblue"; }
