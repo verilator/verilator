@@ -93,7 +93,7 @@ public:
 };
 
 //######################################################################
-// LifePostlicate delay elimination
+// LifePost delay elimination
 
 class LifePostDlyVisitor : public LifePostBaseVisitor {
 private:

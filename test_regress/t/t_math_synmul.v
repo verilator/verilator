@@ -77,7 +77,7 @@ module t (/*AUTOARG*/
       end
       else begin
 	 if (product_d4[63:0] !== muled_d4) begin
-	    $write("[%0t] BAD product, got=%x exp=%x\n",$time, product_d4[63:0], muled_d4);
+	    $write("[%0t] BAD product, got=%x exp=%x at cyc 0x%x\n",$time, product_d4[63:0], muled_d4, cyc);
 	    $stop;
 	 end
 	 if (cyc==99) begin
