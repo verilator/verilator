@@ -1087,7 +1087,8 @@ modport_itemList<nodep>:		// IEEE: part of modport_declaration
 	;
 
 modport_item<nodep>:			// ==IEEE: modport_item
-		id/*new-modport*/ '(' modportPortsDeclList ')'		{ $$ = new AstModport($2,*$1,$3); }
+		id/*new-modport*/ '(' { VARRESET_NONLIST(UNKNOWN); VARIO(INOUT); }
+	/*cont*/	modportPortsDeclList ')'	{ $$ = new AstModport($2,*$1,$4); }
 	;
 
 modportPortsDeclList<nodep>:
@@ -1113,7 +1114,7 @@ modportPortsDecl<nodep>:
 	|	yEXPORT method_prototype		{ $1->v3error("Unsupported: Modport export with prototype"); }
 	// Continuations of above after a comma.
 	//			// IEEE: modport_simple_ports_declaration
-	|	modportSimplePort			{ $$ = new AstModportVarRef($<fl>1,*$1,AstVarType::INOUT); }
+	|	modportSimplePort			{ $$ = new AstModportVarRef($<fl>1,*$1,GRAMMARP->m_varIO); }
 	;
 
 modportSimplePort<strp>:	// IEEE: modport_simple_port or modport_tf_port, depending what keyword was earlier

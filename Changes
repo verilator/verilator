@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 3.917 devel
 
+****   Fix modport outputs being treated as inputs, bug1246. [Jeff Bush]
+
 
 * Verilator 3.916 2017-11-25
 
