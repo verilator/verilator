@@ -394,6 +394,9 @@ public:
 	m_scopep = NULL;
 	//
 	nodep->accept(*this);
+        // Allow downstream modules to find _eval()
+        // easily without iterating through the tree.
+        nodep->evalp(m_evalFuncp);
     }
     virtual ~ClockVisitor() {}
 };

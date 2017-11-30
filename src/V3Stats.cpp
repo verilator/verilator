@@ -90,19 +90,11 @@ private:
     virtual void visit(AstNodeModule* nodep) {
 	allNodes(nodep);
 	if (!m_fast) {
-	    nodep->iterateChildrenConst(*this);
-	} else {
-	    for (AstNode* searchp = nodep->stmtsp(); searchp; searchp=searchp->nextp()) {
-		if (AstCFunc* funcp = searchp->castCFunc()) {
-		    if (funcp->name() == "_eval") {
-			m_instrs=0;
-			m_counting = true;
-			funcp->iterateChildrenConst(*this);
-			m_counting = false;
-		    }
-		}
-	    }
+            // Count all CFuncs below this module
+            nodep->iterateChildrenConst(*this);
 	}
+        // Else we recursively trace fast CFuncs from the top _eval
+        // func, see visit(AstNetlist*)
     }
     virtual void visit(AstVar* nodep) {
 	allNodes(nodep);
@@ -212,6 +204,16 @@ private:
     virtual void visit(AstNode* nodep) {
 	allNodes(nodep);
 	nodep->iterateChildrenConst(*this);
+    }
+    virtual void visit(AstNetlist* nodep) {
+        if (m_fast && nodep->evalp()) {
+            m_instrs = 0;
+            m_counting = true;
+            nodep->evalp()->iterateChildrenConst(*this);
+            m_counting = false;
+        }
+        allNodes(nodep);
+        nodep->iterateChildrenConst(*this);
     }
 public:
     // CONSTRUCTORS

@@ -5471,13 +5471,19 @@ class AstNetlist : public AstNode {
 private:
     AstTypeTable* m_typeTablep;	// Reference to top type table, for faster lookup
     AstPackage*	  m_dollarUnitPkgp;
+    AstCFunc*     m_evalp;      // The '_eval' function
 public:
-    AstNetlist() : AstNode(new FileLine("AstRoot",0)) {
-	m_typeTablep = NULL;
-	m_dollarUnitPkgp = NULL;
-    }
+    AstNetlist()
+	: AstNode(new FileLine("AstRoot",0))
+	, m_typeTablep(NULL)
+	, m_dollarUnitPkgp(NULL)
+	, m_evalp(NULL) { }
     ASTNODE_NODE_FUNCS(Netlist)
-    virtual const char* broken() const { BROKEN_RTN(m_dollarUnitPkgp && !m_dollarUnitPkgp->brokeExists()); return NULL; }
+    virtual const char* broken() const {
+        BROKEN_RTN(m_dollarUnitPkgp && !m_dollarUnitPkgp->brokeExists());
+        BROKEN_RTN(m_evalp && !m_evalp->brokeExists());
+        return NULL;
+    }
     AstNodeModule*	modulesp() 	const { return op1p()->castNodeModule();}	// op1 = List of modules
     AstNodeModule*  topModulep() const { return op1p()->castNodeModule(); }	// * = Top module in hierarchy (first one added, for now)
     void addModulep(AstNodeModule* modulep) { addOp1p(modulep); }
@@ -5497,6 +5503,8 @@ public:
 	    addModulep(m_dollarUnitPkgp);
 	}
 	return m_dollarUnitPkgp; }
+    AstCFunc* evalp() const { return m_evalp; }
+    void evalp(AstCFunc* evalp) { m_evalp = evalp; }
 };
 
 //######################################################################
