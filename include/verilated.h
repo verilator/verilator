@@ -577,6 +577,9 @@ extern const char* vl_mc_scan_plusargs(const char* prefixp);  // PLIish
 #define VL_BITISSET_W(data,bit) (data[VL_BITWORD_I(bit)] & (VL_UL(1)<<VL_BITBIT_I(bit)))
 #define VL_BITISSETLIMIT_W(data,width,bit) (((bit)<(width)) && data[VL_BITWORD_I(bit)] & (VL_UL(1)<<VL_BITBIT_I(bit)))
 
+/// Shift appropriate word by bit. Does not account for wrapping between two words
+#define VL_BITRSHIFT_W(data,bit) (data[VL_BITWORD_I(bit)] >> VL_BITBIT_I(bit))
+
 /// Create two 32-bit words from quadword
 /// WData is always at least 2 words; does not clean upper bits
 #define VL_SET_WQ(owp,data)	{ owp[0]=static_cast<IData>(data); owp[1]=static_cast<IData>((data)>>VL_WORDSIZE); }
@@ -1679,7 +1682,7 @@ static inline WDataOutP VL_STREAML_WWI(int, int lbits, int, WDataOutP owp, WData
 	for (int sbit=0; sbit<ssize && sbit<lbits-istart; ++sbit) {
             // Extract a single bit from lwp and shift it to the correct
             // location for owp.
-            WData bit= ((lwp[VL_BITWORD_I(istart+sbit)] >> VL_BITBIT_I(istart+sbit)) & 1) << VL_BITBIT_I(ostart+sbit);
+            WData bit= (VL_BITRSHIFT_W(lwp, (istart+sbit)) & 1) << VL_BITBIT_I(ostart+sbit);
             owp[VL_BITWORD_I(ostart+sbit)] |= bit;
 	}
     }
@@ -1964,12 +1967,12 @@ static inline IData VL_SEL_IWII(int, int lbits, int, int, WDataInP lwp, IData ls
     if (VL_UNLIKELY(msb>lbits)) {
 	return ~0; // Spec says you can go outside the range of a array.  Don't coredump if so.
     } else if (VL_BITWORD_I(msb)==VL_BITWORD_I(static_cast<int>(lsb))) {
-	return (lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb));
+        return VL_BITRSHIFT_W(lwp, lsb);
     } else {
 	// 32 bit extraction may span two words
 	int nbitsfromlow = 32-VL_BITBIT_I(lsb);  // bits that come from low word
 	return ((lwp[VL_BITWORD_I(msb)]<<nbitsfromlow)
-		|(lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)));
+                | VL_BITRSHIFT_W(lwp, lsb));
     }
 }
 
@@ -1978,18 +1981,18 @@ static inline QData VL_SEL_QWII(int, int lbits, int, int, WDataInP lwp, IData ls
     if (VL_UNLIKELY(msb>lbits)) {
 	return ~0; // Spec says you can go outside the range of a array.  Don't coredump if so.
     } else if (VL_BITWORD_I(msb)==VL_BITWORD_I(static_cast<int>(lsb))) {
-	return (lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb));
+        return VL_BITRSHIFT_W(lwp, lsb);
     } else if (VL_BITWORD_I(msb)==1+VL_BITWORD_I(static_cast<int>(lsb))) {
 	int nbitsfromlow = 32-VL_BITBIT_I(lsb);
 	QData hi = (lwp[VL_BITWORD_I(msb)]);
-	QData lo = (lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb));
+	QData lo = VL_BITRSHIFT_W(lwp, lsb);
 	return (hi<<nbitsfromlow) | lo;
     } else {
 	// 64 bit extraction may span three words
 	int nbitsfromlow = 32-VL_BITBIT_I(lsb);
 	QData hi = (lwp[VL_BITWORD_I(msb)]);
 	QData mid= (lwp[VL_BITWORD_I(lsb)+1]);
-	QData lo = (lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb));
+	QData lo = VL_BITRSHIFT_W(lwp, lsb);
 	return (hi<<(nbitsfromlow+32)) | (mid<<nbitsfromlow) | lo;
     }
 }

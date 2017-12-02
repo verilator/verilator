@@ -572,7 +572,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
 		case 's':
 		    for (; lsb>=0; --lsb) {
 			lsb = (lsb / 8) * 8; // Next digit
-			IData charval = (lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 0xff;
+			IData charval = VL_BITRSHIFT_W(lwp, lsb) & 0xff;
 			output += (charval==0)?' ':charval;
 		    }
 		    break;
@@ -621,7 +621,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
 		}
 		case 'b':
 		    for (; lsb>=0; --lsb) {
-			output += ((lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 1) + '0';
+                        output += (VL_BITRSHIFT_W(lwp, lsb) & 1) + '0';
 		    }
 		    break;
 		    break;
@@ -658,14 +658,14 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
 		    break;
 		case 'v': // Strength; assume always strong
 		    for (lsb=lbits-1; lsb>=0; --lsb) {
-			if ((lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 1) output += "St1 ";
-			else output += "St0 ";
+                        if (VL_BITRSHIFT_W(lwp, lsb) & 1) output += "St1 ";
+                        else output += "St0 ";
 		    }
 		    break;
 		case 'x':
 		    for (; lsb>=0; --lsb) {
 			lsb = (lsb / 4) * 4; // Next digit
-			IData charval = (lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 0xf;
+			IData charval = VL_BITRSHIFT_W(lwp, lsb) & 0xf;
 			output += "0123456789abcdef"[charval];
 		    }
 		    break;
@@ -701,7 +701,7 @@ static inline int  _vl_vsss_peek(FILE* fp, int& floc, WDataInP fromp, const std:
 	if (fromp == NULL) {
 	    return fstr[fstr.length()-1 - (floc>>3)];
 	} else {
-	    return (fromp[VL_BITWORD_I(floc)] >> VL_BITBIT_I(floc)) & 0xff;
+            return VL_BITRSHIFT_W(fromp, floc) & 0xff;
 	}
     }
 }
@@ -916,7 +916,7 @@ void _VL_VINT_TO_STRING(int obits, char* destoutp, WDataInP sourcep) VL_MT_SAFE 
     char* destp = destoutp;
     for (; lsb>=0; --lsb) {
 	lsb = (lsb / 8) * 8; // Next digit
-	IData charval = (sourcep[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 0xff;
+	IData charval = VL_BITRSHIFT_W(sourcep, lsb) & 0xff;
 	if (!start || charval) {
 	    *destp++ = (charval==0)?' ':charval;
 	    start = false;	// Drop leading 0s
@@ -1385,7 +1385,7 @@ std::string VL_CVT_PACK_STR_NW(int lwords, WDataInP lwp) VL_MT_SAFE {
     int len = 0;
     for (; lsb>=0; --lsb) {
 	lsb = (lsb / 8) * 8; // Next digit
-	IData charval = (lwp[VL_BITWORD_I(lsb)]>>VL_BITBIT_I(lsb)) & 0xff;
+	IData charval = VL_BITRSHIFT_W(lwp, lsb) & 0xff;
 	if (!start || charval) {
 	    *destp++ = (charval==0)?' ':charval;
 	    len++;
