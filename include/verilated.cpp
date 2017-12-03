@@ -471,6 +471,45 @@ QData VL_POWSS_QQW(int obits, int, int rbits, QData lhs, WDataInP rwp, bool lsig
 //===========================================================================
 // Formatting
 
+/// Output a string representation of a wide number
+std::string VL_DECIMAL_NW(int width, WDataInP lwp) VL_MT_SAFE {
+    int maxdecwidth = (width+3)*4/3;
+    // Or (maxdecwidth+7)/8], but can't have more than 4 BCD bits per word
+    WData bcd[VL_VALUE_STRING_MAX_WIDTH/4+2];
+    VL_ZERO_RESET_W(maxdecwidth, bcd);
+    WData tmp[VL_VALUE_STRING_MAX_WIDTH/4+2];
+    WData tmp2[VL_VALUE_STRING_MAX_WIDTH/4+2];
+    int from_bit = width-1;
+    // Skip all leading zeros
+    for (; from_bit >= 0 && !(VL_BITRSHIFT_W(lwp, from_bit) & 1); --from_bit);
+    // Double-dabble algorithm
+    for (; from_bit >= 0; --from_bit) {
+        // Any digits >= 5 need an add 3 (via tmp)
+        for (int nibble_bit = 0; nibble_bit < maxdecwidth; nibble_bit+=4) {
+            if ((VL_BITRSHIFT_W(bcd, nibble_bit) & 0xf) >= 5) {
+                VL_ZERO_RESET_W(maxdecwidth, tmp2);
+                tmp2[VL_BITWORD_I(nibble_bit)] |= 0x3 << VL_BITBIT_I(nibble_bit);
+                VL_ASSIGN_W(maxdecwidth, tmp, bcd);
+                VL_ADD_W(VL_WORDS_I(maxdecwidth), bcd, tmp, tmp2);
+            }
+        }
+        // Shift; bcd = bcd << 1
+        VL_ASSIGN_W(maxdecwidth, tmp, bcd);
+        VL_SHIFTL_WWI(maxdecwidth, maxdecwidth, 32, bcd, tmp, 1);
+        // bcd[0] = lwp[from_bit]
+        if (VL_BITISSET_W(lwp, from_bit)) bcd[0] |= 1;
+    }
+    std::string output;
+    int lsb = (maxdecwidth-1) & ~3;
+    for (; lsb>0; lsb-=4) { // Skip leading zeros
+        if (VL_BITRSHIFT_W(bcd, lsb) & 0xf) break;
+    }
+    for (; lsb>=0; lsb-=4) {
+        output += ('0' + (VL_BITRSHIFT_W(bcd, lsb) & 0xf));  // 0..9
+    }
+    return output;
+}
+
 // Do a va_arg returning a quad, assuming input argument is anything less than wide
 #define _VL_VA_ARG_Q(ap, bits) (((bits) <= VL_WORDSIZE) ? va_arg(ap,IData) : va_arg(ap,QData))
 
@@ -559,7 +598,6 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
 		} else {
 		    lwp = va_arg(ap,WDataInP);
 		    ld = lwp[0];
-		    if (fmt == 'd' || fmt == '#') fmt = 'x';  // Not supported, but show something
 		}
 		int lsb=lbits-1;
 		if (widthSet && width==0) while (lsb && !VL_BITISSET_W(lwp,lsb)) --lsb;
@@ -577,8 +615,22 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
 		    }
 		    break;
 		case 'd': { // Signed decimal
-                    int digits = sprintf(tmp,"%" VL_PRI64 "d",
+                    int digits;
+                    std::string append;
+                    if (lbits <= VL_QUADSIZE) {
+                        digits = sprintf(tmp,"%" VL_PRI64 "d",
                                          static_cast<vlsint64_t>(VL_EXTENDS_QQ(lbits,lbits,ld)));
+                        append = tmp;
+                    } else {
+                        if (VL_SIGN_I(lbits, lwp[VL_WORDS_I(lbits)-1])) {
+                            WData neg[VL_VALUE_STRING_MAX_WIDTH/4+2];
+                            VL_NEGATE_W(VL_WORDS_I(lbits), neg, lwp);
+                            append = std::string("-") + VL_DECIMAL_NW(lbits, neg);
+                        } else {
+                            append = VL_DECIMAL_NW(lbits, lwp);
+                        }
+                        digits = append.length();
+                    }
 		    int needmore = width-digits;
 		    if (needmore>0) {
 			if (pctp && pctp[0] && pctp[1]=='0') { //%0
@@ -587,11 +639,19 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
 			    output.append(needmore,' '); // Pre-pad spaces
 			}
 		    }
-		    output += tmp;
+		    output += append;
 		    break;
 		}
 		case '#': { // Unsigned decimal
-		    int digits=sprintf(tmp,"%" VL_PRI64 "u",ld);
+                    int digits;
+                    std::string append;
+                    if (lbits <= VL_QUADSIZE) {
+                        digits = sprintf(tmp,"%" VL_PRI64 "u",ld);
+                        append = tmp;
+                    } else {
+                        append = VL_DECIMAL_NW(lbits, lwp);
+                        digits = append.length();
+                    }
 		    int needmore = width-digits;
 		    if (needmore>0) {
 			if (pctp && pctp[0] && pctp[1]=='0') { //%0
@@ -600,7 +660,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
 			    output.append(needmore,' '); // Pre-pad spaces
 			}
 		    }
-		    output += tmp;
+		    output += append;
 		    break;
 		}
 		case 't': { // Time
@@ -623,7 +683,6 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
 		    for (; lsb>=0; --lsb) {
                         output += (VL_BITRSHIFT_W(lwp, lsb) & 1) + '0';
 		    }
-		    break;
 		    break;
 		case 'o':
 		    for (; lsb>=0; --lsb) {

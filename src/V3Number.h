@@ -202,6 +202,8 @@ public:
     vluint64_t toUQuad() const;
     vlsint64_t toSQuad() const;
     string toString() const;
+    string toDecimalS() const;  // return ASCII signed decimal number
+    string toDecimalU() const;  // return ASCII unsigned decimal number
     double toDouble() const;
     uint32_t toHash() const;
     uint32_t dataWord(int word) const;

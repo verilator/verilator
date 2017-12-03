@@ -539,15 +539,19 @@ string V3Number::displayed(FileLine*fl, const string& vformat) const {
 	    if (issigned) dchars++;  // space for sign
 	    fmtsize = cvtToStr(int(dchars));
 	}
-	if (width() > 64) {
-	    fl->v3error("Unsupported: $display-like format of decimal of > 64 bit results (use hex format instead)");
-	    return "ERR";
-	}
-	if (issigned) {
-	    str = cvtToStr(toSQuad());
-	} else {
-	    str = cvtToStr(toUQuad());
-	}
+        if (issigned) {
+            if (width() > 64) {
+                str = toDecimalS();
+            } else {
+                str = cvtToStr(toSQuad());
+            }
+        } else {
+            if (width() > 64) {
+                str = toDecimalU();
+            } else {
+                str = cvtToStr(toUQuad());
+            }
+        }
 	int intfmtsize = atoi(fmtsize.c_str());
 	bool zeropad = fmtsize.length()>0 && fmtsize[0]=='0';
 	while ((int)(str.length()) < intfmtsize) {
@@ -604,6 +608,57 @@ string V3Number::displayed(FileLine*fl, const string& vformat) const {
 	fl->v3fatalSrc("Unknown $display-like format code for number: %"<<pos[0]);
 	return "ERR";
     }
+}
+
+string V3Number::toDecimalS() const {
+    if (isNegative()) {
+        V3Number lhsNoSign = *this;
+        lhsNoSign.opNegate(*this);
+        return string("-") + lhsNoSign.toDecimalU();
+    } else {
+        return toDecimalU();
+    }
+}
+
+string V3Number::toDecimalU() const {
+    int maxdecwidth = (width()+3)*4/3;
+
+    // Or (maxdecwidth+7)/8], but can't have more than 4 BCD bits per word
+    V3Number bcd (fileline(), maxdecwidth+4);
+    V3Number tmp (fileline(), maxdecwidth+4);
+    V3Number tmp2 (fileline(), maxdecwidth+4);
+
+    int from_bit = width()-1;
+    // Skip all leading zeros
+    for (; from_bit >= 0 && bitIs0(from_bit); --from_bit);
+    // Double-dabble algorithm
+    for (; from_bit >= 0; --from_bit) {
+        // Any digits >= 5 need an add 3 (via tmp)
+        for (int nibble_bit = 0; nibble_bit < maxdecwidth; nibble_bit+=4) {
+            if (bcd.bitsValue(nibble_bit, 4) >= 5) {
+                tmp2.setAllBits0();
+                tmp2.setBit(nibble_bit, 1);  // Add 3, decompsed as two bits
+                tmp2.setBit(nibble_bit+1, 1);
+                tmp.opAssign(bcd);
+                bcd.opAdd(tmp, tmp2);
+            }
+        }
+        // Shift; bcd = bcd << 1
+        tmp.opAssign(bcd);
+        bcd.opShiftL(tmp, V3Number(fileline(), 32, 1));
+        // bcd[0] = this[from_bit]
+        if (bitIs1(from_bit)) bcd.setBit(0, 1);
+    }
+
+    string output;
+    int lsb = (maxdecwidth-1) & ~3;
+    for (; lsb>0; lsb-=4) { // Skip leading zeros
+        if (bcd.bitsValue(lsb, 4)) break;
+    }
+    for (; lsb>=0; lsb-=4) {
+        output += ('0' + bcd.bitsValue(lsb, 4));  // 0..9
+    }
+    return output;
 }
 
 //======================================================================

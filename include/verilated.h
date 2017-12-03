@@ -1226,7 +1226,7 @@ static inline WDataOutP VL_SUB_W(int words, WDataOutP owp,WDataInP lwp,WDataInP 
 static inline IData  VL_NEGATE_I(IData data) VL_PURE { return -data; }
 static inline QData  VL_NEGATE_Q(QData data) VL_PURE { return -data; }
 
-static inline WDataOutP VL_NEGATE_W(int words, WDataOutP owp,WDataInP lwp) VL_MT_SAFE {
+static inline WDataOutP VL_NEGATE_W(int words, WDataOutP owp, WDataInP lwp) VL_MT_SAFE {
     QData carry = 0;
     for (int i=0; i<words; ++i) {
 	carry = carry + static_cast<QData>(static_cast<IData>(~lwp[i]));
