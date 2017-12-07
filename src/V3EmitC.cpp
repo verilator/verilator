@@ -1997,8 +1997,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     ofp()->resetPrivate();
     // We don't need a private copy constructor, as VerilatedModule has one for us.
     ofp()->putsPrivate(true);
-    puts(modClassName(modp)+"& operator= (const "+modClassName(modp)+"&);  ///< Copying not allowed\n");
-    puts(modClassName(modp)+"(const "+modClassName(modp)+"&);  ///< Copying not allowed\n");
+    puts("VL_UNCOPYABLE("+modClassName(modp)+");  ///< Copying not allowed\n");
 
     ofp()->putsPrivate(false);  // public:
     if (optSystemC() && modp->isTop()) {
@@ -2011,7 +2010,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 	if (modp->isTop()) {
 	    puts("/// Construct the model; called by application code\n");
 	    puts("/// The special name "" may be used to make a wrapper with a\n");
-	    puts("/// single model invisible WRT DPI scope names.\n");
+	    puts("/// single model invisible with respect to DPI scope names.\n");
 	}
 	puts(modClassName(modp)+"(const char* name=\"TOP\");\n");
 	if (modp->isTop()) puts("/// Destroy the model; called (often implicitly) by application code\n");
