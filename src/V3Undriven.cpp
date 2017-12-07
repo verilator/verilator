@@ -238,7 +238,7 @@ private:
     vector<UndrivenVarEntry*>	m_entryps[3];	// Nodes to delete when we are finished
     bool		m_inBBox;	// In black box; mark as driven+used
     AstNodeFTask*	m_taskp;	// Current task
-    AstAlways*		m_alwaysp;	// Current always
+    AstAlways*		m_alwaysp;	// Current always if combo, otherwise NULL
 
     // METHODS
     static int debug() {
@@ -266,6 +266,7 @@ private:
 	AstVar* varp = nodep->varp();
 	if (!varp->isParam() && !varp->isGenVar() && !varp->isUsedLoopIdx()
 	    && !m_inBBox   // We may have falsely considered a SysIgnore as a driver
+	    && !nodep->castVarXRef()   // Xrefs might point at two different instances
 	    && !varp->fileline()->warnIsOff(V3ErrorCode::ALWCOMBORDER)) {  // Warn only once per variable
 	    nodep->v3warn(ALWCOMBORDER, "Always_comb variable driven after use: "<<nodep->prettyName());
 	    varp->fileline()->modifyWarnOff(V3ErrorCode::ALWCOMBORDER, true);  // Complain just once for any usage
@@ -275,6 +276,8 @@ private:
     // VISITORS
     virtual void visit(AstVar* nodep) {
 	for (int usr=1; usr<(m_alwaysp?3:2); ++usr) {
+	    // For assigns and non-combo always, do just usr==1, to look for module-wide undriven etc
+	    // For non-combo always, run both usr==1 for above, and also usr==2 for always-only checks
 	    UndrivenVarEntry* entryp = getEntryp (nodep, usr);
 	    if (nodep->isInput()
 		|| nodep->isSigPublic() || nodep->isSigUserRWPublic()

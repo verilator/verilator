@@ -8,6 +8,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix modport outputs being treated as inputs, bug1246. [Jeff Bush]
 
+****  Fix false ALWCOMBORDER on interface references, bug1247. [Josh Redford]
+
 
 * Verilator 3.916 2017-11-25
 
