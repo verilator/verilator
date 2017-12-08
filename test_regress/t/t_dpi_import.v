@@ -59,7 +59,7 @@ module t (/*AUTOARG*/
    import "DPI-C" pure function void dpii_v_struct   (input str_t     i, output str_t     o);
    import "DPI-C" pure function void dpii_v_substruct(input substr_t  i, output int       o);
    import "DPI-C" pure function void dpii_v_chandle  (input chandle   i, output chandle   o);
-   import "DPI-C" pure function void dpii_v_string   (input string    i, output string    o);
+   import "DPI-C" pure function void dpii_v_string   (input string    i, inout  string    o);
    import "DPI-C" pure function void dpii_v_real     (input real      i, output real      o);
 
    import "DPI-C" pure function void dpii_v_uint     (input int unsigned i,      output int unsigned o);

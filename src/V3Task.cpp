@@ -386,6 +386,9 @@ private:
 		    pinp->v3error("Function/task output connected to constant instead of variable: "+portp->prettyName());
 		}
 		else if (portp->isInout()) {
+		    // Correct lvalue; see comments below
+		    V3LinkLValue::linkLValueSet(pinp);
+
 		    if (AstVarRef* varrefp = pinp->castVarRef()) {
 			// Connect to this exact variable
 			AstVarScope* localVscp = varrefp->varScopep(); if (!localVscp) varrefp->v3fatalSrc("Null var scope");
@@ -489,6 +492,9 @@ private:
 		    pinp->v3error("Function/task output connected to constant instead of variable: "+portp->prettyName());
 		}
 		else if (portp->isInout()) {
+		    // Correct lvalue; see comments below
+		    V3LinkLValue::linkLValueSet(pinp);
+
 		    if (pinp->castVarRef()) {
 			// Connect to this exact variable
 		    } else {

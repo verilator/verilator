@@ -12,6 +12,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix false ALWCOMBORDER on interface references, bug1247. [Josh Redford]
 
+****  Fix constant propagation across DPI imports of inout strings. [Victor Besyakov]
+
 
 * Verilator 3.916 2017-11-25
 
