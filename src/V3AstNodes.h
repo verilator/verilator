@@ -3545,6 +3545,18 @@ public:
     virtual int instrCount()	const { return 1+V3Number::log2b(width()); }
 };
 
+class AstLenN : public AstNodeUniop {
+    // Length of a string
+public:
+    AstLenN(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
+        dtypeSetSigned32(); }
+    ASTNODE_NODE_FUNCS(LenN)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opLenN(lhs); }
+    virtual string emitVerilog() { return "%f(%l)"; }
+    virtual string emitC() { return "VL_LEN_IN(%li)"; }
+    virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return true;}
+    virtual bool sizeMattersLhs() {return false;}
+};
 class AstLogNot : public AstNodeUniop {
 public:
     AstLogNot(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {

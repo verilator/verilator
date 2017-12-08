@@ -1035,6 +1035,11 @@ V3Number& V3Number::opConcat (const V3Number& lhs, const V3Number& rhs) {
     return *this;
 }
 
+V3Number& V3Number::opLenN (const V3Number& lhs) {
+    setQuad(lhs.toString().length());
+    return *this;
+}
+
 V3Number& V3Number::opRepl (const V3Number& lhs, const V3Number& rhs) {	// rhs is # of times to replicate
     // Hopefully the using routine has a error check too.
     // See also error in V3Width

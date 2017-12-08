@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support > 64 bit decimal $display.
 
+****  Support string len() method. [Victor Besyakov]
+
 ****  Fix modport outputs being treated as inputs, bug1246. [Jeff Bush]
 
 ****  Fix false ALWCOMBORDER on interface references, bug1247. [Josh Redford]

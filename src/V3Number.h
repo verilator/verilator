@@ -242,6 +242,7 @@ public:
     V3Number& opCLog2	(const V3Number& lhs);
     V3Number& opClean	(const V3Number& lhs, uint32_t bits);
     V3Number& opConcat	(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opLenN	(const V3Number& lhs);
     V3Number& opRepl	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opRepl	(const V3Number& lhs, uint32_t rhs);
     V3Number& opStreamL	(const V3Number& lhs, const V3Number& rhs);

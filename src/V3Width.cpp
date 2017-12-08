@@ -330,6 +330,9 @@ private:
     // Widths: Output integer unsigned, input real
     virtual void visit(AstRealToBits* nodep) {	visit_Ou64_Lr(nodep); }
 
+    // Output integer, input string
+    virtual void visit(AstLenN* nodep) { visit_Os32_string(nodep); }
+
     // Widths: Constant, terminal
     virtual void visit(AstTime* nodep) {	nodep->dtypeSetUInt64(); }
     virtual void visit(AstTimeD* nodep) {	nodep->dtypeSetDouble(); }
@@ -1497,6 +1500,7 @@ private:
 	// Find the fromp dtype - should be a class
 	if (!nodep->fromp() || !nodep->fromp()->dtypep()) nodep->v3fatalSrc("Unsized expression");
 	AstNodeDType* fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
+	AstBasicDType* basicp = fromDtp ? fromDtp->basicp() : NULL;
 	UINFO(9,"     from dt "<<fromDtp<<endl);
 	if (AstEnumDType* adtypep = fromDtp->castEnumDType()) {
 	    // Method call on enum without following parenthesis, e.g. "ENUM.next"
@@ -1612,6 +1616,17 @@ private:
 	    else {
 		nodep->v3error("Unknown built-in array method '"<<nodep->fromp()->prettyTypeName()<<"'");
 	    }
+	}
+	else if (basicp && basicp->isString()) {
+            // Method call on string
+            if (nodep->name() == "len") {
+                // Constant value
+                AstNode* newp = new AstLenN(nodep->fileline(), nodep->fromp()->unlinkFrBack());
+                nodep->replaceWith(newp);
+                pushDeletep(nodep); VL_DANGLING(nodep);
+            } else {
+                nodep->v3error("Unsupported: built-in string method '"<<nodep->fromp()->prettyTypeName()<<"'");
+            }
 	}
 	else {
 	    nodep->v3error("Unsupported: Member call on non-enum object '"
@@ -2645,6 +2660,16 @@ private:
 	    iterateCheckString(nodep,"RHS",nodep->rhsp(),BOTH);
 	    nodep->dtypeSetLogicBool();
 	}
+    }
+    void visit_Os32_string(AstNodeUniop* nodep) {
+        // CALLER: LenN
+        // Widths: 32 bit out
+        if (!nodep->lhsp()) nodep->v3fatalSrc("For unary ops only!");
+        if (m_vup->prelim()) {
+            // See similar handling in visit_cmp_eq_gt where created
+            iterateCheckString(nodep,"LHS",nodep->lhsp(),BOTH);
+            nodep->dtypeSetSigned32();
+        }
     }
 
     void visit_negate_not(AstNodeUniop* nodep, bool real_ok) {

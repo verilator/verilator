@@ -60,6 +60,8 @@ inline std::string VL_REPLICATEN_NNI(int obits,int lbits,int rbits, const std::s
     return VL_REPLICATEN_NNQ(obits,lbits,rbits,lhs,rep);
 }
 
+inline IData VL_LEN_IN(const std::string& ld) { return ld.length(); }
+
 extern IData VL_FOPEN_NI(const std::string& filename, IData mode) VL_MT_SAFE;
 extern void VL_READMEM_N(bool hex, int width, int depth, int array_lsb, int fnwords,
                          const std::string& ofilename, void* memp, IData start, IData end) VL_MT_SAFE;
