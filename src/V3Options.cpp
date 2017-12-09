@@ -732,7 +732,19 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		shift;
 		addCFlags(argv[i]);
 	    }
-	    else if ( !strcmp (sw, "-comp-limits-syms") && (i+1)<argc ) {  // Undocumented
+            else if ( !strcmp (sw, "-comp-limit-blocks") && (i+1)<argc ) {  // Undocumented
+                shift;
+                m_compLimitBlocks = atoi(argv[i]);
+            }
+            else if ( !strcmp (sw, "-comp-limit-members") && (i+1)<argc ) {  // Undocumented
+                shift;
+                m_compLimitMembers = atoi(argv[i]);
+            }
+            else if ( !strcmp (sw, "-comp-limit-parens") && (i+1)<argc ) {  // Undocumented
+                shift;
+                m_compLimitParens = atoi(argv[i]);
+            }
+            else if ( !strcmp (sw, "-comp-limit-syms") && (i+1)<argc ) {  // Undocumented
 		shift;
 		VName::maxLength(atoi(argv[i]));
 	    }
@@ -945,13 +957,17 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( !strcmp (sw, "-compiler") && (i+1)<argc) {
 		shift;
 		if (!strcmp (argv[i], "clang")) {
-		    m_compLimitParens = 80;   // limit unknown
-		    m_compLimitBlocks = 80;   // limit unknown
+                    m_compLimitBlocks = 80;   // limit unknown
+                    m_compLimitMembers = 50;  // soft limit, has slowdown bug as of clang++ 3.8
+                    m_compLimitParens = 80;   // limit unknown
 		} else if (!strcmp (argv[i], "gcc")) {
-		    m_compLimitParens = 0;
+                    m_compLimitBlocks = 0;   // Bug free
+                    m_compLimitMembers = 50;  // soft limit, has slowdown bug as of g++ 7.1
+                    m_compLimitParens = 0;   // Bug free
 		} else if (!strcmp (argv[i], "msvc")) {
-		    m_compLimitParens = 80;   // 128, but allow some room
-		    m_compLimitBlocks = 80;   // 128, but allow some room
+                    m_compLimitBlocks = 80;   // 128, but allow some room
+                    m_compLimitMembers = 0;  // probably ok, and AFAIK doesn't support anon structs
+                    m_compLimitParens = 80;   // 128, but allow some room
 		} else {
 		    fl->v3fatal("Unknown setting for --compiler: "<<argv[i]);
 		}
@@ -1248,8 +1264,9 @@ V3Options::V3Options() {
     m_unrollCount = 64;
     m_unrollStmts = 30000;
 
-    m_compLimitParens = 0;
     m_compLimitBlocks = 0;
+    m_compLimitMembers = 50;
+    m_compLimitParens = 0;
 
     m_makeDir = "obj_dir";
     m_bin = "";

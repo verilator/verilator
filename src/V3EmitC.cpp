@@ -75,7 +75,8 @@ public:
 		    const string& vfmt, char fmtLetter);
 
     void emitVarDecl(AstVar* nodep, const string& prefixIfImp);
-    typedef enum {EVL_IO, EVL_SIG, EVL_TEMP, EVL_PAR, EVL_ALL} EisWhich;
+    typedef enum {EVL_CLASS_IO, EVL_CLASS_SIG, EVL_CLASS_TEMP, EVL_CLASS_PAR, EVL_CLASS_ALL,
+                  EVL_FUNC_ALL} EisWhich;
     void emitVarList(AstNode* firstp, EisWhich which, const string& prefixIfImp);
     void emitVarCtors();
     bool emitSimpleOk(AstNodeMath* nodep);
@@ -892,8 +893,8 @@ class EmitCImp : EmitCStmts {
 		if (varp->isFuncReturn()) emitVarDecl(varp, "");
 	    }
 	}
-	emitVarList(nodep->initsp(), EVL_ALL, "");
-	emitVarList(nodep->stmtsp(), EVL_ALL, "");
+        emitVarList(nodep->initsp(), EVL_FUNC_ALL, "");
+        emitVarList(nodep->stmtsp(), EVL_FUNC_ALL, "");
 
 	nodep->initsp()->iterateAndNext(*this);
 
@@ -1652,7 +1653,7 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
 void EmitCImp::emitStaticDecl(AstNodeModule* modp) {
     // Need implementation here.  Be careful of alignment code; needs to be uniquified
     // with module name to avoid multiple symbols.
-    //emitVarList(modp->stmtsp(), EVL_ALL, modp->name());
+    //emitVarList(modp->stmtsp(), EVL_FUNC_ALL, modp->name());
     puts("");  // NOP for cppcheck, otherwise const function
 }
 
@@ -1799,41 +1800,101 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
     // This aids cache packing and locality
     // Largest->smallest reduces the number of pad variables.
     // But for now, Smallest->largest makes it more likely a small offset will allow access to the signal.
+    // TODO: Move this sort to an earlier visitor stage.
+    typedef std::multimap<int, AstVar*> VarSortMap;
+    VarSortMap varAnonMap;
+    VarSortMap varNonanonMap;
+    int anonMembers = 0;
+
     for (int isstatic=1; isstatic>=0; isstatic--) {
-	if (prefixIfImp!="" && !isstatic) continue;
-	const int sortmax = 9;
-	for (int sort=0; sort<sortmax; sort++) {
-	    if (sort==3) continue;
-	    for (AstNode* nodep=firstp; nodep; nodep = nodep->nextp()) {
-		if (AstVar* varp = nodep->castVar()) {
-		    bool doit = true;
-		    switch (which) {
-		    case EVL_ALL:  doit = true; break;
-		    case EVL_IO:   doit = varp->isIO(); break;
-		    case EVL_SIG:  doit = (varp->isSignal() && !varp->isIO()); break;
-		    case EVL_TEMP: doit = (varp->isTemp() && !varp->isIO()); break;
-		    case EVL_PAR:  doit = (varp->isParam() && !varp->valuep()->castConst()); break;
-		    default: v3fatalSrc("Bad Case");
-		    }
-		    if (varp->isStatic() ? !isstatic : isstatic) doit=false;
-		    if (doit) {
-			int sigbytes = varp->dtypeSkipRefp()->widthAlignBytes();
-			int sortbytes = sortmax-1;
-			if (varp->isUsedClock() && varp->widthMin()==1) sortbytes = 0;
-			else if (varp->dtypeSkipRefp()->castUnpackArrayDType()) sortbytes=8;
-			else if (varp->basicp() && varp->basicp()->isOpaque()) sortbytes=7;
-			else if (varp->isScBv() || varp->isScBigUint()) sortbytes=6;
-			else if (sigbytes==8) sortbytes=5;
-			else if (sigbytes==4) sortbytes=4;
-			else if (sigbytes==2) sortbytes=2;
-			else if (sigbytes==1) sortbytes=1;
-			if (sort==sortbytes) {
-			    emitVarDecl(varp, prefixIfImp);
-			}
-		    }
-		}
-	    }
-	}
+        if (prefixIfImp!="" && !isstatic) continue;
+        for (AstNode* nodep=firstp; nodep; nodep = nodep->nextp()) {
+            if (AstVar* varp = nodep->castVar()) {
+                bool doit = true;
+                switch (which) {
+                case EVL_CLASS_IO:   doit = varp->isIO(); break;
+                case EVL_CLASS_SIG:  doit = (varp->isSignal() && !varp->isIO()); break;
+                case EVL_CLASS_TEMP: doit = (varp->isTemp() && !varp->isIO()); break;
+                case EVL_CLASS_PAR:  doit = (varp->isParam() && !varp->valuep()->castConst()); break;
+                case EVL_CLASS_ALL:  doit = true; break;
+                case EVL_FUNC_ALL:  doit = true; break;
+                default: v3fatalSrc("Bad Case");
+                }
+                if (varp->isStatic() ? !isstatic : isstatic) doit=false;
+                if (doit) {
+                    int sigbytes = varp->dtypeSkipRefp()->widthAlignBytes();
+                    int sortbytes = 9;
+                    if (varp->isUsedClock() && varp->widthMin()==1) sortbytes = 0;
+                    else if (varp->dtypeSkipRefp()->castUnpackArrayDType()) sortbytes=8;
+                    else if (varp->basicp() && varp->basicp()->isOpaque()) sortbytes=7;
+                    else if (varp->isScBv() || varp->isScBigUint()) sortbytes=6;
+                    else if (sigbytes==8) sortbytes=5;
+                    else if (sigbytes==4) sortbytes=4;
+                    else if (sigbytes==2) sortbytes=2;
+                    else if (sigbytes==1) sortbytes=1;
+
+                    bool anonOk = (v3Global.opt.compLimitMembers() != 0  // Enabled
+                                   && !varp->isStatic()
+                                   && !varp->isIO()  // Confusing to user
+                                   && !varp->isSc()  // Aggregates can't be anon
+                                   && (varp->basicp() && !varp->basicp()->isOpaque())  // Aggregates can't be anon
+                                   && which != EVL_FUNC_ALL);  // Anon not legal in funcs, and gcc bug free there anyhow
+                    if (anonOk) {
+                        ++anonMembers;
+                        varAnonMap.insert(make_pair(sortbytes, varp));
+                    } else {
+                        varNonanonMap.insert(make_pair(sortbytes, varp));
+                    }
+                }
+            }
+        }
+    }
+
+    // Output anons
+    {
+        int lim = v3Global.opt.compLimitMembers();
+        int anonL3s = 1;
+        int anonL2s = 1;
+        int anonL1s = 1;
+        if (anonMembers > (lim*lim*lim)) {
+            anonL3s = (anonMembers + (lim*lim*lim) - 1) / (lim*lim*lim);
+            anonL2s = lim;
+            anonL1s = lim;
+        } else if (anonMembers > (lim*lim)) {
+            anonL2s = (anonMembers + (lim*lim) - 1) / (lim*lim);
+            anonL1s = lim;
+        } else if (anonMembers > lim) {
+            anonL1s = (anonMembers + lim - 1) / lim;
+        }
+        if (anonL1s != 1) puts("// Anonymous structures to workaround compiler member-count bugs\n");
+        VarSortMap::iterator it = varAnonMap.begin();
+        for (int l3=0; l3<anonL3s && it != varAnonMap.end(); ++l3) {
+            if (anonL3s != 1) puts("struct {\n");
+            for (int l2=0; l2<anonL2s && it != varAnonMap.end(); ++l2) {
+                if (anonL2s != 1) puts("struct {\n");
+                for (int l1=0; l1<anonL1s && it != varAnonMap.end(); ++l1) {
+                    if (anonL1s != 1) puts("struct {\n");
+                    for (int l0=0; l0<lim && it != varAnonMap.end(); ++l0) {
+                        AstVar* varp = it->second;
+                        emitVarDecl(varp, prefixIfImp);
+                        ++it;
+                    }
+                    if (anonL1s != 1) puts("};\n");
+                }
+                if (anonL2s != 1) puts("};\n");
+            }
+            if (anonL3s != 1) puts("};\n");
+        }
+        // Leftovers, just in case off by one error somewhere above
+        for (; it != varAnonMap.end(); ++it) {
+            AstVar* varp = it->second;
+            emitVarDecl(varp, prefixIfImp);
+        }
+    }
+    // Output nonanons
+    for (VarSortMap::iterator it = varNonanonMap.begin(); it != varNonanonMap.end(); ++it) {
+        AstVar* varp = it->second;
+        emitVarDecl(varp, prefixIfImp);
     }
 }
 
@@ -1945,15 +2006,15 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     puts("\n// PORTS\n");
     if (modp->isTop()) puts("// The application code writes and reads these signals to\n");
     if (modp->isTop()) puts("// propagate new values into/out from the Verilated model.\n");
-    emitVarList(modp->stmtsp(), EVL_IO, "");
+    emitVarList(modp->stmtsp(), EVL_CLASS_IO, "");
 
     puts("\n// LOCAL SIGNALS\n");
     if (modp->isTop()) puts("// Internals; generally not touched by application code\n");
-    emitVarList(modp->stmtsp(), EVL_SIG, "");
+    emitVarList(modp->stmtsp(), EVL_CLASS_SIG, "");
 
     puts("\n// LOCAL VARIABLES\n");
     if (modp->isTop()) puts("// Internals; generally not touched by application code\n");
-    emitVarList(modp->stmtsp(), EVL_TEMP, "");
+    emitVarList(modp->stmtsp(), EVL_CLASS_TEMP, "");
 
     puts("\n// INTERNAL VARIABLES\n");
     if (modp->isTop()) puts("// Internals; generally not touched by application code\n");
@@ -1970,7 +2031,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     puts("\n// PARAMETERS\n");
     if (modp->isTop()) puts("// Parameters marked /*verilator public*/ for use by application code\n");
     ofp()->putsPrivate(false);  // public:
-    emitVarList(modp->stmtsp(), EVL_PAR, "");  // Only those that are non-CONST
+    emitVarList(modp->stmtsp(), EVL_CLASS_PAR, "");  // Only those that are non-CONST
     for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
 	if (AstVar* varp = nodep->castVar()) {
 	    if (varp->isParam() && (varp->isUsedParam() || varp->isSigPublic())) {
@@ -2100,7 +2161,7 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
     if (m_slow && splitFilenum()==0) {
 	puts("\n//--------------------\n");
 	puts("// STATIC VARIABLES\n\n");
-	emitVarList(modp->stmtsp(), EVL_ALL, modClassName(modp));
+        emitVarList(modp->stmtsp(), EVL_CLASS_ALL, modClassName(modp));
     }
 
     if (m_fast && splitFilenum()==0) {
@@ -2410,7 +2471,7 @@ class EmitCTrace : EmitCStmts {
 	    } else nodep->v3fatalSrc("Bad Case");
 
 	    if (nodep->initsp()) putsDecoration("// Variables\n");
-	    emitVarList(nodep->initsp(), EVL_ALL, "");
+            emitVarList(nodep->initsp(), EVL_FUNC_ALL, "");
 	    nodep->initsp()->iterateAndNext(*this);
 
 	    putsDecoration("// Body\n");

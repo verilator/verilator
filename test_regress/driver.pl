@@ -392,7 +392,8 @@ sub new {
 	verilator_flags => ["-cc",
 			    "-Mdir $self->{obj_dir}",
 			    "-OD",  # As currently disabled unless -O3
-			    "--debug-check"],
+                            "--debug-check",
+                            "--comp-limit-members 10", ],
 	verilator_flags2 => [],
 	verilator_flags3 => ["--clk clk"],
 	verilator_make_gcc => 1,

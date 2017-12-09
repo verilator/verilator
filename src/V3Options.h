@@ -121,8 +121,9 @@ class V3Options {
     int		m_unrollCount;	// main switch: --unroll-count
     int		m_unrollStmts;	// main switch: --unroll-stmts
 
-    int		m_compLimitBlocks;	// compiler selection options
-    int		m_compLimitParens;	// compiler selection options
+    int         m_compLimitBlocks;  // compiler selection; number of nested blocks
+    int         m_compLimitMembers;  // compiler selection; number of members in struct before make anon array
+    int         m_compLimitParens;  // compiler selection; number of nested parens
 
     string	m_bin;		// main switch: --bin {binary}
     string	m_exeName;	// main switch: -o {name}
@@ -268,6 +269,7 @@ class V3Options {
     int	   unrollStmts() const { return m_unrollStmts; }
 
     int    compLimitBlocks() const { return m_compLimitBlocks; }
+    int    compLimitMembers() const { return m_compLimitMembers; }
     int    compLimitParens() const { return m_compLimitParens; }
 
     string exeName() const { return m_exeName!="" ? m_exeName : prefix(); }
