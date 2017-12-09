@@ -8,7 +8,7 @@ use strict;
 #======================================================================
 # main
 
-eval `modulecmd perl add synopsys-sim`;
+eval `modulecmd perl add synopsys-sim/latest`;
 exec('vcs',@ARGV);
 
 #######################################################################
