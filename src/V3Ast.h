@@ -1739,6 +1739,7 @@ public:
     pair<uint32_t,uint32_t> dimensions(bool includeBasic);
     uint32_t	arrayUnpackedElements();	// 1, or total multiplication of all dimensions
     static int uniqueNumInc() { return ++s_uniqueNum; }
+    const char* charIQWN() const { return (isString() ? "N" : isWide() ? "W" : isQuad() ? "Q" : "I"); }
 };
 
 class AstNodeClassDType : public AstNodeDType {

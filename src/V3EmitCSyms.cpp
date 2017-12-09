@@ -576,12 +576,12 @@ void EmitCSyms::emitDpiHdr() {
 	AstCFunc* nodep = *it;
 	if (nodep->dpiExportWrapper()) {
 	    if (!firstExp++) puts("\n// DPI EXPORTS\n");
-	    puts("// DPI Export at "+nodep->fileline()->ascii()+"\n");
+	    puts("// DPI export at "+nodep->fileline()->ascii()+"\n");
 	    puts("extern "+nodep->rtnTypeVoid()+" "+nodep->name()+" ("+cFuncArgs(nodep)+");\n");
 	}
 	else if (nodep->dpiImport()) {
 	    if (!firstImp++) puts("\n// DPI IMPORTS\n");
-	    puts("// DPI Import at "+nodep->fileline()->ascii()+"\n");
+	    puts("// DPI import at "+nodep->fileline()->ascii()+"\n");
 	    puts("extern "+nodep->rtnTypeVoid()+" "+nodep->name()+" ("+cFuncArgs(nodep)+");\n");
 	}
     }

@@ -81,10 +81,8 @@ public:
     void emitVarCtors();
     bool emitSimpleOk(AstNodeMath* nodep);
     void emitIQW(AstNode* nodep) {
-	// Other abbrevs: "C"har, "S"hort, "F"loat, "D"ouble, stri"N"g
-	puts (nodep->isString() ? "N"
-	      : nodep->isWide() ? "W"
-	      : nodep->isQuad() ? "Q" : "I");
+        // Other abbrevs: "C"har, "S"hort, "F"loat, "D"ouble, stri"N"g
+        puts (nodep->dtypep()->charIQWN());
     }
     void emitScIQW(AstVar* nodep) {
 	if (!nodep->isSc()) nodep->v3fatalSrc("emitting SystemC operator on non-SC variable");
