@@ -11,12 +11,12 @@
 // Accessor macros, to keep stuff concise
 `define R_ACCESS(type_spec, name, expr)  \
    export "DPI-C" function name``_read;  \
-   function type_spec name``_read;       \
+   function bit type_spec name``_read;   \
       name``_read = (expr);              \
    endfunction
 
 `define W_ACCESS(type_spec, name, expr)   \
-   export "DPI-C" function  name``_write; \
+   export "DPI-C" task  name``_write;     \
    task name``_write;                     \
       input bit type_spec in;             \
       expr = in;                          \

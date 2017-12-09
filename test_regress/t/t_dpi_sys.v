@@ -6,8 +6,8 @@
 // Version 2.0.
 
 // Global is the most likely usage scenario
-import "DPI-C" dpii_sys_task = function void \$dpii_sys (integer i);
-import "DPI-C" dpii_sys_func = function int \$dpii_func (integer i);
+import "DPI-C" dpii_sys_task = function void \$dpii_sys (int i);
+import "DPI-C" dpii_sys_func = function int \$dpii_func (int i);
 
 module t ();
 
