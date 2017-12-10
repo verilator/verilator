@@ -8,7 +8,7 @@
 module t ();
 
    // Can't handle time (yet?)
-   import "DPI-C" dpii_fa_bit =  function int oth_f_int1(input time i);
+   import "DPI-C" dpii_fa_bit = function logic [2:0] oth_f_int1(input time i);
 
    initial begin
       $stop;

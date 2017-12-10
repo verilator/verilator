@@ -418,11 +418,17 @@ public:
     bool isBitLogic() const { // Bit/logic vector types; can form a packed array
 	return (m_e==LOGIC || m_e==BIT);
     }
-    bool isDpiUnsupported() const {
-	return (m_e==TIME);
+    bool isDpiBitVal() const {  // DPI uses svBitVecVal
+        return m_e==BIT;
+    }
+    bool isDpiLogicVal() const {  // DPI uses svLogicVecVal
+        return m_e==INTEGER || m_e==LOGIC || m_e==LOGIC_IMPLICIT || m_e==TIME;
+    }
+    bool isDpiUnreturnable() const {  // Not legal as DPI function return
+        return isDpiLogicVal();
     }
     bool isDpiUnsignable() const {  // Can add "unsigned" to DPI
-	return (m_e==BYTE || m_e==SHORTINT || m_e==INT || m_e==LONGINT || m_e==INTEGER);
+        return (m_e==BYTE || m_e==SHORTINT || m_e==INT || m_e==LONGINT || m_e==INTEGER);
     }
     bool isOpaque() const {  // IE not a simple number we can bit optimize
 	return (m_e==STRING || m_e==SCOPEPTR || m_e==CHARPTR || m_e==DOUBLE || m_e==FLOAT);
@@ -1717,6 +1723,7 @@ public:
     virtual void virtRefDTypep(AstNodeDType* nodep) { }	// Iff has refDTypep(), set as generic node function
     virtual bool similarDType(AstNodeDType* samep) const = 0;  // Assignable equivalence.  Call skipRefp() on this and samep before calling
     virtual AstNodeDType* subDTypep() const { return NULL; }  // Iff has a non-null subDTypep(), as generic node function
+    virtual bool isFourstate() const;
     //
     // Changing the width may confuse the data type resolution, so must clear TypeTable cache after use.
     void widthForce(int width, int sized) { m_width=width; m_widthMin=sized; }
@@ -1748,19 +1755,23 @@ private:
     typedef map<string,AstMemberDType*> MemberNameMap;
     // MEMBERS
     bool		m_packed;
+    bool		m_isFourstate;
     MemberNameMap	m_members;
 public:
     AstNodeClassDType(FileLine* fl, AstNumeric numericUnpack)
 	: AstNodeDType(fl) {
 	// AstNumeric::NOSIGN overloaded to indicate not packed
 	m_packed = (numericUnpack != AstNumeric::NOSIGN);
+        m_isFourstate = false;  // V3Width computes
 	numeric(numericUnpack.isSigned() ? AstNumeric::SIGNED : AstNumeric::UNSIGNED);
     }
     ASTNODE_BASE_FUNCS(NodeClassDType)
     virtual const char* broken() const;
     virtual void dump(ostream& str);
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
-    virtual AstBasicDType* basicp() const { return findLogicDType(width(),width(),numeric())->castBasicDType(); }
+    virtual AstBasicDType* basicp() const {
+        return (isFourstate() ? findLogicDType(width(),width(),numeric())->castBasicDType()
+                : findBitDType(width(),width(),numeric())->castBasicDType()); }
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
@@ -1774,6 +1785,8 @@ public:
     void addMembersp(AstNode* nodep) { addNOp1p(nodep); }
     bool packed() const { return m_packed; }
     bool packedUnsup() const { return true; }  // packed() but as don't support unpacked, presently all structs
+    void isFourstate(bool flag) { m_isFourstate = flag; }
+    virtual bool isFourstate() const { return m_isFourstate; }
     void clearCache() { m_members.clear(); }
     void repairMemberCache();
     AstMemberDType* findMember(const string& name) const {
@@ -2060,6 +2073,8 @@ inline bool AstNode::sameTree(AstNode* node2p) { return sameTreeIter(this, node2
 inline bool AstNode::sameGateTree(AstNode* node2p) { return sameTreeIter(this, node2p, true, true); }
 
 inline void AstNodeVarRef::init() { if (m_varp) dtypep(m_varp->dtypep()); }
+
+inline bool AstNodeDType::isFourstate() const { return basicp()->isFourstate(); }
 
 inline void AstNodeArrayDType::rangep(AstRange* nodep) { setOp2p(nodep); }
 inline int AstNodeArrayDType::msb() const { return rangep()->msbConst(); }

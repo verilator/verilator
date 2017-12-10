@@ -314,7 +314,7 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
     if (forReturn) named=false;
     string arg;
     if (!basicp()) arg = "UNKNOWN";
-    if (basicp()->isBitLogic()) {
+    else if (basicp()->keyword().isDpiBitVal()) {
 	if (widthMin() == 1) {
 	    arg = "unsigned char";
 	    if (!forReturn && isOutput()) arg += "*";
@@ -327,6 +327,19 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
 		arg = "svBitVecVal*";
 	    }
 	}
+    } else if (basicp()->keyword().isDpiLogicVal()) {
+        if (widthMin() == 1) {
+            arg = "unsigned char";
+            if (!forReturn && isOutput()) arg += "*";
+        } else {
+            if (forReturn) {
+                arg = "svLogicVecVal";
+            } else if (isInOnly()) {
+                arg = "const svLogicVecVal*";
+            } else {
+                arg = "svLogicVecVal*";
+            }
+        }
     } else {
 	arg = basicp()->keyword().dpiType();
 	if (basicp()->keyword().isDpiUnsignable() && !basicp()->isSigned()) {
@@ -851,6 +864,7 @@ void AstRefDType::dump(ostream& str) {
 void AstNodeClassDType::dump(ostream& str) {
     this->AstNode::dump(str);
     if (packed()) str<<" [PACKED]";
+    if (isFourstate()) str<<" [4STATE]";
 }
 void AstNodeDType::dump(ostream& str) {
     this->AstNode::dump(str);

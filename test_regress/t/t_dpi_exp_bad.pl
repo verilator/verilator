@@ -11,7 +11,7 @@ compile (
     v_flags2 => ["--lint-only"],
     fails=>$Self->{v3},
     expect=>
-'%Error: t/t_dpi_exp_bad.v:\d+: DPI functions cannot return > 32 bits; use a two-state type or task instead: dpix_f_bit48__Vfuncrtn
+'%Error: t/t_dpi_exp_bad.v:\d+: DPI functions cannot return > 32 bits or four-state; use a two-state type or task instead: dpix_f_bit48__Vfuncrtn
 %Error: Exiting due to .*'
     );
 

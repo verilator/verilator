@@ -48,6 +48,12 @@
 #define _VL_SVDPI_CONTEXT_WARN() \
     VL_PRINTF_MT("%%Warning: DPI C Function called by Verilog DPI import with missing 'context' keyword.\n");
 
+// Function requires svOpenArrayHandle dimensionality
+#define _VL_SVDPI_DIMENSION_CHECK(d, dimensions) \
+    do { if (VL_UNLIKELY(svDimensions(d) != (dimensions))) { \
+            VL_PRINTF_MT("%%Warning: %s called on array that is not %d dimensional.\n", __FUNCTION__, dimensions); \
+        } } while(0)
+
 //======================================================================
 //======================================================================
 //======================================================================
@@ -371,26 +377,18 @@ svLogic svGetLogicArrElem(const svOpenArrayHandle s, int indx1, ...) {
     _VL_SVDPI_UNIMP(); return sv_x;
 }
 svLogic svGetLogicArrElem1(const svOpenArrayHandle s, int indx1) {
-    _VL_SVDPI_UNIMP(); return sv_x;
+    // Verilator doesn't support X/Z so can just call Bit version
+    return svGetBitArrElem1(s, indx1);
 }
 svLogic svGetLogicArrElem2(const svOpenArrayHandle s, int indx1, int indx2) {
-    _VL_SVDPI_UNIMP(); return sv_x;
+    // Verilator doesn't support X/Z so can just call Bit version
+    return svGetBitArrElem2(s, indx1, indx2);
 }
 svLogic svGetLogicArrElem3(const svOpenArrayHandle s, int indx1, int indx2, int indx3) {
-    _VL_SVDPI_UNIMP(); return sv_x;
+    // Verilator doesn't support X/Z so can just call Bit version
+    return svGetBitArrElem3(s, indx1, indx2, indx3);
 }
-void svPutLogicArrElem(const svOpenArrayHandle d, svLogic value, int indx1, ...) {
-    _VL_SVDPI_UNIMP();
-}
-void svPutLogicArrElem1(const svOpenArrayHandle d, svLogic value, int indx1) {
-    _VL_SVDPI_UNIMP();
-}
-void svPutLogicArrElem2(const svOpenArrayHandle d, svLogic value, int indx1, int indx2) {
-    _VL_SVDPI_UNIMP();
-}
-void svPutLogicArrElem3(const svOpenArrayHandle d, svLogic value, int indx1, int indx2, int indx3) {
-    _VL_SVDPI_UNIMP();
-}
+
 void svPutBitArrElem(const svOpenArrayHandle d, svBit value, int indx1, ...) {
     _VL_SVDPI_UNIMP();
 }
@@ -402,6 +400,21 @@ void svPutBitArrElem2(const svOpenArrayHandle d, svBit value, int indx1, int ind
 }
 void svPutBitArrElem3(const svOpenArrayHandle d, svBit value, int indx1, int indx2, int indx3) {
     _VL_SVDPI_UNIMP();
+}
+void svPutLogicArrElem(const svOpenArrayHandle d, svLogic value, int indx1, ...) {
+    _VL_SVDPI_UNIMP();
+}
+void svPutLogicArrElem1(const svOpenArrayHandle d, svLogic value, int indx1) {
+    // Verilator doesn't support X/Z so can just call Bit version
+    svPutBitArrElem1(d, value, indx1);
+}
+void svPutLogicArrElem2(const svOpenArrayHandle d, svLogic value, int indx1, int indx2) {
+    // Verilator doesn't support X/Z so can just call Bit version
+    svPutBitArrElem2(d, value, indx1, indx2);
+}
+void svPutLogicArrElem3(const svOpenArrayHandle d, svLogic value, int indx1, int indx2, int indx3) {
+    // Verilator doesn't support X/Z so can just call Bit version
+    svPutBitArrElem3(d, value, indx1, indx2, indx3);
 }
 
 //======================================================================

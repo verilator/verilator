@@ -75,6 +75,12 @@ extern "C" {
     extern void dpii_v_bit95(const svBitVecVal* i, svBitVecVal* o);
     extern void dpii_v_bit96(const svBitVecVal* i, svBitVecVal* o);
 
+    extern void dpii_v_reg(unsigned char i, unsigned char* o);
+    extern void dpii_v_reg15(const svLogicVecVal* i, svLogicVecVal* o);
+    extern void dpii_v_reg95(const svLogicVecVal* i, svLogicVecVal* o);
+    extern void dpii_v_integer(const svLogicVecVal* i, svLogicVecVal* o);
+    extern void dpii_v_time(const svLogicVecVal* i, svLogicVecVal* o);
+
     extern int dpii_f_strlen (const char* i);
 
     extern void dpii_f_void	();
@@ -88,12 +94,12 @@ extern "C" {
 
 //======================================================================
 
-unsigned char	dpii_f_bit (unsigned char i)		{ return VL_MASK_I(1) & ~i; }
-svBitVecVal	dpii_f_bit8 (const svBitVecVal *i)	{ return VL_MASK_I(8) & ~*i; }
-svBitVecVal	dpii_f_bit9 (const svBitVecVal *i)	{ return VL_MASK_I(9) & ~*i; }
-svBitVecVal	dpii_f_bit16(const svBitVecVal *i)	{ return VL_MASK_I(16) & ~*i; }
-svBitVecVal	dpii_f_bit17(const svBitVecVal *i)	{ return VL_MASK_I(17) & ~*i; }
-svBitVecVal	dpii_f_bit32(const svBitVecVal *i)	{ return               ~*i; }
+unsigned char   dpii_f_bit (unsigned char i)            { return 0x1 & ~i; }
+svBitVecVal     dpii_f_bit8 (const svBitVecVal *i)      { return 0xffUL & ~*i; }
+svBitVecVal     dpii_f_bit9 (const svBitVecVal *i)      { return 0x1ffUL & ~*i; }
+svBitVecVal     dpii_f_bit16(const svBitVecVal *i)      { return 0xffffUL & ~*i; }
+svBitVecVal     dpii_f_bit17(const svBitVecVal *i)      { return 0x1ffffUL & ~*i; }
+svBitVecVal     dpii_f_bit32(const svBitVecVal *i)      { return               ~*i; }
 long long	dpii_f_bit33(const svBitVecVal *i)	{ return ((1ULL<<33)-1) & ~((long long)(i[1])<<32ULL | i[0]); }
 long long	dpii_f_bit64(const svBitVecVal *i)	{ return ~((long long)(i[1])<<32ULL | i[0]); }
 
@@ -106,7 +112,7 @@ const char*	dpii_f_string  (const char* i)	{ return i; }
 double		dpii_f_real    (double i)	{ return i+1.5; }
 float		dpii_f_shortreal(float i)	{ return i+1.5f; }
 
-void dpii_v_bit	(unsigned char i, unsigned char *o)	{ *o = VL_MASK_I(1) & ~i; }
+void dpii_v_bit (unsigned char i, unsigned char *o)     { *o = 1 & ~i; }
 void dpii_v_int (int i, int *o)				{ *o = ~i; }
 void dpii_v_uint (unsigned int i, unsigned int *o)	{ *o = ~i; }
 void dpii_v_byte (char i, char *o)			{ *o = ~i; }
@@ -115,9 +121,33 @@ void dpii_v_ushort (unsigned short i, unsigned short *o) { *o = ~i; }
 void dpii_v_longint (long long i, long long *o)		{ *o = ~i; }
 void dpii_v_ulong (unsigned long long i, unsigned long long *o)	{ *o = ~i; }
 void dpii_v_chandle (void* i, void* *o)			{ *o = i; }
-void dpii_v_string   (const char* i, const char** o)	{ *o = i; }
+void dpii_v_string (const char* i, const char** o)      { *o = strdup(i); } // Leaks
 void dpii_v_real     (double i,      double* o)		{ *o = i + 1.5; }
 void dpii_v_shortreal(float i,       float* o)		{ *o = i + 1.5f; }
+
+void dpii_v_reg(unsigned char i, unsigned char* o) { *o = (~i)&1; }
+void dpii_v_reg15(const svLogicVecVal* i, svLogicVecVal* o) {
+    o[0].aval = (~i[0].aval) & 0x7fffUL;
+    o[0].bval = 0;
+}
+void dpii_v_reg95(const svLogicVecVal* i, svLogicVecVal* o) {
+    o[0].aval = (~i[0].aval);
+    o[1].aval = (~i[1].aval);
+    o[2].aval = (~i[2].aval) & 0x7fffffffUL;
+    o[0].bval = 0;
+    o[1].bval = 0;
+    o[2].bval = 0;
+}
+void dpii_v_integer(const svLogicVecVal* i, svLogicVecVal* o) {
+    o[0].aval = (~i[0].aval);
+    o[0].bval = 0;
+}
+void dpii_v_time(const svLogicVecVal* i, svLogicVecVal* o) {
+    o[0].aval = (~i[0].aval);
+    o[1].aval = (~i[1].aval);
+    o[0].bval = 0;
+    o[1].bval = 0;
+}
 
 void dpii_v_struct (const svBitVecVal* i, svBitVecVal* o) {
     o[0] = ~i[0];
@@ -135,9 +165,9 @@ void dpii_v_bit64(const svBitVecVal* i, svBitVecVal* o)	{
     o[1] = ~i[1];
 }
 void dpii_v_bit95(const svBitVecVal* i, svBitVecVal* o)	{
-    o[0] = ~i[0];
-    o[1] = ~i[1];
-    o[2] = VL_MASK_I(95-64) & ~i[2];
+    o[0] = (~i[0]);
+    o[1] = (~i[1]);
+    o[2] = (~i[2]) & 0x7fffffffUL;
 }
 void dpii_v_bit96(const svBitVecVal* i, svBitVecVal* o)	{
     o[0] = ~i[0];

@@ -1105,7 +1105,7 @@ private:
 	    // So two steps, first do the calculation's width (max of the two widths)
 	    {
 		int calcWidth  = max(width, underDtp->width());
-		AstNodeDType* calcDtp = (underDtp->keyword().isFourstate()
+                AstNodeDType* calcDtp = (underDtp->isFourstate()
 					 ? nodep->findLogicDType(calcWidth, calcWidth, underDtp->numeric())
 					 : nodep->findBitDType(calcWidth, calcWidth, underDtp->numeric()));
 		nodep->dtypep(calcDtp);
@@ -1115,7 +1115,7 @@ private:
 	    if (debug()) nodep->dumpTree(cout,"  CastSizeClc: ");
 	    // Next step, make the proper output width
 	    {
-		AstNodeDType* outDtp = (underDtp->keyword().isFourstate()
+                AstNodeDType* outDtp = (underDtp->isFourstate()
 					? nodep->findLogicDType(width, width, underDtp->numeric())
 					: nodep->findBitDType(width, width, underDtp->numeric()));
 		nodep->dtypep(outDtp);
@@ -1413,10 +1413,12 @@ private:
 	nodep->dtypep(nodep);
 	int lsb = 0;
 	int width = 0;
+        nodep->isFourstate(false);
 	// MSB is first, so go backwards
 	AstMemberDType* itemp;
 	for (itemp = nodep->membersp(); itemp && itemp->nextp(); itemp=itemp->nextp()->castMemberDType()) ;
 	for (AstMemberDType* backip; itemp; itemp=backip) {
+            if (nodep->isFourstate()) nodep->isFourstate(true);
 	    backip = itemp->backp()->castMemberDType();
 	    itemp->lsb(lsb);
 	    if (nodep->castUnionDType()) {

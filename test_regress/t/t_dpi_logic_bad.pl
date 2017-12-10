@@ -8,13 +8,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
-	 v_flags2 => ["--lint-only"],
-	 fails=>$Self->{v3},
-	 expect=>
-'%Error: t/t_dpi_logic_bad.v:\d+: Unsupported: DPI argument of type .*
-%Error: t/t_dpi_logic_bad.v:\d+: ... For best portability, use bit, byte, int, or longint
+    v_flags2 => ["--lint-only"],
+    fails=>$Self->{v3},
+    expect=>
+'%Error: t/t_dpi_logic_bad.v:\d+: DPI function may not return type BASICDTYPE \'logic\' \(IEEE 2012 35.5.5\)
 %Error: Exiting due to .*'
-	 );
+    );
 
 ok(1);
 1;

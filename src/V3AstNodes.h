@@ -426,6 +426,7 @@ public:
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const; // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     virtual int widthTotalBytes() const; // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
+    virtual bool isFourstate() const { return keyword().isFourstate(); }
     AstBasicDTypeKwd keyword() const { return m.m_keyword; }  // Avoid using - use isSomething accessors instead
     bool	isBitLogic() const { return keyword().isBitLogic(); }
     bool	isDouble() const { return keyword().isDouble(); }

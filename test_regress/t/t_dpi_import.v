@@ -7,9 +7,11 @@
 
 `ifdef VCS
  `define NO_SHORTREAL
+ `define NO_TIME
 `endif
 `ifdef NC
  `define NO_SHORTREAL
+ `define NO_TIME
 `endif
 `ifdef VERILATOR  // Unsupported
  `define NO_SHORTREAL
@@ -72,6 +74,14 @@ module t (/*AUTOARG*/
    import "DPI-C" pure function void dpii_v_bit95    (input bit [95-1:0] i, output bit [95-1:0] o);
    import "DPI-C" pure function void dpii_v_bit96    (input bit [96-1:0] i, output bit [96-1:0] o);
 
+   import "DPI-C" pure function void dpii_v_reg      (input reg i, output reg o);
+   import "DPI-C" pure function void dpii_v_reg15    (input reg [14:0] i, output reg [14:0] o);
+   import "DPI-C" pure function void dpii_v_reg95    (input reg [94:0] i, output reg [94:0] o);
+   import "DPI-C" pure function void dpii_v_integer  (input integer   i, output integer   o);
+`ifndef NO_TIME
+   import "DPI-C" pure function void dpii_v_time     (input time      i, output time      o);
+`endif
+
    import "DPI-C" pure function int dpii_f_strlen (input string i);
 
    import "DPI-C" function void dpii_f_void ();
@@ -116,6 +126,12 @@ module t (/*AUTOARG*/
    shortreal 	i_f,	o_f;
 `endif
 
+   reg          i_r, o_r;
+   reg [14:0]   i_r15, o_r15;
+   reg [94:0]   i_r95, o_r95;
+   integer      i_in,   o_in;
+   time         i_tm,   o_tm;
+
    bit [94:0] wide;
 
    bit [6*8:1] string6;
@@ -150,6 +166,12 @@ module t (/*AUTOARG*/
 `ifndef NO_SHORTREAL
       i_f = 30.2;
 `endif
+
+      i_r = '0;
+      i_r15 = wide[14:0];
+      i_r95 = wide[94:0];
+      i_in = -1234;
+      i_tm = 62;
 
       if (dpii_f_bit     (i_b) !== ~i_b) $stop;
       if (dpii_f_bit8    (i_b8) !== ~i_b8) $stop;
@@ -197,6 +219,14 @@ module t (/*AUTOARG*/
       dpii_v_bit64    (i_b64,o_b64); if (o_b64 !== ~i_b64) $stop;
       dpii_v_bit95    (i_b95,o_b95); if (o_b95 !== ~i_b95) $stop;
       dpii_v_bit96    (i_b96,o_b96); if (o_b96 !== ~i_b96) $stop;
+
+      dpii_v_reg      (i_r,o_r); if (o_r !== ~i_r) $stop;
+      dpii_v_reg15    (i_r15,o_r15); if (o_r15 !== ~i_r15) $stop;
+      dpii_v_reg95    (i_r95,o_r95); if (o_r95 !== ~i_r95) $stop;
+      dpii_v_integer  (i_in,o_in); if (o_in != ~i_in) $stop;
+`ifndef NO_TIME
+      dpii_v_time     (i_tm,o_tm); if (o_tm != ~i_tm) $stop;
+`endif
 
       if (dpii_f_strlen ("")!=0) $stop;
       if (dpii_f_strlen ("s")!=1) $stop;
