@@ -738,7 +738,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             }
             else if ( !strcmp (sw, "-comp-limit-members") && (i+1)<argc ) {  // Undocumented
                 shift;
-                m_compLimitMembers = atoi(argv[i]);
+                m_compLimitMembers = atoi(argv[i]);  // Ideally power-of-two so structs stay aligned
             }
             else if ( !strcmp (sw, "-comp-limit-parens") && (i+1)<argc ) {  // Undocumented
                 shift;
@@ -958,11 +958,11 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		shift;
 		if (!strcmp (argv[i], "clang")) {
                     m_compLimitBlocks = 80;   // limit unknown
-                    m_compLimitMembers = 50;  // soft limit, has slowdown bug as of clang++ 3.8
+                    m_compLimitMembers = 64;  // soft limit, has slowdown bug as of clang++ 3.8
                     m_compLimitParens = 80;   // limit unknown
 		} else if (!strcmp (argv[i], "gcc")) {
                     m_compLimitBlocks = 0;   // Bug free
-                    m_compLimitMembers = 50;  // soft limit, has slowdown bug as of g++ 7.1
+                    m_compLimitMembers = 64;  // soft limit, has slowdown bug as of g++ 7.1
                     m_compLimitParens = 0;   // Bug free
 		} else if (!strcmp (argv[i], "msvc")) {
                     m_compLimitBlocks = 80;   // 128, but allow some room
@@ -1265,7 +1265,7 @@ V3Options::V3Options() {
     m_unrollStmts = 30000;
 
     m_compLimitBlocks = 0;
-    m_compLimitMembers = 50;
+    m_compLimitMembers = 64;
     m_compLimitParens = 0;
 
     m_makeDir = "obj_dir";
