@@ -35,6 +35,7 @@
 #include <unistd.h>
 #include <algorithm>
 #include <vector>
+#include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Global.h"
 #include "V3Inline.h"
@@ -269,7 +270,7 @@ public:
 
 class InlineRelinkVisitor : public AstNVisitor {
 private:
-    typedef std::set<string> RenamedInterfacesSet;
+    typedef vl_unordered_set<string> RenamedInterfacesSet;
 
     // NODE STATE
     //  Input:
@@ -412,9 +413,19 @@ private:
 	string newname = m_cellp->name();
 	if (nodep->inlinedDots() != "") { newname += "." + nodep->inlinedDots(); }
 	nodep->inlinedDots(newname);
-	if (m_renamedInterfaces.count(nodep->dotted())) {
-	    nodep->dotted(m_cellp->name() + "__DOT__" + nodep->dotted());
-	}
+        for (string tryname = nodep->dotted(); 1;) {
+            if (m_renamedInterfaces.count(tryname)) {
+                nodep->dotted(m_cellp->name() + "__DOT__" + nodep->dotted());
+                break;
+            }
+            // If foo.bar, and foo is an interface, then need to search again for foo
+            string::size_type pos = tryname.rfind(".");
+            if (pos == string::npos || pos==0) {
+                break;
+            } else {
+                tryname = tryname.substr(0, pos);
+            }
+        }
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstNodeFTaskRef* nodep) {
