@@ -1719,8 +1719,8 @@ module_common_item<nodep>:	// ==IEEE: module_common_item
 	//			// Verilator only - event_control attached to always
 	|	yALWAYS       event_controlE stmtBlock	{ $$ = new AstAlways($1,VAlwaysKwd::ALWAYS, $2,$3); }
 	|	yALWAYS_FF    event_controlE stmtBlock	{ $$ = new AstAlways($1,VAlwaysKwd::ALWAYS_FF, $2,$3); }
-	|	yALWAYS_COMB  event_controlE stmtBlock	{ $$ = new AstAlways($1,VAlwaysKwd::ALWAYS_COMB, $2,$3); }
 	|	yALWAYS_LATCH event_controlE stmtBlock	{ $$ = new AstAlways($1,VAlwaysKwd::ALWAYS_LATCH, $2,$3); }
+	|	yALWAYS_COMB  stmtBlock			{ $$ = new AstAlways($1,VAlwaysKwd::ALWAYS_COMB, NULL, $2); }
 	|	loop_generate_construct			{ $$ = $1; }
 	|	conditional_generate_construct		{ $$ = $1; }
 	|	elaboration_system_task			{ $$ = $1; }

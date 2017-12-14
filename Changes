@@ -13,6 +13,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support string len() method. [Victor Besyakov]
 
+****  Add error if always_comb has sensitivity list. [Arjen Roodselaar]
+
 ****  Fix modport outputs being treated as inputs, bug1246. [Jeff Bush]
 
 ****  Fix false ALWCOMBORDER on interface references, bug1247. [Josh Redford]
