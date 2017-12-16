@@ -305,7 +305,7 @@ private:
 	IM_AFTER,		// Pointing at last inserted stmt, insert after
 	IM_WHILE_PRECOND	// Pointing to for loop, add to body end
     };
-    typedef map<string,pair<AstCFunc*,string> > DpiNames;
+    typedef std::map<string,std::pair<AstNodeFTask*,string> > DpiNames;
 
     // STATE
     TaskStateVisitor*	m_statep;	// Common state between visitors
@@ -677,7 +677,7 @@ private:
 	return newp;
     }
 
-    AstCFunc* makeDpiExportWrapper(AstNodeFTask* nodep, AstVar* rtnvarp) {
+    void makeDpiExportWrapper(AstNodeFTask* nodep, AstVar* rtnvarp) {
 	AstCFunc* dpip = new AstCFunc(nodep->fileline(),
 				      nodep->cname(),
 				      m_scopep,
@@ -771,10 +771,10 @@ private:
 	    string stmt = "return "+rtnvarp->name()+";\n";
 	    dpip->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
 	}
-	return dpip;
+        makePortList(nodep, rtnvarp, dpip);
     }
 
-    AstCFunc* makeDpiImportWrapper(AstNodeFTask* nodep, AstVar* rtnvarp) {
+    void makeDpiImportWrapper(AstNodeFTask* nodep, AstVar* rtnvarp) {
 	if (nodep->cname() != AstNode::prettyName(nodep->cname())) {
 	    nodep->v3error("DPI function has illegal characters in C identifier name: "<<AstNode::prettyName(nodep->cname()));
 	}
@@ -793,7 +793,46 @@ private:
 	dpip->dpiImport  (true);
 	// Add DPI reference to top, since it's a global function
 	m_topScopep->scopep()->addActivep(dpip);
-	return dpip;
+        makePortList(nodep, rtnvarp, dpip);
+    }
+
+    bool duplicatedDpiProto(AstNodeFTask* nodep, string dpiproto) {
+        // Only create one DPI extern for each specified cname,
+        // as it's legal for the user to attach multiple tasks to one dpi cname
+        DpiNames::iterator iter = m_dpiNames.find(nodep->cname());
+        if (iter == m_dpiNames.end()) {
+            m_dpiNames.insert(make_pair(nodep->cname(), make_pair(nodep, dpiproto)));
+            return false;
+        }
+        else if (iter->second.second != dpiproto) {
+            nodep->v3error("Duplicate declaration of DPI function with different formal arguments: "<<nodep->prettyName()<<endl
+                           <<nodep->warnMore()<<"... New prototype:      "<<dpiproto<<endl
+                           <<iter->second.first->warnMore()<<"... Original prototype: "<<iter->second.second);
+            return true;
+        }
+        else {
+            return true;
+        }
+    }
+
+    void makePortList(AstNodeFTask* nodep, AstVar* rtnvarp, AstCFunc* dpip) {
+        // Copy nodep's list of function I/O to the new dpip c function
+        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
+            if (AstVar* portp = stmtp->castVar()) {
+                if (portp->isIO()) {
+                    // Move it to new function
+                    AstVar* newPortp = portp->cloneTree(false);
+                    newPortp->funcLocal(true);
+                    dpip->addArgsp(newPortp);
+                    if (!portp->basicp()) {
+                        portp->v3error("Unsupported: DPI argument of type "<<portp->basicp()->prettyTypeName()<<endl
+                                       <<portp->warnMore()<<"... For best portability, use bit, byte, int, or longint");
+                        // We don't warn on logic either, although the 4-stateness is lost.
+                        // That's what other simulators do.
+                    }
+                }
+            }
+        }
     }
 
     void bodyDpiImportFunc(AstNodeFTask* nodep, AstVarScope* rtnvscp, AstCFunc* cfuncp) {
@@ -858,30 +897,43 @@ private:
 	// should the type of the function be bool/uint32/64 etc (based on lookup) or IData?
 	AstNode::user2ClearTree();
 	AstVar* rtnvarp = NULL;
-	AstVarScope* rtnvscp = NULL;
 	if (nodep->isFunction()) {
-	    AstVar* portp = NULL;
-	    if (NULL!=(portp = nodep->fvarp()->castVar())) {
-		if (!portp->isFuncReturn()) nodep->v3error("Not marked as function return var");
-		if (portp->isWide()) nodep->v3error("Unsupported: Public functions with return > 64 bits wide. (Make it a output instead.)");
-		if (ftaskNoInline || nodep->dpiExport()) portp->funcReturn(false);  // Converting return to 'outputs'
-                if ((nodep->dpiImport() || nodep->dpiExport())
-                    && portp->dtypep()->basicp()
-                    && portp->dtypep()->basicp()->keyword().isDpiUnreturnable()) {
-                    portp->v3error("DPI function may not return type "<<portp->basicp()->prettyTypeName()
-                                   <<" (IEEE 2012 35.5.5)");
-                }
-		portp->unlinkFrBack();
-		rtnvarp = portp;
-		rtnvarp->funcLocal(true);
-		rtnvarp->name(rtnvarp->name()+"__Vfuncrtn");  // Avoid conflict with DPI function name
-		rtnvscp = new AstVarScope (rtnvarp->fileline(), m_scopep, rtnvarp);
-		m_scopep->addVarp(rtnvscp);
-		rtnvarp->user2p(rtnvscp);
-	    } else {
-		nodep->v3fatalSrc("function without function output variable");
+            AstVar* portp = nodep->fvarp()->castVar();
+            if (!portp) nodep->v3fatalSrc("function without function output variable");
+            if (!portp->isFuncReturn()) nodep->v3error("Not marked as function return var");
+            if (portp->isWide()) nodep->v3error("Unsupported: Public functions with return > 64 bits wide. (Make it a output instead.)");
+            if (ftaskNoInline || nodep->dpiExport()) portp->funcReturn(false);  // Converting return to 'outputs'
+            if ((nodep->dpiImport() || nodep->dpiExport())
+                && portp->dtypep()->basicp()
+                && portp->dtypep()->basicp()->keyword().isDpiUnreturnable()) {
+                portp->v3error("DPI function may not return type "<<portp->basicp()->prettyTypeName()
+                               <<" (IEEE 2012 35.5.5)");
 	    }
+            portp->unlinkFrBack();
+            rtnvarp = portp;
+            rtnvarp->funcLocal(true);
+            rtnvarp->name(rtnvarp->name()+"__Vfuncrtn");  // Avoid conflict with DPI function name
 	}
+
+        if (nodep->dpiImport()) {
+            string dpiproto = dpiprotoName(nodep, rtnvarp);
+            if (!duplicatedDpiProto(nodep, dpiproto)) {
+                makeDpiImportWrapper(nodep, rtnvarp);
+            }
+        } else if (nodep->dpiExport()) {
+            string dpiproto = dpiprotoName(nodep, rtnvarp);
+            if (!duplicatedDpiProto(nodep, dpiproto)) {
+                makeDpiExportWrapper(nodep, rtnvarp);
+            }
+        }
+
+        AstVarScope* rtnvscp = NULL;
+        if (rtnvarp) {
+            rtnvscp = new AstVarScope (rtnvarp->fileline(), m_scopep, rtnvarp);
+            m_scopep->addVarp(rtnvscp);
+            rtnvarp->user2p(rtnvscp);
+        }
+
 	string prefix = "";
 	if (nodep->dpiImport()) prefix = "__Vdpiimwrap_";
 	else if (nodep->dpiExport()) prefix = "__Vdpiexp_";
@@ -935,32 +987,6 @@ private:
 	    cfuncp->addInitsp(snp);
 	}
 
-	AstCFunc* dpip = NULL;
-	string dpiproto;
-	if (nodep->dpiImport() || nodep->dpiExport()) {
-	    dpiproto = dpiprotoName(nodep, rtnvarp);
-
-	    // Only create one DPI extern for each specified cname,
-	    // as it's legal for the user to attach multiple tasks to one dpi cname
-	    DpiNames::iterator iter = m_dpiNames.find(nodep->cname());
-	    if (iter == m_dpiNames.end()) {
-		// m_dpiNames insert below
-		if (nodep->dpiImport()) {
-		    dpip = makeDpiImportWrapper(nodep, rtnvarp);
-		} else if (nodep->dpiExport()) {
-		    dpip = makeDpiExportWrapper(nodep, rtnvarp);
-		    cfuncp->addInitsp(new AstComment(dpip->fileline(), (string)("Function called from: ")+dpip->cname()));
-		}
-
-		m_dpiNames.insert(make_pair(nodep->cname(), make_pair(dpip, dpiproto)));
-	    }
-	    else if (iter->second.second != dpiproto) {
-		nodep->v3error("Duplicate declaration of DPI function with different formal arguments: "<<nodep->prettyName()<<endl
-			       <<nodep->warnMore()<<"... New prototype:      "<<dpiproto<<endl
-			       <<iter->second.first->warnMore()<<"... Original prototype: "<<iter->second.second);
-	    }
-	}
-
 	// Create list of arguments and move to function
 	for (AstNode* nextp, *stmtp = nodep->stmtsp(); stmtp; stmtp=nextp) {
 	    nextp = stmtp->nextp();
@@ -970,15 +996,6 @@ private:
 		    portp->unlinkFrBack();
 		    portp->funcLocal(true);
 		    cfuncp->addArgsp(portp);
-		    if (dpip) {
-			dpip->addArgsp(portp->cloneTree(false));
-                        if (!portp->basicp()) {
-			    portp->v3error("Unsupported: DPI argument of type "<<portp->basicp()->prettyTypeName()<<endl
-					   <<portp->warnMore()<<"... For best portability, use bit, byte, int, or longint");
-			    // We don't warn on logic either, although the 4-stateness is lost.
-			    // That's what other simulators do.
-			}
-		    }
 		} else {
 		    // "Normal" variable, mark inside function
 		    portp->funcLocal(true);
