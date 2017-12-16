@@ -275,15 +275,20 @@ string AstVar::vlEnumType() const {
 }
 
 string AstVar::vlEnumDir() const {
+    string out;
     if (isInout()) {
-	return "VLVD_INOUT";
+        out = "VLVD_INOUT";
     } else if (isInOnly()) {
-	return "VLVD_IN";
+        out = "VLVD_IN";
     } else if (isOutOnly()) {
-	return "VLVD_OUT";
+        out = "VLVD_OUT";
     } else {
-	return "VLVD_NODIR";
+        out = "VLVD_NODIR";
     }
+    //
+    if (isSigUserRWPublic()) out += "|VLVF_PUB_RW";
+    else if (isSigUserRdPublic()) out += "|VLVF_PUB_RD";
+    return out;
 }
 
 string AstVar::cPubArgType(bool named, bool forReturn) const {

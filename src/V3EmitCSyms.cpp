@@ -509,8 +509,6 @@ void EmitCSyms::emitSymImp() {
 	    puts(varp->vlEnumType());  // VLVT_UINT32 etc
 	    puts(",");
 	    puts(varp->vlEnumDir());  // VLVD_IN etc
-	    if (varp->isSigUserRWPublic()) puts("|VLVF_PUB_RW");
-	    else if (varp->isSigUserRdPublic()) puts("|VLVF_PUB_RD");
 	    puts(",");
 	    puts(cvtToStr(pdim+udim));
 	    puts(bounds);
