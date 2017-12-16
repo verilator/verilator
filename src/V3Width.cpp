@@ -2396,78 +2396,103 @@ private:
 	userIterate(nodep->taskp(), NULL);
 	//
 	// And do the arguments to the task/function too
-	for (int accept_mode=0; accept_mode<3; accept_mode++) {  // Avoid duplicate code; just do inner stuff several times
-	  reloop:
+        do {
+          reloop:
+            V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
+            for (V3TaskConnects::iterator it=tconnects.begin(); it!=tconnects.end(); ++it) {
+                AstVar* portp = it->first;
+                AstArg* argp = it->second;
+                AstNode* pinp = argp->exprp();
+                if (!pinp) continue;  // Argument error we'll find later
+                // Prelim may cause the node to get replaced; we've lost our
+                // pointer, so need to iterate separately later
+                if (portp->attrSFormat()
+                    && (!pinp->castSFormatF() || pinp->nextp())) {  // Not already done
+                    UINFO(4,"   sformat via metacomment: "<<nodep<<endl);
+                    AstNRelinker handle;
+                    argp->unlinkFrBackWithNext(&handle);  // Format + additional args, if any
+                    AstNode* argsp = NULL;
+                    while (AstArg* nextargp = argp->nextp()->castArg()) {
+                        argsp = AstNode::addNext(argsp, nextargp->exprp()->unlinkFrBackWithNext()); // Expression goes to SFormatF
+                        nextargp->unlinkFrBack()->deleteTree();  // Remove the call's Arg wrapper
+                    }
+                    string format;
+                    if (pinp->castConst()) format = pinp->castConst()->num().toString();
+                    else pinp->v3error("Format to $display-like function must have constant format string");
+                    pushDeletep(argp); VL_DANGLING(argp);
+                    AstSFormatF* newp = new AstSFormatF(nodep->fileline(), format, false, argsp);
+                    if (!newp->scopeNamep() && newp->formatScopeTracking()) {
+                        newp->scopeNamep(new AstScopeName(newp->fileline()));
+                    }
+                    handle.relink(new AstArg(newp->fileline(), "", newp));
+                    // Connection list is now incorrect (has extra args in it).
+                    goto reloop;  // so exit early; next loop will correct it
+                }
+                else if (portp->basicp() && portp->basicp()->keyword()==AstBasicDTypeKwd::STRING
+                         && !pinp->castCvtPackString()
+                         && !pinp->castSFormatF()  // Already generates a string
+                         && !(pinp->castVarRef() && pinp->castVarRef()->varp()->basicp()->keyword()==AstBasicDTypeKwd::STRING)) {
+                    UINFO(4,"   Add CvtPackString: "<<pinp<<endl);
+                    AstNRelinker handle;
+                    pinp->unlinkFrBack(&handle);  // No next, that's the next pin
+                    AstNode* newp = new AstCvtPackString(pinp->fileline(), pinp);
+                    handle.relink(newp);
+                    pinp = newp;
+                }
+                // AstPattern requires assignments to pass datatype on PRELIM
+                userIterate(pinp, WidthVP(portp->dtypep(),PRELIM).p()); VL_DANGLING(pinp);
+            }
+        } while (0);
+        // Stage 2
+        {
 	    V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
 	    for (V3TaskConnects::iterator it=tconnects.begin(); it!=tconnects.end(); ++it) {
 		AstVar* portp = it->first;
 		AstArg* argp = it->second;
 		AstNode* pinp = argp->exprp();
-		if (pinp!=NULL) {  // Else argument error we'll find later
-		    if (accept_mode==0) {
-			// Prelim may cause the node to get replaced; we've lost our
-			// pointer, so need to iterate separately later
-			if (portp->attrSFormat()
-			    && (!pinp->castSFormatF() || pinp->nextp())) {  // Not already done
-			    UINFO(4,"   sformat via metacomment: "<<nodep<<endl);
-			    AstNRelinker handle;
-			    argp->unlinkFrBackWithNext(&handle);  // Format + additional args, if any
-			    AstNode* argsp = NULL;
-			    while (AstArg* nextargp = argp->nextp()->castArg()) {
-				argsp = AstNode::addNext(argsp, nextargp->exprp()->unlinkFrBackWithNext()); // Expression goes to SFormatF
-				nextargp->unlinkFrBack()->deleteTree();  // Remove the call's Arg wrapper
-			    }
-			    string format;
-			    if (pinp->castConst()) format = pinp->castConst()->num().toString();
-			    else pinp->v3error("Format to $display-like function must have constant format string");
-			    pushDeletep(argp); VL_DANGLING(argp);
-			    AstSFormatF* newp = new AstSFormatF(nodep->fileline(), format, false, argsp);
-			    if (!newp->scopeNamep() && newp->formatScopeTracking()) {
-				newp->scopeNamep(new AstScopeName(newp->fileline()));
-			    }
-			    handle.relink(new AstArg(newp->fileline(), "", newp));
-			    // Connection list is now incorrect (has extra args in it).
-			    goto reloop;  // so exit early; next loop will correct it
-			}
-			else if (portp->basicp() && portp->basicp()->keyword()==AstBasicDTypeKwd::STRING
-				 && !pinp->castCvtPackString()
-				 && !pinp->castSFormatF()  // Already generates a string
-				 && !(pinp->castVarRef() && pinp->castVarRef()->varp()->basicp()->keyword()==AstBasicDTypeKwd::STRING)) {
-			    UINFO(4,"   Add CvtPackString: "<<pinp<<endl);
-			    AstNRelinker handle;
-			    pinp->unlinkFrBack(&handle);  // No next, that's the next pin
-			    AstNode* newp = new AstCvtPackString(pinp->fileline(), pinp);
-			    handle.relink(newp);
-			    pinp = newp;
-			}
-			// AstPattern requires assignments to pass datatype on PRELIM
-			userIterate(pinp, WidthVP(portp->dtypep(),PRELIM).p()); VL_DANGLING(pinp);
-		    } else if (accept_mode==1) {
-			// Change data types based on above accept completion
-			if (portp->isDouble()) {
-			    spliceCvtD(pinp); VL_DANGLING(pinp);
-			}
-		    } else if (accept_mode==2) {
-			// Do PRELIM again, because above accept may have exited early due to node replacement
-			userIterate(pinp, WidthVP(portp->dtypep(),PRELIM).p());
-			if ((portp->isOutput() || portp->isInout())
-			    && pinp->width() != portp->width()) {
-			    pinp->v3error("Unsupported: Function output argument '"<<portp->prettyName()<<"'"
-					  <<" requires "<<portp->width()
-					  <<" bits, but connection's "<<pinp->prettyTypeName()
-					  <<" generates "<<pinp->width()<<" bits.");
-			    // otherwise would need some mess to force both sides to proper size
-			    // (get an ASSIGN with EXTEND on the lhs instead of rhs)
-			}
-			if (!portp->basicp() || portp->basicp()->isOpaque()) {
-			    userIterate(pinp, WidthVP(portp->dtypep(),FINAL).p());
-			} else {
-			    iterateCheckAssign(nodep,"Function Argument",pinp,FINAL,portp->dtypep());
-			}
-		    }
+                if (!pinp) continue;  // Argument error we'll find later
+                // Change data types based on above accept completion
+                if (portp->isDouble()) {
+                    spliceCvtD(pinp); VL_DANGLING(pinp);
 		}
 	    }
 	}
+        // Stage 3
+        {
+            V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
+            for (V3TaskConnects::iterator it=tconnects.begin(); it!=tconnects.end(); ++it) {
+                AstVar* portp = it->first;
+                AstArg* argp = it->second;
+                AstNode* pinp = argp->exprp();
+                if (!pinp) continue;  // Argument error we'll find later
+                // Do PRELIM again, because above accept may have exited early due to node replacement
+                userIterate(pinp, WidthVP(portp->dtypep(),PRELIM).p());
+            }
+        }
+        // Stage 4
+        {
+            V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
+            for (V3TaskConnects::iterator it=tconnects.begin(); it!=tconnects.end(); ++it) {
+                AstVar* portp = it->first;
+                AstArg* argp = it->second;
+                AstNode* pinp = argp->exprp();
+                if (!pinp) continue;  // Argument error we'll find later
+                if ((portp->isOutput() || portp->isInout())
+                    && pinp->width() != portp->width()) {
+                    pinp->v3error("Unsupported: Function output argument '"<<portp->prettyName()<<"'"
+                                  <<" requires "<<portp->width()
+                                  <<" bits, but connection's "<<pinp->prettyTypeName()
+                                  <<" generates "<<pinp->width()<<" bits.");
+                    // otherwise would need some mess to force both sides to proper size
+                    // (get an ASSIGN with EXTEND on the lhs instead of rhs)
+                }
+                if (!portp->basicp() || portp->basicp()->isOpaque()) {
+                    userIterate(pinp, WidthVP(portp->dtypep(),FINAL).p());
+                } else {
+                    iterateCheckAssign(nodep,"Function Argument",pinp,FINAL,portp->dtypep());
+                }
+            }
+        }
 	nodep->didWidth(true);
     }
     virtual void visit(AstInitial* nodep) {
