@@ -52,8 +52,8 @@ int main(int argc, char **argv, char **env) {
 
         for (VerilatedVarNameMap::iterator varIt = varNameMap->begin(); varIt != varNameMap->end(); ++varIt) {
             VerilatedVar * var = &varIt->second;
-            int varLeft = var->range().left();
-            int varRight = var->range().right();
+            int varLeft = var->packed().left();
+            int varRight = var->packed().right();
 
 #ifdef TEST_VERBOSE
             VL_PRINTF("\tVar = %s\n", varIt->first);
@@ -124,7 +124,7 @@ int main(int argc, char **argv, char **env) {
 
         for (VerilatedVarNameMap::iterator varIt = varNameMap->begin(); varIt != varNameMap->end(); ++varIt) {
             VerilatedVar * var = &varIt->second;
-            int varLeft = var->range().left();
+            int varLeft = var->packed().left();
             int varBits = varLeft + 1;
             vluint8_t * varData = reinterpret_cast<vluint8_t *>(var->datap());
 

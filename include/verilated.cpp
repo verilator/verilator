@@ -1642,7 +1642,7 @@ vluint32_t VerilatedVar::entSize() const {
     case VLVT_UINT16:	size=sizeof(SData); break;
     case VLVT_UINT32:	size=sizeof(IData); break;
     case VLVT_UINT64:	size=sizeof(QData); break;
-    case VLVT_WDATA:	size=VL_WORDS_I(range().elements())*sizeof(IData); break;
+    case VLVT_WDATA:    size=VL_WORDS_I(packed().elements())*sizeof(IData); break;
     default:		size=0; break;
     }
     return size;
@@ -1715,11 +1715,11 @@ void VerilatedScope::varInsert(int finalize, const char* namep, void* datap,
 	int msb = va_arg(ap,int);
 	int lsb = va_arg(ap,int);
 	if (i==0) {
-	    var.m_range.m_left = msb;
-	    var.m_range.m_right = lsb;
+            var.m_packed.m_left = msb;
+            var.m_packed.m_right = lsb;
 	} else if (i==1) {
-	    var.m_array.m_left = msb;
-	    var.m_array.m_right = lsb;
+            var.m_unpacked[0].m_left = msb;
+            var.m_unpacked[0].m_right = lsb;
 	} else {
 	    // We could have a linked list of ranges, but really this whole thing needs
 	    // to be generalized to support structs and unions, etc.
