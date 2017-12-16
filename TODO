@@ -27,12 +27,10 @@ Long-term Features
 	* Multithreaded execution
 
 Configure/Make/Install
-	* Full MSVC++ compilation (does scons support this?) (4.000?)
 	* Distribute with flex/bison already expanded?
 	  Flex library not needed.  Probably too difficult to be worth it.
 
 Testing:
-	* Move test_c/sp/v/verilated into test_regress format (4.000?)
 	* Capture all inputs into global "rerun it" file
 	* Code to make wrapper that sets signals, so can do comparison checks
 	* New random program generator
@@ -48,20 +46,17 @@ Usability:
 	* Print version/etc message at runtime. (4.000?)
 	  Include number of lines of code, percent comments, code complexity measurement
 	  <-80chars------------------------------------------------------------------->
-	  Verilator 3.600 - fast, free, open-sourced.  Copyright 2001-2013.
+	  Verilator 3.600 - The fast free open-sourced simulator.  Copyright 2001-2013.
 	  Verilated #### modules, #### instances, ##### sigs,
 	  	    #### non-comment lines, ##### ops, ### KB model size
-	* Default the --l2name to remove extra "v" level of hierarchy (flag to make "top")
 
 Lint:
 	* CDCRSTLOGIC should allow filtering with paths
 	  "waive CDCRSTLOGIC --from a.b.sig  --to a.c.sig --via OR"
 
 Internal Code:
-	* Eliminate the AstNUser* passed to all visitors; its only needed in V3Width,
-	  and removing it will speed up and simplify all the other code.
+	* A Visitor class that understands how to traverse data types
 	* V3Graph should be templated container type, taking in Vertex + Edge types
-	* Rename V3PreLex etc to match VerilogPerl filenames
 	* Instead of string, have an VEncodedString/VIdString which contains __DOT__ish
 	  things, to reduce bugs.  Also add _20 trailing space to \ encoded names. (4.000)
 
@@ -114,7 +109,6 @@ Performance:
 	* Usually blocks/values
 		Enable only after certain time, so VL_TIME_I(32) > 0x1e gets eliminated out
 	* Better ordering of a<=b, b<=c, put all refs to 'b' next to each other to optimize caching
-	* Allow Split of case statements without a $display/$stop
 	* I-cache packing improvements (what/how?)
 	* Data cache organization (order of vars in class)
 		First have clocks,
