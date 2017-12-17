@@ -96,6 +96,11 @@ private:
     virtual void write_comment (const std::string &);
     virtual void trace (const unsigned int &, const std::string &, const char **);
 
+#if (SYSTEMC_VERSION>=20171012)
+    DECL_TRACE_METHOD_A( sc_event )
+    DECL_TRACE_METHOD_A( sc_time )
+#endif
+
     DECL_TRACE_METHOD_A( bool )
     DECL_TRACE_METHOD_A( sc_dt::sc_bit )
     DECL_TRACE_METHOD_A( sc_dt::sc_logic )

@@ -39,6 +39,11 @@ void VerilatedVcdSc::trace (const unsigned int &, const std::string &, const cha
 # define DECL_TRACE_METHOD_B(tp) \
     void VerilatedVcdSc::trace( const tp& object, const std::string& name, int width ) {}
 
+#if (SYSTEMC_VERSION>=20171012)
+    DECL_TRACE_METHOD_A( sc_event )
+    DECL_TRACE_METHOD_A( sc_time )
+#endif
+
     DECL_TRACE_METHOD_A( bool )
     DECL_TRACE_METHOD_A( sc_dt::sc_bit )
     DECL_TRACE_METHOD_A( sc_dt::sc_logic )
