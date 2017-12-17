@@ -158,6 +158,7 @@ void svPutPartselBit(svBitVecVal* dp, const svBitVecVal s, int lbit, int width) 
         }
     }
 }
+// cppcheck-suppress passedByValue
 void svPutPartselLogic(svLogicVecVal* dp, const svLogicVecVal s, int lbit, int width) {
     int hbit = lbit+width-1;
     int hoffset = VL_BITBIT_I(hbit);
@@ -487,7 +488,6 @@ void* svGetArrElemPtr3(const svOpenArrayHandle h, int indx1, int indx2, int indx
 void svPutBitArrElemVecVal(const svOpenArrayHandle d, const svBitVecVal* s,
                            int indx1, ...) {
     const VerilatedDpiOpenVar* varp = _vl_openhandle_varp(d);
-    void* datap;
     va_list ap;
     va_start(ap, indx1);
     switch (varp->udims()) {

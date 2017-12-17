@@ -67,10 +67,10 @@ static inline void VL_SET_SVLV_W(int obits, svLogicVecVal* owp, WDataInP lwp) VL
     for (int i=0; i<words-1; ++i) owp[i].aval=lwp[i];
     owp[words-1].aval = lwp[words-1] & VL_MASK_I(obits);
 }
-static inline void VL_SET_SVLV_I(int obits, svLogicVecVal* owp, IData ld) VL_MT_SAFE {
+static inline void VL_SET_SVLV_I(int, svLogicVecVal* owp, IData ld) VL_MT_SAFE {
     owp[0].aval=ld; owp[0].bval=0;
 }
-static inline void VL_SET_SVLV_Q(int obits, svLogicVecVal* owp, QData ld) VL_MT_SAFE {
+static inline void VL_SET_SVLV_Q(int, svLogicVecVal* owp, QData ld) VL_MT_SAFE {
     WData lwp[2]; VL_SET_WQ(lwp,ld);
     owp[0].aval=lwp[0]; owp[0].bval=0;
     owp[1].aval=lwp[1]; owp[1].bval=0;
