@@ -90,7 +90,8 @@ private:
     }
     void computeCppWidth (AstNode* nodep) {
 	if (!nodep->user2() && nodep->hasDType()) {
-	    if (nodep->castVar() || nodep->castNodeDType()) {  // Don't want to change variable widths!
+            if (nodep->castVar() || nodep->castNodeDType()  // Don't want to change variable widths!
+                || nodep->dtypep()->skipRefp()->castUnpackArrayDType()) {  // Or arrays
 	    } else {
 		setCppWidth(nodep);
 	    }
