@@ -72,7 +72,8 @@ svBit svGetBitselBit(const svBitVecVal* sp, int bit) {
 svLogic svGetBitselLogic(const svLogicVecVal* sp, int bit) {
     // Not VL_BITRSHIFT_W as sp is a different structure type
     // Verilator doesn't support X/Z so only aval
-    return (sp[VL_BITWORD_I(bit)].aval >> VL_BITBIT_I(bit)) & 1;
+    return (((sp[VL_BITWORD_I(bit)].aval >> VL_BITBIT_I(bit)) & 1)
+            | (((sp[VL_BITWORD_I(bit)].bval >> VL_BITBIT_I(bit)) & 1)<<1));
 }
 
 void svPutBitselBit(svBitVecVal* dp, int bit, svBit s) {
@@ -83,6 +84,9 @@ void svPutBitselLogic(svLogicVecVal* dp, int bit, svLogic s) {
     dp[VL_BITWORD_I(bit)].aval
         = ((dp[VL_BITWORD_I(bit)].aval & ~(VL_UL(1)<<VL_BITBIT_I(bit)))
            | ((s&1)<<VL_BITBIT_I(bit)));
+    dp[VL_BITWORD_I(bit)].bval
+        = ((dp[VL_BITWORD_I(bit)].bval & ~(VL_UL(1)<<VL_BITBIT_I(bit)))
+           | ((s&2)>>1<<VL_BITBIT_I(bit)));
 }
 
 void svGetPartselBit(svBitVecVal* dp, const svBitVecVal* sp, int lsb, int width) {
@@ -133,113 +137,54 @@ void svGetPartselLogic(svLogicVecVal* dp, const svLogicVecVal* sp, int lsb, int 
     dp[VL_WORDS_I(width)-1].aval &= VL_MASK_I(width);
     dp[VL_WORDS_I(width)-1].bval &= VL_MASK_I(width);
 }
-void svPutPartselBit(svBitVecVal* dp, const svBitVecVal* sp, int lbit, int width) {
-    // See also _VL_INSERT_WW
+void svPutPartselBit(svBitVecVal* dp, const svBitVecVal s, int lbit, int width) {
+    // See also _VL_INSERT_WI
     int hbit = lbit+width-1;
-    int hoffset = hbit & VL_SIZEBITS_I;
-    int loffset = lbit & VL_SIZEBITS_I;
-    int lword = VL_BITWORD_I(lbit);
-    int words = VL_WORDS_I(hbit-lbit+1);
+    int hoffset = VL_BITBIT_I(hbit);
+    int loffset = VL_BITBIT_I(lbit);
     if (hoffset==VL_SIZEBITS_I && loffset==0) {
         // Fast and common case, word based insertion
-        for (int i=0; i<words; ++i) {
-            dp[lword+i] = sp[i];
-        }
-    }
-    else if (loffset==0) {
-        // Non-32bit, but nicely aligned, so stuff all but the last word
-        for (int i=0; i<(words-1); ++i) {
-            dp[lword+i] = sp[i];
-        }
-        IData hinsmask = (VL_MASK_I(hoffset-0+1)); // Know it's not a full word as above fast case handled it
-        dp[lword+words-1] = (dp[words+lword-1] & ~hinsmask) | (sp[words-1] & hinsmask);
+        dp[VL_BITWORD_I(lbit)] = s;
     }
     else {
-        IData hinsmask = (VL_MASK_I(hoffset-0+1))<<0;
-        IData linsmask = (VL_MASK_I(31-loffset+1))<<loffset;
-        int nbitsonright = 32-loffset;  // bits that end up in lword (know loffset!=0)
-        // Middle words
         int hword = VL_BITWORD_I(hbit);
-        for (int i=0; i<words; ++i) {
-            {   // Lower word
-                int oword = lword+i;
-                IData d = sp[i]<<loffset;
-                IData od = (dp[oword] & ~linsmask) | (d & linsmask);
-                if (oword==hword) dp[oword] = (dp[oword] & ~hinsmask) | (od & hinsmask);
-                else dp[oword] = od;
-            }
-            {   // Upper word
-                int oword = lword+i+1;
-                if (oword <= hword) {
-                    IData d = sp[i]>>nbitsonright;
-                    IData od = (d & ~linsmask) | (dp[oword] & linsmask);
-                    if (oword==hword) dp[oword] = (dp[oword] & ~hinsmask) | (od & hinsmask);
-                    else dp[oword] = od;
-                }
-            }
+        int lword = VL_BITWORD_I(lbit);
+        if (hword==lword) {     // know < 32 bits because above checks it
+            IData insmask = (VL_MASK_I(hoffset-loffset+1))<<loffset;
+            dp[lword] = (dp[lword] & ~insmask) | ((s<<loffset) & insmask);
+        } else {
+            IData hinsmask = (VL_MASK_I(hoffset-0+1))<<0;
+            IData linsmask = (VL_MASK_I(31-loffset+1))<<loffset;
+            int nbitsonright = 32-loffset;  // bits that end up in lword
+            dp[lword] = (dp[lword] & ~linsmask) | ((s<<loffset) & linsmask);
+            dp[hword] = (dp[hword] & ~hinsmask) | ((s>>nbitsonright) & hinsmask);
         }
     }
 }
-void svPutPartselLogic(svLogicVecVal* dp, const svLogicVecVal* sp, int lbit, int width) {
+void svPutPartselLogic(svLogicVecVal* dp, const svLogicVecVal s, int lbit, int width) {
     int hbit = lbit+width-1;
-    int hoffset = hbit & VL_SIZEBITS_I;
-    int loffset = lbit & VL_SIZEBITS_I;
-    int lword = VL_BITWORD_I(lbit);
-    int words = VL_WORDS_I(hbit-lbit+1);
+    int hoffset = VL_BITBIT_I(hbit);
+    int loffset = VL_BITBIT_I(lbit);
     if (hoffset==VL_SIZEBITS_I && loffset==0) {
         // Fast and common case, word based insertion
-        for (int i=0; i<words; ++i) {
-            dp[lword+i].aval = sp[i].aval;
-            dp[lword+i].bval = sp[i].bval;
-        }
-    }
-    else if (loffset==0) {
-        // Non-32bit, but nicely aligned, so stuff all but the last word
-        for (int i=0; i<(words-1); ++i) {
-            dp[lword+i].aval = sp[i].aval;
-            dp[lword+i].bval = sp[i].bval;
-        }
-        IData hinsmask = (VL_MASK_I(hoffset-0+1)); // Know it's not a full word as above fast case handled it
-        dp[lword+words-1].aval = (dp[words+lword-1].aval & ~hinsmask) | (sp[words-1].aval & hinsmask);
-        dp[lword+words-1].bval = (dp[words+lword-1].bval & ~hinsmask) | (sp[words-1].bval & hinsmask);
+        dp[VL_BITWORD_I(lbit)].aval = s.aval;
+        dp[VL_BITWORD_I(lbit)].bval = s.bval;
     }
     else {
-        IData hinsmask = (VL_MASK_I(hoffset-0+1))<<0;
-        IData linsmask = (VL_MASK_I(31-loffset+1))<<loffset;
-        int nbitsonright = 32-loffset;  // bits that end up in lword (know loffset!=0)
-        // Middle words
         int hword = VL_BITWORD_I(hbit);
-        for (int i=0; i<words; ++i) {
-            {   // Lower word
-                int oword = lword+i;
-                IData d_a = sp[i].aval << loffset;
-                IData d_b = sp[i].bval << loffset;
-                IData od_a = (dp[oword].aval & ~linsmask) | (d_a & linsmask);
-                IData od_b = (dp[oword].bval & ~linsmask) | (d_b & linsmask);
-                if (oword==hword) {
-                    dp[oword].aval = (dp[oword].aval & ~hinsmask) | (od_a & hinsmask);
-                    dp[oword].bval = (dp[oword].bval & ~hinsmask) | (od_b & hinsmask);
-                } else {
-                    dp[oword].aval = od_a;
-                    dp[oword].bval = od_b;
-                }
-            }
-            {   // Upper word
-                int oword = lword+i+1;
-                if (oword <= hword) {
-                    IData d_a = sp[i].aval >> nbitsonright;
-                    IData d_b = sp[i].bval >> nbitsonright;
-                    IData od_a = (d_a & ~linsmask) | (dp[oword].aval & linsmask);
-                    IData od_b = (d_b & ~linsmask) | (dp[oword].bval & linsmask);
-                    if (oword==hword) {
-                        dp[oword].aval = (dp[oword].aval & ~hinsmask) | (od_a & hinsmask);
-                        dp[oword].bval = (dp[oword].bval & ~hinsmask) | (od_b & hinsmask);
-                    } else {
-                        dp[oword].aval = od_a;
-                        dp[oword].bval = od_b;
-                    }
-                }
-            }
+        int lword = VL_BITWORD_I(lbit);
+        if (hword==lword) {     // know < 32 bits because above checks it
+            IData insmask = (VL_MASK_I(hoffset-loffset+1))<<loffset;
+            dp[lword].aval = (dp[lword].aval & ~insmask) | ((s.aval<<loffset) & insmask);
+            dp[lword].bval = (dp[lword].bval & ~insmask) | ((s.bval<<loffset) & insmask);
+        } else {
+            IData hinsmask = (VL_MASK_I(hoffset-0+1))<<0;
+            IData linsmask = (VL_MASK_I(31-loffset+1))<<loffset;
+            int nbitsonright = 32-loffset;  // bits that end up in lword
+            dp[lword].aval = (dp[lword].aval & ~linsmask) | ((s.aval<<loffset) & linsmask);
+            dp[lword].bval = (dp[lword].bval & ~linsmask) | ((s.bval<<loffset) & linsmask);
+            dp[hword].aval = (dp[hword].aval & ~hinsmask) | ((s.aval>>nbitsonright) & hinsmask);
+            dp[hword].bval = (dp[hword].bval & ~hinsmask) | ((s.bval>>nbitsonright) & hinsmask);
         }
     }
 }
