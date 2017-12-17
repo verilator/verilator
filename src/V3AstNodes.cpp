@@ -239,11 +239,20 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc) const {
     } else if (isWide()) {
 	arg += "WData";  // []'s added later
     }
-    if (isWide() && !strtype) {
-	arg += " (& "+name();
-	arg += ")["+cvtToStr(widthWords())+"]";
+    if (isDpiOpenArray() || (isWide() && !strtype)) {
+        arg += " (& "+name()+")";
+        for (AstNodeDType* dtp=dtypep(); dtp; ) {
+            dtp = dtp->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
+            if (AstUnpackArrayDType* adtypep = dtp->castUnpackArrayDType()) {
+                arg += "["+cvtToStr(adtypep->declRange().elements())+"]";
+                dtp = adtypep->subDTypep();
+            } else break;
+        }
+        if (isWide() && !strtype) {
+            arg += "["+cvtToStr(widthWords())+"]";
+        }
     } else {
-	if (forFunc && (isOutput() || (strtype && isInput()))) arg += "&";
+        if (forFunc && (isOutput() || (strtype && isInput()))) arg += "&";
 	if (named) arg += " "+name();
     }
     return arg;
@@ -288,6 +297,34 @@ string AstVar::vlEnumDir() const {
     //
     if (isSigUserRWPublic()) out += "|VLVF_PUB_RW";
     else if (isSigUserRdPublic()) out += "|VLVF_PUB_RD";
+    //
+    if (AstBasicDType* bdtypep = basicp()) {
+        if (bdtypep->keyword().isDpiCLayout()) out += "|VLVF_DPI_CLAY";
+    }
+    return out;
+}
+
+string AstVar::vlPropInit() const {
+    string out;
+    out = vlEnumType();  // VLVT_UINT32 etc
+    out += ", "+vlEnumDir();  // VLVD_IN etc
+    if (AstBasicDType* bdtypep = basicp()) {
+        out += ", VerilatedVarProps::Packed()";
+        out += ", "+cvtToStr(bdtypep->left())+", "+cvtToStr(bdtypep->right());
+    }
+    bool first = true;
+    for (AstNodeDType* dtp=dtypep(); dtp; ) {
+        dtp = dtp->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
+        if (AstNodeArrayDType* adtypep = dtp->castNodeArrayDType()) {
+            if (first) {
+                out += ", VerilatedVarProps::Unpacked()";
+                first = false;
+            }
+            out += ", "+cvtToStr(adtypep->declRange().left())+", "+cvtToStr(adtypep->declRange().right());
+            dtp = adtypep->subDTypep();
+        }
+        else break; // AstBasicDType - nothing below
+    }
     return out;
 }
 
@@ -318,8 +355,11 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
 string AstVar::dpiArgType(bool named, bool forReturn) const {
     if (forReturn) named=false;
     string arg;
-    if (!basicp()) arg = "UNKNOWN";
-    else if (basicp()->keyword().isDpiBitVal()) {
+    if (isDpiOpenArray()) {
+        arg = "const svOpenArrayHandle";
+    } else if (!basicp()) {
+        arg = "UNKNOWN";
+    } else if (basicp()->keyword().isDpiBitVal()) {
 	if (widthMin() == 1) {
 	    arg = "unsigned char";
 	    if (!forReturn && isOutput()) arg += "*";
@@ -968,7 +1008,10 @@ void AstTypeTable::dump(ostream& str) {
     }
     // Note get newline from caller too.
 }
-
+void AstUnsizedArrayDType::dumpSmall(ostream& str) {
+    this->AstNodeDType::dumpSmall(str);
+    str<<"[]";
+}
 void AstVarScope::dump(ostream& str) {
     this->AstNode::dump(str);
     if (isCircular()) str<<" [CIRC]";
@@ -1015,6 +1058,7 @@ void AstVar::dump(ostream& str) {
     if (attrFileDescr()) str<<" [aFD]";
     if (isFuncReturn()) str<<" [FUNCRTN]";
     else if (isFuncLocal()) str<<" [FUNC]";
+    if (isDpiOpenArray()) str<<" [DPIOPENA]";
     if (!attrClocker().unknown()) str<<" ["<<attrClocker().ascii()<<"] ";
     str<<" "<<varType();
 }
@@ -1060,6 +1104,8 @@ void AstNodeFTask::dump(ostream& str) {
     if (prototype()) str<<" [PROTOTYPE]";
     if (dpiImport()) str<<" [DPII]";
     if (dpiExport()) str<<" [DPIX]";
+    if (dpiOpenChild()) str<<" [DPIOPENCHILD]";
+    if (dpiOpenParent()) str<<" [DPIOPENPARENT]";
     if ((dpiImport() || dpiExport()) && cname()!=name()) str<<" [c="<<cname()<<"]";
 }
 void AstBegin::dump(ostream& str) {

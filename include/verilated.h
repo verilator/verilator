@@ -99,7 +99,8 @@ enum VerilatedVarFlags {
     VLVF_MASK_DIR=7,	// Bit mask for above directions
     // Flags
     VLVF_PUB_RD=(1<<8),	// Public readable
-    VLVF_PUB_RW=(1<<9)	// Public writable
+    VLVF_PUB_RW=(1<<9),  // Public writable
+    VLVF_DPI_CLAY=(1<<10)  // DPI compatible C standard layout
 };
 
 //=========================================================================

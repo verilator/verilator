@@ -471,7 +471,6 @@ private:
 	// outvscp is the variable for functions only, if NULL, it's a task
 	if (!refp->taskp()) refp->v3fatalSrc("Unlinked?");
 	AstCFunc* cfuncp = m_statep->ftaskCFuncp(refp->taskp());
-
 	if (!cfuncp) refp->v3fatalSrc("No non-inline task associated with this task call?");
 	//
 	AstNode* beginp = new AstComment(refp->fileline(), (string)("Function: ")+refp->name());
@@ -774,7 +773,7 @@ private:
         makePortList(nodep, rtnvarp, dpip);
     }
 
-    void makeDpiImportWrapper(AstNodeFTask* nodep, AstVar* rtnvarp) {
+    void makeDpiImportProto(AstNodeFTask* nodep, AstVar* rtnvarp) {
 	if (nodep->cname() != AstNode::prettyName(nodep->cname())) {
 	    nodep->v3error("DPI function has illegal characters in C identifier name: "<<AstNode::prettyName(nodep->cname()));
 	}
@@ -797,7 +796,7 @@ private:
     }
 
     bool duplicatedDpiProto(AstNodeFTask* nodep, string dpiproto) {
-        // Only create one DPI extern for each specified cname,
+        // Only create one DPI extern prototype for each specified cname
         // as it's legal for the user to attach multiple tasks to one dpi cname
         DpiNames::iterator iter = m_dpiNames.find(nodep->cname());
         if (iter == m_dpiNames.end()) {
@@ -845,21 +844,41 @@ private:
 		    && portp->name() != "__Vscopep"	// Passed to dpiContext, not callee
 		    && portp->name() != "__Vfilenamep"
 		    && portp->name() != "__Vlineno") {
+                    bool openarray = portp->isDpiOpenArray();
                     bool bitvec = (portp->basicp()->keyword().isDpiBitVal() && portp->width() > 32);
                     bool logicvec = (portp->basicp()->keyword().isDpiLogicVal() && portp->width() > 1);
 
 		    if (args != "") { args+= ", "; }
-		    if (bitvec) {}
-                    else if (logicvec) {}
-                    else if (portp->isOutput()) args += "&";
-                    else if (portp->basicp() && portp->basicp()->keyword().isDpiBitVal()
-                             && portp->width() != 1) args += "&";  // it's a svBitVecVal (2-32 bits wide)
 
-		    args += portp->name()+"__Vcvt";
+                    if (openarray) {
+                        // Ideally we'd make a table of variable characteristics, and reuse it wherever we can
+                        // At least put them into the module's CTOR as static?
+                        string propName = portp->name()+"__Vopenprops";
+                        string propCode = ("static const VerilatedVarProps "+propName
+                                           +"("+portp->vlPropInit()+");\n");
+                        cfuncp->addStmtsp(new AstCStmt(portp->fileline(), propCode));
+                        //
+                        // At runtime we need the svOpenArrayHandle to point to this task & thread's data,
+                        // in addition to static info about the variable
+                        string name = portp->name()+"__Vopenarray";
+                        string varCode = ("VerilatedDpiOpenVar "+name
+                                          +" (&"+propName+", &"+portp->name()+");\n");
+                        cfuncp->addStmtsp(new AstCStmt(portp->fileline(), varCode));
+                        args += "&"+name;
+                    }
+                    else {
+                        if (bitvec) {}
+                        else if (logicvec) {}
+                        else if (portp->isOutput()) args += "&";
+                        else if (portp->basicp() && portp->basicp()->keyword().isDpiBitVal()
+                                 && portp->width() != 1) args += "&";  // it's a svBitVecVal (2-32 bits wide)
 
-		    cfuncp->addStmtsp(createDpiTemp(portp,"__Vcvt"));
-		    if (portp->isInput()) {
-			cfuncp->addStmtsp(createAssignInternalToDpi(portp,false,false,"","__Vcvt"));
+                        args += portp->name()+"__Vcvt";
+
+                        cfuncp->addStmtsp(createDpiTemp(portp,"__Vcvt"));
+                        if (portp->isInput()) {
+                            cfuncp->addStmtsp(createAssignInternalToDpi(portp,false,false,"","__Vcvt"));
+                        }
 		    }
 		}
 	    }
@@ -883,7 +902,8 @@ private:
 	// Convert output/inout arguments back to internal type
 	for (AstNode* stmtp = cfuncp->argsp(); stmtp; stmtp=stmtp->nextp()) {
 	    if (AstVar* portp = stmtp->castVar()) {
-		if (portp->isIO() && (portp->isOutput() || portp->isFuncReturn())) {
+                if (portp->isIO() && (portp->isOutput() || portp->isFuncReturn())
+                    && !portp->isDpiOpenArray()) {
 		    AstVarScope* portvscp = portp->user2p()->castVarScope();  // Remembered when we created it earlier
 		    cfuncp->addStmtsp(createAssignDpiToInternal(portvscp,portp->name()+"__Vcvt",true));
 		}
@@ -916,10 +936,21 @@ private:
 	}
 
         if (nodep->dpiImport()) {
-            string dpiproto = dpiprotoName(nodep, rtnvarp);
-            if (!duplicatedDpiProto(nodep, dpiproto)) {
-                makeDpiImportWrapper(nodep, rtnvarp);
+            if (nodep->dpiOpenChild()) {  // The parent will make the dpi proto
+                if (nodep->dpiOpenParent()) nodep->v3fatalSrc("DPI task should be parent or wrapper, not both");
             }
+            else {  // Parent or not open child, make wrapper
+                string dpiproto = dpiprotoName(nodep, rtnvarp);
+                if (!duplicatedDpiProto(nodep, dpiproto)) {
+                    makeDpiImportProto(nodep, rtnvarp);
+                }
+                if (nodep->dpiOpenParent()) {
+                    // No need to make more than just the c prototype, children will
+                    pushDeletep(nodep); VL_DANGLING(nodep);
+                    return NULL;
+                }
+            }
+
         } else if (nodep->dpiExport()) {
             string dpiproto = dpiprotoName(nodep, rtnvarp);
             if (!duplicatedDpiProto(nodep, dpiproto)) {
@@ -1154,11 +1185,13 @@ private:
 		if (m_statep->ftaskNoInline(nodep)) m_statep->checkPurity(nodep);
 		AstNodeFTask* clonedFuncp = nodep->cloneTree(false);
 		AstCFunc* cfuncp = makeUserFunc(clonedFuncp, m_statep->ftaskNoInline(nodep));
-		nodep->addNextHere(cfuncp);
-		if (nodep->dpiImport() || m_statep->ftaskNoInline(nodep)) {
-		    m_statep->ftaskCFuncp(nodep, cfuncp);
+                if (cfuncp) {
+                    nodep->addNextHere(cfuncp);
+                    if (nodep->dpiImport() || m_statep->ftaskNoInline(nodep)) {
+                        m_statep->ftaskCFuncp(nodep, cfuncp);
+                    }
+                    iterateIntoFTask(clonedFuncp);  // Do the clone too
 		}
-		iterateIntoFTask(clonedFuncp);  // Do the clone too
 	    }
 
 	    // Any variables inside the function still have varscopes pointing to them.

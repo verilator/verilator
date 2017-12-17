@@ -1634,7 +1634,7 @@ VerilatedModule::~VerilatedModule() {
 // VerilatedVar:: Methods
 
 // cppcheck-suppress unusedFunction  // Used by applications
-vluint32_t VerilatedVar::entSize() const {
+vluint32_t VerilatedVarProps::entSize() const {
     vluint32_t size = 1;
     switch (vltype()) {
     case VLVT_PTR:	size=sizeof(void*); break;
@@ -1646,6 +1646,26 @@ vluint32_t VerilatedVar::entSize() const {
     default:		size=0; break;
     }
     return size;
+}
+
+size_t VerilatedVarProps::totalSize() const {
+    size_t size = entSize();
+    for (int dim=1; dim<=dims(); ++dim) {
+        size *= m_unpacked[dim].elements();
+    }
+    return size;
+}
+
+void* VerilatedVarProps::datapAdjustIndex(void* datap, int dim, int indx) const {
+    if (VL_UNLIKELY(dim <=0 || dim > m_udims || dim > 3)) return NULL;
+    if (VL_UNLIKELY(indx < low(dim) || indx > high(dim))) return NULL;
+    int indxAdj = indx - low(dim);
+    vluint8_t* bytep = reinterpret_cast<vluint8_t*>(datap);
+    // If on index 1 of a 2 index array, then each index 1 is index2sz*entsz
+    size_t slicesz = entSize();
+    for (int d=dim+1; d<=m_udims; ++d) slicesz *= elements(d);
+    bytep += indxAdj*slicesz;
+    return bytep;
 }
 
 //======================================================================
@@ -1717,9 +1737,9 @@ void VerilatedScope::varInsert(int finalize, const char* namep, void* datap,
 	if (i==0) {
             var.m_packed.m_left = msb;
             var.m_packed.m_right = lsb;
-	} else if (i==1) {
-            var.m_unpacked[0].m_left = msb;
-            var.m_unpacked[0].m_right = lsb;
+        } else if (i>=1 && i<=3) {
+            var.m_unpacked[i-1].m_left = msb;
+            var.m_unpacked[i-1].m_right = lsb;
 	} else {
 	    // We could have a linked list of ranges, but really this whole thing needs
 	    // to be generalized to support structs and unions, etc.

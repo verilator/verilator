@@ -28,7 +28,8 @@
 #ifndef _VERILATED_DPI_H_
 #define _VERILATED_DPI_H_ 1 ///< Header Guard
 
-#include "verilated.h"   // Presumed done by caller
+#include "verilated.h"   // Also presumably included by caller
+#include "verilated_sym_props.h"
 #include "svdpi.h"
 
 //===================================================================

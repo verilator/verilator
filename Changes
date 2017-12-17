@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Workaround GCC/clang bug with huge compile times, bug1248.
 
+***   Support DPI open arrays, bug909, bug1245. [David Pierce, Victor Besyakov]
+
 ****  Support > 64 bit decimal $display.
 
 ****  Support DPI time and svLogicVal. [Victor Besyakov]

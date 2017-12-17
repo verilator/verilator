@@ -17,9 +17,10 @@ module t (/*AUTOARG*/);
          $write("%%Error: Failure in DPI tests\n");
          $stop;
       end
-
-      $write("*-* All Finished *-*\n");
-      $finish;
+      else begin
+         $write("*-* All Finished *-*\n");
+         $finish;
+      end
    end
 
 endmodule

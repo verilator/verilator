@@ -91,8 +91,9 @@ public:
     bool allTracingOn(FileLine* fl) {
 	return v3Global.opt.trace() && m_tracingParse && fl->tracingOn();
     }
-    AstNodeDType* createArray(AstNodeDType* basep, AstRange* rangep, bool isPacked);
-    AstVar*  createVariable(FileLine* fileline, string name, AstRange* arrayp, AstNode* attrsp);
+    AstRange* scrubRange(AstNodeRange* rangep);
+    AstNodeDType* createArray(AstNodeDType* basep, AstNodeRange* rangep, bool isPacked);
+    AstVar*  createVariable(FileLine* fileline, string name, AstNodeRange* arrayp, AstNode* attrsp);
     AstNode* createSupplyExpr(FileLine* fileline, string name, int value);
     AstText* createTextQuoted(FileLine* fileline, string text) {
 	string newtext = deQuote(fileline, text);
@@ -131,7 +132,7 @@ public:
 	}
 	return pkgp;
     }
-    AstNodeDType* addRange(AstBasicDType* dtypep, AstRange* rangesp, bool isPacked) {
+    AstNodeDType* addRange(AstBasicDType* dtypep, AstNodeRange* rangesp, bool isPacked) {
 	// If dtypep isn't basic, don't use this, call createArray() instead
 	if (!rangesp) {
 	    return dtypep;
@@ -139,24 +140,26 @@ public:
 	    // If rangesp is "wire [3:3][2:2][1:1] foo [5:5][4:4]"
 	    // then [1:1] becomes the basicdtype range; everything else is arraying
 	    // the final [5:5][4:4] will be passed in another call to createArray
-	    AstRange* rangearraysp = NULL;
-	    if (dtypep->isRanged()) {
-		rangearraysp = rangesp;  // Already a range; everything is an array
-	    } else {
-		AstRange* finalp = rangesp;
-		while (finalp->nextp()) finalp=finalp->nextp()->castRange();
-		if (finalp != rangesp) {
-		    finalp->unlinkFrBack();
-		    rangearraysp = rangesp;
-		}
-		if (dtypep->implicit()) {
-		    // It's no longer implicit but a real logic type
-		    AstBasicDType* newp = new AstBasicDType(dtypep->fileline(), AstBasicDTypeKwd::LOGIC,
-							    dtypep->numeric(), dtypep->width(), dtypep->widthMin());
-		    dtypep->deleteTree(); VL_DANGLING(dtypep);
-		    dtypep = newp;
-		}
-		dtypep->rangep(finalp);
+            AstNodeRange* rangearraysp = NULL;
+            if (dtypep->isRanged()) {
+                rangearraysp = rangesp;  // Already a range; everything is an array
+            } else {
+                AstNodeRange* finalp = rangesp;
+                while (finalp->nextp()) finalp=finalp->nextp()->castNodeRange();
+                if (finalp != rangesp) {
+                    finalp->unlinkFrBack();
+                    rangearraysp = rangesp;
+                }
+                if (AstRange* finalRangep = finalp->castRange()) {  // not an UnsizedRange
+                    if (dtypep->implicit()) {
+                        // It's no longer implicit but a real logic type
+                        AstBasicDType* newp = new AstBasicDType(dtypep->fileline(), AstBasicDTypeKwd::LOGIC,
+                                                                dtypep->numeric(), dtypep->width(), dtypep->widthMin());
+                        dtypep->deleteTree(); VL_DANGLING(dtypep);
+                        dtypep = newp;
+                    }
+                    dtypep->rangep(finalRangep);
+                }
 	    }
 	    return createArray(dtypep, rangearraysp, isPacked);
 	}
@@ -1493,14 +1496,14 @@ variable_dimensionListE<rangep>:	// IEEE: variable_dimension + empty
 
 variable_dimensionList<rangep>:	// IEEE: variable_dimension + empty
 		variable_dimension			{ $$ = $1; }
-	|	variable_dimensionList variable_dimension	{ $$ = $1->addNext($2)->castRange(); }
+	|	variable_dimensionList variable_dimension	{ $$ = $1->addNext($2)->castNodeRange(); }
 	;
 
 variable_dimension<rangep>:	// ==IEEE: variable_dimension
 	//			// IEEE: unsized_dimension
-	//UNSUP	'[' ']'					{ UNSUP }
+		'[' ']'					{ $$ = new AstUnsizedRange($1); }
 	//			// IEEE: unpacked_dimension
-		anyrange				{ $$ = $1; }
+	|	anyrange				{ $$ = $1; }
 	|	'[' constExpr ']'			{ $$ = new AstRange($1, new AstConst($1, 0), new AstSub($1, $2, new AstConst($1, 1))); }
 	//			// IEEE: associative_dimension
 	//UNSUP	'[' data_type ']'			{ UNSUP }
@@ -2005,7 +2008,7 @@ packed_dimensionListE<rangep>:	// IEEE: [{ packed_dimension }]
 
 packed_dimensionList<rangep>:	// IEEE: { packed_dimension }
 		packed_dimension			{ $$ = $1; }
-	|	packed_dimensionList packed_dimension	{ $$ = $1->addNext($2)->castRange(); }
+	|	packed_dimensionList packed_dimension	{ $$ = $1->addNext($2)->castNodeRange(); }
 	;
 
 packed_dimension<rangep>:	// ==IEEE: packed_dimension
@@ -2084,9 +2087,11 @@ instnameList<nodep>:
 
 instnameParen<cellp>:
 	//			// Must clone m_instParamp as may be comma'ed list of instances
-		id instRangeE '(' cellpinList ')'	{ $$ = new AstCell($<fl>1,*$1,GRAMMARP->m_instModule,$4,  GRAMMARP->m_instParamp->cloneTree(true),$2);
+		id instRangeE '(' cellpinList ')'	{ $$ = new AstCell($<fl>1,*$1,GRAMMARP->m_instModule,$4,  GRAMMARP->m_instParamp->cloneTree(true),
+                                                                           GRAMMARP->scrubRange($2));
 						          $$->trace(GRAMMARP->allTracingOn($<fl>1)); }
-	|	id instRangeE 				{ $$ = new AstCell($<fl>1,*$1,GRAMMARP->m_instModule,NULL,GRAMMARP->m_instParamp->cloneTree(true),$2);
+	|	id instRangeE 				{ $$ = new AstCell($<fl>1,*$1,GRAMMARP->m_instModule,NULL,GRAMMARP->m_instParamp->cloneTree(true),
+                                                                           GRAMMARP->scrubRange($2));
 						          $$->trace(GRAMMARP->allTracingOn($<fl>1)); }
 	//UNSUP	instRangeE '(' cellpinList ')'		{ UNSUP } // UDP
 	//			// Adding above and switching to the Verilog-Perl syntax
@@ -3391,7 +3396,7 @@ gateUnsupList<nodep>:
 	;
 
 gateRangeE<nodep>:
-		instRangeE 				{ $$ = $1; GATERANGE($1); }
+		instRangeE 				{ $$ = $1; GATERANGE(GRAMMARP->scrubRange($1)); }
 	;
 
 gateBuf<nodep>:
@@ -3831,26 +3836,42 @@ AstNode* V3ParseGrammar::createSupplyExpr(FileLine* fileline, string name, int v
     return nodep;
 }
 
-AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstRange* rangep, bool isPacked) {
+AstRange* V3ParseGrammar::scrubRange(AstNodeRange* nrangep) {
+    // Remove any UnsizedRange's from list
+    for (AstNodeRange* nodep = nrangep, *nextp; nodep; nodep=nextp) {
+        nextp = nrangep->nextp()->castNodeRange();
+        if (!nodep->castRange()) {
+            nodep->v3error("Unsupported or syntax error: Unsized range in cell or other declaration");
+            nodep->unlinkFrBack(); nodep->deleteTree(); VL_DANGLING(nodep);
+        }
+    }
+    return nrangep->castRange();
+}
+
+AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nrangep, bool isPacked) {
     // Split RANGE0-RANGE1-RANGE2 into ARRAYDTYPE0(ARRAYDTYPE1(ARRAYDTYPE2(BASICTYPE3),RANGE),RANGE)
     AstNodeDType* arrayp = basep;
-    if (rangep) { // Maybe no range - return unmodified base type
-	while (rangep->nextp()) rangep = rangep->nextp()->castRange();
-	while (rangep) {
-	    AstRange* prevp = rangep->backp()->castRange();
-	    if (prevp) rangep->unlinkFrBack();
-	    if (isPacked) {
-	        arrayp = new AstPackArrayDType(rangep->fileline(), VFlagChildDType(), arrayp, rangep);
-	    } else {
-	        arrayp = new AstUnpackArrayDType(rangep->fileline(), VFlagChildDType(), arrayp, rangep);
-	    }
-	    rangep = prevp;
-	}
+    if (nrangep) { // Maybe no range - return unmodified base type
+        while (nrangep->nextp()) nrangep = nrangep->nextp()->castNodeRange();
+        while (nrangep) {
+            AstNodeRange* prevp = nrangep->backp()->castNodeRange();
+            if (prevp) nrangep->unlinkFrBack();
+            AstRange* rangep = nrangep->castRange();
+            if (!rangep) {
+                if (!nrangep->castUnsizedRange()) nrangep->v3fatalSrc("Expected range or unsized range");
+                arrayp = new AstUnsizedArrayDType(nrangep->fileline(), VFlagChildDType(), arrayp);
+            } else if (isPacked) {
+                arrayp = new AstPackArrayDType(rangep->fileline(), VFlagChildDType(), arrayp, rangep);
+            } else {
+                arrayp = new AstUnpackArrayDType(rangep->fileline(), VFlagChildDType(), arrayp, rangep);
+            }
+            nrangep = prevp;
+        }
     }
     return arrayp;
 }
 
-AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name, AstRange* arrayp, AstNode* attrsp) {
+AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name, AstNodeRange* arrayp, AstNode* attrsp) {
     AstNodeDType* dtypep = GRAMMARP->m_varDTypep;
     UINFO(5,"  creVar "<<name<<"  decl="<<GRAMMARP->m_varDecl<<"  io="<<GRAMMARP->m_varIO<<"  dt="<<(dtypep?"set":"")<<endl);
     if (GRAMMARP->m_varIO == AstVarType::UNKNOWN

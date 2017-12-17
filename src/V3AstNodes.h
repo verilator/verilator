@@ -108,22 +108,22 @@ public:
     bool isEqAllOnesV() const { return num().isEqAllOnes(widthMinV()); }
 };
 
-class AstRange : public AstNode {
+class AstRange : public AstNodeRange {
     // Range specification, for use under variables and cells
 private:
     bool	m_littleEndian:1;	// Bit vector is little endian
 public:
     AstRange(FileLine* fl, AstNode* msbp, AstNode* lsbp)
-	:AstNode(fl) {
+        : AstNodeRange(fl) {
 	m_littleEndian = false;
 	setOp2p(msbp); setOp3p(lsbp); }
     AstRange(FileLine* fl, int msb, int lsb)
-	:AstNode(fl) {
+        : AstNodeRange(fl) {
 	m_littleEndian = false;
 	setOp2p(new AstConst(fl,msb)); setOp3p(new AstConst(fl,lsb));
     }
     AstRange(FileLine* fl, const VNumRange& range)
-	:AstNode(fl) {
+        : AstNodeRange(fl) {
 	m_littleEndian = range.littleEndian();
 	setOp2p(new AstConst(fl,range.hi())); setOp3p(new AstConst(fl,range.lo()));
     }
@@ -142,6 +142,17 @@ public:
     void littleEndian(bool flag) { m_littleEndian=flag; }
     virtual void dump(ostream& str);
     virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const { return true; }
+};
+
+class AstUnsizedRange : public AstNodeRange {
+    // Unsized range specification, for open arrays
+public:
+    AstUnsizedRange(FileLine* fl) : AstNodeRange(fl) { }
+    ASTNODE_NODE_FUNCS(UnsizedRange)
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual string emitVerilog() { return "[]"; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode* samep) const { return true; }
 };
@@ -332,6 +343,49 @@ public:
 	widthFromSub(subDTypep());
     }
     ASTNODE_NODE_FUNCS(UnpackArrayDType)
+};
+
+class AstUnsizedArrayDType : public AstNodeDType {
+    // Unsized/open-range Array data type, ie "some_dtype var_name []"
+    // Children: DTYPE (moved to refDTypep() in V3Width)
+private:
+    AstNodeDType* m_refDTypep;  // Elements of this type (after widthing)
+public:
+    AstUnsizedArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp)
+        : AstNodeDType(fl) {
+        childDTypep(dtp);  // Only for parser
+        refDTypep(NULL);
+        dtypep(NULL);  // V3Width will resolve
+    }
+    ASTNODE_NODE_FUNCS(UnsizedArrayDType)
+    virtual const char* broken() const { BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
+                                                      || (!m_refDTypep && childDTypep()))); return NULL; }
+    virtual void cloneRelink() { if (m_refDTypep && m_refDTypep->clonep()) {
+        m_refDTypep = m_refDTypep->clonep();
+    }}
+    virtual bool same(const AstNode* samep) const {
+        const AstNodeArrayDType* asamep = static_cast<const AstNodeArrayDType*>(samep);
+        return (subDTypep()==asamep->subDTypep()); }
+    virtual bool similarDType(AstNodeDType* samep) const {
+        const AstNodeArrayDType* asamep = static_cast<const AstNodeArrayDType*>(samep);
+        return (subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
+    }
+    virtual void dumpSmall(ostream& str);
+    virtual V3Hash sameHash() const { return V3Hash(m_refDTypep); }
+    AstNodeDType* getChildDTypep() const { return childDTypep(); }
+    AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
+    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    virtual AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); }
+    void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
+    virtual AstNodeDType* virtRefDTypep() const { return m_refDTypep; }
+    virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
+    // METHODS
+    virtual AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type
+    virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
+    virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
+    virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
 };
 
 class AstBasicDType : public AstNodeDType {
@@ -1057,6 +1111,7 @@ private:
     bool	m_isPulldown:1;	// Tri0
     bool	m_isPullup:1;	// Tri1
     bool	m_isIfaceParent:1;	// dtype is reference to interface present in this module
+    bool        m_isDpiOpenArray:1;     // DPI import open array
     bool	m_noSubst:1;	// Do not substitute out references
     bool	m_trace:1;	// Trace this variable
     AstVarAttrClocker m_attrClocker;
@@ -1070,8 +1125,8 @@ private:
 	m_funcLocal=false; m_funcReturn=false;
 	m_attrClockEn=false; m_attrScBv=false; m_attrIsolateAssign=false; m_attrSFormat=false;
 	m_fileDescr=false; m_isConst=false; m_isStatic=false; m_isPulldown=false; m_isPullup=false;
-	m_isIfaceParent=false; m_attrClocker=AstVarAttrClocker::CLOCKER_UNKNOWN; m_noSubst=false;
-	m_trace=false;
+        m_isIfaceParent=false; m_isDpiOpenArray=false; m_noSubst=false; m_trace=false;
+        m_attrClocker=AstVarAttrClocker::CLOCKER_UNKNOWN;
     }
 public:
     AstVar(FileLine* fl, AstVarType type, const string& name, VFlagChildDType, AstNodeDType* dtp)
@@ -1131,6 +1186,7 @@ public:
     string	vlArgType(bool named, bool forReturn, bool forFunc) const;  // Return Verilator internal type for argument: CData, SData, IData, WData
     string	vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string	vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
+    string vlPropInit() const;  // Return VerilatorVarProps initializer
     void	combineType(AstVarType type);
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); }	// op1 = Range of variable
@@ -1164,6 +1220,8 @@ public:
     void	isIfaceParent(bool flag) { m_isIfaceParent = flag; }
     void	funcLocal(bool flag) { m_funcLocal = flag; }
     void	funcReturn(bool flag) { m_funcReturn = flag; }
+    void isDpiOpenArray(bool flag) { m_isDpiOpenArray=flag; }
+    bool isDpiOpenArray() const { return m_isDpiOpenArray; }
     void noSubst(bool flag) { m_noSubst=flag; }
     bool noSubst() const { return m_noSubst; }
     void trace(bool flag) { m_trace=flag; }

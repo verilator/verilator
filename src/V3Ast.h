@@ -430,6 +430,10 @@ public:
     bool isDpiUnsignable() const {  // Can add "unsigned" to DPI
         return (m_e==BYTE || m_e==SHORTINT || m_e==INT || m_e==LONGINT || m_e==INTEGER);
     }
+    bool isDpiCLayout() const {  // Uses standard C layout, for DPI runtime access
+        return (m_e==BIT || m_e==BYTE || m_e==CHANDLE || m_e==INT
+                || m_e==LONGINT || m_e==DOUBLE || m_e==SHORTINT || m_e==UINT32 || m_e==UINT64);
+    }
     bool isOpaque() const {  // IE not a simple number we can bit optimize
 	return (m_e==STRING || m_e==SCOPEPTR || m_e==CHARPTR || m_e==DOUBLE || m_e==FLOAT);
     }
@@ -1885,21 +1889,24 @@ class AstNodeFTask : public AstNode {
 private:
     string	m_name;		// Name of task
     string	m_cname;	// Name of task if DPI import
+    uint64_t    m_dpiOpenParent;  // DPI import open array, if !=0, how many callees
     bool	m_taskPublic:1;	// Public task
     bool	m_attrIsolateAssign:1;// User isolate_assignments attribute
     bool	m_prototype:1;	// Just a prototype
     bool	m_dpiExport:1;	// DPI exported
     bool	m_dpiImport:1;	// DPI imported
     bool	m_dpiContext:1;	// DPI import context
+    bool        m_dpiOpenChild:1;  // DPI import open array child wrapper
     bool	m_dpiTask:1;	// DPI import task (vs. void function)
     bool	m_pure:1;	// DPI import pure
 public:
     AstNodeFTask(FileLine* fileline, const string& name, AstNode* stmtsp)
 	: AstNode(fileline)
-	, m_name(name), m_taskPublic(false)
+        , m_name(name)
+        , m_dpiOpenParent(0), m_taskPublic(false)
 	, m_attrIsolateAssign(false), m_prototype(false)
 	, m_dpiExport(false), m_dpiImport(false), m_dpiContext(false)
-	, m_dpiTask(false), m_pure(false) {
+        , m_dpiOpenChild(false), m_dpiTask(false), m_pure(false) {
 	addNOp3p(stmtsp);
 	cname(name);  // Might be overridden by dpi import/export
     }
@@ -1921,23 +1928,29 @@ public:
     void	addStmtsp(AstNode* nodep) { addNOp3p(nodep); }
     // op4 = scope name
     AstScopeName* scopeNamep() const { return op4p()->castScopeName(); }
-    void 	scopeNamep(AstNode* nodep) { setNOp4p(nodep); }
-    void	taskPublic(bool flag) { m_taskPublic=flag; }
-    bool	taskPublic() const { return m_taskPublic; }
-    void	attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
-    bool	attrIsolateAssign() const { return m_attrIsolateAssign; }
-    void	prototype(bool flag) { m_prototype = flag; }
-    bool	prototype() const { return m_prototype; }
-    void	dpiExport(bool flag) { m_dpiExport = flag; }
-    bool	dpiExport() const { return m_dpiExport; }
-    void	dpiImport(bool flag) { m_dpiImport = flag; }
-    bool	dpiImport() const { return m_dpiImport; }
-    void	dpiContext(bool flag) { m_dpiContext = flag; }
-    bool	dpiContext() const { return m_dpiContext; }
-    void	dpiTask(bool flag) { m_dpiTask = flag; }
-    bool	dpiTask() const { return m_dpiTask; }
-    void	pure(bool flag) { m_pure = flag; }
-    bool	pure() const { return m_pure; }
+    // MORE ACCESSORS
+    void dpiOpenParentInc() { ++m_dpiOpenParent; }
+    void dpiOpenParentClear() { m_dpiOpenParent=0; }
+    uint64_t dpiOpenParent() const { return m_dpiOpenParent; }
+    void scopeNamep(AstNode* nodep) { setNOp4p(nodep); }
+    void taskPublic(bool flag) { m_taskPublic=flag; }
+    bool taskPublic() const { return m_taskPublic; }
+    void attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
+    bool attrIsolateAssign() const { return m_attrIsolateAssign; }
+    void prototype(bool flag) { m_prototype = flag; }
+    bool prototype() const { return m_prototype; }
+    void dpiExport(bool flag) { m_dpiExport = flag; }
+    bool dpiExport() const { return m_dpiExport; }
+    void dpiImport(bool flag) { m_dpiImport = flag; }
+    bool dpiImport() const { return m_dpiImport; }
+    void dpiContext(bool flag) { m_dpiContext = flag; }
+    bool dpiContext() const { return m_dpiContext; }
+    void dpiOpenChild(bool flag) { m_dpiOpenChild = flag; }
+    bool dpiOpenChild() const { return m_dpiOpenChild; }
+    void dpiTask(bool flag) { m_dpiTask = flag; }
+    bool dpiTask() const { return m_dpiTask; }
+    void pure(bool flag) { m_pure = flag; }
+    bool pure() const { return m_pure; }
 };
 
 class AstNodeFTaskRef : public AstNode {
@@ -2043,6 +2056,13 @@ public:
     bool recursive() const { return m_recursive; }
     void recursiveClone(bool flag) { m_recursiveClone = flag; }
     bool recursiveClone() const { return m_recursiveClone; }
+};
+
+class AstNodeRange : public AstNode {
+    // A range, sized or unsized
+public:
+    AstNodeRange(FileLine* fl) : AstNode (fl) { }
+    ASTNODE_BASE_FUNCS(NodeRange)
 };
 
 //######################################################################

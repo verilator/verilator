@@ -43,6 +43,7 @@ extern "C" {
 //======================================================================
 
 int failure = 0;
+int dpii_failure() { return failure; }
 
 #define CHECK_RESULT_HEX(got, exp) \
     do { if ((got) != (exp)) { \
@@ -50,8 +51,6 @@ int failure = 0;
                  <<": GOT="<<(got)<<"   EXP="<<(exp)<<std::endl;       \
         failure = __LINE__; \
         }} while(0)
-
-int dpii_failure() { return failure; }
 
 //======================================================================
 

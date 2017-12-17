@@ -187,6 +187,7 @@ private:
     WidthVP*	m_vup;		// Current node state
     bool	m_paramsOnly;	// Computing parameter value; limit operation
     AstRange*	m_cellRangep;	// Range for arrayed instantiations, NULL for normal instantiations
+    AstNodeFTask* m_ftaskp;     // Current function/task
     AstFunc*	m_funcp;	// Current function
     AstInitial*	m_initialp;	// Current initial block
     AstAttrOf*	m_attrp;	// Current attribute
@@ -970,6 +971,15 @@ private:
 	}
 	UINFO(4,"dtWidthed "<<nodep<<endl);
     }
+    virtual void visit(AstUnsizedArrayDType* nodep) {
+        if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
+        if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
+        // Iterate into subDTypep() to resolve that type and update pointer.
+        nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        // Cleanup array size
+        nodep->dtypep(nodep);  // The array itself, not subDtype
+        UINFO(4,"dtWidthed "<<nodep<<endl);
+    }
     virtual void visit(AstBasicDType* nodep) {
 	if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
 	if (nodep->generic()) return;  // Already perfect
@@ -1151,7 +1161,12 @@ private:
 	if (nodep->childDTypep()) nodep->dtypep(moveChildDTypeEdit(nodep));
 	nodep->dtypep(iterateEditDTypep(nodep, nodep->dtypep()));
 	if (!nodep->dtypep()) nodep->v3fatalSrc("No dtype determined for var");
-	if (nodep->isIO() && !(nodep->dtypeSkipRefp()->castBasicDType()
+        if (nodep->dtypeSkipRefp()->castUnsizedArrayDType()) {
+            if (!(m_ftaskp && m_ftaskp->dpiImport())) {
+                nodep->v3error("Unsized/open arrays ('[]') are only supported in DPI imports");
+            }
+        }
+        else if (nodep->isIO() && !(nodep->dtypeSkipRefp()->castBasicDType()
 			       || nodep->dtypeSkipRefp()->castNodeArrayDType()
 			       || nodep->dtypeSkipRefp()->castNodeClassDType())) {
 	    nodep->v3error("Unsupported: Inputs and outputs must be simple data types");
@@ -2345,7 +2360,6 @@ private:
     virtual void visit(AstNodeFTask* nodep) {
 	// Grab width from the output variable (if it's a function)
 	if (nodep->didWidth()) return;
-	UINFO(5,"  FTASK "<<nodep<<endl);
 	if (nodep->doingWidth()) {
 	    nodep->v3error("Unsupported: Recursive function or task call");
 	    nodep->dtypeSetLogicBool();
@@ -2354,6 +2368,7 @@ private:
 	}
 	// Function hasn't been widthed, so make it so.
 	nodep->doingWidth(true);  // Would use user1 etc, but V3Width called from too many places to spend a user
+        m_ftaskp = nodep;
 	userIterateChildren(nodep, NULL);
 	if (nodep->fvarp()) {
 	    m_funcp = nodep->castFunc();
@@ -2363,6 +2378,12 @@ private:
 	nodep->didWidth(true);
 	nodep->doingWidth(false);
 	m_funcp = NULL;
+        m_ftaskp = NULL;
+        if (nodep->dpiImport()
+            && !nodep->dpiOpenParent()
+            && markHasOpenArray(nodep)) {
+            nodep->dpiOpenParentInc();  // Mark so V3Task will wait for a child to build calling func
+        }
     }
     virtual void visit(AstReturn* nodep) {
 	// IEEE: Assignment-like context
@@ -2468,6 +2489,10 @@ private:
                 // Do PRELIM again, because above accept may have exited early due to node replacement
                 userIterate(pinp, WidthVP(portp->dtypep(),PRELIM).p());
             }
+        }
+        // Cleanup any open arrays
+        if (markHasOpenArray(nodep->taskp())) {
+            makeOpenArrayShell(nodep);
         }
         // Stage 4
         {
@@ -3686,6 +3711,50 @@ private:
 	return patmap;
     }
 
+    void makeOpenArrayShell(AstNodeFTaskRef* nodep) {
+        UINFO(4,"Replicate openarray function "<<nodep->taskp()<<endl);
+        AstNodeFTask* oldTaskp = nodep->taskp();
+        oldTaskp->dpiOpenParentInc();
+        if (oldTaskp->dpiOpenChild()) oldTaskp->v3fatalSrc("DPI task should be parent or child, not both");
+        AstNodeFTask* newTaskp = oldTaskp->cloneTree(false);
+        newTaskp->dpiOpenChild(true);
+        newTaskp->dpiOpenParentClear();
+        newTaskp->name(newTaskp->name()+"__Vdpioc"+cvtToStr(oldTaskp->dpiOpenParent()));
+        oldTaskp->addNextHere(newTaskp);
+        // Relink reference to new function
+        nodep->taskp(newTaskp);
+        nodep->name(nodep->taskp()->name());
+        // Replace open array arguments with the callee's task
+        V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
+        for (V3TaskConnects::iterator it=tconnects.begin(); it!=tconnects.end(); ++it) {
+            AstVar* portp = it->first;
+            AstArg* argp = it->second;
+            AstNode* pinp = argp->exprp();
+            if (!pinp) continue;  // Argument error we'll find later
+            if (hasOpenArrayIterateDType(portp->dtypep())) {
+                portp->dtypep(pinp->dtypep());
+            }
+        }
+    }
+
+    bool markHasOpenArray(AstNodeFTask* nodep) {
+        bool hasOpen = false;
+        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
+            if (AstVar* portp = stmtp->castVar()) {
+                if (portp->isDpiOpenArray() || hasOpenArrayIterateDType(portp->dtypep())) {
+                    portp->isDpiOpenArray(true);
+                    hasOpen = true;
+                }
+            }
+        }
+        return hasOpen;
+    }
+    bool hasOpenArrayIterateDType(AstNodeDType* nodep) {
+        // Return true iff this datatype or child has an openarray
+        if (nodep->castUnsizedArrayDType()) return true;
+        if (nodep->subDTypep()) return hasOpenArrayIterateDType(nodep->subDTypep()->skipRefp());
+        return false;
+    }
 
     //----------------------------------------------------------------------
     // METHODS - special type detection
@@ -3764,6 +3833,7 @@ public:
 	//			    // don't wish to trigger errors
 	m_paramsOnly = paramsOnly;
 	m_cellRangep = NULL;
+        m_ftaskp = NULL;
 	m_funcp = NULL;
 	m_initialp = NULL;
 	m_attrp = NULL;
