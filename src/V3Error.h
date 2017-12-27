@@ -80,6 +80,7 @@ public:
 	IMPLICIT,	// Implicit wire
 	IMPURE,		// Impure function not being inlined
 	INCABSPATH,	// Include has absolute path
+        INFINITELOOP,   // Infinite loop
 	INITIALDLY,	// Initial delayed statement
 	LITENDIAN,	// Little bit endian vector
 	MODDUP,		// Duplicate module
@@ -132,7 +133,7 @@ public:
 	    "CMPCONST", "COLONPLUS", "COMBDLY", "DEFPARAM", "DECLFILENAME",
 	    "ENDLABEL", "GENCLK",
 	    "IFDEPTH", "IMPERFECTSCH", "IMPLICIT", "IMPURE",
-	    "INCABSPATH", "INITIALDLY",
+            "INCABSPATH", "INFINITELOOP", "INITIALDLY",
 	    "LITENDIAN", "MODDUP",
 	    "MULTIDRIVEN",
 	    "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY",

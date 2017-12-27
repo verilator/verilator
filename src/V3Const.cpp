@@ -107,6 +107,7 @@ private:
     bool	m_doShort;	// Remove expressions that short circuit
     bool	m_doV;		// Verilog, not C++ conversion
     bool	m_doGenerate;	// Postpone width checking inside generate
+    bool        m_hasJumpGo;    // JumpGo under this while
     AstNodeModule*	m_modp;	// Current module
     AstArraySel*	m_selp;	// Current select
     AstNode*	m_scopep;	// Current scope
@@ -2039,7 +2040,13 @@ private:
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstWhile* nodep) {
-	nodep->iterateChildren(*this);
+        bool oldHasJumpGo = m_hasJumpGo;
+        m_hasJumpGo = false;
+        {
+            nodep->iterateChildren(*this);
+        }
+        bool thisWhileHasJumpGo = m_hasJumpGo;
+        m_hasJumpGo = thisWhileHasJumpGo || oldHasJumpGo;
 	if (m_doNConst) {
 	    if (nodep->condp()->isZero()) {
 		UINFO(4,"WHILE(0) => nop "<<nodep<<endl);
@@ -2047,6 +2054,12 @@ private:
 		else nodep->unlinkFrBack();
 		nodep->deleteTree(); VL_DANGLING(nodep);
 	    }
+            else if (nodep->condp()->isNeqZero()) {
+                if (!thisWhileHasJumpGo) {
+                    nodep->v3warn(INFINITELOOP, "Infinite loop (condition always true)");
+                    nodep->fileline()->modifyWarnOff(V3ErrorCode::INFINITELOOP, true);  // Complain just once
+                }
+            }
 	    else if (operandBoolShift(nodep->condp())) {
 		replaceBoolShift(nodep->condp());
 	    }
@@ -2080,6 +2093,7 @@ private:
 
     virtual void visit(AstJumpGo* nodep) {
 	nodep->iterateChildren(*this);
+        m_hasJumpGo = true;
 	if (m_doExpensive) { nodep->labelp()->user4(true); }
     }
 
@@ -2460,6 +2474,7 @@ public:
 	m_doShort = true;	// Presently always done
 	m_doV = false;
 	m_doGenerate = false;	// Inside generate conditionals
+        m_hasJumpGo = false;
 	m_warn = false;
 	m_wremove = true;  // Overridden in visitors
 	m_modp = NULL;

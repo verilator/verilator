@@ -8,6 +8,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support DPI open arrays, bug909, bug1245. [David Pierce, Victor Besyakov]
 
+***   Add INFINITELOOP warning, bug1254. [Alex Solomatnikov]
+
 ****  Support > 64 bit decimal $display.
 
 ****  Support DPI time and svLogicVal. [Victor Besyakov]

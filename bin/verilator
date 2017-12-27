@@ -3275,6 +3275,18 @@ command line to specify the top include source directories.
 Disabled by default as this is a code style warning; it will simulate
 correctly.
 
+=item INFINITELOOP
+
+Warns that a while or for statement has a condition that is always true.
+and thus result in an infinite loop if the statement ever executes.
+
+This might be unintended behavior if the loop body contains statements that
+in other statements that would make time pass, which Verilator is ignoring
+due to e.g. STMTDLY warnings being disabled.
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly (i.e. hang due to the infinite loop).
+
 =item INITIALDLY
 
 Warns that you have a delayed assignment inside of an initial or final
