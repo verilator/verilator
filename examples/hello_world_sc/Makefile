@@ -5,7 +5,7 @@
 # This calls the object directory makefile.  That allows the objects to
 # be placed in the "current directory" which simplifies the Makefile.
 #
-# Copyright 2003-2017 by Wilson Snyder. This program is free software; you can
+# Copyright 2003-2018 by Wilson Snyder. This program is free software; you can
 # redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -23,7 +23,7 @@ endif
 # real project, it is better to start with a more complete example,
 # e.g. examples/tracing_sc.
 
-# If $VERILATOR_ROOT isn't in the enviornment, we assume it is part of a
+# If $VERILATOR_ROOT isn't in the environment, we assume it is part of a
 # package inatall, and verilator is in your path. Otherwise find the
 # binary relative to $VERILATOR_ROOT (such as when inside the git sources).
 ifeq ($(VERILATOR_ROOT),)
