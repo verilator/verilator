@@ -2040,6 +2040,8 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 		    putsDecoration("// enum WData "+varp->name()+"  //wide");
 		} else if (!varp->valuep()->castConst()) {   // Unsupported for output
 		    //putsDecoration("// enum ..... "+varp->name()+"  //not simple value, see variable above instead");
+                } else if (varp->dtypep()->castBasicDType()
+                           && varp->dtypep()->castBasicDType()->isOpaque()) {  // Can't put out e.g. doubles
 		} else {
 		    puts("enum ");
 		    puts(varp->isQuad()?"_QData":"_IData");
