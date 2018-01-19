@@ -59,7 +59,7 @@ endif
 
 #Default link, using normal make rules
 #$(VM_PREFIX): $(VK_GLOBAL_OBJS) $(VK_OBJS)
-#	$(LINK) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) 2>&1 | c++filt
+#	$(LINK) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) 2>&1
 
 #Our own compile rules; Faster compile, all in one file
 $(VM_PREFIX)__ALLboth.cpp: $(VK_CLASSES_CPP) $(VK_SUPPORT_CPP)
@@ -70,5 +70,5 @@ $(VM_PREFIX)__ALLboth.o: $(VM_PREFIX)__ALLboth.cpp
 
 ifneq ($(MAKE_MAIN),0)
    $(VM_PREFIX): $(VM_PREFIX)__ALLboth.o
-	$(LINK) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) 2>&1 | c++filt
+	$(LINK) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) 2>&1
 endif

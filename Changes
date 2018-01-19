@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix compile error on public real parameters by suppressing, bug1261. [Alex Solomatnikov]
 
+****  Remove c++filt, bug1265. [Stefan Wallentowitz]
+
 
 * Verilator 3.918 2018-01-02
 
