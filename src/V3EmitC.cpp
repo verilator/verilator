@@ -859,7 +859,7 @@ class EmitCImp : EmitCStmts {
 
     //---------------------------------------
     // VISITORS
-    using EmitCStmts::visit;  // Suppress hidden overloaded virtual function warnng
+    using EmitCStmts::visit;  // Suppress hidden overloaded virtual function warning
     virtual void visit(AstCFunc* nodep) {
 	// TRACE_* and DPI handled elsewhere
 	if (nodep->funcType().isTrace()) return;

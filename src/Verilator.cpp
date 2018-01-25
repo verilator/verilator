@@ -476,6 +476,7 @@ void process () {
 	V3Const::constifyCpp(v3Global.rootp());
 	V3Subst::substituteAll(v3Global.rootp());
     }
+
     if (!v3Global.opt.xmlOnly()
 	&& v3Global.opt.oSubstConst()) {
 	// Constant folding of substitutions
