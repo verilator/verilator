@@ -1117,10 +1117,12 @@ class TristateVisitor : public TristateBaseVisitor {
 	    }
 	    // Create new output pin
 	    AstAssignW* outAssignp = NULL;  // If reconnected, the related assignment
-	    AstPin* outpinp;
-	    {
-		AstVar* outModVarp = (AstVar*) nodep->modVarp()->user4p();
-		if (!outModVarp) nodep->v3fatalSrc("Unlinked");
+            AstPin* outpinp = NULL;
+            AstVar* outModVarp = (AstVar*) nodep->modVarp()->user4p();
+            if (!outModVarp) {
+                // At top, no need for __out as might be input only. Otherwise resolvable.
+                if (!m_modp->isTop()) nodep->v3fatalSrc("Unlinked");
+            } else {
 		AstNode* outexprp = nodep->exprp()->cloneTree(false);  // Note has lvalue() set
 		outpinp = new AstPin(nodep->fileline(),
 				     nodep->pinNum(),
@@ -1153,14 +1155,19 @@ class TristateVisitor : public TristateBaseVisitor {
 	    // Connect enable to output signal
 	    AstVarRef* exprrefp;  // Tristate variable that the Pin's expression refers to
 	    if (!outAssignp) {
-		exprrefp = outpinp->exprp()->castVarRef();
+                if (!outpinp) {
+                    exprrefp = NULL;  // Primary input only
+                } else {
+                    // pinReconnect should have converted this
+                    exprrefp = outpinp->exprp()->castVarRef();
+                    if (!exprrefp) nodep->v3error("Unsupported tristate port expression: "<<nodep->exprp()->prettyTypeName());
+                }
 	    } else {
+                // pinReconnect should have converted this
 		exprrefp = outAssignp->rhsp()->castVarRef();  // This should be the same var as the output pin
+                if (!exprrefp) nodep->v3error("Unsupported tristate port expression: "<<nodep->exprp()->prettyTypeName());
 	    }
-	    if (!exprrefp) { // deal with simple varref port
-		// pinReconnect should have converted this
-		nodep->v3error("Unsupported tristate port expression: "<<nodep->exprp()->prettyTypeName());
-	    } else {
+            if (exprrefp) {
 		UINFO(9,"outref "<<exprrefp<<endl);
 		exprrefp->user1p(enrefp);  // Mark as now tristated; iteration will pick it up from there
 		if (!outAssignp) {
