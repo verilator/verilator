@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 3.919 devel
 
+****  Fix gate optimization out of memory, add --gate-stmts, bug1260. [Alex Solomatnikov]
+
 ****  Fix compile error on public real parameters by suppressing, bug1261. [Alex Solomatnikov]
 
 ****  Fix input-only tristate comparisons, bug1267. [Alexis G]

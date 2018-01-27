@@ -289,6 +289,7 @@ descriptions in the next sections for more information.
     --getenv <var>              Get environment variable with defaults
     --help                      Display this help
      -I<dir>                    Directory to search for includes
+    --gate-stmts <value>        Tune gate optimizer depth
     --if-depth <value>          Tune IFDEPTH warning
      +incdir+<dir>              Directory to search for includes
     --inhibit-sim               Create function to turn off sim
@@ -749,6 +750,11 @@ String must in double quotes ("). On the command line it is required to escape
 them properly, e.g. as -GSTR="\"My String\"" or -GSTR='"My String"'.
 
 =back
+
+=item --gate-stmts I<value>
+
+Rarely needed.  Set the maximum number of statements that may be present in
+an equation for the gate substitution optimization to inline that equation.
 
 =item --gdb
 

@@ -787,6 +787,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( !strncmp (sw, "-G", strlen("-G"))) {
 		addParameter(string (sw+strlen("-G")), false);
 	    }
+            else if ( !strcmp (sw, "-gate-stmts") && (i+1)<argc ) {
+                shift;
+                m_gateStmts = atoi(argv[i]);
+            }
 	    else if ( !strcmp (sw, "-getenv") && (i+1)<argc ) {
 		shift;
 		cout<<V3Options::getenvBuiltins(argv[i])<<endl;
@@ -1252,6 +1256,7 @@ V3Options::V3Options() {
 
     m_convergeLimit = 100;
     m_dumpTree = 0;
+    m_gateStmts = 100;
     m_ifDepth = 0;
     m_inlineMult = 2000;
     m_moduleRecursion = 100;

@@ -195,6 +195,7 @@ private:
     bool		m_buffersOnly;	// Set when we only allow simple buffering, no equations (for clocks)
     AstNodeVarRef*	m_lhsVarRef;	// VarRef on lhs of assignment (what we're replacing)
     bool		m_dedupe;	// Set when we use isGateDedupable instead of isGateOptimizable
+    int                 m_ops;  // Operation count
 
     // METHODS
     void clearSimple(const char* because) {
@@ -205,6 +206,7 @@ private:
     }
     // VISITORS
     virtual void visit(AstNodeVarRef* nodep) {
+        ++m_ops;
 	nodep->iterateChildren(*this);
 	// We only allow a LHS ref for the var being set, and a RHS ref for something else being read.
 	if (nodep->varScopep()->varp()->isSc()) {
@@ -254,6 +256,9 @@ private:
     virtual void visit(AstNode* nodep) {
 	// *** Special iterator
 	if (!m_isSimple) return;	// Fastpath
+        if (++m_ops > v3Global.opt.gateStmts()) {
+            clearSimple("--gate-stmts exceeded");
+        }
 	if (!(m_dedupe ? nodep->isGateDedupable() : nodep->isGateOptimizable())
 	    || !nodep->isPure()
 	    || nodep->isBrancher()) {
@@ -270,6 +275,7 @@ public:
 	m_buffersOnly = buffersOnly;
 	m_lhsVarRef = NULL;
 	m_dedupe = dedupe;
+        m_ops = 0;
 	// Iterate
 	nodep->accept(*this);
 	// Check results
@@ -327,7 +333,7 @@ private:
     // METHODS
     void iterateNewStmt(AstNode* nodep, const char* nonReducibleReason, const char* consumeReason) {
 	if (m_scopep) {
-	    UINFO(4,"   STMT "<<nodep<<endl);
+            UINFO(5,"   STMT "<<nodep<<endl);
 	    // m_activep is null under AstCFunc's, that's ok.
 	    m_logicVertexp = new GateLogicVertex(&m_graph, m_scopep, nodep, m_activep, m_inSlow);
 	    if (nonReducibleReason) {
