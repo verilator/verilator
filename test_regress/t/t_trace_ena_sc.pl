@@ -10,16 +10,18 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 top_filename("t/t_trace_ena.v");
 
 compile (
-	 verilator_flags2 => ['-trace -sc'],
-	 );
+    verilator_flags2 => ['-trace -sc'],
+    );
 
 execute (
-	 check_finished=>1,
-	 );
+    check_finished=>1,
+    );
 
 if ($Self->{vlt}) {
     # Note more checks in _cc.pl
     file_grep     ("$Self->{obj_dir}/simx.vcd", qr/\$enddefinitions/x);
+
+    vcd_identical("$Self->{obj_dir}/simx.vcd", "t/$Self->{name}.out");
 }
 
 ok(1);

@@ -90,6 +90,11 @@ int main(int argc, char** argv, char** env) {
         // Evaluate model
         top->eval();
 
+#if VM_TRACE
+        // Dump trace data for this cycle
+        if (tfp) tfp->dump (main_time);
+#endif
+
         // Read outputs
         VL_PRINTF ("[%" VL_PRI64 "d] clk=%x rstl=%x iquad=%" VL_PRI64 "x"
                    " -> oquad=%" VL_PRI64"x owide=%x_%08x_%08x\n",
@@ -102,7 +107,7 @@ int main(int argc, char** argv, char** env) {
 
     // Close trace if opened
 #if VM_TRACE
-    if (tfp) { tfp->close(); }
+    if (tfp) { tfp->close(); tfp = NULL; }
 #endif
 
     //  Coverage analysis (since test passed)

@@ -94,10 +94,10 @@ int sc_main(int argc, char* argv[]) {
     const char* flag = Verilated::commandArgsPlusMatch("trace");
     if (flag && 0==strcmp(flag, "+trace")) {
         cout << "Enabling waves into logs/vlt_dump.vcd...\n";
-        VerilatedVcdSc* tfp = new VerilatedVcdSc;
-        top->trace (tfp, 99);
+        tfp = new VerilatedVcdSc;
+        top->trace(tfp, 99);
         mkdir("logs", 0777);
-        tfp->open ("logs/vlt_dump.vcd");
+        tfp->open("logs/vlt_dump.vcd");
     }
 #endif
 
@@ -107,13 +107,15 @@ int sc_main(int argc, char* argv[]) {
         // Flush the wave files each cycle so we can immediately see the output
         // Don't do this in "real" programs, do it in an abort() handler instead
         if (tfp) tfp->flush();
+#endif
+
         // Apply inputs
         if (VL_TIME_Q() > 1 && VL_TIME_Q() < 10) {
             reset_l = !1;       // Assert reset
         } else if (VL_TIME_Q() > 1) {
             reset_l = !0;       // Deassert reset
         }
-#endif
+
         // Simulate 1ns
 #if (SYSTEMC_VERSION>=20070314)
         sc_start(1,SC_NS);
@@ -122,19 +124,22 @@ int sc_main(int argc, char* argv[]) {
 #endif
     }
 
-    //  Close Waves
-#if VM_TRACE
-    if (tfp) tfp->close();
-#endif
-
     // Final model cleanup
     top->final();
+
+    // Close trace if opened
+#if VM_TRACE
+    if (tfp) { tfp->close(); tfp = NULL; }
+#endif
 
     //  Coverage analysis (since test passed)
 #if VM_COVERAGE
     mkdir("logs", 0777);
     VerilatedCov::write("logs/coverage.dat");
 #endif
+
+    // Destroy model
+    delete top; top = NULL;
 
     // Fin
     return 0;

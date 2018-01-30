@@ -1071,7 +1071,8 @@ sub _make_main {
     print $fh "// General headers\n";
     print $fh "#include \"verilated.h\"\n";
     print $fh "#include \"systemc.h\"\n" if $self->sc;
-    print $fh "#include \"verilated_vcd_c.h\"\n" if $self->{trace};
+    print $fh "#include \"verilated_vcd_c.h\"\n" if $self->{trace} && !$self->sc;
+    print $fh "#include \"verilated_vcd_sc.h\"\n" if $self->{trace} && $self->sc;
     print $fh "#include \"verilated_save.h\"\n" if $self->{savable};
 
     print $fh "$VM_PREFIX * topp;\n";
@@ -1132,7 +1133,8 @@ sub _make_main {
 	$fh->print("\n");
 	$fh->print("#if VM_TRACE\n");
 	$fh->print("    Verilated::traceEverOn(true);\n");
-	$fh->print("    VerilatedVcdC* tfp = new VerilatedVcdC;\n");
+        $fh->print("    VerilatedVcdC* tfp = new VerilatedVcdC;\n") if !$self->sc;
+        $fh->print("    VerilatedVcdSc* tfp = new VerilatedVcdSc;\n") if $self->sc;
 	$fh->print("    topp->trace (tfp, 99);\n");
 	$fh->print("    tfp->open (\"$self->{obj_dir}/simx.vcd\");\n");
 	if ($self->{trace} && !$self->sc) {
