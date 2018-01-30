@@ -2079,10 +2079,10 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     }
     if (v3Global.opt.trace()) {
 	if (modp->isTop()) puts("/// Trace signals in the model; called by application code\n");
-	puts("void trace (VerilatedVcdC* tfp, int levels, int options=0);\n");
+        puts("void trace(VerilatedVcdC* tfp, int levels, int options=0);\n");
 	if (modp->isTop() && optSystemC()) {
 	    puts("/// SC tracing; avoid overloaded virtual function lint warning\n");
-	    puts("virtual void trace (sc_trace_file* tfp) const { ::sc_core::sc_module::trace(tfp); }\n");
+            puts("virtual void trace(sc_trace_file* tfp) const { ::sc_core::sc_module::trace(tfp); }\n");
 	}
     }
 
@@ -2114,9 +2114,9 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
     if (v3Global.opt.trace()) {
 	ofp()->putsPrivate(false);  // public:
-	puts("static void traceInit ("+v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code);\n");
-	puts("static void traceFull ("+v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code);\n");
-	puts("static void traceChg  ("+v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code);\n");
+        puts("static void traceInit("+v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code);\n");
+        puts("static void traceFull("+v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code);\n");
+        puts("static void traceChg("+v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code);\n");
     }
     if (v3Global.opt.savable()) {
 	ofp()->putsPrivate(false);  // public:
@@ -2277,9 +2277,9 @@ class EmitCTrace : EmitCStmts {
     void emitTraceSlow() {
 	puts("\n//======================\n\n");
 
-	puts("void "+topClassName()+"::trace (");
+        puts("void "+topClassName()+"::trace(");
 	puts("VerilatedVcdC* tfp, int, int) {\n");
-	puts(  "tfp->spTrace()->addCallback ("
+        puts(  "tfp->spTrace()->addCallback("
 	       "&"+topClassName()+"::traceInit"
 	       +", &"+topClassName()+"::traceFull"
 	       +", &"+topClassName()+"::traceChg, this);\n");
@@ -2294,7 +2294,7 @@ class EmitCTrace : EmitCStmts {
 	puts("if (!Verilated::calcUnusedSigs()) VL_FATAL_MT(__FILE__,__LINE__,__FILE__,\"Turning on wave traces requires Verilated::traceEverOn(true) call before time 0.\");\n");
 
 	puts("vcdp->scopeEscape(' ');\n");
-	puts("t->traceInitThis (vlSymsp, vcdp, code);\n");
+        puts("t->traceInitThis(vlSymsp, vcdp, code);\n");
 	puts("vcdp->scopeEscape('.');\n");  // Restore so later traced files won't break
 	puts("}\n");
 	splitSizeInc(10);
@@ -2304,7 +2304,7 @@ class EmitCTrace : EmitCStmts {
 	putsDecoration("// Callback from vcd->dump()\n");
 	puts(topClassName()+"* t=("+topClassName()+"*)userthis;\n");
 	puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp;  // Setup global symbol table\n");
-	puts("t->traceFullThis (vlSymsp, vcdp, code);\n");
+        puts("t->traceFullThis(vlSymsp, vcdp, code);\n");
 	puts("}\n");
 	splitSizeInc(10);
 
@@ -2320,7 +2320,7 @@ class EmitCTrace : EmitCStmts {
 	puts(topClassName()+"* t=("+topClassName()+"*)userthis;\n");
 	puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp;  // Setup global symbol table\n");
 	puts("if (vlSymsp->getClearActivity()) {\n");
-	puts("t->traceChgThis (vlSymsp, vcdp, code);\n");
+        puts("t->traceChgThis(vlSymsp, vcdp, code);\n");
 	puts("}\n");
 	puts("}\n");
 	splitSizeInc(10);
