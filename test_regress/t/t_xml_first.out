@@ -43,7 +43,7 @@
       <var fl="e37" name="q" dtype_id="2"/>
       <always fl="e39">
         <sentree fl="e39">
-          <senitem fl="e39">
+          <senitem fl="e39" edgeType="POS">
             <varref fl="e39" name="clk" dtype_id="1"/>
           </senitem>
         </sentree>

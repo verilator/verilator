@@ -12,6 +12,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix input-only tristate comparisons, bug1267. [Alexis G]
 
+****  Fix missing edge type in xml output, msg2480. [Alexis G]
+
 ****  Remove c++filt, bug1265. [Stefan Wallentowitz]
 
 

@@ -129,6 +129,11 @@ class EmitXmlFileVisitor : public AstNVisitor {
 	// Children includes vpiHighConn and vpiLowConn; we don't support port bits (yet?)
 	outputChildrenEnd(nodep, "port");
     }
+    virtual void visit(AstSenItem* nodep) {
+        outputTag(nodep, "");
+        puts(" edgeType=\""+cvtToStr(nodep->edgeType().ascii())+"\"");  // IEEE vpiTopModule
+        outputChildrenEnd(nodep, "");
+    }
 
     // Data types
     virtual void visit(AstBasicDType* nodep) {
