@@ -97,6 +97,15 @@ class EmitXmlFileVisitor : public AstNVisitor {
     }
 
     // VISITORS
+    virtual void visit(AstAssignW* nodep) {
+        outputTag(nodep, "contassign"); // IEEE: vpiContAssign
+        outputChildrenEnd(nodep, "contassign");
+    }
+    virtual void visit(AstCell* nodep) {
+        outputTag(nodep, "instance");   // IEEE: vpiInstance
+        puts(" defName="); putsQuoted(nodep->modName());  // IEEE vpiDefName
+        outputChildrenEnd(nodep, "instance");
+    }
     virtual void visit(AstNetlist* nodep) {
 	puts("<netlist>\n");
 	nodep->iterateChildren(*this);
@@ -107,11 +116,6 @@ class EmitXmlFileVisitor : public AstNVisitor {
 	if (nodep->level()==1 || nodep->level()==2) // ==2 because we don't add wrapper when in XML mode
 	    puts(" topModule=\"1\"");  // IEEE vpiTopModule
 	outputChildrenEnd(nodep, "");
-    }
-    virtual void visit(AstCell* nodep) {
-	outputTag(nodep, "instance");	// IEEE: vpiInstance
-	puts(" defName="); putsQuoted(nodep->modName());  // IEEE vpiDefName
-	outputChildrenEnd(nodep, "instance");
     }
     virtual void visit(AstPin* nodep) {
 	// What we call a pin in verilator is a port in the IEEE spec.
@@ -124,10 +128,6 @@ class EmitXmlFileVisitor : public AstNVisitor {
 	puts(" portIndex=\""+cvtToStr(nodep->pinNum())+"\""); // IEEE: vpiPortIndex
 	// Children includes vpiHighConn and vpiLowConn; we don't support port bits (yet?)
 	outputChildrenEnd(nodep, "port");
-    }
-    virtual void visit(AstAssignW* nodep) {
-	outputTag(nodep, "contassign");	// IEEE: vpiContAssign
-	outputChildrenEnd(nodep, "contassign");
     }
 
     // Data types
@@ -165,7 +165,7 @@ void V3EmitXml::emitxml() {
     of.puts("<!-- DESCR" "IPTION: Verilator output: XML representation of netlist -->\n");
     of.puts("<verilator_xml>\n");
     {
-	stringstream sstr;
+	std::stringstream sstr;
 	FileLine::fileNameNumMapDumpXml(sstr);
 	of.puts(sstr.str());
     }
