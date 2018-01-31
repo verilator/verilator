@@ -32,6 +32,7 @@ module t (/*AUTOARG*/
 `ifdef FAILING_ASSERTIONS
 	    assert (0) else $info;
 	    assert (0) else $info("Info message");
+	    assume (0) else $info("Info message from failing assumption");
 	    assert (0) else $info("Info message, cyc=%d", cyc);
 	    InWarningBlock: assert (0) else $warning("Warning.... 1.0=%f 2.0=%f", 1.0, 2.0);
 	    InErrorBlock: assert (0) else $error("Error....");

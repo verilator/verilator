@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 3.919 devel
 
+***   Support 'assume' similar to 'assert', bug1269. [Dan Gisselquist]
+
 ****  Fix tracing example file output, bug1268. [Enzo Chi]
 
 ****  Fix gate optimization out of memory, add --gate-stmts, bug1260. [Alex Solomatnikov]

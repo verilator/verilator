@@ -302,6 +302,7 @@ class AstSenTree;
 %token<fl>		yALWAYS_LATCH	"always_latch"
 %token<fl>		yAND		"and"
 %token<fl>		yASSERT		"assert"
+%token<fl>		yASSUME		"assume"
 %token<fl>		yASSIGN		"assign"
 %token<fl>		yAUTOMATIC	"automatic"
 %token<fl>		yBEGIN		"begin"
@@ -3667,6 +3668,7 @@ clocking_declaration<nodep>:		// IEEE: clocking_declaration  (INCOMPLETE)
 
 labeledStmt<nodep>:
 		immediate_assert_statement		{ $$ = $1; }
+	|	immediate_assume_statement		{ $$ = $1; }
 	;
 
 concurrent_assertion_item<nodep>:	// IEEE: concurrent_assertion_item
@@ -3696,6 +3698,13 @@ immediate_assert_statement<nodep>:	// ==IEEE: immediate_assert_statement
 		yASSERT '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE	{ $$ = new AstVAssert($1,$3,$5, GRAMMARP->createDisplayError($1)); }
 	|	yASSERT '(' expr ')'           yELSE stmtBlock		{ $$ = new AstVAssert($1,$3,NULL,$6); }
 	|	yASSERT '(' expr ')' stmtBlock yELSE stmtBlock		{ $$ = new AstVAssert($1,$3,$5,$7);   }
+	;
+
+immediate_assume_statement<nodep>:	// ==IEEE: immediate_assume_statement
+	//				// action_block expanded here, for compatibility with AstVAssert
+		yASSUME '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE	{ $$ = new AstVAssert($1,$3,$5, GRAMMARP->createDisplayError($1)); }
+	|	yASSUME '(' expr ')'           yELSE stmtBlock		{ $$ = new AstVAssert($1,$3,NULL,$6); }
+	|	yASSUME '(' expr ')' stmtBlock yELSE stmtBlock		{ $$ = new AstVAssert($1,$3,$5,$7);   }
 	;
 
 //************************************************
