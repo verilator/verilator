@@ -17,5 +17,14 @@ $Self->run(cmd=>["../bin/verilator_coverage",
                  "t/t_vlcov_data_d.dat",
            ],
     );
-ok(files_identical("$Self->{obj_dir}/coverage.dat", "t/$Self->{name}.out"));
+
+# Older clib's didn't properly sort maps, but the coverage data doesn't
+# really care about ordering. So avoid false failures by sorting.
+$Self->run(cmd=>["sort",
+                 "$Self->{obj_dir}/coverage.dat",
+                 "> $Self->{obj_dir}/coverage-sort.dat",
+           ],
+    );
+
+ok(files_identical("$Self->{obj_dir}/coverage-sort.dat", "t/$Self->{name}.out"));
 1;

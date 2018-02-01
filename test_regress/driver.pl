@@ -663,7 +663,7 @@ sub compile {
     elsif ($param{vlt}) {
 	my @cmdargs = $self->compile_vlt_flags(%param);
 
-	if ($self->sc && !defined $ENV{SYSTEMC} && !defined $ENV{SYSTEMC_INCLUDE}) {
+	if ($self->sc && !$self->have_sc) {
 	    $self->skip("Test requires SystemC; ignore error since not installed\n");
 	    return 1;
 	}
@@ -909,6 +909,12 @@ sub v_suffix {
 sub sc {
     my $self = (ref $_[0]? shift : $Self);
     return $self->{sc};
+}
+
+sub have_sc {
+    #my $self = shift;
+    return 1 if (defined $ENV{SYSTEMC} || defined $ENV{SYSTEMC_INCLUDE});
+    return 0;
 }
 
 #----------------------------------------------------------------------

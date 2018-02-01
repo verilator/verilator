@@ -7,21 +7,26 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-top_filename("t/t_trace_ena.v");
+if (!$Self->have_sc) {
+    $Self->skip("No SystemC installed");
+}
+else {
+    top_filename("t/t_trace_ena.v");
 
-compile (
-    verilator_flags2 => ['-trace -sc'],
-    );
+    compile (
+        verilator_flags2 => ['-trace -sc'],
+        );
 
-execute (
-    check_finished=>1,
-    );
+    execute (
+        check_finished=>1,
+        );
 
-if ($Self->{vlt}) {
-    # Note more checks in _cc.pl
-    file_grep     ("$Self->{obj_dir}/simx.vcd", qr/\$enddefinitions/x);
+    if ($Self->{vlt}) {
+        # Note more checks in _cc.pl
+        file_grep     ("$Self->{obj_dir}/simx.vcd", qr/\$enddefinitions/x);
 
-    vcd_identical("$Self->{obj_dir}/simx.vcd", "t/$Self->{name}.out");
+        vcd_identical("$Self->{obj_dir}/simx.vcd", "t/$Self->{name}.out");
+    }
 }
 
 ok(1);
