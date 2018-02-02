@@ -278,7 +278,7 @@ void EmitCSyms::emitSymHdr() {
 
     // for
     puts("\n// INCLUDE MODULE CLASSES\n");
-    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castNodeModule()) {
+    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=VN_CAST(nodep->nextp(), NodeModule)) {
 	puts("#include \""+modClassName(nodep)+".h\"\n");
     }
 
@@ -369,7 +369,7 @@ void EmitCSyms::emitSymImp() {
 
     // Includes
     puts("#include \""+symClassName()+".h\"\n");
-    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castNodeModule()) {
+    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=VN_CAST(nodep->nextp(), NodeModule)) {
 	puts("#include \""+modClassName(nodep)+".h\"\n");
     }
 
@@ -481,10 +481,10 @@ void EmitCSyms::emitSymImp() {
 		}
 		for (AstNodeDType* dtypep=varp->dtypep(); dtypep; ) {
 		    dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
-		    if (AstNodeArrayDType* adtypep = dtypep->castNodeArrayDType()) {
+                    if (const AstNodeArrayDType* adtypep = VN_CAST(dtypep, NodeArrayDType)) {
 			bounds += " ,"; bounds += cvtToStr(adtypep->msb());
 			bounds += ","; bounds += cvtToStr(adtypep->lsb());
-			if (dtypep->castPackArrayDType()) pdim++; else udim++;
+                        if (VN_IS(dtypep, PackArrayDType)) pdim++; else udim++;
 			dtypep = adtypep->subDTypep();
 		    }
 		    else break; // AstBasicDType - nothing below, 1
@@ -628,7 +628,7 @@ void EmitCSyms::emitDpiImp() {
 	    puts("return "+topClassName()+"::"+nodep->name()+"(");
 	    string args;
 	    for (AstNode* stmtp = nodep->argsp(); stmtp; stmtp=stmtp->nextp()) {
-		if (AstVar* portp = stmtp->castVar()) {
+                if (const AstVar* portp = VN_CAST(stmtp, Var)) {
 		    if (portp->isIO() && !portp->isFuncReturn()) {
 			if (args != "") args+= ", ";
 			args += portp->name();

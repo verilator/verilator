@@ -44,6 +44,15 @@ class VFlagChildDType {};  // Used by parser.y to select constructor that sets c
 
 //######################################################################
 
+// (V)erilator (N)ode (is)): True if AstNode is of a a given AstType
+#define VN_IS(nodep,nodetypename) (AstNode::privateIs ## nodetypename(nodep))
+
+// (V)erilator (N)ode (cast): Cast to given type if can; effectively dynamic_cast(nodep)(nodetypename)
+#define VN_CAST(nodep,nodetypename) (AstNode::privateCast ## nodetypename(nodep))
+#define VN_CAST_CONST(nodep,nodetypename) (AstNode::privateConstCast ## nodetypename(nodep) )
+
+//######################################################################
+
 class AstType {
 public:
 #include "V3Ast__gen_types.h"	// From ./astgen
@@ -1048,8 +1057,8 @@ private:
     AstNode*	cloneTreeIterList();
     void	checkTreeIter(AstNode* backp);
     void	checkTreeIterList(AstNode* backp);
-    bool	gateTreeIter();
-    bool	sameTreeIter(AstNode* node1p, AstNode* node2p, bool ignNext, bool gateOnly);
+    bool        gateTreeIter() const;
+    bool        sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ignNext, bool gateOnly) const;
     void	deleteTreeIter();
     void	deleteNode();
 public:
@@ -1240,11 +1249,11 @@ public:
 
     // ACCESSORS for specific types
     // Alas these can't be virtual or they break when passed a NULL
-    bool	isZero();
-    bool	isOne();
-    bool	isNeqZero();
-    bool	isAllOnes();
-    bool	isAllOnesV();  // Verilog width rules apply
+    bool isZero() const;
+    bool isOne() const;
+    bool isNeqZero() const;
+    bool isAllOnes() const;
+    bool isAllOnesV() const;  // Verilog width rules apply
 
     // METHODS - data type changes especially for initial creation
     void	dtypep(AstNodeDType* nodep) { if (m_dtypep != nodep) { m_dtypep = nodep; editCountInc(); } }
@@ -1303,8 +1312,8 @@ public:
     // METHODS - Iterate on a tree
     AstNode*	cloneTree(bool cloneNextLink);
     bool	gateTree() { return gateTreeIter(); }  // Is tree isGateOptimizable?
-    bool	sameTree(AstNode* node2p);	// Does tree of this == node2p?
-    bool	sameGateTree(AstNode* node2p);	// Does tree of this == node2p?, not allowing non-isGateOptimizable
+    bool        sameTree(const AstNode* node2p) const;  // Does tree of this == node2p?
+    bool        sameGateTree(const AstNode* node2p) const;  // Does tree of this == node2p?, not allowing non-isGateOptimizable
     void	deleteTree();	// Always deletes the next link
     void	checkTree();  // User Interface version
     void	checkIter() const;
@@ -1376,7 +1385,7 @@ public:
     virtual bool cleanOut() = 0; // True if output has extra upper bits zero
     // Someday we will generically support data types on every math node
     // Until then isOpaque indicates we shouldn't constant optimize this node type
-    bool isOpaque() { return castCvtPackString()!=NULL; }
+    bool isOpaque() { return VN_IS(this, CvtPackString); }
 };
 
 class AstNodeTermop : public AstNodeMath {
@@ -1516,7 +1525,7 @@ public:
     AstNode*	fromp() const { return lhsp(); }
     AstNode*	rhsp() 	const { return op2p(); }
     AstNode*	thsp() 	const { return op3p(); }
-    AstAttrOf*	attrp() const { return op4p()->castAttrOf(); }
+    AstAttrOf* attrp() const { return VN_CAST(op4p(), AttrOf); }
     void	lhsp(AstNode* nodep)  { return setOp1p(nodep); }
     void	rhsp(AstNode* nodep)  { return setOp2p(nodep); }
     void	thsp(AstNode* nodep)  { return setOp3p(nodep); }
@@ -1611,7 +1620,7 @@ public:
     ASTNODE_BASE_FUNCS(NodeCase)
     virtual int   instrCount()	const { return instrCountBranch(); }
     AstNode*	  exprp()	const { return op1p(); }	// op1 = case condition <expression>
-    AstCaseItem*  itemsp()	const { return op2p()->castCaseItem(); }  // op2 = list of case expressions
+    AstCaseItem* itemsp() const { return VN_CAST(op2p(), CaseItem); }  // op2 = list of case expressions
     AstNode*	  notParallelp() const { return op3p(); }	// op3 = assertion code for non-full case's
     void addItemsp(AstNode* nodep) { addOp2p(nodep); }
     void addNotParallelp(AstNode* nodep) { setOp3p(nodep); }
@@ -1774,8 +1783,9 @@ public:
     virtual void dump(std::ostream& str);
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
     virtual AstBasicDType* basicp() const {
-        return (isFourstate() ? findLogicDType(width(),width(),numeric())->castBasicDType()
-                : findBitDType(width(),width(),numeric())->castBasicDType()); }
+        return (isFourstate()
+                ? VN_CAST(findLogicDType(width(),width(),numeric()), BasicDType)
+                : VN_CAST(findBitDType(width(),width(),numeric()), BasicDType)); }
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
@@ -1785,7 +1795,7 @@ public:
     virtual bool similarDType(AstNodeDType* samep) const {
 	return this==samep;  // We don't compare members, require exact equivalence
     }
-    AstMemberDType* membersp() const { return op1p()->castMemberDType(); } // op1 = AstMember list
+    AstMemberDType* membersp() const { return VN_CAST(op1p(), MemberDType); }  // op1 = AstMember list
     void addMembersp(AstNode* nodep) { addNOp1p(nodep); }
     bool packed() const { return m_packed; }
     bool packedUnsup() const { return true; }  // packed() but as don't support unpacked, presently all structs
@@ -1836,13 +1846,13 @@ public:
     }
     virtual V3Hash sameHash() const { return V3Hash(V3Hash(m_refDTypep),V3Hash(msb()),V3Hash(lsb())); }
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
-    AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
+    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }  // op1 = Range of variable
     void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     virtual AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     virtual AstNodeDType* virtRefDTypep() const { return m_refDTypep; }
     virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
-    AstRange*	rangep() const { return op2p()->castRange(); }	// op2 = Array(s) of variable
+    AstRange* rangep() const { return VN_CAST(op2p(), Range); }  // op2 = Array(s) of variable
     void	rangep(AstRange* nodep);
     // METHODS
     virtual AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type
@@ -1927,7 +1937,7 @@ public:
     AstNode*	stmtsp() 	const { return op3p(); }	// op3 = List of statements
     void	addStmtsp(AstNode* nodep) { addNOp3p(nodep); }
     // op4 = scope name
-    AstScopeName* scopeNamep() const { return op4p()->castScopeName(); }
+    AstScopeName* scopeNamep() const { return VN_CAST(op4p(), ScopeName); }
     // MORE ACCESSORS
     void dpiOpenParentInc() { ++m_dpiOpenParent; }
     void dpiOpenParentClear() { m_dpiOpenParent=0; }
@@ -1996,7 +2006,7 @@ public:
     AstNode*	pinsp() 	const { return op2p(); }
     void addPinsp(AstNode* nodep) { addOp2p(nodep); }
     // op3 = scope tracking
-    AstScopeName* scopeNamep() const { return op3p()->castScopeName(); }
+    AstScopeName* scopeNamep() const { return VN_CAST(op3p(), ScopeName); }
     void 	scopeNamep(AstNode* nodep) { setNOp3p(nodep); }
 };
 
@@ -2029,7 +2039,7 @@ public:
     virtual bool maybePointedTo() const { return true; }
     virtual string name()	const { return m_name; }
     AstNode*	stmtsp() 	const { return op2p(); }	// op2 = List of statements
-    AstActive*  activesp()	const { return op3p()->castActive(); }	// op3 = List of i/sblocks
+    AstActive* activesp() const { return VN_CAST(op3p(), Active); }  // op3 = List of i/sblocks
     // METHODS
     void addInlinesp(AstNode* nodep) { addOp1p(nodep); }
     void addStmtp(AstNode* nodep) { addOp2p(nodep); }
@@ -2071,7 +2081,8 @@ public:
 
 #include "V3Ast__gen_impl.h"	// From ./astgen
 // Things like:
-//  inline AstAlways*	AstNode::castAlways() {	  return dynamic_cast<AstAlways*>(this);}
+//  inline AstAlways* AstNode::castAlways() { return dynamic_cast<AstAlways*>(this);}
+//  inline bool AstNode::privateIsaAlways(const AstNode* nodep) { return nodep && nodep->type() == AstType::atAlways; }
 
 //######################################################################
 // Inline ACCESSORS
@@ -2080,17 +2091,17 @@ inline int AstNode::width() const    { return dtypep() ? dtypep()->width() : 0; 
 inline int AstNode::widthMin() const { return dtypep() ? dtypep()->widthMin() : 0; }
 inline bool AstNode::width1() const  { return dtypep() && dtypep()->width()==1; }  // V3Const uses to know it can optimize
 inline int  AstNode::widthInstrs() const { return (!dtypep() ? 1 : (dtypep()->isWide() ? dtypep()->widthWords() : 1)); }
-inline bool AstNode::isDouble() const { return dtypep() && dtypep()->castBasicDType() && dtypep()->castBasicDType()->isDouble(); }
+inline bool AstNode::isDouble() const { return dtypep() && VN_IS(dtypep(), BasicDType) && VN_CAST(dtypep(), BasicDType)->isDouble(); }
 inline bool AstNode::isString() const { return dtypep() && dtypep()->basicp() && dtypep()->basicp()->isString(); }
 inline bool AstNode::isSigned() const { return dtypep() && dtypep()->isSigned(); }
 
-inline bool AstNode::isZero()     { return (this->castConst() && this->castConst()->num().isEqZero()); }
-inline bool AstNode::isNeqZero()  { return (this->castConst() && this->castConst()->num().isNeqZero()); }
-inline bool AstNode::isOne()      { return (this->castConst() && this->castConst()->num().isEqOne()); }
-inline bool AstNode::isAllOnes()  { return (this->castConst() && this->castConst()->isEqAllOnes()); }
-inline bool AstNode::isAllOnesV() { return (this->castConst() && this->castConst()->isEqAllOnesV()); }
-inline bool AstNode::sameTree(AstNode* node2p) { return sameTreeIter(this, node2p, true, false); }
-inline bool AstNode::sameGateTree(AstNode* node2p) { return sameTreeIter(this, node2p, true, true); }
+inline bool AstNode::isZero() const     { return (VN_IS(this, Const) && VN_CAST_CONST(this, Const)->num().isEqZero()); }
+inline bool AstNode::isNeqZero() const  { return (VN_IS(this, Const) && VN_CAST_CONST(this, Const)->num().isNeqZero()); }
+inline bool AstNode::isOne() const      { return (VN_IS(this, Const) && VN_CAST_CONST(this, Const)->num().isEqOne()); }
+inline bool AstNode::isAllOnes() const  { return (VN_IS(this, Const) && VN_CAST_CONST(this, Const)->isEqAllOnes()); }
+inline bool AstNode::isAllOnesV() const { return (VN_IS(this, Const) && VN_CAST_CONST(this, Const)->isEqAllOnesV()); }
+inline bool AstNode::sameTree(const AstNode* node2p) const { return sameTreeIter(this, node2p, true, false); }
+inline bool AstNode::sameGateTree(const AstNode* node2p) const { return sameTreeIter(this, node2p, true, true); }
 
 inline void AstNodeVarRef::init() { if (m_varp) dtypep(m_varp->dtypep()); }
 

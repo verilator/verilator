@@ -223,7 +223,7 @@ private:
 		if (nodep->valuep() && !vvertexp->duplicatep()) {
 		    V3Hashed::iterator dupit = hashed.findDuplicate(nodep->valuep());
 		    if (dupit != hashed.end()) {
-			AstTraceInc* dupincp = hashed.iteratorNodep(dupit)->backp()->castTraceInc();
+                        AstTraceInc* dupincp = VN_CAST(hashed.iteratorNodep(dupit)->backp(), TraceInc);
 			if (!dupincp) nodep->v3fatalSrc("Trace duplicate of wrong type");
 			TraceTraceVertex* dupvertexp = dynamic_cast<TraceTraceVertex*>(dupincp->user1u().toGraphVertex());
 			UINFO(8,"  Orig "<<nodep<<endl);
@@ -359,10 +359,10 @@ private:
 	}
 	AstCCall* callp = new AstCCall(funcp->fileline(), funcp);
 	callp->argTypes("vlSymsp, vcdp, code");
-	if (callfromp->castCFunc()) {
-	    callfromp->castCFunc()->addStmtsp(callp);
-	} else if (callfromp->castIf()) {
-	    callfromp->castIf()->addIfsp(callp);
+        if (VN_IS(callfromp, CFunc)) {
+            VN_CAST(callfromp, CFunc)->addStmtsp(callp);
+        } else if (VN_IS(callfromp, If)) {
+            VN_CAST(callfromp, If)->addIfsp(callp);
 	} else {
 	    callfromp->v3fatalSrc("Unknown caller node type");  // Where to add it??
 	}
@@ -602,7 +602,7 @@ private:
 	    // If so, all funcs might share the same activity code
 	    TraceActivityVertex* activityVtxp = getActivityVertexp(nodep, nodep->funcp()->slow());
 	    for (AstNode* nextp=nodep; nextp; nextp=nextp->nextp()) {
-		if (AstCCall* ccallp = nextp->castCCall()) {
+                if (AstCCall* ccallp = VN_CAST(nextp, CCall)) {
 		    ccallp->user2(true); // Processed
 		    UINFO(8,"     SubCCALL "<<ccallp<<endl);
 		    V3GraphVertex* ccallFuncVtxp = getCFuncVertexp(ccallp->funcp());

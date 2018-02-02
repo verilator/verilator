@@ -119,14 +119,14 @@ private:
 
     // Potentially very slow, intended for debugging
     string prettyNumber(V3Number* nump, AstNodeDType* dtypep) {
-	if (AstRefDType* refdtypep = dtypep->castRefDType()) {
+        if (AstRefDType* refdtypep = VN_CAST(dtypep, RefDType)) {
 	    dtypep = refdtypep->skipRefp();
 	}
-	if (AstStructDType* stp = dtypep->castStructDType()) {
+        if (AstStructDType* stp = VN_CAST(dtypep, StructDType)) {
 	    if (stp->packed()) {
                 std::ostringstream out;
 		out<<"'{";
-		for (AstMemberDType* itemp = stp->membersp(); itemp; itemp=itemp->nextp()->castMemberDType()) {
+                for (AstMemberDType* itemp = stp->membersp(); itemp; itemp=VN_CAST(itemp->nextp(), MemberDType)) {
 		    int width = itemp->width();
 		    int lsb = itemp->lsb();
 		    int msb = lsb + width - 1;
@@ -143,7 +143,7 @@ private:
 		out<<"}";
 		return out.str();
 	    }
-	} else if (AstPackArrayDType * arrayp = dtypep->castPackArrayDType()) {
+        } else if (AstPackArrayDType * arrayp = VN_CAST(dtypep, PackArrayDType)) {
 	    if (AstNodeDType * childTypep = arrayp->subDTypep()) {
                 std::ostringstream out;
 		out<<"[";
@@ -314,7 +314,7 @@ private:
     }
     void assignOutNumber(AstNodeAssign* nodep, AstNode* vscp, const V3Number* nump) {
 	// Don't do setNumber, as value isn't yet visible to following statements
-	if (nodep->castAssignDly()) {
+        if (VN_IS(nodep, AssignDly)) {
 	    // Don't do setNumber, as value isn't yet visible to following statements
 	    newOutNumber(vscp)->opAssign(*nump);
 	} else {
@@ -341,9 +341,9 @@ private:
 	// We can't have non-delayed assignments with same value on LHS and RHS
 	// as we don't figure out variable ordering.
 	// Delayed is OK though, as we'll decode the next state separately.
-	if (!nodep->varp()->dtypeSkipRefp()->castBasicDType()
-            && !nodep->varp()->dtypeSkipRefp()->castPackArrayDType()
-            && !nodep->varp()->dtypeSkipRefp()->castStructDType())
+        if (!VN_IS(nodep->varp()->dtypeSkipRefp(), BasicDType)
+            && !VN_IS(nodep->varp()->dtypeSkipRefp(), PackArrayDType)
+            && !VN_IS(nodep->varp()->dtypeSkipRefp(), StructDType))
             clearOptimizable(nodep,"Array references/not basic");
 	if (nodep->lvalue()) {
 	    if (m_inDlyAssign) {
@@ -576,11 +576,11 @@ private:
 	// Recurse down to find final variable being set (outVarrefp), with value to write on nodep->rhsp()
 	checkNodeInfo(selp);
 	selp->lsbp()->iterateAndNext(*this);  // Bit index
-	if (AstVarRef* varrefp = selp->fromp()->castVarRef()) {
+        if (AstVarRef* varrefp = VN_CAST(selp->fromp(), VarRef)) {
 	    outVarrefpRef = varrefp;
 	    lsbRef = *fetchNumber(selp->lsbp());
 	    return;  // And presumably still optimizable()
-	} else if (AstSel* subselp = selp->lhsp()->castSel()) {
+        } else if (AstSel* subselp = VN_CAST(selp->lhsp(), Sel)) {
 	    V3Number sublsb = V3Number(nodep->fileline());
 	    handleAssignSelRecurse(nodep, subselp, outVarrefpRef, sublsb/*ref*/, depth+1);
 	    if (optimizable()) {
@@ -595,7 +595,7 @@ private:
     virtual void visit(AstNodeAssign* nodep) {
 	if (jumpingOver(nodep)) return;
 	if (!optimizable()) return;  // Accelerate
-	if (nodep->castAssignDly()) {
+        if (VN_IS(nodep, AssignDly)) {
 	    if (m_anyAssignComb) clearOptimizable(nodep, "Mix of dly/non-dly assigns");
 	    m_anyAssignDly = true;
 	    m_inDlyAssign = true;
@@ -604,11 +604,11 @@ private:
 	    m_anyAssignComb = true;
 	}
 
-	if (AstSel* selp = nodep->lhsp()->castSel()) {
+        if (AstSel* selp = VN_CAST(nodep->lhsp(), Sel)) {
 	    if (!m_params) { clearOptimizable(nodep, "LHS has select"); return; }
 	    handleAssignSel(nodep, selp);
 	}
-	else if (!nodep->lhsp()->castVarRef()) {
+        else if (!VN_IS(nodep->lhsp(), VarRef)) {
 	    clearOptimizable(nodep, "LHS isn't simple variable");
 	}
 	else if (m_checkOnly) {
@@ -617,7 +617,7 @@ private:
 	else if (optimizable()) {
 	    nodep->rhsp()->iterateAndNext(*this);
 	    if (optimizable()) {
-		AstNode* vscp = varOrScope(nodep->lhsp()->castVarRef());
+                AstNode* vscp = varOrScope(VN_CAST(nodep->lhsp(), VarRef));
 		assignOutNumber(nodep, vscp, fetchNumber(nodep->rhsp()));
 	    }
 	}
@@ -636,7 +636,7 @@ private:
 	} else if (optimizable()) {
 	    nodep->exprp()->iterateAndNext(*this);
 	    bool hit = false;
-	    for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
+            for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=VN_CAST(itemp->nextp(), CaseItem)) {
 		if (!itemp->isDefault()) {
 		    for (AstNode* ep = itemp->condsp(); ep; ep=ep->nextp()) {
 			if (hit) break;
@@ -653,7 +653,7 @@ private:
 		}
 	    }
 	    // Else default match
-	    for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
+            for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=VN_CAST(itemp->nextp(), CaseItem)) {
 		if (hit) break;
 		if (!hit && itemp->isDefault()) {
 		    itemp->bodysp()->iterateAndNext(*this);
@@ -764,9 +764,9 @@ private:
 	if (!optimizable()) return;  // Accelerate
 	UINFO(5,"   FUNCREF "<<nodep<<endl);
 	if (!m_params) { badNodeType(nodep); return; }
-	AstNodeFTask* funcp = nodep->taskp()->castNodeFTask(); if (!funcp) nodep->v3fatalSrc("Not linked");
+        AstNodeFTask* funcp = VN_CAST(nodep->taskp(), NodeFTask); if (!funcp) nodep->v3fatalSrc("Not linked");
 	if (m_params) { V3Width::widthParamsEdit(funcp); } VL_DANGLING(funcp); // Make sure we've sized the function
-	funcp = nodep->taskp()->castNodeFTask(); if (!funcp) nodep->v3fatalSrc("Not linked");
+        funcp = VN_CAST(nodep->taskp(), NodeFTask); if (!funcp) nodep->v3fatalSrc("Not linked");
 	// Apply function call values to function
 	V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
 	// Must do this in two steps, eval all params, then apply them

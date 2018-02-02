@@ -217,7 +217,7 @@ private:
 	createOutputAssigns(nodep, stmtsp, indexVscp, chgVscp);
 
 	// Link it in.
-	if (AstAlways* nodeap = nodep->castAlways()) {
+        if (AstAlways* nodeap = VN_CAST(nodep, Always)) {
 	    // Keep sensitivity list, but delete all else
 	    nodeap->bodysp()->unlinkFrBackWithNext()->deleteTree();
 	    nodeap->addStmtp(stmtsp);
@@ -328,7 +328,7 @@ private:
 		    setp = new AstConst (outnump->fileline(), *outnump);
 		}
 		// Note InitArray requires us to have the values in inValue order
-		m_tableVarps[outnum]->varp()->valuep()->castInitArray()->addValuep(setp);
+                VN_CAST(m_tableVarps[outnum]->varp()->valuep(), InitArray)->addValuep(setp);
 		outnum++;
 	    }
 
@@ -336,7 +336,7 @@ private:
 		if (inValue != inValueNextInitArray++)
 		    nodep->v3fatalSrc("InitArray requires us to have the values in inValue order");
 		AstNode* setp = new AstConst (nodep->fileline(), outputChgMask);
-		chgVscp->varp()->valuep()->castInitArray()->addValuep(setp);
+                VN_CAST(chgVscp->varp()->valuep(), InitArray)->addValuep(setp);
 	    }
 	} // each value
     }
@@ -351,8 +351,8 @@ private:
 	    if (var1p->width() == var2p->width()
 		&& (var1p->dtypep()->arrayUnpackedElements()
 		    == var2p->dtypep()->arrayUnpackedElements())) {
-		AstNode* init1p = var1p->valuep()->castInitArray();
-		AstNode* init2p = var2p->valuep()->castInitArray();
+                const AstNode* init1p = VN_CAST(var1p->valuep(), InitArray);
+                const AstNode* init2p = VN_CAST(var2p->valuep(), InitArray);
 		if (init1p->sameGateTree(init2p)) {
 		    UINFO(8,"   Duplicate table var "<<vsc2p<<" == "<<vsc1p<<endl);
 		    vsc1p->unlinkFrBack()->deleteTree();

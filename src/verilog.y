@@ -128,7 +128,7 @@ public:
 	    pkgp = PARSEP->rootp()->dollarUnitPkgAddp();
 	    SYMP->reinsert(pkgp, SYMP->symRootp());  // Don't push/pop scope as they're global
 	} else {
-	    pkgp = symp->nodep()->castPackage();
+	    pkgp = VN_CAST(symp->nodep(), Package);
 	}
 	return pkgp;
     }
@@ -145,12 +145,12 @@ public:
                 rangearraysp = rangesp;  // Already a range; everything is an array
             } else {
                 AstNodeRange* finalp = rangesp;
-                while (finalp->nextp()) finalp=finalp->nextp()->castNodeRange();
+                while (finalp->nextp()) finalp = VN_CAST(finalp->nextp(), Range);
                 if (finalp != rangesp) {
                     finalp->unlinkFrBack();
                     rangearraysp = rangesp;
                 }
-                if (AstRange* finalRangep = finalp->castRange()) {  // not an UnsizedRange
+                if (AstRange* finalRangep = VN_CAST(finalp, Range)) {  // not an UnsizedRange
                     if (dtypep->implicit()) {
                         // It's no longer implicit but a real logic type
                         AstBasicDType* newp = new AstBasicDType(dtypep->fileline(), AstBasicDTypeKwd::LOGIC,
@@ -749,7 +749,7 @@ package_import_itemList<nodep>:
 
 package_import_item<nodep>:	// ==IEEE: package_import_item
 		yaID__aPACKAGE yP_COLONCOLON package_import_itemObj
-			{ $$ = new AstPackageImport($<fl>1, $<scp>1->castPackage(), *$3);
+			{ $$ = new AstPackageImport($<fl>1, VN_CAST($<scp>1, Package), *$3);
 			  SYMP->importItem($<scp>1,*$3); }
 	;
 
@@ -770,7 +770,7 @@ package_export_itemList<nodep>:
 
 package_export_item<nodep>:	// ==IEEE: package_export_item
 		yaID__aPACKAGE yP_COLONCOLON package_import_itemObj
-			{ $$ = new AstPackageExport($<fl>1, $<scp>1->castPackage(), *$3);
+			{ $$ = new AstPackageExport($<fl>1, VN_CAST($<scp>1, Package), *$3);
 			  SYMP->exportItem($<scp>1,*$3); }
 	;
 
@@ -1497,7 +1497,7 @@ variable_dimensionListE<rangep>:	// IEEE: variable_dimension + empty
 
 variable_dimensionList<rangep>:	// IEEE: variable_dimension + empty
 		variable_dimension			{ $$ = $1; }
-	|	variable_dimensionList variable_dimension	{ $$ = $1->addNext($2)->castNodeRange(); }
+	|	variable_dimensionList variable_dimension	{ $$ = VN_CAST($1->addNext($2), NodeRange); }
 	;
 
 variable_dimension<rangep>:	// ==IEEE: variable_dimension
@@ -1836,7 +1836,7 @@ conditional_generate_construct<nodep>:	// ==IEEE: conditional_generate_construct
 loop_generate_construct<nodep>:	// ==IEEE: loop_generate_construct
 		yFOR '(' genvar_initialization ';' expr ';' genvar_iteration ')' ~c~generate_block_or_null
 			{ // Convert BEGIN(...) to BEGIN(GENFOR(...)), as we need the BEGIN to hide the local genvar
-			  AstBegin* lowerBegp = $9->castBegin();
+			  AstBegin* lowerBegp = VN_CAST($9, Begin);
 			  if ($9 && !lowerBegp) $9->v3fatalSrc("Child of GENFOR should have been begin");
 			  if (!lowerBegp) lowerBegp = new AstBegin($1,"genblk",NULL,true);  // Empty body
 			  AstNode* lowerNoBegp = lowerBegp->stmtsp();
@@ -1845,7 +1845,7 @@ loop_generate_construct<nodep>:	// ==IEEE: loop_generate_construct
 			  AstBegin* blkp = new AstBegin($1,lowerBegp->name(),NULL,true);
 			  // V3LinkDot detects BEGIN(GENFOR(...)) as a special case
 			  AstNode* initp = $3;  AstNode* varp = $3;
-			  if (varp->castVar()) {  // Genvar
+			  if (VN_IS(varp, Var)) {  // Genvar
 				initp = varp->nextp();
 				initp->unlinkFrBackWithNext();  // Detach 2nd from varp, make 1st init
 				blkp->addStmtsp(varp);
@@ -2009,7 +2009,7 @@ packed_dimensionListE<rangep>:	// IEEE: [{ packed_dimension }]
 
 packed_dimensionList<rangep>:	// IEEE: { packed_dimension }
 		packed_dimension			{ $$ = $1; }
-	|	packed_dimensionList packed_dimension	{ $$ = $1->addNext($2)->castNodeRange(); }
+	|	packed_dimensionList packed_dimension	{ $$ = VN_CAST($1->addNext($2), NodeRange); }
 	;
 
 packed_dimension<rangep>:	// ==IEEE: packed_dimension
@@ -2116,12 +2116,12 @@ cellpinList<pinp>:
 
 cellparamItList<pinp>:		// IEEE: list_of_parameter_assignmente
 		cellparamItemE				{ $$ = $1; }
-	|	cellparamItList ',' cellparamItemE	{ $$ = $1->addNextNull($3)->castPin(); }
+	|	cellparamItList ',' cellparamItemE	{ $$ = VN_CAST($1->addNextNull($3), Pin); }
 	;
 
 cellpinItList<pinp>:		// IEEE: list_of_port_connections
 		cellpinItemE				{ $$ = $1; }
-	|	cellpinItList ',' cellpinItemE		{ $$ = $1->addNextNull($3)->castPin(); }
+	|	cellpinItList ',' cellpinItemE		{ $$ = VN_CAST($1->addNextNull($3), Pin); }
 	;
 
 cellparamItemE<pinp>:		// IEEE: named_parameter_assignment + empty
@@ -2194,8 +2194,8 @@ event_control<sentreep>:	// ==IEEE: event_control
 
 event_expression<senitemp>:	// IEEE: event_expression - split over several
 		senitem					{ $$ = $1; }
-	|	event_expression yOR senitem		{ $$ = $1->addNextNull($3)->castNodeSenItem(); }
-	|	event_expression ',' senitem		{ $$ = $1->addNextNull($3)->castNodeSenItem(); }	/* Verilog 2001 */
+	|	event_expression yOR senitem		{ $$ = VN_CAST($1->addNextNull($3), NodeSenItem); }
+	|	event_expression ',' senitem		{ $$ = VN_CAST($1->addNextNull($3), NodeSenItem); }	/* Verilog 2001 */
 	;
 
 senitem<senitemp>:		// IEEE: part of event_expression, non-'OR' ',' terms
@@ -2646,7 +2646,7 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yaD_IGNORE  '(' exprList ')'		{ $$ = new AstSysIgnore($<fl>1,$3); }
 	//
 	|	yaD_DPI parenE				{ $$ = new AstTaskRef($<fl>1,*$1,NULL); }
-	|	yaD_DPI '(' exprList ')'		{ $$ = new AstTaskRef($2,*$1,$3); GRAMMARP->argWrapList($$->castTaskRef()); }
+	|	yaD_DPI '(' exprList ')'		{ $$ = new AstTaskRef($2,*$1,$3); GRAMMARP->argWrapList(VN_CAST($$, TaskRef)); }
 	//
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCStmt($1,$3)); }
 	|	yD_FCLOSE '(' idClassSel ')'		{ $$ = new AstFClose($1, $3); }
@@ -2691,7 +2691,7 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	|	yaD_IGNORE '(' exprList ')'		{ $$ = new AstConst($2,V3Number($2,"'b0")); } // Unsized 0
 	//
 	|	yaD_DPI parenE				{ $$ = new AstFuncRef($<fl>1,*$1,NULL); }
-	|	yaD_DPI '(' exprList ')'		{ $$ = new AstFuncRef($2,*$1,$3); GRAMMARP->argWrapList($$->castFuncRef()); }
+	|	yaD_DPI '(' exprList ')'		{ $$ = new AstFuncRef($2,*$1,$3); GRAMMARP->argWrapList(VN_CAST($$, FuncRef)); }
 	//
 	|	yD_BITS '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3); }
 	|	yD_BITS '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3,$5); }
@@ -2772,7 +2772,7 @@ exprOrDataType<nodep>:		// expr | data_type: combined to prevent conflicts
 
 list_of_argumentsE<nodep>:	// IEEE: [list_of_arguments]
 		argsDottedList				{ $$ = $1; }
-	|	argsExprListE				{ if ($1->castArg() && $1->castArg()->emptyConnectNoNext()) { $1->deleteTree(); $$ = NULL; } // Mis-created when have 'func()'
+	|	argsExprListE				{ if (VN_IS($1, Arg) && VN_CAST($1, Arg)->emptyConnectNoNext()) { $1->deleteTree(); $$ = NULL; }  // Mis-created when have 'func()'
 	/*cont*/					  else $$ = $1; }
 	|	argsExprListE ',' argsDottedList	{ $$ = $1->addNextNull($3); }
 	;
@@ -3728,7 +3728,7 @@ ps_id_etc:		// package_scope + general id
 ps_type<dtypep>:		// IEEE: ps_parameter_identifier | ps_type_identifier
 				// Even though we looked up the type and have a AstNode* to it,
 				// we can't fully resolve it because it may have been just a forward definition.
-		package_scopeIdFollowsE yaID__aTYPE	{ $$ = new AstRefDType($<fl>2, *$2); $$->castRefDType()->packagep($1); }
+		package_scopeIdFollowsE yaID__aTYPE	{ $$ = new AstRefDType($<fl>2, *$2); VN_CAST($$, RefDType)->packagep($1); }
 	//			// Simplify typing - from ps_covergroup_identifier
 	//UNSUP	package_scopeIdFollowsE yaID__aCOVERGROUP	{ $<fl>$=$<fl>1; $$=$1+$2; }
 	;
@@ -3748,7 +3748,7 @@ package_scopeIdFollows<packagep>:	// IEEE: package_scope
 		yD_UNIT        { SYMP->nextId(PARSEP->rootp()); }
 	/*cont*/	yP_COLONCOLON	{ $$ = GRAMMARP->unitPackage($<fl>1); }
 	|	yaID__aPACKAGE { SYMP->nextId($<scp>1); }
-	/*cont*/	yP_COLONCOLON	{ $$ = $<scp>1->castPackage(); }
+	/*cont*/	yP_COLONCOLON	{ $$ = VN_CAST($<scp>1, Package); }
 	//UNSUP	yLOCAL__COLONCOLON { PARSEP->symTableNextId($<scp>1); }
 	//UNSUP	/*cont*/	yP_COLONCOLON	{ UNSUP }
 	;
@@ -3848,26 +3848,26 @@ AstNode* V3ParseGrammar::createSupplyExpr(FileLine* fileline, string name, int v
 AstRange* V3ParseGrammar::scrubRange(AstNodeRange* nrangep) {
     // Remove any UnsizedRange's from list
     for (AstNodeRange* nodep = nrangep, *nextp; nodep; nodep=nextp) {
-        nextp = nrangep->nextp()->castNodeRange();
-        if (!nodep->castRange()) {
+        nextp = VN_CAST(nrangep->nextp(), NodeRange);
+        if (!VN_IS(nodep, Range)) {
             nodep->v3error("Unsupported or syntax error: Unsized range in cell or other declaration");
             nodep->unlinkFrBack(); nodep->deleteTree(); VL_DANGLING(nodep);
         }
     }
-    return nrangep->castRange();
+    return VN_CAST(nrangep, Range);
 }
 
 AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nrangep, bool isPacked) {
     // Split RANGE0-RANGE1-RANGE2 into ARRAYDTYPE0(ARRAYDTYPE1(ARRAYDTYPE2(BASICTYPE3),RANGE),RANGE)
     AstNodeDType* arrayp = basep;
     if (nrangep) { // Maybe no range - return unmodified base type
-        while (nrangep->nextp()) nrangep = nrangep->nextp()->castNodeRange();
+        while (nrangep->nextp()) nrangep = VN_CAST(nrangep->nextp(), NodeRange);
         while (nrangep) {
-            AstNodeRange* prevp = nrangep->backp()->castNodeRange();
+            AstNodeRange* prevp = VN_CAST(nrangep->backp(), NodeRange);
             if (prevp) nrangep->unlinkFrBack();
-            AstRange* rangep = nrangep->castRange();
+            AstRange* rangep = VN_CAST(nrangep, Range);
             if (!rangep) {
-                if (!nrangep->castUnsizedRange()) nrangep->v3fatalSrc("Expected range or unsized range");
+                if (!VN_IS(nrangep, UnsizedRange)) nrangep->v3fatalSrc("Expected range or unsized range");
                 arrayp = new AstUnsizedArrayDType(nrangep->fileline(), VFlagChildDType(), arrayp);
             } else if (isPacked) {
                 arrayp = new AstPackArrayDType(rangep->fileline(), VFlagChildDType(), arrayp, rangep);
@@ -3922,7 +3922,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name, AstNodeR
     if (GRAMMARP->m_varDecl == AstVarType::SUPPLY1) {
 	nodep->addNext(V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 1));
     }
-    if (dtypep->castParseTypeDType()) {
+    if (VN_IS(dtypep, ParseTypeDType)) {
 	// Parser needs to know what is a type
 	AstNode* newp = new AstTypedefFwd(fileline, name);
 	nodep->addNext(newp);

@@ -63,16 +63,16 @@ private:
     AstJumpLabel* findAddLabel(AstNode* nodep, bool endOfIter) {
 	// Put label under given node, and if WHILE optionally at end of iteration
 	UINFO(4,"Create label for "<<nodep<<endl);
-	if (nodep->castJumpLabel()) return nodep->castJumpLabel(); // Done
+        if (VN_IS(nodep, JumpLabel)) return VN_CAST(nodep, JumpLabel);  // Done
 
 	AstNode* underp = NULL;
 	bool     under_and_next = true;
-	if (nodep->castBegin()) underp = nodep->castBegin()->stmtsp();
-	else if (nodep->castNodeFTask()) underp = nodep->castNodeFTask()->stmtsp();
-	else if (nodep->castWhile()) {
+        if (VN_IS(nodep, Begin)) underp = VN_CAST(nodep, Begin)->stmtsp();
+        else if (VN_IS(nodep, NodeFTask)) underp = VN_CAST(nodep, NodeFTask)->stmtsp();
+        else if (VN_IS(nodep, While)) {
 	    if (endOfIter) {
 		// Note we jump to end of bodysp; a FOR loop has its increment under incsp() which we don't skip
-		underp = nodep->castWhile()->bodysp();
+                underp = VN_CAST(nodep, While)->bodysp();
 	    } else {
 		underp = nodep; under_and_next=false; // IE we skip the entire while
 	    }
@@ -84,14 +84,14 @@ private:
 	// Skip over variables as we'll just move them in a momement
 	// Also this would otherwise prevent us from using a label twice
 	// see t_func_return test.
-	while (underp && underp->castVar()) underp = underp->nextp();
+        while (underp && VN_IS(underp, Var)) underp = underp->nextp();
 	if (underp) UINFO(5,"  Underpoint is "<<underp<<endl);
 
 	if (!underp) {
 	    nodep->v3fatalSrc("Break/disable/continue not under expected statement");
 	    return NULL;
-	} else if (underp->castJumpLabel()) {
-	    return underp->castJumpLabel();
+        } else if (VN_IS(underp, JumpLabel)) {
+            return VN_CAST(underp, JumpLabel);
 	} else { // Move underp stuff to be under a new label
 	    AstJumpLabel* labelp = new AstJumpLabel(nodep->fileline(), NULL);
 
@@ -104,7 +104,7 @@ private:
 	    // Keep any AstVars under the function not under the new JumpLabel
 	    for (AstNode* nextp, *varp=underp; varp; varp = nextp) {
 		nextp = varp->nextp();
-		if (varp->castVar()) {
+                if (VN_IS(varp, Var)) {
 		    labelp->addPrev(varp->unlinkFrBack());
 		}
 	    }
@@ -177,7 +177,7 @@ private:
     }
     virtual void visit(AstReturn* nodep) {
 	nodep->iterateChildren(*this);
-	AstFunc* funcp = m_ftaskp->castFunc();
+        AstFunc* funcp = VN_CAST(m_ftaskp, Func);
 	if (!m_ftaskp) { nodep->v3error("Return isn't underneath a task or function"); }
 	else if (funcp  && !nodep->lhsp()) { nodep->v3error("Return underneath a function should have return value"); }
 	else if (!funcp &&  nodep->lhsp()) { nodep->v3error("Return underneath a task shouldn't have return value"); }
@@ -185,7 +185,7 @@ private:
 	    if (funcp && nodep->lhsp()) {
 		// Set output variable to return value
 		nodep->addPrev(new AstAssign(nodep->fileline(),
-					     new AstVarRef(nodep->fileline(), funcp->fvarp()->castVar(), true),
+                                             new AstVarRef(nodep->fileline(), VN_CAST(funcp->fvarp(), Var), true),
 					     nodep->lhsp()->unlinkFrBackWithNext()));
 	    }
 	    // Jump to the end of the function call

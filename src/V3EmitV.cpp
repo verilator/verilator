@@ -170,7 +170,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     }
     virtual void visit(AstNodeCase* nodep) {
 	putfs(nodep,"");
-	if (AstCase* casep = nodep->castCase()) {
+        if (const AstCase* casep = VN_CAST(nodep, Case)) {
 	    if (casep->priorityPragma()) puts("priority ");
 	    if (casep->uniquePragma()) puts("unique ");
 	    if (casep->unique0Pragma()) puts("unique0 ");
@@ -179,7 +179,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	puts(" (");
 	nodep->exprp()->iterateAndNext(*this);
 	puts(")\n");
-	if (AstCase* casep = nodep->castCase()) {
+        if (const AstCase* casep = VN_CAST(nodep, Case)) {
 	    if (casep->fullPragma() || casep->parallelPragma()) {
 		puts(" // synopsys");
 		if (casep->fullPragma()) puts(" full_case");
@@ -316,7 +316,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     }
     virtual void visit(AstNodeIf* nodep) {
 	putfs(nodep,"");
-	if (AstIf* ifp = nodep->castIf()) {
+        if (const AstIf* ifp = VN_CAST(nodep, If)) {
 	    if (ifp->priorityPragma()) puts("priority ");
 	    if (ifp->uniquePragma()) puts("unique ");
 	    if (ifp->unique0Pragma()) puts("unique0 ");
@@ -462,10 +462,10 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     }
     virtual void visit(AstRange* nodep) {
 	puts("[");
-	if (nodep->msbp()->castConst() && nodep->lsbp()->castConst()) {
+        if (VN_IS(nodep->msbp(), Const) && VN_IS(nodep->lsbp(), Const)) {
 	    // Looks nicer if we print [1:0] rather than [32'sh1:32sh0]
-	    puts(cvtToStr(nodep->leftp()->castConst()->toSInt())); puts(":");
-	    puts(cvtToStr(nodep->rightp()->castConst()->toSInt())); puts("]");
+            puts(cvtToStr(VN_CAST(nodep->leftp(), Const)->toSInt())); puts(":");
+            puts(cvtToStr(VN_CAST(nodep->rightp(), Const)->toSInt())); puts("]");
 	} else {
 	    nodep->leftp()->iterateAndNext(*this); puts(":");
 	    nodep->rightp()->iterateAndNext(*this); puts("]");
@@ -473,19 +473,19 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     }
     virtual void visit(AstSel* nodep) {
 	nodep->fromp()->iterateAndNext(*this); puts("[");
-	if (nodep->lsbp()->castConst()) {
+        if (VN_IS(nodep->lsbp(), Const)) {
 	    if (nodep->widthp()->isOne()) {
-		if (nodep->lsbp()->castConst()) {
-		    puts(cvtToStr(nodep->lsbp()->castConst()->toSInt()));
+                if (VN_IS(nodep->lsbp(), Const)) {
+                    puts(cvtToStr(VN_CAST(nodep->lsbp(), Const)->toSInt()));
 		} else {
 		    nodep->lsbp()->iterateAndNext(*this);
 		}
 	    } else {
-		puts(cvtToStr(nodep->lsbp()->castConst()->toSInt()
-			      +nodep->widthp()->castConst()->toSInt()
-			      -1));
+                puts(cvtToStr(VN_CAST(nodep->lsbp(), Const)->toSInt()
+                              + VN_CAST(nodep->widthp(), Const)->toSInt()
+                              - 1));
 		puts(":");
-		puts(cvtToStr(nodep->lsbp()->castConst()->toSInt()));
+                puts(cvtToStr(VN_CAST(nodep->lsbp(), Const)->toSInt()));
 	    }
 	} else {
 	    nodep->lsbp()->iterateAndNext(*this); putfs(nodep,"+:");
@@ -725,7 +725,7 @@ void V3EmitV::emitv() {
 	EmitVFileVisitor visitor (v3Global.rootp(), &of);
     } else {
 	// Process each module in turn
-	for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp; modp=modp->nextp()->castNodeModule()) {
+        for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp; modp=VN_CAST(modp->nextp(), NodeModule)) {
 	    V3OutVFile of (v3Global.opt.makeDir()
 			   +"/"+EmitCBaseVisitor::modClassName(modp)+"__Vout.v");
 	    of.putsHeader();

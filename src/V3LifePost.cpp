@@ -148,8 +148,8 @@ private:
 	}
     }
     virtual void visit(AstAssignPost* nodep) {
-	if (AstVarRef* lhsp = nodep->lhsp()->castVarRef()) {
-	    if (AstVarRef* rhsp = nodep->rhsp()->castVarRef()) {
+        if (AstVarRef* lhsp = VN_CAST(nodep->lhsp(), VarRef)) {
+            if (AstVarRef* rhsp = VN_CAST(nodep->rhsp(), VarRef)) {
 		// Scrunch these:
 		//    __Vdly__q = __PVT__clk_clocks;
 		//    ... {no reads or writes of __PVT__q after the first write to __Vdly__q}

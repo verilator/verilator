@@ -56,7 +56,7 @@ void V3LinkLevel::modSortByLevel() {
 
     ModVec vec;
     AstNodeModule* topp = NULL;
-    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castNodeModule()) {
+    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=VN_CAST(nodep->nextp(), NodeModule)) {
 	if (nodep->level()<=2) {
 	    if (topp) {
 		nodep->v3warn(E_MULTITOP, "Unsupported: Multiple top level modules: "
@@ -108,7 +108,7 @@ void V3LinkLevel::wrapTop(AstNetlist* netlistp) {
 void V3LinkLevel::wrapTopCell(AstNetlist* netlistp) {
     AstNodeModule* newmodp = netlistp->modulesp();
     if (!newmodp || !newmodp->isTop()) netlistp->v3fatalSrc("No TOP module found to process");
-    AstNodeModule* oldmodp = newmodp->nextp()->castNodeModule();
+    AstNodeModule* oldmodp = VN_CAST(newmodp->nextp(), NodeModule);
     if (!oldmodp) netlistp->v3fatalSrc("No module found to process");
 
     // Add instance
@@ -121,7 +121,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* netlistp) {
 
     // Add pins
     for (AstNode* subnodep=oldmodp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {
-	if (AstVar* oldvarp=subnodep->castVar()) {
+        if (AstVar* oldvarp=VN_CAST(subnodep, Var)) {
 	    UINFO(8,"VARWRAP "<<oldvarp<<endl);
 	    if (oldvarp->isIO()) {
 		AstVar* varp = oldvarp->cloneTree(false);
@@ -154,8 +154,8 @@ void V3LinkLevel::wrapTopPackages(AstNetlist* netlistp) {
     // This way all later SCOPE based optimizations can ignore packages
     AstNodeModule* newmodp = netlistp->modulesp();
     if (!newmodp || !newmodp->isTop()) netlistp->v3fatalSrc("No TOP module found to process");
-    for (AstNodeModule* modp = netlistp->modulesp(); modp; modp=modp->nextp()->castNodeModule()) {
-	if (modp->castPackage()) {
+    for (AstNodeModule* modp = netlistp->modulesp(); modp; modp=VN_CAST(modp->nextp(), NodeModule)) {
+        if (VN_IS(modp, Package)) {
 	    AstCell* cellp = new AstCell(modp->fileline(),
 					 // Could add __03a__03a="::" to prevent conflict
 					 // with module names/"v"

@@ -188,25 +188,25 @@ private:
 	AstNode* newlhsp = NULL;	// NULL = unlink old assign
 	AstSel*  bitselp = NULL;
 	AstArraySel*  arrayselp = NULL;
-	if (lhsp->castSel()) {
-	    bitselp = lhsp->castSel();
-	    arrayselp = bitselp->fromp()->castArraySel();
+        if (VN_IS(lhsp, Sel)) {
+            bitselp = VN_CAST(lhsp, Sel);
+            arrayselp = VN_CAST(bitselp->fromp(), ArraySel);
 	} else {
-	    arrayselp = lhsp->castArraySel();
+            arrayselp = VN_CAST(lhsp, ArraySel);
 	}
 	if (!arrayselp) nodep->v3fatalSrc("No arraysel under bitsel?");
-	if (arrayselp->dtypep()->skipRefp()->castUnpackArrayDType()) nodep->v3fatalSrc("ArraySel with unpacked arrays should have been removed in V3Slice");
+        if (VN_IS(arrayselp->dtypep()->skipRefp(), UnpackArrayDType)) nodep->v3fatalSrc("ArraySel with unpacked arrays should have been removed in V3Slice");
 
 	UINFO(4,"AssignDlyArray: "<<nodep<<endl);
 	//
 	//=== Dimensions: __Vdlyvdim__
         std::deque<AstNode*> dimvalp;           // Assignment value for each dimension of assignment
 	AstNode* dimselp=arrayselp;
-	for (; dimselp->castArraySel(); dimselp=dimselp->castArraySel()->fromp()) {
-	    AstNode* valp = dimselp->castArraySel()->bitp()->unlinkFrBack();
+        for (; VN_IS(dimselp, ArraySel); dimselp=VN_CAST(dimselp, ArraySel)->fromp()) {
+            AstNode* valp = VN_CAST(dimselp, ArraySel)->bitp()->unlinkFrBack();
 	    dimvalp.push_front(valp);
 	}
-	AstVarRef* varrefp = dimselp->castVarRef();
+        AstVarRef* varrefp = VN_CAST(dimselp, VarRef);
 	if (!varrefp) nodep->v3fatalSrc("No var underneath arraysels");
 	if (!varrefp->varScopep()) varrefp->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp");
 	varrefp->unlinkFrBack();
@@ -216,7 +216,7 @@ private:
         std::deque<AstNode*> dimreadps;         // Read value for each dimension of assignment
 	for (unsigned dimension=0; dimension<dimvalp.size(); dimension++) {
 	    AstNode* dimp = dimvalp[dimension];
-	    if (dimp->castConst()) { // bit = const, can just use it
+            if (VN_IS(dimp, Const)) {  // bit = const, can just use it
 		dimreadps.push_front(dimp);
 	    } else {
 		string bitvarname = (string("__Vdlyvdim")+cvtToStr(dimension)
@@ -235,7 +235,7 @@ private:
 	AstNode* bitreadp=NULL;  // Code to read Vdlyvlsb
 	if (bitselp) {
 	    AstNode* lsbvaluep = bitselp->lsbp()->unlinkFrBack();
-	    if (bitselp->fromp()->castConst()) {// vlsb = constant, can just push constant into where we use it
+            if (VN_IS(bitselp->fromp(), Const)) {  // vlsb = constant, can just push constant into where we use it
 		bitreadp = lsbvaluep;
 	    } else {
 		string bitvarname = (string("__Vdlyvlsb__")+oldvarp->shortName()+"__v"+cvtToStr(modVecNum));
@@ -250,7 +250,7 @@ private:
 	//
 	//=== Value: __Vdlyvval__
 	AstNode* valreadp;	// Code to read Vdlyvval
-	if (nodep->rhsp()->castConst()) {	// vval = constant, can just push constant into where we use it
+        if (VN_IS(nodep->rhsp(), Const)) {  // vval = constant, can just push constant into where we use it
 	    valreadp = nodep->rhsp()->unlinkFrBack();
 	} else {
 	    string valvarname = (string("__Vdlyvval__")+oldvarp->shortName()+"__v"+cvtToStr(modVecNum));
@@ -268,7 +268,7 @@ private:
 	    // then we told this nodep->user3 we can use its Vdlyvset rather than making a new one.
 	    // This is good for code like:
 	    //    for (i=0; i<5; i++)  vector[i] <= something;
-	    setvscp = nodep->user3p()->castVarScope();
+            setvscp = VN_CAST(nodep->user3p(), VarScope);
 	    ++m_statSharedSet;
 	} else {  // Create new one
 	    string setvarname = (string("__Vdlyvset__")+oldvarp->shortName()+"__v"+cvtToStr(modVecNum));
@@ -303,9 +303,9 @@ private:
 	// Build "IF (changeit) ...
 	UINFO(9,"   For "<<setvscp<<endl);
 	UINFO(9,"     & "<<varrefp<<endl);
-	AstAlwaysPost* finalp = varrefp->varScopep()->user4p()->castAlwaysPost();
+        AstAlwaysPost* finalp = VN_CAST(varrefp->varScopep()->user4p(), AlwaysPost);
 	if (finalp) {
-	    AstActive* oldactivep = finalp->user2p()->castActive();
+            AstActive* oldactivep = VN_CAST(finalp->user2p(), Active);
 	    checkActivePost(varrefp, oldactivep);
 	    if (setinitp) oldactivep->addStmtsp(setinitp);
 	} else { // first time we've dealt with this memory
@@ -321,7 +321,7 @@ private:
 	if (finalp->user3p() == setvscp) {
 	    // Optimize as above; if sharing Vdlyvset *ON SAME VARIABLE*,
 	    // we can share the IF statement too
-	    postLogicp = finalp->user4p()->castIf();
+            postLogicp = VN_CAST(finalp->user4p(), If);
 	    if (!postLogicp) nodep->v3fatalSrc("Delayed assignment misoptimized; prev var found w/o associated IF");
 	} else {
 	    postLogicp = new AstIf (nodep->fileline(),
@@ -363,11 +363,11 @@ private:
     }
     virtual void visit(AstAssignDly* nodep) {
 	m_inDly = true;
-	m_nextDlyp = nodep->nextp()->castAssignDly();  // Next assignment in same block, maybe NULL.
+        m_nextDlyp = VN_CAST(nodep->nextp(), AssignDly);  // Next assignment in same block, maybe NULL.
 	if (m_cfuncp) nodep->v3error("Unsupported: Delayed assignment inside public function/task");
-	if (nodep->lhsp()->castArraySel()
-	    || (nodep->lhsp()->castSel()
-		&& nodep->lhsp()->castSel()->fromp()->castArraySel())) {
+        if (VN_IS(nodep->lhsp(), ArraySel)
+            || (VN_IS(nodep->lhsp(), Sel)
+                && VN_IS(VN_CAST(nodep->lhsp(), Sel)->fromp(), ArraySel))) {
 	    AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
 	    AstNode* newlhsp = createDlyArray(nodep, lhsp);
 	    if (m_inLoop) nodep->v3warn(BLKLOOPINIT,"Unsupported: Delayed assignment to array inside for loops (non-delayed is ok - see docs)");
@@ -394,9 +394,9 @@ private:
 		if (!m_activep->hasClocked()) nodep->v3error("Internal: Blocking <= assignment in non-clocked block, should have converted in V3Active");
 		AstVarScope* oldvscp = nodep->varScopep();
 		if (!oldvscp) nodep->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp");
-		AstVarScope* dlyvscp = oldvscp->user1p()->castVarScope();
+                AstVarScope* dlyvscp = VN_CAST(oldvscp->user1p(), VarScope);
 		if (dlyvscp) {  // Multiple use of delayed variable
-		    AstActive* oldactivep = dlyvscp->user2p()->castActive();
+                    AstActive* oldactivep = VN_CAST(dlyvscp->user2p(), Active);
 		    checkActivePost(nodep, oldactivep);
 		}
 		if (!dlyvscp) {  // First use of this delayed variable

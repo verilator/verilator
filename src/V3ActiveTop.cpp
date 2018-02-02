@@ -83,8 +83,8 @@ private:
 	AstSenTree* sensesp = nodep->sensesp();
 	if (!sensesp) nodep->v3fatalSrc("NULL");
 	if (sensesp->sensesp()
-	    && sensesp->sensesp()->castSenItem()
-	    && sensesp->sensesp()->castSenItem()->isNever()) {
+            && VN_IS(sensesp->sensesp(), SenItem)
+            && VN_CAST(sensesp->sensesp(), SenItem)->isNever()) {
 	    // Never executing.  Kill it.
 	    if (sensesp->sensesp()->nextp()) nodep->v3fatalSrc("Never senitem should be alone, else the never should be eliminated.");
 	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);

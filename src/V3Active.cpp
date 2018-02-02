@@ -312,8 +312,8 @@ private:
 	// Move always to appropriate ACTIVE based on its sense list
 	if (oldsensesp
 	    && oldsensesp->sensesp()
-	    && oldsensesp->sensesp()->castSenItem()
-	    && oldsensesp->sensesp()->castSenItem()->isNever()) {
+            && VN_IS(oldsensesp->sensesp(), SenItem)
+            && VN_CAST(oldsensesp->sensesp(), SenItem)->isNever()) {
 	    // Never executing.  Kill it.
 	    if (oldsensesp->sensesp()->nextp()) nodep->v3fatalSrc("Never senitem should be alone, else the never should be eliminated.");
 	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);

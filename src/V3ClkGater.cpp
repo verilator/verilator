@@ -672,7 +672,7 @@ class GaterVisitor : public GaterBaseVisitor {
 	AstSenTree* sensesp = nodep->sensesp()->cloneTree(true);
 #else
 	// Make a SenGate
-	AstSenItem* oldsenitemsp = nodep->sensesp()->sensesp()->castSenItem();
+        AstSenItem* oldsenitemsp = VN_CAST(nodep->sensesp()->sensesp(), SenItem);
 	if (!oldsenitemsp) nodep->v3fatalSrc("SenTree doesn't have any SenItem under it");
 
 	AstSenTree* sensesp = new AstSenTree(nodep->fileline(),
@@ -857,7 +857,7 @@ class GaterVisitor : public GaterBaseVisitor {
 	AstVarScope* lastvscp = m_stmtVscp;
 	bool lastpli = m_stmtInPli;
 	m_directlyUnderAlw = under;
-	if (nodep->castNodeStmt()) {  // Restored below
+        if (VN_IS(nodep, NodeStmt)) {  // Restored below
 	    UINFO(9,"       Stmt: "<<nodep<<endl);
 	    m_stmtVscp = NULL;
 	    m_stmtInPli = false;
@@ -871,7 +871,7 @@ class GaterVisitor : public GaterBaseVisitor {
 	    nodep->iterateChildren(*this);
 	}
 	m_directlyUnderAlw = lastdua;
-	if (nodep->castNodeStmt()) {  // Reset what set above; else propagate up to above statement
+        if (VN_IS(nodep, NodeStmt)) {  // Reset what set above; else propagate up to above statement
 	    m_stmtVscp = lastvscp;
 	    m_stmtInPli = lastpli;
 	}

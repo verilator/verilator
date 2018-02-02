@@ -44,9 +44,11 @@
 
 class EmitCStmts : public EmitCBaseVisitor {
 private:
+    typedef std::vector<const AstVar*> VarVec;
+
     bool	m_suppressSemi;
     AstVarRef*	m_wideTempRefp;		// Variable that _WW macros should be setting
-    std::vector<AstVar*> m_ctorVarsVec;         // All variables in constructor order
+    VarVec      m_ctorVarsVec;  // All variables in constructor order
     int		m_splitSize;	// # of cfunc nodes placed into output file
     int		m_splitFilenum;	// File number being created, 0 = primary
 
@@ -74,7 +76,7 @@ public:
     void displayArg(AstNode* dispp, AstNode** elistp, bool isScan,
 		    const string& vfmt, char fmtLetter);
 
-    void emitVarDecl(AstVar* nodep, const string& prefixIfImp);
+    void emitVarDecl(const AstVar* nodep, const string& prefixIfImp);
     typedef enum {EVL_CLASS_IO, EVL_CLASS_SIG, EVL_CLASS_TEMP, EVL_CLASS_PAR, EVL_CLASS_ALL,
                   EVL_FUNC_ALL} EisWhich;
     void emitVarList(AstNode* firstp, EisWhich which, const string& prefixIfImp);
@@ -93,10 +95,10 @@ public:
     }
     void emitOpName(AstNode* nodep, const string& format,
 		    AstNode* lhsp, AstNode* rhsp, AstNode* thsp);
-    void emitDeclArrayBrackets(AstVar* nodep) {
+    void emitDeclArrayBrackets(const AstVar* nodep) {
 	// This isn't very robust and may need cleanup for other data types
-	for (AstUnpackArrayDType* arrayp=nodep->dtypeSkipRefp()->castUnpackArrayDType(); arrayp;
-	     arrayp = arrayp->subDTypep()->skipRefp()->castUnpackArrayDType()) {
+        for (const AstUnpackArrayDType* arrayp=VN_CAST_CONST(nodep->dtypeSkipRefp(), UnpackArrayDType); arrayp;
+             arrayp = VN_CAST_CONST(arrayp->subDTypep()->skipRefp(), UnpackArrayDType)) {
 	    puts("["+cvtToStr(arrayp->elementsConst())+"]");
 	}
     }
@@ -104,7 +106,7 @@ public:
     void emitTypedefs(AstNode* firstp) {
 	bool first = true;
 	for (AstNode* loopp=firstp; loopp; loopp = loopp->nextp()) {
-	    if (AstTypedef* nodep = loopp->castTypedef()) {
+            if (const AstTypedef* nodep = VN_CAST(loopp, Typedef)) {
 		if (nodep->attrPublic()) {
 		    if (first) {
 			first = false;
@@ -113,16 +115,16 @@ public:
 		    } else {
 			puts("\n");
 		    }
-		    if (AstEnumDType* adtypep = nodep->dtypep()->skipRefToEnump()->castEnumDType()) {
+                    if (const AstEnumDType* adtypep = VN_CAST(nodep->dtypep()->skipRefToEnump(), EnumDType)) {
 			if (adtypep->width()>64) {
 			    putsDecoration("// enum "+nodep->name()+" // Ignored: Too wide for C++\n");
 			} else {
 			    puts("enum "+nodep->name()+" {\n");
-			    for (AstEnumItem* itemp = adtypep->itemsp(); itemp; itemp=itemp->nextp()->castEnumItem()) {
+                            for (AstEnumItem* itemp = adtypep->itemsp(); itemp; itemp=VN_CAST(itemp->nextp(), EnumItem)) {
 				puts(itemp->name());
 				puts(" = ");
 				itemp->valuep()->iterateAndNext(*this);
-				if (itemp->nextp()->castEnumItem()) puts(",");
+                                if (VN_IS(itemp->nextp(), EnumItem)) puts(",");
 				puts("\n");
 			    }
 			    puts("};\n");
@@ -136,7 +138,7 @@ public:
     // VISITORS
     virtual void visit(AstNodeAssign* nodep) {
 	bool paren = true;  bool decind = false;
-	if (AstSel* selp=nodep->lhsp()->castSel()) {
+        if (AstSel* selp=VN_CAST(nodep->lhsp(), Sel)) {
 	    if (selp->widthMin()==1) {
 		putbs("VL_ASSIGNBIT_");
 		emitIQW(selp->fromp());
@@ -173,12 +175,12 @@ public:
 	    puts(cvtToStr(nodep->widthMin())+",");
 	    nodep->lhsp()->iterateAndNext(*this); puts(", ");
 	} else if (nodep->isWide()
-		   && nodep->lhsp()->castVarRef()
-		   && !nodep->rhsp()->castCMath()
-		   && !nodep->rhsp()->castVarRef()
-		   && !nodep->rhsp()->castArraySel()) {
+                   && VN_IS(nodep->lhsp(), VarRef)
+                   && !VN_IS(nodep->rhsp(), CMath)
+                   && !VN_IS(nodep->rhsp(), VarRef)
+                   && !VN_IS(nodep->rhsp(), ArraySel)) {
 	    // Wide functions assign into the array directly, don't need separate assign statement
-	    m_wideTempRefp = nodep->lhsp()->castVarRef();
+            m_wideTempRefp = VN_CAST(nodep->lhsp(), VarRef);
 	    paren = false;
 	} else if (nodep->isWide()) {
 	    putbs("VL_ASSIGN_W(");
@@ -189,7 +191,7 @@ public:
 	    nodep->lhsp()->iterateAndNext(*this);
 	    puts(" ");
 	    ofp()->blockInc(); decind = true;
-	    if (!nodep->rhsp()->castConst()) ofp()->putBreak();
+            if (!VN_IS(nodep->rhsp(), Const)) ofp()->putBreak();
 	    puts("= ");
 	}
 	nodep->rhsp()->iterateAndNext(*this);
@@ -210,7 +212,7 @@ public:
 	    subnodep->accept(*this);
 	    comma = true;
 	}
-	if (nodep->backp()->castNodeMath() || nodep->backp()->castCReturn()) {
+        if (VN_IS(nodep->backp(), NodeMath) || VN_IS(nodep->backp(), CReturn)) {
 	    // We should have a separate CCall for math and statement usage, but...
 	    puts(")");
 	} else {
@@ -332,9 +334,9 @@ public:
 	putbs(",");
 	uint32_t array_lsb = 0;
 	{
-	    AstVarRef* varrefp = nodep->memp()->castVarRef();
+            const AstVarRef* varrefp = VN_CAST(nodep->memp(), VarRef);
 	    if (!varrefp) { nodep->v3error("Readmem loading non-variable"); }
-	    else if (AstUnpackArrayDType* adtypep = varrefp->varp()->dtypeSkipRefp()->castUnpackArrayDType()) {
+            else if (const AstUnpackArrayDType* adtypep = VN_CAST(varrefp->varp()->dtypeSkipRefp(), UnpackArrayDType)) {
 		puts(cvtToStr(varrefp->varp()->dtypep()->arrayUnpackedElements()));
 		array_lsb = adtypep->lsb();
 	    }
@@ -496,7 +498,7 @@ public:
     }
     virtual void visit(AstRedXor* nodep) {
 	if (nodep->lhsp()->isWide()) {
-	    visit(nodep->castNodeUniop());
+            visit(VN_CAST(nodep, NodeUniop));
 	} else {
 	    putbs("VL_REDXOR_");
 	    puts(cvtToStr(nodep->lhsp()->dtypep()->widthPow2()));
@@ -509,31 +511,31 @@ public:
 	if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
 	    nodep->v3error("Unsupported: Signed multiply of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
 	}
-	visit(nodep->castNodeBiop());
+        visit(VN_CAST(nodep, NodeBiop));
     }
     virtual void visit(AstPow* nodep) {
 	if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
 	    nodep->v3error("Unsupported: Power of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
 	}
-	visit(nodep->castNodeBiop());
+        visit(VN_CAST(nodep, NodeBiop));
     }
     virtual void visit(AstPowSS* nodep) {
 	if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
 	    nodep->v3error("Unsupported: Power of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
 	}
-	visit(nodep->castNodeBiop());
+        visit(VN_CAST(nodep, NodeBiop));
     }
     virtual void visit(AstPowSU* nodep) {
 	if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
 	    nodep->v3error("Unsupported: Power of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
 	}
-	visit(nodep->castNodeBiop());
+        visit(VN_CAST(nodep, NodeBiop));
     }
     virtual void visit(AstPowUS* nodep) {
 	if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
 	    nodep->v3error("Unsupported: Power of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
 	}
-	visit(nodep->castNodeBiop());
+        visit(VN_CAST(nodep, NodeBiop));
     }
     virtual void visit(AstCCast* nodep) {
 	// Extending a value of the same word width is just a NOP.
@@ -562,7 +564,7 @@ public:
     }
     virtual void visit(AstReplicate* nodep) {
 	if (nodep->lhsp()->widthMin() == 1 && !nodep->isWide()) {
-	    if (((int)nodep->rhsp()->castConst()->toUInt()
+            if (((int)VN_CAST(nodep->rhsp(), Const)->toUInt()
 		     * nodep->lhsp()->widthMin()) != nodep->widthMin())
 		nodep->v3fatalSrc("Replicate non-constant or width miscomputed");
 	    puts("VL_REPLICATE_");
@@ -581,8 +583,8 @@ public:
     virtual void visit(AstStreamL* nodep) {
 	// Attempt to use a "fast" stream function for slice size = power of 2
 	if (!nodep->isWide()) {
-	    uint32_t isPow2 = nodep->rhsp()->castConst()->num().countOnes() == 1;
-	    uint32_t sliceSize = nodep->rhsp()->castConst()->toUInt();
+            uint32_t isPow2 = VN_CAST(nodep->rhsp(), Const)->num().countOnes() == 1;
+            uint32_t sliceSize = VN_CAST(nodep->rhsp(), Const)->toUInt();
 	    if (isPow2 && sliceSize <= (nodep->isQuad() ? sizeof(uint64_t) : sizeof(uint32_t))) {
 		puts("VL_STREAML_FAST_");
 		emitIQW(nodep);
@@ -593,7 +595,7 @@ public:
 		puts(","+cvtToStr(nodep->rhsp()->widthMin()));
 		puts(",");
 		nodep->lhsp()->iterateAndNext(*this); puts(", ");
-		uint32_t rd_log2 = V3Number::log2b(nodep->rhsp()->castConst()->toUInt());
+                uint32_t rd_log2 = V3Number::log2b(VN_CAST(nodep->rhsp(), Const)->toUInt());
 		puts(cvtToStr(rd_log2)+")");
 		return;
 	    }
@@ -606,7 +608,7 @@ public:
 	puts(nodep->varp()->name());
     }
     void emitCvtPackStr(AstNode* nodep) {
-	if (AstConst* constp = nodep->castConst()) {
+        if (const AstConst* constp = VN_CAST(nodep, Const)) {
 	    putbs("std::string(");
 	    putsQuoted(constp->num().toString());
 	    puts(")");
@@ -656,7 +658,7 @@ public:
 		puts(",");
 		if (!assigntop) {
 		    puts(assignString);
-		} else if (assigntop->castVarRef()) {
+                } else if (VN_IS(assigntop, VarRef)) {
 		    puts(assigntop->hiername());
 		    puts(assigntop->varp()->name());
 		} else {
@@ -677,7 +679,7 @@ public:
 		puts(",");
 		if (!assigntop) {
 		    puts(assignString);
-		} else if (assigntop->castVarRef()) {
+                } else if (VN_IS(assigntop, VarRef)) {
 		    puts(assigntop->hiername());
 		    puts(assigntop->varp()->name());
 		} else {
@@ -790,8 +792,8 @@ class EmitCImp : EmitCStmts {
 	    AstNode* lhsp = changep->lhsp();
 	    AstNode* rhsp = changep->rhsp();
 	    static int addDoubleOr = 10;	// Determined experimentally as best
-	    if (!lhsp->castVarRef() && !lhsp->castArraySel()) changep->v3fatalSrc("Not ref?");
-	    if (!rhsp->castVarRef() && !rhsp->castArraySel()) changep->v3fatalSrc("Not ref?");
+            if (!VN_IS(lhsp, VarRef) && !VN_IS(lhsp, ArraySel)) changep->v3fatalSrc("Not ref?");
+            if (!VN_IS(rhsp, VarRef) && !VN_IS(rhsp, ArraySel)) changep->v3fatalSrc("Not ref?");
 	    for (int word=0; word<changep->lhsp()->widthWords(); word++) {
 		if (!gotOne) {
 		    gotOne = true;
@@ -887,7 +889,7 @@ class EmitCImp : EmitCStmts {
 
 	if (nodep->initsp()) putsDecoration("// Variables\n");
 	for (AstNode* subnodep=nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
-	    if (AstVar* varp=subnodep->castVar()) {
+            if (AstVar* varp=VN_CAST(subnodep, Var)) {
 		if (varp->isFuncReturn()) emitVarDecl(varp, "");
 	    }
 	}
@@ -937,8 +939,8 @@ class EmitCImp : EmitCStmts {
 		    bool gotOneIgnore = false;
 		    doubleOrDetect(nodep, gotOneIgnore);
 		    string varname;
-		    if (nodep->lhsp()->castVarRef()) {
-			varname = ": "+nodep->lhsp()->castVarRef()->varp()->prettyName();
+                    if (VN_IS(nodep->lhsp(), VarRef)) {
+                        varname = ": "+VN_CAST(nodep->lhsp(), VarRef)->varp()->prettyName();
 		    }
 		    puts(")) VL_DBG_MSGF(\"        CHANGE: "+nodep->fileline()->ascii()
 			 +varname+"\\n\"); );\n");
@@ -996,7 +998,7 @@ public:
 //######################################################################
 // Internal EmitCStmts
 
-void EmitCStmts::emitVarDecl(AstVar* nodep, const string& prefixIfImp) {
+void EmitCStmts::emitVarDecl(const AstVar* nodep, const string& prefixIfImp) {
     AstBasicDType* basicp = nodep->basicp();  if (!basicp) nodep->v3fatalSrc("Unimplemented: Outputting this data type");
     if (nodep->isIO()) {
 	if (nodep->isSc()) {
@@ -1077,9 +1079,9 @@ void EmitCStmts::emitVarCtors() {
 	puts("\n");
 	puts("#if (SYSTEMC_VERSION>20011000)\n");  // SystemC 2.0.1 and newer
 	bool first = true;
-        for (std::vector<AstVar*>::iterator it = m_ctorVarsVec.begin(); it != m_ctorVarsVec.end(); ++it) {
-	    AstVar* varp = *it;
-	    bool isArray = !varp->dtypeSkipRefp()->castBasicDType();
+	for (VarVec::iterator it = m_ctorVarsVec.begin(); it != m_ctorVarsVec.end(); ++it) {
+            const AstVar* varp = *it;
+            bool isArray = !VN_CAST(varp->dtypeSkipRefp(), BasicDType);
 	    if (isArray) {
 		puts("// Skipping array: ");
 		puts(varp->name());
@@ -1230,17 +1232,17 @@ struct EmitDispState {
 
 void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
     if (emitDispState.m_format == ""
-	&& nodep->castDisplay()) { // not fscanf etc, as they need to return value
+        && VN_IS(nodep, Display)) {  // not fscanf etc, as they need to return value
 	// NOP
     } else {
 	// Format
 	bool isStmt = false;
-	if (AstFScanF* dispp = nodep->castFScanF()) {
+        if (const AstFScanF* dispp = VN_CAST(nodep, FScanF)) {
 	    isStmt = false;
 	    puts("VL_FSCANF_IX(");
 	    dispp->filep()->iterate(*this);
 	    puts(",");
-	} else if (AstSScanF* dispp = nodep->castSScanF()) {
+        } else if (const AstSScanF* dispp = VN_CAST(nodep, SScanF)) {
 	    isStmt = false;
 	    checkMaxWords(dispp->fromp());
 	    puts("VL_SSCANF_I"); emitIQW(dispp->fromp()); puts("X(");
@@ -1248,7 +1250,7 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
 	    puts(",");
 	    dispp->fromp()->iterate(*this);
 	    puts(",");
-	} else if (AstDisplay* dispp = nodep->castDisplay()) {
+        } else if (const AstDisplay* dispp = VN_CAST(nodep, Display)) {
 	    isStmt = true;
 	    if (dispp->filep()) {
 		puts("VL_FWRITEF(");
@@ -1257,14 +1259,14 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
 	    } else {
 		puts("VL_WRITEF(");
 	    }
-	} else if (AstSFormat* dispp = nodep->castSFormat()) {
+        } else if (const AstSFormat* dispp = VN_CAST(nodep, SFormat)) {
 	    isStmt = true;
 	    puts("VL_SFORMAT_X(");
 	    puts(cvtToStr(dispp->lhsp()->widthMin()));
 	    putbs(",");
 	    dispp->lhsp()->iterate(*this);
 	    putbs(",");
-	} else if (AstSFormatF* dispp = nodep->castSFormatF()) {
+        } else if (const AstSFormatF* dispp = VN_CAST(nodep, SFormatF)) {
 	    isStmt = false;
 	    if (dispp) {}
 	    puts("VL_SFORMATF_NX(");
@@ -1424,21 +1426,21 @@ void EmitCImp::emitVarReset(AstVar* varp) {
 	// If an ARRAYINIT we initialize it using an initial block similar to a signal
 	//puts("// parameter "+varp->name()+" = "+varp->valuep()->name()+"\n");
     }
-    else if (AstInitArray* initarp = varp->valuep()->castInitArray()) {
-	if (AstUnpackArrayDType* arrayp = varp->dtypeSkipRefp()->castUnpackArrayDType()) {
+    else if (AstInitArray* initarp = VN_CAST(varp->valuep(), InitArray)) {
+        if (AstUnpackArrayDType* arrayp = VN_CAST(varp->dtypeSkipRefp(), UnpackArrayDType)) {
 	    if (initarp->defaultp()) {
 		// MSVC++ pre V7 doesn't support 'for (int ...)', so declare in sep block
 		puts("{ int __Vi=0;");
 		puts(" for (; __Vi<"+cvtToStr(arrayp->elementsConst()));
 		puts("; ++__Vi) {\n");
-		emitSetVarConstant(varp->name()+"[__Vi]", initarp->defaultp()->castConst());
+                emitSetVarConstant(varp->name()+"[__Vi]", VN_CAST(initarp->defaultp(), Const));
 		puts("}}\n");
 	    }
 	    int pos = 0;
 	    for (AstNode* itemp = initarp->initsp(); itemp; ++pos, itemp=itemp->nextp()) {
 		int index = initarp->posIndex(pos);
 		if (!initarp->defaultp() && index!=pos) initarp->v3fatalSrc("Not enough values in array initalizement");
-		emitSetVarConstant(varp->name()+"["+cvtToStr(index)+"]", itemp->castConst());
+                emitSetVarConstant(varp->name()+"["+cvtToStr(index)+"]", VN_CAST(itemp, Const));
 	    }
 	} else {
 	    varp->v3fatalSrc("InitArray under non-arrayed var");
@@ -1450,8 +1452,9 @@ void EmitCImp::emitVarReset(AstVar* varp) {
     else {
 	int vects = 0;
 	// This isn't very robust and may need cleanup for other data types
-	for (AstUnpackArrayDType* arrayp=varp->dtypeSkipRefp()->castUnpackArrayDType(); arrayp;
-	     arrayp = arrayp->subDTypep()->skipRefp()->castUnpackArrayDType()) {
+        for (AstUnpackArrayDType* arrayp=VN_CAST(varp->dtypeSkipRefp(), UnpackArrayDType);
+             arrayp;
+             arrayp = VN_CAST(arrayp->subDTypep()->skipRefp(), UnpackArrayDType)) {
 	    int vecnum = vects++;
 	    if (arrayp->msb() < arrayp->lsb()) varp->v3fatalSrc("Should have swapped msb & lsb earlier.");
 	    string ivar = string("__Vi")+cvtToStr(vecnum);
@@ -1588,7 +1591,7 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
 	    // OK if this hash includes some things we won't dump, since just looking for loading the wrong model
 	    VHashSha1 hash;
 	    for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-		if (AstVar* varp = nodep->castVar()) {
+                if (const AstVar* varp = VN_CAST(nodep, Var)) {
 		    hash.insert(varp->name());
 		    hash.insert(varp->dtypep()->width());
 		}
@@ -1604,7 +1607,7 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
 	    // Save all members
 	    if (v3Global.opt.inhibitSim()) puts("os"+op+"__Vm_inhibitSim;\n");
 	    for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-		if (AstVar* varp = nodep->castVar()) {
+                if (const AstVar* varp = VN_CAST(nodep, Var)) {
 		    if (varp->isIO() && modp->isTop() && optSystemC()) {
 			// System C top I/O doesn't need loading, as the lower level subinst code does it.
 		    }
@@ -1613,8 +1616,9 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
 		    else {
 			int vects = 0;
 			// This isn't very robust and may need cleanup for other data types
-			for (AstUnpackArrayDType* arrayp=varp->dtypeSkipRefp()->castUnpackArrayDType(); arrayp;
-			     arrayp = arrayp->subDTypep()->skipRefp()->castUnpackArrayDType()) {
+                        for (AstUnpackArrayDType* arrayp=VN_CAST(varp->dtypeSkipRefp(), UnpackArrayDType);
+                             arrayp;
+                             arrayp = VN_CAST(arrayp->subDTypep()->skipRefp(), UnpackArrayDType)) {
 			    int vecnum = vects++;
 			    if (arrayp->msb() < arrayp->lsb()) varp->v3fatalSrc("Should have swapped msb & lsb earlier.");
 			    string ivar = string("__Vi")+cvtToStr(vecnum);
@@ -1658,7 +1662,7 @@ void EmitCImp::emitStaticDecl(AstNodeModule* modp) {
 void EmitCImp::emitTextSection(AstType type) {
     int last_line = -999;
     for (AstNode* nodep = m_modp->stmtsp(); nodep != NULL; nodep = nodep->nextp()) {
-	if (AstNodeText* textp = nodep->castNodeText()) {
+        if (const AstNodeText* textp = VN_CAST(nodep, NodeText)) {
 	    if (nodep->type() == type) {
 		if (last_line != nodep->fileline()->lineno()) {
 		    if (last_line < 0) {
@@ -1687,7 +1691,7 @@ void EmitCImp::emitCellCtors(AstNodeModule* modp) {
 	puts(EmitCBaseVisitor::symTopAssign()+"\n");
     }
     for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-	if (AstCell* cellp=nodep->castCell()) {
+        if (AstCell* cellp=VN_CAST(nodep, Cell)) {
 	    puts("VL_CELL ("+cellp->name()+", "+modClassName(cellp->modp())+");\n");
 	}
     }
@@ -1700,12 +1704,13 @@ void EmitCImp::emitSensitives() {
 	putsDecoration("// Sensitivities on all clocks and combo inputs\n");
 	puts("SC_METHOD(eval);\n");
 	for (AstNode* nodep=m_modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-	    if (AstVar* varp = nodep->castVar()) {
+            if (const AstVar* varp = VN_CAST(nodep, Var)) {
 		if (varp->isInput() && (varp->isScSensitive() || varp->isUsedClock())) {
 		    int vects = 0;
 		    // This isn't very robust and may need cleanup for other data types
-		    for (AstUnpackArrayDType* arrayp=varp->dtypeSkipRefp()->castUnpackArrayDType(); arrayp;
-			 arrayp = arrayp->subDTypep()->skipRefp()->castUnpackArrayDType()) {
+                    for (AstUnpackArrayDType* arrayp=VN_CAST(varp->dtypeSkipRefp(), UnpackArrayDType);
+                         arrayp;
+                         arrayp = VN_CAST(arrayp->subDTypep()->skipRefp(), UnpackArrayDType)) {
 			int vecnum = vects++;
 			if (arrayp->msb() < arrayp->lsb()) varp->v3fatalSrc("Should have swapped msb & lsb earlier.");
 			string ivar = string("__Vi")+cvtToStr(vecnum);
@@ -1799,7 +1804,7 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
     // Largest->smallest reduces the number of pad variables.
     // But for now, Smallest->largest makes it more likely a small offset will allow access to the signal.
     // TODO: Move this sort to an earlier visitor stage.
-    typedef std::multimap<int, AstVar*> VarSortMap;
+    typedef std::multimap<int, const AstVar*> VarSortMap;
     VarSortMap varAnonMap;
     VarSortMap varNonanonMap;
     int anonMembers = 0;
@@ -1807,13 +1812,13 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
     for (int isstatic=1; isstatic>=0; isstatic--) {
         if (prefixIfImp!="" && !isstatic) continue;
         for (AstNode* nodep=firstp; nodep; nodep = nodep->nextp()) {
-            if (AstVar* varp = nodep->castVar()) {
+            if (const AstVar* varp = VN_CAST(nodep, Var)) {
                 bool doit = true;
                 switch (which) {
                 case EVL_CLASS_IO:   doit = varp->isIO(); break;
                 case EVL_CLASS_SIG:  doit = (varp->isSignal() && !varp->isIO()); break;
                 case EVL_CLASS_TEMP: doit = (varp->isTemp() && !varp->isIO()); break;
-                case EVL_CLASS_PAR:  doit = (varp->isParam() && !varp->valuep()->castConst()); break;
+                case EVL_CLASS_PAR:  doit = (varp->isParam() && !VN_IS(varp->valuep(), Const)); break;
                 case EVL_CLASS_ALL:  doit = true; break;
                 case EVL_FUNC_ALL:  doit = true; break;
                 default: v3fatalSrc("Bad Case");
@@ -1823,7 +1828,7 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
                     int sigbytes = varp->dtypeSkipRefp()->widthAlignBytes();
                     int sortbytes = 9;
                     if (varp->isUsedClock() && varp->widthMin()==1) sortbytes = 0;
-                    else if (varp->dtypeSkipRefp()->castUnpackArrayDType()) sortbytes=8;
+                    else if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) sortbytes=8;
                     else if (varp->basicp() && varp->basicp()->isOpaque()) sortbytes=7;
                     else if (varp->isScBv() || varp->isScBigUint()) sortbytes=6;
                     else if (sigbytes==8) sortbytes=5;
@@ -1873,7 +1878,7 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
                 for (int l1=0; l1<anonL1s && it != varAnonMap.end(); ++l1) {
                     if (anonL1s != 1) puts("struct {\n");
                     for (int l0=0; l0<lim && it != varAnonMap.end(); ++l0) {
-                        AstVar* varp = it->second;
+                        const AstVar* varp = it->second;
                         emitVarDecl(varp, prefixIfImp);
                         ++it;
                     }
@@ -1885,13 +1890,13 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
         }
         // Leftovers, just in case off by one error somewhere above
         for (; it != varAnonMap.end(); ++it) {
-            AstVar* varp = it->second;
+            const AstVar* varp = it->second;
             emitVarDecl(varp, prefixIfImp);
         }
     }
     // Output nonanons
     for (VarSortMap::iterator it = varNonanonMap.begin(); it != varNonanonMap.end(); ++it) {
-        AstVar* varp = it->second;
+        const AstVar* varp = it->second;
         emitVarDecl(varp, prefixIfImp);
     }
 }
@@ -1903,10 +1908,11 @@ struct CmpName {
 };
 
 void EmitCImp::emitIntFuncDecls(AstNodeModule* modp) {
-    std::vector<AstCFunc*> funcsp;
+    typedef std::vector<const AstCFunc*> FuncVec;
+    FuncVec funcsp;
 
     for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-	if (AstCFunc* funcp = nodep->castCFunc()) {
+        if (const AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
 	    if (!funcp->skipDecl()) {
 		funcsp.push_back(funcp);
 	    }
@@ -1915,8 +1921,8 @@ void EmitCImp::emitIntFuncDecls(AstNodeModule* modp) {
 
     stable_sort(funcsp.begin(), funcsp.end(), CmpName());
 
-    for (std::vector<AstCFunc*>::iterator it = funcsp.begin(); it != funcsp.end(); ++it) {
-	AstCFunc* funcp = *it;
+    for (FuncVec::iterator it = funcsp.begin(); it != funcsp.end(); ++it) {
+        const AstCFunc* funcp = *it;
 	if (!funcp->dpiImport()) {  // DPI is prototyped in __Dpi.h
 	    ofp()->putsPrivate(funcp->declPrivate());
 	    if (funcp->ifdef()!="") puts("#ifdef "+funcp->ifdef()+"\n");
@@ -1961,7 +1967,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     puts("class "+symClassName()+";\n");
     vl_unordered_set<string> didClassName;
     for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-	if (AstCell* cellp=nodep->castCell()) {
+        if (AstCell* cellp=VN_CAST(nodep, Cell)) {
 	    string className = modClassName(cellp->modp());
 	    if (didClassName.find(className)==didClassName.end()) {
 		puts("class "+className+";\n");
@@ -1987,7 +1993,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     {  // Instantiated cells
 	bool did = false;
 	for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-	    if (AstCell* cellp=nodep->castCell()) {
+            if (AstCell* cellp=VN_CAST(nodep, Cell)) {
 		if (!did) {
 		    did = true;
 		    putsDecoration("// CELLS\n");
@@ -2031,17 +2037,17 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     ofp()->putsPrivate(false);  // public:
     emitVarList(modp->stmtsp(), EVL_CLASS_PAR, "");  // Only those that are non-CONST
     for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-	if (AstVar* varp = nodep->castVar()) {
+        if (const AstVar* varp = VN_CAST(nodep, Var)) {
 	    if (varp->isParam() && (varp->isUsedParam() || varp->isSigPublic())) {
 		if (!varp->valuep()) nodep->v3fatalSrc("No init for a param?");
 		// These should be static const values, however microsloth VC++ doesn't
 		// support them.  They also cause problems with GDB under GCC2.95.
 		if (varp->isWide()) {   // Unsupported for output
 		    putsDecoration("// enum WData "+varp->name()+"  //wide");
-		} else if (!varp->valuep()->castConst()) {   // Unsupported for output
+                } else if (!VN_IS(varp->valuep(), Const)) {  // Unsupported for output
 		    //putsDecoration("// enum ..... "+varp->name()+"  //not simple value, see variable above instead");
-                } else if (varp->dtypep()->castBasicDType()
-                           && varp->dtypep()->castBasicDType()->isOpaque()) {  // Can't put out e.g. doubles
+                } else if (VN_IS(varp->dtypep(), BasicDType)
+                           && VN_CAST(varp->dtypep(), BasicDType)->isOpaque()) {  // Can't put out e.g. doubles
 		} else {
 		    puts("enum ");
 		    puts(varp->isQuad()?"_QData":"_IData");
@@ -2226,7 +2232,7 @@ void EmitCImp::main(AstNodeModule* modp, bool slow, bool fast) {
     emitImp (modp);
 
     for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-	if (AstCFunc* funcp = nodep->castCFunc()) {
+        if (AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
 	    if (splitNeeded()) {
 		// Close old file
 		delete m_ofp; m_ofp=NULL;
@@ -2329,21 +2335,21 @@ class EmitCTrace : EmitCStmts {
     }
 
     bool emitTraceIsScBv(AstTraceInc* nodep) {
-	AstVarRef* varrefp = nodep->valuep()->castVarRef();
+        const AstVarRef* varrefp = VN_CAST(nodep->valuep(), VarRef);
 	if (!varrefp) return false;
 	AstVar* varp = varrefp->varp();
 	return varp->isSc() && varp->isScBv();
     }
 
     bool emitTraceIsScBigUint(AstTraceInc* nodep) {
-	AstVarRef* varrefp = nodep->valuep()->castVarRef();
+        const AstVarRef* varrefp = VN_CAST(nodep->valuep(), VarRef);
 	if (!varrefp) return false;
 	AstVar* varp = varrefp->varp();
 	return varp->isSc() && varp->isScBigUint();
     }
 
     bool emitTraceIsScUint(AstTraceInc* nodep) {
-	AstVarRef* varrefp = nodep->valuep()->castVarRef();
+        const AstVarRef* varrefp = VN_CAST(nodep->valuep(), VarRef);
 	if (!varrefp) return false;
 	AstVar* varp = varrefp->varp();
 	return varp->isSc() && varp->isScUint();
@@ -2404,8 +2410,8 @@ class EmitCTrace : EmitCStmts {
 	puts(");\n");
     }
     void emitTraceValue(AstTraceInc* nodep, int arrayindex) {
-	if (nodep->valuep()->castVarRef()) {
-	    AstVarRef* varrefp = nodep->valuep()->castVarRef();
+        if (VN_IS(nodep->valuep(), VarRef)) {
+            AstVarRef* varrefp = VN_CAST(nodep->valuep(), VarRef);
 	    AstVar* varp = varrefp->varp();
 	    puts("(");
 	    if (emitTraceIsScBigUint(nodep)) puts("(vluint32_t*)");
@@ -2534,7 +2540,7 @@ public:
 void V3EmitC::emitc() {
     UINFO(2,__FUNCTION__<<": "<<endl);
     // Process each module in turn
-    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castNodeModule()) {
+    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=VN_CAST(nodep->nextp(), NodeModule)) {
 	if (v3Global.opt.outputSplit()) {
 	    { EmitCImp imp; imp.main(nodep, false, true); }
 	    { EmitCImp imp; imp.main(nodep, true, false); }

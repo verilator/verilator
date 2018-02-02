@@ -242,7 +242,7 @@ private:
 	// We'll deal with mismatching pins later
 	if (!taskp) return;
 	for (AstNode* stmtp = taskp->stmtsp(); stmtp && pinp; stmtp=stmtp->nextp()) {
-	    if (AstVar* portp = stmtp->castVar()) {
+            if (const AstVar* portp = VN_CAST(stmtp, Var)) {
 		if (portp->isIO()) {
 		    if (portp->isInput()) {
 			pinp->iterate(*this);

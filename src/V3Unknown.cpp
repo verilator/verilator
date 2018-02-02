@@ -104,8 +104,8 @@ private:
 	AstNode* prep = nodep;
 
 	// Scan back to put the condlvalue above all selects (IE top of the lvalue)
-	while (prep->backp()->castNodeSel()
-	       || prep->backp()->castSel()) {
+        while (VN_IS(prep->backp(), NodeSel)
+               || VN_IS(prep->backp(), Sel)) {
 	    prep=prep->backp();
 	}
 	FileLine* fl = nodep->fileline();
@@ -113,7 +113,7 @@ private:
 
 	// Already exists; rather than IF(a,... IF(b... optimize to IF(a&&b,
 	// Saves us teaching V3Const how to optimize, and it won't be needed again.
-	if (AstIf* ifp = prep->user2p()->castIf()) {
+        if (AstIf* ifp = VN_CAST(prep->user2p(), If)) {
 	    if (needDly) prep->v3fatalSrc("Should have already converted to non-delay");
 	    AstNRelinker replaceHandle;
 	    AstNode* earliercondp = ifp->condp()->unlinkFrBack(&replaceHandle);
@@ -179,7 +179,7 @@ private:
 	UINFO(4," N/EQCASE->EQ "<<nodep<<endl);
 	V3Const::constifyEdit(nodep->lhsp());  // lhsp may change
 	V3Const::constifyEdit(nodep->rhsp());  // rhsp may change
-	if (nodep->lhsp()->castConst() && nodep->rhsp()->castConst()) {
+        if (VN_IS(nodep->lhsp(), Const) && VN_IS(nodep->rhsp(), Const)) {
 	    // Both sides are constant, node can be constant
 	    V3Const::constifyEdit(nodep); VL_DANGLING(nodep);
 	    return;
@@ -188,14 +188,14 @@ private:
 	    AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
 	    AstNode* newp;
 	    // If we got ==1'bx it can never be true (but 1'bx==1'bx can be!)
-	    if (((lhsp->castConst() && lhsp->castConst()->num().isFourState())
-		 || (rhsp->castConst() && rhsp->castConst()->num().isFourState()))) {
-		V3Number num (nodep->fileline(), 1, (nodep->castEqCase()?0:1));
+            if (((VN_IS(lhsp, Const) && VN_CAST(lhsp, Const)->num().isFourState())
+                 || (VN_IS(rhsp, Const) && VN_CAST(rhsp, Const)->num().isFourState()))) {
+                V3Number num (nodep->fileline(), 1, (VN_IS(nodep, EqCase) ? 0:1));
 		newp = new AstConst (nodep->fileline(), num);
 		lhsp->deleteTree(); VL_DANGLING(lhsp);
 		rhsp->deleteTree(); VL_DANGLING(rhsp);
 	    } else {
-		if (nodep->castEqCase())
+                if (VN_IS(nodep, EqCase))
 		newp = new AstEq (nodep->fileline(), lhsp, rhsp);
 		else newp = new AstNeq (nodep->fileline(), lhsp, rhsp);
 	    }
@@ -209,7 +209,7 @@ private:
 	UINFO(4," N/EQWILD->EQ "<<nodep<<endl);
 	V3Const::constifyEdit(nodep->lhsp());  // lhsp may change
 	V3Const::constifyEdit(nodep->rhsp());  // rhsp may change
-	if (nodep->lhsp()->castConst() && nodep->rhsp()->castConst()) {
+        if (VN_IS(nodep->lhsp(), Const) && VN_IS(nodep->rhsp(), Const)) {
 	    // Both sides are constant, node can be constant
 	    V3Const::constifyEdit(nodep); VL_DANGLING(nodep);
 	    return;
@@ -217,20 +217,20 @@ private:
 	    AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
 	    AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
 	    AstNode* newp;
-	    if (!rhsp->castConst()) {
+            if (!VN_IS(rhsp, Const)) {
 		nodep->v3error("Unsupported: RHS of ==? or !=? must be constant to be synthesizable");  // Says spec.
 		// Replace with anything that won't cause more errors
 		newp = new AstEq (nodep->fileline(), lhsp, rhsp);
 	    } else {
 		// X or Z's become mask, ala case statements.
 		V3Number nummask  (rhsp->fileline(), rhsp->width());
-		nummask.opBitsNonX(rhsp->castConst()->num());
+                nummask.opBitsNonX(VN_CAST(rhsp, Const)->num());
 		V3Number numval   (rhsp->fileline(), rhsp->width());
-		numval.opBitsOne  (rhsp->castConst()->num());
+                numval.opBitsOne  (VN_CAST(rhsp, Const)->num());
 		AstNode* and1p = new AstAnd(nodep->fileline(), lhsp,
 					    new AstConst(nodep->fileline(), nummask));
 		AstNode* and2p = new AstConst(nodep->fileline(), numval);
-		if (nodep->castEqWild())
+                if (VN_IS(nodep, EqWild))
 		    newp  = new AstEq  (nodep->fileline(), and1p, and2p);
 		else newp = new AstNeq (nodep->fileline(), and1p, and2p);
 		rhsp->deleteTree(); VL_DANGLING(rhsp);
@@ -333,7 +333,7 @@ private:
 	    // Guard against reading/writing past end of bit vector array
 	    AstNode* basefromp = AstArraySel::baseFromp(nodep);
 	    bool lvalue = false;
-	    if (AstNodeVarRef* varrefp = basefromp->castNodeVarRef()) {
+            if (const AstNodeVarRef* varrefp = VN_CAST(basefromp, NodeVarRef)) {
 		lvalue = varrefp->lvalue();
 	    }
 	    // Find range of dtype we are selecting from
@@ -385,9 +385,9 @@ private:
 	    // Guard against reading/writing past end of arrays
 	    AstNode* basefromp = AstArraySel::baseFromp(nodep->fromp());
 	    bool lvalue = false;
-	    if (AstNodeVarRef* varrefp = basefromp->castNodeVarRef()) {
+            if (const AstNodeVarRef* varrefp = VN_CAST(basefromp, NodeVarRef)) {
 		lvalue = varrefp->lvalue();
-	    } else if (basefromp->castConst()) {
+            } else if (VN_IS(basefromp, Const)) {
 		// If it's a PARAMETER[bit], then basefromp may be a constant instead of a varrefp
 	    } else {
 		nodep->v3fatalSrc("No VarRef or Const under ArraySel");
@@ -396,7 +396,7 @@ private:
 	    int declElements = -1;
 	    AstNodeDType* dtypep = nodep->fromp()->dtypep()->skipRefp();
 	    if (!dtypep) nodep->v3fatalSrc("Select of non-selectable type");
-	    if (AstNodeArrayDType* adtypep = dtypep->castNodeArrayDType()) {
+            if (const AstNodeArrayDType* adtypep = VN_CAST(dtypep, NodeArrayDType)) {
 		declElements = adtypep->elementsConst();
 	    } else {
 		nodep->v3error("Select from non-array "<<dtypep->prettyTypeName());
@@ -415,7 +415,7 @@ private:
 		condp->deleteTree();
 	    }
 	    else if (!lvalue
-		     && !nodep->backp()->castArraySel()) {	// Too complicated and slow if mid-multidimension
+                     && !VN_IS(nodep->backp(), ArraySel)) {  // Too complicated and slow if mid-multidimension
 		// ARRAYSEL(...) -> COND(LT(bit<maxbit), ARRAYSEL(...), {width{1'bx}})
 		AstNRelinker replaceHandle;
 		nodep->unlinkFrBack(&replaceHandle);

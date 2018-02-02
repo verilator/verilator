@@ -266,7 +266,7 @@ private:
 	AstVar* varp = nodep->varp();
 	if (!varp->isParam() && !varp->isGenVar() && !varp->isUsedLoopIdx()
 	    && !m_inBBox   // We may have falsely considered a SysIgnore as a driver
-	    && !nodep->castVarXRef()   // Xrefs might point at two different instances
+            && !VN_IS(nodep, VarXRef)  // Xrefs might point at two different instances
 	    && !varp->fileline()->warnIsOff(V3ErrorCode::ALWCOMBORDER)) {  // Warn only once per variable
 	    nodep->v3warn(ALWCOMBORDER, "Always_comb variable driven after use: "<<nodep->prettyName());
 	    varp->fileline()->modifyWarnOff(V3ErrorCode::ALWCOMBORDER, true);  // Complain just once for any usage
@@ -303,8 +303,8 @@ private:
         nodep->iterateChildren(*this);
     }
     virtual void visit(AstSel* nodep) {
-	AstNodeVarRef* varrefp = nodep->fromp()->castNodeVarRef();
-	AstConst* constp = nodep->lsbp()->castConst();
+        AstNodeVarRef* varrefp = VN_CAST(nodep->fromp(), NodeVarRef);
+        AstConst* constp = VN_CAST(nodep->lsbp(), Const);
 	if (varrefp && constp && !constp->num().isFourState()) {
 	    for (int usr=1; usr<(m_alwaysp?3:2); ++usr) {
 		UndrivenVarEntry* entryp = getEntryp (varrefp->varp(), usr);

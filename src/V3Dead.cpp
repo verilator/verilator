@@ -125,7 +125,7 @@ private:
     void checkDType(AstNodeDType* nodep) {
 	if (!nodep->generic()  // Don't remove generic types
 	    && m_elimDTypes  // dtypes stick around until post-widthing
-	    && !nodep->castMemberDType() // Keep member names iff upper type exists
+            && !VN_IS(nodep, MemberDType)  // Keep member names iff upper type exists
 	    ) {
 	    m_dtypesp.push_back(nodep);
 	}
@@ -229,7 +229,7 @@ private:
 	checkAll(nodep);
 	// Don't let packages with only public variables disappear
 	// Normal modules may disappear, e.g. if they are parameterized then removed
-	if (nodep->attrPublic() && m_modp && m_modp->castPackage()) m_modp->user1Inc();
+        if (nodep->attrPublic() && m_modp && VN_IS(m_modp, Package)) m_modp->user1Inc();
     }
     virtual void visit(AstVarScope* nodep) {
 	nodep->iterateChildren(*this);
@@ -242,7 +242,7 @@ private:
     virtual void visit(AstVar* nodep) {
 	nodep->iterateChildren(*this);
 	checkAll(nodep);
-	if (nodep->isSigPublic() && m_modp && m_modp->castPackage()) m_modp->user1Inc();
+        if (nodep->isSigPublic() && m_modp && VN_IS(m_modp, Package)) m_modp->user1Inc();
 	if (mightElimVar(nodep)) {
 	    m_varsp.push_back(nodep);
 	}
@@ -254,7 +254,7 @@ private:
 	nodep->rhsp()->iterateAndNext(*this);
 	checkAll(nodep);
 	// Has to be direct assignment without any EXTRACTing.
-	AstVarRef* varrefp = nodep->lhsp()->castVarRef();
+        AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef);
 	if (varrefp && !m_sideEffect
 	    && varrefp->varScopep()) {	// For simplicity, we only remove post-scoping
 	    m_assignMap.insert(make_pair(varrefp->varScopep(), nodep));
@@ -281,7 +281,7 @@ private:
 	    retry=false;
 	    AstNodeModule* nextmodp;
 	    for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp; modp=nextmodp) {
-		nextmodp = modp->nextp()->castNodeModule();
+                nextmodp = VN_CAST(modp->nextp(), NodeModule);
 		if (modp->dead() || (modp->level()>2 && modp->user1()==0 && !modp->internal())) {
 		    // > 2 because L1 is the wrapper, L2 is the top user module
 		    UINFO(4,"  Dead module "<<modp<<endl);
@@ -376,9 +376,9 @@ private:
 		// It's possible that there if a reference to each individual member, but
 		// not to the dtype itself.  Check and don't remove the parent dtype if
 		// members are still alive.
-		if ((classp = (*it)->castNodeClassDType())) {
+                if ((classp = VN_CAST((*it), NodeClassDType))) {
 		    bool cont = true;
-		    for (AstMemberDType *memberp = classp->membersp(); memberp; memberp = memberp->nextp()->castMemberDType()) {
+                    for (AstMemberDType *memberp = classp->membersp(); memberp; memberp = VN_CAST(memberp->nextp(), MemberDType)) {
 			if (memberp->user1() != 0) {
 			    cont = false;
 			    break;

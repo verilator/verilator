@@ -141,7 +141,7 @@ private:
 		// We don't need to test for tracing; it would be in the tracefunc if it was needed
 		UINFO(4,"  ModVar->BlkVar "<<nodep<<endl);
 		++m_statLocVars;
-		AstCFunc* newfuncp = nodep->user1p()->castCFunc();
+                AstCFunc* newfuncp = VN_CAST(nodep->user1p(), CFunc);
 		nodep->unlinkFrBack();
 		newfuncp->addInitsp(nodep);
 		// Done
@@ -175,8 +175,8 @@ private:
 	// This could be more complicated; allow always-set under both branches of a IF.
 	// If so, check for ArrayRef's and such, as they aren't acceptable.
 	for (; nodep; nodep=nodep->nextp()) {
-	    if (nodep->castNodeAssign()) {
-		if (AstVarRef* varrefp = nodep->castNodeAssign()->lhsp()->castVarRef()) {
+            if (VN_IS(nodep, NodeAssign)) {
+                if (AstVarRef* varrefp = VN_CAST(VN_CAST(nodep, NodeAssign)->lhsp(), VarRef)) {
 		    if (!varrefp->lvalue()) varrefp->v3fatalSrc("LHS assignment not lvalue");
 		    if (!varrefp->varp()->user4p()) {
 			UINFO(4,"      FuncAsn "<<varrefp<<endl);

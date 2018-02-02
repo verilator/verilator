@@ -66,12 +66,12 @@ public:
 	v3Global.rootp()->addFilesp(cfilep);
 	return cfilep;
     }
-    string cFuncArgs(AstCFunc* nodep) {
+    string cFuncArgs(const AstCFunc* nodep) {
 	// Return argument list for given C function
 	string args = nodep->argTypes();
 	// Might be a user function with argument list.
-	for (AstNode* stmtp = nodep->argsp(); stmtp; stmtp=stmtp->nextp()) {
-	    if (AstVar* portp = stmtp->castVar()) {
+        for (const AstNode* stmtp = nodep->argsp(); stmtp; stmtp=stmtp->nextp()) {
+            if (const AstVar* portp = VN_CAST_CONST(stmtp, Var)) {
 		if (portp->isIO() && !portp->isFuncReturn()) {
 		    if (args != "") args+= ", ";
 		    if (nodep->dpiImport() || nodep->dpiExportWrapper())

@@ -104,7 +104,7 @@ public:
 	m_assignp = assp;
 	m_constp = NULL;
 	m_everSet = true;
-	if (assp->rhsp()->castConst()) m_constp = assp->rhsp()->castConst();
+        if (VN_IS(assp->rhsp(), Const)) m_constp = VN_CAST(assp->rhsp(), Const);
     }
     inline void complexAssign() {  // A[x]=... or some complicated assignment
 	m_assignp = NULL;
@@ -329,8 +329,8 @@ private:
 	    V3Const::constifyEdit(nodep->rhsp());  // rhsp may change
 	}
 	// Has to be direct assignment without any EXTRACTing.
-	if (nodep->lhsp()->castVarRef() && !m_sideEffect && !m_noopt) {
-	    AstVarScope* vscp = nodep->lhsp()->castVarRef()->varScopep();
+        if (VN_IS(nodep->lhsp(), VarRef) && !m_sideEffect && !m_noopt) {
+            AstVarScope* vscp = VN_CAST(nodep->lhsp(), VarRef)->varScopep();
 	    if (!vscp) nodep->v3fatalSrc("Scope lost on variable");
 	    m_lifep->simpleAssign(vscp, nodep);
 	} else {

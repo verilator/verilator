@@ -105,12 +105,12 @@ private:
 	//
 	AstNode* bodysp = NULL;
 	bool selfDestruct = false;
-	if (AstPslCover* snodep = nodep->castPslCover()) {
+        if (AstPslCover* snodep = VN_CAST(nodep, PslCover)) {
 	    if (!v3Global.opt.coverageUser()) {
 		selfDestruct = true;
 	    } else {
 		// V3Coverage assigned us a bucket to increment.
-		AstCoverInc* covincp = snodep->coverincp()->castCoverInc();
+                AstCoverInc* covincp = VN_CAST(snodep->coverincp(), CoverInc);
 		if (!covincp) snodep->v3fatalSrc("Missing AstCoverInc under assertion");
 		covincp->unlinkFrBack();
 		if (message!="") covincp->declp()->comment(message);
@@ -122,7 +122,7 @@ private:
 	if (bodysp && stmtsp) bodysp = bodysp->addNext(stmtsp);
 	AstIf* ifp = new AstIf (nodep->fileline(), propp, bodysp, NULL);
 	bodysp = ifp;
-	if (nodep->castVAssert()) ifp->branchPred(AstBranchPred::BP_UNLIKELY);
+        if (VN_IS(nodep, VAssert)) ifp->branchPred(AstBranchPred::BP_UNLIKELY);
 	//
 	AstNode* newp = new AstAlways (nodep->fileline(),
 				       VAlwaysKwd::ALWAYS,
@@ -146,7 +146,7 @@ private:
 	AstNode* passsp = nodep->passsp(); if (passsp) passsp->unlinkFrBackWithNext();
 	AstNode* failsp = nodep->failsp(); if (failsp) failsp->unlinkFrBackWithNext();
 	//
-	if (nodep->castVAssert()) {
+        if (VN_IS(nodep, VAssert)) {
 	    if (passsp) passsp = newIfAssertOn(passsp);
 	    if (failsp) failsp = newIfAssertOn(failsp);
 	} else {
@@ -155,7 +155,7 @@ private:
 
 	AstIf* ifp = new AstIf (nodep->fileline(), propp, passsp, failsp);
 	AstNode* newp = ifp;
-	if (nodep->castVAssert()) ifp->branchPred(AstBranchPred::BP_UNLIKELY);
+        if (VN_IS(nodep, VAssert)) ifp->branchPred(AstBranchPred::BP_UNLIKELY);
 	//
 	// Install it
 	nodep->replaceWith(newp);
@@ -227,7 +227,7 @@ private:
 	nodep->iterateChildren(*this);
 	if (!nodep->user1SetOnce()) {
 	    bool has_default=false;
-	    for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
+            for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=VN_CAST(itemp->nextp(), CaseItem)) {
 		if (itemp->isDefault()) has_default=true;
 	    }
 	    if (nodep->fullPragma() || nodep->priorityPragma()) {
@@ -246,7 +246,7 @@ private:
 		    // Not parallel, but harmlessly so.
 		} else {
 		    AstNode* propp = NULL;
-		    for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
+                    for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=VN_CAST(itemp->nextp(), CaseItem)) {
 			for (AstNode* icondp = itemp->condsp(); icondp!=NULL; icondp=icondp->nextp()) {
 			    AstNode* onep;
 			    if (nodep->casex() || nodep->casez() || nodep->caseInside()) {

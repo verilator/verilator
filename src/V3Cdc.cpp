@@ -448,7 +448,7 @@ private:
 	// See also OrderGraph::loopsVertexCb(V3GraphVertex* vertexp)
 	AstNode* nodep = vertexp->nodep();
 	string front = pad(filelineWidth(),nodep->fileline()->ascii()+":")+" "+prefix+" +- ";
-	if (nodep->castVarScope()) {
+        if (VN_IS(nodep, VarScope)) {
 	    *m_ofp<<front<<"Variable: "<<nodep->prettyName()<<endl;
 	}
 	else {
@@ -584,7 +584,7 @@ private:
 	}
 	// If multiple domains need to do complicated optimizations
 	if (senedited) {
-	    senoutp = V3Const::constifyExpensiveEdit(senoutp)->castSenTree();
+            senoutp = VN_CAST(V3Const::constifyExpensiveEdit(senoutp), SenTree);
 	}
 	if (traceDests) {
 	    vertexp->dstDomainSet(true);  // Note it's set - domainp may be null, so can't use that
@@ -700,11 +700,11 @@ private:
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstSel* nodep) {
-	if (!nodep->lsbp()->castConst()) setNodeHazard(nodep);
+        if (!VN_IS(nodep->lsbp(), Const)) setNodeHazard(nodep);
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstNodeSel* nodep) {
-	if (!nodep->bitp()->castConst()) setNodeHazard(nodep);
+        if (!VN_IS(nodep->bitp(), Const)) setNodeHazard(nodep);
 	nodep->iterateChildren(*this);
     }
 

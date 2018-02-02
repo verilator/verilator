@@ -237,27 +237,45 @@ sub write_visitor {
 
 sub write_intf {
     my $fh = open_file(@_);
+
+    print $fh "\n";
+    print $fh "    // These for use by VN_IS macro only\n";
     foreach my $type (sort (keys %Classes)) {
-	next if $type eq "Node";	# Special, just a return (this);
-	printf $fh "    Ast%-16s cast${type}();\n"
-	    ,$type."*";
+        print $fh "    static bool privateIs",$type,"(const AstNode* nodep);\n";
     }
+
+    print $fh "\n";
+    print $fh "    // These for use by VN_CAST macro only\n";
+    foreach my $type (sort (keys %Classes)) {
+        print $fh "    static Ast",$type,"* privateCast",$type,"(AstNode* nodep);\n";
+    }
+    foreach my $type (sort (keys %Classes)) {
+        print $fh "    static const Ast",$type,"* privateConstCast",$type,"(const AstNode* nodep);\n";
+    }
+
     $fh->close();
 }
 
 sub write_impl {
     my $fh = open_file(@_);
+
+    print $fh "\n";
+    print $fh "    // These for use by VN_IS macro only\n";
     foreach my $type (sort (keys %Classes)) {
-	next if $type eq "Node";	# Special, just a return (this);
-	# For performance, prefer static_cast where we can
 	if (children_of($type)) {
-	    printf $fh "inline Ast%-16s AstNode::cast${type}() { return (dynamic_cast<Ast${type}*>(this)); }\n"
-		,$type."*";
+            print $fh "inline bool AstNode::privateIs",$type,"(const AstNode* nodep) { return (bool)(dynamic_cast<const Ast",$type,"*>(nodep)); }\n";
 	} else {
-	    printf $fh "inline Ast%-16s AstNode::cast${type}() { return (this && this->type() == AstType::at${type}) ? static_cast<Ast${type}*>(this) : NULL; }\n"
-		,$type."*";
+            print $fh "inline bool AstNode::privateIs",$type,"(const AstNode* nodep) { return nodep && nodep->type() == AstType::at",$type,"; }\n";
 	}
     }
+
+    foreach my $type (sort (keys %Classes)) {
+        print $fh "inline Ast",$type,"* AstNode::privateCast",$type,"(AstNode* nodep) { return dynamic_cast<Ast",$type,"*>(nodep); }\n";
+    }
+    foreach my $type (sort (keys %Classes)) {
+        print $fh "inline const Ast",$type,"* AstNode::privateConstCast",$type,"(const AstNode* nodep) { return dynamic_cast<const Ast",$type,"*>(nodep); }\n";
+    }
+
     $fh->close();
 }
 
@@ -405,12 +423,14 @@ sub tree_line {
 	    next if $subnode =~ /^\$([a-z0-9]+)$/gi;   # "$lhs" is just a comment that this op has a lhs
 	    $mif .= " && " if $mif;
 	    my $subnodeif = $subnode;
+            $subnodeif =~ s/\$([a-zA-Z0-9]+)\.cast([A-Z][A-Za-z0-9]+)$/VN_IS(nodep->$1(),$2)/g;
 	    $subnodeif =~ s/\$([a-zA-Z0-9]+)\.([a-zA-Z0-9]+)$/nodep->$1()->$2()/g;
 	    $subnodeif = add_nodep($subnodeif);
 	    $mif .= $subnodeif;
 	}
 
 	my $exec_func = treeop_exec_func($self, $to);
+        while ($exec_func =~ s/([-()a-zA-Z0-9_>]+)->cast([A-Z][A-Za-z0-9]+)\(\)/VN_CAST($1,$2)/) {}
 
 	$self->{treeop}{$type} ||= [];
 	my $n = $#{$self->{treeop}{$type}} + 1;
@@ -601,7 +621,7 @@ sub tree_base {
 			 "	nodep->lhsp()->iterateAndNext(*this);\n",
 			 @out_for_type_sc);
 	    $self->print("	nodep->rhsp()->iterateAndNext(*this);\n",
-			 "	AstNodeTriop *tnp = nodep->castNodeTriop();\n",
+                         "      AstNodeTriop *tnp = VN_CAST(nodep, NodeTriop);\n",
 			 "	if (tnp && tnp->thsp()) tnp->thsp()->iterateAndNext(*this);\n",
 			 @out_for_type,
 			 "    }\n") if ($out_for_type[0]);

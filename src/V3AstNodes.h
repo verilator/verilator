@@ -132,11 +132,11 @@ public:
     AstNode* lsbp() const { return op3p(); }  // op3 = Lsb expression
     AstNode* leftp() const { return littleEndian()?lsbp():msbp(); }  // How to show a declaration
     AstNode* rightp() const { return littleEndian()?msbp():lsbp(); }
-    int msbConst() const { AstConst* constp=msbp()->castConst(); return (constp?constp->toSInt():0); }
-    int lsbConst() const { AstConst* constp=lsbp()->castConst(); return (constp?constp->toSInt():0); }
+    int msbConst() const { AstConst* constp=VN_CAST(msbp(), Const); return (constp?constp->toSInt():0); }
+    int lsbConst() const { AstConst* constp=VN_CAST(lsbp(), Const); return (constp?constp->toSInt():0); }
     int elementsConst() const { return (msbConst()>lsbConst()) ? msbConst()-lsbConst()+1 : lsbConst()-msbConst()+1; }
-    int leftConst() const { AstConst* constp=leftp()->castConst(); return (constp?constp->toSInt():0); }
-    int rightConst() const { AstConst* constp=rightp()->castConst(); return (constp?constp->toSInt():0); }
+    int leftConst() const { AstConst* constp=VN_CAST(leftp(), Const); return (constp?constp->toSInt():0); }
+    int rightConst() const { AstConst* constp=VN_CAST(rightp(), Const); return (constp?constp->toSInt():0); }
     int leftToRightInc() const { return littleEndian()?1:-1; }
     bool littleEndian() const { return m_littleEndian; }
     void littleEndian(bool flag) { m_littleEndian=flag; }
@@ -168,7 +168,7 @@ public:
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool cleanOut() { return true; }
     AstNode* exprp() const { return op1p(); }			// op1 = Pin expression
-    AstRange* rangep() const { return op2p()->castRange(); }	// op2 = Range of pin
+    AstRange* rangep() const { return VN_CAST(op2p(), Range); }  // op2 = Range of pin
 };
 
 //######################################################################
@@ -188,7 +188,7 @@ public:
     }
     ASTNODE_NODE_FUNCS(ParamTypeDType)
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
-    AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Type assigning to
+    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }  // op1 = Type assigning to
     void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
     virtual AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type
@@ -196,7 +196,7 @@ public:
     virtual AstNodeDType* skipRefToConstp() const { return subDTypep()->skipRefToConstp(); }
     virtual AstNodeDType* skipRefToEnump() const { return subDTypep()->skipRefToEnump(); }
     virtual bool similarDType(AstNodeDType* samep) const {
-	AstParamTypeDType* sp = samep->castParamTypeDType();
+        const AstParamTypeDType* sp = static_cast<const AstParamTypeDType*>(samep);
 	return (sp && this->subDTypep()->skipRefp()->similarDType(sp->subDTypep()->skipRefp()));
     }
     virtual int widthAlignBytes() const { return dtypep()->widthAlignBytes(); }
@@ -227,7 +227,7 @@ public:
     ASTNODE_NODE_FUNCS(Typedef)
     virtual void dump(std::ostream& str);
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
-    AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Type assigning to
+    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }  // op1 = Type assigning to
     void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
     void	addAttrsp(AstNode* nodep) { addNOp4p(nodep); }
@@ -279,7 +279,7 @@ public:
 	return type()==samep->type() && same(samep); }
     virtual V3Hash sameHash() const { return V3Hash(m_uniqueNum); }
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
-    AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
+    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }  // op1 = Range of variable
     void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
     void*	containerp() const { return m_containerp; }
@@ -373,7 +373,7 @@ public:
     virtual void dumpSmall(std::ostream& str);
     virtual V3Hash sameHash() const { return V3Hash(m_refDTypep); }
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
-    AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
+    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }  // op1 = Range of variable
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     virtual AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
@@ -466,7 +466,7 @@ public:
 	return type()==samep->type() && same(samep); }
     virtual string name()	const { return m.m_keyword.ascii(); }
     virtual const char* broken() const { BROKEN_RTN(dtypep()!=this); return NULL; }
-    AstRange*	rangep() 	const { return op1p()->castRange(); }	// op1 = Range of variable
+    AstRange* rangep() const { return VN_CAST(op1p(), Range); }  // op1 = Range of variable
     void	rangep(AstRange* nodep) { setNOp1p(nodep); }
     void setSignedState(VSignedState signst) {
 	// Note NOSIGN does NOT change the state; this is required by the parser
@@ -498,7 +498,7 @@ public:
     bool	implicit() const { return keyword() == AstBasicDTypeKwd::LOGIC_IMPLICIT; }
     VNumRange declRange() const { return isRanged() ? VNumRange(msb(), lsb(), littleEndian()) : VNumRange(); }
     void	cvtRangeConst() {  // Convert to smaller represenation
-	if (rangep() && rangep()->msbp()->castConst() && rangep()->lsbp()->castConst()) {
+        if (rangep() && VN_IS(rangep()->msbp(), Const) && VN_IS(rangep()->lsbp(), Const)) {
 	    m.m_nrange.init(rangep()->msbConst(), rangep()->lsbConst(),
 			    rangep()->littleEndian());
 	    rangep()->unlinkFrBackWithNext()->deleteTree();
@@ -534,7 +534,7 @@ public:
 	return skipRefp()->similarDType(samep->skipRefp()); }
     virtual V3Hash sameHash() const { return V3Hash(m_refDTypep); }  // node's type() included elsewhere
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
-    AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Range of variable
+    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }  // op1 = Range of variable
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     virtual AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); } // op1 = Range of variable
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
@@ -698,7 +698,7 @@ public:
     virtual bool hasDType() const { return true; }
     virtual bool maybePointedTo() const { return true; }
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
-    AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); }	// op1 = Range of variable
+    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }  // op1 = Range of variable
     void	childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     virtual AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
@@ -734,7 +734,7 @@ public:
     virtual bool maybePointedTo() const { return true; }
     virtual bool hasDType() const { return true; }
     void name(const string& flag) { m_name = flag; }
-    AstRange* rangep() const { return op1p()->castRange(); } // op1 = Range for name appending
+    AstRange* rangep() const { return VN_CAST(op1p(), Range); }  // op1 = Range for name appending
     void rangep(AstNode* nodep) { addOp1p(nodep); }
     AstNode* valuep() const { return op2p(); } // op2 = Value
     void valuep(AstNode* nodep) { addOp2p(nodep); }
@@ -754,7 +754,7 @@ public:
     virtual string name() const { return itemp()->name(); }
     virtual const char* broken() const { BROKEN_RTN(!itemp()); return NULL; }
     virtual int instrCount() const { return 0; }
-    virtual void cloneRelink() { if (m_itemp->clonep()) m_itemp = m_itemp->clonep()->castEnumItem(); }
+    virtual void cloneRelink() { if (m_itemp->clonep()) m_itemp = VN_CAST(m_itemp->clonep(), EnumItem); }
     virtual bool same(const AstNode* samep) const {
 	const AstEnumItemRef* sp = static_cast<const AstEnumItemRef*>(samep);
 	return itemp() == sp->itemp(); }
@@ -794,13 +794,13 @@ public:
     virtual bool similarDType(AstNodeDType* samep) const { return this==samep; }
     virtual V3Hash sameHash() const { return V3Hash(m_uniqueNum); }
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
-    AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Data type
+    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }  // op1 = Data type
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     virtual AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); } // op1 = Range of variable
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     virtual AstNodeDType* virtRefDTypep() const { return m_refDTypep; }
     virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
-    AstEnumItem* itemsp() const { return op2p()->castEnumItem(); } // op2 = AstEnumItem's
+    AstEnumItem* itemsp() const { return VN_CAST(op2p(), EnumItem); }  // op2 = AstEnumItem's
     void addValuesp(AstNode* nodep) { addOp2p(nodep); }
     // METHODS
     virtual AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type
@@ -837,9 +837,9 @@ class AstArraySel : public AstNodeSel {
     // Children: varref|arraysel, math
 private:
     void init(AstNode* fromp) {
-	if (fromp && fromp->dtypep()->skipRefp()->castNodeArrayDType()) {
+        if (fromp && VN_IS(fromp->dtypep()->skipRefp(), NodeArrayDType)) {
 	    // Strip off array to find what array references
-	    dtypeFrom(fromp->dtypep()->skipRefp()->castNodeArrayDType()->subDTypep());
+            dtypeFrom(VN_CAST(fromp->dtypep()->skipRefp(), NodeArrayDType)->subDTypep());
 	}
     }
 public:
@@ -945,9 +945,9 @@ public:
     AstSel(FileLine* fl, AstNode* fromp, AstNode* lsbp, AstNode* widthp)
 	:AstNodeTriop(fl, fromp, lsbp, widthp) {
 	m_declElWidth = 1;
-	if (widthp->castConst()) {
-	    dtypeSetLogicSized(widthp->castConst()->toUInt(),
-			       widthp->castConst()->toUInt(),
+        if (VN_IS(widthp, Const)) {
+            dtypeSetLogicSized(VN_CAST(widthp, Const)->toUInt(),
+                               VN_CAST(widthp, Const)->toUInt(),
 			       AstNumeric::UNSIGNED);
 	}
     }
@@ -973,13 +973,13 @@ public:
     virtual bool sizeMattersThs() {return false;}
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode*) const { return true; }
-    virtual int instrCount() const { return widthInstrs()*(lsbp()->castConst()?3:10); }
+    virtual int instrCount() const { return widthInstrs()*(VN_CAST(lsbp(), Const)?3:10); }
     AstNode* fromp()		const { return op1p(); }	// op1 = Extracting what (NULL=TBD during parsing)
     AstNode* lsbp()		const { return op2p(); }	// op2 = Msb selection expression
     AstNode* widthp()		const { return op3p(); }	// op3 = Width
-    int		widthConst() const { return widthp()->castConst()->toSInt(); }
-    int		lsbConst()   const { return lsbp()->castConst()->toSInt(); }
-    int		msbConst()   const { return lsbConst()+widthConst()-1; }
+    int widthConst() const { return VN_CAST(widthp(), Const)->toSInt(); }
+    int lsbConst() const { return VN_CAST(lsbp(), Const)->toSInt(); }
+    int msbConst() const { return lsbConst()+widthConst()-1; }
     VNumRange& declRange() { return m_declRange; }
     void declRange(const VNumRange& flag) { m_declRange = flag; }
     int declElWidth() const { return m_declElWidth; }
@@ -1189,7 +1189,7 @@ public:
     string vlPropInit() const;  // Return VerilatorVarProps initializer
     void	combineType(AstVarType type);
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
-    AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); }	// op1 = Range of variable
+    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }  // op1 = Range of variable
     AstNodeDType* dtypeSkipRefp() const { return subDTypep()->skipRefp(); }
     AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type (Note don't need virtual - AstVar isn't a NodeDType)
     AstNode* 	valuep() const { return op3p(); } // op3 = Initial value that never changes (static const)
@@ -1396,7 +1396,7 @@ public:
     ASTNODE_NODE_FUNCS(TopScope)
     AstNode*	stmtsp() 	const { return op1p(); }
     void addStmtsp(AstNode* nodep) { addOp1p(nodep); }
-    AstScope* scopep()		const { return op2p()->castScope(); }	// op1 = AstVarScope's
+    AstScope* scopep() const { return VN_CAST(op2p(), Scope); }  // op1 = AstVarScope's
 };
 
 class AstVarScope : public AstNode {
@@ -1753,9 +1753,9 @@ public:
     void origName(const string& name) 	{ m_origName = name; }
     string modName()		const { return m_modName; }		// * = Instance name
     void modName(const string& name)	{ m_modName = name; }
-    AstPin* pinsp()		const { return op1p()->castPin(); }	// op1 = List of cell ports
-    AstPin* paramsp()		const { return op2p()->castPin(); }	// op2 = List of parameter #(##) values
-    AstRange* rangep()		const { return op3p()->castRange(); }	// op3 = Range of arrayed instants (NULL=not ranged)
+    AstPin* pinsp() const { return VN_CAST(op1p(), Pin); }  // op1 = List of cell ports
+    AstPin* paramsp() const { return VN_CAST(op2p(), Pin); }  // op2 = List of parameter #(##) values
+    AstRange* rangep() const { return VN_CAST(op3p(), Range); }  // op3 = Range of arrayed instants (NULL=not ranged)
     AstNodeModule* modp()		const { return m_modp; }		// [AfterLink] = Pointer to module instantiated
     void addPinsp(AstPin* nodep) { addOp1p(nodep); }
     void addParamsp(AstPin* nodep) { addOp2p(nodep); }
@@ -1846,7 +1846,7 @@ public:
     AstBind(FileLine* fl, const string& name, AstNode* cellsp)
 	: AstNode(fl)
 	, m_name(name) {
-	if (!cellsp->castCell()) cellsp->v3fatalSrc("Only cells allowed to be bound");
+        if (!VN_IS(cellsp, Cell)) cellsp->v3fatalSrc("Only cells allowed to be bound");
 	addNOp1p(cellsp);
     }
     ASTNODE_NODE_FUNCS(Bind)
@@ -2061,7 +2061,7 @@ public:
     AstEdgeType edgeType()	const { return m_edgeType; }		// * = Posedge/negedge
     void edgeType(AstEdgeType type)  { m_edgeType=type; editCountInc(); }// * = Posedge/negedge
     AstNode*	sensp()		const { return op1p(); }		// op1 = Signal sensitized
-    AstNodeVarRef* varrefp()	const { return op1p()->castNodeVarRef(); }	// op1 = Signal sensitized
+    AstNodeVarRef* varrefp() const { return VN_CAST(op1p(), NodeVarRef); }  // op1 = Signal sensitized
     //
     virtual bool isClocked() const { return edgeType().clockedStmt(); }
     virtual bool isCombo() const { return edgeType()==AstEdgeType::ET_COMBO; }
@@ -2083,7 +2083,7 @@ public:
     }
     ASTNODE_NODE_FUNCS(SenGate)
     virtual string emitVerilog() { return "(%l) %f&& (%r)"; }
-    AstSenItem*	sensesp() const { return op1p()->castSenItem(); }
+    AstSenItem* sensesp() const { return VN_CAST(op1p(), SenItem); }
     AstNode*	rhsp() 	const { return op2p(); }
     void	sensesp(AstSenItem* nodep)  { addOp1p(nodep); }
     void	rhsp(AstNode* nodep)  { setOp2p(nodep); }
@@ -2110,7 +2110,7 @@ public:
     virtual void dump(std::ostream& str);
     virtual bool maybePointedTo() const { return true; }
     bool isMulti() const { return m_multi; }
-    AstNodeSenItem* sensesp() 	const { return op1p()->castNodeSenItem(); }	// op1 = Sensitivity list
+    AstNodeSenItem* sensesp() const { return VN_CAST(op1p(), NodeSenItem); }  // op1 = Sensitivity list
     void addSensesp(AstNodeSenItem* nodep) { addOp1p(nodep); }
     void multi(bool flag) { m_multi = true; }
     // METHODS
@@ -2130,7 +2130,7 @@ public:
     ASTNODE_NODE_FUNCS(Always)
     //
     virtual void dump(std::ostream& str);
-    AstSenTree*	sensesp() 	const { return op1p()->castSenTree(); }	// op1 = Sensitivity list
+    AstSenTree* sensesp() const { return VN_CAST(op1p(), SenTree); }  // op1 = Sensitivity list
     AstNode*	bodysp() 	const { return op2p(); }	// op2 = Statements to evaluate
     void addStmtp(AstNode* nodep) { addOp2p(nodep); }
     VAlwaysKwd keyword() const { return m_keyword; }
@@ -2150,7 +2150,7 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode* samep) const { return true; }
     //
-    AstSenTree*	sensesp() 	const { return op1p()->castSenTree(); }	// op1 = Sensitivity list
+    AstSenTree* sensesp() const { return VN_CAST(op1p(), SenTree); }  // op1 = Sensitivity list
     AstNode*	bodysp() 	const { return op2p(); }	// op2 = Statements to evaluate
     void addStmtp(AstNode* nodep) { addOp2p(nodep); }
     // Special accessors
@@ -2404,7 +2404,7 @@ public:
     virtual bool isPredictOptimizable() const { return true; }
     virtual bool isOutputter() const { return false; }   // Though the AstCoverInc under this is an outputter
     // but isPure()  true
-    AstCoverInc* incp() const { return op1p()->castCoverInc(); }
+    AstCoverInc* incp() const { return VN_CAST(op1p(), CoverInc); }
     void 	incp(AstCoverInc* nodep) { setOp1p(nodep); }
     AstNode* origp() const { return op2p(); }
     AstNode* changep() const { return op3p(); }
@@ -2514,7 +2514,7 @@ public:
     AstNode* exprsp() const { return op1p(); }	// op1 = Expressions to output
     string text() const { return m_text; }		// * = Text to display
     void text(const string& text) { m_text=text; }
-    AstScopeName* scopeNamep() const { return op2p()->castScopeName(); }
+    AstScopeName* scopeNamep() const { return VN_CAST(op2p(), ScopeName); }
     void scopeNamep(AstNode* nodep) { setNOp2p(nodep); }
     bool formatScopeTracking() const {  // Track scopeNamep();  Ok if false positive
 	return (name().find("%m") != string::npos || name().find("%M") != string::npos); }
@@ -2560,7 +2560,7 @@ public:
     void	displayType(AstDisplayType type) { m_displayType = type; }
     bool	addNewline() const { return displayType().addNewline(); }  // * = Add a newline for $display
     void	fmtp(AstSFormatF* nodep) { addOp1p(nodep); }	// op1 = To-String formatter
-    AstSFormatF* fmtp() const { return op1p()->castSFormatF(); }
+    AstSFormatF* fmtp() const { return VN_CAST(op1p(), SFormatF); }
     AstNode*	filep() const { return op3p(); }
     void 	filep(AstNodeVarRef* nodep) { setNOp3p(nodep); }
 };
@@ -2589,7 +2589,7 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode* samep) const { return true; }
     void	fmtp(AstSFormatF* nodep) { addOp1p(nodep); }	// op1 = To-String formatter
-    AstSFormatF* fmtp() const { return op1p()->castSFormatF(); }
+    AstSFormatF* fmtp() const { return VN_CAST(op1p(), SFormatF); }
     AstNode*	lhsp() const { return op3p(); }
     void 	lhsp(AstNode* nodep) { setOp3p(nodep); }
 };
@@ -3047,7 +3047,7 @@ public:
 	addNOp2p(stablesp); addNOp3p(bodysp);
     }
     ASTNODE_NODE_FUNCS(UntilStable)
-    AstVarRef* stablesp()	const { return op2p()->castVarRef(); } // op2= list of variables that must become stable
+    AstVarRef* stablesp() const { return VN_CAST(op2p(), VarRef); }  // op2= list of variables that must become stable
     AstNode*	bodysp()	const { return op3p(); }	// op3= body of loop
     void	addStablesp(AstVarRef* newp)	{ addOp2p(newp); }
     void	addBodysp(AstNode* newp)	{ addOp3p(newp); }
@@ -3371,7 +3371,7 @@ public:
     AstSenTree*	sensesp() 	const { return m_sensesp; }
     // op1 = Sensitivity tree, if a clocked block in early stages
     void	sensesStorep(AstSenTree* nodep) { addOp1p(nodep); }
-    AstSenTree*	sensesStorep() 	const { return op1p()->castSenTree(); }
+    AstSenTree* sensesStorep() const { return VN_CAST(op1p(), SenTree); }
     // op2 = Combo logic
     AstNode*	stmtsp() 	const { return op2p(); }
     void addStmtsp(AstNode* nodep) { addOp2p(nodep); }
@@ -3416,10 +3416,10 @@ public:
     virtual string emitVerilog() { return ""; }
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool cleanOut() { return true; }
-    AstText*	scopeAttrp() const { return op1p()->castText(); }
-    void 	scopeAttrp(AstNode* nodep) { addOp1p(nodep); }
-    AstText*	scopeEntrp() const { return op2p()->castText(); }
-    void 	scopeEntrp(AstNode* nodep) { addOp2p(nodep); }
+    AstText* scopeAttrp() const { return VN_CAST(op1p(), Text); }
+    void scopeAttrp(AstNode* nodep) { addOp1p(nodep); }
+    AstText* scopeEntrp() const { return VN_CAST(op2p(), Text); }
+    void scopeEntrp(AstNode* nodep) { addOp2p(nodep); }
     string scopeSymName() const { return scopeNameFormatter(scopeAttrp()); }  // Name for __Vscope variable including children
     string scopeDpiName() const { return scopeNameFormatter(scopeEntrp()); }  // Name for DPI import scope
     string scopePrettySymName() const { return scopePrettyNameFormatter(scopeAttrp()); }  // Name for __Vscope variable including children
@@ -3435,7 +3435,7 @@ public:
 	addNOp1p(bodysp);
     }
     ASTNODE_NODE_FUNCS(UdpTable)
-    AstUdpTableLine*	bodysp() 	const { return op1p()->castUdpTableLine(); }	// op1 = List of UdpTableLines
+    AstUdpTableLine* bodysp() const { return VN_CAST(op1p(), UdpTableLine); }  // op1 = List of UdpTableLines
 };
 
 class AstUdpTableLine : public AstNode {
@@ -3839,7 +3839,7 @@ public:
     virtual bool sizeMattersLhs() {return false;}
     AstNode* lhsp() const { return op1p(); }
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
-    AstNodeDType* childDTypep() const { return op2p()->castNodeDType(); }
+    AstNodeDType* childDTypep() const { return VN_CAST(op2p(), NodeDType); }
 };
 
 class AstCastParse : public AstNode {
@@ -4904,7 +4904,7 @@ class AstReplicate : public AstNodeBiop {
 private:
     void init() {
 	if (lhsp()) {
-	    if (AstConst* constp=rhsp()->castConst()) {
+            if (const AstConst* constp = VN_CAST(rhsp(), Const)) {
 		dtypeSetLogicSized(lhsp()->width()*constp->toUInt(), lhsp()->width()*constp->toUInt(), AstNumeric::UNSIGNED);
 	    }
 	}
@@ -5020,7 +5020,7 @@ public:
     virtual bool cleanOut() {V3ERROR_NA; return "";}
     virtual int instrCount()	const { return widthInstrs(); }
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
-    AstNodeDType* childDTypep() const { return op1p()->castNodeDType(); } // op1 = Type assigning to
+    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }  // op1 = Type assigning to
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
     AstNode* itemsp() const { return op2p(); } // op2 = AstPatReplicate, AstPatMember, etc
@@ -5084,7 +5084,7 @@ public:
 	addNOp2p(bodysp);
     }
     ASTNODE_NODE_FUNCS(Clocking)
-    AstNodeSenItem* sensesp() 	const { return op1p()->castNodeSenItem(); }	// op1 = Sensitivity list
+    AstNodeSenItem* sensesp() const { return VN_CAST(op1p(), NodeSenItem); }  // op1 = Sensitivity list
     AstNode*	bodysp() 	const { return op2p(); }	// op2 = Body
 };
 
@@ -5104,7 +5104,7 @@ public:
     }
     ASTNODE_NODE_FUNCS(PslClocked)
     virtual bool hasDType() const { return true; }  // Used under PslCover, which expects a bool child
-    AstNodeSenItem* sensesp() 	const { return op1p()->castNodeSenItem(); }	// op1 = Sensitivity list
+    AstNodeSenItem* sensesp() const { return VN_CAST(op1p(), NodeSenItem); }  // op1 = Sensitivity list
     AstNode*	disablep()	const { return op2p(); }	// op2 = disable
     AstNode*	propp()		const { return op3p(); }	// op3 = property
 };
@@ -5128,7 +5128,7 @@ public:
     virtual bool same(const AstNode* samep) const { return samep->name() == name(); }
     virtual void name(const string& name) { m_name = name; }
     AstNode*	propp()		const { return op1p(); }	// op1 = property
-    AstSenTree*	sentreep()	const { return op2p()->castSenTree(); }	// op2 = clock domain
+    AstSenTree* sentreep() const { return VN_CAST(op2p(), SenTree); }  // op2 = clock domain
     void sentreep(AstSenTree* sentreep)  { addOp2p(sentreep); }	// op2 = clock domain
     AstNode*	coverincp()	const { return op3p(); }	// op3 = coverage node
     void coverincp(AstCoverInc* nodep)	{ addOp3p(nodep); }	// op3 = coverage node
@@ -5477,7 +5477,7 @@ public:
     virtual bool isPredictOptimizable() const { return false; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode* samep) const { return true; }
-    AstVarRef* varrefp() const { return op1p()->castVarRef(); }	// op1= varref to reset
+    AstVarRef* varrefp() const { return VN_CAST(op1p(), VarRef); }  // op1= varref to reset
 };
 
 class AstCStmt : public AstNodeStmt {
@@ -5519,7 +5519,7 @@ public:
 	for (int i=0; i<AstBasicDTypeKwd::_ENUM_MAX; ++i) m_basicps[i] = NULL;
     }
     ASTNODE_NODE_FUNCS(TypeTable)
-    AstNodeDType*     typesp() 	const { return op1p()->castNodeDType();}	// op1 = List of dtypes
+    AstNodeDType* typesp() const { return VN_CAST(op1p(), NodeDType);}  // op1 = List of dtypes
     void addTypesp(AstNodeDType* nodep) { addOp1p(nodep); }
     AstBasicDType* findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd);
     AstBasicDType* findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd,
@@ -5555,10 +5555,10 @@ public:
         BROKEN_RTN(m_evalp && !m_evalp->brokeExists());
         return NULL;
     }
-    AstNodeModule*	modulesp() 	const { return op1p()->castNodeModule();}	// op1 = List of modules
-    AstNodeModule*  topModulep() const { return op1p()->castNodeModule(); }	// * = Top module in hierarchy (first one added, for now)
+    AstNodeModule* modulesp() const { return VN_CAST(op1p(), NodeModule); }  // op1 = List of modules
+    AstNodeModule* topModulep() const { return VN_CAST(op1p(), NodeModule); }  // * = Top module in hierarchy (first one added, for now)
     void addModulep(AstNodeModule* modulep) { addOp1p(modulep); }
-    AstCFile*	filesp() 	const { return op2p()->castCFile();}	// op2 = List of files
+    AstCFile* filesp() const { return VN_CAST(op2p(), CFile);}  // op2 = List of files
     void addFilesp(AstCFile* filep) { addOp2p(filep); }
     AstNode*	miscsp() 	const { return op3p();}	// op3 = List of dtypes etc
     void addMiscsp(AstNode* nodep) { addOp3p(nodep); }

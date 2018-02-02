@@ -198,7 +198,7 @@ private:
 	if (m_traVscp) {
 	    if ((int)nodep->arrayUnpackedElements() > v3Global.opt.traceMaxArray()) {
 		addIgnore("Wide memory > --trace-max-array ents");
-	    } else if (nodep->subDTypep()->skipRefp()->castBasicDType()  // Nothing lower than this array
+            } else if (VN_IS(nodep->subDTypep()->skipRefp(), BasicDType)  // Nothing lower than this array
 		       && m_traVscp->dtypep()->skipRefp() == nodep) {  // Nothing above this array
 		// Simple 1-D array, use exising V3EmitC runtime loop rather than unrolling
 		// This will put "(index)" at end of signal name for us
@@ -258,13 +258,13 @@ private:
 		if (!nodep->packed()) {
 		    addIgnore("Unsupported: Unpacked struct/union");
 		} else {
-		    for (AstMemberDType* itemp = nodep->membersp(); itemp; itemp=itemp->nextp()->castMemberDType()) {
+                    for (AstMemberDType* itemp = nodep->membersp(); itemp; itemp=VN_CAST(itemp->nextp(), MemberDType)) {
 			AstNodeDType* subtypep = itemp->subDTypep()->skipRefp();
 			string oldShowname = m_traShowname;
 			AstNode* oldValuep = m_traValuep;
 			{
 			    m_traShowname += string(" ")+itemp->prettyName();
-			    if (nodep->castStructDType()) {
+                            if (VN_IS(nodep, StructDType)) {
 				m_traValuep = new AstSel(nodep->fileline(), m_traValuep->cloneTree(true),
 							 itemp->lsb(), subtypep->width());
 				subtypep->accept(*this);

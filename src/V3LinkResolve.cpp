@@ -136,8 +136,8 @@ private:
 	    // and any width errors will look a bit odd, but it works.
 	    AstNode* sensp = nodep->sensp();
 	    if (sensp
-		&& !sensp->castNodeVarRef()
-		&& !sensp->castConst()) {
+                && !VN_IS(sensp, NodeVarRef)
+                && !VN_IS(sensp, Const)) {
 		// Make a new temp wire
 		string newvarname = "__Vsenitemexpr"+cvtToStr(++m_senitemCvtNum);
 		AstVar* newvarp = new AstVar (sensp->fileline(), AstVarType::MODULETEMP, newvarname,
@@ -145,11 +145,11 @@ private:
 		// We can't just add under the module, because we may be inside a generate, begin, etc.
 		// We know a SenItem should be under a SenTree/Always etc, we we'll just hunt upwards
 		AstNode* addwherep = nodep;  // Add to this element's next
-		while (addwherep->castSenItem()
-		       || addwherep->castSenTree()) {
+                while (VN_IS(addwherep, SenItem)
+                       || VN_IS(addwherep, SenTree)) {
 		    addwherep = addwherep->backp();
 		}
-		if (!addwherep->castAlways()) {  // Assertion perhaps?
+                if (!VN_IS(addwherep, Always)) {  // Assertion perhaps?
 		    sensp->v3error("Unsupported: Non-single-bit pos/negedge clock statement under some complicated block");
 		    addwherep = m_modp;
 		}
@@ -166,26 +166,26 @@ private:
 	    bool did=1;
 	    while (did) {
 		did=0;
-		if (AstNodeSel* selp = nodep->sensp()->castNodeSel()) {
+                if (AstNodeSel* selp = VN_CAST(nodep->sensp(), NodeSel)) {
 		    AstNode* fromp = selp->fromp()->unlinkFrBack();
 		    selp->replaceWith(fromp); selp->deleteTree(); VL_DANGLING(selp);
 		    did=1;
 		}
 		// NodeSel doesn't include AstSel....
-		if (AstSel* selp = nodep->sensp()->castSel()) {
+                if (AstSel* selp = VN_CAST(nodep->sensp(), Sel)) {
 		    AstNode* fromp = selp->fromp()->unlinkFrBack();
 		    selp->replaceWith(fromp); selp->deleteTree(); VL_DANGLING(selp);
 		    did=1;
 		}
-		if (AstNodePreSel* selp = nodep->sensp()->castNodePreSel()) {
+                if (AstNodePreSel* selp = VN_CAST(nodep->sensp(), NodePreSel)) {
 		    AstNode* fromp = selp->lhsp()->unlinkFrBack();
 		    selp->replaceWith(fromp); selp->deleteTree(); VL_DANGLING(selp);
 		    did=1;
 		}
 	    }
 	}
-	if (!nodep->sensp()->castNodeVarRef()
-	    && !nodep->sensp()->castEnumItemRef()  // V3Const will cleanup
+        if (!VN_IS(nodep->sensp(), NodeVarRef)
+            && !VN_IS(nodep->sensp(), EnumItemRef)  // V3Const will cleanup
 	    && !nodep->isIllegal()) {
 	    if (debug()) nodep->dumpTree(cout,"-tree: ");
 	    nodep->v3error("Unsupported: Complex statement in sensitivity list");
@@ -203,16 +203,16 @@ private:
 	    // So we replicate it in another node
 	    // Note that V3Param knows not to replace AstVarRef's under AstAttrOf's
 	    AstNode* basefromp = AstArraySel::baseFromp(nodep);
-	    if (AstNodeVarRef* varrefp = basefromp->castNodeVarRef()) {  // Maybe varxref - so need to clone
+            if (AstNodeVarRef* varrefp = VN_CAST(basefromp, NodeVarRef)) {  // Maybe varxref - so need to clone
 		nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
 					   varrefp->cloneTree(false)));
-	    } else if (AstUnlinkedRef* uvxrp = basefromp->castUnlinkedRef()) {  // Maybe unlinked - so need to clone
+            } else if (AstUnlinkedRef* uvxrp = VN_CAST(basefromp, UnlinkedRef)) {  // Maybe unlinked - so need to clone
 		nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
 					   uvxrp->cloneTree(false)));
-	    } else if (AstMemberSel* fromp = basefromp->castMemberSel()) {
+            } else if (AstMemberSel* fromp = VN_CAST(basefromp, MemberSel)) {
 		nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::MEMBER_BASE,
 					   fromp->cloneTree(false)));
-	    } else if (AstEnumItemRef* fromp = basefromp->castEnumItemRef()) {
+            } else if (AstEnumItemRef* fromp = VN_CAST(basefromp, EnumItemRef)) {
 		nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::ENUM_BASE,
 					   fromp->cloneTree(false)));
 	    } else {
@@ -307,7 +307,7 @@ private:
 		    skipCount--;
 		    continue;
 		}
-		AstConst *constp = argp->castConst();
+                AstConst *constp = VN_CAST(argp, Const);
 		bool isFromString = (constp) ? constp->num().isFromString() : false;
 		if (isFromString) {
 		    int numchars = argp->dtypep()->width()/8;
@@ -357,15 +357,15 @@ private:
 
     virtual void visit(AstFOpen* nodep) {
 	nodep->iterateChildren(*this);
-	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
+        expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
     }
     virtual void visit(AstFClose* nodep) {
 	nodep->iterateChildren(*this);
-	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
+        expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
     }
     virtual void visit(AstFEof* nodep) {
 	nodep->iterateChildren(*this);
-	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
+        expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
     }
     virtual void visit(AstFScanF* nodep) {
 	nodep->iterateChildren(*this);
@@ -380,9 +380,9 @@ private:
 	// Cleanup old-school displays without format arguments
 	if (!nodep->hasFormat()) {
 	    if (nodep->text()!="") nodep->v3fatalSrc("Non-format $sformatf should have \"\" format");
-	    if (nodep->exprsp()->castConst()
-		&& nodep->exprsp()->castConst()->num().isFromString()) {
-		AstConst* fmtp = nodep->exprsp()->unlinkFrBack()->castConst();
+            if (VN_IS(nodep->exprsp(), Const)
+                && VN_CAST(nodep->exprsp(), Const)->num().isFromString()) {
+                AstConst* fmtp = VN_CAST(nodep->exprsp()->unlinkFrBack(), Const);
 		nodep->text(fmtp->num().toString());
 		pushDeletep(fmtp); VL_DANGLING(fmtp);
 	    }
@@ -390,7 +390,8 @@ private:
 	}
 	string newFormat = expectFormat(nodep, nodep->text(), nodep->exprsp(), false);
 	nodep->text(newFormat);
-	if ((nodep->backp()->castDisplay() && nodep->backp()->castDisplay()->displayType().needScopeTracking())
+        if ((VN_IS(nodep->backp(), Display)
+             && VN_CAST(nodep->backp(), Display)->displayType().needScopeTracking())
 	    || nodep->formatScopeTracking()) {
 	    nodep->scopeNamep(new AstScopeName(nodep->fileline()));
 	}
@@ -408,7 +409,7 @@ private:
 	    // Massive hack, just tie off all outputs so our analysis can proceed
 	    AstVar* varoutp = NULL;
 	    for (AstNode* stmtp = m_modp->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
-		if (AstVar* varp = stmtp->castVar()) {
+                if (AstVar* varp = VN_CAST(stmtp, Var)) {
 		    if (varp->isInput()) {
 		    } else if (varp->isOutput()) {
 			if (varoutp) { varp->v3error("Multiple outputs not allowed in udp modules"); }

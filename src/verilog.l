@@ -1073,11 +1073,11 @@ void V3ParseImp::lexToken() {
 	    AstNode* scp = foundp->nodep();
 	    yylval.scp = scp;
 	    UINFO(7,"   lexToken: Found "<<scp<<endl);
-	    if (scp->castTypedef())		token = yaID__aTYPE;
-	    else if (scp->castTypedefFwd())	token = yaID__aTYPE;
-	    else if (scp->castPackage()) 	token = yaID__aPACKAGE;
-	    //UNSUP else if (scp->castClass()) 		token = yaID__aCLASS;
-	    //UNSUP else if (scp->castCoverGroup()) 	token = yaID__aCOVERGROUP;
+	    if (VN_IS(scp, Typedef)) token = yaID__aTYPE;
+	    else if (VN_IS(scp, TypedefFwd)) token = yaID__aTYPE;
+	    else if (VN_IS(scp, Package)) token = yaID__aPACKAGE;
+	    //UNSUP else if (VN_IS(scp, NodeClass)) token = yaID__aCLASS;
+	    //UNSUP else if (VN_IS(scp, CoverGroup)) token = yaID__aCOVERGROUP;
 	    else token = yaID__ETC;
 	} else {  // Not found
 	    yylval.scp = NULL;

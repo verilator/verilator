@@ -44,7 +44,7 @@ const char* AstIfaceRefDType::broken() const {
 }
 
 AstIface* AstIfaceRefDType::ifaceViaCellp() const {
-    return ((m_cellp && m_cellp->modp()) ? m_cellp->modp()->castIface() : m_ifacep);
+    return ((m_cellp && m_cellp->modp()) ? VN_CAST(m_cellp->modp(), Iface) : m_ifacep);
 }
 
 const char* AstNodeVarRef::broken() const {
@@ -58,12 +58,13 @@ void AstNodeVarRef::cloneRelink() {
 }
 
 int AstNodeSel::bitConst() const {
-    AstConst* constp=bitp()->castConst(); return (constp?constp->toSInt():0);
+    AstConst* constp=VN_CAST(bitp(), Const);
+    return (constp ? constp->toSInt() : 0);
 }
 
 void AstNodeClassDType::repairMemberCache() {
     clearCache();
-    for (AstMemberDType* itemp = membersp(); itemp; itemp=itemp->nextp()->castMemberDType()) {
+    for (AstMemberDType* itemp = membersp(); itemp; itemp=VN_CAST(itemp->nextp(), MemberDType)) {
 	if (m_members.find(itemp->name())!=m_members.end()) { itemp->v3error("Duplicate declaration of member name: "<<itemp->prettyName()); }
 	else m_members.insert(make_pair(itemp->name(), itemp));
     }
@@ -71,7 +72,7 @@ void AstNodeClassDType::repairMemberCache() {
 
 const char* AstNodeClassDType::broken() const {
     vl_unordered_set<AstMemberDType*> exists;
-    for (AstMemberDType* itemp = membersp(); itemp; itemp=itemp->nextp()->castMemberDType()) {
+    for (AstMemberDType* itemp = membersp(); itemp; itemp=VN_CAST(itemp->nextp(), MemberDType)) {
 	exists.insert(itemp);
     }
     for (MemberNameMap::const_iterator it=m_members.begin(); it!=m_members.end(); ++it) {
@@ -243,7 +244,7 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc) const {
         arg += " (& "+name()+")";
         for (AstNodeDType* dtp=dtypep(); dtp; ) {
             dtp = dtp->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
-            if (AstUnpackArrayDType* adtypep = dtp->castUnpackArrayDType()) {
+            if (AstUnpackArrayDType* adtypep = VN_CAST(dtp, UnpackArrayDType)) {
                 arg += "["+cvtToStr(adtypep->declRange().elements())+"]";
                 dtp = adtypep->subDTypep();
             } else break;
@@ -315,7 +316,7 @@ string AstVar::vlPropInit() const {
     bool first = true;
     for (AstNodeDType* dtp=dtypep(); dtp; ) {
         dtp = dtp->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
-        if (AstNodeArrayDType* adtypep = dtp->castNodeArrayDType()) {
+        if (AstNodeArrayDType* adtypep = VN_CAST(dtp, NodeArrayDType)) {
             if (first) {
                 out += ", VerilatedVarProps::Unpacked()";
                 first = false;
@@ -422,15 +423,15 @@ AstVar* AstVar::scVarRecurse(AstNode* nodep) {
     // See if this is a SC assignment; if so return that type
     // Historically sc variables are identified by a variable
     // attribute. TODO it would better be a data type attribute.
-    if (AstVar* anodep = nodep->castVar()) {
+    if (AstVar* anodep = VN_CAST(nodep, Var)) {
 	if (anodep->isSc()) return anodep;
 	else return NULL;
     }
-    else if (nodep->castVarRef()) {
-	if (nodep->castVarRef()->varp()->isSc()) return nodep->castVarRef()->varp();
+    else if (VN_IS(nodep, VarRef)) {
+        if (VN_CAST(nodep, VarRef)->varp()->isSc()) return VN_CAST(nodep, VarRef)->varp();
 	else return NULL;
     }
-    else if (nodep->castArraySel()) {
+    else if (VN_IS(nodep, ArraySel)) {
 	if (nodep->op1p()) if (AstVar* p = scVarRecurse(nodep->op1p())) return p;
 	if (nodep->op2p()) if (AstVar* p = scVarRecurse(nodep->op2p())) return p;
 	if (nodep->op3p()) if (AstVar* p = scVarRecurse(nodep->op3p())) return p;
@@ -457,14 +458,14 @@ AstNodeDType* AstNodeDType::dtypeDimensionp(int dimension) {
     UDEBUGONLY(UASSERT(dynamic_cast<AstNode*>(this),"this should not be NULL"););
     for (AstNodeDType* dtypep=this; dtypep; ) {
 	dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
-	if (AstNodeArrayDType* adtypep = dtypep->castNodeArrayDType()) {
+        if (AstNodeArrayDType* adtypep = VN_CAST(dtypep, NodeArrayDType)) {
 	    if ((dim++)==dimension) {
 		return dtypep;
 	    }
 	    dtypep = adtypep->subDTypep();
 	    continue;
 	}
-	else if (AstBasicDType* adtypep = dtypep->castBasicDType()) {
+        else if (AstBasicDType* adtypep = VN_CAST(dtypep, BasicDType)) {
 	    // AstBasicDType - nothing below, return null
 	    if (adtypep->isRanged()) {
 		if ((dim++) == dimension) {
@@ -473,7 +474,7 @@ AstNodeDType* AstNodeDType::dtypeDimensionp(int dimension) {
 	    }
 	    return NULL;
 	}
-	else if (AstNodeClassDType* adtypep = dtypep->castNodeClassDType()) {
+        else if (AstNodeClassDType* adtypep = VN_CAST(dtypep, NodeClassDType)) {
 	    if (adtypep->packed()) {
 		if ((dim++) == dimension) {
 		    return adtypep;
@@ -492,7 +493,7 @@ uint32_t AstNodeDType::arrayUnpackedElements() {
     UDEBUGONLY(UASSERT(dynamic_cast<AstNode*>(this),"this should not be NULL"););
     for (AstNodeDType* dtypep=this; dtypep; ) {
 	dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
-	if (AstUnpackArrayDType* adtypep = dtypep->castUnpackArrayDType()) {
+        if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
 	    entries *= adtypep->elementsConst();
 	    dtypep = adtypep->subDTypep();
 	}
@@ -511,13 +512,13 @@ std::pair<uint32_t,uint32_t> AstNodeDType::dimensions(bool includeBasic) {
     UDEBUGONLY(UASSERT(dynamic_cast<AstNode*>(this),"this should not be NULL"););
     for (AstNodeDType* dtypep=this; dtypep; ) {
 	dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
-	if (AstNodeArrayDType* adtypep = dtypep->castNodeArrayDType()) {
-	    if (adtypep->castPackArrayDType()) packed++;
+        if (const AstNodeArrayDType* adtypep = VN_CAST(dtypep, NodeArrayDType)) {
+            if (VN_IS(adtypep, PackArrayDType)) packed++;
 	    else unpacked++;
 	    dtypep = adtypep->subDTypep();
 	    continue;
 	}
-	else if (AstBasicDType* adtypep = dtypep->castBasicDType()) {
+        else if (const AstBasicDType* adtypep = VN_CAST(dtypep, BasicDType)) {
 	    if (includeBasic && adtypep->isRanged()) packed++;
 	}
 	break;
@@ -537,15 +538,15 @@ int AstNodeDType::widthPow2() const {
 AstNode* AstArraySel::baseFromp(AstNode* nodep) {	///< What is the base variable (or const) this dereferences?
     // Else AstArraySel etc; search for the base
     while (nodep) {
-	if (nodep->castArraySel()) { nodep=nodep->castArraySel()->fromp(); continue; }
-	else if (nodep->castSel()) { nodep=nodep->castSel()->fromp(); continue; }
+        if (VN_IS(nodep, ArraySel)) { nodep=VN_CAST(nodep, ArraySel)->fromp(); continue; }
+        else if (VN_IS(nodep, Sel)) { nodep=VN_CAST(nodep, Sel)->fromp(); continue; }
 	// AstNodeSelPre stashes the associated variable under an ATTROF of AstAttrType::VAR_BASE/MEMBER_BASE so it isn't constified
-	else if (nodep->castAttrOf()) { nodep=nodep->castAttrOf()->fromp(); continue; }
-	else if (nodep->castNodePreSel()) {
-	    if (nodep->castNodePreSel()->attrp()) {
-		nodep=nodep->castNodePreSel()->attrp();
+        else if (VN_IS(nodep, AttrOf)) { nodep=VN_CAST(nodep, AttrOf)->fromp(); continue; }
+        else if (VN_IS(nodep, NodePreSel)) {
+            if (VN_CAST(nodep, NodePreSel)->attrp()) {
+                nodep=VN_CAST(nodep, NodePreSel)->attrp();
 	    } else {
-		nodep=nodep->castNodePreSel()->lhsp();
+                nodep=VN_CAST(nodep, NodePreSel)->lhsp();
 	    }
 	    continue;
 	}
@@ -579,7 +580,7 @@ string AstScope::nameDotless() const {
 
 string AstScopeName::scopePrettyNameFormatter(AstText* scopeTextp) const {
     string out;
-    for (AstText* textp=scopeTextp; textp; textp=textp->nextp()->castText()) {
+    for (AstText* textp=scopeTextp; textp; textp=VN_CAST(textp->nextp(), Text)) {
 	out += textp->text();
     }
     // TOP will be replaced by top->name()
@@ -591,7 +592,7 @@ string AstScopeName::scopePrettyNameFormatter(AstText* scopeTextp) const {
 
 string AstScopeName::scopeNameFormatter(AstText* scopeTextp) const {
     string out;
-    for (AstText* textp=scopeTextp; textp; textp=textp->nextp()->castText()) {
+    for (AstText* textp=scopeTextp; textp; textp=VN_CAST(textp->nextp(), Text)) {
 	out += textp->text();
     }
     if (out.substr(0,10) == "__DOT__TOP") out.replace(0,10,"");
@@ -609,28 +610,28 @@ string AstScopeName::scopeNameFormatter(AstText* scopeTextp) const {
 
 bool AstSenTree::hasClocked() const {
     if (!sensesp()) this->v3fatalSrc("SENTREE without any SENITEMs under it");
-    for (AstNodeSenItem* senp = sensesp(); senp; senp=senp->nextp()->castNodeSenItem()) {
+    for (AstNodeSenItem* senp = sensesp(); senp; senp=VN_CAST(senp->nextp(), NodeSenItem)) {
 	if (senp->isClocked()) return true;
     }
     return false;
 }
 bool AstSenTree::hasSettle() const {
     if (!sensesp()) this->v3fatalSrc("SENTREE without any SENITEMs under it");
-    for (AstNodeSenItem* senp = sensesp(); senp; senp=senp->nextp()->castNodeSenItem()) {
+    for (AstNodeSenItem* senp = sensesp(); senp; senp=VN_CAST(senp->nextp(), NodeSenItem)) {
 	if (senp->isSettle()) return true;
     }
     return false;
 }
 bool AstSenTree::hasInitial() const {
     if (!sensesp()) this->v3fatalSrc("SENTREE without any SENITEMs under it");
-    for (AstNodeSenItem* senp = sensesp(); senp; senp=senp->nextp()->castNodeSenItem()) {
+    for (AstNodeSenItem* senp = sensesp(); senp; senp=VN_CAST(senp->nextp(), NodeSenItem)) {
 	if (senp->isInitial()) return true;
     }
     return false;
 }
 bool AstSenTree::hasCombo() const {
     if (!sensesp()) this->v3fatalSrc("SENTREE without any SENITEMs under it");
-    for (AstNodeSenItem* senp = sensesp(); senp; senp=senp->nextp()->castNodeSenItem()) {
+    for (AstNodeSenItem* senp = sensesp(); senp; senp=VN_CAST(senp->nextp(), NodeSenItem)) {
 	if (senp->isCombo()) return true;
     }
     return false;
@@ -651,7 +652,7 @@ void AstTypeTable::clearCache() {
     m_detailedMap.clear();
     // Clear generic()'s so dead detection will work
     for (AstNode* nodep = typesp(); nodep; nodep=nodep->nextp()) {
-	if (AstBasicDType* bdtypep = nodep->castBasicDType()) {
+        if (AstBasicDType* bdtypep = VN_CAST(nodep, BasicDType)) {
 	    bdtypep->generic(false);
 	}
     }
@@ -661,7 +662,7 @@ void AstTypeTable::repairCache() {
     // After we mass-change widthMin in V3WidthCommit, we need to correct the table.
     clearCache();
     for (AstNode* nodep = typesp(); nodep; nodep=nodep->nextp()) {
-	if (AstBasicDType* bdtypep = nodep->castBasicDType()) {
+        if (AstBasicDType* bdtypep = VN_CAST(nodep, BasicDType)) {
 	    (void)findInsertSameDType(bdtypep);
 	}
     }
@@ -812,7 +813,7 @@ void AstNode::dump(std::ostream& str) {
 	if (dtypep()) str<<" %Error-dtype-exp=null,got="<<(void*)dtypep();
     }
     if (name()!="") {
-	if (castConst()) str<<"  "<<name();  // Already quoted
+        if (VN_IS(this, Const)) str<<"  "<<name();  // Already quoted
 	else str<<"  "<<V3Number::quoteNameControls(name());
     }
 }
@@ -934,7 +935,7 @@ void AstNodeDType::dumpSmall(std::ostream& str) {
 }
 void AstNodeArrayDType::dumpSmall(std::ostream& str) {
     this->AstNodeDType::dumpSmall(str);
-    if (castPackArrayDType()) str<<"p"; else str<<"u";
+    if (VN_IS(this, PackArrayDType)) str<<"p"; else str<<"u";
     str<<declRange();
 }
 void AstNodeArrayDType::dump(std::ostream& str) {

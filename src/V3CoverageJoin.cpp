@@ -82,7 +82,7 @@ private:
 		    AstNode* duporigp = hashed.iteratorNodep(dupit);
 		    // Note hashed will point to the original variable (what's duplicated), not the covertoggle,
 		    // but we need to get back to the covertoggle which is immediately above, so:
-		    AstCoverToggle* removep = duporigp->backp()->castCoverToggle();
+                    AstCoverToggle* removep = VN_CAST(duporigp->backp(), CoverToggle);
 		    if (!removep) nodep->v3fatalSrc("CoverageJoin duplicate of wrong type");
 		    UINFO(8,"  Orig "<<nodep<<" -->> "<<nodep->incp()->declp()<<endl);
 		    UINFO(8,"   dup "<<removep<<" -->> "<<removep->incp()->declp()<<endl);

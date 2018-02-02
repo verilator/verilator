@@ -62,8 +62,8 @@ private:
     // METHODS
     void nodeHashIterate(AstNode* nodep) {
 	if (!nodep->user4()) {
-	    if (nodep->backp()->castCFunc()
-		&& !(nodep->castNodeStmt() || nodep->castCFunc())) {
+            if (VN_IS(nodep->backp(), CFunc)
+                && !(VN_IS(nodep, NodeStmt) || VN_IS(nodep, CFunc))) {
 		nodep->v3fatalSrc("Node "<<nodep->prettyTypeName()<<" in statement position but not marked stmt (node under function)");
 	    }
 	    V3Hash oldHash = m_lowerHash;

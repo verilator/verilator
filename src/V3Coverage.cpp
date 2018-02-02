@@ -200,7 +200,7 @@ private:
     void toggleVarRecurse(AstNodeDType* dtypep, int depth, // per-iteration
 		     const ToggleEnt& above,
 		     AstVar* varp, AstVar* chgVarp) { // Constant
-	if (AstBasicDType* bdtypep = dtypep->castBasicDType()) {
+        if (const AstBasicDType* bdtypep = VN_CAST(dtypep, BasicDType)) {
 	    if (bdtypep->isRanged()) {
 		for (int index_docs=bdtypep->lsb(); index_docs<bdtypep->msb()+1; index_docs++) {
 		    int index_code = index_docs - bdtypep->lsb();
@@ -218,7 +218,7 @@ private:
 				varp, chgVarp);
 	    }
 	}
-	else if (AstUnpackArrayDType* adtypep = dtypep->castUnpackArrayDType()) {
+        else if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
 	    for (int index_docs=adtypep->lsb(); index_docs<=adtypep->msb(); ++index_docs) {
 		int index_code = index_docs - adtypep->lsb();
 		ToggleEnt newent (above.m_comment+string("[")+cvtToStr(index_docs)+"]",
@@ -230,7 +230,7 @@ private:
 		newent.cleanup();
 	    }
 	}
-	else if (AstPackArrayDType* adtypep = dtypep->castPackArrayDType()) {
+        else if (AstPackArrayDType* adtypep = VN_CAST(dtypep, PackArrayDType)) {
 	    for (int index_docs=adtypep->lsb(); index_docs<=adtypep->msb(); ++index_docs) {
 		AstNodeDType* subtypep = adtypep->subDTypep()->skipRefp();
 		int index_code = index_docs - adtypep->lsb();
@@ -245,9 +245,9 @@ private:
 		newent.cleanup();
 	    }
 	}
-	else if (AstStructDType* adtypep = dtypep->castStructDType()) {
+        else if (AstStructDType* adtypep = VN_CAST(dtypep, StructDType)) {
 	    // For now it's packed, so similar to array
-	    for (AstMemberDType* itemp = adtypep->membersp(); itemp; itemp=itemp->nextp()->castMemberDType()) {
+            for (AstMemberDType* itemp = adtypep->membersp(); itemp; itemp=VN_CAST(itemp->nextp(), MemberDType)) {
 		AstNodeDType* subtypep = itemp->subDTypep()->skipRefp();
 		int index_code = itemp->lsb();
 		ToggleEnt newent (above.m_comment+string(".")+itemp->name(),
@@ -261,7 +261,7 @@ private:
 		newent.cleanup();
 	    }
 	}
-	else if (AstUnionDType* adtypep = dtypep->castUnionDType()) {
+        else if (AstUnionDType* adtypep = VN_CAST(dtypep, UnionDType)) {
 	    // Arbitrarially handle only the first member of the union
 	    if (AstMemberDType* itemp = adtypep->membersp()) {
 		AstNodeDType* subtypep = itemp->subDTypep()->skipRefp();
@@ -284,9 +284,9 @@ private:
 	UINFO(4," IF: "<<nodep<<endl);
 	if (m_checkBlock) {
 	    // An else-if.  When we iterate the if, use "elsif" marking
-	    bool elsif = (nodep->elsesp()->castIf()
-			  && !nodep->elsesp()->castIf()->nextp());
-	    if (elsif) nodep->elsesp()->castIf()->user1(true);
+            bool elsif = (VN_IS(nodep->elsesp(), If)
+                          && !VN_CAST(nodep->elsesp(), If)->nextp());
+            if (elsif) VN_CAST(nodep->elsesp(), If)->user1(true);
 	    //
 	    nodep->ifsp()->iterateAndNext(*this);
 	    if (m_checkBlock && !m_inModOff

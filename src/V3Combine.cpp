@@ -221,7 +221,7 @@ private:
     void walkEmptyFuncs() {
 	for (V3Hashed::iterator it = m_hashed.begin(); it != m_hashed.end(); ++it) {
 	    AstNode* node1p = it->second;
-	    AstCFunc* oldfuncp = node1p->castCFunc();
+            AstCFunc* oldfuncp = VN_CAST(node1p, CFunc);
 	    if (oldfuncp
 		&& oldfuncp->emptyBody()
 		&& !oldfuncp->dontCombine()) {
@@ -238,7 +238,7 @@ private:
 	for (V3Hashed::iterator it = m_hashed.begin(); it != m_hashed.end(); ++it) {
 	    V3Hash hashval = it->first;
 	    AstNode* node1p = it->second;
-	    if (!node1p->castCFunc()) continue;
+            if (!VN_IS(node1p, CFunc)) continue;
 	    if (hashval.isIllegal()) node1p->v3fatalSrc("Illegal (unhashed) nodes");
 	    for (V3Hashed::iterator eqit = it; eqit != m_hashed.end(); ++eqit) {
 		AstNode* node2p = eqit->second;
@@ -247,9 +247,9 @@ private:
 		if (node1p->user3p() || node2p->user3p()) continue;   // Already merged
 		if (node1p->sameTree(node2p)) { // walk of tree has same comparison
 		    // Replace AstCCall's that point here
-		    replaceFuncWFunc(node2p->castCFunc(), node1p->castCFunc());
+                    replaceFuncWFunc(VN_CAST(node2p, CFunc), VN_CAST(node1p, CFunc));
 		    // Replacement may promote a slow routine to fast path
-		    if (!node2p->castCFunc()->slow()) node1p->castCFunc()->slow(false);
+                    if (!VN_CAST(node2p, CFunc)->slow()) VN_CAST(node1p, CFunc)->slow(false);
 		}
 	    }
 	}
@@ -265,7 +265,7 @@ private:
 	pushDeletep(oldfuncp); VL_DANGLING(oldfuncp);
     }
     void replaceOnlyCallFunc(AstCCall* nodep) {
-	if (AstCFunc* oldfuncp = nodep->backp()->castCFunc()) {
+        if (AstCFunc* oldfuncp = VN_CAST(nodep->backp(), CFunc)) {
 	    //oldfuncp->dumpTree(cout,"MAYDEL: ");
 	    if (nodep->nextp()==NULL
 		&& oldfuncp->initsp()==NULL

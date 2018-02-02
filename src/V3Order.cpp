@@ -270,7 +270,7 @@ private:
 
     virtual void visit(AstNodeAssign* nodep) {
 	m_hasClk = false;
-	if (AstVarRef* varrefp = nodep->rhsp()->castVarRef()) {
+        if (AstVarRef* varrefp = VN_CAST(nodep->rhsp(), VarRef)) {
 	    this->visit(varrefp);
 	    m_rightClkWidth = varrefp->width();
 	    if (varrefp->varp()->attrClocker() == AstVarAttrClocker::CLOCKER_YES) {
@@ -298,7 +298,7 @@ private:
 		return; // skip the marking
 	    }
 
-	    AstVarRef* lhsp = nodep->lhsp()->castVarRef();
+            const AstVarRef* lhsp = VN_CAST(nodep->lhsp(), VarRef);
 	    if (lhsp && (lhsp->varp()->attrClocker() == AstVarAttrClocker::CLOCKER_UNKNOWN)) {
 		lhsp->varp()->attrClocker(AstVarAttrClocker::CLOCKER_YES); // mark as clocker
 		m_newClkMarked = true; // enable a further run since new clocker is marked
@@ -343,8 +343,8 @@ private:
     virtual void visit(AstReplicate* nodep) {
 	if (m_inAss) {
 	    nodep->iterateChildren(*this);
-	    if (nodep->rhsp()->castConst()) {
-		m_childClkWidth = m_childClkWidth * nodep->rhsp()->castConst()->toUInt();
+            if (VN_IS(nodep->rhsp(), Const)) {
+                m_childClkWidth = m_childClkWidth * VN_CAST(nodep->rhsp(), Const)->toUInt();
 	    } else {
 		m_childClkWidth = nodep->width(); // can not check in this case.
 	    }
@@ -389,7 +389,7 @@ private:
 	return level;
     }
     virtual void visit(AstNodeAssign* nodep) {
-	if (AstVarRef* varrefp = nodep->lhsp()->castVarRef() )
+        if (const AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef) )
 	    if (varrefp->varp()->attrClocker() == AstVarAttrClocker::CLOCKER_YES) {
 		m_clkAss = true;
 		UINFO(6, "node was marked as clocker "<<varrefp<<endl);
@@ -563,8 +563,8 @@ private:
 	    toLVtxp = dynamic_cast<OrderLogicVertex*>(edgep->top());
 	}
 	//
-	if ((fromLVtxp && fromLVtxp->nodep()->castInitial())
-	    || (toLVtxp && toLVtxp->nodep()->castInitial())) {
+        if ((fromLVtxp && VN_IS(fromLVtxp->nodep(), Initial))
+            || (toLVtxp && VN_IS(toLVtxp->nodep(), Initial))) {
 	    // IEEE does not specify ordering between initial blocks, so we can do whatever we want
 	    // We especially do not want to evaluate multiple times, so do not mark the edge circular
 	}
@@ -1079,7 +1079,7 @@ void OrderVisitor::processInputsOutIterate(OrderEitherVertex* vertexp, VertexVec
 		processInputsInIterate(vvertexp, todoVec);
 	    }
 	    if (OrderLogicVertex* vvertexp = dynamic_cast<OrderLogicVertex*>(toVertexp)) {
-		if (vvertexp->nodep()->castNodeAssign()) {
+                if (VN_IS(vvertexp->nodep(), NodeAssign)) {
 		    processInputsInIterate(vvertexp, todoVec);
 		}
 	    }
@@ -1340,8 +1340,8 @@ bool OrderVisitor::domainsExclusive(const AstSenTree* fromp,
     //   always @(negedge A)
     //
     // ... unless you know more about A and B, which sounds hard.
-    const AstSenItem* fromSenListp = fromp->sensesp()->castSenItem();
-    const AstSenItem* toSenListp = top->sensesp()->castSenItem();
+    const AstSenItem* fromSenListp = VN_CAST(fromp->sensesp(), SenItem);
+    const AstSenItem* toSenListp = VN_CAST(top->sensesp(), SenItem);
     // If clk gating is ever reenabled, we may need to update this to handle
     // AstSenGate also.
     if (!fromSenListp) fromp->v3fatalSrc("sensitivity list item is not an AstSenItem");
@@ -1516,11 +1516,11 @@ void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
 	  <<" s="<<(void*)(scopep)<<" "<<lvertexp<<endl);
     AstSenTree* domainp = lvertexp->domainp();
     AstNode* nodep = lvertexp->nodep();
-    AstNodeModule* modp = scopep->user1p()->castNodeModule();  UASSERT(modp,"NULL"); // Stashed by visitor func
-    if (nodep->castUntilStable()) {
+    AstNodeModule* modp = VN_CAST(scopep->user1p(), NodeModule);  UASSERT(modp,"NULL");  // Stashed by visitor func
+    if (VN_IS(nodep, UntilStable)) {
 	nodep->v3fatalSrc("Not implemented");
     }
-    else if (nodep->castSenTree()) {
+    else if (VN_IS(nodep, SenTree)) {
 	// Just ignore sensitivities, we'll deal with them when we move statements that need them
     }
     else {  // Normal logic

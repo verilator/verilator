@@ -119,7 +119,7 @@ private:
 public:
     // METHODS
     AstScope* getScope(AstNodeFTask* nodep) {
-	AstScope* scopep = nodep->user3p()->castScope();
+        AstScope* scopep = VN_CAST(nodep->user3p(), Scope);
 	if (!scopep) nodep->v3fatalSrc("No scope for function");
 	return scopep;
     }
@@ -166,7 +166,7 @@ private:
 	// However, to create variables, we need to track the scopes involved.
 	// Find all var->varscope mappings, for later cleanup
 	for (AstNode* stmtp = nodep->varsp(); stmtp; stmtp=stmtp->nextp()) {
-	    if (AstVarScope* vscp = stmtp->castVarScope()) {
+            if (AstVarScope* vscp = VN_CAST(stmtp, VarScope)) {
 		if (vscp->varp()->isFuncLocal()) {
 		    UINFO(9,"   funcvsc "<<vscp<<endl);
                     m_varToScopeMap.insert(std::make_pair(std::make_pair(nodep, vscp->varp()), vscp));
@@ -175,7 +175,7 @@ private:
 	}
 	// Likewise, all FTask->scope mappings
 	for (AstNode* stmtp = nodep->blocksp(); stmtp; stmtp=stmtp->nextp()) {
-	    if (AstNodeFTask* taskp = stmtp->castNodeFTask()) {
+            if (AstNodeFTask* taskp = VN_CAST(stmtp, NodeFTask)) {
 		taskp->user3p(nodep);
 	    }
 	}
@@ -263,7 +263,7 @@ private:
 	// Similar code in V3Inline
 	if (nodep->varp()->user2p()) { // It's being converted to a alias.
 	    UINFO(9, "    relinkVar "<<(void*)nodep->varp()->user2p()<<" "<<nodep<<endl);
-	    AstVarScope* newvscp = nodep->varp()->user2p()->castVarScope();
+            AstVarScope* newvscp = VN_CAST(nodep->varp()->user2p(), VarScope);
 	    if (!newvscp) nodep->v3fatalSrc("not linked");
 	    nodep->varScopep(newvscp);
 	    nodep->varp(nodep->varScopep()->varp());
@@ -382,14 +382,14 @@ private:
 		pinp->unlinkFrBack();   // Relinked to assignment below
 		argp->unlinkFrBack()->deleteTree(); // Args no longer needed
 		//
-		if ((portp->isInout()||portp->isOutput()) && pinp->castConst()) {
+                if ((portp->isInout() || portp->isOutput()) && VN_IS(pinp, Const)) {
 		    pinp->v3error("Function/task output connected to constant instead of variable: "+portp->prettyName());
 		}
 		else if (portp->isInout()) {
 		    // Correct lvalue; see comments below
 		    V3LinkLValue::linkLValueSet(pinp);
 
-		    if (AstVarRef* varrefp = pinp->castVarRef()) {
+                    if (AstVarRef* varrefp = VN_CAST(pinp, VarRef)) {
 			// Connect to this exact variable
 			AstVarScope* localVscp = varrefp->varScopep(); if (!localVscp) varrefp->v3fatalSrc("Null var scope");
 			portp->user2p(localVscp);
@@ -439,7 +439,7 @@ private:
 	    AstNode* nextstmtp;
 	    for (AstNode* stmtp = beginp; stmtp; stmtp=nextstmtp) {
 		nextstmtp = stmtp->nextp();
-		if (AstVar* portp = stmtp->castVar()) {
+                if (AstVar* portp = VN_CAST(stmtp, Var)) {
 		    // Any I/O variables that fell out of above loop were already linked
 		    if (!portp->user2p()) {
 			// Move it to a new localized variable
@@ -487,14 +487,14 @@ private:
 	    } else {
 		UINFO(9, "     Port "<<portp<<endl);
 		UINFO(9, "      pin "<<pinp<<endl);
-		if ((portp->isInout()||portp->isOutput()) && pinp->castConst()) {
+                if ((portp->isInout() || portp->isOutput()) && VN_IS(pinp, Const)) {
 		    pinp->v3error("Function/task output connected to constant instead of variable: "+portp->prettyName());
 		}
 		else if (portp->isInout()) {
 		    // Correct lvalue; see comments below
 		    V3LinkLValue::linkLValueSet(pinp);
 
-		    if (pinp->castVarRef()) {
+                    if (VN_IS(pinp, VarRef)) {
 			// Connect to this exact variable
 		    } else {
 			pinp->v3warn(E_TASKNSVAR,"Unsupported: Function/task input argument is not simple variable");
@@ -541,7 +541,7 @@ private:
 	for (AstNode* pinp = refp->pinsp(); pinp; pinp=nextpinp) {
 	    nextpinp = pinp->nextp();
 	    // Move pin to the CCall, removing all Arg's
-	    AstNode* exprp = pinp->castArg()->exprp();
+            AstNode* exprp = VN_CAST(pinp, Arg)->exprp();
 	    exprp->unlinkFrBack();
 	    ccallp->addArgsp(exprp);
 	}
@@ -564,7 +564,7 @@ private:
 	dpiproto += " "+nodep->cname()+" (";
 	string args;
 	for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
-	    if (AstVar* portp = stmtp->castVar()) {
+            if (const AstVar* portp = VN_CAST(stmtp, Var)) {
 		if (portp->isIO() && !portp->isFuncReturn() && portp!=rtnvarp) {
 		    if (args != "") { args+= ", "; dpiproto+= ", "; }
 		    args += portp->name();  // Leftover so ,'s look nice
@@ -716,7 +716,7 @@ private:
 	args += "("+v3Global.opt.prefix()+"__Syms*)(__Vscopep->symsp())";  // Upcast w/o overhead
 	AstNode* argnodesp = NULL;
 	for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
-	    if (AstVar* portp = stmtp->castVar()) {
+            if (AstVar* portp = VN_CAST(stmtp, Var)) {
 		if (portp->isIO() && !portp->isFuncReturn() && portp != rtnvarp) {
 		    // No createDpiTemp; we make a real internal variable instead
 		    // SAME CODE BELOW
@@ -757,7 +757,7 @@ private:
 
 	// Convert output/inout arguments back to internal type
 	for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
-	    if (AstVar* portp = stmtp->castVar()) {
+            if (AstVar* portp = VN_CAST(stmtp, Var)) {
 		if (portp->isIO() && portp->isOutput() && !portp->isFuncReturn()) {
 		    dpip->addStmtsp(createAssignInternalToDpi(portp,false,true,"__Vcvt",""));
 		}
@@ -817,7 +817,7 @@ private:
     void makePortList(AstNodeFTask* nodep, AstVar* rtnvarp, AstCFunc* dpip) {
         // Copy nodep's list of function I/O to the new dpip c function
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
-            if (AstVar* portp = stmtp->castVar()) {
+            if (AstVar* portp = VN_CAST(stmtp, Var)) {
                 if (portp->isIO()) {
                     // Move it to new function
                     AstVar* newPortp = portp->cloneTree(false);
@@ -838,8 +838,8 @@ private:
 	// Convert input/inout arguments to DPI types
 	string args;
 	for (AstNode* stmtp = cfuncp->argsp(); stmtp; stmtp=stmtp->nextp()) {
-	    if (AstVar* portp = stmtp->castVar()) {
-		AstVarScope* portvscp = portp->user2p()->castVarScope();  // Remembered when we created it earlier
+            if (AstVar* portp = VN_CAST(stmtp, Var)) {
+                AstVarScope* portvscp = VN_CAST(portp->user2p(), VarScope);  // Remembered when we created it earlier
 		if (portp->isIO() && !portp->isFuncReturn() && portvscp != rtnvscp
 		    && portp->name() != "__Vscopep"	// Passed to dpiContext, not callee
 		    && portp->name() != "__Vfilenamep"
@@ -901,10 +901,10 @@ private:
 
 	// Convert output/inout arguments back to internal type
 	for (AstNode* stmtp = cfuncp->argsp(); stmtp; stmtp=stmtp->nextp()) {
-	    if (AstVar* portp = stmtp->castVar()) {
+            if (AstVar* portp = VN_CAST(stmtp, Var)) {
                 if (portp->isIO() && (portp->isOutput() || portp->isFuncReturn())
                     && !portp->isDpiOpenArray()) {
-		    AstVarScope* portvscp = portp->user2p()->castVarScope();  // Remembered when we created it earlier
+                    AstVarScope* portvscp = VN_CAST(portp->user2p(), VarScope);  // Remembered when we created it earlier
 		    cfuncp->addStmtsp(createAssignDpiToInternal(portvscp,portp->name()+"__Vcvt",true));
 		}
 	    }
@@ -918,7 +918,7 @@ private:
 	AstNode::user2ClearTree();
 	AstVar* rtnvarp = NULL;
 	if (nodep->isFunction()) {
-            AstVar* portp = nodep->fvarp()->castVar();
+            AstVar* portp = VN_CAST(nodep->fvarp(), Var);
             if (!portp) nodep->v3fatalSrc("function without function output variable");
             if (!portp->isFuncReturn()) nodep->v3error("Not marked as function return var");
             if (portp->isWide()) nodep->v3error("Unsupported: Public functions with return > 64 bits wide. (Make it a output instead.)");
@@ -1021,7 +1021,7 @@ private:
 	// Create list of arguments and move to function
 	for (AstNode* nextp, *stmtp = nodep->stmtsp(); stmtp; stmtp=nextp) {
 	    nextp = stmtp->nextp();
-	    if (AstVar* portp = stmtp->castVar()) {
+            if (AstVar* portp = VN_CAST(stmtp, Var)) {
 		if (portp->isIO()) {
 		    // Move it to new function
 		    portp->unlinkFrBack();
@@ -1096,7 +1096,7 @@ private:
 	}
 	else if (m_insMode == IM_WHILE_PRECOND) {
 	    UINFO(5,"     IM_While_Precond "<<m_insStmtp);
-	    AstWhile* whilep = m_insStmtp->castWhile();
+            AstWhile* whilep = VN_CAST(m_insStmtp, While);
 	    if (!whilep) nodep->v3fatalSrc("Insert should be under WHILE");
 	    whilep->addPrecondsp(newp);
 	}
@@ -1131,13 +1131,13 @@ private:
 	UINFO(4," FTask REF   "<<nodep<<endl);
 	if (debug()>=9) { nodep->dumpTree(cout,"-inlfunc:"); }
 	if (!m_scopep) nodep->v3fatalSrc("func ref not under scope");
-	string namePrefix = ((nodep->castFuncRef()?"__Vfunc_":"__Vtask_")
+        string namePrefix = ((VN_IS(nodep, FuncRef) ? "__Vfunc_":"__Vtask_")
 			     +nodep->taskp()->shortName()+"__"+cvtToStr(m_modNCalls++));
 	// Create output variable
 	AstVarScope* outvscp = NULL;
 	if (nodep->taskp()->isFunction()) {
 	    // Not that it's a FUNCREF, but that we're calling a function (perhaps as a task)
-	    outvscp = createVarScope (nodep->taskp()->fvarp()->castVar(),
+            outvscp = createVarScope (VN_CAST(nodep->taskp()->fvarp(), Var),
 				      namePrefix+"__Vfuncout");
 	}
 	// Create cloned statements
@@ -1149,7 +1149,7 @@ private:
 	    beginp = createInlinedFTask(nodep, namePrefix, outvscp);
 	}
 	// Replace the ref
-	if (nodep->castFuncRef()) {
+        if (VN_IS(nodep, FuncRef)) {
 	    if (!nodep->taskp()->isFunction()) nodep->v3fatalSrc("func reference to non-function");
 	    AstVarRef* outrefp = new AstVarRef (nodep->fileline(), outvscp, false);
 	    nodep->replaceWith(outrefp);
@@ -1197,7 +1197,7 @@ private:
 	    // Any variables inside the function still have varscopes pointing to them.
 	    // We're going to delete the vars, so delete the varscopes.
 	    if (nodep->isFunction()) {
-		if (AstVar* portp = nodep->fvarp()->castVar()) {
+                if (AstVar* portp = VN_CAST(nodep->fvarp(), Var)) {
 		    AstVarScope* vscp = m_statep->findVarScope(m_scopep, portp);
 		    UINFO(9,"   funcremovevsc "<<vscp<<endl);
 		    pushDeletep(vscp->unlinkFrBack()); VL_DANGLING(vscp);
@@ -1205,7 +1205,7 @@ private:
 	    }
 	    for (AstNode* nextp, *stmtp = nodep->stmtsp(); stmtp; stmtp=nextp) {
 		nextp = stmtp->nextp();
-		if (AstVar* portp = stmtp->castVar()) {
+                if (AstVar* portp = VN_CAST(stmtp, Var)) {
 		    AstVarScope* vscp = m_statep->findVarScope(m_scopep, portp);
 		    UINFO(9,"   funcremovevsc "<<vscp<<endl);
 		    pushDeletep(vscp->unlinkFrBack()); VL_DANGLING(vscp);
@@ -1282,7 +1282,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     int tpinnum = 0;
     AstVar* sformatp = NULL;
     for (AstNode* stmtp = taskStmtsp; stmtp; stmtp=stmtp->nextp()) {
-	if (AstVar* portp = stmtp->castVar()) {
+        if (AstVar* portp = VN_CAST(stmtp, Var)) {
 	    if (portp->isIO()) {
 		tconnects.push_back(make_pair(portp, (AstArg*)NULL));
 		nameToIndex.insert(make_pair(portp->name(), tpinnum)); // For name based connections
@@ -1301,7 +1301,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     bool reorganize = false;
     for (AstNode* nextp, *pinp = nodep->pinsp(); pinp; pinp=nextp) {
 	nextp = pinp->nextp();
-	AstArg* argp = pinp->castArg(); if (!argp) pinp->v3fatalSrc("Non-arg under ftask reference");
+        AstArg* argp = VN_CAST(pinp, Arg); if (!argp) pinp->v3fatalSrc("Non-arg under ftask reference");
 	if (argp->name() != "") {
 	    // By name
 	    NameToIndex::iterator it = nameToIndex.find(argp->name());
@@ -1346,12 +1346,12 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
 		nodep->v3error("Missing argument on non-defaulted argument '"<<portp->prettyName()
 			       <<"' in function call to "<<nodep->taskp()->prettyTypeName());
 		newvaluep = new AstConst(nodep->fileline(), AstConst::Unsized32(), 0);
-	    } else if (!portp->valuep()->castConst()) {
+            } else if (!VN_IS(portp->valuep(), Const)) {
 		// The default value for this port might be a constant
 		// expression that hasn't been folded yet. Try folding it
 		// now; we don't have much to lose if it fails.
 		newvaluep = V3Const::constifyParamsEdit(portp->valuep());
-		if (!newvaluep->castConst()) {
+                if (!VN_IS(newvaluep, Const)) {
 		    // Problem otherwise is we might have a varref, task call, or something else that only
 		    // makes sense in the domain of the function, not the callee.
 		    nodep->v3error("Unsupported: Non-constant default value in missing argument '"<<portp->prettyName()

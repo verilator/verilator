@@ -76,10 +76,10 @@ class EmitXmlFileVisitor : public AstNVisitor {
     void outputTag(AstNode* nodep, string tag) {
 	if (tag=="") tag = VString::downcase(nodep->typeName());
 	puts("<"+tag+" "+nodep->fileline()->xml());
-	if (nodep->castNodeDType()) { puts(" id="); outputId(nodep); }
+        if (VN_IS(nodep, NodeDType)) { puts(" id="); outputId(nodep); }
 	if (nodep->name()!="") { puts(" name="); putsQuoted(nodep->prettyName()); }
 	if (nodep->tag()!="") { puts(" tag="); putsQuoted(nodep->tag()); }
-	if (AstNodeDType* dtp = nodep->castNodeDType()) {
+        if (AstNodeDType* dtp = VN_CAST(nodep, NodeDType)) {
 	    if (dtp->subDTypep()) { puts(" sub_dtype_id="); outputId(dtp->subDTypep()->skipRefp()); }
 	} else {
 	    if (nodep->dtypep()) { puts(" dtype_id="); outputId(nodep->dtypep()->skipRefp()); }

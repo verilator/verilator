@@ -123,9 +123,9 @@ private:
     }
 
     bool assignNoTemp(AstNodeAssign* nodep) {
-	return (nodep->lhsp()->castVarRef()
+        return (VN_IS(nodep->lhsp(), VarRef)
 		&& !AstVar::scVarRecurse(nodep->lhsp())
-		&& nodep->rhsp()->castConst());
+                && VN_IS(nodep->rhsp(), Const));
     }
     void checkNode(AstNode* nodep) {
 	// Consider adding a temp for this expression.
@@ -141,14 +141,14 @@ private:
 	    if (nodep->isWide()) {
 		if (m_assignLhs) {
 		} else if (nodep->firstAbovep()
-			   && nodep->firstAbovep()->castNodeAssign()
-			   && assignNoTemp(nodep->firstAbovep()->castNodeAssign())) {
+                           && VN_IS(nodep->firstAbovep(), NodeAssign)
+                           && assignNoTemp(VN_CAST(nodep->firstAbovep(), NodeAssign))) {
 		    // Not much point if it's just a direct assignment to a constant
-		} else if (nodep->backp()->castSel()
-			   && nodep->backp()->castSel()->widthp() == nodep) {
+                } else if (VN_IS(nodep->backp(), Sel)
+                           && VN_CAST(nodep->backp(), Sel)->widthp() == nodep) {
 		    // AstSel::width must remain a constant
 		} else if (nodep->firstAbovep()
-			   && nodep->firstAbovep()->castArraySel()) {
+                           && VN_IS(nodep->firstAbovep(), ArraySel)) {
 		    // ArraySel's are pointer refs, ignore
 		} else {
 		    UINFO(4,"Cre Temp: "<<nodep<<endl);
@@ -267,7 +267,7 @@ private:
 	// Shifts of > 32/64 bits in C++ will wrap-around and generate non-0s
 	if (!nodep->user2SetOnce()) {
 	    UINFO(4,"  ShiftFix  "<<nodep<<endl);
-	    AstConst* shiftp = nodep->rhsp()->castConst();
+            const AstConst* shiftp = VN_CAST(nodep->rhsp(), Const);
 	    if (shiftp && shiftp->num().mostSetBitP1() > 32) {
 		shiftp->v3error("Unsupported: Shifting of by over 32-bit number isn't supported."
 				<<" (This isn't a shift of 32 bits, but a shift of 2^32, or 4 billion!)\n");
@@ -359,8 +359,8 @@ private:
     virtual void visit(AstNodeCond* nodep) {
 	nodep->iterateChildren(*this);
 	if (nodep->expr1p()->isWide()
-	    && !nodep->condp()->castConst()
-	    && !nodep->condp()->castVarRef()) {
+            && !VN_IS(nodep->condp(), Const)
+            && !VN_IS(nodep->condp(), VarRef)) {
 	    // We're going to need the expression several times in the expanded code,
 	    // so might as well make it a common expression
 	    createDeepTemp(nodep->condp(), false);
@@ -375,10 +375,10 @@ private:
 	m_stmtp = NULL;
 	if (v3Global.opt.autoflush()) {
 	    AstNode* searchp = nodep->nextp();
-	    while (searchp && searchp->castComment()) searchp = searchp->nextp();
+            while (searchp && VN_IS(searchp, Comment)) searchp = searchp->nextp();
 	    if (searchp
-		&& searchp->castDisplay()
-		&& nodep->filep()->sameGateTree(searchp->castDisplay()->filep())) {
+                && VN_IS(searchp, Display)
+                && nodep->filep()->sameGateTree(VN_CAST(searchp, Display)->filep())) {
 		// There's another display next; we can just wait to flush
 	    } else {
 		UINFO(4,"Autoflush "<<nodep<<endl);
@@ -393,7 +393,7 @@ private:
 	// to avoid passing a pointer to a temporary.
 	for (AstNode* expp=nodep->exprsp(); expp; expp = expp->nextp()) {
 	    if (expp->dtypep()->basicp()->isString()
-		&& !expp->castVarRef()) {
+                && !VN_IS(expp, VarRef)) {
 		createDeepTemp(expp, true);
 	    }
 	}

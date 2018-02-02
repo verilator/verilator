@@ -268,7 +268,7 @@ private:
 	m_assignStep++;
 	nodep->rhsp()->iterateAndNext(*this);
 	bool hit=false;
-	if (AstVarRef* varrefp = nodep->lhsp()->castVarRef()) {
+        if (AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef)) {
 	    if (isSubstVar(varrefp->varp())) {
 		SubstVarEntry* entryp = getEntryp(varrefp);
 		hit = true;
@@ -281,11 +281,11 @@ private:
 		}
 	    }
 	}
-	else if (AstWordSel* wordp = nodep->lhsp()->castWordSel()) {
-	    if (AstVarRef* varrefp = wordp->lhsp()->castVarRef()) {
-		if (wordp->rhsp()->castConst()
+        else if (AstWordSel* wordp = VN_CAST(nodep->lhsp(), WordSel)) {
+            if (AstVarRef* varrefp = VN_CAST(wordp->lhsp(), VarRef)) {
+                if (VN_IS(wordp->rhsp(), Const)
 		    && isSubstVar(varrefp->varp())) {
-		    int word = wordp->rhsp()->castConst()->toUInt();
+                    int word = VN_CAST(wordp->rhsp(), Const)->toUInt();
 		    SubstVarEntry* entryp = getEntryp(varrefp);
 		    hit = true;
 		    if (m_ops > SUBST_MAX_OPS_SUBST) {
@@ -315,8 +315,8 @@ private:
     }
     virtual void visit(AstWordSel* nodep) {
 	nodep->rhsp()->accept(*this);
-	AstVarRef* varrefp = nodep->lhsp()->castVarRef();
-	AstConst* constp = nodep->rhsp()->castConst();
+        AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef);
+        AstConst* constp = VN_CAST(nodep->rhsp(), Const);
 	if (varrefp && isSubstVar(varrefp->varp())
 	    && !varrefp->lvalue()
 	    && constp) {

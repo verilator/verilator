@@ -210,7 +210,7 @@ public:
 	for (IdNameMap::const_iterator it=srcp->m_idNameMap.begin(); it!=srcp->m_idNameMap.end(); ++it) {
 	    const string& name = it->first;
 	    VSymEnt* subSrcp = it->second;
-	    AstVar* varp = subSrcp->nodep()->castVar();
+            const AstVar* varp = VN_CAST(subSrcp->nodep(), Var);
 	    if (!onlyUnmodportable || (varp && varp->varType() == AstVarType::GPARAM)) {
 		VSymEnt* subSymp = new VSymEnt(graphp, subSrcp);
 		reinsert(name, subSymp);
@@ -224,8 +224,8 @@ public:
 	string scopes;
 	for (IdNameMap::iterator it = m_idNameMap.begin(); it!=m_idNameMap.end(); ++it) {
 	    AstNode* nodep = it->second->nodep();
-	    if (nodep->castCell()
-		|| (nodep->castModule() && nodep->castModule()->isTop())) {
+            if (VN_IS(nodep, Cell)
+                || (VN_IS(nodep, Module) && VN_CAST(nodep, Module)->isTop())) {
 		if (scopes != "") scopes += ", ";
 		scopes += AstNode::prettyName(it->first);
 	    }

@@ -119,8 +119,8 @@ private:
 	cleanFileline(nodep);
 	nodep->iterateChildren(*this);
 	if (nodep->rangep()) {
-	    if (!nodep->rangep()->msbp()->castConst()
-		|| !nodep->rangep()->lsbp()->castConst()) nodep->v3error("Enum ranges must be integral, per spec");
+            if (!VN_IS(nodep->rangep()->msbp(), Const)
+                || !VN_IS(nodep->rangep()->lsbp(), Const)) nodep->v3error("Enum ranges must be integral, per spec");
 	    int msb = nodep->rangep()->msbConst();
 	    int lsb = nodep->rangep()->lsbConst();
 	    int increment = (msb > lsb) ? -1 : 1;
@@ -142,9 +142,9 @@ private:
 
     virtual void visit(AstVar* nodep) {
 	cleanFileline(nodep);
-	if (nodep->subDTypep()->castParseTypeDType()) {
+        if (VN_IS(nodep->subDTypep(), ParseTypeDType)) {
 	    // It's a parameter type. Use a different node type for this.
-	    AstNodeDType* dtypep = nodep->valuep()->castNodeDType();
+            AstNodeDType* dtypep = VN_CAST(nodep->valuep(), NodeDType);
 	    if (!dtypep) {
 		nodep->v3error("Parameter type's initial value isn't a type: "<<nodep->prettyName());
 		nodep->unlinkFrBack();
@@ -204,7 +204,7 @@ private:
 	cleanFileline(nodep);
 	nodep->iterateChildren(*this);
 	if (nodep->attrType() == AstAttrType::DT_PUBLIC) {
-	    AstTypedef* typep = nodep->backp()->castTypedef();
+            AstTypedef* typep = VN_CAST(nodep->backp(), Typedef);
 	    if (!typep) nodep->v3fatalSrc("Attribute not attached to typedef");
 	    typep->attrPublic(true);
 	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
@@ -296,13 +296,13 @@ private:
 	    // AstVar, AstTypedef, AstNodeFTask are common containers
 	    AstNode* backp = nodep->backp();
 	    for (; backp; backp=backp->backp()) {
-		if (backp->castVar()) break;
-		else if (backp->castTypedef()) break;
-		else if (backp->castNodeFTask()) break;
+                if (VN_IS(backp, Var)) break;
+                else if (VN_IS(backp, Typedef)) break;
+                else if (VN_IS(backp, NodeFTask)) break;
 	    }
 	    if (!backp) nodep->v3fatalSrc("Implicit enum/struct type created under unexpected node type");
 	    AstNodeDType* dtypep = nodep->childDTypep(); dtypep->unlinkFrBack();
-	    if (backp->castTypedef()) { // A typedef doesn't need us to make yet another level of typedefing
+            if (VN_IS(backp, Typedef)) {  // A typedef doesn't need us to make yet another level of typedefing
 		// For typedefs just remove the AstRefDType level of abstraction
 		nodep->replaceWith(dtypep);
 		nodep->deleteTree(); VL_DANGLING(nodep);

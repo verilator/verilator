@@ -112,9 +112,9 @@ void V3CCtors::evalAsserts() {
     funcp->ifdef("VL_DEBUG");
     modp->addStmtp(funcp);
     for (AstNode* np = modp->stmtsp(); np; np = np->nextp()) {
-	if (AstVar* varp = np->castVar()) {
+        if (AstVar* varp = VN_CAST(np, Var)) {
 	    if (varp->isPrimaryIn() && !varp->isSc()) {
-		if (AstBasicDType* basicp = varp->dtypeSkipRefp()->castBasicDType()) {
+                if (AstBasicDType* basicp = VN_CAST(varp->dtypeSkipRefp(), BasicDType)) {
 		    int storedWidth = basicp->widthAlignBytes() * 8;
 		    int lastWordWidth = varp->width() % storedWidth;
 		    if (lastWordWidth != 0) {
@@ -143,12 +143,12 @@ void V3CCtors::evalAsserts() {
 void V3CCtors::cctorsAll() {
     UINFO(2,__FUNCTION__<<": "<<endl);
     evalAsserts();
-    for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp; modp=modp->nextp()->castNodeModule()) {
+    for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp; modp=VN_CAST(modp->nextp(), NodeModule)) {
         // Process each module in turn
         {
             V3CCtorsVisitor var_reset (modp, "_ctor_var_reset");
             for (AstNode* np = modp->stmtsp(); np; np = np->nextp()) {
-                if (AstVar* varp = np->castVar()) {
+                if (AstVar* varp = VN_CAST(np, Var)) {
                     if (!varp->isIfaceParent() && !varp->isIfaceRef()) {
                         var_reset.add(new AstCReset(varp->fileline(), new AstVarRef(varp->fileline(), varp, true)));
                     }
@@ -160,7 +160,7 @@ void V3CCtors::cctorsAll() {
                 (modp, "_configure_coverage", EmitCBaseVisitor::symClassVar()+ ", bool first", "vlSymsp, first",
                  "if (0 && vlSymsp && first) {} // Prevent unused\n");
             for (AstNode* np = modp->stmtsp(); np; np = np->nextp()) {
-                if (AstCoverDecl* coverp = np->castCoverDecl()) {
+                if (AstCoverDecl* coverp = VN_CAST(np, CoverDecl)) {
                     AstNode* backp = coverp->backp();
                     coverp->unlinkFrBack();
                     configure_coverage.add(coverp);

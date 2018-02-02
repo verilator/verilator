@@ -101,7 +101,7 @@ private:
 	// Recurse to handle the data type, as may change the size etc of this type
 	if (!nodep->user1()) nodep->accept(*this);
 	// Look for duplicate
-	if (AstBasicDType* bdtypep = nodep->castBasicDType()) {
+        if (AstBasicDType* bdtypep = VN_CAST(nodep, BasicDType)) {
 	    AstBasicDType* newp = nodep->findInsertSameDType(bdtypep);
 	    if (newp != bdtypep && debug()>=9) {
 		UINFO(9,"dtype replacement "); nodep->dumpSmall(cout);

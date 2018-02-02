@@ -110,11 +110,11 @@ private:
 
 	m_scopep = new AstScope((m_aboveCellp?(AstNode*)m_aboveCellp:(AstNode*)nodep)->fileline(),
 				nodep, scopename, m_aboveScopep, m_aboveCellp);
-	if (nodep->castPackage()) m_packageScopes.insert(make_pair(nodep->castPackage(), m_scopep));
+        if (VN_IS(nodep, Package)) m_packageScopes.insert(make_pair(VN_CAST(nodep, Package), m_scopep));
 
 	// Now for each child cell, iterate the module this cell points to
 	for (AstNode* cellnextp = nodep->stmtsp(); cellnextp; cellnextp=cellnextp->nextp()) {
-	    if (AstCell* cellp = cellnextp->castCell()) {
+            if (AstCell* cellp = VN_CAST(cellnextp, Cell)) {
 		AstScope* oldScopep = m_scopep;
 		AstCell* oldAbCellp = m_aboveCellp;
 		AstScope* oldAbScopep = m_aboveScopep;
@@ -381,7 +381,7 @@ private:
 	if (nodep->packagep()) {
 	    // Point to the clone
 	    if (!nodep->taskp()) nodep->v3fatalSrc("Unlinked");
-	    AstNodeFTask* newp = nodep->taskp()->user2p()->castNodeFTask();
+            AstNodeFTask* newp = VN_CAST(nodep->taskp()->user2p(), NodeFTask);
 	    if (!newp) nodep->v3fatalSrc("No clone for package function");
 	    nodep->taskp(newp);
 	    UINFO(9,"   New pkg-taskref "<<nodep<<endl);

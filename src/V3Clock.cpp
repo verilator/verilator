@@ -154,11 +154,11 @@ private:
     AstNode* createSenseEquation(AstNodeSenItem* nodesp) {
 	// Nodep may be a list of elements; we need to walk it
 	AstNode* senEqnp = NULL;
-	for (AstNodeSenItem* senp = nodesp; senp; senp=senp->nextp()->castNodeSenItem()) {
+        for (AstNodeSenItem* senp = nodesp; senp; senp=VN_CAST(senp->nextp(), NodeSenItem)) {
 	    AstNode* senOnep = NULL;
-	    if (AstSenItem* itemp = senp->castSenItem()) {
+            if (AstSenItem* itemp = VN_CAST(senp, SenItem)) {
 		senOnep = createSenItemEquation(itemp);
-	    } else if (AstSenGate* itemp = senp->castSenGate()) {
+            } else if (AstSenGate* itemp = VN_CAST(senp, SenGate)) {
 		senOnep = createSenGateEquation(itemp);
 	    } else {
 		senp->v3fatalSrc("Strange node under sentree");

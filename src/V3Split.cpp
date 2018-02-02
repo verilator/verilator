@@ -365,7 +365,7 @@ private:
 
     void reorderBlock(AstNode* nodep) {
 	// Reorder statements in the completed graph
-	AstAlways* splitAlwaysp = nodep->backp()->castAlways();
+        AstAlways* splitAlwaysp = VN_CAST(nodep->backp(), Always);
 
 	// Map the rank numbers into nodes they associate with
         typedef std::multimap<uint32_t,AstNode*> RankNodeMap;

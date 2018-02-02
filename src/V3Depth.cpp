@@ -122,7 +122,7 @@ private:
 	if (m_stmtp
 	    && (v3Global.opt.compLimitParens() >= 1)	// Else compiler doesn't need it
 	    && (m_maxdepth-m_depth) > v3Global.opt.compLimitParens()
-	    && !nodep->backp()->castNodeStmt()  // Not much point if we're about to use it
+            && !VN_IS(nodep->backp(), NodeStmt)  // Not much point if we're about to use it
 	    ) {
 	    m_maxdepth = m_depth;
 	    createDeepTemp(nodep);

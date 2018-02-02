@@ -68,7 +68,7 @@ private:
         // True iff there's exactly one instance of this module in the design.
         int instances = 0;
         for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
-            if (stmtp->castScope()) {
+            if (VN_IS(stmtp, Scope)) {
                 if (++instances > 1) { return false; }
             }
         }
@@ -187,7 +187,7 @@ private:
 		    funcp->declPrivate(true);
 		    AstNode* argsp = NULL;
 		    for (AstNode* stmtp = newfuncp->argsp(); stmtp; stmtp=stmtp->nextp()) {
-			if (AstVar* portp = stmtp->castVar()) {
+                        if (AstVar* portp = VN_CAST(stmtp, Var)) {
 			    if (portp->isIO() && !portp->isFuncReturn()) {
 				AstNode* newp = new AstVarRef(portp->fileline(), portp, portp->isOutput());
 				if (argsp) argsp = argsp->addNextNull(newp);

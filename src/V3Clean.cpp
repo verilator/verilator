@@ -78,7 +78,7 @@ private:
 	if (old_dtypep->width() != width) {
 	    // Since any given dtype's cppWidth() is the same, we can just
 	    // remember one convertion for each, and reuse it
-	    if (AstNodeDType* new_dtypep = old_dtypep->user3p()->castNodeDType()) {
+            if (AstNodeDType* new_dtypep = VN_CAST(old_dtypep->user3p(), NodeDType)) {
 		nodep->dtypep(new_dtypep);
 	    } else {
 		nodep->dtypeChgWidth(width, nodep->widthMin());
@@ -90,8 +90,8 @@ private:
     }
     void computeCppWidth (AstNode* nodep) {
 	if (!nodep->user2() && nodep->hasDType()) {
-            if (nodep->castVar() || nodep->castNodeDType()  // Don't want to change variable widths!
-                || nodep->dtypep()->skipRefp()->castUnpackArrayDType()) {  // Or arrays
+            if (VN_IS(nodep, Var) || VN_IS(nodep, NodeDType)  // Don't want to change variable widths!
+                || VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {  // Or arrays
 	    } else {
 		setCppWidth(nodep);
 	    }
@@ -230,7 +230,7 @@ private:
 	computeCppWidth(nodep);
         setClean (nodep, false);
 	// We always clean, as we don't trust those pesky users.
-	if (!nodep->backp()->castAnd()) {
+        if (!VN_IS(nodep->backp(), And)) {
 	    insertClean(nodep);
 	}
 	insureCleanAndNext (nodep->bodysp());

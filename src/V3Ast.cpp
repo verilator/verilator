@@ -828,7 +828,7 @@ AstNode* AstNode::iterateSubtreeReturnEdits(AstNVisitor& v) {
     // To solve this, this function returns the pointer to the replacement node,
     // which in many cases is just the same node that was passed in.
     AstNode* nodep = this;  // Note "this" may point to bogus point later in this function
-    if (nodep->castNetlist()) {
+    if (VN_IS(nodep, Netlist)) {
 	// Calling on top level; we know the netlist won't get replaced
 	nodep->accept(v);
     } else if (!nodep->backp()) {
@@ -875,7 +875,7 @@ void AstNode::cloneRelinkTree() {
 //======================================================================
 // Comparison
 
-bool AstNode::gateTreeIter() {
+bool AstNode::gateTreeIter() const {
     // private: Return true if the two trees are identical
     if (!isGateOptimizable()) return false;
     if (m_op1p && !m_op1p->gateTreeIter()) return false;
@@ -885,7 +885,7 @@ bool AstNode::gateTreeIter() {
     return true;
 }
 
-bool AstNode::sameTreeIter(AstNode* node1p, AstNode* node2p, bool ignNext, bool gateOnly) {
+bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ignNext, bool gateOnly) const {
     // private: Return true if the two trees are identical
     if (!node1p && !node2p) return true;
     if (!node1p || !node2p) return false;
@@ -927,7 +927,7 @@ void AstNode::checkTreeIter(AstNode* backp) {
     if (backp != this->backp()) {
 	this->v3fatalSrc("Back node inconsistent");
     }
-    if (castNodeTermop() || castNodeVarRef()) {
+    if (VN_IS(this, NodeTermop) || VN_IS(this, NodeVarRef)) {
 	// Termops have a short-circuited iterateChildren, so check usage
 	if (op1p()||op2p()||op3p()||op4p())
 	    this->v3fatalSrc("Terminal operation with non-terminals");
@@ -1055,7 +1055,7 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump) {
 	checkTree();
 	// Broken isn't part of check tree because it can munge iterp's
 	// set by other steps if it is called in the middle of other operations
-	if (AstNetlist* netp=this->castNetlist()) V3Broken::brokenAll(netp);
+        if (AstNetlist* netp=VN_CAST(this, Netlist)) V3Broken::brokenAll(netp);
     }
     // Next dump can indicate start from here
     editCountSetLast();

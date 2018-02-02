@@ -4,6 +4,10 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.000 devel
 
+**    This is a major release.  Any patches may require major rework to apply.
+
+**    Fix internals to make null-pointer-check clean.
+
 ****  Fix internals to avoid 'using namespace std'.
 
 

@@ -101,7 +101,7 @@ private:
 	// Otherwise a (uint64)(a>b) would return wrong value, as
 	// less than has undeterministic signedness.
 	if (nodep->isQuad() && !nodep->lhsp()->isQuad()
-	    && !nodep->lhsp()->castCCast()) {
+            && !VN_IS(nodep->lhsp(), CCast)) {
 	    insertCast(nodep->lhsp(), VL_WORDSIZE);
 	}
     }
@@ -147,9 +147,9 @@ private:
     }
     virtual void visit(AstVarRef* nodep) {
 	if (!nodep->lvalue()
-	    && !nodep->backp()->castCCast()
-	    && nodep->backp()->castNodeMath()
-	    && !nodep->backp()->castArraySel()
+            && !VN_IS(nodep->backp(), CCast)
+            && VN_IS(nodep->backp(), NodeMath)
+            && !VN_IS(nodep->backp(), ArraySel)
 	    && nodep->backp()->width()
 	    && castSize(nodep) != castSize(nodep->varp())) {
 	    // Cast vars to IData first, else below has upper bits wrongly set
