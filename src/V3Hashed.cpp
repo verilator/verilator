@@ -141,10 +141,10 @@ void V3Hashed::dumpFilePrefixed(const string& nameComment, bool tree) {
 }
 
 void V3Hashed::dumpFile(const string& filename, bool tree) {
-    const vl_unique_ptr<ofstream> logp (V3File::new_ofstream(filename));
+    const vl_unique_ptr<std::ofstream> logp (V3File::new_ofstream(filename));
     if (logp->fail()) v3fatalSrc("Can't write "<<filename);
 
-    map<int,int> dist;
+    std::map<int,int> dist;
 
     V3Hash lasthash;
     int num_in_bucket = 0;
@@ -165,8 +165,8 @@ void V3Hashed::dumpFile(const string& filename, bool tree) {
     }
     *logp <<"\n*** STATS:\n"<<endl;
     *logp<<"    #InBucket   Occurrences\n";
-    for (map<int,int>::iterator it=dist.begin(); it!=dist.end(); ++it) {
-	*logp<<"    "<<setw(9)<<it->first<<"  "<<setw(12)<<it->second<<endl;
+    for (std::map<int,int>::iterator it=dist.begin(); it!=dist.end(); ++it) {
+        *logp<<"    "<<std::setw(9)<<it->first<<"  "<<std::setw(12)<<it->second<<endl;
     }
 
     *logp <<"\n*** Dump:\n"<<endl;
@@ -185,7 +185,7 @@ void V3Hashed::dumpFile(const string& filename, bool tree) {
 V3Hashed::iterator V3Hashed::findDuplicate(AstNode* nodep) {
     UINFO(8,"   findD "<<nodep<<endl);
     if (!nodep->user4p()) nodep->v3fatalSrc("Called findDuplicate on non-hashed node");
-    pair <HashMmap::iterator,HashMmap::iterator> eqrange = mmap().equal_range(nodeHash(nodep));
+    std::pair<HashMmap::iterator,HashMmap::iterator> eqrange = mmap().equal_range(nodeHash(nodep));
     for (HashMmap::iterator eqit = eqrange.first; eqit != eqrange.second; ++eqit) {
 	AstNode* node2p = eqit->second;
 	if (nodep != node2p && sameNodes(nodep, node2p)) {
@@ -198,7 +198,7 @@ V3Hashed::iterator V3Hashed::findDuplicate(AstNode* nodep) {
 V3Hashed::iterator V3Hashed::findDuplicate(AstNode* nodep, V3HashedUserCheck* checkp) {
     UINFO(8,"   findD "<<nodep<<endl);
     if (!nodep->user4p()) nodep->v3fatalSrc("Called findDuplicate on non-hashed node");
-    pair <HashMmap::iterator,HashMmap::iterator> eqrange = mmap().equal_range(nodeHash(nodep));
+    std::pair<HashMmap::iterator,HashMmap::iterator> eqrange = mmap().equal_range(nodeHash(nodep));
     for (HashMmap::iterator eqit = eqrange.first; eqit != eqrange.second; ++eqit) {
 	AstNode* node2p = eqit->second;
 	if (nodep != node2p && checkp->check(nodep,node2p) && sameNodes(nodep, node2p)) {

@@ -265,14 +265,14 @@ void VHashSha1::selfTestOne(const string& data, const string& data2,
     VHashSha1 digest (data);
     if (data2!="") digest.insert(data2);
     if (digest.digestHex() != exp) {
-	cerr << "%Error: When hashing '"<<data+data2<<"'"<<endl;
-	cerr << "%Error: got="<<digest.digestHex()<<endl;
-	cerr << "%Error: exp="<<exp<<endl;
+        std::cerr << "%Error: When hashing '"<<data+data2<<"'"<<endl;
+        std::cerr << "%Error: got="<<digest.digestHex()<<endl;
+        std::cerr << "%Error: exp="<<exp<<endl;
     }
     if (digest.digestSymbol() != exp64) {
-	cerr << "%Error: When hashing '"<<data+data2<<"'"<<endl;
-	cerr << "%Error: got="<<digest.digestSymbol()<<endl;
-	cerr << "%Error: exp="<<exp64<<endl;
+        std::cerr << "%Error: When hashing '"<<data+data2<<"'"<<endl;
+        std::cerr << "%Error: got="<<digest.digestSymbol()<<endl;
+        std::cerr << "%Error: exp="<<exp64<<endl;
     }
 }
 

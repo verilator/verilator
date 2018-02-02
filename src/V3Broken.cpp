@@ -155,9 +155,9 @@ public:
 		    // Use only AstNode::dump instead of the virtual one, as there
 		    // may be varp() and other cross links that are bad.
 		    if (v3Global.opt.debugCheck()) {
-			cerr<<"%Error: LeakedNode"<<(it->first->backp()?"Back: ":": ");
-			((AstNode*)(it->first))->AstNode::dump(cerr);
-			cerr<<endl;
+                        std::cerr<<"%Error: LeakedNode"<<(it->first->backp()?"Back: ":": ");
+                        ((AstNode*)(it->first))->AstNode::dump(std::cerr);
+                        std::cerr<<endl;
 			V3Error::incErrors();
 		    }
 		    it->second |= FLAG_LEAKED;

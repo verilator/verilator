@@ -186,7 +186,7 @@ void V3Graph::weaklyConnected(V3EdgeFuncP edgeFuncp) {
 class GraphAlgStrongly : GraphAlg {
 private:
     uint32_t	m_currentDfs;		// DFS count
-    vector<V3GraphVertex*> m_callTrace;	// List of everything we hit processing so far
+    std::vector<V3GraphVertex*> m_callTrace;  // List of everything we hit processing so far
 
     void main() {
 	// Use Tarjan's algorithm to find the strongly connected subgraphs.
@@ -327,7 +327,7 @@ void V3Graph::rank(V3EdgeFuncP edgeFuncp) {
 
 class GraphAlgRLoops : GraphAlg {
 private:
-    vector<V3GraphVertex*> m_callTrace;	// List of everything we hit processing so far
+    std::vector<V3GraphVertex*> m_callTrace;  // List of everything we hit processing so far
     bool		   m_done;	// Exit algorithm
 
     void main(V3GraphVertex* vertexp) {
@@ -460,20 +460,20 @@ struct GraphSortEdgeCmp {
 
 void V3Graph::sortVertices() {
     // Sort list of vertices by rank, then fanout
-    vector<V3GraphVertex*> vertices;
+    std::vector<V3GraphVertex*> vertices;
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
 	vertices.push_back(vertexp);
     }
     std::stable_sort(vertices.begin(), vertices.end(), GraphSortVertexCmp());
     this->verticesUnlink();
-    for (vector<V3GraphVertex*>::iterator it = vertices.begin(); it!=vertices.end(); ++it) {
+    for (std::vector<V3GraphVertex*>::iterator it = vertices.begin(); it!=vertices.end(); ++it) {
 	(*it)->verticesPushBack(this);
     }
 }
 
 void V3Graph::sortEdges() {
     // Sort edges by rank then fanout of node they point to
-    vector<V3GraphEdge*> edges;
+    std::vector<V3GraphEdge*> edges;
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
 	// Make a vector
 	for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
@@ -486,7 +486,7 @@ void V3Graph::sortEdges() {
 	// We know the vector contains all of the edges that were
 	// there originally (didn't delete or add)
 	vertexp->outUnlink();
-	for (vector<V3GraphEdge*>::const_iterator it = edges.begin(); it!=edges.end(); ++it) {
+        for (std::vector<V3GraphEdge*>::const_iterator it = edges.begin(); it!=edges.end(); ++it) {
 	    (*it)->outPushBack();
 	}
 	// Prep for next

@@ -364,7 +364,7 @@ V3Number& V3Number::setMask(int nbits) {
 // ACCESSORS - as strings
 
 string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
-    ostringstream out;
+    std::ostringstream out;
 
     if (isDouble()) {
 	out.precision(17);
@@ -781,7 +781,7 @@ bool V3Number::isUnknown() const {
     return false;
 }
 bool V3Number::isLt(const V3Number& rhs) const {
-    for (int bit=0; bit<max(this->width(),rhs.width()); bit++) {
+    for (int bit=0; bit < std::max(this->width(),rhs.width()); bit++) {
 	if (this->bitIs1(bit) && rhs.bitIs0(bit)) { return 1; }
 	if (rhs.bitIs1(bit) && this->bitIs0(bit)) { return 0; }
 	if (this->bitIsXZ(bit)) { return 0; }
@@ -791,7 +791,7 @@ bool V3Number::isLt(const V3Number& rhs) const {
 }
 bool V3Number::isLtXZ(const V3Number& rhs) const {
     // Include X/Z in comparisons for sort ordering
-    for (int bit=0; bit<max(this->width(),rhs.width()); bit++) {
+    for (int bit=0; bit < std::max(this->width(),rhs.width()); bit++) {
 	if (this->bitIs1(bit) && rhs.bitIs0(bit)) { return 1; }
 	if (rhs.bitIs1(bit) && this->bitIs0(bit)) { return 0; }
 	if (this->bitIsXZ(bit)) { return 1; }
@@ -1068,9 +1068,9 @@ V3Number& V3Number::opStreamL (const V3Number& lhs, const V3Number& rhs) {
 	m_fileline->v3warn(WIDTHCONCAT,"Unsized numbers/parameters not allowed in streams.");
     }
     // Slice size should never exceed the lhs width
-    int ssize=min(rhs.toUInt(), (unsigned)lhs.width());
+    int ssize = std::min(rhs.toUInt(), (unsigned)lhs.width());
     for (int istart=0; istart<lhs.width(); istart+=ssize) {
-	int ostart=max(0, lhs.width()-ssize-istart);
+        int ostart = std::max(0, lhs.width()-ssize-istart);
 	for (int bit=0; bit<ssize && bit<lhs.width()-istart; bit++) {
 	    setBit(ostart+bit, lhs.bitIs(istart+bit));
 	}
@@ -1126,7 +1126,7 @@ V3Number& V3Number::opLogIff (const V3Number& lhs, const V3Number& rhs) {
 V3Number& V3Number::opEq (const V3Number& lhs, const V3Number& rhs) {
     // i op j, 1 bit return, max(L(lhs),L(rhs)) calculation, careful need to X/Z extend.
     char outc = 1;
-    for (int bit=0; bit<max(lhs.width(),rhs.width()); bit++) {
+    for (int bit=0; bit < std::max(lhs.width(),rhs.width()); bit++) {
 	if (lhs.bitIs1(bit) && rhs.bitIs0(bit)) { outc=0; goto last; }
 	if (lhs.bitIs0(bit) && rhs.bitIs1(bit)) { outc=0; goto last; }
 	if (lhs.bitIsXZ(bit)) { outc='x'; }
@@ -1139,7 +1139,7 @@ last:
 V3Number& V3Number::opNeq (const V3Number& lhs, const V3Number& rhs) {
     // i op j, 1 bit return, max(L(lhs),L(rhs)) calculation, careful need to X/Z extend.
     char outc = 0;
-    for (int bit=0; bit<max(lhs.width(),rhs.width()); bit++) {
+    for (int bit=0; bit < std::max(lhs.width(),rhs.width()); bit++) {
 	if (lhs.bitIs1(bit) && rhs.bitIs0(bit)) { outc=1; goto last; }
 	if (lhs.bitIs0(bit) && rhs.bitIs1(bit)) { outc=1; goto last; }
 	if (lhs.bitIsXZ(bit)) { outc='x'; }
@@ -1152,7 +1152,7 @@ last:
 bool V3Number::isCaseEq (const V3Number& rhs) const {
     // i op j, 1 bit return, max(L(lhs),L(rhs)) calculation, careful need to X/Z extend.
     if (this->width() != rhs.width()) return false;
-    for (int bit=0; bit<max(this->width(),rhs.width()); bit++) {
+    for (int bit=0; bit < std::max(this->width(),rhs.width()); bit++) {
 	if (this->bitIs(bit) != rhs.bitIs(bit)) { return false; }
     }
     return true;
@@ -1165,7 +1165,7 @@ V3Number& V3Number::opCaseEq (const V3Number& lhs, const V3Number& rhs) {
 V3Number& V3Number::opCaseNeq (const V3Number& lhs, const V3Number& rhs) {
     // i op j, 1 bit return, max(L(lhs),L(rhs)) calculation, careful need to X/Z extend.
     char outc = 0;
-    for (int bit=0; bit<max(lhs.width(),rhs.width()); bit++) {
+    for (int bit=0; bit < std::max(lhs.width(),rhs.width()); bit++) {
 	if (lhs.bitIs(bit) != rhs.bitIs(bit)) { outc=1; goto last; }
     }
 last:
@@ -1174,7 +1174,7 @@ last:
 
 V3Number& V3Number::opWildEq (const V3Number& lhs, const V3Number& rhs) {
     char outc = 1;
-    for (int bit=0; bit<max(lhs.width(),rhs.width()); bit++) {
+    for (int bit=0; bit < std::max(lhs.width(),rhs.width()); bit++) {
 	if (!rhs.bitIsXZ(bit)
 	    && lhs.bitIs(bit) != rhs.bitIs(bit)) { outc=0; goto last; }
 	if (lhs.bitIsXZ(bit)) outc='x';
@@ -1185,7 +1185,7 @@ last:
 
 V3Number& V3Number::opWildNeq (const V3Number& lhs, const V3Number& rhs) {
     char outc = 0;
-    for (int bit=0; bit<max(lhs.width(),rhs.width()); bit++) {
+    for (int bit=0; bit < std::max(lhs.width(),rhs.width()); bit++) {
 	if (!rhs.bitIsXZ(bit)
 	    && lhs.bitIs(bit) != rhs.bitIs(bit)) { outc=1; goto last; }
 	if (lhs.bitIsXZ(bit)) outc='x';
@@ -1197,7 +1197,7 @@ last:
 V3Number& V3Number::opGt (const V3Number& lhs, const V3Number& rhs) {
     // i op j, 1 bit return, max(L(lhs),L(rhs)) calculation, careful need to X/Z extend.
     char outc = 0;
-    for (int bit=0; bit<max(lhs.width(),rhs.width()); bit++) {
+    for (int bit=0; bit < std::max(lhs.width(),rhs.width()); bit++) {
 	if (lhs.bitIs1(bit) && rhs.bitIs0(bit)) { outc=1; }
 	if (rhs.bitIs1(bit) && lhs.bitIs0(bit)) { outc=0; }
 	if (lhs.bitIsXZ(bit)) { outc='x'; }
@@ -1210,14 +1210,14 @@ V3Number& V3Number::opGtS (const V3Number& lhs, const V3Number& rhs) {
     // i op j, 1 bit return, max(L(lhs),L(rhs)) calculation, careful need to X/Z extend.
     char outc = 0;
     {
-	int mbit=max(lhs.width()-1,rhs.width()-1);
+        int mbit = std::max(lhs.width()-1,rhs.width()-1);
 	if (lhs.bitIsXZ(mbit)) { outc='x'; }
 	else if (rhs.bitIsXZ(mbit)) { outc='x'; }
 	else if (lhs.bitIs0(mbit)       && rhs.bitIs1Extend(mbit)) { outc=1; } // + > -
 	else if (lhs.bitIs1Extend(mbit) && rhs.bitIs0(mbit))       { outc=0; } // - !> +
 	else {
 	    // both positive or negative, normal >
-	    for (int bit=0; bit<max(lhs.width()-1,rhs.width()-1); bit++) {
+            for (int bit=0; bit < std::max(lhs.width()-1,rhs.width()-1); bit++) {
 		if (lhs.bitIs1Extend(bit) && rhs.bitIs0(bit)) { outc=1; }
 		if (rhs.bitIs1Extend(bit) && lhs.bitIs0(bit)) { outc=0; }
 		if (lhs.bitIsXZ(bit)) { outc='x'; }
@@ -1497,7 +1497,7 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
 	    m_value[j] = unw64 / (vluint64_t)(rhs.m_value[0]);
 	    k          = unw64 - (vluint64_t)(m_value[j])*(vluint64_t)(rhs.m_value[0]);
 	}
-	UINFO(9, "  opmoddiv-1w  "<<lhs<<" "<<rhs<<" q="<<*this<<" rem=0x"<<hex<<k<<dec<<endl);
+        UINFO(9, "  opmoddiv-1w  "<<lhs<<" "<<rhs<<" q="<<*this<<" rem=0x"<<std::hex<<k<<std::dec<<endl);
 	if (is_modulus) { setZero(); m_value[0] = k; }
 	opCleanThis();
 	return *this;

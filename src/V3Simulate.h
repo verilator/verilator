@@ -101,13 +101,13 @@ private:
     int		m_dataCount;		///< Bytes of data
     AstJumpGo*	m_jumpp;		///< Jump label we're branching from
     // Simulating:
-    deque<V3Number*>	m_numFreeps;	///< List of all numbers free and not in use
-    deque<V3Number*>	m_numAllps; 	///< List of all numbers free and in use
-    deque<SimulateStackNode*>	m_callStack;	///< Call stack for verbose error messages
+    std::deque<V3Number*>               m_numFreeps;    ///< List of all numbers free and not in use
+    std::deque<V3Number*>               m_numAllps;     ///< List of all numbers free and in use
+    std::deque<SimulateStackNode*>      m_callStack;    ///< Call stack for verbose error messages
 
     // Cleanup
     // V3Numbers that represents strings are a bit special and the API for V3Number does not allow changing them.
-    deque<V3Number*>    m_stringNumbersp; // List of allocated string numbers
+    std::deque<V3Number*>  m_stringNumbersp;  // List of allocated string numbers
 
 
     // Note level 8&9 include debugging each simulation value
@@ -124,7 +124,7 @@ private:
 	}
 	if (AstStructDType* stp = dtypep->castStructDType()) {
 	    if (stp->packed()) {
-		ostringstream out;
+                std::ostringstream out;
 		out<<"'{";
 		for (AstMemberDType* itemp = stp->membersp(); itemp; itemp=itemp->nextp()->castMemberDType()) {
 		    int width = itemp->width();
@@ -145,7 +145,7 @@ private:
 	    }
 	} else if (AstPackArrayDType * arrayp = dtypep->castPackArrayDType()) {
 	    if (AstNodeDType * childTypep = arrayp->subDTypep()) {
-		ostringstream out;
+                std::ostringstream out;
 		out<<"[";
 		int arrayElements = arrayp->elementsConst();
 		for (int element = 0; element < arrayElements; ++element) {
@@ -181,8 +181,8 @@ public:
 		cout<<endl;
 	    }
 	    m_whyNotOptimizable = why;
-	    ostringstream stack;
-	    for (deque<SimulateStackNode*>::iterator it=m_callStack.begin(); it !=m_callStack.end(); ++it) {
+            std::ostringstream stack;
+            for (std::deque<SimulateStackNode*>::iterator it=m_callStack.begin(); it !=m_callStack.end(); ++it) {
 		AstFuncRef* funcp = (*it)->m_funcp;
 		stack<<"\nCalled from:\n"<<funcp->fileline()<<" "<<funcp->prettyName()<<"() with parameters:";
 		V3TaskConnects* tconnects = (*it)->m_tconnects;
@@ -959,10 +959,10 @@ public:
 	mainGuts(nodep);
     }
     virtual ~SimulateVisitor() {
-	for (deque<V3Number*>::iterator it = m_numAllps.begin(); it != m_numAllps.end(); ++it) {
+        for (std::deque<V3Number*>::iterator it = m_numAllps.begin(); it != m_numAllps.end(); ++it) {
 	    delete (*it);
 	}
-	for (deque<V3Number*>::iterator it = m_stringNumbersp.begin(); it != m_stringNumbersp.end(); ++it) {
+        for (std::deque<V3Number*>::iterator it = m_stringNumbersp.begin(); it != m_stringNumbersp.end(); ++it) {
 	    delete (*it);
 	}
 	m_stringNumbersp.clear();

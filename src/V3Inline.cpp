@@ -72,15 +72,15 @@ private:
     AstNodeModule*      m_modp;         // Current module
     V3Double0		m_statUnsup;	// Statistic tracking
 
-    typedef vector<AstNodeModule*> ModVec;
+    typedef std::vector<AstNodeModule*> ModVec;
     ModVec m_allMods;   // All modules, in top-down order.
 
     // Within the context of a given module, LocalInstanceMap maps
     // from child modules to the count of each child's local instantiations.
-    typedef map<AstNodeModule*, int> LocalInstanceMap;
+    typedef std::map<AstNodeModule*, int> LocalInstanceMap;
 
     // We keep a LocalInstanceMap for each module in the design
-    map<AstNodeModule*, LocalInstanceMap> m_instances;
+    std::map<AstNodeModule*, LocalInstanceMap> m_instances;
 
     // METHODS
     static int debug() {

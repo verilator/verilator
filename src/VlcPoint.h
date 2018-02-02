@@ -85,9 +85,9 @@ public:
 	cout<<"  Num,    TestsCover,    Count,  Name"<<endl;
     }
     void dump() const {
-	cout<<"  "<<setw(8)<<setfill('0')<<pointNum()
-	    <<",  "<<setw(7)<<setfill(' ')<<testsCovering()
-	    <<",  "<<setw(7)<<setfill(' ')<<count()
+        cout<<"  "<<std::setw(8)<<std::setfill('0')<<pointNum()
+            <<",  "<<std::setw(7)<<std::setfill(' ')<<testsCovering()
+            <<",  "<<std::setw(7)<<std::setfill(' ')<<count()
 	    <<",  \""<<name()<<"\""<<endl;
     }
 };
@@ -100,7 +100,7 @@ private:
     // MEMBERS
     typedef vl_unordered_map<string,vluint64_t> NameMap;
     NameMap		m_nameMap;	//< Name to point-number
-    vector<VlcPoint>	m_points;	//< List of all points
+    std::vector<VlcPoint> m_points;  //< List of all points
     vluint64_t		m_numPoints;	//< Total unique points
 
 public:

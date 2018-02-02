@@ -63,7 +63,7 @@ public:
 class GraphAcycEdge : public V3GraphEdge {
     // userp() is always used to point to the head original graph edge
 private:
-    typedef list<V3GraphEdge*>	OrigEdgeList;	// List of orig edges, see also GraphAcyc's decl
+    typedef std::list<V3GraphEdge*> OrigEdgeList;  // List of orig edges, see also GraphAcyc's decl
     V3GraphEdge*	origEdgep() const {
 	OrigEdgeList* oEListp = ((OrigEdgeList*)userp());
 	if (!oEListp) v3fatalSrc("No original edge associated with acyc edge "<<this<<endl);
@@ -93,7 +93,7 @@ struct GraphAcycEdgeCmp {
 // CLASSES
 class GraphAcyc {
 private:
-    typedef list<V3GraphEdge*>	OrigEdgeList;	// List of orig edges, see also GraphAcycEdge's decl
+    typedef std::list<V3GraphEdge*> OrigEdgeList;  // List of orig edges, see also GraphAcycEdge's decl
     // GRAPH USERS
     //  origGraph
     //    GraphVertex::user() 	GraphAycVerted*	New graph node
@@ -104,7 +104,7 @@ private:
     V3Graph*		m_origGraphp;		// Original graph
     V3Graph		m_breakGraph;		// Graph with only breakable edges represented
     V3List<GraphAcycVertex*>	m_work;		// List of vertices with optimization work left
-    vector<OrigEdgeList*>	m_origEdgeDelp;	// List of deletions to do when done
+    std::vector<OrigEdgeList*> m_origEdgeDelp;  // List of deletions to do when done
     V3EdgeFuncP		m_origEdgeFuncp;	// Function that says we follow this edge (in original graph)
     uint32_t		m_placeStep;		// Number that user() must be equal to to indicate processing
 
@@ -189,7 +189,7 @@ public:
 	m_placeStep = 0;
     }
     ~GraphAcyc() {
-	for (vector<OrigEdgeList*>::iterator it = m_origEdgeDelp.begin(); it != m_origEdgeDelp.end(); ++it) {
+        for (std::vector<OrigEdgeList*>::iterator it = m_origEdgeDelp.begin(); it != m_origEdgeDelp.end(); ++it) {
 	    delete (*it);
 	}
 	m_origEdgeDelp.clear();
@@ -453,7 +453,7 @@ void GraphAcyc::place() {
     }
     UINFO(4, "    Cutable edges = "<<numEdges<<endl);
 
-    vector<V3GraphEdge*>	edges;	// List of all edges to be processed
+    std::vector<V3GraphEdge*> edges;  // List of all edges to be processed
     edges.reserve(numEdges+1); // Make the vector properly sized right off the bat -- faster than reallocating
     for (V3GraphVertex* vertexp = m_breakGraph.verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
 	vertexp->user(0);	// Clear in prep of next step
@@ -469,7 +469,7 @@ void GraphAcyc::place() {
 
     // Process each edge in weighted order
     m_placeStep = 10;
-    for (vector<V3GraphEdge*>::iterator it = edges.begin(); it!=edges.end(); ++it) {
+    for (std::vector<V3GraphEdge*>::iterator it = edges.begin(); it!=edges.end(); ++it) {
 	V3GraphEdge* edgep = (*it);
 	placeTryEdge(edgep);
     }

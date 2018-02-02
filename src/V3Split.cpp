@@ -224,7 +224,7 @@ private:
     AstUser4InUse	m_inuser4;
 
     // TYPES
-    typedef vector<SplitLogicVertex*> VStack;
+    typedef std::vector<SplitLogicVertex*> VStack;
 
     // STATE
     bool		m_reorder;	// Reorder statements vs. just splitting
@@ -340,7 +340,7 @@ private:
 	m_graph.weaklyConnected(&SplitEdge::followScoreboard);
 
 	// Add hard orderings between all nodes of same color, in the order they appeared
-	vector<SplitLogicVertex*> lastOfColor;  lastOfColor.resize(numVertexes);
+        std::vector<SplitLogicVertex*> lastOfColor;  lastOfColor.resize(numVertexes);
 	for (uint32_t i=0; i<numVertexes; i++) lastOfColor[i] = NULL;
 	for (AstNode* nextp=nodep; nextp; nextp=nextp->nextp()) {
 	    SplitLogicVertex* vvertexp = (SplitLogicVertex*)nextp->user3p();
@@ -368,8 +368,8 @@ private:
 	AstAlways* splitAlwaysp = nodep->backp()->castAlways();
 
 	// Map the rank numbers into nodes they associate with
-	typedef multimap<uint32_t,AstNode*> RankNodeMap;
-	typedef map<uint32_t,RankNodeMap> ColorRankMap;
+        typedef std::multimap<uint32_t,AstNode*> RankNodeMap;
+        typedef std::map<uint32_t,RankNodeMap> ColorRankMap;
 	ColorRankMap colorRankMap;
 	uint32_t firstColor = 0;  bool multiColors = false;
 	int currOrder = 0;	// Existing sequence number of assignment

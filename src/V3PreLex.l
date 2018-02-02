@@ -504,7 +504,7 @@ void V3PreLex::dumpSummary() {
     ssize_t left = (yy_n_chars
 		    - (yy_c_buf_p
 		       -currentBuffer()->yy_ch_buf));
-    cout<<" left="<<dec<<left;
+    cout<<" left="<<std::dec<<left;
 #endif
     cout<<endl;
 }
@@ -512,7 +512,7 @@ void V3PreLex::dumpSummary() {
 void V3PreLex::dumpStack() {
     // For debug use
     dumpSummary();
-    stack<VPreStream*> tmpstack = LEXP->m_streampStack;
+    std::stack<VPreStream*> tmpstack = LEXP->m_streampStack;
     while (!tmpstack.empty()) {
 	VPreStream* streamp = tmpstack.top();
 	cout<<"-    bufferStack["<<(void*)(streamp)<<"]: "

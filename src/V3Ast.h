@@ -61,7 +61,7 @@ public:
   inline bool operator== (AstType lhs, AstType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstType lhs, AstType::en rhs) { return (lhs.m_e == rhs); }
   inline bool operator== (AstType::en lhs, AstType rhs) { return (lhs == rhs.m_e); }
-  inline ostream& operator<<(ostream& os, const AstType& rhs) { return os<<rhs.ascii(); }
+  inline std::ostream& operator<<(std::ostream& os, const AstType& rhs) { return os<<rhs.ascii(); }
 
 //######################################################################
 
@@ -107,7 +107,7 @@ public:
   inline bool operator== (AstNumeric lhs, AstNumeric rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstNumeric lhs, AstNumeric::en rhs) { return (lhs.m_e == rhs); }
   inline bool operator== (AstNumeric::en lhs, AstNumeric rhs) { return (lhs == rhs.m_e); }
-  inline ostream& operator<<(ostream& os, const AstNumeric& rhs) { return os<<rhs.ascii(); }
+  inline std::ostream& operator<<(std::ostream& os, const AstNumeric& rhs) { return os<<rhs.ascii(); }
 
 //######################################################################
 
@@ -497,7 +497,7 @@ public:
   inline bool operator== (AstVarType lhs, AstVarType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstVarType lhs, AstVarType::en rhs) { return (lhs.m_e == rhs); }
   inline bool operator== (AstVarType::en lhs, AstVarType rhs) { return (lhs == rhs.m_e); }
-  inline ostream& operator<<(ostream& os, const AstVarType& rhs) { return os<<rhs.ascii(); }
+  inline std::ostream& operator<<(std::ostream& os, const AstVarType& rhs) { return os<<rhs.ascii(); }
 
 //######################################################################
 
@@ -529,7 +529,7 @@ public:
   inline bool operator== (AstBranchPred lhs, AstBranchPred rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstBranchPred lhs, AstBranchPred::en rhs) { return (lhs.m_e == rhs); }
   inline bool operator== (AstBranchPred::en lhs, AstBranchPred rhs) { return (lhs == rhs.m_e); }
-  inline ostream& operator<<(ostream& os, const AstBranchPred& rhs) { return os<<rhs.ascii(); }
+  inline std::ostream& operator<<(std::ostream& os, const AstBranchPred& rhs) { return os<<rhs.ascii(); }
 
 //######################################################################
 
@@ -562,7 +562,7 @@ public:
   inline bool operator== (AstVarAttrClocker lhs, AstVarAttrClocker rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstVarAttrClocker lhs, AstVarAttrClocker::en rhs) { return (lhs.m_e == rhs); }
   inline bool operator== (AstVarAttrClocker::en lhs, AstVarAttrClocker rhs) { return (lhs == rhs.m_e); }
-  inline ostream& operator<<(ostream& os, const AstVarAttrClocker& rhs) { return os<<rhs.ascii(); }
+  inline std::ostream& operator<<(std::ostream& os, const AstVarAttrClocker& rhs) { return os<<rhs.ascii(); }
 
 //######################################################################
 
@@ -661,7 +661,7 @@ public:
   inline bool operator== (AstParseRefExp lhs, AstParseRefExp rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstParseRefExp lhs, AstParseRefExp::en rhs) { return (lhs.m_e == rhs); }
   inline bool operator== (AstParseRefExp::en lhs, AstParseRefExp rhs) { return (lhs == rhs.m_e); }
-  inline ostream& operator<<(ostream& os, const AstParseRefExp& rhs) { return os<<rhs.ascii(); }
+  inline std::ostream& operator<<(std::ostream& os, const AstParseRefExp& rhs) { return os<<rhs.ascii(); }
 
 //######################################################################
 // VNumRange - Structure containing numberic range information
@@ -715,9 +715,9 @@ struct VNumRange {
     int hiMaxSelect() const { return (lo()<0 ? hi()-lo() : hi()); } // Maximum value a [] select may index
     bool representableByWidth() const  // Could be represented by just width=1, or [width-1:0]
 	{ return (!m_ranged || (m_lo==0 && m_hi>=1 && !m_littleEndian)); }
-    void dump(ostream& str) const { if (ranged()) str<<"["<<left()<<":"<<right()<<"]"; else str<<"[norg]"; }
+    void dump(std::ostream& str) const { if (ranged()) str<<"["<<left()<<":"<<right()<<"]"; else str<<"[norg]"; }
 };
-inline ostream& operator<<(ostream& os, const VNumRange& rhs) { rhs.dump(os); return os; }
+inline std::ostream& operator<<(std::ostream& os, const VNumRange& rhs) { rhs.dump(os); return os; }
 
 //######################################################################
 
@@ -891,7 +891,7 @@ public:
 
 class AstNVisitor {
 private:
-    vector<AstNode*> m_deleteps;  // Nodes to delete when doDeletes() called
+    std::vector<AstNode*> m_deleteps;  // Nodes to delete when doDeletes() called
 protected:
     friend class AstNode;
 public:
@@ -932,9 +932,9 @@ public:
     AstNRelinker() { m_oldp=NULL; m_backp=NULL; m_chg=RELINK_BAD; m_iterpp=NULL;}
     void relink(AstNode* newp);
     AstNode* oldp() const { return m_oldp; }
-    void dump(ostream& str=cout) const;
+    void dump(std::ostream& str=std::cout) const;
 };
-inline ostream& operator<<(ostream& os, const AstNRelinker& rhs) { rhs.dump(os); return os;}
+inline std::ostream& operator<<(std::ostream& os, const AstNRelinker& rhs) { rhs.dump(os); return os;}
 
 //######################################################################
 // V3Hash -- Node hashing for V3Combine
@@ -984,7 +984,7 @@ public:
     V3Hash(V3Hash h1, V3Hash h2, V3Hash h3, V3Hash h4) {
 	setBoth(1,((h1.hshval()*31+h2.hshval())*31+h3.hshval())*31+h4.hshval()); }
 };
-ostream& operator<<(ostream& os, const V3Hash& rhs);
+std::ostream& operator<<(std::ostream& os, const V3Hash& rhs);
 
 //######################################################################
 // AstNode -- Base type of all Ast types
@@ -1275,10 +1275,10 @@ public:
     AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
     // METHODS - dump and error
-    void	v3errorEnd(ostringstream& str) const;
-    void	v3errorEndFatal(ostringstream& str) const VL_ATTR_NORETURN;
+    void        v3errorEnd(std::ostringstream& str) const;
+    void        v3errorEndFatal(std::ostringstream& str) const VL_ATTR_NORETURN;
     string	warnMore() const;
-    virtual void dump(ostream& str=cout);
+    virtual void dump(std::ostream& str=std::cout);
     void	dumpGdb(); // For GDB only
     void	dumpGdbHeader() const;
 
@@ -1309,11 +1309,11 @@ public:
     void	checkTree();  // User Interface version
     void	checkIter() const;
     void	clearIter() { m_iterpp=NULL; }
-    void	dumpPtrs(ostream& str=cout) const;
-    void	dumpTree(ostream& str=cout, const string& indent="    ", int maxDepth=0);
+    void        dumpPtrs(std::ostream& str=std::cout) const;
+    void        dumpTree(std::ostream& str=std::cout, const string& indent="    ", int maxDepth=0);
     void	dumpTree(const string& indent, int maxDepth=0) { dumpTree(cout,indent,maxDepth); }
     void	dumpTreeGdb(); // For GDB only
-    void	dumpTreeAndNext(ostream& str=cout, const string& indent="    ", int maxDepth=0);
+    void        dumpTreeAndNext(std::ostream& str=std::cout, const string& indent="    ", int maxDepth=0);
     void	dumpTreeFile(const string& filename, bool append=false, bool doDump=true);
     static void	dumpTreeFileGdb(const char* filenamep=NULL);
 
@@ -1350,7 +1350,7 @@ public:
     //  AstAlways*	castAlways();
 };
 
-inline ostream& operator<<(ostream& os, AstNode* rhs) { if (!rhs) os<<"NULL"; else rhs->dump(os); return os; }
+inline std::ostream& operator<<(std::ostream& os, AstNode* rhs) { if (!rhs) os<<"NULL"; else rhs->dump(os); return os; }
 inline void AstNRelinker::relink(AstNode* newp) { newp->AstNode::relink(this); }
 
 //######################################################################
@@ -1687,7 +1687,7 @@ public:
 	m_text = textp;	// Copy it
     }
     ASTNODE_BASE_FUNCS(NodeText)
-    virtual void dump(ostream& str=cout);
+    virtual void dump(std::ostream& str=std::cout);
     virtual V3Hash sameHash() const { return V3Hash(text()); }
     virtual bool same(const AstNode* samep) const {
 	const AstNodeText* asamep = static_cast<const AstNodeText*>(samep);
@@ -1713,8 +1713,8 @@ public:
     }
     ASTNODE_BASE_FUNCS(NodeDType)
     // ACCESSORS
-    virtual void dump(ostream& str);
-    virtual void dumpSmall(ostream& str);
+    virtual void dump(std::ostream& str);
+    virtual void dumpSmall(std::ostream& str);
     virtual bool hasDType() const { return true; }
     virtual AstBasicDType* basicp() const = 0;  // (Slow) recurse down to find basic data type
     virtual AstNodeDType* skipRefp() const = 0;  // recurses over typedefs/const/enum to next non-typeref type
@@ -1747,7 +1747,7 @@ public:
     bool generic() const { return m_generic; }
     void generic(bool flag) { m_generic = flag; }
     AstNodeDType* dtypeDimensionp(int depth);
-    pair<uint32_t,uint32_t> dimensions(bool includeBasic);
+    std::pair<uint32_t,uint32_t> dimensions(bool includeBasic);
     uint32_t	arrayUnpackedElements();	// 1, or total multiplication of all dimensions
     static int uniqueNumInc() { return ++s_uniqueNum; }
     const char* charIQWN() const { return (isString() ? "N" : isWide() ? "W" : isQuad() ? "Q" : "I"); }
@@ -1756,7 +1756,7 @@ public:
 class AstNodeClassDType : public AstNodeDType {
 private:
     // TYPES
-    typedef map<string,AstMemberDType*> MemberNameMap;
+    typedef std::map<string,AstMemberDType*> MemberNameMap;
     // MEMBERS
     bool		m_packed;
     bool		m_isFourstate;
@@ -1771,7 +1771,7 @@ public:
     }
     ASTNODE_BASE_FUNCS(NodeClassDType)
     virtual const char* broken() const;
-    virtual void dump(ostream& str);
+    virtual void dump(std::ostream& str);
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
     virtual AstBasicDType* basicp() const {
         return (isFourstate() ? findLogicDType(width(),width(),numeric())->castBasicDType()
@@ -1814,8 +1814,8 @@ public:
 	m_refDTypep = NULL;
     }
     ASTNODE_BASE_FUNCS(NodeArrayDType)
-    virtual void dump(ostream& str);
-    virtual void dumpSmall(ostream& str);
+    virtual void dump(std::ostream& str);
+    virtual void dumpSmall(std::ostream& str);
     virtual const char* broken() const { BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
 						      || (!m_refDTypep && childDTypep()))); return NULL; }
     virtual void cloneRelink() { if (m_refDTypep && m_refDTypep->clonep()) {
@@ -1911,7 +1911,7 @@ public:
 	cname(name);  // Might be overridden by dpi import/export
     }
     ASTNODE_BASE_FUNCS(NodeFTask)
-    virtual void dump(ostream& str=cout);
+    virtual void dump(std::ostream& str=std::cout);
     virtual string name()	const { return m_name; }		// * = Var name
     virtual bool maybePointedTo() const { return true; }
     virtual bool isGateOptimizable() const { return !((m_dpiExport || m_dpiImport) && !m_pure); }
@@ -1977,7 +1977,7 @@ public:
     virtual void cloneRelink() { if (m_taskp && m_taskp->clonep()) {
 	m_taskp = m_taskp->clonep();
     }}
-    virtual void dump(ostream& str=cout);
+    virtual void dump(std::ostream& str=std::cout);
     virtual string name()	const { return m_name; }		// * = Var name
     virtual bool isGateOptimizable() const { return m_taskp && m_taskp->isGateOptimizable(); }
     string	dotted()	const { return m_dotted; }		// * = Scope name or ""
@@ -2025,7 +2025,7 @@ public:
 	,m_internal(false), m_recursive(false), m_recursiveClone(false)
 	,m_level(0), m_varNum(0), m_typeNum(0) { }
     ASTNODE_BASE_FUNCS(NodeModule)
-    virtual void dump(ostream& str);
+    virtual void dump(std::ostream& str);
     virtual bool maybePointedTo() const { return true; }
     virtual string name()	const { return m_name; }
     AstNode*	stmtsp() 	const { return op2p(); }	// op2 = List of statements

@@ -46,7 +46,7 @@ private:
     //AstUser4InUse	In V3Hashed
 
     // TYPES
-    typedef vector<AstCoverToggle*> ToggleList;
+    typedef std::vector<AstCoverToggle*> ToggleList;
 
     // STATE
     ToggleList		m_toggleps;	// List of of all AstCoverToggle's

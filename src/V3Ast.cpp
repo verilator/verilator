@@ -58,7 +58,7 @@ int AstNodeDType::s_uniqueNum = 0;
 //######################################################################
 // V3AstType
 
-ostream& operator<<(ostream& os, AstType rhs);
+std::ostream& operator<<(std::ostream& os, AstType rhs);
 
 //######################################################################
 // Creators
@@ -417,7 +417,7 @@ void AstNode::replaceWith(AstNode* newp) {
     repHandle.relink(newp);
 }
 
-void AstNRelinker::dump(ostream& str) const {
+void AstNRelinker::dump(std::ostream& str) const {
     str<<" BK="<<(uint32_t*)m_backp;
     str<<" ITER="<<(uint32_t*)m_iterpp;
     str<<" CHG="<<(m_chg==RELINK_NEXT?"[NEXT] ":"");
@@ -906,9 +906,9 @@ bool AstNode::sameTreeIter(AstNode* node1p, AstNode* node2p, bool ignNext, bool 
 //======================================================================
 // Static utilities
 
-ostream& operator<<(ostream& os, const V3Hash& rhs) {
-    return os<<hex<<setw(2)<<setfill('0')<<rhs.depth()
-	     <<"_"<<setw(6)<<setfill('0')<<rhs.hshval();
+std::ostream& operator<<(std::ostream& os, const V3Hash& rhs) {
+    return os<<std::hex<<std::setw(2)<<std::setfill('0')<<rhs.depth()
+             <<"_"<<std::setw(6)<<std::setfill('0')<<rhs.hshval();
 }
 
 V3Hash::V3Hash(const string& name) {
@@ -991,7 +991,7 @@ void AstNode::checkIter() const {
     }
 }
 
-void AstNode::dumpPtrs(ostream& os) const {
+void AstNode::dumpPtrs(std::ostream& os) const {
     os<<"This="<<typeName()<<" "<<(void*)this;
     os<<" back="<<(void*)backp();
     if (nextp()) os<<" next="<<(void*)nextp();
@@ -1013,7 +1013,7 @@ void AstNode::dumpPtrs(ostream& os) const {
     os<<endl;
 }
 
-void AstNode::dumpTree(ostream& os, const string& indent, int maxDepth) {
+void AstNode::dumpTree(std::ostream& os, const string& indent, int maxDepth) {
     os<<indent<<" "<<this<<endl;
     if (debug()>8) { os<<indent<<"     "; dumpPtrs(os); }
     if (maxDepth==1) {
@@ -1026,7 +1026,7 @@ void AstNode::dumpTree(ostream& os, const string& indent, int maxDepth) {
     }
 }
 
-void AstNode::dumpTreeAndNext(ostream& os, const string& indent, int maxDepth) {
+void AstNode::dumpTreeAndNext(std::ostream& os, const string& indent, int maxDepth) {
     // Audited to make sure this is never NULL
     for (AstNode* nodep=this; nodep; nodep=nodep->nextp()) {
 	nodep->dumpTree(os, indent, maxDepth);
@@ -1037,10 +1037,10 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump) {
     if (doDump) {
 	{   // Write log & close
 	    UINFO(2,"Dumping "<<filename<<endl);
-	    const vl_unique_ptr<ofstream> logsp (V3File::new_ofstream(filename, append));
+            const vl_unique_ptr<std::ofstream> logsp (V3File::new_ofstream(filename, append));
 	    if (logsp->fail()) v3fatalSrc("Can't write "<<filename);
-	    *logsp<<"Verilator Tree Dump (format 0x3900) from <e"<<dec<<editCountLast()<<">";
-	    *logsp<<" to <e"<<dec<<editCountGbl()<<">"<<endl;
+            *logsp<<"Verilator Tree Dump (format 0x3900) from <e"<<std::dec<<editCountLast()<<">";
+            *logsp<<" to <e"<<std::dec<<editCountGbl()<<">"<<endl;
 	    if (editCountGbl()==editCountLast()
 		&& !(v3Global.opt.dumpTree()>=9)) {
 		*logsp<<endl;
@@ -1061,9 +1061,9 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump) {
     editCountSetLast();
 }
 
-void AstNode::v3errorEndFatal(ostringstream& str) const { v3errorEnd(str); assert(0); }
+void AstNode::v3errorEndFatal(std::ostringstream& str) const { v3errorEnd(str); assert(0); }
 
-void AstNode::v3errorEnd(ostringstream& str) const {
+void AstNode::v3errorEnd(std::ostringstream& str) const {
     if (!dynamic_cast<const AstNode*>(this)) {
 	// No known cases cause this, but better than a core dump
 	if (debug()) UINFO(0, "-node: NULL. Please report this along with a --gdbbt backtrace as a Verilator bug.\n");
@@ -1071,7 +1071,7 @@ void AstNode::v3errorEnd(ostringstream& str) const {
     } else if (!m_fileline) {
 	V3Error::v3errorEnd(str);
     } else {
-	ostringstream nsstr;
+        std::ostringstream nsstr;
 	nsstr<<str.str();
 	if (debug()) {
 	    nsstr<<endl;
@@ -1142,7 +1142,7 @@ AstBasicDType* AstNode::findInsertSameDType(AstBasicDType* nodep) {
 // AstNVisitor
 
 void AstNVisitor::doDeletes() {
-    for (vector<AstNode*>::iterator it = m_deleteps.begin(); it != m_deleteps.end(); ++it) {
+    for (std::vector<AstNode*>::iterator it = m_deleteps.begin(); it != m_deleteps.end(); ++it) {
 	(*it)->deleteTree();
     }
     m_deleteps.clear();

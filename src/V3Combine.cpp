@@ -86,7 +86,7 @@ class CombCallVisitor : CombBaseVisitor {
 private:
     // NODE STATE
     bool	m_find;		// Find mode vs. delete mode
-    typedef multimap<AstCFunc*,AstCCall*> CallMmap;
+    typedef std::multimap<AstCFunc*,AstCCall*> CallMmap;
     CallMmap	m_callMmap;	// Associative array of {function}{call}
     // METHODS
 public:
@@ -95,7 +95,7 @@ public:
 	if (newfuncp) {
 	    UINFO(4, "   Replace "<<oldfuncp<<" -WITH-> "<<newfuncp<<endl);
 	} else UINFO(4, "   Remove "<<oldfuncp<<endl);
-	pair <CallMmap::iterator,CallMmap::iterator> eqrange = m_callMmap.equal_range(oldfuncp);
+        std::pair <CallMmap::iterator,CallMmap::iterator> eqrange = m_callMmap.equal_range(oldfuncp);
 	for (CallMmap::iterator nextit = eqrange.first; nextit != eqrange.second;) {
 	    CallMmap::iterator eqit = nextit++;
 	    AstCCall* callp = eqit->second;
@@ -121,7 +121,7 @@ public:
 	m_callMmap.insert(make_pair(nodep->funcp(), nodep));
     }
     void deleteCall(AstCCall* nodep) {
-	pair <CallMmap::iterator,CallMmap::iterator> eqrange = m_callMmap.equal_range(nodep->funcp());
+        std::pair<CallMmap::iterator,CallMmap::iterator> eqrange = m_callMmap.equal_range(nodep->funcp());
 	for (CallMmap::iterator nextit = eqrange.first; nextit != eqrange.second;) {
 	    CallMmap::iterator eqit = nextit++;
 	    AstCCall* callp = eqit->second;
@@ -225,7 +225,7 @@ private:
 	    if (oldfuncp
 		&& oldfuncp->emptyBody()
 		&& !oldfuncp->dontCombine()) {
-		UINFO(5,"     EmptyFunc "<<hex<<V3Hash(oldfuncp->user4p())<<" "<<oldfuncp<<endl);
+                UINFO(5,"     EmptyFunc "<<std::hex<<V3Hash(oldfuncp->user4p())<<" "<<oldfuncp<<endl);
 		// Mark user3p on entire old tree, so we don't process it more
 		CombMarkVisitor visitor(oldfuncp);
 		m_call.replaceFunc(oldfuncp, NULL);
@@ -255,8 +255,8 @@ private:
 	}
     }
     void replaceFuncWFunc(AstCFunc* oldfuncp, AstCFunc* newfuncp) {
-	UINFO(5,"     DupFunc "<<hex<<V3Hash(newfuncp->user4p())<<" "<<newfuncp<<endl);
-	UINFO(5,"         and "<<hex<<V3Hash(oldfuncp->user4p())<<" "<<oldfuncp<<endl);
+        UINFO(5,"     DupFunc "<<std::hex<<V3Hash(newfuncp->user4p())<<" "<<newfuncp<<endl);
+        UINFO(5,"         and "<<std::hex<<V3Hash(oldfuncp->user4p())<<" "<<oldfuncp<<endl);
 	// Mark user3p on entire old tree, so we don't process it more
 	++m_statCombs;
 	CombMarkVisitor visitor(oldfuncp);
@@ -288,7 +288,7 @@ private:
 	AstNode* bestLast1p = NULL;
 	AstNode* bestLast2p = NULL;
 	//
-	pair <V3Hashed::iterator,V3Hashed::iterator> eqrange = m_hashed.mmap().equal_range(hashval);
+        std::pair<V3Hashed::iterator,V3Hashed::iterator> eqrange = m_hashed.mmap().equal_range(hashval);
 	for (V3Hashed::iterator eqit = eqrange.first; eqit != eqrange.second; ++eqit) {
 	    AstNode* node2p = eqit->second;
 	    if (node1p==node2p) continue;

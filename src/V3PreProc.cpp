@@ -73,7 +73,7 @@ class V3DefineRef {
     string	m_nextarg;	// String being built for next argument
     int		m_parenLevel;	// Parenthesis counting inside def args (for PARENT not child)
 
-    vector<string> m_args;	// List of define arguments
+    std::vector<string> m_args;  // List of define arguments
 public:
     string name() const { return m_name; }
     string params() const { return m_params; }
@@ -81,7 +81,7 @@ public:
     void nextarg(const string& value) { m_nextarg = value; }
     int parenLevel() const { return m_parenLevel; }
     void parenLevel(int value) { m_parenLevel = value; }
-    vector<string>& args() { return m_args; }
+    std::vector<string>& args() { return m_args; }
     V3DefineRef(const string& name, const string& params)
 	: m_name(name), m_params(params), m_parenLevel(0) {}
     ~V3DefineRef() {}
@@ -119,7 +119,7 @@ public:
     // STATE
     V3PreProc*	m_preprocp;	///< Object we're holding data for
     V3PreLex* m_lexp;	///< Current lexer state (NULL = closed)
-    stack<V3PreLex*> m_includeStack;	///< Stack of includers above current m_lexp
+    std::stack<V3PreLex*> m_includeStack;  ///< Stack of includers above current m_lexp
 
     enum ProcState { ps_TOP,
 		     ps_DEFNAME_UNDEF, ps_DEFNAME_DEFINE,
@@ -136,7 +136,7 @@ public:
 	return states[s];
     };
 
-    stack<ProcState>	m_states; ///< Current state of parser
+    std::stack<ProcState> m_states;  ///< Current state of parser
     int		m_off;		///< If non-zero, ifdef level is turned off, don't dump text
     string	m_lastSym;	///< Last symbol name found.
     string	m_formals;	///< Last formals found
@@ -158,18 +158,18 @@ public:
     string	m_strify;	///< Text to be stringified
 
     // For defines
-    stack<V3DefineRef> m_defRefs; // Pending definine substitution
-    stack<VPreIfEntry> m_ifdefStack;	///< Stack of true/false emitting evaluations
+    std::stack<V3DefineRef> m_defRefs;  ///< Pending definine substitution
+    std::stack<VPreIfEntry> m_ifdefStack;   ///< Stack of true/false emitting evaluations
     unsigned	m_defDepth;	///< How many `defines deep
     bool	m_defPutJoin;	///< Insert `` after substitution
 
     // For `` join
-    stack<string> m_joinStack;	///< Text on lhs of join
+    std::stack<string> m_joinStack;  ///< Text on lhs of join
 
     // For getline()
     string	m_lineChars;	///< Characters left for next line
 
-    void v3errorEnd(ostringstream& str) {
+    void v3errorEnd(std::ostringstream& str) {
 	fileline()->v3errorEnd(str);
     }
 
@@ -561,7 +561,7 @@ string V3PreProcImp::defineSubst(V3DefineRef* refp) {
     string value = defValue(refp->name());
     UINFO(4,"defineValue    '"<<V3PreLex::cleanDbgStrg(value)<<"'"<<endl);
 
-    map<string,string> argValueByName;
+    std::map<string,string> argValueByName;
     {   // Parse argument list into map
 	unsigned numArgs=0;
 	string argName;
@@ -648,7 +648,7 @@ string V3PreProcImp::defineSubst(V3DefineRef* refp) {
 	    }
 	    if (argName != "") {
 		// Found a possible variable substitution
-		map<string,string>::iterator iter = argValueByName.find(argName);
+                std::map<string,string>::iterator iter = argValueByName.find(argName);
 		if (iter != argValueByName.end()) {
 		    // Substitute
 		    string subst = iter->second;

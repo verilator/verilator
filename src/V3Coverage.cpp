@@ -45,7 +45,7 @@
 class CoverageVisitor : public AstNVisitor {
 private:
     // TYPES
-    typedef map<string,int>	FileMap;
+    typedef std::map<string,int> FileMap;
 
     struct ToggleEnt {
 	string		m_comment;	// Comment for coverage dump

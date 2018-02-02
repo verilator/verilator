@@ -98,7 +98,7 @@ private:
     bool		m_inDly;	// True in delayed assignments
     bool		m_inLoop;	// True in for loops
     bool		m_inInitial;	// True in intial blocks
-    typedef std::map<pair<AstNodeModule*,string>,AstVar*> VarMap;
+    typedef std::map<std::pair<AstNodeModule*,string>,AstVar*> VarMap;
     VarMap		m_modVarMap;	// Table of new var names created under module
     V3Double0		m_statSharedSet;// Statistic tracking
     typedef std::map<AstVarScope*,int> ScopeVecMap;
@@ -200,7 +200,7 @@ private:
 	UINFO(4,"AssignDlyArray: "<<nodep<<endl);
 	//
 	//=== Dimensions: __Vdlyvdim__
-	deque<AstNode*> dimvalp;		// Assignment value for each dimension of assignment
+        std::deque<AstNode*> dimvalp;           // Assignment value for each dimension of assignment
 	AstNode* dimselp=arrayselp;
 	for (; dimselp->castArraySel(); dimselp=dimselp->castArraySel()->fromp()) {
 	    AstNode* valp = dimselp->castArraySel()->bitp()->unlinkFrBack();
@@ -213,7 +213,7 @@ private:
 	AstVar* oldvarp = varrefp->varp();
 	int modVecNum = m_scopeVecMap[varrefp->varScopep()]++;
 	//
-	deque<AstNode*> dimreadps;		// Read value for each dimension of assignment
+        std::deque<AstNode*> dimreadps;         // Read value for each dimension of assignment
 	for (unsigned dimension=0; dimension<dimvalp.size(); dimension++) {
 	    AstNode* dimp = dimvalp[dimension];
 	    if (dimp->castConst()) { // bit = const, can just use it

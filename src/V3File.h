@@ -34,23 +34,23 @@
 
 class V3File {
 public:
-    static ifstream* new_ifstream(const string& filename) {
+    static std::ifstream* new_ifstream(const string& filename) {
 	addSrcDepend(filename);
 	return new_ifstream_nodepend (filename);
     }
-    static ifstream* new_ifstream_nodepend(const string& filename) {
-	return new ifstream(filename.c_str());
+    static std::ifstream* new_ifstream_nodepend(const string& filename) {
+        return new std::ifstream(filename.c_str());
     }
-    static ofstream* new_ofstream(const string& filename, bool append=false) {
+    static std::ofstream* new_ofstream(const string& filename, bool append=false) {
 	addTgtDepend(filename);
 	return new_ofstream_nodepend (filename, append);
     }
-    static ofstream* new_ofstream_nodepend(const string& filename, bool append=false) {
+    static std::ofstream* new_ofstream_nodepend(const string& filename, bool append=false) {
 	if (filename != VL_DEV_NULL) createMakeDir();
 	if (append) {
-	    return new ofstream(filename.c_str(), ios::app);
+            return new std::ofstream(filename.c_str(), std::ios::app);
 	} else {
-	    return new ofstream(filename.c_str());
+            return new std::ofstream(filename.c_str());
 	}
     }
     static FILE* new_fopen_w(const string& filename) {
@@ -78,7 +78,7 @@ class V3InFilterImp;
 class V3InFilter {
 public:
     // TYPES
-    typedef list<string> StrList;
+    typedef std::list<string> StrList;
 
 private:
     V3InFilterImp* m_impp;
@@ -123,7 +123,7 @@ private:
     int		m_nobreak;	// Basic operator or begin paren, don't break next
     bool	m_prependIndent;
     int		m_indentLevel;	// Current {} indentation
-    stack<int>	m_parenVec;	// Stack of columns where last ( was
+    std::stack<int> m_parenVec;  // Stack of columns where last ( was
 
     int		endLevels(const char* strg);
     const char* indentStr(int levels);

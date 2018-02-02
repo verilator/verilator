@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.000 devel
 
+****  Fix internals to avoid 'using namespace std'.
+
 
 * Verilator 3.921 devel
 

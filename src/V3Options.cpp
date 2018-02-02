@@ -50,17 +50,17 @@
 class V3OptionsImp {
 public:
     // TYPES
-    typedef std::map<string,set<string> > DirMap;	// Directory listing
+    typedef std::map<string,std::set<string> > DirMap;  // Directory listing
 
     // STATE
-    list<string>	m_allArgs;	// List of every argument encountered
-    list<string>	m_incDirUsers;		// Include directories (ordered)
-    set<string>		m_incDirUserSet;	// Include directories (for removing duplicates)
-    list<string>	m_incDirFallbacks;	// Include directories (ordered)
-    set<string>		m_incDirFallbackSet;	// Include directories (for removing duplicates)
-    map<string,V3LangCode> m_langExts;		// Language extension map
-    list<string>	m_libExtVs;	// Library extensions (ordered)
-    set<string>		m_libExtVSet;	// Library extensions (for removing duplicates)
+    std::list<string>   m_allArgs;      // List of every argument encountered
+    std::list<string>   m_incDirUsers;          // Include directories (ordered)
+    std::set<string>    m_incDirUserSet;        // Include directories (for removing duplicates)
+    std::list<string>   m_incDirFallbacks;      // Include directories (ordered)
+    std::set<string>    m_incDirFallbackSet;    // Include directories (for removing duplicates)
+    std::map<string,V3LangCode> m_langExts;             // Language extension map
+    std::list<string>   m_libExtVs;     // Library extensions (ordered)
+    std::set<string>    m_libExtVSet;   // Library extensions (for removing duplicates)
     DirMap		m_dirMap;	// Directory listing
 
     // ACCESSOR METHODS
@@ -167,9 +167,9 @@ string V3Options::parameter(string name) {
 
 void V3Options::checkParameters() {
     if (!m_parameters.empty()) {
-        stringstream msg;
+        std::stringstream msg;
         msg << "Parameters from the command line were not found in the design:";
-        for (map<string,string>::iterator it = m_parameters.begin();
+        for (std::map<string,string>::iterator it = m_parameters.begin();
                 it != m_parameters.end(); ++it) {
             msg << " " << it->first;
         }
@@ -235,7 +235,7 @@ void V3Options::addArg(const string& arg) {
 
 string V3Options::allArgsString() {
     string out;
-    for (list<string>::iterator it=m_impp->m_allArgs.begin(); it!=m_impp->m_allArgs.end(); ++it) {
+    for (std::list<string>::iterator it=m_impp->m_allArgs.begin(); it!=m_impp->m_allArgs.end(); ++it) {
 	if (out != "") out += " ";
 	out += *it;
     }
@@ -297,10 +297,10 @@ string V3Options::fileExists (const string& filename) {
     V3OptionsImp::DirMap::iterator diriter = m_impp->m_dirMap.find(dir);
     if (diriter == m_impp->m_dirMap.end()) {
 	// Read the listing
-	m_impp->m_dirMap.insert(make_pair(dir, set<string>() ));
+        m_impp->m_dirMap.insert(std::make_pair(dir, std::set<string>() ));
 	diriter = m_impp->m_dirMap.find(dir);
 
-	set<string>* setp = &(diriter->second);
+        std::set<string>* setp = &(diriter->second);
 
 	if (DIR* dirp = opendir(dir.c_str())) {
 	    while (struct dirent* direntp = readdir(dirp)) {
@@ -311,8 +311,8 @@ string V3Options::fileExists (const string& filename) {
 	}
     }
     // Find it
-    set<string>* filesetp = &(diriter->second);
-    set<string>::iterator fileiter = filesetp->find(basename);
+    std::set<string>* filesetp = &(diriter->second);
+    std::set<string>::iterator fileiter = filesetp->find(basename);
     if (fileiter == filesetp->end()) {
 	return "";  // Not found
     }
@@ -323,7 +323,7 @@ string V3Options::fileExists (const string& filename) {
 }
 
 string V3Options::filePathCheckOneDir(const string& modname, const string& dirname) {
-    for (list<string>::iterator extIter=m_impp->m_libExtVs.begin(); extIter!=m_impp->m_libExtVs.end(); ++extIter) {
+    for (std::list<string>::iterator extIter=m_impp->m_libExtVs.begin(); extIter!=m_impp->m_libExtVs.end(); ++extIter) {
 	string fn = V3Os::filenameFromDirBase(dirname, modname+*extIter);
 	string exists = fileExists(fn);
 	if (exists!="") {
@@ -340,12 +340,12 @@ string V3Options::filePath (FileLine* fl, const string& modname, const string& l
     // Find a filename to read the specified module name,
     // using the incdir and libext's.
     // Return "" if not found.
-    for (list<string>::iterator dirIter=m_impp->m_incDirUsers.begin();
+    for (std::list<string>::iterator dirIter=m_impp->m_incDirUsers.begin();
 	 dirIter!=m_impp->m_incDirUsers.end(); ++dirIter) {
 	string exists = filePathCheckOneDir(modname, *dirIter);
 	if (exists!="") return exists;
     }
-    for (list<string>::iterator dirIter=m_impp->m_incDirFallbacks.begin();
+    for (std::list<string>::iterator dirIter=m_impp->m_incDirFallbacks.begin();
 	 dirIter!=m_impp->m_incDirFallbacks.end(); ++dirIter) {
 	string exists = filePathCheckOneDir(modname, *dirIter);
 	if (exists!="") return exists;
@@ -372,16 +372,16 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
 	    fl->v3error("This may be because there's no search path specified with -I<dir>."<<endl);
 	}
 	fl->v3error("Looked in:"<<endl);
-	for (list<string>::iterator dirIter=m_impp->m_incDirUsers.begin();
+        for (std::list<string>::iterator dirIter=m_impp->m_incDirUsers.begin();
 	     dirIter!=m_impp->m_incDirUsers.end(); ++dirIter) {
-	    for (list<string>::iterator extIter=m_impp->m_libExtVs.begin(); extIter!=m_impp->m_libExtVs.end(); ++extIter) {
+            for (std::list<string>::iterator extIter=m_impp->m_libExtVs.begin(); extIter!=m_impp->m_libExtVs.end(); ++extIter) {
 		string fn = V3Os::filenameFromDirBase(*dirIter,modname+*extIter);
 		fl->v3error("      "<<fn<<endl);
 	    }
 	}
-	for (list<string>::iterator dirIter=m_impp->m_incDirFallbacks.begin();
+        for (std::list<string>::iterator dirIter=m_impp->m_incDirFallbacks.begin();
 	     dirIter!=m_impp->m_incDirFallbacks.end(); ++dirIter) {
-	    for (list<string>::iterator extIter=m_impp->m_libExtVs.begin(); extIter!=m_impp->m_libExtVs.end(); ++extIter) {
+            for (std::list<string>::iterator extIter=m_impp->m_libExtVs.begin(); extIter!=m_impp->m_libExtVs.end(); ++extIter) {
 		string fn = V3Os::filenameFromDirBase(*dirIter,modname+*extIter);
 		fl->v3error("      "<<fn<<endl);
 	    }
@@ -398,7 +398,7 @@ V3LangCode V3Options::fileLanguage(const string &filename) {
     string::size_type pos;
     if ((pos = ext.rfind(".")) != string::npos) {
 	ext.erase(0, pos + 1);
-	map<string,V3LangCode>::iterator it = m_impp->m_langExts.find(ext);
+        std::map<string,V3LangCode>::iterator it = m_impp->m_langExts.find(ext);
 	if (it != m_impp->m_langExts.end()) {
 	    return it->second;
 	}
@@ -1072,7 +1072,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     // Read the specified -f filename and process as arguments
     UINFO(1,"Reading Options File "<<filename<<endl);
 
-    const vl_unique_ptr<ifstream> ifp (V3File::new_ifstream(filename));
+    const vl_unique_ptr<std::ifstream> ifp (V3File::new_ifstream(filename));
     if (ifp->fail()) {
 	fl->v3error("Cannot open -f command file: "+filename);
 	return;
@@ -1117,7 +1117,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     }
 
     // Strip off arguments and parse into words
-    vector<string> args;
+    std::vector<string> args;
     string::size_type startpos = 0;
     while (startpos < whole_file.length()) {
 	while (isspace(whole_file[startpos])) ++startpos;

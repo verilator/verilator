@@ -48,7 +48,7 @@ class UndrivenVarEntry {
     AstVar*		m_varp;		// Variable this tracks
     bool		m_usedWhole;	// True if whole vector used
     bool		m_drivenWhole;	// True if whole vector driven
-    vector<bool>	m_flags;	// Used/Driven on each subbit
+    std::vector<bool>   m_flags;        // Used/Driven on each subbit
 
     enum { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAGS_PER_BIT = 2 };
 
@@ -235,7 +235,7 @@ private:
     AstUser2InUse	m_inuser2;
 
     // STATE
-    vector<UndrivenVarEntry*>	m_entryps[3];	// Nodes to delete when we are finished
+    std::vector<UndrivenVarEntry*> m_entryps[3];  // Nodes to delete when we are finished
     bool		m_inBBox;	// In black box; mark as driven+used
     AstNodeFTask*	m_taskp;	// Current task
     AstAlways*		m_alwaysp;	// Current always if combo, otherwise NULL
@@ -392,11 +392,11 @@ public:
 	nodep->accept(*this);
     }
     virtual ~UndrivenVisitor() {
-	for (vector<UndrivenVarEntry*>::iterator it = m_entryps[1].begin(); it != m_entryps[1].end(); ++it) {
+        for (std::vector<UndrivenVarEntry*>::iterator it = m_entryps[1].begin(); it != m_entryps[1].end(); ++it) {
 	    (*it)->reportViolations();
 	}
 	for (int usr=1; usr<3; ++usr) {
-	    for (vector<UndrivenVarEntry*>::iterator it = m_entryps[usr].begin(); it != m_entryps[usr].end(); ++it) {
+            for (std::vector<UndrivenVarEntry*>::iterator it = m_entryps[usr].begin(); it != m_entryps[usr].end(); ++it) {
 		delete (*it);
 	    }
 	}

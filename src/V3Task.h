@@ -28,8 +28,8 @@
 
 //============================================================================
 
-typedef pair<AstVar*,AstArg*> V3TaskConnect;	// [port, pin-connects-to]
-typedef vector<V3TaskConnect> V3TaskConnects;	// [ [port, pin-connects-to] ... ]
+typedef std::pair<AstVar*,AstArg*> V3TaskConnect;  // [port, pin-connects-to]
+typedef std::vector<V3TaskConnect> V3TaskConnects;  // [ [port, pin-connects-to] ... ]
 
 //============================================================================
 

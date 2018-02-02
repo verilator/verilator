@@ -32,7 +32,7 @@
 void VlcTop::readCoverage(const string& filename, bool nonfatal) {
     UINFO(2,"readCoverage "<<filename<<endl);
 
-    ifstream is (filename.c_str());
+    std::ifstream is (filename.c_str());
     if (!is) {
 	if (!nonfatal) v3fatal("Can't read "<<filename);
 	return;
@@ -69,7 +69,7 @@ void VlcTop::readCoverage(const string& filename, bool nonfatal) {
 void VlcTop::writeCoverage(const string& filename) {
     UINFO(2,"writeCoverage "<<filename<<endl);
 
-    ofstream os (filename.c_str());
+    std::ofstream os (filename.c_str());
     if (!os) {
 	v3fatal("Can't write "<<filename);
 	return;
@@ -98,7 +98,7 @@ void VlcTop::rank() {
     vluint64_t nextrank=1;
 
     // Sort by computrons, so fast tests get selected first
-    vector<VlcTest*> bytime;
+    std::vector<VlcTest*> bytime;
     for (VlcTests::ByName::iterator it=m_tests.begin(); it!=m_tests.end(); ++it) {
 	VlcTest* testp = *it;
 	if (testp->bucketsCovered()) {	 // else no points, so can't help us
@@ -122,7 +122,7 @@ void VlcTop::rank() {
 	if (debug()) { UINFO(9,"Left on iter"<<nextrank<<": "); remaining.dump(); }
 	VlcTest* bestTestp = NULL;
 	vluint64_t bestRemain = 0;
-	for (vector<VlcTest*>::iterator it=bytime.begin(); it!=bytime.end(); ++it) {
+        for (std::vector<VlcTest*>::iterator it=bytime.begin(); it!=bytime.end(); ++it) {
 	    VlcTest* testp = *it;
 	    if (!testp->rank()) {
 		vluint64_t remain = testp->buckets().dataPopCount(remaining);
@@ -188,7 +188,7 @@ void VlcTop::annotateCalcNeeded() {
     }
     float pct = totCases ? (100*totOk / totCases) : 0;
     cout<<"Total coverage ("<<totOk<<"/"<<totCases<<") "
-	<<fixed<<setw(3)<<setprecision(2)<<pct<<"%"<<endl;
+        <<std::fixed<<std::setw(3)<<std::setprecision(2)<<pct<<"%"<<endl;
     if (totOk != totCases) cout<<"See lines with '%00' in "<<opt.annotateOut()<<endl;
 }
 
@@ -203,13 +203,13 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
 
 	UINFO(1,"annotateOutputFile "<<filename<<" -> "<<outfilename<<endl);
 
-	ifstream is (filename.c_str());
+        std::ifstream is (filename.c_str());
 	if (!is) {
 	    v3error("Can't read "<<filename);
 	    return;
 	}
 
-	ofstream os (outfilename.c_str());
+        std::ofstream os (outfilename.c_str());
 	if (!os) {
 	    v3fatal("Can't write "<<outfilename);
 	    return;
@@ -233,7 +233,7 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
 		    VlcSourceCount& col = cit->second;
 		    //UINFO(0,"Source "<<source.name()<<" lineno="<<col.lineno()<<" col="<<col.column()<<endl);
 		    os<<(col.ok()?" ":"%")
-		      <<setfill('0')<<setw(6)<<col.count()
+                      <<std::setfill('0')<<std::setw(6)<<col.count()
 		      <<"\t"<<line<<endl;
 		    if (first) {
 			first = false;

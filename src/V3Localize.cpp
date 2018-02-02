@@ -113,7 +113,7 @@ private:
     // STATE
     V3Double0	m_statLocVars;	// Statistic tracking
     AstCFunc*	m_cfuncp;	// Current active function
-    vector<AstVar*> m_varps;	// List of variables to consider for deletion
+    std::vector<AstVar*> m_varps;       // List of variables to consider for deletion
 
     // METHODS
     void clearOptimizable(AstVar* nodep, const char* reason) {
@@ -129,7 +129,7 @@ private:
 	flags.setNodeFlags(nodep);
     }
     void moveVars() {
-	for (vector<AstVar*>::iterator it = m_varps.begin(); it != m_varps.end(); ++it) {
+        for (std::vector<AstVar*>::iterator it = m_varps.begin(); it != m_varps.end(); ++it) {
 	    AstVar* nodep = *it;
 	    if (nodep->valuep()) clearOptimizable(nodep,"HasInitValue");
 	    if (!VarFlags(nodep).m_stdFuncAsn) clearStdOptimizable(nodep,"NoStdAssign");

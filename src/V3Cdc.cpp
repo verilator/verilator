@@ -135,7 +135,7 @@ private:
     // NODE STATE
     //Entire netlist:
     // {statement}Node::user3	-> bool, indicating not hazard
-    ofstream*		m_ofp;		// Output file
+    std::ofstream* m_ofp;  // Output file
     string		m_prefix;
 
     virtual void visit(AstNode* nodep) {
@@ -157,7 +157,7 @@ private:
 
 public:
     // CONSTUCTORS
-    CdcDumpVisitor(AstNode* nodep, ofstream* ofp, const string& prefix) {
+    CdcDumpVisitor(AstNode* nodep, std::ofstream* ofp, const string& prefix) {
 	m_ofp = ofp;
 	m_prefix = prefix;
 	nodep->accept(*this);
@@ -225,7 +225,7 @@ private:
     bool		m_inDly;	// In delayed assign
     int			m_inSenItem;	// Number of senitems
     string		m_ofFilename;	// Output filename
-    ofstream*		m_ofp;		// Output file
+    std::ofstream*      m_ofp;          // Output file
     uint32_t		m_userGeneration; // Generation count to avoid slow userClearVertices
     int			m_filelineWidth;  // Characters in longest fileline
 
@@ -284,7 +284,7 @@ private:
 	nodep->v3warnCode(code,msg);
 	if (!told_file) {
 	    told_file = 1;
-	    cerr<<V3Error::msgPrefix()<<"     See details in "<<m_ofFilename<<endl;
+            std::cerr<<V3Error::msgPrefix()<<"     See details in "<<m_ofFilename<<endl;
 	}
 	*m_ofp<<"%Warning-"<<code.ascii()<<": "<<nodep->fileline()<<" "<<msg<<endl;
     }
@@ -496,11 +496,11 @@ private:
 	}
 
 	string filename = v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"__cdc_edges.txt";
-	const vl_unique_ptr<ofstream> ofp (V3File::new_ofstream(filename));
+        const vl_unique_ptr<std::ofstream> ofp (V3File::new_ofstream(filename));
 	if (ofp->fail()) v3fatalSrc("Can't write "<<filename);
 	*ofp<<"Edge Report for "<<v3Global.opt.prefix()<<endl;
 
-	deque<string> report;  // Sort output by name
+        std::deque<string> report;  // Sort output by name
 	for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
 	    if (CdcVarVertex* vvertexp = dynamic_cast<CdcVarVertex*>(itp)) {
 		AstVar* varp = vvertexp->varScp()->varp();
@@ -508,26 +508,26 @@ private:
 		    const char* whatp = "wire";
 		    if (varp->isPrimaryIO()) whatp = (varp->isInout()?"inout":varp->isInput()?"input":"output");
 
-		    ostringstream os;
-		    os.setf(ios::left);
+                    std::ostringstream os;
+                    os.setf(std::ios::left);
 		    // Module name - doesn't work due to flattening having lost the original
 		    // so we assume the modulename matches the filebasename
 		    string fname = vvertexp->varScp()->fileline()->filebasename() + ":";
-		    os<<"  "<<setw(20)<<fname;
-		    os<<"  "<<setw(8)<<whatp;
-		    os<<"  "<<setw(40)<<vvertexp->varScp()->prettyName();
+                    os<<"  "<<std::setw(20)<<fname;
+                    os<<"  "<<std::setw(8)<<whatp;
+                    os<<"  "<<std::setw(40)<<vvertexp->varScp()->prettyName();
 		    os<<"  SRC=";
 		    if (vvertexp->srcDomainp()) V3EmitV::verilogForTree(vvertexp->srcDomainp(), os);
 		    os<<"  DST=";
 		    if (vvertexp->dstDomainp()) V3EmitV::verilogForTree(vvertexp->dstDomainp(), os);
-		    os<<setw(0);
+                    os<<std::setw(0);
 		    os<<endl;
 		    report.push_back(os.str());
 		}
 	    }
 	}
 	stable_sort(report.begin(), report.end());
-	for (deque<string>::iterator it = report.begin(); it!=report.end(); ++it) {
+        for (std::deque<string>::iterator it = report.begin(); it!=report.end(); ++it) {
 	    *ofp << *it;
 	}
     }
@@ -541,7 +541,7 @@ private:
 	// Variables from flops already are domained
 	if (traceDests ? vertexp->dstDomainSet() : vertexp->srcDomainSet()) return;  // Fully computed
 
-	typedef set<AstSenTree*> SenSet;
+        typedef std::set<AstSenTree*> SenSet;
 	SenSet 	    senouts;   // List of all sensitivities for new signal
 	if (CdcLogicVertex* vvertexp = dynamic_cast<CdcLogicVertex*>(vertexp)) {
 	    if (vvertexp) {}  // Unused

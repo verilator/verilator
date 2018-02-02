@@ -30,9 +30,9 @@
 //		Or, converts to a if/else tree.
 //	FUTURES:
 //	    Large 16+ bit tables with constants and no masking (address muxes)
-//		Enter all into multimap, sort by value and use a tree of < and == compares.
+//              Enter all into std::multimap, sort by value and use a tree of < and == compares.
 //	    "Diagonal" find of {rightmost,leftmost} bit {set,clear}
-//		Ignoring mask, check each value is unique (using multimap as above?)
+//              Ignoring mask, check each value is unique (using std::multimap as above?)
 //		Each branch is then mask-and-compare operation (IE <000000001_000000000 at midpoint.)
 //
 //*************************************************************************
@@ -189,7 +189,7 @@ private:
 			    if (!m_valueItem[i]) {
 				m_valueItem[i] = itemp;
 			    } else if (!itemp->ignoreOverlap() && !bitched) {
-				itemp->v3warn(CASEOVERLAP,"Case values overlap (example pattern 0x"<<hex<<i<<")");
+                                itemp->v3warn(CASEOVERLAP,"Case values overlap (example pattern 0x"<<std::hex<<i<<")");
 				bitched = true;
 				m_caseNoOverlapsAllCovered = false;
 			    }
@@ -206,7 +206,7 @@ private:
 	}
 	for (uint32_t i=0; i<(1UL<<m_caseWidth); i++) {
 	    if (!m_valueItem[i]) {
-		nodep->v3warn(CASEINCOMPLETE,"Case values incompletely covered (example pattern 0x"<<hex<<i<<")");
+                nodep->v3warn(CASEINCOMPLETE,"Case values incompletely covered (example pattern 0x"<<std::hex<<i<<")");
 		m_caseNoOverlapsAllCovered = false;
 		return false;
 	    }
@@ -280,7 +280,7 @@ private:
 	if (debug()>=9) {
 	    for (uint32_t i=0; i<(1UL<<m_caseWidth); i++) {
 		if (AstNode* itemp = m_valueItem[i]) {
-		    UINFO(9,"Value "<<hex<<i<<" "<<itemp<<endl);
+                    UINFO(9,"Value "<<std::hex<<i<<" "<<itemp<<endl);
 		}
 	    }
 	}

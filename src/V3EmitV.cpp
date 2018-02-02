@@ -626,7 +626,7 @@ public:
 
 class EmitVStreamVisitor : public EmitVBaseVisitor {
     // MEMBERS
-    ostream&	m_os;
+    std::ostream&       m_os;
     // METHODS
     virtual void putsNoTracking(const string& str) { m_os<<str; }
     virtual void puts(const string& str) { putsNoTracking(str); }
@@ -634,7 +634,7 @@ class EmitVStreamVisitor : public EmitVBaseVisitor {
     virtual void putfs(AstNode*, const string& str) { putbs(str); }
     virtual void putqs(AstNode*, const string& str) { putbs(str); }
 public:
-    EmitVStreamVisitor(AstNode* nodep, ostream& os)
+    EmitVStreamVisitor(AstNode* nodep, std::ostream& os)
 	: m_os(os) {
 	nodep->accept(*this);
     }
@@ -645,7 +645,7 @@ public:
 // Emit to a stream (perhaps stringstream)
 
 class EmitVPrefixedFormatter : public V3OutFormatter {
-    ostream&	m_os;
+    std::ostream&       m_os;
     string	m_prefix;	// What to print at beginning of each line
     int		m_flWidth;	// Padding of fileline
     int		m_column;	// Rough location; need just zero or non-zero
@@ -671,7 +671,7 @@ public:
     void prefixFl(FileLine* fl) { m_prefixFl = fl; }
     FileLine* prefixFl() const { return m_prefixFl; }
     int column() const { return m_column; }
-    EmitVPrefixedFormatter(ostream& os, const string& prefix, int flWidth)
+    EmitVPrefixedFormatter(std::ostream& os, const string& prefix, int flWidth)
 	: V3OutFormatter("__STREAM", V3OutFormatter::LA_VERILOG)
 	, m_os(os), m_prefix(prefix), m_flWidth(flWidth) {
 	m_column = 0;
@@ -703,7 +703,7 @@ class EmitVPrefixedVisitor : public EmitVBaseVisitor {
     }
 
 public:
-    EmitVPrefixedVisitor(AstNode* nodep, ostream& os, const string& prefix, int flWidth,
+    EmitVPrefixedVisitor(AstNode* nodep, std::ostream& os, const string& prefix, int flWidth,
 			 AstSenTree* domainp, bool user3mark)
 	: EmitVBaseVisitor(domainp), m_formatter(os, prefix, flWidth) {
 	if (user3mark) { AstUser3InUse::check(); }
@@ -734,11 +734,11 @@ void V3EmitV::emitv() {
     }
 }
 
-void V3EmitV::verilogForTree(AstNode* nodep, ostream& os) {
+void V3EmitV::verilogForTree(AstNode* nodep, std::ostream& os) {
     EmitVStreamVisitor(nodep, os);
 }
 
-void V3EmitV::verilogPrefixedTree(AstNode* nodep, ostream& os, const string& prefix, int flWidth,
+void V3EmitV::verilogPrefixedTree(AstNode* nodep, std::ostream& os, const string& prefix, int flWidth,
 				  AstSenTree* domainp, bool user3mark) {
     EmitVPrefixedVisitor(nodep, os, prefix, flWidth, domainp, user3mark);
 }

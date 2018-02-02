@@ -1757,15 +1757,15 @@ private:
 		if (nextp && !cmp(senp, nextp)) {
 		    // Something's out of order, sort it
 		    senp = NULL;
-		    vector<AstNodeSenItem*> vec;
+                    std::vector<AstNodeSenItem*> vec;
 		    for (AstNodeSenItem* senp = nodep->sensesp()->castNodeSenItem(); senp; senp=senp->nextp()->castNodeSenItem()) {
 			vec.push_back(senp);
 		    }
 		    stable_sort(vec.begin(), vec.end(), SenItemCmp());
-		    for (vector<AstNodeSenItem*>::iterator it=vec.begin(); it!=vec.end(); ++it) {
+                    for (std::vector<AstNodeSenItem*>::iterator it=vec.begin(); it!=vec.end(); ++it) {
 			(*it)->unlinkFrBack();
 		    }
-		    for (vector<AstNodeSenItem*>::iterator it=vec.begin(); it!=vec.end(); ++it) {
+                    for (std::vector<AstNodeSenItem*>::iterator it=vec.begin(); it!=vec.end(); ++it) {
 			nodep->addSensesp(*it);
 		    }
 		    break;

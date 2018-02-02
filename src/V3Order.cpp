@@ -111,10 +111,10 @@ class OrderMoveDomScope;
 void OrderGraph::loopsVertexCb(V3GraphVertex* vertexp) {
     if (debug()) cout<<"-Info-Loop: "<<vertexp<<" "<<endl;
     if (OrderLogicVertex* vvertexp = dynamic_cast<OrderLogicVertex*>(vertexp)) {
-	cerr<<V3Error::msgPrefix()<<"     Example path: "<<vvertexp->nodep()->fileline()<<" "<<vvertexp->nodep()->typeName()<<endl;
+        std::cerr<<V3Error::msgPrefix()<<"     Example path: "<<vvertexp->nodep()->fileline()<<" "<<vvertexp->nodep()->typeName()<<endl;
     }
     if (OrderVarVertex* vvertexp = dynamic_cast<OrderVarVertex*>(vertexp)) {
-	cerr<<V3Error::msgPrefix()<<"     Example path: "<<vvertexp->varScp()->fileline()<<" "<<vvertexp->varScp()->prettyName()<<endl;
+        std::cerr<<V3Error::msgPrefix()<<"     Example path: "<<vvertexp->varScp()->fileline()<<" "<<vvertexp->varScp()->prettyName()<<endl;
     }
 };
 
@@ -130,7 +130,7 @@ private:
     const AstSenTree*		m_domainp;		// Domain all vertices belong to
     const AstScope*	        m_scopep;		// Scope all vertices belong to
 
-    typedef pair<const AstSenTree*, const AstScope*> DomScopeKey;
+    typedef std::pair<const AstSenTree*, const AstScope*> DomScopeKey;
     typedef std::map<DomScopeKey, OrderMoveDomScope*> DomScopeMap;
     static DomScopeMap	s_dsMap;	// Structure registered for each dom/scope pairing
 
@@ -171,7 +171,7 @@ public:
 
 OrderMoveDomScope::DomScopeMap	OrderMoveDomScope::s_dsMap;
 
-inline ostream& operator<< (ostream& lhs, const OrderMoveDomScope& rhs) {
+inline std::ostream& operator<< (std::ostream& lhs, const OrderMoveDomScope& rhs) {
     lhs<<rhs.name();
     return lhs;
 }
@@ -461,7 +461,7 @@ private:
     bool		m_inPre;	// Underneath AstAssignPre
     bool		m_inPost;	// Underneath AstAssignPost
     OrderLogicVertex*	m_activeSenVxp;	// Sensitivity vertex
-    deque<OrderUser*>	m_orderUserps;	// All created OrderUser's for later deletion.
+    std::deque<OrderUser*>      m_orderUserps;  // All created OrderUser's for later deletion.
     // STATE... for inside process
     AstCFunc*			m_pomNewFuncp;	// Current function being created
     int				m_pomNewStmts;	// Statements in function being created
@@ -470,7 +470,7 @@ private:
 protected:
     friend class OrderMoveDomScope;
     V3List<OrderMoveDomScope*>  m_pomReadyDomScope;	// List of ready domain/scope pairs, by loopId
-    vector<OrderVarStdVertex*>	m_unoptflatVars;	// Vector of variables in UNOPTFLAT loop
+    std::vector<OrderVarStdVertex*>  m_unoptflatVars;   // Vector of variables in UNOPTFLAT loop
 
 private:
     // STATS
@@ -520,7 +520,7 @@ private:
 
     void process();
     void processCircular();
-    typedef deque<OrderEitherVertex*> VertexVec;
+    typedef std::deque<OrderEitherVertex*> VertexVec;
     void processInputs();
     void processInputsInIterate(OrderEitherVertex* vertexp, VertexVec& todoVec);
     void processInputsOutIterate(OrderEitherVertex* vertexp, VertexVec& todoVec);
@@ -631,31 +631,31 @@ private:
 	m_graph.userClearVertices();
 	// May be very large vector, so only report the "most important"
 	// elements. Up to 10 of the widest
-	cerr<<V3Error::msgPrefix()
-	    <<"     Widest candidate vars to split:"<<endl;
+        std::cerr<<V3Error::msgPrefix()
+                 <<"     Widest candidate vars to split:"<<endl;
 	std::stable_sort (m_unoptflatVars.begin(), m_unoptflatVars.end(), OrderVarWidthCmp());
 	int lim = m_unoptflatVars.size() < 10 ? m_unoptflatVars.size() : 10;
 	for (int i = 0; i < lim; i++) {
 	    OrderVarStdVertex* vsvertexp = m_unoptflatVars[i];
 	    AstVar* varp = vsvertexp->varScp()->varp();
-	    cerr<<V3Error::msgPrefix()<<"          "
-		<<varp->fileline()<<" "<<varp->prettyName()<<dec
-		<<", width "<<varp->width()<<", fanout "
-		<<vsvertexp->fanout()<<endl;
+            std::cerr<<V3Error::msgPrefix()<<"          "
+                     <<varp->fileline()<<" "<<varp->prettyName()<<std::dec
+                     <<", width "<<varp->width()<<", fanout "
+                     <<vsvertexp->fanout()<<endl;
 	}
 	// Up to 10 of the most fanned out
-	cerr<<V3Error::msgPrefix()
-	    <<"     Most fanned out candidate vars to split:"<<endl;
+        std::cerr<<V3Error::msgPrefix()
+                 <<"     Most fanned out candidate vars to split:"<<endl;
 	std::stable_sort (m_unoptflatVars.begin(), m_unoptflatVars.end(),
 			  OrderVarFanoutCmp());
 	lim = m_unoptflatVars.size() < 10 ? m_unoptflatVars.size() : 10;
 	for (int i = 0; i < lim; i++) {
 	    OrderVarStdVertex* vsvertexp = m_unoptflatVars[i];
 	    AstVar* varp = vsvertexp->varScp()->varp();
-	    cerr<<V3Error::msgPrefix()<<"          "
-		<<varp->fileline()<<" "<<varp->prettyName()
-		<<", width "<<dec<<varp->width()
-		<<", fanout "<<vsvertexp->fanout()<<endl;
+            std::cerr<<V3Error::msgPrefix()<<"          "
+                     <<varp->fileline()<<" "<<varp->prettyName()
+                     <<", width "<<std::dec<<varp->width()
+                     <<", fanout "<<vsvertexp->fanout()<<endl;
 	}
 	m_unoptflatVars.clear();
     }
@@ -998,7 +998,7 @@ public:
 	    }
 	}
 	// Destruction
-	for (deque<OrderUser*>::iterator it=m_orderUserps.begin(); it!=m_orderUserps.end(); ++it) {
+        for (std::deque<OrderUser*>::iterator it=m_orderUserps.begin(); it!=m_orderUserps.end(); ++it) {
 	    delete *it;
 	}
 	m_graph.debug(V3Error::debugDefault());
@@ -1262,11 +1262,11 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
 void OrderVisitor::processEdgeReport() {
     // Make report of all signal names and what clock edges they have
     string filename = v3Global.debugFilename("order_edges.txt");
-    const vl_unique_ptr<ofstream> logp (V3File::new_ofstream(filename));
+    const vl_unique_ptr<std::ofstream> logp (V3File::new_ofstream(filename));
     if (logp->fail()) v3fatalSrc("Can't write "<<filename);
     //Testing emitter: V3EmitV::verilogForTree(v3Global.rootp(), *logp);
 
-    deque<string> report;
+    std::deque<string> report;
 
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
 	if (OrderVarVertex* vvertexp = dynamic_cast<OrderVarVertex*>(itp)) {
@@ -1275,9 +1275,9 @@ void OrderVisitor::processEdgeReport() {
 	    else if (dynamic_cast<OrderVarPostVertex*>(itp)) name += " {POST}";
 	    else if (dynamic_cast<OrderVarPordVertex*>(itp)) name += " {PORD}";
 	    else if (dynamic_cast<OrderVarSettleVertex*>(itp)) name += " {STL}";
-	    ostringstream os;
-	    os.setf(ios::left);
-	    os<<"  "<<(void*)(vvertexp->varScp())<<" "<<setw(50)<<name<<" ";
+            std::ostringstream os;
+            os.setf(std::ios::left);
+            os<<"  "<<(void*)(vvertexp->varScp())<<" "<<std::setw(50)<<name<<" ";
 	    AstSenTree* sentreep = vvertexp->domainp();
 	    if (sentreep) V3EmitV::verilogForTree(sentreep, os);
 	    report.push_back(os.str());
@@ -1286,7 +1286,7 @@ void OrderVisitor::processEdgeReport() {
 
     *logp<<"Signals and their clock domains:"<<endl;
     stable_sort(report.begin(), report.end());
-    for (deque<string>::iterator it=report.begin(); it!=report.end(); ++it) {
+    for (std::deque<string>::iterator it=report.begin(); it!=report.end(); ++it) {
 	*logp<<(*it)<<endl;
     }
 
@@ -1512,7 +1512,7 @@ void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
     UASSERT(vertexp->domScopep() == domScopep, "Domain mismatch; list misbuilt?\n");
     OrderLogicVertex* lvertexp = vertexp->logicp();
     AstScope* scopep = lvertexp->scopep();
-    UINFO(5,"    POSmove l"<<setw(3)<<level<<" d="<<(void*)(lvertexp->domainp())
+    UINFO(5,"    POSmove l"<<std::setw(3)<<level<<" d="<<(void*)(lvertexp->domainp())
 	  <<" s="<<(void*)(scopep)<<" "<<lvertexp<<endl);
     AstSenTree* domainp = lvertexp->domainp();
     AstNode* nodep = lvertexp->nodep();
@@ -1634,7 +1634,7 @@ void OrderVisitor::process() {
     m_graph.dumpDotFilePrefixed("orderg_done");
     if (0 && debug()) {
 	string dfilename = v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"_INT_order";
-	const vl_unique_ptr<ofstream> logp (V3File::new_ofstream(dfilename));
+        const vl_unique_ptr<std::ofstream> logp (V3File::new_ofstream(dfilename));
 	if (logp->fail()) v3fatalSrc("Can't write "<<dfilename);
 	m_graph.dump(*logp);
     }

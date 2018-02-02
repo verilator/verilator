@@ -71,7 +71,7 @@ int FileLineSingleton::nameToNumber(const string& filename) {
 //! Support XML output
 
 //! Experimental. Updated to also put out the language.
-void FileLineSingleton::fileNameNumMapDumpXml(ostream& os) {
+void FileLineSingleton::fileNameNumMapDumpXml(std::ostream& os) {
     os<<"<files>\n";
     for (FileNameNumMap::const_iterator it = m_namemap.begin(); it != m_namemap.end(); ++it) {
 	os<<"<file id=\""<<filenameLetters(it->second)
@@ -184,8 +184,8 @@ const string FileLine::profileFuncname() const {
 string FileLine::ascii() const {
     return filename()+":"+cvtToStr(lineno());
 }
-ostream& operator<<(ostream& os, FileLine* fileline) {
-    os <<fileline->ascii()<<": "<<hex;
+std::ostream& operator<<(std::ostream& os, FileLine* fileline) {
+    os <<fileline->ascii()<<": "<<std::hex;
     return(os);
 }
 
@@ -237,9 +237,9 @@ void FileLine::modifyStateInherit(const FileLine* fromp) {
     }
 }
 
-void FileLine::v3errorEnd(ostringstream& str) {
+void FileLine::v3errorEnd(std::ostringstream& str) {
     if (m_lineno) {
-	ostringstream nsstr;
+        std::ostringstream nsstr;
 	nsstr<<this<<str.str();
 	if (warnIsOff(V3Error::errorCode())) V3Error::suppressThisWarning();
 	V3Error::v3errorEnd(nsstr);

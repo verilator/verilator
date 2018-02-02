@@ -33,7 +33,7 @@
 #include "V3Graph.h"
 
 int V3Graph::s_debug = 0;
-int V3Graph::debug() { return max(V3Error::debugDefault(), s_debug); }
+int V3Graph::debug() { return std::max(V3Error::debugDefault(), s_debug); }
 
 //######################################################################
 //######################################################################
@@ -82,7 +82,7 @@ void V3GraphVertex::rerouteEdges(V3Graph* graphp) {
     for (V3GraphEdge* iedgep = inBeginp(); iedgep; iedgep=iedgep->inNextp()) {
 	for (V3GraphEdge* oedgep = outBeginp(); oedgep; oedgep=oedgep->outNextp()) {
 	    new V3GraphEdge (graphp, iedgep->fromp(), oedgep->top(),
-			     min(iedgep->weight(),oedgep->weight()),
+                             std::min(iedgep->weight(),oedgep->weight()),
 			     iedgep->cutable() && oedgep->cutable());
 	}
     }
@@ -118,7 +118,7 @@ uint32_t V3GraphVertex::outHash() const {
     return hash;
 }
 
-ostream& operator<<(ostream& os, V3GraphVertex* vertexp) {
+std::ostream& operator<<(std::ostream& os, V3GraphVertex* vertexp) {
     os<<"  VERTEX="<<vertexp->name();
     if (vertexp->rank()) os<<" r"<<vertexp->rank();
     if (vertexp->fanout()!=0.0) os<<" f"<<vertexp->fanout();
@@ -241,10 +241,10 @@ void V3Graph::clearColors() {
 
 void V3Graph::loopsVertexCb(V3GraphVertex* vertexp) {
     // Needed here as V3GraphVertex<< isn't defined until later in header
-    cerr<<"-Info-Loop: "<<(void*)(vertexp)<<" "<<vertexp<<endl;
+    std::cerr<<"-Info-Loop: "<<(void*)(vertexp)<<" "<<vertexp<<endl;
 }
 
-void V3Graph::dump(ostream& os) {
+void V3Graph::dump(std::ostream& os) {
     // This generates a file used by graphviz, http://www.graphviz.org
     os<<" Graph:\n";
     // Print vertices
@@ -262,7 +262,7 @@ void V3Graph::dump(ostream& os) {
     }
 }
 
-void V3Graph::dumpEdge(ostream& os, V3GraphVertex* vertexp, V3GraphEdge* edgep) {
+void V3Graph::dumpEdge(std::ostream& os, V3GraphVertex* vertexp, V3GraphEdge* edgep) {
     if (edgep->weight()
 	&& (edgep->fromp() == vertexp
 	    || edgep->top() == vertexp)) {
@@ -288,7 +288,7 @@ void V3Graph::dumpDotFilePrefixedAlways(const string& nameComment, bool colorAsS
 void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     // This generates a file used by graphviz, http://www.graphviz.org
     // "hardcoded" parameters:
-    const vl_unique_ptr<ofstream> logp (V3File::new_ofstream(filename));
+    const vl_unique_ptr<std::ofstream> logp (V3File::new_ofstream(filename));
     if (logp->fail()) v3fatalSrc("Can't write "<<filename);
 
     // Header
@@ -299,7 +299,7 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     *logp<<"\t\t rankdir="<<dotRankDir()<<"];\n";
 
     // List of all possible subgraphs
-    typedef multimap<string,V3GraphVertex*> SubgraphMmap;
+    typedef std::multimap<string,V3GraphVertex*> SubgraphMmap;
     SubgraphMmap subgraphs;
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
 	string vertexSubgraph = (colorAsSubgraph && vertexp->color()) ? cvtToStr(vertexp->color()) : "";
@@ -308,7 +308,7 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
 
     // We use a map here, as we don't want to corrupt anything (userp) in the graph,
     // and we don't care if this is slow.
-    map<V3GraphVertex*,int>  numMap;
+    std::map<V3GraphVertex*,int>  numMap;
 
     // Print vertices
     int n=0;

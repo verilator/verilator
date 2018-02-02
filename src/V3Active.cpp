@@ -66,7 +66,7 @@ private:
     AstScope*	m_scopep;		// Current scope to add statement to
     AstActive*	m_iActivep;		// For current scope, the IActive we're building
     AstActive*	m_cActivep;		// For current scope, the SActive(combo) we're building
-    vector<AstActive*>	m_activeVec;	// List of sensitive actives, for folding
+    std::vector<AstActive*> m_activeVec;  // List of sensitive actives, for folding
     // METHODS
     void addActive(AstActive* nodep) {
 	if (!m_scopep) nodep->v3fatalSrc("NULL scope");
@@ -119,7 +119,7 @@ public:
 	// Not the fastest, but scopes tend to have few clocks
 	AstActive* activep = NULL;
 	//sitemsp->dumpTree(cout,"  Lookingfor: ");
-	for (vector<AstActive*>::iterator it = m_activeVec.begin(); it!=m_activeVec.end(); ++it) {
+        for (std::vector<AstActive*>::iterator it = m_activeVec.begin(); it!=m_activeVec.end(); ++it) {
 	    activep = *it;
 	    if (activep) {  // Not deleted
 		// Compare the list

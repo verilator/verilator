@@ -66,7 +66,7 @@ public:
     bool sumit() const { return m_sumit; }
     bool perf() const { return m_perf; }
     bool printit() const { return m_printit; }
-    virtual void dump(ofstream& os) const;
+    virtual void dump(std::ofstream& os) const;
     void combineWith(V3Statistic* otherp) {
 	m_count += otherp->count();
 	otherp->m_printit = false;

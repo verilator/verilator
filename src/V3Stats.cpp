@@ -41,7 +41,7 @@ class StatsVisitor : public AstNVisitor {
 private:
     // NODE STATE/TYPES
 
-    typedef map<string,int>	NameMap;	// Number of times a name appears
+    typedef std::map<string,int> NameMap;  // Number of times a name appears
 
     // STATE
     string	m_stage;		// Name of the stage we are scanning
@@ -55,13 +55,13 @@ private:
     double	m_instrs;		// Current instr count (for determining branch direction)
     bool	m_tracingCall;          // Iterating into a CCall to a CFunc
 
-    vector<V3Double0>	m_statTypeCount;	// Nodes of given type
+    std::vector<V3Double0> m_statTypeCount;     // Nodes of given type
     V3Double0		m_statAbove[AstType::_ENUM_END][AstType::_ENUM_END];	// Nodes of given type
     V3Double0		m_statPred[AstBranchPred::_ENUM_END];	// Nodes of given type
     V3Double0		m_statInstr;		// Instruction count
     V3Double0		m_statInstrFast;	// Instruction count, non-slow() eval functions only
-    vector<V3Double0>	m_statVarWidths;	// Variables of given width
-    vector<NameMap>	m_statVarWidthNames;	// Var names of given width
+    std::vector<V3Double0> m_statVarWidths;     // Variables of given width
+    std::vector<NameMap>   m_statVarWidthNames; // Var names of given width
     V3Double0		m_statVarArray;		// Statistic tracking
     V3Double0		m_statVarBytes;		// Statistic tracking
     V3Double0		m_statVarClock;		// Statistic tracking
@@ -246,11 +246,11 @@ public:
 		if (v3Global.opt.statsVars()) {
 		    NameMap& nameMapr = m_statVarWidthNames.at(i);
 		    for (NameMap::iterator it=nameMapr.begin(); it!=nameMapr.end(); ++it) {
-			ostringstream os; os<<"Vars, width "<<setw(5)<<dec<<i<<" "<<it->first;
+                        std::ostringstream os; os<<"Vars, width "<<std::setw(5)<<std::dec<<i<<" "<<it->first;
 			V3Stats::addStat(m_stage, os.str(), it->second);
 		    }
 		} else {
-		    ostringstream os; os<<"Vars, width "<<setw(5)<<dec<<i;
+                    std::ostringstream os; os<<"Vars, width "<<std::setw(5)<<std::dec<<i;
 		    V3Stats::addStat(m_stage, os.str(), count);
 		}
 	    }

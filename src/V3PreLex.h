@@ -128,7 +128,7 @@ class VPreStream {
 public:
     FileLine*		m_curFilelinep;	// Current processing point (see also m_tokFilelinep)
     V3PreLex*		m_lexp;		// Lexer, for resource tracking
-    deque<string>	m_buffers;	// Buffer of characters to process
+    std::deque<string>  m_buffers;      // Buffer of characters to process
     int			m_ignNewlines;	// Ignore multiline newlines
     bool		m_eof;		// "EOF" buffer
     bool		m_file;		// Buffer is start of new file
@@ -152,7 +152,7 @@ private:
 class V3PreLex {
   public:	// Used only by V3PreLex.cpp and V3PreProc.cpp
     V3PreProcImp*	m_preimpp;	// Preprocessor lexor belongs to
-    stack<VPreStream*>	m_streampStack;	// Stack of processing files
+    std::stack<VPreStream*> m_streampStack;  // Stack of processing files
     int			m_streamDepth;	// Depth of stream processing
     YY_BUFFER_STATE	m_bufferState;	// Flex state
     FileLine*		m_tokFilelinep;	// Starting position of current token

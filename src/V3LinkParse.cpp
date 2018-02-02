@@ -49,8 +49,8 @@ private:
     AstUser2InUse	m_inuser2;
 
     // TYPES
-    typedef map <pair<void*,string>,AstTypedef*> ImplTypedefMap;
-    typedef set <FileLine*> FileLineSet;
+    typedef std::map<std::pair<void*,string>,AstTypedef*> ImplTypedefMap;
+    typedef std::set<FileLine*> FileLineSet;
 
     // STATE
     AstVar*		m_varp;		// Variable we're under

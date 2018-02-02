@@ -207,7 +207,7 @@ private:
 		if (nodep->valuep()) {
 		    if (nodep->valuep()->backp() != nodep) nodep->v3fatalSrc("Trace duplicate back needs consistency, so we can map duplicates back to TRACEINCs");
 		    hashed.hash(nodep->valuep());
-		    UINFO(8, "  Hashed "<<hex<<hashed.nodeHash(nodep->valuep())<<" "<<nodep<<endl);
+                    UINFO(8, "  Hashed "<<std::hex<<hashed.nodeHash(nodep->valuep())<<" "<<nodep<<endl);
 
 		    // Just keep one node in the map and point all duplicates to this node
 		    if (hashed.findDuplicate(nodep->valuep()) == hashed.end()) {
@@ -385,8 +385,8 @@ private:
 	// Form a sorted list of the traces we are interested in
 	UINFO(9,"Making trees\n");
 
-	typedef set<uint32_t> ActCodeSet;	// All activity numbers applying to a given trace
-	typedef multimap<ActCodeSet,TraceTraceVertex*> TraceVec;	// For activity set, what traces apply
+        typedef std::set<uint32_t> ActCodeSet;  // All activity numbers applying to a given trace
+        typedef std::multimap<ActCodeSet,TraceTraceVertex*> TraceVec;   // For activity set, what traces apply
 	TraceVec traces;
 
 	// Form sort structure

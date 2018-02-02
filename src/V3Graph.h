@@ -57,7 +57,7 @@ protected:
     void acyclicCut();
     void acyclicLoop(V3GraphVertex* vertexp, int depth);
     double orderDFSIterate(V3GraphVertex* vertexp);
-    void dumpEdge(ostream& os, V3GraphVertex* vertexp, V3GraphEdge* edgep);
+    void dumpEdge(std::ostream& os, V3GraphVertex* vertexp, V3GraphEdge* edgep);
     void verticesUnlink() { m_vertices.reset(); }
     // ACCESSORS
     static int debug();
@@ -126,7 +126,7 @@ public:
     void subtreeLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp, V3Graph* loopGraphp);
 
     /// Debugging
-    void dump(ostream& os=cout);
+    void dump(std::ostream& os=std::cout);
     void dumpDotFile(const string& filename, bool colorAsSubgraph) const;
     void dumpDotFilePrefixed(const string& nameComment, bool colorAsSubgraph=false) const;
     void dumpDotFilePrefixedAlways(const string& nameComment, bool colorAsSubgraph=false) const;
@@ -212,7 +212,7 @@ public:
     void	rerouteEdges(V3Graph* graphp);	///< Edges are routed around this vertex to point from "from" directly to "to"
 };
 
-ostream& operator<<(ostream& os, V3GraphVertex* vertexp);
+std::ostream& operator<<(std::ostream& os, V3GraphVertex* vertexp);
 
 //============================================================================
 

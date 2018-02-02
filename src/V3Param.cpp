@@ -81,31 +81,31 @@ private:
     // User1/2/3 used by constant function simulations
 
     // TYPES
-    typedef deque<pair<AstIfaceRefDType*,AstIfaceRefDType*> > IfaceRefRefs;  // Note may have duplicate entries
+    typedef std::deque<std::pair<AstIfaceRefDType*,AstIfaceRefDType*> > IfaceRefRefs;  // Note may have duplicate entries
 
     // STATE
-    typedef map<AstNode*,AstNode*> CloneMap;
+    typedef std::map<AstNode*,AstNode*> CloneMap;
     struct ModInfo {
 	AstNodeModule*	m_modp;		// Module with specified name
 	CloneMap	m_cloneMap;	// Map of old-varp -> new cloned varp
 	explicit ModInfo(AstNodeModule* modp) { m_modp=modp; }
     };
-    typedef map<string,ModInfo> ModNameMap;
+    typedef std::map<string,ModInfo> ModNameMap;
     ModNameMap	m_modNameMap;	// Hash of created module flavors by name
 
-    typedef map<string,string> LongMap;
+    typedef std::map<string,string> LongMap;
     LongMap	m_longMap;	// Hash of very long names to unique identity number
     int		m_longId;
 
-    typedef map<AstNode*,int> ValueMap;
-    typedef map<int,int> NextValueMap;
+    typedef std::map<AstNode*,int> ValueMap;
+    typedef std::map<int,int> NextValueMap;
     ValueMap	m_valueMap;	// Hash of node to param value
     NextValueMap m_nextValueMap;// Hash of param value to next value to be used
 
-    typedef multimap<int,AstNodeModule*> LevelModMap;
+    typedef std::multimap<int,AstNodeModule*> LevelModMap;
     LevelModMap	m_todoModps;	// Modules left to process
 
-    typedef deque<AstCell*> CellList;
+    typedef std::deque<AstCell*> CellList;
     CellList	m_cellps;	// Cells left to process (in this module)
 
     AstNodeModule* m_modp;  // Current module being processed
@@ -120,7 +120,7 @@ private:
     }
 
     void makeSmallNames(AstNodeModule* modp) {
-	vector<int> usedLetter; usedLetter.resize(256);
+        std::vector<int> usedLetter; usedLetter.resize(256);
 	// Pass 1, assign first letter to each gparam's name
 	for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
 	    if (AstVar* varp = stmtp->castVar()) {

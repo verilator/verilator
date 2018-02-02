@@ -52,7 +52,7 @@ void V3LinkLevel::modSortByLevel() {
 
     // level() was computed for us in V3LinkCells
 
-    typedef vector<AstNodeModule*> ModVec;
+    typedef std::vector<AstNodeModule*> ModVec;
 
     ModVec vec;
     AstNodeModule* topp = NULL;

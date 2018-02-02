@@ -504,7 +504,7 @@ uint32_t AstNodeDType::arrayUnpackedElements() {
     return entries;
 }
 
-pair<uint32_t,uint32_t> AstNodeDType::dimensions(bool includeBasic) {
+std::pair<uint32_t,uint32_t> AstNodeDType::dimensions(bool includeBasic) {
     // How many array dimensions (packed,unpacked) does this Var have?
     uint32_t packed = 0;
     uint32_t unpacked = 0;
@@ -688,7 +688,7 @@ AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kw
     if (kwd == AstBasicDTypeKwd::LOGIC) idx = IDX0_LOGIC;
     else if (kwd == AstBasicDTypeKwd::BIT) idx = IDX0_BIT;
     else fl->v3fatalSrc("Bad kwd for findLogicBitDType");
-    pair<int,int> widths = make_pair(width,widthMin);
+    std::pair<int,int> widths = make_pair(width,widthMin);
     LogicMap& mapr = m_logicMap[idx][(int)numeric];
     LogicMap::const_iterator it = mapr.find(widths);
     if (it != mapr.end()) return it->second;
@@ -791,12 +791,12 @@ void AstWhile::addNextStmt(AstNode* newp, AstNode* belowp) {
 //======================================================================
 // Per-type Debugging
 
-void AstNode::dump(ostream& str) {
+void AstNode::dump(std::ostream& str) {
     str<<typeName()<<" "<<(void*)this
 	//<<" "<<(void*)this->m_backp
-       <<" <e"<<dec<<editCount()
+       <<" <e"<<std::dec<<editCount()
        <<((editCount()>=editCountLast())?"#>":">")
-       <<" {"<<fileline()->filenameLetters()<<dec<<fileline()->lineno()<<"}";
+       <<" {"<<fileline()->filenameLetters()<<std::dec<<fileline()->lineno()<<"}";
     if (user1p()) str<<" u1="<<(void*)user1p();
     if (user2p()) str<<" u2="<<(void*)user2p();
     if (user3p()) str<<" u3="<<(void*)user3p();
@@ -817,45 +817,45 @@ void AstNode::dump(ostream& str) {
     }
 }
 
-void AstAlways::dump(ostream& str) {
+void AstAlways::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (keyword() != VAlwaysKwd::ALWAYS) str<<" ["<<keyword().ascii()<<"]";
 }
 
-void AstAttrOf::dump(ostream& str) {
+void AstAttrOf::dump(std::ostream& str) {
     this->AstNode::dump(str);
     str<<" ["<<attrType().ascii()<<"]";
 }
-void AstBasicDType::dump(ostream& str) {
+void AstBasicDType::dump(std::ostream& str) {
     this->AstNodeDType::dump(str);
     str<<" kwd="<<keyword().ascii();
     if (isRanged() && !rangep()) str<<" range=["<<left()<<":"<<right()<<"]";
 }
-void AstCCast::dump(ostream& str) {
+void AstCCast::dump(std::ostream& str) {
     this->AstNode::dump(str);
     str<<" sz"<<size();
 }
-void AstCell::dump(ostream& str) {
+void AstCell::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (recursive()) str<<" [RECURSIVE]";
     if (modp()) { str<<" -> "; modp()->dump(str); }
     else { str<<" ->UNLINKED:"<<modName(); }
 }
-void AstCellInline::dump(ostream& str) {
+void AstCellInline::dump(std::ostream& str) {
     this->AstNode::dump(str);
     str<<" -> "<<origModName();
 }
-void AstDisplay::dump(ostream& str) {
+void AstDisplay::dump(std::ostream& str) {
     this->AstNode::dump(str);
     //str<<" "<<displayType().ascii();
 }
-void AstEnumItemRef::dump(ostream& str) {
+void AstEnumItemRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
     str<<" -> ";
     if (itemp()) { itemp()->dump(str); }
     else { str<<"UNLINKED"; }
 }
-void AstIfaceRefDType::dump(ostream& str) {
+void AstIfaceRefDType::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (cellName()!="") { str<<" cell="<<cellName(); }
     if (ifaceName()!="") { str<<" if="<<ifaceName(); }
@@ -864,54 +864,54 @@ void AstIfaceRefDType::dump(ostream& str) {
     else if (ifacep()) { str<<" -> "; ifacep()->dump(str); }
     else { str<<" -> UNLINKED"; }
 }
-void AstIfaceRefDType::dumpSmall(ostream& str) {
+void AstIfaceRefDType::dumpSmall(std::ostream& str) {
     this->AstNodeDType::dumpSmall(str);
     str<<"iface";
 }
-void AstJumpGo::dump(ostream& str) {
+void AstJumpGo::dump(std::ostream& str) {
     this->AstNode::dump(str);
     str<<" -> ";
     if (labelp()) { labelp()->dump(str); }
     else { str<<"%Error:UNLINKED"; }
 }
-void AstModportFTaskRef::dump(ostream& str) {
+void AstModportFTaskRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (isExport()) str<<" EXPORT";
     if (isImport()) str<<" IMPORT";
     if (ftaskp()) { str<<" -> "; ftaskp()->dump(str); }
     else { str<<" -> UNLINKED"; }
 }
-void AstModportVarRef::dump(ostream& str) {
+void AstModportVarRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
     str<<" "<<varType();
     if (varp()) { str<<" -> "; varp()->dump(str); }
     else { str<<" -> UNLINKED"; }
 }
-void AstPin::dump(ostream& str) {
+void AstPin::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (modVarp()) { str<<" -> "; modVarp()->dump(str); }
     else { str<<" ->UNLINKED"; }
     if (svImplicit()) str<<" [.SV]";
 }
-void AstTypedef::dump(ostream& str) {
+void AstTypedef::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (attrPublic()) str<<" [PUBLIC]";
 }
-void AstRange::dump(ostream& str) {
+void AstRange::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (littleEndian()) str<<" [LITTLE]";
 }
-void AstRefDType::dump(ostream& str) {
+void AstRefDType::dump(std::ostream& str) {
     this->AstNodeDType::dump(str);
     if (defp()) { str<<" -> "; defp()->dump(str); }
     else { str<<" -> UNLINKED"; }
 }
-void AstNodeClassDType::dump(ostream& str) {
+void AstNodeClassDType::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (packed()) str<<" [PACKED]";
     if (isFourstate()) str<<" [4STATE]";
 }
-void AstNodeDType::dump(ostream& str) {
+void AstNodeDType::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (generic()) str<<" [GENERIC]";
     if (AstNodeDType* dtp = virtRefDTypep()) {
@@ -919,7 +919,7 @@ void AstNodeDType::dump(ostream& str) {
 	dtp->dumpSmall(str);
     }
 }
-void AstNodeDType::dumpSmall(ostream& str) {
+void AstNodeDType::dumpSmall(std::ostream& str) {
     str<<"("
        <<(generic()?"G/":"")
        <<((isSigned()&&!isDouble())?"s":"")
@@ -932,16 +932,16 @@ void AstNodeDType::dumpSmall(ostream& str) {
     if (!widthSized()) str<<"/"<<widthMin();
     str<<")";
 }
-void AstNodeArrayDType::dumpSmall(ostream& str) {
+void AstNodeArrayDType::dumpSmall(std::ostream& str) {
     this->AstNodeDType::dumpSmall(str);
     if (castPackArrayDType()) str<<"p"; else str<<"u";
     str<<declRange();
 }
-void AstNodeArrayDType::dump(ostream& str) {
+void AstNodeArrayDType::dump(std::ostream& str) {
     this->AstNodeDType::dump(str);
     str<<" "<<declRange();
 }
-void AstNodeModule::dump(ostream& str) {
+void AstNodeModule::dump(std::ostream& str) {
     this->AstNode::dump(str);
     str<<"  L"<<level();
     if (modPublic()) str<<" [P]";
@@ -950,33 +950,33 @@ void AstNodeModule::dump(ostream& str) {
     if (recursiveClone()) str<<" [RECURSIVE-CLONE]";
     else if (recursive()) str<<" [RECURSIVE]";
 }
-void AstPackageExport::dump(ostream& str) {
+void AstPackageExport::dump(std::ostream& str) {
     this->AstNode::dump(str);
     str<<" -> "<<packagep();
 }
-void AstPackageImport::dump(ostream& str) {
+void AstPackageImport::dump(std::ostream& str) {
     this->AstNode::dump(str);
     str<<" -> "<<packagep();
 }
-void AstSel::dump(ostream& str) {
+void AstSel::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (declRange().ranged()) {
 	str<<" decl"<<declRange()<<"]";
 	if (declElWidth()!=1) str<<"/"<<declElWidth();
     }
 }
-void AstSliceSel::dump(ostream& str) {
+void AstSliceSel::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (declRange().ranged()) {
         str<<" decl"<<declRange();
     }
 }
-void AstTypeTable::dump(ostream& str) {
+void AstTypeTable::dump(std::ostream& str) {
     this->AstNode::dump(str);
     for (int i=0; i<(int)(AstBasicDTypeKwd::_ENUM_MAX); ++i) {
 	if (AstBasicDType* subnodep=m_basicps[i]) {
 	    str<<endl;  // Newline from caller, so newline first
-	    str<<"\t\t"<<setw(8)<<AstBasicDTypeKwd(i).ascii();
+            str<<"\t\t"<<std::setw(8)<<AstBasicDTypeKwd(i).ascii();
 	    str<<"  -> ";
 	    subnodep->dump(str);
 	}
@@ -987,10 +987,10 @@ void AstTypeTable::dump(ostream& str) {
 	    for (LogicMap::const_iterator it = mapr.begin(); it != mapr.end(); ++it) {
 		AstBasicDType* dtypep = it->second;
 		str<<endl;  // Newline from caller, so newline first
-		stringstream nsstr;
+                std::stringstream nsstr;
 		nsstr<<(isbit?"bw":"lw")
 		     <<it->first.first<<"/"<<it->first.second;
-		str<<"\t\t"<<setw(8)<<nsstr.str();
+                str<<"\t\t"<<std::setw(8)<<nsstr.str();
 		if (issigned) str<<" s"; else str<<" u";
 		str<<"  ->  ";
 		dtypep->dump(str);
@@ -1008,17 +1008,17 @@ void AstTypeTable::dump(ostream& str) {
     }
     // Note get newline from caller too.
 }
-void AstUnsizedArrayDType::dumpSmall(ostream& str) {
+void AstUnsizedArrayDType::dumpSmall(std::ostream& str) {
     this->AstNodeDType::dumpSmall(str);
     str<<"[]";
 }
-void AstVarScope::dump(ostream& str) {
+void AstVarScope::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (isCircular()) str<<" [CIRC]";
     if (varp()) { str<<" -> "; varp()->dump(str); }
     else { str<<" ->UNLINKED"; }
 }
-void AstVarXRef::dump(ostream& str) {
+void AstVarXRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (packagep()) { str<<" pkg="<<(void*)packagep(); }
     if (lvalue()) str<<" [LV] => ";
@@ -1029,7 +1029,7 @@ void AstVarXRef::dump(ostream& str) {
     else if (varp()) { varp()->dump(str); }
     else { str<<"UNLINKED"; }
 }
-void AstVarRef::dump(ostream& str) {
+void AstVarRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (packagep()) { str<<" pkg="<<(void*)packagep(); }
     if (lvalue()) str<<" [LV] => ";
@@ -1038,7 +1038,7 @@ void AstVarRef::dump(ostream& str) {
     else if (varp()) { varp()->dump(str); }
     else { str<<"UNLINKED"; }
 }
-void AstVar::dump(ostream& str) {
+void AstVar::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (isSc()) str<<" [SC]";
     if (isPrimaryIO()) str<<(isInout()?" [PIO]":(isInput()?" [PI]":" [PO]"));
@@ -1062,35 +1062,35 @@ void AstVar::dump(ostream& str) {
     if (!attrClocker().unknown()) str<<" ["<<attrClocker().ascii()<<"] ";
     str<<" "<<varType();
 }
-void AstSenTree::dump(ostream& str) {
+void AstSenTree::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (isMulti()) str<<" [MULTI]";
 }
-void AstSenItem::dump(ostream& str) {
+void AstSenItem::dump(std::ostream& str) {
     this->AstNode::dump(str);
     str<<" ["<<edgeType().ascii()<<"]";
 }
-void AstParseRef::dump(ostream& str) {
+void AstParseRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
     str<<" ["<<expect().ascii()<<"]";
 }
-void AstPackageRef::dump(ostream& str) {
+void AstPackageRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (packagep()) { str<<" pkg="<<(void*)packagep(); }
     str<<" -> ";
     if (packagep()) { packagep()->dump(str); }
     else { str<<"UNLINKED"; }
 }
-void AstDot::dump(ostream& str) {
+void AstDot::dump(std::ostream& str) {
     this->AstNode::dump(str);
 }
-void AstActive::dump(ostream& str) {
+void AstActive::dump(std::ostream& str) {
     this->AstNode::dump(str);
     str<<" => ";
     if (sensesp()) { sensesp()->dump(str); }
     else { str<<"UNLINKED"; }
 }
-void AstNodeFTaskRef::dump(ostream& str) {
+void AstNodeFTaskRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (packagep()) { str<<" pkg="<<(void*)packagep(); }
     str<<" -> ";
@@ -1098,7 +1098,7 @@ void AstNodeFTaskRef::dump(ostream& str) {
     if (taskp()) { taskp()->dump(str); }
     else { str<<"UNLINKED"; }
 }
-void AstNodeFTask::dump(ostream& str) {
+void AstNodeFTask::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (taskPublic()) str<<" [PUBLIC]";
     if (prototype()) str<<" [PROTOTYPE]";
@@ -1108,34 +1108,34 @@ void AstNodeFTask::dump(ostream& str) {
     if (dpiOpenParent()) str<<" [DPIOPENPARENT]";
     if ((dpiImport() || dpiExport()) && cname()!=name()) str<<" [c="<<cname()<<"]";
 }
-void AstBegin::dump(ostream& str) {
+void AstBegin::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (unnamed()) str<<" [UNNAMED]";
     if (generate()) str<<" [GEN]";
     if (genforp()) str<<" [GENFOR]";
 }
-void AstCoverDecl::dump(ostream& str) {
+void AstCoverDecl::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (this->dataDeclNullp()) {
 	str<<" -> ";
 	this->dataDeclNullp()->dump(str);
     } else {
-	if (binNum()) { str<<" bin"<<dec<<binNum(); }
+        if (binNum()) { str<<" bin"<<std::dec<<binNum(); }
     }
 }
-void AstCoverInc::dump(ostream& str) {
+void AstCoverInc::dump(std::ostream& str) {
     this->AstNode::dump(str);
     str<<" -> ";
     if (declp()) { declp()->dump(str); }
     else { str<<"%Error:UNLINKED"; }
 }
-void AstTraceInc::dump(ostream& str) {
+void AstTraceInc::dump(std::ostream& str) {
     this->AstNode::dump(str);
     str<<" -> ";
     if (declp()) { declp()->dump(str); }
     else { str<<"%Error:UNLINKED"; }
 }
-void AstNodeText::dump(ostream& str) {
+void AstNodeText::dump(std::ostream& str) {
     this->AstNode::dump(str);
     string out = text();
     string::size_type pos;
@@ -1146,19 +1146,19 @@ void AstNodeText::dump(ostream& str) {
     str<<" \""<<out<<"\"";
 }
 
-void AstCFile::dump(ostream& str) {
+void AstCFile::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (source()) str<<" [SRC]";
     if (slow()) str<<" [SLOW]";
 }
-void AstCCall::dump(ostream& str) {
+void AstCCall::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (funcp()) {
 	str<<" "<<funcp()->name()<<" => ";
 	funcp()->dump(str);
     }
 }
-void AstCFunc::dump(ostream& str) {
+void AstCFunc::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (slow()) str<<" [SLOW]";
     if (pure()) str<<" [PURE]";

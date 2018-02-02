@@ -50,9 +50,9 @@ private:
     AstUser2InUse	m_inuser2;
 
     // TYPES
-    typedef map<AstPackage*, AstScope*> PackageScopeMap;
-    typedef map<pair<AstVar*, AstScope*>, AstVarScope*> VarScopeMap;
-    typedef set<pair<AstVarRef*, AstScope*> > VarRefScopeSet;
+    typedef std::map<AstPackage*, AstScope*> PackageScopeMap;
+    typedef std::map<std::pair<AstVar*, AstScope*>, AstVarScope*> VarScopeMap;
+    typedef std::set<std::pair<AstVarRef*, AstScope*> > VarRefScopeSet;
 
     // STATE, inside processing a single module
     AstNodeModule* m_modp;	// Current module

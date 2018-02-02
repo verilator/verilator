@@ -47,11 +47,11 @@ public:
 	return (m_on>rh.m_on);
     }
 };
-ostream& operator<<(ostream& os, V3ConfigLine rhs) { return os<<rhs.m_lineno<<", "<<rhs.m_code<<", "<<rhs.m_on; }
+std::ostream& operator<<(std::ostream& os, V3ConfigLine rhs) { return os<<rhs.m_lineno<<", "<<rhs.m_code<<", "<<rhs.m_on; }
 
 class V3ConfigIgnores {
-    typedef multiset<V3ConfigLine> IgnLines;	// list of {line,code,on}
-    typedef map<string,IgnLines> IgnFiles;	// {filename} => list of {line,code,on}
+    typedef std::multiset<V3ConfigLine> IgnLines;  // list of {line,code,on}
+    typedef std::map<string,IgnLines> IgnFiles;  // {filename} => list of {line,code,on}
 
     // MEMBERS
     string		m_lastFilename;	// Last filename looked up

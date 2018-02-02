@@ -89,15 +89,15 @@ private:
     AstUser1InUse	m_inuser1;
 
     // TYPES
-    typedef multimap<AstVarScope*,AstNodeAssign*>	AssignMap;
+    typedef std::multimap<AstVarScope*,AstNodeAssign*>  AssignMap;
 
     // STATE
     AstNodeModule*		m_modp;		// Current module
-    vector<AstVar*>		m_varsp;	// List of all encountered to avoid another loop through tree
-    vector<AstNode*>		m_dtypesp;	// List of all encountered to avoid another loop through tree
-    vector<AstVarScope*>	m_vscsp;	// List of all encountered to avoid another loop through tree
-    vector<AstScope*>		m_scopesp;	// List of all encountered to avoid another loop through tree
-    vector<AstCell*>		m_cellsp;	// List of all encountered to avoid another loop through tree
+    std::vector<AstVar*>        m_varsp;        // List of all encountered to avoid another loop through tree
+    std::vector<AstNode*>       m_dtypesp;      // List of all encountered to avoid another loop through tree
+    std::vector<AstVarScope*>   m_vscsp;        // List of all encountered to avoid another loop through tree
+    std::vector<AstScope*>      m_scopesp;      // List of all encountered to avoid another loop through tree
+    std::vector<AstCell*>       m_cellsp;       // List of all encountered to avoid another loop through tree
     AssignMap			m_assignMap;	// List of all simple assignments for each variable
     bool			m_elimUserVars;	// Allow removal of user's vars
     bool			m_elimDTypes;	// Allow removal of DTypes
@@ -307,7 +307,7 @@ private:
     void deadCheckScope() {
 	for (bool retry=true; retry; ) {
 	    retry = false;
-	    for (vector<AstScope*>::iterator it = m_scopesp.begin(); it != m_scopesp.end();++it) {
+            for (std::vector<AstScope*>::iterator it = m_scopesp.begin(); it != m_scopesp.end();++it) {
 		AstScope* scp = *it;
 		if (!scp)
 		    continue;
@@ -326,7 +326,7 @@ private:
     }
 
     void deadCheckCells() {
-	for (vector<AstCell*>::iterator it = m_cellsp.begin(); it!=m_cellsp.end(); ++it) {
+        for (std::vector<AstCell*>::iterator it = m_cellsp.begin(); it!=m_cellsp.end(); ++it) {
 	    AstCell* cellp = *it;
 	    if (cellp->user1() == 0 && !cellp->modp()->stmtsp()) {
 		cellp->modp()->user1Inc(-1);
@@ -337,11 +337,11 @@ private:
 
     void deadCheckVar() {
 	// Delete any unused varscopes
-	for (vector<AstVarScope*>::iterator it = m_vscsp.begin(); it!=m_vscsp.end(); ++it) {
+        for (std::vector<AstVarScope*>::iterator it = m_vscsp.begin(); it!=m_vscsp.end(); ++it) {
 	    AstVarScope* vscp = *it;
 	    if (vscp->user1() == 0) {
 		UINFO(4,"  Dead "<<vscp<<endl);
-		pair <AssignMap::iterator,AssignMap::iterator> eqrange = m_assignMap.equal_range(vscp);
+                std::pair<AssignMap::iterator,AssignMap::iterator> eqrange = m_assignMap.equal_range(vscp);
 		for (AssignMap::iterator itr = eqrange.first; itr != eqrange.second; ++itr) {
 		    AstNodeAssign* assp = itr->second;
 		    UINFO(4,"	 Dead assign "<<assp<<endl);
@@ -355,7 +355,7 @@ private:
 	}
 	for (bool retry=true; retry; ) {
 	    retry = false;
-	    for (vector<AstVar *>::iterator it = m_varsp.begin(); it != m_varsp.end();++it) {
+            for (std::vector<AstVar *>::iterator it = m_varsp.begin(); it != m_varsp.end();++it) {
 		AstVar* varp = *it;
 		if (!varp)
 		    continue;
@@ -370,7 +370,7 @@ private:
 		}
 	    }
 	}
-	for (vector<AstNode*>::iterator it = m_dtypesp.begin(); it != m_dtypesp.end();++it) {
+        for (std::vector<AstNode*>::iterator it = m_dtypesp.begin(); it != m_dtypesp.end();++it) {
 	    if ((*it)->user1() == 0) {
 		AstNodeClassDType *classp;
 		// It's possible that there if a reference to each individual member, but

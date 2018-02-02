@@ -53,7 +53,7 @@ class SenTreeFinder : public AstNVisitor {
 private:
     // STATE
     AstTopScope*	m_topscopep;		// Top scope to add statement to
-    vector<AstSenTree*>	m_treesp;	// List of sensitive blocks, for folding
+    std::vector<AstSenTree*> m_treesp;  // List of sensitive blocks, for folding
 
     // VISITORS
     static int debug() {
@@ -100,7 +100,7 @@ public:
 	// Not the fastest, but there tend to be few clocks
 	AstSenTree* treep = NULL;
 	//sensesp->dumpTree(cout,"  Lookingfor: ");
-	for (vector<AstSenTree*>::iterator it = m_treesp.begin(); it!=m_treesp.end(); ++it) {
+        for (std::vector<AstSenTree*>::iterator it = m_treesp.begin(); it!=m_treesp.end(); ++it) {
 	    treep = *it;
 	    if (treep) {  // Not deleted
 		if (treep->sameTree(sensesp)) {

@@ -87,14 +87,14 @@
 //######################################################################
 
 enum Stage { PRELIM=1,FINAL=2,BOTH=3 };  // Numbers are a bitmask <0>=prelim, <1>=final
-ostream& operator<<(ostream& str, const Stage& rhs) { return str<<("-PFB"[(int)rhs]); }
+std::ostream& operator<<(std::ostream& str, const Stage& rhs) { return str<<("-PFB"[(int)rhs]); }
 
 enum Determ {
     SELF,		// Self-determined
     CONTEXT,		// Context-determined
     ASSIGN		// Assignment-like where sign comes from RHS only
 };
-ostream& operator<<(ostream& str, const Determ& rhs) {
+std::ostream& operator<<(std::ostream& str, const Determ& rhs) {
     static const char* const s_det[] = {"SELF","CNTX","ASSN"};
     return str<<s_det[rhs];
 }
@@ -137,7 +137,7 @@ public:
     }
     bool prelim() const { return m_stage & PRELIM; }
     bool final() const { return m_stage & FINAL; }
-    void dump(ostream& str) const {
+    void dump(std::ostream& str) const {
 	if (!m_dtypep) {
 	    str<<"  VUP(s="<<m_stage<<",self)";
 	} else {
@@ -145,7 +145,7 @@ public:
 	}
     }
 };
-ostream& operator<<(ostream& str, const WidthVP* vup) {
+std::ostream& operator<<(std::ostream& str, const WidthVP* vup) {
     if (vup) vup->dump(str);
     return str;
 }
@@ -180,8 +180,8 @@ public:
 class WidthVisitor : public AstNVisitor {
 private:
     // TYPES
-    typedef map<pair<AstNodeDType*,AstAttrType>, AstVar*> TableMap;
-    typedef map<int,AstPatMember*> PatVecMap;
+    typedef std::map<std::pair<AstNodeDType*,AstAttrType>, AstVar*> TableMap;
+    typedef std::map<int,AstPatMember*> PatVecMap;
 
     // STATE
     WidthVP*	m_vup;		// Current node state
@@ -363,8 +363,8 @@ private:
 	    if (nodep->expr1p()->isDouble() || nodep->expr2p()->isDouble()) {
 		nodep->dtypeSetDouble();
 	    } else {
-		int width  = max(nodep->expr1p()->width(),    nodep->expr2p()->width());
-		int mwidth = max(nodep->expr1p()->widthMin(), nodep->expr2p()->widthMin());
+                int width  = std::max(nodep->expr1p()->width(),    nodep->expr2p()->width());
+                int mwidth = std::max(nodep->expr1p()->widthMin(), nodep->expr2p()->widthMin());
 		bool issigned = nodep->expr1p()->isSigned() && nodep->expr2p()->isSigned();
 		nodep->dtypeSetLogicSized(width,mwidth,AstNumeric::fromBool(issigned));
 	    }
@@ -542,7 +542,7 @@ private:
 	if (m_vup->prelim()) {
 	    // Don't need to iterate because V3Const already constified
 	    int width = nodep->elementsConst();
-	    if (width > (1<<28)) nodep->v3error("Width of bit range is huge; vector of over 1billion bits: 0x"<<hex<<width);
+            if (width > (1<<28)) nodep->v3error("Width of bit range is huge; vector of over 1billion bits: 0x"<<std::hex<<width);
 	    // Note width() not set on range; use elementsConst()
 	    if (nodep->littleEndian() && !nodep->backp()->castUnpackArrayDType()
 		&& !nodep->backp()->castCell()) {  // For cells we warn in V3Inst
@@ -907,7 +907,7 @@ private:
 	case AstAttrType::DIM_DIMENSIONS:
 	case AstAttrType::DIM_UNPK_DIMENSIONS: {
 	    if (!nodep->fromp() || !nodep->fromp()->dtypep()) nodep->v3fatalSrc("Unsized expression");
-	    pair<uint32_t,uint32_t> dim = nodep->fromp()->dtypep()->dimensions(true);
+            std::pair<uint32_t,uint32_t> dim = nodep->fromp()->dtypep()->dimensions(true);
 	    int val = (nodep->attrType()==AstAttrType::DIM_UNPK_DIMENSIONS
 		       ? dim.second : (dim.first+dim.second));
 	    nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::Signed32(), val)); nodep->deleteTree(); VL_DANGLING(nodep);
@@ -921,7 +921,7 @@ private:
 	case AstAttrType::DIM_RIGHT:
 	case AstAttrType::DIM_SIZE: {
 	    if (!nodep->fromp() || !nodep->fromp()->dtypep()) nodep->v3fatalSrc("Unsized expression");
-	    pair<uint32_t,uint32_t> dim = nodep->fromp()->dtypep()->skipRefp()->dimensions(true);
+            std::pair<uint32_t,uint32_t> dim = nodep->fromp()->dtypep()->skipRefp()->dimensions(true);
 	    uint32_t msbdim = dim.first+dim.second;
 	    if (!nodep->dimp() || nodep->dimp()->castConst() || msbdim<1) {
 		int dim = !nodep->dimp() ? 1 : nodep->dimp()->castConst()->toSInt();
@@ -1114,7 +1114,7 @@ private:
 	    // However the output width is exactly that requested.
 	    // So two steps, first do the calculation's width (max of the two widths)
 	    {
-		int calcWidth  = max(width, underDtp->width());
+                int calcWidth = std::max(width, underDtp->width());
                 AstNodeDType* calcDtp = (underDtp->isFourstate()
 					 ? nodep->findLogicDType(calcWidth, calcWidth, underDtp->numeric())
 					 : nodep->findBitDType(calcWidth, calcWidth, underDtp->numeric()));
@@ -1280,7 +1280,7 @@ private:
 	// Assign missing values
 	V3Number num (nodep->fileline(), nodep->width(), 0);
 	V3Number one (nodep->fileline(), nodep->width(), 1);
-	map<V3Number,AstEnumItem*> inits;
+        std::map<V3Number,AstEnumItem*> inits;
 	for (AstEnumItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castEnumItem()) {
 	    if (itemp->valuep()) {
 		if (debug()>=9) { UINFO(0,"EnumInit "<<itemp<<endl); itemp->valuep()->dumpTree(cout,"-EnumInit: "); }
@@ -1363,8 +1363,8 @@ private:
 	int width = nodep->exprp()->width();
 	int mwidth = nodep->exprp()->widthMin();
 	for (AstNode* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()) {
-	    width = max(width,itemp->width());
-	    mwidth = max(mwidth,itemp->widthMin());
+            width = std::max(width,itemp->width());
+            mwidth = std::max(mwidth,itemp->widthMin());
 	}
 	// Apply width
 	AstNodeDType* subDTypep = nodep->findLogicDType(width,mwidth,nodep->exprp()->dtypep()->numeric());
@@ -1437,7 +1437,7 @@ private:
 	    backip = itemp->backp()->castMemberDType();
 	    itemp->lsb(lsb);
 	    if (nodep->castUnionDType()) {
-		width = max(width, itemp->width());
+                width = std::max(width, itemp->width());
 	    } else {
 		lsb += itemp->width();
 		width += itemp->width();
@@ -1704,7 +1704,7 @@ private:
 		// which member each AstPatMember corresponds to before we can
 		// determine the dtypep for that PatMember's value, and then
 		// width the initial value appropriately.
-		typedef map<AstMemberDType*,AstPatMember*> PatMap;
+                typedef std::map<AstMemberDType*,AstPatMember*> PatMap;
 		PatMap patmap;
 		{
 		    AstMemberDType* memp = classp->membersp();
@@ -1729,7 +1729,7 @@ private:
 			} else if (!memp && patp) { patp->v3error("Assignment pattern contains too many elements");
 			    memp=NULL; patp=NULL; break;
 			} else {
-			    pair<PatMap::iterator, bool> ret = patmap.insert(make_pair(memp, patp));
+                            std::pair<PatMap::iterator, bool> ret = patmap.insert(make_pair(memp, patp));
 			    if (!ret.second) {
 				patp->v3error("Assignment pattern contains duplicate entry: " << patp->keyp()->castText()->text());
 			    }
@@ -1978,8 +1978,8 @@ private:
 		    if (condp->dtypep()->isDouble()) {
 			subDTypep = nodep->findDoubleDType();
 		    } else {
-			int width  = max(subDTypep->width(),condp->width());
-			int mwidth = max(subDTypep->widthMin(),condp->widthMin());
+                        int width  = std::max(subDTypep->width(),condp->width());
+                        int mwidth = std::max(subDTypep->widthMin(),condp->widthMin());
 			bool issigned = subDTypep->isSigned() && condp->isSigned();
 			subDTypep = nodep->findLogicDType(width,mwidth,AstNumeric::fromBool(issigned));
 		    }
@@ -2676,8 +2676,8 @@ private:
 		if (AstNodeBiop* newp=replaceWithUOrSVersion(nodep, signedFl)) { VL_DANGLING(nodep);
 		    nodep = newp;  // Process new node instead
 		}
-		int width  = max(nodep->lhsp()->width(),    nodep->rhsp()->width());
-		int ewidth = max(nodep->lhsp()->widthMin(), nodep->rhsp()->widthMin());
+                int width  = std::max(nodep->lhsp()->width(),    nodep->rhsp()->width());
+                int ewidth = std::max(nodep->lhsp()->widthMin(), nodep->rhsp()->widthMin());
 		AstNodeDType* subDTypep = nodep->findLogicDType(width, ewidth,
 								AstNumeric::fromBool(signedFl));
 		iterateCheck(nodep,"LHS",nodep->lhsp(),CONTEXT,FINAL,subDTypep,signedFl?EXTEND_LHS:EXTEND_ZERO);
@@ -2846,8 +2846,8 @@ private:
 	    userIterateAndNext(nodep->rhsp(), WidthVP(CONTEXT,PRELIM).p());
 	    checkCvtUS(nodep->lhsp());
 	    checkCvtUS(nodep->rhsp());
-	    int width  = max(nodep->lhsp()->width(),    nodep->rhsp()->width());
-	    int mwidth = max(nodep->lhsp()->widthMin(), nodep->rhsp()->widthMin());
+            int width  = std::max(nodep->lhsp()->width(),    nodep->rhsp()->width());
+            int mwidth = std::max(nodep->lhsp()->widthMin(), nodep->rhsp()->widthMin());
 	    bool expSigned = (nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned());
 	    nodep->dtypeChgWidthSigned(width,mwidth,AstNumeric::fromBool(expSigned));
 	}
@@ -2893,8 +2893,8 @@ private:
 		iterateCheckReal(nodep,"RHS",nodep->rhsp(),FINAL);
 		return;
 	    } else {
-		int width  = max(nodep->lhsp()->width(),    nodep->rhsp()->width());
-		int mwidth = max(nodep->lhsp()->widthMin(), nodep->rhsp()->widthMin());
+                int width  = std::max(nodep->lhsp()->width(),    nodep->rhsp()->width());
+                int mwidth = std::max(nodep->lhsp()->widthMin(), nodep->rhsp()->widthMin());
 		bool expSigned = (nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned());
 		nodep->dtypeChgWidthSigned(width,mwidth,AstNumeric::fromBool(expSigned));
 	    }
@@ -3206,8 +3206,8 @@ private:
 		    // IEEE: Signedness is solely determined by the RHS (underp), not by the LHS (expDTypep)
 		    if (underp->isSigned() != subDTypep->isSigned()
 			|| underp->width() != subDTypep->width()) {
-			subDTypep = nodep->findLogicDType(max(subDTypep->width(), underp->width()),
-							  max(subDTypep->widthMin(), underp->widthMin()),
+                        subDTypep = nodep->findLogicDType(std::max(subDTypep->width(), underp->width()),
+                                                          std::max(subDTypep->widthMin(), underp->widthMin()),
 							  AstNumeric::fromBool(underp->isSigned()));
 			UINFO(9,"Assignment of opposite-signed RHS to LHS: "<<nodep<<endl);
 		    }
@@ -3652,7 +3652,7 @@ private:
 
 	// Find valid values and populate
 	if (!nodep->itemsp()) nodep->v3fatalSrc("enum without items");
-	vector<AstNode*> values;
+        std::vector<AstNode*> values;
 	values.reserve(msbdim+1);
 	for (unsigned i=0; i<(msbdim+1); ++i) {
 	    values[i] = NULL;

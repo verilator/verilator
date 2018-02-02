@@ -109,7 +109,7 @@ private:
     AstUser4InUse	m_inuser4;
 
     // TYPES
-    typedef std::map<pair<AstScope*,AstVar*>,AstVarScope*> VarToScopeMap;
+    typedef std::map<std::pair<AstScope*,AstVar*>,AstVarScope*> VarToScopeMap;
     // MEMBERS
     VarToScopeMap	m_varToScopeMap;	// Map for Var -> VarScope mappings
     AstAssignW*		m_assignwp;		// Current assignment
@@ -169,7 +169,7 @@ private:
 	    if (AstVarScope* vscp = stmtp->castVarScope()) {
 		if (vscp->varp()->isFuncLocal()) {
 		    UINFO(9,"   funcvsc "<<vscp<<endl);
-		    m_varToScopeMap.insert(make_pair(make_pair(nodep, vscp->varp()), vscp));
+                    m_varToScopeMap.insert(std::make_pair(std::make_pair(nodep, vscp->varp()), vscp));
 		}
 	    }
 	}
@@ -1272,7 +1272,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     // Missing pin/expr?  We return (pinvar, NULL)
     // Extra   pin/expr?  We clean it up
 
-    typedef map<string,int> NameToIndex;
+    typedef std::map<string,int> NameToIndex;
     NameToIndex nameToIndex;
     V3TaskConnects tconnects;
     if (!nodep->taskp()) nodep->v3fatalSrc("unlinked");

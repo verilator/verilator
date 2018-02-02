@@ -33,8 +33,8 @@
 //######################################################################
 // V3Options - Command line options
 
-typedef vector<string> VlStringList;
-typedef set<string> VlStringSet;
+typedef std::vector<string> VlStringList;
+typedef std::set<string> VlStringSet;
 
 class VlcOptions {
     // MEMBERS (general options)

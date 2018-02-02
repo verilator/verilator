@@ -105,11 +105,11 @@ public:
 
 private:
     // TYPES
-    typedef multimap<string,VSymEnt*> NameScopeSymMap;
-    typedef map<VSymEnt*,VSymEnt*> ScopeAliasMap;
-    typedef set<pair<AstNodeModule*,string> > ImplicitNameSet;
-    typedef vector<VSymEnt*> IfaceVarSyms;
-    typedef vector<pair<AstIface*,VSymEnt*> > IfaceModSyms;
+    typedef std::multimap<string,VSymEnt*> NameScopeSymMap;
+    typedef std::map<VSymEnt*,VSymEnt*> ScopeAliasMap;
+    typedef std::set<std::pair<AstNodeModule*,string> > ImplicitNameSet;
+    typedef std::vector<VSymEnt*> IfaceVarSyms;
+    typedef std::vector<std::pair<AstIface*,VSymEnt*> > IfaceModSyms;
 
     static LinkDotState* s_errorThisp;		// Last self, for error reporting only
 
@@ -135,9 +135,9 @@ public:
     void dump(const string& nameComment="linkdot", bool force=false) {
 	if (debug()>=6 || force) {
 	    string filename = v3Global.debugFilename(nameComment)+".txt";
-	    const vl_unique_ptr<ofstream> logp (V3File::new_ofstream(filename));
+            const vl_unique_ptr<std::ofstream> logp (V3File::new_ofstream(filename));
 	    if (logp->fail()) v3fatalSrc("Can't write "<<filename);
-	    ostream& os = *logp;
+            std::ostream& os = *logp;
 	    m_syms.dump(os);
 	    bool first = true;
 	    for (int samn=0; samn<SAMN__MAX; ++samn) {
@@ -1496,7 +1496,7 @@ private:
 	}
 	string ascii() const {
 	    static const char* const names[] = { "NONE","PACKAGE","SCOPE","FINAL","MEMBER" };
-	    ostringstream sstr;
+            std::ostringstream sstr;
 	    sstr<<"ds="<<names[m_dotPos];
 	    sstr<<"  dse"<<(void*)m_dotSymp;
 	    sstr<<"  txt="<<m_dotText;

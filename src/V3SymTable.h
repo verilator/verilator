@@ -40,8 +40,8 @@ class VSymEnt;
 //######################################################################
 // Symbol table
 
-typedef set<VSymEnt*> VSymMap;
-typedef set<const VSymEnt*> VSymConstMap;
+typedef std::set<VSymEnt*> VSymMap;
+typedef std::set<const VSymEnt*> VSymConstMap;
 
 class VSymEnt {
     // Symbol table that can have a "superior" table for resolving upper references
@@ -66,9 +66,9 @@ private:
     static inline int debug() { return 0; }  // NOT runtime, too hot of a function
 #endif
 public:
-    void dumpIterate(ostream& os, VSymConstMap& doneSymsr, const string& indent, int numLevels, const string& searchName) const {
-	os<<indent<<"+ "<<left<<setw(30)<<(searchName==""?"\"\"":searchName)<<setw(0)<<right;
-	os<<"  se"<<(void*)(this)<<setw(0);
+    void dumpIterate(std::ostream& os, VSymConstMap& doneSymsr, const string& indent, int numLevels, const string& searchName) const {
+        os<<indent<<"+ "<<std::left<<std::setw(30)<<(searchName==""?"\"\"":searchName)<<std::setw(0)<<std::right;
+        os<<"  se"<<(void*)(this)<<std::setw(0);
 	os<<"  fallb=se"<<(void*)(m_fallbackp);
 	os<<"  n="<<nodep();
 	os<<endl;
@@ -83,7 +83,7 @@ public:
 	    }
 	}
     }
-    void dump(ostream& os, const string& indent="", int numLevels=1) const {
+    void dump(std::ostream& os, const string& indent="", int numLevels=1) const {
 	VSymConstMap doneSyms;
 	dumpIterate(os, doneSyms, indent, numLevels, "TOP");
     }
@@ -231,9 +231,9 @@ public:
 	    }
 	}
 	if (scopes=="") scopes="<no cells found>";
-	cerr<<V3Error::msgPrefix()<<"     Known scopes under '"<<prettyName<<"': "
-	    <<scopes<<endl;
-	if (debug()) dump(cerr,"\t\t      KnownScope: ", 1);
+        std::cerr<<V3Error::msgPrefix()<<"     Known scopes under '"<<prettyName<<"': "
+                 <<scopes<<endl;
+        if (debug()) dump(std::cerr,"\t\t      KnownScope: ", 1);
     }
 };
 
@@ -243,7 +243,7 @@ public:
 class VSymGraph {
     // Collection of symbol tables
     // TYPES
-    typedef vector<VSymEnt*>	SymStack;
+    typedef std::vector<VSymEnt*> SymStack;
 
     // MEMBERS
     VSymEnt*	m_symRootp;		// Root symbol table
@@ -265,7 +265,7 @@ public:
     // METHODS
     VSymEnt* rootp() const { return m_symRootp; }
     // Debug
-    void dump(ostream& os, const string& indent="") {
+    void dump(std::ostream& os, const string& indent="") {
 	VSymConstMap doneSyms;
 	os<<"SymEnt Dump:\n";
 	m_symRootp->dumpIterate(os, doneSyms, indent, 9999, "$root");
@@ -281,7 +281,7 @@ public:
 	if (v3Global.opt.dumpTree()) {
 	    string filename = v3Global.debugFilename(nameComment)+".txt";
 	    UINFO(2,"Dumping "<<filename<<endl);
-	    const vl_unique_ptr<ofstream> logp (V3File::new_ofstream(filename));
+            const vl_unique_ptr<std::ofstream> logp (V3File::new_ofstream(filename));
 	    if (logp->fail()) v3fatalSrc("Can't write "<<filename);
 	    dump(*logp, "");
 	}

@@ -53,7 +53,7 @@ class LifeState {
 public:
     V3Double0	m_statAssnDel;	// Statistic tracking
     V3Double0	m_statAssnCon;	// Statistic tracking
-    vector<AstNode*>	m_unlinkps;
+    std::vector<AstNode*> m_unlinkps;
 
 public:
     // CONSTRUCTORS
@@ -61,7 +61,7 @@ public:
     ~LifeState() {
 	V3Stats::addStatSum("Optimizations, Lifetime assign deletions", m_statAssnDel);
 	V3Stats::addStatSum("Optimizations, Lifetime constant prop", m_statAssnCon);
-	for (vector<AstNode*>::iterator it = m_unlinkps.begin(); it != m_unlinkps.end(); ++it) {
+        for (std::vector<AstNode*>::iterator it = m_unlinkps.begin(); it != m_unlinkps.end(); ++it) {
 	    (*it)->unlinkFrBack();
 	    (*it)->deleteTree();
 	}

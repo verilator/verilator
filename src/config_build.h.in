@@ -65,8 +65,14 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
+#include <string>
+#include <iostream>
 
-using namespace std;
+// Avoid needing std:: prefixes on some very common items
+typedef std::string string;
+using std::cout;
+using std::endl;
+using std::make_pair;
 
 //**********************************************************************
 //**** Configure-discovered library options

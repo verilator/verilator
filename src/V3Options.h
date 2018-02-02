@@ -37,12 +37,12 @@
 class V3OptionsImp;
 class FileLine;
 
-typedef vector<string> V3StringList;
-typedef set<string> V3StringSet;
+typedef std::vector<string> V3StringList;
+typedef std::set<string> V3StringSet;
 
 class V3Options {
     // TYPES
-    typedef map<string,int> DebugSrcMap;
+    typedef std::map<string,int> DebugSrcMap;
 
     // MEMBERS (general options)
     V3OptionsImp*	m_impp;		// Slow hidden options
@@ -58,7 +58,7 @@ class V3Options {
     V3StringList m_forceIncs;	// argument: -FI
     DebugSrcMap m_debugSrcs;	// argument: --debugi-<srcfile>=<level>
     DebugSrcMap m_dumpTrees;	// argument: --dump-treei-<srcfile>=<level>
-    map<string,string>  m_parameters;   // Parameters
+    std::map<string,string> m_parameters;  // Parameters
 
 
     bool	m_preprocOnly;	// main switch: -E

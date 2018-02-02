@@ -38,7 +38,7 @@ int V3Error::s_debugDefault = 0;
 int V3Error::s_errorLimit = V3Error::MAX_ERRORS;
 bool V3Error::s_warnFatal = true;
 int V3Error::s_tellManual = 0;
-ostringstream V3Error::s_errorStr;		// Error string being formed
+std::ostringstream V3Error::s_errorStr;  // Error string being formed
 V3ErrorCode V3Error::s_errorCode = V3ErrorCode::EC_FATAL;
 bool V3Error::s_errorSuppressed = false;
 bool V3Error::s_describedEachWarn[V3ErrorCode::_ENUM_MAX];
@@ -81,10 +81,10 @@ void V3Error::init() {
 }
 
 string V3Error::lineStr (const char* filename, int lineno) {
-    ostringstream out;
+    std::ostringstream out;
     const char* fnslashp = strrchr (filename, '/');
     if (fnslashp) filename = fnslashp+1;
-    out<<filename<<":"<<dec<<lineno<<":";
+    out<<filename<<":"<<std::dec<<lineno<<":";
     const char* const spaces = "                    ";
     size_t numsp = out.str().length(); if (numsp>20) numsp = 20;
     out<<(spaces + numsp);
@@ -101,11 +101,11 @@ void V3Error::incErrors() {
 void V3Error::abortIfWarnings() {
     bool exwarn = warnFatal() && warnCount();
     if (errorCount() && exwarn) {
-	v3fatal ("Exiting due to "<<dec<<errorCount()<<" error(s), "<<warnCount()<<" warning(s)\n");
+        v3fatal("Exiting due to "<<std::dec<<errorCount()<<" error(s), "<<warnCount()<<" warning(s)\n");
     } else if (errorCount()) {
-	v3fatal ("Exiting due to "<<dec<<errorCount()<<" error(s)\n");
+        v3fatal("Exiting due to "<<std::dec<<errorCount()<<" error(s)\n");
     } else if (exwarn) {
-	v3fatal ("Exiting due to "<<dec<<warnCount()<<" warning(s)\n");
+        v3fatal("Exiting due to "<<std::dec<<warnCount()<<" warning(s)\n");
     }
 }
 
@@ -139,7 +139,7 @@ string V3Error::msgPrefix() {
 
 void V3Error::vlAbort () {
     if (V3Error::debugDefault()) {
-	cerr<<msgPrefix()<<"Aborting since under --debug"<<endl;
+        std::cerr<<msgPrefix()<<"Aborting since under --debug"<<endl;
 	abort();
     } else {
 	exit(10);
@@ -162,7 +162,7 @@ string V3Error::warnMore() {
     return msgPrefix();
 }
 
-void V3Error::v3errorEnd (ostringstream& sstr) {
+void V3Error::v3errorEnd (std::ostringstream& sstr) {
 #if defined(__COVERITY__) || defined(__cppcheck__)
     if (s_errorCode==V3ErrorCode::EC_FATAL) __coverity_panic__(x);
 #endif
@@ -176,20 +176,20 @@ void V3Error::v3errorEnd (ostringstream& sstr) {
     if (s_messages.find(msg) != s_messages.end()) return;
     s_messages.insert(msg);
     // Output
-    cerr<<msg;
+    std::cerr<<msg;
     if (!s_errorSuppressed && !(s_errorCode==V3ErrorCode::EC_INFO
 				|| s_errorCode==V3ErrorCode::USERINFO)) {
 	if (!s_describedEachWarn[s_errorCode]
 	    && !s_pretendError[s_errorCode]) {
 	    s_describedEachWarn[s_errorCode] = true;
 	    if (s_errorCode>=V3ErrorCode::EC_FIRST_WARN && !s_describedWarnings) {
-		cerr<<msgPrefix()<<"Use \"/* verilator lint_off "<<s_errorCode.ascii()
-		    <<" */\" and lint_on around source to disable this message."<<endl;
+                std::cerr<<msgPrefix()<<"Use \"/* verilator lint_off "<<s_errorCode.ascii()
+                         <<" */\" and lint_on around source to disable this message."<<endl;
 		s_describedWarnings = true;
 	    }
 	    if (s_errorCode.dangerous()) {
-		cerr<<msgPrefix()<<"*** See the manual before disabling this,"<<endl;
-		cerr<<msgPrefix()<<"else you may end up with different sim results."<<endl;
+                std::cerr<<msgPrefix()<<"*** See the manual before disabling this,"<<endl;
+                std::cerr<<msgPrefix()<<"else you may end up with different sim results."<<endl;
 	    }
 	}
 	// If first warning is not the user's fault (internal/unsupported) then give the website
@@ -210,7 +210,7 @@ void V3Error::v3errorEnd (ostringstream& sstr) {
 	    if (!inFatal) {
 		inFatal = true;
 		if (s_tellManual==1) {
-		    cerr<<msgPrefix()<<"See the manual and http://www.veripool.org/verilator for more assistance."<<endl;
+                    std::cerr<<msgPrefix()<<"See the manual and http://www.veripool.org/verilator for more assistance."<<endl;
 		    s_tellManual = 2;
 		}
 #ifndef _V3ERROR_NO_GLOBAL_

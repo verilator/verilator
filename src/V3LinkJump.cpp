@@ -43,7 +43,7 @@
 class LinkJumpVisitor : public AstNVisitor {
 private:
     // TYPES
-    typedef vector<AstBegin*> BeginStack;
+    typedef std::vector<AstBegin*> BeginStack;
 
     // STATE
     AstNodeModule*	m_modp;		// Current module

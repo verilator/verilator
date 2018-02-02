@@ -158,7 +158,7 @@ class InstDeModVarVisitor : public AstNVisitor {
     // Expand all module variables, and save names for later reference
 private:
     // STATE
-    typedef map<string,AstVar*> VarNameMap;
+    typedef std::map<string,AstVar*> VarNameMap;
     VarNameMap	m_modVarNameMap;	// Per module, name of cloned variables
 
     static int debug() {
@@ -221,7 +221,7 @@ private:
     int		m_instSelNum; // Current instantiation count 0..N-1
     InstDeModVarVisitor  m_deModVars;	// State of variables for current cell module
 
-    typedef map<string,AstVar*> VarNameMap;
+    typedef std::map<string,AstVar*> VarNameMap;
 
     static int debug() {
 	static int level = -1;
@@ -333,8 +333,8 @@ private:
 	    UINFO(4,"   PIN  "<<nodep<<endl);
 	    int pinwidth = nodep->modVarp()->width();
 	    int expwidth = nodep->exprp()->width();
-	    pair<uint32_t,uint32_t> pinDim = nodep->modVarp()->dtypep()->dimensions(false);
-	    pair<uint32_t,uint32_t> expDim = nodep->exprp()->dtypep()->dimensions(false);
+            std::pair<uint32_t,uint32_t> pinDim = nodep->modVarp()->dtypep()->dimensions(false);
+            std::pair<uint32_t,uint32_t> expDim = nodep->exprp()->dtypep()->dimensions(false);
 	    UINFO(4,"   PINVAR  "<<nodep->modVarp()<<endl);
 	    UINFO(4,"   EXP     "<<nodep->exprp()<<endl);
 	    UINFO(4,"   pinwidth ew="<<expwidth<<" pw="<<pinwidth

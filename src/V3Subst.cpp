@@ -81,7 +81,7 @@ class SubstVarEntry {
     bool		m_wordAssign;	// True if any word assignments
     bool		m_wordUse;	// True if any individual word usage
     SubstVarWord	m_whole;	// Data for whole vector used at once
-    vector<SubstVarWord> m_words;	// Data for every word, if multi word variable
+    std::vector<SubstVarWord> m_words;  // Data for every word, if multi word variable
     int debug() { return SubstBaseVisitor::debug(); }
 
 public:
@@ -238,7 +238,7 @@ private:
     AstUser2InUse	m_inuser2;
 
     // STATE
-    vector<SubstVarEntry*>	m_entryps;	// Nodes to delete when we are finished
+    std::vector<SubstVarEntry*> m_entryps;      // Nodes to delete when we are finished
     int				m_ops;		// Number of operators on assign rhs
     int				m_assignStep;	// Assignment number to determine var lifetime
     V3Double0			m_statSubsts;	// Statistic tracking
@@ -388,7 +388,7 @@ public:
     }
     virtual ~SubstVisitor() {
 	V3Stats::addStat("Optimizations, Substituted temps", m_statSubsts);
-	for (vector<SubstVarEntry*>::iterator it = m_entryps.begin(); it != m_entryps.end(); ++it) {
+        for (std::vector<SubstVarEntry*>::iterator it = m_entryps.begin(); it != m_entryps.end(); ++it) {
 	    (*it)->deleteUnusedAssign();
 	    delete (*it);
 	}

@@ -45,7 +45,7 @@
 #include "V3Stats.h"
 #include "V3Hashed.h"
 
-typedef list<AstNodeVarRef*> GateVarRefList;
+typedef std::list<AstNodeVarRef*> GateVarRefList;
 
 #define GATE_DEDUP_MAX_DEPTH  20
 
@@ -728,7 +728,7 @@ void GateVisitor::replaceAssigns() {
 		//if (debug()>9) {vscp->dumpTree(cout, "-vscDone: "); cout<<endl;}
 		if (!vscp->valuep()->castNodeMath()
 		    || vscp->valuep()->nextp()) {
-		    vscp->dumpTree(cerr, "vscStrange: ");
+                    vscp->dumpTree(std::cerr, "vscStrange: ");
 		    vscp->v3fatalSrc("Value of varscope not mathematical");
 		}
 	    }

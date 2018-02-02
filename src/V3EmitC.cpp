@@ -46,7 +46,7 @@ class EmitCStmts : public EmitCBaseVisitor {
 private:
     bool	m_suppressSemi;
     AstVarRef*	m_wideTempRefp;		// Variable that _WW macros should be setting
-    vector<AstVar*>		m_ctorVarsVec;		// All variables in constructor order
+    std::vector<AstVar*> m_ctorVarsVec;         // All variables in constructor order
     int		m_splitSize;	// # of cfunc nodes placed into output file
     int		m_splitFilenum;	// File number being created, 0 = primary
 
@@ -773,7 +773,7 @@ public:
 class EmitCImp : EmitCStmts {
     // MEMBERS
     AstNodeModule*	m_modp;
-    vector<AstChangeDet*>	m_blkChangeDetVec;	// All encountered changes in block
+    std::vector<AstChangeDet*> m_blkChangeDetVec;  // All encountered changes in block
     bool	m_slow;		// Creating __Slow file
     bool	m_fast;		// Creating non __Slow file (or both)
 
@@ -915,7 +915,7 @@ class EmitCImp : EmitCStmts {
 	putsDecoration("// Change detection\n");
 	puts("QData __req = false;  // Logically a bool\n");  // But not because it results in faster code
 	bool gotOne = false;
-	for (vector<AstChangeDet*>::iterator it = m_blkChangeDetVec.begin();
+        for (std::vector<AstChangeDet*>::iterator it = m_blkChangeDetVec.begin();
 	     it != m_blkChangeDetVec.end(); ++it) {
 	    AstChangeDet* changep = *it;
 	    if (changep->lhsp()) {
@@ -929,7 +929,7 @@ class EmitCImp : EmitCStmts {
 	if (gotOne) {
 	    puts(");\n");
 	    //puts("VL_DEBUG_IF( if (__req) cout<<\"\tCLOCKREQ );");
-	    for (vector<AstChangeDet*>::iterator it = m_blkChangeDetVec.begin();
+            for (std::vector<AstChangeDet*>::iterator it = m_blkChangeDetVec.begin();
 		 it != m_blkChangeDetVec.end(); ++it) {
 		AstChangeDet* nodep = *it;
 		if (nodep->lhsp()) {
@@ -1077,7 +1077,7 @@ void EmitCStmts::emitVarCtors() {
 	puts("\n");
 	puts("#if (SYSTEMC_VERSION>20011000)\n");  // SystemC 2.0.1 and newer
 	bool first = true;
-	for (vector<AstVar*>::iterator it = m_ctorVarsVec.begin(); it != m_ctorVarsVec.end(); ++it) {
+        for (std::vector<AstVar*>::iterator it = m_ctorVarsVec.begin(); it != m_ctorVarsVec.end(); ++it) {
 	    AstVar* varp = *it;
 	    bool isArray = !varp->dtypeSkipRefp()->castBasicDType();
 	    if (isArray) {
@@ -1210,9 +1210,9 @@ void EmitCStmts::emitOpName(AstNode* nodep, const string& format,
 
 struct EmitDispState {
     string		m_format;	// "%s" and text from user
-    vector<char>	m_argsChar;	// Format of each argument to be printed
-    vector<AstNode*>	m_argsp;	// Each argument to be printed
-    vector<string>	m_argsFunc;	// Function before each argument to be printed
+    std::vector<char>   m_argsChar;     // Format of each argument to be printed
+    std::vector<AstNode*> m_argsp;      // Each argument to be printed
+    std::vector<string> m_argsFunc;     // Function before each argument to be printed
     EmitDispState() { clear(); }
     void clear() {
 	m_format = "";
@@ -1903,7 +1903,7 @@ struct CmpName {
 };
 
 void EmitCImp::emitIntFuncDecls(AstNodeModule* modp) {
-    vector<AstCFunc*> funcsp;
+    std::vector<AstCFunc*> funcsp;
 
     for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
 	if (AstCFunc* funcp = nodep->castCFunc()) {
@@ -1915,7 +1915,7 @@ void EmitCImp::emitIntFuncDecls(AstNodeModule* modp) {
 
     stable_sort(funcsp.begin(), funcsp.end(), CmpName());
 
-    for (vector<AstCFunc*>::iterator it = funcsp.begin(); it != funcsp.end(); ++it) {
+    for (std::vector<AstCFunc*>::iterator it = funcsp.begin(); it != funcsp.end(); ++it) {
 	AstCFunc* funcp = *it;
 	if (!funcp->dpiImport()) {  // DPI is prototyped in __Dpi.h
 	    ofp()->putsPrivate(funcp->declPrivate());

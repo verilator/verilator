@@ -53,11 +53,11 @@ int		V3ParseSym::s_anonNum = 0;
 // Read class functions
 
 V3ParseImp::~V3ParseImp() {
-    for (deque<string*>::iterator it = m_stringps.begin(); it != m_stringps.end(); ++it) {
+    for (std::deque<string*>::iterator it = m_stringps.begin(); it != m_stringps.end(); ++it) {
 	delete (*it);
     }
     m_stringps.clear();
-    for (deque<V3Number*>::iterator it = m_numberps.begin(); it != m_numberps.end(); ++it) {
+    for (std::deque<V3Number*>::iterator it = m_numberps.begin(); it != m_numberps.end(); ++it) {
 	delete (*it);
     }
     m_numberps.clear();
@@ -122,8 +122,8 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
     if (v3Global.opt.preprocOnly() || v3Global.opt.keepTempFiles()) {
 	// Create output file with all the preprocessor output we buffered up
 	string vppfilename = v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"_"+modname+".vpp";
-	ofstream* ofp = NULL;
-	ostream* osp;
+        std::ofstream* ofp = NULL;
+        std::ostream* osp;
 	bool noblanks = v3Global.opt.preprocOnly() && v3Global.opt.preprocNoLine();
 	if (v3Global.opt.preprocOnly()) {
 	    osp = &cout;
@@ -134,7 +134,7 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
 	    fileline->v3error("Cannot write preprocessor output: "+vppfilename);
 	    return;
 	} else {
-	    for (deque<string>::iterator it = m_ppBuffers.begin(); it!=m_ppBuffers.end(); ++it) {
+            for (std::deque<string>::iterator it = m_ppBuffers.begin(); it!=m_ppBuffers.end(); ++it) {
 		if (noblanks) {
 		    bool blank = true;
 		    for (string::iterator its = it->begin(); its != it->end(); ++its) {

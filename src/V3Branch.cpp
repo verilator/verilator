@@ -49,7 +49,7 @@ private:
     AstUser1InUse	m_inuser1;
 
     // TYPES
-    typedef vector<AstCFunc*> CFuncVec;
+    typedef std::vector<AstCFunc*> CFuncVec;
 
     // STATE
     int		m_likely;	// Excuses for branch likely taken

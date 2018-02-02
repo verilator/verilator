@@ -58,7 +58,7 @@ class V3Hashed : public VHashedBase {
     AstUser4InUse	m_inuser4;
 
     // TYPES
-    typedef multimap<V3Hash,AstNode*> HashMmap;
+    typedef std::multimap<V3Hash,AstNode*> HashMmap;
 public:
     typedef HashMmap::iterator iterator;
 private:
