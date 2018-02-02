@@ -19,6 +19,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix missing edge type in xml output, msg2480. [Alexis G]
 
+****  Fix compile error with --public and interface bind, bug1264. [Alexis G]
+
 ****  Remove c++filt, bug1265. [Stefan Wallentowitz]
 
 
