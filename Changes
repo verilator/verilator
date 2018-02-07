@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 3.921 devel
 
+****  Fix GCC 8.0 issues, bug1273.
+
 
 * Verilator 3.920 2018-02-01
 

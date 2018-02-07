@@ -1529,6 +1529,8 @@ void Verilated::flushCb(VerilatedVoidCb cb) VL_MT_SAFE {
 void Verilated::flushCall() VL_MT_SAFE {
     VerilatedLockGuard guard(m_mutex);
     if (s_flushCb) (*s_flushCb)();
+    fflush(stderr);
+    fflush(stdout);
 }
 
 void Verilated::commandArgs(int argc, const char** argv) VL_MT_SAFE {

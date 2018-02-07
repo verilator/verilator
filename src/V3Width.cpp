@@ -3653,7 +3653,7 @@ private:
 	// Find valid values and populate
 	if (!nodep->itemsp()) nodep->v3fatalSrc("enum without items");
 	vector<AstNode*> values;
-	values.reserve(msbdim+1);
+        values.resize(msbdim+1);
 	for (unsigned i=0; i<(msbdim+1); ++i) {
 	    values[i] = NULL;
 	}

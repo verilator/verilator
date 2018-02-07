@@ -18,6 +18,8 @@
 my $Opt_Prefix = $ARGV[0] or die "%Error: No prefix specified,";
 
 foreach my $line (<STDIN>) {
+    # Fix flex 2.6.1 warning
+    $line =~ s/for \( i = 0; i < _yybytes_len; \+\+i \)/for ( i = 0; i < (yy_size_t)(_yybytes_len); ++i )/g;
     # Fix flex 2.6.0 warning
     $line =~ s/\(\(int\) \(\(yy_n_chars\) \+ number_to_move\) > YY_CURRENT_BUFFER_LVALUE->yy_buf_size\)/((int) ((yy_n_chars) + number_to_move) > (int) YY_CURRENT_BUFFER_LVALUE->yy_buf_size)/g;
     $line =~ s/ number_to_move == YY_MORE_ADJ / (int)number_to_move == (int)YY_MORE_ADJ /;

@@ -205,7 +205,7 @@ string VHashSha1::digestBinary() {
     finalize();
     string out; out.reserve(20);
     for (size_t i=0; i<20; ++i) {
-	out[i] = (m_inthash[i >> 2] >> (((3 - i) & 0x3) << 3)) & 0xff;
+        out += (m_inthash[i >> 2] >> (((3 - i) & 0x3) << 3)) & 0xff;
     }
     return out;
 }

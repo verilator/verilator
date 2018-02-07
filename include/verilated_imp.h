@@ -54,7 +54,7 @@ class VerilatedMsg {
 public:
     // TYPES
     struct Cmp {
-	bool operator() (const VerilatedMsg& a, const VerilatedMsg& b) {
+        bool operator() (const VerilatedMsg& a, const VerilatedMsg& b) const {
 	    return a.trainId() < b.trainId(); }
     };
 private:
