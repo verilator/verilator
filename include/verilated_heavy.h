@@ -66,7 +66,7 @@ extern IData VL_FOPEN_NI(const std::string& filename, IData mode) VL_MT_SAFE;
 extern void VL_READMEM_N(bool hex, int width, int depth, int array_lsb, int fnwords,
                          const std::string& ofilename, void* memp, IData start, IData end) VL_MT_SAFE;
 extern IData VL_SSCANF_INX(int lbits, const std::string& ld, const char* formatp, ...) VL_MT_SAFE;
-extern void VL_SFORMAT_X(int obits_ignored, std::string &output, const char* formatp, ...) VL_MT_SAFE;
+extern void VL_SFORMAT_X(int obits_ignored, std::string& output, const char* formatp, ...) VL_MT_SAFE;
 extern std::string VL_SFORMATF_NX(const char* formatp, ...) VL_MT_SAFE;
 extern IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rdp) VL_MT_SAFE;
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, IData& rdr) VL_MT_SAFE {

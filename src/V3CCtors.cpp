@@ -77,7 +77,8 @@ public:
 	m_numStmts += 1;
     }
 
-    V3CCtorsVisitor(AstNodeModule* nodep, string basename, string argsp="", string callargsp="",
+    V3CCtorsVisitor(AstNodeModule* nodep, const string& basename,
+		    const string& argsp="", const string& callargsp="",
 		    const string& stmt="") {
 	m_basename = basename;
 	m_argsp = argsp;

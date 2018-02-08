@@ -66,6 +66,7 @@ protected:
 	    int m_stdFuncAsn:1;	// Found simple assignment
 	    int m_done:1;	// Removed
 	};
+        // cppcheck-suppress unusedStructMember
 	uint32_t m_flags;
 	VarFlags(AstNode* nodep) { m_flags = nodep->user2(); }
 	void setNodeFlags(AstNode* nodep) { nodep->user2(m_flags); }

@@ -795,7 +795,7 @@ private:
         makePortList(nodep, rtnvarp, dpip);
     }
 
-    bool duplicatedDpiProto(AstNodeFTask* nodep, string dpiproto) {
+    bool duplicatedDpiProto(AstNodeFTask* nodep, const string& dpiproto) {
         // Only create one DPI extern prototype for each specified cname
         // as it's legal for the user to attach multiple tasks to one dpi cname
         DpiNames::iterator iter = m_dpiNames.find(nodep->cname());

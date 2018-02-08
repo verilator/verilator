@@ -455,7 +455,7 @@ private:
 
 public:
     // CONSTUCTORS
-    UnrollVisitor(AstNode* nodep, bool generate, string beginName) {
+    UnrollVisitor(AstNode* nodep, bool generate, const string& beginName) {
 	m_forVarp = NULL;
 	m_forVscp = NULL;
 	m_ignoreIncp = NULL;
@@ -481,7 +481,7 @@ void V3Unroll::unrollAll(AstNetlist* nodep) {
     V3Global::dumpCheckGlobalTree("unroll", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
-void V3Unroll::unrollGen(AstNodeFor* nodep, string beginName) {
+void V3Unroll::unrollGen(AstNodeFor* nodep, const string& beginName) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     UnrollVisitor visitor (nodep, true, beginName);
 }

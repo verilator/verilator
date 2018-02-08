@@ -978,7 +978,6 @@ class EmitCImp : EmitCStmts {
     void emitStaticDecl(AstNodeModule* modp);
     void emitWrapEval(AstNodeModule* modp);
     void emitInt(AstNodeModule* modp);
-    void writeMakefile(string filename);
 
 public:
     EmitCImp() {

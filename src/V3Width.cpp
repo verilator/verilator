@@ -3155,8 +3155,7 @@ private:
 	} else {
 	    bool bad = widthBad(underp,nodep->findLogicBoolDType());
 	    if (bad) {
-		bool warnOn = true; // Not used
-		if (warnOn) {
+                {  // if (warnOn), but not needed here
 		    if (debug()>4) nodep->backp()->dumpTree(cout,"  back: ");
 		    nodep->v3warn(WIDTH,"Logical Operator "<<nodep->prettyTypeName()
 				  <<" expects 1 bit on the "<<side<<", but "<<side<<"'s "

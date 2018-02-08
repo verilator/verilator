@@ -144,7 +144,7 @@ V3ConfigIgnores V3ConfigIgnores::s_singleton;
 //######################################################################
 // V3Config
 
-void V3Config::addIgnore(V3ErrorCode code, bool on, string filename, int min, int max) {
+void V3Config::addIgnore(V3ErrorCode code, bool on, const string& filename, int min, int max) {
     if (filename=="*") {
 	FileLine::globalWarnOff(code,!on);
     } else {
