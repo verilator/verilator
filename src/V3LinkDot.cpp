@@ -2110,8 +2110,8 @@ private:
 		}
 		dotSymp = m_statep->findDotted(dotSymp, nodep->dotted(), baddot, okSymp); // Maybe NULL
 	    }
-	    VSymEnt* foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot);
-	    AstNodeFTask* taskp = foundp ? foundp->nodep()->castNodeFTask() : NULL; // Maybe NULL
+            VSymEnt* foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot);
+            AstNodeFTask* taskp = foundp ? foundp->nodep()->castNodeFTask() : NULL;  // Maybe NULL
 	    if (taskp) {
 		nodep->taskp(taskp);
 		nodep->packagep(foundp->packagep());
