@@ -556,6 +556,7 @@ private:
 	// LSB is self-determined (IEEE 2012 11.5.1)
 	// We also use SELs to shorten a signed constant etc, in this case they are signed.
 	if (nodep->didWidth()) return;
+        if (!m_vup) nodep->v3fatalSrc("Select under an unexpected context");
 	if (m_vup->prelim()) {
 	    if (debug()>=9) nodep->dumpTree(cout,"-selWidth: ");
 	    userIterateAndNext(nodep->fromp(), WidthVP(CONTEXT,PRELIM).p());
@@ -948,6 +949,10 @@ private:
 	}
 	}
 	m_attrp = oldAttr;
+    }
+    virtual void visit(AstPull* nodep) {
+        // May have select underneath, let seek natural size
+        userIterateChildren(nodep, WidthVP(SELF,BOTH).p());
     }
     virtual void visit(AstText* nodep) {
 	// Only used in CStmts which don't care....
