@@ -442,11 +442,20 @@ class AstSenTree;
 %token<fl>		yXNOR		"xnor"
 %token<fl>		yXOR		"xor"
 
+%token<fl>		yD_ACOS		"$acos"
+%token<fl>		yD_ACOSH	"$acosh"
+%token<fl>		yD_ASIN		"$asin"
+%token<fl>		yD_ASINH	"$asinh"
+%token<fl>		yD_ATAN		"$atan"
+%token<fl>		yD_ATAN2	"$atan2"
+%token<fl>		yD_ATANH	"$atanh"
 %token<fl>		yD_BITS		"$bits"
 %token<fl>		yD_BITSTOREAL	"$bitstoreal"
 %token<fl>		yD_C		"$c"
 %token<fl>		yD_CEIL		"$ceil"
 %token<fl>		yD_CLOG2	"$clog2"
+%token<fl>		yD_COS		"$cos"
+%token<fl>		yD_COSH		"$cosh"
 %token<fl>		yD_COUNTONES	"$countones"
 %token<fl>		yD_DIMENSIONS	"$dimensions"
 %token<fl>		yD_DISPLAY	"$display"
@@ -465,6 +474,7 @@ class AstSenTree;
 %token<fl>		yD_FSCANF	"$fscanf"
 %token<fl>		yD_FWRITE	"$fwrite"
 %token<fl>		yD_HIGH		"$high"
+%token<fl>		yD_HYPOT	"$hypot"
 %token<fl>		yD_INCREMENT	"$increment"
 %token<fl>		yD_INFO		"$info"
 %token<fl>		yD_ISUNKNOWN	"$isunknown"
@@ -486,6 +496,8 @@ class AstSenTree;
 %token<fl>		yD_SFORMAT	"$sformat"
 %token<fl>		yD_SFORMATF	"$sformatf"
 %token<fl>		yD_SIGNED	"$signed"
+%token<fl>		yD_SIN		"$sin"
+%token<fl>		yD_SINH		"$sinh"
 %token<fl>		yD_SIZE		"$size"
 %token<fl>		yD_SQRT		"$sqrt"
 %token<fl>		yD_SSCANF	"$sscanf"
@@ -493,6 +505,8 @@ class AstSenTree;
 %token<fl>		yD_STOP		"$stop"
 %token<fl>		yD_SWRITE	"$swrite"
 %token<fl>		yD_SYSTEM	"$system"
+%token<fl>		yD_TAN		"$tan"
+%token<fl>		yD_TANH		"$tanh"
 %token<fl>		yD_TESTPLUSARGS	"$test$plusargs"
 %token<fl>		yD_TIME		"$time"
 %token<fl>		yD_UNIT		"$unit"
@@ -2693,12 +2707,21 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	|	yaD_DPI parenE				{ $$ = new AstFuncRef($<fl>1,*$1,NULL); }
 	|	yaD_DPI '(' exprList ')'		{ $$ = new AstFuncRef($2,*$1,$3); GRAMMARP->argWrapList($$->castFuncRef()); }
 	//
+	|	yD_ACOS '(' expr ')'			{ $$ = new AstAcosD($1,$3); }
+	|	yD_ACOSH '(' expr ')'			{ $$ = new AstAcoshD($1,$3); }
+	|	yD_ASIN '(' expr ')'			{ $$ = new AstAsinD($1,$3); }
+	|	yD_ASINH '(' expr ')'			{ $$ = new AstAsinhD($1,$3); }
+	|	yD_ATAN '(' expr ')'			{ $$ = new AstAtanD($1,$3); }
+	|	yD_ATAN2 '(' expr ',' expr ')'  	{ $$ = new AstAtan2D($1,$3,$5); }
+	|	yD_ATANH '(' expr ')'			{ $$ = new AstAtanhD($1,$3); }
 	|	yD_BITS '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3); }
 	|	yD_BITS '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3,$5); }
 	|	yD_BITSTOREAL '(' expr ')'		{ $$ = new AstBitsToRealD($1,$3); }
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCFunc($1,$3)); }
 	|	yD_CEIL '(' expr ')'			{ $$ = new AstCeilD($1,$3); }
 	|	yD_CLOG2 '(' expr ')'			{ $$ = new AstCLog2($1,$3); }
+	|	yD_COS '(' expr ')'			{ $$ = new AstCosD($1,$3); }
+	|	yD_COSH '(' expr ')'			{ $$ = new AstCoshD($1,$3); }
 	|	yD_COUNTONES '(' expr ')'		{ $$ = new AstCountOnes($1,$3); }
 	|	yD_DIMENSIONS '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_DIMENSIONS,$3); }
 	|	yD_EXP '(' expr ')'			{ $$ = new AstExpD($1,$3); }
@@ -2709,6 +2732,7 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	|	yD_FSCANF '(' expr ',' str commaVRDListE ')'	{ $$ = new AstFScanF($1,*$5,$3,$6); }
 	|	yD_HIGH '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_HIGH,$3,NULL); }
 	|	yD_HIGH '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_HIGH,$3,$5); }
+	|	yD_HYPOT '(' expr ',' expr ')'		{ $$ = new AstHypotD($1,$3,$5); }
 	|	yD_INCREMENT '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_INCREMENT,$3,NULL); }
 	|	yD_INCREMENT '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_INCREMENT,$3,$5); }
 	|	yD_ISUNKNOWN '(' expr ')'		{ $$ = new AstIsUnknown($1,$3); }
@@ -2731,12 +2755,16 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	|	yD_RTOI '(' expr ')'			{ $$ = new AstRToIS($1,$3); }
 	|	yD_SFORMATF '(' str commaEListE ')'	{ $$ = new AstSFormatF($1,*$3,false,$4); }
 	|	yD_SIGNED '(' expr ')'			{ $$ = new AstSigned($1,$3); }
+	|	yD_SIN '(' expr ')'			{ $$ = new AstSinD($1,$3); }
+	|	yD_SINH '(' expr ')'			{ $$ = new AstSinhD($1,$3); }
 	|	yD_SIZE '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_SIZE,$3,NULL); }
 	|	yD_SIZE '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_SIZE,$3,$5); }
 	|	yD_SQRT '(' expr ')'			{ $$ = new AstSqrtD($1,$3); }
 	|	yD_SSCANF '(' expr ',' str commaVRDListE ')'	{ $$ = new AstSScanF($1,*$5,$3,$6); }
 	|	yD_STIME parenE				{ $$ = new AstSel($1,new AstTime($1),0,32); }
 	|	yD_SYSTEM  '(' expr ')'			{ $$ = new AstSystemF($1,$3); }
+	|	yD_TAN '(' expr ')'			{ $$ = new AstTanD($1,$3); }
+	|	yD_TANH '(' expr ')'			{ $$ = new AstTanhD($1,$3); }
 	|	yD_TESTPLUSARGS '(' str ')'		{ $$ = new AstTestPlusArgs($1,*$3); }
 	|	yD_TIME	parenE				{ $$ = new AstTime($1); }
 	|	yD_UNPACKED_DIMENSIONS '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_UNPK_DIMENSIONS,$3); }

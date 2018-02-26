@@ -16,7 +16,7 @@ module t (/*AUTOARG*/
 
    task check(integer line, real got, real ex);
       if (got != ex) begin
-	 if ((got - ex) > 0.000001) begin
+         if ((got > ex ? got - ex : ex - got) > 0.000001) begin
 	    $display("%%Error: Line %0d: Bad result, got=%0.99g expect=%0.99g",line,got,ex);
 	    $stop;
 	 end
@@ -45,7 +45,6 @@ module t (/*AUTOARG*/
       check(`__LINE__, $sqrt(1.2),	1.095445115010332148841598609578795731067657470703125);
       //check(`__LINE__, $sqrt(-1.2),	0);	// Bad value
       check(`__LINE__, ((1.5)**(1.25)), 1.660023);
-`ifndef VERILATOR
       check(`__LINE__, $acos (0.2),	1.369438406);	// Arg1 is -1..1
       check(`__LINE__, $acosh(1.2),	0.622362503);
       check(`__LINE__, $asin (0.2),	0.201357920);	// Arg1 is -1..1
@@ -60,7 +59,6 @@ module t (/*AUTOARG*/
       check(`__LINE__, $sinh (1.2),	1.509461355);
       check(`__LINE__, $tan  (1.2),	2.572151622);
       check(`__LINE__, $tanh (1.2),	0.833654607);
-`endif
    end
 
    real sum_ceil;
@@ -108,7 +106,6 @@ module t (/*AUTOARG*/
 	 if (r >= 0.0) sum_pow2 += 1.0+$pow(r,2.3);
 	 if (r >= 0.0) sum_sqrt += 1.0+$sqrt(r);
 
-`ifndef VERILATOR
 	 if (r>=-1.0 && r<=1.0) sum_acos  += 1.0+$acos (r);
 	 if (r>=1.0) sum_acosh += 1.0+$acosh(r);
 	 if (r>=-1.0 && r<=1.0) sum_asin  += 1.0+$asin (r);
@@ -123,7 +120,6 @@ module t (/*AUTOARG*/
 	 sum_sinh  += 1.0+$sinh (r);
 	 sum_tan   += 1.0+$tan  (r);
 	 sum_tanh  += 1.0+$tanh (r);
-`endif
       end
       else if (cyc==99) begin
 	 check (`__LINE__, sum_ceil,	85);
@@ -134,7 +130,6 @@ module t (/*AUTOARG*/
 	 check (`__LINE__, sum_pow1,	410.98798177);
 	 check (`__LINE__, sum_pow2,	321.94765689);
 	 check (`__LINE__, sum_sqrt,	92.269677253);
-`ifndef VERILATOR
 	 check (`__LINE__, sum_acos,	53.986722862);
 	 check (`__LINE__, sum_acosh,	72.685208498);
 	 check (`__LINE__, sum_asin,	21);
@@ -146,10 +141,10 @@ module t (/*AUTOARG*/
 	 check (`__LINE__, sum_cosh,	1054.0178222);
 	 check (`__LINE__, sum_hypot,	388.92858406);
 	 check (`__LINE__, sum_sin,	98.264184989);
-	 check (`__LINE__, sum_sinh,	0);
+         check (`__LINE__, sum_sinh,  -356.9512927);
 	 check (`__LINE__, sum_tan,	1.7007946043);
 	 check (`__LINE__, sum_tanh,	79.003199681);
-`endif
+
 	 $write("*-* All Finished *-*\n");
 	 $finish;
       end

@@ -299,14 +299,10 @@ private:
     virtual void visit(AstDivD* nodep) {	visit_real_add_sub(nodep); }
     virtual void visit(AstMulD* nodep) {	visit_real_add_sub(nodep); }
     virtual void visit(AstPowD* nodep) {	visit_real_add_sub(nodep); }
+    virtual void visit(AstNodeSystemBiop* nodep) { visit_real_add_sub(nodep); }
     // Real: Output real
     virtual void visit(AstNegateD* nodep) {	visit_real_neg_ceil(nodep); }
-    virtual void visit(AstCeilD* nodep) {	visit_real_neg_ceil(nodep); }
-    virtual void visit(AstExpD* nodep) {	visit_real_neg_ceil(nodep); }
-    virtual void visit(AstFloorD* nodep) {	visit_real_neg_ceil(nodep); }
-    virtual void visit(AstLogD* nodep) {	visit_real_neg_ceil(nodep); }
-    virtual void visit(AstLog10D* nodep) {	visit_real_neg_ceil(nodep); }
-    virtual void visit(AstSqrtD* nodep) {	visit_real_neg_ceil(nodep); }
+    virtual void visit(AstNodeSystemUniop* nodep) { visit_real_neg_ceil(nodep); }
 
     // Widths: out signed/unsigned width = lhs width, input un|signed
     virtual void visit(AstSigned* nodep) {	visit_signed_unsigned(nodep, AstNumeric::SIGNED); }
