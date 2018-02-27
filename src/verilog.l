@@ -206,8 +206,17 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /*     Extensions to Verilog set, some specified by PSL */
   "$c"[0-9]*		{ FL; return yD_C; }		/*Verilator only*/
   /*     System Tasks */
+  "$acos"		{ FL; return yD_ACOS; }
+  "$acosh"		{ FL; return yD_ACOSH; }
+  "$asin"		{ FL; return yD_ASIN; }
+  "$asinh"		{ FL; return yD_ASINH; }
+  "$atan"		{ FL; return yD_ATAN; }
+  "$atan2"		{ FL; return yD_ATAN2; }
+  "$atanh"		{ FL; return yD_ATANH; }
   "$bitstoreal"		{ FL; return yD_BITSTOREAL; }
   "$ceil"		{ FL; return yD_CEIL; }
+  "$cos"		{ FL; return yD_COS; }
+  "$cosh"		{ FL; return yD_COSH; }
   "$display"		{ FL; return yD_DISPLAY; }
   "$exp"		{ FL; return yD_EXP; }
   "$fclose"		{ FL; return yD_FCLOSE; }
@@ -223,6 +232,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$fullskew"		{ FL; return yaTIMINGSPEC; }
   "$fwrite"		{ FL; return yD_FWRITE; }
   "$hold"		{ FL; return yaTIMINGSPEC; }
+  "$hypot"		{ FL; return yD_HYPOT; }
   "$itor"		{ FL; return yD_ITOR; }
   "$ln"			{ FL; return yD_LN; }
   "$log10"		{ FL; return yD_LOG10; }
@@ -242,6 +252,8 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$setuphold"		{ FL; return yaTIMINGSPEC; }
   "$sformat"		{ FL; return yD_SFORMAT; }
   "$sformatf"		{ FL; return yD_SFORMATF; }
+  "$sin"		{ FL; return yD_SIN; }
+  "$sinh"		{ FL; return yD_SINH; }
   "$skew"		{ FL; return yaTIMINGSPEC; }
   "$sqrt"		{ FL; return yD_SQRT; }
   "$sscanf"		{ FL; return yD_SSCANF; }
@@ -249,6 +261,8 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$stop"		{ FL; return yD_STOP; }
   "$swrite"		{ FL; return yD_SWRITE; }
   "$system"		{ FL; return yD_SYSTEM; }
+  "$tan"		{ FL; return yD_TAN; }
+  "$tanh"		{ FL; return yD_TANH; }
   "$test$plusargs"	{ FL; return yD_TESTPLUSARGS; }
   "$time"		{ FL; return yD_TIME; }
   "$timeskew"		{ FL; return yaTIMINGSPEC; }
@@ -601,20 +615,20 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
    "aliasparam"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "analog"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "analysis"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "asin"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "asinh"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "asin"		{ FL; return yD_ASIN; }
+   "asinh"		{ FL; return yD_ASINH; }
    "assert"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "atan"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "atan2"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "atanh"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "atan"		{ FL; return yD_ATAN; }
+   "atan2"		{ FL; return yD_ATAN2; }
+   "atanh"		{ FL; return yD_ATANH; }
    "branch"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "ceil"		{ FL; return yD_CEIL; }
    "connect"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "connectmodule"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "connectrules"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "continuous"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "cos"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "cosh"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "cos"		{ FL; return yD_COS; }
+   "cosh"		{ FL; return yD_COSH; }
    "cross"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "ddt"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "ddt_nature"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
@@ -635,7 +649,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
    "flow"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "from"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "ground"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "hypot"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "hypot"		{ FL; return yD_HYPOT; }
    "idt"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "idt_nature"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "idtmod"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
@@ -659,14 +673,14 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
    "potential"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "pow"		{ FL; return yD_POW; }
    "resolveto"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "sin"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "sinh"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "sin"		{ FL; return yD_SIN; }
+   "sinh"		{ FL; return yD_SINH; }
    "slew"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "split"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "sqrt"		{ FL; return yD_SQRT; }
    "string"		{ FL; return ySTRING; }
-   "tan"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "tanh"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "tan"		{ FL; return yD_TAN; }
+   "tanh"		{ FL; return yD_TANH; }
    "timer"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "transition"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
    "units"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }

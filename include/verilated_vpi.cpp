@@ -459,7 +459,7 @@ public:
         m_errorInfo.level = level;
         return this;
     }
-    void setMessage(std::string file, PLI_INT32 line, std::string message, ...) {
+    void setMessage(std::string file, PLI_INT32 line, const std::string& message, ...) {
         static VL_THREAD_LOCAL std::string filehold;
         va_list args;
         va_start(args, message);

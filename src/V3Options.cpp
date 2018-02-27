@@ -155,11 +155,11 @@ void V3Options::addParameter(const string& paramline, bool allowPlus) {
     }
 }
 
-bool V3Options::hasParameter(string name) {
+bool V3Options::hasParameter(const string& name) {
     return m_parameters.find(name) != m_parameters.end();
 }
 
-string V3Options::parameter(string name) {
+string V3Options::parameter(const string& name) {
     string value = m_parameters.find(name)->second;
     m_parameters.erase(m_parameters.find(name));
     return value;
@@ -1284,7 +1284,7 @@ V3Options::V3Options() {
 
     VName::maxLength(128); // Linux filename limits 256; leave half for prefix
 
-    optimize(true);
+    optimize(1);
     // Default +libext+
     addLibExtV("");  // So include "filename.v" will find the same file
     addLibExtV(".v");

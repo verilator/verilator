@@ -299,14 +299,10 @@ private:
     virtual void visit(AstDivD* nodep) {	visit_real_add_sub(nodep); }
     virtual void visit(AstMulD* nodep) {	visit_real_add_sub(nodep); }
     virtual void visit(AstPowD* nodep) {	visit_real_add_sub(nodep); }
+    virtual void visit(AstNodeSystemBiop* nodep) { visit_real_add_sub(nodep); }
     // Real: Output real
     virtual void visit(AstNegateD* nodep) {	visit_real_neg_ceil(nodep); }
-    virtual void visit(AstCeilD* nodep) {	visit_real_neg_ceil(nodep); }
-    virtual void visit(AstExpD* nodep) {	visit_real_neg_ceil(nodep); }
-    virtual void visit(AstFloorD* nodep) {	visit_real_neg_ceil(nodep); }
-    virtual void visit(AstLogD* nodep) {	visit_real_neg_ceil(nodep); }
-    virtual void visit(AstLog10D* nodep) {	visit_real_neg_ceil(nodep); }
-    virtual void visit(AstSqrtD* nodep) {	visit_real_neg_ceil(nodep); }
+    virtual void visit(AstNodeSystemUniop* nodep) { visit_real_neg_ceil(nodep); }
 
     // Widths: out signed/unsigned width = lhs width, input un|signed
     virtual void visit(AstSigned* nodep) {	visit_signed_unsigned(nodep, AstNumeric::SIGNED); }
@@ -556,6 +552,7 @@ private:
 	// LSB is self-determined (IEEE 2012 11.5.1)
 	// We also use SELs to shorten a signed constant etc, in this case they are signed.
 	if (nodep->didWidth()) return;
+        if (!m_vup) nodep->v3fatalSrc("Select under an unexpected context");
 	if (m_vup->prelim()) {
 	    if (debug()>=9) nodep->dumpTree(cout,"-selWidth: ");
 	    userIterateAndNext(nodep->fromp(), WidthVP(CONTEXT,PRELIM).p());
@@ -949,6 +946,10 @@ private:
 	}
 	}
 	m_attrp = oldAttr;
+    }
+    virtual void visit(AstPull* nodep) {
+        // May have select underneath, let seek natural size
+        userIterateChildren(nodep, WidthVP(SELF,BOTH).p());
     }
     virtual void visit(AstText* nodep) {
 	// Only used in CStmts which don't care....
@@ -3157,8 +3158,7 @@ private:
 	} else {
 	    bool bad = widthBad(underp,nodep->findLogicBoolDType());
 	    if (bad) {
-		bool warnOn = true; // Not used
-		if (warnOn) {
+                {  // if (warnOn), but not needed here
 		    if (debug()>4) nodep->backp()->dumpTree(cout,"  back: ");
 		    nodep->v3warn(WIDTH,"Logical Operator "<<nodep->prettyTypeName()
 				  <<" expects 1 bit on the "<<side<<", but "<<side<<"'s "
@@ -3655,7 +3655,7 @@ private:
 	// Find valid values and populate
 	if (!nodep->itemsp()) nodep->v3fatalSrc("enum without items");
         std::vector<AstNode*> values;
-	values.reserve(msbdim+1);
+        values.resize(msbdim+1);
 	for (unsigned i=0; i<(msbdim+1); ++i) {
 	    values[i] = NULL;
 	}

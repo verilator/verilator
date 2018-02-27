@@ -3947,94 +3947,175 @@ public:
     AstNode*	filep() const { return lhsp(); }
 };
 
-class AstCeilD : public AstNodeUniop {
+class AstNodeSystemUniop : public AstNodeUniop {
 public:
-    AstCeilD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	dtypeSetDouble(); }
-    ASTNODE_NODE_FUNCS(CeilD)
-    virtual void numberOperate(V3Number& out, const V3Number& lhs) {
-	out.setDouble(ceil(lhs.toDouble())); }
-    virtual string emitVerilog() { return "%f$ceil(%l)"; }
-    virtual string emitC() { return "ceil(%li)"; }
+    AstNodeSystemUniop(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
+        dtypeSetDouble(); }
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return false;}
     virtual bool sizeMattersLhs() {return false;}
-    virtual int instrCount()	const { return instrCountDoubleTrig(); }
+    virtual int instrCount() const { return instrCountDoubleTrig(); }
     virtual bool doubleFlavor() const { return true; }
 };
 
-class AstExpD : public AstNodeUniop {
+class AstLogD : public AstNodeSystemUniop {
 public:
-    AstExpD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	dtypeSetDouble(); }
-    ASTNODE_NODE_FUNCS(ExpD)
-    virtual void numberOperate(V3Number& out, const V3Number& lhs) {
-	out.setDouble(exp(lhs.toDouble())); }
-    virtual string emitVerilog() { return "%f$exp(%l)"; }
-    virtual string emitC() { return "exp(%li)"; }
-    virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return false;}
-    virtual bool sizeMattersLhs() {return false;}
-    virtual int instrCount()	const { return instrCountDoubleTrig(); }
-    virtual bool doubleFlavor() const { return true; }
-};
-
-class AstFloorD : public AstNodeUniop {
-public:
-    AstFloorD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	dtypeSetDouble(); }
-    ASTNODE_NODE_FUNCS(FloorD)
-    virtual void numberOperate(V3Number& out, const V3Number& lhs) {
-	out.setDouble(floor(lhs.toDouble())); }
-    virtual string emitVerilog() { return "%f$floor(%l)"; }
-    virtual string emitC() { return "floor(%li)"; }
-    virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return false;}
-    virtual bool sizeMattersLhs() {return false;}
-    virtual int instrCount()	const { return instrCountDoubleTrig(); }
-    virtual bool doubleFlavor() const { return true; }
-};
-
-class AstLogD : public AstNodeUniop {
-public:
-    AstLogD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	dtypeSetDouble(); }
+    AstLogD(FileLine* fl, AstNode* lhsp) : AstNodeSystemUniop(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(LogD)
-    virtual void numberOperate(V3Number& out, const V3Number& lhs) {
-	out.setDouble(log(lhs.toDouble())); }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(log(lhs.toDouble())); }
     virtual string emitVerilog() { return "%f$ln(%l)"; }
     virtual string emitC() { return "log(%li)"; }
-    virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return false;}
-    virtual bool sizeMattersLhs() {return false;}
-    virtual int instrCount()	const { return instrCountDoubleTrig(); }
-    virtual bool doubleFlavor() const { return true; }
 };
-
-class AstLog10D : public AstNodeUniop {
+class AstLog10D : public AstNodeSystemUniop {
 public:
-    AstLog10D(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	dtypeSetDouble(); }
+    AstLog10D(FileLine* fl, AstNode* lhsp) : AstNodeSystemUniop(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(Log10D)
-    virtual void numberOperate(V3Number& out, const V3Number& lhs) {
-	out.setDouble(log10(lhs.toDouble())); }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(log10(lhs.toDouble())); }
     virtual string emitVerilog() { return "%f$log10(%l)"; }
     virtual string emitC() { return "log10(%li)"; }
-    virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return false;}
-    virtual bool sizeMattersLhs() {return false;}
-    virtual int instrCount()	const { return instrCountDoubleTrig(); }
-    virtual bool doubleFlavor() const { return true; }
 };
 
-class AstSqrtD : public AstNodeUniop {
+class AstExpD : public AstNodeSystemUniop {
 public:
-    AstSqrtD(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-	dtypeSetDouble(); }
+    AstExpD(FileLine* fl, AstNode* lhsp) : AstNodeSystemUniop(fl, lhsp) {}
+    ASTNODE_NODE_FUNCS(ExpD)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(exp(lhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$exp(%l)"; }
+    virtual string emitC() { return "exp(%li)"; }
+};
+
+class AstSqrtD : public AstNodeSystemUniop {
+public:
+    AstSqrtD(FileLine* fl, AstNode* lhsp) : AstNodeSystemUniop(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(SqrtD)
-    virtual void numberOperate(V3Number& out, const V3Number& lhs) {
-	out.setDouble(sqrt(lhs.toDouble())); }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(sqrt(lhs.toDouble())); }
     virtual string emitVerilog() { return "%f$sqrt(%l)"; }
     virtual string emitC() { return "sqrt(%li)"; }
-    virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return false;}
-    virtual bool sizeMattersLhs() {return false;}
-    virtual int instrCount()	const { return instrCountDoubleTrig(); }
-    virtual bool doubleFlavor() const { return true; }
+};
+
+class AstFloorD : public AstNodeSystemUniop {
+public:
+    AstFloorD(FileLine* fl, AstNode* lhsp) : AstNodeSystemUniop(fl, lhsp) {}
+    ASTNODE_NODE_FUNCS(FloorD)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(floor(lhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$floor(%l)"; }
+    virtual string emitC() { return "floor(%li)"; }
+};
+
+class AstCeilD : public AstNodeSystemUniop {
+public:
+    AstCeilD(FileLine* fl, AstNode* lhsp) : AstNodeSystemUniop(fl, lhsp) {}
+    ASTNODE_NODE_FUNCS(CeilD)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(ceil(lhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$ceil(%l)"; }
+    virtual string emitC() { return "ceil(%li)"; }
+};
+
+class AstSinD : public AstNodeSystemUniop {
+public:
+    AstSinD(FileLine* fl, AstNode* lhsp) : AstNodeSystemUniop(fl, lhsp) {}
+    ASTNODE_NODE_FUNCS(SinD)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(sin(lhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$sin(%l)"; }
+    virtual string emitC() { return "sin(%li)"; }
+};
+
+class AstCosD : public AstNodeSystemUniop {
+public:
+    AstCosD(FileLine* fl, AstNode* lhsp) : AstNodeSystemUniop(fl, lhsp) {}
+    ASTNODE_NODE_FUNCS(CosD)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(cos(lhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$cos(%l)"; }
+    virtual string emitC() { return "cos(%li)"; }
+};
+
+class AstTanD : public AstNodeSystemUniop {
+public:
+    AstTanD(FileLine* fl, AstNode* lhsp) : AstNodeSystemUniop(fl, lhsp) {}
+    ASTNODE_NODE_FUNCS(TanD)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(tan(lhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$tan(%l)"; }
+    virtual string emitC() { return "tan(%li)"; }
+};
+
+class AstAsinD : public AstNodeSystemUniop {
+public:
+    AstAsinD(FileLine* fl, AstNode* lhsp) : AstNodeSystemUniop(fl, lhsp) {}
+    ASTNODE_NODE_FUNCS(AsinD)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(asin(lhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$asin(%l)"; }
+    virtual string emitC() { return "asin(%li)"; }
+};
+
+class AstAcosD : public AstNodeSystemUniop {
+public:
+    AstAcosD(FileLine* fl, AstNode* lhsp) : AstNodeSystemUniop(fl, lhsp) {}
+    ASTNODE_NODE_FUNCS(AcosD)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(acos(lhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$acos(%l)"; }
+    virtual string emitC() { return "acos(%li)"; }
+};
+
+class AstAtanD : public AstNodeSystemUniop {
+public:
+    AstAtanD(FileLine* fl, AstNode* lhsp) : AstNodeSystemUniop(fl, lhsp) {}
+    ASTNODE_NODE_FUNCS(AtanD)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(atan(lhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$atan(%l)"; }
+    virtual string emitC() { return "atan(%li)"; }
+};
+
+class AstSinhD : public AstNodeSystemUniop {
+public:
+    AstSinhD(FileLine* fl, AstNode* lhsp) : AstNodeSystemUniop(fl, lhsp) {}
+    ASTNODE_NODE_FUNCS(SinhD)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(sinh(lhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$sinh(%l)"; }
+    virtual string emitC() { return "sinh(%li)"; }
+};
+
+class AstCoshD : public AstNodeSystemUniop {
+public:
+    AstCoshD(FileLine* fl, AstNode* lhsp) : AstNodeSystemUniop(fl, lhsp) {}
+    ASTNODE_NODE_FUNCS(CoshD)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(cosh(lhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$cosh(%l)"; }
+    virtual string emitC() { return "cosh(%li)"; }
+};
+
+class AstTanhD : public AstNodeSystemUniop {
+public:
+    AstTanhD(FileLine* fl, AstNode* lhsp) : AstNodeSystemUniop(fl, lhsp) {}
+    ASTNODE_NODE_FUNCS(TanhD)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(tanh(lhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$tanh(%l)"; }
+    virtual string emitC() { return "tanh(%li)"; }
+};
+
+class AstAsinhD : public AstNodeSystemUniop {
+public:
+    AstAsinhD(FileLine* fl, AstNode* lhsp) : AstNodeSystemUniop(fl, lhsp) {}
+    ASTNODE_NODE_FUNCS(AsinhD)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(asinh(lhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$asinh(%l)"; }
+    virtual string emitC() { return "asinh(%li)"; }
+};
+
+class AstAcoshD : public AstNodeSystemUniop {
+public:
+    AstAcoshD(FileLine* fl, AstNode* lhsp) : AstNodeSystemUniop(fl, lhsp) {}
+    ASTNODE_NODE_FUNCS(AcoshD)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(acosh(lhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$acosh(%l)"; }
+    virtual string emitC() { return "acosh(%li)"; }
+};
+
+class AstAtanhD : public AstNodeSystemUniop {
+public:
+    AstAtanhD(FileLine* fl, AstNode* lhsp) : AstNodeSystemUniop(fl, lhsp) {}
+    ASTNODE_NODE_FUNCS(AtanhD)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(atanh(lhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$atanh(%l)"; }
+    virtual string emitC() { return "atanh(%li)"; }
 };
 
 //======================================================================
@@ -5002,6 +5083,39 @@ public:
     virtual int instrCount()	const { return widthInstrs()*64; }
     AstNode*	strgp() const { return lhsp(); }
     AstNode*	filep() const { return rhsp(); }
+};
+
+class AstNodeSystemBiop : public AstNodeBiop {
+public:
+    AstNodeSystemBiop(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
+        dtypeSetDouble(); }
+    virtual bool cleanOut() {return false;}
+    virtual bool cleanLhs() {return false;} virtual bool cleanRhs() {return false;}
+    virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}
+    virtual int instrCount()    const { return instrCountDoubleTrig(); }
+    virtual bool doubleFlavor() const { return true; }
+};
+
+class AstAtan2D : public AstNodeSystemBiop {
+public:
+    AstAtan2D(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeSystemBiop(fl, lhsp, rhsp) {}
+    ASTNODE_NODE_FUNCS(Atan2D)
+    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAtan2D(this->fileline(), lhsp, rhsp); }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
+        out.setDouble(atan2(lhs.toDouble(), rhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$atan2(%l,%r)"; }
+    virtual string emitC() { return "atan2(%li,%ri)"; }
+};
+
+class AstHypotD : public AstNodeSystemBiop {
+public:
+    AstHypotD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeSystemBiop(fl, lhsp, rhsp) {}
+    ASTNODE_NODE_FUNCS(HypotD)
+    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstHypotD(this->fileline(), lhsp, rhsp); }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
+        out.setDouble(hypot(lhs.toDouble(), rhs.toDouble())); }
+    virtual string emitVerilog() { return "%f$hypot(%l,%r)"; }
+    virtual string emitC() { return "hypot(%li,%ri)"; }
 };
 
 class AstPattern : public AstNodeMath {

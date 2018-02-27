@@ -604,7 +604,7 @@ class LinkDotFindVisitor : public AstNVisitor {
     // METHODS
     int debug() { return LinkDotState::debug(); }
 
-    virtual AstConst* parseParamLiteral(FileLine* fl, string literal) {
+    virtual AstConst* parseParamLiteral(FileLine* fl, const string& literal) {
 	bool success = false;
         if (literal[0] == '"') {
 	    // This is a string
@@ -2110,10 +2110,8 @@ private:
 		}
 		dotSymp = m_statep->findDotted(dotSymp, nodep->dotted(), baddot, okSymp); // Maybe NULL
 	    }
-	    VSymEnt* foundp = NULL;
-	    AstNodeFTask* taskp = NULL;
-	    foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot);
-            taskp = foundp ? VN_CAST(foundp->nodep(), NodeFTask) : NULL;  // Maybe NULL
+            VSymEnt* foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot);
+            AstNodeFTask* taskp = foundp ? VN_CAST(foundp->nodep(), NodeFTask) : NULL;  // Maybe NULL
 	    if (taskp) {
 		nodep->taskp(taskp);
 		nodep->packagep(foundp->packagep());

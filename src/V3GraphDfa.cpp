@@ -69,7 +69,12 @@ private:
     // MEMBERS
     uint32_t		m_step;		// Processing step, so we can avoid clearUser all the time
     HashMap		m_hashMap;	// Dfa Vertex for each set of NFA vertexes
+
+#ifdef VL_CPPCHECK
+    static int debug() { return 9; }
+#else
     static int debug() { return 0; }
+#endif
 
     // METHODS
     DfaGraph* graphp() { return static_cast<DfaGraph*>(m_graphp); }

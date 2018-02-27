@@ -293,8 +293,8 @@ class V3Options {
     const V3StringList& forceIncs() const { return m_forceIncs; }
     const V3LangCode& defaultLanguage() const { return m_defaultLanguage; }
 
-    bool hasParameter(string name);
-    string parameter(string name);
+    bool hasParameter(const string& name);
+    string parameter(const string& name);
     void checkParameters();
 
     bool isFuture(const string& flag) const;

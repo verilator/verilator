@@ -984,32 +984,37 @@ class TristateVisitor : public TristateBaseVisitor {
 
     virtual void visit(AstPull* nodep) {
 	UINFO(9,dbgState()<<nodep<<endl);
-	if (m_graphing) {
-            if (AstVarRef* lhsp = VN_CAST(nodep->lhsp(), VarRef)) {
-		lhsp->lvalue(true);
-		m_logicp = nodep;
-		m_tgraph.setTristate(nodep);
-		associateLogic(nodep, lhsp->varp());
-		m_logicp = NULL;
-	    } else {
-		nodep->v3error("Unsupported pullup/down (weak driver) construct.");
-	    }
-	} else {
-	    // Replace any pullup/pulldowns with assignw logic and set the
-	    // direction of the pull in the user3() data on the var.  Given
-	    // the complexity of merging tristate drivers at any level, the
-	    // current limitation of this implementation is that a pullup/down
-	    // gets applied to all bits of a bus and a bus cannot have drivers
-	    // in opposite directions on indvidual pins.
-            if (AstVarRef* lhsp = VN_CAST(nodep->lhsp(), VarRef)) {
-		lhsp->lvalue(true);
-		m_tgraph.didProcess(nodep);
-		m_tgraph.didProcess(lhsp->varp());
-		AstVar* varp = lhsp->varp();
-		setPullDirection(varp, nodep);
-	    } else {
-		nodep->v3error("Unsupported pullup/down (weak driver) construct.");
-	    }
+        AstVarRef* varrefp = NULL;
+        if (VN_IS(nodep->lhsp(), VarRef)) {
+            varrefp = VN_CAST(nodep->lhsp(), VarRef);
+        } else if (VN_IS(nodep->lhsp(), Sel)
+                   && VN_IS(VN_CAST(nodep->lhsp(), Sel)->fromp(), VarRef)) {
+            varrefp = VN_CAST(VN_CAST(nodep->lhsp(), Sel)->fromp(), VarRef);
+        }
+        if (!varrefp) {
+            if (debug()>=4) nodep->dumpTree(cout, "- ");
+            nodep->v3error("Unsupported pullup/down (weak driver) construct.");
+        } else {
+            if (m_graphing) {
+                varrefp->lvalue(true);
+                m_logicp = nodep;
+                m_tgraph.setTristate(nodep);
+                associateLogic(nodep, varrefp->varp());
+                m_logicp = NULL;
+            } else {
+                // Replace any pullup/pulldowns with assignw logic and set the
+                // direction of the pull in the user3() data on the var.  Given
+                // the complexity of merging tristate drivers at any level, the
+                // current limitation of this implementation is that a pullup/down
+                // gets applied to all bits of a bus and a bus cannot have drivers
+                // in opposite directions on indvidual pins.
+                varrefp->lvalue(true);
+                m_tgraph.didProcess(nodep);
+                m_tgraph.didProcess(varrefp->varp());
+                setPullDirection(varrefp->varp(), nodep);
+            }
+        }
+        if (!m_graphing) {
 	    nodep->unlinkFrBack();
 	    pushDeletep(nodep); VL_DANGLING(nodep);  // Node must persist as user3p points to it
 	}
