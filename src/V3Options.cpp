@@ -1284,7 +1284,7 @@ V3Options::V3Options() {
 
     VName::maxLength(128); // Linux filename limits 256; leave half for prefix
 
-    optimize(true);
+    optimize(1);
     // Default +libext+
     addLibExtV("");  // So include "filename.v" will find the same file
     addLibExtV(".v");

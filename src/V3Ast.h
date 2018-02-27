@@ -1287,7 +1287,7 @@ public:
     static AstNode* addNextNull(AstNode* nodep, AstNode* newp);	// Returns nodep, adds newp (maybe NULL) to end of nodep's list
     inline AstNode* addNext(AstNode* newp) { return addNext(this, newp); }
     inline AstNode* addNextNull(AstNode* newp) { return addNextNull(this, newp); }
-    void	addNextHere(AstNode* newp);	// Adds after speced node
+    void addNextHere(AstNode* newp);  // Insert newp at this->nextp
     void	addPrev(AstNode* newp) { replaceWith(newp); newp->addNext(this); }
     void	addHereThisAsNext(AstNode* newp); // Adds at old place of this, this becomes next
     void	replaceWith(AstNode* newp);	// Replace current node in tree with new node
