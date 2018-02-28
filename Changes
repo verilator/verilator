@@ -8,6 +8,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    Fix internals to make null-pointer-check clean.
 
+***   Better optimize large always block splitting, bug1244. [John Coiner]
+
 ****  Fix internals to avoid 'using namespace std'.
 
 

@@ -5614,6 +5614,14 @@ public:
     AstNode*	bodysp()	const { return op1p(); }	// op1= expressions to print
 };
 
+class AstSplitPlaceholder : public AstNode {
+public:
+    // Dummy node used within V3Split; never exists outside of V3Split.
+    AstSplitPlaceholder(FileLine* filelinep)
+        : AstNode(filelinep) {}
+    ASTNODE_NODE_FUNCS(SplitPlaceholder)
+};
+
 //######################################################################
 // Right below top
 
