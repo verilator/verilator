@@ -147,23 +147,38 @@ private:
 	    vscp->user2(m_sequence);
 	}
     }
+
+    virtual void visit(AstAssignPre* nodep) {
+        // Do not record varrefs within assign pre.
+        //
+        // The pre-assignment into the dly var should not count as its
+        // first write; we only want to consider reads and writes that
+        // would still happen if the dly var were eliminated.
+    }
+
     virtual void visit(AstAssignPost* nodep) {
         if (AstVarRef* lhsp = VN_CAST(nodep->lhsp(), VarRef)) {
             if (AstVarRef* rhsp = VN_CAST(nodep->rhsp(), VarRef)) {
-		// Scrunch these:
-		//    __Vdly__q = __PVT__clk_clocks;
-		//    ... {no reads or writes of __PVT__q after the first write to __Vdly__q}
-		//    ... {no reads of __Vdly__q after the first write to __Vdly__q}
-		//    __PVT__q = __Vdly__q;
+                // Scrunch these:
+                // X1:  __Vdly__q = __PVT__clk_clocks;
+                //    ... {no reads of __PVT__q after the first write to __Vdly__q}
+                //    ... {no reads of __Vdly__q after the first write to __Vdly__q}
+                // X2:  __PVT__q = __Vdly__q;
+                //
+                // Into just this:
+                // X1:  __PVT__q = __PVT__clk_clocks;
+                // X2:   (nothing)
 		UINFO(9,"   POST "<<nodep<<endl);
 		UINFO(9,"     lhs "<<lhsp<<endl);
 		UINFO(9,"     rhs "<<rhsp<<endl);
-		uint32_t firstWrite = rhsp->varScopep()->user1();
-		uint32_t lastRead   = rhsp->varScopep()->user2();
-		uint32_t lastRead2  = lhsp->varScopep()->user2();
-		UINFO(9,"     first "<<firstWrite<<" last "<<lastRead<<" "<<lastRead2<<endl);
-		if (lastRead < firstWrite
-		    && lastRead2 < firstWrite) {
+                uint32_t firstDlyVarWrite = rhsp->varScopep()->user1();
+                uint32_t lastDlyVarRead   = rhsp->varScopep()->user2();
+                uint32_t lastOrigVarRead  = lhsp->varScopep()->user2();
+                UINFO(9,"     first_dly_w "<<firstDlyVarWrite
+                      <<" last_dly_r "<<lastDlyVarRead
+                      <<" last_orig_r "<<lastOrigVarRead<<endl);
+                if (lastDlyVarRead < firstDlyVarWrite
+                    && lastOrigVarRead < firstDlyVarWrite) {
 		    UINFO(4,"    DELETE "<<nodep<<endl);
 		    // Mark so LifePostElimVisitor will get it
 		    rhsp->varScopep()->user4p(lhsp->varScopep());
