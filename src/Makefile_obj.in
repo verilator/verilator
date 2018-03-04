@@ -78,7 +78,7 @@ ifeq ($(VL_DEBUG),)
 COPT = -O2
 else
 # Debug
-COPT = -ggdb -DVL_DEBUG
+COPT = -ggdb -DVL_DEBUG -D_GLIBCXX_DEBUG
 # Debug & Profile:
 #LDFLAGS += -pg -g
 #COPT = -ggdb -pg -g
