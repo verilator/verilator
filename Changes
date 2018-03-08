@@ -10,6 +10,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix pullup/pulldowns on bit selects, bug1274. [Rob Stoddard]
 
+****  Fix verilator_coverage --annotate-min, bug1284. [Tymoteusz Blazejczyk]
+
 
 * Verilator 3.920 2018-02-01
 

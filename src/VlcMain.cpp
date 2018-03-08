@@ -77,6 +77,10 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
 	    else if ( onoff   (sw, "-rank", flag/*ref*/) ) { m_rank = flag; }
 	    else if ( onoff   (sw, "-unlink", flag/*ref*/) )	{ m_unlink = flag; }
 	    // Parameterized switches
+            else if ( !strcmp (sw, "-annotate-min") && (i+1)<argc ) {
+                shift;
+                m_annotateMin = atoi(argv[i]);
+            }
 	    else if ( !strcmp (sw, "-annotate") && (i+1)<argc ) {
 		shift;
 		m_annotateOut = argv[i];
