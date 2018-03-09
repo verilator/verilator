@@ -89,6 +89,8 @@
 #include <algorithm>
 #include <vector>
 #include <map>
+#include VL_INCLUDE_UNORDERED_MAP
+#include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Global.h"
 #include "V3Split.h"
