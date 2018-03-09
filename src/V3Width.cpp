@@ -2188,6 +2188,10 @@ private:
 	    nodep->dtypeSetSigned32();  // Spec says integer return
 	}
     }
+    virtual void visit(AstSysFuncAsTask* nodep) {
+        assertAtStatement(nodep);
+        userIterateAndNext(nodep->lhsp(), WidthVP(SELF,BOTH).p());
+    }
     virtual void visit(AstSystemT* nodep) {
 	assertAtStatement(nodep);
 	userIterateAndNext(nodep->lhsp(), WidthVP(SELF,BOTH).p());

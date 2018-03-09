@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support trig functions ($sin() etc), bug1281. [Patrick Stewart]
 
+***   Support calling system functions as tasks, bug1285. [Joel Holdsworth]
+
 ****  Fix GCC 8.0 issues, bug1273.
 
 ****  Fix pullup/pulldowns on bit selects, bug1274. [Rob Stoddard]

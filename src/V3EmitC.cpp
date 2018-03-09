@@ -374,6 +374,11 @@ public:
 	    puts(")); }\n");
 	}
     }
+    virtual void visit(AstSysFuncAsTask* nodep) {
+        if (!nodep->lhsp()->isWide()) puts("(void)");
+        nodep->lhsp()->iterateAndNext(*this);
+        if (!nodep->lhsp()->isWide()) puts(";");
+    }
     virtual void visit(AstSystemT* nodep) {
 	puts("(void)VL_SYSTEM_I");
 	emitIQW(nodep->lhsp());

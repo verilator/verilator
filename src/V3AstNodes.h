@@ -2594,6 +2594,26 @@ public:
     void 	lhsp(AstNode* nodep) { setOp3p(nodep); }
 };
 
+class AstSysFuncAsTask : public AstNodeStmt {
+    // Call what is normally a system function (with a return) in a non-return context
+    // Parents: stmtlist
+    // Children: a system function
+public:
+    AstSysFuncAsTask(FileLine* fileline, AstNode* exprsp)
+        : AstNodeStmt (fileline) { addNOp1p(exprsp); }
+    ASTNODE_NODE_FUNCS(SysFuncAsTask)
+    virtual string verilogKwd() const { return ""; }
+    virtual bool isGateOptimizable() const { return true; }
+    virtual bool isPredictOptimizable() const { return true; }
+    virtual bool isPure() const { return true; }
+    virtual bool isOutputter() const { return false; }
+    virtual int instrCount() const { return 0; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const { return true; }
+    AstNode* lhsp() const { return op1p(); }  // op1 = Expressions to eval
+    void lhsp(AstNode* nodep) { addOp1p(nodep); }  // op1 = Expressions to eval
+};
+
 class AstSysIgnore : public AstNodeStmt {
     // Parents: stmtlist
     // Children: varrefs or exprs

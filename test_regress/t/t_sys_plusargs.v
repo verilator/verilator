@@ -45,6 +45,11 @@ module t;
       $display("str='%s'",sv_str);
       if (sv_str != "T=1234") $stop;
 
+      sv_str = "none";
+      $value$plusargs("IN%s", sv_str);
+      $display("str='%s'",sv_str);
+      if (sv_str != "T=1234") $stop;
+
       p_in = "IN%s";
 `ifdef VERILATOR
       p_in = $c(p_in); // Prevent constant propagation

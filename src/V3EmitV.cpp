@@ -278,6 +278,10 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	if (nodep->msbp()) { putbs(","); nodep->msbp()->iterateAndNext(*this); }
 	puts(");\n");
     }
+    virtual void visit(AstSysFuncAsTask* nodep) {
+        nodep->lhsp()->iterateAndNext(*this);
+        puts(";\n");
+    }
     virtual void visit(AstSysIgnore* nodep) {
 	putfs(nodep,nodep->verilogKwd());
 	putbs(" (");
