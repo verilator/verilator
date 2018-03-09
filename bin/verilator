@@ -54,18 +54,6 @@ push @ARGV, (split ' ',$ENV{VERILATOR_TEST_FLAGS}||"");
 # We sneak a look at the flags so we can do some pre-environment checks
 # All flags will hit verilator...
 foreach my $sw (@ARGV) {
-    # Some special treatment for parameters to allow verilog literals for numbers
-    if ((substr($sw, 0, 2) eq "-G") || (substr($sw, 0, 8) eq "-pvalue+")) {
-        # If there is a single quote in the parameter put it double quotes ,
-        # else just put it in double quotes
-        if ($sw =~ m![\']!) {
-            $sw = "\"$sw\"";
-        } else {
-            $sw = "'$sw'";
-        }
-    } else {
-        $sw = "'$sw'" if $sw =~ m![^---a-zA-Z0-9_/\\:.+]!;
-    }
     push @Opt_Verilator_Sw, $sw;
 }
 
@@ -84,16 +72,27 @@ if (! GetOptions (
     pod2usage(-exitstatus=>2, -verbose=>0);
 }
 
-# Determine runtime flags and run
 if ($opt_gdbbt && !gdb_works()) {
     warn "-Info: --gdbbt ignored: gdb doesn't seem to be working\n" if $Debug;
     $opt_gdbbt = 0;
 }
+
+# Determine runtime flags and run
+# Opt_Verilator_Sw is what we want verilator to see on its argc/argv.
+# Starting with that, escape all special chars for the shell;
+# The shell will undo the escapes and the verilator binary should
+# then see exactly the contents of @Opt_Verilator_Sw.
+my @quoted_sw = map {sh_escape($_)} @Opt_Verilator_Sw;
 if ($opt_gdb) {
     # Generic GDB interactive
     run (("gdb"||$ENV{VERILATOR_GDB})
          ." ".verilator_bin()
-         ." -ex 'run ".join(' ',@Opt_Verilator_Sw)."'"
+         # Note, we must use double-quotes ("run <switches>")
+         # and not single ('run <switches>') below. Bash swallows
+         # escapes as you would expect in a double-quoted string.
+         # That's not true for a single-quoted string, where \'
+         # actually terminates the string -- not what we want!
+         ." -ex \"run ".join(' ', @quoted_sw)."\""
          ." -ex 'set width 0'"
          ." -ex 'bt'");
 } elsif ($opt_gdbbt && $Debug) {
@@ -101,13 +100,12 @@ if ($opt_gdb) {
     run ("gdb"
          ." ".verilator_bin()
          ." --batch --quiet --return-child-result"
-         ." -ex 'run ".join(' ',@Opt_Verilator_Sw)."'"
+         ." -ex \"run ".join(' ', @quoted_sw)."\""
          ." -ex 'set width 0'"
          ." -ex 'bt'");
 } else {
     # Normal, non gdb
-    run (verilator_bin()
-         ." ".join(' ',@Opt_Verilator_Sw));
+    run (verilator_bin()." ".join(' ',@quoted_sw));
 }
 
 #----------------------------------------------------------------------
@@ -194,6 +192,16 @@ sub run {
         }
         die "%Error: Command Failed $command\n";
     }
+}
+
+sub sh_escape {
+    my ($arg) = @_;
+
+    # This is similar to quotemeta() but less aggressive.
+    # There's no need to escape hyphens, periods, or forward slashes
+    # for the shell as these have no special meaning to the shell.
+    $arg =~ s/([^0-9a-zA-Z_\-\.\/])/\\$1/g;
+    return $arg;
 }
 
 #######################################################################

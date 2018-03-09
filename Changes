@@ -12,6 +12,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix verilator_coverage --annotate-min, bug1284. [Tymoteusz Blazejczyk]
 
+****  Fix quoting of quoted arguments. [John Coiner]
+
 
 * Verilator 3.920 2018-02-01
 
