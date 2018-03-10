@@ -300,7 +300,9 @@ public:
 
 void V3Changed::changedAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    ChangedState state;
-    ChangedVisitor visitor (nodep, &state);
+    {
+        ChangedState state;
+        ChangedVisitor visitor (nodep, &state);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("changed", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

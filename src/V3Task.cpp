@@ -1395,7 +1395,9 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
 
 void V3Task::taskAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    TaskStateVisitor visitors (nodep);
-    TaskVisitor visitor (nodep, &visitors);
+    {
+        TaskStateVisitor visitors (nodep);
+        TaskVisitor visitor (nodep, &visitors);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("task", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

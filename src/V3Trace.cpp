@@ -712,6 +712,8 @@ public:
 
 void V3Trace::traceAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    TraceVisitor visitor (nodep);
+    {
+        TraceVisitor visitor (nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("trace", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

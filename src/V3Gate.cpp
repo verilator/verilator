@@ -1496,7 +1496,9 @@ public:
 
 void V3Gate::gateAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    GateVisitor visitor (nodep);
-    GateDeassignVisitor deassign (nodep);
+    {
+        GateVisitor visitor (nodep);
+        GateDeassignVisitor deassign (nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("gate", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

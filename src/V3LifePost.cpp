@@ -213,6 +213,8 @@ public:
 void V3LifePost::lifepostAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     // Mark redundant AssignPost
-    LifePostDlyVisitor visitor (nodep);
+    {
+        LifePostDlyVisitor visitor (nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("life_post", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

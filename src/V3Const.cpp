@@ -2559,15 +2559,19 @@ AstNode* V3Const::constifyGenerateParamsEdit(AstNode* nodep) {
 void V3Const::constifyAllLint(AstNetlist* nodep) {
     // Only call from Verilator.cpp, as it uses user#'s
     UINFO(2,__FUNCTION__<<": "<<endl);
-    ConstVisitor visitor (ConstVisitor::PROC_V_WARN);
-    (void)visitor.mainAcceptEdit(nodep);
+    {
+        ConstVisitor visitor (ConstVisitor::PROC_V_WARN);
+        (void)visitor.mainAcceptEdit(nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("const", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 void V3Const::constifyCpp(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    ConstVisitor visitor (ConstVisitor::PROC_CPP);
-    (void)visitor.mainAcceptEdit(nodep);
+    {
+        ConstVisitor visitor (ConstVisitor::PROC_CPP);
+        (void)visitor.mainAcceptEdit(nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("const_cpp", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
@@ -2582,16 +2586,20 @@ void V3Const::constifyAllLive(AstNetlist* nodep) {
     // This only pushes constants up, doesn't make any other edits
     // IE doesn't prune dead statements, as we need to do some usability checks after this
     UINFO(2,__FUNCTION__<<": "<<endl);
-    ConstVisitor visitor (ConstVisitor::PROC_LIVE);
-    (void)visitor.mainAcceptEdit(nodep);
+    {
+        ConstVisitor visitor (ConstVisitor::PROC_LIVE);
+        (void)visitor.mainAcceptEdit(nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("const", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 void V3Const::constifyAll(AstNetlist* nodep) {
     // Only call from Verilator.cpp, as it uses user#'s
     UINFO(2,__FUNCTION__<<": "<<endl);
-    ConstVisitor visitor (ConstVisitor::PROC_V_EXPENSIVE);
-    (void)visitor.mainAcceptEdit(nodep);
+    {
+        ConstVisitor visitor (ConstVisitor::PROC_V_EXPENSIVE);
+        (void)visitor.mainAcceptEdit(nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("const", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 

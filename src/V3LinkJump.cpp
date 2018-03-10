@@ -262,6 +262,8 @@ public:
 
 void V3LinkJump::linkJump(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    LinkJumpVisitor bvisitor (nodep);
+    {
+        LinkJumpVisitor bvisitor (nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("link", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

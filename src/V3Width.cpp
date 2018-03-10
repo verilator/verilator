@@ -3862,12 +3862,14 @@ int V3Width::debug() {
 
 void V3Width::width(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    // We should do it in bottom-up module order, but it works in any order.
-    WidthClearVisitor cvisitor (nodep);
-    WidthVisitor visitor (false, false);
-    (void)visitor.mainAcceptEdit(nodep);
-    WidthRemoveVisitor rvisitor;
-    (void)rvisitor.mainAcceptEdit(nodep);
+    {
+        // We should do it in bottom-up module order, but it works in any order.
+        WidthClearVisitor cvisitor (nodep);
+        WidthVisitor visitor (false, false);
+        (void)visitor.mainAcceptEdit(nodep);
+        WidthRemoveVisitor rvisitor;
+        (void)rvisitor.mainAcceptEdit(nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("width", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
@@ -3903,6 +3905,8 @@ AstNode* V3Width::widthGenerateParamsEdit(
 
 void V3Width::widthCommit(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    WidthCommitVisitor visitor (nodep);
+    {
+        WidthCommitVisitor visitor (nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("widthcommit", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

@@ -148,6 +148,8 @@ public:
 
 void V3Name::nameAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    NameVisitor visitor (nodep);
+    {
+        NameVisitor visitor (nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("name", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

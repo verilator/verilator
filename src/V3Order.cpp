@@ -1645,8 +1645,10 @@ void OrderVisitor::process() {
 
 void V3Order::orderAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    OrderClkMarkVisitor markVisitor(nodep);
-    OrderVisitor visitor;
-    visitor.main(nodep);
+    {
+        OrderClkMarkVisitor markVisitor(nodep);
+        OrderVisitor visitor;
+        visitor.main(nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("order", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

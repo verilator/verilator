@@ -582,12 +582,16 @@ AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModu
 
 void V3Inst::instAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    InstVisitor visitor (nodep);
+    {
+        InstVisitor visitor (nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("inst", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 void V3Inst::dearrayAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    InstDeVisitor visitor (nodep);
+    {
+        InstDeVisitor visitor (nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("dearray", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

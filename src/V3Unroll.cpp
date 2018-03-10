@@ -477,7 +477,9 @@ public:
 
 void V3Unroll::unrollAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    UnrollVisitor visitor (nodep, false, "");
+    {
+        UnrollVisitor visitor (nodep, false, "");
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("unroll", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
