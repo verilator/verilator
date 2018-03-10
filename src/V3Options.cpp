@@ -659,6 +659,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( onoff   (sw, "-covsp", flag/*ref*/) )	{ }  // TBD
 	    else if ( !strcmp (sw, "-debug-abort") )		{ abort(); } // Undocumented, see also --debug-sigsegv
 	    else if ( onoff   (sw, "-debug-check", flag/*ref*/) ){ m_debugCheck = flag; }
+            else if ( onoff   (sw, "-debug-leak", flag/*ref*/) ){ m_debugLeak = flag; }
 	    else if ( !strcmp (sw, "-debug-sigsegv") )		{ throwSigsegv(); }  // Undocumented, see also --debug-abort
 	    else if ( !strcmp (sw, "-debug-fatalsrc") )		{ v3fatalSrc("--debug-fatal-src"); }  // Undocumented, see also --debug-abort
 	    else if ( onoff   (sw, "-decoration", flag/*ref*/) ) { m_decoration = flag; }
@@ -1218,6 +1219,7 @@ V3Options::V3Options() {
     m_coverageUnderscore = false;
     m_coverageUser = false;
     m_debugCheck = false;
+    m_debugLeak = true;
     m_decoration = true;
     m_exe = false;
     m_ignc = false;

@@ -488,7 +488,9 @@ public:
 
 void V3Case::caseAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    CaseVisitor visitor (nodep);
+    {
+        CaseVisitor visitor (nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("case", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 void V3Case::caseLint(AstNodeCase* nodep) {

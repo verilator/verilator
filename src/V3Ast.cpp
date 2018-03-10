@@ -229,7 +229,8 @@ inline void AstNode::debugTreeChange(const char* prefix, int lineno, bool next) 
     // Called on all major tree changers.
     // Only for use for those really nasty bugs relating to internals
     // Note this may be null.
-    //if (debug()) cout<<"-treeChange: V3Ast.cpp:"<<lineno<<" Tree Change for "<<prefix<<": "<<(void*)this<<" <e"<<AstNode::s_editCntGbl<<">"<<endl;
+    //if (debug()) cout<<"-treeChange: V3Ast.cpp:"<<lineno<<" Tree Change for "
+    //                 <<prefix<<": "<<(void*)this<<" <e"<<AstNode::s_editCntGbl<<">"<<endl;
     //if (debug()) {
     //	cout<<"-treeChange: V3Ast.cpp:"<<lineno<<" Tree Change for "<<prefix<<endl;
     //	// Commenting out the section below may crash, as the tree state
@@ -677,9 +678,17 @@ void AstNode::deleteNode() {
     this->m_op2p = (AstNode*)1;
     this->m_op3p = (AstNode*)1;
     this->m_op4p = (AstNode*)1;
+    if (
 #if !defined(VL_DEBUG) || defined(VL_LEAK_CHECKS)
-    delete this;	// Leak massively, so each pointer is unique and we can debug easier
+        1
+#else
+        !v3Global.opt.debugLeak()
 #endif
+        ) {
+        delete this;
+    }
+    // Else leak massively, so each pointer is unique
+    // and we can debug easier.
 }
 
 AstNode::~AstNode() {
@@ -779,7 +788,9 @@ void AstNode::iterateAndNext(AstNVisitor& v) {
 	niterp->m_iterpp = &niterp;
 	niterp->accept(v);
 	// accept may do a replaceNode and change niterp on us...
-	//if (niterp != nodep) UINFO(1,"iterateAndNext edited "<<(void*)nodep<<" now into "<<(void*)niterp<<endl);  // niterp maybe NULL, so need cast
+        // niterp maybe NULL, so need cast if printing
+        //if (niterp != nodep) UINFO(1,"iterateAndNext edited "<<(void*)nodep
+        //                             <<" now into "<<(void*)niterp<<endl);
 	if (!niterp) return;  // Perhaps node deleted inside accept
 	niterp->m_iterpp = NULL;
 	if (VL_UNLIKELY(niterp!=nodep)) { // Edited node inside accept

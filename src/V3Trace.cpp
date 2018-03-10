@@ -205,7 +205,10 @@ private:
 	    if (TraceTraceVertex* vvertexp = dynamic_cast<TraceTraceVertex*>(itp)) {
 		AstTraceInc* nodep = vvertexp->nodep();
 		if (nodep->valuep()) {
-		    if (nodep->valuep()->backp() != nodep) nodep->v3fatalSrc("Trace duplicate back needs consistency, so we can map duplicates back to TRACEINCs");
+                    if (nodep->valuep()->backp() != nodep) {
+                        nodep->v3fatalSrc("Trace duplicate back needs consistency,"
+                                          " so we can map duplicates back to TRACEINCs");
+                    }
 		    hashed.hash(nodep->valuep());
                     UINFO(8, "  Hashed "<<std::hex<<hashed.nodeHash(nodep->valuep())<<" "<<nodep<<endl);
 
@@ -712,6 +715,8 @@ public:
 
 void V3Trace::traceAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    TraceVisitor visitor (nodep);
+    {
+        TraceVisitor visitor (nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("trace", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

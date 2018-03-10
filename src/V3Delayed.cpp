@@ -115,7 +115,8 @@ private:
 	//UINFO(4," MVU "<<flags<<" "<<nodep<<endl);
 	nodep->user5( nodep->user5() | flags );
 	if ((nodep->user5() & VU_DLY) && (nodep->user5() & VU_NONDLY)) {
-	    nodep->v3warn(BLKANDNBLK,"Unsupported: Blocked and non-blocking assignments to same variable: "<<nodep->varp()->prettyName());
+            nodep->v3warn(BLKANDNBLK,"Unsupported: Blocked and non-blocking assignments to same variable: "
+                          <<nodep->varp()->prettyName());
 	}
     }
     AstVarScope* createVarSc(AstVarScope* oldvarscp, string name, int width/*0==fromoldvar*/, AstNodeDType* newdtypep) {
@@ -158,7 +159,8 @@ private:
 	if (oldactivep->sensesp() != m_activep->sensesp()) {
 	    if (!varrefp->varp()->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVEN)
 		&& !varrefp->varp()->user2()) {
-		varrefp->varp()->v3warn(MULTIDRIVEN,"Signal has multiple driving blocks with different clocking: "<<varrefp->varp()->prettyName()<<endl
+                varrefp->varp()->v3warn(MULTIDRIVEN,"Signal has multiple driving blocks with different clocking: "
+                                        <<varrefp->varp()->prettyName()<<endl
 					<<varrefp->warnMore()<<"... Location of first driving block"<<endl
 					<<oldactivep->warnMore()<<"... Location of other driving block");
 		varrefp->varp()->user2(true);
@@ -195,8 +197,9 @@ private:
             arrayselp = VN_CAST(lhsp, ArraySel);
 	}
 	if (!arrayselp) nodep->v3fatalSrc("No arraysel under bitsel?");
-        if (VN_IS(arrayselp->dtypep()->skipRefp(), UnpackArrayDType)) nodep->v3fatalSrc("ArraySel with unpacked arrays should have been removed in V3Slice");
-
+        if (VN_IS(arrayselp->dtypep()->skipRefp(), UnpackArrayDType)) {
+            nodep->v3fatalSrc("ArraySel with unpacked arrays should have been removed in V3Slice");
+        }
 	UINFO(4,"AssignDlyArray: "<<nodep<<endl);
 	//
 	//=== Dimensions: __Vdlyvdim__
@@ -391,7 +394,9 @@ private:
 		UINFO(4,"AssignDlyVar: "<<nodep<<endl);
 		markVarUsage(nodep->varScopep(), VU_DLY);
 		if (!m_activep) nodep->v3fatalSrc("<= not under sensitivity block");
-		if (!m_activep->hasClocked()) nodep->v3error("Internal: Blocking <= assignment in non-clocked block, should have converted in V3Active");
+                if (!m_activep->hasClocked()) {
+                    nodep->v3error("Internal: Blocking <= assignment in non-clocked block, should have converted in V3Active");
+                }
 		AstVarScope* oldvscp = nodep->varScopep();
 		if (!oldvscp) nodep->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp");
                 AstVarScope* dlyvscp = VN_CAST(oldvscp->user1p(), VarScope);
@@ -470,6 +475,8 @@ public:
 
 void V3Delayed::delayedAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    DelayedVisitor visitor (nodep);
+    {
+        DelayedVisitor visitor (nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("delayed", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

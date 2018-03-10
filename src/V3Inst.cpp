@@ -545,7 +545,8 @@ public:
 	    // Important to add statement next to cell, in case there is a generate with same named cell
 	    cellp->addNextHere(newvarp);
 	    if (pinVarp->isInout()) {
-		pinVarp->v3fatalSrc("Unsupported: Inout connections to pins must be direct one-to-one connection (without any expression)");
+                pinVarp->v3fatalSrc("Unsupported: Inout connections to pins must be"
+                                    " direct one-to-one connection (without any expression)");
 	    } else if (pinVarp->isOutput()) {
 		// See also V3Inst
 		AstNode* rhsp = new AstVarRef(pinp->fileline(), newvarp, false);
@@ -582,12 +583,16 @@ AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModu
 
 void V3Inst::instAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    InstVisitor visitor (nodep);
+    {
+        InstVisitor visitor (nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("inst", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 void V3Inst::dearrayAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    InstDeVisitor visitor (nodep);
+    {
+        InstDeVisitor visitor (nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("dearray", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

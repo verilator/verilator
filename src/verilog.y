@@ -2663,6 +2663,8 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yaD_DPI '(' exprList ')'		{ $$ = new AstTaskRef($2,*$1,$3); GRAMMARP->argWrapList(VN_CAST($$, TaskRef)); }
 	//
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCStmt($1,$3)); }
+	|	yD_SYSTEM  '(' expr ')'				{ $$ = new AstSystemT($1,$3); }
+	//
 	|	yD_FCLOSE '(' idClassSel ')'		{ $$ = new AstFClose($1, $3); }
 	|	yD_FFLUSH parenE			{ $1->v3error("Unsupported: $fflush of all handles does not map to C++."); }
 	|	yD_FFLUSH '(' expr ')'			{ $$ = new AstFFlush($1, $3); }
@@ -2673,7 +2675,6 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	//
 	|	yD_SFORMAT '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
 	|	yD_SWRITE  '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
-	|	yD_SYSTEM  '(' expr ')'				{ $$ = new AstSystemT($1,$3); }
 	//
 	|	yD_DISPLAY  parenE				{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY,NULL,NULL); }
 	|	yD_DISPLAY  '(' exprList ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY,NULL,$3); }
@@ -2698,6 +2699,9 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_READMEMH '(' expr ',' idClassSel ')'				{ $$ = new AstReadMem($1,true, $3,$5,NULL,NULL); }
 	|	yD_READMEMH '(' expr ',' idClassSel ',' expr ')'		{ $$ = new AstReadMem($1,true, $3,$5,$7,NULL); }
 	|	yD_READMEMH '(' expr ',' idClassSel ',' expr ',' expr ')'	{ $$ = new AstReadMem($1,true, $3,$5,$7,$9); }
+	//
+	// Any system function as a task
+	|	system_f_call_or_t			{ $$ = new AstSysFuncAsTask($<fl>1, $1); }
 	;
 
 system_f_call<nodep>:		// IEEE: system_tf_call (as func)
@@ -2707,7 +2711,14 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	|	yaD_DPI parenE				{ $$ = new AstFuncRef($<fl>1,*$1,NULL); }
 	|	yaD_DPI '(' exprList ')'		{ $$ = new AstFuncRef($2,*$1,$3); GRAMMARP->argWrapList(VN_CAST($$, FuncRef)); }
 	//
-	|	yD_ACOS '(' expr ')'			{ $$ = new AstAcosD($1,$3); }
+	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCFunc($1,$3)); }
+	|	yD_SYSTEM  '(' expr ')'			{ $$ = new AstSystemF($1,$3); }
+	//
+	|	system_f_call_or_t			{ $$ = $1; }
+	;
+
+system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
+		yD_ACOS '(' expr ')'			{ $$ = new AstAcosD($1,$3); }
 	|	yD_ACOSH '(' expr ')'			{ $$ = new AstAcoshD($1,$3); }
 	|	yD_ASIN '(' expr ')'			{ $$ = new AstAsinD($1,$3); }
 	|	yD_ASINH '(' expr ')'			{ $$ = new AstAsinhD($1,$3); }
@@ -2717,7 +2728,6 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	|	yD_BITS '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3); }
 	|	yD_BITS '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3,$5); }
 	|	yD_BITSTOREAL '(' expr ')'		{ $$ = new AstBitsToRealD($1,$3); }
-	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCFunc($1,$3)); }
 	|	yD_CEIL '(' expr ')'			{ $$ = new AstCeilD($1,$3); }
 	|	yD_CLOG2 '(' expr ')'			{ $$ = new AstCLog2($1,$3); }
 	|	yD_COS '(' expr ')'			{ $$ = new AstCosD($1,$3); }
@@ -2762,7 +2772,6 @@ system_f_call<nodep>:		// IEEE: system_tf_call (as func)
 	|	yD_SQRT '(' expr ')'			{ $$ = new AstSqrtD($1,$3); }
 	|	yD_SSCANF '(' expr ',' str commaVRDListE ')'	{ $$ = new AstSScanF($1,*$5,$3,$6); }
 	|	yD_STIME parenE				{ $$ = new AstSel($1,new AstTime($1),0,32); }
-	|	yD_SYSTEM  '(' expr ')'			{ $$ = new AstSystemF($1,$3); }
 	|	yD_TAN '(' expr ')'			{ $$ = new AstTanD($1,$3); }
 	|	yD_TANH '(' expr ')'			{ $$ = new AstTanhD($1,$3); }
 	|	yD_TESTPLUSARGS '(' str ')'		{ $$ = new AstTestPlusArgs($1,*$3); }

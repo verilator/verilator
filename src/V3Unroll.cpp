@@ -185,10 +185,11 @@ private:
     }
 
     bool canSimulate(AstNode *nodep) {
-	SimulateVisitor simvis;
-	AstNode* clone = nodep->cloneTree(true);
-	simvis.mainCheckTree(clone);
-	return simvis.optimizable();
+        SimulateVisitor simvis;
+        AstNode* clonep = nodep->cloneTree(true);
+        simvis.mainCheckTree(clonep);
+        pushDeletep(clonep); clonep = NULL;
+        return simvis.optimizable();
     }
 
     bool simulateTree(AstNode *nodep, const V3Number *loopValue, AstNode *dtypep, V3Number &outNum) {
@@ -333,7 +334,9 @@ private:
 
 		    ++m_statIters;
 		    if (++times > unrollCount()*3) {
-			nodep->v3error("Loop unrolling took too long; probably this is an infinite loop, or set --unroll-count above "<<unrollCount());
+                        nodep->v3error("Loop unrolling took too long;"
+                                       " probably this is an infinite loop, or set --unroll-count above "
+                                       <<unrollCount());
 			break;
 		    }
 
@@ -477,7 +480,9 @@ public:
 
 void V3Unroll::unrollAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    UnrollVisitor visitor (nodep, false, "");
+    {
+        UnrollVisitor visitor (nodep, false, "");
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("unroll", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 

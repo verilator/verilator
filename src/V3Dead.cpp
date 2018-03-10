@@ -378,7 +378,8 @@ private:
 		// members are still alive.
                 if ((classp = VN_CAST((*it), NodeClassDType))) {
 		    bool cont = true;
-                    for (AstMemberDType *memberp = classp->membersp(); memberp; memberp = VN_CAST(memberp->nextp(), MemberDType)) {
+                    for (AstMemberDType *memberp = classp->membersp();
+                         memberp; memberp = VN_CAST(memberp->nextp(), MemberDType)) {
 			if (memberp->user1() != 0) {
 			    cont = false;
 			    break;
@@ -425,30 +426,40 @@ public:
 
 void V3Dead::deadifyModules(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    DeadVisitor visitor (nodep, false, false, false, false);
+    {
+        DeadVisitor visitor (nodep, false, false, false, false);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadModules", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }
 
 void V3Dead::deadifyDTypes(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    DeadVisitor visitor (nodep, false, true, false, false);
+    {
+        DeadVisitor visitor (nodep, false, true, false, false);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadDtypes", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 void V3Dead::deadifyDTypesScoped(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    DeadVisitor visitor (nodep, false, true, true, false);
+    {
+        DeadVisitor visitor (nodep, false, true, true, false);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadDtypesScoped", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 void V3Dead::deadifyAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    DeadVisitor visitor (nodep, true, true, false, true);
+    {
+        DeadVisitor visitor (nodep, true, true, false, true);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadAll", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 void V3Dead::deadifyAllScoped(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    DeadVisitor visitor (nodep, true, true, true, true);
+    {
+        DeadVisitor visitor (nodep, true, true, true, true);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deadAllScoped", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

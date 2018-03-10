@@ -600,7 +600,8 @@ private:
         bool bitvec = (portp->basicp()->keyword().isDpiBitVal() && portp->width() > 32);
         bool logicvec = (portp->basicp()->keyword().isDpiLogicVal() && portp->width() > 1);
         if (isRtn && (bitvec || logicvec)) {
-            portp->v3error("DPI functions cannot return > 32 bits or four-state; use a two-state type or task instead: "<<portp->prettyName());
+            portp->v3error("DPI functions cannot return > 32 bits or four-state;"
+                           " use a two-state type or task instead: "<<portp->prettyName());
             // Code below works, but won't compile right, and IEEE illegal
         }
 	string stmt;
@@ -1395,7 +1396,9 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
 
 void V3Task::taskAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    TaskStateVisitor visitors (nodep);
-    TaskVisitor visitor (nodep, &visitors);
+    {
+        TaskStateVisitor visitors (nodep);
+        TaskVisitor visitor (nodep, &visitors);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("task", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

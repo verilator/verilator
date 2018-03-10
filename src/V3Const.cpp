@@ -1202,7 +1202,8 @@ private:
 	AstAnd* newp = new AstAnd(nodep->fileline(),
 				  new AstConst(nodep->fileline(), val),
 				  fromp);
-	newp->dtypeSetLogicSized(nodep->width(), nodep->width(), AstNumeric::UNSIGNED);  // widthMin no longer applicable if different C-expanded width
+        // widthMin no longer applicable if different C-expanded width
+        newp->dtypeSetLogicSized(nodep->width(), nodep->width(), AstNumeric::UNSIGNED);
 	nodep->replaceWith(newp);
 	nodep->deleteTree(); VL_DANGLING(nodep);
 	if (debug()>=9) newp->dumpTree(cout,"       _new: ");
@@ -1759,7 +1760,8 @@ private:
 		    // Something's out of order, sort it
 		    senp = NULL;
 		    std::vector<AstNodeSenItem*> vec;
-                    for (AstNodeSenItem* senp = VN_CAST(nodep->sensesp(), NodeSenItem); senp; senp=VN_CAST(senp->nextp(), NodeSenItem)) {
+                    for (AstNodeSenItem* senp = VN_CAST(nodep->sensesp(), NodeSenItem);
+                         senp; senp=VN_CAST(senp->nextp(), NodeSenItem)) {
 			vec.push_back(senp);
 		    }
 		    stable_sort(vec.begin(), vec.end(), SenItemCmp());
@@ -2561,15 +2563,19 @@ AstNode* V3Const::constifyGenerateParamsEdit(AstNode* nodep) {
 void V3Const::constifyAllLint(AstNetlist* nodep) {
     // Only call from Verilator.cpp, as it uses user#'s
     UINFO(2,__FUNCTION__<<": "<<endl);
-    ConstVisitor visitor (ConstVisitor::PROC_V_WARN);
-    (void)visitor.mainAcceptEdit(nodep);
+    {
+        ConstVisitor visitor (ConstVisitor::PROC_V_WARN);
+        (void)visitor.mainAcceptEdit(nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("const", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 void V3Const::constifyCpp(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    ConstVisitor visitor (ConstVisitor::PROC_CPP);
-    (void)visitor.mainAcceptEdit(nodep);
+    {
+        ConstVisitor visitor (ConstVisitor::PROC_CPP);
+        (void)visitor.mainAcceptEdit(nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("const_cpp", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
@@ -2584,16 +2590,20 @@ void V3Const::constifyAllLive(AstNetlist* nodep) {
     // This only pushes constants up, doesn't make any other edits
     // IE doesn't prune dead statements, as we need to do some usability checks after this
     UINFO(2,__FUNCTION__<<": "<<endl);
-    ConstVisitor visitor (ConstVisitor::PROC_LIVE);
-    (void)visitor.mainAcceptEdit(nodep);
+    {
+        ConstVisitor visitor (ConstVisitor::PROC_LIVE);
+        (void)visitor.mainAcceptEdit(nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("const", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 void V3Const::constifyAll(AstNetlist* nodep) {
     // Only call from Verilator.cpp, as it uses user#'s
     UINFO(2,__FUNCTION__<<": "<<endl);
-    ConstVisitor visitor (ConstVisitor::PROC_V_EXPENSIVE);
-    (void)visitor.mainAcceptEdit(nodep);
+    {
+        ConstVisitor visitor (ConstVisitor::PROC_V_EXPENSIVE);
+        (void)visitor.mainAcceptEdit(nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("const", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 

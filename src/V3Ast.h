@@ -1110,7 +1110,8 @@ public:
     AstNode*	op4p() const { return m_op4p; }
     AstNodeDType* dtypep() const { return m_dtypep; }
     AstNode*	clonep() const { return ((m_cloneCnt==s_cloneCntGbl)?m_clonep:NULL); }
-    AstNode*	firstAbovep() const { return ((backp() && backp()->nextp()!=this) ? backp() : NULL); }  // Returns NULL when second or later in list
+    AstNode* firstAbovep() const {  // Returns NULL when second or later in list
+        return ((backp() && backp()->nextp()!=this) ? backp() : NULL); }
     bool	brokeExists() const;
     bool	brokeExistsAbove() const;
 
@@ -1301,7 +1302,8 @@ public:
     void	addHereThisAsNext(AstNode* newp); // Adds at old place of this, this becomes next
     void	replaceWith(AstNode* newp);	// Replace current node in tree with new node
     AstNode*	unlinkFrBack(AstNRelinker* linkerp=NULL);  // Unlink this from whoever points to it.
-    AstNode*	unlinkFrBackWithNext(AstNRelinker* linkerp=NULL);  // Unlink this from whoever points to it, keep entire next list with unlinked node
+    // Unlink this from whoever points to it, keep entire next list with unlinked node
+    AstNode*    unlinkFrBackWithNext(AstNRelinker* linkerp=NULL);
     void	swapWith(AstNode* bp);
     void	relink(AstNRelinker* linkerp);	// Generally use linker->relink() instead
     void	cloneRelinkNode() { cloneRelink(); }
@@ -1330,17 +1332,20 @@ public:
     virtual bool isPure() const { return true; }	// Else a $display, etc, that must be ordered with other displays
     virtual bool isBrancher() const { return false; }	// Changes control flow, disable some optimizations
     virtual bool isGateOptimizable() const { return true; }	// Else a AstTime etc that can't be pushed out
-    virtual bool isGateDedupable() const { return isGateOptimizable(); }  // GateDedupable is a slightly larger superset of GateOptimzable (eg, AstNodeIf)
+    // GateDedupable is a slightly larger superset of GateOptimzable (eg, AstNodeIf)
+    virtual bool isGateDedupable() const { return isGateOptimizable(); }
     virtual bool isSubstOptimizable() const { return true; }	// Else a AstTime etc that can't be substituted out
     virtual bool isPredictOptimizable() const { return true; }	// Else a AstTime etc which output can't be predicted from input
     virtual bool isOutputter() const { return false; }	// Else creates output or exits, etc, not unconsumed
-    virtual bool isUnlikely() const { return false; }	// Else $stop or similar statement which means an above IF statement is unlikely to be taken
+    // isUnlikely handles $stop or similar statement which means an above IF statement is unlikely to be taken
+    virtual bool isUnlikely() const { return false; }
     virtual int  instrCount() const { return 0; }
     virtual V3Hash sameHash() const { return V3Hash(V3Hash::Illegal()); }  // Not a node that supports it
     virtual bool same(const AstNode*) const { return true; }
     virtual bool hasDType() const { return false; }	// Iff has a data type; dtype() must be non null
     virtual AstNodeDType* getChildDTypep() const { return NULL; } // Iff has a non-null childDTypep(), as generic node function
-    virtual bool maybePointedTo() const { return false; }  // Another AstNode* may have a pointer into this node, other then normal front/back/etc.
+    // Another AstNode* may have a pointer into this node, other then normal front/back/etc.
+    virtual bool maybePointedTo() const { return false; }
     virtual const char* broken() const { return NULL; }
 
     // INVOKERS
@@ -1463,7 +1468,9 @@ public:
     void	rhsp(AstNode* nodep)  { return setOp2p(nodep); }
     void	thsp(AstNode* nodep)  { return setOp3p(nodep); }
     // METHODS
-    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs, const V3Number& ths) = 0; // Set out to evaluation of a AstConst'ed
+    // Set out to evaluation of a AstConst'ed
+    virtual void numberOperate(V3Number& out, const V3Number& lhs,
+                               const V3Number& rhs, const V3Number& ths) = 0;
     virtual bool cleanLhs() = 0; // True if LHS must have extra upper bits zero
     virtual bool cleanRhs() = 0; // True if RHS must have extra upper bits zero
     virtual bool cleanThs() = 0; // True if THS must have extra upper bits zero
@@ -1749,7 +1756,8 @@ public:
     bool isNosign() const { return m_numeric.isNosign(); }
     AstNumeric numeric() const { return m_numeric; }
     int	widthWords() const { return VL_WORDS_I(width()); }
-    int	widthMin() const { return m_widthMin?m_widthMin:m_width; }  // If sized, the size, if unsized the min digits to represent it
+    int widthMin() const {  // If sized, the size, if unsized the min digits to represent it
+        return m_widthMin?m_widthMin:m_width; }
     int widthPow2() const;
     void widthMinFromWidth() { m_widthMin = m_width; }
     bool widthSized() const { return !m_widthMin || m_widthMin==m_width; }
@@ -2089,11 +2097,16 @@ public:
 
 inline int AstNode::width() const    { return dtypep() ? dtypep()->width() : 0; }
 inline int AstNode::widthMin() const { return dtypep() ? dtypep()->widthMin() : 0; }
-inline bool AstNode::width1() const  { return dtypep() && dtypep()->width()==1; }  // V3Const uses to know it can optimize
-inline int  AstNode::widthInstrs() const { return (!dtypep() ? 1 : (dtypep()->isWide() ? dtypep()->widthWords() : 1)); }
-inline bool AstNode::isDouble() const { return dtypep() && VN_IS(dtypep(), BasicDType) && VN_CAST(dtypep(), BasicDType)->isDouble(); }
-inline bool AstNode::isString() const { return dtypep() && dtypep()->basicp() && dtypep()->basicp()->isString(); }
-inline bool AstNode::isSigned() const { return dtypep() && dtypep()->isSigned(); }
+inline bool AstNode::width1() const  {  // V3Const uses to know it can optimize
+    return dtypep() && dtypep()->width()==1; }
+inline int  AstNode::widthInstrs() const {
+    return (!dtypep() ? 1 : (dtypep()->isWide() ? dtypep()->widthWords() : 1)); }
+inline bool AstNode::isDouble() const {
+    return dtypep() && VN_IS(dtypep(), BasicDType) && VN_CAST(dtypep(), BasicDType)->isDouble(); }
+inline bool AstNode::isString() const {
+    return dtypep() && dtypep()->basicp() && dtypep()->basicp()->isString(); }
+inline bool AstNode::isSigned() const {
+    return dtypep() && dtypep()->isSigned(); }
 
 inline bool AstNode::isZero() const     { return (VN_IS(this, Const) && VN_CAST_CONST(this, Const)->num().isEqZero()); }
 inline bool AstNode::isNeqZero() const  { return (VN_IS(this, Const) && VN_CAST_CONST(this, Const)->num().isNeqZero()); }

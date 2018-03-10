@@ -1566,14 +1566,16 @@ void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
     processMoveDoneOne (vertexp);
 }
 
-inline void OrderMoveDomScope::ready(OrderVisitor* ovp) {	// Check the domScope is on ready list, add if not
+// Check the domScope is on ready list, add if not
+inline void OrderMoveDomScope::ready(OrderVisitor* ovp) {
     if (!m_onReadyList) {
 	m_onReadyList = true;
 	m_readyDomScopeE.pushBack(ovp->m_pomReadyDomScope, this);
     }
 }
 
-inline void OrderMoveDomScope::movedVertex(OrderVisitor* ovp, OrderMoveVertex* vertexp) {	// Mark one vertex as finished, remove from ready list if done
+// Mark one vertex as finished, remove from ready list if done
+inline void OrderMoveDomScope::movedVertex(OrderVisitor* ovp, OrderMoveVertex* vertexp) {
     UASSERT(m_onReadyList, "Moving vertex from ready when nothing was on que as ready.");
     if (m_readyVertices.empty()) {	// Else more work to get to later
 	m_onReadyList = false;
@@ -1645,8 +1647,10 @@ void OrderVisitor::process() {
 
 void V3Order::orderAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    OrderClkMarkVisitor markVisitor(nodep);
-    OrderVisitor visitor;
-    visitor.main(nodep);
+    {
+        OrderClkMarkVisitor markVisitor(nodep);
+        OrderVisitor visitor;
+        visitor.main(nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("order", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

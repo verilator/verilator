@@ -74,7 +74,10 @@ class SliceVisitor : public AstNVisitor {
 	// Insert an ArraySel, except for a few special cases
         AstUnpackArrayDType* arrayp = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType);
 	if (!arrayp) {  // V3Width should have complained, but...
-	    if (!m_assignError) nodep->v3error(nodep->prettyTypeName()<<" is not an unpacked array, but is in an unpacked array context");
+            if (!m_assignError) {
+                nodep->v3error(nodep->prettyTypeName()
+                               <<" is not an unpacked array, but is in an unpacked array context");
+            }
 	    m_assignError = true;
 	    return nodep->cloneTree(false);  // Likely will cause downstream errors
 	}
@@ -241,6 +244,8 @@ public:
 
 void V3Slice::sliceAll(AstNetlist* rootp) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    SliceVisitor visitor(rootp);
+    {
+        SliceVisitor visitor(rootp);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("slice", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

@@ -192,11 +192,13 @@ void svPutPartselLogic(svLogicVecVal* dp, const svLogicVecVal s, int lbit, int w
 
 static inline const VerilatedDpiOpenVar* _vl_openhandle_varp(const svOpenArrayHandle h) {
     if (VL_UNLIKELY(!h)) {
-        VL_FATAL_MT(__FILE__,__LINE__,"","%%Error: DPI svOpenArrayHandle function called with NULL handle");
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+                    "%%Error: DPI svOpenArrayHandle function called with NULL handle");
     }
     const VerilatedDpiOpenVar* varp = reinterpret_cast<const VerilatedDpiOpenVar*>(h);
     if (VL_UNLIKELY(!varp->magicOk())) {
-        VL_FATAL_MT(__FILE__,__LINE__,"","%%Error: DPI svOpenArrayHandle function called with non-Verilator handle");
+        VL_FATAL_MT(__FILE__, __LINE__, "",
+                    "%%Error: DPI svOpenArrayHandle function called with non-Verilator handle");
     }
     return varp;
 }
@@ -246,7 +248,8 @@ static void* _vl_sv_adjusted_datap(const VerilatedDpiOpenVar* varp,
                                    int nargs, int indx1, int indx2, int indx3) {
     void* datap = varp->datap();
     if (VL_UNLIKELY(nargs != varp->udims())) {
-        _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function called on %d dimensional array using %d dimensional function.\n",
+        _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function called on"
+                       " %d dimensional array using %d dimensional function.\n",
                        varp->udims(), nargs);
         return NULL;
     }

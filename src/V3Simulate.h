@@ -718,7 +718,9 @@ private:
 		nodep->bodysp()->iterateAndNext(*this);
 		nodep->incsp()->iterateAndNext(*this);
 		if (loops++ > unrollCount()*16) {
-		    clearOptimizable(nodep, "Loop unrolling took too long; probably this is an infinite loop, or set --unroll-count above "+cvtToStr(unrollCount()));
+                    clearOptimizable(nodep, "Loop unrolling took too long; probably this is an"
+                                     "infinite loop, or set --unroll-count above "
+                                     + cvtToStr(unrollCount()));
 		    break;
 		}
 	    }
@@ -752,7 +754,8 @@ private:
 
 		// Prep for next loop
 		if (loops++ > unrollCount()*16) {
-		    clearOptimizable(nodep, "Loop unrolling took too long; probably this is an infinite loop, or set --unroll-count above "+cvtToStr(unrollCount()));
+                    clearOptimizable(nodep, "Loop unrolling took too long; probably this is an infinite"
+                                     " loop, or set --unroll-count above "+cvtToStr(unrollCount()));
 		    break;
 		}
 	    }

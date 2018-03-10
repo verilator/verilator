@@ -139,6 +139,8 @@ public:
 
 void V3DepthBlock::depthBlockAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    DepthBlockVisitor visitor (nodep);
+    {
+        DepthBlockVisitor visitor (nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deepblock", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

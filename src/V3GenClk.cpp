@@ -242,6 +242,8 @@ public:
 
 void V3GenClk::genClkAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    GenClkReadVisitor visitor (nodep);
+    {
+        GenClkReadVisitor visitor (nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("genclk", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

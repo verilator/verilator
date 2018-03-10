@@ -782,6 +782,8 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 
 void V3Param::param(AstNetlist* rootp) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    ParamVisitor visitor (rootp);
+    {
+        ParamVisitor visitor (rootp);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("param", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

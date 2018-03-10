@@ -243,7 +243,9 @@ private:
     }
     bool expandWide (AstNodeAssign* nodep, AstArraySel* rhsp) {
 	UINFO(8,"    Wordize ASSIGN(ARRAYSEL) "<<nodep<<endl);
-        if (VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)) nodep->v3fatalSrc("ArraySel with unpacked arrays should have been removed in V3Slice");
+        if (VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
+            nodep->v3fatalSrc("ArraySel with unpacked arrays should have been removed in V3Slice");
+        }
 	for (int w=0; w<nodep->widthWords(); w++) {
 	    addWordAssign(nodep, w, newAstWordSelClone (rhsp, w));
 	}
@@ -936,6 +938,8 @@ public:
 
 void V3Expand::expandAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    ExpandVisitor visitor (nodep);
+    {
+        ExpandVisitor visitor (nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("expand", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

@@ -138,7 +138,8 @@ public:
     }
     // Read a datum and compare with expected value
     VerilatedDeserialize& readAssert(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE;
-    VerilatedDeserialize& readAssert(vluint64_t data) VL_MT_UNSAFE_ONE { return readAssert(&data, sizeof(data)); }
+    VerilatedDeserialize& readAssert(vluint64_t data) VL_MT_UNSAFE_ONE {
+        return readAssert(&data, sizeof(data)); }
 private:
     bool readDiffers(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE;
     VerilatedDeserialize& bufferCheck() VL_MT_UNSAFE_ONE {

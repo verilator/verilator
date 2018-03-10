@@ -376,6 +376,11 @@ public:
 	    puts(")); }\n");
 	}
     }
+    virtual void visit(AstSysFuncAsTask* nodep) {
+        if (!nodep->lhsp()->isWide()) puts("(void)");
+        nodep->lhsp()->iterateAndNext(*this);
+        if (!nodep->lhsp()->isWide()) puts(";");
+    }
     virtual void visit(AstSystemT* nodep) {
 	puts("(void)VL_SYSTEM_I");
 	emitIQW(nodep->lhsp());
@@ -509,31 +514,36 @@ public:
     }
     virtual void visit(AstMulS* nodep) {
 	if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
-	    nodep->v3error("Unsupported: Signed multiply of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
+            nodep->v3error("Unsupported: Signed multiply of "<<nodep->width()
+                           <<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
 	}
         visit(VN_CAST(nodep, NodeBiop));
     }
     virtual void visit(AstPow* nodep) {
 	if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
-	    nodep->v3error("Unsupported: Power of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
+            nodep->v3error("Unsupported: Power of "<<nodep->width()
+                           <<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
 	}
         visit(VN_CAST(nodep, NodeBiop));
     }
     virtual void visit(AstPowSS* nodep) {
 	if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
-	    nodep->v3error("Unsupported: Power of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
+            nodep->v3error("Unsupported: Power of "<<nodep->width()
+                           <<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
 	}
         visit(VN_CAST(nodep, NodeBiop));
     }
     virtual void visit(AstPowSU* nodep) {
 	if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
-	    nodep->v3error("Unsupported: Power of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
+            nodep->v3error("Unsupported: Power of "<<nodep->width()
+                           <<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
 	}
         visit(VN_CAST(nodep, NodeBiop));
     }
     virtual void visit(AstPowUS* nodep) {
 	if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
-	    nodep->v3error("Unsupported: Power of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
+            nodep->v3error("Unsupported: Power of "<<nodep->width()
+                           <<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
 	}
         visit(VN_CAST(nodep, NodeBiop));
     }
@@ -978,6 +988,7 @@ class EmitCImp : EmitCStmts {
     // High level
     void emitImp(AstNodeModule* modp);
     void emitStaticDecl(AstNodeModule* modp);
+    void emitSettleLoop(std::string eval_call, bool initial);
     void emitWrapEval(AstNodeModule* modp);
     void emitInt(AstNodeModule* modp);
 
@@ -1550,7 +1561,8 @@ void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
 	puts("\n// Coverage\n");
 	// Rather than putting out VL_COVER_INSERT calls directly, we do it via this function
 	// This gets around gcc slowness constructing all of the template arguments.
-	puts("void "+modClassName(m_modp)+"::__vlCoverInsert(uint32_t* countp, bool enable, const char* filenamep, int lineno, int column,\n");
+        puts("void "+modClassName(m_modp)+"::__vlCoverInsert(uint32_t* countp, bool enable,"
+             " const char* filenamep, int lineno, int column,\n");
 	puts(  	"const char* hierp, const char* pagep, const char* commentp) {\n");
 	puts(   "static uint32_t fake_zero_count = 0;\n");  // static doesn't need save-restore as constant
 	puts(   "if (!enable) countp = &fake_zero_count;\n");  // Used for second++ instantiation of identical bin
@@ -1729,6 +1741,29 @@ void EmitCImp::emitSensitives() {
     }
 }
 
+void EmitCImp::emitSettleLoop(std::string eval_call, bool initial) {
+    putsDecoration("// Evaluate till stable\n");
+    puts("int __VclockLoop = 0;\n");
+    puts("QData __Vchange = 1;\n");
+    puts("do {\n");
+    puts(    eval_call + "\n");
+    puts(    "if (VL_UNLIKELY(++__VclockLoop > "+cvtToStr(v3Global.opt.convergeLimit())
+             +")) {\n");
+    puts(        "// About to fail, so enable debug to see what's not settling.\n");
+    puts(        "// Note you must run make with OPT=-DVL_DEBUG for debug prints.\n");
+    puts(        "int __Vsaved_debug = Verilated::debug();\n");
+    puts(        "Verilated::debug(1);\n");
+    puts(        "__Vchange = _change_request(vlSymsp);\n");
+    puts(        "Verilated::debug(__Vsaved_debug);\n");
+    puts(        "VL_FATAL_MT(__FILE__,__LINE__,__FILE__,\"Verilated model didn't ");
+    if (initial) puts ("DC ");
+    puts(        "converge\");\n");
+    puts(    "} else {\n");
+    puts(        "__Vchange = _change_request(vlSymsp);\n");
+    puts(    "}\n");
+    puts("} while (VL_UNLIKELY(__Vchange));\n");
+}
+
 void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     puts("\nvoid "+modClassName(modp)+"::eval() {\n");
     puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+++++TOP Evaluate "+modClassName(modp)+"::eval\\n\"); );\n");
@@ -1750,20 +1785,10 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
 	puts("VL_DEBUG_IF(VL_DBG_MSGF(\"Train starting, trainId="+cvtToStr(trainId)+"\\n\"););\n");
 	puts("Verilated::trainId("+cvtToStr(trainId)+");\n");
     }
-
-    putsDecoration("// Evaluate till stable\n");
-    puts("int __VclockLoop = 0;\n");
-    puts("QData __Vchange = 1;\n");
-    puts("while (VL_LIKELY(__Vchange)) {\n");
-    puts(    "VL_DEBUG_IF(VL_DBG_MSGF(\"+ Clock loop\\n\"););\n");
-    if (v3Global.opt.trace()) {
-	puts("vlSymsp->__Vm_activity = true;\n");
-    }
-    puts(    "_eval(vlSymsp);\n");
-    puts(    "__Vchange = _change_request(vlSymsp);\n");
-    puts(    "if (VL_UNLIKELY(++__VclockLoop > "+cvtToStr(v3Global.opt.convergeLimit())
-	     +")) VL_FATAL_MT(__FILE__,__LINE__,__FILE__,\"Verilated model didn't converge\");\n");
-    puts("}\n");
+    emitSettleLoop(
+        (string("VL_DEBUG_IF(VL_DBG_MSGF(\"+ Clock loop\\n\"););\n")
+         + (v3Global.opt.trace() ? "vlSymsp->__Vm_activity = true;\n" : "")
+         + "_eval(vlSymsp);"), false);
     if (v3Global.opt.threads()) {  // THREADED-TODO move to end of all trains on thread
 	puts("Verilated::endOfThreadTrain(vlSymsp->__Vm_evalMsgQp);\n");
     }
@@ -1780,15 +1805,8 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     if (v3Global.opt.trace()) {
 	puts("vlSymsp->__Vm_activity = true;\n");
     }
-    puts(    "int __VclockLoop = 0;\n");
-    puts(    "QData __Vchange = 1;\n");
-    puts(    "while (VL_LIKELY(__Vchange)) {\n");
-    puts(        "_eval_settle(vlSymsp);\n");
-    puts(        "_eval(vlSymsp);\n");
-    puts(	 "__Vchange = _change_request(vlSymsp);\n");
-    puts(        "if (VL_UNLIKELY(++__VclockLoop > "+cvtToStr(v3Global.opt.convergeLimit())
-		 +")) VL_FATAL_MT(__FILE__,__LINE__,__FILE__,\"Verilated model didn't DC converge\");\n");
-    puts(    "}\n");
+    emitSettleLoop((string("_eval_settle(vlSymsp);\n")
+                    +"_eval(vlSymsp);"), true);
     puts("}\n");
     splitSizeInc(10);
 }
@@ -2296,8 +2314,9 @@ class EmitCTrace : EmitCStmts {
 	putsDecoration("// Callback from vcd->open()\n");
 	puts(topClassName()+"* t=("+topClassName()+"*)userthis;\n");
 	puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp;  // Setup global symbol table\n");
-	puts("if (!Verilated::calcUnusedSigs()) VL_FATAL_MT(__FILE__,__LINE__,__FILE__,\"Turning on wave traces requires Verilated::traceEverOn(true) call before time 0.\");\n");
-
+        puts("if (!Verilated::calcUnusedSigs()) {\n");
+        puts(    "VL_FATAL_MT(__FILE__,__LINE__,__FILE__,\"Turning on wave traces requires Verilated::traceEverOn(true) call before time 0.\");\n");
+        puts("}\n");
 	puts("vcdp->scopeEscape(' ');\n");
         puts("t->traceInitThis(vlSymsp, vcdp, code);\n");
 	puts("vcdp->scopeEscape('.');\n");  // Restore so later traced files won't break

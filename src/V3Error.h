@@ -266,8 +266,11 @@ inline void v3errorEndFatal(std::ostringstream& sstr) { V3Error::v3errorEnd(sstr
 // Careful, you can't put () around msg, as you would in most macro definitions
 // Note the commas are the comma operator, not separating arguments. These are needed to insure
 // evaluation order as otherwise we couldn't insure v3errorPrep is called first.
-#define v3warnCode(code,msg) v3errorEnd((V3Error::v3errorPrep(code), (V3Error::v3errorStr()<<msg), V3Error::v3errorStr()));
-#define v3warnCodeFatal(code,msg) v3errorEndFatal((V3Error::v3errorPrep(code), (V3Error::v3errorStr()<<msg), V3Error::v3errorStr()));
+#define v3warnCode(code,msg) \
+    v3errorEnd((V3Error::v3errorPrep(code), (V3Error::v3errorStr()<<msg), V3Error::v3errorStr()));
+#define v3warnCodeFatal(code,msg) \
+    v3errorEndFatal((V3Error::v3errorPrep(code), (V3Error::v3errorStr()<<msg), \
+                     V3Error::v3errorStr()));
 #define v3warn(code,msg) v3warnCode(V3ErrorCode::code, msg)
 #define v3info(msg)  v3warnCode(V3ErrorCode::EC_INFO, msg)
 #define v3error(msg) v3warnCode(V3ErrorCode::EC_ERROR, msg)
@@ -286,7 +289,9 @@ inline void v3errorEndFatal(std::ostringstream& sstr) { V3Error::v3errorEnd(sstr
 
 #define UASSERT(condition,stmsg) { if (VL_UNLIKELY(!(condition))) { v3fatalSrc(stmsg); }}
 // For use in V3Ast static functions only
-#define UASSERT_STATIC(condition,stmsg) { if (VL_UNLIKELY(!(condition))) { std::cerr<<"Internal Error: "<<__FILE__<<":"<<std::dec<<__LINE__<<":"<<(stmsg)<<std::endl; abort(); } }
+#define UASSERT_STATIC(condition,stmsg) \
+    { if (VL_UNLIKELY(!(condition))) { \
+            std::cerr<<"Internal Error: "<<__FILE__<<":"<<std::dec<<__LINE__<<":"<<(stmsg)<<std::endl; abort(); } }
 
 #define V3ERROR_NA { v3error("Internal: Unexpected Call"); v3fatalSrc("Unexpected Call"); }
 

@@ -66,7 +66,8 @@ private:
     static inline int debug() { return 0; }  // NOT runtime, too hot of a function
 #endif
 public:
-    void dumpIterate(std::ostream& os, VSymConstMap& doneSymsr, const string& indent, int numLevels, const string& searchName) const {
+    void dumpIterate(std::ostream& os, VSymConstMap& doneSymsr, const string& indent,
+                     int numLevels, const string& searchName) const {
         os<<indent<<"+ "<<std::left<<std::setw(30)<<(searchName==""?"\"\"":searchName)<<std::setw(0)<<std::right;
         os<<"  se"<<(void*)(this)<<std::setw(0);
 	os<<"  fallb=se"<<(void*)(m_fallbackp);

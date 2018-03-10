@@ -349,6 +349,8 @@ public:
 
 void V3Assert::assertAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    AssertVisitor visitor (nodep);
+    {
+        AssertVisitor visitor (nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("assert", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

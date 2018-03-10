@@ -103,7 +103,8 @@ class EmitCSyms : EmitCBaseVisitor {
 	    if (rsvd != "") {
 		// Generally V3Name should find all of these and throw SYMRSVDWORD.
 		// We'll still check here because the compiler errors resulting if we miss this warning are SO nasty
-		nodep->v3error("Symbol matching "+rsvd+" reserved word reached emitter, should have hit SYMRSVDWORD: '"<<nodep->prettyName()<<"'");
+                nodep->v3error("Symbol matching "+rsvd+" reserved word reached emitter,"
+                               " should have hit SYMRSVDWORD: '"<<nodep->prettyName()<<"'");
 	    }
 	}
     }

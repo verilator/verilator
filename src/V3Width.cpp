@@ -31,11 +31,11 @@
 //		    widthSized() = true if all constants sized, else false
 //	    Compute size of this expression
 //	    Lint warn about mismatches
-//		If expr size != subop fixed, bad
-//		If expr size  < subop unsized minimum, bad
-//		If expr size != subop, edit netlist
-//			For == and similar ops, if multibit underneath, add a REDOR
-//			If subop larger, add a EXTRACT
+//              If expr size != subop fixed, bad
+//              If expr size  < subop unsized minimum, bad
+//              If expr size != subop, edit netlist
+//                      For == and similar ops, if multibit underneath, add a REDOR
+//                      If subop larger, add a EXTRACT
 //			If subop smaller, add a EXTEND
 //	    Pass size to sub-expressions if required (+/-* etc)
 //              FINAL = true.
@@ -48,16 +48,16 @@
 //	Comparison results are unsigned
 //	Bit&Part selects are unsigned, even if whole
 //	Concatenates are unsigned
-//	Ignore signedness of self-determined:
-//		shift rhs, ** rhs, x?: lhs, concat and replicate members
+//      Ignore signedness of self-determined:
+//              shift rhs, ** rhs, x?: lhs, concat and replicate members
 //	Else, if any operand unsigned, output unsigned
 //
 // Real number rules:
 //      Real numbers are real (duh)
 //	Reals convert to integers by rounding
 //	Reals init to 0.0
-//	Logicals convert compared to zero
-//	If any operand is real, result is real
+//      Logicals convert compared to zero
+//      If any operand is real, result is real
 //*************************************************************************
 // V3Width is the only visitor that uses vup.  We could switch to using userp,
 // though note some iterators operate on next() and so would need to pass the
@@ -1199,7 +1199,9 @@ private:
 		    if (nodep->valuep()->dtypep()->widthSized()) {
 			width = nodep->valuep()->width();
 		    } else {
-			if (nodep->valuep()->width()>32) nodep->valuep()->v3warn(WIDTH,"Assigning >32 bit to unranged parameter (defaults to 32 bits)");
+                        if (nodep->valuep()->width()>32) {
+                            nodep->valuep()->v3warn(WIDTH,"Assigning >32 bit to unranged parameter (defaults to 32 bits)");
+                        }
 			width = 32;
 		    }
 		    // Can't just inherit valuep()->dtypep() as mwidth might not equal width
@@ -1244,7 +1246,8 @@ private:
 	if (nodep->didWidth()) return;
 	if (!nodep->varp()) {
             if (m_paramsOnly && VN_IS(nodep, VarXRef)) {
-		checkConstantOrReplace(nodep, "Parameter-resolved constants must not use dotted references: "+nodep->prettyName()); VL_DANGLING(nodep);
+                checkConstantOrReplace(nodep, "Parameter-resolved constants must not use dotted references: "
+                                       +nodep->prettyName()); VL_DANGLING(nodep);
 		return;
 	    } else {
 		nodep->v3fatalSrc("Unlinked varref");
@@ -1493,13 +1496,15 @@ private:
 	    } else {
 		AstSel* newp = new AstSel(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
 					  memberp->lsb(), memberp->width());
-		newp->dtypep(memberp->subDTypep()->skipRefToEnump());  // Must skip over the member to find the union; as the member may disappear later
+                // Must skip over the member to find the union; as the member may disappear later
+                newp->dtypep(memberp->subDTypep()->skipRefToEnump());
 		newp->didWidth(true);  // Don't replace dtype with basic type
 		UINFO(9,"   MEMBERSEL -> "<<newp<<endl);
 		UINFO(9,"           dt-> "<<newp->dtypep()<<endl);
 		nodep->replaceWith(newp);
 		pushDeletep(nodep); VL_DANGLING(nodep);
-		// Should be able to treat it as a normal-ish nodesel - maybe.  The lhsp() will be strange until this stage; create the number here?
+                // Should be able to treat it as a normal-ish nodesel - maybe.
+                // The lhsp() will be strange until this stage; create the number here?
 	    }
 	}
 	if (!memberp) {  // Very bogus, but avoids core dump
@@ -1661,7 +1666,9 @@ private:
 	    nodep->dtypep(m_vup->dtypep());
 	}
 	AstNodeDType* vdtypep = nodep->dtypep();
-	if (!vdtypep) nodep->v3error("Unsupported/Illegal: Assignment pattern member not underneath a supported construct: "<<nodep->backp()->prettyTypeName());
+        if (!vdtypep) nodep->v3error("Unsupported/Illegal: Assignment pattern"
+                                     " member not underneath a supported construct: "
+                                     <<nodep->backp()->prettyTypeName());
 	{
 	    vdtypep = vdtypep->skipRefp();
 	    nodep->dtypep(vdtypep);
@@ -1721,7 +1728,8 @@ private:
 					continue;
 				    }
 				} else {
-				    patp->keyp()->v3error("Assignment pattern key not supported/understood: "<<patp->keyp()->prettyTypeName());
+                                    patp->keyp()->v3error("Assignment pattern key not"
+                                                          " supported/understood: "<<patp->keyp()->prettyTypeName());
 				}
 			    }
 			}
@@ -1733,7 +1741,8 @@ private:
 			} else {
                             std::pair<PatMap::iterator, bool> ret = patmap.insert(make_pair(memp, patp));
 			    if (!ret.second) {
-                                patp->v3error("Assignment pattern contains duplicate entry: " << VN_CAST(patp->keyp(), Text)->text());
+                                patp->v3error("Assignment pattern contains duplicate entry: "
+                                              << VN_CAST(patp->keyp(), Text)->text());
 			    }
 			}
 			// Next
@@ -2189,6 +2198,10 @@ private:
 	    nodep->dtypeSetSigned32();  // Spec says integer return
 	}
     }
+    virtual void visit(AstSysFuncAsTask* nodep) {
+        assertAtStatement(nodep);
+        userIterateAndNext(nodep->lhsp(), WidthVP(SELF,BOTH).p());
+    }
     virtual void visit(AstSystemT* nodep) {
 	assertAtStatement(nodep);
 	userIterateAndNext(nodep->lhsp(), WidthVP(SELF,BOTH).p());
@@ -2286,8 +2299,12 @@ private:
                 if ((VN_IS(modDTypep, IfaceRefDType) && !VN_IS(exprDTypep, IfaceRefDType)) ||
                     (VN_IS(exprDTypep, IfaceRefDType) && !VN_IS(modDTypep, IfaceRefDType))) {
 		    nodep->v3error("Illegal "<<nodep->prettyOperatorName()<<","
-                                   <<" mismatch between port which is"<<(VN_CAST(modDTypep, IfaceRefDType)?"":" not")<<" an interface,"
-                                   <<" and expression which is"<<(VN_CAST(exprDTypep, IfaceRefDType)?"":" not")<<" an interface.");
+                                   <<" mismatch between port which is"
+                                   <<(VN_CAST(modDTypep, IfaceRefDType)?"":" not")
+                                   <<" an interface,"
+                                   <<" and expression which is"
+                                   <<(VN_CAST(exprDTypep, IfaceRefDType)?"":" not")
+                                   <<" an interface.");
                 }
 
 		// TODO Simple dtype checking, should be a more general check
@@ -2952,9 +2969,12 @@ private:
     bool widthBad (AstNode* nodep, AstNodeDType* expDTypep) {
 	int expWidth = expDTypep->width();
 	int expWidthMin = expDTypep->widthMin();
-	if (!nodep->dtypep()) nodep->v3fatalSrc("Under node "<<nodep->prettyTypeName()<<" has no dtype?? Missing Visitor func?");
-	if (nodep->width()==0) nodep->v3fatalSrc("Under node "<<nodep->prettyTypeName()<<" has no expected width?? Missing Visitor func?");
-	if (expWidth==0) nodep->v3fatalSrc("Node "<<nodep->prettyTypeName()<<" has no expected width?? Missing Visitor func?");
+        if (!nodep->dtypep()) nodep->v3fatalSrc("Under node "<<nodep->prettyTypeName()
+                                                <<" has no dtype?? Missing Visitor func?");
+        if (nodep->width()==0) nodep->v3fatalSrc("Under node "<<nodep->prettyTypeName()
+                                                 <<" has no expected width?? Missing Visitor func?");
+        if (expWidth==0) nodep->v3fatalSrc("Node "<<nodep->prettyTypeName()
+                                           <<" has no expected width?? Missing Visitor func?");
 	if (expWidthMin==0) expWidthMin = expWidth;
 	if (nodep->dtypep()->width() == expWidth) return false;
 	if (nodep->dtypep()->widthSized()  && nodep->width() != expWidthMin) return true;
@@ -3860,12 +3880,14 @@ int V3Width::debug() {
 
 void V3Width::width(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    // We should do it in bottom-up module order, but it works in any order.
-    WidthClearVisitor cvisitor (nodep);
-    WidthVisitor visitor (false, false);
-    (void)visitor.mainAcceptEdit(nodep);
-    WidthRemoveVisitor rvisitor;
-    (void)rvisitor.mainAcceptEdit(nodep);
+    {
+        // We should do it in bottom-up module order, but it works in any order.
+        WidthClearVisitor cvisitor (nodep);
+        WidthVisitor visitor (false, false);
+        (void)visitor.mainAcceptEdit(nodep);
+        WidthRemoveVisitor rvisitor;
+        (void)rvisitor.mainAcceptEdit(nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("width", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
@@ -3901,6 +3923,8 @@ AstNode* V3Width::widthGenerateParamsEdit(
 
 void V3Width::widthCommit(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    WidthCommitVisitor visitor (nodep);
+    {
+        WidthCommitVisitor visitor (nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("widthcommit", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

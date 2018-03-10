@@ -430,7 +430,8 @@ QData VL_POW_QQW(int, int, int rbits, QData lhs, WDataInP rwp) VL_MT_SAFE {
     return out;
 }
 
-WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, bool lsign, bool rsign) VL_MT_SAFE {
+WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, WDataInP rwp,
+                       bool lsign, bool rsign) VL_MT_SAFE {
     // obits==lbits, rbits can be different
     if (rsign && VL_SIGN_W(rbits, rwp)) {
 	int words = VL_WORDS_I(obits);
@@ -450,7 +451,9 @@ WDataOutP VL_POWSS_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, W
     }
     return VL_POW_WWW(obits, rbits, rbits, owp, lwp, rwp);
 }
-WDataOutP VL_POWSS_WWQ(int obits, int lbits, int rbits, WDataOutP owp, WDataInP lwp, QData rhs, bool lsign, bool rsign) VL_MT_SAFE {
+WDataOutP VL_POWSS_WWQ(int obits, int lbits, int rbits,
+                       WDataOutP owp, WDataInP lwp, QData rhs,
+                       bool lsign, bool rsign) VL_MT_SAFE {
     WData rhsw[2];  VL_SET_WQ(rhsw, rhs);
     return VL_POWSS_WWW(obits,lbits,rbits,owp,lwp,rhsw,lsign,rsign);
 }
@@ -982,7 +985,8 @@ void _VL_VINT_TO_STRING(int obits, char* destoutp, WDataInP sourcep) VL_MT_SAFE 
 	}
     }
     *destp = '\0'; // Terminate
-    if (!start) while (isspace(*(destp-1)) && destp>destoutp) *--destp = '\0';  // Drop trailing spaces
+    // Drop trailing spaces
+    if (!start) while (isspace(*(destp-1)) && destp>destoutp) *--destp = '\0';
 }
 
 void _VL_STRING_TO_VINT(int obits, void* destp, size_t srclen, const char* srcp) VL_MT_SAFE {
@@ -1239,7 +1243,8 @@ void VL_READMEM_N(bool hex, int width, int depth, int array_lsb, int fnwords,
     while (1) {
         int c = fgetc(fp);
         if (VL_UNLIKELY(c==EOF)) break;
-        //printf("%d: Got '%c' Addr%x IN%d IgE%d IgC%d ninc%d\n", linenum, c, addr, innum, ignore_to_eol, ignore_to_cmt, needinc);
+        //printf("%d: Got '%c' Addr%x IN%d IgE%d IgC%d ninc%d\n",
+        //       linenum, c, addr, innum, ignore_to_eol, ignore_to_cmt, needinc);
         if (c=='\n') { linenum++; ignore_to_eol=false; if (innum) reading_addr=false; innum=false; }
         else if (c=='\t' || c==' ' || c=='\r' || c=='\f') { if (innum) reading_addr=false; innum=false; }
         // Skip // comments and detect /* comments
@@ -1267,7 +1272,8 @@ void VL_READMEM_N(bool hex, int width, int depth, int array_lsb, int fnwords,
                     //printf(" Value width=%d  @%x = %c\n", width, addr, c);
                     if (VL_UNLIKELY(addr >= static_cast<IData>(depth+array_lsb)
                                     || addr < static_cast<IData>(array_lsb))) {
-                        VL_FATAL_MT (ofilenamep.c_str(), linenum, "", "$readmem file address beyond bounds of array");
+                        VL_FATAL_MT (ofilenamep.c_str(), linenum, "",
+                                     "$readmem file address beyond bounds of array");
                     } else {
                         int entry = addr - array_lsb;
                         QData shift = hex ? VL_ULL(4) : VL_ULL(1);
@@ -1296,7 +1302,8 @@ void VL_READMEM_N(bool hex, int width, int depth, int array_lsb, int fnwords,
                             datap[0] |= value;
                         }
                         if (VL_UNLIKELY(value>=(1<<shift))) {
-                            VL_FATAL_MT (ofilenamep.c_str(), linenum, "", "$readmemb (binary) file contains hex characters");
+                            VL_FATAL_MT (ofilenamep.c_str(), linenum, "",
+                                         "$readmemb (binary) file contains hex characters");
                         }
                     }
                 }
@@ -1745,7 +1752,9 @@ void VerilatedScope::varInsert(int finalize, const char* namep, void* datap,
 	} else {
 	    // We could have a linked list of ranges, but really this whole thing needs
 	    // to be generalized to support structs and unions, etc.
-	    VL_FATAL_MT(__FILE__,__LINE__,"",(std::string("Unsupported multi-dimensional public varInsert: ")+namep).c_str());
+            VL_FATAL_MT(__FILE__,__LINE__,"",
+                        (std::string("Unsupported multi-dimensional public varInsert: ")
+                         + namep).c_str());
 	}
     }
     va_end(ap);

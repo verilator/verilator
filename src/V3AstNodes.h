@@ -47,26 +47,26 @@ private:
 public:
     AstConst(FileLine* fl, const V3Number& num)
 	:AstNodeMath(fl)
-	,m_num(num) {
+        ,m_num(num) {
 	if (m_num.isDouble()) {
 	    dtypeSetDouble();
-	} else if (m_num.isString()) {
+        } else if (m_num.isString()) {
 	    dtypeSetString();
 	} else {
-	    dtypeSetLogicSized(m_num.width(), m_num.sized()?0:m_num.widthMin(),
-			       m_num.isSigned() ? AstNumeric::SIGNED
+            dtypeSetLogicSized(m_num.width(), m_num.sized()?0:m_num.widthMin(),
+                               m_num.isSigned() ? AstNumeric::SIGNED
 			       : AstNumeric::UNSIGNED);
-	}
+        }
     }
     AstConst(FileLine* fl, uint32_t num)
 	:AstNodeMath(fl)
-	,m_num(V3Number(fl,32,num)) { dtypeSetLogicSized(m_num.width(),
+        ,m_num(V3Number(fl,32,num)) { dtypeSetLogicSized(m_num.width(),
 							 m_num.sized()?0:m_num.widthMin(),
 							 AstNumeric::UNSIGNED); }
-    class Unsized32 {};		// for creator type-overload selection
+    class Unsized32 {};         // for creator type-overload selection
     AstConst(FileLine* fl, Unsized32, uint32_t num)  // Unsized 32-bit integer of specified value
-	:AstNodeMath(fl)
-	,m_num(V3Number(fl,32,num)) { m_num.width(32,false); dtypeSetLogicSized(32,m_num.widthMin(),
+        :AstNodeMath(fl)
+        ,m_num(V3Number(fl,32,num)) { m_num.width(32,false); dtypeSetLogicSized(32,m_num.widthMin(),
 										AstNumeric::UNSIGNED); }
     class Signed32 {};		// for creator type-overload selection
     AstConst(FileLine* fl, Signed32, int32_t num)  // Signed 32-bit integer of specified value
@@ -79,7 +79,7 @@ public:
 	,m_num(V3Number(fl,64)) { m_num.setDouble(num); dtypeSetDouble(); }
     class String {};		// for creator type-overload selection
     AstConst(FileLine* fl, String, const string& num)
-	:AstNodeMath(fl)
+        :AstNodeMath(fl)
 	,m_num(V3Number(V3Number::String(), fl, num)) { dtypeSetString(); }
     class LogicFalse {};
     AstConst(FileLine* fl, LogicFalse) // Shorthand const 0, know the dtype should be a logic of size 1
@@ -706,13 +706,17 @@ public:
     virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
     virtual bool similarDType(AstNodeDType* samep) const { return this==samep; }
     //
-    virtual AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type (Note don't need virtual - AstVar isn't a NodeDType)
-    AstNodeDType* dtypeSkipRefp() const { return subDTypep()->skipRefp(); }	// op1 = Range of variable (Note don't need virtual - AstVar isn't a NodeDType)
+    // (Slow) recurse down to find basic data type (Note don't need virtual - AstVar isn't a NodeDType)
+    virtual AstBasicDType* basicp() const { return subDTypep()->basicp(); }
+    // op1 = Range of variable (Note don't need virtual - AstVar isn't a NodeDType)
+    AstNodeDType* dtypeSkipRefp() const { return subDTypep()->skipRefp(); }
     virtual AstNodeDType* skipRefp() const { return subDTypep()->skipRefp(); }
     virtual AstNodeDType* skipRefToConstp() const { return subDTypep()->skipRefToConstp(); }
     virtual AstNodeDType* skipRefToEnump() const { return subDTypep()->skipRefToEnump(); }
-    virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); } // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
-    virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); } // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
+    // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
+    virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
+    // (Slow) recurses - Width in bytes rounding up 1,2,4,8,12,...
+    virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
     // METHODS
     virtual void name(const string& name) { m_name = name; }
     virtual void tag(const string& text) { m_tag = text;}
@@ -1183,7 +1187,8 @@ public:
     string	scType() const;	  // Return SysC type: bool, uint32_t, uint64_t, sc_bv
     string	cPubArgType(bool named, bool forReturn) const;  // Return C /*public*/ type for argument: bool, uint32_t, uint64_t, etc.
     string	dpiArgType(bool named, bool forReturn) const;  // Return DPI-C type for argument
-    string	vlArgType(bool named, bool forReturn, bool forFunc) const;  // Return Verilator internal type for argument: CData, SData, IData, WData
+    // Return Verilator internal type for argument: CData, SData, IData, WData
+    string vlArgType(bool named, bool forReturn, bool forFunc) const;
     string	vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string	vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
     string vlPropInit() const;  // Return VerilatorVarProps initializer
@@ -1191,7 +1196,8 @@ public:
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }  // op1 = Range of variable
     AstNodeDType* dtypeSkipRefp() const { return subDTypep()->skipRefp(); }
-    AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type (Note don't need virtual - AstVar isn't a NodeDType)
+    // (Slow) recurse down to find basic data type (Note don't need virtual - AstVar isn't a NodeDType)
+    AstBasicDType* basicp() const { return subDTypep()->basicp(); }
     AstNode* 	valuep() const { return op3p(); } // op3 = Initial value that never changes (static const)
     void	valuep(AstNode* nodep) { setOp3p(nodep); }    // It's valuep, not constp, as may be more complicated than an AstConst
     void	addAttrsp(AstNode* nodep) { addNOp4p(nodep); }
@@ -1443,11 +1449,14 @@ class AstVarRef : public AstNodeVarRef {
     // A reference to a variable (lvalue or rvalue)
 public:
     AstVarRef(FileLine* fl, const string& name, bool lvalue)
-	:AstNodeVarRef(fl, name, NULL, lvalue) {}
-    AstVarRef(FileLine* fl, AstVar* varp, bool lvalue)  // This form only allowed post-link
-	:AstNodeVarRef(fl, varp->name(), varp, lvalue) {}		// because output/wire compression may lead to deletion of AstVar's
-    AstVarRef(FileLine* fl, AstVarScope* varscp, bool lvalue)  // This form only allowed post-link
-	:AstNodeVarRef(fl, varscp->varp()->name(), varscp->varp(), lvalue) {	// because output/wire compression may lead to deletion of AstVar's
+        : AstNodeVarRef(fl, name, NULL, lvalue) {}
+    // This form only allowed post-link because output/wire compression may
+    // lead to deletion of AstVar's
+    AstVarRef(FileLine* fl, AstVar* varp, bool lvalue)
+        : AstNodeVarRef(fl, varp->name(), varp, lvalue) {}
+    // This form only allowed post-link (see above)
+    AstVarRef(FileLine* fl, AstVarScope* varscp, bool lvalue)
+        : AstNodeVarRef(fl, varscp->varp()->name(), varscp->varp(), lvalue) {
 	varScopep(varscp);
     }
     ASTNODE_NODE_FUNCS(VarRef)
@@ -2331,7 +2340,9 @@ public:
     ASTNODE_NODE_FUNCS(CoverDecl)
     virtual const char* broken() const {
 	BROKEN_RTN(m_dataDeclp && !m_dataDeclp->brokeExists());
-	if (m_dataDeclp && m_dataDeclp->m_dataDeclp) v3fatalSrc("dataDeclp should point to real data, not be a list");  // Avoid O(n^2) accessing
+        if (m_dataDeclp && m_dataDeclp->m_dataDeclp) {  // Avoid O(n^2) accessing
+            v3fatalSrc("dataDeclp should point to real data, not be a list");
+        }
         return NULL; }
     virtual void cloneRelink() { if (m_dataDeclp && m_dataDeclp->clonep()) m_dataDeclp = m_dataDeclp->clonep(); }
     virtual void dump(std::ostream& str);
@@ -2592,6 +2603,26 @@ public:
     AstSFormatF* fmtp() const { return VN_CAST(op1p(), SFormatF); }
     AstNode*	lhsp() const { return op3p(); }
     void 	lhsp(AstNode* nodep) { setOp3p(nodep); }
+};
+
+class AstSysFuncAsTask : public AstNodeStmt {
+    // Call what is normally a system function (with a return) in a non-return context
+    // Parents: stmtlist
+    // Children: a system function
+public:
+    AstSysFuncAsTask(FileLine* fileline, AstNode* exprsp)
+        : AstNodeStmt (fileline) { addNOp1p(exprsp); }
+    ASTNODE_NODE_FUNCS(SysFuncAsTask)
+    virtual string verilogKwd() const { return ""; }
+    virtual bool isGateOptimizable() const { return true; }
+    virtual bool isPredictOptimizable() const { return true; }
+    virtual bool isPure() const { return true; }
+    virtual bool isOutputter() const { return false; }
+    virtual int instrCount() const { return 0; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const { return true; }
+    AstNode* lhsp() const { return op1p(); }  // op1 = Expressions to eval
+    void lhsp(AstNode* nodep) { addOp1p(nodep); }  // op1 = Expressions to eval
 };
 
 class AstSysIgnore : public AstNodeStmt {
@@ -3420,10 +3451,14 @@ public:
     void scopeAttrp(AstNode* nodep) { addOp1p(nodep); }
     AstText* scopeEntrp() const { return VN_CAST(op2p(), Text); }
     void scopeEntrp(AstNode* nodep) { addOp2p(nodep); }
-    string scopeSymName() const { return scopeNameFormatter(scopeAttrp()); }  // Name for __Vscope variable including children
-    string scopeDpiName() const { return scopeNameFormatter(scopeEntrp()); }  // Name for DPI import scope
-    string scopePrettySymName() const { return scopePrettyNameFormatter(scopeAttrp()); }  // Name for __Vscope variable including children
-    string scopePrettyDpiName() const { return scopePrettyNameFormatter(scopeEntrp()); }  // Name for __Vscope variable including children
+    string scopeSymName() const {  // Name for __Vscope variable including children
+        return scopeNameFormatter(scopeAttrp()); }
+    string scopeDpiName() const {  // Name for DPI import scope
+        return scopeNameFormatter(scopeEntrp()); }
+    string scopePrettySymName() const {  // Name for __Vscope variable including children
+        return scopePrettyNameFormatter(scopeAttrp()); }
+    string scopePrettyDpiName() const {  // Name for __Vscope variable including children
+        return scopePrettyNameFormatter(scopeEntrp()); }
     bool dpiExport() const { return m_dpiExport; }
     void dpiExport(bool flag) { m_dpiExport=flag; }
 };
@@ -4606,7 +4641,9 @@ public:
     virtual string emitSimpleOperator() { return ">>"; }
     virtual bool cleanOut() {return false;}
     virtual bool cleanLhs() {return true;} virtual bool cleanRhs() {return true;}
-    virtual bool sizeMattersLhs() {return false;} virtual bool sizeMattersRhs() {return false;}  // LHS size might be > output size, so don't want to force size
+    // LHS size might be > output size, so don't want to force size
+    virtual bool sizeMattersLhs() {return false;}
+    virtual bool sizeMattersRhs() {return false;}
 };
 class AstShiftRS : public AstNodeBiop {
     // Shift right with sign extension, >>> operator
@@ -5677,8 +5714,10 @@ public:
         BROKEN_RTN(m_evalp && !m_evalp->brokeExists());
         return NULL;
     }
-    AstNodeModule* modulesp() const { return VN_CAST(op1p(), NodeModule); }  // op1 = List of modules
-    AstNodeModule* topModulep() const { return VN_CAST(op1p(), NodeModule); }  // * = Top module in hierarchy (first one added, for now)
+    AstNodeModule* modulesp() const {  // op1 = List of modules
+        return VN_CAST(op1p(), NodeModule); }
+    AstNodeModule* topModulep() const {  // * = Top module in hierarchy (first one added, for now)
+        return VN_CAST(op1p(), NodeModule); }
     void addModulep(AstNodeModule* modulep) { addOp1p(modulep); }
     AstCFile* filesp() const { return VN_CAST(op2p(), CFile);}  // op2 = List of files
     void addFilesp(AstCFile* filep) { addOp2p(filep); }

@@ -65,7 +65,8 @@ int AstNodeSel::bitConst() const {
 void AstNodeClassDType::repairMemberCache() {
     clearCache();
     for (AstMemberDType* itemp = membersp(); itemp; itemp=VN_CAST(itemp->nextp(), MemberDType)) {
-	if (m_members.find(itemp->name())!=m_members.end()) { itemp->v3error("Duplicate declaration of member name: "<<itemp->prettyName()); }
+        if (m_members.find(itemp->name())!=m_members.end()) {
+            itemp->v3error("Duplicate declaration of member name: "<<itemp->prettyName()); }
 	else m_members.insert(make_pair(itemp->name(), itemp));
     }
 }

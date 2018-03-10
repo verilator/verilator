@@ -278,7 +278,9 @@ public:
 
 void V3LinkLValue::linkLValue(AstNetlist* rootp) {
     UINFO(4,__FUNCTION__<<": "<<endl);
-    LinkLValueVisitor visitor(rootp, false);
+    {
+        LinkLValueVisitor visitor(rootp, false);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linklvalue", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }
 void V3LinkLValue::linkLValueSet(AstNode* nodep) {

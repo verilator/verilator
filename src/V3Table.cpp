@@ -305,7 +305,10 @@ private:
 
 	    // Simulate
 	    simvis.mainTableEmulate(nodep);
-	    if (!simvis.optimizable()) simvis.whyNotNodep()->v3fatalSrc("Optimizable cleared, even though earlier test run said not: "<<simvis.whyNotMessage());
+            if (!simvis.optimizable()) {
+                simvis.whyNotNodep()->v3fatalSrc("Optimizable cleared, even though earlier test run said not: "
+                                                 <<simvis.whyNotMessage());
+            }
 
 	    // If a output changed, add it to table
 	    int outnum = 0;
@@ -465,6 +468,8 @@ void TableSimulateVisitor::varRefCb(AstVarRef* nodep) {
 
 void V3Table::tableAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    TableVisitor visitor (nodep);
+    {
+        TableVisitor visitor (nodep);
+    }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("table", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

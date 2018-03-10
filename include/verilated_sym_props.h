@@ -52,7 +52,8 @@ public:
     int right() const { return m_right; }
     int low() const { return (m_left < m_right) ? m_left : m_right; }
     int high() const { return (m_left > m_right) ? m_left : m_right; }
-    int elements() const { return (VL_LIKELY(m_left>=m_right) ? (m_left-m_right+1) : (m_right-m_left+1)); }
+    int elements() const {
+        return (VL_LIKELY(m_left>=m_right) ? (m_left-m_right+1) : (m_right-m_left+1)); }
     int increment() const { return (m_left >= m_right) ? 1 : -1; }
 };
 
@@ -81,45 +82,54 @@ public:
     class Unpacked {};
     // Without packed
     VerilatedVarProps(VerilatedVarType vltype, int vlflags)
-        : m_magic(MAGIC), m_vltype(vltype), m_vlflags(VerilatedVarFlags(vlflags)), m_pdims(0), m_udims(0) { }
+        : m_magic(MAGIC), m_vltype(vltype),
+          m_vlflags(VerilatedVarFlags(vlflags)), m_pdims(0), m_udims(0) { }
     VerilatedVarProps(VerilatedVarType vltype, int vlflags,
                       Unpacked, int u0l, int u0r)
-        : m_magic(MAGIC), m_vltype(vltype), m_vlflags(VerilatedVarFlags(vlflags)), m_pdims(0), m_udims(1) {
+        : m_magic(MAGIC), m_vltype(vltype),
+          m_vlflags(VerilatedVarFlags(vlflags)), m_pdims(0), m_udims(1) {
         m_unpacked[0].init(u0l, u0r); }
     VerilatedVarProps(VerilatedVarType vltype, int vlflags,
                       Unpacked, int u0l, int u0r, int u1l, int u1r)
-        : m_magic(MAGIC), m_vltype(vltype), m_vlflags(VerilatedVarFlags(vlflags)), m_pdims(0), m_udims(2) {
+        : m_magic(MAGIC), m_vltype(vltype),
+          m_vlflags(VerilatedVarFlags(vlflags)), m_pdims(0), m_udims(2) {
         m_unpacked[0].init(u0l, u0r); m_unpacked[1].init(u1l, u1r); }
     VerilatedVarProps(VerilatedVarType vltype, int vlflags,
                       Unpacked, int u0l, int u0r, int u1l, int u1r, int u2l, int u2r)
-        : m_magic(MAGIC), m_vltype(vltype), m_vlflags(VerilatedVarFlags(vlflags)), m_pdims(0), m_udims(3) {
+        : m_magic(MAGIC), m_vltype(vltype),
+          m_vlflags(VerilatedVarFlags(vlflags)), m_pdims(0), m_udims(3) {
         m_unpacked[0].init(u0l, u0r); m_unpacked[1].init(u1l, u1r); m_unpacked[2].init(u2l, u2r); }
     // With packed
     class Packed {};
     VerilatedVarProps(VerilatedVarType vltype, int vlflags,
                       Packed, int pl, int pr)
-        : m_magic(MAGIC), m_vltype(vltype), m_vlflags(VerilatedVarFlags(vlflags)), m_pdims(1), m_udims(0), m_packed(pl,pr) { }
+        : m_magic(MAGIC), m_vltype(vltype),
+          m_vlflags(VerilatedVarFlags(vlflags)), m_pdims(1), m_udims(0), m_packed(pl,pr) { }
     VerilatedVarProps(VerilatedVarType vltype, int vlflags,
                       Packed, int pl, int pr,
                       Unpacked, int u0l, int u0r)
-        : m_magic(MAGIC), m_vltype(vltype), m_vlflags(VerilatedVarFlags(vlflags)), m_pdims(1), m_udims(1), m_packed(pl,pr) {
+        : m_magic(MAGIC), m_vltype(vltype),
+          m_vlflags(VerilatedVarFlags(vlflags)), m_pdims(1), m_udims(1), m_packed(pl,pr) {
         m_unpacked[0].init(u0l, u0r); }
     VerilatedVarProps(VerilatedVarType vltype, int vlflags,
                       Packed, int pl, int pr,
                       Unpacked, int u0l, int u0r, int u1l, int u1r)
-        : m_magic(MAGIC), m_vltype(vltype), m_vlflags(VerilatedVarFlags(vlflags)), m_pdims(1), m_udims(2), m_packed(pl,pr) {
+        : m_magic(MAGIC), m_vltype(vltype), m_vlflags(VerilatedVarFlags(vlflags)),
+          m_pdims(1), m_udims(2), m_packed(pl,pr) {
         m_unpacked[0].init(u0l, u0r); m_unpacked[1].init(u1l, u1r); }
     VerilatedVarProps(VerilatedVarType vltype, int vlflags,
                       Packed, int pl, int pr,
                       Unpacked, int u0l, int u0r, int u1l, int u1r, int u2l, int u2r)
-        : m_magic(MAGIC), m_vltype(vltype), m_vlflags(VerilatedVarFlags(vlflags)), m_pdims(1), m_udims(3), m_packed(pl,pr) {
+        : m_magic(MAGIC), m_vltype(vltype),
+          m_vlflags(VerilatedVarFlags(vlflags)), m_pdims(1), m_udims(3), m_packed(pl,pr) {
         m_unpacked[0].init(u0l, u0r); m_unpacked[1].init(u1l, u1r); m_unpacked[2].init(u2l, u2r); }
 public:
     ~VerilatedVarProps() {}
     // METHODS
     bool magicOk() const { return m_magic==MAGIC; }
     VerilatedVarType vltype() const { return m_vltype; }
-    VerilatedVarFlags vldir() const { return static_cast<VerilatedVarFlags>(static_cast<int>(m_vlflags) & VLVF_MASK_DIR); }
+    VerilatedVarFlags vldir() const {
+        return static_cast<VerilatedVarFlags>(static_cast<int>(m_vlflags) & VLVF_MASK_DIR); }
     vluint32_t entSize() const;
     bool isPublicRW() const { return ((m_vlflags & VLVF_PUB_RW) != 0); }
     /// DPI compatible C standard layout
