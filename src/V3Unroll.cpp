@@ -185,10 +185,11 @@ private:
     }
 
     bool canSimulate(AstNode *nodep) {
-	SimulateVisitor simvis;
-	AstNode* clone = nodep->cloneTree(true);
-	simvis.mainCheckTree(clone);
-	return simvis.optimizable();
+        SimulateVisitor simvis;
+        AstNode* clonep = nodep->cloneTree(true);
+        simvis.mainCheckTree(clonep);
+        pushDeletep(clonep); clonep = NULL;
+        return simvis.optimizable();
     }
 
     bool simulateTree(AstNode *nodep, const V3Number *loopValue, AstNode *dtypep, V3Number &outNum) {
