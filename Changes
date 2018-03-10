@@ -10,6 +10,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Add --no-debug-leak to reduce memory use under debug. [John Coiner]
 
+****  On convergence errors, show activity. [John Coiner]
+
 ****  Fix GCC 8.0 issues, bug1273.
 
 ****  Fix pullup/pulldowns on bit selects, bug1274. [Rob Stoddard]
