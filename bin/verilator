@@ -1272,8 +1272,9 @@ supports which the older version does not support.
 
 =item -Wno-I<message>
 
-Disable the specified warning message. This will override any lint_on
-directives in the source, i.e. the warning will still not be printed.
+Disable the specified warning message, or in some cases where noted here
+disable an error.  This will override any lint_on directives in the source,
+i.e. the warning will still not be printed.
 
 =item -Wno-lint
 
@@ -3072,9 +3073,10 @@ This is not illegal in SystemVerilog, but a violation of good coding
 practice. Verilator reports this as an error, because ignoring this warning
 may make Verilator simulations differ from other simulators.
 
-It is generally safe to disable this error when one of the assignments is
-inside a public task, or when the blocked and non-blocking assignments have
-non-overlapping bits and structure members.
+It is generally safe to disable this error (with a "// verilator lint_off
+BLKANDNBLK" metacomment or the -Wno-BLKANDNBLK option) when one of the
+assignments is inside a public task, or when the blocked and non-blocking
+assignments have non-overlapping bits and structure members.
 
 =item BLKSEQ
 
