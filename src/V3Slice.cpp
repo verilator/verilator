@@ -74,7 +74,10 @@ class SliceVisitor : public AstNVisitor {
 	// Insert an ArraySel, except for a few special cases
 	AstUnpackArrayDType* arrayp = nodep->dtypep()->skipRefp()->castUnpackArrayDType();
 	if (!arrayp) {  // V3Width should have complained, but...
-	    if (!m_assignError) nodep->v3error(nodep->prettyTypeName()<<" is not an unpacked array, but is in an unpacked array context");
+            if (!m_assignError) {
+                nodep->v3error(nodep->prettyTypeName()
+                               <<" is not an unpacked array, but is in an unpacked array context");
+            }
 	    m_assignError = true;
 	    return nodep->cloneTree(false);  // Likely will cause downstream errors
 	}

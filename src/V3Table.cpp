@@ -305,7 +305,10 @@ private:
 
 	    // Simulate
 	    simvis.mainTableEmulate(nodep);
-	    if (!simvis.optimizable()) simvis.whyNotNodep()->v3fatalSrc("Optimizable cleared, even though earlier test run said not: "<<simvis.whyNotMessage());
+            if (!simvis.optimizable()) {
+                simvis.whyNotNodep()->v3fatalSrc("Optimizable cleared, even though earlier test run said not: "
+                                                 <<simvis.whyNotMessage());
+            }
 
 	    // If a output changed, add it to table
 	    int outnum = 0;

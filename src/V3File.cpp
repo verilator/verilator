@@ -238,7 +238,8 @@ inline bool V3FileDependImp::checkTimes(const string& filename, const string& cm
 	    UINFO(2,"   --check-times failed: missing "<<chkFilename<<endl);
 	    return false;
 	}
-	//UINFO(9," got d="<<chkDir<<" s="<<chkSize<<" ct="<<chkCstime<<"."<<chkCnstime<<" mt="<<chkMstime<<"."<<chkMnstime<<" fn = "<<chkFilename<<endl);
+        //UINFO(9," got d="<<chkDir<<" s="<<chkSize<<" ct="<<chkCstime<<"."
+        //        <<chkCnstime<<" mt="<<chkMstime<<"."<<chkMnstime<<" fn = "<<chkFilename<<endl);
 	//UINFO(9," nowSt  s="<<chkStat.st_size<<" mt="<<chkStat.st_mtime<<" ct="<<chkStat.st_ctime<<" fn = "<<chkFilename<<endl);
 	if (filename != chkFilename) {  // Other then the .dat file itself, as we were writing it at the time...
 	    // We'd like this rule:

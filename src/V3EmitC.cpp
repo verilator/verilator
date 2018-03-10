@@ -512,31 +512,36 @@ public:
     }
     virtual void visit(AstMulS* nodep) {
 	if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
-	    nodep->v3error("Unsupported: Signed multiply of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
+            nodep->v3error("Unsupported: Signed multiply of "<<nodep->width()
+                           <<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
 	}
 	visit(nodep->castNodeBiop());
     }
     virtual void visit(AstPow* nodep) {
 	if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
-	    nodep->v3error("Unsupported: Power of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
+            nodep->v3error("Unsupported: Power of "<<nodep->width()
+                           <<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
 	}
 	visit(nodep->castNodeBiop());
     }
     virtual void visit(AstPowSS* nodep) {
 	if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
-	    nodep->v3error("Unsupported: Power of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
+            nodep->v3error("Unsupported: Power of "<<nodep->width()
+                           <<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
 	}
 	visit(nodep->castNodeBiop());
     }
     virtual void visit(AstPowSU* nodep) {
 	if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
-	    nodep->v3error("Unsupported: Power of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
+            nodep->v3error("Unsupported: Power of "<<nodep->width()
+                           <<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
 	}
 	visit(nodep->castNodeBiop());
     }
     virtual void visit(AstPowUS* nodep) {
 	if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
-	    nodep->v3error("Unsupported: Power of "<<nodep->width()<<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
+            nodep->v3error("Unsupported: Power of "<<nodep->width()
+                           <<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
 	}
 	visit(nodep->castNodeBiop());
     }
@@ -1553,7 +1558,8 @@ void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
 	puts("\n// Coverage\n");
 	// Rather than putting out VL_COVER_INSERT calls directly, we do it via this function
 	// This gets around gcc slowness constructing all of the template arguments.
-	puts("void "+modClassName(m_modp)+"::__vlCoverInsert(uint32_t* countp, bool enable, const char* filenamep, int lineno, int column,\n");
+        puts("void "+modClassName(m_modp)+"::__vlCoverInsert(uint32_t* countp, bool enable,"
+             " const char* filenamep, int lineno, int column,\n");
 	puts(  	"const char* hierp, const char* pagep, const char* commentp) {\n");
 	puts(   "static uint32_t fake_zero_count = 0;\n");  // static doesn't need save-restore as constant
 	puts(   "if (!enable) countp = &fake_zero_count;\n");  // Used for second++ instantiation of identical bin
@@ -2302,8 +2308,9 @@ class EmitCTrace : EmitCStmts {
 	putsDecoration("// Callback from vcd->open()\n");
 	puts(topClassName()+"* t=("+topClassName()+"*)userthis;\n");
 	puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp;  // Setup global symbol table\n");
-	puts("if (!Verilated::calcUnusedSigs()) VL_FATAL_MT(__FILE__,__LINE__,__FILE__,\"Turning on wave traces requires Verilated::traceEverOn(true) call before time 0.\");\n");
-
+        puts("if (!Verilated::calcUnusedSigs()) {\n");
+        puts(    "VL_FATAL_MT(__FILE__,__LINE__,__FILE__,\"Turning on wave traces requires Verilated::traceEverOn(true) call before time 0.\");\n");
+        puts("}\n");
 	puts("vcdp->scopeEscape(' ');\n");
         puts("t->traceInitThis(vlSymsp, vcdp, code);\n");
 	puts("vcdp->scopeEscape('.');\n");  // Restore so later traced files won't break

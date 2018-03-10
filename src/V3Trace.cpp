@@ -205,7 +205,10 @@ private:
 	    if (TraceTraceVertex* vvertexp = dynamic_cast<TraceTraceVertex*>(itp)) {
 		AstTraceInc* nodep = vvertexp->nodep();
 		if (nodep->valuep()) {
-		    if (nodep->valuep()->backp() != nodep) nodep->v3fatalSrc("Trace duplicate back needs consistency, so we can map duplicates back to TRACEINCs");
+                    if (nodep->valuep()->backp() != nodep) {
+                        nodep->v3fatalSrc("Trace duplicate back needs consistency,"
+                                          " so we can map duplicates back to TRACEINCs");
+                    }
 		    hashed.hash(nodep->valuep());
 		    UINFO(8, "  Hashed "<<hex<<hashed.nodeHash(nodep->valuep())<<" "<<nodep<<endl);
 

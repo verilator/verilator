@@ -545,7 +545,8 @@ public:
 	    // Important to add statement next to cell, in case there is a generate with same named cell
 	    cellp->addNextHere(newvarp);
 	    if (pinVarp->isInout()) {
-		pinVarp->v3fatalSrc("Unsupported: Inout connections to pins must be direct one-to-one connection (without any expression)");
+                pinVarp->v3fatalSrc("Unsupported: Inout connections to pins must be"
+                                    " direct one-to-one connection (without any expression)");
 	    } else if (pinVarp->isOutput()) {
 		// See also V3Inst
 		AstNode* rhsp = new AstVarRef(pinp->fileline(), newvarp, false);

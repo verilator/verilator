@@ -334,7 +334,9 @@ private:
 
 		    ++m_statIters;
 		    if (++times > unrollCount()*3) {
-			nodep->v3error("Loop unrolling took too long; probably this is an infinite loop, or set --unroll-count above "<<unrollCount());
+                        nodep->v3error("Loop unrolling took too long;"
+                                       " probably this is an infinite loop, or set --unroll-count above "
+                                       <<unrollCount());
 			break;
 		    }
 

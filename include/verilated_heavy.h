@@ -56,7 +56,8 @@ inline std::string VL_REPLICATEN_NNQ(int,int,int, const std::string& lhs, IData 
     for (unsigned times=0; times<rep; ++times) out += lhs;
     return out;
 }
-inline std::string VL_REPLICATEN_NNI(int obits,int lbits,int rbits, const std::string& lhs, IData rep) VL_PURE {
+inline std::string VL_REPLICATEN_NNI(int obits,int lbits,int rbits,
+                                     const std::string& lhs, IData rep) VL_PURE {
     return VL_REPLICATEN_NNQ(obits,lbits,rbits,lhs,rep);
 }
 

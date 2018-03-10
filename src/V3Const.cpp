@@ -1202,7 +1202,8 @@ private:
 	AstAnd* newp = new AstAnd(nodep->fileline(),
 				  new AstConst(nodep->fileline(), val),
 				  fromp);
-	newp->dtypeSetLogicSized(nodep->width(), nodep->width(), AstNumeric::UNSIGNED);  // widthMin no longer applicable if different C-expanded width
+        // widthMin no longer applicable if different C-expanded width
+        newp->dtypeSetLogicSized(nodep->width(), nodep->width(), AstNumeric::UNSIGNED);
 	nodep->replaceWith(newp);
 	nodep->deleteTree(); VL_DANGLING(nodep);
 	if (debug()>=9) newp->dumpTree(cout,"       _new: ");

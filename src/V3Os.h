@@ -38,7 +38,8 @@ public:
     static string filenameFromDirBase (const string& dir, const string& basename);
     static string filenameNonDir (const string& filename);	///< Return non-directory part of filename
     static string filenameNonExt (const string& filename);	///< Return non-extensioned (no .) part of filename
-    static string filenameNonDirExt (const string& filename) { return filenameNonExt(filenameNonDir(filename)); }	///< Return basename of filename
+    static string filenameNonDirExt (const string& filename) {  ///< Return basename of filename
+        return filenameNonExt(filenameNonDir(filename)); }
     static string filenameDir (const string& filename);	///< Return directory part of filename
     static string filenameSubstitute (const string& filename);	///< Return filename with env vars removed
     static string filenameRealPath(const string& fn);  ///< Return realpath of filename

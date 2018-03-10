@@ -174,11 +174,13 @@ private:
 	    // Convert to a non-delayed assignment
 	    UINFO(5,"    ASSIGNDLY "<<nodep<<endl);
 	    if (m_check == CT_INITIAL) {
-		nodep->v3warn(INITIALDLY,"Delayed assignments (<=) in initial or final block; suggest blocking assignments (=).");
+                nodep->v3warn(INITIALDLY, "Delayed assignments (<=) in initial"
+                              " or final block; suggest blocking assignments (=).");
 	    } else if (m_check == CT_LATCH) {
 		// Suppress. Shouldn't matter that the interior of the latch races
 	    } else {
-		nodep->v3warn(COMBDLY,"Delayed assignments (<=) in non-clocked (non flop or latch) block; suggest blocking assignments (=).");
+                nodep->v3warn(COMBDLY, "Delayed assignments (<=) in non-clocked"
+                              " (non flop or latch) block; suggest blocking assignments (=).");
 	    }
 	    AstNode* newp = new AstAssign (nodep->fileline(),
 					   nodep->lhsp()->unlinkFrBack(),

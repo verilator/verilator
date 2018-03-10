@@ -1198,7 +1198,9 @@ private:
 		    if (nodep->valuep()->dtypep()->widthSized()) {
 			width = nodep->valuep()->width();
 		    } else {
-			if (nodep->valuep()->width()>32) nodep->valuep()->v3warn(WIDTH,"Assigning >32 bit to unranged parameter (defaults to 32 bits)");
+                        if (nodep->valuep()->width()>32) {
+                            nodep->valuep()->v3warn(WIDTH,"Assigning >32 bit to unranged parameter (defaults to 32 bits)");
+                        }
 			width = 32;
 		    }
 		    // Can't just inherit valuep()->dtypep() as mwidth might not equal width
@@ -1243,7 +1245,8 @@ private:
 	if (nodep->didWidth()) return;
 	if (!nodep->varp()) {
 	    if (m_paramsOnly && nodep->castVarXRef()) {
-		checkConstantOrReplace(nodep, "Parameter-resolved constants must not use dotted references: "+nodep->prettyName()); VL_DANGLING(nodep);
+                checkConstantOrReplace(nodep, "Parameter-resolved constants must not use dotted references: "
+                                       +nodep->prettyName()); VL_DANGLING(nodep);
 		return;
 	    } else {
 		nodep->v3fatalSrc("Unlinked varref");
@@ -1492,13 +1495,15 @@ private:
 	    } else {
 		AstSel* newp = new AstSel(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
 					  memberp->lsb(), memberp->width());
-		newp->dtypep(memberp->subDTypep()->skipRefToEnump());  // Must skip over the member to find the union; as the member may disappear later
+                // Must skip over the member to find the union; as the member may disappear later
+                newp->dtypep(memberp->subDTypep()->skipRefToEnump());
 		newp->didWidth(true);  // Don't replace dtype with basic type
 		UINFO(9,"   MEMBERSEL -> "<<newp<<endl);
 		UINFO(9,"           dt-> "<<newp->dtypep()<<endl);
 		nodep->replaceWith(newp);
 		pushDeletep(nodep); VL_DANGLING(nodep);
-		// Should be able to treat it as a normal-ish nodesel - maybe.  The lhsp() will be strange until this stage; create the number here?
+                // Should be able to treat it as a normal-ish nodesel - maybe.
+                // The lhsp() will be strange until this stage; create the number here?
 	    }
 	}
 	if (!memberp) {  // Very bogus, but avoids core dump
@@ -1660,7 +1665,9 @@ private:
 	    nodep->dtypep(m_vup->dtypep());
 	}
 	AstNodeDType* vdtypep = nodep->dtypep();
-	if (!vdtypep) nodep->v3error("Unsupported/Illegal: Assignment pattern member not underneath a supported construct: "<<nodep->backp()->prettyTypeName());
+        if (!vdtypep) nodep->v3error("Unsupported/Illegal: Assignment pattern"
+                                     " member not underneath a supported construct: "
+                                     <<nodep->backp()->prettyTypeName());
 	{
 	    vdtypep = vdtypep->skipRefp();
 	    nodep->dtypep(vdtypep);
@@ -1720,7 +1727,8 @@ private:
 					continue;
 				    }
 				} else {
-				    patp->keyp()->v3error("Assignment pattern key not supported/understood: "<<patp->keyp()->prettyTypeName());
+                                    patp->keyp()->v3error("Assignment pattern key not"
+                                                          " supported/understood: "<<patp->keyp()->prettyTypeName());
 				}
 			    }
 			}
@@ -2954,9 +2962,12 @@ private:
     bool widthBad (AstNode* nodep, AstNodeDType* expDTypep) {
 	int expWidth = expDTypep->width();
 	int expWidthMin = expDTypep->widthMin();
-	if (!nodep->dtypep()) nodep->v3fatalSrc("Under node "<<nodep->prettyTypeName()<<" has no dtype?? Missing Visitor func?");
-	if (nodep->width()==0) nodep->v3fatalSrc("Under node "<<nodep->prettyTypeName()<<" has no expected width?? Missing Visitor func?");
-	if (expWidth==0) nodep->v3fatalSrc("Node "<<nodep->prettyTypeName()<<" has no expected width?? Missing Visitor func?");
+        if (!nodep->dtypep()) nodep->v3fatalSrc("Under node "<<nodep->prettyTypeName()
+                                                <<" has no dtype?? Missing Visitor func?");
+        if (nodep->width()==0) nodep->v3fatalSrc("Under node "<<nodep->prettyTypeName()
+                                                 <<" has no expected width?? Missing Visitor func?");
+        if (expWidth==0) nodep->v3fatalSrc("Node "<<nodep->prettyTypeName()
+                                           <<" has no expected width?? Missing Visitor func?");
 	if (expWidthMin==0) expWidthMin = expWidth;
 	if (nodep->dtypep()->width() == expWidth) return false;
 	if (nodep->dtypep()->widthSized()  && nodep->width() != expWidthMin) return true;

@@ -224,8 +224,11 @@ private:
 	    nodep->v3fatalSrc("Broken link in node (or something without maybePointedTo): "<<whyp);
 	}
 	if (nodep->dtypep()) {
-	    if (!nodep->dtypep()->brokeExists()) { nodep->v3fatalSrc("Broken link in node->dtypep() to "<<(void*)nodep->dtypep()); }
-	    else if (!nodep->dtypep()->castNodeDType()) { nodep->v3fatalSrc("Non-dtype link in node->dtypep() to "<<(void*)nodep->dtypep()); }
+            if (!nodep->dtypep()->brokeExists()) {
+                nodep->v3fatalSrc("Broken link in node->dtypep() to "<<(void*)nodep->dtypep());
+            } else if (!nodep->dtypep()->castNodeDType()) {
+                nodep->v3fatalSrc("Non-dtype link in node->dtypep() to "<<(void*)nodep->dtypep());
+            }
 	}
 	if (v3Global.assertDTypesResolved()) {
 	    if (nodep->hasDType()) {

@@ -1065,7 +1065,8 @@ void V3ParseImp::lexToken() {
 	}
 	else if (token == yGLOBAL__LEX) {
 	    if (nexttok == yCLOCKING) token = yGLOBAL__CLOCKING;
-	    else { token = yaID__LEX; yylval.strp = PARSEP->newString("global"); }  // Avoid 2009 "global" conflicting with old code when we can
+	    // Avoid 2009 "global" conflicting with old code when we can
+	    else { token = yaID__LEX; yylval.strp = PARSEP->newString("global"); }
 	}
 	// If add to above "else if", also add to "if (token" further above
     }

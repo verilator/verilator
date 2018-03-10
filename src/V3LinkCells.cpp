@@ -413,7 +413,9 @@ private:
 		idtypep->cellp(nodep);  // Only set when real parent cell known.
 		AstVar* varp;
 		if (nodep->rangep()) {
-		    AstNodeArrayDType* arrp = new AstUnpackArrayDType(nodep->fileline(),VFlagChildDType(), idtypep, nodep->rangep()->cloneTree(true));
+                    AstNodeArrayDType* arrp
+                        = new AstUnpackArrayDType(nodep->fileline(), VFlagChildDType(),
+                                                  idtypep, nodep->rangep()->cloneTree(true));
 		    varp = new AstVar(nodep->fileline(), AstVarType::IFACEREF, varName,
 				      VFlagChildDType(), arrp);
 		} else {

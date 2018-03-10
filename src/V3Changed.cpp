@@ -175,13 +175,17 @@ private:
 	    newChangeDet();
 	} else {
 	    if (debug()) nodep->dumpTree(cout,"-DETECTARRAY-class-");
-	    m_vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect changes on complex variable (probably with UNOPTFLAT warning suppressed): "<<m_vscp->varp()->prettyName());
+            m_vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect changes on complex variable"
+                           " (probably with UNOPTFLAT warning suppressed): "
+                           <<m_vscp->varp()->prettyName());
 	}
     }
     virtual void visit(AstNode* nodep) {
 	nodep->iterateChildren(*this);
 	if (debug()) nodep->dumpTree(cout,"-DETECTARRAY-general-");
-	m_vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect changes on complex variable (probably with UNOPTFLAT warning suppressed): "<<m_vscp->varp()->prettyName());
+        m_vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect changes on complex variable"
+                       " (probably with UNOPTFLAT warning suppressed): "
+                       <<m_vscp->varp()->prettyName());
     }
 public:
     // CONSTUCTORS

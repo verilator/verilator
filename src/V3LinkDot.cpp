@@ -262,7 +262,8 @@ public:
 			AstCell* nodep, const string& scopename) {
 	if (!abovep) nodep->v3fatalSrc("Null symbol table inserting node");
 	VSymEnt* symp = new VSymEnt(&m_syms, nodep);
-	UINFO(9,"      INSERTcel se"<<(void*)symp<<"  "<<scopename<<" above=se"<<(void*)abovep<<" mods=se"<<(void*)modSymp<<" node="<<nodep<<endl);
+        UINFO(9,"      INSERTcel se"<<(void*)symp<<"  "<<scopename<<" above=se"<<(void*)abovep
+              <<" mods=se"<<(void*)modSymp<<" node="<<nodep<<endl);
 	symp->parentp(abovep);
 	symp->fallbackp(dunitEntp());  // Needed so can find $unit stuff
 	nodep->user1p(symp);
@@ -283,7 +284,8 @@ public:
 	// This refrences to another Sym, and eventually resolves to a module with a prefix
 	if (!abovep) nodep->v3fatalSrc("Null symbol table inserting node");
 	VSymEnt* symp = new VSymEnt(&m_syms, nodep);
-	UINFO(9,"      INSERTinl se"<<(void*)symp<<"  "<<basename<<" above=se"<<(void*)abovep<<" mods=se"<<(void*)modSymp<<" node="<<nodep<<endl);
+        UINFO(9,"      INSERTinl se"<<(void*)symp<<"  "<<basename<<" above=se"<<(void*)abovep
+              <<" mods=se"<<(void*)modSymp<<" node="<<nodep<<endl);
 	symp->parentp(abovep);
 	symp->fallbackp(modSymp);
 	symp->symPrefix(nodep->name()+"__DOT__");
@@ -1551,7 +1553,8 @@ private:
     inline void checkNoDot(AstNode* nodep) {
 	if (VL_UNLIKELY(m_ds.m_dotPos != DP_NONE)) {
 	    //UINFO(9,"ds="<<m_ds.ascii()<<endl);
-	    nodep->v3error("Syntax Error: Not expecting "<<nodep->type()<<" under a "<<nodep->backp()->type()<<" in dotted expression");
+            nodep->v3error("Syntax Error: Not expecting "<<nodep->type()<<" under a "
+                           <<nodep->backp()->type()<<" in dotted expression");
 	    m_ds.m_dotErr = true;
 	}
     }
@@ -1815,7 +1818,8 @@ private:
 		    AstCell* cellp = foundp->nodep()->castCell();
                     if (cellp->modp()->castIface()) {
                         // Interfaces can be referenced like a variable for interconnect
-                        VSymEnt* cellEntp = m_statep->getNodeSym(cellp);  if (!cellEntp) nodep->v3fatalSrc("No interface sym entry");
+                        VSymEnt* cellEntp = m_statep->getNodeSym(cellp);
+                        if (!cellEntp) nodep->v3fatalSrc("No interface sym entry");
                         VSymEnt* parentEntp = cellEntp->parentp();  // Container of the var; probably a module or generate begin
                         string findName = nodep->name()+"__Viftop";
                         VSymEnt* ifaceSymp = parentEntp->findIdFallback(findName);
@@ -2011,7 +2015,8 @@ private:
 		VSymEnt* foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot);
 		AstVarScope* vscp = foundp ? foundp->nodep()->castVarScope() : NULL;
 		if (!vscp) {
-		    nodep->v3error("Can't find varpin scope of '"<<baddot<<"' in dotted signal: "<<nodep->dotted()+"."+nodep->prettyName());
+                    nodep->v3error("Can't find varpin scope of '"<<baddot
+                                   <<"' in dotted signal: "<<nodep->dotted()+"."+nodep->prettyName());
 		    okSymp->cellErrorScopes(nodep);
 		} else {
 		    while (vscp->user2p()) {  // If V3Inline aliased it, pick up the new signal
@@ -2126,7 +2131,8 @@ private:
 		} else if (nodep->dotted() == "") {
 		    nodep->v3error("Can't find definition of task/function: "<<nodep->prettyName());
 		} else {
-		    nodep->v3error("Can't find definition of '"<<baddot<<"' in dotted task/function: "<<nodep->dotted()+"."+nodep->prettyName());
+                    nodep->v3error("Can't find definition of '"<<baddot
+                                   <<"' in dotted task/function: "<<nodep->dotted()+"."+nodep->prettyName());
 		    okSymp->cellErrorScopes(nodep);
 		}
 	    }
@@ -2314,21 +2320,29 @@ public:
 int V3LinkDot::debug() { return LinkDotState::debug(); }
 
 void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
-    if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot.tree"));
+    if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) {
+        v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot.tree"));
+    }
     LinkDotState state (rootp, step);
     LinkDotFindVisitor visitor(rootp,&state);
-    if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-find.tree"));
+    if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) {
+        v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-find.tree"));
+    }
     if (step == LDS_PRIMARY || step == LDS_PARAMED) {
 	// Initial link stage, resolve parameters
 	LinkDotParamVisitor visitors(rootp,&state);
-	if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-param.tree"));
+        if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) {
+            v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-param.tree"));
+        }
     }
     else if (step == LDS_ARRAYED) {}
     else if (step == LDS_SCOPED) {
 	// Well after the initial link when we're ready to operate on the flat design,
 	// process AstScope's.  This needs to be separate pass after whole hierarchy graph created.
 	LinkDotScopeVisitor visitors(rootp,&state);
-	if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-scoped.tree"));
+        if (LinkDotState::debug()>=5 || v3Global.opt.dumpTree()>=9) {
+            v3Global.rootp()->dumpTreeFile(v3Global.debugFilename("prelinkdot-scoped.tree"));
+        }
     }
     else v3fatalSrc("Bad case");
     state.dump();

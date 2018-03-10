@@ -243,7 +243,9 @@ private:
     }
     bool expandWide (AstNodeAssign* nodep, AstArraySel* rhsp) {
 	UINFO(8,"    Wordize ASSIGN(ARRAYSEL) "<<nodep<<endl);
-	if (nodep->dtypep()->skipRefp()->castUnpackArrayDType()) nodep->v3fatalSrc("ArraySel with unpacked arrays should have been removed in V3Slice");
+        if (nodep->dtypep()->skipRefp()->castUnpackArrayDType()) {
+            nodep->v3fatalSrc("ArraySel with unpacked arrays should have been removed in V3Slice");
+        }
 	for (int w=0; w<nodep->widthWords(); w++) {
 	    addWordAssign(nodep, w, newAstWordSelClone (rhsp, w));
 	}

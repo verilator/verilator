@@ -600,7 +600,8 @@ private:
         bool bitvec = (portp->basicp()->keyword().isDpiBitVal() && portp->width() > 32);
         bool logicvec = (portp->basicp()->keyword().isDpiLogicVal() && portp->width() > 1);
         if (isRtn && (bitvec || logicvec)) {
-            portp->v3error("DPI functions cannot return > 32 bits or four-state; use a two-state type or task instead: "<<portp->prettyName());
+            portp->v3error("DPI functions cannot return > 32 bits or four-state;"
+                           " use a two-state type or task instead: "<<portp->prettyName());
             // Code below works, but won't compile right, and IEEE illegal
         }
 	string stmt;

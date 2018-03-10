@@ -221,7 +221,8 @@ public:
 	    TristateVertex* vvertexp = static_cast<TristateVertex*>(itp);
 	    if (vvertexp->isTristate() && !vvertexp->processed()) {
 		// Not v3errorSrc as no reason to stop the world
-		vvertexp->nodep()->v3error("Unsupported tristate construct (in graph; not converted): "<<vvertexp->nodep()->prettyTypeName());
+                vvertexp->nodep()->v3error("Unsupported tristate construct"
+                                           " (in graph; not converted): "<<vvertexp->nodep()->prettyTypeName());
 	    }
 	}
 	m_graph.clear();
