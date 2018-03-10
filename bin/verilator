@@ -278,6 +278,7 @@ descriptions in the next sections for more information.
      -D<var>[=<value>]          Set preprocessor define
     --debug                     Enable debugging
     --debug-check               Enable debugging assertions
+    --no-debug-leak             Disable leaking memory in --debug mode
     --debugi <level>            Enable debugging at a specified level
     --debugi-<srcfile> <level>  Enable debugging a source file at a level
     --default-language <lang>   Default language to parse
@@ -634,6 +635,18 @@ to C<--dump-treei 3>).
 
 Rarely needed.  Enable internal debugging assertion checks, without
 changing debug verbosity.  Enabled automatically when --debug specified.
+
+=item --no-debug-leak
+
+In --debug mode, by default Verilator intentionally leaks AstNode's
+instead of freeing them, so that each node pointer is unique in the
+resulting tree files and dot files.
+
+This option disables the leak. This may avoid out-of-memory errors
+when Verilating large models in --debug mode.
+
+Outside of --debug mode, AstNode's should never be leaked and this option
+has no effect.
 
 =item --debugi <level>
 

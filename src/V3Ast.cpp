@@ -677,9 +677,17 @@ void AstNode::deleteNode() {
     this->m_op2p = (AstNode*)1;
     this->m_op3p = (AstNode*)1;
     this->m_op4p = (AstNode*)1;
+    if (
 #if !defined(VL_DEBUG) || defined(VL_LEAK_CHECKS)
-    delete this;	// Leak massively, so each pointer is unique and we can debug easier
+        1
+#else
+        !v3Global.opt.debugLeak()
 #endif
+        ) {
+        delete this;
+    }
+    // Else leak massively, so each pointer is unique
+    // and we can debug easier.
 }
 
 AstNode::~AstNode() {

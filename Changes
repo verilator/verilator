@@ -8,6 +8,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support calling system functions as tasks, bug1285. [Joel Holdsworth]
 
+***   Add --no-debug-leak to reduce memory use under debug. [John Coiner]
+
 ****  Fix GCC 8.0 issues, bug1273.
 
 ****  Fix pullup/pulldowns on bit selects, bug1274. [Rob Stoddard]
