@@ -1312,6 +1312,8 @@ public:
     virtual void addBeforeStmt(AstNode* newp, AstNode* belowp);  // When calling, "this" is second argument
 
     // METHODS - Iterate on a tree
+    static AstNode* cloneTreeNull(AstNode* nodep, bool cloneNextLink) {  // Clone or return NULL if NULL
+        return nodep ? nodep->cloneTree(cloneNextLink) : NULL; }
     AstNode*	cloneTree(bool cloneNextLink);
     bool	gateTree() { return gateTreeIter(); }  // Is tree isGateOptimizable?
     bool        sameTree(const AstNode* node2p) const;  // Does tree of this == node2p?
@@ -1373,6 +1375,8 @@ inline void AstNRelinker::relink(AstNode* newp) { newp->AstNode::relink(this); }
 
 #define ASTNODE_BASE_FUNCS(name)	\
     virtual ~Ast ##name() {} \
+    static Ast ##name * cloneTreeNull(Ast ##name * nodep, bool cloneNextLink) { \
+        return nodep ? nodep->cloneTree(cloneNextLink) : NULL; } \
     Ast ##name * cloneTree(bool cloneNext) { return static_cast<Ast ##name *>(AstNode::cloneTree(cloneNext)); } \
     Ast ##name * clonep() const { return static_cast<Ast ##name *>(AstNode::clonep()); }
 

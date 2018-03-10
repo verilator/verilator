@@ -30,9 +30,11 @@
 
 #define ASTNODE_NODE_FUNCS(name) \
     virtual ~Ast ##name() {} \
+    virtual void accept(AstNVisitor& v) { v.visit(this); } \
     virtual AstType type() const { return AstType::at ## name; } \
     virtual AstNode* clone() { return new Ast ##name (*this); } \
-    virtual void accept(AstNVisitor& v) { v.visit(this); } \
+    static Ast ##name * cloneTreeNull(Ast ##name * nodep, bool cloneNextLink) { \
+        return nodep ? nodep->cloneTree(cloneNextLink) : NULL; } \
     Ast ##name * cloneTree(bool cloneNext) { return static_cast<Ast ##name *>(AstNode::cloneTree(cloneNext)); } \
     Ast ##name * clonep() const { return static_cast<Ast ##name *>(AstNode::clonep()); }
 

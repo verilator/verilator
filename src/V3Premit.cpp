@@ -383,7 +383,7 @@ private:
 	    } else {
 		UINFO(4,"Autoflush "<<nodep<<endl);
 		nodep->addNextHere(new AstFFlush(nodep->fileline(),
-						 nodep->filep()->cloneTree(true)));
+						 AstNode::cloneTreeNull(nodep->filep(), true)));
 	    }
 	}
     }

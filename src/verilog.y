@@ -1444,7 +1444,8 @@ member_decl_assignment<memberp>:	// Derived from IEEE: variable_decl_assignment
 	//			// At present we allow only packed structures/unions.  So this is different from variable_decl_assignment
 		id variable_dimensionListE
 			{ if ($2) $2->v3error("Unsupported: Unpacked array in packed struct/union");
-			  $$ = new AstMemberDType($<fl>1, *$1, VFlagChildDType(), GRAMMARP->m_memDTypep->cloneTree(true));
+			  $$ = new AstMemberDType($<fl>1, *$1, VFlagChildDType(),
+						  AstNodeDType::cloneTreeNull(GRAMMARP->m_memDTypep, true));
                           PARSEP->tagNodep($$);
                           }
 	|	id variable_dimensionListE '=' variable_declExpr
@@ -2102,10 +2103,12 @@ instnameList<nodep>:
 
 instnameParen<cellp>:
 	//			// Must clone m_instParamp as may be comma'ed list of instances
-		id instRangeE '(' cellpinList ')'	{ $$ = new AstCell($<fl>1,*$1,GRAMMARP->m_instModule,$4,  GRAMMARP->m_instParamp->cloneTree(true),
+		id instRangeE '(' cellpinList ')'	{ $$ = new AstCell($<fl>1, *$1, GRAMMARP->m_instModule, $4,
+									   AstPin::cloneTreeNull(GRAMMARP->m_instParamp, true),
                                                                            GRAMMARP->scrubRange($2));
 						          $$->trace(GRAMMARP->allTracingOn($<fl>1)); }
-	|	id instRangeE 				{ $$ = new AstCell($<fl>1,*$1,GRAMMARP->m_instModule,NULL,GRAMMARP->m_instParamp->cloneTree(true),
+	|	id instRangeE 				{ $$ = new AstCell($<fl>1, *$1, GRAMMARP->m_instModule, NULL,
+									   AstPin::cloneTreeNull(GRAMMARP->m_instParamp, true),
                                                                            GRAMMARP->scrubRange($2));
 						          $$->trace(GRAMMARP->allTracingOn($<fl>1)); }
 	//UNSUP	instRangeE '(' cellpinList ')'		{ UNSUP } // UDP
@@ -2375,7 +2378,11 @@ statement_item<nodep>:		// IEEE: statement_item
 	//			// for's first ';' is in for_initalization
 	|	yFOR '(' for_initialization expr ';' for_stepE ')' stmtBlock
 							{ $$ = new AstBegin($1,"",$3); $3->addNext(new AstWhile($1, $4,$8,$6)); }
-	|	yDO stmtBlock yWHILE '(' expr ')' ';'	{ $$ = $2->cloneTree(true); $$->addNext(new AstWhile($1,$5,$2));}
+	|	yDO stmtBlock yWHILE '(' expr ')' ';'	{ if ($2) {
+							     $$ = $2->cloneTree(true);
+							     $$->addNext(new AstWhile($1,$5,$2));
+							  }
+							  else $$ = new AstWhile($1,$5,NULL); }
 	//			// IEEE says array_identifier here, but dotted accepted in VMM and 1800-2009
 	|	yFOREACH '(' idClassForeach '[' loop_variables ']' ')' stmtBlock	{ $$ = new AstForeach($1,$3,$5,$8); }
 	//
