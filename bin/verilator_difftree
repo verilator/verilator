@@ -85,7 +85,8 @@ sub diff_dir {
 	diff_file($a,$b);
 	$any = 1;
     }
-    $any or warn "%Warning: No .tree files found\n";
+    $any or warn ("%Warning: No .tree files found that have similar base names:\n    "
+                  .join("\n    ", sort keys %files),"\n");
 }
 
 sub diff_file {
