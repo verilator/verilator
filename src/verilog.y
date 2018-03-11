@@ -3723,9 +3723,14 @@ concurrent_assertion_item<nodep>:	// IEEE: concurrent_assertion_item
 	;
 
 concurrent_assertion_statement<nodep>:	// ==IEEE: concurrent_assertion_statement
-	//UNSUP: assert/assume
+		yASSERT yPROPERTY '(' property_spec ')' elseStmtBlock	{ $$ = new AstPslAssert($1,$4,$6); }
 	//				// IEEE: cover_property_statement
-		yCOVER yPROPERTY '(' property_spec ')' stmtBlock	{ $$ = new AstPslCover($1,$4,$6); }
+	|	yCOVER yPROPERTY '(' property_spec ')' stmtBlock	{ $$ = new AstPslCover($1,$4,$6); }
+	;
+
+elseStmtBlock<nodep>:	// Part of concurrent_assertion_statement
+		';'					{ $$ = NULL; }
+	|	yELSE stmtBlock				{ $$ = $2; }
 	;
 
 property_spec<nodep>:			// IEEE: property_spec

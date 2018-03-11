@@ -2228,7 +2228,7 @@ private:
 	assertAtStatement(nodep);
 	userIterateChildren(nodep, WidthVP(SELF,BOTH).p());
     }
-    virtual void visit(AstPslCover* nodep) {
+    virtual void visit(AstNodePslCoverOrAssert* nodep) {
 	assertAtStatement(nodep);
 	iterateCheckBool(nodep,"Property",nodep->propp(),BOTH);	// it's like an if() condition.
 	userIterateAndNext(nodep->stmtsp(), NULL);
