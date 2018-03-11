@@ -88,11 +88,17 @@ private:
 	return newp;
     }
 
-    AstNode* newFireAssert(AstNode* nodep, const string& message) {
+    AstNode* newFireAssertUnchecked(AstNode* nodep, const string& message) {
+        // Like newFireAssert() but omits the asserts-on check
 	AstDisplay* dispp = new AstDisplay (nodep->fileline(), AstDisplayType::DT_ERROR, message, NULL, NULL);
 	AstNode* bodysp = dispp;
 	replaceDisplay(dispp, "%%Error");   // Convert to standard DISPLAY format
 	bodysp->addNext(new AstStop (nodep->fileline()));
+        return bodysp;
+    }
+
+    AstNode* newFireAssert(AstNode* nodep, const string& message) {
+        AstNode* bodysp = newFireAssertUnchecked(nodep, message);
 	bodysp = newIfAssertOn(bodysp);
 	return bodysp;
     }
@@ -105,7 +111,9 @@ private:
 	//
 	AstNode* bodysp = NULL;
 	bool selfDestruct = false;
+        AstIf* ifp = NULL;
 	if (AstPslCover* snodep = nodep->castPslCover()) {
+            ++m_statAsCover;
 	    if (!v3Global.opt.coverageUser()) {
 		selfDestruct = true;
 	    } else {
@@ -116,14 +124,30 @@ private:
 		if (message!="") covincp->declp()->comment(message);
 		bodysp = covincp;
 	    }
+
+            if (bodysp && stmtsp) bodysp = bodysp->addNext(stmtsp);
+            ifp = new AstIf (nodep->fileline(), propp, bodysp, NULL);
+            bodysp = ifp;
+
+        } else if (nodep->castPslAssert()) {
+            ++m_statAsPsl;
+            // Insert an automatic error message and $stop after
+            // any user-supplied statements.
+            AstNode* autoMsgp = newFireAssertUnchecked(nodep, "'assert property' failed.");
+            if (stmtsp) {
+                stmtsp->addNext(autoMsgp);
+            } else {
+                stmtsp = autoMsgp;
+            }
+            ifp = new AstIf(nodep->fileline(), propp, NULL, stmtsp);
+            // It's more LIKELY that we'll take the NULL if clause
+            // than the sim-killing else clause:
+            ifp->branchPred(AstBranchPred::BP_LIKELY);
+            bodysp = newIfAssertOn(ifp);
 	} else {
 	    nodep->v3fatalSrc("Unknown node type");
 	}
-	if (bodysp && stmtsp) bodysp = bodysp->addNext(stmtsp);
-	AstIf* ifp = new AstIf (nodep->fileline(), propp, bodysp, NULL);
-	bodysp = ifp;
-	if (nodep->castVAssert()) ifp->branchPred(AstBranchPred::BP_UNLIKELY);
-	//
+
 	AstNode* newp = new AstAlways (nodep->fileline(),
 				       VAlwaysKwd::ALWAYS,
 				       sentreep,
@@ -294,12 +318,11 @@ private:
 	}
     }
 
-    virtual void visit(AstPslCover* nodep) {
+    virtual void visit(AstNodePslCoverOrAssert* nodep) {
 	nodep->iterateChildren(*this);
 	if (m_beginp && nodep->name() == "") nodep->name(m_beginp->name());
 	newPslAssertion(nodep, nodep->propp(), nodep->sentreep(),
 			nodep->stmtsp(), nodep->name()); VL_DANGLING(nodep);
-	++m_statAsCover;
     }
     virtual void visit(AstVAssert* nodep) {
 	nodep->iterateChildren(*this);

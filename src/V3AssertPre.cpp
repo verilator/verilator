@@ -86,7 +86,7 @@ private:
 	pushDeletep(nodep); VL_DANGLING(nodep);
     }
 
-    virtual void visit(AstPslCover* nodep) {
+    virtual void visit(AstNodePslCoverOrAssert* nodep) {
 	if (nodep->sentreep()) return;  // Already processed
 	clearAssertInfo();
 	nodep->iterateChildren(*this);

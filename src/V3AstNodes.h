@@ -3986,6 +3986,7 @@ class AstNodeSystemUniop : public AstNodeUniop {
 public:
     AstNodeSystemUniop(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
         dtypeSetDouble(); }
+    ASTNODE_BASE_FUNCS(NodeSystemUniop)
     virtual bool cleanOut() {return true;} virtual bool cleanLhs() {return false;}
     virtual bool sizeMattersLhs() {return false;}
     virtual int instrCount() const { return instrCountDoubleTrig(); }
@@ -5260,30 +5261,44 @@ public:
     AstNode*	propp()		const { return op3p(); }	// op3 = property
 };
 
-class AstPslCover : public AstNodeStmt {
+class AstNodePslCoverOrAssert : public AstNodeStmt {
     // Psl Cover
     // Parents:  {statement list}
     // Children: expression, report string
 private:
     string	m_name;		// Name to report
 public:
-    AstPslCover(FileLine* fl, AstNode* propp, AstNode* stmtsp, const string& name="")
+    AstNodePslCoverOrAssert(FileLine* fl, AstNode* propp, AstNode* stmtsp, const string& name="")
 	: AstNodeStmt(fl)
 	, m_name(name) {
 	addOp1p(propp);
 	addNOp4p(stmtsp);
     }
-    ASTNODE_NODE_FUNCS(PslCover)
-    virtual string name()	const { return m_name; }		// * = Var name
+    ASTNODE_BASE_FUNCS(NodePslCoverOrAssert)
+    virtual string name() const { return m_name; }  // * = Var name
     virtual V3Hash sameHash() const { return V3Hash(name()); }
     virtual bool same(const AstNode* samep) const { return samep->name() == name(); }
     virtual void name(const string& name) { m_name = name; }
-    AstNode*	propp()		const { return op1p(); }	// op1 = property
-    AstSenTree*	sentreep()	const { return op2p()->castSenTree(); }	// op2 = clock domain
-    void sentreep(AstSenTree* sentreep)  { addOp2p(sentreep); }	// op2 = clock domain
-    AstNode*	coverincp()	const { return op3p(); }	// op3 = coverage node
-    void coverincp(AstCoverInc* nodep)	{ addOp3p(nodep); }	// op3 = coverage node
-    AstNode*	stmtsp()	const { return op4p(); }	// op4 = statements
+    AstNode* propp() const { return op1p(); }  // op1 = property
+    AstSenTree* sentreep() const { return op2p()->castSenTree(); }  // op2 = clock domain
+    void sentreep(AstSenTree* sentreep) { addOp2p(sentreep); }  // op2 = clock domain
+    AstNode* stmtsp() const { return op4p(); }  // op4 = statements
+};
+
+class AstPslCover : public AstNodePslCoverOrAssert {
+public:
+    ASTNODE_NODE_FUNCS(PslCover)
+    AstPslCover(FileLine* fl, AstNode* propp, AstNode* stmtsp, const string& name="")
+        : AstNodePslCoverOrAssert(fl, propp, stmtsp, name) {}
+    AstNode* coverincp() const { return op3p(); }  // op3 = coverage node
+    void coverincp(AstCoverInc* nodep) { addOp3p(nodep); }  // op3 = coverage node
+};
+
+class AstPslAssert : public AstNodePslCoverOrAssert {
+public:
+    ASTNODE_NODE_FUNCS(PslAssert)
+    AstPslAssert(FileLine* fl, AstNode* propp, AstNode* stmtsp, const string& name="")
+        : AstNodePslCoverOrAssert(fl, propp, stmtsp, name) {}
 };
 
 //======================================================================
