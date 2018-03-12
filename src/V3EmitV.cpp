@@ -268,7 +268,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	if (nodep->stmtsp()) nodep->stmtsp()->iterateAndNext(*this);
 	puts("end\n");
     }
-    virtual void visit(AstReadMem* nodep) {
+    virtual void visit(AstNodeReadWriteMem* nodep) {
 	putfs(nodep,nodep->verilogKwd());
 	putbs(" (");
 	if (nodep->filenamep()) nodep->filenamep()->iterateAndNext(*this);

@@ -10,6 +10,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support assert properties, bug785, bug1290. [John Coiner, et al]
 
+***   Support $writememh. [John Coiner]
+
 ***   Add --no-debug-leak to reduce memory use under debug. [John Coiner]
 
 ****  On convergence errors, show activity. [John Coiner]

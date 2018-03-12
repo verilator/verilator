@@ -2204,12 +2204,13 @@ private:
 	assertAtStatement(nodep);
 	userIterateAndNext(nodep->lhsp(), WidthVP(SELF,BOTH).p());
     }
-    virtual void visit(AstReadMem* nodep) {
+    virtual void visit(AstNodeReadWriteMem* nodep) {
 	assertAtStatement(nodep);
 	userIterateAndNext(nodep->filenamep(), WidthVP(SELF,BOTH).p());
 	userIterateAndNext(nodep->memp(), WidthVP(SELF,BOTH).p());
 	if (!nodep->memp()->dtypep()->skipRefp()->castUnpackArrayDType()) {
-	    nodep->memp()->v3error("Unsupported: $readmem into other than unpacked array");
+	    nodep->memp()->v3error("Unsupported: " << nodep->verilogKwd()
+                                   << " into other than unpacked array");
 	}
 	userIterateAndNext(nodep->lsbp(), WidthVP(SELF,BOTH).p());
 	userIterateAndNext(nodep->msbp(), WidthVP(SELF,BOTH).p());

@@ -269,6 +269,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$value$plusargs"	{ FL; return yD_VALUEPLUSARGS; }
   "$width"		{ FL; return yaTIMINGSPEC; }
   "$write"		{ FL; return yD_WRITE; }
+  "$writememh"		{ FL; return yD_WRITEMEMH; }
   /*     Keywords */
   "always"		{ FL; return yALWAYS; }
   "and"			{ FL; return yAND; }

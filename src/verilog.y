@@ -515,6 +515,7 @@ class AstSenTree;
 %token<fl>		yD_VALUEPLUSARGS "$value$plusargs"
 %token<fl>		yD_WARNING	"$warning"
 %token<fl>		yD_WRITE	"$write"
+%token<fl>		yD_WRITEMEMH	"$writememh"
 
 %token<fl>		yVL_CLOCK		"/*verilator sc_clock*/"
 %token<fl>		yVL_CLOCKER		"/*verilator clocker*/"
@@ -2699,6 +2700,10 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_READMEMH '(' expr ',' idClassSel ')'				{ $$ = new AstReadMem($1,true, $3,$5,NULL,NULL); }
 	|	yD_READMEMH '(' expr ',' idClassSel ',' expr ')'		{ $$ = new AstReadMem($1,true, $3,$5,$7,NULL); }
 	|	yD_READMEMH '(' expr ',' idClassSel ',' expr ',' expr ')'	{ $$ = new AstReadMem($1,true, $3,$5,$7,$9); }
+	//
+	|	yD_WRITEMEMH '(' expr ',' idClassSel ')'			{ $$ = new AstWriteMem($1,$3,$5,NULL,NULL); }
+	|	yD_WRITEMEMH '(' expr ',' idClassSel ',' expr ')'		{ $$ = new AstWriteMem($1,$3,$5,$7,NULL); }
+	|	yD_WRITEMEMH '(' expr ',' idClassSel ',' expr ',' expr ')'	{ $$ = new AstWriteMem($1,$3,$5,$7,$9); }
 	//
 	// Any system function as a task
 	|	system_f_call_or_t			{ $$ = new AstSysFuncAsTask($<fl>1, $1); }

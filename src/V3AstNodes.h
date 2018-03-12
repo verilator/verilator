@@ -2773,17 +2773,16 @@ public:
     void 	fromp(AstNode* nodep) { setOp2p(nodep); }
 };
 
-class AstReadMem : public AstNodeStmt {
+class AstNodeReadWriteMem : public AstNodeStmt {
 private:
     bool	m_isHex;	// readmemh, not readmemb
 public:
-    AstReadMem(FileLine* fileline, bool hex,
-	       AstNode* filenamep, AstNode* memp, AstNode* lsbp, AstNode* msbp)
+    AstNodeReadWriteMem(FileLine* fileline, bool hex,
+                        AstNode* filenamep, AstNode* memp,
+                        AstNode* lsbp, AstNode* msbp)
 	: AstNodeStmt (fileline), m_isHex(hex) {
 	setOp1p(filenamep); setOp2p(memp); setNOp3p(lsbp); setNOp4p(msbp);
     }
-    ASTNODE_NODE_FUNCS(ReadMem)
-    virtual string verilogKwd() const { return (isHex()?"$readmemh":"$readmemb"); }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool isPure() const { return false; }
@@ -2791,12 +2790,35 @@ public:
     virtual bool isUnlikely() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode* samep) const {
-	return isHex()==static_cast<const AstReadMem*>(samep)->isHex(); }
+	return isHex()==static_cast<const AstNodeReadWriteMem*>(samep)->isHex();
+    }
     bool	isHex() const { return m_isHex; }
     AstNode*	filenamep() const { return op1p(); }
     AstNode*	memp() const { return op2p(); }
     AstNode*	lsbp() const { return op3p(); }
     AstNode*	msbp() const { return op4p(); }
+    virtual const char* cFuncPrefixp() const = 0;
+};
+
+class AstReadMem : public AstNodeReadWriteMem {
+public:
+    AstReadMem(FileLine* fileline, bool hex,
+	       AstNode* filenamep, AstNode* memp, AstNode* lsbp, AstNode* msbp)
+	: AstNodeReadWriteMem(fileline, hex, filenamep, memp, lsbp, msbp)
+        { }
+    ASTNODE_NODE_FUNCS(ReadMem);
+    virtual string verilogKwd() const { return (isHex()?"$readmemh":"$readmemb"); }
+    virtual const char* cFuncPrefixp() const { return "VL_READMEM_"; }
+};
+
+class AstWriteMem : public AstNodeReadWriteMem {
+public:
+    AstWriteMem(FileLine* fileline,
+                AstNode* filenamep, AstNode* memp, AstNode* lsbp, AstNode* msbp)
+	: AstNodeReadWriteMem(fileline, true, filenamep, memp, lsbp, msbp) { }
+    ASTNODE_NODE_FUNCS(WriteMem)
+    virtual string verilogKwd() const { return (isHex()?"$writememh":"$writememb"); }
+    virtual const char* cFuncPrefixp() const { return "VL_WRITEMEM_"; }
 };
 
 class AstSystemT : public AstNodeStmt {
