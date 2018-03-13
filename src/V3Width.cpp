@@ -446,7 +446,7 @@ private:
 	    if (!constp) { nodep->v3error("Replication value isn't a constant."); return; }
 	    uint32_t times = constp->toUInt();
 	    if (times==0 && !nodep->backp()->castConcat()) {  // Concat Visitor will clean it up.
-		nodep->v3error("Replication value of 0 is only legal under a concatenation (IEEE 2012 11.4.12.1)"); times=1;
+		nodep->v3error("Replication value of 0 is only legal under a concatenation (IEEE 2017 11.4.12.1)"); times=1;
 	    }
 	    if (nodep->lhsp()->isString()) {
 		AstNode* newp = new AstReplicateN(nodep->fileline(),nodep->lhsp()->unlinkFrBack(),
@@ -477,7 +477,7 @@ private:
 	    if (!constp) { nodep->v3error("Replication value isn't a constant."); return; }
 	    uint32_t times = constp->toUInt();
 	    if (times==0 && !nodep->backp()->castConcat()) {  // Concat Visitor will clean it up.
-		nodep->v3error("Replication value of 0 is only legal under a concatenation (IEEE 2012 11.4.12.1)");
+		nodep->v3error("Replication value of 0 is only legal under a concatenation (IEEE 2017 11.4.12.1)");
 	    }
 	    nodep->dtypeSetString();
 	}
@@ -1298,7 +1298,7 @@ private:
 	    }
 	    if (!itemp->valuep()) {
 		if (num.isEqZero() && itemp != nodep->itemsp())
-		    itemp->v3error("Enum value illegally wrapped around (IEEE 2012 6.19)");
+		    itemp->v3error("Enum value illegally wrapped around (IEEE 2017 6.19)");
 		if (!nodep->dtypep()->basicp()
 		    && !nodep->dtypep()->basicp()->keyword().isIntNumeric()) {
 		    itemp->v3error("Enum names without values only allowed on numeric types");

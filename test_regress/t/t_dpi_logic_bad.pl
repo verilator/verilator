@@ -11,7 +11,7 @@ compile (
     v_flags2 => ["--lint-only"],
     fails=>$Self->{v3},
     expect=>
-'%Error: t/t_dpi_logic_bad.v:\d+: DPI function may not return type BASICDTYPE \'logic\' \(IEEE 2012 35.5.5\)
+'%Error: t/t_dpi_logic_bad.v:\d+: DPI function may not return type BASICDTYPE \'logic\' \(IEEE 2017 35.5.5\)
 %Error: Exiting due to .*'
     );
 

@@ -42,6 +42,7 @@ public:
 	L1800_2005,
 	L1800_2009,
 	L1800_2012,
+	L1800_2017,
 	// ***Add new elements below also***
 	_ENUM_END
     };
@@ -54,12 +55,14 @@ public:
 	    "1364-2005",
 	    "1800-2005",
 	    "1800-2009",
-	    "1800-2012"
+	    "1800-2012",
+	    "1800-2017"
 	};
 	return names[m_e];
     };
-    static V3LangCode mostRecent() { return V3LangCode(L1800_2012); }
-    bool systemVerilog() const { return m_e == L1800_2005 || m_e == L1800_2009 || m_e == L1800_2012; }
+    static V3LangCode mostRecent() { return V3LangCode(L1800_2017); }
+    bool systemVerilog() const { return m_e == L1800_2005 || m_e == L1800_2009
+	    || m_e == L1800_2012 || m_e == L1800_2017; }
     bool legal() const { return m_e != L_ERROR; }
     //
     enum en m_e;

@@ -2,11 +2,11 @@
 <!-- DESCRIPTION: Verilator output: XML representation of netlist -->
 <verilator_xml>
   <files>
-    <file id="a" filename="AstRoot" language="1800-2012"/>
-    <file id="b" filename="COMMAND_LINE" language="1800-2012"/>
-    <file id="c" filename="INTERNAL_VERILATOR_DEFINE" language="1800-2012"/>
-    <file id="d" filename="input.vc" language="1800-2012"/>
-    <file id="e" filename="t/t_xml_tag.v" language="1800-2012"/>
+    <file id="a" filename="AstRoot" language="1800-2017"/>
+    <file id="b" filename="COMMAND_LINE" language="1800-2017"/>
+    <file id="c" filename="INTERNAL_VERILATOR_DEFINE" language="1800-2017"/>
+    <file id="d" filename="input.vc" language="1800-2017"/>
+    <file id="e" filename="t/t_xml_tag.v" language="1800-2017"/>
   </files>
   <netlist>
     <module fl="e6" name="m">

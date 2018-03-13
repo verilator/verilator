@@ -743,7 +743,6 @@ package_or_generate_item_declaration<nodep>:	// ==IEEE: package_or_generate_item
 	|	local_parameter_declaration ';'		{ $$ = $1; }
 	|	parameter_declaration ';'		{ $$ = $1; }
 	//UNSUP	covergroup_declaration			{ $$ = $1; }
-	//UNSUP	overload_declaration			{ $$ = $1; }
 	//UNSUP	assertion_item_declaration		{ $$ = $1; }
 	|	';'					{ $$ = NULL; }
 	;
@@ -2275,7 +2274,6 @@ block_item_declaration<nodep>:	// ==IEEE: block_item_declaration
 		data_declaration 			{ $$ = $1; }
 	|	local_parameter_declaration ';'		{ $$ = $1; }
 	|	parameter_declaration ';' 		{ $$ = $1; }
-	//UNSUP	overload_declaration 			{ $$ = $1; }
 	//UNSUP	let_declaration 			{ $$ = $1; }
 	;
 
@@ -2374,8 +2372,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	|	yREPEAT '(' expr ')' stmtBlock		{ $$ = new AstRepeat($1,$3,$5);}
 	|	yWHILE '(' expr ')' stmtBlock		{ $$ = new AstWhile($1,$3,$5);}
 	//			// for's first ';' is in for_initalization
-	|	yFOR '(' for_initialization expr ';' for_stepE ')' stmtBlock
-							{ $$ = new AstBegin($1,"",$3); $3->addNext(new AstWhile($1, $4,$8,$6)); }
+	|	statementFor				{ $$ = $1; }
 	|	yDO stmtBlock yWHILE '(' expr ')' ';'	{ $$ = $2->cloneTree(true); $$->addNext(new AstWhile($1,$5,$2));}
 	//			// IEEE says array_identifier here, but dotted accepted in VMM and 1800-2009
 	|	yFOREACH '(' idClassForeach '[' loop_variables ']' ')' stmtBlock	{ $$ = new AstForeach($1,$3,$5,$8); }
@@ -2421,6 +2418,15 @@ statement_item<nodep>:		// IEEE: statement_item
 	//UNSUP	expect_property_statement		{ $$ = $1; }
 	//
 	|	error ';'				{ $$ = NULL; }
+	;
+
+statementFor<beginp>:		// IEEE: part of statement
+		yFOR '(' for_initialization expr ';' for_stepE ')' stmtBlock
+							{ $$ = new AstBegin($1,"",$3);
+							  $$->addStmtsp(new AstWhile($1, $4,$8,$6)); }
+	|	yFOR '(' for_initialization ';' for_stepE ')' stmtBlock
+							{ $$ = new AstBegin($1,"",$3);
+							  $$->addStmtsp(new AstWhile($1, new AstConst($1,AstConst::LogicTrue()),$7,$5)); }
 	;
 
 statementVerilatorPragmas<nodep>:
@@ -2597,6 +2603,7 @@ for_initialization<nodep>:	// ==IEEE: for_initialization + for_variable_declarat
 			  $$ = VARDONEA($<fl>2,*$2,NULL,NULL);
 			  $$->addNext(new AstAssign($3,new AstVarRef($3,*$2,true),$4));}
 	|	varRefBase '=' expr ';'			{ $$ = new AstAssign($2,$1,$3); }
+	|	';'					{ $$ = NULL; }
 	//UNSUP: List of initializations
 	;
 
@@ -3120,7 +3127,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//
 	//			// IEEE: "... hierarchical_identifier select"  see below
 	//
-	//			// IEEE: empty_queue
+	//			// IEEE: empty_queue (IEEE 1800-2017 empty_unpacked_array_concatenation)
 	//UNSUP	'{' '}'
 	//
 	//			// IEEE: concatenation/constant_concatenation

@@ -1,7 +1,7 @@
 /*******************************************************************************
  * vpi_user.h
  *
- * IEEE Std 1800-2012 Programming Language Interface (PLI)
+ * IEEE Std 1800-2017 Programming Language Interface (PLI)
  *
  * This file contains the constant definitions, structure definitions, and
  * routine declarations used by the SystemVerilog Verification Procedural
@@ -251,7 +251,7 @@ typedef PLI_UINT32 *vpiHandle;
 #define vpiModPathOut         96   /* output terminal of a module path */
 #define vpiOperand            97   /* operand of expression */
 #define vpiPortInst           98   /* connected port instance */
-#define vpiProcess            99   /* process in module */
+#define vpiProcess            99   /* process in module, program or interface */
 #define vpiVariables         100   /* variables in module */
 #define vpiUse               101   /* usage */
 
@@ -978,7 +978,7 @@ XXTERN vpiHandle    vpi_handle_by_multi_index PROTO_PARAMS((vpiHandle obj,
 
 /****************************** GLOBAL VARIABLES ******************************/
 
-PLI_VEXTERN PLI_DLLESPEC void (*vlog_startup_routines[])();
+PLI_VEXTERN PLI_DLLESPEC void (*vlog_startup_routines[])( void );
 
   /* array of function pointers, last pointer should be null */
 

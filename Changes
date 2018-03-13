@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 3.921 devel
 
+**    Support IEEE 1800-2017 as default language.
+
 ***   Support trig functions ($sin() etc), bug1281. [Patrick Stewart]
 
 ***   Support calling system functions as tasks, bug1285. [Joel Holdsworth]
