@@ -69,6 +69,12 @@ bool VString::wildmatch(const char* s, const char* p) {
     return (*s == '\0');
 }
 
+string VString::dot(const string& a, const string& dot, const string& b) {
+    if (b=="") return a;
+    if (a=="") return b;
+    return a+dot+b;
+}
+
 string VString::downcase(const string& str) {
     string out = str;
     for (string::iterator pos = out.begin(); pos != out.end(); ++pos) {

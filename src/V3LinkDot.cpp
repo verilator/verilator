@@ -78,6 +78,7 @@
 #include "V3Graph.h"
 #include "V3Ast.h"
 #include "V3ParseImp.h"
+#include "V3String.h"
 
 //######################################################################
 // LinkDot state, as a visitor of each AstNode
@@ -1807,8 +1808,7 @@ private:
 		       || foundp->nodep()->castModule()) {  // if top
 		if (allowScope) {
 		    ok = true;
-		    if (m_ds.m_dotText!="") m_ds.m_dotText += ".";
-		    m_ds.m_dotText += nodep->name();
+                    m_ds.m_dotText = VString::dot(m_ds.m_dotText, ".", nodep->name());
 		    m_ds.m_dotSymp = foundp;
 		    m_ds.m_dotPos = DP_SCOPE;
 		    // Upper AstDot visitor will handle it from here
@@ -1827,8 +1827,7 @@ private:
                         if (!ifaceRefVarp) nodep->v3fatalSrc("Can't find interface var ref: "<<findName);
                         //
                         ok = true;
-                        if (m_ds.m_dotText!="") m_ds.m_dotText += ".";
-                        m_ds.m_dotText += nodep->name();
+                        m_ds.m_dotText = VString::dot(m_ds.m_dotText, ".", nodep->name());
                         m_ds.m_dotSymp = foundp;
                         m_ds.m_dotPos = DP_SCOPE;
                         UINFO(9," cell -> iface varref "<<foundp->nodep()<<endl);
@@ -1845,8 +1844,7 @@ private:
 		    if (!ifacerefp->ifaceViaCellp()) ifacerefp->v3fatalSrc("Unlinked interface");
 		    // Really this is a scope reference into an interface
 		    UINFO(9,"varref-ifaceref "<<m_ds.m_dotText<<"  "<<nodep<<endl);
-		    if (m_ds.m_dotText!="") m_ds.m_dotText += ".";
-		    m_ds.m_dotText += nodep->name();
+                    m_ds.m_dotText = VString::dot(m_ds.m_dotText, ".", nodep->name());
 		    m_ds.m_dotSymp = m_statep->getNodeSym(ifacerefp->ifaceViaCellp());
 		    m_ds.m_dotPos = DP_SCOPE;
 		    ok = true;
@@ -1897,8 +1895,7 @@ private:
 		    if (!cellp) nodep->v3fatalSrc("Modport not referenced from a cell");
 		    AstIface* ifacep = cellp->modp()->castIface();
 		    //string cellName = m_ds.m_dotText;   // Use cellp->name
-		    if (m_ds.m_dotText!="") m_ds.m_dotText += ".";
-		    m_ds.m_dotText += nodep->name();
+                    m_ds.m_dotText = VString::dot(m_ds.m_dotText, ".", nodep->name());
 		    m_ds.m_dotSymp = m_statep->getNodeSym(modportp);
 		    m_ds.m_dotPos = DP_SCOPE;
 		    ok = true;

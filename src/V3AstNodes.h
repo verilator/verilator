@@ -1484,7 +1484,7 @@ class AstVarXRef : public AstNodeVarRef {
     // A VarRef to something in another module before AstScope.
     // Includes pin on a cell, as part of a ASSIGN statement to connect I/Os until AstScope
 private:
-    string	m_dotted;	// Scope name to connected to
+    string      m_dotted;       // Dotted part of scope the name()'ed reference is under or ""
     string	m_inlinedDots;	// Dotted hierarchy flattened out
 public:
     AstVarXRef(FileLine* fl, const string& name, const string& dotted, bool lvalue)

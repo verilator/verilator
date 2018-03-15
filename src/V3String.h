@@ -33,8 +33,13 @@ class VString {
     static bool wildmatchi(const char* s, const char* p);
 public:
     // METHODS (generic string utilities)
+    // Return true if p with ? or *'s matches s
     static bool wildmatch(const char* s, const char* p);
+    // Return {a}{dot}{b}, omitting dot if a or b are empty
+    static string dot(const string& a, const string& dot, const string& b);
+    // Convert string to lowercase
     static string downcase(const string& str);
+    // Replace any %'s with %%
     static string quotePercent(const string& str);
 };
 

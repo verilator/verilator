@@ -1966,7 +1966,7 @@ class AstNodeFTaskRef : public AstNode {
 private:
     AstNodeFTask*	m_taskp;	// [AfterLink] Pointer to task referenced
     string		m_name;		// Name of variable
-    string		m_dotted;	// Dotted part of scope to task or ""
+    string              m_dotted;       // Dotted part of scope the name()ed task/func is under or ""
     string		m_inlinedDots;	// Dotted hierarchy flattened out
     AstPackage*		m_packagep;	// Package hierarchy
 public:
