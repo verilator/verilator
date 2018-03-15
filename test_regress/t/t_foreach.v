@@ -13,12 +13,24 @@ module t (/*AUTOARG*/);
    reg [63:0] sum;
    reg [2:1] [4:3] array [5:6] [7:8];
    reg [1:2] [3:4] larray [6:5] [8:7];
+   bit [31:0]      depth1_array [0:0];
 
    function [63:0] crc (input [63:0] sum, input [31:0] a, input [31:0] b, input [31:0] c, input [31:0] d);
       crc = {sum[62:0],sum[63]} ^ {4'b0,a[7:0], 4'h0,b[7:0], 4'h0,c[7:0], 4'h0,d[7:0]};
    endfunction
 
    initial begin
+      sum = 0;
+      foreach (depth1_array[index]) begin
+         sum = crc(sum, index, 0, 0, 0);
+
+         // Ensure the index never goes out of bounds.
+         // We used to get this wrong for an array of depth 1.
+         assert (index != -1);
+         assert (index != 1);
+      end
+      `checkh(sum, 64'h0);
+
       sum = 0;
       foreach (array[a]) begin
 	 sum = crc(sum, a, 0, 0, 0);
