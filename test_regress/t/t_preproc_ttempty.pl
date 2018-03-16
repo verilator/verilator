@@ -14,7 +14,7 @@ my $stdout_filename = "$Self->{obj_dir}/$Self->{name}__test.vpp";
 compile (
     # Override default flags
     v_flags => [''],
-    verilator_flags => ["-E -P +incdir+t"],
+    verilator_flags => ["-E -P +incdir+t -Mdir $Self->{obj_dir}", ],
     verilator_flags2 => ['',],
     verilator_flags3 => ['',],
     verilator_make_gcc => 0,
