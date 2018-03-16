@@ -549,6 +549,14 @@ inline void VL_READMEM_I(bool hex, int width, int depth, int array_lsb, int fnwo
 			 IData ofilename,    void* memp, IData start, IData end) VL_MT_SAFE {
     VL_READMEM_Q(hex, width,depth,array_lsb,fnwords, ofilename,memp,start,end); }
 
+extern void VL_WRITEMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
+                          WDataInP ofilename, const void* memp, IData start, IData end);
+extern void VL_WRITEMEM_Q(bool hex, int width, int depth, int array_lsb, int fnwords,
+                          QData ofilename,    const void* memp, IData start, IData end);
+inline void VL_WRITEMEM_I(bool hex, int width, int depth, int array_lsb, int fnwords,
+                          IData ofilename,    const void* memp, IData start, IData end) VL_MT_SAFE {
+    VL_WRITEMEM_Q(hex, width,depth,array_lsb,fnwords, ofilename,memp,start,end); }
+
 extern void VL_WRITEF(const char* formatp, ...);
 extern void VL_FWRITEF(IData fpi, const char* formatp, ...);
 

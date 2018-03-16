@@ -15,13 +15,19 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 3.921 devel
 
+**    Support IEEE 1800-2017 as default language.
+
 ***   Support trig functions ($sin() etc), bug1281. [Patrick Stewart]
 
 ***   Support calling system functions as tasks, bug1285. [Joel Holdsworth]
 
 ***   Support assert properties, bug785, bug1290. [John Coiner, et al]
 
+***   Support $writememh. [John Coiner]
+
 ***   Add --no-debug-leak to reduce memory use under debug. [John Coiner]
+
+****  Fix severe runtime performance bug in certain foreach loops. [John Coiner]
 
 ****  On convergence errors, show activity. [John Coiner]
 

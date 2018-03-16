@@ -129,7 +129,7 @@ module t (/*AUTOARG*/
 	 if (bug764_p11 !== 4'b000x) $stop;
 	 if (~& bug764_p11 !== 1'b1) $stop;
 	 //verilator lint_on WIDTH
-	 // However IEEE says for constants in 2012 5.7.1 that smaller-sizes do extend
+	 // However IEEE 2017 5.7.1 says for constants that smaller-sizes do extend
 	 if (4'bx !== 4'bxxxx) $stop;
 	 if (4'bz !== 4'bzzzz) $stop;
 	 if (4'b1 !== 4'b0001) $stop;

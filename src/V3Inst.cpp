@@ -86,9 +86,9 @@ private:
 	// Use user1p on the PIN to indicate we created an assign for this pin
 	if (!nodep->user1SetOnce()) {
 	    // Simplify it
-	    V3Inst::pinReconnectSimple(nodep, m_cellp, m_modp, false);
-	    // Make a ASSIGNW (expr, pin)
-	    AstNode*  exprp  = nodep->exprp()->cloneTree(false);
+            V3Inst::pinReconnectSimple(nodep, m_cellp, false);
+            // Make an ASSIGNW (expr, pin)
+            AstNode* exprp = nodep->exprp()->cloneTree(false);
 	    if (exprp->width() != nodep->modVarp()->width())
 		nodep->v3fatalSrc("Width mismatch, should have been handled in pinReconnectSimple");
 	    if (nodep->modVarp()->isInout()) {
@@ -133,6 +133,7 @@ private:
     }
 
     // Save some time
+    virtual void visit(AstNodeMath*) {}
     virtual void visit(AstNodeAssign*) {}
     virtual void visit(AstAlways*) {}
 
@@ -496,7 +497,7 @@ private:
     }
 
 public:
-    static AstAssignW* pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModule*,
+    static AstAssignW* pinReconnectSimple(AstPin* pinp, AstCell* cellp,
 					  bool forTristate, bool alwaysCvt) {
 	// If a pin connection is "simple" leave it as-is
 	// Else create a intermediate wire to perform the interconnect
@@ -573,9 +574,9 @@ public:
 //######################################################################
 // Inst class functions
 
-AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, AstNodeModule* modp,
+AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp,
 				       bool forTristate, bool alwaysCvt) {
-    return InstStatic::pinReconnectSimple(pinp, cellp, modp, forTristate, alwaysCvt);
+    return InstStatic::pinReconnectSimple(pinp, cellp, forTristate, alwaysCvt);
 }
 
 //######################################################################

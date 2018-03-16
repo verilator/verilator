@@ -20,7 +20,7 @@
 // V3Width's Transformations:
 //	Top down traversal:
 //	    Determine width of sub-expressions
-//		width() = # bits upper expression wants, 0 for anything-goes
+//              width() = # bits upper expression wants, 0 for anything-goes
 //		widthUnsized() = # bits for unsized constant, or 0 if it's sized
 //		widthMin() = Alternative acceptable width for linting, or width() if sized
 //		Determine this subop's width, can be either:
@@ -29,7 +29,7 @@
 //		Pass up:
 //		    width() = # bits this expression generates
 //		    widthSized() = true if all constants sized, else false
-//	    Compute size of this expression
+//          Compute size of this expression
 //	    Lint warn about mismatches
 //              If expr size != subop fixed, bad
 //              If expr size  < subop unsized minimum, bad
@@ -446,7 +446,7 @@ private:
 	    if (!constp) { nodep->v3error("Replication value isn't a constant."); return; }
 	    uint32_t times = constp->toUInt();
             if (times==0 && !VN_IS(nodep->backp(), Concat)) {  // Concat Visitor will clean it up.
-		nodep->v3error("Replication value of 0 is only legal under a concatenation (IEEE 2012 11.4.12.1)"); times=1;
+		nodep->v3error("Replication value of 0 is only legal under a concatenation (IEEE 2017 11.4.12.1)"); times=1;
 	    }
 	    if (nodep->lhsp()->isString()) {
 		AstNode* newp = new AstReplicateN(nodep->fileline(),nodep->lhsp()->unlinkFrBack(),
@@ -477,7 +477,7 @@ private:
 	    if (!constp) { nodep->v3error("Replication value isn't a constant."); return; }
 	    uint32_t times = constp->toUInt();
             if (times==0 && !VN_IS(nodep->backp(), Concat)) {  // Concat Visitor will clean it up.
-		nodep->v3error("Replication value of 0 is only legal under a concatenation (IEEE 2012 11.4.12.1)");
+		nodep->v3error("Replication value of 0 is only legal under a concatenation (IEEE 2017 11.4.12.1)");
 	    }
 	    nodep->dtypeSetString();
 	}
@@ -1299,7 +1299,7 @@ private:
 	    }
 	    if (!itemp->valuep()) {
 		if (num.isEqZero() && itemp != nodep->itemsp())
-		    itemp->v3error("Enum value illegally wrapped around (IEEE 2012 6.19)");
+		    itemp->v3error("Enum value illegally wrapped around (IEEE 2017 6.19)");
 		if (!nodep->dtypep()->basicp()
 		    && !nodep->dtypep()->basicp()->keyword().isIntNumeric()) {
 		    itemp->v3error("Enum names without values only allowed on numeric types");
@@ -2206,12 +2206,13 @@ private:
 	assertAtStatement(nodep);
 	userIterateAndNext(nodep->lhsp(), WidthVP(SELF,BOTH).p());
     }
-    virtual void visit(AstReadMem* nodep) {
+    virtual void visit(AstNodeReadWriteMem* nodep) {
 	assertAtStatement(nodep);
 	userIterateAndNext(nodep->filenamep(), WidthVP(SELF,BOTH).p());
 	userIterateAndNext(nodep->memp(), WidthVP(SELF,BOTH).p());
         if (!VN_IS(nodep->memp()->dtypep()->skipRefp(), UnpackArrayDType)) {
-	    nodep->memp()->v3error("Unsupported: $readmem into other than unpacked array");
+	    nodep->memp()->v3error("Unsupported: " << nodep->verilogKwd()
+                                   << " into other than unpacked array");
 	}
 	userIterateAndNext(nodep->lsbp(), WidthVP(SELF,BOTH).p());
 	userIterateAndNext(nodep->msbp(), WidthVP(SELF,BOTH).p());

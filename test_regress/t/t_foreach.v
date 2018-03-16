@@ -13,6 +13,7 @@ module t (/*AUTOARG*/);
    reg [63:0] sum;
    reg [2:1] [4:3] array [5:6] [7:8];
    reg [1:2] [3:4] larray [6:5] [8:7];
+   bit [31:0]      depth1_array [0:0];
 
    function [63:0] crc (input [63:0] sum, input [31:0] a, input [31:0] b, input [31:0] c, input [31:0] d);
       crc = {sum[62:0],sum[63]} ^ {4'b0,a[7:0], 4'h0,b[7:0], 4'h0,c[7:0], 4'h0,d[7:0]};
@@ -20,53 +21,68 @@ module t (/*AUTOARG*/);
 
    initial begin
       sum = 0;
-      foreach (array[a]) begin
-	 sum = crc(sum, a, 0, 0, 0);
+      // We use 'index_' as the prefix for all loop vars,
+      // this allows t_foreach.pl to confirm that all loops
+      // have been unrolled and flattened away and no loop vars
+      // remain in the generated .cpp
+      foreach (depth1_array[index_a]) begin
+         sum = crc(sum, index_a, 0, 0, 0);
+
+         // Ensure the index never goes out of bounds.
+         // We used to get this wrong for an array of depth 1.
+         assert (index_a != -1);
+         assert (index_a != 1);
+      end
+      `checkh(sum, 64'h0);
+
+      sum = 0;
+      foreach (array[index_a]) begin
+         sum = crc(sum, index_a, 0, 0, 0);
       end
       `checkh(sum, 64'h000000c000000000);
 
       sum = 0;
-      foreach (array[a,b]) begin
-	 sum = crc(sum, a, b, 0, 0);
+      foreach (array[index_a,index_b]) begin
+         sum = crc(sum, index_a, index_b, 0, 0);
       end
       `checkh(sum, 64'h000003601e000000);
 
       sum = 0;
-      foreach (array[a,b,c]) begin
-	 sum = crc(sum, a, b, c, 0);
+      foreach (array[index_a,index_b,index_c]) begin
+         sum = crc(sum, index_a, index_b, index_c, 0);
       end
       `checkh(sum, 64'h00003123fc101000);
 
       sum = 0;
-      foreach (array[a,b,c,d]) begin
-	 sum = crc(sum, a, b, c, d);
+      foreach (array[index_a,index_b,index_c,index_d]) begin
+         sum = crc(sum, index_a, index_b, index_c, index_d);
       end
       `checkh(sum, 64'h0030128ab2a8e557);
 
       //
 
       sum = 0;
-      foreach (larray[a]) begin
-	 sum = crc(sum, a, 0, 0, 0);
+      foreach (larray[index_a]) begin
+         sum = crc(sum, index_a, 0, 0, 0);
       end
       `checkh(sum, 64'h0000009000000000);
 
       sum = 0;
-      foreach (larray[a,b]) begin
-	 sum = crc(sum, a, b, 0, 0);
-	 sum = sum + {4'b0,a[7:0], 4'h0,b[7:0]};
+      foreach (larray[index_a,index_b]) begin
+         sum = crc(sum, index_a, index_b, 0, 0);
+         sum = sum + {4'b0,index_a[7:0], 4'h0,index_b[7:0]};
       end
       `checkh(sum, 64'h000002704b057073);
 
       sum = 0;
-      foreach (larray[a,b,c]) begin
-	 sum = crc(sum, a, b, c, 0);
+      foreach (larray[index_a,index_b,index_c]) begin
+         sum = crc(sum, index_a, index_b, index_c, 0);
       end
       `checkh(sum, 64'h00002136f9000000);
 
       sum = 0;
-      foreach (larray[a,b,c,d]) begin
-	 sum = crc(sum, a, b, c, d);
+      foreach (larray[index_a,index_b,index_c,index_d]) begin
+         sum = crc(sum, index_a, index_b, index_c, index_d);
       end
       `checkh(sum, 64'h0020179aa7aa0aaa);
 

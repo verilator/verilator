@@ -8,12 +8,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 compile (
-    v_flags2 => ["--lint-only"],
-    fails=>$Self->{v3},
-    expect=>
-'%Error: t/t_dpi_logic_bad.v:\d+: DPI function may not return type BASICDTYPE \'logic\' \(IEEE 2017 35.5.5\)
-%Error: Exiting due to .*'
     );
+
+execute (
+    check_finished=>1,
+    );
+
+file_grep_not ("$Self->{obj_dir}/$Self->{VM_PREFIX}.cpp", qr/rstn_r/);
 
 ok(1);
 1;

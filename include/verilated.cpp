@@ -1205,10 +1205,134 @@ IData VL_SSCANF_INX(int, const std::string& ld, const char* formatp, ...) VL_MT_
     return got;
 }
 
+void VL_WRITEMEM_Q(bool hex, int width, int depth, int array_lsb, int,
+                   QData ofilename, const void* memp, IData start,
+                   IData end) VL_MT_SAFE {
+    WData fnw[2];  VL_SET_WQ(fnw, ofilename);
+    return VL_WRITEMEM_W(hex, width,depth,array_lsb,2,fnw,memp,start,end);
+}
+
+void VL_WRITEMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
+                   WDataInP ofilenamep, const void* memp, IData start,
+                   IData end) VL_MT_SAFE {
+    char ofilenamez[VL_TO_STRING_MAX_WORDS*VL_WORDSIZE+1];
+    _VL_VINT_TO_STRING(fnwords*VL_WORDSIZE, ofilenamez, ofilenamep);
+    std::string ofilenames(ofilenamez);
+    return VL_WRITEMEM_N(hex, width,depth,array_lsb,ofilenames,memp,start,end);
+}
+
+const char* memhFormat(int nBits) {
+    assert((nBits >= 1) && (nBits <= 32));
+
+    static char buf[32];
+    switch ((nBits - 1) / 4) {
+    case 0: VL_SNPRINTF(buf, 32, "%%01x"); break;
+    case 1: VL_SNPRINTF(buf, 32, "%%02x"); break;
+    case 2: VL_SNPRINTF(buf, 32, "%%03x"); break;
+    case 3: VL_SNPRINTF(buf, 32, "%%04x"); break;
+    case 4: VL_SNPRINTF(buf, 32, "%%05x"); break;
+    case 5: VL_SNPRINTF(buf, 32, "%%06x"); break;
+    case 6: VL_SNPRINTF(buf, 32, "%%07x"); break;
+    case 7: VL_SNPRINTF(buf, 32, "%%08x"); break;
+    default: assert(false); break;
+    }
+    return buf;
+}
+
+void VL_WRITEMEM_N(
+    bool      hex,  // Hex format, else binary
+    int     width,  // Width of each array row
+    int     depth,  // Number of rows
+    int array_lsb,  // Index of first row. Valid row addresses
+    //              //  range from array_lsb up to (array_lsb + depth - 1)
+    const std::string& ofilenamep,  // Output file name
+    const void* memp,  // Array state
+    IData   start,  // First array row address to write
+    IData     end   // Last address to write
+    ) VL_MT_SAFE {
+    if (VL_UNLIKELY(!hex)) {
+        VL_FATAL_MT(ofilenamep.c_str(), 0, "",
+                    "VL_WRITEMEM_N only supports hex format for now, sorry!");
+        return;
+    }
+    FILE* fp = fopen(ofilenamep.c_str(), "w");
+    if (VL_UNLIKELY(!fp)) {
+        VL_FATAL_MT(ofilenamep.c_str(), 0, "", "$writemem file not found");
+        return;
+    }
+
+    for (int row_addr = start; row_addr <= end; ++row_addr) {
+        if ((row_addr < array_lsb)
+            || (row_addr > array_lsb + depth - 1)) {
+            vluint32_t endmax = ~0;
+            if (end != endmax) {
+                VL_FATAL_MT(ofilenamep.c_str(), 0, "",
+                            "$writemem specified address out-of-bounds");
+            }
+            // else, it's not an error to overflow due to end == endmax,
+            // just return cleanly.
+            goto cleanup;
+        }
+
+        // Compute the offset into the memp array.
+        int row_offset = row_addr - array_lsb;
+
+        if (width <= 8) {
+            const CData* datap
+                = &(reinterpret_cast<const CData*>(memp))[row_offset];
+            fprintf(fp, memhFormat(width), VL_MASK_I(width) & *datap);
+            fprintf(fp, "\n");
+        } else if (width <= 16) {
+            const SData* datap
+                = &(reinterpret_cast<const SData*>(memp))[row_offset];
+            fprintf(fp, memhFormat(width), VL_MASK_I(width) & *datap);
+            fprintf(fp, "\n");
+        } else if (width <= 32) {
+            const IData* datap
+                = &(reinterpret_cast<const IData*>(memp))[row_offset];
+            fprintf(fp, memhFormat(width), VL_MASK_I(width) & *datap);
+            fprintf(fp, "\n");
+        } else if (width <= 64) {
+            const QData* datap
+                = &(reinterpret_cast<const QData*>(memp))[row_offset];
+            vluint64_t value = VL_MASK_Q(width) & *datap;
+            vluint32_t lo = value & 0xffffffff;
+            vluint32_t hi = value >> 32;
+            fprintf(fp, memhFormat(width - 32), hi);
+            fprintf(fp, "%08x\n", lo);
+        } else {
+            WDataInP memDatap = reinterpret_cast<WDataInP>(memp);
+            WDataInP datap = &memDatap[row_offset * VL_WORDS_I(width)];
+            // output as a sequence of VL_WORDSIZE'd words
+            // from MSB to LSB. Mask off the MSB word which could
+            // contain junk above the top of valid data.
+            int word_idx = ((width - 1) / VL_WORDSIZE);
+            bool first = true;
+            while (word_idx >= 0) {
+                IData data = datap[word_idx];
+                if (first) {
+                    data &= VL_MASK_I(width);
+                    int top_word_nbits = ((width - 1) & 0x1f) + 1;
+                    fprintf(fp, memhFormat(top_word_nbits), data);
+                } else {
+                    fprintf(fp, "%08x", data);
+                }
+
+                word_idx--;
+                first = false;
+            }
+            fprintf(fp, "\n");
+        }
+    }
+
+  cleanup:
+    fclose(fp);
+}
+
 void VL_READMEM_Q(bool hex, int width, int depth, int array_lsb, int,
 		  QData ofilename, void* memp, IData start, IData end) VL_MT_SAFE {
     WData fnw[2];  VL_SET_WQ(fnw, ofilename);
-    return VL_READMEM_W(hex,width,depth,array_lsb,2, fnw,memp,start,end);
+    return VL_READMEM_W(hex,width,depth,array_lsb,2,fnw,memp,start,end);
 }
 
 void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
@@ -1216,12 +1340,20 @@ void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
     char ofilenamez[VL_TO_STRING_MAX_WORDS*VL_WORDSIZE+1];
     _VL_VINT_TO_STRING(fnwords*VL_WORDSIZE, ofilenamez, ofilenamep);
     std::string ofilenames(ofilenamez);
-    return VL_READMEM_N(hex,width,depth,array_lsb,fnwords,ofilenames,memp,start,end);
+    return VL_READMEM_N(hex,width,depth,array_lsb,ofilenames,memp,start,end);
 }
 
-void VL_READMEM_N(bool hex, int width, int depth, int array_lsb, int fnwords,
-		  const std::string& ofilenamep, void* memp, IData start, IData end) VL_MT_SAFE {
-    if (fnwords) {}
+void VL_READMEM_N(
+    bool      hex,  // Hex format, else binary
+    int     width,  // Width of each array row
+    int     depth,  // Number of rows
+    int array_lsb,  // Index of first row. Valid row addresses
+    //              //  range from array_lsb up to (array_lsb + depth - 1)
+    const std::string& ofilenamep,  // Input file name
+    void*    memp,  // Array state
+    IData   start,  // First array row address to read
+    IData     end   // Last row address to read
+    ) VL_MT_SAFE {
     FILE* fp = fopen(ofilenamep.c_str(), "r");
     if (VL_UNLIKELY(!fp)) {
         // We don't report the Verilog source filename as it slow to have to pass it down

@@ -78,6 +78,22 @@ module t (/*AUTOARG*/
 	 if (i !== -1) $stop;
 	 if (loops !== 17) $stop;
 	 //
+	 // 1800-2017 optionals init/expr/incr
+	 loops = 0;
+	 i = 0;
+	 for (; i<10; ++i) ++loops;
+	 if (loops !== 10) $stop;
+	 //
+	 loops = 0;
+	 i = 0;
+	 for (i=0; i<10; ) begin ++loops; ++i; end
+	 if (loops !== 10) $stop;
+	 //
+	 loops = 0;
+	 i = 0;
+	 for (; ; ++i) begin ++loops; break; end
+	 if (loops !== 1) $stop;
+	 //
 	 $write("*-* All Finished *-*\n");
 	 $finish;
       end

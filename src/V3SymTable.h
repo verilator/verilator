@@ -71,6 +71,7 @@ public:
         os<<indent<<"+ "<<std::left<<std::setw(30)<<(searchName==""?"\"\"":searchName)<<std::setw(0)<<std::right;
         os<<"  se"<<(void*)(this)<<std::setw(0);
 	os<<"  fallb=se"<<(void*)(m_fallbackp);
+        if (m_symPrefix!="") os<<"  symPrefix="<<m_symPrefix;
 	os<<"  n="<<nodep();
 	os<<endl;
 	if (doneSymsr.find(this) != doneSymsr.end()) {

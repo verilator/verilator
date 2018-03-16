@@ -340,6 +340,7 @@ private:
 	    FileLine* fl = varsp->fileline();
 	    AstNode* varp = new AstVar(fl, AstVarType::BLOCKTEMP,
 				       varsp->name(), nodep->findSigned32DType());
+            // These will be the left and right dimensions of the array:
 	    AstNode* leftp = new AstAttrOf(fl, AstAttrType::DIM_LEFT,
 					   new AstVarRef(fl, arrayp->name(), false),
 					   new AstConst(fl, dimension));
@@ -347,19 +348,26 @@ private:
 					    new AstVarRef(fl, arrayp->name(), false),
 					    new AstConst(fl, dimension));
 	    AstNode* stmtsp = varp;
-	    stmtsp->addNext(new AstAssign(fl, new AstVarRef(fl, varp->name(), true), leftp));
-	    AstNode* comparep =
-		new AstCond(fl, new AstLte(fl, leftp->cloneTree(true), rightp->cloneTree(true)),
-			    // left increments up to right
-			    new AstLte(fl, new AstVarRef(fl, varp->name(), false), rightp->cloneTree(true)),
-			    // left decrements down to right
-			    new AstGte(fl, new AstVarRef(fl, varp->name(), false), rightp));
-	    AstNode* incp =
-		new AstAssign(fl, new AstVarRef(fl, varp->name(), true),
-			      new AstAdd(fl, new AstVarRef(fl, varp->name(), false),
-					 new AstNegate(fl, new AstAttrOf(fl, AstAttrType::DIM_INCREMENT,
-									 new AstVarRef(fl, arrayp->name(), false),
-									 new AstConst(fl, dimension)))));
+            // Assign left-dimension into the loop var:
+            stmtsp->addNext(new AstAssign
+                            (fl, new AstVarRef(fl, varp->name(), true), leftp));
+            // This will turn into a bool constant, indicating whether
+            // we count the loop variable up or down:
+            AstNode* countupp = new AstLte(fl, leftp->cloneTree(true),
+                                           rightp->cloneTree(true));
+            AstNode* comparep = new AstCond(
+                fl, countupp->cloneTree(true),
+                // Left increments up to right
+                new AstLte(fl, new AstVarRef(fl, varp->name(), false),
+                           rightp->cloneTree(true)),
+                // Left decrements down to right
+                new AstGte(fl, new AstVarRef(fl, varp->name(), false), rightp));
+            AstNode* incp = new AstAssign(
+                fl, new AstVarRef(fl, varp->name(), true),
+                new AstAdd(fl, new AstVarRef(fl, varp->name(), false),
+                           new AstCond(fl, countupp,
+                                       new AstConst(fl, 1),
+                                       new AstConst(fl, -1))));
 	    stmtsp->addNext(new AstWhile(fl, comparep, newp, incp));
 	    newp = new AstBegin(nodep->fileline(),"",stmtsp);
 	    dimension--;

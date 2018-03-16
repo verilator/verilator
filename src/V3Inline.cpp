@@ -42,6 +42,7 @@
 #include "V3Inst.h"
 #include "V3Stats.h"
 #include "V3Ast.h"
+#include "V3String.h"
 
 // CONFIG
 static const int INLINE_MODS_SMALLER = 100;	// If a mod is < this # nodes, can always inline it
@@ -270,14 +271,14 @@ public:
 
 class InlineRelinkVisitor : public AstNVisitor {
 private:
-    typedef vl_unordered_set<string> RenamedInterfacesSet;
+    typedef vl_unordered_set<string> StringSet;
 
     // NODE STATE
     //  Input:
     //   See InlineVisitor
 
     // STATE
-    RenamedInterfacesSet m_renamedInterfaces;	// Name of renamed interface variables
+    StringSet           m_renamedInterfaces;  // Name of renamed interface variables
     AstNodeModule*	m_modp;		// Current module
     AstCell*		m_cellp;	// Cell being cloned
 
@@ -410,9 +411,8 @@ private:
     }
     virtual void visit(AstVarXRef* nodep) {
 	// Track what scope it was originally under so V3LinkDot can resolve it
-	string newname = m_cellp->name();
-	if (nodep->inlinedDots() != "") { newname += "." + nodep->inlinedDots(); }
-	nodep->inlinedDots(newname);
+        string newdots = VString::dot(m_cellp->name(), ".", nodep->inlinedDots());
+        nodep->inlinedDots(newdots);
         for (string tryname = nodep->dotted(); 1;) {
             if (m_renamedInterfaces.count(tryname)) {
                 nodep->dotted(m_cellp->name() + "__DOT__" + nodep->dotted());
@@ -430,9 +430,8 @@ private:
     }
     virtual void visit(AstNodeFTaskRef* nodep) {
 	// Track what scope it was originally under so V3LinkDot can resolve it
-	string newname = m_cellp->name();
-	if (nodep->inlinedDots() != "") { newname += "." + nodep->inlinedDots(); }
-	nodep->inlinedDots(newname);
+        string newdots = VString::dot(m_cellp->name(), ".", nodep->inlinedDots());
+        nodep->inlinedDots(newdots);
 	if (m_renamedInterfaces.count(nodep->dotted())) {
 	    nodep->dotted(m_cellp->name() + "__DOT__" + nodep->dotted());
 	}
@@ -459,9 +458,7 @@ private:
     }
     virtual void visit(AstCoverDecl* nodep) {
 	// Fix path in coverage statements
-	nodep->hier(m_cellp->prettyName()
-		    + (nodep->hier()!="" ? ".":"")
-		    + nodep->hier());
+        nodep->hier(VString::dot(m_cellp->prettyName(), ".", nodep->hier()));
 	nodep->iterateChildren(*this);
     }
     virtual void visit(AstNode* nodep) {
@@ -537,7 +534,7 @@ private:
 	    // this loop as it clone()s itself.
             for (AstPin* pinp = nodep->pinsp(); pinp; pinp=VN_CAST(pinp->nextp(), Pin)) {
 		if (!pinp->exprp()) continue;
-		V3Inst::pinReconnectSimple(pinp, nodep, m_modp, false);
+                V3Inst::pinReconnectSimple(pinp, nodep, false);
 	    }
 
 	    // Clone original module

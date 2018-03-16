@@ -515,6 +515,7 @@ class AstSenTree;
 %token<fl>		yD_VALUEPLUSARGS "$value$plusargs"
 %token<fl>		yD_WARNING	"$warning"
 %token<fl>		yD_WRITE	"$write"
+%token<fl>		yD_WRITEMEMH	"$writememh"
 
 %token<fl>		yVL_CLOCK		"/*verilator sc_clock*/"
 %token<fl>		yVL_CLOCKER		"/*verilator clocker*/"
@@ -742,7 +743,6 @@ package_or_generate_item_declaration<nodep>:	// ==IEEE: package_or_generate_item
 	|	local_parameter_declaration ';'		{ $$ = $1; }
 	|	parameter_declaration ';'		{ $$ = $1; }
 	//UNSUP	covergroup_declaration			{ $$ = $1; }
-	//UNSUP	overload_declaration			{ $$ = $1; }
 	//UNSUP	assertion_item_declaration		{ $$ = $1; }
 	|	';'					{ $$ = NULL; }
 	;
@@ -2277,7 +2277,6 @@ block_item_declaration<nodep>:	// ==IEEE: block_item_declaration
 		data_declaration 			{ $$ = $1; }
 	|	local_parameter_declaration ';'		{ $$ = $1; }
 	|	parameter_declaration ';' 		{ $$ = $1; }
-	//UNSUP	overload_declaration 			{ $$ = $1; }
 	//UNSUP	let_declaration 			{ $$ = $1; }
 	;
 
@@ -2376,8 +2375,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	|	yREPEAT '(' expr ')' stmtBlock		{ $$ = new AstRepeat($1,$3,$5);}
 	|	yWHILE '(' expr ')' stmtBlock		{ $$ = new AstWhile($1,$3,$5);}
 	//			// for's first ';' is in for_initalization
-	|	yFOR '(' for_initialization expr ';' for_stepE ')' stmtBlock
-							{ $$ = new AstBegin($1,"",$3); $3->addNext(new AstWhile($1, $4,$8,$6)); }
+	|	statementFor				{ $$ = $1; }
 	|	yDO stmtBlock yWHILE '(' expr ')' ';'	{ if ($2) {
 							     $$ = $2->cloneTree(true);
 							     $$->addNext(new AstWhile($1,$5,$2));
@@ -2427,6 +2425,15 @@ statement_item<nodep>:		// IEEE: statement_item
 	//UNSUP	expect_property_statement		{ $$ = $1; }
 	//
 	|	error ';'				{ $$ = NULL; }
+	;
+
+statementFor<beginp>:		// IEEE: part of statement
+		yFOR '(' for_initialization expr ';' for_stepE ')' stmtBlock
+							{ $$ = new AstBegin($1,"",$3);
+							  $$->addStmtsp(new AstWhile($1, $4,$8,$6)); }
+	|	yFOR '(' for_initialization ';' for_stepE ')' stmtBlock
+							{ $$ = new AstBegin($1,"",$3);
+							  $$->addStmtsp(new AstWhile($1, new AstConst($1,AstConst::LogicTrue()),$7,$5)); }
 	;
 
 statementVerilatorPragmas<nodep>:
@@ -2603,6 +2610,7 @@ for_initialization<nodep>:	// ==IEEE: for_initialization + for_variable_declarat
 			  $$ = VARDONEA($<fl>2,*$2,NULL,NULL);
 			  $$->addNext(new AstAssign($3,new AstVarRef($3,*$2,true),$4));}
 	|	varRefBase '=' expr ';'			{ $$ = new AstAssign($2,$1,$3); }
+	|	';'					{ $$ = NULL; }
 	//UNSUP: List of initializations
 	;
 
@@ -2706,6 +2714,10 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_READMEMH '(' expr ',' idClassSel ')'				{ $$ = new AstReadMem($1,true, $3,$5,NULL,NULL); }
 	|	yD_READMEMH '(' expr ',' idClassSel ',' expr ')'		{ $$ = new AstReadMem($1,true, $3,$5,$7,NULL); }
 	|	yD_READMEMH '(' expr ',' idClassSel ',' expr ',' expr ')'	{ $$ = new AstReadMem($1,true, $3,$5,$7,$9); }
+	//
+	|	yD_WRITEMEMH '(' expr ',' idClassSel ')'			{ $$ = new AstWriteMem($1,$3,$5,NULL,NULL); }
+	|	yD_WRITEMEMH '(' expr ',' idClassSel ',' expr ')'		{ $$ = new AstWriteMem($1,$3,$5,$7,NULL); }
+	|	yD_WRITEMEMH '(' expr ',' idClassSel ',' expr ',' expr ')'	{ $$ = new AstWriteMem($1,$3,$5,$7,$9); }
 	//
 	// Any system function as a task
 	|	system_f_call_or_t			{ $$ = new AstSysFuncAsTask($<fl>1, $1); }
@@ -3122,7 +3134,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//
 	//			// IEEE: "... hierarchical_identifier select"  see below
 	//
-	//			// IEEE: empty_queue
+	//			// IEEE: empty_queue (IEEE 1800-2017 empty_unpacked_array_concatenation)
 	//UNSUP	'{' '}'
 	//
 	//			// IEEE: concatenation/constant_concatenation

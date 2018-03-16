@@ -324,8 +324,8 @@ public:
 	nodep->modep()->iterateAndNext(*this);
 	puts(");\n");
     }
-    virtual void visit(AstReadMem* nodep) {
-	puts("VL_READMEM_");
+    virtual void visit(AstNodeReadWriteMem* nodep) {
+        puts(nodep->cFuncPrefixp());
 	emitIQW(nodep->filenamep());
 	puts(" (");  // We take a void* rather than emitIQW(nodep->memp());
 	puts(nodep->isHex()?"true":"false");
@@ -335,21 +335,24 @@ public:
 	uint32_t array_lsb = 0;
 	{
             const AstVarRef* varrefp = VN_CAST(nodep->memp(), VarRef);
-	    if (!varrefp) { nodep->v3error("Readmem loading non-variable"); }
+            if (!varrefp) { nodep->v3error(nodep->verilogKwd() << " loading non-variable"); }
             else if (const AstUnpackArrayDType* adtypep = VN_CAST(varrefp->varp()->dtypeSkipRefp(), UnpackArrayDType)) {
 		puts(cvtToStr(varrefp->varp()->dtypep()->arrayUnpackedElements()));
 		array_lsb = adtypep->lsb();
 	    }
 	    else {
-		nodep->v3error("Readmem loading other than unpacked-array variable");
+		nodep->v3error(nodep->verilogKwd()
+			       << " loading other than unpacked-array variable");
 	    }
 	}
 	putbs(", ");
 	puts(cvtToStr(array_lsb));
 	putbs(",");
-	puts(cvtToStr(nodep->filenamep()->widthWords()));
-	checkMaxWords(nodep->filenamep());
-	putbs(", ");
+        if (!nodep->filenamep()->dtypep()->isString()) {
+            puts(cvtToStr(nodep->filenamep()->widthWords()));
+            checkMaxWords(nodep->filenamep());
+            putbs(", ");
+        }
 	nodep->filenamep()->iterateAndNext(*this);
 	putbs(", ");
 	nodep->memp()->iterateAndNext(*this);

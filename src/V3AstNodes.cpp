@@ -1025,7 +1025,7 @@ void AstVarXRef::dump(std::ostream& str) {
     if (packagep()) { str<<" pkg="<<(void*)packagep(); }
     if (lvalue()) str<<" [LV] => ";
     else          str<<" [RV] <- ";
-    str<<dotted()<<". - ";
+    str<<".="<<dotted()<<" ";
     if (inlinedDots()!="") str<<" inline.="<<inlinedDots()<<" - ";
     if (varScopep()) { varScopep()->dump(str); }
     else if (varp()) { varp()->dump(str); }
@@ -1096,7 +1096,7 @@ void AstNodeFTaskRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (packagep()) { str<<" pkg="<<(void*)packagep(); }
     str<<" -> ";
-    if (dotted()!="") { str<<dotted()<<". - "; }
+    if (dotted()!="") { str<<".="<<dotted()<<" "; }
     if (taskp()) { taskp()->dump(str); }
     else { str<<"UNLINKED"; }
 }

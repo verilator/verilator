@@ -7,7 +7,7 @@
  * This file contains the constant definitions, structure definitions,
  * and routine declarations used by SystemVerilog DPI.
  *
- * This file is from the SystemVerilog IEEE 1800-2012 Annex I.
+ * This file is from the SystemVerilog IEEE 1800-2017 Annex I.
  */
 
 #ifndef INCLUDED_SVDPI
@@ -117,7 +117,7 @@ typedef uint32_t svBitVecVal;
 /*
  * Return implementation version information string ("1800-2005" or "SV3.1a").
  */
-XXTERN const char* svDpiVersion();
+XXTERN const char* svDpiVersion( void );
 
 /* a handle to a scope (an instance of a module or interface) */
 XXTERN typedef void* svScope;
@@ -241,28 +241,28 @@ XXTERN void svGetLogicArrElem2VecVal(svLogicVecVal* d, const svOpenArrayHandle s
 XXTERN void svGetLogicArrElem3VecVal(svLogicVecVal* d, const svOpenArrayHandle s,
         int indx1, int indx2, int indx3);
 
-XXTERN   svBit svGetBitArrElem(const svOpenArrayHandle s, int indx1, ...);
-XXTERN   svBit svGetBitArrElem1(const svOpenArrayHandle s, int indx1);
-XXTERN   svBit svGetBitArrElem2(const svOpenArrayHandle s, int indx1, int indx2);
-XXTERN   svBit svGetBitArrElem3(const svOpenArrayHandle s, int indx1, int indx2,
+XXTERN svBit svGetBitArrElem(const svOpenArrayHandle s, int indx1, ...);
+XXTERN svBit svGetBitArrElem1(const svOpenArrayHandle s, int indx1);
+XXTERN svBit svGetBitArrElem2(const svOpenArrayHandle s, int indx1, int indx2);
+XXTERN svBit svGetBitArrElem3(const svOpenArrayHandle s, int indx1, int indx2,
           int indx3);
-XXTERN   svLogic svGetLogicArrElem(const svOpenArrayHandle s, int indx1, ...);
-XXTERN   svLogic svGetLogicArrElem1(const svOpenArrayHandle s, int indx1);
-XXTERN   svLogic svGetLogicArrElem2(const svOpenArrayHandle s, int indx1, int indx2);
-XXTERN   svLogic svGetLogicArrElem3(const svOpenArrayHandle s, int indx1, int indx2,
+XXTERN svLogic svGetLogicArrElem(const svOpenArrayHandle s, int indx1, ...);
+XXTERN svLogic svGetLogicArrElem1(const svOpenArrayHandle s, int indx1);
+XXTERN svLogic svGetLogicArrElem2(const svOpenArrayHandle s, int indx1, int indx2);
+XXTERN svLogic svGetLogicArrElem3(const svOpenArrayHandle s, int indx1, int indx2,
           int indx3);
-XXTERN   void svPutLogicArrElem(const svOpenArrayHandle d, svLogic value, int indx1,
+XXTERN void svPutLogicArrElem(const svOpenArrayHandle d, svLogic value, int indx1,
           ...);
-XXTERN   void svPutLogicArrElem1(const svOpenArrayHandle d, svLogic value, int indx1);
-XXTERN   void svPutLogicArrElem2(const svOpenArrayHandle d, svLogic value, int indx1,
+XXTERN void svPutLogicArrElem1(const svOpenArrayHandle d, svLogic value, int indx1);
+XXTERN void svPutLogicArrElem2(const svOpenArrayHandle d, svLogic value, int indx1,
           int indx2);
-XXTERN   void svPutLogicArrElem3(const svOpenArrayHandle d, svLogic value, int indx1,
+XXTERN void svPutLogicArrElem3(const svOpenArrayHandle d, svLogic value, int indx1,
           int indx2, int indx3);
-XXTERN   void svPutBitArrElem(const svOpenArrayHandle d, svBit value, int indx1, ...);
-XXTERN   void svPutBitArrElem1(const svOpenArrayHandle d, svBit value, int indx1);
-XXTERN   void svPutBitArrElem2(const svOpenArrayHandle d, svBit value, int indx1,
+XXTERN void svPutBitArrElem(const svOpenArrayHandle d, svBit value, int indx1, ...);
+XXTERN void svPutBitArrElem1(const svOpenArrayHandle d, svBit value, int indx1);
+XXTERN void svPutBitArrElem2(const svOpenArrayHandle d, svBit value, int indx1,
           int indx2);
-XXTERN   void svPutBitArrElem3(const svOpenArrayHandle d, svBit value, int indx1,
+XXTERN void svPutBitArrElem3(const svOpenArrayHandle d, svBit value, int indx1,
           int indx2, int indx3);
 
 /* Functions for working with DPI context */
@@ -273,7 +273,7 @@ XXTERN   void svPutBitArrElem3(const svOpenArrayHandle d, svBit value, int indx1
  * is the scope of the function's declaration site, not call site.
  * Returns NULL if called from C code that is *not* an imported function.
  */
-XXTERN svScope svGetScope();
+XXTERN svScope svGetScope( void );
 
 /*
  * Set context for subsequent export function execution.
@@ -337,7 +337,7 @@ XXTERN int svGetCallerInfo(const char** fileName, int *lineNumber);
  * Returns 1 if the current execution thread is in the disabled state.
  * Disable protocol must be adhered to if in the disabled state.
  */
-XXTERN int svIsDisabledState();
+XXTERN int svIsDisabledState( void );
 
 /*
  * Imported functions call this API function during disable processing to
@@ -345,7 +345,7 @@ XXTERN int svIsDisabledState();
  * This function must be called before returning from an imported function that is
  * in the disabled state.
  */
-XXTERN void svAckDisabledState();
+XXTERN void svAckDisabledState( void );
 
 /*
  **********************************************************

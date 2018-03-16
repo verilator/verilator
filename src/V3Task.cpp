@@ -928,7 +928,7 @@ private:
                 && portp->dtypep()->basicp()
                 && portp->dtypep()->basicp()->keyword().isDpiUnreturnable()) {
                 portp->v3error("DPI function may not return type "<<portp->basicp()->prettyTypeName()
-                               <<" (IEEE 2012 35.5.5)");
+                               <<" (IEEE 2017 35.5.5)");
 	    }
             portp->unlinkFrBack();
             rtnvarp = portp;
