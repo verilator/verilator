@@ -534,7 +534,7 @@ private:
 	    // this loop as it clone()s itself.
 	    for (AstPin* pinp = nodep->pinsp(); pinp; pinp=pinp->nextp()->castPin()) {
 		if (!pinp->exprp()) continue;
-		V3Inst::pinReconnectSimple(pinp, nodep, m_modp, false);
+                V3Inst::pinReconnectSimple(pinp, nodep, false);
 	    }
 
 	    // Clone original module

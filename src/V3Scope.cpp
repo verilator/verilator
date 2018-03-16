@@ -33,6 +33,8 @@
 #include <algorithm>
 #include <iomanip>
 #include <map>
+#include VL_INCLUDE_UNORDERED_MAP
+#include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Global.h"
 #include "V3Scope.h"
@@ -50,9 +52,9 @@ private:
     AstUser2InUse	m_inuser2;
 
     // TYPES
-    typedef map<AstPackage*, AstScope*> PackageScopeMap;
-    typedef map<pair<AstVar*, AstScope*>, AstVarScope*> VarScopeMap;
-    typedef set<pair<AstVarRef*, AstScope*> > VarRefScopeSet;
+    typedef vl_unordered_map<AstPackage*, AstScope*> PackageScopeMap;
+    typedef vl_unordered_map<pair<AstVar*, AstScope*>, AstVarScope*> VarScopeMap;
+    typedef vl_unordered_set<pair<AstVarRef*, AstScope*> > VarRefScopeSet;
 
     // STATE, inside processing a single module
     AstNodeModule* m_modp;	// Current module

@@ -1066,7 +1066,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	    if (!enModVarp) {
 		if (nodep->exprp()) {
 		    // May have an output only that later connects to a tristate, so simplify now.
-		    V3Inst::pinReconnectSimple(nodep, m_cellp, m_modp, false);
+                    V3Inst::pinReconnectSimple(nodep, m_cellp, false);
 		}
 		iteratePinGuts(nodep);
 		return; // No __en signals on this pin
@@ -1092,7 +1092,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	    } else if (inDeclProcessing) {   // Not an input that was a converted tristate
 		// Input only may have driver in underneath module which would stomp
 		// the input value.  So make a temporary connection.
-		AstAssignW* reAssignp = V3Inst::pinReconnectSimple(nodep, m_cellp, m_modp, true, true);
+                AstAssignW* reAssignp = V3Inst::pinReconnectSimple(nodep, m_cellp, true, true);
 		UINFO(5,"Input pin buffering: "<<reAssignp<<endl);
 		m_tgraph.setTristate(reAssignp->lhsp());
 	    }
@@ -1146,7 +1146,7 @@ class TristateVisitor : public TristateBaseVisitor {
 		    TristatePinVisitor visitor (outexprp, m_tgraph, true);
 		}
 		if (debug()>=9) outpinp->dumpTree(cout,"-pin-opr: ");
-		outAssignp = V3Inst::pinReconnectSimple(outpinp, m_cellp, m_modp, true);  // Note may change outpinp->exprp()
+                outAssignp = V3Inst::pinReconnectSimple(outpinp, m_cellp, true);  // Note may change outpinp->exprp()
 		if (debug()>=9) outpinp->dumpTree(cout,"-pin-out: ");
 		if (debug()>=9 && outAssignp) outAssignp->dumpTree(cout,"-pin-out: ");
 		// Must still iterate the outAssignp, as need to build output equation
@@ -1154,7 +1154,7 @@ class TristateVisitor : public TristateBaseVisitor {
 
 	    // Existing pin becomes an input, and we mark each resulting signal as tristate
 	    TristatePinVisitor visitor (nodep->exprp(), m_tgraph, false);
-	    AstNode* inAssignp = V3Inst::pinReconnectSimple(nodep, m_cellp, m_modp, true);  // Note may change nodep->exprp()
+            AstNode* inAssignp = V3Inst::pinReconnectSimple(nodep, m_cellp, true);  // Note may change nodep->exprp()
 	    if (debug()>=9) nodep->dumpTree(cout,"-pin-in:  ");
 	    if (debug()>=9 && inAssignp) inAssignp->dumpTree(cout,"-pin-as:  ");
 
