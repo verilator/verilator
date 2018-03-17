@@ -49,8 +49,7 @@ private:
     AstUser1InUse	m_inuser1;
 
     // STATE
-    AstNodeModule*	m_modp;		// Current module
-    AstCell*	m_cellp;	// Current cell
+    AstCell*            m_cellp;        // Current cell
 
     static int debug() {
 	static int level = -1;
@@ -60,13 +59,6 @@ private:
     //int m_debug;  int debug() { return m_debug; }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) {
-	UINFO(4," MOD   "<<nodep<<endl);
-	//if (nodep->name() == "t_chg") m_debug = 9; else m_debug=0;
-	m_modp = nodep;
-	nodep->iterateChildren(*this);
-	m_modp = NULL;
-    }
     virtual void visit(AstCell* nodep) {
 	UINFO(4,"  CELL   "<<nodep<<endl);
 	m_cellp = nodep;
@@ -96,7 +88,7 @@ private:
 	    } else if (nodep->modVarp()->isOutput()) {
 		AstNode* rhsp = new AstVarXRef (exprp->fileline(), nodep->modVarp(), m_cellp->name(), false);
 		AstAssignW* assp = new AstAssignW (exprp->fileline(), exprp, rhsp);
-		m_modp->addStmtp(assp);
+                m_cellp->addNextHere(assp);
 	    } else if (nodep->modVarp()->isInput()) {
 		// Don't bother moving constants now,
 		// we'll be pushing the const down to the cell soon enough.
@@ -104,7 +96,7 @@ private:
 		    (exprp->fileline(),
 		     new AstVarXRef(exprp->fileline(), nodep->modVarp(), m_cellp->name(), true),
 		     exprp);
-		m_modp->addStmtp(assp);
+                m_cellp->addNextHere(assp);
 		if (debug()>=9) assp->dumpTree(cout,"     _new: ");
 	    } else if (nodep->modVarp()->isIfaceRef()
 		       || (nodep->modVarp()->subDTypep()->castUnpackArrayDType()
@@ -115,7 +107,7 @@ private:
 		AstVarXRef* xrefp = exprp->castVarXRef();
 		if (!refp && !xrefp) exprp->v3fatalSrc("Interfaces: Pin is not connected to a VarRef or VarXRef");
 		AstAssignVarScope* assp = new AstAssignVarScope(exprp->fileline(), lhsp, exprp);
-		m_modp->addStmtp(assp);
+                m_cellp->addNextHere(assp);
 	    } else {
 		nodep->v3error("Assigned pin is neither input nor output");
 	    }
@@ -145,7 +137,6 @@ private:
 public:
     // CONSTUCTORS
     explicit InstVisitor(AstNetlist* nodep) {
-	m_modp=NULL;
 	m_cellp=NULL;
 	//
 	nodep->accept(*this);
