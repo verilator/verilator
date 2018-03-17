@@ -978,7 +978,12 @@ sub _run {
     flush STDERR;
 
     if (!$param{fails} && $status) {
-	$self->error("Exec of $param{cmd}[0] failed\n");
+        my $firstline = "";
+        if (my $fh = IO::File->new("<$param{logfile}")) {
+            $firstline = $fh->getline;
+            chomp $firstline;
+        }
+        $self->error("Exec of $param{cmd}[0] failed: $firstline\n");
     }
     if ($param{fails} && $status) {
 	print "(Exec expected to fail, and did.)\n";

@@ -13,7 +13,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 ****  Fix internals to avoid 'using namespace std'.
 
 
-* Verilator 3.921 devel
+* Verilator 3.922 2018-03-17
 
 **    Support IEEE 1800-2017 as default language.
 

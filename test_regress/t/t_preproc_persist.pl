@@ -15,7 +15,7 @@ compile (
     # Override default flags
     v_flags => [''],
     v_other_filenames => ["t_preproc_persist2.v"],
-    verilator_flags => ["-E -P +incdir+t"],
+    verilator_flags => ["-E -P +incdir+t -Mdir $Self->{obj_dir}", ],
     verilator_flags2 => ['',],
     verilator_flags3 => ['',],
     verilator_make_gcc => 0,

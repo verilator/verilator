@@ -34,6 +34,7 @@ verilator.pc$
 verilator_bin.*
 verilator_coverage_bin.*
 .vcsmx_rebuild$
+ncverilog.history
 autom4te\.cache/
 nodist/
 /simv$
