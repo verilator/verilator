@@ -53,8 +53,9 @@ private:
 
     // TYPES
     typedef vl_unordered_map<AstPackage*, AstScope*> PackageScopeMap;
-    typedef vl_unordered_map<pair<AstVar*, AstScope*>, AstVarScope*> VarScopeMap;
-    typedef vl_unordered_set<pair<AstVarRef*, AstScope*> > VarRefScopeSet;
+    // These cannot be unordered unless make a specialized hashing pair (gcc-8)
+    typedef std::map<std::pair<AstVar*, AstScope*>, AstVarScope*> VarScopeMap;
+    typedef std::set<std::pair<AstVarRef*, AstScope*> > VarRefScopeSet;
 
     // STATE, inside processing a single module
     AstNodeModule* m_modp;	// Current module
