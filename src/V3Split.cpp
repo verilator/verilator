@@ -627,7 +627,7 @@ private:
 };
 
 typedef vl_unordered_set<uint32_t> ColorSet;
-typedef vl_unordered_set<AstAlways*> AlwaysSet;
+typedef std::vector<AstAlways*> AlwaysVec;
 
 class IfColorVisitor : public AstNVisitor {
     // MEMBERS
@@ -714,7 +714,7 @@ class EmitSplitVisitor : public AstNVisitor {
     typedef vl_unordered_map<uint32_t, AstNode*> LocMap;
     LocMap m_addAfter;
 
-    AlwaysSet* m_newBlocksp;  // Split always blocks we have generated
+    AlwaysVec* m_newBlocksp;  // Split always blocks we have generated
 
     // CONSTRUCTORS
 public:
@@ -723,7 +723,7 @@ public:
     // into *newBlocksp.
     EmitSplitVisitor(AstAlways* nodep,
                      const IfColorVisitor* ifColorp,
-                     AlwaysSet* newBlocksp)
+                     AlwaysVec* newBlocksp)
         : m_origAlwaysp(nodep)
         , m_ifColorp(ifColorp)
         , m_newBlocksp(newBlocksp) {
@@ -748,7 +748,7 @@ public:
             AstSplitPlaceholder* placeholderp = makePlaceholderp();
             alwaysp->addStmtp(placeholderp);
             m_addAfter[*color] = placeholderp;
-            m_newBlocksp->insert(alwaysp);
+            m_newBlocksp->push_back(alwaysp);
         }
         // Scan the body of the always. We'll handle if/else
         // specially, everything else is a leaf node that we can
@@ -861,7 +861,7 @@ private:
     // Keys are original always blocks pending delete,
     // values are newly split always blocks pending insertion
     // at the same position as the originals:
-    typedef vl_unordered_map<AstAlways*, AlwaysSet> ReplaceMap;
+    typedef vl_unordered_map<AstAlways*, AlwaysVec> ReplaceMap;
     ReplaceMap m_replaceBlocks;
 
     // AstNodeIf* whose condition we're currently visiting
@@ -880,7 +880,7 @@ public:
         for (ReplaceMap::iterator it = m_replaceBlocks.begin();
              it != m_replaceBlocks.end(); ++it) {
             AstAlways* origp = it->first;
-            for (AlwaysSet::iterator addme = it->second.begin();
+            for (AlwaysVec::iterator addme = it->second.begin();
                  addme != it->second.end(); ++addme) {
                 origp->addNextHere(*addme);
                 RemovePlaceholdersVisitor removePlaceholders(*addme);
