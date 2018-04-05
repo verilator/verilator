@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 3.923 devel
 
+****  Report interface ports connected to wrong interface, bug1294. [Todd Strader]
+
 ****  Fix parsing "output signed" in V2K port list, msg2540. [James Jung]
 
 

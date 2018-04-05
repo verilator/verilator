@@ -652,6 +652,14 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 			longname += "_" + paramSmallName(srcModp, pinp->modVarp()) + paramValueNumber(pinIrefp);
 			any_overrides = true;
 			ifaceRefRefs.push_back(make_pair(portIrefp,pinIrefp));
+                        if (portIrefp->ifacep() != pinIrefp->ifacep()
+                            // Might be different only due to param cloning, so check names too
+                            && portIrefp->ifaceName() != pinIrefp->ifaceName()) {
+                            pinp->v3error("Port '"<<pinp->prettyName()<<"' expects '"
+                                          <<AstNode::prettyName(portIrefp->ifaceName())
+                                          <<"' interface but pin connects '"
+                                          <<AstNode::prettyName(pinIrefp->ifaceName())<<"' interface");
+                        }
 		    }
 		}
 	    }
