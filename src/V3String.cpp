@@ -220,7 +220,8 @@ uint64_t VHashSha1::digestUInt64() {
     const string& binhash = digestBinary();
     uint64_t out = 0;
     for (size_t byte=0; byte<sizeof(uint64_t); ++byte) {
-	out = (out<<8) | binhash[byte];
+        unsigned char c = binhash[byte];
+        out = (out<<8) | c;
     }
     return out;
 }
