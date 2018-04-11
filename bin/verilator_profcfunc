@@ -73,6 +73,14 @@ sub profcfunc {
 	    $funcs{$func}{sec} += $sec;
 	    $funcs{$func}{calls} += $calls;
 	}
+        # Older gprofs have no call column for single-call functions
+        #                  %time      cumesec   selfsec      {stuff}   name
+        elsif ($line =~ /^\s*([0-9.]+)\s+[0-9.]+\s+([0-9.]+)\s+[^a-zA-Z_]*([a-zA-Z_].*)$/) {
+            my $pct=$1; my $sec=$2; my $calls=1; my $func=$3;
+            $funcs{$func}{pct} += $pct;
+            $funcs{$func}{sec} += $sec;
+            $funcs{$func}{calls} += $calls;
+        }
     }
     $fh->close;
 
