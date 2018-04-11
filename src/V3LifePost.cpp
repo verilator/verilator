@@ -110,7 +110,7 @@ class LifePostDlyVisitor : public LifePostBaseVisitor {
 private:
     // NODE STATE
     // Cleared on entire tree
-    //  AstVarScope::user()	-> Sequence # of first virtex setting this var.
+    //  AstVarScope::user()     -> Sequence # of first vertex setting this var.
     //  AstVarScope::user2()	-> Sequence # of last consumption of this var
     //  AstVarScope::user4()	-> AstVarScope*: Passed to LifePostElim to substitute this var
     AstUser1InUse	m_inuser1;

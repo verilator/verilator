@@ -1062,7 +1062,7 @@ block or wire statement.  (Note this will slow down the executable by ~5%.)
 Furthermore, the function name will be suffixed with the basename of the
 Verilog module and line number the statement came from.  This allows gprof
 or oprofile reports to be correlated with the original Verilog source
-statements.
+statements. See also L<verilator_profcfunc>.
 
 =item --private
 

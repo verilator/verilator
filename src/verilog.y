@@ -948,6 +948,8 @@ port<nodep>:			// ==IEEE: port
 			{ $$=$4; VARDTYPE($3); $$->addNextNull(VARDONEP($$,$5,$6)); }
 	|	portDirNetE yVAR implicit_typeE portSig variable_dimensionListE sigAttrListE
 			{ $$=$4; VARDTYPE($3); $$->addNextNull(VARDONEP($$,$5,$6)); }
+	|	portDirNetE signing             portSig variable_dimensionListE sigAttrListE
+			{ $$=$3; VARDTYPE(new AstBasicDType($3->fileline(), LOGIC_IMPLICIT, $2)); $$->addNextNull(VARDONEP($$,$4,$5)); }
 	|	portDirNetE signingE rangeList  portSig variable_dimensionListE sigAttrListE
 			{ $$=$4; VARDTYPE(GRAMMARP->addRange(new AstBasicDType($3->fileline(), LOGIC_IMPLICIT, $2), $3,true)); $$->addNextNull(VARDONEP($$,$5,$6)); }
 	|	portDirNetE /*implicit*/        portSig variable_dimensionListE sigAttrListE

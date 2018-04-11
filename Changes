@@ -12,6 +12,10 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix internals to avoid 'using namespace std'.
 
+****  Report interface ports connected to wrong interface, bug1294. [Todd Strader]
+
+****  Fix parsing "output signed" in V2K port list, msg2540. [James Jung]
+
 
 * Verilator 3.922 2018-03-17
 
