@@ -689,22 +689,6 @@ private:
     VL_UNCOPYABLE(IfColorVisitor);
 };
 
-class OrderCheckNoIfVisitor : public AstNVisitor {
-public:
-    explicit OrderCheckNoIfVisitor(AstNode* nodep) {
-        nodep->accept(*this);
-    }
-    virtual ~OrderCheckNoIfVisitor() {}
-    virtual void visit(AstNode* nodep) {
-        nodep->iterateChildren(*this);
-    }
-    virtual void visit(AstNodeIf* nodep) {
-        UASSERT(false, "Found unexpeceted if/else in OrderCheckNoIfVisitor!");
-    }
-private:
-    VL_UNCOPYABLE(OrderCheckNoIfVisitor);
-};
-
 class EmitSplitVisitor : public AstNVisitor {
     // MEMBERS
     AstAlways* m_origAlwaysp;  // Block that *this will split
@@ -768,14 +752,20 @@ protected:
     }
 
     virtual void visit(AstNode* nodep) {
-        // Anything that's not an if/else we assume is a leaf.
-        // Actually, that's worth asserting...
-#ifdef VL_DEBUG
-        OrderCheckNoIfVisitor noIf(nodep);
-#endif
+        // Anything that's not an if/else we assume is a leaf
+        // (that is, something we won't split.) Don't visit further
+        // into the leaf.
+        //
+        // A leaf might contain another if, for example a WHILE loop
+        // could contain an if. We can't split WHILE loops, so we
+        // won't split its nested if either. Just treat it as part
+        // of the leaf; do not visit further; do not reach visit(AstNodeIf*)
+        // for such an embedded if.
 
         // Each leaf must have a user3p
-        UASSERT(nodep->user3p(), "null user3p!");
+        if (!nodep->user3p()) {
+            v3fatalSrc("null user3p in V3Split leaf");
+        }
 
         // Clone the leaf into its new always block
         SplitLogicVertex* vxp = (SplitLogicVertex*)(nodep->user3p());
