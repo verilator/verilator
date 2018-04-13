@@ -186,14 +186,16 @@ endif
 
 debug-make::
 	@echo
+	@echo CPPFLAGS: $(CPPFLAGS)
 	@echo VM_PREFIX:  $(VM_PREFIX)
+	@echo VM_PARALLEL_BUILDS:  $(VM_PARALLEL_BUILDS)
 	@echo VM_CLASSES_FAST: $(VM_CLASSES_FAST)
 	@echo VM_CLASSES_SLOW: $(VM_CLASSES_SLOW)
 	@echo VM_SUPPORT_FAST: $(VM_SUPPORT_FAST)
 	@echo VM_SUPPORT_SLOW: $(VM_SUPPORT_SLOW)
 	@echo VM_GLOBAL_FAST: $(VM_GLOBAL_FAST)
 	@echo VM_GLOBAL_SLOW: $(VM_GLOBAL_SLOW)
-	@echo CPPFLAGS: $(CPPFLAGS)
+	@echo VK_OBJS: $(VK_OBJS)
 	@echo
 
 ######################################################################
