@@ -2558,19 +2558,19 @@ void V3EmitC::emitc() {
     UINFO(2,__FUNCTION__<<": "<<endl);
     // Process each module in turn
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castNodeModule()) {
-	if (v3Global.opt.outputSplit()) {
-	    { EmitCImp imp; imp.main(nodep, false, true); }
-	    { EmitCImp imp; imp.main(nodep, true, false); }
-	} else {
-	    { EmitCImp imp; imp.main(nodep, true, true); }
-	}
+        if (v3Global.opt.outputSplit()) {
+            { EmitCImp fast; fast.main(nodep, false, true); }
+            { EmitCImp slow; slow.main(nodep, true, false); }
+        } else {
+            { EmitCImp both; both.main(nodep, true, true); }
+        }
     }
 }
 
 void V3EmitC::emitcTrace() {
     UINFO(2,__FUNCTION__<<": "<<endl);
     if (v3Global.opt.trace()) {
-	{ EmitCTrace imp (true);  imp.main(); }
-	{ EmitCTrace imp (false); imp.main(); }
+        { EmitCTrace slow(true);  slow.main(); }
+        { EmitCTrace fast(false); fast.main(); }
     }
 }
