@@ -487,6 +487,6 @@ void V3Unroll::unrollAll(AstNetlist* nodep) {
 }
 
 void V3Unroll::unrollGen(AstNodeFor* nodep, const string& beginName) {
-    UINFO(2,__FUNCTION__<<": "<<endl);
+    UINFO(5,__FUNCTION__<<": "<<endl);
     UnrollVisitor visitor (nodep, true, beginName);
 }
