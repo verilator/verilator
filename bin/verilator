@@ -87,6 +87,9 @@ if ($opt_gdb) {
     # Generic GDB interactive
     run (("gdb"||$ENV{VERILATOR_GDB})
          ." ".verilator_bin()
+         # Note, uncomment to set breakpoints before running:
+         #  ." -ex 'break main'"
+
          # Note, we must use double-quotes ("run <switches>")
          # and not single ('run <switches>') below. Bash swallows
          # escapes as you would expect in a double-quoted string.
