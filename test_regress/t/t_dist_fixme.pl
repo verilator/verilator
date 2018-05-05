@@ -19,7 +19,7 @@ if (!-r "$root/.git") {
     my $files = `cd $root && git ls-files --exclude-standard`;
     print "ST $files\n" if $Debug;
     $files =~ s/\s+/ /g;
-    my $cmd = "cd $root && fgrep -n FIX"."ME $files | sort | grep -v t_dist_fixme";
+    my $cmd = "cd $root && grep -n -P '(FIX"."ME|BO"."ZO)' $files | sort";
     my $grep = `$cmd`;
     print "$grep\n";
     if ($grep ne "") {

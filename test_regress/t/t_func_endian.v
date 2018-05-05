@@ -21,13 +21,11 @@ module t (/*AUTOARG*/
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire [31:0] 		out;			// From test of Test.v
-   wire [31:0] 		swapped;		// From test of Test.v
    // End of automatics
 
    Test test (/*AUTOINST*/
 	      // Outputs
 	      .out			(out[31:0]),
-	      .swapped			(swapped[31:0]),
 	      // Inputs
 	      .clk			(clk),
 	      .noswap			(noswap),
@@ -67,7 +65,7 @@ endmodule
 
 module Test (/*AUTOARG*/
    // Outputs
-   out, swapped,
+   out,
    // Inputs
    clk, noswap, nibble, in
    );
@@ -78,7 +76,6 @@ module Test (/*AUTOARG*/
 
    input  [31:0] in;
    output [31:0] out;
-   output [31:0] swapped;
 
    function [7:0] EndianSwap;
       input Nibble;
@@ -98,12 +95,4 @@ module Test (/*AUTOARG*/
 			: EndianSwap(nibble, in[15:8]));
    assign out[7:0]   = (noswap ? in[7:0]
 			: EndianSwap(nibble, in[7:0]));
-
-   reg [31:0] swapped;
-   always @(posedge clk) begin
-      swapped[31:24] <= EndianSwap(nibble, in[31:24]);
-      swapped[23:16] <= EndianSwap(nibble, in[23:16]);
-      swapped[15:8]  <= EndianSwap(nibble, in[15:8] );
-      swapped[7:0]   <= EndianSwap(nibble, in[7:0]  );
-   end
 endmodule

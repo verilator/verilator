@@ -14,6 +14,7 @@ module t (/*AUTOARG*/
 
    reg [63:0] crc;
    `verilator_file_descriptor	  fd;
+   `verilator_file_descriptor	  fdtmp;
 
    t_case_write1_tasks tasks ();
 
@@ -32,7 +33,8 @@ module t (/*AUTOARG*/
       if (cyc==1) begin
 	 crc <= 64'h00000000_00000097;
 	 $write("Open obj_dir/t_case_write1/t_case_write1_logger.log\n");
-	 fd = $fopen("obj_dir/t_case_write1/t_case_write1_logger.log", "w");
+	 fdtmp = $fopen("obj_dir/t_case_write1/t_case_write1_logger.log", "w");
+         fd <= fdtmp;
       end
       if (cyc==90) begin
 	 $write("*-* All Finished *-*\n");
