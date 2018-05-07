@@ -10,12 +10,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 $Self->{vlt} or $Self->skip("Verilator only test");
 
 top_filename("t/t_unopt_array.v");
-compile (
+compile(
     v_flags2 => ["--trace --output-split 1 --output-split-cfuncs 1 -Wno-UNOPTFLAT"],
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 ok(1);

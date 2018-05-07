@@ -9,13 +9,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 $Self->{vlt} or $Self->skip("Verilator only test");
 
-compile (
+compile(
     v_flags2 => ["--lint-only"],
-    fails=>1,
+    fails => 1,
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect=> quotemeta(
+    expect => quotemeta(
 qq{%Error: t/t_lint_pkg_colon_bad.v:6: syntax error, unexpected ::, expecting ')' or ','
 %Error: t/t_lint_pkg_colon_bad.v:6: Perhaps 'mispkg' is a package which needs to be predeclared? (IEEE 2017 26.3)
 %Error: t/t_lint_pkg_colon_bad.v:7: syntax error, unexpected ::, expecting ',' or ';'

@@ -7,13 +7,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 v_flags2 => ["t/t_dpi_display_c.cpp"],
-	 );
+compile(
+    v_flags2 => ["t/t_dpi_display_c.cpp"],
+    );
 
-execute (
-	 check_finished=>1,
-	 expect=>quotemeta(
+execute(
+    check_finished => 1,
+    expect => quotemeta(
 q{dpii_display_call: ''
 dpii_display_call: 'c'
 dpii_display_call: 'co'

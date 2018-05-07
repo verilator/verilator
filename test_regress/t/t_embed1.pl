@@ -16,35 +16,35 @@ mkdir $child_dir;
 # Compile the child
 {
     my @cmdargs = $Self->compile_vlt_flags
-	(VM_PREFIX => "$Self->{VM_PREFIX}_child",
-	 top_filename => "$Self->{name}_child.v",
-	 verilator_flags => ["-cc", "-Mdir", "${child_dir}", "--debug-check"],
-	);
+        (VM_PREFIX => "$Self->{VM_PREFIX}_child",
+         top_filename => "$Self->{name}_child.v",
+         verilator_flags => ["-cc", "-Mdir", "${child_dir}", "--debug-check"],
+        );
 
-    $Self->run(logfile=>"${child_dir}/vlt_compile.log",
-               cmd=>\@cmdargs);
+    $Self->run(logfile => "${child_dir}/vlt_compile.log",
+               cmd => \@cmdargs);
 
-    $Self->run(logfile=>"${child_dir}/vlt_gcc.log",
-               cmd=>["cd ${child_dir} && ",
-                     "make", "-f".getcwd()."/Makefile_obj",
-                     "CPPFLAGS_DRIVER=-D".uc($self->{name}),
-                     ($opt_verbose ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1":""),
-                     "MAKE_MAIN=0",
-                     "VM_PREFIX=$self->{VM_PREFIX}_child",
-                     "V$self->{name}_child__ALL.a",  # bypass default rule, make archive
-                     ($param{make_flags}||""),
+    $Self->run(logfile => "${child_dir}/vlt_gcc.log",
+               cmd => ["cd ${child_dir} && ",
+                       "make", "-f".getcwd()."/Makefile_obj",
+                       "CPPFLAGS_DRIVER=-D".uc($self->{name}),
+                       ($opt_verbose ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1":""),
+                       "MAKE_MAIN=0",
+                       "VM_PREFIX=$self->{VM_PREFIX}_child",
+                       "V$self->{name}_child__ALL.a",  # bypass default rule, make archive
+                       ($param{make_flags}||""),
                ]);
 }
 
 # Compile the parent (might be with other than verilator)
-compile (
+compile(
     v_flags2 => [File::Spec->rel2abs("${child_dir}/V$self->{name}_child__ALL.a"),
-		 # TODO would be nice to have this in embedded archive
-		 "t/t_embed1_c.cpp"],
+                 # TODO would be nice to have this in embedded archive
+                 "t/t_embed1_c.cpp"],
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 ok(1);

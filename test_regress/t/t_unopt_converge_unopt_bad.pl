@@ -11,12 +11,12 @@ top_filename("t/t_unopt_converge.v");
 
 $Self->{vlt} or $Self->skip("Verilator only test");
 
-compile (
-	 fails=>1,
-	 expect=> '%Warning-UNOPT: t/t_unopt_converge.v:\d+: Signal unoptimizable: Feedback to public clock or circular logic: x
+compile(
+    fails => 1,
+    expect => '%Warning-UNOPT: t/t_unopt_converge.v:\d+: Signal unoptimizable: Feedback to public clock or circular logic: x
 .*
 %Error: Exiting due to '
-     );
+    );
 
 ok(1);
 1;

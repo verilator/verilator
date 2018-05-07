@@ -6,12 +6,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # redistribute it and/or modify it under the terms of either the GNU
 # General Public License or the Perl Artistic License.
 
-compile (
-	 );
+compile(
+    );
 
-execute (
-	 check_finished=>1,
-     );
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

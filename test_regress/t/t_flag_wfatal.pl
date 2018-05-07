@@ -11,13 +11,13 @@ top_filename("t/t_flag_wfatal.v");
 
 $Self->{vlt} or $Self->skip("Verilator only test");
 
-compile (
+compile(
     v_flags2 => ["--lint-only -Wno-fatal"],
-    fails=>0,
+    fails => 0,
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect=>
+    expect =>
 q{%Warning-WIDTH: t/t_flag_wfatal.v:\d+: Operator ASSIGNW expects 4 bits on the Assign RHS, but Assign RHS.s CONST '6'h2e' generates 6 bits.
 %Warning-WIDTH: Use .* and lint_on around source to disable this message.
 },

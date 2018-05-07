@@ -9,10 +9,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 $Self->{vlt} or $Self->skip("Verilator only test");
 
-compile (
-	 v_flags2 => ["--lint-only --Mdir obj_lint_only"],
-	 fails=>1,
-	 expect=>
+compile(
+    v_flags2 => ["--lint-only --Mdir obj_lint_only"],
+    fails => 1,
+    expect =>
 '%Error-ASSIGNIN: t/t_var_in_assign_bad.v:\d+: Assigning to input variable: value
 %Error-ASSIGNIN: t/t_var_in_assign_bad.v:\d+: Assigning to input variable: valueSub
 %Error: Exiting due to.*',

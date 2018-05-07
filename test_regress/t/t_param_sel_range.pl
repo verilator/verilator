@@ -9,9 +9,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 $Self->{vlt} or $Self->skip("Verilator only test");
 
-compile (
+compile(
     v_flags2 => ["--lint-only -Wno-SELRANGE"],
-    fails=>0,
+    fails => 0,
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,

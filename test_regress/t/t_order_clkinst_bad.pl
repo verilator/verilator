@@ -9,10 +9,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_order_clkinst.v");
 
-compile (
+compile(
     v_flags2 => ["-Wwarn-IMPERFECTSCH"],
-    fails=>1,
-    expect=>
+    fails => 1,
+    expect =>
 q{.*%Warning-IMPERFECTSCH: .*
 .*%Error: Exiting due to.*},
     );

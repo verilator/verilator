@@ -7,13 +7,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 v_flags2 => ["--lint-only"],
-	 fails=>$Self->{v3},
-	 expect=>
+compile(
+    v_flags2 => ["--lint-only"],
+    fails => $Self->{vlt},
+    expect =>
 q{%Error: t/t_select_bad_tri.v:\d+: Selection index is constantly unknown or tristated: lsb=7'bxxxxxxx width=32'sh47
 %Error: Exiting due to.*},
-	 );
+    );
 
 ok(1);
 1;

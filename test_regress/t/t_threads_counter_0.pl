@@ -9,12 +9,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_threads_counter.v");
 
-compile (
+compile(
     verilator_flags2 => ['--cc --no-threads'],
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 ok(1);

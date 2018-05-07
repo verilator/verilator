@@ -11,15 +11,15 @@ $Self->{vlt} or $Self->skip("Verilator only test");
 
 $ENV{FOOBARTEST} = "gotit";
 
-compile (
-	 v_flags2 => ["--getenv FOOBARTEST"],
-	 expect=>
+compile(
+    v_flags2 => ["--getenv FOOBARTEST"],
+    expect =>
 'gotit
 ',
-	 make_top_shell => 0,
-	 make_main => 0,
-	 verilator_make_gcc => 0,
-	 );
+    make_top_shell => 0,
+    make_main => 0,
+    verilator_make_gcc => 0,
+    );
 
 ok(1);
 1;

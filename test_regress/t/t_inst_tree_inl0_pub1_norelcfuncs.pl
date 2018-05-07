@@ -9,9 +9,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_inst_tree.v");
 
-compile (
-	 verilator_flags2 => ['+define+NOUSE_INLINE', '+define+USE_PUBLIC', '--stats', '--norelative-cfuncs'],
-	 );
+compile(
+    verilator_flags2 => ['+define+NOUSE_INLINE', '+define+USE_PUBLIC', '--stats', '--norelative-cfuncs'],
+    );
 
 if ($Self->{vlt}) {
     # Fewer optimizations than t_inst_tree_inl0_pub1 which allows
@@ -30,12 +30,12 @@ if ($Self->{vlt}) {
     }
 }
 
-execute (
-	 check_finished=>1,
-	 expect=>
+execute(
+    check_finished => 1,
+    expect =>
 '\] (%m|.*t\.ps): Clocked
 ',
-     );
+    );
 
 ok(1);
 1;

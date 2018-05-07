@@ -9,13 +9,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 $Self->{vlt} or $Self->skip("Verilator only test");
 
-compile (
+compile(
     v_flags2 => ["--lint-only -Wall -Wno-DECLFILENAME --if-depth 10"],
-    fails=>1,
+    fails => 1,
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect=>
+    expect =>
 '%Warning-SYNCASYNCNET: t/t_lint_syncasyncnet_bad.v:\d+: Signal flopped as both synchronous and async: rst_both_l
 %Warning-SYNCASYNCNET: t/t_lint_syncasyncnet_bad.v:\d+: ... Location of async usage
 %Warning-SYNCASYNCNET: t/t_lint_syncasyncnet_bad.v:\d+: ... Location of sync usage

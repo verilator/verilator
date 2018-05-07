@@ -7,12 +7,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 );
+compile(
+    );
 
-execute (
-	 check_finished=>1,
-	 expect=>
+execute(
+    check_finished => 1,
+    expect =>
 '[10] hello
 [20] world
 ',

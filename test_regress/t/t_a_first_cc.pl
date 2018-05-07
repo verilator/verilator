@@ -13,14 +13,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 $DEBUG_QUIET = "--debug --debugi 0 --gdbbt --no-dump-tree";
 
-$Self->run(cmd=>["perl", "../bin/verilator", $DEBUG_QUIET, "-V"]);
+$Self->run(cmd => ["perl", "../bin/verilator", $DEBUG_QUIET, "-V"]);
 
-compile (
+compile(
     verilator_flags2 => [$DEBUG_QUIET, "--trace"],
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 ok(1);

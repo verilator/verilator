@@ -9,9 +9,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 $Self->{vlt} or $Self->skip("Verilator only test");
 
-compile (
-	 v_flags2 => ["-Wno-IMPLICIT"],
-	 );
+compile(
+    v_flags2 => ["-Wno-IMPLICIT"],
+    );
 
 ok(1);
 1;

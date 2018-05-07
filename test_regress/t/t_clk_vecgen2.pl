@@ -9,13 +9,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_clk_vecgen1.v");
 
-compile (
+compile(
     v_flags2 => ['+define+T_TEST2',],
     );
 
-execute (
-	 check_finished=>1,
-     );
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

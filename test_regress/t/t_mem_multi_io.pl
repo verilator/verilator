@@ -7,15 +7,15 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 # Disable inlining, this test is trivial without it
-	 verilator_flags2 => ["-Oi --trace"],
-	 verilator_flags3 => [],
-	 );
+compile(
+    # Disable inlining, this test is trivial without it
+    verilator_flags2 => ["-Oi --trace"],
+    verilator_flags3 => [],
+    );
 
-execute (
-	 check_finished=>1,
-     );
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

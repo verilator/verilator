@@ -9,10 +9,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 # Comple time only test
 
-compile (
+compile(
     verilator_flags2 => ["--lint-only"],
-    fails=>1,
-    expect=>
+    fails => 1,
+    expect =>
 '.*%Error: t/t_bitsel_wire_array_bad.v:\d+: Illegal assignment of constant to unpacked array
 %Error: Exiting due to.*',
     );

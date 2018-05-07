@@ -9,10 +9,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 $Self->{vlt} or $Self->skip("Verilator only test");
 
-compile (
-	 v_flags2 => ["--lint-only"],
-	 fails=>1,
-	 expect=>
+compile(
+    v_flags2 => ["--lint-only"],
+    fails => 1,
+    expect =>
 '%Error: t/t_pp_misdef_bad.v:\d+: Define or directive not defined: `NOTDEF
 %Error: Exiting due to.*',
     );

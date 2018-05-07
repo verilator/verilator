@@ -11,7 +11,7 @@ $Self->{vlt} or $Self->skip("Verilator only test");
 
 my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
 
-compile (
+compile(
     verilator_flags2 => ['--xml-only'],
     verilator_make_gcc => 0,
     );

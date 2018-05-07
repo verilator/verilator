@@ -9,13 +9,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 $Self->{vlt} or $Self->skip("Verilator only test");
 
-compile (
+compile(
     v_flags2 => ["--lint-only --bbox-sys --bbox-unsup -Wall -Wno-DECLFILENAME"],
-    fails=>1,
+    fails => 1,
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect=>
+    expect =>
 '%Warning-UNUSED: t/t_lint_unused_bad.v:\d+: Bits of signal are not used: assunu1\[5:1\]
 %Warning-UNUSED: Use .* to disable this message.
 %Warning-UNDRIVEN: t/t_lint_unused_bad.v:\d+: Bits of signal are not driven: udrb2\[14:13,11\]

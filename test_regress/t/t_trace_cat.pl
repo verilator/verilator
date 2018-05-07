@@ -9,20 +9,20 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 $Self->{vlt} or $Self->skip("Verilator only test");
 
-compile (
+compile(
     make_top_shell => 0,
     make_main => 0,
     v_flags2 => ["--trace --exe $Self->{t_dir}/t_trace_cat.cpp"],
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 system("cat $Self->{obj_dir}/simpart*.vcd > $Self->{obj_dir}/simall.vcd");
 
-vcd_identical ("$Self->{obj_dir}/simall.vcd",
-	       "t/$Self->{name}.out");
+vcd_identical("$Self->{obj_dir}/simall.vcd",
+              "t/$Self->{name}.out");
 
 ok(1);
 1;

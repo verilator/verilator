@@ -11,7 +11,7 @@ $Self->{vlt} or $Self->skip("Verilator only test");
 
 my $stdout_filename = "$Self->{obj_dir}/$Self->{name}__test.vpp";
 
-compile (
+compile(
     # Override default flags
     v_flags => [''],
     v_other_filenames => ["t_preproc_persist2.v"],

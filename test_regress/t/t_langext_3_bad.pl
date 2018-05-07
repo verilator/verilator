@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 top_filename("t/t_langext_3.v");
 
 # This is a compile only test.
-compile (
+compile(
     v_flags2 => ["+1364-2001ext+v"],
     fails => 1
     );

@@ -7,14 +7,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 v_flags2 => ["t/t_dpi_qw_c.cpp"],
-	 verilator_flags2 => ["-Wall -Wno-DECLFILENAME -no-l2name"],
-	 );
+compile(
+    v_flags2 => ["t/t_dpi_qw_c.cpp"],
+    verilator_flags2 => ["-Wall -Wno-DECLFILENAME -no-l2name"],
+    );
 
-execute (
-	 check_finished=>1,
-     );
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

@@ -11,13 +11,13 @@ top_filename("t/t_lint_setout_bad.v");
 
 $Self->{vlt} or $Self->skip("Verilator only test");
 
-compile (
+compile(
     v_flags2 => ["--lint-only -Oi"],
-    fails=>1,
+    fails => 1,
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect=>
+    expect =>
 '%Error: t/t_lint_setout_bad.v:\d+: Output port is connected to a constant pin, electrical short
 .*',
     );

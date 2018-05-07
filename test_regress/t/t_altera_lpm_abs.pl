@@ -12,7 +12,7 @@ $Self->{vlt} or $Self->skip("Verilator only test");
 top_filename("t/t_altera_lpm.v");
 (my $module = $Self->{name}) =~ s/.*t_altera_//;
 
-compile (
+compile(
     verilator_flags2 => ["--top-module ${module}"]
     );
 

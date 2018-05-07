@@ -9,10 +9,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 $Self->{vlt} or $Self->skip("Verilator only test");
 
-compile (
-	 verilator_flags2 => ["--lint-only"],
-	 fails=>1,
-	 expect=>
+compile(
+    verilator_flags2 => ["--lint-only"],
+    fails => 1,
+    expect =>
 '%Error: t/t_pp_underline_bad.v:\d+: Extra underscore in meta-comment.*
 %Error: Exiting due to.*',
     );

@@ -9,16 +9,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_inst_tree.v");
 
-compile (
-	 v_flags2 => ['+define+NOUSE_INLINE', '+define+NOUSE_PUBLIC'],
-	 );
+compile(
+    v_flags2 => ['+define+NOUSE_INLINE', '+define+NOUSE_PUBLIC'],
+    );
 
-execute (
-	 check_finished=>1,
-	 expect=>
+execute(
+    check_finished => 1,
+    expect =>
 '\] (%m|.*t\.ps): Clocked
 ',
-     );
+    );
 
 ok(1);
 1;

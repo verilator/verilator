@@ -7,14 +7,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 );
+compile(
+    );
 
-execute (
-	 fails=>$Self->{v3},
-	 expect=>
+execute(
+    fails => $Self->{vlt},
+    expect =>
 '%Error: t/t_sys_readmem_bad_digit.mem:\d+: \$readmemb \(binary\) file contains hex characters',
-     );
+    );
 
 ok(1);
 1;

@@ -22,8 +22,8 @@ compile(v_flags2 => [
             "+define+OUT_TMP5=\\\"$Self->{obj_dir}/tmp5.mem\\\"",
         ]);
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 for (my $i = 1; $i <= 5; $i++) {

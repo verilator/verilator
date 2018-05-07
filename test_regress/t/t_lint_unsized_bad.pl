@@ -9,13 +9,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 $Self->{vlt} or $Self->skip("Verilator only test");
 
-compile (
+compile(
     v_flags2 => ["--lint-only"],
-    fails=>1,
+    fails => 1,
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect=> quotemeta(
+    expect => quotemeta(
 qq{%Error: t/t_lint_unsized_bad.v:7: Too many digits for 32 bit number: 'd123456789123456789123456789
 %Error: t/t_lint_unsized_bad.v:7: As that number was unsized ('d...) it is limited to 32 bits (IEEE 2017 5.7.1)
 }).'%Error: Exiting due to.*'

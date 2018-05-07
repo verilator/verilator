@@ -9,13 +9,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_package_export.v");
 
-compile (
+compile(
     v_flags2 => ['+define+T_PACKAGE_EXPORT_BAD',],
-    fails=>1,
+    fails => 1,
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect=>
+    expect =>
 '%Error: t/t_package_export.v:\d+: Can\'t find definition of scope/variable: PARAM2
 %Error: t/t_package_export.v:\d+: Can\'t find definition of scope/variable: PARAM3
 %Error: t/t_package_export.v:\d+: Can\'t find definition of scope/variable: PARAM2

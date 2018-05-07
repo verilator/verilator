@@ -8,18 +8,18 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 if ($Self->{vlt}) {
-    compile (
-	verilator_flags2 => ["--exe $Self->{t_dir}/$Self->{name}.cpp"],
-	make_top_shell => 0,
-	make_main => 0,
-	);
+    compile(
+        verilator_flags2 => ["--exe $Self->{t_dir}/$Self->{name}.cpp"],
+        make_top_shell => 0,
+        make_main => 0,
+        );
 } else {
-    compile (
-	);
+    compile(
+        );
 }
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 ok(1);

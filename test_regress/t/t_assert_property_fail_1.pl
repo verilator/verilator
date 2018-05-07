@@ -9,12 +9,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_assert_property.v");
 
-compile (
+compile(
     v_flags2 => ['+define+FAIL_ASSERT_1'],
     verilator_flags2 => ['--assert --cc'],
     );
 
-execute (
+execute(
     fails => 1
     );
 

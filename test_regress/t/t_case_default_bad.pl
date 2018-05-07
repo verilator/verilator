@@ -7,13 +7,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 v_flags2 => ["--lint-only"],
-	 fails=>1,
-	 expect=>
+compile(
+    v_flags2 => ["--lint-only"],
+    fails => 1,
+    expect =>
 '%Error: t/t_case_default_bad.v:\d+: Multiple default statements in case statement.
 %Error: Exiting due to.*',
-	 );
+    );
 
 ok(1);
 1;

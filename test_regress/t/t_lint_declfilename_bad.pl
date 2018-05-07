@@ -11,13 +11,13 @@ top_filename("t/t_lint_declfilename.v");
 
 $Self->{vlt} or $Self->skip("Verilator only test");
 
-compile (
+compile(
     v_flags2 => ["--lint-only -Wall"],
-    fails=>1,
+    fails => 1,
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect=>
+    expect =>
 '%Warning-DECLFILENAME: t/t_lint_declfilename.v:6: Filename \'t_lint_declfilename\' does not match MODULE name: t
 %Warning-DECLFILENAME: Use .* to disable this message.
 %Error: Exiting due to.*',

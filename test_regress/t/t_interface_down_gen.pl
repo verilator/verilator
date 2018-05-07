@@ -10,11 +10,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 $Self->{vlt} and $Self->unsupported("Verilator unsupported, interface generates changing types");
 $Self->{vcs} and $Self->unsupported("Commercially unsupported, interface crossrefs");
 
-compile (
+compile(
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 ok(1);

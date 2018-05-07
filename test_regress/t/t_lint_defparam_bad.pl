@@ -11,13 +11,13 @@ top_filename("t/t_lint_defparam.v");
 
 $Self->{vlt} or $Self->skip("Verilator only test");
 
-compile (
+compile(
     v_flags2 => ["--lint-only -Wwarn-style -Wno-DECLFILENAME"],
-    fails=>1,
+    fails => 1,
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect=>
+    expect =>
 '%Warning-DEFPARAM: t/t_lint_defparam.v:\d+: Suggest replace defparam with Verilog 2001 #\(.P\(...etc...\)\)
 %Warning-DEFPARAM: Use .* to disable this message.
 %Error: Exiting due to.*',

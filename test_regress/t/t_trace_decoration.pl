@@ -7,12 +7,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
+compile(
     verilator_flags2 => ['--cc --trace --no-decoration'],
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 file_grep_not ("$Self->{obj_dir}/$Self->{VM_PREFIX}.h", qr!// Body!x);

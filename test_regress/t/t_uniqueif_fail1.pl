@@ -9,16 +9,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_uniqueif.v");
 
-compile (
+compile(
     v_flags2 => ['+define+FAILING_ASSERTION1'],
     verilator_flags2 => ['--assert'],
     nc_flags2 => ['+assert'],
     fails => $Self->{nc},
     );
 
-execute (
+execute(
     fails => $Self->{vlt},
-    expect=>
+    expect =>
 '.*%Error: t_uniqueif.v:\d+: Assertion failed in top.t: \'unique if\' statement violated
 %Error: t/t_uniqueif.v:\d+: Verilog \$stop
 .*',

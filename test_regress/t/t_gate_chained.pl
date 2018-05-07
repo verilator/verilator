@@ -41,12 +41,12 @@ top_filename("$Self->{obj_dir}/t_gate_chained.v");
 
 gen($Self->{top_filename});
 
-compile (
+compile(
     verilator_flags2=>["--stats --x-assign fast --x-initial fast"],
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 # Must be <<9000 above to prove this worked

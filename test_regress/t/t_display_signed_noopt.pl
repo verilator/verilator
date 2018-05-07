@@ -9,13 +9,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_display_signed.v");
 
-compile (
-	 verilator_flags2 => ["-O0"],
-	 );
+compile(
+    verilator_flags2 => ["-O0"],
+    );
 
-execute (
-	 check_finished=>1,
-	 expect=> quotemeta(
+execute(
+    check_finished => 1,
+    expect => quotemeta(
 '[0] lp %x=0bbccc %x=0bbccc %o=2736314 %b=010111011110011001100 %0d=769228 %d=  769228
 [0] ln %x=1bbccc %x=1bbccc %o=6736314 %b=110111011110011001100 %0d=-279348 %d= -279348
 [0] qp %x=001bbbbcccc %x=001bbbbcccc %o=00067356746314 %b=00000000110111011101110111100110011001100 %0d=7444614348 %d=    7444614348

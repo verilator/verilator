@@ -38,12 +38,12 @@ top_filename("$Self->{obj_dir}/t_emit_memb_limit.v");
 # Current limit is 50, so want to test at least 50*50 cases
 gen($Self->{top_filename}, 6000);
 
-compile (
+compile(
     verilator_flags2=>["-x-assign fast --x-initial fast"],
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.h", qr/struct \{/);

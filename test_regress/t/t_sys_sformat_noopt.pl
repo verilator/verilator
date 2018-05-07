@@ -9,7 +9,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_sys_sformat.v");
 
-compile (
+compile(
     # Avoid inlining our simple example, to make sure verilated.h works right
     verilator_flags2 => ["-O0"],
     );
@@ -19,8 +19,8 @@ if ($Self->cxx_version =~ /clang version ([0-9]+\.[0-9]+)/
     $Self->skip("Known clang bug");
     #Here:   if (VL_UNLIKELY(VL_NEQ_W(12, __Vtemp1, vlSymsp->TOP__t.__PVT__str)))
 } else{
-    execute (
-        check_finished=>1,
+    execute(
+        check_finished => 1,
         );
 }
 

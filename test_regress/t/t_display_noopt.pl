@@ -9,13 +9,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_display.v");
 
-compile (
+compile(
     verilator_flags2 => ["-O0"],
     );
 
-execute (
-    check_finished=>1,
-    expect=>dequote(
+execute(
+    check_finished => 1,
+    expect => dequote(
 q{[0] In top.t: Hi
 [0] In top.t.sub (sub)
 [0] In top.t.sub.subblock (sub)

@@ -7,13 +7,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 v_flags2 => ["--lint-only"],
-	 fails=>1,
-	 expect=>
+compile(
+    v_flags2 => ["--lint-only"],
+    fails => 1,
+    expect =>
 q{%Error: t/t_func_wide_out_bad.v:\d+: Unsupported: Function output argument 'data' requires 4352 bits, but connection's VARREF 'msg' generates 4350 bits.
 %Error: Exiting due to.*},
-	 );
+    );
 
 ok(1);
 1;

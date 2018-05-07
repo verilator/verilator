@@ -11,16 +11,16 @@ if (eval "use Bit::Vector; return 2;" != 2) { $Self->error("Please install Bit::
 
 top_filename("$Self->{obj_dir}/vgen.v");
 
-$Self->run(cmd=>["./vgen.pl",
-		 "-o $Self->{top_filename}",
-                 #"--seed 0",
+$Self->run(cmd => ["./vgen.pl",
+                   "-o $Self->{top_filename}",
+                   #"--seed 0",
            ]);
 
-compile (
+compile(
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 ok(1);

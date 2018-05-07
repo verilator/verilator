@@ -9,13 +9,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 $Self->{golden_out} ||= "t/$Self->{name}.out";
 
-compile (
-	 verilator_flags2 => ["--stats --O3 -x-assign fast"],
-	 );
+compile(
+    verilator_flags2 => ["--stats --O3 -x-assign fast"],
+    );
 
-execute (
-	 check_finished=>1,
-     );
+execute(
+    check_finished => 1,
+    );
 
 ok(files_identical("$Self->{obj_dir}/$Self->{name}_logger.log", $Self->{golden_out}));
 

@@ -9,10 +9,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t_initial_dlyass.v");
 
-compile (
-	 v_flags2 => ["--lint-only"],
-	 fails=>1,
-	 expect=>
+compile(
+    v_flags2 => ["--lint-only"],
+    fails => 1,
+    expect =>
 qr{%Warning-INITIALDLY: t/t_initial_dlyass.v:\d+: Delayed assignments .*
 %Error: Exiting due to.*},
      );

@@ -7,10 +7,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 v_flags2 => ["--lint-only"],
-	 fails=>1,
-	 expect=>
+compile(
+    v_flags2 => ["--lint-only"],
+    fails => 1,
+    expect =>
 q{%Error: t/t_func_const_bad.v:11: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_output'
 %Error: t/t_func_const_bad.v:12: ... Location of non-constant VAR 'o': Language violation: Outputs not allowed in constant functions
 %Error: t/t_func_const_bad.v:20: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_dotted'
@@ -44,7 +44,7 @@ Called from:
 t/t_func_const_bad.v:49:  f_bad_fatal() with parameters:
     a = ?32?sh3
 },
-	 );
+     );
 
 ok(1);
 1;

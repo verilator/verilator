@@ -11,9 +11,9 @@ $Self->{vlt} or $Self->skip("Verilator only test");
 
 my $stdout_filename = "$Self->{obj_dir}/$Self->{name}__test.vpp";
 
-compile (
+compile(
     verilator_flags2 => ['-E'],
-    verilator_make_gcc=>0,
+    verilator_make_gcc => 0,
     stdout_filename => $stdout_filename,
     );
 

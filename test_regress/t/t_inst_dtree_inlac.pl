@@ -9,13 +9,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_inst_dtree.v");
 
-compile (
+compile(
     v_flags2 => ['+define+INLINE_A +define+INLINE_C'],
     verilator_flags2 => ['-trace'],
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 ok(1);

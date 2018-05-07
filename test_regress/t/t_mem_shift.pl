@@ -7,17 +7,17 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 verilator_flags2 => ["--stats"],
-	 );
+compile(
+    verilator_flags2 => ["--stats"],
+    );
 
 if ($Self->{vlt}) {
     file_grep ($Self->{stats}, qr/Optimizations, Delayed shared-sets\s+(\d+)/i, 14);
 }
 
-execute (
-	 check_finished=>1,
-     );
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

@@ -9,16 +9,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_clk_latch.v");
 
-my $fail = ($Self->{v3} && verilator_version() !~ /\(ord\)/);
+my $fail = ($Self->{vlt} && verilator_version() !~ /\(ord\)/);
 
-compile (
-	 v_flags2 => ['+define+EDGE_DETECT_STYLE'],
-	 fails => $fail,
-	 );
+compile(
+    v_flags2 => ['+define+EDGE_DETECT_STYLE'],
+    fails => $fail,
+    );
 
-execute (
-	 check_finished => !$fail,
-	 ) if !$fail;
+execute(
+    check_finished => !$fail,
+    ) if !$fail;
 
 ok(1);
 1;

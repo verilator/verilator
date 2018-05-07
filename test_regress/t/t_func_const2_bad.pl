@@ -7,10 +7,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 #
-compile (
-	 v_flags2 => ["--lint-only"],
-	 fails=>1,
-	 expect=>
+compile(
+    v_flags2 => ["--lint-only"],
+    fails => 1,
+    expect =>
 q{%Warning-USERFATAL: f_add = 15
 %Warning-USERFATAL: Use "/* verilator lint_off USERFATAL */" and lint_on around source to disable this message.
 %Error: t/t_func_const2_bad.v:10: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_add2'
@@ -25,7 +25,7 @@ t/t_func_const2_bad.v:10:  f_add2() with parameters:
     b = ?32?sh8
     c = ?32?sh9
 },
-	 );
+    );
 
 ok(1);
 1;

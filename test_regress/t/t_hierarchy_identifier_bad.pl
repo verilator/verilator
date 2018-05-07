@@ -7,10 +7,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 v_flags2 => ["--lint-only"],
-	 fails=>1,
-	 expect=>
+compile(
+    v_flags2 => ["--lint-only"],
+    fails => 1,
+    expect =>
 q{%Warning-ENDLABEL: t/t_hierarchy_identifier_bad.v:\d+: End label 'if_cnt_finish_bad' does not match begin label 'if_cnt_finish'
 %Warning-ENDLABEL: Use .*
 %Warning-ENDLABEL: t/t_hierarchy_identifier_bad.v:\d+: End label 'generate_for_bad' does not match begin label 'generate_for'

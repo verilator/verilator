@@ -9,16 +9,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_unopt_combo.v");
 
-compile (
-	 verilator_flags2 => ['+define+ISOLATE --stats'],
-	 );
+compile(
+    verilator_flags2 => ['+define+ISOLATE --stats'],
+    );
 
 if ($Self->{vlt}) {
-    file_grep ($Self->{stats}, qr/Optimizations, isolate_assignments blocks\s+5/i);
+    file_grep($Self->{stats}, qr/Optimizations, isolate_assignments blocks\s+5/i);
 }
 
-execute (
-	 );
+execute(
+    );
 
 ok(1);
 1;

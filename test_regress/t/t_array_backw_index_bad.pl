@@ -7,9 +7,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-    fails=>1,
-    expect=>
+compile(
+    fails => 1,
+    expect =>
 q{%Error: t/t_array_backw_index_bad.v:\d+: Slice selection '\[1:3\]' has backward indexing versus data type's '\[3:0\]'
 %Error: t/t_array_backw_index_bad.v:\d+: Slice selection '\[3:1\]' has backward indexing versus data type's '\[0:3\]'
 %Error: t/t_array_backw_index_bad.v:\d+: Slice selection index '\[4:3\]' outside data type's '\[3:0\]'

@@ -9,18 +9,18 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 unlink("$Self->{obj_dir}/t_sys_file_basic_test.log");
 
-compile (
+compile(
     v_flags2 => ['+incdir+../include'],
     # Build without cached objects, see bug363
     verilator_flags2 => ["--exe ../$Self->{main_filename}"],
-    make_flags=>'MAKE_MAIN=0 VM_PARALLEL_BUILDS=0',
+    make_flags => 'MAKE_MAIN=0 VM_PARALLEL_BUILDS=0',
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
-file_grep ("$Self->{obj_dir}/t_sys_file_basic_test.log",
+file_grep("$Self->{obj_dir}/t_sys_file_basic_test.log",
 qr/\[0\] hello v=12345667
 \[0\] Hello2
 /);

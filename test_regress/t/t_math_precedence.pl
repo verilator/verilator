@@ -9,12 +9,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 #!$Self->{vcs} or $Self->unsupported("VCS does ** wrong, fixed in 2014");
 
-compile (
-	 );
+compile(
+    );
 
-execute (
-	 check_finished=>1,
-     );
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

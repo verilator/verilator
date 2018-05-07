@@ -23,11 +23,11 @@ if (!-r "$root/.git") {
     my $grep = `$cmd`;
     print "$grep\n";
     if ($grep ne "") {
-	my %names;
-	foreach my $line (split /\n/, $grep) {
-	    $names{$1} = 1 if $line =~ /^([^:]+)/;
-	}
-	$Self->error("Files with FIX"."MEs: ",join(' ',sort keys %names));
+        my %names;
+        foreach my $line (split /\n/, $grep) {
+            $names{$1} = 1 if $line =~ /^([^:]+)/;
+        }
+        $Self->error("Files with FIX"."MEs: ",join(' ',sort keys %names));
     }
 }
 

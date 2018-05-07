@@ -7,10 +7,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
+compile(
     v_flags2 => ["--lint-only"],
-    fails=>$Self->{v3},
-    expect=>
+    fails => $Self->{vlt},
+    expect =>
 q{%Warning-LITENDIAN: t/t_interface_array_nocolon_bad.v:\d+: Little endian cell range connecting to vector: MSB < LSB of cell range: 0:2
 %Warning-LITENDIAN: Use [^\n]+
 %Warning-LITENDIAN: t/t_interface_array_nocolon_bad.v:\d+: Little endian cell range connecting to vector: MSB < LSB of cell range: 1:3

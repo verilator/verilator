@@ -7,10 +7,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
+compile(
     v_flags2 => ["--lint-only"],
-    fails=>$Self->{v3},
-    expect=>
+    fails => $Self->{vlt},
+    expect =>
 '%Error: t/t_dpi_openreg_bad.v:\d+: Unsized/open arrays \(\'\[\]\'\) are only supported in DPI imports
 %Error: t/t_dpi_openreg_bad.v:\d+: Unsized/open arrays \(\'\[\]\'\) are only supported in DPI imports
 %Error: Exiting due to .*'

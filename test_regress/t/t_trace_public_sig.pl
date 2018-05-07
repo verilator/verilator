@@ -11,21 +11,21 @@ top_filename("t/t_trace_public.v");
 
 $Self->{vlt} or $Self->skip("Verilator only test");
 
-compile (
+compile(
     make_top_shell => 0,
     make_main => 0,
     v_flags2 => ["--trace --exe $Self->{t_dir}/$Self->{name}.cpp"],
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
-vcd_identical ("$Self->{obj_dir}/simx.vcd",
-	       "t/t_trace_public.out");
+vcd_identical("$Self->{obj_dir}/simx.vcd",
+              "t/t_trace_public.out");
 
 # vcd_identical doesn't detect "$var a.b;" vs "$scope module a; $var b;"
-file_grep ("$Self->{obj_dir}/simx.vcd", qr/module glbl/i);
+file_grep("$Self->{obj_dir}/simx.vcd", qr/module glbl/i);
 
 ok(1);
 1;

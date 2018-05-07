@@ -13,12 +13,12 @@ if (!$Self->have_sc) {
 else {
     top_filename("t/t_trace_ena.v");
 
-    compile (
+    compile(
         verilator_flags2 => ['-trace -sc'],
         );
 
-    execute (
-        check_finished=>1,
+    execute(
+        check_finished => 1,
         );
 
     if ($Self->{vlt}) {

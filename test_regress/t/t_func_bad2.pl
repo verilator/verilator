@@ -7,12 +7,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 fails=>$Self->{v3},
-	 expect=>
+compile(
+    fails => $Self->{vlt},
+    expect =>
 '%Error: t/t_func_bad2.v:\d+: Unsupported: Recursive function or task call
 %Error: Exiting due to',
-	 );
+    );
 
 ok(1);
 1;

@@ -9,13 +9,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 $Self->{vlt} or $Self->skip("Verilator only test");
 
-compile (
-	 v_flags2 => ["--top-module b "],
-	 );
+compile(
+    v_flags2 => ["--top-module b "],
+    );
 
-execute (
-	 check_finished=>1,
-	 );
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

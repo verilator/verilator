@@ -9,12 +9,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 $Self->{vcs} and $Self->unsupported("VCS unsupported");
 
-compile (
+compile(
     v_flags2 => ['+define+T_PACKAGE_EXPORT',],
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 ok(1);

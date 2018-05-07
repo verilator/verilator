@@ -11,13 +11,13 @@ top_filename("t/t_lint_incabspath.v");
 
 $Self->{vlt} or $Self->skip("Verilator only test");
 
-compile (
+compile(
     v_flags2 => ["--lint-only -Wall -Wno-DECLFILENAME"],
-    fails=>1,
+    fails => 1,
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect=>
+    expect =>
 '%Warning-INCABSPATH: t/t_lint_incabspath.v:\d+: Suggest `include with absolute path be made relative, and use \+include: /dev/null
 %Warning-INCABSPATH: Use .* to disable this message.
 %Error: Exiting due to.*',

@@ -9,7 +9,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_udp.v");
 
-compile (
+compile(
     # Unsupported: UDP Tables
     make_top_shell => 0,
     make_main => 0,

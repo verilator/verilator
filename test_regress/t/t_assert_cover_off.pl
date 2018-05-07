@@ -9,13 +9,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_assert_cover.v");
 
-compile (
-	 v_flags2 => [],
-	 );
+compile(
+    v_flags2 => [],
+    );
 
-execute (
-	 check_finished=>1,
-	 );
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

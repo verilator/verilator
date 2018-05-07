@@ -9,9 +9,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 top_filename("t/t_inst_tree.v");
 
-compile (
-	 verilator_flags2 => ['+define+NOUSE_INLINE', '+define+USE_PUBLIC', '--stats'],
-	 );
+compile(
+    verilator_flags2 => ['+define+NOUSE_INLINE', '+define+USE_PUBLIC', '--stats'],
+    );
 
 sub checkRelativeRefs {
     my ($mod, $expect_relative) = @_;
@@ -51,12 +51,12 @@ if ($Self->{vlt}) {
     checkRelativeRefs("l5__P2", 1);
 }
 
-execute (
-	 check_finished=>1,
-	 expect=>
+execute(
+    check_finished => 1,
+    expect =>
 '\] (%m|.*t\.ps): Clocked
 ',
-     );
+    );
 
 ok(1);
 1;

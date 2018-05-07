@@ -13,10 +13,10 @@ top_filename("t/t_initial_edge.v");
 # fail with Verilator if --x-initial-edge is not specified.
 $Self->{vlt} or $Self->skip("Verilator only test");
 
-compile (
+compile(
     );
 
-execute (
+execute(
     fails => 1,
     );
 

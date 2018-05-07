@@ -9,13 +9,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 #$Self->{vlt} or $Self->skip("Verilator only test");
 
-compile (
+compile(
     verilator_flags2 => ["--lint-only -Wno-DECLFILENAME"],
-    fails=>1,
+    fails => 1,
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect=>
+    expect =>
 '%Error: t/t_lint_modport_dir_bad.v:\d+: Attempt to drive input-only modport: signal
 %Error: Exiting due to .*',
     );

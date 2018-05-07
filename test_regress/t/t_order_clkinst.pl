@@ -7,15 +7,15 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-my $fail = ($Self->{v3} && verilator_version() !~ /\(ord\)/);
+my $fail = ($Self->{vlt} && verilator_version() !~ /\(ord\)/);
 
-compile (
-	 );
+compile(
+    );
 
-execute (
-	 check_finished => !$fail,
-	 fails => $fail,
-	 );
+execute(
+    check_finished => !$fail,
+    fails => $fail,
+    );
 
 ok(1);
 1;

@@ -7,10 +7,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 v_flags2 => ["--lint-only"],
-	 fails=>1,
-	 expect=>
+compile(
+    v_flags2 => ["--lint-only"],
+    fails => 1,
+    expect =>
 q{%Error: t/t_func_bad.v:\d+: Missing argument on non-defaulted argument 'from2' in function call to FUNC 'add'
 %Error: t/t_func_bad.v:\d+: Too many arguments in function call to FUNC 'add'
 %Error: t/t_func_bad.v:\d+: Missing argument on non-defaulted argument 'y' in function call to TASK 'x'
@@ -19,7 +19,7 @@ q{%Error: t/t_func_bad.v:\d+: Missing argument on non-defaulted argument 'from2'
 %Error: t/t_func_bad.v:\d+: Duplicate argument 'dup' in function call to FUNC 'f'
 %Error: t/t_func_bad.v:\d+: Too many arguments in function call to FUNC 'f'
 %Error: Exiting due to},
-	 );
+    );
 
 ok(1);
 1;

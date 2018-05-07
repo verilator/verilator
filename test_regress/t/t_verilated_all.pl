@@ -9,13 +9,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 my $root = "..";
 
-compile (
+compile(
     # Can't use --coverage and --savable together, so cheat and compile inline
     verilator_flags2 => ['--cc --coverage-toggle --coverage-line --coverage-user --trace --vpi $root/include/verilated_save.cpp'],
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 my %hit;

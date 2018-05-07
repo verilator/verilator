@@ -15,11 +15,11 @@ foreach my $prog (
     "../bin/verilator_difftree",
     "../bin/verilator_profcfunc",
     ) {
-    $Self->run(fails=>1,
-               cmd=>["perl",$prog,
-                     "--help"],
-               logfile=>"$Self->{obj_dir}/t_help.log",
-               tee=>0,
+    $Self->run(fails => 1,
+               cmd => ["perl",$prog,
+                       "--help"],
+               logfile => "$Self->{obj_dir}/t_help.log",
+               tee => 0,
         );
     file_grep ("$Self->{obj_dir}/t_help.log", qr/DISTRIBUTION/i);
 }

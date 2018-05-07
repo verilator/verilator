@@ -7,19 +7,19 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$Self->skip("No thread support") if !$Self->cfg_with_threaded;
+$Self->cfg_with_threaded or $Self->skip("No thread support");
 
 top_filename("t/t_verilated_all.v");
 
 my $root = "..";
 
-compile (
+compile(
     # Can't use --coverage and --savable together, so cheat and compile inline
     verilator_flags2 => ['--cc --coverage-toggle --coverage-line --coverage-user --trace --threads 1 --vpi $root/include/verilated_save.cpp'],
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 ok(1);
