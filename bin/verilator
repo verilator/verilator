@@ -545,7 +545,7 @@ functions to avoid error C1061.
 
 =back
 
-=item --converge-limit <loops>
+=item --converge-limit I<loops>
 
 Rarely needed.  Specifies the maximum number of runtime iterations before
 creating a model failed to converge error.  Defaults to 100.
@@ -654,9 +654,9 @@ when Verilating large models in --debug mode.
 Outside of --debug mode, AstNode's should never be leaked and this option
 has no effect.
 
-=item --debugi <level>
+=item --debugi I<level>
 
-=item --debugi-<srcfile> <level>
+=item --debugi-I<srcfile> I<level>
 
 Rarely needed - for developer use.  Set internal debugging level globally
 to the specified debug level (1-10) or set the specified Verilator source
@@ -698,9 +698,9 @@ the Verilator Internals manual.  --dump-tree is enabled automatically with
 --debug, so "--debug --no-dump-tree" may be useful if the dump files are
 large and not desired.
 
-=item --dump-treei <level>
+=item --dump-treei I<level>
 
-=item --dump-treei-<srcfile> <level>
+=item --dump-treei-I<srcfile> I<level>
 
 Rarely needed - for developer use.  Set internal tree dumping level
 globally to a specific dumping level or set the specified Verilator source
@@ -714,7 +714,7 @@ Preprocess the source code, but do not compile, as with 'gcc -E'.  Output
 is written to standard out.  Beware of enabling debugging messages, as they
 will also go to standard out.
 
-=item --error-limit <value>
+=item --error-limit I<value>
 
 After this number of errors or warnings are encountered, exit.  Defaults to
 50.
@@ -741,7 +741,7 @@ The file may contain // comments which are ignored to the end of the line.
 Any $VAR, $(VAR), or ${VAR} will be replaced with the specified environment
 variable.
 
-=item -FI <file>
+=item -FI I<file>
 
 Force include of the specified C++ header file.  All generated C++ files
 will insert a #include of the specified file before any other includes. The
@@ -773,7 +773,7 @@ Double literals must contain a dot (.) and/or an exponent (e).
 
 =item Strings
 
-String must in double quotes ("). On the command line it is required to escape
+String must in double quotes (""). On the command line it is required to escape
 them properly, e.g. as -GSTR="\"My String\"" or -GSTR='"My String"'.
 
 =back
@@ -899,7 +899,7 @@ otherwise manually create the Mdir before calling Verilator.
 Specifies the name to prepend to all lower level classes.  Defaults to
 the same as --prefix.
 
-=item --no-clk <signal-name>
+=item --no-clk I<signal-name>
 
 Prevent the specified signal from being marked as clock. See C<--clk>.
 
@@ -958,7 +958,7 @@ disables an optimization, an upper case letter enables it.  This is
 intended for debugging use only; see the source code for version-dependent
 mappings of optimizations to -O letters.
 
-=item -o <executable>
+=item -o I<executable>
 
 Specify the name for the final executable built if using --exe.  Defaults
 to the --prefix if not specified.
