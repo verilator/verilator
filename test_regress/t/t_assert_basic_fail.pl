@@ -13,12 +13,13 @@ top_filename("t/t_assert_basic.v");
 
 compile(
     v_flags2 => ['+define+FAILING_ASSERTIONS',
-                 $Self->{vlt}?'--assert':($Self->{nc}?'+assert':'')],
+                 ($Self->{vlt_all} ? '--assert'
+                  : ($Self->{nc} ? '+assert' : ''))],
     fails => $Self->{nc},
     );
 
 execute(
-    fails => $Self->{vlt},
+    fails => $Self->{vlt_all},
     );
 
 ok(1);

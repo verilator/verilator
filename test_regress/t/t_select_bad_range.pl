@@ -11,7 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     v_flags2 => ["--lint-only"],
-    fails => $Self->{vlt},
+    fails => $Self->{vlt_all},
     expect =>
 '%Warning-SELRANGE: t/t_select_bad_range.v:\d+: Selection index out of range: 44:44 outside 43:0
 %Warning-SELRANGE: Use .*

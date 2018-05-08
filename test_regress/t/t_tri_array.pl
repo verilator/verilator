@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 # When fix, update ifdefs in t_sv_cpu files; search for t_tri_array
-$Self->{vlt} and unsupported("Verilator unsupported, tristate arrays");
+$Self->{vlt_all} and unsupported("Verilator unsupported, tristate arrays");
 
 compile(
     );

@@ -16,7 +16,7 @@ compile(
     verilator_make_gcc => 0,
     );
 
-if ($Self->{vlt}) {
+{
     file_grep ("$Self->{obj_dir}/Vt_var_pins_cc.h", qr/VL_IN8  \(i1,0,0\);/x);
     file_grep ("$Self->{obj_dir}/Vt_var_pins_cc.h", qr/VL_IN8  \(i8,7,0\);/x);
     file_grep ("$Self->{obj_dir}/Vt_var_pins_cc.h", qr/VL_IN16 \(i16,15,0\);/x);

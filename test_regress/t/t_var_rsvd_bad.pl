@@ -12,7 +12,7 @@ scenarios(simulator => 1);
 top_filename("t/t_var_rsvd_port.v");
 
 compile(
-    fails => $Self->{vlt},
+    fails => $Self->{vlt_all},
     expect =>
 q{%Warning-SYMRSVDWORD: t/t_var_rsvd_port.v:\d+: Symbol matches C\+\+ keyword: 'bool'
 .*

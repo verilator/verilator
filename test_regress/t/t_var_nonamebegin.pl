@@ -26,7 +26,7 @@ t2 {mod}.tsk top.t
 *-* All Finished *-*'),
     );
 
-if ($Self->{vlt}) {
+if ($Self->{vlt_all}) {
     vcd_identical("$Self->{obj_dir}/simx.vcd",
                   "t/$Self->{name}.out");
 }

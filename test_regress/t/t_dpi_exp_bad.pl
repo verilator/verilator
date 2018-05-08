@@ -11,7 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     v_flags2 => ["--lint-only"],
-    fails => $Self->{vlt},
+    fails => $Self->{vlt_all},
     expect =>
 '%Error: t/t_dpi_exp_bad.v:\d+: DPI functions cannot return > 32 bits or four-state; use a two-state type or task instead: dpix_f_bit48__Vfuncrtn
 %Error: Exiting due to .*'

@@ -15,10 +15,8 @@ compile(
     verilator_flags2 => ["--stats --profile-cfuncs -CFLAGS '-pg' -LDFLAGS '-pg'"],
     );
 
-if ($Self->{vlt}) {
-    file_grep ($Self->{stats}, qr/Optimizations, Tables created\s+(\d+)/i, 10);
-    file_grep ($Self->{stats}, qr/Optimizations, Combined CFuncs\s+(\d+)/i, 10);
-}
+file_grep ($Self->{stats}, qr/Optimizations, Tables created\s+(\d+)/i, 10);
+file_grep ($Self->{stats}, qr/Optimizations, Combined CFuncs\s+(\d+)/i, 10);
 
 unlink $_ foreach (glob "$Self->{obj_dir}/gmon.out.*");
 $ENV{GMON_OUT_PREFIX} = "$Self->{obj_dir}/gmon.out";

@@ -12,7 +12,7 @@ $ENV{VERILATOR_TEST_NO_GDB} and skip("Skipping due to VERILATOR_TEST_NO_GDB");
 
 compile(
     v_flags2 => ["--lint-only --debug --gdbbt --debug-sigsegv"],
-    fails => $Self->{vlt},
+    fails => $Self->{vlt_all},
     expect =>
 '.*
 Program received signal SIGSEGV, Segmentation fault.

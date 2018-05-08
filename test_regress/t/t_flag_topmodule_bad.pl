@@ -12,7 +12,7 @@ scenarios(vlt => 1);
 top_filename("t/t_flag_topmodule.v");
 
 compile(
-    fails => $Self->{vlt},
+    fails => 1,
     nc => 0,  # Need to get it not to give the prompt
     expect =>
 '%Error-MULTITOP: t/t_flag_topmodule.v:\d+: Unsupported: Multiple top level modules: .*

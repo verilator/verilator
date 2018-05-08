@@ -11,7 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     v_flags2 => ["--lint-only -Wwarn-VARHIDDEN"],
-    fails => $Self->{vlt},
+    fails => $Self->{vlt_all},
     expect =>
 '%Warning-VARHIDDEN: t/t_var_bad_hide.v:\d+: Declaration of signal hides declaration in upper scope: top
 .*

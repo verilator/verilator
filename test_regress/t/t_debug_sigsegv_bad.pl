@@ -12,7 +12,7 @@ $ENV{VERILATOR_TEST_NO_GDB} and skip("Skipping due to VERILATOR_TEST_NO_GDB");
 
 compile(
     v_flags => ["--debug-sigsegv"],
-    fails => $Self->{vlt},
+    fails => 1,
     expect =>
 '%Error: Verilator internal fault, sorry.  Consider trying --debug --gdbbt
 %Error: Command Failed.*',

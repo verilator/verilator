@@ -13,7 +13,7 @@ compile(
     );
 
 execute(
-    fails => $Self->{vlt},
+    fails => $Self->{vlt_all},
     expect =>
 '%Error: t/t_sys_readmem_bad_NOTFOUND.mem:\d+: \$readmem file not found',
     );

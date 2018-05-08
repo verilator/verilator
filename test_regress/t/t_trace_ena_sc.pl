@@ -23,7 +23,7 @@ else {
         check_finished => 1,
         );
 
-    if ($Self->{vlt}) {
+    if ($Self->{vlt_all}) {
         # Note more checks in _cc.pl
         file_grep     ("$Self->{obj_dir}/simx.vcd", qr/\$enddefinitions/x);
 

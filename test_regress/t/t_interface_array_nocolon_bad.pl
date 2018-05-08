@@ -11,7 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     v_flags2 => ["--lint-only"],
-    fails => $Self->{vlt},
+    fails => $Self->{vlt_all},
     expect =>
 q{%Warning-LITENDIAN: t/t_interface_array_nocolon_bad.v:\d+: Little endian cell range connecting to vector: MSB < LSB of cell range: 0:2
 %Warning-LITENDIAN: Use [^\n]+

@@ -16,7 +16,7 @@ compile(
     make_top_shell => 0,
     verilator_flags => [qw(-cc)],
     verilator_make_gcc => 0,
-    fails => $Self->{vlt},
+    fails => $Self->{vlt_all},
     expect =>
 q{%Warning-WIDTH: t/t_inst_overwide.v:\d+: Output port connection 'outy_w92' expects 92 bits on the pin connection, but pin connection's VARREF 'outc_w30' generates 30 bits.
 %Warning-WIDTH: Use .* to disable this message.

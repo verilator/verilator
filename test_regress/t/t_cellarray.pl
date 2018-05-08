@@ -17,7 +17,7 @@ execute(
     check_finished => 1,
     );
 
-if ($Self->{vlt}) {
+if ($Self->{vlt_all}) {
     file_grep ($Self->{stats}, qr/Optimizations, Gate assign merged\s+(\d+)/i, 28);
 };
 

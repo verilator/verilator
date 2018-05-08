@@ -15,12 +15,12 @@ unlink("$Self->{obj_dir}/t_assert_elab_bad.log");
 
 compile(
     v_flags2 => ['+define+FAILING_ASSERTIONS',
-    $Self->{vlt}?'--assert':($Self->{nc}?'+assert':'')],
+    $Self->{vlt_all} ? '--assert' : ($Self->{nc} ? '+assert':'')],
     fails => 1,
 );
 
 execute(
-    fails => $Self->{vlt},
+    fails => $Self->{vlt_all},
 );
 
 file_grep ("$Self->{obj_dir}/vlt_compile.log",

@@ -9,7 +9,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-my $pubtask = ($Self->{vlt} && verilator_version() =~ /\(public_tasks\)/);  # TBD
+my $pubtask = ($Self->{vlt_all} && verilator_version() =~ /\(public_tasks\)/);  # TBD
 
 top_filename("t/t_func_public.v");
 

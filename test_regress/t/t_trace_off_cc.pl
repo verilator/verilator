@@ -19,7 +19,7 @@ execute(
     check_finished => 1,
     );
 
-if ($Self->{vlt}) {
+if ($Self->{vlt_all}) {
     !-r "$Self->{obj_dir}/simx.vcd" or error("Tracing should be off\n");
 }
 
