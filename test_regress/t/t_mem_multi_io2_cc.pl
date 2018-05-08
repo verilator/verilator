@@ -7,19 +7,19 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(vlt_all => 1);
+
 top_filename("t/t_mem_multi_io2.v");
 
-$Self->{vlt} or $Self->skip("Verilator only test");
-
-compile (
-	 make_top_shell => 0,
-	 make_main => 0,
-	 verilator_flags2 => ["--exe $Self->{t_dir}/t_mem_multi_io2.cpp -Oi"],
-	 verilator_flags3 => [],
+compile(
+    make_top_shell => 0,
+    make_main => 0,
+    verilator_flags2 => ["--exe $Self->{t_dir}/t_mem_multi_io2.cpp -Oi"],
+    verilator_flags3 => [],
     );
 
-execute (
-	 check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 ok(1);

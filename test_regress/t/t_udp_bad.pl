@@ -7,17 +7,19 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(simulator => 1);
+
 top_filename("t/t_udp.v");
 
-compile (
-	 fails=>$Self->{vlt},
-	 expect=>
+compile(
+    fails => $Self->{vlt},
+    expect =>
 '%Error: t/t_udp.v:\d+: Unsupported: Verilog 1995 UDP Tables.  Use --bbox-unsup to ignore tables.
 %Error: Exiting due to '
-	 );
+    );
 
-execute (
-     ) if !$Self->{vlt};
+execute(
+    ) if !$Self->{vlt};
 
 ok(1);
 1;

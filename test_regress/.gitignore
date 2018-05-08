@@ -1,5 +1,6 @@
 *.old
 obj_dir
+obj_*
 vcs.key
 csrc
 cov_work

@@ -7,13 +7,15 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 verilator_flags2 => ['--assert --cc --coverage-user'],
-	 );
+scenarios(simulator => 1);
 
-execute (
-	 check_finished=>1,
-	 );
+compile(
+    verilator_flags2 => ['--assert --cc --coverage-user'],
+    );
+
+execute(
+    check_finished => 1,
+    );
 
 #if ($Self->{nc}) ... # See t_assert_cover.pl for NC version
 

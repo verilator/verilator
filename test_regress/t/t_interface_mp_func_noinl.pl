@@ -6,14 +6,17 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
+
+scenarios(simulator => 1);
+
 top_filename("t/t_interface_mp_func.v");
 
-compile (
+compile(
     v_flags2 => ["-Oi"],
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 ok(1);

@@ -7,10 +7,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
+scenarios(simulator => 1);
+
+compile(
     v_flags2 => ["--lint-only"],
-    fails=>1,
-    expect=>
+    fails => 1,
+    expect =>
 '%Warning-WIDTHCONCAT: t/t_concat_large_bad.v:\d+: More than a 8k bit replication is probably wrong: 32768
 %Warning-WIDTHCONCAT: Use .*
 %Error: Exiting due to.*',

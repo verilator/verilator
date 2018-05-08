@@ -7,15 +7,15 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$Self->{vlt} or $Self->skip("Verilator only test");
+scenarios(vlt_all => 1);
 
-compile (
+compile(
     v_flags2 => ["--lint-only -Wwarn-style -Wno-DECLFILENAME"],
-    fails=>1,
+    fails => 1,
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect=>
+    expect =>
 quotemeta(
 '%Warning-COMBDLY: t/t_lint_latch_bad.v:24: Delayed assignments (<=) in non-clocked (non flop or latch) block; suggest blocking assignments (=).
 %Warning-COMBDLY: Use "/* verilator lint_off COMBDLY */" and lint_on around source to disable this message.

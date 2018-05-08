@@ -7,14 +7,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(vlt => 1);
+
 top_filename("t/t_pp_dupdef.v");
 
-$Self->{vlt} or $Self->skip("Verilator only test");
-
-compile (
-	 v_flags2 => ["--lint-only"],
-	 fails=>1,
-	 expect=>
+compile(
+    v_flags2 => ["--lint-only"],
+    fails => 1,
+    expect =>
 '%Warning-REDEFMACRO: t/t_pp_dupdef.v:\d+: Redefining existing define: DUP, with different value: barney
 %Warning-REDEFMACRO: Use .* to disable this message.
 %Warning-REDEFMACRO: t/t_pp_dupdef.v:\d+: Previous definition is here, with value: fred

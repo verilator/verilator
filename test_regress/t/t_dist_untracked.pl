@@ -7,11 +7,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(dist => 1);
+
 my $root = "..";
 my $Debug;
 
 if (!-r "$root/.git") {
-    $Self->skip("Not in a git repository");
+    skip("Not in a git repository");
 } else {
     ### Must trim output before and after our file list
     my %warns;
@@ -33,9 +35,9 @@ if (!-r "$root/.git") {
     }
     if (keys %warns) {
         # First warning lists everything as that's shown in the driver summary
-        $Self->error($summary." ",join(' ',sort keys %warns));
+        error($summary." ",join(' ',sort keys %warns));
         foreach my $file (sort keys %warns) {
-            $Self->error($warns{$file});
+            error($warns{$file});
         }
     }
 }

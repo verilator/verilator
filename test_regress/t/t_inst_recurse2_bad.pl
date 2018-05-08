@@ -7,9 +7,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-    fails=>1,
-    expect=>
+scenarios(simulator => 1);
+
+compile(
+    fails => 1,
+    expect =>
 '.*%Error: t/t_inst_recurse2_bad.v:\d+: Unsupported: Identically recursive module \(module instantiates itself, without changing parameters\): looped
 %Error: Exiting due to.*',
     );

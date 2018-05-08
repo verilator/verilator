@@ -7,17 +7,18 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$Self->{vlt} and $Self->unsupported("Verilator unsupported, bug413 short circuit");
+scenarios(simulator => 1);
+$Self->{vlt} and unsupported("Verilator unsupported, bug413 short circuit");
 
-compile (
-	 # Amazingly VCS, NC and Verilator all just accept the C file here!
-	 v_flags2 => ["t/t_dpi_shortcircuit_c.cpp"],
-	 verilator_flags2 => ["-Wno-DECLFILENAME"],
-	 );
+compile(
+    # Amazingly VCS, NC and Verilator all just accept the C file here!
+    v_flags2 => ["t/t_dpi_shortcircuit_c.cpp"],
+    verilator_flags2 => ["-Wno-DECLFILENAME"],
+    );
 
-execute (
-	 check_finished=>1,
-     );
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

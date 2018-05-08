@@ -7,12 +7,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 fails=>1,
-	 expect=>
+scenarios(simulator => 1);
+
+compile(
+    fails => 1,
+    expect =>
 '%Error: t/t_struct_notfound_bad.v:\d+: Member \'nfmember\' not found in structure
 %Error: Exiting due to.*',
-	 );
+    );
 
 ok(1);
 1;

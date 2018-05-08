@@ -7,14 +7,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$Self->{vlt} or $Self->skip("Verilator only test");
+scenarios(vlt_all => 1);
 
 top_filename("t/t_var_pinsizes.v");
 
-compile (
-	 verilator_flags2 => ["-sc -pins-uint8 --trace --exe $Self->{t_dir}/t_var_pinsizes.cpp"],
-	 make_main => 0,
-	 );
+compile(
+    verilator_flags2 => ["-sc -pins-uint8 --trace --exe $Self->{t_dir}/t_var_pinsizes.cpp"],
+    make_main => 0,
+    );
 
 if ($Self->{vlt}) {
     file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.h", qr/sc_in<bool> \s+ i1;/x);

@@ -7,11 +7,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$Self->{vlt} or $Self->skip("Verilator only test");
+scenarios(vlt => 1);
 
 my $stdout_filename = "$Self->{obj_dir}/$Self->{name}__test.vpp";
 
-compile (
+compile(
     # Override default flags
     v_flags => [''],
     v_other_filenames => ["t_preproc_persist2.v"],

@@ -7,11 +7,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(simulator => 1);
+
 top_filename("t/t_inst_tree.v");
 
-compile (
-	 verilator_flags2 => ['+define+NOUSE_INLINE', '+define+USE_PUBLIC', '--stats'],
-	 );
+compile(
+    verilator_flags2 => ['+define+NOUSE_INLINE', '+define+USE_PUBLIC', '--stats'],
+    );
 
 sub checkRelativeRefs {
     my ($mod, $expect_relative) = @_;
@@ -27,9 +29,9 @@ sub checkRelativeRefs {
     }
 
     if ($found_relative != $expect_relative) {
-        $Self->error("$file " .
-                     ($found_relative ? "has" : "does not have") .
-                     " relative variable references.");
+        error("$file " .
+              ($found_relative ? "has" : "does not have") .
+              " relative variable references.");
     }
 }
 
@@ -51,12 +53,12 @@ if ($Self->{vlt}) {
     checkRelativeRefs("l5__P2", 1);
 }
 
-execute (
-	 check_finished=>1,
-	 expect=>
+execute(
+    check_finished => 1,
+    expect =>
 '\] (%m|.*t\.ps): Clocked
 ',
-     );
+    );
 
 ok(1);
 1;

@@ -7,18 +7,20 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(simulator => 1);
+
 top_filename("t/t_inst_tree.v");
 
-compile (
-	 v_flags2 => ['+define+USE_INLINE', '+define+USE_PUBLIC'],
-	 );
+compile(
+    v_flags2 => ['+define+USE_INLINE', '+define+USE_PUBLIC'],
+    );
 
-execute (
-	 check_finished=>1,
-	 expect=>
+execute(
+    check_finished => 1,
+    expect =>
 '\] (%m|.*t\.ps): Clocked
 ',
-     );
+    );
 
 ok(1);
 1;

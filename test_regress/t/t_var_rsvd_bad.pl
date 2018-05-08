@@ -7,16 +7,18 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(simulator => 1);
+
 top_filename("t/t_var_rsvd_port.v");
 
-compile (
-	 fails=>$Self->{v3},
-	 expect=>
+compile(
+    fails => $Self->{vlt},
+    expect =>
 q{%Warning-SYMRSVDWORD: t/t_var_rsvd_port.v:\d+: Symbol matches C\+\+ keyword: 'bool'
 .*
 %Warning-SYMRSVDWORD: t/t_var_rsvd_port.v:\d+: Symbol matches C\+\+ keyword: 'switch'
 %Error: Exiting due to.*},
-	 );
+    );
 
 ok(1);
 1;

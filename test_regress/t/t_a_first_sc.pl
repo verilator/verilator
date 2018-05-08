@@ -11,16 +11,18 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # after building so we make sure to run with --gdbbt, so if it dumps we'll
 # get a trace.
 
+scenarios(simulator => 1);
+
 top_filename("t/t_a_first_cc.v");
 
 $DEBUG_QUIET = "--debug --debugi 0 --gdbbt --no-dump-tree";
 
-compile (
+compile(
     verilator_flags2 => [$DEBUG_QUIET, "-sc --trace"],
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 ok(1);

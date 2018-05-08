@@ -7,6 +7,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(dist => 1);
+
 my $root = "..";
 my $Debug;
 
@@ -24,10 +26,10 @@ my %file_regexps;
 my $skip = file_contents("$root/MANIFEST.SKIP");
 foreach my $file (sort keys %files) {
     foreach my $skip (split /\s+/,$skip) {
-	if ($file =~ /$skip/) {
-	    $files{$file} |= 4;
-	    $file_regexps{$file} = $skip;
-	}
+        if ($file =~ /$skip/) {
+            $files{$file} |= 4;
+            $file_regexps{$file} = $skip;
+        }
     }
 }
 
@@ -38,24 +40,24 @@ foreach my $file (sort keys %files) {
     my $skip = $files{$file}&4;
 
     print +(($tar ? "TAR ":"    ")
-	    .($dir ? "DIR ":"    ")
-	    .($skip ? "SKIP ":"     ")
-	    ."  $file\n") if $Debug;
+            .($dir ? "DIR ":"    ")
+            .($skip ? "SKIP ":"     ")
+            ."  $file\n") if $Debug;
 
     if ($dir && !$tar && !$skip) {
-	$warns{$file} = "File not in manifest or MANIFEST.SKIP: $file";
+        $warns{$file} = "File not in manifest or MANIFEST.SKIP: $file";
     } elsif (!$dir && $tar && !$skip) {
-	$warns{$file} = "File in manifest, but not directory: $file";
+        $warns{$file} = "File in manifest, but not directory: $file";
     } elsif ($dir && $tar && $skip) {
-	$warns{$file} = "File in manifest and also MANIFEST.SKIP, too general skip regexp '$file_regexps{$file}'?: $file";
+        $warns{$file} = "File in manifest and also MANIFEST.SKIP, too general skip regexp '$file_regexps{$file}'?: $file";
     }
 }
 
 if (keys %warns) {
     # First warning lists everything as that's shown in the driver summary
-    $Self->error("Files mismatch with manifest: ",join(' ',sort keys %warns));
+    error("Files mismatch with manifest: ",join(' ',sort keys %warns));
     foreach my $file (sort keys %warns) {
-	$Self->error($warns{$file});
+        error($warns{$file});
     }
 }
 
@@ -71,8 +73,8 @@ sub get_manifest_files {
     print "MF $manifest_files\n" if $Self->{verbose};
     my %files;
     foreach my $file (split /\s+/,$manifest_files) {
-	next if $file eq '';
-	$files{$file} |= 1;
+        next if $file eq '';
+        $files{$file} |= 1;
     }
     return \%files;
 }

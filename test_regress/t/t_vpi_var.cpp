@@ -91,11 +91,14 @@ unsigned int callback_count_strs_max = 500;
 #define CHECK_RESULT_CSTR_STRIP(got, exp) \
     CHECK_RESULT_CSTR(got+strspn(got, " "), exp)
 
+#define STRINGIFY(x) STRINGIFY2(x)
+#define STRINGIFY2(x) #x
+
 int _mon_check_mcd() {
     PLI_INT32 status;
 
     PLI_UINT32 mcd;
-    PLI_BYTE8* filename = (PLI_BYTE8*)"obj_dir/t_vpi_var/mcd_open.tmp";
+    PLI_BYTE8* filename = (PLI_BYTE8*)(STRINGIFY(TEST_OBJ_DIR) "/mcd_open.tmp");
     mcd = vpi_mcd_open(filename);
     CHECK_RESULT_NZ(mcd);
 
@@ -622,8 +625,8 @@ int main(int argc, char **argv, char **env) {
     Verilated::traceEverOn(true);
     VL_PRINTF("Enabling waves...\n");
     VerilatedVcdC* tfp = new VerilatedVcdC;
-    topp->trace (tfp, 99);
-    tfp->open ("obj_dir/t_vpi_var/simx.vcd");
+    topp->trace(tfp, 99);
+    tfp->open(STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 #endif
 
     topp->eval();

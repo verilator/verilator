@@ -7,16 +7,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$Self->{vlt} or $Self->skip("Verilator only test");
-$Self->{vlt} and $Self->unsupported("Verilator unsupported, bug485, false begin due to WHILE conversion blocks duplicate name detection");
+scenarios(vlt_all => 1);
+$Self->{vlt} and unsupported("Verilator unsupported, bug485, false begin due to WHILE conversion blocks duplicate name detection");
 
-compile (
+compile(
     v_flags2 => ["--lint-only"],
-    fails=>1,
+    fails => 1,
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect=>
+    expect =>
 '%Warning: duplicate...
 %Error: Exiting due to.*',
     );

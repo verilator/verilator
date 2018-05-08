@@ -7,15 +7,17 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(simulator => 1);
+
 top_filename("t/t_param_sel_range.v");
 
-compile (
+compile(
     v_flags2 => ["--lint-only"],
-    fails=>1,
+    fails => 1,
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect=>
+    expect =>
 '%Warning-SELRANGE: t/t_param_sel_range.v:\d+: Selection index out of range: 7:7 outside 4:0
 %Warning-SELRANGE: Use .* to disable this message.
 %Error: Exiting due to.*',

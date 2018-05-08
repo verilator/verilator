@@ -7,12 +7,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(simulator => 1);
+
 top_filename("t/t_order_clkinst.v");
 
-compile (
+compile(
     v_flags2 => ["-Wwarn-IMPERFECTSCH"],
-    fails=>1,
-    expect=>
+    fails => 1,
+    expect =>
 q{.*%Warning-IMPERFECTSCH: .*
 .*%Error: Exiting due to.*},
     );

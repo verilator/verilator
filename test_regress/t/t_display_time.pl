@@ -7,15 +7,17 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(simulator => 1);
+
 $Self->{vl_time_multiplier} = 1000;
 
-compile (
+compile(
     verilator_flags2 => ['-DVL_TIME_MULTIPLER=1000'],
     );
 
-execute (
-	 check_finished=>1,
-	 expect=> quotemeta(
+execute(
+    check_finished => 1,
+    expect => quotemeta(
 'default:   [0.000] 0t time [               0.000] No0 time
 '
 # Unsupported:

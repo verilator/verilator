@@ -7,13 +7,15 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 v_flags2 => ["--lint-only"],
-	 fails=>1,
-	 expect=>
+scenarios(simulator => 1);
+
+compile(
+    v_flags2 => ["--lint-only"],
+    fails => 1,
+    expect =>
 q{%Error: t/t_func_task_bad.v:\d+: Illegal call of a task as a function: task_as_func
 %Error: Exiting due to.*},
-	 );
+    );
 
 ok(1);
 1;

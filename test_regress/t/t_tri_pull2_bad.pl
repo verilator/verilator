@@ -7,9 +7,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 fails=>$Self->{v3},
-	 expect=>
+scenarios(simulator => 1);
+
+compile(
+    fails => $Self->{vlt},
+    expect =>
 '%Error: t/t_tri_pull2_bad.v:\d+: Unsupported: Conflicting pull directions.
 %Error: t/t_tri_pull2_bad.v:\d+: ... Location of conflicting pull.
 %Error: Exiting due to',

@@ -7,21 +7,21 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$Self->{vlt} or $Self->skip("Verilator only test");
+scenarios(vlt_all => 1);
 
-compile (
+compile(
     make_top_shell => 0,
     make_main => 0,
     v_flags2 => ["--trace --exe $Self->{t_dir}/t_trace_timescale.cpp"],
     make_flags => 'CPPFLAGS_ADD=-DVL_TIME_MULTIPLIER=1000',
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
-vcd_identical ("$Self->{obj_dir}/$Self->{name}.vcd",
-	       "t/$Self->{name}.out");
+vcd_identical("$Self->{obj_dir}/simx.vcd",
+              "t/$Self->{name}.out");
 
 ok(1);
 1;

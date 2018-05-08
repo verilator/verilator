@@ -7,14 +7,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 v_flags2 => ["--lint-only"],
-	 fails=>1,
-	 expect=>
+scenarios(simulator => 1);
+
+compile(
+    v_flags2 => ["--lint-only"],
+    fails => 1,
+    expect =>
 '%Warning-CASEWITHX: t/t_case_zx_bad.v:\d+: Use of x constant in casez statement, \(perhaps intended \?/z in constant\)
 .*
 %Error: Exiting due to.*',
-	 );
+    );
 
 ok(1);
 1;

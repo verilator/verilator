@@ -7,15 +7,17 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(simulator => 1);
+
 top_filename("t/t_unopt_converge_initial.v");
 
-compile (
+compile(
     v_flags2 => ['+define+ALLOW_UNOPT'],
     );
 
-execute (
-    fails=>1,
-    expect=> '%Error: \S+:\d+: Verilated model didn\'t DC converge',
+execute(
+    fails => 1,
+    expect => '%Error: \S+:\d+: Verilated model didn\'t DC converge',
     ) if $Self->{vlt};
 
 ok(1);

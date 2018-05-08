@@ -9,11 +9,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 use IO::File;
 
+scenarios(dist => 1);
+
 my $root = "..";
 my $Debug;
 
 if (!-r "$root/.git") {
-    $Self->skip("Not in a git repository");
+    skip("Not in a git repository");
 } else {
     uint();
     printfll();
@@ -44,7 +46,7 @@ sub uint {
 	}
     }
     if (keys %names) {
-	$Self->error("Files with uint32*_t instead of vluint32s: ",join(' ',sort keys %names));
+        error("Files with uint32*_t instead of vluint32s: ",join(' ',sort keys %names));
     }
 }
 
@@ -65,7 +67,7 @@ sub printfll {
 	}
     }
     if (keys %names) {
-	$Self->error("Files with %ll instead of VL_PRI64: ",join(' ',sort keys %names));
+        error("Files with %ll instead of VL_PRI64: ",join(' ',sort keys %names));
     }
 }
 
@@ -83,7 +85,7 @@ sub cstr {
 	}
     }
     if (keys %names) {
-	$Self->error("Files with potential c_str() lifetime issue: ",join(' ',sort keys %names));
+        error("Files with potential c_str() lifetime issue: ",join(' ',sort keys %names));
     }
 }
 
@@ -102,7 +104,7 @@ sub vsnprintf {
 	}
     }
     if (keys %names) {
-	$Self->error("Files with vsnprintf, use VL_VSNPRINTF: ",join(' ',sort keys %names));
+        error("Files with vsnprintf, use VL_VSNPRINTF: ",join(' ',sort keys %names));
     }
 }
 

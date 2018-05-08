@@ -9,21 +9,23 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 use Cwd;
 
+scenarios(dist => 1);
+
 my $root = "..";
 my $Debug;
 
 if (!-r "$root/.git") {
-    $Self->skip("Not in a git repository");
+    skip("Not in a git repository");
 } else {
     my $cwd = getcwd();
     my $destdir = "$cwd/".$Self->{obj_dir};
     # Start clean
-    $Self->run(cmd=>["rm -rf $destdir && mkdir -p $destdir"],
-               check_finished=>0);
+    run(cmd => ["rm -rf $destdir && mkdir -p $destdir"],
+        check_finished => 0);
     # Install into temp area
     print "Install...\n";
-    $Self->run(cmd=>["cd $root && make DESTDIR=$destdir install-all"],
-               check_finished=>0);
+    run(cmd => ["cd $root && make DESTDIR=$destdir install-all"],
+        check_finished => 0);
 
     # Check we can run a test
     # Unfortunately the prefix was hardcoded in the exec at a different place,
@@ -32,20 +34,20 @@ if (!-r "$root/.git") {
 
     # Uninstall
     print "Uninstall...\n";
-    $Self->run(cmd=>["cd $root && make DESTDIR=$destdir uninstall"],
-               check_finished=>0);
+    run(cmd => ["cd $root && make DESTDIR=$destdir uninstall"],
+        check_finished => 0);
 
     # Check empty
     my @files;
     $finds = `find $destdir -type f -print`;
     foreach my $file (split /\n/, $finds) {
-	next if $file =~ /\.status/;  # Made by driver.pl, not Verilator
-	print "\tLEFT:  $file\n";
-	$file =~ s!^$cwd!.!;
-	push @files, $file;
+        next if $file =~ /\.status/;  # Made by driver.pl, not Verilator
+        print "\tLEFT:  $file\n";
+        $file =~ s!^$cwd!.!;
+        push @files, $file;
     }
     if ($#files >= 0) {
-	$Self->error("Uninstall missed files: ",join(' ',@files));
+        error("Uninstall missed files: ",join(' ',@files));
     }
 }
 

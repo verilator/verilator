@@ -7,15 +7,17 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 make_top_shell => 0,
-	 make_main => 0,
-	 verilator_flags2 => ["--exe --no-l2name $Self->{t_dir}/t_dpi_var.cpp"],
-	 );
+scenarios(simulator => 1);
 
-execute (
-	 check_finished=>1,
-     );
+compile(
+    make_top_shell => 0,
+    make_main => 0,
+    verilator_flags2 => ["--exe --no-l2name $Self->{t_dir}/t_dpi_var.cpp"],
+    );
+
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

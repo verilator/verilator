@@ -7,12 +7,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 );
+scenarios(simulator => 1);
 
-execute (
-	 check_finished=>1,
-	 expect=> quotemeta(
+compile(
+    );
+
+execute(
+    check_finished => 1,
+    expect => quotemeta(
 '[0] e=0.000000e+00 e1=0.000000e+00 e30=0e+00 e32=0.00e+00
 [0] f=0.000000 f1=0.000000e+00 f30=0e+00 f32=0.00e+00
 [0] g=0 g1=0.000000e+00 g30=0e+00 g32=0.00e+00

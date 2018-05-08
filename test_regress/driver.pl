@@ -33,6 +33,18 @@ $SIG{TERM} = sub { $Fork->kill_tree_all('TERM') if $Fork; die "Quitting...\n"; }
 
 #======================================================================
 
+# Map of all scenarios, with the names used to enable them
+our %All_Scenarios
+    = (dist  => [             "dist"],
+       atsim => ["simulator", "atsim"],
+       ghdl  => ["simulator", "ghdl"],
+       iv    => ["simulator", "iv"],
+       ms    => ["simulator", "ms"],
+       nc    => ["simulator", "nc"],
+       vcs   => ["simulator", "vcs"],
+       vlt   => ["simulator", "vlt_all", "vlt"],
+    );
+
 #======================================================================
 # main
 
@@ -44,23 +56,18 @@ our @Orig_ARGV_Sw;  foreach (@Orig_ARGV) { push @Orig_ARGV_Sw, $_ if /^-/ && !/^
 our $Start = time();
 
 $Debug = 0;
-my $opt_atsim;
 my $opt_benchmark;
 my @opt_tests;
+my $opt_dist;
 my $opt_gdb;
 my $opt_gdbbt;
 my $opt_gdbsim;
-my $opt_ghdl;
-my $opt_iv;
 my $opt_jobs = 1;
-my $opt_ms;
-my $opt_nc;
 my $opt_optimize;
+my %opt_scenarios;
 my $opt_site;
 my $opt_stop;
 my $opt_trace;
-my $opt_vlt;
-my $opt_vcs;
 my $opt_verbose;
 my $Opt_Verilated_Debug;
 our $Opt_Unsupported;
@@ -69,35 +76,35 @@ our @Opt_Driver_Verilator_Flags;
 
 Getopt::Long::config ("pass_through");
 if (! GetOptions (
-		  "benchmark:i" => sub { $opt_benchmark = $_[1] ? $_[1] : 1; },
-		  "debug"	=> \&debug,
-	  	  #debugi	   see parameter()
-		  "atsim|athdl!"=> \$opt_atsim,
-		  "gdb!"	=> \$opt_gdb,
-		  "gdbbt!"	=> \$opt_gdbbt,
-		  "gdbsim!"	=> \$opt_gdbsim,
-		  "ghdl!"	=> \$opt_ghdl,
-		  "golden!"	=> sub { $ENV{HARNESS_UPDATE_GOLDEN} = 1; },
-		  "help"	=> \&usage,
-		  "iverilog!"	=> \$opt_iv,
-		  "j=i"		=> \$opt_jobs,
-		  "ms!"		=> \$opt_ms,
-		  "nc!"		=> \$opt_nc,
-		  "optimize:s"	=> \$opt_optimize,
-		  "site!"	=> \$opt_site,
-		  "stop!"	=> \$opt_stop,
-		  "trace!"	=> \$opt_trace,
-	  	  "unsupported!"=> \$Opt_Unsupported,
-		  "v3!"		=> \$opt_vlt,  # Old
-		  "vl!"		=> \$opt_vlt,  # Old
-		  "vlt!"	=> \$opt_vlt,
-		  "vcs!"	=> \$opt_vcs,
-		  "verbose!"	=> \$opt_verbose,
-		  "verilation!"		=> \$Opt_Verilation,  # Undocumented debugging
-		  "verilated_debug!"	=> \$Opt_Verilated_Debug,
-	  	  #W		   see parameter()
-		  "<>"		=> \&parameter,
-		  )) {
+          "benchmark:i" => sub { $opt_benchmark = $_[1] ? $_[1] : 1; },
+          "debug"       => \&debug,
+          #debugi          see parameter()
+          "gdb!"        => \$opt_gdb,
+          "gdbbt!"      => \$opt_gdbbt,
+          "gdbsim!"     => \$opt_gdbsim,
+          "golden!"     => sub { $ENV{HARNESS_UPDATE_GOLDEN} = 1; },
+          "help"        => \&usage,
+          "j=i"         => \$opt_jobs,
+          "optimize:s"  => \$opt_optimize,
+          "site!"       => \$opt_site,
+          "stop!"       => \$opt_stop,
+          "trace!"      => \$opt_trace,
+          "unsupported!"=> \$Opt_Unsupported,
+          "verbose!"    => \$opt_verbose,
+          "verilation!"         => \$Opt_Verilation,  # Undocumented debugging
+          "verilated_debug!"    => \$Opt_Verilated_Debug,
+          #W               see parameter()
+          # Scenarios
+          "atsim|athdl!"=> sub { $opt_scenarios{atsim} = $_[1]; },
+          "dist!"       => sub { $opt_scenarios{dist} = $_[1]; },
+          "ghdl!"       => sub { $opt_scenarios{ghdl} = $_[1]; },
+          "iverilog!"   => sub { $opt_scenarios{iverilog} = $_[1]; },
+          "ms!"         => sub { $opt_scenarios{ms} = $_[1]; },
+          "nc!"         => sub { $opt_scenarios{nc} = $_[1]; },
+          "vlt!"        => sub { $opt_scenarios{vlt} = $_[1]; },
+          "vcs!"        => sub { $opt_scenarios{vcs} = $_[1]; },
+          "<>"          => \&parameter,
+    )) {
     die "%Error: Bad usage, try '$0 --help'\n";
 }
 
@@ -105,8 +112,9 @@ $opt_jobs = calc_jobs() if defined $opt_jobs && $opt_jobs==0;
 
 $Fork->max_proc($opt_jobs);
 
-if (!$opt_atsim && !$opt_ghdl && !$opt_iv && !$opt_vcs && !$opt_ms && !$opt_nc && !$opt_vlt) {
-    $opt_vlt = 1;
+if ((scalar keys %opt_scenarios) < 1) {
+    $opt_scenarios{dist} = 1;
+    $opt_scenarios{vlt} = 1;
 }
 
 our @Test_Dirs = "t";
@@ -128,20 +136,17 @@ if ($#opt_tests>=2 && $opt_jobs>=2) {
     open(STDIN,  "+>/dev/null");
 }
 
-mkdir "obj_dir";
 
-our $Log_Filename = "obj_dir/driver_".strftime("%Y%m%d_%H%M%S.log", localtime);
+mkdir "obj_dist";
+our $Log_Filename = "obj_dist/driver_".strftime("%Y%m%d_%H%M%S.log", localtime);
 my $LeftCnt=0; my $OkCnt=0; my $FailCnt=0; my $SkipCnt=0; my $UnsupCnt=0;
 my @fails;
 
 foreach my $testpl (@opt_tests) {
-    one_test(pl_filename => $testpl, atsim=>1) if $opt_atsim;
-    one_test(pl_filename => $testpl, ghdl=>1) if $opt_ghdl;
-    one_test(pl_filename => $testpl, iv=>1) if $opt_iv;
-    one_test(pl_filename => $testpl, ms=>1) if $opt_ms;
-    one_test(pl_filename => $testpl, nc=>1) if $opt_nc;
-    one_test(pl_filename => $testpl, vcs=>1) if $opt_vcs;
-    one_test(pl_filename => $testpl, vlt=>1, 'v3'=>1) if $opt_vlt;
+    foreach my $scenario (sort keys %opt_scenarios) {
+        next if !$opt_scenarios{$scenario};
+        one_test(pl_filename => $testpl, $scenario=>1);
+    }
 }
 
 $Fork->wait_all();   # Wait for all children to finish
@@ -159,25 +164,18 @@ sub one_test {
 	     my $test = VTest->new(@params);
 	     $test->oprint("="x50,"\n");
 	     unlink $test->{status_filename};
-	     $test->prep;
-	     $test->read;
-	     if ($test->ok) {
-		 $test->oprint("Test PASSED\n");
-	     } elsif ($test->skips && !$test->errors) {
-		 $test->oprint("%Skip: $test->{skips}\n");
-	     } elsif ($test->unsupporteds && !$test->errors) {
-		 $test->oprint("%Unsupported: $test->{unsupporteds}\n");
-	     } else {
-		 $test->error("Missing ok\n") if !$test->errors;
-		 $test->oprint("%Error: $test->{errors}\n");
-	     }
-	     $test->write_status;
+             $test->_prep;
+             $test->_read;
+             # Don't put anything other than _exit after _read,
+             # as may call _exit via another path
+             $test->_exit;
 	 },
 	 run_on_finish => sub {
 	     my $test = VTest->new(@params);
-	     $test->read_status;
+             $test->_read_status;
 	     if ($test->ok) {
 		 $OkCnt++;
+             } elsif ($test->scenario_off && !$test->errors) {
 	     } elsif ($test->skips && !$test->errors) {
 		 $SkipCnt++;
 	     } elsif ($test->unsupporteds && !$test->errors) {
@@ -187,7 +185,9 @@ sub one_test {
 		 my $j = ($opt_jobs>1?" -j":"");
 		 push @fails, ("\t#".$test->soprint("%Error: $test->{errors}\n")
 			       ."\t\tmake$j && test_regress/"
-			       .$test->{pl_filename}." ".join(' ',@Orig_ARGV_Sw)."\n");
+                               .$test->{pl_filename}
+                               ." ".join(' ', _args_scenario())
+                               ." --".$test->{scenario}."\n");
 		 $FailCnt++;
 		 report(\@fails, $Log_Filename);
 		 my $other = "";
@@ -278,6 +278,21 @@ sub report {
 	       int($delta/60),$delta%60);
 }
 
+sub _args_scenario {
+    # Return command line with scenarios stripped
+    my @out;
+  arg:
+    foreach my $arg (@Orig_ARGV_Sw) {
+        foreach my $allsc (keys %All_Scenarios) {
+            foreach my $allscarg (@{$All_Scenarios{$allsc}}) {
+                next arg if ("--$allscarg" eq $arg);
+            }
+        }
+        push @out, $arg;
+    }
+    return @out;
+}
+
 #######################################################################
 #######################################################################
 #######################################################################
@@ -299,18 +314,19 @@ sub new {
 
     $self->{name} ||= $2 if $self->{pl_filename} =~ m!^(.*/)?([^/]*)\.pl$!;
 
-    $self->{mode} = "";
-    $self->{mode} ||= "atsim" if $self->{atsim};
-    $self->{mode} ||= "ghdl" if $self->{ghdl};
-    $self->{mode} ||= "vcs" if $self->{vcs};
-    $self->{mode} ||= "vlt" if $self->{vlt};
-    $self->{mode} ||= "nc" if $self->{nc};
-    $self->{mode} ||= "ms" if $self->{ms};
-    $self->{mode} ||= "iv" if $self->{iv};
+    $self->{scenario} = "";
+    $self->{scenario} ||= "dist" if $self->{dist};
+    $self->{scenario} ||= "atsim" if $self->{atsim};
+    $self->{scenario} ||= "ghdl" if $self->{ghdl};
+    $self->{scenario} ||= "vcs" if $self->{vcs};
+    $self->{scenario} ||= "vlt" if $self->{vlt};
+    $self->{scenario} ||= "nc" if $self->{nc};
+    $self->{scenario} ||= "ms" if $self->{ms};
+    $self->{scenario} ||= "iv" if $self->{iv};
 
     # For backward compatibility, the verilator tests have no prefix
-    $self->{obj_dir} ||= ("obj_dir/".($self->{mode} eq 'vlt' ? "" : $self->{mode}."_")
-			  ."$self->{name}");
+    mkdir "obj_$self->{scenario}";
+    $self->{obj_dir} ||= ("obj_$self->{scenario}/$self->{name}");
 
     foreach my $dir (@::Test_Dirs) {
 	# t_dir used both absolutely and under obj_dir
@@ -339,6 +355,7 @@ sub new {
 	v_flags => [split(/\s+/,(" -f input.vc "
 				 .($self->{t_dir} !~ m!/test_regress!  # Don't include standard dir, only site's
 				   ? " +incdir+$self->{t_dir} -y $self->{t_dir}" : "")
+                                 . " +define+TEST_OBJ_DIR=$self->{obj_dir}"
 				 .($opt_verbose ? " +define+TEST_VERBOSE=1":"")
 				 .($opt_benchmark ? " +define+TEST_BENCHMARK=$opt_benchmark":"")
 				 .($opt_trace ? " +define+WAVES=1":"")
@@ -425,46 +442,82 @@ sub new {
 }
 
 sub soprint {
-    my $self = shift;
-    my $str = "$self->{mode}/$self->{name}: ".join('',@_);
+    my $self = (ref $_[0] ? shift : $Self);
+    my $str = "$self->{scenario}/$self->{name}: ".join('',@_);
     $str =~ s/\n\n+$/\n/s;
     return $str;
 }
 
 sub oprint {
-    my $self = shift;
+    my $self = (ref $_[0] ? shift : $Self);
     print $self->soprint(@_);
 }
 
 sub error {
-    my $self = shift;
+    my $self = (ref $_[0] ? shift : $Self);
     my $msg = join('',@_);
-    warn "%Warning: $self->{mode}/$self->{name}: ".$msg."\n";
+    # Called from tests as: error("Reason message"[, ...]);
+    warn "%Warning: $self->{scenario}/$self->{name}: ".$msg."\n";
     $self->{errors} ||= $msg;
 }
 
 sub skip {
-    my $self = shift;
+    my $self = (ref $_[0] ? shift : $Self);
     my $msg = join('',@_);
-    warn "%Skip: $self->{mode}/$self->{name}: ".$msg."\n";
+    # Called from tests as: skip("Reason message"[, ...]);
+    warn "-Skip: $self->{scenario}/$self->{name}: ".$msg."\n";
     $self->{skips} ||= "Skip: ".$msg;
 }
 
 sub unsupported {
-    my $self = shift;
+    my $self = (ref $_[0] ? shift : $Self);
     my $msg = join('',@_);
-    warn "%Unsupported: $self->{mode}/$self->{name}: ".$msg."\n";
+    # Called from tests as: unsupported("Reason message"[, ...]);
+    warn "-Unsupported: $self->{scenario}/$self->{name}: ".$msg."\n";
     if (!$::Opt_Unsupported) {
 	$self->{unsupporteds} ||= "Unsupported: ".$msg;
     }
 }
 
-sub prep {
+sub scenarios {
+    my $self = (ref $_[0] ? shift : $Self);
+    my %params = (@_);
+    # Called from tests as: scenarios(...);
+    # to specify which scenarios this test runs under.
+    #  Where ... is one cases listed in All_Scenarios
+    if ((scalar keys %params) < 1) {
+        $params{simulators} = 1;
+    }
+    my %enabled_scenarios;
+    foreach my $scenario (keys %params) {
+        my $value = $params{$scenario};
+        my $hit = 0;
+        foreach my $allsc (keys %All_Scenarios) {
+            foreach my $allscarg (@{$All_Scenarios{$allsc}}) {
+                if ($scenario eq $allscarg) {
+                    $hit = 1;
+                    $enabled_scenarios{$allsc} = 1;
+                }
+            }
+        }
+        if (!$hit) {
+            $self->error("scenarios('$scenario' => ...) has unknown scenario '$scenario',");
+        }
+    }
+
+    if (!$enabled_scenarios{$self->{scenario}}) {
+        $self->skip("scenario '$self->{scenario}' not enabled for test");
+        $self->{scenario_off} ||= 1;
+        $self->_exit();
+    }
+}
+
+sub _prep {
     my $self = shift;
     mkdir $self->{obj_dir};  # Ok if already exists
 }
 
-sub read {
+sub _read {
     my $self = shift;
     # Read the control file
     (-r $self->{pl_filename})
@@ -474,7 +527,23 @@ sub read {
     require $self->{pl_filename};
 }
 
-sub write_status {
+sub _exit {
+    my $self = shift;
+    if ($self->ok) {
+        $self->oprint("Self PASSED\n");
+    } elsif ($self->skips && !$self->errors) {
+        $self->oprint("%Skip: $self->{skips}\n");
+    } elsif ($self->unsupporteds && !$self->errors) {
+        $self->oprint("%Unsupported: $self->{unsupporteds}\n");
+    } else {
+        $self->error("Missing ok\n") if !$self->errors;
+        $self->oprint("%Error: $self->{errors}\n");
+    }
+    $self->_write_status;
+    exit(0);
+}
+
+sub _write_status {
     my $self = shift;
     my $filename = $self->{status_filename};
     my $fh = IO::File->new(">$filename") or die "%Error: $! $filename,";
@@ -483,7 +552,7 @@ sub write_status {
     $fh->close();
 }
 
-sub read_status {
+sub _read_status {
     my $self = shift;
     my $filename = $self->{status_filename};
     use vars qw($VAR1);
@@ -686,6 +755,7 @@ sub compile {
                              "-C ".$self->{obj_dir},
                              "-f ".getcwd()."/Makefile_obj",
 			      "VM_PREFIX=$self->{VM_PREFIX}",
+                              "TEST_OBJ_DIR=$self->{obj_dir}",
 			      "CPPFLAGS_DRIVER=-D".uc($self->{name}),
 			      ($opt_verbose ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1":""),
 			      ($param{make_main}?"":"MAKE_MAIN=0"),
@@ -696,7 +766,7 @@ sub compile {
 	}
     }
     else {
-	$self->error("No compile step for this simulator");
+        $self->error("No compile step defined for '$self->{scenario}' scenario");
     }
 
     if ($param{make_pli}) {
@@ -873,6 +943,11 @@ sub continuing {
 sub errors {
     my $self = (ref $_[0]? shift : $Self);
     return $self->{errors};
+}
+
+sub scenario_off {
+    my $self = (ref $_[0]? shift : $Self);
+    return $self->{scenario_off};
 }
 
 sub skips {
@@ -1529,8 +1604,8 @@ sub cxx_version {
 
 our $_Cfg_With_Threaded;
 sub cfg_with_threaded {
-    my $out = `make -f ../Makefile print-cfg-with-threaded`;
-    return ($out =~ /yes/i) ? 1:0;
+    $_Cfg_With_Threaded ||= `make -f ../Makefile print-cfg-with-threaded`;
+    return ($_Cfg_With_Threaded =~ /yes/i) ? 1:0;
 }
 
 sub file_grep_not {
@@ -1844,10 +1919,6 @@ not matter. This makes it easier to extend or modify the test in future.
 
 =over 4
 
-=item --atsim
-
-Run using ATSIM simulator.
-
 =item --benchmark [<cycles>]
 
 Show execution times of each step.  If an optional number is given,
@@ -1885,10 +1956,6 @@ print backtrace information.  Requires --debug.
 
 Run Verilator generated executable under the debugger.
 
-=item --ghdl
-
-Run using GHDL simulator.
-
 =item --golden
 
 Update golden files, equivalent to setting HARNESS_UPDATE_GOLDEN=1.
@@ -1897,22 +1964,10 @@ Update golden files, equivalent to setting HARNESS_UPDATE_GOLDEN=1.
 
 Displays this message and program version and exits.
 
-=item --iverilog
-
-Run using Icarus Verilog simulator.
-
 =item --j #
 
 Run number of parallel tests, or 0 to determine the count based on the
 number of cores installed.  Requires Perl's Parallel::Forker package.
-
-=item --ms
-
-Run using ModelSim simulator.
-
-=item --nc
-
-Run using Cadence NC-Verilog simulator.
 
 =item --optimize
 
@@ -1935,18 +1990,52 @@ Set the simulator specific flags to request waveform tracing.
 
 Run tests even if marked as unsupported.
 
-=item --vcs
-
-Run using Synopsys VCS simulator.
-
 =item --verbose
 
 Compile and run the test in verbose mode. This means C<TEST_VERBOSE> will
 be defined for the test (Verilog and any C++/SystemC wrapper).
 
+=back
+
+=head1 SCENARIO ARGUMENTS
+
+The following options control which simulator is used, and which tests are
+run.  Multiple flags may be used to run multiple simulators/scenarios
+simultaneously.
+
+=over 4
+
+=item --atsim
+
+Run ATSIM simulator tests.
+
+=item --dist
+
+Run simulator-agnostic distribution tests.
+
+=item --ghdl
+
+Run GHDL simulator tests.
+
+=item --iverilog
+
+Run Icarus Verilog simulator tests.
+
+=item --ms
+
+Run ModelSim simulator tests.
+
+=item --nc
+
+Run Cadence NC-Verilog simulator tests.
+
+=item --vcs
+
+Run Synopsys VCS simulator tests.
+
 =item --vlt
 
-Run using Verilator.  Defaults set unless another simulator is requested.
+Run Verilator tests.  Default unless another scenario flag is provided.
 
 =back
 

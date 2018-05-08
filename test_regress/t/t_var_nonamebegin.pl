@@ -7,12 +7,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
+scenarios(simulator => 1);
+
+compile(
     verilator_flags2 => ['-trace'],
     );
 
-execute (
-	 expect=>quotemeta(
+execute(
+    expect => quotemeta(
 'ingen: {mod}.genblk1 top.t.genblk1
 d3a: {mod}.d3nameda top.t.d3nameda
 b2: {mod} top.t
@@ -25,8 +27,8 @@ t2 {mod}.tsk top.t
     );
 
 if ($Self->{vlt}) {
-    vcd_identical ("$Self->{obj_dir}/simx.vcd",
-		   "t/$Self->{name}.out");
+    vcd_identical("$Self->{obj_dir}/simx.vcd",
+                  "t/$Self->{name}.out");
 }
 ok(1);
 1;

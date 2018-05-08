@@ -7,14 +7,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-# When fix, update ifdefs in t_sv_cpu files; search for t_tri_array
-$Self->{vlt} and $Self->unsupported("Verilator unsupported, tristate arrays");
+scenarios(simulator => 1);
 
-compile (
+# When fix, update ifdefs in t_sv_cpu files; search for t_tri_array
+$Self->{vlt} and unsupported("Verilator unsupported, tristate arrays");
+
+compile(
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 ok(1);

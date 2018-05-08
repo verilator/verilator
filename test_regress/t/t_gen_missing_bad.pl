@@ -7,13 +7,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(vlt => 1);
+
 top_filename("t/t_gen_missing.v");
 
-$Self->{vlt} or $Self->skip("Verilator only test");
-compile (
+compile(
     v_flags2 => ['+define+T_GEN_MISSING_BAD'],
     fails => 1,
-    expect=>
+    expect =>
 '%Error: t/t_gen_missing.v:\d+: Cannot find file containing module: foo_not_needed
 %Error: t/t_gen_missing.v:\d+: Looked in:
 %Error: t/t_gen_missing.v:\d+:       t/foo_not_needed

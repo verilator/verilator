@@ -7,16 +7,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$Self->{vlt} or $Self->skip("Verilator only test");
-$ENV{VERILATOR_TEST_NO_GDB} and $Self->skip("Skipping due to VERILATOR_TEST_NO_GDB");
+scenarios(vlt => 1);
+$ENV{VERILATOR_TEST_NO_GDB} and skip("Skipping due to VERILATOR_TEST_NO_GDB");
 
-compile (
-	 verilator_flags2 => ["--debug-sigsegv"],
-	 fails=>$Self->{v3},
-	 expect=>
+compile(
+    v_flags => ["--debug-sigsegv"],
+    fails => $Self->{vlt},
+    expect =>
 '%Error: Verilator internal fault, sorry.  Consider trying --debug --gdbbt
 %Error: Command Failed.*',
-	 );
+    );
 
 ok(1);
 1;

@@ -7,15 +7,17 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 # Amazingly VCS, NC and Verilator all just accept the C file here!
-	 v_flags2 => ["t/t_dpi_import_c.cpp"],
-	 verilator_flags2 => ["-Wall -Wno-DECLFILENAME"],
-	 );
+scenarios(simulator => 1);
 
-execute (
-	 check_finished=>1,
-     );
+compile(
+    # Amazingly VCS, NC and Verilator all just accept the C file here!
+    v_flags2 => ["t/t_dpi_import_c.cpp"],
+    verilator_flags2 => ["-Wall -Wno-DECLFILENAME"],
+    );
+
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

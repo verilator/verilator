@@ -13,6 +13,9 @@
 
 #include "Vt_scope_map.h"
 
+#define STRINGIFY(x) STRINGIFY2(x)
+#define STRINGIFY2(x) #x
+
 using namespace std;
 
 unsigned long long main_time = 0;
@@ -30,7 +33,7 @@ int main(int argc, char **argv, char **env) {
 
     VerilatedVcdC* tfp = new VerilatedVcdC;
     top->trace(tfp,99);
-    tfp->open("obj_dir/t_scope_map/simx.vcd");
+    tfp->open(STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 
     top->CLK = 0;
     top->eval();

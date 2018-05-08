@@ -4,38 +4,39 @@
   <files>
     <file id="a" filename="AstRoot" language="1800-2017"/>
     <file id="b" filename="COMMAND_LINE" language="1800-2017"/>
+    <file id="e" filename="COMMAND_LINE_DEFINE" language="1800-2017"/>
     <file id="c" filename="INTERNAL_VERILATOR_DEFINE" language="1800-2017"/>
     <file id="d" filename="input.vc" language="1800-2017"/>
-    <file id="e" filename="t/t_xml_tag.v" language="1800-2017"/>
+    <file id="f" filename="t/t_xml_tag.v" language="1800-2017"/>
   </files>
   <netlist>
-    <module fl="e6" name="m">
-      <var fl="e8" name="clk_ip" tag="clk_ip" dtype_id="1"/>
-      <var fl="e9" name="rst_ip" dtype_id="1"/>
-      <var fl="e10" name="foo_op" tag="foo_op" dtype_id="1"/>
-      <typedef fl="e14" name="my_struct" tag="my_struct" dtype_id="2"/>
-      <var fl="e23" name="this_struct" tag="this_struct" dtype_id="3"/>
+    <module fl="f6" name="m">
+      <var fl="f8" name="clk_ip" tag="clk_ip" dtype_id="1"/>
+      <var fl="f9" name="rst_ip" dtype_id="1"/>
+      <var fl="f10" name="foo_op" tag="foo_op" dtype_id="1"/>
+      <typedef fl="f14" name="my_struct" tag="my_struct" dtype_id="2"/>
+      <var fl="f23" name="this_struct" tag="this_struct" dtype_id="3"/>
     </module>
     <typetable fl="a0">
-      <basicdtype  fl="e23" id="4" name="logic" left="31" right="0"/>
-      <basicdtype  fl="e8" id="1" name="logic"/>
-      <structdtype fl="e14" id="2">
-        <memberdtype fl="e15" id="5" name="clk" tag="this is clk" sub_dtype_id="6"/>
-        <memberdtype fl="e16" id="7" name="k" sub_dtype_id="8"/>
-        <memberdtype fl="e17" id="9" name="enable" tag="enable" sub_dtype_id="10"/>
-        <memberdtype fl="e18" id="11" name="data" tag="data" sub_dtype_id="12"/>
+      <basicdtype  fl="f23" id="4" name="logic" left="31" right="0"/>
+      <basicdtype  fl="f8" id="1" name="logic"/>
+      <structdtype fl="f14" id="2">
+        <memberdtype fl="f15" id="5" name="clk" tag="this is clk" sub_dtype_id="6"/>
+        <memberdtype fl="f16" id="7" name="k" sub_dtype_id="8"/>
+        <memberdtype fl="f17" id="9" name="enable" tag="enable" sub_dtype_id="10"/>
+        <memberdtype fl="f18" id="11" name="data" tag="data" sub_dtype_id="12"/>
       </structdtype>
-      <basicdtype  fl="e15" id="6" name="logic"/>
-      <basicdtype  fl="e16" id="8" name="logic"/>
-      <basicdtype  fl="e17" id="10" name="logic"/>
-      <basicdtype  fl="e18" id="12" name="logic"/>
-      <unpackarraydtype fl="e23" id="3" sub_dtype_id="2">
-        <range fl="e23">
-          <const fl="e23" name="32'h1" dtype_id="4"/>
-          <const fl="e23" name="32'h0" dtype_id="4"/>
+      <basicdtype  fl="f15" id="6" name="logic"/>
+      <basicdtype  fl="f16" id="8" name="logic"/>
+      <basicdtype  fl="f17" id="10" name="logic"/>
+      <basicdtype  fl="f18" id="12" name="logic"/>
+      <unpackarraydtype fl="f23" id="3" sub_dtype_id="2">
+        <range fl="f23">
+          <const fl="f23" name="32'h1" dtype_id="4"/>
+          <const fl="f23" name="32'h0" dtype_id="4"/>
         </range>
       </unpackarraydtype>
-      <refdtype fl="e23" id="13" name="my_struct" sub_dtype_id="2"/>
+      <refdtype fl="f23" id="13" name="my_struct" sub_dtype_id="2"/>
     </typetable>
   </netlist>
 </verilator_xml>

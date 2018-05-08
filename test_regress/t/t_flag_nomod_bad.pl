@@ -7,15 +7,15 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$Self->{vlt} or $Self->skip("Verilator only test");
+scenarios(vlt => 1);
 
-compile (
-	 v_flags2 => ["--lint-only"],
-	 fails=>$Self->{v3},
-	 expect=>
+compile(
+    v_flags2 => ["--lint-only"],
+    fails => $Self->{vlt},
+    expect =>
 '%Error: No top level module found
 %Error: Exiting due to',
-	 );
+    );
 
 ok(1);
 1;

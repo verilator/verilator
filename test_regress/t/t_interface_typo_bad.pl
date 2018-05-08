@@ -7,7 +7,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
+scenarios(simulator => 1);
+
+compile(
     verilator_flags2 => ["--lint-only"],
     verilator_make_gcc => 0,
     make_top_shell => 0,
@@ -15,12 +17,12 @@ compile (
     fails => 1,
     # Used to be %Error: t/t_order_wireloop.v:\d+: Wire inputs its own output, creating circular logic .wire x=x.
     # However we no longer gate optimize this
-    expect=>
+    expect =>
 q{%Error: t/t_interface_typo_bad.v:\d+: Parent cell's interface is not found: foo_intf
 %Error: t/t_interface_typo_bad.v:\d+: Cannot find file containing interface: fo_intf
 %Error: t/t_interface_typo_bad.v:\d+: Found definition of 'the_foo' as a CELL but expected a variable
 .*},
-	 );
+    );
 
 ok(1);
 1;

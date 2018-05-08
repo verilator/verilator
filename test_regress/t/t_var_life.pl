@@ -7,18 +7,20 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 verilator_flags2 => ["--stats"],
-	 );
+scenarios(simulator => 1);
+
+compile(
+    verilator_flags2 => ["--stats"],
+    );
 
 if ($Self->{vlt}) {
-    file_grep ($Self->{stats}, qr/Optimizations, Lifetime assign deletions\s+(\d+)/i, 4);
-    file_grep ($Self->{stats}, qr/Optimizations, Lifetime constant prop\s+(\d+)/i, 2);
+    file_grep($Self->{stats}, qr/Optimizations, Lifetime assign deletions\s+(\d+)/i, 4);
+    file_grep($Self->{stats}, qr/Optimizations, Lifetime constant prop\s+(\d+)/i, 2);
 }
 
-execute (
-	 check_finished=>1,
-     );
+execute(
+    check_finished => 1,
+    );
 
 ok(1);
 1;

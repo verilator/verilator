@@ -7,17 +7,19 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(simulator => 1);
+
 top_filename("t/t_assert_basic.v");
 
-compile (
-	 v_flags2 => ['+define+FAILING_ASSERTIONS',
-	              $Self->{v3}?'--assert':($Self->{nc}?'+assert':'')],
-	 fails => $Self->{nc},
-	 );
+compile(
+    v_flags2 => ['+define+FAILING_ASSERTIONS',
+                 $Self->{vlt}?'--assert':($Self->{nc}?'+assert':'')],
+    fails => $Self->{nc},
+    );
 
-execute (
-	 fails => $Self->{vlt},
-	 );
+execute(
+    fails => $Self->{vlt},
+    );
 
 ok(1);
 1;

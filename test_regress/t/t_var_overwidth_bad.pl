@@ -7,14 +7,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
+scenarios(simulator => 1);
+
+compile(
     make_main => 0,
     verilator_flags2 => ["--exe $Self->{t_dir}/t_var_overwidth_bad.cpp"],
     );
 
-execute (
-    fails=>1,
-    expect=>
+execute(
+    fails => 1,
+    expect =>
 qr{%Error: unknown:0: Testbench C set input 'clk' to value that overflows what the signal's width can fit
 Aborting....*}
     );

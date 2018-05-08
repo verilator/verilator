@@ -7,17 +7,19 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(simulator => 1);
+
 top_filename("t/t_assert_elab.v");
 unlink("$Self->{obj_dir}/t_assert_elab_bad.log");
 
 
-compile (
+compile(
     v_flags2 => ['+define+FAILING_ASSERTIONS',
-    $Self->{v3}?'--assert':($Self->{nc}?'+assert':'')],
+    $Self->{vlt}?'--assert':($Self->{nc}?'+assert':'')],
     fails => 1,
 );
 
-execute (
+execute(
     fails => $Self->{vlt},
 );
 

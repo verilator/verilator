@@ -7,14 +7,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$Self->skip("Verilator only test") if !$Self->{vlt};
+scenarios(vlt_all => 1);
 
-compile (
-	 fails=>1,
-	 expect=>
+compile(
+    fails => 1,
+    expect =>
 '%Warning-WIDTH: t/t_lint_literal_bad.v:9: Value too large for 8 bit number: 256
 ',
-	 );
+    );
 
 ok(1);
 1;

@@ -7,11 +7,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$Self->{vlt} or $Self->skip("Verilator only test");
+scenarios(vlt => 1);
 
 my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
 
-compile (
+compile(
     verilator_flags2 => ['--xml-only'],
     verilator_make_gcc => 0,
     );

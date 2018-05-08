@@ -7,6 +7,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(dist => 1);
+
 my $root = "..";
 my $Debug;
 
@@ -45,14 +47,14 @@ foreach my $file (sort keys %files) {
 if (keys %warns) {
     # First warning lists everything as that's shown in the driver summary
     if ($ENV{HARNESS_UPDATE_GOLDEN}) {
-	$Self->error("Updated files with whitespace errors: ",join(' ',sort keys %warns));
-	$Self->error("To auto-fix: HARNESS_UPDATE_GOLDEN=1 {command} or --golden");
+        error("Updated files with whitespace errors: ",join(' ',sort keys %warns));
+        error("To auto-fix: HARNESS_UPDATE_GOLDEN=1 {command} or --golden");
     } else {
-	$Self->error("Files have whitespace errors: ",join(' ',sort keys %warns));
-	$Self->error("To auto-fix: HARNESS_UPDATE_GOLDEN=1 {command} or --golden");
+        error("Files have whitespace errors: ",join(' ',sort keys %warns));
+        error("To auto-fix: HARNESS_UPDATE_GOLDEN=1 {command} or --golden");
     }
     foreach my $file (sort keys %warns) {
-	$Self->error($warns{$file});
+        error($warns{$file});
     }
 }
 

@@ -7,15 +7,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$Self->{vlt} and $Self->unsupported("Verilator unsupported, bug408");
+scenarios(simulator => 1);
+$Self->{vlt} and unsupported("Verilator unsupported, bug408");
 
-compile (
-	 v_flags2 => ["--lint-only"],
-	 fails=>1,
-	 expect=>
+compile(
+    v_flags2 => ["--lint-only"],
+    fails => 1,
+    expect =>
 '.*%Error: t/t_genvar_misuse_bad.v:\d+: Use of genvar where not convertible to constant: i
 %Error: Exiting due to.*',
-	 );
+    );
 
 ok(1);
 1;

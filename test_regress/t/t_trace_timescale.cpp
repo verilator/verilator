@@ -10,6 +10,9 @@
 
 #include VM_PREFIX_INCLUDE
 
+#define STRINGIFY(x) STRINGIFY2(x)
+#define STRINGIFY2(x) #x
+
 unsigned long long main_time = 0;
 double sc_time_stamp() {
     return ((double)main_time) / VL_TIME_MULTIPLIER;
@@ -27,7 +30,7 @@ int main(int argc, char **argv, char **env) {
 
     top->trace(tfp,99);
 
-    tfp->open("obj_dir/t_trace_timescale/t_trace_timescale.vcd");
+    tfp->open(STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 
     top->clk = 0;
 

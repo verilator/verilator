@@ -7,13 +7,15 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 v_flags2 => ["--lint-only"],
-	 fails=>1,
-	 expect=>
+scenarios(simulator => 1);
+
+compile(
+    v_flags2 => ["--lint-only"],
+    fails => 1,
+    expect =>
 '.*%Error: t/t_gen_var_bad.v:\d+: Non-genvar used in generate for: i
 %Error: Exiting due to.*',
-	 );
+    );
 
 ok(1);
 1;

@@ -7,17 +7,18 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$ENV{VERILATOR_TEST_NO_GDB} and $Self->skip("Skipping due to VERILATOR_TEST_NO_GDB");
+scenarios(vlt => 1);
+$ENV{VERILATOR_TEST_NO_GDB} and skip("Skipping due to VERILATOR_TEST_NO_GDB");
 
-compile (
-	 v_flags2 => ["--lint-only --debug --gdbbt --debug-sigsegv"],
-	 fails=>$Self->{v3},
-	 expect=>
+compile(
+    v_flags2 => ["--lint-only --debug --gdbbt --debug-sigsegv"],
+    fails => $Self->{vlt},
+    expect =>
 '.*
 Program received signal SIGSEGV, Segmentation fault.
 .*in V3Options::.*
 .*%Error: Command Failed.*',
-	 );
+    );
 
 ok(1);
 1;

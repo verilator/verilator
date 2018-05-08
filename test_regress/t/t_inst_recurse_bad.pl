@@ -7,9 +7,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-    fails=>1,
-    expect=>
+scenarios(simulator => 1);
+
+compile(
+    fails => 1,
+    expect =>
 '.*%Error: t/t_inst_recurse_bad.v:\d+: Unsupported: Recursive multiple modules \(module instantiates something leading back to itself\): looped
 %Error: t/t_inst_recurse_bad.v:\d+: Note self-recursion \(module instantiating itself directly\) is supported.
 %Error: Exiting due to.*',

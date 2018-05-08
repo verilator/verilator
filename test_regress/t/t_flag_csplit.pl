@@ -7,14 +7,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$Self->{vlt} or $Self->skip("Verilator only test");
+scenarios(vlt_all => 1);
 
-compile (
+compile(
     v_flags2 => ["--trace --output-split 1 --output-split-cfuncs 1"],
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 my $got1;
@@ -22,7 +22,7 @@ foreach my $file (glob("$Self->{obj_dir}/*.cpp")) {
     $got1 = 1 if $file =~ /__1/;
     check($file);
 }
-$got1 or $Self->error("No __1 split file found");
+$got1 or error("No __1 split file found");
 
 ok(1);
 1;
@@ -32,7 +32,7 @@ sub check {
     my $filename = shift;
     my $size = -s $filename;
     printf "  File %6d  %s\n", $size, $filename if $Self->{verbose};
-    my $fh = IO::File->new("<$filename") or $Self->error("$! $filenme");
+    my $fh = IO::File->new("<$filename") or error("$! $filenme");
     my @funcs;
     while (defined (my $line = $fh->getline)) {
 	if ($line =~ /^(void|IData)\s+(.*::.*)/) {
@@ -50,6 +50,6 @@ sub check {
 	}
     }
     if ($#funcs > 0) {
-	$Self->error("Split had multiple functions in $filename\n\t".join("\n\t",@funcs));
+        error("Split had multiple functions in $filename\n\t".join("\n\t",@funcs));
     }
 }

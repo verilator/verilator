@@ -7,20 +7,22 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(simulator => 1);
+
 top_filename("t/t_assert_synth.v");
 
-compile (
-	 v_flags2 => ['+define+FAILING_PARALLEL'],
-	 verilator_flags2 => ['--assert'],
-	 nc_flags2 => ['+assert'],
-	 );
+compile(
+    v_flags2 => ['+define+FAILING_PARALLEL'],
+    verilator_flags2 => ['--assert'],
+    nc_flags2 => ['+assert'],
+    );
 
-execute (
-	 check_finished=>0,
-	 fails => $Self->{v3},
-	 expect=>
+execute(
+    check_finished => 0,
+    fails => $Self->{vlt},
+    expect =>
 '%Error: t_assert_synth.v:\d+: Assertion failed in top.t: synthesis parallel_case'
-	 );
+    );
 
 ok(1);
 1;

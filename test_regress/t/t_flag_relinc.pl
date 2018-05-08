@@ -7,11 +7,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$Self->{vlt} or $Self->skip("Verilator only test");
+scenarios(vlt => 1);
 
-compile (
+compile(
     v_flags2 => ["--relative-includes",
-		 "--lint-only $Self->{t_dir}/t_flag_relinc_dir/chip/t_flag_relinc_sub.v"],
+                 "--lint-only $Self->{t_dir}/t_flag_relinc_dir/chip/t_flag_relinc_sub.v"],
     make_top_shell => 0,
     make_main => 0,
     verilator_make_gcc => 0,

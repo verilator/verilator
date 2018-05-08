@@ -5,13 +5,15 @@
 
 `include "verilated.v"
 
+`define STRINGIFY(x) `"x`"
+
 module t;
    `verilator_file_descriptor infile, outfile;
    integer count, a;
 
    initial begin
       infile = $fopen("t/t_sys_file_scan_input.dat", "r");
-      outfile = $fopen("obj_dir/t_sys_file_scan/t_sys_file_scan_test.log", "w");
+      outfile = $fopen({`STRINGIFY(`TEST_OBJ_DIR),"/t_sys_file_scan_test.log"}, "w");
 
       count = 1234;
 `ifdef TEST_VERBOSE

@@ -7,16 +7,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$Self->skip("Verilator only test") if !$Self->{vlt};
+scenarios(vlt => 1);
 
 top_filename("t/t_pipe_filter.v");
 
-compile (
+compile(
     verilator_flags2 => ['-E --pipe-filter \'perl t/t_pipe_exit_bad.pf\' '],
-    verilator_make_gcc=>0,
+    verilator_make_gcc => 0,
     stdout_filename => $stdout_filename,
-    fails=>1,
-    expect=>
+    fails => 1,
+    expect =>
 '%Error: t_pipe_exit_bad.pf: Intentional bad exit status....*',
     );
 ok(1);

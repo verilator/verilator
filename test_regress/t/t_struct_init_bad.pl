@@ -7,13 +7,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(simulator => 1);
+
 top_filename("t/t_struct_init.v");
 
-
-compile (
+compile(
     v_flags2 => ['+define+T_STRUCT_INIT_BAD'],
     fails => 1,
-    expect=>
+    expect =>
 '%Error: t/t_struct_init.v:\d+: Assignment pattern contains duplicate entry: b1
 %Error: Exiting due to.*'
     );

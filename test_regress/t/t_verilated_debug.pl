@@ -7,14 +7,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(vlt_all => 1);
+
 $Self->{verilated_debug} = 1;
 
-compile (
+compile(
     verilator_flags2 => [],
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 ok(files_identical("$Self->{obj_dir}/vlt_sim.log", "t/$Self->{name}.out"));

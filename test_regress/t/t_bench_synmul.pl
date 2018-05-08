@@ -7,6 +7,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(simulator => 1);
+
 top_filename("t/t_math_synmul.v");
 
 $Self->{cycles} = $Self->{benchmark}||0;
@@ -14,12 +16,12 @@ $Self->{cycles} = 100 if $Self->{cycles}<100;
 
 $Self->{sim_time} = $Self->{cycles}*100;
 
-compile (
+compile(
     v_flags2 => ["+define+SIM_CYCLES=$Self->{cycles} --stats"],
     );
 
-execute (
-    check_finished=>1,
+execute(
+    check_finished => 1,
     );
 
 ok(1);

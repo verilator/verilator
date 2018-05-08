@@ -7,13 +7,15 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 v_flags2 => ["--lint-only"],
-	 fails=>$Self->{v3},
-	 expect=>
+scenarios(simulator => 1);
+
+compile(
+    v_flags2 => ["--lint-only"],
+    fails => $Self->{vlt},
+    expect =>
 '%Error: t/t_dpi_name_bad.v:\d+: DPI function has illegal characters in C identifier name: badly.named
 %Error: Exiting due to .*'
-	 );
+    );
 
 ok(1);
 1;

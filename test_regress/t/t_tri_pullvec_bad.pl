@@ -7,12 +7,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$Self->{vlt} or $Self->skip("Verilator only test");
+scenarios(vlt_all => 1);
 
-compile (
+compile(
     v_flags2 => ["--lint-only"],
-    fails=>$Self->{v3},
-    expect=>
+    fails => $Self->{vlt},
+    expect =>
 '%Error: t/t_tri_pullvec_bad.v:\d+: Unsupported: Conflicting pull directions.
 %Error: t/t_tri_pullvec_bad.v:\d+: ... Location of conflicting pull.
 %Error: t/t_tri_pullvec_bad.v:\d+: Unsupported: Conflicting pull directions.

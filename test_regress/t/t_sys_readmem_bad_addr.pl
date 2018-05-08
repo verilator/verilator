@@ -7,14 +7,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-compile (
-	 );
+scenarios(simulator => 1);
 
-execute (
-	 fails=>$Self->{v3},
-	 expect=>
+compile(
+    );
+
+execute(
+    fails => $Self->{vlt},
+    expect =>
 '%Error: t/t_sys_readmem_bad_addr.mem:\d+: \$readmem file address beyond bounds of array',
-     );
+    );
 
 ok(1);
 1;
