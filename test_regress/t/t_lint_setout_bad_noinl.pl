@@ -7,9 +7,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-top_filename("t/t_lint_setout_bad.v");
+scenarios(vlt_all => 1);
 
-$Self->{vlt} or $Self->skip("Verilator only test");
+top_filename("t/t_lint_setout_bad.v");
 
 compile(
     v_flags2 => ["--lint-only -Oi"],

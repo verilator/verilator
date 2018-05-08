@@ -3,6 +3,8 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2003-2007 by Wilson Snyder.
 
+`define STRINGIFY(x) `"x`"
+
 module t (/*AUTOARG*/
    // Inputs
    clk
@@ -40,7 +42,7 @@ module t (/*AUTOARG*/
 //`define WAVES
 `ifdef WAVES
    initial begin
-      $dumpfile("obj_dir/t_gen_intdot/t_gen_intdot.vcd");
+      $dumpfile({`STRINGIFY(`TEST_OBJ_DIR),"/simx.vcd"});
       $dumpvars(12, t);
    end
 `endif

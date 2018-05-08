@@ -7,6 +7,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(simulator => 1);
+
 top_filename("t/t_assert_cover.v");
 
 compile(
@@ -28,10 +30,10 @@ if ($Self->{nc}) {
         $fh->printf("report_html -both -instance * > $Self->{obj_dir}/${name}__nccover.html\n");
         $fh->close;
     }
-    $Self->run(logfile => "$Self->{obj_dir}/${name}__nccover.log",
-               tee => 0,
-               cmd => [($ENV{VERILATOR_ICCR}||'iccr'),
-                       "-test ${name} ${cf}"]);
+    run(logfile => "$Self->{obj_dir}/${name}__nccover.log",
+        tee => 0,
+        cmd => [($ENV{VERILATOR_ICCR}||'iccr'),
+                "-test ${name} ${cf}"]);
 }
 
 file_grep($Self->{run_log_filename}, qr/COVER: Cyc==4/);

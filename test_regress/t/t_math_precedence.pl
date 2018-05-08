@@ -7,7 +7,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-#!$Self->{vcs} or $Self->unsupported("VCS does ** wrong, fixed in 2014");
+scenarios(simulator => 1);
+
+#!$Self->{vcs} or unsupported("VCS does ** wrong, fixed in 2014");
 
 compile(
     );

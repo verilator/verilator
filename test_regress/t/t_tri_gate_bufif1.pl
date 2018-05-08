@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
 # Copyright 2003-2009 by Wilson Snyder. This program is free software; you can
@@ -7,9 +6,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-top_filename("t/t_tri_gate.v");
+scenarios(vlt_all => 1);
 
-$Self->{vlt} or $Self->skip("Verilator only test");
+top_filename("t/t_tri_gate.v");
 
 compile(
     make_top_shell => 0,

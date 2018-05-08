@@ -19,4 +19,4 @@ $ENV{PWD} = Cwd::getcwd();  # Else chdir leaves the .. which confuses later comm
 @args = map { s!.*test_regress/!!; $_; } @args;
 
 exec("./driver.pl", @args);
-die;
+die "$!, in exec";

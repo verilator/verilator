@@ -7,6 +7,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(vlt => 1);
+
 my $root = "..";
 
 compile(
@@ -36,7 +38,7 @@ foreach my $dfile (glob("$Self->{obj_dir}/*.d")) {
 foreach my $file (sort keys %hit) {
     if (!$hit{$file}
         && $file !~ /_sc/) {
-        $Self->error("Include file not covered by t_verilated_all test: ",$file);
+        error("Include file not covered by t_verilated_all test: ",$file);
     }
 }
 

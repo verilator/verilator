@@ -7,6 +7,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(simulator => 1);
+
 compile(
     v_flags2 => ["--savable"],
     save_time => 500,
@@ -17,7 +19,7 @@ execute(
     all_run_flags => ['+save_time=500'],
     );
 
--r "$Self->{obj_dir}/saved.vltsv" or $Self->error("Saved.vltsv not created\n");
+-r "$Self->{obj_dir}/saved.vltsv" or error("Saved.vltsv not created\n");
 
 execute(
     all_run_flags => ['+save_restore=1'],

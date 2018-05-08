@@ -7,7 +7,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$Self->{vlt} or $Self->skip("Verilator only test");
+scenarios(vlt => 1);
 
 $Self->{golden_out} ||= "t/$Self->{name}.out";
 my $stdout_filename = "$Self->{obj_dir}/$Self->{name}__test.vpp";
@@ -46,14 +46,14 @@ sub preproc_check {
 	    if ($line =~ /^Line_Preproc_Check\s+(\d+)/) {
 		my $linecmt = $1;
 		my $check = shift @Line_Checks;
-		if (!$check) { $Self->error("$filename2:$.: Extra Line_Preproc_Check\n"); }
-		if ($linecmt != $check) { $Self->error("$filename2:$.: __LINE__ inserted $linecmt, exp=$check\n"); }
-		if ($lineno != $check)  { $Self->error("$filename2:$.: __LINE__ on `line $lineno, exp=$check\n"); }
+                if (!$check) { error("$filename2:$.: Extra Line_Preproc_Check\n"); }
+                if ($linecmt != $check) { error("$filename2:$.: __LINE__ inserted $linecmt, exp=$check\n"); }
+                if ($lineno != $check)  { error("$filename2:$.: __LINE__ on `line $lineno, exp=$check\n"); }
 	    }
 	}
 	$fh->close;
     }
-    if ($Line_Checks[0]) { $Self->error("$filename2: Missing a Line_Preproc_Check\n"); }
+    if ($Line_Checks[0]) { error("$filename2: Missing a Line_Preproc_Check\n"); }
     return 1;
 }
 

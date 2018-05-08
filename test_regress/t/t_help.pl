@@ -7,7 +7,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$Self->{vlt} or $Self->skip("Verilator only test");
+scenarios(dist => 1);
 
 foreach my $prog (
     "../bin/verilator",
@@ -15,11 +15,11 @@ foreach my $prog (
     "../bin/verilator_difftree",
     "../bin/verilator_profcfunc",
     ) {
-    $Self->run(fails => 1,
-               cmd => ["perl",$prog,
-                       "--help"],
-               logfile => "$Self->{obj_dir}/t_help.log",
-               tee => 0,
+    run(fails => 1,
+        cmd => ["perl",$prog,
+                "--help"],
+        logfile => "$Self->{obj_dir}/t_help.log",
+        tee => 0,
         );
     file_grep ("$Self->{obj_dir}/t_help.log", qr/DISTRIBUTION/i);
 }

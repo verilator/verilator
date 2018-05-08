@@ -7,6 +7,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(dist => 1);
+
 # This test now does nothing, because using DRIVER_STD=oldest tends to blow up glibc.
 
 ok(1);

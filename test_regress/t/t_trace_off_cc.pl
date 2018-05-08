@@ -7,6 +7,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(simulator => 1);
+
 top_filename("t/t_trace_ena.v");
 
 compile(
@@ -18,7 +20,7 @@ execute(
     );
 
 if ($Self->{vlt}) {
-    !-r "$Self->{obj_dir}/simx.vcd" or $Self->error("Tracing should be off\n");
+    !-r "$Self->{obj_dir}/simx.vcd" or error("Tracing should be off\n");
 }
 
 ok(1);

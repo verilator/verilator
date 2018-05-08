@@ -7,11 +7,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-top_filename("t/t_initial_edge.v");
-
-# This works with other simulators, we we don't run it for them. It should
+# This works with other vlt_alls, we we don't run it for them. It should
 # fail with Verilator if --x-initial-edge is not specified.
-$Self->{vlt} or $Self->skip("Verilator only test");
+
+scenarios(vlt_all => 1);
+
+top_filename("t/t_initial_edge.v");
 
 compile(
     );

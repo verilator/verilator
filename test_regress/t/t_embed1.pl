@@ -9,6 +9,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 use File::Spec;
 
+scenarios(simulator => 1);
+
 my $self = $Self;
 my $child_dir = "$Self->{obj_dir}_child";
 mkdir $child_dir;
@@ -21,19 +23,19 @@ mkdir $child_dir;
          verilator_flags => ["-cc", "-Mdir", "${child_dir}", "--debug-check"],
         );
 
-    $Self->run(logfile => "${child_dir}/vlt_compile.log",
-               cmd => \@cmdargs);
+    run(logfile => "${child_dir}/vlt_compile.log",
+        cmd => \@cmdargs);
 
-    $Self->run(logfile => "${child_dir}/vlt_gcc.log",
-               cmd => ["cd ${child_dir} && ",
-                       "make", "-f".getcwd()."/Makefile_obj",
-                       "CPPFLAGS_DRIVER=-D".uc($self->{name}),
-                       ($opt_verbose ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1":""),
-                       "MAKE_MAIN=0",
-                       "VM_PREFIX=$self->{VM_PREFIX}_child",
-                       "V$self->{name}_child__ALL.a",  # bypass default rule, make archive
-                       ($param{make_flags}||""),
-               ]);
+    run(logfile => "${child_dir}/vlt_gcc.log",
+        cmd => ["cd ${child_dir} && ",
+                "make", "-f".getcwd()."/Makefile_obj",
+                "CPPFLAGS_DRIVER=-D".uc($self->{name}),
+                ($opt_verbose ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1":""),
+                "MAKE_MAIN=0",
+                "VM_PREFIX=$self->{VM_PREFIX}_child",
+                "V$self->{name}_child__ALL.a",  # bypass default rule, make archive
+                ($param{make_flags}||""),
+        ]);
 }
 
 # Compile the parent (might be with other than verilator)

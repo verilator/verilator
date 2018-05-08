@@ -7,7 +7,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-$Self->{vcs} and $Self->unsupported("VCS unsupported");
+scenarios(simulator => 1);
+$Self->{vcs} and unsupported("VCS unsupported");
 
 compile(
     v_flags2 => ['+define+T_PACKAGE_EXPORT',],

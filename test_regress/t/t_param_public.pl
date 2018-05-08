@@ -7,6 +7,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(simulator => 1);
+
 if ($Self->{vlt}) {
     compile(
         verilator_flags2 => ["--exe $Self->{t_dir}/$Self->{name}.cpp"],

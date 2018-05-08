@@ -11,9 +11,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # after building so we make sure to run with --gdbbt, so if it dumps we'll
 # get a trace.
 
+scenarios(simulator => 1);
+
 $DEBUG_QUIET = "--debug --debugi 0 --gdbbt --no-dump-tree";
 
-$Self->run(cmd => ["perl", "../bin/verilator", $DEBUG_QUIET, "-V"]);
+run(cmd => ["perl", "../bin/verilator", $DEBUG_QUIET, "-V"]);
 
 compile(
     verilator_flags2 => [$DEBUG_QUIET, "--trace"],

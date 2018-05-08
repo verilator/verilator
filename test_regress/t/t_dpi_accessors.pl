@@ -10,6 +10,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # 8-Mar-2012: Modifications for this test contributed by Jeremy Bennett and
 # Jie Xu.
 
+scenarios(simulator => 1);
+
 compile(
     make_top_shell   => 0,
     make_main        => 0,

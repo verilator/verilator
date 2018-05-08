@@ -33,8 +33,6 @@ ifneq ($(NC_ROOT),)
 #PRODUCTS += --nc
 endif
 
-PRODUCTS += --vlt
-
 # Run tests in parallel.  Requires Parallel::Forker to be installed.
 ifeq ($(CFG_WITH_LONGTESTS),yes)
  DRIVER_FLAGS += -j 0
@@ -46,7 +44,7 @@ endif
 
 .PHONY: test
 test:
-	$(PERL) driver.pl $(DRIVER_FLAGS) $(PRODUCTS)
+	$(PERL) driver.pl $(DRIVER_FLAGS) --vlt --dist
 
 ######################################################################
 
@@ -82,4 +80,4 @@ print-cxx-version:
 ######################################################################
 maintainer-copy::
 clean mostlyclean distclean maintainer-clean::
-	-rm -rf obj_dir simv* simx* csrc cov_work INCA_libs *.log *.key logs vc_hdrs.h
+	-rm -rf obj_* simv* simx* csrc cov_work INCA_libs *.log *.key logs vc_hdrs.h

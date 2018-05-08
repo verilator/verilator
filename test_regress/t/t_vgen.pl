@@ -7,13 +7,15 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-if (eval "use Bit::Vector; return 2;" != 2) { $Self->error("Please install Bit::Vector"); }
+scenarios(simulator => 1);
+
+if (eval "use Bit::Vector; return 2;" != 2) { error("Please install Bit::Vector"); }
 
 top_filename("$Self->{obj_dir}/vgen.v");
 
-$Self->run(cmd => ["./vgen.pl",
-                   "-o $Self->{top_filename}",
-                   #"--seed 0",
+run(cmd => ["./vgen.pl",
+            "-o $Self->{top_filename}",
+            #"--seed 0",
            ]);
 
 compile(

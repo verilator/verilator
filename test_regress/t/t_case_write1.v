@@ -5,6 +5,8 @@
 
 `include "verilated.v"
 
+`define STRINGIFY(x) `"x`"
+
 module t (/*AUTOARG*/
    // Inputs
    clk
@@ -32,8 +34,8 @@ module t (/*AUTOARG*/
       crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
       if (cyc==1) begin
 	 crc <= 64'h00000000_00000097;
-	 $write("Open obj_dir/t_case_write1/t_case_write1_logger.log\n");
-	 fdtmp = $fopen("obj_dir/t_case_write1/t_case_write1_logger.log", "w");
+         $write("%s", {"Open ", `STRINGIFY(`TEST_OBJ_DIR), "/t_case_write1_logger.log\n"});
+         fdtmp = $fopen({`STRINGIFY(`TEST_OBJ_DIR), "/t_case_write1_logger.log"}, "w");
          fd <= fdtmp;
       end
       if (cyc==90) begin

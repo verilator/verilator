@@ -7,6 +7,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(simulator => 1);
+
 top_filename("t/t_sys_sformat.v");
 
 compile(
@@ -16,7 +18,7 @@ compile(
 
 if ($Self->cxx_version =~ /clang version ([0-9]+\.[0-9]+)/
     && ($1 >= 3.8 && $1 <= 5.0)) {
-    $Self->skip("Known clang bug");
+    skip("Known clang bug");
     #Here:   if (VL_UNLIKELY(VL_NEQ_W(12, __Vtemp1, vlSymsp->TOP__t.__PVT__str)))
 } else{
     execute(

@@ -7,6 +7,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(dist => 1);
+
 my $root = "..";
 my $Debug;
 
@@ -53,9 +55,9 @@ foreach my $file (sort keys %files) {
 
 if (keys %warns) {
     # First warning lists everything as that's shown in the driver summary
-    $Self->error("Files mismatch with manifest: ",join(' ',sort keys %warns));
+    error("Files mismatch with manifest: ",join(' ',sort keys %warns));
     foreach my $file (sort keys %warns) {
-        $Self->error($warns{$file});
+        error($warns{$file});
     }
 }
 

@@ -9,6 +9,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 #       irun -sv top.v t_dpi_export.v -cpost t_dpi_export_c.c -end
 
+scenarios(simulator => 1);
+
 compile(
     # Amazingly VCS, NC and Verilator all just accept the C file here!
     v_flags2 => ["t/t_dpi_export_c.cpp"],

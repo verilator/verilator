@@ -7,6 +7,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+scenarios(simulator => 1);
+
 top_filename("t/t_sys_readmem.v");
 
 # Use random reset to ensure we're fully initializing arrays before
@@ -33,7 +35,7 @@ for (my $i = 1; $i <= 5; $i++) {
     my @diffs = `diff $gold $out`;
     if (0 < scalar @diffs) {
         print @diffs;
-        $Self->error("Got unexpected diffs against gold.");
+        error("Got unexpected diffs against gold.");
     }
 }
 
