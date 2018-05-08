@@ -16,7 +16,7 @@ compile(
     make_main => 0,
     );
 
-if ($Self->{vlt}) {
+if ($Self->{vlt_all}) {
     file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.h", qr/sc_in<sc_bv<1>\s> \s+ i1;/x);
     file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.h", qr/sc_in<sc_bv<8>\s> \s+ i8;/x);
     file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.h", qr/sc_in<sc_bv<16>\s> \s+ i16;/x);

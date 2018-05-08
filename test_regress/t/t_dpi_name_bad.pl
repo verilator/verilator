@@ -11,7 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     v_flags2 => ["--lint-only"],
-    fails => $Self->{vlt},
+    fails => $Self->{vlt_all},
     expect =>
 '%Error: t/t_dpi_name_bad.v:\d+: DPI function has illegal characters in C identifier name: badly.named
 %Error: Exiting due to .*'

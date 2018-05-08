@@ -9,7 +9,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-if ($Self->{vlt}) {
+if ($Self->{vlt_all}) {
     compile(
         verilator_flags2 => ["--exe $Self->{t_dir}/$Self->{name}.cpp"],
         make_top_shell => 0,

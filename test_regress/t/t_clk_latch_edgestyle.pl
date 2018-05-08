@@ -11,7 +11,7 @@ scenarios(simulator => 1);
 
 top_filename("t/t_clk_latch.v");
 
-my $fail = ($Self->{vlt} && verilator_version() !~ /\(ord\)/);
+my $fail = ($Self->{vlt_all} && verilator_version() !~ /\(ord\)/);
 
 compile(
     v_flags2 => ['+define+EDGE_DETECT_STYLE'],

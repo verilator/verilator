@@ -12,7 +12,7 @@ scenarios(simulator => 1);
 top_filename("t/t_unopt_combo.v");
 
 compile(
-    fails => $Self->{vlt},
+    fails => $Self->{vlt_all},
     expect =>
 '%Warning-UNOPTFLAT: t/t_unopt_combo.v:\d+: Signal unoptimizable: Feedback to clock or circular logic: t.c
 %Warning-UNOPTFLAT: Use "/\* verilator lint_off UNOPTFLAT \*/" and lint_on around source to disable this message.
@@ -25,7 +25,7 @@ compile(
     );
 
 execute(
-    ) if !$Self->{vlt};
+    ) if !$Self->{vlt_all};
 
 ok(1);
 1;

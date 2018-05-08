@@ -11,14 +11,14 @@ scenarios(simulator => 1);
 
 compile(
     # Access is so we can dump waves
-    v_flags2 => [$Self->{vlt}?'-trace':' +access+rwc'],
+    v_flags2 => [$Self->{vlt_all} ? '-trace' : ' +access+rwc'],
     );
 
 execute(
     check_finished => 1,
     );
 
-if ($Self->{vlt}) {
+if ($Self->{vlt_all}) {
     file_grep     ("$Self->{obj_dir}/simx.vcd", qr/\$enddefinitions/x);
     my $sig = quotemeta("bra[ket]slash/dash-colon:9");
     file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ $sig/);

@@ -9,7 +9,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 # Not yet working on Verilator
-$Self->{vlt} and unsupported("Verilator unsupported");
+$Self->{vlt_all} and unsupported("Verilator unsupported");
 
 compile(
     );

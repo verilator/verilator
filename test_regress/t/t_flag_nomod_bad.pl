@@ -11,7 +11,7 @@ scenarios(vlt => 1);
 
 compile(
     v_flags2 => ["--lint-only"],
-    fails => $Self->{vlt},
+    fails => 1,
     expect =>
 '%Error: No top level module found
 %Error: Exiting due to',

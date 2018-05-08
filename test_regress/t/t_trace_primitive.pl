@@ -17,7 +17,7 @@ execute(
     check_finished => 1,
     );
 
-if ($Self->{vlt}) {
+if ($Self->{vlt_all}) {
    file_grep("$Self->{obj_dir}/simx.vcd", "sub_t_i");
 };
 

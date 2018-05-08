@@ -13,7 +13,7 @@ top_filename("t/t_dpi_context.v");
 
 compile(
     v_flags2 => ["t/t_dpi_context_c.cpp"],
-    verilator_flags2 => [$Self->{vlt}?"-O0":""],
+    verilator_flags2 => [$Self->{vlt_all} ? "-O0" : ""],
     );
 
 execute(

@@ -11,7 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     v_flags2 => ["--lint-only"],
-    fails => $Self->{vlt},
+    fails => $Self->{vlt_all},
     expect =>
 '%Error: t/t_dpi_2exp_bad.v:11: Function was already DPI Exported, duplicate not allowed: dpix_twice
 %Error: Exiting due to .*'

@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 compile(
-    fails => $Self->{vlt},
+    fails => $Self->{vlt_all},
     nc => 0,  # Need to get it not to give the prompt
     expect =>
 q{%Error: t/t_mem_multi_ref_bad.v:\d+: Illegal bit or array select; type does not have a bit range, or bad dimension: type is (bit|logic)

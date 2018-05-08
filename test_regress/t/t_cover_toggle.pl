@@ -21,7 +21,7 @@ execute(
 inline_checks();
 
 file_grep ($Self->{stats}, qr/Coverage, Toggle points joined\s+(\d+)/i, 25)
-    if $Self->{vlt};
+    if $Self->{vlt_all};
 
 ok(1);
 1;

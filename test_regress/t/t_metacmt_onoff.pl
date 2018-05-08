@@ -14,7 +14,7 @@ compile(
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    fails => $Self->{vlt},
+    fails => $Self->{vlt_all},
     expect =>
 '%Warning-LITENDIAN: t/t_metacmt_onoff.v:\d+: Little bit endian vector: MSB < LSB of bit range: 0:1
 %Warning-LITENDIAN: Use "/\* verilator lint_off LITENDIAN \*/" and lint_on around source to disable this message.

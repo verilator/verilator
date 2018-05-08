@@ -12,7 +12,7 @@ scenarios(vlt => 1);
 top_filename("t/t_flag_topmodule.v");
 
 compile(
-    fails => $Self->{vlt},
+    fails => 1,
     v_flags2 => ["--top-module notfound"],
     nc => 0,  # Need to get it not to give the prompt
     expect =>

@@ -15,7 +15,7 @@ compile(
     verilator_flags2 => ['+define+ISOLATE --stats'],
     );
 
-if ($Self->{vlt}) {
+if ($Self->{vlt_all}) {
     file_grep($Self->{stats}, qr/Optimizations, isolate_assignments blocks\s+5/i);
 }
 

@@ -15,7 +15,7 @@ compile(
     verilator_flags2 => ['+define+NOUSE_INLINE', '+define+USE_PUBLIC', '--stats', '--norelative-cfuncs'],
     );
 
-if ($Self->{vlt}) {
+if ($Self->{vlt_all}) {
     # Fewer optimizations than t_inst_tree_inl0_pub1 which allows
     # relative CFuncs:
     file_grep ($Self->{stats}, qr/Optimizations, Combined CFuncs\s+(\d+)/i, 31);

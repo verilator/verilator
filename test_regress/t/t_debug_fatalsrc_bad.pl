@@ -11,7 +11,7 @@ scenarios(vlt => 1);
 
 compile(
     verilator_flags2 => ["--debug-fatalsrc"],
-    fails => $Self->{vlt},
+    fails => $Self->{vlt_all},
     expect =>
 '%Error: Internal Error: .*: --debug-fatal-src
 %Error: Internal Error: See the manual and http://www.veripool.org/verilator for more assistance.

@@ -405,7 +405,6 @@ sub new {
 	ms_run_flags => [split(/\s+/,"-lib $self->{obj_dir}/work -c -do 'run -all;quit' ")],
 	# Verilator
 	vlt => 0,
-	'v3' => 0,
 	verilator_flags => ["-cc",
 			    "-Mdir $self->{obj_dir}",
 			    "-OD",  # As currently disabled unless -O3
@@ -418,6 +417,8 @@ sub new {
 	stdout_filename => undef,	# Redirect stdout
 	%$self};
     bless $self, $class;
+
+    $self->{vlt_all} = $self->{vlt};  # Any Verilator scenario
 
     $self->{VM_PREFIX} ||= "V".$self->{name};
     $self->{stats} ||= "$self->{obj_dir}/V".$self->{name}."__stats.txt";
@@ -557,6 +558,10 @@ sub _read_status {
     my $filename = $self->{status_filename};
     use vars qw($VAR1);
     local $VAR1;
+    if (!-r $filename) {
+        $self->error("driver.pl _read_status file missing: $filename");
+        return;
+    }
     require $filename or die "%Error: $! $filename,";
     if ($VAR1) {
 	%{$self} = %{$VAR1};
@@ -729,7 +734,7 @@ sub compile {
 		    fails=>$param{fails},
 		    cmd=>\@cmd);
     }
-    elsif ($param{vlt}) {
+    elsif ($param{vlt_all}) {
 	my @cmdargs = $self->compile_vlt_flags(%param);
 
 	if ($self->sc && !$self->have_sc) {
@@ -863,7 +868,7 @@ sub execute {
 		    expect=>$param{vcs_run_expect},	# non-verilator expect isn't the same
 		    );
     }
-    elsif ($param{vlt}
+    elsif ($param{vlt_all}
 	#&& (!$param{needs_v4} || -r "$ENV{VERILATOR_ROOT}/src/V3Gate.cpp")
 	) {
 	$param{executable} ||= "$self->{obj_dir}/$param{VM_PREFIX}";
@@ -887,7 +892,7 @@ sub execute {
 sub inline_checks {
     my $self = (ref $_[0]? shift : $Self);
     return 1 if $self->errors || $self->skips || $self->unsupporteds;
-    return 1 if !$self->{vlt};
+    return 1 if !$self->{vlt_all};
 
     my %param = (%{$self}, @_);	   # Default arguments are from $self
 

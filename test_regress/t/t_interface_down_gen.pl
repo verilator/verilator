@@ -8,7 +8,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 
 scenarios(simulator => 1);
-$Self->{vlt} and unsupported("Verilator unsupported, interface generates changing types");
+$Self->{vlt_all} and unsupported("Verilator unsupported, interface generates changing types");
 $Self->{vcs} and unsupported("Commercially unsupported, interface crossrefs");
 
 compile(
