@@ -956,13 +956,13 @@ port<nodep>:			// ==IEEE: port
 			{ $$=$2; /*VARDTYPE-same*/ $$->addNextNull(VARDONEP($$,$3,$4)); }
 	//
 	|	portDirNetE data_type           portSig variable_dimensionListE sigAttrListE '=' constExpr
-			{ $$=$3; VARDTYPE($2); AstVar* vp=VARDONEP($$,$4,$5); $$->addNextNull(vp); vp->valuep($7); }
+			{ $$=$3; VARDTYPE($2); if (AstVar* vp=VARDONEP($$,$4,$5)) { $$->addNextNull(vp); vp->valuep($7); } }
 	|	portDirNetE yVAR data_type      portSig variable_dimensionListE sigAttrListE '=' constExpr
-			{ $$=$4; VARDTYPE($3); AstVar* vp=VARDONEP($$,$5,$6); $$->addNextNull(vp); vp->valuep($8); }
+			{ $$=$4; VARDTYPE($3); if (AstVar* vp=VARDONEP($$,$5,$6)) { $$->addNextNull(vp); vp->valuep($8); } }
 	|	portDirNetE yVAR implicit_typeE portSig variable_dimensionListE sigAttrListE '=' constExpr
-			{ $$=$4; VARDTYPE($3); AstVar* vp=VARDONEP($$,$5,$6); $$->addNextNull(vp); vp->valuep($8); }
+			{ $$=$4; VARDTYPE($3); if (AstVar* vp=VARDONEP($$,$5,$6)) { $$->addNextNull(vp); vp->valuep($8); } }
 	|	portDirNetE /*implicit*/        portSig variable_dimensionListE sigAttrListE '=' constExpr
-			{ $$=$2; /*VARDTYPE-same*/ AstVar* vp=VARDONEP($$,$3,$4); $$->addNextNull(vp); vp->valuep($6); }
+			{ $$=$2; /*VARDTYPE-same*/ if (AstVar* vp=VARDONEP($$,$3,$4)) { $$->addNextNull(vp); vp->valuep($6); } }
  	;
 
 portDirNetE:			// IEEE: part of port, optional net type and/or direction
@@ -3845,6 +3845,7 @@ vltOnFront<errcodeen>:
 %%
 
 int V3ParseImp::bisonParse() {
+    // Use --debugi-bison 9 to enable this
     if (PARSEP->debugBison()>=9) yydebug = 1;
     return yyparse();
 }
