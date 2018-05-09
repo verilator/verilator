@@ -1783,17 +1783,17 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     }
 
     if (v3Global.opt.threads()) {  // THREADED-TODO move to per-train
-	uint32_t trainId = 0;
-	putsDecoration("// Train "+cvtToStr(trainId)+" start\n");
-	puts("VL_DEBUG_IF(VL_DBG_MSGF(\"Train starting, trainId="+cvtToStr(trainId)+"\\n\"););\n");
-	puts("Verilated::trainId("+cvtToStr(trainId)+");\n");
+	uint32_t mtaskId = 0;
+	putsDecoration("// MTask "+cvtToStr(mtaskId)+" start\n");
+	puts("VL_DEBUG_IF(VL_DBG_MSGF(\"MTask starting, mtaskId="+cvtToStr(mtaskId)+"\\n\"););\n");
+	puts("Verilated::mtaskId("+cvtToStr(mtaskId)+");\n");
     }
     emitSettleLoop(
         (string("VL_DEBUG_IF(VL_DBG_MSGF(\"+ Clock loop\\n\"););\n")
          + (v3Global.opt.trace() ? "vlSymsp->__Vm_activity = true;\n" : "")
          + "_eval(vlSymsp);"), false);
-    if (v3Global.opt.threads()) {  // THREADED-TODO move to end of all trains on thread
-	puts("Verilated::endOfThreadTrain(vlSymsp->__Vm_evalMsgQp);\n");
+    if (v3Global.opt.threads()) {  // THREADED-TODO move to end of all mtasks on thread
+	puts("Verilated::endOfThreadMTask(vlSymsp->__Vm_evalMsgQp);\n");
     }
     if (v3Global.opt.threads()) {
 	puts("Verilated::endOfEval(vlSymsp->__Vm_evalMsgQp);\n");

@@ -354,5 +354,40 @@ typedef unsigned long long	vluint64_t;	///< 64-bit unsigned type
 #endif
 
 //=========================================================================
+// Performance counters
+
+#if VL_THREADED
+# if defined(__i386__) || defined(__x86_64__)
+/// The vluint64_t argument is loaded with a high-performance counter for profiling
+/// or 0x0 if not implemeted on this platform
+#  define VL_RDTSC(val) asm volatile("rdtsc" : "=A" (val))
+# elif defined(__aarch64__)
+#  define VL_RDTSC(val) asm volatile("mrs %[rt],PMCCNTR_EL0" : [rt] "=r" (val));
+# elif
+// We just silently ignore unknown OSes, as only leads to missing statistics
+#  define VL_RDTSC(val) (val) = 0;
+# endif
+#endif
+
+//=========================================================================
+// Threading related OS-specific functions
+
+#if VL_THREADED
+# if defined(__i386__) || defined(__x86_64__)
+/// For more efficient busy waiting on SMT CPUs, let the processor know
+/// we're just waiting so it can let another thread run
+#  define VL_CPU_RELAX() asm volatile("rep; nop" ::: "memory")
+# elif defined(__ia64__)
+#  define VL_CPU_RELAX() asm volatile("hint @pause" ::: "memory")
+# elif defined(__aarch64__)
+#  define VL_CPU_RELAX() asm volatile("yield" ::: "memory")
+# elif defined(__powerpc64__)
+#  define VL_CPU_RELAX() asm volatile("or 1, 1, 1; or 2, 2, 2;" ::: "memory")
+# elif
+#  error "Missing VL_CPU_RELAX() definition. Or, don't use VL_THREADED"
+# endif
+#endif
+
+//=========================================================================
 
 #endif /*guard*/

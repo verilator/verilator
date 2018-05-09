@@ -159,7 +159,11 @@ void VL_DBG_MSGF(const char* formatp, ...) VL_MT_SAFE {
     std::string out = _vl_string_vprintf(formatp, ap);
     va_end(ap);
     // printf("-imm-V{t%d,%" VL_PRI64 "d}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(), out.c_str());
-    VL_PRINTF_MT("-V{t%d,%" VL_PRI64 "d}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(), out.c_str());
+
+    // Using VL_PRINTF not VL_PRINTF_MT so that we can call VL_DBG_MSGF
+    // from within the guts of the thread execution machinery (and it goes
+    // to the screen and not into the queues we're debugging)
+    VL_PRINTF("-V{t%d,%" VL_PRI64 "d}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(), out.c_str());
 }
 
 #ifdef VL_THREADED
@@ -1599,7 +1603,8 @@ std::string VL_CVT_PACK_STR_NW(int lwords, WDataInP lwp) VL_MT_SAFE {
 Verilated::ThreadLocal::ThreadLocal()
     :
 #ifdef VL_THREADED
-    t_trainId(0),
+    t_mtaskId(0),
+    t_endOfEvalReqd(0),
 #endif
     t_dpiScopep(NULL), t_dpiFilename(0), t_dpiLineno(0) {
 }
@@ -1734,8 +1739,8 @@ const VerilatedScopeNameMap* Verilated::scopeNameMap() VL_MT_SAFE {
 }
 
 #ifdef VL_THREADED
-void Verilated::endOfThreadTrainGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
-    VL_DEBUG_IF(VL_DBG_MSGF("End of thread train\n"););
+void Verilated::endOfThreadMTaskGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
+    VL_DEBUG_IF(VL_DBG_MSGF("End of thread mtask\n"););
     VerilatedThreadMsgQueue::flush(evalMsgQp);
 }
 

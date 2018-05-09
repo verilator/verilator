@@ -111,6 +111,8 @@ extern vluint32_t VL_THREAD_ID() VL_MT_SAFE;
 
 #if VL_THREADED
 
+#define VL_LOCK_SPINS 50000  /// Number of times to spin for a mutex before relaxing
+
 /// Mutex, wrapped to allow -fthread_safety checks
 class VL_CAPABILITY("mutex") VerilatedMutex {
   private:
@@ -119,9 +121,19 @@ class VL_CAPABILITY("mutex") VerilatedMutex {
     VerilatedMutex() {}
     ~VerilatedMutex() {}
     /// Acquire/lock mutex
-    void lock() VL_ACQUIRE() { m_mutex.lock(); }
+    void lock() VL_ACQUIRE() {
+        // Try to acquire the lock by spinning.  If the wait is short,
+        // avoids a trap to the OS plus OS scheduler overhead.
+        if (VL_LIKELY(try_lock())) return;  // Short circuit loop
+        for (int i = 0; i < VL_LOCK_SPINS; ++i) {
+            if (VL_LIKELY(try_lock())) return;
+            VL_CPU_RELAX();
+        }
+        // Spinning hasn't worked, pay the cost of blocking.
+        m_mutex.lock();
+    }
     /// Release/unlock mutex
-     void unlock() VL_RELEASE() { m_mutex.unlock(); }
+    void unlock() VL_RELEASE() { m_mutex.unlock(); }
     /// Try to acquire mutex.  Returns true on success, and false on failure.
     bool try_lock() VL_TRY_ACQUIRE(true) { return m_mutex.try_lock(); }
 };
@@ -143,14 +155,21 @@ class VL_SCOPED_CAPABILITY VerilatedLockGuard {
 
 #else // !VL_THREADED
 
-// Empty classes to avoid #ifdefs everywhere
-class VerilatedMutex {};
+/// Empty non-threaded mutex to avoid #ifdefs in consuming code
+class VerilatedMutex {
+public:
+    void lock() {}
+    void unlock() {}
+};
+
+/// Empty non-threaded lock guard to avoid #ifdefs in consuming code
 class VerilatedLockGuard {
     VL_UNCOPYABLE(VerilatedLockGuard);
 public:
     explicit VerilatedLockGuard(VerilatedMutex&) {}
     ~VerilatedLockGuard() {}
 };
+
 #endif // VL_THREADED
 
 /// Remember the calling thread at construction time, and make sure later calls use same thread
@@ -336,7 +355,7 @@ class Verilated {
     // Not covered by mutex, as per-thread
     static VL_THREAD_LOCAL struct ThreadLocal {
 #ifdef VL_THREADED
-	vluint32_t t_trainId;  ///< Current train# executing on this thread
+        vluint32_t t_mtaskId;  ///< Current mtask# executing on this thread
 	vluint32_t t_endOfEvalReqd;  ///< Messages may be pending, thread needs endOf-eval calls
 #endif
 	const VerilatedScope* t_dpiScopep;  ///< DPI context scope
@@ -455,22 +474,29 @@ public:
     static size_t serializedSize() VL_PURE { return sizeof(s_s); }
     static void* serializedPtr() VL_MT_UNSAFE { return &s_s; } // Unsafe, for Serialize only
 #ifdef VL_THREADED
-    /// Set the trainId, called when a train starts
-    static void trainId(vluint32_t id) VL_MT_SAFE { t_s.t_trainId = id; }
-    static vluint32_t trainId() VL_MT_SAFE { return t_s.t_trainId; }
+    /// Set the mtaskId, called when an mtask starts
+    static void mtaskId(vluint32_t id) VL_MT_SAFE { t_s.t_mtaskId = id; }
+    static vluint32_t mtaskId() VL_MT_SAFE { return t_s.t_mtaskId; }
     static void endOfEvalReqdInc() VL_MT_SAFE { ++t_s.t_endOfEvalReqd; }
     static void endOfEvalReqdDec() VL_MT_SAFE { --t_s.t_endOfEvalReqd; }
-    /// Called at end of each thread train, before finishing eval
-    static void endOfThreadTrain(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
-	if (VL_UNLIKELY(t_s.t_endOfEvalReqd)) { endOfThreadTrainGuts(evalMsgQp); } }
+
+    /// Called at end of each thread mtask, before finishing eval
+    static void endOfThreadMTask(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
+        if (VL_UNLIKELY(t_s.t_endOfEvalReqd)) { endOfThreadMTaskGuts(evalMsgQp); }
+    }
     /// Called at end of eval loop
     static void endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
-	if (VL_UNLIKELY(t_s.t_endOfEvalReqd)) { endOfEvalGuts(evalMsgQp); } }
+        // It doesn't work to set endOfEvalReqd on the threadpool thread
+        // and then check it on the eval thread since it's thread local.
+        // It should be ok to call into endOfEvalGuts, it returns immediately
+        // if there are no transactions.
+        endOfEvalGuts(evalMsgQp);
+    }
 #endif
 
 private:
 #ifdef VL_THREADED
-    static void endOfThreadTrainGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
+    static void endOfThreadMTaskGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
     static void endOfEvalGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
 #endif
 };
@@ -526,6 +552,11 @@ extern IData  VL_RAND_RESET_I(int obits);	///< Random reset a signal
 extern QData  VL_RAND_RESET_Q(int obits);	///< Random reset a signal
 extern WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp);	///< Random reset a signal
 extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp);	///< Zero reset a signal (slow - else use VL_ZERO_W)
+
+#if VL_THREADED
+/// Return high-precision counter for profiling, or 0x0 if not available
+inline QData VL_RDTSC_Q() { vluint64_t val; VL_RDTSC(val); return val; }
+#endif
 
 /// Math
 extern WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, bool is_modulus);

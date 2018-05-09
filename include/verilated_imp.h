@@ -49,25 +49,25 @@ class VerilatedScope;
 // Threaded message passing
 
 #ifdef VL_THREADED
-/// Message, enqueued on a train, and consumed on the main eval thread
+/// Message, enqueued on an mtask, and consumed on the main eval thread
 class VerilatedMsg {
 public:
     // TYPES
     struct Cmp {
         bool operator() (const VerilatedMsg& a, const VerilatedMsg& b) const {
-	    return a.trainId() < b.trainId(); }
+            return a.mtaskId() < b.mtaskId(); }
     };
 private:
     // MEMBERS
-    vluint32_t 		m_trainId;  	///< Train that did enqueue
+    vluint32_t          m_mtaskId;      ///< MTask that did enqueue
     std::function<void()> m_cb; 	///< Lambda to execute when message received
 public:
     // CONSTRUCTORS
     VerilatedMsg(const std::function<void()>& cb)
-	: m_trainId(Verilated::trainId()), m_cb(cb) {}
+        : m_mtaskId(Verilated::mtaskId()), m_cb(cb) {}
     ~VerilatedMsg() {}
     // METHODS
-    vluint32_t trainId() const { return m_trainId; }
+    vluint32_t mtaskId() const { return m_mtaskId; }
     /// Execute the lambda function
     void run() const { m_cb(); }
 };
@@ -84,7 +84,9 @@ class VerilatedEvalMsgQueue  {
     VerilatedThreadQueue m_queue VL_GUARDED_BY(m_mutex);  ///< Message queue
 public:
     // CONSTRUCTORS
-    VerilatedEvalMsgQueue() : m_depth(0) { }
+    VerilatedEvalMsgQueue() : m_depth(0) {
+        assert(atomic_is_lock_free(&m_depth));
+    }
     ~VerilatedEvalMsgQueue() { }
 private:
     VL_UNCOPYABLE(VerilatedEvalMsgQueue);
@@ -92,7 +94,6 @@ public:
     // METHODS
     //// Add message to queue (called by producer)
     void post(const VerilatedMsg& msg) VL_EXCLUDES(m_mutex) {
-	Verilated::endOfEvalReqdInc(); // No mutex, threadsafe
 	VerilatedLockGuard guard(m_mutex);
 	m_queue.insert(msg);  // Pass by value to copy the message into queue
 	++m_depth;
@@ -114,10 +115,9 @@ public:
 	    m_queue.erase(it);
 	    m_mutex.unlock();
 	    m_depth--;  // Ok if outside critical section as only this code checks the value
-	    Verilated::endOfEvalReqdDec(); // No mutex, threadsafe
 	    {
-		VL_DEBUG_IF(VL_DBG_MSGF("Executing callback from trainId=%d\n", msg.trainId()););
-		msg.run();
+                VL_DEBUG_IF(VL_DBG_MSGF("Executing callback from mtaskId=%d\n", msg.mtaskId()););
+                msg.run();
 	    }
 	}
     }
@@ -143,8 +143,15 @@ private:
 public:
     /// Add message to queue, called by producer
     static void post(const VerilatedMsg& msg) VL_MT_SAFE {
-	Verilated::endOfEvalReqdInc();
-	threadton().m_queue.push(msg);  // Pass by value to copy the message into queue
+        // Handle calls to threaded routines outside
+        // of any mtask -- if an initial block calls $finish, say.
+        if (Verilated::mtaskId() == 0) {
+            // No queueing, just do the action immediately
+            msg.run();
+        } else {
+            Verilated::endOfEvalReqdInc();
+            threadton().m_queue.push(msg);  // Pass by value to copy the message into queue
+        }
     }
     /// Push all messages to the eval's queue
     static void flush(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
