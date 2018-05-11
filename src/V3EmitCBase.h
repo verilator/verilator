@@ -102,13 +102,13 @@ private:
     // VISITORS
     virtual void visit(AstNode* nodep) {
 	m_count++;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
     explicit EmitCBaseCounterVisitor(AstNode* nodep) {
 	m_count = 0;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~EmitCBaseCounterVisitor() {}
     int count() const { return m_count; }

@@ -51,13 +51,13 @@ class EmitCInlines : EmitCBaseVisitor {
     virtual void visit(AstNodeStmt*) {}
     // Default
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     //---------------------------------------
     // ACCESSORS
 public:
     explicit EmitCInlines(AstNetlist* nodep) {
-	nodep->accept(*this);
+        iterate(nodep);
 	if (v3Global.needHInlines()) {
 	    emitInt();
 	}

@@ -207,7 +207,7 @@ private:
     // VISITORS
     virtual void visit(AstNodeVarRef* nodep) {
         ++m_ops;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// We only allow a LHS ref for the var being set, and a RHS ref for something else being read.
 	if (nodep->varScopep()->varp()->isSc()) {
 	    clearSimple("SystemC sig");  // Don't want to eliminate the VL_ASSIGN_SI's
@@ -236,7 +236,7 @@ private:
 	m_substTreep = nodep->rhsp();
         if (!VN_IS(nodep->lhsp(), NodeVarRef))
 	    clearSimple("ASSIGN(non-VARREF)");
-	else nodep->iterateChildren(*this);
+        else iterateChildren(nodep);
 	// We don't push logic other then assignments/NOTs into SenItems
 	// This avoids a mess in computing what exactly a POSEDGE is
 	// V3Const cleans up any NOTs by flipping the edges for us
@@ -265,7 +265,7 @@ private:
 	    UINFO(5, "Non optimizable type: "<<nodep<<endl);
 	    clearSimple("Non optimizable type");
 	}
-	else nodep->iterateChildren(*this);
+        else iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
@@ -277,7 +277,7 @@ public:
 	m_dedupe = dedupe;
         m_ops = 0;
 	// Iterate
-	nodep->accept(*this);
+        iterate(nodep);
 	// Check results
 	if (!m_substTreep) {
 	    clearSimple("No assignment found\n");
@@ -343,7 +343,7 @@ private:
 	    }
 	    if (consumeReason) m_logicVertexp->setConsumed(consumeReason);
             if (VN_IS(nodep, SenItem)) m_logicVertexp->setConsumed("senItem");
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    m_logicVertexp = NULL;
 	}
     }
@@ -384,7 +384,7 @@ private:
 
     // VISITORS
     virtual void visit(AstNetlist* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	//if (debug()>6) m_graph.dump();
 	if (debug()>6) m_graph.dumpDotFilePrefixed("gate_pre");
 	warnSignals();  // Before loss of sync/async pointers
@@ -411,14 +411,14 @@ private:
     virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
 	m_activeReducible = true;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp = NULL;
     }
     virtual void visit(AstScope* nodep) {
 	UINFO(4," SCOPE "<<nodep<<endl);
 	m_scopep = nodep;
 	m_logicVertexp = NULL;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_scopep = NULL;
     }
     virtual void visit(AstActive* nodep) {
@@ -427,7 +427,7 @@ private:
 	m_activeReducible = !(nodep->hasClocked());  // Seq logic outputs aren't reducible
 	m_activep = nodep;
 	AstNode::user2ClearTree();
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	AstNode::user2ClearTree();
 	m_activep = NULL;
 	m_activeReducible = true;
@@ -475,7 +475,7 @@ private:
 	// The gating term of a AstSenGate is normal logic
 	m_inSenItem = true;
 	if (m_logicVertexp) {  // Already under logic; presumably a SenGate
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	} else {  // Standalone item, probably right under a SenTree
 	    iterateNewStmt(nodep, NULL, NULL);
 	}
@@ -511,13 +511,13 @@ private:
         if (VN_IS(nodep->backp(), NodeAssign) && VN_CAST(nodep->backp(), NodeAssign)->lhsp()==nodep) {
 	    nodep->v3fatalSrc("Concat on LHS of assignment; V3Const should have deleted it");
 	}
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
     //--------------------
     // Default
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->isOutputter() && m_logicVertexp) m_logicVertexp->setConsumed("outputter");
     }
 
@@ -532,7 +532,7 @@ public:
 	m_activeReducible = true;
 	m_inSenItem = false;
 	m_inSlow = false;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~GateVisitor() {
 	V3Stats::addStat("Optimizations, Gate sigs deleted", m_statSigs);
@@ -848,7 +848,7 @@ private:
 	}
     }
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
@@ -857,7 +857,7 @@ public:
 	m_didReplace = false;
 	m_elimVarScp = varscp;
 	m_replaceTreep = replaceTreep;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     bool didReplace() const { return m_didReplace; }
 };
@@ -971,7 +971,7 @@ private:
 	if (m_dedupable) {
 	    if (!m_always) {
 		m_always = true;
-		alwaysp->bodysp()->iterateAndNext(*this);
+                iterateAndNextNull(alwaysp->bodysp());
 	    } else {
 		m_dedupable = false;
 	    }
@@ -985,7 +985,7 @@ private:
 	if (m_dedupable) {
 	    if (m_always && !m_ifCondp && !ifp->elsesp()) {  //we're under an always, this is the first IF,  and there's no else
 		m_ifCondp = ifp->condp();
-		ifp->ifsp()->iterateAndNext(*this);
+                iterateAndNextNull(ifp->ifsp());
 	    } else {
 		m_dedupable = false;
 	    }
@@ -1013,7 +1013,7 @@ public:
 	m_ifCondp = NULL;
 	m_always = false;
 	m_dedupable = true;
-	nodep->accept(*this);
+        iterate(nodep);
 	if (m_dedupable && m_assignp) {
 	    AstNode* lhsp = m_assignp->lhsp();
 	    // Possible todo, handle more complex lhs expressions
@@ -1292,13 +1292,13 @@ private:
     }
     virtual void visit(AstConcat* nodep) {
 	UINFO(9,"CLK DECOMP Concat search (off = "<<m_offset<<") - "<<nodep<<endl);
-	nodep->rhsp()->iterate(*this);
-	nodep->lhsp()->iterate(*this);
+        iterate(nodep->rhsp());
+        iterate(nodep->lhsp());
     }
     //--------------------
     // Default
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
@@ -1315,7 +1315,7 @@ public:
 	m_offset = 0;
 	m_found = false;
 	// Iterate
-	concatp->accept(*this);
+        iterate(concatp);
 	UINFO(9,"CLK DECOMP Concat Offset (found = "<<m_found<<") ("<<m_found_offset<<") - "<<concatp<<" : "<<vscp<<endl);
 	offsetr = m_found_offset;
 	return m_found;
@@ -1480,13 +1480,13 @@ private:
     virtual void visit(AstVar* nodep) {}
     virtual void visit(AstActive* nodep) {}
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
     // CONSTUCTORS
     explicit GateDeassignVisitor(AstNode* nodep) {
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~GateDeassignVisitor() {}
 };

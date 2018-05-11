@@ -145,13 +145,13 @@ private:
 	*m_ofp<<nodep->prettyTypeName()<<" "<<endl;
 	string lastPrefix = m_prefix;
 	m_prefix = lastPrefix + "1:";
-	nodep->op1p()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->op1p());
 	m_prefix = lastPrefix + "2:";
-	nodep->op2p()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->op2p());
 	m_prefix = lastPrefix + "3:";
-	nodep->op3p()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->op3p());
 	m_prefix = lastPrefix + "4:";
-	nodep->op4p()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->op4p());
 	m_prefix = lastPrefix;
     }
 
@@ -160,7 +160,7 @@ public:
     CdcDumpVisitor(AstNode* nodep, std::ofstream* ofp, const string& prefix) {
 	m_ofp = ofp;
 	m_prefix = prefix;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~CdcDumpVisitor() {}
 };
@@ -173,7 +173,7 @@ private:
     size_t	m_maxFilenameLen;
 
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Keeping line+filename lengths separate is much faster than calling ascii().length()
 	if (nodep->fileline()->lineno() >= m_maxLineno) {
 	    m_maxLineno = nodep->fileline()->lineno()+1;
@@ -187,7 +187,7 @@ public:
     explicit CdcWidthVisitor(AstNode* nodep) {
 	m_maxLineno = 0;
 	m_maxFilenameLen = 0;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~CdcWidthVisitor() {}
     // ACCESSORS
@@ -241,7 +241,7 @@ private:
 		m_logicVertexp->dstDomainp(m_domainp);
 		m_logicVertexp->dstDomainSet(true);
 	    }
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    m_logicVertexp = NULL;
 
 	    if (0 && debug()>=9) {
@@ -606,14 +606,14 @@ private:
     // VISITORS
     virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp = NULL;
     }
     virtual void visit(AstScope* nodep) {
 	UINFO(4," SCOPE "<<nodep<<endl);
 	m_scopep = nodep;
 	m_logicVertexp = NULL;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_scopep = NULL;
     }
     virtual void visit(AstActive* nodep) {
@@ -657,14 +657,14 @@ private:
     }
     virtual void visit(AstAssignDly* nodep) {
 	m_inDly = true;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_inDly = false;
     }
     virtual void visit(AstSenItem* nodep) {
 	// Note we look at only AstSenItems, not AstSenGate's
 	// The gating term of a AstSenGate is normal logic
 	m_inSenItem = true;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_inSenItem = false;
     }
     virtual void visit(AstAlways* nodep) {
@@ -691,21 +691,21 @@ private:
     // Math that shouldn't cause us to clear hazard
     virtual void visit(AstConst* nodep) { }
     virtual void visit(AstReplicate* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstConcat* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstNot* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstSel* nodep) {
         if (!VN_IS(nodep->lsbp(), Const)) setNodeHazard(nodep);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstNodeSel* nodep) {
         if (!VN_IS(nodep->bitp(), Const)) setNodeHazard(nodep);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
     // Ignores
@@ -718,10 +718,10 @@ private:
     // Default
     virtual void visit(AstNodeMath* nodep) {
 	setNodeHazard(nodep);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -747,7 +747,7 @@ public:
 	*m_ofp<<"repeating recursively forwards to the destination flop(s).\n";
 	*m_ofp<<"%% Indicates the operator considered potentially hazardous.\n";
 
-	nodep->accept(*this);
+        iterate(nodep);
 	analyze();
 	if (debug()>=1) edgeReport();  // Not useful to users at the moment
 

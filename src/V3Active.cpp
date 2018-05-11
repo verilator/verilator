@@ -78,7 +78,7 @@ private:
 	m_iActivep = NULL;
 	m_cActivep = NULL;
 	m_activeVec.clear();
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Don't clear scopep, the namer persists beyond this visit
     }
     virtual void visit(AstSenTree* nodep) {
@@ -91,7 +91,7 @@ private:
     // Default
     virtual void visit(AstNode* nodep) {
 	// Default: Just iterate
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     // METHODS
 public:
@@ -154,7 +154,7 @@ public:
     }
     virtual ~ActiveNamer() {}
     void main(AstScope* nodep) {
-	nodep->accept(*this);
+        iterate(nodep);
     }
 };
 
@@ -193,7 +193,7 @@ private:
 	if (m_check == CT_SEQ) {
 	    AstNode* las = m_assignp;
 	    m_assignp = nodep;
-	    nodep->lhsp()->iterateAndNext(*this);
+            iterateAndNextNull(nodep->lhsp());
 	    m_assignp = las;
 	}
     }
@@ -217,7 +217,7 @@ private:
     }
     //--------------------
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
@@ -225,7 +225,7 @@ public:
 	m_alwaysp = nodep;
 	m_check = check;
 	m_assignp = NULL;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~ActiveDlyVisitor() {}
 };
@@ -252,7 +252,7 @@ private:
 	// Clear last scope's names, and collect this scope's existing names
 	m_namer.main(nodep);
 	m_scopeFinalp = NULL;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstActive* nodep) {
 	// Actives are being formed, so we can ignore any already made
@@ -325,7 +325,7 @@ private:
 	// Read sensitivitues
 	m_itemCombo = false;
 	m_itemSequent = false;
-	if (oldsensesp) oldsensesp->iterateAndNext(*this);
+        iterateAndNextNull(oldsensesp);
 	bool combo = m_itemCombo;
 	bool sequent = m_itemSequent;
 
@@ -399,7 +399,7 @@ private:
 	    && subitemp->edgeType() != AstEdgeType::ET_NEGEDGE) {
 	    nodep->v3fatalSrc("Strange activity type under SenGate");
 	}
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstSenItem* nodep) {
 	if (nodep->edgeType() == AstEdgeType::ET_ANYEDGE) {
@@ -421,7 +421,7 @@ private:
     virtual void visit(AstVarScope* nodep) {}
     //--------------------
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
@@ -429,7 +429,7 @@ public:
 	m_scopeFinalp = NULL;
 	m_itemCombo = false;
 	m_itemSequent = false;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~ActiveVisitor() {}
 };

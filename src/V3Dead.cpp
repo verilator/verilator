@@ -59,18 +59,18 @@ private:
     // ** Shared with DeadVisitor **
     // VISITORS
     virtual void visit(AstCell* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	nodep->modp()->user1Inc(-1);
     }
     //-----
     virtual void visit(AstNodeMath* nodep) {}  // Accelerate
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTRUCTORS
     explicit DeadModVisitor(AstNodeModule* nodep) {
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~DeadModVisitor() {}
 };
@@ -138,18 +138,18 @@ private:
     virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
 	if (!nodep->dead()) {
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    checkAll(nodep);
 	}
 	m_modp = NULL;
     }
     virtual void visit(AstCFunc* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	checkAll(nodep);
 	if (nodep->scopep()) nodep->scopep()->user1Inc();
     }
     virtual void visit(AstScope* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	checkAll(nodep);
 	if (nodep->aboveScopep()) nodep->aboveScopep()->user1Inc();
 
@@ -158,14 +158,14 @@ private:
 	}
     }
     virtual void visit(AstCell* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	checkAll(nodep);
 	m_cellsp.push_back(nodep);
 	nodep->modp()->user1Inc();
     }
 
     virtual void visit(AstNodeVarRef* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	checkAll(nodep);
 	if (nodep->varScopep()) {
 	    nodep->varScopep()->user1Inc();
@@ -180,7 +180,7 @@ private:
 	}
     }
     virtual void visit(AstNodeFTaskRef* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	checkAll(nodep);
 	if (nodep->packagep()) {
 	    if (m_elimCells) nodep->packagep(NULL);
@@ -188,7 +188,7 @@ private:
 	}
     }
     virtual void visit(AstRefDType* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	checkDType(nodep);
 	checkAll(nodep);
 	if (nodep->packagep()) {
@@ -197,12 +197,12 @@ private:
 	}
     }
     virtual void visit(AstNodeDType* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	checkDType(nodep);
 	checkAll(nodep);
     }
     virtual void visit(AstEnumItemRef* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	checkAll(nodep);
 	if (nodep->packagep()) {
 	    if (m_elimCells) nodep->packagep(NULL);
@@ -211,7 +211,7 @@ private:
 	checkAll(nodep);
     }
     virtual void visit(AstModport* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (m_elimCells) {
 	    if (!nodep->varsp()) {
 		pushDeletep(nodep->unlinkFrBack()); VL_DANGLING(nodep);
@@ -221,7 +221,7 @@ private:
 	checkAll(nodep);
     }
     virtual void visit(AstTypedef* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (m_elimCells && !nodep->attrPublic()) {
 	    pushDeletep(nodep->unlinkFrBack()); VL_DANGLING(nodep);
 	    return;
@@ -232,7 +232,7 @@ private:
         if (nodep->attrPublic() && m_modp && VN_IS(m_modp, Package)) m_modp->user1Inc();
     }
     virtual void visit(AstVarScope* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	checkAll(nodep);
 	if (nodep->scopep()) nodep->scopep()->user1Inc();
 	if (mightElimVar(nodep->varp())) {
@@ -240,7 +240,7 @@ private:
 	}
     }
     virtual void visit(AstVar* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	checkAll(nodep);
         if (nodep->isSigPublic() && m_modp && VN_IS(m_modp, Package)) m_modp->user1Inc();
 	if (mightElimVar(nodep)) {
@@ -251,7 +251,7 @@ private:
 	// See if simple assignments to variables may be eliminated because that variable is never used.
 	// Similar code in V3Life
 	m_sideEffect = false;
-	nodep->rhsp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->rhsp());
 	checkAll(nodep);
 	// Has to be direct assignment without any EXTRACTing.
         AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef);
@@ -260,7 +260,7 @@ private:
 	    m_assignMap.insert(make_pair(varrefp->varScopep(), nodep));
 	    checkAll(varrefp);	// Must track reference to dtype()
 	} else {  // Track like any other statement
-	    nodep->lhsp()->iterateAndNext(*this);
+            iterateAndNextNull(nodep->lhsp());
 	}
 	checkAll(nodep);
     }
@@ -268,7 +268,7 @@ private:
     //-----
     virtual void visit(AstNode* nodep) {
 	if (nodep->isOutputter()) m_sideEffect=true;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	checkAll(nodep);
     }
 
@@ -405,7 +405,7 @@ public:
 	// Prepare to remove some datatypes
 	nodep->typeTablep()->clearCache();
 	// Operate on whole netlist
-	nodep->accept(*this);
+        iterate(nodep);
 
 	deadCheckVar();
 	// We only elimate scopes when in a flattened structure

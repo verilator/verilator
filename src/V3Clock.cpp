@@ -239,7 +239,7 @@ private:
 	    m_settleFuncp = funcp;
 	}
 	// Process the activates
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Done, clear so we can detect errors
 	UINFO(4," TOPSCOPEDONE "<<nodep<<endl);
 	clearLastSen();
@@ -249,13 +249,13 @@ private:
     virtual void visit(AstNodeModule* nodep) {
 	//UINFO(4," MOD   "<<nodep<<endl);
 	m_modp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp= NULL;
     }
     virtual void visit(AstScope* nodep) {
 	//UINFO(4," SCOPE   "<<nodep<<endl);
 	m_scopep = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (AstNode* movep = nodep->finalClksp()) {
 	    if (!m_topScopep) nodep->v3fatalSrc("Final clocks under non-top scope");
 	    movep->unlinkFrBackWithNext();
@@ -311,7 +311,7 @@ private:
 	nodep->deleteTree(); VL_DANGLING(nodep);
     }
     virtual void visit(AstCFunc* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Link to global function
 	if (nodep->formCallTree()) {
 	    UINFO(4, "    formCallTree "<<nodep<<endl);
@@ -380,7 +380,7 @@ private:
     //--------------------
     // Default: Just iterate
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -393,7 +393,7 @@ public:
 	m_lastIfp = NULL;
 	m_scopep = NULL;
 	//
-	nodep->accept(*this);
+        iterate(nodep);
         // Allow downstream modules to find _eval()
         // easily without iterating through the tree.
         nodep->evalp(m_evalFuncp);

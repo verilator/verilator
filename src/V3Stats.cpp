@@ -91,14 +91,14 @@ private:
 	allNodes(nodep);
 	if (!m_fast) {
             // Count all CFuncs below this module
-            nodep->iterateChildrenConst(*this);
+            iterateChildrenConst(nodep);
 	}
         // Else we recursively trace fast CFuncs from the top _eval
         // func, see visit(AstNetlist*)
     }
     virtual void visit(AstVar* nodep) {
 	allNodes(nodep);
-	nodep->iterateChildrenConst(*this);
+        iterateChildrenConst(nodep);
 	if (m_counting && nodep->dtypep()) {
 	    if (nodep->isUsedClock()) ++m_statVarClock;
             if (VN_IS(nodep->dtypeSkipRefp(), UnpackArrayDType)) ++m_statVarArray;
@@ -121,7 +121,7 @@ private:
     }
     virtual void visit(AstVarScope* nodep) {
 	allNodes(nodep);
-	nodep->iterateChildrenConst(*this);
+        iterateChildrenConst(nodep);
 	if (m_counting) {
             if (VN_IS(nodep->varp()->dtypeSkipRefp(), BasicDType)) {
 		m_statVarScpBytes += nodep->varp()->dtypeSkipRefp()->widthTotalBytes();
@@ -132,14 +132,14 @@ private:
 	UINFO(4,"   IF i="<<m_instrs<<" "<<nodep<<endl);
 	allNodes(nodep);
 	// Condition is part of cost allocated to PREVIOUS block
-	nodep->condp()->iterateAndNextConst(*this);
+        iterateAndNextConstNull(nodep->condp());
 	// Track prediction
 	if (m_counting) {
 	    ++m_statPred[nodep->branchPred()];
 	}
 	if (!m_fast) {
 	    // Count everything
-	    nodep->iterateChildrenConst(*this);
+            iterateChildrenConst(nodep);
 	} else {
 	    // See which path we want to take
 	    // Need to do even if !m_counting because maybe determining upstream if/else
@@ -151,7 +151,7 @@ private:
 		{
 		    m_counting = false;
 		    m_instrs = 0.0;
-		    nodep->ifsp()->iterateAndNextConst(*this);
+                    iterateAndNextConstNull(nodep->ifsp());
 		    ifInstrs = m_instrs;
 		}
 		m_instrs = prevInstr;
@@ -163,7 +163,7 @@ private:
 		{
 		    m_counting = false;
 		    m_instrs = 0.0;
-		    nodep->elsesp()->iterateAndNextConst(*this);
+                    iterateAndNextConstNull(nodep->elsesp());
 		    elseInstrs = m_instrs;
 		}
 		m_instrs = prevInstr;
@@ -172,9 +172,9 @@ private:
 	    // Now collect the stats
 	    if (m_counting) {
 		if (ifInstrs >= elseInstrs) {
-		    nodep->ifsp()->iterateAndNextConst(*this);
+                    iterateAndNextConstNull(nodep->ifsp());
 		} else {
-		    nodep->elsesp()->iterateAndNextConst(*this);
+                    iterateAndNextConstNull(nodep->elsesp());
 		}
 	    }
 	}
@@ -184,11 +184,11 @@ private:
 
     virtual void visit(AstCCall* nodep) {
 	allNodes(nodep);
-	nodep->iterateChildrenConst(*this);
+        iterateChildrenConst(nodep);
         if (m_fast && !nodep->funcp()->entryPoint()) {
 	    // Enter the function and trace it
             m_tracingCall = true;
-            nodep->funcp()->accept(*this);
+            iterate(nodep->funcp());
         }
     }
     virtual void visit(AstCFunc* nodep) {
@@ -198,22 +198,22 @@ private:
         }
 	m_cfuncp = nodep;
 	allNodes(nodep);
-	nodep->iterateChildrenConst(*this);
+        iterateChildrenConst(nodep);
 	m_cfuncp = NULL;
     }
     virtual void visit(AstNode* nodep) {
 	allNodes(nodep);
-	nodep->iterateChildrenConst(*this);
+        iterateChildrenConst(nodep);
     }
     virtual void visit(AstNetlist* nodep) {
         if (m_fast && nodep->evalp()) {
             m_instrs = 0;
             m_counting = true;
-            nodep->evalp()->iterateChildrenConst(*this);
+            if (nodep->evalp()) iterateChildrenConst(nodep->evalp());
             m_counting = false;
         }
         allNodes(nodep);
-        nodep->iterateChildrenConst(*this);
+        iterateChildrenConst(nodep);
     }
 public:
     // CONSTRUCTORS
@@ -227,7 +227,7 @@ public:
 	// Initialize arrays
 	m_statTypeCount.resize(AstType::_ENUM_END);
 	// Process
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~StatsVisitor() {
 	// Done. Publish statistics

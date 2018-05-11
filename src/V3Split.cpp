@@ -328,7 +328,7 @@ protected:
 	// Iterate across current block, making the scoreboard
 	for (AstNode* nextp=nodep; nextp; nextp=nextp->nextp()) {
 	    scoreboardPushStmt(nextp);
-	    nextp->accept(*this);
+            iterate(nextp);
 	    scoreboardPopStmt();
 	}
     }
@@ -364,7 +364,7 @@ protected:
     virtual void visit(AstAssignDly* nodep) {
         m_inDly = true;
         UINFO(4,"    ASSIGNDLY "<<nodep<<endl);
-        nodep->iterateChildren(*this);
+        iterateChildren(nodep);
         m_inDly = false;
     }
     virtual void visit(AstVarRef* nodep) {
@@ -434,7 +434,7 @@ protected:
         // in always, so the performance gain probably isn't worth the work.
         UINFO(9,"         NoReordering "<<nodep<<endl);
         m_noReorderWhy = "JumpGo";
-        nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
     //--------------------
@@ -445,7 +445,7 @@ protected:
             UINFO(9,"         NotSplittable "<<nodep<<endl);
             scoreboardPli(nodep);
         }
-        nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 private:
@@ -457,7 +457,7 @@ class ReorderVisitor : public SplitReorderBaseVisitor {
 public:
     explicit ReorderVisitor(AstNetlist* nodep)
         : SplitReorderBaseVisitor() {
-            nodep->accept(*this);
+            iterate(nodep);
         }
 
     virtual ~ReorderVisitor() {}
@@ -585,7 +585,7 @@ protected:
 	// Process it
 	if (!nodep->nextp()) {
 	    // Just one, so can't reorder.  Just look for more blocks/statements.
-	    nodep->accept(*this);
+            iterate(nodep);
 	} else {
 	    UINFO(9,"  processBlock "<<nodep<<endl);
 	    // Process block and followers
@@ -618,7 +618,7 @@ protected:
 
     virtual void visit(AstNodeIf* nodep) {
         UINFO(4,"     IF "<<nodep<<endl);
-        nodep->condp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->condp());
         processBlock(nodep->ifsp());
         processBlock(nodep->elsesp());
     }
@@ -645,7 +645,7 @@ public:
     // Visit through *nodep and map each AstNodeIf within to the set of
     // colors it will participate in. Also find the whole set of colors.
     explicit IfColorVisitor(AstAlways* nodep) {
-        nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~IfColorVisitor() {}
 
@@ -660,7 +660,7 @@ public:
 protected:
     virtual void visit(AstNodeIf* nodep) {
         m_ifStack.push_back(nodep);
-        nodep->iterateChildren(*this);
+        iterateChildren(nodep);
         m_ifStack.pop_back();
     }
 
@@ -677,7 +677,7 @@ protected:
                 m_ifColors[*it].insert(color);
             }
         }
-        nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
     static int debug() {
@@ -737,7 +737,7 @@ public:
         // Scan the body of the always. We'll handle if/else
         // specially, everything else is a leaf node that we can
         // just clone into one of the split always blocks.
-        m_origAlwaysp->bodysp()->iterateAndNext(*this);
+        iterateAndNextNull(m_origAlwaysp->bodysp());
     }
 
 protected:
@@ -803,14 +803,14 @@ protected:
             m_addAfter[*color] = if_placeholderp;
         }
 
-        nodep->ifsp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->ifsp());
 
         for (ColorSet::const_iterator color = colors.begin();
              color != colors.end(); ++color) {
             m_addAfter[*color] = clones[*color]->elsesp();
         }
 
-        nodep->elsesp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->elsesp());
 
         for (ColorSet::const_iterator color = colors.begin();
              color != colors.end(); ++color) {
@@ -827,7 +827,7 @@ class RemovePlaceholdersVisitor : public AstNVisitor {
     NodeSet m_removeSet;  // placeholders to be removed
 public:
     explicit RemovePlaceholdersVisitor(AstNode* nodep) {
-        nodep->accept(*this);
+        iterate(nodep);
         for (NodeSet::const_iterator it = m_removeSet.begin();
              it != m_removeSet.end(); ++it) {
             AstNode* np = *it;
@@ -837,7 +837,7 @@ public:
     }
     virtual ~RemovePlaceholdersVisitor() {}
     virtual void visit(AstNode* nodep) {
-        nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstSplitPlaceholder* nodep) {
         m_removeSet.insert(nodep);
@@ -862,7 +862,7 @@ public:
     explicit SplitVisitor(AstNetlist* nodep)
         : SplitReorderBaseVisitor()
         , m_curIfConditional(NULL) {
-        nodep->accept(*this);
+        iterate(nodep);
 
         // Splice newly-split blocks into the tree. Remove placeholders
         // from newly-split blocks. Delete the original always blocks
@@ -1000,7 +1000,7 @@ protected:
     virtual void visit(AstNodeIf* nodep) {
         UINFO(4,"     IF "<<nodep<<endl);
         m_curIfConditional = nodep;
-        nodep->condp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->condp());
         m_curIfConditional = NULL;
         scanBlock(nodep->ifsp());
         scanBlock(nodep->elsesp());

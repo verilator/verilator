@@ -179,11 +179,11 @@ private:
 		taskp->user3p(nodep);
 	    }
 	}
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstAssignW* nodep) {
 	m_assignwp = nodep;
-	nodep->iterateChildren(*this); VL_DANGLING(nodep);  // May delete nodep.
+        iterateChildren(nodep); VL_DANGLING(nodep);  // May delete nodep.
 	m_assignwp = NULL;
     }
     virtual void visit(AstNodeFTaskRef* nodep) {
@@ -202,7 +202,7 @@ private:
 	TaskBaseVertex* lastVxp = m_curVxp;
 	m_curVxp = getFTaskVertex(nodep);
 	if (nodep->dpiImport()) m_curVxp->noInline(true);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_curVxp = lastVxp;
     }
     virtual void visit(AstPragma* nodep) {
@@ -212,15 +212,15 @@ private:
 	    nodep->unlinkFrBack()->deleteTree();
 	}
 	else {
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
     }
     virtual void visit(AstVar* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	nodep->user4p(m_curVxp);  // Remember what task it's under
     }
     virtual void visit(AstVarRef* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->varp()->user4u().toGraphVertex() != m_curVxp) {
 	    if (m_curVxp->pure()
 		&& !nodep->varp()->isXTemp()) {
@@ -231,7 +231,7 @@ private:
     //--------------------
     // Default: Just iterate
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
@@ -241,7 +241,7 @@ public:
 	AstNode::user3ClearTree();
 	AstNode::user4ClearTree();
 	//
-	nodep->accept(*this);
+        iterate(nodep);
 	//
 	m_callGraph.removeRedundantEdgesSum(&TaskEdge::followAlwaysTrue);
 	m_callGraph.dumpDotFilePrefixed("task_call");
@@ -269,17 +269,17 @@ private:
 	    nodep->varp(nodep->varScopep()->varp());
 	    nodep->name(nodep->varp()->name());
 	}
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
     //--------------------
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
     explicit TaskRelinkVisitor(AstBegin* nodep) {  // Passed temporary tree
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~TaskRelinkVisitor() {}
 };
@@ -1076,7 +1076,7 @@ private:
 	InsertMode prevInsMode = m_insMode;
 	AstNode* prevInsStmtp = m_insStmtp;
 	m_scopep = m_statep->getScope(nodep);
-	nodep->accept(*this);
+        iterate(nodep);
 	m_scopep = oldscopep;
 	m_insMode = prevInsMode;
 	m_insStmtp = prevInsStmtp;
@@ -1113,17 +1113,17 @@ private:
 	m_modp = nodep;
 	m_insStmtp = NULL;
 	m_modNCalls = 0;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp = NULL;
     }
     virtual void visit(AstTopScope* nodep) {
 	m_topScopep = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstScope* nodep) {
 	m_scopep = nodep;
 	m_insStmtp = NULL;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_scopep = NULL;
     }
     virtual void visit(AstNodeFTaskRef* nodep) {
@@ -1224,15 +1224,15 @@ private:
 	// Special, as statements need to be put in different places
 	// Preconditions insert first just before themselves (the normal rule for other statement types)
 	m_insStmtp = NULL;	// First thing should be new statement
-	nodep->precondsp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->precondsp());
 	// Conditions insert first at end of precondsp.
 	m_insMode = IM_WHILE_PRECOND;
 	m_insStmtp = nodep;
-	nodep->condp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->condp());
 	// Body insert just before themselves
 	m_insStmtp = NULL;	// First thing should be new statement
-	nodep->bodysp()->iterateAndNext(*this);
-	nodep->incsp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->bodysp());
+        iterateAndNextNull(nodep->incsp());
 	// Done the loop
 	m_insStmtp = NULL;	// Next thing should be new statement
     }
@@ -1242,13 +1242,13 @@ private:
     virtual void visit(AstNodeStmt* nodep) {
 	m_insMode = IM_BEFORE;
 	m_insStmtp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_insStmtp = NULL;	// Next thing should be new statement
     }
     //--------------------
     // Default: Just iterate
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -1260,7 +1260,7 @@ public:
 	m_scopep = NULL;
 	m_insStmtp = NULL;
 	AstNode::user1ClearTree();
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~TaskVisitor() {}
 };

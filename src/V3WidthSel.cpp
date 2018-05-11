@@ -478,7 +478,7 @@ public:
     // CONSTUCTORS
     WidthSelVisitor() {}
     AstNode* mainAcceptEdit(AstNode* nodep) {
-	return nodep->iterateSubtreeReturnEdits(*this);
+        return iterateSubtreeReturnEdits(nodep);
     }
     virtual ~WidthSelVisitor() {}
 };

@@ -91,7 +91,7 @@ private:
 	if (!nodep->user1SetOnce()) {  // Process only once.
 	    cleanFileline(nodep);
 	    m_ftaskp = nodep;
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    m_ftaskp = NULL;
 	}
     }
@@ -101,7 +101,7 @@ private:
 	    UINFO(5,"   "<<nodep<<endl);
 	    AstNodeModule* upperValueModp = m_valueModp;
 	    m_valueModp = NULL;
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    m_valueModp = upperValueModp;
 	}
     }
@@ -110,14 +110,14 @@ private:
 	    cleanFileline(nodep);
 	    AstNodeDType* upperDtypep = m_dtypep;
 	    m_dtypep = nodep;
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    m_dtypep = upperDtypep;
 	}
     }
     virtual void visit(AstEnumItem* nodep) {
 	// Expand ranges
 	cleanFileline(nodep);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->rangep()) {
             if (!VN_IS(nodep->rangep()->msbp(), Const)
                 || !VN_IS(nodep->rangep()->lsbp(), Const)) nodep->v3error("Enum ranges must be integral, per spec");
@@ -166,7 +166,7 @@ private:
 	    nodep->trace(false);
 	}
 	m_varp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_varp = NULL;
 	// temporaries under an always aren't expected to be blocking
 	if (m_inAlways) nodep->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);
@@ -202,7 +202,7 @@ private:
 
     virtual void visit(AstAttrOf* nodep) {
 	cleanFileline(nodep);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->attrType() == AstAttrType::DT_PUBLIC) {
             AstTypedef* typep = VN_CAST(nodep->backp(), Typedef);
 	    if (!typep) nodep->v3fatalSrc("Attribute not attached to typedef");
@@ -270,7 +270,7 @@ private:
 	// AlwaysPublic was attached under a var, but it's a statement that should be
 	// at the same level as the var
 	cleanFileline(nodep);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (m_varp) {
 	    nodep->unlinkFrBack();
 	    m_varp->addNext(nodep);
@@ -383,7 +383,7 @@ private:
 	//
 	m_modp = nodep;
 	m_valueModp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp = NULL;
 	m_valueModp = NULL;
     }
@@ -393,7 +393,7 @@ private:
 	//
 	AstNodeModule* upperValueModp = m_valueModp;
 	m_valueModp = NULL;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_valueModp = upperValueModp;
     }
     virtual void visit(AstInitial* nodep) {
@@ -414,7 +414,7 @@ private:
     virtual void visit(AstNode* nodep) {
 	// Default: Just iterate
 	cleanFileline(nodep);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -428,7 +428,7 @@ public:
 	m_inGenerate = false;
 	m_needStart = false;
 	m_valueModp = NULL;
-	rootp->accept(*this);
+        iterate(rootp);
     }
     virtual ~LinkParseVisitor() {}
 };

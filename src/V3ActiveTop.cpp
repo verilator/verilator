@@ -68,14 +68,14 @@ private:
     virtual void visit(AstTopScope* nodep) {
 	m_topscopep = nodep;
 	m_finder.main(m_topscopep);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_topscopep = NULL;
     }
     virtual void visit(AstNodeModule* nodep) {
 	// Create required actives and add to module
 	// We can start ordering at a module, or a scope
 	UINFO(4," MOD   "<<nodep<<endl);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstActive* nodep) {
 	UINFO(4,"   ACTIVE "<<nodep<<endl);
@@ -118,7 +118,7 @@ private:
 	    nodep->sensesp(wantp);
 	}
 	// No need to do statements under it, they're already moved.
-	//nodep->iterateChildren(*this);
+        //iterateChildren(nodep);
     }
     virtual void visit(AstInitial* nodep) {
 	nodep->v3fatalSrc("Node should have been under ACTIVE");
@@ -143,13 +143,13 @@ private:
     virtual void visit(AstVarScope* nodep) {}
     //--------------------
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
     explicit ActiveTopVisitor(AstNetlist* nodep) {
 	m_topscopep = NULL;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~ActiveTopVisitor() {}
 };

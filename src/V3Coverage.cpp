@@ -132,7 +132,7 @@ private:
 	m_modp = nodep;
 	m_inModOff = nodep->isTop();   // Ignore coverage on top module; it's a shell we created
 	m_fileps.clear();
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp = NULL;
 	m_inModOff = true;
     }
@@ -142,12 +142,12 @@ private:
 	bool oldtog = m_inToggleOff;
 	{
 	    m_inToggleOff = true;
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
 	m_inToggleOff = oldtog;
     }
     virtual void visit(AstVar* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (m_modp && !m_inModOff && !m_inToggleOff
 	    && nodep->fileline()->coverageOn() && v3Global.opt.coverageToggle()) {
 	    const char* disablep = varIgnoreToggle(nodep);
@@ -288,7 +288,7 @@ private:
                           && !VN_CAST(nodep->elsesp(), If)->nextp());
             if (elsif) VN_CAST(nodep->elsesp(), If)->user1(true);
 	    //
-	    nodep->ifsp()->iterateAndNext(*this);
+            iterateAndNextNull(nodep->ifsp());
 	    if (m_checkBlock && !m_inModOff
 		&& nodep->fileline()->coverageOn() && v3Global.opt.coverageLine()) {	// if a "if" branch didn't disable it
 		UINFO(4,"   COVER: "<<nodep<<endl);
@@ -301,7 +301,7 @@ private:
 	    // Don't do empty else's, only empty if/case's
 	    if (nodep->elsesp()) {
 		m_checkBlock = true;
-		nodep->elsesp()->iterateAndNext(*this);
+                iterateAndNextNull(nodep->elsesp());
 		if (m_checkBlock && !m_inModOff
 		    && nodep->fileline()->coverageOn() && v3Global.opt.coverageLine()) {	// if a "else" branch didn't disable it
 		    UINFO(4,"   COVER: "<<nodep<<endl);
@@ -317,7 +317,7 @@ private:
 	UINFO(4," CASEI: "<<nodep<<endl);
 	if (m_checkBlock && !m_inModOff
 	    && nodep->fileline()->coverageOn() && v3Global.opt.coverageLine()) {
-	    nodep->bodysp()->iterateAndNext(*this);
+            iterateAndNextNull(nodep->bodysp());
 	    if (m_checkBlock) {	// if the case body didn't disable it
 		UINFO(4,"   COVER: "<<nodep<<endl);
 		nodep->addBodysp(newCoverInc(nodep->fileline(), "", "v_line", "case"));
@@ -328,7 +328,7 @@ private:
     virtual void visit(AstPslCover* nodep) {
 	UINFO(4," PSLCOVER: "<<nodep<<endl);
 	m_checkBlock = true;  // Always do cover blocks, even if there's a $stop
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (!nodep->coverincp()) {
 	    // Note the name may be overridden by V3Assert processing
 	    nodep->coverincp(newCoverInc(nodep->fileline(), m_beginHier, "v_user", "cover"));
@@ -346,7 +346,7 @@ private:
 	    m_checkBlock = false;
 	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
 	} else {
-	    if (m_checkBlock) nodep->iterateChildren(*this);
+            if (m_checkBlock) iterateChildren(nodep);
 	}
     }
     virtual void visit(AstBegin* nodep) {
@@ -362,7 +362,7 @@ private:
 	    if (nodep->name()!="") {
 		m_beginHier = m_beginHier + (m_beginHier!=""?".":"") + nodep->name();
 	    }
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
 	m_beginHier = oldHier;
 	m_inToggleOff = oldtog;
@@ -372,7 +372,7 @@ private:
     virtual void visit(AstNode* nodep) {
 	// Default: Just iterate
 	if (m_checkBlock) {
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    m_checkBlock = true;  // Reset as a child may have cleared it
 	}
     }
@@ -385,7 +385,7 @@ public:
 	m_beginHier = "";
 	m_inToggleOff = false;
 	m_inModOff = true;
-	rootp->iterateChildren(*this);
+        iterateChildren(rootp);
     }
     virtual ~CoverageVisitor() {}
 };

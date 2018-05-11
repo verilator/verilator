@@ -292,15 +292,15 @@ private:
 	    }
 	}
 	// Discover variables used in bit definitions, etc
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstArraySel* nodep) {
 	// Arrays are rarely constant assigned, so for now we punt and do all entries
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstSliceSel* nodep) {
         // Arrays are rarely constant assigned, so for now we punt and do all entries
-        nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstSel* nodep) {
         AstNodeVarRef* varrefp = VN_CAST(nodep->fromp(), NodeVarRef);
@@ -321,7 +321,7 @@ private:
 	    }
 	} else {
 	    // else other varrefs handled as unknown mess in AstVarRef
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
     }
     virtual void visit(AstNodeVarRef* nodep) {
@@ -344,7 +344,7 @@ private:
     virtual void visit(AstSysIgnore* nodep) {
 	bool prevMark = m_inBBox;
 	m_inBBox = true;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_inBBox = prevMark;
     }
 
@@ -355,7 +355,7 @@ private:
 	    if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9,"   "<<nodep<<endl);
 	    if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) m_alwaysp = nodep;
 	    else m_alwaysp = NULL;
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9,"   Done "<<nodep<<endl);
 	}
 	m_alwaysp = prevAlwp;
@@ -364,7 +364,7 @@ private:
     virtual void visit(AstNodeFTask* nodep) {
 	AstNodeFTask* prevTaskp = m_taskp;
 	m_taskp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_taskp = prevTaskp;
     }
 
@@ -381,7 +381,7 @@ private:
     // iterate
     virtual void visit(AstConst* nodep) {}
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
@@ -389,7 +389,7 @@ public:
 	m_inBBox = false;
 	m_taskp = NULL;
 	m_alwaysp = NULL;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~UndrivenVisitor() {
         for (std::vector<UndrivenVarEntry*>::iterator it = m_entryps[1].begin(); it != m_entryps[1].end(); ++it) {

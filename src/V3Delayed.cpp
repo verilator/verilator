@@ -344,16 +344,16 @@ private:
     virtual void visit(AstNetlist* nodep) {
 	//VV*****  We reset all userp() on the netlist
 	m_modVarMap.clear();
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstScope* nodep) {
 	UINFO(4," MOD   "<<nodep<<endl);
 	AstNode::user3ClearTree();
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstCFunc* nodep) {
 	m_cfuncp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_cfuncp = NULL;
     }
     virtual void visit(AstActive* nodep) {
@@ -361,7 +361,7 @@ private:
 	bool oldinit = m_inInitial;
 	m_inInitial = nodep->hasInitial();
 	AstNode::user3ClearTree();  // Two sets to same variable in different actives must use different vars.
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_inInitial = oldinit;
     }
     virtual void visit(AstAssignDly* nodep) {
@@ -382,7 +382,7 @@ private:
 	    lhsp->deleteTree(); VL_DANGLING(lhsp);
 	}
 	else {
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
 	m_inDly = false;
 	m_nextDlyp = NULL;
@@ -443,14 +443,14 @@ private:
     virtual void visit(AstWhile* nodep) {
 	bool oldloop = m_inLoop;
 	m_inLoop = true;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_inLoop = oldloop;
     }
 
     //--------------------
     // Default: Just iterate
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -463,7 +463,7 @@ public:
 	m_inLoop = false;
 	m_inInitial = false;
 
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~DelayedVisitor() {
 	V3Stats::addStat("Optimizations, Delayed shared-sets", m_statSharedSet);

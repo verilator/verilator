@@ -94,7 +94,7 @@ private:
 	if (!scopep) nodep->v3fatalSrc("No scope found on top level");
 	m_scopetopp = scopep;
 
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     //----
     virtual void visit(AstVarRef* nodep) {
@@ -115,17 +115,18 @@ private:
     }
     virtual void visit(AstActive* nodep) {
 	m_activep = nodep;
-	nodep->sensesp()->iterateChildren(*this);  // iterateAndNext?
+        if (!nodep->sensesp()) nodep->v3fatalSrc("Unlinked");
+        iterateChildren(nodep->sensesp());  // iterateAndNext?
 	m_activep = NULL;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstCFunc* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
     //-----
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTRUCTORS
@@ -133,7 +134,7 @@ public:
 	m_topModp = topModp;
 	m_scopetopp = NULL;
 	m_activep = NULL;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~GenClkRenameVisitor() {}
 };
@@ -157,7 +158,7 @@ private:
     // VISITORS
     virtual void visit(AstTopScope* nodep) {
 	AstNode::user1ClearTree();	// user1p() used on entire tree
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	{
 	    // Make the new clock signals and replace any activate references
 	    // See rename, it does some AstNode::userClearTree()'s
@@ -168,15 +169,15 @@ private:
 	// Only track the top scopes, not lower level functions
 	if (nodep->isTop()) {
 	    m_topModp = nodep;
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
     }
     virtual void visit(AstCCall* nodep) {
-        nodep->iterateChildren(*this);
+        iterateChildren(nodep);
         if (!nodep->funcp()->entryPoint()) {
             // Enter the function and trace it
             m_tracingCall = true;
-            nodep->funcp()->accept(*this);
+            iterate(nodep->funcp());
         }
     }
     virtual void visit(AstCFunc* nodep) {
@@ -187,7 +188,7 @@ private:
             return;
         }
         m_tracingCall = false;
-        nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     //----
 
@@ -209,21 +210,22 @@ private:
     virtual void visit(AstNodeAssign* nodep) {
 	//UINFO(8,"ASS "<<nodep<<endl);
 	m_assignp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_assignp = NULL;
     }
     virtual void visit(AstActive* nodep) {
 	UINFO(8,"ACTIVE "<<nodep<<endl);
 	m_activep = nodep;
-	nodep->sensesp()->iterateChildren(*this);  // iterateAndNext?
+        if (!nodep->sensesp()) nodep->v3fatalSrc("Unlinked");
+        iterateChildren(nodep->sensesp());  // iterateAndNext?
 	m_activep = NULL;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
     //-----
     virtual void visit(AstVar*) {}	// Don't want varrefs under it
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTRUCTORS
@@ -232,7 +234,7 @@ public:
         , m_tracingCall(false)
         , m_assignp(NULL)
         , m_topModp(NULL) {
-        nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~GenClkReadVisitor() {}
 };

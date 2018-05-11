@@ -193,7 +193,7 @@ private:
     // METHODS
     void processAndIterate(AstNode* nodep) {
 	BrokenTable::addInTree(nodep, nodep->maybePointedTo());
-	nodep->iterateChildrenConst(*this);
+        iterateChildrenConst(nodep);
     }
     // VISITORS
     virtual void visit(AstNode* nodep) {
@@ -202,7 +202,7 @@ private:
 public:
     // CONSTUCTORS
     explicit BrokenMarkVisitor(AstNetlist* nodep) {
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~BrokenMarkVisitor() {}
 };
@@ -239,7 +239,7 @@ private:
             if (const AstNodeDType* dnodep = VN_CAST(nodep, NodeDType)) checkWidthMin(dnodep);
 	}
 	checkWidthMin(nodep);
-	nodep->iterateChildrenConst(*this);
+        iterateChildrenConst(nodep);
 	BrokenTable::setUnder(nodep,false);
     }
     virtual void visit(AstNodeAssign* nodep) {
@@ -257,7 +257,7 @@ private:
 public:
     // CONSTUCTORS
     explicit BrokenCheckVisitor(AstNetlist* nodep) {
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~BrokenCheckVisitor() {}
 };

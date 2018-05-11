@@ -156,7 +156,7 @@ class SliceVisitor : public AstNVisitor {
 		return;
 	    }
 	    m_assignp = nodep;
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    m_assignp = NULL;
 	}
     }
@@ -208,7 +208,7 @@ class SliceVisitor : public AstNVisitor {
 		pushDeletep(nodep); VL_DANGLING(nodep);
 		nodep = logp;
 	    }
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
     }
     virtual void visit(AstEq* nodep) {
@@ -226,7 +226,7 @@ class SliceVisitor : public AstNVisitor {
 
     virtual void visit(AstNode* nodep) {
 	// Default: Just iterate
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -234,7 +234,7 @@ public:
     explicit SliceVisitor(AstNetlist* rootp) {
 	m_assignp = NULL;
 	m_assignError = false;
-	rootp->accept(*this);
+        iterate(rootp);
     }
     virtual ~SliceVisitor() {}
 };

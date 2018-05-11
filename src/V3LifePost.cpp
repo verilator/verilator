@@ -75,30 +75,30 @@ private:
     }
     virtual void visit(AstNodeModule* nodep) {
 	// Only track the top scopes, not lower level functions
-	if (nodep->isTop()) nodep->iterateChildren(*this);
+        if (nodep->isTop()) iterateChildren(nodep);
     }
     virtual void visit(AstCCall* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
         if (!nodep->funcp()->entryPoint()) {
             // Enter the function and trace it
             m_tracingCall = true;
-            nodep->funcp()->accept(*this);
+            iterate(nodep->funcp());
         }
     }
     virtual void visit(AstCFunc* nodep) {
         if (!m_tracingCall && !nodep->entryPoint()) return;
         m_tracingCall = false;
-        nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstVar*) {}	// Don't want varrefs under it
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTRUCTORS
     explicit LifePostElimVisitor(AstTopScope* nodep)
         : m_tracingCall(false) {
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~LifePostElimVisitor() {}
 };
@@ -128,7 +128,7 @@ private:
 	AstNode::user2ClearTree();	// user2p() used on entire tree
 	AstNode::user4ClearTree();	// user4p() used on entire tree
 	m_sequence = 0;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 
 	// Replace any node4p varscopes with the new scope
 	LifePostElimVisitor visitor (nodep);
@@ -190,32 +190,32 @@ private:
     }
     virtual void visit(AstNodeModule* nodep) {
 	// Only track the top scopes, not lower level functions
-	if (nodep->isTop()) nodep->iterateChildren(*this);
+        if (nodep->isTop()) iterateChildren(nodep);
     }
     virtual void visit(AstCCall* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
         if (!nodep->funcp()->entryPoint()) {
             // Enter the function and trace it
             m_tracingCall = true;
-            nodep->funcp()->accept(*this);
+            iterate(nodep->funcp());
         }
     }
     virtual void visit(AstCFunc* nodep) {
         if (!m_tracingCall && !nodep->entryPoint()) return;
         m_tracingCall = false;
-        nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
     //-----
     virtual void visit(AstVar*) {}	// Don't want varrefs under it
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTRUCTORS
     explicit LifePostDlyVisitor(AstNetlist* nodep)
         : m_tracingCall(false) {
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~LifePostDlyVisitor() {
 	V3Stats::addStat("Optimizations, Lifetime postassign deletions", m_statAssnDel);

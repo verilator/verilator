@@ -569,11 +569,11 @@ private:
 
 	// Add vertexes for all TRACES, and edges from VARs each trace looks at
 	m_finding = false;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 
 	// Add vertexes for all CFUNCs, and edges to VARs the func sets
 	m_finding = true;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_finding = false;
 
 	// Detect and remove duplicate values
@@ -590,13 +590,13 @@ private:
     }
     virtual void visit(AstNodeModule* nodep) {
 	if (nodep->isTop()) m_topModp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstTopScope* nodep) {
 	AstScope* scopep = nodep->scopep();
 	if (!scopep) nodep->v3fatalSrc("No scope found on top level");
 	m_highScopep = scopep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstCCall* nodep) {
 	UINFO(8,"   CCALL "<<nodep<<endl);
@@ -614,7 +614,7 @@ private:
 		}
 	    }
 	}
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstCFunc* nodep) {
 	UINFO(8,"   CFUNC "<<nodep<<endl);
@@ -636,7 +636,7 @@ private:
 	    }
 	}
 	m_funcp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_funcp = NULL;
     }
     virtual void visit(AstTraceInc* nodep) {
@@ -649,7 +649,7 @@ private:
 
 	if (!m_funcp || (!m_chgFuncp || !m_fullFuncp)) nodep->v3fatalSrc("Trace not under func");
 	m_tracep = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_tracep = NULL;
     }
     virtual void visit(AstVarRef* nodep) {
@@ -679,7 +679,7 @@ private:
     }
     //--------------------
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -701,7 +701,7 @@ public:
 	m_chgSubParentp = NULL;
 	m_chgSubStmts = 0;
 	m_funcNum = 0;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~TraceVisitor() {
 	V3Stats::addStat("Tracing, Unique changing signals", m_statChgSigs);

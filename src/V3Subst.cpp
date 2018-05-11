@@ -210,7 +210,7 @@ private:
     }
     virtual void visit(AstConst* nodep) {}	// Accelerate
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
@@ -218,7 +218,7 @@ public:
 	UINFO(9, "        SubstUseVisitor "<<origStep<<" "<<nodep<<endl);
 	m_ok = true;
 	m_origStep = origStep;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~SubstUseVisitor() {}
     // METHODS
@@ -266,7 +266,7 @@ private:
     virtual void visit(AstNodeAssign* nodep) {
 	m_ops = 0;
 	m_assignStep++;
-	nodep->rhsp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->rhsp());
 	bool hit=false;
         if (AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef)) {
 	    if (isSubstVar(varrefp->varp())) {
@@ -299,7 +299,7 @@ private:
 	    }
 	}
 	if (!hit) {
-	    nodep->lhsp()->accept(*this);
+            iterate(nodep->lhsp());
 	}
     }
     void replaceSubstEtc(AstNode* nodep, AstNode* substp) {
@@ -314,7 +314,7 @@ private:
 	++m_statSubsts;
     }
     virtual void visit(AstWordSel* nodep) {
-	nodep->rhsp()->accept(*this);
+        iterate(nodep->rhsp());
         AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef);
         AstConst* constp = VN_CAST(nodep->rhsp(), Const);
 	if (varrefp && isSubstVar(varrefp->varp())
@@ -337,7 +337,7 @@ private:
 		entryp->consumeWord(word);
 	    }
 	} else {
-	    nodep->lhsp()->accept(*this);
+            iterate(nodep->lhsp());
 	}
     }
     virtual void visit(AstVarRef* nodep) {
@@ -375,7 +375,7 @@ private:
 	if (!nodep->isSubstOptimizable()) {
 	    m_ops = SUBST_MAX_OPS_NA;
 	}
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
@@ -384,7 +384,7 @@ public:
 	AstNode::user2ClearTree();	// user2p() used on entire tree
 	m_ops = 0;
 	m_assignStep = 0;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~SubstVisitor() {
 	V3Stats::addStat("Optimizations, Substituted temps", m_statSubsts);

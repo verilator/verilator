@@ -82,12 +82,12 @@ private:
 	{
 	    // Do if
 	    reset();
-	    nodep->ifsp()->iterateAndNext(*this);
+            iterateAndNextNull(nodep->ifsp());
 	    int ifLikely = m_likely;
 	    int ifUnlikely = m_unlikely;
 	    // Do else
 	    reset();
-	    nodep->elsesp()->iterateAndNext(*this);
+            iterateAndNextNull(nodep->elsesp());
 	    int elseLikely = m_likely;
 	    int elseUnlikely = m_unlikely;
 	    // Compute
@@ -104,16 +104,16 @@ private:
     virtual void visit(AstCCall* nodep) {
 	checkUnlikely(nodep);
 	nodep->funcp()->user1Inc();
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstCFunc* nodep) {
 	checkUnlikely(nodep);
 	m_cfuncsp.push_back(nodep);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstNode* nodep) {
 	checkUnlikely(nodep);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
     // METHODS
@@ -130,7 +130,7 @@ public:
     // CONSTUCTORS
     explicit BranchVisitor(AstNetlist* nodep) {
 	reset();
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	calc_tasks();
     }
     virtual ~BranchVisitor() {}

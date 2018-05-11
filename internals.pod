@@ -268,8 +268,8 @@ technique lifted from graph traversal packages).
 A visitor first clears the one it wants to use by calling
 C<AstNode::user#ClearTree()>, then it can mark any node's user() with whatever
 data it wants.  Readers just call C<< nodep->user() >>, but may need to cast
-appropriately, so you'll often see C<< nodep->userp()->castSOMETYPE() >>.  At
-the top of each visitor are comments describing how the C<user()> stuff
+appropriately, so you'll often see C<< VN_CAST(nodep->userp(), SOMETYPE) >>.
+At the top of each visitor are comments describing how the C<user()> stuff
 applies to that visitor class.  For example:
 
     // NODE STATE
@@ -299,16 +299,13 @@ as it slows the program down to have to pass vup everywhere.)
 
 =head2 Iterators
 
-C<AstNode> provides a set of iterators to facilitate walking over the
-tree. Each takes two arguments, a visitor, C<v>, of type C<AstNVisitor> and
-an optional pointer user data, C<vup>, of type C<AstNUser*>. The second is
-one of the ways to pass parameters to visitors described in L</Visitor
-Functions>, but its use is now deprecated and should I<not> be used for new
-visitor classes.
+C<AstNVisitor> provides a set of iterators to facilitate walking over the
+tree. Each operates on the current C<AstNVisitor> class (as this) and takes
+an argument type C<AstNode*>.
 
 =over 4
 
-=item C<iterate()>
+=item C<iterate>
 
 This just applies the C<accept> method of the C<AstNode> to the visitor
 function.
@@ -349,9 +346,9 @@ to be aware that calling iteration may cause the children to change.  For
 example:
 
     // nodep->lhsp() is 0x1234000
-    nodep->lhsp()->iterateAndNext(...);  // and under covers nodep->lhsp() changes
+    iterateAndNextNull(nodep->lhsp());  // and under covers nodep->lhsp() changes
     // nodep->lhsp() is 0x5678400
-    nodep->lhsp()->iterateAndNext(...);
+    iterateAndNextNull(nodep->lhsp());
 
 Will work fine, as even if the first iterate causes a new node to take the
 place of the lhsp(), that edit will update nodep->lhsp() and the second
@@ -359,9 +356,9 @@ call will correctly see the change. Alternatively:
 
     lp = nodep->lhsp();
     // nodep->lhsp() is 0x1234000, lp is 0x1234000
-    lp->iterateAndNext(...); **lhsp=NULL;** // and under covers nodep->lhsp() changes
+    iterateAndNextNull(lp); **lhsp=NULL;** // and under covers nodep->lhsp() changes
     // nodep->lhsp() is 0x5678400, lp is 0x1234000
-    lp->iterateAndNext(...);
+    iterateAndNextNull(lp);
 
 This will cause bugs or a core dump, as lp is a dangling pointer.  Thus it
 is advisable to set lhsp=NULL shown in the *'s above to make sure these
@@ -370,7 +367,7 @@ V3Width is to use acceptSubtreeReturnEdits, which operates on a single node
 and returns the new pointer if any.  Note acceptSubtreeReturnEdits does not
 follow nextp() links.
 
-    lp = lp->acceptSubtreeReturnEdits()
+    lp = acceptSubtreeReturnEdits(lp)
 
 =head2 Identifying derived classes
 
@@ -379,16 +376,16 @@ dealing with. For example a visitor might not implement separate C<visit>
 methods for C<AstIf> and C<AstGenIf>, but just a single method for the base
 class:
 
-  void visit (AstNodeIf* nodep, AstNUser* vup)
+  void visit (AstNodeIf* nodep)
 
 However that method might want to specify additional code if it is called
-for C<AstGenIf>. Verilator does this by providing a C<castSOMETYPE()>
+for C<AstGenIf>. Verilator does this by providing a C<VN_CAST>
 method for each possible node type, using C++ C<dynamic_cast>. This either
 returns a pointer to the object cast to that type (if it is of class
 C<SOMETYPE>, or a derived class of C<SOMETYPE>) or else NULL. So our
 C<visit> method could use:
 
-  if (nodep->castAstGenIf()) {
+  if (VN_CAST(nodep, AstGenIf) {
       <code specific to AstGenIf>
   }
 

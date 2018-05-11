@@ -406,19 +406,19 @@ private:
 
     // VISITORS
     virtual void visit(AstNetlist* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstNodeModule* nodep) {
 	m_modTables = 0;
 	m_modTableVscs.clear();
 	m_modp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp = NULL;
     }
     virtual void visit(AstScope* nodep) {
 	UINFO(4," SCOPE "<<nodep<<endl);
 	m_scopep = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_scopep = NULL;
     }
     virtual void visit(AstAlways* nodep) {
@@ -436,7 +436,7 @@ private:
     }
     // default
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTRUCTORS
@@ -448,7 +448,7 @@ public:
 	m_inWidth = 0;
 	m_outWidth = 0;
 	m_totalBytes = 0;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~TableVisitor() {
 	V3Stats::addStat("Optimizations, Tables created", m_statTablesCre);

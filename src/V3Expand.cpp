@@ -312,7 +312,7 @@ private:
     // VISITORS
     virtual void visit(AstExtend* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->isWide()) {
 	    // See under ASSIGN(EXTEND)
 	} else {
@@ -351,7 +351,7 @@ private:
 
     virtual void visit(AstSel* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Remember, Sel's may have non-integer rhs, so need to optimize for that!
 	if (nodep->widthMin()!=(int)nodep->widthConst()) nodep->v3fatalSrc("Width mismatch");
         if (VN_IS(nodep->backp(), NodeAssign) && nodep==VN_CAST(nodep->backp(), NodeAssign)->lhsp()) {
@@ -652,7 +652,7 @@ private:
 
     virtual void visit(AstConcat* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->isWide()) {
 	    // See under ASSIGN(WIDE)
 	} else {
@@ -692,7 +692,7 @@ private:
 
     virtual void visit(AstReplicate* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->isWide()) {
 	    // See under ASSIGN(WIDE)
 	} else {
@@ -753,7 +753,7 @@ private:
 
     virtual void visit(AstChangeXor* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	UINFO(8,"    Wordize ChangeXor "<<nodep<<endl);
 	// -> (0=={or{for each_word{WORDSEL(lhs,#)^WORDSEL(rhs,#)}}}
 	AstNode* newp = NULL;
@@ -768,7 +768,7 @@ private:
 
     void visitEqNeq(AstNodeBiop* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->lhsp()->isWide()) {
 	    UINFO(8,"    Wordize EQ/NEQ "<<nodep<<endl);
 	    // -> (0=={or{for each_word{WORDSEL(lhs,#)^WORDSEL(rhs,#)}}}
@@ -794,7 +794,7 @@ private:
 
     virtual void visit(AstRedOr* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->lhsp()->isWide()) {
 	    UINFO(8,"    Wordize REDOR "<<nodep<<endl);
 	    // -> (0!={or{for each_word{WORDSEL(lhs,#)}}}
@@ -818,7 +818,7 @@ private:
     }
     virtual void visit(AstRedAnd* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->lhsp()->isWide()) {
 	    UINFO(8,"    Wordize REDAND "<<nodep<<endl);
 	    // -> (0!={and{for each_word{WORDSEL(lhs,#)}}}
@@ -847,7 +847,7 @@ private:
     }
     virtual void visit(AstRedXor* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->lhsp()->isWide()) {
 	    UINFO(8,"    Wordize REDXOR "<<nodep<<endl);
 	    // -> (0!={redxor{for each_word{XOR(WORDSEL(lhs,#))}}}
@@ -867,13 +867,13 @@ private:
     virtual void visit(AstNodeStmt* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
 	m_stmtp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_stmtp = NULL;
     }
     virtual void visit(AstNodeAssign* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
 	m_stmtp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	bool did = false;
         if (nodep->isWide() && ((VN_IS(nodep->lhsp(), VarRef)
                                  || VN_IS(nodep->lhsp(), ArraySel)))
@@ -918,14 +918,14 @@ private:
     // Default: Just iterate
     virtual void visit(AstVar*) {}	// Don't hit varrefs under vars
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
     // CONSTUCTORS
     explicit ExpandVisitor(AstNetlist* nodep) {
 	m_stmtp=NULL;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~ExpandVisitor() {}
 };

@@ -146,10 +146,10 @@ private:
 	//
 	m_initSubFuncp = newCFuncSub(m_initFuncp);
 	// And find variables
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstVarScope* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Avoid updating this if (), instead see varp->isTrace()
 	if (!nodep->varp()->isTemp() && !nodep->varp()->isFuncLocal()) {
 	    UINFO(5, "    vsc "<<nodep<<endl);
@@ -172,7 +172,7 @@ private:
 		else m_traValuep = new AstVarRef(nodep->fileline(), nodep, false);
 		{
 		    // Recurse into data type of the signal; the visitors will call addTraceDecl()
-		    varp->dtypeSkipRefp()->accept(*this);
+                    iterate(varp->dtypeSkipRefp());
 		}
 		// Cleanup
 		if (m_traValuep) { m_traValuep->deleteTree(); m_traValuep=NULL; }
@@ -185,12 +185,12 @@ private:
     // VISITORS - Data types when tracing
     virtual void visit(AstConstDType* nodep) {
 	if (m_traVscp) {
-	    nodep->subDTypep()->skipRefp()->accept(*this);
+            iterate(nodep->subDTypep()->skipRefp());
 	}
     }
     virtual void visit(AstRefDType* nodep) {
 	if (m_traVscp) {
-	    nodep->subDTypep()->skipRefp()->accept(*this);
+            iterate(nodep->subDTypep()->skipRefp());
 	}
     }
     virtual void visit(AstUnpackArrayDType* nodep) {
@@ -214,7 +214,7 @@ private:
 			m_traValuep = new AstArraySel(nodep->fileline(), m_traValuep->cloneTree(true),
 						      i - nodep->lsb());
 
-			subtypep->accept(*this);
+                        iterate(subtypep);
 			m_traValuep->deleteTree(); m_traValuep = NULL;
 		    }
 		    m_traShowname = oldShowname;
@@ -239,7 +239,7 @@ private:
 			m_traValuep = new AstSel(nodep->fileline(), m_traValuep->cloneTree(true),
 						 (i - nodep->lsb())*subtypep->width(),
 						 subtypep->width());
-			subtypep->accept(*this);
+                        iterate(subtypep);
 			m_traValuep->deleteTree(); m_traValuep = NULL;
 		    }
 		    m_traShowname = oldShowname;
@@ -267,10 +267,10 @@ private:
                             if (VN_IS(nodep, StructDType)) {
 				m_traValuep = new AstSel(nodep->fileline(), m_traValuep->cloneTree(true),
 							 itemp->lsb(), subtypep->width());
-				subtypep->accept(*this);
+                                iterate(subtypep);
 				m_traValuep->deleteTree(); m_traValuep = NULL;
 			    } else { // Else union, replicate fields
-				subtypep->accept(*this);
+                                iterate(subtypep);
 			    }
 			}
 			m_traShowname = oldShowname;
@@ -297,7 +297,7 @@ private:
 
     //--------------------
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -312,7 +312,7 @@ public:
 	m_funcNum = 0;
 	m_traVscp = NULL;
 	m_traValuep = NULL;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~TraceDeclVisitor() {
 	V3Stats::addStat("Tracing, Traced signals", m_statSigs);

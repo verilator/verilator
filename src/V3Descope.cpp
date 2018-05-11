@@ -234,13 +234,13 @@ private:
 	m_modp = nodep;
 	m_modFuncs.clear();
         m_modSingleton = modIsSingleton(m_modp);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	makePublicFuncWrappers();
 	m_modp = NULL;
     }
     virtual void visit(AstScope* nodep) {
 	m_scopep = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_scopep = NULL;
     }
     virtual void visit(AstVarScope* nodep) {
@@ -249,7 +249,7 @@ private:
 	pushDeletep(nodep);
     }
     virtual void visit(AstNodeVarRef* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Convert the hierch name
 	if (!m_scopep) nodep->v3fatalSrc("Node not under scope");
 	bool hierThis;
@@ -259,7 +259,7 @@ private:
     }
     virtual void visit(AstCCall* nodep) {
 	//UINFO(9,"       "<<nodep<<endl);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Convert the hierch name
 	if (!m_scopep) nodep->v3fatalSrc("Node not under scope");
 	if (!nodep->funcp()->scopep()) nodep->v3fatalSrc("CFunc not under scope");
@@ -271,7 +271,7 @@ private:
     virtual void visit(AstCFunc* nodep) {
 	if (!nodep->user1()) {
 	    m_needThis = false;
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    nodep->user1(true);
 	    if (m_needThis) {
                 nodep->isStatic(false);
@@ -292,7 +292,7 @@ private:
     }
     virtual void visit(AstVar*) {}
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTRUCTORS
@@ -301,7 +301,7 @@ public:
           m_scopep(NULL),
           m_modSingleton(false),
           m_needThis(false) {
-        nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~DescopeVisitor() {}
 };

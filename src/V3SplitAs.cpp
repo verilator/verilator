@@ -67,13 +67,13 @@ private:
 	}
     }
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
     explicit SplitAsFindVisitor(AstAlways* nodep) {
 	m_splitVscp = NULL;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~SplitAsFindVisitor() {}
     // METHODS
@@ -107,7 +107,7 @@ private:
 	    m_matches = false;
 	    m_keepStmt = false;
 
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 
 	    if (m_keepStmt
 		|| (m_modeMatch ? m_matches : !m_matches)) {
@@ -123,14 +123,14 @@ private:
 	UINFO(9,"     upKeep="<<m_keepStmt<<" STMT "<<nodep<<endl);
     }
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
     SplitAsCleanVisitor(AstAlways* nodep, AstVarScope* vscp, bool modeMatch) {
 	m_splitVscp = vscp;
 	m_modeMatch = modeMatch;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~SplitAsCleanVisitor() {}
 };
@@ -195,7 +195,7 @@ private:
     virtual void visit(AstNodeMath* nodep) {}
 
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -203,7 +203,7 @@ public:
     explicit SplitAsVisitor(AstNetlist* nodep) {
 	m_splitVscp = NULL;
 	AstNode::user1ClearTree();	// user1p() used on entire tree
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~SplitAsVisitor() {
 	V3Stats::addStat("Optimizations, isolate_assignments blocks", m_statSplits);

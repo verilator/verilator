@@ -90,12 +90,12 @@ private:
 	}
     }
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTRUCTORS
     explicit LocalizeDehierVisitor(AstNetlist* nodep) {
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~LocalizeDehierVisitor() {}
 };
@@ -157,7 +157,7 @@ private:
 
     // VISITORS
     virtual void visit(AstNetlist* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	moveVars();
     }
     virtual void visit(AstCFunc* nodep) {
@@ -167,7 +167,7 @@ private:
 	searchFuncStmts(nodep->initsp());
 	searchFuncStmts(nodep->stmtsp());
 	searchFuncStmts(nodep->finalsp());
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_cfuncp = NULL;
     }
     void searchFuncStmts(AstNode* nodep) {
@@ -230,13 +230,13 @@ private:
 	// No iterate; Don't want varrefs under it
     }
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTRUCTORS
     explicit LocalizeVisitor(AstNetlist* nodep) {
 	m_cfuncp = NULL;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~LocalizeVisitor() {
 	V3Stats::addStat("Optimizations, Vars localized", m_statLocVars);

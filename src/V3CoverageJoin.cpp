@@ -105,24 +105,24 @@ private:
     // VISITORS
     virtual void visit(AstNetlist* nodep) {
 	// Find all Coverage's
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Simplify
 	detectDuplicates();
     }
     virtual void visit(AstCoverToggle* nodep) {
 	m_toggleps.push_back(nodep);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     //--------------------
     virtual void visit(AstNodeMath* nodep) {}  // Accelerate
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
     // CONSTUCTORS
     explicit CoverageJoinVisitor(AstNetlist* nodep) {
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~CoverageJoinVisitor() {
 	V3Stats::addStat("Coverage, Toggle points joined", m_statToggleJoins);

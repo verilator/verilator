@@ -290,7 +290,7 @@ void AstNode::addNextHere(AstNode* newp) {
     // Add to m_nextp on exact node passed, not at the end.
     //  This could be at head, tail, or both (single)
     //  New  could be head of single node, or list
-    UDEBUGONLY(UASSERT(dynamic_cast<AstNode*>(this),"this should not be NULL"););
+    UDEBUGONLY(UASSERT(dynamic_cast<const AstNode*>(this),"this should not be NULL"););
     UASSERT(newp,"Null item passed to addNext");
     UASSERT(newp->backp()==NULL,"New node (back) already assigned?");
     this->debugTreeChange("-addHereThs: ", __LINE__, false);
@@ -646,7 +646,7 @@ AstNode* AstNode::cloneTreeIterList() {
 }
 
 AstNode* AstNode::cloneTree(bool cloneNextLink) {
-    UDEBUGONLY(UASSERT(dynamic_cast<AstNode*>(this),"this should not be NULL"););
+    UDEBUGONLY(UASSERT(dynamic_cast<const AstNode*>(this),"this should not be NULL"););
     this->debugTreeChange("-cloneThs: ", __LINE__, cloneNextLink);
     cloneClearTree();
     AstNode* newp;
@@ -802,7 +802,7 @@ void AstNode::iterateAndNext(AstNVisitor& v) {
 }
 
 void AstNode::iterateListBackwards(AstNVisitor& v) {
-    UDEBUGONLY(UASSERT(dynamic_cast<AstNode*>(this),"this should not be NULL"););
+    UDEBUGONLY(UASSERT(dynamic_cast<const AstNode*>(this),"this should not be NULL"););
     AstNode* nodep=this;
     while (nodep->m_nextp) nodep=nodep->m_nextp;
     while (nodep) {
@@ -822,8 +822,8 @@ void AstNode::iterateChildrenBackwards(AstNVisitor& v) {
 
 void AstNode::iterateAndNextConst(AstNVisitor& v) {
     // Keep following the current list even if edits change it
-    if (!this) return;  // A few cases could be cleaned up, but want symmetry with iterateAndNext
-    for (AstNode* nodep=this; nodep; ) {   // effectively: if (!this) return;  // Callers rely on this
+    UDEBUGONLY(UASSERT(dynamic_cast<const AstNode*>(this),"this should not be NULL"););
+    for (AstNode* nodep=this; nodep; ) {
 	AstNode* nnextp = nodep->m_nextp;
 	ASTNODE_PREFETCH(nnextp);
 	nodep->accept(v);
@@ -871,6 +871,7 @@ AstNode* AstNode::iterateSubtreeReturnEdits(AstNVisitor& v) {
 
 void AstNode::cloneRelinkTree() {
     // private: Cleanup clone() operation on whole tree. Publicly call cloneTree() instead.
+    UDEBUGONLY(UASSERT(dynamic_cast<const AstNode*>(this),"this should not be NULL"););
     for (AstNode* nodep=this; nodep; nodep=nodep->m_nextp) {
 	if (m_dtypep && m_dtypep->clonep()) {
 	    m_dtypep = m_dtypep->clonep();
@@ -896,7 +897,7 @@ bool AstNode::gateTreeIter() const {
     return true;
 }
 
-bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ignNext, bool gateOnly) const {
+bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ignNext, bool gateOnly) {
     // private: Return true if the two trees are identical
     if (!node1p && !node2p) return true;
     if (!node1p || !node2p) return false;

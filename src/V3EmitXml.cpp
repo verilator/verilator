@@ -89,7 +89,7 @@ class EmitXmlFileVisitor : public AstNVisitor {
 	if (tag=="") tag = VString::downcase(nodep->typeName());
 	if (nodep->op1p() || nodep->op2p() || nodep->op3p() || nodep->op4p()) {
 	    puts(">\n");
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    puts("</"+tag+">\n");
 	} else {
 	    puts("/>\n");
@@ -108,7 +108,7 @@ class EmitXmlFileVisitor : public AstNVisitor {
     }
     virtual void visit(AstNetlist* nodep) {
 	puts("<netlist>\n");
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	puts("</netlist>\n");
     }
     virtual void visit(AstNodeModule* nodep) {
@@ -154,7 +154,7 @@ public:
     EmitXmlFileVisitor(AstNode* nodep, V3OutFile* ofp) {
 	m_ofp = ofp;
 	m_id = 0;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~EmitXmlFileVisitor() {}
 };

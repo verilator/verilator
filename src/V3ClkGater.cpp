@@ -196,7 +196,7 @@ private:
     bool		m_isSimple;	// Set false when we know it isn't simple
     // METHODS
     inline void okIterate(AstNode* nodep) {
-	if (m_isSimple) nodep->iterateChildren(*this);
+        if (m_isSimple) iterateChildren(nodep);
     }
     // VISITORS
     virtual void visit(AstOr* nodep) {	okIterate(nodep); }
@@ -213,13 +213,13 @@ private:
 
     virtual void visit(AstNode* nodep) {
 	m_isSimple = false;
-	//nodep->iterateChildren(*this);
+        //iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
     explicit GaterCondVisitor(AstNode* nodep) {
 	m_isSimple = true;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~GaterCondVisitor() {}
     // PUBLIC METHODS
@@ -283,7 +283,7 @@ class GaterBodyVisitor : public GaterBaseVisitor {
 	uint32_t childstate;
 	{
 	    m_state = STATE_UNKNOWN;
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    childstate = m_state;
 	}
 	m_state = oldstate;
@@ -305,7 +305,7 @@ class GaterBodyVisitor : public GaterBaseVisitor {
 	}
     }
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
@@ -315,7 +315,7 @@ public:
 	m_state = STATE_UNKNOWN;
 	m_cloning = false;
 	if (debug()>=9) nodep->dumpTree(cout,"  GateBodyIn:  ");
-	nodep->bodysp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->bodysp());
 	if (debug()>=9) nodep->dumpTree(cout,"  GateBodyOut: ");
 	// If there's no statements we shouldn't have had a resulting graph
 	// vertex asking for this creation
@@ -802,17 +802,17 @@ class GaterVisitor : public GaterBaseVisitor {
 	    GaterIfVertex* vertexp = new GaterIfVertex(&m_graph, nodep);
 	    new GaterEdge(&m_graph, m_aboveVertexp, vertexp, m_aboveTrue);
 	    {
-		nodep->condp()->iterateAndNext(*this);  // directlyUnder stays as-is
+                iterateAndNextNull(nodep->condp());  // directlyUnder stays as-is
 	    }
 	    {
 		m_aboveVertexp = vertexp;  // Vars will point at this edge
 		m_aboveTrue = VU_IF;
-		nodep->ifsp()->iterateAndNext(*this);  // directlyUnder stays as-is (true)
+                iterateAndNextNull(nodep->ifsp());  // directlyUnder stays as-is (true)
 	    }
 	    {
 		m_aboveVertexp = vertexp;  // Vars will point at this edge
 		m_aboveTrue = VU_ELSE;
-		nodep->elsesp()->iterateAndNext(*this);  // directlyUnder stays as-is (true)
+                iterateAndNextNull(nodep->elsesp());  // directlyUnder stays as-is (true)
 	    }
 	    m_aboveVertexp = lastabovep;
 	    m_aboveTrue = lasttrue;
@@ -868,7 +868,7 @@ class GaterVisitor : public GaterBaseVisitor {
 	    scoreboardPli(nodep);
 	}
 	{
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
 	m_directlyUnderAlw = lastdua;
         if (VN_IS(nodep, NodeStmt)) {  // Reset what set above; else propagate up to above statement
@@ -882,7 +882,7 @@ public:
     explicit GaterVisitor(AstNetlist* nodep) {
 	// AstAlways visitor does the real work, so most zeroing needs to be in clear()
 	clear();
-	nodep->accept(*this);
+        iterate(nodep);
     }
     void clear() {
 	m_nonopt = "";

@@ -160,7 +160,7 @@ private:
     virtual void visit(AstNetlist* nodep) {
 	AstNode::user1ClearTree();
 	readModNames();
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Find levels in graph
 	m_graph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
 	m_graph.dumpDotFilePrefixed("linkcells");
@@ -219,7 +219,7 @@ private:
 	    new V3GraphEdge(&m_graph, m_libVertexp, vertex(nodep), 1, false);
 	}
 	// Note AstBind also has iteration on cells
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	nodep->checkTree();
 	m_modp = NULL;
     }
@@ -245,7 +245,7 @@ private:
 
     virtual void visit(AstPackageImport* nodep) {
 	// Package Import: We need to do the package before the use of a package
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (!nodep->packagep()) nodep->v3fatalSrc("Unlinked package");  // Parser should set packagep
 	new V3GraphEdge(&m_graph, vertex(m_modp), vertex(nodep->packagep()), 1, false);
     }
@@ -264,7 +264,7 @@ private:
 	    {
 		m_modp = modp;
 		modp->addStmtp(cellsp);  // Important that this adds to end, as next iterate assumes does all cells
-		cellsp->iterateAndNext(*this);
+                iterateAndNextNull(cellsp);
 	    }
 	    m_modp = oldModp;
 	}
@@ -428,7 +428,7 @@ private:
 	    }
 	}
 	if (nodep->modp()) {
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
 	UINFO(4," Link Cell done: "<<nodep<<endl);
     }
@@ -438,7 +438,7 @@ private:
     virtual void visit(AstNodeMath* nodep) {}
     virtual void visit(AstNode* nodep) {
 	// Default: Just iterate
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
     // METHODS
@@ -470,7 +470,7 @@ public:
 	m_modp = NULL;
 	m_libVertexp = NULL;
 	m_topVertexp = NULL;
-	rootp->accept(*this);
+        iterate(rootp);
     }
     virtual ~LinkCellsVisitor() {}
 };

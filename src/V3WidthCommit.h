@@ -44,7 +44,7 @@ private:
 	replaceWithSignedVersion(nodep, nodep->lhsp()->unlinkFrBack()); VL_DANGLING(nodep);
     }
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     void replaceWithSignedVersion(AstNode* nodep, AstNode* newp) {
 	UINFO(6," Replace "<<nodep<<" w/ "<<newp<<endl);
@@ -57,7 +57,7 @@ public:
     WidthRemoveVisitor() {}
     virtual ~WidthRemoveVisitor() {}
     AstNode* mainAcceptEdit(AstNode* nodep) {
-	return nodep->iterateSubtreeReturnEdits(*this);
+        return iterateSubtreeReturnEdits(nodep);
     }
 };
 
@@ -99,7 +99,7 @@ private:
 	// dtypep() figures into sameTree() results in better optimizations
 	if (!nodep) return NULL;
 	// Recurse to handle the data type, as may change the size etc of this type
-	if (!nodep->user1()) nodep->accept(*this);
+        if (!nodep->user1()) iterate(nodep);
 	// Look for duplicate
         if (AstBasicDType* bdtypep = VN_CAST(nodep, BasicDType)) {
 	    AstBasicDType* newp = nodep->findInsertSameDType(bdtypep);
@@ -114,7 +114,7 @@ private:
     // VISITORS
     virtual void visit(AstConst* nodep) {
 	if (!nodep->dtypep()) nodep->v3fatalSrc("No dtype");
-	nodep->dtypep()->accept(*this);  // Do datatype first
+        iterate(nodep->dtypep());  // Do datatype first
 	if (AstConst* newp = newIfConstCommitSize(nodep)) {
 	    nodep->replaceWith(newp);
 	    AstNode* oldp = nodep; nodep = newp;
@@ -147,7 +147,7 @@ private:
 	nodep->widthMinFromWidth();
 	// Too late to any unspecified sign to be anything but unsigned
 	if (nodep->numeric().isNosign()) nodep->numeric(AstNumeric::UNSIGNED);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	nodep->virtRefDTypep(editOneDType(nodep->virtRefDTypep()));
     }
     virtual void visit(AstNodePreSel* nodep) {
@@ -155,7 +155,7 @@ private:
 	nodep->v3fatalSrc("Presels should have been removed before this point");
     }
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	editDType(nodep);
     }
 public:
@@ -163,7 +163,7 @@ public:
     explicit WidthCommitVisitor(AstNetlist* nodep) {
 	// Were changing widthMin's, so the table is now somewhat trashed
 	nodep->typeTablep()->clearCache();
-	nodep->accept(*this);
+        iterate(nodep);
 	// Don't want to repairCache, as all needed nodes have been added back in
 	// a repair would prevent dead nodes from being detected
     }

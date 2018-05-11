@@ -64,7 +64,7 @@ private:
 	m_cellp = nodep;
 	//VV*****  We reset user1p() on each cell!!!
 	AstNode::user1ClearTree();
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_cellp = NULL;
     }
     virtual void visit(AstPin* nodep) {
@@ -132,14 +132,14 @@ private:
     //--------------------
     // Default: Just iterate
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
     explicit InstVisitor(AstNetlist* nodep) {
 	m_cellp=NULL;
 	//
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~InstVisitor() {}
 };
@@ -165,13 +165,13 @@ private:
 	    UINFO(8,"   dm-1-VAR    "<<nodep<<endl);
 	    insert(nodep);
 	}
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     // Save some time
     virtual void visit(AstNodeMath*) {}
     // Default: Just iterate
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // METHODS
@@ -198,7 +198,7 @@ public:
     void main(AstNodeModule* nodep) {
 	UINFO(8,"  dmMODULE    "<<nodep<<endl);
 	m_modVarNameMap.clear();
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~InstDeModVarVisitor() {}
 };
@@ -251,7 +251,7 @@ private:
 	    if (prevp) nodep->addNextHere(prevp);
 	    if (prevp && debug()==9) { prevp->dumpTree(cout, "newintf: "); cout << endl; }
 	}
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
     virtual void visit(AstCell* nodep) {
@@ -302,7 +302,7 @@ private:
 		    if (debug()==9) { varNewp->dumpTree(cout, "newintf: "); cout << endl; }
 		}
 		// Fixup pins
-		newp->pinsp()->iterateAndNext(*this);
+                iterateAndNextNull(newp->pinsp());
 		if (debug()==9) { newp->dumpTree(cout,"newcell: "); cout<<endl; }
 	    }
 
@@ -314,7 +314,7 @@ private:
 	    nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
 	} else {
 	    m_cellRangep = NULL;
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
     }
 
@@ -448,7 +448,7 @@ private:
     //--------------------
     // Default: Just iterate
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
@@ -456,7 +456,7 @@ public:
 	m_cellRangep=NULL;
 	m_instSelNum=0;
 	//
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~InstDeVisitor() {}
 };

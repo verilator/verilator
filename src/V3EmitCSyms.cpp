@@ -166,7 +166,7 @@ class EmitCSyms : EmitCBaseVisitor {
     // VISITORS
     virtual void visit(AstNetlist* nodep) {
 	// Collect list of scopes
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	varsExpand();
 
 	// Sort by names, so line/process order matters less
@@ -185,7 +185,7 @@ class EmitCSyms : EmitCBaseVisitor {
 	nameCheck(nodep);
 	m_modp = nodep;
 	m_labelNum = 0;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp = NULL;
     }
     virtual void visit(AstScope* nodep) {
@@ -210,7 +210,7 @@ class EmitCSyms : EmitCBaseVisitor {
     }
     virtual void visit(AstVar* nodep) {
 	nameCheck(nodep);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->isSigUserRdPublic()
 	    && !nodep->isParam()) {  // The VPI functions require a pointer to allow modification, but parameters are constants
 	    m_modVars.push_back(make_pair(m_modp, nodep));
@@ -224,7 +224,7 @@ class EmitCSyms : EmitCBaseVisitor {
     }
     virtual void visit(AstJumpLabel* nodep) {
 	nodep->labelNum(++m_labelNum);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstCFunc* nodep) {
 	nameCheck(nodep);
@@ -232,14 +232,14 @@ class EmitCSyms : EmitCBaseVisitor {
 	    m_dpis.push_back(nodep);
 	}
 	m_funcp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_funcp = NULL;
     }
     // NOPs
     virtual void visit(AstConst*) {}
     // Default
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     //---------------------------------------
     // ACCESSORS
@@ -249,7 +249,7 @@ public:
 	m_modp = NULL;
 	m_coverBins = 0;
 	m_labelNum = 0;
-	nodep->accept(*this);
+        iterate(nodep);
     }
 };
 

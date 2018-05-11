@@ -51,13 +51,13 @@ private:
 	if (nodep->varp()) nodep->varp()->user4(1);
     }
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
     explicit ConstVarMarkVisitor(AstNode* nodep) {
 	AstNode::user4ClearTree();  // Check marked InUse before we're called
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~ConstVarMarkVisitor() {}
 };
@@ -73,13 +73,13 @@ private:
 	if (nodep->varp() && nodep->varp()->user4()) m_found = true;
     }
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
     explicit ConstVarFindVisitor(AstNode* nodep) {
 	m_found = false;
-	nodep->iterateAndNext(*this);
+        iterateAndNextNull(nodep);
     }
     virtual ~ConstVarFindVisitor() {}
     // METHODS
@@ -430,7 +430,7 @@ private:
 	if (m_doGenerate) {
 	    // Never checked yet
 	    V3Width::widthParamsEdit(nodep);
-	    nodep->iterateChildren(*this);	// May need "constifying"
+            iterateChildren(nodep);  // May need "constifying"
 	}
 	// Find range of dtype we are selecting from
 	// Similar code in V3Unknown::AstSel
@@ -686,14 +686,14 @@ private:
     //! Replace a ternary node with its RHS after iterating
     //! Used with short-circuting, where the RHS has not yet been iterated.
     void replaceWIteratedRhs(AstNodeTriop* nodep) {
-	if (AstNode *rhsp = nodep->rhsp()) rhsp->iterateAndNext(*this);
+        if (AstNode* rhsp = nodep->rhsp()) iterateAndNextNull(rhsp);
 	replaceWChild(nodep, nodep->rhsp());	// May have changed
     }
 
     //! Replace a ternary node with its THS after iterating
     //! Used with short-circuting, where the THS has not yet been iterated.
     void replaceWIteratedThs(AstNodeTriop* nodep) {
-	if (AstNode *thsp = nodep->thsp()) thsp->iterateAndNext(*this);
+        if (AstNode* thsp = nodep->thsp()) iterateAndNextNull(thsp);
 	replaceWChild(nodep, nodep->thsp());	// May have changed
     }
     void replaceWLhs(AstNodeUniop* nodep) {
@@ -835,8 +835,8 @@ private:
 	    UINFO(5, "merged "<< nodep <<endl);
 	    rp->unlinkFrBack()->deleteTree(); VL_DANGLING(rp);
 	    nodep->replaceWith(lp->unlinkFrBack()); nodep->deleteTree(); VL_DANGLING(nodep);
-	    lp->lhsp()->accept(*this);
-	    lp->rhsp()->accept(*this);
+            iterate(lp->lhsp());
+            iterate(lp->rhsp());
 	} else nodep->v3fatalSrc("tried to merge two Concat which are not adjacent");
     }
     void replaceExtend (AstNode* nodep, AstNode* arg0p) {
@@ -892,7 +892,7 @@ private:
 	AstNodeBiop* newp = lhsp;
 	newp->lhsp(shift1p); newp->rhsp(shift2p);
 	handle.relink(newp);
-	newp->accept(*this);	// Further reduce, either node may have more reductions.
+        iterate(newp);  // Further reduce, either node may have more reductions.
     }
     void replaceShiftShift (AstNodeBiop* nodep) {
 	UINFO(4,"SHIFT(SHIFT(a,s1),s2)->SHIFT(a,ADD(s1,s2)) "<<nodep<<endl);
@@ -910,7 +910,7 @@ private:
 	    shift2p->deleteTree(); VL_DANGLING(shift2p);
 	    nodep->lhsp(ap);
 	    nodep->rhsp(new AstConst(nodep->fileline(), newshift));
-	    nodep->accept(*this);	// Further reduce, either node may have more reductions.
+            iterate(nodep);  // Further reduce, either node may have more reductions.
 	} else {
 	    // We know shift amounts are constant, but might be a mixed left/right shift
             int shift1 = VN_CAST(shift1p, Const)->toUInt(); if (VN_IS(lhsp, ShiftR))  shift1=-shift1;
@@ -947,7 +947,7 @@ private:
 	    newp->dtypeFrom(nodep);
 	    nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
 	    //newp->dumpTree(cout, "  repShiftShift_new: ");
-	    newp->accept(*this);	// Further reduce, either node may have more reductions.
+            iterate(newp);  // Further reduce, either node may have more reductions.
 	}
 	lhsp->deleteTree(); VL_DANGLING(lhsp);
     }
@@ -1234,25 +1234,25 @@ private:
     // VISITORS
     virtual void visit(AstNetlist* nodep) {
 	// Iterate modules backwards, in bottom-up order.  That's faster
-	nodep->iterateChildrenBackwards(*this);
+        iterateChildrenBackwards(nodep);
     }
     virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp = NULL;
     }
     virtual void visit(AstCFunc* nodep) {
 	// No ASSIGNW removals under funcs, we've long eliminated INITIALs
 	// (We should perhaps rename the assignw's to just assigns)
 	m_wremove = false;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_wremove = true;
     }
     virtual void visit(AstScope* nodep) {
 	// No ASSIGNW removals under scope, we've long eliminated INITIALs
 	m_scopep = nodep;
 	m_wremove = false;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_wremove = true;
 	m_scopep = NULL;
     }
@@ -1264,7 +1264,7 @@ private:
 	AstNode* rhsp = nodep->rhsp()->unlinkFrBackWithNext();
 	nodep->lhsp(rhsp);
 	nodep->rhsp(lhsp);
-	nodep->accept(*this);  // Again?
+        iterate(nodep);  // Again?
     }
 
     int operandConcatMove(AstConcat* nodep) {
@@ -1325,13 +1325,13 @@ private:
 
     virtual void visit(AstCell* nodep) {
 	if (m_params) {
-	    nodep->paramsp()->iterateAndNext(*this);
+            iterateAndNextNull(nodep->paramsp());
 	} else {
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
     }
     virtual void visit(AstPin* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
     void replaceSelSel(AstSel* nodep) {
@@ -1501,12 +1501,12 @@ private:
     virtual void visit(AstAttrOf* nodep) {
 	AstAttrOf* oldAttr = m_attrp;
 	m_attrp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_attrp = oldAttr;
     }
 
     virtual void visit(AstArraySel* nodep) {
-	nodep->bitp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->bitp());
         if (VN_IS(nodep->bitp(), Const)
             && VN_IS(nodep->fromp(), VarRef)
 	    // Need to make sure it's an array object so don't mis-allow a constant (bug509.)
@@ -1514,7 +1514,7 @@ private:
             && VN_IS(VN_CAST(nodep->fromp(), VarRef)->varp()->valuep(), InitArray)) {
 	    m_selp = nodep;  // Ask visit(AstVarRef) to replace varref with const
 	}
-	nodep->fromp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->fromp());
         if (VN_IS(nodep->fromp(), Const)) {  // It did.
 	    if (!m_selp) {
 		nodep->v3error("Illegal assignment of constant to unpacked array");
@@ -1530,12 +1530,12 @@ private:
 	m_selp = NULL;
     }
     virtual void visit(AstNodeVarRef* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (!nodep->varp()) nodep->v3fatalSrc("Not linked");
 	bool did=false;
 	if (m_doV && nodep->varp()->valuep() && !m_attrp) {
 	    //if (debug()) valuep->dumpTree(cout,"  visitvaref: ");
-	    nodep->varp()->valuep()->iterateAndNext(*this);  // May change nodep->varp()->valuep()
+            iterateAndNextNull(nodep->varp()->valuep());  // May change nodep->varp()->valuep()
 	    AstNode* valuep = nodep->varp()->valuep();
 	    if (!nodep->lvalue()
 		&& ((!m_params // Can reduce constant wires into equations
@@ -1590,12 +1590,12 @@ private:
 	}
     }
     virtual void visit(AstEnumItemRef* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (!nodep->itemp()) nodep->v3fatalSrc("Not linked");
 	bool did=false;
 	if (nodep->itemp()->valuep()) {
 	    //if (debug()) nodep->varp()->valuep()->dumpTree(cout,"  visitvaref: ");
-	    nodep->itemp()->valuep()->iterateAndNext(*this);
+            iterateAndNextNull(nodep->itemp()->valuep());
             if (AstConst* valuep = VN_CAST(nodep->itemp()->valuep(), Const)) {
 		const V3Number& num = valuep->num();
 		replaceNum(nodep, num); VL_DANGLING(nodep);
@@ -1616,7 +1616,7 @@ private:
 	return (!nodep->nextp() && nodep->backp()->nextp() != nodep);
     }
     virtual void visit(AstSenItem* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (m_doNConst
             && (VN_IS(nodep->sensp(), Const)
                 || VN_IS(nodep->sensp(), EnumItemRef)
@@ -1657,7 +1657,7 @@ private:
 	}
     }
     virtual void visit(AstSenGate* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
         if (AstConst* constp = VN_CAST(nodep->rhsp(), Const)) {
 	    if (constp->isZero()) {
 		UINFO(4,"SENGATE(...,0)->NEVER"<<endl);
@@ -1706,7 +1706,7 @@ private:
     };
 
     virtual void visit(AstSenTree* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (m_doExpensive) {
 	    //cout<<endl; nodep->dumpTree(cout,"ssin: ");
 	    // Optimize ideas for the future:
@@ -1811,7 +1811,7 @@ private:
     //-----
     // Zero elimination
     virtual void visit(AstNodeAssign* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (m_doNConst && replaceNodeAssign(nodep)) return;
     }
     virtual void visit(AstAssignAlias* nodep) {
@@ -1821,7 +1821,7 @@ private:
 	// Don't perform any optimizations, the node won't be linked yet
     }
     virtual void visit(AstAssignW* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (m_doNConst && replaceNodeAssign(nodep)) return;
         AstNodeVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef);  // Not VarXRef, as different refs may set different values to each hierarchy
 	if (m_wremove && !m_params && m_doNConst
@@ -1848,7 +1848,7 @@ private:
     }
 
     virtual void visit(AstNodeIf* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (m_doNConst) {
             if (const AstConst* constp = VN_CAST(nodep->condp(), Const)) {
 		AstNode* keepp = NULL;
@@ -1927,7 +1927,7 @@ private:
 
     virtual void visit(AstDisplay* nodep) {
         // DISPLAY(SFORMAT(text1)),DISPLAY(SFORMAT(text2)) -> DISPLAY(SFORMAT(text1+text2))
-        nodep->iterateChildren(*this);
+        iterateChildren(nodep);
         if (stmtDisplayDisplay(nodep)) return;
     }
     bool stmtDisplayDisplay(AstDisplay* nodep) {
@@ -1974,7 +1974,7 @@ private:
 	// Substitute constants into displays.  The main point of this is to
 	// simplify assertion methodologies which call functions with display's.
 	// This eliminates a pile of wide temps, and makes the C a whole lot more readable.
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	bool anyconst = false;
 	for (AstNode* argp = nodep->exprsp(); argp; argp=argp->nextp()) {
             if (VN_IS(argp, Const)) { anyconst=true; break; }
@@ -2033,20 +2033,20 @@ private:
     }
 
     virtual void visit(AstFuncRef* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (m_params) {  // Only parameters force us to do constant function call propagation
 	    replaceWithSimulation(nodep);
 	}
     }
     virtual void visit(AstArg* nodep) {
 	// replaceWithSimulation on the Arg's parent FuncRef replaces these
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstWhile* nodep) {
         bool oldHasJumpGo = m_hasJumpGo;
         m_hasJumpGo = false;
         {
-            nodep->iterateChildren(*this);
+            iterateChildren(nodep);
         }
         bool thisWhileHasJumpGo = m_hasJumpGo;
         m_hasJumpGo = thisWhileHasJumpGo || oldHasJumpGo;
@@ -2070,7 +2070,7 @@ private:
     }
     virtual void visit(AstInitArray* nodep) {
 	// Constant if all children are constant
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
     // These are converted by V3Param.  Don't constify as we don't want the from() VARREF to disappear, if any
@@ -2079,7 +2079,7 @@ private:
 
     // Ignored, can eliminate early
     virtual void visit(AstSysIgnore* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (m_doNConst) {
 	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
 	}
@@ -2087,7 +2087,7 @@ private:
 
     // Simplify
     virtual void visit(AstBasicDType* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	nodep->cvtRangeConst();
     }
 
@@ -2095,7 +2095,7 @@ private:
     // Jump elimination
 
     virtual void visit(AstJumpGo* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
         m_hasJumpGo = true;
 	if (m_doExpensive) { nodep->labelp()->user4(true); }
     }
@@ -2104,7 +2104,7 @@ private:
 	// Because JumpLabels disable many optimizations,
 	// remove JumpLabels that are not pointed to by any AstJumpGos
 	// Note this assumes all AstJumpGos are underneath the given label; V3Broken asserts this
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// AstJumpGo's below here that point to this node will set user4
 	if (m_doExpensive && !nodep->user4()) {
 	    UINFO(4,"JUMPLABEL => unused "<<nodep<<endl);
@@ -2453,7 +2453,7 @@ private:
 	    if (m_params && !nodep->width()) {
 		nodep = V3Width::widthParamsEdit(nodep);
 	    }
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
     }
 
@@ -2500,7 +2500,7 @@ public:
     virtual ~ConstVisitor() {}
     AstNode* mainAcceptEdit(AstNode* nodep) {
 	// Operate starting at a random place
-	return nodep->iterateSubtreeReturnEdits(*this);
+        return iterateSubtreeReturnEdits(nodep);
     }
 };
 

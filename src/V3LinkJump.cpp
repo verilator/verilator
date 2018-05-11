@@ -117,18 +117,18 @@ private:
 	if (nodep->dead()) return;
 	m_modp = nodep;
 	m_repeatNum = 0;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp = NULL;
     }
     virtual void visit(AstNodeFTask* nodep) {
 	m_ftaskp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_ftaskp = NULL;
     }
     virtual void visit(AstBegin* nodep) {
 	UINFO(8,"  "<<nodep<<endl);
 	m_beginStack.push_back(nodep);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_beginStack.pop_back();
     }
     virtual void visit(AstRepeat* nodep) {
@@ -167,16 +167,16 @@ private:
 	bool lastInc = m_loopInc;
 	m_loopp = nodep;
 	m_loopInc = false;
-	nodep->precondsp()->iterateAndNext(*this);
-	nodep->condp()->iterateAndNext(*this);
-	nodep->bodysp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->precondsp());
+        iterateAndNextNull(nodep->condp());
+        iterateAndNextNull(nodep->bodysp());
 	m_loopInc = true;
-	nodep->incsp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->incsp());
 	m_loopInc = lastInc;
 	m_loopp = lastLoopp;
     }
     virtual void visit(AstReturn* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
         AstFunc* funcp = VN_CAST(m_ftaskp, Func);
 	if (!m_ftaskp) { nodep->v3error("Return isn't underneath a task or function"); }
 	else if (funcp  && !nodep->lhsp()) { nodep->v3error("Return underneath a function should have return value"); }
@@ -195,7 +195,7 @@ private:
 	nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
     }
     virtual void visit(AstBreak* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (!m_loopp) { nodep->v3error("break isn't underneath a loop"); }
 	else {
 	    // Jump to the end of the loop
@@ -205,7 +205,7 @@ private:
 	nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
     }
     virtual void visit(AstContinue* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (!m_loopp) { nodep->v3error("continue isn't underneath a loop"); }
 	else {
 	    // Jump to the end of this iteration
@@ -217,7 +217,7 @@ private:
     }
     virtual void visit(AstDisable* nodep) {
 	UINFO(8,"   DISABLE "<<nodep<<endl);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	AstBegin* beginp = NULL;
 	for (BeginStack::reverse_iterator it = m_beginStack.rbegin(); it != m_beginStack.rend(); ++it) {
 	    UINFO(9,"    UNDERBLK  "<<*it<<endl);
@@ -242,7 +242,7 @@ private:
 
     virtual void visit(AstConst* nodep) {}
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
@@ -252,7 +252,7 @@ public:
 	m_loopp = NULL;
 	m_loopInc = false;
 	m_repeatNum = 0;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~LinkJumpVisitor() {}
 };

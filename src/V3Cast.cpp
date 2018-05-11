@@ -108,19 +108,19 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeUniop* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	nodep->user1(nodep->lhsp()->user1());
 	if (nodep->sizeMattersLhs()) insureCast(nodep->lhsp());
     }
     virtual void visit(AstNodeBiop* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	nodep->user1(nodep->lhsp()->user1()
 		    | nodep->rhsp()->user1());
 	if (nodep->sizeMattersLhs()) insureCast(nodep->lhsp());
 	if (nodep->sizeMattersRhs()) insureCast(nodep->rhsp());
     }
     virtual void visit(AstNodeTriop* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	nodep->user1(nodep->lhsp()->user1()
 		    | nodep->rhsp()->user1()
 		    | nodep->thsp()->user1());
@@ -129,12 +129,12 @@ private:
 	if (nodep->sizeMattersThs()) insureCast(nodep->thsp());
     }
     virtual void visit(AstCCast* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	insureLower32Cast(nodep);
 	nodep->user1(1);
     }
     virtual void visit(AstNegate* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	nodep->user1(nodep->lhsp()->user1());
 	if (nodep->lhsp()->widthMin()==1) {
 	    // We want to avoid a GCC "converting of negative value" warning
@@ -171,13 +171,13 @@ private:
     //--------------------
     // Default: Just iterate
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
     // CONSTUCTORS
     explicit CastVisitor(AstNetlist* nodep) {
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~CastVisitor() {}
 };

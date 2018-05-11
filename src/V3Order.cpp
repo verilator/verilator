@@ -284,7 +284,7 @@ private:
 	} else {
 	    m_inAss = true;
 	    m_childClkWidth = 0;
-	    nodep->rhsp()->iterateAndNext(*this);
+            iterateAndNextNull(nodep->rhsp());
 	    m_rightClkWidth = m_childClkWidth;
 	    m_inAss = false;
 	}
@@ -320,29 +320,29 @@ private:
     }
     virtual void visit(AstConcat* nodep) {
 	if (m_inAss) {
-	    nodep->lhsp()->iterateAndNext(*this);
+            iterateAndNextNull(nodep->lhsp());
 	    int lw = m_childClkWidth;
-	    nodep->rhsp()->iterateAndNext(*this);
+            iterateAndNextNull(nodep->rhsp());
 	    int rw = m_childClkWidth;
 	    m_childClkWidth = lw + rw;  // Pass up
 	}
     }
     virtual void visit(AstNodeSel* nodep) {
 	if (m_inAss) {
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    // Pass up result width
 	    if (m_childClkWidth > nodep->width()) m_childClkWidth = nodep->width();
 	}
     }
     virtual void visit(AstSel* nodep) {
 	if (m_inAss) {
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    if (m_childClkWidth > nodep->width()) m_childClkWidth = nodep->width();
 	}
     }
     virtual void visit(AstReplicate* nodep) {
 	if (m_inAss) {
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
             if (VN_IS(nodep->rhsp(), Const)) {
                 m_childClkWidth = m_childClkWidth * VN_CAST(nodep->rhsp(), Const)->toUInt();
 	    } else {
@@ -352,11 +352,11 @@ private:
     }
     virtual void visit(AstActive* nodep) {
 	m_inClocked = nodep->hasClocked();
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_inClocked = false;
     }
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -369,7 +369,7 @@ public:
 	m_rightClkWidth = 0;
 	do {
 	    m_newClkMarked = false;
-	    nodep->accept(*this);
+            iterate(nodep);
 	} while (m_newClkMarked);
     }
     virtual ~OrderClkMarkVisitor() {}
@@ -394,7 +394,7 @@ private:
 		m_clkAss = true;
 		UINFO(6, "node was marked as clocker "<<varrefp<<endl);
 	    }
-	nodep->rhsp()->iterateChildren(*this);
+        iterateChildren(nodep->rhsp());
     }
     virtual void visit(AstVarRef* nodep) {
 	if (nodep->varp()->attrClocker() == AstVarAttrClocker::CLOCKER_YES) {
@@ -403,14 +403,14 @@ private:
 	}
     }
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
     // CONSTUCTORS
     explicit OrderClkAssVisitor(AstNode* nodep) {
 	m_clkAss = false;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~OrderClkAssVisitor() {}
 
@@ -502,7 +502,7 @@ private:
 		new OrderEdge(&m_graph, m_activeSenVxp, m_logicVxp, WEIGHT_NORMAL);
 	    }
 	    nodep->user1p(m_modp);
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    m_logicVxp = NULL;
 	}
     }
@@ -695,7 +695,7 @@ private:
     virtual void visit(AstNetlist* nodep) {
 	{
 	    AstUser4InUse	m_inuser4;	// Used only when building tree, so below
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
 	// We're finished, complete the topscopes
 	if (m_topScopep) { process(); m_topScopep=NULL; }
@@ -732,7 +732,7 @@ private:
 	m_activeSenVxp = NULL;
 	m_inputsVxp = new OrderInputsVertex(&m_graph, NULL);
 	//
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Done topscope, erase extra user information
 	// user1p passed to next process() operation
 	AstNode::user3ClearTree();
@@ -740,7 +740,7 @@ private:
     }
     virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp = NULL;
     }
     virtual void visit(AstScope* nodep) {
@@ -750,7 +750,7 @@ private:
 	m_activeSenVxp = NULL;
 	nodep->user1p(m_modp);
 	// Iterate
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_scopep = NULL;
     }
     virtual void visit(AstActive* nodep) {
@@ -761,9 +761,9 @@ private:
 	m_inClocked = nodep->hasClocked();
 	// Grab the sensitivity list
 	if (nodep->sensesStorep()) nodep->v3fatalSrc("Senses should have been activeTop'ed to be global!");
-	nodep->sensesp()->accept(*this);
+        iterate(nodep->sensesp());
 	// Collect statements under it
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_activep = NULL;
     }
     virtual void visit(AstVarScope* nodep) {
@@ -906,7 +906,7 @@ private:
 		if (!m_activeSenVxp) {
 		    m_activeSenVxp = new OrderLogicVertex(&m_graph, m_scopep, nodep, m_activep);
 		}
-		nodep->iterateChildren(*this);
+                iterateChildren(nodep);
 	    }
 	    m_inSenTree = false;
 	}
@@ -964,7 +964,7 @@ private:
     //--------------------
     // Default
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
@@ -1004,7 +1004,7 @@ public:
 	m_graph.debug(V3Error::debugDefault());
     }
     void main(AstNode* nodep) {
-	nodep->accept(*this);
+        iterate(nodep);
     }
 };
 

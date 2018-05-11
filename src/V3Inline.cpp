@@ -117,13 +117,13 @@ private:
 	}
 	if (m_modp->modPublic()) cantInline("modPublic",false);
 
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp = NULL;
     }
     virtual void visit(AstCell* nodep) {
         nodep->modp()->user3Inc();  // Inc refs
         m_instances[m_modp][nodep->modp()]++;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstPragma* nodep) {
 	if (nodep->pragType() == AstPragmaType::INLINE_MODULE) {
@@ -143,7 +143,7 @@ private:
 	    }
 	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);  // Remove so don't propagate to upper cell...
 	} else {
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
     }
     virtual void visit(AstVarXRef* nodep) {
@@ -153,23 +153,23 @@ private:
     virtual void visit(AstNodeFTaskRef* nodep) {
 	// Cleanup link until V3LinkDot can correct it
 	if (!nodep->packagep()) nodep->taskp(NULL);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstAlways* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
         m_modp->user4Inc(); // statement count
     }
     virtual void visit(AstNodeAssign* nodep) {
 	// Don't count assignments, as they'll likely flatten out
 	// Still need to iterate though to nullify VarXRefs
         int oldcnt = m_modp->user4();
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
         m_modp->user4(oldcnt);
     }
     virtual void visit(AstNetlist* nodep) {
         // Build user2, user3, and user4 for all modules.
         // Also build m_allMods and m_instances.
-        nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 
         // Iterate through all modules in bottom-up order.
         // Make a final inlining decision for each.
@@ -210,7 +210,7 @@ private:
     //--------------------
     // Default: Just iterate
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
         if (m_modp) {
             m_modp->user4Inc();  // Inc statement count
 	}
@@ -220,7 +220,7 @@ public:
     // CONSTUCTORS
     explicit InlineMarkVisitor(AstNode* nodep) {
 	m_modp = NULL;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~InlineMarkVisitor() {
 	V3Stats::addStat("Optimizations, Inline unsupported", m_statUnsup);
@@ -255,13 +255,13 @@ private:
     virtual void visit(AstNodeStmt* nodep) {}
     virtual void visit(AstNodeMath* nodep) {}
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
     // CONSTUCTORS
     explicit InlineCollectVisitor(AstNodeModule* nodep) {  // passed OLD module, not new one
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~InlineCollectVisitor() {}
 };
@@ -298,17 +298,17 @@ private:
 	nodep->name(name);
 	UINFO(6, "    Inline "<<nodep<<endl);
 	// Do CellInlines under this, but don't move them
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstCell* nodep) {
 	// Cell under the inline cell, need to rename to avoid conflicts
 	string name = m_cellp->name() + "__DOT__" + nodep->name();
 	nodep->name(name);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstModule* nodep) {
 	m_renamedInterfaces.clear();
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstVar* nodep) {
 	if (nodep->user2p()) {
@@ -376,17 +376,17 @@ private:
 	if (!m_cellp->isTrace()) nodep->trace(false);
 	if (debug()>=9) { nodep->dumpTree(cout,"varchanged:"); }
 	if (debug()>=9 && nodep->valuep()) { nodep->valuep()->dumpTree(cout,"varchangei:"); }
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstNodeFTask* nodep) {
 	// Function under the inline cell, need to rename to avoid conflicts
 	nodep->name(m_cellp->name() + "__DOT__" + nodep->name());
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstTypedef* nodep) {
 	// Typedef under the inline cell, need to rename to avoid conflicts
 	nodep->name(m_cellp->name() + "__DOT__" + nodep->name());
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstVarRef* nodep) {
 	if (nodep->varp()->user2p()  // It's being converted to an alias.
@@ -407,7 +407,7 @@ private:
 	    }
 	}
 	nodep->name(nodep->varp()->name());
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstVarXRef* nodep) {
 	// Track what scope it was originally under so V3LinkDot can resolve it
@@ -426,7 +426,7 @@ private:
                 tryname = tryname.substr(0, pos);
             }
         }
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstNodeFTaskRef* nodep) {
 	// Track what scope it was originally under so V3LinkDot can resolve it
@@ -436,7 +436,7 @@ private:
 	    nodep->dotted(m_cellp->name() + "__DOT__" + nodep->dotted());
 	}
 	UINFO(8,"   "<<nodep<<endl);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
     // Not needed, as V3LinkDot doesn't care about typedefs
@@ -454,15 +454,15 @@ private:
 	if (afterp) afterp->unlinkFrBackWithNext();
 	nodep->scopeEntrp(new AstText(nodep->fileline(), (string)"__DOT__"+m_cellp->name()));
 	if (afterp) nodep->scopeEntrp(afterp);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstCoverDecl* nodep) {
 	// Fix path in coverage statements
         nodep->hier(VString::dot(m_cellp->prettyName(), ".", nodep->hier()));
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -470,7 +470,7 @@ public:
     InlineRelinkVisitor(AstNodeModule* cloneModp, AstNodeModule* oldModp, AstCell* cellp) {
 	m_modp = oldModp;
 	m_cellp = cellp;
-	cloneModp->accept(*this);
+        iterate(cloneModp);
     }
     virtual ~InlineRelinkVisitor() {}
 };
@@ -508,7 +508,7 @@ private:
     // VISITORS
     virtual void visit(AstNetlist* nodep) {
 	// Iterate modules backwards, in bottom-up order.  Required!
-	nodep->iterateChildrenBackwards(*this);
+        iterateChildrenBackwards(nodep);
     }
     virtual void visit(AstIfaceRefDType* nodep) {
 	if (nodep->user5()) {
@@ -520,7 +520,7 @@ private:
     }
     virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstCell* nodep) {
 	if (nodep->modp()->user1()) {  // Marked with inline request
@@ -605,14 +605,14 @@ private:
     virtual void visit(AstNodeMath* nodep) {}  // Accelerate
     virtual void visit(AstNodeStmt* nodep) {}  // Accelerate
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
     // CONSTUCTORS
     explicit InlineVisitor(AstNode* nodep) {
 	m_modp = NULL;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~InlineVisitor() {
 	V3Stats::addStat("Optimizations, Inlined cells", m_statCells);

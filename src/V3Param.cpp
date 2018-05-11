@@ -222,7 +222,7 @@ private:
 	    if (!nodep->user5SetOnce()) {  // Process once; note clone() must clear so we do it again
 		m_modp = nodep;
 		UINFO(4," MOD   "<<nodep<<endl);
-		nodep->iterateChildren(*this);
+                iterateChildren(nodep);
 		// Note above iterate may add to m_todoModps
 		//
 		// Process interface cells, then non-interface which may ref an interface cell
@@ -244,7 +244,7 @@ private:
     // VISITORS
     virtual void visit(AstNetlist* nodep) {
 	// Modules must be done in top-down-order
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstNodeModule* nodep) {
 	if (nodep->dead()) {
@@ -271,7 +271,7 @@ private:
     // Make sure all parameters are constantified
     virtual void visit(AstVar* nodep) {
 	if (!nodep->user5SetOnce()) {  // Process once
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    if (nodep->isParam()) {
 		if (!nodep->valuep()) { nodep->v3fatalSrc("Parameter without initial value"); }
 		V3Const::constifyParamsEdit(nodep);  // The variable, not just the var->init()
@@ -288,7 +288,7 @@ private:
     }
     // Make sure varrefs cause vars to constify before things above
     virtual void visit(AstVarRef* nodep) {
-	if (nodep->varp()) nodep->varp()->iterate(*this);
+        if (nodep->varp()) iterate(nodep->varp());
     }
     bool ifaceParamReplace(AstVarXRef* nodep, AstNode* candp) {
 	for (; candp; candp = candp->nextp()) {
@@ -357,7 +357,7 @@ private:
 	    nodep->v3fatalSrc("Unexpected AstUnlinkedRef node");
 	    return;
 	}
-	nodep->cellrefp()->iterate(*this);
+        iterate(nodep->cellrefp());
 
 	if (varxrefp) {
 	    varxrefp->dotted(m_unlinkedTxt);
@@ -387,7 +387,7 @@ private:
     // Generate Statements
     virtual void visit(AstGenerate* nodep) {
 	if (debug()>=9) nodep->dumpTree(cout,"-genin: ");
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// After expanding the generate, all statements under it can be moved
 	// up, and the generate block deleted as it's not relevant
 	if (AstNode* stmtsp = nodep->stmtsp()) {
@@ -401,7 +401,7 @@ private:
     }
     virtual void visit(AstGenIf* nodep) {
 	UINFO(9,"  GENIF "<<nodep<<endl);
-	nodep->condp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->condp());
 	// We suppress errors when widthing params since short-circuiting in
 	// the conditional evaluation may mean these error can never occur. We
 	// then make sure that short-circuiting is used by constifyParamsEdit.
@@ -454,7 +454,7 @@ private:
 		// Note this clears nodep->genforp(), so begin is no longer special
 	    }
 	} else {
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
     }
     virtual void visit(AstGenFor* nodep) {
@@ -463,7 +463,7 @@ private:
     virtual void visit(AstGenCase* nodep) {
 	UINFO(9,"  GENCASE "<<nodep<<endl);
 	AstNode* keepp = NULL;
-	nodep->exprp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->exprp());
 	V3Case::caseLint(nodep);
 	V3Width::widthParamsEdit(nodep);  // Param typed widthing will NOT recurse the body,
 					  // don't trigger errors yet.
@@ -473,7 +473,7 @@ private:
         for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=VN_CAST(itemp->nextp(), CaseItem)) {
 	    for (AstNode* ep = itemp->condsp(); ep; ) {
 		AstNode* nextp = ep->nextp(); //May edit list
-		ep->iterateAndNext(*this);
+                iterateAndNextNull(ep);
 		V3Const::constifyParamsEdit(ep); VL_DANGLING(ep); // ep may change
 		ep = nextp;
 	    }
@@ -511,7 +511,7 @@ private:
 
     // Default: Just iterate
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -520,7 +520,7 @@ public:
 	m_longId = 0;
 	m_modp = NULL;
 	//
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~ParamVisitor() {}
 };
@@ -530,7 +530,7 @@ public:
 
 void ParamVisitor::visitCell(AstCell* nodep) {
     // Cell: Check for parameters in the instantiation.
-    nodep->iterateChildren(*this);
+    iterateChildren(nodep);
     if (!nodep->modp()) nodep->v3fatalSrc("Not linked?");
     // We always run this, even if no parameters, as need to look for interfaces,
     // and remove any recursive references

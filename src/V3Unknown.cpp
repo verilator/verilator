@@ -151,28 +151,28 @@ private:
 	UINFO(4," MOD   "<<nodep<<endl);
 	m_modp = nodep;
 	m_constXCvt = true;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp = NULL;
     }
     virtual void visit(AstAssignDly* nodep) {
 	m_assigndlyp = nodep;
-	nodep->iterateChildren(*this); VL_DANGLING(nodep);  // May delete nodep.
+        iterateChildren(nodep); VL_DANGLING(nodep);  // May delete nodep.
 	m_assigndlyp = NULL;
     }
     virtual void visit(AstAssignW* nodep) {
 	m_assignwp = nodep;
-	nodep->iterateChildren(*this); VL_DANGLING(nodep);  // May delete nodep.
+        iterateChildren(nodep); VL_DANGLING(nodep);  // May delete nodep.
 	m_assignwp = NULL;
     }
     virtual void visit(AstCaseItem* nodep) {
 	m_constXCvt = false;  // Avoid losing the X's in casex
-	nodep->condsp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->condsp());
 	m_constXCvt = true;
-	nodep->bodysp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->bodysp());
     }
     virtual void visit(AstNodeDType* nodep) {
 	m_constXCvt = false;  // Avoid losing the X's in casex
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_constXCvt = true;
     }
     void visitEqNeqCase(AstNodeBiop* nodep) {
@@ -202,7 +202,7 @@ private:
 	    nodep->replaceWith(newp);
 	    nodep->deleteTree(); VL_DANGLING(nodep);
 	    // Iterate tree now that we may have gotten rid of Xs
-	    newp->iterateChildren(*this);
+            iterateChildren(newp);
 	}
     }
     void visitEqNeqWild(AstNodeBiop* nodep) {
@@ -238,7 +238,7 @@ private:
 	    nodep->replaceWith(newp);
 	    nodep->deleteTree(); VL_DANGLING(nodep);
 	    // Iterate tree now that we may have gotten rid of the compare
-	    newp->iterateChildren(*this);
+            iterateChildren(newp);
 	}
     }
 
@@ -255,7 +255,7 @@ private:
 	visitEqNeqWild(nodep);
     }
     virtual void visit(AstIsUnknown* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Ahh, we're two state, so this is easy
 	UINFO(4," ISUNKNOWN->0 "<<nodep<<endl);
 	V3Number zero (nodep->fileline(), 1, 0);
@@ -328,7 +328,7 @@ private:
     }
 
     virtual void visit(AstSel* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (!nodep->user1SetOnce()) {
 	    // Guard against reading/writing past end of bit vector array
 	    AstNode* basefromp = AstArraySel::baseFromp(nodep);
@@ -367,7 +367,7 @@ private:
 		// Link in conditional
 		replaceHandle.relink(newp);
 		// Added X's, tristate them too
-		newp->accept(*this);
+                iterate(newp);
 	    }
 	    else { // lvalue
 		replaceBoundLvalue(nodep, condp);
@@ -379,7 +379,7 @@ private:
     // in V3Width.
 
     virtual void visit(AstArraySel* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (!nodep->user1SetOnce()) {
 	    if (debug()==9) nodep->dumpTree(cout,"-in: ");
 	    // Guard against reading/writing past end of arrays
@@ -433,7 +433,7 @@ private:
 		// Link in conditional, can blow away temp xor
 		replaceHandle.relink(newp);
 		// Added X's, tristate them too
-		newp->accept(*this);
+                iterate(newp);
 	    }
 	    else if (!lvalue) {  // Mid-multidimension read, just use zero
 		// ARRAYSEL(...) -> ARRAYSEL(COND(LT(bit<maxbit), bit, 0))
@@ -447,7 +447,7 @@ private:
 		// Added X's, tristate them too
 		if (debug()>=9) newp->dumpTree(cout,"        _new: ");
 		replaceHandle.relink(newp);
-		newp->accept(*this);
+                iterate(newp);
 	    }
 	    else {  // lvalue
 		replaceBoundLvalue(nodep, condp);
@@ -457,7 +457,7 @@ private:
     //--------------------
     // Default: Just iterate
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -467,7 +467,7 @@ public:
 	m_assigndlyp = NULL;
 	m_assignwp = NULL;
 	m_constXCvt = false;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~UnknownVisitor() {
 	V3Stats::addStat("Unknowns, variables created", m_statUnkVars);

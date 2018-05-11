@@ -3807,7 +3807,7 @@ private:
 	AstNode* ret;
 	{
 	    m_vup = vup;
-	    ret = nodep->iterateSubtreeReturnEdits(*this);
+            ret = iterateSubtreeReturnEdits(nodep);
 	}
 	m_vup = saveVup;
 	return ret;
@@ -3817,7 +3817,7 @@ private:
 	WidthVP* saveVup = m_vup;
 	{
 	    m_vup = vup;
-	    nodep->iterate(*this);
+            iterate(nodep);
 	}
 	m_vup = saveVup;
     }
@@ -3826,7 +3826,7 @@ private:
 	WidthVP* saveVup = m_vup;
 	{
 	    m_vup = vup;
-	    nodep->iterateAndNext(*this);
+            iterateAndNextNull(nodep);
 	}
 	m_vup = saveVup;
     }
@@ -3835,7 +3835,7 @@ private:
 	WidthVP* saveVup = m_vup;
 	{
 	    m_vup = vup;
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
 	m_vup = saveVup;
     }
@@ -3844,7 +3844,7 @@ private:
 	WidthVP* saveVup = m_vup;
 	{
 	    m_vup = vup;
-	    nodep->iterateChildrenBackwards(*this);
+            iterateChildrenBackwards(nodep);
 	}
 	m_vup = saveVup;
     }

@@ -142,9 +142,9 @@ private:
 	m_varModeCheck = true;
 	m_varAssignHit = false;
 	m_ignoreIncp = incp;
-	precondsp->iterateAndNext(*this);
-	bodysp->iterateAndNext(*this);
-	incp->iterateAndNext(*this);
+        iterateAndNextNull(precondsp);
+        iterateAndNextNull(bodysp);
+        iterateAndNextNull(incp);
 	m_varModeCheck = false;
 	m_ignoreIncp = NULL;
 	if (m_varAssignHit) return cantUnroll(nodep, "genvar assigned *inside* loop");
@@ -203,7 +203,7 @@ private:
 	    // Iteration requires a back, so put under temporary node
 	    AstBegin* tempp = new AstBegin (nodep->fileline(), "[EditWrapper]", clone);
 	    m_varModeReplace = true;
-	    tempp->stmtsp()->iterateAndNext(*this);
+            iterateAndNextNull(tempp->stmtsp());
 	    m_varModeReplace = false;
 	    clone = tempp->stmtsp()->unlinkFrBackWithNext();
 	    tempp->deleteTree();
@@ -319,7 +319,7 @@ private:
 		    if (oneloopp) {
 			AstBegin* tempp = new AstBegin(oneloopp->fileline(),"[EditWrapper]",oneloopp);
 			m_varModeReplace = true;
-			tempp->stmtsp()->iterateAndNext(*this);
+                        iterateAndNextNull(tempp->stmtsp());
 			m_varModeReplace = false;
 			oneloopp = tempp->stmtsp()->unlinkFrBackWithNext(); tempp->deleteTree(); VL_DANGLING(tempp);
 		    }
@@ -363,7 +363,7 @@ private:
     }
 
     virtual void visit(AstWhile* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (m_varModeCheck || m_varModeReplace) {
 	} else {
 	    // Constify before unroll call, as it may change what is underneath.
@@ -393,7 +393,7 @@ private:
     }
     virtual void visit(AstGenFor* nodep) {
 	if (!m_generate || m_varModeReplace) {
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}  // else V3Param will recursively call each for loop to be unrolled for us
 	if (m_varModeCheck || m_varModeReplace) {
 	} else {
@@ -421,7 +421,7 @@ private:
     }
     virtual void visit(AstNodeFor* nodep) {
 	if (m_generate) {  // Ignore for's when expanding genfor's
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	} else {
 	    nodep->v3error("V3Begin should have removed standard FORs");
 	}
@@ -452,7 +452,7 @@ private:
 	if (m_varModeCheck && nodep == m_ignoreIncp) {
 	    // Ignore subtree that is the increment
 	} else {
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
     }
 
@@ -467,7 +467,7 @@ public:
 	m_generate = generate;
 	m_beginName = beginName;
 	//
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~UnrollVisitor() {
 	V3Stats::addStatSum("Optimizations, Unrolled Loops", m_statLoops);

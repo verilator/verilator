@@ -917,6 +917,21 @@ public:
     virtual ~AstNVisitor() {
 	doDeletes();
     }
+    /// Call visit()s on nodep
+    void iterate(AstNode* nodep);
+    /// Call visit()s on nodep's children
+    void iterateChildren(AstNode* nodep);
+    /// Call visit()s on nodep's children in backp() order
+    void iterateChildrenBackwards(AstNode* nodep);
+    /// Call visit()s on const nodep's children
+    void iterateChildrenConst(AstNode* nodep);
+    /// Call visit()s on nodep (maybe NULL) and nodep's nextp() list
+    void iterateAndNextNull(AstNode* nodep);
+    /// Call visit()s on const nodep (maybe NULL) and nodep's nextp() list
+    void iterateAndNextConstNull(AstNode* nodep);
+    /// Return edited nodep; see comments in V3Ast.cpp
+    AstNode* iterateSubtreeReturnEdits(AstNode* nodep);
+
 #include "V3Ast__gen_visitor.h"	// From ./astgen
     // Things like:
     //  virtual void visit(AstBreak* nodep) { visit((AstNodeStmt*)(nodep)); }
@@ -1051,14 +1066,13 @@ class AstNode {
     void	op4p(AstNode* nodep) { m_op4p = nodep; if (nodep) nodep->m_backp = this; }
 
     void	init();	// initialize value of AstNode
-    void	iterateListBackwards(AstNVisitor& v);
 private:
     AstNode*	cloneTreeIter();
     AstNode*	cloneTreeIterList();
     void	checkTreeIter(AstNode* backp);
     void	checkTreeIterList(AstNode* backp);
     bool        gateTreeIter() const;
-    bool        sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ignNext, bool gateOnly) const;
+    static bool sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ignNext, bool gateOnly);
     void	deleteTreeIter();
     void	deleteNode();
 public:
@@ -1352,15 +1366,21 @@ public:
 
     // INVOKERS
     virtual void accept(AstNVisitor& v) = 0;
-    void	iterate(AstNVisitor& v) { this->accept(v); } 	  // Does this; excludes following this->next
-    void	iterateAndNext(AstNVisitor& v);
-    void	iterateAndNextConst(AstNVisitor& v);
-    void	iterateChildren(AstNVisitor& v);  // Excludes following this->next
-    void	iterateChildrenBackwards(AstNVisitor& v);  // Excludes following this->next
-    void	iterateChildrenConst(AstNVisitor& v);  // Excludes following this->next
-    AstNode*	iterateSubtreeReturnEdits(AstNVisitor& v);  // Return edited nodep; see comments in V3Ast.cpp
+
+protected:
+    // All AstNVisitor related functions are called as methods off the visitor
+    friend class AstNVisitor;
+    void iterateChildren(AstNVisitor& v);  // Use instead AstNVisitor::iterateChildren
+    void iterateChildrenBackwards(AstNVisitor& v);  // Use instead AstNVisitor::iterateChildrenBackwards
+    void iterateChildrenConst(AstNVisitor& v);  // Use instead AstNVisitor::iterateChildrenConst
+    void iterateAndNext(AstNVisitor& v);  // Use instead AstNVisitor::iterateAndNextNull
+    void iterateAndNextConst(AstNVisitor& v);  // Use instead AstNVisitor::iterateAndNextConstNull
+    AstNode* iterateSubtreeReturnEdits(AstNVisitor& v);  // Use instead AstNVisitor::iterateSubtreeReturnEdits
+private:
+    void iterateListBackwards(AstNVisitor& v);
 
     // CONVERSION
+public:
 #include "V3Ast__gen_interface.h"	// From ./astgen
     // Things like:
     //  AstAlways*	castAlways();
@@ -2095,6 +2115,31 @@ public:
 // Things like:
 //  inline AstAlways* AstNode::castAlways() { return dynamic_cast<AstAlways*>(this);}
 //  inline bool AstNode::privateIsaAlways(const AstNode* nodep) { return nodep && nodep->type() == AstType::atAlways; }
+
+//######################################################################
+// Inline AstNVisitor METHODS
+
+inline void AstNVisitor::iterate(AstNode* nodep) {
+    nodep->accept(*this);
+}
+inline void AstNVisitor::iterateChildren(AstNode* nodep) {
+    nodep->iterateChildren(*this);
+}
+inline void AstNVisitor::iterateChildrenBackwards(AstNode* nodep) {
+    nodep->iterateChildrenBackwards(*this);
+}
+inline void AstNVisitor::iterateChildrenConst(AstNode* nodep) {
+    nodep->iterateChildrenConst(*this);
+}
+inline void AstNVisitor::iterateAndNextNull(AstNode* nodep) {
+    if (VL_LIKELY(nodep)) nodep->iterateAndNext(*this);
+}
+inline void AstNVisitor::iterateAndNextConstNull(AstNode* nodep) {
+    if (VL_LIKELY(nodep)) nodep->iterateAndNextConst(*this);
+}
+inline AstNode* AstNVisitor::iterateSubtreeReturnEdits(AstNode* nodep) {
+    return nodep->iterateSubtreeReturnEdits(*this);
+}
 
 //######################################################################
 // Inline ACCESSORS

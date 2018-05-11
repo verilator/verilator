@@ -141,7 +141,7 @@ private:
     virtual void visit(AstNodeAssign* nodep) {}
     virtual void visit(AstNodeMath* nodep) {}
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTRUCTORS
@@ -150,7 +150,7 @@ public:
     }
     virtual ~CombCallVisitor() {}
     void main(AstNetlist* nodep) {
-	nodep->accept(*this);
+        iterate(nodep);
     }
 };
 
@@ -165,12 +165,12 @@ private:
     // VISITORS
     virtual void visit(AstNode* nodep) {
 	nodep->user3(true);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTRUCTORS
     explicit CombMarkVisitor(AstNode* nodep) {
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~CombMarkVisitor() {}
 };
@@ -214,7 +214,7 @@ private:
 	CombineState oldState = m_state;
 	{
 	    m_state = STATE_HASH;
-	    nodep->accept(*this);
+            iterate(nodep);
 	}
 	m_state = oldState;
     }
@@ -396,7 +396,7 @@ private:
 	//In V3Hashed AstNode::user4ClearTree();	// user4p() used on entire tree
 	// Iterate modules backwards, in bottom-up order.
 	// Required so that a module instantiating another can benefit from collapsing.
-	nodep->iterateChildrenBackwards(*this);
+        iterateChildrenBackwards(nodep);
     }
     virtual void visit(AstNodeModule* nodep) {
 	UINFO(4," MOD   "<<nodep<<endl);
@@ -405,7 +405,7 @@ private:
 	m_hashed.clear();
 	// Compute hash of all statement trees in the function
 	m_state = STATE_HASH;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_state = STATE_IDLE;
 	if (debug()>=9) {
 	    m_hashed.dumpFilePrefixed("combine");
@@ -421,7 +421,7 @@ private:
 	// Walk the statements looking for large replicated code sections
 	if (statementCombine()) {
 	    m_state = STATE_DUP;
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    m_state = STATE_IDLE;
 	}
 	m_modp = NULL;
@@ -432,7 +432,7 @@ private:
 	    if (m_state == STATE_HASH) {
 		hashStatement(nodep);  // Hash the entire function - it might be identical
 	    } else if (m_state == STATE_DUP) {
-		nodep->iterateChildren(*this);
+                iterateChildren(nodep);
 	    }
 	}
 	m_funcp = NULL;
@@ -452,7 +452,7 @@ private:
     virtual void visit(AstTraceDecl*) {}
     virtual void visit(AstTraceInc*) {}
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -461,7 +461,7 @@ public:
 	m_modp=NULL;
 	m_funcp = NULL;
 	m_state = STATE_IDLE;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~CombineVisitor() {
 	V3Stats::addStat("Optimizations, Combined CFuncs", m_statCombs);

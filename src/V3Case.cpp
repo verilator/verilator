@@ -83,9 +83,9 @@ private:
 	// Check for X/Z in non-casex statements
 	{
 	    m_caseExprp = nodep;
-	    nodep->exprp()->accept(*this);
+            iterate(nodep->exprp());
             for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=VN_CAST(itemp->nextp(), CaseItem)) {
-		itemp->condsp()->iterateAndNext(*this);
+                iterateAndNextNull(itemp->condsp());
 	    }
 	    m_caseExprp = NULL;
 	}
@@ -108,13 +108,13 @@ private:
 	}
     }
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
     explicit CaseLintVisitor(AstNodeCase* nodep) {
 	m_caseExprp = NULL;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~CaseLintVisitor() {}
 };
@@ -453,7 +453,7 @@ private:
     // VISITORS
     virtual void visit(AstCase* nodep) {
 	V3Case::caseLint(nodep);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (debug()>=9) nodep->dumpTree(cout," case_old: ");
 	if (isCaseTreeFast(nodep) && v3Global.opt.oCase()) {
 	    // It's a simple priority encoder or complete statement
@@ -468,14 +468,14 @@ private:
     //--------------------
     // Default: Just iterate
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
     // CONSTUCTORS
     explicit CaseVisitor(AstNetlist* nodep) {
 	m_caseNoOverlapsAllCovered = false;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~CaseVisitor() {
 	V3Stats::addStat("Optimizations, Cases parallelized", m_statCaseFast);
