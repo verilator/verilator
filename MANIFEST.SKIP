@@ -17,6 +17,7 @@
 /obj_dbg/
 /obj_opt/
 /obj_vlt/
+/obj_vltmt/
 /obj_dist/
 /INCA_libs/
 /cov_work/
