@@ -202,7 +202,7 @@ IData VL_RAND32() VL_MT_SAFE {
 	t_seeded = true;
 	long seedval;
 	{
-	    VerilatedLockGuard guard(s_mutex);
+	    VerilatedLockGuard lock(s_mutex);
 	    seedval = lrand48()<<16 ^ lrand48();
 	    if (!seedval) seedval++;
 	}
@@ -1612,7 +1612,7 @@ Verilated::ThreadLocal::~ThreadLocal() {
 }
 
 void Verilated::debug(int val) VL_MT_SAFE {
-    VerilatedLockGuard guard(m_mutex);
+    VerilatedLockGuard lock(m_mutex);
     s_s.s_debug = val;
     if (val) {
 #ifdef VL_DEBUG
@@ -1623,23 +1623,23 @@ void Verilated::debug(int val) VL_MT_SAFE {
     }
 }
 void Verilated::randReset(int val) VL_MT_SAFE {
-    VerilatedLockGuard guard(m_mutex);
+    VerilatedLockGuard lock(m_mutex);
     s_s.s_randReset = val;
 }
 void Verilated::calcUnusedSigs(bool flag) VL_MT_SAFE {
-    VerilatedLockGuard guard(m_mutex);
+    VerilatedLockGuard lock(m_mutex);
     s_s.s_calcUnusedSigs = flag;
 }
 void Verilated::gotFinish(bool flag) VL_MT_SAFE {
-    VerilatedLockGuard guard(m_mutex);
+    VerilatedLockGuard lock(m_mutex);
     s_s.s_gotFinish = flag;
 }
 void Verilated::assertOn(bool flag) VL_MT_SAFE {
-    VerilatedLockGuard guard(m_mutex);
+    VerilatedLockGuard lock(m_mutex);
     s_s.s_assertOn = flag;
 }
 void Verilated::fatalOnVpiError(bool flag) VL_MT_SAFE {
-    VerilatedLockGuard guard(m_mutex);
+    VerilatedLockGuard lock(m_mutex);
     s_s.s_fatalOnVpiError = flag;
 }
 
@@ -1661,7 +1661,7 @@ const char* Verilated::catName(const char* n1, const char* n2) VL_MT_SAFE {
 }
 
 void Verilated::flushCb(VerilatedVoidCb cb) VL_MT_SAFE {
-    VerilatedLockGuard guard(m_mutex);
+    VerilatedLockGuard lock(m_mutex);
     if (s_flushCb == cb) {}  // Ok - don't duplicate
     else if (!s_flushCb) { s_flushCb=cb; }
     else {
@@ -1671,14 +1671,14 @@ void Verilated::flushCb(VerilatedVoidCb cb) VL_MT_SAFE {
 }
 
 void Verilated::flushCall() VL_MT_SAFE {
-    VerilatedLockGuard guard(m_mutex);
+    VerilatedLockGuard lock(m_mutex);
     if (s_flushCb) (*s_flushCb)();
     fflush(stderr);
     fflush(stdout);
 }
 
 void Verilated::commandArgs(int argc, const char** argv) VL_MT_SAFE {
-    VerilatedLockGuard guard(m_mutex);
+    VerilatedLockGuard lock(m_mutex);
     s_args.argc = argc;
     s_args.argv = argv;
     VerilatedImp::commandArgs(argc,argv);
@@ -1714,16 +1714,6 @@ void Verilated::internalsDump() VL_MT_SAFE {
 
 void Verilated::scopesDump() VL_MT_SAFE {
     VerilatedImp::scopesDump();
-}
-
-void Verilated::numThreads(unsigned threads) VL_MT_SAFE {
-    VerilatedImp::numThreads(threads);
-}
-unsigned Verilated::numThreads() VL_MT_SAFE {
-    return VerilatedImp::numThreads();
-}
-void Verilated::spawnThreads() VL_MT_SAFE {
-    VerilatedImp::spawnThreads();
 }
 
 const VerilatedScope* Verilated::scopeFind(const char* namep) VL_MT_SAFE {
@@ -1948,7 +1938,7 @@ void VerilatedScope::scopeDump() const {
 //===========================================================================
 // VerilatedOneThreaded:: Methods
 
-#ifdef VL_THREADED
+#if defined(VL_THREADED) && defined(VL_DEBUG)
 void VerilatedAssertOneThread::fatal_different() VL_MT_SAFE {
     VL_FATAL_MT(__FILE__, __LINE__, "", "Routine called that is single threaded, but called from"
 		" a different thread then the expected constructing thread");

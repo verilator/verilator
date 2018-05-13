@@ -437,17 +437,6 @@ public:
     /// releases - contact the authors before production use.
     static void scopesDump() VL_MT_SAFE;
 
-    /// Set the number of threads to execute on.
-    /// 0x0 = use all available CPU threads, or 1 if no support compiled in
-    /// Ignored after spawnThreads() has been called
-    static void numThreads(unsigned threads) VL_MT_SAFE;
-    static unsigned numThreads() VL_MT_SAFE;
-    /// Spawn child threads, using numThreads() as # of threads
-    /// Verilator calls this automatically on the first eval() call
-    /// User code may call it earlier if desired
-    /// Once called the first time, later calls are ignored
-    static void spawnThreads() VL_MT_SAFE;
-
 public:
     // METHODS - INTERNAL USE ONLY (but public due to what uses it)
     // Internal: Create a new module name by concatenating two strings
