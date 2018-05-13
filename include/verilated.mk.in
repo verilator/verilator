@@ -24,6 +24,8 @@ CFG_CXXFLAGS_STD_OLDEST = @CFG_CXXFLAGS_STD_OLDEST@
 CFG_CXXFLAGS_NO_UNUSED = @CFG_CXXFLAGS_NO_UNUSED@
 # Compiler flags that turn on extra warnings
 CFG_CXXFLAGS_WEXTRA = @CFG_CXXFLAGS_WEXTRA@
+# Linker libraries for multithreading
+CFG_LDLIBS_THREADS = @CFG_LDLIBS_THREADS@
 
 ######################################################################
 # Programs
@@ -116,6 +118,7 @@ ifneq ($(VM_THREADS),0)
  ifneq ($(VM_THREADS),)
   # Need C++11 at least, so always default to newest
   CPPFLAGS += -DVL_THREADED $(CFG_CXXFLAGS_STD_NEWEST)
+  LDLIBS += $(CFG_LDLIBS_THREADS)
  endif
 endif
 

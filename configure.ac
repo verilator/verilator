@@ -165,6 +165,34 @@ AC_DEFUN([_MY_CXX_CHECK_OPT],
     fi
    ])
 
+AC_DEFUN([_MY_LDLIBS_CHECK_FLAG],
+   [# _MY_LDLIBS_CHECK_FLAG(flag) -- Check if linker supports specific options
+    # Set $_my_result appropriately
+    ACO_SAVE_LIBS="$LIBS"
+    LIBS="$LIBS $1"
+    AC_MSG_CHECKING([whether $CXX linker accepts $1])
+    AC_LINK_IFELSE(
+         [AC_LANG_PROGRAM([[]])],
+         [_my_result=yes
+          if test -s conftest.err; then
+            if grep -e "$1" conftest.err >/dev/null; then
+              _my_result=no
+            fi
+          fi],
+         [_my_result=no])
+    AC_MSG_RESULT($_my_result)
+    LIBS="$ACO_SAVE_LIBS"
+   ])
+
+AC_DEFUN([_MY_LDLIBS_CHECK_OPT],
+   [# _MY_LDLIBS_CHECK_OPT(flag) -- Check if linker supports specific options
+    # If it does, append flag to variable
+    _MY_LDLIBS_CHECK_FLAG($2)
+    if test "$_my_result" = "yes" ; then
+       $1="$$1 $2"
+    fi
+   ])
+
 # Flag to select newest language standard supported
 # Macros work such that first option that passes is the one we take
 # gnu++14 is the newest that Verilator supports
@@ -231,6 +259,13 @@ _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-Wno-unused-parameter)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-Wno-unused-variable)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-Wno-shadow)
 AC_SUBST(CFG_CXXFLAGS_NO_UNUSED)
+
+# Find multithread linker flags
+_MY_LDLIBS_CHECK_OPT(CFG_LDLIBS_THREADS,-mt)
+_MY_LDLIBS_CHECK_OPT(CFG_LDLIBS_THREADS,-pthread)
+_MY_LDLIBS_CHECK_OPT(CFG_LDLIBS_THREADS,-lpthread)
+_MY_LDLIBS_CHECK_OPT(CFG_LDLIBS_THREADS,-latomic)
+AC_SUBST(CFG_LDLIBS_THREADS)
 
 # Set CFG_WITH_THREADED if can support threading
 AC_MSG_CHECKING(whether $CXX supports Verilated threads)
