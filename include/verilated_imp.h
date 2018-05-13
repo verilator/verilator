@@ -94,7 +94,7 @@ public:
     // METHODS
     //// Add message to queue (called by producer)
     void post(const VerilatedMsg& msg) VL_EXCLUDES(m_mutex) {
-	VerilatedLockGuard guard(m_mutex);
+	VerilatedLockGuard lock(m_mutex);
 	m_queue.insert(msg);  // Pass by value to copy the message into queue
 	++m_depth;
     }
@@ -199,15 +199,10 @@ class VerilatedImp {
     std::vector<FILE*>  m_fdps VL_GUARDED_BY(m_fdMutex);  ///< File descriptors
     std::deque<IData>   m_fdFree VL_GUARDED_BY(m_fdMutex);  ///< List of free descriptors (SLOW - FOPEN/CLOSE only)
 
-    // Threads
-    VerilatedMutex      m_threadMutex;  ///< Protect m_numThreads, etc
-    bool                m_spawned VL_GUARDED_BY(m_threadMutex);  ///< Already called spawnThreads()
-    unsigned            m_numThreads VL_GUARDED_BY(m_threadMutex);  ///< Number of threads user requested, 0x0=all cpus
-
 public: // But only for verilated*.cpp
     // CONSTRUCTORS
     VerilatedImp()
-	: m_argVecLoaded(false), m_exportNext(0), m_spawned(false), m_numThreads(0) {
+	: m_argVecLoaded(false), m_exportNext(0) {
 	m_fdps.resize(3);
 	m_fdps[0] = stdin;
 	m_fdps[1] = stdout;
@@ -218,7 +213,7 @@ private:
     VL_UNCOPYABLE(VerilatedImp);
 public:
     static void internalsDump() VL_MT_SAFE {
-	VerilatedLockGuard guard(s_s.m_argMutex);
+	VerilatedLockGuard lock(s_s.m_argMutex);
 	VL_PRINTF_MT("internalsDump:\n");
 	VL_PRINTF_MT("  Argv:");
 	for (ArgVec::const_iterator it=s_s.m_argVec.begin(); it!=s_s.m_argVec.end(); ++it) {
@@ -234,16 +229,16 @@ public:
     // METHODS - arguments
 public:
     static void commandArgs(int argc, const char** argv) VL_EXCLUDES(s_s.m_argMutex) {
-	VerilatedLockGuard guard(s_s.m_argMutex);
+	VerilatedLockGuard lock(s_s.m_argMutex);
 	s_s.m_argVec.clear();  // Always clear
 	commandArgsAddGuts(argc, argv);
     }
     static void commandArgsAdd(int argc, const char** argv) VL_EXCLUDES(s_s.m_argMutex) {
-	VerilatedLockGuard guard(s_s.m_argMutex);
+	VerilatedLockGuard lock(s_s.m_argMutex);
 	commandArgsAddGuts(argc, argv);
     }
     static std::string argPlusMatch(const char* prefixp) VL_EXCLUDES(s_s.m_argMutex) {
-	VerilatedLockGuard guard(s_s.m_argMutex);
+	VerilatedLockGuard lock(s_s.m_argMutex);
 	// Note prefixp does not include the leading "+"
 	size_t len = strlen(prefixp);
 	if (VL_UNLIKELY(!s_s.m_argVecLoaded)) {
@@ -272,14 +267,14 @@ public:
     // There's often many more scopes than userdata's and thus having a ~48byte
     // per map overhead * N scopes would take much more space and cache thrashing.
     static inline void userInsert(const void* scopep, void* userKey, void* userData) VL_MT_SAFE {
-	VerilatedLockGuard guard(s_s.m_userMapMutex);
+	VerilatedLockGuard lock(s_s.m_userMapMutex);
 	UserMap::iterator it=s_s.m_userMap.find(std::make_pair(scopep,userKey));
 	if (it != s_s.m_userMap.end()) it->second = userData;
 	// When we support VL_THREADs, we need a lock around this insert, as it's runtime
 	else s_s.m_userMap.insert(it, std::make_pair(std::make_pair(scopep,userKey),userData));
     }
     static inline void* userFind(const void* scopep, void* userKey) VL_MT_SAFE {
-	VerilatedLockGuard guard(s_s.m_userMapMutex);
+	VerilatedLockGuard lock(s_s.m_userMapMutex);
 	UserMap::const_iterator it=s_s.m_userMap.find(std::make_pair(scopep,userKey));
 	if (VL_LIKELY(it != s_s.m_userMap.end())) return it->second;
 	else return NULL;
@@ -288,7 +283,7 @@ private:
     /// Symbol table destruction cleans up the entries for each scope.
     static void userEraseScope(const VerilatedScope* scopep) VL_MT_SAFE {
 	// Slow ok - called once/scope on destruction, so we simply iterate.
-	VerilatedLockGuard guard(s_s.m_userMapMutex);
+	VerilatedLockGuard lock(s_s.m_userMapMutex);
 	for (UserMap::iterator it=s_s.m_userMap.begin(); it!=s_s.m_userMap.end(); ) {
 	    if (it->first.first == scopep) {
 		s_s.m_userMap.erase(it++);
@@ -298,7 +293,7 @@ private:
 	}
     }
     static void userDump() VL_MT_SAFE {
-	VerilatedLockGuard guard(s_s.m_userMapMutex);  // Avoid it changing in middle of dump
+	VerilatedLockGuard lock(s_s.m_userMapMutex);  // Avoid it changing in middle of dump
 	bool first = true;
 	for (UserMap::const_iterator it=s_s.m_userMap.begin(); it!=s_s.m_userMap.end(); ++it) {
 	    if (first) { VL_PRINTF_MT("  userDump:\n"); first=false; }
@@ -311,27 +306,27 @@ public: // But only for verilated*.cpp
     // METHODS - scope name
     static void scopeInsert(const VerilatedScope* scopep) VL_MT_SAFE {
 	// Slow ok - called once/scope at construction
-	VerilatedLockGuard guard(s_s.m_nameMutex);
+	VerilatedLockGuard lock(s_s.m_nameMutex);
 	VerilatedScopeNameMap::iterator it=s_s.m_nameMap.find(scopep->name());
 	if (it == s_s.m_nameMap.end()) {
 	    s_s.m_nameMap.insert(it, std::make_pair(scopep->name(),scopep));
 	}
     }
     static inline const VerilatedScope* scopeFind(const char* namep) VL_MT_SAFE {
-	VerilatedLockGuard guard(s_s.m_nameMutex);  // If too slow, can assume this is only VL_MT_SAFE_POSINIT
+	VerilatedLockGuard lock(s_s.m_nameMutex);  // If too slow, can assume this is only VL_MT_SAFE_POSINIT
 	VerilatedScopeNameMap::const_iterator it=s_s.m_nameMap.find(namep);
 	if (VL_LIKELY(it != s_s.m_nameMap.end())) return it->second;
 	else return NULL;
     }
     static void scopeErase(const VerilatedScope* scopep) VL_MT_SAFE {
 	// Slow ok - called once/scope at destruction
-	VerilatedLockGuard guard(s_s.m_nameMutex);
+	VerilatedLockGuard lock(s_s.m_nameMutex);
 	userEraseScope(scopep);
 	VerilatedScopeNameMap::iterator it=s_s.m_nameMap.find(scopep->name());
 	if (it != s_s.m_nameMap.end()) s_s.m_nameMap.erase(it);
     }
     static void scopesDump() VL_MT_SAFE {
-	VerilatedLockGuard guard(s_s.m_nameMutex);
+	VerilatedLockGuard lock(s_s.m_nameMutex);
 	VL_PRINTF_MT("  scopesDump:\n");
 	for (VerilatedScopeNameMap::const_iterator it=s_s.m_nameMap.begin(); it!=s_s.m_nameMap.end(); ++it) {
 	    const VerilatedScope* scopep = it->second;
@@ -355,7 +350,7 @@ public: // But only for verilated*.cpp
     // miss at the cost of a multiply, and all lookups move to slowpath.
     static int exportInsert(const char* namep) VL_MT_SAFE {
 	// Slow ok - called once/function at creation
-	VerilatedLockGuard guard(s_s.m_exportMutex);
+	VerilatedLockGuard lock(s_s.m_exportMutex);
 	ExportNameMap::iterator it=s_s.m_exportMap.find(namep);
 	if (it == s_s.m_exportMap.end()) {
 	    s_s.m_exportMap.insert(it, std::make_pair(namep, s_s.m_exportNext++));
@@ -365,7 +360,7 @@ public: // But only for verilated*.cpp
 	}
     }
     static int exportFind(const char* namep) VL_MT_SAFE {
-	VerilatedLockGuard guard(s_s.m_exportMutex);
+	VerilatedLockGuard lock(s_s.m_exportMutex);
 	ExportNameMap::const_iterator it=s_s.m_exportMap.find(namep);
 	if (VL_LIKELY(it != s_s.m_exportMap.end())) return it->second;
 	std::string msg = (std::string("%Error: Testbench C called ")+namep
@@ -375,14 +370,14 @@ public: // But only for verilated*.cpp
     }
     static const char* exportName(int funcnum) VL_MT_SAFE {
 	// Slowpath; find name for given export; errors only so no map to reverse-map it
-	VerilatedLockGuard guard(s_s.m_exportMutex);
+	VerilatedLockGuard lock(s_s.m_exportMutex);
 	for (ExportNameMap::const_iterator it=s_s.m_exportMap.begin(); it!=s_s.m_exportMap.end(); ++it) {
 	    if (it->second == funcnum) return it->first;
 	}
 	return "*UNKNOWN*";
     }
     static void exportsDump() VL_MT_SAFE {
-	VerilatedLockGuard guard(s_s.m_exportMutex);
+	VerilatedLockGuard lock(s_s.m_exportMutex);
 	bool first = true;
 	for (ExportNameMap::const_iterator it=s_s.m_exportMap.begin(); it!=s_s.m_exportMap.end(); ++it) {
 	    if (first) { VL_PRINTF_MT("  exportDump:\n"); first=false; }
@@ -397,7 +392,7 @@ public: // But only for verilated*.cpp
     static IData fdNew(FILE* fp) VL_MT_SAFE {
 	if (VL_UNLIKELY(!fp)) return 0;
 	// Bit 31 indicates it's a descriptor not a MCD
-	VerilatedLockGuard guard(s_s.m_fdMutex);
+	VerilatedLockGuard lock(s_s.m_fdMutex);
 	if (s_s.m_fdFree.empty()) {
 	    // Need to create more space in m_fdps and m_fdFree
 	    size_t start = s_s.m_fdps.size();
@@ -410,7 +405,7 @@ public: // But only for verilated*.cpp
     }
     static void fdDelete(IData fdi) VL_MT_SAFE {
 	IData idx = VL_MASK_I(31) & fdi;
-	VerilatedLockGuard guard(s_s.m_fdMutex);
+	VerilatedLockGuard lock(s_s.m_fdMutex);
 	if (VL_UNLIKELY(!(fdi & (1ULL<<31)) || idx >= s_s.m_fdps.size())) return;
 	if (VL_UNLIKELY(!s_s.m_fdps[idx])) return;  // Already free
 	s_s.m_fdps[idx] = NULL;
@@ -418,40 +413,9 @@ public: // But only for verilated*.cpp
     }
     static inline FILE* fdToFp(IData fdi) VL_MT_SAFE {
 	IData idx = VL_MASK_I(31) & fdi;
-	VerilatedLockGuard guard(s_s.m_fdMutex);  // This might get slow, if it does we can cache it
+	VerilatedLockGuard lock(s_s.m_fdMutex);  // This might get slow, if it does we can cache it
 	if (VL_UNLIKELY(!(fdi & (1ULL<<31)) || idx >= s_s.m_fdps.size())) return NULL;
 	return s_s.m_fdps[idx];
-    }
-
-public: // But only for verilated*.cpp
-    // METHODS - Threading
-    static void numThreads(unsigned threads) VL_MT_SAFE {
-	VerilatedLockGuard guard(s_s.m_threadMutex);
-	if (!s_s.m_spawned) s_s.m_numThreads = threads;
-    }
-    static unsigned numThreads() VL_MT_SAFE {
-	VerilatedLockGuard guard(s_s.m_threadMutex);
-#ifdef VL_THREADED
-	unsigned threads = s_s.m_numThreads;
-	if (threads == 0x0) {
-	    threads = std::thread::hardware_concurrency(); // Or 0=unknown, C++11
-	}
-	if (threads<1) threads = 1;
-	return threads;
-#else
-	return 0;
-#endif
-    }
-    static void spawnThreads() VL_MT_SAFE {
-	VerilatedLockGuard guard(s_s.m_threadMutex);
-	if (!s_s.m_spawned) {
-	    // Convert numThreads from 0 to the spawned number
-	    numThreads(numThreads());
-	    s_s.m_spawned = true;
-#ifdef VL_THREADED
-	    // THREADED-TODO startup threads
-#endif
-	}
     }
 };
 

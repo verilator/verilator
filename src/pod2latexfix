@@ -27,7 +27,7 @@ my $header = ("\\usepackage[left=1.7in,right=1.7in,top=1.3in,bottom=1.3in]{geome
 	      );
 
 foreach my $line (<STDIN>) {
-    $line =~ s/(\\begin{document})/${header}$1/;
-    $line =~ s/(\\tableofcontents)/\\begin{titlepage} \\maketitle \\end{titlepage}\n$1/;
+    $line =~ s/(\\begin\{document\})/${header}$1/;
+    $line =~ s/(\\tableofcontents)/\\begin\{titlepage\} \\maketitle \\end\{titlepage\}\n$1/;
     print "$line";
 }

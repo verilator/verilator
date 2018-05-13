@@ -233,12 +233,12 @@ public:
     // PUBLIC METHODS
     void clear() VL_EXCLUDES(m_mutex) {
 	Verilated::quiesce();
-	VerilatedLockGuard guard(m_mutex);
+	VerilatedLockGuard lock(m_mutex);
 	clearGuts();
     }
     void clearNonMatch(const char* matchp) VL_EXCLUDES(m_mutex) {
 	Verilated::quiesce();
-	VerilatedLockGuard guard(m_mutex);
+	VerilatedLockGuard lock(m_mutex);
 	if (matchp && matchp[0]) {
 	    ItemList newlist;
 	    for (ItemList::iterator it=m_items.begin(); it!=m_items.end(); ++it) {
@@ -254,7 +254,7 @@ public:
     }
     void zero() VL_EXCLUDES(m_mutex) {
 	Verilated::quiesce();
-	VerilatedLockGuard guard(m_mutex);
+	VerilatedLockGuard lock(m_mutex);
 	for (ItemList::const_iterator it=m_items.begin(); it!=m_items.end(); ++it) {
 	    (*it)->zero();
 	}
@@ -262,18 +262,18 @@ public:
 
     // We assume there's always call to i/f/p in that order
     void inserti (VerilatedCovImpItem* itemp) VL_EXCLUDES(m_mutex) {
-	VerilatedLockGuard guard(m_mutex);
+	VerilatedLockGuard lock(m_mutex);
 	assert(!m_insertp);
  	m_insertp = itemp;
     }
     void insertf (const char* filenamep, int lineno) VL_EXCLUDES(m_mutex) {
-	VerilatedLockGuard guard(m_mutex);
+	VerilatedLockGuard lock(m_mutex);
 	m_insertFilenamep = filenamep;
 	m_insertLineno = lineno;
     }
     void insertp (const char* ckeyps[MAX_KEYS],
 		  const char* valps[MAX_KEYS]) VL_EXCLUDES(m_mutex) {
-	VerilatedLockGuard guard(m_mutex);
+	VerilatedLockGuard lock(m_mutex);
 	assert(m_insertp);
 	// First two key/vals are filename
 	ckeyps[0]="filename";	valps[0]=m_insertFilenamep;
@@ -328,7 +328,7 @@ public:
 
     void write(const char* filename) VL_EXCLUDES(m_mutex) {
 	Verilated::quiesce();
-	VerilatedLockGuard guard(m_mutex);
+	VerilatedLockGuard lock(m_mutex);
 #ifndef VM_COVERAGE
 	VL_FATAL_MT("",0,"","%Error: Called VerilatedCov::write when VM_COVERAGE disabled\n");
 #endif

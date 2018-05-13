@@ -228,8 +228,8 @@ Verilator - Convert Verilog code to C++/SystemC
 
 =head1 DESCRIPTION
 
-Verilator converts synthesizable (not behavioral) Verilog code, plus some
-Synthesis, SystemVerilog and a small subset of Verilog AMS assertions, into
+Verilator converts synthesizable (generally not behavioral) Verilog code,
+plus some Synthesis, SystemVerilog and a small subset of Verilog AMS into
 C++ or SystemC code.  It is not a complete simulator, but a compiler.
 
 Verilator is invoked with parameters similar to GCC, Cadence

@@ -16,6 +16,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix parsing "output signed" in V2K port list, msg2540. [James Jung]
 
+****  Fix parsing error on bad missing #, bug1308. [Dan Kirkham]
+
 
 * Verilator 3.922 2018-03-17
 
