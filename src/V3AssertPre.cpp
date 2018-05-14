@@ -49,11 +49,7 @@ private:
     AstNodeSenItem*	m_senip;	// Last sensitivity
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     AstSenTree* newSenTree(AstNode* nodep) {
 	// Create sentree based on clocked or default clock

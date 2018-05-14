@@ -53,13 +53,9 @@ private:
     // STATE
     V3Hash		m_lowerHash;	// Hash of the statement we're building
 
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
-
     // METHODS
+    VL_DEBUG_FUNC;  // Declare debug()
+
     void nodeHashIterate(AstNode* nodep) {
 	if (!nodep->user4()) {
             if (VN_IS(nodep->backp(), CFunc)

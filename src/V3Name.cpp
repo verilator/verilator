@@ -52,11 +52,7 @@ private:
     V3LanguageWords 	m_words;	// Reserved word detector
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     void rename(AstNode* nodep, bool addPvt) {
 	if (!nodep->user1()) {  // Not already done

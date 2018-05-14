@@ -58,11 +58,7 @@ private:
     SenTreeFinder	m_finder;	// Find global sentree's and add them
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
     virtual void visit(AstTopScope* nodep) {

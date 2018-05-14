@@ -52,11 +52,7 @@ class UndrivenVarEntry {
 
     enum { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAGS_PER_BIT = 2 };
 
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
 public:
     // CONSTRUCTORS
@@ -241,11 +237,7 @@ private:
     AstAlways*		m_alwaysp;	// Current always if combo, otherwise NULL
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     UndrivenVarEntry* getEntryp(AstVar* nodep, int which_user) {
 	if (!(which_user==1 ? nodep->user1p() : nodep->user2p())) {

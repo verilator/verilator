@@ -54,11 +54,7 @@ private:
     BeginStack		m_beginStack;	// All begin blocks above current node
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     AstJumpLabel* findAddLabel(AstNode* nodep, bool endOfIter) {
 	// Put label under given node, and if WHILE optionally at end of iteration

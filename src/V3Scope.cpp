@@ -69,11 +69,7 @@ private:
     VarRefScopeSet	m_varRefScopes;		// Varrefs-in-scopes needing fixup when donw
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     void cleanupVarRefs() {
 	for (VarRefScopeSet::iterator it = m_varRefScopes.begin();
@@ -317,11 +313,7 @@ private:
     AstScope*	m_scopep;	// Current scope we are building
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
     virtual void visit(AstScope* nodep) {

@@ -128,11 +128,8 @@ private:
 
 public:
 
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    // METHODS
+    VL_DEBUG_FUNC;  // Declare debug()
     void dump(const string& nameComment="linkdot", bool force=false) {
 	if (debug()>=6 || force) {
 	    string filename = v3Global.debugFilename(nameComment)+".txt";

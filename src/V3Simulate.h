@@ -111,11 +111,7 @@ private:
 
 
     // Note level 8&9 include debugging each simulation value
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     // Potentially very slow, intended for debugging
     string prettyNumber(V3Number* nump, AstNodeDType* dtypep) {

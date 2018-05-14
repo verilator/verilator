@@ -262,11 +262,7 @@ private:
     int  m_rightClkWidth;	// Clk width on the RHS
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     virtual void visit(AstNodeAssign* nodep) {
 	m_hasClk = false;
@@ -383,11 +379,7 @@ private:
     bool m_clkAss; 	// There is signals marked as clocker in the assignment
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
     virtual void visit(AstNodeAssign* nodep) {
         if (const AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef) )
 	    if (varrefp->varp()->attrClocker() == AstVarAttrClocker::CLOCKER_YES) {
@@ -480,11 +472,7 @@ private:
     enum VarUsage { VU_NONE=0, VU_CON=1, VU_GEN=2 };
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     void iterateNewStmt(AstNode* nodep) {
 	if (m_scopep) {

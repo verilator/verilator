@@ -51,12 +51,8 @@ private:
     // STATE
     AstCell*            m_cellp;        // Current cell
 
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
-    //int m_debug;  int debug() { return m_debug; }
+    // METHODS
+    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
     virtual void visit(AstCell* nodep) {
@@ -153,11 +149,7 @@ private:
     typedef std::map<string,AstVar*> VarNameMap;
     VarNameMap	m_modVarNameMap;	// Per module, name of cloned variables
 
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
     virtual void visit(AstVar* nodep) {
@@ -215,11 +207,7 @@ private:
 
     typedef std::map<string,AstVar*> VarNameMap;
 
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
     virtual void visit(AstVar* nodep) {
@@ -466,11 +454,7 @@ public:
 
 class InstStatic {
 private:
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
     InstStatic() {} // Static class
 
     static AstNode* extendOrSel(FileLine* fl, AstNode* rhsp, AstNode* cmpWidthp) {

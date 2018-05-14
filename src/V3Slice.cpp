@@ -64,11 +64,7 @@ class SliceVisitor : public AstNVisitor {
     bool		m_assignError;	// True if the current assign already has an error
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     AstNode* cloneAndSel(AstNode* nodep, int elements, int offset) {
 	// Insert an ArraySel, except for a few special cases

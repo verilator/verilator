@@ -135,11 +135,7 @@ class LifeBlock {
     LifeBlock*	m_aboveLifep;	// Upper life, or NULL
     LifeState*	m_statep;	// Current global state
 
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
 public:
     LifeBlock(LifeBlock* aboveLifep, LifeState* statep) {
@@ -297,11 +293,7 @@ private:
     LifeBlock*	m_lifep;	// Current active lifetime map for current scope
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
     virtual void visit(AstVarRef* nodep) {

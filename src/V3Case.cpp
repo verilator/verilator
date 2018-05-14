@@ -59,11 +59,8 @@ class CaseLintVisitor : public AstNVisitor {
 private:
     AstNodeCase* m_caseExprp;	// Under a CASE value node, if so the relevant case statement
 
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    // METHODS
+    VL_DEBUG_FUNC;  // Declare debug()
 
     virtual void visit(AstNodeCase* nodep) {
         if (VN_IS(nodep, Case) && VN_CAST(nodep, Case)->casex()) {
@@ -140,11 +137,7 @@ private:
     AstNode*	m_valueItem[1<<CASE_OVERLAP_WIDTH];  // For each possible value, the case branch we need
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     bool isCaseTreeFast(AstCase* nodep) {
 	int width = 0;

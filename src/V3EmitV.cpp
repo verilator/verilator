@@ -41,11 +41,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     AstSenTree*	m_sensesp;
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     virtual void puts(const string& str) = 0;
     virtual void putbs(const string& str) = 0;

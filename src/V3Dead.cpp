@@ -106,11 +106,7 @@ private:
     bool			m_sideEffect;	// Side effects discovered in assign RHS
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     void checkAll(AstNode* nodep) {
 	if (nodep != nodep->dtypep()) {	 // NodeDTypes reference themselves

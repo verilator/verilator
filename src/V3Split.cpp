@@ -277,11 +277,7 @@ public:
 
     // METHODS
 protected:
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     void scoreboardClear() {
 	//VV*****  We reset user1p() and user2p on each block!!!
@@ -680,11 +676,7 @@ protected:
         iterateChildren(nodep);
     }
 
-    static int debug() {
-        static int level = -1;
-        if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-        return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 private:
     VL_UNCOPYABLE(IfColorVisitor);
 };
@@ -741,11 +733,7 @@ public:
     }
 
 protected:
-    static int debug() {
-        static int level = -1;
-        if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-        return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     AstSplitPlaceholder* makePlaceholderp() {
         return new AstSplitPlaceholder(m_origAlwaysp->fileline());

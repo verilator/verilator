@@ -295,6 +295,15 @@ inline void v3errorEndFatal(std::ostringstream& sstr) { V3Error::v3errorEnd(sstr
 
 #define V3ERROR_NA { v3error("Internal: Unexpected Call"); v3fatalSrc("Unexpected Call"); }
 
+/// Declare a convenience debug() routine that may be added to any class in
+/// Verilator so that --debugi-<srcfile> will work to control UINFOs in
+/// that class:
+#define VL_DEBUG_FUNC static int debug() { \
+        static int level = -1; \
+        if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__); \
+        return level; \
+    }
+
 //----------------------------------------------------------------------
 
 template< class T> std::string cvtToStr (const T& t) {

@@ -84,11 +84,7 @@ private:
     std::map<AstNodeModule*, LocalInstanceMap> m_instances;
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
     void cantInline(const char* reason, bool hard) {
 	if (hard) {
 	    if (m_modp->user2() != CIL_NOTHARD) {
@@ -241,11 +237,8 @@ private:
     //  Output:
     //   AstCell::user4p()	// AstCell* of the created clone
 
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    // METHODS
+    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
     virtual void visit(AstCell* nodep) {
@@ -282,11 +275,8 @@ private:
     AstNodeModule*	m_modp;		// Current module
     AstCell*		m_cellp;	// Cell being cloned
 
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    // METHODS
+    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
     virtual void visit(AstCellInline* nodep) {
@@ -499,11 +489,8 @@ private:
     AstNodeModule*      m_modp;         // Current module
     V3Double0		m_statCells;	// Statistic tracking
 
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    // METHODS
+    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
     virtual void visit(AstNetlist* nodep) {

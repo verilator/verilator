@@ -98,11 +98,7 @@ private:
     std::deque<AstVarScope*> m_tableVarps;      // Table being created
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     bool treeTest(AstAlways* nodep) {
 	// Process alw/assign tree

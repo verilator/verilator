@@ -54,11 +54,7 @@ private:
     bool	m_noopt;	// Disable optimization of variables in this block
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
     virtual void visit(AstNodeAssign* nodep) {
@@ -116,11 +112,7 @@ private:
     bool		m_assignLhs;	// Inside assignment lhs, don't breakup extracts
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     bool assignNoTemp(AstNodeAssign* nodep) {
         return (VN_IS(nodep->lhsp(), VarRef)

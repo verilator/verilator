@@ -68,11 +68,7 @@ private:
     V3Double0		m_statVarScpBytes;	// Statistic tracking
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     void allNodes(AstNode* nodep) {
 	m_instrs += nodep->instrCount();

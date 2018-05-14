@@ -900,10 +900,12 @@ public:
 
 class AstNVisitor {
 private:
+    // MEMBERS
     std::vector<AstNode*> m_deleteps;  // Nodes to delete when doDeletes() called
 protected:
     friend class AstNode;
 public:
+    // METHODS
     /// At the end of the visitor (or doDeletes()), delete this pushed node
     /// along with all children and next(s). This is often better to use
     /// than an immediate deleteTree, as any pointers into this node will

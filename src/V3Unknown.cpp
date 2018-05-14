@@ -64,11 +64,7 @@ private:
     AstAssignDly*	m_assigndlyp;	// Current assignment
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     void replaceBoundLvalue(AstNode* nodep, AstNode* condp) {
 	// Spec says a out-of-range LHS SEL results in a NOP.

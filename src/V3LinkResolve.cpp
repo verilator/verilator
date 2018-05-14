@@ -60,11 +60,7 @@ private:
     int		m_senitemCvtNum; // Temporary signal counter
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITs
     // TODO: Most of these visitors are here for historical reasons.
@@ -472,11 +468,7 @@ private:
     AstNodeModule*	m_modp;		// Current module
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITs
     virtual void visit(AstNetlist* nodep) {

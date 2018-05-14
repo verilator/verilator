@@ -113,11 +113,7 @@ private:
     V3GraphVertex*	m_topVertexp;	// Vertex of top module
     vl_unordered_set<string> m_declfnWarned;  // Files we issued DECLFILENAME on
 
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     // METHODS
     V3GraphVertex* vertex(AstNodeModule* nodep) {

@@ -53,11 +53,7 @@ private:
 #define iterateChildren DO_NOT_iterateChildern_IN_V3WidthSel
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     void checkConstantOrReplace(AstNode* nodep, const string& message) {
 	// See also V3Width::checkConstantOrReplace

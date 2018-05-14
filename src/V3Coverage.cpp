@@ -74,11 +74,7 @@ private:
     string	m_beginHier;	// AstBegin hier name for user coverage points
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     const char* varIgnoreToggle(AstVar* nodep) {
 	// Return true if this shouldn't be traced

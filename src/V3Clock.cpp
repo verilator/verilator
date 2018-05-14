@@ -70,11 +70,7 @@ private:
     AstIf*		m_lastIfp;	// Last sensitivity if active to add more under
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     AstVarScope* getCreateLastClk(AstVarScope* vscp) {
 	if (vscp->user1p()) return ((AstVarScope*)vscp->user1p());
