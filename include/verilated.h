@@ -186,9 +186,7 @@ public:
     // METHODS
     /// Check that the current thread ID is the same as the construction thread ID
     void check() VL_MT_UNSAFE_ONE {
-        // Memoize results in local thread, to prevent slow get_id() call
-        VL_THREAD_LOCAL bool t_okThread = (m_threadid == VL_THREAD_ID());
-        if (!VL_LIKELY(t_okThread)) {
+        if (!VL_LIKELY(m_threadid == VL_THREAD_ID())) {
             fatal_different();
         }
     }

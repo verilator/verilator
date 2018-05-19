@@ -156,20 +156,27 @@ struct params {
       unsigned int  scalar;
       int  type;
     } attributes, children;
-} values[] = {
-    {"onebit", {1, vpiNoDirection, 1, vpiReg}, {0, 0, 0, 0}},
-    {"twoone", {2, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
-    {"onetwo", {2, vpiNoDirection, 0, TestSimulator::is_verilator() ? vpiReg : vpiMemory}, {0, 0, 0, 0}},
-    {"fourthreetwoone", {2, vpiNoDirection, 0, vpiMemory}, {2, vpiNoDirection, 0, vpiMemoryWord}},
-    {"clk", {1, vpiInput, 1, vpiPort}, {0, 0, 0, 0}},
-    {"testin", {16, vpiInput, 0, vpiPort}, {0, 0, 0, 0}},
-    {"testout", {24, vpiOutput, 0, vpiPort}, {0, 0, 0, 0}},
-    {"sub.subin", {1, vpiInput, 1, vpiPort}, {0, 0, 0, 0}},
-    {"sub.subout", {1, vpiOutput, 1, vpiPort}, {0, 0, 0, 0}},
-    {NULL, {0, 0, 0, 0}, {0, 0, 0, 0}}
 };
 
 int mon_check_props() {
+    // This table needs to be function-static.
+    // This avoids calling is_verilator() below at global-static init time.
+    // When global-static led to a race between the is_verilator call below, and
+    // the code that sets up the VerilatedAssertOneThread() check in
+    // verilated_vpi.cc, it was causing the check to falsely fail
+    // (due to m_threadid within the check not being initted yet.)
+    static struct params values[] = {
+        {"onebit", {1, vpiNoDirection, 1, vpiReg}, {0, 0, 0, 0}},
+        {"twoone", {2, vpiNoDirection, 0, vpiReg}, {0, 0, 0, 0}},
+        {"onetwo", {2, vpiNoDirection, 0, TestSimulator::is_verilator() ? vpiReg : vpiMemory}, {0, 0, 0, 0}},
+        {"fourthreetwoone", {2, vpiNoDirection, 0, vpiMemory}, {2, vpiNoDirection, 0, vpiMemoryWord}},
+        {"clk", {1, vpiInput, 1, vpiPort}, {0, 0, 0, 0}},
+        {"testin", {16, vpiInput, 0, vpiPort}, {0, 0, 0, 0}},
+        {"testout", {24, vpiOutput, 0, vpiPort}, {0, 0, 0, 0}},
+        {"sub.subin", {1, vpiInput, 1, vpiPort}, {0, 0, 0, 0}},
+        {"sub.subout", {1, vpiOutput, 1, vpiPort}, {0, 0, 0, 0}},
+        {NULL, {0, 0, 0, 0}, {0, 0, 0, 0}}
+    };
     struct params* value = values;
     while (value->signal) {
       TestVpiHandle h = VPI_HANDLE(value->signal);

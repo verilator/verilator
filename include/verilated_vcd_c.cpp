@@ -343,7 +343,7 @@ void VerilatedVcd::bufferResize(vluint64_t minsize) {
 	memcpy(m_wrBufp, oldbufp, m_writep - oldbufp);
         m_writep = m_wrBufp + (m_writep - oldbufp);
 	m_wrFlushp = m_wrBufp + m_wrChunkSize * 6;
-	delete oldbufp; oldbufp=NULL;
+	delete [] oldbufp; oldbufp=NULL;
     }
 }
 
