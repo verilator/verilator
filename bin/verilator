@@ -366,6 +366,7 @@ descriptions in the next sections for more information.
      -v <filename>              Verilog library
      +verilog1995ext+<ext>      Synonym for +1364-1995ext+<ext>
      +verilog2001ext+<ext>      Synonym for +1364-2001ext+<ext>
+    --version                   Displays program version and exits
     --vpi                       Enable VPI compiles
      -Wall                      Enable all style warnings
      -Werror-<message>          Convert warnings to errors
@@ -1251,6 +1252,10 @@ Note -v is fairly standard across Verilog tools.
 =item  +verilog2001ext+I<ext>
 
 Synonyms for C<+1364-1995ext+>I<ext> and C<+1364-2001ext+>I<ext> respectively
+
+=item --version
+
+Displays program version and exits.
 
 =item --vpi
 
