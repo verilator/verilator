@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Report interface ports connected to wrong interface, bug1294. [Todd Strader]
 
+****  When tracing, use scalars on single bit arrays to appease vcddiff.
+
 ****  Fix parsing "output signed" in V2K port list, msg2540. [James Jung]
 
 ****  Fix parsing error on bad missing #, bug1308. [Dan Kirkham]

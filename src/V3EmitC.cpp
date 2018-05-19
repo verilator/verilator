@@ -2405,14 +2405,20 @@ class EmitCTrace : EmitCStmts {
 	string full = ((m_funcp->funcType() == AstCFuncType::TRACE_FULL
 			|| m_funcp->funcType() == AstCFuncType::TRACE_FULL_SUB)
 		       ? "full":"chg");
+        bool emitWidth = false;
 	if (nodep->dtypep()->basicp()->isDouble()) {
 	    puts("vcdp->"+full+"Double");
 	} else if (nodep->isWide() || emitTraceIsScBv(nodep) || emitTraceIsScBigUint(nodep)) {
 	    puts("vcdp->"+full+"Array");
+            emitWidth = true;
 	} else if (nodep->isQuad()) {
 	    puts("vcdp->"+full+"Quad ");
-	} else if (nodep->declp()->bitRange().ranged()) {
+            emitWidth = true;
+        } else if (nodep->declp()->bitRange().ranged()
+                   // 1 element smaller to use Bit dump
+                   && nodep->declp()->bitRange().elements() != 1) {
 	    puts("vcdp->"+full+"Bus  ");
+            emitWidth = true;
 	} else {
 	    puts("vcdp->"+full+"Bit  ");
 	}
@@ -2420,8 +2426,7 @@ class EmitCTrace : EmitCStmts {
 			    + ((arrayindex<0) ? 0 : (arrayindex*nodep->declp()->widthWords()))));
 	puts(",");
 	emitTraceValue(nodep, arrayindex);
-	if (!nodep->dtypep()->basicp()->isDouble()  // When float/double no longer have widths this can go
-	    && (nodep->declp()->bitRange().ranged() || emitTraceIsScBv(nodep) || emitTraceIsScBigUint(nodep))) {
+        if (emitWidth) {
 	    puts(","+cvtToStr(nodep->declp()->widthMin()));
 	}
 	puts(");\n");
