@@ -28,8 +28,12 @@ VPATH += ../../$(VM_USER_DIR)
 # Needed by DPI tests
 CPPFLAGS += -DVERILATOR=1
 
-# Needed by tracing routines
+# Debugging
 CPPFLAGS += -DVL_DEBUG=1
+# Assertions disabled as SystemC libraries are not clean
+#CPPFLAGS += -D_GLIBCXX_DEBUG
+
+# Needed by tracing routines
 CPPFLAGS += -DTEST_OBJ_DIR=$(TEST_OBJ_DIR)
 CPPFLAGS += -DVM_PREFIX=$(VM_PREFIX)
 CPPFLAGS += -DVM_PREFIX_INCLUDE="<$(VM_PREFIX).h>"
