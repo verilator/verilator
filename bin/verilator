@@ -380,6 +380,16 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --x-initial-edge            Enable initial X->0 and X->1 edge triggers
      -y <dir>                   Directory to search for modules
 
+This is a short summary of the arguments to run-time Verilated arguments.
+detailed descriptions in L</"RUNTIME ARGUMENTS"> for more information.
+
+     +verilator+debug                  Enable debugging
+     +verilator+debugi+I<value>        Enable debugging at a level
+     +verilator+help                   Display help
+     +verilator+rand+reset+I<value>    Set random reset technique
+     +verilator+V                      Verbose version and config
+     +verilator+version                Show version and exit
+
 
 =head1 VERILATION ARGUMENTS
 
@@ -1428,6 +1438,45 @@ Verilator defaults to the current directory ("-y .") and any specified
 --Mdir, though these default paths are used after any user specified
 directories.  This allows '-y "$(pwd)"' to be used if absolute filenames
 are desired for error messages instead of relative filenames.
+
+=back
+
+
+=head1 RUNTIME ARGUMENTS
+
+The following are the arguments that may be passed to a Verilated
+executable, provided that executable calls Verilated::commandArgs().
+
+All runtime arguments begin with +verilator, so that the user's executable
+may skip over all +verilator arguments when parsing its command line.
+
+=over 4
+
+=item +verilator+debug
+
+Enable debugging.  Equivalent to +verilator+debugi+4.
+
+=item +verilator+debugi+I<value>
+
+Enable debugging at the provided level.
+
+=item +verilator+help
+
+Display help and exit.
+
+=item +verilator+rand+reset+I<value>
+
+When a model was Verilated using "-x-inital unique", sets the
+initialization technique.  0 = Reset to zeros. 1 = Reset to all-ones.  2 =
+Randomize.  See L</"Unknown states">.
+
+=item +verilator+V
+
+Shows the verbose version, including configuration information.
+
+=item +verilator+version
+
+Displays program version and exits.
 
 =back
 

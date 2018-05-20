@@ -239,6 +239,9 @@ public:
     }
 private:
     static void commandArgsAddGuts(int argc, const char** argv) VL_REQUIRES(s_s.m_argMutex);
+    static void commandArgVl(const std::string& arg);
+    static bool commandArgVlValue(const std::string& arg,
+                                  const std::string& prefix, std::string& valuer);
 
 public:
     // METHODS - user scope tracking

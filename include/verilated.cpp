@@ -1774,8 +1774,51 @@ void VerilatedImp::commandArgsAddGuts(int argc, const char** argv) VL_REQUIRES(s
     if (!s_s.m_argVecLoaded) s_s.m_argVec.clear();
     for (int i=0; i<argc; ++i) {
         s_s.m_argVec.push_back(argv[i]);
+        commandArgVl(argv[i]);
     }
     s_s.m_argVecLoaded = true;  // Can't just test later for empty vector, no arguments is ok
+}
+void VerilatedImp::commandArgVl(const std::string& arg) {
+    if (0 == strncmp(arg.c_str(), "+verilator+", strlen("+verilator+"))) {
+        std::string value;
+        if (0) {
+        }
+        else if (arg == "+verilator+debug") {
+            Verilated::debug(4);
+        }
+        else if (commandArgVlValue(arg, "+verilator+debugi+", value/*ref*/)) {
+            Verilated::debug(atoi(value.c_str()));
+        }
+        else if (arg == "+verilator+help") {
+            versionDump();
+            VL_PRINTF_MT("For help, please see 'verilator --help'\n");
+            VL_FATAL_MT("COMMAND_LINE", 0, "", "Exiting due to command line argument (not an error)");
+        }
+        else if (commandArgVlValue(arg, "+verilator+rand+reset+", value/*ref*/)) {
+            Verilated::randReset(atoi(value.c_str()));
+        }
+        else if (arg == "+verilator+V") {
+            versionDump();  // Someday more info too
+            VL_FATAL_MT("COMMAND_LINE", 0, "", "Exiting due to command line argument (not an error)");
+        }
+        else if (arg == "+verilator+version") {
+            versionDump();
+            VL_FATAL_MT("COMMAND_LINE", 0, "", "Exiting due to command line argument (not an error)");
+        }
+        else {
+            VL_PRINTF_MT("%%Warning: Unknown +verilator runtime argument: '%s'\n", arg.c_str());
+        }
+    }
+}
+bool VerilatedImp::commandArgVlValue(const std::string& arg,
+                                     const std::string& prefix, std::string& valuer) {
+    size_t len = prefix.length();
+    if (0==strncmp(prefix.c_str(), arg.c_str(), len)) {
+        valuer = arg.substr(len);
+        return true;
+    } else {
+        return false;
+    }
 }
 
 //======================================================================
