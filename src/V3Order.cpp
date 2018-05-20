@@ -548,7 +548,7 @@ private:
 			  : (domainp->hasSettle() ? "_settle"
 			     : (domainp->isMulti() ? "_multiclk" : "_sequent"))));
 	name = name+"__"+scopep->nameDotless()+"__"+cvtToStr(funcnum);
-	if (v3Global.opt.profileCFuncs()) {
+        if (v3Global.opt.profCFuncs()) {
 	    name += "__PROF__"+forWhatp->fileline()->profileFuncname();
 	}
 	return name;
@@ -1525,7 +1525,7 @@ void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
     }
     else {  // Normal logic
 	// Make or borrow a CFunc to contain the new statements
-	if (v3Global.opt.profileCFuncs()
+        if (v3Global.opt.profCFuncs()
 	    || (v3Global.opt.outputSplitCFuncs()
 		&& v3Global.opt.outputSplitCFuncs() < m_pomNewStmts)) {
 	    // Put every statement into a unique function to ease profiling or reduce function size

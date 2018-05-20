@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 3.923 devel
 
+***   Renamed --profile-cfuncs to --prof-cfuncs.
+
 ****  Report interface ports connected to wrong interface, bug1294. [Todd Strader]
 
 ****  When tracing, use scalars on single bit arrays to appease vcddiff.
@@ -2194,7 +2196,7 @@ Bug fixes:
 
 * Verilator 3.501 2005/11/16 Stable
 
-***  Add --profile-cfuncs for correlating profiles back to Verilog.
+***  Add --prof-cfuncs for correlating profiles back to Verilog.
 
 **** Fixed functions where regs are declared before inputs.  [Danny Ding]
 

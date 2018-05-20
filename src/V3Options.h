@@ -86,7 +86,7 @@ class V3Options {
     bool	m_pinsScUint;   // main switch: --pins-sc-uint
     bool	m_pinsScBigUint;// main switch: --pins-sc-biguint
     bool	m_pinsUint8;	// main switch: --pins-uint8
-    bool	m_profileCFuncs;// main switch: --profile-cfuncs
+    bool        m_profCFuncs;   // main switch: --prof-cfuncs
     bool	m_public;	// main switch: --public
     bool	m_relativeCFuncs; // main switch: --relative-cfuncs
     bool	m_relativeIncludes; // main switch: --relative-includes
@@ -244,7 +244,7 @@ class V3Options {
     bool pinsScUint() const { return m_pinsScUint; }
     bool pinsScBigUint() const { return m_pinsScBigUint; }
     bool pinsUint8() const { return m_pinsUint8; }
-    bool profileCFuncs() const { return m_profileCFuncs; }
+    bool profCFuncs() const { return m_profCFuncs; }
     bool allPublic() const { return m_public; }
     bool lintOnly() const { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
