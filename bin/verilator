@@ -384,9 +384,9 @@ This is a short summary of the arguments to run-time Verilated arguments.
 detailed descriptions in L</"RUNTIME ARGUMENTS"> for more information.
 
      +verilator+debug                  Enable debugging
-     +verilator+debugi+I<value>        Enable debugging at a level
+     +verilator+debugi+<value>         Enable debugging at a level
      +verilator+help                   Display help
-     +verilator+rand+reset+I<value>    Set random reset technique
+     +verilator+rand+reset+<value>     Set random reset technique
      +verilator+V                      Verbose version and config
      +verilator+version                Show version and exit
 
