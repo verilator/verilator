@@ -42,7 +42,7 @@ VL_THREAD_LOCAL Verilated::ThreadLocal Verilated::t_s;
 
 struct Verilated::CommandArgValues Verilated::s_args = {0, NULL};
 
-VerilatedImp  VerilatedImp::s_s;
+VerilatedImp VerilatedImp::s_s;
 
 //===========================================================================
 // User definable functions
@@ -1739,6 +1739,44 @@ void Verilated::endOfEvalGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
     evalMsgQp->process();
 }
 #endif
+
+//===========================================================================
+// VerilatedImp:: Methods
+
+void VerilatedImp::internalsDump() VL_MT_SAFE {
+    VerilatedLockGuard lock(s_s.m_argMutex);
+    VL_PRINTF_MT("internalsDump:\n");
+    versionDump();
+    VL_PRINTF_MT("  Argv:");
+    for (ArgVec::const_iterator it=s_s.m_argVec.begin(); it!=s_s.m_argVec.end(); ++it) {
+        VL_PRINTF_MT(" %s",it->c_str());
+    }
+    VL_PRINTF_MT("\n");
+    scopesDump();
+    exportsDump();
+    userDump();
+}
+void VerilatedImp::versionDump() VL_MT_SAFE {
+    VL_PRINTF_MT("  Version: %s %s\n",
+                 Verilated::productName(), Verilated::productVersion());
+}
+
+void VerilatedImp::commandArgs(int argc, const char** argv) VL_EXCLUDES(s_s.m_argMutex) {
+    VerilatedLockGuard lock(s_s.m_argMutex);
+    s_s.m_argVec.clear();  // Always clear
+    commandArgsAddGuts(argc, argv);
+}
+void VerilatedImp::commandArgsAdd(int argc, const char** argv) VL_EXCLUDES(s_s.m_argMutex) {
+    VerilatedLockGuard lock(s_s.m_argMutex);
+    commandArgsAddGuts(argc, argv);
+}
+void VerilatedImp::commandArgsAddGuts(int argc, const char** argv) VL_REQUIRES(s_s.m_argMutex) {
+    if (!s_s.m_argVecLoaded) s_s.m_argVec.clear();
+    for (int i=0; i<argc; ++i) {
+        s_s.m_argVec.push_back(argv[i]);
+    }
+    s_s.m_argVecLoaded = true;  // Can't just test later for empty vector, no arguments is ok
+}
 
 //======================================================================
 // VerilatedSyms:: Methods

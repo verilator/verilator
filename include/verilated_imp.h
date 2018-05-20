@@ -212,31 +212,14 @@ public: // But only for verilated*.cpp
 private:
     VL_UNCOPYABLE(VerilatedImp);
 public:
-    static void internalsDump() VL_MT_SAFE {
-	VerilatedLockGuard lock(s_s.m_argMutex);
-	VL_PRINTF_MT("internalsDump:\n");
-	VL_PRINTF_MT("  Argv:");
-	for (ArgVec::const_iterator it=s_s.m_argVec.begin(); it!=s_s.m_argVec.end(); ++it) {
-	    VL_PRINTF_MT(" %s",it->c_str());
-	}
-	VL_PRINTF_MT("\n");
-	VL_PRINTF_MT("  Version: %s %s\n", Verilated::productName(), Verilated::productVersion());
-	scopesDump();
-	exportsDump();
-	userDump();
-    }
+    // METHODS - debug
+    static void internalsDump() VL_MT_SAFE;
+    static void versionDump() VL_MT_SAFE;
 
     // METHODS - arguments
 public:
-    static void commandArgs(int argc, const char** argv) VL_EXCLUDES(s_s.m_argMutex) {
-	VerilatedLockGuard lock(s_s.m_argMutex);
-	s_s.m_argVec.clear();  // Always clear
-	commandArgsAddGuts(argc, argv);
-    }
-    static void commandArgsAdd(int argc, const char** argv) VL_EXCLUDES(s_s.m_argMutex) {
-	VerilatedLockGuard lock(s_s.m_argMutex);
-	commandArgsAddGuts(argc, argv);
-    }
+    static void commandArgs(int argc, const char** argv) VL_EXCLUDES(s_s.m_argMutex);
+    static void commandArgsAdd(int argc, const char** argv) VL_EXCLUDES(s_s.m_argMutex);
     static std::string argPlusMatch(const char* prefixp) VL_EXCLUDES(s_s.m_argMutex) {
 	VerilatedLockGuard lock(s_s.m_argMutex);
 	// Note prefixp does not include the leading "+"
@@ -255,11 +238,7 @@ public:
 	return "";
     }
 private:
-    static void commandArgsAddGuts(int argc, const char** argv) VL_REQUIRES(s_s.m_argMutex) {
-	if (!s_s.m_argVecLoaded) s_s.m_argVec.clear();
-	for (int i=0; i<argc; ++i) s_s.m_argVec.push_back(argv[i]);
-	s_s.m_argVecLoaded = true; // Can't just test later for empty vector, no arguments is ok
-    }
+    static void commandArgsAddGuts(int argc, const char** argv) VL_REQUIRES(s_s.m_argMutex);
 
 public:
     // METHODS - user scope tracking

@@ -249,8 +249,8 @@ To get started, jump down to "EXAMPLE C++ EXECUTION".
 
 =head1 ARGUMENT SUMMARY
 
-This is a short summary of the arguments to Verilator.  See the detailed
-descriptions in the next sections for more information.
+This is a short summary of the arguments to Verilator itself.  See the
+detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
 
     {file.v}                    Verilog package, module and top module filenames
     {file.c/cc/cpp}             Optional C++ files to compile in
@@ -381,7 +381,9 @@ descriptions in the next sections for more information.
      -y <dir>                   Directory to search for modules
 
 
-=head1 ARGUMENTS
+=head1 VERILATION ARGUMENTS
+
+The following are the arguments that may be passed to Verilator itself.
 
 =over 4
 
@@ -1376,7 +1378,7 @@ not otherwise initialized.
 
 --x-initial=unique, the default, initializes variables using a function,
 which determines the value to use each initialization. This gives greatest
-flexibility and allows finding reset bugs.  See L</"Unknown states">
+flexibility and allows finding reset bugs.  See L</"Unknown states">.
 
 --x-initial=fast, is best for performance, and initializes all variables to
 a state Verilator determines is optimal.  This may allow further code

@@ -411,7 +411,8 @@ public:
 
     /// Record command line arguments, for retrieval by $test$plusargs/$value$plusargs
     static void commandArgs(int argc, const char** argv) VL_MT_SAFE;
-    static void commandArgs(int argc, char** argv) VL_MT_SAFE { commandArgs(argc, const_cast<const char**>(argv)); }
+    static void commandArgs(int argc, char** argv) VL_MT_SAFE {
+        commandArgs(argc, const_cast<const char**>(argv)); }
     static void commandArgsAdd(int argc, const char** argv);
     static CommandArgValues* getCommandArgs() VL_MT_SAFE { return &s_args; }
     /// Match plusargs with a given prefix. Returns static char* valid only for a single call
