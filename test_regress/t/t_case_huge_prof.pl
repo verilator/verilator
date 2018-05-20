@@ -12,7 +12,7 @@ scenarios(vlt_all => 1);
 top_filename("t/t_case_huge.v");
 
 compile(
-    verilator_flags2 => ["--stats --profile-cfuncs -CFLAGS '-pg' -LDFLAGS '-pg'"],
+    verilator_flags2 => ["--stats --prof-cfuncs -CFLAGS '-pg' -LDFLAGS '-pg'"],
     );
 
 file_grep ($Self->{stats}, qr/Optimizations, Tables created\s+(\d+)/i, 10);
