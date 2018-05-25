@@ -332,15 +332,16 @@ class Verilated {
     static VerilatedVoidCb  s_flushCb;		///< Flush callback function
 
     static struct Serialized {   // All these members serialized/deserialized
-	// Slow path
-	int		s_randReset;		///< Random reset: 0=all 0s, 1=all 1s, 2=random
 	// Fast path
 	int		s_debug;		///< See accessors... only when VL_DEBUG set
 	bool		s_calcUnusedSigs;	///< Waves file on, need all signals calculated
 	bool		s_gotFinish;		///< A $finish statement executed
 	bool		s_assertOn;		///< Assertions are enabled
         bool		s_fatalOnVpiError;	///< Stop on vpi error/unsupported
-	Serialized();
+        // Slow path
+        int             s_randReset;            ///< Random reset: 0=all 0s, 1=all 1s, 2=random
+        Serialized();
+        ~Serialized() {}
     } s_s;
 
     // no need to be save-restored (serialized) the
@@ -348,6 +349,8 @@ class Verilated {
     static struct CommandArgValues {
 	int          argc;
 	const char** argv;
+        CommandArgValues() : argc(0), argv(NULL) {}
+        ~CommandArgValues() {}
     } s_args;
 
     // Not covered by mutex, as per-thread

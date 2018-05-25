@@ -1,4 +1,6 @@
-#!/usr/bin/perl -w
+: # -*-Mode: perl;-*- use perl, wherever it is
+eval 'exec perl -wS $0 ${1+"$@"}'
+  if 0;
 # See copyright, etc in below POD section.
 ######################################################################
 
