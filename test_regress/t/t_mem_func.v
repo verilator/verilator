@@ -116,8 +116,8 @@ module Test
 	 p[1]  = p1;
 	 p[2]  = p2;
 	 p[3]  = p3;
-	 p1_r[0] = p[0];
-	 p1_r[1] = p[1];
+         p1_r[0] <= p[0];
+         p1_r[1] <= p[1];
       end
    endtask
 endmodule
