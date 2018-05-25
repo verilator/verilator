@@ -347,6 +347,7 @@ class Verilated {
     // no need to be save-restored (serialized) the
     // assumption is that the restore is allowed to pass different arguments
     static struct CommandArgValues {
+        VerilatedMutex m_argMutex;  ///< Mutex for s_args members, when VL_THREADED
 	int          argc;
 	const char** argv;
         CommandArgValues() : argc(0), argv(NULL) {}

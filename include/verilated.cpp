@@ -1678,7 +1678,7 @@ void Verilated::flushCall() VL_MT_SAFE {
 }
 
 void Verilated::commandArgs(int argc, const char** argv) VL_MT_SAFE {
-    VerilatedLockGuard lock(m_mutex);
+    VerilatedLockGuard lock(s_args.m_argMutex);
     s_args.argc = argc;
     s_args.argv = argv;
     VerilatedImp::commandArgs(argc,argv);
