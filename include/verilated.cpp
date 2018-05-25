@@ -40,7 +40,7 @@ VerilatedVoidCb Verilated::s_flushCb = NULL;
 Verilated::Serialized Verilated::s_s;
 VL_THREAD_LOCAL Verilated::ThreadLocal Verilated::t_s;
 
-struct Verilated::CommandArgValues Verilated::s_args = {0, NULL};
+Verilated::CommandArgValues Verilated::s_args;
 
 VerilatedImp VerilatedImp::s_s;
 
