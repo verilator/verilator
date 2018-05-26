@@ -290,7 +290,6 @@ void AstNode::addNextHere(AstNode* newp) {
     // Add to m_nextp on exact node passed, not at the end.
     //  This could be at head, tail, or both (single)
     //  New  could be head of single node, or list
-    UDEBUGONLY(UASSERT(dynamic_cast<const AstNode*>(this),"this should not be NULL"););
     UASSERT(newp,"Null item passed to addNext");
     UASSERT(newp->backp()==NULL,"New node (back) already assigned?");
     this->debugTreeChange("-addHereThs: ", __LINE__, false);
@@ -646,7 +645,6 @@ AstNode* AstNode::cloneTreeIterList() {
 }
 
 AstNode* AstNode::cloneTree(bool cloneNextLink) {
-    UDEBUGONLY(UASSERT(dynamic_cast<const AstNode*>(this),"this should not be NULL"););
     this->debugTreeChange("-cloneThs: ", __LINE__, cloneNextLink);
     cloneClearTree();
     AstNode* newp;
@@ -802,7 +800,6 @@ void AstNode::iterateAndNext(AstNVisitor& v) {
 }
 
 void AstNode::iterateListBackwards(AstNVisitor& v) {
-    UDEBUGONLY(UASSERT(dynamic_cast<const AstNode*>(this),"this should not be NULL"););
     AstNode* nodep=this;
     while (nodep->m_nextp) nodep=nodep->m_nextp;
     while (nodep) {
@@ -822,13 +819,13 @@ void AstNode::iterateChildrenBackwards(AstNVisitor& v) {
 
 void AstNode::iterateAndNextConst(AstNVisitor& v) {
     // Keep following the current list even if edits change it
-    UDEBUGONLY(UASSERT(dynamic_cast<const AstNode*>(this),"this should not be NULL"););
-    for (AstNode* nodep=this; nodep; ) {
+    AstNode* nodep=this;
+    do {
 	AstNode* nnextp = nodep->m_nextp;
 	ASTNODE_PREFETCH(nnextp);
 	nodep->accept(v);
 	nodep = nnextp;
-    }
+    } while (nodep);
 }
 
 AstNode* AstNode::iterateSubtreeReturnEdits(AstNVisitor& v) {
@@ -871,7 +868,6 @@ AstNode* AstNode::iterateSubtreeReturnEdits(AstNVisitor& v) {
 
 void AstNode::cloneRelinkTree() {
     // private: Cleanup clone() operation on whole tree. Publicly call cloneTree() instead.
-    UDEBUGONLY(UASSERT(dynamic_cast<const AstNode*>(this),"this should not be NULL"););
     for (AstNode* nodep=this; nodep; nodep=nodep->m_nextp) {
 	if (m_dtypep && m_dtypep->clonep()) {
 	    m_dtypep = m_dtypep->clonep();
@@ -976,17 +972,14 @@ void AstNode::checkTree() {
 }
 
 void AstNode::dumpGdb() {  // For GDB only
-    if (!dynamic_cast<const AstNode*>(this)) { cout<<"This=NULL"<<endl; return; }
     dumpGdbHeader();
     cout<<"  "; dump(cout); cout<<endl;
 }
 void AstNode::dumpGdbHeader() const {  // For GDB only
-    if (!dynamic_cast<const AstNode*>(this)) { cout<<"This=NULL"<<endl; return; }
     dumpPtrs(cout);
     cout<<"  Fileline = "<<fileline()<<endl;
 }
 void AstNode::dumpTreeGdb() {  // For GDB only
-    if (!dynamic_cast<const AstNode*>(this)) { cout<<"This=NULL"<<endl; return; }
     dumpGdbHeader();
     dumpTree(cout);
 }
@@ -1076,11 +1069,7 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump) {
 void AstNode::v3errorEndFatal(std::ostringstream& str) const { v3errorEnd(str); assert(0); }
 
 void AstNode::v3errorEnd(std::ostringstream& str) const {
-    if (!dynamic_cast<const AstNode*>(this)) {
-	// No known cases cause this, but better than a core dump
-	if (debug()) UINFO(0, "-node: NULL. Please report this along with a --gdbbt backtrace as a Verilator bug.\n");
-	V3Error::v3errorEnd(str);
-    } else if (!m_fileline) {
+    if (!m_fileline) {
 	V3Error::v3errorEnd(str);
     } else {
         std::ostringstream nsstr;

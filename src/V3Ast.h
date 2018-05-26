@@ -44,10 +44,10 @@ class VFlagChildDType {};  // Used by parser.y to select constructor that sets c
 
 //######################################################################
 
-// (V)erilator (N)ode (is)): True if AstNode is of a a given AstType
+// (V)erilator (N)ode is: True if AstNode is of a a given AstType
 #define VN_IS(nodep,nodetypename) (AstNode::privateIs ## nodetypename(nodep))
 
-// (V)erilator (N)ode (cast): Cast to given type if can; effectively dynamic_cast(nodep)(nodetypename)
+// (V)erilator (N)ode cast: Cast to given type if can; effectively dynamic_cast(nodep)(nodetypename)
 #define VN_CAST(nodep,nodetypename) (AstNode::privateCast ## nodetypename(nodep))
 #define VN_CAST_CONST(nodep,nodetypename) (AstNode::privateConstCast ## nodetypename(nodep) )
 
