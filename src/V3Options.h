@@ -265,7 +265,8 @@ class V3Options {
     int	   outputSplitCFuncs() const { return m_outputSplitCFuncs; }
     int	   outputSplitCTrace() const { return m_outputSplitCTrace; }
     int	   pinsBv() const { return m_pinsBv; }
-    int	   threads() const { return m_threads; }
+    int threads() const { return m_threads; }
+    bool mtasks() const { return (m_threads > 1); }
     int	   traceDepth() const { return m_traceDepth; }
     int	   traceMaxArray() const { return m_traceMaxArray; }
     int	   traceMaxWidth() const { return m_traceMaxWidth; }
