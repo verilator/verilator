@@ -1210,6 +1210,7 @@ sub _make_main {
     }
     print $fh "    Verilated::commandArgs(argc, argv);\n";
     print $fh "    Verilated::debug(".($self->{verilated_debug}?1:0).");\n";
+    print $fh "    srand48(5);\n";  # Ensure determinism
     print $fh "    Verilated::randReset(".$self->{verilated_randReset}.");\n" if defined $self->{verilated_randReset};
     print $fh "    topp = new $VM_PREFIX (\"top\");\n";
     my $set;

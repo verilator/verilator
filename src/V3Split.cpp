@@ -751,9 +751,7 @@ protected:
         // for such an embedded if.
 
         // Each leaf must have a user3p
-        if (!nodep->user3p()) {
-            v3fatalSrc("null user3p in V3Split leaf");
-        }
+        if (!nodep->user3p()) v3fatalSrc("null user3p in V3Split leaf");
 
         // Clone the leaf into its new always block
         SplitLogicVertex* vxp = (SplitLogicVertex*)(nodep->user3p());

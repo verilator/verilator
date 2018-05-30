@@ -76,7 +76,8 @@ public:
     typedef enum {EVL_CLASS_IO, EVL_CLASS_SIG, EVL_CLASS_TEMP, EVL_CLASS_PAR, EVL_CLASS_ALL,
                   EVL_FUNC_ALL} EisWhich;
     void emitVarList(AstNode* firstp, EisWhich which, const string& prefixIfImp);
-    void emitVarCtors();
+    void emitVarCtors(bool* firstp);
+    void emitCtorSep(bool* firstp);
     bool emitSimpleOk(AstNodeMath* nodep);
     void emitIQW(AstNode* nodep) {
         // Other abbrevs: "C"har, "S"hort, "F"loat, "D"ouble, stri"N"g
@@ -894,6 +895,7 @@ class EmitCImp : EmitCStmts {
 	puts(modClassName(m_modp)+"::"+nodep->name()
 	     +"\\n\"); );\n");
 
+        // Declare and set vlTOPp
 	if (nodep->symProlog()) puts(EmitCBaseVisitor::symTopAssign()+"\n");
 
 	if (nodep->initsp()) putsDecoration("// Variables\n");
@@ -990,6 +992,7 @@ class EmitCImp : EmitCStmts {
     void emitSettleLoop(std::string eval_call, bool initial);
     void emitWrapEval(AstNodeModule* modp);
     void emitInt(AstNodeModule* modp);
+    void maybeSplit(AstNodeModule* modp);
 
 public:
     EmitCImp() {
@@ -1082,12 +1085,20 @@ void EmitCStmts::emitVarDecl(const AstVar* nodep, const string& prefixIfImp) {
     }
 }
 
-void EmitCStmts::emitVarCtors() {
+void EmitCStmts::emitCtorSep(bool* firstp) {
+    if (*firstp) {
+        puts("  : "); *firstp = false;
+    } else {
+        puts(", ");
+    }
+    if (ofp()->exceededWidth()) puts("\n  ");
+}
+
+void EmitCStmts::emitVarCtors(bool* firstp) {
     if (!m_ctorVarsVec.empty()) {
 	ofp()->indentInc();
 	puts("\n");
 	puts("#if (SYSTEMC_VERSION>20011000)\n");  // SystemC 2.0.1 and newer
-	bool first = true;
 	for (VarVec::iterator it = m_ctorVarsVec.begin(); it != m_ctorVarsVec.end(); ++it) {
             const AstVar* varp = *it;
             bool isArray = !VN_CAST(varp->dtypeSkipRefp(), BasicDType);
@@ -1096,9 +1107,7 @@ void EmitCStmts::emitVarCtors() {
 		puts(varp->name());
 		puts("\n");
 	    } else {
-		if (first) { puts("  : "); first=false; }
-		else puts(", ");
-		if (ofp()->exceededWidth()) puts("\n  ");
+                emitCtorSep(firstp);
 		puts(varp->name());
 		puts("("); putsQuoted(varp->name()); puts(")");
 	    }
@@ -1523,12 +1532,14 @@ void EmitCImp::emitCoverageDecl(AstNodeModule* modp) {
 
 void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     puts("\n");
+    bool first = true;
     if (optSystemC() && modp->isTop()) {
 	puts("VL_SC_CTOR_IMP("+modClassName(modp)+")");
     } else {
-	puts("VL_CTOR_IMP("+modClassName(modp)+")");
+        puts("VL_CTOR_IMP("+modClassName(modp)+")");
+        first = false;  // VL_CTOR_IMP includes the first ':'
     }
-    emitVarCtors();
+    emitVarCtors(&first);
     puts(" {\n");
     emitCellCtors(modp);
     emitSensitives();
@@ -1778,7 +1789,7 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
 	puts("if (VL_UNLIKELY(__Vm_inhibitSim)) return;\n");
     }
 
-    if (v3Global.opt.threads()) {  // THREADED-TODO move to per-train
+    if (v3Global.opt.threads() == 1) {
 	uint32_t mtaskId = 0;
 	putsDecoration("// MTask "+cvtToStr(mtaskId)+" start\n");
 	puts("VL_DEBUG_IF(VL_DBG_MSGF(\"MTask starting, mtaskId="+cvtToStr(mtaskId)+"\\n\"););\n");
@@ -1788,7 +1799,7 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
         (string("VL_DEBUG_IF(VL_DBG_MSGF(\"+ Clock loop\\n\"););\n")
          + (v3Global.opt.trace() ? "vlSymsp->__Vm_activity = true;\n" : "")
          + "_eval(vlSymsp);"), false);
-    if (v3Global.opt.threads()) {  // THREADED-TODO move to end of all mtasks on thread
+    if (v3Global.opt.threads() == 1) {
 	puts("Verilated::endOfThreadMTask(vlSymsp->__Vm_evalMsgQp);\n");
     }
     if (v3Global.opt.threads()) {
@@ -2216,6 +2227,17 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
 
 //######################################################################
 
+void EmitCImp::maybeSplit(AstNodeModule* modp) {
+    if (splitNeeded()) {
+        // Close old file
+        delete m_ofp; m_ofp=NULL;
+        // Open a new file
+        m_ofp = newOutCFile(modp, !m_fast, true/*source*/, splitFilenumInc());
+        emitImp(modp);
+    }
+    splitSizeInc(10);  // Even blank functions get a file with a low csplit
+}
+
 void EmitCImp::main(AstNodeModule* modp, bool slow, bool fast) {
     // Output a module
     m_modp = modp;
@@ -2226,37 +2248,18 @@ void EmitCImp::main(AstNodeModule* modp, bool slow, bool fast) {
 	UINFO(0,"  Emitting "<<modClassName(modp)<<endl);
     }
 
-    if (optSystemC()) {
-	if (m_fast) {
-	    m_ofp = newOutCFile (modp, !m_fast, false/*source*/);
-	    emitInt (modp);
-	    delete m_ofp; m_ofp=NULL;
-	}
-
-	m_ofp = newOutCFile (modp, !m_fast, true/*source*/);
-    }
-    else {
-	if (m_fast) {
-	    m_ofp = newOutCFile (modp, !m_fast, false/*source*/);
-	    emitInt (modp);
-	    delete m_ofp; m_ofp=NULL;
-	}
-
-	m_ofp = newOutCFile (modp, !m_fast, true/*source*/);
+    if (m_fast) {
+        m_ofp = newOutCFile(modp, !m_fast, false/*source*/);
+        emitInt(modp);
+        delete m_ofp; m_ofp=NULL;
     }
 
-    emitImp (modp);
+    m_ofp = newOutCFile(modp, !m_fast, true/*source*/);
+    emitImp(modp);
 
     for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
         if (AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
-	    if (splitNeeded()) {
-		// Close old file
-		delete m_ofp; m_ofp=NULL;
-		// Open a new file
-		m_ofp = newOutCFile (modp, !m_fast, true/*source*/, splitFilenumInc());
-		emitImp (modp);
-	    }
-	    splitSizeInc(10);  // Even blank functions get a file with a low csplit
+            maybeSplit(modp);
 	    mainDoFunc(funcp);
 	}
     }

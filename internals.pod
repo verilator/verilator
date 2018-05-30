@@ -746,7 +746,7 @@ File a bug (if there isn't already) so others know what you're working on.
 
 =item 2.
 
-Make a testcase in the test_regress/t/t_EXAMPLE format, see L<TESTING>.
+Make a testcase in the test_regress/t/t_EXAMPLE format, see L</TESTING>.
 
 =item 3.
 
