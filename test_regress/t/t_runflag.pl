@@ -15,12 +15,8 @@ compile(
 execute(
     all_run_flags => ["+verilator+debug +verilator+debugi+9 +verilator+rand+reset+1"],
     check_finished => 1,
-    expect => (
-q{-V{t0,1}- Verilated::debug is on. Message prefix indicates {<thread>,<sequence_number>}.
--V{t0,2}- Verilated::debug is on. Message prefix indicates {<thread>,<sequence_number>}.
-*-* All Finished *-*
-}),
-     );
+    expect => (q{.*Verilated::debug is on.*}),
+    );
 
 execute(
     all_run_flags => ["+verilator+help"],
