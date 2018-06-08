@@ -14,6 +14,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix parsing error on bad missing #, bug1308. [Dan Kirkham]
 
+****  Fix $clog2 to be in verilog 2005, bug1319. [James Hutchinson]
+
 
 * Verilator 3.922 2018-03-17
 
