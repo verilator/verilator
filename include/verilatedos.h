@@ -157,9 +157,6 @@
 
 #if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__)
 # define VL_EQ_DELETE = delete
-# define VL_HAS_UNIQUE_PTR
-# define VL_HAS_UNORDERED_MAP
-# define VL_HAS_UNORDERED_SET
 # define vl_unique_ptr std::unique_ptr
 # define vl_unordered_map std::unordered_map
 # define vl_unordered_set std::unordered_set
@@ -168,10 +165,8 @@
 #else
 # define VL_EQ_DELETE
 # define vl_unique_ptr std::auto_ptr
-# define vl_unordered_map std::map
-# define vl_unordered_set std::set
-# define VL_INCLUDE_UNORDERED_MAP <map>
-# define VL_INCLUDE_UNORDERED_SET <set>
+# define VL_INCLUDE_UNORDERED_MAP "verilated_unordered_set_map.h"
+# define VL_INCLUDE_UNORDERED_SET "verilated_unordered_set_map.h"
 #endif
 
 //=========================================================================
@@ -387,7 +382,7 @@ typedef unsigned long long	vluint64_t;	///< 64-bit unsigned type
 #  define VL_CPU_RELAX() asm volatile("yield" ::: "memory")
 # elif defined(__powerpc64__)
 #  define VL_CPU_RELAX() asm volatile("or 1, 1, 1; or 2, 2, 2;" ::: "memory")
-# elif
+# else
 #  error "Missing VL_CPU_RELAX() definition. Or, don't use VL_THREADED"
 # endif
 #endif

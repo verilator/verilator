@@ -23,6 +23,12 @@ execute(
 my %hit;
 foreach my $file (glob("$root/include/*.cpp $root/include/*.h")) {
     $file =~ s!.*/!!;
+
+    # This file isn't actually used by the runtime (though
+    # it might be in the future? hence it's under include/)
+    # It is used to build verilator.
+    if ($file =~ /verilated_unordered_set_map\.h/) { next; }
+
     print "NEED: $file\n" if $Self->{verbose};
     $hit{$file} = 0;
 }
