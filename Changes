@@ -14,6 +14,11 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix internals to avoid 'using namespace std'.
 
+****  Fix Verilation performance issues, bug1316. [John Coiner]
+
+
+* Verilator 3.923 devel
+
 ***   Renamed --profile-cfuncs to --prof-cfuncs.
 
 ****  Report interface ports connected to wrong interface, bug1294. [Todd Strader]
@@ -24,7 +29,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix parsing error on bad missing #, bug1308. [Dan Kirkham]
 
-****  Fix Verilation performance issues, bug1316. [John Coiner]
+****  Fix $clog2 to be in verilog 2005, bug1319. [James Hutchinson]
+
 
 * Verilator 3.922 2018-03-17
 

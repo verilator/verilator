@@ -422,6 +422,8 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /* Verilog 2005 */
 <V05,S05,S09,S12,S17,SAX>{
+  /*     System Tasks */
+  "$clog2"		{ FL; return yD_CLOG2; }
   /*     Keywords */
   "uwire"		{ FL; return yWIRE; }
 }
@@ -430,7 +432,6 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <S05,S09,S12,S17,SAX>{
   /*     System Tasks */
   "$bits"		{ FL; return yD_BITS; }
-  "$clog2"		{ FL; return yD_CLOG2; }
   "$countones"		{ FL; return yD_COUNTONES; }
   "$dimensions"		{ FL; return yD_DIMENSIONS; }
   "$error"		{ FL; return yD_ERROR; }
