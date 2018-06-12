@@ -44,6 +44,8 @@
 #include "V3Ast.h"
 #include "V3EmitCBase.h"
 #include "V3Const.h"
+#include "V3SenTree.h"  // for SenTreeSet
+#include VL_INCLUDE_UNORDERED_MAP
 
 //***** See below for main transformation engine
 
@@ -62,7 +64,11 @@ private:
     AstScope*	m_scopep;		// Current scope to add statement to
     AstActive*	m_iActivep;		// For current scope, the IActive we're building
     AstActive*	m_cActivep;		// For current scope, the SActive(combo) we're building
-    std::vector<AstActive*> m_activeVec;  // List of sensitive actives, for folding
+
+    SenTreeSet  m_activeSens;  // Sen lists for each active we've made
+    typedef vl_unordered_map<AstSenTree*, AstActive*> ActiveMap;
+    ActiveMap m_activeMap; // Map sentree to active, for folding.
+
     // METHODS
     void addActive(AstActive* nodep) {
 	if (!m_scopep) nodep->v3fatalSrc("NULL scope");
@@ -73,7 +79,8 @@ private:
 	m_scopep = nodep;
 	m_iActivep = NULL;
 	m_cActivep = NULL;
-	m_activeVec.clear();
+        m_activeSens.clear();
+        m_activeMap.clear();
         iterateChildren(nodep);
 	// Don't clear scopep, the namer persists beyond this visit
     }
@@ -112,22 +119,15 @@ public:
     }
     AstActive* getActive(FileLine* fl, AstSenTree* sensesp) {
 	// Return a sentree in this scope that matches given sense list.
-	// Not the fastest, but scopes tend to have few clocks
+
 	AstActive* activep = NULL;
-	//sitemsp->dumpTree(cout,"  Lookingfor: ");
-        for (std::vector<AstActive*>::iterator it = m_activeVec.begin(); it!=m_activeVec.end(); ++it) {
-	    activep = *it;
-	    if (activep) {  // Not deleted
-		// Compare the list
-		AstSenTree* asenp = activep->sensesp();
-		if (asenp->sameTree(sensesp)) {
-		    UINFO(8,"    Found ACTIVE "<<activep<<endl);
-		    goto found;
-		}
-	    }
-	    activep = NULL;
-	}
-      found:
+        AstSenTree* activeSenp = m_activeSens.find(sensesp);
+        if (activeSenp) {
+            ActiveMap::iterator it = m_activeMap.find(activeSenp);
+            UASSERT(it != m_activeMap.end(), "Corrupt active map");
+            activep = it->second;
+        }
+
 	// Not found, form a new one
 	if (!activep) {
 	    AstSenTree* newsenp = sensesp->cloneTree(false);
@@ -136,7 +136,8 @@ public:
 	    UINFO(8,"    New ACTIVE "<<activep<<endl);
 	    // Form the sensitivity list
 	    addActive(activep);
-	    m_activeVec.push_back(activep);
+            m_activeMap[newsenp] = activep;
+            m_activeSens.add(newsenp);
 	    // Note actives may have also been added above in the Active visitor
 	}
 	return activep;

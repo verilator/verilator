@@ -52,17 +52,19 @@ private:
 
     // STATE
     V3Hash		m_lowerHash;	// Hash of the statement we're building
+    bool                m_cacheInUser4; // Use user4 to cache each V3Hash?
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
     void nodeHashIterate(AstNode* nodep) {
-	if (!nodep->user4()) {
+        V3Hash thisHash;
+        if (!m_cacheInUser4 || !nodep->user4()) {
             if (VN_IS(nodep->backp(), CFunc)
                 && !(VN_IS(nodep, NodeStmt) || VN_IS(nodep, CFunc))) {
 		nodep->v3fatalSrc("Node "<<nodep->prettyTypeName()<<" in statement position but not marked stmt (node under function)");
 	    }
-	    V3Hash oldHash = m_lowerHash;
+            V3Hash oldHash = m_lowerHash;
 	    {
 		m_lowerHash = nodep->sameHash();
 		if (m_lowerHash.isIllegal()) {
@@ -76,10 +78,12 @@ private:
 		nodep->user4(m_lowerHash.fullValue());
 		//UINFO(9, "    hashnode "<<m_lowerHash<<"  "<<nodep<<endl);
 	    }
+            thisHash = m_lowerHash;
 	    m_lowerHash = oldHash;
 	}
 	// Update what will become the above node's hash
-	m_lowerHash += V3Hashed::nodeHash(nodep);
+        m_lowerHash += m_cacheInUser4
+            ? V3Hashed::nodeHash(nodep) : thisHash;
     }
 
     //--------------------
@@ -94,14 +98,25 @@ private:
 public:
     // CONSTUCTORS
     explicit HashedVisitor(AstNode* nodep) {
+        m_cacheInUser4 = true;
 	nodeHashIterate(nodep);
 	//UINFO(9,"  stmthash "<<hex<<V3Hashed::nodeHash(nodep)<<"  "<<nodep<<endl);
     }
+    explicit HashedVisitor(const AstNode* nodep) {
+        m_cacheInUser4 = false;
+        nodeHashIterate(const_cast<AstNode*>(nodep));
+    }
+    V3Hash finalHash() const { return m_lowerHash; }
     virtual ~HashedVisitor() {}
 };
 
 //######################################################################
 // Hashed class functions
+
+V3Hash V3Hashed::uncachedHash(const AstNode* nodep) {
+    HashedVisitor visitor(nodep);
+    return visitor.finalHash();
+}
 
 V3Hashed::iterator V3Hashed::hashAndInsert(AstNode* nodep) {
     hash(nodep);

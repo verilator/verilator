@@ -2120,6 +2120,7 @@ public:
     ASTNODE_NODE_FUNCS(SenTree)
     virtual void dump(std::ostream& str);
     virtual bool maybePointedTo() const { return true; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
     bool isMulti() const { return m_multi; }
     AstNodeSenItem* sensesp() const { return VN_CAST(op1p(), NodeSenItem); }  // op1 = Sensitivity list
     void addSensesp(AstNodeSenItem* nodep) { addOp1p(nodep); }

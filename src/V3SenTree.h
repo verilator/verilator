@@ -41,19 +41,69 @@
 #include <map>
 #include <algorithm>
 #include <vector>
+#include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Global.h"
 #include "V3Ast.h"
+#include "V3Hashed.h"
 
 //######################################################################
 // Collect SenTrees under the entire scope
 // And provide functions to find/add a new one
 
+class SenTreeSet {
+    // Hash table of sensitive blocks.
+private:
+    // TYPES
+    class HashSenTree {
+    public:
+        HashSenTree() {}
+        size_t operator() (const AstSenTree* kp) const {
+            return V3Hashed::uncachedHash(kp).fullValue();
+        }
+    private:
+        VL_UNCOPYABLE(HashSenTree);
+    };
+
+    class EqSenTree {
+    public:
+        EqSenTree() {}
+        bool operator() (const AstSenTree* ap, const AstSenTree* bp) const {
+            return ap->sameTree(bp);
+        }
+    private:
+        VL_UNCOPYABLE(EqSenTree);
+    };
+
+    // MEMBERS
+    typedef vl_unordered_set<AstSenTree*, HashSenTree, EqSenTree> Set;
+    Set m_trees;  // Set of sensitive blocks, for folding.
+
+public:
+    // CONSTRUCTORS
+    SenTreeSet() {}
+
+    // METHODS
+    void add(AstSenTree* nodep) { m_trees.insert(nodep); }
+    AstSenTree* find(AstSenTree* likep) {
+        AstSenTree* resultp = NULL;
+        Set::iterator it = m_trees.find(likep);
+        if (it != m_trees.end()) {
+            resultp = *it;
+        }
+        return resultp;
+    }
+    void clear() { m_trees.clear(); }
+
+private:
+    VL_UNCOPYABLE(SenTreeSet);
+};
+
 class SenTreeFinder : public AstNVisitor {
 private:
     // STATE
-    AstTopScope*	m_topscopep;		// Top scope to add statement to
-    std::vector<AstSenTree*> m_treesp;  // List of sensitive blocks, for folding
+    AstTopScope*        m_topscopep;    // Top scope to add statement to
+    SenTreeSet m_trees;  // Set of sensitive blocks, for folding
 
     // VISITORS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -77,9 +127,7 @@ private:
 	// Don't grab SenTrees under Actives, only those that are global (under Scope directly)
         iterateChildren(nodep);
     }
-    virtual void visit(AstSenTree* nodep) {
-	m_treesp.push_back(nodep);
-    }
+    virtual void visit(AstSenTree* nodep) { m_trees.add(nodep); }
     // Empty visitors, speed things up
     virtual void visit(AstNodeStmt* nodep) { }
     virtual void visit(AstNode* nodep) {
@@ -89,31 +137,18 @@ private:
 public:
     void clear() {
 	m_topscopep = NULL;
-	m_treesp.clear();
+        m_trees.clear();
     }
     AstSenTree* getSenTree(FileLine* fl, AstSenTree* sensesp) {
 	// Return a global sentree that matches given sense list.
-	// Not the fastest, but there tend to be few clocks
-	AstSenTree* treep = NULL;
-	//sensesp->dumpTree(cout,"  Lookingfor: ");
-        for (std::vector<AstSenTree*>::iterator it = m_treesp.begin(); it!=m_treesp.end(); ++it) {
-	    treep = *it;
-	    if (treep) {  // Not deleted
-		if (treep->sameTree(sensesp)) {
-		    UINFO(8,"    Found SBLOCK "<<treep<<endl);
-		    goto found;
-		}
-	    }
-	    treep = NULL;
-	}
-      found:
+        AstSenTree* treep = m_trees.find(sensesp);
 	// Not found, form a new one
 	if (!treep) {
 	    UASSERT(m_topscopep,"Never called main()");
 	    treep = sensesp->cloneTree(false);
 	    m_topscopep->addStmtsp(treep);
 	    UINFO(8,"    New SENTREE "<<treep<<endl);
-	    m_treesp.push_back(treep);
+            m_trees.add(treep);
 	    // Note blocks may have also been added above in the Active visitor
 	}
 	return treep;

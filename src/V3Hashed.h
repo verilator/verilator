@@ -83,6 +83,8 @@ public:
     void dumpFile(const string& filename, bool tree);
     void dumpFilePrefixed(const string& nameComment, bool tree=false);
     static V3Hash nodeHash(AstNode* nodep) { return V3Hash(nodep->user4p()); }
+    // Hash of the nodep tree, without caching in user4.
+    static V3Hash uncachedHash(const AstNode* nodep);
 };
 
 #endif // Guard
