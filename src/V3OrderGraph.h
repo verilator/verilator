@@ -357,11 +357,11 @@ public:
     OrderLogicVertex* logicp() const { return m_logicp; }
     bool isWait() const { return m_state==POM_WAIT; }
     void setReady() {
-	UASSERT(m_state==POM_WAIT, "Wait->Ready on node not in proper state\n");
+        UASSERT(m_state==POM_WAIT, "Wait->Ready on node not in proper state");
 	m_state = POM_READY;
     }
     void setMoved() {
-	UASSERT(m_state==POM_READY, "Ready->Moved on node not in proper state\n");
+        UASSERT(m_state==POM_READY, "Ready->Moved on node not in proper state");
 	m_state = POM_MOVED;
     }
     OrderMoveDomScope* domScopep() const { return m_domScopep; }

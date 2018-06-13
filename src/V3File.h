@@ -152,7 +152,7 @@ public:
     void indentInc() { m_indentLevel += m_blockIndent; }
     void indentDec() {
 	m_indentLevel -= m_blockIndent;
-	UASSERT(m_indentLevel>=0, ": "<<m_filename<<": Underflow of indentation\n");
+        UASSERT(m_indentLevel>=0, ": "<<m_filename<<": Underflow of indentation");
     }
     void blockInc() { m_parenVec.push(m_indentLevel + m_blockIndent); }
     void blockDec() { if (!m_parenVec.empty()) m_parenVec.pop(); }

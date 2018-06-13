@@ -589,7 +589,7 @@ private:
 
     void replaceNum (AstNode* oldp, const V3Number& num) {
 	// Replace oldp node with a constant set to specified value
-	UASSERT (oldp, "Null old\n");
+        UASSERT(oldp, "Null old");
 	if (oldp->castConst() && !oldp->castConst()->num().isFourState()) {
 	    oldp->v3fatalSrc("Already constant??");
 	}
@@ -662,7 +662,7 @@ private:
 
     void replaceConstString (AstNode* oldp, const string& num) {
 	// Replace oldp node with a constant set to specified value
-	UASSERT (oldp, "Null old\n");
+        UASSERT(oldp, "Null old");
 	AstNode* newp = new AstConst(oldp->fileline(), AstConst::String(), num);
 	if (debug()>5) oldp->dumpTree(cout,"  const_old: ");
 	if (debug()>5) newp->dumpTree(cout,"       _new: ");

@@ -1162,7 +1162,7 @@ void OrderVisitor::processSensitive() {
 void OrderVisitor::processDomains() {
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
 	OrderEitherVertex* vertexp = dynamic_cast<OrderEitherVertex*>(itp);
-	UASSERT(vertexp, "Null or vertex not derived from EitherVertex\n");
+        UASSERT(vertexp, "Null or vertex not derived from EitherVertex");
 	processDomainsIterate(vertexp);
     }
 }
@@ -1509,7 +1509,7 @@ void OrderVisitor::processMoveDoneOne(OrderMoveVertex* vertexp) {
 }
 
 void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* domScopep, int level) {
-    UASSERT(vertexp->domScopep() == domScopep, "Domain mismatch; list misbuilt?\n");
+    UASSERT(vertexp->domScopep() == domScopep, "Domain mismatch; list misbuilt?");
     OrderLogicVertex* lvertexp = vertexp->logicp();
     AstScope* scopep = lvertexp->scopep();
     UINFO(5,"    POSmove l"<<setw(3)<<level<<" d="<<(void*)(lvertexp->domainp())

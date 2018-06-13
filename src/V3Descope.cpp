@@ -87,7 +87,7 @@ private:
     // false if the object is in another scope.
     string descopedName(const AstScope* scopep, bool& hierThisr,
                         const AstVar* varp=NULL) {
-	UASSERT(scopep, "Var/Func not scoped\n");
+        UASSERT(scopep, "Var/Func not scoped");
 	hierThisr = (scopep == m_scopep);
 
         // It's possible to disable relative references. This is a concession
