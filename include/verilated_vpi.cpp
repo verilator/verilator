@@ -473,11 +473,12 @@ public:
         m_errorInfo.level = level;
         return this;
     }
-    void setMessage(std::string file, PLI_INT32 line, const std::string& message, ...) {
+    void setMessage(std::string file, PLI_INT32 line, const char* message, ...) {
+        // message cannot be a const string& as va_start cannot use a reference
         static VL_THREAD_LOCAL std::string filehold;
         va_list args;
         va_start(args, message);
-        VL_VSNPRINTF(m_buff, sizeof(m_buff), message.c_str(), args);
+        VL_VSNPRINTF(m_buff, sizeof(m_buff), message, args);
         va_end(args);
         m_errorInfo.state = vpiPLI;
         filehold = file;
