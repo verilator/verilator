@@ -180,7 +180,7 @@ private:
     // MEMBERS
     size_type m_numElements;    //  Number of entries present.
     size_type m_log2Buckets;    //  Log-base-2 of the number of buckets.
-    mutable Bucket *m_bucketsp; //  Hash table buckets. May be NULL;
+    mutable Bucket* m_bucketsp; //  Hash table buckets. May be NULL;
     //                          //   we'll allocate it on the fly when
     //                          //   the first entries are created.
     Bucket m_emptyBucket;       //  A fake bucket, used to construct end().
@@ -266,10 +266,10 @@ public:
         size_type hash = m_hash.operator()(key);
         bucketIdxOut = hash & ((VL_ULL(1) << m_log2Buckets) - 1);
         initBuckets();
-        Bucket *bucket = &m_bucketsp[bucketIdxOut];
+        Bucket* bucketp = &m_bucketsp[bucketIdxOut];
 
-        for (typename Bucket::iterator it = bucket->begin();
-            it != bucket->end(); ++it) {
+        for (typename Bucket::iterator it = bucketp->begin();
+            it != bucketp->end(); ++it) {
             if (m_equal.operator()(*it, key)) {
                 return iterator(bucketIdxOut, it, this);
             }
@@ -346,9 +346,6 @@ public:
     }
 
 private:
-    // numBuckets() and getBucket() are only public so that
-    // vl_unordered_map can see them. Do not call from outside
-    // this file.
     size_type numBuckets() const { return (VL_ULL(1) << m_log2Buckets); }
 
     Bucket* getBucket(size_type idx) {
@@ -356,7 +353,6 @@ private:
         return &m_bucketsp[idx];
     }
 
-private:
     void initBuckets() const {
         if (!m_bucketsp) m_bucketsp = new Bucket[numBuckets()];
     }
@@ -364,16 +360,19 @@ private:
     bool needToRehash() const { return ((4 * numBuckets()) < m_numElements); }
 
     void rehash() {
-        size_type new_log2Buckets = m_log2Buckets << 2;
+        size_type new_log2Buckets = m_log2Buckets + 2;
         size_type new_num_buckets = VL_ULL(1) << new_log2Buckets;
-        Bucket *new_bucketsp = new Bucket[new_num_buckets];
+        Bucket* new_bucketsp = new Bucket[new_num_buckets];
 
         for (size_type i=0; i<numBuckets(); i++) {
-            for (typename Bucket::iterator bit = m_bucketsp[i].begin();
-                bit != m_bucketsp[i].end(); ++bit) {
+            while (!m_bucketsp[i].empty()) {
+                typename Bucket::iterator bit = m_bucketsp[i].begin();
                 size_type hash = m_hash.operator()(*bit);
                 size_type new_idx = hash & ((VL_ULL(1) << new_log2Buckets) - 1);
-                new_bucketsp[new_idx].push_back(*bit);
+                // Avoid mallocing one list elem and freeing another;
+                // splice just moves it over.
+                new_bucketsp[new_idx].splice(new_bucketsp[new_idx].begin(),
+                                             m_bucketsp[i], bit);
             }
         }
 
@@ -442,7 +441,7 @@ template <class Key,
         Equal mapEq;
         size_type hash = mapHash.operator()(k);
         size_type bucketIdxOut = hash & (m_set.numBuckets() - 1);
-        typename MapSet::Bucket *bucketp = m_set.getBucket(bucketIdxOut);
+        typename MapSet::Bucket* bucketp = m_set.getBucket(bucketIdxOut);
 
         for (typename MapSet::Bucket::iterator it = bucketp->begin();
             it != bucketp->end(); ++it) {
