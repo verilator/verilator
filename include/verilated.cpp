@@ -122,10 +122,16 @@ std::string _vl_string_vprintf(const char* formatp, va_list ap) VL_MT_SAFE {
     va_list aq;
     va_copy(aq, ap);
     int len = VL_VSNPRINTF(NULL, 0, formatp, aq);
-    if (VL_UNLIKELY(len < 1)) return "";
+    va_end(aq);
+    if (VL_UNLIKELY(len < 1)) {
+        va_end(ap);
+        return "";
+    }
 
     char* bufp = new char[len+1];
     VL_VSNPRINTF(bufp, len+1, formatp, ap);
+    va_end(ap);
+
     std::string out = std::string(bufp, len);
     delete[] bufp;
     return out;
@@ -163,7 +169,7 @@ void VL_DBG_MSGF(const char* formatp, ...) VL_MT_SAFE {
     // Using VL_PRINTF not VL_PRINTF_MT so that we can call VL_DBG_MSGF
     // from within the guts of the thread execution machinery (and it goes
     // to the screen and not into the queues we're debugging)
-    VL_PRINTF("-V{t%d,%" VL_PRI64 "d}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(), out.c_str());
+    VL_PRINTF("-V{t%d,%" VL_PRI64 "u}%s", VL_THREAD_ID(), _vl_dbg_sequence_number(), out.c_str());
 }
 
 #ifdef VL_THREADED
