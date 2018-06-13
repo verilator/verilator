@@ -387,7 +387,7 @@ typedef unsigned long long	vluint64_t;	///< 64-bit unsigned type
 #  define VL_CPU_RELAX() asm volatile("yield" ::: "memory")
 # elif defined(__powerpc64__)
 #  define VL_CPU_RELAX() asm volatile("or 1, 1, 1; or 2, 2, 2;" ::: "memory")
-# elif
+# else
 #  error "Missing VL_CPU_RELAX() definition. Or, don't use VL_THREADED"
 # endif
 #endif

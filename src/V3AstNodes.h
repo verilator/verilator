@@ -149,7 +149,7 @@ public:
 class AstUnsizedRange : public AstNodeRange {
     // Unsized range specification, for open arrays
 public:
-    AstUnsizedRange(FileLine* fl) : AstNodeRange(fl) { }
+    explicit AstUnsizedRange(FileLine* fl) : AstNodeRange(fl) { }
     ASTNODE_NODE_FUNCS(UnsizedRange)
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual string emitVerilog() { return "[]"; }

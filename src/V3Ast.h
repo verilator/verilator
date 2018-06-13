@@ -2069,7 +2069,7 @@ public:
 class AstNodeRange : public AstNode {
     // A range, sized or unsized
 public:
-    AstNodeRange(FileLine* fl) : AstNode (fl) { }
+    explicit AstNodeRange(FileLine* fl) : AstNode (fl) { }
     ASTNODE_BASE_FUNCS(NodeRange)
 };
 
