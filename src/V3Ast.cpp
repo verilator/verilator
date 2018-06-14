@@ -291,7 +291,7 @@ void AstNode::addNextHere(AstNode* newp) {
     //  This could be at head, tail, or both (single)
     //  New  could be head of single node, or list
     UASSERT(newp,"Null item passed to addNext");
-    UASSERT(newp->backp()==NULL,"New node (back) already assigned?");
+    UASSERT(!newp->backp(), "New node (back) already assigned?");
     this->debugTreeChange("-addHereThs: ", __LINE__, false);
     newp->debugTreeChange("-addHereNew: ", __LINE__, true);
     newp->editCountInc();
@@ -334,7 +334,7 @@ void AstNode::addNextHere(AstNode* newp) {
 }
 
 void AstNode::setOp1p(AstNode* newp) {
-    UASSERT(newp,"Null item passed to setOp1p\n");
+    UASSERT(newp, "Null item passed to setOp1p");
     UDEBUGONLY(if (m_op1p) this->v3fatalSrc("Adding to non-empty, non-list op1"););
     UDEBUGONLY(if (newp->m_backp) newp->v3fatalSrc("Adding already linked node"););
     UDEBUGONLY(if (newp->m_nextp) newp->v3fatalSrc("Adding list to non-list op1"););
@@ -347,7 +347,7 @@ void AstNode::setOp1p(AstNode* newp) {
 }
 
 void AstNode::setOp2p(AstNode* newp) {
-    UASSERT(newp,"Null item passed to setOp2p\n");
+    UASSERT(newp, "Null item passed to setOp2p");
     UDEBUGONLY(if (m_op2p) this->v3fatalSrc("Adding to non-empty, non-list op2"););
     UDEBUGONLY(if (newp->m_backp) newp->v3fatalSrc("Adding already linked node"););
     UDEBUGONLY(if (newp->m_nextp) newp->v3fatalSrc("Adding list to non-list op2"););
@@ -360,7 +360,7 @@ void AstNode::setOp2p(AstNode* newp) {
 }
 
 void AstNode::setOp3p(AstNode* newp) {
-    UASSERT(newp,"Null item passed to setOp3p\n");
+    UASSERT(newp, "Null item passed to setOp3p");
     UDEBUGONLY(if (m_op3p) this->v3fatalSrc("Adding to non-empty, non-list op3"););
     UDEBUGONLY(if (newp->m_backp) newp->v3fatalSrc("Adding already linked node"););
     UDEBUGONLY(if (newp->m_nextp) newp->v3fatalSrc("Adding list to non-list op3"););
@@ -373,7 +373,7 @@ void AstNode::setOp3p(AstNode* newp) {
 }
 
 void AstNode::setOp4p(AstNode* newp) {
-    UASSERT(newp,"Null item passed to setOp4p\n");
+    UASSERT(newp, "Null item passed to setOp4p");
     UDEBUGONLY(if (m_op4p) this->v3fatalSrc("Adding to non-empty, non-list op4"););
     UDEBUGONLY(if (newp->m_backp) newp->v3fatalSrc("Adding already linked node"););
     UDEBUGONLY(if (newp->m_nextp) newp->v3fatalSrc("Adding list to non-list op4"););
@@ -386,25 +386,25 @@ void AstNode::setOp4p(AstNode* newp) {
 }
 
 void AstNode::addOp1p(AstNode* newp) {
-    UASSERT(newp,"Null item passed to addOp1p\n");
+    UASSERT(newp, "Null item passed to addOp1p");
     if (!m_op1p) { op1p(newp); }
     else { m_op1p->addNext(newp); }
 }
 
 void AstNode::addOp2p(AstNode* newp) {
-    UASSERT(newp,"Null item passed to addOp2p\n");
+    UASSERT(newp, "Null item passed to addOp2p");
     if (!m_op2p) { op2p(newp); }
     else { m_op2p->addNext(newp); }
 }
 
 void AstNode::addOp3p(AstNode* newp) {
-    UASSERT(newp,"Null item passed to addOp3p\n");
+    UASSERT(newp, "Null item passed to addOp3p");
     if (!m_op3p) { op3p(newp); }
     else { m_op3p->addNext(newp); }
 }
 
 void AstNode::addOp4p(AstNode* newp) {
-    UASSERT(newp,"Null item passed to addOp4p\n");
+    UASSERT(newp, "Null item passed to addOp4p");
     if (!m_op4p) { op4p(newp); }
     else { m_op4p->addNext(newp); }
 }
@@ -430,7 +430,7 @@ void AstNRelinker::dump(std::ostream& str) const {
 AstNode* AstNode::unlinkFrBackWithNext(AstNRelinker* linkerp) {
     this->debugTreeChange("-unlinkWNextThs: ", __LINE__, true);
     AstNode* oldp = this;
-    UASSERT(oldp->m_backp,"Node has no back, already unlinked?\n");
+    UASSERT(oldp->m_backp, "Node has no back, already unlinked?");
     oldp->editCountInc();
     AstNode* backp = oldp->m_backp;
     if (linkerp) {
@@ -478,7 +478,7 @@ AstNode* AstNode::unlinkFrBackWithNext(AstNRelinker* linkerp) {
 AstNode* AstNode::unlinkFrBack(AstNRelinker* linkerp) {
     this->debugTreeChange("-unlinkFrBkThs: ", __LINE__, true);
     AstNode* oldp = this;
-    UASSERT(oldp->m_backp,"Node has no back, already unlinked?\n");
+    UASSERT(oldp->m_backp, "Node has no back, already unlinked?");
     oldp->editCountInc();
     AstNode* backp = oldp->m_backp;
     if (linkerp) {
@@ -530,8 +530,8 @@ AstNode* AstNode::unlinkFrBack(AstNRelinker* linkerp) {
 void AstNode::relink(AstNRelinker* linkerp) {
     if (debug()>8) {	UINFO(0," EDIT:      relink: "); dumpPtrs();    }
     AstNode* newp = this;
-    UASSERT(linkerp && linkerp->m_backp, "Need non-empty linker\n");
-    UASSERT(newp->backp()==NULL, "New node already linked?\n");
+    UASSERT(linkerp && linkerp->m_backp, "Need non-empty linker");
+    UASSERT(!newp->backp(), "New node already linked?");
     newp->editCountInc();
 
     if (debug()>8) { linkerp->dump(cout); cout<<endl; }
@@ -666,7 +666,7 @@ AstNode* AstNode::cloneTree(bool cloneNextLink) {
 
 void AstNode::deleteNode() {
     // private: Delete single node. Publicly call deleteTree() instead.
-    UASSERT(m_backp==NULL,"Delete called on node with backlink still set\n");
+    UASSERT(!m_backp, "Delete called on node with backlink still set");
     editCountInc();
     // Change links of old node so we coredump if used
     this->m_nextp = (AstNode*)1;
@@ -711,7 +711,7 @@ void AstNode::deleteTreeIter() {
 void AstNode::deleteTree() {
     // deleteTree always deletes the next link, because you must have called
     // unlinkFromBack or unlinkFromBackWithNext as appropriate before calling this.
-    UASSERT(m_backp==NULL,"Delete called on node with backlink still set\n");
+    UASSERT(!m_backp, "Delete called on node with backlink still set");
     this->debugTreeChange("-delTree:  ", __LINE__, true);
     this->editCountInc();
     // MUST be depth first!

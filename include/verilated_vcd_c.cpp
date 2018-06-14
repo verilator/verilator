@@ -569,7 +569,7 @@ void VerilatedVcd::declare (vluint32_t code, const char* name, const char* wirep
     sprintf(buf, " %2d ", bits);
     decl += buf;
     if (m_evcd) {
-	sprintf(buf, "<%d", code);
+        sprintf(buf, "<%u", code);
 	decl += buf;
     } else {
 	decl += stringCode(code);

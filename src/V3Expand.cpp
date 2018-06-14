@@ -825,6 +825,8 @@ private:
 		    // Rather than doing a (slowish) ==##, we OR in the bits that aren't part of the mask
 		    eqp = new AstOr (nodep->fileline(),
 				     new AstConst (nodep->fileline(), notWideMask(nodep->lhsp())),
+                                     // Bug in cppcheck
+                                     // cppcheck-suppress memleak
 				     eqp);
 		}
 		newp = (newp==NULL) ? eqp : (new AstAnd (nodep->fileline(), newp, eqp));

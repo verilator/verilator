@@ -115,7 +115,8 @@ private:
                           <<nodep->varp()->prettyName());
 	}
     }
-    AstVarScope* createVarSc(AstVarScope* oldvarscp, string name, int width/*0==fromoldvar*/, AstNodeDType* newdtypep) {
+    AstVarScope* createVarSc(AstVarScope* oldvarscp, const string& name,
+                             int width/*0==fromoldvar*/, AstNodeDType* newdtypep) {
 	// Because we've already scoped it, we may need to add both the AstVar and the AstVarScope
 	if (!oldvarscp->scopep()) oldvarscp->v3fatalSrc("Var unscoped");
 	AstVar* varp;

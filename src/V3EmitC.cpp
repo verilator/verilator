@@ -989,7 +989,7 @@ class EmitCImp : EmitCStmts {
     // High level
     void emitImp(AstNodeModule* modp);
     void emitStaticDecl(AstNodeModule* modp);
-    void emitSettleLoop(std::string eval_call, bool initial);
+    void emitSettleLoop(const std::string& eval_call, bool initial);
     void emitWrapEval(AstNodeModule* modp);
     void emitInt(AstNodeModule* modp);
     void maybeSplit(AstNodeModule* modp);
@@ -1751,7 +1751,7 @@ void EmitCImp::emitSensitives() {
     }
 }
 
-void EmitCImp::emitSettleLoop(std::string eval_call, bool initial) {
+void EmitCImp::emitSettleLoop(const std::string& eval_call, bool initial) {
     putsDecoration("// Evaluate till stable\n");
     puts("int __VclockLoop = 0;\n");
     puts("QData __Vchange = 1;\n");

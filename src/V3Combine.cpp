@@ -397,6 +397,7 @@ private:
 	UINFO(4," MOD   "<<nodep<<endl);
 	m_modp = nodep;
 	m_modNFuncs = 0;
+        m_walkLast2p = NULL;
 	m_hashed.clear();
 	// Compute hash of all statement trees in the function
 	m_state = STATE_HASH;

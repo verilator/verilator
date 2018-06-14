@@ -159,7 +159,7 @@ private:
 	}
 	UINFO(8,"Simple case statement: "<<nodep<<endl);
 	// Zero list of items for each value
-	for (uint32_t i=0; i<(1UL<<m_caseWidth); i++) m_valueItem[i] = NULL;
+        for (uint32_t i=0; i<(1UL<<m_caseWidth); ++i) m_valueItem[i] = NULL;
 	// Now pick up the values for each assignment
 	// We can cheat and use uint32_t's because we only support narrow case's
 	bool bitched = false;
@@ -177,7 +177,7 @@ private:
 		    V3Number numval  (itemp->fileline(), iconstp->width());
 		    numval.opBitsOne(iconstp->num());
 		    uint32_t val  = numval.toUInt();
-		    for (uint32_t i=0; i<(1UL<<m_caseWidth); i++) {
+                    for (uint32_t i=0; i<(1UL<<m_caseWidth); ++i) {
 			if ((i & mask) == val) {
 			    if (!m_valueItem[i]) {
 				m_valueItem[i] = itemp;
@@ -192,12 +192,12 @@ private:
 	    }
 	    // Defaults were moved to last in the caseitem list by V3LinkDot
 	    if (itemp->isDefault()) {  // Case statement's default... Fill the table
-		for (uint32_t i=0; i<(1UL<<m_caseWidth); i++) {
+                for (uint32_t i=0; i<(1UL<<m_caseWidth); ++i) {
 		    if (!m_valueItem[i]) m_valueItem[i] = itemp;
 		}
 	    }
 	}
-	for (uint32_t i=0; i<(1UL<<m_caseWidth); i++) {
+        for (uint32_t i=0; i<(1UL<<m_caseWidth); ++i) {
 	    if (!m_valueItem[i]) {
                 nodep->v3warn(CASEINCOMPLETE,"Case values incompletely covered (example pattern 0x"<<std::hex<<i<<")");
 		m_caseNoOverlapsAllCovered = false;
@@ -271,7 +271,7 @@ private:
 	AstNode* cexprp = nodep->exprp()->unlinkFrBack();
 
 	if (debug()>=9) {
-	    for (uint32_t i=0; i<(1UL<<m_caseWidth); i++) {
+            for (uint32_t i=0; i<(1UL<<m_caseWidth); ++i) {
 		if (AstNode* itemp = m_valueItem[i]) {
                     UINFO(9,"Value "<<std::hex<<i<<" "<<itemp<<endl);
 		}

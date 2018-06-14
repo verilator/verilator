@@ -122,8 +122,10 @@ private:
 public:
     // CONSTUCTORS
     explicit DepthBlockVisitor(AstNetlist* nodep) {
-	m_modp=NULL;
-	m_depth=0;
+        m_modp = NULL;
+        m_funcp = NULL;
+        m_depth = 0;
+        m_deepNum = 0;
 	//
         iterate(nodep);
     }

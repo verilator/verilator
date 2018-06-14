@@ -1254,7 +1254,9 @@ public:
 	m_modp = NULL;
 	m_topScopep = NULL;
 	m_scopep = NULL;
+        m_insMode = IM_BEFORE;
 	m_insStmtp = NULL;
+        m_modNCalls = 0;
 	AstNode::user1ClearTree();
         iterate(nodep);
     }

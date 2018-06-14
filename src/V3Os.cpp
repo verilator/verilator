@@ -211,9 +211,9 @@ uint64_t V3Os::memUsageBytes() {
     if (!fp) {
 	return 0;
     }
-    uint64_t size, resident, share, text, lib, data, dt;  // All in pages
-    if (7 != fscanf(fp, "%" VL_PRI64 "d %" VL_PRI64 "d %" VL_PRI64 "d %"
-		    VL_PRI64 "d %" VL_PRI64 "d %" VL_PRI64 "d %" VL_PRI64 "d",
+    vluint64_t size, resident, share, text, lib, data, dt;  // All in pages
+    if (7 != fscanf(fp, "%" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %"
+                    VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u",
 		    &size, &resident, &share, &text, &lib, &data, &dt)) {
 	fclose(fp);
 	return 0;
