@@ -461,9 +461,11 @@ public:
     UnrollVisitor(AstNode* nodep, bool generate, const string& beginName) {
 	m_forVarp = NULL;
 	m_forVscp = NULL;
+        m_varValuep = NULL;
 	m_ignoreIncp = NULL;
 	m_varModeCheck = false;
 	m_varModeReplace = false;
+        m_varAssignHit = false;
 	m_generate = generate;
 	m_beginName = beginName;
 	//

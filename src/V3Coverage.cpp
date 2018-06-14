@@ -382,6 +382,7 @@ public:
     explicit CoverageVisitor(AstNetlist* rootp) {
 	// Operate on all modules
 	m_checkBlock = true;
+        m_modp = NULL;
 	m_beginHier = "";
 	m_inToggleOff = false;
 	m_inModOff = true;

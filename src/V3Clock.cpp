@@ -386,10 +386,13 @@ private:
 public:
     // CONSTUCTORS
     explicit ClockVisitor(AstNetlist* nodep) {
-	m_modp=NULL;
+        m_modp = NULL;
 	m_evalFuncp = NULL;
-	m_topScopep=NULL;
-	m_lastSenp=NULL;
+        m_initFuncp = NULL;
+        m_finalFuncp = NULL;
+        m_settleFuncp = NULL;
+        m_topScopep = NULL;
+        m_lastSenp = NULL;
 	m_lastIfp = NULL;
 	m_scopep = NULL;
 	//

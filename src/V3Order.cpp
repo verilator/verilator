@@ -1612,7 +1612,7 @@ void OrderVisitor::process() {
     UINFO(2,"  Process Circulars...\n");
     processCircular();  // must be before processDomains
 
-    // Assign logic verticesto new domains
+    // Assign logic vertices to new domains
     UINFO(2,"  Domains...\n");
     processDomains();
     m_graph.dumpDotFilePrefixed("orderg_domain");
