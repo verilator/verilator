@@ -283,6 +283,7 @@ private:
 public:
     // CONSTUCTORS
     explicit CleanVisitor(AstNetlist* nodep) {
+        m_modp = NULL;
         iterate(nodep);
     }
     virtual ~CleanVisitor() {}

@@ -207,7 +207,7 @@ private:
 	if (m_caseItems <= 3) return false;	// Not worth simplifing
 	// Convert valueItem from AstCaseItem* to the expression
 	// Not done earlier, as we may now have a NULL because it's just a ";" NOP branch
-	for (uint32_t i=0; i<(1UL<<m_caseWidth); i++) {
+        for (uint32_t i=0; i<(1UL<<m_caseWidth); ++i) {
             m_valueItem[i] = VN_CAST(m_valueItem[i], CaseItem)->bodysp();
 	}
 	return true;  // All is fine
@@ -467,7 +467,12 @@ private:
 public:
     // CONSTUCTORS
     explicit CaseVisitor(AstNetlist* nodep) {
+        m_caseWidth = 0;
+        m_caseItems = 0;
 	m_caseNoOverlapsAllCovered = false;
+        for (uint32_t i=0; i<(1UL<<CASE_OVERLAP_WIDTH); ++i) {
+            m_valueItem[i] = NULL;
+        }
         iterate(nodep);
     }
     virtual ~CaseVisitor() {

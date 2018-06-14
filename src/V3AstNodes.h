@@ -5694,7 +5694,7 @@ public:
 class AstSplitPlaceholder : public AstNode {
 public:
     // Dummy node used within V3Split; never exists outside of V3Split.
-    AstSplitPlaceholder(FileLine* filelinep)
+    explicit AstSplitPlaceholder(FileLine* filelinep)
         : AstNode(filelinep) {}
     ASTNODE_NODE_FUNCS(SplitPlaceholder)
 };

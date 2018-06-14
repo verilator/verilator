@@ -454,9 +454,12 @@ private:
 public:
     // CONSTUCTORS
     explicit CombineVisitor(AstNetlist* nodep) {
-	m_modp=NULL;
-	m_funcp = NULL;
 	m_state = STATE_IDLE;
+        m_modp = NULL;
+        m_funcp = NULL;
+        m_modNFuncs = 0;
+        m_walkLast1p = NULL;
+        m_walkLast2p = NULL;
         iterate(nodep);
     }
     virtual ~CombineVisitor() {

@@ -134,6 +134,7 @@ private:
 public:
     // CONSTUCTORS
     explicit NameVisitor(AstNetlist* nodep) {
+        m_modp = NULL;
         iterate(nodep);
     }
     virtual ~NameVisitor() {}

@@ -409,7 +409,7 @@ template <class Key,
         Equal key_eq;
     public:
         KeyEqual() {}
-        bool operator()(const value_type& kv_a, const value_type kv_b) const {
+        bool operator()(const value_type& kv_a, const value_type& kv_b) const {
             return key_eq.operator()(kv_a.first, kv_b.first);
         }
     };

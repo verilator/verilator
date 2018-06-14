@@ -126,6 +126,8 @@ public:
     SplitAsCleanVisitor(AstAlways* nodep, AstVarScope* vscp, bool modeMatch) {
 	m_splitVscp = vscp;
 	m_modeMatch = modeMatch;
+        m_keepStmt =  false;
+        m_matches = false;
         iterate(nodep);
     }
     virtual ~SplitAsCleanVisitor() {}

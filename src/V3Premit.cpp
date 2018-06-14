@@ -406,6 +406,7 @@ public:
 	m_stmtp = NULL;
 	m_inWhilep = NULL;
 	m_inTracep = NULL;
+        m_assignLhs = false;
         iterate(nodep);
     }
     virtual ~PremitVisitor() {}

@@ -210,7 +210,8 @@ private:
 public:
     // CONSTRUCTORS
     explicit LifePostDlyVisitor(AstNetlist* nodep)
-        : m_tracingCall(false) {
+        : m_sequence(0)
+        , m_tracingCall(false) {
         iterate(nodep);
     }
     virtual ~LifePostDlyVisitor() {
