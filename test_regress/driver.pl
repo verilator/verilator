@@ -1734,8 +1734,8 @@ resource required by the test is not available, such as SystemC), or are
 unsupported (buggy or require a feature change before will pass.)
 
 There are hundreds of tests, and for faster completion you may want to run
-the regression tests with CCACHE enabled and in parallel on a machine with
-many cores.  See the -j option.
+the regression tests with OBJCACHE enabled and in parallel on a machine
+with many cores.  See the -j option and OBJCACHE environment variable.
 
 =head1 TEST CONFIGURATION
 
