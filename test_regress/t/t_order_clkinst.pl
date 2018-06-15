@@ -9,15 +9,15 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-my $fail = ($Self->{vlt_all} && verilator_version() !~ /\(ord\)/);
+# On Verilator, we expect this to pass.
+#
+# TBD: Will event-based simulators match Verilator's behavior
+# closely enough to pass the same test?
+# If not -- probably we should switch this to be vlt-only.
 
-compile(
-    );
+compile();
 
-execute(
-    check_finished => !$fail,
-    fails => $fail,
-    );
+execute(check_finished => 1);
 
 ok(1);
 1;
