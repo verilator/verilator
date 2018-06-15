@@ -507,7 +507,10 @@ void V3Graph::order() {
 
     // Compute rankings again
     rank(&V3GraphEdge::followAlwaysTrue);
+    orderPreRanked();
+}
 
+void V3Graph::orderPreRanked() {
     // Compute fanouts
     // Vertex::m_user begin: 1 indicates processing, 2 indicates completed
     userClearVertices();

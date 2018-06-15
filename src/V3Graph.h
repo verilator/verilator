@@ -102,7 +102,12 @@ public:
     /// Order all vertices by rank and fanout, lowest first
     /// Sort all vertices by rank and fanout, lowest first
     /// Sort all edges by weight, lowest first
+    /// Side-effect: assigns ranks to every node.
     void order();
+
+    // Similar to order() but does not assign ranks. Caller must
+    // ensure that the graph has been ranked ahead of the call.
+    void orderPreRanked();
 
     /// Make acyclical (into a tree) by breaking a minimal subset of cutable edges.
     void acyclic(V3EdgeFuncP edgeFuncp);
