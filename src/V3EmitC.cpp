@@ -45,6 +45,7 @@
 class EmitCStmts : public EmitCBaseVisitor {
 private:
     typedef std::vector<const AstVar*> VarVec;
+    typedef std::map<int, VarVec> VarSortMap;  // Map size class to VarVec
 
     bool	m_suppressSemi;
     AstVarRef*	m_wideTempRefp;		// Variable that _WW macros should be setting
@@ -76,6 +77,9 @@ public:
     typedef enum {EVL_CLASS_IO, EVL_CLASS_SIG, EVL_CLASS_TEMP, EVL_CLASS_PAR, EVL_CLASS_ALL,
                   EVL_FUNC_ALL} EisWhich;
     void emitVarList(AstNode* firstp, EisWhich which, const string& prefixIfImp);
+    static void emitVarSort(const VarSortMap& vmap, VarVec* sortedp);
+    void emitSortedVarList(const VarVec& anons,
+                           const VarVec& nonanons, const string& prefixIfImp);
     void emitVarCtors(bool* firstp);
     void emitCtorSep(bool* firstp);
     bool emitSimpleOk(AstNodeMath* nodep);
@@ -1831,10 +1835,9 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
     // Largest->smallest reduces the number of pad variables.
     // But for now, Smallest->largest makes it more likely a small offset will allow access to the signal.
     // TODO: Move this sort to an earlier visitor stage.
-    typedef std::multimap<int, const AstVar*> VarSortMap;
+    //
     VarSortMap varAnonMap;
     VarSortMap varNonanonMap;
-    int anonMembers = 0;
 
     for (int isstatic=1; isstatic>=0; isstatic--) {
         if (prefixIfImp!="" && !isstatic) continue;
@@ -1870,18 +1873,43 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
                                    && (varp->basicp() && !varp->basicp()->isOpaque())  // Aggregates can't be anon
                                    && which != EVL_FUNC_ALL);  // Anon not legal in funcs, and gcc bug free there anyhow
                     if (anonOk) {
-                        ++anonMembers;
-                        varAnonMap.insert(make_pair(sortbytes, varp));
+                        varAnonMap[sortbytes].push_back(varp);
                     } else {
-                        varNonanonMap.insert(make_pair(sortbytes, varp));
+                        varNonanonMap[sortbytes].push_back(varp);
                     }
                 }
             }
         }
     }
 
+    VarVec anons;
+    VarVec nonanons;
+    emitVarSort(varAnonMap, &anons);
+    emitVarSort(varNonanonMap, &nonanons);
+    emitSortedVarList(anons, nonanons, prefixIfImp);
+}
+
+void EmitCStmts::emitVarSort(const VarSortMap& vmap, VarVec* sortedp) {
+    UASSERT(sortedp->empty(), "Sorted should be initially empty");
+    {
+        // Plain old serial mode. Sort by size, from small to large.
+        for (VarSortMap::const_iterator it = vmap.begin();
+             it != vmap.end(); ++it) {
+            for (VarVec::const_iterator jt = it->second.begin();
+                 jt != it->second.end(); ++jt) {
+                sortedp->push_back(*jt);
+            }
+        }
+    }
+}
+
+void EmitCStmts::emitSortedVarList(const VarVec& anons,
+                                   const VarVec& nonanons,
+                                   const string& prefixIfImp) {
+    string cur_mtask_footprint = "";
     // Output anons
     {
+        int anonMembers = anons.size();
         int lim = v3Global.opt.compLimitMembers();
         int anonL3s = 1;
         int anonL2s = 1;
@@ -1897,15 +1925,15 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
             anonL1s = (anonMembers + lim - 1) / lim;
         }
         if (anonL1s != 1) puts("// Anonymous structures to workaround compiler member-count bugs\n");
-        VarSortMap::iterator it = varAnonMap.begin();
-        for (int l3=0; l3<anonL3s && it != varAnonMap.end(); ++l3) {
+        VarVec::const_iterator it = anons.begin();
+        for (int l3=0; l3<anonL3s && it != anons.end(); ++l3) {
             if (anonL3s != 1) puts("struct {\n");
-            for (int l2=0; l2<anonL2s && it != varAnonMap.end(); ++l2) {
+            for (int l2=0; l2<anonL2s && it != anons.end(); ++l2) {
                 if (anonL2s != 1) puts("struct {\n");
-                for (int l1=0; l1<anonL1s && it != varAnonMap.end(); ++l1) {
+                for (int l1=0; l1<anonL1s && it != anons.end(); ++l1) {
                     if (anonL1s != 1) puts("struct {\n");
-                    for (int l0=0; l0<lim && it != varAnonMap.end(); ++l0) {
-                        const AstVar* varp = it->second;
+                    for (int l0=0; l0<lim && it != anons.end(); ++l0) {
+                        const AstVar* varp = *it;
                         emitVarDecl(varp, prefixIfImp);
                         ++it;
                     }
@@ -1916,14 +1944,14 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
             if (anonL3s != 1) puts("};\n");
         }
         // Leftovers, just in case off by one error somewhere above
-        for (; it != varAnonMap.end(); ++it) {
-            const AstVar* varp = it->second;
+        for (; it != anons.end(); ++it) {
+            const AstVar* varp = *it;
             emitVarDecl(varp, prefixIfImp);
         }
     }
     // Output nonanons
-    for (VarSortMap::iterator it = varNonanonMap.begin(); it != varNonanonMap.end(); ++it) {
-        const AstVar* varp = it->second;
+    for (VarVec::const_iterator it = nonanons.begin(); it != nonanons.end(); ++it) {
+        const AstVar* varp = *it;
         emitVarDecl(varp, prefixIfImp);
     }
 }
