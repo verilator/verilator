@@ -197,12 +197,16 @@ private:
 		// Find it in the clone structure
 		//UINFO(8,"Clone find 0x"<<hex<<(uint32_t)pinp->modVarp()<<endl);
 		CloneMap::iterator cloneiter = clonemapp->find(pinp->modVarp());
-		UASSERT(cloneiter != clonemapp->end(), "Couldn't find pin in clone list");
+                if (cloneiter == clonemapp->end()) {
+                    pinp->v3fatalSrc("Couldn't find pin in clone list");
+                }
 		pinp->modVarp(cloneiter->second->castVar());
 	    }
 	    else if (pinp->modPTypep()) {
 		CloneMap::iterator cloneiter = clonemapp->find(pinp->modPTypep());
-		UASSERT(cloneiter != clonemapp->end(), "Couldn't find pin in clone list");
+                if (cloneiter == clonemapp->end()) {
+                    pinp->v3fatalSrc("Couldn't find pin in clone list");
+                }
 		pinp->modPTypep(cloneiter->second->castParamTypeDType());
 	    }
 	    else {

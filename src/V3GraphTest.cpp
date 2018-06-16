@@ -119,9 +119,12 @@ public:
 	gp->stronglyConnected(&V3GraphEdge::followAlwaysTrue);
 	dump();
 
-	UASSERT(i->color()!=a->color() && a->color() != g2->color() && g2->color() != q->color(), "Separate colors not assigned");
-	UASSERT(a->color()==b->color() && a->color()==g1->color(), "Strongly connected nodes not colored together");
-	UASSERT(g2->color()==g3->color(), "Strongly connected nodes not colored together");
+        UASSERT(i->color()!=a->color() && a->color() != g2->color() && g2->color() != q->color(),
+                "SelfTest: Separate colors not assigned");
+        UASSERT(a->color()==b->color() && a->color()==g1->color(),
+                "SelfTest: Strongly connected nodes not colored together");
+        UASSERT(g2->color()==g3->color(),
+                "SelfTest: Strongly connected nodes not colored together");
     }
 };
 
