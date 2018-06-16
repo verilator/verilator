@@ -202,7 +202,7 @@ public:
 		string cppfile = *it;
 		string basename = V3Os::filenameNonExt(cppfile);
 		of.puts(basename+".o: "+cppfile+"\n");
-		of.puts("\t$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<\n");
+		of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<\n");
 	    }
 
 	    of.puts("\n### Link rules... (from --exe)\n");

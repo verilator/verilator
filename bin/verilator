@@ -1756,8 +1756,8 @@ needed at runtime.
 
 Optionally specifies a caching or distribution program to place in front of
 all runs of the C++ Compiler.  For example, "objcache --read --write", or
-"ccache".  If using distcc, it would generally be run under either objcache
-or ccache; see the documentation for those programs.
+"ccache".  If using distcc or icecc/icecream, they would generally be run
+under either objcache or ccache; see the documentation for those programs.
 
 =item SYSTEMC
 

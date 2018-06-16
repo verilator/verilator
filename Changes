@@ -19,6 +19,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 3.925 devel
 
+****  Add OBJCACHE envvar support to examples and generated Makefiles.
+
 
 * Verilator 3.924 2018-06-12
 

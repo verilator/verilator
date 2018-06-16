@@ -24,6 +24,7 @@
 #include "verilatedos.h"
 #include <vector>
 
+#include "V3Ast.h"  // for VNUser
 #include "V3Global.h"
 #include "V3Graph.h"
 
