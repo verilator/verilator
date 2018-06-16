@@ -373,8 +373,8 @@ public:
 	return names[m_e];
     };
     static void selfTest() {
-	UASSERT(0==strcmp(AstBasicDTypeKwd(_ENUM_MAX).ascii()," MAX"),"Enum array mismatch");
-	UASSERT(0==strcmp(AstBasicDTypeKwd(_ENUM_MAX).dpiType()," MAX"),"Enum array mismatch");
+        UASSERT(0==strcmp(AstBasicDTypeKwd(_ENUM_MAX).ascii()," MAX"), "SelfTest: Enum mismatch");
+        UASSERT(0==strcmp(AstBasicDTypeKwd(_ENUM_MAX).dpiType()," MAX"),"SelfTest: Enum mismatch");
     }
     inline AstBasicDTypeKwd () : m_e(UNKNOWN) {}
     // cppcheck-suppress noExplicitConstructor
