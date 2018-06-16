@@ -43,6 +43,7 @@
 #include "verilatedos.h"
 
 #include <list>
+#include <stdexcept>
 #include <string>
 
 // Abstract 'vl_hash' and 'vl_equal_to' templates.
@@ -112,6 +113,7 @@ public:
     // TYPES
     typedef std::list<Key> Bucket;
     typedef vluint64_t size_type;
+    enum RehashType {GROW, SHRINK};
 
     template <class KK, class VV,
               class HH, class EQ> friend class vl_unordered_map;
@@ -192,12 +194,16 @@ public:
     vl_unordered_set()
         : m_numElements(0)
         , m_log2Buckets(4)
-        , m_bucketsp(NULL) { }
+        , m_bucketsp(NULL)
+        , m_hash()
+        , m_equal() { }
 
     vl_unordered_set(const vl_unordered_set& other)
         : m_numElements(other.m_numElements)
         , m_log2Buckets(other.m_log2Buckets)
-        , m_bucketsp(NULL) {
+        , m_bucketsp(NULL)
+        , m_hash()
+        , m_equal() {
         if (other.m_bucketsp) {
             m_bucketsp = new Bucket[numBuckets()];
             for (size_type i = 0; i < numBuckets(); i++) {
@@ -308,10 +314,9 @@ public:
         // if we don't rehash:
         iterator result_it(bucketIdx, m_bucketsp[bucketIdx].begin(), this);
 
-        if (needToRehash()) {
-            rehash();
-            // ... since we rehashed, do a lookup to get the
-            // result iterator.
+        if (needToRehash(GROW)) {
+            rehash(GROW);
+            // ... since we rehashed, do a lookup to get the result iterator.
             result_it = find(val);
         }
 
@@ -331,6 +336,13 @@ public:
         if (it != end()) {
             m_bucketsp[bucketIdx].erase(it.bit());
             m_numElements--;
+            // Rehashing to handle a shrinking data set is important
+            // for the Scoreboard in V3Partition, which begins tracking
+            // a huge number of vertices and then tracks a successively
+            // smaller number over time.
+            if (needToRehash(SHRINK)) {
+                rehash(SHRINK);
+            }
             return 1;
         }
         return 0;
@@ -338,9 +350,8 @@ public:
 
     void clear() {
         if (m_bucketsp) {
-            for (size_type i = 0; i < numBuckets(); i++) {
-                m_bucketsp[i].clear();
-            }
+            delete [] m_bucketsp;
+            m_bucketsp = NULL;
         }
         m_numElements = 0;
     }
@@ -357,10 +368,28 @@ private:
         if (!m_bucketsp) m_bucketsp = new Bucket[numBuckets()];
     }
 
-    bool needToRehash() const { return ((4 * numBuckets()) < m_numElements); }
+    bool needToRehash(RehashType rt) const {
+        if (rt == GROW) {
+            return ((4 * numBuckets()) < m_numElements);
+        } else {
+            return (numBuckets() > (4 * m_numElements));
+        }
+    }
 
-    void rehash() {
-        size_type new_log2Buckets = m_log2Buckets + 2;
+    void rehash(RehashType rt) {
+        size_type new_log2Buckets;
+        if (rt == GROW) {
+            new_log2Buckets = m_log2Buckets + 2;
+        } else {
+            if (m_log2Buckets <= 4) {
+                // On shrink, saturate m_log2Buckets at its
+                // initial size of 2^4 == 16 buckets. Don't risk
+                // underflowing!
+                return;
+            }
+            new_log2Buckets = m_log2Buckets - 2;
+        }
+
         size_type new_num_buckets = VL_ULL(1) << new_log2Buckets;
         Bucket* new_bucketsp = new Bucket[new_num_buckets];
 
@@ -475,7 +504,12 @@ template <class Key,
         // For the 'set', it's generally not safe to modify
         // the value after deref. For the 'map' though, we know
         // it's safe to modify the value field and we can allow it:
-        return const_cast<Value&>(it->second);
+        return it->second;
+    }
+    Value& at(const Key& k) {
+        iterator it = find(k);
+        if (it == end()) { throw std::out_of_range("sorry"); }
+        return it->second;
     }
     void clear() { m_set.clear(); }
     size_type size() const { return m_set.size(); }

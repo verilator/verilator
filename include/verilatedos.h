@@ -158,10 +158,17 @@
 #if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__)
 # define VL_EQ_DELETE = delete
 # define vl_unique_ptr std::unique_ptr
-# define vl_unordered_map std::unordered_map
-# define vl_unordered_set std::unordered_set
-# define VL_INCLUDE_UNORDERED_MAP <unordered_map>
-# define VL_INCLUDE_UNORDERED_SET <unordered_set>
+// By default we use std:: types in C++11.
+// Define VL_USE_UNORDERED_TYPES to test these pre-C++11 classes
+# ifdef VL_USE_UNORDERED_TYPES
+#  define VL_INCLUDE_UNORDERED_MAP "verilated_unordered_set_map.h"
+#  define VL_INCLUDE_UNORDERED_SET "verilated_unordered_set_map.h"
+# else
+#  define vl_unordered_map std::unordered_map
+#  define vl_unordered_set std::unordered_set
+#  define VL_INCLUDE_UNORDERED_MAP <unordered_map>
+#  define VL_INCLUDE_UNORDERED_SET <unordered_set>
+# endif
 #else
 # define VL_EQ_DELETE
 # define vl_unique_ptr std::auto_ptr
