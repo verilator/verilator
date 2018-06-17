@@ -511,6 +511,11 @@ template <class Key,
         if (it == end()) { throw std::out_of_range("sorry"); }
         return it->second;
     }
+    const Value& at(const Key& k) const {
+        iterator it = find(k);
+        if (it == end()) { throw std::out_of_range("sorry"); }
+        return it->second;
+    }
     void clear() { m_set.clear(); }
     size_type size() const { return m_set.size(); }
 };
