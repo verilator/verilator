@@ -87,6 +87,7 @@
 #include "V3Trace.h"
 #include "V3TraceDecl.h"
 #include "V3Tristate.h"
+#include "V3TSP.h"
 #include "V3Undriven.h"
 #include "V3Unknown.h"
 #include "V3Unroll.h"
@@ -584,17 +585,19 @@ int main(int argc, char** argv, char** env) {
 	exit(0);
     }
 
-    // Internal tests (after option parsing as need debug() setting)
-    VHashSha1::selfTest();
-    AstBasicDTypeKwd::selfTest();
-    V3Graph::selfTest();
-
     //--FRONTEND------------------
 
     // Cleanup
     V3Os::unlinkRegexp(v3Global.opt.makeDir(), v3Global.opt.prefix()+"_*.tree");
     V3Os::unlinkRegexp(v3Global.opt.makeDir(), v3Global.opt.prefix()+"_*.dot");
     V3Os::unlinkRegexp(v3Global.opt.makeDir(), v3Global.opt.prefix()+"_*.txt");
+
+    // Internal tests (after option parsing as need debug() setting,
+    // and after removing files as may make debug output)
+    VHashSha1::selfTest();
+    AstBasicDTypeKwd::selfTest();
+    V3Graph::selfTest();
+    V3TSP::selfTest();
 
     // Read first filename
     v3Global.readFiles();

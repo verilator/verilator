@@ -1607,14 +1607,16 @@ void OrderVisitor::process() {
 
     if (debug() && v3Global.opt.dumpTree()) processEdgeReport();
 
-    UINFO(2,"  Construct Move Graph...\n");
-    processMoveBuildGraph();
-    if (debug()>=4) m_pomGraph.dumpDotFilePrefixed("ordermv_start");  // Different prefix (ordermv) as it's not the same graph
-    m_pomGraph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
-    m_pomGraph.dumpDotFilePrefixed("ordermv_simpl");
+    {
+        UINFO(2,"  Construct Move Graph...\n");
+        processMoveBuildGraph();
+        if (debug()>=4) m_pomGraph.dumpDotFilePrefixed("ordermv_start");  // Different prefix (ordermv) as it's not the same graph
+        m_pomGraph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
+        if (debug()>=4) m_pomGraph.dumpDotFilePrefixed("ordermv_simpl");
 
-    UINFO(2,"  Move...\n");
-    processMove();
+        UINFO(2,"  Move...\n");
+        processMove();
+    }
 
     // Any SC inputs feeding a combo domain must be marked, so we can make them sc_sensitive
     UINFO(2,"  Sensitive...\n");
