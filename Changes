@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Add OBJCACHE envvar support to examples and generated Makefiles.
 
+****  Fix define argument stringification (`"), broke since 3.914. [Joe DErrico]
+
 
 * Verilator 3.924 2018-06-12
 
