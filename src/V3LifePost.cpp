@@ -18,13 +18,13 @@
 //
 //*************************************************************************
 // LIFE TRANSFORMATIONS:
-//	Build control-flow graph with assignments and var usages
-//	All modules:
-//	    Delete these
-//		ASSIGN(Vdly, a)
-//	    	... {no reads or writes of a after the first write to Vdly}
-//	 	... {no reads of a after the first write to Vdly}
-//		ASSIGNPOST(Vdly,tmp)
+//      Build control-flow graph with assignments and var usages
+//      All modules:
+//          Delete these
+//              ASSIGN(Vdly, a)
+//              ... {no reads or writes of a after the first write to Vdly}
+//              ... {no reads of a after the first write to Vdly}
+//              ASSIGNPOST(Vdly,tmp)
 //
 //*************************************************************************
 
@@ -40,37 +40,32 @@
 #include "V3Ast.h"
 
 //######################################################################
-// LifePost state, as a visitor of each AstNode
-
-class LifePostBaseVisitor : public AstNVisitor {
-protected:
-    VL_DEBUG_FUNC;  // Declare debug()
-};
-
-//######################################################################
 // LifePost class functions
 
-class LifePostElimVisitor : public LifePostBaseVisitor {
+class LifePostElimVisitor : public AstNVisitor {
 private:
     bool        m_tracingCall;  // Iterating into a CCall to a CFunc
 
     // NODE STATE
     // INPUT:
-    //  AstVarScope::user4p()	-> AstVarScope*, If set, replace this varscope with specified new one
+    //  AstVarScope::user4p()   -> AstVarScope*, If set, replace this varscope with specified new one
     // STATE
+    // METHODS
+    VL_DEBUG_FUNC;  // Declare debug()
+
     // VISITORS
     virtual void visit(AstVarRef* nodep) {
-	AstVarScope* vscp = nodep->varScopep();
-	if (!vscp) nodep->v3fatalSrc("Scope not assigned");
-	if (AstVarScope* newvscp = (AstVarScope*)vscp->user4p()) {
-	    UINFO(9, "  Replace "<<nodep<<" to "<<newvscp<<endl);
-	    AstVarRef* newrefp = new AstVarRef(nodep->fileline(), newvscp, nodep->lvalue());
-	    nodep->replaceWith(newrefp);
-	    nodep->deleteTree(); VL_DANGLING(nodep);
-	}
+        AstVarScope* vscp = nodep->varScopep();
+        if (!vscp) nodep->v3fatalSrc("Scope not assigned");
+        if (AstVarScope* newvscp = (AstVarScope*)vscp->user4p()) {
+            UINFO(9, "  Replace "<<nodep<<" to "<<newvscp<<endl);
+            AstVarRef* newrefp = new AstVarRef(nodep->fileline(), newvscp, nodep->lvalue());
+            nodep->replaceWith(newrefp);
+            nodep->deleteTree(); VL_DANGLING(nodep);
+        }
     }
     virtual void visit(AstNodeModule* nodep) {
-	// Only track the top scopes, not lower level functions
+        // Only track the top scopes, not lower level functions
         if (nodep->isTop()) iterateChildren(nodep);
     }
     virtual void visit(AstCCall* nodep) {
@@ -86,7 +81,7 @@ private:
         m_tracingCall = false;
         iterateChildren(nodep);
     }
-    virtual void visit(AstVar*) {}	// Don't want varrefs under it
+    virtual void visit(AstVar*) {}  // Don't want varrefs under it
     virtual void visit(AstNode* nodep) {
         iterateChildren(nodep);
     }
@@ -102,48 +97,49 @@ public:
 //######################################################################
 // LifePost delay elimination
 
-class LifePostDlyVisitor : public LifePostBaseVisitor {
+class LifePostDlyVisitor : public AstNVisitor {
 private:
     // NODE STATE
     // Cleared on entire tree
     //  AstVarScope::user()     -> Sequence # of first vertex setting this var.
-    //  AstVarScope::user2()	-> Sequence # of last consumption of this var
-    //  AstVarScope::user4()	-> AstVarScope*: Passed to LifePostElim to substitute this var
-    AstUser1InUse	m_inuser1;
-    AstUser2InUse	m_inuser2;
-    AstUser4InUse	m_inuser4;
+    //  AstVarScope::user2()    -> Sequence # of last consumption of this var
+    //  AstVarScope::user4()    -> AstVarScope*: Passed to LifePostElim to substitute this var
+    AstUser1InUse       m_inuser1;
+    AstUser2InUse       m_inuser2;
+    AstUser4InUse       m_inuser4;
 
     // STATE
-    uint32_t		m_sequence;	// Sequence number of assignments/varrefs
-    V3Double0		m_statAssnDel;	// Statistic tracking
-    bool		m_tracingCall;  // Tracing a CCall to a CFunc
+    uint32_t            m_sequence;     // Sequence number of assigns/varrefs,
+    V3Double0           m_statAssnDel;  // Statistic tracking
+    bool                m_tracingCall;  // Currently tracing a CCall to a CFunc
+
+    // METHODS
+    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
     virtual void visit(AstTopScope* nodep) {
-	AstNode::user1ClearTree();	// user1p() used on entire tree
-	AstNode::user2ClearTree();	// user2p() used on entire tree
-	AstNode::user4ClearTree();	// user4p() used on entire tree
-	m_sequence = 0;
+        AstNode::user1ClearTree();  // user1p() used on entire tree
+        AstNode::user2ClearTree();  // user2p() used on entire tree
+        AstNode::user4ClearTree();  // user4p() used on entire tree
+        m_sequence = 0;
         iterateChildren(nodep);
 
-	// Replace any node4p varscopes with the new scope
-	LifePostElimVisitor visitor (nodep);
+        // Replace any node4p varscopes with the new scope
+        LifePostElimVisitor visitor (nodep);
     }
-
     virtual void visit(AstVarRef* nodep) {
-	// Consumption/generation of a variable,
-	AstVarScope* vscp = nodep->varScopep();
-	if (!vscp) nodep->v3fatalSrc("Scope not assigned");
-	m_sequence++;
-	if (nodep->lvalue()) {
-	    // First generator
-	    if (!vscp->user1()) vscp->user1(m_sequence);
-	} else {
-	    // Last consumer
-	    vscp->user2(m_sequence);
-	}
+        // Consumption/generation of a variable,
+        AstVarScope* vscp = nodep->varScopep();
+        if (!vscp) nodep->v3fatalSrc("Scope not assigned");
+        m_sequence++;
+        if (nodep->lvalue()) {
+            // First generator
+            if (!vscp->user1()) vscp->user1(m_sequence);
+        } else {
+            // Last consumer
+            vscp->user2(m_sequence);
+        }
     }
-
     virtual void visit(AstAssignPre* nodep) {
         // Do not record varrefs within assign pre.
         //
@@ -151,7 +147,6 @@ private:
         // first write; we only want to consider reads and writes that
         // would still happen if the dly var were eliminated.
     }
-
     virtual void visit(AstAssignPost* nodep) {
         if (AstVarRef* lhsp = VN_CAST(nodep->lhsp(), VarRef)) {
             if (AstVarRef* rhsp = VN_CAST(nodep->rhsp(), VarRef)) {
@@ -164,9 +159,9 @@ private:
                 // Into just this:
                 // X1:  __PVT__q = __PVT__clk_clocks;
                 // X2:   (nothing)
-		UINFO(9,"   POST "<<nodep<<endl);
-		UINFO(9,"     lhs "<<lhsp<<endl);
-		UINFO(9,"     rhs "<<rhsp<<endl);
+                UINFO(9,"   POST "<<nodep<<endl);
+                UINFO(9,"     lhs "<<lhsp<<endl);
+                UINFO(9,"     rhs "<<rhsp<<endl);
                 uint32_t firstDlyVarWrite = rhsp->varScopep()->user1();
                 uint32_t lastDlyVarRead   = rhsp->varScopep()->user2();
                 uint32_t lastOrigVarRead  = lhsp->varScopep()->user2();
@@ -175,17 +170,17 @@ private:
                       <<" last_orig_r "<<lastOrigVarRead<<endl);
                 if (lastDlyVarRead < firstDlyVarWrite
                     && lastOrigVarRead < firstDlyVarWrite) {
-		    UINFO(4,"    DELETE "<<nodep<<endl);
-		    // Mark so LifePostElimVisitor will get it
-		    rhsp->varScopep()->user4p(lhsp->varScopep());
-		    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
-		    ++m_statAssnDel;
-		}
-	    }
-	}
+                    UINFO(4,"    DELETE "<<nodep<<endl);
+                    // Mark so LifePostElimVisitor will get it
+                    rhsp->varScopep()->user4p(lhsp->varScopep());
+                    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+                    ++m_statAssnDel;
+                }
+            }
+        }
     }
     virtual void visit(AstNodeModule* nodep) {
-	// Only track the top scopes, not lower level functions
+        // Only track the top scopes, not lower level functions
         if (nodep->isTop()) iterateChildren(nodep);
     }
     virtual void visit(AstCCall* nodep) {
@@ -201,9 +196,8 @@ private:
         m_tracingCall = false;
         iterateChildren(nodep);
     }
-
     //-----
-    virtual void visit(AstVar*) {}	// Don't want varrefs under it
+    virtual void visit(AstVar*) {}  // Don't want varrefs under it
     virtual void visit(AstNode* nodep) {
         iterateChildren(nodep);
     }
@@ -215,7 +209,7 @@ public:
         iterate(nodep);
     }
     virtual ~LifePostDlyVisitor() {
-	V3Stats::addStat("Optimizations, Lifetime postassign deletions", m_statAssnDel);
+        V3Stats::addStat("Optimizations, Lifetime postassign deletions", m_statAssnDel);
     }
 };
 
@@ -226,7 +220,7 @@ void V3LifePost::lifepostAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     // Mark redundant AssignPost
     {
-        LifePostDlyVisitor visitor (nodep);
+        LifePostDlyVisitor visitor(nodep);
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("life_post", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
