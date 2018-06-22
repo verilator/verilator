@@ -1607,7 +1607,7 @@ private:
     }
 
     // virtual void visit(AstCvtPackString* nodep) {
-    // Not constant propagated (for today) because AstMath::isOpaque is set
+    // Not constant propagated (for today) because AstNodeMath::isOpaque is set
     // Someday if lower is constant, convert to quoted "string".
 
     bool onlySenItemInSenTree(AstNodeSenItem* nodep) {

@@ -32,7 +32,7 @@
 //		For interface Parent's we have the AstIfaceRefDType::cellp()
 //		pointing to this module.  If that parent cell's interface
 //		module gets parameterized, AstIfaceRefDType::cloneRelink
-//		will update AstIfaceRefDType::cellp(), and AstLinkDot will
+//              will update AstIfaceRefDType::cellp(), and V3LinkDot will
 //		see the new interface.
 //
 //		However if a submodule's AstIfaceRefDType::ifacep() points

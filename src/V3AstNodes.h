@@ -399,7 +399,7 @@ private:
 	    return rhs.m_keyword == m_keyword
 		&& rhs.m_nrange == m_nrange; }
     } m;
-    // See also in AstNodeDtype: m_width, m_widthMin, m_numeric(issigned)
+    // See also in AstNodeDType: m_width, m_widthMin, m_numeric(issigned)
 public:
     AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, VSignedState signst=signedst_NOSIGN)
 	: AstNodeDType(fl) {
@@ -670,7 +670,7 @@ public:
 
 class AstMemberDType : public AstNodeDType {
     // A member of a struct/union
-    // PARENT: AstClassDType
+    // PARENT: AstNodeClassDType
 private:
     AstNodeDType*	m_refDTypep;	// Elements of this type (after widthing)
     string	m_name;		// Name of variable
@@ -1949,7 +1949,7 @@ public:
 };
 
 class AstDot : public AstNode {
-    // A dot separating paths in an AstXRef, AstFuncRef or AstTaskRef
+    // A dot separating paths in an AstVarXRef, AstFuncRef or AstTaskRef
     // These are eliminated in the link stage
 public:
     AstDot(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
