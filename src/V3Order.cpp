@@ -1004,8 +1004,9 @@ static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top) {
     // Return 'true' if we can prove that both 'from' and 'to' cannot both
     // be active on the same eval pass, or false if we can't prove this.
     //
-    // For now, this only detects the case of 'always @(posedge clk)'
-    // and 'always @(negedge clk)' being exclusive.
+    // This detects the case of 'always @(posedge clk)'
+    // and 'always @(negedge clk)' being exclusive. It also detects
+    // that initial/settle blocks and post-initial blocks are exclusive.
     //
     // Are there any other cases we need to handle? Maybe not,
     // because these are not exclusive:
@@ -1013,6 +1014,13 @@ static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top) {
     //   always @(negedge A)
     //
     // ... unless you know more about A and B, which sounds hard.
+
+    bool toInitial = top->hasInitial() || top->hasSettle();
+    bool fromInitial = fromp->hasInitial() || fromp->hasSettle();
+    if (toInitial != fromInitial) {
+        return true;
+    }
+
     const AstSenItem* fromSenListp = VN_CAST(fromp->sensesp(), SenItem);
     const AstSenItem* toSenListp = VN_CAST(top->sensesp(), SenItem);
     // If clk gating is ever reenabled, we may need to update this to handle
