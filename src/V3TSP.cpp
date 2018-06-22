@@ -61,37 +61,37 @@ namespace V3TSP {
 }  // namespace V3TSP
 
 // Vertex that tracks a per-vertex key
-template <typename Key>
+template <typename T_Key>
 class TspVertexTmpl : public V3GraphVertex {
 private:
-    Key m_key;
+    T_Key m_key;
 public:
-    TspVertexTmpl(V3Graph* graphp, const Key& k)
+    TspVertexTmpl(V3Graph* graphp, const T_Key& k)
         : V3GraphVertex(graphp), m_key(k) {}
     virtual ~TspVertexTmpl() {}
-    const Key& key() const { return m_key; }
+    const T_Key& key() const { return m_key; }
 private:
     VL_UNCOPYABLE(TspVertexTmpl);
 };
 
 // TspGraphTmpl represents a complete graph, templatized to work with
-// different Key types.
-template <typename Key>
+// different T_Key types.
+template <typename T_Key>
 class TspGraphTmpl : public V3Graph {
 public:
     // TYPES
-    typedef TspVertexTmpl<Key> Vertex;
+    typedef TspVertexTmpl<T_Key> Vertex;
 
     // MEMBERS
-    typedef vl_unordered_map<Key, Vertex*> VMap;
-    VMap m_vertices;  // Key to Vertex lookup map
+    typedef vl_unordered_map<T_Key, Vertex*> VMap;
+    VMap m_vertices;  // T_Key to Vertex lookup map
 
     // CONSTRUCTORS
     TspGraphTmpl() : V3Graph() {}
     virtual ~TspGraphTmpl() {}
 
     // METHODS
-    void addVertex(const Key &key) {
+    void addVertex(const T_Key &key) {
         typename VMap::iterator itr = m_vertices.find(key);
         UASSERT(itr == m_vertices.end(), "Vertex already exists with same key");
         Vertex *v = new Vertex(this, key);
@@ -102,7 +102,7 @@ public:
     // Map that onto the normally-directional V3Graph by creating
     // a matched pairs of opposite-directional edges to represent
     // each non-directional edge:
-    void addEdge(const Key& from, const Key& to, int cost) {
+    void addEdge(const T_Key& from, const T_Key& to, int cost) {
         UASSERT(from != to, "Adding edge would form a loop");
         Vertex* fp = findVertex(from);
         Vertex* tp = findVertex(to);
@@ -121,7 +121,7 @@ public:
 
     bool empty() const { return m_vertices.empty(); }
 
-    std::list<Vertex*> keysToVertexList(const std::vector<Key>& odds) {
+    std::list<Vertex*> keysToVertexList(const std::vector<T_Key>& odds) {
         std::list<Vertex*> vertices;
         for(unsigned i = 0; i < odds.size(); ++i) {
             vertices.push_back(findVertex(odds.at(i)));
@@ -231,7 +231,7 @@ public:
 
     // Populate *outp with a minimal perfect matching of *this.
     // *outp must be initially empty.
-    void perfectMatching(const std::vector<Key>& oddKeys,
+    void perfectMatching(const std::vector<T_Key>& oddKeys,
                          TspGraphTmpl* outp) {
         UASSERT(outp->empty(), "Output graph must start empty");
 
@@ -305,7 +305,7 @@ public:
 
     void findEulerTourRecurse(vl_unordered_set<unsigned>* markedEdgesp,
                               Vertex* startp,
-                              std::vector<Key>* sortedOutp) {
+                              std::vector<T_Key>* sortedOutp) {
         Vertex* cur_vertexp = startp;
 
         // Go on a random tour. Fun!
@@ -390,7 +390,7 @@ public:
         }
     }
 
-    void findEulerTour(std::vector<Key>* sortedOutp) {
+    void findEulerTour(std::vector<T_Key>* sortedOutp) {
         UASSERT(sortedOutp->empty(), "Output graph must start empty");
         if (debug() >= 6) dumpDotFilePrefixed("findEulerTour");
         vl_unordered_set<unsigned /*edgeID*/> markedEdges;
@@ -399,8 +399,8 @@ public:
         findEulerTourRecurse(&markedEdges, start_vertexp, sortedOutp);
     }
 
-    std::vector<Key> getOddDegreeKeys() const {
-        std::vector<Key> result;
+    std::vector<T_Key> getOddDegreeKeys() const {
+        std::vector<T_Key> result;
         for (V3GraphVertex* vxp = verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             Vertex* tspvp = castVertexp(vxp);
             vluint32_t degree = 0;
@@ -415,7 +415,7 @@ public:
     }
 
 private:
-    Vertex* findVertex(const Key& key) const {
+    Vertex* findVertex(const T_Key& key) const {
         typename VMap::const_iterator it = m_vertices.find(key);
         UASSERT(it != m_vertices.end(), "Vertex not found");
         return it->second;
