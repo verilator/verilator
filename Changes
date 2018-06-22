@@ -16,6 +16,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix Verilation performance issues, bug1316. [John Coiner]
 
+****  Fix clocker attributes to not propagate on concats. [John Coiner]
+
 
 * Verilator 3.925 devel
 

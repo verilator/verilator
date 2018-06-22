@@ -379,27 +379,26 @@ public:
 class OrderClkAssVisitor : public AstNVisitor {
 private:
     bool m_clkAss; 	// There is signals marked as clocker in the assignment
-
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
     virtual void visit(AstNodeAssign* nodep) {
-        if (const AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef) )
+        if (const AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef)) {
 	    if (varrefp->varp()->attrClocker() == AstVarAttrClocker::CLOCKER_YES) {
 		m_clkAss = true;
 		UINFO(6, "node was marked as clocker "<<varrefp<<endl);
 	    }
+        }
         iterateChildren(nodep->rhsp());
     }
     virtual void visit(AstVarRef* nodep) {
-	if (nodep->varp()->attrClocker() == AstVarAttrClocker::CLOCKER_YES) {
-	    m_clkAss = true;
-	    UINFO(6, "node was marked as clocker "<<nodep<<endl);
-	}
+        // Previous versions checked attrClocker() here, but this breaks
+        // the updated t_clocker VCD test.
+        // If reenable this visitor note AstNodeMath short circuit below
     }
+    virtual void visit(AstNodeMath* nodep) {} // Accelerate
     virtual void visit(AstNode* nodep) {
         iterateChildren(nodep);
     }
-
 public:
     // CONSTUCTORS
     explicit OrderClkAssVisitor(AstNode* nodep) {
@@ -407,9 +406,8 @@ public:
         iterate(nodep);
     }
     virtual ~OrderClkAssVisitor() {}
-
     // METHODS
-    bool isClkAss() {return m_clkAss;}
+    bool isClkAss() { return m_clkAss; }
 };
 
 

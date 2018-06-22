@@ -15,9 +15,11 @@ scenarios(simulator => 1);
 # closely enough to pass the same test?
 # If not -- probably we should switch this to be vlt-only.
 
-compile();
+compile(verilator_flags2 => ["--trace"]);
 
 execute(check_finished => 1);
+
+vcd_identical("$Self->{obj_dir}/simx.vcd", "t/$Self->{name}.out");
 
 ok(1);
 1;
