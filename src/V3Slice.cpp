@@ -55,7 +55,7 @@ class SliceVisitor : public AstNVisitor {
     // NODE STATE
     // Cleared on netlist
     //  AstNodeAssign::user1()	    -> bool.  True if find is complete
-    //  AstUniop::user1()	    -> bool.  True if find is complete
+    //  AstNodeUniop::user1()       -> bool.  True if find is complete
     //  AstArraySel::user1p()	    -> AstVarRef. The VarRef that the final ArraySel points to
     AstUser1InUse	m_inuser1;
 

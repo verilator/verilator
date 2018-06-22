@@ -308,7 +308,7 @@ private:
     // {statement}Node::user1p	-> GateLogicVertex* for this statement
     // AstVarScope::user2	-> bool: Signal used in SenItem in *this* always statement
     // AstVar::user2		-> bool: Warned about SYNCASYNCNET
-    // AstVarNodeRef::user2	-> bool: ConcatOffset visited
+    // AstNodeVarRef::user2     -> bool: ConcatOffset visited
     AstUser1InUse	m_inuser1;
     AstUser2InUse	m_inuser2;
 
