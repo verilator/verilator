@@ -1,0 +1,177 @@
+#!/usr/bin/perl -w
+# See copyright, etc in below POD section.
+######################################################################
+
+use Getopt::Long;
+#use Data::Dumper; $Data::Dumper::Indent=1; $Data::Dumper::Sortkeys=1; #Debug
+use IO::File;
+use IO::Dir;
+use Pod::Usage;
+use strict;
+use vars qw ($Debug);
+
+our $VERSION = '0.001';
+
+#======================================================================
+# main
+
+autoflush STDOUT 1;
+autoflush STDERR 1;
+Getopt::Long::config ("no_auto_abbrev");
+if (! GetOptions (
+          "debug"       => sub { $Debug = 1; },
+          "help"        => sub { print "Version $VERSION\n";
+                                 pod2usage(-verbose=>2, -exitval => 2, output=>\*STDOUT, -noperldoc=>1); },
+          "version"     => sub { print "Version $VERSION\n"; exit(0); },
+          "<>"          => sub { die "%Error: Unknown parameter: $_[0]\n"; },
+    )) {
+    die "%Error: Bad usage, try 'git_untabify --help'\n";
+}
+
+read_patch();
+
+#######################################################################
+
+sub read_patch {
+    my $filename = undef;
+    my $lineno = 0;
+    my $editlines = {};
+    while (defined(my $line = <STDIN>)) {
+        if ($line =~ m!^\+\+\+ b/(.*)!) {
+            edit_file($filename, $editlines);
+            $filename = $1;
+            $lineno = 0;
+            $editlines = {};
+            print "FILE $filename\n" if $Debug;
+        }
+        elsif ($line  =~ m!^@@ -?[0-9]+,?[0-9]* \+?([0-9]+)!) {
+            $lineno = $1 - 1;
+            print "  LINE $1  $line" if $Debug;
+        }
+        elsif ($line  =~ m!^ !) {
+            ++$lineno;
+        }
+        elsif ($line  =~ m!^\+!) {
+            ++$lineno;
+            if ($line  =~ m!\t!) {
+                print "  $lineno: $line" if $Debug;
+                $editlines->{$lineno} = 1;
+            }
+        }
+    }
+    edit_file($filename, $editlines);
+}
+
+sub edit_file {
+    my $filename = shift;
+    my $editlines = shift;
+
+    return if (scalar keys(%$editlines) < 1);
+    if (ignore($filename)) {
+        print "%Warning: Ignoring $filename\n";
+        return;
+    }
+    print "Edit $filename ",join(",",sort(keys %$editlines)),"\n";
+
+    my $lineno = 0;
+    my @out;
+    {
+        my $fh = IO::File->new("<$filename") or die "%Error: $! $filename\n";
+        while (defined(my $line = $fh->getline)) {
+            ++$lineno;
+            if ($editlines->{$lineno}) {
+                print $line;
+                push @out, untabify($line);
+            } else {
+                push @out, $line;
+            }
+        }
+        $fh->close;
+    }
+    {
+        my $fh = IO::File->new(">${filename}.untab") or die "%Error: $! ${filename}.untab,";
+        $fh->print(join('',@out));
+        $fh->close;
+
+        my ($dev,$ino,$mode) = stat($filename);
+        chmod $mode, "${filename}.untab";
+    }
+
+    rename("${filename}.untab", $filename) or die "%Error: $! ${filename}.untab,";
+}
+
+sub ignore {
+    my $filename = shift;
+    return 1 if ($filename =~ /(Makefile|\.mk)/);
+    return 1 if ($filename =~ /\.(y|l|out|vcd)$/);
+    #
+    return 0 if ($filename =~ /\.(sv|v|vh|svh|h|vc|cpp|pl)$/);
+    return 0;
+}
+
+sub untabify {
+    my $line = shift;
+    my $out = "";
+    my $col = 0;
+    foreach my $c (split //, $line) {
+        if ($c eq "\t") {
+            my $destcol = int(($col+8)/8)*8;
+            while ($col < $destcol) { ++$col; $out .= " "; }
+        } else {
+            $out .= $c;
+            $col++;
+        }
+    }
+    return $out;
+}
+
+#######################################################################
+__END__
+
+=pod
+
+=head1 NAME
+
+git_untabify - Pipe a git diff report and untabify differences
+
+=head1 SYNOPSIS
+
+  git diff a..b | git_untabify
+
+=head1 DESCRIPTION
+
+Take a patch file, and edit the files in the destination patch list to
+untabify the related patch lines.
+
+=head1 ARGUMENTS
+
+=over 4
+
+=item --help
+
+Displays this message and program version and exits.
+
+=item --version
+
+Displays program version and exits.
+
+=back
+
+=head1 DISTRIBUTION
+
+Copyright 2005-2018 by Wilson Snyder.  Verilator is free software; you can
+redistribute it and/or modify it under the terms of either the GNU Lesser
+General Public License Version 3 or the Perl Artistic License Version 2.0.
+
+=head1 AUTHORS
+
+Wilson Snyder <wsnyder@wsnyder.org>
+
+=head1 SEE ALSO
+
+=cut
+
+######################################################################
+### Local Variables:
+### compile-command: "./git_untabify "
+### End:
