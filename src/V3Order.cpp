@@ -105,6 +105,8 @@
 
 class OrderMoveDomScope;
 
+static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top);
+
 //######################################################################
 // Functions for above graph classes
 
@@ -371,9 +373,9 @@ public:
     virtual ~OrderClkMarkVisitor() {}
 };
 
-
 //######################################################################
-// The class used to check if the assignment has clocker inside.
+// The class checks if the assignment generates a clock.
+
 class OrderClkAssVisitor : public AstNVisitor {
 private:
     bool m_clkAss; 	// There is signals marked as clocker in the assignment
@@ -526,7 +528,6 @@ private:
     void processMoveReadyOne(OrderMoveVertex* vertexp);
     void processMoveDoneOne(OrderMoveVertex* vertexp);
     void processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* domScopep, int level);
-    static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top);
 
     string cfuncName(AstNodeModule* modp, AstSenTree* domainp, AstScope* scopep, AstNode* forWhatp) {
 	modp->user3Inc();
@@ -997,7 +998,44 @@ public:
 };
 
 //######################################################################
-// Clock propagation
+// General utilities
+
+static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top) {
+    // Return 'true' if we can prove that both 'from' and 'to' cannot both
+    // be active on the same eval pass, or false if we can't prove this.
+    //
+    // For now, this only detects the case of 'always @(posedge clk)'
+    // and 'always @(negedge clk)' being exclusive.
+    //
+    // Are there any other cases we need to handle? Maybe not,
+    // because these are not exclusive:
+    //   always @(posedge A or posedge B)
+    //   always @(negedge A)
+    //
+    // ... unless you know more about A and B, which sounds hard.
+    const AstSenItem* fromSenListp = VN_CAST(fromp->sensesp(), SenItem);
+    const AstSenItem* toSenListp = VN_CAST(top->sensesp(), SenItem);
+    // If clk gating is ever reenabled, we may need to update this to handle
+    // AstSenGate also.
+    if (!fromSenListp) fromp->v3fatalSrc("sensitivity list item is not an AstSenItem");
+    if (!toSenListp) top->v3fatalSrc("sensitivity list item is not an AstSenItem");
+
+    if (fromSenListp->nextp()) return false;
+    if (toSenListp->nextp()) return false;
+
+    const AstNodeVarRef* fromVarrefp = fromSenListp->varrefp();
+    const AstNodeVarRef* toVarrefp = toSenListp->varrefp();
+    if (!fromVarrefp || !toVarrefp) return false;
+
+    // We know nothing about the relationship between different clocks here,
+    // so give up on proving anything.
+    if (fromVarrefp->varScopep() != toVarrefp->varScopep()) return false;
+
+    return fromSenListp->edgeType().exclusiveEdge(toSenListp->edgeType());
+}
+
+//######################################################################
+// OrderVisitor - Clock propagation
 
 void OrderVisitor::processInputs() {
     m_graph.userClearVertices();  // Vertex::user()   // 1 if input recursed, 2 if marked as input, 3 if out-edges recursed
@@ -1076,7 +1114,7 @@ void OrderVisitor::processInputsOutIterate(OrderEitherVertex* vertexp, VertexVec
 }
 
 //######################################################################
-// Circular detection
+// OrderVisitor - Circular detection
 
 void OrderVisitor::processCircular() {
     // Take broken edges and add circular flags
@@ -1245,7 +1283,7 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
 }
 
 //######################################################################
-// Move graph construction
+// OrderVisitor - Move graph construction
 
 void OrderVisitor::processEdgeReport() {
     // Make report of all signal names and what clock edges they have
@@ -1277,11 +1315,7 @@ void OrderVisitor::processEdgeReport() {
     for (std::deque<string>::iterator it=report.begin(); it!=report.end(); ++it) {
 	*logp<<(*it)<<endl;
     }
-
 }
-
-//######################################################################
-// Move graph construction
 
 void OrderVisitor::processMoveClear() {
     OrderMoveDomScope::clear();
@@ -1312,41 +1346,6 @@ void OrderVisitor::processMoveBuildGraph() {
 	    processMoveBuildGraphIterate(moveVxp, lvertexp, 0);
 	}
     }
-}
-
-bool OrderVisitor::domainsExclusive(const AstSenTree* fromp,
-                                    const AstSenTree* top) {
-    // Return 'true' if we can prove that both 'from' and 'to' cannot both
-    // be active on the same eval pass, or false if we can't prove this.
-    //
-    // For now, this only detects the case of 'always @(posedge clk)'
-    // and 'always @(negedge clk)' being exclusive.
-    //
-    // Are there any other cases we need to handle? Maybe not,
-    // because these are not exclusive:
-    //   always @(posedge A or posedge B)
-    //   always @(negedge A)
-    //
-    // ... unless you know more about A and B, which sounds hard.
-    const AstSenItem* fromSenListp = VN_CAST(fromp->sensesp(), SenItem);
-    const AstSenItem* toSenListp = VN_CAST(top->sensesp(), SenItem);
-    // If clk gating is ever reenabled, we may need to update this to handle
-    // AstSenGate also.
-    if (!fromSenListp) fromp->v3fatalSrc("sensitivity list item is not an AstSenItem");
-    if (!toSenListp) top->v3fatalSrc("sensitivity list item is not an AstSenItem");
-
-    if (fromSenListp->nextp()) return false;
-    if (toSenListp->nextp()) return false;
-
-    const AstNodeVarRef* fromVarrefp = fromSenListp->varrefp();
-    const AstNodeVarRef* toVarrefp = toSenListp->varrefp();
-    if (!fromVarrefp || !toVarrefp) return false;
-
-    // We know nothing about the relationship between different clocks here,
-    // so give up on proving anything.
-    if (fromVarrefp->varScopep() != toVarrefp->varScopep()) return false;
-
-    return fromSenListp->edgeType().exclusiveEdge(toSenListp->edgeType());
 }
 
 void OrderVisitor::processMoveBuildGraphIterate (OrderMoveVertex* moveVxp, V3GraphVertex* vertexp, int weightmin) {
@@ -1388,7 +1387,7 @@ void OrderVisitor::processMoveBuildGraphIterate (OrderMoveVertex* moveVxp, V3Gra
 }
 
 //######################################################################
-// Moving
+// OrderVisitor - Moving
 
 void OrderVisitor::processMove() {
     // The graph routines have already sorted the vertexes and edges into best->worst order
@@ -1572,7 +1571,7 @@ inline void OrderMoveDomScope::movedVertex(OrderVisitor* ovp, OrderMoveVertex* v
 }
 
 //######################################################################
-// Top processing
+// OrderVisitor - Top processing
 
 void OrderVisitor::process() {
     // Dump data

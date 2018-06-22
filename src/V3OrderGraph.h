@@ -330,6 +330,7 @@ public:
     virtual OrderMoveVertex* clone(V3Graph* graphp) const {
 	return new OrderMoveVertex(graphp, *this);
     }
+    // METHODS
     virtual OrderVEdgeType type() const { return OrderVEdgeType::VERTEX_MOVE; }
     virtual string dotColor() const {
         if (logicp()) {
@@ -350,7 +351,6 @@ public:
         }
         return nm;
     }
-    // ACCESSORS
     OrderLogicVertex* logicp() const { return m_logicp; }
     bool isWait() const { return m_state==POM_WAIT; }
     void setReady() {
