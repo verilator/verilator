@@ -12,7 +12,12 @@ double sc_time_stamp() {
     return 0;
 }
 
-int main() {
+#ifdef SYSTEMC_VERSION
+int sc_main(int, char**)
+#else
+int main()
+#endif
+{
     Verilated::debug(0);
     tb = new VM_PREFIX ("tb");
 

@@ -19,7 +19,12 @@ void check(const char* bus, int got, int exp) {
     }
 }
 
-int main() {
+#ifdef SYSTEMC_VERSION
+int sc_main(int, char**)
+#else
+int main()
+#endif
+{
     Verilated::debug(0);
     tb = new VM_PREFIX ("tb");
 

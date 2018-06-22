@@ -612,6 +612,26 @@ NYS_FAMILY = `NYS_FAMILY
 `INSTANCE(pa5)
 
 //======================================================================
+// Stringify bug
+
+`define hack(GRP) `dbg_hdl(UVM_LOW, (`"Functional coverage enabled: GRP`"));
+`hack(paramgrp)
+
+`define dbg_hdl(LVL, MSG)      $display ("DEBUG : %s [%m]", $sformatf MSG)
+`define svfcov_new(GRP) \
+   initial do begin `dbg_hdl(UVM_LOW, (`"Functional coverage enabled: GRP`")); end while(0)
+`define simple_svfcov_clk(LBL, CLK, RST, ARG) \
+  covergroup LBL @(posedge CLK); \
+    c: coverpoint ARG iff ((RST) === 1'b1); endgroup \
+      LBL u_``LBL; `svfcov_new(u_``LBL)
+
+module pcc2_cfg;
+  generate
+   `simple_svfcov_clk(a, b, c, d);
+  endgenerate
+endmodule
+
+//======================================================================
 // IEEE mandated predefines
 `undefineall  // undefineall should have no effect on these
 predef `SV_COV_START 0

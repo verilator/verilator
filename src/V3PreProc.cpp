@@ -1127,6 +1127,10 @@ int V3PreProcImp::getStateToken() {
 		string rtn; rtn.assign(yyourtext(),yyourleng());
 		refp->nextarg(refp->nextarg()+rtn);
 		goto next_tok;
+            } else if (tok==VP_STRIFY) {
+                // We must expand stringinfication, when done will return to this state
+                statePush(ps_STRIFY);
+                goto next_tok;
 	    } else {
 		error((string)"Expecting ) or , to end argument list for define reference. Found: "+tokenName(tok));
 		statePop();

@@ -899,6 +899,38 @@ XYS_FAMILY = XYS_foo
 `line 614 "t/t_preproc.v" 0
  
  
+
+`line 617 "t/t_preproc.v" 0
+ 
+`dbg_hdl(UVM_LOW, ("Functional coverage enabled: paramgrp"));
+
+`line 620 "t/t_preproc.v" 0
+ 
+ 
+
+ 
+
+
+
+
+`line 628 "t/t_preproc.v" 0
+module pcc2_cfg;
+  generate
+   
+`line 630 "t/t_preproc.v" 0
+  covergroup a @(posedge b); 
+`line 630 "t/t_preproc.v" 0
+    c: coverpoint d iff ((c) === 1'b1); endgroup 
+`line 630 "t/t_preproc.v" 0
+      a u_a; 
+`line 630 "t/t_preproc.v" 0
+   initial do begin $display ("DEBUG : %s [%m]", $sformatf ("Functional coverage enabled: u_a")); end while(0);
+  endgenerate
+endmodule
+
+`line 634 "t/t_preproc.v" 0
+ 
+ 
    
 predef 0 0
 predef 1 1
@@ -917,4 +949,4 @@ predef 1 1
 predef 2 2
  
 
-`line 634 "t/t_preproc.v" 2
+`line 654 "t/t_preproc.v" 2
