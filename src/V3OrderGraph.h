@@ -50,6 +50,7 @@
 
 class OrderVisitor;
 class OrderMoveVertex;
+class OrderMoveVertexMaker;
 class OrderMoveDomScope;
 
 //######################################################################
@@ -188,13 +189,12 @@ public:
 
 class OrderLogicVertex : public OrderEitherVertex {
     AstNode*		m_nodep;
-    OrderMoveVertex*	m_moveVxp;
 protected:
     OrderLogicVertex(V3Graph* graphp, const OrderLogicVertex& old)
-	: OrderEitherVertex(graphp, old), m_nodep(old.m_nodep), m_moveVxp(old.m_moveVxp) {}
+        : OrderEitherVertex(graphp, old), m_nodep(old.m_nodep) {}
 public:
     OrderLogicVertex(V3Graph* graphp, AstScope* scopep, AstSenTree* domainp, AstNode* nodep)
-	: OrderEitherVertex(graphp, scopep, domainp), m_nodep(nodep), m_moveVxp(NULL) {}
+        : OrderEitherVertex(graphp, scopep, domainp), m_nodep(nodep) {}
     virtual ~OrderLogicVertex() {}
     virtual OrderLogicVertex* clone(V3Graph* graphp) const {
 	return new OrderLogicVertex(graphp, *this); }
@@ -204,8 +204,6 @@ public:
     virtual string name() const { return (cvtToStr((void*)m_nodep)+"\\n "+cvtToStr(nodep()->typeName())); }
     AstNode* nodep() const { return m_nodep; }
     virtual string dotColor() const { return "yellow"; }
-    OrderMoveVertex*	moveVxp() const { return m_moveVxp; }
-    void moveVxp(OrderMoveVertex* moveVxp) { m_moveVxp = moveVxp; }
 };
 
 class OrderVarVertex : public OrderEitherVertex {
@@ -315,21 +313,18 @@ class OrderMoveVertex : public V3GraphVertex {
 
 protected:
     friend class OrderVisitor;
+    friend class OrderMoveVertexMaker;
     // These only contain the "next" item,
     // for the head of the list, see the same var name under OrderVisitor
     V3ListEnt<OrderMoveVertex*>	m_pomWaitingE;	// List of nodes needing inputs to become ready
     V3ListEnt<OrderMoveVertex*>	m_readyVerticesE;// List of ready under domain/scope
-    // CONSTRUCTORS
-    OrderMoveVertex(V3Graph* graphp, const OrderMoveVertex& old)
-	: V3GraphVertex(graphp, old), m_logicp(old.m_logicp), m_state(old.m_state)
-	, m_domScopep(old.m_domScopep) {}
 public:
+    // CONSTRUCTORS
     OrderMoveVertex(V3Graph* graphp, OrderLogicVertex* logicp)
-	: V3GraphVertex(graphp), m_logicp(logicp), m_state(POM_WAIT), m_domScopep(NULL) {}
+        : V3GraphVertex(graphp), m_logicp(logicp), m_state(POM_WAIT), m_domScopep(NULL) {}
     virtual ~OrderMoveVertex() {}
     virtual OrderMoveVertex* clone(V3Graph* graphp) const {
-	return new OrderMoveVertex(graphp, *this);
-    }
+        v3fatalSrc("Unsupported"); return NULL; }
     // METHODS
     virtual OrderVEdgeType type() const { return OrderVEdgeType::VERTEX_MOVE; }
     virtual string dotColor() const {
