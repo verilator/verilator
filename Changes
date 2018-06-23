@@ -12,6 +12,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Better optimize large always block splitting, bug1244. [John Coiner]
 
+***   Add new reloop optimization for repetitive assignment compression.
+
 ****  Fix internals to avoid 'using namespace std'.
 
 ****  Fix Verilation performance issues, bug1316. [John Coiner]

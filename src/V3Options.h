@@ -159,6 +159,7 @@ class V3Options {
     bool	m_oLifePost;	// main switch: -Ot: delayed assignment elimination
     bool	m_oLocalize;	// main switch: -Oz: convert temps to local variables
     bool	m_oInline;	// main switch: -Oi: module inlining
+    bool        m_oReloop;      // main switch: -Ov: reform loops
     bool	m_oReorder;	// main switch: -Or: reorder assignments in blocks
     bool	m_oSplit;	// main switch: -Os: always assignment splitting
     bool	m_oSubst;	// main switch: -Ou: substitute expression temp values
@@ -320,6 +321,7 @@ class V3Options {
     bool oLifePost() const { return m_oLifePost; }
     bool oLocalize() const { return m_oLocalize; }
     bool oInline() const { return m_oInline; }
+    bool oReloop() const { return m_oReloop; }
     bool oReorder() const { return m_oReorder; }
     bool oSplit() const { return m_oSplit; }
     bool oSubst() const { return m_oSubst; }

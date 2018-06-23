@@ -13,7 +13,7 @@
 // please note it here, otherwise:**
 //
 // This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2017 by ____YOUR_NAME_HERE____.
+// without warranty, 2018 by ____YOUR_NAME_HERE____.
 
 module t (/*AUTOARG*/
    // Inputs

@@ -75,6 +75,7 @@
 #include "V3ParseSym.h"
 #include "V3PreShell.h"
 #include "V3Premit.h"
+#include "V3Reloop.h"
 #include "V3Scope.h"
 #include "V3Slice.h"
 #include "V3Split.h"
@@ -484,6 +485,14 @@ void process () {
 	V3Const::constifyCpp(v3Global.rootp());
 
 	V3Dead::deadifyAll(v3Global.rootp());
+    }
+
+    if (!v3Global.opt.lintOnly()
+        && !v3Global.opt.xmlOnly()
+        && v3Global.opt.oReloop()) {
+        // Reform loops to reduce code size
+        // Must be after all Sel/array index based optimizations
+        V3Reloop::reloopAll(v3Global.rootp());
     }
 
     if (!v3Global.opt.lintOnly()
