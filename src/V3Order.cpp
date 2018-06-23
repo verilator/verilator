@@ -526,6 +526,8 @@ private:
     void processMoveReadyOne(OrderMoveVertex* vertexp);
     void processMoveDoneOne(OrderMoveVertex* vertexp);
     void processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* domScopep, int level);
+    AstActive* processMoveOneLogic(const OrderLogicVertex* lvertexp,
+                                   AstCFunc*& newFuncpr, int& newStmtsr);
 
     string cfuncName(AstNodeModule* modp, AstSenTree* domainp, AstScope* scopep, AstNode* forWhatp) {
 	modp->user3Inc();
@@ -752,6 +754,8 @@ private:
 	// Collect statements under it
         iterateChildren(nodep);
 	m_activep = NULL;
+        m_activeSenVxp = NULL;
+        m_inClocked = false;
     }
     virtual void visit(AstVarScope* nodep) {
 	// Create links to all input signals
@@ -1475,7 +1479,7 @@ void OrderVisitor::processMoveReadyOne(OrderMoveVertex* vertexp) {
     vertexp->m_pomWaitingE.unlink(m_pomWaiting, vertexp);
     // Add to ready list (indexed by domain and scope)
     vertexp->m_readyVerticesE.pushBack(vertexp->domScopep()->m_readyVertices, vertexp);
-    vertexp->domScopep()->ready (this);
+    vertexp->domScopep()->ready(this);
 }
 
 void OrderVisitor::processMoveDoneOne(OrderMoveVertex* vertexp) {
@@ -1483,7 +1487,7 @@ void OrderVisitor::processMoveDoneOne(OrderMoveVertex* vertexp) {
     vertexp->setMoved();
     // Unlink from ready lists
     vertexp->m_readyVerticesE.unlink(vertexp->domScopep()->m_readyVertices, vertexp);
-    vertexp->domScopep()->movedVertex (this, vertexp);
+    vertexp->domScopep()->movedVertex(this, vertexp);
     // Don't need to add it to another list, as we're done with it
     // Mark our outputs as one closer to ready
     for (V3GraphEdge* edgep = vertexp->outBeginp(), *nextp; edgep; edgep=nextp) {
@@ -1503,10 +1507,21 @@ void OrderVisitor::processMoveDoneOne(OrderMoveVertex* vertexp) {
 
 void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* domScopep, int level) {
     UASSERT(vertexp->domScopep() == domScopep, "Domain mismatch; list misbuilt?");
-    OrderLogicVertex* lvertexp = vertexp->logicp();
-    AstScope* scopep = lvertexp->scopep();
+    const OrderLogicVertex* lvertexp = vertexp->logicp();
+    const AstScope* scopep = lvertexp->scopep();
     UINFO(5,"    POSmove l"<<std::setw(3)<<level<<" d="<<(void*)(lvertexp->domainp())
-	  <<" s="<<(void*)(scopep)<<" "<<lvertexp<<endl);
+          <<" s="<<(void*)(scopep)<<" "<<lvertexp<<endl);
+    AstActive* newActivep = processMoveOneLogic(lvertexp, m_pomNewFuncp/*ref*/,
+                                                m_pomNewStmts/*ref*/);
+    if (newActivep) m_scopetopp->addActivep(newActivep);
+    processMoveDoneOne(vertexp);
+}
+
+AstActive* OrderVisitor::processMoveOneLogic(const OrderLogicVertex* lvertexp,
+                                             AstCFunc*& newFuncpr,
+                                             int& newStmtsr) {
+    AstActive* activep = NULL;
+    AstScope* scopep = lvertexp->scopep();
     AstSenTree* domainp = lvertexp->domainp();
     AstNode* nodep = lvertexp->nodep();
     AstNodeModule* modp = VN_CAST(scopep->user1p(), NodeModule);  UASSERT(modp,"NULL");  // Stashed by visitor func
@@ -1520,26 +1535,25 @@ void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
 	// Make or borrow a CFunc to contain the new statements
         if (v3Global.opt.profCFuncs()
 	    || (v3Global.opt.outputSplitCFuncs()
-		&& v3Global.opt.outputSplitCFuncs() < m_pomNewStmts)) {
+                && v3Global.opt.outputSplitCFuncs() < newStmtsr)) {
 	    // Put every statement into a unique function to ease profiling or reduce function size
-	    m_pomNewFuncp = NULL;
+            newFuncpr = NULL;
 	}
-	if (!m_pomNewFuncp && domainp != m_deleteDomainp) {
+        if (!newFuncpr && domainp != m_deleteDomainp) {
 	    string name = cfuncName(modp, domainp, scopep, nodep);
-	    m_pomNewFuncp = new AstCFunc(nodep->fileline(), name, scopep);
-	    m_pomNewFuncp->argTypes(EmitCBaseVisitor::symClassVar());
-	    m_pomNewFuncp->symProlog(true);
-	    m_pomNewStmts = 0;
-	    if (domainp->hasInitial() || domainp->hasSettle()) m_pomNewFuncp->slow(true);
-	    scopep->addActivep(m_pomNewFuncp);
+            newFuncpr = new AstCFunc(nodep->fileline(), name, scopep);
+            newFuncpr->argTypes(EmitCBaseVisitor::symClassVar());
+            newFuncpr->symProlog(true);
+            newStmtsr = 0;
+            if (domainp->hasInitial() || domainp->hasSettle()) newFuncpr->slow(true);
+            scopep->addActivep(newFuncpr);
 	    // Where will we be adding the call?
-	    AstActive* callunderp = new AstActive(nodep->fileline(), name, domainp);
-	    m_scopetopp->addActivep(callunderp);
+            activep = new AstActive(nodep->fileline(), name, domainp);
 	    // Add a top call to it
-	    AstCCall* callp = new AstCCall(nodep->fileline(), m_pomNewFuncp);
+            AstCCall* callp = new AstCCall(nodep->fileline(), newFuncpr);
 	    callp->argTypes("vlSymsp");
-	    callunderp->addStmtsp(callp);
-	    UINFO(6,"      New "<<m_pomNewFuncp<<endl);
+            activep->addStmtsp(callp);
+            UINFO(6,"      New "<<newFuncpr<<endl);
 	}
 
 	// Move the logic to the function we're creating
@@ -1548,15 +1562,15 @@ void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
 	    UINFO(4," Ordering deleting pre-settled "<<nodep<<endl);
 	    pushDeletep(nodep); VL_DANGLING(nodep);
 	} else {
-	    m_pomNewFuncp->addStmtsp(nodep);
+            newFuncpr->addStmtsp(nodep);
 	    if (v3Global.opt.outputSplitCFuncs()) {
 		// Add in the number of nodes we're adding
 		EmitCBaseCounterVisitor visitor(nodep);
-		m_pomNewStmts += visitor.count();
+                newStmtsr += visitor.count();
 	    }
 	}
     }
-    processMoveDoneOne (vertexp);
+    return activep;
 }
 
 // Check the domScope is on ready list, add if not
