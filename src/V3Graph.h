@@ -159,7 +159,6 @@ protected:
     void verticesPushBack(V3Graph* graphp);
     // ACCESSORS
     void fanout(double fanout) { m_fanout = fanout; }
-    void rank(uint32_t rank) { m_rank = rank; }
     void inUnlink() { m_ins.reset(); }	 // Low level; normally unlinkDelete is what you want
     void outUnlink() { m_outs.reset(); } // Low level; normally unlinkDelete is what you want
 protected:
@@ -192,6 +191,7 @@ public:
     uint32_t	color() const { return m_color; }
     void	color(uint32_t color) { m_color = color; }
     uint32_t	rank() const { return m_rank; }
+    void        rank(uint32_t rank) { m_rank = rank; }
     double	fanout() const { return m_fanout; }
     void	user(uint32_t user) { m_user = user; }
     uint32_t	user() const { return m_user; }
