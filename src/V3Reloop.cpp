@@ -64,7 +64,7 @@ private:
     AstCFunc*           m_cfuncp;       // Current block
 
     AssVec              m_mgAssignps;   // List of assignments merging
-    AstNode*            m_mgCfuncp;     // Parent C function
+    AstCFunc*           m_mgCfuncp;     // Parent C function
     AstNode*            m_mgNextp;      // Next node
     AstNodeSel*         m_mgSelLp;      // Parent select, NULL = idle
     AstNodeSel*         m_mgSelRp;      // Parent select, NULL = constant
@@ -77,15 +77,15 @@ private:
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
-    AstVar* findCreateVarTemp(FileLine* fl, AstNode* nodep) {
-        AstVar* varp = VN_CAST(nodep->user1p(), Var);
+    AstVar* findCreateVarTemp(FileLine* fl, AstCFunc* cfuncp) {
+        AstVar* varp = VN_CAST(cfuncp->user1p(), Var);
         if (!varp) {
             string newvarname = string("__Vilp");
             varp = new AstVar(fl, AstVarType::STMTTEMP,
                               newvarname, VFlagLogicPacked(), 32);
-            if (!m_cfuncp) nodep->v3fatalSrc("Assignment not under a function");
-            m_cfuncp->addInitsp(varp);
-            nodep->user1p(varp);
+            if (!cfuncp) fl->v3fatalSrc("Assignment not under a function");
+            cfuncp->addInitsp(varp);
+            cfuncp->user1p(varp);
         }
         return varp;
     }
