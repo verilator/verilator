@@ -76,10 +76,13 @@ symb		([a-zA-Z_][a-zA-Z0-9_$]*|\\[^ \t\f\r\n]+)
 symbdef		([a-zA-Z_][a-zA-Z0-9_$]*|\\[^ \t\f\r\n`]+)
 word		[a-zA-Z0-9_]+
 drop		[\032]
+bom		[\357\273\277]
+
 
 	/**************************************************************/
 %%
 
+<INITIAL>{bom}		{ }
 <INITIAL,STRIFY>^{ws}*"`line"{ws}+.*{crnl}	{ LEXP->lineDirective(yytext);
 						  return(VP_LINE); }
 
