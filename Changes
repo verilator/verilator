@@ -10,6 +10,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix to ignore Unicode UTF-8 BOM sequences, msg2576. [HyungKi Jeong]
 
+****  Fix std:: build error, bug1322.
+
 
 * Verilator 3.924 2018-06-12
 

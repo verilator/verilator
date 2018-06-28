@@ -19,6 +19,13 @@
 //*************************************************************************
 
 // Cheat for speed and compile .cpp files into one object
+#include "config_build.h"
+#ifndef HAVE_CONFIG_BUILD
+# error "Something failed during ./configure as config_build.h is incomplete."
+#endif
+
+#include "verilatedos.h"
+
 #define _V3ERROR_NO_GLOBAL_ 1
 #include "V3Error.cpp"
 #include "V3String.cpp"
