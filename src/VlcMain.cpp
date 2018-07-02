@@ -21,7 +21,7 @@
 // Cheat for speed and compile .cpp files into one object
 #include "config_build.h"
 #ifndef HAVE_CONFIG_BUILD
-# error "Something failed during ./configure as config_build.h is incomplete."
+# error "Something failed during ./configure as config_build.h is incomplete. Perhaps you used autoreconf, don't."
 #endif
 
 #include "verilatedos.h"
