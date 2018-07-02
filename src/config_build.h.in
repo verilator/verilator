@@ -84,3 +84,7 @@ using std::make_pair;
 //**** OS and compiler specifics
 
 #include "verilatedos.h"
+
+//**********************************************************************
+//**** This file sometimes gets truncated, so check in consumers
+#define HAVE_CONFIG_BUILD

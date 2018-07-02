@@ -22,6 +22,10 @@
 #define _V3GLOBAL_H_ 1
 
 #include "config_build.h"
+#ifndef HAVE_CONFIG_BUILD
+# error "Something failed during ./configure as config_build.h is incomplete."
+#endif
+
 #include "verilatedos.h"
 #include <string>
 
