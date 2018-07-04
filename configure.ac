@@ -15,6 +15,14 @@ AC_CONFIG_FILES(Makefile src/Makefile src/Makefile_obj include/verilated.mk incl
 
 AC_MSG_RESULT([configuring for $PACKAGE_STRING])
 
+# Ignore automake flags passed by Ubuntu builds
+AC_ARG_ENABLE([dependency-tracking],
+              [AS_HELP_STRING([--disable-dependency-tracking], [ignored])])
+AC_ARG_ENABLE([maintainer-mode],
+              [AS_HELP_STRING([--enable-maintainer-mode], [ignored])])
+AC_ARG_ENABLE([silent-rules],
+              [AS_HELP_STRING([--disable-silent-rules], [ignored])])
+
 # Special Substitutions - CFG_WITH_DEFENV
 AC_MSG_CHECKING(whether to use hardcoded paths)
 AC_ARG_ENABLE([defenv],
