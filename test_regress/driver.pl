@@ -591,7 +591,6 @@ sub compile_vlt_flags {
     my @verilator_flags = @{$param{verilator_flags}};
     unshift @verilator_flags, "--gdb" if $opt_gdb;
     unshift @verilator_flags, "--gdbbt" if $opt_gdbbt;
-    unshift @verilator_flags, @Opt_Driver_Verilator_Flags;
     unshift @verilator_flags, "--x-assign unique";  # More likely to be buggy
     unshift @verilator_flags, "--trace" if $opt_trace;
     if (defined $opt_optimize) {
@@ -615,6 +614,9 @@ sub compile_vlt_flags {
 		   @{$param{verilator_flags3}},
 		   @{$param{v_flags}},
 		   @{$param{v_flags2}},
+                   # Flags from driver cmdline override default flags and
+                   # flags from the test itself
+                   @Opt_Driver_Verilator_Flags,
 		   $param{top_filename},
 		   @{$param{v_other_filenames}},
 		   ($param{stdout_filename}?"> ".$param{stdout_filename}:""),
