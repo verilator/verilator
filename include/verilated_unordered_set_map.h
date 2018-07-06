@@ -195,7 +195,7 @@ public:
     // CONSTRUCTORS
     vl_unordered_set()
         : m_numElements(0)
-        , m_log2Buckets(4)
+        , m_log2Buckets(initLog2Buckets())
         , m_bucketsp(NULL)
         , m_hash()
         , m_equal() { }
@@ -212,6 +212,9 @@ public:
                 m_bucketsp[i] = other.m_bucketsp[i];
             }
         }
+    }
+    ~vl_unordered_set() {
+        delete [] m_bucketsp; VL_DANGLING(m_bucketsp);
     }
 
     vl_unordered_set& operator=(const vl_unordered_set& other) {
@@ -232,11 +235,9 @@ public:
         return *this;
     }
 
-    ~vl_unordered_set() {
-        delete [] m_bucketsp;  VL_DANGLING(m_bucketsp);
-    }
-
     // METHODS
+    static size_t initLog2Buckets() { return 4; }
+
     iterator begin() {
         if (m_numElements) {
             initBuckets();
@@ -246,7 +247,6 @@ public:
         }
         return end();
     }
-
     const_iterator begin() const {
         if (m_numElements) {
             initBuckets();
@@ -256,7 +256,6 @@ public:
         }
         return end();
     }
-
     const_iterator end() const {
         return iterator(VL_ULL(0xFFFFFFFFFFFFFFFF),
                         const_cast<Bucket&>(m_emptyBucket).begin(), this);
@@ -379,6 +378,7 @@ public:
             m_bucketsp = NULL;
         }
         m_numElements = 0;
+        m_log2Buckets = initLog2Buckets();
     }
 
 private:
