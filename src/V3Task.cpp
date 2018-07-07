@@ -980,6 +980,7 @@ private:
 	cfuncp->entryPoint (!nodep->dpiImport());
 	cfuncp->funcPublic (nodep->taskPublic());
 	cfuncp->dpiExport  (nodep->dpiExport());
+        cfuncp->dpiImportWrapper(nodep->dpiImport());
 	cfuncp->isStatic   (!(nodep->dpiImport()||nodep->taskPublic()));
 	cfuncp->pure	   (nodep->pure());
 	//cfuncp->dpiImport   // Not set in the wrapper - the called function has it set

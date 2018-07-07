@@ -28,8 +28,7 @@
 //######################################################################
 // Standard defines for all AstNode final classes
 
-#define ASTNODE_NODE_FUNCS(name) \
-    virtual ~Ast ##name() {} \
+#define ASTNODE_NODE_FUNCS_NO_DTOR(name) \
     virtual void accept(AstNVisitor& v) { v.visit(this); } \
     virtual AstType type() const { return AstType::at ## name; } \
     virtual AstNode* clone() { return new Ast ##name (*this); } \
@@ -37,6 +36,10 @@
         return nodep ? nodep->cloneTree(cloneNextLink) : NULL; } \
     Ast ##name * cloneTree(bool cloneNext) { return static_cast<Ast ##name *>(AstNode::cloneTree(cloneNext)); } \
     Ast ##name * clonep() const { return static_cast<Ast ##name *>(AstNode::clonep()); }
+
+#define ASTNODE_NODE_FUNCS(name) \
+    virtual ~Ast ##name() {} \
+    ASTNODE_NODE_FUNCS_NO_DTOR(name)
 
 //######################################################################
 //=== Ast* : Specific types
@@ -5470,6 +5473,7 @@ private:
     bool	m_dpiExport:1;		// From dpi export
     bool	m_dpiExportWrapper:1;	// From dpi export; static function with dispatch table
     bool	m_dpiImport:1;		// From dpi import
+    bool        m_dpiImportWrapper:1;   // Wrapper from dpi import
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType="")
 	: AstNode(fl) {
@@ -5491,6 +5495,7 @@ public:
 	m_dpiExport = false;
 	m_dpiExportWrapper = false;
 	m_dpiImport = false;
+        m_dpiImportWrapper = false;
     }
     ASTNODE_NODE_FUNCS(CFunc)
     virtual string name()	const { return m_name; }
@@ -5548,6 +5553,8 @@ public:
     void	dpiExportWrapper(bool flag) { m_dpiExportWrapper = flag; }
     bool	dpiImport() const { return m_dpiImport; }
     void	dpiImport(bool flag) { m_dpiImport = flag; }
+    bool dpiImportWrapper() const { return m_dpiImportWrapper; }
+    void dpiImportWrapper(bool flag) { m_dpiImportWrapper = flag; }
     //
     // If adding node accessors, see below emptyBody
     AstNode*	argsp() 	const { return op1p(); }
