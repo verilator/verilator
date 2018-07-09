@@ -40,6 +40,38 @@ class OrderLogicVertex;
 
 typedef bool (*V3EdgeFuncP)(const V3GraphEdge* edgep);
 
+//=============================================================================
+// When the Graph represents a directional acyclical graph (DAG), following
+// the to() edges is forward, and back() is reverse.  However, sometimes
+// it's useful to have algorithms that can walk in either direction, hence
+// some methods take GraphWay to programmatically select the direction.
+
+class GraphWay {
+public:
+    enum en { FORWARD=0,
+              REVERSE=1,
+              NUM_WAYS=2  // NUM_WAYS is not an actual way, it's typically
+              //          // an array dimension or loop bound.
+    };
+    enum en m_e;
+    inline GraphWay() : m_e(FORWARD) {}
+    // cppcheck-suppress noExplicitConstructor
+    inline GraphWay(en _e) : m_e(_e) {}
+    explicit inline GraphWay(int _e) : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
+    const char* ascii() const {
+        static const char* const names[] = { "FORWARD", "REVERSE" };
+        return names[m_e];
+    };
+    // METHODS unique to this class
+    GraphWay invert() const { return m_e == FORWARD ? REVERSE : FORWARD; }
+    bool forward() const { return m_e == FORWARD; }
+    bool reverse() const { return m_e != FORWARD; }
+};
+inline bool operator==(GraphWay lhs, GraphWay rhs) { return (lhs.m_e == rhs.m_e); }
+inline bool operator==(GraphWay lhs, GraphWay::en rhs) { return (lhs.m_e == rhs); }
+inline bool operator==(GraphWay::en lhs, GraphWay rhs) { return (lhs == rhs.m_e); }
+
 //============================================================================
 
 class V3Graph {
@@ -212,6 +244,8 @@ public:
     bool 	 outEmpty() const { return outBeginp()==NULL; }
     bool 	 outSize1() const;
     uint32_t	 outHash() const;
+    V3GraphEdge* beginp(GraphWay way) const {
+        return way.forward() ? outBeginp() : inBeginp(); }
     // METHODS
     void	rerouteEdges(V3Graph* graphp);	///< Edges are routed around this vertex to point from "from" directly to "to"
 };
@@ -278,14 +312,18 @@ public:
     void*	userp() const { return m_userp; }
     void 	user(uint32_t user) { m_user = user; }
     uint32_t	user() const { return m_user; }
-    V3GraphVertex*	fromp() const { return m_fromp; }
-    V3GraphVertex*	top() const { return m_top; }
+    V3GraphVertex* fromp() const { return m_fromp; }
+    V3GraphVertex* top() const { return m_top; }
+    V3GraphVertex* closerp(GraphWay way) const { return way.forward() ? fromp() : top(); }
+    V3GraphVertex* furtherp(GraphWay way) const { return way.forward() ? top() : fromp(); }
     // STATIC ACCESSORS
-    static bool	followNotCutable(const V3GraphEdge* edgep) { return !edgep->m_cutable; }
-    static bool	followAlwaysTrue(const V3GraphEdge*) { return true; }
+    static bool followNotCutable(const V3GraphEdge* edgep) { return !edgep->m_cutable; }
+    static bool followAlwaysTrue(const V3GraphEdge*) { return true; }
     // ITERATORS
     V3GraphEdge* outNextp() const { return m_outs.nextp(); }
     V3GraphEdge* inNextp() const { return m_ins.nextp(); }
+    V3GraphEdge* nextp(GraphWay way) const {
+        return way.forward() ? outNextp() : inNextp(); }
 };
 
 //============================================================================
