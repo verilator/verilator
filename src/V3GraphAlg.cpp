@@ -74,7 +74,7 @@ void V3Graph::deleteCutableOnlyEdges() {
 //######################################################################
 // Algorithms - weakly connected components
 
-class GraphRemoveRedundant : GraphAlg {
+class GraphRemoveRedundant : GraphAlg<> {
     bool	m_sumWeights;		///< Sum, rather then maximize weights
 private:
     void main() {
@@ -138,7 +138,7 @@ void V3Graph::removeRedundantEdgesSum(V3EdgeFuncP edgeFuncp) {
 //######################################################################
 // Algorithms - weakly connected components
 
-class GraphAlgWeakly : GraphAlg {
+class GraphAlgWeakly : GraphAlg<> {
 private:
     void main() {
 	// Initialize state
@@ -183,7 +183,7 @@ void V3Graph::weaklyConnected(V3EdgeFuncP edgeFuncp) {
 //######################################################################
 // Algorithms - strongly connected components
 
-class GraphAlgStrongly : GraphAlg {
+class GraphAlgStrongly : GraphAlg<> {
 private:
     uint32_t	m_currentDfs;		// DFS count
     std::vector<V3GraphVertex*> m_callTrace;  // List of everything we hit processing so far
@@ -269,7 +269,7 @@ void V3Graph::stronglyConnected(V3EdgeFuncP edgeFuncp) {
 //######################################################################
 // Algorithms - ranking
 
-class GraphAlgRank : GraphAlg {
+class GraphAlgRank : GraphAlg<> {
 private:
     void main() {
 	// Rank each vertex, ignoring cutable edges
@@ -325,7 +325,7 @@ void V3Graph::rank(V3EdgeFuncP edgeFuncp) {
 //######################################################################
 // Algorithms - ranking
 
-class GraphAlgRLoops : GraphAlg {
+class GraphAlgRLoops : GraphAlg<> {
 private:
     std::vector<V3GraphVertex*> m_callTrace;  // List of everything we hit processing so far
     bool		   m_done;	// Exit algorithm
@@ -381,7 +381,7 @@ void V3Graph::reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp) {
 //######################################################################
 // Algorithms - subtrees
 
-class GraphAlgSubtrees : GraphAlg {
+class GraphAlgSubtrees : GraphAlg<> {
 private:
     V3Graph* m_loopGraphp;
 

@@ -56,7 +56,7 @@ DfaVertex* DfaGraph::findStart() {
 // Algorithms - convert NFA to a DFA
 // Uses the Subset Construction Algorithm
 
-class GraphNfaToDfa : GraphAlg {
+class GraphNfaToDfa : GraphAlg<> {
     // We have two types of nodes in one graph, NFA and DFA nodes.
     // Edges from NFA to NFA come from the user, and indicate input or epsilon transitions
     // Edges from DFA to NFA indicate the NFA from which that DFA was formed.
@@ -363,7 +363,7 @@ void DfaGraph::nfaToDfa() {
 //
 // Scan the DFA, cleaning up trailing states.
 
-class DfaGraphReduce : GraphAlg {
+class DfaGraphReduce : GraphAlg<> {
 private:
     // METHODS
     static int debug() { return 0; }
@@ -505,7 +505,7 @@ void DfaGraph::dfaReduce() {
 // The user's old accept is now the new accept.  This is imporant as
 // we want the virtual type of it to be intact.
 
-class DfaGraphComplement : GraphAlg {
+class DfaGraphComplement : GraphAlg<> {
 private:
     // MEMBERS
     DfaVertex* m_tempNewerReject;
