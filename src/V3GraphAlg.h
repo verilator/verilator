@@ -30,13 +30,13 @@
 // Algorithms - common class
 // For internal use, most graph algorithms use this as a base class
 
-template <class T = V3Graph>  // Or sometimes const V3Graph
+template <class T_Graph = V3Graph>  // Or sometimes const V3Graph
 class GraphAlg {
 protected:
-    T* m_graphp;  // Graph we're operating upon
+    T_Graph* m_graphp;  // Graph we're operating upon
     V3EdgeFuncP m_edgeFuncp;  // Function that says we follow this edge
     // CONSTRUCTORS
-    GraphAlg(T* graphp, V3EdgeFuncP edgeFuncp)
+    GraphAlg(T_Graph* graphp, V3EdgeFuncP edgeFuncp)
         : m_graphp(graphp), m_edgeFuncp(edgeFuncp) {}
     ~GraphAlg() {}
     // METHODS
