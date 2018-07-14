@@ -38,5 +38,6 @@ public:
     // If assertNoDups is true, marks user5 on each AstNode scanned.  Then
     // if we see the same node twice (across more than one call to count,
     // potentially) raises an error.
-    static uint32_t count(AstNode* nodep, bool assertNoDups, int forceDebug = 0);
+    // Optional osp is stream to dump critical path to.
+    static uint32_t count(AstNode* nodep, bool assertNoDups, std::ostream* osp = NULL);
 };

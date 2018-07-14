@@ -21,6 +21,7 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
+#include <iomanip>
 
 #include "V3Ast.h"
 #include "V3InstrCount.h"
@@ -33,14 +34,18 @@
 
 class InstrCountVisitor : public AstNVisitor {
 private:
+    // NODE STATE
+    //  AstNode::user4()        -> int.  Path cost + 1, 0 means don't dump
+    //  AstNode::user5()        -> bool. Processed if assertNoDups
+    AstUser4InUse m_inuser4;
+
     // MEMBERS
     uint32_t m_instrCount;  // Running count of instructions
     const AstNode* m_startNodep;  // Start node of count
     bool m_tracingCall;  // Iterating into a CCall to a CFunc
     bool m_inCFunc;  // Inside AstCFunc
     bool m_assertNoDups;  // Check for duplicates
-    int m_debug;  // Debug level, with possible override
-    unsigned m_debugDepth;  // Current tree depth for debug indent
+    std::ostream* m_osp;  // Dump file
 
     // TYPES
     // Little class to cleanly call startVisitBase/endVisitBase
@@ -65,14 +70,14 @@ private:
 
 public:
     // CONSTRUCTORS
-    InstrCountVisitor(AstNode* nodep, bool assertNoDups, int forceDebug)
+    InstrCountVisitor(AstNode* nodep, bool assertNoDups, std::ostream* osp)
         : m_instrCount(0),
           m_startNodep(nodep),
           m_tracingCall(false),
           m_inCFunc(false),
           m_assertNoDups(assertNoDups),
-          m_debugDepth(0) {
-        m_debug = std::max(forceDebug, v3Global.opt.debugSrcLevel(__FILE__));
+          m_osp(osp)
+        {
         if (nodep) iterate(nodep);
     }
     virtual ~InstrCountVisitor() {}
@@ -81,9 +86,6 @@ public:
     uint32_t instrCount() const { return m_instrCount; }
 
 private:
-    int debug() const { return m_debug; }
-    string indent() { return string(m_debugDepth, ' ')+cvtToStr(m_debugDepth)+"> "; }
-
     uint32_t startVisitBase(AstNode* nodep) {
         if (m_assertNoDups && !m_inCFunc) {
             // Ensure we don't count the same node twice
@@ -107,15 +109,18 @@ private:
         // Save the count, and add it back in during ~VisitBase This allows
         // debug prints to show local cost of each subtree, so we can see a
         // hierarchical view of the cost when in debug mode.
-        ++m_debugDepth;
         uint32_t savedCount = m_instrCount;
         m_instrCount = nodep->instrCount();
         return savedCount;
     }
     void endVisitBase(uint32_t savedCount, AstNode* nodep) {
-        UINFO(8, indent()<<"cost "<<m_instrCount<<"  "<<nodep<<endl);
-        --m_debugDepth;
+        UINFO(8, "cost "<<std::setw(6)<<std::left<<m_instrCount
+              <<"  "<<nodep<<endl);
+        markCost(nodep);
         m_instrCount += savedCount;
+    }
+    void markCost(AstNode* nodep) {
+        if (m_osp) nodep->user4(m_instrCount+1);  // Else don't mark to avoid writeback
     }
 
     // VISITORS
@@ -163,23 +168,30 @@ private:
         // the concat at all to reflect a linear cost; it's already there
         // in the width of the destination (which we count) and the sum of
         // the widths of the operands (ignored here).
+        markCost(nodep);
     }
     virtual void visit(AstNodeIf* nodep) {
         VisitBase vb(this, nodep);
         iterateAndNextNull(nodep->condp());
         uint32_t savedCount = m_instrCount;
 
-        UINFO(8, indent()<<"ifsp:\n");
+        UINFO(8, "ifsp:\n");
         m_instrCount = 0;
         iterateAndNextNull(nodep->ifsp());
         uint32_t ifCount = m_instrCount;
 
-        UINFO(8, indent()<<"elsesp:\n");
+        UINFO(8, "elsesp:\n");
         m_instrCount = 0;
         iterateAndNextNull(nodep->elsesp());
         uint32_t elseCount = m_instrCount;
 
-        m_instrCount = savedCount + std::max(ifCount, elseCount);
+        if (ifCount < elseCount) {
+            m_instrCount = savedCount + elseCount;
+            if (nodep->ifsp()) nodep->ifsp()->user4(0);  // Don't dump it
+        } else {
+            m_instrCount = savedCount + ifCount;
+            if (nodep->elsesp()) nodep->elsesp()->user4(0);  // Don't dump it
+        }
     }
     virtual void visit(AstNodeCond* nodep) {
         // Just like if/else above, the ternary operator only evaluates
@@ -188,17 +200,23 @@ private:
         iterateAndNextNull(nodep->condp());
         uint32_t savedCount = m_instrCount;
 
-        UINFO(8, indent()<<"?\n");
+        UINFO(8, "?\n");
         m_instrCount = 0;
         iterateAndNextNull(nodep->expr1p());
         uint32_t ifCount = m_instrCount;
 
-        UINFO(8, indent()<<":\n");
+        UINFO(8, ":\n");
         m_instrCount = 0;
         iterateAndNextNull(nodep->expr2p());
         uint32_t elseCount = m_instrCount;
 
-        m_instrCount = savedCount + std::max(ifCount, elseCount);
+        if (ifCount < elseCount) {
+            m_instrCount = savedCount + elseCount;
+            if (nodep->expr1p()) nodep->expr1p()->user4(0);  // Don't dump it
+        } else {
+            m_instrCount = savedCount + ifCount;
+            if (nodep->expr2p()) nodep->expr2p()->user4(0);  // Don't dump it
+        }
     }
     virtual void visit(AstActive* nodep) {
         // You'd think that the OrderLogicVertex's would be disjoint trees
@@ -213,6 +231,7 @@ private:
         // search; there should be no actives beneath the root, as there
         // are no actives-under-actives.  In any case, check that we're at
         // root:
+        markCost(nodep);
         if (nodep != m_startNodep) {
             nodep->v3fatalSrc("Multiple actives, or not start node");
         }
@@ -246,10 +265,49 @@ private:
         iterateChildren(nodep);
     }
 
+    VL_DEBUG_FUNC;  // Declare debug()
     VL_UNCOPYABLE(InstrCountVisitor);
 };
 
-uint32_t V3InstrCount::count(AstNode* nodep, bool assertNoDups, int forceDebug) {
-    InstrCountVisitor visitor(nodep, assertNoDups, forceDebug);
+// Iterate the graph printing the critical path marked by previous visitation
+class InstrCountDumpVisitor : public AstNVisitor {
+private:
+    // NODE STATE
+    //  AstNode::user4()        -> int.  Path cost, 0 means don't dump
+
+    // MEMBERS
+    std::ostream* m_osp;  // Dump file
+    unsigned m_depth;  // Current tree depth for printing indent
+
+public:
+    // CONSTRUCTORS
+    InstrCountDumpVisitor(AstNode* nodep, std::ostream* osp)
+        : m_osp(osp), m_depth(0) {
+        // No check for NULL output, so...
+        if (!osp) nodep->v3fatalSrc("Don't call if not dumping");
+        if (nodep) iterate(nodep);
+    }
+    virtual ~InstrCountDumpVisitor() {}
+
+private:
+    // METHODS
+    string indent() { return string(m_depth, ':')+" "; }
+    virtual void visit(AstNode* nodep) {
+        ++m_depth;
+        if (unsigned costPlus1 = nodep->user4()) {
+            *m_osp <<"  "<<indent()
+                   <<"cost "<<std::setw(6)<<std::left<<(costPlus1-1)
+                   <<"  "<<nodep<<endl;
+            iterateChildren(nodep);
+        }
+        --m_depth;
+    }
+    VL_DEBUG_FUNC;  // Declare debug()
+    VL_UNCOPYABLE(InstrCountDumpVisitor);
+};
+
+uint32_t V3InstrCount::count(AstNode* nodep, bool assertNoDups, std::ostream* osp) {
+    InstrCountVisitor visitor(nodep, assertNoDups, osp);
+    if (osp) InstrCountDumpVisitor dumper(nodep, osp);
     return visitor.instrCount();
 }
