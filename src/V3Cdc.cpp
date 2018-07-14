@@ -496,8 +496,8 @@ private:
 	}
 
 	string filename = v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"__cdc_edges.txt";
-	const vl_unique_ptr<ofstream> ofp (V3File::new_ofstream(filename));
-	if (ofp->fail()) v3fatalSrc("Can't write "<<filename);
+        const vl_unique_ptr<std::ofstream> ofp (V3File::new_ofstream(filename));
+        if (ofp->fail()) v3fatal("Can't write "<<filename);
 	*ofp<<"Edge Report for "<<v3Global.opt.prefix()<<endl;
 
 	deque<string> report;  // Sort output by name
@@ -739,7 +739,7 @@ public:
 	// Make report of all signal names and what clock edges they have
 	string filename = v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"__cdc.txt";
 	m_ofp = V3File::new_ofstream(filename);
-	if (m_ofp->fail()) v3fatalSrc("Can't write "<<filename);
+        if (m_ofp->fail()) v3fatal("Can't write "<<filename);
 	m_ofFilename = filename;
 	*m_ofp<<"CDC Report for "<<v3Global.opt.prefix()<<endl;
 	*m_ofp<<"Each dump below traces logic from inputs/source flops to destination flop(s).\n";

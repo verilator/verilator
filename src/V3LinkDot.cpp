@@ -136,8 +136,8 @@ public:
     void dump(const string& nameComment="linkdot", bool force=false) {
 	if (debug()>=6 || force) {
 	    string filename = v3Global.debugFilename(nameComment)+".txt";
-	    const vl_unique_ptr<ofstream> logp (V3File::new_ofstream(filename));
-	    if (logp->fail()) v3fatalSrc("Can't write "<<filename);
+            const vl_unique_ptr<std::ofstream> logp (V3File::new_ofstream(filename));
+            if (logp->fail()) v3fatal("Can't write "<<filename);
 	    ostream& os = *logp;
 	    m_syms.dump(os);
 	    bool first = true;
