@@ -62,6 +62,7 @@ public:
     virtual ~LinkCellsVertex() {}
     AstNodeModule* modp() const { return m_modp; }
     virtual string name() const { return modp()->name(); }
+    virtual FileLine* fileline() const { return modp()->fileline(); }
     // Recursive modules get space for maximum recursion
     virtual uint32_t rankAdder() const { return m_modp->recursiveClone() ? (1+v3Global.opt.moduleRecursionDepth()) : 1; }
 };

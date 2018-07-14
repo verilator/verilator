@@ -117,6 +117,7 @@ protected:
 	    return m_nodep->name();
 	}
     }
+    virtual FileLine* fileline() const { return nodep()->fileline(); }
 public:
     virtual AstNode* nodep() const { return m_nodep; }
 };

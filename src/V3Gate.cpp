@@ -172,6 +172,7 @@ public:
     // ACCESSORS
     virtual string name() const { return (cvtToStr((void*)m_nodep)+"@"+scopep()->prettyName()); }
     virtual string dotColor() const { return "yellow"; }
+    virtual FileLine* fileline() const { return nodep()->fileline(); }
     AstNode* nodep() const { return m_nodep; }
     AstActive* activep() const { return m_activep; }
     bool	slow() const { return m_slow; }

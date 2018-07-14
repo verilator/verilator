@@ -222,6 +222,7 @@ public:
     virtual ~OrderVarVertex() {}
     virtual OrderVarVertex* clone (V3Graph* graphp) const = 0;
     virtual OrderVEdgeType type() const = 0;
+    virtual FileLine* fileline() const { return varScp()->fileline(); }
     // ACCESSORS
     AstVarScope* varScp() const { return m_varScp; }
     void isClock(bool flag) { m_isClock=flag; }
@@ -328,11 +329,12 @@ public:
     // METHODS
     virtual OrderVEdgeType type() const { return OrderVEdgeType::VERTEX_MOVE; }
     virtual string dotColor() const {
-        if (logicp()) {
-            return logicp()->dotColor();
-        } else {
-            return "";
-        }
+        if (logicp()) return logicp()->dotColor();
+        else return "";
+    }
+    virtual FileLine* fileline() const {
+        if (logicp()) return logicp()->fileline();
+        else return NULL;
     }
     virtual string name() const {
         string nm;

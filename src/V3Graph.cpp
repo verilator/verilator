@@ -118,6 +118,23 @@ uint32_t V3GraphVertex::outHash() const {
     return hash;
 }
 
+void V3GraphVertex::v3errorEnd(std::ostringstream& str) const {
+    std::ostringstream nsstr;
+    nsstr<<str.str();
+    if (debug()) {
+        nsstr<<endl;
+        nsstr<<"-vertex: "<<this<<endl;
+    }
+    if (!fileline()) {
+        V3Error::v3errorEnd(nsstr);
+    } else {
+        fileline()->v3errorEnd(nsstr);
+    }
+}
+void V3GraphVertex::v3errorEndFatal(std::ostringstream& str) const {
+    v3errorEnd(str); assert(0);
+}
+
 std::ostream& operator<<(std::ostream& os, V3GraphVertex* vertexp) {
     os<<"  VERTEX="<<vertexp->name();
     if (vertexp->rank()) os<<" r"<<vertexp->rank();

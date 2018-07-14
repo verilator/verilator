@@ -217,6 +217,7 @@ public:
     virtual string dotStyle() const { return ""; }
     virtual string dotName() const { return ""; }
     virtual uint32_t rankAdder() const { return 1; }
+    virtual FileLine* fileline() const { return NULL; }  // NULL for unknown
     virtual int sortCmp(const V3GraphVertex* rhsp) const {
 	// LHS goes first if of lower rank, or lower fanout
 	if (m_rank < rhsp->m_rank) return -1;
@@ -249,6 +250,8 @@ public:
     // METHODS
     /// Edges are routed around this vertex to point from "from" directly to "to"
     void rerouteEdges(V3Graph* graphp);
+    void v3errorEnd(std::ostringstream& str) const;
+    void v3errorEndFatal(std::ostringstream& str) const;
 };
 
 std::ostream& operator<<(std::ostream& os, V3GraphVertex* vertexp);

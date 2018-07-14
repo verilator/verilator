@@ -532,7 +532,7 @@ double V3Graph::orderDFSIterate(V3GraphVertex* vertexp) {
     // Compute fanouts of each node
     // If forward edge, don't double count that fanout
     if (vertexp->user() == 2) return vertexp->fanout();  // Already processed it
-    if (vertexp->user() == 1) v3fatalSrc("Loop found, backward edges should be dead");
+    if (vertexp->user() == 1) vertexp->v3fatalSrc("Loop found, backward edges should be dead");
     vertexp->user(1);
     double fanout = 0;
     for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {

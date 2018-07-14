@@ -56,6 +56,7 @@ public:
     bool isDelete() const { return m_deleted; }
     virtual string name() const { return m_origVertexp->name(); }
     virtual string dotColor() const { return m_origVertexp->dotColor(); }
+    virtual FileLine* fileline() const { return m_origVertexp->fileline(); }
 };
 
 //--------------------------------------------------------------------

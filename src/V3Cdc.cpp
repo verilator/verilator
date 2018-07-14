@@ -73,6 +73,7 @@ public:
 	, m_asyncPath(false) {}
     virtual ~CdcEitherVertex() {}
     // ACCESSORS
+    virtual FileLine* fileline() const { return nodep()->fileline(); }
     AstScope* scopep() const { return m_scopep; }
     AstNode* nodep() const { return m_nodep; }
     AstSenTree* srcDomainp() const { return m_srcDomainp; }

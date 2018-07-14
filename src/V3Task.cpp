@@ -73,6 +73,7 @@ public:
     AstNodeFTask* nodep() const { return m_nodep; }
     virtual string name() const { return nodep()->name(); }
     virtual string dotColor() const { return pure() ? "black" : "red"; }
+    virtual FileLine* fileline() const { return nodep()->fileline(); }
     AstCFunc* cFuncp() const { return m_cFuncp; }
     void cFuncp(AstCFunc* nodep) { m_cFuncp=nodep; }
 };

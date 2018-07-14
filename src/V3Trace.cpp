@@ -115,6 +115,7 @@ public:
     AstCFunc* nodep() const { return m_nodep; }
     virtual string name() const { return nodep()->name(); }
     virtual string dotColor() const { return "yellow"; }
+    virtual FileLine* fileline() const { return nodep()->fileline(); }
 };
 
 class TraceTraceVertex : public V3GraphVertex {
@@ -128,6 +129,7 @@ public:
     AstTraceInc* nodep() const { return m_nodep; }
     virtual string name() const { return nodep()->declp()->name(); }
     virtual string dotColor() const { return "red"; }
+    virtual FileLine* fileline() const { return nodep()->fileline(); }
     TraceTraceVertex* duplicatep() const { return m_duplicatep; }
     void duplicatep(TraceTraceVertex* dupp) {
 	if (duplicatep()) nodep()->v3fatalSrc("Assigning duplicatep() to already duplicated node");
@@ -144,6 +146,7 @@ public:
     AstVarScope* nodep() const { return m_nodep; }
     virtual string name() const { return nodep()->name(); }
     virtual string dotColor() const { return "skyblue"; }
+    virtual FileLine* fileline() const { return nodep()->fileline(); }
 };
 
 //######################################################################

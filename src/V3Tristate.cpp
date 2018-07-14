@@ -108,6 +108,7 @@ public:
 		   :feedsTri() ? "blue" : "lightblue")
 		: (isTristate() ? "darkgreen"
 		   :feedsTri() ? "green" : "lightgreen")); }
+    virtual FileLine* fileline() const { return nodep()->fileline(); }
     void isTristate(bool flag) { m_isTristate = flag; }
     bool isTristate() const { return m_isTristate; }
     void feedsTri(bool flag) { m_feedsTri = flag; }
