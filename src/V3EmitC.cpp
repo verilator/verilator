@@ -1906,7 +1906,6 @@ void EmitCStmts::emitVarSort(const VarSortMap& vmap, VarVec* sortedp) {
 void EmitCStmts::emitSortedVarList(const VarVec& anons,
                                    const VarVec& nonanons,
                                    const string& prefixIfImp) {
-    string cur_mtask_footprint = "";
     // Output anons
     {
         int anonMembers = anons.size();

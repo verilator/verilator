@@ -247,7 +247,8 @@ public:
     V3GraphEdge* beginp(GraphWay way) const {
         return way.forward() ? outBeginp() : inBeginp(); }
     // METHODS
-    void	rerouteEdges(V3Graph* graphp);	///< Edges are routed around this vertex to point from "from" directly to "to"
+    /// Edges are routed around this vertex to point from "from" directly to "to"
+    void rerouteEdges(V3Graph* graphp);
 };
 
 std::ostream& operator<<(std::ostream& os, V3GraphVertex* vertexp);

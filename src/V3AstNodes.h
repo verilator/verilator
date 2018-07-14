@@ -5695,7 +5695,7 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode* samep) const { return true; }
     void addBodysp(AstNode* nodep) { addNOp1p(nodep); }
-    AstNode*	bodysp()	const { return op1p(); }	// op1= expressions to print
+    AstNode* bodysp() const { return op1p(); }  // op1= expressions to print
 };
 
 class AstSplitPlaceholder : public AstNode {

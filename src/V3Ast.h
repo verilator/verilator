@@ -39,10 +39,10 @@ class VFlagLogicPacked {};
 class VFlagBitPacked {};
 class VFlagChildDType {};  // Used by parser.y to select constructor that sets childDType
 
+//######################################################################
+
 // For broken() function, return error string if have a match
 #define BROKEN_RTN(test) do { if (VL_UNLIKELY(test)) return # test; } while(0)
-
-//######################################################################
 
 // (V)erilator (N)ode is: True if AstNode is of a a given AstType
 #define VN_IS(nodep,nodetypename) (AstNode::privateIs ## nodetypename(nodep))
