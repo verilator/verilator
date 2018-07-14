@@ -453,4 +453,4 @@ public:
     virtual bool followSequentConnected() const { return false; }
 };
 
-#endif  // _V3ORDERGRAPH_H_
+#endif  // Guard

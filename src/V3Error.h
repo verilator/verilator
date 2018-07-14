@@ -292,6 +292,12 @@ inline void v3errorEndFatal(std::ostringstream& sstr) { V3Error::v3errorEnd(sstr
 #define UASSERT_STATIC(condition,stmsg) \
     { if (VL_UNLIKELY(!(condition))) { \
             std::cerr<<"Internal Error: "<<__FILE__<<":"<<std::dec<<__LINE__<<":"<<(stmsg)<<std::endl; abort(); } }
+// Check self test values for expected value.  Safe from side-effects.
+// Type argument can be removed when go to C++11 (use auto).
+#define UASSERT_SELFTEST(Type,got,exp) \
+    do { Type g = (got); Type e = (exp); \
+         UASSERT(g==e, "Self-test failed '" #got "==" #exp "'"" got=" \
+                 <<g<<" expected="<<e); } while(0)
 
 #define V3ERROR_NA { v3error("Internal: Unexpected Call"); v3fatalSrc("Unexpected Call"); }
 
