@@ -1501,7 +1501,7 @@ void OrderVisitor::processEdgeReport() {
     // Make report of all signal names and what clock edges they have
     string filename = v3Global.debugFilename("order_edges.txt");
     const vl_unique_ptr<std::ofstream> logp (V3File::new_ofstream(filename));
-    if (logp->fail()) v3fatalSrc("Can't write "<<filename);
+    if (logp->fail()) v3fatal("Can't write "<<filename);
     //Testing emitter: V3EmitV::verilogForTree(v3Global.rootp(), *logp);
 
     std::deque<string> report;
@@ -1776,7 +1776,7 @@ void OrderVisitor::process() {
     if (0 && debug()) {
 	string dfilename = v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"_INT_order";
         const vl_unique_ptr<std::ofstream> logp (V3File::new_ofstream(dfilename));
-	if (logp->fail()) v3fatalSrc("Can't write "<<dfilename);
+        if (logp->fail()) v3fatal("Can't write "<<dfilename);
 	m_graph.dump(*logp);
     }
 }

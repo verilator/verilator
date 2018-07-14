@@ -244,7 +244,7 @@ void V3Stats::statsReport() {
     // Open stats file
     string filename = v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"__stats.txt";
     std::ofstream* ofp (V3File::new_ofstream(filename));
-    if (ofp->fail()) v3fatalSrc("Can't write "<<filename);
+    if (ofp->fail()) v3fatal("Can't write "<<filename);
 
     StatsReport reporter (ofp);
 

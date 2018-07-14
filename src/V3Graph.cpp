@@ -306,7 +306,7 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     // This generates a file used by graphviz, http://www.graphviz.org
     // "hardcoded" parameters:
     const vl_unique_ptr<std::ofstream> logp (V3File::new_ofstream(filename));
-    if (logp->fail()) v3fatalSrc("Can't write "<<filename);
+    if (logp->fail()) v3fatal("Can't write "<<filename);
 
     // Header
     *logp<<"digraph v3graph {\n";

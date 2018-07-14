@@ -385,7 +385,7 @@ public:
         if (v3Global.opt.dumpTree()) {
             string filename = v3Global.debugFilename(nameComment)+".txt";
             const vl_unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
-            if (logp->fail()) v3fatalSrc("Can't write "<<filename);
+            if (logp->fail()) v3fatal("Can't write "<<filename);
             dumpGraph(*logp, nameComment);
         }
     }

@@ -135,7 +135,7 @@ V3FileDependImp  dependImp;	// Depend implementation class
 
 inline void V3FileDependImp::writeDepend(const string& filename) {
     const vl_unique_ptr<std::ofstream> ofp (V3File::new_ofstream(filename));
-    if (ofp->fail()) v3fatalSrc("Can't write "<<filename);
+    if (ofp->fail()) v3fatal("Can't write "<<filename);
 
     for (std::set<DependFile>::iterator iter=m_filenameList.begin();
 	 iter!=m_filenameList.end(); ++iter) {
@@ -171,7 +171,7 @@ inline void V3FileDependImp::writeDepend(const string& filename) {
 
 inline void V3FileDependImp::writeTimes(const string& filename, const string& cmdlineIn) {
     const vl_unique_ptr<std::ofstream> ofp (V3File::new_ofstream(filename));
-    if (ofp->fail()) v3fatalSrc("Can't write "<<filename);
+    if (ofp->fail()) v3fatal("Can't write "<<filename);
 
     string cmdline = stripQuotes(cmdlineIn);
     *ofp<<"# DESCR"<<"IPTION: Verilator output: Timestamp data for --skip-identical.  Delete at will."<<endl;
