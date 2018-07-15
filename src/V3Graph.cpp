@@ -256,6 +256,10 @@ void V3Graph::clearColors() {
 //======================================================================
 // Dumping
 
+void V3Graph::loopsMessageCb(V3GraphVertex* vertexp) {
+    vertexp->v3fatalSrc("Loops detected in graph: "<<vertexp);
+}
+
 void V3Graph::loopsVertexCb(V3GraphVertex* vertexp) {
     // Needed here as V3GraphVertex<< isn't defined until later in header
     std::cerr<<"-Info-Loop: "<<(void*)(vertexp)<<" "<<vertexp<<endl;

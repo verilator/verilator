@@ -1239,7 +1239,9 @@ inline void OrderMoveDomScope::ready(OrderVisitor* ovp) {
 
 // Mark one vertex as finished, remove from ready list if done
 inline void OrderMoveDomScope::movedVertex(OrderVisitor* ovp, OrderMoveVertex* vertexp) {
-    UASSERT(m_onReadyList, "Moving vertex from ready when nothing was on que as ready.");
+    if (!m_onReadyList) {
+        vertexp->v3fatalSrc("Moving vertex from ready when nothing was on que as ready.");
+    }
     if (m_readyVertices.empty()) {      // Else more work to get to later
         m_onReadyList = false;
         m_readyDomScopeE.unlink(ovp->m_pomReadyDomScope, this);
@@ -1306,7 +1308,9 @@ void OrderVisitor::processInputsOutIterate(OrderEitherVertex* vertexp, VertexVec
     // First make sure input path is fully recursed
     processInputsInIterate(vertexp, todoVec);
     // Propagate PrimaryIn through simple assignments
-    if (!vertexp->isFromInput()) v3fatalSrc("processInputsOutIterate only for input marked vertexes");
+    if (!vertexp->isFromInput()) {
+        vertexp->v3fatalSrc("processInputsOutIterate only for input marked vertexes");
+    }
     vertexp->user(3);  // out-edges processed
 
     {
@@ -1653,7 +1657,9 @@ void OrderVisitor::processMoveDoneOne(OrderMoveVertex* vertexp) {
 }
 
 void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* domScopep, int level) {
-    UASSERT(vertexp->domScopep() == domScopep, "Domain mismatch; list misbuilt?");
+    if (vertexp->domScopep() != domScopep) {
+        vertexp->v3fatalSrc("Domain mismatch; list misbuilt?");
+    }
     const OrderLogicVertex* lvertexp = vertexp->logicp();
     const AstScope* scopep = lvertexp->scopep();
     UINFO(5,"    POSmove l"<<std::setw(3)<<level<<" d="<<(void*)(lvertexp->domainp())

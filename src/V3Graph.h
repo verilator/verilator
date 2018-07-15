@@ -27,6 +27,7 @@
 #include <vector>
 #include <algorithm>
 
+class FileLine;
 class V3Graph;
 class V3GraphVertex;
 class V3GraphEdge;
@@ -171,7 +172,7 @@ public:
     static void selfTest();
 
     // CALLBACKS
-    virtual void loopsMessageCb(V3GraphVertex* vertexp) { v3fatalSrc("Loops detected in graph: "<<vertexp); }
+    virtual void loopsMessageCb(V3GraphVertex* vertexp);
     virtual void loopsVertexCb(V3GraphVertex* vertexp);
 };
 
@@ -248,10 +249,11 @@ public:
     V3GraphEdge* beginp(GraphWay way) const {
         return way.forward() ? outBeginp() : inBeginp(); }
     // METHODS
-    /// Edges are routed around this vertex to point from "from" directly to "to"
-    void rerouteEdges(V3Graph* graphp);
+    /// Error reporting
     void v3errorEnd(std::ostringstream& str) const;
     void v3errorEndFatal(std::ostringstream& str) const;
+    /// Edges are routed around this vertex to point from "from" directly to "to"
+    void rerouteEdges(V3Graph* graphp);
 };
 
 std::ostream& operator<<(std::ostream& os, V3GraphVertex* vertexp);

@@ -168,11 +168,11 @@ public:
         // nodes.
         PendingEdgeSet pendingEdges(cmp);
 
-        vluint32_t vert_ct = 0;
+        vluint32_t vertCount = 0;
         for (V3GraphVertex* vxp = verticesBeginp();
              vxp; vxp = vxp->verticesNextp()) {
             mstp->addVertex(castVertexp(vxp)->key());
-            vert_ct++;
+            vertCount++;
         }
 
         // Choose an arbitrary start vertex and visit it;
@@ -225,8 +225,8 @@ public:
             }
         }
 
-        UASSERT(edges_made + 1 == vert_ct, "Algorithm failed");
-        UASSERT(visited_set.size() == vert_ct, "Algorithm failed");
+        UASSERT(edges_made + 1 == vertCount, "Algorithm failed");
+        UASSERT(visited_set.size() == vertCount, "Algorithm failed");
     }
 
     // Populate *outp with a minimal perfect matching of *this.
