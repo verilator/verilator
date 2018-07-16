@@ -179,18 +179,20 @@ private:
         m_instrCount = 0;
         iterateAndNextNull(nodep->ifsp());
         uint32_t ifCount = m_instrCount;
+        if (nodep->branchPred() == AstBranchPred::BP_UNLIKELY) ifCount = 0;
 
         UINFO(8, "elsesp:\n");
         m_instrCount = 0;
         iterateAndNextNull(nodep->elsesp());
         uint32_t elseCount = m_instrCount;
+        if (nodep->branchPred() == AstBranchPred::BP_LIKELY) elseCount = 0;
 
-        if (ifCount < elseCount) {
-            m_instrCount = savedCount + elseCount;
-            if (nodep->ifsp()) nodep->ifsp()->user4(0);  // Don't dump it
-        } else {
+        if (ifCount >= elseCount) {
             m_instrCount = savedCount + ifCount;
             if (nodep->elsesp()) nodep->elsesp()->user4(0);  // Don't dump it
+        } else {
+            m_instrCount = savedCount + elseCount;
+            if (nodep->ifsp()) nodep->ifsp()->user4(0);  // Don't dump it
         }
     }
     virtual void visit(AstNodeCond* nodep) {

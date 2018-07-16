@@ -127,15 +127,16 @@ private:
 
 	    AstNode* abovep = prep->backp();  // Grab above point before lose it w/ next replace
 	    prep->replaceWith(new AstVarRef(fl, varp, true));
-	    AstNode* newp = new AstIf(fl, condp,
-				      (needDly
-				       ? static_cast<AstNode*>
-				       (new AstAssignDly(fl, prep,
-							 new AstVarRef(fl, varp, false)))
-				       : static_cast<AstNode*>
-				       (new AstAssign   (fl, prep,
-							 new AstVarRef(fl, varp, false)))),
-				      NULL);
+            AstIf* newp = new AstIf(fl, condp,
+                                    (needDly
+                                     ? static_cast<AstNode*>
+                                     (new AstAssignDly(fl, prep,
+                                                       new AstVarRef(fl, varp, false)))
+                                     : static_cast<AstNode*>
+                                     (new AstAssign   (fl, prep,
+                                                       new AstVarRef(fl, varp, false)))),
+                                    NULL);
+            newp->branchPred(AstBranchPred::BP_LIKELY);
 	    if (debug()>=9) newp->dumpTree(cout,"     _new: ");
 	    abovep->addNextStmt(newp,abovep);
 	    prep->user2p(newp);  // Save so we may LogAnd it next time
