@@ -156,6 +156,12 @@ public:
     /// Remove any redundant edges, weights become SUM of any other weight
     void removeRedundantEdgesSum(V3EdgeFuncP edgeFuncp);
 
+    /// Remove any transitive edges.  E.g. if have edges A->B, B->C, and A->C
+    /// then A->C is a "transitive" edge; it's implied by the first two
+    /// (assuming the DAG is a dependency graph.)
+    /// This algorithm can be expensive.
+    void removeTransitiveEdges();
+
     /// Call loopsVertexCb on any one loop starting where specified
     void reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp);
 
@@ -254,6 +260,9 @@ public:
     void v3errorEndFatal(std::ostringstream& str) const;
     /// Edges are routed around this vertex to point from "from" directly to "to"
     void rerouteEdges(V3Graph* graphp);
+    /// Find the edge connecting ap and bp, where bp is wayward from ap.
+    /// If edge is not found returns NULL. O(edges) performance.
+    V3GraphEdge* findConnectingEdgep(GraphWay way, const V3GraphVertex* waywardp);
 };
 
 std::ostream& operator<<(std::ostream& os, V3GraphVertex* vertexp);

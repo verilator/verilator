@@ -77,6 +77,7 @@
 #include "V3Premit.h"
 #include "V3Reloop.h"
 #include "V3Scope.h"
+#include "V3Scoreboard.h"
 #include "V3Slice.h"
 #include "V3Split.h"
 #include "V3SplitAs.h"
@@ -607,6 +608,7 @@ int main(int argc, char** argv, char** env) {
     AstBasicDTypeKwd::selfTest();
     V3Graph::selfTest();
     V3TSP::selfTest();
+    V3ScoreboardBase::selfTest();
 
     // Read first filename
     v3Global.readFiles();

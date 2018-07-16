@@ -118,6 +118,23 @@ uint32_t V3GraphVertex::outHash() const {
     return hash;
 }
 
+V3GraphEdge* V3GraphVertex::findConnectingEdgep(GraphWay way,
+                                                const V3GraphVertex* waywardp) {
+    // O(edges) linear search. Searches search both nodes' edge lists in
+    // parallel.  The lists probably aren't _both_ huge, so this is
+    // unlikely to blow up even on fairly nasty graphs.
+    GraphWay inv = way.invert();
+    V3GraphEdge* aedgep = this->beginp(way);
+    V3GraphEdge* bedgep = waywardp->beginp(inv);
+    while (aedgep && bedgep) {
+        if (aedgep->furtherp(way) == waywardp) return aedgep;
+        if (bedgep->furtherp(inv) == this) return bedgep;
+        aedgep = aedgep->nextp(way);
+        bedgep = bedgep->nextp(inv);
+    }
+    return NULL;
+}
+
 void V3GraphVertex::v3errorEnd(std::ostringstream& str) const {
     std::ostringstream nsstr;
     nsstr<<str.str();

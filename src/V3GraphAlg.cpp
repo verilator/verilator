@@ -30,6 +30,7 @@
 
 #include "V3Global.h"
 #include "V3GraphAlg.h"
+#include "V3GraphPathChecker.h"
 
 //######################################################################
 //######################################################################
@@ -132,6 +133,46 @@ void V3Graph::removeRedundantEdges(V3EdgeFuncP edgeFuncp) {
 }
 void V3Graph::removeRedundantEdgesSum(V3EdgeFuncP edgeFuncp) {
     GraphRemoveRedundant (this, edgeFuncp, true);
+}
+
+//######################################################################
+//######################################################################
+// Algorithms - remove transitive
+
+class GraphAlgRemoveTransitiveEdges : GraphAlg<> {
+public:
+    explicit GraphAlgRemoveTransitiveEdges(V3Graph* graphp)
+        : GraphAlg (graphp, NULL) {}
+    void go() {
+        GraphPathChecker checker(m_graphp);
+        for (V3GraphVertex* vxp = m_graphp->verticesBeginp();
+             vxp; vxp = vxp->verticesNextp()) {
+            V3GraphEdge* deletep = NULL;
+            for (V3GraphEdge* edgep = vxp->outBeginp();
+                 edgep; edgep = edgep->outNextp()) {
+                if (deletep) {
+                    deletep->unlinkDelete(); deletep = NULL;
+                }
+                // It should be safe to modify the graph, despite using
+                // the GraphPathChecker, as none of the modifications will
+                // change what can be reached from what, nor should they
+                // change the rank or CP of any node.
+                if (checker.isTransitiveEdge(edgep)) {
+                    deletep = edgep;
+                }
+            }
+            if (deletep) {
+                deletep->unlinkDelete(); VL_DANGLING(deletep);
+            }
+        }
+    }
+private:
+    VL_DEBUG_FUNC;  // Declare debug()
+    VL_UNCOPYABLE(GraphAlgRemoveTransitiveEdges);
+};
+
+void V3Graph::removeTransitiveEdges() {
+    GraphAlgRemoveTransitiveEdges(this).go();
 }
 
 //######################################################################
