@@ -55,7 +55,7 @@ struct GraphPCNode {
 // GraphPathChecker implementation
 
 GraphPathChecker::GraphPathChecker(const V3Graph* graphp, V3EdgeFuncP edgeFuncp)
-    : GraphAlg(graphp, edgeFuncp)
+    : GraphAlg<const V3Graph>(graphp, edgeFuncp)
     , m_generation(0) {
     for (V3GraphVertex* vxp = graphp->verticesBeginp();
          vxp; vxp = vxp->verticesNextp()) {

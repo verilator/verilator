@@ -348,7 +348,7 @@ private:
 
 public:
     GraphNfaToDfa(V3Graph* graphp, V3EdgeFuncP edgeFuncp)
-	: GraphAlg(graphp, edgeFuncp) {
+	: GraphAlg<>(graphp, edgeFuncp) {
 	m_step = 0;
 	main();
     }
@@ -471,7 +471,7 @@ private:
     }
 public:
     DfaGraphReduce(V3Graph* graphp, V3EdgeFuncP edgeFuncp)
-	: GraphAlg(graphp, edgeFuncp) {
+	: GraphAlg<>(graphp, edgeFuncp) {
 	if (debug()>=6) m_graphp->dumpDotFilePrefixed("opt_in");
 	optimize_accepting_out();
 	if (debug()>=6) m_graphp->dumpDotFilePrefixed("opt_acc");
@@ -561,7 +561,7 @@ private:
     }
 public:
     DfaGraphComplement(V3Graph* dfagraphp, V3EdgeFuncP edgeFuncp)
-	: GraphAlg(dfagraphp, edgeFuncp) {
+	: GraphAlg<>(dfagraphp, edgeFuncp) {
 	if (debug()>=6) m_graphp->dumpDotFilePrefixed("comp_in");
 
 	// Vertex::m_user begin: 1 indicates new edge, no more processing
