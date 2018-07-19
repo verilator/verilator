@@ -1173,7 +1173,7 @@ sub _make_main {
     print $fh "$VM_PREFIX * topp;\n";
     if (!$self->sc) {
 	print $fh "vluint64_t main_time = false;\n";
-	print $fh "double sc_time_stamp () {\n";
+        print $fh "double sc_time_stamp() {\n";
 	print $fh "    return main_time;\n";
 	print $fh "}\n";
     }
@@ -1205,7 +1205,7 @@ sub _make_main {
 	print $fh "int sc_main(int argc, char **argv) {\n";
 	print $fh "    sc_signal<bool> fastclk;\n" if $self->{inputs}{fastclk};
 	print $fh "    sc_signal<bool> clk;\n"  if $self->{inputs}{clk};
-	print $fh "    sc_time sim_time ($self->{sim_time}, SC_NS);\n";
+        print $fh "    sc_time sim_time($self->{sim_time}, SC_NS);\n";
     } else {
 	print $fh "int main(int argc, char **argv, char **env) {\n";
 	print $fh "    double sim_time = $self->{sim_time};\n";
@@ -1214,7 +1214,7 @@ sub _make_main {
     print $fh "    Verilated::debug(".($self->{verilated_debug}?1:0).");\n";
     print $fh "    srand48(5);\n";  # Ensure determinism
     print $fh "    Verilated::randReset(".$self->{verilated_randReset}.");\n" if defined $self->{verilated_randReset};
-    print $fh "    topp = new $VM_PREFIX (\"top\");\n";
+    print $fh "    topp = new $VM_PREFIX(\"top\");\n";
     my $set;
     if ($self->sc) {
 	print $fh "    topp->fastclk(fastclk);\n" if $self->{inputs}{fastclk};
@@ -1231,8 +1231,8 @@ sub _make_main {
 	$fh->print("    Verilated::traceEverOn(true);\n");
         $fh->print("    VerilatedVcdC* tfp = new VerilatedVcdC;\n") if !$self->sc;
         $fh->print("    VerilatedVcdSc* tfp = new VerilatedVcdSc;\n") if $self->sc;
-	$fh->print("    topp->trace (tfp, 99);\n");
-	$fh->print("    tfp->open (\"$self->{obj_dir}/simx.vcd\");\n");
+        $fh->print("    topp->trace(tfp, 99);\n");
+        $fh->print("    tfp->open(\"$self->{obj_dir}/simx.vcd\");\n");
 	if ($self->{trace} && !$self->sc) {
             $fh->print("    if (tfp) tfp->dump (main_time);\n");
 	}
@@ -1516,8 +1516,8 @@ sub verilator_version {
 sub files_identical {
     my $fn1 = shift;
     my $fn2 = shift;
-    my $f1 = IO::File->new ("<$fn1"); if (!$f1) { warn "%Error: $! $fn1\n"; return 0; }
-    my $f2 = IO::File->new ("<$fn2"); if (!$f2) { warn "%Error: $! $fn2\n"; return 0; }
+    my $f1 = IO::File->new("<$fn1"); if (!$f1) { warn "%Error: $! $fn1\n"; return 0; }
+    my $f2 = IO::File->new("<$fn2"); if (!$f2) { warn "%Error: $! $fn2\n"; return 0; }
     my @l1 = $f1->getlines();
     my @l2 = $f2->getlines();
     my $nl = $#l1;  $nl = $#l2 if ($#l2 > $nl);

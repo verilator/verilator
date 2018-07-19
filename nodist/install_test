@@ -100,7 +100,7 @@ sub write_verilog {
     my $fh = IO::File->new(">$dir/foo.cpp");
     $fh->print('#include "Vfoo.h"'		,"\n");
     $fh->print('unsigned int main_time = 0;'	,"\n");
-    $fh->print('double sc_time_stamp () {'	,"\n");
+    $fh->print('double sc_time_stamp() {'       ,"\n");
     $fh->print('    return main_time;'		,"\n");
     $fh->print('}'				,"\n");
     $fh->print('int main() {'			,"\n");
