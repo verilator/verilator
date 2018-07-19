@@ -104,39 +104,39 @@ VLCOVGEN_ITEM("name=>'weight',      short=>'w',  group=>0, default=>undef, descr
 class VerilatedCovKey {
 public:
     static std::string shortKey(const std::string& key) VL_PURE {
-	// VLCOVGEN_SHORT_AUTO_EDIT_BEGIN
-	if (key == "col0") return VL_CIK_COL0;
-	if (key == "col0_name") return VL_CIK_COL0_NAME;
-	if (key == "col1") return VL_CIK_COL1;
-	if (key == "col1_name") return VL_CIK_COL1_NAME;
-	if (key == "col2") return VL_CIK_COL2;
-	if (key == "col2_name") return VL_CIK_COL2_NAME;
-	if (key == "col3") return VL_CIK_COL3;
-	if (key == "col3_name") return VL_CIK_COL3_NAME;
-	if (key == "column") return VL_CIK_COLUMN;
-	if (key == "comment") return VL_CIK_COMMENT;
-	if (key == "filename") return VL_CIK_FILENAME;
-	if (key == "groupcmt") return VL_CIK_GROUPCMT;
-	if (key == "groupdesc") return VL_CIK_GROUPDESC;
-	if (key == "groupname") return VL_CIK_GROUPNAME;
-	if (key == "hier") return VL_CIK_HIER;
-	if (key == "limit") return VL_CIK_LIMIT;
-	if (key == "lineno") return VL_CIK_LINENO;
-	if (key == "per_instance") return VL_CIK_PER_INSTANCE;
-	if (key == "row0") return VL_CIK_ROW0;
-	if (key == "row0_name") return VL_CIK_ROW0_NAME;
-	if (key == "row1") return VL_CIK_ROW1;
-	if (key == "row1_name") return VL_CIK_ROW1_NAME;
-	if (key == "row2") return VL_CIK_ROW2;
-	if (key == "row2_name") return VL_CIK_ROW2_NAME;
-	if (key == "row3") return VL_CIK_ROW3;
-	if (key == "row3_name") return VL_CIK_ROW3_NAME;
-	if (key == "table") return VL_CIK_TABLE;
-	if (key == "thresh") return VL_CIK_THRESH;
-	if (key == "type") return VL_CIK_TYPE;
-	if (key == "weight") return VL_CIK_WEIGHT;
-	// VLCOVGEN_SHORT_AUTO_EDIT_END
-	return key;
+        // VLCOVGEN_SHORT_AUTO_EDIT_BEGIN
+        if (key == "col0") return VL_CIK_COL0;
+        if (key == "col0_name") return VL_CIK_COL0_NAME;
+        if (key == "col1") return VL_CIK_COL1;
+        if (key == "col1_name") return VL_CIK_COL1_NAME;
+        if (key == "col2") return VL_CIK_COL2;
+        if (key == "col2_name") return VL_CIK_COL2_NAME;
+        if (key == "col3") return VL_CIK_COL3;
+        if (key == "col3_name") return VL_CIK_COL3_NAME;
+        if (key == "column") return VL_CIK_COLUMN;
+        if (key == "comment") return VL_CIK_COMMENT;
+        if (key == "filename") return VL_CIK_FILENAME;
+        if (key == "groupcmt") return VL_CIK_GROUPCMT;
+        if (key == "groupdesc") return VL_CIK_GROUPDESC;
+        if (key == "groupname") return VL_CIK_GROUPNAME;
+        if (key == "hier") return VL_CIK_HIER;
+        if (key == "limit") return VL_CIK_LIMIT;
+        if (key == "lineno") return VL_CIK_LINENO;
+        if (key == "per_instance") return VL_CIK_PER_INSTANCE;
+        if (key == "row0") return VL_CIK_ROW0;
+        if (key == "row0_name") return VL_CIK_ROW0_NAME;
+        if (key == "row1") return VL_CIK_ROW1;
+        if (key == "row1_name") return VL_CIK_ROW1_NAME;
+        if (key == "row2") return VL_CIK_ROW2;
+        if (key == "row2_name") return VL_CIK_ROW2_NAME;
+        if (key == "row3") return VL_CIK_ROW3;
+        if (key == "row3_name") return VL_CIK_ROW3_NAME;
+        if (key == "table") return VL_CIK_TABLE;
+        if (key == "thresh") return VL_CIK_THRESH;
+        if (key == "type") return VL_CIK_TYPE;
+        if (key == "weight") return VL_CIK_WEIGHT;
+        // VLCOVGEN_SHORT_AUTO_EDIT_END
+        return key;
     }
 };
 

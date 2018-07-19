@@ -1234,7 +1234,7 @@ sub _make_main {
 	$fh->print("    topp->trace (tfp, 99);\n");
 	$fh->print("    tfp->open (\"$self->{obj_dir}/simx.vcd\");\n");
 	if ($self->{trace} && !$self->sc) {
-	    $fh->print("	if (tfp) tfp->dump (main_time);\n");
+            $fh->print("    if (tfp) tfp->dump (main_time);\n");
 	}
 	$fh->print("#endif\n");
     }
@@ -1262,19 +1262,19 @@ sub _make_main {
     for (my $i=0; $i<5; $i++) {
 	my $action = 0;
 	if ($self->{inputs}{fastclk}) {
-	    print $fh "	${set}fastclk=!${set}fastclk;\n";
+            print $fh "        ${set}fastclk=!${set}fastclk;\n";
 	    $action = 1;
 	}
 	if ($i==0 && $self->{inputs}{clk}) {
-	    print $fh "	${set}clk=!${set}clk;\n";
+            print $fh "        ${set}clk=!${set}clk;\n";
 	    $action = 1;
 	}
 	if ($self->{savable}) {
-	    $fh->print("	if (sc_time_stamp() == save_time && save_time) {\n");
-	    $fh->print("	    save_model(\"$self->{obj_dir}/saved.vltsv\");\n");
-	    $fh->print("	    printf(\"Exiting after save_model\\n\");\n");
-	    $fh->print("	    exit(0);\n");
-	    $fh->print("	}\n");
+            $fh->print("        if (sc_time_stamp() == save_time && save_time) {\n");
+            $fh->print("            save_model(\"$self->{obj_dir}/saved.vltsv\");\n");
+            $fh->print("            printf(\"Exiting after save_model\\n\");\n");
+            $fh->print("            exit(0);\n");
+            $fh->print("        }\n");
 	}
 	_print_advance_time($self, $fh, 1, $action);
     }
@@ -1291,7 +1291,7 @@ sub _make_main {
     }
     if ($self->{trace}) {
 	$fh->print("#if VM_TRACE\n");
-	$fh->print("	if (tfp) tfp->close();\n");
+        $fh->print("    if (tfp) tfp->close();\n");
 	$fh->print("#endif //VM_TRACE\n");
     }
     $fh->print("\n");
@@ -1314,20 +1314,20 @@ sub _print_advance_time {
 
     if ($self->sc) {
 	print $fh "#if (SYSTEMC_VERSION>=20070314)\n";
-	print $fh "	sc_start(${time},SC_NS);\n";
+        print $fh "        sc_start(${time},SC_NS);\n";
 	print $fh "#else\n";
-	print $fh "	sc_start(${time});\n";
+        print $fh "        sc_start(${time});\n";
 	print $fh "#endif\n";
     } else {
 	if ($action) {
-	    print $fh "	${set}eval();\n";
+            print $fh "        ${set}eval();\n";
 	    if ($self->{trace} && !$self->sc) {
 		$fh->print("#if VM_TRACE\n");
-		$fh->print("	if (tfp) tfp->dump (main_time);\n");
+                $fh->print("        if (tfp) tfp->dump (main_time);\n");
 		$fh->print("#endif //VM_TRACE\n");
 	    }
 	}
-	print $fh "	main_time += ${time};\n";
+        print $fh "        main_time += ${time};\n";
     }
 }
 
