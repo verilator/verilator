@@ -371,11 +371,11 @@ public:
     }
     virtual void visit(AstFFlush* nodep) {
 	if (!nodep->filep()) {
-	    puts("fflush (stdout);\n");
+            puts("fflush(stdout);\n");
 	} else {
 	    puts("if (");
 	    nodep->filep()->iterateAndNext(*this);
-	    puts(") { fflush (VL_CVT_I_FP(");
+            puts(") { fflush(VL_CVT_I_FP(");
 	    nodep->filep()->iterateAndNext(*this);
 	    puts(")); }\n");
 	}
@@ -1715,7 +1715,7 @@ void EmitCImp::emitCellCtors(AstNodeModule* modp) {
     }
     for (AstNode* nodep=modp->stmtsp(); nodep; nodep = nodep->nextp()) {
 	if (AstCell* cellp=nodep->castCell()) {
-	    puts("VL_CELL ("+cellp->name()+", "+modClassName(cellp->modp())+");\n");
+            puts("VL_CELL("+cellp->name()+", "+modClassName(cellp->modp())+");\n");
 	}
     }
 }
