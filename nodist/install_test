@@ -106,8 +106,8 @@ sub write_verilog {
     $fh->print('int main() {'			,"\n");
     $fh->print('    Vfoo *top = new Vfoo;'	,"\n");
     $fh->print('    while (!Verilated::gotFinish()) {',"\n");
-    $fh->print('	top->eval();'		,"\n");
-    $fh->print('	main_time++;'		,"\n");
+    $fh->print('        top->eval();'           ,"\n");
+    $fh->print('        main_time++;'           ,"\n");
     $fh->print('    }'				,"\n");
     $fh->print('    top->final();'		,"\n");
     $fh->print('}'				,"\n");

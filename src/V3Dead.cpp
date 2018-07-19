@@ -312,7 +312,7 @@ private:
 		if (!scp)
 		    continue;
 		if (scp->user1() == 0) {
-		    UINFO(4, "	Dead AstScope " << scp << endl);
+                    UINFO(4, "  Dead AstScope " << scp << endl);
 		    scp->aboveScopep()->user1Inc(-1);
 		    if (scp->dtypep()) {
 			scp->dtypep()->user1Inc(-1);
@@ -344,7 +344,7 @@ private:
 		pair <AssignMap::iterator,AssignMap::iterator> eqrange = m_assignMap.equal_range(vscp);
 		for (AssignMap::iterator itr = eqrange.first; itr != eqrange.second; ++itr) {
 		    AstNodeAssign* assp = itr->second;
-		    UINFO(4,"	 Dead assign "<<assp<<endl);
+                    UINFO(4,"    Dead assign "<<assp<<endl);
 		    assp->dtypep()->user1Inc(-1);
 		    assp->unlinkFrBack()->deleteTree(); VL_DANGLING(assp);
 		}
@@ -360,7 +360,7 @@ private:
 		if (!varp)
 		    continue;
 		if (varp->user1() == 0) {
-		    UINFO(4, "	Dead " << varp << endl);
+                    UINFO(4, "  Dead " << varp << endl);
 		    if (varp->dtypep()) {
 			varp->dtypep()->user1Inc(-1);
 		    }

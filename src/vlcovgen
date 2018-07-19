@@ -95,7 +95,7 @@ sub write_keys {
 	    $deleting = 1;
 	    push @out, $line;
 	    foreach my $keyref (sort {$a->{name} cmp $b->{name}} @Items) {
-		push @out, sprintf("\tif (key == \"%s\") return VL_CIK_%s;\n",
+                push @out, sprintf("        if (key == \"%s\") return VL_CIK_%s;\n",
 				   $keyref->{name}, uc $keyref->{name});
 	    }
 	}
