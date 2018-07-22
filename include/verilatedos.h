@@ -358,21 +358,19 @@ typedef unsigned long long	vluint64_t;	///< 64-bit unsigned type
 //=========================================================================
 // Performance counters
 
-#if VL_THREADED
 /// The vluint64_t argument is loaded with a high-performance counter for profiling
 /// or 0x0 if not implemeted on this platform
-# if defined(__i386__) || defined(__x86_64__)
-#  define VL_RDTSC(val) {  \
+#if defined(__i386__) || defined(__x86_64__)
+# define VL_RDTSC(val) {  \
     vluint32_t hi, lo;  \
     asm volatile("rdtsc" : "=a" (lo), "=d" (hi));  \
     (val) = ((vluint64_t)lo) | (((vluint64_t)hi)<<32);  \
 }
-# elif defined(__aarch64__)
-#  define VL_RDTSC(val) asm volatile("mrs %[rt],PMCCNTR_EL0" : [rt] "=r" (val));
-# else
+#elif defined(__aarch64__)
+# define VL_RDTSC(val) asm volatile("mrs %[rt],PMCCNTR_EL0" : [rt] "=r" (val));
+#else
 // We just silently ignore unknown OSes, as only leads to missing statistics
-#  define VL_RDTSC(val) (val) = 0;
-# endif
+# define VL_RDTSC(val) (val) = 0;
 #endif
 
 //=========================================================================
