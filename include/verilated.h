@@ -327,7 +327,7 @@ public:  // But internals only - called from VerilatedModule's
 class Verilated {
     // MEMBERS
     // Slow path variables
-    static VerilatedMutex m_mutex;  ///< Mutex for all static members, when VL_THREADED
+    static VerilatedMutex m_mutex;  ///< Mutex for s_s/s_ns members, when VL_THREADED
 
     static VerilatedVoidCb  s_flushCb;		///< Flush callback function
 
