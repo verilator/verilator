@@ -97,6 +97,7 @@ public:
 	UNDRIVEN,	// No drivers
 	UNOPT,		// Unoptimizable block
 	UNOPTFLAT,	// Unoptimizable block after flattening
+        UNOPTTHREADS,   // Thread partitioner unable to fill all requested threads
 	UNPACKED,	// Unsupported unpacked
 	UNSIGNED,	// Comparison is constant due to unsigned arithmetic
 	UNUSED,		// No receivers
@@ -139,7 +140,8 @@ public:
 	    "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY",
 	    "REALCVT", "REDEFMACRO",
 	    "SELRANGE", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
-	    "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNPACKED", "UNSIGNED", "UNUSED",
+            "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
+            "UNPACKED", "UNSIGNED", "UNUSED",
 	    "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
 	    "VARHIDDEN", "WIDTH", "WIDTHCONCAT",
 	    " MAX"

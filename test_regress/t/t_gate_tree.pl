@@ -112,7 +112,8 @@ gen($Self->{top_filename});
 
 compile(
     v_flags2 => ["+define+SIM_CYCLES=$Self->{cycles}",],
-    verilator_flags2=>["--stats --x-assign fast --x-initial fast"],
+    verilator_flags2=>["--stats --x-assign fast --x-initial fast",
+                       "-Wno-UNOPTTHREADS"],
     );
 
 execute(

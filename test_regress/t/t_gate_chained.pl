@@ -44,7 +44,8 @@ top_filename("$Self->{obj_dir}/t_gate_chained.v");
 gen($Self->{top_filename});
 
 compile(
-    verilator_flags2=>["--stats --x-assign fast --x-initial fast"],
+    verilator_flags2=>["--stats --x-assign fast --x-initial fast",
+                       "-Wno-UNOPTTHREADS"],
     );
 
 execute(
