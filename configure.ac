@@ -6,7 +6,8 @@
 
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[3.925 devel])
+AC_INIT([Verilator],[3.925 devel],[https://www.veripool.org/verilator],
+        [verilator],[https://www.veripool.org/verilator])
 # When releasing, also update header of Changes file
 # and commit using "devel release" or "Version bump" message
 
