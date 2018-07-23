@@ -64,6 +64,7 @@ sub test {
 	run("test -e $prefix/bin/verilator");
 	run("test -e $prefix/bin/verilator_bin");
 	run("test -e $prefix/bin/verilator_bin_dbg");
+        run("test -e $prefix/bin/verilator_gantt");
 	run("test -e $prefix/bin/verilator_profcfunc");
     }
 

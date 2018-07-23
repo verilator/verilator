@@ -38,6 +38,7 @@ VerilatedVoidCb Verilated::s_flushCb = NULL;
 
 // Keep below together in one cache line
 Verilated::Serialized Verilated::s_s;
+Verilated::NonSerialized Verilated::s_ns;
 VL_THREAD_LOCAL Verilated::ThreadLocal Verilated::t_s;
 
 Verilated::CommandArgValues Verilated::s_args;
@@ -194,6 +195,17 @@ Verilated::Serialized::Serialized() {
     s_gotFinish = false;
     s_assertOn = true;
     s_fatalOnVpiError = true; // retains old default behaviour
+}
+
+Verilated::NonSerialized::NonSerialized() {
+    s_profThreadsStart = 1;
+    s_profThreadsWindow = 2;
+    s_profThreadsFilenamep = strdup("profile_threads.dat");
+}
+Verilated::NonSerialized::~NonSerialized() {
+    if (s_profThreadsFilenamep) {
+        free(const_cast<char*>(s_profThreadsFilenamep)); s_profThreadsFilenamep=NULL;
+    }
 }
 
 //===========================================================================
@@ -1648,6 +1660,20 @@ void Verilated::fatalOnVpiError(bool flag) VL_MT_SAFE {
     VerilatedLockGuard lock(m_mutex);
     s_s.s_fatalOnVpiError = flag;
 }
+void Verilated::profThreadsStart(vluint64_t flag) VL_MT_SAFE {
+    VerilatedLockGuard lock(m_mutex);
+    s_ns.s_profThreadsStart = flag;
+}
+void Verilated::profThreadsWindow(vluint64_t flag) VL_MT_SAFE {
+    VerilatedLockGuard lock(m_mutex);
+    s_ns.s_profThreadsWindow = flag;
+}
+void Verilated::profThreadsFilenamep(const char* flagp) VL_MT_SAFE {
+    VerilatedLockGuard lock(m_mutex);
+    if (s_ns.s_profThreadsFilenamep) free(const_cast<char*>(s_ns.s_profThreadsFilenamep));
+    s_ns.s_profThreadsFilenamep = strdup(flagp);
+}
+
 
 const char* Verilated::catName(const char* n1, const char* n2) VL_MT_SAFE {
     // Returns new'ed data
@@ -1799,6 +1825,15 @@ void VerilatedImp::commandArgVl(const std::string& arg) {
             versionDump();
             VL_PRINTF_MT("For help, please see 'verilator --help'\n");
             VL_FATAL_MT("COMMAND_LINE", 0, "", "Exiting due to command line argument (not an error)");
+        }
+        else if (commandArgVlValue(arg, "+verilator+prof+threads+start+", value/*ref*/)) {
+            Verilated::profThreadsStart(atoll(value.c_str()));
+        }
+        else if (commandArgVlValue(arg, "+verilator+prof+threads+window+", value/*ref*/)) {
+            Verilated::profThreadsWindow(atol(value.c_str()));
+        }
+        else if (commandArgVlValue(arg, "+verilator+prof+threads+file+", value/*ref*/)) {
+            Verilated::profThreadsFilenamep(value.c_str());
         }
         else if (commandArgVlValue(arg, "+verilator+rand+reset+", value/*ref*/)) {
             Verilated::randReset(atoi(value.c_str()));

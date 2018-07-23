@@ -661,6 +661,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( !strcmp (sw, "-debug-abort") )		{ abort(); } // Undocumented, see also --debug-sigsegv
 	    else if ( onoff   (sw, "-debug-check", flag/*ref*/) ){ m_debugCheck = flag; }
             else if ( onoff   (sw, "-debug-leak", flag/*ref*/) ){ m_debugLeak = flag; }
+            else if ( onoff   (sw, "-debug-nondeterminism", flag/*ref*/) ){ m_debugNondeterminism = flag; }
+            else if ( onoff   (sw, "-debug-partition", flag/*ref*/) ){ m_debugPartition = flag; }  // Undocumented
+            else if ( onoff   (sw, "-debug-self-test", flag/*ref*/) ){ m_debugSelfTest = flag; }  // Undocumented
 	    else if ( !strcmp (sw, "-debug-sigsegv") )		{ throwSigsegv(); }  // Undocumented, see also --debug-abort
 	    else if ( !strcmp (sw, "-debug-fatalsrc") )		{ v3fatalSrc("--debug-fatal-src"); }  // Undocumented, see also --debug-abort
 	    else if ( onoff   (sw, "-decoration", flag/*ref*/) ) { m_decoration = flag; }
@@ -678,6 +681,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( !strcmp (sw, "-private") )		{ m_public = false; }
             else if ( onoff   (sw, "-prof-cfuncs", flag/*ref*/) )       { m_profCFuncs = flag; }
             else if ( onoff   (sw, "-profile-cfuncs", flag/*ref*/) )    { m_profCFuncs = flag; }  // Undocumented, for backward compat
+            else if ( onoff   (sw, "-prof-threads", flag/*ref*/) )      { m_profThreads = flag; }
 	    else if ( onoff   (sw, "-public", flag/*ref*/) )		{ m_public = flag; }
             else if ( !strncmp(sw, "-pvalue+", strlen("-pvalue+")))	{ addParameter(string(sw+strlen("-pvalue+")), false); }
             else if ( onoff   (sw, "-relative-cfuncs", flag/*ref*/) )   { m_relativeCFuncs = flag; }
@@ -689,6 +693,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( onoff   (sw, "-stats", flag/*ref*/) )		{ m_stats = flag; }
 	    else if ( onoff   (sw, "-stats-vars", flag/*ref*/) )	{ m_statsVars = flag; m_stats |= flag; }
 	    else if ( !strcmp (sw, "-sv") )				{ m_defaultLanguage = V3LangCode::L1800_2005; }
+            else if ( onoff   (sw, "-threads-coarsen", flag/*ref*/))    { m_threadsCoarsen = flag; }  // Undocumented, debug
 	    else if ( onoff   (sw, "-trace", flag/*ref*/) )		{ m_trace = flag; }
 	    else if ( onoff   (sw, "-trace-dups", flag/*ref*/) )	{ m_traceDups = flag; }
 	    else if ( onoff   (sw, "-trace-params", flag/*ref*/) )	{ m_traceParams = flag; }
@@ -1013,6 +1018,20 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		shift; m_threads = atoi(argv[i]);
 		if (m_threads < 0) fl->v3fatal("--threads must be >= 0: "<<argv[i]);
 	    }
+            else if ( !strcmp (sw, "-threads-dpi") && (i+1)<argc) {
+                shift;
+                if (!strcmp(argv[i], "all")) { m_threadsDpiPure=true; m_threadsDpiUnpure=true; }
+                else if (!strcmp(argv[i], "none")) { m_threadsDpiPure=false; m_threadsDpiUnpure=false; }
+                else if (!strcmp(argv[i], "pure")) { m_threadsDpiPure=true; m_threadsDpiUnpure=false; }
+                else {
+                    fl->v3fatal("Unknown setting for --threads-dpi: "<<argv[i]);
+                }
+            }
+            else if ( !strcmp (sw, "-threads-max-mtasks") ) {
+                shift; m_threadsMaxMTasks = atoi(argv[i]);
+                if (m_threadsMaxMTasks < 1)
+                    fl->v3fatal("--threads-max-mtasks must be >= 1: "<<argv[i]);
+            }
 	    else if ( !strcmp (sw, "-top-module") && (i+1)<argc ) {
 		shift; m_topModule = argv[i];
 	    }
@@ -1223,6 +1242,9 @@ V3Options::V3Options() {
     m_coverageUser = false;
     m_debugCheck = false;
     m_debugLeak = true;
+    m_debugNondeterminism = false;
+    m_debugPartition = false;
+    m_debugSelfTest = false;
     m_decoration = true;
     m_exe = false;
     m_ignc = false;
@@ -1237,6 +1259,7 @@ V3Options::V3Options() {
     m_pinsScBigUint = false;
     m_pinsUint8 = false;
     m_profCFuncs = false;
+    m_profThreads = false;
     m_preprocOnly = false;
     m_preprocNoLine = false;
     m_public = false;
@@ -1249,6 +1272,10 @@ V3Options::V3Options() {
     m_statsVars = false;
     m_systemC = false;
     m_threads = 0;
+    m_threadsDpiPure = true;
+    m_threadsDpiUnpure = false;
+    m_threadsCoarsen = true;
+    m_threadsMaxMTasks = 0;
     m_trace = false;
     m_traceDups = false;
     m_traceParams = true;

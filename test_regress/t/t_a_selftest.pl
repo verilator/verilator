@@ -7,20 +7,15 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-scenarios(simulator => 1);
+scenarios(vlt_all => 1);
+
+top_filename("t/t_EXAMPLE.v");
 
 compile(
-    verilator_flags2 => ["--stats"],
-    );
-
-if ($Self->{vlt_all}) {
-    file_grep ($Self->{stats}, qr/Optimizations, Tables created\s+(\d+)/i, 10);
-    file_grep ($Self->{stats}, qr/Optimizations, Combined CFuncs\s+(\d+)/i,
-               ($Self->{vltmt} ? 0 : 8));
-}
-
-execute(
-    check_finished => 1,
+    verilator_flags2 => ['--debug-self-test'],
+    verilator_make_gcc => 0,
+    make_top_shell => 0,
+    make_main => 0,
     );
 
 ok(1);

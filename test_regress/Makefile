@@ -44,7 +44,7 @@ endif
 
 .PHONY: test
 test:
-	$(PERL) driver.pl $(DRIVER_FLAGS) --vlt --dist
+	$(PERL) driver.pl $(DRIVER_FLAGS) --vlt --vltmt --dist
 
 ######################################################################
 
@@ -60,6 +60,9 @@ nc:
 
 vlt:
 	$(PERL) driver.pl $(DRIVER_FLAGS) --vlt --stop
+
+vltmt:
+	$(PERL) driver.pl $(DRIVER_FLAGS) --vltmt --stop
 
 ######################################################################
 

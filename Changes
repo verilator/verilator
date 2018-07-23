@@ -5,14 +5,17 @@ The contributors that suggested a given feature are shown in []. Thanks!
 * Verilator 4.000 devel
 
 **    This is a major release.  Any patches may require major rework to apply.
+      [Thanks everyone]
+
+**    Add multithreaded model generation.
 
 **    Add runtime arguments.
-
-**    Fix internals to be C++ null-pointer-check clean.
 
 ***   Better optimize large always block splitting, bug1244. [John Coiner]
 
 ***   Add new reloop optimization for repetitive assignment compression.
+
+****  Fix internals to be C++ null-pointer-check clean.
 
 ****  Fix internals to avoid 'using namespace std'.
 

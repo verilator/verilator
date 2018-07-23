@@ -94,6 +94,9 @@ public:
 			    putMakeClassEntry(of, "verilated_vcd_sc.cpp");
 			}
 		    }
+                    if (v3Global.opt.mtasks()) {
+                        putMakeClassEntry(of, "verilated_threads.cpp");
+                    }
 		}
 		else if (support==2 && slow) {
 		}

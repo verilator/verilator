@@ -34,6 +34,8 @@
 #include "V3EmitC.h"
 #include "V3EmitCBase.h"
 #include "V3Number.h"
+#include "V3PartitionGraph.h"
+#include "V3TSP.h"
 
 #define VL_VALUE_STRING_MAX_WIDTH 8192	// We use a static char array in VL_VALUE_STRING
 
@@ -103,7 +105,13 @@ public:
 	    puts("["+cvtToStr(arrayp->elementsConst())+"]");
 	}
     }
-
+    void emitVarCmtChg(const AstVar* varp, string* curVarCmtp) {
+        string newVarCmt = varp->mtasksString();
+        if (*curVarCmtp != newVarCmt) {
+            *curVarCmtp = newVarCmt;
+            puts("// Begin mtask footprint "+*curVarCmtp+"\n");
+        }
+    }
     void emitTypedefs(AstNode* firstp) {
 	bool first = true;
 	for (AstNode* loopp=firstp; loopp; loopp = loopp->nextp()) {
@@ -784,6 +792,50 @@ public:
 };
 
 //######################################################################
+// Establish mtask variable sort order in mtasks mode
+
+class EmitVarTspSorter : public V3TSP::TspStateBase {
+private:
+    // MEMBERS
+    const MTaskIdSet& m_mtaskIds;  // Mtask we're ordering
+    static unsigned m_serialNext;  // Unique ID to establish serial order
+    unsigned m_serial;  // Serial ordering
+public:
+    // CONSTRUCTORS
+    explicit EmitVarTspSorter(const MTaskIdSet& mtaskIds)
+        : m_mtaskIds(mtaskIds),
+          m_serial(++m_serialNext) {}
+    virtual ~EmitVarTspSorter() {}
+    // METHODS
+    bool operator<(const TspStateBase& other) const {
+        return operator<(dynamic_cast<const EmitVarTspSorter&>(other));
+    }
+    bool operator<(const EmitVarTspSorter& other) const {
+        return m_serial < other.m_serial;
+    }
+    const MTaskIdSet& mtaskIds() const { return m_mtaskIds; }
+    virtual int cost(const TspStateBase* otherp) const {
+        return cost(dynamic_cast<const EmitVarTspSorter*>(otherp));
+    }
+    virtual int cost(const EmitVarTspSorter* otherp) const {
+        int cost = diffs(m_mtaskIds, otherp->m_mtaskIds);
+        cost += diffs(otherp->m_mtaskIds, m_mtaskIds);
+        return cost;
+    }
+    // Returns the number of elements in set_a that don't appear in set_b
+    static int diffs(const MTaskIdSet& set_a, const MTaskIdSet& set_b) {
+        int diffs = 0;
+        for (MTaskIdSet::iterator it = set_a.begin();
+             it != set_a.end(); ++it) {
+            if (set_b.find(*it) == set_b.end()) ++diffs;
+        }
+        return diffs;
+    }
+};
+
+unsigned EmitVarTspSorter::m_serialNext = 0;
+
+//######################################################################
 // Internal EmitC implementation
 
 class EmitCImp : EmitCStmts {
@@ -871,6 +923,91 @@ class EmitCImp : EmitCStmts {
 	ofp->puts("\n");
 
 	return ofp;
+    }
+
+    // Returns the number of cross-thread dependencies into mtaskp.
+    // If >0, mtaskp must test whether its prereqs are done before starting,
+    // and may need to block.
+    static uint32_t packedMTaskMayBlock(const ExecMTask* mtaskp) {
+        uint32_t result = 0;
+        for (V3GraphEdge* edgep = mtaskp->inBeginp(); edgep; edgep = edgep->inNextp()) {
+            const ExecMTask* prevp = dynamic_cast<ExecMTask*>(edgep->fromp());
+            if (prevp->thread() != mtaskp->thread()) {
+                ++result;
+            }
+        }
+        return result;
+    }
+
+    void emitMTaskBody(AstMTaskBody* nodep) {
+        ExecMTask* curExecMTaskp = nodep->execMTaskp();
+        if (packedMTaskMayBlock(curExecMTaskp)) {
+            puts("vlTOPp->__Vm_mt_" + cvtToStr(curExecMTaskp->id())
+                 + ".waitUntilUpstreamDone(even_cycle);\n");
+        }
+
+        string recName;
+        if (v3Global.opt.profThreads()) {
+            recName = "__Vprfthr_" + cvtToStr(curExecMTaskp->id());
+            puts("VlProfileRec* " + recName + " = NULL;\n");
+            // Leave this if() here, as don't want to call VL_RDTSC_Q unless profiling
+            puts("if (VL_UNLIKELY(vlTOPp->__Vm_profile_cycle_start)) {\n");
+            puts(  recName + " = vlTOPp->__Vm_threadPoolp->profileAppend();\n");
+            puts(  recName + "->startRecord(VL_RDTSC_Q() - vlTOPp->__Vm_profile_cycle_start,");
+            puts(               " "+cvtToStr(curExecMTaskp->id())+ ",");
+            puts(               " "+cvtToStr(curExecMTaskp->cost())+");\n");
+            puts("}\n");
+        }
+        puts("Verilated::mtaskId(" + cvtToStr(curExecMTaskp->id()) + ");\n");
+
+        // The actual body of calls to leaf functions
+        iterateAndNextNull(nodep->stmtsp());
+
+        if (v3Global.opt.profThreads()) {
+            // Leave this if() here, as don't want to call VL_RDTSC_Q unless profiling
+            puts("if (VL_UNLIKELY("+recName+")) {\n");
+            puts(  recName + "->endRecord(VL_RDTSC_Q() - vlTOPp->__Vm_profile_cycle_start);\n");
+            puts("}\n");
+        }
+
+        // Flush message queue
+        puts("Verilated::endOfThreadMTask(vlSymsp->__Vm_evalMsgQp);\n");
+
+        // For any downstream mtask that's on another thread, bump its
+        // counter and maybe notify it.
+        for (V3GraphEdge* edgep = curExecMTaskp->outBeginp();
+             edgep; edgep = edgep->outNextp()) {
+            const ExecMTask* nextp = dynamic_cast<ExecMTask*>(edgep->top());
+            if (nextp->thread() != curExecMTaskp->thread()) {
+                puts("vlTOPp->__Vm_mt_"+cvtToStr(nextp->id())
+                     + ".signalUpstreamDone(even_cycle);\n");
+            }
+        }
+
+        // Run the next mtask inline
+        const ExecMTask* nextp = curExecMTaskp->packNextp();
+        if (nextp) {
+            emitMTaskBody(nextp->bodyp());
+        } else {
+            // Unblock the fake "final" mtask
+            puts("vlTOPp->__Vm_mt_final.signalUpstreamDone(even_cycle);\n");
+        }
+    }
+
+    virtual void visit(AstMTaskBody* nodep) {
+        ExecMTask* mtp = nodep->execMTaskp();
+        puts("\n");
+        puts("void ");
+        puts(modClassName(m_modp)+"::"+mtp->cFuncName());
+        puts("(bool even_cycle, void* symtab) {\n");
+
+        // Declare and set vlSymsp
+        puts(EmitCBaseVisitor::symClassVar() + " = ("
+             + EmitCBaseVisitor::symClassName() + "*)symtab;\n");
+        puts(EmitCBaseVisitor::symTopAssign()+"\n");
+
+        emitMTaskBody(nodep);
+        puts("}\n");
     }
 
     //---------------------------------------
@@ -973,6 +1110,54 @@ class EmitCImp : EmitCStmts {
 	emitVarReset(varp);
     }
 
+    virtual void visit(AstExecGraph* nodep) {
+        if (nodep != v3Global.rootp()->execGraphp()) {
+            nodep->v3fatalSrc("ExecGraph should be a singleton!");
+        }
+        // The location of the AstExecGraph within the containing _eval()
+        // function is where we want to invoke the graph and wait for it to
+        // complete. Do that now.
+        //
+        // Don't recurse to children -- this isn't the place to emit
+        // function definitions for the nested CFuncs. We'll do that at the
+        // end.
+        puts("vlTOPp->__Vm_even_cycle = !vlTOPp->__Vm_even_cycle;\n");
+
+        // Build the list of initial mtasks to start
+        std::vector<const ExecMTask*> execMTasks;
+
+        // Start each root mtask
+        for (const V3GraphVertex* vxp = nodep->depGraphp()->verticesBeginp();
+             vxp; vxp = vxp->verticesNextp()) {
+            const ExecMTask* etp = dynamic_cast<const ExecMTask*>(vxp);
+            if (etp->threadRoot()) execMTasks.push_back(etp);
+        }
+        if (execMTasks.size() >
+            static_cast<unsigned>(v3Global.opt.threads())) {
+            nodep->v3fatalSrc("More root mtasks than available threads");
+        }
+
+        if (!execMTasks.empty()) {
+            for (uint32_t i = 0; i < execMTasks.size(); ++i) {
+                bool runInline = (i == execMTasks.size() - 1);
+                if (runInline) {
+                    // The thread calling eval() will run this mtask inline,
+                    // along with its packed successors.
+                    puts(execMTasks[i]->cFuncName()
+                         + "(vlTOPp->__Vm_even_cycle, vlSymsp);\n");
+                    puts("Verilated::mtaskId(0);\n");
+                } else {
+                    // The other N-1 go to the thread pool.
+                    puts("vlTOPp->__Vm_threadPoolp->workerp("
+                         + cvtToStr(i)+")->addTask("
+                         + execMTasks[i]->cFuncName()
+                         + ", vlTOPp->__Vm_even_cycle, vlSymsp);\n");
+                }
+            }
+            puts("vlTOPp->__Vm_mt_final.waitUntilUpstreamDone(vlTOPp->__Vm_even_cycle);\n");
+        }
+    }
+
     //---------------------------------------
     // ACCESSORS
 
@@ -995,6 +1180,8 @@ class EmitCImp : EmitCStmts {
     void emitStaticDecl(AstNodeModule* modp);
     void emitSettleLoop(const std::string& eval_call, bool initial);
     void emitWrapEval(AstNodeModule* modp);
+    void emitMTaskState();
+    void emitMTaskVertexCtors(bool* firstp);
     void emitInt(AstNodeModule* modp);
     void maybeSplit(AstNodeModule* modp);
 
@@ -1534,6 +1721,36 @@ void EmitCImp::emitCoverageDecl(AstNodeModule* modp) {
     }
 }
 
+void EmitCImp::emitMTaskVertexCtors(bool* firstp) {
+    AstExecGraph* execGraphp = v3Global.rootp()->execGraphp();
+    if (!execGraphp) v3Global.rootp()->v3fatalSrc("Should have an execGraphp");
+    const V3Graph* depGraphp = execGraphp->depGraphp();
+
+    unsigned finalEdgesInCt = 0;
+    for (const V3GraphVertex* vxp = depGraphp->verticesBeginp();
+         vxp; vxp = vxp->verticesNextp()) {
+        const ExecMTask* mtp = dynamic_cast<const ExecMTask*>(vxp);
+        unsigned edgesInCt = packedMTaskMayBlock(mtp);
+        if (packedMTaskMayBlock(mtp) > 0) {
+            emitCtorSep(firstp);
+            puts("__Vm_mt_"+cvtToStr(mtp->id())+"("+cvtToStr(edgesInCt)+")");
+        }
+        // Each mtask with no packed successor will become a dependency
+        // for the final node:
+        if (!mtp->packNextp()) ++finalEdgesInCt;
+    }
+
+    emitCtorSep(firstp);
+    puts("__Vm_mt_final(" + cvtToStr(finalEdgesInCt) + ")");
+
+    // This will flip to 'true' before the start of the 0th cycle.
+    emitCtorSep(firstp); puts("__Vm_threadPoolp(NULL)");
+    if (v3Global.opt.profThreads()) {
+        emitCtorSep(firstp); puts("__Vm_profile_cycle_start(0)");
+    }
+    emitCtorSep(firstp); puts("__Vm_even_cycle(false)");
+}
+
 void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     puts("\n");
     bool first = true;
@@ -1544,6 +1761,9 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
         first = false;  // VL_CTOR_IMP includes the first ':'
     }
     emitVarCtors(&first);
+    if (modp->isTop() && v3Global.opt.mtasks()) {
+        emitMTaskVertexCtors(&first);
+    }
     puts(" {\n");
     emitCellCtors(modp);
     emitSensitives();
@@ -1556,6 +1776,39 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     putsDecoration("// Reset structure values\n");
     puts("_ctor_var_reset();\n");
     emitTextSection(AstType::atScCtor);
+
+    if (modp->isTop() && v3Global.opt.mtasks()) {
+        // TODO-- For now each top module creates its own ThreadPool here,
+        // and deletes it in the destructor. If A and B are each top level
+        // modules, each creates a separate thread pool.  This allows
+        // A.eval() and B.eval() to run concurrently without any
+        // interference -- so long as the physical machine has enough cores
+        // to support both pools and all testbench threads.
+        //
+        // In the future, we might want to let the client provide a
+        // threadpool to the constructor. This would allow two or more
+        // models to share a single threadpool.
+        //
+        // For example: suppose models A and B are each compiled to run on
+        // 4 threads. The client might create a single thread pool with 3
+        // threads and pass it to both models. If the client can ensure tht
+        // A.eval() and B.eval() do NOT run concurrently, there will be no
+        // contention for the threads. This mode is missing for now.  (Is
+        // there demand for such a setup?)
+        puts("__Vm_threadPoolp = new VlThreadPool("
+             // Note we create N-1 threads in the thread pool. The thread
+             // that calls eval() becomes the final Nth thread for the
+             // duration of the eval call.
+             + cvtToStr(v3Global.opt.threads() - 1)
+             + ", " + cvtToStr(v3Global.opt.profThreads())
+             + ");\n");
+
+        if (v3Global.opt.profThreads()) {
+            puts("__Vm_profile_cycle_start = 0;\n");
+            puts("__Vm_profile_time_finished = 0;\n");
+            puts("__Vm_profile_window_ct = 0;");
+        }
+    }
     puts("}\n");
 }
 
@@ -1597,6 +1850,9 @@ void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
 void EmitCImp::emitDestructorImp(AstNodeModule* modp) {
     puts("\n");
     puts(modClassName(modp)+"::~"+modClassName(modp)+"() {\n");
+    if (modp->isTop() && v3Global.opt.mtasks()) {
+        puts("delete __Vm_threadPoolp; __Vm_threadPoolp = NULL;\n");
+    }
     emitTextSection(AstType::atScDtor);
     if (modp->isTop()) puts("delete __VlSymsp; __VlSymsp=NULL;\n");
     puts("}\n");
@@ -1796,9 +2052,47 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     if (v3Global.opt.threads() == 1) {
 	uint32_t mtaskId = 0;
 	putsDecoration("// MTask "+cvtToStr(mtaskId)+" start\n");
-	puts("VL_DEBUG_IF(VL_DBG_MSGF(\"MTask starting, mtaskId="+cvtToStr(mtaskId)+"\\n\"););\n");
+        puts("VL_DEBUG_IF(VL_DBG_MSGF(\"MTask"+cvtToStr(mtaskId)+" starting\\n\"););\n");
 	puts("Verilated::mtaskId("+cvtToStr(mtaskId)+");\n");
     }
+
+    if (v3Global.opt.mtasks()
+        && v3Global.opt.profThreads()) {
+        puts("if (VL_UNLIKELY((Verilated::profThreadsStart() != __Vm_profile_time_finished)\n");
+        puts(                 " && (VL_TIME_Q() > Verilated::profThreadsStart())\n");
+        puts(                 " && (Verilated::profThreadsWindow() >= 1))) {\n");
+        // Within a profile (either starting, middle, or end)
+        puts(    "if (vlTOPp->__Vm_profile_window_ct == 0) {\n");  // Opening file?
+        // Start profile on this cycle. We'll capture a window worth, then
+        // only analyze the next window worth. The idea is that the first window
+        // capture will hit some cache-cold stuff (eg printf) but it'll be warm
+        // by the time we hit the second window, we hope.
+        puts(        "vlTOPp->__Vm_profile_cycle_start = VL_RDTSC_Q();\n");
+        // "* 2" as first half is warmup, second half is collection
+        puts(        "vlTOPp->__Vm_profile_window_ct = Verilated::profThreadsWindow() * 2 + 1;\n");
+        puts(    "}\n");
+        puts(    "--vlTOPp->__Vm_profile_window_ct;\n");
+        puts(    "if (vlTOPp->__Vm_profile_window_ct == (Verilated::profThreadsWindow())) {\n");
+        // This barrier record in every threads' profile demarcates the
+        // cache-warm-up cycles before the barrier from the actual profile
+        // cycles afterward.
+        puts(        "vlTOPp->__Vm_threadPoolp->profileAppendAll(");
+        puts(                       "VlProfileRec(VlProfileRec::Barrier()));\n");
+        puts(        "vlTOPp->__Vm_profile_cycle_start = VL_RDTSC_Q();\n");
+        puts(    "}\n");
+        puts(    "else if (vlTOPp->__Vm_profile_window_ct == 0) {\n");
+        // Ending file.
+        puts(        "vluint64_t elapsed = VL_RDTSC_Q() - vlTOPp->__Vm_profile_cycle_start;\n");
+        puts(        "vlTOPp->__Vm_threadPoolp->profileDump(Verilated::profThreadsFilenamep(), elapsed);\n");
+        // This turns off the test to enter the profiling code, but still
+        // allows the user to collect another profile by changing
+        // profThreadsStart
+        puts(        "__Vm_profile_time_finished = Verilated::profThreadsStart();\n");
+        puts(        "vlTOPp->__Vm_profile_cycle_start = 0;\n");
+        puts(    "}\n");
+        puts("}\n");
+    }
+
     emitSettleLoop(
         (string("VL_DEBUG_IF(VL_DBG_MSGF(\"+ Clock loop\\n\"););\n")
          + (v3Global.opt.trace() ? "vlSymsp->__Vm_activity = true;\n" : "")
@@ -1832,10 +2126,13 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
     // Put out a list of signal declarations
     // in order of 0:clocks, 1:vluint8, 2:vluint16, 4:vluint32, 5:vluint64, 6:wide, 7:arrays
     // This aids cache packing and locality
-    // Largest->smallest reduces the number of pad variables.
-    // But for now, Smallest->largest makes it more likely a small offset will allow access to the signal.
-    // TODO: Move this sort to an earlier visitor stage.
     //
+    // Largest->smallest reduces the number of pad variables.  Also
+    // experimented with alternating between large->small and small->large
+    // on successive Mtask groups, but then when a new mtask gets added may
+    // cause a huge delta.
+    //
+    // TODO: Move this sort to an earlier visitor stage.
     VarSortMap varAnonMap;
     VarSortMap varNonanonMap;
 
@@ -1891,8 +2188,9 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
 
 void EmitCStmts::emitVarSort(const VarSortMap& vmap, VarVec* sortedp) {
     UASSERT(sortedp->empty(), "Sorted should be initially empty");
-    {
-        // Plain old serial mode. Sort by size, from small to large.
+    if (!v3Global.opt.mtasks()) {
+        // Plain old serial mode. Sort by size, from small to large,
+        // to optimize for both packing and small offsets in code.
         for (VarSortMap::const_iterator it = vmap.begin();
              it != vmap.end(); ++it) {
             for (VarVec::const_iterator jt = it->second.begin();
@@ -1900,12 +2198,52 @@ void EmitCStmts::emitVarSort(const VarSortMap& vmap, VarVec* sortedp) {
                 sortedp->push_back(*jt);
             }
         }
+        return;
+    }
+
+    // MacroTask mode.  Sort by MTask-affinity group first, size second.
+    typedef std::map<MTaskIdSet, VarSortMap> MTaskVarSortMap;
+    MTaskVarSortMap m2v;
+    for (VarSortMap::const_iterator it = vmap.begin(); it != vmap.end(); ++it) {
+        int size_class = it->first;
+        const VarVec& vec = it->second;
+        for (VarVec::const_iterator jt = vec.begin(); jt != vec.end(); ++jt) {
+            const AstVar* varp = *jt;
+            m2v[varp->mtaskIds()][size_class].push_back(varp);
+        }
+    }
+
+    // Create a TSP sort state for each MTaskIdSet footprint
+    V3TSP::StateVec states;
+    for (MTaskVarSortMap::iterator it = m2v.begin(); it != m2v.end(); ++it) {
+        states.push_back(new EmitVarTspSorter(it->first));
+    }
+
+    // Do the TSP sort
+    V3TSP::StateVec sorted_states;
+    V3TSP::tspSort(states, &sorted_states);
+
+    for (V3TSP::StateVec::iterator it = sorted_states.begin();
+         it != sorted_states.end(); ++it) {
+        const EmitVarTspSorter* statep = dynamic_cast<const EmitVarTspSorter*>(*it);
+        const VarSortMap& localVmap = m2v[statep->mtaskIds()];
+        // use rbegin/rend to sort size large->small
+        for (VarSortMap::const_reverse_iterator jt = localVmap.rbegin();
+             jt != localVmap.rend(); ++jt) {
+            const VarVec& vec = jt->second;
+            for (VarVec::const_iterator kt = vec.begin();
+                 kt != vec.end(); ++kt) {
+                sortedp->push_back(*kt);
+            }
+        }
+        delete statep; VL_DANGLING(statep);
     }
 }
 
 void EmitCStmts::emitSortedVarList(const VarVec& anons,
                                    const VarVec& nonanons,
                                    const string& prefixIfImp) {
+    string curVarCmt = "";
     // Output anons
     {
         int anonMembers = anons.size();
@@ -1933,6 +2271,7 @@ void EmitCStmts::emitSortedVarList(const VarVec& anons,
                     if (anonL1s != 1) puts("struct {\n");
                     for (int l0=0; l0<lim && it != anons.end(); ++l0) {
                         const AstVar* varp = *it;
+                        emitVarCmtChg(varp, &curVarCmt);
                         emitVarDecl(varp, prefixIfImp);
                         ++it;
                     }
@@ -1945,12 +2284,14 @@ void EmitCStmts::emitSortedVarList(const VarVec& anons,
         // Leftovers, just in case off by one error somewhere above
         for (; it != anons.end(); ++it) {
             const AstVar* varp = *it;
+            emitVarCmtChg(varp, &curVarCmt);
             emitVarDecl(varp, prefixIfImp);
         }
     }
     // Output nonanons
     for (VarVec::const_iterator it = nonanons.begin(); it != nonanons.end(); ++it) {
         const AstVar* varp = *it;
+        emitVarCmtChg(varp, &curVarCmt);
         emitVarDecl(varp, prefixIfImp);
     }
 }
@@ -1986,6 +2327,59 @@ void EmitCImp::emitIntFuncDecls(AstNodeModule* modp) {
 	    if (funcp->ifdef()!="") puts("#endif // "+funcp->ifdef()+"\n");
 	}
     }
+
+    if (modp->isTop() && v3Global.opt.mtasks()) {
+        // Emit the mtask func prototypes.
+        AstExecGraph* execGraphp = v3Global.rootp()->execGraphp();
+        if (!execGraphp) v3Global.rootp()->v3fatalSrc("Root should have an execGraphp");
+        const V3Graph* depGraphp = execGraphp->depGraphp();
+        for (const V3GraphVertex* vxp = depGraphp->verticesBeginp();
+             vxp; vxp = vxp->verticesNextp()) {
+            const ExecMTask* mtp = dynamic_cast<const ExecMTask*>(vxp);
+            if (mtp->threadRoot()) {
+                // Emit function declaration for this mtask
+                ofp()->putsPrivate(true);
+                puts("static void "); puts(mtp->cFuncName());
+                puts("(bool even_cycle, void* symtab);\n");
+            }
+        }
+        // No AstCFunc for this one, as it's synthetic. Just write it:
+        puts("static void __Vmtask__final(bool even_cycle, void* symtab);\n");
+    }
+}
+
+void EmitCImp::emitMTaskState() {
+    ofp()->putsPrivate(true);
+    AstExecGraph* execGraphp = v3Global.rootp()->execGraphp();
+    if (!execGraphp) v3Global.rootp()->v3fatalSrc("Root should have an execGraphp");
+
+    const V3Graph* depGraphp = execGraphp->depGraphp();
+    for (const V3GraphVertex* vxp = depGraphp->verticesBeginp();
+         vxp; vxp = vxp->verticesNextp()) {
+        const ExecMTask* mtp = dynamic_cast<const ExecMTask*>(vxp);
+        if (packedMTaskMayBlock(mtp) > 0) {
+            puts("VlMTaskVertex __Vm_mt_" + cvtToStr(mtp->id()) + ";\n");
+        }
+    }
+    // This fake mtask depends on all the real ones.  We use it to block
+    // eval() until all mtasks are done.
+    //
+    // In the future we might allow _eval() to return before the graph is
+    // fully done executing, for "half wave" scheduling. For now we wait
+    // for all mtasks though.
+    puts("VlMTaskVertex __Vm_mt_final;\n");
+    puts("VlThreadPool* __Vm_threadPoolp;\n");
+
+    if (v3Global.opt.profThreads()) {
+        // rdtsc() at current cycle start
+        puts("vluint64_t __Vm_profile_cycle_start;\n");
+        // Time we finished analysis
+        puts("vluint64_t __Vm_profile_time_finished;\n");
+        // Track our position in the cache warmup and actual profile window
+        puts("vluint32_t __Vm_profile_window_ct;\n");
+    }
+
+    puts("bool __Vm_even_cycle;\n");
 }
 
 void EmitCImp::emitInt(AstNodeModule* modp) {
@@ -1999,6 +2393,9 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 	puts("#include \"verilated_heavy.h\"\n");
     } else {
 	puts("#include \"verilated.h\"\n");
+    }
+    if (v3Global.opt.mtasks()) {
+        puts("#include \"verilated_threads.h\"\n");
     }
     if (v3Global.opt.savable()) {
 	puts("#include \"verilated_save.h\"\n");
@@ -2083,6 +2480,9 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 	if (v3Global.opt.inhibitSim()) {
 	    puts("bool __Vm_inhibitSim;  ///< Set true to disable evaluation of module\n");
 	}
+    }
+    if (modp->isTop() && v3Global.opt.mtasks()) {
+        emitMTaskState();
     }
     emitCoverageDecl(modp);	// may flip public/private
 
@@ -2291,6 +2691,24 @@ void EmitCImp::main(AstNodeModule* modp, bool slow, bool fast) {
 	}
     }
 
+    if (fast && modp->isTop() && v3Global.opt.mtasks()) {
+        // Make a final pass and emit function definitions for the mtasks
+        // in the ExecGraph
+        AstExecGraph* execGraphp = v3Global.rootp()->execGraphp();
+        const V3Graph* depGraphp = execGraphp->depGraphp();
+        for (const V3GraphVertex* vxp = depGraphp->verticesBeginp();
+             vxp; vxp = vxp->verticesNextp()) {
+            const ExecMTask* mtaskp = dynamic_cast<const ExecMTask*>(vxp);
+            if (mtaskp->threadRoot()) {
+                maybeSplit(modp);
+                // Only define one function for all the mtasks packed on
+                // a given thread. We'll name this function after the
+                // root mtask though it contains multiple mtasks' worth
+                // of logic.
+                iterate(mtaskp->bodyp());
+            }
+        }
+    }
     delete m_ofp; m_ofp=NULL;
 }
 

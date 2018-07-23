@@ -13,7 +13,12 @@ my $root = "..";
 
 compile(
     # Can't use --coverage and --savable together, so cheat and compile inline
-    verilator_flags2 => ['--cc --coverage-toggle --coverage-line --coverage-user --trace --vpi $root/include/verilated_save.cpp'],
+    verilator_flags2 => ["--cc",
+                         "--coverage-toggle --coverage-line --coverage-user",
+                         "--trace --vpi ",
+                         ($Self->cfg_with_threaded
+                          ? "--threads 2 $root/include/verilated_threads.cpp" : ""),
+                         "$root/include/verilated_save.cpp"],
     );
 
 execute(
@@ -43,7 +48,8 @@ foreach my $dfile (glob("$Self->{obj_dir}/*.d")) {
 
 foreach my $file (sort keys %hit) {
     if (!$hit{$file}
-        && $file !~ /_sc/) {
+        && $file !~ /_sc/
+        && ($file !~ /_thread/ || $Self->cfg_with_threaded)) {
         error("Include file not covered by t_verilated_all test: ",$file);
     }
 }

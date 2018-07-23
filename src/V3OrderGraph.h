@@ -21,6 +21,7 @@
 //
 //	V3GraphVertex
 //	  OrderMoveVertex
+//        MTaskMoveVertex
 //	  OrderEitherVertex
 //	    OrderInputsVertex
 //	    OrderSettleVertex
@@ -47,6 +48,7 @@
 #include "verilatedos.h"
 #include "V3Ast.h"
 #include "V3Graph.h"
+#include VL_INCLUDE_UNORDERED_MAP
 
 class OrderVisitor;
 class OrderMoveVertex;
@@ -361,6 +363,57 @@ public:
     OrderMoveDomScope* domScopep() const { return m_domScopep; }
     OrderMoveVertex* pomWaitingNextp() const { return m_pomWaitingE.nextp(); }
     void domScopep(OrderMoveDomScope* ds) { m_domScopep=ds; }
+};
+
+// Similar to OrderMoveVertex, but modified for threaded code generation.
+class MTaskMoveVertex : public V3GraphVertex {
+    //  This could be more compact, since we know m_varp and m_logicp
+    //  cannot both be set. Each MTaskMoveVertex represents a logic node
+    //  or a var node, it can't be both.
+    OrderLogicVertex* m_logicp;  // Logic represented by this vertex
+    const OrderEitherVertex* m_varp;  // Var represented by this vertex
+    const AstScope* m_scopep;
+    const AstSenTree* m_domainp;
+
+protected:
+    friend class OrderVisitor;
+    friend class MTaskMoveVertexMaker;
+public:
+    MTaskMoveVertex(V3Graph* graphp, OrderLogicVertex* logicp,
+                    const OrderEitherVertex* varp,
+                    const AstScope* scopep, const AstSenTree* domainp)
+        : V3GraphVertex(graphp), m_logicp(logicp),
+          m_varp(varp), m_scopep(scopep), m_domainp(domainp) {
+        UASSERT(!(logicp && varp),
+                "MTaskMoveVertex: logicp and varp may not both be set!\n");
+    }
+    virtual ~MTaskMoveVertex() {}
+    virtual MTaskMoveVertex* clone(V3Graph* graphp) const {
+      v3fatalSrc("Unsupported"); return NULL; }
+    virtual OrderVEdgeType type() const { return OrderVEdgeType::VERTEX_MOVE; }
+    virtual string dotColor() const {
+        if (logicp()) return logicp()->dotColor();
+        else return "yellow";
+    }
+    virtual string name() const {
+        string nm;
+        if (logicp()) {
+            nm = logicp()->name();
+            nm += (string("\\nMV:")
+                   +" d="+cvtToStr((void*)logicp()->domainp())
+                   +" s="+cvtToStr((void*)logicp()->scopep())
+                   // "color()" represents the mtask ID.
+                   +"\\nt="+cvtToStr(color()));
+        } else {
+            nm = "nolog\\nt="+cvtToStr(color());
+        }
+        return nm;
+    }
+    // ACCESSORS
+    OrderLogicVertex* logicp() const { return m_logicp; }
+    const OrderEitherVertex* varp() const { return m_varp; }
+    const AstScope* scopep() const { return m_scopep; }
+    const AstSenTree* domainp() const { return m_domainp; }
 };
 
 //######################################################################

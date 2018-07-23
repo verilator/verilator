@@ -43,7 +43,10 @@ gen($Self->{top_filename}, 6000);
 compile(
     verilator_flags2=>["-x-assign fast --x-initial fast",
                        "-Wno-UNOPTTHREADS",
-    ],
+                       # The slow V3Partition asserts are just too slow
+                       # in this test. They're disabled just for performance
+                       # reasons:
+                       "--no-debug-partition"],
     );
 
 execute(

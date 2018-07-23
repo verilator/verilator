@@ -217,6 +217,7 @@ RAW_OBJS = \
 	V3Order.o \
 	V3Os.o \
 	V3Param.o \
+	V3Partition.o \
 	V3PreShell.o \
 	V3Premit.o \
 	V3Reloop.o \

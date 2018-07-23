@@ -182,6 +182,7 @@ private:
     AstNode*		m_chgSubParentp;// Which node has call to m_chgSubFuncp
     int			m_chgSubStmts;	// Statements under function being built
     AstVarScope*	m_activityVscp;	// Activity variable
+    uint32_t            m_activityNumber;  // Count of fields in activity variable
     uint32_t		m_code;		// Trace ident code# being assigned
     V3Graph		m_graph;	// Var/CFunc tracking
     TraceActivityVertex* m_alwaysVtxp;	// "Always trace" vertex
@@ -297,7 +298,7 @@ private:
 
     void assignActivity() {
 	// Select activity numbers and put into each CFunc vertex
-	uint32_t activityNumber = 1;	// Note 0 indicates "slow"
+        m_activityNumber = 1;  // Note 0 indicates "slow"
 	for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
 	    if (TraceActivityVertex* vvertexp = dynamic_cast<TraceActivityVertex*>(itp)) {
 		if (!vvertexp->activityCodeValid()) {
@@ -306,17 +307,39 @@ private:
 			// This makes us need less activityNumbers and so speeds up the fast path.
 			vvertexp->activityCode(TraceActivityVertex::ACTIVITY_SLOW);
 		    } else {
-			vvertexp->activityCode(activityNumber++);
+                        vvertexp->activityCode(m_activityNumber++);
 		    }
 		}
 	    }
 	}
 
-	// Insert global variable
-	if (!activityNumber) activityNumber++;   // For simplicity, always create it
-	int activityBits = VL_WORDS_I(activityNumber)*VL_WORDSIZE;   // For tighter code; round to next 32 bit point.
-	AstVar* newvarp = new AstVar (m_chgFuncp->fileline(), AstVarType::MODULETEMP,
-				      "__Vm_traceActivity", VFlagBitPacked(), activityBits);
+        AstVar* newvarp;
+        if (v3Global.opt.mtasks()) {
+            // Create a vector of bytes, not bits, for the tracing vector,
+            // so that we can set them atomically without locking.
+            //
+            // TODO: It would be slightly faster to have a bit vector per
+            // chain of packed MTasks, but we haven't packed the MTasks yet.
+            // If we support fully threaded tracing in the future, it would
+            // make sense to improve this at that time.
+            AstNodeDType* newScalarDtp
+                = new AstBasicDType(m_chgFuncp->fileline(), VFlagLogicPacked(), 1);
+            v3Global.rootp()->typeTablep()->addTypesp(newScalarDtp);
+            AstNodeDType* newArrDtp = new AstUnpackArrayDType(
+                m_chgFuncp->fileline(),
+                newScalarDtp,
+                new AstRange(m_chgFuncp->fileline(),
+                             VNumRange(m_activityNumber-1, 0, false)));
+            v3Global.rootp()->typeTablep()->addTypesp(newArrDtp);
+            newvarp = new AstVar(m_chgFuncp->fileline(),
+                                 AstVarType::MODULETEMP,
+                                  "__Vm_traceActivity", newArrDtp);
+        } else {
+            // For tighter code; round to next 32 bit point.
+            int activityBits = VL_WORDS_I(m_activityNumber)*VL_WORDSIZE;
+            newvarp = new AstVar(m_chgFuncp->fileline(), AstVarType::MODULETEMP,
+                                 "__Vm_traceActivity", VFlagBitPacked(), activityBits);
+        }
 	m_topModp->addStmtp(newvarp);
 	AstVarScope* newvscp = new AstVarScope(newvarp->fileline(), m_highScopep, newvarp);
 	m_highScopep->addVarp(newvscp);
@@ -329,13 +352,21 @@ private:
 		    FileLine* fl = vvertexp->insertp()->fileline();
 		    uint32_t acode = vvertexp->activityCode();
 		    vvertexp->insertp()->addNextHere
-			(new AstAssign (fl,
-					new AstSel (fl, new AstVarRef(fl, m_activityVscp, true),
-						    acode, 1),
-					new AstConst (fl, AstConst::LogicTrue())));
+                        (new AstAssign(fl, selectActivity(fl, acode, true),
+                                       new AstConst(fl, AstConst::LogicTrue())));
 		}
 	    }
 	}
+    }
+
+    AstNode* selectActivity(FileLine* flp, uint32_t acode, bool lvalue) {
+        if (v3Global.opt.mtasks()) {
+            return new AstArraySel(
+                flp, new AstVarRef(flp, m_activityVscp, lvalue), acode);
+        } else {
+            return new AstSel(
+                flp, new AstVarRef(flp, m_activityVscp, lvalue), acode, 1);
+        }
     }
 
     AstCFunc* newCFunc(AstCFuncType type, const string& name, AstCFunc* basep) {
@@ -453,8 +484,7 @@ private:
 		    AstNode* condp = NULL;
 		    for (ActCodeSet::const_iterator csit = actset.begin(); csit!=actset.end(); ++csit) {
 			uint32_t acode = *csit;
-			AstNode* selp = new AstSel (fl, new AstVarRef(fl, m_activityVscp, false),
-						    acode, 1);
+                        AstNode* selp = selectActivity(fl, acode, false);
 			if (condp) condp = new AstOr (fl, condp, selp);
 			else condp = selp;
 		    }
@@ -473,11 +503,19 @@ private:
 
 	// Clear activity after tracing completes
 	FileLine* fl = m_chgFuncp->fileline();
-	AstNode* clrp = new AstAssign (fl,
-				       new AstVarRef(fl, m_activityVscp, true),
-				       new AstConst(fl, V3Number(fl, m_activityVscp->width())));
-	m_fullFuncp->addFinalsp(clrp->cloneTree(true));
-	m_chgFuncp->addFinalsp(clrp);
+        if (v3Global.opt.mtasks()) {
+            for (uint32_t i = 0; i < m_activityNumber; ++i) {
+                AstNode* clrp = new AstAssign(fl, selectActivity(fl, i, true),
+                                              new AstConst(fl, AstConst::LogicFalse()));
+                m_fullFuncp->addFinalsp(clrp->cloneTree(true));
+                m_chgFuncp->addFinalsp(clrp);
+            }
+        } else {
+            AstNode* clrp = new AstAssign(fl, new AstVarRef(fl, m_activityVscp, true),
+                                          new AstConst(fl, V3Number(fl, m_activityVscp->width())));
+            m_fullFuncp->addFinalsp(clrp->cloneTree(true));
+            m_chgFuncp->addFinalsp(clrp);
+        }
     }
 
     uint32_t assignDeclCode(AstTraceDecl* nodep) {
@@ -699,6 +737,7 @@ public:
 	m_chgSubFuncp = NULL;
 	m_chgSubParentp = NULL;
 	m_chgSubStmts = 0;
+        m_activityNumber = 0;
         m_code = 0;
         m_finding = false;
 	m_funcNum = 0;

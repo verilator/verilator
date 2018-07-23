@@ -344,6 +344,17 @@ class Verilated {
         ~Serialized() {}
     } s_s;
 
+    static struct NonSerialized {  // Non-serialized information
+        // These are reloaded from on command-line settings, so do not need to persist
+        // Fast path
+        vluint64_t s_profThreadsStart;  ///< +prof+threads starting time
+        vluint32_t s_profThreadsWindow;  ///< +prof+threads window size
+        // Slow path
+        const char* s_profThreadsFilenamep;  ///< +prof+threads filename
+        NonSerialized();
+        ~NonSerialized();
+    } s_ns;
+
     // no need to be save-restored (serialized) the
     // assumption is that the restore is allowed to pass different arguments
     static struct CommandArgValues {
@@ -409,6 +420,14 @@ public:
     /// Enable/disable vpi fatal
     static void fatalOnVpiError(bool flag) VL_MT_SAFE;
     static bool fatalOnVpiError() VL_MT_SAFE { return s_s.s_fatalOnVpiError; }
+    /// --prof-threads related settings
+    static void profThreadsStart(vluint64_t flag) VL_MT_SAFE;
+    static vluint64_t profThreadsStart() VL_MT_SAFE { return s_ns.s_profThreadsStart; }
+    static void profThreadsWindow(vluint64_t flag) VL_MT_SAFE;
+    static vluint32_t profThreadsWindow() VL_MT_SAFE { return s_ns.s_profThreadsWindow; }
+    static void profThreadsFilenamep(const char* flagp) VL_MT_SAFE;
+    static const char* profThreadsFilenamep() VL_MT_SAFE { return s_ns.s_profThreadsFilenamep; }
+
     /// Flush callback for VCD waves
     static void flushCb(VerilatedVoidCb cb) VL_MT_SAFE;
     static void flushCall() VL_MT_SAFE;

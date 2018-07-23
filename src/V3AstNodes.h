@@ -1124,6 +1124,7 @@ private:
     bool	m_noSubst:1;	// Do not substitute out references
     bool	m_trace:1;	// Trace this variable
     AstVarAttrClocker m_attrClocker;
+    MTaskIdSet  m_mtaskIds;  // MTaskID's that read or write this var
 
     void	init() {
 	m_input=false; m_output=false; m_tristate=false; m_declOutput=false;
@@ -1323,6 +1324,10 @@ public:
 	if (varType()==AstVarType::INPUT || varType()==AstVarType::OUTPUT) m_varType = AstVarType::WIRE;
     }
     static AstVar* scVarRecurse(AstNode* nodep);
+    void addProducingMTaskId(int id) { m_mtaskIds.insert(id); }
+    void addConsumingMTaskId(int id) { m_mtaskIds.insert(id); }
+    const MTaskIdSet& mtaskIds() const { return m_mtaskIds; }
+    string mtasksString() const;
 };
 
 class AstDefParam : public AstNode {
@@ -5698,6 +5703,44 @@ public:
     AstNode* bodysp() const { return op1p(); }  // op1= expressions to print
 };
 
+class AstMTaskBody : public AstNode {
+    // Hold statements for each MTask
+private:
+    ExecMTask* m_execMTaskp;
+public:
+    explicit AstMTaskBody(FileLine* flp)
+        : AstNode(flp)
+        , m_execMTaskp(NULL) {}
+    ASTNODE_NODE_FUNCS(MTaskBody);
+    virtual const char* broken() const { BROKEN_RTN(!m_execMTaskp); return NULL; }
+    AstNode* stmtsp() const { return op1p(); }
+    void addStmtsp(AstNode* nodep) { addOp1p(nodep); }
+    ExecMTask* execMTaskp() const { return m_execMTaskp; }
+    void execMTaskp(ExecMTask* execMTaskp) { m_execMTaskp = execMTaskp; }
+    virtual void dump(std::ostream& str=std::cout);
+};
+
+class AstExecGraph : public AstNode {
+    // For parallel execution, this node contains a dependency graph.  Each
+    // node in the graph is an ExecMTask, which contains a body for the
+    // mtask, which contains a set of AstActive's, each of which calls a
+    // leaf AstCFunc. whew!
+    //
+    // The mtask bodies are also children of this node, so we can visit
+    // them without traversing the graph (it's not always needed to
+    // traverse the graph.)
+private:
+    V3Graph *m_depGraphp;  // contains ExecMTask's
+public:
+    explicit AstExecGraph(FileLine* fileline);
+    ASTNODE_NODE_FUNCS_NO_DTOR(ExecGraph)
+    virtual ~AstExecGraph();
+    virtual const char* broken() const { BROKEN_RTN(!m_depGraphp); return NULL; }
+    const V3Graph* depGraphp() const { return m_depGraphp; }
+    V3Graph* mutableDepGraphp() { return m_depGraphp; }
+    void addMTaskBody(AstMTaskBody* bodyp) { addOp1p(bodyp); }
+};
+
 class AstSplitPlaceholder : public AstNode {
 public:
     // Dummy node used within V3Split; never exists outside of V3Split.
@@ -5749,12 +5792,14 @@ private:
     AstTypeTable* m_typeTablep;	// Reference to top type table, for faster lookup
     AstPackage*	  m_dollarUnitPkgp;
     AstCFunc*     m_evalp;      // The '_eval' function
+    AstExecGraph* m_execGraphp;  // Execution MTask graph for threads>1 mode
 public:
     AstNetlist()
 	: AstNode(new FileLine("AstRoot",0))
 	, m_typeTablep(NULL)
 	, m_dollarUnitPkgp(NULL)
-	, m_evalp(NULL) { }
+        , m_evalp(NULL)
+        , m_execGraphp(NULL) { }
     ASTNODE_NODE_FUNCS(Netlist)
     virtual const char* broken() const {
         BROKEN_RTN(m_dollarUnitPkgp && !m_dollarUnitPkgp->brokeExists());
@@ -5784,6 +5829,8 @@ public:
 	return m_dollarUnitPkgp; }
     AstCFunc* evalp() const { return m_evalp; }
     void evalp(AstCFunc* evalp) { m_evalp = evalp; }
+    AstExecGraph* execGraphp() const { return m_execGraphp; }
+    void execGraphp(AstExecGraph* graphp) { m_execGraphp = graphp; }
 };
 
 //######################################################################

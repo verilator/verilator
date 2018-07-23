@@ -120,6 +120,7 @@ DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
 	bin/verilator \
 	bin/verilator_coverage \
 	bin/verilator_difftree \
+	bin/verilator_gantt \
 	bin/verilator_includer \
 	bin/verilator_profcfunc \
 	doxygen-mainpage doxygen.config veripool-logo.png \
@@ -154,6 +155,7 @@ DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
 INST_PROJ_FILES = \
 	bin/verilator \
 	bin/verilator_coverage \
+	bin/verilator_gantt \
 	bin/verilator_includer \
 	bin/verilator_profcfunc \
 	include/verilated.mk \
@@ -272,12 +274,12 @@ internals.pdf: internals.pod Makefile
 
 # See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
 VL_INST_BIN_FILES = verilator verilator_bin verilator_bin_dbg verilator_coverage_bin_dbg \
-	verilator_coverage verilator_includer verilator_profcfunc
+	verilator_coverage verilator_gantt verilator_includer verilator_profcfunc
 # Some scripts go into both the search path and pkgdatadir,
 # so they can be found by the user, and under $VERILATOR_ROOT.
 
 # See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
-VL_INST_MAN_FILES = verilator.1 verilator_coverage.1 verilator_profcfunc.1
+VL_INST_MAN_FILES = verilator.1 verilator_coverage.1 verilator_gantt.1 verilator_profcfunc.1
 
 VL_INST_INC_BLDDIR_FILES = \
 	include/verilated_config.h \
@@ -295,6 +297,7 @@ installbin:
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(bindir)
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator $(DESTDIR)$(bindir)/verilator )
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_coverage $(DESTDIR)$(bindir)/verilator_coverage )
+	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_gantt $(DESTDIR)$(bindir)/verilator_gantt )
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_profcfunc $(DESTDIR)$(bindir)/verilator_profcfunc )
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_bin $(DESTDIR)$(bindir)/verilator_bin )
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_bin_dbg $(DESTDIR)$(bindir)/verilator_bin_dbg )

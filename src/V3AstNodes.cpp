@@ -31,6 +31,8 @@
 #include "V3Ast.h"
 #include "V3File.h"
 #include "V3Global.h"
+#include "V3Graph.h"
+#include "V3PartitionGraph.h"  // Just for mtask dumping
 
 //======================================================================
 // Special methods
@@ -151,22 +153,26 @@ AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
     }
 }
 
+AstExecGraph::AstExecGraph(FileLine* fileline)
+    : AstNode(fileline) {
+    m_depGraphp = new V3Graph;
+}
+AstExecGraph::~AstExecGraph() {
+    delete m_depGraphp; VL_DANGLING(m_depGraphp);
+}
+
 bool AstVar::isSigPublic() const {
     return (m_sigPublic || (v3Global.opt.allPublic() && !isTemp() && !isGenVar()));
 }
-
 bool AstVar::isScQuad() const {
     return (isSc() && isQuad() && !isScBv() && !isScBigUint());
 }
-
 bool AstVar::isScBv() const {
     return ((isSc() && width() >= v3Global.opt.pinsBv()) || m_attrScBv);
 }
-
 bool AstVar::isScUint() const {
     return ((isSc() && v3Global.opt.pinsScUint() && width() >= 2 && width() <= 64) && !isScBv());
 }
-
 bool AstVar::isScBigUint() const {
     return ((isSc() && v3Global.opt.pinsScBigUint() && width() >= 65 && width() <= 512) && !isScBv());
 }
@@ -439,6 +445,16 @@ AstVar* AstVar::scVarRecurse(AstNode* nodep) {
 	if (nodep->op4p()) if (AstVar* p = scVarRecurse(nodep->op4p())) return p;
     }
     return NULL;
+}
+
+string AstVar::mtasksString() const {
+    std::ostringstream os;
+    os<<" all: ";
+    for (MTaskIdSet::const_iterator it = m_mtaskIds.begin();
+         it != m_mtaskIds.end(); ++it) {
+        os<<*it<<" ";
+    }
+    return os.str();
 }
 
 AstNodeDType* AstNodeDType::dtypeDimensionp(int dimension) {
@@ -969,6 +985,11 @@ void AstSliceSel::dump(std::ostream& str) {
     if (declRange().ranged()) {
         str<<" decl"<<declRange();
     }
+}
+void AstMTaskBody::dump(std::ostream& str) {
+    this->AstNode::dump(str);
+    str<<" ";
+    m_execMTaskp->dump(str);
 }
 void AstTypeTable::dump(std::ostream& str) {
     this->AstNode::dump(str);

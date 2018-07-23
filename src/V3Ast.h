@@ -29,15 +29,23 @@
 #include <vector>
 #include <cmath>
 #include <map>
+#include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Ast__gen_classes.h"	// From ./astgen
 // Things like:
 //   class V3AstNode;
 
+// Forward declarations
+class V3Graph;
+class ExecMTask;
+
 // Hint class so we can choose constructors
 class VFlagLogicPacked {};
 class VFlagBitPacked {};
 class VFlagChildDType {};  // Used by parser.y to select constructor that sets childDType
+
+// Used as key for another map, needs operator<, hence not an unordered_set
+typedef std::set<int> MTaskIdSet;  // Set of mtaskIds for Var sorting
 
 //######################################################################
 

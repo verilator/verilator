@@ -73,6 +73,7 @@
 #include "V3Param.h"
 #include "V3Parse.h"
 #include "V3ParseSym.h"
+#include "V3Partition.h"
 #include "V3PreShell.h"
 #include "V3Premit.h"
 #include "V3Reloop.h"
@@ -524,6 +525,14 @@ void process () {
 	V3EmitC::emitcSyms();
 	V3EmitC::emitcTrace();
     }
+    if (!v3Global.opt.xmlOnly()
+        && v3Global.opt.mtasks()) {
+        // Finalize our MTask cost estimates and pack the mtasks into
+        // threads. Must happen pre-EmitC which relies on the packing
+        // order. Must happen post-V3LifePost which changes the relative
+        // costs of mtasks.
+        V3Partition::finalize();
+    }
     if (!v3Global.opt.xmlOnly()) { // Unfortunately we have some lint checks in emitc.
 	V3EmitC::emitc();
     }
@@ -607,8 +616,11 @@ int main(int argc, char** argv, char** env) {
     VHashSha1::selfTest();
     AstBasicDTypeKwd::selfTest();
     V3Graph::selfTest();
-    V3TSP::selfTest();
-    V3ScoreboardBase::selfTest();
+    if (v3Global.opt.debugSelfTest()) {
+        V3TSP::selfTest();
+        V3ScoreboardBase::selfTest();
+        V3Partition::selfTest();
+    }
 
     // Read first filename
     v3Global.readFiles();

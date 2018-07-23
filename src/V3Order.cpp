@@ -89,19 +89,22 @@
 #include <sstream>
 #include <memory>
 
-#include "V3Global.h"
-#include "V3File.h"
 #include "V3Ast.h"
+#include "V3Const.h"
+#include "V3EmitCBase.h"
+#include "V3EmitV.h"
+#include "V3File.h"
+#include "V3Global.h"
 #include "V3Graph.h"
+#include "V3GraphStream.h"
 #include "V3List.h"
+#include "V3Partition.h"
+#include "V3PartitionGraph.h"
 #include "V3SenTree.h"
 #include "V3Stats.h"
-#include "V3EmitCBase.h"
-#include "V3Const.h"
 
 #include "V3Order.h"
 #include "V3OrderGraph.h"
-#include "V3EmitV.h"
 
 #include VL_INCLUDE_UNORDERED_MAP
 #include VL_INCLUDE_UNORDERED_SET
@@ -423,10 +426,15 @@ class ProcessMoveBuildGraph {
     // OrderVisitor. It produces a slightly coarsened graph to drive the
     // code scheduling.
     //
-    // * The new graph contains nodes of type OrderMoveVertex.
+    // * For the serial code scheduler, the new graph contains
+    //   nodes of type OrderMoveVertex.
+    //
+    // * For the threaded code scheduler, the new graph contains
+    //   nodes of type MTaskMoveVertex.
     //
     // * The difference in output type is abstracted away by the
-    //   'T_MoveVertex' template parameter.
+    //   'T_MoveVertex' template parameter; ProcessMoveBuildGraph otherwise
+    //   works the same way for both cases.
 
     // TYPES
     typedef std::pair<const V3GraphVertex*, const AstSenTree*> VxDomPair;
@@ -563,7 +571,7 @@ private:
 };
 
 //######################################################################
-// OrderMoveVertexMaker
+// OrderMoveVertexMaker and related
 
 class OrderMoveVertexMaker
     : public ProcessMoveBuildGraph<OrderMoveVertex>::MoveVertexMaker {
@@ -593,6 +601,64 @@ public:
     }
 private:
     VL_UNCOPYABLE(OrderMoveVertexMaker);
+};
+
+class OrderMTaskMoveVertexMaker
+    : public ProcessMoveBuildGraph<MTaskMoveVertex>::MoveVertexMaker {
+    V3Graph* m_pomGraphp;
+public:
+    explicit OrderMTaskMoveVertexMaker(V3Graph* pomGraphp)
+        : m_pomGraphp(pomGraphp) {}
+    MTaskMoveVertex* makeVertexp(OrderLogicVertex* lvertexp,
+                                 const OrderEitherVertex* varVertexp,
+                                 const AstScope* scopep,
+                                 const AstSenTree* domainp) {
+        // Exclude initial/settle logic from the mtasks graph.
+        // We'll output time-zero logic separately.
+        if (domainp->hasInitial() || domainp->hasSettle()) {
+            return NULL;
+        }
+        return new MTaskMoveVertex(m_pomGraphp, lvertexp, varVertexp, scopep, domainp);
+    }
+    void freeVertexp(MTaskMoveVertex* freeMep) {
+        freeMep->unlinkDelete(m_pomGraphp);
+    }
+private:
+    VL_UNCOPYABLE(OrderMTaskMoveVertexMaker);
+};
+
+class OrderVerticesByDomainThenScope {
+    PartPtrIdMap m_ids;
+public:
+    virtual bool operator()(const V3GraphVertex* lhsp,
+                            const V3GraphVertex* rhsp) const {
+        const MTaskMoveVertex* l_vxp = dynamic_cast<const MTaskMoveVertex*>(lhsp);
+        const MTaskMoveVertex* r_vxp = dynamic_cast<const MTaskMoveVertex*>(rhsp);
+        vluint64_t l_id = m_ids.findId(l_vxp->domainp());
+        vluint64_t r_id = m_ids.findId(r_vxp->domainp());
+        if (l_id < r_id) return true;
+        if (l_id > r_id) return false;
+        l_id = m_ids.findId(l_vxp->scopep());
+        r_id = m_ids.findId(r_vxp->scopep());
+        return l_id < r_id;
+    }
+};
+
+class MTaskVxIdLessThan {
+public:
+    MTaskVxIdLessThan() {}
+    virtual ~MTaskVxIdLessThan() {}
+
+    // Sort vertex's, which must be AbstractMTask's, into a deterministic
+    // order by comparing their serial IDs.
+    virtual bool operator()(const V3GraphVertex* lhsp,
+                            const V3GraphVertex* rhsp) const {
+        const AbstractMTask* lmtaskp =
+            dynamic_cast<const AbstractLogicMTask*>(lhsp);
+        const AbstractMTask* rmtaskp =
+            dynamic_cast<const AbstractLogicMTask*>(rhsp);
+        return lmtaskp->id() < rmtaskp->id();
+    }
 };
 
 //######################################################################
@@ -701,6 +767,7 @@ private:
     void processDomainsIterate(OrderEitherVertex* vertexp);
     void processEdgeReport();
 
+    // processMove* routines schedule serial execution
     void processMove();
     void processMoveClear();
     void processMoveBuildGraph();
@@ -710,6 +777,18 @@ private:
     void processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* domScopep, int level);
     AstActive* processMoveOneLogic(const OrderLogicVertex* lvertexp,
                                    AstCFunc*& newFuncpr, int& newStmtsr);
+
+    // processMTask* routines schedule threaded execution
+    struct MTaskState {
+        typedef std::list<const OrderLogicVertex*> Logics;
+        AstMTaskBody* m_mtaskBodyp;
+        Logics m_logics;
+        ExecMTask* m_execMTaskp;
+        MTaskState() : m_mtaskBodyp(NULL), m_execMTaskp(NULL) {}
+    };
+    void processMTasks();
+    typedef enum {LOGIC_INITIAL, LOGIC_SETTLE} InitialLogicE;
+    void processMTasksInitial(InitialLogicE logic_type);
 
     string cfuncName(AstNodeModule* modp, AstSenTree* domainp, AstScope* scopep, AstNode* forWhatp) {
 	modp->user3Inc();
@@ -1726,6 +1805,173 @@ AstActive* OrderVisitor::processMoveOneLogic(const OrderLogicVertex* lvertexp,
     return activep;
 }
 
+void OrderVisitor::processMTasksInitial(InitialLogicE logic_type) {
+    // Emit initial/settle logic. Initial blocks won't be part of the
+    // mtask partition, aren't eligible for parallelism.
+    //
+    int initStmts = 0;
+    AstCFunc* initCFunc = NULL;
+    AstScope* lastScopep = NULL;
+    for (V3GraphVertex* initVxp = m_graph.verticesBeginp();
+         initVxp; initVxp = initVxp->verticesNextp()) {
+        OrderLogicVertex* initp = dynamic_cast<OrderLogicVertex*>(initVxp);
+        if (!initp) continue;
+        if ((logic_type == LOGIC_INITIAL)
+            && !initp->domainp()->hasInitial()) continue;
+        if ((logic_type == LOGIC_SETTLE)
+            && !initp->domainp()->hasSettle()) continue;
+        if (initp->scopep() != lastScopep) {
+            // Start new cfunc, don't let the cfunc cross scopes
+            initCFunc = NULL;
+            lastScopep = initp->scopep();
+        }
+        AstActive* newActivep = processMoveOneLogic(initp, initCFunc/*ref*/, initStmts/*ref*/);
+        if (newActivep) m_scopetopp->addActivep(newActivep);
+    }
+}
+
+void OrderVisitor::processMTasks() {
+    // For nondeterminism debug:
+    V3Partition::hashGraphDebug(&m_graph, "V3Order's m_graph");
+
+    processMTasksInitial(LOGIC_INITIAL);
+    processMTasksInitial(LOGIC_SETTLE);
+
+    // We already produced a graph of every var, input, logic, and settle
+    // block and all dependencies; this is 'm_graph'.
+    //
+    // Now, starting from m_graph, make a slightly-coarsened graph representing
+    // only logic, and discarding edges we know we can ignore.
+    // This is quite similar to the 'm_pomGraph' of the serial code gen:
+    V3Graph logicGraph;
+    OrderMTaskMoveVertexMaker create_mtask_vertex(&logicGraph);
+    ProcessMoveBuildGraph<MTaskMoveVertex> mtask_pmbg(
+        &m_graph, &logicGraph, &create_mtask_vertex);
+    mtask_pmbg.build();
+
+    // Needed? We do this for m_pomGraph in serial mode, so do it here too:
+    logicGraph.removeRedundantEdges(&V3GraphEdge::followAlwaysTrue);
+
+    // Partition logicGraph into LogicMTask's. The partitioner will annotate
+    // each vertex in logicGraph with a 'color' which is really an mtask ID
+    // in this context.
+    V3Partition partitioner(&logicGraph);
+    V3Graph mtasks;
+    partitioner.go(&mtasks);
+
+    vl_unordered_map<unsigned /*mtask id*/, MTaskState> mtaskStates;
+
+    // Iterate through the entire logicGraph. For each logic node,
+    // attach it to a per-MTask ordered list of logic nodes.
+    // This is the order we'll execute logic nodes within the MTask.
+    //
+    // MTasks may span scopes and domains, so sort by both here:
+    GraphStream<OrderVerticesByDomainThenScope> emit_logic(&logicGraph);
+    const V3GraphVertex* moveVxp;
+    while ((moveVxp = emit_logic.nextp())) {
+        const MTaskMoveVertex* movep =
+            dynamic_cast<const MTaskMoveVertex*>(moveVxp);
+        unsigned mtaskId = movep->color();
+        UASSERT(mtaskId > 0,
+                "Every MTaskMoveVertex should have an mtask assignment >0");
+        if (movep->logicp()) {
+            // Add this logic to the per-mtask order
+            mtaskStates[mtaskId].m_logics.push_back(movep->logicp());
+
+            // Since we happen to be iterating over every logic node,
+            // take this opportunity to annotate each AstVar with the id's
+            // of mtasks that consume it and produce it. We'll use this
+            // information in V3EmitC when we lay out var's in memory.
+            const OrderLogicVertex* logicp = movep->logicp();
+            for (const V3GraphEdge* edgep = logicp->inBeginp();
+                 edgep; edgep = edgep->inNextp()) {
+                const OrderVarVertex* pre_varp =
+                    dynamic_cast<const OrderVarVertex*>(edgep->fromp());
+                if (!pre_varp) continue;
+                AstVar* varp = pre_varp->varScp()->varp();
+                // varp depends on logicp, so logicp produces varp,
+                // and vice-versa below
+                varp->addProducingMTaskId(mtaskId);
+            }
+            for (const V3GraphEdge* edgep = logicp->outBeginp();
+                 edgep; edgep = edgep->outNextp()) {
+                const OrderVarVertex* post_varp
+                    = dynamic_cast<const OrderVarVertex*>(edgep->top());
+                if (!post_varp) continue;
+                AstVar* varp = post_varp->varScp()->varp();
+                varp->addConsumingMTaskId(mtaskId);
+            }
+            // TODO? We ignore IO vars here, so those will have empty mtask
+            // signatures. But we could also give those mtask signatures.
+        }
+    }
+
+    // Create the AstExecGraph node which represents the execution
+    // of the MTask graph.
+    FileLine* rootFlp = new FileLine("AstRoot", 0);
+    AstExecGraph* execGraphp = new AstExecGraph(rootFlp);
+    m_scopetopp->addActivep(execGraphp);
+    v3Global.rootp()->execGraphp(execGraphp);
+
+    // Create CFuncs and bodies for each MTask.
+    GraphStream<MTaskVxIdLessThan> emit_mtasks(&mtasks);
+    const V3GraphVertex* mtaskVxp;
+    while ((mtaskVxp = emit_mtasks.nextp())) {
+        const AbstractLogicMTask* mtaskp =
+            dynamic_cast<const AbstractLogicMTask*>(mtaskVxp);
+
+        // Create a body for this mtask
+        AstMTaskBody* bodyp = new AstMTaskBody(rootFlp);
+        MTaskState& state = mtaskStates[mtaskp->id()];
+        state.m_mtaskBodyp = bodyp;
+
+        // Create leaf CFunc's to run this mtask's logic,
+        // and create a set of AstActive's to call those CFuncs.
+        // Add the AstActive's into the AstMTaskBody.
+        const AstSenTree* last_domainp = NULL;
+        AstCFunc* leafCFuncp = NULL;
+        int leafStmts = 0;
+        for (MTaskState::Logics::iterator it = state.m_logics.begin();
+             it != state.m_logics.end(); ++it) {
+            const OrderLogicVertex* logicp = *it;
+            if (logicp->domainp() != last_domainp) {
+                // Start a new leaf function.
+                leafCFuncp = NULL;
+            }
+            last_domainp = logicp->domainp();
+
+            AstActive* newActivep = processMoveOneLogic(logicp, leafCFuncp/*ref*/, leafStmts/*ref*/);
+            if (newActivep) bodyp->addStmtsp(newActivep);
+        }
+
+        // Translate the LogicMTask graph into the corresponding ExecMTask
+        // graph, which will outlive V3Order and persist for the remainder
+        // of verilator's processing.
+        // - The LogicMTask graph points to MTaskMoveVertex's
+        //   and OrderLogicVertex's which are ephemeral to V3Order.
+        // - The ExecMTask graph and the AstMTaskBody's produced here
+        //   persist until code generation time.
+        state.m_execMTaskp =
+            new ExecMTask(execGraphp->mutableDepGraphp(),
+                          bodyp, mtaskp->id());
+        // Cross-link each ExecMTask and MTaskBody
+        //  Q: Why even have two objects?
+        //  A: One is an AstNode, the other is a GraphVertex,
+        //     to combine them would involve multiple inheritance...
+        state.m_mtaskBodyp->execMTaskp(state.m_execMTaskp);
+        for (V3GraphEdge* inp = mtaskp->inBeginp();
+             inp; inp = inp->inNextp()) {
+            const V3GraphVertex* fromVxp = inp->fromp();
+            const AbstractLogicMTask* fromp =
+                dynamic_cast<const AbstractLogicMTask*>(fromVxp);
+            MTaskState& fromState = mtaskStates[fromp->id()];
+            new V3GraphEdge(execGraphp->mutableDepGraphp(),
+                            fromState.m_execMTaskp, state.m_execMTaskp, 1);
+        }
+        execGraphp->addMTaskBody(bodyp);
+    }
+}
+
 //######################################################################
 // OrderVisitor - Top processing
 
@@ -1762,7 +2008,7 @@ void OrderVisitor::process() {
 
     if (debug() && v3Global.opt.dumpTree()) processEdgeReport();
 
-    {
+    if (!v3Global.opt.mtasks()) {
         UINFO(2,"  Construct Move Graph...\n");
         processMoveBuildGraph();
         if (debug()>=4) m_pomGraph.dumpDotFilePrefixed("ordermv_start");  // Different prefix (ordermv) as it's not the same graph
@@ -1771,6 +2017,9 @@ void OrderVisitor::process() {
 
         UINFO(2,"  Move...\n");
         processMove();
+    } else {
+        UINFO(2,"  Set up mtasks...\n");
+        processMTasks();
     }
 
     // Any SC inputs feeding a combo domain must be marked, so we can make them sc_sensitive

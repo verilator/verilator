@@ -18,7 +18,8 @@ compile(
 if ($Self->{vlt_all}) {
     # Fewer optimizations than t_inst_tree_inl0_pub1 which allows
     # relative CFuncs:
-    file_grep ($Self->{stats}, qr/Optimizations, Combined CFuncs\s+(\d+)/i, 31);
+    file_grep ($Self->{stats}, qr/Optimizations, Combined CFuncs\s+(\d+)/i,
+               ($Self->{vltmt} ? 0 : 31));
 
     # Should not find any 'this->' except some 'this->__VlSymsp'
     my @files = `ls $Self->{obj_dir}/*.cpp`;

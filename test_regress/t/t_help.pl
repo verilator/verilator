@@ -13,6 +13,7 @@ foreach my $prog (
     "../bin/verilator",
     "../bin/verilator_coverage",
     "../bin/verilator_difftree",
+    "../bin/verilator_gantt",
     "../bin/verilator_profcfunc",
     ) {
     run(fails => 1,

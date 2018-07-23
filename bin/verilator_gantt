@@ -1,0 +1,559 @@
+: # -*-Mode: perl;-*- use perl, wherever it is
+eval 'exec perl -wS $0 ${1+"$@"}'
+  if 0;
+# See copyright, etc in below POD section.
+######################################################################
+
+use strict;
+use warnings;
+use Getopt::Long;
+use Pod::Usage;
+use vars qw ($Debug);
+
+$Debug = 0;
+my $Opt_File;
+my $Opt_Time_Per_Char = 0;  # rdtsc ticks per char in gantt chart, 0=auto
+my $opt_vcd = "profile_threads.vcd";
+
+our %Threads;
+our %Mtasks;
+our %Global;
+
+autoflush STDOUT 1;
+autoflush STDERR 1;
+Getopt::Long::config ("no_auto_abbrev");
+if (! GetOptions (
+          "help"        => \&usage,
+          "scale=i"     => \$Opt_Time_Per_Char,
+          "debug"       => sub { $Debug = 1; },
+          "vcd=s"       => \$opt_vcd,
+          "no-vcd!"     => sub { $opt_vcd = undef; },
+          "<>"          => \&parameter,
+    )) {
+    die "%Error: Bad usage, try 'verilator_gantt --help'\n";
+}
+
+$Opt_File = "profile_threads.dat" if !defined $Opt_File;
+
+process($Opt_File);
+write_vcd($opt_vcd) if defined $opt_vcd;
+exit(0);
+
+#######################################################################
+
+sub usage {
+    pod2usage(-verbose=>2, -exitval=>2, -output=>\*STDOUT);
+    exit (1);
+}
+
+sub parameter {
+    my $param = shift;
+    if (!defined $Opt_File) {
+        $Opt_File = $param;
+    } else {
+        die "%Error: Unknown parameter: $param\n";
+    }
+}
+
+#######################################################################
+
+sub process {
+    my $filename = shift;
+
+    read_data($filename);
+    report();
+}
+
+#######################################################################
+
+sub read_data {
+    my $filename = shift;
+
+    %Global = (rdtsc_cycle_time => 0);
+
+    my $fh = IO::File->new ($filename) or die "%Error: $! $filename,";
+    while (my $line = $fh->getline) {
+        if ($line =~ m/VLPROF mtask\s(\d+)\sstart\s(\d+)\send\s(\d+)\selapsed\s(\d+)\spredict_time\s(\d+)\scpu\s(\d+)\son thread (\d+)/) {
+            my $mtask = $1;
+            my $start = $2;
+            my $end = $3;
+            my $elapsed_time = $4;
+            my $predict_time = $5;
+            my $cpu = $6;
+            my $thread = $7;
+            $Threads{$thread}{$start}{mtask} = $mtask;
+            $Threads{$thread}{$start}{end} = $end;
+            $Threads{$thread}{$start}{cpu} = $cpu;
+
+            if (!exists $Mtasks{$mtask}{elapsed}) {
+                $Mtasks{$mtask}{elapsed} = 0;
+            }
+            $Mtasks{$mtask}{elapsed} += $elapsed_time;
+            $Mtasks{$mtask}{predict} = $predict_time;
+            $Mtasks{$mtask}{end} = max($Mtasks{$mtask}{end}, $end);
+        }
+        elsif ($line =~ /^VLPROFTHREAD/) {}
+        elsif ($line =~ m/VLPROF arg\s+(\S+)\+([0-9.])\s*$/
+               || $line =~ m/VLPROF arg\s+(\S+)\s+([0-9.])\s*$/) {
+            $Global{args}{$1} = $2;
+        }
+        elsif ($line =~ m/VLPROF stat\s+(\S+)\s+([0-9.]+)/) {
+            $Global{stats}{$1} = $2;
+        }
+        elsif ($line =~ /^#/) {}
+        elsif ($Debug) {
+            chomp $line;
+            print "Unk: $line\n";
+        }
+        # TODO -- this is parsing text printed by a client.
+        # Really, verilator proper should generate this
+        # if it's useful...
+        if ($line =~ m/rdtsc time = (\d+) ticks/) {
+            $Global{rdtsc_cycle_time} = $1;
+        }
+    }
+}
+
+sub report {
+    print "Verilator Gantt report\n";
+
+    print "\nArgument settings:\n";
+    foreach my $arg (sort keys %{$Global{args}}) {
+        my $plus = ($arg =~ /^\+/) ? "+" : " ";
+        printf "  %s%s%d\n", $arg, $plus, $Global{args}{$arg};
+    }
+
+    my $nthreads = scalar keys %Threads;
+    $Global{cpus}{cpu_time} = {};
+    foreach my $thread (keys %Threads) {
+        # Make potentially multiple characters per column
+        foreach my $start (keys %{$Threads{$thread}}) {
+            my $cpu = $Threads{$thread}{$start}{cpu};
+            my $elapsed = $Threads{$thread}{$start}{end} - $start;
+            $Global{cpus}{cpu_time}{$cpu} += $elapsed;
+        }
+    }
+
+    my $mt_mtask_time = 0;
+    my $long_mtask_time = 0;
+    my $last_end = 0;
+    foreach my $mtask (keys %Mtasks) {
+        $mt_mtask_time += $Mtasks{$mtask}{elapsed};
+        $last_end = max($last_end, $Mtasks{$mtask}{end});
+        $long_mtask_time = max($long_mtask_time, $Mtasks{$mtask}{elapsed});
+    }
+    $Global{last_end} = $last_end;
+
+    report_graph();
+
+    # If we know cycle time in the same (rdtsc) units,
+    # this will give us an actual utilization number,
+    # (how effectively we keep the cores busy.)
+    #
+    # It also gives us a number we can compare against
+    # serial mode, to estimate the overhead of data sharing,
+    # which will show up in the total elapsed time. (Overhead
+    # of synchronization and scheduling should not.)
+    print "\nAnalysis:\n";
+    printf "  Total threads             = %d\n", $nthreads;
+    printf "  Total mtasks              = %d\n", scalar (keys %Mtasks);
+    printf "  Total cpus used           = %d\n", scalar (keys %{$Global{cpus}});
+    printf "  Total yields              = %d\n", $Global{stats}{yields};
+    printf "  Total eval time           = %d rdtsc ticks\n", $Global{last_end};
+    printf "  Longest mtask time        = %d rdtsc ticks\n", $long_mtask_time;
+    printf "  All-thread mtask time     = %d rdtsc ticks\n", $mt_mtask_time;
+    my $long_efficiency = $long_mtask_time/($Global{last_end});
+    printf "  Longest-thread efficiency = %0.1f%%\n", $long_efficiency*100;
+    my $mt_efficiency = $mt_mtask_time/($Global{last_end}*$nthreads);
+    printf "  All-thread efficiency     = %0.1f%%\n", $mt_efficiency*100;
+    printf "  All-thread speedup        = %0.1f\n", $mt_efficiency*$nthreads;
+    if ($Global{rdtsc_cycle_time} > 0) {
+        my $ut = $mt_mtask_time / $Global{rdtsc_cycle_time};
+        print "tot_mtask_cpu=$mt_mtask_time cyc=$Global{rdtsc_cycle_time} ut=$ut\n";
+    }
+
+    my @p2e_ratios;
+    my $min_p2e = 1000000;
+    my $min_mtask;
+    my $max_p2e = -1000000;
+    my $max_mtask;
+    foreach my $mtask (sort keys %Mtasks) {
+        if ($Mtasks{$mtask}{elapsed} > 0) {
+            if ($Mtasks{$mtask}{predict} == 0) {
+                $Mtasks{$mtask}{predict} = 1;  # don't log(0) below
+            }
+            my $p2e_ratio = log( $Mtasks{$mtask}{predict} / $Mtasks{$mtask}{elapsed} );
+            #print "log(p2e $mtask) = $p2e_ratio   (predict $Mtasks{$mtask}{predict}, elapsed $Mtasks{$mtask}{elapsed})\n";
+            push @p2e_ratios, $p2e_ratio;
+
+            if ($p2e_ratio > $max_p2e) {
+                $max_p2e = $p2e_ratio;
+                $max_mtask = $mtask;
+            }
+            if ($p2e_ratio < $min_p2e) {
+                $min_p2e = $p2e_ratio;
+                $min_mtask = $mtask;
+            }
+        }
+    }
+
+    print "\nStatistics:\n";
+    print "  min log(p2e) = $min_p2e  from mtask $min_mtask (predict $Mtasks{$min_mtask}{predict}, elapsed $Mtasks{$min_mtask}{elapsed})\n";
+    print "  max log(p2e) = $max_p2e  from mtask $max_mtask (predict $Mtasks{$max_mtask}{predict}, elapsed $Mtasks{$max_mtask}{elapsed})\n";
+
+    my $stddev = stddev(\@p2e_ratios);
+    my $mean = mean(\@p2e_ratios);
+    print "  mean = " . ($mean) . "\n";
+    print "  stddev = " . ($stddev) . "\n";
+    print "  e ^ stddev = " . exp($stddev). "\n";
+    print "\n";
+}
+
+sub report_graph {
+    my $time_per = $Opt_Time_Per_Char;
+    if ($time_per == 0) {
+        $time_per = ($Global{last_end} / 40);  # Start with 40 columns
+        while ($time_per > 10) {
+            my ($graph, $conflicts) = _make_graph($time_per);
+            last if !$conflicts;
+            $time_per = int($time_per/2);
+        }
+        # One more step so we can fit more labels
+        $time_per = int($time_per/2);
+    }
+
+    my ($graph, $conflicts) = _make_graph($time_per);
+
+    print "\nThread gantt graph:\n";
+    print "  Legend: One character width = $time_per rdtsc ticks\n";
+    print "  Legend: '&' = multiple mtasks in this period (character width)\n";
+
+    my $scale = "   <-".$Global{last_end}." rdtsc total";
+    for (my $col = length($scale);  # -2 for '->' below
+         $col < ($Global{last_end}/$time_per); ++$col) {
+        $scale .= "-";
+    }
+    print "  $scale->\n";
+
+    foreach my $thread (sort keys %{$graph}) {
+        print "  t: ";
+        _print_graph_line($graph->{$thread}, '');
+    }
+}
+
+sub _make_graph {
+    my $time_per = shift;
+
+    my $graph = {};  # {thread}{column}{char=>'x' or chars=>#}
+    my $conflicts = 0;
+    foreach my $thread (keys %Threads) {
+        # Make potentially multiple characters per column
+        foreach my $start (sort {$a <=> $b} keys %{$Threads{$thread}}) {
+            my $end = $Threads{$thread}{$start}{end};
+            my $mtask = $Threads{$thread}{$start}{mtask};
+            my $cpu = $Threads{$thread}{$start}{cpu};
+
+            my $startcol = _time_col($time_per, $start);
+            my $endcol = _time_col($time_per, $end);
+
+            my $label = "[";
+            $label .= "$cpu";  # Maybe make optional in future
+            my $width = $endcol - $startcol + 1;
+            while (length($label) < ($width-1)) {  # -1 for ']'
+                $label .= "-";
+            }
+            $label .= "]";
+            $graph->{$thread}[$startcol]{char} .= $label;
+        }
+        if ($Debug) {
+            print "# Multicol: "; _print_graph_line($graph->{$thread}, '|');
+        }
+        # Expand line to one char per column
+        for (my $col = 0; $col <= $#{$graph->{$thread}}; ++$col) {
+            if (my $chars = $graph->{$thread}[$col]{char}) {
+                my $ok = 1;
+                for (my $coladd = 1; $coladd<length($chars); ++$coladd) {
+                    if ($graph->{$thread}[$col + $coladd]{char}) {
+                        $ok = 0; last;
+                    }
+                }
+                if (!$ok) {
+                    if ($chars =~ /\[.*\[/) {  # Two begins or more
+                        $conflicts++;
+                        $graph->{$thread}[$col]{char} = "&";
+                    } else {
+                        $graph->{$thread}[$col]{char} = "[";
+                    }
+                    for (my $coladd = 1; $coladd<length($chars); ++$coladd) {
+                        if ($graph->{$thread}[$col + $coladd]{char}) {
+                            last;
+                        } else {
+                            $graph->{$thread}[$col + $coladd]{char} = 'x';
+                        }
+                    }
+                } else {
+                    my $coladd = 0;
+                    foreach my $char (split //, $chars) {
+                        $graph->{$thread}[$col+$coladd]{char} = $char;
+                        ++$coladd;
+                    }
+                }
+            }
+        }
+        if ($Debug) {
+            print "# Singlcol: "; _print_graph_line($graph->{$thread}, '|');
+        }
+    }
+    print "# Conflicts $conflicts\n" if $Debug;
+    return ($graph, $conflicts);
+}
+
+sub _print_graph_line {
+    my $graph_thread = shift;
+    my $sep = shift;
+    for (my $col = 0; $col <= $#{$graph_thread}; ++$col) {
+        my $c = $graph_thread->[$col]{char}; $c=' ' if !defined $c;
+        print $c, $sep;
+    }
+    print "\n";
+}
+
+sub _time_col {
+    my $time_per = shift;
+    my $time = shift;
+    return int($time/$time_per);
+}
+
+#######################################################################
+
+sub write_vcd {
+    my $filename = shift;
+    print "Writing $filename\n";
+    my $fh = IO::File->new(">$filename") or die "%Error: $! $filename,";
+    my $vcd = {values => {},  # {<time>}{<code>} = value
+               sigs => {},  # {<module>}{<sig}} = code
+               code => 0,
+    };
+
+    my %parallelism;
+    foreach my $thread (keys %Threads) {
+        my $mcode = ($vcd->{sigs}{threads}{"thread${thread}_mtask"} ||= $vcd->{code}++);
+        foreach my $start (sort {$a <=> $b} keys %{$Threads{$thread}}) {
+            my $end = $Threads{$thread}{$start}{end};
+            my $mtask = $Threads{$thread}{$start}{mtask};
+            my $cpu = $Threads{$thread}{$start}{cpu};
+            $vcd->{values}{$start}{$mcode} = $mtask;
+            $vcd->{values}{$end}{$mcode} = undef;
+            $parallelism{$start}++;
+            $parallelism{$end}--;
+
+            my $ccode = $vcd->{sigs}{cpus}{"cpu${cpu}_thread"} ||= $vcd->{code}++;
+            $vcd->{values}{$start}{$ccode} = $thread;
+            $vcd->{values}{$end}{$ccode} = undef;
+
+            my $mcode = $vcd->{sigs}{mtasks}{"mtask${mtask}_cpu"} ||= $vcd->{code}++;
+            $vcd->{values}{$start}{$mcode} = $cpu;
+            $vcd->{values}{$end}{$mcode} = undef;
+        }
+    }
+    {
+        my $pcode = ($vcd->{sigs}{Stats}{"parallelism"} ||= $vcd->{code}++);
+        my $value = 0;
+        foreach my $time (sort {$a<=>$b} keys %parallelism) {
+            $value += $parallelism{$time};
+            $vcd->{values}{$time}{$pcode} = $value;
+        }
+    }
+
+    $fh->print('$version Generated by verilator_gantt $end'."\n");
+    $fh->print('$timescale 1ns $end'."\n");
+    $fh->print("\n");
+
+    my %all_codes;
+    $fh->print(' $scope module gantt $end'."\n");
+    foreach my $module (sort keys %{$vcd->{sigs}}) {
+        $fh->printf('  $scope module %s $end'."\n", $module);
+        foreach my $sig (sort keys %{$vcd->{sigs}{$module}}) {
+            my $code = $vcd->{sigs}{$module}{$sig};
+            $fh->printf('   $var wire 32 v%x %s [31:0] $end'."\n",
+                        $code, $sig);
+            $all_codes{$code} = 1;
+        }
+        $fh->print('  $upscope $end'."\n");
+    }
+    $fh->print(' $upscope $end'."\n");
+    $fh->print('$enddefinitions $end'."\n");
+    $fh->print("\n");
+
+    my $first = 1;
+    foreach my $time (sort {$a <=> $b} keys %{$vcd->{values}}) {
+        if ($first) {
+            $first = 0;
+            # Start with Z for any signals without time zero data
+            foreach my $code (keys %all_codes) {
+                if (!defined $vcd->{values}{$time}{$code}) {
+                    $vcd->{values}{$time}{$code} = undef;
+                }
+            }
+        }
+        $fh->printf("#%d\n", $time);
+        foreach my $code (sort keys %{$vcd->{values}{$time}}) {
+            my $value = $vcd->{values}{$time}{$code};
+            if (defined $value) {
+                $fh->printf("b%b v%x\n", $value, $code);
+            } else {
+                $fh->printf("bz v%x\n", $code);
+            }
+        }
+    }
+}
+
+#######################################################################
+# Similar to Statistics::Basic functions, but avoid a package dependency
+
+sub max {
+    my $n = $_[0]; shift;
+    while (defined $_[0]) {
+        $n = $_[0] if !defined $n || $_[0] > $n;
+        shift;
+    }
+    return $n;
+}
+
+sub mean {
+    my $arrayref = shift;
+    my $n = 0;
+    my $sum = 0;
+    foreach my $v (@$arrayref) {
+        $sum += $v;
+        $n++;
+    }
+    return undef if !$n;
+    return $sum/$n;
+}
+
+sub stddev {
+    my $arrayref = shift;
+    my $n = 0;
+    my $sum = 0;
+    my $sumsq = 0;
+    foreach my $v (@$arrayref) {
+        $sum += $v;
+        $sumsq += $v**2;
+        $n++;
+    }
+    return undef if !$n;
+    return sqrt(($sumsq/$n) - ($sum/$n)**2);
+}
+
+#######################################################################
+__END__
+
+=pod
+
+=head1 NAME
+
+verilator_gantt - Create Gantt chart of multi-threaded execution
+
+=head1 SYNOPSIS
+
+Creates a visual representation to help analyze Verilator multithreaded
+simulation performance, by showing when each macro-task starts and ends,
+and showing when each thread is busy or idle.
+
+The generated Gantt chart has time on the X-axis. Times shown are to the
+scale printed, i.e. a certain about of time for each character width.  The
+Y-axis shows threads, each thread's execution is shown on one line.  That
+line shows "[" at the position in time when it executes.
+
+Following the "[" is the cpu number the task executed on, followed by zero
+or more "-" to make the width of the characters match the scaled execution
+time, followed by a "]".  If the scale is too small, the cpu number and
+mtask number will not be printed.  If the scale is very small, a "&"
+indicates multiple mtasks started at that time position.
+
+Also creates a value change dump (VCD) format dump file which may be viewed
+in a waveform viewer (e.g. C<GTKWave>).  See below.
+
+=head1 USAGE
+
+  Build with --prof-threads.
+
+  Run a sim with +verilator+prof+threads+window 2.
+
+  This will create profile_threads.dat.
+
+  Then run:
+
+  verilator_gantt profile_threads.dat
+
+  The report will be printed on standard output, this also generates
+  profile_threads.vcd
+
+  View profile_threads.vcd in a waveform viewer.
+
+=head1 VCD SIGNALS
+
+In waveforms there are the following signals. Most signals the "decimal"
+format will remove the leading zeros and make the traces easier to read.
+
+parallelism: The number of mtasks active at this time, for best performance
+this will match the thread count. You may want to use an "analog step"
+format to view this signal.
+
+cpu#_thread: For the given CPU number, the thread number executing.
+
+mtask#_cpu; For the given mtask id, the CPU it is executing on.
+
+thread#_mtask: For the given thread number, the mtask id executing.
+
+=head1 ARGUMENTS
+
+=over 4
+
+=item I<filename>
+
+The filename to read data from, defaults to "profile_threads.dat".
+
+=item --help
+
+Displays this message and program version and exits.
+
+=item --scale I<n>
+
+On the X-axis of the generated Gantt chart, each character represents this
+many time units. (On x86, time units are rdtsc ticks.)  Defaults to 0,
+which will automatically compute a reasonable scale where no two mtasks
+need to fit into same character width's worth of scaled time.
+
+=item --no-vcd
+
+=item --vcd I<filename>
+
+Set output filename for vcd dump, or disable. Default is
+verilator_gantt.vcd.
+
+=back
+
+=head1 DISTRIBUTION
+
+The latest version is available from L<http://www.veripool.org/>.
+
+Copyright 2018-2018 by Wilson Snyder.  Verilator is free software; you can
+redistribute it and/or modify it under the terms of either the GNU Lesser
+General Public License Version 3 or the Perl Artistic License Version 2.0.
+
+=head1 AUTHORS
+
+Wilson Snyder <wsnyder@wsnyder.org>
+
+=head1 SEE ALSO
+
+C<verilator>
+
+=cut
+
+######################################################################
+### Local Variables:
+### compile-command: "$V4/bin/verilator_gantt $V4/test_regress/obj_vltmt/t_gantt/vlt_sim.log"
+### End:

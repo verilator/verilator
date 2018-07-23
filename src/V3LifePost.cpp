@@ -37,6 +37,8 @@
 #include VL_INCLUDE_UNORDERED_MAP
 
 #include "V3Global.h"
+#include "V3PartitionGraph.h"
+#include "V3GraphPathChecker.h"
 #include "V3LifePost.h"
 #include "V3Stats.h"
 #include "V3Ast.h"
@@ -78,6 +80,11 @@ private:
             iterate(nodep->funcp());
         }
     }
+    virtual void visit(AstExecGraph* nodep) {
+        // Can just iterate across the MTask bodies in any order.  Order
+        // isn't important for LifePostElimVisitor's simple substitution.
+        iterateChildren(nodep);
+    }
     virtual void visit(AstCFunc* nodep) {
         if (!m_tracingCall && !nodep->entryPoint()) return;
         m_tracingCall = false;
@@ -101,11 +108,17 @@ public:
 // and a sequence number within the mtask:
 
 struct LifeLocation {
+    const ExecMTask* mtaskp;
     uint32_t sequence;
 public:
-    LifeLocation() : sequence(0) {}
-    LifeLocation(uint32_t sequence_) : sequence(sequence_) {}
+    LifeLocation() : mtaskp(NULL), sequence(0) {}
+    LifeLocation(const ExecMTask* mtaskp_, uint32_t sequence_)
+        : mtaskp(mtaskp_), sequence(sequence_) {}
     bool operator< (const LifeLocation& b) const {
+        unsigned a_id = mtaskp ? mtaskp->id() : 0;
+        unsigned b_id = b.mtaskp ? b.mtaskp->id() : 0;
+        if (a_id < b_id) { return true; }
+        if (b_id < a_id) { return false; }
         return sequence < b.sequence;
     }
 };
@@ -130,6 +143,9 @@ private:
 
     // STATE
     uint32_t            m_sequence;     // Sequence number of assigns/varrefs,
+    //                                  // local to the current MTask.
+    const ExecMTask*    m_execMTaskp;   // Current ExecMTask being processed,
+    //                                  // or NULL for serial code.
     V3Double0           m_statAssnDel;  // Statistic tracking
     bool                m_tracingCall;  // Currently tracing a CCall to a CFunc
 
@@ -143,11 +159,15 @@ private:
     typedef vl_unordered_map<const AstVarScope*, LifePostLocation> PostLocMap;
     PostLocMap          m_assignposts;  // AssignPost dly var locations
 
+    const V3Graph*      m_mtasksGraphp;  // Mtask tracking graph
+    vl_unique_ptr<GraphPathChecker> m_checker;
+
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
-    static bool before(const LifeLocation& a, const LifeLocation& b) {
-        return a.sequence < b.sequence;
+    bool before(const LifeLocation& a, const LifeLocation& b) {
+        if (a.mtaskp == b.mtaskp) return a.sequence < b.sequence;
+        return m_checker->pathExistsFrom(a.mtaskp, b.mtaskp);
     }
     bool outsideCriticalArea(LifeLocation loc,
                              const std::set<LifeLocation>& dlyVarAssigns,
@@ -159,6 +179,13 @@ private:
         // Otherwise, loc could fall in the "critical" area where the
         // substitution affects the result of the operation at loc, so
         // return false.
+        if (!loc.mtaskp && assignPostLoc.mtaskp) {
+            // This is threaded mode; 'loc' is something that happens at
+            // initial/settle time, or perhaps in _eval() but outside of
+            // the mtask graph.
+            // In either case, it's not in the critical area.
+            return true;
+        }
         if (before(assignPostLoc, loc)) return true;
         for (std::set<LifeLocation>::iterator it = dlyVarAssigns.begin();
              it != dlyVarAssigns.end(); ++it) {
@@ -239,6 +266,17 @@ private:
         // within the mtask) where each varscope is read, and written.
         iterateChildren(nodep);
 
+        if (v3Global.opt.mtasks()) {
+            if (!m_mtasksGraphp) {
+                nodep->v3fatalSrc("Should have initted m_mtasksGraphp by now");
+            }
+            m_checker.reset(new GraphPathChecker(m_mtasksGraphp));
+        } else {
+            if (m_mtasksGraphp) {
+                nodep->v3fatalSrc("Did not expect any m_mtasksGraphp in serial mode");
+            }
+        }
+
         // Find all assignposts. Determine which ones can be
         // eliminated. Remove those, and mark their dly vars' user4 field
         // to indicate we should replace these dly vars with their original
@@ -252,7 +290,8 @@ private:
         // Consumption/generation of a variable,
         AstVarScope* vscp = nodep->varScopep();
         if (!vscp) nodep->v3fatalSrc("Scope not assigned");
-        LifeLocation loc(++m_sequence);
+
+        LifeLocation loc(m_execMTaskp, ++m_sequence);
         if (nodep->lvalue()) {
             m_writes[vscp].insert(loc);
         } else {
@@ -275,7 +314,7 @@ private:
             if (m_assignposts.find(dlyVarp) != m_assignposts.end()) {
                 nodep->v3fatalSrc("LifePostLocation attempted duplicate dlyvar map addition");
             }
-            LifeLocation loc(++m_sequence);
+            LifeLocation loc(m_execMTaskp, ++m_sequence);
             m_assignposts[dlyVarp] = LifePostLocation(loc, nodep);
         }
     }
@@ -291,6 +330,18 @@ private:
             iterate(nodep->funcp());
         }
     }
+    virtual void visit(AstExecGraph* nodep) {
+        // Treat the ExecGraph like a call to each mtask body
+        m_mtasksGraphp = nodep->depGraphp();
+        for (V3GraphVertex* mtaskVxp = m_mtasksGraphp->verticesBeginp();
+             mtaskVxp; mtaskVxp = mtaskVxp->verticesNextp()) {
+            ExecMTask* mtaskp = dynamic_cast<ExecMTask*>(mtaskVxp);
+            m_execMTaskp = mtaskp;
+            m_sequence = 0;
+            iterate(mtaskp->bodyp());
+        }
+        m_execMTaskp = NULL;
+    }
     virtual void visit(AstCFunc* nodep) {
         if (!m_tracingCall && !nodep->entryPoint()) return;
         m_tracingCall = false;
@@ -305,7 +356,9 @@ public:
     // CONSTRUCTORS
     explicit LifePostDlyVisitor(AstNetlist* nodep)
         : m_sequence(0)
-        , m_tracingCall(false) {
+        , m_execMTaskp(NULL)
+        , m_tracingCall(false)
+        , m_mtasksGraphp(NULL) {
         iterate(nodep);
     }
     virtual ~LifePostDlyVisitor() {
