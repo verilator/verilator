@@ -34,6 +34,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix std:: build error, bug1322.
 
+****  Change MODDUP errors to warnings, msg2588. [Marshal Qiao]
+
 
 * Verilator 3.924 2018-06-12
 

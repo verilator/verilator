@@ -3576,10 +3576,14 @@ correctly.
 
 =item MODDUP
 
-Error that a module has multiple definitions.  Generally this indicates a
+Warns that a module has multiple definitions.  Generally this indicates a
 coding error, or a mistake in a library file and it's good practice to have
-one module per file to avoid these issues.  For some gate level netlists
-duplicates are unavoidable, and this error may be disabled.
+one module per file (and only put each file once on the command line) to
+avoid these issues.  For some gate level netlists duplicates are sometimes
+unavoidable, and MODDUP should be disabled.
+
+Ignoring this warning will cause the more recent module definition to be
+discarded.
 
 =item MULTIDRIVEN
 

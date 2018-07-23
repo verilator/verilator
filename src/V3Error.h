@@ -156,7 +156,7 @@ public:
     // Later -Werror- options may make more of these.
     bool pretendError() const { return ( m_e==ASSIGNIN || m_e==BLKANDNBLK
 					 || m_e==BLKLOOPINIT
-					 || m_e==IMPURE || m_e==MODDUP); }
+					 || m_e==IMPURE); }
     // Warnings to mention manual
     bool mentionManual() const { return ( m_e==EC_FATALSRC || m_e==SYMRSVDWORD
 					  || pretendError() ); }

@@ -12,8 +12,8 @@ scenarios(vlt_all => 1);
 compile(
     fails => 1,
     expect =>
-'%Error-MODDUP: t/t_mod_dup_bad.v:\d+: Duplicate declaration of module: a
-%Error-MODDUP: t/t_mod_dup_bad.v:\d+: ... Location of original declaration
+'%Warning-MODDUP: t/t_mod_dup_bad.v:\d+: Duplicate declaration of module: a
+%Warning-MODDUP: t/t_mod_dup_bad.v:\d+: ... Location of original declaration
 .*
 %Error: Exiting due to.*',
     );
