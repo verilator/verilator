@@ -77,7 +77,7 @@ public:
         bool m_end;  // At the end()
 
         // CONSTRUCTORS
-        const_iterator(SortByValueMap* sbmvp)  // for end()
+        explicit const_iterator(SortByValueMap* sbmvp)  // for end()
             : m_sbvmp(sbmvp)
             , m_end(true) {}
         const_iterator(typename Val2Keys::iterator valIt,
@@ -210,7 +210,7 @@ public:
         // const_iterator
 
         // CONSTRUCTORS
-        iterator(SortByValueMap* sbvmp)
+        explicit iterator(SortByValueMap* sbvmp)
             : const_iterator(sbvmp) {}
         iterator(typename Val2Keys::iterator valIt,
                  typename KeySet::iterator keyIt,
@@ -306,7 +306,7 @@ public:
     const_iterator find(const T_Key& k) const {
         SortByValueMap* mutp = const_cast<SortByValueMap*>(this);
         typename Key2Val::iterator kvit = mutp->m_keys.find(k);
-        if (kvit == m_keys.end()) return end();
+        if (kvit == mutp->m_keys.end()) return end();
 
         typename Val2Keys::iterator valIt = mutp->m_vals.find(kvit->second);
         typename KeySet::iterator keyIt = valIt->second.find(k);
@@ -331,11 +331,11 @@ public:
         m_keys.erase(kvit);
         return 1;
     }
-    void erase(iterator it) {
+    void erase(const iterator& it) {
         m_keys.erase(it.key());
         removeKeyFromOldVal(it);
     }
-    void erase(reverse_iterator it) {
+    void erase(const reverse_iterator& it) {
         erase(*it);  // Dereferencing returns a copy of the forward iterator
     }
     bool has(const T_Key& k) const {
