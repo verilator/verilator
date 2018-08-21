@@ -326,7 +326,7 @@ public:
     virtual void visit(AstNodeReadWriteMem* nodep) {
         puts(nodep->cFuncPrefixp());
 	emitIQW(nodep->filenamep());
-	puts(" (");  // We take a void* rather than emitIQW(nodep->memp());
+        puts("(");  // We take a void* rather than emitIQW(nodep->memp());
 	puts(nodep->isHex()?"true":"false");
 	putbs(",");
 	puts(cvtToStr(nodep->memp()->widthMin()));  // Need real storage width
