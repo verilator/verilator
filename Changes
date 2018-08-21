@@ -6,13 +6,15 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Add OBJCACHE envvar support to examples and generated Makefiles.
 
+****  Change MODDUP errors to warnings, msg2588. [Marshal Qiao]
+
 ****  Fix define argument stringification (`"), broke since 3.914. [Joe DErrico]
 
 ****  Fix to ignore Unicode UTF-8 BOM sequences, msg2576. [HyungKi Jeong]
 
 ****  Fix std:: build error, bug1322.
 
-****  Change MODDUP errors to warnings, msg2588. [Marshal Qiao]
+****  Fix function inlining inside certain while loops, bug1330. [Julien Margetts]
 
 
 * Verilator 3.924 2018-06-12
