@@ -24,7 +24,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 ****  Fix clocker attributes to not propagate on concats. [John Coiner]
 
 
-* Verilator 3.925 devel
+* Verilator 3.926 2018-08-22
 
 ****  Add OBJCACHE envvar support to examples and generated Makefiles.
 
