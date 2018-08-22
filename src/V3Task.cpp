@@ -1079,10 +1079,12 @@ private:
 	m_insMode = prevInsMode;
 	m_insStmtp = prevInsStmtp;
     }
-    void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
+    AstNode* insertBeforeStmt(AstNode* nodep, AstNode* newp) {
+        // Return node that must be visited, if any
 	// See also AstNode::addBeforeStmt; this predates that function
 	if (debug()>=9) { nodep->dumpTree(cout,"-newstmt:"); }
 	if (!m_insStmtp) nodep->v3fatalSrc("Function not underneath a statement");
+        AstNode* visitp = NULL;
 	if (m_insMode == IM_BEFORE) {
 	    // Add the whole thing before insertAt
 	    UINFO(5,"     IM_Before  "<<m_insStmtp<<endl);
@@ -1090,20 +1092,22 @@ private:
 	    m_insStmtp->addHereThisAsNext(newp);
 	}
 	else if (m_insMode == IM_AFTER) {
-	    UINFO(5,"     IM_After   "<<m_insStmtp);
+            UINFO(5,"     IM_After   "<<m_insStmtp<<endl);
 	    m_insStmtp->addNextHere(newp);
 	}
 	else if (m_insMode == IM_WHILE_PRECOND) {
-	    UINFO(5,"     IM_While_Precond "<<m_insStmtp);
+            UINFO(5,"     IM_While_Precond "<<m_insStmtp<<endl);
             AstWhile* whilep = VN_CAST(m_insStmtp, While);
 	    if (!whilep) nodep->v3fatalSrc("Insert should be under WHILE");
 	    whilep->addPrecondsp(newp);
+            visitp = newp;
 	}
 	else {
 	    nodep->v3fatalSrc("Unknown InsertMode");
 	}
 	m_insMode = IM_AFTER;
 	m_insStmtp = newp;
+        return visitp;
     }
 
     // VISITORS
@@ -1148,12 +1152,13 @@ private:
 	    beginp = createInlinedFTask(nodep, namePrefix, outvscp);
 	}
 	// Replace the ref
+        AstNode* visitp = NULL;
         if (VN_IS(nodep, FuncRef)) {
 	    if (!nodep->taskp()->isFunction()) nodep->v3fatalSrc("func reference to non-function");
 	    AstVarRef* outrefp = new AstVarRef (nodep->fileline(), outvscp, false);
 	    nodep->replaceWith(outrefp);
 	    // Insert new statements
-	    insertBeforeStmt(nodep, beginp);
+            visitp = insertBeforeStmt(nodep, beginp);
 	} else {
 	    // outvscp maybe non-NULL if calling a function in a taskref,
 	    // but if so we want to simply ignore the function result
@@ -1162,6 +1167,8 @@ private:
 	// Cleanup
 	nodep->deleteTree(); VL_DANGLING(nodep);
 	UINFO(4,"  FTask REF Done.\n");
+        // Visit nodes that normal iteration won't find
+        if (visitp) iterateAndNextNull(visitp);
     }
     virtual void visit(AstNodeFTask* nodep) {
 	UINFO(4," Inline   "<<nodep<<endl);
