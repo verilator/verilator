@@ -67,7 +67,7 @@ private:
 
     SenTreeSet  m_activeSens;  // Sen lists for each active we've made
     typedef vl_unordered_map<AstSenTree*, AstActive*> ActiveMap;
-    ActiveMap m_activeMap; // Map sentree to active, for folding.
+    ActiveMap m_activeMap;  // Map sentree to active, for folding.
 
     // METHODS
     void addActive(AstActive* nodep) {

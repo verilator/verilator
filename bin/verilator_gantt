@@ -21,8 +21,8 @@ our %Global;
 
 autoflush STDOUT 1;
 autoflush STDERR 1;
-Getopt::Long::config ("no_auto_abbrev");
-if (! GetOptions (
+Getopt::Long::config("no_auto_abbrev");
+if (! GetOptions(
           "help"        => \&usage,
           "scale=i"     => \$Opt_Time_Per_Char,
           "debug"       => sub { $Debug = 1; },
@@ -156,8 +156,8 @@ sub report {
     # of synchronization and scheduling should not.)
     print "\nAnalysis:\n";
     printf "  Total threads             = %d\n", $nthreads;
-    printf "  Total mtasks              = %d\n", scalar (keys %Mtasks);
-    printf "  Total cpus used           = %d\n", scalar (keys %{$Global{cpus}});
+    printf "  Total mtasks              = %d\n", scalar(keys %Mtasks);
+    printf "  Total cpus used           = %d\n", scalar(keys %{$Global{cpus}});
     printf "  Total yields              = %d\n", $Global{stats}{yields};
     printf "  Total eval time           = %d rdtsc ticks\n", $Global{last_end};
     printf "  Longest mtask time        = %d rdtsc ticks\n", $long_mtask_time;

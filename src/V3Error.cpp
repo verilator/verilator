@@ -162,7 +162,7 @@ string V3Error::warnMore() {
     return msgPrefix();
 }
 
-void V3Error::v3errorEnd (std::ostringstream& sstr) {
+void V3Error::v3errorEnd(std::ostringstream& sstr) {
 #if defined(__COVERITY__) || defined(__cppcheck__)
     if (s_errorCode==V3ErrorCode::EC_FATAL) __coverity_panic__(x);
 #endif

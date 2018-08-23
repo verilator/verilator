@@ -45,7 +45,7 @@
 #include "V3Stats.h"
 #include "V3Ast.h"
 
-#define RELOOP_MIN_ITERS 40   // Need at least this many loops to do this optimization
+#define RELOOP_MIN_ITERS 40  // Need at least this many loops to do this optimization
 
 //######################################################################
 
@@ -122,7 +122,7 @@ private:
                 AstNode* lbitp = m_mgSelLp->bitp();
                 lbitp->replaceWith(new AstVarRef(fl, itp, false));
                 lbitp->deleteTree(); VL_DANGLING(lbitp);
-                if (m_mgSelRp) { // else constant and no replace
+                if (m_mgSelRp) {  // else constant and no replace
                     AstNode* rbitp = m_mgSelRp->bitp();
                     rbitp->replaceWith(new AstVarRef(fl, itp, false));
                     rbitp->deleteTree(); VL_DANGLING(lbitp);
@@ -184,7 +184,7 @@ private:
             }
         }
 
-        if (m_mgSelLp) { // Old merge
+        if (m_mgSelLp) {  // Old merge
             if (m_mgCfuncp == m_cfuncp
                 && m_mgNextp == nodep
                 && m_mgSelLp->same(lselp)
@@ -260,7 +260,7 @@ public:
 void V3Reloop::reloopAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     {
-        ReloopVisitor visitor (nodep);
+        ReloopVisitor visitor(nodep);
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("reloop", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

@@ -1755,7 +1755,7 @@ private:
 		if (nextp && !cmp(senp, nextp)) {
 		    // Something's out of order, sort it
 		    senp = NULL;
-		    std::vector<AstNodeSenItem*> vec;
+                    std::vector<AstNodeSenItem*> vec;
                     for (AstNodeSenItem* senp = VN_CAST(nodep->sensesp(), NodeSenItem);
                          senp; senp=VN_CAST(senp->nextp(), NodeSenItem)) {
 			vec.push_back(senp);

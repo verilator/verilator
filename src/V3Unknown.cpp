@@ -187,7 +187,7 @@ private:
 	    // If we got ==1'bx it can never be true (but 1'bx==1'bx can be!)
             if (((VN_IS(lhsp, Const) && VN_CAST(lhsp, Const)->num().isFourState())
                  || (VN_IS(rhsp, Const) && VN_CAST(rhsp, Const)->num().isFourState()))) {
-                V3Number num (nodep->fileline(), 1, (VN_IS(nodep, EqCase) ? 0:1));
+                V3Number num(nodep->fileline(), 1, (VN_IS(nodep, EqCase) ? 0:1));
 		newp = new AstConst (nodep->fileline(), num);
 		lhsp->deleteTree(); VL_DANGLING(lhsp);
 		rhsp->deleteTree(); VL_DANGLING(rhsp);

@@ -32,4 +32,4 @@ public:
     static void reloopAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

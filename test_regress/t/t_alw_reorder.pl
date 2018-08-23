@@ -9,11 +9,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt_all => 1);
 
-compile (
+compile(
     verilator_flags2 => ["--stats"],
     );
 
-file_grep ($Self->{stats}, qr/Optimizations, Split always\s+(\d+)/i, 0);
+file_grep($Self->{stats}, qr/Optimizations, Split always\s+(\d+)/i, 0);
 # Important: if reorder succeeded, we should see no dly vars.
 # Equally important: twin test t_alw_noreorder should see dly vars,
 #  is identical to this test except for disabling the reorder step.
@@ -24,7 +24,7 @@ foreach my $file ("$Self->{obj_dir}/$Self->{VM_PREFIX}.cpp",
     file_grep_not($file, qr/dly__t__DOT__v3/i);
 }
 
-execute (
+execute(
     check_finished=>1,
     );
 

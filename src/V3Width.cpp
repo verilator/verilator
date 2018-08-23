@@ -1285,7 +1285,7 @@ private:
 	// Assign missing values
 	V3Number num (nodep->fileline(), nodep->width(), 0);
 	V3Number one (nodep->fileline(), nodep->width(), 1);
-	std::map<V3Number,AstEnumItem*> inits;
+        std::map<V3Number,AstEnumItem*> inits;
         for (AstEnumItem* itemp = nodep->itemsp(); itemp; itemp=VN_CAST(itemp->nextp(), EnumItem)) {
 	    if (itemp->valuep()) {
 		if (debug()>=9) { UINFO(0,"EnumInit "<<itemp<<endl); itemp->valuep()->dumpTree(cout,"-EnumInit: "); }
@@ -1442,7 +1442,7 @@ private:
             backip = VN_CAST(itemp->backp(), MemberDType);
 	    itemp->lsb(lsb);
             if (VN_IS(nodep, UnionDType)) {
-		width = std::max(width, itemp->width());
+                width = std::max(width, itemp->width());
 	    } else {
 		lsb += itemp->width();
 		width += itemp->width();

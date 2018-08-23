@@ -211,7 +211,7 @@ class V3Error {
     static int		s_errCount;		// Error count
     static int		s_warnCount;		// Warning count
     static int 		s_tellManual;		// Tell user to see manual, 0=not yet, 1=doit, 2=disable
-    static std::ostringstream s_errorStr;               // Error string being formed
+    static std::ostringstream s_errorStr;       // Error string being formed
     static V3ErrorCode	s_errorCode;		// Error string being formed will abort
     static bool		s_errorSuppressed;	// Error being formed should be suppressed
     static MessagesSet	s_messages;		// What errors we've outputted
@@ -256,7 +256,7 @@ class V3Error {
 	s_errorStr.str(""); s_errorCode=code; s_errorSuppressed=false; }
     static std::ostringstream& v3errorStr() { return s_errorStr; }
     static void	vlAbort();
-    static void v3errorEnd(std::ostringstream& sstr);   // static, but often overridden in classes.
+    static void v3errorEnd(std::ostringstream& sstr);  // static, but often overridden in classes.
 };
 
 // Global versions, so that if the class doesn't define a operator, we get the functions anyways.

@@ -305,8 +305,8 @@ public:
         *m_writep++=' '; printCode(code); *m_writep++='\n';
         bufferCheck();
     }
-    inline void fullQuadX(vluint32_t code, int bits) { fullBusX (code, bits); }
-    inline void fullArrayX(vluint32_t code, int bits) { fullBusX (code, bits); }
+    inline void fullQuadX(vluint32_t code, int bits) { fullBusX(code, bits); }
+    inline void fullArrayX(vluint32_t code, int bits) { fullBusX(code, bits); }
 
     /// Inside dumping routines, dump one signal if it has changed
     inline void chgBit(vluint32_t code, const vluint32_t newval) {

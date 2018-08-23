@@ -375,7 +375,7 @@ private:
 	    } else {
 		UINFO(4,"Autoflush "<<nodep<<endl);
 		nodep->addNextHere(new AstFFlush(nodep->fileline(),
-						 AstNode::cloneTreeNull(nodep->filep(), true)));
+                                                 AstNode::cloneTreeNull(nodep->filep(), true)));
 	    }
 	}
     }

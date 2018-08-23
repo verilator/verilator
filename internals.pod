@@ -571,7 +571,7 @@ call will correctly see the change. Alternatively:
 
     lp = nodep->lhsp();
     // nodep->lhsp() is 0x1234000, lp is 0x1234000
-    iterateAndNextNull(lp); **lhsp=NULL;** // and under covers nodep->lhsp() changes
+    iterateAndNextNull(lp); **lhsp=NULL;**  // and under covers nodep->lhsp() changes
     // nodep->lhsp() is 0x5678400, lp is 0x1234000
     iterateAndNextNull(lp);
 

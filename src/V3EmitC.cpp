@@ -351,7 +351,7 @@ public:
 	    }
 	    else {
 		nodep->v3error(nodep->verilogKwd()
-			       << " loading other than unpacked-array variable");
+                               << " loading other than unpacked-array variable");
 	    }
 	}
 	putbs(", ");
@@ -1290,7 +1290,7 @@ void EmitCStmts::emitVarCtors(bool* firstp) {
 	ofp()->indentInc();
 	puts("\n");
 	puts("#if (SYSTEMC_VERSION>20011000)\n");  // SystemC 2.0.1 and newer
-	for (VarVec::iterator it = m_ctorVarsVec.begin(); it != m_ctorVarsVec.end(); ++it) {
+        for (VarVec::iterator it = m_ctorVarsVec.begin(); it != m_ctorVarsVec.end(); ++it) {
             const AstVar* varp = *it;
             bool isArray = !VN_CAST(varp->dtypeSkipRefp(), BasicDType);
 	    if (isArray) {

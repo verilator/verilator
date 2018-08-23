@@ -82,6 +82,6 @@ module t (/*AUTOARG*/
 	    $finish;
 	 end
       end
-   end // always @ (posedge clk)
+   end  // always @ (posedge clk)
 
 endmodule

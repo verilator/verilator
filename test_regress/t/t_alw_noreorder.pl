@@ -10,18 +10,18 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt_all => 1);
 
 top_filename("t/t_alw_reorder.v");
-compile (
+compile(
     verilator_flags2 => ["--stats -Or"],
     );
 
-file_grep ($Self->{stats}, qr/Optimizations, Split always\s+(\d+)/i, 0);
+file_grep($Self->{stats}, qr/Optimizations, Split always\s+(\d+)/i, 0);
 # Here we should see some dly vars since reorder is disabled.
 # (Whereas our twin test, t_alw_reorder, should see no dly vars
 #  since it enables the reorder step.)
-file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.cpp", qr/dly__t__DOT__v1/i);
-file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.cpp", qr/dly__t__DOT__v2/i);
+file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}.cpp", qr/dly__t__DOT__v1/i);
+file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}.cpp", qr/dly__t__DOT__v2/i);
 
-execute (
+execute(
     check_finished=>1,
     );
 

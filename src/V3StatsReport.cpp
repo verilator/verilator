@@ -206,7 +206,7 @@ StatsReport::StatColl	StatsReport::s_allStats;
 //######################################################################
 // V3Statstic class
 
-void V3Statistic::dump (std::ofstream& os) const {
+void V3Statistic::dump(std::ofstream& os) const {
     if (perf()) {
         os<<"  "<<std::right<<std::fixed<<std::setprecision(6)<<std::setw(9)<<count();
     } else {

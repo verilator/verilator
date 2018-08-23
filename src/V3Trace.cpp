@@ -419,7 +419,7 @@ private:
 	UINFO(9,"Making trees\n");
 
         typedef std::set<uint32_t> ActCodeSet;  // All activity numbers applying to a given trace
-        typedef std::multimap<ActCodeSet,TraceTraceVertex*> TraceVec;   // For activity set, what traces apply
+        typedef std::multimap<ActCodeSet,TraceTraceVertex*> TraceVec;  // For activity set, what traces apply
 	TraceVec traces;
 
 	// Form sort structure

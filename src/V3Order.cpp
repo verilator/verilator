@@ -401,7 +401,7 @@ private:
         // the updated t_clocker VCD test.
         // If reenable this visitor note AstNodeMath short circuit below
     }
-    virtual void visit(AstNodeMath* nodep) {} // Accelerate
+    virtual void visit(AstNodeMath* nodep) {}  // Accelerate
     virtual void visit(AstNode* nodep) {
         iterateChildren(nodep);
     }
@@ -1321,7 +1321,7 @@ inline void OrderMoveDomScope::movedVertex(OrderVisitor* ovp, OrderMoveVertex* v
     if (!m_onReadyList) {
         vertexp->v3fatalSrc("Moving vertex from ready when nothing was on que as ready.");
     }
-    if (m_readyVertices.empty()) {      // Else more work to get to later
+    if (m_readyVertices.empty()) {  // Else more work to get to later
         m_onReadyList = false;
         m_readyDomScopeE.unlink(ovp->m_pomReadyDomScope, this);
     }

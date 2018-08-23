@@ -9,15 +9,15 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-compile (
+compile(
     verilator_flags2 => ["--stats"],
     );
 
 if ($Self->{vlt_all}) {
-    file_grep ($Self->{stats}, qr/Optimizations, Split always\s+(\d+)/i, 0);
+    file_grep($Self->{stats}, qr/Optimizations, Split always\s+(\d+)/i, 0);
 }
 
-execute (
+execute(
     check_finished=>1,
     );
 

@@ -358,7 +358,7 @@ private:
     AstNode* createInlinedFTask(AstNodeFTaskRef* refp, const string& namePrefix, AstVarScope* outvscp) {
 	// outvscp is the variable for functions only, if NULL, it's a task
 	if (!refp->taskp()) refp->v3fatalSrc("Unlinked?");
-	AstNode* newbodysp = AstNode::cloneTreeNull(refp->taskp()->stmtsp(), true);  // Maybe NULL
+        AstNode* newbodysp = AstNode::cloneTreeNull(refp->taskp()->stmtsp(), true);  // Maybe NULL
 	AstNode* beginp = new AstComment(refp->fileline(), (string)("Function: ")+refp->name());
 	if (newbodysp) beginp->addNext(newbodysp);
 	if (debug()>=9) { beginp->dumpTreeAndNext(cout,"-newbegi:"); }
@@ -1140,8 +1140,8 @@ private:
 	AstVarScope* outvscp = NULL;
 	if (nodep->taskp()->isFunction()) {
 	    // Not that it's a FUNCREF, but that we're calling a function (perhaps as a task)
-            outvscp = createVarScope (VN_CAST(nodep->taskp()->fvarp(), Var),
-				      namePrefix+"__Vfuncout");
+            outvscp = createVarScope(VN_CAST(nodep->taskp()->fvarp(), Var),
+                                     namePrefix+"__Vfuncout");
 	}
 	// Create cloned statements
 	AstNode* beginp;

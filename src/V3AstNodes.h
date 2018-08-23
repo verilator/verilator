@@ -68,7 +68,7 @@ public:
         ,m_num(V3Number(fl,32,num)) { dtypeSetLogicSized(m_num.width(),
 							 m_num.sized()?0:m_num.widthMin(),
 							 AstNumeric::UNSIGNED); }
-    class Unsized32 {};         // for creator type-overload selection
+    class Unsized32 {};  // for creator type-overload selection
     AstConst(FileLine* fl, Unsized32, uint32_t num)  // Unsized 32-bit integer of specified value
         :AstNodeMath(fl)
         ,m_num(V3Number(fl,32,num)) { m_num.width(32,false); dtypeSetLogicSized(32,m_num.widthMin(),

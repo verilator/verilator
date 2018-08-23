@@ -112,7 +112,7 @@ private:
 	AstNode* bodysp = NULL;
 	bool selfDestruct = false;
         AstIf* ifp = NULL;
-	if (AstPslCover* snodep = VN_CAST(nodep, PslCover)) {
+        if (AstPslCover* snodep = VN_CAST(nodep, PslCover)) {
             ++m_statAsCover;
 	    if (!v3Global.opt.coverageUser()) {
 		selfDestruct = true;

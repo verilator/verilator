@@ -88,7 +88,7 @@ module t (/*AUTOARG*/
          h_split_1 <= 16'h0;
          h_split_2 <= 16'h0;
       end
-   end // always @ (posedge clk)
+   end  // always @ (posedge clk)
 
    always @ (posedge clk) begin
       if (cyc!=0) begin

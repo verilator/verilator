@@ -32,7 +32,7 @@
 void VlcTop::readCoverage(const string& filename, bool nonfatal) {
     UINFO(2,"readCoverage "<<filename<<endl);
 
-    std::ifstream is (filename.c_str());
+    std::ifstream is(filename.c_str());
     if (!is) {
 	if (!nonfatal) v3fatal("Can't read "<<filename);
 	return;
@@ -69,7 +69,7 @@ void VlcTop::readCoverage(const string& filename, bool nonfatal) {
 void VlcTop::writeCoverage(const string& filename) {
     UINFO(2,"writeCoverage "<<filename<<endl);
 
-    std::ofstream os (filename.c_str());
+    std::ofstream os(filename.c_str());
     if (!os) {
 	v3fatal("Can't write "<<filename);
 	return;
@@ -203,13 +203,13 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
 
 	UINFO(1,"annotateOutputFile "<<filename<<" -> "<<outfilename<<endl);
 
-        std::ifstream is (filename.c_str());
+        std::ifstream is(filename.c_str());
 	if (!is) {
 	    v3error("Can't read "<<filename);
 	    return;
 	}
 
-        std::ofstream os (outfilename.c_str());
+        std::ofstream os(outfilename.c_str());
 	if (!os) {
 	    v3fatal("Can't write "<<outfilename);
 	    return;
