@@ -7,6 +7,7 @@ eval 'exec perl -wS $0 ${1+"$@"}'
 use strict;
 use warnings;
 use Getopt::Long;
+use IO::File;
 use Pod::Usage;
 use vars qw ($Debug);
 

@@ -1018,7 +1018,6 @@ static void partInitCriticalPaths(V3Graph* mtasksp) {
 
     // Reset all MTaskEdges so that 'm_edges' will show correct CP numbers.
     // They would have been all zeroes on initial creation of the MTaskEdges.
-    std::vector<V3GraphEdge*> edges;
     for (V3GraphVertex* vxp = mtasksp->verticesBeginp();
          vxp; vxp = vxp->verticesNextp()) {
         for (V3GraphEdge* edgep = vxp->outBeginp();
