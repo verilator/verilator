@@ -177,18 +177,35 @@ public:
         m_mtaskId = 0;
         m_predictTime = 0;
         m_startTime = 0;
-        m_cpu = sched_getcpu();
+        m_cpu = getcpu();
     }
     void startRecord(vluint64_t time, uint32_t mtask, uint32_t predict) {
         m_type = VlProfileRec::TYPE_MTASK_RUN;
         m_mtaskId = mtask;
         m_predictTime = predict;
         m_startTime = time;
-        m_cpu = sched_getcpu();
+        m_cpu = getcpu();
     }
     void endRecord(vluint64_t time) {
         m_endTime = time;
     }
+    static int getcpu() {  // Return current executing CPU
+#if defined(__linux)
+        return sched_getcpu();
+#elif defined(__APPLE__)
+        uint32_t CPUInfo[4];
+        CPUID(CPUInfo, 1, 0);
+        /* CPUInfo[1] is EBX, bits 24-31 are APIC ID */
+        if ((CPUInfo[3] & (1 << 9)) == 0) {
+            return -1;  /* no APIC on chip */
+        } else {
+            return (unsigned)CPUInfo[1] >> 24;
+        }
+#else
+        return 0;
+#endif
+    }
+    
 };
 
 class VlThreadPool;
