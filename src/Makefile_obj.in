@@ -93,7 +93,7 @@ endif
 LIBS = -lm -lstdc++
 
 CPPFLAGS += -MMD
-CPPFLAGS += -I. -I$(bldsrc) -I$(srcdir) -I$(incdir)
+CPPFLAGS += -I. -I$(bldsrc) -I$(srcdir) -I$(incdir) -I../../include
 CPPFLAGS += -DYYDEBUG 	# Required to get nice error messages
 #CPPFLAGS += -DVL_LEAK_CHECKS 	# If running valgrind or other hunting tool
 CPPFLAGS += $(COPT)

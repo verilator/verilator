@@ -185,8 +185,8 @@ all_nomsg: verilator_exe $(VL_INST_MAN_FILES)
 .PHONY:verilator_coverage_bin_dbg
 verilator_exe verilator_bin verilator_bin_dbg verilator_coverage_bin_dbg:
 	@echo ------------------------------------------------------------
-	@echo "making verilator in src" ; \
-	  (cd src && $(MAKE) $(OBJCACHE_JOBS) )
+	@echo "making verilator in src"
+	$(MAKE) -C src $(OBJCACHE_JOBS)
 
 .PHONY:msg_test
 msg_test: all_nomsg
@@ -212,7 +212,7 @@ smoke-test: all_nomsg
 	test_regress/t/t_a_first_sc.pl
 
 test_regress: all_nomsg
-	@(cd test_regress && $(MAKE))
+	$(MAKE) -C test_regress
 
 examples: all_nomsg
 	for p in examples/* ; do \
@@ -299,9 +299,9 @@ installbin:
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_coverage $(DESTDIR)$(bindir)/verilator_coverage )
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_gantt $(DESTDIR)$(bindir)/verilator_gantt )
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_profcfunc $(DESTDIR)$(bindir)/verilator_profcfunc )
-	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_bin $(DESTDIR)$(bindir)/verilator_bin )
-	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_bin_dbg $(DESTDIR)$(bindir)/verilator_bin_dbg )
-	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_coverage_bin_dbg $(DESTDIR)$(bindir)/verilator_coverage_bin_dbg )
+	( cd bin ; $(INSTALL_PROGRAM) verilator_bin $(DESTDIR)$(bindir)/verilator_bin )
+	( cd bin ; $(INSTALL_PROGRAM) verilator_bin_dbg $(DESTDIR)$(bindir)/verilator_bin_dbg )
+	( cd bin ; $(INSTALL_PROGRAM) verilator_coverage_bin_dbg $(DESTDIR)$(bindir)/verilator_coverage_bin_dbg )
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/bin
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_includer $(DESTDIR)$(pkgdatadir)/bin/verilator_includer )
 
@@ -480,7 +480,7 @@ maintainer-clean::
 clean mostlyclean distclean maintainer-clean maintainer-copy::
 	for dir in $(SUBDIRS); do \
 	  echo making $@ in $$dir ; \
-	  (cd $$dir && $(MAKE) $@) ; \
+	  $(MAKE) -C $$dir $@ ; \
 	done
 
 clean mostlyclean distclean maintainer-clean::

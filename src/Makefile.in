@@ -22,9 +22,10 @@
 #### Start of system configuration section. ####
 
 srcdir = @srcdir@
-VPATH = @srcdir@
 PERL = @PERL@
 EXEEXT = @EXEEXT@
+# VPATH only does sources; fix install_test's not creating ../bin
+vpath %.h @srcdir@
 
 #### End of system configuration section. ####
 
@@ -42,9 +43,11 @@ UNDER_GIT = $(wildcard ${srcdir}/../.git/logs/HEAD)
 #*********************************************************************
 
 obj_opt:
-	mkdir $@
+	mkdir -p $@
 obj_dbg:
-	mkdir $@
+	mkdir -p $@
+../bin:
+	mkdir -p $@
 
 .SUFFIXES:
 
@@ -52,23 +55,23 @@ obj_dbg:
 
 opt: ../bin/verilator_bin
 ifeq ($(VERILATOR_NO_OPT_BUILD),1)	# Faster laptop development... One build
-../bin/verilator_bin: ../bin/verilator_bin_dbg
+../bin/verilator_bin: ../bin ../bin/verilator_bin_dbg
 	-rm -rf $@ $@.exe
 	-cp -p $<$(EXEEXT) $@$(EXEEXT)
 else
-../bin/verilator_bin: obj_opt prefiles
-	cd obj_opt && $(MAKE) -j 1  TGT=../$@ -f ../Makefile_obj serial
-	cd obj_opt && $(MAKE)       TGT=../$@ -f ../Makefile_obj
+../bin/verilator_bin: obj_opt ../bin prefiles
+	$(MAKE) -C obj_opt -j 1  TGT=../$@ -f ../Makefile_obj serial
+	$(MAKE) -C obj_opt       TGT=../$@ -f ../Makefile_obj
 endif
 
 dbg: ../bin/verilator_bin_dbg ../bin/verilator_coverage_bin_dbg
-../bin/verilator_bin_dbg: obj_dbg prefiles
-	cd obj_dbg && $(MAKE) -j 1  TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj serial
-	cd obj_dbg && $(MAKE)       TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj
+../bin/verilator_bin_dbg: obj_dbg ../bin prefiles
+	$(MAKE) -C obj_dbg -j 1  TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj serial
+	$(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj
 
-../bin/verilator_coverage_bin_dbg: obj_dbg prefiles
-	cd obj_dbg && $(MAKE)       TGT=../$@ VL_DEBUG=1 VL_VLCOV=1 -f ../Makefile_obj serial_vlcov
-	cd obj_dbg && $(MAKE)       TGT=../$@ VL_DEBUG=1 VL_VLCOV=1 -f ../Makefile_obj
+../bin/verilator_coverage_bin_dbg: obj_dbg ../bin prefiles
+	$(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 VL_VLCOV=1 -f ../Makefile_obj serial_vlcov
+	$(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 VL_VLCOV=1 -f ../Makefile_obj
 
 prefiles::
 prefiles:: config_rev.h
