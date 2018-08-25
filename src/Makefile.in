@@ -55,7 +55,7 @@ obj_dbg:
 
 opt: ../bin/verilator_bin
 ifeq ($(VERILATOR_NO_OPT_BUILD),1)	# Faster laptop development... One build
-../bin/verilator_bin: ../bin ../bin/verilator_bin_dbg
+../bin/verilator_bin: ../bin/verilator_bin_dbg
 	-rm -rf $@ $@.exe
 	-cp -p $<$(EXEEXT) $@$(EXEEXT)
 else
