@@ -44,6 +44,6 @@ int main(int argc, char **argv, char **env) {
     }
     tfp->close();
     top->final();
-    printf ("*-* All Finished *-*\n");
+    printf("*-* All Finished *-*\n");
     return 0;
 }

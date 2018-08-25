@@ -47,11 +47,11 @@ extern "C" {
     extern void dpii_open_pw_u2(int c, int p, int u, const svOpenArrayHandle i, const svOpenArrayHandle o);
     extern void dpii_open_pw_u3(int c, int p, int u, const svOpenArrayHandle i, const svOpenArrayHandle o);
 
-    extern void dpii_open_bit (const svOpenArrayHandle i, const svOpenArrayHandle o);
-    extern void dpii_open_byte (const svOpenArrayHandle i, const svOpenArrayHandle o);
-    extern void dpii_open_int (const svOpenArrayHandle i, const svOpenArrayHandle o);
-    extern void dpii_open_integer (const svOpenArrayHandle i, const svOpenArrayHandle o);
-    extern void dpii_open_logic (const svOpenArrayHandle i, const svOpenArrayHandle o);
+    extern void dpii_open_bit(const svOpenArrayHandle i, const svOpenArrayHandle o);
+    extern void dpii_open_byte(const svOpenArrayHandle i, const svOpenArrayHandle o);
+    extern void dpii_open_int(const svOpenArrayHandle i, const svOpenArrayHandle o);
+    extern void dpii_open_integer(const svOpenArrayHandle i, const svOpenArrayHandle o);
+    extern void dpii_open_logic(const svOpenArrayHandle i, const svOpenArrayHandle o);
 
     extern int dpii_failure();
 }
@@ -222,11 +222,11 @@ void dpii_open_pw_u3(int c, int p, int u, const svOpenArrayHandle i, const svOpe
     _dpii_all(c,p,u,i,o);
 }
 
-void dpii_open_bit (const svOpenArrayHandle i, const svOpenArrayHandle o) { }
-void dpii_open_byte (const svOpenArrayHandle i, const svOpenArrayHandle o) { }
-void dpii_open_int (const svOpenArrayHandle i, const svOpenArrayHandle o) { }
-void dpii_open_integer (const svOpenArrayHandle i, const svOpenArrayHandle o) { }
-void dpii_open_logic (const svOpenArrayHandle i, const svOpenArrayHandle o) { }
+void dpii_open_bit(const svOpenArrayHandle i, const svOpenArrayHandle o) { }
+void dpii_open_byte(const svOpenArrayHandle i, const svOpenArrayHandle o) { }
+void dpii_open_int(const svOpenArrayHandle i, const svOpenArrayHandle o) { }
+void dpii_open_integer(const svOpenArrayHandle i, const svOpenArrayHandle o) { }
+void dpii_open_logic(const svOpenArrayHandle i, const svOpenArrayHandle o) { }
 
 int dpii_failed() {
     return failure;

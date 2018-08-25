@@ -215,7 +215,7 @@ private:
 	    nump->setLong(value);  // We do support more than 32 bit numbers, just valuep=0 in that case
 	} else {
 	    //UINFO(7,"Num New "<<nodep->width()<<endl);
-	    nump = new V3Number (nodep->fileline(), nodep->width(), value);
+            nump = new V3Number(nodep->fileline(), nodep->width(), value);
 	    m_numAllps.push_back(nump);
 	}
 	nump->isDouble(nodep->isDouble());
@@ -567,9 +567,9 @@ private:
 	    assignOutNumber(nodep, vscp, &outnum);
 	}
     }
-    void handleAssignSelRecurse (AstNodeAssign* nodep, AstSel* selp,
-				 AstVarRef*& outVarrefpRef, V3Number& lsbRef,
-				 int depth) {
+    void handleAssignSelRecurse(AstNodeAssign* nodep, AstSel* selp,
+                                AstVarRef*& outVarrefpRef, V3Number& lsbRef,
+                                int depth) {
 	// Recurse down to find final variable being set (outVarrefp), with value to write on nodep->rhsp()
 	checkNodeInfo(selp);
         iterateAndNextNull(selp->lsbp());  // Bit index
@@ -942,19 +942,19 @@ public:
 	// Move all allocated numbers to the free pool
 	m_numFreeps = m_numAllps;
     }
-    void mainTableCheck (AstNode* nodep) {
+    void mainTableCheck(AstNode* nodep) {
 	setMode(true/*scoped*/,true/*checking*/, false/*params*/);
 	mainGuts(nodep);
     }
-    void mainTableEmulate (AstNode* nodep) {
+    void mainTableEmulate(AstNode* nodep) {
 	setMode(true/*scoped*/,false/*checking*/, false/*params*/);
 	mainGuts(nodep);
     }
-    void mainCheckTree (AstNode* nodep) {
+    void mainCheckTree(AstNode* nodep) {
 	setMode(false/*scoped*/,true/*checking*/, false/*params*/);
 	mainGuts(nodep);
     }
-    void mainParamEmulate (AstNode* nodep) {
+    void mainParamEmulate(AstNode* nodep) {
 	setMode(false/*scoped*/,false/*checking*/, true/*params*/);
 	mainGuts(nodep);
     }

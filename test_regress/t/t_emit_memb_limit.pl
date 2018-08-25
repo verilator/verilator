@@ -53,7 +53,7 @@ execute(
     check_finished => 1,
     );
 
-file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.h", qr/struct \{/);
+file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}.h", qr/struct \{/);
 
 ok(1);
 1;

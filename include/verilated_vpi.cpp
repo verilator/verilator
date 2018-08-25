@@ -1884,7 +1884,7 @@ PLI_INT32 vpi_free_object(vpiHandle object) {
     return vpi_release_handle(object);  // Deprecated
 }
 
-PLI_INT32 vpi_release_handle (vpiHandle object) {
+PLI_INT32 vpi_release_handle(vpiHandle object) {
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_release_handle %p\n",object););
     VerilatedVpiImp::assertOneCheck();
     VerilatedVpio* vop = VerilatedVpio::castp(object);

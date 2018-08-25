@@ -488,7 +488,7 @@ private:
 			if (condp) condp = new AstOr (fl, condp, selp);
 			else condp = selp;
 		    }
-		    AstIf* ifp = new AstIf (fl, condp, NULL, NULL);
+                    AstIf* ifp = new AstIf(fl, condp, NULL, NULL);
 		    ifp->branchPred(AstBranchPred::BP_UNLIKELY);
 		    m_chgFuncp->addStmtsp(ifp);
 		    lastactp = &actset;
@@ -647,7 +647,7 @@ private:
 		    UINFO(8,"     SubCCALL "<<ccallp<<endl);
 		    V3GraphVertex* ccallFuncVtxp = getCFuncVertexp(ccallp->funcp());
 		    activityVtxp->slow(ccallp->funcp()->slow());
-		    new V3GraphEdge (&m_graph, activityVtxp, ccallFuncVtxp, 1);
+                    new V3GraphEdge(&m_graph, activityVtxp, ccallFuncVtxp, 1);
 		}
 	    }
 	}
@@ -669,7 +669,7 @@ private:
 		// Need a non-null place to remember to later add a statement; make one
 		if (!nodep->stmtsp()) nodep->addStmtsp(new AstComment(nodep->fileline(), "Tracing activity check"));
 		V3GraphVertex* activityVtxp = getActivityVertexp(nodep->stmtsp(), nodep->slow());
-		new V3GraphEdge (&m_graph, activityVtxp, funcVtxp, 1);
+                new V3GraphEdge(&m_graph, activityVtxp, funcVtxp, 1);
 	    }
 	}
 	m_funcp = nodep;
@@ -756,7 +756,7 @@ public:
 void V3Trace::traceAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     {
-        TraceVisitor visitor (nodep);
+        TraceVisitor visitor(nodep);
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("trace", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

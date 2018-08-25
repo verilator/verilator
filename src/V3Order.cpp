@@ -876,14 +876,14 @@ private:
 	m_graph.userClearVertices();
 	AstNode::user3ClearTree();
 	m_unoptflatVars.clear();
-	reportLoopVarsIterate (vertexp, vertexp->color());
+        reportLoopVarsIterate(vertexp, vertexp->color());
 	AstNode::user3ClearTree();
 	m_graph.userClearVertices();
 	// May be very large vector, so only report the "most important"
 	// elements. Up to 10 of the widest
         std::cerr<<V3Error::msgPrefix()
                  <<"     Widest candidate vars to split:"<<endl;
-	std::stable_sort (m_unoptflatVars.begin(), m_unoptflatVars.end(), OrderVarWidthCmp());
+        std::stable_sort(m_unoptflatVars.begin(), m_unoptflatVars.end(), OrderVarWidthCmp());
 	int lim = m_unoptflatVars.size() < 10 ? m_unoptflatVars.size() : 10;
 	for (int i = 0; i < lim; i++) {
 	    OrderVarStdVertex* vsvertexp = m_unoptflatVars[i];
@@ -896,8 +896,8 @@ private:
 	// Up to 10 of the most fanned out
         std::cerr<<V3Error::msgPrefix()
                  <<"     Most fanned out candidate vars to split:"<<endl;
-	std::stable_sort (m_unoptflatVars.begin(), m_unoptflatVars.end(),
-			  OrderVarFanoutCmp());
+        std::stable_sort(m_unoptflatVars.begin(), m_unoptflatVars.end(),
+                         OrderVarFanoutCmp());
 	lim = m_unoptflatVars.size() < 10 ? m_unoptflatVars.size() : 10;
 	for (int i = 0; i < lim; i++) {
 	    OrderVarStdVertex* vsvertexp = m_unoptflatVars[i];
@@ -965,17 +965,17 @@ private:
 	m_finder.main(m_topScopep);
 	// ProcessDomainsIterate will use these when it needs to move
 	// something to a combodomain.  This saves a ton of find() operations.
-	AstSenTree* combp = new AstSenTree (nodep->fileline(),	// Gets cloned() so ok if goes out of scope
-					    new AstSenItem(nodep->fileline(), AstSenItem::Combo()));
+        AstSenTree* combp = new AstSenTree(nodep->fileline(),  // Gets cloned() so ok if goes out of scope
+                                           new AstSenItem(nodep->fileline(), AstSenItem::Combo()));
 	m_comboDomainp = m_finder.getSenTree(nodep->fileline(), combp);
 	pushDeletep(combp);  // Cleanup when done
-	AstSenTree* settlep = new AstSenTree (nodep->fileline(),  // Gets cloned() so ok if goes out of scope
-					      new AstSenItem(nodep->fileline(), AstSenItem::Settle()));
+        AstSenTree* settlep = new AstSenTree(nodep->fileline(),  // Gets cloned() so ok if goes out of scope
+                                             new AstSenItem(nodep->fileline(), AstSenItem::Settle()));
 	m_settleDomainp = m_finder.getSenTree(nodep->fileline(), settlep);
 	pushDeletep(settlep);  // Cleanup when done
 	// Fake AstSenTree we set domainp to indicate needs deletion
-	m_deleteDomainp = new AstSenTree (nodep->fileline(),
-					  new AstSenItem(nodep->fileline(), AstSenItem::Settle()));
+        m_deleteDomainp = new AstSenTree(nodep->fileline(),
+                                         new AstSenItem(nodep->fileline(), AstSenItem::Settle()));
 	pushDeletep(m_deleteDomainp);  // Cleanup when done
 	UINFO(5,"    DeleteDomain = "<<m_deleteDomainp<<endl);
 	// Base vertices

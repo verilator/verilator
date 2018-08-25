@@ -89,8 +89,8 @@ private:
 	// Copy combo tree to settlement tree with duplicated statements
 	if (sensesp->hasCombo()) {
 	    AstSenTree* newsentreep
-		= new AstSenTree (nodep->fileline(),
-				  new AstSenItem (nodep->fileline(), AstSenItem::Settle()));
+                = new AstSenTree(nodep->fileline(),
+                                 new AstSenItem (nodep->fileline(), AstSenItem::Settle()));
 	    AstActive* newp = new AstActive(nodep->fileline(),"settle", newsentreep);
 	    newp->sensesStorep(newsentreep);
 	    if (nodep->stmtsp()) newp->addStmtsp(nodep->stmtsp()->cloneTree(true));

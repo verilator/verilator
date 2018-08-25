@@ -78,16 +78,16 @@ private:
 	AstVar* varp = vscp->varp();
 	if (!varp->width1()) varp->v3error("Unsupported: Clock edge on non-single bit signal: "<<varp->prettyName());
 	string newvarname = ((string)"__Vclklast__"+vscp->scopep()->nameDotless()+"__"+varp->name());
-	AstVar* newvarp = new AstVar (vscp->fileline(), AstVarType::MODULETEMP, newvarname, VFlagLogicPacked(), 1);
+        AstVar* newvarp = new AstVar(vscp->fileline(), AstVarType::MODULETEMP, newvarname, VFlagLogicPacked(), 1);
 	m_modp->addStmtp(newvarp);
 	AstVarScope* newvscp = new AstVarScope(vscp->fileline(), m_scopep, newvarp);
 	vscp->user1p(newvscp);
 	m_scopep->addVarp(newvscp);
 	// At bottom, assign them
 	AstAssign* finalp
-	    = new AstAssign (vscp->fileline(),
-			     new AstVarRef(vscp->fileline(), newvscp, true),
-			     new AstVarRef(vscp->fileline(), vscp, false));
+            = new AstAssign(vscp->fileline(),
+                            new AstVarRef(vscp->fileline(), newvscp, true),
+                            new AstVarRef(vscp->fileline(), vscp, false));
 	m_evalFuncp->addFinalsp(finalp);
 	//
 	UINFO(4,"New Last: "<<newvscp<<endl);
@@ -172,8 +172,7 @@ private:
     AstIf* makeActiveIf(AstSenTree* sensesp) {
 	AstNode* senEqnp = createSenseEquation(sensesp->sensesp());
 	if (!senEqnp) sensesp->v3fatalSrc("No sense equation, shouldn't be in sequent activation.");
-	AstIf* newifp = new AstIf (sensesp->fileline(),
-				   senEqnp, NULL, NULL);
+        AstIf* newifp = new AstIf(sensesp->fileline(), senEqnp, NULL, NULL);
 	return (newifp);
     }
     void clearLastSen() {

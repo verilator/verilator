@@ -17,7 +17,7 @@ execute(
     check_finished => 1,
     );
 
-file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}.cpp", qr/VL_RAND_RESET/);
+file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}.cpp", qr/VL_RAND_RESET/);
 
 ok(1);
 1;

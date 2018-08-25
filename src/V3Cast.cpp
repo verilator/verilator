@@ -72,14 +72,14 @@ private:
 	AstNRelinker relinkHandle;
 	nodep->unlinkFrBack(&relinkHandle);
 	//
-	AstCCast* castp = new AstCCast (nodep->fileline(), nodep, needsize, nodep->widthMin());
+        AstCCast* castp = new AstCCast(nodep->fileline(), nodep, needsize, nodep->widthMin());
 	relinkHandle.relink(castp);
 	//if (debug()>8) castp->dumpTree(cout,"-castins: ");
 	//
 	insureLower32Cast(castp);
 	nodep->user1(1);  // Now must be of known size
     }
-    int castSize (AstNode* nodep) {
+    int castSize(AstNode* nodep) {
 	if (nodep->isQuad()) return VL_QUADSIZE;
 	else if (nodep->width()<=8) return 8;
 	else if (nodep->width()<=16) return 16;
@@ -150,7 +150,7 @@ private:
 	    && castSize(nodep) != castSize(nodep->varp())) {
 	    // Cast vars to IData first, else below has upper bits wrongly set
 	    //  CData x=3;  out = (QData)(x<<30);
-	    insertCast (nodep, castSize(nodep));
+            insertCast(nodep, castSize(nodep));
 	}
 	nodep->user1(1);
     }

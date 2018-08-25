@@ -131,13 +131,13 @@ private:
 	}
 	m_statep->maybeCreateChgFuncp();
 
-	AstChangeDet* changep = new AstChangeDet (m_vscp->fileline(),
-						  m_varEqnp->cloneTree(true),
-						  m_newRvEqnp->cloneTree(true), false);
+        AstChangeDet* changep = new AstChangeDet(m_vscp->fileline(),
+                                                 m_varEqnp->cloneTree(true),
+                                                 m_newRvEqnp->cloneTree(true), false);
 	m_statep->m_chgFuncp->addStmtsp(changep);
-	AstAssign* initp = new AstAssign (m_vscp->fileline(),
-					  m_newLvEqnp->cloneTree(true),
-					  m_varEqnp->cloneTree(true));
+        AstAssign* initp = new AstAssign(m_vscp->fileline(),
+                                         m_newLvEqnp->cloneTree(true),
+                                         m_varEqnp->cloneTree(true));
 	m_statep->m_chgFuncp->addFinalsp(initp);
 	EmitCBaseCounterVisitor visitor(initp);
 	m_statep->m_numStmts += visitor.count();
@@ -200,7 +200,7 @@ public:
 	    //          ASSIGN(VARREF(_last), VARREF(var))
 	    //          ...
 	    //          CHANGEDET(VARREF(_last), VARREF(var))
-	    AstVar* newvarp = new AstVar (varp->fileline(), AstVarType::MODULETEMP, newvarname, varp);
+            AstVar* newvarp = new AstVar(varp->fileline(), AstVarType::MODULETEMP, newvarname, varp);
 	    m_statep->m_topModp->addStmtp(newvarp);
 	    m_newvscp = new AstVarScope(m_vscp->fileline(), m_statep->m_scopetopp, newvarp);
 	    m_statep->m_scopetopp->addVarp(m_newvscp);

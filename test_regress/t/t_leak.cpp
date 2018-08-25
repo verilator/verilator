@@ -13,7 +13,7 @@
 #include "Vt_leak.h"
 
 unsigned int main_time = false;
-double sc_time_stamp () {
+double sc_time_stamp() {
     return main_time;
 }
 
@@ -46,7 +46,7 @@ long long get_memory_usage() {
     }
 }
 
-void make_and_destroy () {
+void make_and_destroy() {
     Vt_leak* topp = new Vt_leak;
 
     Verilated::debug(0);
@@ -62,7 +62,7 @@ void make_and_destroy () {
     delete topp; topp=NULL;
 }
 
-int main (int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
     vluint64_t firstUsage = get_memory_usage();
 
     // Warmup phase
@@ -81,9 +81,9 @@ int main (int argc, char *argv[]) {
 
     vluint64_t leaked = get_memory_usage() - firstUsage;
     if (leaked > 64*1024) {  // Have to allow some slop for this code.
-	printf ("Leaked %" VL_PRI64 "d bytes, or ~ %" VL_PRI64 "d bytes/construt\n", leaked, leaked/loops);
+        printf("Leaked %" VL_PRI64 "d bytes, or ~ %" VL_PRI64 "d bytes/construt\n", leaked, leaked/loops);
 	vl_fatal(__FILE__,__LINE__,"top", "Leaked memory\n");
     }
 
-    printf ("*-* All Finished *-*\n");
+    printf("*-* All Finished *-*\n");
 }

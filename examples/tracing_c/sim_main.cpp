@@ -20,8 +20,8 @@
 // Current simulation time (64-bit unsigned)
 vluint64_t main_time = 0;
 // Called by $time in Verilog
-double sc_time_stamp () {
-    return main_time; // Note does conversion to real, to match SystemC
+double sc_time_stamp() {
+    return main_time;  // Note does conversion to real, to match SystemC
 }
 
 int main(int argc, char** argv, char** env) {

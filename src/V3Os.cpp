@@ -71,13 +71,13 @@ void V3Os::setenvStr(const string& envvar, const string& value, const string& wh
 //######################################################################
 // Generic filename utilities
 
-string V3Os::filenameFromDirBase (const string& dir, const string& basename) {
+string V3Os::filenameFromDirBase(const string& dir, const string& basename) {
     // Don't return ./{filename} because if filename was absolute, that makes it relative
     if (dir == ".") return basename;
     else return dir+"/"+basename;
 }
 
-string V3Os::filenameDir (const string& filename) {
+string V3Os::filenameDir(const string& filename) {
     string::size_type pos;
     if ((pos = filename.rfind("/")) != string::npos) {
 	return filename.substr(0,pos);
@@ -86,7 +86,7 @@ string V3Os::filenameDir (const string& filename) {
     }
 }
 
-string V3Os::filenameNonDir (const string& filename) {
+string V3Os::filenameNonDir(const string& filename) {
     string::size_type pos;
     if ((pos = filename.rfind("/")) != string::npos) {
 	return filename.substr(pos+1);
@@ -95,7 +95,7 @@ string V3Os::filenameNonDir (const string& filename) {
     }
 }
 
-string V3Os::filenameNonExt (const string& filename) {
+string V3Os::filenameNonExt(const string& filename) {
     string base = filenameNonDir(filename);
     string::size_type pos;
     if ((pos = base.find(".")) != string::npos) {
@@ -104,7 +104,7 @@ string V3Os::filenameNonExt (const string& filename) {
     return base;
 }
 
-string V3Os::filenameSubstitute (const string& filename) {
+string V3Os::filenameSubstitute(const string& filename) {
     string out;
     enum { NONE, PAREN, CURLY } brackets = NONE;
     for (string::size_type pos = 0; pos < filename.length(); ++pos) {
@@ -181,7 +181,7 @@ void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
 	while (struct dirent* direntp = readdir(dirp)) {
 	    if (VString::wildmatch(direntp->d_name, regexp.c_str())) {
 		string fullname = dir + "/" + string(direntp->d_name);
-		unlink (fullname.c_str());
+                unlink(fullname.c_str());
 	    }
 	}
 	closedir(dirp);

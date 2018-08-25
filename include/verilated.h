@@ -519,31 +519,31 @@ private:
 /// User code may wish to replace this function, to do so, define VL_USER_FINISH.
 /// This code does not have to be thread safe.
 /// Verilator internal code must call VL_FINISH_MT instead, which eventually calls this.
-extern void vl_finish (const char* filename, int linenum, const char* hier);
+extern void vl_finish(const char* filename, int linenum, const char* hier);
 
 /// Routine to call for $stop
 /// User code may wish to replace this function, to do so, define VL_USER_STOP.
 /// This code does not have to be thread safe.
 /// Verilator internal code must call VL_FINISH_MT instead, which eventually calls this.
-extern void vl_stop   (const char* filename, int linenum, const char* hier);
+extern void vl_stop(const char* filename, int linenum, const char* hier);
 
 /// Routine to call for a couple of fatal messages
 /// User code may wish to replace this function, to do so, define VL_USER_FATAL.
 /// This code does not have to be thread safe.
 /// Verilator internal code must call VL_FINISH_MT instead, which eventually calls this.
-extern void vl_fatal  (const char* filename, int linenum, const char* hier,
-		       const char* msg);
+extern void vl_fatal(const char* filename, int linenum, const char* hier,
+                     const char* msg);
 
 //=========================================================================
 // Extern functions -- Slow path
 
 /// Multithread safe wrapper for calls to $finish
-extern void VL_FINISH_MT (const char* filename, int linenum, const char* hier) VL_MT_SAFE;
+extern void VL_FINISH_MT(const char* filename, int linenum, const char* hier) VL_MT_SAFE;
 /// Multithread safe wrapper for calls to $stop
-extern void VL_STOP_MT   (const char* filename, int linenum, const char* hier) VL_MT_SAFE;
+extern void VL_STOP_MT(const char* filename, int linenum, const char* hier) VL_MT_SAFE;
 /// Multithread safe wrapper to call for a couple of fatal messages
-extern void VL_FATAL_MT  (const char* filename, int linenum, const char* hier,
-			  const char* msg) VL_MT_SAFE;
+extern void VL_FATAL_MT(const char* filename, int linenum, const char* hier,
+                        const char* msg) VL_MT_SAFE;
 
 /// Print a string, multithread safe. Eventually VL_PRINTF will get called.
 #ifdef VL_THREADED

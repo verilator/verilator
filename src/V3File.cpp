@@ -120,7 +120,7 @@ public:
     void addTgtDepend(const string& filename) {
 	if (m_filenameSet.find(filename) == m_filenameSet.end()) {
 	    m_filenameSet.insert(filename);
-	    m_filenameList.insert(DependFile (filename, true));
+            m_filenameList.insert(DependFile(filename, true));
 	}
     }
     void writeDepend(const string& filename);
@@ -323,7 +323,7 @@ private:
 	else return readContentsFile(filename,outl);
     }
     bool readContentsFile(const string& filename, StrList& outl) {
-	int fd = open (filename.c_str(), O_RDONLY);
+        int fd = open(filename.c_str(), O_RDONLY);
 	if (fd<0) return false;
 	m_readEof = false;
 	readBlocks(fd, -1, outl);
@@ -369,7 +369,7 @@ private:
 	    ssize_t todo = INFILTER_IPC_BUFSIZ;
 	    if (size>0 && size<todo) todo = size;
 	    errno = 0;
-	    ssize_t got = read (fd, buf, todo);
+            ssize_t got = read(fd, buf, todo);
 	    //UINFO(9,"RD GOT g "<< got<<" e "<<errno<<" "<<strerror(errno)<<endl);  usleep(50*1000);
 	    if (got>0) {
 		outl.push_back(string(buf, got));
@@ -411,7 +411,7 @@ private:
 	unsigned offset = 0;
 	while (!m_readEof && out.length()>offset) {
 	    errno = 0;
-	    int got = write (m_writeFd, (out.c_str())+offset, out.length()-offset);
+            int got = write(m_writeFd, (out.c_str())+offset, out.length()-offset);
 	    //UINFO(9,"WR GOT g "<< got<<" e "<<errno<<" "<<strerror(errno)<<endl);  usleep(50*1000);
 	    if (got>0) offset += got;
 	    else if (errno == EINTR || errno == EAGAIN
@@ -629,7 +629,7 @@ bool V3OutFormatter::tokenEnd(const char* cp) {
 	    || tokenStart(cp,"endmodule"));
 }
 
-int V3OutFormatter::endLevels (const char *strg) {
+int V3OutFormatter::endLevels(const char *strg) {
     int levels=m_indentLevel;
     {
 	const char* cp=strg;
@@ -674,14 +674,14 @@ int V3OutFormatter::endLevels (const char *strg) {
     return (levels);
 }
 
-void V3OutFormatter::puts (const char *strg) {
+void V3OutFormatter::puts(const char *strg) {
     if (m_prependIndent) {
 	putsNoTracking(indentStr(endLevels(strg)));
 	m_prependIndent = false;
     }
     bool wordstart = true;
     for (const char* cp=strg; *cp; cp++) {
-	putcNoTracking (*cp);
+        putcNoTracking(*cp);
 	switch (*cp) {
 	case '\n':
 	    m_lineno++;
@@ -764,12 +764,12 @@ void V3OutFormatter::puts (const char *strg) {
     }
 }
 
-void V3OutFormatter::putBreakExpr () {
+void V3OutFormatter::putBreakExpr() {
     if (!m_parenVec.empty()) putBreak();
 }
 
 // Add a line break if too wide
-void V3OutFormatter::putBreak () {
+void V3OutFormatter::putBreak() {
     if (!m_nobreak) {
 	//char s[1000]; sprintf(s,"{%d,%d}",m_column,m_parenVec.top()); putsNoTracking(s);
 	if (exceededWidth()) {
@@ -785,18 +785,18 @@ void V3OutFormatter::putsQuoted(const string& strg) {
     putcNoTracking('"');
     string quoted = V3Number::quoteNameControls(strg);
     for (string::const_iterator cp=quoted.begin(); cp!=quoted.end(); ++cp) {
-    	putcNoTracking (*cp);
+        putcNoTracking(*cp);
     }
     putcNoTracking('"');
 }
-void V3OutFormatter::putsNoTracking (const string& strg) {
+void V3OutFormatter::putsNoTracking(const string& strg) {
     // Don't track {}'s, probably because it's a $display format string
     for (string::const_iterator cp=strg.begin(); cp!=strg.end(); ++cp) {
-	putcNoTracking (*cp);
+        putcNoTracking(*cp);
     }
 }
 
-void V3OutFormatter::putcNoTracking (char chr) {
+void V3OutFormatter::putcNoTracking(char chr) {
     switch (chr) {
     case '\n':
 	m_lineno++;
@@ -817,13 +817,13 @@ void V3OutFormatter::putcNoTracking (char chr) {
 	m_nobreak=false;
 	break;
     }
-    putcOutput (chr);
+    putcOutput(chr);
 }
 
 //----------------------------------------------------------------------
 // Simple wrappers
 
-void V3OutFormatter::printf (const char *fmt...) {
+void V3OutFormatter::printf(const char *fmt...) {
     char sbuff[5000];
     va_list ap;
     va_start(ap,fmt);

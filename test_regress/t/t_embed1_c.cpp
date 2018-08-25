@@ -85,15 +85,15 @@ void t_embed_child_eval() {
     __modelp->eval();
 }
 
-void t_embed_child_io_eval (unsigned char clk,
-			    unsigned char bit_in,
-			    const svBitVecVal* vec_in,
-			    const svBitVecVal* wide_in,
-			    unsigned char is_ref,
-			    unsigned char* bit_out,
-			    svBitVecVal* vec_out,
-			    svBitVecVal* wide_out,
-			    unsigned char* did_init_out) {
+void t_embed_child_io_eval(unsigned char clk,
+                           unsigned char bit_in,
+                           const svBitVecVal* vec_in,
+                           const svBitVecVal* wide_in,
+                           unsigned char is_ref,
+                           unsigned char* bit_out,
+                           svBitVecVal* vec_out,
+                           svBitVecVal* wide_out,
+                           unsigned char* did_init_out) {
     VL_DEBUG_IF(VL_PRINTF("    t_embed1_child_io_eval\n"); );
     Vt_embed1_child* __modelp = __get_modelp();
     VL_DEBUG_IF(VL_PRINTF("[%0ld]      in clk=%x b=%x V=%x R=%x\n",

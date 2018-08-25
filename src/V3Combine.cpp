@@ -85,7 +85,7 @@ private:
     CallMmap	m_callMmap;	// Associative array of {function}{call}
     // METHODS
 public:
-    void replaceFunc (AstCFunc* oldfuncp, AstCFunc* newfuncp) {
+    void replaceFunc(AstCFunc* oldfuncp, AstCFunc* newfuncp) {
 	if (oldfuncp==newfuncp) return;
 	if (newfuncp) {
 	    UINFO(4, "   Replace "<<oldfuncp<<" -WITH-> "<<newfuncp<<endl);
@@ -275,7 +275,7 @@ private:
     }
 
     void walkDupCodeStart(AstNode* node1p) {
-	V3Hash hashval (node1p->user4p());
+        V3Hash hashval(node1p->user4p());
 	//UINFO(4,"    STMT "<<hashval<<" "<<node1p<<endl);
 	//
 	int	 bestDepth = 0;		// Best substitution found in the search

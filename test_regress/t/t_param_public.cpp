@@ -10,7 +10,7 @@
 
 #include "Vt_param_public_p.h"
 
-int main (int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
     Vt_param_public *topp = new Vt_param_public;
 
     Verilated::debug(0);

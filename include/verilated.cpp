@@ -49,7 +49,7 @@ VerilatedImp VerilatedImp::s_s;
 // User definable functions
 
 #ifndef VL_USER_FINISH		// Define this to override this function
-void vl_finish (const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
+void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
     if (0 && hier) {}
     VL_PRINTF("- %s:%d: Verilog $finish\n", filename, linenum);  // Not VL_PRINTF_MT, already on main thread
     if (Verilated::gotFinish()) {
@@ -62,15 +62,15 @@ void vl_finish (const char* filename, int linenum, const char* hier) VL_MT_UNSAF
 #endif
 
 #ifndef VL_USER_STOP		// Define this to override this function
-void vl_stop (const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
+void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
     Verilated::gotFinish(true);
     Verilated::flushCall();
-    vl_fatal (filename,linenum,hier,"Verilog $stop");
+    vl_fatal(filename,linenum,hier,"Verilog $stop");
 }
 #endif
 
 #ifndef VL_USER_FATAL	// Define this to override this function
-void vl_fatal (const char* filename, int linenum, const char* hier, const char* msg) VL_MT_UNSAFE {
+void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_UNSAFE {
     if (0 && hier) {}
     Verilated::gotFinish(true);
     VL_PRINTF("%%Error: %s:%d: %s\n", filename, linenum, msg);  // Not VL_PRINTF_MT, already on main thread
@@ -85,7 +85,7 @@ void vl_fatal (const char* filename, int linenum, const char* hier, const char* 
 //===========================================================================
 // Wrapper to call certain functions via messages when multithreaded
 
-void VL_FINISH_MT (const char* filename, int linenum, const char* hier) VL_MT_SAFE {
+void VL_FINISH_MT(const char* filename, int linenum, const char* hier) VL_MT_SAFE {
 #ifdef VL_THREADED
     VerilatedThreadMsgQueue::post(VerilatedMsg([=](){
 		vl_finish(filename, linenum, hier);
@@ -95,7 +95,7 @@ void VL_FINISH_MT (const char* filename, int linenum, const char* hier) VL_MT_SA
 #endif
 }
 
-void VL_STOP_MT (const char* filename, int linenum, const char* hier) VL_MT_SAFE {
+void VL_STOP_MT(const char* filename, int linenum, const char* hier) VL_MT_SAFE {
 #ifdef VL_THREADED
     VerilatedThreadMsgQueue::post(VerilatedMsg([=](){
 		vl_stop(filename, linenum, hier);
@@ -105,7 +105,7 @@ void VL_STOP_MT (const char* filename, int linenum, const char* hier) VL_MT_SAFE
 #endif
 }
 
-void VL_FATAL_MT (const char* filename, int linenum, const char* hier, const char* msg) VL_MT_SAFE {
+void VL_FATAL_MT(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_SAFE {
 #ifdef VL_THREADED
     VerilatedThreadMsgQueue::post(VerilatedMsg([=](){
 		vl_fatal(filename, linenum, hier, msg);
@@ -1379,7 +1379,7 @@ void VL_READMEM_N(
     FILE* fp = fopen(ofilenamep.c_str(), "r");
     if (VL_UNLIKELY(!fp)) {
         // We don't report the Verilog source filename as it slow to have to pass it down
-        VL_FATAL_MT (ofilenamep.c_str(), 0, "", "$readmem file not found");
+        VL_FATAL_MT(ofilenamep.c_str(), 0, "", "$readmem file not found");
         return;
     }
     // Prep for reading
@@ -1426,8 +1426,8 @@ void VL_READMEM_N(
                     //printf(" Value width=%d  @%x = %c\n", width, addr, c);
                     if (VL_UNLIKELY(addr >= static_cast<IData>(depth+array_lsb)
                                     || addr < static_cast<IData>(array_lsb))) {
-                        VL_FATAL_MT (ofilenamep.c_str(), linenum, "",
-                                     "$readmem file address beyond bounds of array");
+                        VL_FATAL_MT(ofilenamep.c_str(), linenum, "",
+                                    "$readmem file address beyond bounds of array");
                     } else {
                         int entry = addr - array_lsb;
                         QData shift = hex ? VL_ULL(4) : VL_ULL(1);
@@ -1456,15 +1456,15 @@ void VL_READMEM_N(
                             datap[0] |= value;
                         }
                         if (VL_UNLIKELY(value>=(1<<shift))) {
-                            VL_FATAL_MT (ofilenamep.c_str(), linenum, "",
-                                         "$readmemb (binary) file contains hex characters");
+                            VL_FATAL_MT(ofilenamep.c_str(), linenum, "",
+                                        "$readmemb (binary) file contains hex characters");
                         }
                     }
                 }
                 innum = true;
             }
             else {
-                VL_FATAL_MT (ofilenamep.c_str(), linenum, "", "$readmem file syntax error");
+                VL_FATAL_MT(ofilenamep.c_str(), linenum, "", "$readmem file syntax error");
             }
         }
         lastc = c;
@@ -1474,7 +1474,7 @@ void VL_READMEM_N(
     // Final checks
     fclose(fp);
     if (VL_UNLIKELY(end != VL_UL(0xffffffff) && addr != (end+1))) {
-        VL_FATAL_MT (ofilenamep.c_str(), linenum, "", "$readmem file ended before specified ending-address");
+        VL_FATAL_MT(ofilenamep.c_str(), linenum, "", "$readmem file ended before specified ending-address");
     }
 }
 
@@ -1985,7 +1985,7 @@ void VerilatedScope::varInsert(int finalize, const char* namep, void* datap,
     if (!finalize) return;
 
     if (!m_varsp) m_varsp = new VerilatedVarNameMap();
-    VerilatedVar var (namep, datap, vltype, (VerilatedVarFlags)vlflags, dims);
+    VerilatedVar var(namep, datap, vltype, (VerilatedVarFlags)vlflags, dims);
 
     va_list ap;
     va_start(ap,dims);

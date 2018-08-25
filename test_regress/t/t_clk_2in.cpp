@@ -10,7 +10,7 @@
 
 unsigned int main_time = false;
 
-double sc_time_stamp () {
+double sc_time_stamp() {
     return main_time;
 }
 
@@ -29,7 +29,7 @@ void clockit(int clk1, int clk0) {
     main_time++;
 }
 
-int main (int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
     topp = new VM_PREFIX;
     topp->check = 0;
     clockit(0,0);

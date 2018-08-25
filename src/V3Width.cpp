@@ -405,8 +405,8 @@ private:
 	    }
 	    if (nodep->lhsp()->isString()
 		|| nodep->rhsp()->isString()) {
-		AstNode* newp = new AstConcatN (nodep->fileline(),nodep->lhsp()->unlinkFrBack(),
-						nodep->rhsp()->unlinkFrBack());
+                AstNode* newp = new AstConcatN(nodep->fileline(),nodep->lhsp()->unlinkFrBack(),
+                                               nodep->rhsp()->unlinkFrBack());
 		nodep->replaceWith(newp);
 		pushDeletep(nodep); VL_DANGLING(nodep);
 		return;
@@ -846,14 +846,14 @@ private:
 	    iterateCheck(nodep,"LHS",nodep->lhsp(),SELF,FINAL,nodep->dtypep(),EXTEND_EXP);
 	    AstNode* newp = NULL;  // No change
 	    if (nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned()) {
-		newp = new AstPowSS (nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
-				     nodep->rhsp()->unlinkFrBack());
+                newp = new AstPowSS(nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
+                                    nodep->rhsp()->unlinkFrBack());
 	    } else if (nodep->lhsp()->isSigned() && !nodep->rhsp()->isSigned()) {
-		newp = new AstPowSU (nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
-				     nodep->rhsp()->unlinkFrBack());
+                newp = new AstPowSU(nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
+                                    nodep->rhsp()->unlinkFrBack());
 	    } else if (!nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned()) {
-		newp = new AstPowUS (nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
-				     nodep->rhsp()->unlinkFrBack());
+                newp = new AstPowUS(nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
+                                    nodep->rhsp()->unlinkFrBack());
 	    }
 	    if (newp) {
 		newp->dtypeFrom(nodep);
@@ -2967,7 +2967,7 @@ private:
     //----------------------------------------------------------------------
     // LOWER LEVEL WIDTH METHODS  (none iterate)
 
-    bool widthBad (AstNode* nodep, AstNodeDType* expDTypep) {
+    bool widthBad(AstNode* nodep, AstNodeDType* expDTypep) {
 	int expWidth = expDTypep->width();
 	int expWidthMin = expDTypep->widthMin();
         if (!nodep->dtypep()) nodep->v3fatalSrc("Under node "<<nodep->prettyTypeName()
@@ -2983,7 +2983,7 @@ private:
 	return false;
     }
 
-    void fixWidthExtend (AstNode* nodep, AstNodeDType* expDTypep, ExtendRule extendRule) {
+    void fixWidthExtend(AstNode* nodep, AstNodeDType* expDTypep, ExtendRule extendRule) {
 	// Fix the width mismatch by extending or truncating bits
 	// *ONLY* call this from checkWidth()
 	// Truncation is rarer, but can occur:  parameter [3:0] FOO = 64'h12312;
@@ -3042,7 +3042,7 @@ private:
 	UINFO(4,"             _new: "<<nodep<<endl);
     }
 
-    void fixWidthReduce (AstNode* nodep) {
+    void fixWidthReduce(AstNode* nodep) {
 	// Fix the width mismatch by adding a reduction OR operator
 	// IF (A(CONSTwide)) becomes  IF (A(CONSTreduced))
 	// IF (A(somewide))  becomes  IF (A(REDOR(somewide)))
@@ -3070,7 +3070,7 @@ private:
 	UINFO(4,"             _new: "<<nodep<<endl);
     }
 
-    bool fixAutoExtend (AstNode*& nodepr, int expWidth) {
+    bool fixAutoExtend(AstNode*& nodepr, int expWidth) {
 	// For SystemVerilog '0,'1,'x,'z, autoextend and don't warn
         if (AstConst* constp = VN_CAST(nodepr, Const)) {
 	    if (constp->num().autoExtend() && !constp->num().sized() && constp->width()==1) {
@@ -3094,7 +3094,7 @@ private:
     bool similarDTypeRecurse(AstNodeDType* node1p, AstNodeDType* node2p) {
 	return node1p->skipRefp()->similarDType(node2p->skipRefp());
     }
-    void iterateCheckFileDesc (AstNode* nodep, AstNode* underp, Stage stage) {
+    void iterateCheckFileDesc(AstNode* nodep, AstNode* underp, Stage stage) {
 	if (stage != BOTH) nodep->v3fatalSrc("Bad call");
 	// underp may change as a result of replacement
 	underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF,PRELIM).p());
@@ -3102,7 +3102,7 @@ private:
 	underp = iterateCheck(nodep,"file_descriptor",underp,SELF,FINAL,expDTypep,EXTEND_EXP);
 	if (underp) {} // cppcheck
     }
-    void iterateCheckReal (AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
+    void iterateCheckReal(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
 	// Coerce child to real if not already. Child is self-determined
 	// e.g. nodep=ADDD, underp=ADD in ADDD(ADD(a,b), real-CONST)
 	// Don't need separate PRELIM and FINAL(double) calls;
@@ -3118,7 +3118,7 @@ private:
 	}
 	if (underp) {} // cppcheck
     }
-    void iterateCheckString (AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
+    void iterateCheckString(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
 	if (stage & PRELIM) {
 	    underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF,PRELIM).p());
 	}
@@ -3128,8 +3128,8 @@ private:
 	}
 	if (underp) {} // cppcheck
     }
-    void iterateCheckSizedSelf (AstNode* nodep, const char* side, AstNode* underp,
-				Determ determ, Stage stage) {
+    void iterateCheckSizedSelf(AstNode* nodep, const char* side, AstNode* underp,
+                               Determ determ, Stage stage) {
 	// Coerce child to any sized-number data type; child is self-determined i.e. isolated from expected type.
 	// e.g. nodep=CONCAT, underp=lhs in CONCAT(lhs,rhs)
 	if (determ != SELF) nodep->v3fatalSrc("Bad call");
@@ -3154,7 +3154,7 @@ private:
 	if (rhsp) {} // cppcheck
     }
 
-    void iterateCheckBool (AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
+    void iterateCheckBool(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
 	if (stage != BOTH) nodep->v3fatalSrc("Bad call");  // Booleans always self-determined so do BOTH at once
 	// Underp is used in a self-determined but boolean context, reduce a multibit number to one bit
 	// stage is always BOTH so not passed as argument
@@ -3193,10 +3193,10 @@ private:
 	}
     }
 
-    AstNode* iterateCheck (AstNode* nodep, const char* side, AstNode* underp,
-			   Determ determ, Stage stage, AstNodeDType* expDTypep,
-			   ExtendRule extendRule,
-			   bool warnOn=true) {
+    AstNode* iterateCheck(AstNode* nodep, const char* side, AstNode* underp,
+                          Determ determ, Stage stage, AstNodeDType* expDTypep,
+                          ExtendRule extendRule,
+                          bool warnOn=true) {
 	// Perform data type check on underp, which is underneath nodep used for error reporting
 	// Returns the new underp
 	// Conversion to/from doubles and integers are before iterating.
@@ -3249,11 +3249,11 @@ private:
 	return underp;
     }
 
-    void widthCheckSized (AstNode* nodep, const char* side,
-			  AstNode* underp,  // Node to be checked or have typecast added in front of
-			  AstNodeDType* expDTypep,
-			  ExtendRule extendRule,
-			  bool warnOn=true) {
+    void widthCheckSized(AstNode* nodep, const char* side,
+                         AstNode* underp,  // Node to be checked or have typecast added in front of
+                         AstNodeDType* expDTypep,
+                         ExtendRule extendRule,
+                         bool warnOn=true) {
 	// Issue warnings on sized number width mismatches, then do appropriate size extension
 	// Generally iterateCheck is what is wanted instead of this
 	//UINFO(9,"wchk "<<side<<endl<<"  "<<nodep<<endl<<"  "<<underp<<endl<<"  e="<<expDTypep<<" i"<<warnOn<<endl);
@@ -3617,11 +3617,11 @@ private:
 	AstNodeArrayDType* vardtypep = new AstUnpackArrayDType(nodep->fileline(),
 							       nodep->findSigned32DType(),
 							       new AstRange(nodep->fileline(), msbdim, 0));
-	AstInitArray* initp = new AstInitArray (nodep->fileline(), vardtypep, NULL);
+        AstInitArray* initp = new AstInitArray(nodep->fileline(), vardtypep, NULL);
 	v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
-	AstVar* varp = new AstVar (nodep->fileline(), AstVarType::MODULETEMP,
-				   "__Vdimtab_" + VString::downcase(attrType.ascii()) + cvtToStr(m_dtTables++),
-				   vardtypep);
+        AstVar* varp = new AstVar(nodep->fileline(), AstVarType::MODULETEMP,
+                                  "__Vdimtab_" + VString::downcase(attrType.ascii()) + cvtToStr(m_dtTables++),
+                                  vardtypep);
 	varp->isConst(true);
 	varp->isStatic(true);
 	varp->valuep(initp);
@@ -3652,11 +3652,11 @@ private:
 	AstNodeArrayDType* vardtypep = new AstUnpackArrayDType(nodep->fileline(),
 							       basep,
 							       new AstRange(nodep->fileline(), msbdim, 0));
-	AstInitArray* initp = new AstInitArray (nodep->fileline(), vardtypep, NULL);
+        AstInitArray* initp = new AstInitArray(nodep->fileline(), vardtypep, NULL);
 	v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
-	AstVar* varp = new AstVar (nodep->fileline(), AstVarType::MODULETEMP,
-				   "__Venumtab_" + VString::downcase(attrType.ascii()) + cvtToStr(m_dtTables++),
-				   vardtypep);
+        AstVar* varp = new AstVar(nodep->fileline(), AstVarType::MODULETEMP,
+                                  "__Venumtab_" + VString::downcase(attrType.ascii()) + cvtToStr(m_dtTables++),
+                                  vardtypep);
 	varp->isConst(true);
 	varp->isStatic(true);
 	varp->valuep(initp);
@@ -3894,7 +3894,7 @@ void V3Width::width(AstNetlist* nodep) {
 
 //! Single node parameter propagation
 //! Smaller step... Only do a single node for parameter propagation
-AstNode* V3Width::widthParamsEdit (AstNode* nodep) {
+AstNode* V3Width::widthParamsEdit(AstNode* nodep) {
     UINFO(4,__FUNCTION__<<": "<<nodep<<endl);
     // We should do it in bottom-up module order, but it works in any order.
     WidthVisitor visitor (true, false);

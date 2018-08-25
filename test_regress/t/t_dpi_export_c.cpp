@@ -54,7 +54,7 @@ extern "C" {
     extern long long     dpix_f_longint(long long i);
     extern void*         dpix_f_chandle(void* i);
 
-    extern int dpix_sub_inst (int i);
+    extern int dpix_sub_inst(int i);
 
     extern void dpix_t_reg(svLogic i, svLogic* o);
     extern void dpix_t_reg15(const svLogicVecVal* i, svLogicVecVal* o);
@@ -88,7 +88,7 @@ static int check_sub(const char* name, int i) {
 #ifdef TEST_VERBOSE
     printf("svGetScopeFromName(\"%s\") -> %p\n", name, scope);
 #endif
-    CHECK_RESULT_NNULL (scope);
+    CHECK_RESULT_NNULL(scope);
     svScope prev = svGetScope();
     svScope sout = svSetScope(scope);
     CHECK_RESULT(svScope, sout, prev);
@@ -113,7 +113,7 @@ int dpix_run_tests() {
 #endif
 
 #ifndef CADENCE // Unimplemented; how hard is it?
-    printf ("svDpiVersion: %s\n",svDpiVersion());
+    printf("svDpiVersion: %s\n",svDpiVersion());
     CHECK_RESULT (bool,
 		  strcmp(svDpiVersion(), "1800-2005")==0
 		  || strcmp(svDpiVersion(), "P1800-2005")==0

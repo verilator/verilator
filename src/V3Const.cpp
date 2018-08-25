@@ -116,7 +116,7 @@ private:
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
-    bool operandConst (AstNode* nodep) {
+    bool operandConst(AstNode* nodep) {
         return VN_IS(nodep, Const);
     }
     bool operandAsvConst(const AstNode* nodep) {
@@ -583,7 +583,7 @@ private:
     // Constant Replacement functions.
     // These all take a node, delete its tree, and replaces it with a constant
 
-    void replaceNum (AstNode* oldp, const V3Number& num) {
+    void replaceNum(AstNode* oldp, const V3Number& num) {
 	// Replace oldp node with a constant set to specified value
         UASSERT(oldp, "Null old");
         if (VN_IS(oldp, Const) && !VN_CAST(oldp, Const)->num().isFourState()) {
@@ -596,7 +596,7 @@ private:
 	oldp->replaceWith(newp);
 	oldp->deleteTree(); VL_DANGLING(oldp);
     }
-    void replaceNum (AstNode* nodep, uint32_t val) {
+    void replaceNum(AstNode* nodep, uint32_t val) {
 	V3Number num (nodep->fileline(), nodep->width(), val);
 	replaceNum(nodep, num); VL_DANGLING(nodep);
     }
@@ -630,7 +630,7 @@ private:
 	    nodep->deleteTree(); VL_DANGLING(nodep);
 	}
     }
-    void replaceAllOnes (AstNode* nodep) {
+    void replaceAllOnes(AstNode* nodep) {
 	V3Number ones (nodep->fileline(), nodep->width(), 0);
 	ones.setMask(nodep->width());
 	replaceNum(nodep, ones); VL_DANGLING(nodep);
@@ -656,7 +656,7 @@ private:
 	replaceNum(nodep, num); VL_DANGLING(nodep);
     }
 
-    void replaceConstString (AstNode* oldp, const string& num) {
+    void replaceConstString(AstNode* oldp, const string& num) {
 	// Replace oldp node with a constant set to specified value
         UASSERT(oldp, "Null old");
 	AstNode* newp = new AstConst(oldp->fileline(), AstConst::String(), num);
@@ -704,7 +704,7 @@ private:
 	// Keep RHS, remove LHS
 	replaceWChild(nodep, nodep->rhsp());
     }
-    void replaceAsv (AstNodeBiop* nodep) {
+    void replaceAsv(AstNodeBiop* nodep) {
 	// BIASV(CONSTa, BIASV(CONSTb, c)) -> BIASV( BIASV_CONSTED(a,b), c)
 	// BIASV(SAMEa,  BIASV(SAMEb, c))  -> BIASV( BIASV(SAMEa,SAMEb), c)
 	//nodep->dumpTree(cout, "  repAsvConst_old: ");
@@ -723,7 +723,7 @@ private:
         if (VN_IS(rp->lhsp(), Const) && VN_IS(rp->rhsp(), Const)) replaceConst(rp);
 	//nodep->dumpTree(cout, "  repAsvConst_new: ");
     }
-    void replaceAsvLUp (AstNodeBiop* nodep) {
+    void replaceAsvLUp(AstNodeBiop* nodep) {
 	// BIASV(BIASV(CONSTll,lr),r) -> BIASV(CONSTll,BIASV(lr,r))
         AstNodeBiop* lp = VN_CAST(nodep->lhsp()->unlinkFrBack(), NodeBiop);
 	AstNode* llp = lp->lhsp()->unlinkFrBack();
@@ -735,7 +735,7 @@ private:
 	lp->rhsp(rp);
 	//nodep->dumpTree(cout, "  repAsvLUp_new: ");
     }
-    void replaceAsvRUp (AstNodeBiop* nodep) {
+    void replaceAsvRUp(AstNodeBiop* nodep) {
 	// BIASV(l,BIASV(CONSTrl,rr)) -> BIASV(CONSTrl,BIASV(l,rr))
 	AstNode* lp  = nodep->lhsp()->unlinkFrBack();
         AstNodeBiop* rp = VN_CAST(nodep->rhsp()->unlinkFrBack(), NodeBiop);
@@ -747,7 +747,7 @@ private:
 	rp->rhsp(rrp);
 	//nodep->dumpTree(cout, "  repAsvRUp_new: ");
     }
-    void replaceAndOr (AstNodeBiop* nodep) {
+    void replaceAndOr(AstNodeBiop* nodep) {
 	//  OR  (AND (CONSTll,lr), AND(CONSTrl==ll,rr))    -> AND (CONSTll, OR(lr,rr))
 	//  OR  (AND (CONSTll,lr), AND(CONSTrl,    rr=lr)) -> AND (OR(ll,rl), rr)
 	// nodep ^lp  ^llp   ^lrp  ^rp  ^rlp       ^rrp
@@ -778,7 +778,7 @@ private:
 	}
 	//nodep->dumpTree(cout, "  repAndOr_new: ");
     }
-    void replaceShiftSame (AstNodeBiop* nodep) {
+    void replaceShiftSame(AstNodeBiop* nodep) {
 	// Or(Shift(ll,CONSTlr),Shift(rl,CONSTrr==lr)) -> Shift(Or(ll,rl),CONSTlr)
 	// (Or/And may also be reversed)
         AstNodeBiop* lp = VN_CAST(nodep->lhsp()->unlinkFrBack(), NodeBiop);
@@ -835,7 +835,7 @@ private:
             iterate(lp->rhsp());
 	} else nodep->v3fatalSrc("tried to merge two Concat which are not adjacent");
     }
-    void replaceExtend (AstNode* nodep, AstNode* arg0p) {
+    void replaceExtend(AstNode* nodep, AstNode* arg0p) {
 	// -> EXTEND(nodep)
 	// like a AstExtend{$rhsp}, but we need to set the width correctly from base node
 	arg0p->unlinkFrBack();
@@ -845,7 +845,7 @@ private:
 	newp->dtypeFrom(nodep);
 	nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
     }
-    void replacePowShift (AstNodeBiop* nodep) {  // Pow or PowS
+    void replacePowShift(AstNodeBiop* nodep) {  // Pow or PowS
 	UINFO(5,"POW(2,b)->SHIFTL(1,b) "<<nodep<<endl);
 	AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
 	AstShiftL* newp = new AstShiftL(nodep->fileline(),
@@ -855,7 +855,7 @@ private:
 	newp->lhsp()->dtypeFrom(nodep);
 	nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
     }
-    void replaceMulShift (AstMul* nodep) {  // Mul, but not MulS as not simple shift
+    void replaceMulShift(AstMul* nodep) {  // Mul, but not MulS as not simple shift
 	UINFO(5,"MUL(2^n,b)->SHIFTL(b,n) "<<nodep<<endl);
         int amount = VN_CAST(nodep->lhsp(), Const)->num().mostSetBitP1()-1;  // 2^n->n+1
 	AstNode* opp = nodep->rhsp()->unlinkFrBack();
@@ -864,7 +864,7 @@ private:
 	newp->dtypeFrom(nodep);
 	nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
     }
-    void replaceDivShift (AstDiv* nodep) {  // Mul, but not MulS as not simple shift
+    void replaceDivShift(AstDiv* nodep) {  // Mul, but not MulS as not simple shift
 	UINFO(5,"DIV(b,2^n)->SHIFTR(b,n) "<<nodep<<endl);
         int amount = VN_CAST(nodep->rhsp(), Const)->num().mostSetBitP1()-1;  // 2^n->n+1
 	AstNode* opp = nodep->lhsp()->unlinkFrBack();
@@ -873,7 +873,7 @@ private:
 	newp->dtypeFrom(nodep);
 	nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
     }
-    void replaceShiftOp (AstNodeBiop* nodep) {
+    void replaceShiftOp(AstNodeBiop* nodep) {
 	UINFO(5,"SHIFT(AND(a,b),CONST)->AND(SHIFT(a,CONST),SHIFT(b,CONST)) "<<nodep<<endl);
 	AstNRelinker handle;
 	nodep->unlinkFrBack(&handle);
@@ -890,7 +890,7 @@ private:
 	handle.relink(newp);
         iterate(newp);  // Further reduce, either node may have more reductions.
     }
-    void replaceShiftShift (AstNodeBiop* nodep) {
+    void replaceShiftShift(AstNodeBiop* nodep) {
 	UINFO(4,"SHIFT(SHIFT(a,s1),s2)->SHIFT(a,ADD(s1,s2)) "<<nodep<<endl);
 	if (debug()>=9) nodep->dumpTree(cout, "  repShiftShift_old: ");
         AstNodeBiop* lhsp = VN_CAST(nodep->lhsp(), NodeBiop); lhsp->unlinkFrBack();
@@ -937,9 +937,9 @@ private:
 				     new AstConst(nodep->fileline(), newshift));
 	    }
 	    newp->dtypeFrom(nodep);
-	    newp = new AstAnd (nodep->fileline(),
-			       newp,
-			       new AstConst (nodep->fileline(), mask));
+            newp = new AstAnd(nodep->fileline(),
+                              newp,
+                              new AstConst(nodep->fileline(), mask));
 	    newp->dtypeFrom(nodep);
 	    nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
 	    //newp->dumpTree(cout, "  repShiftShift_new: ");
@@ -980,13 +980,13 @@ private:
 	AstNode* rhs2p = nextp->rhsp()->unlinkFrBack();
 	AstNode* newp;
 	if (lsbFirstAssign) {
-	    newp = nodep->cloneType (new AstSel(sel1p->fileline(), varref1p->unlinkFrBack(),
-						sel1p->lsbConst(), sel1p->width() + sel2p->width()),
-				     new AstConcat(rhs1p->fileline(), rhs2p, rhs1p));
+            newp = nodep->cloneType(new AstSel(sel1p->fileline(), varref1p->unlinkFrBack(),
+                                               sel1p->lsbConst(), sel1p->width() + sel2p->width()),
+                                    new AstConcat(rhs1p->fileline(), rhs2p, rhs1p));
 	} else {
-	    newp = nodep->cloneType (new AstSel(sel1p->fileline(), varref1p->unlinkFrBack(),
-						sel2p->lsbConst(), sel1p->width() + sel2p->width()),
-				     new AstConcat(rhs1p->fileline(), rhs1p, rhs2p));
+            newp = nodep->cloneType(new AstSel(sel1p->fileline(), varref1p->unlinkFrBack(),
+                                               sel2p->lsbConst(), sel1p->width() + sel2p->width()),
+                                    new AstConcat(rhs1p->fileline(), rhs1p, rhs2p));
 	}
 	//pnewp->dumpTree(cout, "conew: ");
 	nodep->replaceWith(newp); nodep->deleteTree();
@@ -1673,7 +1673,7 @@ private:
     }
 
     struct SenItemCmp {
-	inline bool operator () (AstNodeSenItem* lhsp, AstNodeSenItem* rhsp) const {
+        inline bool operator() (AstNodeSenItem* lhsp, AstNodeSenItem* rhsp) const {
 	    if (lhsp->type() < rhsp->type()) return true;
 	    if (lhsp->type() > rhsp->type()) return false;
             const AstSenItem* litemp = VN_CAST_CONST(lhsp, SenItem);

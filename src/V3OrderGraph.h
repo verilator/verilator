@@ -96,11 +96,11 @@ struct OrderVEdgeType {
 	return names[m_e];
     }
     enum en m_e;
-    inline OrderVEdgeType () : m_e(VERTEX_UNKNOWN) {}
+    inline OrderVEdgeType() : m_e(VERTEX_UNKNOWN) {}
     // cppcheck-suppress noExplicitConstructor
-    inline OrderVEdgeType (en _e) : m_e(_e) {}
-    explicit inline OrderVEdgeType (int _e) : m_e(static_cast<en>(_e)) {}
-    operator en () const { return m_e; }
+    inline OrderVEdgeType(en _e) : m_e(_e) {}
+    explicit inline OrderVEdgeType(int _e) : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
   };
   inline bool operator== (OrderVEdgeType lhs, OrderVEdgeType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (OrderVEdgeType lhs, OrderVEdgeType::en rhs) { return (lhs.m_e == rhs); }
@@ -222,7 +222,7 @@ public:
 	: OrderEitherVertex(graphp, scopep, NULL), m_varScp(varScp)
         , m_isClock(false), m_isDelayed(false) {}
     virtual ~OrderVarVertex() {}
-    virtual OrderVarVertex* clone (V3Graph* graphp) const = 0;
+    virtual OrderVarVertex* clone(V3Graph* graphp) const = 0;
     virtual OrderVEdgeType type() const = 0;
     virtual FileLine* fileline() const { return varScp()->fileline(); }
     // ACCESSORS
@@ -430,7 +430,7 @@ public:
 	: V3GraphEdge(graphp, fromp, top, weight, cutable) {}
     virtual ~OrderEdge() {}
     virtual OrderVEdgeType type() const { return OrderVEdgeType::EDGE_STD; }
-    virtual OrderEdge* clone (V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top) const {
+    virtual OrderEdge* clone(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top) const {
 	return new OrderEdge(graphp, fromp, top, *this);
     }
     // When ordering combo blocks with stronglyConnected, follow edges not involving pre/pos variables

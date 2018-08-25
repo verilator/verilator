@@ -139,7 +139,7 @@ public:
     int yylexThis();
     static bool optFuture(const string& flag) { return v3Global.opt.isFuture(flag); }
 
-    void ppline (const char* text);
+    void ppline(const char* text);
     void linenoInc() { fileline()->linenoInc(); }
     void verilatorCmtLint(const char* text, bool on);
     void verilatorCmtLintSave();
@@ -164,23 +164,23 @@ public:
     // and called as READP->newString(...) etc.
     string* newString(const string& text) {
 	// Allocate a string, remembering it so we can reclaim storage at lex end
-	string* strp = new string (text);
+        string* strp = new string(text);
 	m_stringps.push_back(strp);
 	return strp;
     }
     string* newString(const char* text) {
 	// Allocate a string, remembering it so we can reclaim storage at lex end
-	string* strp = new string (text);
+        string* strp = new string(text);
 	m_stringps.push_back(strp);
 	return strp;
     }
     string* newString(const char* text, size_t length) {
-	string* strp = new string (text, length);
+        string* strp = new string(text, length);
 	m_stringps.push_back(strp);
 	return strp;
     }
     V3Number* newNumber(FileLine* fl, const char* text) {
-	V3Number* nump = new V3Number (fl, text);
+        V3Number* nump = new V3Number(fl, text);
 	m_numberps.push_back(nump);
 	return nump;
     }

@@ -31,8 +31,8 @@
 #ifdef NEED_EXTERNS
 extern "C" {
 
-    extern void dpii_sys_task (int i);
-    extern int dpii_sys_func (int i);
+    extern void dpii_sys_task(int i);
+    extern int dpii_sys_func(int i);
 
 }
 #endif

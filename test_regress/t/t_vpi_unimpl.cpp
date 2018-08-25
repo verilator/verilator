@@ -144,7 +144,7 @@ int mon_check() {
 //======================================================================
 
 
-double sc_time_stamp () {
+double sc_time_stamp() {
     return main_time;
 }
 int main(int argc, char **argv, char **env) {
@@ -153,7 +153,7 @@ int main(int argc, char **argv, char **env) {
     Verilated::debug(0);
     Verilated::fatalOnVpiError(0); // we're going to be checking for these errors do don't crash out
 
-    VM_PREFIX* topp = new VM_PREFIX ("");  // Note null name - we're flattening it out
+    VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
 
 #ifdef VERILATOR
 # ifdef TEST_VERBOSE

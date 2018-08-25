@@ -94,8 +94,8 @@ protected:
 	}
     }
 
-    bool preproc (FileLine* fl, const string& modname, V3InFilter* filterp, V3ParseImp* parsep,
-		  const string& errmsg) {  // "" for no error
+    bool preproc(FileLine* fl, const string& modname, V3InFilter* filterp, V3ParseImp* parsep,
+                 const string& errmsg) {  // "" for no error
 	debug(true);  // Recheck if debug on - first check was before command line passed
 
 	// Preprocess the given module, putting output in vppFilename
@@ -113,24 +113,24 @@ protected:
 	return true;
     }
 
-    void preprocInclude (FileLine* fl, const string& modname) {
+    void preprocInclude(FileLine* fl, const string& modname) {
 	if (modname[0]=='/' || modname[0]=='\\') {
 	    fl->v3warn(INCABSPATH,"Suggest `include with absolute path be made relative, and use +include: "<<modname);
 	}
 	preprocOpen(fl, s_filterp, modname, V3Os::filenameDir(fl->filename()), "Cannot find include file: ");
     }
 
-    bool preprocOpen (FileLine* fl, V3InFilter* filterp, const string& modname, const string& lastpath,
-		      const string& errmsg) {  // Error message or "" to suppress
+    bool preprocOpen(FileLine* fl, V3InFilter* filterp, const string& modname, const string& lastpath,
+                     const string& errmsg) {  // Error message or "" to suppress
 	// Returns true if successful
 	// Try a pure name in case user has a bogus `filename they don't expect
-	string filename = v3Global.opt.filePath (fl, modname, lastpath, errmsg);
+        string filename = v3Global.opt.filePath(fl, modname, lastpath, errmsg);
 	if (filename=="") {
 	    // Allow user to put `defined names on the command line instead of filenames,
 	    // then convert them properly.
-	    string ppmodname = s_preprocp->removeDefines (modname);
+            string ppmodname = s_preprocp->removeDefines(modname);
 
-	    filename = v3Global.opt.filePath (fl, ppmodname, lastpath, errmsg);
+            filename = v3Global.opt.filePath(fl, ppmodname, lastpath, errmsg);
 	}
 	if (filename=="") return false;  // Not found
 

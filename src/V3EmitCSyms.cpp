@@ -63,12 +63,12 @@ class EmitCSyms : EmitCBaseVisitor {
     typedef std::pair<AstScope*,AstNodeModule*> ScopeModPair;
     typedef std::pair<AstNodeModule*,AstVar*> ModVarPair;
     struct CmpName {
-	inline bool operator () (const ScopeModPair& lhsp, const ScopeModPair& rhsp) const {
+        inline bool operator() (const ScopeModPair& lhsp, const ScopeModPair& rhsp) const {
 	    return lhsp.first->name() < rhsp.first->name();
 	}
     };
     struct CmpDpi {
-	inline bool operator () (const AstCFunc* lhsp, const AstCFunc* rhsp) const {
+        inline bool operator() (const AstCFunc* lhsp, const AstCFunc* rhsp) const {
 	    if (lhsp->dpiImport() != rhsp->dpiImport()) {
 		// cppcheck-suppress comparisonOfFuncReturningBoolError
 		return lhsp->dpiImport() < rhsp->dpiImport();
@@ -284,7 +284,7 @@ void EmitCSyms::emitSymHdr() {
     }
 
     if (v3Global.dpi()) {
-	puts ("\n// DPI TYPES for DPI Export callbacks (Internal use)\n");
+        puts("\n// DPI TYPES for DPI Export callbacks (Internal use)\n");
         std::map<string,int> types;  // Remove duplicates and sort
 	for (ScopeFuncs::iterator it = m_scopeFuncs.begin(); it != m_scopeFuncs.end(); ++it) {
 	    AstCFunc* funcp = it->second.m_funcp;

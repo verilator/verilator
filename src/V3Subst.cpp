@@ -82,7 +82,7 @@ class SubstVarEntry {
 
 public:
     // CONSTRUCTORS
-    explicit SubstVarEntry (AstVar* varp) {	// Construction for when a var is used
+    explicit SubstVarEntry(AstVar* varp) {  // Construction for when a var is used
 	m_varp = varp;
 	m_whole.m_use = false;
 	m_wordAssign = false;
@@ -104,12 +104,12 @@ private:
 	else return m_words[word].m_assignp;
     }
 public:
-    void assignWhole (int step, AstNodeAssign* assp) {
+    void assignWhole(int step, AstNodeAssign* assp) {
 	if (m_whole.m_assignp) m_whole.m_complex = true;
 	m_whole.m_assignp = assp;
 	m_whole.m_step = step;
     }
-    void assignWord (int step, int word, AstNodeAssign* assp) {
+    void assignWord(int step, int word, AstNodeAssign* assp) {
 	if (!wordNumOk(word) || getWordAssignp(word) || m_words[word].m_complex) m_whole.m_complex = true;
 	m_wordAssign = true;
 	if (wordNumOk(word)) {
@@ -117,7 +117,7 @@ public:
 	    m_words[word].m_step = step;
 	}
     }
-    void assignWordComplex (int step, int word) {
+    void assignWordComplex(int step, int word) {
 	if (!wordNumOk(word) || getWordAssignp(word) || m_words[word].m_complex) m_whole.m_complex = true;
 	m_words[word].m_complex = true;
     }
@@ -157,18 +157,18 @@ public:
     int getWordStep(int word) const {
 	if (!wordNumOk(word)) return 0; else return m_words[word].m_step;
     }
-    void deleteAssign (AstNodeAssign* nodep) {
+    void deleteAssign(AstNodeAssign* nodep) {
 	UINFO(5, "Delete "<<nodep<<endl);
 	nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
     }
     void deleteUnusedAssign() {
 	// If there are unused assignments in this var, kill them
 	if (!m_whole.m_use && !m_wordUse && m_whole.m_assignp) {
-	    deleteAssign (m_whole.m_assignp); m_whole.m_assignp=NULL;
+            deleteAssign(m_whole.m_assignp); m_whole.m_assignp=NULL;
 	}
 	for (unsigned i=0; i<m_words.size(); i++) {
 	    if (!m_whole.m_use && !m_words[i].m_use && m_words[i].m_assignp && !m_words[i].m_complex) {
-		deleteAssign (m_words[i].m_assignp); m_words[i].m_assignp=NULL;
+                deleteAssign(m_words[i].m_assignp); m_words[i].m_assignp=NULL;
 	    }
 	}
     }
@@ -192,7 +192,7 @@ private:
     }
     // VISITORS
     virtual void visit(AstVarRef* nodep) {
-	SubstVarEntry* entryp = findEntryp (nodep);
+        SubstVarEntry* entryp = findEntryp(nodep);
 	if (entryp) {
 	    // Don't sweat it.  We assign a new temp variable for every new assignment,
 	    // so there's no way we'd ever replace a old value.
@@ -245,7 +245,7 @@ private:
     // METHODS
     SubstVarEntry* getEntryp(AstVarRef* nodep) {
 	if (!nodep->varp()->user1p()) {
-	    SubstVarEntry* entryp = new SubstVarEntry (nodep->varp());
+            SubstVarEntry* entryp = new SubstVarEntry(nodep->varp());
 	    m_entryps.push_back(entryp);
 	    nodep->varp()->user1p(entryp);
 	    return entryp;
@@ -302,7 +302,7 @@ private:
 	if (debug()>5) nodep->dumpTree(cout,"  substw_old: ");
 	AstNode* newp = substp->cloneTree(true);
 	if (!nodep->isQuad() && newp->isQuad()) {
-	    newp = new AstCCast (newp->fileline(), newp, nodep);
+            newp = new AstCCast(newp->fileline(), newp, nodep);
 	}
 	if (debug()>5)  newp->dumpTree(cout,"       w_new: ");
 	nodep->replaceWith(newp);
@@ -344,7 +344,7 @@ private:
 	    UINFO(9, " ASSIGNstep u2="<<nodep->varp()->user2()<<" "<<nodep<<endl);
 	}
 	if (isSubstVar(nodep->varp())) {
-	    SubstVarEntry* entryp = getEntryp (nodep);
+            SubstVarEntry* entryp = getEntryp(nodep);
 	    if (nodep->lvalue()) {
 		UINFO(8," ASSIGNcpx "<<nodep<<endl);
 		entryp->assignComplex(m_assignStep);

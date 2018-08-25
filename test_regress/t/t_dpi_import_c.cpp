@@ -81,12 +81,12 @@ extern "C" {
     extern void dpii_v_integer(const svLogicVecVal* i, svLogicVecVal* o);
     extern void dpii_v_time(const svLogicVecVal* i, svLogicVecVal* o);
 
-    extern int dpii_f_strlen (const char* i);
+    extern int dpii_f_strlen(const char* i);
 
-    extern void dpii_f_void	();
-    extern int dpii_t_void	();
-    extern int dpii_t_void_context ();
-    extern int dpii_t_int	(int i,		int *o);
+    extern void dpii_f_void();
+    extern int dpii_t_void();
+    extern int dpii_t_void_context();
+    extern int dpii_t_int(int i, int *o);
 
     extern int dpii_fa_bit(int i);
 }
@@ -112,18 +112,18 @@ const char*	dpii_f_string  (const char* i)	{ return i; }
 double		dpii_f_real    (double i)	{ return i+1.5; }
 float		dpii_f_shortreal(float i)	{ return i+1.5f; }
 
-void dpii_v_bit (unsigned char i, unsigned char *o)     { *o = 1 & ~i; }
-void dpii_v_int (int i, int *o)				{ *o = ~i; }
-void dpii_v_uint (unsigned int i, unsigned int *o)	{ *o = ~i; }
-void dpii_v_byte (char i, char *o)			{ *o = ~i; }
-void dpii_v_shortint (short int i, short int *o)	{ *o = ~i; }
-void dpii_v_ushort (unsigned short i, unsigned short *o) { *o = ~i; }
-void dpii_v_longint (long long i, long long *o)		{ *o = ~i; }
-void dpii_v_ulong (unsigned long long i, unsigned long long *o)	{ *o = ~i; }
-void dpii_v_chandle (void* i, void* *o)			{ *o = i; }
-void dpii_v_string (const char* i, const char** o)      { *o = strdup(i); } // Leaks
-void dpii_v_real     (double i,      double* o)		{ *o = i + 1.5; }
-void dpii_v_shortreal(float i,       float* o)		{ *o = i + 1.5f; }
+void dpii_v_bit(unsigned char i, unsigned char *o)      { *o = 1 & ~i; }
+void dpii_v_int(int i, int *o)                          { *o = ~i; }
+void dpii_v_uint(unsigned int i, unsigned int *o)       { *o = ~i; }
+void dpii_v_byte(char i, char *o)                       { *o = ~i; }
+void dpii_v_shortint(short int i, short int *o) { *o = ~i; }
+void dpii_v_ushort(unsigned short i, unsigned short *o) { *o = ~i; }
+void dpii_v_longint(long long i, long long *o)          { *o = ~i; }
+void dpii_v_ulong(unsigned long long i, unsigned long long *o)  { *o = ~i; }
+void dpii_v_chandle(void* i, void* *o)                  { *o = i; }
+void dpii_v_string(const char* i, const char** o)       { *o = strdup(i); }  // Leaks
+void dpii_v_real(double i, double* o)                   { *o = i + 1.5; }
+void dpii_v_shortreal(float i, float* o)                { *o = i + 1.5f; }
 
 void dpii_v_reg(unsigned char i, unsigned char* o) { *o = (~i)&1; }
 void dpii_v_reg15(const svLogicVecVal* i, svLogicVecVal* o) {
@@ -179,23 +179,23 @@ int  dpii_f_strlen (const char* i) { return strlen(i); }
 
 //======================================================================
 
-void dpii_f_void () {}
+void dpii_f_void() {}
 
 #ifdef VCS
-void dpii_t_void () {}
-void dpii_t_void_context () {}
-void dpii_t_int (int i, int *o) {
+void dpii_t_void() {}
+void dpii_t_void_context() {}
+void dpii_t_int(int i, int *o) {
     *o = i;
 }
 #else
-int dpii_t_void () { return svIsDisabledState(); }
-int dpii_t_void_context () { return svIsDisabledState(); }
-int dpii_t_int (int i, int *o) {
+int dpii_t_void() { return svIsDisabledState(); }
+int dpii_t_void_context() { return svIsDisabledState(); }
+int dpii_t_int(int i, int *o) {
     *o = i;
     return svIsDisabledState();  // Tasks generally need this
 }
 #endif
 
-int dpii_fa_bit (int i) {
+int dpii_fa_bit(int i) {
     return ~i;
 }

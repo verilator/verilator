@@ -113,9 +113,8 @@ private:
 	    if (needDly) prep->v3fatalSrc("Should have already converted to non-delay");
 	    AstNRelinker replaceHandle;
 	    AstNode* earliercondp = ifp->condp()->unlinkFrBack(&replaceHandle);
-	    AstNode* newp = new AstLogAnd (condp->fileline(),
-					   condp,
-					   earliercondp);
+            AstNode* newp = new AstLogAnd(condp->fileline(),
+                                          condp, earliercondp);
 	    UINFO(4, "Edit BOUNDLVALUE "<<newp<<endl);
 	    replaceHandle.relink(newp);
 	}
@@ -133,8 +132,8 @@ private:
                                      (new AstAssignDly(fl, prep,
                                                        new AstVarRef(fl, varp, false)))
                                      : static_cast<AstNode*>
-                                     (new AstAssign   (fl, prep,
-                                                       new AstVarRef(fl, varp, false)))),
+                                     (new AstAssign(fl, prep,
+                                                    new AstVarRef(fl, varp, false)))),
                                     NULL);
             newp->branchPred(AstBranchPred::BP_LIKELY);
 	    if (debug()>=9) newp->dumpTree(cout,"     _new: ");
@@ -188,13 +187,13 @@ private:
             if (((VN_IS(lhsp, Const) && VN_CAST(lhsp, Const)->num().isFourState())
                  || (VN_IS(rhsp, Const) && VN_CAST(rhsp, Const)->num().isFourState()))) {
                 V3Number num(nodep->fileline(), 1, (VN_IS(nodep, EqCase) ? 0:1));
-		newp = new AstConst (nodep->fileline(), num);
+                newp = new AstConst(nodep->fileline(), num);
 		lhsp->deleteTree(); VL_DANGLING(lhsp);
 		rhsp->deleteTree(); VL_DANGLING(rhsp);
 	    } else {
                 if (VN_IS(nodep, EqCase))
-		newp = new AstEq (nodep->fileline(), lhsp, rhsp);
-		else newp = new AstNeq (nodep->fileline(), lhsp, rhsp);
+                newp = new AstEq(nodep->fileline(), lhsp, rhsp);
+                else newp = new AstNeq(nodep->fileline(), lhsp, rhsp);
 	    }
 	    nodep->replaceWith(newp);
 	    nodep->deleteTree(); VL_DANGLING(nodep);
@@ -217,19 +216,19 @@ private:
             if (!VN_IS(rhsp, Const)) {
 		nodep->v3error("Unsupported: RHS of ==? or !=? must be constant to be synthesizable");  // Says spec.
 		// Replace with anything that won't cause more errors
-		newp = new AstEq (nodep->fileline(), lhsp, rhsp);
+                newp = new AstEq(nodep->fileline(), lhsp, rhsp);
 	    } else {
 		// X or Z's become mask, ala case statements.
 		V3Number nummask  (rhsp->fileline(), rhsp->width());
                 nummask.opBitsNonX(VN_CAST(rhsp, Const)->num());
 		V3Number numval   (rhsp->fileline(), rhsp->width());
-                numval.opBitsOne  (VN_CAST(rhsp, Const)->num());
+                numval.opBitsOne(VN_CAST(rhsp, Const)->num());
 		AstNode* and1p = new AstAnd(nodep->fileline(), lhsp,
 					    new AstConst(nodep->fileline(), nummask));
 		AstNode* and2p = new AstConst(nodep->fileline(), numval);
                 if (VN_IS(nodep, EqWild))
-		    newp  = new AstEq  (nodep->fileline(), and1p, and2p);
-		else newp = new AstNeq (nodep->fileline(), and1p, and2p);
+                    newp  = new AstEq(nodep->fileline(), and1p, and2p);
+                else newp = new AstNeq(nodep->fileline(), and1p, and2p);
 		rhsp->deleteTree(); VL_DANGLING(rhsp);
 	    }
 	    nodep->replaceWith(newp);
@@ -256,7 +255,7 @@ private:
 	// Ahh, we're two state, so this is easy
 	UINFO(4," ISUNKNOWN->0 "<<nodep<<endl);
 	V3Number zero (nodep->fileline(), 1, 0);
-	AstConst* newp = new AstConst (nodep->fileline(), zero);
+        AstConst* newp = new AstConst(nodep->fileline(), zero);
 	nodep->replaceWith(newp);
 	nodep->deleteTree(); VL_DANGLING(nodep);
     }
@@ -291,8 +290,8 @@ private:
 		string newvarname = ((string)"__Vxrand"
 				     +cvtToStr(m_modp->varNumGetInc()));
 		AstVar* newvarp
-		    = new AstVar (nodep->fileline(), AstVarType::XTEMP, newvarname,
-				  VFlagLogicPacked(), nodep->width());
+                    = new AstVar(nodep->fileline(), AstVarType::XTEMP, newvarname,
+                                 VFlagLogicPacked(), nodep->width());
 		++m_statUnkVars;
 		AstNRelinker replaceHandle;
 		nodep->unlinkFrBack(&replaceHandle);
@@ -340,9 +339,9 @@ private:
 	    V3Number maxmsbnum (nodep->fileline(), nodep->lsbp()->width(), maxmsb);
 
 	    // If (maxmsb >= selected), we're in bound
-	    AstNode* condp = new AstGte (nodep->fileline(),
-					 new AstConst(nodep->fileline(), maxmsbnum),
-					 nodep->lsbp()->cloneTree(false));
+            AstNode* condp = new AstGte(nodep->fileline(),
+                                        new AstConst(nodep->fileline(), maxmsbnum),
+                                        nodep->lsbp()->cloneTree(false));
 	    // See if the condition is constant true (e.g. always in bound due to constant select)
 	    // Note below has null backp(); the Edit function knows how to deal with that.
 	    condp = V3Const::constifyEdit(condp);
@@ -356,10 +355,10 @@ private:
 		nodep->unlinkFrBack(&replaceHandle);
 		V3Number xnum (nodep->fileline(), nodep->width());
 		xnum.setAllBitsX();
-		AstNode* newp = new AstCondBound (nodep->fileline(),
-						  condp,
-						  nodep,
-						  new AstConst(nodep->fileline(), xnum));
+                AstNode* newp = new AstCondBound(nodep->fileline(),
+                                                 condp,
+                                                 nodep,
+                                                 new AstConst(nodep->fileline(), xnum));
 		if (debug()>=9) newp->dumpTree(cout,"        _new: ");
 		// Link in conditional
 		replaceHandle.relink(newp);
@@ -402,9 +401,9 @@ private:
 	    V3Number widthnum (nodep->fileline(), nodep->bitp()->width(), declElements-1);
 
 	    // See if the condition is constant true
-	    AstNode* condp = new AstGte (nodep->fileline(),
-					 new AstConst(nodep->fileline(), widthnum),
-					 nodep->bitp()->cloneTree(false));
+            AstNode* condp = new AstGte(nodep->fileline(),
+                                        new AstConst(nodep->fileline(), widthnum),
+                                        nodep->bitp()->cloneTree(false));
 	    // Note below has null backp(); the Edit function knows how to deal with that.
 	    condp = V3Const::constifyEdit(condp);
 	    if (condp->isOne()) {
@@ -422,10 +421,9 @@ private:
 		} else {
 		    xnum.setAllBitsX();
 		}
-		AstNode* newp = new AstCondBound (nodep->fileline(),
-						  condp,
-						  nodep,
-						  new AstConst(nodep->fileline(), xnum));
+                AstNode* newp = new AstCondBound(nodep->fileline(),
+                                                 condp, nodep,
+                                                 new AstConst(nodep->fileline(), xnum));
 		if (debug()>=9) newp->dumpTree(cout,"        _new: ");
 		// Link in conditional, can blow away temp xor
 		replaceHandle.relink(newp);
@@ -437,10 +435,9 @@ private:
 		AstNRelinker replaceHandle;
 		AstNode* bitp = nodep->bitp()->unlinkFrBack(&replaceHandle);
 		V3Number zeronum (nodep->fileline(), bitp->width(), 0);
-		AstNode* newp = new AstCondBound (bitp->fileline(),
-						  condp,
-						  bitp,
-						  new AstConst(bitp->fileline(), zeronum));
+                AstNode* newp = new AstCondBound(bitp->fileline(),
+                                                 condp, bitp,
+                                                 new AstConst(bitp->fileline(), zeronum));
 		// Added X's, tristate them too
 		if (debug()>=9) newp->dumpTree(cout,"        _new: ");
 		replaceHandle.relink(newp);

@@ -28,7 +28,7 @@ bool check() {
 	pass = false;
     }
 #ifdef TEST_VERBOSE
-    printf ("SEL=%d A=%d B=%d Z=%d Y1=%d Y2=%d\n", tb->SEL, tb->A, tb->B, tb->Z, tb->Y1, tb->Y2);
+    printf("SEL=%d A=%d B=%d Z=%d Y1=%d Y2=%d\n", tb->SEL, tb->A, tb->B, tb->Z, tb->Y1, tb->Y2);
 #endif
     return pass;
 }

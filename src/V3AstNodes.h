@@ -1599,7 +1599,7 @@ class AstModule : public AstNodeModule {
     // A module declaration
 public:
     AstModule(FileLine* fl, const string& name)
-	: AstNodeModule (fl,name) {}
+        : AstNodeModule(fl,name) {}
     ASTNODE_NODE_FUNCS(Module)
     virtual string verilogKwd() const { return "module"; }
 };
@@ -1608,7 +1608,7 @@ class AstNotFoundModule : public AstNodeModule {
     // A missing module declaration
 public:
     AstNotFoundModule(FileLine* fl, const string& name)
-	: AstNodeModule (fl,name) {}
+        : AstNodeModule(fl,name) {}
     ASTNODE_NODE_FUNCS(NotFoundModule)
     virtual string verilogKwd() const { return "/*not-found-*/ module"; }
 };
@@ -1617,7 +1617,7 @@ class AstPackage : public AstNodeModule {
     // A package declaration
 public:
     AstPackage(FileLine* fl, const string& name)
-	: AstNodeModule (fl,name) {}
+        : AstNodeModule(fl,name) {}
     ASTNODE_NODE_FUNCS(Package)
     virtual string verilogKwd() const { return "package"; }
     static string dollarUnitName() { return AstNode::encodeName("$unit"); }
@@ -1628,7 +1628,7 @@ class AstPrimitive : public AstNodeModule {
     // A primitive declaration
 public:
     AstPrimitive(FileLine* fl, const string& name)
-	: AstNodeModule (fl,name) {}
+        : AstNodeModule(fl,name) {}
     ASTNODE_NODE_FUNCS(Primitive)
     virtual string verilogKwd() const { return "primitive"; }
 };
@@ -1638,7 +1638,7 @@ class AstPackageExportStarStar : public AstNode {
 public:
     // cppcheck-suppress noExplicitConstructor
     AstPackageExportStarStar(FileLine* fl)
-	: AstNode (fl) {}
+        : AstNode(fl) {}
     ASTNODE_NODE_FUNCS(PackageExportStarStar)
 };
 
@@ -1649,7 +1649,7 @@ private:
     AstPackage*	m_packagep;	// Package hierarchy
 public:
     AstPackageExport(FileLine* fl, AstPackage* packagep, const string& name)
-	: AstNode (fl), m_name(name), m_packagep(packagep) {}
+        : AstNode(fl), m_name(name), m_packagep(packagep) {}
     ASTNODE_NODE_FUNCS(PackageExport)
     virtual const char* broken() const { BROKEN_RTN(!m_packagep || !m_packagep->brokeExists()); return NULL; }
     virtual void cloneRelink() { if (m_packagep && m_packagep->clonep()) m_packagep = m_packagep->clonep(); }
@@ -1666,7 +1666,7 @@ private:
     AstPackage*	m_packagep;	// Package hierarchy
 public:
     AstPackageImport(FileLine* fl, AstPackage* packagep, const string& name)
-	: AstNode (fl), m_name(name), m_packagep(packagep) {}
+        : AstNode(fl), m_name(name), m_packagep(packagep) {}
     ASTNODE_NODE_FUNCS(PackageImport)
     virtual const char* broken() const { BROKEN_RTN(!m_packagep || !m_packagep->brokeExists()); return NULL; }
     virtual void cloneRelink() { if (m_packagep && m_packagep->clonep()) m_packagep = m_packagep->clonep(); }
@@ -1680,7 +1680,7 @@ class AstIface : public AstNodeModule {
     // A module declaration
 public:
     AstIface(FileLine* fl, const string& name)
-	: AstNodeModule (fl,name) { }
+        : AstNodeModule(fl,name) { }
     ASTNODE_NODE_FUNCS(Iface)
 };
 
@@ -2234,8 +2234,8 @@ public:
     AstAlways* convertToAlways() {
 	AstNode* lhs1p = lhsp()->unlinkFrBack();
 	AstNode* rhs1p = rhsp()->unlinkFrBack();
-	AstAlways* newp = new AstAlways (fileline(), VAlwaysKwd::ALWAYS, NULL,
-					 new AstAssign (fileline(), lhs1p, rhs1p));
+        AstAlways* newp = new AstAlways(fileline(), VAlwaysKwd::ALWAYS, NULL,
+                                        new AstAssign(fileline(), lhs1p, rhs1p));
 	replaceWith(newp); // User expected to then deleteTree();
 	return newp;
     }
@@ -2553,13 +2553,13 @@ private:
     AstDisplayType	m_displayType;
 public:
     AstDisplay(FileLine* fileline, AstDisplayType dispType, const string& text, AstNode* filep, AstNode* exprsp)
-	: AstNodeStmt (fileline) {
+        : AstNodeStmt(fileline) {
 	setOp1p(new AstSFormatF(fileline,text,true,exprsp));
 	setNOp3p(filep);
 	m_displayType = dispType;
     }
     AstDisplay(FileLine* fileline, AstDisplayType dispType, AstNode* filep, AstNode* exprsp)
-	: AstNodeStmt (fileline) {
+        : AstNodeStmt(fileline) {
 	setOp1p(new AstSFormatF(fileline, AstSFormatF::NoFormat(), exprsp));
 	setNOp3p(filep);
 	m_displayType = dispType;
@@ -2593,7 +2593,7 @@ class AstSFormat : public AstNodeStmt {
     // Children: SFORMATF to generate print string
 public:
     AstSFormat(FileLine* fileline, AstNode* lhsp, const string& text, AstNode* exprsp)
-	: AstNodeStmt (fileline) {
+        : AstNodeStmt(fileline) {
 	setOp1p(new AstSFormatF(fileline,text,true,exprsp));
 	setOp3p(lhsp);
     }
@@ -2622,7 +2622,7 @@ class AstSysFuncAsTask : public AstNodeStmt {
     // Children: a system function
 public:
     AstSysFuncAsTask(FileLine* fileline, AstNode* exprsp)
-        : AstNodeStmt (fileline) { addNOp1p(exprsp); }
+        : AstNodeStmt(fileline) { addNOp1p(exprsp); }
     ASTNODE_NODE_FUNCS(SysFuncAsTask)
     virtual string verilogKwd() const { return ""; }
     virtual bool isGateOptimizable() const { return true; }
@@ -2641,7 +2641,7 @@ class AstSysIgnore : public AstNodeStmt {
     // Children: varrefs or exprs
 public:
     AstSysIgnore(FileLine* fileline, AstNode* exprsp)
-	: AstNodeStmt (fileline) { addNOp1p(exprsp); }
+        : AstNodeStmt(fileline) { addNOp1p(exprsp); }
     ASTNODE_NODE_FUNCS(SysIgnore)
     virtual string verilogKwd() const { return "$ignored"; }
     virtual bool isGateOptimizable() const { return false; }  // Though deleted before opt
@@ -2658,7 +2658,7 @@ class AstFClose : public AstNodeStmt {
     // Children: file which must be a varref
 public:
     AstFClose(FileLine* fileline, AstNode* filep)
-	: AstNodeStmt (fileline) {
+        : AstNodeStmt(fileline) {
 	setNOp2p(filep);
     }
     ASTNODE_NODE_FUNCS(FClose)
@@ -2678,7 +2678,7 @@ class AstFOpen : public AstNodeStmt {
     // Although a system function in IEEE, here a statement which sets the file pointer (MCD)
 public:
     AstFOpen(FileLine* fileline, AstNode* filep, AstNode* filenamep, AstNode* modep)
-	: AstNodeStmt (fileline) {
+        : AstNodeStmt(fileline) {
 	setOp1p(filep);
 	setOp2p(filenamep);
 	setOp3p(modep);
@@ -2702,7 +2702,7 @@ class AstFFlush : public AstNodeStmt {
     // Children: file which must be a varref
 public:
     AstFFlush(FileLine* fileline, AstNode* filep)
-	: AstNodeStmt (fileline) {
+        : AstNodeStmt(fileline) {
 	setNOp2p(filep);
     }
     ASTNODE_NODE_FUNCS(FFlush)
@@ -2726,7 +2726,7 @@ private:
     string	m_text;
 public:
     AstFScanF(FileLine* fileline, const string& text, AstNode* filep, AstNode* exprsp)
-	: AstNodeMath (fileline), m_text(text) {
+        : AstNodeMath(fileline), m_text(text) {
 	addNOp1p(exprsp);
 	setNOp2p(filep);
     }
@@ -2759,7 +2759,7 @@ private:
     string	m_text;
 public:
     AstSScanF(FileLine* fileline, const string& text, AstNode* fromp, AstNode* exprsp)
-	: AstNodeMath (fileline), m_text(text) {
+        : AstNodeMath(fileline), m_text(text) {
 	addNOp1p(exprsp);
 	setOp2p(fromp);
     }
@@ -2791,7 +2791,7 @@ public:
     AstNodeReadWriteMem(FileLine* fileline, bool hex,
                         AstNode* filenamep, AstNode* memp,
                         AstNode* lsbp, AstNode* msbp)
-	: AstNodeStmt (fileline), m_isHex(hex) {
+        : AstNodeStmt(fileline), m_isHex(hex) {
 	setOp1p(filenamep); setOp2p(memp); setNOp3p(lsbp); setNOp4p(msbp);
     }
     virtual bool isGateOptimizable() const { return false; }
@@ -2836,7 +2836,7 @@ class AstSystemT : public AstNodeStmt {
     // $system used as task
 public:
     AstSystemT(FileLine* fileline, AstNode* lhsp)
-	: AstNodeStmt (fileline) {
+        : AstNodeStmt(fileline) {
 	setOp1p(lhsp);
     }
     ASTNODE_NODE_FUNCS(SystemT)
@@ -2855,7 +2855,7 @@ class AstSystemF : public AstNodeMath {
     // $system used as function
 public:
     AstSystemF(FileLine* fileline, AstNode* lhsp)
-	: AstNodeMath (fileline) {
+        : AstNodeMath(fileline) {
 	setOp1p(lhsp);
     }
     ASTNODE_NODE_FUNCS(SystemF)
@@ -2878,7 +2878,7 @@ class AstValuePlusArgs : public AstNodeMath {
     // Child: variable to set.  If NULL then this is a $test$plusargs instead of $value$plusargs
 public:
     AstValuePlusArgs(FileLine* fileline, AstNode* searchp, AstNode* outp)
-	: AstNodeMath (fileline) {
+        : AstNodeMath(fileline) {
 	setOp1p(searchp); setOp2p(outp);
     }
     ASTNODE_NODE_FUNCS(ValuePlusArgs)
@@ -2903,7 +2903,7 @@ private:
     string	m_text;
 public:
     AstTestPlusArgs(FileLine* fileline, const string& text)
-	: AstNodeMath (fileline), m_text(text) { }
+        : AstNodeMath(fileline), m_text(text) { }
     ASTNODE_NODE_FUNCS(TestPlusArgs)
     virtual string name()	const { return m_text; }
     virtual string verilogKwd() const { return "$test$plusargs"; }
@@ -2985,7 +2985,7 @@ public:
 class AstBreak : public AstNodeStmt {
 public:
     explicit AstBreak(FileLine* fileline)
-	: AstNodeStmt (fileline) {}
+        : AstNodeStmt(fileline) {}
     ASTNODE_NODE_FUNCS(Break)
     virtual string verilogKwd() const { return "break"; };
     virtual V3Hash sameHash() const { return V3Hash(); }
@@ -2995,7 +2995,7 @@ public:
 class AstContinue : public AstNodeStmt {
 public:
     explicit AstContinue(FileLine* fileline)
-	: AstNodeStmt (fileline) {}
+        : AstNodeStmt(fileline) {}
     ASTNODE_NODE_FUNCS(Continue)
     virtual string verilogKwd() const { return "continue"; };
     virtual V3Hash sameHash() const { return V3Hash(); }
@@ -3017,7 +3017,7 @@ public:
 class AstReturn : public AstNodeStmt {
 public:
     AstReturn(FileLine* fileline, AstNode* lhsp=NULL)
-	: AstNodeStmt (fileline) {
+        : AstNodeStmt(fileline) {
 	setNOp1p(lhsp);
     }
     ASTNODE_NODE_FUNCS(Return)
@@ -3278,7 +3278,7 @@ public:
 	m_indices.push_back(m_indices.size());
     }
     int	posIndex(int listPos) {
-	UASSERT (listPos < (int)m_indices.size(), "InitArray past end of indices list");
+        UASSERT(listPos < (int)m_indices.size(), "InitArray past end of indices list");
 	return m_indices[listPos]; }
     virtual bool hasDType() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(); }

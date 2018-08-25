@@ -179,13 +179,13 @@ private:
 	    else if (m_valueModp) {
 		nodep->addNextHere
 		    (new AstInitial
-		     (fl, new AstAssign (fl, new AstVarRef(fl, nodep->name(), true),
-					 nodep->valuep()->unlinkFrBack())));
+                     (fl, new AstAssign(fl, new AstVarRef(fl, nodep->name(), true),
+                                        nodep->valuep()->unlinkFrBack())));
 	    } // 3. Under blocks, it's an initial value to be under an assign
 	    else {
 		nodep->addNextHere
-		    (new AstAssign (fl, new AstVarRef(fl, nodep->name(), true),
-				    nodep->valuep()->unlinkFrBack()));
+                    (new AstAssign(fl, new AstVarRef(fl, nodep->name(), true),
+                                   nodep->valuep()->unlinkFrBack()));
 	    }
 	}
 	if (nodep->isIfaceRef() && !nodep->isIfaceParent()) {

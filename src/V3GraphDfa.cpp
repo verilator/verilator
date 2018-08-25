@@ -89,7 +89,7 @@ private:
     }
 
     DfaVertex* newDfaVertex(DfaVertex* nfaTemplatep=NULL) {
-	DfaVertex* vertexp = new DfaVertex (graphp());
+        DfaVertex* vertexp = new DfaVertex(graphp());
 	vertexp->color(1);  // Mark as dfa
 	if (nfaTemplatep && nfaTemplatep->start()) vertexp->start(true);
 	if (nfaTemplatep && nfaTemplatep->accepting()) vertexp->accepting(true);
@@ -320,13 +320,13 @@ private:
 		    // Track what nfa's point to it.
 		    for (DfaStates::const_iterator nfaIt=nfasWithInput.begin(); nfaIt!=nfasWithInput.end(); ++nfaIt) {
 			UINFO(9,"          NewContainsNfa "<<*nfaIt<<endl);
-			new DfaEdge (graphp(), toDfaStatep, *nfaIt, DfaEdge::NA());
+                        new DfaEdge(graphp(), toDfaStatep, *nfaIt, DfaEdge::NA());
 			if ((*nfaIt)->accepting()) toDfaStatep->accepting(true);
 		    }
 		    insertDfaOrigins(toDfaStatep);
 		}
 		// Add input transition
-		new DfaEdge (graphp(), dfaStatep, toDfaStatep, input);
+                new DfaEdge(graphp(), dfaStatep, toDfaStatep, input);
 
 		if (debug()>=6) m_graphp->dumpDotFilePrefixed("step");
 	    }
@@ -356,7 +356,7 @@ public:
 };
 
 void DfaGraph::nfaToDfa() {
-    GraphNfaToDfa (this, &V3GraphEdge::followAlwaysTrue);
+    GraphNfaToDfa(this, &V3GraphEdge::followAlwaysTrue);
 }
 
 //######################################################################
@@ -484,7 +484,7 @@ public:
 };
 
 void DfaGraph::dfaReduce() {
-    DfaGraphReduce (this, &V3GraphEdge::followAlwaysTrue);
+    DfaGraphReduce(this, &V3GraphEdge::followAlwaysTrue);
 }
 
 //######################################################################
@@ -549,7 +549,7 @@ private:
 			    // We make a edge for each value to OR, IE
 			    // edge(complemented,a) edge(complemented,b) means !(a | b)
 			    if (!tovertexp->accepting()) {  // Note we must include edges moved above to reject
-				DfaEdge* newp = new DfaEdge (graphp(), vvertexp, acceptp, vedgep);
+                                DfaEdge* newp = new DfaEdge(graphp(), vvertexp, acceptp, vedgep);
 				newp->complement(!newp->complement());
 				newp->user(1);
 			    }
@@ -578,5 +578,5 @@ public:
 };
 
 void DfaGraph::dfaComplement() {
-    DfaGraphComplement (this, &V3GraphEdge::followAlwaysTrue);
+    DfaGraphComplement(this, &V3GraphEdge::followAlwaysTrue);
 }

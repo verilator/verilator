@@ -33,7 +33,7 @@ if (! GetOptions (
 }
 
 dotread ($opt_filename);
-cwrite ("graph_export.cpp");
+cwrite("graph_export.cpp");
 
 #----------------------------------------------------------------------
 

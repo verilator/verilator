@@ -939,11 +939,11 @@ class TristateVisitor : public TristateBaseVisitor {
                 V3Number oneIfEn = VN_CAST(constp->user1p(), Const)->num();  // visit(AstConst) already split into en/ones
 		V3Number oneIfEnOne = constp->num();
 		AstVar* envarp = getCreateEnVarp(varrefp->varp());
-		AstNode* newp = new AstLogAnd (fl, new AstEq (fl, new AstConst(fl, oneIfEn),
-							      new AstVarRef(fl, envarp, false)),
-					       // Keep the caseeq if there are X's present
-					       new AstEqCase(fl, new AstConst(fl, oneIfEnOne),
-							     varrefp));
+                AstNode* newp = new AstLogAnd(fl, new AstEq(fl, new AstConst(fl, oneIfEn),
+                                                            new AstVarRef(fl, envarp, false)),
+                                              // Keep the caseeq if there are X's present
+                                              new AstEqCase(fl, new AstConst(fl, oneIfEnOne),
+                                                            varrefp));
 		if (neq) newp = new AstLogNot(fl, newp);
 		UINFO(9,"       newceq "<<newp<<endl);
 		if (debug()>=9) nodep->dumpTree(cout,"-caseeq-old: ");

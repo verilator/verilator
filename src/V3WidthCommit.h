@@ -72,7 +72,7 @@ class WidthCommitVisitor : public AstNVisitor {
 
 public:
     // METHODS
-    static AstConst* newIfConstCommitSize (AstConst* nodep) {
+    static AstConst* newIfConstCommitSize(AstConst* nodep) {
 	if (((nodep->dtypep()->width() != nodep->num().width())
 	     || !nodep->num().sized())
 	    && !nodep->num().isString()) {  // Need to force the number from unsized to sized

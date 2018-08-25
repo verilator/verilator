@@ -32,7 +32,7 @@
 #ifdef NEED_EXTERNS
 extern "C" {
 
-    extern int dpii_string (const char* s);
+    extern int dpii_string(const char* s);
 
 }
 #endif

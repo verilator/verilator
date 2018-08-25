@@ -36,14 +36,14 @@ class V3File {
 public:
     static std::ifstream* new_ifstream(const string& filename) {
 	addSrcDepend(filename);
-	return new_ifstream_nodepend (filename);
+        return new_ifstream_nodepend(filename);
     }
     static std::ifstream* new_ifstream_nodepend(const string& filename) {
         return new std::ifstream(filename.c_str());
     }
     static std::ofstream* new_ofstream(const string& filename, bool append=false) {
 	addTgtDepend(filename);
-	return new_ofstream_nodepend (filename, append);
+        return new_ofstream_nodepend(filename, append);
     }
     static std::ofstream* new_ofstream_nodepend(const string& filename, bool append=false) {
 	if (filename != VL_DEV_NULL) createMakeDir();

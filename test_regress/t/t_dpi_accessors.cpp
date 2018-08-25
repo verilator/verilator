@@ -33,9 +33,7 @@ using std::setw;
 
 
 // Convenience function to check we didn't finish unexpectedly
-static void
-checkFinish (const char *msg)
-{
+static void checkFinish(const char *msg) {
     if (Verilated::gotFinish ()) {
 	vl_fatal (__FILE__, __LINE__, "dut", msg);
 	exit (1);
@@ -45,12 +43,10 @@ checkFinish (const char *msg)
 
 // Convenience function to log the value of a register in hex. Only in verbose
 // mode.
-static void
-logReg (int         clk,
-	   const char *desc,
-	   int         val,
-	   const char *note)
-{
+static void logReg(int         clk,
+                   const char *desc,
+                   int         val,
+                   const char *note) {
 #ifdef TEST_VERBOSE
     cout << "clk = " << clk << ", " << desc << " = " << val << note << endl;
 #endif
@@ -59,12 +55,11 @@ logReg (int         clk,
 
 // Convenience function to log the value of a register in hex. Only in verbose
 // mode.
-static void
-logRegHex (int         clk,
-	   const char *desc,
-	   int         bitWidth,
-	   int         val,
-	   const char *note)
+static void logRegHex (int         clk,
+                       const char *desc,
+                       int         bitWidth,
+                       int         val,
+                       const char *note)
 {
 #ifdef TEST_VERBOSE
     cout << "clk = " << clk << ", " << desc << " = " << bitWidth << "\'h" << hex
@@ -76,10 +71,8 @@ logRegHex (int         clk,
 
 
 // Convenience function to check we got an expected result. Silent on success.
-static void
-checkResult (bool    p,
-	     const char *msg_fail)
-{
+static void checkResult (bool    p,
+                         const char *msg_fail) {
     if (!p) {
 	vl_fatal (__FILE__, __LINE__, "dut", msg_fail);
     }
@@ -87,8 +80,7 @@ checkResult (bool    p,
 
 
 // Main function instantiates the model and steps through the test.
-int main ()
-{
+int main () {
     Vt_dpi_accessors *dut = new Vt_dpi_accessors ("dut");
     svSetScope (svGetScopeFromName ("dut.t"));
 

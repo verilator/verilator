@@ -129,10 +129,10 @@ public:
 };
 
 void V3Graph::removeRedundantEdges(V3EdgeFuncP edgeFuncp) {
-    GraphRemoveRedundant (this, edgeFuncp, false);
+    GraphRemoveRedundant(this, edgeFuncp, false);
 }
 void V3Graph::removeRedundantEdgesSum(V3EdgeFuncP edgeFuncp) {
-    GraphRemoveRedundant (this, edgeFuncp, true);
+    GraphRemoveRedundant(this, edgeFuncp, true);
 }
 
 //######################################################################
@@ -217,7 +217,7 @@ public:
 };
 
 void V3Graph::weaklyConnected(V3EdgeFuncP edgeFuncp) {
-    GraphAlgWeakly (this, edgeFuncp);
+    GraphAlgWeakly(this, edgeFuncp);
 }
 
 //######################################################################
@@ -303,7 +303,7 @@ public:
 };
 
 void V3Graph::stronglyConnected(V3EdgeFuncP edgeFuncp) {
-    GraphAlgStrongly (this, edgeFuncp);
+    GraphAlgStrongly(this, edgeFuncp);
 }
 
 //######################################################################
@@ -355,11 +355,11 @@ public:
 };
 
 void V3Graph::rank() {
-    GraphAlgRank (this, &V3GraphEdge::followAlwaysTrue);
+    GraphAlgRank(this, &V3GraphEdge::followAlwaysTrue);
 }
 
 void V3Graph::rank(V3EdgeFuncP edgeFuncp) {
-    GraphAlgRank (this, edgeFuncp);
+    GraphAlgRank(this, edgeFuncp);
 }
 
 //######################################################################
@@ -414,7 +414,7 @@ public:
 };
 
 void V3Graph::reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp) {
-    GraphAlgRLoops (this, edgeFuncp, vertexp);
+    GraphAlgRLoops(this, edgeFuncp, vertexp);
 }
 
 
@@ -453,7 +453,7 @@ private:
 public:
     GraphAlgSubtrees(V3Graph* graphp, V3Graph* loopGraphp,
 		     V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp)
-        : GraphAlg<>(graphp, edgeFuncp), m_loopGraphp (loopGraphp) {
+        : GraphAlg<>(graphp, edgeFuncp), m_loopGraphp(loopGraphp) {
 	// Vertex::m_userp - New vertex if we have seen this vertex already
 	// Edge::m_userp - New edge if we have seen this edge already
 	m_graphp->userClearVertices();
@@ -466,7 +466,7 @@ public:
 //! Report the entire connected graph with a loop or loops
 void V3Graph::subtreeLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp,
 			   V3Graph* loopGraphp) {
-    GraphAlgSubtrees (this, loopGraphp, edgeFuncp, vertexp);
+    GraphAlgSubtrees(this, loopGraphp, edgeFuncp, vertexp);
 }
 
 //######################################################################
@@ -489,12 +489,12 @@ void V3Graph::makeEdgesNonCutable(V3EdgeFuncP edgeFuncp) {
 // Algorithms - sorting
 
 struct GraphSortVertexCmp {
-    inline bool operator () (const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
+    inline bool operator() (const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
 	return lhsp->sortCmp(rhsp) < 0;
     }
 };
 struct GraphSortEdgeCmp {
-    inline bool operator () (const V3GraphEdge* lhsp, const V3GraphEdge* rhsp) const {
+    inline bool operator() (const V3GraphEdge* lhsp, const V3GraphEdge* rhsp) const {
 	return lhsp->sortCmp(rhsp) < 0;
     }
 };

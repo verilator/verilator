@@ -152,8 +152,8 @@ private:
 
     AstVar* getBlockTemp(AstNode* nodep) {
 	string newvarname = ((string)"__Vtemp"+cvtToStr(m_modp->varNumGetInc()));
-	AstVar* varp = new AstVar (nodep->fileline(), AstVarType::STMTTEMP, newvarname,
-				   nodep->dtypep());
+        AstVar* varp = new AstVar(nodep->fileline(), AstVarType::STMTTEMP, newvarname,
+                                  nodep->dtypep());
 	m_funcp->addInitsp(varp);
 	return varp;
     }
@@ -185,12 +185,12 @@ private:
 	AstVar* varp = getBlockTemp(nodep);
 	if (noSubst) varp->noSubst(true); // Do not remove varrefs to this in V3Const
 	// Replace node tree with reference to var
-	AstVarRef* newp = new AstVarRef (nodep->fileline(), varp, false);
+        AstVarRef* newp = new AstVarRef(nodep->fileline(), varp, false);
 	linker.relink(newp);
 	// Put assignment before the referencing statement
-	AstAssign* assp = new AstAssign (nodep->fileline(),
-					 new AstVarRef(nodep->fileline(), varp, true),
-					 nodep);
+        AstAssign* assp = new AstAssign(nodep->fileline(),
+                                        new AstVarRef(nodep->fileline(), varp, true),
+                                        nodep);
 	insertBeforeStmt(assp);
 	if (debug()>8) assp->dumpTree(cout,"deepou:");
 	nodep->user1(true);  // Don't add another assignment
@@ -255,7 +255,7 @@ private:
 	m_inTracep = NULL;
 	m_stmtp = NULL;
     }
-    void visitShift (AstNodeBiop* nodep) {
+    void visitShift(AstNodeBiop* nodep) {
 	// Shifts of > 32/64 bits in C++ will wrap-around and generate non-0s
 	if (!nodep->user2SetOnce()) {
 	    UINFO(4,"  ShiftFix  "<<nodep<<endl);
@@ -275,28 +275,28 @@ private:
 		    // Then over shifting gives the sign bit, not all zeros
 		    // Note *NOT* clean output -- just like normal shift!
 		    // Create equivalent of VL_SIGNONES_(node_width)
-		    constzerop = new AstNegate (nodep->fileline(),
-						new AstShiftR(nodep->fileline(),
-							      nodep->lhsp()->cloneTree(false),
-							      new AstConst(nodep->fileline(),
-									   m1value),
-							      nodep->width()));
+                    constzerop = new AstNegate(nodep->fileline(),
+                                               new AstShiftR(nodep->fileline(),
+                                                             nodep->lhsp()->cloneTree(false),
+                                                             new AstConst(nodep->fileline(),
+                                                                          m1value),
+                                                             nodep->width()));
 		} else {
 		    V3Number zeronum  (nodep->fileline(), nodep->width(), 0);
 		    constzerop = new AstConst(nodep->fileline(), zeronum);
 		}
-		constzerop->dtypeFrom (nodep);  // unsigned
+                constzerop->dtypeFrom(nodep);  // unsigned
 
 		V3Number widthnum (nodep->fileline(), nodep->rhsp()->widthMin(), m1value);
 		AstNode* constwidthp = new AstConst(nodep->fileline(), widthnum);
-		constwidthp->dtypeFrom (nodep->rhsp());  // unsigned
+                constwidthp->dtypeFrom(nodep->rhsp());  // unsigned
 		AstCond* newp =
-		    new AstCond (nodep->fileline(),
-				 new AstGte (nodep->fileline(),
-					     constwidthp,
-					     nodep->rhsp()->cloneTree(false)),
-				 nodep,
-				 constzerop);
+                    new AstCond(nodep->fileline(),
+                                new AstGte(nodep->fileline(),
+                                           constwidthp,
+                                           nodep->rhsp()->cloneTree(false)),
+                                nodep,
+                                constzerop);
 		replaceHandle.relink(newp);
 	    }
 	}

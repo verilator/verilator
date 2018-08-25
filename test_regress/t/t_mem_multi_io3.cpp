@@ -19,7 +19,7 @@ int main()
 #endif
 {
     Verilated::debug(0);
-    tb = new VM_PREFIX ("tb");
+    tb = new VM_PREFIX("tb");
 
     // Just a constructor test
     bool pass = true;

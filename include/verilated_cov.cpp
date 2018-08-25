@@ -261,18 +261,18 @@ public:
     }
 
     // We assume there's always call to i/f/p in that order
-    void inserti (VerilatedCovImpItem* itemp) VL_EXCLUDES(m_mutex) {
+    void inserti(VerilatedCovImpItem* itemp) VL_EXCLUDES(m_mutex) {
 	VerilatedLockGuard lock(m_mutex);
 	assert(!m_insertp);
  	m_insertp = itemp;
     }
-    void insertf (const char* filenamep, int lineno) VL_EXCLUDES(m_mutex) {
+    void insertf(const char* filenamep, int lineno) VL_EXCLUDES(m_mutex) {
 	VerilatedLockGuard lock(m_mutex);
 	m_insertFilenamep = filenamep;
 	m_insertLineno = lineno;
     }
-    void insertp (const char* ckeyps[MAX_KEYS],
-		  const char* valps[MAX_KEYS]) VL_EXCLUDES(m_mutex) {
+    void insertp(const char* ckeyps[MAX_KEYS],
+                 const char* valps[MAX_KEYS]) VL_EXCLUDES(m_mutex) {
 	VerilatedLockGuard lock(m_mutex);
 	assert(m_insertp);
 	// First two key/vals are filename
@@ -334,7 +334,7 @@ public:
 #endif
 	selftest();
 
-	std::ofstream os (filename);
+        std::ofstream os(filename);
 	if (os.fail()) {
 	    std::string msg = std::string("%Error: Can't write '")+filename+"'";
 	    VL_FATAL_MT("",0,"",msg.c_str());
@@ -427,9 +427,9 @@ void VerilatedCov::_insertf(const char* filename, int lineno) VL_MT_SAFE {
 #define A(n) const char* key ## n, const char* val ## n		// Argument list
 #define C(n) key ## n, val ## n	// Calling argument list
 #define N(n) "",""	// Null argument list
-void VerilatedCov::_insertp (A(0),A(1),A(2),A(3),A(4),A(5),A(6),A(7),A(8),A(9),
-			     A(10),A(11),A(12),A(13),A(14),A(15),A(16),A(17),A(18),A(19),
-			     A(20),A(21),A(22),A(23),A(24),A(25),A(26),A(27),A(28),A(29)) VL_MT_SAFE {
+void VerilatedCov::_insertp(A(0),A(1),A(2),A(3),A(4),A(5),A(6),A(7),A(8),A(9),
+                            A(10),A(11),A(12),A(13),A(14),A(15),A(16),A(17),A(18),A(19),
+                            A(20),A(21),A(22),A(23),A(24),A(25),A(26),A(27),A(28),A(29)) VL_MT_SAFE {
     const char* keyps[VerilatedCovImpBase::MAX_KEYS]
 	= {NULL,NULL,NULL,	// filename,lineno,page
 	   key0,key1,key2,key3,key4,key5,key6,key7,key8,key9,
@@ -444,20 +444,20 @@ void VerilatedCov::_insertp (A(0),A(1),A(2),A(3),A(4),A(5),A(6),A(7),A(8),A(9),
 }
 
 // And versions with fewer arguments  (oh for a language with named parameters!)
-void VerilatedCov::_insertp (A(0),A(1),A(2),A(3),A(4),A(5),A(6),A(7),A(8),A(9)) VL_MT_SAFE {
+void VerilatedCov::_insertp(A(0),A(1),A(2),A(3),A(4),A(5),A(6),A(7),A(8),A(9)) VL_MT_SAFE {
     _insertp(C(0),C(1),C(2),C(3),C(4),C(5),C(6),C(7),C(8),C(9),
 	     N(10),N(11),N(12),N(13),N(14),N(15),N(16),N(17),N(18),N(19),
 	     N(20),N(21),N(22),N(23),N(24),N(25),N(26),N(27),N(28),N(29));
 }
-void VerilatedCov::_insertp (A(0),A(1),A(2),A(3),A(4),A(5),A(6),A(7),A(8),A(9),
-			     A(10),A(11),A(12),A(13),A(14),A(15),A(16),A(17),A(18),A(19)) VL_MT_SAFE {
+void VerilatedCov::_insertp(A(0),A(1),A(2),A(3),A(4),A(5),A(6),A(7),A(8),A(9),
+                            A(10),A(11),A(12),A(13),A(14),A(15),A(16),A(17),A(18),A(19)) VL_MT_SAFE {
     _insertp(C(0),C(1),C(2),C(3),C(4),C(5),C(6),C(7),C(8),C(9),
 	     C(10),C(11),C(12),C(13),C(14),C(15),C(16),C(17),C(18),C(19),
 	     N(20),N(21),N(22),N(23),N(24),N(25),N(26),N(27),N(28),N(29));
 }
 // Backward compatibility for Verilator
-void VerilatedCov::_insertp (A(0), A(1),  K(2),int val2,  K(3),int val3,
-			     K(4),const std::string& val4,  A(5),A(6)) VL_MT_SAFE {
+void VerilatedCov::_insertp(A(0), A(1),  K(2),int val2,  K(3),int val3,
+                            K(4),const std::string& val4,  A(5),A(6)) VL_MT_SAFE {
     std::string val2str = vlCovCvtToStr(val2);
     std::string val3str = vlCovCvtToStr(val3);
     _insertp(C(0),C(1),

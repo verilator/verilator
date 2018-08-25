@@ -155,7 +155,7 @@ void V3Global::dumpCheckGlobalTree(const string& stagename, int newNumber, bool 
 
 //######################################################################
 
-void process () {
+void process() {
     // Sort modules by level so later algorithms don't need to care
     V3LinkLevel::modSortByLevel();
     V3Error::abortIfErrors();

@@ -112,12 +112,12 @@ public:
 	// ***Add new elements below also***
     };
     enum en m_e;
-    inline V3ErrorCode () : m_e(EC_MIN) {}
+    inline V3ErrorCode() : m_e(EC_MIN) {}
     // cppcheck-suppress noExplicitConstructor
-    inline V3ErrorCode (en _e) : m_e(_e) {}
-    explicit V3ErrorCode (const char* msgp);	// Matching code or ERROR
-    explicit inline V3ErrorCode (int _e) : m_e(static_cast<en>(_e)) {}
-    operator en () const { return m_e; }
+    inline V3ErrorCode(en _e) : m_e(_e) {}
+    explicit V3ErrorCode(const char* msgp);  // Matching code or ERROR
+    explicit inline V3ErrorCode(int _e) : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
     const char* ascii() const {
 	const char* names[] = {
 	    // Leading spaces indicate it can't be disabled.
@@ -243,8 +243,8 @@ class V3Error {
     static void		suppressThisWarning();	// Suppress next %Warn if user has it off
     static void		pretendError(V3ErrorCode code, bool flag) { s_pretendError[code]=flag; }
     static bool		isError(V3ErrorCode code, bool supp);
-    static string	lineStr (const char* filename, int lineno);
-    static V3ErrorCode	errorCode() { return s_errorCode; }
+    static string lineStr(const char* filename, int lineno);
+    static V3ErrorCode errorCode() { return s_errorCode; }
     static void		errorExitCb(ErrorExitCb cb) { s_errorExitCb = cb; }
 
     // When printing an error/warning, print prefix for multiline message
@@ -318,7 +318,7 @@ inline void v3errorEndFatal(std::ostringstream& sstr) { V3Error::v3errorEnd(sstr
 
 //----------------------------------------------------------------------
 
-template< class T> std::string cvtToStr (const T& t) {
+template< class T> std::string cvtToStr(const T& t) {
     std::ostringstream os; os<<t; return os.str();
 }
 

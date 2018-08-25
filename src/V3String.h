@@ -99,7 +99,7 @@ class VName {
     static size_t s_minLength;		// Length to preserve if over maxLength
 public:
     // CONSTRUCTORS
-    explicit VName (const string& name) : m_name(name) {}
+    explicit VName(const string& name) : m_name(name) {}
     ~VName() {}
     // METHODS
     void name(const string& name) { m_name = name; m_hashed = ""; }

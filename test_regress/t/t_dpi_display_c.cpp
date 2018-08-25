@@ -31,7 +31,7 @@
 #ifdef NEED_EXTERNS
 extern "C" {
 
-    extern void dpii_display_call (const char* c);
+    extern void dpii_display_call(const char* c);
 }
 #endif
 

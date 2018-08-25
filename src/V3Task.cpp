@@ -196,7 +196,7 @@ private:
 	}
 	// We make multiple edges if a task is called multiple times from another task.
 	if (!nodep->taskp()) nodep->v3fatalSrc("Unlinked task");
-	new TaskEdge (&m_callGraph, m_curVxp, getFTaskVertex(nodep->taskp()));
+        new TaskEdge(&m_callGraph, m_curVxp, getFTaskVertex(nodep->taskp()));
     }
     virtual void visit(AstNodeFTask* nodep) {
 	UINFO(9,"  TASK "<<nodep<<endl);
@@ -322,8 +322,8 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     AstVarScope* createFuncVar(AstCFunc* funcp, const string& name, AstVar* examplep) {
-	AstVar* newvarp = new AstVar (funcp->fileline(), AstVarType::BLOCKTEMP, name,
-				      examplep);
+        AstVar* newvarp = new AstVar(funcp->fileline(), AstVarType::BLOCKTEMP, name,
+                                     examplep);
 	newvarp->funcLocal(true);
 	funcp->addInitsp(newvarp);
 	AstVarScope* newvscp = new AstVarScope(funcp->fileline(), m_scopep, newvarp);
@@ -331,8 +331,8 @@ private:
 	return newvscp;
     }
     AstVarScope* createInputVar(AstCFunc* funcp, const string& name, AstBasicDTypeKwd kwd) {
-	AstVar* newvarp = new AstVar (funcp->fileline(), AstVarType::BLOCKTEMP, name,
-				      funcp->findBasicDType(kwd));
+        AstVar* newvarp = new AstVar(funcp->fileline(), AstVarType::BLOCKTEMP, name,
+                                     funcp->findBasicDType(kwd));
 	newvarp->funcLocal(true);
 	newvarp->combineType(AstVarType::INPUT);
 	funcp->addArgsp(newvarp);
@@ -345,12 +345,12 @@ private:
 	// It shouldn't matter, as they are only local variables.
 	// We choose to do it under whichever called this function, which results
 	// in more cache locality.
-	AstVar* newvarp = new AstVar (invarp->fileline(), AstVarType::BLOCKTEMP,
-				      name, invarp);
+        AstVar* newvarp = new AstVar(invarp->fileline(), AstVarType::BLOCKTEMP,
+                                     name, invarp);
 	newvarp->funcLocal(false);
 	newvarp->propagateAttrFrom(invarp);
 	m_modp->addStmtp(newvarp);
-	AstVarScope* newvscp = new AstVarScope (newvarp->fileline(), m_scopep, newvarp);
+        AstVarScope* newvscp = new AstVarScope(newvarp->fileline(), m_scopep, newvarp);
 	m_scopep->addVarp(newvscp);
 	return newvscp;
     }
@@ -405,22 +405,22 @@ private:
 
 		    // Even if it's referencing a varref, we still make a temporary
 		    // Else task(x,x,x) might produce incorrect results
-		    AstVarScope* outvscp = createVarScope (portp, namePrefix+"__"+portp->shortName());
+                    AstVarScope* outvscp = createVarScope(portp, namePrefix+"__"+portp->shortName());
 		    portp->user2p(outvscp);
-		    AstAssign* assp = new AstAssign (pinp->fileline(),
-						     pinp,
-						     new AstVarRef(outvscp->fileline(), outvscp, false));
+                    AstAssign* assp = new AstAssign(pinp->fileline(),
+                                                    pinp,
+                                                    new AstVarRef(outvscp->fileline(), outvscp, false));
 		    assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);  // Ok if in <= block
 		    // Put assignment BEHIND of all other statements
 		    beginp->addNext(assp);
 		}
 		else if (portp->isInput()) {
 		    // Make input variable
-		    AstVarScope* inVscp = createVarScope (portp, namePrefix+"__"+portp->shortName());
+                    AstVarScope* inVscp = createVarScope(portp, namePrefix+"__"+portp->shortName());
 		    portp->user2p(inVscp);
-		    AstAssign* assp = new AstAssign (pinp->fileline(),
-						     new AstVarRef(inVscp->fileline(), inVscp, true),
-						     pinp);
+                    AstAssign* assp = new AstAssign(pinp->fileline(),
+                                                    new AstVarRef(inVscp->fileline(), inVscp, true),
+                                                    pinp);
 		    assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);  // Ok if in <= block
 		    // Put assignment in FRONT of all other statements
 		    if (AstNode* afterp = beginp->nextp()) {
@@ -441,7 +441,7 @@ private:
 		    if (!portp->user2p()) {
 			// Move it to a new localized variable
 			portp->unlinkFrBack(); pushDeletep(portp);  // Remove it from the clone (not original)
-			AstVarScope* localVscp = createVarScope (portp, namePrefix+"__"+portp->shortName());
+                        AstVarScope* localVscp = createVarScope(portp, namePrefix+"__"+portp->shortName());
 			portp->user2p(localVscp);
 		    }
 		}
@@ -507,12 +507,12 @@ private:
 
 		    // Even if it's referencing a varref, we still make a temporary
 		    // Else task(x,x,x) might produce incorrect results
-		    AstVarScope* outvscp = createVarScope (portp, namePrefix+"__"+portp->shortName());
+                    AstVarScope* outvscp = createVarScope(portp, namePrefix+"__"+portp->shortName());
 		    portp->user2p(outvscp);
 		    pinp->replaceWith(new AstVarRef(outvscp->fileline(), outvscp, true));
-		    AstAssign* assp = new AstAssign (pinp->fileline(),
-						     pinp,
-						     new AstVarRef(outvscp->fileline(), outvscp, false));
+                    AstAssign* assp = new AstAssign(pinp->fileline(),
+                                                    pinp,
+                                                    new AstVarRef(outvscp->fileline(), outvscp, false));
 		    assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);  // Ok if in <= block
 		    // Put assignment BEHIND of all other statements
 		    beginp->addNext(assp);
@@ -720,7 +720,7 @@ private:
 		    // SAME CODE BELOW
 		    args+= ", ";
 		    if (args != "") { argnodesp = argnodesp->addNext(new AstText(portp->fileline(), args, true)); args=""; }
-		    AstVarScope* outvscp = createFuncVar (dpip, portp->name()+"__Vcvt", portp);
+                    AstVarScope* outvscp = createFuncVar(dpip, portp->name()+"__Vcvt", portp);
 		    AstVarRef* refp = new AstVarRef(portp->fileline(), outvscp, portp->isOutput());
 		    argnodesp = argnodesp->addNextNull(refp);
 
@@ -736,7 +736,7 @@ private:
 	    // SAME CODE ABOVE
 	    args+= ", ";
 	    if (args != "") { argnodesp = argnodesp->addNext(new AstText(portp->fileline(), args, true)); args=""; }
-	    AstVarScope* outvscp = createFuncVar (dpip, portp->name()+"__Vcvt", portp);
+            AstVarScope* outvscp = createFuncVar(dpip, portp->name()+"__Vcvt", portp);
 	    AstVarRef* refp = new AstVarRef(portp->fileline(), outvscp, portp->isOutput());
 	    argnodesp = argnodesp->addNextNull(refp);
 	}
@@ -783,11 +783,11 @@ private:
 				       : nodep->dpiTask() ? "int"
 				       : ""));
 	dpip->dontCombine(true);
-	dpip->entryPoint (false);
-	dpip->funcPublic (true);
-	dpip->isStatic   (false);
-	dpip->pure       (nodep->pure());
-	dpip->dpiImport  (true);
+        dpip->entryPoint(false);
+        dpip->funcPublic(true);
+        dpip->isStatic(false);
+        dpip->pure(nodep->pure());
+        dpip->dpiImport(true);
 	// Add DPI reference to top, since it's a global function
 	m_topScopep->scopep()->addActivep(dpip);
         makePortList(nodep, rtnvarp, dpip);
@@ -958,7 +958,7 @@ private:
 
         AstVarScope* rtnvscp = NULL;
         if (rtnvarp) {
-            rtnvscp = new AstVarScope (rtnvarp->fileline(), m_scopep, rtnvarp);
+            rtnvscp = new AstVarScope(rtnvarp->fileline(), m_scopep, rtnvarp);
             m_scopep->addVarp(rtnvscp);
             rtnvarp->user2p(rtnvscp);
         }
@@ -978,12 +978,12 @@ private:
 					 : ""));
 	// It's ok to combine imports because this is just a wrapper; duplicate wrappers can get merged.
 	cfuncp->dontCombine(!nodep->dpiImport());
-	cfuncp->entryPoint (!nodep->dpiImport());
-	cfuncp->funcPublic (nodep->taskPublic());
-	cfuncp->dpiExport  (nodep->dpiExport());
+        cfuncp->entryPoint(!nodep->dpiImport());
+        cfuncp->funcPublic(nodep->taskPublic());
+        cfuncp->dpiExport(nodep->dpiExport());
         cfuncp->dpiImportWrapper(nodep->dpiImport());
-	cfuncp->isStatic   (!(nodep->dpiImport()||nodep->taskPublic()));
-	cfuncp->pure	   (nodep->pure());
+        cfuncp->isStatic(!(nodep->dpiImport()||nodep->taskPublic()));
+        cfuncp->pure(nodep->pure());
 	//cfuncp->dpiImport   // Not set in the wrapper - the called function has it set
 	if (cfuncp->dpiExport()) cfuncp->cname (nodep->cname());
 
@@ -1001,9 +1001,9 @@ private:
 	}
 	if (nodep->dpiContext()) {
 	    // First three args go to dpiContext call
-	    createInputVar (cfuncp, "__Vscopep", AstBasicDTypeKwd::SCOPEPTR);
-	    createInputVar (cfuncp, "__Vfilenamep", AstBasicDTypeKwd::CHARPTR);
-	    createInputVar (cfuncp, "__Vlineno", AstBasicDTypeKwd::INT);
+            createInputVar(cfuncp, "__Vscopep", AstBasicDTypeKwd::SCOPEPTR);
+            createInputVar(cfuncp, "__Vfilenamep", AstBasicDTypeKwd::CHARPTR);
+            createInputVar(cfuncp, "__Vlineno", AstBasicDTypeKwd::INT);
 	}
 
 	if (!nodep->dpiImport()) {
@@ -1030,7 +1030,7 @@ private:
 		    // "Normal" variable, mark inside function
 		    portp->funcLocal(true);
 		}
-		AstVarScope* newvscp = new AstVarScope (portp->fileline(), m_scopep, portp);
+                AstVarScope* newvscp = new AstVarScope(portp->fileline(), m_scopep, portp);
 		m_scopep->addVarp(newvscp);
 		portp->user2p(newvscp);
 	    }
@@ -1155,7 +1155,7 @@ private:
         AstNode* visitp = NULL;
         if (VN_IS(nodep, FuncRef)) {
 	    if (!nodep->taskp()->isFunction()) nodep->v3fatalSrc("func reference to non-function");
-	    AstVarRef* outrefp = new AstVarRef (nodep->fileline(), outvscp, false);
+            AstVarRef* outrefp = new AstVarRef(nodep->fileline(), outvscp, false);
 	    nodep->replaceWith(outrefp);
 	    // Insert new statements
             visitp = insertBeforeStmt(nodep, beginp);

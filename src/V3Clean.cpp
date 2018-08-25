@@ -67,7 +67,7 @@ private:
 	else if (nodep->width()<=VL_QUADSIZE) return VL_QUADSIZE;
 	else return nodep->widthWords()*VL_WORDSIZE;
     }
-    void setCppWidth (AstNode* nodep) {
+    void setCppWidth(AstNode* nodep) {
 	nodep->user2(true);  // Don't resize it again
 	AstNodeDType* old_dtypep = nodep->dtypep();
 	int width=cppWidth(nodep);  // widthMin is unchanged
@@ -84,7 +84,7 @@ private:
 	    }
 	}
     }
-    void computeCppWidth (AstNode* nodep) {
+    void computeCppWidth(AstNode* nodep) {
 	if (!nodep->user2() && nodep->hasDType()) {
             if (VN_IS(nodep, Var) || VN_IS(nodep, NodeDType)  // Don't want to change variable widths!
                 || VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {  // Or arrays
@@ -109,7 +109,7 @@ private:
 	return false;
     }
     void setClean(AstNode* nodep, bool isClean) {
-	computeCppWidth (nodep);  // Just to be sure it's in widthMin
+        computeCppWidth(nodep);  // Just to be sure it's in widthMin
 	bool wholeUint = ((nodep->widthMin() % VL_WORDSIZE) == 0);  //32,64,...
 	setCleanState(nodep, ((isClean||wholeUint) ? CS_CLEAN:CS_DIRTY));
     }
@@ -123,9 +123,9 @@ private:
 	computeCppWidth(nodep);
 	V3Number mask (nodep->fileline(), cppWidth(nodep));
 	mask.setMask(nodep->widthMin());
-	AstNode* cleanp = new AstAnd (nodep->fileline(),
-				      new AstConst (nodep->fileline(), mask),
-				      nodep);
+        AstNode* cleanp = new AstAnd(nodep->fileline(),
+                                     new AstConst(nodep->fileline(), mask),
+                                     nodep);
 	cleanp->dtypeFrom(nodep);  // Otherwise the AND normally picks LHS
 	relinkHandle.relink(cleanp);
     }
@@ -181,28 +181,28 @@ private:
 	if (nodep->cleanLhs()) {
 	    insureClean(nodep->lhsp());
 	}
-	setClean (nodep, nodep->cleanOut());
+        setClean(nodep, nodep->cleanOut());
     }
     virtual void visit(AstNodeBiop* nodep) {
 	operandBiop(nodep);
-	setClean (nodep, nodep->cleanOut());
+        setClean(nodep, nodep->cleanOut());
     }
     virtual void visit(AstAnd* nodep) {
 	operandBiop(nodep);
-	setClean (nodep, isClean(nodep->lhsp()) || isClean(nodep->rhsp()));
+        setClean(nodep, isClean(nodep->lhsp()) || isClean(nodep->rhsp()));
     }
     virtual void visit(AstXor* nodep) {
 	operandBiop(nodep);
-	setClean (nodep, isClean(nodep->lhsp()) && isClean(nodep->rhsp()));
+        setClean(nodep, isClean(nodep->lhsp()) && isClean(nodep->rhsp()));
     }
     virtual void visit(AstOr* nodep) {
 	operandBiop(nodep);
-	setClean (nodep, isClean(nodep->lhsp()) && isClean(nodep->rhsp()));
+        setClean(nodep, isClean(nodep->lhsp()) && isClean(nodep->rhsp()));
     }
     virtual void visit(AstNodeMath* nodep) {
         iterateChildren(nodep);
 	computeCppWidth(nodep);
-        setClean (nodep, nodep->cleanOut());
+        setClean(nodep, nodep->cleanOut());
     }
     virtual void visit(AstNodeAssign* nodep) {
         iterateChildren(nodep);
@@ -212,28 +212,28 @@ private:
 	}
     }
     virtual void visit(AstText* nodep) {
-	setClean (nodep, true);
+        setClean(nodep, true);
     }
     virtual void visit(AstScopeName* nodep) {
-	setClean (nodep, true);
+        setClean(nodep, true);
     }
     virtual void visit(AstSel* nodep) {
 	operandTriop(nodep);
-        setClean (nodep, nodep->cleanOut());
+        setClean(nodep, nodep->cleanOut());
     }
     virtual void visit(AstUCFunc* nodep) {
         iterateChildren(nodep);
 	computeCppWidth(nodep);
-        setClean (nodep, false);
+        setClean(nodep, false);
 	// We always clean, as we don't trust those pesky users.
         if (!VN_IS(nodep->backp(), And)) {
 	    insertClean(nodep);
 	}
-	insureCleanAndNext (nodep->bodysp());
+        insureCleanAndNext(nodep->bodysp());
     }
     virtual void visit(AstTraceInc* nodep) {
         iterateChildren(nodep);
-	insureCleanAndNext (nodep->valuep());
+        insureCleanAndNext(nodep->valuep());
     }
     virtual void visit(AstTypedef* nodep) {
 	// No cleaning, or would loose pointer to enum
@@ -260,17 +260,17 @@ private:
     }
     virtual void visit(AstSFormatF* nodep) {
         iterateChildren(nodep);
-	insureCleanAndNext (nodep->exprsp());
+        insureCleanAndNext(nodep->exprsp());
 	setClean(nodep, true);  // generates a string, so not relevant
     }
     virtual void visit(AstUCStmt* nodep) {
         iterateChildren(nodep);
-	insureCleanAndNext (nodep->bodysp());
+        insureCleanAndNext(nodep->bodysp());
     }
     virtual void visit(AstCCall* nodep) {
         iterateChildren(nodep);
-	insureCleanAndNext (nodep->argsp());
-	setClean (nodep, true);
+        insureCleanAndNext(nodep->argsp());
+        setClean(nodep, true);
     }
 
     //--------------------

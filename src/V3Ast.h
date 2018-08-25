@@ -69,11 +69,11 @@ public:
     //   const char* ascii() const {...};
     enum en m_e;
     // cppcheck-suppress uninitVar  // responsiblity of each subclass
-    inline AstType () {}
+    inline AstType() {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstType (en _e) : m_e(_e) {}
-    explicit inline AstType (int _e) : m_e(static_cast<en>(_e)) {}
-    operator en () const { return m_e; }
+    inline AstType(en _e) : m_e(_e) {}
+    explicit inline AstType(int _e) : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
   };
   inline bool operator== (AstType lhs, AstType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstType lhs, AstType::en rhs) { return (lhs.m_e == rhs); }
@@ -104,19 +104,19 @@ public:
 	};
 	return names[m_e];
     };
-    inline AstNumeric () : m_e(UNSIGNED) {}
+    inline AstNumeric() : m_e(UNSIGNED) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstNumeric (en _e) : m_e(_e) {}
+    inline AstNumeric(en _e) : m_e(_e) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstNumeric (VSignedState signst) {
+    inline AstNumeric(VSignedState signst) {
 	if (signst==signedst_UNSIGNED) m_e=UNSIGNED;
 	else if (signst==signedst_SIGNED) m_e=SIGNED;
 	else m_e=NOSIGN;
     }
-    static inline AstNumeric fromBool (bool isSigned) {  // Factory method
+    static inline AstNumeric fromBool(bool isSigned) {  // Factory method
 	return isSigned ? AstNumeric(SIGNED) : AstNumeric(UNSIGNED); }
-    explicit inline AstNumeric (int _e) : m_e(static_cast<en>(_e)) {}
-    operator en () const { return m_e; }
+    explicit inline AstNumeric(int _e) : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
     inline bool isSigned() const { return m_e==SIGNED; }
     inline bool isNosign() const { return m_e==NOSIGN; }
     // No isUnsigned() as it's ambiguous if NOSIGN should be included or not.
@@ -140,11 +140,11 @@ public:
 	PUBLIC_TASK
     };
     enum en m_e;
-    inline AstPragmaType () : m_e(ILLEGAL) {}
+    inline AstPragmaType() : m_e(ILLEGAL) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstPragmaType (en _e) : m_e(_e) {}
-    explicit inline AstPragmaType (int _e) : m_e(static_cast<en>(_e)) {}
-    operator en () const { return m_e; }
+    inline AstPragmaType(en _e) : m_e(_e) {}
+    explicit inline AstPragmaType(int _e) : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
   };
   inline bool operator== (AstPragmaType lhs, AstPragmaType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstPragmaType lhs, AstPragmaType::en rhs) { return (lhs.m_e == rhs); }
@@ -164,11 +164,11 @@ public:
 	TRACE_CHANGE_SUB
     };
     enum en m_e;
-    inline AstCFuncType () : m_e(FT_NORMAL) {}
+    inline AstCFuncType() : m_e(FT_NORMAL) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstCFuncType (en _e) : m_e(_e) {}
-    explicit inline AstCFuncType (int _e) : m_e(static_cast<en>(_e)) {}
-    operator en () const { return m_e; }
+    inline AstCFuncType(en _e) : m_e(_e) {}
+    explicit inline AstCFuncType(int _e) : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
     // METHODS
     bool isTrace() const { return (m_e==TRACE_INIT || m_e==TRACE_INIT_SUB
 				   || m_e==TRACE_FULL || m_e==TRACE_FULL_SUB
@@ -256,11 +256,11 @@ public:
         }
         return false;
     }
-    inline AstEdgeType () : m_e(ET_ILLEGAL) {}
+    inline AstEdgeType() : m_e(ET_ILLEGAL) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstEdgeType (en _e) : m_e(_e) {}
-    explicit inline AstEdgeType (int _e) : m_e(static_cast<en>(_e)) {}
-    operator en () const { return m_e; }
+    inline AstEdgeType(en _e) : m_e(_e) {}
+    explicit inline AstEdgeType(int _e) : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
   };
   inline bool operator== (AstEdgeType lhs, AstEdgeType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstEdgeType lhs, AstEdgeType::en rhs) { return (lhs.m_e == rhs); }
@@ -324,11 +324,11 @@ public:
 	};
 	return names[m_e];
     };
-    inline AstAttrType () : m_e(ILLEGAL) {}
+    inline AstAttrType() : m_e(ILLEGAL) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstAttrType (en _e) : m_e(_e) {}
-    explicit inline AstAttrType (int _e) : m_e(static_cast<en>(_e)) {}
-    operator en () const { return m_e; }
+    inline AstAttrType(en _e) : m_e(_e) {}
+    explicit inline AstAttrType(int _e) : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
   };
   inline bool operator== (AstAttrType lhs, AstAttrType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstAttrType lhs, AstAttrType::en rhs) { return (lhs.m_e == rhs); }
@@ -384,11 +384,11 @@ public:
         UASSERT(0==strcmp(AstBasicDTypeKwd(_ENUM_MAX).ascii()," MAX"), "SelfTest: Enum mismatch");
         UASSERT(0==strcmp(AstBasicDTypeKwd(_ENUM_MAX).dpiType()," MAX"),"SelfTest: Enum mismatch");
     }
-    inline AstBasicDTypeKwd () : m_e(UNKNOWN) {}
+    inline AstBasicDTypeKwd() : m_e(UNKNOWN) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstBasicDTypeKwd (en _e) : m_e(_e) {}
-    explicit inline AstBasicDTypeKwd (int _e) : m_e(static_cast<en>(_e)) {}
-    operator en () const { return m_e; }
+    inline AstBasicDTypeKwd(en _e) : m_e(_e) {}
+    explicit inline AstBasicDTypeKwd(int _e) : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
     int width() const {
 	switch (m_e) {
 	case BIT:	return 1;   // scalar, can't bit extract unless ranged
@@ -490,11 +490,11 @@ public:
 	IFACEREF	// Used to link Interfaces between modules
     };
     enum en m_e;
-    inline AstVarType () : m_e(UNKNOWN) {}
+    inline AstVarType() : m_e(UNKNOWN) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstVarType (en _e) : m_e(_e) {}
-    explicit inline AstVarType (int _e) : m_e(static_cast<en>(_e)) {}
-    operator en () const { return m_e; }
+    inline AstVarType(en _e) : m_e(_e) {}
+    explicit inline AstVarType(int _e) : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
     const char* ascii() const {
 	static const char* const names[] = {
 	    "?","GPARAM","LPARAM","GENVAR",
@@ -528,11 +528,11 @@ public:
     };
     enum en m_e;
     // CONSTRUCTOR - note defaults to *UNKNOWN*
-    inline AstBranchPred () : m_e(BP_UNKNOWN) {}
+    inline AstBranchPred() : m_e(BP_UNKNOWN) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstBranchPred (en _e) : m_e(_e) {}
-    explicit inline AstBranchPred (int _e) : m_e(static_cast<en>(_e)) {}
-    operator en () const { return m_e; }
+    inline AstBranchPred(en _e) : m_e(_e) {}
+    explicit inline AstBranchPred(int _e) : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
     AstBranchPred invert() const {
 	if (m_e==BP_UNLIKELY) return BP_LIKELY;
 	else if (m_e==BP_LIKELY) return BP_UNLIKELY;
@@ -560,11 +560,11 @@ public:
     };
     enum en m_e;
     // CONSTRUCTOR - note defaults to *UNKNOWN*
-    inline AstVarAttrClocker () : m_e(CLOCKER_UNKNOWN) {}
+    inline AstVarAttrClocker() : m_e(CLOCKER_UNKNOWN) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstVarAttrClocker (en _e) : m_e(_e) {}
-    explicit inline AstVarAttrClocker (int _e) : m_e(static_cast<en>(_e)) {}
-    operator en () const { return m_e; }
+    inline AstVarAttrClocker(en _e) : m_e(_e) {}
+    explicit inline AstVarAttrClocker(int _e) : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
     bool unknown() const { return m_e==CLOCKER_UNKNOWN; }
     AstVarAttrClocker invert() const {
 	if (m_e==CLOCKER_YES) return CLOCKER_NO;
@@ -592,11 +592,11 @@ public:
 	ALWAYS_COMB
     };
     enum en m_e;
-    inline VAlwaysKwd () : m_e(ALWAYS) {}
+    inline VAlwaysKwd() : m_e(ALWAYS) {}
     // cppcheck-suppress noExplicitConstructor
-    inline VAlwaysKwd (en _e) : m_e(_e) {}
-    explicit inline VAlwaysKwd (int _e) : m_e(static_cast<en>(_e)) {}
-    operator en () const { return m_e; }
+    inline VAlwaysKwd(en _e) : m_e(_e) {}
+    explicit inline VAlwaysKwd(int _e) : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
     const char* ascii() const {
 	static const char* const names[] = {
 	    "always","always_ff","always_latch","always_comb"};
@@ -617,11 +617,11 @@ public:
 	CT_CASEINSIDE
     };
     enum en m_e;
-    inline VCaseType () : m_e(CT_CASE) {}
+    inline VCaseType() : m_e(CT_CASE) {}
     // cppcheck-suppress noExplicitConstructor
-    inline VCaseType (en _e) : m_e(_e) {}
-    explicit inline VCaseType (int _e) : m_e(static_cast<en>(_e)) {}
-    operator en () const { return m_e; }
+    inline VCaseType(en _e) : m_e(_e) {}
+    explicit inline VCaseType(int _e) : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
   };
   inline bool operator== (VCaseType lhs, VCaseType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (VCaseType lhs, VCaseType::en rhs) { return (lhs.m_e == rhs); }
@@ -640,11 +640,11 @@ public:
 	DT_FATAL
     };
     enum en m_e;
-    inline AstDisplayType () : m_e(DT_DISPLAY) {}
+    inline AstDisplayType() : m_e(DT_DISPLAY) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstDisplayType (en _e) : m_e(_e) {}
-    explicit inline AstDisplayType (int _e) : m_e(static_cast<en>(_e)) {}
-    operator en () const { return m_e; }
+    inline AstDisplayType(en _e) : m_e(_e) {}
+    explicit inline AstDisplayType(int _e) : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
     bool addNewline() const { return m_e!=DT_WRITE; }
     bool needScopeTracking() const { return m_e!=DT_DISPLAY && m_e!=DT_WRITE; }
     const char* ascii() const {
@@ -667,9 +667,9 @@ public:
     enum en m_e;
     inline AstParseRefExp() : m_e(PX_NONE) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstParseRefExp (en _e) : m_e(_e) {}
-    explicit inline AstParseRefExp (int _e) : m_e(static_cast<en>(_e)) {}
-    operator en () const { return m_e; }
+    inline AstParseRefExp(en _e) : m_e(_e) {}
+    explicit inline AstParseRefExp(int _e) : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
     const char* ascii() const {
 	static const char* const names[] = {
 	    "","TEXT","PREDOT"};
@@ -803,8 +803,8 @@ public:
     inline int	toInt() {
 	return m_u.ui;
     }
-    static inline VNUser fromZero () { return VNUser(0); }
-    static inline VNUser fromInt (int i) { return VNUser(i); }
+    static inline VNUser fromZero() { return VNUser(0); }
+    static inline VNUser fromInt(int i) { return VNUser(i); }
 };
 
 //######################################################################
@@ -2071,7 +2071,7 @@ private:
     int		m_typeNum;	// Incrementing implicit type number
 public:
     AstNodeModule(FileLine* fl, const string& name)
-	: AstNode (fl)
+        : AstNode(fl)
 	,m_name(name), m_origName(name)
 	,m_modPublic(false), m_modTrace(false), m_inLibrary(false), m_dead(false)
 	,m_internal(false), m_recursive(false), m_recursiveClone(false)
@@ -2113,7 +2113,7 @@ public:
 class AstNodeRange : public AstNode {
     // A range, sized or unsized
 public:
-    explicit AstNodeRange(FileLine* fl) : AstNode (fl) { }
+    explicit AstNodeRange(FileLine* fl) : AstNode(fl) { }
     ASTNODE_BASE_FUNCS(NodeRange)
 };
 

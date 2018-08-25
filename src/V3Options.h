@@ -353,8 +353,8 @@ class V3Options {
     string allArgsString();	///< Return all passed arguments as simple string
     void bin(const string& flag) { m_bin = flag; }
     void parseOpts(FileLine* fl, int argc, char** argv);
-    void parseOptsList (FileLine* fl, const string& optdir, int argc, char** argv);
-    void parseOptsFile (FileLine* fl, const string& filename, bool rel);
+    void parseOptsList(FileLine* fl, const string& optdir, int argc, char** argv);
+    void parseOptsFile(FileLine* fl, const string& filename, bool rel);
 
     // METHODS (environment)
     // Most of these may be built into the executable with --enable-defenv,
@@ -369,12 +369,12 @@ class V3Options {
     static string getenvVERILATOR_ROOT();
 
     // METHODS (file utilities using these options)
-    string fileExists (const string& filename);
+    string fileExists(const string& filename);
     string filePath(FileLine* fl, const string& modname, const string& lastpath, const string& errmsg);
     void filePathLookedMsg(FileLine* fl, const string& modname);
     V3LangCode fileLanguage(const string &filename);
-    static bool fileStatDir (const string& filename);
-    static bool fileStatNormal (const string& filename);
+    static bool fileStatDir(const string& filename);
+    static bool fileStatNormal(const string& filename);
     static void fileNfsFlush(const string& filename);
 
     // METHODS (other OS)

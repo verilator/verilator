@@ -111,7 +111,7 @@ void mon_eval() {
 
 unsigned int main_time = false;
 
-double sc_time_stamp () {
+double sc_time_stamp() {
     return main_time;
 }
 int main(int argc, char **argv, char **env) {
@@ -119,7 +119,7 @@ int main(int argc, char **argv, char **env) {
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
 
-    VM_PREFIX* topp = new VM_PREFIX ("");  // Note null name - we're flattening it out
+    VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
 
 #ifdef VERILATOR
 # ifdef TEST_VERBOSE

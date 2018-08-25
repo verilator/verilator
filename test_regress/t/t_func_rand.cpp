@@ -8,12 +8,12 @@
 #include <verilated.h>
 #include "Vt_func_rand.h"
 
-int main (int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
     Vt_func_rand *topp = new Vt_func_rand;
 
     Verilated::debug(0);
 
-    printf ("\nTesting\n");
+    printf("\nTesting\n");
     for (int i = 0; i < 10; i++) {
 	topp->clk          = 0;
 	topp->eval();
@@ -23,5 +23,5 @@ int main (int argc, char *argv[]) {
     if (topp->Rand != 0xfeed0fad) {
 	vl_fatal(__FILE__,__LINE__,"top", "Unexpected value for Rand output\n");
     }
-    printf ("*-* All Finished *-*\n");
+    printf("*-* All Finished *-*\n");
 }

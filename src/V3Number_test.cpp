@@ -37,8 +37,8 @@ void test(const string& lhss, const string& op, const string& rhss, const string
     char* r1 = strdup(rhss.c_str());
     char* e1 = strdup(exps.c_str());
 
-    V3Number lhnum (new FileLine ("ck",__LINE__), l1);
-    V3Number rhnum (new FileLine ("ck",__LINE__), r1);
+    V3Number lhnum (new FileLine("ck",__LINE__), l1);
+    V3Number rhnum (new FileLine("ck",__LINE__), r1);
     V3Number expnum (new FileLine("ck",__LINE__), e1);
 
     V3Number gotnum (new FileLine("ck",__LINE__), expnum.width());

@@ -1149,10 +1149,10 @@ private:
 		  <<" attach-to "<<cellp
 		  <<"  <= "<<exprp<<endl);
 	    // Don't need to check the name of the defparam exists.  V3Param does.
-	    AstPin* pinp = new AstPin (nodep->fileline(),
-				       -1, // Pin# not relevant
-				       nodep->name(),
-				       exprp);
+            AstPin* pinp = new AstPin(nodep->fileline(),
+                                      -1,  // Pin# not relevant
+                                      nodep->name(),
+                                      exprp);
 	    cellp->addParamsp(pinp);
 	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
 	}
@@ -1508,7 +1508,7 @@ private:
     int debug() { return LinkDotState::debug(); }
 
     // METHODS - Variables
-    void createImplicitVar (VSymEnt* lookupSymp, AstVarRef* nodep, AstNodeModule* modp, VSymEnt* moduleSymp, bool noWarn) {
+    void createImplicitVar(VSymEnt* lookupSymp, AstVarRef* nodep, AstNodeModule* modp, VSymEnt* moduleSymp, bool noWarn) {
 	// Create implicit after warning
 	if (!nodep->varp()) {
 	    if (!noWarn) {
@@ -1518,8 +1518,8 @@ private:
 		    nodep->v3warn(IMPLICIT,"Signal definition not found, creating implicitly: "<<nodep->prettyName());
 		}
 	    }
-	    AstVar* newp = new AstVar (nodep->fileline(), AstVarType::WIRE,
-				       nodep->name(), VFlagLogicPacked(), 1);
+            AstVar* newp = new AstVar(nodep->fileline(), AstVarType::WIRE,
+                                      nodep->name(), VFlagLogicPacked(), 1);
 	    newp->trace(modp->modTrace());
 	    nodep->varp(newp);
 	    modp->addStmtp(newp);
@@ -1936,7 +1936,7 @@ private:
 		    AstVarRef* newp = new AstVarRef(nodep->fileline(), nodep->name(), false);
 		    nodep->replaceWith(newp);
 		    pushDeletep(nodep); VL_DANGLING(nodep);
-		    createImplicitVar (m_curSymp, newp, m_modp, m_modSymp, err);
+                    createImplicitVar(m_curSymp, newp, m_modp, m_modSymp, err);
 		}
 	    }
 	}

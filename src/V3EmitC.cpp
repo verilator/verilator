@@ -87,14 +87,14 @@ public:
     bool emitSimpleOk(AstNodeMath* nodep);
     void emitIQW(AstNode* nodep) {
         // Other abbrevs: "C"har, "S"hort, "F"loat, "D"ouble, stri"N"g
-        puts (nodep->dtypep()->charIQWN());
+        puts(nodep->dtypep()->charIQWN());
     }
     void emitScIQW(AstVar* nodep) {
 	if (!nodep->isSc()) nodep->v3fatalSrc("emitting SystemC operator on non-SC variable");
-	puts (nodep->isScBigUint() ? "SB"
-	      : nodep->isScUint()  ? "SU"
-	      : nodep->isScBv()    ? "SW"
-	      : (nodep->isScQuad() ? "SQ" : "SI"));
+        puts(nodep->isScBigUint() ? "SB"
+             : nodep->isScUint()  ? "SU"
+             : nodep->isScBv()    ? "SW"
+             : (nodep->isScQuad() ? "SQ" : "SI"));
     }
     void emitOpName(AstNode* nodep, const string& format,
 		    AstNode* lhsp, AstNode* rhsp, AstNode* thsp);
@@ -161,7 +161,7 @@ public:
                 iterateAndNextNull(selp->fromp()); puts(", ");
 	    } else {
 		putbs("VL_ASSIGNSEL_");
-		emitIQW (selp->fromp());
+                emitIQW(selp->fromp());
 		puts("II");
 		emitIQW(nodep->rhsp());
 		puts("(");
@@ -892,17 +892,17 @@ class EmitCImp : EmitCStmts {
 	    // We should move them to a different stage.
 	    string filename = VL_DEV_NULL;
 	    newCFile(filename, slow, source);
-	    ofp = new V3OutCFile (filename);
+            ofp = new V3OutCFile(filename);
 	}
 	else if (optSystemC()) {
 	    string filename = filenameNoExt+(source?".cpp":".h");
 	    newCFile(filename, slow, source);
-	    ofp = new V3OutScFile (filename);
+            ofp = new V3OutScFile(filename);
 	}
 	else {
 	    string filename = filenameNoExt+(source?".cpp":".h");
 	    newCFile(filename, slow, source);
-	    ofp = new V3OutCFile  (filename);
+            ofp = new V3OutCFile(filename);
 	}
 
 	ofp->putsHeader();
@@ -1303,7 +1303,7 @@ void EmitCStmts::emitVarCtors(bool* firstp) {
 		puts("("); putsQuoted(varp->name()); puts(")");
 	    }
 	}
-	puts ("\n#endif\n");
+        puts("\n#endif\n");
 	ofp()->indentDec();
     }
 }
@@ -2297,7 +2297,7 @@ void EmitCStmts::emitSortedVarList(const VarVec& anons,
 }
 
 struct CmpName {
-    inline bool operator () (const AstNode* lhsp, const AstNode* rhsp) const {
+    inline bool operator() (const AstNode* lhsp, const AstNode* rhsp) const {
 	return lhsp->name() < rhsp->name();
     }
 };
@@ -2730,7 +2730,7 @@ class EmitCTrace : EmitCStmts {
 	cfilep->support(true);
 
 	if (m_ofp) v3fatalSrc("Previous file not closed");
-	m_ofp = new V3OutCFile (filename);
+        m_ofp = new V3OutCFile(filename);
 	m_ofp->putsHeader();
 	m_ofp->puts("// DESCR" "IPTION: Verilator output: Tracing implementation internals\n");
 
@@ -2923,7 +2923,7 @@ class EmitCTrace : EmitCStmts {
 		// Close old file
 		delete m_ofp; m_ofp=NULL;
 		// Open a new file
-		newOutCFile (splitFilenumInc());
+                newOutCFile(splitFilenumInc());
 	    }
 
 	    splitSizeInc(nodep);

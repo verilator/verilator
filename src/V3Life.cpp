@@ -79,7 +79,7 @@ class LifeVarEntry {
     bool		m_setBeforeUse;	// First access was a set (and thus block above may have a set that can be deleted
     bool		m_everSet;	// Was ever assigned (and thus above block may not preserve constant propagation)
 
-    inline void init (bool setBeforeUse) {
+    inline void init(bool setBeforeUse) {
 	m_assignp = NULL;
 	m_constp = NULL;
 	m_setBeforeUse = setBeforeUse;
@@ -185,7 +185,7 @@ public:
 	    m_map.insert(make_pair(nodep,LifeVarEntry(LifeVarEntry::COMPLEXASSIGN())));
 	}
     }
-    void varUsageReplace (AstVarScope* nodep, AstVarRef* varrefp) {
+    void varUsageReplace(AstVarScope* nodep, AstVarRef* varrefp) {
 	// Variable rvalue.  If it references a constant, we can simply replace it
 	LifeMap::iterator it = m_map.find(nodep);
 	if (it != m_map.end()) {
@@ -238,7 +238,7 @@ public:
 	    }
 	}
     }
-    void dualBranch (LifeBlock* life1p, LifeBlock* life2p) {
+    void dualBranch(LifeBlock* life1p, LifeBlock* life2p) {
 	// Find any common sets on both branches of IF and propagate upwards
 	//life1p->lifeDump();
 	//life2p->lifeDump();
@@ -340,8 +340,8 @@ private:
 	// Condition is part of PREVIOUS block
         iterateAndNextNull(nodep->condp());
 	LifeBlock* prevLifep = m_lifep;
-	LifeBlock* ifLifep   = new LifeBlock (prevLifep, m_statep);
-	LifeBlock* elseLifep = new LifeBlock (prevLifep, m_statep);
+        LifeBlock* ifLifep   = new LifeBlock(prevLifep, m_statep);
+        LifeBlock* elseLifep = new LifeBlock(prevLifep, m_statep);
 	{
 	    m_lifep = ifLifep;
             iterateAndNextNull(nodep->ifsp());
@@ -354,7 +354,7 @@ private:
 	}
 	UINFO(4,"   join "<<endl);
 	// Find sets on both flows
-	m_lifep->dualBranch (ifLifep, elseLifep);
+        m_lifep->dualBranch(ifLifep, elseLifep);
 	// For the next assignments, clear any variables that were read or written in the block
 	ifLifep->lifeToAbove();
 	elseLifep->lifeToAbove();
@@ -371,8 +371,8 @@ private:
 	// it as a IF statement, and just don't allow elimination of
 	// variables across the body.
 	LifeBlock* prevLifep = m_lifep;
-	LifeBlock* condLifep = new LifeBlock (prevLifep, m_statep);
-	LifeBlock* bodyLifep = new LifeBlock (prevLifep, m_statep);
+        LifeBlock* condLifep = new LifeBlock(prevLifep, m_statep);
+        LifeBlock* bodyLifep = new LifeBlock(prevLifep, m_statep);
 	{
 	    m_lifep = condLifep;
             iterateAndNextNull(nodep->precondsp());
@@ -397,7 +397,7 @@ private:
 	// It's worse though as an IF(..., JUMPGO) may change the control flow.
 	// Just don't optimize blocks with labels; they're rare - so far.
 	LifeBlock* prevLifep = m_lifep;
-	LifeBlock* bodyLifep = new LifeBlock (prevLifep, m_statep);
+        LifeBlock* bodyLifep = new LifeBlock(prevLifep, m_statep);
 	bool prev_noopt = m_noopt;
 	{
 	    m_lifep = bodyLifep;
@@ -452,7 +452,7 @@ public:
 	m_noopt = false;
         m_tracingCall = false;
 	{
-	    m_lifep = new LifeBlock (NULL, m_statep);
+            m_lifep = new LifeBlock(NULL, m_statep);
             iterate(nodep);
 	    if (m_lifep) { delete m_lifep; m_lifep=NULL; }
 	}

@@ -59,21 +59,21 @@ private:
 	//if (debug()>=9) nodep->dumpTree(cout,"deep:");
 
 	string newvarname = ((string)"__Vdeeptemp"+cvtToStr(m_modp->varNumGetInc()));
-	AstVar* varp = new AstVar (nodep->fileline(), AstVarType::STMTTEMP, newvarname,
-				   // Width, not widthMin, as we may be in middle of BITSEL expression which
-				   // though it's one bit wide, needs the mask in the upper bits.
-				   // (Someday we'll have a valid bitmask instead of widths....)
-				   // See t_func_crc for an example test that requires this
-				   VFlagLogicPacked(), nodep->width());
+        AstVar* varp = new AstVar(nodep->fileline(), AstVarType::STMTTEMP, newvarname,
+                                  // Width, not widthMin, as we may be in middle of BITSEL expression which
+                                  // though it's one bit wide, needs the mask in the upper bits.
+                                  // (Someday we'll have a valid bitmask instead of widths....)
+                                  // See t_func_crc for an example test that requires this
+                                  VFlagLogicPacked(), nodep->width());
 	if (!m_funcp) nodep->v3fatalSrc("Deep expression not under a function");
 	m_funcp->addInitsp(varp);
 	// Replace node tree with reference to var
-	AstVarRef* newp = new AstVarRef (nodep->fileline(), varp, false);
+        AstVarRef* newp = new AstVarRef(nodep->fileline(), varp, false);
 	nodep->replaceWith(newp);
 	// Put assignment before the referencing statement
-	AstAssign* assp = new AstAssign (nodep->fileline(),
-					 new AstVarRef(nodep->fileline(), varp, true),
-					 nodep);
+        AstAssign* assp = new AstAssign(nodep->fileline(),
+                                        new AstVarRef(nodep->fileline(), varp, true),
+                                        nodep);
 	AstNRelinker linker2;
 	m_stmtp->unlinkFrBack(&linker2);
 	assp->addNext(m_stmtp);

@@ -80,9 +80,9 @@ void V3Error::init() {
     }
 }
 
-string V3Error::lineStr (const char* filename, int lineno) {
+string V3Error::lineStr(const char* filename, int lineno) {
     std::ostringstream out;
-    const char* fnslashp = strrchr (filename, '/');
+    const char* fnslashp = strrchr(filename, '/');
     if (fnslashp) filename = fnslashp+1;
     out<<filename<<":"<<std::dec<<lineno<<":";
     const char* const spaces = "                    ";
@@ -94,7 +94,7 @@ string V3Error::lineStr (const char* filename, int lineno) {
 void V3Error::incErrors() {
     s_errCount++;
     if (errorCount() == errorLimit()) {  // Not >= as would otherwise recurse
-	v3fatal ("Exiting due to too many errors encountered; --error-limit="<<errorCount()<<endl);
+        v3fatal("Exiting due to too many errors encountered; --error-limit="<<errorCount()<<endl);
     }
 }
 
@@ -137,7 +137,7 @@ string V3Error::msgPrefix() {
 //======================================================================
 // Abort/exit
 
-void V3Error::vlAbort () {
+void V3Error::vlAbort() {
     if (V3Error::debugDefault()) {
         std::cerr<<msgPrefix()<<"Aborting since under --debug"<<endl;
 	abort();

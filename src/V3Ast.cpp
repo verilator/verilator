@@ -593,7 +593,7 @@ void AstNode::relinkOneLink(AstNode*& pointpr,  // Ref to pointer that gets set 
     pointpr = newp;
 }
 
-void AstNode::addHereThisAsNext (AstNode* newp) {
+void AstNode::addHereThisAsNext(AstNode* newp) {
     // {old}->this->{next} becomes {old}->new->this->{next}
     AstNRelinker handle;
     this->unlinkFrBackWithNext(&handle);
@@ -601,7 +601,7 @@ void AstNode::addHereThisAsNext (AstNode* newp) {
     handle.relink(newp);
 }
 
-void AstNode::swapWith (AstNode* bp) {
+void AstNode::swapWith(AstNode* bp) {
     AstNRelinker aHandle;
     AstNRelinker bHandle;
     this->unlinkFrBack(&aHandle);

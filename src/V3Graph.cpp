@@ -81,9 +81,9 @@ void V3GraphVertex::rerouteEdges(V3Graph* graphp) {
     // Make new edges for each from/to pair
     for (V3GraphEdge* iedgep = inBeginp(); iedgep; iedgep=iedgep->inNextp()) {
 	for (V3GraphEdge* oedgep = outBeginp(); oedgep; oedgep=oedgep->outNextp()) {
-	    new V3GraphEdge (graphp, iedgep->fromp(), oedgep->top(),
-                             std::min(iedgep->weight(),oedgep->weight()),
-			     iedgep->cutable() && oedgep->cutable());
+            new V3GraphEdge(graphp, iedgep->fromp(), oedgep->top(),
+                            std::min(iedgep->weight(),oedgep->weight()),
+                            iedgep->cutable() && oedgep->cutable());
 	}
     }
     // Remove old edges
@@ -292,10 +292,10 @@ void V3Graph::dump(std::ostream& os) {
 	os<<endl;
 	// Print edges
 	for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep=edgep->inNextp()) {
-	    dumpEdge (os, vertexp, edgep);
+            dumpEdge(os, vertexp, edgep);
 	}
 	for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
-	    dumpEdge (os, vertexp, edgep);
+            dumpEdge(os, vertexp, edgep);
 	}
     }
 }

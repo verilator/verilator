@@ -3,14 +3,14 @@
 #include <verilated.h>
 #include "Vt_math_imm2.h"
 
-QData MaskVal (int lbit, int hbit) {
+QData MaskVal(int lbit, int hbit) {
     QData val;
     for (val = 0; lbit <= hbit; lbit++)
 	val |= (1ULL << lbit);
     return val;
 }
 
-int main (int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
     Verilated::debug(0);
 
     Vt_math_imm2 *sim = new Vt_math_imm2;
@@ -28,15 +28,15 @@ int main (int argc, char *argv[]) {
 
 	    sim->eval();
 
-	    expected = (MaskVal (sim->LowMaskSel_Top, sim->HighMaskSel_Top) << 32ULL)
-		        | MaskVal (sim->LowMaskSel_Bot, sim->HighMaskSel_Bot);
+            expected = (MaskVal(sim->LowMaskSel_Top, sim->HighMaskSel_Top) << 32ULL)
+                        | MaskVal(sim->LowMaskSel_Bot, sim->HighMaskSel_Bot);
 
 	    if (sim->LogicImm != expected) {
-		printf ("%%Error: %d.%d,%d.%d -> %016" VL_PRI64 "x/%016" VL_PRI64 "x -> %016" VL_PRI64 "x (expected %016" VL_PRI64 "x)\n",
-			sim->LowMaskSel_Top, sim->HighMaskSel_Top,
-			sim->LowMaskSel_Bot, sim->HighMaskSel_Bot,
-			sim->LowLogicImm, sim->HighLogicImm,
-			sim->LogicImm,  expected);
+                printf("%%Error: %d.%d,%d.%d -> %016" VL_PRI64 "x/%016" VL_PRI64 "x -> %016" VL_PRI64 "x (expected %016" VL_PRI64 "x)\n",
+                       sim->LowMaskSel_Top, sim->HighMaskSel_Top,
+                       sim->LowMaskSel_Bot, sim->HighMaskSel_Bot,
+                       sim->LowLogicImm, sim->HighLogicImm,
+                       sim->LogicImm,  expected);
 		errs=1;
 	    }
 	}
@@ -46,7 +46,7 @@ int main (int argc, char *argv[]) {
 	vl_stop(__FILE__, __LINE__, "TOP-cpp");
 	exit(10);
     } else {
-	printf ("*-* All Finished *-*\n");
+        printf("*-* All Finished *-*\n");
 	exit(0);
     }
 }

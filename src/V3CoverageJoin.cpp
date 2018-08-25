@@ -85,7 +85,7 @@ private:
 		    // The CoverDecl the duplicate pointed to now needs to point to the original's data
 		    // IE the duplicate will get the coverage number from the non-duplicate
 		    AstCoverDecl* datadeclp = nodep->incp()->declp()->dataDeclThisp();
-		    removep->incp()->declp()->dataDeclp (datadeclp);
+                    removep->incp()->declp()->dataDeclp(datadeclp);
 		    UINFO(8,"   new "<<removep->incp()->declp()<<endl);
 		    // Mark the found node as a duplicate of the first node
 		    // (Not vice-versa as we have the iterator for the found node)

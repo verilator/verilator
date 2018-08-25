@@ -68,13 +68,13 @@ private:
 	    // Create:  VARREF(inpclk)
 	    //          ...
 	    //          ASSIGN(VARREF(inpclk), VARREF(var))
-	    AstVar* newvarp = new AstVar (varp->fileline(), AstVarType::MODULETEMP, newvarname, varp);
+            AstVar* newvarp = new AstVar(varp->fileline(), AstVarType::MODULETEMP, newvarname, varp);
 	    m_topModp->addStmtp(newvarp);
 	    AstVarScope* newvscp = new AstVarScope(vscp->fileline(), m_scopetopp, newvarp);
 	    m_scopetopp->addVarp(newvscp);
-	    AstAssign* asninitp = new AstAssign (vscp->fileline(),
-						 new AstVarRef(vscp->fileline(), newvscp, true),
-						 new AstVarRef(vscp->fileline(), vscp, false));
+            AstAssign* asninitp = new AstAssign(vscp->fileline(),
+                                                new AstVarRef(vscp->fileline(), newvscp, true),
+                                                new AstVarRef(vscp->fileline(), vscp, false));
 	    m_scopetopp->addFinalClkp(asninitp);
 	    //
 	    vscp->user2p(newvscp);

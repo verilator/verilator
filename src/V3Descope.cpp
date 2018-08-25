@@ -192,20 +192,19 @@ private:
 			}
 		    }
 
-		    AstNode* returnp = new AstCReturn (funcp->fileline(),
-						       new AstCCall (funcp->fileline(),
-								     funcp,
-								     argsp));
+                    AstNode* returnp = new AstCReturn(funcp->fileline(),
+                                                      new AstCCall(funcp->fileline(),
+                                                                   funcp, argsp));
 
 		    if (moreOfSame) {
-			AstIf* ifp = new AstIf (funcp->fileline(),
-						new AstEq(funcp->fileline(),
-							  new AstCMath(funcp->fileline(),
-								       "this", 64),
-							  new AstCMath(funcp->fileline(),
-								       string("&(")
-								       +funcp->scopep()->nameVlSym()
-								       +")", 64)),
+                        AstIf* ifp = new AstIf(funcp->fileline(),
+                                               new AstEq(funcp->fileline(),
+                                                         new AstCMath(funcp->fileline(),
+                                                                      "this", 64),
+                                                         new AstCMath(funcp->fileline(),
+                                                                      string("&(")
+                                                                      +funcp->scopep()->nameVlSym()
+                                                                      +")", 64)),
 						returnp, NULL);
 			newfuncp->addStmtsp(ifp);
 		    } else {

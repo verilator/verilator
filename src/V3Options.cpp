@@ -245,7 +245,7 @@ string V3Options::allArgsString() {
 //######################################################################
 // V3LangCode class functions
 
-V3LangCode::V3LangCode (const char* textp) {
+V3LangCode::V3LangCode(const char* textp) {
     // Return code for given string, or ERROR, which is a bad code
     for (int codei=V3LangCode::L_ERROR; codei<V3LangCode::_ENUM_END; ++codei) {
 	V3LangCode code = (V3LangCode)codei;
@@ -286,7 +286,7 @@ void V3Options::fileNfsFlush(const string& filename) {
     }
 }
 
-string V3Options::fileExists (const string& filename) {
+string V3Options::fileExists(const string& filename) {
     // Surprisingly, for VCS and other simulators, this process
     // is quite slow; presumably because of re-reading each directory
     // many times.  So we read a whole dir at once and cache it
@@ -317,7 +317,7 @@ string V3Options::fileExists (const string& filename) {
 	return "";  // Not found
     }
     // Check if it is a directory, ignore if so
-    string filenameOut = V3Os::filenameFromDirBase (dir, basename);
+    string filenameOut = V3Os::filenameFromDirBase(dir, basename);
     if (!fileStatNormal(filenameOut)) return "";   // Directory
     return filenameOut;
 }
@@ -335,8 +335,8 @@ string V3Options::filePathCheckOneDir(const string& modname, const string& dirna
     return "";
 }
 
-string V3Options::filePath (FileLine* fl, const string& modname, const string& lastpath,
-			    const string& errmsg) {   // Error prefix or "" to suppress error
+string V3Options::filePath(FileLine* fl, const string& modname, const string& lastpath,
+                           const string& errmsg) {  // Error prefix or "" to suppress error
     // Find a filename to read the specified module name,
     // using the incdir and libext's.
     // Return "" if not found.
@@ -533,7 +533,7 @@ void V3Options::throwSigsegv() {
 //######################################################################
 // V3 Options utilities
 
-string V3Options::argString (int argc, char** argv) {
+string V3Options::argString(int argc, char** argv) {
     // Return list of arguments as simple string
     string opts;
     for (int i=0; i<argc; ++i)  {
@@ -546,10 +546,10 @@ string V3Options::argString (int argc, char** argv) {
 //######################################################################
 // V3 Options Parsing
 
-void V3Options::parseOpts (FileLine* fl, int argc, char** argv) {
+void V3Options::parseOpts(FileLine* fl, int argc, char** argv) {
     // Parse all options
     // Inital entry point from Verilator.cpp
-    parseOptsList (fl, ".", argc, argv);
+    parseOptsList(fl, ".", argc, argv);
 
     // Default certain options and error check
     // Detailed error, since this is what we often get when run with minimal arguments
@@ -599,10 +599,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	if (argv[i][0]=='+') {
 	    char *sw = argv[i];
 	    if ( !strncmp (sw, "+define+", 8)) {
-		addDefine (string (sw+strlen("+define+")), true);
+                addDefine(string(sw+strlen("+define+")), true);
 	    }
 	    else if ( !strncmp (sw, "+incdir+", 8)) {
-		addIncDirUser (parseFileArg(optdir, string (sw+strlen("+incdir+"))));
+                addIncDirUser(parseFileArg(optdir, string(sw+strlen("+incdir+"))));
 	    }
 	    else if (parseLangExt(sw, "+systemverilogext+", V3LangCode::L1800_2017)
 		     || parseLangExt(sw, "+verilog1995ext+", V3LangCode::L1364_1995)
@@ -621,17 +621,17 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		string exts = string(sw+strlen("+libext+"));
 		string::size_type pos;
 		while ((pos=exts.find("+")) != string::npos) {
-		    addLibExtV (exts.substr(0,pos));
+                    addLibExtV(exts.substr(0,pos));
 		    exts = exts.substr(pos+1);
 		}
-		addLibExtV (exts);
+                addLibExtV(exts);
 	    }
 	    else if ( !strcmp (sw, "+librescan")) { // NOP
 	    }
 	    else if ( !strcmp (sw, "+notimingchecks")) { // NOP
 	    }
 	    else {
-		fl->v3fatal ("Invalid Option: "<<argv[i]);
+                fl->v3fatal("Invalid Option: "<<argv[i]);
 	    }
 	    shift;
 	} // + options
@@ -762,7 +762,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		m_convergeLimit = atoi(argv[i]);
 	    }
 	    else if ( !strncmp (sw, "-D", 2)) {
-		addDefine (string (sw+strlen("-D")), false);
+                addDefine(string(sw+strlen("-D")), false);
 	    }
 	    else if ( !strcmp (sw, "-debug") ) {
 		setDebugMode(3);
@@ -791,10 +791,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    }
 	    else if ( !strcmp (sw, "-FI") && (i+1)<argc ) {
 		shift;
-		addForceInc(parseFileArg(optdir, string (argv[i])));
+                addForceInc(parseFileArg(optdir, string(argv[i])));
 	    }
 	    else if ( !strncmp (sw, "-G", strlen("-G"))) {
-		addParameter(string (sw+strlen("-G")), false);
+                addParameter(string(sw+strlen("-G")), false);
 	    }
             else if ( !strcmp (sw, "-gate-stmts") && (i+1)<argc ) {
                 shift;
@@ -806,7 +806,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		exit(0);
 	    }
 	    else if ( !strncmp (sw, "-I", 2)) {
-		addIncDirUser(parseFileArg(optdir, string (sw+strlen("-I"))));
+                addIncDirUser(parseFileArg(optdir, string(sw+strlen("-I"))));
 	    }
 	    else if ( !strcmp (sw, "-if-depth") && (i+1)<argc ) {
 		shift;
@@ -842,7 +842,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    }
 	    else if ( !strcmp (sw, "-Mdir") && (i+1)<argc ) {
 		shift; m_makeDir = argv[i];
-		addIncDirFallback (m_makeDir);	 // Need to find generated files there too
+                addIncDirFallback(m_makeDir);  // Need to find generated files there too
 	    }
 	    else if ( !strcmp (sw, "-o") && (i+1)<argc ) {
 		shift; m_exeName = argv[i];
@@ -876,7 +876,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		m_traceMaxWidth = atoi(argv[i]);
 	    }
 	    else if ( !strncmp (sw, "-U", 2)) {
-		V3PreShell::undef (string (sw+strlen("-U")));
+                V3PreShell::undef(string(sw+strlen("-U")));
 	    }
 	    else if ( !strcmp (sw, "-unroll-count") ) { // Undocumented optimization tweak
 		shift;
@@ -1058,10 +1058,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		}
 	    }
 	    else if ( !strcmp (sw, "-y") && (i+1)<argc ) {
-		shift; addIncDirUser (parseFileArg(optdir,string (argv[i])));
+                shift; addIncDirUser(parseFileArg(optdir,string(argv[i])));
 	    }
 	    else {
-		fl->v3fatal ("Invalid Option: "<<argv[i]);
+                fl->v3fatal("Invalid Option: "<<argv[i]);
 	    }
 	    shift;
 	} // - options
@@ -1178,9 +1178,9 @@ string V3Options::parseFileArg(const string& optdir, const string& relfilename) 
 //======================================================================
 
 //! Utility to see if we have a language extension argument and if so add it.
-bool V3Options::parseLangExt (const char* swp, //!< argument text
-			      const char* langswp, //!< option to match
-			      const V3LangCode& lc) { //!< language code
+bool V3Options::parseLangExt(const char* swp,  //!< argument text
+                             const char* langswp,  //!< option to match
+                             const V3LangCode& lc) {  //!< language code
     int len = strlen(langswp);
     if (!strncmp(swp, langswp, len)) {
 	addLangExt(swp + len, lc);

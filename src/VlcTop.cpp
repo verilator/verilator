@@ -85,7 +85,7 @@ void VlcTop::writeCoverage(const string& filename) {
 //********************************************************************
 
 struct CmpComputrons {
-    inline bool operator () (const VlcTest* lhsp, const VlcTest* rhsp) const {
+    inline bool operator() (const VlcTest* lhsp, const VlcTest* rhsp) const {
 	if (lhsp->computrons() != rhsp->computrons()) {
 	    return lhsp->computrons() < rhsp->computrons();
 	}

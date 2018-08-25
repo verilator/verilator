@@ -128,25 +128,25 @@ private:
 	    varp = it->second;
 	} else {
 	    if (newdtypep) {
-		varp = new AstVar (oldvarscp->fileline(), AstVarType::BLOCKTEMP, name, newdtypep);
+                varp = new AstVar(oldvarscp->fileline(), AstVarType::BLOCKTEMP, name, newdtypep);
 	    } else if (width==0) {
-		varp = new AstVar (oldvarscp->fileline(), AstVarType::BLOCKTEMP, name, oldvarscp->varp());
+                varp = new AstVar(oldvarscp->fileline(), AstVarType::BLOCKTEMP, name, oldvarscp->varp());
 		varp->dtypeFrom(oldvarscp);
 	    } else { // Used for vset and dimensions, so can zero init
-		varp = new AstVar (oldvarscp->fileline(), AstVarType::BLOCKTEMP, name, VFlagBitPacked(), width);
+                varp = new AstVar(oldvarscp->fileline(), AstVarType::BLOCKTEMP, name, VFlagBitPacked(), width);
 	    }
 	    addmodp->addStmtp(varp);
 	    m_modVarMap.insert(make_pair(make_pair(addmodp, name), varp));
 	}
 
-	AstVarScope* varscp = new AstVarScope (oldvarscp->fileline(), oldvarscp->scopep(), varp);
+        AstVarScope* varscp = new AstVarScope(oldvarscp->fileline(), oldvarscp->scopep(), varp);
 	oldvarscp->scopep()->addVarp(varscp);
 	return varscp;
     }
 
     AstActive* createActivePost(AstVarRef* varrefp) {
-	AstActive* newactp = new AstActive (varrefp->fileline(), "sequentdly",
-					    m_activep->sensesp());
+        AstActive* newactp = new AstActive(varrefp->fileline(), "sequentdly",
+                                           m_activep->sensesp());
         // Was addNext(), but addNextHere() avoids a linear search.
         m_activep->addNextHere(newactp);
 	return newactp;
@@ -224,9 +224,9 @@ private:
 				     +"__"+oldvarp->shortName()+"__v"+cvtToStr(modVecNum));
 		AstVarScope* bitvscp = createVarSc(varrefp->varScopep(), bitvarname, dimp->width(), NULL);
 		AstAssign* bitassignp
-		    = new AstAssign (nodep->fileline(),
-				     new AstVarRef(nodep->fileline(), bitvscp, true),
-				     dimp);
+                    = new AstAssign(nodep->fileline(),
+                                    new AstVarRef(nodep->fileline(), bitvscp, true),
+                                    dimp);
 		nodep->addNextHere(bitassignp);
 		dimreadps.push_front(new AstVarRef(nodep->fileline(), bitvscp, false));
 	    }
@@ -241,9 +241,9 @@ private:
 	    } else {
 		string bitvarname = (string("__Vdlyvlsb__")+oldvarp->shortName()+"__v"+cvtToStr(modVecNum));
 		AstVarScope* bitvscp = createVarSc(varrefp->varScopep(), bitvarname, lsbvaluep->width(), NULL);
-		AstAssign* bitassignp = new AstAssign (nodep->fileline(),
-						       new AstVarRef(nodep->fileline(), bitvscp, true),
-						       lsbvaluep);
+                AstAssign* bitassignp = new AstAssign(nodep->fileline(),
+                                                      new AstVarRef(nodep->fileline(), bitvscp, true),
+                                                      lsbvaluep);
 		nodep->addNextHere(bitassignp);
 		bitreadp = new AstVarRef(nodep->fileline(), bitvscp, false);
 	    }
@@ -274,14 +274,14 @@ private:
 	} else {  // Create new one
 	    string setvarname = (string("__Vdlyvset__")+oldvarp->shortName()+"__v"+cvtToStr(modVecNum));
 	    setvscp = createVarSc(varrefp->varScopep(), setvarname, 1, NULL);
-	    setinitp = new AstAssignPre (nodep->fileline(),
-					 new AstVarRef(nodep->fileline(), setvscp, true),
-					 new AstConst(nodep->fileline(), 0));
+            setinitp = new AstAssignPre(nodep->fileline(),
+                                        new AstVarRef(nodep->fileline(), setvscp, true),
+                                        new AstConst(nodep->fileline(), 0));
 	    AstAssign* setassignp
-		= new AstAssign (nodep->fileline(),
-				 new AstVarRef(nodep->fileline(), setvscp, true),
-				 new AstConst(nodep->fileline(),
-					      V3Number(nodep->fileline(),1,true)));
+                = new AstAssign(nodep->fileline(),
+                                new AstVarRef(nodep->fileline(), setvscp, true),
+                                new AstConst(nodep->fileline(),
+                                             V3Number(nodep->fileline(),1,true)));
 	    nodep->addNextHere(setassignp);
 	}
 	if (m_nextDlyp) {  // Tell next assigndly it can share the variable
@@ -325,10 +325,9 @@ private:
             postLogicp = VN_CAST(finalp->user4p(), If);
 	    if (!postLogicp) nodep->v3fatalSrc("Delayed assignment misoptimized; prev var found w/o associated IF");
 	} else {
-	    postLogicp = new AstIf (nodep->fileline(),
-				    new AstVarRef(nodep->fileline(), setvscp, false),
-				    NULL,
-				    NULL);
+            postLogicp = new AstIf(nodep->fileline(),
+                                   new AstVarRef(nodep->fileline(), setvscp, false),
+                                   NULL, NULL);
 	    UINFO(9,"     Created "<<postLogicp<<endl);
 	    finalp->addBodysp(postLogicp);
 	    finalp->user3p(setvscp);	// Remember IF's vset variable
@@ -406,13 +405,13 @@ private:
 		    string newvarname = (string("__Vdly__")+nodep->varp()->shortName());
 		    dlyvscp = createVarSc(oldvscp, newvarname, 0, NULL);
 		    AstNodeAssign* prep
-			= new AstAssignPre (nodep->fileline(),
-					    new AstVarRef(nodep->fileline(), dlyvscp, true),
-					    new AstVarRef(nodep->fileline(), oldvscp, false));
+                        = new AstAssignPre(nodep->fileline(),
+                                           new AstVarRef(nodep->fileline(), dlyvscp, true),
+                                           new AstVarRef(nodep->fileline(), oldvscp, false));
 		    AstNodeAssign* postp
-			= new AstAssignPost (nodep->fileline(),
-					     new AstVarRef(nodep->fileline(), oldvscp, true),
-					     new AstVarRef(nodep->fileline(), dlyvscp, false));
+                        = new AstAssignPost(nodep->fileline(),
+                                            new AstVarRef(nodep->fileline(), oldvscp, true),
+                                            new AstVarRef(nodep->fileline(), dlyvscp, false));
 		    postp->lhsp()->user2(true);	// Don't detect this assignment
 		    oldvscp->user1p(dlyvscp);  // So we can find it later
 		    // Make new ACTIVE with identical sensitivity tree

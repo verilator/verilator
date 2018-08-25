@@ -22,24 +22,24 @@
 
 #ifdef NEED_EXTERNS
 extern "C" {
-    extern void dpii_call (double in, double* outp);
+    extern void dpii_call(double in, double* outp);
 }
 #endif
 
-void dpii_call (double in, double* outp) {
+void dpii_call(double in, double* outp) {
     *outp = in + 0.1;
 }
 //======================================================================
 
 unsigned int main_time = 0;
 
-double sc_time_stamp () {
+double sc_time_stamp() {
     return main_time;
 }
 
 VM_PREFIX* topp = NULL;
 
-int main (int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
     topp = new VM_PREFIX;
 
     Verilated::debug(0);

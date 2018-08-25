@@ -54,7 +54,7 @@ public:
     V3Number& setLong(uint32_t value);
     V3Number& setLongS(vlsint32_t value);
     V3Number& setDouble(double value);
-    void setBit (int bit, char value) {		// Note must be pre-zeroed!
+    void setBit(int bit, char value) {  // Note must be pre-zeroed!
 	if (bit>=m_width) return;
 	uint32_t mask = (1UL<<(bit&31));
 	if (value=='0' || value==0) {
@@ -72,14 +72,14 @@ public:
 	}
     }
 private:
-    char bitIs	(int bit) const {
+    char bitIs(int bit) const {
 	if (bit>=m_width || bit<0) {
 	    // We never sign extend
 	    return '0';
 	}
 	return ( "01zx"[(((m_value[bit/32] & (1UL<<(bit&31)))?1:0)
 			 | ((m_valueX[bit/32] & (1UL<<(bit&31)))?2:0))] ); }
-    char bitIsExtend (int bit, int lbits) const {
+    char bitIsExtend(int bit, int lbits) const {
 	// lbits usually = width, but for C optimizations width=32_bits, lbits = 32_or_less
 	if (bit<0) return '0';
 	UASSERT(lbits<=m_width, "Extend of wrong size");
@@ -91,19 +91,19 @@ private:
 	}
 	return ( "01zx"[(((m_value[bit/32] & (1UL<<(bit&31)))?1:0)
 			 | ((m_valueX[bit/32] & (1UL<<(bit&31)))?2:0))] ); }
-    bool bitIs0	(int bit) const {
+    bool bitIs0(int bit) const {
 	if (bit<0) return false;
 	if (bit>=m_width) return !bitIsXZ(m_width-1);
 	return ( (m_value[bit/32] & (1UL<<(bit&31)))==0 && !(m_valueX[bit/32] & (1UL<<(bit&31))) ); }
-    bool bitIs1	(int bit) const {
+    bool bitIs1(int bit) const {
 	if (bit<0) return false;
 	if (bit>=m_width) return false;
 	return ( (m_value[bit/32] & (1UL<<(bit&31))) && !(m_valueX[bit/32] & (1UL<<(bit&31))) ); }
-    bool bitIs1Extend (int bit) const {
+    bool bitIs1Extend(int bit) const {
 	if (bit<0) return false;
 	if (bit>=m_width) return bitIs1Extend(m_width-1);
 	return ( (m_value[bit/32] & (1UL<<(bit&31))) && !(m_valueX[bit/32] & (1UL<<(bit&31))) ); }
-    bool bitIsX (int bit) const {
+    bool bitIsX(int bit) const {
 	if (bit<0) return false;
 	if (bit>=m_width) return bitIsZ(m_width-1);
 	return ( (m_value[bit/32] & (1UL<<(bit&31))) && (m_valueX[bit/32] & (1UL<<(bit&31))) ); }
@@ -112,7 +112,7 @@ private:
 	if (bit>=m_width) return bitIsXZ(m_width-1);
 	return ( (m_valueX[bit/32] & (1UL<<(bit&31))));
     }
-    bool bitIsZ (int bit) const {
+    bool bitIsZ(int bit) const {
 	if (bit<0) return false;
 	if (bit>=m_width) return bitIsZ(m_width-1);
 	return ( (~m_value[bit/32] & (1UL<<(bit&31))) && (m_valueX[bit/32] & (1UL<<(bit&31))) ); }

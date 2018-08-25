@@ -49,11 +49,11 @@ public:
 	VERILOG_WIDTH
     };
     enum en m_e;
-    inline VWidthMinUsage () : m_e(LINT_WIDTH) {}
+    inline VWidthMinUsage() : m_e(LINT_WIDTH) {}
     // cppcheck-suppress noExplicitConstructor
-    inline VWidthMinUsage (en _e) : m_e(_e) {}
-    explicit inline VWidthMinUsage (int _e) : m_e(static_cast<en>(_e)) {}
-    operator en () const { return m_e; }
+    inline VWidthMinUsage(en _e) : m_e(_e) {}
+    explicit inline VWidthMinUsage(int _e) : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
   };
   inline bool operator== (VWidthMinUsage lhs, VWidthMinUsage rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (VWidthMinUsage lhs, VWidthMinUsage::en rhs) { return (lhs.m_e == rhs); }

@@ -48,7 +48,7 @@ static const char* const VLTSAVE_TRAILER_STR = "vltsaved";	///< Value of last by
 //=============================================================================
 // Searalization
 
-bool VerilatedDeserialize::readDiffers (const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
+bool VerilatedDeserialize::readDiffers(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
     bufferCheck();
     const vluint8_t* __restrict dp = (const vluint8_t* __restrict)datap;
     vluint8_t miss = 0;
@@ -58,7 +58,7 @@ bool VerilatedDeserialize::readDiffers (const void* __restrict datap, size_t siz
     return (miss!=0);
 }
 
-VerilatedDeserialize& VerilatedDeserialize::readAssert (const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
+VerilatedDeserialize& VerilatedDeserialize::readAssert(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
     if (VL_UNLIKELY(readDiffers(datap,size))) {
 	std::string fn = filename();
 	std::string msg = std::string("Can't deserialize save-restore file as was made from different model");
@@ -119,8 +119,8 @@ void VerilatedSave::open(const char* filenamep) VL_MT_UNSAFE_ONE {
 	assert(0);	// Not supported yet.
     } else {
 	// cppcheck-suppress duplicateExpression
-	m_fd = ::open (filenamep, O_CREAT|O_WRONLY|O_TRUNC|O_LARGEFILE|O_NONBLOCK
-		       , 0666);
+        m_fd = ::open(filenamep, O_CREAT|O_WRONLY|O_TRUNC|O_LARGEFILE|O_NONBLOCK
+                      , 0666);
 	if (m_fd<0) {
 	    // User code can check isOpen()
 	    m_isOpen = false;
@@ -142,8 +142,8 @@ void VerilatedRestore::open(const char* filenamep) VL_MT_UNSAFE_ONE {
 	assert(0);	// Not supported yet.
     } else {
 	// cppcheck-suppress duplicateExpression
-	m_fd = ::open (filenamep, O_CREAT|O_RDONLY|O_LARGEFILE
-		       , 0666);
+        m_fd = ::open(filenamep, O_CREAT|O_RDONLY|O_LARGEFILE
+                      , 0666);
 	if (m_fd<0) {
 	    // User code can check isOpen()
 	    m_isOpen = false;
@@ -184,7 +184,7 @@ void VerilatedSave::flush() VL_MT_UNSAFE_ONE {
 	ssize_t remaining = (m_cp - wp);
 	if (remaining==0) break;
 	errno = 0;
-	ssize_t got = ::write (m_fd, wp, remaining);
+        ssize_t got = ::write(m_fd, wp, remaining);
 	if (got>0) {
 	    wp += got;
 	} else if (got < 0) {
@@ -213,7 +213,7 @@ void VerilatedRestore::fill() VL_MT_UNSAFE_ONE {
 	ssize_t remaining = (m_bufp+bufferSize() - m_endp);
 	if (remaining==0) break;
 	errno = 0;
-	ssize_t got = ::read (m_fd, m_endp, remaining);
+        ssize_t got = ::read(m_fd, m_endp, remaining);
 	if (got>0) {
 	    m_endp += got;
 	} else if (got < 0) {

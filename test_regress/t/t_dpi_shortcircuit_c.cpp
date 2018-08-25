@@ -37,11 +37,11 @@
 
 #ifdef NEED_EXTERNS
 extern "C" {
-    extern int  dpii_clear ();
-    extern int   dpii_count (int idx);
-    extern unsigned char  dpii_inc0 (int idx);
-    extern unsigned char  dpii_inc1 (int idx);
-    extern unsigned char  dpii_incx (int idx, unsigned char value);
+    extern int dpii_clear();
+    extern int dpii_count(int idx);
+    extern unsigned char dpii_inc0(int idx);
+    extern unsigned char dpii_inc1(int idx);
+    extern unsigned char dpii_incx(int idx, unsigned char value);
 }
 #endif
 
@@ -50,16 +50,16 @@ extern "C" {
 #define COUNTERS 16
 static int global_count[COUNTERS];
 
-int dpii_clear () {
+int dpii_clear() {
     for (int i=0; i<COUNTERS; ++i) global_count[i] = 0;
     return 0;
 }
-int dpii_count (int idx) {
+int dpii_count(int idx) {
     return (idx >= 0 && idx<COUNTERS) ? global_count[idx] : -1;
 }
-unsigned char dpii_incx (int idx, unsigned char value) {
+unsigned char dpii_incx(int idx, unsigned char value) {
     if (idx >= 0 && idx<COUNTERS) global_count[idx]++;
     return value;
 }
-unsigned char dpii_inc0 (int idx) { return dpii_incx(idx,0); }
-unsigned char dpii_inc1 (int idx) { return dpii_incx(idx,1); }
+unsigned char dpii_inc0(int idx) { return dpii_incx(idx,0); }
+unsigned char dpii_inc1(int idx) { return dpii_incx(idx,1); }

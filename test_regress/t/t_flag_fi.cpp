@@ -12,7 +12,7 @@
 
 unsigned int main_time = 0;
 
-double sc_time_stamp () {
+double sc_time_stamp() {
     return main_time;
 }
 
@@ -23,14 +23,14 @@ void myfunction() {
     gotit = true;
 }
 
-int main (int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
     topp = new VM_PREFIX;
 
     Verilated::debug(0);
 
     topp->eval();
     if (!gotit) {
-	vl_fatal (__FILE__, __LINE__, "dut", "Never got call to myfunction");
+        vl_fatal(__FILE__, __LINE__, "dut", "Never got call to myfunction");
     }
 
     topp->final();

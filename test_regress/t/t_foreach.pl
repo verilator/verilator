@@ -19,12 +19,12 @@ execute(
 
 # We expect all loops should be unrolled by verilator,
 # none of the loop variables should exist in the output:
-file_grep_not ("$Self->{obj_dir}/$Self->{VM_PREFIX}.cpp", qr/index_/);
+file_grep_not("$Self->{obj_dir}/$Self->{VM_PREFIX}.cpp", qr/index_/);
 
 # Further, we expect that all logic within the loop should
 # have been evaluated inside the compiler. So there should be
 # no references to 'sum' in the .cpp.
-file_grep_not ("$Self->{obj_dir}/$Self->{VM_PREFIX}.cpp", qr/sum/);
+file_grep_not("$Self->{obj_dir}/$Self->{VM_PREFIX}.cpp", qr/sum/);
 
 ok(1);
 1;

@@ -92,19 +92,19 @@ protected:
     friend class V3PreLex;
     friend class V3PreProcImp;
     void lineno(int num) { m_lineno = num; }
-    void language (V3LangCode lang) { singleton().numberToLang(m_filenameno, lang); }
+    void language(V3LangCode lang) { singleton().numberToLang(m_filenameno, lang); }
     void filename(const string& name) { m_filenameno = singleton().nameToNumber(name); }
     void lineDirective(const char* textp, int& enterExitRef);
     void linenoInc() { m_lineno++; }
     void linenoIncInPlace() { m_lineno++; }
     FileLine* copyOrSameFileLine();
 public:
-    FileLine (const string& filename, int lineno) {
+    FileLine(const string& filename, int lineno) {
 	m_lineno=lineno; m_filenameno = singleton().nameToNumber(filename);
 	m_warnOn=defaultFileLine().m_warnOn; }
-    explicit FileLine (FileLine* fromp) {
+    explicit FileLine(FileLine* fromp) {
 	m_lineno=fromp->m_lineno; m_filenameno = fromp->m_filenameno; m_warnOn=fromp->m_warnOn; }
-    explicit FileLine (EmptySecret);
+    explicit FileLine(EmptySecret);
     ~FileLine() { }
     FileLine* create(const string& filename, int lineno) { return new FileLine(filename,lineno); }
     FileLine* create(int lineno) { return create(filename(), lineno); }
@@ -114,13 +114,13 @@ public:
     static void operator delete(void* obj, size_t size);
 #endif
 
-    int lineno () const { return m_lineno; }
-    V3LangCode language () const { return singleton().numberToLang(m_filenameno); }
+    int lineno() const { return m_lineno; }
+    V3LangCode language() const { return singleton().numberToLang(m_filenameno); }
     string ascii() const;
-    const string filename () const { return singleton().numberToName(m_filenameno); }
+    const string filename() const { return singleton().numberToName(m_filenameno); }
     const string filenameLetters() const { return singleton().filenameLetters(m_filenameno); }
-    const string filebasename () const;
-    const string filebasenameNoExt () const;
+    const string filebasename() const;
+    const string filebasenameNoExt() const;
     const string profileFuncname() const;
     const string xml() const { return "fl=\""+filenameLetters()+cvtToStr(lineno())+"\""; }
     string lineDirectiveStrg(int enter_exit_level) const;

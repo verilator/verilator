@@ -175,29 +175,29 @@ private:
 	++m_statTablesCre;
 
 	// Index into our table
-	AstVar* indexVarp = new AstVar (nodep->fileline(), AstVarType::BLOCKTEMP,
-					"__Vtableidx" + cvtToStr(m_modTables),
-					VFlagBitPacked(), m_inWidth);
+        AstVar* indexVarp = new AstVar(nodep->fileline(), AstVarType::BLOCKTEMP,
+                                       "__Vtableidx" + cvtToStr(m_modTables),
+                                       VFlagBitPacked(), m_inWidth);
 	m_modp->addStmtp(indexVarp);
-	AstVarScope* indexVscp = new AstVarScope (indexVarp->fileline(), m_scopep, indexVarp);
+        AstVarScope* indexVscp = new AstVarScope(indexVarp->fileline(), m_scopep, indexVarp);
 	m_scopep->addVarp(indexVscp);
 
 	// Change it variable
 	FileLine* fl = nodep->fileline();
 	AstNodeArrayDType* dtypep
-	    = new AstUnpackArrayDType (fl,
-				       nodep->findBitDType(m_outVarps.size(),
-							   m_outVarps.size(), AstNumeric::UNSIGNED),
-				       new AstRange (fl, VL_MASK_I(m_inWidth), 0));
+            = new AstUnpackArrayDType(fl,
+                                      nodep->findBitDType(m_outVarps.size(),
+                                                          m_outVarps.size(), AstNumeric::UNSIGNED),
+                                      new AstRange(fl, VL_MASK_I(m_inWidth), 0));
 	v3Global.rootp()->typeTablep()->addTypesp(dtypep);
 	AstVar* chgVarp
-	    = new AstVar (fl, AstVarType::MODULETEMP,
-			  "__Vtablechg" + cvtToStr(m_modTables),
-			  dtypep);
+            = new AstVar(fl, AstVarType::MODULETEMP,
+                         "__Vtablechg" + cvtToStr(m_modTables),
+                         dtypep);
 	chgVarp->isConst(true);
-	chgVarp->valuep(new AstInitArray (nodep->fileline(), dtypep, NULL));
+        chgVarp->valuep(new AstInitArray(nodep->fileline(), dtypep, NULL));
 	m_modp->addStmtp(chgVarp);
-	AstVarScope* chgVscp = new AstVarScope (chgVarp->fileline(), m_scopep, chgVarp);
+        AstVarScope* chgVscp = new AstVarScope(chgVarp->fileline(), m_scopep, chgVarp);
 	m_scopep->addVarp(chgVscp);
 
 	createTableVars(nodep);
@@ -233,16 +233,16 @@ private:
 	    AstVar* outvarp = outvscp->varp();
 	    FileLine* fl = nodep->fileline();
 	    AstNodeArrayDType* dtypep
-		= new AstUnpackArrayDType (fl, outvarp->dtypep(),
-					   new AstRange (fl, VL_MASK_I(m_inWidth), 0));
+                = new AstUnpackArrayDType(fl, outvarp->dtypep(),
+                                          new AstRange(fl, VL_MASK_I(m_inWidth), 0));
 	    v3Global.rootp()->typeTablep()->addTypesp(dtypep);
 	    AstVar* tablevarp
-		= new AstVar (fl, AstVarType::MODULETEMP,
-			      "__Vtable" + cvtToStr(m_modTables) +"_"+outvarp->name(),
-			      dtypep);
+                = new AstVar(fl, AstVarType::MODULETEMP,
+                             "__Vtable" + cvtToStr(m_modTables) +"_"+outvarp->name(),
+                             dtypep);
 	    tablevarp->isConst(true);
 	    tablevarp->isStatic(true);
-	    tablevarp->valuep(new AstInitArray (nodep->fileline(), dtypep, NULL));
+            tablevarp->valuep(new AstInitArray(nodep->fileline(), dtypep, NULL));
 	    m_modp->addStmtp(tablevarp);
 	    AstVarScope* tablevscp = new AstVarScope(tablevarp->fileline(), m_scopep, tablevarp);
 	    m_scopep->addVarp(tablevscp);
@@ -256,15 +256,15 @@ private:
 	AstNode* concatp = NULL;
         for (std::deque<AstVarScope*>::iterator it = m_inVarps.begin(); it!=m_inVarps.end(); ++it) {
 	    AstVarScope* invscp = *it;
-	    AstVarRef* refp = new AstVarRef (nodep->fileline(), invscp, false);
+            AstVarRef* refp = new AstVarRef(nodep->fileline(), invscp, false);
 	    if (concatp) {
-		concatp = new AstConcat (nodep->fileline(), refp, concatp);
+                concatp = new AstConcat(nodep->fileline(), refp, concatp);
 	    } else concatp = refp;
 	}
 
 	AstNode* stmtsp = new AstAssign
 	    (nodep->fileline(),
-	     new AstVarRef (nodep->fileline(), indexVscp, true),
+             new AstVarRef(nodep->fileline(), indexVscp, true),
 	     concatp);
 	return stmtsp;
     }
@@ -317,14 +317,14 @@ private:
 		    UINFO(8,"   Output "<<outvscp->name()<<" never set\n");
 		    m_outNotSet[outnum] = true;
 		    // Value in table is arbitrary, but we need something
-		    setp = new AstConst (outvscp->fileline(),
-					 V3Number(outvscp->fileline(), outvscp->width(), 0));
+                    setp = new AstConst(outvscp->fileline(),
+                                        V3Number(outvscp->fileline(), outvscp->width(), 0));
 		} else {
 		    UINFO(8,"   Output "<<outvscp->name()<<" = "<<*outnump<<endl);
 		    //  m_tableVarps[inValue] = num;
 		    // Mark changed bit, too
 		    outputChgMask.setBit(outnum, 1);
-		    setp = new AstConst (outnump->fileline(), *outnump);
+                    setp = new AstConst(outnump->fileline(), *outnump);
 		}
 		// Note InitArray requires us to have the values in inValue order
                 VN_CAST(m_tableVarps[outnum]->varp()->valuep(), InitArray)->addValuep(setp);
@@ -334,7 +334,7 @@ private:
 	    {   // Set changed table
 		if (inValue != inValueNextInitArray++)
 		    nodep->v3fatalSrc("InitArray requires us to have the values in inValue order");
-		AstNode* setp = new AstConst (nodep->fileline(), outputChgMask);
+                AstNode* setp = new AstConst(nodep->fileline(), outputChgMask);
                 VN_CAST(chgVscp->varp()->valuep(), InitArray)->addValuep(setp);
 	    }
 	} // each value
@@ -377,21 +377,21 @@ private:
 					     new AstVarRef(nodep->fileline(), m_tableVarps[outnum], false),
 					     new AstVarRef(nodep->fileline(), indexVscp, false));
 	    AstNode* outasnp = (m_assignDly
-				? (AstNode*)(new AstAssignDly (nodep->fileline(), alhsp, arhsp))
-				: (AstNode*)(new AstAssign (nodep->fileline(), alhsp, arhsp)));
+                                ? (AstNode*)(new AstAssignDly(nodep->fileline(), alhsp, arhsp))
+                                : (AstNode*)(new AstAssign(nodep->fileline(), alhsp, arhsp)));
 	    AstNode* outsetp = outasnp;
 
 	    // Is the value set in only some branches of the table?
 	    if (m_outNotSet[outnum]) {
 		V3Number outputChgMask (nodep->fileline(), m_outVarps.size(), 0);
 		outputChgMask.setBit(outnum,1);
-		outsetp = new AstIf (nodep->fileline(),
-				     new AstAnd(nodep->fileline(),
-						new AstArraySel(nodep->fileline(),
-								new AstVarRef(nodep->fileline(), chgVscp, false),
-								new AstVarRef(nodep->fileline(), indexVscp, false)),
-						new AstConst(nodep->fileline(), outputChgMask)),
-				     outsetp, NULL);
+                outsetp = new AstIf(nodep->fileline(),
+                                    new AstAnd(nodep->fileline(),
+                                               new AstArraySel(nodep->fileline(),
+                                                               new AstVarRef(nodep->fileline(), chgVscp, false),
+                                                               new AstVarRef(nodep->fileline(), indexVscp, false)),
+                                               new AstConst(nodep->fileline(), outputChgMask)),
+                                    outsetp, NULL);
 	    }
 
 	    stmtsp->addNext(outsetp);

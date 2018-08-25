@@ -112,7 +112,7 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
 		m_writeFile = argv[i];
 	    }
 	    else {
-		v3fatal ("Invalid option: "<<argv[i]);
+                v3fatal("Invalid option: "<<argv[i]);
 	    }
 	    shift;
 	} // - options
@@ -121,7 +121,7 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
 	    shift;
 	}
 	else {
-	    v3fatal ("Invalid argument: "<<argv[i]);
+            v3fatal("Invalid argument: "<<argv[i]);
 	    shift;
 	}
     }

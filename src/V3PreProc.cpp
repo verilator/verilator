@@ -238,10 +238,10 @@ public:
     // METHODS, callbacks
     virtual void comment(const string& cmt);		// Comment detected (if keepComments==2)
     virtual void include(const string& filename);	// Request a include file be processed
-    virtual void undef (const string& name);
+    virtual void undef(const string& name);
     virtual void undefineall();
-    virtual void define (FileLine* fl, const string& name, const string& value,
-			 const string& params, bool cmdline);
+    virtual void define(FileLine* fl, const string& name, const string& value,
+                        const string& params, bool cmdline);
     virtual string removeDefines(const string& text);	// Remove defines in a text string
 
     // CONSTRUCTORS
@@ -268,7 +268,7 @@ public:
 	m_preprocp = this;   // Silly, but to make code more similar to Verilog-Perl
 	m_finFilelinep = filelinep->create(1);
 	// Create lexer
-	m_lexp = new V3PreLex (this, filelinep);
+        m_lexp = new V3PreLex(this, filelinep);
 	m_lexp->m_keepComments = m_preprocp->keepComments();
 	m_lexp->m_keepWhitespace = m_preprocp->keepWhitespace();
 	m_lexp->m_pedantic = m_preprocp->pedantic();
@@ -361,7 +361,7 @@ string V3PreProcImp::removeDefines(const string& sym) {
 
 void V3PreProcImp::include(const string& filename) {
     // Include seen.  Ask the preprocessor shell to call back around to us
-    V3PreShell::preprocInclude (fileline(), filename);
+    V3PreShell::preprocInclude(fileline(), filename);
 }
 
 bool V3PreProcImp::commentTokenMatch(string& cmdr, const char* strg) {
@@ -432,10 +432,10 @@ void V3PreProcImp::comment(const string& text) {
 	if (v3Global.opt.assertOn()) {
 	    // one_hot, one_cold, (full_case, parallel_case)
 	    if (commentTokenMatch(cmd/*ref*/, "full_case")) {
-		insertUnreadback ("/*verilator full_case*/");
+                insertUnreadback("/*verilator full_case*/");
 	    }
 	    if (commentTokenMatch(cmd/*ref*/, "parallel_case")) {
-		insertUnreadback ("/*verilator parallel_case*/");
+                insertUnreadback("/*verilator parallel_case*/");
 	    }
 	    //if (commentTokenMatch(cmd/*ref*/, "one_hot")) {
 	    //	insertUnreadback ("/*verilator one_hot*/ "+cmd+";");
@@ -451,9 +451,9 @@ void V3PreProcImp::comment(const string& text) {
 	while (isspace(cmd[0])) cmd = cmd.substr(1);
 	if ((pos=cmd.find("*/")) != string::npos)
 	    cmd.replace(pos, 2, "");
-	insertUnreadback ("/*verilator public_flat_rw*/ "+cmd+" /**/");
+        insertUnreadback("/*verilator public_flat_rw*/ "+cmd+" /**/");
     } else {
-	insertUnreadback ("/*verilator "+cmd+"*/");
+        insertUnreadback("/*verilator "+cmd+"*/");
     }
 }
 
@@ -851,14 +851,14 @@ int V3PreProcImp::getRawToken() {
 
 void V3PreProcImp::debugToken(int tok, const char* cmtp) {
     if (debug()>=5) {
-	string buf = string (yyourtext(), yyourleng());
+        string buf = string(yyourtext(), yyourleng());
 	string::size_type pos;
 	while ((pos=buf.find("\n")) != string::npos) { buf.replace(pos, 1, "\\n"); }
 	while ((pos=buf.find("\r")) != string::npos) { buf.replace(pos, 1, "\\r"); }
-	fprintf (stderr, "%d: %s %s %s(%d) dr%d:  <%d>%-10s: %s\n",
-		 m_lexp->m_tokFilelinep->lineno(), cmtp, m_off?"of":"on",
-		 procStateName(state()), (int)m_states.size(), (int)m_defRefs.size(),
-		 m_lexp->currentStartState(), tokenName(tok), buf.c_str());
+        fprintf(stderr, "%d: %s %s %s(%d) dr%d:  <%d>%-10s: %s\n",
+                m_lexp->m_tokFilelinep->lineno(), cmtp, m_off?"of":"on",
+                procStateName(state()), (int)m_states.size(), (int)m_defRefs.size(),
+                m_lexp->currentStartState(), tokenName(tok), buf.c_str());
     }
 }
 
@@ -880,13 +880,13 @@ int V3PreProcImp::getStateToken() {
 		if (m_lexp->m_keepComments == KEEPCMT_SUB) {
 		    string rtn; rtn.assign(yyourtext(),yyourleng());
 		    comment(rtn);
-		    // Need to insure "foo/**/bar" becomes two tokens
-		    insertUnreadback (" ");
+                    // Need to ensure "foo/**/bar" becomes two tokens
+                    insertUnreadback(" ");
 		} else if (m_lexp->m_keepComments) {
 		    return (tok);
 		} else {
-		    // Need to insure "foo/**/bar" becomes two tokens
-		    insertUnreadback (" ");
+                    // Need to ensure "foo/**/bar" becomes two tokens
+                    insertUnreadback(" ");
 		}
 	    }
 	    // We're off or processed the comment specially.  If there are newlines
@@ -1399,14 +1399,14 @@ int V3PreProcImp::getFinalToken(string& buf) {
     if (!m_finAhead) {
 	m_finAhead = true;
 	m_finToken = getStateToken();
-	m_finBuf = string (yyourtext(), yyourleng());
+        m_finBuf = string(yyourtext(), yyourleng());
     }
     int tok = m_finToken;
     buf = m_finBuf;
     if (0 && debug()>=5) {
 	string bufcln = V3PreLex::cleanDbgStrg(buf);
-	fprintf (stderr,"%d: FIN:      %-10s: %s\n",
-		 m_lexp->m_tokFilelinep->lineno(), tokenName(tok), bufcln.c_str());
+        fprintf(stderr,"%d: FIN:      %-10s: %s\n",
+                m_lexp->m_tokFilelinep->lineno(), tokenName(tok), bufcln.c_str());
     }
     // Track `line
     const char* bufp = buf.c_str();
@@ -1461,8 +1461,8 @@ string V3PreProcImp::getline() {
 	int tok = getFinalToken(buf/*ref*/);
 	if (debug()>=5) {
 	    string bufcln = V3PreLex::cleanDbgStrg(buf);
-	    fprintf (stderr,"%d: GETFETC:  %-10s: %s\n",
-	             m_lexp->m_tokFilelinep->lineno(), tokenName(tok), bufcln.c_str());
+            fprintf(stderr,"%d: GETFETC:  %-10s: %s\n",
+                    m_lexp->m_tokFilelinep->lineno(), tokenName(tok), bufcln.c_str());
 	}
 	if (tok==VP_EOF) {
 	    // Add a final newline, if the user forgot the final \n.
@@ -1482,8 +1482,8 @@ string V3PreProcImp::getline() {
     m_lineChars = m_lineChars.erase(0,len);	// Remove returned characters
     if (debug()>=4) {
 	string lncln = V3PreLex::cleanDbgStrg(theLine);
-	fprintf (stderr,"%d: GETLINE:  %s\n",
-		 m_lexp->m_tokFilelinep->lineno(), lncln.c_str());
+        fprintf(stderr,"%d: GETLINE:  %s\n",
+                m_lexp->m_tokFilelinep->lineno(), lncln.c_str());
     }
     return theLine;
 }

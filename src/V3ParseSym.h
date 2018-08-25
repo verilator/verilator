@@ -116,7 +116,7 @@ public:
 	if (m_sympStack.empty()) { nodep->v3fatalSrc("symbol stack underflow"); return; }
 	m_symCurrentp = m_sympStack.back();
     }
-    void showUpward () {
+    void showUpward() {
 	UINFO(1,"ParseSym Stack:\n");
 	for (SymStack::reverse_iterator it=m_sympStack.rbegin(); it!=m_sympStack.rend(); ++it) {
 	    VSymEnt* symp = *it;
@@ -127,7 +127,7 @@ public:
     void dump(std::ostream& os, const string& indent="") {
 	m_syms.dump(os,indent);
     }
-    AstNode* findEntUpward (const string& name) {
+    AstNode* findEntUpward(const string& name) {
 	// Lookup the given string as an identifier, return type of the id, scanning upward
 	VSymEnt* foundp = symCurrentp()->findIdFallback(name);
 	if (foundp) return foundp->nodep();

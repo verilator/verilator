@@ -179,9 +179,9 @@ private:
                 nodep->v3warn(COMBDLY, "Delayed assignments (<=) in non-clocked"
                               " (non flop or latch) block; suggest blocking assignments (=).");
 	    }
-	    AstNode* newp = new AstAssign (nodep->fileline(),
-					   nodep->lhsp()->unlinkFrBack(),
-					   nodep->rhsp()->unlinkFrBack());
+            AstNode* newp = new AstAssign(nodep->fileline(),
+                                          nodep->lhsp()->unlinkFrBack(),
+                                          nodep->rhsp()->unlinkFrBack());
 	    nodep->replaceWith(newp);
 	    nodep->deleteTree(); VL_DANGLING(nodep);
 	}

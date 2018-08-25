@@ -56,7 +56,7 @@ class UndrivenVarEntry {
 
 public:
     // CONSTRUCTORS
-    explicit UndrivenVarEntry (AstVar* varp) {	// Construction for when a var is used
+    explicit UndrivenVarEntry(AstVar* varp) {  // Construction for when a var is used
 	UINFO(9, "create "<<varp<<endl);
 	m_varp = varp;
 	m_usedWhole = false;
@@ -113,7 +113,7 @@ public:
 	UINFO(9, "set d[*] "<<m_varp->name()<<endl);
 	m_drivenWhole = true;
     }
-    void usedBit (int bit, int width) {
+    void usedBit(int bit, int width) {
 	UINFO(9, "set u["<<(bit+width-1)<<":"<<bit<<"] "<<m_varp->name()<<endl);
 	for (int i=0; i<width; i++) {
 	    if (bitNumOk(bit+i)) {
@@ -121,7 +121,7 @@ public:
 	    }
 	}
     }
-    void drivenBit (int bit, int width) {
+    void drivenBit(int bit, int width) {
 	UINFO(9, "set d["<<(bit+width-1)<<":"<<bit<<"] "<<m_varp->name()<<endl);
 	for (int i=0; i<width; i++) {
 	    if (bitNumOk(bit+i)) {
@@ -129,7 +129,7 @@ public:
 	    }
 	}
     }
-    bool isUsedNotDrivenBit (int bit, int width) const {
+    bool isUsedNotDrivenBit(int bit, int width) const {
 	for (int i=0; i<width; i++) {
 	    if (bitNumOk(bit+i)
 		&& (m_usedWhole || m_flags[(bit+i)*FLAGS_PER_BIT + FLAG_USED])
@@ -137,7 +137,7 @@ public:
 	}
 	return false;
     }
-    bool isUsedNotDrivenAny () const {
+    bool isUsedNotDrivenAny() const {
 	return isUsedNotDrivenBit(0, m_flags.size()/FLAGS_PER_BIT);
     }
     bool unusedMatch(AstVar* nodep) {
@@ -241,7 +241,7 @@ private:
 
     UndrivenVarEntry* getEntryp(AstVar* nodep, int which_user) {
 	if (!(which_user==1 ? nodep->user1p() : nodep->user2p())) {
-	    UndrivenVarEntry* entryp = new UndrivenVarEntry (nodep);
+            UndrivenVarEntry* entryp = new UndrivenVarEntry(nodep);
 	    //UINFO(9," Associate u="<<which_user<<" "<<(void*)this<<" "<<nodep->name()<<endl);
 	    m_entryps[which_user].push_back(entryp);
 	    if (which_user==1) nodep->user1p(entryp);
@@ -270,7 +270,7 @@ private:
 	for (int usr=1; usr<(m_alwaysp?3:2); ++usr) {
 	    // For assigns and non-combo always, do just usr==1, to look for module-wide undriven etc
 	    // For non-combo always, run both usr==1 for above, and also usr==2 for always-only checks
-	    UndrivenVarEntry* entryp = getEntryp (nodep, usr);
+            UndrivenVarEntry* entryp = getEntryp(nodep, usr);
 	    if (nodep->isInput()
 		|| nodep->isSigPublic() || nodep->isSigUserRWPublic()
 		|| (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {
@@ -299,7 +299,7 @@ private:
         AstConst* constp = VN_CAST(nodep->lsbp(), Const);
 	if (varrefp && constp && !constp->num().isFourState()) {
 	    for (int usr=1; usr<(m_alwaysp?3:2); ++usr) {
-		UndrivenVarEntry* entryp = getEntryp (varrefp->varp(), usr);
+                UndrivenVarEntry* entryp = getEntryp(varrefp->varp(), usr);
 		int lsb = constp->toUInt();
 		if (m_inBBox || varrefp->lvalue()) {
 		    // Don't warn if already driven earlier as "a=0; if(a) a=1;" is fine.
@@ -319,7 +319,7 @@ private:
     virtual void visit(AstNodeVarRef* nodep) {
 	// Any variable
 	for (int usr=1; usr<(m_alwaysp?3:2); ++usr) {
-	    UndrivenVarEntry* entryp = getEntryp (nodep->varp(), usr);
+            UndrivenVarEntry* entryp = getEntryp(nodep->varp(), usr);
 	    bool fdrv = nodep->lvalue() && nodep->varp()->attrFileDescr();  // FD's are also being read from
 	    if (m_inBBox || nodep->lvalue()) {
 		if (usr==2 && m_alwaysp && entryp->isUsedNotDrivenAny()) {

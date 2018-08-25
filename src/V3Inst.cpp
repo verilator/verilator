@@ -82,8 +82,8 @@ private:
 	    if (nodep->modVarp()->isInout()) {
 		nodep->v3fatalSrc("Unsupported: Verilator is a 2-state simulator");
 	    } else if (nodep->modVarp()->isOutput()) {
-		AstNode* rhsp = new AstVarXRef (exprp->fileline(), nodep->modVarp(), m_cellp->name(), false);
-		AstAssignW* assp = new AstAssignW (exprp->fileline(), exprp, rhsp);
+                AstNode* rhsp = new AstVarXRef(exprp->fileline(), nodep->modVarp(), m_cellp->name(), false);
+                AstAssignW* assp = new AstAssignW(exprp->fileline(), exprp, rhsp);
                 m_cellp->addNextHere(assp);
 	    } else if (nodep->modVarp()->isInput()) {
 		// Don't bother moving constants now,
@@ -98,7 +98,7 @@ private:
                        || (VN_IS(nodep->modVarp()->subDTypep(), UnpackArrayDType)
                            && VN_IS(VN_CAST(nodep->modVarp()->subDTypep(), UnpackArrayDType)->subDTypep(), IfaceRefDType))) {
 		// Create an AstAssignVarScope for Vars to Cells so we can link with their scope later
-		AstNode* lhsp = new AstVarXRef (exprp->fileline(), nodep->modVarp(), m_cellp->name(), false);
+                AstNode* lhsp = new AstVarXRef(exprp->fileline(), nodep->modVarp(), m_cellp->name(), false);
                 const AstVarRef* refp = VN_CAST(exprp, VarRef);
                 const AstVarXRef* xrefp = VN_CAST(exprp, VarXRef);
 		if (!refp && !xrefp) exprp->v3fatalSrc("Interfaces: Pin is not connected to a VarRef or VarXRef");
@@ -323,8 +323,7 @@ private:
 	    if (expDim.first == pinDim.first && expDim.second == pinDim.second+1) {
 		// Connection to array, where array dimensions match the instant dimension
 		AstNode* exprp = nodep->exprp()->unlinkFrBack();
-		exprp = new AstArraySel (exprp->fileline(), exprp,
-					 m_instSelNum);
+                exprp = new AstArraySel(exprp->fileline(), exprp, m_instSelNum);
 		nodep->exprp(exprp);
 	    } else if (expwidth == pinwidth) {
 		// NOP: Arrayed instants: widths match so connect to each instance
@@ -342,9 +341,9 @@ private:
 		    nodep->v3error("Unsupported: Per-bit array instantiations with output connections to non-wires.");
 		    // Note spec allows more complicated matches such as slices and such
 		}
-		exprp = new AstSel (exprp->fileline(), exprp,
-				    pinwidth*m_instSelNum,
-				    pinwidth);
+                exprp = new AstSel(exprp->fileline(), exprp,
+                                   pinwidth*m_instSelNum,
+                                   pinwidth);
 		nodep->exprp(exprp);
 	    } else {
 		nodep->v3fatalSrc("Width mismatch; V3Width should have errored out.");
@@ -411,7 +410,7 @@ private:
 		// And replace exprp with a new varxref
                 const AstVarRef* varrefp = VN_CAST(newp->exprp(), VarRef);
 		string newname = varrefp->name() + "__BRA__" + cvtToStr(i) + "__KET__";
-		AstVarXRef* newVarXRefp = new AstVarXRef (nodep->fileline(), newname, "", true);
+                AstVarXRef* newVarXRefp = new AstVarXRef(nodep->fileline(), newname, "", true);
 		newVarXRefp->varp(newp->modVarp());
 		newVarXRefp->dtypep(newp->modVarp()->dtypep());
 		newp->exprp()->unlinkFrBack()->deleteTree();
@@ -464,7 +463,7 @@ private:
 		    : static_cast<AstNode*>(new AstExtend (fl, rhsp)));
 	    rhsp->dtypeFrom(cmpWidthp);  // Need proper widthMin, which may differ from AstSel created above
 	} else if (cmpWidthp->width() < rhsp->width()) {
-	    rhsp = new AstSel (fl, rhsp, 0, cmpWidthp->width());
+            rhsp = new AstSel(fl, rhsp, 0, cmpWidthp->width());
 	    rhsp->dtypeFrom(cmpWidthp);  // Need proper widthMin, which may differ from AstSel created above
 	}
 	// else don't change dtype, as might be e.g. array of something
@@ -517,7 +516,7 @@ public:
 	    string newvarname = ((string)(pinVarp->isOutput() ? "__Vcellout" : "__Vcellinp")
 				 +(forTristate?"t":"")  // Prevent name conflict if both tri & non-tri add signals
 				 +"__"+cellp->name()+"__"+pinp->name());
-	    AstVar* newvarp = new AstVar (pinVarp->fileline(), AstVarType::MODULETEMP, newvarname, pinVarp);
+            AstVar* newvarp = new AstVar(pinVarp->fileline(), AstVarType::MODULETEMP, newvarname, pinVarp);
 	    // Important to add statement next to cell, in case there is a generate with same named cell
 	    cellp->addNextHere(newvarp);
 	    if (pinVarp->isInout()) {
@@ -527,16 +526,16 @@ public:
 		// See also V3Inst
 		AstNode* rhsp = new AstVarRef(pinp->fileline(), newvarp, false);
 		UINFO(5,"pinRecon width "<<pinVarp->width()<<" >? "<<rhsp->width()<<" >? "<<pinexprp->width()<<endl);
-		rhsp = extendOrSel (pinp->fileline(), rhsp, pinVarp);
-		pinp->exprp(new AstVarRef (newvarp->fileline(), newvarp, true));
-		AstNode* rhsSelp = extendOrSel (pinp->fileline(), rhsp, pinexprp);
-		assignp = new AstAssignW (pinp->fileline(), pinexprp, rhsSelp);
+                rhsp = extendOrSel(pinp->fileline(), rhsp, pinVarp);
+                pinp->exprp(new AstVarRef(newvarp->fileline(), newvarp, true));
+                AstNode* rhsSelp = extendOrSel(pinp->fileline(), rhsp, pinexprp);
+                assignp = new AstAssignW(pinp->fileline(), pinexprp, rhsSelp);
 	    } else {
 		// V3 width should have range/extended to make the widths correct
-		assignp = new AstAssignW (pinp->fileline(),
-					  new AstVarRef(pinp->fileline(), newvarp, true),
-					  pinexprp);
-		pinp->exprp(new AstVarRef (pinexprp->fileline(), newvarp, false));
+                assignp = new AstAssignW(pinp->fileline(),
+                                         new AstVarRef(pinp->fileline(), newvarp, true),
+                                         pinexprp);
+                pinp->exprp(new AstVarRef(pinexprp->fileline(), newvarp, false));
 	    }
 	    if (assignp) cellp->addNextHere(assignp);
 	    //if (debug()) { pinp->dumpTree(cout,"-  out:"); }

@@ -207,10 +207,10 @@ private:
 	    // SELBIT(array, index) -> ARRAYSEL(array, index)
 	    AstNode* subp = rhsp;
 	    if (fromRange.lo()!=0 || fromRange.hi()<0) {
-		subp = newSubNeg (subp, fromRange.lo());
+                subp = newSubNeg(subp, fromRange.lo());
 	    }
-	    AstArraySel* newp = new AstArraySel (nodep->fileline(),
-						 fromp, subp);
+            AstArraySel* newp = new AstArraySel(nodep->fileline(),
+                                                fromp, subp);
 	    newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
 	    if (debug()>=9) newp->dumpTree(cout,"--SELBTn: ");
 	    nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
@@ -229,12 +229,12 @@ private:
 		adtypep->v3fatalSrc("Array extraction with width miscomputed "
 				    <<adtypep->width()<<"/"<<fromRange.elements());
 	    int elwidth = adtypep->width() / fromRange.elements();
-	    AstSel* newp = new AstSel (nodep->fileline(),
-				       fromp,
-				       new AstMul(nodep->fileline(),
-						  new AstConst(nodep->fileline(),AstConst::Unsized32(),elwidth),
-						  subp),
-				       new AstConst (nodep->fileline(),AstConst::Unsized32(),elwidth));
+            AstSel* newp = new AstSel(nodep->fileline(),
+                                      fromp,
+                                      new AstMul(nodep->fileline(),
+                                                 new AstConst(nodep->fileline(),AstConst::Unsized32(),elwidth),
+                                                 subp),
+                                      new AstConst(nodep->fileline(),AstConst::Unsized32(),elwidth));
 	    newp->declRange(fromRange);
 	    newp->declElWidth(elwidth);
 	    newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
@@ -243,11 +243,11 @@ private:
 	}
         else if (VN_IS(ddtypep, BasicDType)) {
 	    // SELBIT(range, index) -> SEL(array, index, 1)
-	    AstSel* newp = new AstSel (nodep->fileline(),
-				       fromp,
-				       newSubLsbOf(rhsp, fromRange),
-				       // Unsized so width from user
-				       new AstConst (nodep->fileline(),AstConst::Unsized32(),1));
+            AstSel* newp = new AstSel(nodep->fileline(),
+                                      fromp,
+                                      newSubLsbOf(rhsp, fromRange),
+                                      // Unsized so width from user
+                                      new AstConst(nodep->fileline(), AstConst::Unsized32(), 1));
 	    newp->declRange(fromRange);
 	    UINFO(6,"   new "<<newp<<endl);
 	    if (debug()>=9) newp->dumpTree(cout,"--SELBTn: ");
@@ -255,11 +255,11 @@ private:
 	}
         else if (VN_IS(ddtypep, NodeClassDType)) {  // It's packed, so a bit from the packed struct
 	    // SELBIT(range, index) -> SEL(array, index, 1)
-	    AstSel* newp = new AstSel (nodep->fileline(),
-				       fromp,
-				       newSubLsbOf(rhsp, fromRange),
-				       // Unsized so width from user
-				       new AstConst (nodep->fileline(),AstConst::Unsized32(),1));
+            AstSel* newp = new AstSel(nodep->fileline(),
+                                      fromp,
+                                      newSubLsbOf(rhsp, fromRange),
+                                      // Unsized so width from user
+                                      new AstConst(nodep->fileline(), AstConst::Unsized32(), 1));
 	    newp->declRange(fromRange);
 	    UINFO(6,"   new "<<newp<<endl);
 	    if (debug()>=9) newp->dumpTree(cout,"--SELBTn: ");
@@ -323,11 +323,11 @@ private:
 		int x = msb; msb = lsb; lsb = x;
 	    }
 	    int elwidth = adtypep->width() / fromRange.elements();
-	    AstSel* newp = new AstSel (nodep->fileline(),
-				       fromp,
-				       new AstMul(nodep->fileline(), newSubLsbOf(lsbp, fromRange),
-						  new AstConst(nodep->fileline(), AstConst::Unsized32(), elwidth)),
-				       new AstConst(nodep->fileline(), AstConst::Unsized32(), (msb-lsb+1)*elwidth));
+            AstSel* newp = new AstSel(nodep->fileline(),
+                                      fromp,
+                                      new AstMul(nodep->fileline(), newSubLsbOf(lsbp, fromRange),
+                                                 new AstConst(nodep->fileline(), AstConst::Unsized32(), elwidth)),
+                                      new AstConst(nodep->fileline(), AstConst::Unsized32(), (msb-lsb+1)*elwidth));
 	    newp->declRange(fromRange);
 	    newp->declElWidth(elwidth);
 	    newp->dtypeFrom(sliceDType(adtypep, msb, lsb));
@@ -344,12 +344,13 @@ private:
 		nodep->v3error("["<<msb<<":"<<lsb<<"] Range extract has backward bit ordering, perhaps you wanted ["<<lsb<<":"<<msb<<"]");
 		int x = msb; msb = lsb; lsb = x;
 	    }
-	    AstNode* widthp = new AstConst (msbp->fileline(), AstConst::Unsized32(), // Unsized so width from user
-					    msb +1-lsb);
-	    AstSel* newp = new AstSel (nodep->fileline(),
-				       fromp,
-				       newSubLsbOf(lsbp, fromRange),
-				       widthp);
+            AstNode* widthp = new AstConst(msbp->fileline(),
+                                           AstConst::Unsized32(),  // Unsized so width from user
+                                           msb +1-lsb);
+            AstSel* newp = new AstSel(nodep->fileline(),
+                                      fromp,
+                                      newSubLsbOf(lsbp, fromRange),
+                                      widthp);
 	    newp->declRange(fromRange);
 	    UINFO(6,"   new "<<newp<<endl);
 	    //if (debug()>=9) newp->dumpTree(cout,"--SELEXnew: ");
@@ -361,12 +362,13 @@ private:
 		nodep->v3error("["<<msb<<":"<<lsb<<"] Range extract has backward bit ordering, perhaps you wanted ["<<lsb<<":"<<msb<<"]");
 		int x = msb; msb = lsb; lsb = x;
 	    }
-	    AstNode* widthp = new AstConst (msbp->fileline(), AstConst::Unsized32(), // Unsized so width from user
-					    msb +1-lsb);
-	    AstSel* newp = new AstSel (nodep->fileline(),
-				       fromp,
-				       newSubLsbOf(lsbp, fromRange),
-				       widthp);
+            AstNode* widthp = new AstConst(msbp->fileline(),
+                                           AstConst::Unsized32(),  // Unsized so width from user
+                                           msb +1-lsb);
+            AstSel* newp = new AstSel(nodep->fileline(),
+                                      fromp,
+                                      newSubLsbOf(lsbp, fromRange),
+                                      widthp);
 	    newp->declRange(fromRange);
 	    UINFO(6,"   new "<<newp<<endl);
 	    //if (debug()>=9) newp->dumpTree(cout,"--SELEXnew: ");
@@ -412,7 +414,7 @@ private:
 	    AstNode* newwidthp = widthp;
             if (const AstPackArrayDType* adtypep = VN_CAST(ddtypep, PackArrayDType)) {
 		elwidth = adtypep->width() / fromRange.elements();
-		newwidthp = new AstConst (nodep->fileline(),AstConst::Unsized32(), width * elwidth);
+                newwidthp = new AstConst(nodep->fileline(),AstConst::Unsized32(), width * elwidth);
 	    }
 	    AstNode* newlsbp = NULL;
             if (VN_IS(nodep, SelPlus)) {
@@ -434,10 +436,10 @@ private:
 	    } else {
 		nodep->v3fatalSrc("Bad Case");
 	    }
-	    if (elwidth != 1) newlsbp = new AstMul (nodep->fileline(), newlsbp,
-						    new AstConst (nodep->fileline(), elwidth));
-	    AstSel* newp = new AstSel (nodep->fileline(),
-				       fromp, newlsbp, newwidthp);
+            if (elwidth != 1) newlsbp = new AstMul(nodep->fileline(), newlsbp,
+                                                   new AstConst(nodep->fileline(), elwidth));
+            AstSel* newp = new AstSel(nodep->fileline(),
+                                      fromp, newlsbp, newwidthp);
 	    newp->declRange(fromRange);
 	    newp->declElWidth(elwidth);
 	    UINFO(6,"   new "<<newp<<endl);

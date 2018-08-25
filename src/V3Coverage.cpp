@@ -163,7 +163,7 @@ private:
 
 		// Add signal to hold the old value
 		string newvarname = (string)"__Vtogcov__"+nodep->shortName();
-		AstVar* chgVarp = new AstVar (nodep->fileline(), AstVarType::MODULETEMP, newvarname, nodep);
+                AstVar* chgVarp = new AstVar(nodep->fileline(), AstVarType::MODULETEMP, newvarname, nodep);
 		chgVarp->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);
 		m_modp->addStmtp(chgVarp);
 
@@ -185,11 +185,11 @@ private:
 		     const ToggleEnt& above,
 		     AstVar* varp, AstVar* chgVarp) { // Constant
 	AstCoverToggle* newp
-	    = new AstCoverToggle (varp->fileline(),
-				  newCoverInc(varp->fileline(), "", "v_toggle",
-					      varp->name()+above.m_comment),
-				  above.m_varRefp->cloneTree(true),
-				  above.m_chgRefp->cloneTree(true));
+            = new AstCoverToggle(varp->fileline(),
+                                 newCoverInc(varp->fileline(), "", "v_toggle",
+                                             varp->name()+above.m_comment),
+                                 above.m_varRefp->cloneTree(true),
+                                 above.m_chgRefp->cloneTree(true));
 	m_modp->addStmtp(newp);
     }
 

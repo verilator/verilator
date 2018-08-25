@@ -77,23 +77,23 @@ private:
 	// Add a internal if to check assertions are on.
 	// Don't make this a AND term, as it's unlikely to need to test this.
 	AstNode* newp
-	    = new AstIf (nodep->fileline(),
-			 // If assertions are off, have constant propagation rip them out later
-			 // This allows syntax errors and such to be detected normally.
-			 (v3Global.opt.assertOn()
-			  ? (AstNode*)(new AstCMath(nodep->fileline(), "Verilated::assertOn()", 1))
-			  : (AstNode*)(new AstConst(nodep->fileline(), AstConst::LogicFalse()))),
-			 nodep, NULL);
+            = new AstIf(nodep->fileline(),
+                        // If assertions are off, have constant propagation rip them out later
+                        // This allows syntax errors and such to be detected normally.
+                        (v3Global.opt.assertOn()
+                         ? (AstNode*)(new AstCMath(nodep->fileline(), "Verilated::assertOn()", 1))
+                         : (AstNode*)(new AstConst(nodep->fileline(), AstConst::LogicFalse()))),
+                        nodep, NULL);
 	newp->user1(true); // Don't assert/cover this if
 	return newp;
     }
 
     AstNode* newFireAssertUnchecked(AstNode* nodep, const string& message) {
         // Like newFireAssert() but omits the asserts-on check
-	AstDisplay* dispp = new AstDisplay (nodep->fileline(), AstDisplayType::DT_ERROR, message, NULL, NULL);
+        AstDisplay* dispp = new AstDisplay(nodep->fileline(), AstDisplayType::DT_ERROR, message, NULL, NULL);
 	AstNode* bodysp = dispp;
 	replaceDisplay(dispp, "%%Error");   // Convert to standard DISPLAY format
-	bodysp->addNext(new AstStop (nodep->fileline()));
+        bodysp->addNext(new AstStop(nodep->fileline()));
         return bodysp;
     }
 
@@ -126,7 +126,7 @@ private:
 	    }
 
             if (bodysp && stmtsp) bodysp = bodysp->addNext(stmtsp);
-            ifp = new AstIf (nodep->fileline(), propp, bodysp, NULL);
+            ifp = new AstIf(nodep->fileline(), propp, bodysp, NULL);
             bodysp = ifp;
 
         } else if (VN_IS(nodep, PslAssert)) {
@@ -148,10 +148,8 @@ private:
 	    nodep->v3fatalSrc("Unknown node type");
 	}
 
-	AstNode* newp = new AstAlways (nodep->fileline(),
-				       VAlwaysKwd::ALWAYS,
-				       sentreep,
-				       bodysp);
+        AstNode* newp = new AstAlways(nodep->fileline(),
+                                      VAlwaysKwd::ALWAYS, sentreep, bodysp);
 	// Install it
 	if (selfDestruct) {
 	    // Delete it after making the tree.  This way we can tell the user
@@ -177,7 +175,7 @@ private:
 	    nodep->v3fatalSrc("Unknown node type");
 	}
 
-	AstIf* ifp = new AstIf (nodep->fileline(), propp, passsp, failsp);
+        AstIf* ifp = new AstIf(nodep->fileline(), propp, passsp, failsp);
 	AstNode* newp = ifp;
         if (VN_IS(nodep, VAssert)) ifp->branchPred(AstBranchPred::BP_UNLIKELY);
 	//
@@ -234,10 +232,10 @@ private:
 	    AstNode* ohot = ((allow_none || hasDefaultElse)
 			     ? static_cast<AstNode*>(new AstOneHot0(nodep->fileline(), propp))
 			     : static_cast<AstNode*>(new AstOneHot (nodep->fileline(), propp)));
-	    AstIf* checkifp = new AstIf (nodep->fileline(),
-					 new AstLogNot (nodep->fileline(), ohot),
-					 newFireAssert(nodep, "'unique if' statement violated"),
-					 newifp);
+            AstIf* checkifp = new AstIf(nodep->fileline(),
+                                        new AstLogNot(nodep->fileline(), ohot),
+                                        newFireAssert(nodep, "'unique if' statement violated"),
+                                        newifp);
 	    checkifp->branchPred(AstBranchPred::BP_UNLIKELY);
 	    nodep->replaceWith(checkifp);
 	    pushDeletep(nodep);
@@ -293,10 +291,10 @@ private:
 		    AstNode* ohot = (allow_none
 				     ? static_cast<AstNode*>(new AstOneHot0(nodep->fileline(), propp))
 				     : static_cast<AstNode*>(new AstOneHot (nodep->fileline(), propp)));
-		    AstIf* ifp = new AstIf (nodep->fileline(),
-					    new AstLogNot (nodep->fileline(), ohot),
-					    newFireAssert(nodep, "synthesis parallel_case, but multiple matches found"),
-					    NULL);
+                    AstIf* ifp = new AstIf(nodep->fileline(),
+                                           new AstLogNot(nodep->fileline(), ohot),
+                                           newFireAssert(nodep, "synthesis parallel_case, but multiple matches found"),
+                                           NULL);
 		    ifp->branchPred(AstBranchPred::BP_UNLIKELY);
 		    nodep->addNotParallelp(ifp);
 		}
