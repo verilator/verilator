@@ -57,11 +57,11 @@ class EmitCSyms : EmitCBaseVisitor {
 	ScopeVarData(const string& scopeName, const string& varBasePretty, AstVar* varp, AstNodeModule* modp, AstScope* scopep)
 	    : m_scopeName(scopeName), m_varBasePretty(varBasePretty), m_varp(varp), m_modp(modp), m_scopep(scopep) {}
     };
-    typedef map<string,ScopeFuncData> ScopeFuncs;
-    typedef map<string,ScopeVarData> ScopeVars;
-    typedef map<string,ScopeNameData> ScopeNames;
-    typedef pair<AstScope*,AstNodeModule*> ScopeModPair;
-    typedef pair<AstNodeModule*,AstVar*> ModVarPair;
+    typedef std::map<string,ScopeFuncData> ScopeFuncs;
+    typedef std::map<string,ScopeVarData> ScopeVars;
+    typedef std::map<string,ScopeNameData> ScopeNames;
+    typedef std::pair<AstScope*,AstNodeModule*> ScopeModPair;
+    typedef std::pair<AstNodeModule*,AstVar*> ModVarPair;
     struct CmpName {
 	inline bool operator () (const ScopeModPair& lhsp, const ScopeModPair& rhsp) const {
 	    return lhsp.first->name() < rhsp.first->name();
@@ -80,9 +80,9 @@ class EmitCSyms : EmitCBaseVisitor {
     // STATE
     AstCFunc*		m_funcp;	// Current function
     AstNodeModule*	m_modp;		// Current module
-    vector<ScopeModPair>  m_scopes;	// Every scope by module
-    vector<AstCFunc*>	m_dpis;		// DPI functions
-    vector<ModVarPair>	m_modVars;	// Each public {mod,var}
+    std::vector<ScopeModPair> m_scopes; // Every scope by module
+    std::vector<AstCFunc*>    m_dpis;   // DPI functions
+    std::vector<ModVarPair>   m_modVars;  // Each public {mod,var}
     ScopeNames		m_scopeNames;	// Each unique AstScopeName
     ScopeFuncs		m_scopeFuncs;	// Each {scope,dpi-export-func}
     ScopeVars		m_scopeVars;	// Each {scope,public-var}
@@ -113,9 +113,9 @@ class EmitCSyms : EmitCBaseVisitor {
 	// We didn'e have all m_scopes loaded when we encountered variables, so expand them now
 	// It would be less code if each module inserted its own variables.
 	// Someday.  For now public isn't common.
-	for (vector<ScopeModPair>::iterator itsc = m_scopes.begin(); itsc != m_scopes.end(); ++itsc) {
+        for (std::vector<ScopeModPair>::iterator itsc = m_scopes.begin(); itsc != m_scopes.end(); ++itsc) {
 	    AstScope* scopep = itsc->first;  AstNodeModule* smodp = itsc->second;
-	    for (vector<ModVarPair>::iterator it = m_modVars.begin(); it != m_modVars.end(); ++it) {
+            for (std::vector<ModVarPair>::iterator it = m_modVars.begin(); it != m_modVars.end(); ++it) {
 		AstNodeModule* modp = it->first;
 		AstVar* varp = it->second;
 		if (modp == smodp) {
@@ -166,7 +166,7 @@ class EmitCSyms : EmitCBaseVisitor {
     // VISITORS
     virtual void visit(AstNetlist* nodep) {
 	// Collect list of scopes
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	varsExpand();
 
 	// Sort by names, so line/process order matters less
@@ -185,7 +185,7 @@ class EmitCSyms : EmitCBaseVisitor {
 	nameCheck(nodep);
 	m_modp = nodep;
 	m_labelNum = 0;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp = NULL;
     }
     virtual void visit(AstScope* nodep) {
@@ -210,7 +210,7 @@ class EmitCSyms : EmitCBaseVisitor {
     }
     virtual void visit(AstVar* nodep) {
 	nameCheck(nodep);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->isSigUserRdPublic()
 	    && !nodep->isParam()) {  // The VPI functions require a pointer to allow modification, but parameters are constants
 	    m_modVars.push_back(make_pair(m_modp, nodep));
@@ -224,7 +224,7 @@ class EmitCSyms : EmitCBaseVisitor {
     }
     virtual void visit(AstJumpLabel* nodep) {
 	nodep->labelNum(++m_labelNum);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstCFunc* nodep) {
 	nameCheck(nodep);
@@ -232,14 +232,14 @@ class EmitCSyms : EmitCBaseVisitor {
 	    m_dpis.push_back(nodep);
 	}
 	m_funcp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_funcp = NULL;
     }
     // NOPs
     virtual void visit(AstConst*) {}
     // Default
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     //---------------------------------------
     // ACCESSORS
@@ -249,7 +249,7 @@ public:
 	m_modp = NULL;
 	m_coverBins = 0;
 	m_labelNum = 0;
-	nodep->accept(*this);
+        iterate(nodep);
     }
 };
 
@@ -279,13 +279,13 @@ void EmitCSyms::emitSymHdr() {
 
     // for
     puts("\n// INCLUDE MODULE CLASSES\n");
-    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castNodeModule()) {
+    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=VN_CAST(nodep->nextp(), NodeModule)) {
 	puts("#include \""+modClassName(nodep)+".h\"\n");
     }
 
     if (v3Global.dpi()) {
 	puts ("\n// DPI TYPES for DPI Export callbacks (Internal use)\n");
-	map<string,int> types;  // Remove duplicates and sort
+        std::map<string,int> types;  // Remove duplicates and sort
 	for (ScopeFuncs::iterator it = m_scopeFuncs.begin(); it != m_scopeFuncs.end(); ++it) {
 	    AstCFunc* funcp = it->second.m_funcp;
 	    if (funcp->dpiExport()) {
@@ -293,7 +293,7 @@ void EmitCSyms::emitSymHdr() {
 		types["typedef void (*"+cbtype+") ("+cFuncArgs(funcp)+");\n"] = 1;
 	    }
 	}
-	for (map<string,int>::iterator it = types.begin(); it != types.end(); ++it) {
+        for (std::map<string,int>::iterator it = types.begin(); it != types.end(); ++it) {
 	    puts(it->first);
 	}
     }
@@ -310,7 +310,7 @@ void EmitCSyms::emitSymHdr() {
     puts("bool __Vm_didInit;\n");
 
     puts("\n// SUBCELL STATE\n");
-    for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
+    for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
 	AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
 	if (modp->isTop()) {
 	    ofp()->printf("%-30s ", (modClassName(modp)+"*").c_str());
@@ -370,7 +370,7 @@ void EmitCSyms::emitSymImp() {
 
     // Includes
     puts("#include \""+symClassName()+".h\"\n");
-    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=nodep->nextp()->castNodeModule()) {
+    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=VN_CAST(nodep->nextp(), NodeModule)) {
 	puts("#include \""+modClassName(nodep)+".h\"\n");
     }
 
@@ -386,7 +386,7 @@ void EmitCSyms::emitSymImp() {
     puts("\t, __Vm_didInit(false)\n");
     puts("\t// Setup submodule names\n");
     char comma=',';
-    for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
+    for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
 	AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
 	if (modp->isTop()) {
 	} else {
@@ -404,7 +404,7 @@ void EmitCSyms::emitSymImp() {
     puts("// Pointer to top level\n");
     puts("TOPp = topp;\n");
     puts("// Setup each module's pointers to their submodules\n");
-    for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
+    for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
 	AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
 	if (!modp->isTop()) {
 	    string arrow = scopep->name();
@@ -421,7 +421,7 @@ void EmitCSyms::emitSymImp() {
 
     puts("// Setup each module's pointer back to symbol table (for public functions)\n");
     puts("TOPp->__Vconfigure(this, true);\n");
-    for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
+    for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
 	AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
 	if (!modp->isTop()) {
 	    // first is used by AstCoverDecl's call to __vlCoverInsert
@@ -482,10 +482,10 @@ void EmitCSyms::emitSymImp() {
 		}
 		for (AstNodeDType* dtypep=varp->dtypep(); dtypep; ) {
 		    dtypep = dtypep->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
-		    if (AstNodeArrayDType* adtypep = dtypep->castNodeArrayDType()) {
+                    if (const AstNodeArrayDType* adtypep = VN_CAST(dtypep, NodeArrayDType)) {
 			bounds += " ,"; bounds += cvtToStr(adtypep->msb());
 			bounds += ","; bounds += cvtToStr(adtypep->lsb());
-			if (dtypep->castPackArrayDType()) pdim++; else udim++;
+                        if (VN_IS(dtypep, PackArrayDType)) pdim++; else udim++;
 			dtypep = adtypep->subDTypep();
 		    }
 		    else break; // AstBasicDType - nothing below, 1
@@ -534,7 +534,7 @@ void EmitCSyms::emitSymImp() {
 	    }
 	    puts(   "os"+op+"__Vm_didInit;\n");
 	    puts(   "// SUBCELL STATE\n");
-	    for (vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
+            for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
 		AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
 		if (!modp->isTop()) {
 		    puts(   scopep->nameDotless()+"."+funcname+"(os);\n");
@@ -571,7 +571,7 @@ void EmitCSyms::emitDpiHdr() {
 
     int firstExp = 0;
     int firstImp = 0;
-    for (vector<AstCFunc*>::iterator it = m_dpis.begin(); it != m_dpis.end(); ++it) {
+    for (std::vector<AstCFunc*>::iterator it = m_dpis.begin(); it != m_dpis.end(); ++it) {
 	AstCFunc* nodep = *it;
 	if (nodep->dpiExportWrapper()) {
 	    if (!firstExp++) puts("\n// DPI EXPORTS\n");
@@ -619,7 +619,7 @@ void EmitCSyms::emitDpiImp() {
     puts("#include \""+topClassName()+".h\"\n");
     puts("\n");
 
-    for (vector<AstCFunc*>::iterator it = m_dpis.begin(); it != m_dpis.end(); ++it) {
+    for (std::vector<AstCFunc*>::iterator it = m_dpis.begin(); it != m_dpis.end(); ++it) {
 	AstCFunc* nodep = *it;
 	if (nodep->dpiExportWrapper()) {
 	    puts("#ifndef _VL_DPIDECL_"+nodep->name()+"\n");
@@ -629,7 +629,7 @@ void EmitCSyms::emitDpiImp() {
 	    puts("return "+topClassName()+"::"+nodep->name()+"(");
 	    string args;
 	    for (AstNode* stmtp = nodep->argsp(); stmtp; stmtp=stmtp->nextp()) {
-		if (AstVar* portp = stmtp->castVar()) {
+                if (const AstVar* portp = VN_CAST(stmtp, Var)) {
 		    if (portp->isIO() && !portp->isFuncReturn()) {
 			if (args != "") args+= ", ";
 			args += portp->name();

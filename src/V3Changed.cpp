@@ -85,7 +85,7 @@ public:
 	    if (!m_tlChgFuncp->stmtsp()) {
 		m_tlChgFuncp->addStmtsp(new AstCReturn(m_scopetopp->fileline(), callp));
 	    } else {
-		AstCReturn* returnp = m_tlChgFuncp->stmtsp()->castCReturn();
+                AstCReturn* returnp = VN_CAST(m_tlChgFuncp->stmtsp(), CReturn);
 		if (!returnp) m_scopetopp->v3fatalSrc("Lost CReturn in top change function");
 		// This is currently using AstLogOr which will shortcut the evaluation if
 		// any function returns true. This is likely what we want and is similar to the logic already in use
@@ -159,7 +159,7 @@ private:
 	    m_newLvEqnp = new AstArraySel(nodep->fileline(), m_newLvEqnp->cloneTree(true), index);
 	    m_newRvEqnp = new AstArraySel(nodep->fileline(), m_newRvEqnp->cloneTree(true), index);
 
-	    nodep->subDTypep()->skipRefp()->accept(*this);
+            iterate(nodep->subDTypep()->skipRefp());
 
 	    m_varEqnp->deleteTree();
 	    m_newLvEqnp->deleteTree();
@@ -181,7 +181,7 @@ private:
 	}
     }
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (debug()) nodep->dumpTree(cout,"-DETECTARRAY-general-");
         m_vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect changes on complex variable"
                        " (probably with UNOPTFLAT warning suppressed): "
@@ -209,7 +209,7 @@ public:
 	    m_newLvEqnp = new AstVarRef(m_vscp->fileline(), m_newvscp, true);
 	    m_newRvEqnp = new AstVarRef(m_vscp->fileline(), m_newvscp, false);
 	}
-	vscp->dtypep()->skipRefp()->accept(*this);
+        iterate(vscp->dtypep()->skipRefp());
 	m_varEqnp->deleteTree();
 	m_newLvEqnp->deleteTree();
 	m_newRvEqnp->deleteTree();
@@ -231,11 +231,7 @@ private:
     ChangedState*	m_statep;	// Shared state across visitors
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     void genChangeDet(AstVarScope* vscp) {
 	vscp->v3warn(IMPERFECTSCH,"Imperfect scheduling of variable: "<<vscp);
@@ -248,7 +244,7 @@ private:
 	if (nodep->isTop()) {
 	    m_statep->m_topModp = nodep;
 	}
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
     virtual void visit(AstTopScope* nodep) {
@@ -271,7 +267,7 @@ private:
 	m_statep->maybeCreateChgFuncp();
 	m_statep->m_chgFuncp->addStmtsp(new AstChangeDet(nodep->fileline(), NULL, NULL, false));
 
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstVarScope* nodep) {
 	if (nodep->isCircular()) {
@@ -287,14 +283,14 @@ private:
     //--------------------
     // Default: Just iterate
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
     // CONSTUCTORS
     ChangedVisitor(AstNetlist* nodep, ChangedState* statep) {
 	m_statep = statep;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~ChangedVisitor() {}
 };

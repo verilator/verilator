@@ -37,12 +37,12 @@
 class V3OptionsImp;
 class FileLine;
 
-typedef vector<string> V3StringList;
-typedef set<string> V3StringSet;
+typedef std::vector<string> V3StringList;
+typedef std::set<string> V3StringSet;
 
 class V3Options {
     // TYPES
-    typedef map<string,int> DebugSrcMap;
+    typedef std::map<string,int> DebugSrcMap;
 
     // MEMBERS (general options)
     V3OptionsImp*	m_impp;		// Slow hidden options
@@ -58,7 +58,7 @@ class V3Options {
     V3StringList m_forceIncs;	// argument: -FI
     DebugSrcMap m_debugSrcs;	// argument: --debugi-<srcfile>=<level>
     DebugSrcMap m_dumpTrees;	// argument: --dump-treei-<srcfile>=<level>
-    map<string,string>  m_parameters;   // Parameters
+    std::map<string,string> m_parameters;  // Parameters
 
 
     bool	m_preprocOnly;	// main switch: -E
@@ -75,7 +75,10 @@ class V3Options {
     bool	m_coverageUnderscore;// main switch: --coverage-underscore
     bool	m_coverageUser;	// main switch: --coverage-func
     bool	m_debugCheck;	// main switch: --debug-check
-    bool        m_debugLeak;   // main switch: --debug-leak
+    bool        m_debugLeak;    // main switch: --debug-leak
+    bool        m_debugNondeterminism;  // main switch: --debug-nondeterminism
+    bool        m_debugPartition;  // main switch: --debug-partition
+    bool        m_debugSelfTest;  // main switch: --debug-self-test
     bool	m_decoration;	// main switch: --decoration
     bool	m_exe;		// main switch: --exe
     bool	m_ignc;		// main switch: --ignc
@@ -87,6 +90,7 @@ class V3Options {
     bool	m_pinsScBigUint;// main switch: --pins-sc-biguint
     bool	m_pinsUint8;	// main switch: --pins-uint8
     bool        m_profCFuncs;   // main switch: --prof-cfuncs
+    bool        m_profThreads;  // main switch: --prof-threads
     bool	m_public;	// main switch: --public
     bool	m_relativeCFuncs; // main switch: --relative-cfuncs
     bool	m_relativeIncludes; // main switch: --relative-includes
@@ -96,6 +100,9 @@ class V3Options {
     bool	m_skipIdentical;// main switch: --skip-identical
     bool	m_stats;	// main switch: --stats
     bool	m_statsVars;	// main switch: --stats-vars
+    bool        m_threadsCoarsen;  // main switch: --threads-coarsen
+    bool        m_threadsDpiPure;  // main switch: --threads-dpi all/pure
+    bool        m_threadsDpiUnpure;  // main switch: --threads-dpi all
     bool	m_trace;	// main switch: --trace
     bool	m_traceDups;	// main switch: --trace-dups
     bool	m_traceParams;	// main switch: --trace-params
@@ -117,6 +124,7 @@ class V3Options {
     int		m_outputSplitCTrace;// main switch: --output-split-ctrace
     int		m_pinsBv;	// main switch: --pins-bv
     int		m_threads;	// main switch: --threads (0 == --no-threads)
+    int         m_threadsMaxMTasks;  // main switch: --threads-max-mtasks
     int		m_traceDepth;	// main switch: --trace-depth
     int		m_traceMaxArray;// main switch: --trace-max-array
     int		m_traceMaxWidth;// main switch: --trace-max-width
@@ -159,6 +167,7 @@ class V3Options {
     bool	m_oLifePost;	// main switch: -Ot: delayed assignment elimination
     bool	m_oLocalize;	// main switch: -Oz: convert temps to local variables
     bool	m_oInline;	// main switch: -Oi: module inlining
+    bool        m_oReloop;      // main switch: -Ov: reform loops
     bool	m_oReorder;	// main switch: -Or: reorder assignments in blocks
     bool	m_oSplit;	// main switch: -Os: always assignment splitting
     bool	m_oSubst;	// main switch: -Ou: substitute expression temp values
@@ -231,8 +240,14 @@ class V3Options {
     bool coverageUser() const { return m_coverageUser; }
     bool debugCheck() const { return m_debugCheck; }
     bool debugLeak() const { return m_debugLeak; }
+    bool debugNondeterminism() const { return m_debugNondeterminism; }
+    bool debugPartition() const { return m_debugPartition; }
+    bool debugSelfTest() const { return m_debugSelfTest; }
     bool decoration() const { return m_decoration; }
     bool exe() const { return m_exe; }
+    bool threadsDpiPure() const { return m_threadsDpiPure; }
+    bool threadsDpiUnpure() const { return m_threadsDpiUnpure; }
+    bool threadsCoarsen() const { return m_threadsCoarsen; }
     bool trace() const { return m_trace; }
     bool traceDups() const { return m_traceDups; }
     bool traceParams() const { return m_traceParams; }
@@ -245,6 +260,7 @@ class V3Options {
     bool pinsScBigUint() const { return m_pinsScBigUint; }
     bool pinsUint8() const { return m_pinsUint8; }
     bool profCFuncs() const { return m_profCFuncs; }
+    bool profThreads() const { return m_profThreads; }
     bool allPublic() const { return m_public; }
     bool lintOnly() const { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
@@ -266,6 +282,7 @@ class V3Options {
     int	   outputSplitCTrace() const { return m_outputSplitCTrace; }
     int	   pinsBv() const { return m_pinsBv; }
     int threads() const { return m_threads; }
+    int threadsMaxMTasks() const { return m_threadsMaxMTasks; }
     bool mtasks() const { return (m_threads > 1); }
     int	   traceDepth() const { return m_traceDepth; }
     int	   traceMaxArray() const { return m_traceMaxArray; }
@@ -320,6 +337,7 @@ class V3Options {
     bool oLifePost() const { return m_oLifePost; }
     bool oLocalize() const { return m_oLocalize; }
     bool oInline() const { return m_oInline; }
+    bool oReloop() const { return m_oReloop; }
     bool oReorder() const { return m_oReorder; }
     bool oSplit() const { return m_oSplit; }
     bool oSubst() const { return m_oSubst; }

@@ -45,7 +45,7 @@
 class CoverageVisitor : public AstNVisitor {
 private:
     // TYPES
-    typedef map<string,int>	FileMap;
+    typedef std::map<string,int> FileMap;
 
     struct ToggleEnt {
 	string		m_comment;	// Comment for coverage dump
@@ -74,11 +74,7 @@ private:
     string	m_beginHier;	// AstBegin hier name for user coverage points
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     const char* varIgnoreToggle(AstVar* nodep) {
 	// Return true if this shouldn't be traced
@@ -132,7 +128,7 @@ private:
 	m_modp = nodep;
 	m_inModOff = nodep->isTop();   // Ignore coverage on top module; it's a shell we created
 	m_fileps.clear();
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp = NULL;
 	m_inModOff = true;
     }
@@ -142,12 +138,12 @@ private:
 	bool oldtog = m_inToggleOff;
 	{
 	    m_inToggleOff = true;
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
 	m_inToggleOff = oldtog;
     }
     virtual void visit(AstVar* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (m_modp && !m_inModOff && !m_inToggleOff
 	    && nodep->fileline()->coverageOn() && v3Global.opt.coverageToggle()) {
 	    const char* disablep = varIgnoreToggle(nodep);
@@ -200,7 +196,7 @@ private:
     void toggleVarRecurse(AstNodeDType* dtypep, int depth, // per-iteration
 		     const ToggleEnt& above,
 		     AstVar* varp, AstVar* chgVarp) { // Constant
-	if (AstBasicDType* bdtypep = dtypep->castBasicDType()) {
+        if (const AstBasicDType* bdtypep = VN_CAST(dtypep, BasicDType)) {
 	    if (bdtypep->isRanged()) {
 		for (int index_docs=bdtypep->lsb(); index_docs<bdtypep->msb()+1; index_docs++) {
 		    int index_code = index_docs - bdtypep->lsb();
@@ -218,7 +214,7 @@ private:
 				varp, chgVarp);
 	    }
 	}
-	else if (AstUnpackArrayDType* adtypep = dtypep->castUnpackArrayDType()) {
+        else if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
 	    for (int index_docs=adtypep->lsb(); index_docs<=adtypep->msb(); ++index_docs) {
 		int index_code = index_docs - adtypep->lsb();
 		ToggleEnt newent (above.m_comment+string("[")+cvtToStr(index_docs)+"]",
@@ -230,7 +226,7 @@ private:
 		newent.cleanup();
 	    }
 	}
-	else if (AstPackArrayDType* adtypep = dtypep->castPackArrayDType()) {
+        else if (AstPackArrayDType* adtypep = VN_CAST(dtypep, PackArrayDType)) {
 	    for (int index_docs=adtypep->lsb(); index_docs<=adtypep->msb(); ++index_docs) {
 		AstNodeDType* subtypep = adtypep->subDTypep()->skipRefp();
 		int index_code = index_docs - adtypep->lsb();
@@ -245,9 +241,9 @@ private:
 		newent.cleanup();
 	    }
 	}
-	else if (AstStructDType* adtypep = dtypep->castStructDType()) {
+        else if (AstStructDType* adtypep = VN_CAST(dtypep, StructDType)) {
 	    // For now it's packed, so similar to array
-	    for (AstMemberDType* itemp = adtypep->membersp(); itemp; itemp=itemp->nextp()->castMemberDType()) {
+            for (AstMemberDType* itemp = adtypep->membersp(); itemp; itemp=VN_CAST(itemp->nextp(), MemberDType)) {
 		AstNodeDType* subtypep = itemp->subDTypep()->skipRefp();
 		int index_code = itemp->lsb();
 		ToggleEnt newent (above.m_comment+string(".")+itemp->name(),
@@ -261,7 +257,7 @@ private:
 		newent.cleanup();
 	    }
 	}
-	else if (AstUnionDType* adtypep = dtypep->castUnionDType()) {
+        else if (AstUnionDType* adtypep = VN_CAST(dtypep, UnionDType)) {
 	    // Arbitrarially handle only the first member of the union
 	    if (AstMemberDType* itemp = adtypep->membersp()) {
 		AstNodeDType* subtypep = itemp->subDTypep()->skipRefp();
@@ -284,11 +280,11 @@ private:
 	UINFO(4," IF: "<<nodep<<endl);
 	if (m_checkBlock) {
 	    // An else-if.  When we iterate the if, use "elsif" marking
-	    bool elsif = (nodep->elsesp()->castIf()
-			  && !nodep->elsesp()->castIf()->nextp());
-	    if (elsif) nodep->elsesp()->castIf()->user1(true);
+            bool elsif = (VN_IS(nodep->elsesp(), If)
+                          && !VN_CAST(nodep->elsesp(), If)->nextp());
+            if (elsif) VN_CAST(nodep->elsesp(), If)->user1(true);
 	    //
-	    nodep->ifsp()->iterateAndNext(*this);
+            iterateAndNextNull(nodep->ifsp());
 	    if (m_checkBlock && !m_inModOff
 		&& nodep->fileline()->coverageOn() && v3Global.opt.coverageLine()) {	// if a "if" branch didn't disable it
 		UINFO(4,"   COVER: "<<nodep<<endl);
@@ -301,7 +297,7 @@ private:
 	    // Don't do empty else's, only empty if/case's
 	    if (nodep->elsesp()) {
 		m_checkBlock = true;
-		nodep->elsesp()->iterateAndNext(*this);
+                iterateAndNextNull(nodep->elsesp());
 		if (m_checkBlock && !m_inModOff
 		    && nodep->fileline()->coverageOn() && v3Global.opt.coverageLine()) {	// if a "else" branch didn't disable it
 		    UINFO(4,"   COVER: "<<nodep<<endl);
@@ -317,7 +313,7 @@ private:
 	UINFO(4," CASEI: "<<nodep<<endl);
 	if (m_checkBlock && !m_inModOff
 	    && nodep->fileline()->coverageOn() && v3Global.opt.coverageLine()) {
-	    nodep->bodysp()->iterateAndNext(*this);
+            iterateAndNextNull(nodep->bodysp());
 	    if (m_checkBlock) {	// if the case body didn't disable it
 		UINFO(4,"   COVER: "<<nodep<<endl);
 		nodep->addBodysp(newCoverInc(nodep->fileline(), "", "v_line", "case"));
@@ -328,7 +324,7 @@ private:
     virtual void visit(AstPslCover* nodep) {
 	UINFO(4," PSLCOVER: "<<nodep<<endl);
 	m_checkBlock = true;  // Always do cover blocks, even if there's a $stop
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (!nodep->coverincp()) {
 	    // Note the name may be overridden by V3Assert processing
 	    nodep->coverincp(newCoverInc(nodep->fileline(), m_beginHier, "v_user", "cover"));
@@ -346,7 +342,7 @@ private:
 	    m_checkBlock = false;
 	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
 	} else {
-	    if (m_checkBlock) nodep->iterateChildren(*this);
+            if (m_checkBlock) iterateChildren(nodep);
 	}
     }
     virtual void visit(AstBegin* nodep) {
@@ -362,7 +358,7 @@ private:
 	    if (nodep->name()!="") {
 		m_beginHier = m_beginHier + (m_beginHier!=""?".":"") + nodep->name();
 	    }
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
 	m_beginHier = oldHier;
 	m_inToggleOff = oldtog;
@@ -372,7 +368,7 @@ private:
     virtual void visit(AstNode* nodep) {
 	// Default: Just iterate
 	if (m_checkBlock) {
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    m_checkBlock = true;  // Reset as a child may have cleared it
 	}
     }
@@ -386,7 +382,7 @@ public:
 	m_beginHier = "";
 	m_inToggleOff = false;
 	m_inModOff = true;
-	rootp->iterateChildren(*this);
+        iterateChildren(rootp);
     }
     virtual ~CoverageVisitor() {}
 };

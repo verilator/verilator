@@ -36,7 +36,6 @@ sub test {
     -r "nodist/install_test" or die "%Error: Run from the top of the verilator kit,";
 
     cleanenv();
-    $ENV{VERILATOR_NO_OPT_BUILD} = 1;   # Don't build optimized executables; just slows this down
     run("make distclean") if -r "Makefile";
 
     # Try building from a scratch area
@@ -59,11 +58,12 @@ sub test {
 	run("/bin/mkdir -p $prefix");
 	run("cd $blddir && make install");
 	run("test -e $prefix/share/man/man1/verilator.1");
-	run("test -e $prefix/share/verilator/examples/test_c/Makefile");
+        run("test -e $prefix/share/verilator/examples/tracing_c/Makefile");
 	run("test -e $prefix/share/verilator/include/verilated.h");
 	run("test -e $prefix/bin/verilator");
 	run("test -e $prefix/bin/verilator_bin");
 	run("test -e $prefix/bin/verilator_bin_dbg");
+        run("test -e $prefix/bin/verilator_gantt");
 	run("test -e $prefix/bin/verilator_profcfunc");
     }
 
@@ -92,6 +92,10 @@ sub test {
 	run("cd $dir/obj_dir && make -f Vfoo.mk");
 	run("cd $dir/obj_dir && ./Vfoo");
     }
+
+    if ($Opt_Stage <= 9) {
+        print "*-* All Finished *-*\n";
+    }
 }
 
 sub write_verilog {
@@ -116,7 +120,8 @@ sub write_verilog {
 sub cleanenv {
     foreach my $var (keys %ENV) {
 	if ($var eq "VERILATOR_ROOT"
-	    || $var eq "VERILATOR_INCLUDE") {
+            || $var eq "VERILATOR_INCLUDE"
+            || $var eq "VERILATOR_NO_OPT_BUILD") {
 	    print "unset $var # Was '$ENV{$var}'\n";
 	    delete $ENV{$var}
 	}

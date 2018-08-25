@@ -10,12 +10,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 compile(
-#    verilator_flags2 => ["-Wno-UNOPTFLAT"]
+    verilator_flags2 => ["--trace"]
     );
 
 execute(
     check_finished => 1,
     );
+
+vcd_identical("$Self->{obj_dir}/simx.vcd", "t/$Self->{name}.out");
 
 ok(1);
 1;

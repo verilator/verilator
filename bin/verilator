@@ -338,6 +338,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --pipe-filter <command>     Filter all input through a script
     --prefix <topname>          Name of top level class
     --prof-cfuncs               Name functions for profiling
+    --prof-threads              Enable generating gantt chart data for threads
     --private                   Debugging; see docs
     --public                    Debugging; see docs
      -pvalue+<name>=<value>     Overwrite toplevel parameter
@@ -350,6 +351,9 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --stats-vars                Provide statistics on variables
      -sv                        Enable SystemVerilog parsing
      +systemverilogext+<ext>    Synonym for +1800-2017ext+<ext>
+    --threads <threads>         Enable multithreading
+    --threads-dpi <mode>        Enable multithreaded DPI
+    --threads-max-mtasks <mtasks>  Tune maximum mtask partitioning
     --top-module <topname>      Name of top level input module
     --trace                     Enable waveform creation
     --trace-depth <levels>      Depth of tracing
@@ -379,6 +383,19 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --x-initial <mode>          Assign initial Xs to this value
     --x-initial-edge            Enable initial X->0 and X->1 edge triggers
      -y <dir>                   Directory to search for modules
+
+This is a short summary of the arguments to run-time Verilated arguments.
+detailed descriptions in L</"RUNTIME ARGUMENTS"> for more information.
+
+     +verilator+debug                  Enable debugging
+     +verilator+debugi+<value>         Enable debugging at a level
+     +verilator+help                   Display help
+     +verilator+prof+threads+file+I<filename>  Set profile filename
+     +verilator+prof+threads+start+I<value>    Set profile starting point
+     +verilator+prof+threads+window+I<value>   Set profile duration
+     +verilator+rand+reset+<value>     Set random reset technique
+     +verilator+V                      Verbose version and config
+     +verilator+version                Show version and exit
 
 
 =head1 VERILATION ARGUMENTS
@@ -1070,6 +1087,18 @@ Verilog module and line number the statement came from.  This allows gprof
 or oprofile reports to be correlated with the original Verilog source
 statements. See also L<verilator_profcfunc>.
 
+=item --prof-threads
+
+Enable gantt chart data collection for threaded builds.
+
+Verilator will record the start and end time of each macro-task across a
+number of calls to eval. (What is a macro-task? See the Verilator internals
+document.)
+
+When profiling is enabled, the runtime will emit a blurb of profiling data
+in non-human-friendly form. The C<verilator_gantt> script will transform
+this into a nicer visual format and produce some related statistics.
+
 =item --private
 
 Opposite of --public.  Is the default; this option exists for backwards
@@ -1124,7 +1153,10 @@ Enable including save and restore functions in the generated model.
 
 The user code must create a VerilatedSerialize or VerilatedDeserialze
 object then calling the << or >> operators on the generated model and any
-other data the process needs saved/restored.  For example:
+other data the process needs saved/restored.  These functions are not
+thread safe, and are typically called only by a main thread.
+
+For example:
 
     void save_model(const char* filenamep) {
         VerilatedSave os;
@@ -1162,6 +1194,42 @@ compatibility with other simulators.
 =item  +systemverilogext+I<ext>
 
 A synonym for C<+1800-2017ext+>I<ext>.
+
+=item --threads I<threads>
+
+=item --no-threads
+
+With --threads 0 or --no-threads, the default, the generated model is not
+thread safe. With --threads 1, the generated model is single threaded but
+may run in a multithreaded environment. With --threads N, where N >= 2, the
+model is generated to run multithreaded on up to N threads. See
+L</"MULTITHREADING">.
+
+=item --threads-dpi all
+
+=item --threads-dpi none
+
+=item --threads-dpi pure
+
+When using --dpi with --threads, control what DPI tasks are thread safe.
+
+With --threads-dpi all, enable Verilator to assume all DPI imports are
+threadsafe, and to use thread-local storage for communication with DPI,
+potentially improving performance. Any DPI libraries need appropriate
+mutexes to avoid undefined behavior.
+
+With --threads-dpi none, Verilator assume DPI imports are not thread safe,
+and Verilator will serialize calls to DPI imports by default, potentially
+harming performance.
+
+With --threads-dpi pure, the default, Verilator assumes DPI pure imports
+are threadsafe, but non-pure DPI imports are not.
+
+=item --threads-max-mtasks I<value>
+
+Rarely needed.  When using --threads, specify the number of mtasks the
+model is to be partitioned into. If unspecified, Verilator approximates a
+good value.
 
 =item --top-module I<topname>
 
@@ -1432,6 +1500,67 @@ are desired for error messages instead of relative filenames.
 =back
 
 
+=head1 RUNTIME ARGUMENTS
+
+The following are the arguments that may be passed to a Verilated
+executable, provided that executable calls Verilated::commandArgs().
+
+All runtime arguments begin with +verilator, so that the user's executable
+may skip over all +verilator arguments when parsing its command line.
+
+=over 4
+
+=item +verilator+debug
+
+Enable debugging.  Equivalent to +verilator+debugi+4.
+
+=item +verilator+debugi+I<value>
+
+Enable debugging at the provided level.
+
+=item +verilator+help
+
+Display help and exit.
+
+=item +verilator+prof+threads+file+I<filename>
+
+When using --prof-threads, the filename to dump to.  Defaults to
+"profile_threads.dat".
+
+=item +verilator+prof+threads+start+I<value>
+
+When using --prof-threads, Verilator will wait until $time is at this
+value, then start the profiling warmup, then capturing. Generally this
+should be set to some time that is well within the normal operation of the
+simulation, i.e. outside of reset. If 0, the dump is disabled. Defaults to
+1.
+
+=item +verilator+prof+threads+window+I<value>
+
+When using --prof-threads, after $time reaches
++verilator+prof+threads+start, Verilator will warm up the profiling for
+this number of eval() calls, then will capture the profiling of this number
+of eval() calls.  Defaults to 2, which makes sense for a
+single-clock-domain module where it's typical to want to capture one
+posedge eval() and one negedge eval().
+
+=item +verilator+rand+reset+I<value>
+
+When a model was Verilated using "-x-inital unique", sets the
+initialization technique.  0 = Reset to zeros. 1 = Reset to all-ones.  2 =
+Randomize.  See L</"Unknown states">.
+
+=item +verilator+V
+
+Shows the verbose version, including configuration information.
+
+=item +verilator+version
+
+Displays program version and exits.
+
+=back
+
+
 =head1 EXAMPLE C++ EXECUTION
 
 We'll compile this example into C++.
@@ -1585,6 +1714,9 @@ For best performance, run Verilator with the "-O3 --x-assign=fast
 compile times, and --x-assign=fast --x-initial=fast may increase the risk
 of reset bugs in trade for performance; see the above documentation for
 these flags.
+
+If using Verilated multithreaded, use C<numactl> to ensure you are using
+non-conflicting hardware resources. See L</"MULTITHREADING">.
 
 Minor Verilog code changes can also give big wins.  You should not have any
 UNOPTFLAT warnings from Verilator.  Fixing these warnings can result in
@@ -2126,6 +2258,91 @@ For larger designs you'll want to automate this using makefiles, which pull
 the names of the .cpp files to compile in from the make variables generated
 in obj_dir/Vour_classes.mk.
 
+
+=head1 MULTITHREADING
+
+Verilator experimentally supports multithreading.
+
+With --no-threads, the default, the model is not thread safe, and any use
+of more than one thread calling into one or even different Verilated models
+may result in unpredictable behavior. This gives the highest single thread
+performance.
+
+With --threads 1, the generated model is single threaded, however the
+support libraries are multithread safe. This allows different
+instantiations of model(s) to potentially each be run under a different
+thread.  All threading is the responsibility of the user's C++ testbench.
+
+With --threads N, where N is at least 2, the generated model will be
+designed to run in parallel on N threads. The thread calling eval()
+provides one of those threads, and the generated model will create and
+manage the other N-1 threads. It's the client's responsibility not to
+oversubscribe the available CPU cores. Under CPU oversubscription, the
+Verilated model should not livelock nor deadlock, however, you can expect
+performance to be far worse than it would be with proper stoichiometry of
+threads and CPU cores.
+
+The remainder of this section describe behavior with --threads 1 or
+--threads N (not --no-threads).
+
+VL_THREADED is defined when compiling a threaded Verilated module, causing
+the Verilated support classes become threadsafe.
+
+The thread used for constructing a model must the the same thread that
+calls eval() into the model, this is called the "eval thread". The thread
+used to perform certain global operations such as saving and tracing must
+be done by a "main thread". In most cases the eval thread and main thread
+are the same thread (i.e. the user's top C++ testbench runs on a single
+thread), but this is not required.
+
+When running a multithreaded model, the default Linux task scheduler often
+works against the model, by assuming threads are short lived, and thus
+often schedules threads using multiple hyperthreads within the same
+physical core. For best performance use the C<numactl> program to (when the
+threading count fits) select unique physical cores on the same socket. For
+example, if a model was Verilated with "--threads 4", we consult
+
+   egrep 'processor|physical id|core id' /proc/cpuinfo
+
+To select cores 0, 1, 2, and 3 that are all located on the same socket (0)
+but different physical cores.  (Also useful is "numactl --hardware", or
+C<lscpu> but those doesn't show Hyperthreading cores.) Then we execute
+
+   numactl -m 0 -C 0,1,2,3 -- verilated_executable_name
+
+This will limit memory to socket 0, and threads to cores 0, 1, 2, 3,
+(presumably on socket 0) optimizing performance.  Of course this must be
+adjusted if you want another simulator using e.g. socket 1, or if you
+Verilated with a different number of threads.  To see what CPUs are
+actually used, use --prof-threads.
+
+=head2 Multithreaded Verilog and Library Support
+
+$display/$stop/$finish are delayed until the end of an eval() call in order
+to maintain ordering between threads. This may result in additional tasks
+completing after the $stop or $finish.
+
+=over 4
+
+If using --coverage, the coverage routines are fully thread safe.
+
+If using --dpi, Verilator assumes pure DPI imports are thread safe,
+balancing performance versus saftey. See --threads-dpi.
+
+If using --savable, the save/restore classes are not multithreaded and are
+must be called only by the eval thread.
+
+If using --sc, the SystemC kernel is not thread safe, therefore the eval
+thread and main thread must be the same.
+
+If using --trace, the tracing classes must be constructed and called from
+the main thread.
+
+If using --vpi, since SystemVerilog VPI was not architected by IEEE to be
+multithreaded, Verilator requires all VPI calls are only made from the main
+thread.
+
+=back
 
 =head1 CONFIGURATION FILES
 
@@ -3591,6 +3808,21 @@ section for more details.
 Ignoring this warning will only slow simulations, it will simulate
 correctly.
 
+=item UNOPTTHREADS
+
+Warns that the thread scheduler was unable to partition the design to fill
+the requested number of threads.
+
+One workaround is to request fewer threads with C<--threads>.
+
+Another possible workaround is to allow more MTasks in the runtime, by
+increasing the value of --threads-max-mtasks. More MTasks will result in
+more communication and synchronization overhead at runtime; the scheduler
+attempts to minimize the number of MTasks for this reason.
+
+Ignoring this warning will only slow simulations, it will simulate
+correctly.
+
 =item UNPACKED
 
 Warns that unpacked structs and unions are not supported.
@@ -4140,6 +4372,8 @@ performance gain.
 
 In 2009, major SystemVerilog and DPI language support was added.
 
+In 2018, Verilator 4.000 was released with multithreaded support.
+
 Currently, various language features and performance enhancements are added
 as the need arises.  Verilator is now about 3x faster than in 2002, and is
 faster than many popular commercial simulators.
@@ -4240,7 +4474,7 @@ License Version 2.0.
 
 =head1 SEE ALSO
 
-L<verilator_coverage>, L<verilator_profcfunc>, L<make>,
+L<verilator_coverage>, L<verilator_gantt>, L<verilator_profcfunc>, L<make>,
 
 L<verilator --help> which is the source for this document,
 

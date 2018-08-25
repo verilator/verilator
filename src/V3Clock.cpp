@@ -68,13 +68,10 @@ private:
     AstCFunc*		m_settleFuncp;	// Top settlement function we are creating
     AstSenTree*		m_lastSenp;	// Last sensitivity match, so we can detect duplicates.
     AstIf*		m_lastIfp;	// Last sensitivity if active to add more under
+    AstMTaskBody*       m_mtaskBodyp;   // Current mtask body
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     AstVarScope* getCreateLastClk(AstVarScope* vscp) {
 	if (vscp->user1p()) return ((AstVarScope*)vscp->user1p());
@@ -154,11 +151,11 @@ private:
     AstNode* createSenseEquation(AstNodeSenItem* nodesp) {
 	// Nodep may be a list of elements; we need to walk it
 	AstNode* senEqnp = NULL;
-	for (AstNodeSenItem* senp = nodesp; senp; senp=senp->nextp()->castNodeSenItem()) {
+        for (AstNodeSenItem* senp = nodesp; senp; senp=VN_CAST(senp->nextp(), NodeSenItem)) {
 	    AstNode* senOnep = NULL;
-	    if (AstSenItem* itemp = senp->castSenItem()) {
+            if (AstSenItem* itemp = VN_CAST(senp, SenItem)) {
 		senOnep = createSenItemEquation(itemp);
-	    } else if (AstSenGate* itemp = senp->castSenGate()) {
+            } else if (AstSenGate* itemp = VN_CAST(senp, SenGate)) {
 		senOnep = createSenGateEquation(itemp);
 	    } else {
 		senp->v3fatalSrc("Strange node under sentree");
@@ -239,7 +236,7 @@ private:
 	    m_settleFuncp = funcp;
 	}
 	// Process the activates
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Done, clear so we can detect errors
 	UINFO(4," TOPSCOPEDONE "<<nodep<<endl);
 	clearLastSen();
@@ -249,13 +246,13 @@ private:
     virtual void visit(AstNodeModule* nodep) {
 	//UINFO(4," MOD   "<<nodep<<endl);
 	m_modp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp= NULL;
     }
     virtual void visit(AstScope* nodep) {
 	//UINFO(4," SCOPE   "<<nodep<<endl);
 	m_scopep = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (AstNode* movep = nodep->finalClksp()) {
 	    if (!m_topScopep) nodep->v3fatalSrc("Final clocks under non-top scope");
 	    movep->unlinkFrBackWithNext();
@@ -311,7 +308,7 @@ private:
 	nodep->deleteTree(); VL_DANGLING(nodep);
     }
     virtual void visit(AstCFunc* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Link to global function
 	if (nodep->formCallTree()) {
 	    UINFO(4, "    formCallTree "<<nodep<<endl);
@@ -342,6 +339,30 @@ private:
 	    // Only empty blocks should be leftover on the non-top.  Killem.
 	    if (nodep->stmtsp()) nodep->v3fatalSrc("Non-empty lower active");
 	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+        } else if (m_mtaskBodyp) {
+            UINFO(4,"  TR ACTIVE  "<<nodep<<endl);
+            AstNode* stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
+            if (nodep->hasClocked()) {
+                if (nodep->hasInitial()) nodep->v3fatalSrc("Initial block should not have clock sensitivity");
+                if (m_lastSenp && nodep->sensesp()->sameTree(m_lastSenp)) {
+                    UINFO(4,"    sameSenseTree\n");
+                } else {
+                    clearLastSen();
+                    m_lastSenp = nodep->sensesp();
+                    // Make a new if statement
+                    m_lastIfp = makeActiveIf(m_lastSenp);
+                    m_mtaskBodyp->addStmtsp(m_lastIfp);
+                }
+                // Move statements to if
+                m_lastIfp->addIfsp(stmtsp);
+            } else if (nodep->hasInitial() || nodep->hasSettle()) {
+                nodep->v3fatalSrc("MTask should not include initial/settle logic.");
+            } else {
+                // Combo logic. Move statements to mtask func.
+                clearLastSen();
+                m_mtaskBodyp->addStmtsp(stmtsp);
+            }
+            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
 	} else {
 	    UINFO(4,"  ACTIVE  "<<nodep<<endl);
 	    AstNode* stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
@@ -376,11 +397,25 @@ private:
 	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
 	}
     }
+    virtual void visit(AstExecGraph* nodep) {
+        for (m_mtaskBodyp = VN_CAST(nodep->op1p(), MTaskBody);
+             m_mtaskBodyp;
+             m_mtaskBodyp = VN_CAST(m_mtaskBodyp->nextp(), MTaskBody)) {
+            clearLastSen();
+            iterate(m_mtaskBodyp);
+        }
+        clearLastSen();
+        // Move the ExecGraph into _eval. Its location marks the
+        // spot where the graph will execute, relative to other
+        // (serial) logic in the cycle.
+        nodep->unlinkFrBack();
+        addToEvalLoop(nodep);
+    }
 
     //--------------------
     // Default: Just iterate
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -395,8 +430,9 @@ public:
         m_lastSenp = NULL;
 	m_lastIfp = NULL;
 	m_scopep = NULL;
+        m_mtaskBodyp = NULL;
 	//
-	nodep->accept(*this);
+        iterate(nodep);
         // Allow downstream modules to find _eval()
         // easily without iterating through the tree.
         nodep->evalp(m_evalFuncp);

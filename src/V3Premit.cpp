@@ -54,19 +54,15 @@ private:
     bool	m_noopt;	// Disable optimization of variables in this block
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
     virtual void visit(AstNodeAssign* nodep) {
         //AstNode::user4ClearTree();  // Implied by AstUser4InUse
 	// LHS first as fewer varrefs
-	nodep->lhsp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->lhsp());
 	// Now find vars marked as lhs
-	nodep->rhsp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->rhsp());
     }
     virtual void visit(AstVarRef* nodep) {
 	// it's LHS var is used so need a deep temporary
@@ -80,7 +76,7 @@ private:
 	}
     }
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -88,7 +84,7 @@ public:
     explicit PremitAssignVisitor(AstNodeAssign* nodep) {
 	UINFO(4,"  PremitAssignVisitor on "<<nodep<<endl);
 	m_noopt = false;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~PremitAssignVisitor() {}
     bool noOpt() const { return m_noopt; }
@@ -116,16 +112,12 @@ private:
     bool		m_assignLhs;	// Inside assignment lhs, don't breakup extracts
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     bool assignNoTemp(AstNodeAssign* nodep) {
-	return (nodep->lhsp()->castVarRef()
+        return (VN_IS(nodep->lhsp(), VarRef)
 		&& !AstVar::scVarRecurse(nodep->lhsp())
-		&& nodep->rhsp()->castConst());
+                && VN_IS(nodep->rhsp(), Const));
     }
     void checkNode(AstNode* nodep) {
 	// Consider adding a temp for this expression.
@@ -141,14 +133,14 @@ private:
 	    if (nodep->isWide()) {
 		if (m_assignLhs) {
 		} else if (nodep->firstAbovep()
-			   && nodep->firstAbovep()->castNodeAssign()
-			   && assignNoTemp(nodep->firstAbovep()->castNodeAssign())) {
+                           && VN_IS(nodep->firstAbovep(), NodeAssign)
+                           && assignNoTemp(VN_CAST(nodep->firstAbovep(), NodeAssign))) {
 		    // Not much point if it's just a direct assignment to a constant
-		} else if (nodep->backp()->castSel()
-			   && nodep->backp()->castSel()->widthp() == nodep) {
+                } else if (VN_IS(nodep->backp(), Sel)
+                           && VN_CAST(nodep->backp(), Sel)->widthp() == nodep) {
 		    // AstSel::width must remain a constant
 		} else if (nodep->firstAbovep()
-			   && nodep->firstAbovep()->castArraySel()) {
+                           && VN_IS(nodep->firstAbovep(), ArraySel)) {
 		    // ArraySel's are pointer refs, ignore
 		} else {
 		    UINFO(4,"Cre Temp: "<<nodep<<endl);
@@ -209,12 +201,12 @@ private:
 	UINFO(4," MOD   "<<nodep<<endl);
 	m_modp = nodep;
 	m_funcp = NULL;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp = NULL;
     }
     virtual void visit(AstCFunc* nodep) {
 	m_funcp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_funcp = NULL;
     }
     void startStatement(AstNode* nodep) {
@@ -224,14 +216,14 @@ private:
     virtual void visit(AstWhile* nodep) {
 	UINFO(4,"  WHILE  "<<nodep<<endl);
 	startStatement(nodep);
-	nodep->precondsp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->precondsp());
 	startStatement(nodep);
 	m_inWhilep = nodep;
-	nodep->condp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->condp());
 	m_inWhilep = NULL;
 	startStatement(nodep);
-	nodep->bodysp()->iterateAndNext(*this);
-	nodep->incsp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->bodysp());
+        iterateAndNextNull(nodep->incsp());
 	m_stmtp = NULL;
     }
     virtual void visit(AstNodeAssign* nodep) {
@@ -244,22 +236,22 @@ private:
 		createDeepTemp(nodep->rhsp(), false);
 	    }
 	}
-	nodep->rhsp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->rhsp());
 	m_assignLhs = true;
-	nodep->lhsp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->lhsp());
 	m_assignLhs = false;
 	m_stmtp = NULL;
     }
     virtual void visit(AstNodeStmt* nodep) {
 	UINFO(4,"  STMT  "<<nodep<<endl);
 	startStatement(nodep);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_stmtp = NULL;
     }
     virtual void visit(AstTraceInc* nodep) {
 	startStatement(nodep);
 	m_inTracep = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_inTracep = NULL;
 	m_stmtp = NULL;
     }
@@ -267,7 +259,7 @@ private:
 	// Shifts of > 32/64 bits in C++ will wrap-around and generate non-0s
 	if (!nodep->user2SetOnce()) {
 	    UINFO(4,"  ShiftFix  "<<nodep<<endl);
-	    AstConst* shiftp = nodep->rhsp()->castConst();
+            const AstConst* shiftp = VN_CAST(nodep->rhsp(), Const);
 	    if (shiftp && shiftp->num().mostSetBitP1() > 32) {
 		shiftp->v3error("Unsupported: Shifting of by over 32-bit number isn't supported."
 				<<" (This isn't a shift of 32 bits, but a shift of 2^32, or 4 billion!)\n");
@@ -308,7 +300,7 @@ private:
 		replaceHandle.relink(newp);
 	    }
 	}
-	nodep->iterateChildren(*this); checkNode(nodep);
+        iterateChildren(nodep); checkNode(nodep);
     }
     virtual void visit(AstShiftL* nodep) {
 	visitShift(nodep);
@@ -321,46 +313,46 @@ private:
     }
     // Operators
     virtual void visit(AstNodeTermop* nodep) {
-	nodep->iterateChildren(*this); checkNode(nodep);
+        iterateChildren(nodep); checkNode(nodep);
     }
     virtual void visit(AstNodeUniop* nodep) {
-	nodep->iterateChildren(*this); checkNode(nodep);
+        iterateChildren(nodep); checkNode(nodep);
     }
     virtual void visit(AstNodeBiop* nodep) {
-	nodep->iterateChildren(*this); checkNode(nodep);
+        iterateChildren(nodep); checkNode(nodep);
     }
     virtual void visit(AstUCFunc* nodep) {
-	nodep->iterateChildren(*this); checkNode(nodep);
+        iterateChildren(nodep); checkNode(nodep);
     }
     virtual void visit(AstSel* nodep) {
-	nodep->fromp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->fromp());
 	{   // Only the 'from' is part of the assignment LHS
 	    bool prevAssign = m_assignLhs;
 	    m_assignLhs = false;
-	    nodep->lsbp()->iterateAndNext(*this);
-	    nodep->widthp()->iterateAndNext(*this);
+            iterateAndNextNull(nodep->lsbp());
+            iterateAndNextNull(nodep->widthp());
 	    m_assignLhs = prevAssign;
 	}
 	checkNode(nodep);
     }
     virtual void visit(AstArraySel* nodep) {
-	nodep->fromp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->fromp());
 	{   // Only the 'from' is part of the assignment LHS
 	    bool prevAssign = m_assignLhs;
 	    m_assignLhs = false;
-	    nodep->bitp()->iterateAndNext(*this);
+            iterateAndNextNull(nodep->bitp());
 	    m_assignLhs = prevAssign;
 	}
 	checkNode(nodep);
     }
     virtual void visit(AstConst* nodep) {
-	nodep->iterateChildren(*this); checkNode(nodep);
+        iterateChildren(nodep); checkNode(nodep);
     }
     virtual void visit(AstNodeCond* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->expr1p()->isWide()
-	    && !nodep->condp()->castConst()
-	    && !nodep->condp()->castVarRef()) {
+            && !VN_IS(nodep->condp(), Const)
+            && !VN_IS(nodep->condp(), VarRef)) {
 	    // We're going to need the expression several times in the expanded code,
 	    // so might as well make it a common expression
 	    createDeepTemp(nodep->condp(), false);
@@ -371,29 +363,29 @@ private:
     // Autoflush
     virtual void visit(AstDisplay* nodep) {
 	startStatement(nodep);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_stmtp = NULL;
 	if (v3Global.opt.autoflush()) {
 	    AstNode* searchp = nodep->nextp();
-	    while (searchp && searchp->castComment()) searchp = searchp->nextp();
+            while (searchp && VN_IS(searchp, Comment)) searchp = searchp->nextp();
 	    if (searchp
-		&& searchp->castDisplay()
-		&& nodep->filep()->sameGateTree(searchp->castDisplay()->filep())) {
+                && VN_IS(searchp, Display)
+                && nodep->filep()->sameGateTree(VN_CAST(searchp, Display)->filep())) {
 		// There's another display next; we can just wait to flush
 	    } else {
 		UINFO(4,"Autoflush "<<nodep<<endl);
 		nodep->addNextHere(new AstFFlush(nodep->fileline(),
-						 nodep->filep()->cloneTree(true)));
+                                                 AstNode::cloneTreeNull(nodep->filep(), true)));
 	    }
 	}
     }
     virtual void visit(AstSFormatF* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Any strings sent to a display must be var of string data type,
 	// to avoid passing a pointer to a temporary.
 	for (AstNode* expp=nodep->exprsp(); expp; expp = expp->nextp()) {
 	    if (expp->dtypep()->basicp()->isString()
-		&& !expp->castVarRef()) {
+                && !VN_IS(expp, VarRef)) {
 		createDeepTemp(expp, true);
 	    }
 	}
@@ -403,7 +395,7 @@ private:
     // Default: Just iterate
     virtual void visit(AstVar* nodep) {}	// Don't hit varrefs under vars
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -414,7 +406,8 @@ public:
 	m_stmtp = NULL;
 	m_inWhilep = NULL;
 	m_inTracep = NULL;
-	nodep->accept(*this);
+        m_assignLhs = false;
+        iterate(nodep);
     }
     virtual ~PremitVisitor() {}
 };

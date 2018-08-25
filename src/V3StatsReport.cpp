@@ -38,10 +38,10 @@
 
 class StatsReport {
     // TYPES
-    typedef vector<V3Statistic> StatColl;
+    typedef std::vector<V3Statistic> StatColl;
 
     // STATE
-    ofstream&	os;		// Output stream
+    std::ofstream&      os;             ///< Output stream
     static StatColl	s_allStats;	///< All statistics
 
     void header() {
@@ -56,7 +56,7 @@ class StatsReport {
 
     void sumit() {
 	// If sumit is set on a statistic, combine with others of same name
-	typedef multimap<string,V3Statistic*> ByName;
+        typedef std::multimap<string,V3Statistic*> ByName;
 	ByName byName;
 	// * is always first
 	for (StatColl::iterator it = s_allStats.begin(); it!=s_allStats.end(); ++it) {
@@ -79,7 +79,7 @@ class StatsReport {
     void stars() {
 	// Find all stages
 	size_t maxWidth = 0;
-	typedef multimap<string,const V3Statistic*> ByName;
+        typedef std::multimap<string,const V3Statistic*> ByName;
 	ByName byName;
 	// * is always first
 	for (StatColl::iterator it = s_allStats.begin(); it!=s_allStats.end(); ++it) {
@@ -96,7 +96,7 @@ class StatsReport {
 	for (ByName::iterator it = byName.begin(); it!=byName.end(); ++it) {
 	    const V3Statistic* repp = it->second;
 	    if (repp->perf()) continue;
-	    os<<"  "<<left<<setw(maxWidth)<<repp->name();
+            os<<"  "<<std::left<<std::setw(maxWidth)<<repp->name();
 	    repp->dump(os);
 	    os<<endl;
 	}
@@ -108,7 +108,7 @@ class StatsReport {
 	for (ByName::iterator it = byName.begin(); it!=byName.end(); ++it) {
 	    const V3Statistic* repp = it->second;
 	    if (!repp->perf()) continue;
-	    os<<"  "<<left<<setw(maxWidth)<<repp->name();
+            os<<"  "<<std::left<<std::setw(maxWidth)<<repp->name();
 	    repp->dump(os);
 	    os<<endl;
 	}
@@ -121,10 +121,10 @@ class StatsReport {
 	// Find all stages
 	int stage=0;
 	size_t maxWidth = 0;
-	typedef vector<string> Stages;
+        typedef std::vector<string> Stages;
 	Stages stages;
 	vl_unordered_map<string,int> stageInt;
-	typedef multimap<string,const V3Statistic*> ByName;
+        typedef std::multimap<string,const V3Statistic*> ByName;
 	ByName byName;
 	// * is always first
 	for (StatColl::iterator it = s_allStats.begin(); it!=s_allStats.end(); ++it) {
@@ -140,14 +140,14 @@ class StatsReport {
 	}
 
 	// Header
-	os<<"  Stat     "<<left<<setw(maxWidth-5-2)<<"";
+        os<<"  Stat     "<<std::left<<std::setw(maxWidth-5-2)<<"";
 	for (Stages::iterator it = stages.begin(); it!=stages.end(); ++it) {
-	    os<<"  "<<left<<setw(9)<<*it;
+            os<<"  "<<std::left<<std::setw(9)<<*it;
 	}
 	os<<endl;
-	os<<"  -------- "<<left<<setw(maxWidth-5-2)<<"";
+        os<<"  -------- "<<std::left<<std::setw(maxWidth-5-2)<<"";
 	for (Stages::iterator it = stages.begin(); it!=stages.end(); ++it) {
-	    os<<"  "<<left<<setw(9)<<"-------";
+            os<<"  "<<std::left<<std::setw(9)<<"-------";
 	}
 	//os<<endl;
 
@@ -172,10 +172,10 @@ class StatsReport {
 		}
 		os<<endl;
 		col = 0;
-		os<<"  "<<left<<setw(maxWidth)<<repp->name();
+                os<<"  "<<std::left<<std::setw(maxWidth)<<repp->name();
 	    }
 	    while (col<stages.size() && stages.at(col) != repp->stage()) {
-		os<<setw(11)<<"";
+                os<<std::setw(11)<<"";
 		col++;
 	    }
 	    repp->dump(os);
@@ -191,7 +191,7 @@ public:
     }
 
     // CONSTRUCTORS
-    explicit StatsReport(ofstream* aofp)
+    explicit StatsReport(std::ofstream* aofp)
 	: os(*aofp) {
 	header();
 	sumit();
@@ -206,11 +206,11 @@ StatsReport::StatColl	StatsReport::s_allStats;
 //######################################################################
 // V3Statstic class
 
-void V3Statistic::dump (ofstream& os) const {
+void V3Statistic::dump(std::ofstream& os) const {
     if (perf()) {
-	os<<"  "<<right<<fixed<<setprecision(6)<<setw(9)<<count();
+        os<<"  "<<std::right<<std::fixed<<std::setprecision(6)<<std::setw(9)<<count();
     } else {
-	os<<"  "<<right<<fixed<<setprecision(0)<<setw(9)<<count();
+        os<<"  "<<std::right<<std::fixed<<std::setprecision(0)<<std::setw(9)<<count();
     }
 }
 

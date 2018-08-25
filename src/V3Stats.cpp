@@ -41,7 +41,7 @@ class StatsVisitor : public AstNVisitor {
 private:
     // NODE STATE/TYPES
 
-    typedef map<string,int>	NameMap;	// Number of times a name appears
+    typedef std::map<string,int> NameMap;  // Number of times a name appears
 
     // STATE
     string	m_stage;		// Name of the stage we are scanning
@@ -55,24 +55,20 @@ private:
     double	m_instrs;		// Current instr count (for determining branch direction)
     bool	m_tracingCall;          // Iterating into a CCall to a CFunc
 
-    vector<V3Double0>	m_statTypeCount;	// Nodes of given type
+    std::vector<V3Double0> m_statTypeCount;     // Nodes of given type
     V3Double0		m_statAbove[AstType::_ENUM_END][AstType::_ENUM_END];	// Nodes of given type
     V3Double0		m_statPred[AstBranchPred::_ENUM_END];	// Nodes of given type
     V3Double0		m_statInstr;		// Instruction count
     V3Double0		m_statInstrFast;	// Instruction count, non-slow() eval functions only
-    vector<V3Double0>	m_statVarWidths;	// Variables of given width
-    vector<NameMap>	m_statVarWidthNames;	// Var names of given width
+    std::vector<V3Double0> m_statVarWidths;     // Variables of given width
+    std::vector<NameMap>   m_statVarWidthNames; // Var names of given width
     V3Double0		m_statVarArray;		// Statistic tracking
     V3Double0		m_statVarBytes;		// Statistic tracking
     V3Double0		m_statVarClock;		// Statistic tracking
     V3Double0		m_statVarScpBytes;	// Statistic tracking
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     void allNodes(AstNode* nodep) {
 	m_instrs += nodep->instrCount();
@@ -91,17 +87,17 @@ private:
 	allNodes(nodep);
 	if (!m_fast) {
             // Count all CFuncs below this module
-            nodep->iterateChildrenConst(*this);
+            iterateChildrenConst(nodep);
 	}
         // Else we recursively trace fast CFuncs from the top _eval
         // func, see visit(AstNetlist*)
     }
     virtual void visit(AstVar* nodep) {
 	allNodes(nodep);
-	nodep->iterateChildrenConst(*this);
+        iterateChildrenConst(nodep);
 	if (m_counting && nodep->dtypep()) {
 	    if (nodep->isUsedClock()) ++m_statVarClock;
-	    if (nodep->dtypeSkipRefp()->castUnpackArrayDType()) ++m_statVarArray;
+            if (VN_IS(nodep->dtypeSkipRefp(), UnpackArrayDType)) ++m_statVarArray;
 	    else m_statVarBytes += nodep->dtypeSkipRefp()->widthTotalBytes();
 	    if (int(m_statVarWidths.size()) <= nodep->width()) {
 		m_statVarWidths.resize(nodep->width()+5);
@@ -121,9 +117,9 @@ private:
     }
     virtual void visit(AstVarScope* nodep) {
 	allNodes(nodep);
-	nodep->iterateChildrenConst(*this);
+        iterateChildrenConst(nodep);
 	if (m_counting) {
-	    if (nodep->varp()->dtypeSkipRefp()->castBasicDType()) {
+            if (VN_IS(nodep->varp()->dtypeSkipRefp(), BasicDType)) {
 		m_statVarScpBytes += nodep->varp()->dtypeSkipRefp()->widthTotalBytes();
 	    }
 	}
@@ -132,14 +128,14 @@ private:
 	UINFO(4,"   IF i="<<m_instrs<<" "<<nodep<<endl);
 	allNodes(nodep);
 	// Condition is part of cost allocated to PREVIOUS block
-	nodep->condp()->iterateAndNextConst(*this);
+        iterateAndNextConstNull(nodep->condp());
 	// Track prediction
 	if (m_counting) {
 	    ++m_statPred[nodep->branchPred()];
 	}
 	if (!m_fast) {
 	    // Count everything
-	    nodep->iterateChildrenConst(*this);
+            iterateChildrenConst(nodep);
 	} else {
 	    // See which path we want to take
 	    // Need to do even if !m_counting because maybe determining upstream if/else
@@ -151,7 +147,7 @@ private:
 		{
 		    m_counting = false;
 		    m_instrs = 0.0;
-		    nodep->ifsp()->iterateAndNextConst(*this);
+                    iterateAndNextConstNull(nodep->ifsp());
 		    ifInstrs = m_instrs;
 		}
 		m_instrs = prevInstr;
@@ -163,7 +159,7 @@ private:
 		{
 		    m_counting = false;
 		    m_instrs = 0.0;
-		    nodep->elsesp()->iterateAndNextConst(*this);
+                    iterateAndNextConstNull(nodep->elsesp());
 		    elseInstrs = m_instrs;
 		}
 		m_instrs = prevInstr;
@@ -172,9 +168,9 @@ private:
 	    // Now collect the stats
 	    if (m_counting) {
 		if (ifInstrs >= elseInstrs) {
-		    nodep->ifsp()->iterateAndNextConst(*this);
+                    iterateAndNextConstNull(nodep->ifsp());
 		} else {
-		    nodep->elsesp()->iterateAndNextConst(*this);
+                    iterateAndNextConstNull(nodep->elsesp());
 		}
 	    }
 	}
@@ -184,11 +180,11 @@ private:
 
     virtual void visit(AstCCall* nodep) {
 	allNodes(nodep);
-	nodep->iterateChildrenConst(*this);
+        iterateChildrenConst(nodep);
         if (m_fast && !nodep->funcp()->entryPoint()) {
 	    // Enter the function and trace it
             m_tracingCall = true;
-            nodep->funcp()->accept(*this);
+            iterate(nodep->funcp());
         }
     }
     virtual void visit(AstCFunc* nodep) {
@@ -198,22 +194,22 @@ private:
         }
 	m_cfuncp = nodep;
 	allNodes(nodep);
-	nodep->iterateChildrenConst(*this);
+        iterateChildrenConst(nodep);
 	m_cfuncp = NULL;
     }
     virtual void visit(AstNode* nodep) {
 	allNodes(nodep);
-	nodep->iterateChildrenConst(*this);
+        iterateChildrenConst(nodep);
     }
     virtual void visit(AstNetlist* nodep) {
         if (m_fast && nodep->evalp()) {
             m_instrs = 0;
             m_counting = true;
-            nodep->evalp()->iterateChildrenConst(*this);
+            if (nodep->evalp()) iterateChildrenConst(nodep->evalp());
             m_counting = false;
         }
         allNodes(nodep);
-        nodep->iterateChildrenConst(*this);
+        iterateChildrenConst(nodep);
     }
 public:
     // CONSTRUCTORS
@@ -227,7 +223,7 @@ public:
 	// Initialize arrays
 	m_statTypeCount.resize(AstType::_ENUM_END);
 	// Process
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~StatsVisitor() {
 	// Done. Publish statistics
@@ -246,11 +242,11 @@ public:
 		if (v3Global.opt.statsVars()) {
 		    NameMap& nameMapr = m_statVarWidthNames.at(i);
 		    for (NameMap::iterator it=nameMapr.begin(); it!=nameMapr.end(); ++it) {
-			ostringstream os; os<<"Vars, width "<<setw(5)<<dec<<i<<" "<<it->first;
+                        std::ostringstream os; os<<"Vars, width "<<std::setw(5)<<std::dec<<i<<" "<<it->first;
 			V3Stats::addStat(m_stage, os.str(), it->second);
 		    }
 		} else {
-		    ostringstream os; os<<"Vars, width "<<setw(5)<<dec<<i;
+                    std::ostringstream os; os<<"Vars, width "<<std::setw(5)<<std::dec<<i;
 		    V3Stats::addStat(m_stage, os.str(), count);
 		}
 	    }

@@ -43,7 +43,7 @@
 class LinkJumpVisitor : public AstNVisitor {
 private:
     // TYPES
-    typedef vector<AstBegin*> BeginStack;
+    typedef std::vector<AstBegin*> BeginStack;
 
     // STATE
     AstNodeModule*	m_modp;		// Current module
@@ -54,25 +54,21 @@ private:
     BeginStack		m_beginStack;	// All begin blocks above current node
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     AstJumpLabel* findAddLabel(AstNode* nodep, bool endOfIter) {
 	// Put label under given node, and if WHILE optionally at end of iteration
 	UINFO(4,"Create label for "<<nodep<<endl);
-	if (nodep->castJumpLabel()) return nodep->castJumpLabel(); // Done
+        if (VN_IS(nodep, JumpLabel)) return VN_CAST(nodep, JumpLabel);  // Done
 
 	AstNode* underp = NULL;
 	bool     under_and_next = true;
-	if (nodep->castBegin()) underp = nodep->castBegin()->stmtsp();
-	else if (nodep->castNodeFTask()) underp = nodep->castNodeFTask()->stmtsp();
-	else if (nodep->castWhile()) {
+        if (VN_IS(nodep, Begin)) underp = VN_CAST(nodep, Begin)->stmtsp();
+        else if (VN_IS(nodep, NodeFTask)) underp = VN_CAST(nodep, NodeFTask)->stmtsp();
+        else if (VN_IS(nodep, While)) {
 	    if (endOfIter) {
 		// Note we jump to end of bodysp; a FOR loop has its increment under incsp() which we don't skip
-		underp = nodep->castWhile()->bodysp();
+                underp = VN_CAST(nodep, While)->bodysp();
 	    } else {
 		underp = nodep; under_and_next=false; // IE we skip the entire while
 	    }
@@ -84,14 +80,14 @@ private:
 	// Skip over variables as we'll just move them in a momement
 	// Also this would otherwise prevent us from using a label twice
 	// see t_func_return test.
-	while (underp && underp->castVar()) underp = underp->nextp();
+        while (underp && VN_IS(underp, Var)) underp = underp->nextp();
 	if (underp) UINFO(5,"  Underpoint is "<<underp<<endl);
 
 	if (!underp) {
 	    nodep->v3fatalSrc("Break/disable/continue not under expected statement");
 	    return NULL;
-	} else if (underp->castJumpLabel()) {
-	    return underp->castJumpLabel();
+        } else if (VN_IS(underp, JumpLabel)) {
+            return VN_CAST(underp, JumpLabel);
 	} else { // Move underp stuff to be under a new label
 	    AstJumpLabel* labelp = new AstJumpLabel(nodep->fileline(), NULL);
 
@@ -104,7 +100,7 @@ private:
 	    // Keep any AstVars under the function not under the new JumpLabel
 	    for (AstNode* nextp, *varp=underp; varp; varp = nextp) {
 		nextp = varp->nextp();
-		if (varp->castVar()) {
+                if (VN_IS(varp, Var)) {
 		    labelp->addPrev(varp->unlinkFrBack());
 		}
 	    }
@@ -117,18 +113,18 @@ private:
 	if (nodep->dead()) return;
 	m_modp = nodep;
 	m_repeatNum = 0;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp = NULL;
     }
     virtual void visit(AstNodeFTask* nodep) {
 	m_ftaskp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_ftaskp = NULL;
     }
     virtual void visit(AstBegin* nodep) {
 	UINFO(8,"  "<<nodep<<endl);
 	m_beginStack.push_back(nodep);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_beginStack.pop_back();
     }
     virtual void visit(AstRepeat* nodep) {
@@ -167,17 +163,17 @@ private:
 	bool lastInc = m_loopInc;
 	m_loopp = nodep;
 	m_loopInc = false;
-	nodep->precondsp()->iterateAndNext(*this);
-	nodep->condp()->iterateAndNext(*this);
-	nodep->bodysp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->precondsp());
+        iterateAndNextNull(nodep->condp());
+        iterateAndNextNull(nodep->bodysp());
 	m_loopInc = true;
-	nodep->incsp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->incsp());
 	m_loopInc = lastInc;
 	m_loopp = lastLoopp;
     }
     virtual void visit(AstReturn* nodep) {
-	nodep->iterateChildren(*this);
-	AstFunc* funcp = m_ftaskp->castFunc();
+        iterateChildren(nodep);
+        AstFunc* funcp = VN_CAST(m_ftaskp, Func);
 	if (!m_ftaskp) { nodep->v3error("Return isn't underneath a task or function"); }
 	else if (funcp  && !nodep->lhsp()) { nodep->v3error("Return underneath a function should have return value"); }
 	else if (!funcp &&  nodep->lhsp()) { nodep->v3error("Return underneath a task shouldn't have return value"); }
@@ -185,7 +181,7 @@ private:
 	    if (funcp && nodep->lhsp()) {
 		// Set output variable to return value
 		nodep->addPrev(new AstAssign(nodep->fileline(),
-					     new AstVarRef(nodep->fileline(), funcp->fvarp()->castVar(), true),
+                                             new AstVarRef(nodep->fileline(), VN_CAST(funcp->fvarp(), Var), true),
 					     nodep->lhsp()->unlinkFrBackWithNext()));
 	    }
 	    // Jump to the end of the function call
@@ -195,7 +191,7 @@ private:
 	nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
     }
     virtual void visit(AstBreak* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (!m_loopp) { nodep->v3error("break isn't underneath a loop"); }
 	else {
 	    // Jump to the end of the loop
@@ -205,7 +201,7 @@ private:
 	nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
     }
     virtual void visit(AstContinue* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (!m_loopp) { nodep->v3error("continue isn't underneath a loop"); }
 	else {
 	    // Jump to the end of this iteration
@@ -217,7 +213,7 @@ private:
     }
     virtual void visit(AstDisable* nodep) {
 	UINFO(8,"   DISABLE "<<nodep<<endl);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	AstBegin* beginp = NULL;
 	for (BeginStack::reverse_iterator it = m_beginStack.rbegin(); it != m_beginStack.rend(); ++it) {
 	    UINFO(9,"    UNDERBLK  "<<*it<<endl);
@@ -242,7 +238,7 @@ private:
 
     virtual void visit(AstConst* nodep) {}
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
@@ -252,7 +248,7 @@ public:
 	m_loopp = NULL;
 	m_loopInc = false;
 	m_repeatNum = 0;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~LinkJumpVisitor() {}
 };

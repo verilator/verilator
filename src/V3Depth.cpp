@@ -52,11 +52,7 @@ private:
     int			m_maxdepth;	// Maximum depth in an expression
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     void createDeepTemp(AstNode* nodep) {
 	UINFO(6,"  Deep  "<<nodep<<endl);
@@ -89,21 +85,21 @@ private:
 	UINFO(4," MOD   "<<nodep<<endl);
 	m_modp = nodep;
 	m_funcp = NULL;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp = NULL;
     }
     virtual void visit(AstCFunc* nodep) {
 	m_funcp = nodep;
 	m_depth = 0;
 	m_maxdepth = 0;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_funcp = NULL;
     }
     void visitStmt(AstNodeStmt* nodep) {
 	m_depth = 0;
 	m_maxdepth = 0;
 	m_stmtp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_stmtp = NULL;
     }
     virtual void visit(AstNodeStmt* nodep) {
@@ -116,13 +112,13 @@ private:
 	// We have some operator defines that use 2 parens, so += 2.
 	m_depth += 2;
 	if (m_depth>m_maxdepth) m_maxdepth=m_depth;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_depth -= 2;
 
 	if (m_stmtp
 	    && (v3Global.opt.compLimitParens() >= 1)	// Else compiler doesn't need it
 	    && (m_maxdepth-m_depth) > v3Global.opt.compLimitParens()
-	    && !nodep->backp()->castNodeStmt()  // Not much point if we're about to use it
+            && !VN_IS(nodep->backp(), NodeStmt)  // Not much point if we're about to use it
 	    ) {
 	    m_maxdepth = m_depth;
 	    createDeepTemp(nodep);
@@ -141,7 +137,7 @@ private:
     }
     virtual void visit(AstUCFunc* nodep) {
 	needNonStaticFunc(nodep);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstUCStmt* nodep) {
 	needNonStaticFunc(nodep);
@@ -152,7 +148,7 @@ private:
     // Default: Just iterate
     virtual void visit(AstVar* nodep) {}	// Don't hit varrefs under vars
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -164,7 +160,7 @@ public:
 	m_depth=0;
 	m_maxdepth=0;
 	//
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~DepthVisitor() {}
 };

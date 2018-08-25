@@ -39,8 +39,8 @@ class V3Number {
     bool	m_fromString:1;	// True if from string literal
     bool	m_autoExtend:1;	// True if SystemVerilog extend-to-any-width
     FileLine*	m_fileline;
-    vector<uint32_t>	m_value;	// The Value, with bit 0 being in bit 0 of this vector (unless X/Z)
-    vector<uint32_t>	m_valueX;	// Each bit is true if it's X or Z, 10=z, 11=x
+    std::vector<uint32_t> m_value;  // The Value, with bit 0 being in bit 0 of this vector (unless X/Z)
+    std::vector<uint32_t> m_valueX;  // Each bit is true if it's X or Z, 10=z, 11=x
     string		m_stringVal;	// If isString, the value of the string
     // METHODS
     V3Number& setSingleBits(char value);
@@ -330,6 +330,6 @@ public:
     V3Number& opLtN	(const V3Number& lhs, const V3Number& rhs);
     V3Number& opLteN	(const V3Number& lhs, const V3Number& rhs);
 };
-inline ostream& operator<<(ostream& os, const V3Number& rhs) { return os<<rhs.ascii(); }
+inline std::ostream& operator<<(std::ostream& os, const V3Number& rhs) { return os<<rhs.ascii(); }
 
 #endif // Guard

@@ -97,8 +97,8 @@ class V3FileDependImp {
     };
 
     // MEMBERS
-    set<string>		m_filenameSet;		// Files generated (elim duplicates)
-    set<DependFile>	m_filenameList;		// Files sourced/generated
+    std::set<string> m_filenameSet;  // Files generated (elim duplicates)
+    std::set<DependFile> m_filenameList;  // Files sourced/generated
 
     static string stripQuotes(const string& in) {
 	string pretty = in;
@@ -137,7 +137,7 @@ inline void V3FileDependImp::writeDepend(const string& filename) {
     const vl_unique_ptr<std::ofstream> ofp (V3File::new_ofstream(filename));
     if (ofp->fail()) v3fatal("Can't write "<<filename);
 
-    for (set<DependFile>::iterator iter=m_filenameList.begin();
+    for (std::set<DependFile>::iterator iter=m_filenameList.begin();
 	 iter!=m_filenameList.end(); ++iter) {
 	if (iter->target()) {
 	    *ofp<<iter->filename()<<" ";
@@ -149,7 +149,7 @@ inline void V3FileDependImp::writeDepend(const string& filename) {
     *ofp<<V3PreShell::dependFiles();
     *ofp<<"  ";
 
-    for (set<DependFile>::iterator iter=m_filenameList.begin();
+    for (std::set<DependFile>::iterator iter=m_filenameList.begin();
 	 iter!=m_filenameList.end(); ++iter) {
 	if (!iter->target()) {
 	    *ofp<<iter->filename()<<" ";
@@ -160,7 +160,7 @@ inline void V3FileDependImp::writeDepend(const string& filename) {
 
     if (v3Global.opt.makePhony()) {
 	*ofp<<endl;
-	for (set<DependFile>::iterator iter=m_filenameList.begin();
+        for (std::set<DependFile>::iterator iter=m_filenameList.begin();
 	     iter!=m_filenameList.end(); ++iter) {
 	    if (!iter->target()) {
 		*ofp<<iter->filename()<<":"<<endl;
@@ -177,7 +177,7 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
     *ofp<<"# DESCR"<<"IPTION: Verilator output: Timestamp data for --skip-identical.  Delete at will."<<endl;
     *ofp<<"C \""<<cmdline<<"\""<<endl;
 
-    for (set<DependFile>::iterator iter=m_filenameList.begin();
+    for (std::set<DependFile>::iterator iter=m_filenameList.begin();
 	 iter!=m_filenameList.end(); ++iter) {
 	// Read stats of files we create after we're done making them (execpt for this file, of course)
 	DependFile* dfp = (DependFile*)&(*iter);
@@ -188,19 +188,19 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
 	if (dfp->filename() == filename) { showSize=0; showIno=0; }  // We're writing it, so need to ignore it
 
 	*ofp<<(iter->target()?"T":"S")<<" ";
-	*ofp<<" "<<setw(8)<<showSize;
-	*ofp<<" "<<setw(8)<<showIno;
-	*ofp<<" "<<setw(11)<<iter->cstime();
-	*ofp<<" "<<setw(11)<<iter->cnstime();
-	*ofp<<" "<<setw(11)<<iter->mstime();
-	*ofp<<" "<<setw(11)<<iter->mnstime();
+        *ofp<<" "<<std::setw(8)<<showSize;
+        *ofp<<" "<<std::setw(8)<<showIno;
+        *ofp<<" "<<std::setw(11)<<iter->cstime();
+        *ofp<<" "<<std::setw(11)<<iter->cnstime();
+        *ofp<<" "<<std::setw(11)<<iter->mstime();
+        *ofp<<" "<<std::setw(11)<<iter->mnstime();
 	*ofp<<" \""<<iter->filename()<<"\"";
 	*ofp<<endl;
     }
 }
 
 inline bool V3FileDependImp::checkTimes(const string& filename, const string& cmdlineIn) {
-    const vl_unique_ptr<ifstream> ifp (V3File::new_ifstream_nodepend(filename));
+    const vl_unique_ptr<std::ifstream> ifp (V3File::new_ifstream_nodepend(filename));
     if (ifp->fail()) {
 	UINFO(2,"   --check-times failed: no input "<<filename<<endl);
 	return false;
@@ -299,7 +299,7 @@ void V3File::createMakeDir() {
 // V3InFilterImp
 
 class V3InFilterImp {
-    typedef map<string,string> FileContentsMap;
+    typedef std::map<string,string> FileContentsMap;
     typedef V3InFilter::StrList StrList;
 
     FileContentsMap	m_contentsMap;	// Cache of file contents
@@ -316,11 +316,7 @@ class V3InFilterImp {
 
 private:
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     bool readContents(const string& filename, StrList& outl) {
 	if (m_pid) return readContentsFilter(filename,outl);

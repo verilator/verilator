@@ -30,14 +30,15 @@ class V3LanguageWords {
     // List of common reserved keywords
 
   private:
-    map<string,string>	m_kwdMap;	// List of keywords, and what language applies
+    typedef std::map<string,string> KeywordMap;
+    KeywordMap m_kwdMap;  // List of keywords, and what language applies
 
     void addKwd(const string& kwd, const string& why) {
 	m_kwdMap.insert(make_pair(kwd,why));
     }
   public:
     string isKeyword(const string& kwd) {
-	map<string,string>::iterator it = m_kwdMap.find(kwd);
+        KeywordMap::iterator it = m_kwdMap.find(kwd);
 	if (it == m_kwdMap.end()) return "";
 	return it->second;
     }
@@ -107,8 +108,8 @@ class V3LanguageWords {
 	addKwd("long",			"C++ keyword");
 	addKwd("map",			"C++ common word");
 	addKwd("module",		"C++ modules TS keyword");
-	addKwd("multimap",		"C++ common word");
-	addKwd("multiset",		"C++ common word");
+        addKwd("std::multimap",         "C++ common word");
+        addKwd("std::multiset",         "C++ common word");
 	addKwd("mutable",		"C++ keyword");
 	addKwd("namespace",		"C++ keyword");
 	addKwd("near",			"C++ common word");

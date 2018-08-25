@@ -21,6 +21,7 @@
 //
 //	V3GraphVertex
 //	  OrderMoveVertex
+//        MTaskMoveVertex
 //	  OrderEitherVertex
 //	    OrderInputsVertex
 //	    OrderSettleVertex
@@ -47,9 +48,11 @@
 #include "verilatedos.h"
 #include "V3Ast.h"
 #include "V3Graph.h"
+#include VL_INCLUDE_UNORDERED_MAP
 
 class OrderVisitor;
 class OrderMoveVertex;
+class OrderMoveVertexMaker;
 class OrderMoveDomScope;
 
 //######################################################################
@@ -188,13 +191,12 @@ public:
 
 class OrderLogicVertex : public OrderEitherVertex {
     AstNode*		m_nodep;
-    OrderMoveVertex*	m_moveVxp;
 protected:
     OrderLogicVertex(V3Graph* graphp, const OrderLogicVertex& old)
-	: OrderEitherVertex(graphp, old), m_nodep(old.m_nodep), m_moveVxp(old.m_moveVxp) {}
+        : OrderEitherVertex(graphp, old), m_nodep(old.m_nodep) {}
 public:
     OrderLogicVertex(V3Graph* graphp, AstScope* scopep, AstSenTree* domainp, AstNode* nodep)
-	: OrderEitherVertex(graphp, scopep, domainp), m_nodep(nodep), m_moveVxp(NULL) {}
+        : OrderEitherVertex(graphp, scopep, domainp), m_nodep(nodep) {}
     virtual ~OrderLogicVertex() {}
     virtual OrderLogicVertex* clone(V3Graph* graphp) const {
 	return new OrderLogicVertex(graphp, *this); }
@@ -204,8 +206,6 @@ public:
     virtual string name() const { return (cvtToStr((void*)m_nodep)+"\\n "+cvtToStr(nodep()->typeName())); }
     AstNode* nodep() const { return m_nodep; }
     virtual string dotColor() const { return "yellow"; }
-    OrderMoveVertex*	moveVxp() const { return m_moveVxp; }
-    void moveVxp(OrderMoveVertex* moveVxp) { m_moveVxp = moveVxp; }
 };
 
 class OrderVarVertex : public OrderEitherVertex {
@@ -224,6 +224,7 @@ public:
     virtual ~OrderVarVertex() {}
     virtual OrderVarVertex* clone (V3Graph* graphp) const = 0;
     virtual OrderVEdgeType type() const = 0;
+    virtual FileLine* fileline() const { return varScp()->fileline(); }
     // ACCESSORS
     AstVarScope* varScp() const { return m_varScp; }
     void isClock(bool flag) { m_isClock=flag; }
@@ -315,28 +316,27 @@ class OrderMoveVertex : public V3GraphVertex {
 
 protected:
     friend class OrderVisitor;
+    friend class OrderMoveVertexMaker;
     // These only contain the "next" item,
     // for the head of the list, see the same var name under OrderVisitor
     V3ListEnt<OrderMoveVertex*>	m_pomWaitingE;	// List of nodes needing inputs to become ready
     V3ListEnt<OrderMoveVertex*>	m_readyVerticesE;// List of ready under domain/scope
-    // CONSTRUCTORS
-    OrderMoveVertex(V3Graph* graphp, const OrderMoveVertex& old)
-	: V3GraphVertex(graphp, old), m_logicp(old.m_logicp), m_state(old.m_state)
-	, m_domScopep(old.m_domScopep) {}
 public:
+    // CONSTRUCTORS
     OrderMoveVertex(V3Graph* graphp, OrderLogicVertex* logicp)
-	: V3GraphVertex(graphp), m_logicp(logicp), m_state(POM_WAIT), m_domScopep(NULL) {}
+        : V3GraphVertex(graphp), m_logicp(logicp), m_state(POM_WAIT), m_domScopep(NULL) {}
     virtual ~OrderMoveVertex() {}
     virtual OrderMoveVertex* clone(V3Graph* graphp) const {
-	return new OrderMoveVertex(graphp, *this);
-    }
+        v3fatalSrc("Unsupported"); return NULL; }
+    // METHODS
     virtual OrderVEdgeType type() const { return OrderVEdgeType::VERTEX_MOVE; }
     virtual string dotColor() const {
-        if (logicp()) {
-            return logicp()->dotColor();
-        } else {
-            return "";
-        }
+        if (logicp()) return logicp()->dotColor();
+        else return "";
+    }
+    virtual FileLine* fileline() const {
+        if (logicp()) return logicp()->fileline();
+        else return NULL;
     }
     virtual string name() const {
         string nm;
@@ -350,7 +350,6 @@ public:
         }
         return nm;
     }
-    // ACCESSORS
     OrderLogicVertex* logicp() const { return m_logicp; }
     bool isWait() const { return m_state==POM_WAIT; }
     void setReady() {
@@ -364,6 +363,57 @@ public:
     OrderMoveDomScope* domScopep() const { return m_domScopep; }
     OrderMoveVertex* pomWaitingNextp() const { return m_pomWaitingE.nextp(); }
     void domScopep(OrderMoveDomScope* ds) { m_domScopep=ds; }
+};
+
+// Similar to OrderMoveVertex, but modified for threaded code generation.
+class MTaskMoveVertex : public V3GraphVertex {
+    //  This could be more compact, since we know m_varp and m_logicp
+    //  cannot both be set. Each MTaskMoveVertex represents a logic node
+    //  or a var node, it can't be both.
+    OrderLogicVertex* m_logicp;  // Logic represented by this vertex
+    const OrderEitherVertex* m_varp;  // Var represented by this vertex
+    const AstScope* m_scopep;
+    const AstSenTree* m_domainp;
+
+protected:
+    friend class OrderVisitor;
+    friend class MTaskMoveVertexMaker;
+public:
+    MTaskMoveVertex(V3Graph* graphp, OrderLogicVertex* logicp,
+                    const OrderEitherVertex* varp,
+                    const AstScope* scopep, const AstSenTree* domainp)
+        : V3GraphVertex(graphp), m_logicp(logicp),
+          m_varp(varp), m_scopep(scopep), m_domainp(domainp) {
+        UASSERT(!(logicp && varp),
+                "MTaskMoveVertex: logicp and varp may not both be set!\n");
+    }
+    virtual ~MTaskMoveVertex() {}
+    virtual MTaskMoveVertex* clone(V3Graph* graphp) const {
+      v3fatalSrc("Unsupported"); return NULL; }
+    virtual OrderVEdgeType type() const { return OrderVEdgeType::VERTEX_MOVE; }
+    virtual string dotColor() const {
+        if (logicp()) return logicp()->dotColor();
+        else return "yellow";
+    }
+    virtual string name() const {
+        string nm;
+        if (logicp()) {
+            nm = logicp()->name();
+            nm += (string("\\nMV:")
+                   +" d="+cvtToStr((void*)logicp()->domainp())
+                   +" s="+cvtToStr((void*)logicp()->scopep())
+                   // "color()" represents the mtask ID.
+                   +"\\nt="+cvtToStr(color()));
+        } else {
+            nm = "nolog\\nt="+cvtToStr(color());
+        }
+        return nm;
+    }
+    // ACCESSORS
+    OrderLogicVertex* logicp() const { return m_logicp; }
+    const OrderEitherVertex* varp() const { return m_varp; }
+    const AstScope* scopep() const { return m_scopep; }
+    const AstSenTree* domainp() const { return m_domainp; }
 };
 
 //######################################################################
@@ -458,4 +508,4 @@ public:
     virtual bool followSequentConnected() const { return false; }
 };
 
-#endif  // _V3ORDERGRAPH_H_
+#endif  // Guard

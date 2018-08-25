@@ -53,7 +53,7 @@ class LifeState {
 public:
     V3Double0	m_statAssnDel;	// Statistic tracking
     V3Double0	m_statAssnCon;	// Statistic tracking
-    vector<AstNode*>	m_unlinkps;
+    std::vector<AstNode*> m_unlinkps;
 
 public:
     // CONSTRUCTORS
@@ -61,7 +61,7 @@ public:
     ~LifeState() {
 	V3Stats::addStatSum("Optimizations, Lifetime assign deletions", m_statAssnDel);
 	V3Stats::addStatSum("Optimizations, Lifetime constant prop", m_statAssnCon);
-	for (vector<AstNode*>::iterator it = m_unlinkps.begin(); it != m_unlinkps.end(); ++it) {
+        for (std::vector<AstNode*>::iterator it = m_unlinkps.begin(); it != m_unlinkps.end(); ++it) {
 	    (*it)->unlinkFrBack();
 	    (*it)->deleteTree();
 	}
@@ -104,7 +104,7 @@ public:
 	m_assignp = assp;
 	m_constp = NULL;
 	m_everSet = true;
-	if (assp->rhsp()->castConst()) m_constp = assp->rhsp()->castConst();
+        if (VN_IS(assp->rhsp(), Const)) m_constp = VN_CAST(assp->rhsp(), Const);
     }
     inline void complexAssign() {  // A[x]=... or some complicated assignment
 	m_assignp = NULL;
@@ -135,11 +135,7 @@ class LifeBlock {
     LifeBlock*	m_aboveLifep;	// Upper life, or NULL
     LifeState*	m_statep;	// Current global state
 
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
 public:
     LifeBlock(LifeBlock* aboveLifep, LifeState* statep) {
@@ -297,11 +293,7 @@ private:
     LifeBlock*	m_lifep;	// Current active lifetime map for current scope
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
     virtual void visit(AstVarRef* nodep) {
@@ -322,42 +314,42 @@ private:
 	// Similar code in V3Dead
 	vluint64_t lastEdit = AstNode::editCountGbl();	// When it was last edited
 	m_sideEffect = false;
-	nodep->rhsp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->rhsp());
 	if (lastEdit != AstNode::editCountGbl()) {
 	    // We changed something, try to constant propagate, but don't delete the
 	    // assignment as we still need nodep to remain.
 	    V3Const::constifyEdit(nodep->rhsp());  // rhsp may change
 	}
 	// Has to be direct assignment without any EXTRACTing.
-	if (nodep->lhsp()->castVarRef() && !m_sideEffect && !m_noopt) {
-	    AstVarScope* vscp = nodep->lhsp()->castVarRef()->varScopep();
+        if (VN_IS(nodep->lhsp(), VarRef) && !m_sideEffect && !m_noopt) {
+            AstVarScope* vscp = VN_CAST(nodep->lhsp(), VarRef)->varScopep();
 	    if (!vscp) nodep->v3fatalSrc("Scope lost on variable");
 	    m_lifep->simpleAssign(vscp, nodep);
 	} else {
-	    nodep->lhsp()->iterateAndNext(*this);
+            iterateAndNextNull(nodep->lhsp());
 	}
     }
     virtual void visit(AstAssignDly* nodep) {
 	// Don't treat as normal assign; V3Life doesn't understand time sense
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
     //---- Track control flow changes
     virtual void visit(AstNodeIf* nodep) {
 	UINFO(4,"   IF "<<nodep<<endl);
 	// Condition is part of PREVIOUS block
-	nodep->condp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->condp());
 	LifeBlock* prevLifep = m_lifep;
 	LifeBlock* ifLifep   = new LifeBlock (prevLifep, m_statep);
 	LifeBlock* elseLifep = new LifeBlock (prevLifep, m_statep);
 	{
 	    m_lifep = ifLifep;
-	    nodep->ifsp()->iterateAndNext(*this);
+            iterateAndNextNull(nodep->ifsp());
 	    m_lifep = prevLifep;
 	}
 	{
 	    m_lifep = elseLifep;
-	    nodep->elsesp()->iterateAndNext(*this);
+            iterateAndNextNull(nodep->elsesp());
 	    m_lifep = prevLifep;
 	}
 	UINFO(4,"   join "<<endl);
@@ -383,14 +375,14 @@ private:
 	LifeBlock* bodyLifep = new LifeBlock (prevLifep, m_statep);
 	{
 	    m_lifep = condLifep;
-	    nodep->precondsp()->iterateAndNext(*this);
-	    nodep->condp()->iterateAndNext(*this);
+            iterateAndNextNull(nodep->precondsp());
+            iterateAndNextNull(nodep->condp());
 	    m_lifep = prevLifep;
 	}
 	{
 	    m_lifep = bodyLifep;
-	    nodep->bodysp()->iterateAndNext(*this);
-	    nodep->incsp()->iterateAndNext(*this);
+            iterateAndNextNull(nodep->bodysp());
+            iterateAndNextNull(nodep->incsp());
 	    m_lifep = prevLifep;
 	}
 	UINFO(4,"   joinfor"<<endl);
@@ -410,7 +402,7 @@ private:
 	{
 	    m_lifep = bodyLifep;
 	    m_noopt = true;
-	    nodep->stmtsp()->iterateAndNext(*this);
+            iterateAndNextNull(nodep->stmtsp());
 	    m_lifep = prevLifep;
 	    m_noopt = prev_noopt;
 	}
@@ -421,11 +413,11 @@ private:
     }
     virtual void visit(AstCCall* nodep) {
 	//UINFO(4,"  CCALL "<<nodep<<endl);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Enter the function and trace it
 	if (!nodep->funcp()->entryPoint()) {  // else is non-inline or public function we optimize separately
             m_tracingCall = true;
-            nodep->funcp()->accept(*this);
+            iterate(nodep->funcp());
 	}
     }
     virtual void visit(AstCFunc* nodep) {
@@ -435,20 +427,20 @@ private:
 	if (nodep->dpiImport() && !nodep->pure()) {
 	    m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
 	}
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstUCFunc* nodep) {
 	m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstCMath* nodep) {
 	m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
     virtual void visit(AstVar*) {}	// Don't want varrefs under it
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -461,7 +453,7 @@ public:
         m_tracingCall = false;
 	{
 	    m_lifep = new LifeBlock (NULL, m_statep);
-	    nodep->accept(*this);
+            iterate(nodep);
 	    if (m_lifep) { delete m_lifep; m_lifep=NULL; }
 	}
     }
@@ -502,13 +494,13 @@ private:
     virtual void visit(AstNodeStmt*) {}	// Accelerate
     virtual void visit(AstNodeMath*) {}	// Accelerate
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTRUCTORS
     LifeTopVisitor(AstNetlist* nodep, LifeState* statep) {
 	m_statep = statep;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~LifeTopVisitor() {}
 };

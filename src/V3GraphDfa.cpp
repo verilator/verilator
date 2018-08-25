@@ -40,11 +40,11 @@ DfaVertex* DfaGraph::findStart() {
     for (V3GraphVertex* vertexp = this->verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
 	if (DfaVertex* vvertexp = dynamic_cast<DfaVertex*>(vertexp)) {
 	    if (vvertexp->start()) {
-		if (startp) v3fatalSrc("Multiple start points in NFA graph");
+                if (startp) vertexp->v3fatalSrc("Multiple start points in NFA graph");
 		startp = vvertexp;
 	    }
 	} else {
-	    v3fatalSrc("Non DfaVertex in DfaGraph");
+            vertexp->v3fatalSrc("Non DfaVertex in DfaGraph");
 	}
     }
     if (!startp) v3fatalSrc("No start point in NFA graph");
@@ -56,15 +56,15 @@ DfaVertex* DfaGraph::findStart() {
 // Algorithms - convert NFA to a DFA
 // Uses the Subset Construction Algorithm
 
-class GraphNfaToDfa : GraphAlg {
+class GraphNfaToDfa : GraphAlg<> {
     // We have two types of nodes in one graph, NFA and DFA nodes.
     // Edges from NFA to NFA come from the user, and indicate input or epsilon transitions
     // Edges from DFA to NFA indicate the NFA from which that DFA was formed.
     // Edges from DFA to DFA indicate a completed input transition
 private:
     // TYPES
-    typedef deque<DfaVertex*>		DfaStates;
-    typedef multimap<vluint64_t,DfaVertex*>	HashMap;
+    typedef std::deque<DfaVertex*> DfaStates;
+    typedef std::multimap<vluint64_t,DfaVertex*> HashMap;
 
     // MEMBERS
     uint32_t		m_step;		// Processing step, so we can avoid clearUser all the time
@@ -116,7 +116,9 @@ private:
 		DfaVertex* nfaStatep = static_cast<DfaVertex*>(dfaEdgep->top());
 		hash ^= hashVertex(nfaStatep);
 		if (debug()) {
-		    if (nfaStatep->user()==m_step) v3fatalSrc("DFA state points to duplicate NFA state.");
+                    if (nfaStatep->user()==m_step) {
+                        nfaStatep->v3fatalSrc("DFA state points to duplicate NFA state.");
+                    }
 		    nfaStatep->user(m_step);
 		}
 	    }
@@ -174,7 +176,7 @@ private:
 	// The order of the nodes is not deterministic; the hash thus must not depend on order of edges
 	uint32_t hash = hashDfaOrigins(nfasWithInput);
 
-	pair <HashMap::iterator,HashMap::iterator> eqrange = m_hashMap.equal_range(hash);
+        std::pair<HashMap::iterator,HashMap::iterator> eqrange = m_hashMap.equal_range(hash);
 	for (HashMap::iterator it = eqrange.first; it != eqrange.second; ++it) {
 	    DfaVertex* testp = it->second;
 	    if (compareDfaOrigins(nfasWithInput, testp)) {
@@ -280,7 +282,7 @@ private:
 	    UINFO(9,"  On dfaState "<<dfaStatep<<endl);
 
 	    // From this dfaState, what corresponding nfaStates have what inputs?
-	    set<int> inputs;
+            std::set<int> inputs;
 	    // Foreach NFA state (this DFA state was formed from)
 	    for (V3GraphEdge* dfaEdgep = dfaStatep->outBeginp(); dfaEdgep; dfaEdgep=dfaEdgep->outNextp()) {
 		if (nfaState(dfaEdgep->top())) {
@@ -299,7 +301,7 @@ private:
 	    }
 
 	    // Foreach input state (NFA inputs of this DFA state)
-	    for (set<int>::const_iterator inIt=inputs.begin(); inIt!=inputs.end(); ++inIt) {
+            for (std::set<int>::const_iterator inIt=inputs.begin(); inIt!=inputs.end(); ++inIt) {
 		DfaInput input = *inIt;
 		UINFO(9,"    ==="<<++i<<"=======================\n");
 		UINFO(9,"    On input "<<(void*)(input.toNodep())<<endl);
@@ -346,7 +348,7 @@ private:
 
 public:
     GraphNfaToDfa(V3Graph* graphp, V3EdgeFuncP edgeFuncp)
-	: GraphAlg(graphp, edgeFuncp) {
+        : GraphAlg<>(graphp, edgeFuncp) {
 	m_step = 0;
 	main();
     }
@@ -363,7 +365,7 @@ void DfaGraph::nfaToDfa() {
 //
 // Scan the DFA, cleaning up trailing states.
 
-class DfaGraphReduce : GraphAlg {
+class DfaGraphReduce : GraphAlg<> {
 private:
     // METHODS
     static int debug() { return 0; }
@@ -402,7 +404,7 @@ private:
 	m_graphp->userClearVertices();
 
 	DfaVertex* startp = graphp()->findStart();
-	stack<V3GraphVertex*> workps;  workps.push(startp);
+        std::stack<V3GraphVertex*> workps;  workps.push(startp);
 
 	// Mark all nodes connected to start
 	while (!workps.empty()) {
@@ -437,14 +439,14 @@ private:
 	m_graphp->userClearVertices();
 
 	// Find all dead vertexes
-	stack<DfaVertex*> workps;
+        std::stack<DfaVertex*> workps;
 	for (V3GraphVertex* vertexp = m_graphp->verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
 	    if (DfaVertex* vvertexp = dynamic_cast<DfaVertex*>(vertexp)) {
 		workps.push(vvertexp);
 		vertexp->user(1);
 	    } else {
 		// If ever remove this, need dyn cast below
-		v3fatalSrc("Non DfaVertex in dfa graph");
+                vertexp->v3fatalSrc("Non DfaVertex in dfa graph");
 	    }
 	}
 
@@ -469,7 +471,7 @@ private:
     }
 public:
     DfaGraphReduce(V3Graph* graphp, V3EdgeFuncP edgeFuncp)
-	: GraphAlg(graphp, edgeFuncp) {
+        : GraphAlg<>(graphp, edgeFuncp) {
 	if (debug()>=6) m_graphp->dumpDotFilePrefixed("opt_in");
 	optimize_accepting_out();
 	if (debug()>=6) m_graphp->dumpDotFilePrefixed("opt_acc");
@@ -505,7 +507,7 @@ void DfaGraph::dfaReduce() {
 // The user's old accept is now the new accept.  This is imporant as
 // we want the virtual type of it to be intact.
 
-class DfaGraphComplement : GraphAlg {
+class DfaGraphComplement : GraphAlg<> {
 private:
     // MEMBERS
     DfaVertex* m_tempNewerReject;
@@ -559,7 +561,7 @@ private:
     }
 public:
     DfaGraphComplement(V3Graph* dfagraphp, V3EdgeFuncP edgeFuncp)
-	: GraphAlg(dfagraphp, edgeFuncp) {
+        : GraphAlg<>(dfagraphp, edgeFuncp) {
 	if (debug()>=6) m_graphp->dumpDotFilePrefixed("comp_in");
 
 	// Vertex::m_user begin: 1 indicates new edge, no more processing

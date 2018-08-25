@@ -44,6 +44,8 @@
 #include "V3Ast.h"
 #include "V3EmitCBase.h"
 #include "V3Const.h"
+#include "V3SenTree.h"  // for SenTreeSet
+#include VL_INCLUDE_UNORDERED_MAP
 
 //***** See below for main transformation engine
 
@@ -52,11 +54,7 @@
 
 class ActiveBaseVisitor : public AstNVisitor {
 protected:
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 };
 
 class ActiveNamer : public ActiveBaseVisitor {
@@ -66,7 +64,11 @@ private:
     AstScope*	m_scopep;		// Current scope to add statement to
     AstActive*	m_iActivep;		// For current scope, the IActive we're building
     AstActive*	m_cActivep;		// For current scope, the SActive(combo) we're building
-    vector<AstActive*>	m_activeVec;	// List of sensitive actives, for folding
+
+    SenTreeSet  m_activeSens;  // Sen lists for each active we've made
+    typedef vl_unordered_map<AstSenTree*, AstActive*> ActiveMap;
+    ActiveMap m_activeMap;  // Map sentree to active, for folding.
+
     // METHODS
     void addActive(AstActive* nodep) {
 	if (!m_scopep) nodep->v3fatalSrc("NULL scope");
@@ -77,8 +79,9 @@ private:
 	m_scopep = nodep;
 	m_iActivep = NULL;
 	m_cActivep = NULL;
-	m_activeVec.clear();
-	nodep->iterateChildren(*this);
+        m_activeSens.clear();
+        m_activeMap.clear();
+        iterateChildren(nodep);
 	// Don't clear scopep, the namer persists beyond this visit
     }
     virtual void visit(AstSenTree* nodep) {
@@ -91,7 +94,7 @@ private:
     // Default
     virtual void visit(AstNode* nodep) {
 	// Default: Just iterate
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     // METHODS
 public:
@@ -116,22 +119,15 @@ public:
     }
     AstActive* getActive(FileLine* fl, AstSenTree* sensesp) {
 	// Return a sentree in this scope that matches given sense list.
-	// Not the fastest, but scopes tend to have few clocks
+
 	AstActive* activep = NULL;
-	//sitemsp->dumpTree(cout,"  Lookingfor: ");
-	for (vector<AstActive*>::iterator it = m_activeVec.begin(); it!=m_activeVec.end(); ++it) {
-	    activep = *it;
-	    if (activep) {  // Not deleted
-		// Compare the list
-		AstSenTree* asenp = activep->sensesp();
-		if (asenp->sameTree(sensesp)) {
-		    UINFO(8,"    Found ACTIVE "<<activep<<endl);
-		    goto found;
-		}
-	    }
-	    activep = NULL;
-	}
-      found:
+        AstSenTree* activeSenp = m_activeSens.find(sensesp);
+        if (activeSenp) {
+            ActiveMap::iterator it = m_activeMap.find(activeSenp);
+            UASSERT(it != m_activeMap.end(), "Corrupt active map");
+            activep = it->second;
+        }
+
 	// Not found, form a new one
 	if (!activep) {
 	    AstSenTree* newsenp = sensesp->cloneTree(false);
@@ -140,7 +136,8 @@ public:
 	    UINFO(8,"    New ACTIVE "<<activep<<endl);
 	    // Form the sensitivity list
 	    addActive(activep);
-	    m_activeVec.push_back(activep);
+            m_activeMap[newsenp] = activep;
+            m_activeSens.add(newsenp);
 	    // Note actives may have also been added above in the Active visitor
 	}
 	return activep;
@@ -154,7 +151,7 @@ public:
     }
     virtual ~ActiveNamer() {}
     void main(AstScope* nodep) {
-	nodep->accept(*this);
+        iterate(nodep);
     }
 };
 
@@ -193,7 +190,7 @@ private:
 	if (m_check == CT_SEQ) {
 	    AstNode* las = m_assignp;
 	    m_assignp = nodep;
-	    nodep->lhsp()->iterateAndNext(*this);
+            iterateAndNextNull(nodep->lhsp());
 	    m_assignp = las;
 	}
     }
@@ -217,7 +214,7 @@ private:
     }
     //--------------------
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
@@ -225,7 +222,7 @@ public:
 	m_alwaysp = nodep;
 	m_check = check;
 	m_assignp = NULL;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~ActiveDlyVisitor() {}
 };
@@ -252,7 +249,7 @@ private:
 	// Clear last scope's names, and collect this scope's existing names
 	m_namer.main(nodep);
 	m_scopeFinalp = NULL;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstActive* nodep) {
 	// Actives are being formed, so we can ignore any already made
@@ -314,8 +311,8 @@ private:
 	// Move always to appropriate ACTIVE based on its sense list
 	if (oldsensesp
 	    && oldsensesp->sensesp()
-	    && oldsensesp->sensesp()->castSenItem()
-	    && oldsensesp->sensesp()->castSenItem()->isNever()) {
+            && VN_IS(oldsensesp->sensesp(), SenItem)
+            && VN_CAST(oldsensesp->sensesp(), SenItem)->isNever()) {
 	    // Never executing.  Kill it.
 	    if (oldsensesp->sensesp()->nextp()) nodep->v3fatalSrc("Never senitem should be alone, else the never should be eliminated.");
 	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
@@ -325,7 +322,7 @@ private:
 	// Read sensitivitues
 	m_itemCombo = false;
 	m_itemSequent = false;
-	if (oldsensesp) oldsensesp->iterateAndNext(*this);
+        iterateAndNextNull(oldsensesp);
 	bool combo = m_itemCombo;
 	bool sequent = m_itemSequent;
 
@@ -399,7 +396,7 @@ private:
 	    && subitemp->edgeType() != AstEdgeType::ET_NEGEDGE) {
 	    nodep->v3fatalSrc("Strange activity type under SenGate");
 	}
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstSenItem* nodep) {
 	if (nodep->edgeType() == AstEdgeType::ET_ANYEDGE) {
@@ -421,7 +418,7 @@ private:
     virtual void visit(AstVarScope* nodep) {}
     //--------------------
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
@@ -429,7 +426,7 @@ public:
 	m_scopeFinalp = NULL;
 	m_itemCombo = false;
 	m_itemSequent = false;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~ActiveVisitor() {}
 };

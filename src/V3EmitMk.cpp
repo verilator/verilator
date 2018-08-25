@@ -40,11 +40,7 @@ class EmitMkVisitor : public EmitCBaseVisitor {
 public:
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     void putMakeClassEntry(V3OutMkFile& of, const string& name) {
 	of.puts("\t"+V3Os::filenameNonDirExt(name)+" \\\n");
@@ -98,11 +94,14 @@ public:
 			    putMakeClassEntry(of, "verilated_vcd_sc.cpp");
 			}
 		    }
+                    if (v3Global.opt.mtasks()) {
+                        putMakeClassEntry(of, "verilated_threads.cpp");
+                    }
 		}
 		else if (support==2 && slow) {
 		}
 		else {
-		    for (AstCFile* nodep = v3Global.rootp()->filesp(); nodep; nodep=nodep->nextp()->castCFile()) {
+                    for (AstCFile* nodep = v3Global.rootp()->filesp(); nodep; nodep=VN_CAST(nodep->nextp(), CFile)) {
 			if (nodep->source() && nodep->slow()==(slow!=0) && nodep->support()==(support!=0)) {
 			    putMakeClassEntry(of, nodep->name());
 			}

@@ -65,11 +65,7 @@ private:
     // STATE
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     void insertCast(AstNode* nodep, int needsize) {  // We'll insert ABOVE passed node
 	UINFO(4,"  NeedCast "<<nodep<<endl);
@@ -101,26 +97,26 @@ private:
 	// Otherwise a (uint64)(a>b) would return wrong value, as
 	// less than has undeterministic signedness.
 	if (nodep->isQuad() && !nodep->lhsp()->isQuad()
-	    && !nodep->lhsp()->castCCast()) {
+            && !VN_IS(nodep->lhsp(), CCast)) {
 	    insertCast(nodep->lhsp(), VL_WORDSIZE);
 	}
     }
 
     // VISITORS
     virtual void visit(AstNodeUniop* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	nodep->user1(nodep->lhsp()->user1());
 	if (nodep->sizeMattersLhs()) insureCast(nodep->lhsp());
     }
     virtual void visit(AstNodeBiop* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	nodep->user1(nodep->lhsp()->user1()
 		    | nodep->rhsp()->user1());
 	if (nodep->sizeMattersLhs()) insureCast(nodep->lhsp());
 	if (nodep->sizeMattersRhs()) insureCast(nodep->rhsp());
     }
     virtual void visit(AstNodeTriop* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	nodep->user1(nodep->lhsp()->user1()
 		    | nodep->rhsp()->user1()
 		    | nodep->thsp()->user1());
@@ -129,12 +125,12 @@ private:
 	if (nodep->sizeMattersThs()) insureCast(nodep->thsp());
     }
     virtual void visit(AstCCast* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	insureLower32Cast(nodep);
 	nodep->user1(1);
     }
     virtual void visit(AstNegate* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	nodep->user1(nodep->lhsp()->user1());
 	if (nodep->lhsp()->widthMin()==1) {
 	    // We want to avoid a GCC "converting of negative value" warning
@@ -147,9 +143,9 @@ private:
     }
     virtual void visit(AstVarRef* nodep) {
 	if (!nodep->lvalue()
-	    && !nodep->backp()->castCCast()
-	    && nodep->backp()->castNodeMath()
-	    && !nodep->backp()->castArraySel()
+            && !VN_IS(nodep->backp(), CCast)
+            && VN_IS(nodep->backp(), NodeMath)
+            && !VN_IS(nodep->backp(), ArraySel)
 	    && nodep->backp()->width()
 	    && castSize(nodep) != castSize(nodep->varp())) {
 	    // Cast vars to IData first, else below has upper bits wrongly set
@@ -171,13 +167,13 @@ private:
     //--------------------
     // Default: Just iterate
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
     // CONSTUCTORS
     explicit CastVisitor(AstNetlist* nodep) {
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~CastVisitor() {}
 };

@@ -45,6 +45,7 @@ our %All_Scenarios
        nc    => ["simulator", "nc"],
        vcs   => ["simulator", "vcs"],
        vlt   => ["simulator", "vlt_all", "vlt"],
+       vltmt => ["simulator", "vlt_all", "vltmt"],
     );
 
 #======================================================================
@@ -104,6 +105,7 @@ if (! GetOptions (
           "ms!"         => sub { $opt_scenarios{ms} = $_[1]; },
           "nc!"         => sub { $opt_scenarios{nc} = $_[1]; },
           "vlt!"        => sub { $opt_scenarios{vlt} = $_[1]; },
+          "vltmt!"      => sub { $opt_scenarios{vltmt} = $_[1]; },
           "vcs!"        => sub { $opt_scenarios{vcs} = $_[1]; },
           "<>"          => \&parameter,
     )) {
@@ -322,6 +324,7 @@ sub new {
     $self->{scenario} ||= "ghdl" if $self->{ghdl};
     $self->{scenario} ||= "vcs" if $self->{vcs};
     $self->{scenario} ||= "vlt" if $self->{vlt};
+    $self->{scenario} ||= "vltmt" if $self->{vltmt};
     $self->{scenario} ||= "nc" if $self->{nc};
     $self->{scenario} ||= "ms" if $self->{ms};
     $self->{scenario} ||= "iv" if $self->{iv};
@@ -407,6 +410,7 @@ sub new {
 	ms_run_flags => [split(/\s+/,"-lib $self->{obj_dir}/work -c -do 'run -all;quit' ")],
 	# Verilator
 	vlt => 0,
+        vltmt => 0,
 	verilator_flags => ["-cc",
 			    "-Mdir $self->{obj_dir}",
 			    "-OD",  # As currently disabled unless -O3
@@ -420,7 +424,7 @@ sub new {
 	%$self};
     bless $self, $class;
 
-    $self->{vlt_all} = $self->{vlt};  # Any Verilator scenario
+    $self->{vlt_all} = $self->{vlt} || $self->{vltmt};  # Any Verilator scenario
 
     $self->{VM_PREFIX} ||= "V".$self->{name};
     $self->{stats} ||= "$self->{obj_dir}/V".$self->{name}."__stats.txt";
@@ -593,6 +597,8 @@ sub compile_vlt_flags {
     unshift @verilator_flags, "--gdbbt" if $opt_gdbbt;
     unshift @verilator_flags, "--x-assign unique";  # More likely to be buggy
     unshift @verilator_flags, "--trace" if $opt_trace;
+    unshift @verilator_flags, "--threads 3" if $param{vltmt};
+    unshift @verilator_flags, "--debug-partition" if $param{vltmt};
     if (defined $opt_optimize) {
 	my $letters = "";
 	if ($opt_optimize =~ /[a-zA-Z]/) {
@@ -745,6 +751,11 @@ sub compile {
 	    $self->skip("Test requires SystemC; ignore error since not installed\n");
 	    return 1;
 	}
+
+        if ($self->{vltmt} && !$self->cfg_with_threaded) {
+            $self->skip("Test requires Verilator configured with threads\n");
+            return 1;
+        }
 
 	if (!$param{fails} && $param{verilator_make_gcc}
 	    && $param{make_main}) {
@@ -2045,7 +2056,11 @@ Run Synopsys VCS simulator tests.
 
 =item --vlt
 
-Run Verilator tests.  Default unless another scenario flag is provided.
+Run Verilator tests in single-threaded mode.  Default unless another scenario flag is provided.
+
+=item --vltmt
+
+Run Verilator tests in multithreaded mode.
 
 =back
 

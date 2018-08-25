@@ -61,11 +61,7 @@ private:
     V3Double0		m_statIters;		// Statistic tracking
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
     bool cantUnroll(AstNode* nodep, const char* reason) {
@@ -110,22 +106,22 @@ private:
 	if (incp)	UINFO(6, "    Inc  "<<incp<<endl);
 
 	// Initial value check
-	AstAssign* initAssp = initp->castAssign();
+        AstAssign* initAssp = VN_CAST(initp, Assign);
 	if (!initAssp) return cantUnroll(nodep, "no initial assignment");
 	if (initp->nextp() && initp->nextp()!=nodep) nodep->v3fatalSrc("initial assignment shouldn't be a list");
-	if (!initAssp->lhsp()->castVarRef()) return cantUnroll(nodep, "no initial assignment to simple variable");
+        if (!VN_IS(initAssp->lhsp(), VarRef)) return cantUnroll(nodep, "no initial assignment to simple variable");
 	//
 	// Condition check
 	if (condp->nextp()) nodep->v3fatalSrc("conditional shouldn't be a list");
 	//
 	// Assignment of next value check
-	AstAssign* incAssp = incp->castAssign();
+        AstAssign* incAssp = VN_CAST(incp, Assign);
 	if (!incAssp) return cantUnroll(nodep, "no increment assignment");
 	if (incAssp->nextp()) nodep->v3fatalSrc("increment shouldn't be a list");
 
-	m_forVarp = initAssp->lhsp()->castVarRef()->varp();
-	m_forVscp = initAssp->lhsp()->castVarRef()->varScopep();
-	if (nodep->castGenFor() && !m_forVarp->isGenVar()) {
+        m_forVarp = VN_CAST(initAssp->lhsp(), VarRef)->varp();
+        m_forVscp = VN_CAST(initAssp->lhsp(), VarRef)->varScopep();
+        if (VN_IS(nodep, GenFor) && !m_forVarp->isGenVar()) {
 	    nodep->v3error("Non-genvar used in generate for: "<<m_forVarp->prettyName()<<endl);
 	}
 	if (m_generate) V3Const::constifyParamsEdit(initAssp->rhsp());  // rhsp may change
@@ -134,7 +130,7 @@ private:
 	// however, for repeat loops, the loop variable is auto-generated
 	// and the initp statements will reference a variable outside of the initp scope
 	// alas, failing to simulate.
-	AstConst* constInitp = initAssp->rhsp()->castConst();
+        AstConst* constInitp = VN_CAST(initAssp->rhsp(), Const);
 	if (!constInitp) return cantUnroll(nodep, "non-constant initializer");
 
 	//
@@ -142,9 +138,9 @@ private:
 	m_varModeCheck = true;
 	m_varAssignHit = false;
 	m_ignoreIncp = incp;
-	precondsp->iterateAndNext(*this);
-	bodysp->iterateAndNext(*this);
-	incp->iterateAndNext(*this);
+        iterateAndNextNull(precondsp);
+        iterateAndNextNull(bodysp);
+        iterateAndNextNull(incp);
 	m_varModeCheck = false;
 	m_ignoreIncp = NULL;
 	if (m_varAssignHit) return cantUnroll(nodep, "genvar assigned *inside* loop");
@@ -156,7 +152,7 @@ private:
 
 
 	if (!m_generate) {
-	    AstAssign *incpAssign = incp->castAssign();
+            AstAssign *incpAssign = VN_CAST(incp, Assign);
 	    if (!canSimulate(incpAssign->rhsp())) return cantUnroll(incp, "Unable to simulate increment");
 	    if (!canSimulate(condp)) return cantUnroll(condp, "Unable to simulate condition");
 
@@ -203,7 +199,7 @@ private:
 	    // Iteration requires a back, so put under temporary node
 	    AstBegin* tempp = new AstBegin (nodep->fileline(), "[EditWrapper]", clone);
 	    m_varModeReplace = true;
-	    tempp->stmtsp()->iterateAndNext(*this);
+            iterateAndNextNull(tempp->stmtsp());
 	    m_varModeReplace = false;
 	    clone = tempp->stmtsp()->unlinkFrBackWithNext();
 	    tempp->deleteTree();
@@ -252,7 +248,7 @@ private:
 	    outLoopsr++;
 
 	    // Run inc
-	    AstAssign* incpass = incp->castAssign();
+            AstAssign* incpass = VN_CAST(incp, Assign);
 	    V3Number newLoopValue = V3Number(initp->fileline());
 	    if (!simulateTree(incpass->rhsp(), &loopValue, incpass, newLoopValue)) {
 		return false;
@@ -288,7 +284,7 @@ private:
 	    bodysp->unlinkFrBackWithNext();
 	    stmtsp = AstNode::addNextNull(stmtsp, bodysp);  // Maybe null if no body
 	}
-	if (incp && !nodep->castGenFor()) {  // Generates don't need to increment loop index
+        if (incp && !VN_IS(nodep, GenFor)) {  // Generates don't need to increment loop index
 	    incp->unlinkFrBackWithNext();
 	    stmtsp = AstNode::addNextNull(stmtsp, incp);  // Maybe null if no body
 	}
@@ -319,7 +315,7 @@ private:
 		    if (oneloopp) {
 			AstBegin* tempp = new AstBegin(oneloopp->fileline(),"[EditWrapper]",oneloopp);
 			m_varModeReplace = true;
-			tempp->stmtsp()->iterateAndNext(*this);
+                        iterateAndNextNull(tempp->stmtsp());
 			m_varModeReplace = false;
 			oneloopp = tempp->stmtsp()->unlinkFrBackWithNext(); tempp->deleteTree(); VL_DANGLING(tempp);
 		    }
@@ -341,7 +337,7 @@ private:
 		    }
 
 		    // loopValue += valInc
-		    AstAssign *incpass = incp->castAssign();
+                    AstAssign *incpass = VN_CAST(incp, Assign);
 		    V3Number newLoopValue = V3Number(nodep->fileline());
 		    if (!simulateTree(incpass->rhsp(), &loopValue, incpass, newLoopValue)) {
 			nodep->v3error("Loop unrolling failed");
@@ -363,7 +359,7 @@ private:
     }
 
     virtual void visit(AstWhile* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (m_varModeCheck || m_varModeReplace) {
 	} else {
 	    // Constify before unroll call, as it may change what is underneath.
@@ -393,7 +389,7 @@ private:
     }
     virtual void visit(AstGenFor* nodep) {
 	if (!m_generate || m_varModeReplace) {
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}  // else V3Param will recursively call each for loop to be unrolled for us
 	if (m_varModeCheck || m_varModeReplace) {
 	} else {
@@ -421,7 +417,7 @@ private:
     }
     virtual void visit(AstNodeFor* nodep) {
 	if (m_generate) {  // Ignore for's when expanding genfor's
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	} else {
 	    nodep->v3error("V3Begin should have removed standard FORs");
 	}
@@ -452,7 +448,7 @@ private:
 	if (m_varModeCheck && nodep == m_ignoreIncp) {
 	    // Ignore subtree that is the increment
 	} else {
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
     }
 
@@ -469,7 +465,7 @@ public:
 	m_generate = generate;
 	m_beginName = beginName;
 	//
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~UnrollVisitor() {
 	V3Stats::addStatSum("Optimizations, Unrolled Loops", m_statLoops);

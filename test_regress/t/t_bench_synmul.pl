@@ -17,7 +17,9 @@ $Self->{cycles} = 100 if $Self->{cycles}<100;
 $Self->{sim_time} = $Self->{cycles}*100;
 
 compile(
-    v_flags2 => ["+define+SIM_CYCLES=$Self->{cycles} --stats"],
+    v_flags2 => ["+define+SIM_CYCLES=$Self->{cycles}",
+                 "--stats",
+                 "-Wno-UNOPTTHREADS"],
     );
 
 execute(

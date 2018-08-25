@@ -60,11 +60,7 @@ private:
     int		m_senitemCvtNum; // Temporary signal counter
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITs
     // TODO: Most of these visitors are here for historical reasons.
@@ -76,11 +72,11 @@ private:
 	if (nodep->dead()) return;
 	m_modp = nodep;
 	m_senitemCvtNum = 0;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp = NULL;
     }
     virtual void visit(AstInitial* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Initial assignments under function/tasks can just be simple assignments without the initial
 	if (m_ftaskp) {
 	    nodep->replaceWith(nodep->bodysp()->unlinkFrBackWithNext()); VL_DANGLING(nodep);
@@ -89,12 +85,12 @@ private:
     virtual void visit(AstVAssert* nodep) {
 	if (m_assertp) nodep->v3error("Assert not allowed under another assert");
 	m_assertp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_assertp = NULL;
     }
 
     virtual void visit(AstVar* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (m_ftaskp) nodep->funcLocal(true);
 	if (nodep->isSigModPublic()) {
 	    nodep->sigModPublic(false);  // We're done with this attribute
@@ -107,21 +103,21 @@ private:
 	if (nodep->varp()) {
 	    nodep->varp()->usedParam(true);
 	}
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
     virtual void visit(AstNodeFTask* nodep) {
 	// NodeTask: Remember its name for later resolution
 	// Remember the existing symbol table scope
 	m_ftaskp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_ftaskp = NULL;
 	if (nodep->dpiExport()) {
 	    nodep->scopeNamep(new AstScopeName(nodep->fileline()));
 	}
     }
     virtual void visit(AstNodeFTaskRef* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->taskp() && (nodep->taskp()->dpiContext() || nodep->taskp()->dpiExport())) {
 	    nodep->scopeNamep(new AstScopeName(nodep->fileline()));
 	}
@@ -129,15 +125,15 @@ private:
 
     virtual void visit(AstSenItem* nodep) {
 	// Remove bit selects, and bark if it's not a simple variable
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->isClocked()) {
 	    // If it's not a simple variable wrap in a temporary
 	    // This is a bit unfortunate as we haven't done width resolution
 	    // and any width errors will look a bit odd, but it works.
 	    AstNode* sensp = nodep->sensp();
 	    if (sensp
-		&& !sensp->castNodeVarRef()
-		&& !sensp->castConst()) {
+                && !VN_IS(sensp, NodeVarRef)
+                && !VN_IS(sensp, Const)) {
 		// Make a new temp wire
 		string newvarname = "__Vsenitemexpr"+cvtToStr(++m_senitemCvtNum);
 		AstVar* newvarp = new AstVar (sensp->fileline(), AstVarType::MODULETEMP, newvarname,
@@ -145,11 +141,11 @@ private:
 		// We can't just add under the module, because we may be inside a generate, begin, etc.
 		// We know a SenItem should be under a SenTree/Always etc, we we'll just hunt upwards
 		AstNode* addwherep = nodep;  // Add to this element's next
-		while (addwherep->castSenItem()
-		       || addwherep->castSenTree()) {
+                while (VN_IS(addwherep, SenItem)
+                       || VN_IS(addwherep, SenTree)) {
 		    addwherep = addwherep->backp();
 		}
-		if (!addwherep->castAlways()) {  // Assertion perhaps?
+                if (!VN_IS(addwherep, Always)) {  // Assertion perhaps?
 		    sensp->v3error("Unsupported: Non-single-bit pos/negedge clock statement under some complicated block");
 		    addwherep = m_modp;
 		}
@@ -166,26 +162,26 @@ private:
 	    bool did=1;
 	    while (did) {
 		did=0;
-		if (AstNodeSel* selp = nodep->sensp()->castNodeSel()) {
+                if (AstNodeSel* selp = VN_CAST(nodep->sensp(), NodeSel)) {
 		    AstNode* fromp = selp->fromp()->unlinkFrBack();
 		    selp->replaceWith(fromp); selp->deleteTree(); VL_DANGLING(selp);
 		    did=1;
 		}
 		// NodeSel doesn't include AstSel....
-		if (AstSel* selp = nodep->sensp()->castSel()) {
+                if (AstSel* selp = VN_CAST(nodep->sensp(), Sel)) {
 		    AstNode* fromp = selp->fromp()->unlinkFrBack();
 		    selp->replaceWith(fromp); selp->deleteTree(); VL_DANGLING(selp);
 		    did=1;
 		}
-		if (AstNodePreSel* selp = nodep->sensp()->castNodePreSel()) {
+                if (AstNodePreSel* selp = VN_CAST(nodep->sensp(), NodePreSel)) {
 		    AstNode* fromp = selp->lhsp()->unlinkFrBack();
 		    selp->replaceWith(fromp); selp->deleteTree(); VL_DANGLING(selp);
 		    did=1;
 		}
 	    }
 	}
-	if (!nodep->sensp()->castNodeVarRef()
-	    && !nodep->sensp()->castEnumItemRef()  // V3Const will cleanup
+        if (!VN_IS(nodep->sensp(), NodeVarRef)
+            && !VN_IS(nodep->sensp(), EnumItemRef)  // V3Const will cleanup
 	    && !nodep->isIllegal()) {
 	    if (debug()) nodep->dumpTree(cout,"-tree: ");
 	    nodep->v3error("Unsupported: Complex statement in sensitivity list");
@@ -197,22 +193,22 @@ private:
 
     virtual void visit(AstNodePreSel* nodep) {
 	if (!nodep->attrp()) {
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    // Constification may change the fromp() to a constant, which will lose the
 	    // variable we're extracting from (to determine MSB/LSB/endianness/etc.)
 	    // So we replicate it in another node
 	    // Note that V3Param knows not to replace AstVarRef's under AstAttrOf's
 	    AstNode* basefromp = AstArraySel::baseFromp(nodep);
-	    if (AstNodeVarRef* varrefp = basefromp->castNodeVarRef()) {  // Maybe varxref - so need to clone
+            if (AstNodeVarRef* varrefp = VN_CAST(basefromp, NodeVarRef)) {  // Maybe varxref - so need to clone
 		nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
 					   varrefp->cloneTree(false)));
-	    } else if (AstUnlinkedRef* uvxrp = basefromp->castUnlinkedRef()) {  // Maybe unlinked - so need to clone
+            } else if (AstUnlinkedRef* uvxrp = VN_CAST(basefromp, UnlinkedRef)) {  // Maybe unlinked - so need to clone
 		nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
 					   uvxrp->cloneTree(false)));
-	    } else if (AstMemberSel* fromp = basefromp->castMemberSel()) {
+            } else if (AstMemberSel* fromp = VN_CAST(basefromp, MemberSel)) {
 		nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::MEMBER_BASE,
 					   fromp->cloneTree(false)));
-	    } else if (AstEnumItemRef* fromp = basefromp->castEnumItemRef()) {
+            } else if (AstEnumItemRef* fromp = VN_CAST(basefromp, EnumItemRef)) {
 		nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::ENUM_BASE,
 					   fromp->cloneTree(false)));
 	    } else {
@@ -225,7 +221,7 @@ private:
     virtual void visit(AstCaseItem* nodep) {
 	// Move default caseItems to the bottom of the list
 	// That saves us from having to search each case list twice, for non-defaults and defaults
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (!nodep->user2() && nodep->isDefault() && nodep->nextp()) {
 	    nodep->user2(true);
 	    AstNode* nextp = nodep->nextp();
@@ -252,7 +248,7 @@ private:
 	    }
 	}
 	else {
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
     }
 
@@ -307,7 +303,7 @@ private:
 		    skipCount--;
 		    continue;
 		}
-		AstConst *constp = argp->castConst();
+                AstConst *constp = VN_CAST(argp, Const);
 		bool isFromString = (constp) ? constp->num().isFromString() : false;
 		if (isFromString) {
 		    int numchars = argp->dtypep()->width()/8;
@@ -356,33 +352,33 @@ private:
     }
 
     virtual void visit(AstFOpen* nodep) {
-	nodep->iterateChildren(*this);
-	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
+        iterateChildren(nodep);
+        expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
     }
     virtual void visit(AstFClose* nodep) {
-	nodep->iterateChildren(*this);
-	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
+        iterateChildren(nodep);
+        expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
     }
     virtual void visit(AstFEof* nodep) {
-	nodep->iterateChildren(*this);
-	expectDescriptor(nodep, nodep->filep()->castNodeVarRef());
+        iterateChildren(nodep);
+        expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
     }
     virtual void visit(AstFScanF* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	expectFormat(nodep, nodep->text(), nodep->exprsp(), true);
     }
     virtual void visit(AstSScanF* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	expectFormat(nodep, nodep->text(), nodep->exprsp(), true);
     }
     virtual void visit(AstSFormatF* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Cleanup old-school displays without format arguments
 	if (!nodep->hasFormat()) {
 	    if (nodep->text()!="") nodep->v3fatalSrc("Non-format $sformatf should have \"\" format");
-	    if (nodep->exprsp()->castConst()
-		&& nodep->exprsp()->castConst()->num().isFromString()) {
-		AstConst* fmtp = nodep->exprsp()->unlinkFrBack()->castConst();
+            if (VN_IS(nodep->exprsp(), Const)
+                && VN_CAST(nodep->exprsp(), Const)->num().isFromString()) {
+                AstConst* fmtp = VN_CAST(nodep->exprsp()->unlinkFrBack(), Const);
 		nodep->text(fmtp->num().toString());
 		pushDeletep(fmtp); VL_DANGLING(fmtp);
 	    }
@@ -390,13 +386,14 @@ private:
 	}
 	string newFormat = expectFormat(nodep, nodep->text(), nodep->exprsp(), false);
 	nodep->text(newFormat);
-	if ((nodep->backp()->castDisplay() && nodep->backp()->castDisplay()->displayType().needScopeTracking())
+        if ((VN_IS(nodep->backp(), Display)
+             && VN_CAST(nodep->backp(), Display)->displayType().needScopeTracking())
 	    || nodep->formatScopeTracking()) {
 	    nodep->scopeNamep(new AstScopeName(nodep->fileline()));
 	}
     }
     virtual void visit(AstDisplay* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
     virtual void visit(AstUdpTable* nodep) {
@@ -408,7 +405,7 @@ private:
 	    // Massive hack, just tie off all outputs so our analysis can proceed
 	    AstVar* varoutp = NULL;
 	    for (AstNode* stmtp = m_modp->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
-		if (AstVar* varp = stmtp->castVar()) {
+                if (AstVar* varp = VN_CAST(stmtp, Var)) {
 		    if (varp->isInput()) {
 		    } else if (varp->isOutput()) {
 			if (varoutp) { varp->v3error("Multiple outputs not allowed in udp modules"); }
@@ -429,22 +426,22 @@ private:
     virtual void visit(AstScCtor* nodep) {
 	// Constructor info means the module must remain public
 	m_modp->modPublic(true);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstScDtor* nodep) {
 	// Destructor info means the module must remain public
 	m_modp->modPublic(true);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstScInt* nodep) {
 	// Special class info means the module must remain public
 	m_modp->modPublic(true);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
     virtual void visit(AstNode* nodep) {
 	// Default: Just iterate
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -455,7 +452,7 @@ public:
 	m_assertp = NULL;
 	m_senitemCvtNum = 0;
 	//
-	rootp->accept(*this);
+        iterate(rootp);
     }
     virtual ~LinkResolveVisitor() {}
 };
@@ -471,20 +468,16 @@ private:
     AstNodeModule*	m_modp;		// Current module
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITs
     virtual void visit(AstNetlist* nodep) {
 	// Iterate modules backwards, in bottom-up order.
-	nodep->iterateChildrenBackwards(*this);
+        iterateChildrenBackwards(nodep);
     }
     virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp = NULL;
     }
     virtual void visit(AstCell* nodep) {
@@ -497,14 +490,14 @@ private:
     }
     virtual void visit(AstNode* nodep) {
 	// Default: Just iterate
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
     explicit LinkBotupVisitor(AstNetlist* rootp) {
 	m_modp = NULL;
 	//
-	rootp->accept(*this);
+        iterate(rootp);
     }
     virtual ~LinkBotupVisitor() {}
 };

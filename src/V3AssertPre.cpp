@@ -49,11 +49,7 @@ private:
     AstNodeSenItem*	m_senip;	// Last sensitivity
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     AstSenTree* newSenTree(AstNode* nodep) {
 	// Create sentree based on clocked or default clock
@@ -89,12 +85,12 @@ private:
     virtual void visit(AstNodePslCoverOrAssert* nodep) {
 	if (nodep->sentreep()) return;  // Already processed
 	clearAssertInfo();
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	nodep->sentreep(newSenTree(nodep));
 	clearAssertInfo();
     }
     virtual void visit(AstPslClocked* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (m_senip) {
 	    nodep->v3error("Unsupported: Only one PSL clock allowed per assertion");
 	}
@@ -112,12 +108,12 @@ private:
 	pushDeletep(nodep); VL_DANGLING(nodep);
     }
     virtual void visit(AstNodeModule* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Reset defaults
 	m_seniDefaultp = NULL;
     }
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -126,7 +122,7 @@ public:
 	m_seniDefaultp = NULL;
 	clearAssertInfo();
 	// Process
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~AssertPreVisitor() {}
 };

@@ -53,11 +53,7 @@ private:
     AstNode*		m_stmtp;	// Current statement
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     int longOrQuadWidth (AstNode* nodep) {
 	// Return 32 or 64...
@@ -107,7 +103,7 @@ private:
     void fixCloneLvalue (AstNode* nodep) {
 	// In AstSel transforms, we call clone() on VarRefs that were lvalues,
 	// but are now being used on the RHS of the assignment
-	if (nodep->castVarRef()) nodep->castVarRef()->lvalue(false);
+        if (VN_IS(nodep, VarRef)) VN_CAST(nodep, VarRef)->lvalue(false);
 	// Iterate
 	if (nodep->op1p()) fixCloneLvalue(nodep->op1p());
 	if (nodep->op2p()) fixCloneLvalue(nodep->op2p());
@@ -178,9 +174,9 @@ private:
 
     AstNode* newSelBitWord(AstNode* lsbp, int wordAdder) {
 	// Return equation to get the VL_BITWORD of a constant or non-constant
-	if (lsbp->castConst()) {
+        if (VN_IS(lsbp, Const)) {
 	    return new AstConst (lsbp->fileline(),
-				 wordAdder + VL_BITWORD_I(lsbp->castConst()->toUInt()));
+                                 wordAdder + VL_BITWORD_I(VN_CAST(lsbp, Const)->toUInt()));
 	} else {
 	    AstNode* shiftp = new AstShiftR (lsbp->fileline(),
 					     lsbp->cloneTree(true),
@@ -201,17 +197,17 @@ private:
 	//  If there's a CONDBOUND safety to keep arrays in bounds,
 	//  we're going to AND it to a value that always fits inside a
 	//  word, so we don't need it.
-	//if (nodep->castCondBound() && nodep->castCondBound()->lhsp()->castLte()) {
-	//    nodep = nodep->castCondBound()->rhsp();
+        //if (VN_IS(nodep, CondBound) && VN_IS(VN_CAST(nodep, CondBound)->lhsp(), Lte)) {
+        //    nodep = VN_CAST(nodep, CondBound)->rhsp();
 	//}
 	return nodep;
     }
 
     AstNode* newSelBitBit(AstNode* lsbp) {
 	// Return equation to get the VL_BITBIT of a constant or non-constant
-	if (lsbp->castConst()) {
+        if (VN_IS(lsbp, Const)) {
 	    return new AstConst (lsbp->fileline(),
-				 VL_BITBIT_I(lsbp->castConst()->toUInt()));
+                                 VL_BITBIT_I(VN_CAST(lsbp, Const)->toUInt()));
 	} else {
 	    return new AstAnd   (lsbp->fileline(),
 				 new AstConst(lsbp->fileline(), VL_WORDSIZE-1),
@@ -243,7 +239,7 @@ private:
     }
     bool expandWide (AstNodeAssign* nodep, AstArraySel* rhsp) {
 	UINFO(8,"    Wordize ASSIGN(ARRAYSEL) "<<nodep<<endl);
-        if (nodep->dtypep()->skipRefp()->castUnpackArrayDType()) {
+        if (VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
             nodep->v3fatalSrc("ArraySel with unpacked arrays should have been removed in V3Slice");
         }
 	for (int w=0; w<nodep->widthWords(); w++) {
@@ -312,7 +308,7 @@ private:
     // VISITORS
     virtual void visit(AstExtend* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->isWide()) {
 	    // See under ASSIGN(EXTEND)
 	} else {
@@ -351,10 +347,10 @@ private:
 
     virtual void visit(AstSel* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Remember, Sel's may have non-integer rhs, so need to optimize for that!
 	if (nodep->widthMin()!=(int)nodep->widthConst()) nodep->v3fatalSrc("Width mismatch");
-	if (nodep->backp()->castNodeAssign() && nodep==nodep->backp()->castNodeAssign()->lhsp()) {
+        if (VN_IS(nodep->backp(), NodeAssign) && nodep==VN_CAST(nodep->backp(), NodeAssign)->lhsp()) {
 	    // Sel is an LHS assignment select
 	} else if (nodep->isWide()) {
 	    // See under ASSIGN(WIDE)
@@ -462,7 +458,7 @@ private:
 
     bool expandWide (AstNodeAssign* nodep, AstSel* rhsp) {
 	if (nodep->widthMin()!=(int)rhsp->widthConst()) nodep->v3fatalSrc("Width mismatch");
-	if (rhsp->lsbp()->castConst() && VL_BITBIT_I(rhsp->lsbConst())==0) {
+        if (VN_IS(rhsp->lsbp(), Const) && VL_BITBIT_I(rhsp->lsbConst())==0) {
 	    int lsb = rhsp->lsbConst();
 	    UINFO(8,"    Wordize ASSIGN(SEL,align) "<<nodep<<endl);
 	    for (int w=0; w<nodep->widthWords(); w++) {
@@ -515,7 +511,7 @@ private:
 	// Yuk.
 	bool destwide = lhsp->fromp()->isWide();
 	bool ones = nodep->rhsp()->isAllOnesV();
-	if (lhsp->lsbp()->castConst()) {
+        if (VN_IS(lhsp->lsbp(), Const)) {
 	    // The code should work without this constant test, but it won't
 	    // constify as nicely as we'd like.
 	    AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
@@ -652,7 +648,7 @@ private:
 
     virtual void visit(AstConcat* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->isWide()) {
 	    // See under ASSIGN(WIDE)
 	} else {
@@ -692,7 +688,7 @@ private:
 
     virtual void visit(AstReplicate* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->isWide()) {
 	    // See under ASSIGN(WIDE)
 	} else {
@@ -704,7 +700,7 @@ private:
 		newp = new AstNegate (nodep->fileline(), lhsp);
 	    } else {
 		UINFO(8,"    REPLICATE "<<nodep<<endl);
-		AstConst* constp = nodep->rhsp()->castConst();
+                const AstConst* constp = VN_CAST(nodep->rhsp(), Const);
 		if (!constp) nodep->v3fatalSrc("Replication value isn't a constant.  Checked earlier!");
 		uint32_t times = constp->toUInt();
 		if (nodep->isQuad() && !lhsp->isQuad()) lhsp = new AstCCast(nodep->fileline(), lhsp, nodep);
@@ -729,7 +725,7 @@ private:
 	UINFO(8,"    Wordize ASSIGN(REPLICATE) "<<nodep<<endl);
 	AstNode* lhsp = rhsp->lhsp();
 	int lhswidth = lhsp->widthMin();
-	AstConst* constp = rhsp->rhsp()->castConst();
+        const AstConst* constp = VN_CAST(rhsp->rhsp(), Const);
 	if (!constp) rhsp->v3fatalSrc("Replication value isn't a constant.  Checked earlier!");
 	uint32_t times = constp->toUInt();
 	for (int w=0; w<rhsp->widthWords(); w++) {
@@ -753,7 +749,7 @@ private:
 
     virtual void visit(AstChangeXor* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	UINFO(8,"    Wordize ChangeXor "<<nodep<<endl);
 	// -> (0=={or{for each_word{WORDSEL(lhs,#)^WORDSEL(rhs,#)}}}
 	AstNode* newp = NULL;
@@ -768,7 +764,7 @@ private:
 
     void visitEqNeq(AstNodeBiop* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->lhsp()->isWide()) {
 	    UINFO(8,"    Wordize EQ/NEQ "<<nodep<<endl);
 	    // -> (0=={or{for each_word{WORDSEL(lhs,#)^WORDSEL(rhs,#)}}}
@@ -779,7 +775,7 @@ private:
 					   newAstWordSelClone (nodep->rhsp(), w));
 		newp = (newp==NULL) ? eqp : (new AstOr (nodep->fileline(), newp, eqp));
 	    }
-	    if (nodep->castNeq()) {
+            if (VN_IS(nodep, Neq)) {
 		newp = new AstNeq (nodep->fileline(),
 				   new AstConst (nodep->fileline(), 0), newp);
 	    } else {
@@ -794,7 +790,7 @@ private:
 
     virtual void visit(AstRedOr* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->lhsp()->isWide()) {
 	    UINFO(8,"    Wordize REDOR "<<nodep<<endl);
 	    // -> (0!={or{for each_word{WORDSEL(lhs,#)}}}
@@ -818,7 +814,7 @@ private:
     }
     virtual void visit(AstRedAnd* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->lhsp()->isWide()) {
 	    UINFO(8,"    Wordize REDAND "<<nodep<<endl);
 	    // -> (0!={and{for each_word{WORDSEL(lhs,#)}}}
@@ -849,7 +845,7 @@ private:
     }
     virtual void visit(AstRedXor* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (nodep->lhsp()->isWide()) {
 	    UINFO(8,"    Wordize REDXOR "<<nodep<<endl);
 	    // -> (0!={redxor{for each_word{XOR(WORDSEL(lhs,#))}}}
@@ -869,44 +865,44 @@ private:
     virtual void visit(AstNodeStmt* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
 	m_stmtp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_stmtp = NULL;
     }
     virtual void visit(AstNodeAssign* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
 	m_stmtp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	bool did = false;
-	if (nodep->isWide() && ((nodep->lhsp()->castVarRef()
-				|| nodep->lhsp()->castArraySel()))
+        if (nodep->isWide() && ((VN_IS(nodep->lhsp(), VarRef)
+                                 || VN_IS(nodep->lhsp(), ArraySel)))
 	    && !AstVar::scVarRecurse(nodep->lhsp())	// Need special function for SC
 	    && !AstVar::scVarRecurse(nodep->rhsp())) {
-	    if (AstConst* rhsp = nodep->rhsp()->castConst()) {
+            if (AstConst* rhsp = VN_CAST(nodep->rhsp(), Const)) {
 		did = expandWide(nodep,rhsp);
-	    } else if (AstVarRef* rhsp = nodep->rhsp()->castVarRef()) {
+            } else if (AstVarRef* rhsp = VN_CAST(nodep->rhsp(), VarRef)) {
 		did = expandWide(nodep,rhsp);
-	    } else if (AstSel* rhsp = nodep->rhsp()->castSel()) {
+            } else if (AstSel* rhsp = VN_CAST(nodep->rhsp(), Sel)) {
 		did = expandWide(nodep,rhsp);
-	    } else if (AstArraySel* rhsp = nodep->rhsp()->castArraySel()) {
+            } else if (AstArraySel* rhsp = VN_CAST(nodep->rhsp(), ArraySel)) {
 		did = expandWide(nodep,rhsp);
-	    } else if (AstConcat* rhsp = nodep->rhsp()->castConcat()) {
+            } else if (AstConcat* rhsp = VN_CAST(nodep->rhsp(), Concat)) {
 		did = expandWide(nodep,rhsp);
-	    } else if (AstReplicate* rhsp = nodep->rhsp()->castReplicate()) {
+            } else if (AstReplicate* rhsp = VN_CAST(nodep->rhsp(), Replicate)) {
 		did = expandWide(nodep,rhsp);
-	    } else if (AstAnd* rhsp = nodep->rhsp()->castAnd()) {
+            } else if (AstAnd* rhsp = VN_CAST(nodep->rhsp(), And)) {
 		did = expandWide(nodep,rhsp);
-	    } else if (AstOr* rhsp = nodep->rhsp()->castOr()) {
+            } else if (AstOr* rhsp = VN_CAST(nodep->rhsp(), Or)) {
 		did = expandWide(nodep,rhsp);
-	    } else if (AstNot* rhsp = nodep->rhsp()->castNot()) {
+            } else if (AstNot* rhsp = VN_CAST(nodep->rhsp(), Not)) {
 		did = expandWide(nodep,rhsp);
-	    } else if (AstXor* rhsp = nodep->rhsp()->castXor()) {
+            } else if (AstXor* rhsp = VN_CAST(nodep->rhsp(), Xor)) {
 		did = expandWide(nodep,rhsp);
-	    } else if (AstXnor* rhsp = nodep->rhsp()->castXnor()) {
+            } else if (AstXnor* rhsp = VN_CAST(nodep->rhsp(), Xnor)) {
 		did = expandWide(nodep,rhsp);
-	    } else if (AstNodeCond* rhsp = nodep->rhsp()->castNodeCond()) {
+            } else if (AstNodeCond* rhsp = VN_CAST(nodep->rhsp(), NodeCond)) {
 		did = expandWide(nodep,rhsp);
 	    }
-	} else if (AstSel* lhsp = nodep->lhsp()->castSel()) {
+        } else if (AstSel* lhsp = VN_CAST(nodep->lhsp(), Sel)) {
 	    did = expandLhs(nodep,lhsp);
 	}
 	// Cleanup common code
@@ -920,14 +916,14 @@ private:
     // Default: Just iterate
     virtual void visit(AstVar*) {}	// Don't hit varrefs under vars
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
     // CONSTUCTORS
     explicit ExpandVisitor(AstNetlist* nodep) {
 	m_stmtp=NULL;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~ExpandVisitor() {}
 };

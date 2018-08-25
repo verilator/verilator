@@ -58,7 +58,7 @@ int AstNodeDType::s_uniqueNum = 0;
 //######################################################################
 // V3AstType
 
-ostream& operator<<(ostream& os, AstType rhs);
+std::ostream& operator<<(std::ostream& os, AstType rhs);
 
 //######################################################################
 // Creators
@@ -290,8 +290,7 @@ void AstNode::addNextHere(AstNode* newp) {
     // Add to m_nextp on exact node passed, not at the end.
     //  This could be at head, tail, or both (single)
     //  New  could be head of single node, or list
-    UDEBUGONLY(UASSERT(dynamic_cast<AstNode*>(this),"this should not be NULL"););
-    UASSERT(newp, "Null item passed to addNext");
+    UASSERT(newp,"Null item passed to addNext");
     UASSERT(!newp->backp(), "New node (back) already assigned?");
     this->debugTreeChange("-addHereThs: ", __LINE__, false);
     newp->debugTreeChange("-addHereNew: ", __LINE__, true);
@@ -418,7 +417,7 @@ void AstNode::replaceWith(AstNode* newp) {
     repHandle.relink(newp);
 }
 
-void AstNRelinker::dump(ostream& str) const {
+void AstNRelinker::dump(std::ostream& str) const {
     str<<" BK="<<(uint32_t*)m_backp;
     str<<" ITER="<<(uint32_t*)m_iterpp;
     str<<" CHG="<<(m_chg==RELINK_NEXT?"[NEXT] ":"");
@@ -646,7 +645,6 @@ AstNode* AstNode::cloneTreeIterList() {
 }
 
 AstNode* AstNode::cloneTree(bool cloneNextLink) {
-    if (!this) return NULL;  // verilog.y relies on this
     this->debugTreeChange("-cloneThs: ", __LINE__, cloneNextLink);
     cloneClearTree();
     AstNode* newp;
@@ -802,7 +800,6 @@ void AstNode::iterateAndNext(AstNVisitor& v) {
 }
 
 void AstNode::iterateListBackwards(AstNVisitor& v) {
-    UDEBUGONLY(UASSERT(dynamic_cast<AstNode*>(this),"this should not be NULL"););
     AstNode* nodep=this;
     while (nodep->m_nextp) nodep=nodep->m_nextp;
     while (nodep) {
@@ -822,13 +819,13 @@ void AstNode::iterateChildrenBackwards(AstNVisitor& v) {
 
 void AstNode::iterateAndNextConst(AstNVisitor& v) {
     // Keep following the current list even if edits change it
-    if (!this) return;  // A few cases could be cleaned up, but want symmetry with iterateAndNext
-    for (AstNode* nodep=this; nodep; ) {   // effectively: if (!this) return;  // Callers rely on this
+    AstNode* nodep=this;
+    do {
 	AstNode* nnextp = nodep->m_nextp;
 	ASTNODE_PREFETCH(nnextp);
 	nodep->accept(v);
 	nodep = nnextp;
-    }
+    } while (nodep);
 }
 
 AstNode* AstNode::iterateSubtreeReturnEdits(AstNVisitor& v) {
@@ -839,7 +836,7 @@ AstNode* AstNode::iterateSubtreeReturnEdits(AstNVisitor& v) {
     // To solve this, this function returns the pointer to the replacement node,
     // which in many cases is just the same node that was passed in.
     AstNode* nodep = this;  // Note "this" may point to bogus point later in this function
-    if (nodep->castNetlist()) {
+    if (VN_IS(nodep, Netlist)) {
 	// Calling on top level; we know the netlist won't get replaced
 	nodep->accept(v);
     } else if (!nodep->backp()) {
@@ -886,7 +883,7 @@ void AstNode::cloneRelinkTree() {
 //======================================================================
 // Comparison
 
-bool AstNode::gateTreeIter() {
+bool AstNode::gateTreeIter() const {
     // private: Return true if the two trees are identical
     if (!isGateOptimizable()) return false;
     if (m_op1p && !m_op1p->gateTreeIter()) return false;
@@ -896,7 +893,7 @@ bool AstNode::gateTreeIter() {
     return true;
 }
 
-bool AstNode::sameTreeIter(AstNode* node1p, AstNode* node2p, bool ignNext, bool gateOnly) {
+bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ignNext, bool gateOnly) {
     // private: Return true if the two trees are identical
     if (!node1p && !node2p) return true;
     if (!node1p || !node2p) return false;
@@ -917,9 +914,9 @@ bool AstNode::sameTreeIter(AstNode* node1p, AstNode* node2p, bool ignNext, bool 
 //======================================================================
 // Static utilities
 
-ostream& operator<<(ostream& os, const V3Hash& rhs) {
-    return os<<hex<<setw(2)<<setfill('0')<<rhs.depth()
-	     <<"_"<<setw(6)<<setfill('0')<<rhs.hshval();
+std::ostream& operator<<(std::ostream& os, const V3Hash& rhs) {
+    return os<<std::hex<<std::setw(2)<<std::setfill('0')<<rhs.depth()
+             <<"_"<<std::setw(6)<<std::setfill('0')<<rhs.hshval();
 }
 
 V3Hash::V3Hash(const string& name) {
@@ -938,7 +935,7 @@ void AstNode::checkTreeIter(AstNode* backp) {
     if (backp != this->backp()) {
 	this->v3fatalSrc("Back node inconsistent");
     }
-    if (castNodeTermop() || castNodeVarRef()) {
+    if (VN_IS(this, NodeTermop) || VN_IS(this, NodeVarRef)) {
 	// Termops have a short-circuited iterateChildren, so check usage
 	if (op1p()||op2p()||op3p()||op4p())
 	    this->v3fatalSrc("Terminal operation with non-terminals");
@@ -975,17 +972,14 @@ void AstNode::checkTree() {
 }
 
 void AstNode::dumpGdb() {  // For GDB only
-    if (!dynamic_cast<const AstNode*>(this)) { cout<<"This=NULL"<<endl; return; }
     dumpGdbHeader();
     cout<<"  "; dump(cout); cout<<endl;
 }
 void AstNode::dumpGdbHeader() const {  // For GDB only
-    if (!dynamic_cast<const AstNode*>(this)) { cout<<"This=NULL"<<endl; return; }
     dumpPtrs(cout);
     cout<<"  Fileline = "<<fileline()<<endl;
 }
 void AstNode::dumpTreeGdb() {  // For GDB only
-    if (!dynamic_cast<const AstNode*>(this)) { cout<<"This=NULL"<<endl; return; }
     dumpGdbHeader();
     dumpTree(cout);
 }
@@ -1002,7 +996,7 @@ void AstNode::checkIter() const {
     }
 }
 
-void AstNode::dumpPtrs(ostream& os) const {
+void AstNode::dumpPtrs(std::ostream& os) const {
     os<<"This="<<typeName()<<" "<<(void*)this;
     os<<" back="<<(void*)backp();
     if (nextp()) os<<" next="<<(void*)nextp();
@@ -1024,7 +1018,7 @@ void AstNode::dumpPtrs(ostream& os) const {
     os<<endl;
 }
 
-void AstNode::dumpTree(ostream& os, const string& indent, int maxDepth) {
+void AstNode::dumpTree(std::ostream& os, const string& indent, int maxDepth) {
     os<<indent<<" "<<this<<endl;
     if (debug()>8) { os<<indent<<"     "; dumpPtrs(os); }
     if (maxDepth==1) {
@@ -1037,7 +1031,7 @@ void AstNode::dumpTree(ostream& os, const string& indent, int maxDepth) {
     }
 }
 
-void AstNode::dumpTreeAndNext(ostream& os, const string& indent, int maxDepth) {
+void AstNode::dumpTreeAndNext(std::ostream& os, const string& indent, int maxDepth) {
     // Audited to make sure this is never NULL
     for (AstNode* nodep=this; nodep; nodep=nodep->nextp()) {
 	nodep->dumpTree(os, indent, maxDepth);
@@ -1050,8 +1044,8 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump) {
 	    UINFO(2,"Dumping "<<filename<<endl);
             const vl_unique_ptr<std::ofstream> logsp (V3File::new_ofstream(filename, append));
             if (logsp->fail()) v3fatal("Can't write "<<filename);
-	    *logsp<<"Verilator Tree Dump (format 0x3900) from <e"<<dec<<editCountLast()<<">";
-	    *logsp<<" to <e"<<dec<<editCountGbl()<<">"<<endl;
+            *logsp<<"Verilator Tree Dump (format 0x3900) from <e"<<std::dec<<editCountLast()<<">";
+            *logsp<<" to <e"<<std::dec<<editCountGbl()<<">"<<endl;
 	    if (editCountGbl()==editCountLast()
 		&& !(v3Global.opt.dumpTree()>=9)) {
 		*logsp<<endl;
@@ -1066,23 +1060,19 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump) {
 	checkTree();
 	// Broken isn't part of check tree because it can munge iterp's
 	// set by other steps if it is called in the middle of other operations
-	if (AstNetlist* netp=this->castNetlist()) V3Broken::brokenAll(netp);
+        if (AstNetlist* netp=VN_CAST(this, Netlist)) V3Broken::brokenAll(netp);
     }
     // Next dump can indicate start from here
     editCountSetLast();
 }
 
-void AstNode::v3errorEndFatal(ostringstream& str) const { v3errorEnd(str); assert(0); }
+void AstNode::v3errorEndFatal(std::ostringstream& str) const { v3errorEnd(str); assert(0); }
 
-void AstNode::v3errorEnd(ostringstream& str) const {
-    if (!dynamic_cast<const AstNode*>(this)) {
-	// No known cases cause this, but better than a core dump
-	if (debug()) UINFO(0, "-node: NULL. Please report this along with a --gdbbt backtrace as a Verilator bug.\n");
-	V3Error::v3errorEnd(str);
-    } else if (!m_fileline) {
+void AstNode::v3errorEnd(std::ostringstream& str) const {
+    if (!m_fileline) {
 	V3Error::v3errorEnd(str);
     } else {
-	ostringstream nsstr;
+        std::ostringstream nsstr;
 	nsstr<<str.str();
 	if (debug()) {
 	    nsstr<<endl;
@@ -1153,7 +1143,7 @@ AstBasicDType* AstNode::findInsertSameDType(AstBasicDType* nodep) {
 // AstNVisitor
 
 void AstNVisitor::doDeletes() {
-    for (vector<AstNode*>::iterator it = m_deleteps.begin(); it != m_deleteps.end(); ++it) {
+    for (std::vector<AstNode*>::iterator it = m_deleteps.begin(); it != m_deleteps.end(); ++it) {
 	(*it)->deleteTree();
     }
     m_deleteps.clear();

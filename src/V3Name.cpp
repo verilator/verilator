@@ -52,11 +52,7 @@ private:
     V3LanguageWords 	m_words;	// Reserved word detector
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     void rename(AstNode* nodep, bool addPvt) {
 	if (!nodep->user1()) {  // Not already done
@@ -78,7 +74,7 @@ private:
     // VISITORS
     virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp = NULL;
     }
     // Add __PVT__ to names of local signals
@@ -91,54 +87,55 @@ private:
     }
     virtual void visit(AstCFunc* nodep) {
 	if (!nodep->user1()) {
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    rename(nodep, false);
 	}
     }
     virtual void visit(AstVarRef* nodep) {
 	if (nodep->varp()) {
-	    nodep->varp()->iterate(*this);
+            iterate(nodep->varp());
 	    nodep->name(nodep->varp()->name());
 	}
     }
     virtual void visit(AstCell* nodep) {
 	if (!nodep->user1()) {
 	    rename(nodep, !nodep->modp()->modPublic());
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
     }
     virtual void visit(AstMemberDType* nodep) {
 	if (!nodep->user1()) {
 	    rename(nodep, false);
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
     }
     virtual void visit(AstMemberSel* nodep) {
 	if (!nodep->user1()) {
 	    rename(nodep, false);
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
     }
     virtual void visit(AstScope* nodep) {
 	if (!nodep->user1SetOnce()) {
-	    if (nodep->aboveScopep()) nodep->aboveScopep()->iterate(*this);
-	    if (nodep->aboveCellp()) nodep->aboveCellp()->iterate(*this);
+            if (nodep->aboveScopep()) iterate(nodep->aboveScopep());
+            if (nodep->aboveCellp()) iterate(nodep->aboveCellp());
 	    // Always recompute name (as many level above scope may have changed)
 	    // Same formula as V3Scope
 	    nodep->name(nodep->isTop() ? "TOP"
 			: (nodep->aboveScopep()->name()+"."+nodep->aboveCellp()->name()));
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
     }
 
     //--------------------
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
     explicit NameVisitor(AstNetlist* nodep) {
-	nodep->accept(*this);
+        m_modp = NULL;
+        iterate(nodep);
     }
     virtual ~NameVisitor() {}
 };

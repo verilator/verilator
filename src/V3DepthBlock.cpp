@@ -49,11 +49,7 @@ private:
     int			m_deepNum;	// How many functions made
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     AstCFunc* createDeepFunc(AstNode* nodep) {
 	AstNRelinker relinkHandle;
@@ -80,7 +76,7 @@ private:
 	UINFO(4," MOD   "<<nodep<<endl);
 	m_modp = nodep;
 	m_deepNum = 0;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp = NULL;
     }
     virtual void visit(AstCFunc* nodep) {
@@ -90,7 +86,7 @@ private:
 	{
 	    m_depth = 0;
 	    m_funcp = nodep;
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
 	m_depth = lastDepth;
 	m_funcp = lastFuncp;
@@ -98,16 +94,16 @@ private:
     void visitStmt(AstNodeStmt* nodep) {
 	m_depth++;
 	if (m_depth > v3Global.opt.compLimitBlocks()
-	    && !nodep->castCCall()) {   // Already done
+            && !VN_IS(nodep, CCall)) {  // Already done
 	    UINFO(4, "DeepBlocks "<<m_depth<<" "<<nodep<<endl);
 	    AstNode* backp = nodep->backp();  // Only for debug
 	    if (debug()>=9) backp->dumpTree(cout,"-   pre : ");
 	    AstCFunc* funcp = createDeepFunc(nodep);
-	    funcp->accept(*this);
+            iterate(funcp);
 	    if (debug()>=9) backp->dumpTree(cout,"-   post: ");
 	    if (debug()>=9) funcp->dumpTree(cout,"-   func: ");
 	} else {
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
 	m_depth--;
     }
@@ -120,7 +116,7 @@ private:
     // Default: Just iterate
     virtual void visit(AstVar* nodep) {}	// Don't hit varrefs under vars
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -131,7 +127,7 @@ public:
         m_depth = 0;
         m_deepNum = 0;
 	//
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~DepthBlockVisitor() {}
 };

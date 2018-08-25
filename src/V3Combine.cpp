@@ -60,13 +60,8 @@ protected:
     // STATE
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
-
     virtual ~CombBaseVisitor() {}
+    VL_DEBUG_FUNC;  // Declare debug()
 
     //***** optimization levels
     static bool emptyFunctionDeletion() { return true; }
@@ -86,7 +81,7 @@ class CombCallVisitor : CombBaseVisitor {
 private:
     // NODE STATE
     bool	m_find;		// Find mode vs. delete mode
-    typedef multimap<AstCFunc*,AstCCall*> CallMmap;
+    typedef std::multimap<AstCFunc*,AstCCall*> CallMmap;
     CallMmap	m_callMmap;	// Associative array of {function}{call}
     // METHODS
 public:
@@ -95,7 +90,7 @@ public:
 	if (newfuncp) {
 	    UINFO(4, "   Replace "<<oldfuncp<<" -WITH-> "<<newfuncp<<endl);
 	} else UINFO(4, "   Remove "<<oldfuncp<<endl);
-	pair <CallMmap::iterator,CallMmap::iterator> eqrange = m_callMmap.equal_range(oldfuncp);
+        std::pair <CallMmap::iterator,CallMmap::iterator> eqrange = m_callMmap.equal_range(oldfuncp);
 	for (CallMmap::iterator nextit = eqrange.first; nextit != eqrange.second;) {
 	    CallMmap::iterator eqit = nextit++;
 	    AstCCall* callp = eqit->second;
@@ -121,7 +116,7 @@ public:
 	m_callMmap.insert(make_pair(nodep->funcp(), nodep));
     }
     void deleteCall(AstCCall* nodep) {
-	pair <CallMmap::iterator,CallMmap::iterator> eqrange = m_callMmap.equal_range(nodep->funcp());
+        std::pair<CallMmap::iterator,CallMmap::iterator> eqrange = m_callMmap.equal_range(nodep->funcp());
 	for (CallMmap::iterator nextit = eqrange.first; nextit != eqrange.second;) {
 	    CallMmap::iterator eqit = nextit++;
 	    AstCCall* callp = eqit->second;
@@ -141,7 +136,7 @@ private:
     virtual void visit(AstNodeAssign* nodep) {}
     virtual void visit(AstNodeMath* nodep) {}
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTRUCTORS
@@ -150,7 +145,7 @@ public:
     }
     virtual ~CombCallVisitor() {}
     void main(AstNetlist* nodep) {
-	nodep->accept(*this);
+        iterate(nodep);
     }
 };
 
@@ -165,12 +160,12 @@ private:
     // VISITORS
     virtual void visit(AstNode* nodep) {
 	nodep->user3(true);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTRUCTORS
     explicit CombMarkVisitor(AstNode* nodep) {
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~CombMarkVisitor() {}
 };
@@ -214,18 +209,18 @@ private:
 	CombineState oldState = m_state;
 	{
 	    m_state = STATE_HASH;
-	    nodep->accept(*this);
+            iterate(nodep);
 	}
 	m_state = oldState;
     }
     void walkEmptyFuncs() {
 	for (V3Hashed::iterator it = m_hashed.begin(); it != m_hashed.end(); ++it) {
 	    AstNode* node1p = it->second;
-	    AstCFunc* oldfuncp = node1p->castCFunc();
+            AstCFunc* oldfuncp = VN_CAST(node1p, CFunc);
 	    if (oldfuncp
 		&& oldfuncp->emptyBody()
 		&& !oldfuncp->dontCombine()) {
-		UINFO(5,"     EmptyFunc "<<hex<<V3Hash(oldfuncp->user4p())<<" "<<oldfuncp<<endl);
+                UINFO(5,"     EmptyFunc "<<std::hex<<V3Hash(oldfuncp->user4p())<<" "<<oldfuncp<<endl);
 		// Mark user3p on entire old tree, so we don't process it more
 		CombMarkVisitor visitor(oldfuncp);
 		m_call.replaceFunc(oldfuncp, NULL);
@@ -238,7 +233,7 @@ private:
 	for (V3Hashed::iterator it = m_hashed.begin(); it != m_hashed.end(); ++it) {
 	    V3Hash hashval = it->first;
 	    AstNode* node1p = it->second;
-	    if (!node1p->castCFunc()) continue;
+            if (!VN_IS(node1p, CFunc)) continue;
 	    if (hashval.isIllegal()) node1p->v3fatalSrc("Illegal (unhashed) nodes");
 	    for (V3Hashed::iterator eqit = it; eqit != m_hashed.end(); ++eqit) {
 		AstNode* node2p = eqit->second;
@@ -247,16 +242,16 @@ private:
 		if (node1p->user3p() || node2p->user3p()) continue;   // Already merged
 		if (node1p->sameTree(node2p)) { // walk of tree has same comparison
 		    // Replace AstCCall's that point here
-		    replaceFuncWFunc(node2p->castCFunc(), node1p->castCFunc());
+                    replaceFuncWFunc(VN_CAST(node2p, CFunc), VN_CAST(node1p, CFunc));
 		    // Replacement may promote a slow routine to fast path
-		    if (!node2p->castCFunc()->slow()) node1p->castCFunc()->slow(false);
+                    if (!VN_CAST(node2p, CFunc)->slow()) VN_CAST(node1p, CFunc)->slow(false);
 		}
 	    }
 	}
     }
     void replaceFuncWFunc(AstCFunc* oldfuncp, AstCFunc* newfuncp) {
-	UINFO(5,"     DupFunc "<<hex<<V3Hash(newfuncp->user4p())<<" "<<newfuncp<<endl);
-	UINFO(5,"         and "<<hex<<V3Hash(oldfuncp->user4p())<<" "<<oldfuncp<<endl);
+        UINFO(5,"     DupFunc "<<std::hex<<V3Hash(newfuncp->user4p())<<" "<<newfuncp<<endl);
+        UINFO(5,"         and "<<std::hex<<V3Hash(oldfuncp->user4p())<<" "<<oldfuncp<<endl);
 	// Mark user3p on entire old tree, so we don't process it more
 	++m_statCombs;
 	CombMarkVisitor visitor(oldfuncp);
@@ -265,7 +260,7 @@ private:
 	pushDeletep(oldfuncp); VL_DANGLING(oldfuncp);
     }
     void replaceOnlyCallFunc(AstCCall* nodep) {
-	if (AstCFunc* oldfuncp = nodep->backp()->castCFunc()) {
+        if (AstCFunc* oldfuncp = VN_CAST(nodep->backp(), CFunc)) {
 	    //oldfuncp->dumpTree(cout,"MAYDEL: ");
 	    if (nodep->nextp()==NULL
 		&& oldfuncp->initsp()==NULL
@@ -288,7 +283,7 @@ private:
 	AstNode* bestLast1p = NULL;
 	AstNode* bestLast2p = NULL;
 	//
-	pair <V3Hashed::iterator,V3Hashed::iterator> eqrange = m_hashed.mmap().equal_range(hashval);
+        std::pair<V3Hashed::iterator,V3Hashed::iterator> eqrange = m_hashed.mmap().equal_range(hashval);
 	for (V3Hashed::iterator eqit = eqrange.first; eqit != eqrange.second; ++eqit) {
 	    AstNode* node2p = eqit->second;
 	    if (node1p==node2p) continue;
@@ -396,7 +391,7 @@ private:
 	//In V3Hashed AstNode::user4ClearTree();	// user4p() used on entire tree
 	// Iterate modules backwards, in bottom-up order.
 	// Required so that a module instantiating another can benefit from collapsing.
-	nodep->iterateChildrenBackwards(*this);
+        iterateChildrenBackwards(nodep);
     }
     virtual void visit(AstNodeModule* nodep) {
 	UINFO(4," MOD   "<<nodep<<endl);
@@ -406,7 +401,7 @@ private:
 	m_hashed.clear();
 	// Compute hash of all statement trees in the function
 	m_state = STATE_HASH;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_state = STATE_IDLE;
 	if (debug()>=9) {
 	    m_hashed.dumpFilePrefixed("combine");
@@ -422,7 +417,7 @@ private:
 	// Walk the statements looking for large replicated code sections
 	if (statementCombine()) {
 	    m_state = STATE_DUP;
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    m_state = STATE_IDLE;
 	}
 	m_modp = NULL;
@@ -433,7 +428,7 @@ private:
 	    if (m_state == STATE_HASH) {
 		hashStatement(nodep);  // Hash the entire function - it might be identical
 	    } else if (m_state == STATE_DUP) {
-		nodep->iterateChildren(*this);
+                iterateChildren(nodep);
 	    }
 	}
 	m_funcp = NULL;
@@ -453,16 +448,19 @@ private:
     virtual void visit(AstTraceDecl*) {}
     virtual void visit(AstTraceInc*) {}
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
     // CONSTUCTORS
     explicit CombineVisitor(AstNetlist* nodep) {
-	m_modp=NULL;
-	m_funcp = NULL;
 	m_state = STATE_IDLE;
-	nodep->accept(*this);
+        m_modp = NULL;
+        m_funcp = NULL;
+        m_modNFuncs = 0;
+        m_walkLast1p = NULL;
+        m_walkLast2p = NULL;
+        iterate(nodep);
     }
     virtual ~CombineVisitor() {
 	V3Stats::addStat("Optimizations, Combined CFuncs", m_statCombs);

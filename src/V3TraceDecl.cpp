@@ -58,11 +58,7 @@ private:
     V3Double0		m_statIgnSigs;	// Statistic tracking
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     const char* vscIgnoreTrace(AstVarScope* nodep) {
 	// Return true if this shouldn't be traced
@@ -146,10 +142,10 @@ private:
 	//
 	m_initSubFuncp = newCFuncSub(m_initFuncp);
 	// And find variables
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstVarScope* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Avoid updating this if (), instead see varp->isTrace()
 	if (!nodep->varp()->isTemp() && !nodep->varp()->isFuncLocal()) {
 	    UINFO(5, "    vsc "<<nodep<<endl);
@@ -172,7 +168,7 @@ private:
 		else m_traValuep = new AstVarRef(nodep->fileline(), nodep, false);
 		{
 		    // Recurse into data type of the signal; the visitors will call addTraceDecl()
-		    varp->dtypeSkipRefp()->accept(*this);
+                    iterate(varp->dtypeSkipRefp());
 		}
 		// Cleanup
 		if (m_traValuep) { m_traValuep->deleteTree(); m_traValuep=NULL; }
@@ -185,12 +181,12 @@ private:
     // VISITORS - Data types when tracing
     virtual void visit(AstConstDType* nodep) {
 	if (m_traVscp) {
-	    nodep->subDTypep()->skipRefp()->accept(*this);
+            iterate(nodep->subDTypep()->skipRefp());
 	}
     }
     virtual void visit(AstRefDType* nodep) {
 	if (m_traVscp) {
-	    nodep->subDTypep()->skipRefp()->accept(*this);
+            iterate(nodep->subDTypep()->skipRefp());
 	}
     }
     virtual void visit(AstUnpackArrayDType* nodep) {
@@ -198,7 +194,7 @@ private:
 	if (m_traVscp) {
 	    if ((int)nodep->arrayUnpackedElements() > v3Global.opt.traceMaxArray()) {
 		addIgnore("Wide memory > --trace-max-array ents");
-	    } else if (nodep->subDTypep()->skipRefp()->castBasicDType()  // Nothing lower than this array
+            } else if (VN_IS(nodep->subDTypep()->skipRefp(), BasicDType)  // Nothing lower than this array
 		       && m_traVscp->dtypep()->skipRefp() == nodep) {  // Nothing above this array
 		// Simple 1-D array, use exising V3EmitC runtime loop rather than unrolling
 		// This will put "(index)" at end of signal name for us
@@ -214,7 +210,7 @@ private:
 			m_traValuep = new AstArraySel(nodep->fileline(), m_traValuep->cloneTree(true),
 						      i - nodep->lsb());
 
-			subtypep->accept(*this);
+                        iterate(subtypep);
 			m_traValuep->deleteTree(); m_traValuep = NULL;
 		    }
 		    m_traShowname = oldShowname;
@@ -239,7 +235,7 @@ private:
 			m_traValuep = new AstSel(nodep->fileline(), m_traValuep->cloneTree(true),
 						 (i - nodep->lsb())*subtypep->width(),
 						 subtypep->width());
-			subtypep->accept(*this);
+                        iterate(subtypep);
 			m_traValuep->deleteTree(); m_traValuep = NULL;
 		    }
 		    m_traShowname = oldShowname;
@@ -258,19 +254,19 @@ private:
 		if (!nodep->packed()) {
 		    addIgnore("Unsupported: Unpacked struct/union");
 		} else {
-		    for (AstMemberDType* itemp = nodep->membersp(); itemp; itemp=itemp->nextp()->castMemberDType()) {
+                    for (AstMemberDType* itemp = nodep->membersp(); itemp; itemp=VN_CAST(itemp->nextp(), MemberDType)) {
 			AstNodeDType* subtypep = itemp->subDTypep()->skipRefp();
 			string oldShowname = m_traShowname;
 			AstNode* oldValuep = m_traValuep;
 			{
 			    m_traShowname += string(" ")+itemp->prettyName();
-			    if (nodep->castStructDType()) {
+                            if (VN_IS(nodep, StructDType)) {
 				m_traValuep = new AstSel(nodep->fileline(), m_traValuep->cloneTree(true),
 							 itemp->lsb(), subtypep->width());
-				subtypep->accept(*this);
+                                iterate(subtypep);
 				m_traValuep->deleteTree(); m_traValuep = NULL;
 			    } else { // Else union, replicate fields
-				subtypep->accept(*this);
+                                iterate(subtypep);
 			    }
 			}
 			m_traShowname = oldShowname;
@@ -297,7 +293,7 @@ private:
 
     //--------------------
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -312,7 +308,7 @@ public:
 	m_funcNum = 0;
 	m_traVscp = NULL;
 	m_traValuep = NULL;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~TraceDeclVisitor() {
 	V3Stats::addStat("Tracing, Traced signals", m_statSigs);

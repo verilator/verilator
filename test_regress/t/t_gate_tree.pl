@@ -112,10 +112,15 @@ gen($Self->{top_filename});
 
 compile(
     v_flags2 => ["+define+SIM_CYCLES=$Self->{cycles}",],
-    verilator_flags2=>["--stats --x-assign fast --x-initial fast"],
+    verilator_flags2=>["--stats --x-assign fast --x-initial fast",
+                       "-Wno-UNOPTTHREADS"],
     );
 
 execute(
+    all_run_flags => ["+verilator+prof+threads+start+100",
+                      " +verilator+prof+threads+window+2",
+                      " +verilator+prof+threads+file+$Self->{obj_dir}/profile_threads.dat",
+                      ],
     check_finished => 1,
     );
 

@@ -12,12 +12,13 @@ module t (/*AUTOARG*/
    // verilator lint_off COMBDLY
    // verilator lint_off UNOPT
    // verilator lint_off UNOPTFLAT
+   // verilator lint_off BLKANDNBLK
 
    reg 	       c1_start; initial c1_start = 0;
    wire [31:0] c1_count;
    comb_loop c1 (.count(c1_count), .start(c1_start));
 
-   wire        s2_start = (c1_count==0 && c1_start);
+   wire        s2_start = c1_start;
    wire [31:0] s2_count;
    seq_loop  s2 (.count(s2_count), .start(s2_start));
 
@@ -40,9 +41,13 @@ module t (/*AUTOARG*/
       endcase
       case (cyc)
 	8'd02: begin
+           // On Verilator, we expect these comparisons to match exactly,
+           // confirming that our settle loop repeated the exact number of
+           // iterations we expect. No '$stop' should be called here, and we
+           // should reach the normal '$finish' below on the next cycle.
 	   if (c1_count!=32'h3) $stop;
 	   if (s2_count!=32'h3) $stop;
-	   if (c3_count!=32'h6) $stop;
+           if (c3_count!=32'h5) $stop;
 	end
 	8'd03: begin
 	   $write("*-* All Finished *-*\n");
@@ -64,10 +69,8 @@ module comb_loop (/*AUTOARG*/
 
    reg [31:0] 	 runnerm1, runner; initial runner = 0;
 
-   always @ (start) begin
-      if (start) begin
-	 runner = 3;
-      end
+   always @ (posedge start) begin
+      runner = 3;
    end
 
    always @ (/*AS*/runner) begin
@@ -95,10 +98,8 @@ module seq_loop (/*AUTOARG*/
 
    reg [31:0] 	 runnerm1, runner; initial runner = 0;
 
-   always @ (start) begin
-      if (start) begin
-	 runner <= 3;
-      end
+   always @ (posedge start) begin
+      runner <= 3;
    end
 
    always @ (/*AS*/runner) begin

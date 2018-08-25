@@ -155,9 +155,9 @@ public:
 		    // Use only AstNode::dump instead of the virtual one, as there
 		    // may be varp() and other cross links that are bad.
 		    if (v3Global.opt.debugCheck()) {
-			cerr<<"%Error: LeakedNode"<<(it->first->backp()?"Back: ":": ");
-			((AstNode*)(it->first))->AstNode::dump(cerr);
-			cerr<<endl;
+                        std::cerr<<"%Error: LeakedNode"<<(it->first->backp()?"Back: ":": ");
+                        ((AstNode*)(it->first))->AstNode::dump(std::cerr);
+                        std::cerr<<endl;
 			V3Error::incErrors();
 		    }
 		    it->second |= FLAG_LEAKED;
@@ -193,7 +193,7 @@ private:
     // METHODS
     void processAndIterate(AstNode* nodep) {
 	BrokenTable::addInTree(nodep, nodep->maybePointedTo());
-	nodep->iterateChildrenConst(*this);
+        iterateChildrenConst(nodep);
     }
     // VISITORS
     virtual void visit(AstNode* nodep) {
@@ -202,7 +202,7 @@ private:
 public:
     // CONSTUCTORS
     explicit BrokenMarkVisitor(AstNetlist* nodep) {
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~BrokenMarkVisitor() {}
 };
@@ -212,7 +212,7 @@ public:
 
 class BrokenCheckVisitor : public AstNVisitor {
 private:
-    void checkWidthMin(AstNode* nodep) {
+    void checkWidthMin(const AstNode* nodep) {
 	if (nodep->width() != nodep->widthMin()
 	    && v3Global.widthMinUsage()==VWidthMinUsage::MATCHES_WIDTH) {
 	    nodep->v3fatalSrc("Width != WidthMin");
@@ -225,10 +225,9 @@ private:
 	}
 	if (nodep->dtypep()) {
             if (!nodep->dtypep()->brokeExists()) {
-                nodep->v3fatalSrc("Broken link in node->dtypep() to "<<(void*)nodep->dtypep());
-            } else if (!nodep->dtypep()->castNodeDType()) {
-                nodep->v3fatalSrc("Non-dtype link in node->dtypep() to "<<(void*)nodep->dtypep());
-            }
+                nodep->v3fatalSrc("Broken link in node->dtypep() to "<<(void*)nodep->dtypep()); }
+            else if (!VN_IS(nodep->dtypep(), NodeDType)) {
+                nodep->v3fatalSrc("Non-dtype link in node->dtypep() to "<<(void*)nodep->dtypep()); }
 	}
 	if (v3Global.assertDTypesResolved()) {
 	    if (nodep->hasDType()) {
@@ -237,18 +236,18 @@ private:
 		if (nodep->dtypep()) nodep->v3fatalSrc("DType on node without hasDType(): "<<nodep->prettyTypeName());
 	    }
 	    if (nodep->getChildDTypep()) nodep->v3fatalSrc("childDTypep() non-null on node after should have removed");
-	    if (AstNodeDType* dnodep = nodep->castNodeDType()) checkWidthMin(dnodep);
+            if (const AstNodeDType* dnodep = VN_CAST(nodep, NodeDType)) checkWidthMin(dnodep);
 	}
 	checkWidthMin(nodep);
-	nodep->iterateChildrenConst(*this);
+        iterateChildrenConst(nodep);
 	BrokenTable::setUnder(nodep,false);
     }
     virtual void visit(AstNodeAssign* nodep) {
 	processAndIterate(nodep);
 	if (v3Global.assertDTypesResolved()
 	    && nodep->brokeLhsMustBeLvalue()
-	    && nodep->lhsp()->castNodeVarRef()
-	    && !nodep->lhsp()->castNodeVarRef()->lvalue()) {
+            && VN_IS(nodep->lhsp(), NodeVarRef)
+            && !VN_CAST(nodep->lhsp(), NodeVarRef)->lvalue()) {
 	    nodep->v3fatalSrc("Assignment LHS is not an lvalue");
 	}
     }
@@ -258,7 +257,7 @@ private:
 public:
     // CONSTUCTORS
     explicit BrokenCheckVisitor(AstNetlist* nodep) {
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~BrokenCheckVisitor() {}
 };

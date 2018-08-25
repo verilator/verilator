@@ -48,15 +48,11 @@ class UndrivenVarEntry {
     AstVar*		m_varp;		// Variable this tracks
     bool		m_usedWhole;	// True if whole vector used
     bool		m_drivenWhole;	// True if whole vector driven
-    vector<bool>	m_flags;	// Used/Driven on each subbit
+    std::vector<bool>   m_flags;        // Used/Driven on each subbit
 
     enum { FLAG_USED = 0, FLAG_DRIVEN = 1, FLAGS_PER_BIT = 2 };
 
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
 public:
     // CONSTRUCTORS
@@ -235,17 +231,13 @@ private:
     AstUser2InUse	m_inuser2;
 
     // STATE
-    vector<UndrivenVarEntry*>	m_entryps[3];	// Nodes to delete when we are finished
+    std::vector<UndrivenVarEntry*> m_entryps[3];  // Nodes to delete when we are finished
     bool		m_inBBox;	// In black box; mark as driven+used
     AstNodeFTask*	m_taskp;	// Current task
     AstAlways*		m_alwaysp;	// Current always if combo, otherwise NULL
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     UndrivenVarEntry* getEntryp(AstVar* nodep, int which_user) {
 	if (!(which_user==1 ? nodep->user1p() : nodep->user2p())) {
@@ -266,7 +258,7 @@ private:
 	AstVar* varp = nodep->varp();
 	if (!varp->isParam() && !varp->isGenVar() && !varp->isUsedLoopIdx()
 	    && !m_inBBox   // We may have falsely considered a SysIgnore as a driver
-	    && !nodep->castVarXRef()   // Xrefs might point at two different instances
+            && !VN_IS(nodep, VarXRef)  // Xrefs might point at two different instances
 	    && !varp->fileline()->warnIsOff(V3ErrorCode::ALWCOMBORDER)) {  // Warn only once per variable
 	    nodep->v3warn(ALWCOMBORDER, "Always_comb variable driven after use: "<<nodep->prettyName());
 	    varp->fileline()->modifyWarnOff(V3ErrorCode::ALWCOMBORDER, true);  // Complain just once for any usage
@@ -292,19 +284,19 @@ private:
 	    }
 	}
 	// Discover variables used in bit definitions, etc
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstArraySel* nodep) {
 	// Arrays are rarely constant assigned, so for now we punt and do all entries
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstSliceSel* nodep) {
         // Arrays are rarely constant assigned, so for now we punt and do all entries
-        nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstSel* nodep) {
-	AstNodeVarRef* varrefp = nodep->fromp()->castNodeVarRef();
-	AstConst* constp = nodep->lsbp()->castConst();
+        AstNodeVarRef* varrefp = VN_CAST(nodep->fromp(), NodeVarRef);
+        AstConst* constp = VN_CAST(nodep->lsbp(), Const);
 	if (varrefp && constp && !constp->num().isFourState()) {
 	    for (int usr=1; usr<(m_alwaysp?3:2); ++usr) {
 		UndrivenVarEntry* entryp = getEntryp (varrefp->varp(), usr);
@@ -321,7 +313,7 @@ private:
 	    }
 	} else {
 	    // else other varrefs handled as unknown mess in AstVarRef
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
     }
     virtual void visit(AstNodeVarRef* nodep) {
@@ -344,7 +336,7 @@ private:
     virtual void visit(AstSysIgnore* nodep) {
 	bool prevMark = m_inBBox;
 	m_inBBox = true;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_inBBox = prevMark;
     }
 
@@ -355,7 +347,7 @@ private:
 	    if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9,"   "<<nodep<<endl);
 	    if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) m_alwaysp = nodep;
 	    else m_alwaysp = NULL;
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9,"   Done "<<nodep<<endl);
 	}
 	m_alwaysp = prevAlwp;
@@ -364,7 +356,7 @@ private:
     virtual void visit(AstNodeFTask* nodep) {
 	AstNodeFTask* prevTaskp = m_taskp;
 	m_taskp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_taskp = prevTaskp;
     }
 
@@ -381,7 +373,7 @@ private:
     // iterate
     virtual void visit(AstConst* nodep) {}
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
@@ -389,14 +381,14 @@ public:
 	m_inBBox = false;
 	m_taskp = NULL;
 	m_alwaysp = NULL;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~UndrivenVisitor() {
-	for (vector<UndrivenVarEntry*>::iterator it = m_entryps[1].begin(); it != m_entryps[1].end(); ++it) {
+        for (std::vector<UndrivenVarEntry*>::iterator it = m_entryps[1].begin(); it != m_entryps[1].end(); ++it) {
 	    (*it)->reportViolations();
 	}
 	for (int usr=1; usr<3; ++usr) {
-	    for (vector<UndrivenVarEntry*>::iterator it = m_entryps[usr].begin(); it != m_entryps[usr].end(); ++it) {
+            for (std::vector<UndrivenVarEntry*>::iterator it = m_entryps[usr].begin(); it != m_entryps[usr].end(); ++it) {
 		delete (*it);
 	    }
 	}

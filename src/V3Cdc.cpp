@@ -51,11 +51,7 @@
 
 class CdcBaseVisitor : public AstNVisitor {
 public:
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 };
 
 //######################################################################
@@ -77,6 +73,7 @@ public:
 	, m_asyncPath(false) {}
     virtual ~CdcEitherVertex() {}
     // ACCESSORS
+    virtual FileLine* fileline() const { return nodep()->fileline(); }
     AstScope* scopep() const { return m_scopep; }
     AstNode* nodep() const { return m_nodep; }
     AstSenTree* srcDomainp() const { return m_srcDomainp; }
@@ -135,7 +132,7 @@ private:
     // NODE STATE
     //Entire netlist:
     // {statement}Node::user3	-> bool, indicating not hazard
-    ofstream*		m_ofp;		// Output file
+    std::ofstream* m_ofp;  // Output file
     string		m_prefix;
 
     virtual void visit(AstNode* nodep) {
@@ -145,22 +142,22 @@ private:
 	*m_ofp<<nodep->prettyTypeName()<<" "<<endl;
 	string lastPrefix = m_prefix;
 	m_prefix = lastPrefix + "1:";
-	nodep->op1p()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->op1p());
 	m_prefix = lastPrefix + "2:";
-	nodep->op2p()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->op2p());
 	m_prefix = lastPrefix + "3:";
-	nodep->op3p()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->op3p());
 	m_prefix = lastPrefix + "4:";
-	nodep->op4p()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->op4p());
 	m_prefix = lastPrefix;
     }
 
 public:
     // CONSTUCTORS
-    CdcDumpVisitor(AstNode* nodep, ofstream* ofp, const string& prefix) {
+    CdcDumpVisitor(AstNode* nodep, std::ofstream* ofp, const string& prefix) {
 	m_ofp = ofp;
 	m_prefix = prefix;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~CdcDumpVisitor() {}
 };
@@ -173,7 +170,7 @@ private:
     size_t	m_maxFilenameLen;
 
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Keeping line+filename lengths separate is much faster than calling ascii().length()
 	if (nodep->fileline()->lineno() >= m_maxLineno) {
 	    m_maxLineno = nodep->fileline()->lineno()+1;
@@ -187,7 +184,7 @@ public:
     explicit CdcWidthVisitor(AstNode* nodep) {
 	m_maxLineno = 0;
 	m_maxFilenameLen = 0;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~CdcWidthVisitor() {}
     // ACCESSORS
@@ -225,7 +222,7 @@ private:
     bool		m_inDly;	// In delayed assign
     int			m_inSenItem;	// Number of senitems
     string		m_ofFilename;	// Output filename
-    ofstream*		m_ofp;		// Output file
+    std::ofstream*      m_ofp;          // Output file
     uint32_t		m_userGeneration; // Generation count to avoid slow userClearVertices
     int			m_filelineWidth;  // Characters in longest fileline
 
@@ -241,7 +238,7 @@ private:
 		m_logicVertexp->dstDomainp(m_domainp);
 		m_logicVertexp->dstDomainSet(true);
 	    }
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    m_logicVertexp = NULL;
 
 	    if (0 && debug()>=9) {
@@ -284,7 +281,7 @@ private:
 	nodep->v3warnCode(code,msg);
 	if (!told_file) {
 	    told_file = 1;
-	    cerr<<V3Error::msgPrefix()<<"     See details in "<<m_ofFilename<<endl;
+            std::cerr<<V3Error::msgPrefix()<<"     See details in "<<m_ofFilename<<endl;
 	}
 	*m_ofp<<"%Warning-"<<code.ascii()<<": "<<nodep->fileline()<<" "<<msg<<endl;
     }
@@ -448,7 +445,7 @@ private:
 	// See also OrderGraph::loopsVertexCb(V3GraphVertex* vertexp)
 	AstNode* nodep = vertexp->nodep();
 	string front = pad(filelineWidth(),nodep->fileline()->ascii()+":")+" "+prefix+" +- ";
-	if (nodep->castVarScope()) {
+        if (VN_IS(nodep, VarScope)) {
 	    *m_ofp<<front<<"Variable: "<<nodep->prettyName()<<endl;
 	}
 	else {
@@ -500,7 +497,7 @@ private:
         if (ofp->fail()) v3fatal("Can't write "<<filename);
 	*ofp<<"Edge Report for "<<v3Global.opt.prefix()<<endl;
 
-	deque<string> report;  // Sort output by name
+        std::deque<string> report;  // Sort output by name
 	for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
 	    if (CdcVarVertex* vvertexp = dynamic_cast<CdcVarVertex*>(itp)) {
 		AstVar* varp = vvertexp->varScp()->varp();
@@ -508,26 +505,26 @@ private:
 		    const char* whatp = "wire";
 		    if (varp->isPrimaryIO()) whatp = (varp->isInout()?"inout":varp->isInput()?"input":"output");
 
-		    ostringstream os;
-		    os.setf(ios::left);
+                    std::ostringstream os;
+                    os.setf(std::ios::left);
 		    // Module name - doesn't work due to flattening having lost the original
 		    // so we assume the modulename matches the filebasename
 		    string fname = vvertexp->varScp()->fileline()->filebasename() + ":";
-		    os<<"  "<<setw(20)<<fname;
-		    os<<"  "<<setw(8)<<whatp;
-		    os<<"  "<<setw(40)<<vvertexp->varScp()->prettyName();
+                    os<<"  "<<std::setw(20)<<fname;
+                    os<<"  "<<std::setw(8)<<whatp;
+                    os<<"  "<<std::setw(40)<<vvertexp->varScp()->prettyName();
 		    os<<"  SRC=";
 		    if (vvertexp->srcDomainp()) V3EmitV::verilogForTree(vvertexp->srcDomainp(), os);
 		    os<<"  DST=";
 		    if (vvertexp->dstDomainp()) V3EmitV::verilogForTree(vvertexp->dstDomainp(), os);
-		    os<<setw(0);
+                    os<<std::setw(0);
 		    os<<endl;
 		    report.push_back(os.str());
 		}
 	    }
 	}
 	stable_sort(report.begin(), report.end());
-	for (deque<string>::iterator it = report.begin(); it!=report.end(); ++it) {
+        for (std::deque<string>::iterator it = report.begin(); it!=report.end(); ++it) {
 	    *ofp << *it;
 	}
     }
@@ -541,7 +538,7 @@ private:
 	// Variables from flops already are domained
 	if (traceDests ? vertexp->dstDomainSet() : vertexp->srcDomainSet()) return;  // Fully computed
 
-	typedef set<AstSenTree*> SenSet;
+        typedef std::set<AstSenTree*> SenSet;
 	SenSet 	    senouts;   // List of all sensitivities for new signal
 	if (CdcLogicVertex* vvertexp = dynamic_cast<CdcLogicVertex*>(vertexp)) {
 	    if (vvertexp) {}  // Unused
@@ -584,7 +581,7 @@ private:
 	}
 	// If multiple domains need to do complicated optimizations
 	if (senedited) {
-	    senoutp = V3Const::constifyExpensiveEdit(senoutp)->castSenTree();
+            senoutp = VN_CAST(V3Const::constifyExpensiveEdit(senoutp), SenTree);
 	}
 	if (traceDests) {
 	    vertexp->dstDomainSet(true);  // Note it's set - domainp may be null, so can't use that
@@ -606,14 +603,14 @@ private:
     // VISITORS
     virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_modp = NULL;
     }
     virtual void visit(AstScope* nodep) {
 	UINFO(4," SCOPE "<<nodep<<endl);
 	m_scopep = nodep;
 	m_logicVertexp = NULL;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_scopep = NULL;
     }
     virtual void visit(AstActive* nodep) {
@@ -657,14 +654,14 @@ private:
     }
     virtual void visit(AstAssignDly* nodep) {
 	m_inDly = true;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_inDly = false;
     }
     virtual void visit(AstSenItem* nodep) {
 	// Note we look at only AstSenItems, not AstSenGate's
 	// The gating term of a AstSenGate is normal logic
 	m_inSenItem = true;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_inSenItem = false;
     }
     virtual void visit(AstAlways* nodep) {
@@ -691,21 +688,21 @@ private:
     // Math that shouldn't cause us to clear hazard
     virtual void visit(AstConst* nodep) { }
     virtual void visit(AstReplicate* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstConcat* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstNot* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstSel* nodep) {
-	if (!nodep->lsbp()->castConst()) setNodeHazard(nodep);
-	nodep->iterateChildren(*this);
+        if (!VN_IS(nodep->lsbp(), Const)) setNodeHazard(nodep);
+        iterateChildren(nodep);
     }
     virtual void visit(AstNodeSel* nodep) {
-	if (!nodep->bitp()->castConst()) setNodeHazard(nodep);
-	nodep->iterateChildren(*this);
+        if (!VN_IS(nodep->bitp(), Const)) setNodeHazard(nodep);
+        iterateChildren(nodep);
     }
 
     // Ignores
@@ -718,10 +715,10 @@ private:
     // Default
     virtual void visit(AstNodeMath* nodep) {
 	setNodeHazard(nodep);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -747,7 +744,7 @@ public:
 	*m_ofp<<"repeating recursively forwards to the destination flop(s).\n";
 	*m_ofp<<"%% Indicates the operator considered potentially hazardous.\n";
 
-	nodep->accept(*this);
+        iterate(nodep);
 	analyze();
 	if (debug()>=1) edgeReport();  // Not useful to users at the moment
 

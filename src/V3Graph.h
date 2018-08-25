@@ -27,6 +27,7 @@
 #include <vector>
 #include <algorithm>
 
+class FileLine;
 class V3Graph;
 class V3GraphVertex;
 class V3GraphEdge;
@@ -39,6 +40,38 @@ class OrderLogicVertex;
 // True for those edges we should honor.
 
 typedef bool (*V3EdgeFuncP)(const V3GraphEdge* edgep);
+
+//=============================================================================
+// When the Graph represents a directional acyclical graph (DAG), following
+// the to() edges is forward, and back() is reverse.  However, sometimes
+// it's useful to have algorithms that can walk in either direction, hence
+// some methods take GraphWay to programmatically select the direction.
+
+class GraphWay {
+public:
+    enum en { FORWARD=0,
+              REVERSE=1,
+              NUM_WAYS=2  // NUM_WAYS is not an actual way, it's typically
+              //          // an array dimension or loop bound.
+    };
+    enum en m_e;
+    inline GraphWay() : m_e(FORWARD) {}
+    // cppcheck-suppress noExplicitConstructor
+    inline GraphWay(en _e) : m_e(_e) {}
+    explicit inline GraphWay(int _e) : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
+    const char* ascii() const {
+        static const char* const names[] = { "FORWARD", "REVERSE" };
+        return names[m_e];
+    };
+    // METHODS unique to this class
+    GraphWay invert() const { return m_e == FORWARD ? REVERSE : FORWARD; }
+    bool forward() const { return m_e == FORWARD; }
+    bool reverse() const { return m_e != FORWARD; }
+};
+inline bool operator==(GraphWay lhs, GraphWay rhs) { return (lhs.m_e == rhs.m_e); }
+inline bool operator==(GraphWay lhs, GraphWay::en rhs) { return (lhs.m_e == rhs); }
+inline bool operator==(GraphWay::en lhs, GraphWay rhs) { return (lhs == rhs.m_e); }
 
 //============================================================================
 
@@ -56,7 +89,7 @@ protected:
     void acyclicCut();
     void acyclicLoop(V3GraphVertex* vertexp, int depth);
     double orderDFSIterate(V3GraphVertex* vertexp);
-    void dumpEdge(ostream& os, V3GraphVertex* vertexp, V3GraphEdge* edgep);
+    void dumpEdge(std::ostream& os, V3GraphVertex* vertexp, V3GraphEdge* edgep);
     void verticesUnlink() { m_vertices.reset(); }
     // ACCESSORS
     static int debug();
@@ -101,7 +134,12 @@ public:
     /// Order all vertices by rank and fanout, lowest first
     /// Sort all vertices by rank and fanout, lowest first
     /// Sort all edges by weight, lowest first
+    /// Side-effect: assigns ranks to every node.
     void order();
+
+    // Similar to order() but does not assign ranks. Caller must
+    // ensure that the graph has been ranked ahead of the call.
+    void orderPreRanked();
 
     /// Make acyclical (into a tree) by breaking a minimal subset of cutable edges.
     void acyclic(V3EdgeFuncP edgeFuncp);
@@ -118,6 +156,12 @@ public:
     /// Remove any redundant edges, weights become SUM of any other weight
     void removeRedundantEdgesSum(V3EdgeFuncP edgeFuncp);
 
+    /// Remove any transitive edges.  E.g. if have edges A->B, B->C, and A->C
+    /// then A->C is a "transitive" edge; it's implied by the first two
+    /// (assuming the DAG is a dependency graph.)
+    /// This algorithm can be expensive.
+    void removeTransitiveEdges();
+
     /// Call loopsVertexCb on any one loop starting where specified
     void reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp);
 
@@ -125,7 +169,7 @@ public:
     void subtreeLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp, V3Graph* loopGraphp);
 
     /// Debugging
-    void dump(ostream& os=cout);
+    void dump(std::ostream& os=std::cout);
     void dumpDotFile(const string& filename, bool colorAsSubgraph) const;
     void dumpDotFilePrefixed(const string& nameComment, bool colorAsSubgraph=false) const;
     void dumpDotFilePrefixedAlways(const string& nameComment, bool colorAsSubgraph=false) const;
@@ -134,7 +178,7 @@ public:
     static void selfTest();
 
     // CALLBACKS
-    virtual void loopsMessageCb(V3GraphVertex* vertexp) { v3fatalSrc("Loops detected in graph: "<<vertexp); }
+    virtual void loopsMessageCb(V3GraphVertex* vertexp);
     virtual void loopsVertexCb(V3GraphVertex* vertexp);
 };
 
@@ -180,6 +224,7 @@ public:
     virtual string dotStyle() const { return ""; }
     virtual string dotName() const { return ""; }
     virtual uint32_t rankAdder() const { return 1; }
+    virtual FileLine* fileline() const { return NULL; }  // NULL for unknown
     virtual int sortCmp(const V3GraphVertex* rhsp) const {
 	// LHS goes first if of lower rank, or lower fanout
 	if (m_rank < rhsp->m_rank) return -1;
@@ -207,11 +252,20 @@ public:
     bool 	 outEmpty() const { return outBeginp()==NULL; }
     bool 	 outSize1() const;
     uint32_t	 outHash() const;
+    V3GraphEdge* beginp(GraphWay way) const {
+        return way.forward() ? outBeginp() : inBeginp(); }
     // METHODS
-    void	rerouteEdges(V3Graph* graphp);	///< Edges are routed around this vertex to point from "from" directly to "to"
+    /// Error reporting
+    void v3errorEnd(std::ostringstream& str) const;
+    void v3errorEndFatal(std::ostringstream& str) const;
+    /// Edges are routed around this vertex to point from "from" directly to "to"
+    void rerouteEdges(V3Graph* graphp);
+    /// Find the edge connecting ap and bp, where bp is wayward from ap.
+    /// If edge is not found returns NULL. O(edges) performance.
+    V3GraphEdge* findConnectingEdgep(GraphWay way, const V3GraphVertex* waywardp);
 };
 
-ostream& operator<<(ostream& os, V3GraphVertex* vertexp);
+std::ostream& operator<<(std::ostream& os, V3GraphVertex* vertexp);
 
 //============================================================================
 
@@ -273,14 +327,18 @@ public:
     void*	userp() const { return m_userp; }
     void 	user(uint32_t user) { m_user = user; }
     uint32_t	user() const { return m_user; }
-    V3GraphVertex*	fromp() const { return m_fromp; }
-    V3GraphVertex*	top() const { return m_top; }
+    V3GraphVertex* fromp() const { return m_fromp; }
+    V3GraphVertex* top() const { return m_top; }
+    V3GraphVertex* closerp(GraphWay way) const { return way.forward() ? fromp() : top(); }
+    V3GraphVertex* furtherp(GraphWay way) const { return way.forward() ? top() : fromp(); }
     // STATIC ACCESSORS
-    static bool	followNotCutable(const V3GraphEdge* edgep) { return !edgep->m_cutable; }
-    static bool	followAlwaysTrue(const V3GraphEdge*) { return true; }
+    static bool followNotCutable(const V3GraphEdge* edgep) { return !edgep->m_cutable; }
+    static bool followAlwaysTrue(const V3GraphEdge*) { return true; }
     // ITERATORS
     V3GraphEdge* outNextp() const { return m_outs.nextp(); }
     V3GraphEdge* inNextp() const { return m_ins.nextp(); }
+    V3GraphEdge* nextp(GraphWay way) const {
+        return way.forward() ? outNextp() : inNextp(); }
 };
 
 //============================================================================

@@ -33,7 +33,7 @@
 
 class V3ParseSym {
     // TYPES
-    typedef vector<VSymEnt*>	SymStack;
+    typedef std::vector<VSymEnt*> SymStack;
 
 private:
     // MEMBERS
@@ -124,7 +124,7 @@ public:
 	}
 	UINFO(1,"ParseSym Current: "<<symCurrentp()->nodep()<<endl);
     }
-    void dump(ostream& os, const string& indent="") {
+    void dump(std::ostream& os, const string& indent="") {
 	m_syms.dump(os,indent);
     }
     AstNode* findEntUpward (const string& name) {

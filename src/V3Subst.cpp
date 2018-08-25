@@ -45,11 +45,7 @@
 
 class SubstBaseVisitor : public AstNVisitor {
 public:
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 };
 
 //######################################################################
@@ -81,7 +77,7 @@ class SubstVarEntry {
     bool		m_wordAssign;	// True if any word assignments
     bool		m_wordUse;	// True if any individual word usage
     SubstVarWord	m_whole;	// Data for whole vector used at once
-    vector<SubstVarWord> m_words;	// Data for every word, if multi word variable
+    std::vector<SubstVarWord> m_words;  // Data for every word, if multi word variable
     int debug() { return SubstBaseVisitor::debug(); }
 
 public:
@@ -210,7 +206,7 @@ private:
     }
     virtual void visit(AstConst* nodep) {}	// Accelerate
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
@@ -218,7 +214,7 @@ public:
 	UINFO(9, "        SubstUseVisitor "<<origStep<<" "<<nodep<<endl);
 	m_ok = true;
 	m_origStep = origStep;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~SubstUseVisitor() {}
     // METHODS
@@ -238,7 +234,7 @@ private:
     AstUser2InUse	m_inuser2;
 
     // STATE
-    vector<SubstVarEntry*>	m_entryps;	// Nodes to delete when we are finished
+    std::vector<SubstVarEntry*> m_entryps;      // Nodes to delete when we are finished
     int				m_ops;		// Number of operators on assign rhs
     int				m_assignStep;	// Assignment number to determine var lifetime
     V3Double0			m_statSubsts;	// Statistic tracking
@@ -266,9 +262,9 @@ private:
     virtual void visit(AstNodeAssign* nodep) {
 	m_ops = 0;
 	m_assignStep++;
-	nodep->rhsp()->iterateAndNext(*this);
+        iterateAndNextNull(nodep->rhsp());
 	bool hit=false;
-	if (AstVarRef* varrefp = nodep->lhsp()->castVarRef()) {
+        if (AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef)) {
 	    if (isSubstVar(varrefp->varp())) {
 		SubstVarEntry* entryp = getEntryp(varrefp);
 		hit = true;
@@ -281,11 +277,11 @@ private:
 		}
 	    }
 	}
-	else if (AstWordSel* wordp = nodep->lhsp()->castWordSel()) {
-	    if (AstVarRef* varrefp = wordp->lhsp()->castVarRef()) {
-		if (wordp->rhsp()->castConst()
+        else if (AstWordSel* wordp = VN_CAST(nodep->lhsp(), WordSel)) {
+            if (AstVarRef* varrefp = VN_CAST(wordp->lhsp(), VarRef)) {
+                if (VN_IS(wordp->rhsp(), Const)
 		    && isSubstVar(varrefp->varp())) {
-		    int word = wordp->rhsp()->castConst()->toUInt();
+                    int word = VN_CAST(wordp->rhsp(), Const)->toUInt();
 		    SubstVarEntry* entryp = getEntryp(varrefp);
 		    hit = true;
 		    if (m_ops > SUBST_MAX_OPS_SUBST) {
@@ -299,7 +295,7 @@ private:
 	    }
 	}
 	if (!hit) {
-	    nodep->lhsp()->accept(*this);
+            iterate(nodep->lhsp());
 	}
     }
     void replaceSubstEtc(AstNode* nodep, AstNode* substp) {
@@ -314,9 +310,9 @@ private:
 	++m_statSubsts;
     }
     virtual void visit(AstWordSel* nodep) {
-	nodep->rhsp()->accept(*this);
-	AstVarRef* varrefp = nodep->lhsp()->castVarRef();
-	AstConst* constp = nodep->rhsp()->castConst();
+        iterate(nodep->rhsp());
+        AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef);
+        AstConst* constp = VN_CAST(nodep->rhsp(), Const);
 	if (varrefp && isSubstVar(varrefp->varp())
 	    && !varrefp->lvalue()
 	    && constp) {
@@ -337,7 +333,7 @@ private:
 		entryp->consumeWord(word);
 	    }
 	} else {
-	    nodep->lhsp()->accept(*this);
+            iterate(nodep->lhsp());
 	}
     }
     virtual void visit(AstVarRef* nodep) {
@@ -375,7 +371,7 @@ private:
 	if (!nodep->isSubstOptimizable()) {
 	    m_ops = SUBST_MAX_OPS_NA;
 	}
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTUCTORS
@@ -384,11 +380,11 @@ public:
 	AstNode::user2ClearTree();	// user2p() used on entire tree
 	m_ops = 0;
 	m_assignStep = 0;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~SubstVisitor() {
 	V3Stats::addStat("Optimizations, Substituted temps", m_statSubsts);
-	for (vector<SubstVarEntry*>::iterator it = m_entryps.begin(); it != m_entryps.end(); ++it) {
+        for (std::vector<SubstVarEntry*>::iterator it = m_entryps.begin(); it != m_entryps.end(); ++it) {
 	    (*it)->deleteUnusedAssign();
 	    delete (*it);
 	}

@@ -46,7 +46,7 @@ private:
     //AstUser4InUse	In V3Hashed
 
     // TYPES
-    typedef vector<AstCoverToggle*> ToggleList;
+    typedef std::vector<AstCoverToggle*> ToggleList;
 
     // STATE
     ToggleList		m_toggleps;	// List of of all AstCoverToggle's
@@ -54,11 +54,7 @@ private:
     V3Double0		m_statToggleJoins;	// Statistic tracking
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     void detectDuplicates() {
 	UINFO(9,"Finding duplicates\n");
@@ -82,7 +78,7 @@ private:
 		    AstNode* duporigp = hashed.iteratorNodep(dupit);
 		    // Note hashed will point to the original variable (what's duplicated), not the covertoggle,
 		    // but we need to get back to the covertoggle which is immediately above, so:
-		    AstCoverToggle* removep = duporigp->backp()->castCoverToggle();
+                    AstCoverToggle* removep = VN_CAST(duporigp->backp(), CoverToggle);
 		    if (!removep) nodep->v3fatalSrc("CoverageJoin duplicate of wrong type");
 		    UINFO(8,"  Orig "<<nodep<<" -->> "<<nodep->incp()->declp()<<endl);
 		    UINFO(8,"   dup "<<removep<<" -->> "<<removep->incp()->declp()<<endl);
@@ -105,24 +101,24 @@ private:
     // VISITORS
     virtual void visit(AstNetlist* nodep) {
 	// Find all Coverage's
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Simplify
 	detectDuplicates();
     }
     virtual void visit(AstCoverToggle* nodep) {
 	m_toggleps.push_back(nodep);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     //--------------------
     virtual void visit(AstNodeMath* nodep) {}  // Accelerate
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
     // CONSTUCTORS
     explicit CoverageJoinVisitor(AstNetlist* nodep) {
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~CoverageJoinVisitor() {
 	V3Stats::addStat("Coverage, Toggle points joined", m_statToggleJoins);

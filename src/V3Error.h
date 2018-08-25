@@ -97,6 +97,7 @@ public:
 	UNDRIVEN,	// No drivers
 	UNOPT,		// Unoptimizable block
 	UNOPTFLAT,	// Unoptimizable block after flattening
+        UNOPTTHREADS,   // Thread partitioner unable to fill all requested threads
 	UNPACKED,	// Unsupported unpacked
 	UNSIGNED,	// Comparison is constant due to unsigned arithmetic
 	UNUSED,		// No receivers
@@ -130,7 +131,7 @@ public:
 	    "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN",
 	    "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CLKDATA",
-	    "CMPCONST", "COLONPLUS", "COMBDLY", "DEFPARAM", "DECLFILENAME",
+            "CMPCONST", "COLONPLUS", "COMBDLY", "DEFPARAM", "DECLFILENAME",
 	    "ENDLABEL", "GENCLK",
 	    "IFDEPTH", "IMPERFECTSCH", "IMPLICIT", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY",
@@ -139,7 +140,8 @@ public:
 	    "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY",
 	    "REALCVT", "REDEFMACRO",
 	    "SELRANGE", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
-	    "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNPACKED", "UNSIGNED", "UNUSED",
+            "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
+            "UNPACKED", "UNSIGNED", "UNUSED",
 	    "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
 	    "VARHIDDEN", "WIDTH", "WIDTHCONCAT",
 	    " MAX"
@@ -189,14 +191,14 @@ public:
   inline bool operator== (V3ErrorCode lhs, V3ErrorCode rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (V3ErrorCode lhs, V3ErrorCode::en rhs) { return (lhs.m_e == rhs); }
   inline bool operator== (V3ErrorCode::en lhs, V3ErrorCode rhs) { return (lhs == rhs.m_e); }
-  inline ostream& operator<<(ostream& os, V3ErrorCode rhs) { return os<<rhs.ascii(); }
+  inline std::ostream& operator<<(std::ostream& os, V3ErrorCode rhs) { return os<<rhs.ascii(); }
 
 //######################################################################
 
 class V3Error {
     // Base class for any object that wants debugging and error reporting
 
-    typedef set<string> MessagesSet;
+    typedef std::set<string> MessagesSet;
     typedef void (*ErrorExitCb)(void);
 
   private:
@@ -209,7 +211,7 @@ class V3Error {
     static int		s_errCount;		// Error count
     static int		s_warnCount;		// Warning count
     static int 		s_tellManual;		// Tell user to see manual, 0=not yet, 1=doit, 2=disable
-    static ostringstream s_errorStr;		// Error string being formed
+    static std::ostringstream s_errorStr;       // Error string being formed
     static V3ErrorCode	s_errorCode;		// Error string being formed will abort
     static bool		s_errorSuppressed;	// Error being formed should be suppressed
     static MessagesSet	s_messages;		// What errors we've outputted
@@ -217,7 +219,7 @@ class V3Error {
 
     enum MaxErrors { 	MAX_ERRORS = 50 };	// Fatal after this may errors
 
-    V3Error() { cerr<<("Static class"); abort(); }
+    V3Error() { std::cerr<<("Static class"); abort(); }
 
   public:
     // CONSTRUCTORS
@@ -252,15 +254,15 @@ class V3Error {
     // Error end takes the string stream to output, be careful to seek() as needed
     static void v3errorPrep(V3ErrorCode code) {
 	s_errorStr.str(""); s_errorCode=code; s_errorSuppressed=false; }
-    static ostringstream& v3errorStr() { return s_errorStr; }
+    static std::ostringstream& v3errorStr() { return s_errorStr; }
     static void	vlAbort();
-    static void	v3errorEnd(ostringstream& sstr);	// static, but often overridden in classes.
+    static void v3errorEnd(std::ostringstream& sstr);  // static, but often overridden in classes.
 };
 
 // Global versions, so that if the class doesn't define a operator, we get the functions anyways.
 inline int debug() { return V3Error::debugDefault(); }
-inline void v3errorEnd(ostringstream& sstr) { V3Error::v3errorEnd(sstr); }
-inline void v3errorEndFatal(ostringstream& sstr) { V3Error::v3errorEnd(sstr); assert(0); VL_UNREACHABLE }
+inline void v3errorEnd(std::ostringstream& sstr) { V3Error::v3errorEnd(sstr); }
+inline void v3errorEndFatal(std::ostringstream& sstr) { V3Error::v3errorEnd(sstr); assert(0); VL_UNREACHABLE }
 
 // Theses allow errors using << operators: v3error("foo"<<"bar");
 // Careful, you can't put () around msg, as you would in most macro definitions
@@ -276,7 +278,11 @@ inline void v3errorEndFatal(ostringstream& sstr) { V3Error::v3errorEnd(sstr); as
 #define v3error(msg) v3warnCode(V3ErrorCode::EC_ERROR, msg)
 #define v3fatal(msg) v3warnCodeFatal(V3ErrorCode::EC_FATAL, msg)
 // Use this instead of fatal() to mention the source code line.
-#define v3fatalSrc(msg) v3warnCodeFatal(V3ErrorCode::EC_FATALSRC, __FILE__<<":"<<dec<<__LINE__<<": "<<msg)
+#define v3fatalSrc(msg) v3warnCodeFatal(V3ErrorCode::EC_FATALSRC, __FILE__<<":"<<std::dec<<__LINE__<<": "<<msg)
+// Use this when normal v3fatal is called in static method that overrides fileline.
+#define v3fatalStatic(msg) \
+    ::v3errorEndFatal((V3Error::v3errorPrep(V3ErrorCode::EC_FATAL), \
+                       (V3Error::v3errorStr()<<msg), V3Error::v3errorStr()));
 
 #define UINFO(level,stmsg) {if(VL_UNLIKELY(debug()>=(level))) { cout<<"- "<<V3Error::lineStr(__FILE__,__LINE__)<<stmsg; }}
 #define UINFONL(level,stmsg) {if(VL_UNLIKELY(debug()>=(level))) { cout<<stmsg; } }
@@ -289,15 +295,31 @@ inline void v3errorEndFatal(ostringstream& sstr) { V3Error::v3errorEnd(sstr); as
 
 #define UASSERT(condition,stmsg) { if (VL_UNLIKELY(!(condition))) { v3fatalSrc(stmsg); }}
 // For use in V3Ast static functions only
-#define UASSERT_STATIC(condition,stmsg) { if (VL_UNLIKELY(!(condition))) { \
-            cerr<<"Internal Error: "<<__FILE__<<":"<<dec<<__LINE__<<":"<<(stmsg)<<endl; abort(); } }
+#define UASSERT_STATIC(condition,stmsg) \
+    { if (VL_UNLIKELY(!(condition))) { \
+            std::cerr<<"Internal Error: "<<__FILE__<<":"<<std::dec<<__LINE__<<":"<<(stmsg)<<std::endl; abort(); } }
+// Check self test values for expected value.  Safe from side-effects.
+// Type argument can be removed when go to C++11 (use auto).
+#define UASSERT_SELFTEST(Type,got,exp) \
+    do { Type g = (got); Type e = (exp); \
+         UASSERT(g==e, "Self-test failed '" #got "==" #exp "'"" got=" \
+                 <<g<<" expected="<<e); } while(0)
 
 #define V3ERROR_NA { v3error("Internal: Unexpected Call"); v3fatalSrc("Unexpected Call"); }
+
+/// Declare a convenience debug() routine that may be added to any class in
+/// Verilator so that --debugi-<srcfile> will work to control UINFOs in
+/// that class:
+#define VL_DEBUG_FUNC static int debug() { \
+        static int level = -1; \
+        if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__); \
+        return level; \
+    }
 
 //----------------------------------------------------------------------
 
 template< class T> std::string cvtToStr (const T& t) {
-    ostringstream os; os<<t; return os.str();
+    std::ostringstream os; os<<t; return os.str();
 }
 
 inline uint32_t cvtToHash(const void* vp) {

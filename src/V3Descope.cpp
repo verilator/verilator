@@ -48,7 +48,7 @@ private:
     AstUser1InUse	m_inuser1;
 
     // TYPES
-    typedef multimap<string,AstCFunc*>	FuncMmap;
+    typedef std::multimap<string,AstCFunc*>     FuncMmap;
 
     // STATE
     AstNodeModule*	m_modp;		// Current module
@@ -58,17 +58,13 @@ private:
     FuncMmap		m_modFuncs;	// Name of public functions added
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     static bool modIsSingleton(AstNodeModule* modp) {
         // True iff there's exactly one instance of this module in the design.
         int instances = 0;
         for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
-            if (stmtp->castScope()) {
+            if (VN_IS(stmtp, Scope)) {
                 if (++instances > 1) { return false; }
             }
         }
@@ -187,7 +183,7 @@ private:
 		    funcp->declPrivate(true);
 		    AstNode* argsp = NULL;
 		    for (AstNode* stmtp = newfuncp->argsp(); stmtp; stmtp=stmtp->nextp()) {
-			if (AstVar* portp = stmtp->castVar()) {
+                        if (AstVar* portp = VN_CAST(stmtp, Var)) {
 			    if (portp->isIO() && !portp->isFuncReturn()) {
 				AstNode* newp = new AstVarRef(portp->fileline(), portp, portp->isOutput());
 				if (argsp) argsp = argsp->addNextNull(newp);
@@ -234,13 +230,13 @@ private:
 	m_modp = nodep;
 	m_modFuncs.clear();
         m_modSingleton = modIsSingleton(m_modp);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	makePublicFuncWrappers();
 	m_modp = NULL;
     }
     virtual void visit(AstScope* nodep) {
 	m_scopep = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_scopep = NULL;
     }
     virtual void visit(AstVarScope* nodep) {
@@ -249,7 +245,7 @@ private:
 	pushDeletep(nodep);
     }
     virtual void visit(AstNodeVarRef* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Convert the hierch name
 	if (!m_scopep) nodep->v3fatalSrc("Node not under scope");
 	bool hierThis;
@@ -259,7 +255,7 @@ private:
     }
     virtual void visit(AstCCall* nodep) {
 	//UINFO(9,"       "<<nodep<<endl);
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Convert the hierch name
 	if (!m_scopep) nodep->v3fatalSrc("Node not under scope");
 	if (!nodep->funcp()->scopep()) nodep->v3fatalSrc("CFunc not under scope");
@@ -271,7 +267,7 @@ private:
     virtual void visit(AstCFunc* nodep) {
 	if (!nodep->user1()) {
 	    m_needThis = false;
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    nodep->user1(true);
 	    if (m_needThis) {
                 nodep->isStatic(false);
@@ -292,7 +288,7 @@ private:
     }
     virtual void visit(AstVar*) {}
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTRUCTORS
@@ -301,7 +297,7 @@ public:
           m_scopep(NULL),
           m_modSingleton(false),
           m_needThis(false) {
-        nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~DescopeVisitor() {}
 };

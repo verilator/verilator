@@ -53,16 +53,12 @@ private:
 #define iterateChildren DO_NOT_iterateChildern_IN_V3WidthSel
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     void checkConstantOrReplace(AstNode* nodep, const string& message) {
 	// See also V3Width::checkConstantOrReplace
 	// Note can't call V3Const::constifyParam(nodep) here, as constify may change nodep on us!
-	if (!nodep->castConst()) {
+        if (!VN_IS(nodep, Const)) {
 	    nodep->v3error(message);
 	    nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::Unsized32(), 1));
 	    pushDeletep(nodep); VL_DANGLING(nodep);
@@ -83,8 +79,8 @@ private:
 	UINFO(9,"  fromData start ddtypep = "<<basefromp<<endl);
 	VNumRange fromRange;  // constructs to isRanged(false)
 	while (basefromp) {
-	    if (basefromp->castAttrOf()) {
-		basefromp = basefromp->castAttrOf()->fromp();
+            if (VN_IS(basefromp, AttrOf)) {
+                basefromp = VN_CAST(basefromp, AttrOf)->fromp();
 		continue;
 	    }
 	    break;
@@ -93,17 +89,17 @@ private:
 	AstNodeDType* ddtypep = basefromp->dtypep()->skipRefp();
 	AstNode* errp = ddtypep;
 	UINFO(9,"  fromData.ddtypep = "<<ddtypep<<endl);
-	if (AstNodeArrayDType* adtypep = ddtypep->castNodeArrayDType()) {
+        if (const AstNodeArrayDType* adtypep = VN_CAST(ddtypep, NodeArrayDType)) {
 	    fromRange = adtypep->declRange();
 	}
-	else if (AstNodeClassDType* adtypep = ddtypep->castNodeClassDType()) {
+        else if (const AstNodeClassDType* adtypep = VN_CAST(ddtypep, NodeClassDType)) {
 	    fromRange = adtypep->declRange();
 	}
-	else if (AstBasicDType* adtypep = ddtypep->castBasicDType()) {
+        else if (AstBasicDType* adtypep = VN_CAST(ddtypep, BasicDType)) {
 	    if (adtypep->isRanged()) {
 		if (adtypep->rangep()
-		    && (!adtypep->rangep()->msbp()->castConst()
-			|| !adtypep->rangep()->lsbp()->castConst()))
+                    && (!VN_IS(adtypep->rangep()->msbp(), Const)
+                        || !VN_IS(adtypep->rangep()->lsbp(), Const)))
 		    nodep->v3fatalSrc("Non-constant variable range; errored earlier");  // in constifyParam(bfdtypep)
 		fromRange = adtypep->declRange();
 	    } else {
@@ -123,10 +119,10 @@ private:
 	// have to deal with signed math and related 32bit sign extension problems
 	if (rhs == 0) {
 	    return lhsp;
-	} else if (lhsp->castConst()) {
+        } else if (VN_IS(lhsp, Const)) {
 	    // Optional vs just making add/sub below, but saves constification some work
 	    V3Number num (lhsp->fileline(), lhsp->width());
-	    num.opSub(lhsp->castConst()->num(), V3Number(lhsp->fileline(), 32, rhs));
+            num.opSub(VN_CAST(lhsp, Const)->num(), V3Number(lhsp->fileline(), 32, rhs));
 	    num.isSigned(lhsp->isSigned());
 	    AstNode* newp = new AstConst(lhsp->fileline(), num);
 	    return newp;
@@ -207,7 +203,7 @@ private:
 	AstNodeDType* ddtypep = fromdata.m_dtypep;
 	VNumRange fromRange = fromdata.m_fromRange;
 	UINFO(6,"  ddtypep "<<ddtypep<<endl);
-	if (AstUnpackArrayDType* adtypep = ddtypep->castUnpackArrayDType()) {
+        if (AstUnpackArrayDType* adtypep = VN_CAST(ddtypep, UnpackArrayDType)) {
 	    // SELBIT(array, index) -> ARRAYSEL(array, index)
 	    AstNode* subp = rhsp;
 	    if (fromRange.lo()!=0 || fromRange.hi()<0) {
@@ -219,7 +215,7 @@ private:
 	    if (debug()>=9) newp->dumpTree(cout,"--SELBTn: ");
 	    nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
 	}
-	else if (AstPackArrayDType* adtypep = ddtypep->castPackArrayDType()) {
+        else if (AstPackArrayDType* adtypep = VN_CAST(ddtypep, PackArrayDType)) {
 	    // SELBIT(array, index) -> SEL(array, index*width-of-subindex, width-of-subindex)
 	    AstNode* subp = rhsp;
 	    if (fromRange.lo()!=0 || fromRange.hi()<0) {
@@ -245,7 +241,7 @@ private:
 	    if (debug()>=9) newp->dumpTree(cout,"--SELBTn: ");
 	    nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
 	}
-	else if (ddtypep->castBasicDType()) {
+        else if (VN_IS(ddtypep, BasicDType)) {
 	    // SELBIT(range, index) -> SEL(array, index, 1)
 	    AstSel* newp = new AstSel (nodep->fileline(),
 				       fromp,
@@ -257,7 +253,7 @@ private:
 	    if (debug()>=9) newp->dumpTree(cout,"--SELBTn: ");
 	    nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
 	}
-	else if (ddtypep->castNodeClassDType()) {  // It's packed, so a bit from the packed struct
+        else if (VN_IS(ddtypep, NodeClassDType)) {  // It's packed, so a bit from the packed struct
 	    // SELBIT(range, index) -> SEL(array, index, 1)
 	    AstSel* newp = new AstSel (nodep->fileline(),
 				       fromp,
@@ -292,13 +288,13 @@ private:
 	AstNode* fromp = nodep->lhsp()->unlinkFrBack();
 	AstNode* msbp = nodep->rhsp()->unlinkFrBack();
 	AstNode* lsbp = nodep->thsp()->unlinkFrBack();
-	vlsint32_t msb = msbp->castConst()->toSInt();
-	vlsint32_t lsb = lsbp->castConst()->toSInt();
+        vlsint32_t msb = VN_CAST(msbp, Const)->toSInt();
+        vlsint32_t lsb = VN_CAST(lsbp, Const)->toSInt();
 	vlsint32_t elem = (msb>lsb) ? (msb-lsb+1) : (lsb-msb+1);
 	FromData fromdata = fromDataForArray(nodep, fromp, false);
 	AstNodeDType* ddtypep = fromdata.m_dtypep;
 	VNumRange fromRange = fromdata.m_fromRange;
-	if (ddtypep->castUnpackArrayDType()) {
+        if (VN_IS(ddtypep, UnpackArrayDType)) {
 	    // Slice extraction
 	    if (fromRange.elements() == elem
 		&& fromRange.lo() == lsb) { // Extracting whole of original array
@@ -313,7 +309,7 @@ private:
                 nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
             }
 	}
-	else if (AstPackArrayDType* adtypep = ddtypep->castPackArrayDType()) {
+        else if (AstPackArrayDType* adtypep = VN_CAST(ddtypep, PackArrayDType)) {
 	    // SELEXTRACT(array, msb, lsb) -> SEL(array, lsb*width-of-subindex, width-of-subindex*(msb-lsb))
 	    if (!fromRange.elements() || (adtypep->width() % fromRange.elements())!=0)
 		adtypep->v3fatalSrc("Array extraction with width miscomputed "
@@ -339,7 +335,7 @@ private:
 	    if (newp->widthMin()!=(int)newp->widthConst()) nodep->v3fatalSrc("Width mismatch");
 	    nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
 	}
-	else if (ddtypep->castBasicDType()) {
+        else if (VN_IS(ddtypep, BasicDType)) {
 	    if (fromRange.littleEndian()) {
 		// Below code assumes big bit endian; just works out if we swap
 		int x = msb; msb = lsb; lsb = x;
@@ -359,7 +355,7 @@ private:
 	    //if (debug()>=9) newp->dumpTree(cout,"--SELEXnew: ");
 	    nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
 	}
-	else if (ddtypep->castNodeClassDType()) {
+        else if (VN_IS(ddtypep, NodeClassDType)) {
 	    // Classes aren't little endian
 	    if (lsb > msb) {
 		nodep->v3error("["<<msb<<":"<<lsb<<"] Range extract has backward bit ordering, perhaps you wanted ["<<lsb<<":"<<msb<<"]");
@@ -402,24 +398,24 @@ private:
 	AstNode* fromp = nodep->lhsp()->unlinkFrBack();
 	AstNode* rhsp  = nodep->rhsp()->unlinkFrBack();
 	AstNode* widthp = nodep->thsp()->unlinkFrBack();
-	int width = widthp->castConst()->toSInt();
+        int width = VN_CAST(widthp, Const)->toSInt();
 	if (width > (1<<28)) nodep->v3error("Width of :+ or :- is huge; vector of over 1billion bits: "<<widthp->prettyName());
 	if (width<0) nodep->v3error("Width of :+ or :- is < 0: "<<widthp->prettyName());
 	FromData fromdata = fromDataForArray(nodep, fromp, width!=1);
 	AstNodeDType* ddtypep = fromdata.m_dtypep;
 	VNumRange fromRange = fromdata.m_fromRange;
-	if (ddtypep->castBasicDType()
-	    || ddtypep->castPackArrayDType()
-	    || (ddtypep->castNodeClassDType()
-		&& ddtypep->castNodeClassDType()->packedUnsup())) {
+        if (VN_IS(ddtypep, BasicDType)
+            || VN_IS(ddtypep, PackArrayDType)
+            || (VN_IS(ddtypep, NodeClassDType)
+                && VN_CAST(ddtypep, NodeClassDType)->packedUnsup())) {
 	    int elwidth = 1;
 	    AstNode* newwidthp = widthp;
-	    if (AstPackArrayDType* adtypep = ddtypep->castPackArrayDType()) {
+            if (const AstPackArrayDType* adtypep = VN_CAST(ddtypep, PackArrayDType)) {
 		elwidth = adtypep->width() / fromRange.elements();
 		newwidthp = new AstConst (nodep->fileline(),AstConst::Unsized32(), width * elwidth);
 	    }
 	    AstNode* newlsbp = NULL;
-	    if (nodep->castSelPlus()) {
+            if (VN_IS(nodep, SelPlus)) {
 		if (fromRange.littleEndian()) {
 		    // SELPLUS(from,lsb,width) -> SEL(from, (vector_msb-width+1)-sel, width)
 		    newlsbp = newSubNeg((fromRange.hi()-width+1), rhsp);
@@ -427,7 +423,7 @@ private:
 		    // SELPLUS(from,lsb,width) -> SEL(from, lsb-vector_lsb, width)
 		    newlsbp = newSubNeg(rhsp, fromRange.lo());
 		}
-	    } else if (nodep->castSelMinus()) {
+            } else if (VN_IS(nodep, SelMinus)) {
 		if (fromRange.littleEndian()) {
 		    // SELMINUS(from,msb,width) -> SEL(from, msb-[bit])
 		    newlsbp = newSubNeg(fromRange.hi(), rhsp);
@@ -478,7 +474,7 @@ public:
     // CONSTUCTORS
     WidthSelVisitor() {}
     AstNode* mainAcceptEdit(AstNode* nodep) {
-	return nodep->iterateSubtreeReturnEdits(*this);
+        return iterateSubtreeReturnEdits(nodep);
     }
     virtual ~WidthSelVisitor() {}
 };

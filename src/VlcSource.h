@@ -66,8 +66,8 @@ public:
 class VlcSource {
 public:
     // TYPES
-    typedef map<int,VlcSourceCount> ColumnMap;	// Map of {column}
-    typedef map<int,ColumnMap> LinenoMap;	// Map of {lineno}{column}
+    typedef std::map<int,VlcSourceCount> ColumnMap;  // Map of {column}
+    typedef std::map<int,ColumnMap> LinenoMap;  // Map of {lineno}{column}
 
 private:
     // MEMBERS
@@ -111,7 +111,7 @@ public:
 class VlcSources {
 public:
     // TYPES
-    typedef map<string,VlcSource> NameMap;
+    typedef std::map<string,VlcSource> NameMap;
 private:
     // MEMBERS
     NameMap	m_sources;	//< List of all sources

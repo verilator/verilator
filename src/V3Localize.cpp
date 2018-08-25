@@ -50,11 +50,7 @@ protected:
     //  AstVar::user4()		-> AstVarRef*.  First place signal set; must be first assignment
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     // TYPES
     union VarFlags {
@@ -90,12 +86,12 @@ private:
 	}
     }
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTRUCTORS
     explicit LocalizeDehierVisitor(AstNetlist* nodep) {
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~LocalizeDehierVisitor() {}
 };
@@ -114,7 +110,7 @@ private:
     // STATE
     V3Double0	m_statLocVars;	// Statistic tracking
     AstCFunc*	m_cfuncp;	// Current active function
-    vector<AstVar*> m_varps;	// List of variables to consider for deletion
+    std::vector<AstVar*> m_varps;       // List of variables to consider for deletion
 
     // METHODS
     void clearOptimizable(AstVar* nodep, const char* reason) {
@@ -130,7 +126,7 @@ private:
 	flags.setNodeFlags(nodep);
     }
     void moveVars() {
-	for (vector<AstVar*>::iterator it = m_varps.begin(); it != m_varps.end(); ++it) {
+        for (std::vector<AstVar*>::iterator it = m_varps.begin(); it != m_varps.end(); ++it) {
 	    AstVar* nodep = *it;
 	    if (nodep->valuep()) clearOptimizable(nodep,"HasInitValue");
 	    if (!VarFlags(nodep).m_stdFuncAsn) clearStdOptimizable(nodep,"NoStdAssign");
@@ -142,7 +138,7 @@ private:
 		// We don't need to test for tracing; it would be in the tracefunc if it was needed
 		UINFO(4,"  ModVar->BlkVar "<<nodep<<endl);
 		++m_statLocVars;
-		AstCFunc* newfuncp = nodep->user1p()->castCFunc();
+                AstCFunc* newfuncp = VN_CAST(nodep->user1p(), CFunc);
 		nodep->unlinkFrBack();
 		newfuncp->addInitsp(nodep);
 		// Done
@@ -157,7 +153,7 @@ private:
 
     // VISITORS
     virtual void visit(AstNetlist* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	moveVars();
     }
     virtual void visit(AstCFunc* nodep) {
@@ -167,7 +163,7 @@ private:
 	searchFuncStmts(nodep->initsp());
 	searchFuncStmts(nodep->stmtsp());
 	searchFuncStmts(nodep->finalsp());
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_cfuncp = NULL;
     }
     void searchFuncStmts(AstNode* nodep) {
@@ -176,8 +172,8 @@ private:
 	// This could be more complicated; allow always-set under both branches of a IF.
 	// If so, check for ArrayRef's and such, as they aren't acceptable.
 	for (; nodep; nodep=nodep->nextp()) {
-	    if (nodep->castNodeAssign()) {
-		if (AstVarRef* varrefp = nodep->castNodeAssign()->lhsp()->castVarRef()) {
+            if (VN_IS(nodep, NodeAssign)) {
+                if (AstVarRef* varrefp = VN_CAST(VN_CAST(nodep, NodeAssign)->lhsp(), VarRef)) {
 		    if (!varrefp->lvalue()) varrefp->v3fatalSrc("LHS assignment not lvalue");
 		    if (!varrefp->varp()->user4p()) {
 			UINFO(4,"      FuncAsn "<<varrefp<<endl);
@@ -230,13 +226,13 @@ private:
 	// No iterate; Don't want varrefs under it
     }
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTRUCTORS
     explicit LocalizeVisitor(AstNetlist* nodep) {
 	m_cfuncp = NULL;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~LocalizeVisitor() {
 	V3Stats::addStat("Optimizations, Vars localized", m_statLocVars);

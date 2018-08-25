@@ -46,11 +46,7 @@ class EmitXmlFileVisitor : public AstNVisitor {
     uint64_t	m_id;
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     // Outfile methods
     V3OutFile*	ofp() const { return m_ofp; }
@@ -76,10 +72,10 @@ class EmitXmlFileVisitor : public AstNVisitor {
     void outputTag(AstNode* nodep, string tag) {
 	if (tag=="") tag = VString::downcase(nodep->typeName());
 	puts("<"+tag+" "+nodep->fileline()->xml());
-	if (nodep->castNodeDType()) { puts(" id="); outputId(nodep); }
+        if (VN_IS(nodep, NodeDType)) { puts(" id="); outputId(nodep); }
 	if (nodep->name()!="") { puts(" name="); putsQuoted(nodep->prettyName()); }
 	if (nodep->tag()!="") { puts(" tag="); putsQuoted(nodep->tag()); }
-	if (AstNodeDType* dtp = nodep->castNodeDType()) {
+        if (AstNodeDType* dtp = VN_CAST(nodep, NodeDType)) {
 	    if (dtp->subDTypep()) { puts(" sub_dtype_id="); outputId(dtp->subDTypep()->skipRefp()); }
 	} else {
 	    if (nodep->dtypep()) { puts(" dtype_id="); outputId(nodep->dtypep()->skipRefp()); }
@@ -89,7 +85,7 @@ class EmitXmlFileVisitor : public AstNVisitor {
 	if (tag=="") tag = VString::downcase(nodep->typeName());
 	if (nodep->op1p() || nodep->op2p() || nodep->op3p() || nodep->op4p()) {
 	    puts(">\n");
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	    puts("</"+tag+">\n");
 	} else {
 	    puts("/>\n");
@@ -108,7 +104,7 @@ class EmitXmlFileVisitor : public AstNVisitor {
     }
     virtual void visit(AstNetlist* nodep) {
 	puts("<netlist>\n");
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	puts("</netlist>\n");
     }
     virtual void visit(AstNodeModule* nodep) {
@@ -154,7 +150,7 @@ public:
     EmitXmlFileVisitor(AstNode* nodep, V3OutFile* ofp) {
 	m_ofp = ofp;
 	m_id = 0;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~EmitXmlFileVisitor() {}
 };

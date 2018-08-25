@@ -114,10 +114,10 @@ class V3ParseImp {
     V3ParseBisonYYSType m_curBisonVal;	// current token for error reporting
     V3ParseBisonYYSType m_prevBisonVal;	// previous token for error reporting
 
-    deque<string*> m_stringps;		// Created strings for later cleanup
-    deque<V3Number*> m_numberps;	// Created numbers for later cleanup
-    deque<FileLine>  m_lintState;	// Current lint state for save/restore
-    deque<string> m_ppBuffers;		// Preprocessor->lex buffer of characters to process
+    std::deque<string*>   m_stringps;   // Created strings for later cleanup
+    std::deque<V3Number*> m_numberps;   // Created numbers for later cleanup
+    std::deque<FileLine>  m_lintState;  // Current lint state for save/restore
+    std::deque<string>    m_ppBuffers;  // Preprocessor->lex buffer of characters to process
 
     string m_tag;                       // Contents (if any) of current verilator tag
     AstNode* m_tagNodep;                // Points to the node to set to m_tag or NULL to not set.

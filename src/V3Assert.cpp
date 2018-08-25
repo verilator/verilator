@@ -112,13 +112,13 @@ private:
 	AstNode* bodysp = NULL;
 	bool selfDestruct = false;
         AstIf* ifp = NULL;
-	if (AstPslCover* snodep = nodep->castPslCover()) {
+        if (AstPslCover* snodep = VN_CAST(nodep, PslCover)) {
             ++m_statAsCover;
 	    if (!v3Global.opt.coverageUser()) {
 		selfDestruct = true;
 	    } else {
 		// V3Coverage assigned us a bucket to increment.
-		AstCoverInc* covincp = snodep->coverincp()->castCoverInc();
+                AstCoverInc* covincp = VN_CAST(snodep->coverincp(), CoverInc);
 		if (!covincp) snodep->v3fatalSrc("Missing AstCoverInc under assertion");
 		covincp->unlinkFrBack();
 		if (message!="") covincp->declp()->comment(message);
@@ -129,7 +129,7 @@ private:
             ifp = new AstIf (nodep->fileline(), propp, bodysp, NULL);
             bodysp = ifp;
 
-        } else if (nodep->castPslAssert()) {
+        } else if (VN_IS(nodep, PslAssert)) {
             ++m_statAsPsl;
             // Insert an automatic error message and $stop after
             // any user-supplied statements.
@@ -170,7 +170,7 @@ private:
 	AstNode* passsp = nodep->passsp(); if (passsp) passsp->unlinkFrBackWithNext();
 	AstNode* failsp = nodep->failsp(); if (failsp) failsp->unlinkFrBackWithNext();
 	//
-	if (nodep->castVAssert()) {
+        if (VN_IS(nodep, VAssert)) {
 	    if (passsp) passsp = newIfAssertOn(passsp);
 	    if (failsp) failsp = newIfAssertOn(failsp);
 	} else {
@@ -179,7 +179,7 @@ private:
 
 	AstIf* ifp = new AstIf (nodep->fileline(), propp, passsp, failsp);
 	AstNode* newp = ifp;
-	if (nodep->castVAssert()) ifp->branchPred(AstBranchPred::BP_UNLIKELY);
+        if (VN_IS(nodep, VAssert)) ifp->branchPred(AstBranchPred::BP_UNLIKELY);
 	//
 	// Install it
 	nodep->replaceWith(newp);
@@ -197,14 +197,14 @@ private:
 		// If this statement ends with 'else if', then nextIf will point to the
 		// nextIf statement.  Otherwise it will be null.
 		AstNodeIf* nextifp = dynamic_cast<AstNodeIf*>(ifp->elsesp());
-		ifp->condp()->iterateAndNext(*this);
+                iterateAndNextNull(ifp->condp());
 
 		// Recurse into the true case.
-		ifp->ifsp()->iterateAndNext(*this);
+                iterateAndNextNull(ifp->ifsp());
 
 		// If the last else is not an else if, recurse into that too.
 		if (ifp->elsesp() && !nextifp) {
-		    ifp->elsesp()->iterateAndNext(*this);
+                    iterateAndNextNull(ifp->elsesp());
 		}
 
 		// Build a bitmask of the true predicates
@@ -242,16 +242,16 @@ private:
 	    nodep->replaceWith(checkifp);
 	    pushDeletep(nodep);
 	} else {
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
     }
 
     // VISITORS  //========== Case assertions
     virtual void visit(AstCase* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (!nodep->user1SetOnce()) {
 	    bool has_default=false;
-	    for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
+            for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=VN_CAST(itemp->nextp(), CaseItem)) {
 		if (itemp->isDefault()) has_default=true;
 	    }
 	    if (nodep->fullPragma() || nodep->priorityPragma()) {
@@ -270,7 +270,7 @@ private:
 		    // Not parallel, but harmlessly so.
 		} else {
 		    AstNode* propp = NULL;
-		    for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=itemp->nextp()->castCaseItem()) {
+                    for (AstCaseItem* itemp = nodep->itemsp(); itemp; itemp=VN_CAST(itemp->nextp(), CaseItem)) {
 			for (AstNode* icondp = itemp->condsp(); icondp!=NULL; icondp=icondp->nextp()) {
 			    AstNode* onep;
 			    if (nodep->casex() || nodep->casez() || nodep->caseInside()) {
@@ -306,7 +306,7 @@ private:
 
     // VISITORS  //========== Statements
     virtual void visit(AstDisplay* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Replace the special types with standard text
 	if (nodep->displayType()==AstDisplayType::DT_INFO) {
 	    replaceDisplay(nodep, "-Info");
@@ -319,13 +319,13 @@ private:
     }
 
     virtual void visit(AstNodePslCoverOrAssert* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	if (m_beginp && nodep->name() == "") nodep->name(m_beginp->name());
 	newPslAssertion(nodep, nodep->propp(), nodep->sentreep(),
 			nodep->stmtsp(), nodep->name()); VL_DANGLING(nodep);
     }
     virtual void visit(AstVAssert* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	newVAssertion(nodep, nodep->propp()); VL_DANGLING(nodep);
 	++m_statAsSV;
     }
@@ -333,7 +333,7 @@ private:
     virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
 	//
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	// Reset defaults
 	m_modp = NULL;
     }
@@ -343,13 +343,13 @@ private:
 	AstBegin* lastp = m_beginp;
 	{
 	    m_beginp = nodep;
-	    nodep->iterateChildren(*this);
+            iterateChildren(nodep);
 	}
 	m_beginp = lastp;
     }
 
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 public:
     // CONSTRUCTORS
@@ -357,7 +357,7 @@ public:
 	m_beginp = NULL;
 	m_modp = NULL;
 	// Process
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~AssertVisitor() {
 	V3Stats::addStat("Assertions, PSL asserts", m_statAsPsl);

@@ -115,6 +115,7 @@ public:
     AstCFunc* nodep() const { return m_nodep; }
     virtual string name() const { return nodep()->name(); }
     virtual string dotColor() const { return "yellow"; }
+    virtual FileLine* fileline() const { return nodep()->fileline(); }
 };
 
 class TraceTraceVertex : public V3GraphVertex {
@@ -128,6 +129,7 @@ public:
     AstTraceInc* nodep() const { return m_nodep; }
     virtual string name() const { return nodep()->declp()->name(); }
     virtual string dotColor() const { return "red"; }
+    virtual FileLine* fileline() const { return nodep()->fileline(); }
     TraceTraceVertex* duplicatep() const { return m_duplicatep; }
     void duplicatep(TraceTraceVertex* dupp) {
 	if (duplicatep()) nodep()->v3fatalSrc("Assigning duplicatep() to already duplicated node");
@@ -144,6 +146,7 @@ public:
     AstVarScope* nodep() const { return m_nodep; }
     virtual string name() const { return nodep()->name(); }
     virtual string dotColor() const { return "skyblue"; }
+    virtual FileLine* fileline() const { return nodep()->fileline(); }
 };
 
 //######################################################################
@@ -179,6 +182,7 @@ private:
     AstNode*		m_chgSubParentp;// Which node has call to m_chgSubFuncp
     int			m_chgSubStmts;	// Statements under function being built
     AstVarScope*	m_activityVscp;	// Activity variable
+    uint32_t            m_activityNumber;  // Count of fields in activity variable
     uint32_t		m_code;		// Trace ident code# being assigned
     V3Graph		m_graph;	// Var/CFunc tracking
     TraceActivityVertex* m_alwaysVtxp;	// "Always trace" vertex
@@ -190,11 +194,7 @@ private:
     V3Double0		m_statUniqCodes;// Statistic tracking
 
     // METHODS
-    static int debug() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__);
-	return level;
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
 
     void detectDuplicates() {
 	UINFO(9,"Finding duplicates\n");
@@ -210,7 +210,7 @@ private:
                                           " so we can map duplicates back to TRACEINCs");
                     }
 		    hashed.hash(nodep->valuep());
-		    UINFO(8, "  Hashed "<<hex<<hashed.nodeHash(nodep->valuep())<<" "<<nodep<<endl);
+                    UINFO(8, "  Hashed "<<std::hex<<hashed.nodeHash(nodep->valuep())<<" "<<nodep<<endl);
 
 		    // Just keep one node in the map and point all duplicates to this node
 		    if (hashed.findDuplicate(nodep->valuep()) == hashed.end()) {
@@ -226,7 +226,7 @@ private:
 		if (nodep->valuep() && !vvertexp->duplicatep()) {
 		    V3Hashed::iterator dupit = hashed.findDuplicate(nodep->valuep());
 		    if (dupit != hashed.end()) {
-			AstTraceInc* dupincp = hashed.iteratorNodep(dupit)->backp()->castTraceInc();
+                        AstTraceInc* dupincp = VN_CAST(hashed.iteratorNodep(dupit)->backp(), TraceInc);
 			if (!dupincp) nodep->v3fatalSrc("Trace duplicate of wrong type");
 			TraceTraceVertex* dupvertexp = dynamic_cast<TraceTraceVertex*>(dupincp->user1u().toGraphVertex());
 			UINFO(8,"  Orig "<<nodep<<endl);
@@ -298,7 +298,7 @@ private:
 
     void assignActivity() {
 	// Select activity numbers and put into each CFunc vertex
-	uint32_t activityNumber = 1;	// Note 0 indicates "slow"
+        m_activityNumber = 1;  // Note 0 indicates "slow"
 	for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
 	    if (TraceActivityVertex* vvertexp = dynamic_cast<TraceActivityVertex*>(itp)) {
 		if (!vvertexp->activityCodeValid()) {
@@ -307,17 +307,39 @@ private:
 			// This makes us need less activityNumbers and so speeds up the fast path.
 			vvertexp->activityCode(TraceActivityVertex::ACTIVITY_SLOW);
 		    } else {
-			vvertexp->activityCode(activityNumber++);
+                        vvertexp->activityCode(m_activityNumber++);
 		    }
 		}
 	    }
 	}
 
-	// Insert global variable
-	if (!activityNumber) activityNumber++;   // For simplicity, always create it
-	int activityBits = VL_WORDS_I(activityNumber)*VL_WORDSIZE;   // For tighter code; round to next 32 bit point.
-	AstVar* newvarp = new AstVar (m_chgFuncp->fileline(), AstVarType::MODULETEMP,
-				      "__Vm_traceActivity", VFlagBitPacked(), activityBits);
+        AstVar* newvarp;
+        if (v3Global.opt.mtasks()) {
+            // Create a vector of bytes, not bits, for the tracing vector,
+            // so that we can set them atomically without locking.
+            //
+            // TODO: It would be slightly faster to have a bit vector per
+            // chain of packed MTasks, but we haven't packed the MTasks yet.
+            // If we support fully threaded tracing in the future, it would
+            // make sense to improve this at that time.
+            AstNodeDType* newScalarDtp
+                = new AstBasicDType(m_chgFuncp->fileline(), VFlagLogicPacked(), 1);
+            v3Global.rootp()->typeTablep()->addTypesp(newScalarDtp);
+            AstNodeDType* newArrDtp = new AstUnpackArrayDType(
+                m_chgFuncp->fileline(),
+                newScalarDtp,
+                new AstRange(m_chgFuncp->fileline(),
+                             VNumRange(m_activityNumber-1, 0, false)));
+            v3Global.rootp()->typeTablep()->addTypesp(newArrDtp);
+            newvarp = new AstVar(m_chgFuncp->fileline(),
+                                 AstVarType::MODULETEMP,
+                                  "__Vm_traceActivity", newArrDtp);
+        } else {
+            // For tighter code; round to next 32 bit point.
+            int activityBits = VL_WORDS_I(m_activityNumber)*VL_WORDSIZE;
+            newvarp = new AstVar(m_chgFuncp->fileline(), AstVarType::MODULETEMP,
+                                 "__Vm_traceActivity", VFlagBitPacked(), activityBits);
+        }
 	m_topModp->addStmtp(newvarp);
 	AstVarScope* newvscp = new AstVarScope(newvarp->fileline(), m_highScopep, newvarp);
 	m_highScopep->addVarp(newvscp);
@@ -330,13 +352,21 @@ private:
 		    FileLine* fl = vvertexp->insertp()->fileline();
 		    uint32_t acode = vvertexp->activityCode();
 		    vvertexp->insertp()->addNextHere
-			(new AstAssign (fl,
-					new AstSel (fl, new AstVarRef(fl, m_activityVscp, true),
-						    acode, 1),
-					new AstConst (fl, AstConst::LogicTrue())));
+                        (new AstAssign(fl, selectActivity(fl, acode, true),
+                                       new AstConst(fl, AstConst::LogicTrue())));
 		}
 	    }
 	}
+    }
+
+    AstNode* selectActivity(FileLine* flp, uint32_t acode, bool lvalue) {
+        if (v3Global.opt.mtasks()) {
+            return new AstArraySel(
+                flp, new AstVarRef(flp, m_activityVscp, lvalue), acode);
+        } else {
+            return new AstSel(
+                flp, new AstVarRef(flp, m_activityVscp, lvalue), acode, 1);
+        }
     }
 
     AstCFunc* newCFunc(AstCFuncType type, const string& name, AstCFunc* basep) {
@@ -362,10 +392,10 @@ private:
 	}
 	AstCCall* callp = new AstCCall(funcp->fileline(), funcp);
 	callp->argTypes("vlSymsp, vcdp, code");
-	if (callfromp->castCFunc()) {
-	    callfromp->castCFunc()->addStmtsp(callp);
-	} else if (callfromp->castIf()) {
-	    callfromp->castIf()->addIfsp(callp);
+        if (VN_IS(callfromp, CFunc)) {
+            VN_CAST(callfromp, CFunc)->addStmtsp(callp);
+        } else if (VN_IS(callfromp, If)) {
+            VN_CAST(callfromp, If)->addIfsp(callp);
 	} else {
 	    callfromp->v3fatalSrc("Unknown caller node type");  // Where to add it??
 	}
@@ -388,8 +418,8 @@ private:
 	// Form a sorted list of the traces we are interested in
 	UINFO(9,"Making trees\n");
 
-	typedef set<uint32_t> ActCodeSet;	// All activity numbers applying to a given trace
-	typedef multimap<ActCodeSet,TraceTraceVertex*> TraceVec;	// For activity set, what traces apply
+        typedef std::set<uint32_t> ActCodeSet;  // All activity numbers applying to a given trace
+        typedef std::multimap<ActCodeSet,TraceTraceVertex*> TraceVec;  // For activity set, what traces apply
 	TraceVec traces;
 
 	// Form sort structure
@@ -454,8 +484,7 @@ private:
 		    AstNode* condp = NULL;
 		    for (ActCodeSet::const_iterator csit = actset.begin(); csit!=actset.end(); ++csit) {
 			uint32_t acode = *csit;
-			AstNode* selp = new AstSel (fl, new AstVarRef(fl, m_activityVscp, false),
-						    acode, 1);
+                        AstNode* selp = selectActivity(fl, acode, false);
 			if (condp) condp = new AstOr (fl, condp, selp);
 			else condp = selp;
 		    }
@@ -474,11 +503,19 @@ private:
 
 	// Clear activity after tracing completes
 	FileLine* fl = m_chgFuncp->fileline();
-	AstNode* clrp = new AstAssign (fl,
-				       new AstVarRef(fl, m_activityVscp, true),
-				       new AstConst(fl, V3Number(fl, m_activityVscp->width())));
-	m_fullFuncp->addFinalsp(clrp->cloneTree(true));
-	m_chgFuncp->addFinalsp(clrp);
+        if (v3Global.opt.mtasks()) {
+            for (uint32_t i = 0; i < m_activityNumber; ++i) {
+                AstNode* clrp = new AstAssign(fl, selectActivity(fl, i, true),
+                                              new AstConst(fl, AstConst::LogicFalse()));
+                m_fullFuncp->addFinalsp(clrp->cloneTree(true));
+                m_chgFuncp->addFinalsp(clrp);
+            }
+        } else {
+            AstNode* clrp = new AstAssign(fl, new AstVarRef(fl, m_activityVscp, true),
+                                          new AstConst(fl, V3Number(fl, m_activityVscp->width())));
+            m_fullFuncp->addFinalsp(clrp->cloneTree(true));
+            m_chgFuncp->addFinalsp(clrp);
+        }
     }
 
     uint32_t assignDeclCode(AstTraceDecl* nodep) {
@@ -569,11 +606,11 @@ private:
 
 	// Add vertexes for all TRACES, and edges from VARs each trace looks at
 	m_finding = false;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 
 	// Add vertexes for all CFUNCs, and edges to VARs the func sets
 	m_finding = true;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_finding = false;
 
 	// Detect and remove duplicate values
@@ -590,13 +627,13 @@ private:
     }
     virtual void visit(AstNodeModule* nodep) {
 	if (nodep->isTop()) m_topModp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstTopScope* nodep) {
 	AstScope* scopep = nodep->scopep();
 	if (!scopep) nodep->v3fatalSrc("No scope found on top level");
 	m_highScopep = scopep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstCCall* nodep) {
 	UINFO(8,"   CCALL "<<nodep<<endl);
@@ -605,7 +642,7 @@ private:
 	    // If so, all funcs might share the same activity code
 	    TraceActivityVertex* activityVtxp = getActivityVertexp(nodep, nodep->funcp()->slow());
 	    for (AstNode* nextp=nodep; nextp; nextp=nextp->nextp()) {
-		if (AstCCall* ccallp = nextp->castCCall()) {
+                if (AstCCall* ccallp = VN_CAST(nextp, CCall)) {
 		    ccallp->user2(true); // Processed
 		    UINFO(8,"     SubCCALL "<<ccallp<<endl);
 		    V3GraphVertex* ccallFuncVtxp = getCFuncVertexp(ccallp->funcp());
@@ -614,7 +651,7 @@ private:
 		}
 	    }
 	}
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
     virtual void visit(AstCFunc* nodep) {
 	UINFO(8,"   CFUNC "<<nodep<<endl);
@@ -636,7 +673,7 @@ private:
 	    }
 	}
 	m_funcp = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_funcp = NULL;
     }
     virtual void visit(AstTraceInc* nodep) {
@@ -649,7 +686,7 @@ private:
 
 	if (!m_funcp || (!m_chgFuncp || !m_fullFuncp)) nodep->v3fatalSrc("Trace not under func");
 	m_tracep = nodep;
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
 	m_tracep = NULL;
     }
     virtual void visit(AstVarRef* nodep) {
@@ -679,7 +716,7 @@ private:
     }
     //--------------------
     virtual void visit(AstNode* nodep) {
-	nodep->iterateChildren(*this);
+        iterateChildren(nodep);
     }
 
 public:
@@ -700,10 +737,11 @@ public:
 	m_chgSubFuncp = NULL;
 	m_chgSubParentp = NULL;
 	m_chgSubStmts = 0;
+        m_activityNumber = 0;
         m_code = 0;
         m_finding = false;
 	m_funcNum = 0;
-	nodep->accept(*this);
+        iterate(nodep);
     }
     virtual ~TraceVisitor() {
 	V3Stats::addStat("Tracing, Unique changing signals", m_statChgSigs);
