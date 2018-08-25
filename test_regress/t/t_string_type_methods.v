@@ -36,12 +36,12 @@ module t (/*AUTOARG*/
       s="101"; `checkh(s.atooct(), 'o101);
       s="101"; `checkh(s.atobin(), 'b101);
       s="1.23"; `checkg(s.atoreal(), 1.23);
+`endif
       s.itoa(123); `checks(s, "123");
       s.hextoa(123); `checks(s, "7b");
       s.octtoa(123); `checks(s, "173");
       s.bintoa(123); `checks(s, "1111011");
       s.realtoa(1.23); `checks(s, "1.23");
-`endif
    end
 
    // Check runtime
@@ -53,15 +53,17 @@ module t (/*AUTOARG*/
       end
       else if (cyc==1) begin
          `checkh(s.len(),4);
+      end
 `ifndef VERILATOR
+      else if (cyc==2) begin
          s.putc(2, "z");
       end
-      else if (cyc==2) begin
+      else if (cyc==3) begin
          `checks(s, "12z4");
          `checkh(s.getc(2), "z");
          s="abCD";
       end
-      else if (cyc==3) begin
+      else if (cyc==4) begin
          `checks(s.toupper(), "ABCD");
          `checks(s.tolower(), "abcd");
          s="b";
@@ -84,6 +86,9 @@ module t (/*AUTOARG*/
       end
       else if (cyc==8) begin
          `checkg(s.atoreal(), 1.23);
+      end
+`endif
+      else if (cyc==9) begin
          s.itoa(123);
       end
       else if (cyc==10) begin
@@ -104,7 +109,6 @@ module t (/*AUTOARG*/
       end
       else if (cyc==14) begin
          `checks(s, "1.23");
-`endif
       end
       else if (cyc==99) begin
          $write("*-* All Finished *-*\n");

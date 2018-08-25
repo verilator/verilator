@@ -1599,7 +1599,7 @@ private:
 							   0, selwidth));
 		nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
 	    } else {
-		nodep->v3error("Unknown built-in enum method '"<<nodep->fromp()->prettyTypeName()<<"'");
+                nodep->v3error("Unknown built-in enum method '"<<nodep->prettyName()<<"'");
 	    }
 	}
         else if (AstUnpackArrayDType* arrayType = VN_CAST(fromDtp, UnpackArrayDType)) {
@@ -1638,18 +1638,29 @@ private:
 		nodep->deleteTree(); VL_DANGLING(nodep);
 	    }
 	    else {
-		nodep->v3error("Unknown built-in array method '"<<nodep->fromp()->prettyTypeName()<<"'");
+                nodep->v3error("Unknown built-in array method '"<<nodep->prettyName()<<"'");
 	    }
 	}
 	else if (basicp && basicp->isString()) {
             // Method call on string
             if (nodep->name() == "len") {
                 // Constant value
+                if (nodep->pinsp()) nodep->v3error("Arguments passed to string.len method, but it does not take arguments");
                 AstNode* newp = new AstLenN(nodep->fileline(), nodep->fromp()->unlinkFrBack());
                 nodep->replaceWith(newp);
                 pushDeletep(nodep); VL_DANGLING(nodep);
+            } else if (nodep->name() == "itoa") {
+                replaceWithSFormat(nodep, "%0d"); VL_DANGLING(nodep);
+            } else if (nodep->name() == "hextoa") {
+                replaceWithSFormat(nodep, "%0x"); VL_DANGLING(nodep);
+            } else if (nodep->name() == "octtoa") {
+                replaceWithSFormat(nodep, "%0o"); VL_DANGLING(nodep);
+            } else if (nodep->name() == "bintoa") {
+                replaceWithSFormat(nodep, "%0b"); VL_DANGLING(nodep);
+            } else if (nodep->name() == "realtoa") {
+                replaceWithSFormat(nodep, "%g"); VL_DANGLING(nodep);
             } else {
-                nodep->v3error("Unsupported: built-in string method '"<<nodep->fromp()->prettyTypeName()<<"'");
+                nodep->v3error("Unsupported: built-in string method '"<<nodep->prettyName()<<"'");
             }
 	}
 	else {
@@ -3503,6 +3514,26 @@ private:
 	newp->dtypeFrom(nodep);
 	pushDeletep(nodep); VL_DANGLING(nodep);
 	return newp;
+    }
+
+    //----------------------------------------------------------------------
+    // METHODS - strings
+
+    void replaceWithSFormat(AstMethodSel* nodep, const string& format) {
+        // For string.itoa and similar, replace with SFormatF
+        AstArg* argp = VN_CAST(nodep->pinsp(), Arg);
+        if (!argp) {
+            nodep->v3error("Argument needed for string."
+                           +nodep->prettyName()+" method");
+            return;
+        }
+        AstNodeVarRef* fromp = VN_CAST(nodep->fromp()->unlinkFrBack(), VarRef);
+        AstNode* newp = new AstAssign(nodep->fileline(), fromp,
+                                      new AstSFormatF(nodep->fileline(), format, false,
+                                                      argp->exprp()->unlinkFrBack()));
+        fromp->lvalue(true);
+        nodep->replaceWith(newp);
+        pushDeletep(nodep); VL_DANGLING(nodep);
     }
 
     //----------------------------------------------------------------------

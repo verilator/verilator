@@ -15,6 +15,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Add new reloop optimization for repetitive assignment compression.
 
+***   Support string.atoi and similar methods, bug1289. [Joel Holdsworth]
+
 ****  Fix internals to be C++ null-pointer-check clean.
 
 ****  Fix internals to avoid 'using namespace std'.
