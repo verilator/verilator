@@ -2322,6 +2322,8 @@ $display/$stop/$finish are delayed until the end of an eval() call in order
 to maintain ordering between threads. This may result in additional tasks
 completing after the $stop or $finish.
 
+=over 4
+
 If using --coverage, the coverage routines are fully thread safe.
 
 If using --dpi, Verilator assumes pure DPI imports are thread safe,
