@@ -29,6 +29,9 @@
 #include <vector>
 #include <set>
 #include <sched.h>  // For sched_getcpu()
+#if defined(__APPLE__)
+# include <cpuid.h>  // For __cpuid_count()
+#endif
 
 #include "verilated.h"  // for VerilatedMutex and clang annotations
 
@@ -193,13 +196,13 @@ public:
 #if defined(__linux)
         return sched_getcpu();
 #elif defined(__APPLE__)
-        uint32_t CPUInfo[4];
-        CPUID(CPUInfo, 1, 0);
-        /* CPUInfo[1] is EBX, bits 24-31 are APIC ID */
-        if ((CPUInfo[3] & (1 << 9)) == 0) {
+        uint32_t info[4];
+        __cpuid_count(1, 0, info[0], info[1], info[2], info[3])
+        /* info[1] is EBX, bits 24-31 are APIC ID */
+        if ((info[3] & (1 << 9)) == 0) {
             return -1;  /* no APIC on chip */
         } else {
-            return (unsigned)CPUInfo[1] >> 24;
+            return (unsigned)info[1] >> 24;
         }
 #else
         return 0;
