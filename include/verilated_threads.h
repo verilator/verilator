@@ -205,7 +205,7 @@ public:
         return 0;
 #endif
     }
-    
+
 };
 
 class VlThreadPool;

@@ -11,6 +11,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    Add runtime arguments.
 
+**    Note $random has new algorithm; results may vary vs. previous versions.
+
 ***   Better optimize large always block splitting, bug1244. [John Coiner]
 
 ***   Add new reloop optimization for repetitive assignment compression.

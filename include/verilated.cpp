@@ -209,27 +209,12 @@ Verilated::NonSerialized::~NonSerialized() {
 }
 
 //===========================================================================
-// Random reset -- Only called at init time, so don't inline.
+// Random -- Mostly called at init time, so not inline.
 
-IData VL_RAND32() VL_MT_SAFE {
-#ifdef VL_THREADED
-    static VL_THREAD_LOCAL bool t_seeded = false;
-    static VL_THREAD_LOCAL drand48_data t_buffer;
-    static VerilatedMutex s_mutex;
-    if (VL_UNLIKELY(!t_seeded)) {
-	t_seeded = true;
-	long seedval;
-	{
-	    VerilatedLockGuard lock(s_mutex);
-	    seedval = lrand48()<<16 ^ lrand48();
-	    if (!seedval) seedval++;
-	}
-	srand48_r(seedval, &t_buffer);
-    }
-    long v0; lrand48_r(&t_buffer, &v0);
-    long v1; lrand48_r(&t_buffer, &v1);
-    return (v0<<16) ^ v1;
-#elif defined(_WIN32) && !defined(__CYGWIN__)
+static vluint32_t vl_sys_rand32() VL_MT_UNSAFE {
+    // Return random 32-bits using system library.
+    // Used only to construct seed for Verilator's PNRG.
+#if defined(_WIN32) && !defined(__CYGWIN__)
     // Windows doesn't have lrand48(), although Cygwin does.
     return (rand()<<16) ^ rand();
 #else
@@ -237,21 +222,46 @@ IData VL_RAND32() VL_MT_SAFE {
 #endif
 }
 
+vluint64_t vl_rand64() VL_MT_SAFE {
+    static VerilatedMutex s_mutex;
+    static VL_THREAD_LOCAL bool t_seeded = false;
+    static VL_THREAD_LOCAL vluint64_t t_state[2];
+    if (VL_UNLIKELY(!t_seeded)) {
+	t_seeded = true;
+	{
+            long seedval;
+	    VerilatedLockGuard lock(s_mutex);
+            t_state[0] = (((vluint64_t)vl_sys_rand32())<<32
+                          ^ ((vluint64_t)vl_sys_rand32()));
+            t_state[1] = (((vluint64_t)vl_sys_rand32())<<32
+                          ^ ((vluint64_t)vl_sys_rand32()));
+            // Fix state as algorithm is slow to randomize if many zeros
+            // This causes a loss of ~ 1 bit of seed entropy, no big deal
+            if (VL_COUNTONES_I(t_state[0]) < 10) t_state[0] = ~t_state[0];
+            if (VL_COUNTONES_I(t_state[1]) < 10) t_state[1] = ~t_state[1];
+	}
+    }
+    // Xoroshiro128+ algorithm
+    vluint64_t result = t_state[0] + t_state[1];
+    t_state[1] ^= t_state[0];
+    t_state[0] = (((t_state[0] << 55) | (t_state[0] >> 9))
+                  ^ t_state[1] ^ (t_state[1] << 14));
+    t_state[1] = (t_state[1] << 36) | (t_state[1] >> 28);
+    return result;
+}
+
 IData VL_RANDOM_I(int obits) VL_MT_SAFE {
-    return VL_RAND32() & VL_MASK_I(obits);
+    return vl_rand64() & VL_MASK_I(obits);
 }
-
 QData VL_RANDOM_Q(int obits) VL_MT_SAFE {
-    QData data = ((QData)VL_RAND32()<<VL_ULL(32)) | (QData)VL_RAND32();
-    return data & VL_MASK_Q(obits);
+    return vl_rand64() & VL_MASK_Q(obits);
 }
-
 WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     for (int i=0; i<VL_WORDS_I(obits); ++i) {
 	if (i<(VL_WORDS_I(obits)-1)) {
-	    outwp[i] = VL_RAND32();
+	    outwp[i] = vl_rand64();
 	} else {
-	    outwp[i] = VL_RAND32() & VL_MASK_I(obits);
+	    outwp[i] = vl_rand64() & VL_MASK_I(obits);
 	}
     }
     return outwp;
@@ -266,7 +276,6 @@ IData VL_RAND_RESET_I(int obits) VL_MT_SAFE {
     if (obits<32) data &= VL_MASK_I(obits);
     return data;
 }
-
 QData VL_RAND_RESET_Q(int obits) VL_MT_SAFE {
     if (Verilated::randReset()==0) return 0;
     QData data = VL_ULL(~0);
@@ -276,7 +285,6 @@ QData VL_RAND_RESET_Q(int obits) VL_MT_SAFE {
     if (obits<64) data &= VL_MASK_Q(obits);
     return data;
 }
-
 WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     for (int i=0; i<VL_WORDS_I(obits); ++i) {
 	if (i<(VL_WORDS_I(obits)-1)) {
