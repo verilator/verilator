@@ -197,7 +197,7 @@ public:
         return sched_getcpu();
 #elif defined(__APPLE__)
         uint32_t info[4];
-        __cpuid_count(1, 0, info[0], info[1], info[2], info[3])
+        __cpuid_count(1, 0, info[0], info[1], info[2], info[3]);
         /* info[1] is EBX, bits 24-31 are APIC ID */
         if ((info[3] & (1 << 9)) == 0) {
             return -1;  /* no APIC on chip */
