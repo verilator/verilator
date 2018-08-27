@@ -7,8 +7,6 @@
 // Include common routines
 #include <verilated.h>
 
-#include <sys/stat.h>  // mkdir
-
 // Include model header, generated from Verilating "top.v"
 #include "Vtop.h"
 
@@ -51,7 +49,7 @@ int main(int argc, char** argv, char** env) {
         VL_PRINTF("Enabling waves into logs/vlt_dump.vcd...\n");
         tfp = new VerilatedVcdC;
         top->trace(tfp, 99);  // Trace 99 levels of hierarchy
-        mkdir("logs", 0777);
+        Verilated::mkdir("logs");
         tfp->open("logs/vlt_dump.vcd");  // Open the dump file
     }
 #endif
@@ -112,7 +110,7 @@ int main(int argc, char** argv, char** env) {
 
     //  Coverage analysis (since test passed)
 #if VM_COVERAGE
-    mkdir("logs", 0777);
+    Verilated::mkdir("logs");
     VerilatedCov::write("logs/coverage.dat");
 #endif
 

@@ -445,6 +445,9 @@ public:
     static const char* productName() VL_PURE { return VERILATOR_PRODUCT; }
     static const char* productVersion() VL_PURE { return VERILATOR_VERSION; }
 
+    /// Convenience OS utilities
+    static void mkdir(const char* dirname) VL_MT_UNSAFE;
+
     /// When multithreaded, quiesce the model to prepare for trace/saves/coverage
     /// This may only be called when no locks are held.
     static void quiesce() VL_MT_SAFE;

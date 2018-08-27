@@ -96,7 +96,7 @@ int sc_main(int argc, char* argv[]) {
         cout << "Enabling waves into logs/vlt_dump.vcd...\n";
         tfp = new VerilatedVcdSc;
         top->trace(tfp, 99);
-        mkdir("logs", 0777);
+        Verilated::mkdir("logs");
         tfp->open("logs/vlt_dump.vcd");
     }
 #endif
@@ -134,7 +134,7 @@ int sc_main(int argc, char* argv[]) {
 
     //  Coverage analysis (since test passed)
 #if VM_COVERAGE
-    mkdir("logs", 0777);
+    Verilated::mkdir("logs");
     VerilatedCov::write("logs/coverage.dat");
 #endif
 

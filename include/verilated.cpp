@@ -26,6 +26,11 @@
 #define _VERILATED_CPP_
 #include "verilated_imp.h"
 #include <cctype>
+#include <sys/stat.h>  // mkdir
+
+#if defined(WIN32) || defined(__MINGW32__)
+# include <direct.h>  // mkdir
+#endif
 
 #define VL_VALUE_STRING_MAX_WIDTH 8192	///< Max static char array for VL_VALUE_STRING
 
@@ -1739,6 +1744,14 @@ void Verilated::overWidthError(const char* signame) VL_MT_SAFE {
                        + signame
                        + "' to value that overflows what the signal's width can fit");
     VL_FATAL_MT("unknown",0,"", msg.c_str());
+}
+
+void Verilated::mkdir(const char* dirname) VL_MT_UNSAFE {
+#if defined(_WIN32) || defined(__MINGW32__)
+    ::mkdir(dirname);
+#else
+    ::mkdir(dirname, 0777);
+#endif
 }
 
 void Verilated::quiesce() VL_MT_SAFE {
