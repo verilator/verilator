@@ -120,6 +120,7 @@ class VL_CAPABILITY("mutex") VerilatedMutex {
   public:
     VerilatedMutex() {}
     ~VerilatedMutex() {}
+    const VerilatedMutex& operator!() const { return *this; }  // For -fthread_safety
     /// Acquire/lock mutex
     void lock() VL_ACQUIRE() {
         // Try to acquire the lock by spinning.  If the wait is short,
