@@ -9,6 +9,7 @@ module t (/*AUTOARG*/
    );
 
    input clk;
+   int cnt;
 
    // This won't compile with tracing as an incorrect declaration is made for
    // the temp variables used to represent the elements of localparam v
@@ -22,8 +23,14 @@ module t (/*AUTOARG*/
        '{'{32'h30000002, 32'h30000001, 32'h30000000}}
    };
 
-   initial begin
-      $write("*-* All Finished *-*\n");
-      $finish;
+   initial cnt = 0;
+   always@(posedge clk) begin
+      if (cnt < 3) begin
+          cnt = cnt + 1;
+      end
+      else begin
+          $write("*-* All Finished *-*\n");
+          $finish;
+      end
    end
 endmodule

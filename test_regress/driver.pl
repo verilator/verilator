@@ -431,7 +431,6 @@ sub new {
     $self->{status_filename} ||= "$self->{obj_dir}/V".$self->{name}.".status";
     $self->{run_log_filename} ||= "$self->{obj_dir}/vlt_sim.log";
     $self->{coverage_filename} ||= "$self->{obj_dir}/coverage.dat";
-    $self->{vcd_filename}  ||= "$self->{obj_dir}/sim.vcd";
     $self->{main_filename} ||= "$self->{obj_dir}/$self->{VM_PREFIX}__main.cpp";
     ($self->{top_filename} = $self->{pl_filename}) =~ s/\.pl$//;
     if (-e ($self->{top_filename}.".vhd")) { # If VHDL file exists
@@ -588,7 +587,10 @@ sub compile_vlt_flags {
 			  @{$param{verilator_flags2}},
 			  @{$param{verilator_flags3}});
     $self->{sc} = 1 if ($checkflags =~ /-sc\b/);
-    $self->{trace} = 1 if ($opt_trace || $checkflags =~ /-trace\b/);
+    $self->{trace} = ($opt_trace || $checkflags =~ /-trace\b/ || $checkflags =~ /-trace-lxt2\b/);
+    $self->{trace_format} = (($checkflags =~ /-trace-lxt2\b/ && 'lxt2-c')
+                             || ($self->{sc} && 'vcd-sc')
+                             || (!$self->{sc} && 'vcd-c'));
     $self->{savable} = 1 if ($checkflags =~ /-savable\b/);
     $self->{coverage} = 1 if ($checkflags =~ /-coverage\b/);
 
@@ -1012,6 +1014,12 @@ sub have_sc {
     return 0;
 }
 
+sub trace_filename {
+    my $self = shift;
+    return "$self->{obj_dir}/simx.lxt2" if $self->{trace_format} =~ /^lxt2/;
+    return "$self->{obj_dir}/simx.vcd";
+}
+
 #----------------------------------------------------------------------
 
 sub run {
@@ -1177,8 +1185,9 @@ sub _make_main {
     print $fh "// General headers\n";
     print $fh "#include \"verilated.h\"\n";
     print $fh "#include \"systemc.h\"\n" if $self->sc;
-    print $fh "#include \"verilated_vcd_c.h\"\n" if $self->{trace} && !$self->sc;
-    print $fh "#include \"verilated_vcd_sc.h\"\n" if $self->{trace} && $self->sc;
+    print $fh "#include \"verilated_lxt2_c.h\"\n" if $self->{trace} && $self->{trace_format} eq 'lxt2-c';
+    print $fh "#include \"verilated_vcd_c.h\"\n" if $self->{trace} && $self->{trace_format} eq 'vcd-c';
+    print $fh "#include \"verilated_vcd_sc.h\"\n" if $self->{trace} && $self->{trace_format} eq 'vcd-sc';
     print $fh "#include \"verilated_save.h\"\n" if $self->{savable};
 
     print $fh "$VM_PREFIX * topp;\n";
@@ -1240,10 +1249,11 @@ sub _make_main {
 	$fh->print("\n");
 	$fh->print("#if VM_TRACE\n");
 	$fh->print("    Verilated::traceEverOn(true);\n");
-        $fh->print("    VerilatedVcdC* tfp = new VerilatedVcdC;\n") if !$self->sc;
-        $fh->print("    VerilatedVcdSc* tfp = new VerilatedVcdSc;\n") if $self->sc;
+        $fh->print("    VerilatedVcdC* tfp = new VerilatedVcdC;\n") if $self->{trace_format} eq 'vcd-c';
+        $fh->print("    VerilatedVcdSc* tfp = new VerilatedVcdSc;\n") if $self->{trace_format} eq 'vcd-sc';
+        $fh->print("    VerilatedLxt2C* tfp = new VerilatedLxt2C;\n") if $self->{trace_format} eq 'lxt2-c';
         $fh->print("    topp->trace(tfp, 99);\n");
-        $fh->print("    tfp->open(\"$self->{obj_dir}/simx.vcd\");\n");
+        $fh->print("    tfp->open(\"".$self->trace_filename."\");\n");
 	if ($self->{trace} && !$self->sc) {
             $fh->print("    if (tfp) tfp->dump (main_time);\n");
 	}
@@ -1376,8 +1386,8 @@ sub _make_top_v {
     print $fh "\n";
     print $fh "`ifdef WAVES\n";
     print $fh "   initial begin\n";
-    print $fh "      \$display(\"-Tracing Waves to Dumpfile: $self->{vcd_filename}\");\n";
-    print $fh "      \$dumpfile(\"$self->{vcd_filename}\");\n";
+    print $fh "      \$display(\"-Tracing Waves to Dumpfile: ".$self->trace_filename."\");\n";
+    print $fh "      \$dumpfile(\"".$self->trace_filename."\");\n";
     print $fh "      \$dumpvars(0, top);\n";
     print $fh "   end\n";
     print $fh "`endif\n";
@@ -1593,6 +1603,23 @@ sub vcd_identical {
     }
     return 1;
 }
+
+sub lxt2vcd {
+    my $self = (ref $_[0]? shift : $Self);
+    my $fn1 = shift;
+    my $fn2 = shift;
+    if (!-r $fn1) { $self->error("File does not exist $fn1\n"); return 0; }
+    my $cmd = qq{lxt2vcd --help};
+    print "\t$cmd\n" if $::Debug;
+    my $out = `$cmd`;
+    if ($out !~ /Usage:/) { $self->skip("No lxt2vcd installed\n"); return 0; }
+
+    $cmd = qq{lxt2vcd "$fn1" -o "$fn2"};
+    print "\t$cmd\n" if $::Debug;
+    $out = `$cmd`;
+    return 1;
+}
+
 
 sub _vcd_read {
     my $self = (ref $_[0]? shift : $Self);

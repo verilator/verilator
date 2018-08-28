@@ -356,6 +356,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --threads-max-mtasks <mtasks>  Tune maximum mtask partitioning
     --top-module <topname>      Name of top level input module
     --trace                     Enable waveform creation
+    --trace-lxt2                Enable LXT2 waveform creation
     --trace-depth <levels>      Depth of tracing
     --trace-max-array <depth>   Maximum bit width for tracing
     --trace-max-width <width>   Maximum array depth for tracing
@@ -1240,16 +1241,22 @@ designs with only one top.
 
 =item --trace
 
-Adds waveform tracing code to the model.  Verilator will generate
-additional {prefix}__Trace*.cpp files that will need to be compiled.  In
-addition verilated_vcd_sc.cpp (for SystemC traces) or verilated_vcd_c.cpp
-(for both) must be compiled and linked in.  If using the Verilator
-generated Makefiles, these files will be added as source targets for you.
-If you're not using the Verilator makefiles, you will need to add these to
-your Makefile manually.
+Adds waveform tracing code to the model using VCD format. This overrides
+C<--trace-lxt2>.
+
+Verilator will generate additional {prefix}__Trace*.cpp files that will
+need to be compiled.  In addition verilated_vcd_sc.cpp (for SystemC traces)
+or verilated_vcd_c.cpp (for both) must be compiled and linked in.  If using
+the Verilator generated Makefiles, these files will be added as source
+targets for you.  If you're not using the Verilator makefiles, you will
+need to add these to your Makefile manually.
 
 Having tracing compiled in may result in some small performance losses,
 even when waveforms are not turned on during model execution.
+
+=item --trace-lxt2
+
+Enable LXT2 waveform tracing in the model. This overrides C<--trace>.
 
 =item --trace-depth I<levels>
 
@@ -4098,11 +4105,29 @@ trace file if you want all data to land in the same output file.
         tfp->close();
     }
 
+=item How do I generate LXT2 waveforms (traces) in C++?
+
+LXT2 a format by GTKWave, which is usually 10x smaller than VCD format.
+This version provides a basic LXT2 support.
+To dump LXT2 format, add the --trace switch to Verilator and change the include path in the testbench to:
+
+    #include "verilated_lxt2_c.h"
+    VerilatedLxt2C* tfp = new VerilatedLxt2C;
+
+Note that currently supporting both LXT2 and VCD in a single simulation is impossible,
+but such requirement could be rare.
+
+=item How do I generate LXT2 waveforms (traces) in SystemC?
+
+The LXT2 library from GTKWave does not currently support SystemC; use VCD
+format instead.
+
 =item How do I view waveforms (traces)?
 
-Verilator makes standard VCD (Value Change Dump) files.  They are viewable
-with the public domain GtkWave (recommended) or Dinotrace (legacy)
-programs, or any of the many commercial offerings.
+Verilator makes standard VCD (Value Change Dump) and LXT2 files.  VCD files are viewable
+with the public domain GTKWave (recommended) or Dinotrace (legacy)
+programs, or any of the many commercial offerings;
+LXT2 is supported by GTKWave only.
 
 =item How do I reduce the size of large waveform (trace) files?
 

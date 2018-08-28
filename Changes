@@ -11,6 +11,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    Add runtime arguments.
 
+**    Add GTKWave LXT2 native tracing, bug1333. [Yu Sheng Lin]
+
 **    Note $random has new algorithm; results may vary vs. previous versions.
 
 ***   Better optimize large always block splitting, bug1244. [John Coiner]

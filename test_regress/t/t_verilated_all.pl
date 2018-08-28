@@ -49,6 +49,7 @@ foreach my $dfile (glob("$Self->{obj_dir}/*.d")) {
 foreach my $file (sort keys %hit) {
     if (!$hit{$file}
         && $file !~ /_sc/
+        && $file !~ /_lxt2/
         && ($file !~ /_thread/ || $Self->cfg_with_threaded)) {
         error("Include file not covered by t_verilated_all test: ",$file);
     }

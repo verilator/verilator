@@ -24,7 +24,8 @@ if (!-r "$root/.git") {
     my $cmd = "cd $root && fgrep -n include $files | sort";
     my $grep = `$cmd`;
     foreach my $line (split /\n/, $grep) {
-	next if $line =~ /vpi_user.h/;  # IEEE Standard file - can't change it
+        next if $line =~ m!include/vltstd/vpi_user.h!;  # IEEE Standard file - can't change it
+        next if $line =~ m!include/lxt2/!;  # Standard file - can't change it
 	my $hit;
 	$hit = 1 if $line =~ /\bassert\.h/;
 	$hit = 1 if $line =~ /\bctype\.h/;

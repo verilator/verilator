@@ -31,16 +31,49 @@
 #include "V3Global.h"
 #include "V3LangCode.h"
 
-//######################################################################
-// V3Options - Command line options
-
 class V3OptionsImp;
 class FileLine;
+
+//######################################################################
+
+class TraceFormat {
+public:
+    enum en {
+        VCD = 0,
+        LXT2
+    } m_e;
+    inline TraceFormat(en _e = VCD) : m_e(_e) {}
+    explicit inline TraceFormat(int _e) : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
+    string classBase() const {
+        static const char* const names[] = {
+            "VerilatedVcd",
+            "VerilatedLxt2"
+        };
+        return names[m_e];
+    }
+    string sourceName() const {
+        static const char* const names[] = {
+            "verilated_vcd",
+            "verilated_lxt2"
+        };
+        return names[m_e];
+    }
+};
+inline bool operator==(TraceFormat lhs, TraceFormat rhs) { return (lhs.m_e == rhs.m_e); }
+inline bool operator==(TraceFormat lhs, TraceFormat::en rhs) { return (lhs.m_e == rhs); }
+inline bool operator==(TraceFormat::en lhs, TraceFormat rhs) { return (lhs == rhs.m_e); }
 
 typedef std::vector<string> V3StringList;
 typedef std::set<string> V3StringSet;
 
+//######################################################################
+// V3Options - Command line options
+
 class V3Options {
+  public:
+
+  private:
     // TYPES
     typedef std::map<string,int> DebugSrcMap;
 
@@ -126,6 +159,7 @@ class V3Options {
     int		m_threads;	// main switch: --threads (0 == --no-threads)
     int         m_threadsMaxMTasks;  // main switch: --threads-max-mtasks
     int		m_traceDepth;	// main switch: --trace-depth
+    TraceFormat m_traceFormat;  // main switch: --trace or --trace-lxt2
     int		m_traceMaxArray;// main switch: --trace-max-array
     int		m_traceMaxWidth;// main switch: --trace-max-width
     int		m_unrollCount;	// main switch: --unroll-count
@@ -284,7 +318,8 @@ class V3Options {
     int threads() const { return m_threads; }
     int threadsMaxMTasks() const { return m_threadsMaxMTasks; }
     bool mtasks() const { return (m_threads > 1); }
-    int	   traceDepth() const { return m_traceDepth; }
+    int traceDepth() const { return m_traceDepth; }
+    TraceFormat traceFormat() const { return m_traceFormat; }
     int	   traceMaxArray() const { return m_traceMaxArray; }
     int	   traceMaxWidth() const { return m_traceMaxWidth; }
     int	   unrollCount() const { return m_unrollCount; }
@@ -344,8 +379,8 @@ class V3Options {
     bool oSubstConst() const { return m_oSubstConst; }
     bool oTable() const { return m_oTable; }
 
-    // METHODS (uses above)
-    string traceClassBase() const { return "VerilatedVcd"; }
+    string traceClassBase() const { return m_traceFormat.classBase(); }
+    string traceSourceName() const { return m_traceFormat.sourceName(); }
 
     // METHODS (from main)
     static string version();

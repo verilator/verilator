@@ -128,6 +128,7 @@ DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
 	include/*.[chv]* \
 	include/*.in \
 	include/.*ignore \
+	include/lxt2/*.[chv]* \
 	include/vltstd/*.[chv]* \
 	.*attributes */.*attributes  */*/.*attributes \
 	src/.*ignore src/*.in src/*.cpp src/*.[chly] \
@@ -160,6 +161,7 @@ INST_PROJ_FILES = \
 	bin/verilator_profcfunc \
 	include/verilated.mk \
 	include/*.[chv]* \
+	include/lxt2/*.[chv]* \
 	include/vltstd/*.[chv]* \
 
 INST_PROJ_BIN_FILES = \
@@ -288,6 +290,7 @@ VL_INST_INC_BLDDIR_FILES = \
 # Files under srcdir, instead of build time
 VL_INST_INC_SRCDIR_FILES = \
 	include/*.[chv]* \
+	include/lxt2/*.[chv]* \
 	include/vltstd/*.[chv]* \
 
 VL_INST_DATA_SRCDIR_FILES = \
@@ -315,6 +318,7 @@ installman: $(VL_INST_MAN_FILES)
 	done
 
 installdata:
+	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/include/lxt2
 	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/include/vltstd
 	for p in $(VL_INST_INC_BLDDIR_FILES) ; do \
 	  $(INSTALL_DATA) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
@@ -344,6 +348,7 @@ uninstall:
 	-cd $(DESTDIR)$(pkgdatadir) && rm -f $(VL_INST_DATA_SRCDIR_FILES)
 	-rm $(DESTDIR)$(pkgconfigdir)/verilator.pc
 	-rmdir $(DESTDIR)$(pkgdatadir)/bin
+	-rmdir $(DESTDIR)$(pkgdatadir)/include/lxt2
 	-rmdir $(DESTDIR)$(pkgdatadir)/include/vltstd
 	-rmdir $(DESTDIR)$(pkgdatadir)/include
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/hello_world_c
@@ -408,6 +413,7 @@ ifeq ($(CFG_WITH_DEFENV),yes)
 	false
 endif
 	@echo "Install-cadtools-quick (no strip) to $(VERILATOR_CAD_DIR)"
+	$(SHELL) ${srcdir}/mkinstalldirs $(VERILATOR_CAD_DIR)/include/lxt2
 	$(SHELL) ${srcdir}/mkinstalldirs $(VERILATOR_CAD_DIR)/include/vltstd
 	$(SHELL) ${srcdir}/mkinstalldirs $(VERILATOR_CAD_DIR)/bin
 	for p in $(INST_PROJ_FILES) ; do \

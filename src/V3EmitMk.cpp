@@ -89,9 +89,13 @@ public:
 			putMakeClassEntry(of, "verilated_cov.cpp");
 		    }
 		    if (v3Global.opt.trace()) {
-			putMakeClassEntry(of, "verilated_vcd_c.cpp");
+                        putMakeClassEntry(of, v3Global.opt.traceSourceName()+"_c.cpp");
 			if (v3Global.opt.systemC()) {
-			    putMakeClassEntry(of, "verilated_vcd_sc.cpp");
+                            if (v3Global.opt.traceFormat() != TraceFormat::VCD) {
+                                v3error("Unsupported: This trace format is not supported in SystemC, use VCD format.");
+                            } else {
+                                putMakeClassEntry(of, v3Global.opt.traceSourceName()+"_sc.cpp");
+                            }
 			}
 		    }
                     if (v3Global.opt.mtasks()) {
