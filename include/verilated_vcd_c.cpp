@@ -226,7 +226,7 @@ void VerilatedVcd::makeNameMap() {
     m_nextCode = 1;
     m_namemapp = new NameMap;
     for (vluint32_t ent = 0; ent< m_callbacks.size(); ent++) {
-        VerilatedVcdCallInfo *cip = m_callbacks[ent];
+        VerilatedVcdCallInfo* cip = m_callbacks[ent];
         cip->m_code = m_nextCode;
         (cip->m_initcb) (this, cip->m_userthis, cip->m_code);
     }
@@ -655,8 +655,8 @@ void VerilatedVcd::dumpFull(vluint64_t timeui) {
     dumpPrep(timeui);
     Verilated::quiesce();
     for (vluint32_t ent = 0; ent< m_callbacks.size(); ent++) {
-        VerilatedVcdCallInfo *cip = m_callbacks[ent];
-        (cip->m_fullcb) (this, cip->m_userthis, cip->m_code);
+        VerilatedVcdCallInfo* cip = m_callbacks[ent];
+        (cip->m_fullcb)(this, cip->m_userthis, cip->m_code);
     }
 }
 
@@ -674,9 +674,9 @@ void VerilatedVcd::dump(vluint64_t timeui) {
     }
     dumpPrep(timeui);
     Verilated::quiesce();
-    for (vluint32_t ent = 0; ent< m_callbacks.size(); ent++) {
-        VerilatedVcdCallInfo *cip = m_callbacks[ent];
-        (cip->m_changecb) (this, cip->m_userthis, cip->m_code);
+    for (vluint32_t ent = 0; ent< m_callbacks.size(); ++ent) {
+        VerilatedVcdCallInfo* cip = m_callbacks[ent];
+        (cip->m_changecb)(this, cip->m_userthis, cip->m_code);
     }
 }
 
