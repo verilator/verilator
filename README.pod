@@ -78,7 +78,14 @@ instead.)
 
 =item
 
-You will need the C<flex> and C<bison> packages installed.
+To use Verilator you will need the C<perl>, C<make> (or C<gmake>), and
+C<g++> (or C<clang>) packages.
+
+To use Verilator LTX2 tracing you will need the C<gtkwave> and C<libgz> (on
+Ubuntu C<zlibc> C<zlib1g> C<zlib1g-dev>) packages installed.
+
+To compile Verilator in addition to the above you need the C<flex>,
+C<bison> and C<texi2html> packages installed.
 
 =item
 
