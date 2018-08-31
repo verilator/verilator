@@ -95,7 +95,7 @@ if (! GetOptions (
           "unsupported!"=> \$Opt_Unsupported,
           "verbose!"    => \$opt_verbose,
           "verilation!"         => \$Opt_Verilation,  # Undocumented debugging
-          "verilated_debug!"    => \$Opt_Verilated_Debug,
+          "verilated-debug!"    => \$Opt_Verilated_Debug,
           #W               see parameter()
           # Scenarios
           "atsim|athdl!"=> sub { $opt_scenarios{atsim} = $_[1]; },
