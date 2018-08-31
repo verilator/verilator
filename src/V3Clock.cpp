@@ -51,9 +51,7 @@ private:
     // NODE STATE
     // Cleared each Module:
     //  AstVarScope::user1p()	-> AstVarScope*.  Temporary signal that was created.
-    //  AstVarScope::user2p()	-> AstVarScope*.  Temporary signal for change detects
     AstUser1InUse	m_inuser1;
-    AstUser2InUse	m_inuser2;
 
     // TYPES
     enum {  DOUBLE_OR_RATE = 10 };	// How many | per ||, Determined experimentally as best
@@ -79,10 +77,18 @@ private:
 	if (!varp->width1()) varp->v3error("Unsupported: Clock edge on non-single bit signal: "<<varp->prettyName());
 	string newvarname = ((string)"__Vclklast__"+vscp->scopep()->nameDotless()+"__"+varp->name());
         AstVar* newvarp = new AstVar(vscp->fileline(), AstVarType::MODULETEMP, newvarname, VFlagLogicPacked(), 1);
+        newvarp->noReset(true);  // Reset by below assign
 	m_modp->addStmtp(newvarp);
 	AstVarScope* newvscp = new AstVarScope(vscp->fileline(), m_scopep, newvarp);
 	vscp->user1p(newvscp);
 	m_scopep->addVarp(newvscp);
+        // Add init
+        AstNode* fromp = new AstVarRef(newvarp->fileline(), vscp, false);
+        if (v3Global.opt.xInitialEdge()) fromp = new AstNot(fromp->fileline(), fromp);
+        AstNode* newinitp = new AstAssign(vscp->fileline(),
+                                          new AstVarRef(newvarp->fileline(), newvscp, true),
+                                          fromp);
+        addToInitial(newinitp);
 	// At bottom, assign them
 	AstAssign* finalp
             = new AstAssign(vscp->fileline(),

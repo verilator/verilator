@@ -151,7 +151,8 @@ void V3CCtors::cctorsAll() {
             V3CCtorsVisitor var_reset (modp, "_ctor_var_reset");
             for (AstNode* np = modp->stmtsp(); np; np = np->nextp()) {
                 if (AstVar* varp = VN_CAST(np, Var)) {
-                    if (!varp->isIfaceParent() && !varp->isIfaceRef()) {
+                    if (!varp->isIfaceParent() && !varp->isIfaceRef()
+                        && !varp->noReset()) {
                         var_reset.add(new AstCReset(varp->fileline(), new AstVarRef(varp->fileline(), varp, true)));
                     }
                 }

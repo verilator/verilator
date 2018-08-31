@@ -1121,6 +1121,7 @@ private:
     bool	m_isPullup:1;	// Tri1
     bool	m_isIfaceParent:1;	// dtype is reference to interface present in this module
     bool        m_isDpiOpenArray:1;     // DPI import open array
+    bool        m_noReset:1;    // Do not do automated reset/randomization
     bool	m_noSubst:1;	// Do not substitute out references
     bool	m_trace:1;	// Trace this variable
     AstVarAttrClocker m_attrClocker;
@@ -1135,7 +1136,8 @@ private:
 	m_funcLocal=false; m_funcReturn=false;
 	m_attrClockEn=false; m_attrScBv=false; m_attrIsolateAssign=false; m_attrSFormat=false;
 	m_fileDescr=false; m_isConst=false; m_isStatic=false; m_isPulldown=false; m_isPullup=false;
-        m_isIfaceParent=false; m_isDpiOpenArray=false; m_noSubst=false; m_trace=false;
+        m_isIfaceParent=false; m_isDpiOpenArray=false;
+        m_noReset=false; m_noSubst=false; m_trace=false;
         m_attrClocker=AstVarAttrClocker::CLOCKER_UNKNOWN;
     }
 public:
@@ -1234,6 +1236,8 @@ public:
     void	funcReturn(bool flag) { m_funcReturn = flag; }
     void isDpiOpenArray(bool flag) { m_isDpiOpenArray=flag; }
     bool isDpiOpenArray() const { return m_isDpiOpenArray; }
+    void noReset(bool flag) { m_noReset=flag; }
+    bool noReset() const { return m_noReset; }
     void noSubst(bool flag) { m_noSubst=flag; }
     bool noSubst() const { return m_noSubst; }
     void trace(bool flag) { m_trace=flag; }
@@ -5669,7 +5673,7 @@ public:
 
 
 class AstCReset : public AstNodeStmt {
-    //Reset variable at startup
+    // Reset variable at startup
 public:
     AstCReset(FileLine* fl, AstNode* exprsp)
 	: AstNodeStmt(fl) {

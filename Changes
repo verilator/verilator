@@ -29,6 +29,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix clocker attributes to not propagate on concats. [John Coiner]
 
+****  Fix first clock edge and --x-initial-edge, bug1327. [Rupert Swarbrick]
+
 
 * Verilator 3.926 2018-08-22
 

@@ -1696,9 +1696,6 @@ void EmitCImp::emitVarReset(AstVar* varp) {
 	    // with any initial block settings.
 	    if (zeroit || (v3Global.opt.xInitialEdge() && varp->isUsedClock())) {
 		puts(" = 0;\n");
-	    } else if (v3Global.opt.xInitialEdge()
-		       && (0 == varp->name().find("__Vclklast__"))) {
-		puts(" = 1;\n");
 	    } else {
 		puts(" = VL_RAND_RESET_");
 		emitIQW(varp);
