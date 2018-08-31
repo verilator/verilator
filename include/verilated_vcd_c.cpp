@@ -24,7 +24,6 @@
 #include "verilated.h"
 #include "verilated_vcd_c.h"
 
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <cerrno>

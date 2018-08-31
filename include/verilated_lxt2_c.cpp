@@ -26,7 +26,6 @@
 // Include the GTKWave implementation directly
 #include "lxt2/lxt2_write.cpp"
 
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <cerrno>
