@@ -68,7 +68,7 @@ module t (clk);
       v_arrp <= ~v_arrp;
       v_arrp_arrp <= ~v_arrp_arrp;
       v_real <= v_real + 0.1;
-      v_string <= "foo";
+      v_string <= cyc[0] ? "foo" : "bar";
       v_arr_real[0] <= v_arr_real[0] + 0.2;
       v_arr_real[1] <= v_arr_real[1] + 0.3;
       for (integer b=3; b<=4; b++) begin

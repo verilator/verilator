@@ -198,7 +198,11 @@ private:
 		       && m_traVscp->dtypep()->skipRefp() == nodep) {  // Nothing above this array
 		// Simple 1-D array, use exising V3EmitC runtime loop rather than unrolling
 		// This will put "(index)" at end of signal name for us
-		addTraceDecl(nodep->declRange(), 0);
+                if (m_traVscp->dtypep()->skipRefp()->isString()) {
+                    addIgnore("Unsupported: strings");
+                } else {
+                    addTraceDecl(nodep->declRange(), 0);
+                }
 	    } else {
 		// Unroll now, as have no other method to get right signal names
 		AstNodeDType* subtypep = nodep->subDTypep()->skipRefp();
@@ -278,7 +282,7 @@ private:
     }
     virtual void visit(AstBasicDType* nodep) {
 	if (m_traVscp) {
-	    if (nodep->keyword()==AstBasicDTypeKwd::STRING) {
+            if (nodep->isString()) {
 		addIgnore("Unsupported: strings");
 	    } else {
 		addTraceDecl(VNumRange(), 0);
