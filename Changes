@@ -31,7 +31,9 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix first clock edge and --x-initial-edge, bug1327. [Rupert Swarbrick]
 
-****  Fix compile error on tracing of string arrays, bug1338. [Iztok Jeras].
+****  Fix compile error on tracing of string arrays, bug1338. [Iztok Jeras]
+
+****  Fix number parsing with newline after radix, bug1340. [George Cuan]
 
 
 * Verilator 3.926 2018-08-22
