@@ -35,6 +35,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix number parsing with newline after radix, bug1340. [George Cuan]
 
+****  Fix string ?: conditional type resolution, bug1345. [Iztok Jeras]
+
 
 * Verilator 3.926 2018-08-22
 

@@ -358,6 +358,8 @@ private:
 	    //  the expression includes the size of the output too.
 	    if (nodep->expr1p()->isDouble() || nodep->expr2p()->isDouble()) {
 		nodep->dtypeSetDouble();
+            } else if (nodep->expr1p()->isString() || nodep->expr2p()->isString()) {
+                nodep->dtypeSetString();
 	    } else {
                 int width  = std::max(nodep->expr1p()->width(),    nodep->expr2p()->width());
                 int mwidth = std::max(nodep->expr1p()->widthMin(), nodep->expr2p()->widthMin());
