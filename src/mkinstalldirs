@@ -25,7 +25,7 @@ do
         mkdir "$pathcomp" || lasterr=$?
 
         if test ! -d "$pathcomp"; then
-  	  errstatus=$lasterr
+          errstatus=$lasterr
         fi
      fi
 

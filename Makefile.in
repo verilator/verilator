@@ -56,6 +56,7 @@ INSTALL_DATA = @INSTALL_DATA@
 MAKEINFO = makeinfo
 POD2TEXT = pod2text
 POD2LATEXFIX = $(srcdir)/src/pod2latexfix
+MKINSTALLDIRS = $(SHELL) $(srcdir)/src/mkinstalldirs
 PERL = @PERL@
 
 # Destination prefix for RPMs
@@ -124,7 +125,7 @@ DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
 	bin/verilator_includer \
 	bin/verilator_profcfunc \
 	doxygen-mainpage doxygen.config veripool-logo.png \
-	install-sh configure mkinstalldirs *.pod \
+	install-sh configure *.pod \
 	include/*.[chv]* \
 	include/*.in \
 	include/.*ignore \
@@ -133,7 +134,7 @@ DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
 	.*attributes */.*attributes  */*/.*attributes \
 	src/.*ignore src/*.in src/*.cpp src/*.[chly] \
 	src/astgen src/bisonpre src/*fix src/cppcheck_filtered \
-	src/vlcovgen \
+	src/vlcovgen src/mkinstalldirs \
 	src/.gdbinit \
 	src/*.pl src/*.pod \
 	examples/*/.*ignore examples/*/Makefile* \
@@ -297,7 +298,7 @@ VL_INST_DATA_SRCDIR_FILES = \
 	examples/*/*.[chv]*  examples/*/Makefile* \
 
 installbin:
-	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(bindir)
+	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator $(DESTDIR)$(bindir)/verilator )
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_coverage $(DESTDIR)$(bindir)/verilator_coverage )
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_gantt $(DESTDIR)$(bindir)/verilator_gantt )
@@ -305,21 +306,20 @@ installbin:
 	( cd bin ; $(INSTALL_PROGRAM) verilator_bin $(DESTDIR)$(bindir)/verilator_bin )
 	( cd bin ; $(INSTALL_PROGRAM) verilator_bin_dbg $(DESTDIR)$(bindir)/verilator_bin_dbg )
 	( cd bin ; $(INSTALL_PROGRAM) verilator_coverage_bin_dbg $(DESTDIR)$(bindir)/verilator_coverage_bin_dbg )
-	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/bin
+	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/bin
 	( cd ${srcdir}/bin ; $(INSTALL_PROGRAM) verilator_includer $(DESTDIR)$(pkgdatadir)/bin/verilator_includer )
 
 # Man files can either be part of the original kit, or built in current directory
-# So important we use $< so VPATH is searched
+# So important we use $^ so VPATH is searched
 installman: $(VL_INST_MAN_FILES)
-	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(mandir)/man1
-	cd $(srcdir) \
-	; for p in $(VL_INST_MAN_FILES) ; do \
+	$(MKINSTALLDIRS) $(DESTDIR)$(mandir)/man1
+	for p in $^ ; do \
 	  $(INSTALL_DATA) $$p $(DESTDIR)$(mandir)/man1/$$p; \
 	done
 
 installdata:
-	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/include/lxt2
-	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/include/vltstd
+	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/include/lxt2
+	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/include/vltstd
 	for p in $(VL_INST_INC_BLDDIR_FILES) ; do \
 	  $(INSTALL_DATA) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
 	done
@@ -327,15 +327,15 @@ installdata:
 	; for p in $(VL_INST_INC_SRCDIR_FILES) ; do \
 	  $(INSTALL_DATA) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
 	done
-	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/examples/hello_world_c
-	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/examples/hello_world_sc
-	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/examples/tracing_c
-	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgdatadir)/examples/tracing_sc
+	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/hello_world_c
+	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/hello_world_sc
+	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/tracing_c
+	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/tracing_sc
 	cd $(srcdir) \
 	; for p in $(VL_INST_DATA_SRCDIR_FILES) ; do \
 	  $(INSTALL_DATA) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
 	done
-	$(SHELL) ${srcdir}/mkinstalldirs $(DESTDIR)$(pkgconfigdir)
+	$(MKINSTALLDIRS) $(DESTDIR)$(pkgconfigdir)
 	$(INSTALL_DATA) verilator.pc $(DESTDIR)$(pkgconfigdir)
 
 # We don't trust rm -rf, so rmdir instead as it will fail if user put in other files
@@ -400,7 +400,7 @@ install-cadtools: dist
 	strip bin/verilator_bin*
 	strip bin/verilator_coverage_bin*
 	$(MAKE) install-cadtools-quick
-	$(SHELL) ${srcdir}/mkinstalldirs $(VERILATOR_CAD_DIR)/man/man1
+	$(MKINSTALLDIRS) $(VERILATOR_CAD_DIR)/man/man1
 	for p in $(VL_INST_MAN_FILES) ; do \
 	  $(INSTALL_DATA) $$p $(VERILATOR_CAD_DIR)/man/man1/$$p; \
 	done
@@ -413,9 +413,9 @@ ifeq ($(CFG_WITH_DEFENV),yes)
 	false
 endif
 	@echo "Install-cadtools-quick (no strip) to $(VERILATOR_CAD_DIR)"
-	$(SHELL) ${srcdir}/mkinstalldirs $(VERILATOR_CAD_DIR)/include/lxt2
-	$(SHELL) ${srcdir}/mkinstalldirs $(VERILATOR_CAD_DIR)/include/vltstd
-	$(SHELL) ${srcdir}/mkinstalldirs $(VERILATOR_CAD_DIR)/bin
+	$(MKINSTALLDIRS) $(VERILATOR_CAD_DIR)/include/lxt2
+	$(MKINSTALLDIRS) $(VERILATOR_CAD_DIR)/include/vltstd
+	$(MKINSTALLDIRS) $(VERILATOR_CAD_DIR)/bin
 	for p in $(INST_PROJ_FILES) ; do \
 	  $(INST_PROJ_CVS) $$p $(VERILATOR_CAD_DIR)/$$p; \
 	done
