@@ -235,13 +235,13 @@ void process() {
     }
 
     if (!v3Global.opt.xmlOnly()) {
-	// Expand inouts, stage 2
-	// Also simplify pin connections to always be AssignWs in prep for V3Unknown
-	V3Tristate::tristateAll(v3Global.rootp());
-
 	// Task inlining & pushing BEGINs names to variables/cells
 	// Begin processing must be after Param, before module inlining
 	V3Begin::debeginAll(v3Global.rootp());	// Flatten cell names, before inliner
+
+        // Expand inouts, stage 2
+        // Also simplify pin connections to always be AssignWs in prep for V3Unknown
+        V3Tristate::tristateAll(v3Global.rootp());
 
 	// Move assignments from X into MODULE temps.
 	// (Before flattening, so each new X variable is shared between all scopes of that module.)

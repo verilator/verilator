@@ -37,6 +37,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix string ?: conditional type resolution, bug1345. [Iztok Jeras]
 
+****  Fix duplicate symbol error on generate tri, bug1347. [Tomas Dzetkulic]
+
 
 * Verilator 3.926 2018-08-22
 
