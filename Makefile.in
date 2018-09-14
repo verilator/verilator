@@ -235,8 +235,8 @@ verilator.html: ${srcdir}/bin/verilator
 	pod2html $< >$@
 
 # PDF needs DIST variables; but having configure.ac as dependency isn't detected
-verilator.pdf: ${srcdir}/bin/verilator Makefile
-	pod2latex --full --out verilator.tex ${srcdir}/bin/verilator
+verilator.pdf: ${srcdir}/bin/verilator Makefile $(POD2LATEXFIX)
+	pod2latex --full --out verilator.tex $<
 	$(PERL) $(POD2LATEXFIX) "$(DISTTITLE)" "${DISTDATE}" < verilator.tex > verilator2.tex
 	mv verilator2.tex verilator.tex
 	pdflatex verilator.tex
@@ -251,8 +251,8 @@ README.html: README.pod
 	pod2html $< >$@
 
 # PDF needs DIST variables; but having configure.ac as dependency isn't detected
-README.pdf: README.pod Makefile
-	pod2latex --full --out README.tex README.pod
+README.pdf: README.pod Makefile $(POD2LATEXFIX)
+	pod2latex --full --out README.tex $<
 	$(PERL) $(POD2LATEXFIX) "$(DISTTITLE) README File" "${DISTDATE}" < README.tex > README2.tex
 	mv README2.tex README.tex
 	pdflatex README.tex
@@ -267,8 +267,8 @@ internals.html: internals.pod
 	pod2html $< >$@
 
 # PDF needs DIST variables; but having configure.ac as dependency isn't detected
-internals.pdf: internals.pod Makefile
-	pod2latex --full --out internals.tex internals.pod
+internals.pdf: internals.pod Makefile $(POD2LATEXFIX)
+	pod2latex --full --out internals.tex $<
 	$(PERL) $(POD2LATEXFIX) "$(DISTTITLE) Internals Manual" "${DISTDATE}" < internals.tex > internals2.tex
 	mv internals2.tex internals.tex
 	pdflatex internals.tex
