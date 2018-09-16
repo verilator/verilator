@@ -124,7 +124,7 @@ DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
 	bin/verilator_gantt \
 	bin/verilator_includer \
 	bin/verilator_profcfunc \
-	doxygen-mainpage doxygen.config veripool-logo.png \
+	doxygen-mainpage doxygen.config verilator_logo.png \
 	install-sh configure *.pod \
 	include/*.[chv]* \
 	include/*.in \

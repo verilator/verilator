@@ -31,8 +31,8 @@ include/verilated.mk$
 test_regress/.gdbinit$
 config.cache$
 config.status$
-verilator.log
-verilator.tex
+verilator\.log
+verilator\.tex
 verilator.pc$
 verilator_bin.*
 verilator_coverage_bin.*
