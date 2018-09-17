@@ -387,7 +387,7 @@ private:
     typedef vl_unordered_set<const T_Elem*> NeedRescoreSet;
     class CmpElems {
     public:
-        bool operator() (const T_Elem* const& ap, const T_Elem* const& bp) {
+        bool operator() (const T_Elem* const& ap, const T_Elem* const& bp) const {
             T_ElemCompare cmp;
             return cmp.operator()(*ap, *bp);
         }
