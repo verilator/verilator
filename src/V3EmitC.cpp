@@ -1875,7 +1875,7 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
 		}
 	    }
 	    ofp()->printf(   "vluint64_t __Vcheckval = VL_ULL(0x%" VL_PRI64 "x);\n",
-			     hash.digestUInt64());
+                             (vluint64_t)hash.digestUInt64());
 	    if (de) {
 		puts("os.readAssert(__Vcheckval);\n");
 	    } else {

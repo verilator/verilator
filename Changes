@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.003 devel
 
+***   Fix Mac OSX 10.13.6 / LLVM 9.1  compile issues, bug1348. [Kevin Kiningham]
+
 
 * Verilator 4.002 2018-09-16
 

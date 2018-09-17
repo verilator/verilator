@@ -234,7 +234,6 @@ vluint64_t vl_rand64() VL_MT_SAFE {
     if (VL_UNLIKELY(!t_seeded)) {
 	t_seeded = true;
 	{
-            long seedval;
 	    VerilatedLockGuard lock(s_mutex);
             t_state[0] = (((vluint64_t)vl_sys_rand32())<<32
                           ^ ((vluint64_t)vl_sys_rand32()));

@@ -61,8 +61,7 @@ private:
         size_t operator() (const AstSenTree* kp) const {
             return V3Hashed::uncachedHash(kp).fullValue();
         }
-    private:
-        VL_UNCOPYABLE(HashSenTree);
+	// Copying required for OSX's libc++
     };
 
     class EqSenTree {
@@ -71,8 +70,7 @@ private:
         bool operator() (const AstSenTree* ap, const AstSenTree* bp) const {
             return ap->sameTree(bp);
         }
-    private:
-        VL_UNCOPYABLE(EqSenTree);
+	// Copying required for OSX's libc++
     };
 
     // MEMBERS
