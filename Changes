@@ -6,6 +6,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Fix Mac OSX 10.13.6 / LLVM 9.1  compile issues, bug1348. [Kevin Kiningham]
 
+***   Fix MinGW compile issues, msg2636. [HyungKi Jeong]
 
 * Verilator 4.002 2018-09-16
 

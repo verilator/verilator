@@ -189,6 +189,19 @@ void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
 }
 
 //######################################################################
+// METHODS (random)
+
+vluint64_t V3Os::rand64(vluint64_t* statep) {
+    // Xoroshiro128+ algorithm
+    vluint64_t result = statep[0] + statep[1];
+    statep[1] ^= statep[0];
+    statep[0] = (((statep[0] << 55) | (statep[0] >> 9))
+                 ^ statep[1] ^ (statep[1] << 14));
+    statep[1] = (statep[1] << 36) | (statep[1] >> 28);
+    return result;
+}
+
+//######################################################################
 // METHODS (performance)
 
 uint64_t V3Os::timeUsecs() {

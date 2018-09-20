@@ -347,7 +347,7 @@ private:
     }
     void go() {
         // Generate a pseudo-random graph
-        uint16_t rngState[3] = { 0xdead, 0xbeef, 0xf000 };
+        vluint64_t rngState[2] = {VL_ULL(0x12345678), VL_ULL(0x9abcdef0)};
         // Create 50 vertices
         for (unsigned i = 0; i < 50; ++i) {
             m_vx[i] = new V3GraphVertex(&m_graph);
@@ -355,8 +355,8 @@ private:
         // Create 250 edges at random. Edges must go from
         // lower-to-higher index vertices, so we get a DAG.
         for (unsigned i = 0; i < 250; ++i) {
-            unsigned idx1 = nrand48(rngState) % 50;
-            unsigned idx2 = nrand48(rngState) % 50;
+            unsigned idx1 = V3Os::rand64(rngState) % 50;
+            unsigned idx2 = V3Os::rand64(rngState) % 50;
             if (idx1 > idx2) {
                 new V3GraphEdge(&m_graph, m_vx[idx2], m_vx[idx1], 1);
             } else if (idx2 > idx1) {
