@@ -3731,6 +3731,17 @@ Change this to:
 Verilator doesn't do this conversion for you, as some more complicated
 cases would result in simulator mismatches.
 
+=item TICKCOUNT
+
+Warns that the number of ticks to delay a $past variable is greater than
+10.  At present Verilator effectively creates a flop for each delayed
+signals, and as such any large counts may lead to large design size
+increases.
+
+Ignoring this warning will only slow simulations, it will simulate
+correctly.
+
+
 =item UNDRIVEN
 
 Warns that the specified signal is never sourced.  Verilator is fairly

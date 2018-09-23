@@ -94,6 +94,7 @@ public:
 	STMTDLY,	// Delayed statement
 	SYMRSVDWORD,	// Symbol is Reserved Word
 	SYNCASYNCNET,	// Mixed sync + async reset
+        TICKCOUNT,      // Too large tick count
 	UNDRIVEN,	// No drivers
 	UNOPT,		// Unoptimizable block
 	UNOPTFLAT,	// Unoptimizable block after flattening
@@ -140,6 +141,7 @@ public:
 	    "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY",
 	    "REALCVT", "REDEFMACRO",
 	    "SELRANGE", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
+            "TICKCOUNT",
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
             "UNPACKED", "UNSIGNED", "UNUSED",
 	    "USERERROR", "USERFATAL", "USERINFO", "USERWARN",

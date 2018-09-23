@@ -444,6 +444,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$low"		{ FL; return yD_LOW; }
   "$onehot"		{ FL; return yD_ONEHOT; }
   "$onehot0"		{ FL; return yD_ONEHOT0; }
+  "$past"		{ FL; return yD_PAST; }
   "$right"		{ FL; return yD_RIGHT; }
   "$size"		{ FL; return yD_SIZE; }
   "$unpacked_dimensions" { FL; return yD_UNPACKED_DIMENSIONS; }

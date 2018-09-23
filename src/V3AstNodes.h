@@ -2155,7 +2155,7 @@ public:
     //
     virtual void dump(std::ostream& str);
     AstSenTree* sensesp() const { return VN_CAST(op1p(), SenTree); }  // op1 = Sensitivity list
-    AstNode*	bodysp() 	const { return op2p(); }	// op2 = Statements to evaluate
+    AstNode* bodysp() const { return op2p(); }  // op2 = Statements to evaluate
     void addStmtp(AstNode* nodep) { addOp2p(nodep); }
     VAlwaysKwd keyword() const { return m_keyword; }
     // Special accessors
@@ -5191,6 +5191,30 @@ public:
         out.setDouble(hypot(lhs.toDouble(), rhs.toDouble())); }
     virtual string emitVerilog() { return "%f$hypot(%l,%r)"; }
     virtual string emitC() { return "hypot(%li,%ri)"; }
+};
+
+class AstPast : public AstNodeMath {
+    // Verilog $past
+    // Parents: math
+    // Children: expression
+public:
+    AstPast(FileLine* fl, AstNode* exprp, AstNode* ticksp) : AstNodeMath(fl) {
+        addOp1p(exprp);
+        addNOp2p(ticksp);
+    }
+    ASTNODE_NODE_FUNCS(Past)
+    virtual string emitVerilog() { V3ERROR_NA; return ""; }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { V3ERROR_NA; }
+    virtual string emitC() { V3ERROR_NA; return "";}
+    virtual string emitSimpleOperator() { V3ERROR_NA; return "";}
+    virtual bool cleanOut() { V3ERROR_NA; return "";}
+    virtual int instrCount() const { return widthInstrs(); }
+    AstNode* exprp() const { return op1p(); }  // op1 = expression
+    AstNode* ticksp() const { return op2p(); }  // op2 = ticks or NULL means 1
+    AstSenTree* sentreep() const { return VN_CAST(op4p(), SenTree); }  // op4 = clock domain
+    void sentreep(AstSenTree* sentreep) { addOp4p(sentreep); }  // op4 = clock domain
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const { return true; }
 };
 
 class AstPattern : public AstNodeMath {

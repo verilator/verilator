@@ -45,6 +45,7 @@ private:
     // STATE
     AstNodeModule*	m_modp;		// Last module
     AstBegin*	m_beginp;	// Last begin
+    unsigned    m_modPastNum;   // Module past numbering
     V3Double0	m_statAsCover;	// Statistic tracking
     V3Double0	m_statAsPsl;	// Statistic tracking
     V3Double0	m_statAsFull;	// Statistic tracking
@@ -185,6 +186,7 @@ private:
 	pushDeletep(nodep); VL_DANGLING(nodep);
     }
 
+    // VISITORS
     virtual void visit(AstIf* nodep) {
 	if (nodep->user1SetOnce()) return;
 	if (nodep->uniquePragma() || nodep->unique0Pragma()) {
@@ -244,7 +246,7 @@ private:
 	}
     }
 
-    // VISITORS  //========== Case assertions
+    //========== Case assertions
     virtual void visit(AstCase* nodep) {
         iterateChildren(nodep);
 	if (!nodep->user1SetOnce()) {
@@ -302,7 +304,38 @@ private:
 	}
     }
 
-    // VISITORS  //========== Statements
+    //========== Past
+    virtual void visit(AstPast* nodep) {
+        iterateChildren(nodep);
+        uint32_t ticks = 1;
+        if (nodep->ticksp()) {
+            if (!VN_IS(nodep->ticksp(), Const)) nodep->v3fatalSrc("Expected constant ticks, checked in V3Width");
+            ticks = VN_CAST(nodep->ticksp(), Const)->toUInt();
+        }
+        if (ticks<1) nodep->v3fatalSrc("0 tick should have been checked in V3Width");
+        AstNode* inp = nodep->exprp()->unlinkFrBack();
+        AstVar* invarp = NULL;
+        AstSenTree* sentreep = nodep->sentreep(); sentreep->unlinkFrBack();
+        AstAlways* alwaysp = new AstAlways(nodep->fileline(), VAlwaysKwd::ALWAYS,
+                                           sentreep, NULL);
+        m_modp->addStmtp(alwaysp);
+        for (uint32_t i=0; i<ticks; ++i) {
+            AstVar* outvarp = new AstVar(nodep->fileline(), AstVarType::MODULETEMP,
+                                         "_Vpast_"+cvtToStr(m_modPastNum++)+"_"+cvtToStr(i),
+                                         inp->dtypep());
+            m_modp->addStmtp(outvarp);
+            AstNode* assp = new AstAssignDly(nodep->fileline(),
+                                             new AstVarRef(nodep->fileline(), outvarp, true),
+                                             inp);
+            alwaysp->addStmtp(assp);
+            //if (debug()>-9) assp->dumpTree(cout, "-ass: ");
+            invarp = outvarp;
+            inp = new AstVarRef(nodep->fileline(), invarp, false);
+        }
+        nodep->replaceWith(inp);
+    }
+
+    //========== Statements
     virtual void visit(AstDisplay* nodep) {
         iterateChildren(nodep);
 	// Replace the special types with standard text
@@ -330,6 +363,7 @@ private:
 
     virtual void visit(AstNodeModule* nodep) {
 	m_modp = nodep;
+        m_modPastNum = 0;
 	//
         iterateChildren(nodep);
 	// Reset defaults
@@ -354,6 +388,7 @@ public:
     explicit AssertVisitor(AstNetlist* nodep) {
 	m_beginp = NULL;
 	m_modp = NULL;
+        m_modPastNum = 0;
 	// Process
         iterate(nodep);
     }

@@ -332,6 +332,15 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	}
 	putqs(nodep,"end\n");
     }
+    virtual void visit(AstPast* nodep) {
+        putfs(nodep, "$past(");
+        iterateAndNextNull(nodep->exprp());
+        if (nodep->ticksp()) {
+            puts(",");
+            iterateAndNextNull(nodep->ticksp());
+        }
+        puts(")");
+    }
     virtual void visit(AstReturn* nodep) {
 	putfs(nodep,"return ");
         iterateAndNextNull(nodep->lhsp());

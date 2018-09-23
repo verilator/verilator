@@ -485,6 +485,7 @@ class AstSenTree;
 %token<fl>		yD_LOW		"$low"
 %token<fl>		yD_ONEHOT	"$onehot"
 %token<fl>		yD_ONEHOT0	"$onehot0"
+%token<fl>		yD_PAST		"$past"
 %token<fl>		yD_POW		"$pow"
 %token<fl>		yD_RANDOM	"$random"
 %token<fl>		yD_READMEMB	"$readmemb"
@@ -2776,8 +2777,12 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_LOW '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_LOW,$3,$5); }
 	|	yD_ONEHOT '(' expr ')'			{ $$ = new AstOneHot($1,$3); }
 	|	yD_ONEHOT0 '(' expr ')'			{ $$ = new AstOneHot0($1,$3); }
+	|	yD_PAST '(' expr ')'			{ $$ = new AstPast($1,$3, NULL); }
+	|	yD_PAST '(' expr ',' expr ')'		{ $$ = new AstPast($1,$3, $5); }
+	|	yD_PAST '(' expr ',' expr ',' expr ')'		{ $1->v3error("Unsupported: $past expr2 and clock arguments"); $$ = $3; }
+	|	yD_PAST '(' expr ',' expr ',' expr ',' expr')'	{ $1->v3error("Unsupported: $past expr2 and clock arguments"); $$ = $3; }
 	|	yD_POW '(' expr ',' expr ')'		{ $$ = new AstPowD($1,$3,$5); }
-	|	yD_RANDOM '(' expr ')'			{ $1->v3error("Unsupported: Seeding $random doesn't map to C++, use $c(\"srand\")"); }
+	|	yD_RANDOM '(' expr ')'			{ $1->v3error("Unsupported: Seeding $random doesn't map to C++, use $c(\"srand\")"); $$ = NULL; }
 	|	yD_RANDOM parenE			{ $$ = new AstRand($1); }
 	|	yD_REALTIME parenE			{ $$ = new AstTimeD($1); }
 	|	yD_REALTOBITS '(' expr ')'		{ $$ = new AstRealToBits($1,$3); }

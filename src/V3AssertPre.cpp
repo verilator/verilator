@@ -44,9 +44,11 @@ private:
     // NODE STATE/TYPES
     // STATE
     // Reset each module:
-    AstNodeSenItem*	m_seniDefaultp;	// Default sensitivity (from AstDefClock)
+    AstNodeSenItem* m_seniDefaultp;  // Default sensitivity (from AstDefClock)
     // Reset each assertion:
-    AstNodeSenItem*	m_senip;	// Last sensitivity
+    AstNodeSenItem* m_senip;  // Last sensitivity
+    // Reset each always:
+    AstNodeSenItem* m_seniAlwaysp;  // Last sensitivity in always
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -55,7 +57,9 @@ private:
 	// Create sentree based on clocked or default clock
 	// Return NULL for always
 	AstSenTree* newp = NULL;
-	AstNodeSenItem* senip = m_senip ? m_senip : m_seniDefaultp;
+        AstNodeSenItem* senip = m_senip;
+        if (!senip) senip = m_seniDefaultp;
+        if (!senip) senip = m_seniAlwaysp;
 	if (!senip) {
 	    nodep->v3error("Unsupported: Unclocked assertion");
 	    newp = new AstSenTree(nodep->fileline(), NULL);
@@ -68,7 +72,8 @@ private:
 	m_senip = NULL;
     }
 
-    // VISITORS  //========== Statements
+    // VISITORS
+    //========== Statements
     virtual void visit(AstClocking* nodep) {
 	UINFO(8,"   CLOCKING"<<nodep<<endl);
 	// Store the new default clock, reset on new module
@@ -81,16 +86,31 @@ private:
 	}
 	pushDeletep(nodep); VL_DANGLING(nodep);
     }
+    virtual void visit(AstAlways* nodep) {
+        iterateAndNextNull(nodep->sensesp());
+        if (nodep->sensesp()) {
+            m_seniAlwaysp = nodep->sensesp()->sensesp();
+        }
+        iterateAndNextNull(nodep->bodysp());
+        m_seniAlwaysp = NULL;
+    }
 
     virtual void visit(AstNodePslCoverOrAssert* nodep) {
 	if (nodep->sentreep()) return;  // Already processed
 	clearAssertInfo();
+        // Find PslClocking's burried under nodep->exprsp
         iterateChildren(nodep);
 	nodep->sentreep(newSenTree(nodep));
 	clearAssertInfo();
     }
-    virtual void visit(AstPslClocked* nodep) {
+    virtual void visit(AstPast* nodep) {
+        if (nodep->sentreep()) return;  // Already processed
         iterateChildren(nodep);
+        nodep->sentreep(newSenTree(nodep));
+    }
+    virtual void visit(AstPslClocked* nodep) {
+        // No need to iterate the body, once replace will get iterated
+        iterateAndNextNull(nodep->sensesp());
 	if (m_senip) {
 	    nodep->v3error("Unsupported: Only one PSL clock allowed per assertion");
 	}
@@ -120,6 +140,7 @@ public:
     // CONSTRUCTORS
     explicit AssertPreVisitor(AstNetlist* nodep) {
 	m_seniDefaultp = NULL;
+        m_seniAlwaysp = NULL;
 	clearAssertInfo();
 	// Process
         iterate(nodep);

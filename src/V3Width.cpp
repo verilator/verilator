@@ -798,6 +798,26 @@ private:
 	// We don't size the constant until we commit the widths, as need parameters
 	// to remain unsized, and numbers to remain unsized to avoid backp() warnings
     }
+    virtual void visit(AstPast* nodep) {
+        if (m_vup->prelim()) {
+            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
+            nodep->dtypeFrom(nodep->exprp());
+            if (nodep->ticksp()) {
+                iterateCheckSizedSelf(nodep, "Ticks", nodep->ticksp(), SELF, BOTH);
+                V3Const::constifyParamsEdit(nodep->ticksp());  // ticksp may change
+                const AstConst* constp = VN_CAST(nodep->ticksp(), Const);
+                if (!constp || constp->toSInt() < 1) {
+                    nodep->v3error("$past tick value must be constant and >= 1 (IEEE 2017 16.9.3)");
+                    nodep->ticksp()->unlinkFrBack()->deleteTree();
+                } else {
+                    if (constp->toSInt() > 10) {
+                        nodep->v3warn(TICKCOUNT, "$past tick value of "<<constp->toSInt()
+                                      <<" may have a large performance cost");
+                    }
+                }
+            }
+        }
+    }
     virtual void visit(AstRand* nodep) {
 	if (m_vup->prelim()) {
 	    nodep->dtypeSetSigned32();  // Says the spec
