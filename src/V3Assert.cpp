@@ -145,6 +145,10 @@ private:
             // than the sim-killing else clause:
             ifp->branchPred(AstBranchPred::BP_LIKELY);
             bodysp = newIfAssertOn(ifp);
+        } else if (VN_IS(nodep, PslRestrict)) {
+            // IEEE says simulator ignores these
+            pushDeletep(nodep->unlinkFrBack()); VL_DANGLING(nodep);
+            return;
 	} else {
 	    nodep->v3fatalSrc("Unknown node type");
 	}

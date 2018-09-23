@@ -406,6 +406,9 @@ private:
     virtual void visit(AstPslCover* nodep) {
 	visitIterateNoValueMod(nodep);
     }
+    virtual void visit(AstPslRestrict* nodep) {
+        visitIterateNoValueMod(nodep);
+    }
 
     virtual void visit(AstNode* nodep) {
 	// Default: Just iterate

@@ -491,6 +491,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "pure"		{ FL; return yPURE; }
   "rand"		{ FL; return yRAND; }
   "randc"		{ FL; return yRANDC; }
+  "restrict"		{ FL; return yRESTRICT; }
   "return"		{ FL; return yRETURN; }
   "shortint"		{ FL; return ySHORTINT; }
   "static"		{ FL; return ySTATIC; }

@@ -399,6 +399,7 @@ class AstSenTree;
 %token<fl>		yREALTIME	"realtime"
 %token<fl>		yREG		"reg"
 %token<fl>		yREPEAT		"repeat"
+%token<fl>		yRESTRICT	"restrict"
 %token<fl>		yRETURN		"return"
 %token<fl>		yRNMOS		"rnmos"
 %token<fl>		yRPMOS		"rpmos"
@@ -3745,6 +3746,8 @@ concurrent_assertion_statement<nodep>:	// ==IEEE: concurrent_assertion_statement
 		yASSERT yPROPERTY '(' property_spec ')' elseStmtBlock	{ $$ = new AstPslAssert($1,$4,$6); }
 	//				// IEEE: cover_property_statement
 	|	yCOVER yPROPERTY '(' property_spec ')' stmtBlock	{ $$ = new AstPslCover($1,$4,$6); }
+	//			// IEEE: restrict_property_statement
+	|	yRESTRICT yPROPERTY '(' property_spec ')' ';'		{ $$ = new AstPslRestrict($1,$4); }
 	;
 
 elseStmtBlock<nodep>:	// Part of concurrent_assertion_statement

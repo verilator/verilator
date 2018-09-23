@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support $past. [Dan Gisselquist]
 
+***   Support restrict, bug1350. [Clifford Wolf]
+
 ***   Fix Mac OSX 10.13.6 / LLVM 9.1  compile issues, bug1348. [Kevin Kiningham]
 
 ***   Fix MinGW compile issues, msg2636. [HyungKi Jeong]

@@ -45,6 +45,8 @@ module Test
 
    assert property (@(posedge clk) cyc < 100);
 
+   restrict property (@(posedge clk) cyc==1);  // Ignored in simulators
+
 // Unclocked is not supported:
 //   assert property (cyc != 6);
 

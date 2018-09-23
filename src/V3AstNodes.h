@@ -5346,6 +5346,13 @@ public:
     AstNode* stmtsp() const { return op4p(); }  // op4 = statements
 };
 
+class AstPslAssert : public AstNodePslCoverOrAssert {
+public:
+    ASTNODE_NODE_FUNCS(PslAssert)
+    AstPslAssert(FileLine* fl, AstNode* propp, AstNode* stmtsp, const string& name="")
+        : AstNodePslCoverOrAssert(fl, propp, stmtsp, name) {}
+};
+
 class AstPslCover : public AstNodePslCoverOrAssert {
 public:
     ASTNODE_NODE_FUNCS(PslCover)
@@ -5355,11 +5362,11 @@ public:
     void coverincp(AstCoverInc* nodep) { addOp3p(nodep); }  // op3 = coverage node
 };
 
-class AstPslAssert : public AstNodePslCoverOrAssert {
+class AstPslRestrict : public AstNodePslCoverOrAssert {
 public:
-    ASTNODE_NODE_FUNCS(PslAssert)
-    AstPslAssert(FileLine* fl, AstNode* propp, AstNode* stmtsp, const string& name="")
-        : AstNodePslCoverOrAssert(fl, propp, stmtsp, name) {}
+    ASTNODE_NODE_FUNCS(PslRestrict)
+    AstPslRestrict(FileLine* fl, AstNode* propp)
+        : AstNodePslCoverOrAssert(fl, propp, NULL, "") {}
 };
 
 //======================================================================
