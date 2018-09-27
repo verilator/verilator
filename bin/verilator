@@ -1801,34 +1801,45 @@ For -cc and -sc mode, it also creates:
 
     {prefix}.cpp                        // Top level C++ file
     {prefix}.h                          // Top level header
+    {prefix}__Slow{__n}.cpp             // Constructors and infrequent routines
+    {prefix}{__n}.cpp                   // Additional top C++ files (--output-split)
     {prefix}{each_verilog_module}.cpp   // Lower level internal C++ files
     {prefix}{each_verilog_module}.h     // Lower level internal header files
+    {prefix}{each_verilog_module}{__n}.cpp   // Additional lower C++ files (--output-split)
 
-In certain optimization modes, it also creates:
+In certain debug and other modes, it also creates:
 
+    {prefix}.xml                        // XML tree information (--xml)
+    {prefix}__Dpi.cpp                   // DPI import and export wrappers
     {prefix}__Dpi.h                     // DPI import and export declarations
     {prefix}__Inlines.h                 // Inline support functions
-    {prefix}__Slow.cpp                  // Constructors and infrequent routines
     {prefix}__Syms.cpp                  // Global symbol table C++
     {prefix}__Syms.h                    // Global symbol table header
-    {prefix}__Trace.cpp                 // Wave file generation code (--trace)
+    {prefix}__Trace__Slow{__n}.cpp      // Wave file generation code (--trace)
+    {prefix}__Trace{__n}.cpp            // Wave file generation code (--trace)
     {prefix}__cdc.txt                   // Clock Domain Crossing checks (--cdc)
     {prefix}__stats.txt                 // Statistics (--stats)
 
 It also creates internal files that can be mostly ignored:
 
-    {each_verilog_module}.vpp           // Post-processed verilog (--debug)
-    {prefix}.flags_vbin                 // Verilator dependencies
-    {prefix}.flags_vpp                  // Pre-processor dependencies
+    {mod_prefix}_{each_verilog_module}{__n}.vpp  // Post-processed verilog
+    {prefix}__ver.d                     // Make dependencies (-MMD)
     {prefix}__verFiles.dat              // Timestamps for skip-identical
-    {prefix}{misc}.d                    // Make dependencies (-MMD)
     {prefix}{misc}.dot                  // Debugging graph files (--debug)
     {prefix}{misc}.tree                 // Debugging files (--debug)
 
-After running Make, the C++ compiler should produce the following:
+After running Make, the C++ compiler may produce the following:
 
+    verilated{misc}.d                   // Intermediate dependencies
+    verilated{misc}.o                   // Intermediate objects
+    {mod_prefix}{misc}.d                // Intermediate dependencies
+    {mod_prefix}{misc}.o                // Intermediate objects
     {prefix}                            // Final executable (w/--exe argument)
     {prefix}__ALL.a                     // Library of all Verilated objects
+    {prefix}__ALLboth.cpp               // Include of classes for single compile
+    {prefix}__ALLcls.cpp                // Include of user classes for single compile
+    {prefix}__ALLsup.cpp                // Include of support files for single compile
+    {prefix}{misc}.d                    // Intermediate dependencies
     {prefix}{misc}.o                    // Intermediate objects
 
 
