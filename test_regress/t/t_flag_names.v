@@ -8,6 +8,7 @@ module t;
 endmodule
 
 module sub;
+   //verilator no_inline_module
    string scope;
    initial begin
       scope = $sformatf("%m");
