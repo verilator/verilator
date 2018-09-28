@@ -849,6 +849,7 @@ class EmitCImp : EmitCStmts {
     // METHODS
 
     void doubleOrDetect(AstChangeDet* changep, bool& gotOne) {
+        static int s_addDoubleOr = 10;  // Determined experimentally as best
 	if (!changep->rhsp()) {
 	    if (!gotOne) gotOne = true;
 	    else puts(" | ");
@@ -857,17 +858,18 @@ class EmitCImp : EmitCStmts {
 	else {
 	    AstNode* lhsp = changep->lhsp();
 	    AstNode* rhsp = changep->rhsp();
-	    static int addDoubleOr = 10;	// Determined experimentally as best
             if (!VN_IS(lhsp, VarRef) && !VN_IS(lhsp, ArraySel)) changep->v3fatalSrc("Not ref?");
             if (!VN_IS(rhsp, VarRef) && !VN_IS(rhsp, ArraySel)) changep->v3fatalSrc("Not ref?");
-	    for (int word=0; word<changep->lhsp()->widthWords(); word++) {
+            for (int word=0;
+                 word < (changep->lhsp()->isWide() ? changep->lhsp()->widthWords() : 1);
+                 ++word) {
 		if (!gotOne) {
 		    gotOne = true;
-		    addDoubleOr = 10;	// Determined experimentally as best
+                    s_addDoubleOr = 10;
 		    puts("(");
-		} else if (--addDoubleOr == 0) {
+                } else if (--s_addDoubleOr == 0) {
 		    puts("|| (");
-		    addDoubleOr = 10;
+                    s_addDoubleOr = 10;
 		} else {
 		    puts(" | (");
 		}

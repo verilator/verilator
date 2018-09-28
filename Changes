@@ -12,6 +12,9 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Fix MinGW compile issues, msg2636. [HyungKi Jeong]
 
+***   Fix replication of 64-bit signal change detects.
+
+
 * Verilator 4.002 2018-09-16
 
 **    This is a major release.  Any patches may require major rework to apply.
