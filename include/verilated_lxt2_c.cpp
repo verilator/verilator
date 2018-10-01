@@ -24,7 +24,7 @@
 #include "verilated.h"
 #include "verilated_lxt2_c.h"
 // Include the GTKWave implementation directly
-#include "lxt2/lxt2_write.cpp"
+#include "gtkwave/lxt2_write.cpp"
 
 #include <sys/stat.h>
 #include <fcntl.h>

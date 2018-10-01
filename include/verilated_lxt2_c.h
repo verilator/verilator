@@ -25,7 +25,7 @@
 
 #include "verilatedos.h"
 #include "verilated.h"
-#include "lxt2/lxt2_write.h"
+#include "gtkwave/lxt2_write.h"
 
 #include <string>
 #include <vector>

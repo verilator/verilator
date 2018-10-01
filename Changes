@@ -8,11 +8,13 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support restrict, bug1350. [Clifford Wolf]
 
-***   Fix Mac OSX 10.13.6 / LLVM 9.1  compile issues, bug1348. [Kevin Kiningham]
+***   Rename include/lxt2 to include/gtkwave.
 
-***   Fix MinGW compile issues, msg2636. [HyungKi Jeong]
+****  Fix replication of 64-bit signal change detects.
 
-***   Fix replication of 64-bit signal change detects.
+****  Fix Mac OSX 10.13.6 / LLVM 9.1 compile issues, bug1348. [Kevin Kiningham]
+
+****  Fix MinGW compile issues, msg2636. [HyungKi Jeong]
 
 
 * Verilator 4.002 2018-09-16
