@@ -130,7 +130,7 @@ if ($#opt_tests<0) {
     foreach my $dir (@Test_Dirs) {
 	my @stats = stat($dir);  # Uniquify by inode, so different paths to same place get combined
 	next if !$stats[1] || $uniq{$stats[1]}++;
-	push @opt_tests, sort(glob ("${dir}/t_*.pl"));
+        push @opt_tests, sort(glob("${dir}/t_*.pl"));
     }
 }
 if ($#opt_tests>=2 && $opt_jobs>=2) {
@@ -1255,7 +1255,7 @@ sub _make_main {
         $fh->print("    topp->trace(tfp, 99);\n");
         $fh->print("    tfp->open(\"".$self->trace_filename."\");\n");
 	if ($self->{trace} && !$self->sc) {
-            $fh->print("    if (tfp) tfp->dump (main_time);\n");
+            $fh->print("    if (tfp) tfp->dump(main_time);\n");
 	}
 	$fh->print("#endif\n");
     }
@@ -1308,12 +1308,12 @@ sub _make_main {
     if ($self->{coverage}) {
 	$fh->print("#if VM_COVERAGE\n");
 	$fh->print("    VerilatedCov::write(\"",$self->{coverage_filename},"\");\n");
-	$fh->print("#endif //VM_COVERAGE\n");
+        $fh->print("#endif  // VM_COVERAGE\n");
     }
     if ($self->{trace}) {
 	$fh->print("#if VM_TRACE\n");
         $fh->print("    if (tfp) tfp->close();\n");
-	$fh->print("#endif //VM_TRACE\n");
+        $fh->print("#endif  // VM_TRACE\n");
     }
     $fh->print("\n");
 
@@ -1344,8 +1344,8 @@ sub _print_advance_time {
             print $fh "        ${set}eval();\n";
 	    if ($self->{trace} && !$self->sc) {
 		$fh->print("#if VM_TRACE\n");
-                $fh->print("        if (tfp) tfp->dump (main_time);\n");
-		$fh->print("#endif //VM_TRACE\n");
+                $fh->print("        if (tfp) tfp->dump(main_time);\n");
+                $fh->print("#endif  // VM_TRACE\n");
 	    }
 	}
         print $fh "        main_time += ${time};\n";

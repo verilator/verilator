@@ -227,7 +227,7 @@ void VerilatedVcd::makeNameMap() {
     for (vluint32_t ent = 0; ent< m_callbacks.size(); ent++) {
         VerilatedVcdCallInfo* cip = m_callbacks[ent];
         cip->m_code = m_nextCode;
-        (cip->m_initcb) (this, cip->m_userthis, cip->m_code);
+        (cip->m_initcb)(this, cip->m_userthis, cip->m_code);
     }
 
     // Though not speced, it's illegal to generate a vcd with signals
