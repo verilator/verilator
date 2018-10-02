@@ -40,7 +40,8 @@ class TraceFormat {
 public:
     enum en {
         VCD = 0,
-        LXT2
+        LXT2,
+        FST
     } m_e;
     inline TraceFormat(en _e = VCD) : m_e(_e) {}
     explicit inline TraceFormat(int _e) : m_e(static_cast<en>(_e)) {}
@@ -48,14 +49,16 @@ public:
     string classBase() const {
         static const char* const names[] = {
             "VerilatedVcd",
-            "VerilatedLxt2"
+            "VerilatedLxt2",
+            "VerilatedFst"
         };
         return names[m_e];
     }
     string sourceName() const {
         static const char* const names[] = {
             "verilated_vcd",
-            "verilated_lxt2"
+            "verilated_lxt2",
+            "verilated_fst"
         };
         return names[m_e];
     }

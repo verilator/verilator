@@ -1,0 +1,57 @@
+$date
+	Tue Aug 28 17:08:13 2018
+$end
+$version
+	lxt2vcd
+$end
+$timescale 1ns $end
+$scope module top $end
+$var wire 1 ! clk $end
+$scope module t $end
+$scope module biggie $end
+$var wire 1048577 " d [1048576:0] $end
+$upscope $end
+$var wire 32 # cyc [31:0] $end
+$var wire 1 ! clk $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+$dumpvars
+#0
+0!
+b0 "
+b0 #
+#10
+b1 #
+b111111101110110111111010110011100 "
+1!
+#15
+0!
+#20
+1!
+b1111111011101101111110101100111000 "
+b10 #
+#25
+0!
+#30
+1!
+b11 #
+b11111110111011011111101011001110000 "
+#35
+0!
+#40
+1!
+b111111101110110111111010110011100000 "
+b100 #
+#45
+0!
+#50
+1!
+b101 #
+b1111111011101101111110101100111000000 "
+#55
+0!
+#60
+1!
+b11111110111011011111101011001110000000 "
+b110 #

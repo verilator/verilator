@@ -1,0 +1,209 @@
+// -*- mode: C++; c-file-style: "cc-mode" -*-
+//=============================================================================
+//
+// THIS MODULE IS PUBLICLY LICENSED
+//
+// Copyright 2001-2018 by Wilson Snyder.  This program is free software;
+// you can redistribute it and/or modify it under the terms of either the GNU
+// Lesser General Public License Version 3 or the Perl Artistic License Version 2.0.
+//
+// This is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or
+// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+// for more details.
+//
+//=============================================================================
+///
+/// \file
+/// \brief C++ Tracing in FST Format
+///
+//=============================================================================
+// SPDIFF_OFF
+
+#ifndef _VERILATED_FST_C_H_
+#define _VERILATED_FST_C_H_ 1
+
+#include "verilatedos.h"
+#include "verilated.h"
+#include "gtkwave/fstapi.h"
+
+#include <string>
+#include <vector>
+#include <list>
+#include <map>
+
+class VerilatedFst;
+class VerilatedFstCallInfo;
+typedef void (*VerilatedFstCallback_t)(VerilatedFst* vcdp, void* userthis, vluint32_t code);
+
+//=============================================================================
+// VerilatedFst
+/// Base class to create a Verilator FST dump
+/// This is an internally used class - see VerilatedFstC for what to call from applications
+
+class VerilatedFst {
+    typedef std::map<vluint32_t, fstHandle> Code2SymbolType;
+    typedef std::vector<VerilatedFstCallInfo*> CallbackVec;
+private:
+    void* m_fst;
+    VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
+    bool m_fullDump;
+    char m_scopeEscape;
+    std::string m_module;
+    CallbackVec m_callbacks;  ///< Routines to perform dumping
+    Code2SymbolType m_code2symbol;
+    std::list<std::string> m_curScope;
+    // CONSTRUCTORS
+    VL_UNCOPYABLE(VerilatedFst);
+    void declSymbol(vluint32_t code, const char* name, int arraynum, uint32_t len, fstVarType vartype);
+    // helpers
+    std::vector<char> m_valueStrBuffer;
+    char* word2Str(vluint32_t newval, int bits);
+    char* quad2Str(vluint64_t newval, int bits);
+    char* array2Str(const vluint32_t *newval, int bits);
+public:
+    explicit VerilatedFst(void* fst=NULL);
+    ~VerilatedFst() { if (m_fst == NULL) { fstWriterClose(m_fst); } }
+    bool isOpen() const { return m_fst != NULL; }
+    void open(const char* filename) VL_MT_UNSAFE;
+    void flush() VL_MT_UNSAFE { fstWriterFlushContext(m_fst); }
+    void close() VL_MT_UNSAFE {
+        m_assertOne.check();
+        fstWriterClose(m_fst);
+        m_fst = NULL;
+    }
+    // void set_time_unit(const char* unit); ///< Set time units (s/ms, defaults to ns)
+    // void set_time_unit(const std::string& unit) { set_time_unit(unit.c_str()); }
+
+    // void set_time_resolution(const char* unit); ///< Set time resolution (s/ms, defaults to ns)
+    // void set_time_resolution(const std::string& unit) { set_time_resolution(unit.c_str()); }
+
+    // double timescaleToDouble(const char* unitp);
+    // std::string doubleToTimescale(double value);
+
+    /// Change character that splits scopes.  Note whitespace are ALWAYS escapes.
+    void scopeEscape(char flag) { m_scopeEscape = flag; }
+    /// Is this an escape?
+    bool isScopeEscape(char c) { return isspace(c) || c==m_scopeEscape; }
+    /// Inside dumping routines, called each cycle to make the dump
+    void dump(vluint64_t timeui);
+    /// Inside dumping routines, declare callbacks for tracings
+    void addCallback(VerilatedFstCallback_t init, VerilatedFstCallback_t full,
+                     VerilatedFstCallback_t change,
+                     void* userthis) VL_MT_UNSAFE_ONE;
+
+    /// Inside dumping routines, declare a module
+    void module(const std::string& name);
+    /// Inside dumping routines, declare a signal
+    void declBit(vluint32_t code, const char* name, int arraynum) {
+        this->declSymbol(code, name, arraynum, 1, FST_VT_VCD_WIRE);
+    }
+    void declBus(vluint32_t code, const char* name, int arraynum, int msb, int lsb) {
+        this->declSymbol(code, name, arraynum, msb - lsb + 1, FST_VT_VCD_WIRE);
+    }
+    void declDouble(vluint32_t code, const char* name, int arraynum) {
+        this->declSymbol(code, name, arraynum, 2, FST_VT_VCD_REAL);
+    }
+    void declFloat(vluint32_t code, const char* name, int arraynum) {
+        this->declSymbol(code, name, arraynum, 1, FST_VT_SV_SHORTREAL);
+    }
+    void declQuad(vluint32_t code, const char* name, int arraynum, int msb, int lsb) {
+        this->declSymbol(code, name, arraynum, msb - lsb + 1, FST_VT_VCD_WIRE);
+    }
+    void declArray(vluint32_t code, const char* name, int arraynum, int msb, int lsb) {
+        this->declSymbol(code, name, arraynum, msb - lsb + 1, FST_VT_VCD_WIRE);
+    }
+
+    /// Inside dumping routines, dump one signal if it has changed
+    void chgBit(vluint32_t code, const vluint32_t newval) {
+        fstWriterEmitValueChange(m_fst, m_code2symbol[code], newval ? "1" : "0");
+    }
+    void chgBus(vluint32_t code, const vluint32_t newval, int bits) {
+        fstWriterEmitValueChange(m_fst, m_code2symbol[code], word2Str(newval, bits));
+    }
+    void chgDouble(vluint32_t code, const double newval) {
+        double val = newval;
+        fstWriterEmitValueChange(m_fst, m_code2symbol[code], &val);
+    }
+    void chgFloat(vluint32_t code, const float newval) {
+        double val = (double)newval;
+        fstWriterEmitValueChange(m_fst, m_code2symbol[code], &val);
+    }
+    void chgQuad(vluint32_t code, const vluint64_t newval, int bits) {
+        fstWriterEmitValueChange(m_fst, m_code2symbol[code], quad2Str(newval, bits));
+    }
+    void chgArray(vluint32_t code, const vluint32_t* newval, int bits) {
+        fstWriterEmitValueChange(m_fst, m_code2symbol[code], array2Str(newval, bits));
+    }
+
+    void fullBit(vluint32_t code, const vluint32_t newval) { chgBit(code, newval); }
+    void fullBus(vluint32_t code, const vluint32_t newval, int bits) { chgBus(code, newval, bits); }
+    void fullDouble(vluint32_t code, const double newval) { chgDouble(code, newval); }
+    void fullFloat(vluint32_t code, const float newval) { chgFloat(code, newval); }
+    void fullQuad(vluint32_t code, const vluint64_t newval, int bits) { chgQuad(code, newval, bits); }
+    void fullArray(vluint32_t code, const vluint32_t* newval, int bits) { chgArray(code, newval, bits); }
+
+    void declTriBit   (vluint32_t code, const char* name, int arraynum);
+    void declTriBus   (vluint32_t code, const char* name, int arraynum, int msb, int lsb);
+    void declTriQuad  (vluint32_t code, const char* name, int arraynum, int msb, int lsb);
+    void declTriArray (vluint32_t code, const char* name, int arraynum, int msb, int lsb);
+    void fullTriBit(vluint32_t code, const vluint32_t newval, const vluint32_t newtri);
+    void fullTriBus(vluint32_t code, const vluint32_t newval, const vluint32_t newtri, int bits);
+    void fullTriQuad(vluint32_t code, const vluint64_t newval, const vluint32_t newtri, int bits);
+    void fullTriArray(vluint32_t code, const vluint32_t* newvalp, const vluint32_t* newtrip, int bits);
+    void fullBitX(vluint32_t code);
+    void fullBusX(vluint32_t code, int bits);
+    void fullQuadX(vluint32_t code, int bits);
+    void fullArrayX(vluint32_t code, int bits);
+    void chgTriBit(vluint32_t code, const vluint32_t newval, const vluint32_t newtri);
+    void chgTriBus(vluint32_t code, const vluint32_t newval, const vluint32_t newtri, int bits);
+    void chgTriQuad(vluint32_t code, const vluint64_t newval, const vluint32_t newtri, int bits);
+    void chgTriArray(vluint32_t code, const vluint32_t* newvalp, const vluint32_t* newtrip, int bits);
+};
+
+//=============================================================================
+// VerilatedFstC
+/// Create a FST dump file in C standalone (no SystemC) simulations.
+/// Also derived for use in SystemC simulations.
+/// Thread safety: Unless otherwise indicated, every function is VL_MT_UNSAFE_ONE
+
+class VerilatedFstC {
+    VerilatedFst m_sptrace;  ///< Trace file being created
+
+    // CONSTRUCTORS
+    VL_UNCOPYABLE(VerilatedFstC);
+public:
+    explicit VerilatedFstC(void* filep=NULL) : m_sptrace(filep) {}
+    ~VerilatedFstC() {}
+public:
+    // ACCESSORS
+    /// Is file open?
+    bool isOpen() const { return m_sptrace.isOpen(); }
+    // METHODS
+    /// Open a new FST file
+    void open(const char* filename) VL_MT_UNSAFE_ONE { m_sptrace.open(filename); }
+    /// Close dump
+    void close() VL_MT_UNSAFE_ONE { m_sptrace.close(); }
+    /// Flush dump
+    void flush() VL_MT_UNSAFE_ONE { m_sptrace.flush(); }
+    /// Write one cycle of dump data
+    void dump(vluint64_t timeui) { m_sptrace.dump(timeui); }
+    /// Write one cycle of dump data - backward compatible and to reduce
+    /// conversion warnings.  It's better to use a vluint64_t time instead.
+    void dump(double timestamp) { dump(static_cast<vluint64_t>(timestamp)); }
+    void dump(vluint32_t timestamp) { dump(static_cast<vluint64_t>(timestamp)); }
+    void dump(int timestamp) { dump(static_cast<vluint64_t>(timestamp)); }
+    /// Set time units (s/ms, defaults to ns)
+    /// See also VL_TIME_PRECISION, and VL_TIME_MULTIPLIER in verilated.h
+    void set_time_unit(const char* unit) { /* TODO */ }
+    void set_time_unit(const std::string& unit) { set_time_unit(unit.c_str()); }
+    /// Set time resolution (s/ms, defaults to ns)
+    /// See also VL_TIME_PRECISION, and VL_TIME_MULTIPLIER in verilated.h
+    void set_time_resolution(const char* unit) { /* TODO */ }
+    void set_time_resolution(const std::string& unit) { set_time_resolution(unit.c_str()); }
+
+    /// Internal class access
+    inline VerilatedFst* spTrace() { return &m_sptrace; };
+};
+
+#endif  // guard

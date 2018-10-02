@@ -81,7 +81,7 @@ instead.)
 To use Verilator you will need the C<perl>, C<make> (or C<gmake>), and
 C<g++> (or C<clang>) packages.
 
-To use Verilator LXT2 tracing you will need the C<gtkwave> and C<libgz> (on
+To use Verilator LXT2 or FST tracing you will need the C<gtkwave> and C<libgz> (on
 Ubuntu C<zlibc> C<zlib1g> C<zlib1g-dev>) packages installed.
 
 To compile Verilator in addition to the above you need the C<flex>,

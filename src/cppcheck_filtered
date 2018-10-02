@@ -71,13 +71,10 @@ sub process {
 	next if $line =~ m!^make.*Entering directory !;
 	next if $line =~ m!^make.*Leaving directory !;
 	next if $line =~ m!^\s+$!g;
-	# Specific suppressions
-	next if $line =~ m!id="missingInclude" .*systemc.h!;
-	next if $line =~ m!id="missingInclude" .*svdpi.h!;
-	next if $line =~ m!id="unusedFunction" .*sv! && $line =~ m!verilated_dpi.cpp!;
-	next if $line =~ m!id="unusedFunction" .*vpi! && $line =~ m!verilated_vpi.cpp!;
-	next if $line =~ m!id="unusedPrivateFunction" .*::debug!;  # Doesn't know UINFO will use it
-	next if $line =~ m!file=".*obj_dbg/V3ParseBison.c".* id="unreachableCode"!;
+
+        # Specific suppressions (see _suppress also)
+        next if $line =~ m!id="unusedPrivateFunction" .*::debug!;  # Doesn't know UINFO will use it
+
 	# Output
 	if ($line =~ /^cppcheck --/) {
 	    print $line if $Debug;
@@ -135,6 +132,15 @@ sub _suppress {
     #print "-Suppression search $filename $linenum $id\n" if $Self->{verbose};
 
     return undef if $filename eq "*";
+
+    # Specific suppressions
+    return 1 if $id eq "missingInclude" && $filename =~ m!systemc.h!;
+    return 1 if $id eq "missingInclude" && $filename =~ m!svdpi.h!;
+    return 1 if $id eq "unusedFunction" && $filename =~ m!verilated_dpi.cpp!;
+    return 1 if $id eq "unusedFunction" && $filename =~ m!verilated_vpi.cpp!;
+    return 1 if $id eq "unreachableCode" && $filename =~ /V3ParseBison.c/;
+    return 1 if $id eq 'variableScope' && $filename =~ /fstapi.c/;
+    return 1 if $id eq 'variableScope' && $filename =~ /lxt2_write.c/;
 
     my $fh = IO::File->new("<$filename");
     if (!$fh) {

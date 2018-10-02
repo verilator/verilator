@@ -356,6 +356,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --threads-max-mtasks <mtasks>  Tune maximum mtask partitioning
     --top-module <topname>      Name of top level input module
     --trace                     Enable waveform creation
+    --trace-fst                 Enable FST waveform creation
     --trace-lxt2                Enable LXT2 waveform creation
     --trace-depth <levels>      Depth of tracing
     --trace-max-array <depth>   Maximum bit width for tracing
@@ -1242,7 +1243,7 @@ designs with only one top.
 =item --trace
 
 Adds waveform tracing code to the model using VCD format. This overrides
-C<--trace-lxt2>.
+C<--trace-fst> and C<--trace-lxt2>.
 
 Verilator will generate additional {prefix}__Trace*.cpp files that will
 need to be compiled.  In addition verilated_vcd_sc.cpp (for SystemC traces)
@@ -1254,9 +1255,15 @@ need to add these to your Makefile manually.
 Having tracing compiled in may result in some small performance losses,
 even when waveforms are not turned on during model execution.
 
+=item --trace-fst
+
+Enable FST waveform tracing in the model. This overrides C<--trace> and C<--trace-lxt2>.
+
 =item --trace-lxt2
 
-Enable LXT2 waveform tracing in the model. This overrides C<--trace>.
+Enable LXT2 waveform tracing in the model. This overrides C<--trace> and
+C<--trace-fst>.  This option is deprecated in favor of FST traces and may
+be removed in the near future.
 
 =item --trace-depth I<levels>
 
@@ -4127,6 +4134,23 @@ trace file if you want all data to land in the same output file.
         tfp->close();
     }
 
+=item How do I generate FST waveforms (traces) in C++?
+
+FST a format by GTKWave.
+This version provides a basic FST support.
+To dump FST format, add the --trace switch to Verilator and change the include path in the testbench to:
+
+    #include "verilated_fst_c.h"
+    VerilatedFstC* tfp = new VerilatedFstC;
+
+Note that currently supporting both FST and VCD in a single simulation is impossible,
+but such requirement could be rare.
+
+=item How do I generate FST waveforms (traces) in SystemC?
+
+The FST library from GTKWave does not currently support SystemC; use VCD
+format instead.
+
 =item How do I generate LXT2 waveforms (traces) in C++?
 
 LXT2 a format by GTKWave, which is usually 10x smaller than VCD format.
@@ -4146,10 +4170,10 @@ format instead.
 
 =item How do I view waveforms (traces)?
 
-Verilator makes standard VCD (Value Change Dump) and LXT2 files.  VCD files are viewable
+Verilator makes standard VCD (Value Change Dump), LXT2 and FST files.  VCD files are viewable
 with the public domain GTKWave (recommended) or Dinotrace (legacy)
 programs, or any of the many commercial offerings;
-LXT2 is supported by GTKWave only.
+LXT2 and FST are supported by GTKWave only.
 
 =item How do I reduce the size of large waveform (trace) files?
 

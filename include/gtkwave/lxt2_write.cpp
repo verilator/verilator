@@ -27,6 +27,7 @@
 #include "lxt2_config.h"
 #include "lxt2_write.h"
 
+
 static char *lxt2_wr_vcd_truncate_bitvec(char *s)
 {
 char l, r;
@@ -96,7 +97,7 @@ if (lo<hi)
 
 static void wave_msort(struct lxt2_wr_symbol **a, int num)
 {
-struct lxt2_wr_symbol **b = (lxt2_wr_symbol**)malloc(((num/2)+1) * sizeof(struct lxt2_wr_symbol *));
+struct lxt2_wr_symbol **b = (struct lxt2_wr_symbol**)malloc(((num/2)+1) * sizeof(struct lxt2_wr_symbol *));
 
 wave_mergesort(a, b, 0, num-1);
 
@@ -582,7 +583,7 @@ unsigned int i;
 if((lt)&&(lt->numfacs))
 	{
 	struct lxt2_wr_symbol *s = lt->symchain;
-	struct lxt2_wr_symbol **aliascache = (lxt2_wr_symbol**)calloc(lt->numalias ? lt->numalias : 1, sizeof(struct lxt2_wr_symbol *));
+	struct lxt2_wr_symbol **aliascache = (struct lxt2_wr_symbol**)calloc(lt->numalias ? lt->numalias : 1, sizeof(struct lxt2_wr_symbol *));
 	unsigned int aliases_encountered, facs_encountered;
 
 	lt->sorted_facs = (struct lxt2_wr_symbol **)calloc(lt->numfacs, sizeof(struct lxt2_wr_symbol *));
@@ -2100,7 +2101,7 @@ if((lt)&&(lt->blackout))
                 {
                 if((!(s->flags&LXT2_WR_SYM_F_ALIAS))&&(s->rows<2))
                         {
-			char tmp[16]; // To get rid of the warning
+			char tmp[16]; /* To get rid of the warning */
 			if(!(s->flags&(LXT2_WR_SYM_F_DOUBLE|LXT2_WR_SYM_F_STRING)))
 				{
 	                        strcpy(tmp, "x");

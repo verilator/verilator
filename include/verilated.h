@@ -81,6 +81,8 @@ class VerilatedVcd;
 class VerilatedVcdC;
 class VerilatedLxt2;
 class VerilatedLxt2C;
+class VerilatedFst;
+class VerilatedFstC;
 
 enum VerilatedVarType {
     VLVT_UNKNOWN=0,
