@@ -93,22 +93,22 @@ public:
     void module(const std::string& name);
     /// Inside dumping routines, declare a signal
     void declBit(vluint32_t code, const char* name, int arraynum) {
-        this->declSymbol(code, name, arraynum, 0, 0, LXT2_WR_SYM_F_BITS);
+        declSymbol(code, name, arraynum, 0, 0, LXT2_WR_SYM_F_BITS);
     }
     void declBus(vluint32_t code, const char* name, int arraynum, int msb, int lsb) {
-        this->declSymbol(code, name, arraynum, msb, lsb, LXT2_WR_SYM_F_BITS);
+        declSymbol(code, name, arraynum, msb, lsb, LXT2_WR_SYM_F_BITS);
     }
     void declDouble(vluint32_t code, const char* name, int arraynum) {
-        this->declSymbol(code, name, arraynum, 63, 0, LXT2_WR_SYM_F_DOUBLE);
+        declSymbol(code, name, arraynum, 63, 0, LXT2_WR_SYM_F_DOUBLE);
     }
     void declFloat(vluint32_t code, const char* name, int arraynum) {
-        this->declSymbol(code, name, arraynum, 63, 0, LXT2_WR_SYM_F_DOUBLE);
+        declSymbol(code, name, arraynum, 63, 0, LXT2_WR_SYM_F_DOUBLE);
     }
     void declQuad(vluint32_t code, const char* name, int arraynum, int msb, int lsb) {
-        this->declSymbol(code, name, arraynum, msb, lsb, LXT2_WR_SYM_F_BITS);
+        declSymbol(code, name, arraynum, msb, lsb, LXT2_WR_SYM_F_BITS);
     }
     void declArray(vluint32_t code, const char* name, int arraynum, int msb, int lsb) {
-        this->declSymbol(code, name, arraynum, msb, lsb, LXT2_WR_SYM_F_BITS);
+        declSymbol(code, name, arraynum, msb, lsb, LXT2_WR_SYM_F_BITS);
     }
 
     /// Inside dumping routines, dump one signal if it has changed

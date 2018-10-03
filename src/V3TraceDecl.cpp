@@ -110,7 +110,8 @@ private:
 	AstBasicDType* bdtypep = m_traValuep->dtypep()->basicp();
 	if (widthOverride) bitRange = VNumRange(widthOverride-1,0,false);
 	else if (bdtypep) bitRange = bdtypep->nrange();
-	AstTraceDecl* declp = new AstTraceDecl(m_traVscp->fileline(), m_traShowname, m_traValuep,
+        AstTraceDecl* declp = new AstTraceDecl(m_traVscp->fileline(), m_traShowname,
+                                               m_traVscp->varp(), m_traValuep,
 					       bitRange, arrayRange);
 	UINFO(9,"Decl "<<declp<<endl);
 

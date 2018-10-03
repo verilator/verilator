@@ -185,8 +185,10 @@ void AstVar::combineType(AstVarType type) {
     if (type == AstVarType::SUPPLY1) type = AstVarType::WIRE;
     m_varType=type; 	// For debugging prints only
     // These flags get combined with the existing settings of the flags.
-    if (type==AstVarType::INPUT || type==AstVarType::INOUT)
+    if (type==AstVarType::INPUT || type==AstVarType::INOUT) {
 	m_input = true;
+        m_declInput = true;
+    }
     if (type==AstVarType::OUTPUT || type==AstVarType::INOUT) {
 	m_output = true;
 	m_declOutput = true;

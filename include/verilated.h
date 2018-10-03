@@ -96,15 +96,16 @@ enum VerilatedVarType {
 };
 
 enum VerilatedVarFlags {
-    VLVD_IN=1,		// == vpiInput
-    VLVD_OUT=2,		// == vpiOutput
-    VLVD_INOUT=3,	// == vpiInOut
-    VLVD_NODIR=5,	// == vpiNoDirection
-    VLVF_MASK_DIR=7,	// Bit mask for above directions
+    VLVD_0 = 0,         // None
+    VLVD_IN = 1,	// == vpiInput
+    VLVD_OUT = 2,	// == vpiOutput
+    VLVD_INOUT = 3,	// == vpiInOut
+    VLVD_NODIR = 5,	// == vpiNoDirection
+    VLVF_MASK_DIR = 7,	// Bit mask for above directions
     // Flags
-    VLVF_PUB_RD=(1<<8),	// Public readable
-    VLVF_PUB_RW=(1<<9),  // Public writable
-    VLVF_DPI_CLAY=(1<<10)  // DPI compatible C standard layout
+    VLVF_PUB_RD = (1<<8),  // Public readable
+    VLVF_PUB_RW = (1<<9),  // Public writable
+    VLVF_DPI_CLAY = (1<<10)  // DPI compatible C standard layout
 };
 
 //=========================================================================

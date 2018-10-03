@@ -1096,7 +1096,8 @@ private:
     bool	m_input:1;	// Input or inout
     bool	m_output:1;	// Output or inout
     bool	m_tristate:1;	// Inout or triwire or trireg
-    bool	m_declOutput:1; // Inout or output before tristate resolution
+    bool        m_declInput:1;  // Inout or input before tristate and inline resolution
+    bool        m_declOutput:1;  // Inout or output before tristate and inline resolution
     bool	m_primaryIO:1;	// In/out to top level (or directly assigned from same)
     bool	m_sc:1;		// SystemC variable
     bool	m_scClocked:1;	// SystemC sc_clk<> needed
@@ -1128,7 +1129,7 @@ private:
     MTaskIdSet  m_mtaskIds;  // MTaskID's that read or write this var
 
     void	init() {
-	m_input=false; m_output=false; m_tristate=false; m_declOutput=false;
+        m_input=false; m_output=false; m_tristate=false; m_declInput=false; m_declOutput=false;
 	m_primaryIO=false;
 	m_sc=false; m_scClocked=false; m_scSensitive=false;
 	m_usedClock=false; m_usedParam=false; m_usedLoopIdx=false;
@@ -1247,13 +1248,14 @@ public:
     virtual string tag() const { return m_tag; }
     virtual string directionName() const { return (isInout() ? "inout" : isInput() ? "input"
 						   : isOutput() ? "output" : varType().ascii()); }
-    bool	isInput() const { return m_input; }
-    bool	isOutput() const { return m_output; }
-    bool	isInOnly() const { return m_input && !m_output; }
-    bool	isOutOnly() const { return m_output && !m_input; }
-    bool	isInout() const { return m_input && m_output; }
-    bool	isTristate() const  { return m_tristate; }
-    bool	isDeclOutput() const  { return m_declOutput; }
+    bool isInput() const { return m_input; }
+    bool isOutput() const { return m_output; }
+    bool isInOnly() const { return m_input && !m_output; }
+    bool isOutOnly() const { return m_output && !m_input; }
+    bool isInout() const { return m_input && m_output; }
+    bool isTristate() const { return m_tristate; }
+    bool isDeclInput() const { return m_declInput; }
+    bool isDeclOutput() const { return m_declOutput; }
     bool	isPrimaryIO() const { return m_primaryIO; }
     bool	isPrimaryIn() const { return isPrimaryIO() && isInput(); }
     bool	isIO() const  { return (m_input||m_output); }
@@ -3351,8 +3353,13 @@ private:
     VNumRange	m_bitRange;	// Property of var the trace details
     VNumRange	m_arrayRange;	// Property of var the trace details
     uint32_t	m_codeInc;	// Code increment
+    AstVarType  m_varType;      // Type of variable (for localparam vs. param)
+    bool        m_declInput:1;  // Input or inout
+    bool        m_declOutput:1;  // Output or inout
 public:
-    AstTraceDecl(FileLine* fl, const string& showname, AstNode* valuep,
+    AstTraceDecl(FileLine* fl, const string& showname,
+                 AstVar* varp,  // For input/output state etc
+                 AstNode* valuep,
 		 const VNumRange& bitRange, const VNumRange& arrayRange)
 	: AstNodeStmt(fl)
 	, m_showname(showname), m_bitRange(bitRange), m_arrayRange(arrayRange) {
@@ -3360,20 +3367,27 @@ public:
 	m_code = 0;
 	m_codeInc = ((arrayRange.ranged() ? arrayRange.elements() : 1)
 		     * valuep->dtypep()->widthWords());
+        m_varType = varp->varType();
+        m_declInput = varp->isDeclInput();
+        m_declOutput = varp->isDeclOutput();
     }
-    virtual int instrCount()	const { return 100; }  // Large...
+    virtual int instrCount() const { return 100; }  // Large...
     ASTNODE_NODE_FUNCS(TraceDecl)
-    virtual string name()	const { return m_showname; }
+    virtual string name() const { return m_showname; }
     virtual bool maybePointedTo() const { return true; }
     virtual bool hasDType() const { return true; }
     virtual bool same(const AstNode* samep) const { return false; }
     string showname()	const { return m_showname; }		// * = Var name
     // Details on what we're tracing
-    uint32_t	code() const { return m_code; }
-    void	code(uint32_t code) { m_code=code; }
-    uint32_t	codeInc() const { return m_codeInc; }
+    uint32_t code() const { return m_code; }
+    void code(uint32_t code) { m_code=code; }
+    uint32_t codeInc() const { return m_codeInc; }
     const VNumRange& bitRange() const { return m_bitRange; }
     const VNumRange& arrayRange() const { return m_arrayRange; }
+    AstVarType varType() const { return m_varType; }
+    bool declInput() const { return m_declInput; }
+    bool declOutput() const { return m_declOutput; }
+    bool declInout() const { return m_declInput && m_declOutput; }
 };
 
 class AstTraceInc : public AstNodeStmt {

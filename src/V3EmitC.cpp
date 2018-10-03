@@ -2831,10 +2831,19 @@ class EmitCTrace : EmitCStmts {
 	} else {
 	    puts("vcdp->declBit  ");
 	}
+
 	puts("(c+"+cvtToStr(nodep->code()));
 	if (nodep->arrayRange().ranged()) puts("+i*"+cvtToStr(nodep->widthWords()));
 	puts(",");
 	putsQuoted(nodep->showname());
+        // Direction
+        if (v3Global.opt.traceFormat() == TraceFormat::FST) {
+            if (nodep->declInout()) puts(",VLVD_INOUT");
+            else if (nodep->declInput()) puts(",VLVD_IN");
+            else if (nodep->declOutput()) puts(",VLVD_OUT");
+            else puts(",VLVD_0");
+        }
+        // Range
 	if (nodep->arrayRange().ranged()) {
 	    puts(",(i+"+cvtToStr(nodep->arrayRange().lo())+")");
 	} else {

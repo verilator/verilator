@@ -55,7 +55,8 @@ private:
     std::list<std::string> m_curScope;
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFst);
-    void declSymbol(vluint32_t code, const char* name, int arraynum, uint32_t len, fstVarType vartype);
+    void declSymbol(vluint32_t code, const char* name, VerilatedVarFlags varflags,
+                    int arraynum, vluint32_t len, fstVarType vartype);
     // helpers
     std::vector<char> m_valueStrBuffer;
     char* word2Str(vluint32_t newval, int bits);
@@ -95,23 +96,29 @@ public:
     /// Inside dumping routines, declare a module
     void module(const std::string& name);
     /// Inside dumping routines, declare a signal
-    void declBit(vluint32_t code, const char* name, int arraynum) {
-        this->declSymbol(code, name, arraynum, 1, FST_VT_VCD_WIRE);
+    void declBit(vluint32_t code, const char* name, VerilatedVarFlags varflags,
+                 int arraynum) {
+        declSymbol(code, name, varflags, arraynum, 1, FST_VT_VCD_WIRE);
     }
-    void declBus(vluint32_t code, const char* name, int arraynum, int msb, int lsb) {
-        this->declSymbol(code, name, arraynum, msb - lsb + 1, FST_VT_VCD_WIRE);
+    void declBus(vluint32_t code, const char* name, VerilatedVarFlags varflags,
+                 int arraynum, int msb, int lsb) {
+        declSymbol(code, name, varflags, arraynum, msb - lsb + 1, FST_VT_VCD_WIRE);
     }
-    void declDouble(vluint32_t code, const char* name, int arraynum) {
-        this->declSymbol(code, name, arraynum, 2, FST_VT_VCD_REAL);
+    void declDouble(vluint32_t code, const char* name, VerilatedVarFlags varflags,
+                    int arraynum) {
+        declSymbol(code, name, varflags, arraynum, 2, FST_VT_VCD_REAL);
     }
-    void declFloat(vluint32_t code, const char* name, int arraynum) {
-        this->declSymbol(code, name, arraynum, 1, FST_VT_SV_SHORTREAL);
+    void declFloat(vluint32_t code, const char* name, VerilatedVarFlags varflags,
+                   int arraynum) {
+        declSymbol(code, name, varflags, arraynum, 1, FST_VT_SV_SHORTREAL);
     }
-    void declQuad(vluint32_t code, const char* name, int arraynum, int msb, int lsb) {
-        this->declSymbol(code, name, arraynum, msb - lsb + 1, FST_VT_VCD_WIRE);
+    void declQuad(vluint32_t code, const char* name, VerilatedVarFlags varflags,
+                  int arraynum, int msb, int lsb) {
+        declSymbol(code, name, varflags, arraynum, msb - lsb + 1, FST_VT_VCD_WIRE);
     }
-    void declArray(vluint32_t code, const char* name, int arraynum, int msb, int lsb) {
-        this->declSymbol(code, name, arraynum, msb - lsb + 1, FST_VT_VCD_WIRE);
+    void declArray(vluint32_t code, const char* name, VerilatedVarFlags varflags,
+                   int arraynum, int msb, int lsb) {
+        declSymbol(code, name, varflags, arraynum, msb - lsb + 1, FST_VT_VCD_WIRE);
     }
 
     /// Inside dumping routines, dump one signal if it has changed
