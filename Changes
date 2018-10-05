@@ -6,6 +6,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 * Verilator 4.003 devel
 
 **    Add GTKWave FST native tracing, bug1356. [Sergi Granell]
+      (Verilator developers need to pull the latest vcddiff.)
 
 ***   Support $past. [Dan Gisselquist]
 
