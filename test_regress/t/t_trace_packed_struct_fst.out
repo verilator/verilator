@@ -1,5 +1,5 @@
 $date
-	Tue Oct  2 18:35:19 2018
+	Thu Oct  4 19:33:41 2018
 
 $end
 $version
@@ -9,13 +9,13 @@ $timescale
 	1ns
 $end
 $scope module top $end
-$var wire 1 ! clk $end
+$var bit 1 ! clk $end
 $scope module t $end
 $var wire 1 ! clk $end
-$var wire 32 " cnt $end
-$var wire 96 # v(0) $end
-$var wire 96 $ v(1) $end
-$var wire 96 % v(2) $end
+$var int 32 " cnt $end
+$var parameter 96 # v(0) $end
+$var parameter 96 $ v(1) $end
+$var parameter 96 % v(2) $end
 $upscope $end
 $upscope $end
 $enddefinitions $end

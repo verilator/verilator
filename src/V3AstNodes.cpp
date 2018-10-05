@@ -181,8 +181,6 @@ void AstVar::combineType(AstVarType type) {
     // These flags get combined with the existing settings of the flags.
     // We don't test varType for certain types, instead set flags since
     // when we combine wires cross-hierarchy we need a union of all characteristics.
-    if (type == AstVarType::SUPPLY0) type = AstVarType::WIRE;
-    if (type == AstVarType::SUPPLY1) type = AstVarType::WIRE;
     m_varType=type; 	// For debugging prints only
     // These flags get combined with the existing settings of the flags.
     if (type==AstVarType::INPUT || type==AstVarType::INOUT) {

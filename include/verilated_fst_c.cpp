@@ -94,8 +94,9 @@ void VerilatedFst::module(const std::string& name) {
 //=============================================================================
 // Decl
 
-void VerilatedFst::declSymbol(vluint32_t code, const char* name, VerilatedVarFlags varflags,
-                              int arraynum, vluint32_t len, fstVarType vartype) {
+void VerilatedFst::declSymbol(vluint32_t code, const char* name, fstVarDir vardir,
+                              fstVarType vartype,
+                              int arraynum, vluint32_t len) {
     std::pair<Code2SymbolType::iterator, bool> p
         = m_code2symbol.insert(std::make_pair(code, (fstHandle)(0)));
     std::istringstream nameiss(name);
@@ -133,12 +134,6 @@ void VerilatedFst::declSymbol(vluint32_t code, const char* name, VerilatedVarFla
     if (arraynum >= 0)
         name_ss << "(" << arraynum << ")";
     std::string name_str = name_ss.str();
-
-    static fstVarDir vardir;
-    if ((varflags & VLVD_INOUT) == VLVD_INOUT) vardir = FST_VD_INOUT;
-    else if ((varflags & VLVD_IN) == VLVD_IN) vardir = FST_VD_INPUT;
-    else if ((varflags & VLVD_OUT) == VLVD_OUT) vardir = FST_VD_OUTPUT;
-    else vardir = FST_VD_IMPLICIT;
 
     if (p.second) {  // New
         p.first->second = fstWriterCreateVar(m_fst, vartype, vardir, len, name_str.c_str(), 0);

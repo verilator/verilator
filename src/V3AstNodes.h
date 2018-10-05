@@ -1093,6 +1093,7 @@ private:
     string	m_origName;	// Original name before dot addition
     string      m_tag;          // Holds the string of the verilator tag -- used in XML output.
     AstVarType	m_varType;	// Type of variable
+    AstBasicDTypeKwd m_declKwd;  // Keyword at declaration time
     bool	m_input:1;	// Input or inout
     bool	m_output:1;	// Output or inout
     bool	m_tristate:1;	// Inout or triwire or trireg
@@ -1149,6 +1150,8 @@ public:
 	combineType(type);
 	childDTypep(dtp);  // Only for parser
 	dtypep(NULL);  // V3Width will resolve
+        if (dtp->basicp()) m_declKwd = dtp->basicp()->keyword();
+        else m_declKwd = AstBasicDTypeKwd::LOGIC;
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, AstNodeDType* dtp)
 	:AstNode(fl)
@@ -1157,6 +1160,8 @@ public:
 	combineType(type);
 	UASSERT(dtp,"AstVar created with no dtype");
 	dtypep(dtp);
+        if (dtp->basicp()) m_declKwd = dtp->basicp()->keyword();
+        else m_declKwd = AstBasicDTypeKwd::LOGIC;
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, VFlagLogicPacked, int wantwidth)
 	:AstNode(fl)
@@ -1164,6 +1169,7 @@ public:
 	init();
 	combineType(type);
 	dtypeSetLogicSized(wantwidth,wantwidth,AstNumeric::UNSIGNED);
+        m_declKwd = AstBasicDTypeKwd::LOGIC;
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, VFlagBitPacked, int wantwidth)
 	:AstNode(fl)
@@ -1171,6 +1177,7 @@ public:
 	init();
 	combineType(type);
 	dtypeSetLogicSized(wantwidth,wantwidth,AstNumeric::UNSIGNED);
+        m_declKwd = AstBasicDTypeKwd::BIT;
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, AstVar* examplep)
 	:AstNode(fl)
@@ -1181,6 +1188,7 @@ public:
 	    childDTypep(examplep->childDTypep()->cloneTree(true));
 	}
 	dtypeFrom(examplep);
+        m_declKwd = examplep->declKwd();
     }
     ASTNODE_NODE_FUNCS(Var)
     virtual void dump(std::ostream& str);
@@ -1193,6 +1201,7 @@ public:
     void varType(AstVarType type) { m_varType = type; }
     void varType2Out() { m_tristate=0; m_input=0; m_output=1; }
     void varType2In() {  m_tristate=0; m_input=1; m_output=0; }
+    AstBasicDTypeKwd declKwd() const { return m_declKwd; }
     string	scType() const;	  // Return SysC type: bool, uint32_t, uint64_t, sc_bv
     string	cPubArgType(bool named, bool forReturn) const;  // Return C /*public*/ type for argument: bool, uint32_t, uint64_t, etc.
     string	dpiArgType(bool named, bool forReturn) const;  // Return DPI-C type for argument
@@ -3354,6 +3363,7 @@ private:
     VNumRange	m_arrayRange;	// Property of var the trace details
     uint32_t	m_codeInc;	// Code increment
     AstVarType  m_varType;      // Type of variable (for localparam vs. param)
+    AstBasicDTypeKwd m_declKwd;  // Keyword at declaration time
     bool        m_declInput:1;  // Input or inout
     bool        m_declOutput:1;  // Output or inout
 public:
@@ -3368,6 +3378,7 @@ public:
 	m_codeInc = ((arrayRange.ranged() ? arrayRange.elements() : 1)
 		     * valuep->dtypep()->widthWords());
         m_varType = varp->varType();
+        m_declKwd = varp->declKwd();
         m_declInput = varp->isDeclInput();
         m_declOutput = varp->isDeclOutput();
     }
@@ -3385,6 +3396,7 @@ public:
     const VNumRange& bitRange() const { return m_bitRange; }
     const VNumRange& arrayRange() const { return m_arrayRange; }
     AstVarType varType() const { return m_varType; }
+    AstBasicDTypeKwd declKwd() const { return m_declKwd; }
     bool declInput() const { return m_declInput; }
     bool declOutput() const { return m_declOutput; }
     bool declInout() const { return m_declInput && m_declOutput; }

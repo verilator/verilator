@@ -2838,10 +2838,54 @@ class EmitCTrace : EmitCStmts {
 	putsQuoted(nodep->showname());
         // Direction
         if (v3Global.opt.traceFormat() == TraceFormat::FST) {
-            if (nodep->declInout()) puts(",VLVD_INOUT");
-            else if (nodep->declInput()) puts(",VLVD_IN");
-            else if (nodep->declOutput()) puts(",VLVD_OUT");
-            else puts(",VLVD_0");
+            // fstVarDir
+            if (nodep->declInout()) puts(",FST_VD_INOUT");
+            else if (nodep->declInput()) puts(",FST_VD_INPUT");
+            else if (nodep->declOutput()) puts(",FST_VD_OUTPUT");
+            else puts(",FST_VD_IMPLICIT");
+            //
+            // fstVarType
+            AstVarType vartype = nodep->varType();
+            AstBasicDTypeKwd kwd = nodep->declKwd();
+            string fstvt;
+            // Doubles have special decoding properties, so must indicate if a double
+            if (nodep->dtypep()->basicp()->isDouble()) {
+                if (vartype == AstVarType::GPARAM || vartype == AstVarType::LPARAM) {
+                    fstvt = "FST_VT_VCD_REAL_PARAMETER";
+                } else fstvt = "FST_VT_VCD_REAL";
+            }
+            else if (vartype == AstVarType::GPARAM)  fstvt = "FST_VT_VCD_PARAMETER";
+            else if (vartype == AstVarType::LPARAM)  fstvt = "FST_VT_VCD_PARAMETER";
+            else if (vartype == AstVarType::SUPPLY0) fstvt = "FST_VT_VCD_SUPPLY0";
+            else if (vartype == AstVarType::SUPPLY1) fstvt = "FST_VT_VCD_SUPPLY1";
+            else if (vartype == AstVarType::TRI0)    fstvt = "FST_VT_VCD_TRI0";
+            else if (vartype == AstVarType::TRI1)    fstvt = "FST_VT_VCD_TRI1";
+            else if (vartype == AstVarType::TRIWIRE) fstvt = "FST_VT_VCD_TRI";
+            else if (vartype == AstVarType::WIRE)    fstvt = "FST_VT_VCD_WIRE";
+            //
+            else if (kwd == AstBasicDTypeKwd::INTEGER)  fstvt = "FST_VT_VCD_INTEGER";
+            else if (kwd == AstBasicDTypeKwd::BIT)      fstvt = "FST_VT_SV_BIT";
+            else if (kwd == AstBasicDTypeKwd::LOGIC)    fstvt = "FST_VT_SV_LOGIC";
+            else if (kwd == AstBasicDTypeKwd::INT)      fstvt = "FST_VT_SV_INT";
+            else if (kwd == AstBasicDTypeKwd::SHORTINT) fstvt = "FST_VT_SV_SHORTINT";
+            else if (kwd == AstBasicDTypeKwd::LONGINT)  fstvt = "FST_VT_SV_LONGINT";
+            else if (kwd == AstBasicDTypeKwd::BYTE)     fstvt = "FST_VT_SV_BYTE";
+            else fstvt = "FST_VT_SV_BIT";
+            //
+            // Not currently supported
+            // FST_VT_VCD_EVENT
+            // FST_VT_VCD_PORT
+            // FST_VT_VCD_SHORTREAL
+            // FST_VT_VCD_REALTIME
+            // FST_VT_VCD_SPARRAY
+            // FST_VT_VCD_TRIAND
+            // FST_VT_VCD_TRIOR
+            // FST_VT_VCD_TRIREG
+            // FST_VT_VCD_WAND
+            // FST_VT_VCD_WOR
+            // FST_VT_SV_ENUM
+            // FST_VT_GEN_STRING
+            puts(","+fstvt);
         }
         // Range
 	if (nodep->arrayRange().ranged()) {
