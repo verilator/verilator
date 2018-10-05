@@ -568,7 +568,6 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "let"		 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
   "nexttime"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
   "reject_on"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
-  "restrict"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
   "s_always"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
   "s_eventually" 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
   "s_nexttime"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
