@@ -51,16 +51,16 @@
 //######################################################################
 // Simulate class functions
 
-class SimulateStackNode {
+class SimStackNode {
 public:
     // MEMBERS
     AstFuncRef*		m_funcp;
     V3TaskConnects*	m_tconnects;
     // CONSTRUCTORS
-    SimulateStackNode(AstFuncRef* funcp, V3TaskConnects* tconnects):
+    SimStackNode(AstFuncRef* funcp, V3TaskConnects* tconnects):
 	m_funcp(funcp),
 	m_tconnects(tconnects) {}
-    ~SimulateStackNode() {}
+    ~SimStackNode() {}
 };
 
 class SimulateVisitor : public AstNVisitor {
@@ -103,7 +103,7 @@ private:
     // Simulating:
     std::deque<V3Number*>               m_numFreeps;    ///< List of all numbers free and not in use
     std::deque<V3Number*>               m_numAllps;     ///< List of all numbers free and in use
-    std::deque<SimulateStackNode*>      m_callStack;    ///< Call stack for verbose error messages
+    std::deque<SimStackNode*>      m_callStack;    ///< Call stack for verbose error messages
 
     // Cleanup
     // V3Numbers that represents strings are a bit special and the API for V3Number does not allow changing them.
@@ -178,7 +178,7 @@ public:
 	    }
 	    m_whyNotOptimizable = why;
             std::ostringstream stack;
-            for (std::deque<SimulateStackNode*>::iterator it=m_callStack.begin(); it !=m_callStack.end(); ++it) {
+            for (std::deque<SimStackNode*>::iterator it=m_callStack.begin(); it !=m_callStack.end(); ++it) {
 		AstFuncRef* funcp = (*it)->m_funcp;
 		stack<<"\nCalled from:\n"<<funcp->fileline()<<" "<<funcp->prettyName()<<"() with parameters:";
 		V3TaskConnects* tconnects = (*it)->m_tconnects;
@@ -241,6 +241,9 @@ public:
 	} else {
 	    return (fetchOutNumber(nodep));
 	}
+    }
+    void newNumber(AstNode* nodep, const V3Number& numr) {
+        newNumber(nodep)->opAssign(numr);
     }
     V3Number* fetchNumberNull(AstNode* nodep) {
 	return ((V3Number*)nodep->user3p());
@@ -390,7 +393,7 @@ private:
     }
     virtual void visit(AstVarXRef* nodep) {
 	if (jumpingOver(nodep)) return;
-	if (m_scoped) {  badNodeType(nodep); return; }
+        if (m_scoped) { badNodeType(nodep); return; }
 	else { clearOptimizable(nodep,"Language violation: Dotted hierarchical references not allowed in constant functions"); }
     }
     virtual void visit(AstNodeFTask* nodep) {
@@ -793,7 +796,7 @@ private:
 		}
 	    }
 	}
-	SimulateStackNode stackNode(nodep, &tconnects);
+        SimStackNode stackNode(nodep, &tconnects);
 	m_callStack.push_front(&stackNode);
 	// Evaluate the function
         iterate(funcp);
@@ -922,6 +925,7 @@ private:
 public:
     // CONSTRUCTORS
     SimulateVisitor() {
+        // Note AstUser#InUse ensures only one invocation exists at once
 	setMode(false,false,false);
 	clear(); // We reuse this structure in the main loop, so put initializers inside clear()
     }

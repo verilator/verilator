@@ -292,7 +292,9 @@ private:
             for (std::deque<AstVarScope*>::iterator it = m_inVarps.begin(); it!=m_inVarps.end(); ++it) {
 		AstVarScope* invscp = *it;
 		// LSB is first variable, so extract it that way
-		simvis.newNumber(invscp, VL_MASK_I(invscp->width()) & (inValue>>shift));
+                simvis.newNumber(invscp,
+                                 V3Number(invscp->fileline(), invscp->width(),
+                                          VL_MASK_I(invscp->width()) & (inValue>>shift)));
 		shift += invscp->width();
 		// We're just using32 bit arithmetic, because there's no way the input table can be 2^32 bytes!
 		if (shift>31) nodep->v3fatalSrc("shift overflow");
