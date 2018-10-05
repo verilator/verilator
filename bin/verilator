@@ -3983,16 +3983,29 @@ For example:
 will toggle forever and thus the executable will give the didn't converge
 error to prevent an infinite loop.
 
-To debug this, run Verilator with --prof-cfuncs.  Run make on the
-generated files with "OPT=-DVL_DEBUG". Then call Verilated::debug(1) in
-your main.cpp.
+To debug this, first is to review any UNOPTFLAT warnings that were ignored,
+though typically these can be ignored (at a performance cost), convergence
+issues can also be flagged with this warning as Verilator didn't know if
+they would eventually converge.
+
+Next, run Verilator with --prof-cfuncs.  Run make on the generated
+files with "OPT=-DVL_DEBUG". Then call Verilated::debug(1) in your
+main.cpp.
 
 This will cause each change in a variable to print a message.  Near the
-bottom you'll see the code and variable that causes the problem.  For the
-program above:
+bottom you'll see the variables that causes the problem.  For the program
+above:
 
         CHANGE: filename.v:1: b
         CHANGE: filename.v:2: a
+
+If many signals are getting printed then most likely each are oscillating
+(or there is a bug). It may also be that e.g. "a" may be oscillating, then
+"a" feeds signal "c" which then is also reported as oscillating.
+
+Finally, rare more difficult cases can be debugged like a "C" program;
+either enter GDB and use its tracing facilities, or edit the generated C++
+code to add appropriate prints to see what is going on.
 
 =back
 
