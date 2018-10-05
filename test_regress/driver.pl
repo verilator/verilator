@@ -1577,7 +1577,7 @@ sub vcd_identical {
 	my $cmd = qq{vcddiff --help};
 	print "\t$cmd\n" if $::Debug;
 	my $out = `$cmd`;
-	if ($out !~ /Usage:/) { $self->skip("No vcddiff installed\n"); return 0; }
+	if (!$out || $out !~ /Usage:/) { $self->skip("No vcddiff installed\n"); return 0; }
 
 	$cmd = qq{vcddiff "$fn1" "$fn2"};
 	print "\t$cmd\n" if $::Debug;
@@ -1618,7 +1618,7 @@ sub fst2vcd {
     my $cmd = qq{fst2vcd --help};
     print "\t$cmd\n" if $::Debug;
     my $out = `$cmd`;
-    if ($out !~ /Usage:/) { $self->skip("No fst2vcd installed\n"); return 0; }
+    if (!$out || $out !~ /Usage:/) { $self->skip("No fst2vcd installed\n"); return 0; }
 
     $cmd = qq{fst2vcd "$fn1" -o "$fn2"};
     print "\t$cmd\n" if $::Debug;
@@ -1634,7 +1634,7 @@ sub lxt2vcd {
     my $cmd = qq{lxt2vcd --help};
     print "\t$cmd\n" if $::Debug;
     my $out = `$cmd`;
-    if ($out !~ /Usage:/) { $self->skip("No lxt2vcd installed\n"); return 0; }
+    if (!$out || $out !~ /Usage:/) { $self->skip("No lxt2vcd installed\n"); return 0; }
 
     $cmd = qq{lxt2vcd "$fn1" -o "$fn2"};
     print "\t$cmd\n" if $::Debug;

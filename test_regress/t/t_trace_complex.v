@@ -56,6 +56,9 @@ module t (clk);
    initial v_str32x2[0] = 32'hff;
    initial v_str32x2[1] = 0;
 
+   typedef enum int { ZERO=0, ONE, TWO, THREE } enumed_t;
+   enumed_t v_enumed;
+
    p #(.PARAM(2)) p2 ();
    p #(.PARAM(3)) p3 ();
 
@@ -71,6 +74,7 @@ module t (clk);
       v_string <= cyc[0] ? "foo" : "bar";
       v_arr_real[0] <= v_arr_real[0] + 0.2;
       v_arr_real[1] <= v_arr_real[1] + 0.3;
+      v_enumed <= v_enumed + 1;
       for (integer b=3; b<=4; b++) begin
 	 v_arru[b] <= ~v_arru[b];
 	 v_arru_strp[b] <= ~v_arru_strp[b];
