@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in []. Thanks!
 
 
-* Verilator 4.003 devel
+* Verilator 4.004 2018-10-6
 
 **    Add GTKWave FST native tracing, bug1356. [Sergi Granell]
       (Verilator developers need to pull the latest vcddiff.)
