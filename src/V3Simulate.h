@@ -245,6 +245,9 @@ public:
     void newNumber(AstNode* nodep, const V3Number& numr) {
         newNumber(nodep)->opAssign(numr);
     }
+    void newOutNumber(AstNode* nodep, const V3Number& numr) {
+        newOutNumber(nodep)->opAssign(numr);
+    }
     V3Number* fetchNumberNull(AstNode* nodep) {
 	return ((V3Number*)nodep->user3p());
     }
@@ -312,13 +315,12 @@ private:
 	return (m_jumpp && m_jumpp->labelp()!=nodep);
     }
     void assignOutNumber(AstNodeAssign* nodep, AstNode* vscp, const V3Number* nump) {
-	// Don't do setNumber, as value isn't yet visible to following statements
         if (VN_IS(nodep, AssignDly)) {
 	    // Don't do setNumber, as value isn't yet visible to following statements
-	    newOutNumber(vscp)->opAssign(*nump);
+            newOutNumber(vscp, *nump);
 	} else {
-	    newNumber(vscp)->opAssign(*nump);
-	    newOutNumber(vscp)->opAssign(*nump);
+            newNumber(vscp, *nump);
+            newOutNumber(vscp, *nump);
 	}
     }
 
@@ -351,7 +353,7 @@ private:
 		    vscp->user1( vscp->user1() | VU_LVDLY);
 		    if (m_checkOnly) varRefCb (nodep);
 		}
-	    } else { // nondly asn
+            } else {  // nondly asn
 		if (!(vscp->user1() & VU_LV)) {
 		    if (!m_params && (vscp->user1() & VU_RV)) clearOptimizable(nodep,"Var read & write");
 		    vscp->user1( vscp->user1() | VU_LV);
@@ -364,16 +366,16 @@ private:
 		vscp->user1( vscp->user1() | VU_RV);
 		bool isConst = nodep->varp()->isParam();
 		V3Number* nump = isConst ? fetchNumberNull(nodep->varp()->valuep()) : NULL;
-		if (isConst && nump) { // Propagate PARAM constants for constant function analysis
+                if (isConst && nump) {  // Propagate PARAM constants for constant function analysis
 		    if (!m_checkOnly && optimizable()) {
-			newNumber(vscp)->opAssign(*nump);
+                        newNumber(vscp, *nump);
 		    }
 		} else {
 		    if (m_checkOnly) varRefCb (nodep);
 		}
 	    }
 	}
-	if (!m_checkOnly && optimizable()) { // simulating
+        if (!m_checkOnly && optimizable()) {  // simulating
 	    if (nodep->lvalue()) {
 		nodep->v3fatalSrc("LHS varref should be handled in AstAssign visitor.");
 	    } else {
@@ -434,7 +436,7 @@ private:
 	    if (valuep) {
                 iterateAndNextNull(valuep);
 		if (optimizable()) {
-		    newNumber(nodep)->opAssign(*fetchNumber(valuep));
+                    newNumber(nodep, *fetchNumber(valuep));
 		}
             } else {
                 clearOptimizable(nodep, "No value found for enum item");
@@ -446,7 +448,8 @@ private:
 	checkNodeInfo(nodep);
         iterateChildren(nodep);
 	if (!m_checkOnly && optimizable()) {
-	    nodep->numberOperate(*newNumber(nodep), *fetchNumber(nodep->lhsp()));
+            nodep->numberOperate(*newNumber(nodep),
+                                 *fetchNumber(nodep->lhsp()));
 	}
     }
     virtual void visit(AstNodeBiop* nodep) {
@@ -454,7 +457,9 @@ private:
 	checkNodeInfo(nodep);
         iterateChildren(nodep);
 	if (!m_checkOnly && optimizable()) {
-	    nodep->numberOperate(*newNumber(nodep), *fetchNumber(nodep->lhsp()), *fetchNumber(nodep->rhsp()));
+            nodep->numberOperate(*newNumber(nodep),
+                                 *fetchNumber(nodep->lhsp()),
+                                 *fetchNumber(nodep->rhsp()));
 	}
     }
     virtual void visit(AstNodeTriop* nodep) {
@@ -479,9 +484,9 @@ private:
 	    if (optimizable()) {
 		if (fetchNumber(nodep->lhsp())->isNeqZero()) {
                     iterate(nodep->rhsp());
-		    newNumber(nodep)->opAssign(*fetchNumber(nodep->rhsp()));
+                    newNumber(nodep, *fetchNumber(nodep->rhsp()));
 		} else {
-		    newNumber(nodep)->opAssign(*fetchNumber(nodep->lhsp()));  // a zero
+                    newNumber(nodep, *fetchNumber(nodep->lhsp()));  // a zero
 		}
 	    }
 	}
@@ -496,10 +501,10 @@ private:
             iterate(nodep->lhsp());
 	    if (optimizable()) {
 		if (fetchNumber(nodep->lhsp())->isNeqZero()) {
-		    newNumber(nodep)->opAssign(*fetchNumber(nodep->lhsp()));  // a one
+                    newNumber(nodep, *fetchNumber(nodep->lhsp()));  // a one
 		} else {
                     iterate(nodep->rhsp());
-		    newNumber(nodep)->opAssign(*fetchNumber(nodep->rhsp()));
+                    newNumber(nodep, *fetchNumber(nodep->rhsp()));
 		}
 	    }
 	}
@@ -514,10 +519,10 @@ private:
             iterate(nodep->lhsp());
 	    if (optimizable()) {
 		if (fetchNumber(nodep->lhsp())->isEqZero()) {
-		    newNumber(nodep)->opAssign(V3Number(nodep->fileline(), 1, 1));  // a one
+                    newNumber(nodep, V3Number(nodep->fileline(), 1, 1));  // a one
 		} else {
                     iterate(nodep->rhsp());
-		    newNumber(nodep)->opAssign(*fetchNumber(nodep->rhsp()));
+                    newNumber(nodep, *fetchNumber(nodep->rhsp()));
 		}
 	    }
 	}
@@ -534,10 +539,10 @@ private:
 	    if (optimizable()) {
 		if (fetchNumber(nodep->condp())->isNeqZero()) {
                     iterate(nodep->expr1p());
-		    newNumber(nodep)->opAssign(*fetchNumber(nodep->expr1p()));
+                    newNumber(nodep, *fetchNumber(nodep->expr1p()));
 		} else {
                     iterate(nodep->expr2p());
-		    newNumber(nodep)->opAssign(*fetchNumber(nodep->expr2p()));
+                    newNumber(nodep, *fetchNumber(nodep->expr2p()));
 		}
 	    }
 	}
@@ -768,7 +773,7 @@ private:
 	UINFO(5,"   FUNCREF "<<nodep<<endl);
 	if (!m_params) { badNodeType(nodep); return; }
         AstNodeFTask* funcp = VN_CAST(nodep->taskp(), NodeFTask); if (!funcp) nodep->v3fatalSrc("Not linked");
-	if (m_params) { V3Width::widthParamsEdit(funcp); } VL_DANGLING(funcp); // Make sure we've sized the function
+        if (m_params) { V3Width::widthParamsEdit(funcp); } VL_DANGLING(funcp);  // Make sure we've sized the function
         funcp = VN_CAST(nodep->taskp(), NodeFTask); if (!funcp) nodep->v3fatalSrc("Not linked");
 	// Apply function call values to function
 	V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
@@ -792,7 +797,7 @@ private:
 	    if (pinp) {  // Else too few arguments in function call - ignore it
 		// Apply value to the function
 		if (!m_checkOnly && optimizable()) {
-		    newNumber(portp)->opAssign(*fetchNumber(pinp));
+                    newNumber(portp, *fetchNumber(pinp));
 		}
 	    }
 	}
@@ -804,7 +809,7 @@ private:
 	if (!m_checkOnly && optimizable()) {
 	    // Grab return value from output variable (if it's a function)
 	    if (!funcp->fvarp()) nodep->v3fatalSrc("Function reference points at non-function");
-	    newNumber(nodep)->opAssign(*fetchNumber(funcp->fvarp()));
+            newNumber(nodep, *fetchNumber(funcp->fvarp()));
 	}
     }
 
@@ -833,9 +838,9 @@ private:
 	    for (; pos != format.end(); ++pos) {
 		if (!inPct && pos[0] == '%') {
 		    inPct = true;
-		} else if (!inPct) {   // Normal text
+                } else if (!inPct) {  // Normal text
 		    result += *pos;
-		} else { // Format character
+                } else {  // Format character
 		    inPct = false;
 
 		    if (V3Number::displayedFmtLegal(tolower(pos[0]))) {
@@ -927,7 +932,7 @@ public:
     SimulateVisitor() {
         // Note AstUser#InUse ensures only one invocation exists at once
 	setMode(false,false,false);
-	clear(); // We reuse this structure in the main loop, so put initializers inside clear()
+        clear();  // We reuse this structure in the main loop, so put initializers inside clear()
     }
     void clear() {
 	m_whyNotOptimizable = "";
@@ -939,9 +944,9 @@ public:
 	m_dataCount = 0;
 	m_jumpp = NULL;
 
-	AstNode::user1ClearTree();	// user1p() used on entire tree
-	AstNode::user2ClearTree();	// user2p() used on entire tree
-	AstNode::user3ClearTree();	// user3p() used on entire tree
+        AstNode::user1ClearTree();
+        AstNode::user2ClearTree();
+        AstNode::user3ClearTree();
 
 	// Move all allocated numbers to the free pool
 	m_numFreeps = m_numAllps;
@@ -975,4 +980,4 @@ public:
     }
 };
 
-#endif // Guard
+#endif  // Guard
