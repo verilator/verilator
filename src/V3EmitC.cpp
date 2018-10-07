@@ -2825,11 +2825,11 @@ class EmitCTrace : EmitCStmts {
 	} else if (nodep->isWide()) {
 	    puts("vcdp->declArray");
 	} else if (nodep->isQuad()) {
-	    puts("vcdp->declQuad ");
+            puts("vcdp->declQuad");
 	} else if (nodep->bitRange().ranged()) {
-	    puts("vcdp->declBus  ");
+            puts("vcdp->declBus");
 	} else {
-	    puts("vcdp->declBit  ");
+            puts("vcdp->declBit");
 	}
 
 	puts("(c+"+cvtToStr(nodep->code()));
@@ -2912,15 +2912,15 @@ class EmitCTrace : EmitCStmts {
 	    puts("vcdp->"+full+"Array");
             emitWidth = true;
 	} else if (nodep->isQuad()) {
-	    puts("vcdp->"+full+"Quad ");
+            puts("vcdp->"+full+"Quad");
             emitWidth = true;
         } else if (nodep->declp()->bitRange().ranged()
                    // 1 element smaller to use Bit dump
                    && nodep->declp()->bitRange().elements() != 1) {
-	    puts("vcdp->"+full+"Bus  ");
+            puts("vcdp->"+full+"Bus");
             emitWidth = true;
 	} else {
-	    puts("vcdp->"+full+"Bit  ");
+            puts("vcdp->"+full+"Bit");
 	}
 	puts("(c+"+cvtToStr(nodep->declp()->code()
 			    + ((arrayindex<0) ? 0 : (arrayindex*nodep->declp()->widthWords()))));
