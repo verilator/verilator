@@ -104,6 +104,7 @@ sub ignore {
     my $filename = shift;
     return 1 if ($filename =~ /(Makefile|\.mk)/);
     return 1 if ($filename =~ /\.(y|l|out|vcd)$/);
+    return 1 if ($filename =~ /gtkwave/);
     #
     return 0 if ($filename =~ /\.(sv|v|vh|svh|h|vc|cpp|pl)$/);
     return 0;
