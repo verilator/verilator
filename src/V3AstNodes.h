@@ -779,6 +779,7 @@ class AstEnumDType : public AstNodeDType {
     // Parents: TYPEDEF/MODULE
     // Children: ENUMVALUEs
 private:
+    string m_name;  // Name from upper typedef, if any
     AstNodeDType*	m_refDTypep;	// Elements are of this type after V3Width
     int		m_uniqueNum;
 public:
@@ -809,6 +810,8 @@ public:
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     virtual AstNodeDType* virtRefDTypep() const { return m_refDTypep; }
     virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
+    virtual string name() const { return m_name; }
+    void name(const string& flag) { m_name = flag; }
     AstEnumItem* itemsp() const { return VN_CAST(op2p(), EnumItem); }  // op2 = AstEnumItem's
     void addValuesp(AstNode* nodep) { addOp2p(nodep); }
     // METHODS

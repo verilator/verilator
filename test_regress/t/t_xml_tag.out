@@ -20,7 +20,7 @@
     <typetable fl="a0">
       <basicdtype  fl="f23" id="4" name="logic" left="31" right="0"/>
       <basicdtype  fl="f8" id="1" name="logic"/>
-      <structdtype fl="f14" id="2">
+      <structdtype fl="f14" id="2" name="m.my_struct">
         <memberdtype fl="f15" id="5" name="clk" tag="this is clk" sub_dtype_id="6"/>
         <memberdtype fl="f16" id="7" name="k" sub_dtype_id="8"/>
         <memberdtype fl="f17" id="9" name="enable" tag="enable" sub_dtype_id="10"/>

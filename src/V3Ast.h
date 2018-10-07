@@ -1809,6 +1809,7 @@ private:
     // TYPES
     typedef std::map<string,AstMemberDType*> MemberNameMap;
     // MEMBERS
+    string m_name;  // Name from upper typedef, if any
     bool		m_packed;
     bool		m_isFourstate;
     MemberNameMap	m_members;
@@ -1837,6 +1838,8 @@ public:
     virtual bool similarDType(AstNodeDType* samep) const {
 	return this==samep;  // We don't compare members, require exact equivalence
     }
+    virtual string name() const { return m_name; }
+    void name(const string& flag) { m_name = flag; }
     AstMemberDType* membersp() const { return VN_CAST(op1p(), MemberDType); }  // op1 = AstMember list
     void addMembersp(AstNode* nodep) { addNOp1p(nodep); }
     bool packed() const { return m_packed; }

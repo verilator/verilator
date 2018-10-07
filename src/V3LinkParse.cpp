@@ -82,6 +82,29 @@ private:
 	}
     }
 
+    string nameFromTypedef(AstNode* nodep) {
+        // Try to find a name for a typedef'ed enum/struct
+        if (AstTypedef* typedefp = VN_CAST(nodep->backp(), Typedef)) {
+            // Create a name for the enum, to aid debug and tracing
+            // This name is not guaranteed to be globally unique (due to later parameterization)
+            string above;
+            if (m_modp && VN_IS(m_modp, Package)) above = m_modp->name()+"::";
+            else if (m_modp) above = m_modp->name()+".";
+            return above + typedefp->name();
+        }
+        return "";
+    }
+
+    void visitIterateNodeDType(AstNodeDType* nodep) {
+        if (!nodep->user1SetOnce()) {  // Process only once.
+            cleanFileline(nodep);
+            AstNodeDType* upperDtypep = m_dtypep;
+            m_dtypep = nodep;
+            iterateChildren(nodep);
+            m_dtypep = upperDtypep;
+        }
+    }
+
     // VISITs
     virtual void visit(AstNodeFTask* nodep) {
 	if (!nodep->user1SetOnce()) {  // Process only once.
@@ -102,13 +125,19 @@ private:
 	}
     }
     virtual void visit(AstNodeDType* nodep) {
-	if (!nodep->user1SetOnce()) {  // Process only once.
-	    cleanFileline(nodep);
-	    AstNodeDType* upperDtypep = m_dtypep;
-	    m_dtypep = nodep;
-            iterateChildren(nodep);
-	    m_dtypep = upperDtypep;
+        visitIterateNodeDType(nodep);
+    }
+    virtual void visit(AstEnumDType* nodep) {
+        if (nodep->name() == "") {
+            nodep->name(nameFromTypedef(nodep));  // Might still remain ""
+        }
+        visitIterateNodeDType(nodep);
+    }
+    virtual void visit(AstNodeClassDType* nodep) {
+        if (nodep->name() == "") {
+            nodep->name(nameFromTypedef(nodep));  // Might still remain ""
 	}
+        visitIterateNodeDType(nodep);
     }
     virtual void visit(AstEnumItem* nodep) {
 	// Expand ranges
