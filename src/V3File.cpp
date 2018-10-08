@@ -576,7 +576,7 @@ bool V3InFilter::readWholefile(const string& filename, V3InFilter::StrList& outl
 V3OutFormatter::V3OutFormatter(const string& filename, V3OutFormatter::Language lang)
     : m_filename(filename), m_lang(lang)
     , m_lineno(1), m_column(0)
-    , m_nobreak(false), m_prependIndent(true), m_indentLevel(0) {
+    , m_nobreak(false), m_prependIndent(true), m_indentLevel(0), m_bracketLevel(0) {
     m_blockIndent = v3Global.opt.decoration() ? 4 : 1;
     m_commaWidth  = v3Global.opt.decoration() ? 50 : 150;
 }
@@ -680,6 +680,7 @@ void V3OutFormatter::puts(const char *strg) {
 	m_prependIndent = false;
     }
     bool wordstart = true;
+    bool equalsForBracket = false;  // Looking for "= {"
     for (const char* cp=strg; *cp; cp++) {
         putcNoTracking(*cp);
 	switch (*cp) {
@@ -700,9 +701,18 @@ void V3OutFormatter::puts(const char *strg) {
 	    wordstart = true;
 	    break;
 	case '{':
+            if (m_lang==LA_C && (equalsForBracket || m_bracketLevel)) {
+                // Break up large code inside "= { ..."
+                m_parenVec.push(m_indentLevel*m_blockIndent);  // Line up continuation with block+1
+                ++m_bracketLevel;
+            }
 	    indentInc();
 	    break;
 	case '}':
+            if (m_bracketLevel>0) {
+                m_parenVec.pop();
+                --m_bracketLevel;
+            }
 	    indentDec();
 	    break;
 	case '(':
@@ -761,6 +771,17 @@ void V3OutFormatter::puts(const char *strg) {
 	    wordstart = false;
 	    break;
 	}
+
+        switch (*cp) {
+        case '=':
+            equalsForBracket = true;
+            break;
+        case ' ':
+            break;
+        default:
+            equalsForBracket = false;
+            break;
+        }
     }
 }
 

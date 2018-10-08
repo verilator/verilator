@@ -124,6 +124,7 @@ private:
     bool	m_prependIndent;
     int		m_indentLevel;	// Current {} indentation
     std::stack<int> m_parenVec;  // Stack of columns where last ( was
+    int         m_bracketLevel;  // Intenting = { block, indicates number of {'s seen.
 
     int		endLevels(const char* strg);
     const char* indentStr(int levels);
