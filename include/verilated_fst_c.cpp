@@ -70,7 +70,7 @@ VerilatedFst::VerilatedFst(void* fst)
 
 void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
     m_assertOne.check();
-    m_fst = fstWriterCreate(filename, 0);
+    m_fst = fstWriterCreate(filename, 1);
     m_curScope.clear();
 
     for (vluint32_t ent = 0; ent< m_callbacks.size(); ++ent) {
