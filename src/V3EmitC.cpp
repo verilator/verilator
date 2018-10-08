@@ -2715,8 +2715,15 @@ void EmitCImp::main(AstNodeModule* modp, bool slow, bool fast) {
 // Tracing routines
 
 class EmitCTrace : EmitCStmts {
+    // NODE STATE/TYPES
+    // Cleared on netlist
+    //  AstNode::user1()        -> int.  Enum number
+    AstUser1InUse m_inuser1;
+
+    // MEMBERS
     AstCFunc*	m_funcp;	// Function we're in now
     bool	m_slow;		// Making slow file
+    int         m_enumNum;      // Enumeration number (whole netlist)
 
     // METHODS
     void newOutCFile(int filenum) {
@@ -2819,7 +2826,7 @@ class EmitCTrace : EmitCStmts {
 	return varp->isSc() && varp->isScUint();
     }
 
-    void emitTraceInitOne(AstTraceDecl* nodep) {
+    void emitTraceInitOne(AstTraceDecl* nodep, int enumNum) {
 	if (nodep->dtypep()->basicp()->isDouble()) {
 	    puts("vcdp->declDouble");
 	} else if (nodep->isWide()) {
@@ -2838,6 +2845,7 @@ class EmitCTrace : EmitCStmts {
 	putsQuoted(nodep->showname());
         // Direction
         if (v3Global.opt.traceFormat() == TraceFormat::FST) {
+            puts(","+cvtToStr(enumNum));
             // fstVarDir
             if (nodep->declInout()) puts(",FST_VD_INOUT");
             else if (nodep->declInput()) puts(",FST_VD_INPUT");
@@ -2898,6 +2906,49 @@ class EmitCTrace : EmitCStmts {
 	    puts(","+cvtToStr(nodep->bitRange().left())+","+cvtToStr(nodep->bitRange().right()));
 	}
 	puts(");");
+    }
+
+    int emitTraceDeclDType(AstNodeDType* nodep) {
+        // Return enum number or -1 for none
+        if (v3Global.opt.traceFormat() == TraceFormat::FST) {
+            // Skip over refs-to-refs, but stop before final ref so can get data type name
+            // Alternatively back in V3Width we could have push enum names from upper typedefs
+            if (AstEnumDType* enump = VN_CAST(nodep->skipRefToEnump(), EnumDType)) {
+                int enumNum = enump->user1();
+                if (!enumNum) {
+                    enumNum = ++m_enumNum;
+                    enump->user1(enumNum);
+                    int nvals = 0;
+                    puts("{\n");
+                    puts("const char* __VenumItemNames[]\n");
+                    puts("= {");
+                    for (AstEnumItem* itemp = enump->itemsp(); itemp;
+                         itemp=VN_CAST(itemp->nextp(), EnumItem)) {
+                        if (++nvals > 1) puts(", ");
+                        putbs("\""+itemp->prettyName()+"\"");
+                    }
+                    puts("};\n");
+                    nvals = 0;
+                    puts("const char* __VenumItemValues[]\n");
+                    puts("= {");
+                    for (AstEnumItem* itemp = enump->itemsp(); itemp;
+                         itemp=VN_CAST(itemp->nextp(), EnumItem)) {
+                        AstConst* constp = VN_CAST(itemp->valuep(), Const);
+                        if (++nvals > 1) puts(", ");
+                        putbs("\""+constp->num().displayed(nodep->fileline(), "%0b")+"\"");
+                    }
+                    puts("};\n");
+                    puts("vcdp->declDTypeEnum("+cvtToStr(enumNum)
+                         +", \""+enump->prettyName()+"\", "
+                         +cvtToStr(nvals)
+                         +", "+cvtToStr(enump->widthMin())
+                         +", __VenumItemNames, __VenumItemValues);\n");
+                    puts("}\n");
+                }
+                return enumNum;
+            }
+        }
+        return -1;
     }
 
     void emitTraceChangeOne(AstTraceInc* nodep, int arrayindex) {
@@ -3013,12 +3064,13 @@ class EmitCTrace : EmitCStmts {
 	m_funcp = NULL;
     }
     virtual void visit(AstTraceDecl* nodep) {
+        int enumNum = emitTraceDeclDType(nodep->dtypep());
 	if (nodep->arrayRange().ranged()) {
 	    puts("{int i; for (i=0; i<"+cvtToStr(nodep->arrayRange().elements())+"; i++) {\n");
-	    emitTraceInitOne(nodep);
+            emitTraceInitOne(nodep, enumNum);
 	    puts("}}\n");
 	} else {
-	    emitTraceInitOne(nodep);
+            emitTraceInitOne(nodep, enumNum);
 	    puts("\n");
 	}
     }
@@ -3041,6 +3093,7 @@ public:
     explicit EmitCTrace(bool slow) {
 	m_funcp = NULL;
 	m_slow = slow;
+        m_enumNum = 0;
     }
     virtual ~EmitCTrace() {}
     void main() {

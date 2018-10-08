@@ -94,8 +94,16 @@ void VerilatedFst::module(const std::string& name) {
 //=============================================================================
 // Decl
 
-void VerilatedFst::declSymbol(vluint32_t code, const char* name, fstVarDir vardir,
-                              fstVarType vartype,
+void VerilatedFst::declDTypeEnum(int dtypenum, const char* name, vluint32_t elements,
+                                 unsigned int minValbits,
+                                 const char** itemNamesp, const char** itemValuesp) {
+    fstEnumHandle enumNum = fstWriterCreateEnumTable(m_fst, name, elements,
+                                                     minValbits, itemNamesp, itemValuesp);
+    m_local2fstdtype[dtypenum] = enumNum;
+}
+
+void VerilatedFst::declSymbol(vluint32_t code, const char* name,
+                              int dtypenum, fstVarDir vardir, fstVarType vartype,
                               int arraynum, vluint32_t len) {
     std::pair<Code2SymbolType::iterator, bool> p
         = m_code2symbol.insert(std::make_pair(code, (fstHandle)(0)));
@@ -135,6 +143,10 @@ void VerilatedFst::declSymbol(vluint32_t code, const char* name, fstVarDir vardi
         name_ss << "(" << arraynum << ")";
     std::string name_str = name_ss.str();
 
+    if (dtypenum > 0) {
+        fstEnumHandle enumNum = m_local2fstdtype[dtypenum];
+        fstWriterEmitEnumTableRef(m_fst, enumNum);
+    }
     if (p.second) {  // New
         p.first->second = fstWriterCreateVar(m_fst, vartype, vardir, len, name_str.c_str(), 0);
         assert(p.first->second);

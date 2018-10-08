@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2017 Tony Bybell.
+ * Copyright (c) 2009-2018 Tony Bybell.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -39,6 +39,7 @@ extern "C" {
 #define FST_RDLOAD "FSTLOAD | "
 
 typedef uint32_t fstHandle;
+typedef uint32_t fstEnumHandle;
 
 enum fstWriterPackType {
     FST_WR_PT_ZLIB             = 0,
@@ -196,9 +197,10 @@ enum fstMiscType {
     FST_MT_SOURCESTEM  = 4,     /* use fstWriterSetSourceStem() to emit */
     FST_MT_SOURCEISTEM = 5,     /* use fstWriterSetSourceInstantiationStem() to emit */
     FST_MT_VALUELIST   = 6,	/* use fstWriterSetValueList() to emit, followed by fstWriterCreateVar*() */
-    FST_MT_UNKNOWN     = 7,
+    FST_MT_ENUMTABLE   = 7,	/* use fstWriterCreateEnumTable() and fstWriterEmitEnumTableRef() to emit */
+    FST_MT_UNKNOWN     = 8,
 
-    FST_MT_MAX         = 7
+    FST_MT_MAX         = 8
 };
 
 enum fstArrayType {
@@ -228,7 +230,10 @@ enum fstEnumValueType {
     FST_EV_SV_UNSIGNED_LONGINT  = 12,
     FST_EV_SV_UNSIGNED_BYTE     = 13,
 
-    FST_EV_MAX                  = 13
+    FST_EV_REG			= 14,
+    FST_EV_TIME			= 15,
+
+    FST_EV_MAX                  = 15
 };
 
 enum fstPackType {
@@ -324,11 +329,21 @@ union {
 };
 
 
+struct fstETab
+{
+char *name;
+uint32_t elem_count;
+char **literal_arr;
+char **val_arr;
+};
+
+
 /*
  * writer functions
  */
 void            fstWriterClose(void *ctx);
 void *          fstWriterCreate(const char *nam, int use_compressed_hier);
+fstEnumHandle   fstWriterCreateEnumTable(void *ctx, const char *name, uint32_t elem_count, unsigned int min_valbits, const char **literal_arr, const char **val_arr);
                 /* used for Verilog/SV */
 fstHandle       fstWriterCreateVar(void *ctx, enum fstVarType vt, enum fstVarDir vd,
                         uint32_t len, const char *nam, fstHandle aliasHandle);
@@ -337,9 +352,10 @@ fstHandle       fstWriterCreateVar(void *ctx, enum fstVarType vt, enum fstVarDir
 fstHandle       fstWriterCreateVar2(void *ctx, enum fstVarType vt, enum fstVarDir vd,
                         uint32_t len, const char *nam, fstHandle aliasHandle,
                         const char *type, enum fstSupplementalVarType svt, enum fstSupplementalDataType sdt);
+void            fstWriterEmitDumpActive(void *ctx, int enable);
+void 		fstWriterEmitEnumTableRef(void *ctx, fstEnumHandle handle);
 void            fstWriterEmitValueChange(void *ctx, fstHandle handle, const void *val);
 void            fstWriterEmitVariableLengthValueChange(void *ctx, fstHandle handle, const void *val, uint32_t len);
-void            fstWriterEmitDumpActive(void *ctx, int enable);
 void            fstWriterEmitTimeChange(void *ctx, uint64_t tim);
 void            fstWriterFlushContext(void *ctx);
 int             fstWriterGetDumpSizeLimitReached(void *ctx);
@@ -422,8 +438,12 @@ void            fstReaderSetVcdExtensions(void *ctx, int enable);
 /*
  * utility functions
  */
-int             fstUtilityBinToEsc(unsigned char *d, unsigned char *s, int len);
+int             fstUtilityBinToEscConvertedLen(const unsigned char *s, int len); /* used for mallocs for fstUtilityBinToEsc() */
+int             fstUtilityBinToEsc(unsigned char *d, const unsigned char *s, int len);
 int             fstUtilityEscToBin(unsigned char *d, unsigned char *s, int len);
+struct fstETab *fstUtilityExtractEnumTableFromString(const char *s);
+void 		fstUtilityFreeEnumTable(struct fstETab *etab); /* must use to free fstETab properly */
+
 
 #ifdef __cplusplus
 }

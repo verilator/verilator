@@ -795,6 +795,8 @@ char *geom_handle_nam;
 char *valpos_handle_nam;
 char *curval_handle_nam;
 char *tchn_handle_nam;
+
+fstEnumHandle max_enumhandle;
 };
 
 
@@ -2305,7 +2307,7 @@ if(xc && path && path[0])
         const unsigned char *path2 = (const unsigned char *)path;
 	PPvoid_t pv;
 #else
-        char *path2 = alloca(slen + 1); /* judy lacks const qualifier in its JudyHSIns definition */
+        char *path2 = (char *)alloca(slen + 1); /* judy lacks const qualifier in its JudyHSIns definition */
 	PPvoid_t pv;
         strcpy(path2, path);
 #endif
@@ -2722,6 +2724,111 @@ if(xc)
         {
         fputc(FST_ST_GEN_ATTREND, xc->hier_handle);
         xc->hier_file_len++;
+        }
+}
+
+
+fstEnumHandle fstWriterCreateEnumTable(void *ctx, const char *name, uint32_t elem_count, unsigned int min_valbits, const char **literal_arr, const char **val_arr)
+{
+fstEnumHandle handle = 0;
+unsigned int *literal_lens = NULL;
+unsigned int *val_lens = NULL;
+int lit_len_tot = 0;
+int val_len_tot = 0;
+int name_len;
+char elem_count_buf[16];
+int elem_count_len;
+int total_len;
+int pos = 0;
+char *attr_str = NULL;
+
+if(ctx && name && literal_arr && val_arr && (elem_count != 0))
+	{
+	struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
+
+	uint32_t i;
+
+	name_len = strlen(name);
+	elem_count_len = sprintf(elem_count_buf, "%" PRIu32, elem_count);
+
+	literal_lens = (unsigned int *)calloc(elem_count, sizeof(unsigned int));
+	val_lens = (unsigned int *)calloc(elem_count, sizeof(unsigned int));
+
+	for(i=0;i<elem_count;i++)
+		{
+		literal_lens[i] = strlen(literal_arr[i]);
+		lit_len_tot += fstUtilityBinToEscConvertedLen((unsigned char*)literal_arr[i], literal_lens[i]);
+
+		val_lens[i] =  strlen(val_arr[i]);
+		val_len_tot += fstUtilityBinToEscConvertedLen((unsigned char*)val_arr[i], val_lens[i]);
+
+		if(min_valbits > 0)
+			{
+			if(val_lens[i] < min_valbits)
+				{
+				val_len_tot += (min_valbits - val_lens[i]); /* additional converted len is same for '0' character */
+				}
+			}
+		}
+
+	total_len = name_len + 1 + elem_count_len + 1 + lit_len_tot + elem_count + val_len_tot + elem_count;
+
+	attr_str = (char*)malloc(total_len);
+	pos = 0;
+
+	memcpy(attr_str+pos, name, name_len);
+	pos += name_len;
+	attr_str[pos++] = ' ';
+
+	memcpy(attr_str+pos, elem_count_buf, elem_count_len);
+	pos += elem_count_len;
+	attr_str[pos++] = ' ';
+
+	for(i=0;i<elem_count;i++)
+		{
+		pos += fstUtilityBinToEsc((unsigned char*)attr_str+pos, (unsigned char*)literal_arr[i], literal_lens[i]);
+		attr_str[pos++] = ' ';
+		}
+
+	for(i=0;i<elem_count;i++)
+		{
+		if(min_valbits > 0)
+			{
+			if(val_lens[i] < min_valbits)
+				{
+				memset(attr_str+pos, '0', min_valbits - val_lens[i]);
+				pos += (min_valbits - val_lens[i]);
+				}
+			}
+
+		pos += fstUtilityBinToEsc((unsigned char*)attr_str+pos, (unsigned char*)val_arr[i], val_lens[i]);
+		attr_str[pos++] = ' ';
+		}
+
+	attr_str[pos-1] = 0;
+
+#ifdef FST_DEBUG
+	fprintf(stderr, FST_APIMESS"fstWriterCreateEnumTable() total_len: %d, pos: %d\n", total_len, pos);
+	fprintf(stderr, FST_APIMESS"*%s*\n", attr_str);
+#endif
+
+	fstWriterSetAttrBegin(xc, FST_AT_MISC, FST_MT_ENUMTABLE, attr_str, handle = ++xc->max_enumhandle);
+
+	free(attr_str);
+	free(val_lens);
+	free(literal_lens);
+	}
+
+return(handle);
+}
+
+
+void fstWriterEmitEnumTableRef(void *ctx, fstEnumHandle handle)
+{
+struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
+if(xc && handle)
+	{
+	fstWriterSetAttrBegin(xc, FST_AT_MISC, FST_MT_ENUMTABLE, NULL, handle);
         }
 }
 
@@ -6503,9 +6610,46 @@ if(base && *base)
 /***                  ***/
 /************************/
 
-int fstUtilityBinToEsc(unsigned char *d, unsigned char *s, int len)
+int fstUtilityBinToEscConvertedLen(const unsigned char *s, int len)
 {
-unsigned char *src = s;
+const unsigned char *src = s;
+int dlen = 0;
+int i;
+
+for(i=0;i<len;i++)
+        {
+        switch(src[i])
+                {
+                case '\a':      /* fallthrough */
+                case '\b':	/* fallthrough */
+                case '\f':	/* fallthrough */
+                case '\n':	/* fallthrough */
+                case '\r':	/* fallthrough */
+                case '\t':	/* fallthrough */
+                case '\v':	/* fallthrough */
+                case '\'':	/* fallthrough */
+                case '\"':	/* fallthrough */
+                case '\\':	/* fallthrough */
+                case '\?':      dlen += 2; break;
+                default:        if((src[i] > ' ') && (src[i] <= '~')) /* no white spaces in output */
+                                        {
+					dlen++;
+                                        }
+                                        else
+                                        {
+					dlen += 4;
+                                        }
+                                break;
+                }
+        }
+
+return(dlen);
+}
+
+
+int fstUtilityBinToEsc(unsigned char *d, const unsigned char *s, int len)
+{
+const unsigned char *src = s;
 unsigned char *dst = d;
 unsigned char val;
 int i;
@@ -6603,4 +6747,77 @@ for(i=0;i<len;i++)
         }
 
 return(dst - s);
+}
+
+
+struct fstETab *fstUtilityExtractEnumTableFromString(const char *s)
+{
+struct fstETab *et = NULL;
+int num_spaces = 0;
+int i;
+int newlen;
+
+if(s)
+	{
+	const char *csp = strchr(s, ' ');
+	int cnt = atoi(csp+1);
+
+	for(;;)
+		{
+		csp = strchr(csp+1, ' ');
+		if(csp) { num_spaces++; } else { break; }
+		}
+
+	if(num_spaces == (2*cnt))
+		{
+		char *sp, *sp2;
+
+		et = (struct fstETab*)calloc(1, sizeof(struct fstETab));
+		et->elem_count = cnt;
+		et->name = strdup(s);
+		et->literal_arr = (char**)calloc(cnt, sizeof(char *));
+		et->val_arr = (char**)calloc(cnt, sizeof(char *));
+
+		sp = strchr(et->name, ' ');
+		*sp = 0;
+
+		sp = strchr(sp+1, ' ');
+
+		for(i=0;i<cnt;i++)
+			{
+			sp2 = strchr(sp+1, ' ');
+			*(char*)sp2 = 0;
+			et->literal_arr[i] = sp+1;
+			sp = sp2;
+
+			newlen = fstUtilityEscToBin(NULL, (unsigned char*)et->literal_arr[i], strlen(et->literal_arr[i]));
+			et->literal_arr[i][newlen] = 0;
+			}
+
+		for(i=0;i<cnt;i++)
+			{
+			sp2 = strchr(sp+1, ' ');
+			if(sp2) { *sp2 = 0; }
+			et->val_arr[i] = sp+1;
+			sp = sp2;
+
+			newlen = fstUtilityEscToBin(NULL, (unsigned char*)et->val_arr[i], strlen(et->val_arr[i]));
+			et->val_arr[i][newlen] = 0;
+			}
+		}
+	}
+
+return(et);
+}
+
+
+void fstUtilityFreeEnumTable(struct fstETab *etab)
+{
+if(etab)
+	{
+	free(etab->literal_arr);
+	free(etab->val_arr);
+	free(etab->name);
+	free(etab);
+	}
 }

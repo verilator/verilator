@@ -1,5 +1,5 @@
 $date
-	Sun Oct  7 21:45:44 2018
+	Mon Oct  8 07:13:12 2018
 
 $end
 $version
@@ -72,8 +72,11 @@ $var logic 32 A data $end
 $upscope $end
 $scope module v_str32x2(1) $end
 $var logic 32 B data $end
+$attrbegin misc 07 t.enumed_t 4 ZERO ONE TWO THREE 00000000000000000000000000000000 00000000000000000000000000000001 00000000000000000000000000000010 00000000000000000000000000000011 1 $end
 $upscope $end
+$attrbegin misc 07 "" 1 $end
 $var logic 32 C v_enumed $end
+$attrbegin misc 07 "" 1 $end
 $var logic 32 D v_enumed2 $end
 $scope module unnamedblk1 $end
 $var integer 32 E b $end
