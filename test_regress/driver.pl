@@ -1604,6 +1604,11 @@ sub vcd_identical {
 	if ($a ne $b) {
 	    print "$a\n$b\n" if $::Debug;
 	    $self->error("VCD hier mismatch $fn1 $fn2\n");
+            if ($ENV{HARNESS_UPDATE_GOLDEN}) {  # Update golden files with current
+                warn "%Warning: HARNESS_UPDATE_GOLDEN set: cp $fn1 $fn2\n";
+                eval "use File::Copy;";
+                File::Copy::copy($fn1,$fn2);
+            }
 	    return 0;
 	}
     }
@@ -1620,7 +1625,7 @@ sub fst2vcd {
     my $out = `$cmd`;
     if (!$out || $out !~ /Usage:/) { $self->skip("No fst2vcd installed\n"); return 0; }
 
-    $cmd = qq{fst2vcd "$fn1" -o "$fn2"};
+    $cmd = qq{fst2vcd -e "$fn1" -o "$fn2"};
     print "\t$cmd\n" if $::Debug;
     $out = `$cmd`;
     return 1;
@@ -1649,17 +1654,23 @@ sub _vcd_read {
     my $fh = IO::File->new ("<$filename");
     if (!$fh) { warn "%Error: $! $filename\n"; return $data; }
     my @hier = ($data);
+    my $lasthier;
     while (defined(my $line = $fh->getline)) {
 	if ($line =~ /\$scope module\s+(\S+)/) {
 	    $hier[$#hier]->{$1} ||= {};
 	    push @hier, $hier[$#hier]->{$1};
+            $lasthier = $hier[$#hier];
 	} elsif ($line =~ /(\$var \S+\s+\d+\s+)\S+\s+(\S+)/) {
-	    $hier[$#hier]->{$1.$2} ||= 1;
+            $hier[$#hier]->{$1.$2} ||= {};
+            $lasthier = $hier[$#hier];
+        } elsif ($line =~ /(\$attrbegin .* \$end)/) {
+            if ($lasthier) { $lasthier->{$1} ||= 1; }
 	} elsif ($line =~ /\$enddefinitions/) {
 	    last;
 	}
 	while ($line =~ s/\$upscope//) {
 	    pop @hier;
+            $lasthier = undef;
 	}
     }
     return $data;

@@ -58,6 +58,7 @@ module t (clk);
 
    typedef enum int { ZERO=0, ONE, TWO, THREE } enumed_t;
    enumed_t v_enumed;
+   enumed_t v_enumed2;
 
    p #(.PARAM(2)) p2 ();
    p #(.PARAM(3)) p3 ();
@@ -75,6 +76,7 @@ module t (clk);
       v_arr_real[0] <= v_arr_real[0] + 0.2;
       v_arr_real[1] <= v_arr_real[1] + 0.3;
       v_enumed <= v_enumed + 1;
+      v_enumed2 <= v_enumed2 + 2;
       for (integer b=3; b<=4; b++) begin
 	 v_arru[b] <= ~v_arru[b];
 	 v_arru_strp[b] <= ~v_arru_strp[b];
