@@ -347,10 +347,12 @@ class AstSenTree;
 %token<fl>		yENDTASK	"endtask"
 %token<fl>		yENUM		"enum"
 %token<fl>		yEXPORT		"export"
+%token<fl>		yEXTERN		"extern"
 %token<fl>		yFINAL		"final"
 %token<fl>		yFOR		"for"
 %token<fl>		yFOREACH	"foreach"
 %token<fl>		yFOREVER	"forever"
+%token<fl>		yFORKJOIN	"forkjoin"
 %token<fl>		yFUNCTION	"function"
 %token<fl>		yGENERATE	"generate"
 %token<fl>		yGENVAR		"genvar"
@@ -408,6 +410,7 @@ class AstSenTree;
 %token<fl>		yRTRANIF1	"rtranif1"
 %token<fl>		ySCALARED	"scalared"
 %token<fl>		ySHORTINT	"shortint"
+%token<fl>		ySHORTREAL	"shortreal"
 %token<fl>		ySIGNED		"signed"
 %token<fl>		ySPECIFY	"specify"
 %token<fl>		ySPECPARAM	"specparam"
@@ -707,8 +710,8 @@ package_declaration:		// ==IEEE: package_declaration
 	;
 
 packageFront<modulep>:
-		yPACKAGE idAny ';'
-			{ $$ = new AstPackage($1,*$2);
+		yPACKAGE lifetimeE idAny ';'
+			{ $$ = new AstPackage($1,*$3);
 			  $$->inLibrary(true);  // packages are always libraries; don't want to make them a "top"
 			  $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
 			  PARSEP->rootp()->addModulep($$);
@@ -727,7 +730,7 @@ package_itemList<nodep>:	// IEEE: { package_item }
 
 package_item<nodep>:		// ==IEEE: package_item
 		package_or_generate_item_declaration	{ $$ = $1; }
-	//UNSUP	anonymous_program			{ $$ = $1; }
+	|	anonymous_program			{ $$ = $1; }
 	|	package_export_declaration		{ $$ = $1; }
 	|	timeunits_declaration			{ $$ = $1; }
 	;
@@ -812,8 +815,8 @@ module_declaration:		// ==IEEE: module_declaration
 			  SYMP->popScope($1);
 			  GRAMMARP->endLabel($<fl>7,$1,$7); }
 	//
-	//UNSUP	yEXTERN modFront parameter_port_listE portsStarE ';'
-	//UNSUP		{ UNSUP }
+	|	yEXTERN modFront parameter_port_listE portsStarE ';'
+			{ $<fl>1->v3error("Unsupported: extern module"); }
 	;
 
 modFront<modulep>:
@@ -997,7 +1000,8 @@ interface_declaration:		// IEEE: interface_declaration + interface_nonansi_heade
 			  if ($3) $1->addStmtp($3);
 			  if ($5) $1->addStmtp($5);
 			  SYMP->popScope($1); }
-	//UNSUP yEXTERN intFront parameter_port_listE portsStarE ';'	{ }
+	|	yEXTERN intFront parameter_port_listE portsStarE ';'
+			{ $<fl>1->v3error("Unsupported: extern interface"); }
 	;
 
 intFront<modulep>:
@@ -1040,11 +1044,35 @@ interface_or_generate_item<nodep>:  // ==IEEE: interface_or_generate_item
 	//			    // module_common_item in interface_item, as otherwise duplicated
 	//			    // with module_or_generate_item's module_common_item
 		modport_declaration			{ $$ = $1; }
-	//UNSUP	extern_tf_declaration			{ $$ = $1; }
+	|	extern_tf_declaration			{ $$ = $1; }
 	;
 
 //**********************************************************************
 // Program headers
+
+anonymous_program<nodep>:	// ==IEEE: anonymous_program
+	//			// See the spec - this doesn't change the scope, items still go up "top"
+		yPROGRAM ';' anonymous_program_itemListE yENDPROGRAM	{ $<fl>1->v3error("Unsupported: Anonymous programs"); $$ = NULL; }
+	;
+
+anonymous_program_itemListE<nodep>:	// IEEE: { anonymous_program_item }
+		/* empty */				{ $$ = NULL; }
+	|	anonymous_program_itemList		{ $$ = $1; }
+	;
+
+anonymous_program_itemList<nodep>:	// IEEE: { anonymous_program_item }
+		anonymous_program_item			{ $$ = $1; }
+	|	anonymous_program_itemList anonymous_program_item	{ $$ = $1->addNextNull($2); }
+	;
+
+anonymous_program_item<nodep>:	// ==IEEE: anonymous_program_item
+		task_declaration			{ $$ = $1; }
+	|	function_declaration			{ $$ = $1; }
+	//UNSUP	class_declaration			{ $$ = $1; }
+	//UNSUP	covergroup_declaration			{ $$ = $1; }
+	//			// class_constructor_declaration is part of function_declaration
+	|	';'					{ }
+	;
 
 program_declaration:		// IEEE: program_declaration + program_nonansi_header + program_ansi_header:
 	//			// timeunits_delcarationE is instead in program_item
@@ -1055,8 +1083,9 @@ program_declaration:		// IEEE: program_declaration + program_nonansi_header + pr
 			  if ($5) $1->addStmtp($5);
 			  SYMP->popScope($1);
 			  GRAMMARP->endLabel($<fl>7,$1,$7); }
-	//UNSUP	yEXTERN	pgmFront parameter_port_listE portsStarE ';'
-	//UNSUP		{ PARSEP->symPopScope(VAstType::PROGRAM); }
+	|	yEXTERN	pgmFront parameter_port_listE portsStarE ';'
+			{ $<fl>1->v3error("Unsupported: extern program");
+			  SYMP->popScope($2); }
 	;
 
 pgmFront<modulep>:
@@ -1097,6 +1126,12 @@ program_generate_item<nodep>:		// ==IEEE: program_generate_item
 	|	conditional_generate_construct		{ $$ = $1; }
 	|	generate_region				{ $$ = $1; }
 	|	elaboration_system_task			{ $$ = $1; }
+	;
+
+extern_tf_declaration<nodep>:		// ==IEEE: extern_tf_declaration
+		yEXTERN task_prototype ';'		{ $<fl>1->v3error("Unsupported: extern task"); $$ = NULL; }
+	|	yEXTERN function_prototype ';'		{ $<fl>1->v3error("Unsupported: extern function"); $$ = NULL; }
+	|	yEXTERN yFORKJOIN task_prototype ';'	{ $<fl>1->v3error("Unsupported: extern forkjoin"); $$ = NULL; }
 	;
 
 modport_declaration<nodep>:		// ==IEEE: modport_declaration
@@ -1213,6 +1248,7 @@ net_declaration<nodep>:		// IEEE: net_declaration - excluding implict
 
 net_declarationFront:		// IEEE: beginning of net_declaration
 		net_declRESET net_type   strengthSpecE net_scalaredE net_dataType { VARDTYPE($5); }
+	//UNSUP	net_declRESET yINTERCONNECT signingE rangeListE { VARNET($2); VARDTYPE(x); }
 	;
 
 net_declRESET:
@@ -1331,7 +1367,8 @@ integer_vector_type<bdtypep>:	// ==IEEE: integer_atom_type
 non_integer_type<bdtypep>:	// ==IEEE: non_integer_type
 		yREAL					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
 	|	yREALTIME				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
-	//UNSUP	ySHORTREAL				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::FLOAT); }
+	|	ySHORTREAL				{ $<fl>1->v3error("Unsupported: shortreal (use real instead)");
+							  $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
 	;
 
 signingE<signstate>:		// IEEE: signing - plus empty
@@ -1659,6 +1696,7 @@ type_declaration<nodep>:	// ==IEEE: type_declaration
 	|	yTYPEDEF ySTRUCT idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$3); SYMP->reinsert($$); PARSEP->tagNodep($$); }
 	|	yTYPEDEF yUNION idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$3); SYMP->reinsert($$); PARSEP->tagNodep($$); }
 	//UNSUP	yTYPEDEF yCLASS idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>1, *$3); SYMP->reinsert($$); PARSEP->tagNodep($$); }
+	//UNSUP	yTYPEDEF yINTERFACE yCLASS idAny ';'	{ ... }
 	;
 
 dtypeAttrListE<nodep>:
@@ -2033,7 +2071,7 @@ packed_dimensionList<rangep>:	// IEEE: { packed_dimension }
 
 packed_dimension<rangep>:	// ==IEEE: packed_dimension
 		anyrange				{ $$ = $1; }
-	//UNSUP	'[' ']'					{ UNSUP }
+	|	'[' ']'					{ $<fl>1->v3error("Unsupported: [] dimensions"); $$ = NULL; }
 	;
 
 //************************************************
@@ -2849,6 +2887,7 @@ task_declaration<ftaskp>:	// ==IEEE: task_declaration
 
 task_prototype<ftaskp>:		// ==IEEE: task_prototype
 		yTASK taskId '(' tf_port_listE ')'	{ $$=$2; $$->addStmtsp($4); $$->prototype(true); SYMP->popScope($$); }
+	|	yTASK taskId				{ $$=$2; $$->prototype(true); SYMP->popScope($$); }
 	;
 
 function_declaration<ftaskp>:	// IEEE: function_declaration + function_body_declaration
@@ -2860,6 +2899,7 @@ function_declaration<ftaskp>:	// IEEE: function_declaration + function_body_decl
 
 function_prototype<ftaskp>:	// IEEE: function_prototype
 		yFUNCTION funcId '(' tf_port_listE ')'	{ $$=$2; $$->addStmtsp($4); $$->prototype(true); SYMP->popScope($$); }
+	|	yFUNCTION funcId			{ $$=$2; $$->prototype(true); SYMP->popScope($$); }
 	;
 
 funcIsolateE<cint>:
@@ -3611,8 +3651,6 @@ id<strp>:
 	;
 
 idAny<strp>:			// Any kind of identifier
-	//UNSUP	yaID__aCLASS				{ $$ = $1; $<fl>$=$<fl>1; }
-	//UNSUP	yaID__aCOVERGROUP			{ $$ = $1; $<fl>$=$<fl>1; }
 		yaID__aPACKAGE				{ $$ = $1; $<fl>$=$<fl>1; }
 	|	yaID__aTYPE				{ $$ = $1; $<fl>$=$<fl>1; }
 	|	yaID__ETC				{ $$ = $1; $<fl>$=$<fl>1; }

@@ -474,7 +474,9 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "endproperty"		{ FL; return yENDPROPERTY; }
   "enum"		{ FL; return yENUM; }
   "export"		{ FL; return yEXPORT; }
+  "extern"		{ FL; return yEXTERN; }
   "final"		{ FL; return yFINAL; }
+  "forkjoin"		{ FL; return yFORKJOIN; }
   "iff"			{ FL; return yIFF; }
   "import"		{ FL; return yIMPORT; }
   "inside"		{ FL; return yINSIDE; }
@@ -494,6 +496,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "restrict"		{ FL; return yRESTRICT; }
   "return"		{ FL; return yRETURN; }
   "shortint"		{ FL; return ySHORTINT; }
+  "shortreal"		{ FL; return ySHORTREAL; }
   "static"		{ FL; return ySTATIC; }
   "string"		{ FL; return ySTRING; }
   "struct"		{ FL; return ySTRUCT; }
@@ -523,9 +526,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "endsequence"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "expect"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "extends"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "extern"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "first_match"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "forkjoin"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "ignore_bins"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "illegal_bins"	{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "intersect"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
@@ -541,7 +542,6 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "randsequence"	{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "ref"			{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "sequence"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "shortreal"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "solve"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "super"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "tagged"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
