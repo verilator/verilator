@@ -10,6 +10,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   For --trace-fst, instead of *.fst.hier, put data into *.fst. [Tony Bybell]
 
+****  Fix --trace-lxt2 compile error on MinGW, msg2667. [HyungKi Jeong]
+
 
 * Verilator 4.004 2018-10-6
 

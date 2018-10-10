@@ -24,7 +24,7 @@
 #pragma alloca
 #endif
 
-#include "lxt2_config.h"
+#include "fst_config.h"
 #include "lxt2_write.h"
 
 
