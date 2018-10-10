@@ -501,9 +501,13 @@ output files.
 
 =item -CFLAGS I<flags>
 
-Add specified C compiler flags to the generated makefiles.  When make is
-run on the generated makefile these will be passed to the C++ compiler
-(gcc/g++/msvc++).
+Add specified C compiler flag to the generated makefiles. For multiple
+flags either pass them as a single argument with space separators quoted in
+the shell (C<-CFLAGS "-a -b">), or use multiple -CFLAGS arguments
+(C<-CFLAGS -a -CFLAGS -b>).
+
+When make is run on the generated makefile these will be passed to the C++
+compiler (gcc/g++/msvc++).
 
 =item --cc
 
@@ -860,13 +864,17 @@ small modules; they will always be inlined, if allowed.
 
 =item -LDFLAGS I<flags>
 
-Add specified C linker flags to the generated makefiles.  When make is run
-on the generated makefile these will be passed to the C++ linker (ld)
-*after* the primary file being linked.  This flag is called -LDFLAGS as
-that's the traditional name in simulators; it's would have been better
-called LDLIBS as that's the Makefile variable it controls.  (In Make,
-LDFLAGS is before the first object, LDLIBS after.  -L libraries need to be
-in the Make variable LDLIBS, not LDFLAGS.)
+Add specified C linker flags to the generated makefiles.  For multiple
+flags either pass them as a single argument with space separators quoted in
+the shell (C<-LDFLAGS "-a -b">), or use multiple -LDFLAGS arguments
+(C<-LDFLAGS -a -LDFLAGS -b>).
+
+When make is run on the generated makefile these will be passed to the C++
+linker (ld) *after* the primary file being linked.  This flag is called
+-LDFLAGS as that's the traditional name in simulators; it's would have been
+better called LDLIBS as that's the Makefile variable it controls.  (In
+Make, LDFLAGS is before the first object, LDLIBS after.  -L libraries need
+to be in the Make variable LDLIBS, not LDFLAGS.)
 
 =item --l2-name I<value>
 
