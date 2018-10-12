@@ -320,6 +320,7 @@ class AstSenTree;
 %token<fl>		yCLOCKING	"clocking"
 %token<fl>		yCONST__ETC	"const"
 %token<fl>		yCONST__LEX	"const-in-lex"
+%token<fl>		yCONST__REF	"const-then-ref"
 %token<fl>		yCMOS		"cmos"
 %token<fl>		yCONTEXT	"context"
 %token<fl>		yCONTINUE	"continue"
@@ -399,6 +400,7 @@ class AstSenTree;
 %token<fl>		yRCMOS		"rcmos"
 %token<fl>		yREAL		"real"
 %token<fl>		yREALTIME	"realtime"
+%token<fl>		yREF		"ref"
 %token<fl>		yREG		"reg"
 %token<fl>		yREPEAT		"repeat"
 %token<fl>		yRESTRICT	"restrict"
@@ -1301,8 +1303,8 @@ port_direction:			// ==IEEE: port_direction + tf_port_direction
 		yINPUT					{ VARIO(INPUT); }
 	|	yOUTPUT					{ VARIO(OUTPUT); }
 	|	yINOUT					{ VARIO(INOUT); }
-	//UNSUP	yREF					{ VARIO(REF); }
-	//UNSUP	yCONST__REF yREF			{ VARIO(CONSTREF); }
+	|	yREF					{ $<fl>1->v3error("Unsupported: ref port"); VARIO(INOUT); }
+	|	yCONST__REF yREF			{ $<fl>1->v3error("Unsupported: const ref port"); VARIO(INOUT); }
 	;
 
 port_directionReset:		// IEEE: port_direction that starts a port_declaraiton
@@ -1310,8 +1312,8 @@ port_directionReset:		// IEEE: port_direction that starts a port_declaraiton
 		yINPUT					{ VARRESET_NONLIST(UNKNOWN); VARIO(INPUT); }
 	|	yOUTPUT					{ VARRESET_NONLIST(UNKNOWN); VARIO(OUTPUT); }
 	|	yINOUT					{ VARRESET_NONLIST(UNKNOWN); VARIO(INOUT); }
-	//UNSUP	yREF					{ VARRESET_NONLIST(UNKNOWN); VARIO(REF); }
-	//UNSUP	yCONST__REF yREF			{ VARRESET_NONLIST(UNKNOWN); VARIO(CONSTREF); }
+	|	yREF					{ $<fl>1->v3error("Unsupported: ref port"); VARRESET_NONLIST(UNKNOWN); VARIO(INOUT); }
+	|	yCONST__REF yREF			{ $<fl>1->v3error("Unsupported: const ref port"); VARRESET_NONLIST(UNKNOWN); VARIO(INOUT); }
 	;
 
 port_declaration<nodep>:	// ==IEEE: port_declaration

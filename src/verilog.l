@@ -493,6 +493,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "pure"		{ FL; return yPURE; }
   "rand"		{ FL; return yRAND; }
   "randc"		{ FL; return yRANDC; }
+  "ref"			{ FL; return yREF; }
   "restrict"		{ FL; return yRESTRICT; }
   "return"		{ FL; return yRETURN; }
   "shortint"		{ FL; return ySHORTINT; }
@@ -540,7 +541,6 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "randcase"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "randomize"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "randsequence"	{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "ref"			{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "sequence"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "solve"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "super"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
@@ -1067,8 +1067,8 @@ void V3ParseImp::lexToken() {
 	yylval = curValue;
 	// Now potentially munge the current token
 	if (token == yCONST__LEX) {
-	    //UNSUP if (nexttok == yREF) token = yCONST__REF;
-	    token = yCONST__ETC;
+	    if (nexttok == yREF) token = yCONST__REF;
+	    else token = yCONST__ETC;
 	}
 	else if (token == yGLOBAL__LEX) {
 	    if (nexttok == yCLOCKING) token = yGLOBAL__CLOCKING;
