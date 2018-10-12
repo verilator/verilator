@@ -134,13 +134,15 @@ sub verilator_bin {
                     || ($Debug ? "verilator_bin_dbg" : "verilator_bin"));
     if (defined($ENV{VERILATOR_ROOT})) {
         my $dir = $ENV{VERILATOR_ROOT};
-        if (-x "$dir/bin/$basename") {  # From a "make install" into VERILATOR_ROOT
+        if (-x "$dir/bin/$basename"
+            || -x "$dir/bin/$basename.exe") {  # From a "make install" into VERILATOR_ROOT
             $bin = "$dir/bin/$basename";
         } else {
             $bin = "$dir/$basename";  # From pointing to kit directory
         }
     } else {
-        if (-x "$RealBin/$basename") {
+        if (-x "$RealBin/$basename"
+            || -x "$RealBin/$basename.exe") {
             $bin = "$RealBin/$basename";  # From path/to/verilator with verilator_bin installed
         } else {
             $bin = $basename;  # Find in PATH

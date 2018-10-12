@@ -12,6 +12,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix --trace-lxt2 compile error on MinGW, msg2667. [HyungKi Jeong]
 
+****  Fix Windows .exe not found, bug1361. [Patrick Stewart]
+
 
 * Verilator 4.004 2018-10-6
 
