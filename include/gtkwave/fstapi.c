@@ -285,7 +285,7 @@ static char *fstRealpath(const char *path, char *resolved_path)
 #if (defined(__MACH__) && defined(__APPLE__))
 if(!resolved_path)
         {
-        resolved_path = (unsigned char *)malloc(PATH_MAX+1); /* fixes bug on Leopard when resolved_path == NULL */
+        resolved_path = (char *)malloc(PATH_MAX+1); /* fixes bug on Leopard when resolved_path == NULL */
         }
 #endif
 
@@ -2164,7 +2164,7 @@ if(xc && !xc->already_in_close && !xc->already_in_flush)
 #ifdef __MINGW32__
         {
         int flen = strlen(xc->filename);
-        char *hf = (char*)calloc(1, flen + 6);
+        char *hf = (char *)calloc(1, flen + 6);
         strcpy(hf, xc->filename);
 
         if(xc->compress_hier)
