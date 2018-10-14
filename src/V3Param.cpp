@@ -50,12 +50,12 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
 #include <cstdarg>
-#include <unistd.h>
-#include <map>
-#include <vector>
+#include <cstdio>
 #include <deque>
+#include <map>
+#include <unistd.h>
+#include <vector>
 
 #include "V3Global.h"
 #include "V3Param.h"

@@ -20,8 +20,8 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
 #include <cstdarg>
+#include <cstdio>
 #include <cstring>
 #include VL_INCLUDE_UNORDERED_SET
 

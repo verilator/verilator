@@ -24,9 +24,9 @@
 #include "verilated_cov.h"
 #include "verilated_cov_key.h"
 
-#include <map>
 #include <deque>
 #include <fstream>
+#include <map>
 
 //=============================================================================
 // VerilatedCovImpBase

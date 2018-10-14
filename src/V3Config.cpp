@@ -20,9 +20,9 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <string>
 #include <map>
 #include <set>
+#include <string>
 
 #include "V3Global.h"
 #include "V3String.h"

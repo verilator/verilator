@@ -48,11 +48,11 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
 #include <cstdarg>
-#include <unistd.h>
-#include <set>
+#include <cstdio>
 #include <map>
+#include <set>
+#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3Trace.h"

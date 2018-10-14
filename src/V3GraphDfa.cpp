@@ -20,12 +20,12 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
 #include <cstdarg>
-#include <unistd.h>
-#include <stack>
+#include <cstdio>
 #include <map>
 #include <set>
+#include <stack>
+#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3GraphDfa.h"

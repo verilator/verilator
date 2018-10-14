@@ -20,11 +20,11 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
 #include <cstdarg>
-#include <unistd.h>
-#include <map>
+#include <cstdio>
 #include <iomanip>
+#include <map>
+#include <unistd.h>
 #include VL_INCLUDE_UNORDERED_MAP
 
 #include "V3Global.h"

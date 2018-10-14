@@ -24,12 +24,12 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
+#include <algorithm>
 #include <cstdarg>
-#include <unistd.h>
+#include <cstdio>
 #include <map>
 #include <set>
-#include <algorithm>
+#include <unistd.h>
 #include <vector>
 
 #include "V3Global.h"

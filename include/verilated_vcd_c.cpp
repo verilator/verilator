@@ -24,11 +24,11 @@
 #include "verilated.h"
 #include "verilated_vcd_c.h"
 
-#include <sys/stat.h>
-#include <fcntl.h>
+#include <algorithm>
 #include <cerrno>
 #include <ctime>
-#include <algorithm>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 #if defined(_WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__)
 # include <io.h>

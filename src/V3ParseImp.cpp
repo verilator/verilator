@@ -28,11 +28,11 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
 #include <cstdarg>
-#include <unistd.h>
+#include <cstdio>
 #include <fstream>
 #include <sstream>
+#include <unistd.h>
 
 #include "V3Error.h"
 #include "V3Global.h"

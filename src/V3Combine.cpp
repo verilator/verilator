@@ -36,12 +36,12 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
 #include <algorithm>
-#include <vector>
+#include <cstdarg>
+#include <cstdio>
 #include <map>
+#include <unistd.h>
+#include <vector>
 
 #include "V3Global.h"
 #include "V3Combine.h"

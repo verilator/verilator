@@ -28,13 +28,13 @@
 #include "gtkwave/fastlz.c"
 #include "gtkwave/lz4.c"
 
-#include <sys/stat.h>
-#include <fcntl.h>
+#include <algorithm>
 #include <cerrno>
 #include <ctime>
-#include <algorithm>
-#include <sstream>
+#include <fcntl.h>
 #include <iterator>
+#include <sstream>
+#include <sys/stat.h>
 
 #if defined(_WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__)
 # include <io.h>

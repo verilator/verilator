@@ -33,8 +33,8 @@
 #include "verilated_vpi.h"
 
 #include <list>
-#include <set>
 #include <map>
+#include <set>
 
 //======================================================================
 // Internal constants

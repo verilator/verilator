@@ -28,10 +28,10 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
 #include <cstdarg>
-#include <unistd.h>
+#include <cstdio>
 #include <map>
+#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3Descope.h"

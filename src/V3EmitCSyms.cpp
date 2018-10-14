@@ -20,14 +20,14 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
+#include <algorithm>
 #include <cmath>
+#include <cstdarg>
+#include <cstdio>
 #include <map>
 #include <set>
+#include <unistd.h>
 #include <vector>
-#include <algorithm>
 
 #include "V3Global.h"
 #include "V3EmitC.h"

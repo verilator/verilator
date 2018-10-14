@@ -27,10 +27,10 @@
 #include "verilated.h"
 #include "gtkwave/fstapi.h"
 
-#include <string>
-#include <vector>
 #include <list>
 #include <map>
+#include <string>
+#include <vector>
 
 class VerilatedFst;
 class VerilatedFstCallInfo;

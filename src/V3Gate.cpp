@@ -27,14 +27,14 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
 #include <algorithm>
+#include <cstdarg>
+#include <cstdio>
 #include <iomanip>
-#include <vector>
 #include <list>
 #include <map>
+#include <unistd.h>
+#include <vector>
 #include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Global.h"

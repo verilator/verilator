@@ -23,8 +23,8 @@
 #include "verilated.h"
 #include "verilated_save.h"
 
-#include <fcntl.h>
 #include <cerrno>
+#include <fcntl.h>
 
 #if defined(_WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__)
 # include <io.h>

@@ -27,9 +27,9 @@
 #include "verilated.h"
 #include "gtkwave/lxt2_write.h"
 
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 
 class VerilatedLxt2;
 class VerilatedLxt2CallInfo;

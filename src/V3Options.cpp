@@ -27,12 +27,12 @@
 #endif
 #include <cctype>
 #include <dirent.h>
-#include <unistd.h>
 #include <fcntl.h>
-#include <set>
 #include <list>
 #include <map>
 #include <memory>
+#include <set>
+#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3String.h"

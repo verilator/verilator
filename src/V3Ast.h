@@ -26,9 +26,9 @@
 #include "V3FileLine.h"
 #include "V3Number.h"
 #include "V3Global.h"
-#include <vector>
 #include <cmath>
 #include <map>
+#include <vector>
 #include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Ast__gen_classes.h"	// From ./astgen

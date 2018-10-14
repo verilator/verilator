@@ -30,10 +30,10 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
 #include <algorithm>
+#include <cstdarg>
+#include <cstdio>
+#include <unistd.h>
 #include <vector>
 #include VL_INCLUDE_UNORDERED_SET
 

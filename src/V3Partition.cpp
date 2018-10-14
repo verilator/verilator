@@ -20,9 +20,9 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
+#include <cstring>
 #include <list>
 #include <memory>
-#include <cstring>
 
 #include "V3Os.h"
 #include "V3File.h"

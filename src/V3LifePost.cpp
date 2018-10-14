@@ -30,8 +30,8 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
 #include <cstdarg>
+#include <cstdio>
 #include <memory>  // for vl_unique_ptr -> auto_ptr or unique_ptr
 #include <unistd.h>
 #include VL_INCLUDE_UNORDERED_MAP

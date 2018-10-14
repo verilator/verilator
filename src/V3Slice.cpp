@@ -41,8 +41,8 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
 #include <cstdarg>
+#include <cstdio>
 #include <unistd.h>
 
 #include "V3Global.h"

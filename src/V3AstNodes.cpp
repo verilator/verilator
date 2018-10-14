@@ -20,12 +20,12 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
+#include <algorithm>
 #include <cstdarg>
+#include <cstdio>
 #include <fstream>
 #include <iomanip>
 #include <vector>
-#include <algorithm>
 #include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Ast.h"

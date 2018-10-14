@@ -20,15 +20,15 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
+#include <cerrno>
 #include <cstdarg>
+#include <fcntl.h>
+#include <iomanip>
+#include <map>
+#include <memory>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <cerrno>
-#include <fcntl.h>
-#include <iomanip>
-#include <memory>
-#include <map>
 
 #if defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))
 # define INFILTER_PIPE  // Allow pipe filtering.  Needs fork()
