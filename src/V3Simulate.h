@@ -831,7 +831,7 @@ private:
 	if (m_params) {
 	    AstNode* nextArgp = nodep->exprsp();
 
-	    string result = "";
+            string result;
 	    string format = nodep->text();
 	    string::const_iterator pos = format.begin();
 	    bool inPct = false;

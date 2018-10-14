@@ -76,7 +76,7 @@ private:
     inline bool drivenFlag(int bit) const { return m_drivenWhole || m_flags[bit*FLAGS_PER_BIT + FLAG_DRIVEN]; }
     enum BitNamesWhich { BN_UNUSED, BN_UNDRIVEN, BN_BOTH };
     string bitNames(BitNamesWhich which) {
-	string bits="";
+        string bits;
 	bool prev = false;
 	int msb = 0;
 	// bit==-1 loops below; we do one extra iteration so end with prev=false

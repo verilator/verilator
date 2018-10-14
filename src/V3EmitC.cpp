@@ -1559,7 +1559,7 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep,
     // Convert Verilog display to C printf formats
     // 		"%0t" becomes "%d"
     emitDispState.clear();
-    string vfmt = "";
+    string vfmt;
     string::const_iterator pos = vformat.begin();
     bool inPct = false;
     for (; pos != vformat.end(); ++pos) {
@@ -2242,7 +2242,7 @@ void EmitCStmts::emitVarSort(const VarSortMap& vmap, VarVec* sortedp) {
 void EmitCStmts::emitSortedVarList(const VarVec& anons,
                                    const VarVec& nonanons,
                                    const string& prefixIfImp) {
-    string curVarCmt = "";
+    string curVarCmt;
     // Output anons
     {
         int anonMembers = anons.size();

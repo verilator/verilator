@@ -3070,7 +3070,7 @@ dpi_import_export<nodep>:	// ==IEEE: dpi_import_export
 	;
 
 dpi_importLabelE<strp>:		// IEEE: part of dpi_import_export
-		/* empty */				{ static string s = ""; $$ = &s; }
+		/* empty */				{ static string s; $$ = &s; }
 	|	idAny/*c_identifier*/ '='		{ $$ = $1; $<fl>$=$<fl>1; }
 	;
 

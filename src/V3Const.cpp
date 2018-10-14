@@ -1977,8 +1977,8 @@ private:
 	}
 	if (m_doNConst && anyconst) {
 	    //UINFO(9,"  Display in  "<<nodep->text()<<endl);
-	    string newFormat = "";
-	    string fmt = "";
+            string newFormat;
+            string fmt;
 	    bool inPct = false;
 	    AstNode* argp = nodep->exprsp();
 	    string text = nodep->text();

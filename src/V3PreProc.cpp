@@ -629,7 +629,7 @@ string V3PreProcImp::defineSubst(V3DefineRef* refp) {
 	}
     }
 
-    string out = "";
+    string out;
     {   // Parse substitution define using arguments
 	string argName;
 	bool quote = false;

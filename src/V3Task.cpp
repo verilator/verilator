@@ -969,7 +969,7 @@ private:
 	else if (ftaskNoInline) prefix = "__VnoInFunc_";
 	// Unless public, v3Descope will not uniquify function names even if duplicate per-scope,
 	// so make it unique now.
-	string suffix = "";  // So, make them unique
+        string suffix;  // So, make them unique
 	if (!nodep->taskPublic()) suffix = "_"+m_scopep->nameDotless();
 	AstCFunc* cfuncp = new AstCFunc(nodep->fileline(),
 					prefix + nodep->name() + suffix,

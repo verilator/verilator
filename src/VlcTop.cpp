@@ -238,7 +238,7 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
 		    if (first) {
 			first = false;
 			// Multiple columns on same line; print line just once
-			string indent = "";
+                        string indent;
 			for (string::const_iterator pos=line.begin(); pos!=line.end() && isspace(*pos); ++pos) {
 			    indent += *pos;
 			}

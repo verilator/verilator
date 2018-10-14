@@ -485,7 +485,7 @@ public:
 	    }
 	    baddot = ident;   // So user can see where they botched it
 	    okSymp = lookupSymp;
-	    string altIdent = "";
+            string altIdent;
 	    if (m_forPrearray) {
 		// GENFOR Begin is foo__BRA__##__KET__ after we've genloop unrolled,
 		// but presently should be just "foo".

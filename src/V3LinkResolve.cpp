@@ -256,7 +256,7 @@ private:
 	// Check display arguments, return new format string
 	string newFormat;
 	bool inPct = false;
-	string fmt = "";
+        string fmt;
 	for (string::const_iterator it = format.begin(); it != format.end(); ++it) {
 	    char ch = *it;
 	    if (!inPct && ch=='%') {
