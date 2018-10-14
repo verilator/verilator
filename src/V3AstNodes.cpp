@@ -804,24 +804,25 @@ void AstWhile::addNextStmt(AstNode* newp, AstNode* belowp) {
 // Per-type Debugging
 
 void AstNode::dump(std::ostream& str) {
-    str<<typeName()<<" "<<(void*)this
-	//<<" "<<(void*)this->m_backp
+    str<<typeName()<<" "<<cvtToHex(this)
+        //<<" "<<cvtToHex(this)->m_backp
        <<" <e"<<std::dec<<editCount()
        <<((editCount()>=editCountLast())?"#>":">")
        <<" {"<<fileline()->filenameLetters()<<std::dec<<fileline()->lineno()<<"}";
-    if (user1p()) str<<" u1="<<(void*)user1p();
-    if (user2p()) str<<" u2="<<(void*)user2p();
-    if (user3p()) str<<" u3="<<(void*)user3p();
-    if (user4p()) str<<" u4="<<(void*)user4p();
-    if (user5p()) str<<" u5="<<(void*)user5p();
+    if (user1p()) str<<" u1="<<cvtToHex(user1p());
+    if (user2p()) str<<" u2="<<cvtToHex(user2p());
+    if (user3p()) str<<" u3="<<cvtToHex(user3p());
+    if (user4p()) str<<" u4="<<cvtToHex(user4p());
+    if (user5p()) str<<" u5="<<cvtToHex(user5p());
     if (hasDType()) {
+        // Final @ so less likely to by accident read it as a nodep
 	if (dtypep()==this) str<<" @dt="<<"this@";
-	else str<<" @dt="<<(void*)dtypep()<<"@";  // Final @ so less likely to by accident think it's nodep
+        else str<<" @dt="<<cvtToHex(dtypep())<<"@";
 	if (AstNodeDType* dtp = dtypep()) {
 	    dtp->dumpSmall(str);
 	}
     } else { // V3Broken will throw an error
-	if (dtypep()) str<<" %Error-dtype-exp=null,got="<<(void*)dtypep();
+        if (dtypep()) str<<" %Error-dtype-exp=null,got="<<cvtToHex(dtypep());
     }
     if (name()!="") {
         if (VN_IS(this, Const)) str<<"  "<<name();  // Already quoted
@@ -927,7 +928,7 @@ void AstNodeDType::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (generic()) str<<" [GENERIC]";
     if (AstNodeDType* dtp = virtRefDTypep()) {
-	str<<" refdt="<<(void*)(dtp);
+        str<<" refdt="<<cvtToHex(dtp);
 	dtp->dumpSmall(str);
     }
 }
@@ -1037,7 +1038,7 @@ void AstVarScope::dump(std::ostream& str) {
 }
 void AstVarXRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
-    if (packagep()) { str<<" pkg="<<(void*)packagep(); }
+    if (packagep()) { str<<" pkg="<<cvtToHex(packagep()); }
     if (lvalue()) str<<" [LV] => ";
     else          str<<" [RV] <- ";
     str<<".="<<dotted()<<" ";
@@ -1048,7 +1049,7 @@ void AstVarXRef::dump(std::ostream& str) {
 }
 void AstVarRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
-    if (packagep()) { str<<" pkg="<<(void*)packagep(); }
+    if (packagep()) { str<<" pkg="<<cvtToHex(packagep()); }
     if (lvalue()) str<<" [LV] => ";
     else          str<<" [RV] <- ";
     if (varScopep()) { varScopep()->dump(str); }
@@ -1093,7 +1094,7 @@ void AstParseRef::dump(std::ostream& str) {
 }
 void AstPackageRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
-    if (packagep()) { str<<" pkg="<<(void*)packagep(); }
+    if (packagep()) { str<<" pkg="<<cvtToHex(packagep()); }
     str<<" -> ";
     if (packagep()) { packagep()->dump(str); }
     else { str<<"UNLINKED"; }
@@ -1109,7 +1110,7 @@ void AstActive::dump(std::ostream& str) {
 }
 void AstNodeFTaskRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
-    if (packagep()) { str<<" pkg="<<(void*)packagep(); }
+    if (packagep()) { str<<" pkg="<<cvtToHex(packagep()); }
     str<<" -> ";
     if (dotted()!="") { str<<".="<<dotted()<<" "; }
     if (taskp()) { taskp()->dump(str); }

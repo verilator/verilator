@@ -262,7 +262,7 @@ private:
     virtual void visit(AstVarRef* nodep) {
 	// Similar code in V3Inline
 	if (nodep->varp()->user2p()) { // It's being converted to a alias.
-	    UINFO(9, "    relinkVar "<<(void*)nodep->varp()->user2p()<<" "<<nodep<<endl);
+            UINFO(9, "    relinkVar "<<cvtToHex(nodep->varp()->user2p())<<" "<<nodep<<endl);
             AstVarScope* newvscp = VN_CAST(nodep->varp()->user2p(), VarScope);
 	    if (!newvscp) nodep->v3fatalSrc("not linked");
 	    nodep->varScopep(newvscp);
@@ -1396,7 +1396,9 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
 
     if (debug()>=9) {
 	nodep->dumpTree(cout,"-ftref-out: ");
-	for (int i=0; i<tpinnum; ++i) UINFO(0,"   pin "<<i<<"  conn="<<(void*)tconnects[i].second<<endl);
+        for (int i=0; i<tpinnum; ++i) {
+            UINFO(0,"   pin "<<i<<"  conn="<<cvtToHex(tconnects[i].second)<<endl);
+        }
     }
     return tconnects;
 }

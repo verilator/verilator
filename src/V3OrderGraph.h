@@ -148,7 +148,7 @@ public:
     // Methods
     virtual OrderVEdgeType type() const = 0;
     virtual bool domainMatters() = 0;	// Must be in same domain when cross edge to this vertex
-    virtual string dotName() const { return cvtToStr((void*)m_scopep)+"_"; }
+    virtual string dotName() const { return cvtToHex(m_scopep)+"_"; }
     // ACCESSORS
     void domainp(AstSenTree* domainp) { m_domainp = domainp; }
     AstScope* scopep() const { return m_scopep; }
@@ -205,7 +205,7 @@ public:
     virtual OrderVEdgeType type() const { return OrderVEdgeType::VERTEX_LOGIC; }
     virtual bool domainMatters() { return true; }
     // ACCESSORS
-    virtual string name() const { return (cvtToStr((void*)m_nodep)+"\\n "+cvtToStr(nodep()->typeName())); }
+    virtual string name() const { return (cvtToHex(m_nodep)+"\\n "+cvtToStr(nodep()->typeName())); }
     AstNode* nodep() const { return m_nodep; }
     virtual string dotColor() const { return "yellow"; }
 };
@@ -245,7 +245,7 @@ public:
     virtual OrderVarStdVertex* clone(V3Graph* graphp) const {
 	return new OrderVarStdVertex(graphp, *this); }
     virtual OrderVEdgeType type() const { return OrderVEdgeType::VERTEX_VARSTD; }
-    virtual string name() const { return (cvtToStr((void*)varScp())+"\\n "+varScp()->name());}
+    virtual string name() const { return (cvtToHex(varScp())+"\\n "+varScp()->name());}
     virtual string dotColor() const { return "skyblue"; }
     virtual bool domainMatters() { return true; }
 };
@@ -259,7 +259,7 @@ public:
     virtual OrderVarPreVertex* clone(V3Graph* graphp) const {
 	return new OrderVarPreVertex(graphp, *this); }
     virtual OrderVEdgeType type() const { return OrderVEdgeType::VERTEX_VARPRE; }
-    virtual string name() const { return (cvtToStr((void*)varScp())+" PRE\\n "+varScp()->name());}
+    virtual string name() const { return (cvtToHex(varScp())+" PRE\\n "+varScp()->name());}
     virtual string dotColor() const { return "lightblue"; }
     virtual bool domainMatters() { return false; }
 };
@@ -273,7 +273,7 @@ public:
 	return new OrderVarPostVertex(graphp, *this); }
     virtual OrderVEdgeType type() const { return OrderVEdgeType::VERTEX_VARPOST; }
     virtual ~OrderVarPostVertex() {}
-    virtual string name() const { return (cvtToStr((void*)varScp())+" POST\\n "+varScp()->name());}
+    virtual string name() const { return (cvtToHex(varScp())+" POST\\n "+varScp()->name());}
     virtual string dotColor() const { return "CadetBlue"; }
     virtual bool domainMatters() { return false; }
 };
@@ -287,7 +287,7 @@ public:
     virtual OrderVarPordVertex* clone(V3Graph* graphp) const {
 	return new OrderVarPordVertex(graphp, *this); }
     virtual OrderVEdgeType type() const { return OrderVEdgeType::VERTEX_VARPORD; }
-    virtual string name() const { return (cvtToStr((void*)varScp())+" PORD\\n "+varScp()->name());}
+    virtual string name() const { return (cvtToHex(varScp())+" PORD\\n "+varScp()->name());}
     virtual string dotColor() const { return "NavyBlue"; }
     virtual bool domainMatters() { return false; }
 };
@@ -301,7 +301,7 @@ public:
     virtual OrderVarSettleVertex* clone(V3Graph* graphp) const {
 	return new OrderVarSettleVertex(graphp, *this); }
     virtual OrderVEdgeType type() const { return OrderVEdgeType::VERTEX_VARSETTLE; }
-    virtual string name() const { return (cvtToStr((void*)varScp())+" STL\\n "+varScp()->name());}
+    virtual string name() const { return (cvtToHex(varScp())+" STL\\n "+varScp()->name());}
     virtual string dotColor() const { return "PowderBlue"; }
     virtual bool domainMatters() { return false; }
 };
@@ -345,8 +345,8 @@ public:
         if (logicp()) {
             nm = logicp()->name();
             nm += (string("\\nMV:")
-                   +" d="+cvtToStr((void*)logicp()->domainp())
-                   +" s="+cvtToStr((void*)logicp()->scopep()));
+                   +" d="+cvtToHex(logicp()->domainp())
+                   +" s="+cvtToHex(logicp()->scopep()));
         } else {
             nm = "nul";
         }
@@ -402,8 +402,8 @@ public:
         if (logicp()) {
             nm = logicp()->name();
             nm += (string("\\nMV:")
-                   +" d="+cvtToStr((void*)logicp()->domainp())
-                   +" s="+cvtToStr((void*)logicp()->scopep())
+                   +" d="+cvtToHex(logicp()->domainp())
+                   +" s="+cvtToHex(logicp()->scopep())
                    // "color()" represents the mtask ID.
                    +"\\nt="+cvtToStr(color()));
         } else {

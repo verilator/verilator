@@ -170,8 +170,8 @@ public:
     }
     string name() const {
 	return (string("MDS:")
-		+" d="+cvtToStr((void*)domainp())
-		+" s="+cvtToStr((void*)scopep()));
+                +" d="+cvtToHex(domainp())
+                +" s="+cvtToHex(scopep()));
     }
 };
 
@@ -1510,7 +1510,8 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
 	    if (edgep->weight()
 		&& fromVertexp->domainMatters()
 		) {
-		UINFO(9,"     from d="<<(void*)fromVertexp->domainp()<<" "<<fromVertexp<<endl);
+                UINFO(9,"     from d="<<cvtToHex(fromVertexp->domainp())
+                      <<" "<<fromVertexp<<endl);
 		if (!domainp  // First input to this vertex
 		    || domainp->hasSettle()	// or, we can ignore being in the settle domain
 		    || domainp->hasInitial()) {
@@ -1568,7 +1569,7 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
     //
     vertexp->domainp(domainp);
     if (vertexp->domainp()) {
-	UINFO(5,"      done d="<<(void*)vertexp->domainp()
+        UINFO(5,"      done d="<<cvtToHex(vertexp->domainp())
 	      <<(vertexp->domainp()->hasCombo()?" [COMB]":"")
 	      <<(vertexp->domainp()->isMulti()?" [MULT]":"")
 	      <<" "<<vertexp<<endl);
@@ -1596,7 +1597,7 @@ void OrderVisitor::processEdgeReport() {
 	    else if (dynamic_cast<OrderVarSettleVertex*>(itp)) name += " {STL}";
             std::ostringstream os;
             os.setf(std::ios::left);
-            os<<"  "<<(void*)(vvertexp->varScp())<<" "<<std::setw(50)<<name<<" ";
+            os<<"  "<<cvtToHex(vvertexp->varScp())<<" "<<std::setw(50)<<name<<" ";
 	    AstSenTree* sentreep = vvertexp->domainp();
 	    if (sentreep) V3EmitV::verilogForTree(sentreep, os);
 	    report.push_back(os.str());
@@ -1739,8 +1740,8 @@ void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp, OrderMoveDomScope* d
     }
     const OrderLogicVertex* lvertexp = vertexp->logicp();
     const AstScope* scopep = lvertexp->scopep();
-    UINFO(5,"    POSmove l"<<std::setw(3)<<level<<" d="<<(void*)(lvertexp->domainp())
-          <<" s="<<(void*)(scopep)<<" "<<lvertexp<<endl);
+    UINFO(5,"    POSmove l"<<std::setw(3)<<level<<" d="<<cvtToHex(lvertexp->domainp())
+          <<" s="<<cvtToHex(scopep)<<" "<<lvertexp<<endl);
     AstActive* newActivep = processMoveOneLogic(lvertexp, m_pomNewFuncp/*ref*/,
                                                 m_pomNewStmts/*ref*/);
     if (newActivep) m_scopetopp->addActivep(newActivep);

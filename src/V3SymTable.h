@@ -68,8 +68,8 @@ public:
     void dumpIterate(std::ostream& os, VSymConstMap& doneSymsr, const string& indent,
                      int numLevels, const string& searchName) const {
         os<<indent<<"+ "<<std::left<<std::setw(30)<<(searchName==""?"\"\"":searchName)<<std::setw(0)<<std::right;
-        os<<"  se"<<(void*)(this)<<std::setw(0);
-	os<<"  fallb=se"<<(void*)(m_fallbackp);
+        os<<"  se"<<cvtToHex(this)<<std::setw(0);
+        os<<"  fallb=se"<<cvtToHex(m_fallbackp);
         if (m_symPrefix!="") os<<"  symPrefix="<<m_symPrefix;
 	os<<"  n="<<nodep();
 	os<<endl;
@@ -117,7 +117,8 @@ public:
     bool imported() const { return m_imported; }
     void imported(bool flag) { m_imported = flag; }
     void insert(const string& name, VSymEnt* entp) {
-	UINFO(9, "     SymInsert se"<<(void*)this<<" '"<<name<<"' se"<<(void*)entp<<"  "<<entp->nodep()<<endl);
+        UINFO(9, "     SymInsert se"<<cvtToHex(this)
+              <<" '"<<name<<"' se"<<cvtToHex(entp)<<"  "<<entp->nodep()<<endl);
 	if (name != "" && m_idNameMap.find(name) != m_idNameMap.end()) {
 	    if (!V3Error::errorCount()) {   // Else may have just reported warning
 		if (debug()>=9 || V3Error::debugDefault()) dump(cout,"- err-dump: ", 1);
@@ -130,7 +131,8 @@ public:
     void reinsert(const string& name, VSymEnt* entp) {
 	IdNameMap::iterator it = m_idNameMap.find(name);
 	if (name!="" && it != m_idNameMap.end()) {
-	    UINFO(9, "     SymReinsert se"<<(void*)this<<" '"<<name<<"' se"<<(void*)entp<<"  "<<entp->nodep()<<endl);
+            UINFO(9, "     SymReinsert se"<<cvtToHex(this)
+                  <<" '"<<name<<"' se"<<cvtToHex(entp)<<"  "<<entp->nodep()<<endl);
 	    it->second = entp;  // Replace
 	} else {
 	    insert(name,entp);
@@ -140,9 +142,9 @@ public:
 	// Find identifier without looking upward through symbol hierarchy
 	// First, scan this begin/end block or module for the name
 	IdNameMap::const_iterator it = m_idNameMap.find(name);
-	UINFO(9, "     SymFind   se"<<(void*)this<<" '"<<name
+        UINFO(9, "     SymFind   se"<<cvtToHex(this)<<" '"<<name
 	      <<"' -> "<<(it == m_idNameMap.end() ? "NONE"
-			  : "se"+cvtToStr((void*)(it->second))+" n="+cvtToStr((void*)(it->second->nodep())))<<endl);
+                          : "se"+cvtToHex(it->second)+" n="+cvtToHex(it->second->nodep()))<<endl);
 	if (it != m_idNameMap.end()) return (it->second);
 	return NULL;
     }
@@ -207,7 +209,7 @@ public:
     }
     void importFromIface(VSymGraph* graphp, const VSymEnt* srcp, bool onlyUnmodportable = false) {
 	// Import interface tokens from source symbol table into this symbol table, recursively
-	UINFO(9, "     importIf  se"<<(void*)this<<" from se"<<(void*)srcp<<endl);
+        UINFO(9, "     importIf  se"<<cvtToHex(this)<<" from se"<<cvtToHex(srcp)<<endl);
 	for (IdNameMap::const_iterator it=srcp->m_idNameMap.begin(); it!=srcp->m_idNameMap.end(); ++it) {
 	    const string& name = it->first;
 	    VSymEnt* subSrcp = it->second;

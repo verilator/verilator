@@ -320,8 +320,11 @@ inline void v3errorEndFatal(std::ostringstream& sstr) { V3Error::v3errorEnd(sstr
 
 //----------------------------------------------------------------------
 
-template< class T> std::string cvtToStr(const T& t) {
+template <class T> std::string cvtToStr(const T& t) {
     std::ostringstream os; os<<t; return os.str();
+}
+template <class T> std::string cvtToHex(const T* tp) {
+    std::ostringstream os; os<<static_cast<const void*>(tp); return os.str();
 }
 
 inline uint32_t cvtToHash(const void* vp) {

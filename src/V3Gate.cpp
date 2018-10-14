@@ -138,7 +138,7 @@ public:
     virtual ~GateVarVertex() {}
     // ACCESSORS
     AstVarScope* varScp() const { return m_varScp; }
-    virtual string name() const { return (cvtToStr((void*)m_varScp)+" "+varScp()->name()); }
+    virtual string name() const { return (cvtToHex(m_varScp)+" "+varScp()->name()); }
     virtual string dotColor() const { return "blue"; }
     bool isTop() const { return m_isTop; }
     void setIsTop() { m_isTop = true; }
@@ -169,7 +169,7 @@ public:
 	: GateEitherVertex(graphp,scopep), m_nodep(nodep), m_activep(activep), m_slow(slow) {}
     virtual ~GateLogicVertex() {}
     // ACCESSORS
-    virtual string name() const { return (cvtToStr((void*)m_nodep)+"@"+scopep()->prettyName()); }
+    virtual string name() const { return (cvtToHex(m_nodep)+"@"+scopep()->prettyName()); }
     virtual string dotColor() const { return "yellow"; }
     virtual FileLine* fileline() const { return nodep()->fileline(); }
     AstNode* nodep() const { return m_nodep; }

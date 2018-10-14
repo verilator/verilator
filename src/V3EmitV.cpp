@@ -256,10 +256,10 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	puts(");\n");
     }
     virtual void visit(AstJumpGo* nodep) {
-	putbs("disable "+cvtToStr((void*)(nodep->labelp()))+";\n");
+        putbs("disable "+cvtToHex(nodep->labelp())+";\n");
     }
     virtual void visit(AstJumpLabel* nodep) {
-	putbs("begin : "+cvtToStr((void*)(nodep))+"\n");
+        putbs("begin : "+cvtToHex(nodep)+"\n");
         if (nodep->stmtsp()) iterateAndNextNull(nodep->stmtsp());
 	puts("end\n");
     }

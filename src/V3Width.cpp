@@ -140,7 +140,7 @@ public:
 	if (!m_dtypep) {
 	    str<<"  VUP(s="<<m_stage<<",self)";
 	} else {
-	    str<<"  VUP(s="<<m_stage<<",dt="<<(void*)dtypep()<<")";
+            str<<"  VUP(s="<<m_stage<<",dt="<<cvtToHex(dtypep())<<")";
 	}
     }
 };
@@ -3657,7 +3657,8 @@ private:
 	    break;
 	}
 	if (!valp) valp = new AstConst(nodep->fileline(), AstConst::Signed32(), val);
-	UINFO(9," $dimension "<<attrType.ascii()<<"("<<((void*)dtypep)<<","<<dim<<")="<<valp<<endl);
+        UINFO(9," $dimension "<<attrType.ascii()
+              <<"("<<cvtToHex(dtypep)<<","<<dim<<")="<<valp<<endl);
 	return valp;
     }
     AstVar* dimensionVarp(AstNodeDType* nodep, AstAttrType attrType, uint32_t msbdim) {

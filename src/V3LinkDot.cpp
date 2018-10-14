@@ -235,7 +235,7 @@ public:
     void insertDUnit(AstNetlist* nodep) {
 	// $unit on top scope
 	VSymEnt* symp = new VSymEnt(&m_syms, nodep);
-	UINFO(9,"      INSERTdunit se"<<(void*)symp<<endl);
+        UINFO(9,"      INSERTdunit se"<<cvtToHex(symp)<<endl);
 	symp->parentp(rootEntp());  // Needed so backward search can find name of top module
 	symp->fallbackp(NULL);
 	rootEntp()->insert("$unit ",symp);  // Space so can never name conflict with user code
@@ -246,7 +246,7 @@ public:
     VSymEnt* insertTopCell(AstNodeModule* nodep, const string& scopename) {
 	// Only called on the module at the very top of the hierarchy
 	VSymEnt* symp = new VSymEnt(&m_syms, nodep);
-	UINFO(9,"      INSERTtop se"<<(void*)symp<<"  "<<scopename<<" "<<nodep<<endl);
+        UINFO(9,"      INSERTtop se"<<cvtToHex(symp)<<"  "<<scopename<<" "<<nodep<<endl);
 	symp->parentp(rootEntp());  // Needed so backward search can find name of top module
 	symp->fallbackp(dunitEntp());  // Needed so can find $unit stuff
 	nodep->user1p(symp);
@@ -259,8 +259,8 @@ public:
 			AstCell* nodep, const string& scopename) {
 	if (!abovep) nodep->v3fatalSrc("Null symbol table inserting node");
 	VSymEnt* symp = new VSymEnt(&m_syms, nodep);
-        UINFO(9,"      INSERTcel se"<<(void*)symp<<"  "<<scopename<<" above=se"<<(void*)abovep
-              <<" mods=se"<<(void*)modSymp<<" node="<<nodep<<endl);
+        UINFO(9,"      INSERTcel se"<<cvtToHex(symp)<<"  "<<scopename<<" above=se"<<cvtToHex(abovep)
+              <<" mods=se"<<cvtToHex(modSymp)<<" node="<<nodep<<endl);
 	symp->parentp(abovep);
 	symp->fallbackp(dunitEntp());  // Needed so can find $unit stuff
 	nodep->user1p(symp);
@@ -281,8 +281,8 @@ public:
 	// This refrences to another Sym, and eventually resolves to a module with a prefix
 	if (!abovep) nodep->v3fatalSrc("Null symbol table inserting node");
 	VSymEnt* symp = new VSymEnt(&m_syms, nodep);
-        UINFO(9,"      INSERTinl se"<<(void*)symp<<"  "<<basename<<" above=se"<<(void*)abovep
-              <<" mods=se"<<(void*)modSymp<<" node="<<nodep<<endl);
+        UINFO(9,"      INSERTinl se"<<cvtToHex(symp)<<"  "<<basename<<" above=se"<<cvtToHex(abovep)
+              <<" mods=se"<<cvtToHex(modSymp)<<" node="<<nodep<<endl);
 	symp->parentp(abovep);
 	symp->fallbackp(modSymp);
 	symp->symPrefix(nodep->name()+"__DOT__");
@@ -302,7 +302,7 @@ public:
 	// However, cells walk the graph, so cells will appear under the begin/ftask itself
 	if (!abovep) nodep->v3fatalSrc("Null symbol table inserting node");
 	VSymEnt* symp = new VSymEnt(&m_syms, nodep);
-	UINFO(9,"      INSERTblk se"<<(void*)symp<<"  above=se"<<(void*)abovep<<"  node="<<nodep<<endl);
+        UINFO(9,"      INSERTblk se"<<cvtToHex(symp)<<"  above=se"<<cvtToHex(abovep)<<"  node="<<nodep<<endl);
 	symp->parentp(abovep);
 	symp->packagep(packagep);
 	symp->fallbackp(abovep);
@@ -317,7 +317,8 @@ public:
     VSymEnt* insertSym(VSymEnt* abovep, const string& name, AstNode* nodep, AstPackage* packagep) {
 	if (!abovep) nodep->v3fatalSrc("Null symbol table inserting node");
 	VSymEnt* symp = new VSymEnt(&m_syms, nodep);
-	UINFO(9,"      INSERTsym se"<<(void*)symp<<"  name='"<<name<<"' above=se"<<(void*)abovep<<"  node="<<nodep<<endl);
+        UINFO(9,"      INSERTsym se"<<cvtToHex(symp)<<"  name='"<<name
+              <<"' above=se"<<cvtToHex(abovep)<<"  node="<<nodep<<endl);
 	// We don't remember the ent associated with each node, because we need a unique scope entry for each instantiation
 	symp->packagep(packagep);
 	symp->parentp(abovep);
@@ -381,7 +382,7 @@ public:
 	for (IfaceVarSyms::iterator it = m_ifaceVarSyms.begin(); it != m_ifaceVarSyms.end(); ++it) {
 	    VSymEnt* varSymp = *it;
             AstVar* varp = varSymp ? VN_CAST(varSymp->nodep(), Var) : NULL;
-	    UINFO(9, "  insAllIface se"<<(void*)varSymp<<" "<<varp<<endl);
+            UINFO(9, "  insAllIface se"<<cvtToHex(varSymp)<<" "<<varp<<endl);
 	    AstIfaceRefDType* ifacerefp = ifaceRefFromArray(varp->subDTypep());
 	    if (!ifacerefp) varp->v3fatalSrc("Non-ifacerefs on list!");
 	    if (!ifacerefp->ifaceViaCellp()) {
@@ -422,7 +423,7 @@ public:
     void insertScopeAlias(SAMNum samn, VSymEnt* lhsp, VSymEnt* rhsp) {
 	// Track and later insert scope aliases; an interface referenced by a child cell connecting to that interface
 	// Typically lhsp=VAR w/dtype IFACEREF, rhsp=IFACE cell
-	UINFO(9,"   insertScopeAlias se"<<(void*)lhsp<<" se"<<(void*)rhsp<<endl);
+        UINFO(9,"   insertScopeAlias se"<<cvtToHex(lhsp)<<" se"<<cvtToHex(rhsp)<<endl);
         if (VN_IS(rhsp->nodep(), Cell)
             && !VN_IS(VN_CAST(rhsp->nodep(), Cell)->modp(), Iface)) {
 	    rhsp->nodep()->v3fatalSrc("Got a non-IFACE alias RHS");
@@ -468,7 +469,7 @@ public:
 			string& baddot, VSymEnt*& okSymp) {
 	// Given a dotted hierarchy name, return where in scope it is
 	// Note when dotname=="" we just fall through and return lookupSymp
-	UINFO(8,"    dottedFind se"<<(void*)lookupSymp<<" '"<<dotname<<"'"<<endl);
+        UINFO(8,"    dottedFind se"<<cvtToHex(lookupSymp)<<" '"<<dotname<<"'"<<endl);
 	bool firstId = true;
 	string leftname = dotname;
 	okSymp = lookupSymp;  // So can list bad scopes
@@ -562,7 +563,7 @@ public:
 	// For simplicity lookupSymp may be passed NULL result from findDotted
 	if (!lookupSymp) return NULL;
 	UINFO(8,"\t\tfindSymPrefixed "<<dotname
-	      <<" under se"<<(void*)lookupSymp
+              <<" under se"<<cvtToHex(lookupSymp)
 	      <<((lookupSymp->symPrefix()=="") ? "" : " as ")
 	      <<((lookupSymp->symPrefix()=="") ? "" : lookupSymp->symPrefix()+dotname)
 	      <<"  at se"<<lookupSymp
@@ -902,7 +903,8 @@ class LinkDotFindVisitor : public AstNVisitor {
 			       <<LinkDotState::nodeTextType(foundp->nodep())<<": "<<nodep->prettyName());
 	    } else if (findvarp != nodep) {
 		UINFO(4,"DupVar: "<<nodep<<" ;; "<<foundp->nodep()<<endl);
-		UINFO(4,"    found  cur=se"<<(void*)m_curSymp<<" ;; parent=se"<<(void*)foundp->parentp()<<endl);
+                UINFO(4,"    found  cur=se"<<cvtToHex(m_curSymp)
+                      <<" ;; parent=se"<<cvtToHex(foundp->parentp())<<endl);
 		if (foundp && foundp->parentp() == m_curSymp  // Only when on same level
 		    && !foundp->imported()) {  // and not from package
 		    if ((findvarp->isIO() && nodep->isSignal())
@@ -1259,12 +1261,12 @@ class LinkDotScopeVisitor : public AstNVisitor {
 		string baddot; VSymEnt* okSymp;
 		VSymEnt* cellSymp = m_statep->findDotted(m_modSymp, ifcellname, baddot, okSymp);
 		if (!cellSymp) nodep->v3fatalSrc("No symbol for interface cell: " <<nodep->prettyName(ifcellname));
-		UINFO(5, "       Found interface cell: se"<<(void*)cellSymp<<" "<<cellSymp->nodep()<<endl);
+                UINFO(5, "       Found interface cell: se"<<cvtToHex(cellSymp)<<" "<<cellSymp->nodep()<<endl);
 		if (dtypep->modportName()!="") {
 		    VSymEnt* mpSymp = m_statep->findDotted(m_modSymp, ifcellname, baddot, okSymp);
 		    if (!mpSymp) { nodep->v3fatalSrc("No symbol for interface modport: " <<nodep->prettyName(dtypep->modportName())); }
 		    else cellSymp = mpSymp;
-		    UINFO(5, "       Found modport cell: se"<<(void*)cellSymp<<" "<<mpSymp->nodep()<<endl);
+                    UINFO(5, "       Found modport cell: se"<<cvtToHex(cellSymp)<<" "<<mpSymp->nodep()<<endl);
 		}
 		// Interface reference; need to put whole thing into symtable, but can't clone it now
 		// as we may have a later alias for it.
@@ -1308,7 +1310,7 @@ class LinkDotScopeVisitor : public AstNVisitor {
 	    }
 	    if (!symp) UINFO(9,"No symbol for interface alias rhs ("<<string(refp?"VARREF ":"VARXREF ")<<scopename<<")"<<endl);
 	    if (!symp) nodep->v3fatalSrc("No symbol for interface alias rhs");
-	    UINFO(5, "       Found a linked scope RHS: "<<scopename<<"  se"<<(void*)symp<<" "<<symp->nodep()<<endl);
+            UINFO(5, "       Found a linked scope RHS: "<<scopename<<"  se"<<cvtToHex(symp)<<" "<<symp->nodep()<<endl);
 	    rhsSymp = symp;
 	}
 	VSymEnt* lhsSymp;
@@ -1321,7 +1323,7 @@ class LinkDotScopeVisitor : public AstNVisitor {
 	    string baddot; VSymEnt* okSymp;
 	    VSymEnt* symp = m_statep->findDotted(m_modSymp, scopename, baddot, okSymp);
 	    if (!symp) nodep->v3fatalSrc("No symbol for interface alias lhs");
-	    UINFO(5, "       Found a linked scope LHS: "<<scopename<<"  se"<<(void*)symp<<" "<<symp->nodep()<<endl);
+            UINFO(5, "       Found a linked scope LHS: "<<scopename<<"  se"<<cvtToHex(symp)<<" "<<symp->nodep()<<endl);
 	    lhsSymp = symp;
 	}
 	// Remember the alias - can't do it yet because we may have additional symbols to be added,
@@ -1497,7 +1499,7 @@ private:
 	    static const char* const names[] = { "NONE","PACKAGE","SCOPE","FINAL","MEMBER" };
             std::ostringstream sstr;
 	    sstr<<"ds="<<names[m_dotPos];
-	    sstr<<"  dse"<<(void*)m_dotSymp;
+            sstr<<"  dse"<<cvtToHex(m_dotSymp);
 	    sstr<<"  txt="<<m_dotText;
 	    sstr<<"  unr="<<m_unresolved;
 	    return sstr.str();
@@ -1794,7 +1796,7 @@ private:
 	    } else {
 		foundp = m_ds.m_dotSymp->findIdFallback(nodep->name());
 	    }
-	    if (foundp) UINFO(9,"     found=se"<<(void*)foundp<<"  exp="<<expectWhat
+            if (foundp) UINFO(9,"     found=se"<<cvtToHex(foundp)<<"  exp="<<expectWhat
 			      <<"  n="<<foundp->nodep()<<endl);
 	    // What fell out?
 	    bool ok = false;
@@ -1920,7 +1922,7 @@ private:
 				       <<"'"<<" as a "<<foundp->nodep()->typeName()
 				       <<" but expected a "<<expectWhat);
 		    } else if (m_ds.m_dotText=="") {
-			UINFO(7,"   ErrParseRef curSymp=se"<<(void*)m_curSymp<<" ds="<<m_ds.ascii()<<endl);
+                        UINFO(7,"   ErrParseRef curSymp=se"<<cvtToHex(m_curSymp)<<" ds="<<m_ds.ascii()<<endl);
 			nodep->v3error("Can't find definition of "<<expectWhat
 				       <<": "<<nodep->prettyName());
 		    } else {
@@ -1950,7 +1952,7 @@ private:
 	// No checkNoDot; created and iterated from a parseRef
         iterateChildren(nodep);
 	if (!nodep->varp()) {
-	    UINFO(9," linkVarRef se"<<(void*)m_curSymp<<"  n="<<nodep<<endl);
+            UINFO(9," linkVarRef se"<<cvtToHex(m_curSymp)<<"  n="<<nodep<<endl);
 	    if (!m_curSymp) nodep->v3fatalSrc("NULL lookup symbol table");
 	    VSymEnt* foundp = m_curSymp->findIdFallback(nodep->name());
 	    if (AstVar* varp = foundp ? foundToVarp(foundp, nodep, nodep->lvalue()) : NULL) {
@@ -2116,7 +2118,8 @@ private:
 		UINFO(7,"         Resolved "<<nodep<<endl);  // Also prints taskp
 	    } else {
 		// Note ParseRef has similar error handling/message output
-		UINFO(7,"   ErrFtask curSymp=se"<<(void*)m_curSymp<<" dotSymp=se"<<(void*)dotSymp<<endl);
+                UINFO(7,"   ErrFtask curSymp=se"<<cvtToHex(m_curSymp)
+                      <<" dotSymp=se"<<cvtToHex(dotSymp)<<endl);
 		if (foundp) {
 		    nodep->v3error("Found definition of '"<<m_ds.m_dotText<<(m_ds.m_dotText==""?"":".")<<nodep->prettyName()
 				   <<"'"<<" as a "<<foundp->nodep()->typeName()
@@ -2190,11 +2193,11 @@ private:
 	VSymEnt* oldCurSymp = m_curSymp;
 	{
 	    m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
-	    UINFO(5,"   cur=se"<<(void*)m_curSymp<<endl);
+            UINFO(5,"   cur=se"<<cvtToHex(m_curSymp)<<endl);
             iterateChildren(nodep);
 	}
 	m_ds.m_dotSymp = m_curSymp = oldCurSymp;
-	UINFO(5,"   cur=se"<<(void*)m_curSymp<<endl);
+        UINFO(5,"   cur=se"<<cvtToHex(m_curSymp)<<endl);
     }
     virtual void visit(AstNodeFTask* nodep) {
 	UINFO(5,"   "<<nodep<<endl);

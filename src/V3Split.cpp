@@ -111,7 +111,7 @@ protected:
     // reordering a lower block, but we don't repair it
     virtual string name() const {
 	if (m_nodep->name() == "") {
-	    return cvtToStr((void*)m_nodep);
+            return cvtToHex(m_nodep);
 	} else {
 	    return m_nodep->name();
 	}

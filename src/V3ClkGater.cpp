@@ -100,7 +100,8 @@ public:
 	: GaterVertex(graphp), m_nodep(nodep) { }
     virtual ~GaterIfVertex() {}
     virtual int typeNum() const { return __LINE__; }  // C++ typeof() equivelent
-    virtual string name() const { return cvtToStr((void*)m_nodep)+" {"+cvtToStr(m_nodep->fileline()->lineno())+"}"; }
+    virtual string name() const {
+        return cvtToHex(m_nodep)+" {"+cvtToStr(m_nodep->fileline()->lineno())+"}"; }
 };
 
 class GaterVarVertex : public GaterVertex {
@@ -582,9 +583,9 @@ class GaterVisitor : public GaterBaseVisitor {
     }
     void nafgMarkRecurse(V3GraphVertex* vertexp, uint32_t generation) {
 	// Backwards mark user() on the path we recurse
-	//UINFO(9," nafgMark: v "<<(void*)(vertexp)<<" "<<vertexp->name()<<endl);
+        //UINFO(9," nafgMark: v "<<cvtToHex(vertexp)<<" "<<vertexp->name()<<endl);
 	for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-	    //UINFO(9," nafgMark: "<<(void*)(edgep)<<" "<<edgep->name()<<endl);
+            //UINFO(9," nafgMark: "<<cvtToHex(edgep)<<" "<<edgep->name()<<endl);
 	    edgep->user(generation);
 	    nafgMarkRecurse(edgep->fromp(), generation);
 	}
@@ -593,18 +594,18 @@ class GaterVisitor : public GaterBaseVisitor {
 	// Forewards follow user() marked previously and build tree
 	AstNode* nodep = NULL;
 	// OR across all edges found at this level
-	//UINFO(9," nafgEnter: v "<<(void*)(vertexp)<<" "<<vertexp->name()<<endl);
+        //UINFO(9," nafgEnter: v "<<cvtToHex(vertexp)<<" "<<vertexp->name()<<endl);
 	for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
 	    if (edgep->user() == generation) {
 		GaterEdge* cedgep = static_cast<GaterEdge*>(edgep);
 		AstNode* eqnp = NULL;
-		//UINFO(9," nafgFollow: "<<(void*)(edgep)<<" "<<edgep->name()<<endl);
+                //UINFO(9," nafgFollow: "<<cvtToHex(edgep)<<" "<<edgep->name()<<endl);
 		if (dynamic_cast<GaterHeadVertex*>(edgep->fromp())) {
 		    // Just OR in all lower terms
 		    eqnp = nafgCreateRecurse(edgep->top(), generation);
 		} else if (GaterIfVertex* cVxp = dynamic_cast<GaterIfVertex*>(edgep->fromp())) {
 		    // Edges from IFs represent a real IF branch in the equation tree
-		    //UINFO(9,"  ifver "<<(void*)(edgep)<<" cc"<<edgep->dotColor()<<endl);
+                    //UINFO(9,"  ifver "<<cvtToHex(edgep)<<" cc"<<edgep->dotColor()<<endl);
 		    eqnp = cVxp->nodep()->condp()->cloneTree(true);
 		    if (!eqnp) cVxp->nodep()->v3fatalSrc("null condition");
 		    if (cedgep->ifelseFalse()) {
@@ -621,7 +622,7 @@ class GaterVisitor : public GaterBaseVisitor {
 		//if (debug()>=9) nodep->dumpTree(cout,"      followExpr: ");
 	    }
 	}
-	//UINFO(9," nafgExit:  "<<(void*)(vertexp)<<" "<<vertexp->name()<<endl);
+        //UINFO(9," nafgExit:  "<<cvtToHex(vertexp)<<" "<<vertexp->name()<<endl);
 	return nodep;
     }
 

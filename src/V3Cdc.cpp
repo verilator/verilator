@@ -97,7 +97,7 @@ public:
     virtual ~CdcVarVertex() {}
     // ACCESSORS
     AstVarScope* varScp() const { return m_varScp; }
-    virtual string name() const { return (cvtToStr((void*)m_varScp)+" "+varScp()->name()); }
+    virtual string name() const { return (cvtToHex(m_varScp)+" "+varScp()->name()); }
     virtual string dotColor() const { return fromFlop() ? "green" : cntAsyncRst() ? "red" : "blue"; }
     int cntAsyncRst() const { return m_cntAsyncRst; }
     void cntAsyncRst(int flag) { m_cntAsyncRst=flag; }
@@ -115,7 +115,7 @@ public:
 	{ srcDomainp(sensenodep); dstDomainp(sensenodep); }
     virtual ~CdcLogicVertex() {}
     // ACCESSORS
-    virtual string name() const { return (cvtToStr((void*)nodep())+"@"+scopep()->prettyName()); }
+    virtual string name() const { return (cvtToHex(nodep())+"@"+scopep()->prettyName()); }
     virtual string dotColor() const { return hazard() ? "black" : "yellow"; }
     bool hazard() const { return m_hazard; }
     void setHazard(AstNode* nodep) { m_hazard = true; nodep->user3(true); }

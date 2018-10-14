@@ -1562,7 +1562,7 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep,
     string::const_iterator pos = vformat.begin();
     bool inPct = false;
     for (; pos != vformat.end(); ++pos) {
-	//UINFO(1,"Parse '"<<*pos<<"'  IP"<<inPct<<" List "<<(void*)(elistp)<<endl);
+        //UINFO(1,"Parse '"<<*pos<<"'  IP"<<inPct<<" List "<<cvtToHex(elistp)<<endl);
 	if (!inPct && pos[0]=='%') {
 	    inPct = true;
 	    vfmt = "";

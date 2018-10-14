@@ -536,7 +536,7 @@ private:
 	TraceTraceVertex* dupvertexp = vvertexp;
 	if (dupvertexp->duplicatep()) {
 	    dupvertexp = dupvertexp->duplicatep();
-	    UINFO(9,"   dupOf "<<((void*)dupvertexp)<<" "<<((void*)dupvertexp->nodep())
+            UINFO(9,"   dupOf "<<cvtToHex(dupvertexp)<<" "<<cvtToHex(dupvertexp->nodep())
 		  <<" "<<dupvertexp<<endl);
 	    if (dupvertexp->duplicatep()) dupvertexp->nodep()->v3fatalSrc("Original node was marked as a duplicate");
 	}

@@ -575,7 +575,8 @@ sub tree_match {
 	    $self->print("    bool $typefunc->{match_func}(Ast${base}* nodep) {\n",
 			 "\t// $typefunc->{comment}\n",);
 	    $self->print(	"\tif ($typefunc->{match_if}) {\n");
-	    $self->print(	"\t    UINFO($typefunc->{uinfo_level},(void*)(nodep)<<\" $typefunc->{uinfo}\\n\");\n");
+            $self->print(       "\t    UINFO($typefunc->{uinfo_level},cvtToHex(nodep)"
+                                ."<<\" $typefunc->{uinfo}\\n\");\n");
 	    $self->print(	"\t    $typefunc->{exec_func}\n");
 	    $self->print(	"\t    return true;\n");
 	    $self->print(	"\t}\n");

@@ -96,7 +96,7 @@ public:
     }
     string name() const { return string("mt")+cvtToStr(id()); }
     void dump(std::ostream& str) const {
-        str <<name()<<"."<<((void*)this);
+        str <<name()<<"."<<cvtToHex(this);
         if (priority() || cost()) str <<" [pr="<<priority()<<" c="<<cvtToStr(cost())<<"]";
         if (thread() != 0xffffffff) str <<" th="<<thread();
         if (threadRoot()) str <<" [ROOT]";

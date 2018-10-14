@@ -1543,7 +1543,7 @@ private:
 		    || nodep->varp()->isParam())) {
 		if (operandConst(valuep)) {
                     const V3Number& num = VN_CAST(valuep, Const)->num();
-		    //UINFO(2,"constVisit "<<(void*)valuep<<" "<<num<<endl);
+                    //UINFO(2,"constVisit "<<cvtToHex(valuep)<<" "<<num<<endl);
 		    replaceNum(nodep, num); VL_DANGLING(nodep);
 		    did=true;
 		}
@@ -1565,7 +1565,7 @@ private:
 		    }
                     if (VN_IS(itemp, Const)) {
                         const V3Number& num = VN_CAST(itemp, Const)->num();
-			//UINFO(2,"constVisit "<<(void*)valuep<<" "<<num<<endl);
+                        //UINFO(2,"constVisit "<<cvtToHex(valuep)<<" "<<num<<endl);
 			replaceNum(nodep, num); VL_DANGLING(nodep);
 			did=true;
 		    }

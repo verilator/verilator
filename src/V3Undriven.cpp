@@ -241,7 +241,7 @@ private:
     UndrivenVarEntry* getEntryp(AstVar* nodep, int which_user) {
 	if (!(which_user==1 ? nodep->user1p() : nodep->user2p())) {
             UndrivenVarEntry* entryp = new UndrivenVarEntry(nodep);
-	    //UINFO(9," Associate u="<<which_user<<" "<<(void*)this<<" "<<nodep->name()<<endl);
+            //UINFO(9," Associate u="<<which_user<<" "<<cvtToHex(this)<<" "<<nodep->name()<<endl);
 	    m_entryps[which_user].push_back(entryp);
 	    if (which_user==1) nodep->user1p(entryp);
 	    else if (which_user==2) nodep->user2p(entryp);
@@ -303,7 +303,7 @@ private:
 		if (m_inBBox || varrefp->lvalue()) {
 		    // Don't warn if already driven earlier as "a=0; if(a) a=1;" is fine.
 		    if (usr==2 && m_alwaysp && entryp->isUsedNotDrivenBit(lsb, nodep->width())) {
-			UINFO(9," Select.  Entryp="<<(void*)entryp<<endl);
+                        UINFO(9," Select.  Entryp="<<cvtToHex(entryp)<<endl);
 			warnAlwCombOrder(varrefp);
 		    }
 		    entryp->drivenBit(lsb, nodep->width());
@@ -322,7 +322,7 @@ private:
 	    bool fdrv = nodep->lvalue() && nodep->varp()->attrFileDescr();  // FD's are also being read from
 	    if (m_inBBox || nodep->lvalue()) {
 		if (usr==2 && m_alwaysp && entryp->isUsedNotDrivenAny()) {
-		    UINFO(9," Full bus.  Entryp="<<(void*)entryp<<endl);
+                    UINFO(9," Full bus.  Entryp="<<cvtToHex(entryp)<<endl);
 		    warnAlwCombOrder(nodep);
 		}
 		entryp->drivenWhole();

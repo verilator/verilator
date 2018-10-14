@@ -99,8 +99,8 @@ public:
     AstVar* varp() const { return VN_CAST(nodep(), Var); }
     virtual string name() const {
 	return ((isTristate() ? "tri\\n"
-		 :feedsTri() ? "feed\\n" : "-\\n")
-		+(nodep()->prettyTypeName()+" "+cvtToStr((void*)nodep()))); }
+                 : feedsTri() ? "feed\\n" : "-\\n")
+                +(nodep()->prettyTypeName()+" "+cvtToHex(nodep()))); }
     virtual string dotColor() const {
 	return (varp()
 		? (isTristate() ? "darkblue"
