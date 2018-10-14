@@ -208,6 +208,7 @@ public:
 	    for (V3StringSet::const_iterator it = cppFiles.begin(); it != cppFiles.end(); ++it) {
 		string cppfile = *it;
 		string basename = V3Os::filenameNonExt(cppfile);
+                // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
 		of.puts(basename+".o: "+cppfile+"\n");
 		of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<\n");
 	    }

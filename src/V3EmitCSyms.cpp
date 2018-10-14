@@ -526,6 +526,7 @@ void EmitCSyms::emitSymImp() {
 	    string classname = de ? "VerilatedDeserialize" : "VerilatedSerialize";
 	    string funcname = de ? "__Vdeserialize" : "__Vserialize";
 	    string op = de ? ">>" : "<<";
+            // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
 	    puts("void "+symClassName()+"::"+funcname+"("+classname+"& os) {\n");
 	    puts(   "// LOCAL STATE\n");
 	    // __Vm_namep presumably already correct

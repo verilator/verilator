@@ -818,7 +818,7 @@ int V3PreProcImp::getRawToken() {
 	    static string rtncmt;  // Keep the c string till next call
 	    rtncmt = m_lineCmt;
 	    if (m_lineCmtNl) {
-		if (!m_rawAtBol) rtncmt = "\n"+rtncmt;
+                if (!m_rawAtBol) rtncmt.insert(0, "\n");
 		m_lineCmtNl = false;
 	    }
 	    yyourtext(rtncmt.c_str(), rtncmt.length());
@@ -1099,7 +1099,7 @@ int V3PreProcImp::getStateToken() {
 		    if (state() == ps_JOIN) {  // Handle {left}```FOO(ARG) where `FOO(ARG) might be empty
 			if (m_joinStack.empty()) fatalSrc("`` join stack empty, but in a ``");
 			string lhs = m_joinStack.top(); m_joinStack.pop();
-			out = lhs+out;
+                        out.insert(0, lhs);
 			UINFO(5,"``-end-defarg Out:"<<out<<endl);
 			statePop();
 		    }
@@ -1323,7 +1323,7 @@ int V3PreProcImp::getStateToken() {
 			if (state() == ps_JOIN) {  // Handle {left}```FOO where `FOO might be empty
 			    if (m_joinStack.empty()) fatalSrc("`` join stack empty, but in a ``");
 			    string lhs = m_joinStack.top(); m_joinStack.pop();
-			    out = lhs+out;
+                            out.insert(0, lhs);
 			    UINFO(5,"``-end-defref Out:"<<out<<endl);
 			    statePop();
 			}

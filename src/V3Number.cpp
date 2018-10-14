@@ -556,8 +556,8 @@ string V3Number::displayed(FileLine*fl, const string& vformat) const {
 	int intfmtsize = atoi(fmtsize.c_str());
 	bool zeropad = fmtsize.length()>0 && fmtsize[0]=='0';
 	while ((int)(str.length()) < intfmtsize) {
-	    if (zeropad) str = "0"+str;
-	    else str = " "+str;
+            if (zeropad) str.insert(0, "0");
+            else str.insert(0, " ");
 	}
 	return str;
     }

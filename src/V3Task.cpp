@@ -859,8 +859,9 @@ private:
                         // At runtime we need the svOpenArrayHandle to point to this task & thread's data,
                         // in addition to static info about the variable
                         string name = portp->name()+"__Vopenarray";
-                        string varCode = ("VerilatedDpiOpenVar "+name
-                                          +" (&"+propName+", &"+portp->name()+");\n");
+                        string varCode = ("VerilatedDpiOpenVar "
+                                          // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
+                                          +name+" (&"+propName+", &"+portp->name()+");\n");
                         cfuncp->addStmtsp(new AstCStmt(portp->fileline(), varCode));
                         args += "&"+name;
                     }
