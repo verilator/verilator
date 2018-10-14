@@ -60,7 +60,7 @@ private:
     virtual void visit(AstVarRef* nodep) {
         AstVarScope* vscp = nodep->varScopep();
         if (!vscp) nodep->v3fatalSrc("Scope not assigned");
-        if (AstVarScope* newvscp = (AstVarScope*)vscp->user4p()) {
+        if (AstVarScope* newvscp = reinterpret_cast<AstVarScope*>(vscp->user4p())) {
             UINFO(9, "  Replace "<<nodep<<" to "<<newvscp<<endl);
             AstVarRef* newrefp = new AstVarRef(nodep->fileline(), newvscp, nodep->lvalue());
             nodep->replaceWith(newrefp);
@@ -222,7 +222,7 @@ private:
             const std::set<LifeLocation>& dlyVarAssigns = m_writes[dlyVarp];
             // Proof (1)
             const std::set<LifeLocation>& dlyVarReads = m_reads[dlyVarp];
-            if (dlyVarReads.size() > 0) {
+            if (!dlyVarReads.empty()) {
                 continue; // do not scrunch, go to next LifePostLocation
             }
 

@@ -1,5 +1,4 @@
-^CVS/
-/CVS/
+\.clang-tidy
 \.git/
 \.svn/
 \.(bak|old)/
@@ -9,6 +8,7 @@
 .*\.log
 \..*\.swp
 .*\.tmp
+.*\.tidy
 .*\.tex
 .*\.key
 .*\.vcd

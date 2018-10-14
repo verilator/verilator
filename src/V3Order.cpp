@@ -749,7 +749,7 @@ private:
 	    m_orderUserps.push_back(newup);
 	    varscp->user1p(newup);
 	}
-	OrderUser* up = (OrderUser*)(varscp->user1p());
+        OrderUser* up = reinterpret_cast<OrderUser*>(varscp->user1p());
 	OrderVarVertex* varVxp = up->newVarUserVertex(&m_graph, m_scopep, varscp, type, createdp);
 	return varVxp;
     }
@@ -1059,7 +1059,8 @@ private:
 			// clock_enable attribute: user's worring about it for us
 			con = false;
 		    }
-		    if (m_inClkAss && (varscp->varp()->attrClocker()) != AstVarAttrClocker::CLOCKER_YES) {
+                    if (m_inClkAss && (varscp->varp()->attrClocker()
+                                       != AstVarAttrClocker::CLOCKER_YES)) {
 			con = false;
 			UINFO(4, "nodep used as clock_enable "<<varscp<<" in "<<m_logicVxp->nodep()<<endl);
 		    }
@@ -1087,10 +1088,12 @@ private:
 			    } else {
 				// If the lhs is a clocker, avoid marking that as circular by
 				// putting a hard edge instead of normal cuttable
-				if (varscp->varp()->attrClocker() == AstVarAttrClocker::CLOCKER_YES)
+                                if (varscp->varp()->attrClocker()
+                                    == AstVarAttrClocker::CLOCKER_YES) {
 				    new OrderEdge(&m_graph, m_logicVxp, varVxp, WEIGHT_NORMAL);
-				else
+                                } else {
 				    new OrderComboCutEdge(&m_graph, m_logicVxp, varVxp);
+                                }
 			    }
 			    // For m_inPost:
 			    //    Add edge consumed_var_POST->logic_vertex
@@ -1354,7 +1357,7 @@ void OrderVisitor::processInputsInIterate(OrderEitherVertex* vertexp, VertexVec&
     // Also, determine if this vertex is an input
     int inonly = 1;  // 0=no, 1=maybe, 2=yes until a no
     for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep=edgep->inNextp()) {
-	OrderEitherVertex* frVertexp = (OrderEitherVertex*)edgep->fromp();
+        OrderEitherVertex* frVertexp = static_cast<OrderEitherVertex*>(edgep->fromp());
 	processInputsInIterate(frVertexp, todoVec);
 	if (frVertexp->isFromInput()) {
 	    if (inonly==1) inonly = 2;
@@ -1393,7 +1396,7 @@ void OrderVisitor::processInputsOutIterate(OrderEitherVertex* vertexp, VertexVec
     {
 	// Propagate PrimaryIn through simple assignments, followint target of vertex
 	for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
-	    OrderEitherVertex* toVertexp = (OrderEitherVertex*)edgep->top();
+            OrderEitherVertex* toVertexp = static_cast<OrderEitherVertex*>(edgep->top());
 	    if (OrderVarStdVertex* vvertexp = dynamic_cast<OrderVarStdVertex*>(toVertexp)) {
 		processInputsInIterate(vvertexp, todoVec);
 	    }
@@ -1506,7 +1509,7 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
     }
     if (!domainp) {
 	for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-	    OrderEitherVertex* fromVertexp = (OrderEitherVertex*)edgep->fromp();
+            OrderEitherVertex* fromVertexp = static_cast<OrderEitherVertex*>(edgep->fromp());
 	    if (edgep->weight()
 		&& fromVertexp->domainMatters()
 		) {
@@ -1721,7 +1724,7 @@ void OrderVisitor::processMoveDoneOne(OrderMoveVertex* vertexp) {
     // Mark our outputs as one closer to ready
     for (V3GraphEdge* edgep = vertexp->outBeginp(), *nextp; edgep; edgep=nextp) {
 	nextp = edgep->outNextp();
-	OrderMoveVertex* toVertexp = (OrderMoveVertex*)edgep->top();
+        OrderMoveVertex* toVertexp = static_cast<OrderMoveVertex*>(edgep->top());
 	UINFO(9,"          Clear to "<<(toVertexp->inEmpty()?"[EMP] ":"      ")
 	      <<toVertexp<<endl);
 	// Delete this edge

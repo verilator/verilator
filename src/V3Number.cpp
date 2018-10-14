@@ -490,7 +490,7 @@ string V3Number::displayed(FileLine*fl, const string& vformat) const {
 	while ((bit%3)!=2) bit++;
 	for (; bit>0; bit -= 3) {
 	    int v = bitsValue(bit-2, 3);
-	    str += (char)('0'+v);
+            str += static_cast<char>('0' + v);
 	}
 	return str;
     }
@@ -501,8 +501,8 @@ string V3Number::displayed(FileLine*fl, const string& vformat) const {
 	while ((bit%4)!=3) bit++;
 	for (; bit>0; bit -= 4) {
 	    int v = bitsValue(bit-3, 4);
-	    if (v>=10) str += (char)('a'+v-10);
-	    else str += (char)('0'+v);
+            if (v>=10) str += static_cast<char>('a' + v - 10);
+            else str += static_cast<char>('0' + v);
 	}
 	return str;
     }
@@ -521,8 +521,8 @@ string V3Number::displayed(FileLine*fl, const string& vformat) const {
 	for (; bit>=0; bit -= 8) {
 	    int v = bitsValue(bit-7, 8);
 	    if (!start || v) {
-		str += (char)((v==0)?' ':v);
-		start = false;	// Drop leading 0s
+                str += static_cast<char>((v==0) ? ' ' : v);
+                start = false;  // Drop leading 0s
 	    } else {
 		if (fmtsize != "0") str += ' ';
 	    }
@@ -555,7 +555,7 @@ string V3Number::displayed(FileLine*fl, const string& vformat) const {
         }
 	int intfmtsize = atoi(fmtsize.c_str());
 	bool zeropad = fmtsize.length()>0 && fmtsize[0]=='0';
-	while ((int)(str.length()) < intfmtsize) {
+        while (static_cast<int>(str.length()) < intfmtsize) {
             if (zeropad) str.insert(0, "0");
             else str.insert(0, " ");
 	}
@@ -572,23 +572,23 @@ string V3Number::displayed(FileLine*fl, const string& vformat) const {
     // 'p'   // Packed - converted to another code by V3Width
     case 'u': {  // Packed 2-state
 	for (int i=0; i<words(); i++) {
-	    str += (char)((m_value[i] >> 0) & 0xff);
-	    str += (char)((m_value[i] >> 8) & 0xff);
-	    str += (char)((m_value[i] >> 16) & 0xff);
-	    str += (char)((m_value[i] >> 24) & 0xff);
+            str += static_cast<char>((m_value[i] >> 0) & 0xff);
+            str += static_cast<char>((m_value[i] >> 8) & 0xff);
+            str += static_cast<char>((m_value[i] >> 16) & 0xff);
+            str += static_cast<char>((m_value[i] >> 24) & 0xff);
 	}
 	return str;
     }
     case 'z': {  // Packed 4-state
 	for (int i=0; i<words(); i++) {
-	    str += (char)((m_value[i] >> 0) & 0xff);
-	    str += (char)((m_value[i] >> 8) & 0xff);
-	    str += (char)((m_value[i] >> 16) & 0xff);
-	    str += (char)((m_value[i] >> 24) & 0xff);
-	    str += (char)((m_valueX[i] >> 0) & 0xff);
-	    str += (char)((m_valueX[i] >> 8) & 0xff);
-	    str += (char)((m_valueX[i] >> 16) & 0xff);
-	    str += (char)((m_valueX[i] >> 24) & 0xff);
+            str += static_cast<char>((m_value[i] >> 0) & 0xff);
+            str += static_cast<char>((m_value[i] >> 8) & 0xff);
+            str += static_cast<char>((m_value[i] >> 16) & 0xff);
+            str += static_cast<char>((m_value[i] >> 24) & 0xff);
+            str += static_cast<char>((m_valueX[i] >> 0) & 0xff);
+            str += static_cast<char>((m_valueX[i] >> 8) & 0xff);
+            str += static_cast<char>((m_valueX[i] >> 16) & 0xff);
+            str += static_cast<char>((m_valueX[i] >> 24) & 0xff);
 	}
 	return str;
     }
@@ -691,11 +691,11 @@ vlsint32_t V3Number::toSInt() const {
 	uint32_t v = toUInt();
 	uint32_t signExtend = (-(v & (1UL<<(width()-1))));
 	uint32_t extended = v | signExtend;
-	return (vlsint32_t)(extended);
+        return static_cast<vlsint32_t>(extended);
     } else {
 	// Where we use this (widths, etc) and care about signedness,
 	// we can reasonably assume the MSB isn't set on unsigned numbers.
-	return (vlsint32_t)toUInt();
+        return static_cast<vlsint32_t>(toUInt());
     }
 }
 
@@ -705,15 +705,16 @@ vluint64_t V3Number::toUQuad() const {
     for (int i=2; i<words(); ++i) {
 	UASSERT(!m_value[i], "Value too wide for 64-bits expected in this context "<<*this);
     }
-    if (width()<=32) return ((vluint64_t)(toUInt()));
-    return ((vluint64_t)m_value[1]<<VL_ULL(32)) | ((vluint64_t)m_value[0]);
+    if (width()<=32) return (static_cast<vluint64_t>(toUInt()));
+    return ((static_cast<vluint64_t>(m_value[1])<<VL_ULL(32))
+            | (static_cast<vluint64_t>(m_value[0])));
 }
 
 vlsint64_t V3Number::toSQuad() const {
     vluint64_t v = toUQuad();
     vluint64_t signExtend = (-(v & (VL_ULL(1)<<(width()-1))));
     vluint64_t extended = v | signExtend;
-    return (vlsint64_t)(extended);
+    return static_cast<vlsint64_t>(extended);
 }
 
 string V3Number::toString() const {
@@ -727,8 +728,8 @@ string V3Number::toString() const {
     for (; bit>=0; bit -= 8) {
 	int v = bitsValue(bit-7, 8);
 	if (!start || v) {
-	    str += (char)((v==0)?' ':v);
-	    start = false;	// Drop leading 0s
+            str += static_cast<char>((v==0) ? ' ' : v);
+            start = false;  // Drop leading 0s
 	}
     }
     return str;
@@ -1069,7 +1070,7 @@ V3Number& V3Number::opStreamL(const V3Number& lhs, const V3Number& rhs) {
 	m_fileline->v3warn(WIDTHCONCAT,"Unsized numbers/parameters not allowed in streams.");
     }
     // Slice size should never exceed the lhs width
-    int ssize = std::min(rhs.toUInt(), (unsigned)lhs.width());
+    int ssize = std::min(rhs.toUInt(), static_cast<unsigned>(lhs.width()));
     for (int istart=0; istart<lhs.width(); istart+=ssize) {
         int ostart = std::max(0, lhs.width()-ssize-istart);
 	for (int bit=0; bit<ssize && bit<lhs.width()-istart; bit++) {
@@ -1273,7 +1274,7 @@ V3Number& V3Number::opRotL(const V3Number& lhs, const V3Number& rhs) {
     setZero();
     uint32_t rhsval = rhs.toUInt();
     for (int bit=0; bit<this->width(); bit++) {
-	if (bit >= (int)rhsval) {
+        if (bit >= static_cast<int>(rhsval)) {
 	    setBit(bit,lhs.bitIs((bit - rhsval) % this->width()));
 	}
     }
@@ -1288,7 +1289,7 @@ V3Number& V3Number::opShiftR(const V3Number& lhs, const V3Number& rhs) {
 	if (rhs.bitIs1(bit)) return *this;  // shift of over 2^32 must be zero
     }
     uint32_t rhsval = rhs.toUInt();
-    if (rhsval < (uint32_t)lhs.width()) {
+    if (rhsval < static_cast<uint32_t>(lhs.width())) {
 	for (int bit=0; bit<this->width(); bit++) {
 	    setBit(bit,lhs.bitIs(bit + rhsval));
 	}
@@ -1310,7 +1311,7 @@ V3Number& V3Number::opShiftRS(const V3Number& lhs, const V3Number& rhs, uint32_t
 	return *this;  // shift of over 2^32 must be -1/0
     }
     uint32_t rhsval = rhs.toUInt();
-    if (rhsval < (uint32_t)lhs.width()) {
+    if (rhsval < static_cast<uint32_t>(lhs.width())) {
 	for (int bit=0; bit<this->width(); bit++) {
 	    setBit(bit,lhs.bitIsExtend(bit + rhsval, lbits));
 	}
@@ -1331,8 +1332,8 @@ V3Number& V3Number::opShiftL(const V3Number& lhs, const V3Number& rhs) {
     }
     uint32_t rhsval = rhs.toUInt();
     for (int bit=0; bit<this->width(); bit++) {
-	if (bit >= (int)rhsval) {
-	    setBit(bit,lhs.bitIs(bit - rhsval));
+        if (bit >= static_cast<int>(rhsval)) {
+            setBit(bit, lhs.bitIs(bit - rhsval));
 	}
     }
     return *this;
@@ -1391,7 +1392,8 @@ V3Number& V3Number::opMul(const V3Number& lhs, const V3Number& rhs) {
     } else {
 	for (int lword=0; lword<lhs.words(); lword++) {
 	    for (int rword=0; rword<rhs.words(); rword++) {
-		vluint64_t mul = (vluint64_t)(lhs.m_value[lword]) * (vluint64_t)(rhs.m_value[rword]);
+                vluint64_t mul = static_cast<vluint64_t>(lhs.m_value[lword])
+                    * static_cast<vluint64_t>(rhs.m_value[rword]);
 		for (int qword=lword+rword; qword<this->words(); qword++) {
 		    mul += (vluint64_t)(m_value[qword]);
 		    m_value[qword] = (mul & VL_ULL(0xffffffff));
@@ -1494,9 +1496,10 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
     if (vw == 1) {  // Single divisor word breaks rest of algorithm
 	vluint64_t k = 0;
 	for (int j = uw-1; j >= 0; j--) {
-	    vluint64_t unw64 = ((k<<VL_ULL(32)) + (vluint64_t)(lhs.m_value[j]));
-	    m_value[j] = unw64 / (vluint64_t)(rhs.m_value[0]);
-	    k          = unw64 - (vluint64_t)(m_value[j])*(vluint64_t)(rhs.m_value[0]);
+            vluint64_t unw64 = ((k<<VL_ULL(32)) + static_cast<vluint64_t>(lhs.m_value[j]));
+            m_value[j] = unw64 / static_cast<vluint64_t>(rhs.m_value[0]);
+            k          = unw64 - (static_cast<vluint64_t>(m_value[j])
+                                  * static_cast<vluint64_t>(rhs.m_value[0]));
 	}
         UINFO(9, "  opmoddiv-1w  "<<lhs<<" "<<rhs<<" q="<<*this<<" rem=0x"<<std::hex<<k<<std::dec<<endl);
 	if (is_modulus) { setZero(); m_value[0] = k; }
@@ -1536,9 +1539,10 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
     // Main loop
     for (int j = uw - vw; j >= 0; j--) {
 	// Estimate
-	vluint64_t unw64 = ((vluint64_t)(un[j+vw])<<VL_ULL(32) | (vluint64_t)(un[j+vw-1]));
-	vluint64_t qhat = unw64 / (vluint64_t)(vn[vw-1]);
-	vluint64_t rhat = unw64 - qhat*(vluint64_t)(vn[vw-1]);
+        vluint64_t unw64 = (static_cast<vluint64_t>(un[j+vw])<<VL_ULL(32)
+                            | static_cast<vluint64_t>(un[j+vw-1]));
+        vluint64_t qhat = unw64 / static_cast<vluint64_t>(vn[vw-1]);
+        vluint64_t rhat = unw64 - qhat*static_cast<vluint64_t>(vn[vw-1]);
 
       again:
 	if (qhat >= VL_ULL(0x100000000)
@@ -1565,7 +1569,7 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
 	    this->m_value[j]--;
 	    k = 0;
 	    for (int i=0; i<vw; i++) {
-		t = (vluint64_t)(un[i+j]) + (vluint64_t)(vn[i]) + k;
+                t = static_cast<vluint64_t>(un[i+j]) + static_cast<vluint64_t>(vn[i]) + k;
 		un[i+j] = t;
 		k = t >> VL_ULL(32);
 	    }
@@ -1684,15 +1688,15 @@ V3Number& V3Number::opSel(const V3Number& lhs, const V3Number& msb, const V3Numb
 
 V3Number& V3Number::opSel(const V3Number& lhs, uint32_t msbval, uint32_t lsbval) {
     setZero();
-    int ibit=lsbval;
+    int ibit = lsbval;
     for(int bit=0; bit<this->width(); bit++) {
 	if (ibit>=0 && ibit<lhs.width()
-	    && ibit<=(int)msbval) {
-	    setBit(bit,lhs.bitIs(ibit));
+            && ibit <= static_cast<int>(msbval)) {
+            setBit(bit, lhs.bitIs(ibit));
 	} else {
-	    setBit(bit,'x');
+            setBit(bit, 'x');
 	}
-	ibit++;
+        ++ibit;
     }
     //UINFO(0,"RANGE "<<lhs<<" "<<msb<<" "<<lsb<<" = "<<*this<<endl);
     return *this;
@@ -1743,12 +1747,12 @@ V3Number& V3Number::opIToRD(const V3Number& lhs) {
 }
 V3Number& V3Number::opRToIS(const V3Number& lhs) {
     double v = VL_TRUNC(lhs.toDouble());
-    vlsint32_t i = (vlsint32_t)v; // C converts from double to vlsint32
+    vlsint32_t i = static_cast<vlsint32_t>(v);  // C converts from double to vlsint32
     return setLongS(i);
 }
 V3Number& V3Number::opRToIRoundS(const V3Number& lhs) {
     double v = VL_ROUND(lhs.toDouble());
-    vlsint32_t i = (vlsint32_t)v; // C converts from double to vlsint32
+    vlsint32_t i = static_cast<vlsint32_t>(v);  // C converts from double to vlsint32
     return setLongS(i);
 }
 V3Number& V3Number::opRealToBits(const V3Number& lhs) {

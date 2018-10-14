@@ -79,11 +79,10 @@ public:
             vluint8_t* newp = t_freeHead;
             t_freeHead = *((vluint8_t**)newp);
             return newp+8;
-        } else {
-            // +8: 8 bytes for next
-            vluint8_t* newp = reinterpret_cast<vluint8_t*>(::operator new(chunk+8));
-            return newp+8;
         }
+        // +8: 8 bytes for next
+        vluint8_t* newp = reinterpret_cast<vluint8_t*>(::operator new(chunk+8));
+        return newp+8;
     }
     inline static void operator delete(void* obj, size_t size) VL_MT_SAFE {
         vluint8_t* oldp = ((vluint8_t*)obj)-8;
@@ -156,9 +155,8 @@ public:
             VerilatedVpioRange* nextp = new VerilatedVpioRange(*this);
             nextp->iterationInc();
             return ((nextp)->castVpiHandle());
-        } else {
-            return 0;  // End of list - only one deep
         }
+        return 0;  // End of list - only one deep
     }
 };
 
@@ -275,9 +273,8 @@ public:
             if (m_it == varsp->end()) return 0;
             return ((new VerilatedVpioVar(&(m_it->second), m_scopep))
                     ->castVpiHandle());
-        } else {
-            return 0;  // End of list - only one deep
         }
+        return 0;  // End of list - only one deep
     }
 };
 
@@ -388,9 +385,8 @@ public:
         VpioTimedCbs::const_iterator it=s_s.m_timedCbs.begin();
         if (VL_LIKELY(it!=s_s.m_timedCbs.end())) {
             return it->first;
-        } else {
-            return ~VL_ULL(0);  // maxquad
         }
+        return ~VL_ULL(0);  // maxquad
     }
     static void callCbs(vluint32_t reason) {
         VpioCbList& cbObjList = s_s.m_cbObjLists[reason];
@@ -1037,17 +1033,15 @@ vpiHandle vpi_handle_by_index(vpiHandle object, PLI_INT32 indx) {
 	    return (new VerilatedVpioMemoryWord(varop->varp(), varop->scopep(), indx,
                                               indx - varop->varp()->unpacked().right()))
 		->castVpiHandle();
-	} else {
-            if (VL_UNLIKELY(indx < varop->varp()->unpacked().left()
-                            || indx > varop->varp()->unpacked().right())) return 0;
-	    return (new VerilatedVpioMemoryWord(varop->varp(), varop->scopep(), indx,
-                                              indx - varop->varp()->unpacked().left()))
-		->castVpiHandle();
 	}
-    } else {
-	_VL_VPI_INTERNAL(__FILE__, __LINE__, "%s : can't resolve handle", VL_FUNC);
-        return 0;
+        if (VL_UNLIKELY(indx < varop->varp()->unpacked().left()
+                        || indx > varop->varp()->unpacked().right())) return 0;
+        return (new VerilatedVpioMemoryWord(varop->varp(), varop->scopep(), indx,
+                                            indx - varop->varp()->unpacked().left()))
+            ->castVpiHandle();
     }
+    _VL_VPI_INTERNAL(__FILE__, __LINE__, "%s : can't resolve handle", VL_FUNC);
+    return 0;
 }
 
 // for traversing relationships

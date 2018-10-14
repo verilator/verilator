@@ -141,7 +141,7 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     TristateVertex* makeVertex(AstNode* nodep) {
-	TristateVertex* vertexp = (TristateVertex*)(nodep->user5p());
+        TristateVertex* vertexp = reinterpret_cast<TristateVertex*>(nodep->user5p());
 	if (!vertexp) {
 	    UINFO(6,"         New vertex "<<nodep<<endl);
 	    vertexp = new TristateVertex(&m_graph, nodep);
@@ -224,10 +224,10 @@ public:
 	//if (debug()>=9) m_graph.dumpDotFilePrefixed("tri_pre__"+nodep->name());
 	UINFO(9," Walking "<<nodep<<endl);
 	for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
-	    graphWalkRecurseFwd((TristateVertex*)itp, 0);
+            graphWalkRecurseFwd(static_cast<TristateVertex*>(itp), 0);
 	}
 	for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
-	    graphWalkRecurseBack((TristateVertex*)itp, 0);
+            graphWalkRecurseBack(static_cast<TristateVertex*>(itp), 0);
 	}
 	if (debug()>=9) m_graph.dumpDotFilePrefixed("tri_pos__"+nodep->name());
     }
@@ -238,15 +238,15 @@ public:
 	new V3GraphEdge(&m_graph, makeVertex(fromp), makeVertex(top), 1);
     }
     bool isTristate(AstNode* nodep) {
-	TristateVertex* vertexp = (TristateVertex*)(nodep->user5p());
+        TristateVertex* vertexp = reinterpret_cast<TristateVertex*>(nodep->user5p());
 	return vertexp && vertexp->isTristate();
     }
     bool feedsTri(AstNode* nodep) {
-	TristateVertex* vertexp = (TristateVertex*)(nodep->user5p());
+        TristateVertex* vertexp = reinterpret_cast<TristateVertex*>(nodep->user5p());
 	return vertexp && vertexp->feedsTri();
     }
     void didProcess(AstNode* nodep) {
-	TristateVertex* vertexp = (TristateVertex*)(nodep->user5p());
+        TristateVertex* vertexp = reinterpret_cast<TristateVertex*>(nodep->user5p());
 	if (!vertexp) {
 	    // Not v3errorSrc as no reason to stop the world
 	    nodep->v3error("Unsupported tristate construct (not in propagation graph): "<<nodep->prettyTypeName());
@@ -441,7 +441,7 @@ class TristateVisitor : public TristateBaseVisitor {
     }
 
     void setPullDirection(AstVar* varp, AstPull* pullp) {
-	AstPull* oldpullp = (AstPull*)varp->user3p();
+        AstPull* oldpullp = static_cast<AstPull*>(varp->user3p());
 	if (!oldpullp) {
 	    varp->user3p(pullp); //save off to indicate the pull direction
 	} else {
@@ -599,7 +599,7 @@ class TristateVisitor : public TristateBaseVisitor {
 		// This is the final resolution of the tristate, so we apply
 		// the pull direction to any undriven pins.
 		V3Number pull(invarp->fileline(), lhsp->width());
-		AstPull* pullp = (AstPull*)lhsp->user3p();
+                AstPull* pullp = static_cast<AstPull*>(lhsp->user3p());
 		if (pullp && pullp->direction() == 1) {
 		    pull.setAllBits1();
 		    UINFO(9,"Has pullup "<<pullp<<endl);
@@ -1054,7 +1054,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	    if (nodep->user2() & U2_GRAPHING) return;  // This pin is already expanded
 	    nodep->user2(U2_GRAPHING);
 	    // Find child module's new variables.
-	    AstVar* enModVarp = (AstVar*) nodep->modVarp()->user1p();
+            AstVar* enModVarp = static_cast<AstVar*>(nodep->modVarp()->user1p());
 	    if (!enModVarp) {
 		if (nodep->exprp()) {
 		    // May have an output only that later connects to a tristate, so simplify now.
@@ -1116,7 +1116,7 @@ class TristateVisitor : public TristateBaseVisitor {
 	    // Create new output pin
 	    AstAssignW* outAssignp = NULL;  // If reconnected, the related assignment
             AstPin* outpinp = NULL;
-            AstVar* outModVarp = (AstVar*) nodep->modVarp()->user4p();
+            AstVar* outModVarp = static_cast<AstVar*>(nodep->modVarp()->user4p());
             if (!outModVarp) {
                 // At top, no need for __out as might be input only. Otherwise resolvable.
                 if (!m_modp->isTop()) nodep->v3fatalSrc("Unlinked");
@@ -1176,7 +1176,7 @@ class TristateVisitor : public TristateBaseVisitor {
 
 	    // Propagate any pullups/pulldowns upwards if necessary
 	    if (exprrefp) {
-		if (AstPull* pullp = (AstPull*) nodep->modVarp()->user3p()) {
+                if (AstPull* pullp = static_cast<AstPull*>(nodep->modVarp()->user3p())) {
 		    UINFO(9, "propagate pull on "<<exprrefp<<endl);
 		    setPullDirection(exprrefp->varp(), pullp);
 		}

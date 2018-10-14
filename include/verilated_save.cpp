@@ -38,6 +38,9 @@
 #ifndef O_NONBLOCK
 # define O_NONBLOCK 0
 #endif
+#ifndef O_CLOEXEC
+# define O_CLOEXEC 0
+#endif
 
 // CONSTANTS
 static const char* const VLTSAVE_HEADER_STR = "verilatorsave01\n";	///< Value of first bytes of each file
@@ -50,7 +53,7 @@ static const char* const VLTSAVE_TRAILER_STR = "vltsaved";	///< Value of last by
 
 bool VerilatedDeserialize::readDiffers(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
     bufferCheck();
-    const vluint8_t* __restrict dp = (const vluint8_t* __restrict)datap;
+    const vluint8_t* __restrict dp = static_cast<const vluint8_t* __restrict>(datap);
     vluint8_t miss = 0;
     while (size--) {
 	miss |= (*dp++ ^ *m_cp++);
@@ -119,7 +122,7 @@ void VerilatedSave::open(const char* filenamep) VL_MT_UNSAFE_ONE {
 	assert(0);	// Not supported yet.
     } else {
 	// cppcheck-suppress duplicateExpression
-        m_fd = ::open(filenamep, O_CREAT|O_WRONLY|O_TRUNC|O_LARGEFILE|O_NONBLOCK
+        m_fd = ::open(filenamep, O_CREAT|O_WRONLY|O_TRUNC|O_LARGEFILE|O_NONBLOCK|O_CLOEXEC
                       , 0666);
 	if (m_fd<0) {
 	    // User code can check isOpen()
@@ -142,7 +145,7 @@ void VerilatedRestore::open(const char* filenamep) VL_MT_UNSAFE_ONE {
 	assert(0);	// Not supported yet.
     } else {
 	// cppcheck-suppress duplicateExpression
-        m_fd = ::open(filenamep, O_CREAT|O_RDONLY|O_LARGEFILE
+        m_fd = ::open(filenamep, O_CREAT|O_RDONLY|O_LARGEFILE|O_CLOEXEC
                       , 0666);
 	if (m_fd<0) {
 	    // User code can check isOpen()

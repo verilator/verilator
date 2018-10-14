@@ -65,8 +65,8 @@ public:
     static void addSrcDepend(const string& filename);
     static void addTgtDepend(const string& filename);
     static void writeDepend(const string& filename);
-    static void writeTimes(const string& filename, const string& cmdline);
-    static bool checkTimes(const string& filename, const string& cmdline);
+    static void writeTimes(const string& filename, const string& cmdlineIn);
+    static bool checkTimes(const string& filename, const string& cmdlineIn);
 
     // Directory utilities
     static void createMakeDir();
@@ -129,7 +129,7 @@ private:
     int         m_bracketLevel;  // Intenting = { block, indicates number of {'s seen.
 
     int		endLevels(const char* strg);
-    const char* indentStr(int levels);
+    const char* indentStr(int num);
     void putcNoTracking(char chr);
 
 public:
@@ -160,7 +160,7 @@ public:
     void blockInc() { m_parenVec.push(m_indentLevel + m_blockIndent); }
     void blockDec() { if (!m_parenVec.empty()) m_parenVec.pop(); }
     // STATIC METHODS
-    static const string indentSpaces(int levels);
+    static const string indentSpaces(int num);
 
     // CALLBACKS - MUST OVERRIDE
     virtual void putcOutput(char chr) = 0;

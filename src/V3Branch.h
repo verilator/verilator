@@ -32,7 +32,7 @@
 class V3Branch {
 public:
     // CONSTRUCTORS
-    static void branchAll(AstNetlist* rootp);
+    static void branchAll(AstNetlist* nodep);
 };
 
 #endif // Guard

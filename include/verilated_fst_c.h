@@ -77,10 +77,10 @@ public:
         fstWriterClose(m_fst);
         m_fst = NULL;
     }
-    // void set_time_unit(const char* unit); ///< Set time units (s/ms, defaults to ns)
+    // void set_time_unit(const char* unitp);  ///< Set time units (s/ms, defaults to ns)
     // void set_time_unit(const std::string& unit) { set_time_unit(unit.c_str()); }
 
-    // void set_time_resolution(const char* unit); ///< Set time resolution (s/ms, defaults to ns)
+    // void set_time_resolution(const char* unitp);  ///< Set time resolution (s/ms, defaults to ns)
     // void set_time_resolution(const std::string& unit) { set_time_resolution(unit.c_str()); }
 
     // double timescaleToDouble(const char* unitp);
@@ -93,8 +93,8 @@ public:
     /// Inside dumping routines, called each cycle to make the dump
     void dump(vluint64_t timeui);
     /// Inside dumping routines, declare callbacks for tracings
-    void addCallback(VerilatedFstCallback_t init, VerilatedFstCallback_t full,
-                     VerilatedFstCallback_t change,
+    void addCallback(VerilatedFstCallback_t initcb, VerilatedFstCallback_t fullcb,
+                     VerilatedFstCallback_t changecb,
                      void* userthis) VL_MT_UNSAFE_ONE;
 
     /// Inside dumping routines, declare a module

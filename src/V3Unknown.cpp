@@ -190,9 +190,9 @@ private:
 		lhsp->deleteTree(); VL_DANGLING(lhsp);
 		rhsp->deleteTree(); VL_DANGLING(rhsp);
 	    } else {
-                if (VN_IS(nodep, EqCase))
-                newp = new AstEq(nodep->fileline(), lhsp, rhsp);
-                else newp = new AstNeq(nodep->fileline(), lhsp, rhsp);
+                if (VN_IS(nodep, EqCase)) {
+                    newp = new AstEq(nodep->fileline(), lhsp, rhsp);
+                } else { newp = new AstNeq(nodep->fileline(), lhsp, rhsp); }
 	    }
 	    nodep->replaceWith(newp);
 	    nodep->deleteTree(); VL_DANGLING(nodep);
@@ -225,9 +225,9 @@ private:
 		AstNode* and1p = new AstAnd(nodep->fileline(), lhsp,
 					    new AstConst(nodep->fileline(), nummask));
 		AstNode* and2p = new AstConst(nodep->fileline(), numval);
-                if (VN_IS(nodep, EqWild))
+                if (VN_IS(nodep, EqWild)) {
                     newp  = new AstEq(nodep->fileline(), and1p, and2p);
-                else newp = new AstNeq(nodep->fileline(), and1p, and2p);
+                } else { newp = new AstNeq(nodep->fileline(), and1p, and2p); }
 		rhsp->deleteTree(); VL_DANGLING(rhsp);
 	    }
 	    nodep->replaceWith(newp);

@@ -123,10 +123,10 @@ public:
     const string filebasenameNoExt() const;
     const string profileFuncname() const;
     const string xml() const { return "fl=\""+filenameLetters()+cvtToStr(lineno())+"\""; }
-    string lineDirectiveStrg(int enter_exit_level) const;
+    string lineDirectiveStrg(int enterExit) const;
     void warnOn(V3ErrorCode code, bool flag) { m_warnOn.set(code,flag); }	// Turn on/off warning messages on this line.
     void warnOff(V3ErrorCode code, bool flag) { warnOn(code,!flag); }
-    bool warnOff(const string& code, bool flag);  // Returns 1 if ok
+    bool warnOff(const string& msg, bool flag);  // Returns 1 if ok
     bool warnIsOff(V3ErrorCode code) const;
     void warnLintOff(bool flag);
     void warnStyleOff(bool flag);

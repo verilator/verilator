@@ -98,7 +98,7 @@ private:
 	nodep->user1(clean);
     }
     CleanState getCleanState(AstNode* nodep) {
-	return ((CleanState)nodep->user1());
+        return static_cast<CleanState>(nodep->user1());
     }
     bool isClean(AstNode* nodep) {
 	CleanState clstate = getCleanState(nodep);

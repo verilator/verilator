@@ -54,8 +54,8 @@
 
 // If change this code, run a test with the below size set very small
 //#define INFILTER_IPC_BUFSIZ 16
-#define INFILTER_IPC_BUFSIZ 64*1024  // For debug, try this as a small number
-#define INFILTER_CACHE_MAX  64*1024  // Maximum bytes to cache if same file read twice
+#define INFILTER_IPC_BUFSIZ (64*1024)  // For debug, try this as a small number
+#define INFILTER_CACHE_MAX  (64*1024)  // Maximum bytes to cache if same file read twice
 
 //######################################################################
 // V3File Internal state
@@ -124,8 +124,8 @@ public:
 	}
     }
     void writeDepend(const string& filename);
-    void writeTimes(const string& filename, const string& cmdline);
-    bool checkTimes(const string& filename, const string& cmdline);
+    void writeTimes(const string& filename, const string& cmdlineIn);
+    bool checkTimes(const string& filename, const string& cmdlineIn);
 };
 
 V3FileDependImp  dependImp;	// Depend implementation class
@@ -180,7 +180,7 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
     for (std::set<DependFile>::iterator iter=m_filenameList.begin();
 	 iter!=m_filenameList.end(); ++iter) {
 	// Read stats of files we create after we're done making them (execpt for this file, of course)
-	DependFile* dfp = (DependFile*)&(*iter);
+        DependFile* dfp = const_cast<DependFile*>(&(*iter));
 	V3Options::fileNfsFlush(dfp->filename());
 	dfp->loadStats();
 	off_t showSize = iter->size();
@@ -232,6 +232,7 @@ inline bool V3FileDependImp::checkTimes(const string& filename, const string& cm
 	string chkFilename; getline(*ifp, chkFilename, '"');
 
 	V3Options::fileNfsFlush(chkFilename);
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 	struct stat chkStat;
 	int err = stat(chkFilename.c_str(), &chkStat);
 	if (err!=0) {
@@ -280,11 +281,11 @@ void V3File::addTgtDepend(const string& filename) {
 void V3File::writeDepend(const string& filename) {
     dependImp.writeDepend(filename);
 }
-void V3File::writeTimes(const string& filename, const string& cmdline) {
-    dependImp.writeTimes(filename, cmdline);
+void V3File::writeTimes(const string& filename, const string& cmdlineIn) {
+    dependImp.writeTimes(filename, cmdlineIn);
 }
-bool V3File::checkTimes(const string& filename, const string& cmdline) {
-    return dependImp.checkTimes(filename, cmdline);
+bool V3File::checkTimes(const string& filename, const string& cmdlineIn) {
+    return dependImp.checkTimes(filename, cmdlineIn);
 }
 
 void V3File::createMakeDir() {
@@ -463,7 +464,7 @@ private:
 	    dup2(fd_stdout[P_WR], 1);
 	    // And stderr comes from parent
 
-	    execl("/bin/sh", "sh", "-c", command.c_str(), (char*)NULL);
+            execl("/bin/sh", "sh", "-c", command.c_str(), static_cast<char*>(NULL));
 	    // Don't use v3fatal, we don't share the common structures any more
 	    fprintf(stderr,"--pipe-filter: exec failed: %s\n",strerror(errno));
 	    _exit(10);
@@ -858,7 +859,7 @@ void V3OutFormatter::printf(const char *fmt...) {
 
 V3OutFile::V3OutFile(const string& filename, V3OutFormatter::Language lang)
     : V3OutFormatter(filename, lang) {
-    if ((m_fp = V3File::new_fopen_w(filename.c_str())) == NULL) {
+    if ((m_fp = V3File::new_fopen_w(filename)) == NULL) {
 	v3fatal("Cannot write "<<filename);
     }
 }

@@ -226,10 +226,10 @@ class SliceVisitor : public AstNVisitor {
 
 public:
     // CONSTUCTORS
-    explicit SliceVisitor(AstNetlist* rootp) {
+    explicit SliceVisitor(AstNetlist* nodep) {
 	m_assignp = NULL;
 	m_assignError = false;
-        iterate(rootp);
+        iterate(nodep);
     }
     virtual ~SliceVisitor() {}
 };
@@ -237,10 +237,10 @@ public:
 //######################################################################
 // Link class functions
 
-void V3Slice::sliceAll(AstNetlist* rootp) {
+void V3Slice::sliceAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     {
-        SliceVisitor visitor(rootp);
+        SliceVisitor visitor(nodep);
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("slice", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

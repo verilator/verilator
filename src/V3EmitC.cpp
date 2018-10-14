@@ -585,8 +585,8 @@ public:
     }
     virtual void visit(AstReplicate* nodep) {
 	if (nodep->lhsp()->widthMin() == 1 && !nodep->isWide()) {
-            if (((int)VN_CAST(nodep->rhsp(), Const)->toUInt()
-		     * nodep->lhsp()->widthMin()) != nodep->widthMin())
+            if ((static_cast<int>(VN_CAST(nodep->rhsp(), Const)->toUInt())
+                 * nodep->lhsp()->widthMin()) != nodep->widthMin())
 		nodep->v3fatalSrc("Replicate non-constant or width miscomputed");
 	    puts("VL_REPLICATE_");
 	    emitIQW(nodep);
@@ -687,7 +687,9 @@ public:
 		}
 		for (int word=VL_WORDS_I(upWidth)-1; word>=0; word--) {
 		    // Only 32 bits - llx + long long here just to appease CPP format warning
-		    ofp()->printf(",0x%08" VL_PRI64 "x", (vluint64_t)(nodep->num().dataWord(word+chunks*EMITC_NUM_CONSTW)));
+                    ofp()->printf(",0x%08" VL_PRI64 "x",
+                                  static_cast<vluint64_t>(nodep->num().dataWord
+                                                          (word+chunks*EMITC_NUM_CONSTW)));
 		}
 		puts(")");
 	    }
@@ -708,7 +710,9 @@ public:
 		}
 		for (int word=EMITC_NUM_CONSTW-1; word>=0; word--) {
 		    // Only 32 bits - llx + long long here just to appease CPP format warning
-		    ofp()->printf(",0x%08" VL_PRI64 "x", (vluint64_t)(nodep->num().dataWord(word+chunks*EMITC_NUM_CONSTW)));
+                    ofp()->printf(",0x%08" VL_PRI64 "x",
+                                  static_cast<vluint64_t>(nodep->num().dataWord
+                                                          (word+chunks*EMITC_NUM_CONSTW)));
 		}
 		puts(")");
 	    }
@@ -730,7 +734,7 @@ public:
 	    uint32_t num = nodep->toUInt();
 	    // Only 32 bits - llx + long long here just to appease CPP format warning
 	    if (num<10) puts(cvtToStr(num));
-	    else ofp()->printf("0x%" VL_PRI64 "x", (vluint64_t)num);
+            else ofp()->printf("0x%" VL_PRI64 "x", static_cast<vluint64_t>(num));
 	    // If signed, we'll do our own functions
 	    // But must be here, or <= comparisons etc may end up signed
 	    puts("U");
@@ -1164,7 +1168,7 @@ class EmitCImp : EmitCStmts {
 
     // METHODS
     // Low level
-    void emitVarReset(AstVar* modp);
+    void emitVarReset(AstVar* varp);
     void emitCellCtors(AstNodeModule* modp);
     void emitSensitives();
     // Medium level
@@ -1336,7 +1340,7 @@ void EmitCStmts::emitOpName(AstNode* nodep, const string& format,
     //	,	Commas suppressed if the previous field is suppressed
     string nextComma;
     bool needComma = false;
-#define COMMA { if (nextComma!="") { puts(nextComma); nextComma=""; } }
+#define COMMA { if (!nextComma.empty()) { puts(nextComma); nextComma=""; } }
 
     putbs("");
     for (string::const_iterator pos = format.begin(); pos != format.end(); ++pos) {
@@ -1675,7 +1679,8 @@ void EmitCImp::emitVarReset(AstVar* varp) {
 	}
 	bool zeroit = (varp->attrFileDescr() // Zero it out, so we don't core dump if never call $fopen
 		       || (varp->basicp() && varp->basicp()->isZeroInit())
-		       || (varp->name().size()>=1 && varp->name()[0]=='_' && v3Global.opt.underlineZero())
+                       || (v3Global.opt.underlineZero()
+                           && !varp->name().empty() && varp->name()[0]=='_')
 		       || (v3Global.opt.xInitial() == "fast" || v3Global.opt.xInitial() == "0"));
 	if (varp->isWide()) {
 	    // DOCUMENT: We randomize everything.  If the user wants a _var to be zero,
@@ -1877,7 +1882,7 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
 		}
 	    }
 	    ofp()->printf(   "vluint64_t __Vcheckval = VL_ULL(0x%" VL_PRI64 "x);\n",
-                             (vluint64_t)hash.digestUInt64());
+                             static_cast<vluint64_t>(hash.digestUInt64()));
 	    if (de) {
 		puts("os.readAssert(__Vcheckval);\n");
 	    } else {

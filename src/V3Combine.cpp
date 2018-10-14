@@ -69,7 +69,7 @@ protected:
     // Also repair it for DPI functions; when make __common need to insure proper
     // flags get inherited from the old to new AstCFunc, and that AstText doesn't
     // get split between functions causing the text to have a danginling reference.
-    bool statementCombine() { return false && duplicateFunctionCombine(); }
+    bool statementCombine() { return false; }  // duplicateFunctionCombine();
 };
 
 //######################################################################

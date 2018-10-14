@@ -48,7 +48,7 @@ class StatsReport {
 	os<<endl;
 
 	os<<"Information:"<<endl;
-	os<<"  "<<v3Global.opt.version()<<endl;
+        os<<"  "<<V3Options::version()<<endl;
 	os<<"  Arguments: "<<v3Global.opt.allArgsString()<<endl;
 	os<<endl;
     }

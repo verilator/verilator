@@ -200,7 +200,7 @@ public:
     int  bisonParse();
 
     // Interactions with lexer
-    void lexNew(int debug);
+    void lexNew();
     void lexDestroy();
     void statePop();		// Parser -> lexer communication
     static int stateVerilogRecent();	// Parser -> lexer communication

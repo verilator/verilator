@@ -767,7 +767,7 @@ private:
 	    string stmt = "return "+rtnvarp->name()+";\n";
 	    dpip->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
 	}
-        makePortList(nodep, rtnvarp, dpip);
+        makePortList(nodep, dpip);
     }
 
     void makeDpiImportProto(AstNodeFTask* nodep, AstVar* rtnvarp) {
@@ -789,7 +789,7 @@ private:
         dpip->dpiImport(true);
 	// Add DPI reference to top, since it's a global function
 	m_topScopep->scopep()->addActivep(dpip);
-        makePortList(nodep, rtnvarp, dpip);
+        makePortList(nodep, dpip);
     }
 
     bool duplicatedDpiProto(AstNodeFTask* nodep, const string& dpiproto) {
@@ -811,7 +811,7 @@ private:
         }
     }
 
-    void makePortList(AstNodeFTask* nodep, AstVar* rtnvarp, AstCFunc* dpip) {
+    void makePortList(AstNodeFTask* nodep, AstCFunc* dpip) {
         // Copy nodep's list of function I/O to the new dpip c function
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
             if (AstVar* portp = VN_CAST(stmtp, Var)) {
@@ -963,7 +963,7 @@ private:
             rtnvarp->user2p(rtnvscp);
         }
 
-	string prefix = "";
+        string prefix;
 	if (nodep->dpiImport()) prefix = "__Vdpiimwrap_";
 	else if (nodep->dpiExport()) prefix = "__Vdpiexp_";
 	else if (ftaskNoInline) prefix = "__VnoInFunc_";
@@ -1292,7 +1292,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     for (AstNode* stmtp = taskStmtsp; stmtp; stmtp=stmtp->nextp()) {
         if (AstVar* portp = VN_CAST(stmtp, Var)) {
 	    if (portp->isIO()) {
-		tconnects.push_back(make_pair(portp, (AstArg*)NULL));
+                tconnects.push_back(make_pair(portp, static_cast<AstArg*>(NULL)));
 		nameToIndex.insert(make_pair(portp->name(), tpinnum)); // For name based connections
 		tpinnum++;
 		if (portp->attrSFormat()) {
@@ -1330,7 +1330,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
 	} else { // By pin number
 	    if (ppinnum >= tpinnum) {
 		if (sformatp) {
-		    tconnects.push_back(make_pair(sformatp, (AstArg*)NULL));
+                    tconnects.push_back(make_pair(sformatp, static_cast<AstArg*>(NULL)));
 		    tconnects[ppinnum].second = argp;
 		    tpinnum++;
 		} else {

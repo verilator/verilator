@@ -69,11 +69,11 @@ private:
 	AstNode* m_errp;  // Node that was found, for error reporting if not known type
 	AstNodeDType* m_dtypep;  // Data type for the 'from' slice
 	VNumRange m_fromRange;  // Numeric range bounds for the 'from' slice
-	FromData(AstNode* errp, AstNodeDType* dtypep, VNumRange fromRange)
+        FromData(AstNode* errp, AstNodeDType* dtypep, const VNumRange& fromRange)
 	    { m_errp=errp; m_dtypep=dtypep; m_fromRange=fromRange; }
 	~FromData() {}
     };
-    FromData fromDataForArray(AstNode* nodep, AstNode* basefromp, bool rangedSelect) {
+    FromData fromDataForArray(AstNode* nodep, AstNode* basefromp) {
 	// What is the data type and information for this SEL-ish's from()?
 	UINFO(9,"  fromData start ddtypep = "<<basefromp<<endl);
 	VNumRange fromRange;  // constructs to isRanged(false)
@@ -198,7 +198,7 @@ private:
 	AstNode* fromp = nodep->lhsp()->unlinkFrBack();
 	AstNode* rhsp = nodep->rhsp()->unlinkFrBack();  // bit we're extracting
 	if (debug()>=9) nodep->dumpTree(cout,"--SELBT2: ");
-	FromData fromdata = fromDataForArray(nodep, fromp, false);
+        FromData fromdata = fromDataForArray(nodep, fromp);
 	AstNodeDType* ddtypep = fromdata.m_dtypep;
 	VNumRange fromRange = fromdata.m_fromRange;
 	UINFO(6,"  ddtypep "<<ddtypep<<endl);
@@ -290,7 +290,7 @@ private:
         vlsint32_t msb = VN_CAST(msbp, Const)->toSInt();
         vlsint32_t lsb = VN_CAST(lsbp, Const)->toSInt();
 	vlsint32_t elem = (msb>lsb) ? (msb-lsb+1) : (lsb-msb+1);
-	FromData fromdata = fromDataForArray(nodep, fromp, false);
+        FromData fromdata = fromDataForArray(nodep, fromp);
 	AstNodeDType* ddtypep = fromdata.m_dtypep;
 	VNumRange fromRange = fromdata.m_fromRange;
         if (VN_IS(ddtypep, UnpackArrayDType)) {
@@ -331,7 +331,7 @@ private:
 	    newp->declElWidth(elwidth);
 	    newp->dtypeFrom(sliceDType(adtypep, msb, lsb));
 	    //if (debug()>=9) newp->dumpTree(cout,"--EXTBTn: ");
-	    if (newp->widthMin()!=(int)newp->widthConst()) nodep->v3fatalSrc("Width mismatch");
+            if (newp->widthMin() != newp->widthConst()) nodep->v3fatalSrc("Width mismatch");
 	    nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
 	}
         else if (VN_IS(ddtypep, BasicDType)) {
@@ -402,7 +402,7 @@ private:
         int width = VN_CAST(widthp, Const)->toSInt();
 	if (width > (1<<28)) nodep->v3error("Width of :+ or :- is huge; vector of over 1billion bits: "<<widthp->prettyName());
 	if (width<0) nodep->v3error("Width of :+ or :- is < 0: "<<widthp->prettyName());
-	FromData fromdata = fromDataForArray(nodep, fromp, width!=1);
+        FromData fromdata = fromDataForArray(nodep, fromp);
 	AstNodeDType* ddtypep = fromdata.m_dtypep;
 	VNumRange fromRange = fromdata.m_fromRange;
         if (VN_IS(ddtypep, BasicDType)

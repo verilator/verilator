@@ -566,7 +566,7 @@ int main(int argc, char** argv, char** env) {
 
     time_t randseed;
     time(&randseed);
-    srand( (int) randseed);
+    srand(static_cast<int>(randseed));
 
     // Post-constructor initialization of netlists
     v3Global.boot();

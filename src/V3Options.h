@@ -27,10 +27,10 @@
 #include "V3Global.h"
 #include "V3LangCode.h"
 
-#include <string>
-#include <vector>
 #include <map>
 #include <set>
+#include <string>
+#include <vector>
 
 class V3OptionsImp;
 class FileLine;
@@ -214,7 +214,7 @@ class V3Options {
 
   private:
     // METHODS
-    void addArg(const string& flag);
+    void addArg(const string& arg);
     void addDefine(const string& defline, bool allowPlus);
     void addFuture(const string& flag);
     void addIncDirUser(const string& incdir);  // User requested
@@ -238,9 +238,9 @@ class V3Options {
     ~V3Options();
     void setDebugMode(int level);
     void setDebugSrcLevel(const string& srcfile, int level);
-    int debugSrcLevel(const string& srcfile, int default_level=V3Error::debugDefault());
+    int debugSrcLevel(const string& srcfile_path, int default_level=V3Error::debugDefault());
     void setDumpTreeLevel(const string& srcfile, int level);
-    int dumpTreeLevel(const string& srcfile);
+    int dumpTreeLevel(const string& srcfile_path);
 
     // METHODS
     void addCppFile(const string& filename);

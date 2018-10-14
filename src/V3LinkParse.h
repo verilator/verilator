@@ -31,7 +31,7 @@
 
 class V3LinkParse {
 public:
-    static void linkParse(AstNetlist* nodep);
+    static void linkParse(AstNetlist* rootp);
 };
 
 #endif // Guard

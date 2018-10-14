@@ -334,7 +334,7 @@ public:
     virtual string name() { return "import"; }
     virtual void runTest() {
 	DfaGraph* gp = &m_graph;
-	if (V3GraphTest::debug()) gp->debug(9);
+        if (V3GraphTest::debug()) DfaGraph::debug(9);
 	dotImport();
 	dump();
 	gp->acyclic(&V3GraphEdge::followAlwaysTrue);

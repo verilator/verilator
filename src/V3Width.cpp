@@ -86,7 +86,9 @@
 //######################################################################
 
 enum Stage { PRELIM=1,FINAL=2,BOTH=3 };  // Numbers are a bitmask <0>=prelim, <1>=final
-std::ostream& operator<<(std::ostream& str, const Stage& rhs) { return str<<("-PFB"[(int)rhs]); }
+std::ostream& operator<<(std::ostream& str, const Stage& rhs) {
+    return str<<("-PFB"[static_cast<int>(rhs)]);
+}
 
 enum Determ {
     SELF,		// Self-determined
@@ -1644,9 +1646,9 @@ private:
 		for (int i = 0; i < arrayType->elementsConst(); ++i) {
 		    AstNode* arrayRef = nodep->fromp()->cloneTree(false);
 		    AstNode* selector = new AstArraySel(fl, arrayRef, i);
-		    if (!newp)
+                    if (!newp) {
 			newp = selector;
-		    else {
+                    } else {
 			switch (methodId) {
 			    case ARRAY_OR: newp = new AstOr(fl, newp, selector); break;
 			    case ARRAY_AND: newp = new AstAnd(fl, newp, selector); break;

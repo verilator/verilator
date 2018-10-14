@@ -70,10 +70,10 @@ public:
         lxt2_wr_close(m_lxt2);
         m_lxt2 = NULL;
     }
-    // void set_time_unit(const char* unit); ///< Set time units (s/ms, defaults to ns)
+    // void set_time_unit(const char* unitp);  ///< Set time units (s/ms, defaults to ns)
     // void set_time_unit(const std::string& unit) { set_time_unit(unit.c_str()); }
 
-    // void set_time_resolution(const char* unit); ///< Set time resolution (s/ms, defaults to ns)
+    // void set_time_resolution(const char* unitp);  ///< Set time resolution (s/ms, defaults to ns)
     // void set_time_resolution(const std::string& unit) { set_time_resolution(unit.c_str()); }
 
     // double timescaleToDouble(const char* unitp);
@@ -86,8 +86,8 @@ public:
     /// Inside dumping routines, called each cycle to make the dump
     void dump(vluint64_t timeui);
     /// Inside dumping routines, declare callbacks for tracings
-    void addCallback(VerilatedLxt2Callback_t init, VerilatedLxt2Callback_t full,
-                     VerilatedLxt2Callback_t change,
+    void addCallback(VerilatedLxt2Callback_t initcb, VerilatedLxt2Callback_t fullcb,
+                     VerilatedLxt2Callback_t changecb,
                      void* userthis) VL_MT_UNSAFE_ONE;
 
     /// Inside dumping routines, declare a module

@@ -419,8 +419,8 @@ void AstNode::replaceWith(AstNode* newp) {
 }
 
 void AstNRelinker::dump(std::ostream& str) const {
-    str<<" BK="<<(uint32_t*)m_backp;
-    str<<" ITER="<<(uint32_t*)m_iterpp;
+    str<<" BK="<<reinterpret_cast<uint32_t*>(m_backp);
+    str<<" ITER="<<reinterpret_cast<uint32_t*>(m_iterpp);
     str<<" CHG="<<(m_chg==RELINK_NEXT?"[NEXT] ":"");
     str<<(m_chg==RELINK_OP1?"[OP1] ":"");
     str<<(m_chg==RELINK_OP2?"[OP2] ":"");
@@ -670,13 +670,13 @@ void AstNode::deleteNode() {
     UASSERT(!m_backp, "Delete called on node with backlink still set");
     editCountInc();
     // Change links of old node so we coredump if used
-    this->m_nextp = (AstNode*)1;
-    this->m_backp = (AstNode*)1;
-    this->m_headtailp = (AstNode*)1;
-    this->m_op1p = (AstNode*)1;
-    this->m_op2p = (AstNode*)1;
-    this->m_op3p = (AstNode*)1;
-    this->m_op4p = (AstNode*)1;
+    this->m_nextp = reinterpret_cast<AstNode*>(0x1);
+    this->m_backp = reinterpret_cast<AstNode*>(0x1);
+    this->m_headtailp = reinterpret_cast<AstNode*>(0x1);
+    this->m_op1p = reinterpret_cast<AstNode*>(0x1);
+    this->m_op2p = reinterpret_cast<AstNode*>(0x1);
+    this->m_op3p = reinterpret_cast<AstNode*>(0x1);
+    this->m_op4p = reinterpret_cast<AstNode*>(0x1);
     if (
 #if !defined(VL_DEBUG) || defined(VL_LEAK_CHECKS)
         1
@@ -1077,7 +1077,9 @@ void AstNode::v3errorEnd(std::ostringstream& str) const {
 	nsstr<<str.str();
 	if (debug()) {
 	    nsstr<<endl;
-	    nsstr<<"-node: "; ((AstNode*)this)->dump(nsstr); nsstr<<endl;
+            nsstr<<"-node: ";
+            const_cast<AstNode*>(this)->dump(nsstr);
+            nsstr<<endl;
 	}
 	m_fileline->v3errorEnd(nsstr);
     }

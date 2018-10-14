@@ -26,9 +26,9 @@
 
 #include "config_rev.h"
 
-#include <vector>
 #include <map>
 #include <set>
+#include <vector>
 
 //######################################################################
 // V3Options - Command line options

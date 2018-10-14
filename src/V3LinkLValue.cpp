@@ -271,10 +271,10 @@ public:
 //######################################################################
 // Link class functions
 
-void V3LinkLValue::linkLValue(AstNetlist* rootp) {
+void V3LinkLValue::linkLValue(AstNetlist* nodep) {
     UINFO(4,__FUNCTION__<<": "<<endl);
     {
-        LinkLValueVisitor visitor(rootp, false);
+        LinkLValueVisitor visitor(nodep, false);
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linklvalue", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

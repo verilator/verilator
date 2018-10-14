@@ -60,7 +60,7 @@ public:
     static void hashGraphDebug(const V3Graph* graphp, const char* debugName);
 
     // Print debug stats about graphp whose nodes must be AbstractMTask's.
-    static void debugMTaskGraphStats(const V3Graph* graphp, const string& name);
+    static void debugMTaskGraphStats(const V3Graph* graphp, const string& stage);
 
     // Operate on the final ExecMTask graph, immediately prior to code
     // generation time.

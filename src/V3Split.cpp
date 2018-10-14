@@ -183,8 +183,7 @@ public:
     static bool followCyclic(const V3GraphEdge* edgep) {
 	const SplitEdge* oedgep = dynamic_cast<const SplitEdge*>(edgep);
 	if (!oedgep) v3fatalSrc("Following edge of non-SplitEdge type");
-	if (oedgep->ignoreThisStep()) return false;
-	return true;
+        return (!oedgep->ignoreThisStep());
     }
     virtual string dotStyle() const {
         return ignoreThisStep() ? "dotted" : V3GraphEdge::dotStyle();
@@ -335,7 +334,7 @@ protected:
             if (!vertexp->outBeginp()
                 && dynamic_cast<SplitVarStdVertex*>(vertexp)) {
                 if (debug() >= 9) {
-                    SplitVarStdVertex* stdp = (SplitVarStdVertex*)(vertexp);
+                    SplitVarStdVertex* stdp = static_cast<SplitVarStdVertex*>(vertexp);
                     UINFO(0, "Will prune deps on var "<<stdp->nodep()<<endl);
                     stdp->nodep()->dumpTree(cout, "- ");
                 }
@@ -388,10 +387,10 @@ protected:
 
                 // Create vertexes for variable
                 if (!vscp->user1p()) {
-                    SplitVarStdVertex*  vstdp  = new SplitVarStdVertex(&m_graph, vscp);
+                    SplitVarStdVertex* vstdp = new SplitVarStdVertex(&m_graph, vscp);
                     vscp->user1p(vstdp);
                 }
-                SplitVarStdVertex*  vstdp  = (SplitVarStdVertex*) vscp->user1p();
+                SplitVarStdVertex* vstdp = reinterpret_cast<SplitVarStdVertex*>(vscp->user1p());
 
                 // SPEEDUP: We add duplicate edges, that should be fixed
                 if (m_inDly && nodep->lvalue()) {
@@ -402,7 +401,8 @@ protected:
                         vscp->user2p(vpostp);
                         new SplitPostEdge(&m_graph, vstdp, vpostp);
                     }
-                    SplitVarPostVertex* vpostp = (SplitVarPostVertex*)vscp->user2p();
+                    SplitVarPostVertex* vpostp
+                        = reinterpret_cast<SplitVarPostVertex*>(vscp->user2p());
                     // Add edges
                     for (VStack::iterator it = m_stmtStackps.begin(); it != m_stmtStackps.end(); ++it) {
                         new SplitLVEdge(&m_graph, vpostp, *it);
@@ -451,11 +451,9 @@ private:
 class ReorderVisitor : public SplitReorderBaseVisitor {
     // CONSTRUCTORS
 public:
-    explicit ReorderVisitor(AstNetlist* nodep)
-        : SplitReorderBaseVisitor() {
-            iterate(nodep);
-        }
-
+    explicit ReorderVisitor(AstNetlist* nodep) {
+        iterate(nodep);
+    }
     virtual ~ReorderVisitor() {}
 
     // METHODS
@@ -480,7 +478,7 @@ protected:
 	// Vertex::m_user begin: true indicates logic for this step
 	m_graph.userClearVertices();
 	for (AstNode* nextp=nodep; nextp; nextp=nextp->nextp()) {
-	    SplitLogicVertex* vvertexp = (SplitLogicVertex*)nextp->user3p();
+            SplitLogicVertex* vvertexp = reinterpret_cast<SplitLogicVertex*>(nextp->user3p());
 	    vvertexp->user(true);
 	}
 
@@ -513,7 +511,7 @@ protected:
 	// Add hard orderings between all nodes of same color, in the order they appeared
         vl_unordered_map<uint32_t, SplitLogicVertex*> lastOfColor;
 	for (AstNode* nextp=nodep; nextp; nextp=nextp->nextp()) {
-	    SplitLogicVertex* vvertexp = (SplitLogicVertex*)nextp->user3p();
+            SplitLogicVertex* vvertexp = reinterpret_cast<SplitLogicVertex*>(nextp->user3p());
             uint32_t color = vvertexp->color();
 	    if (!color) nextp->v3fatalSrc("No node color assigned");
 	    if (lastOfColor[color]) {
@@ -539,7 +537,7 @@ protected:
         RankNodeMap rankMap;
 	int currOrder = 0;	// Existing sequence number of assignment
 	for (AstNode* nextp=nodep; nextp; nextp=nextp->nextp()) {
-	    SplitLogicVertex* vvertexp = (SplitLogicVertex*)nextp->user3p();
+            SplitLogicVertex* vvertexp = reinterpret_cast<SplitLogicVertex*>(nextp->user3p());
 	    rankMap.insert(make_pair(vvertexp->rank(), nextp));
 	    nextp->user4(++currOrder);   // Record current ordering
 	}
@@ -593,9 +591,11 @@ protected:
 		cleanupBlockGraph(nodep);
 		reorderBlock(nodep);
 		// Delete old vertexes and edges only applying to this block
-		while (firstp->backp()->nextp()==firstp) firstp = firstp->backp();  // Walk back to first in list
+                // First, walk back to first in list
+                while (firstp->backp()->nextp()==firstp) firstp = firstp->backp();
 		for (AstNode* nextp=firstp; nextp; nextp=nextp->nextp()) {
-		    SplitLogicVertex* vvertexp = (SplitLogicVertex*)nextp->user3p();
+                    SplitLogicVertex* vvertexp
+                        = reinterpret_cast<SplitLogicVertex*>(nextp->user3p());
 		    vvertexp->unlinkDelete(&m_graph);
 		}
 	    }
@@ -662,7 +662,7 @@ protected:
 
     virtual void visit(AstNode* nodep) {
         if (nodep->user3p()) {
-            SplitLogicVertex* vertexp = (SplitLogicVertex*)(nodep->user3p());
+            SplitLogicVertex* vertexp = reinterpret_cast<SplitLogicVertex*>(nodep->user3p());
             uint32_t color = vertexp->color();
             m_colors.insert(color);
             UINFO(8, "  SVL " << vertexp << " has color " << color << "\n");
@@ -754,7 +754,7 @@ protected:
         if (!nodep->user3p()) nodep->v3fatalSrc("null user3p in V3Split leaf");
 
         // Clone the leaf into its new always block
-        SplitLogicVertex* vxp = (SplitLogicVertex*)(nodep->user3p());
+        SplitLogicVertex* vxp = reinterpret_cast<SplitLogicVertex*>(nodep->user3p());
         uint32_t color = vxp->color();
         AstNode* clonedp = nodep->cloneTree(false);
         m_addAfter[color]->addNextHere(clonedp);
@@ -846,8 +846,7 @@ private:
     // CONSTRUCTORS
 public:
     explicit SplitVisitor(AstNetlist* nodep)
-        : SplitReorderBaseVisitor()
-        , m_curIfConditional(NULL) {
+        : m_curIfConditional(NULL) {
         iterate(nodep);
 
         // Splice newly-split blocks into the tree. Remove placeholders

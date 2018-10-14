@@ -63,7 +63,7 @@ protected:
 	};
         // cppcheck-suppress unusedStructMember
 	uint32_t m_flags;
-	VarFlags(AstNode* nodep) { m_flags = nodep->user2(); }
+        explicit VarFlags(AstNode* nodep) { m_flags = nodep->user2(); }
 	void setNodeFlags(AstNode* nodep) { nodep->user2(m_flags); }
     };
 };
@@ -215,7 +215,7 @@ private:
 		    clearOptimizable(nodep->varp(),"BVmultiF");
 		}
 		// First varref in function must be assignment found earlier
-		AstVarRef* firstasn = (AstVarRef*)(nodep->varp()->user4p());
+                AstVarRef* firstasn = static_cast<AstVarRef*>(nodep->varp()->user4p());
 		if (firstasn && nodep!=firstasn) {
 		    clearStdOptimizable(nodep->varp(),"notFirstAsn");
 		    nodep->varp()->user4p(NULL);

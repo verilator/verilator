@@ -577,7 +577,9 @@ const char* AstScope::broken() const {
 void AstScope::cloneRelink() {
     if (m_aboveScopep && m_aboveScopep->clonep()) m_aboveScopep->clonep();
     if (m_aboveCellp && m_aboveCellp->clonep()) m_aboveCellp->clonep();
-    if (m_modp && ((AstNode*)m_modp)->clonep()) ((AstNode*)m_modp)->clonep();
+    if (m_modp && static_cast<AstNode*>(m_modp)->clonep()) {
+        static_cast<AstNode*>(m_modp)->clonep();
+    }
 }
 
 string AstScope::nameDotless() const {
@@ -651,7 +653,7 @@ bool AstSenTree::hasCombo() const {
 void AstTypeTable::clearCache() {
     // When we mass-change widthMin in V3WidthCommit, we need to correct the table.
     // Just clear out the maps; the search functions will be used to rebuild the map
-    for (int i=0; i<(int)(AstBasicDTypeKwd::_ENUM_MAX); ++i) {
+    for (int i=0; i < static_cast<int>(AstBasicDTypeKwd::_ENUM_MAX); ++i) {
 	m_basicps[i] = NULL;
     }
     for (int isbit=0; isbit<_IDX0_MAX; ++isbit) {
@@ -701,7 +703,7 @@ AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kw
     else if (kwd == AstBasicDTypeKwd::BIT) idx = IDX0_BIT;
     else fl->v3fatalSrc("Bad kwd for findLogicBitDType");
     std::pair<int,int> widths = make_pair(width,widthMin);
-    LogicMap& mapr = m_logicMap[idx][(int)numeric];
+    LogicMap& mapr = m_logicMap[idx][static_cast<int>(numeric)];
     LogicMap::const_iterator it = mapr.find(widths);
     if (it != mapr.end()) return it->second;
     //
@@ -991,7 +993,7 @@ void AstMTaskBody::dump(std::ostream& str) {
 }
 void AstTypeTable::dump(std::ostream& str) {
     this->AstNode::dump(str);
-    for (int i=0; i<(int)(AstBasicDTypeKwd::_ENUM_MAX); ++i) {
+    for (int i=0; i < static_cast<int>(AstBasicDTypeKwd::_ENUM_MAX); ++i) {
 	if (AstBasicDType* subnodep=m_basicps[i]) {
 	    str<<endl;  // Newline from caller, so newline first
             str<<"\t\t"<<std::setw(8)<<AstBasicDTypeKwd(i).ascii();

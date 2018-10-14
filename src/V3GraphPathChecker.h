@@ -58,7 +58,7 @@ class GraphPathChecker : GraphAlg<const V3Graph> {
     bool pathExistsInternal(const V3GraphVertex* ap,
                             const V3GraphVertex* bp,
                             unsigned* costp = NULL);
-    void initHalfCriticalPaths(GraphWay w, bool checkOnly);
+    void initHalfCriticalPaths(GraphWay way, bool checkOnly);
     void incGeneration() { ++m_generation; }
 
     VL_DEBUG_FUNC;  // Declare debug()

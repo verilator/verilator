@@ -36,9 +36,9 @@ class V3PreShell {
     // Static class for calling preprocessor
 public:
     static void boot(char** env);
-    static bool preproc(FileLine* fileline, const string& module, V3InFilter* filterp,
-			V3ParseImp* parsep, const string& errmsg);
-    static void preprocInclude(FileLine* fileline, const string& module);
+    static bool preproc(FileLine* fl, const string& modname, V3InFilter* filterp,
+                        V3ParseImp* parsep, const string& errmsg);
+    static void preprocInclude(FileLine* fl, const string& modname);
     static string dependFiles() { return ""; }   // Perl only
     static void defineCmdLine(const string& name, const string& value);
     static void undef(const string& name);

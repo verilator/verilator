@@ -36,15 +36,15 @@
 //######################################################################
 // FileLineSingleton class functions
 
-const string FileLineSingleton::filenameLetters(int no) {
+const string FileLineSingleton::filenameLetters(int fileno) {
     const int size = 1 + (64 / 4);  // Each letter retires more than 4 bits of a > 64 bit number
     char out[size];
     char* op = out+size-1;
     *--op = '\0';  // We build backwards
-    int num = no;
+    int num = fileno;
     do {
-	*--op = 'a'+num%26;
-	num /= 26;
+        *--op = 'a'+num%26;
+        num /= 26;
     } while (num);
     return op;
 }
@@ -90,8 +90,8 @@ FileLine::FileLine(FileLine::EmptySecret) {
 
     m_warnOn=0;
     for (int codei=V3ErrorCode::EC_MIN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
-	V3ErrorCode code = (V3ErrorCode)codei;
-	warnOff(code, code.defaultsOff());
+        V3ErrorCode code = V3ErrorCode(codei);
+        warnOff(code, code.defaultsOff());
     }
 }
 
@@ -205,15 +205,15 @@ bool FileLine::warnOff(const string& msg, bool flag) {
 
 void FileLine::warnLintOff(bool flag) {
     for (int codei=V3ErrorCode::EC_MIN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
-	V3ErrorCode code = (V3ErrorCode)codei;
-	if (code.lintError()) warnOff(code, flag);
+        V3ErrorCode code = V3ErrorCode(codei);
+        if (code.lintError()) warnOff(code, flag);
     }
 }
 
 void FileLine::warnStyleOff(bool flag) {
     for (int codei=V3ErrorCode::EC_MIN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
-	V3ErrorCode code = (V3ErrorCode)codei;
-	if (code.styleError()) warnOff(code, flag);
+        V3ErrorCode code = V3ErrorCode(codei);
+        if (code.styleError()) warnOff(code, flag);
     }
 }
 
@@ -229,10 +229,8 @@ bool FileLine::warnIsOff(V3ErrorCode code) const {
 void FileLine::modifyStateInherit(const FileLine* fromp) {
     // Any warnings that are off in "from", become off in "this".
     for (int codei=V3ErrorCode::EC_MIN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
-	V3ErrorCode code = (V3ErrorCode)codei;
-	if (fromp->warnIsOff(code)) {
-	    warnOff(code, true);
-	}
+        V3ErrorCode code = V3ErrorCode(codei);
+        if (fromp->warnIsOff(code)) { warnOff(code, true); }
     }
 }
 

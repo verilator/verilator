@@ -44,6 +44,9 @@
 #ifndef O_NONBLOCK
 # define O_NONBLOCK 0
 #endif
+#ifndef O_CLOEXEC
+# define O_CLOEXEC 0
+#endif
 
 //=============================================================================
 // VerilatedVcdImp
@@ -109,7 +112,7 @@ protected:
 // VerilatedVcdFile
 
 bool VerilatedVcdFile::open(const std::string& name) VL_MT_UNSAFE {
-    m_fd = ::open(name.c_str(), O_CREAT|O_WRONLY|O_TRUNC|O_LARGEFILE|O_NONBLOCK, 0666);
+    m_fd = ::open(name.c_str(), O_CREAT|O_WRONLY|O_TRUNC|O_LARGEFILE|O_NONBLOCK|O_CLOEXEC, 0666);
     return (m_fd>=0);
 }
 
@@ -237,7 +240,7 @@ void VerilatedVcd::makeNameMap() {
     bool nullScope = false;
     for (NameMap::const_iterator it=m_namemapp->begin(); it!=m_namemapp->end(); ++it) {
         const std::string& hiername = it->first;
-        if (hiername.size() >= 1 && hiername[0] == '\t') nullScope=true;
+        if (!hiername.empty() && hiername[0] == '\t') nullScope=true;
     }
     if (nullScope) {
         NameMap* newmapp = new NameMap;
@@ -546,13 +549,15 @@ void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep,
     // Tab sorts before spaces, so signals nicely will print before scopes
     // Note the hiername may be nothing, if so we'll add "\t{name}"
     std::string nameasstr = name;
-    if (m_modName!="") { nameasstr = m_modName+m_scopeEscape+nameasstr; }  // Optional ->module prefix
+    if (!m_modName.empty()) {
+        nameasstr = m_modName+m_scopeEscape+nameasstr;  // Optional ->module prefix
+    }
     std::string hiername;
     std::string basename;
     for (const char* cp=nameasstr.c_str(); *cp; cp++) {
         if (isScopeEscape(*cp)) {
             // Ahh, we've just read a scope, not a basename
-            if (hiername!="") hiername += " ";
+            if (!hiername.empty()) hiername += " ";
             hiername += basename;
             basename = "";
         } else {

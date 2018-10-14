@@ -180,9 +180,7 @@ private:
 	}
     }
 
-    void toggleVarBottom(AstNodeDType* dtypep, int depth, // per-iteration
-		     const ToggleEnt& above,
-		     AstVar* varp, AstVar* chgVarp) { // Constant
+    void toggleVarBottom(const ToggleEnt& above, const AstVar* varp) {
 	AstCoverToggle* newp
             = new AstCoverToggle(varp->fileline(),
                                  newCoverInc(varp->fileline(), "", "v_toggle",
@@ -202,15 +200,11 @@ private:
 		    ToggleEnt newent (above.m_comment+string("[")+cvtToStr(index_docs)+"]",
 				      new AstSel(varp->fileline(), above.m_varRefp->cloneTree(true), index_code, 1),
 				      new AstSel(varp->fileline(), above.m_chgRefp->cloneTree(true), index_code, 1));
-		    toggleVarBottom(dtypep, depth+1,
-				    newent,
-				    varp, chgVarp);
+                    toggleVarBottom(newent, varp);
 		    newent.cleanup();
 		}
 	    } else {
-		toggleVarBottom(dtypep, depth+1,
-				above,
-				varp, chgVarp);
+                toggleVarBottom(above, varp);
 	    }
 	}
         else if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {

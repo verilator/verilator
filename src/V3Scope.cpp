@@ -106,7 +106,9 @@ private:
 	UINFO(4," MOD AT "<<scopename<<"  "<<nodep<<endl);
         AstNode::user1ClearTree();
 
-	m_scopep = new AstScope((m_aboveCellp?(AstNode*)m_aboveCellp:(AstNode*)nodep)->fileline(),
+        m_scopep = new AstScope((m_aboveCellp ? static_cast<AstNode*>(m_aboveCellp)
+                                 : static_cast<AstNode*>(nodep))
+                                ->fileline(),
 				nodep, scopename, m_aboveScopep, m_aboveCellp);
         if (VN_IS(nodep, Package)) m_packageScopes.insert(make_pair(VN_CAST(nodep, Package), m_scopep));
 

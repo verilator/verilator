@@ -376,7 +376,7 @@ class GaterVisitor : public GaterBaseVisitor {
 	    m_pliVertexp = new GaterPliVertex(&m_graph);
 	}
 	if (m_stmtVscp) {  // Already saw a variable, be sure to mark it!
-	    GaterVarVertex* varVtxp = (GaterVarVertex*)(m_stmtVscp->user1p());
+            GaterVarVertex* varVtxp = reinterpret_cast<GaterVarVertex*>(m_stmtVscp->user1p());
 	    new GaterEdge(&m_graph, m_pliVertexp, varVtxp, VU_PLI);
 	}
 	m_stmtInPli = true;  // Mark all followon variables too
@@ -689,9 +689,9 @@ class GaterVisitor : public GaterBaseVisitor {
 	nodep->addNextHere(alwp);
 
 	// Blow moved statements from old body
-	GaterBodyVisitor(nodep,exprp,true);
+        { GaterBodyVisitor vis(nodep,exprp,true); }
 	// Blow old statements from new body
-	GaterBodyVisitor(alwp,exprp,false);
+        { GaterBodyVisitor vis(alwp,exprp,false); }
 
 	++m_statGaters;
 	if (debug()>=9) alwp->dumpTree(cout,"  new: ");
@@ -764,7 +764,7 @@ class GaterVisitor : public GaterBaseVisitor {
 	    }
 	    m_stmtVscp = vscp;
 	    // Find, or make new Vertex
-	    GaterVarVertex* vertexp = (GaterVarVertex*)(vscp->user1p());
+            GaterVarVertex* vertexp = reinterpret_cast<GaterVarVertex*>(vscp->user1p());
 	    if (!vertexp) {
 		vertexp = new GaterVarVertex(&m_graph, vscp);
 		vscp->user1p(vertexp);

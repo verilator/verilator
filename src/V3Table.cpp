@@ -119,8 +119,8 @@ private:
 	// Calc data storage in bytes
 	size_t chgWidth = m_outVarps.size();	// Width of one change-it-vector
 	if (chgWidth<8) chgWidth = 8;
-	double space = (pow((double)2,((double)(m_inWidth)))
-			*(double)(m_outWidth+chgWidth));
+        double space = (pow(static_cast<double>(2.0), static_cast<double>(m_inWidth))
+                        * static_cast<double>(m_outWidth + chgWidth));
 	// Instruction count bytes (ok, it's space also not time :)
 	double bytesPerInst = 4;
 	double time  = (chkvis.instrCount()*bytesPerInst + chkvis.dataCount()) + 1;  // +1 so won't div by zero
@@ -377,9 +377,10 @@ private:
 	    AstNode* arhsp = new AstArraySel(nodep->fileline(),
 					     new AstVarRef(nodep->fileline(), m_tableVarps[outnum], false),
 					     new AstVarRef(nodep->fileline(), indexVscp, false));
-	    AstNode* outasnp = (m_assignDly
-                                ? (AstNode*)(new AstAssignDly(nodep->fileline(), alhsp, arhsp))
-                                : (AstNode*)(new AstAssign(nodep->fileline(), alhsp, arhsp)));
+            AstNode* outasnp
+                = (m_assignDly
+                   ? static_cast<AstNode*>(new AstAssignDly(nodep->fileline(), alhsp, arhsp))
+                   : static_cast<AstNode*>(new AstAssign(nodep->fileline(), alhsp, arhsp)));
 	    AstNode* outsetp = outasnp;
 
 	    // Is the value set in only some branches of the table?

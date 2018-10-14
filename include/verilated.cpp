@@ -135,13 +135,11 @@ std::string _vl_string_vprintf(const char* formatp, va_list ap) VL_MT_SAFE {
     int len = VL_VSNPRINTF(NULL, 0, formatp, aq);
     va_end(aq);
     if (VL_UNLIKELY(len < 1)) {
-        va_end(ap);
         return "";
     }
 
     char* bufp = new char[len+1];
     VL_VSNPRINTF(bufp, len+1, formatp, ap);
-    va_end(ap);
 
     std::string out = std::string(bufp, len);
     delete[] bufp;
@@ -240,10 +238,10 @@ vluint64_t vl_rand64() VL_MT_SAFE {
 	t_seeded = true;
 	{
 	    VerilatedLockGuard lock(s_mutex);
-            t_state[0] = (((vluint64_t)vl_sys_rand32())<<32
-                          ^ ((vluint64_t)vl_sys_rand32()));
-            t_state[1] = (((vluint64_t)vl_sys_rand32())<<32
-                          ^ ((vluint64_t)vl_sys_rand32()));
+            t_state[0] = ((static_cast<vluint64_t>(vl_sys_rand32()) << 32)
+                          ^ (static_cast<vluint64_t>(vl_sys_rand32())));
+            t_state[1] = ((static_cast<vluint64_t>(vl_sys_rand32()) << 32)
+                          ^ (static_cast<vluint64_t>(vl_sys_rand32())));
             // Fix state as algorithm is slow to randomize if many zeros
             // This causes a loss of ~ 1 bit of seed entropy, no big deal
             if (VL_COUNTONES_I(t_state[0]) < 10) t_state[0] = ~t_state[0];
@@ -1245,19 +1243,19 @@ IData VL_SSCANF_INX(int, const std::string& ld, const char* formatp, ...) VL_MT_
 }
 
 void VL_WRITEMEM_Q(bool hex, int width, int depth, int array_lsb, int,
-                   QData ofilename, const void* memp, IData start,
+                   QData filename, const void* memp, IData start,
                    IData end) VL_MT_SAFE {
-    WData fnw[2];  VL_SET_WQ(fnw, ofilename);
-    return VL_WRITEMEM_W(hex, width,depth,array_lsb,2,fnw,memp,start,end);
+    WData fnw[2];  VL_SET_WQ(fnw, filename);
+    return VL_WRITEMEM_W(hex, width, depth, array_lsb,2, fnw, memp, start, end);
 }
 
 void VL_WRITEMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
-                   WDataInP ofilenamep, const void* memp, IData start,
+                   WDataInP filenamep, const void* memp, IData start,
                    IData end) VL_MT_SAFE {
-    char ofilenamez[VL_TO_STRING_MAX_WORDS*VL_WORDSIZE+1];
-    _VL_VINT_TO_STRING(fnwords*VL_WORDSIZE, ofilenamez, ofilenamep);
-    std::string ofilenames(ofilenamez);
-    return VL_WRITEMEM_N(hex, width,depth,array_lsb,ofilenames,memp,start,end);
+    char filenamez[VL_TO_STRING_MAX_WORDS*VL_WORDSIZE+1];
+    _VL_VINT_TO_STRING(fnwords*VL_WORDSIZE, filenamez, filenamep);
+    std::string filenames(filenamez);
+    return VL_WRITEMEM_N(hex, width, depth, array_lsb, filenames, memp, start, end);
 }
 
 const char* memhFormat(int nBits) {
@@ -1284,19 +1282,19 @@ void VL_WRITEMEM_N(
     int     depth,  // Number of rows
     int array_lsb,  // Index of first row. Valid row addresses
     //              //  range from array_lsb up to (array_lsb + depth - 1)
-    const std::string& ofilenamep,  // Output file name
+    const std::string& filename,  // Output file name
     const void* memp,  // Array state
     IData   start,  // First array row address to write
     IData     end   // Last address to write
     ) VL_MT_SAFE {
     if (VL_UNLIKELY(!hex)) {
-        VL_FATAL_MT(ofilenamep.c_str(), 0, "",
+        VL_FATAL_MT(filename.c_str(), 0, "",
                     "VL_WRITEMEM_N only supports hex format for now, sorry!");
         return;
     }
-    FILE* fp = fopen(ofilenamep.c_str(), "w");
+    FILE* fp = fopen(filename.c_str(), "w");
     if (VL_UNLIKELY(!fp)) {
-        VL_FATAL_MT(ofilenamep.c_str(), 0, "", "$writemem file not found");
+        VL_FATAL_MT(filename.c_str(), 0, "", "$writemem file not found");
         return;
     }
 
@@ -1305,7 +1303,7 @@ void VL_WRITEMEM_N(
             || (row_addr > array_lsb + depth - 1)) {
             vluint32_t endmax = ~0;
             if (end != endmax) {
-                VL_FATAL_MT(ofilenamep.c_str(), 0, "",
+                VL_FATAL_MT(filename.c_str(), 0, "",
                             "$writemem specified address out-of-bounds");
             }
             // else, it's not an error to overflow due to end == endmax,
@@ -1369,17 +1367,17 @@ void VL_WRITEMEM_N(
 }
 
 void VL_READMEM_Q(bool hex, int width, int depth, int array_lsb, int,
-		  QData ofilename, void* memp, IData start, IData end) VL_MT_SAFE {
-    WData fnw[2];  VL_SET_WQ(fnw, ofilename);
-    return VL_READMEM_W(hex,width,depth,array_lsb,2,fnw,memp,start,end);
+                  QData filename, void* memp, IData start, IData end) VL_MT_SAFE {
+    WData fnw[2];  VL_SET_WQ(fnw, filename);
+    return VL_READMEM_W(hex, width, depth, array_lsb, 2, fnw, memp, start, end);
 }
 
 void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
-		  WDataInP ofilenamep, void* memp, IData start, IData end) VL_MT_SAFE {
-    char ofilenamez[VL_TO_STRING_MAX_WORDS*VL_WORDSIZE+1];
-    _VL_VINT_TO_STRING(fnwords*VL_WORDSIZE, ofilenamez, ofilenamep);
-    std::string ofilenames(ofilenamez);
-    return VL_READMEM_N(hex,width,depth,array_lsb,ofilenames,memp,start,end);
+                  WDataInP filenamep, void* memp, IData start, IData end) VL_MT_SAFE {
+    char filenamez[VL_TO_STRING_MAX_WORDS*VL_WORDSIZE+1];
+    _VL_VINT_TO_STRING(fnwords*VL_WORDSIZE, filenamez, filenamep);
+    std::string filenames(filenamez);
+    return VL_READMEM_N(hex, width, depth, array_lsb, filenames, memp, start, end);
 }
 
 void VL_READMEM_N(
@@ -1388,15 +1386,15 @@ void VL_READMEM_N(
     int     depth,  // Number of rows
     int array_lsb,  // Index of first row. Valid row addresses
     //              //  range from array_lsb up to (array_lsb + depth - 1)
-    const std::string& ofilenamep,  // Input file name
+    const std::string& filename,  // Input file name
     void*    memp,  // Array state
     IData   start,  // First array row address to read
     IData     end   // Last row address to read
     ) VL_MT_SAFE {
-    FILE* fp = fopen(ofilenamep.c_str(), "r");
+    FILE* fp = fopen(filename.c_str(), "r");
     if (VL_UNLIKELY(!fp)) {
         // We don't report the Verilog source filename as it slow to have to pass it down
-        VL_FATAL_MT(ofilenamep.c_str(), 0, "", "$readmem file not found");
+        VL_FATAL_MT(filename.c_str(), 0, "", "$readmem file not found");
         return;
     }
     // Prep for reading
@@ -1443,7 +1441,7 @@ void VL_READMEM_N(
                     //printf(" Value width=%d  @%x = %c\n", width, addr, c);
                     if (VL_UNLIKELY(addr >= static_cast<IData>(depth+array_lsb)
                                     || addr < static_cast<IData>(array_lsb))) {
-                        VL_FATAL_MT(ofilenamep.c_str(), linenum, "",
+                        VL_FATAL_MT(filename.c_str(), linenum, "",
                                     "$readmem file address beyond bounds of array");
                     } else {
                         int entry = addr - array_lsb;
@@ -1473,7 +1471,7 @@ void VL_READMEM_N(
                             datap[0] |= value;
                         }
                         if (VL_UNLIKELY(value>=(1<<shift))) {
-                            VL_FATAL_MT(ofilenamep.c_str(), linenum, "",
+                            VL_FATAL_MT(filename.c_str(), linenum, "",
                                         "$readmemb (binary) file contains hex characters");
                         }
                     }
@@ -1481,7 +1479,7 @@ void VL_READMEM_N(
                 innum = true;
             }
             else {
-                VL_FATAL_MT(ofilenamep.c_str(), linenum, "", "$readmem file syntax error");
+                VL_FATAL_MT(filename.c_str(), linenum, "", "$readmem file syntax error");
             }
         }
         lastc = c;
@@ -1491,7 +1489,8 @@ void VL_READMEM_N(
     // Final checks
     fclose(fp);
     if (VL_UNLIKELY(end != VL_UL(0xffffffff) && addr != (end+1))) {
-        VL_FATAL_MT(ofilenamep.c_str(), linenum, "", "$readmem file ended before specified ending-address");
+        VL_FATAL_MT(filename.c_str(), linenum, "",
+                    "$readmem file ended before specified ending-address");
     }
 }
 
@@ -1499,16 +1498,16 @@ IData VL_SYSTEM_IQ(QData lhs) VL_MT_SAFE {
     WData lhsw[2];  VL_SET_WQ(lhsw, lhs);
     return VL_SYSTEM_IW(2, lhsw);
 }
-IData VL_SYSTEM_IW(int lhswords, WDataInP filenamep) VL_MT_SAFE {
+IData VL_SYSTEM_IW(int lhswords, WDataInP lhsp) VL_MT_SAFE {
     char filenamez[VL_TO_STRING_MAX_WORDS*VL_WORDSIZE+1];
-    _VL_VINT_TO_STRING(lhswords*VL_WORDSIZE, filenamez, filenamep);
+    _VL_VINT_TO_STRING(lhswords*VL_WORDSIZE, filenamez, lhsp);
     int code = system(filenamez);  // Yes, system() is threadsafe
     return code >> 8;  // Want exit status
 }
 
 IData VL_TESTPLUSARGS_I(const char* formatp) VL_MT_SAFE {
     const std::string& match = VerilatedImp::argPlusMatch(formatp);
-    if (match == "") return 0;
+    if (match.empty()) return 0;
     else return 1;
 }
 
@@ -1538,7 +1537,7 @@ IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_M
 
     const std::string& match = VerilatedImp::argPlusMatch(prefix.c_str());
     const char* dp = match.c_str() + 1 /*leading + */ + prefix.length();
-    if (match == "") return 0;
+    if (match.empty()) return 0;
 
     VL_ZERO_RESET_W(rbits, rwp);
     switch (tolower(fmt)) {
@@ -1594,7 +1593,7 @@ IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) VL_MT_S
     }
     const std::string& match = VerilatedImp::argPlusMatch(prefix.c_str());
     const char* dp = match.c_str() + 1 /*leading + */ + prefix.length();
-    if (match == "") return 0;
+    if (match.empty()) return 0;
     rdr = std::string(dp);
     return 1;
 }
@@ -1602,7 +1601,7 @@ IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) VL_MT_S
 const char* vl_mc_scan_plusargs(const char* prefixp) VL_MT_SAFE {
     const std::string& match = VerilatedImp::argPlusMatch(prefixp);
     static VL_THREAD_LOCAL char outstr[VL_VALUE_STRING_MAX_WIDTH];
-    if (match == "") return NULL;
+    if (match.empty()) return NULL;
     strncpy(outstr, match.c_str()+strlen(prefixp)+1, // +1 to skip the "+"
 	    VL_VALUE_STRING_MAX_WIDTH);
     outstr[VL_VALUE_STRING_MAX_WIDTH-1] = '\0';
@@ -1646,10 +1645,10 @@ Verilated::ThreadLocal::ThreadLocal()
 Verilated::ThreadLocal::~ThreadLocal() {
 }
 
-void Verilated::debug(int val) VL_MT_SAFE {
+void Verilated::debug(int level) VL_MT_SAFE {
     VerilatedLockGuard lock(m_mutex);
-    s_s.s_debug = val;
-    if (val) {
+    s_s.s_debug = level;
+    if (level) {
 #ifdef VL_DEBUG
 	VL_DEBUG_IF(VL_DBG_MSGF("- Verilated::debug is on. Message prefix indicates {<thread>,<sequence_number>}.\n"););
 #else
@@ -1743,7 +1742,7 @@ void Verilated::commandArgs(int argc, const char** argv) VL_MT_SAFE {
 const char* Verilated::commandArgsPlusMatch(const char* prefixp) VL_MT_SAFE {
     const std::string& match = VerilatedImp::argPlusMatch(prefixp);
     static VL_THREAD_LOCAL char outstr[VL_VALUE_STRING_MAX_WIDTH];
-    if (match == "") return "";
+    if (match.empty()) return "";
     strncpy(outstr, match.c_str(), VL_VALUE_STRING_MAX_WIDTH);
     outstr[VL_VALUE_STRING_MAX_WIDTH-1] = '\0';
     return outstr;
@@ -1917,7 +1916,8 @@ VerilatedModule::VerilatedModule(const char* namep)
 
 VerilatedModule::~VerilatedModule() {
     // Memory cleanup - not called during normal operation
-    if (m_namep) { free((void*)m_namep); m_namep=NULL; }
+    // NOLINTNEXTLINE(google-readability-casting)
+    if (m_namep) { free((void*)(m_namep)); m_namep=NULL; }
 }
 
 //======================================================================
@@ -2017,7 +2017,7 @@ void VerilatedScope::varInsert(int finalize, const char* namep, void* datap,
     if (!finalize) return;
 
     if (!m_varsp) m_varsp = new VerilatedVarNameMap();
-    VerilatedVar var(namep, datap, vltype, (VerilatedVarFlags)vlflags, dims);
+    VerilatedVar var(namep, datap, vltype, static_cast<VerilatedVarFlags>(vlflags), dims);
 
     va_list ap;
     va_start(ap,dims);

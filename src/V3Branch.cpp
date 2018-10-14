@@ -134,7 +134,7 @@ public:
 //######################################################################
 // Branch class functions
 
-void V3Branch::branchAll(AstNetlist* rootp) {
+void V3Branch::branchAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    BranchVisitor visitor (rootp);
+    BranchVisitor visitor (nodep);
 }

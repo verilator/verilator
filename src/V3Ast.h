@@ -1027,7 +1027,7 @@ std::ostream& operator<<(std::ostream& os, const V3Hash& rhs);
 // Prefetch a node.
 // The if() makes it faster, even though prefetch won't fault on null pointers
 #define ASTNODE_PREFETCH(nodep) \
-    { if (nodep) { VL_PREFETCH_RD(&(nodep->m_nextp)); VL_PREFETCH_RD(&(nodep->m_iterpp)); }}
+    { if (nodep) { VL_PREFETCH_RD(&((nodep)->m_nextp)); VL_PREFETCH_RD(&((nodep)->m_iterpp)); }}
 
 class AstNode {
     // v ASTNODE_PREFETCH depends on below ordering of members
@@ -1171,8 +1171,8 @@ public:
     static string dedotName(const string& namein);	// Name with dots removed
     static string prettyName(const string& namein);	// Name for printing out to the user
     static string encodeName(const string& namein);	// Encode user name into internal C representation
-    static string encodeNumber(vlsint64_t numin);	// Encode number into internal C representation
-    static string vcdName(const string& namein); // Name for printing out to vcd files
+    static string encodeNumber(vlsint64_t num);  // Encode number into internal C representation
+    static string vcdName(const string& namein);  // Name for printing out to vcd files
     string	prettyName() const { return prettyName(name()); }
     string 	prettyTypeName() const;			// "VARREF" for error messages
     virtual string prettyOperatorName() const { return "operator "+prettyTypeName(); }
@@ -1347,13 +1347,13 @@ public:
     void	checkTree();  // User Interface version
     void	checkIter() const;
     void	clearIter() { m_iterpp=NULL; }
-    void        dumpPtrs(std::ostream& str=std::cout) const;
-    void        dumpTree(std::ostream& str=std::cout, const string& indent="    ", int maxDepth=0);
-    void	dumpTree(const string& indent, int maxDepth=0) { dumpTree(cout,indent,maxDepth); }
-    void	dumpTreeGdb(); // For GDB only
-    void        dumpTreeAndNext(std::ostream& str=std::cout, const string& indent="    ", int maxDepth=0);
-    void	dumpTreeFile(const string& filename, bool append=false, bool doDump=true);
-    static void	dumpTreeFileGdb(const char* filenamep=NULL);
+    void dumpPtrs(std::ostream& os=std::cout) const;
+    void dumpTree(std::ostream& os=std::cout, const string& indent="    ", int maxDepth=0);
+    void dumpTree(const string& indent, int maxDepth=0) { dumpTree(cout,indent,maxDepth); }
+    void dumpTreeGdb();  // For GDB only
+    void dumpTreeAndNext(std::ostream& os=std::cout, const string& indent="    ", int maxDepth=0);
+    void dumpTreeFile(const string& filename, bool append=false, bool doDump=true);
+    static void dumpTreeFileGdb(const char* filenamep=NULL);
 
     // METHODS - queries
     virtual bool isPure() const { return true; }	// Else a $display, etc, that must be ordered with other displays
@@ -1798,7 +1798,7 @@ public:
     bool widthSized() const { return !m_widthMin || m_widthMin==m_width; }
     bool generic() const { return m_generic; }
     void generic(bool flag) { m_generic = flag; }
-    AstNodeDType* dtypeDimensionp(int depth);
+    AstNodeDType* dtypeDimensionp(int dimension);
     std::pair<uint32_t,uint32_t> dimensions(bool includeBasic);
     uint32_t	arrayUnpackedElements();	// 1, or total multiplication of all dimensions
     static int uniqueNumInc() { return ++s_uniqueNum; }

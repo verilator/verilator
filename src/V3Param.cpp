@@ -618,25 +618,26 @@ void ParamVisitor::visitCell(AstCell* nodep) {
                     && VN_IS(exprp, VarRef)
                     && VN_CAST(exprp, VarRef)->varp()
                     && VN_CAST(exprp, VarRef)->varp()->subDTypep()
-                    && VN_IS(VN_CAST(exprp, VarRef)->varp()->subDTypep(), IfaceRefDType))
+                    && VN_IS(VN_CAST(exprp, VarRef)->varp()->subDTypep(), IfaceRefDType)) {
                     pinIrefp = VN_CAST(VN_CAST(exprp, VarRef)->varp()->subDTypep(), IfaceRefDType);
-		else if (exprp
-			 && exprp->op1p()
-                         && VN_IS(exprp->op1p(), VarRef)
-                         && VN_CAST(exprp->op1p(), VarRef)->varp()
-                         && VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep()
-                         && VN_CAST(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep(), UnpackArrayDType)
-                         && VN_CAST(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep(), UnpackArrayDType)->subDTypep()
-                         && VN_CAST(VN_CAST(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep(), UnpackArrayDType)->subDTypep(), IfaceRefDType))
+                } else if (exprp
+                           && exprp->op1p()
+                           && VN_IS(exprp->op1p(), VarRef)
+                           && VN_CAST(exprp->op1p(), VarRef)->varp()
+                           && VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep()
+                           && VN_CAST(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep(), UnpackArrayDType)
+                           && VN_CAST(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep(), UnpackArrayDType)->subDTypep()
+                           && VN_CAST(VN_CAST(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep(), UnpackArrayDType)->subDTypep(), IfaceRefDType)) {
                     pinIrefp = VN_CAST(VN_CAST(VN_CAST(exprp->op1p(), VarRef)->varp()->subDTypep(), UnpackArrayDType)->subDTypep(), IfaceRefDType);
-		else if (exprp
-                         && VN_IS(exprp, VarRef)
-                         && VN_CAST(exprp, VarRef)->varp()
-                         && VN_CAST(exprp, VarRef)->varp()->subDTypep()
-                         && VN_CAST(VN_CAST(exprp, VarRef)->varp()->subDTypep(), UnpackArrayDType)
-                         && VN_CAST(VN_CAST(exprp, VarRef)->varp()->subDTypep(), UnpackArrayDType)->subDTypep()
-                         && VN_CAST(VN_CAST(VN_CAST(exprp, VarRef)->varp()->subDTypep(), UnpackArrayDType)->subDTypep(), IfaceRefDType))
+                } else if (exprp
+                           && VN_IS(exprp, VarRef)
+                           && VN_CAST(exprp, VarRef)->varp()
+                           && VN_CAST(exprp, VarRef)->varp()->subDTypep()
+                           && VN_CAST(VN_CAST(exprp, VarRef)->varp()->subDTypep(), UnpackArrayDType)
+                           && VN_CAST(VN_CAST(exprp, VarRef)->varp()->subDTypep(), UnpackArrayDType)->subDTypep()
+                           && VN_CAST(VN_CAST(VN_CAST(exprp, VarRef)->varp()->subDTypep(), UnpackArrayDType)->subDTypep(), IfaceRefDType)) {
                     pinIrefp = VN_CAST(VN_CAST(VN_CAST(exprp, VarRef)->varp()->subDTypep(), UnpackArrayDType)->subDTypep(), IfaceRefDType);
+                }
 
 		UINFO(9,"     portIfaceRef "<<portIrefp<<endl);
 

@@ -31,11 +31,11 @@
 
 class V3LinkLevel {
 private:
-    static void wrapTopCell(AstNetlist* nodep);
-    static void wrapTopPackages(AstNetlist* nodep);
+    static void wrapTopCell(AstNetlist* rootp);
+    static void wrapTopPackages(AstNetlist* rootp);
 public:
     static void modSortByLevel();
-    static void wrapTop(AstNetlist* nodep);
+    static void wrapTop(AstNetlist* rootp);
 };
 
 #endif // Guard

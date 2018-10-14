@@ -248,7 +248,7 @@ string V3Options::allArgsString() {
 V3LangCode::V3LangCode(const char* textp) {
     // Return code for given string, or ERROR, which is a bad code
     for (int codei=V3LangCode::L_ERROR; codei<V3LangCode::_ENUM_END; ++codei) {
-	V3LangCode code = (V3LangCode)codei;
+        V3LangCode code = V3LangCode(codei);
 	if (0==strcasecmp(textp,code.ascii())) {
 	    m_e = code; return;
 	}
@@ -260,7 +260,8 @@ V3LangCode::V3LangCode(const char* textp) {
 // File searching
 
 bool V3Options::fileStatDir(const string& filename) {
-    struct stat	sstat;		// Stat information
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    struct stat sstat;  // Stat information
     int err = stat(filename.c_str(), &sstat);
     if (err!=0) return false;
     if (!S_ISDIR(sstat.st_mode)) return false;
@@ -268,7 +269,8 @@ bool V3Options::fileStatDir(const string& filename) {
 }
 
 bool V3Options::fileStatNormal(const string& filename) {
-    struct stat	sstat;		// Stat information
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    struct stat sstat;  // Stat information
     int err = stat(filename.c_str(), &sstat);
     if (err!=0) return false;
     if (S_ISDIR(sstat.st_mode)) return false;
@@ -450,6 +452,7 @@ string V3Options::getenvSYSTEMC_ARCH() {
         string sysname = "WIN32";
         var = "win32";
 #else
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 	struct utsname uts;
 	uname(&uts);
 	string sysname = VString::downcase(uts.sysname);  // aka  'uname -s'
@@ -1164,7 +1167,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     // Convert to argv style arg list and parse them
     char* argv [args.size()+1];
     for (unsigned i=0; i<args.size(); ++i) {
-	argv[i] = (char*)args[i].c_str();
+        argv[i] = const_cast<char*>(args[i].c_str());
     }
     parseOptsList(fl, optdir, args.size(), argv);
 }

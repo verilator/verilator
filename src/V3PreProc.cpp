@@ -230,11 +230,11 @@ public:
     string getline();
     void insertUnreadback(const string& text) { m_lineCmt += text; }
     void insertUnreadbackAtBol(const string& text);
-    void addLineComment(int enter_exit_level);
+    void addLineComment(int enterExit);
 
     // METHODS, callbacks
-    virtual void comment(const string& cmt);		// Comment detected (if keepComments==2)
-    virtual void include(const string& filename);	// Request a include file be processed
+    virtual void comment(const string& text);  // Comment detected (if keepComments==2)
+    virtual void include(const string& filename);  // Request a include file be processed
     virtual void undef(const string& name);
     virtual void undefineall();
     virtual void define(FileLine* fl, const string& name, const string& value,
@@ -242,7 +242,7 @@ public:
     virtual string removeDefines(const string& text);	// Remove defines in a text string
 
     // CONSTRUCTORS
-    V3PreProcImp() : V3PreProc() {
+    V3PreProcImp() {
 	m_debug = 0;
 	m_states.push(ps_TOP);
 	m_off = 0;
@@ -299,8 +299,7 @@ void V3PreProcImp::undefineall() {
 }
 bool V3PreProcImp::defExists(const string& name) {
     DefinesMap::iterator iter = m_defines.find(name);
-    if (iter == m_defines.end()) return false;
-    return true;
+    return (iter != m_defines.end());
 }
 string V3PreProcImp::defValue(const string& name) {
     DefinesMap::iterator iter = m_defines.find(name);
@@ -338,9 +337,9 @@ void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
     m_defines.insert(make_pair(name, V3Define(fl, value, params, cmdline)));
 }
 
-string V3PreProcImp::removeDefines(const string& sym) {
+string V3PreProcImp::removeDefines(const string& text) {
     string val = "0_never_match";
-    string rtnsym = sym;
+    string rtnsym = text;
     for (int loopprevent=0; loopprevent<100; loopprevent++) {
 	string xsym = rtnsym;
 	if (xsym.substr(0,1)=="`") xsym.replace(0,1,"");
@@ -793,9 +792,9 @@ void V3PreProcImp::insertUnreadbackAtBol(const string& text) {
     insertUnreadback(text);
 }
 
-void V3PreProcImp::addLineComment(int enter_exit_level) {
+void V3PreProcImp::addLineComment(int enterExit) {
     if (lineDirectives()) {
-	insertUnreadbackAtBol(m_lexp->curFilelinep()->lineDirectiveStrg(enter_exit_level));
+        insertUnreadbackAtBol(m_lexp->curFilelinep()->lineDirectiveStrg(enterExit));
     }
 }
 
@@ -854,7 +853,8 @@ void V3PreProcImp::debugToken(int tok, const char* cmtp) {
         while ((pos = buf.find('\r')) != string::npos) { buf.replace(pos, 1, "\\r"); }
         fprintf(stderr, "%d: %s %s %s(%d) dr%d:  <%d>%-10s: %s\n",
                 m_lexp->m_tokFilelinep->lineno(), cmtp, m_off?"of":"on",
-                procStateName(state()), (int)m_states.size(), (int)m_defRefs.size(),
+                procStateName(state()), static_cast<int>(m_states.size()),
+                static_cast<int>(m_defRefs.size()),
                 m_lexp->currentStartState(), tokenName(tok), buf.c_str());
     }
 }
@@ -889,7 +889,9 @@ int V3PreProcImp::getStateToken() {
 	    // We're off or processed the comment specially.  If there are newlines
 	    // in it, we also return the newlines as TEXT so that the linenumber
 	    // count is maintained for downstream tools
-	    for (size_t len=0; len<(size_t)yyourleng(); len++) { if (yyourtext()[len]=='\n') m_lineAdd++; }
+            for (size_t len=0; len<static_cast<size_t>(yyourleng()); len++) {
+                if (yyourtext()[len]=='\n') m_lineAdd++;
+            }
 	    goto next_tok;
 	}
 	if (tok==VP_LINE) {
@@ -1416,11 +1418,14 @@ int V3PreProcImp::getFinalToken(string& buf) {
 	if (m_finAtBol && !(tok==VP_TEXT && buf=="\n")
 	    && m_preprocp->lineDirectives()) {
 	    if (int outBehind = m_lexp->m_tokFilelinep->lineno() - m_finFilelinep->lineno()) {
-		if (debug()>=5) fprintf(stderr,"%d: FIN: readjust, fin at %d  request at %d\n",
-					m_lexp->m_tokFilelinep->lineno(),
-					m_finFilelinep->lineno(), m_lexp->m_tokFilelinep->lineno());
+                if (debug()>=5) {
+                    fprintf(stderr, "%d: FIN: readjust, fin at %d  request at %d\n",
+                            m_lexp->m_tokFilelinep->lineno(),
+                            m_finFilelinep->lineno(), m_lexp->m_tokFilelinep->lineno());
+                }
 		m_finFilelinep = m_finFilelinep->create(m_lexp->m_tokFilelinep->filename(),m_lexp->m_tokFilelinep->lineno());
-		if (outBehind > 0 && outBehind <= (int)V3PreProc::NEWLINES_VS_TICKLINE) {
+                if (outBehind > 0
+                    && (outBehind <= static_cast<int>(V3PreProc::NEWLINES_VS_TICKLINE))) {
 		    // Output stream is behind, send newlines to get back in sync
 		    // (Most likely because we're completing a disabled `endif)
 		    if (m_preprocp->keepWhitespace()) {

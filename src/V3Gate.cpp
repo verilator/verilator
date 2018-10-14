@@ -230,9 +230,11 @@ private:
     }
     virtual void visit(AstNodeAssign* nodep) {
 	m_substTreep = nodep->rhsp();
-        if (!VN_IS(nodep->lhsp(), NodeVarRef))
-	    clearSimple("ASSIGN(non-VARREF)");
-        else iterateChildren(nodep);
+        if (!VN_IS(nodep->lhsp(), NodeVarRef)) {
+            clearSimple("ASSIGN(non-VARREF)");
+        } else {
+            iterateChildren(nodep);
+        }
 	// We don't push logic other then assignments/NOTs into SenItems
 	// This avoids a mess in computing what exactly a POSEDGE is
 	// V3Const cleans up any NOTs by flipping the edges for us
@@ -345,7 +347,7 @@ private:
     }
 
     GateVarVertex* makeVarVertex(AstVarScope* varscp) {
-	GateVarVertex* vertexp = (GateVarVertex*)(varscp->user1p());
+        GateVarVertex* vertexp = reinterpret_cast<GateVarVertex*>(varscp->user1p());
 	if (!vertexp) {
 	    UINFO(6,"New vertex "<<varscp<<endl);
 	    vertexp = new GateVarVertex(&m_graph, m_scopep, varscp);
@@ -368,7 +370,7 @@ private:
 
     void optimizeSignals(bool allowMultiIn);
     bool elimLogicOkOutputs(GateLogicVertex* consumeVertexp, const GateOkVisitor& okVisitor);
-    void optimizeElimVar(AstVarScope* varscp, AstNode* logicp, AstNode* consumerp);
+    void optimizeElimVar(AstVarScope* varscp, AstNode* substp, AstNode* consumerp);
     void warnSignals();
     void consumedMark();
     void consumedMarkRecurse(GateEitherVertex* vertexp);
@@ -738,7 +740,7 @@ void GateVisitor::consumedMark() {
     // Propagate consumed signals backwards to all producers into a consumed node
     m_graph.userClearVertices();
     for (V3GraphVertex* vertexp = m_graph.verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
-	GateEitherVertex* evertexp = (GateEitherVertex*)vertexp;
+        GateEitherVertex* evertexp = static_cast<GateEitherVertex*>(vertexp);
 	if (!evertexp->user() && evertexp->consumed()) {
 	    consumedMarkRecurse(evertexp);
 	}
@@ -751,7 +753,7 @@ void GateVisitor::consumedMarkRecurse(GateEitherVertex* vertexp) {
     if (!vertexp->consumed()) vertexp->setConsumed("propagated");
     // Walk sources and mark them too
     for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
-	GateEitherVertex* eFromVertexp = (GateEitherVertex*)edgep->fromp();
+        GateEitherVertex* eFromVertexp = static_cast<GateEitherVertex*>(edgep->fromp());
 	consumedMarkRecurse(eFromVertexp);
     }
 }
@@ -1016,7 +1018,7 @@ public:
             if (AstNodeVarRef* lhsVarRefp = VN_CAST(lhsp, NodeVarRef)) {
 		if (lhsVarRefp->varScopep() != consumerVarScopep) consumerVarScopep->v3fatalSrc("Consumer doesn't match lhs of assign");
 		if (AstNodeAssign* dup =  m_hash.hashAndFindDupe(m_assignp,activep,m_ifCondp)) {
-		    return (AstNodeVarRef*) dup->lhsp();
+                    return static_cast<AstNodeVarRef*>(dup->lhsp());
 		}
 	    }
 	}
@@ -1044,16 +1046,17 @@ private:
 
 	m_depth++;
 	if (vvertexp->inSize1()) {
-	    AstNodeVarRef* dupVarRefp = (AstNodeVarRef*) vvertexp->iterateInEdges(*this, VNUser(vvertexp)).toNodep();
-
+            AstNodeVarRef* dupVarRefp = static_cast<AstNodeVarRef*>
+                (vvertexp->iterateInEdges(*this, VNUser(vvertexp)).toNodep());
 	    if (dupVarRefp) {
 		V3GraphEdge* edgep = vvertexp->inBeginp();
-		GateLogicVertex* lvertexp = (GateLogicVertex*)edgep->fromp();
+                GateLogicVertex* lvertexp = static_cast<GateLogicVertex*>(edgep->fromp());
 		if (!vvertexp->dedupable()) vvertexp->varScp()->v3fatalSrc("GateLogicVertex* visit should have returned NULL if consumer var vertex is not dedupable.");
 		GateOkVisitor okVisitor(lvertexp->nodep(), false, true);
 		if (okVisitor.isSimple()) {
 		    AstVarScope* dupVarScopep = dupVarRefp->varScopep();
-		    GateVarVertex* dupVvertexp = (GateVarVertex*) (dupVarScopep->user1p());
+                    GateVarVertex* dupVvertexp
+                        = reinterpret_cast<GateVarVertex*>(dupVarScopep->user1p());
 		    UINFO(4,"replacing " << vvertexp << " with " << dupVvertexp << endl);
 		    ++m_numDeduped;
 		    // Replace all of this varvertex's consumers with dupVarRefp
@@ -1089,7 +1092,7 @@ private:
     virtual VNUser visit(GateLogicVertex* lvertexp, VNUser vu) {
 	lvertexp->iterateInEdges(*this);
 
-	GateVarVertex* consumerVvertexpp = (GateVarVertex*) vu.toGraphVertex();
+        GateVarVertex* consumerVvertexpp = static_cast<GateVarVertex*>(vu.toGraphVertex());
 	if (lvertexp->dedupable() && consumerVvertexpp->dedupable()) {
 	    AstNode* nodep = lvertexp->nodep();
 	    AstVarScope* consumerVarScopep = consumerVvertexpp->varScp();
@@ -1161,9 +1164,10 @@ private:
         const AstConst* cstart = VN_CAST(cur->lsbp(), Const);
         const AstConst* cwidth = VN_CAST(cur->widthp(), Const);
 	if (!pstart || !pwidth || !cstart || !cwidth) return NULL; // too complicated
-	if (cur->lsbConst()+cur->widthConst() == pre->lsbConst())
-	    return new AstSel(curVarRefp->fileline(), curVarRefp->cloneTree(false), cur->lsbConst(), pre->widthConst()+cur->widthConst());
-	else return NULL;
+        if (cur->lsbConst()+cur->widthConst() == pre->lsbConst()) {
+            return new AstSel(curVarRefp->fileline(), curVarRefp->cloneTree(false),
+                              cur->lsbConst(), pre->widthConst()+cur->widthConst());
+        } else return NULL;
     }
 
     virtual VNUser visit(GateVarVertex *vvertexp, VNUser) {
@@ -1353,7 +1357,7 @@ private:
 	    m_seen_clk_vectors++;
 	    m_total_seen_clk_vectors++;
 	}
-	GateClkDecompState* currState = (GateClkDecompState*) vu.c();
+        GateClkDecompState* currState = reinterpret_cast<GateClkDecompState*>(vu.c());
 	GateClkDecompState nextState(currState->m_offset, vsp);
 	vvertexp->iterateCurrentOutEdges(*this, VNUser(&nextState));
 	if (vsp->varp()->width() > 1) {
@@ -1364,7 +1368,7 @@ private:
     }
 
     virtual VNUser visit(GateLogicVertex* lvertexp, VNUser vu) {
-	GateClkDecompState* currState = (GateClkDecompState*) vu.c();
+        GateClkDecompState* currState = reinterpret_cast<GateClkDecompState*>(vu.c());
 	int clk_offset = currState->m_offset;
         if (const AstAssignW* assignp = VN_CAST(lvertexp->nodep(), AssignW)) {
 	    UINFO(9,"CLK DECOMP Logic (off = "<<clk_offset<<") - "<<lvertexp<<" : "<<m_clk_vsp<<endl);

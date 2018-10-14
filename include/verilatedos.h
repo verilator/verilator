@@ -40,7 +40,7 @@
 # ifdef _WIN32
 #  define VL_ATTR_PRINTF(fmtArgNum)  // GCC with MS runtime will fool the print arg checker
 # else
-#  define VL_ATTR_PRINTF(fmtArgNum) __attribute__ ((format (printf, fmtArgNum, fmtArgNum+1)))
+#  define VL_ATTR_PRINTF(fmtArgNum) __attribute__ ((format (printf, (fmtArgNum), (fmtArgNum)+1)))
 # endif
 # define VL_ATTR_PURE __attribute__ ((pure))
 # define VL_ATTR_UNUSED __attribute__ ((unused))

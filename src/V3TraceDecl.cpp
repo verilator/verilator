@@ -71,7 +71,7 @@ private:
 	}
 	else if (!v3Global.opt.traceUnderscore()) {
 	    string prettyName = varp->prettyName();
-	    if (prettyName.size()>=1 && prettyName[0] == '_')
+            if (!prettyName.empty() && prettyName[0] == '_')
 	        return "Leading underscore";
 	    if (prettyName.find("._") != string::npos)
 	        return "Inlined leading underscore";
@@ -192,7 +192,7 @@ private:
     virtual void visit(AstUnpackArrayDType* nodep) {
 	// Note more specific dtypes above
 	if (m_traVscp) {
-	    if ((int)nodep->arrayUnpackedElements() > v3Global.opt.traceMaxArray()) {
+            if (static_cast<int>(nodep->arrayUnpackedElements()) > v3Global.opt.traceMaxArray()) {
 		addIgnore("Wide memory > --trace-max-array ents");
             } else if (VN_IS(nodep->subDTypep()->skipRefp(), BasicDType)  // Nothing lower than this array
 		       && m_traVscp->dtypep()->skipRefp() == nodep) {  // Nothing above this array

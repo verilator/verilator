@@ -159,9 +159,7 @@ private:
 	}
 	// If we saw all of the nodes, then they have the same number of hits
 	// (Else something in dfa1p that wasn't in dfa2p)
-	if (num1s != num2s) return false;
-	// Match
-	return true;
+        return (num1s == num2s);
     }
 
     void insertDfaOrigins(DfaVertex* dfaStatep) {

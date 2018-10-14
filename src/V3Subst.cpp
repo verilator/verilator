@@ -83,7 +83,6 @@ public:
     // CONSTRUCTORS
     explicit SubstVarEntry(AstVar* varp) {  // Construction for when a var is used
 	m_varp = varp;
-	m_whole.m_use = false;
 	m_wordAssign = false;
 	m_wordUse = false;
 	m_words.resize(varp->widthWords());
@@ -116,11 +115,11 @@ public:
 	    m_words[word].m_step = step;
 	}
     }
-    void assignWordComplex(int step, int word) {
+    void assignWordComplex(int word) {
 	if (!wordNumOk(word) || getWordAssignp(word) || m_words[word].m_complex) m_whole.m_complex = true;
 	m_words[word].m_complex = true;
     }
-    void assignComplex(int step) {
+    void assignComplex() {
 	m_whole.m_complex = true;
     }
     void consumeWhole() {  //==consumeComplex as we don't know the difference
@@ -187,7 +186,7 @@ private:
 
     // METHODS
     SubstVarEntry* findEntryp(AstVarRef* nodep) {
-	return (SubstVarEntry*)(nodep->varp()->user1p());  // Might be NULL
+        return reinterpret_cast<SubstVarEntry*>(nodep->varp()->user1p());  // Might be NULL
     }
     // VISITORS
     virtual void visit(AstVarRef* nodep) {
@@ -249,7 +248,7 @@ private:
 	    nodep->varp()->user1p(entryp);
 	    return entryp;
 	} else {
-	    SubstVarEntry* entryp = (SubstVarEntry*)(nodep->varp()->user1p());
+            SubstVarEntry* entryp = reinterpret_cast<SubstVarEntry*>(nodep->varp()->user1p());
 	    return entryp;
 	}
     }
@@ -269,7 +268,7 @@ private:
 		hit = true;
 		if (m_ops > SUBST_MAX_OPS_SUBST) {
 		    UINFO(8," ASSIGNtooDeep "<<varrefp<<endl);
-		    entryp->assignComplex(m_assignStep);
+                    entryp->assignComplex();
 		} else {
 		    UINFO(8," ASSIGNwhole "<<varrefp<<endl);
 		    entryp->assignWhole(m_assignStep, nodep);
@@ -285,7 +284,7 @@ private:
 		    hit = true;
 		    if (m_ops > SUBST_MAX_OPS_SUBST) {
 			UINFO(8," ASSIGNtooDeep "<<varrefp<<endl);
-			entryp->assignWordComplex(m_assignStep, word);
+                        entryp->assignWordComplex(word);
 		    } else {
 			UINFO(8," ASSIGNword"<<word<<" "<<varrefp<<endl);
 			entryp->assignWord(m_assignStep, word, nodep);
@@ -346,7 +345,7 @@ private:
             SubstVarEntry* entryp = getEntryp(nodep);
 	    if (nodep->lvalue()) {
 		UINFO(8," ASSIGNcpx "<<nodep<<endl);
-		entryp->assignComplex(m_assignStep);
+                entryp->assignComplex();
 	    } else if (AstNode* substp = entryp->substWhole(nodep)) {
 		// Check that the RHS hasn't changed value since we recorded it.
 		SubstUseVisitor visitor (substp, entryp->getWholeStep());

@@ -77,7 +77,7 @@ public:
     virtual void zero() const { *m_countp = 0; }
     // CONSTRUCTORS
     // cppcheck-suppress noExplicitConstructor
-    VerilatedCoverItemSpec(T* countp) : m_countp(countp) { zero(); }
+    VerilatedCoverItemSpec(T* countp) : m_countp(countp) { *m_countp = 0; }
     virtual ~VerilatedCoverItemSpec() {}
 };
 
@@ -167,8 +167,8 @@ private:
 	// (foo.a.x, foo.b.y) => foo.*
 	// (foo.a.x, foo.b)   => foo.*
 	if (old == add) return add;
-	if (old == "") return add;
-	if (add == "") return old;
+        if (old.empty()) return add;
+        if (add.empty()) return old;
 
 	const char* a = old.c_str();
 	const char* b = add.c_str();
@@ -296,7 +296,7 @@ public:
 	}
 	// Ignore empty keys
 	for (int i=0; i<MAX_KEYS; ++i) {
-	    if (keys[i]!="") {
+            if (!keys[i].empty()) {
 		for (int j=i+1; j<MAX_KEYS; ++j) {
 		    if (keys[i] == keys[j]) {  // Duplicate key.  Keep the last one
 			keys[i] = "";
@@ -309,7 +309,7 @@ public:
 	int addKeynum=0;
 	for (int i=0; i<MAX_KEYS; ++i) {
 	    const std::string key = keys[i];
-	    if (keys[i]!="") {
+            if (!keys[i].empty()) {
 		const std::string val = valps[i];
 		//cout<<"   "<<__FUNCTION__<<"  "<<key<<" = "<<val<<endl;
 		m_insertp->m_keys[addKeynum] = valueIndex(key);
@@ -391,7 +391,7 @@ public:
 	for (EventMap::const_iterator it=eventCounts.begin(); it!=eventCounts.end(); ++it) {
 	    os<<"C '"<<std::dec;
 	    os<<it->first;
-	    if (it->second.first != "") os<<keyValueFormatter(VL_CIK_HIER,it->second.first);
+            if (!it->second.first.empty()) os<<keyValueFormatter(VL_CIK_HIER,it->second.first);
 	    os<<"' "<<it->second.second;
 	    os<<std::endl;
 	}
@@ -424,9 +424,9 @@ void VerilatedCov::_insertf(const char* filename, int lineno) VL_MT_SAFE {
 }
 
 #define K(n) const char* key ## n
-#define A(n) const char* key ## n, const char* val ## n		// Argument list
-#define C(n) key ## n, val ## n	// Calling argument list
-#define N(n) "",""	// Null argument list
+#define A(n) const char* key ## n, const char* valp ## n  // Argument list
+#define C(n) key ## n, valp ## n  // Calling argument list
+#define N(n) "",""  // Null argument list
 void VerilatedCov::_insertp(A(0),A(1),A(2),A(3),A(4),A(5),A(6),A(7),A(8),A(9),
                             A(10),A(11),A(12),A(13),A(14),A(15),A(16),A(17),A(18),A(19),
                             A(20),A(21),A(22),A(23),A(24),A(25),A(26),A(27),A(28),A(29)) VL_MT_SAFE {
@@ -437,9 +437,9 @@ void VerilatedCov::_insertp(A(0),A(1),A(2),A(3),A(4),A(5),A(6),A(7),A(8),A(9),
 	   key20,key21,key22,key23,key24,key25,key26,key27,key28,key29};
     const char* valps[VerilatedCovImpBase::MAX_KEYS]
 	= {NULL,NULL,NULL,	// filename,lineno,page
-	   val0,val1,val2,val3,val4,val5,val6,val7,val8,val9,
-	   val10,val11,val12,val13,val14,val15,val16,val17,val18,val19,
-	   val20,val21,val22,val23,val24,val25,val26,val27,val28,val29};
+           valp0,valp1,valp2,valp3,valp4,valp5,valp6,valp7,valp8,valp9,
+           valp10,valp11,valp12,valp13,valp14,valp15,valp16,valp17,valp18,valp19,
+           valp20,valp21,valp22,valp23,valp24,valp25,valp26,valp27,valp28,valp29};
     VerilatedCovImp::imp().insertp(keyps, valps);
 }
 

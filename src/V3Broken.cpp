@@ -61,7 +61,8 @@ public:
         if (debug()>=9) cout<<"-nodeDel:  "<<cvtToHex(nodep)<<endl;
 	NodeMap::iterator iter = s_nodes.find(nodep);
 	if (iter==s_nodes.end() || !(iter->second & FLAG_ALLOCATED)) {
-	    ((AstNode*)(nodep))->v3fatalSrc("Deleting AstNode object that was never tracked or already deleted");
+            reinterpret_cast<const AstNode*>(nodep)
+                ->v3fatalSrc("Deleting AstNode object that was never tracked or already deleted");
 	}
 	if (iter!=s_nodes.end()) s_nodes.erase(iter);
     }
@@ -155,7 +156,9 @@ public:
 		    // may be varp() and other cross links that are bad.
 		    if (v3Global.opt.debugCheck()) {
                         std::cerr<<"%Error: LeakedNode"<<(it->first->backp()?"Back: ":": ");
-                        ((AstNode*)(it->first))->AstNode::dump(std::cerr);
+                        AstNode* rawp = const_cast<AstNode*>
+                            (static_cast<const AstNode*>(it->first));
+                        rawp->AstNode::dump(std::cerr);
                         std::cerr<<endl;
 			V3Error::incErrors();
 		    }

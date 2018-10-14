@@ -121,7 +121,7 @@ private:
     void openNext();
     void makeNameMap();
     void deleteNameMap();
-    void printIndent(int levelchange);
+    void printIndent(int level_change);
     void printStr(const char* str);
     void printQuad(vluint64_t n);
     void printTime(vluint64_t timeui);
@@ -172,10 +172,10 @@ public:
     /// Flush any remaining data from all files
     static void flush_all() VL_MT_UNSAFE_ONE;
 
-    void set_time_unit(const char* unit);  ///< Set time units (s/ms, defaults to ns)
+    void set_time_unit(const char* unitp);  ///< Set time units (s/ms, defaults to ns)
     void set_time_unit(const std::string& unit) { set_time_unit(unit.c_str()); }
 
-    void set_time_resolution(const char* unit);  ///< Set time resolution (s/ms, defaults to ns)
+    void set_time_resolution(const char* unitp);  ///< Set time resolution (s/ms, defaults to ns)
     void set_time_resolution(const std::string& unit) { set_time_resolution(unit.c_str()); }
 
     double timescaleToDouble(const char* unitp);
@@ -187,8 +187,8 @@ public:
     void dumpSeconds(double secs) { dump(static_cast<vluint64_t>(secs * m_timeRes)); }
 
     /// Inside dumping routines, declare callbacks for tracings
-    void addCallback(VerilatedVcdCallback_t init, VerilatedVcdCallback_t full,
-                     VerilatedVcdCallback_t change,
+    void addCallback(VerilatedVcdCallback_t initcb, VerilatedVcdCallback_t fullcb,
+                     VerilatedVcdCallback_t changecb,
                      void* userthis) VL_MT_UNSAFE_ONE;
 
     /// Inside dumping routines, declare a module

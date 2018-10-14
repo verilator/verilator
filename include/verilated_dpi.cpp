@@ -721,14 +721,16 @@ void svPutLogicArrElem3(const svOpenArrayHandle d, svLogic value, int indx1, int
 
 svScope svGetScope() {
     if (VL_UNLIKELY(!Verilated::dpiInContext())) { _VL_SVDPI_CONTEXT_WARN(); return NULL; }
-    return (svScope)Verilated::dpiScope();
+    // NOLINTNEXTLINE(google-readability-casting)
+    return (svScope)(Verilated::dpiScope());
 }
 
 svScope svSetScope(const svScope scope) {
     const VerilatedScope* prevScopep = Verilated::dpiScope();
     const VerilatedScope* vscopep = reinterpret_cast<const VerilatedScope*>(scope);
     Verilated::dpiScope(vscopep);
-    return (svScope)prevScopep;
+    // NOLINTNEXTLINE(google-readability-casting)
+    return (svScope)(prevScopep);
 }
 
 const char* svGetNameFromScope(const svScope scope) {
@@ -737,7 +739,8 @@ const char* svGetNameFromScope(const svScope scope) {
 }
 
 svScope svGetScopeFromName(const char* scopeName) {
-    return (svScope)VerilatedImp::scopeFind(scopeName);
+    // NOLINTNEXTLINE(google-readability-casting)
+    return (svScope)(VerilatedImp::scopeFind(scopeName));
 }
 
 int svPutUserData(const svScope scope, void* userKey, void* userData) {

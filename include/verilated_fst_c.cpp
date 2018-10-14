@@ -107,7 +107,7 @@ void VerilatedFst::declSymbol(vluint32_t code, const char* name,
                               int dtypenum, fstVarDir vardir, fstVarType vartype,
                               int arraynum, vluint32_t len) {
     std::pair<Code2SymbolType::iterator, bool> p
-        = m_code2symbol.insert(std::make_pair(code, (fstHandle)(0)));
+        = m_code2symbol.insert(std::make_pair(code, static_cast<fstHandle>(NULL)));
     std::istringstream nameiss(name);
     std::istream_iterator<std::string> beg(nameiss), end;
     std::list<std::string> tokens(beg, end);  // Split name

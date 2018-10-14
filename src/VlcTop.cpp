@@ -150,11 +150,11 @@ void VlcTop::annotateCalc() {
 	const VlcPoint& point = m_points.pointNumber(it->second);
 	string filename = point.filename();
 	int lineno = point.lineno();
-	if (filename!="" && lineno!=0) {
+        if (!filename.empty() && lineno!=0) {
 	    int column = point.column();
 	    VlcSource& source = sources().findNewSource(filename);
 	    string threshStr = point.thresh();
-	    unsigned thresh = (threshStr!="") ? atoi(threshStr.c_str()) : opt.annotateMin();
+            unsigned thresh = (!threshStr.empty()) ? atoi(threshStr.c_str()) : opt.annotateMin();
 	    bool ok = (point.count() >= thresh);
 	    UINFO(9, "AnnoCalc count "<<filename<<" "<<lineno<<" "<<point.count()<<endl);
 	    source.incCount(lineno, column, point.count(), ok);

@@ -56,7 +56,7 @@ v3errorIniter v3errorInit;
 V3ErrorCode::V3ErrorCode(const char* msgp) {
     // Return error encoding for given string, or ERROR, which is a bad code
     for (int codei=V3ErrorCode::EC_MIN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
-	V3ErrorCode code = (V3ErrorCode)codei;
+        V3ErrorCode code = V3ErrorCode(codei);
 	if (0==strcasecmp(msgp,code.ascii())) {
 	    m_e = code; return;
 	}

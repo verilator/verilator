@@ -33,8 +33,8 @@ class V3Inst {
 public:
     static void instAll(AstNetlist* nodep);
     static void dearrayAll(AstNetlist* nodep);
-    static AstAssignW* pinReconnectSimple(AstPin* nodep, AstCell* cellp,
-					  bool forTristate, bool alwaysCvt=false);
+    static AstAssignW* pinReconnectSimple(AstPin* pinp, AstCell* cellp,
+                                          bool forTristate, bool alwaysCvt=false);
 };
 
 #endif // Guard

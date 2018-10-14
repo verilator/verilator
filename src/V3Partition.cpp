@@ -551,7 +551,7 @@ public:
         logcost = ceil(logcost);
         logcost = logcost / 20.0;
 
-        uint32_t stepCost = (uint32_t)(exp(logcost));
+        uint32_t stepCost = static_cast<uint32_t>(exp(logcost));
         UASSERT_STATIC(stepCost >= cost, "stepped cost error exceeded");
         UASSERT_STATIC(stepCost <= ((cost * 11 / 10)), "stepped cost error exceeded");
         return stepCost;
@@ -822,8 +822,7 @@ class MTaskEdge : public V3GraphEdge, public MergeCandidate {
 public:
     // CONSTRUCTORS
     MTaskEdge(V3Graph* graphp, LogicMTask* fromp, LogicMTask* top, int weight)
-        : V3GraphEdge(graphp, fromp, top, weight),
-          MergeCandidate() {
+        : V3GraphEdge(graphp, fromp, top, weight) {
         fromp->addRelative(GraphWay::FORWARD, top);
         top->addRelative(GraphWay::REVERSE, fromp);
     }
@@ -2204,10 +2203,10 @@ private:
 
 public:
     // CONSTRUCTORS
-    PartPackMTasks(V3Graph* mtasksp,
-                   uint32_t nThreads = v3Global.opt.threads(),
-                   unsigned sandbagNumerator = 30,
-                   unsigned sandbagDenom = 100)
+    explicit PartPackMTasks(V3Graph* mtasksp,
+                            uint32_t nThreads = v3Global.opt.threads(),
+                            unsigned sandbagNumerator = 30,
+                            unsigned sandbagDenom = 100)
         : m_mtasksp(mtasksp)
         , m_nThreads(nThreads)
         , m_sandbagNumerator(sandbagNumerator)
@@ -2296,6 +2295,7 @@ public:
                           <<" on thread "<<th<<endl);
                     if ((timeBegin < bestTime)
                         || ((timeBegin == bestTime)
+                            && bestMtaskp  // Redundant, but appeases static analysis tools
                             && (taskp->priority() > bestMtaskp->priority()))) {
                         bestTime = timeBegin;
                         bestTh = th;
@@ -2304,6 +2304,7 @@ public:
                 }
             }
 
+            if (!bestMtaskp) v3fatalSrc("Should have found some task");
             UINFO(6, "Will schedule "<<bestMtaskp->name()
                   <<" onto thread "<<bestTh<<endl);
             uint32_t bestEndTime = bestTime + bestMtaskp->cost();

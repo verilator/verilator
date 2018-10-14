@@ -164,7 +164,7 @@ void V3ParseImp::lexFile(const string& modname) {
     s_parsep = this;
     fileline()->warnResetDefault();	// Reenable warnings on each file
     lexDestroy();	// Restart from clean slate.
-    lexNew(debugFlex()>=9);
+    lexNew();
 
     // Lex it
     if (bisonParse()) v3fatal("Cannot continue\n");

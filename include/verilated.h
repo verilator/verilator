@@ -583,29 +583,29 @@ extern WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP r
 /// File I/O
 extern IData VL_FGETS_IXI(int obits, void* destp, IData fpi);
 
-extern IData VL_FOPEN_S(const char* filenamep, const char* mode);
-extern IData VL_FOPEN_WI(int fnwords, WDataInP ofilename, IData mode);
-extern IData VL_FOPEN_QI(QData ofilename, IData mode);
-inline IData VL_FOPEN_II(IData ofilename, IData mode) VL_MT_SAFE {
-    return VL_FOPEN_QI(ofilename,mode); }
+extern IData VL_FOPEN_S(const char* filenamep, const char* modep);
+extern IData VL_FOPEN_WI(int fnwords, WDataInP filenamep, IData mode);
+extern IData VL_FOPEN_QI(QData filename, IData mode);
+inline IData VL_FOPEN_II(IData filename, IData mode) VL_MT_SAFE {
+    return VL_FOPEN_QI(filename,mode); }
 
 extern void VL_FCLOSE_I(IData fdi);
 
 extern void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
-			 WDataInP ofilename, void* memp, IData start, IData end);
+                         WDataInP filenamep, void* memp, IData start, IData end);
 extern void VL_READMEM_Q(bool hex, int width, int depth, int array_lsb, int fnwords,
-			 QData ofilename,    void* memp, IData start, IData end);
+                         QData filename,     void* memp, IData start, IData end);
 inline void VL_READMEM_I(bool hex, int width, int depth, int array_lsb, int fnwords,
-			 IData ofilename,    void* memp, IData start, IData end) VL_MT_SAFE {
-    VL_READMEM_Q(hex, width,depth,array_lsb,fnwords, ofilename,memp,start,end); }
+                         IData filename,     void* memp, IData start, IData end) VL_MT_SAFE {
+    VL_READMEM_Q(hex, width,depth,array_lsb,fnwords, filename,memp,start,end); }
 
 extern void VL_WRITEMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
-                          WDataInP ofilename, const void* memp, IData start, IData end);
+                          WDataInP filenamep, const void* memp, IData start, IData end);
 extern void VL_WRITEMEM_Q(bool hex, int width, int depth, int array_lsb, int fnwords,
-                          QData ofilename,    const void* memp, IData start, IData end);
+                          QData filename,     const void* memp, IData start, IData end);
 inline void VL_WRITEMEM_I(bool hex, int width, int depth, int array_lsb, int fnwords,
-                          IData ofilename,    const void* memp, IData start, IData end) VL_MT_SAFE {
-    VL_WRITEMEM_Q(hex, width,depth,array_lsb,fnwords, ofilename,memp,start,end); }
+                          IData filename,     const void* memp, IData start, IData end) VL_MT_SAFE {
+    VL_WRITEMEM_Q(hex, width,depth,array_lsb,fnwords, filename,memp,start,end); }
 
 extern void VL_WRITEF(const char* formatp, ...);
 extern void VL_FWRITEF(IData fpi, const char* formatp, ...);
@@ -621,7 +621,7 @@ extern void VL_SFORMAT_X(int obits, IData& destr, const char* formatp, ...);
 extern void VL_SFORMAT_X(int obits, QData& destr, const char* formatp, ...);
 extern void VL_SFORMAT_X(int obits, void* destp, const char* formatp, ...);
 
-extern IData VL_SYSTEM_IW(int lhsnwords, WDataInP lhs);
+extern IData VL_SYSTEM_IW(int lhswords, WDataInP lhsp);
 extern IData VL_SYSTEM_IQ(QData lhs);
 inline IData VL_SYSTEM_II(IData lhs) VL_MT_SAFE { return VL_SYSTEM_IQ(lhs); }
 
@@ -632,24 +632,24 @@ extern const char* vl_mc_scan_plusargs(const char* prefixp);  // PLIish
 // Base macros
 
 /// Return true if data[bit] set; not 0/1 return, but 0/non-zero return.
-#define VL_BITISSET_I(data,bit) (data & (VL_UL(1)<<VL_BITBIT_I(bit)))
-#define VL_BITISSET_Q(data,bit) (data & (VL_ULL(1)<<VL_BITBIT_Q(bit)))
-#define VL_BITISSET_W(data,bit) (data[VL_BITWORD_I(bit)] & (VL_UL(1)<<VL_BITBIT_I(bit)))
+#define VL_BITISSET_I(data,bit) ((data) & (VL_UL(1) << VL_BITBIT_I(bit)))
+#define VL_BITISSET_Q(data,bit) ((data) & (VL_ULL(1) << VL_BITBIT_Q(bit)))
+#define VL_BITISSET_W(data,bit) ((data)[VL_BITWORD_I(bit)] & (VL_UL(1) << VL_BITBIT_I(bit)))
 #define VL_BITISSETLIMIT_W(data,width,bit) \
-    (((bit)<(width)) && data[VL_BITWORD_I(bit)] & (VL_UL(1)<<VL_BITBIT_I(bit)))
+    (((bit)<(width)) && (data)[VL_BITWORD_I(bit)] & (VL_UL(1) << VL_BITBIT_I(bit)))
 
 /// Shift appropriate word by bit. Does not account for wrapping between two words
-#define VL_BITRSHIFT_W(data,bit) (data[VL_BITWORD_I(bit)] >> VL_BITBIT_I(bit))
+#define VL_BITRSHIFT_W(data,bit) ((data)[VL_BITWORD_I(bit)] >> VL_BITBIT_I(bit))
 
 /// Create two 32-bit words from quadword
 /// WData is always at least 2 words; does not clean upper bits
-#define VL_SET_WQ(owp,data)     { owp[0]=static_cast<IData>(data); \
-        owp[1]=static_cast<IData>((data)>>VL_WORDSIZE); }
-#define VL_SET_WI(owp,data)	{ owp[0]=static_cast<IData>(data); owp[1]=0; }
+#define VL_SET_WQ(owp,data) { (owp)[0] = static_cast<IData>(data);  \
+        (owp)[1] = static_cast<IData>((data)>>VL_WORDSIZE); }
+#define VL_SET_WI(owp,data) { (owp)[0] = static_cast<IData>(data); (owp)[1] = 0; }
 #define VL_SET_QW(lwp) \
-    ( (static_cast<QData>(lwp[0])) \
-      | (static_cast<QData>(lwp[1])<<(static_cast<QData>(VL_WORDSIZE)) ))
-#define _VL_SET_QII(ld,rd)      ( (static_cast<QData>(ld)<<VL_ULL(32)) | static_cast<QData>(rd) )
+    ( (static_cast<QData>((lwp)[0]))                                    \
+      | (static_cast<QData>((lwp)[1]) << (static_cast<QData>(VL_WORDSIZE)) ))
+#define _VL_SET_QII(ld,rd) ((static_cast<QData>(ld)<<VL_ULL(32)) | static_cast<QData>(rd))
 
 /// Return FILE* from IData
 extern FILE*  VL_CVT_I_FP(IData lhs);
@@ -698,7 +698,7 @@ extern void _VL_DEBUG_PRINT_W(int lbits, WDataInP iwp);
 // Pli macros
 
 #ifndef VL_TIME_PRECISION
-# define VL_TIME_PRECISION -12	///< Timescale units only for for VPI return - picoseconds
+# define VL_TIME_PRECISION (-12)  ///< Timescale units only for for VPI return - picoseconds
 #endif
 #ifndef VL_TIME_MULTIPLIER
 # define VL_TIME_MULTIPLIER 1
@@ -828,31 +828,32 @@ static inline void VL_ASSIGNBIT_WO(int, int bit, WDataOutP owp, IData) VL_MT_SAF
 #define VL_ASSIGN_ISI(obits,vvar,svar) { (vvar) = VL_CLEAN_II((obits),(obits),(svar).read()); }
 #define VL_ASSIGN_QSQ(obits,vvar,svar) { (vvar) = VL_CLEAN_QQ((obits),(obits),(svar).read()); }
 
-#define VL_ASSIGN_ISW(obits,od,svar) { \
-    od = (svar.read().get_word(0)) & VL_MASK_I(obits); \
-}
-#define VL_ASSIGN_QSW(obits,od,svar) { \
-    od = ((static_cast<QData>(svar.read().get_word(1)))<<VL_WORDSIZE | svar.read().get_word(0)) \
-         & VL_MASK_Q(obits); \
-}
-#define VL_ASSIGN_WSW(obits,owp,svar) { \
-    int words = VL_WORDS_I(obits); \
-    for (int i=0; i < words; ++i) owp[i] = svar.read().get_word(i); \
-    owp[words-1] &= VL_MASK_I(obits); \
-}
+#define VL_ASSIGN_ISW(obits,od,svar) {                          \
+        (od) = ((svar).read().get_word(0)) & VL_MASK_I(obits);  \
+    }
+#define VL_ASSIGN_QSW(obits,od,svar) {                                  \
+        (od) = ((static_cast<QData>((svar).read().get_word(1)))<<VL_WORDSIZE \
+                | (svar).read().get_word(0))                            \
+            & VL_MASK_Q(obits);                                         \
+    }
+#define VL_ASSIGN_WSW(obits,owp,svar) {                                 \
+        int words = VL_WORDS_I(obits);                                  \
+        for (int i=0; i < words; ++i) (owp)[i] = (svar).read().get_word(i); \
+        (owp)[words-1] &= VL_MASK_I(obits);                             \
+    }
 
 #define VL_ASSIGN_ISU(obits,vvar,svar) { (vvar) = VL_CLEAN_II((obits),(obits),(svar).read().to_uint()); }
 #define VL_ASSIGN_QSU(obits,vvar,svar) { (vvar) = VL_CLEAN_QQ((obits),(obits),(svar).read().to_uint64()); }
-#define VL_ASSIGN_WSB(obits,owp,svar) {                       \
-    int words = VL_WORDS_I(obits);                            \
-    sc_biguint<obits> _butemp = (svar).read();                \
-    for (int i=0; i < words; ++i) {                           \
-        int msb = ((i+1)*VL_WORDSIZE) - 1;                    \
-        msb = (msb >= obits) ? (obits-1) : msb;               \
-        owp[i] = _butemp.range(msb,i*VL_WORDSIZE).to_uint();  \
-    }                                                         \
-    owp[words-1] &= VL_MASK_I(obits);                         \
-}
+#define VL_ASSIGN_WSB(obits,owp,svar) {                                 \
+        int words = VL_WORDS_I(obits);                                  \
+        sc_biguint<(obits)> _butemp = (svar).read();                    \
+        for (int i=0; i < words; ++i) {                                 \
+            int msb = ((i+1)*VL_WORDSIZE) - 1;                          \
+            msb = (msb >= (obits)) ? ((obits)-1) : msb;                 \
+            (owp)[i] = _butemp.range(msb,i*VL_WORDSIZE).to_uint();      \
+        }                                                               \
+        (owp)[words-1] &= VL_MASK_I(obits);                             \
+    }
 
 // Copying verilog format from systemc integers and bit vectors.
 // Set a SystemC variable
@@ -860,36 +861,36 @@ static inline void VL_ASSIGNBIT_WO(int, int bit, WDataOutP owp, IData) VL_MT_SAF
 #define VL_ASSIGN_SII(obits,svar,vvar) { (svar).write(vvar); }
 #define VL_ASSIGN_SQQ(obits,svar,vvar) { (svar).write(vvar); }
 
-#define VL_ASSIGN_SWI(obits,svar,rd) { \
-    sc_bv<obits> _bvtemp; \
-    _bvtemp.set_word(0,(rd));			\
-    svar.write(_bvtemp); \
-}
-#define VL_ASSIGN_SWQ(obits,svar,rd) { \
-    sc_bv<obits> _bvtemp; \
-    _bvtemp.set_word(0, static_cast<IData>(rd));	 \
-    _bvtemp.set_word(1, static_cast<IData>((rd)>>VL_WORDSIZE));	\
-    svar.write(_bvtemp); \
-}
-#define VL_ASSIGN_SWW(obits,svar,rwp) { \
-    sc_bv<obits> _bvtemp; \
-    for (int i=0; i < VL_WORDS_I(obits); ++i) _bvtemp.set_word(i,rwp[i]); \
-    svar.write(_bvtemp); \
-}
+#define VL_ASSIGN_SWI(obits,svar,rd) {          \
+        sc_bv<(obits)> _bvtemp;                 \
+        _bvtemp.set_word(0, (rd));              \
+        (svar).write(_bvtemp);                  \
+    }
+#define VL_ASSIGN_SWQ(obits,svar,rd) {                                  \
+        sc_bv<(obits)> _bvtemp;                                         \
+        _bvtemp.set_word(0, static_cast<IData>(rd));                    \
+        _bvtemp.set_word(1, static_cast<IData>((rd)>>VL_WORDSIZE));     \
+        (svar).write(_bvtemp);                                          \
+    }
+#define VL_ASSIGN_SWW(obits,svar,rwp) {                                 \
+        sc_bv<(obits)> _bvtemp;                                         \
+        for (int i=0; i < VL_WORDS_I(obits); ++i) _bvtemp.set_word(i, (rwp)[i]); \
+        (svar).write(_bvtemp);                                          \
+    }
 
 #define VL_ASSIGN_SUI(obits,svar,rd) { (svar).write(rd); }
 #define VL_ASSIGN_SUQ(obits,svar,rd) { (svar).write(rd); }
 #define VL_ASSIGN_SBI(obits,svar,rd) { (svar).write(rd); }
 #define VL_ASSIGN_SBQ(obits,svar,rd) { (svar).write(rd); }
-#define VL_ASSIGN_SBW(obits,svar,rwp) {             \
-    sc_biguint<obits> _butemp;                      \
-    for (int i=0; i < VL_WORDS_I(obits); ++i) {     \
-        int msb = ((i+1)*VL_WORDSIZE) - 1;          \
-        msb = (msb >= obits) ? (obits-1) : msb;     \
-        _butemp.range(msb,i*VL_WORDSIZE) = rwp[i];  \
-    }                                               \
-    svar.write(_butemp);                            \
-}
+#define VL_ASSIGN_SBW(obits,svar,rwp) {                         \
+        sc_biguint<(obits)> _butemp;                            \
+        for (int i=0; i < VL_WORDS_I(obits); ++i) {             \
+            int msb = ((i+1)*VL_WORDSIZE) - 1;                  \
+            msb = (msb >= (obits)) ? ((obits)-1) : msb;         \
+            _butemp.range(msb, i*VL_WORDSIZE) = (rwp)[i];       \
+        }                                                       \
+        (svar).write(_butemp);                                  \
+    }
 
 //===================================================================
 // Extending sizes
@@ -957,8 +958,8 @@ static inline WDataOutP VL_EXTENDS_WW(int obits, int lbits, WDataOutP owp, WData
 // REDUCTION OPERATORS
 
 // EMIT_RULE: VL_REDAND:  oclean=clean; lclean==clean; obits=1;
-#define VL_REDAND_II(obits,lbits,lhs) (lhs == VL_MASK_I(lbits))
-#define VL_REDAND_IQ(obits,lbits,lhs) (lhs == VL_MASK_Q(lbits))
+#define VL_REDAND_II(obits,lbits,lhs) ((lhs) == VL_MASK_I(lbits))
+#define VL_REDAND_IQ(obits,lbits,lhs) ((lhs) == VL_MASK_Q(lbits))
 static inline IData VL_REDAND_IW(int, int lbits, WDataInP lwp) VL_MT_SAFE {
     int words = VL_WORDS_I(lbits);
     IData combine=lwp[0];
@@ -968,8 +969,8 @@ static inline IData VL_REDAND_IW(int, int lbits, WDataInP lwp) VL_MT_SAFE {
 }
 
 // EMIT_RULE: VL_REDOR:  oclean=clean; lclean==clean; obits=1;
-#define VL_REDOR_I(lhs) (lhs!=0)
-#define VL_REDOR_Q(lhs) (lhs!=0)
+#define VL_REDOR_I(lhs) ((lhs)!=0)
+#define VL_REDOR_Q(lhs) ((lhs)!=0)
 static inline IData VL_REDOR_W(int words, WDataInP lwp) VL_MT_SAFE {
     IData equal=0;
     for (int i=0; i < words; ++i) equal |= lwp[i];

@@ -1,0 +1,9 @@
+Checks:          'clang-diagnostic-*,clang-analyzer-*,*,-modernize*,-hicpp*,-android-cloexec-fopen,-cert-dcl50-cpp,-cert-env33-c,-cert-err34-c,-cert-err58-cpp,-clang-analyzer-core.UndefinedBinaryOperatorResult,-clang-analyzer-security*,-cppcoreguidelines-no-malloc,-cppcoreguidelines-owning-memory,-cppcoreguidelines-pro-bounds-array-to-pointer-decay,-cppcoreguidelines-pro-bounds-array-to-pointer-decay,-cppcoreguidelines-pro-bounds-constant-array-index,-cppcoreguidelines-pro-bounds-pointer-arithmetic,-cppcoreguidelines-pro-type-const-cast,-cppcoreguidelines-pro-type-reinterpret-cast,-cppcoreguidelines-pro-type-static-cast-downcast,-cppcoreguidelines-pro-type-union-access,-cppcoreguidelines-pro-type-vararg,-cppcoreguidelines-special-member-functions,-fuchsia-default-arguments,-fuchsia-overloaded-operator,-google-default-arguments,-google-readability-todo,-google-runtime-references,-llvm-header-guard,-llvm-include-order,-misc-string-integer-assignment,-misc-string-literal-with-embedded-nul,-readability-braces-around-statements,-readability-container-size-empty,-readability-delete-null-pointer,-readability-else-after-return,-readability-implicit-bool-conversion,-readability-named-parameter,-readability-static-accessed-through-instance'
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+FormatStyle:     none
+CheckOptions:    
+  - key:             google-readability-braces-around-statements.ShortStatementLines
+    value:           '2'
+  - key:             google-readability-namespace-comments.SpacesBeforeComments
+    value:           '2'

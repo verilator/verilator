@@ -3501,8 +3501,8 @@ class AstScopeName : public AstNodeMath {
     // Children: TEXT
 private:
     bool	m_dpiExport;	// Is for dpiExport
-    string scopeNameFormatter(AstText* textp) const;
-    string scopePrettyNameFormatter(AstText* textp) const;
+    string scopeNameFormatter(AstText* scopeTextp) const;
+    string scopePrettyNameFormatter(AstText* scopeTextp) const;
 public:
     explicit AstScopeName(FileLine* fl) : AstNodeMath(fl), m_dpiExport(false) {
 	dtypeSetUInt64(); }

@@ -92,7 +92,7 @@ private:
 	    nextp = edgep->outNextp();
 	    if (followEdge(edgep)) {
 		V3GraphVertex* outVertexp = edgep->top();
-		V3GraphEdge* prevEdgep = (V3GraphEdge*)outVertexp->userp();
+                V3GraphEdge* prevEdgep = static_cast<V3GraphEdge*>(outVertexp->userp());
 		if (!prevEdgep) { // No previous assignment
 		    outVertexp->userp(edgep);
 		} else { // Duplicate
@@ -427,7 +427,7 @@ private:
 
     //! Iterate through all connected nodes of a graph with a loop or loops.
     V3GraphVertex* vertexIterateAll(V3GraphVertex* vertexp) {
-	if (V3GraphVertex* newVertexp = (V3GraphVertex*)vertexp->userp()) {
+        if (V3GraphVertex* newVertexp = static_cast<V3GraphVertex*>(vertexp->userp())) {
 	    return newVertexp;
 	} else {
 	    newVertexp = vertexp->clone(m_loopGraphp);
@@ -436,7 +436,7 @@ private:
 	    for (V3GraphEdge* edgep = vertexp->outBeginp();
 		 edgep; edgep=edgep->outNextp()) {
 		if (followEdge(edgep)) {
-		    V3GraphEdge* newEdgep = (V3GraphEdge*)edgep->userp();
+                    V3GraphEdge* newEdgep = static_cast<V3GraphEdge*>(edgep->userp());
 		    if (!newEdgep) {
 			V3GraphVertex* newTop = vertexIterateAll(edgep->top());
 			newEdgep = edgep->clone(m_loopGraphp, newVertexp,

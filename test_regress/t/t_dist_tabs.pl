@@ -44,6 +44,13 @@ if (!-r "$root/.git") {
                 print "  Inserts tabs\n" if $Self->{verbose} && !$btab;
                 $btab = 1;
             }
+            elsif ($line =~ m!^\+(.*)!) {
+                my $len = length($1);
+                if ($len >= 100) {
+                    print"  Wide $line\n" if $Self->{verbose};
+                    $warns{$file} = "File modification adds a new >100 column line: $file";
+                }
+            }
         }
     }
     if (keys %warns) {

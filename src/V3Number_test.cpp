@@ -87,6 +87,10 @@ void test(const string& lhss, const string& op, const string& rhss, const string
     if (ok.toUInt()!=1) {
 	v3fatalSrc("%Error:Test FAILED");
     }
+
+    free(l1);
+    free(r1);
+    free(e1);
 }
 
 int main() {

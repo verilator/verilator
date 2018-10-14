@@ -31,7 +31,7 @@
 
 class V3LinkResolve {
 public:
-    static void linkResolve(AstNetlist* nodep);
+    static void linkResolve(AstNetlist* rootp);
 };
 
 #endif // Guard

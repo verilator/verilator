@@ -85,30 +85,30 @@ void V3LinkLevel::modSortByLevel() {
 //######################################################################
 // Wrapping
 
-void V3LinkLevel::wrapTop(AstNetlist* netlistp) {
+void V3LinkLevel::wrapTop(AstNetlist* rootp) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     // We do ONLY the top module
-    AstNodeModule* oldmodp = netlistp->modulesp();
-    if (!oldmodp) netlistp->v3fatalSrc("No module found to process");
+    AstNodeModule* oldmodp = rootp->modulesp();
+    if (!oldmodp) rootp->v3fatalSrc("No module found to process");
     AstNodeModule* newmodp = new AstModule(oldmodp->fileline(), string("TOP_")+oldmodp->name());
     // Make the new module first in the list
     oldmodp->unlinkFrBackWithNext();
     newmodp->addNext(oldmodp);
     newmodp->level(1);
     newmodp->modPublic(true);
-    netlistp->addModulep(newmodp);
+    rootp->addModulep(newmodp);
 
     // TODO the module creation above could be done after linkcells, but
     // the rest must be done after data type resolution
-    wrapTopCell(netlistp);
-    wrapTopPackages(netlistp);
+    wrapTopCell(rootp);
+    wrapTopPackages(rootp);
 }
 
-void V3LinkLevel::wrapTopCell(AstNetlist* netlistp) {
-    AstNodeModule* newmodp = netlistp->modulesp();
-    if (!newmodp || !newmodp->isTop()) netlistp->v3fatalSrc("No TOP module found to process");
+void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
+    AstNodeModule* newmodp = rootp->modulesp();
+    if (!newmodp || !newmodp->isTop()) rootp->v3fatalSrc("No TOP module found to process");
     AstNodeModule* oldmodp = VN_CAST(newmodp->nextp(), NodeModule);
-    if (!oldmodp) netlistp->v3fatalSrc("No module found to process");
+    if (!oldmodp) rootp->v3fatalSrc("No module found to process");
 
     // Add instance
     AstCell* cellp = new AstCell(newmodp->fileline(),
@@ -148,12 +148,12 @@ void V3LinkLevel::wrapTopCell(AstNetlist* netlistp) {
     }
 }
 
-void V3LinkLevel::wrapTopPackages(AstNetlist* netlistp) {
+void V3LinkLevel::wrapTopPackages(AstNetlist* rootp) {
     // Instantiate all packages under the top wrapper
     // This way all later SCOPE based optimizations can ignore packages
-    AstNodeModule* newmodp = netlistp->modulesp();
-    if (!newmodp || !newmodp->isTop()) netlistp->v3fatalSrc("No TOP module found to process");
-    for (AstNodeModule* modp = netlistp->modulesp(); modp; modp=VN_CAST(modp->nextp(), NodeModule)) {
+    AstNodeModule* newmodp = rootp->modulesp();
+    if (!newmodp || !newmodp->isTop()) rootp->v3fatalSrc("No TOP module found to process");
+    for (AstNodeModule* modp = rootp->modulesp(); modp; modp=VN_CAST(modp->nextp(), NodeModule)) {
         if (VN_IS(modp, Package)) {
 	    AstCell* cellp = new AstCell(modp->fileline(),
 					 // Could add __03a__03a="::" to prevent conflict
