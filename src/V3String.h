@@ -23,8 +23,8 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
+
 #include <string>
-#include "V3Error.h"
 
 //######################################################################
 // VString - String manipulation

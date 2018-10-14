@@ -78,16 +78,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cstdarg>
-#include <cstdio>
-#include <deque>
-#include <iomanip>
-#include <map>
-#include <memory>
-#include <sstream>
-#include <unistd.h>
-#include <vector>
 
 #include "V3Ast.h"
 #include "V3Const.h"
@@ -106,6 +96,14 @@
 #include "V3Order.h"
 #include "V3OrderGraph.h"
 
+#include <algorithm>
+#include <cstdarg>
+#include <deque>
+#include <iomanip>
+#include <map>
+#include <memory>
+#include <sstream>
+#include <vector>
 #include VL_INCLUDE_UNORDERED_MAP
 #include VL_INCLUDE_UNORDERED_SET
 

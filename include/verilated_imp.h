@@ -33,11 +33,9 @@
 #include "verilated_heavy.h"
 #include "verilated_syms.h"
 
-#include <map>
+#include <deque>
 #include <set>
 #include <vector>
-#include <deque>
-#include <string>
 #ifdef VL_THREADED
 # include <functional>
 # include <queue>

@@ -23,8 +23,10 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
+
 #include "VlcPoint.h"
 #include "VlcBucket.h"
+
 #include <map>
 #include <vector>
 

@@ -26,6 +26,7 @@
 #ifndef _VERILATED_VPI_H_
 #define _VERILATED_VPI_H_ 1 ///< Header Guard
 
+#include "verilatedos.h"
 #include "verilated.h"
 #include "verilated_syms.h"
 

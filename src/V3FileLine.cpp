@@ -20,10 +20,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdarg>
-#include <cstdio>
-#include <cstring>
-#include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Error.h"
 #include "V3FileLine.h"
@@ -33,6 +29,9 @@
 # include "V3Stats.h"
 # include "V3Config.h"
 #endif
+
+#include <cstdarg>
+#include VL_INCLUDE_UNORDERED_SET
 
 //######################################################################
 // FileLineSingleton class functions

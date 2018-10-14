@@ -20,19 +20,18 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cmath>
-#include <cstdarg>
-#include <cstdio>
-#include <map>
-#include <set>
-#include <unistd.h>
-#include <vector>
 
 #include "V3Global.h"
 #include "V3EmitC.h"
 #include "V3EmitCBase.h"
 #include "V3LanguageWords.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdarg>
+#include <map>
+#include <set>
+#include <vector>
 
 //######################################################################
 // Symbol table emitting

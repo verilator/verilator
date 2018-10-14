@@ -46,8 +46,10 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
+
 #include "V3Ast.h"
 #include "V3Graph.h"
+
 #include VL_INCLUDE_UNORDERED_MAP
 
 class OrderVisitor;

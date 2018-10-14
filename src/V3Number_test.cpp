@@ -21,16 +21,17 @@
 // CHEAT!
 #define V3NUMBER_ASCII_BINARY
 #define _V3ERROR_NO_GLOBAL_ 1
-#include "V3Error.cpp"
-#include "V3FileLine.cpp"
-#include "V3Number.cpp"
 
 #include <config_build.h>
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <algorithm>
+
+#include "V3Error.cpp"
+#include "V3FileLine.cpp"
+#include "V3Number.cpp"
 #include "V3Number.h"
+
+#include <algorithm>
+#include <cstdarg>
 
 void test(const string& lhss, const string& op, const string& rhss, const string& exps) {
     char* l1 = strdup(lhss.c_str());

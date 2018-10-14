@@ -20,17 +20,16 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cmath>
-#include <cstdarg>
-#include <cstdio>
-#include <map>
-#include <unistd.h>
-#include <vector>
 
 #include "V3Global.h"
 #include "V3EmitC.h"
 #include "V3EmitCBase.h"
 #include "V3Stats.h"
+
+#include <cmath>
+#include <cstdarg>
+#include <map>
+#include <vector>
 
 //######################################################################
 

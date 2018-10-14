@@ -29,14 +29,13 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cstdarg>
-#include <cstdio>
-#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3Clean.h"
 #include "V3Ast.h"
+
+#include <algorithm>
+#include <cstdarg>
 
 //######################################################################
 // Clean state, as a visitor of each AstNode

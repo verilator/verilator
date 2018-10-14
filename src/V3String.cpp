@@ -25,7 +25,6 @@
 #include "V3String.h"
 #include "V3Error.h"
 
-
 size_t VName::s_minLength = 32;
 size_t VName::s_maxLength = 0;	// Disabled
 

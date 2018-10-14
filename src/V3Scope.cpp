@@ -27,18 +27,17 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cstdarg>
-#include <cstdio>
-#include <iomanip>
-#include <map>
-#include <unistd.h>
-#include VL_INCLUDE_UNORDERED_MAP
-#include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Global.h"
 #include "V3Scope.h"
 #include "V3Ast.h"
+
+#include <algorithm>
+#include <cstdarg>
+#include <iomanip>
+#include <map>
+#include VL_INCLUDE_UNORDERED_MAP
+#include VL_INCLUDE_UNORDERED_SET
 
 //######################################################################
 // Scope class functions

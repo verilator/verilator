@@ -25,6 +25,7 @@
 #ifndef _VERILATED_VCD_SC_H_
 #define _VERILATED_VCD_SC_H_ 1
 
+#include "verilatedos.h"
 #include "verilated_sc.h"
 #include "verilated_vcd_c.h"
 

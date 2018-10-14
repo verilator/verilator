@@ -21,15 +21,13 @@
 //*************************************************************************
 
 %{
-#include <cstdio>
-#include <cstdlib>
-#include <cstdarg>
-#include <cstring>
-
 #include "V3Ast.h"
 #include "V3Global.h"
 #include "V3Config.h"
 #include "V3ParseImp.h"  // Defines YYTYPE; before including bison header
+
+#include <cstdlib>
+#include <cstdarg>
 
 #define YYERROR_VERBOSE 1
 #define YYINITDEPTH 10000	// Older bisons ignore YYMAXDEPTH

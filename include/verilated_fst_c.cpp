@@ -23,9 +23,10 @@
 #include "verilatedos.h"
 #include "verilated.h"
 #include "verilated_fst_c.h"
+
 // Include the GTKWave implementation directly
-#include "gtkwave/fstapi.c"
 #include "gtkwave/fastlz.c"
+#include "gtkwave/fstapi.c"
 #include "gtkwave/lz4.c"
 
 #include <algorithm>

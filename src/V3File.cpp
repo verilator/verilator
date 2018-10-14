@@ -20,6 +20,13 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
+
+#include "V3Global.h"
+#include "V3File.h"
+#include "V3Os.h"
+#include "V3PreShell.h"
+#include "V3Ast.h"
+
 #include <cerrno>
 #include <cstdarg>
 #include <fcntl.h>
@@ -28,7 +35,6 @@
 #include <memory>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
 
 #if defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))
 # define INFILTER_PIPE  // Allow pipe filtering.  Needs fork()
@@ -45,12 +51,6 @@
 #ifdef INFILTER_PIPE
 # include <sys/wait.h>
 #endif
-
-#include "V3Global.h"
-#include "V3File.h"
-#include "V3Os.h"
-#include "V3PreShell.h"
-#include "V3Ast.h"
 
 // If change this code, run a test with the below size set very small
 //#define INFILTER_IPC_BUFSIZ 16

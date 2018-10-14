@@ -23,10 +23,10 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
+
 #include "V3Error.h"
 #include "V3FileLine.h"
 
-#include <string>
 #include <map>
 #include <list>
 #include <iostream>

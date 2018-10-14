@@ -20,19 +20,16 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cstdarg>
-#include <cstdio>
-#include <fstream>
-#include <iomanip>
-#include <vector>
-#include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Ast.h"
 #include "V3File.h"
 #include "V3Global.h"
 #include "V3Graph.h"
 #include "V3PartitionGraph.h"  // Just for mtask dumping
+
+#include <cstdarg>
+#include <iomanip>
+#include <vector>
 
 //======================================================================
 // Special methods

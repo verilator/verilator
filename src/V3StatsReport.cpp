@@ -20,18 +20,17 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdarg>
-#include <cstdio>
-#include <iomanip>
-#include <map>
-#include <unistd.h>
-#include VL_INCLUDE_UNORDERED_MAP
 
 #include "V3Global.h"
 #include "V3Stats.h"
 #include "V3Ast.h"
 #include "V3File.h"
 #include "V3Os.h"
+
+#include <cstdarg>
+#include <iomanip>
+#include <map>
+#include VL_INCLUDE_UNORDERED_MAP
 
 //######################################################################
 // Stats dumping

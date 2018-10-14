@@ -23,7 +23,9 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
+
 #include "verilated_cov_key.h"
+
 #include <vector>
 #include <iomanip>
 #include VL_INCLUDE_UNORDERED_MAP

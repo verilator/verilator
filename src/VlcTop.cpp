@@ -23,9 +23,9 @@
 #include "VlcOptions.h"
 #include "VlcTop.h"
 
-#include <sys/stat.h>
-#include <fstream>
 #include <algorithm>
+#include <fstream>
+#include <sys/stat.h>
 
 //######################################################################
 

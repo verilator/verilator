@@ -32,12 +32,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cstdarg>
-#include <cstdio>
-#include <map>
-#include <unistd.h>
-#include <vector>
 
 #include "V3Global.h"
 #include "V3Active.h"
@@ -45,6 +39,7 @@
 #include "V3EmitCBase.h"
 #include "V3Const.h"
 #include "V3SenTree.h"  // for SenTreeSet
+
 #include VL_INCLUDE_UNORDERED_MAP
 
 //***** See below for main transformation engine

@@ -25,6 +25,7 @@
 
 #include "verilatedos.h"
 #include "verilated.h"
+
 #include "gtkwave/lxt2_write.h"
 
 #include <map>

@@ -20,14 +20,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cmath>
-#include <cstdarg>
-#include <cstdio>
-#include <map>
-#include <unistd.h>
-#include <vector>
-#include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Global.h"
 #include "V3String.h"
@@ -36,6 +28,13 @@
 #include "V3Number.h"
 #include "V3PartitionGraph.h"
 #include "V3TSP.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdarg>
+#include <map>
+#include <vector>
+#include VL_INCLUDE_UNORDERED_SET
 
 #define VL_VALUE_STRING_MAX_WIDTH 8192	// We use a static char array in VL_VALUE_STRING
 

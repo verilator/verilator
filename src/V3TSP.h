@@ -21,8 +21,10 @@
 
 #ifndef _V3TSP_H_
 #define _V3TSP_H_ 1
+
 #include "config_build.h"
 #include "verilatedos.h"
+
 #include "V3Error.h"
 
 namespace V3TSP {

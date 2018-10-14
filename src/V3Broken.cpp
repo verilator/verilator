@@ -27,11 +27,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cstdarg>
-#include <cstdio>
-#include <unistd.h>
-#include VL_INCLUDE_UNORDERED_MAP
 
 #include "V3Global.h"
 #include "V3Broken.h"
@@ -39,6 +34,10 @@
 
 // This visitor does not edit nodes, and is called at error-exit, so should use constant iterators
 #include "V3AstConstOnly.h"
+
+#include <algorithm>
+#include <cstdarg>
+#include VL_INCLUDE_UNORDERED_MAP
 
 //######################################################################
 

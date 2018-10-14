@@ -83,20 +83,19 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cstdarg>
-#include <cstdio>
-#include <map>
-#include <unistd.h>
-#include <vector>
-#include VL_INCLUDE_UNORDERED_MAP
-#include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Global.h"
 #include "V3Split.h"
 #include "V3Stats.h"
 #include "V3Ast.h"
 #include "V3Graph.h"
+
+#include <algorithm>
+#include <cstdarg>
+#include <map>
+#include <vector>
+#include VL_INCLUDE_UNORDERED_MAP
+#include VL_INCLUDE_UNORDERED_SET
 
 //######################################################################
 // Support classes

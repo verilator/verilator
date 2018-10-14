@@ -18,16 +18,14 @@
 //
 //*************************************************************************
 
-#include <cstdarg>
-#include <cstdio>
-#include <cstring>
-#include <set>
 #include "V3Error.h"
 #ifndef _V3ERROR_NO_GLOBAL_
 # include "V3Ast.h"
 # include "V3Global.h"
 # include "V3Stats.h"
 #endif
+
+#include <cstdarg>
 
 //======================================================================
 // Statics

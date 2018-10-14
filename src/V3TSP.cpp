@@ -25,11 +25,15 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include "V3Error.h"
+#include "V3Global.h"
+#include "V3File.h"
+#include "V3Graph.h"
+#include "V3TSP.h"
+
 #include <cassert>
 #include <cmath>
-#include <cstdlib>
 #include <fstream>
-#include <iostream>
 #include <limits>
 #include <list>
 #include <map>
@@ -39,12 +43,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-#include "V3Error.h"
-#include "V3Global.h"
-#include "V3File.h"
-#include "V3Graph.h"
-#include "V3TSP.h"
 #include VL_INCLUDE_UNORDERED_SET
 #include VL_INCLUDE_UNORDERED_MAP
 

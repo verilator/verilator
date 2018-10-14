@@ -20,18 +20,17 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cmath>
-#include <cstdarg>
-#include <cstdio>
-#include <map>
-#include <unistd.h>
-#include <vector>
 
 #include "V3Global.h"
 #include "V3String.h"
 #include "V3EmitXml.h"
 #include "V3EmitCBase.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdarg>
+#include <map>
+#include <vector>
 
 //######################################################################
 // Emit statements and math operators

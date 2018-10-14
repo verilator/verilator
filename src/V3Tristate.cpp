@@ -59,11 +59,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cstdarg>
-#include <cstdio>
-#include <map>
-#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3Tristate.h"
@@ -73,6 +68,10 @@
 #include "V3Inst.h"
 #include "V3Stats.h"
 #include "V3Graph.h"
+
+#include <algorithm>
+#include <cstdarg>
+#include <map>
 
 //######################################################################
 

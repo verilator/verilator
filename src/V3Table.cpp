@@ -27,17 +27,16 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cmath>
-#include <cstdarg>
-#include <cstdio>
-#include <deque>
-#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3Table.h"
 #include "V3Simulate.h"
 #include "V3Stats.h"
 #include "V3Ast.h"
+
+#include <cmath>
+#include <cstdarg>
+#include <deque>
 
 //######################################################################
 // Table class functions

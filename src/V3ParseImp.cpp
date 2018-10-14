@@ -28,11 +28,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdarg>
-#include <cstdio>
-#include <fstream>
-#include <sstream>
-#include <unistd.h>
 
 #include "V3Error.h"
 #include "V3Global.h"
@@ -41,6 +36,10 @@
 #include "V3File.h"
 #include "V3ParseImp.h"
 #include "V3PreShell.h"
+
+#include <cstdarg>
+#include <fstream>
+#include <sstream>
 
 //======================================================================
 // Globals

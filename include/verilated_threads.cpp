@@ -21,6 +21,7 @@
 
 #include "verilatedos.h"
 #include "verilated_threads.h"
+
 #include <cstdio>
 
 std::atomic<vluint64_t> VlNotification::s_yields;

@@ -20,14 +20,14 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cmath>
-#include <cstdarg>
-#include <cstdio>
-#include <iomanip>
 
 #include "V3Global.h"
 #include "V3Number.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdarg>
+#include <iomanip>
 
 #define MAX_SPRINTF_DOUBLE_SIZE 100  // Maximum characters with a sprintf %e/%f/%g (probably < 30)
 

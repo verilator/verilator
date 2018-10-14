@@ -27,15 +27,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cstdarg>
-#include <cstdio>
-#include <deque>
-#include <iomanip>
-#include <list>
-#include <memory>
-#include <unistd.h>
-#include <vector>
 
 #include "V3Global.h"
 #include "V3Cdc.h"
@@ -44,6 +35,14 @@
 #include "V3Const.h"
 #include "V3EmitV.h"
 #include "V3File.h"
+
+#include <algorithm>
+#include <cstdarg>
+#include <deque>
+#include <iomanip>
+#include <list>
+#include <memory>
+#include <vector>
 
 #define CDC_WEIGHT_ASYNC	0x1000	// Weight for edges that feed async logic
 

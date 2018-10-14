@@ -20,13 +20,12 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdarg>
-#include <cstdio>
-#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3Graph.h"
 #include "V3GraphDfa.h"
+
+#include <cstdarg>
 
 //######################################################################
 //######################################################################

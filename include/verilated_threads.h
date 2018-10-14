@@ -23,17 +23,14 @@
 #define _VERILATED_THREADS_H_
 
 #include "verilatedos.h"
+#include "verilated.h"  // for VerilatedMutex and clang annotations
 
-#include <atomic>
-#include <thread>
-#include <vector>
-#include <set>
 #include <sched.h>  // For sched_getcpu()
+#include <set>
+#include <vector>
 #if defined(__APPLE__)
 # include <cpuid.h>  // For __cpuid_count()
 #endif
-
-#include "verilated.h"  // for VerilatedMutex and clang annotations
 
 // VlMTaskVertex and VlThreadpool will work with multiple symbol table types.
 // Since the type is opaque to VlMTaskVertex and VlThreadPool, represent it

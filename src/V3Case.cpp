@@ -39,15 +39,14 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cstdarg>
-#include <cstdio>
-#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3Case.h"
 #include "V3Ast.h"
 #include "V3Stats.h"
+
+#include <algorithm>
+#include <cstdarg>
 
 #define CASE_OVERLAP_WIDTH 12		// Maximum width we can check for overlaps in
 #define CASE_BARF	   999999	// Magic width when non-constant

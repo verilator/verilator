@@ -30,12 +30,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cstdarg>
-#include <cstdio>
-#include <unistd.h>
-#include <vector>
-#include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Global.h"
 #include "V3Inline.h"
@@ -43,6 +37,11 @@
 #include "V3Stats.h"
 #include "V3Ast.h"
 #include "V3String.h"
+
+#include <algorithm>
+#include <cstdarg>
+#include <vector>
+#include VL_INCLUDE_UNORDERED_SET
 
 // CONFIG
 static const int INLINE_MODS_SMALLER = 100;	// If a mod is < this # nodes, can always inline it

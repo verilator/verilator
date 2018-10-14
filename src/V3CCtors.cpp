@@ -27,19 +27,19 @@
 //
 //	This transformation honors outputSplitCFuncs.
 //*************************************************************************
+
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cmath>
-#include <cstdarg>
-#include <cstdio>
-#include <map>
-#include <unistd.h>
-#include <vector>
 
 #include "V3Global.h"
 #include "V3EmitCBase.h"
 #include "V3CCtors.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdarg>
+#include <map>
+#include <vector>
 
 class V3CCtorsVisitor {
 private:

@@ -29,10 +29,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdarg>
-#include <cstdio>
-#include <map>
-#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3Const.h"
@@ -42,6 +38,9 @@
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
 #include "V3LinkLValue.h"
+
+#include <cstdarg>
+#include <map>
 
 //######################################################################
 // Graph subclasses

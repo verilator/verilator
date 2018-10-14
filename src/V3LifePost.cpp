@@ -30,11 +30,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdarg>
-#include <cstdio>
-#include <memory>  // for vl_unique_ptr -> auto_ptr or unique_ptr
-#include <unistd.h>
-#include VL_INCLUDE_UNORDERED_MAP
 
 #include "V3Global.h"
 #include "V3PartitionGraph.h"
@@ -42,6 +37,10 @@
 #include "V3LifePost.h"
 #include "V3Stats.h"
 #include "V3Ast.h"
+
+#include <cstdarg>
+#include <memory>  // for vl_unique_ptr -> auto_ptr or unique_ptr
+#include VL_INCLUDE_UNORDERED_MAP
 
 //######################################################################
 // LifePost class functions

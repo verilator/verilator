@@ -36,14 +36,14 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+// <iostream> avoided to reduce compile time
+// <map> avoided and instead in verilated_heavy.h to reduce compile time
+// <string> avoided and instead in verilated_heavy.h to reduce compile time
 #ifdef VL_THREADED
 # include <atomic>
 # include <mutex>
 # include <thread>
 #endif
-// <iostream> avoided to reduce compile time
-// <map> avoided and instead in verilated_heavy.h to reduce compile time
-// <string> avoided and instead in verilated_heavy.h to reduce compile time
 
 //=============================================================================
 // Switches

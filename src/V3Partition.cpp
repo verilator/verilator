@@ -20,9 +20,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstring>
-#include <list>
-#include <memory>
 
 #include "V3Os.h"
 #include "V3File.h"
@@ -34,6 +31,9 @@
 #include "V3PartitionGraph.h"
 #include "V3Scoreboard.h"
 #include "V3Stats.h"
+
+#include <list>
+#include <memory>
 #include VL_INCLUDE_UNORDERED_SET
 
 class MergeCandidate;

@@ -20,15 +20,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdarg>
-#include <cstdio>
-#include <cstdlib>
-#include <fstream>
-#include <list>
-#include <map>
-#include <stack>
-#include <unistd.h>
-#include <vector>
 
 #include "V3Error.h"
 #include "V3Global.h"
@@ -36,6 +27,12 @@
 #include "V3PreLex.h"
 #include "V3PreProc.h"
 #include "V3PreShell.h"
+
+#include <cstdarg>
+#include <cstdlib>
+#include <fstream>
+#include <stack>
+#include <vector>
 
 //======================================================================
 // Build in LEX script

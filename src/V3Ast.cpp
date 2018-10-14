@@ -18,17 +18,18 @@
 //
 //*************************************************************************
 
-#include <cstdarg>
-#include <cstdio>
-#include <fstream>
-#include <iomanip>
-#include <memory>
+#include "config_build.h"
+#include "verilatedos.h"
 
 #include "V3Ast.h"
 #include "V3File.h"
 #include "V3Global.h"
 #include "V3Broken.h"
 #include "V3String.h"
+
+#include <cstdarg>
+#include <iomanip>
+#include <memory>
 
 //======================================================================
 // Statics

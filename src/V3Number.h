@@ -20,12 +20,14 @@
 
 #ifndef _V3NUMBER_H_
 #define _V3NUMBER_H_ 1
+
 #include "config_build.h"
 #include "verilatedos.h"
-#include <vector>
 
 #include "V3Error.h"
 #include "V3FileLine.h"
+
+#include <vector>
 
 //============================================================================
 

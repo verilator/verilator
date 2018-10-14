@@ -20,8 +20,10 @@
 
 #ifndef _V3LIST_H_
 #define _V3LIST_H_ 1
+
 #include "config_build.h"
 #include "verilatedos.h"
+
 #include <vector>
 
 //============================================================================

@@ -20,15 +20,16 @@
 
 #ifndef _V3AST_H_
 #define _V3AST_H_ 1
+
 #include "config_build.h"
 #include "verilatedos.h"
+
 #include "V3Error.h"
 #include "V3FileLine.h"
 #include "V3Number.h"
 #include "V3Global.h"
+
 #include <cmath>
-#include <map>
-#include <vector>
 #include VL_INCLUDE_UNORDERED_SET
 
 #include "V3Ast__gen_classes.h"	// From ./astgen

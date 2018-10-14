@@ -23,10 +23,11 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <list>
 
 #include "V3Graph.h"
 #include "V3OrderGraph.h"
+
+#include <list>
 
 class LogicMTask;
 typedef vl_unordered_map<const MTaskMoveVertex*, LogicMTask*> Vx2MTaskMap;

@@ -20,10 +20,12 @@
 
 #ifndef _V3FILE_H_
 #define _V3FILE_H_ 1
+
 #include "config_build.h"
 #include "verilatedos.h"
+
 #include "V3Error.h"
-#include <cstdio>
+
 #include <stack>
 #include <set>
 #include <list>

@@ -22,7 +22,6 @@
 #define _V3GRAPHDFA_H_ 1
 #include "config_build.h"
 #include "verilatedos.h"
-#include <vector>
 
 #include "V3Ast.h"  // for VNUser
 #include "V3Global.h"

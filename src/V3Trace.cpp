@@ -48,11 +48,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdarg>
-#include <cstdio>
-#include <map>
-#include <set>
-#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3Trace.h"
@@ -60,6 +55,10 @@
 #include "V3Graph.h"
 #include "V3Hashed.h"
 #include "V3Stats.h"
+
+#include <cstdarg>
+#include <map>
+#include <set>
 
 //######################################################################
 // Graph vertexes

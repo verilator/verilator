@@ -20,8 +20,10 @@
 
 #ifndef _V3PARAM_H_
 #define _V3PARAM_H_ 1
+
 #include "config_build.h"
 #include "verilatedos.h"
+
 #include "V3Error.h"
 #include "V3Ast.h"
 

@@ -26,11 +26,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cstdarg>
-#include <cstdio>
-#include <map>
-#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3String.h"
@@ -38,6 +33,10 @@
 #include "V3Ast.h"
 #include "V3Width.h"
 #include "V3Simulate.h"
+
+#include <algorithm>
+#include <cstdarg>
+#include <map>
 
 //######################################################################
 // Utilities

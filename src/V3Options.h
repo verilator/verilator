@@ -23,13 +23,14 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
+
+#include "V3Global.h"
+#include "V3LangCode.h"
+
 #include <string>
 #include <vector>
 #include <map>
 #include <set>
-
-#include "V3Global.h"
-#include "V3LangCode.h"
 
 class V3OptionsImp;
 class FileLine;

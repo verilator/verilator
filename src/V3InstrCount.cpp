@@ -21,10 +21,11 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <iomanip>
 
 #include "V3Ast.h"
 #include "V3InstrCount.h"
+
+#include <iomanip>
 
 /// Estimate the instruction cost for executing all logic within and below
 /// a given AST node. Note this estimates the number of instructions we'll

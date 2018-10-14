@@ -24,6 +24,7 @@
 //=========================================================================
 
 #define _VERILATED_DPI_CPP_
+
 #include "verilatedos.h"
 #include "verilated_dpi.h"
 #include "verilated_imp.h"

@@ -28,15 +28,14 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdarg>
-#include <cstdio>
-#include <unistd.h>
-#include <vector>
 
 #include "V3Global.h"
 #include "V3Localize.h"
 #include "V3Stats.h"
 #include "V3Ast.h"
+
+#include <cstdarg>
+#include <vector>
 
 //######################################################################
 // Localize base class

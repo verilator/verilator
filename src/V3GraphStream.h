@@ -24,10 +24,11 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <set>
-#include VL_INCLUDE_UNORDERED_MAP
 
 #include "V3Graph.h"
+
+#include <set>
+#include VL_INCLUDE_UNORDERED_MAP
 
 //######################################################################
 // GraphStream

@@ -30,10 +30,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cstdarg>
-#include <cstdio>
-#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3Unroll.h"
@@ -41,6 +37,9 @@
 #include "V3Const.h"
 #include "V3Ast.h"
 #include "V3Simulate.h"
+
+#include <algorithm>
+#include <cstdarg>
 
 //######################################################################
 // Unroll state, as a visitor of each AstNode

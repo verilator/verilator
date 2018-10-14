@@ -26,10 +26,6 @@
 
 #include "verilatedos.h"
 
-#include <algorithm>
-#include <fstream>
-#include <unistd.h>
-
 #define _V3ERROR_NO_GLOBAL_ 1
 #include "V3Error.cpp"
 #include "V3String.cpp"
@@ -38,6 +34,9 @@
 
 #include "VlcOptions.h"
 #include "VlcTop.h"
+
+#include <algorithm>
+#include <fstream>
 
 //######################################################################
 // VlcOptions

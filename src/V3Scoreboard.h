@@ -30,9 +30,10 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <map>
 
 #include "V3Error.h"
+
+#include <map>
 #include VL_INCLUDE_UNORDERED_MAP
 #include VL_INCLUDE_UNORDERED_SET
 

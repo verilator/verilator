@@ -69,9 +69,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdarg>
-#include <cstdio>
-#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3Width.h"
@@ -79,6 +76,8 @@
 #include "V3Const.h"
 #include "V3String.h"
 #include "V3Task.h"
+
+#include <cstdarg>
 
 // More code; this file was getting too large; see actions there
 #define _V3WIDTH_CPP_

@@ -30,16 +30,14 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cstdarg>
-#include <cstdio>
-#include <list>
-#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3Premit.h"
 #include "V3Ast.h"
 
+#include <algorithm>
+#include <cstdarg>
+#include <list>
 
 //######################################################################
 // Structure for global state

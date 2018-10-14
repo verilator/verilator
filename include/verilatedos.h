@@ -202,11 +202,11 @@
 //=========================================================================
 // Basic integer types
 
-#ifdef VL_UINTS_DEFINED
-#elif defined(__CYGWIN__)
+#if defined(__CYGWIN__)
 
 # include <stdint.h>
 # include <sys/types.h>  // __WORDSIZE
+# include <unistd.h>  // ssize_t
 typedef unsigned char           uint8_t;	///< 8-bit unsigned type (backward compatibility)
 typedef unsigned short int      uint16_t;	///< 16-bit unsigned type (backward compatibility)
 typedef unsigned char           vluint8_t;	///< 8-bit unsigned type
@@ -249,10 +249,10 @@ typedef signed   __int32        ssize_t;        ///< signed size_t; returned fro
 
 #else // Linux or compliant Unix flavors, -m64
 
-# include <stdint.h>	// Linux and most flavors
-# include <unistd.h>	// Linux ssize_t
 # include <inttypes.h>	// Solaris
+# include <stdint.h>  // Linux and most flavors
 # include <sys/types.h>  // __WORDSIZE
+# include <unistd.h>  // ssize_t
 typedef uint8_t			vluint8_t;	///< 32-bit unsigned type
 typedef uint16_t		vluint16_t;	///< 32-bit unsigned type
 typedef int			vlsint32_t;	///< 32-bit signed type

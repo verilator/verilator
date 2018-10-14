@@ -20,13 +20,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cstdarg>
-#include <cstdio>
-#include <iostream>
-#include <list>
-#include <set>
-#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3PreShell.h"
@@ -34,6 +27,12 @@
 #include "V3File.h"
 #include "V3Parse.h"
 #include "V3Os.h"
+
+#include <algorithm>
+#include <cstdarg>
+#include <iostream>
+#include <list>
+#include <set>
 
 //######################################################################
 

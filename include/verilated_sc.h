@@ -28,6 +28,7 @@
 #define _VERILATED_SC_H_ 1 ///< Header Guard
 
 #include "verilatedos.h"
+
 #include "systemc.h"
 
 //=============================================================================

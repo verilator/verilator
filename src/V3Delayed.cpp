@@ -53,17 +53,16 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cstdarg>
-#include <cstdio>
-#include <deque>
-#include <map>
-#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3Delayed.h"
 #include "V3Ast.h"
 #include "V3Stats.h"
+
+#include <algorithm>
+#include <cstdarg>
+#include <deque>
+#include <map>
 
 //######################################################################
 // Delayed state, as a visitor of each AstNode

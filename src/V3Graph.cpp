@@ -20,17 +20,15 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cstdarg>
-#include <cstdio>
-#include <map>
-#include <memory>
-#include <unistd.h>
-#include <vector>
 
 #include "V3Global.h"
 #include "V3File.h"
 #include "V3Graph.h"
+
+#include <cstdarg>
+#include <map>
+#include <memory>
+#include <vector>
 
 int V3Graph::s_debug = 0;
 int V3Graph::debug() { return std::max(V3Error::debugDefault(), s_debug); }

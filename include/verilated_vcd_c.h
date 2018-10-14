@@ -26,9 +26,9 @@
 #include "verilatedos.h"
 #include "verilated.h"
 
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 
 class VerilatedVcd;
 class VerilatedVcdCallInfo;

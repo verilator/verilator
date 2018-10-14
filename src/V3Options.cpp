@@ -20,6 +20,15 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
+
+#include "V3Global.h"
+#include "V3String.h"
+#include "V3Os.h"
+#include "V3Options.h"
+#include "V3Error.h"
+#include "V3File.h"
+#include "V3PreShell.h"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifndef _WIN32
@@ -32,15 +41,6 @@
 #include <map>
 #include <memory>
 #include <set>
-#include <unistd.h>
-
-#include "V3Global.h"
-#include "V3String.h"
-#include "V3Os.h"
-#include "V3Options.h"
-#include "V3Error.h"
-#include "V3File.h"
-#include "V3PreShell.h"
 
 #include "config_rev.h"
 

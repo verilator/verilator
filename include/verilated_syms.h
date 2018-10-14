@@ -31,9 +31,10 @@
 #ifndef _VERILATED_SYMS_H_
 #define _VERILATED_SYMS_H_ 1 ///< Header Guard
 
+#include "verilatedos.h"
+#include "verilated_heavy.h"
 #include "verilated_sym_props.h"
 
-#include "verilated_heavy.h"
 #include <map>
 
 //======================================================================

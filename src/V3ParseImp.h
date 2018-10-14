@@ -20,13 +20,16 @@
 
 #ifndef _V3PARSEIMP_H_
 #define _V3PARSEIMP_H_ 1
+
 #include "config_build.h"
 #include "verilatedos.h"
+
 #include "V3Error.h"
 #include "V3FileLine.h"
 #include "V3Global.h"
 #include "V3Parse.h"
 #include "V3ParseSym.h"
+
 #include <deque>
 
 class V3Lexer;

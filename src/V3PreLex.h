@@ -25,11 +25,11 @@
 #ifndef _VPREPROCLEX_H_		// Guard
 #define _VPREPROCLEX_H_ 1
 
-#include <deque>
-#include <stack>
-
 #include "V3Error.h"
 #include "V3FileLine.h"
+
+#include <deque>
+#include <stack>
 
 //======================================================================
 

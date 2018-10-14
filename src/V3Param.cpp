@@ -50,12 +50,6 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdarg>
-#include <cstdio>
-#include <deque>
-#include <map>
-#include <unistd.h>
-#include <vector>
 
 #include "V3Global.h"
 #include "V3Param.h"
@@ -64,6 +58,11 @@
 #include "V3Const.h"
 #include "V3Width.h"
 #include "V3Unroll.h"
+
+#include <cstdarg>
+#include <deque>
+#include <map>
+#include <vector>
 
 //######################################################################
 // Param state, as a visitor of each AstNode

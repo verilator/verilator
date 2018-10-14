@@ -20,17 +20,16 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <algorithm>
-#include <vector>
-#include <map>
-#include <list>
 
 #include "V3Global.h"
 #include "V3GraphAlg.h"
 #include "V3GraphPathChecker.h"
+
+#include <cstdarg>
+#include <algorithm>
+#include <vector>
+#include <map>
+#include <list>
 
 //######################################################################
 //######################################################################

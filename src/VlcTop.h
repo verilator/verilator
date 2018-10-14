@@ -23,6 +23,7 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
+
 #include "VlcOptions.h"
 #include "VlcTest.h"
 #include "VlcPoint.h"

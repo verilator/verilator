@@ -20,17 +20,15 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdarg>
-#include <cstdio>
-#include <iomanip>
-#include <map>
-#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3Assert.h"
 #include "V3Ast.h"
 #include "V3GraphDfa.h"
 #include "V3Stats.h"
+
+#include <cstdarg>
+#include <iomanip>
 
 //######################################################################
 // Assert class functions

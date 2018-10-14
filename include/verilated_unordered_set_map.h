@@ -39,7 +39,6 @@
 #ifndef _V3_UNORDERED_SET_MAP_H_
 #define _V3_UNORDERED_SET_MAP_H_
 
-#include "verilated_config.h"
 #include "verilatedos.h"
 
 #include <list>

@@ -20,10 +20,14 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
+
+#include "V3Global.h"
+#include "V3String.h"
+#include "V3Os.h"
+
 #include <cerrno>
 #include <climits>
 #include <cstdarg>
-#include <cstdlib>
 #include <dirent.h>
 #include <fcntl.h>
 #include <iomanip>
@@ -31,15 +35,11 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <unistd.h>
 
 #if defined(WIN32) || defined(__MINGW32__)
 # include <direct.h>  // mkdir
 #endif
 
-#include "V3Global.h"
-#include "V3String.h"
-#include "V3Os.h"
 
 //######################################################################
 // Environment

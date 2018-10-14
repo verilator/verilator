@@ -29,16 +29,15 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cstdarg>
-#include <cstdio>
-#include <unistd.h>
-#include <vector>
 
 #include "V3Global.h"
 #include "V3String.h"
 #include "V3Undriven.h"
 #include "V3Ast.h"
+
+#include <algorithm>
+#include <cstdarg>
+#include <vector>
 
 //######################################################################
 // Class for every variable we may process

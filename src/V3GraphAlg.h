@@ -20,6 +20,7 @@
 
 #ifndef _V3GRAPHALG_H_
 #define _V3GRAPHALG_H_ 1
+
 #include "config_build.h"
 #include "verilatedos.h"
 

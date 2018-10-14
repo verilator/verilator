@@ -23,12 +23,12 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <string>
+
+#include "config_rev.h"
+
 #include <vector>
 #include <map>
 #include <set>
-
-#include "config_rev.h"
 
 //######################################################################
 // V3Options - Command line options

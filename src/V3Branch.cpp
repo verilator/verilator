@@ -29,14 +29,13 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdarg>
-#include <cstdio>
-#include <map>
-#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3Branch.h"
 #include "V3Ast.h"
+
+#include <cstdarg>
+#include <map>
 
 //######################################################################
 // Branch state, as a visitor of each AstNode

@@ -33,15 +33,14 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <algorithm>
-#include <cstdarg>
-#include <cstdio>
-#include <unistd.h>
 
 #include "V3Global.h"
 #include "V3Clock.h"
 #include "V3Ast.h"
 #include "V3EmitCBase.h"
+
+#include <algorithm>
+#include <cstdarg>
 
 //######################################################################
 // Clock state, as a visitor of each AstNode

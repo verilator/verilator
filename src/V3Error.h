@@ -20,16 +20,16 @@
 
 #ifndef _V3ERROR_H_
 #define _V3ERROR_H_ 1
+
 #include "config_build.h"
 #include "verilatedos.h"
-#include <string>
-#include <iostream>
-#include <sstream>
+
 #include <bitset>
+#include <cassert>
+#include <deque>
 #include <map>
 #include <set>
-#include <deque>
-#include <cassert>
+#include <sstream>
 
 //######################################################################
 

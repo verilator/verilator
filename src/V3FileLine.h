@@ -20,18 +20,18 @@
 
 #ifndef _V3FileLine_H_
 #define _V3FileLine_H_ 1
+
 #include "config_build.h"
 #include "verilatedos.h"
-#include <string>
-#include <iostream>
+
+#include "V3Error.h"
+#include "V3LangCode.h"
+
 #include <sstream>
 #include <bitset>
 #include <map>
 #include <set>
 #include <deque>
-
-#include "V3Error.h"
-#include "V3LangCode.h"
 
 //######################################################################
 

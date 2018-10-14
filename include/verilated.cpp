@@ -25,7 +25,9 @@
 
 #define _VERILATED_CPP_
 
+#include "verilatedos.h"
 #include "verilated_imp.h"
+
 #include "verilated_config.h"
 
 #include <cctype>

@@ -23,14 +23,13 @@
 
 #include "config_build.h"
 #include "verilatedos.h"
-#include <cstdio>
-#include <cstdarg>
-#include <unistd.h>
-#include <cmath>
 
 #include "V3Global.h"
 #include "V3File.h"
 #include "V3Ast.h"
+
+#include <cstdarg>
+#include <cmath>
 
 //######################################################################
 // Base Visitor class -- holds output file pointer
