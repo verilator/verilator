@@ -28,15 +28,14 @@
 #ifndef _VERILATED_H_
 #define _VERILATED_H_ 1 ///< Header Guard
 
-#include "verilated_config.h"
 #include "verilatedos.h"
 
 #include <cassert>
+#include <cmath>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <cmath>
 #ifdef VL_THREADED
 # include <atomic>
 # include <mutex>
@@ -448,8 +447,8 @@ public:
     static const char* commandArgsPlusMatch(const char* prefixp) VL_MT_SAFE;
 
     /// Produce name & version for (at least) VPI
-    static const char* productName() VL_PURE { return VERILATOR_PRODUCT; }
-    static const char* productVersion() VL_PURE { return VERILATOR_VERSION; }
+    static const char* productName() VL_PURE;
+    static const char* productVersion() VL_PURE;
 
     /// Convenience OS utilities
     static void mkdir(const char* dirname) VL_MT_UNSAFE;

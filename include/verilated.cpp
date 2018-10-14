@@ -24,7 +24,10 @@
 //=========================================================================
 
 #define _VERILATED_CPP_
+
 #include "verilated_imp.h"
+#include "verilated_config.h"
+
 #include <cctype>
 #include <sys/stat.h>  // mkdir
 
@@ -1719,6 +1722,13 @@ void Verilated::flushCall() VL_MT_SAFE {
     if (s_flushCb) (*s_flushCb)();
     fflush(stderr);
     fflush(stdout);
+}
+
+const char* Verilated::productName() VL_PURE {
+    return VERILATOR_PRODUCT;
+}
+const char* Verilated::productVersion() VL_PURE {
+    return VERILATOR_VERSION;
 }
 
 void Verilated::commandArgs(int argc, const char** argv) VL_MT_SAFE {
