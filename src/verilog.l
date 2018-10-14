@@ -65,7 +65,7 @@ void V3ParseImp::verilatorCmtLint(const char* textp, bool warnOff) {
     while (*sp && !isspace(*sp)) sp++;  while (*sp && isspace(*sp)) sp++;
     string msg = sp;
     string::size_type pos;
-    if ((pos=msg.find("*")) != string::npos) { msg.erase(pos); }
+    if ((pos = msg.find('*')) != string::npos) { msg.erase(pos); }
     if (!(PARSEP->fileline()->warnOff(msg, warnOff))) {
 	if (!PARSEP->optFuture(msg)) {
 	    yyerrorf("Unknown verilator lint message code: %s, in %s",msg.c_str(), textp);

@@ -409,7 +409,7 @@ private:
                 break;
             }
             // If foo.bar, and foo is an interface, then need to search again for foo
-            string::size_type pos = tryname.rfind(".");
+            string::size_type pos = tryname.rfind('.');
             if (pos == string::npos || pos==0) {
                 break;
             } else {

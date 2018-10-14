@@ -103,8 +103,8 @@ class V3FileDependImp {
     static string stripQuotes(const string& in) {
 	string pretty = in;
 	string::size_type pos;
-	while ((pos=pretty.find("\"")) != string::npos) pretty.replace(pos, 1, "_");
-	while ((pos=pretty.find("\n")) != string::npos) pretty.replace(pos, 1, "_");
+        while ((pos = pretty.find('\"')) != string::npos) pretty.replace(pos, 1, "_");
+        while ((pos = pretty.find('\n')) != string::npos) pretty.replace(pos, 1, "_");
 	return pretty;
     }
 public:

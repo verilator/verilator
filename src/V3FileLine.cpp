@@ -154,7 +154,7 @@ FileLine* FileLine::copyOrSameFileLine() {
 const string FileLine::filebasename() const {
     string name = filename();
     string::size_type pos;
-    if ((pos = name.rfind("/")) != string::npos) {
+    if ((pos = name.rfind('/')) != string::npos) {
 	name.erase(0,pos+1);
     }
     return name;
@@ -163,7 +163,7 @@ const string FileLine::filebasename() const {
 const string FileLine::filebasenameNoExt() const {
     string name = filebasename();
     string::size_type pos;
-    if ((pos = name.find(".")) != string::npos) {
+    if ((pos = name.find('.')) != string::npos) {
 	name = name.substr(0,pos);
     }
     return name;

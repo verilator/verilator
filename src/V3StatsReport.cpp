@@ -162,7 +162,7 @@ class StatsReport {
 		{
 		    string commaName = lastName;
 		    string::size_type pos;
-		    if ((pos=commaName.find(",")) != string::npos) {
+                    if ((pos = commaName.find(',')) != string::npos) {
 			commaName.erase(pos);
 		    }
 		    if (lastCommaName != commaName) {

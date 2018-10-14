@@ -421,11 +421,11 @@ void V3PreProcImp::comment(const string& text) {
 
     string cmd (cp, ep-cp);
     string::size_type pos;
-    while ((pos=cmd.find("\"")) != string::npos)
+    while ((pos = cmd.find('\"')) != string::npos)
 	cmd.replace(pos, 1, " ");
-    while ((pos=cmd.find("\t")) != string::npos)
+    while ((pos = cmd.find('\t')) != string::npos)
 	cmd.replace(pos, 1, " ");
-    while ((pos=cmd.find("  ")) != string::npos)
+    while ((pos = cmd.find("  ")) != string::npos)
 	cmd.replace(pos, 2, " ");
 
     if (synth) {
@@ -853,8 +853,8 @@ void V3PreProcImp::debugToken(int tok, const char* cmtp) {
     if (debug()>=5) {
         string buf = string(yyourtext(), yyourleng());
 	string::size_type pos;
-	while ((pos=buf.find("\n")) != string::npos) { buf.replace(pos, 1, "\\n"); }
-	while ((pos=buf.find("\r")) != string::npos) { buf.replace(pos, 1, "\\r"); }
+        while ((pos = buf.find('\n')) != string::npos) { buf.replace(pos, 1, "\\n"); }
+        while ((pos = buf.find('\r')) != string::npos) { buf.replace(pos, 1, "\\r"); }
         fprintf(stderr, "%d: %s %s %s(%d) dr%d:  <%d>%-10s: %s\n",
                 m_lexp->m_tokFilelinep->lineno(), cmtp, m_off?"of":"on",
                 procStateName(state()), (int)m_states.size(), (int)m_defRefs.size(),
@@ -1214,7 +1214,7 @@ int V3PreProcImp::getStateToken() {
 		// Convert any newlines to spaces, so we don't get a multiline "..." without \ escapes
 		// The spec is silent about this either way; simulators vary
 		string::size_type pos;
-		while ((pos=out.find("\n")) != string::npos) {
+                while ((pos=out.find('\n')) != string::npos) {
 		    out.replace(pos, 1, " ");
 		}
                 unputString(string("\"")+out+"\"");

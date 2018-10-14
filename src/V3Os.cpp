@@ -79,7 +79,7 @@ string V3Os::filenameFromDirBase(const string& dir, const string& basename) {
 
 string V3Os::filenameDir(const string& filename) {
     string::size_type pos;
-    if ((pos = filename.rfind("/")) != string::npos) {
+    if ((pos = filename.rfind('/')) != string::npos) {
 	return filename.substr(0,pos);
     } else {
 	return ".";
@@ -88,7 +88,7 @@ string V3Os::filenameDir(const string& filename) {
 
 string V3Os::filenameNonDir(const string& filename) {
     string::size_type pos;
-    if ((pos = filename.rfind("/")) != string::npos) {
+    if ((pos = filename.rfind('/')) != string::npos) {
 	return filename.substr(pos+1);
     } else {
 	return filename;
@@ -98,7 +98,7 @@ string V3Os::filenameNonDir(const string& filename) {
 string V3Os::filenameNonExt(const string& filename) {
     string base = filenameNonDir(filename);
     string::size_type pos;
-    if ((pos = base.find(".")) != string::npos) {
+    if ((pos = base.find('.')) != string::npos) {
 	base.erase(pos);
     }
     return base;

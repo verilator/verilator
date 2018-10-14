@@ -144,7 +144,7 @@ class EmitCSyms : EmitCBaseVisitor {
 			}
 			if (out.substr(0,10) == "TOP__DOT__") out.replace(0,10,"");
 			if (out.substr(0,4) == "TOP.") out.replace(0,4,"");
-			while ((pos=out.find(".")) != string::npos) {
+                        while ((pos = out.find('.')) != string::npos) {
 			    out.replace(pos, 1, "__");
 			}
 			while ((pos=out.find("__DOT__")) != string::npos) {
@@ -409,7 +409,7 @@ void EmitCSyms::emitSymImp() {
 	if (!modp->isTop()) {
 	    string arrow = scopep->name();
 	    string::size_type pos;
-	    while ((pos=arrow.find(".")) != string::npos) {
+            while ((pos = arrow.find('.')) != string::npos) {
 		arrow.replace(pos, 1, "->");
 	    }
 	    if (arrow.substr(0,5) == "TOP->") arrow.replace(0,5,"TOPp->");

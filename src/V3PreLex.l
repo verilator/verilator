@@ -532,8 +532,8 @@ void V3PreLex::dumpStack() {
 string V3PreLex::cleanDbgStrg(const string& in) {
     string out = in;
     string::size_type pos;
-    while ((pos=out.find("\n")) != string::npos) { out.replace(pos, 1, "\\n"); }
-    while ((pos=out.find("\r")) != string::npos) { out.replace(pos, 1, "\\r"); }
+    while ((pos = out.find('\n')) != string::npos) { out.replace(pos, 1, "\\n"); }
+    while ((pos = out.find('\r')) != string::npos) { out.replace(pos, 1, "\\r"); }
     return out;
 }
 

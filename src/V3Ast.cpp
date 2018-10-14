@@ -158,7 +158,7 @@ string AstNode::vcdName(const string& namein) {
     while ((pos=pretty.find("__DOT__")) != string::npos) {
 	pretty.replace(pos, 7, " ");
     }
-    while ((pos=pretty.find(".")) != string::npos) {
+    while ((pos = pretty.find('.')) != string::npos) {
 	pretty.replace(pos, 1, " ");
     }
     // Now convert escaped special characters, etc

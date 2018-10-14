@@ -182,7 +182,7 @@ void VerilatedVcd::openNext(bool incFilename) {
     if (incFilename) {
         // Find _0000.{ext} in filename
         std::string name = m_filename;
-        size_t pos=name.rfind(".");
+        size_t pos = name.rfind('.');
         if (pos>8 && 0==strncmp("_cat",name.c_str()+pos-8,4)
             && isdigit(name.c_str()[pos-4])
             && isdigit(name.c_str()[pos-3])

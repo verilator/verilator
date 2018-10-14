@@ -586,7 +586,7 @@ void AstScope::cloneRelink() {
 string AstScope::nameDotless() const {
     string out = shortName();
     string::size_type pos;
-    while ((pos=out.find(".")) != string::npos) {
+    while ((pos = out.find('.')) != string::npos) {
 	out.replace(pos, 1, "__");
     }
     return out;
@@ -613,7 +613,7 @@ string AstScopeName::scopeNameFormatter(AstText* scopeTextp) const {
     if (out.substr(0,7) == "__DOT__") out.replace(0,7,"");
     if (out.substr(0,1) == ".") out.replace(0,1,"");
     string::size_type pos;
-    while ((pos=out.find(".")) != string::npos) {
+    while ((pos = out.find('.')) != string::npos) {
 	out.replace(pos, 1, "__");
     }
     while ((pos=out.find("__DOT__")) != string::npos) {
@@ -1159,7 +1159,7 @@ void AstNodeText::dump(std::ostream& str) {
     this->AstNode::dump(str);
     string out = text();
     string::size_type pos;
-    if ((pos = out.find("\n")) != string::npos) {
+    if ((pos = out.find('\n')) != string::npos) {
 	out.erase(pos,out.length()-pos);
 	out += "...";
     }

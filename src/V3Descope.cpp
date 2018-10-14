@@ -126,7 +126,7 @@ private:
             // Reference to scope of cell directly under this module, can just "cell->"
             string name = scopep->name();
             string::size_type pos;
-            if ((pos = name.rfind(".")) != string::npos) {
+            if ((pos = name.rfind('.')) != string::npos) {
                 name.erase(0,pos+1);
             }
             m_needThis = true;

@@ -2021,7 +2021,7 @@ private:
 	    }
 	}
 	if (!nodep->exprsp()
-	    && nodep->name().find("%") == string::npos
+            && nodep->name().find('%') == string::npos
 	    && !nodep->hidden()) {
 	    // Just a simple constant string - the formatting is pointless
 	    replaceConstString(nodep, nodep->name()); VL_DANGLING(nodep);

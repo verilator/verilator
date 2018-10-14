@@ -476,7 +476,7 @@ public:
 	while (leftname != "") {  // foreach dotted part of xref name
 	    string::size_type pos;
 	    string ident;
-	    if ((pos = leftname.find(".")) != string::npos) {
+            if ((pos = leftname.find('.')) != string::npos) {
 		ident = leftname.substr(0,pos);
 		leftname = leftname.substr(pos+1);
 	    } else {
@@ -611,8 +611,8 @@ class LinkDotFindVisitor : public AstNVisitor {
             string v = literal.substr(1, literal.find('"', 1) - 1);
             V3Number n(V3Number::VerilogStringLiteral(), fl, v);
             return new AstConst(fl,n);
-        } else if ((literal.find(".") != string::npos)
-		   || (literal.find("e") != string::npos)) {
+        } else if ((literal.find('.') != string::npos)
+                   || (literal.find('e') != string::npos)) {
 	    // This may be a real
             double v = V3ParseImp::parseDouble(literal.c_str(), literal.length(), &success);
             if (success) {
@@ -750,7 +750,7 @@ class LinkDotFindVisitor : public AstNVisitor {
 	VSymEnt* aboveSymp = m_curSymp;
 	string origname = AstNode::dedotName(nodep->name());
 	string::size_type pos;
-	if ((pos = origname.rfind(".")) != string::npos) {
+        if ((pos = origname.rfind('.')) != string::npos) {
 	    // Flattened, find what CellInline it should live under
 	    string scope = origname.substr(0,pos);
 	    string baddot;

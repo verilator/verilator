@@ -116,14 +116,14 @@ void V3Options::addDefine(const string& defline, bool allowPlus) {
     while (left != "") {
 	string def = left;
 	string::size_type pos;
-	if (allowPlus && ((pos=left.find("+")) != string::npos)) {
+        if (allowPlus && ((pos = left.find('+')) != string::npos)) {
 	    left = left.substr(pos+1);
 	    def.erase(pos);
 	} else {
 	    left = "";
 	}
 	string value;
-	if ((pos=def.find("=")) != string::npos) {
+        if ((pos = def.find('=')) != string::npos) {
 	    value = def.substr(pos+1);
 	    def.erase(pos);
 	}
@@ -138,14 +138,14 @@ void V3Options::addParameter(const string& paramline, bool allowPlus) {
     while (left != "") {
         string param = left;
         string::size_type pos;
-        if (allowPlus && ((pos=left.find("+")) != string::npos)) {
+        if (allowPlus && ((pos = left.find('+')) != string::npos)) {
             left = left.substr(pos+1);
             param.erase(pos);
         } else {
             left = "";
         }
         string value;
-        if ((pos=param.find("=")) != string::npos) {
+        if ((pos = param.find('=')) != string::npos) {
             value = param.substr(pos+1);
             param.erase(pos);
         }
@@ -396,7 +396,7 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
 V3LangCode V3Options::fileLanguage(const string &filename) {
     string ext = V3Os::filenameNonDir(filename);
     string::size_type pos;
-    if ((pos = ext.rfind(".")) != string::npos) {
+    if ((pos = ext.rfind('.')) != string::npos) {
 	ext.erase(0, pos + 1);
         std::map<string,V3LangCode>::iterator it = m_impp->m_langExts.find(ext);
 	if (it != m_impp->m_langExts.end()) {
@@ -620,7 +620,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( !strncmp (sw, "+libext+", 8)) {
 		string exts = string(sw+strlen("+libext+"));
 		string::size_type pos;
-		while ((pos=exts.find("+")) != string::npos) {
+                while ((pos = exts.find('+')) != string::npos) {
                     addLibExtV(exts.substr(0,pos));
 		    exts = exts.substr(pos+1);
 		}
@@ -1139,7 +1139,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     // Split into argument list and process
     // Note we don't respect quotes.  It seems most simulators dont.
     // Woez those that expect it; we'll at least complain.
-    if (whole_file.find("\"") != string::npos) {
+    if (whole_file.find('\"') != string::npos) {
 	fl->v3error("Double quotes in -f files cause unspecified behavior.");
     }
 
