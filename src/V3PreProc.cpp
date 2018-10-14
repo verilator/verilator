@@ -999,7 +999,7 @@ int V3PreProcImp::getStateToken() {
 		break;
 	    }
 	    else {
-		error((string)"Expecting define name. Found: "+tokenName(tok)+"\n");
+                error(string("Expecting define name. Found: ")+tokenName(tok)+"\n");
 		goto next_tok;
 	    }
 	}
@@ -1015,7 +1015,7 @@ int V3PreProcImp::getStateToken() {
 		if (!m_off) return tok;
 		else goto next_tok;
 	    } else {
-		error((string)"Expecting define formal arguments. Found: "+tokenName(tok)+"\n");
+                error(string("Expecting define formal arguments. Found: ")+tokenName(tok)+"\n");
 		goto next_tok;
 	    }
 	}
@@ -1068,7 +1068,7 @@ int V3PreProcImp::getStateToken() {
 	    } else {
 		if (m_defRefs.empty()) fatalSrc("Shouldn't be in DEFPAREN w/o active defref");
 		V3DefineRef* refp = &(m_defRefs.top());
-		error((string)"Expecting ( to begin argument list for define reference `"+refp->name()+"\n");
+                error(string("Expecting ( to begin argument list for define reference `")+refp->name()+"\n");
 		statePop();
 		goto next_tok;
 	    }
@@ -1132,7 +1132,7 @@ int V3PreProcImp::getStateToken() {
                 statePush(ps_STRIFY);
                 goto next_tok;
 	    } else {
-		error((string)"Expecting ) or , to end argument list for define reference. Found: "+tokenName(tok));
+                error(string("Expecting ) or , to end argument list for define reference. Found: ")+tokenName(tok));
 		statePop();
 		goto next_tok;
 	    }
@@ -1161,7 +1161,7 @@ int V3PreProcImp::getStateToken() {
 	    }
 	    else {
 		statePop();
-		error((string)"Expecting include filename. Found: "+tokenName(tok)+"\n");
+                error(string("Expecting include filename. Found: ")+tokenName(tok)+"\n");
 		goto next_tok;
 	    }
 	}
@@ -1175,7 +1175,7 @@ int V3PreProcImp::getStateToken() {
 		goto next_tok;
 	    }
 	    else {
-		error((string)"Expecting `error string. Found: "+tokenName(tok)+"\n");
+                error(string("Expecting `error string. Found: ")+tokenName(tok)+"\n");
 		statePop();
 		goto next_tok;
 	    }
@@ -1217,7 +1217,7 @@ int V3PreProcImp::getStateToken() {
 		while ((pos=out.find("\n")) != string::npos) {
 		    out.replace(pos, 1, " ");
 		}
-		unputString((string)"\""+out+"\"");
+                unputString(string("\"")+out+"\"");
 		statePop();
 		goto next_tok;
 	    }
@@ -1386,7 +1386,7 @@ int V3PreProcImp::getStateToken() {
 	case VP_DEFFORM:	// Handled by state=ps_DEFFORM;
 	case VP_DEFVALUE:	// Handled by state=ps_DEFVALUE;
 	default:
-	    fatalSrc((string)"Internal error: Unexpected token "+tokenName(tok)+"\n");
+            fatalSrc(string("Internal error: Unexpected token ")+tokenName(tok)+"\n");
 	    break;
 	}
 	return tok;

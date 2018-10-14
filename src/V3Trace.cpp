@@ -93,7 +93,7 @@ public:
     }
     virtual string name() const {
 	if (activityAlways()) return "*ALWAYS*";
-	else return ((string)(slow()?"*SLOW* ":""))+insertp()->name();
+        else return (string(slow()?"*SLOW* ":""))+insertp()->name();
     }
     virtual string dotColor() const { return slow()?"yellowGreen":"green"; }
     bool activityCodeValid() const { return m_activityCodeValid; }

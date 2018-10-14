@@ -57,13 +57,13 @@ private:
     void rename(AstNode* nodep, bool addPvt) {
 	if (!nodep->user1()) {  // Not already done
 	    if (addPvt) {
-		string newname = (string)"__PVT__"+nodep->name();
+                string newname = string("__PVT__")+nodep->name();
 		nodep->name(newname);
 	    } else {
 		string rsvd = m_words.isKeyword(nodep->name());
 		if (rsvd != "") {
 		    nodep->v3warn(SYMRSVDWORD,"Symbol matches "+rsvd+": '"<<nodep->prettyName()<<"'");
-		    string newname = (string)"__SYM__"+nodep->name();
+                    string newname = string("__SYM__")+nodep->name();
 		    nodep->name(newname);
 		}
 	    }

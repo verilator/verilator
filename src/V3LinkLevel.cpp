@@ -91,7 +91,7 @@ void V3LinkLevel::wrapTop(AstNetlist* netlistp) {
     // We do ONLY the top module
     AstNodeModule* oldmodp = netlistp->modulesp();
     if (!oldmodp) netlistp->v3fatalSrc("No module found to process");
-    AstNodeModule* newmodp = new AstModule(oldmodp->fileline(), (string)"TOP_"+oldmodp->name());
+    AstNodeModule* newmodp = new AstModule(oldmodp->fileline(), string("TOP_")+oldmodp->name());
     // Make the new module first in the list
     oldmodp->unlinkFrBackWithNext();
     newmodp->addNext(oldmodp);

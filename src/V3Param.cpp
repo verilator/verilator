@@ -165,7 +165,7 @@ private:
 	    int num = bucket + offset * BUCKETS;
 	    m_valueMap.insert(make_pair(nodep, num));
 	    // 'z' just to make sure we don't collide with a normal non-hashed number
-	    return (string)"z"+cvtToStr(num);
+            return string("z")+cvtToStr(num);
 	}
     }
     void collectPins(CloneMap* clonemapp, AstNodeModule* modp) {

@@ -299,7 +299,7 @@ void EmitCSyms::emitSymHdr() {
     }
 
     puts("\n// SYMS CLASS\n");
-    puts((string)"class "+symClassName()+" : public VerilatedSyms {\n");
+    puts(string("class ")+symClassName()+" : public VerilatedSyms {\n");
     ofp()->putsPrivate(false);  // public:
 
     puts("\n// LOCAL STATE\n");
@@ -340,7 +340,7 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n// CREATORS\n");
     puts(symClassName()+"("+topClassName()+"* topp, const char* namep);\n");
-    puts((string)"~"+symClassName()+"() {}\n");
+    puts(string("~")+symClassName()+"() {}\n");
 
     puts("\n// METHODS\n");
     puts("inline const char* name() { return __Vm_namep; }\n");

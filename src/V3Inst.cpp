@@ -513,7 +513,7 @@ public:
 	    // Make a new temp wire
 	    //if (1||debug()>=9) { pinp->dumpTree(cout,"-in_pin:"); }
 	    AstNode* pinexprp = pinp->exprp()->unlinkFrBack();
-	    string newvarname = ((string)(pinVarp->isOutput() ? "__Vcellout" : "__Vcellinp")
+            string newvarname = (string(pinVarp->isOutput() ? "__Vcellout" : "__Vcellinp")
 				 +(forTristate?"t":"")  // Prevent name conflict if both tri & non-tri add signals
 				 +"__"+cellp->name()+"__"+pinp->name());
             AstVar* newvarp = new AstVar(pinVarp->fileline(), AstVarType::MODULETEMP, newvarname, pinVarp);

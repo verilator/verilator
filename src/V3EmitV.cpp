@@ -194,7 +194,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	putqs(nodep,"end\n");
     }
     virtual void visit(AstComment* nodep) {
-	puts((string)"// "+nodep->name()+"\n");
+        puts(string("// ")+nodep->name()+"\n");
         iterateChildren(nodep);
     }
     virtual void visit(AstContinue* nodep) {
@@ -595,7 +595,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     virtual void visit(AstCell*) {}		// Handled outside the Visit class
     // Default
     virtual void visit(AstNode* nodep) {
-	puts((string)"\n???? // "+nodep->prettyTypeName()+"\n");
+        puts(string("\n???? // ")+nodep->prettyTypeName()+"\n");
         iterateChildren(nodep);
 	// Not v3fatalSrc so we keep processing
 	nodep->v3error("Internal: Unknown node type reached emitter: "<<nodep->prettyTypeName());

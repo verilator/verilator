@@ -119,7 +119,7 @@ private:
 	    replaceHandle.relink(newp);
 	}
 	else {
-	    string name = ((string)"__Vlvbound"+cvtToStr(m_modp->varNumGetInc()));
+            string name = (string("__Vlvbound")+cvtToStr(m_modp->varNumGetInc()));
 	    AstVar* varp = new AstVar(fl, AstVarType::MODULETEMP, name,
 				      prep->dtypep());
 	    m_modp->addStmtp(varp);
@@ -287,7 +287,7 @@ private:
 		// Make a Vxrand variable
 		// We use the special XTEMP type so it doesn't break pure functions
 		if (!m_modp) nodep->v3fatalSrc("X number not under module");
-		string newvarname = ((string)"__Vxrand"
+                string newvarname = (string("__Vxrand")
 				     +cvtToStr(m_modp->varNumGetInc()));
 		AstVar* newvarp
                     = new AstVar(nodep->fileline(), AstVarType::XTEMP, newvarname,

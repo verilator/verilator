@@ -99,7 +99,7 @@ FileLine::FileLine(FileLine::EmptySecret) {
 string FileLine::lineDirectiveStrg(int enterExit) const {
     char numbuf[20]; sprintf(numbuf, "%d", lineno());
     char levelbuf[20]; sprintf(levelbuf, "%d", enterExit);
-    return ((string)"`line "+numbuf+" \""+filename()+"\" "+levelbuf+"\n");
+    return (string("`line ")+numbuf+" \""+filename()+"\" "+levelbuf+"\n");
 }
 
 void FileLine::lineDirective(const char* textp, int& enterExitRef) {

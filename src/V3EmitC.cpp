@@ -233,7 +233,7 @@ public:
 	nodep->v3fatalSrc("Case statements should have been reduced out");
     }
     virtual void visit(AstComment* nodep) {
-	putsDecoration((string)"// "+nodep->name()+" at "+nodep->fileline()->ascii()+"\n");
+        putsDecoration(string("// ")+nodep->name()+" at "+nodep->fileline()->ascii()+"\n");
         iterateChildren(nodep);
     }
     virtual void visit(AstCoverDecl* nodep) {
@@ -776,7 +776,7 @@ public:
     virtual void visit(AstCFile*) {}		// Handled outside the Visit class
     // Default
     virtual void visit(AstNode* nodep) {
-	puts((string)"\n???? // "+nodep->prettyTypeName()+"\n");
+        puts(string("\n???? // ")+nodep->prettyTypeName()+"\n");
         iterateChildren(nodep);
 	nodep->v3fatalSrc("Unknown node type reached emitter: "<<nodep->prettyTypeName());
     }

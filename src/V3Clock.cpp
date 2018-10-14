@@ -75,7 +75,7 @@ private:
 	if (vscp->user1p()) return ((AstVarScope*)vscp->user1p());
 	AstVar* varp = vscp->varp();
 	if (!varp->width1()) varp->v3error("Unsupported: Clock edge on non-single bit signal: "<<varp->prettyName());
-	string newvarname = ((string)"__Vclklast__"+vscp->scopep()->nameDotless()+"__"+varp->name());
+        string newvarname = (string("__Vclklast__")+vscp->scopep()->nameDotless()+"__"+varp->name());
         AstVar* newvarp = new AstVar(vscp->fileline(), AstVarType::MODULETEMP, newvarname, VFlagLogicPacked(), 1);
         newvarp->noReset(true);  // Reset by below assign
 	m_modp->addStmtp(newvarp);

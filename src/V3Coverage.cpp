@@ -162,7 +162,7 @@ private:
 		//	We'll do this, and make the if(...) coverinc later.
 
 		// Add signal to hold the old value
-		string newvarname = (string)"__Vtogcov__"+nodep->shortName();
+                string newvarname = string("__Vtogcov__")+nodep->shortName();
                 AstVar* chgVarp = new AstVar(nodep->fileline(), AstVarType::MODULETEMP, newvarname, nodep);
 		chgVarp->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);
 		m_modp->addStmtp(chgVarp);

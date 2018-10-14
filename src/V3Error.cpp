@@ -130,8 +130,8 @@ string V3Error::msgPrefix() {
     else if (code==V3ErrorCode::EC_FATAL) return "%Error: ";
     else if (code==V3ErrorCode::EC_FATALSRC) return "%Error: Internal Error: ";
     else if (code==V3ErrorCode::EC_ERROR) return "%Error: ";
-    else if (isError(code, supp)) return "%Error-"+(string)code.ascii()+": ";
-    else return "%Warning-"+(string)code.ascii()+": ";
+    else if (isError(code, supp)) return "%Error-"+string(code.ascii())+": ";
+    else return "%Warning-"+string(code.ascii())+": ";
 }
 
 //======================================================================

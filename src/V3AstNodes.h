@@ -1405,7 +1405,7 @@ public:
     virtual string name()	const { return m_name; }		// * = Scope name
     virtual void name(const string& name) { m_name = name; }
     string nameDotless() const;
-    string nameVlSym() const { return (((string)"vlSymsp->") + nameDotless()); }
+    string nameVlSym() const { return ((string("vlSymsp->")) + nameDotless()); }
     AstNodeModule* modp()		const { return m_modp; }
     void addVarp(AstNode* nodep) { addOp1p(nodep); }
     AstNode* varsp()		const { return op1p(); }	// op1 = AstVarScope's
@@ -2585,8 +2585,8 @@ public:
     ASTNODE_NODE_FUNCS(Display)
     virtual void dump(std::ostream& str);
     virtual const char* broken() const { BROKEN_RTN(!fmtp()); return NULL; }
-    virtual string verilogKwd() const { return (filep() ? (string)"$f"+(string)displayType().ascii()
-						: (string)"$"+(string)displayType().ascii()); }
+    virtual string verilogKwd() const { return (filep() ? string("$f")+string(displayType().ascii())
+                                                : string("$")+string(displayType().ascii())); }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual bool isPure() const { return false; }	// SPECIAL: $display has 'visual' ordering
