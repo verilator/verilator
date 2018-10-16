@@ -43,6 +43,7 @@
 #include "V3DepthBlock.h"
 #include "V3Descope.h"
 #include "V3EmitC.h"
+#include "V3EmitCMake.h"
 #include "V3EmitMk.h"
 #include "V3EmitV.h"
 #include "V3EmitXml.h"
@@ -565,7 +566,11 @@ void process() {
         && !v3Global.opt.xmlOnly()
         && !v3Global.opt.dpiHdrOnly()) {
         // Makefile must be after all other emitters
-        V3EmitMk::emitmk(v3Global.rootp());
+        if (v3Global.opt.cmake()) {
+            V3EmitCMake::emit(v3Global.rootp());
+        } else {
+            V3EmitMk::emitmk(v3Global.rootp());
+        }
     }
 
     // Note early return above when opt.cdc()

@@ -29,6 +29,7 @@
 #include <stack>
 #include <set>
 #include <list>
+#include <vector>
 #include <fstream>
 
 //============================================================================
@@ -65,6 +66,7 @@ public:
     static void addSrcDepend(const string& filename);
     static void addTgtDepend(const string& filename);
     static void writeDepend(const string& filename);
+    static std::vector<string> getAllDeps();
     static void writeTimes(const string& filename, const string& cmdlineIn);
     static bool checkTimes(const string& filename, const string& cmdlineIn);
 

@@ -704,6 +704,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-bbox-unsup", flag/*ref*/))   { m_bboxUnsup = flag; }
             else if (!strcmp(sw, "-cc"))                        { m_outFormatOk = true; m_systemC = false; }
             else if ( onoff (sw, "-cdc", flag/*ref*/))          { m_cdc = flag; }
+            else if ( onoff (sw, "-cmake", flag/*ref*/) )       { m_cmake = flag; }
             else if ( onoff (sw, "-coverage", flag/*ref*/))     { coverage(flag); }
             else if ( onoff (sw, "-coverage-line", flag/*ref*/)){ m_coverageLine = flag; }
             else if ( onoff (sw, "-coverage-toggle", flag/*ref*/)){ m_coverageToggle = flag; }
@@ -1323,6 +1324,7 @@ V3Options::V3Options() {
     m_bboxSys = false;
     m_bboxUnsup = false;
     m_cdc = false;
+    m_cmake = false;
     m_coverageLine = false;
     m_coverageToggle = false;
     m_coverageUnderscore = false;

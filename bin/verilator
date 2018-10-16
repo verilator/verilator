@@ -283,6 +283,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --cc                        Create C++ output
     --cdc                       Clock domain crossing analysis
     --clk <signal-name>         Mark specified signal as clock
+    --cmake                     Generate CMake file list instead of MakeFile
     --compiler <compiler-name>  Tune for specified C++ compiler
     --converge-limit <loops>    Tune convergence settle time
     --coverage                  Enable all coverage
@@ -573,6 +574,10 @@ RTL file to mark the signal directly.
 If clock signals are assigned to vectors and then later used individually,
 Verilator will attempt to decompose the vector and connect the single-bit
 clock signals directly.  This should be transparent to the user.
+
+=item --cmake
+
+Generates a listfile for CMake instead of a Makefile. See CMake below.
 
 =item --compiler I<compiler-name>
 
@@ -2405,6 +2410,97 @@ configure.
 The target system may also require edits to the Makefiles, the simple
 Makefiles produced by Verilator presume the target system is the same type
 as the build system.
+
+=head2 CMake
+
+Verilator can be run using CMake, which takes care of both running verilator and
+compiling the output. There is a CMake example in the examples/ directory. The
+following is a minimal CMakeLists.txt:
+
+    project(cmake_example)
+    find_package(verilator HINTS $ENV{VERILATOR_ROOT})
+    add_executable(example main.cpp)
+    verilate(example SOURCES top.v)
+
+find_package will automatically find an installed copy of verilator, or use a
+local build if VERILATOR_ROOT is set.
+
+It is recommended to use CMake >= 3.12 and the Ninja generator, though other
+combinations should work. If you use the Makefile generator you may need to run
+'make' twice after configuration to get a successful build due to limitations of
+the POSIX Makefiles CMake generates. To build with CMake, change to the folder
+containing CMakeLists.txt and run:
+
+    mkdir build
+    cd build
+    cmake -GNinja ..
+    ninja
+
+Or to build with your system default generator:
+
+    mkdir build
+    cd build
+    cmake ..
+    cmake --build .
+
+The package sets the CMake variables verilator_FOUND, VERILATOR_ROOT and
+VERILATOR_BIN to the appropriate values, and also creates a verilate() function.
+verilate() will automatically create custom commands to run verilator and add
+the resulting C++ sources to the target specified.
+
+    verilate(target TRACE SYSTEMC NAME name TOP top SOURCES ... ARGS ...
+             INCLUDEDIRS ... SLOW_FLAGS ... FAST_FLAGS ...)
+
+Lowercase and ... should be replaced with arguments, the uppercase parts delimit
+the arguments and can be passed in any order, or left out entirely if optional.
+
+=over 4
+
+=item target
+
+Name of a target created by add_executable or add_library.
+
+=item TRACE
+
+Optional. Enables tracing if present, equivalent to "ARGS --trace ...".
+
+=item SYSTEMC
+
+Optional. Enables SystemC mode, defaults to C++ if not specified.
+
+=item NAME
+
+Optional. Sets the verilator output prefix. Defaults to "Vtop" for a verilog
+module called "top". Must be unique in each call to verilate(), so this is
+necessary if you build a module multiple times with different parameters.
+
+=item TOP
+
+Optional. Sets the name of the top module. Defaults to the name of the first
+file in the SOURCES array.
+
+=item SOURCES
+
+List of verilog files to verilate. Must have at least one file.
+
+=item ARGS
+
+Optional. Extra arguments to verilator.
+
+=item INCLUDEDIRS
+
+Optional. Sets directories that verilator searches (same as -y).
+
+=item SLOW_FLAGS
+
+Optional. Set compiler flags for the slow path. You may want to reduce the
+optimisation level to improve compile times with large designs.
+
+=item FAST_FLAGS
+
+Optional. Set compiler flags for the fast path.
+
+=back
 
 =head2 Cadence NC-SystemC Models
 

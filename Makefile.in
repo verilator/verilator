@@ -151,6 +151,7 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	src/*.pl src/*.pod \
 	examples/*/.*ignore examples/*/Makefile* \
 	examples/*/*.[chv]* examples/*/*.pl \
+	examples/*/CMakeLists.txt \
 	test_*/.*ignore test_*/Makefile* test_*/*.cpp \
 	test_*/*.pl test_*/*.v test_*/*.vc test_*/*.vh \
 	test_regress/t/t*/*.sv* \
@@ -302,6 +303,7 @@ VL_INST_INC_SRCDIR_FILES = \
 
 VL_INST_DATA_SRCDIR_FILES = \
 	examples/*/*.[chv]*  examples/*/Makefile* \
+	examples/*/CMakeLists.txt \
 
 installbin:
 	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
@@ -337,6 +339,7 @@ installdata:
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/make_hello_sc
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/make_tracing_c
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/make_tracing_sc
+	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/cmake_hello_c
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/make_protect_lib
 	cd $(srcdir) \
 	; for p in $(VL_INST_DATA_SRCDIR_FILES) ; do \
@@ -344,6 +347,7 @@ installdata:
 	done
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgconfigdir)
 	$(INSTALL_DATA) verilator.pc $(DESTDIR)$(pkgconfigdir)
+	$(INSTALL_DATA) verilator-config.cmake $(DESTDIR)$(pkgdatadir)
 
 # We don't trust rm -rf, so rmdir instead as it will fail if user put in other files
 uninstall:
@@ -354,6 +358,7 @@ uninstall:
 	-cd $(DESTDIR)$(pkgdatadir) && rm -f $(VL_INST_INC_SRCDIR_FILES)
 	-cd $(DESTDIR)$(pkgdatadir) && rm -f $(VL_INST_DATA_SRCDIR_FILES)
 	-rm $(DESTDIR)$(pkgconfigdir)/verilator.pc
+	-rm $(DESTDIR)$(pkgdatadir)/verilator-config.cmake
 	-rmdir $(DESTDIR)$(pkgdatadir)/bin
 	-rmdir $(DESTDIR)$(pkgdatadir)/include/gtkwave
 	-rmdir $(DESTDIR)$(pkgdatadir)/include/vltstd
@@ -362,6 +367,7 @@ uninstall:
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/make_hello_sc
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/make_tracing_c
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/make_tracing_sc
+	-rmdir $(DESTDIR)$(pkgdatadir)/examples/cmake_hello_c
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/make_protect_lib
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples
 	-rmdir $(DESTDIR)$(pkgdatadir)
