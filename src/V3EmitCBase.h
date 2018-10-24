@@ -58,7 +58,7 @@ public:
     static string topClassName() {		// Return name of top wrapper module
 	return v3Global.opt.prefix();
     }
-    AstCFile* newCFile(const string& filename, bool slow, bool source) {
+    static AstCFile* newCFile(const string& filename, bool slow, bool source) {
 	AstCFile* cfilep = new AstCFile(v3Global.rootp()->fileline(), filename);
 	cfilep->slow(slow);
 	cfilep->source(source);
