@@ -361,6 +361,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --public                    Debugging; see docs
     --public-flat-rw            Mark all variables, etc as public_flat_rw
      -pvalue+<name>=<value>     Overwrite toplevel parameter
+    --python                    Generate python bindings
     --quiet-exit                Don't print the command on failure
     --relative-includes         Resolve includes relative to current file
     --no-relative-cfuncs        Disallow 'this->' in generated functions
@@ -1245,6 +1246,13 @@ in combination with --vpi. This may also in some rare cases result in
 mis-simulation of generated clocks.  Instead of this global switch, marking
 only those signals that need public_flat_rw is typically significantly
 better performing.
+
+=item --python
+
+This generates a file wraps the toplevel module into a python module using
+pybind11 (https://github.com/pybind/pybind11). You will need to use CMake and
+write a small C++ file to make use of it. There is an example that could be used
+as a starting point in examples/python.
 
 =item -pvalue+I<name>=I<value>
 

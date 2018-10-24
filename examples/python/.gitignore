@@ -1,0 +1,5 @@
+build*
+__pycache__
+.pytest_cache
+pybind11
+test_example.vcd

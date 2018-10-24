@@ -140,6 +140,7 @@ class V3Options {
     bool        m_protectIds;   // main switch: --protect-ids
     bool        m_public;       // main switch: --public
     bool        m_publicFlatRW;  // main switch: --public-flat-rw
+    bool        m_python;       // main switch: --python
     bool        m_relativeCFuncs; // main switch: --relative-cfuncs
     bool        m_relativeIncludes; // main switch: --relative-includes
     bool        m_reportUnoptflat; // main switch: --report-unoptflat
@@ -320,6 +321,7 @@ class V3Options {
     bool profCFuncs() const { return m_profCFuncs; }
     bool profThreads() const { return m_profThreads; }
     bool protectIds() const { return m_protectIds; }
+    bool python() const { return m_python; }
     bool allPublic() const { return m_public; }
     bool publicFlatRW() const { return m_publicFlatRW; }
     bool lintOnly() const { return m_lintOnly; }
