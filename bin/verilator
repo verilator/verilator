@@ -289,6 +289,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --debugi-<srcfile> <level>  Enable debugging a source file at a level
     --default-language <lang>   Default language to parse
      +define+<var>=<value>      Set preprocessor define
+    --dump-defines              Show preprocessor defines with -E
     --dump-tree                 Enable dumping .tree files
     --dump-treei <level>        Enable dumping .tree files at a level
     --dump-treei-<srcfile> <level>  Enable dumping .tree file at a source file at a level
@@ -717,6 +718,15 @@ then the latest SystemVerilog language (IEEE 1800-2017) is used.
 Defines the given preprocessor symbol, or multiple symbols if separated by
 plusses.  Similar to -D; +define is fairly standard across Verilog tools
 while -D is an alias for GCC compatibility.
+
+=item --dump-defines
+
+With -E, suppress normal output, and instead print a list of all defines
+existing at the end of pre-processing the input files. Similar to GCC "-dM"
+option. This also gives you a way of finding out what is predefined in
+Verilator using the command:
+
+   touch foo.v ; verilator -E --dump-defines foo.v
 
 =item --dump-tree
 

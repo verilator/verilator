@@ -231,6 +231,7 @@ public:
     void insertUnreadback(const string& text) { m_lineCmt += text; }
     void insertUnreadbackAtBol(const string& text);
     void addLineComment(int enterExit);
+    void dumpDefines(std::ostream& os);
 
     // METHODS, callbacks
     virtual void comment(const string& text);  // Comment detected (if keepComments==2)
@@ -795,6 +796,16 @@ void V3PreProcImp::insertUnreadbackAtBol(const string& text) {
 void V3PreProcImp::addLineComment(int enterExit) {
     if (lineDirectives()) {
         insertUnreadbackAtBol(m_lexp->curFilelinep()->lineDirectiveStrg(enterExit));
+    }
+}
+
+void V3PreProcImp::dumpDefines(std::ostream& os) {
+    for (DefinesMap::iterator it = m_defines.begin(); it != m_defines.end(); ++it) {
+        os<<"`define "<<it->first;
+        // No need to print "()" below as already part of params()
+        if (!it->second.params().empty()) os<<it->second.params();
+        if (!it->second.value().empty()) os<<" "<<it->second.value();
+        os<<endl;
     }
 }
 

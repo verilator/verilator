@@ -244,6 +244,7 @@ private:
     void lexFile(const string& modname);
     int yylexReadTok();
     void lexToken(); // Internal; called from lexToBison
+    void preprocDumps(std::ostream& os);
 };
 
 #endif // Guard

@@ -89,6 +89,24 @@ size_t V3ParseImp::ppInputToLex(char* buf, size_t max_size) {
     return got;
 }
 
+void V3ParseImp::preprocDumps(std::ostream& os) {
+    if (v3Global.opt.dumpDefines()) {
+        V3PreShell::dumpDefines(os);
+    } else {
+        bool noblanks = v3Global.opt.preprocOnly() && v3Global.opt.preprocNoLine();
+        for (std::deque<string>::iterator it = m_ppBuffers.begin(); it!=m_ppBuffers.end(); ++it) {
+            if (noblanks) {
+                bool blank = true;
+                for (string::iterator its = it->begin(); its != it->end(); ++its) {
+                    if (!isspace(*its) && *its!='\n') { blank=false; break; }
+                }
+                if (blank) continue;
+            }
+            os << *it;
+        }
+    }
+}
+
 void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool inLibrary,
 			   const string& errmsg) {  // "" for no error, make fake node
     string modname = V3Os::filenameNonExt(modfilename);
@@ -123,7 +141,6 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
 	string vppfilename = v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"_"+modname+".vpp";
         std::ofstream* ofp = NULL;
         std::ostream* osp;
-	bool noblanks = v3Global.opt.preprocOnly() && v3Global.opt.preprocNoLine();
 	if (v3Global.opt.preprocOnly()) {
 	    osp = &cout;
 	} else {
@@ -133,16 +150,7 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
 	    fileline->v3error("Cannot write preprocessor output: "+vppfilename);
 	    return;
 	} else {
-            for (std::deque<string>::iterator it = m_ppBuffers.begin(); it!=m_ppBuffers.end(); ++it) {
-		if (noblanks) {
-		    bool blank = true;
-		    for (string::iterator its = it->begin(); its != it->end(); ++its) {
-			if (!isspace(*its) && *its!='\n') { blank=false; break; }
-		    }
-		    if (blank) continue;
-		}
-		*osp << *it;
-	    }
+            preprocDumps(*osp);
 	    if (ofp) {
 		ofp->close();
 		delete ofp; VL_DANGLING(ofp);

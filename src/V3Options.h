@@ -117,6 +117,7 @@ class V3Options {
     bool        m_debugPartition;  // main switch: --debug-partition
     bool        m_debugSelfTest;  // main switch: --debug-self-test
     bool	m_decoration;	// main switch: --decoration
+    bool        m_dumpDefines;  // main switch: --dump-defines
     bool	m_exe;		// main switch: --exe
     bool	m_ignc;		// main switch: --ignc
     bool	m_inhibitSim;	// main switch: --inhibit-sim
@@ -282,6 +283,7 @@ class V3Options {
     bool debugPartition() const { return m_debugPartition; }
     bool debugSelfTest() const { return m_debugSelfTest; }
     bool decoration() const { return m_decoration; }
+    bool dumpDefines() const { return m_dumpDefines; }
     bool exe() const { return m_exe; }
     bool threadsDpiPure() const { return m_threadsDpiPure; }
     bool threadsDpiUnpure() const { return m_threadsDpiUnpure; }

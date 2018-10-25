@@ -5,6 +5,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.005 devel
 
+**    Add --dump-defines.
+
 ***   For --trace-fst, save enum decoding information, bug1358. [Sergi Granell]
       (To visualize enumeration data you must use GTKwave 3.3.95 or newer.)
 

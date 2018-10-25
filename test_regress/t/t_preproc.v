@@ -650,3 +650,5 @@ predef `SV_COV_NOCOV 0
 predef `SV_COV_OK 1
 predef `SV_COV_PARTIAL 2
 //======================================================================
+// After `undefineall above, for testing --dump-defines
+`define WITH_ARG(a) (a)(a)

@@ -167,3 +167,6 @@ void V3PreShell::defineCmdLine(const string& name, const string& value) {
 void V3PreShell::undef(const string& name) {
     V3PreShellImp::s_preprocp->undef(name);
 }
+void V3PreShell::dumpDefines(std::ostream& os) {
+    V3PreShellImp::s_preprocp->dumpDefines(os);
+}

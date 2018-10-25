@@ -42,6 +42,7 @@ public:
     static string dependFiles() { return ""; }   // Perl only
     static void defineCmdLine(const string& name, const string& value);
     static void undef(const string& name);
+    static void dumpDefines(std::ostream& os);
 };
 
 #endif // Guard
