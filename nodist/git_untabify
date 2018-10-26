@@ -11,6 +11,7 @@ use strict;
 use vars qw ($Debug);
 
 our $VERSION = '0.001';
+our $Opt_Widen = 1;
 
 #======================================================================
 # main
@@ -22,7 +23,9 @@ if (! GetOptions (
           "debug"       => sub { $Debug = 1; },
           "help"        => sub { print "Version $VERSION\n";
                                  pod2usage(-verbose=>2, -exitval => 2, output=>\*STDOUT, -noperldoc=>1); },
+          "narrow!"     => sub { $Opt_Widen = 0; },
           "version"     => sub { print "Version $VERSION\n"; exit(0); },
+          "widen!"      => sub { $Opt_Widen = 1; },  # Default, undocumented
           "<>"          => sub { die "%Error: Unknown parameter: $_[0]\n"; },
     )) {
     die "%Error: Bad usage, try 'git_untabify --help'\n";
@@ -35,9 +38,12 @@ read_patch();
 sub read_patch {
     my $filename = undef;
     my $lineno = 0;
+    my $hunk = 0;
     my $editlines = {};
     while (defined(my $line = <STDIN>)) {
+        chomp $line;
         if ($line =~ m!^\+\+\+ b/(.*)!) {
+            find_edits($editlines);
             edit_file($filename, $editlines);
             $filename = $1;
             $lineno = 0;
@@ -46,32 +52,78 @@ sub read_patch {
         }
         elsif ($line  =~ m!^@@ -?[0-9]+,?[0-9]* \+?([0-9]+)!) {
             $lineno = $1 - 1;
+            ++$hunk;
             print "  LINE $1  $line" if $Debug;
         }
         elsif ($line  =~ m!^ !) {
             ++$lineno;
+            $editlines->{$lineno} = {line => $line,
+                                     hunk => $hunk,
+                                     user_edit => 0, };
         }
         elsif ($line  =~ m!^\+!) {
             ++$lineno;
-            if ($line  =~ m!\t!) {
-                print "  $lineno: $line" if $Debug;
-                $editlines->{$lineno} = 1;
+            print "  $lineno: $line" if $Debug;
+            $editlines->{$lineno} = {line => $line,
+                                     hunk => $hunk,
+                                     user_edit => 1, };
+        }
+    }
+    find_edits($editlines);
+    edit_file($filename, $editlines);
+}
+
+sub find_edits {
+    my $editlines = shift;
+    # Expand edit regions so if have edited line, non-edited line, edited
+    # line, we will tab expand the middle ones.
+    my %hunk_firstlines;
+    foreach my $lineno (sort {$a <=> $b} keys %$editlines) {
+        my $hunk = $editlines->{$lineno}{hunk};
+        $hunk_firstlines{$hunk} ||= $lineno if $editlines->{$lineno}{user_edit};
+    }
+    my %hunk_lastlines;
+    foreach my $lineno (sort {$b <=> $a} keys %$editlines) {
+        my $hunk = $editlines->{$lineno}{hunk};
+        $hunk_lastlines{$hunk} ||= $lineno if $editlines->{$lineno}{user_edit};
+    }
+    # Expand to always untabify at least 3 lines (so that future diff will
+    # have non-tabs within a edit hunk distance
+    foreach my $hunk (keys %hunk_firstlines) {
+        if ($hunk_firstlines{$hunk} == $hunk_lastlines{$hunk}) {
+            --$hunk_firstlines{$hunk};
+            ++$hunk_lastlines{$hunk};
+        }
+        elsif ($hunk_firstlines{$hunk}+1 == $hunk_lastlines{$hunk}) {
+            ++$hunk_lastlines{$hunk};
+        }
+    }
+
+    foreach my $lineno (sort {$a <=> $b} keys %$editlines) {
+        if ($editlines->{$lineno}{line} =~ /\t/) {
+            my $hunk = $editlines->{$lineno}{hunk};
+            if ($hunk_firstlines{$hunk} <= $lineno && $hunk_lastlines{$hunk} >= $lineno) {
+                $editlines->{$lineno}{editit} = 1;
             }
         }
     }
-    edit_file($filename, $editlines);
 }
 
 sub edit_file {
     my $filename = shift;
     my $editlines = shift;
 
-    return if (scalar keys(%$editlines) < 1);
+    my @editits;
+    foreach my $lineno (sort {$a <=> $b} keys %$editlines) {
+        push @editits, $lineno if $editlines->{$lineno}{editit};
+    }
+    
+    return if $#editits < 0;
     if (ignore($filename)) {
         print "%Warning: Ignoring $filename\n";
         return;
     }
-    print "Edit $filename ",join(",",sort(keys %$editlines)),"\n";
+    print "Edit $filename ",join(",",@editits),"\n";
 
     my $lineno = 0;
     my @out;
@@ -79,7 +131,7 @@ sub edit_file {
         my $fh = IO::File->new("<$filename") or die "%Error: $! $filename\n";
         while (defined(my $line = $fh->getline)) {
             ++$lineno;
-            if ($editlines->{$lineno}) {
+            if ($editlines->{$lineno}{editit}) {
                 print $line;
                 push @out, untabify($line);
             } else {
@@ -151,6 +203,13 @@ untabify the related patch lines.
 =item --help
 
 Displays this message and program version and exits.
+
+=item --narrow
+
+Only edit lines which the user edited.
+
+If not provided, also edit other lines within at least a 3 line area around
+the edit, and between any edits within the same hunk.
 
 =item --version
 
