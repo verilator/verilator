@@ -339,6 +339,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --pins-sc-biguint           Specify types for top level ports
     --pins-uint8                Specify types for top level ports
     --pipe-filter <command>     Filter all input through a script
+    --pp-comments               Show preprocessor comments with -E
     --prefix <topname>          Name of top level class
     --prof-cfuncs               Name functions for profiling
     --prof-threads              Enable generating gantt chart data for threads
@@ -1092,6 +1093,10 @@ t/t_pipe_filter test for an example.
 
 To debug the output of the filter, try using the -E option to see
 preprocessed output.
+
+=item --pp-comments
+
+With -E, show comments in preprocessor output.
 
 =item --prefix I<topname>
 

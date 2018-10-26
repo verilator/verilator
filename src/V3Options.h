@@ -127,6 +127,7 @@ class V3Options {
     bool	m_pinsScUint;   // main switch: --pins-sc-uint
     bool	m_pinsScBigUint;// main switch: --pins-sc-biguint
     bool	m_pinsUint8;	// main switch: --pins-uint8
+    bool        m_ppComments;   // main switch: --pp-comments
     bool        m_profCFuncs;   // main switch: --prof-cfuncs
     bool        m_profThreads;  // main switch: --prof-threads
     bool	m_public;	// main switch: --public
@@ -299,6 +300,7 @@ class V3Options {
     bool pinsScUint() const { return m_pinsScUint; }
     bool pinsScBigUint() const { return m_pinsScBigUint; }
     bool pinsUint8() const { return m_pinsUint8; }
+    bool ppComments() const { return m_ppComments; }
     bool profCFuncs() const { return m_profCFuncs; }
     bool profThreads() const { return m_profThreads; }
     bool allPublic() const { return m_public; }

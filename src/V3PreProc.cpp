@@ -390,6 +390,12 @@ bool V3PreProcImp::commentTokenMatch(string& cmdr, const char* strg) {
 
 void V3PreProcImp::comment(const string& text) {
     // Comment detected.  Only keep relevant data.
+    bool printed = false;
+    if (v3Global.opt.preprocOnly() && v3Global.opt.ppComments()) {
+        insertUnreadback(text);
+        printed = true;
+    }
+
     const char* cp = text.c_str();
     if (cp[0]=='/' && (cp[1]=='/' || cp[1]=='*')) {
 	cp+=2;
@@ -431,16 +437,16 @@ void V3PreProcImp::comment(const string& text) {
 	if (v3Global.opt.assertOn()) {
 	    // one_hot, one_cold, (full_case, parallel_case)
 	    if (commentTokenMatch(cmd/*ref*/, "full_case")) {
-                insertUnreadback("/*verilator full_case*/");
+                if (!printed) insertUnreadback("/*verilator full_case*/");
 	    }
 	    if (commentTokenMatch(cmd/*ref*/, "parallel_case")) {
-                insertUnreadback("/*verilator parallel_case*/");
+                if (!printed) insertUnreadback("/*verilator parallel_case*/");
 	    }
 	    //if (commentTokenMatch(cmd/*ref*/, "one_hot")) {
-	    //	insertUnreadback ("/*verilator one_hot*/ "+cmd+";");
+            //  insertUnreadback ("/*verilator one_hot*/ "+cmd+";");
 	    //}
 	    //if (commentTokenMatch(cmd/*ref*/, "one_cold")) {
-	    //	insertUnreadback ("/*verilator one_cold*/ "+cmd+";");
+            //  insertUnreadback ("/*verilator one_cold*/ "+cmd+";");
 	    //}
 	    // else ignore the comment we don't recognize
 	} // else no assertions
@@ -450,9 +456,9 @@ void V3PreProcImp::comment(const string& text) {
             // "/*verilator public_flat_rw @(foo) */" -> "/*verilator public_flat_rw*/ @(foo)"
             cmd = cmd.substr(pos+strlen("public_flat_rw"));
             while (isspace(cmd[0])) cmd = cmd.substr(1);
-            insertUnreadback("/*verilator public_flat_rw*/ "+cmd+" /**/");
+            if (!printed) insertUnreadback("/*verilator public_flat_rw*/ "+cmd+" /**/");
         } else {
-            insertUnreadback("/*verilator "+cmd+"*/");
+            if (!printed) insertUnreadback("/*verilator "+cmd+"*/");
         }
     }
 }

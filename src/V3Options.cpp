@@ -682,6 +682,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( onoff   (sw, "-pins-sc-uint", flag/*ref*/) ){ m_pinsScUint = flag; if (!m_pinsScBigUint) m_pinsBv = 65; }
 	    else if ( onoff   (sw, "-pins-sc-biguint", flag/*ref*/) ){ m_pinsScBigUint = flag; m_pinsBv = 513; }
 	    else if ( onoff   (sw, "-pins-uint8", flag/*ref*/) ){ m_pinsUint8 = flag; }
+            else if ( onoff   (sw, "-pp-comments", flag/*ref*/) ) { m_ppComments = flag; }
 	    else if ( !strcmp (sw, "-private") )		{ m_public = false; }
             else if ( onoff   (sw, "-prof-cfuncs", flag/*ref*/) )       { m_profCFuncs = flag; }
             else if ( onoff   (sw, "-profile-cfuncs", flag/*ref*/) )    { m_profCFuncs = flag; }  // Undocumented, for backward compat
@@ -1267,6 +1268,7 @@ V3Options::V3Options() {
     m_pinsScUint = false;
     m_pinsScBigUint = false;
     m_pinsUint8 = false;
+    m_ppComments = false;
     m_profCFuncs = false;
     m_profThreads = false;
     m_preprocOnly = false;

@@ -5,6 +5,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.005 devel
 
+**    Add --pp-comments, msg2700. [Robert Henry]
+
 **    Add --dump-defines.
 
 ***   For --trace-fst, save enum decoding information, bug1358. [Sergi Granell]
