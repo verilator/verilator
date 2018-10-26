@@ -185,6 +185,7 @@ private:
     string defParams(const string& name);
     FileLine* defFileline(const string& name);
 
+    string commentCleanup(const string& text);
     bool commentTokenMatch(string& cmdr, const char* strg);
     string trimWhitespace(const string& strg, bool trailing);
     void unputString(const string& strg);
@@ -361,6 +362,20 @@ void V3PreProcImp::include(const string& filename) {
     V3PreShell::preprocInclude(fileline(), filename);
 }
 
+string V3PreProcImp::commentCleanup(const string& text) {
+    // Cleanup comment for easier parsing (call before commentTokenMatch)
+    string cmd = text;
+    string::size_type pos;
+    while ((pos = cmd.find("//")) != string::npos) cmd.replace(pos, 2, "");
+    while ((pos = cmd.find("/*")) != string::npos) cmd.replace(pos, 2, "");
+    while ((pos = cmd.find("*/")) != string::npos) cmd.replace(pos, 2, "");
+    while ((pos = cmd.find('\"')) != string::npos) cmd.replace(pos, 1, " ");
+    while ((pos = cmd.find('\t')) != string::npos) cmd.replace(pos, 1, " ");
+    while ((pos = cmd.find("  ")) != string::npos) cmd.replace(pos, 2, " ");
+    while (!cmd.empty() && isspace(cmd[cmd.size()-1])) cmd.erase(cmd.size()-1);
+    return cmd;
+}
+
 bool V3PreProcImp::commentTokenMatch(string& cmdr, const char* strg) {
     int len = strlen(strg);
     if (0==strncmp(cmdr.c_str(), strg, len)
@@ -375,11 +390,6 @@ bool V3PreProcImp::commentTokenMatch(string& cmdr, const char* strg) {
 
 void V3PreProcImp::comment(const string& text) {
     // Comment detected.  Only keep relevant data.
-    // if (text =~ m!^\/[\*\/]\s*[vV]erilator\s*(.*$)!) {
-    //	  string cmd = $1;
-    //	  cmd =~ s!\s*(\*\/)\s*$!!;
-    //	  cmd =~ s!\s+! !g;
-    //	  cmd =~ s!\s+$!!g;
     const char* cp = text.c_str();
     if (cp[0]=='/' && (cp[1]=='/' || cp[1]=='*')) {
 	cp+=2;
@@ -388,42 +398,34 @@ void V3PreProcImp::comment(const string& text) {
     while (isspace(*cp)) cp++;
 
     bool synth = false;
+    bool vlcomment = false;
     if ((cp[0]=='v' || cp[0]=='V')
 	&& 0==(strncmp(cp+1,"erilator",8))) {
-	cp+=strlen("verilator");
+        cp += strlen("verilator");
 	if (*cp == '_') fileline()->v3error("Extra underscore in meta-comment; use /*verilator {...}*/ not /*verilator_{...}*/");
+        vlcomment = true;
     } else if (0==(strncmp(cp,"synopsys",strlen("synopsys")))) {
-	cp+=strlen("synopsys");
+        cp += strlen("synopsys");
 	synth = true;
 	if (*cp == '_') fileline()->v3error("Extra underscore in meta-comment; use /*synopsys {...}*/ not /*synopsys_{...}*/");
     } else if (0==(strncmp(cp,"cadence",strlen("cadence")))) {
-	cp+=strlen("cadence");
+        cp += strlen("cadence");
 	synth = true;
     } else if (0==(strncmp(cp,"pragma",strlen("pragma")))) {
-	cp+=strlen("pragma");
+        cp += strlen("pragma");
 	synth = true;
     } else if (0==(strncmp(cp,"ambit synthesis",strlen("ambit synthesis")))) {
-	cp+=strlen("ambit synthesis");
+        cp += strlen("ambit synthesis");
 	synth = true;
     } else {
 	return;
     }
-    if (*cp && !isspace(*cp)) return;
+
+    if (!vlcomment && !synth) return;  // Short-circuit
 
     while (isspace(*cp)) cp++;
-
-    const char* ep = cp+strlen(cp);
-    if (ep>cp && (ep[-1]=='/' || cp[-2]=='*')) ep-=2;
-    while (ep>cp && (isspace(ep[-1]))) ep--;
-
-    string cmd (cp, ep-cp);
-    string::size_type pos;
-    while ((pos = cmd.find('\"')) != string::npos)
-	cmd.replace(pos, 1, " ");
-    while ((pos = cmd.find('\t')) != string::npos)
-	cmd.replace(pos, 1, " ");
-    while ((pos = cmd.find("  ")) != string::npos)
-	cmd.replace(pos, 2, " ");
+    string cmd = commentCleanup(string(cp));
+    // cmd now is comment without extra spaces and "verilator" prefix
 
     if (synth) {
 	if (v3Global.opt.assertOn()) {
@@ -442,15 +444,16 @@ void V3PreProcImp::comment(const string& text) {
 	    //}
 	    // else ignore the comment we don't recognize
 	} // else no assertions
-    } else if ((pos=cmd.find("public_flat_rw")) != string::npos) {
-	// "/*verilator public_flat_rw @(foo) */" -> "/*verilator public_flat_rw*/ @(foo)"
-	cmd = cmd.substr(pos+strlen("public_flat_rw"));
-	while (isspace(cmd[0])) cmd = cmd.substr(1);
-	if ((pos=cmd.find("*/")) != string::npos)
-	    cmd.replace(pos, 2, "");
-        insertUnreadback("/*verilator public_flat_rw*/ "+cmd+" /**/");
-    } else {
-        insertUnreadback("/*verilator "+cmd+"*/");
+    } else if (vlcomment) {
+        string::size_type pos;
+        if ((pos = cmd.find("public_flat_rw")) != string::npos) {
+            // "/*verilator public_flat_rw @(foo) */" -> "/*verilator public_flat_rw*/ @(foo)"
+            cmd = cmd.substr(pos+strlen("public_flat_rw"));
+            while (isspace(cmd[0])) cmd = cmd.substr(1);
+            insertUnreadback("/*verilator public_flat_rw*/ "+cmd+" /**/");
+        } else {
+            insertUnreadback("/*verilator "+cmd+"*/");
+        }
     }
 }
 
