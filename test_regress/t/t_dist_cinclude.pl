@@ -26,27 +26,27 @@ if (!-r "$root/.git") {
     foreach my $line (split /\n/, $grep) {
         next if $line =~ m!include/vltstd/vpi_user.h!;  # IEEE Standard file - can't change it
         next if $line =~ m!include/gtkwave/!;  # Standard file - can't change it
-	my $hit;
-	$hit = 1 if $line =~ /\bassert\.h/;
-	$hit = 1 if $line =~ /\bctype\.h/;
-	$hit = 1 if $line =~ /\berrno\.h/;
-	$hit = 1 if $line =~ /\bfloat\.h/;
-	$hit = 1 if $line =~ /\blimits\.h/;
-	$hit = 1 if $line =~ /\blocale\.h/;
-	$hit = 1 if $line =~ /\bmath\.h/;
-	$hit = 1 if $line =~ /\bsetjmp\.h/;
-	$hit = 1 if $line =~ /\bsignal\.h/;
-	$hit = 1 if $line =~ /\bstdarg\.h/;
-	$hit = 1 if $line =~ /\bstdbool\.h/;
-	$hit = 1 if $line =~ /\bstddef\.h/;
-	#Not yet: $hit = 1 if $line =~ /\bstdint\.h/;
-	$hit = 1 if $line =~ /\bstdio\.h/;
-	$hit = 1 if $line =~ /\bstdlib\.h/;
-	$hit = 1 if $line =~ /\bstring\.h/;
-	$hit = 1 if $line =~ /\btime\.h/ && $line !~ m!sys/time.h!;
-	next if !$hit;
-	print "$line\n";
-	$names{$1} = 1 if $line =~ /^([^:]+)/;
+        my $hit;
+        $hit = 1 if $line =~ /\bassert\.h/;
+        $hit = 1 if $line =~ /\bctype\.h/;
+        $hit = 1 if $line =~ /\berrno\.h/;
+        $hit = 1 if $line =~ /\bfloat\.h/;
+        $hit = 1 if $line =~ /\blimits\.h/;
+        $hit = 1 if $line =~ /\blocale\.h/;
+        $hit = 1 if $line =~ /\bmath\.h/;
+        $hit = 1 if $line =~ /\bsetjmp\.h/;
+        $hit = 1 if $line =~ /\bsignal\.h/;
+        $hit = 1 if $line =~ /\bstdarg\.h/;
+        $hit = 1 if $line =~ /\bstdbool\.h/;
+        $hit = 1 if $line =~ /\bstddef\.h/;
+        #Not yet: $hit = 1 if $line =~ /\bstdint\.h/;
+        $hit = 1 if $line =~ /\bstdio\.h/;
+        $hit = 1 if $line =~ /\bstdlib\.h/;
+        $hit = 1 if $line =~ /\bstring\.h/;
+        $hit = 1 if $line =~ /\btime\.h/ && $line !~ m!sys/time.h!;
+        next if !$hit;
+        print "$line\n";
+        $names{$1} = 1 if $line =~ /^([^:]+)/;
     }
 
     if (keys %names) {

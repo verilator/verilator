@@ -16,7 +16,7 @@ module t (/*AUTOARG*/);
    genvar the_genvar;
    generate
       for (the_genvar = 0; the_genvar < 4; the_genvar++) begin: foo_loop
-	 foo foo_inst();
+         foo foo_inst();
       end
    endgenerate
 

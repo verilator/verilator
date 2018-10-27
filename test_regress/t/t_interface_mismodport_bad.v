@@ -20,7 +20,7 @@ module t (/*AUTOARG*/
    ifc itop();
 
    counter_ansi  c1 (.isub(itop),
-		     .i_value(4'h4));
+                     .i_value(4'h4));
 
 endmodule
 

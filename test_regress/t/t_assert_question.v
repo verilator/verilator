@@ -13,7 +13,7 @@ module t (/*AUTOARG*/
    input clk;
    input bit [3:0] sel;
    input bit [3:0] a;
-   input bit 	   c;
+   input bit       c;
    output bit      dout;
 
    localparam logic DC  = 1'b?;

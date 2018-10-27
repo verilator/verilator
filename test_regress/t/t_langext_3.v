@@ -16,6 +16,6 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   uwire w;			// Only in Verilog 2005
+   uwire w;  // Only in Verilog 2005
 
 endmodule

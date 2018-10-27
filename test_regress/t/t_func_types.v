@@ -5,7 +5,7 @@
 
 module t;
 
-   function int	int123();  int123 = 32'h123;   endfunction
+   function int int123(); int123 = 32'h123; endfunction
 
    function bit         f_bit     ; input bit      i;  f_bit      = ~i;   endfunction
    function int         f_int     ; input int      i;  f_int      = ~i;   endfunction

@@ -26,7 +26,7 @@ void poke_value(int i) {
     static int didDump = 0;
     if (didDump++ == 0) {
 # ifdef TEST_VERBOSE
-	Verilated::scopesDump();
+        Verilated::scopesDump();
 # endif
     }
 #endif

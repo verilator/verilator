@@ -11,7 +11,7 @@ module t ();
 
    generate
       begin : DSM
-	 string SOME_STRING;
+         string SOME_STRING;
       end
    endgenerate
 

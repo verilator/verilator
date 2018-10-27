@@ -51,7 +51,7 @@ module t (/*AUTOARG*/
       end
 
       if (in==3) begin
-	     $write("*-* All Finished *-*\n");
+         $write("*-* All Finished *-*\n");
          $finish;
       end
    end

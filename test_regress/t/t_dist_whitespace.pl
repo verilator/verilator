@@ -19,16 +19,16 @@ foreach my $file (sort keys %files) {
     my $filename = "$root/$file";
     my $contents = file_contents($filename);
     if ($file =~ /\.out$/) {
-	# Ignore golden files
+        # Ignore golden files
     } elsif ($contents =~ /[\001\002\003\004\005\006]/) {
-	# Ignore binrary files
+        # Ignore binrary files
     } elsif ($contents =~ /[ \t]\n/) {
-	if ($ENV{HARNESS_UPDATE_GOLDEN}) {
-	    $contents =~ s/[ \t]+\n/\n/g;
-	    $warns{$file} = "Updated whitespace at $file";
-	    write_wholefile($filename, $contents);
-	    next;
-	}
+        if ($ENV{HARNESS_UPDATE_GOLDEN}) {
+            $contents =~ s/[ \t]+\n/\n/g;
+            $warns{$file} = "Updated whitespace at $file";
+            write_wholefile($filename, $contents);
+            next;
+        }
         my @lines = split(/\n/, $contents);
         my $line_no = 0;
         foreach my $line (@lines) {
@@ -70,8 +70,8 @@ sub get_manifest_files {
     print "MF $manifest_files\n" if $Self->{verbose};
     my %files;
     foreach my $file (split /\s+/,$manifest_files) {
-	next if $file eq '';
-	$files{$file} |= 1;
+        next if $file eq '';
+        $files{$file} |= 1;
     }
     return \%files;
 }

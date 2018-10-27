@@ -7,7 +7,7 @@ module sub();
 endmodule
 
 module t(input logic a, input logic b,
-	 output logic x, output logic y);
+         output logic x, output logic y);
 
    always_comb begin
       integer i;

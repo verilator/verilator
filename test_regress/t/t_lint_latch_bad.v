@@ -19,7 +19,7 @@ module t (/*AUTOARG*/
    end
 
    output logic bc;
-   output logic	cc;
+   output logic cc;
    always_comb begin
       bc <= a;  // Warning
       cc = a;

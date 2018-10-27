@@ -8,6 +8,6 @@
 module t;
 
    export "DPI-C" function dpix_f_bit48;
-   function bit [47:0]	dpix_f_bit48  (bit [47:0] i); dpix_f_bit48    = ~i;   endfunction
+   function bit [47:0] dpix_f_bit48(bit [47:0] i); dpix_f_bit48 = ~i; endfunction
 
 endmodule

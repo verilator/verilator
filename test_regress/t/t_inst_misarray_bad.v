@@ -13,7 +13,7 @@ module t (/*AUTOARG*/
 
 //   dut #(.W(4)) udut(.*);
    dut #(.W(4)) udut(.clk(clk),
-		     .foo(foo));  // Should be a non-internal error, as assigning logic to logic array
+                     .foo(foo));  // Assigning logic to logic array
 
 endmodule
 

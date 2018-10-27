@@ -15,7 +15,7 @@ module t;
 `define rs right_side
 `define noarg  na//note extra space
 `define thru(x) x
-`define thruthru `ls `rs	// Doesn't expand
+`define thruthru `ls `rs  // Doesn't expand
 `define msg(x,y) `"x: `\`"y`\`"`"
 `define left(m,left) m // The 'left' as the variable name shouldn't match the "left" in the `" string
    initial begin

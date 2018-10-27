@@ -21,7 +21,7 @@ module t;
 
    initial begin
       casex (1'b1)
-	1'b0: $stop;
+        1'b0: $stop;
       endcase
 
       $write("*-* All Finished *-*\n");

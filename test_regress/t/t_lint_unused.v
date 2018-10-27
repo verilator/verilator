@@ -21,7 +21,7 @@ module t (/*AUTOARG*/
    udp_mux2 udpsub (out, in, in, in);
 
    // Check ignoreds mark as used
-   reg 	  sysused;
+   reg    sysused;
    initial $bboxed(sysused);
 
    // Check file IO.  The fopen is the "driver" all else a usage.

@@ -35,19 +35,19 @@ sub check {
     my $fh = IO::File->new("<$filename") or error("$! $filenme");
     my @funcs;
     while (defined (my $line = $fh->getline)) {
-	if ($line =~ /^(void|IData)\s+(.*::.*)/) {
-	    my $func = $2;
-	    $func =~ s/\(.*$//;
-	    print "\tFunc $func\n" if $Self->{verbose};
-	    if ($func !~ /::_eval_initial_loop$/
-		&& $func !~ /::__Vconfigure$/
-		&& $func !~ /::trace$/
-		&& $func !~ /::traceInit$/
-		&& $func !~ /::traceFull$/
-		) {
-		push @funcs, $func;
-	    }
-	}
+        if ($line =~ /^(void|IData)\s+(.*::.*)/) {
+            my $func = $2;
+            $func =~ s/\(.*$//;
+            print "\tFunc $func\n" if $Self->{verbose};
+            if ($func !~ /::_eval_initial_loop$/
+                && $func !~ /::__Vconfigure$/
+                && $func !~ /::trace$/
+                && $func !~ /::traceInit$/
+                && $func !~ /::traceFull$/
+                ) {
+                push @funcs, $func;
+            }
+        }
     }
     if ($#funcs > 0) {
         error("Split had multiple functions in $filename\n\t".join("\n\t",@funcs));

@@ -27,7 +27,7 @@ module top (
 //   pulldown  p1(PAD);
 
 
-   wire [5:0] 	     fill = { 4'b0, A1 };
+   wire [5:0]        fill = { 4'b0, A1 };
 
 endmodule
 

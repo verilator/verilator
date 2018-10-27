@@ -13,7 +13,7 @@ endpackage
 
 module t;
    reg [1:0]  ttype;
-   reg 	      m;
+   reg        m;
 
    enum       bit [1:0] { LOCAL } l;
 

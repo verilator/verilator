@@ -6,7 +6,7 @@
 module x;
 
    typedef struct {
-      int 	  a;
+      int         a;
    } notpacked_t;
 
    typedef struct packed {

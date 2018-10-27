@@ -18,7 +18,7 @@ module t;
 
    initial begin
       begin: lower
-	 integer top;
+         integer top;
       end
    end
 

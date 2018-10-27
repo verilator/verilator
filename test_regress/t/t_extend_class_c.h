@@ -13,6 +13,6 @@ public:
     // METHODS
     // This function will be called from a instance created in Verilog
     inline vluint32_t my_math(vluint32_t in) {
-	return in+1;
+        return in+1;
     }
 };

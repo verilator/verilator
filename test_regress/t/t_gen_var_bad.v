@@ -6,7 +6,7 @@
 module t;
    integer i;
    generate
-      for (i=0; i<3; i=i+1) begin	// Bad: i is not a genvar
+      for (i=0; i<3; i=i+1) begin  // Bad: i is not a genvar
       end
    endgenerate
 endmodule

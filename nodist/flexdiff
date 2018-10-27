@@ -47,12 +47,12 @@ sub prep {
     my @lines;
 
     while (defined(my $line = $fh->getline)) {
-	# Productions
-	#$line =~ s/[ \t]{[^}]*?}/\t{}/g;
-	$line =~ s/StashPrefix;//g;
-	$line =~ s/VALTEXT;//g;
-	$line =~ s/CALLBACK\([^)]*\);//g;
-	push @lines, $line;
+        # Productions
+        #$line =~ s/[ \t]{[^}]*?}/\t{}/g;
+        $line =~ s/StashPrefix;//g;
+        $line =~ s/VALTEXT;//g;
+        $line =~ s/CALLBACK\([^)]*\);//g;
+        push @lines, $line;
     }
 
     #@lines = sort @lines;

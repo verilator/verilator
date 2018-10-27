@@ -9,7 +9,7 @@ module t (/*AUTOARG*/
    );
    input [3:0] value;
    assign      value = 4'h0;
-   sub sub (.valueSub	(value[3:0]));
+   sub sub(.valueSub(value[3:0]));
 endmodule
 
 module sub (/*AUTOARG*/

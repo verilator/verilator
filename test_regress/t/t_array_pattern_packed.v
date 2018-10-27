@@ -12,7 +12,7 @@ module t (/*AUTOARG*/
 
    logic [1:0] [3:0] [3:0] array_simp;  // big endian array
 
-   logic [3:0] 		   array_oned;
+   logic [3:0]             array_oned;
 
    initial begin
       array_oned = '{2:1'b1, 0:1'b1, default:1'b0};

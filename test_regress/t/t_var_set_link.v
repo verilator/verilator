@@ -12,7 +12,7 @@ module t (/*AUTOARG*/
 
    // Gave "Internal Error: V3Broken.cpp:: Broken link in node"
    output [1:0] state;
-   reg [1:0] 	state = 2'b11;
+   reg [1:0]    state = 2'b11;
    always @ (posedge clk) begin
       state <= state;
    end

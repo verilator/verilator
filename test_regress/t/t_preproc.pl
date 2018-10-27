@@ -27,31 +27,31 @@ sub preproc_check {
 
     my @Line_Checks;
     {   # Read line comments.
-	my $fh = IO::File->new($filename1) or die "%Error: $! $filename1\n";
-	while (defined(my $line = $fh->getline)) {
-	    if ($line =~ /^Line_Preproc_Check/) {
-		push @Line_Checks, $.;
-	    }
-	}
-	$fh->close;
+        my $fh = IO::File->new($filename1) or die "%Error: $! $filename1\n";
+        while (defined(my $line = $fh->getline)) {
+            if ($line =~ /^Line_Preproc_Check/) {
+                push @Line_Checks, $.;
+            }
+        }
+        $fh->close;
     }
     {   # See if output file agrees.
-	my $fh = IO::File->new($filename2) or die "%Error: $! $filename2\n";
-	my $lineno = 0;
-	while (defined(my $line = $fh->getline)) {
-	    $lineno++;
-	    if ($line =~ /^\`line\s+(\d+)/) {
-		$lineno = $1 - 1;
-	    }
-	    if ($line =~ /^Line_Preproc_Check\s+(\d+)/) {
-		my $linecmt = $1;
-		my $check = shift @Line_Checks;
+        my $fh = IO::File->new($filename2) or die "%Error: $! $filename2\n";
+        my $lineno = 0;
+        while (defined(my $line = $fh->getline)) {
+            $lineno++;
+            if ($line =~ /^\`line\s+(\d+)/) {
+                $lineno = $1 - 1;
+            }
+            if ($line =~ /^Line_Preproc_Check\s+(\d+)/) {
+                my $linecmt = $1;
+                my $check = shift @Line_Checks;
                 if (!$check) { error("$filename2:$.: Extra Line_Preproc_Check\n"); }
                 if ($linecmt != $check) { error("$filename2:$.: __LINE__ inserted $linecmt, exp=$check\n"); }
                 if ($lineno != $check)  { error("$filename2:$.: __LINE__ on `line $lineno, exp=$check\n"); }
-	    }
-	}
-	$fh->close;
+            }
+        }
+        $fh->close;
     }
     if ($Line_Checks[0]) { error("$filename2: Missing a Line_Preproc_Check\n"); }
     return 1;

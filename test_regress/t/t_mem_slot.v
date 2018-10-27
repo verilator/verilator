@@ -3,7 +3,7 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2006 by Wilson Snyder.
 
-`define RegDel	1
+`define RegDel 1
 
 module t_mem_slot (Clk, SlotIdx, BitToChange, BitVal, SlotToReturn, OutputVal);
 

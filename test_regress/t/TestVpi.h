@@ -28,7 +28,7 @@ public:
     operator vpiHandle() const { return m_handle; }
     inline TestVpiHandle& operator= (vpiHandle h) { m_handle = h; return *this; }
     TestVpiHandle& nofree() {
-	m_free = false;
+        m_free = false;
         return *this;
     }
 };

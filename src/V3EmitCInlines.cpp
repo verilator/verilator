@@ -41,9 +41,10 @@ class EmitCInlines : EmitCBaseVisitor {
 
     // VISITORS
     virtual void visit(AstBasicDType* nodep) {
-	if (nodep->keyword() == AstBasicDTypeKwd::STRING) {
-	    v3Global.needHeavy(true);  // #include <string> via verilated_heavy.h when we create symbol file
-	}
+        if (nodep->keyword() == AstBasicDTypeKwd::STRING) {
+            // Request #include <string> via verilated_heavy.h when we create symbol file
+            v3Global.needHeavy(true);
+        }
     }
 
     // NOPs
@@ -57,9 +58,9 @@ class EmitCInlines : EmitCBaseVisitor {
 public:
     explicit EmitCInlines(AstNetlist* nodep) {
         iterate(nodep);
-	if (v3Global.needHInlines()) {
-	    emitInt();
-	}
+        if (v3Global.needHInlines()) {
+            emitInt();
+        }
     }
 };
 

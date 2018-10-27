@@ -35,15 +35,15 @@ sub uint {
     my $grep = `$cmd`;
     my %names;
     foreach my $line (split /\n/, $grep) {
-	$line =~ s!//.*$!!;
-	next if $line !~ /uint\d+_t\b/;
-	next if $line =~ /vl[su]int\d+_t/;
-	next if $line =~ /typedef/;
-	next if $line =~ m!include/svdpi.h!;  # Not ours
-	if ($line =~ /^([^:]+)/) {
-	    $names{$1} = 1;
-	    print "$line\n";
-	}
+        $line =~ s!//.*$!!;
+        next if $line !~ /uint\d+_t\b/;
+        next if $line =~ /vl[su]int\d+_t/;
+        next if $line =~ /typedef/;
+        next if $line =~ m!include/svdpi.h!;  # Not ours
+        if ($line =~ /^([^:]+)/) {
+            $names{$1} = 1;
+            print "$line\n";
+        }
     }
     if (keys %names) {
         error("Files with uint32*_t instead of vluint32s: ",join(' ',sort keys %names));
@@ -57,14 +57,14 @@ sub printfll {
     my $grep = `$cmd`;
     my %names;
     foreach my $line (split /\n/, $grep) {
-	next if $line !~ /%[a-z0-9]*ll/;
-	next if $line !~ /\blong\S+long\b/;  # Assume a cast
-	print "$line\n";
-	if ($line =~ /^([^:]+)/) {
-	    $names{$1} = 1;
-	} else {
-	    $names{UNKNOWN} = 1;
-	}
+        next if $line !~ /%[a-z0-9]*ll/;
+        next if $line !~ /\blong\S+long\b/;  # Assume a cast
+        print "$line\n";
+        if ($line =~ /^([^:]+)/) {
+            $names{$1} = 1;
+        } else {
+            $names{UNKNOWN} = 1;
+        }
     }
     if (keys %names) {
         error("Files with %ll instead of VL_PRI64: ",join(' ',sort keys %names));
@@ -78,11 +78,11 @@ sub cstr {
     my $grep = `$cmd`;
     my %names;
     foreach my $line (split /\n/, $grep) {
-	if ($line =~ /^([^:]+).*\(\)[a-z0-9_().->]*[.->]+(c_str|r?begin|r?end)\(\)/) {
-	    next if $line =~ /lintok-begin-on-ref/;
-	    print "$line\n";
-	    $names{$1} = 1;
-	}
+        if ($line =~ /^([^:]+).*\(\)[a-z0-9_().->]*[.->]+(c_str|r?begin|r?end)\(\)/) {
+            next if $line =~ /lintok-begin-on-ref/;
+            print "$line\n";
+            $names{$1} = 1;
+        }
     }
     if (keys %names) {
         error("Files with potential c_str() lifetime issue: ",join(' ',sort keys %names));
@@ -97,11 +97,11 @@ sub vsnprintf {
     my $grep = `$cmd`;
     my %names;
     foreach my $line (split /\n/, $grep) {
-	if ($line =~ /\b(snprintf|vsnprintf)\b/) {
-	    next if $line =~ /# *define\s*VL_V?SNPRINTF/;
-	    print "$line\n";
-	    $names{$1} = 1;
-	}
+        if ($line =~ /\b(snprintf|vsnprintf)\b/) {
+            next if $line =~ /# *define\s*VL_V?SNPRINTF/;
+            print "$line\n";
+            $names{$1} = 1;
+        }
     }
     if (keys %names) {
         error("Files with vsnprintf, use VL_VSNPRINTF: ",join(' ',sort keys %names));

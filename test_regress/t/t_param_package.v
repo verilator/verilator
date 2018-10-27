@@ -19,5 +19,5 @@ module Test0 (val0);
 endmodule
 
 module Test1 (val1);
-   input logic [params::P : 0] val1;	// Fully qualified parameter
+   input logic [params::P : 0] val1;  // Fully qualified parameter
 endmodule

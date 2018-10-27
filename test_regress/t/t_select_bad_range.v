@@ -7,7 +7,7 @@ module t (clk);
    input clk;
 
    reg [43:0] mi;
-   reg 	      sel;
+   reg        sel;
    reg [3:0]  sel2;
 
    always @ (posedge clk) begin

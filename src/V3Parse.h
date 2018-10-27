@@ -36,7 +36,7 @@ class V3ParseSym;
 
 class V3Parse {
 private:
-    V3ParseImp*	m_impp;
+    V3ParseImp* m_impp;
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(V3Parse);
@@ -48,10 +48,10 @@ public:
     // METHODS
     // Preprocess and read the Verilog file specified into the netlist database
     void parseFile(FileLine* fileline, const string& modname, bool inLibrary,
-		   const string& errmsg);
+                   const string& errmsg);
 
     // Push preprocessed text to the lexer
     static void ppPushText(V3ParseImp* impp, const string& text);
 };
 
-#endif // Guard
+#endif  // Guard

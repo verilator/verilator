@@ -35,7 +35,7 @@ module t;
    localparam B4 = f_bad_infinite(3);
    function integer f_bad_infinite(input [31:0] a);
       while (1) begin
-	 f_bad_infinite = 0;
+         f_bad_infinite = 0;
       end
    endfunction
 

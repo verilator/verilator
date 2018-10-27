@@ -17,7 +17,7 @@ endmodule
 module t ();
    generate
       for (genvar i = 0; i < 100; i = i + 1) begin : module_set
-	 submodule u_submodule ();
+         submodule u_submodule();
       end
    endgenerate
    initial begin
