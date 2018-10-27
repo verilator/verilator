@@ -24,6 +24,7 @@ if (!-r "$root/.git") {
         my $file;
         my $atab;
         my $btab;
+        my $lineno = 0;
         foreach my $line ((split /\n/, $diff), "+++ b/_the_end") {
             if ($line =~ m!^\+\+\+ b/(.*)!) {
                 if ($file && !$atab && $btab) {
@@ -36,19 +37,31 @@ if (!-r "$root/.git") {
                 $btab = 0;
                 print " File $file\n" if $Self->{verbose};
             }
-            elsif ($line =~ m!^[- ].*\t!) {
+            elsif ($line  =~ m!^@@ -?[0-9]+,?[0-9]* \+?([0-9]+)!) {
+                $lineno = $1 - 1;
+            }
+            elsif ($line  =~ m!^ !) {
+                ++$lineno;
+                if ($line =~ m!^[- ].*\t!) {
+                    print "  Had tabs\n" if $Self->{verbose} && !$atab;
+                    $atab = 1;
+                }
+            }
+            elsif ($line =~ m!^-.*\t!) {
                 print "  Had tabs\n" if $Self->{verbose} && !$atab;
                 $atab = 1;
             }
             elsif ($line =~ m!^\+.*\t!) {
+                ++$lineno;
                 print "  Inserts tabs\n" if $Self->{verbose} && !$btab;
                 $btab = 1;
             }
             elsif ($line =~ m!^\+(.*)!) {
+                ++$lineno;
                 my $len = length($1);
                 if ($len >= 100) {
                     print"  Wide $line\n" if $Self->{verbose};
-                    $warns{$file} = "File modification adds a new >100 column line: $file";
+                    $warns{$file} = "File modification adds a new >100 column line: $file:$lineno";
                 }
             }
         }
