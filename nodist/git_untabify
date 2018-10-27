@@ -87,6 +87,18 @@ sub find_edits {
         my $hunk = $editlines->{$lineno}{hunk};
         $hunk_lastlines{$hunk} ||= $lineno if $editlines->{$lineno}{user_edit};
     }
+    # Expand to include }'s that finish basic block
+    foreach my $hunk (keys %hunk_lastlines) {
+        while (my $lineno = $hunk_lastlines{$hunk}) {
+            ++$lineno;
+            if (($editlines->{$lineno}{line} || "")
+                =~ /^[+ ]\s+}[ \t};]*$/) {
+                $hunk_lastlines{$hunk} = $lineno;
+            } else {
+                last;
+            }
+        }
+    }
     # Expand to always untabify at least 3 lines (so that future diff will
     # have non-tabs within a edit hunk distance
     foreach my $hunk (keys %hunk_firstlines) {
@@ -100,7 +112,7 @@ sub find_edits {
     }
 
     foreach my $lineno (sort {$a <=> $b} keys %$editlines) {
-        if ($editlines->{$lineno}{line} =~ /\t/) {
+        if (($editlines->{$lineno}{line}||"") =~ /\t/) {
             my $hunk = $editlines->{$lineno}{hunk};
             if ($hunk_firstlines{$hunk} <= $lineno && $hunk_lastlines{$hunk} >= $lineno) {
                 $editlines->{$lineno}{editit} = 1;
