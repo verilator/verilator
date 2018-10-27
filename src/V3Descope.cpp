@@ -183,13 +183,14 @@ private:
 		    AstNode* argsp = NULL;
 		    for (AstNode* stmtp = newfuncp->argsp(); stmtp; stmtp=stmtp->nextp()) {
                         if (AstVar* portp = VN_CAST(stmtp, Var)) {
-			    if (portp->isIO() && !portp->isFuncReturn()) {
-				AstNode* newp = new AstVarRef(portp->fileline(), portp, portp->isOutput());
-				if (argsp) argsp = argsp->addNextNull(newp);
-				else argsp = newp;
-			    }
-			}
-		    }
+                            if (portp->isIO() && !portp->isFuncReturn()) {
+                                AstNode* newp = new AstVarRef(portp->fileline(),
+                                                              portp, portp->isWritable());
+                                if (argsp) argsp = argsp->addNextNull(newp);
+                                else argsp = newp;
+                            }
+                        }
+                    }
 
                     AstNode* returnp = new AstCReturn(funcp->fileline(),
                                                       new AstCCall(funcp->fileline(),

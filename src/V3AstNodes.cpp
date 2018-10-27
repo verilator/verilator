@@ -178,40 +178,30 @@ void AstVar::combineType(AstVarType type) {
     // These flags get combined with the existing settings of the flags.
     // We don't test varType for certain types, instead set flags since
     // when we combine wires cross-hierarchy we need a union of all characteristics.
-    m_varType=type; 	// For debugging prints only
+    m_varType = type;
     // These flags get combined with the existing settings of the flags.
-    if (type==AstVarType::INPUT || type==AstVarType::INOUT) {
-	m_input = true;
-        m_declInput = true;
+    if (type==AstVarType::TRIWIRE || type==AstVarType::TRI0 || type==AstVarType::TRI1) {
+        m_tristate = true;
     }
-    if (type==AstVarType::OUTPUT || type==AstVarType::INOUT) {
-	m_output = true;
-	m_declOutput = true;
+    if (type==AstVarType::TRI0) {
+        m_isPulldown = true;
     }
-    if (type==AstVarType::INOUT || type==AstVarType::TRIWIRE
-	|| type==AstVarType::TRI0 || type==AstVarType::TRI1)
-	m_tristate = true;
-    if (type==AstVarType::TRI0)
-	m_isPulldown = true;
-    if (type==AstVarType::TRI1)
-	m_isPullup = true;
+    if (type==AstVarType::TRI1) {
+        m_isPullup = true;
+    }
 }
 
 string AstVar::verilogKwd() const {
-    if (isInout()) {
-	return "inout";
-    } else if (isInput()) {
-	return "input";
-    } else if (isOutput()) {
-	return "output";
+    if (isIO()) {
+        return direction().verilogKwd();
     } else if (isTristate()) {
-	return "tri";
+        return "tri";
     } else if (varType()==AstVarType::WIRE) {
-	return "wire";
+        return "wire";
     } else if (varType()==AstVarType::WREAL) {
-	return "wreal";
+        return "wreal";
     } else {
-	return dtypep()->name();
+        return dtypep()->name();
     }
 }
 
@@ -219,7 +209,7 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc) const {
     if (forReturn) named=false;
     if (forReturn) v3fatalSrc("verilator internal data is never passed as return, but as first argument");
     string arg;
-    if (isWide() && isInOnly()) arg += "const ";
+    if (isWide() && isReadOnly()) arg += "const ";
     AstBasicDType* bdtypep = basicp();
     bool strtype = bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::STRING;
     if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::CHARPTR) {
@@ -231,8 +221,8 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc) const {
     } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::FLOAT) {
 	arg += "float";
     } else if (strtype) {
-	if (isInOnly()) arg += "const ";
-	arg += "std::string";
+        if (isReadOnly()) arg += "const ";
+        arg += "std::string";
     } else if (widthMin() <= 8) {
 	arg += "CData";
     } else if (widthMin() <= 16) {
@@ -257,8 +247,9 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc) const {
             arg += "["+cvtToStr(widthWords())+"]";
         }
     } else {
-        if (forFunc && (isOutput() || (strtype && isInput()))) arg += "&";
-	if (named) arg += " "+name();
+        if (forFunc && (isWritable()
+                        || (strtype && isNonOutput()))) arg += "&";
+        if (named) arg += " "+name();
     }
     return arg;
 }
@@ -290,12 +281,12 @@ string AstVar::vlEnumType() const {
 
 string AstVar::vlEnumDir() const {
     string out;
-    if (isInout()) {
+    if (isInoutish()) {
         out = "VLVD_INOUT";
-    } else if (isInOnly()) {
-        out = "VLVD_IN";
-    } else if (isOutOnly()) {
+    } else if (isWritable()) {
         out = "VLVD_OUT";
+    } else if (isNonOutput()) {
+        out = "VLVD_IN";
     } else {
         out = "VLVD_NODIR";
     }
@@ -336,7 +327,7 @@ string AstVar::vlPropInit() const {
 string AstVar::cPubArgType(bool named, bool forReturn) const {
     if (forReturn) named=false;
     string arg;
-    if (isWide() && isInOnly()) arg += "const ";
+    if (isWide() && isReadOnly()) arg += "const ";
     if (widthMin() == 1) {
 	arg += "bool";
     } else if (widthMin() <= VL_WORDSIZE) {
@@ -351,8 +342,8 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
 	arg += " (& "+name();
 	arg += ")["+cvtToStr(widthWords())+"]";
     } else {
-	if (isOutput() && !forReturn) arg += "&";
-	if (named) arg += " "+name();
+        if (!forReturn && isWritable()) arg += "&";
+        if (named) arg += " "+name();
     }
     return arg;
 }
@@ -367,11 +358,11 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
     } else if (basicp()->keyword().isDpiBitVal()) {
 	if (widthMin() == 1) {
 	    arg = "unsigned char";
-	    if (!forReturn && isOutput()) arg += "*";
-	} else {
-	    if (forReturn) {
-		arg = "svBitVecVal";
-	    } else if (isInOnly()) {
+            if (!forReturn && isWritable()) arg += "*";
+        } else {
+            if (forReturn) {
+                arg = "svBitVecVal";
+            } else if (isReadOnly()) {
 		arg = "const svBitVecVal*";
 	    } else {
 		arg = "svBitVecVal*";
@@ -380,11 +371,11 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
     } else if (basicp()->keyword().isDpiLogicVal()) {
         if (widthMin() == 1) {
             arg = "unsigned char";
-            if (!forReturn && isOutput()) arg += "*";
+            if (!forReturn && isWritable()) arg += "*";
         } else {
             if (forReturn) {
                 arg = "svLogicVecVal";
-            } else if (isInOnly()) {
+            } else if (isReadOnly()) {
                 arg = "const svLogicVecVal*";
             } else {
                 arg = "svLogicVecVal*";
@@ -394,8 +385,8 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
 	arg = basicp()->keyword().dpiType();
 	if (basicp()->keyword().isDpiUnsignable() && !basicp()->isSigned()) {
 	    arg = "unsigned "+arg;
-	}
-	if (!forReturn && isOutput()) arg += "*";
+        }
+        if (!forReturn && isWritable()) arg += "*";
     }
     if (named) arg += " "+name();
     return arg;
@@ -898,7 +889,7 @@ void AstModportFTaskRef::dump(std::ostream& str) {
 }
 void AstModportVarRef::dump(std::ostream& str) {
     this->AstNode::dump(str);
-    str<<" "<<varType();
+    if (direction().isAny()) str<<" "<<direction();
     if (varp()) { str<<" -> "; varp()->dump(str); }
     else { str<<" -> UNLINKED"; }
 }
@@ -1061,12 +1052,8 @@ void AstVarRef::dump(std::ostream& str) {
 void AstVar::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (isSc()) str<<" [SC]";
-    if (isPrimaryIO()) str<<(isInout()?" [PIO]":(isInput()?" [PI]":" [PO]"));
-    else {
-	if (isInout()) str<<" [IO]";
-	else if (isInput()) str<<" [I]";
-	else if (isOutput()) str<<" [O]";
-    }
+    if (isPrimaryIO()) str<<(isInoutish()?" [PIO]":(isWritable()?" [PO]":" [PI]"));
+    if (isIO()) str<<" "<<direction().ascii();
     if (isConst()) str<<" [CONST]";
     if (isPullup()) str<<" [PULLUP]";
     if (isPulldown()) str<<" [PULLDOWN]";

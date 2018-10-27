@@ -871,8 +871,9 @@ class LinkDotFindVisitor : public AstNVisitor {
 		// also return the class reference.
 		if (dtypep) dtypep->unlinkFrBack();
 		else dtypep = new AstBasicDType(nodep->fileline(), AstBasicDTypeKwd::LOGIC);
-		AstVar* newvarp = new AstVar(nodep->fileline(), AstVarType::OUTPUT, nodep->name(),
-					     VFlagChildDType(), dtypep);  // Not dtype resolved yet
+                AstVar* newvarp = new AstVar(nodep->fileline(), AstVarType::WIRE, nodep->name(),
+                                             VFlagChildDType(), dtypep);  // Not dtype resolved yet
+                newvarp->direction(VDirection::OUTPUT);
 		newvarp->funcReturn(true);
 		newvarp->trace(false);  // Not user visible
 		newvarp->attrIsolateAssign(nodep->attrIsolateAssign());
@@ -1537,10 +1538,10 @@ private:
         } else if (VN_IS(symp->nodep(), ModportVarRef)) {
             AstModportVarRef* snodep = VN_CAST(symp->nodep(), ModportVarRef);
             AstVar* varp = snodep->varp();
-            if (lvalue && snodep->isInput()) {
+            if (lvalue && snodep->direction().isReadOnly()) {
                 nodep->v3error("Attempt to drive input-only modport: "<<nodep->prettyName());
             } // else other simulators don't warn about reading, and IEEE doesn't say illegal
-	    return varp;
+            return varp;
         } else {
             return NULL;
         }

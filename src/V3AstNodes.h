@@ -1096,12 +1096,10 @@ private:
     string	m_origName;	// Original name before dot addition
     string      m_tag;          // Holds the string of the verilator tag -- used in XML output.
     AstVarType	m_varType;	// Type of variable
+    VDirection  m_direction;    // Direction input/output etc
+    VDirection  m_declDirection;    // Declared direction input/output etc
     AstBasicDTypeKwd m_declKwd;  // Keyword at declaration time
-    bool	m_input:1;	// Input or inout
-    bool	m_output:1;	// Output or inout
     bool	m_tristate:1;	// Inout or triwire or trireg
-    bool        m_declInput:1;  // Inout or input before tristate and inline resolution
-    bool        m_declOutput:1;  // Inout or output before tristate and inline resolution
     bool	m_primaryIO:1;	// In/out to top level (or directly assigned from same)
     bool	m_sc:1;		// SystemC variable
     bool	m_scClocked:1;	// SystemC sc_clk<> needed
@@ -1132,10 +1130,9 @@ private:
     AstVarAttrClocker m_attrClocker;
     MTaskIdSet  m_mtaskIds;  // MTaskID's that read or write this var
 
-    void	init() {
-        m_input=false; m_output=false; m_tristate=false; m_declInput=false; m_declOutput=false;
-	m_primaryIO=false;
-	m_sc=false; m_scClocked=false; m_scSensitive=false;
+    void init() {
+        m_tristate=false; m_primaryIO=false;
+        m_sc=false; m_scClocked=false; m_scSensitive=false;
 	m_usedClock=false; m_usedParam=false; m_usedLoopIdx=false;
 	m_sigPublic=false; m_sigModPublic=false; m_sigUserRdPublic=false; m_sigUserRWPublic=false;
 	m_funcLocal=false; m_funcReturn=false;
@@ -1201,9 +1198,16 @@ public:
     string origName() const { return m_origName; }		// * = Original name
     void origName(const string& name) { m_origName = name; }
     AstVarType varType() const { return m_varType; }  // * = Type of variable
+    void direction(const VDirection& flag) {
+        m_direction = flag;
+        if (m_direction == VDirection::INOUT) m_tristate = true; }
+    VDirection direction() const { return m_direction; }
+    bool isIO() const { return m_direction != VDirection::NONE; }
+    void declDirection(const VDirection& flag) { m_declDirection = flag; }
+    VDirection declDirection() const { return m_declDirection; }
     void varType(AstVarType type) { m_varType = type; }
-    void varType2Out() { m_tristate=0; m_input=0; m_output=1; }
-    void varType2In() {  m_tristate=0; m_input=1; m_output=0; }
+    void varType2Out() { m_tristate=0; m_direction=VDirection::OUTPUT; }
+    void varType2In() {  m_tristate=0; m_direction=VDirection::INPUT; }
     AstBasicDTypeKwd declKwd() const { return m_declKwd; }
     string	scType() const;	  // Return SysC type: bool, uint32_t, uint64_t, sc_bv
     string	cPubArgType(bool named, bool forReturn) const;  // Return C /*public*/ type for argument: bool, uint32_t, uint64_t, etc.
@@ -1258,19 +1262,13 @@ public:
     virtual void name(const string& name) { m_name = name; }
     virtual void tag(const string& text) { m_tag = text;}
     virtual string tag() const { return m_tag; }
-    virtual string directionName() const { return (isInout() ? "inout" : isInput() ? "input"
-						   : isOutput() ? "output" : varType().ascii()); }
-    bool isInput() const { return m_input; }
-    bool isOutput() const { return m_output; }
-    bool isInOnly() const { return m_input && !m_output; }
-    bool isOutOnly() const { return m_output && !m_input; }
-    bool isInout() const { return m_input && m_output; }
+    bool isInoutish() const { return m_direction.isInoutish(); }
+    bool isNonOutput() const { return m_direction.isNonOutput(); }
+    bool isReadOnly() const { return m_direction.isReadOnly(); }
+    bool isWritable() const { return m_direction.isWritable(); }
     bool isTristate() const { return m_tristate; }
-    bool isDeclInput() const { return m_declInput; }
-    bool isDeclOutput() const { return m_declOutput; }
-    bool	isPrimaryIO() const { return m_primaryIO; }
-    bool	isPrimaryIn() const { return isPrimaryIO() && isInput(); }
-    bool	isIO() const  { return (m_input||m_output); }
+    bool isPrimaryIO() const { return m_primaryIO; }
+    bool isPrimaryInish() const { return isPrimaryIO() && isNonOutput(); }
     bool	isIfaceRef() const { return (varType()==AstVarType::IFACEREF); }
     bool	isIfaceParent() const { return m_isIfaceParent; }
     bool	isSignal() const  { return varType().isSignal(); }
@@ -1326,8 +1324,9 @@ public:
 	// Ok to gate optimize; must return false if propagateAttrFrom would do anything
 	return (!attrClockEn() && !isUsedClock());
     }
-    void	combineType(AstVar* typevarp) {
-	// This is same as typevarp (for combining input & reg decls)
+    void combineType(AstVar* typevarp) {
+        // This is same as typevarp (for combining input & reg decls)
+        // "this" is the input var. typevarp is the reg var.
 	propagateAttrFrom(typevarp);
 	combineType(typevarp->varType());
 	if (typevarp->isSigPublic()) sigPublic(true);
@@ -1337,9 +1336,11 @@ public:
 	if (typevarp->attrScClocked()) attrScClocked(true);
     }
     void	inlineAttrReset(const string& name) {
-	m_input=m_output=false; m_name = name;
-	if (varType()==AstVarType::INOUT) m_varType = AstVarType::TRIWIRE;
-	if (varType()==AstVarType::INPUT || varType()==AstVarType::OUTPUT) m_varType = AstVarType::WIRE;
+        if (direction()==VDirection::INOUT && varType()==AstVarType::WIRE) {
+            m_varType = AstVarType::TRIWIRE;
+        }
+        m_direction = VDirection::NONE;
+        m_name = name;
     }
     static AstVar* scVarRecurse(AstNode* nodep);
     void addProducingMTaskId(int id) { m_mtaskIds.insert(id); }
@@ -1577,10 +1578,13 @@ public:
 	return NULL; }
     virtual string name()	const { return m_name; }		// * = Pin name, ""=go by number
     virtual void name(const string& name) { m_name = name; }
-    virtual string prettyOperatorName() const { return modVarp()
-	    ? (modVarp()->directionName()+" port connection '"+modVarp()->prettyName()+"'")
-	    : "port connection"; }
-    bool	dotStar()	const { return name() == ".*"; }	// Special fake name for .* connections until linked
+    virtual string prettyOperatorName() const {
+        return modVarp() ? ((modVarp()->direction().isAny()
+                             ? modVarp()->direction().prettyName()+" "
+                             : "")
+                            +"port connection '"+modVarp()->prettyName()+"'")
+            : "port connection"; }
+    bool dotStar() const { return name() == ".*"; }  // Fake name for .* connections until linked
     int		pinNum()	const { return m_pinNum; }
     void	exprp(AstNode* nodep) { addOp1p(nodep); }
     AstNode*	exprp()		const { return op1p(); }	// op1 = Expression connected to pin, NULL if unconnected
@@ -1730,19 +1734,18 @@ class AstModportVarRef : public AstNode {
     // PARENT: AstModport
 private:
     string	m_name;		// Name of the variable referenced
-    AstVarType	m_type;		// Type of the variable (in/out)
-    AstVar*	m_varp;		// Link to the actual Var
+    VDirection  m_direction;    // Direction of the variable (in/out)
+    AstVar*     m_varp;         // Link to the actual Var
 public:
-    AstModportVarRef(FileLine* fl, const string& name, AstVarType::en type)
-	: AstNode(fl), m_name(name), m_type(type), m_varp(NULL) { }
+    AstModportVarRef(FileLine* fl, const string& name, VDirection::en direction)
+        : AstNode(fl), m_name(name), m_direction(direction), m_varp(NULL) { }
     ASTNODE_NODE_FUNCS(ModportVarRef)
     virtual const char* broken() const { BROKEN_RTN(m_varp && !m_varp->brokeExists()); return NULL; }
     virtual void dump(std::ostream& str);
     virtual void cloneRelink() { if (m_varp && m_varp->clonep()) m_varp = m_varp->clonep(); }
     virtual string name() const { return m_name; }
-    AstVarType	varType() const { return m_type; }		// * = Type of variable
-    bool isInput() const { return (varType()==AstVarType::INPUT || varType()==AstVarType::INOUT); }
-    bool isOutput() const { return (varType()==AstVarType::OUTPUT || varType()==AstVarType::INOUT); }
+    void direction(const VDirection& flag) { m_direction = flag; }
+    VDirection direction() const { return m_direction; }
     AstVar* varp() const { return m_varp; }		// [After Link] Pointer to variable
     void varp(AstVar* varp) { m_varp=varp; }
 };
@@ -3367,8 +3370,7 @@ private:
     uint32_t	m_codeInc;	// Code increment
     AstVarType  m_varType;      // Type of variable (for localparam vs. param)
     AstBasicDTypeKwd m_declKwd;  // Keyword at declaration time
-    bool        m_declInput:1;  // Input or inout
-    bool        m_declOutput:1;  // Output or inout
+    VDirection  m_declDirection;  // Declared direction input/output etc
 public:
     AstTraceDecl(FileLine* fl, const string& showname,
                  AstVar* varp,  // For input/output state etc
@@ -3382,8 +3384,7 @@ public:
 		     * valuep->dtypep()->widthWords());
         m_varType = varp->varType();
         m_declKwd = varp->declKwd();
-        m_declInput = varp->isDeclInput();
-        m_declOutput = varp->isDeclOutput();
+        m_declDirection = varp->declDirection();
     }
     virtual int instrCount() const { return 100; }  // Large...
     ASTNODE_NODE_FUNCS(TraceDecl)
@@ -3400,9 +3401,7 @@ public:
     const VNumRange& arrayRange() const { return m_arrayRange; }
     AstVarType varType() const { return m_varType; }
     AstBasicDTypeKwd declKwd() const { return m_declKwd; }
-    bool declInput() const { return m_declInput; }
-    bool declOutput() const { return m_declOutput; }
-    bool declInout() const { return m_declInput && m_declOutput; }
+    VDirection declDirection() const { return m_declDirection; }
 };
 
 class AstTraceInc : public AstNodeStmt {

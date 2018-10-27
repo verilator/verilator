@@ -1211,13 +1211,13 @@ void EmitCStmts::emitVarDecl(const AstVar* nodep, const string& prefixIfImp) {
     if (nodep->isIO()) {
 	if (nodep->isSc()) {
 	    m_ctorVarsVec.push_back(nodep);
-	    if (nodep->attrScClocked() && nodep->isInput()) {
-		puts("sc_in_clk ");
-	    } else {
-		if (nodep->isInout()) puts("sc_inout<");
-		else if (nodep->isInput()) puts("sc_in<");
-		else if (nodep->isOutput()) puts("sc_out<");
-		else nodep->v3fatalSrc("Unknown type");
+            if (nodep->attrScClocked() && nodep->isReadOnly()) {
+                puts("sc_in_clk ");
+            } else {
+                if (nodep->isInoutish()) puts("sc_inout<");
+                else if (nodep->isWritable()) puts("sc_out<");
+                else if (nodep->isNonOutput()) puts("sc_in<");
+                else nodep->v3fatalSrc("Unknown type");
 
 		puts(nodep->scType());
 		puts("> ");
@@ -1230,11 +1230,11 @@ void EmitCStmts::emitVarDecl(const AstVar* nodep, const string& prefixIfImp) {
 	    puts(nodep->vlArgType(true,false,false));
 	    emitDeclArrayBrackets(nodep);
 	    puts(";\n");
-	} else { // C++ signals
-	    if (nodep->isInout()) puts("VL_INOUT");
-	    else if (nodep->isInput()) puts("VL_IN");
-	    else if (nodep->isOutput()) puts("VL_OUT");
-	    else nodep->v3fatalSrc("Unknown type");
+        } else {  // C++ signals
+            if (nodep->isInoutish()) puts("VL_INOUT");
+            else if (nodep->isWritable()) puts("VL_OUT");
+            else if (nodep->isNonOutput()) puts("VL_IN");
+            else nodep->v3fatalSrc("Unknown type");
 
 	    if (nodep->isQuad()) puts("64");
 	    else if (nodep->widthMin() <= 8) puts("8");
@@ -1990,9 +1990,10 @@ void EmitCImp::emitSensitives() {
 	puts("SC_METHOD(eval);\n");
 	for (AstNode* nodep=m_modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstVar* varp = VN_CAST(nodep, Var)) {
-		if (varp->isInput() && (varp->isScSensitive() || varp->isUsedClock())) {
-		    int vects = 0;
-		    // This isn't very robust and may need cleanup for other data types
+                if (varp->isNonOutput() && (varp->isScSensitive()
+                                            || varp->isUsedClock())) {
+                    int vects = 0;
+                    // This isn't very robust and may need cleanup for other data types
                     for (AstUnpackArrayDType* arrayp=VN_CAST(varp->dtypeSkipRefp(), UnpackArrayDType);
                          arrayp;
                          arrayp = VN_CAST(arrayp->subDTypep()->skipRefp(), UnpackArrayDType)) {
@@ -2852,9 +2853,9 @@ class EmitCTrace : EmitCStmts {
         if (v3Global.opt.traceFormat() == TraceFormat::FST) {
             puts(","+cvtToStr(enumNum));
             // fstVarDir
-            if (nodep->declInout()) puts(",FST_VD_INOUT");
-            else if (nodep->declInput()) puts(",FST_VD_INPUT");
-            else if (nodep->declOutput()) puts(",FST_VD_OUTPUT");
+            if (nodep->declDirection().isInoutish()) puts(",FST_VD_INOUT");
+            else if (nodep->declDirection().isWritable()) puts(",FST_VD_OUTPUT");
+            else if (nodep->declDirection().isNonOutput()) puts(",FST_VD_INPUT");
             else puts(",FST_VD_IMPLICIT");
             //
             // fstVarType
@@ -2875,6 +2876,7 @@ class EmitCTrace : EmitCStmts {
             else if (vartype == AstVarType::TRI1)    fstvt = "FST_VT_VCD_TRI1";
             else if (vartype == AstVarType::TRIWIRE) fstvt = "FST_VT_VCD_TRI";
             else if (vartype == AstVarType::WIRE)    fstvt = "FST_VT_VCD_WIRE";
+            else if (vartype == AstVarType::PORT)    fstvt = "FST_VT_VCD_WIRE";
             //
             else if (kwd == AstBasicDTypeKwd::INTEGER)  fstvt = "FST_VT_VCD_INTEGER";
             else if (kwd == AstBasicDTypeKwd::BIT)      fstvt = "FST_VT_SV_BIT";

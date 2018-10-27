@@ -14,7 +14,7 @@ compile(
     fails => 1,
     expect =>
 q{%Error: t/t_func_const_bad.v:11: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_output'
-%Error: t/t_func_const_bad.v:12: ... Location of non-constant VAR 'o': Language violation: Outputs not allowed in constant functions
+%Error: t/t_func_const_bad.v:12: ... Location of non-constant VAR 'o': Language violation: Outputs/refs not allowed in constant functions
 %Error: t/t_func_const_bad.v:20: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_dotted'
 %Error: t/t_func_const_bad.v:22: ... Location of non-constant VARXREF 'EIGHT': Language violation: Dotted hierarchical references not allowed in constant functions
 Called from:

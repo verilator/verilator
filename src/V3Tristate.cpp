@@ -27,9 +27,9 @@
 // Over each module, from child to parent:
 //   Build a graph, connecting signals together so we can propagate tristates
 //     Variable becomes tristate with
-//	 VAR->isInout
-//	 VAR->isPullup/isPulldown (converted to AstPullup/AstPulldown
-//	 BufIf0/1
+//       VAR->isInoutish
+//       VAR->isPullup/isPulldown (converted to AstPullup/AstPulldown
+//       BufIf0/1
 //   All variables on the LHS need to become tristate when there is:
 //	 CONST-> with Z value on the RHS of an assignment
 //	 AstPin with lower connection a tristate
@@ -1067,18 +1067,20 @@ class TristateVisitor : public TristateBaseVisitor {
 	    UINFO(9,dbgState()<<nodep<<endl);
 	    if (debug()>=9) nodep->dumpTree(cout,"-pin-pre: ");
 
-	    // Empty/in-only; need Z to propagate
-	    bool inDeclProcessing = (nodep->exprp()
-				     && nodep->modVarp()->isInOnly()
-				     // Need to consider the original state instead of current state
-				     // as we converted tristates to inputs, which do not want to have this.
-				     && !nodep->modVarp()->isDeclOutput());
-	    if (!nodep->exprp()) { // No-connect; covert to empty connection
-		UINFO(5,"Unconnected pin terminate "<<nodep<<endl);
-		AstVar* ucVarp = getCreateUnconnVarp(nodep, nodep->modVarp()->dtypep());
-		nodep->exprp(new AstVarRef(nodep->fileline(), ucVarp,
-					   // We converted, so use declaration output state
-					   nodep->modVarp()->isDeclOutput()));
+            // Empty/in-only; need Z to propagate
+            bool inDeclProcessing = (nodep->exprp()
+                                     && nodep->modVarp()->direction() == VDirection::INPUT
+                                     // Need to consider the original state
+                                     // instead of current state as we converted
+                                     // tristates to inputs, which do not want
+                                     // to have this.
+                                     && !nodep->modVarp()->declDirection().isWritable());
+            if (!nodep->exprp()) {  // No-connect; covert to empty connection
+                UINFO(5,"Unconnected pin terminate "<<nodep<<endl);
+                AstVar* ucVarp = getCreateUnconnVarp(nodep, nodep->modVarp()->dtypep());
+                nodep->exprp(new AstVarRef(nodep->fileline(), ucVarp,
+                                           // We converted, so use declaration output state
+                                           nodep->modVarp()->declDirection().isWritable()));
 		m_tgraph.setTristate(ucVarp);
 		// We don't need a driver on the wire; the lack of one will default to tristate
 	    } else if (inDeclProcessing) {   // Not an input that was a converted tristate
@@ -1245,11 +1247,12 @@ class TristateVisitor : public TristateBaseVisitor {
 		nodep->addNextHere(newp);
 		// We'll iterate on the new AstPull later
 	    }
-	    if (nodep->isInout()
-		//|| varp->isOutput()
-		// Note unconnected output only changes behavior vs. previous versions and causes outputs
-		// that don't come from anywhere to possibly create connection errors.
-		// One example of problems is this:  "output z;  task t; z <= {something}; endtask"
+            if (nodep->isInoutish()
+                //|| varp->isOutput()
+                // Note unconnected output only changes behavior vs. previous
+                // versions and causes outputs that don't come from anywhere to
+                // possibly create connection errors.
+                // One example of problems is this:  "output z;  task t; z <= {something}; endtask"
 		) {
 		UINFO(9,"  setTristate-inout "<<nodep<<endl);
 		m_tgraph.setTristate(nodep);

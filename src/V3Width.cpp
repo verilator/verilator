@@ -2557,7 +2557,7 @@ private:
                 AstArg* argp = it->second;
                 AstNode* pinp = argp->exprp();
                 if (!pinp) continue;  // Argument error we'll find later
-                if ((portp->isOutput() || portp->isInout())
+                if (portp->isWritable()
                     && pinp->width() != portp->width()) {
                     pinp->v3error("Unsupported: Function output argument '"<<portp->prettyName()<<"'"
                                   <<" requires "<<portp->width()
@@ -3344,8 +3344,9 @@ private:
                 AstNodeAssign* assignp = VN_CAST(nodep, NodeAssign);
                 AstPin* pinp = VN_CAST(nodep, Pin);
                 if (assignp && VN_IS(assignp->lhsp(), NodeStream)) {
-		} else if (pinp && !pinp->modVarp()->isInput()) {  // V3Inst::pinReconnectSimple must deal
-		    UINFO(5,"pinInSizeMismatch: "<<pinp);
+                } else if (pinp && pinp->modVarp()->direction() != VDirection::INPUT) {
+                    // V3Inst::pinReconnectSimple must deal
+                    UINFO(5,"pinInSizeMismatch: "<<pinp);
 		} else {
 		    fixWidthExtend(underp, expDTypep, extendRule); VL_DANGLING(underp);//Changed
 		}

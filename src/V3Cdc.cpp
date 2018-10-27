@@ -258,13 +258,13 @@ private:
 		// Create IO vertex - note it's relative to the pointed to var, not where we are now
 		// This allows reporting to easily print the input statement
 		CdcLogicVertex* ioVertexp = new CdcLogicVertex(&m_graph, varscp->scopep(), varscp->varp(), NULL);
-		if (varscp->varp()->isInput()) {
-		    new V3GraphEdge(&m_graph, ioVertexp, vertexp, 1);
-		} else {
-		    new V3GraphEdge(&m_graph, vertexp, ioVertexp, 1);
-		}
-	    }
-	}
+                if (varscp->varp()->isWritable()) {
+                    new V3GraphEdge(&m_graph, vertexp, ioVertexp, 1);
+                } else {
+                    new V3GraphEdge(&m_graph, ioVertexp, vertexp, 1);
+                }
+            }
+        }
 	if (m_inSenItem) {
 	    varscp->user2(true);  // It's like a clock...
 	    // TODO: In the future we could mark it here and do normal clock tree glitch checks also
@@ -372,9 +372,9 @@ private:
 	}
 	else if (CdcVarVertex* vvertexp = dynamic_cast<CdcVarVertex*>(vertexp)) {
 	    if (mark) vvertexp->asyncPath(true);
-	    // If primary I/O, it's ok here back
-	    if (vvertexp->varScp()->varp()->isPrimaryIn()) {
-		// Show the source "input" statement if it exists
+            // If primary I/O, it's ok here back
+            if (vvertexp->varScp()->varp()->isPrimaryInish()) {
+                // Show the source "input" statement if it exists
 		for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
                     CdcEitherVertex* eFromVertexp = static_cast<CdcEitherVertex*>(edgep->fromp());
 		    eFromVertexp->asyncPath(true);
@@ -501,8 +501,8 @@ private:
 	    if (CdcVarVertex* vvertexp = dynamic_cast<CdcVarVertex*>(itp)) {
 		AstVar* varp = vvertexp->varScp()->varp();
 		if (1) {  // varp->isPrimaryIO()
-		    const char* whatp = "wire";
-		    if (varp->isPrimaryIO()) whatp = (varp->isInout()?"inout":varp->isInput()?"input":"output");
+                    string what = "wire";
+                    if (varp->isPrimaryIO()) what = varp->direction().prettyName();
 
                     std::ostringstream os;
                     os.setf(std::ios::left);
@@ -510,7 +510,7 @@ private:
 		    // so we assume the modulename matches the filebasename
 		    string fname = vvertexp->varScp()->fileline()->filebasename() + ":";
                     os<<"  "<<std::setw(20)<<fname;
-                    os<<"  "<<std::setw(8)<<whatp;
+                    os<<"  "<<std::setw(8)<<what;
                     os<<"  "<<std::setw(40)<<vvertexp->varScp()->prettyName();
 		    os<<"  SRC=";
 		    if (vvertexp->srcDomainp()) V3EmitV::verilogForTree(vvertexp->srcDomainp(), os);
@@ -545,10 +545,12 @@ private:
 	else if (CdcVarVertex* vvertexp = dynamic_cast<CdcVarVertex*>(vertexp)) {
 	    // If primary I/O, give it domain of the input
 	    AstVar* varp = vvertexp->varScp()->varp();
-	    if (varp->isPrimaryIO() && varp->isInput() && !traceDests) {
-		senouts.insert(new AstSenTree(varp->fileline(), new AstSenItem(varp->fileline(), AstSenItem::Combo())));
-	    }
-	}
+            if (varp->isPrimaryIO() && varp->isNonOutput() && !traceDests) {
+                senouts.insert(
+                    new AstSenTree(varp->fileline(),
+                                   new AstSenItem(varp->fileline(), AstSenItem::Combo())));
+            }
+        }
 
 	// Now combine domains of sources/dests
 	if (traceDests) {

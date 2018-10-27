@@ -405,14 +405,17 @@ private:
 	    AstVar* varoutp = NULL;
 	    for (AstNode* stmtp = m_modp->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
                 if (AstVar* varp = VN_CAST(stmtp, Var)) {
-		    if (varp->isInput()) {
-		    } else if (varp->isOutput()) {
-			if (varoutp) { varp->v3error("Multiple outputs not allowed in udp modules"); }
-			varoutp = varp;
-			// Tie off
-			m_modp->addStmtp(new AstAssignW(varp->fileline(),
-							new AstVarRef(varp->fileline(), varp, true),
-							new AstConst(varp->fileline(), AstConst::LogicFalse())));
+                    if (varp->isReadOnly()) {
+                    } else if (varp->isWritable()) {
+                        if (varoutp) {
+                            varp->v3error("Multiple outputs not allowed in udp modules");
+                        }
+                        varoutp = varp;
+                        // Tie off
+                        m_modp->addStmtp(new AstAssignW(
+                                             varp->fileline(),
+                                             new AstVarRef(varp->fileline(), varp, true),
+                                             new AstConst(varp->fileline(), AstConst::LogicFalse())));
 		    } else {
 			varp->v3error("Only inputs and outputs are allowed in udp modules");
 		    }

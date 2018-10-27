@@ -1538,9 +1538,10 @@ private:
 		&& ((!m_params // Can reduce constant wires into equations
 		     && m_doNConst
 		     && v3Global.opt.oConst()
-		     && !(nodep->varp()->isFuncLocal() // Default value, not a "known" constant for this usage
-			  && nodep->varp()->isInput())
-		     && !nodep->varp()->noSubst()
+                     // Default value, not a "known" constant for this usage
+                     && !(nodep->varp()->isFuncLocal()
+                          && nodep->varp()->isNonOutput())
+                     && !nodep->varp()->noSubst()
 		     && !nodep->varp()->isSigPublic())
 		    || nodep->varp()->isParam())) {
 		if (operandConst(valuep)) {

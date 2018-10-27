@@ -1017,9 +1017,9 @@ private:
         m_inClocked = false;
     }
     virtual void visit(AstVarScope* nodep) {
-	// Create links to all input signals
-	if (m_modp->isTop() && nodep->varp()->isInput()) {
-	    OrderVarVertex* varVxp = newVarUserVertex(nodep, WV_STD);
+        // Create links to all input signals
+        if (m_modp->isTop() && nodep->varp()->isNonOutput()) {
+            OrderVarVertex* varVxp = newVarUserVertex(nodep, WV_STD);
 	    new OrderEdge(&m_graph, m_inputsVxp, varVxp, WEIGHT_INPUT);
 	}
     }
@@ -1463,9 +1463,9 @@ void OrderVisitor::processSensitive() {
     // Sc sensitives are required on all inputs that go to a combo
     // block.  (Not inputs that go only to clocked blocks.)
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
-	if (OrderVarStdVertex* vvertexp = dynamic_cast<OrderVarStdVertex*>(itp)) {
-	    if (vvertexp->varScp()->varp()->isInput()) {
-		//UINFO(0,"  scsen "<<vvertexp<<endl);
+        if (OrderVarStdVertex* vvertexp = dynamic_cast<OrderVarStdVertex*>(itp)) {
+            if (vvertexp->varScp()->varp()->isNonOutput()) {
+                //UINFO(0,"  scsen "<<vvertexp<<endl);
 		for (V3GraphEdge* edgep = vvertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
 		    if (OrderEitherVertex* toVertexp = dynamic_cast<OrderEitherVertex*>(edgep->top())) {
 			if (edgep->weight() && toVertexp->domainp()) {
@@ -1501,8 +1501,8 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
     OrderVarVertex* vvertexp = dynamic_cast<OrderVarVertex*>(vertexp);
     AstSenTree* domainp = NULL;
     UASSERT(m_comboDomainp, "not preset");
-    if (vvertexp && vvertexp->varScp()->varp()->isInput()) {
-	domainp = m_comboDomainp;
+    if (vvertexp && vvertexp->varScp()->varp()->isNonOutput()) {
+        domainp = m_comboDomainp;
     }
     if (vvertexp && vvertexp->varScp()->isCircular()) {
 	domainp = m_comboDomainp;

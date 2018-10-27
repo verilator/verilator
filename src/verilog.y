@@ -51,7 +51,7 @@ class V3ParseGrammar {
 public:
     bool	m_impliedDecl;	// Allow implied wire declarations
     AstVarType	m_varDecl;	// Type for next signal declaration (reg/wire/etc)
-    AstVarType	m_varIO;	// Type for next signal declaration (input/output/etc)
+    VDirection  m_varIO;        // Direction for next signal declaration (reg/wire/etc)
     AstVar*	m_varAttrp;	// Current variable for attribute adding
     AstRange*	m_gateRangep;	// Current range for gate declarations
     AstCase*	m_caseAttrp;	// Current case statement for attribute adding
@@ -68,7 +68,7 @@ public:
     V3ParseGrammar() {
 	m_impliedDecl = false;
 	m_varDecl = AstVarType::UNKNOWN;
-	m_varIO = AstVarType::UNKNOWN;
+	m_varIO = VDirection::NONE;
 	m_varDTypep = NULL;
 	m_gateRangep = NULL;
 	m_memDTypep = NULL;
@@ -182,9 +182,9 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
 
 #define VARRESET_LIST(decl)    { GRAMMARP->m_pinNum=1; VARRESET(); VARDECL(decl); }	// Start of pinlist
 #define VARRESET_NONLIST(decl) { GRAMMARP->m_pinNum=0; VARRESET(); VARDECL(decl); }	// Not in a pinlist
-#define VARRESET() { VARDECL(UNKNOWN); VARIO(UNKNOWN); VARDTYPE(NULL); }
+#define VARRESET() { VARDECL(UNKNOWN); VARIO(NONE); VARDTYPE(NULL); }
 #define VARDECL(type) { GRAMMARP->m_varDecl = AstVarType::type; }
-#define VARIO(type) { GRAMMARP->m_varIO = AstVarType::type; }
+#define VARIO(type) { GRAMMARP->m_varIO = VDirection::type; }
 #define VARDTYPE(dtypep) { GRAMMARP->setDType(dtypep); }
 
 #define VARDONEA(fl,name,array,attrs) GRAMMARP->createVariable((fl),(name),(array),(attrs))
@@ -899,11 +899,11 @@ port<nodep>:			// ==IEEE: port
 	//			// Expanded interface_port_header
 	//			// We use instantCb here because the non-port form looks just like a module instantiation
 		portDirNetE id/*interface*/                      portSig variable_dimensionListE sigAttrListE
-			{ $$ = $3; VARDECL(AstVarType::IFACEREF); VARIO(UNKNOWN);
+			{ $$ = $3; VARDECL(AstVarType::IFACEREF); VARIO(NONE);
 			  VARDTYPE(new AstIfaceRefDType($<fl>2,"",*$2));
 			  $$->addNextNull(VARDONEP($$,$4,$5)); }
 	|	portDirNetE id/*interface*/ '.' idAny/*modport*/ portSig variable_dimensionListE sigAttrListE
-			{ $$ = $5; VARDECL(AstVarType::IFACEREF); VARIO(UNKNOWN);
+			{ $$ = $5; VARDECL(AstVarType::IFACEREF); VARIO(NONE);
 			  VARDTYPE(new AstIfaceRefDType($<fl>2,"",*$2,*$4));
 			  $$->addNextNull(VARDONEP($$,$6,$7)); }
 	|	portDirNetE yINTERFACE                           portSig rangeListE sigAttrListE
@@ -3993,13 +3993,12 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nra
 AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name, AstNodeRange* arrayp, AstNode* attrsp) {
     AstNodeDType* dtypep = GRAMMARP->m_varDTypep;
     UINFO(5,"  creVar "<<name<<"  decl="<<GRAMMARP->m_varDecl<<"  io="<<GRAMMARP->m_varIO<<"  dt="<<(dtypep?"set":"")<<endl);
-    if (GRAMMARP->m_varIO == AstVarType::UNKNOWN
+    if (GRAMMARP->m_varIO == VDirection::NONE
 	&& GRAMMARP->m_varDecl == AstVarType::PORT) {
 	// Just a port list with variable name (not v2k format); AstPort already created
 	if (dtypep) fileline->v3error("Unsupported: Ranges ignored in port-lists");
 	return NULL;
     }
-    AstVarType type = GRAMMARP->m_varIO;
     if (GRAMMARP->m_varDecl == AstVarType::WREAL) {
 	// dtypep might not be null, might be implicit LOGIC before we knew better
 	dtypep = new AstBasicDType(fileline,AstBasicDTypeKwd::DOUBLE);
@@ -4010,21 +4009,28 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name, AstNodeR
 	dtypep = dtypep->cloneTree(false);
     }
     //UINFO(0,"CREVAR "<<fileline->ascii()<<" decl="<<GRAMMARP->m_varDecl.ascii()<<" io="<<GRAMMARP->m_varIO.ascii()<<endl);
-    if (type == AstVarType::UNKNOWN
-	|| (type == AstVarType::PORT && GRAMMARP->m_varDecl != AstVarType::UNKNOWN))
-	type = GRAMMARP->m_varDecl;
-    if (type == AstVarType::UNKNOWN) fileline->v3fatalSrc("Unknown signal type declared");
+    AstVarType type = GRAMMARP->m_varDecl;
+    if (type == AstVarType::UNKNOWN) {
+        if (GRAMMARP->m_varIO.isAny()) {
+            type = AstVarType::PORT;
+        } else {
+            fileline->v3fatalSrc("Unknown signal type declared");
+        }
+    }
     if (type == AstVarType::GENVAR) {
 	if (arrayp) fileline->v3error("Genvars may not be arrayed: "<<name);
     }
 
     // Split RANGE0-RANGE1-RANGE2 into ARRAYDTYPE0(ARRAYDTYPE1(ARRAYDTYPE2(BASICTYPE3),RANGE),RANGE)
-    AstNodeDType* arrayDTypep = createArray(dtypep,arrayp,false);
+    AstNodeDType* arrayDTypep = createArray(dtypep, arrayp, false);
 
     AstVar* nodep = new AstVar(fileline, type, name, VFlagChildDType(), arrayDTypep);
     nodep->addAttrsp(attrsp);
     if (GRAMMARP->m_varDecl != AstVarType::UNKNOWN) nodep->combineType(GRAMMARP->m_varDecl);
-    if (GRAMMARP->m_varIO != AstVarType::UNKNOWN) nodep->combineType(GRAMMARP->m_varIO);
+    if (GRAMMARP->m_varIO != VDirection::NONE) {
+        nodep->declDirection(GRAMMARP->m_varIO);
+        nodep->direction(GRAMMARP->m_varIO);
+    }
 
     if (GRAMMARP->m_varDecl == AstVarType::SUPPLY0) {
 	nodep->addNext(V3ParseGrammar::createSupplyExpr(fileline, nodep->name(), 0));

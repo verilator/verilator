@@ -464,18 +464,56 @@ public:
 
 //######################################################################
 
+class VDirection {
+public:
+    enum en {
+        NONE,
+        INPUT,
+        OUTPUT,
+        INOUT
+    };
+    enum en m_e;
+    inline VDirection() : m_e(NONE) {}
+    // cppcheck-suppress noExplicitConstructor
+    inline VDirection(en _e) : m_e(_e) {}
+    explicit inline VDirection(int _e) : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
+    const char* ascii() const {
+        static const char* const names[] = {
+            "NONE", "INPUT", "OUTPUT", "INOUT"};
+        return names[m_e]; }
+    string verilogKwd() const {
+        static const char* const names[] = {
+            "", "input", "output", "inout"};
+        return names[m_e]; }
+    string xmlKwd() const {  // For historical reasons no "put" suffix
+        static const char* const names[] = {
+            "", "in", "out", "inout"};
+        return names[m_e]; }
+    string prettyName() const { return verilogKwd(); }
+    bool isAny() const { return m_e != NONE; }
+    // Looks like inout - "ish" because not identical to being an INOUT
+    bool isInoutish() const { return m_e == INOUT; }
+    bool isNonOutput() const { return m_e == INPUT || m_e == INOUT; }
+    bool isReadOnly() const { return m_e == INPUT; }
+    bool isWritable() const { return m_e == OUTPUT || m_e == INOUT; }
+  };
+  inline bool operator== (VDirection lhs, VDirection rhs) { return (lhs.m_e == rhs.m_e); }
+  inline bool operator== (VDirection lhs, VDirection::en rhs) { return (lhs.m_e == rhs); }
+  inline bool operator== (VDirection::en lhs, VDirection rhs) { return (lhs == rhs.m_e); }
+  inline std::ostream& operator<<(std::ostream& os, const VDirection& rhs) { return os<<rhs.ascii(); }
+
+//######################################################################
+
 class AstVarType {
 public:
     enum en {
-	UNKNOWN,
-	GPARAM,
-	LPARAM,
-	GENVAR,
-	VAR,		// Reg, integer, logic, etc
-	INPUT,
-	OUTPUT,
-	INOUT,
-	SUPPLY0,
+        UNKNOWN,
+        GPARAM,
+        LPARAM,
+        GENVAR,
+        VAR,  // Reg, integer, logic, etc
+        SUPPLY0,
 	SUPPLY1,
 	WIRE,
 	WREAL,
@@ -497,20 +535,19 @@ public:
     explicit inline AstVarType(int _e) : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     const char* ascii() const {
-	static const char* const names[] = {
-	    "?","GPARAM","LPARAM","GENVAR",
-	    "VAR","INPUT","OUTPUT","INOUT",
-	    "SUPPLY0","SUPPLY1","WIRE","WREAL","IMPLICITWIRE",
-	    "TRIWIRE","TRI0","TRI1",
-	    "PORT",
-	    "BLOCKTEMP","MODULETEMP","STMTTEMP","XTEMP",
-	    "IFACEREF"};
-	return names[m_e]; }
+        static const char* const names[] = {
+            "?", "GPARAM", "LPARAM", "GENVAR", "VAR",
+            "SUPPLY0", "SUPPLY1", "WIRE", "WREAL", "IMPLICITWIRE",
+            "TRIWIRE", "TRI0", "TRI1",
+            "PORT",
+            "BLOCKTEMP", "MODULETEMP", "STMTTEMP", "XTEMP",
+            "IFACEREF"};
+        return names[m_e]; }
     bool isSignal() const  { return (m_e==WIRE || m_e==WREAL || m_e==IMPLICITWIRE
-				     || m_e==TRIWIRE
-				     || m_e==TRI0 || m_e==TRI1
-				     || m_e==SUPPLY0 || m_e==SUPPLY1
-				     || m_e==VAR); }
+                                     || m_e==TRIWIRE
+                                     || m_e==TRI0 || m_e==TRI1 || m_e==PORT
+                                     || m_e==SUPPLY0 || m_e==SUPPLY1
+                                     || m_e==VAR); }
   };
   inline bool operator== (AstVarType lhs, AstVarType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstVarType lhs, AstVarType::en rhs) { return (lhs.m_e == rhs); }

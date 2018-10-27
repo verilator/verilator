@@ -272,12 +272,12 @@ private:
 	    // For assigns and non-combo always, do just usr==1, to look for module-wide undriven etc
 	    // For non-combo always, run both usr==1 for above, and also usr==2 for always-only checks
             UndrivenVarEntry* entryp = getEntryp(nodep, usr);
-	    if (nodep->isInput()
-		|| nodep->isSigPublic() || nodep->isSigUserRWPublic()
-		|| (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {
-		entryp->drivenWhole();
-	    }
-	    if (nodep->isOutput()
+            if (nodep->isNonOutput()
+                || nodep->isSigPublic() || nodep->isSigUserRWPublic()
+                || (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {
+                entryp->drivenWhole();
+            }
+            if (nodep->isWritable()
 		|| nodep->isSigPublic() || nodep->isSigUserRWPublic()
 		|| nodep->isSigUserRdPublic()
 		|| (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {

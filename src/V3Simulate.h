@@ -785,11 +785,11 @@ private:
 	    AstVar* portp = it->first;
 	    AstNode* pinp = it->second->exprp();
 	    if (pinp) {  // Else too few arguments in function call - ignore it
-		if (portp->isOutput()) {
-		    clearOptimizable(portp,"Language violation: Outputs not allowed in constant functions");
-		    return;
-		}
-		// Evaluate pin value
+                if (portp->isWritable()) {
+                    clearOptimizable(portp, "Language violation: Outputs/refs not allowed in constant functions");
+                    return;
+                }
+                // Evaluate pin value
                 iterate(pinp);
 	    }
 	}

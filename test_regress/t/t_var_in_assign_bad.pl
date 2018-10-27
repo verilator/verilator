@@ -7,14 +7,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-scenarios(vlt_all => 1);
+scenarios(vlt => 1);
 
 compile(
     v_flags2 => ["--lint-only --Mdir obj_lint_only"],
     fails => 1,
     expect =>
-'%Error-ASSIGNIN: t/t_var_in_assign_bad.v:\d+: Assigning to input variable: value
-%Error-ASSIGNIN: t/t_var_in_assign_bad.v:\d+: Assigning to input variable: valueSub
+'%Error-ASSIGNIN: t/t_var_in_assign_bad.v:\d+: Assigning to input/const variable: value
+%Error-ASSIGNIN: t/t_var_in_assign_bad.v:\d+: Assigning to input/const variable: valueSub
 %Error: Exiting due to.*',
     );
 

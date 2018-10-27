@@ -63,28 +63,31 @@ private:
 	m_cellp = NULL;
     }
     virtual void visit(AstPin* nodep) {
-	// PIN(p,expr) -> ASSIGNW(VARXREF(p),expr)    (if sub's input)
-	//	      or  ASSIGNW(expr,VARXREF(p))    (if sub's output)
-	UINFO(4,"   PIN  "<<nodep<<endl);
-	if (!nodep->exprp()) return; // No-connect
-	if (debug()>=9) nodep->dumpTree(cout,"  Pin_oldb: ");
-        if (nodep->modVarp()->isOutOnly() && VN_IS(nodep->exprp(), Const))
-	    nodep->v3error("Output port is connected to a constant pin, electrical short");
-	// Use user1p on the PIN to indicate we created an assign for this pin
-	if (!nodep->user1SetOnce()) {
-	    // Simplify it
+        // PIN(p,expr) -> ASSIGNW(VARXREF(p),expr)    (if sub's input)
+        //            or  ASSIGNW(expr,VARXREF(p))    (if sub's output)
+        UINFO(4,"   PIN  "<<nodep<<endl);
+        if (!nodep->exprp()) return;  // No-connect
+        if (debug()>=9) nodep->dumpTree(cout,"  Pin_oldb: ");
+        if (nodep->modVarp()->direction() == VDirection::OUTPUT
+            && VN_IS(nodep->exprp(), Const)) {
+            nodep->v3error("Output port is connected to a constant pin, electrical short");
+        }
+        // Use user1p on the PIN to indicate we created an assign for this pin
+        if (!nodep->user1SetOnce()) {
+            // Simplify it
             V3Inst::pinReconnectSimple(nodep, m_cellp, false);
             // Make an ASSIGNW (expr, pin)
             AstNode* exprp = nodep->exprp()->cloneTree(false);
-	    if (exprp->width() != nodep->modVarp()->width())
-		nodep->v3fatalSrc("Width mismatch, should have been handled in pinReconnectSimple");
-	    if (nodep->modVarp()->isInout()) {
-		nodep->v3fatalSrc("Unsupported: Verilator is a 2-state simulator");
-	    } else if (nodep->modVarp()->isOutput()) {
+            if (exprp->width() != nodep->modVarp()->width()) {
+                nodep->v3fatalSrc("Width mismatch, should have been handled in pinReconnectSimple");
+            }
+            if (nodep->modVarp()->isInoutish()) {
+                nodep->v3fatalSrc("Unsupported: Verilator is a 2-state simulator");
+            } else if (nodep->modVarp()->isWritable()) {
                 AstNode* rhsp = new AstVarXRef(exprp->fileline(), nodep->modVarp(), m_cellp->name(), false);
                 AstAssignW* assp = new AstAssignW(exprp->fileline(), exprp, rhsp);
                 m_cellp->addNextHere(assp);
-	    } else if (nodep->modVarp()->isInput()) {
+            } else if (nodep->modVarp()->isNonOutput()) {
 		// Don't bother moving constants now,
 		// we'll be pushing the const down to the cell soon enough.
 		AstNode* assp = new AstAssignW
@@ -332,8 +335,8 @@ private:
 		    nodep->v3warn(LITENDIAN,"Little endian cell range connecting to vector: MSB < LSB of cell range: "
 				  <<m_cellRangep->lsbConst()<<":"<<m_cellRangep->msbConst());
 		}
-		AstNode* exprp = nodep->exprp()->unlinkFrBack();
-		bool inputPin = nodep->modVarp()->isInput();
+                AstNode* exprp = nodep->exprp()->unlinkFrBack();
+                bool inputPin = nodep->modVarp()->isNonOutput();
                 if (!inputPin && !VN_IS(exprp, VarRef)
                     && !VN_IS(exprp, Concat)  // V3Const will collapse the SEL with the one we're about to make
                     && !VN_IS(exprp, Sel)) {  // V3Const will collapse the SEL with the one we're about to make
@@ -512,25 +515,29 @@ public:
 	    // Make a new temp wire
 	    //if (1||debug()>=9) { pinp->dumpTree(cout,"-in_pin:"); }
 	    AstNode* pinexprp = pinp->exprp()->unlinkFrBack();
-            string newvarname = (string(pinVarp->isOutput() ? "__Vcellout" : "__Vcellinp")
-				 +(forTristate?"t":"")  // Prevent name conflict if both tri & non-tri add signals
-				 +"__"+cellp->name()+"__"+pinp->name());
-            AstVar* newvarp = new AstVar(pinVarp->fileline(), AstVarType::MODULETEMP, newvarname, pinVarp);
-	    // Important to add statement next to cell, in case there is a generate with same named cell
-	    cellp->addNextHere(newvarp);
-	    if (pinVarp->isInout()) {
+            string newvarname = (string(pinVarp->isWritable() ? "__Vcellout" : "__Vcellinp")
+                                 // Prevent name conflict if both tri & non-tri add signals
+                                 +(forTristate?"t":"")
+                                 +"__"+cellp->name()+"__"+pinp->name());
+            AstVar* newvarp = new AstVar(pinVarp->fileline(),
+                                         AstVarType::MODULETEMP, newvarname, pinVarp);
+            // Important to add statement next to cell, in case there is a
+            // generate with same named cell
+            cellp->addNextHere(newvarp);
+            if (pinVarp->isInoutish()) {
                 pinVarp->v3fatalSrc("Unsupported: Inout connections to pins must be"
                                     " direct one-to-one connection (without any expression)");
-	    } else if (pinVarp->isOutput()) {
-		// See also V3Inst
-		AstNode* rhsp = new AstVarRef(pinp->fileline(), newvarp, false);
-		UINFO(5,"pinRecon width "<<pinVarp->width()<<" >? "<<rhsp->width()<<" >? "<<pinexprp->width()<<endl);
+            } else if (pinVarp->isWritable()) {
+                // See also V3Inst
+                AstNode* rhsp = new AstVarRef(pinp->fileline(), newvarp, false);
+                UINFO(5,"pinRecon width "<<pinVarp->width()<<" >? "
+                      <<rhsp->width()<<" >? "<<pinexprp->width()<<endl);
                 rhsp = extendOrSel(pinp->fileline(), rhsp, pinVarp);
                 pinp->exprp(new AstVarRef(newvarp->fileline(), newvarp, true));
                 AstNode* rhsSelp = extendOrSel(pinp->fileline(), rhsp, pinexprp);
                 assignp = new AstAssignW(pinp->fileline(), pinexprp, rhsSelp);
-	    } else {
-		// V3 width should have range/extended to make the widths correct
+            } else {
+                // V3 width should have range/extended to make the widths correct
                 assignp = new AstAssignW(pinp->fileline(),
                                          new AstVarRef(pinp->fileline(), newvarp, true),
                                          pinexprp);

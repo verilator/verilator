@@ -56,21 +56,21 @@ private:
 	    nodep->lvalue(true);
 	}
 	if (nodep->varp()) {
-	    if (nodep->lvalue() && nodep->varp()->isInOnly()) {
-		if (!m_ftaskp) {
-		    nodep->v3warn(ASSIGNIN,"Assigning to input variable: "<<nodep->prettyName());
-		}
-	    }
-	}
+            if (nodep->lvalue() && !m_ftaskp
+                && nodep->varp()->isReadOnly()) {
+                nodep->v3warn(ASSIGNIN,"Assigning to input/const variable: "
+                              <<nodep->prettyName());
+            }
+        }
         iterateChildren(nodep);
     }
 
     // Nodes that start propagating down lvalues
     virtual void visit(AstPin* nodep) {
-	if (nodep->modVarp() && nodep->modVarp()->isOutput()) {
-	    // When the varref's were created, we didn't know the I/O state
-	    // Now that we do, and it's from a output, we know it's a lvalue
-	    m_setRefLvalue = true;
+        if (nodep->modVarp() && nodep->modVarp()->isWritable()) {
+            // When the varref's were created, we didn't know the I/O state
+            // Now that we do, and it's from a output, we know it's a lvalue
+            m_setRefLvalue = true;
             iterateChildren(nodep);
 	    m_setRefLvalue = false;
 	} else {
@@ -238,14 +238,14 @@ private:
 	if (!taskp) return;
 	for (AstNode* stmtp = taskp->stmtsp(); stmtp && pinp; stmtp=stmtp->nextp()) {
             if (const AstVar* portp = VN_CAST(stmtp, Var)) {
-		if (portp->isIO()) {
-		    if (portp->isInput()) {
+                if (portp->isIO()) {
+                    if (portp->isWritable()) {
+                        m_setRefLvalue = true;
                         iterate(pinp);
-		    } else {  // Output or Inout
-			m_setRefLvalue = true;
+                        m_setRefLvalue = false;
+                    } else {
                         iterate(pinp);
-			m_setRefLvalue = false;
-		    }
+                    }
 		    // Advance pin
 		    pinp = pinp->nextp();
 		}

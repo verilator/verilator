@@ -1131,11 +1131,11 @@ void GateVisitor::dedupe() {
     }
     // Traverse starting from each of the outputs
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
-	if (GateVarVertex* vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
-	    if (vvertexp->isTop() && vvertexp->varScp()->varp()->isOutput()) {
-		deduper.dedupeTree(vvertexp);
-	    }
-	}
+        if (GateVarVertex* vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
+            if (vvertexp->isTop() && vvertexp->varScp()->varp()->isWritable()) {
+                deduper.dedupeTree(vvertexp);
+            }
+        }
     }
     m_statDedupLogic += deduper.numDeduped();
 }

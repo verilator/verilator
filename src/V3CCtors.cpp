@@ -114,7 +114,7 @@ void V3CCtors::evalAsserts() {
     modp->addStmtp(funcp);
     for (AstNode* np = modp->stmtsp(); np; np = np->nextp()) {
         if (AstVar* varp = VN_CAST(np, Var)) {
-	    if (varp->isPrimaryIn() && !varp->isSc()) {
+            if (varp->isPrimaryInish() && !varp->isSc()) {
                 if (AstBasicDType* basicp = VN_CAST(varp->dtypeSkipRefp(), BasicDType)) {
 		    int storedWidth = basicp->widthAlignBytes() * 8;
 		    int lastWordWidth = varp->width() % storedWidth;
