@@ -496,8 +496,8 @@ endif
 
 maintainer-clean::
 	@echo "This command is intended for maintainers to use;"
-	@echo "rebuilding the deleted files requires makeinfo."
-	rm -f *.info* *.1 $(INFOS) configure
+	@echo "rebuilding the deleted files requires autoconf."
+	rm -f configure
 
 clean mostlyclean distclean maintainer-clean maintainer-copy::
 	for dir in $(SUBDIRS); do \
@@ -515,6 +515,7 @@ clean mostlyclean distclean maintainer-clean::
 	rm -rf examples/*/obj_dir examples/*/logs
 
 distclean maintainer-clean::
+	rm -f *.info* *.1 $(INFOS)
 	rm -f Makefile config.status config.cache config.log TAGS
 	rm -f verilator_bin* verilator_coverage_bin*
 	rm -f bin/verilator_bin* bin/verilator_coverage_bin*
