@@ -6,7 +6,7 @@
 
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[4.005 devel],
+AC_INIT([Verilator],[4.006 2018-10-27],
         [https://www.veripool.org/verilator],
         [verilator],[https://www.veripool.org/verilator])
 # When releasing, also update header of Changes file
