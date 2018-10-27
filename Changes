@@ -3,6 +3,9 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in []. Thanks!
 
 
+* Verilator 4.007 devel
+
+
 * Verilator 4.006 2018-10-27
 
 **    Add --pp-comments, msg2700. [Robert Henry]
