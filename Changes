@@ -5,6 +5,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.007 devel
 
+****  Fix --trace-lxt2 compile error on MinGW, msg2711. [HyungKi Jeong]
+
 
 * Verilator 4.006 2018-10-27
 

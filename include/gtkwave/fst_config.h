@@ -2,9 +2,6 @@
 /* config.h.  Generated from config.h.in by configure.  */
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
-/* Define to 1 if you have `alloca', as a function or macro. */
-#define HAVE_ALLOCA 1
-
 /* Define to 1 if you have <alloca.h> and it should be used (not on Ultrix). */
 #define HAVE_ALLOCA_H 1
 #if !defined(__MINGW32__)
