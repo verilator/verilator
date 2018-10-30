@@ -1086,8 +1086,8 @@ class EmitCImp : EmitCStmts {
 	    }
 	}
 	if (gotOne) {
-	    puts(");\n");
-	    //puts("VL_DEBUG_IF( if (__req) cout<<\"\tCLOCKREQ );");
+            puts(");\n");
+            //puts("VL_DEBUG_IF( if (__req) cout<<\"- CLOCKREQ );");
             for (std::vector<AstChangeDet*>::iterator it = m_blkChangeDetVec.begin();
 		 it != m_blkChangeDetVec.end(); ++it) {
 		AstChangeDet* nodep = *it;
@@ -2609,11 +2609,8 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 //----------------------------------------------------------------------
 
 void EmitCImp::emitImp(AstNodeModule* modp) {
-    ofp()->printf("#include \"%-20s // For This\n",
-		  (modClassName(modp)+".h\"").c_str());
-
-    // Us
-    puts("#include \""+ symClassName() +".h\"\n");
+    puts("#include \""+modClassName(modp)+".h\"\n");
+    puts("#include \""+symClassName()+".h\"\n");
 
     if (v3Global.dpi()) {
 	puts("\n");
