@@ -10,12 +10,12 @@
     <file id="f" filename="t/t_xml_tag.v" language="1800-2017"/>
   </files>
   <netlist>
-    <module fl="f6" name="m">
-      <var fl="f8" name="clk_ip" tag="clk_ip" dtype_id="1"/>
-      <var fl="f9" name="rst_ip" dtype_id="1"/>
-      <var fl="f10" name="foo_op" tag="foo_op" dtype_id="1"/>
+    <module fl="f6" name="m" origName="m">
+      <var fl="f8" name="clk_ip" tag="clk_ip" dtype_id="1" origName="clk_ip"/>
+      <var fl="f9" name="rst_ip" dtype_id="1" origName="rst_ip"/>
+      <var fl="f10" name="foo_op" tag="foo_op" dtype_id="1" origName="foo_op"/>
       <typedef fl="f14" name="my_struct" tag="my_struct" dtype_id="2"/>
-      <var fl="f23" name="this_struct" tag="this_struct" dtype_id="3"/>
+      <var fl="f23" name="this_struct" tag="this_struct" dtype_id="3" origName="this_struct"/>
     </module>
     <typetable fl="a0">
       <basicdtype  fl="f23" id="4" name="logic" left="31" right="0"/>

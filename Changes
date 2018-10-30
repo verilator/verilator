@@ -5,6 +5,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.007 devel
 
+***   In --xml-only show the original unmodified names, msg2716. [Kanad Kanhere]
+
 ****  Fix --trace-lxt2 compile error on MinGW, msg2711. [HyungKi Jeong]
 
 

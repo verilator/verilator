@@ -10,12 +10,12 @@
     <file id="f" filename="t/t_xml_first.v" language="1800-2017"/>
   </files>
   <netlist>
-    <module fl="f6" name="t" topModule="1">
-      <var fl="f12" name="clk" dtype_id="1"/>
-      <var fl="f13" name="d" dtype_id="2"/>
-      <var fl="f14" name="q" dtype_id="2"/>
-      <var fl="f16" name="between" dtype_id="2"/>
-      <instance fl="f18" name="cell1" defName="mod1">
+    <module fl="f6" name="t" origName="t" topModule="1">
+      <var fl="f12" name="clk" dtype_id="1" origName="clk"/>
+      <var fl="f13" name="d" dtype_id="2" origName="d"/>
+      <var fl="f14" name="q" dtype_id="2" origName="q"/>
+      <var fl="f16" name="between" dtype_id="2" origName="between"/>
+      <instance fl="f18" name="cell1" defName="mod1" origName="cell1">
         <port fl="f18" name="q" direction="out" portIndex="1">
           <varref fl="f18" name="between" dtype_id="2"/>
         </port>
@@ -26,7 +26,7 @@
           <varref fl="f22" name="d" dtype_id="2"/>
         </port>
       </instance>
-      <instance fl="f24" name="cell2" defName="mod2">
+      <instance fl="f24" name="cell2" defName="mod2" origName="cell2">
         <port fl="f24" name="d" direction="in" portIndex="1">
           <varref fl="f24" name="between" dtype_id="2"/>
         </port>
@@ -38,10 +38,10 @@
         </port>
       </instance>
     </module>
-    <module fl="f33" name="mod1">
-      <var fl="f35" name="clk" dtype_id="1"/>
-      <var fl="f36" name="d" dtype_id="2"/>
-      <var fl="f37" name="q" dtype_id="2"/>
+    <module fl="f33" name="mod1" origName="mod1">
+      <var fl="f35" name="clk" dtype_id="1" origName="clk"/>
+      <var fl="f36" name="d" dtype_id="2" origName="d"/>
+      <var fl="f37" name="q" dtype_id="2" origName="q"/>
       <always fl="f39">
         <sentree fl="f39">
           <senitem fl="f39" edgeType="POS">
@@ -54,10 +54,10 @@
         </assigndly>
       </always>
     </module>
-    <module fl="f44" name="mod2">
-      <var fl="f46" name="clk" dtype_id="1"/>
-      <var fl="f47" name="d" dtype_id="2"/>
-      <var fl="f48" name="q" dtype_id="2"/>
+    <module fl="f44" name="mod2" origName="mod2">
+      <var fl="f46" name="clk" dtype_id="1" origName="clk"/>
+      <var fl="f47" name="d" dtype_id="2" origName="d"/>
+      <var fl="f48" name="q" dtype_id="2" origName="q"/>
       <contassign fl="f51" dtype_id="2">
         <varref fl="f51" name="d" dtype_id="2"/>
         <varref fl="f51" name="q" dtype_id="2"/>

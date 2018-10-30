@@ -99,6 +99,7 @@ class EmitXmlFileVisitor : public AstNVisitor {
     virtual void visit(AstCell* nodep) {
         outputTag(nodep, "instance");   // IEEE: vpiInstance
         puts(" defName="); putsQuoted(nodep->modName());  // IEEE vpiDefName
+        puts(" origName="); putsQuoted(nodep->origName());
         outputChildrenEnd(nodep, "instance");
     }
     virtual void visit(AstNetlist* nodep) {
@@ -108,8 +109,14 @@ class EmitXmlFileVisitor : public AstNVisitor {
     }
     virtual void visit(AstNodeModule* nodep) {
 	outputTag(nodep, "");
+	puts(" origName="); putsQuoted(nodep->origName());
 	if (nodep->level()==1 || nodep->level()==2) // ==2 because we don't add wrapper when in XML mode
 	    puts(" topModule=\"1\"");  // IEEE vpiTopModule
+	outputChildrenEnd(nodep, "");
+    }
+    virtual void visit(AstVar* nodep) {
+	outputTag(nodep, "");
+	puts(" origName="); putsQuoted(nodep->origName());
 	outputChildrenEnd(nodep, "");
     }
     virtual void visit(AstPin* nodep) {
