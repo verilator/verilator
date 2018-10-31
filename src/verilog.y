@@ -1301,8 +1301,8 @@ port_direction:			// ==IEEE: port_direction + tf_port_direction
 		yINPUT					{ VARIO(INPUT); }
 	|	yOUTPUT					{ VARIO(OUTPUT); }
 	|	yINOUT					{ VARIO(INOUT); }
-	|	yREF					{ $<fl>1->v3error("Unsupported: ref port"); VARIO(INOUT); }
-	|	yCONST__REF yREF			{ $<fl>1->v3error("Unsupported: const ref port"); VARIO(INOUT); }
+	|	yREF					{ VARIO(REF); }
+	|	yCONST__REF yREF			{ VARIO(CONSTREF); }
 	;
 
 port_directionReset:		// IEEE: port_direction that starts a port_declaraiton
@@ -1310,8 +1310,8 @@ port_directionReset:		// IEEE: port_direction that starts a port_declaraiton
 		yINPUT					{ VARRESET_NONLIST(UNKNOWN); VARIO(INPUT); }
 	|	yOUTPUT					{ VARRESET_NONLIST(UNKNOWN); VARIO(OUTPUT); }
 	|	yINOUT					{ VARRESET_NONLIST(UNKNOWN); VARIO(INOUT); }
-	|	yREF					{ $<fl>1->v3error("Unsupported: ref port"); VARRESET_NONLIST(UNKNOWN); VARIO(INOUT); }
-	|	yCONST__REF yREF			{ $<fl>1->v3error("Unsupported: const ref port"); VARRESET_NONLIST(UNKNOWN); VARIO(INOUT); }
+	|	yREF					{ VARRESET_NONLIST(UNKNOWN); VARIO(REF); }
+	|	yCONST__REF yREF			{ VARRESET_NONLIST(UNKNOWN); VARIO(CONSTREF); }
 	;
 
 port_declaration<nodep>:	// ==IEEE: port_declaration

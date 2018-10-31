@@ -470,7 +470,9 @@ public:
         NONE,
         INPUT,
         OUTPUT,
-        INOUT
+        INOUT,
+        REF,
+        CONSTREF
     };
     enum en m_e;
     inline VDirection() : m_e(NONE) {}
@@ -480,23 +482,26 @@ public:
     operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[] = {
-            "NONE", "INPUT", "OUTPUT", "INOUT"};
+            "NONE", "INPUT", "OUTPUT", "INOUT", "REF", "CONSTREF"};
         return names[m_e]; }
     string verilogKwd() const {
         static const char* const names[] = {
-            "", "input", "output", "inout"};
+            "", "input", "output", "inout", "ref", "const ref"};
         return names[m_e]; }
     string xmlKwd() const {  // For historical reasons no "put" suffix
         static const char* const names[] = {
-            "", "in", "out", "inout"};
+            "", "in", "out", "inout", "ref", "const ref"};
         return names[m_e]; }
     string prettyName() const { return verilogKwd(); }
     bool isAny() const { return m_e != NONE; }
     // Looks like inout - "ish" because not identical to being an INOUT
     bool isInoutish() const { return m_e == INOUT; }
-    bool isNonOutput() const { return m_e == INPUT || m_e == INOUT; }
-    bool isReadOnly() const { return m_e == INPUT; }
-    bool isWritable() const { return m_e == OUTPUT || m_e == INOUT; }
+    bool isNonOutput() const { return m_e == INPUT || m_e == INOUT
+            || m_e == REF || m_e == CONSTREF; }
+    bool isReadOnly() const { return m_e == INPUT || m_e == CONSTREF; }
+    bool isWritable() const { return m_e == OUTPUT || m_e == INOUT
+            || m_e == REF; }
+    bool isRefOrConstRef() const { return m_e == REF || m_e == CONSTREF; }
   };
   inline bool operator== (VDirection lhs, VDirection rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (VDirection lhs, VDirection::en rhs) { return (lhs.m_e == rhs); }

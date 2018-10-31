@@ -130,6 +130,10 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                     oldvarp->primaryIO(false);
                     varp->primaryIO(true);
                 }
+                if (varp->direction().isRefOrConstRef()) {
+                    varp->v3error("Unsupported: ref/const ref as primary input/output: "
+                                  <<varp->prettyName());
+                }
 		if (varp->isIO() && v3Global.opt.systemC()) {
 		    varp->sc(true);
 		    // User can see trace one level down from the wrapper

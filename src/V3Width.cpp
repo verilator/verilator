@@ -1287,7 +1287,10 @@ private:
 	    if (!nodep->widthMin()) nodep->v3fatalSrc("LHS var should be size complete");
 	}
 	//if (debug()>=9) nodep->dumpTree(cout,"  VRout ");
-	if (nodep->lvalue() && nodep->varp()->isConst()
+        if (nodep->lvalue() && nodep->varp()->direction() == VDirection::CONSTREF) {
+            nodep->v3error("Assigning to const ref variable: "<<nodep->prettyName());
+        }
+        else if (nodep->lvalue() && nodep->varp()->isConst()
 	    && !m_paramsOnly
 	    && !m_initialp) {  // Too loose, but need to allow our generated first assignment
 	    //                 // Move this to a property of the AstInitial block
@@ -2319,7 +2322,13 @@ private:
 		}
 		userIterateAndNext(nodep->exprp(), WidthVP(subDTypep,FINAL).p());
 	    } else {
-		if (nodep->modVarp()->isTristate()) {
+                if (nodep->modVarp()->direction() == VDirection::REF) {
+                    nodep->v3error("Ref connection '"<<nodep->modVarp()->prettyName()<<"'"
+                                   <<" requires matching types;"
+                                   <<" ref requires "<<pinDTypep->prettyTypeName()
+                                   <<" but connection is "
+                                   <<conDTypep->prettyTypeName()<<"."<<endl);
+                } else if (nodep->modVarp()->isTristate()) {
 		    if (pinwidth != conwidth) {
 			nodep->v3error("Unsupported: "<<ucfirst(nodep->prettyOperatorName())
 				       <<" to inout signal requires "<<pinwidth
@@ -2557,9 +2566,16 @@ private:
                 AstArg* argp = it->second;
                 AstNode* pinp = argp->exprp();
                 if (!pinp) continue;  // Argument error we'll find later
-                if (portp->isWritable()
-                    && pinp->width() != portp->width()) {
-                    pinp->v3error("Unsupported: Function output argument '"<<portp->prettyName()<<"'"
+                if (portp->direction() == VDirection::REF
+                    && !similarDTypeRecurse(portp->dtypep(), pinp->dtypep())) {
+                    pinp->v3error("Ref argument requires matching types;"
+                                  <<" port '"<<portp->prettyName()<<"'"
+                                  <<" requires "<<portp->prettyTypeName()
+                                  <<" but connection is "<<pinp->prettyTypeName()<<".");
+                } else if (portp->isWritable()
+                           && pinp->width() != portp->width()) {
+                    pinp->v3error("Unsupported: Function output argument '"
+                                  <<portp->prettyName()<<"'"
                                   <<" requires "<<portp->width()
                                   <<" bits, but connection's "<<pinp->prettyTypeName()
                                   <<" generates "<<pinp->width()<<" bits.");

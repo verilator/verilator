@@ -208,50 +208,68 @@ string AstVar::verilogKwd() const {
 string AstVar::vlArgType(bool named, bool forReturn, bool forFunc) const {
     if (forReturn) named=false;
     if (forReturn) v3fatalSrc("verilator internal data is never passed as return, but as first argument");
-    string arg;
-    if (isWide() && isReadOnly()) arg += "const ";
+    string otype;
     AstBasicDType* bdtypep = basicp();
     bool strtype = bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::STRING;
     if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::CHARPTR) {
-	arg += "const char*";
+        otype += "const char*";
     } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::SCOPEPTR) {
-	arg += "const VerilatedScope*";
+        otype += "const VerilatedScope*";
     } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::DOUBLE) {
-	arg += "double";
+        if (forFunc && isReadOnly()) otype += "const ";
+        otype += "double";
     } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::FLOAT) {
-	arg += "float";
+        if (forFunc && isReadOnly()) otype += "const ";
+        otype += "float";
     } else if (strtype) {
-        if (isReadOnly()) arg += "const ";
-        arg += "std::string";
+        if (forFunc && isReadOnly()) otype += "const ";
+        otype += "std::string";
     } else if (widthMin() <= 8) {
-	arg += "CData";
+        if (forFunc && isReadOnly()) otype += "const ";
+        otype += "CData";
     } else if (widthMin() <= 16) {
-	arg += "SData";
+        if (forFunc && isReadOnly()) otype += "const ";
+        otype += "SData";
     } else if (widthMin() <= VL_WORDSIZE) {
-	arg += "IData";
+        if (forFunc && isReadOnly()) otype += "const ";
+        otype += "IData";
     } else if (isQuad()) {
-	arg += "QData";
+        if (forFunc && isReadOnly()) otype += "const ";
+        otype += "QData";
     } else if (isWide()) {
-	arg += "WData";  // []'s added later
+        if (forFunc && isReadOnly()) otype += "const ";
+        otype += "WData";  // []'s added later
     }
-    if (isDpiOpenArray() || (isWide() && !strtype)) {
-        arg += " (& "+name()+")";
+
+    bool mayparen = false;  // Need paren, to handle building "(& name)[2]"
+    string oname;
+    if (isDpiOpenArray()
+        || (isWide() && !strtype)
+        || (forFunc && (isWritable()
+                        || direction()==VDirection::REF
+                        || direction()==VDirection::CONSTREF
+                        || (strtype && isNonOutput())))) {
+        oname += "&";
+        mayparen = true;
+    }
+    if (named) oname += " "+name();
+
+    string oarray;
+    if (isDpiOpenArray() || direction().isRefOrConstRef()) {
         for (AstNodeDType* dtp=dtypep(); dtp; ) {
             dtp = dtp->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
             if (AstUnpackArrayDType* adtypep = VN_CAST(dtp, UnpackArrayDType)) {
-                arg += "["+cvtToStr(adtypep->declRange().elements())+"]";
+                if (mayparen) { oname = " ("+oname+")"; mayparen = false; }
+                oarray += "["+cvtToStr(adtypep->declRange().elements())+"]";
                 dtp = adtypep->subDTypep();
             } else break;
         }
-        if (isWide() && !strtype) {
-            arg += "["+cvtToStr(widthWords())+"]";
-        }
-    } else {
-        if (forFunc && (isWritable()
-                        || (strtype && isNonOutput()))) arg += "&";
-        if (named) arg += " "+name();
     }
-    return arg;
+    if (isWide() && !strtype) {
+        if (mayparen) { oname = " ("+oname+")"; mayparen = false; }
+        oarray += "["+cvtToStr(widthWords())+"]";
+    }
+    return otype+oname+oarray;
 }
 
 string AstVar::vlEnumType() const {
@@ -342,7 +360,8 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
 	arg += " (& "+name();
 	arg += ")["+cvtToStr(widthWords())+"]";
     } else {
-        if (!forReturn && isWritable()) arg += "&";
+        if (!forReturn && (isWritable()
+                           || direction().isRefOrConstRef())) arg += "&";
         if (named) arg += " "+name();
     }
     return arg;
