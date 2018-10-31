@@ -187,8 +187,9 @@ sub one_test {
 	     } else {
 		 $test->oprint("FAILED: ","*"x60,"\n");
 		 my $j = ($opt_jobs>1?" -j":"");
-		 push @fails, ("\t#".$test->soprint("%Error: $test->{errors}\n")
-			       ."\t\tmake$j && test_regress/"
+                 my $makecmd = $ENV{VERILATOR_MAKE} || "make$j &&";
+                 push @fails, ("\t#".$test->soprint("%Error: $test->{errors}\n")
+                               ."\t\t$makecmd test_regress/"
                                .$test->{pl_filename}
                                ." ".join(' ', _args_scenario())
                                ." --".$test->{scenario}."\n");
@@ -2142,6 +2143,10 @@ Command to use to invoke GHDL.
 =item VERILATOR_IVERILOG
 
 Command to use to invoke Icarus Verilog.
+
+=item VERILATOR_MAKE
+
+Command to use to rebuild Verilator and run single test.  Defaults to "make &&".
 
 =item VERILATOR_MODELSIM
 
