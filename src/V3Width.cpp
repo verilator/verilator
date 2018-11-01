@@ -1756,32 +1756,39 @@ private:
 		    AstMemberDType* memp = classp->membersp();
                     AstPatMember* patp = VN_CAST(nodep->itemsp(), PatMember);
 		    for (; memp || patp; ) {
-			if (patp) {
-			    if (patp->keyp()) {
-                                if (AstText* textp = VN_CAST(patp->keyp(), Text)) {
-				    memp = classp->findMember(textp->text());
-				    if (!memp) {
-					patp->keyp()->v3error("Assignment pattern key '"<<textp->text()<<"' not found as member");
-					continue;
-				    }
-				} else {
-                                    patp->keyp()->v3error("Assignment pattern key not"
-                                                          " supported/understood: "<<patp->keyp()->prettyTypeName());
-				}
-			    }
-			}
-			if (memp && !patp) {
-			    // Missing init elements, warn below
-			    memp=NULL; patp=NULL; break;
-			} else if (!memp && patp) { patp->v3error("Assignment pattern contains too many elements");
-			    memp=NULL; patp=NULL; break;
-			} else {
-                            std::pair<PatMap::iterator, bool> ret = patmap.insert(make_pair(memp, patp));
-			    if (!ret.second) {
-                                patp->v3error("Assignment pattern contains duplicate entry: "
-                                              << VN_CAST(patp->keyp(), Text)->text());
-			    }
-			}
+                        do {
+                            if (patp) {
+                                if (patp->keyp()) {
+                                    if (AstText* textp = VN_CAST(patp->keyp(), Text)) {
+                                        memp = classp->findMember(textp->text());
+                                        if (!memp) {
+                                            patp->keyp()->v3error(
+                                                "Assignment pattern key '"
+                                                <<textp->text()<<"' not found as member");
+                                            break;
+                                        }
+                                    } else {
+                                        patp->keyp()->v3error(
+                                            "Assignment pattern key not supported/understood: "
+                                            <<patp->keyp()->prettyTypeName());
+                                    }
+                                }
+                            }
+                            if (memp && !patp) {
+                                // Missing init elements, warn below
+                                memp=NULL; patp=NULL; break;
+                            } else if (!memp && patp) {
+                                patp->v3error("Assignment pattern contains too many elements");
+                                memp=NULL; patp=NULL; break;
+                            } else {
+                                std::pair<PatMap::iterator, bool> ret
+                                    = patmap.insert(make_pair(memp, patp));
+                                if (!ret.second) {
+                                    patp->v3error("Assignment pattern contains duplicate entry: "
+                                                  << VN_CAST(patp->keyp(), Text)->text());
+                                }
+                            }
+                        } while(0);
 			// Next
                         if (memp) memp = VN_CAST(memp->nextp(), MemberDType);
                         if (patp) patp = VN_CAST(patp->nextp(), PatMember);

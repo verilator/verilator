@@ -11,6 +11,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix --trace-lxt2 compile error on MinGW, msg2711. [HyungKi Jeong]
 
+****  Fix hang on bad pattern keys, bug1364. [Matt Myers]
+
 
 * Verilator 4.006 2018-10-27
 
