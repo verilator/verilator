@@ -7,7 +7,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support "ref" and "const ref" pins and functions, bug1360. [Jake Longo]
 
-***   In --xml-only show the original unmodified names, msg2716. [Kanad Kanhere]
+***   In --xml-only show the original unmodified names, and add module_files
+      and cells similar to Verilog-Perl, msg2719. [Kanad Kanhere]
 
 ****  Fix --trace-lxt2 compile error on MinGW, msg2711. [HyungKi Jeong]
 

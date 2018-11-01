@@ -9,6 +9,15 @@
     <file id="d" filename="input.vc" language="1800-2017"/>
     <file id="f" filename="t/t_xml_first.v" language="1800-2017"/>
   </files>
+  <module_files>
+    <file id="f" filename="t/t_xml_first.v" language="1800-2017"/>
+  </module_files>
+  <cells>
+    <cell fl="f6" name="t" submodname="t" hier="t">
+      <cell fl="f18" name="cell1" submodname="mod1" hier="t.cell1"/>
+      <cell fl="f24" name="cell2" submodname="mod2" hier="t.cell2"/>
+    </cell>
+  </cells>
   <netlist>
     <module fl="f6" name="t" origName="t" topModule="1">
       <var fl="f12" name="clk" dtype_id="1" origName="clk"/>

@@ -160,6 +160,126 @@ public:
 };
 
 //######################################################################
+// List of module files xml visitor
+
+class ModuleFilesXmlVisitor : public AstNVisitor {
+private:
+    // MEMBERS
+    std::ostream& m_os;
+    std::set<std::string> m_modulesCovered;
+    std::deque<FileLine*> m_nodeModules;
+
+    // METHODS
+    VL_DEBUG_FUNC;  // Declare debug()
+
+    // VISITORS
+    virtual void visit(AstNetlist* nodep) {
+        // Children are iterated backwards to ensure correct compilation order
+        iterateChildrenBackwards(nodep);
+    }
+    virtual void visit(AstNodeModule* nodep) {
+        // Only list modules and interfaces
+        // Assumes modules and interfaces list is already sorted level wise
+        if (!nodep->dead()
+            && (VN_IS(nodep, Module) || VN_IS(nodep, Iface))
+            && m_modulesCovered.insert(nodep->fileline()->filename()).second) {
+            m_nodeModules.push_front(nodep->fileline());
+        }
+    }
+    //-----
+    virtual void visit(AstNode* nodep) {
+        // All modules are present at root so no need to iterate on children
+    }
+
+public:
+    // CONSTRUCTORS
+    ModuleFilesXmlVisitor(AstNetlist* nodep, std::ostream& os)
+        : m_os(os), m_modulesCovered(), m_nodeModules() {
+        // Operate on whole netlist
+        nodep->accept(*this);
+        // Xml output
+        m_os<<"<module_files>\n";
+        for (std::deque<FileLine*>::iterator it = m_nodeModules.begin();
+                it != m_nodeModules.end(); it++) {
+            m_os<<"<file id=\""<<(*it)->filenameLetters()
+                <<"\" filename=\""<<(*it)->filename()
+                <<"\" language=\""<<(*it)->language().ascii()<<"\"/>\n";
+        }
+        m_os<<"</module_files>\n";
+    }
+    virtual ~ModuleFilesXmlVisitor() {}
+};
+
+//######################################################################
+// Hierarchy of Cells visitor
+
+class HierCellsXmlVisitor : public AstNVisitor {
+private:
+    // MEMBERS
+    std::ostream& m_os;
+    std::string m_hier;
+    bool m_hasChildren;
+
+    // METHODS
+    VL_DEBUG_FUNC;  // Declare debug()
+
+    // VISITORS
+    virtual void visit(AstNodeModule* nodep) {
+        if (nodep->level() >= 0
+            && nodep->level() <=2 ) {  // ==2 because we don't add wrapper when in XML mode
+            m_os<<"<cells>\n";
+            m_os<<"<cell "<<nodep->fileline()->xml()
+                <<" name=\""<<nodep->name()<<"\""
+                <<" submodname=\""<<nodep->name()<<"\""
+                <<" hier=\""<<nodep->name()<<"\"";
+            m_hier = nodep->name() + ".";
+            m_hasChildren = false;
+            iterateChildren(nodep);
+            if (m_hasChildren) {
+                m_os<<"</cell>\n";
+            } else {
+                m_os<<"/>\n";
+            }
+            m_os<<"</cells>\n";
+        }
+    }
+    virtual void visit(AstCell* nodep) {
+        if (nodep->modp()->dead()) {
+            return;
+        }
+        if (!m_hasChildren) m_os<<">\n";
+        m_os<<"<cell "<<nodep->fileline()->xml()
+            <<" name=\""<<nodep->name()<<"\""
+            <<" submodname=\""<<nodep->modName()<<"\""
+            <<" hier=\""<<m_hier+nodep->name()<<"\"";
+        std::string hier = m_hier;
+        m_hier += nodep->name() + ".";
+        m_hasChildren = false;
+        iterateChildren(nodep->modp());
+        if (m_hasChildren) {
+            m_os<<"</cell>\n";
+        } else {
+            m_os<<"/>\n";
+        }
+        m_hier = hier;
+        m_hasChildren = true;
+    }
+    //-----
+    virtual void visit(AstNode* nodep) {
+        iterateChildren(nodep);
+    }
+
+public:
+    // CONSTRUCTORS
+    HierCellsXmlVisitor(AstNetlist* nodep, std::ostream& os)
+        : m_os(os), m_hier(""), m_hasChildren(false) {
+        // Operate on whole netlist
+        nodep->accept(*this);
+    }
+    virtual ~HierCellsXmlVisitor() {}
+};
+
+//######################################################################
 // EmitXml class functions
 
 void V3EmitXml::emitxml() {
@@ -173,6 +293,12 @@ void V3EmitXml::emitxml() {
 	std::stringstream sstr;
 	FileLine::fileNameNumMapDumpXml(sstr);
 	of.puts(sstr.str());
+    }
+    {
+        std::stringstream sstr;
+        ModuleFilesXmlVisitor moduleFilesVisitor (v3Global.rootp(), sstr);
+        HierCellsXmlVisitor cellsVisitor (v3Global.rootp(), sstr);
+        of.puts(sstr.str());
     }
     EmitXmlFileVisitor visitor (v3Global.rootp(), &of);
     of.puts("</verilator_xml>\n");
