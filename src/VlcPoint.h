@@ -100,10 +100,10 @@ public:
 class VlcPoints {
 private:
     // MEMBERS
-    typedef vl_unordered_map<string,vluint64_t> NameMap;
-    NameMap		m_nameMap;	//< Name to point-number
+    typedef std::map<string,vluint64_t> NameMap;  // Sorted by name (ordered)
+    NameMap m_nameMap;  //< Name to point-number
     std::vector<VlcPoint> m_points;  //< List of all points
-    vluint64_t		m_numPoints;	//< Total unique points
+    vluint64_t m_numPoints;  //< Total unique points
 
 public:
     // ITERATORS
