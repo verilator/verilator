@@ -9,7 +9,6 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-$Self->{golden_out} ||= "t/$Self->{name}.out";
 my $stdout_filename = "$Self->{obj_dir}/$Self->{name}__test.vpp";
 
 compile(
@@ -19,7 +18,7 @@ compile(
     );
 
 ok(preproc_check($Self->{top_filename}, $stdout_filename)
-   && files_identical($stdout_filename, $Self->{golden_out}));
+   && files_identical($stdout_filename, $Self->{golden_filename}));
 
 sub preproc_check {
     my $filename1 = shift;

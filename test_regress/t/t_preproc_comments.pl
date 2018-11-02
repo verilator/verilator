@@ -11,7 +11,6 @@ scenarios(vlt => 1);
 
 top_filename("t/t_preproc.v");
 
-$Self->{golden_out} ||= "t/$Self->{name}.out";
 my $stdout_filename = "$Self->{obj_dir}/$Self->{name}__test.vpp";
 
 compile(
@@ -20,6 +19,6 @@ compile(
     stdout_filename => $stdout_filename,
     );
 
-ok(files_identical($stdout_filename, $Self->{golden_out}));
+ok(files_identical($stdout_filename, $Self->{golden_filename}));
 
 1;

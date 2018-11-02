@@ -433,7 +433,8 @@ sub new {
     $self->{run_log_filename} ||= "$self->{obj_dir}/vlt_sim.log";
     $self->{coverage_filename} ||= "$self->{obj_dir}/coverage.dat";
     $self->{main_filename} ||= "$self->{obj_dir}/$self->{VM_PREFIX}__main.cpp";
-    ($self->{top_filename} = $self->{pl_filename}) =~ s/\.pl$//;
+    ($self->{top_filename} ||= $self->{pl_filename}) =~ s/\.pl$//;
+    ($self->{golden_filename} ||= $self->{pl_filename}) =~ s/\.pl$/.out/;
     if (-e ($self->{top_filename}.".vhd")) { # If VHDL file exists
 	$self->{vhdl} = 1;
         $self->{top_filename} .= ".vhd";

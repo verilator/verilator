@@ -7,14 +7,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-scenarios(simulator => 1);
+scenarios(vlt => 1);
 
 top_filename("$Self->{obj_dir}/$Self->{name}.v");
+$Self->{golden_filename} = "$Self->{obj_dir}/$Self->{name}.out";
 
 # Rather then having to maintain a new .v and .out, simply add returns
 # to all lines of the existing t_preproc test.
-
-$Self->{golden_out} = "$Self->{obj_dir}/$Self->{name}.out";
 
 {
     my $wholefile = file_contents("$Self->{t_dir}/t_preproc.v");
@@ -24,7 +23,7 @@ $Self->{golden_out} = "$Self->{obj_dir}/$Self->{name}.out";
 {
     my $wholefile = file_contents("$Self->{t_dir}/t_preproc.out");
     $wholefile =~ s!t/t_preproc.v!$Self->{obj_dir}/t_preproc_dos.v!og;  # Fix `line's
-    write_wholefile($Self->{golden_out}, $wholefile);
+    write_wholefile($Self->{golden_filename}, $wholefile);
 }
 
 do 't/t_preproc.pl';
