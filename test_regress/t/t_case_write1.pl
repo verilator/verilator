@@ -17,5 +17,7 @@ execute(
     check_finished => 1,
     );
 
-ok(files_identical("$Self->{obj_dir}/$Self->{name}_logger.log", $Self->{golden_filename}));
+files_identical("$Self->{obj_dir}/$Self->{name}_logger.log", $Self->{golden_filename});
+
+ok(1);
 1;

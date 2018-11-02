@@ -23,6 +23,7 @@ compile(
     stdout_filename => $stdout_filename,
     );
 
-ok(files_identical($stdout_filename, "t/$Self->{name}.out"));
+files_identical($stdout_filename, "t/$Self->{name}.out");
 
+ok(1);
 1;

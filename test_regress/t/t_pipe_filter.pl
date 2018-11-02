@@ -16,6 +16,8 @@ compile(
     verilator_make_gcc => 0,
     stdout_filename => $stdout_filename,
     );
-ok(files_identical($stdout_filename, $Self->{golden_filename}));
 
+files_identical($stdout_filename, $Self->{golden_filename});
+
+ok(1);
 1;

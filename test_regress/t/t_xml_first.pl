@@ -16,6 +16,7 @@ compile(
     verilator_make_gcc => 0,
     );
 
-ok(files_identical("$out_filename", "t/$Self->{name}.out"));
+files_identical("$out_filename", "t/$Self->{name}.out");
 
+ok(1);
 1;

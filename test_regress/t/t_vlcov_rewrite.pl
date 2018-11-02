@@ -20,6 +20,8 @@ foreach my $basename ("t_vlcov_data_a.dat",
         ],
         tee => 0,
         );
-    ok(files_identical("$Self->{obj_dir}/${basename}", "t/${basename}"));
+    files_identical("$Self->{obj_dir}/${basename}", "t/${basename}");
 }
+
+ok(1);
 1;

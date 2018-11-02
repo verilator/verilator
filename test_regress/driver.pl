@@ -1543,18 +1543,21 @@ sub verilator_version {
 # File utilities
 
 sub files_identical {
+    my $self = (ref $_[0]? shift : $Self);
     my $fn1 = shift;
     my $fn2 = shift;
-    my $f1 = IO::File->new("<$fn1"); if (!$f1) { warn "%Error: $! $fn1\n"; return 0; }
-    my $f2 = IO::File->new("<$fn2"); if (!$f2) { warn "%Error: $! $fn2\n"; return 0; }
+    my $f1 = IO::File->new("<$fn1");
+    my $f2 = IO::File->new("<$fn2");
+    if (!$f1) { $self->error("Files_identical file does not exist $fn1\n"); return 0; }
+    if (!$f2) { $self->error("Files_identical file does not exist $fn2\n"); return 0; }
     my @l1 = $f1->getlines();
     my @l2 = $f2->getlines();
     my $nl = $#l1;  $nl = $#l2 if ($#l2 > $nl);
     for (my $l=0; $l<=$nl; $l++) {
 	if (($l1[$l]||"") ne ($l2[$l]||"")) {
-	    warn ("%Warning: Line ".($l+1)." mismatches; $fn1 != $fn2\n"
-		  ."F1: ".($l1[$l]||"*EOF*\n")
-		  ."F2: ".($l2[$l]||"*EOF*\n"));
+            $self->error("Line ".($l+1)." mismatches; $fn1 != $fn2");
+            warn("F1: ".($l1[$l]||"*EOF*\n")
+                 ."F2: ".($l2[$l]||"*EOF*\n"));
 	    if ($ENV{HARNESS_UPDATE_GOLDEN}) {  # Update golden files with current
 		warn "%Warning: HARNESS_UPDATE_GOLDEN set: cp $fn1 $fn2\n";
 		eval "use File::Copy;";
@@ -1572,8 +1575,8 @@ sub vcd_identical {
     my $self = (ref $_[0]? shift : $Self);
     my $fn1 = shift;
     my $fn2 = shift;
-    if (!-r $fn1) { $self->error("File does not exist $fn1\n"); return 0; }
-    if (!-r $fn2) { $self->error("File does not exist $fn2\n"); return 0; }
+    if (!-r $fn1) { $self->error("Vcd_identical file does not exist $fn1\n"); return 0; }
+    if (!-r $fn2) { $self->error("Vcd_identical file does not exist $fn2\n"); return 0; }
     {
 	# vcddiff to check transitions, if installed
 	my $cmd = qq{vcddiff --help};

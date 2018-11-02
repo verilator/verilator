@@ -27,6 +27,7 @@ run(cmd => ["../bin/verilator_coverage",
             "$Self->{obj_dir}/coverage.dat",
     ]);
 
-ok(files_identical("$Self->{obj_dir}/annotated/t_cover_line.v", "t/t_cover_line.out"));
+files_identical("$Self->{obj_dir}/annotated/t_cover_line.v", "t/t_cover_line.out");
 
+ok(1);
 1;

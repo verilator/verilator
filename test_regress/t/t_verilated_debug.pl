@@ -19,7 +19,9 @@ execute(
     check_finished => 1,
     );
 
-ok(files_identical("$Self->{obj_dir}/vlt_sim.log", "t/$Self->{name}.out"));
+if (!$Self->{vltmt}) {  # vltmt output may vary between thread exec order
+    files_identical("$Self->{obj_dir}/vlt_sim.log", "t/$Self->{name}.out");
+}
 
 ok(1);
 1;

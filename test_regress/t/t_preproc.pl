@@ -17,8 +17,9 @@ compile(
     stdout_filename => $stdout_filename,
     );
 
-ok(preproc_check($Self->{top_filename}, $stdout_filename)
-   && files_identical($stdout_filename, $Self->{golden_filename}));
+preproc_check($Self->{top_filename}, $stdout_filename);
+files_identical($stdout_filename, $Self->{golden_filename});
+ok(1);
 
 sub preproc_check {
     my $filename1 = shift;
@@ -53,7 +54,6 @@ sub preproc_check {
         $fh->close;
     }
     if ($Line_Checks[0]) { error("$filename2: Missing a Line_Preproc_Check\n"); }
-    return 1;
 }
 
 1;
