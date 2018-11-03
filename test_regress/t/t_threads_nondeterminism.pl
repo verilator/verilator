@@ -12,7 +12,7 @@ scenarios(vltmt => 1);
 top_filename("t/t_threads_counter.v");
 
 compile(
-    verilator_flags2 => ['--cc --threads 2 --debug-nondeterminism'],
+    verilator_flags2 => ['--cc --threads 2 --debug-nondeterminism --no-skip-identical'],
     );
 
 execute(
