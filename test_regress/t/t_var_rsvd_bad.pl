@@ -13,11 +13,7 @@ top_filename("t/t_var_rsvd_port.v");
 
 compile(
     fails => $Self->{vlt_all},
-    expect =>
-q{%Warning-SYMRSVDWORD: t/t_var_rsvd_port.v:\d+: Symbol matches C\+\+ keyword: 'bool'
-.*
-%Warning-SYMRSVDWORD: t/t_var_rsvd_port.v:\d+: Symbol matches C\+\+ keyword: 'switch'
-%Error: Exiting due to.*},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

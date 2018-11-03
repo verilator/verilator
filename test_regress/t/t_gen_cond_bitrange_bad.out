@@ -1,0 +1,6 @@
+%Warning-SELRANGE: t/t_gen_cond_bitrange_bad.v:58: Selection index out of range: 2:2 outside 1:0
+%Warning-SELRANGE: Use "/* verilator lint_off SELRANGE */" and lint_on around source to disable this message.
+%Warning-SELRANGE: t/t_gen_cond_bitrange_bad.v:70: Selection index out of range: 2:2 outside 1:0
+%Warning-SELRANGE: t/t_gen_cond_bitrange_bad.v:83: Selection index out of range: 2:2 outside 1:0
+%Warning-SELRANGE: t/t_gen_cond_bitrange_bad.v:96: Selection index out of range: 2:2 outside 1:0
+%Error: Exiting due to

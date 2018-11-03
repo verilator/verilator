@@ -13,15 +13,7 @@ top_filename("t/t_unopt_combo.v");
 
 compile(
     fails => $Self->{vlt_all},
-    expect =>
-'%Warning-UNOPTFLAT: t/t_unopt_combo.v:\d+: Signal unoptimizable: Feedback to clock or circular logic: t.c
-%Warning-UNOPTFLAT: Use "/\* verilator lint_off UNOPTFLAT \*/" and lint_on around source to disable this message.
-%Warning-UNOPTFLAT:      Example path: t/t_unopt_combo.v:\d+:  t.c
-%Warning-UNOPTFLAT:      Example path: t/t_unopt_combo.v:\d+:  ALWAYS
-%Warning-UNOPTFLAT:      Example path: t/t_unopt_combo.v:\d+:  t.b
-%Warning-UNOPTFLAT:      Example path: t/t_unopt_combo.v:\d+:  ALWAYS
-%Warning-UNOPTFLAT:      Example path: t/t_unopt_combo.v:\d+:  t.c
-%Error: Exiting due to '
+    expect_filename => $Self->{golden_filename},
     );
 
 execute(

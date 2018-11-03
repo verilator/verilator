@@ -12,11 +12,7 @@ scenarios(vlt_all => 1);
 compile(
     v_flags2 => ["--lint-only"],
     fails => $Self->{vlt_all},
-    expect =>
-'%Error: t/t_tri_pullvec_bad.v:\d+: Unsupported: Conflicting pull directions.
-%Error: t/t_tri_pullvec_bad.v:\d+: ... Location of conflicting pull.
-%Error: t/t_tri_pullvec_bad.v:\d+: Unsupported: Conflicting pull directions.
-%Error: Exiting due to .*'
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

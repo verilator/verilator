@@ -1,0 +1,4 @@
+%Warning-IMPLICIT: t/t_lint_implicit_def_bad.v:10: Signal definition not found, creating implicitly: imp_warn
+%Warning-IMPLICIT: Use "/* verilator lint_off IMPLICIT */" and lint_on around source to disable this message.
+%Error: t/t_lint_implicit_def_bad.v:15: Signal definition not found, and implicit disabled with `default_nettype: imp_err
+%Error: Exiting due to

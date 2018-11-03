@@ -13,13 +13,7 @@ $Self->{verilated_randReset} = 1;  # allow checking if we initialize vars to zer
 
 compile(
     fails => 1,
-    expect =>
-'%Error: t/t_var_types_bad.v:\d+: Illegal bit or array select; type does not have a bit range, or bad dimension: type is bit
-.*%Error: t/t_var_types_bad.v:\d+: Illegal bit or array select; type does not have a bit range, or bad dimension: type is logic
-.*%Error: t/t_var_types_bad.v:\d+: Illegal bit or array select; type does not have a bit range, or bad dimension: type is logic
-.*%Error: t/t_var_types_bad.v:\d+: Illegal bit or array select; type does not have a bit range, or bad dimension: type is real
-.*%Error: t/t_var_types_bad.v:\d+: Illegal bit or array select; type does not have a bit range, or bad dimension: type is real
-.*%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

@@ -1,0 +1,10 @@
+%Warning-UNOPTFLAT: t/t_unoptflat_simple_2.v:14: Signal unoptimizable: Feedback to clock or circular logic: t.x
+%Warning-UNOPTFLAT: Use "/* verilator lint_off UNOPTFLAT */" and lint_on around source to disable this message.
+%Warning-UNOPTFLAT:      Example path: t/t_unoptflat_simple_2.v:14:  t.x
+%Warning-UNOPTFLAT:      Example path: t/t_unoptflat_simple_2.v:20:  ASSIGNW
+%Warning-UNOPTFLAT:      Example path: t/t_unoptflat_simple_2.v:14:  t.x
+%Warning-UNOPTFLAT:      Widest candidate vars to split:
+%Warning-UNOPTFLAT:           t/t_unoptflat_simple_2.v:14:  t.x, width 3, fanout 13
+%Warning-UNOPTFLAT:      Most fanned out candidate vars to split:
+%Warning-UNOPTFLAT:           t/t_unoptflat_simple_2.v:14:  t.x, width 3, fanout 13
+%Error: Exiting due to

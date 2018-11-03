@@ -1,0 +1,4 @@
+%Error: t/t_dpi_dup_bad.v:12: Duplicate declaration of DPI function with different formal arguments: t.oth_f_int2
+%Error: t/t_dpi_dup_bad.v:12: ... New prototype:      pure int dpii_fa_bit (int, int)
+%Error: t/t_dpi_dup_bad.v:11: ... Original prototype: int dpii_fa_bit (int)
+%Error: Exiting due to

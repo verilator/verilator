@@ -1,0 +1,6 @@
+%Warning-VARHIDDEN: t/t_var_bad_hide.v:15: Declaration of signal hides declaration in upper scope: top
+%Warning-VARHIDDEN: t/t_var_bad_hide.v:12: ... Location of original declaration
+%Warning-VARHIDDEN: Use "/* verilator lint_off VARHIDDEN */" and lint_on around source to disable this message.
+%Warning-VARHIDDEN: t/t_var_bad_hide.v:21: Declaration of signal hides declaration in upper scope: top
+%Warning-VARHIDDEN: t/t_var_bad_hide.v:12: ... Location of original declaration
+%Error: Exiting due to

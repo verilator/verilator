@@ -15,11 +15,7 @@ compile(
     make_main => 0,
     verilator_make_gcc => 0,
     fails => 1,
-    expect =>
-'%Warning-INFINITELOOP: t/t_lint_infinite.v:\d+: Infinite loop \(condition always true\)
-%Warning-INFINITELOOP: Use .*
-%Warning-INFINITELOOP: t/t_lint_infinite.v:\d+: Infinite loop \(condition always true\)
-.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

@@ -1,0 +1,6 @@
+%Warning-ASSIGNDLY: t/t_delay.v:19: Unsupported: Ignoring delay on this assignment/primitive.
+%Warning-ASSIGNDLY: Use "/* verilator lint_off ASSIGNDLY */" and lint_on around source to disable this message.
+%Warning-ASSIGNDLY: t/t_delay.v:24: Unsupported: Ignoring delay on this assignment/primitive.
+%Warning-ASSIGNDLY: t/t_delay.v:27: Unsupported: Ignoring delay on this assignment/primitive.
+%Warning-STMTDLY: t/t_delay.v:33: Unsupported: Ignoring delay on this delayed statement.
+%Error: Exiting due to

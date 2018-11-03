@@ -1,0 +1,5 @@
+%Error: t/t_mem_slice_bad.v:38: Slice selection index '[2:0]' outside data type's '[1:0]'
+%Error: t/t_mem_slice_bad.v:38: Slice selection index '[3:0]' outside data type's '[2:0]'
+%Error: t/t_mem_slice_bad.v:38: Slice selection index '[3:0]' outside data type's '[1:0]'
+%Error: t/t_mem_slice_bad.v:50: Slice selection index '[8:0]' outside data type's '[7:0]'
+%Error: Exiting due to

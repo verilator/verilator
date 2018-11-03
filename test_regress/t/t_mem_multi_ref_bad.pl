@@ -12,13 +12,7 @@ scenarios(simulator => 1);
 compile(
     fails => $Self->{vlt_all},
     nc => 0,  # Need to get it not to give the prompt
-    expect =>
-q{%Error: t/t_mem_multi_ref_bad.v:\d+: Illegal bit or array select; type does not have a bit range, or bad dimension: type is (bit|logic)
-.*%Error: t/t_mem_multi_ref_bad.v:\d+: Illegal bit or array select; type does not have a bit range, or bad dimension: type is (bit|logic)
-.*%Error: t/t_mem_multi_ref_bad.v:\d+: Illegal bit or array select; type does not have a bit range, or bad dimension: type is (bit|logic)
-.*%Error: t/t_mem_multi_ref_bad.v:\d+: Illegal \+: or -: select; type already selected, or bad dimension: type is UNPACKARRAYDTYPE
-.*%Error: t/t_mem_multi_ref_bad.v:\d+: Illegal bit or array select; type does not have a bit range, or bad dimension: type is logic
-.*%Error: Exiting due to.*},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

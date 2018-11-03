@@ -15,13 +15,7 @@ compile(
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect =>
-quotemeta(
-'%Warning-COMBDLY: t/t_lint_latch_bad.v:24: Delayed assignments (<=) in non-clocked (non flop or latch) block; suggest blocking assignments (=).
-%Warning-COMBDLY: Use "/* verilator lint_off COMBDLY */" and lint_on around source to disable this message.
-%Warning-COMBDLY: *** See the manual before disabling this,
-%Warning-COMBDLY: else you may end up with different sim results.
-%Error: Exiting due to 1 warning').'.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

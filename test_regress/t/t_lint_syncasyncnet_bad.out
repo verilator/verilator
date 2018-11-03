@@ -1,0 +1,5 @@
+%Warning-SYNCASYNCNET: t/t_lint_syncasyncnet_bad.v:15: Signal flopped as both synchronous and async: rst_both_l
+%Warning-SYNCASYNCNET: t/t_lint_syncasyncnet_bad.v:90: ... Location of async usage
+%Warning-SYNCASYNCNET: t/t_lint_syncasyncnet_bad.v:58: ... Location of sync usage
+%Warning-SYNCASYNCNET: Use "/* verilator lint_off SYNCASYNCNET */" and lint_on around source to disable this message.
+%Error: Exiting due to

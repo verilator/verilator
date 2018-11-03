@@ -1,0 +1,4 @@
+%Error: t/t_tri_pullvec_bad.v:10: Unsupported: Conflicting pull directions.
+%Error: t/t_tri_pullvec_bad.v:9: ... Location of conflicting pull.
+%Error: t/t_tri_pullvec_bad.v:11: Unsupported: Conflicting pull directions.
+%Error: Exiting due to

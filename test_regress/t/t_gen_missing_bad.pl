@@ -14,13 +14,7 @@ top_filename("t/t_gen_missing.v");
 compile(
     v_flags2 => ['+define+T_GEN_MISSING_BAD'],
     fails => 1,
-    expect =>
-'%Error: t/t_gen_missing.v:\d+: Cannot find file containing module: foo_not_needed
-%Error: t/t_gen_missing.v:\d+: Looked in:
-%Error: t/t_gen_missing.v:\d+:       t/foo_not_needed
-%Error: t/t_gen_missing.v:\d+:       t/foo_not_needed.v
-%Error: t/t_gen_missing.v:\d+:       t/foo_not_needed.sv
-.*%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

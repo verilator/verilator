@@ -15,13 +15,7 @@ compile(
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect =>
-'%Warning-BLKSEQ: t/t_lint_blksync_bad.v:\d+: Blocking assignments \(=\) in sequential \(flop or latch\) block; suggest delayed assignments \(<=\).
-%Warning-BLKSEQ: Use .* to disable this message.
-%Warning-COMBDLY: t/t_lint_blksync_bad.v:\d+: Delayed assignments \(<=\) in non-clocked \(non flop or latch\) block; suggest blocking assignments \(=\).
-%Warning-COMBDLY: \*\*\* See the manual before disabling this,
-%Warning-COMBDLY: else you may end up with different sim results.
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

@@ -12,13 +12,7 @@ scenarios(simulator => 1);
 compile(
     v_flags2 => ["--lint-only"],
     fails => 1,
-    expect =>
-q{%Warning-SELRANGE: t/t_gen_cond_bitrange_bad.v:\d+: Selection index out of range: 2:2 outside 1:0
-%Warning-SELRANGE: Use .*
-%Warning-SELRANGE: t/t_gen_cond_bitrange_bad.v:\d+: Selection index out of range: 2:2 outside 1:0
-%Warning-SELRANGE: t/t_gen_cond_bitrange_bad.v:\d+: Selection index out of range: 2:2 outside 1:0
-%Warning-SELRANGE: t/t_gen_cond_bitrange_bad.v:\d+: Selection index out of range: 2:2 outside 1:0
-%Error: Exiting due to .*},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

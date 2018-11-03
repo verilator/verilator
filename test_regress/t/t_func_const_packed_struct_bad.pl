@@ -12,20 +12,7 @@ scenarios(simulator => 1);
 compile(
     v_flags2 => ["--lint-only"],
     fails => 1,
-    expect =>
-q{%Warning-USERFATAL: f_add = 15
-%Warning-USERFATAL: Use "/* verilator lint_off USERFATAL */" and lint_on around source to disable this message.
-%Error: t/t_func_const_packed_struct_bad.v:13: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_add2'
-%Error: t/t_func_const_packed_struct_bad.v:24: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
-Called from:
-t/t_func_const_packed_struct_bad.v:32:  f_add() with parameters:
-    params = [0 = '{a: 32'h7, b: 32'h22b}, 1 = '{a: 32'h3039, b: 32'h8}]
-Called from:
-t/t_func_const_packed_struct_bad.v:13:  f_add2() with parameters:
-    a = ?32?sh7
-    b = ?32?sh8
-    c = ?32?sh9
-},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

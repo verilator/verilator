@@ -1,0 +1,6 @@
+%Warning-LITENDIAN: t/t_interface_array_nocolon_bad.v:25: Little endian cell range connecting to vector: MSB < LSB of cell range: 0:2
+%Warning-LITENDIAN: Use "/* verilator lint_off LITENDIAN */" and lint_on around source to disable this message.
+%Warning-LITENDIAN: t/t_interface_array_nocolon_bad.v:26: Little endian cell range connecting to vector: MSB < LSB of cell range: 1:3
+%Warning-LITENDIAN: t/t_interface_array_nocolon_bad.v:29: Little endian cell range connecting to vector: MSB < LSB of cell range: 0:2
+%Warning-LITENDIAN: t/t_interface_array_nocolon_bad.v:30: Little endian cell range connecting to vector: MSB < LSB of cell range: 1:3
+%Error: Exiting due to

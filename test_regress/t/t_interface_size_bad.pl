@@ -11,10 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     fails => 1,
-    expect =>
-q{%Error: t/t_interface_size_bad.v:\d+: Illegal port connection 'foo', mismatch between port which is an interface array of size 5, and expression which is an interface array of size 4.
-%Error: t/t_interface_size_bad.v:\d+: Illegal port connection 'foo', mismatch between port which is an interface array of size 5, and expression which is an interface array of size 6.
-%Error: Exiting due to.*},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

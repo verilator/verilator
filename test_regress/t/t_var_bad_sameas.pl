@@ -11,18 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     fails => 1,
-    expect =>
-'%Error: t/t_var_bad_sameas.v:\d+: Unsupported in C: Cell has the same name as variable: varfirst
-%Error: t/t_var_bad_sameas.v:\d+: ... Location of original declaration
-%Error: t/t_var_bad_sameas.v:\d+: Unsupported in C: Task has the same name as (variable|cell): varfirst
-%Error: t/t_var_bad_sameas.v:\d+: ... Location of original declaration
-%Error: t/t_var_bad_sameas.v:\d+: Unsupported in C: Variable has same name as cell: cellfirst
-%Error: t/t_var_bad_sameas.v:\d+: Unsupported in C: Task has the same name as cell: cellfirst
-%Error: t/t_var_bad_sameas.v:\d+: ... Location of original declaration
-%Error: t/t_var_bad_sameas.v:\d+: Unsupported in C: Variable has same name as task: taskfirst
-%Error: t/t_var_bad_sameas.v:\d+: Unsupported in C: Cell has the same name as task: taskfirst
-%Error: t/t_var_bad_sameas.v:\d+: ... Location of original declaration
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

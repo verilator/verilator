@@ -1,0 +1,8 @@
+%Error: t/t_func_bad.v:8: Missing argument on non-defaulted argument 'from2' in function call to FUNC 'add'
+%Error: t/t_func_bad.v:9: Too many arguments in function call to FUNC 'add'
+%Error: t/t_func_bad.v:10: Missing argument on non-defaulted argument 'y' in function call to TASK 'x'
+%Error: t/t_func_bad.v:10: Unsupported: Function output argument 'y' requires 1 bits, but connection's CONST '?32?h0' generates 32 bits.
+%Error: t/t_func_bad.v:13: No such argument 'no_such' in function call to FUNC 'f'
+%Error: t/t_func_bad.v:14: Duplicate argument 'dup' in function call to FUNC 'f'
+%Error: t/t_func_bad.v:15: Too many arguments in function call to FUNC 'f'
+%Error: Exiting due to

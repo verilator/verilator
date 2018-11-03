@@ -1,0 +1,13 @@
+%Warning-USERFATAL: f_add = 15
+%Warning-USERFATAL: Use "/* verilator lint_off USERFATAL */" and lint_on around source to disable this message.
+%Error: t/t_func_const_struct_bad.v:16: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_add2'
+%Error: t/t_func_const_struct_bad.v:27: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
+Called from:
+t/t_func_const_struct_bad.v:37:  f_add() with parameters:
+    params = '{a: 32'h7, b: 32'h8}
+Called from:
+t/t_func_const_struct_bad.v:16:  f_add2() with parameters:
+    a = ?32?sh7
+    b = ?32?sh8
+    c = ?32?sh9
+%Error: Exiting due to

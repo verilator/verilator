@@ -11,12 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     fails => 1,
-    expect =>
-q{%Error: t/t_array_backw_index_bad.v:\d+: Slice selection '\[1:3\]' has backward indexing versus data type's '\[3:0\]'
-%Error: t/t_array_backw_index_bad.v:\d+: Slice selection '\[3:1\]' has backward indexing versus data type's '\[0:3\]'
-%Error: t/t_array_backw_index_bad.v:\d+: Slice selection index '\[4:3\]' outside data type's '\[3:0\]'
-%Error: t/t_array_backw_index_bad.v:\d+: Slice selection index '\[1:-1\]' outside data type's '\[3:0\]'
-.*%Error: Exiting due to.*},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

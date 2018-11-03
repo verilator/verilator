@@ -1,0 +1,6 @@
+%Warning-IMPLICIT: t/t_lint_implicit.v:10: Signal definition not found, creating implicitly: b
+%Warning-IMPLICIT: Use "/* verilator lint_off IMPLICIT */" and lint_on around source to disable this message.
+%Warning-IMPLICIT: t/t_lint_implicit.v:12: Signal definition not found, creating implicitly: nt0
+%Warning-IMPLICIT: t/t_lint_implicit.v:15: Signal definition not found, creating implicitly: dummy1
+%Warning-IMPLICIT: t/t_lint_implicit.v:15: Signal definition not found, creating implicitly: dummy2
+%Error: Exiting due to

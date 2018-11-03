@@ -12,11 +12,7 @@ scenarios(vlt_all => 1);
 compile(
     verilator_flags2 => ["--lint-only -Wall -Wno-DECLFILENAME"],
     fails => 1,
-    expect =>
-'%Warning-IMPLICIT: t/t_lint_implicit_def_bad.v:\d+: Signal definition not found, creating implicitly: imp_warn
-%Warning-IMPLICIT: Use "/\* verilator lint_off IMPLICIT \*/" and lint_on around source to disable this message.
-%Error: t/t_lint_implicit_def_bad.v:\d+: Signal definition not found, and implicit disabled with `default_nettype: imp_err
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

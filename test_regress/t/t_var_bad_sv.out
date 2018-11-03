@@ -1,0 +1,5 @@
+%Error: t/t_var_bad_sv.v:7: Unexpected "do": "do" is a SystemVerilog keyword misused as an identifier.
+%Error: t/t_var_bad_sv.v:7: Modify the Verilog-2001 code to avoid SV keywords, or use `begin_keywords or --language.
+%Error: t/t_var_bad_sv.v:8: Unexpected "do": "do" is a SystemVerilog keyword misused as an identifier.
+%Error: t/t_var_bad_sv.v:8: syntax error, unexpected '(', expecting ')'
+%Error: Exiting due to

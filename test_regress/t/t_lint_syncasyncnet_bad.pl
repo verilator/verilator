@@ -15,12 +15,7 @@ compile(
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect =>
-'%Warning-SYNCASYNCNET: t/t_lint_syncasyncnet_bad.v:\d+: Signal flopped as both synchronous and async: rst_both_l
-%Warning-SYNCASYNCNET: t/t_lint_syncasyncnet_bad.v:\d+: ... Location of async usage
-%Warning-SYNCASYNCNET: t/t_lint_syncasyncnet_bad.v:\d+: ... Location of sync usage
-%Warning-SYNCASYNCNET: Use .* around source to disable this message.
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

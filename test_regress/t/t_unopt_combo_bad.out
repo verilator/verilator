@@ -1,0 +1,8 @@
+%Warning-UNOPTFLAT: t/t_unopt_combo.v:23: Signal unoptimizable: Feedback to clock or circular logic: t.c
+%Warning-UNOPTFLAT: Use "/* verilator lint_off UNOPTFLAT */" and lint_on around source to disable this message.
+%Warning-UNOPTFLAT:      Example path: t/t_unopt_combo.v:23:  t.c
+%Warning-UNOPTFLAT:      Example path: t/t_unopt_combo.v:80:  ALWAYS
+%Warning-UNOPTFLAT:      Example path: t/t_unopt_combo.v:22:  t.b
+%Warning-UNOPTFLAT:      Example path: t/t_unopt_combo.v:116:  ALWAYS
+%Warning-UNOPTFLAT:      Example path: t/t_unopt_combo.v:23:  t.c
+%Error: Exiting due to

@@ -15,11 +15,7 @@ compile(
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect =>
-'%Warning-UNDRIVEN: t/t_lint_unused_iface_bad.v:\d+: Signal is not driven: sig_udrv
-%Warning-UNDRIVEN: Use .*
-%Warning-UNUSED: t/t_lint_unused_iface_bad.v:\d+: Signal is not used: sig_uusd
-%Error: Exiting due to .*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

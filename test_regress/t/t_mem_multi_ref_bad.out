@@ -1,0 +1,11 @@
+%Error: t/t_mem_multi_ref_bad.v:14: Illegal bit or array select; type does not have a bit range, or bad dimension: type is logic
+%Error: t/t_mem_multi_ref_bad.v:14: Extracting 2 bits from only 1 bit number
+%Error: t/t_mem_multi_ref_bad.v:15: Illegal bit or array select; type does not have a bit range, or bad dimension: type is logic
+%Warning-SELRANGE: t/t_mem_multi_ref_bad.v:15: Selection index out of range: 1:1 outside 0:0
+%Warning-SELRANGE: Use "/* verilator lint_off SELRANGE */" and lint_on around source to disable this message.
+%Error: t/t_mem_multi_ref_bad.v:16: Illegal bit or array select; type does not have a bit range, or bad dimension: type is logic
+%Warning-SELRANGE: t/t_mem_multi_ref_bad.v:16: Selection index out of range: 1:1 outside 0:0
+%Error: t/t_mem_multi_ref_bad.v:18: Illegal +: or -: select; type already selected, or bad dimension: type is UNPACKARRAYDTYPE
+%Error: t/t_mem_multi_ref_bad.v:22: Illegal bit or array select; type does not have a bit range, or bad dimension: type is logic
+%Warning-SELRANGE: t/t_mem_multi_ref_bad.v:22: Selection index out of range: 1:1 outside 0:0
+%Error: Exiting due to

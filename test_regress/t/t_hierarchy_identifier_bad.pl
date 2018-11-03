@@ -12,15 +12,8 @@ scenarios(simulator => 1);
 compile(
     v_flags2 => ["--lint-only"],
     fails => 1,
-    expect =>
-q{%Warning-ENDLABEL: t/t_hierarchy_identifier_bad.v:\d+: End label 'if_cnt_finish_bad' does not match begin label 'if_cnt_finish'
-%Warning-ENDLABEL: Use .*
-%Warning-ENDLABEL: t/t_hierarchy_identifier_bad.v:\d+: End label 'generate_for_bad' does not match begin label 'generate_for'
-%Warning-ENDLABEL: t/t_hierarchy_identifier_bad.v:\d+: End label 'generate_if_if_bad' does not match begin label 'generate_if_if'
-%Warning-ENDLABEL: t/t_hierarchy_identifier_bad.v:\d+: End label 'generate_if_else_bad' does not match begin label 'generate_if_else'
-%Warning-ENDLABEL: t/t_hierarchy_identifier_bad.v:\d+: End label 't_bad' does not match begin label 't'
-%Error: Exiting due to.*},
-     );
+    expect_filename => $Self->{golden_filename},
+    );
 
 ok(1);
 1;

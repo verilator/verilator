@@ -14,16 +14,9 @@ compile(
 
 execute(
     check_finished => 1,
-    expect => quotemeta(dequote(
-'To stdout
-To stderr
-*-* All Finished *-*
-')),
-     );
+    expect_filename => $Self->{golden_filename},
+    );
 
 ok(1);
-
-# Don't put control chars into our source repository, pre-compress instead
-sub dequote { my $s = shift; $s =~ s/<#013>/\r/g; $s; }
 
 1;

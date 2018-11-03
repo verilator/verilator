@@ -1,0 +1,4 @@
+%Warning-SYMRSVDWORD: t/t_var_rsvd_port.v:11: Symbol matches C++ keyword: 'bool'
+%Warning-SYMRSVDWORD: Use "/* verilator lint_off SYMRSVDWORD */" and lint_on around source to disable this message.
+%Warning-SYMRSVDWORD: t/t_var_rsvd_port.v:14: Symbol matches C++ keyword: 'switch'
+%Error: Exiting due to

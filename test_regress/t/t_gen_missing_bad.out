@@ -1,0 +1,18 @@
+%Error: t/t_gen_missing.v:42: Cannot find file containing module: foo_not_needed
+%Error: t/t_gen_missing.v:42: Looked in:
+%Error: t/t_gen_missing.v:42:       t/foo_not_needed
+%Error: t/t_gen_missing.v:42:       t/foo_not_needed.v
+%Error: t/t_gen_missing.v:42:       t/foo_not_needed.sv
+%Error: t/t_gen_missing.v:42:       obj_dir//foo_not_needed
+%Error: t/t_gen_missing.v:42:       obj_dir//foo_not_needed.v
+%Error: t/t_gen_missing.v:42:       obj_dir//foo_not_needed.sv
+%Error: t/t_gen_missing.v:42:       ../include/foo_not_needed
+%Error: t/t_gen_missing.v:42:       ../include/foo_not_needed.v
+%Error: t/t_gen_missing.v:42:       ../include/foo_not_needed.sv
+%Error: t/t_gen_missing.v:42:       foo_not_needed
+%Error: t/t_gen_missing.v:42:       foo_not_needed.v
+%Error: t/t_gen_missing.v:42:       foo_not_needed.sv
+%Error: t/t_gen_missing.v:42:       obj_vlt/t_gen_missing_bad/foo_not_needed
+%Error: t/t_gen_missing.v:42:       obj_vlt/t_gen_missing_bad/foo_not_needed.v
+%Error: t/t_gen_missing.v:42:       obj_vlt/t_gen_missing_bad/foo_not_needed.sv
+%Error: Exiting due to

@@ -1,0 +1,6 @@
+%Error: t/t_lint_pindup_bad.v:17: Duplicate pin connection: i
+%Error: t/t_lint_pindup_bad.v:16: ... Location of original pin connection
+%Error: t/t_lint_pindup_bad.v:18: Pin not found: __pinNumber4
+%Error: t/t_lint_pindup_bad.v:14: Duplicate parameter pin connection: P
+%Error: t/t_lint_pindup_bad.v:14: ... Location of original parameter pin connection
+%Error: Exiting due to

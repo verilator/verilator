@@ -1,0 +1,11 @@
+%Error: t/t_var_types_bad.v:38: Illegal bit or array select; type does not have a bit range, or bad dimension: type is bit
+%Error: t/t_var_types_bad.v:39: Illegal bit or array select; type does not have a bit range, or bad dimension: type is logic
+%Error: t/t_var_types_bad.v:40: Illegal bit or array select; type does not have a bit range, or bad dimension: type is logic
+%Error: t/t_var_types_bad.v:45: Illegal bit or array select; type does not have a bit range, or bad dimension: type is real
+%Error: t/t_var_types_bad.v:45: Expected integral (non-real) input to SEL
+%Warning-REALCVT: t/t_var_types_bad.v:45: Implicit conversion of real to integer
+%Warning-REALCVT: Use "/* verilator lint_off REALCVT */" and lint_on around source to disable this message.
+%Error: t/t_var_types_bad.v:46: Illegal bit or array select; type does not have a bit range, or bad dimension: type is real
+%Error: t/t_var_types_bad.v:46: Expected integral (non-real) input to SEL
+%Warning-REALCVT: t/t_var_types_bad.v:46: Implicit conversion of real to integer
+%Error: Exiting due to

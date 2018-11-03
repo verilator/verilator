@@ -12,11 +12,7 @@ scenarios(simulator => 1);
 compile(
     v_flags2 => ["--lint-only -Wwarn-VARHIDDEN"],
     fails => $Self->{vlt_all},
-    expect =>
-'%Warning-VARHIDDEN: t/t_var_bad_hide2.v:\d+: Declaration of signal hides declaration in upper scope: t
-%Warning-VARHIDDEN: t/t_var_bad_hide2.v:\d+: ... Location of original declaration
-.*
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

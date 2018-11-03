@@ -16,10 +16,7 @@ compile(
     verilator_flags3 => [],
     verilator_flags2 => ["--report-unoptflat"],
     fails => 1,
-    expect =>
-'.*%Warning-UNOPTFLAT:      Widest candidate vars to split:
-%Warning-UNOPTFLAT:           t/t_unoptflat_simple_2.v:\d+:  t.x, width 3, fanout \d+
-.*%Error: Exiting due to ',
+    expect_filename => $Self->{golden_filename},
     );
 
 

@@ -12,12 +12,7 @@ scenarios(simulator => 1);
 compile(
     v_flags2 => ["--lint-only"],
     fails => $Self->{vlt_all},
-    expect =>
-'%Error: t/t_var_bad_sv.v:\d+: Unexpected "do": "do" is a SystemVerilog keyword misused as an identifier.
-%Error: t/t_var_bad_sv.v:\d+: Modify the Verilog-2001 code to avoid SV keywords, or use `begin_keywords or --language.
-%Error: t/t_var_bad_sv.v:\d+: Unexpected "do": "do" is a SystemVerilog keyword misused as an identifier.
-.*
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

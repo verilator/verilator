@@ -15,15 +15,7 @@ compile(
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect =>
-'%Warning-MULTIDRIVEN: t/t_lint_multidriven_bad.v:\d+: Signal has multiple driving blocks with different clocking: t.mem
-%Warning-MULTIDRIVEN: t/t_lint_multidriven_bad.v:\d+: ... Location of first driving block
-%Warning-MULTIDRIVEN: t/t_lint_multidriven_bad.v:\d+: ... Location of other driving block
-%Warning-MULTIDRIVEN: Use ".*" and lint_on around source to disable this message.
-%Warning-MULTIDRIVEN: t/t_lint_multidriven_bad.v:\d+: Signal has multiple driving blocks with different clocking: out2
-%Warning-MULTIDRIVEN: t/t_lint_multidriven_bad.v:\d+: ... Location of first driving block
-%Warning-MULTIDRIVEN: t/t_lint_multidriven_bad.v:\d+: ... Location of other driving block
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

@@ -15,27 +15,7 @@ compile(
 
 execute(
     check_finished => 1,
-    expect => (quotemeta(
-'Merge:
-This should merge
-f
- a=top.t
- b=top.t
- pre
- t=0
- t2=0
- post
- t3=0
- t4=0 t5=00000000000000000
-m
- t=0 t2=0 t3=0 t4=0 t5=0
- t=0 t2=0 t3=0 t4=0 t5=0
-mm
-
-f a=top.t b=top.t pre t=0 t2=0 post t3=0 t4=0 t5=00000000000000000m t=0 t2=0 t3=0 t4=0 t5=0 t=0 t2=0 t3=0 t4=0 t5=0mm
-
-*-* All Finished *-*')
-              .'.*')
+    expect_filename => $Self->{golden_filename},
     );
 
 file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}__stats.txt",

@@ -1,0 +1,7 @@
+%Error: t/t_var_notfound_bad.v:14: Can't find definition of variable: nf
+%Error: t/t_var_notfound_bad.v:15: Can't find definition of 'subsubz' in dotted scope/variable: sub.subsubz
+%Error:      Known scopes under 'sub': subsub
+%Error: t/t_var_notfound_bad.v:16: Can't find definition of task/function: nofunc
+%Error: t/t_var_notfound_bad.v:17: Can't find definition of task/function: notask
+%Error: t/t_var_notfound_bad.v:18: Found definition of 'a_var' as a VAR but expected a task/function
+%Error: Exiting due to

@@ -12,11 +12,7 @@ scenarios(simulator => 1);
 compile(
     v_flags2 => ["--lint-only"],
     fails => $Self->{vlt_all},
-    expect =>
-'%Error: t/t_dpi_dup_bad.v:\d+: Duplicate declaration of DPI function with different formal arguments: t.oth_f_int2
-%Error: t/t_dpi_dup_bad.v:\d+: ... New prototype:      pure int dpii_fa_bit \(int, int\)
-%Error: t/t_dpi_dup_bad.v:\d+: ... Original prototype: int dpii_fa_bit \(int\)
-%Error: Exiting due to .*'
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);
