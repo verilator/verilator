@@ -1104,8 +1104,9 @@ sub _run {
 
     # Read the log file a couple of times to allow for NFS delays
     if ($param{check_finished} || $param{expect}) {
-	for (my $try=7; $try>=0; $try--) {
-	    sleep 1 if ($try!=7);
+        my $tries = $self->tries;
+        for (my $try=$tries-1; $try>=0; $try--) {
+            sleep 1 if ($try!=$tries-1);
 	    my $moretry = $try!=0;
 
 	    my $fh = IO::File->new("<$param{logfile}");
@@ -1114,17 +1115,18 @@ sub _run {
 	    my $wholefile = <$fh>;
 	    $fh->close();
 
-	    # Strip debugging comments
-	    $wholefile =~ s/^- [^\n]+\n//mig;
-	    $wholefile =~ s/^- [a-z.0-9]+:\d+:[^\n]+\n//mig;
-	    $wholefile =~ s/^dot [^\n]+\n//mig;
-
 	    # Finished?
 	    if ($param{check_finished} && $wholefile !~ /\*\-\* All Finished \*\-\*/) {
 		next if $moretry;
 		$self->error("Missing All Finished\n");
 	    }
 	    if ($param{expect}) {
+                # Strip debugging comments
+                # See also files_identical
+                $wholefile =~ s/^- [^\n]+\n//mig;
+                $wholefile =~ s/^- [a-z.0-9]+:\d+:[^\n]+\n//mig;
+                $wholefile =~ s/^dot [^\n]+\n//mig;
+
 		# Compare
 		my $quoted = quotemeta ($param{expect});
                 my $ok = ($wholefile eq $param{expect}
@@ -1691,6 +1693,14 @@ our $_Cfg_With_Threaded;
 sub cfg_with_threaded {
     $_Cfg_With_Threaded ||= `make -f ../Makefile print-cfg-with-threaded`;
     return ($_Cfg_With_Threaded =~ /yes/i) ? 1:0;
+}
+
+sub tries {
+    # Number of retries when reading logfiles, generally only need many
+    # retries when system is busy running a lot of tests
+    return 2 if !$::Fork->running;
+    return 7 if (scalar($::Fork->running)) > 1;
+    return 2;
 }
 
 sub file_grep_not {

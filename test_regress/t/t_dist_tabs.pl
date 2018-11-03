@@ -59,7 +59,8 @@ if (!-r "$root/.git") {
             elsif ($line =~ m!^\+(.*)!) {
                 ++$lineno;
                 my $len = length($1);
-                if ($len >= 100) {
+                if ($len >= 100
+                    && $file !~ /\.out$/) {
                     print"  Wide $line\n" if $Self->{verbose};
                     $warns{$file} = "File modification adds a new >100 column line: $file:$lineno";
                 }
