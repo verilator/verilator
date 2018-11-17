@@ -1910,7 +1910,7 @@ void OrderVisitor::processMTasks() {
 
     // Create the AstExecGraph node which represents the execution
     // of the MTask graph.
-    FileLine* rootFlp = new FileLine("AstRoot", 0);
+    FileLine* rootFlp = v3Global.rootp()->fileline();
     AstExecGraph* execGraphp = new AstExecGraph(rootFlp);
     m_scopetopp->addActivep(execGraphp);
     v3Global.rootp()->execGraphp(execGraphp);

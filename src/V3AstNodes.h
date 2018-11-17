@@ -5852,15 +5852,15 @@ class AstNetlist : public AstNode {
     // Parents:   none
     // Children:  MODULEs & CFILEs
 private:
-    AstTypeTable* m_typeTablep;	// Reference to top type table, for faster lookup
-    AstPackage*	  m_dollarUnitPkgp;
-    AstCFunc*     m_evalp;      // The '_eval' function
+    AstTypeTable* m_typeTablep;  // Reference to top type table, for faster lookup
+    AstPackage*   m_dollarUnitPkgp;  // $unit
+    AstCFunc*     m_evalp;       // The '_eval' function
     AstExecGraph* m_execGraphp;  // Execution MTask graph for threads>1 mode
 public:
     AstNetlist()
-	: AstNode(new FileLine("AstRoot",0))
-	, m_typeTablep(NULL)
-	, m_dollarUnitPkgp(NULL)
+        : AstNode(new FileLine("AstRoot", 0))
+        , m_typeTablep(NULL)
+        , m_dollarUnitPkgp(NULL)
         , m_evalp(NULL)
         , m_execGraphp(NULL) { }
     ASTNODE_NODE_FUNCS(Netlist)
@@ -5876,7 +5876,7 @@ public:
     void addModulep(AstNodeModule* modulep) { addOp1p(modulep); }
     AstCFile* filesp() const { return VN_CAST(op2p(), CFile);}  // op2 = List of files
     void addFilesp(AstCFile* filep) { addOp2p(filep); }
-    AstNode*	miscsp() 	const { return op3p();}	// op3 = List of dtypes etc
+    AstNode* miscsp() const { return op3p(); }  // op3 = List of dtypes etc
     void addMiscsp(AstNode* nodep) { addOp3p(nodep); }
     AstTypeTable* typeTablep() { return m_typeTablep; }
     void addTypeTablep(AstTypeTable* nodep) { m_typeTablep = nodep; addMiscsp(nodep); }

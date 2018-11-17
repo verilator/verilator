@@ -1248,11 +1248,8 @@ public:
                     if (mtaskCount > maxMTasks) {
                         uint32_t oldLimit = m_scoreLimit;
                         m_scoreLimit = (m_scoreLimit * 120) / 100;
-
-                        // Line must be >0 otherwise FileLine doesn't check
-                        // if the warning is suppressed with -Wno-UNOPTTHREADS
-                        FileLine dummyFl("AstRoot", 1);
-                        dummyFl.v3warn(UNOPTTHREADS, "Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.");
+                        v3Global.rootp()->fileline()->v3warn(
+                            UNOPTTHREADS, "Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.");
                         UINFO(1,"Critical path limit was="<<oldLimit
                               <<" now="<<m_scoreLimit<<endl);
                         continue;
