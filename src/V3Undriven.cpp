@@ -233,8 +233,8 @@ private:
     // STATE
     std::vector<UndrivenVarEntry*> m_entryps[3];  // Nodes to delete when we are finished
     bool		m_inBBox;	// In black box; mark as driven+used
-    AstNodeFTask*	m_taskp;	// Current task
-    AstAlways*		m_alwaysp;	// Current always if combo, otherwise NULL
+    AstNodeFTask*       m_taskp;        // Current task
+    AstAlways*          m_alwaysCombp;  // Current always if combo, otherwise NULL
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -268,9 +268,9 @@ private:
 
     // VISITORS
     virtual void visit(AstVar* nodep) {
-	for (int usr=1; usr<(m_alwaysp?3:2); ++usr) {
-	    // For assigns and non-combo always, do just usr==1, to look for module-wide undriven etc
-	    // For non-combo always, run both usr==1 for above, and also usr==2 for always-only checks
+        for (int usr=1; usr<(m_alwaysCombp?3:2); ++usr) {
+            // For assigns and non-combo always, do just usr==1, to look for module-wide undriven etc
+            // For non-combo always, run both usr==1 for above, and also usr==2 for always-only checks
             UndrivenVarEntry* entryp = getEntryp(nodep, usr);
             if (nodep->isNonOutput()
                 || nodep->isSigPublic() || nodep->isSigUserRWPublic()
@@ -299,12 +299,12 @@ private:
         AstNodeVarRef* varrefp = VN_CAST(nodep->fromp(), NodeVarRef);
         AstConst* constp = VN_CAST(nodep->lsbp(), Const);
 	if (varrefp && constp && !constp->num().isFourState()) {
-	    for (int usr=1; usr<(m_alwaysp?3:2); ++usr) {
+            for (int usr=1; usr<(m_alwaysCombp?3:2); ++usr) {
                 UndrivenVarEntry* entryp = getEntryp(varrefp->varp(), usr);
-		int lsb = constp->toUInt();
-		if (m_inBBox || varrefp->lvalue()) {
-		    // Don't warn if already driven earlier as "a=0; if(a) a=1;" is fine.
-		    if (usr==2 && m_alwaysp && entryp->isUsedNotDrivenBit(lsb, nodep->width())) {
+                int lsb = constp->toUInt();
+                if (m_inBBox || varrefp->lvalue()) {
+                    // Don't warn if already driven earlier as "a=0; if(a) a=1;" is fine.
+                    if (usr==2 && m_alwaysCombp && entryp->isUsedNotDrivenBit(lsb, nodep->width())) {
                         UINFO(9," Select.  Entryp="<<cvtToHex(entryp)<<endl);
 			warnAlwCombOrder(varrefp);
 		    }
@@ -319,11 +319,11 @@ private:
     }
     virtual void visit(AstNodeVarRef* nodep) {
 	// Any variable
-	for (int usr=1; usr<(m_alwaysp?3:2); ++usr) {
+        for (int usr=1; usr<(m_alwaysCombp?3:2); ++usr) {
             UndrivenVarEntry* entryp = getEntryp(nodep->varp(), usr);
-	    bool fdrv = nodep->lvalue() && nodep->varp()->attrFileDescr();  // FD's are also being read from
-	    if (m_inBBox || nodep->lvalue()) {
-		if (usr==2 && m_alwaysp && entryp->isUsedNotDrivenAny()) {
+            bool fdrv = nodep->lvalue() && nodep->varp()->attrFileDescr();  // FD's are also being read from
+            if (m_inBBox || nodep->lvalue()) {
+                if (usr==2 && m_alwaysCombp && entryp->isUsedNotDrivenAny()) {
                     UINFO(9," Full bus.  Entryp="<<cvtToHex(entryp)<<endl);
 		    warnAlwCombOrder(nodep);
 		}
@@ -342,16 +342,16 @@ private:
     }
 
     virtual void visit(AstAlways* nodep) {
-	AstAlways* prevAlwp = m_alwaysp;
-	{
-	    AstNode::user2ClearTree();
-	    if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9,"   "<<nodep<<endl);
-	    if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) m_alwaysp = nodep;
-	    else m_alwaysp = NULL;
+        AstAlways* prevAlwp = m_alwaysCombp;
+        {
+            AstNode::user2ClearTree();
+            if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9,"   "<<nodep<<endl);
+            if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) m_alwaysCombp = nodep;
+            else m_alwaysCombp = NULL;
             iterateChildren(nodep);
-	    if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9,"   Done "<<nodep<<endl);
-	}
-	m_alwaysp = prevAlwp;
+            if (nodep->keyword() == VAlwaysKwd::ALWAYS_COMB) UINFO(9,"   Done "<<nodep<<endl);
+        }
+        m_alwaysCombp = prevAlwp;
     }
 
     virtual void visit(AstNodeFTask* nodep) {
@@ -380,8 +380,8 @@ public:
     // CONSTUCTORS
     explicit UndrivenVisitor(AstNetlist* nodep) {
 	m_inBBox = false;
-	m_taskp = NULL;
-	m_alwaysp = NULL;
+        m_taskp = NULL;
+        m_alwaysCombp = NULL;
         iterate(nodep);
     }
     virtual ~UndrivenVisitor() {
