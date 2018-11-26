@@ -6,7 +6,7 @@
 module t (
     input  wire CLK,
     output reg  RESET
-	  );
+          );
 
    neg neg (.clk(CLK));
    little little (.clk(CLK));
@@ -31,20 +31,20 @@ endmodule
 
 module glbl();
 `ifdef PUB_FUNC
-   wire GSR;
+   reg GSR;
    task setGSR;
       /* verilator public */
       input value;
       GSR = value;
    endtask
 `else
-   wire GSR /*verilator public*/;
+   reg GSR /*verilator public*/;
 `endif
 endmodule
 
 module neg (
    input clk
-	    );
+            );
 
    reg [0:-7] i8; initial i8 = '0;
    reg [-1:-48] i48; initial i48 = '0;
@@ -59,7 +59,7 @@ endmodule
 
 module little (
    input clk
-	    );
+            );
 
    // verilator lint_off LITENDIAN
    reg [0:7] i8; initial i8 = '0;

@@ -3455,15 +3455,6 @@ instead intended is to use a casez with C<?>.
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
 
-=item COLONPLUS
-
-Warns that a :+ is seen. Likely the intent was to use +: to select a range
-of bits. If the intent was a range that is explicitly positive, suggest
-adding a space, e.g. use ": +".
-
-Ignoring this warning will only suppress the lint check, it will simulate
-correctly.
-
 =item CDCRSTLOGIC
 
 With --cdc only, warns that asynchronous flop reset terms come from other
@@ -3484,6 +3475,15 @@ the Verilated model.
 
 Warns that you are comparing a value in a way that will always be constant.
 For example "X > 1" will always be true when X is a single bit wide.
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
+
+=item COLONPLUS
+
+Warns that a :+ is seen. Likely the intent was to use +: to select a range
+of bits. If the intent was a range that is explicitly positive, suggest
+adding a space, e.g. use ": +".
 
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
@@ -3692,6 +3692,11 @@ signal.
 
 Disabled by default as this is a code style warning; it will simulate
 correctly.
+
+=item PROCASSWIRE
+
+Error that a procedural assignment is setting a wire. According to IEEE, a
+var/reg must be used as the target of procedural assignments.
 
 =item REALCVT
 

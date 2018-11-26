@@ -5,7 +5,7 @@
 
 module t (/*AUTOARG*/);
 
-   wire [32767:0] a;
+   reg [32767:0] a;
 
    initial begin
       // verilator lint_off WIDTHCONCAT

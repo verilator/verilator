@@ -10,7 +10,7 @@ module t (/*AUTOARG*/
    input clk;
 
    // No endian warning here
-   wire [7:0] pack [3:0];
+   reg [7:0] pack [3:0];
 
    initial begin
       pack[0] = 8'h78;

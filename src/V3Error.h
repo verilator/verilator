@@ -70,9 +70,9 @@ public:
 	CLKDATA,        // Clock used as data
 	CMPCONST,	// Comparison is constant due to limited range
 	COLONPLUS,	// :+ instead of +:
-	COMBDLY,	// Combinatorial delayed assignment
-	DEFPARAM,	// Style: Defparam
-	DECLFILENAME,	// Declaration doesn't match filename
+        COMBDLY,        // Combinatorial delayed assignment
+        DEFPARAM,       // Style: Defparam
+        DECLFILENAME,   // Declaration doesn't match filename
 	ENDLABEL,	// End lable name mismatch
 	GENCLK,		// Generated Clock
 	IFDEPTH,	// If statements too deep
@@ -87,8 +87,9 @@ public:
 	MULTIDRIVEN,	// Driven from multiple blocks
 	PINMISSING,	// Cell pin not specified
 	PINNOCONNECT,	// Cell pin not connected
-	PINCONNECTEMPTY,// Cell pin connected by name with empty reference: ".name()" (can be used to mark unused pins)
-	REALCVT,	// Real conversion
+        PINCONNECTEMPTY,// Cell pin connected by name with empty reference
+        PROCASSWIRE,    // Procedural assignment on wire
+        REALCVT,        // Real conversion
 	REDEFMACRO,	// Redefining existing define macro
 	SELRANGE,	// Selection index out of range
 	STMTDLY,	// Delayed statement
@@ -132,13 +133,14 @@ public:
 	    "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN",
 	    "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
 	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CLKDATA",
-            "CMPCONST", "COLONPLUS", "COMBDLY", "DEFPARAM", "DECLFILENAME",
-	    "ENDLABEL", "GENCLK",
-	    "IFDEPTH", "IMPERFECTSCH", "IMPLICIT", "IMPURE",
+            "CMPCONST", "COLONPLUS", "COMBDLY",
+            "DEFPARAM", "DECLFILENAME",
+            "ENDLABEL", "GENCLK",
+            "IFDEPTH", "IMPERFECTSCH", "IMPLICIT", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY",
-	    "LITENDIAN", "MODDUP",
-	    "MULTIDRIVEN",
-	    "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY",
+            "LITENDIAN", "MODDUP",
+            "MULTIDRIVEN",
+            "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY", "PROCASSWIRE",
 	    "REALCVT", "REDEFMACRO",
 	    "SELRANGE", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT",
@@ -158,7 +160,8 @@ public:
     // Later -Werror- options may make more of these.
     bool pretendError() const { return ( m_e==ASSIGNIN || m_e==BLKANDNBLK
 					 || m_e==BLKLOOPINIT
-					 || m_e==IMPURE); }
+                                         || m_e==IMPURE
+                                         || m_e==PROCASSWIRE); }
     // Warnings to mention manual
     bool mentionManual() const { return ( m_e==EC_FATALSRC || m_e==SYMRSVDWORD
 					  || pretendError() ); }

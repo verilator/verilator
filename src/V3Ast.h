@@ -548,11 +548,20 @@ public:
             "BLOCKTEMP", "MODULETEMP", "STMTTEMP", "XTEMP",
             "IFACEREF"};
         return names[m_e]; }
-    bool isSignal() const  { return (m_e==WIRE || m_e==WREAL || m_e==IMPLICITWIRE
-                                     || m_e==TRIWIRE
-                                     || m_e==TRI0 || m_e==TRI1 || m_e==PORT
-                                     || m_e==SUPPLY0 || m_e==SUPPLY1
-                                     || m_e==VAR); }
+    bool isSignal() const {
+        return (m_e==WIRE || m_e==WREAL || m_e==IMPLICITWIRE
+                || m_e==TRIWIRE
+                || m_e==TRI0 || m_e==TRI1 || m_e==PORT
+                || m_e==SUPPLY0 || m_e==SUPPLY1
+                || m_e==VAR);
+    }
+    bool isProcAssignable() const {
+        return (m_e==GPARAM || m_e==LPARAM || m_e==GENVAR
+                || m_e==VAR
+                || m_e==TRIWIRE || m_e==TRI0 || m_e==TRI1 || m_e==PORT
+                || m_e==BLOCKTEMP || m_e==MODULETEMP || m_e==STMTTEMP
+                || m_e==XTEMP || m_e==IFACEREF);
+    }
   };
   inline bool operator== (AstVarType lhs, AstVarType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator== (AstVarType lhs, AstVarType::en rhs) { return (lhs.m_e == rhs); }

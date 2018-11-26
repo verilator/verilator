@@ -232,7 +232,8 @@ private:
 
     // STATE
     std::vector<UndrivenVarEntry*> m_entryps[3];  // Nodes to delete when we are finished
-    bool		m_inBBox;	// In black box; mark as driven+used
+    bool                m_inBBox;       // In black box; mark as driven+used
+    bool                m_inProcAssign;  // In procedual assignment
     AstNodeFTask*       m_taskp;        // Current task
     AstAlways*          m_alwaysCombp;  // Current always if combo, otherwise NULL
 
@@ -319,6 +320,13 @@ private:
     }
     virtual void visit(AstNodeVarRef* nodep) {
 	// Any variable
+        if (nodep->lvalue()
+            && !VN_IS(nodep, VarXRef)) {  // Ignore interface variables and similar ugly items
+            if (m_inProcAssign && !nodep->varp()->varType().isProcAssignable()) {
+                nodep->v3warn(PROCASSWIRE, "Procedural assignment to wire, perhaps intend var (IEEE 2017 6.5): "
+                              +nodep->prettyName());
+            }
+        }
         for (int usr=1; usr<(m_alwaysCombp?3:2); ++usr) {
             UndrivenVarEntry* entryp = getEntryp(nodep->varp(), usr);
             bool fdrv = nodep->lvalue() && nodep->varp()->attrFileDescr();  // FD's are also being read from
@@ -341,6 +349,24 @@ private:
 	m_inBBox = prevMark;
     }
 
+    virtual void visit(AstAssign* nodep) {
+        bool prevBeh = m_inProcAssign;
+        {
+            m_inProcAssign = true;
+            iterateChildren(nodep);
+            m_inProcAssign = false;
+        }
+        m_inProcAssign = prevBeh;
+    }
+    virtual void visit(AstAssignDly* nodep) {
+        bool prevBeh = m_inProcAssign;
+        {
+            m_inProcAssign = true;
+            iterateChildren(nodep);
+            m_inProcAssign = false;
+        }
+        m_inProcAssign = prevBeh;
+    }
     virtual void visit(AstAlways* nodep) {
         AstAlways* prevAlwp = m_alwaysCombp;
         {
@@ -379,7 +405,8 @@ private:
 public:
     // CONSTUCTORS
     explicit UndrivenVisitor(AstNetlist* nodep) {
-	m_inBBox = false;
+        m_inBBox = false;
+        m_inProcAssign = false;
         m_taskp = NULL;
         m_alwaysCombp = NULL;
         iterate(nodep);

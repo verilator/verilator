@@ -13,10 +13,6 @@ module t (/*AUTOARG*/
 
    wire [2:0] x;
 
-   initial begin
-      x = 3'b000;
-   end
-
    assign x[1:0] = { x[0], clk };
    assign x[2:1] = { clk, x[1] };
 
@@ -27,8 +23,8 @@ module t (/*AUTOARG*/
 `endif
 
       if (x[1] != 0) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

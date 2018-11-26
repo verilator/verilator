@@ -13,19 +13,22 @@ module t (/*AUTOARG*/
 
    parameter CNT = 10;
 
-   wire [31:0] 	w [CNT:0];
+   wire [31:0]  w [CNT:0];
 
    generate
       for (genvar g=0; g<CNT; g++)
-	sub sub (.clk(clk), .i(w[g]), .z(w[g+1]));
+        sub sub (.clk(clk), .i(w[g]), .z(w[g+1]));
    endgenerate
+
+   reg [31:0]   w0;
+   assign w[0] = w0;
 
    // Test loop
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc==0) begin
-	 // Setup
-	 w[0] = 32'h1234;
+         // Setup
+         w0 = 32'h1234;
       end
       else if (cyc<90) begin
       end

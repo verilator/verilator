@@ -1,0 +1,2 @@
+%Error-PROCASSWIRE: t/t_wire_beh_bad.v:12: Procedural assignment to wire, perhaps intend var (IEEE 2017 6.5): w
+%Error: Exiting due to

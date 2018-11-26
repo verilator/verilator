@@ -10,6 +10,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 ***   In --xml-only show the original unmodified names, and add module_files
       and cells similar to Verilog-Perl, msg2719. [Kanad Kanhere]
 
+****  Add PROCASSWIRE error on behavioral assignments to wires, msg2737. [Neil Turton]
+
 ****  Fix --trace-lxt2 compile error on MinGW, msg2711. [HyungKi Jeong]
 
 ****  Fix hang on bad pattern keys, bug1364. [Matt Myers]

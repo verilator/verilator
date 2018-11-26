@@ -203,15 +203,18 @@ private:
             else if (!m_ftaskp && nodep->isNonOutput()) {
 		nodep->v3error("Unsupported: Default value on module input: "<<nodep->prettyName());
 		nodep->valuep()->unlinkFrBack()->deleteTree();
-	    } // 2. Under modules, it's an initial value to be loaded at time 0 via an AstInitial
-	    else if (m_valueModp) {
-		nodep->addNextHere
-		    (new AstInitial
-                     (fl, new AstAssign(fl, new AstVarRef(fl, nodep->name(), true),
-                                        nodep->valuep()->unlinkFrBack())));
-	    } // 3. Under blocks, it's an initial value to be under an assign
-	    else {
-		nodep->addNextHere
+            }  // 2. Under modules, it's an initial value to be loaded at time 0 via an AstInitial
+            else if (m_valueModp) {
+                // Making an AstAssign (vs AstAssignW) to a wire is an error, suppress it
+                FileLine* newfl = new FileLine (fl);
+                newfl->warnOff(V3ErrorCode::PROCASSWIRE, true);
+                nodep->addNextHere
+                    (new AstInitial
+                     (newfl, new AstAssign(newfl, new AstVarRef(newfl, nodep->name(), true),
+                                           nodep->valuep()->unlinkFrBack())));
+            }  // 3. Under blocks, it's an initial value to be under an assign
+            else {
+                nodep->addNextHere
                     (new AstAssign(fl, new AstVarRef(fl, nodep->name(), true),
                                    nodep->valuep()->unlinkFrBack()));
 	    }
