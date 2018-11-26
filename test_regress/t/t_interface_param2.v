@@ -15,20 +15,23 @@ module t (input clk);
 endmodule
 
 interface simple_bus #(AWIDTH = 8, DWIDTH = 8)
-   (input logic clk); // Define the interface
+   (input logic clk);  // Define the interface
 
    logic req, gnt;
    logic [AWIDTH-1:0] addr;
    logic [DWIDTH-1:0] data;
 
    modport slave( input req, addr, clk,
-		  output gnt,
-		  input  data);
+                  output gnt,
+                  input  data);
 
    modport master(input gnt, clk,
-		  output req, addr,
-		  output data);
+                  output req, addr,
+                  output data);
 
+   initial begin
+      if (DWIDTH != 16) $stop;
+   end
 endinterface: simple_bus
 
 module mem(interface a);
@@ -36,7 +39,7 @@ module mem(interface a);
    always @(posedge a.clk)
      a.gnt <= a.req & avail;
    initial begin
-      if ($bits(a.data != 16)) $stop;
+      if ($bits(a.data) != 16) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
    end
