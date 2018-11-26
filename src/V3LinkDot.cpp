@@ -867,11 +867,11 @@ class LinkDotFindVisitor : public AstNVisitor {
 	    if (nodep->fvarp()
                 && !VN_IS(nodep->fvarp(), Var)) {
                 AstNodeDType* dtypep = VN_CAST(nodep->fvarp(), NodeDType);
-		// If unspecified, function returns one bit; however when we support NEW() it could
-		// also return the class reference.
-		if (dtypep) dtypep->unlinkFrBack();
-		else dtypep = new AstBasicDType(nodep->fileline(), AstBasicDTypeKwd::LOGIC);
-                AstVar* newvarp = new AstVar(nodep->fileline(), AstVarType::WIRE, nodep->name(),
+                // If unspecified, function returns one bit; however when we support NEW() it could
+                // also return the class reference.
+                if (dtypep) dtypep->unlinkFrBack();
+                else dtypep = new AstBasicDType(nodep->fileline(), AstBasicDTypeKwd::LOGIC);
+                AstVar* newvarp = new AstVar(nodep->fileline(), AstVarType::VAR, nodep->name(),
                                              VFlagChildDType(), dtypep);  // Not dtype resolved yet
                 newvarp->direction(VDirection::OUTPUT);
 		newvarp->funcReturn(true);
