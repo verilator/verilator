@@ -15,7 +15,9 @@
 .*\.1
 /obj_dir/
 /obj_dbg/
+/obj_nc/
 /obj_opt/
+/obj_vcs/
 /obj_vlt/
 /obj_vltmt/
 /obj_dist/
