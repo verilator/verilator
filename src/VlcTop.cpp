@@ -42,10 +42,9 @@ void VlcTop::readCoverage(const string& filename, bool nonfatal) {
     VlcTest* testp = tests().newTest(filename, 0, 0);
 
     while (!is.eof()) {
-	string line;
-	getline(is, line);
-	//UINFO(9," got "<<line<<endl);
-	if (line[0] == 'C') {
+        string line = V3Os::getline(is);
+        //UINFO(9," got "<<line<<endl);
+        if (line[0] == 'C') {
 	    string::size_type secspace=3;
 	    for (; secspace<line.length(); secspace++) {
 		if (line[secspace]=='\'' && line[secspace+1]==' ') break;
@@ -219,9 +218,8 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
 
 	int lineno = 0;
 	while (!is.eof()) {
-	    lineno++;
-	    string line;
-	    getline(is, line);
+            lineno++;
+            string line = V3Os::getline(is);
 
 	    bool first = true;
 

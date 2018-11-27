@@ -46,6 +46,9 @@ public:
     static string filenameRealPath(const string& filename);  ///< Return realpath of filename
     static bool filenameIsRel(const string& filename);  ///< True if relative
 
+    // METHODS (file utilities)
+    static string getline(std::istream& is, char delim='\n');
+
     // METHODS (directory utilities)
     static void createDir(const string& dirname);
     static void unlinkRegexp(const string& dir, const string& regexp);

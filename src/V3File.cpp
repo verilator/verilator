@@ -206,12 +206,12 @@ inline bool V3FileDependImp::checkTimes(const string& filename, const string& cm
 	return false;
     }
     {
-	string ignore;  getline(*ifp, ignore);
+        string ignore = V3Os::getline(*ifp);
     }
     {
-	char   chkDir;   *ifp>>chkDir;
-	char   quote;    *ifp>>quote;
-	string chkCmdline;  getline(*ifp, chkCmdline, '"');
+        char   chkDir;   *ifp>>chkDir;
+        char   quote;    *ifp>>quote;
+        string chkCmdline = V3Os::getline(*ifp, '"');
 	string cmdline = stripQuotes(cmdlineIn);
 	if (cmdline != chkCmdline) {
 	    UINFO(2,"   --check-times failed: different command line\n");
@@ -228,8 +228,8 @@ inline bool V3FileDependImp::checkTimes(const string& filename, const string& cm
 	time_t chkCnstime; *ifp>>chkCnstime;
 	time_t chkMstime; *ifp>>chkMstime;
 	time_t chkMnstime; *ifp>>chkMnstime;
-	char   quote;    *ifp>>quote;
-	string chkFilename; getline(*ifp, chkFilename, '"');
+        char   quote;    *ifp>>quote;
+        string chkFilename = V3Os::getline(*ifp, '"');
 
 	V3Options::fileNfsFlush(chkFilename);
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)

@@ -166,6 +166,21 @@ bool V3Os::filenameIsRel(const string& filename) {
 }
 
 //######################################################################
+// File utilities
+
+string V3Os::getline(std::istream& is, char delim) {
+    string line;
+#if defined(__CYGWIN__)  // Work around buggy implementation of getline
+    char buf[65536];
+    is.getline(buf, 65535, delim);
+    line = buf;
+#else
+    std::getline(is, line, delim);
+#endif
+    return line;
+}
+
+//######################################################################
 // Directory utilities
 
 void V3Os::createDir(const string& dirname) {

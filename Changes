@@ -16,6 +16,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix hang on bad pattern keys, bug1364. [Matt Myers]
 
+****  Fix crash due to cygwin bug in getline, bug1349. [Affe Mao]
+
 
 * Verilator 4.006 2018-10-27
 

@@ -1113,10 +1113,9 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     string whole_file;
     bool inCmt = false;
     while (!ifp->eof()) {
-	string line;
-	getline(*ifp, line);
-	// Strip simple comments
-	string oline;
+        string line = V3Os::getline(*ifp);
+        // Strip simple comments
+        string oline;
 	// cppcheck-suppress StlMissingComparison
 	for (string::const_iterator pos = line.begin(); pos != line.end(); ++pos) {
 	    if (inCmt) {
