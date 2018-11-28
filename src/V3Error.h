@@ -77,8 +77,9 @@ public:
 	GENCLK,		// Generated Clock
 	IFDEPTH,	// If statements too deep
 	IMPERFECTSCH,	// Imperfect schedule (disabled by default)
-	IMPLICIT,	// Implicit wire
-	IMPURE,		// Impure function not being inlined
+        IMPLICIT,       // Implicit wire
+        IMPORTSTAR,     // Import::* in $unit
+        IMPURE,         // Impure function not being inlined
 	INCABSPATH,	// Include has absolute path
         INFINITELOOP,   // Infinite loop
 	INITIALDLY,	// Initial delayed statement
@@ -136,7 +137,7 @@ public:
             "CMPCONST", "COLONPLUS", "COMBDLY",
             "DEFPARAM", "DECLFILENAME",
             "ENDLABEL", "GENCLK",
-            "IFDEPTH", "IMPERFECTSCH", "IMPLICIT", "IMPURE",
+            "IFDEPTH", "IMPERFECTSCH", "IMPLICIT", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY",
             "LITENDIAN", "MODDUP",
             "MULTIDRIVEN",
@@ -185,9 +186,10 @@ public:
 				       || m_e==BLKSEQ
 				       || m_e==DEFPARAM
 				       || m_e==DECLFILENAME
-				       || m_e==INCABSPATH
-				       || m_e==PINCONNECTEMPTY
-				       || m_e==PINNOCONNECT
+                                       || m_e==IMPORTSTAR
+                                       || m_e==INCABSPATH
+                                       || m_e==PINCONNECTEMPTY
+                                       || m_e==PINNOCONNECT
 				       || m_e==SYNCASYNCNET
 				       || m_e==UNDRIVEN
 				       || m_e==UNUSED

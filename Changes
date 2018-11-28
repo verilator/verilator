@@ -12,6 +12,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Add PROCASSWIRE error on behavioral assignments to wires, msg2737. [Neil Turton]
 
+****  Add IMPORTSTAR warning on import::* inside $unit scope.
+
 ****  Fix --trace-lxt2 compile error on MinGW, msg2711. [HyungKi Jeong]
 
 ****  Fix hang on bad pattern keys, bug1364. [Matt Myers]

@@ -226,7 +226,7 @@ Verilator - Convert Verilog code to C++/SystemC
     verilator --version
     verilator --cc [options] [source_files.v]... [opt_c_files.cpp/c/cc/a/o/so]
     verilator --sc [options] [source_files.v]... [opt_c_files.cpp/c/cc/a/o/so]
-    verilator --lint-only    [source_files.v]...
+    verilator --lint-only -Wall [source_files.v]...
 
 =head1 DESCRIPTION
 
@@ -1414,8 +1414,8 @@ received from third parties.
 
 Disable all code style related warning messages (note by default they are
 already disabled).  This is equivalent to "-Wno-DECLFILENAME -Wno-DEFPARAM
--Wno-INCABSPATH -Wno-PINCONNECTEMPTY -Wno-PINNOCONNECT -Wno-SYNCASYNCNET
--Wno-UNDRIVEN -Wno-UNUSED -Wno-VARHIDDEN".
+-Wno-IMPORTSTAR -Wno-INCABSPATH -Wno-PINCONNECTEMPTY -Wno-PINNOCONNECT
+-Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNUSED -Wno-VARHIDDEN".
 
 =item -Wno-fatal
 
@@ -3577,6 +3577,16 @@ nets.  A better option is the /*AUTOWIRE*/ feature of Verilog-Mode for
 Emacs, available from L<http://www.veripool.org/>
 
 Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
+
+=item IMPORTSTAR
+
+Warns that an "import I<package>::*" statement is in $unit scope. This
+causes the imported symbols to polute the global namespace, defeating much
+of the purpose of having a package. Generally "import ::*" should only be
+used inside a lower scope such as a package or module.
+
+Disabled by default as this is a code style warning; it will simulate
 correctly.
 
 =item IMPURE

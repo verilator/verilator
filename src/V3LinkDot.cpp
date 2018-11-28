@@ -1020,7 +1020,11 @@ class LinkDotFindVisitor : public AstNVisitor {
     virtual void visit(AstPackageImport* nodep) {
 	UINFO(4,"  Link: "<<nodep<<endl);
 	VSymEnt* srcp = m_statep->getNodeSym(nodep->packagep());
-	if (nodep->name()!="*") {
+        if (nodep->name()=="*") {
+            if (m_curSymp == m_statep->dunitEntp()) {
+                nodep->v3warn(IMPORTSTAR,"Import::* in $unit scope may pollute global namespace");
+            }
+        } else {
 	    VSymEnt* impp = srcp->findIdFlat(nodep->name());
 	    if (!impp) {
 		nodep->v3error("Import object not found: "<<nodep->packagep()->prettyName()<<"::"<<nodep->prettyName());
