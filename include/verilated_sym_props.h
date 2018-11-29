@@ -30,7 +30,7 @@
 
 
 #ifndef _VERILATED_SYM_PROPS_H_
-#define _VERILATED_SYM_PROPS_H_ 1 ///< Header Guard
+#define _VERILATED_SYM_PROPS_H_ 1  ///< Header Guard
 
 #include "verilatedos.h"
 
@@ -223,4 +223,4 @@ public:
     const char* name() const { return m_namep; }
 };
 
-#endif // Guard
+#endif  // Guard

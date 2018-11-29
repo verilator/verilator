@@ -248,4 +248,4 @@ inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, std::string& r
     return os.read((void*)rhs.data(), len);
 }
 
-#endif // guard
+#endif  // Guard

@@ -8,7 +8,7 @@ use IO::File;
 use IO::Dir;
 use Pod::Usage;
 use strict;
-use vars qw ($Debug);
+use vars qw($Debug);
 
 our $VERSION = '0.001';
 our $Opt_Widen = 1;
@@ -18,7 +18,7 @@ our $Opt_Widen = 1;
 
 autoflush STDOUT 1;
 autoflush STDERR 1;
-Getopt::Long::config ("no_auto_abbrev");
+Getopt::Long::config("no_auto_abbrev");
 if (! GetOptions (
           "debug"       => sub { $Debug = 1; },
           "help"        => sub { print "Version $VERSION\n";

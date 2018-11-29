@@ -27,7 +27,7 @@
 
 
 #ifndef _VERILATED_HEAVY_H_
-#define _VERILATED_HEAVY_H_ 1 ///< Header Guard
+#define _VERILATED_HEAVY_H_ 1  ///< Header Guard
 
 #include "verilated.h"
 
@@ -88,4 +88,4 @@ inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, QData& rdr) 
 }
 extern IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) VL_MT_SAFE;
 
-#endif // Guard
+#endif  // Guard

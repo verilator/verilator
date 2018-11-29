@@ -10,7 +10,7 @@ use Getopt::Long;
 use IO::File;
 use Pod::Usage;
 use strict;
-use vars qw ($Debug);
+use vars qw($Debug);
 
 #======================================================================
 
@@ -37,7 +37,7 @@ my $Opt_B;
 my $Opt_Lineno = 1;
 autoflush STDOUT 1;
 autoflush STDERR 1;
-Getopt::Long::config ("no_auto_abbrev");
+Getopt::Long::config("no_auto_abbrev");
 if (! GetOptions (
 	  "help"	=> \&usage,
 	  "debug"	=> \&debug,
@@ -54,9 +54,9 @@ defined $Opt_B or die "%Error: No new diff filename\n";
 -e $Opt_B or die "%Error: No new diff filename found: $Opt_B\n";
 
 if (-d $Opt_A && -d $Opt_B) {
-    diff_dir ($Opt_A, $Opt_B);
+    diff_dir($Opt_A, $Opt_B);
 } elsif (-f $Opt_A && -f $Opt_B) {
-    diff_file ($Opt_A, $Opt_B);
+    diff_file($Opt_A, $Opt_B);
 } else {
     die "%Error: Mix of files and dirs\n";
 }
@@ -85,8 +85,8 @@ sub diff_dir {
 	diff_file($a,$b);
 	$any = 1;
     }
-    $any or warn ("%Warning: No .tree files found that have similar base names:\n    "
-                  .join("\n    ", sort keys %files),"\n");
+    $any or warn("%Warning: No .tree files found that have similar base names:\n    "
+                 .join("\n    ", sort keys %files),"\n");
 }
 
 sub diff_file {
@@ -103,8 +103,8 @@ sub diff_file {
     my $verCvt = (($vera < 0x3900 && $verb >= 0x3900)
 		  || ($vera >= 0x3900 && $verb < 0x3900));
 
-    filter ($a, $tmp_a, $verCvt);
-    filter ($b, $tmp_b, $verCvt);
+    filter($a, $tmp_a, $verCvt);
+    filter($b, $tmp_b, $verCvt);
     system("diff -u $tmp_a $tmp_b");
     unlink $tmp_a;
     unlink $tmp_b;
@@ -169,7 +169,7 @@ sub filter {
 
 sub usage {
     pod2usage(-verbose=>2, -exitval=>2, -output=>\*STDOUT);
-    exit (1);
+    exit(1);
 }
 
 sub debug {

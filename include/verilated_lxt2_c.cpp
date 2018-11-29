@@ -51,9 +51,9 @@ protected:
     void* m_userthis;  ///< Fake "this" for caller
     vluint32_t m_code;  ///< Starting code number
     // CONSTRUCTORS
-    VerilatedLxt2CallInfo (VerilatedLxt2Callback_t icb, VerilatedLxt2Callback_t fcb,
-                           VerilatedLxt2Callback_t changecb,
-                           void* ut, vluint32_t code)
+    VerilatedLxt2CallInfo(VerilatedLxt2Callback_t icb, VerilatedLxt2Callback_t fcb,
+                          VerilatedLxt2Callback_t changecb,
+                          void* ut, vluint32_t code)
         : m_initcb(icb), m_fullcb(fcb), m_changecb(changecb), m_userthis(ut), m_code(code) {};
     ~VerilatedLxt2CallInfo() {}
 };

@@ -30,7 +30,7 @@ use IO::File;
 use Pod::Usage;
 
 use strict;
-use vars qw ($Debug @Opt_Verilator_Sw);
+use vars qw($Debug @Opt_Verilator_Sw);
 
 #######################################################################
 #######################################################################
@@ -57,7 +57,7 @@ foreach my $sw (@ARGV) {
     push @Opt_Verilator_Sw, $sw;
 }
 
-Getopt::Long::config ("no_auto_abbrev","pass_through");
+Getopt::Long::config("no_auto_abbrev","pass_through");
 if (! GetOptions (
                   # Major operating modes
                   "help"        => \&usage,
@@ -108,7 +108,7 @@ if ($opt_gdb) {
          ." -ex 'bt'");
 } else {
     # Normal, non gdb
-    run (verilator_bin()." ".join(' ',@quoted_sw));
+    run(verilator_bin()." ".join(' ',@quoted_sw));
 }
 
 #----------------------------------------------------------------------
@@ -3784,7 +3784,7 @@ expression as the next statement.  For example:
 
       task foo; output sig; ... endtask
       always @* begin
-           foo(bus_we_select_from[2]);   // Will get TASKNSVAR error
+           foo(bus_we_select_from[2]);  // Will get TASKNSVAR error
       end
 
 Change this to:
@@ -4152,12 +4152,12 @@ trace file if you want all data to land in the same output file.
         ...
         Verilated::traceEverOn(true);
         VerilatedVcdC* tfp = new VerilatedVcdC;
-        topp->trace (tfp, 99);
-        tfp->open ("obj_dir/t_trace_ena_cc/simx.vcd");
+        topp->trace(tfp, 99);
+        tfp->open("obj_dir/t_trace_ena_cc/simx.vcd");
         ...
         while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
             main_time += #;
-            tfp->dump (main_time);
+            tfp->dump(main_time);
         }
         tfp->close();
     }
@@ -4188,8 +4188,8 @@ trace file if you want all data to land in the same output file.
         ...
         Verilated::traceEverOn(true);
         VerilatedVcdSc* tfp = new VerilatedVcdSc;
-        topp->trace (tfp, 99);
-        tfp->open ("obj_dir/t_trace_ena_cc/simx.vcd");
+        topp->trace(tfp, 99);
+        tfp->open("obj_dir/t_trace_ena_cc/simx.vcd");
         ...
         sc_start(1);
         ...

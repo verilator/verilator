@@ -22,7 +22,7 @@
 
 
 #ifndef _VERILATED_IMP_H_
-#define _VERILATED_IMP_H_ 1 ///< Header Guard
+#define _VERILATED_IMP_H_ 1  ///< Header Guard
 
 #if !defined(_VERILATED_CPP_) && !defined(_VERILATED_DPI_CPP_)
 # error "verilated_imp.h only to be included by verilated*.cpp internals"
@@ -57,8 +57,8 @@ public:
     };
 private:
     // MEMBERS
-    vluint32_t          m_mtaskId;      ///< MTask that did enqueue
-    std::function<void()> m_cb; 	///< Lambda to execute when message received
+    vluint32_t m_mtaskId;  ///< MTask that did enqueue
+    std::function<void()> m_cb;  ///< Lambda to execute when message received
 public:
     // CONSTRUCTORS
     VerilatedMsg(const std::function<void()>& cb)
@@ -103,9 +103,9 @@ public:
 	while (m_depth) {
 	    // Wait for a message to be added to the queue
 	    // We don't use unique_lock as want to unlock with the message copy still in scope
-	    m_mutex.lock();
-	    assert(!m_queue.empty()); // Otherwise m_depth is wrong
-	    // Unfortunately to release the lock we need to copy the message
+            m_mutex.lock();
+            assert(!m_queue.empty());  // Otherwise m_depth is wrong
+            // Unfortunately to release the lock we need to copy the message
 	    // (Or have the message be a pointer, but then new/delete cost on each message)
 	    // We assume messages are small, so copy
 	    auto it = m_queue.begin();
@@ -160,7 +160,7 @@ public:
 	}
     }
 };
-#endif // VL_THREADED
+#endif  // VL_THREADED
 
 //======================================================================
 // VerilatedImp
@@ -174,7 +174,7 @@ class VerilatedImp {
     typedef std::map<const char*, int, VerilatedCStrCmp>  ExportNameMap;
 
     // MEMBERS
-    static VerilatedImp	s_s;		///< Static Singleton; One and only static this
+    static VerilatedImp s_s;  ///< Static Singleton; One and only static this
 
     // Nothing here is save-restored; users expected to re-register appropriately
 
@@ -197,7 +197,7 @@ class VerilatedImp {
     std::vector<FILE*>  m_fdps VL_GUARDED_BY(m_fdMutex);  ///< File descriptors
     std::deque<IData>   m_fdFree VL_GUARDED_BY(m_fdMutex);  ///< List of free descriptors (SLOW - FOPEN/CLOSE only)
 
-public: // But only for verilated*.cpp
+public:  // But only for verilated*.cpp
     // CONSTRUCTORS
     VerilatedImp()
 	: m_argVecLoaded(false), m_exportNext(0) {
@@ -282,7 +282,7 @@ private:
 	}
     }
 
-public: // But only for verilated*.cpp
+public:  // But only for verilated*.cpp
     // METHODS - scope name
     static void scopeInsert(const VerilatedScope* scopep) VL_MT_SAFE {
 	// Slow ok - called once/scope at construction
@@ -319,7 +319,7 @@ public: // But only for verilated*.cpp
         return &s_s.m_nameMap;
     }
 
-public: // But only for verilated*.cpp
+public:  // But only for verilated*.cpp
     // METHODS - export names
 
     // Each function prototype is converted to a function number which we
@@ -367,7 +367,7 @@ public: // But only for verilated*.cpp
     // We don't free up m_exportMap until the end, because we can't be sure
     // what other models are using the assigned funcnum's.
 
-public: // But only for verilated*.cpp
+public:  // But only for verilated*.cpp
     // METHODS - file IO
     static IData fdNew(FILE* fp) VL_MT_SAFE {
 	if (VL_UNLIKELY(!fp)) return 0;

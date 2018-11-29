@@ -40,7 +40,7 @@ class VerilatedVcdCallInfo;
 
 class VerilatedVcdFile {
 private:
-    int                 m_fd;           ///< File descriptor we're writing to
+    int m_fd;  ///< File descriptor we're writing to
 public:
     // METHODS
     VerilatedVcdFile() : m_fd(0) {}

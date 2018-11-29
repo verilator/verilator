@@ -11,7 +11,7 @@ use IO::File;
 use Pod::Usage;
 eval { use Data::Dumper;  $Data::Dumper::Indent = 1; }; # Debug, ok if missing
 use strict;
-use vars qw ($Debug);
+use vars qw($Debug);
 
 #======================================================================
 
@@ -23,7 +23,7 @@ $Debug = 0;
 my $Opt_File;
 autoflush STDOUT 1;
 autoflush STDERR 1;
-Getopt::Long::config ("no_auto_abbrev");
+Getopt::Long::config("no_auto_abbrev");
 if (! GetOptions (
 		  "help"	=> \&usage,
 		  "debug"	=> \&debug,
@@ -40,7 +40,7 @@ profcfunc($Opt_File);
 
 sub usage {
     pod2usage(-verbose=>2, -exitval=>2, -output=>\*STDOUT);
-    exit (1);
+    exit(1);
 }
 
 sub debug {

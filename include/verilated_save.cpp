@@ -32,7 +32,7 @@
 # include <unistd.h>
 #endif
 
-#ifndef O_LARGEFILE // For example on WIN32
+#ifndef O_LARGEFILE  // For example on WIN32
 # define O_LARGEFILE 0
 #endif
 #ifndef O_NONBLOCK
@@ -43,8 +43,8 @@
 #endif
 
 // CONSTANTS
-static const char* const VLTSAVE_HEADER_STR = "verilatorsave01\n";	///< Value of first bytes of each file
-static const char* const VLTSAVE_TRAILER_STR = "vltsaved";	///< Value of last bytes of each file
+static const char* const VLTSAVE_HEADER_STR = "verilatorsave01\n";  ///< Value of first bytes of each file
+static const char* const VLTSAVE_TRAILER_STR = "vltsaved";  ///< Value of last bytes of each file
 
 //=============================================================================
 //=============================================================================
@@ -119,7 +119,7 @@ void VerilatedSave::open(const char* filenamep) VL_MT_UNSAFE_ONE {
     VL_DEBUG_IF(VL_DBG_MSGF("- save: opening save file %s\n",filenamep););
 
     if (filenamep[0]=='|') {
-	assert(0);	// Not supported yet.
+        assert(0);  // Not supported yet.
     } else {
 	// cppcheck-suppress duplicateExpression
         m_fd = ::open(filenamep, O_CREAT|O_WRONLY|O_TRUNC|O_LARGEFILE|O_NONBLOCK|O_CLOEXEC
@@ -142,7 +142,7 @@ void VerilatedRestore::open(const char* filenamep) VL_MT_UNSAFE_ONE {
     VL_DEBUG_IF(VL_DBG_MSGF("- restore: opening restore file %s\n",filenamep););
 
     if (filenamep[0]=='|') {
-	assert(0);	// Not supported yet.
+        assert(0);  // Not supported yet.
     } else {
 	// cppcheck-suppress duplicateExpression
         m_fd = ::open(filenamep, O_CREAT|O_RDONLY|O_LARGEFILE|O_CLOEXEC
@@ -200,7 +200,7 @@ void VerilatedSave::flush() VL_MT_UNSAFE_ONE {
 	    }
 	}
     }
-    m_cp = m_bufp; // Reset buffer
+    m_cp = m_bufp;  // Reset buffer
 }
 
 void VerilatedRestore::fill() VL_MT_UNSAFE_ONE {
@@ -210,7 +210,7 @@ void VerilatedRestore::fill() VL_MT_UNSAFE_ONE {
     vluint8_t* rp = m_bufp;
     for (vluint8_t* sp=m_cp; sp < m_endp;) *rp++ = *sp++;  // Overlaps
     m_endp = m_bufp + (m_endp - m_cp);
-    m_cp = m_bufp; // Reset buffer
+    m_cp = m_bufp;  // Reset buffer
     // Read into buffer starting at m_endp
     while (1) {
 	ssize_t remaining = (m_bufp+bufferSize() - m_endp);
@@ -226,9 +226,10 @@ void VerilatedRestore::fill() VL_MT_UNSAFE_ONE {
 		VL_FATAL_MT("",0,"",msg.c_str());
 		close();
 		break;
-	    }
-	} else { // got==0, EOF
-	    // Fill buffer from here to end with NULLs so reader's don't need to check eof each character.
+            }
+        } else {  // got==0, EOF
+            // Fill buffer from here to end with NULLs so reader's don't
+            // need to check eof each character.
 	    while (m_endp < m_bufp+bufferSize()) *m_endp++ = '\0';
 	    break;
 	}

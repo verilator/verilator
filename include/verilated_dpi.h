@@ -26,7 +26,7 @@
 
 
 #ifndef _VERILATED_DPI_H_
-#define _VERILATED_DPI_H_ 1 ///< Header Guard
+#define _VERILATED_DPI_H_ 1  ///< Header Guard
 
 #include "verilatedos.h"
 #include "verilated.h"  // Also presumably included by caller
@@ -80,4 +80,4 @@ static inline void VL_SET_SVLV_Q(int, svLogicVecVal* owp, QData ld) VL_MT_SAFE {
 
 //======================================================================
 
-#endif // _VERILATED_DPI_H_
+#endif  // Guard

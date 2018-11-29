@@ -921,7 +921,7 @@ void VerilatedVpiError::selfTest() VL_MT_UNSAFE_ONE {
 
 vpiHandle vpi_register_cb(p_cb_data cb_data_p) {
     VerilatedVpiImp::assertOneCheck();
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     // cppcheck-suppress nullPointer
     if (VL_UNLIKELY(!cb_data_p)) {
         _VL_VPI_WARNING(__FILE__, __LINE__, "%s : callback data pointer is null", VL_FUNC);
@@ -963,7 +963,7 @@ PLI_INT32 vpi_remove_cb(vpiHandle object) {
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_remove_cb %p\n",object););
     VerilatedVpiImp::assertOneCheck();
     VerilatedVpioCb* vop = VerilatedVpioCb::castp(object);
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     if (VL_UNLIKELY(!vop)) return 0;
     if (vop->cb_datap()->reason == cbAfterDelay) {
 	VerilatedVpiImp::cbTimedRemove(vop);
@@ -987,7 +987,7 @@ void vpi_get_systf_info(vpiHandle object, p_vpi_systf_data systf_data_p) {
 
 vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
     VerilatedVpiImp::assertOneCheck();
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     if (VL_UNLIKELY(!namep)) return NULL;
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_handle_by_name %s %p\n",namep,scope););
     VerilatedVpioScope* voScopep = VerilatedVpioScope::castp(scope);
@@ -1024,7 +1024,7 @@ vpiHandle vpi_handle_by_index(vpiHandle object, PLI_INT32 indx) {
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_handle_by_index %p %d\n",object, indx););
     VerilatedVpiImp::assertOneCheck();
     VerilatedVpioVar* varop = VerilatedVpioVar::castp(object);
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     if (VL_LIKELY(varop)) {
 	if (varop->varp()->dims()<2) return 0;
         if (VL_LIKELY(varop->varp()->unpacked().left() >= varop->varp()->unpacked().right())) {
@@ -1049,7 +1049,7 @@ vpiHandle vpi_handle_by_index(vpiHandle object, PLI_INT32 indx) {
 vpiHandle vpi_handle(PLI_INT32 type, vpiHandle object) {
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_handle %d %p\n",type,object););
     VerilatedVpiImp::assertOneCheck();
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     switch (type) {
     case vpiLeftRange: {
 	VerilatedVpioVar* vop = VerilatedVpioVar::castp(object);
@@ -1092,7 +1092,7 @@ vpiHandle vpi_handle_multi(PLI_INT32 type, vpiHandle refHandle1, vpiHandle refHa
 vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_iterate %d %p\n",type,object););
     VerilatedVpiImp::assertOneCheck();
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     switch (type) {
     case vpiMemoryWord: {
 	VerilatedVpioVar* vop = VerilatedVpioVar::castp(object);
@@ -1130,7 +1130,7 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
 vpiHandle vpi_scan(vpiHandle object) {
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_scan %p\n",object););
     VerilatedVpiImp::assertOneCheck();
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     VerilatedVpio* vop = VerilatedVpio::castp(object);
     if (VL_UNLIKELY(!vop)) return NULL;
     return vop->dovpi_scan();
@@ -1142,7 +1142,7 @@ PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
     // Leave this in the header file - in many cases the compiler can constant propagate "object"
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_get %d %p\n",property,object););
     VerilatedVpiImp::assertOneCheck();
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     switch (property) {
     case vpiTimePrecision: {
 	return VL_TIME_PRECISION;
@@ -1185,7 +1185,7 @@ PLI_BYTE8 *vpi_get_str(PLI_INT32 property, vpiHandle object) {
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_get_str %d %p\n",property,object););
     VerilatedVpiImp::assertOneCheck();
     VerilatedVpio* vop = VerilatedVpio::castp(object);
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     if (VL_UNLIKELY(!vop)) return NULL;
     switch (property) {
     case vpiName: {
@@ -1224,7 +1224,7 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
     static VL_THREAD_LOCAL int outStrSz = sizeof(outStr)-1;
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_get_value %p\n",object););
     VerilatedVpiImp::assertOneCheck();
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     if (VL_UNLIKELY(!value_p)) return;
     if (VerilatedVpioVar* vop = VerilatedVpioVar::castp(object)) {
 	// We used to presume vpiValue.format = vpiIntVal or if single bit vpiScalarVal
@@ -1295,10 +1295,10 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
 		for (i=0; i<bits; ++i) {
 		    char val = (datap[i>>3]>>(i&7))&1;
 		    outStr[bits-i-1] = val?'1':'0';
-		}
-		outStr[i]=0; // NULL terminate
-		return;
-	    }
+                }
+                outStr[i] = '\0';
+                return;
+            }
 	    default:
 		_VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s",
                               VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format),
@@ -1345,10 +1345,10 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
 			}
 		    }
 		    outStr[chars-i-1] = '0' + (val&7);
-		}
-		outStr[i]=0; // NULL terminate
-		return;
-	    }
+                }
+                outStr[i] = '\0';
+                return;
+            }
 	    default:
                 strcpy(outStr, "0");
 		_VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s",
@@ -1404,10 +1404,10 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
 			}
 		    }
 		    outStr[chars-i-1] = "0123456789abcdef"[static_cast<int>(val)];
-		}
-		outStr[i]=0; // NULL terminate
-		return;
-	    }
+                }
+                outStr[i] = '\0';
+                return;
+            }
 	    default:
 		_VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s",
 			      VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
@@ -1436,10 +1436,10 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
 		    char val = datap[bytes-i-1];
                      // other simulators replace [leading?] zero chars with spaces, replicate here.
 		    outStr[i] = val?val:' ';
-		}
-		outStr[i]=0; // NULL terminate
-		return;
-	    }
+                }
+                outStr[i] = '\0';
+                return;
+            }
 	    default:
 		_VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s",
 			      VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
@@ -1456,9 +1456,9 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
 	    case VLVT_UINT32:
 		value_p->value.integer = *(reinterpret_cast<IData*>(vop->varDatap()));
 		return;
-	    case VLVT_WDATA: // FALLTHRU
-	    case VLVT_UINT64: // FALLTHRU
-	    default:
+            case VLVT_WDATA:  // FALLTHRU
+            case VLVT_UINT64:  // FALLTHRU
+            default:
 		value_p->value.integer = 0;
                 _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s",
 			      VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
@@ -1488,7 +1488,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
 			p_vpi_time time_p, PLI_INT32 flags) {
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_put_value %p %p\n",object, value_p););
     VerilatedVpiImp::assertOneCheck();
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     if (VL_UNLIKELY(!value_p)) {
       _VL_VPI_WARNING(__FILE__, __LINE__, "Ignoring vpi_put_value with NULL value pointer");
       return 0;
@@ -1578,8 +1578,8 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
 		int len	 = strlen(value_p->value.str);
 		CData* datap = (reinterpret_cast<CData*>(vop->varDatap()));
                 div_t idx;
-                datap[0] = 0; // reset zero'th byte
-		for (int i=0; i<chars; ++i) {
+                datap[0] = 0;  // reset zero'th byte
+                for (int i=0; i<chars; ++i) {
                     union {
 			char  byte[2];
                         short half;
@@ -1605,11 +1605,12 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
                     // signifcant byte of the aligned value is the most significant
                     // byte of the destination.
                     val.half <<= idx.rem;
-                    datap[idx.quot] |= val.byte[0]; // or in value
+                    datap[idx.quot] |= val.byte[0];  // or in value
                     if ((idx.quot+1) < bytes) {
-		        datap[idx.quot+1] = val.byte[1]; // this also resets all bits to 0 prior to or'ing above
-		    }
-		}
+                        datap[idx.quot+1] = val.byte[1];  // this also resets
+			// all bits to 0 prior to or'ing above
+                    }
+                }
                 // mask off non existant bits in the most significant byte
                 if (idx.quot == (bytes-1)) {
                     datap[idx.quot] &= vop->mask_byte(idx.quot);
@@ -1692,9 +1693,10 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
 		    if (i&1) {
 		        datap[i>>1] |= hex<<4;
 		    } else {
-		        datap[i>>1]  = hex; // this also resets all bits to 0 prior to or'ing above of the msb
-		    }
-		}
+                        datap[i>>1]  = hex;  // this also resets all
+			// bits to 0 prior to or'ing above of the msb
+                    }
+                }
                 // apply bit mask to most significant byte
                 datap[(chars-1)>>1] &= vop->mask_byte((chars-1)>>1);
 		return object;
@@ -1736,9 +1738,9 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
 	    case VLVT_UINT32:
 		*(reinterpret_cast<IData*>(vop->varDatap())) = vop->mask() & value_p->value.integer;
 		return object;
-	    case VLVT_WDATA: // FALLTHRU
-	    case VLVT_UINT64: // FALLTHRU
-	    default:
+            case VLVT_WDATA:  // FALLTHRU
+            case VLVT_UINT64:  // FALLTHRU
+            default:
                 _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s",
 			      VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
 		return 0;
@@ -1789,13 +1791,13 @@ void vpi_get_time(vpiHandle object, p_vpi_time time_p) {
 
 PLI_UINT32 vpi_mcd_open(PLI_BYTE8 *filenamep) {
     VerilatedVpiImp::assertOneCheck();
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     return VL_FOPEN_S(filenamep,"wb");
 }
 
 PLI_UINT32 vpi_mcd_close(PLI_UINT32 mcd) {
     VerilatedVpiImp::assertOneCheck();
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     VL_FCLOSE_I(mcd); return 0;
 }
 
@@ -1805,7 +1807,7 @@ PLI_BYTE8 *vpi_mcd_name(PLI_UINT32 mcd) {
 
 PLI_INT32 vpi_mcd_printf(PLI_UINT32 mcd, PLI_BYTE8 *formatp, ...) {
     VerilatedVpiImp::assertOneCheck();
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     va_list ap;
     va_start(ap,formatp);
     int chars = vpi_mcd_vprintf(mcd, formatp, ap);
@@ -1815,7 +1817,7 @@ PLI_INT32 vpi_mcd_printf(PLI_UINT32 mcd, PLI_BYTE8 *formatp, ...) {
 
 PLI_INT32 vpi_printf(PLI_BYTE8 *formatp, ...) {
     VerilatedVpiImp::assertOneCheck();
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     va_list ap;
     va_start(ap,formatp);
     int chars = vpi_vprintf(formatp, ap);
@@ -1825,14 +1827,14 @@ PLI_INT32 vpi_printf(PLI_BYTE8 *formatp, ...) {
 
 PLI_INT32 vpi_vprintf(PLI_BYTE8* formatp, va_list ap) {
     VerilatedVpiImp::assertOneCheck();
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     return VL_VPRINTF(formatp, ap);
 }
 
 PLI_INT32 vpi_mcd_vprintf(PLI_UINT32 mcd, PLI_BYTE8 *format, va_list ap) {
     VerilatedVpiImp::assertOneCheck();
     FILE* fp = VL_CVT_I_FP(mcd);
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     // cppcheck-suppress nullPointer
     if (VL_UNLIKELY(!fp)) return 0;
     int chars = vfprintf(fp, format, ap);
@@ -1841,7 +1843,7 @@ PLI_INT32 vpi_mcd_vprintf(PLI_UINT32 mcd, PLI_BYTE8 *format, va_list ap) {
 
 PLI_INT32 vpi_flush(void) {
     VerilatedVpiImp::assertOneCheck();
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     Verilated::flushCall();
     return 0;
 }
@@ -1849,7 +1851,7 @@ PLI_INT32 vpi_flush(void) {
 PLI_INT32 vpi_mcd_flush(PLI_UINT32 mcd) {
     VerilatedVpiImp::assertOneCheck();
     FILE* fp = VL_CVT_I_FP(mcd);
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     if (VL_UNLIKELY(!fp)) return 1;
     fflush(fp);
     return 0;
@@ -1868,13 +1870,13 @@ PLI_INT32 vpi_chk_error(p_vpi_error_info error_info_p) {
     if (error_info_p && _error_info_p) {
       *error_info_p = *_error_info_p;
     }
-    if (!_error_info_p) return 0; // no error occured
+    if (!_error_info_p) return 0;  // no error occured
     return _error_info_p->level;  // return error severity level
 };
 
 PLI_INT32 vpi_free_object(vpiHandle object) {
     VerilatedVpiImp::assertOneCheck();
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     return vpi_release_handle(object);  // Deprecated
 }
 
@@ -1882,7 +1884,7 @@ PLI_INT32 vpi_release_handle(vpiHandle object) {
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_release_handle %p\n",object););
     VerilatedVpiImp::assertOneCheck();
     VerilatedVpio* vop = VerilatedVpio::castp(object);
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     if (VL_UNLIKELY(!vop)) return 0;
     vpi_remove_cb(object);  // May not be a callback, but that's ok
     delete vop;
@@ -1891,7 +1893,7 @@ PLI_INT32 vpi_release_handle(vpiHandle object) {
 
 PLI_INT32 vpi_get_vlog_info(p_vpi_vlog_info vlog_info_p) VL_MT_SAFE {
     VerilatedVpiImp::assertOneCheck();
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     vlog_info_p->argc = Verilated::getCommandArgs()->argc;
     vlog_info_p->argv = (PLI_BYTE8**)Verilated::getCommandArgs()->argv;
     vlog_info_p->product = (PLI_BYTE8*)Verilated::productName();
@@ -1917,7 +1919,7 @@ PLI_INT32 vpi_put_userdata(vpiHandle obj, void *userdata) {
 PLI_INT32 vpi_control(PLI_INT32 operation, ...) {
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_control %d\n",operation););
     VerilatedVpiImp::assertOneCheck();
-    _VL_VPI_ERROR_RESET(); // reset vpi error status
+    _VL_VPI_ERROR_RESET();
     switch (operation) {
     case vpiFinish: {
 	VL_FINISH_MT(__FILE__,__LINE__,"*VPI*");

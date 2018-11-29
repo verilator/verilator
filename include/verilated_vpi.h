@@ -24,7 +24,7 @@
 //=========================================================================
 
 #ifndef _VERILATED_VPI_H_
-#define _VERILATED_VPI_H_ 1 ///< Header Guard
+#define _VERILATED_VPI_H_ 1  ///< Header Guard
 
 #include "verilatedos.h"
 #include "verilated.h"
@@ -49,5 +49,4 @@ public:
     static void selfTest() VL_MT_UNSAFE_ONE;
 };
 
-
-#endif // Guard
+#endif  // Guard

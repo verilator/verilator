@@ -31,7 +31,7 @@ use Pod::Usage;
 use Cwd qw(abs_path getcwd);
 
 use strict;
-use vars qw ($Debug @Opt_Verilator_Sw);
+use vars qw($Debug @Opt_Verilator_Sw);
 
 #######################################################################
 #######################################################################
@@ -54,7 +54,7 @@ foreach my $sw (@ARGV) {
     push @Opt_Verilator_Sw, $sw;
 }
 
-Getopt::Long::config ("no_auto_abbrev","pass_through");
+Getopt::Long::config("no_auto_abbrev","pass_through");
 if (! GetOptions (
 	  # Major operating modes
 	  "help"	=> \&usage,
@@ -67,8 +67,8 @@ if (! GetOptions (
 }
 
 # Normal, non gdb
-run (verilator_coverage_bin()
-     ." ".join(' ',@Opt_Verilator_Sw));
+run(verilator_coverage_bin()
+    ." ".join(' ',@Opt_Verilator_Sw));
 
 #----------------------------------------------------------------------
 

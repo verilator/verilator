@@ -9,7 +9,7 @@ use warnings;
 use Getopt::Long;
 use IO::File;
 use Pod::Usage;
-use vars qw ($Debug);
+use vars qw($Debug);
 
 $Debug = 0;
 my $Opt_File;
@@ -44,7 +44,7 @@ exit(0);
 
 sub usage {
     pod2usage(-verbose=>2, -exitval=>2, -output=>\*STDOUT);
-    exit (1);
+    exit(1);
 }
 
 sub parameter {

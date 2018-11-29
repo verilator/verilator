@@ -26,7 +26,7 @@
 
 
 #ifndef _VERILATED_H_
-#define _VERILATED_H_ 1 ///< Header Guard
+#define _VERILATED_H_ 1  ///< Header Guard
 
 #include "verilatedos.h"
 
@@ -48,8 +48,8 @@
 //=============================================================================
 // Switches
 
-#if VM_TRACE		// Verilator tracing requested
-# define WAVES 1	// Set backward compatibility flag
+#if VM_TRACE  // Verilator tracing requested
+# define WAVES 1  // Set backward compatibility flag
 #endif
 
 //=========================================================================
@@ -158,7 +158,7 @@ class VL_SCOPED_CAPABILITY VerilatedLockGuard {
     }
 };
 
-#else // !VL_THREADED
+#else  // !VL_THREADED
 
 /// Empty non-threaded mutex to avoid #ifdefs in consuming code
 class VerilatedMutex {
@@ -175,7 +175,7 @@ public:
     ~VerilatedLockGuard() {}
 };
 
-#endif // VL_THREADED
+#endif  // VL_THREADED
 
 /// Remember the calling thread at construction time, and make sure later calls use same thread
 class VerilatedAssertOneThread {
@@ -196,7 +196,7 @@ public:
         }
     }
     static void fatal_different() VL_MT_SAFE;
-#else // !VL_THREADED || !VL_DEBUG
+#else  // !VL_THREADED || !VL_DEBUG
 public:
     void check() {}
 #endif
@@ -208,11 +208,11 @@ public:
 class VerilatedModule {
     VL_UNCOPYABLE(VerilatedModule);
 private:
-    const char*		m_namep;	///< Module name
+    const char* m_namep;  ///< Module name
 public:
-    explicit VerilatedModule(const char* namep);	///< Create module with given hierarchy name
+    explicit VerilatedModule(const char* namep);  ///< Create module with given hierarchy name
     ~VerilatedModule();
-    const char* name() const { return m_namep; }	///< Return name of module
+    const char* name() const { return m_namep; }  ///< Return name of module
 };
 
 //=========================================================================
@@ -336,9 +336,9 @@ class Verilated {
 
     static VerilatedVoidCb  s_flushCb;		///< Flush callback function
 
-    static struct Serialized {   // All these members serialized/deserialized
-	// Fast path
-	int		s_debug;		///< See accessors... only when VL_DEBUG set
+    static struct Serialized {  // All these members serialized/deserialized
+        // Fast path
+        int             s_debug;                ///< See accessors... only when VL_DEBUG set
 	bool		s_calcUnusedSigs;	///< Waves file on, need all signals calculated
 	bool		s_gotFinish;		///< A $finish statement executed
 	bool		s_assertOn;		///< Assertions are enabled
@@ -470,7 +470,7 @@ public:
 public:
     // METHODS - INTERNAL USE ONLY (but public due to what uses it)
     // Internal: Create a new module name by concatenating two strings
-    static const char* catName(const char* n1, const char* n2); // Returns static data
+    static const char* catName(const char* n1, const char* n2);  // Returns static data
 
     // Internal: Throw signal assertion
     static void overWidthError(const char* signame) VL_MT_SAFE;
@@ -491,7 +491,7 @@ public:
     static int exportFuncNum(const char* namep) VL_MT_SAFE;
 
     static size_t serializedSize() VL_PURE { return sizeof(s_s); }
-    static void* serializedPtr() VL_MT_UNSAFE { return &s_s; } // Unsafe, for Serialize only
+    static void* serializedPtr() VL_MT_UNSAFE { return &s_s; }  // Unsafe, for Serialize only
 #ifdef VL_THREADED
     /// Set the mtaskId, called when an mtask starts
     static void mtaskId(vluint32_t id) VL_MT_SAFE { t_s.t_mtaskId = id; }
@@ -562,15 +562,15 @@ extern void VL_PRINTF_MT(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
 /// Print a debug message from internals with standard prefix, with printf style format
 extern void VL_DBG_MSGF(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
 
-extern IData  VL_RANDOM_I(int obits);	///< Randomize a signal
-extern QData  VL_RANDOM_Q(int obits);	///< Randomize a signal
-extern WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp);	///< Randomize a signal
+extern IData  VL_RANDOM_I(int obits);  ///< Randomize a signal
+extern QData  VL_RANDOM_Q(int obits);  ///< Randomize a signal
+extern WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp);  ///< Randomize a signal
 
 /// Init time only, so slow is fine
-extern IData  VL_RAND_RESET_I(int obits);	///< Random reset a signal
-extern QData  VL_RAND_RESET_Q(int obits);	///< Random reset a signal
-extern WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp);	///< Random reset a signal
-extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp);	///< Zero reset a signal (slow - else use VL_ZERO_W)
+extern IData  VL_RAND_RESET_I(int obits);  ///< Random reset a signal
+extern QData  VL_RAND_RESET_Q(int obits);  ///< Random reset a signal
+extern WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp);  ///< Random reset a signal
+extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp);  ///< Zero reset a signal (slow - else use VL_ZERO_W)
 
 #if VL_THREADED
 /// Return high-precision counter for profiling, or 0x0 if not available
@@ -1191,7 +1191,7 @@ static inline int _VL_CMP_W(int words, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
 	if (lwp[i] > rwp[i]) return 1;
 	if (lwp[i] < rwp[i]) return -1;
     }
-    return(0); // ==
+    return(0);  // ==
 }
 
 #define VL_LTS_IWW(obits,lbits,rbbits,lwp,rwp)		(_VL_CMPS_W(lbits,lwp,rwp)<0)
@@ -1202,8 +1202,8 @@ static inline int _VL_CMP_W(int words, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
 static inline IData VL_GTS_III(int, int lbits, int, IData lhs, IData rhs) VL_PURE {
     // For lbits==32, this becomes just a single instruction, otherwise ~5.
     // GCC 3.3.4 sign extension bugs on AMD64 architecture force us to use quad logic
-    vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs); //Q for gcc
-    vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs); //Q for gcc
+    vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);  // Q for gcc
+    vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);  // Q for gcc
     return lhs_signed > rhs_signed;
 }
 static inline IData VL_GTS_IQQ(int, int lbits, int, QData lhs, QData rhs) VL_PURE {
@@ -1213,8 +1213,8 @@ static inline IData VL_GTS_IQQ(int, int lbits, int, QData lhs, QData rhs) VL_PUR
 }
 
 static inline IData VL_GTES_III(int, int lbits, int, IData lhs, IData rhs) VL_PURE {
-    vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs); //Q for gcc
-    vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs); //Q for gcc
+    vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);  // Q for gcc
+    vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);  // Q for gcc
     return lhs_signed >= rhs_signed;
 }
 static inline IData VL_GTES_IQQ(int, int lbits, int, QData lhs, QData rhs) VL_PURE {
@@ -1224,8 +1224,8 @@ static inline IData VL_GTES_IQQ(int, int lbits, int, QData lhs, QData rhs) VL_PU
 }
 
 static inline IData VL_LTS_III(int, int lbits, int, IData lhs, IData rhs) VL_PURE {
-    vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs); //Q for gcc
-    vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs); //Q for gcc
+    vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);  // Q for gcc
+    vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);  // Q for gcc
     return lhs_signed < rhs_signed;
 }
 static inline IData VL_LTS_IQQ(int, int lbits, int, QData lhs, QData rhs) VL_PURE {
@@ -1235,8 +1235,8 @@ static inline IData VL_LTS_IQQ(int, int lbits, int, QData lhs, QData rhs) VL_PUR
 }
 
 static inline IData VL_LTES_III(int, int lbits, int, IData lhs, IData rhs) VL_PURE {
-    vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs); //Q for gcc
-    vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs); //Q for gcc
+    vlsint64_t lhs_signed = VL_EXTENDS_QQ(64, lbits, lhs);  // Q for gcc
+    vlsint64_t rhs_signed = VL_EXTENDS_QQ(64, lbits, rhs);  // Q for gcc
     return lhs_signed <= rhs_signed;
 }
 static inline IData VL_LTES_IQQ(int, int lbits, int, QData lhs, QData rhs) VL_PURE {
@@ -1251,13 +1251,13 @@ static inline int _VL_CMPS_W(int lbits, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
     // We need to flip sense if negative comparison
     IData lsign = VL_SIGN_I(lbits,lwp[i]);
     IData rsign = VL_SIGN_I(lbits,rwp[i]);
-    if (!lsign && rsign) return  1; // + > -
-    if (lsign && !rsign) return -1; // - < +
+    if (!lsign && rsign) return  1;  // + > -
+    if (lsign && !rsign) return -1;  // - < +
     for (; i>=0; --i) {
-	if (lwp[i] > rwp[i]) return 1;
-	if (lwp[i] < rwp[i]) return -1;
+        if (lwp[i] > rwp[i]) return 1;
+        if (lwp[i] < rwp[i]) return -1;
     }
-    return(0); // ==
+    return(0);  // ==
 }
 
 //=========================================================================
@@ -1341,26 +1341,26 @@ static inline QData VL_MULS_QQQ(int,int lbits,int, QData lhs,QData rhs) VL_PURE 
 static inline WDataOutP VL_MULS_WWW(int,int lbits,int, WDataOutP owp,WDataInP lwp,WDataInP rwp) VL_MT_SAFE {
     int words = VL_WORDS_I(lbits);
     // cppcheck-suppress variableScope
-    WData lwstore[VL_MULS_MAX_WORDS]; // Fixed size, as MSVC++ doesn't allow [words] here
+    WData lwstore[VL_MULS_MAX_WORDS];  // Fixed size, as MSVC++ doesn't allow [words] here
     // cppcheck-suppress variableScope
     WData rwstore[VL_MULS_MAX_WORDS];
     WDataInP lwusp = lwp;
     WDataInP rwusp = rwp;
     IData lneg = VL_SIGN_I(lbits,lwp[words-1]);
-    if (lneg) { // Negate lhs
-	lwusp = lwstore;
-	VL_NEGATE_W(words, lwstore, lwp);
-	lwstore[words-1] &= VL_MASK_I(lbits);  // Clean it
+    if (lneg) {  // Negate lhs
+        lwusp = lwstore;
+        VL_NEGATE_W(words, lwstore, lwp);
+        lwstore[words-1] &= VL_MASK_I(lbits);  // Clean it
     }
     IData rneg = VL_SIGN_I(lbits,rwp[words-1]);
-    if (rneg) { // Negate rhs
-	rwusp = rwstore;
-	VL_NEGATE_W(words, rwstore, rwp);
-	rwstore[words-1] &= VL_MASK_I(lbits);  // Clean it
+    if (rneg) {  // Negate rhs
+        rwusp = rwstore;
+        VL_NEGATE_W(words, rwstore, rwp);
+        rwstore[words-1] &= VL_MASK_I(lbits);  // Clean it
     }
     VL_MUL_W(words,owp,lwusp,rwusp);
     owp[words-1] &= VL_MASK_I(lbits);  // Clean.  Note it's ok for the multiply to overflow into the sign bit
-    if ((lneg ^ rneg) & 1) {      // Negate output  (not using NEGATE, as owp==lwp)
+    if ((lneg ^ rneg) & 1) {  // Negate output (not using NEGATE, as owp==lwp)
 	QData carry = 0;
 	for (int i=0; i<words; ++i) {
 	    carry = carry + static_cast<QData>(static_cast<IData>(~owp[i]));
@@ -1404,7 +1404,7 @@ static inline WDataOutP VL_DIVS_WWW(int lbits, WDataOutP owp,WDataInP lwp,WDataI
     IData lsign = VL_SIGN_I(lbits,lwp[words-1]);
     IData rsign = VL_SIGN_I(lbits,rwp[words-1]);
     // cppcheck-suppress variableScope
-    WData lwstore[VL_MULS_MAX_WORDS]; // Fixed size, as MSVC++ doesn't allow [words] here
+    WData lwstore[VL_MULS_MAX_WORDS];  // Fixed size, as MSVC++ doesn't allow [words] here
     // cppcheck-suppress variableScope
     WData rwstore[VL_MULS_MAX_WORDS];
     WDataInP ltup = lwp;
@@ -1425,7 +1425,7 @@ static inline WDataOutP VL_MODDIVS_WWW(int lbits, WDataOutP owp,WDataInP lwp,WDa
     IData lsign = VL_SIGN_I(lbits,lwp[words-1]);
     IData rsign = VL_SIGN_I(lbits,rwp[words-1]);
     // cppcheck-suppress variableScope
-    WData lwstore[VL_MULS_MAX_WORDS]; // Fixed size, as MSVC++ doesn't allow [words] here
+    WData lwstore[VL_MULS_MAX_WORDS];  // Fixed size, as MSVC++ doesn't allow [words] here
     // cppcheck-suppress variableScope
     WData rwstore[VL_MULS_MAX_WORDS];
     WDataInP ltup = lwp;
@@ -1488,12 +1488,12 @@ static inline IData VL_POWSS_III(int obits, int, int rbits,
                                  IData lhs, IData rhs, bool lsign, bool rsign) VL_MT_SAFE {
     if (VL_UNLIKELY(rhs==0)) return 1;
     if (rsign && VL_SIGN_I(rbits, rhs)) {
-	if (lhs==0) return 0;	// "X"
-	else if (lhs==1) return 1;
-	else if (lsign && lhs==VL_MASK_I(obits)) {  // -1
-	    if (rhs & 1) return VL_MASK_I(obits);  // -1^odd=-1
-	    else return 1; // -1^even=1
-	}
+        if (lhs==0) return 0;  // "X"
+        else if (lhs==1) return 1;
+        else if (lsign && lhs==VL_MASK_I(obits)) {  // -1
+            if (rhs & 1) return VL_MASK_I(obits);  // -1^odd=-1
+            else return 1;  // -1^even=1
+        }
 	return 0;
     }
     return VL_POW_III(obits, rbits, rbits, lhs, rhs);
@@ -1502,12 +1502,12 @@ static inline QData VL_POWSS_QQQ(int obits, int, int rbits,
                                  QData lhs, QData rhs, bool lsign, bool rsign) VL_MT_SAFE {
     if (VL_UNLIKELY(rhs==0)) return 1;
     if (rsign && VL_SIGN_I(rbits, rhs)) {
-	if (lhs==0) return 0;	// "X"
-	else if (lhs==1) return 1;
-	else if (lsign && lhs==VL_MASK_I(obits)) {  // -1
-	    if (rhs & 1) return VL_MASK_I(obits);  // -1^odd=-1
-	    else return 1; // -1^even=1
-	}
+        if (lhs==0) return 0;  // "X"
+        else if (lhs==1) return 1;
+        else if (lsign && lhs==VL_MASK_I(obits)) {  // -1
+            if (rhs & 1) return VL_MASK_I(obits);  // -1^odd=-1
+            else return 1;  // -1^even=1
+        }
 	return 0;
     }
     return VL_POW_QQQ(obits, rbits, rbits, lhs, rhs);
@@ -1549,9 +1549,9 @@ static inline void _VL_INSERT_WI(int, WDataOutP owp, IData ld, int hbit, int lbi
     }
     else {
 	int hword = VL_BITWORD_I(hbit);
-	int lword = VL_BITWORD_I(lbit);
-	if (hword==lword) {	// know < 32 bits because above checks it
-	    IData insmask = (VL_MASK_I(hoffset-loffset+1))<<loffset;
+        int lword = VL_BITWORD_I(lbit);
+        if (hword==lword) {  // know < 32 bits because above checks it
+            IData insmask = (VL_MASK_I(hoffset-loffset+1))<<loffset;
 	    owp[lword] = (owp[lword] & ~insmask) | ((ld<<loffset) & insmask);
 	} else {
 	    IData hinsmask = (VL_MASK_I(hoffset-0+1))<<0;
@@ -1580,9 +1580,9 @@ static inline void _VL_INSERT_WW(int, WDataOutP owp, WDataInP lwp, int hbit, int
 	// Non-32bit, but nicely aligned, so stuff all but the last word
 	for (int i=0; i<(words-1); ++i) {
 	    owp[lword+i] = lwp[i];
-	}
-	IData hinsmask = (VL_MASK_I(hoffset-0+1)); // Know it's not a full word as above fast case handled it
-	owp[lword+words-1] = (owp[words+lword-1] & ~hinsmask) | (lwp[words-1] & hinsmask);
+        }
+        IData hinsmask = (VL_MASK_I(hoffset-0+1));  // Know it's not a full word as above fast case handled it
+        owp[lword+words-1] = (owp[words+lword-1] & ~hinsmask) | (lwp[words-1] & hinsmask);
     }
     else {
 	IData hinsmask = (VL_MASK_I(hoffset-0+1))<<0;
@@ -1688,20 +1688,24 @@ static inline IData VL_STREAML_FAST_III(int, int lbits, int, IData ld, IData rd_
     //   ret = 10324---
     IData ret = ld;
     if (rd_log2) {
-	vluint32_t lbitsFloor = lbits & ~VL_MASK_I(rd_log2); // max multiple of rd <= lbits
-	vluint32_t lbitsRem = lbits - lbitsFloor; // number of bits in most-sig slice (MSS)
-	IData msbMask = VL_MASK_I(lbitsRem) << lbitsFloor; // mask to sel only bits in MSS
-	ret = (ret & ~msbMask) | ((ret & msbMask) << ((VL_UL(1) << rd_log2) - lbitsRem));
+        vluint32_t lbitsFloor = lbits & ~VL_MASK_I(rd_log2);  // max multiple of rd <= lbits
+        vluint32_t lbitsRem = lbits - lbitsFloor;  // number of bits in most-sig slice (MSS)
+        IData msbMask = VL_MASK_I(lbitsRem) << lbitsFloor;  // mask to sel only bits in MSS
+        ret = (ret & ~msbMask) | ((ret & msbMask) << ((VL_UL(1) << rd_log2) - lbitsRem));
     }
     switch (rd_log2) {
-	case 0:
-	    ret = ((ret >> 1) & VL_UL(0x55555555)) | ((ret & VL_UL(0x55555555)) << 1);    // FALLTHRU
-	case 1:
-	    ret = ((ret >> 2) & VL_UL(0x33333333)) | ((ret & VL_UL(0x33333333)) << 2);    // FALLTHRU
-	case 2:
-	    ret = ((ret >> 4) & VL_UL(0x0f0f0f0f)) | ((ret & VL_UL(0x0f0f0f0f)) << 4);    // FALLTHRU
-	case 3:
-	    ret = ((ret >> 8) & VL_UL(0x00ff00ff)) | ((ret & VL_UL(0x00ff00ff)) << 8);    // FALLTHRU
+        case 0:
+            ret = ((ret >> 1) & VL_UL(0x55555555))
+                | ((ret & VL_UL(0x55555555)) << 1);  // FALLTHRU
+        case 1:
+            ret = ((ret >> 2) & VL_UL(0x33333333))
+                | ((ret & VL_UL(0x33333333)) << 2);  // FALLTHRU
+        case 2:
+            ret = ((ret >> 4) & VL_UL(0x0f0f0f0f))
+                | ((ret & VL_UL(0x0f0f0f0f)) << 4);  // FALLTHRU
+        case 3:
+            ret = ((ret >> 8) & VL_UL(0x00ff00ff))
+                | ((ret & VL_UL(0x00ff00ff)) << 8);  // FALLTHRU
 	case 4:
 	    ret = ((ret >> 16) | (ret << 16));
     }
@@ -1895,17 +1899,17 @@ static inline WDataOutP VL_SHIFTL_WWI(int obits,int,int,WDataOutP owp,WDataInP l
 static inline WDataOutP VL_SHIFTL_WWW(int obits, int lbits, int rbits,
                                       WDataOutP owp, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
     for (int i=1; i < VL_WORDS_I(rbits); ++i) {
-	if (VL_UNLIKELY(rwp[i])) { // Huge shift 1>>32 or more
-	    return VL_ZERO_W(obits, owp);
-	}
+        if (VL_UNLIKELY(rwp[i])) {  // Huge shift 1>>32 or more
+            return VL_ZERO_W(obits, owp);
+        }
     }
     return VL_SHIFTL_WWI(obits,lbits,32,owp,lwp,rwp[0]);
 }
 static inline IData VL_SHIFTL_IIW(int obits,int,int rbits,IData lhs, WDataInP rwp) VL_MT_SAFE {
     for (int i=1; i < VL_WORDS_I(rbits); ++i) {
-	if (VL_UNLIKELY(rwp[i])) { // Huge shift 1>>32 or more
-	    return 0;
-	}
+        if (VL_UNLIKELY(rwp[i])) {  // Huge shift 1>>32 or more
+            return 0;
+        }
     }
     return VL_CLEAN_II(obits,obits,lhs<<rwp[0]);
 }
@@ -1942,17 +1946,17 @@ static inline WDataOutP VL_SHIFTR_WWI(int obits, int, int,
 static inline WDataOutP VL_SHIFTR_WWW(int obits, int lbits, int rbits,
                                       WDataOutP owp, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
     for (int i=1; i < VL_WORDS_I(rbits); ++i) {
-	if (VL_UNLIKELY(rwp[i])) { // Huge shift 1>>32 or more
-	    return VL_ZERO_W(obits, owp);
-	}
+        if (VL_UNLIKELY(rwp[i])) {  // Huge shift 1>>32 or more
+            return VL_ZERO_W(obits, owp);
+        }
     }
     return VL_SHIFTR_WWI(obits,lbits,32,owp,lwp,rwp[0]);
 }
 static inline IData VL_SHIFTR_IIW(int obits,int,int rbits,IData lhs, WDataInP rwp) VL_MT_SAFE {
     for (int i=1; i < VL_WORDS_I(rbits); ++i) {
-	if (VL_UNLIKELY(rwp[i])) { // Huge shift 1>>32 or more
-	    return 0;
-	}
+        if (VL_UNLIKELY(rwp[i])) {  // Huge shift 1>>32 or more
+            return 0;
+        }
     }
     return VL_CLEAN_II(obits,obits,lhs>>rwp[0]);
 }
@@ -1963,8 +1967,8 @@ static inline IData VL_SHIFTRS_III(int obits, int lbits, int, IData lhs, IData r
     // IEEE says signed if output signed, but bit position from lbits;
     // must use lbits for sign; lbits might != obits,
     // an EXTEND(SHIFTRS(...)) can became a SHIFTRS(...) within same 32/64 bit word length
-    IData sign    = -(lhs >> (lbits-1)); // ffff_ffff if negative
-    IData signext = ~(VL_MASK_I(lbits) >> rhs);   // One with bits where we've shifted "past"
+    IData sign    = -(lhs >> (lbits-1));  // ffff_ffff if negative
+    IData signext = ~(VL_MASK_I(lbits) >> rhs);  // One with bits where we've shifted "past"
     return (lhs >> rhs) | (sign & VL_CLEAN_II(obits,obits,signext));
 }
 static inline QData VL_SHIFTRS_QQI(int obits, int lbits, int, QData lhs, IData rhs) VL_PURE {
@@ -2012,9 +2016,9 @@ static inline WDataOutP VL_SHIFTRS_WWI(int obits, int lbits, int,
 static inline WDataOutP VL_SHIFTRS_WWW(int obits, int lbits, int rbits,
                                        WDataOutP owp, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
     for (int i=1; i < VL_WORDS_I(rbits); ++i) {
-	if (VL_UNLIKELY(rwp[i])) { // Huge shift 1>>32 or more
-	    int lmsw = VL_WORDS_I(obits)-1;
-	    IData sign = VL_SIGNONES_I(lbits,lwp[lmsw]);
+        if (VL_UNLIKELY(rwp[i])) {  // Huge shift 1>>32 or more
+            int lmsw = VL_WORDS_I(obits)-1;
+            IData sign = VL_SIGNONES_I(lbits,lwp[lmsw]);
 	    for (int j=0; j <= lmsw; ++j) owp[j] = sign;
 	    owp[lmsw] &= VL_MASK_I(lbits);
 	    return owp;
@@ -2025,20 +2029,20 @@ static inline WDataOutP VL_SHIFTRS_WWW(int obits, int lbits, int rbits,
 static inline IData VL_SHIFTRS_IIW(int obits, int lbits, int rbits,
                                    IData lhs, WDataInP rwp) VL_MT_SAFE {
     for (int i=1; i < VL_WORDS_I(rbits); ++i) {
-	if (VL_UNLIKELY(rwp[i])) { // Huge shift 1>>32 or more
-	    IData sign    = -(lhs >> (lbits-1)); // ffff_ffff if negative
-	    return VL_CLEAN_II(obits,obits,sign);
-	}
+        if (VL_UNLIKELY(rwp[i])) {  // Huge shift 1>>32 or more
+            IData sign = -(lhs >> (lbits-1));  // ffff_ffff if negative
+            return VL_CLEAN_II(obits,obits,sign);
+        }
     }
     return VL_SHIFTRS_III(obits,lbits,32,lhs,rwp[0]);
 }
 static inline QData VL_SHIFTRS_QQW(int obits, int lbits, int rbits,
                                    QData lhs, WDataInP rwp) VL_MT_SAFE {
     for (int i=1; i < VL_WORDS_I(rbits); ++i) {
-	if (VL_UNLIKELY(rwp[i])) { // Huge shift 1>>32 or more
-	    QData sign    = -(lhs >> (lbits-1)); // ffff_ffff if negative
-	    return VL_CLEAN_QQ(obits,obits,sign);
-	}
+        if (VL_UNLIKELY(rwp[i])) {  // Huge shift 1>>32 or more
+            QData sign = -(lhs >> (lbits-1));  // ffff_ffff if negative
+            return VL_CLEAN_QQ(obits,obits,sign);
+        }
     }
     return VL_SHIFTRS_QQI(obits,lbits,32,lhs,rwp[0]);
 }
@@ -2063,8 +2067,8 @@ static inline QData VL_SHIFTRS_QQQ(int obits,int lbits,int rbits,QData lhs, QDat
 static inline IData VL_BITSEL_IWII(int, int lbits, int, int, WDataInP lwp, IData rd) VL_MT_SAFE {
     int word = VL_BITWORD_I(rd);
     if (VL_UNLIKELY(rd > static_cast<IData>(lbits))) {
-	return ~0; // Spec says you can go outside the range of a array.  Don't coredump if so.
-	// We return all 1's as that's more likely to find bugs (?) than 0's.
+        return ~0;  // Spec says you can go outside the range of a array.  Don't coredump if so.
+        // We return all 1's as that's more likely to find bugs (?) than 0's.
     } else {
 	return (lwp[word]>>VL_BITBIT_I(rd));
     }
@@ -2080,7 +2084,7 @@ static inline IData VL_SEL_IWII(int, int lbits, int, int,
                                 WDataInP lwp, IData lsb, IData width) VL_MT_SAFE {
     int msb = lsb+width-1;
     if (VL_UNLIKELY(msb>lbits)) {
-	return ~0; // Spec says you can go outside the range of a array.  Don't coredump if so.
+        return ~0;  // Spec says you can go outside the range of a array.  Don't coredump if so.
     } else if (VL_BITWORD_I(msb)==VL_BITWORD_I(static_cast<int>(lsb))) {
         return VL_BITRSHIFT_W(lwp, lsb);
     } else {
@@ -2095,7 +2099,7 @@ static inline QData VL_SEL_QWII(int, int lbits, int, int,
                                 WDataInP lwp, IData lsb, IData width) VL_MT_SAFE {
     int msb = lsb+width-1;
     if (VL_UNLIKELY(msb>lbits)) {
-	return ~0; // Spec says you can go outside the range of a array.  Don't coredump if so.
+        return ~0;  // Spec says you can go outside the range of a array.  Don't coredump if so.
     } else if (VL_BITWORD_I(msb)==VL_BITWORD_I(static_cast<int>(lsb))) {
         return VL_BITRSHIFT_W(lwp, lsb);
     } else if (VL_BITWORD_I(msb)==1+VL_BITWORD_I(static_cast<int>(lsb))) {
@@ -2117,9 +2121,9 @@ static inline WDataOutP VL_SEL_WWII(int obits, int lbits, int, int,
                                     WDataOutP owp, WDataInP lwp, IData lsb, IData width) VL_MT_SAFE {
     int msb = lsb+width-1;
     int word_shift = VL_BITWORD_I(lsb);
-    if (VL_UNLIKELY(msb>lbits)) { // Outside bounds,
-	for (int i=0; i<VL_WORDS_I(obits)-1; ++i) owp[i] = ~0;
-	owp[VL_WORDS_I(obits)-1] = VL_MASK_I(obits);
+    if (VL_UNLIKELY(msb>lbits)) {  // Outside bounds,
+        for (int i=0; i<VL_WORDS_I(obits)-1; ++i) owp[i] = ~0;
+        owp[VL_WORDS_I(obits)-1] = VL_MASK_I(obits);
     } else if (VL_BITBIT_I(lsb)==0) {
 	// Just a word extract
 	for (int i=0; i<VL_WORDS_I(obits); ++i) owp[i] = lwp[i+word_shift];
@@ -2287,4 +2291,4 @@ static inline void VL_CONSTLO_W_8X(int lsb, WDataOutP obase,
 
 //======================================================================
 
-#endif /*_VERILATED_H_*/
+#endif  // Guard

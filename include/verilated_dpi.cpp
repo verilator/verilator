@@ -147,7 +147,7 @@ void svPutPartselBit(svBitVecVal* dp, const svBitVecVal s, int lbit, int width) 
     else {
         int hword = VL_BITWORD_I(hbit);
         int lword = VL_BITWORD_I(lbit);
-        if (hword==lword) {     // know < 32 bits because above checks it
+        if (hword==lword) {  // know < 32 bits because above checks it
             IData insmask = (VL_MASK_I(hoffset-loffset+1))<<loffset;
             dp[lword] = (dp[lword] & ~insmask) | ((s<<loffset) & insmask);
         } else {
@@ -172,7 +172,7 @@ void svPutPartselLogic(svLogicVecVal* dp, const svLogicVecVal s, int lbit, int w
     else {
         int hword = VL_BITWORD_I(hbit);
         int lword = VL_BITWORD_I(lbit);
-        if (hword==lword) {     // know < 32 bits because above checks it
+        if (hword==lword) {  // know < 32 bits because above checks it
             IData insmask = (VL_MASK_I(hoffset-loffset+1))<<loffset;
             dp[lword].aval = (dp[lword].aval & ~insmask) | ((s.aval<<loffset) & insmask);
             dp[lword].bval = (dp[lword].bval & ~insmask) | ((s.bval<<loffset) & insmask);
@@ -474,7 +474,7 @@ void* svGetArrElemPtr(const svOpenArrayHandle h, int indx1, ...) {
             datap = _vl_svGetArrElemPtr(h, 2, indx1, indx2, 0); break; }
     case 3: { int indx2=va_arg(ap,int); int indx3=va_arg(ap,int);
             datap = _vl_svGetArrElemPtr(h, 3, indx1, indx2, indx3); break; }
-    default: datap = _vl_svGetArrElemPtr(h, -1, 0, 0, 0); break; // Will error
+    default: datap = _vl_svGetArrElemPtr(h, -1, 0, 0, 0); break;  // Will error
     }
     va_end(ap);
     return datap;
@@ -500,7 +500,7 @@ void svPutBitArrElemVecVal(const svOpenArrayHandle d, const svBitVecVal* s,
             _vl_svPutBitArrElemVecVal(d, s, 2, indx1, indx2, 0); break; }
     case 3: { int indx2=va_arg(ap,int); int indx3=va_arg(ap,int);
             _vl_svPutBitArrElemVecVal(d, s, 3, indx1, indx2, indx3); break; }
-    default: _vl_svPutBitArrElemVecVal(d, s, -1, 0, 0, 0); break; // Will error
+    default: _vl_svPutBitArrElemVecVal(d, s, -1, 0, 0, 0); break;  // Will error
     }
     va_end(ap);
 }
@@ -527,7 +527,7 @@ void svPutLogicArrElemVecVal(const svOpenArrayHandle d, const svLogicVecVal* s,
             _vl_svPutLogicArrElemVecVal(d, s, 2, indx1, indx2, 0); break; }
     case 3: { int indx2=va_arg(ap,int); int indx3=va_arg(ap,int);
             _vl_svPutLogicArrElemVecVal(d, s, 3, indx1, indx2, indx3); break; }
-    default: _vl_svPutLogicArrElemVecVal(d, s, -1, 0, 0, 0); break; // Will error
+    default: _vl_svPutLogicArrElemVecVal(d, s, -1, 0, 0, 0); break;  // Will error
     }
     va_end(ap);
 }
@@ -558,7 +558,7 @@ void svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s,
             _vl_svGetBitArrElemVecVal(d, s, 2, indx1, indx2, 0); break; }
     case 3: { int indx2=va_arg(ap,int); int indx3=va_arg(ap,int);
             _vl_svGetBitArrElemVecVal(d, s, 3, indx1, indx2, indx3); break; }
-    default: _vl_svGetBitArrElemVecVal(d, s, -1, 0, 0, 0); break; // Will error
+    default: _vl_svGetBitArrElemVecVal(d, s, -1, 0, 0, 0); break;  // Will error
     }
     va_end(ap);
 }
@@ -585,7 +585,7 @@ void svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandle s,
             _vl_svGetLogicArrElemVecVal(d, s, 2, indx1, indx2, 0); break; }
     case 3: { int indx2=va_arg(ap,int); int indx3=va_arg(ap,int);
             _vl_svGetLogicArrElemVecVal(d, s, 3, indx1, indx2, indx3); break; }
-    default: _vl_svGetLogicArrElemVecVal(d, s, -1, 0, 0, 0); break; // Will error
+    default: _vl_svGetLogicArrElemVecVal(d, s, -1, 0, 0, 0); break;  // Will error
     }
     va_end(ap);
 }
@@ -615,7 +615,7 @@ svBit svGetBitArrElem(const svOpenArrayHandle s, int indx1, ...) {
             out = _vl_svGetBitArrElem(s, 3, indx1, indx2, indx3, 0); break; }
     case 4: { int indx2=va_arg(ap,int); int indx3=va_arg(ap,int); int indx4=va_arg(ap,int);
             out = _vl_svGetBitArrElem(s, 4, indx1, indx2, indx3, indx4); break; }
-    default: out = _vl_svGetBitArrElem(s, -1, 0, 0, 0, 0); break; // Will error
+    default: out = _vl_svGetBitArrElem(s, -1, 0, 0, 0, 0); break;  // Will error
     }
     va_end(ap);
     return out;
@@ -643,7 +643,7 @@ svLogic svGetLogicArrElem(const svOpenArrayHandle s, int indx1, ...) {
             out = _vl_svGetBitArrElem(s, 3, indx1, indx2, indx3, 0); break; }
     case 4: { int indx2=va_arg(ap,int); int indx3=va_arg(ap,int); int indx4=va_arg(ap,int);
             out = _vl_svGetBitArrElem(s, 4, indx1, indx2, indx3, indx4); break; }
-    default: out = _vl_svGetBitArrElem(s, -1, 0, 0, 0, 0); break; // Will error
+    default: out = _vl_svGetBitArrElem(s, -1, 0, 0, 0, 0); break;  // Will error
     }
     va_end(ap);
     return out;
@@ -673,7 +673,7 @@ void svPutBitArrElem(const svOpenArrayHandle d, svBit value, int indx1, ...) {
             _vl_svPutBitArrElem(d, value, 3, indx1, indx2, indx3, 0); break; }
     case 4: { int indx2=va_arg(ap,int); int indx3=va_arg(ap,int); int indx4=va_arg(ap,int);
             _vl_svPutBitArrElem(d, value, 4, indx1, indx2, indx3, indx4); break; }
-    default: _vl_svPutBitArrElem(d, value, -1, 0, 0, 0, 0); break; // Will error
+    default: _vl_svPutBitArrElem(d, value, -1, 0, 0, 0, 0); break;  // Will error
     }
     va_end(ap);
 }
@@ -699,7 +699,7 @@ void svPutLogicArrElem(const svOpenArrayHandle d, svLogic value, int indx1, ...)
             _vl_svPutBitArrElem(d, value, 3, indx1, indx2, indx3, 0); break; }
     case 4: { int indx2=va_arg(ap,int); int indx3=va_arg(ap,int); int indx4=va_arg(ap,int);
             _vl_svPutBitArrElem(d, value, 4, indx1, indx2, indx3, indx4); break; }
-    default: _vl_svPutBitArrElem(d, value, -1, 0, 0, 0, 0); break; // Will error
+    default: _vl_svPutBitArrElem(d, value, -1, 0, 0, 0, 0); break;  // Will error
     }
     va_end(ap);
 }
@@ -763,7 +763,7 @@ int svGetCallerInfo(const char** fileNamepp, int *lineNumberp) {
 // Disables
 
 int svIsDisabledState() {
-    return 0; // Disables not implemented
+    return 0;  // Disables not implemented
 }
 
 void svAckDisabledState() {

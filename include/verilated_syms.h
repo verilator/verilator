@@ -29,7 +29,7 @@
 
 
 #ifndef _VERILATED_SYMS_H_
-#define _VERILATED_SYMS_H_ 1 ///< Header Guard
+#define _VERILATED_SYMS_H_ 1  ///< Header Guard
 
 #include "verilatedos.h"
 #include "verilated_heavy.h"
@@ -63,4 +63,4 @@ public:
     ~VerilatedVarNameMap() {}
 };
 
-#endif // Guard
+#endif  // Guard

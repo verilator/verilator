@@ -29,4 +29,4 @@
  // Hide file descriptor difference - deprecated - for older versions
  `define verilator_file_descriptor integer
 
-`endif // guard
+`endif  // guard

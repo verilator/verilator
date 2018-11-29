@@ -122,9 +122,9 @@ public:
     class iterator {
     protected:
         // MEMBERS
-        size_t m_bucketIdx; //  Bucket this iterator points into.
-        typename Bucket::iterator m_bit; //  Bucket-local iterator.
-        const vl_unordered_set* m_setp;  //  The containing set.
+        size_t m_bucketIdx;  //  Bucket this iterator points into
+        typename Bucket::iterator m_bit;  // Bucket-local iterator
+        const vl_unordered_set* m_setp;  // The containing set
 
     public:
         // CONSTRUCTORS
@@ -469,7 +469,7 @@ private:
 
     // MEMBERS
     typedef vl_unordered_set<KeyValPair, KeyHash, KeyEqual> MapSet;
-    MapSet m_set;   //  Wrap this vl_unordered_set which holds all state.
+    MapSet m_set;  // Wrap this vl_unordered_set which holds all state.
 
 public:
     // CONSTRUCTORS

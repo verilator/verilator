@@ -25,7 +25,7 @@
 
 
 #ifndef _VERILATED_SC_H_
-#define _VERILATED_SC_H_ 1 ///< Header Guard
+#define _VERILATED_SC_H_ 1  ///< Header Guard
 
 #include "verilatedos.h"
 
@@ -50,4 +50,4 @@ public:
 
 //=========================================================================
 
-#endif // guard
+#endif  // Guard

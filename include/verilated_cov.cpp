@@ -34,8 +34,8 @@
 
 struct VerilatedCovImpBase {
     // TYPES
-    enum { MAX_KEYS = 33 };		/// Maximum user arguments + filename+lineno
-    enum { KEY_UNDEF = 0 };		/// Magic key # for unspecified values
+    enum { MAX_KEYS = 33 };  /// Maximum user arguments + filename+lineno
+    enum { KEY_UNDEF = 0 };  /// Magic key # for unspecified values
 };
 
 //=============================================================================
@@ -45,8 +45,8 @@ struct VerilatedCovImpBase {
 class VerilatedCovImpItem : VerilatedCovImpBase {
 public:  // But only local to this file
     // MEMBERS
-    int	m_keys[MAX_KEYS];		///< Key
-    int	m_vals[MAX_KEYS];		///< Value for specified key
+    int m_keys[MAX_KEYS];  ///< Key
+    int m_vals[MAX_KEYS];  ///< Value for specified key
     // CONSTRUCTORS
     // Derived classes should call zero() in their constructor
     VerilatedCovImpItem() {
@@ -69,7 +69,7 @@ public:  // But only local to this file
 template <class T> class VerilatedCoverItemSpec : public VerilatedCovImpItem {
 private:
     // MEMBERS
-    T*	m_countp;	///< Count value
+    T*  m_countp;  ///< Count value
 public:
     // METHODS
     // cppcheck-suppress truncLongCastReturn
@@ -431,12 +431,12 @@ void VerilatedCov::_insertp(A(0),A(1),A(2),A(3),A(4),A(5),A(6),A(7),A(8),A(9),
                             A(10),A(11),A(12),A(13),A(14),A(15),A(16),A(17),A(18),A(19),
                             A(20),A(21),A(22),A(23),A(24),A(25),A(26),A(27),A(28),A(29)) VL_MT_SAFE {
     const char* keyps[VerilatedCovImpBase::MAX_KEYS]
-	= {NULL,NULL,NULL,	// filename,lineno,page
-	   key0,key1,key2,key3,key4,key5,key6,key7,key8,key9,
-	   key10,key11,key12,key13,key14,key15,key16,key17,key18,key19,
-	   key20,key21,key22,key23,key24,key25,key26,key27,key28,key29};
+        = {NULL,NULL,NULL,  // filename,lineno,page
+           key0,key1,key2,key3,key4,key5,key6,key7,key8,key9,
+           key10,key11,key12,key13,key14,key15,key16,key17,key18,key19,
+           key20,key21,key22,key23,key24,key25,key26,key27,key28,key29};
     const char* valps[VerilatedCovImpBase::MAX_KEYS]
-	= {NULL,NULL,NULL,	// filename,lineno,page
+        = {NULL,NULL,NULL,  // filename,lineno,page
            valp0,valp1,valp2,valp3,valp4,valp5,valp6,valp7,valp8,valp9,
            valp10,valp11,valp12,valp13,valp14,valp15,valp16,valp17,valp18,valp19,
            valp20,valp21,valp22,valp23,valp24,valp25,valp26,valp27,valp28,valp29};

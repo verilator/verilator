@@ -8,7 +8,7 @@ use IO::File;
 use Pod::Usage;
 use Data::Dumper; $Data::Dumper::Indent=1;
 use strict;
-use vars qw ($Debug);
+use vars qw($Debug);
 
 #======================================================================
 
@@ -35,7 +35,7 @@ if (! GetOptions (
     usage();
 }
 
-dotread ($opt_filename);
+dotread($opt_filename);
 circle($opt_circle) if $opt_circle;
 simplify();
 dotwrite();
@@ -44,7 +44,7 @@ dotwrite();
 
 sub usage {
     pod2usage(-verbose=>2, -exitval=>2, -output=>\*STDOUT);
-    exit (1);
+    exit(1);
 }
 
 sub debug {

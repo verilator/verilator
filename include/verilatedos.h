@@ -28,7 +28,7 @@
 
 
 #ifndef _VERILATEDOS_H_
-#define _VERILATEDOS_H_ 1 ///< Header Guard
+#define _VERILATEDOS_H_ 1  ///< Header Guard
 
 //=========================================================================
 // Compiler pragma abstraction
@@ -188,14 +188,14 @@
 
 #ifndef VL_WARNINGS
 # ifdef _MSC_VER
-#  pragma warning(disable:4099)	// C4099: type name first seen using 'class' now seen using 'struct' (V3AstNode)
-#  pragma warning(disable:4100)	// C4100: unreferenced formal parameter (L4)
-#  pragma warning(disable:4127)	// C4127: conditional expression is constant (L4)
-#  pragma warning(disable:4146)	// C4146: unary minus operator applied to unsigned type, result still unsigned
-#  pragma warning(disable:4189)	// C4189: local variable is initialized but not referenced (L4)
-#  pragma warning(disable:4244)	// C4244: conversion from 'uint64_t' to 'uint_32_t', possible loss of data
-#  pragma warning(disable:4245)	// C4245: conversion from 'int' to 'unsigned', signed/unsigned mismatch
-#  pragma warning(disable:4996)	// C4996: sscanf/fopen/etc may be unsafe
+#  pragma warning(disable:4099)  // C4099: type name first seen using 'class' now seen using 'struct' (V3AstNode)
+#  pragma warning(disable:4100)  // C4100: unreferenced formal parameter (L4)
+#  pragma warning(disable:4127)  // C4127: conditional expression is constant (L4)
+#  pragma warning(disable:4146)  // C4146: unary minus operator applied to unsigned type, result still unsigned
+#  pragma warning(disable:4189)  // C4189: local variable is initialized but not referenced (L4)
+#  pragma warning(disable:4244)  // C4244: conversion from 'uint64_t' to 'uint_32_t', possible loss of data
+#  pragma warning(disable:4245)  // C4245: conversion from 'int' to 'unsigned', signed/unsigned mismatch
+#  pragma warning(disable:4996)  // C4996: sscanf/fopen/etc may be unsafe
 # endif
 #endif
 
@@ -211,10 +211,10 @@ typedef unsigned char           uint8_t;	///< 8-bit unsigned type (backward comp
 typedef unsigned short int      uint16_t;	///< 16-bit unsigned type (backward compatibility)
 typedef unsigned char           vluint8_t;	///< 8-bit unsigned type
 typedef unsigned short int      vluint16_t;	///< 16-bit unsigned type
-# if defined(__uint32_t_defined) || defined(___int32_t_defined)    // Newer Cygwin uint32_t in stdint.h as an unsigned int
-typedef int32_t			vlsint32_t;	///< 32-bit signed type
-typedef uint32_t		vluint32_t;	///< 32-bit unsigned type
-# else				 		// Older Cygwin has long==uint32_t
+# if defined(__uint32_t_defined) || defined(___int32_t_defined)  // Newer Cygwin uint32_t in stdint.h as an unsigned int
+typedef int32_t                 vlsint32_t;     ///< 32-bit signed type
+typedef uint32_t                vluint32_t;     ///< 32-bit unsigned type
+# else  // Older Cygwin has long==uint32_t
 typedef unsigned long		uint32_t;	///< 32-bit unsigned type (backward compatibility)
 typedef long			vlsint32_t;	///< 32-bit signed type
 typedef unsigned long		vluint32_t;	///< 32-bit unsigned type
@@ -247,9 +247,9 @@ typedef signed   __int32        ssize_t;        ///< signed size_t; returned fro
 #  endif
 # endif
 
-#else // Linux or compliant Unix flavors, -m64
+#else  // Linux or compliant Unix flavors, -m64
 
-# include <inttypes.h>	// Solaris
+# include <inttypes.h>  // Solaris
 # include <stdint.h>  // Linux and most flavors
 # include <sys/types.h>  // __WORDSIZE
 # include <unistd.h>  // ssize_t
@@ -272,7 +272,7 @@ typedef unsigned long long	vluint64_t;	///< 64-bit unsigned type
 
 #ifdef _WIN32
 # define VL_PRI64 "I64"
-#else // Linux or compliant Unix flavors
+#else  // Linux or compliant Unix flavors
 # if defined(__WORDSIZE) && (__WORDSIZE == 64)
 #  define VL_PRI64 "l"
 # else
@@ -297,7 +297,7 @@ typedef unsigned long long	vluint64_t;	///< 64-bit unsigned type
 
 #ifdef _WIN32
 # define VL_DEV_NULL "nul"
-#else // Linux or compliant Unix flavors
+#else  // Linux or compliant Unix flavors
 # define VL_DEV_NULL "/dev/null"
 #endif
 
@@ -341,9 +341,9 @@ typedef unsigned long long	vluint64_t;	///< 64-bit unsigned type
 /// Mask for quads with 1's where relevant bits are (0=all bits)
 #define VL_MASK_Q(nbits)  (((nbits) & VL_SIZEBITS_Q) \
 			 ? ((VL_ULL(1) << ((nbits) & VL_SIZEBITS_Q) )-VL_ULL(1)) : VL_ULL(~0))
-#define VL_BITWORD_I(bit)	((bit)/VL_WORDSIZE)	///< Word number for a wide quantity
-#define VL_BITBIT_I(bit)	((bit)&VL_SIZEBITS_I)	///< Bit number for a bit in a long
-#define VL_BITBIT_Q(bit)	((bit)&VL_SIZEBITS_Q)	///< Bit number for a bit in a quad
+#define VL_BITWORD_I(bit) ((bit)/VL_WORDSIZE)  ///< Word number for a wide quantity
+#define VL_BITBIT_I(bit) ((bit)&VL_SIZEBITS_I)  ///< Bit number for a bit in a long
+#define VL_BITBIT_Q(bit) ((bit)&VL_SIZEBITS_Q)  ///< Bit number for a bit in a quad
 
 //=========================================================================
 // Floating point
