@@ -13,9 +13,10 @@ top_filename("t/t_inst_overwide.v");
 
 compile(
     v_flags2 => ["--lint-only"],
-    make_top_shell => 0,
     verilator_flags => [qw(-cc)],
     verilator_make_gcc => 0,
+    make_top_shell => 0,
+    make_main => 0,
     fails => $Self->{vlt_all},
     expect_filename => $Self->{golden_filename},
     );

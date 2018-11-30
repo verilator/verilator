@@ -13,10 +13,10 @@ top_filename("t/t_udp.v");
 
 compile(
     # Unsupported: UDP Tables
-    make_top_shell => 0,
-    make_main => 0,
     verilator_flags2 => ["--lint-only --bbox-unsup"],
     verilator_make_gcc => 0,
+    make_top_shell => 0,
+    make_main => 0,
     );
 
 ok(1);

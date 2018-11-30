@@ -10,10 +10,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 
 compile(
-    make_top_shell => 0,
-    make_main => 0,
     verilator_flags2 => [qw(--lint-only -Wfuture-FUTURE1 -Wfuture-FUTURE2)],
     verilator_make_gcc => 0,
+    make_top_shell => 0,
+    make_main => 0,
     );
 
 ok(1);

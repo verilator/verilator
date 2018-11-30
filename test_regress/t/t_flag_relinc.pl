@@ -12,9 +12,9 @@ scenarios(vlt => 1);
 compile(
     v_flags2 => ["--relative-includes",
                  "--lint-only $Self->{t_dir}/t_flag_relinc_dir/chip/t_flag_relinc_sub.v"],
+    verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    verilator_make_gcc => 0,
     );
 
 ok(1);

@@ -764,9 +764,8 @@ sub compile {
             return 1;
         }
 
-	if (!$param{fails} && $param{verilator_make_gcc}
-	    && $param{make_main}) {
-	    $self->_make_main();
+        if (!$param{fails} && $param{make_main}) {
+            $self->_make_main();
 	}
 
 	$self->_run(logfile=>"$self->{obj_dir}/vlt_compile.log",

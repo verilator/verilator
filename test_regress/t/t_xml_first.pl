@@ -14,6 +14,8 @@ my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
 compile(
     verilator_flags2 => ['--xml-only'],
     verilator_make_gcc => 0,
+    make_top_shell => 0,
+    make_main => 0,
     );
 
 files_identical("$out_filename", "t/$Self->{name}.out");

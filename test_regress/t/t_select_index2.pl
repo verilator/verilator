@@ -11,9 +11,9 @@ scenarios(simulator => 1);
 
 compile(
     v_flags2 => ["--lint-only"],
+    verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    verilator_make_gcc => 0,
     );
 
 ok(1);

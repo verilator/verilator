@@ -10,9 +10,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 
 compile(
+    verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    verilator_make_gcc => 0,
     v_flags2 => ["--lint-only t/t_vlt_warn.vlt"],
     );
 

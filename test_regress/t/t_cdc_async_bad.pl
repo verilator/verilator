@@ -12,6 +12,8 @@ scenarios(vlt => 1);
 compile(
     v_flags => ['--cdc'],
     verilator_make_gcc => 0,
+    make_top_shell => 0,
+    make_main => 0,
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );

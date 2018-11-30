@@ -20,6 +20,7 @@ compile(
     verilator_flags3 => ['',],
     verilator_make_gcc => 0,
     make_top_shell => 0,
+    make_main => 0,
     stdout_filename => $stdout_filename,
     );
 

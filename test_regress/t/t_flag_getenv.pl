@@ -16,9 +16,9 @@ compile(
     expect =>
 'gotit
 ',
+    verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    verilator_make_gcc => 0,
     );
 
 ok(1);
