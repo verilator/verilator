@@ -167,17 +167,19 @@ $(VM_PREFIX)__ALL.a: $(VK_OBJS)
 ### Compile rules
 
 ifneq ($(VM_DEFAULT_RULES),0)
-$(VM_PREFIX)__ALLsup.o: $(VM_PREFIX)__ALLsup.cpp
-	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_SLOW) -c -o $@ $<
-
 $(VM_PREFIX)__ALLcls.o: $(VM_PREFIX)__ALLcls.cpp
 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
 
-$(VM_PREFIX)%__Slow.o: $(VM_PREFIX)%__Slow.cpp
+$(VM_PREFIX)__ALLsup.o: $(VM_PREFIX)__ALLsup.cpp
 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_SLOW) -c -o $@ $<
 
-$(VM_PREFIX)%.o: $(VM_PREFIX)%.cpp
+# VM_GLOBAL_FAST files including verilated.o use this rule
+%.o: %.cpp
 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
+
+%__Slow.o: %__Slow.cpp
+	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_SLOW) -c -o $@ $<
+
 endif
 
 #Default rule embedded in make:
@@ -189,7 +191,10 @@ endif
 
 debug-make::
 	@echo
+	@echo CXXFLAGS: $(CXXFLAGS)
 	@echo CPPFLAGS: $(CPPFLAGS)
+	@echo OPT_FAST: $(OPT_FAST)
+	@echo OPT_SLOW: $(OPT_SLOW)
 	@echo VM_PREFIX:  $(VM_PREFIX)
 	@echo VM_PARALLEL_BUILDS:  $(VM_PARALLEL_BUILDS)
 	@echo VM_CLASSES_FAST: $(VM_CLASSES_FAST)

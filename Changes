@@ -20,6 +20,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix crash due to cygwin bug in getline, bug1349. [Affe Mao]
 
+****  Fix __Slow files getting compiled with OPT_FAST, bug1370. [Thomas Watts]
+
 
 * Verilator 4.006 2018-10-27
 

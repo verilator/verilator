@@ -2730,10 +2730,11 @@ class EmitCTrace : EmitCStmts {
 
     // METHODS
     void newOutCFile(int filenum) {
-	string filename = (v3Global.opt.makeDir()+"/"+ topClassName()
-			   + (m_slow?"__Trace__Slow":"__Trace"));
-	if (filenum) filename += "__"+cvtToStr(filenum);
-	filename += ".cpp";
+        string filename = (v3Global.opt.makeDir()+"/"+ topClassName()
+                           +"__Trace");
+        if (filenum) filename += "__"+cvtToStr(filenum);
+        filename += (m_slow ? "__Slow":"");
+        filename += ".cpp";
 
 	AstCFile* cfilep = newCFile(filename, m_slow, true/*source*/);
 	cfilep->support(true);
