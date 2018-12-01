@@ -3500,6 +3500,18 @@ L<http://www.sunburst-design.com/papers/CummingsSNUG2000SJ_NBA_rev1_2.pdf>
 Ignoring this warning may make Verilator simulations differ from other
 simulators.
 
+=item CONTASSREG
+
+Error that a continuous assignment is setting a reg. According to IEEE
+Verilog, but not SystemVerilog, a wire must be used as the target of
+continuous assignments.
+
+This error is only reported when "--language 1364-1995", "--language
+1364-2001", or "--language 1364-2005" is used.
+
+Ignoring this error will only suppress the lint check, it will simulate
+correctly.
+
 =item DECLFILENAME
 
 Warns that a module or other declaration's name doesn't match the filename

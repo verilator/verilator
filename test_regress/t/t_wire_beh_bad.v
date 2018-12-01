@@ -9,6 +9,6 @@ module t (/*AUTOARG*/);
    reg  r;
 
    assign r = 1'b1;
-   always_comb w = 1'b0;
+   always @ (r) w = 1'b0;
 
 endmodule

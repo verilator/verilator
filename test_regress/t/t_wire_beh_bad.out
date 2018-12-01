@@ -1,2 +1,3 @@
-%Error-PROCASSWIRE: t/t_wire_beh_bad.v:12: Procedural assignment to wire, perhaps intend var (IEEE 2017 6.5): w
+%Error-CONTASSREG: t/t_wire_beh_bad.v:11: Continuous assignment to reg, perhaps intended wire (IEEE 2005 6.1; Verilog only, legal in SV): r
+%Error-PROCASSWIRE: t/t_wire_beh_bad.v:12: Procedural assignment to wire, perhaps intended var (IEEE 2017 6.5): w
 %Error: Exiting due to

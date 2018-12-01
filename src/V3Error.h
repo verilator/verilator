@@ -71,6 +71,7 @@ public:
 	CMPCONST,	// Comparison is constant due to limited range
 	COLONPLUS,	// :+ instead of +:
         COMBDLY,        // Combinatorial delayed assignment
+        CONTASSREG,     // Continuous assignment on reg
         DEFPARAM,       // Style: Defparam
         DECLFILENAME,   // Declaration doesn't match filename
 	ENDLABEL,	// End lable name mismatch
@@ -133,8 +134,8 @@ public:
 	    " EC_FIRST_WARN",
 	    "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN",
 	    "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
-	    "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CLKDATA",
-            "CMPCONST", "COLONPLUS", "COMBDLY",
+            "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CLKDATA",
+            "CMPCONST", "COLONPLUS", "COMBDLY", "CONTASSREG",
             "DEFPARAM", "DECLFILENAME",
             "ENDLABEL", "GENCLK",
             "IFDEPTH", "IMPERFECTSCH", "IMPLICIT", "IMPORTSTAR", "IMPURE",
@@ -160,7 +161,8 @@ public:
     // Warnings we'll present to the user as errors
     // Later -Werror- options may make more of these.
     bool pretendError() const { return ( m_e==ASSIGNIN || m_e==BLKANDNBLK
-					 || m_e==BLKLOOPINIT
+                                         || m_e==BLKLOOPINIT
+                                         || m_e==CONTASSREG
                                          || m_e==IMPURE
                                          || m_e==PROCASSWIRE); }
     // Warnings to mention manual

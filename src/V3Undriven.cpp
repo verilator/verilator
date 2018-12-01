@@ -233,6 +233,7 @@ private:
     // STATE
     std::vector<UndrivenVarEntry*> m_entryps[3];  // Nodes to delete when we are finished
     bool                m_inBBox;       // In black box; mark as driven+used
+    bool                m_inContAssign;  // In continuous assignment
     bool                m_inProcAssign;  // In procedual assignment
     AstNodeFTask*       m_taskp;        // Current task
     AstAlways*          m_alwaysCombp;  // Current always if combo, otherwise NULL
@@ -323,7 +324,14 @@ private:
         if (nodep->lvalue()
             && !VN_IS(nodep, VarXRef)) {  // Ignore interface variables and similar ugly items
             if (m_inProcAssign && !nodep->varp()->varType().isProcAssignable()) {
-                nodep->v3warn(PROCASSWIRE, "Procedural assignment to wire, perhaps intend var (IEEE 2017 6.5): "
+                nodep->v3warn(PROCASSWIRE, "Procedural assignment to wire, perhaps intended var"
+                              " (IEEE 2017 6.5): "
+                              +nodep->prettyName());
+            }
+            if (m_inContAssign && !nodep->varp()->varType().isContAssignable()
+                && !nodep->fileline()->language().systemVerilog()) {
+                nodep->v3warn(CONTASSREG, "Continuous assignment to reg, perhaps intended wire"
+                              " (IEEE 2005 6.1; Verilog only, legal in SV): "
                               +nodep->prettyName());
             }
         }
@@ -350,22 +358,31 @@ private:
     }
 
     virtual void visit(AstAssign* nodep) {
-        bool prevBeh = m_inProcAssign;
+        bool prevProc = m_inProcAssign;
         {
             m_inProcAssign = true;
             iterateChildren(nodep);
             m_inProcAssign = false;
         }
-        m_inProcAssign = prevBeh;
+        m_inProcAssign = prevProc;
     }
     virtual void visit(AstAssignDly* nodep) {
-        bool prevBeh = m_inProcAssign;
+        bool prevProc = m_inProcAssign;
         {
             m_inProcAssign = true;
             iterateChildren(nodep);
             m_inProcAssign = false;
         }
-        m_inProcAssign = prevBeh;
+        m_inProcAssign = prevProc;
+    }
+    virtual void visit(AstAssignW* nodep) {
+        bool prevCont = m_inProcAssign;
+        {
+            m_inContAssign = true;
+            iterateChildren(nodep);
+            m_inContAssign = false;
+        }
+        m_inProcAssign = prevCont;
     }
     virtual void visit(AstAlways* nodep) {
         AstAlways* prevAlwp = m_alwaysCombp;
@@ -406,6 +423,7 @@ public:
     // CONSTUCTORS
     explicit UndrivenVisitor(AstNetlist* nodep) {
         m_inBBox = false;
+        m_inContAssign = false;
         m_inProcAssign = false;
         m_taskp = NULL;
         m_alwaysCombp = NULL;

@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 
 compile(
-    v_flags2 => ["--lint-only"],
+    v_flags2 => ["--lint-only --language 1364-2001"],
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );

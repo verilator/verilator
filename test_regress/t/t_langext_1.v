@@ -17,35 +17,34 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   reg [1:0] 	res;
+   wire [1:0] res;
 
    // Instantiate the test
-   test test_i (/*AUTOINST*/
-	      // Outputs
-	      .res			(res),
-	      // Inputs
-	      .clk			(clk),
-	      .in			(1'b1));
+   test test_i (// Outputs
+                .res                    (res[1:0]),
+                // Inputs
+                .clk                    (clk),
+                .in                     (1'b1));
 
 endmodule
 
 module test (// Outputs
-	     res,
-	     // Inputs
-	     clk,
-	     in
+             res,
+             // Inputs
+             clk,
+             in
    );
-   output [1:0]  res;
-   input 	 clk;
-   input 	 in;
+   output reg [1:0] res;
+   input         clk;
+   input         in;
 
    // This is a Verilog 2001 test
    generate
       genvar i;
       for (i=0; i<2; i=i+1) begin
-	 always @(posedge clk) begin
-	    res[i:i] <= in;
-	 end
+         always @(posedge clk) begin
+            res[i:i] <= in;
+         end
       end
    endgenerate
 endmodule
