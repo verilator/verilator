@@ -3,6 +3,9 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in []. Thanks!
 
 
+* Verilator 4.009 devel
+
+
 * Verilator 4.008 2018-12-01
 
 ***   Support "ref" and "const ref" pins and functions, bug1360. [Jake Longo]
