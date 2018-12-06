@@ -424,8 +424,8 @@ class TristateVisitor : public TristateBaseVisitor {
 	    refs->push_back(nodep);
 	    m_lhsmap.insert(make_pair(key, refs));
 	} else {
-	    (*it).second->push_back(nodep);
-	}
+            it->second->push_back(nodep);
+        }
     }
 
     AstNode* newEnableDeposit(AstSel* selp, AstNode* enp) {
@@ -499,8 +499,8 @@ class TristateVisitor : public TristateBaseVisitor {
 	// Note there might not be any drivers.
 	for (VarMap::iterator nextit, it = m_lhsmap.begin(); it != m_lhsmap.end(); it = nextit) {
 	    nextit = it; ++nextit;
-	    AstVar* invarp = (*it).first;
-	    RefVec* refs = (*it).second;
+            AstVar* invarp = it->first;
+            RefVec* refs = it->second;
 
 	    // Figure out if this var needs tristate expanded.
 	    if (!m_tgraph.isTristate(invarp)) {
