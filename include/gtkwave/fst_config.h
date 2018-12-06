@@ -3,7 +3,6 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* Define to 1 if you have <alloca.h> and it should be used (not on Ultrix). */
-#define HAVE_ALLOCA_H 1
 #if !defined(__MINGW32__)
 # define HAVE_ALLOCA_H 1
 #endif
