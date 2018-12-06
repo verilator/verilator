@@ -95,7 +95,7 @@ int sc_main(int argc, char* argv[]) {
     if (flag && 0==strcmp(flag, "+trace")) {
         cout << "Enabling waves into logs/vlt_dump.vcd...\n";
         tfp = new VerilatedVcdSc;
-        top->trace(tfp, 99);
+        top->trace(tfp, 99);  // Trace 99 levels of hierarchy
         Verilated::mkdir("logs");
         tfp->open("logs/vlt_dump.vcd");
     }

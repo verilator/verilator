@@ -4164,7 +4164,7 @@ trace file if you want all data to land in the same output file.
         ...
         Verilated::traceEverOn(true);
         VerilatedVcdC* tfp = new VerilatedVcdC;
-        topp->trace(tfp, 99);
+        topp->trace(tfp, 99);  // Trace 99 levels of hierarchy
         tfp->open("obj_dir/t_trace_ena_cc/simx.vcd");
         ...
         while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
@@ -4200,7 +4200,7 @@ trace file if you want all data to land in the same output file.
         ...
         Verilated::traceEverOn(true);
         VerilatedVcdSc* tfp = new VerilatedVcdSc;
-        topp->trace(tfp, 99);
+        topp->trace(tfp, 99);  // Trace 99 levels of hierarchy
         tfp->open("obj_dir/t_trace_ena_cc/simx.vcd");
         ...
         sc_start(1);
