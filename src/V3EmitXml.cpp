@@ -115,7 +115,17 @@ class EmitXmlFileVisitor : public AstNVisitor {
 	outputChildrenEnd(nodep, "");
     }
     virtual void visit(AstVar* nodep) {
-	outputTag(nodep, "");
+        AstVarType typ = nodep->varType();
+        string kw = nodep->verilogKwd();
+        string vt = nodep->dtypep()->name();
+        outputTag(nodep, "");
+        if (nodep->isIO()) {
+            puts(" dir="); putsQuoted(kw);
+            puts(" vartype="); putsQuoted(!vt.empty()
+					  ? vt : typ == AstVarType::PORT ? "port" : "unknown");
+        } else {
+            puts(" vartype="); putsQuoted(!vt.empty() ? vt : kw);
+        }
 	puts(" origName="); putsQuoted(nodep->origName());
 	outputChildrenEnd(nodep, "");
     }

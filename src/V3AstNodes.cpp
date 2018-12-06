@@ -200,6 +200,8 @@ string AstVar::verilogKwd() const {
         return "wire";
     } else if (varType()==AstVarType::WREAL) {
         return "wreal";
+    } else if (varType()==AstVarType::IFACEREF) {
+        return "ifaceref";
     } else {
         return dtypep()->name();
     }

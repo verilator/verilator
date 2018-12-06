@@ -20,10 +20,10 @@
   </cells>
   <netlist>
     <module fl="f6" name="t" origName="t" topModule="1">
-      <var fl="f12" name="clk" dtype_id="1" origName="clk"/>
-      <var fl="f13" name="d" dtype_id="2" origName="d"/>
-      <var fl="f14" name="q" dtype_id="2" origName="q"/>
-      <var fl="f16" name="between" dtype_id="2" origName="between"/>
+      <var fl="f12" name="clk" dtype_id="1" dir="input" vartype="logic" origName="clk"/>
+      <var fl="f13" name="d" dtype_id="2" dir="input" vartype="logic" origName="d"/>
+      <var fl="f14" name="q" dtype_id="2" dir="output" vartype="logic" origName="q"/>
+      <var fl="f16" name="between" dtype_id="2" vartype="logic" origName="between"/>
       <instance fl="f18" name="cell1" defName="mod1" origName="cell1">
         <port fl="f18" name="q" direction="out" portIndex="1">
           <varref fl="f18" name="between" dtype_id="2"/>
@@ -48,9 +48,9 @@
       </instance>
     </module>
     <module fl="f33" name="mod1" origName="mod1">
-      <var fl="f35" name="clk" dtype_id="1" origName="clk"/>
-      <var fl="f36" name="d" dtype_id="2" origName="d"/>
-      <var fl="f37" name="q" dtype_id="2" origName="q"/>
+      <var fl="f35" name="clk" dtype_id="1" dir="input" vartype="logic" origName="clk"/>
+      <var fl="f36" name="d" dtype_id="2" dir="input" vartype="logic" origName="d"/>
+      <var fl="f37" name="q" dtype_id="2" dir="output" vartype="logic" origName="q"/>
       <always fl="f39">
         <sentree fl="f39">
           <senitem fl="f39" edgeType="POS">
@@ -64,9 +64,9 @@
       </always>
     </module>
     <module fl="f44" name="mod2" origName="mod2">
-      <var fl="f46" name="clk" dtype_id="1" origName="clk"/>
-      <var fl="f47" name="d" dtype_id="2" origName="d"/>
-      <var fl="f48" name="q" dtype_id="2" origName="q"/>
+      <var fl="f46" name="clk" dtype_id="1" dir="input" vartype="logic" origName="clk"/>
+      <var fl="f47" name="d" dtype_id="2" dir="input" vartype="logic" origName="d"/>
+      <var fl="f48" name="q" dtype_id="2" dir="output" vartype="logic" origName="q"/>
       <contassign fl="f51" dtype_id="2">
         <varref fl="f51" name="d" dtype_id="2"/>
         <varref fl="f51" name="q" dtype_id="2"/>
