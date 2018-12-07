@@ -5,6 +5,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.009 devel
 
+***   Removed --trace-lxt2, use --trace-fst instead.
+
 ****  For --xml, add additional var information, bug1372. [Jonathan Kimmitt]
 
 

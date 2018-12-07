@@ -140,7 +140,6 @@ sub _suppress {
     return 1 if $id eq "unusedFunction" && $filename =~ m!verilated_vpi.cpp!;
     return 1 if $id eq "unreachableCode" && $filename =~ /V3ParseBison.c/;
     return 1 if $id eq 'variableScope' && $filename =~ /fstapi.c/;
-    return 1 if $id eq 'variableScope' && $filename =~ /lxt2_write.c/;
 
     my $fh = IO::File->new("<$filename");
     if (!$fh) {

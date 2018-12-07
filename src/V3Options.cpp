@@ -701,9 +701,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff   (sw, "-threads-coarsen", flag/*ref*/))    { m_threadsCoarsen = flag; }  // Undocumented, debug
 	    else if ( onoff   (sw, "-trace", flag/*ref*/) )		{ m_trace = flag; }
             else if ( onoff   (sw, "-trace-fst", flag/*ref*/) )         { m_trace = flag; m_traceFormat = TraceFormat::FST; addLdLibs("-lz"); }
-            else if ( onoff   (sw, "-trace-lxt2", flag/*ref*/) )        {
-                std::cerr<<"-Note: --trace-lxt2 format is deprecated, please use --trace-fst.\n";
-                m_trace = flag; m_traceFormat = TraceFormat::LXT2; addLdLibs("-lz"); }
 	    else if ( onoff   (sw, "-trace-dups", flag/*ref*/) )	{ m_traceDups = flag; }
 	    else if ( onoff   (sw, "-trace-params", flag/*ref*/) )	{ m_traceParams = flag; }
 	    else if ( onoff   (sw, "-trace-structs", flag/*ref*/) )	{ m_traceStructs = flag; }
