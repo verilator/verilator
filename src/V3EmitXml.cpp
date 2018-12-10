@@ -144,6 +144,13 @@ class EmitXmlFileVisitor : public AstNVisitor {
         puts(" edgeType=\""+cvtToStr(nodep->edgeType().ascii())+"\"");  // IEEE vpiTopModule
         outputChildrenEnd(nodep, "");
     }
+    virtual void visit(AstModportVarRef* nodep) {
+        // Dump direction for Modport references
+        string kw = nodep->direction().xmlKwd();
+        outputTag(nodep, "");
+        puts(" direction="); putsQuoted(kw);
+        outputChildrenEnd(nodep, "");
+    }
 
     // Data types
     virtual void visit(AstBasicDType* nodep) {
