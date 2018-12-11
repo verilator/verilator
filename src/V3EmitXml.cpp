@@ -161,6 +161,13 @@ class EmitXmlFileVisitor : public AstNVisitor {
 	}
 	puts("/>\n");
     }
+    virtual void visit(AstIfaceRefDType* nodep) {
+        string mpn;
+        outputTag(nodep, "");
+        if (nodep->isModport()) mpn = nodep->modportName();
+        puts(" modportname="); putsQuoted(mpn);
+        outputChildrenEnd(nodep, "");
+    }
 
     // Default
     virtual void visit(AstNode* nodep) {

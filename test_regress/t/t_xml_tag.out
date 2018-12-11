@@ -13,36 +13,48 @@
     <file id="f" filename="t/t_xml_tag.v" language="1800-2017"/>
   </module_files>
   <cells>
-    <cell fl="f6" name="m" submodname="m" hier="m"/>
+    <cell fl="f11" name="m" submodname="m" hier="m">
+      <cell fl="f28" name="itop" submodname="ifc" hier="m.itop"/>
+    </cell>
   </cells>
   <netlist>
-    <module fl="f6" name="m" origName="m">
-      <var fl="f8" name="clk_ip" tag="clk_ip" dtype_id="1" dir="input" vartype="logic" origName="clk_ip"/>
-      <var fl="f9" name="rst_ip" dtype_id="1" dir="input" vartype="logic" origName="rst_ip"/>
-      <var fl="f10" name="foo_op" tag="foo_op" dtype_id="1" dir="output" vartype="logic" origName="foo_op"/>
-      <typedef fl="f14" name="my_struct" tag="my_struct" dtype_id="2"/>
-      <var fl="f23" name="this_struct" tag="this_struct" dtype_id="3" vartype="" origName="this_struct"/>
+    <module fl="f11" name="m" origName="m" topModule="1">
+      <var fl="f13" name="clk_ip" tag="clk_ip" dtype_id="1" dir="input" vartype="logic" origName="clk_ip"/>
+      <var fl="f14" name="rst_ip" dtype_id="1" dir="input" vartype="logic" origName="rst_ip"/>
+      <var fl="f15" name="foo_op" tag="foo_op" dtype_id="1" dir="output" vartype="logic" origName="foo_op"/>
+      <typedef fl="f19" name="my_struct" tag="my_struct" dtype_id="2"/>
+      <instance fl="f28" name="itop" defName="ifc" origName="itop"/>
+      <var fl="f28" name="itop__Viftop" dtype_id="3" vartype="ifaceref" origName="itop__Viftop"/>
+      <var fl="f30" name="this_struct" tag="this_struct" dtype_id="4" vartype="" origName="this_struct"/>
     </module>
+    <iface fl="f6" name="ifc" origName="ifc">
+      <var fl="f7" name="value" dtype_id="5" vartype="integer" origName="value"/>
+      <modport fl="f8" name="out_modport">
+        <modportvarref fl="f8" name="value" direction="out"/>
+      </modport>
+    </iface>
     <typetable fl="a0">
-      <basicdtype  fl="f23" id="4" name="logic" left="31" right="0"/>
-      <basicdtype  fl="f8" id="1" name="logic"/>
-      <structdtype fl="f14" id="2" name="m.my_struct">
-        <memberdtype fl="f15" id="5" name="clk" tag="this is clk" sub_dtype_id="6"/>
-        <memberdtype fl="f16" id="7" name="k" sub_dtype_id="8"/>
-        <memberdtype fl="f17" id="9" name="enable" tag="enable" sub_dtype_id="10"/>
-        <memberdtype fl="f18" id="11" name="data" tag="data" sub_dtype_id="12"/>
+      <basicdtype  fl="f30" id="6" name="logic" left="31" right="0"/>
+      <basicdtype  fl="f7" id="5" name="integer" left="31" right="0"/>
+      <basicdtype  fl="f13" id="1" name="logic"/>
+      <structdtype fl="f19" id="2" name="m.my_struct">
+        <memberdtype fl="f20" id="7" name="clk" tag="this is clk" sub_dtype_id="8"/>
+        <memberdtype fl="f21" id="9" name="k" sub_dtype_id="10"/>
+        <memberdtype fl="f22" id="11" name="enable" tag="enable" sub_dtype_id="12"/>
+        <memberdtype fl="f23" id="13" name="data" tag="data" sub_dtype_id="14"/>
       </structdtype>
-      <basicdtype  fl="f15" id="6" name="logic"/>
-      <basicdtype  fl="f16" id="8" name="logic"/>
-      <basicdtype  fl="f17" id="10" name="logic"/>
-      <basicdtype  fl="f18" id="12" name="logic"/>
-      <unpackarraydtype fl="f23" id="3" sub_dtype_id="2">
-        <range fl="f23">
-          <const fl="f23" name="32'h1" dtype_id="4"/>
-          <const fl="f23" name="32'h0" dtype_id="4"/>
+      <basicdtype  fl="f20" id="8" name="logic"/>
+      <basicdtype  fl="f21" id="10" name="logic"/>
+      <basicdtype  fl="f22" id="12" name="logic"/>
+      <basicdtype  fl="f23" id="14" name="logic"/>
+      <ifacerefdtype fl="f28" id="3" modportname=""/>
+      <unpackarraydtype fl="f30" id="4" sub_dtype_id="2">
+        <range fl="f30">
+          <const fl="f30" name="32'h1" dtype_id="6"/>
+          <const fl="f30" name="32'h0" dtype_id="6"/>
         </range>
       </unpackarraydtype>
-      <refdtype fl="f23" id="13" name="my_struct" sub_dtype_id="2"/>
+      <refdtype fl="f30" id="15" name="my_struct" sub_dtype_id="2"/>
     </typetable>
   </netlist>
 </verilator_xml>
