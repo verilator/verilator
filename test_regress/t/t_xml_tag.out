@@ -26,16 +26,21 @@
       <instance fl="f28" name="itop" defName="ifc" origName="itop"/>
       <var fl="f28" name="itop__Viftop" dtype_id="3" vartype="ifaceref" origName="itop__Viftop"/>
       <var fl="f30" name="this_struct" tag="this_struct" dtype_id="4" vartype="" origName="this_struct"/>
+      <var fl="f32" name="dotted" dtype_id="5" vartype="logic" origName="dotted"/>
+      <contassign fl="f32" dtype_id="5">
+        <varxref fl="f32" name="value" dtype_id="6" dotted="itop"/>
+        <varref fl="f32" name="dotted" dtype_id="5"/>
+      </contassign>
     </module>
     <iface fl="f6" name="ifc" origName="ifc">
-      <var fl="f7" name="value" dtype_id="5" vartype="integer" origName="value"/>
+      <var fl="f7" name="value" dtype_id="6" vartype="integer" origName="value"/>
       <modport fl="f8" name="out_modport">
         <modportvarref fl="f8" name="value" direction="out"/>
       </modport>
     </iface>
     <typetable fl="a0">
-      <basicdtype  fl="f30" id="6" name="logic" left="31" right="0"/>
-      <basicdtype  fl="f7" id="5" name="integer" left="31" right="0"/>
+      <basicdtype  fl="f30" id="5" name="logic" left="31" right="0"/>
+      <basicdtype  fl="f7" id="6" name="integer" left="31" right="0"/>
       <basicdtype  fl="f13" id="1" name="logic"/>
       <structdtype fl="f19" id="2" name="m.my_struct">
         <memberdtype fl="f20" id="7" name="clk" tag="this is clk" sub_dtype_id="8"/>
@@ -50,8 +55,8 @@
       <ifacerefdtype fl="f28" id="3" modportname=""/>
       <unpackarraydtype fl="f30" id="4" sub_dtype_id="2">
         <range fl="f30">
-          <const fl="f30" name="32'h1" dtype_id="6"/>
-          <const fl="f30" name="32'h0" dtype_id="6"/>
+          <const fl="f30" name="32'h1" dtype_id="5"/>
+          <const fl="f30" name="32'h0" dtype_id="5"/>
         </range>
       </unpackarraydtype>
       <refdtype fl="f30" id="15" name="my_struct" sub_dtype_id="2"/>

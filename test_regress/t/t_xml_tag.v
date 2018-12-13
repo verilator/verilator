@@ -29,4 +29,6 @@ module m
 
    my_struct this_struct [2];  // verilator tag this_struct
 
+   wire [31:0] dotted = itop.value;
+
 endmodule

@@ -151,6 +151,11 @@ class EmitXmlFileVisitor : public AstNVisitor {
         puts(" direction="); putsQuoted(kw);
         outputChildrenEnd(nodep, "");
     }
+    virtual void visit(AstVarXRef* nodep) {
+        outputTag(nodep, "");
+        puts(" dotted="); putsQuoted(nodep->dotted());
+        outputChildrenEnd(nodep, "");
+    }
 
     // Data types
     virtual void visit(AstBasicDType* nodep) {
