@@ -82,7 +82,7 @@ sub check_gcc_flags {
         if ($line =~ /\.cpp/) {
             my $filetype = ($line =~ /Slow/) ? "slow":"fast";
             my $opt = ($line !~ /-O2/) ? "slow":"fast";
-            print "$filetype, $opt, $line\n";
+            print "$filetype, $opt, $line\n" if $Self->{verbose};
             if ($filetype ne $opt) {
                 error("${filetype} file compiled as if was ${opt}: $line");
             }
