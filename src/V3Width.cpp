@@ -1806,9 +1806,10 @@ private:
 			}
 			else {
                             if (!VN_IS(classp, UnionDType)) {
-				patp->v3error("Assignment pattern missed initializing elements: "<<memp->prettyTypeName());
-			    }
-			}
+                                nodep->v3error("Assignment pattern missed initializing elements: "
+                                               <<memp->prettyTypeName());
+                            }
+                        }
 		    } else {
 			patp = it->second;
 		    }

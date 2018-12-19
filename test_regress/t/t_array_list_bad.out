@@ -1,0 +1,4 @@
+%Error: t/t_array_list_bad.v:37: Assignment pattern missed initializing elements: MEMBERDTYPE 't3'
+%Warning-WIDTH: t/t_array_list_bad.v:37: Operator ASSIGNDLY expects 3 bits on the Assign RHS, but Assign RHS's CONCAT generates 2 bits.
+%Warning-WIDTH: Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
+%Error: Exiting due to
