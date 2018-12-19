@@ -220,15 +220,15 @@ char* VerilatedFst::array2Str(const vluint32_t* newval, int bits) {
     int bq = bits/32, br = bits%32;
     m_valueStrBuffer.resize(bits+1);
     char* s = m_valueStrBuffer.data();
+    for (int i = 0; i < br; ++i) {
+        *s = '0' + ((newval[bq]>>(br-i-1))&1);
+        ++s;
+    }
     for (int w = bq-1; w >= 0; --w) {
         for (int i = 0; i < 32; ++i) {
             *s = '0' + ((newval[w]>>(32-i-1))&1);
             ++s;
         }
-    }
-    for (int i = 0; i < br; ++i) {
-        *s = '0' + ((newval[bq]>>(br-i-1))&1);
-        ++s;
     }
     *s = '\0';
     return m_valueStrBuffer.data();

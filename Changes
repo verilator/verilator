@@ -9,6 +9,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  For --xml, add additional information, bug1372. [Jonathan Kimmitt]
 
+****  Fix FST tracing of wide arrays, bug1376. [Aleksander Osman]
+
 ****  Fix error when pattern assignment has too few elements, bug1378. [Viktor Tomov]
 
 
