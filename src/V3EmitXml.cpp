@@ -174,6 +174,13 @@ class EmitXmlFileVisitor : public AstNVisitor {
         outputChildrenEnd(nodep, "");
     }
 
+    // Display
+    virtual void visit(AstDisplay* nodep) {
+        outputTag(nodep, "");
+        puts(" displaytype="); putsQuoted(nodep->verilogKwd());
+        outputChildrenEnd(nodep, "");
+    }
+
     // Default
     virtual void visit(AstNode* nodep) {
 	outputTag(nodep, "");
