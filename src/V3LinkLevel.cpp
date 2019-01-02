@@ -101,7 +101,8 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
     // TODO the module creation above could be done after linkcells, but
     // the rest must be done after data type resolution
     wrapTopCell(rootp);
-    wrapTopPackages(rootp);
+
+    V3Global::dumpCheckGlobalTree("wraptop", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }
 
 void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
@@ -150,15 +151,12 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
 	    }
 	}
     }
-}
 
-void V3LinkLevel::wrapTopPackages(AstNetlist* rootp) {
     // Instantiate all packages under the top wrapper
     // This way all later SCOPE based optimizations can ignore packages
-    AstNodeModule* newmodp = rootp->modulesp();
-    if (!newmodp || !newmodp->isTop()) rootp->v3fatalSrc("No TOP module found to process");
     for (AstNodeModule* modp = rootp->modulesp(); modp; modp=VN_CAST(modp->nextp(), NodeModule)) {
-        if (VN_IS(modp, Package)) {
+        if (VN_IS(modp, Package)
+	    && modp != oldmodp) {  // Don't duplicate if didn't find a top module
 	    AstCell* cellp = new AstCell(modp->fileline(),
 					 // Could add __03a__03a="::" to prevent conflict
 					 // with module names/"v"
