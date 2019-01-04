@@ -177,10 +177,9 @@ V3Number::V3Number(FileLine* fileline, const char* sourcep) {
     }
     else {
 	// Convert bin/octal number to hex
-	for (const char* cp=value_startp+strlen(value_startp)-1;
-	     (cp>=value_startp
-	      && obit<=width());
-	     cp--) {
+        for (const char* cp=value_startp+strlen(value_startp)-1;
+             cp >= value_startp;
+             cp--) {
 	    if (*cp!='_' && *cp!='0' && obit>=width()) {
 		m_fileline->v3error("Too many digits for "<<width()<<" bit number: "<<sourcep);
 		break;

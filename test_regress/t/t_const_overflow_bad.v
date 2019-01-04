@@ -14,4 +14,7 @@ module t (/*AUTOARG*/);
    // We'll allow this though; no reason to be cruel
    parameter [200:0] OKH = 8'h000000001;
 
+   // bug1380
+   parameter [128:0] ALSO_SMALL = 129'hdeadbeefc001f00ddeadbeefc001f00ddeadbeefc001f00ddeadbeefc001f00d;
+
 endmodule

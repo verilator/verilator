@@ -15,6 +15,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix error when no modules in $unit, bug1381. [Al Grant]
 
+****  Fix missing too many digits warning, bug1380. [Jonathan Kimmitt]
+
 
 * Verilator 4.008 2018-12-01
 
