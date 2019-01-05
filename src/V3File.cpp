@@ -86,9 +86,10 @@ class V3FileDependImp {
 	    if (!m_stat.st_mtime) {
 		string fn = filename();
 		int err = stat(fn.c_str(), &m_stat);
-		if (err!=0) {
-		    m_stat.st_mtime = 1;
-		    // Not a error... This can occur due to `line directives in the .vpp files
+                if (err!=0) {
+                    memset(&m_stat, 0, sizeof(m_stat));
+                    m_stat.st_mtime = 1;
+                    // Not an error... This can occur due to `line directives in the .vpp files
 		    UINFO(1,"-Info: File not statable: "<<filename()<<endl);
 		}
 	    }
