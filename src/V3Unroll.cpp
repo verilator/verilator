@@ -404,11 +404,11 @@ private:
 		// we'd need to initialize the variable to the initial
 		// condition, but they'll become while's which can be
 		// deleted by V3Const.
-		nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
-	    } else if (forUnrollCheck(nodep, nodep->initsp(),
-				      NULL, nodep->condp(),
-				      nodep->incsp(), nodep->bodysp())) {
-		pushDeletep(nodep); VL_DANGLING(nodep); // Did replacement
+                pushDeletep(nodep->unlinkFrBack()); VL_DANGLING(nodep);
+            } else if (forUnrollCheck(nodep, nodep->initsp(),
+                                      NULL, nodep->condp(),
+                                      nodep->incsp(), nodep->bodysp())) {
+                pushDeletep(nodep); VL_DANGLING(nodep);  // Did replacement
 	    } else {
 		nodep->v3error("For loop doesn't have genvar index, or is malformed");
 	    }
