@@ -761,7 +761,7 @@ void AstNode::addBeforeStmt(AstNode* newp, AstNode*) {
     this->backp()->addBeforeStmt(newp, this);
 }
 void AstNode::addNextStmt(AstNode* newp, AstNode*) {
-    if (!backp()) newp->v3fatalSrc("Can't find current statement to addBeforeStmt");
+    if (!backp()) newp->v3fatalSrc("Can't find current statement to addNextStmt");
     // Look up; virtual call will find where to put it
     this->backp()->addNextStmt(newp, this);
 }

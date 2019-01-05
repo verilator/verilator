@@ -1975,13 +1975,13 @@ class AstNodeSel : public AstNodeBiop {
     // Single bit range extraction, perhaps with non-constant selection or array selection
 public:
     AstNodeSel(FileLine* fl, AstNode* fromp, AstNode* bitp)
-	:AstNodeBiop(fl, fromp, bitp) {}
+        : AstNodeBiop(fl, fromp, bitp) {}
     ASTNODE_BASE_FUNCS(NodeSel)
-    AstNode* fromp() const { return op1p(); }	// op1 = Extracting what (NULL=TBD during parsing)
+    AstNode* fromp() const { return op1p(); }  // op1 = Extracting what (NULL=TBD during parsing)
     void fromp(AstNode* nodep) { setOp1p(nodep); }
-    AstNode* bitp() const { return op2p(); }	// op2 = Msb selection expression
+    AstNode* bitp() const { return op2p(); }  // op2 = Msb selection expression
     void bitp(AstNode* nodep) { setOp2p(nodep); }
-    int	     bitConst()	const;
+    int bitConst() const;
     virtual bool hasDType() const { return true; }
 };
 
@@ -2077,14 +2077,14 @@ private:
     AstPackage*		m_packagep;	// Package hierarchy
 public:
     AstNodeFTaskRef(FileLine* fl, AstNode* namep, AstNode* pinsp)
-	:AstNode(fl)
-	, m_taskp(NULL), m_packagep(NULL) {
-	setOp1p(namep);	addNOp2p(pinsp);
+        : AstNode(fl)
+        , m_taskp(NULL), m_packagep(NULL) {
+        setOp1p(namep); addNOp2p(pinsp);
     }
     AstNodeFTaskRef(FileLine* fl, const string& name, AstNode* pinsp)
-	:AstNode(fl)
-	, m_taskp(NULL), m_name(name), m_packagep(NULL) {
-	addNOp2p(pinsp);
+        : AstNode(fl)
+        , m_taskp(NULL), m_name(name), m_packagep(NULL) {
+        addNOp2p(pinsp);
     }
     ASTNODE_BASE_FUNCS(NodeFTaskRef)
     virtual const char* broken() const { BROKEN_RTN(m_taskp && !m_taskp->brokeExists()); return NULL; }
