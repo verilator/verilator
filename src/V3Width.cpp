@@ -1147,7 +1147,7 @@ private:
 		// We ignore warnings as that is sort of the point of a cast
 		iterateCheck(nodep,"Cast expr",nodep->lhsp(),CONTEXT,FINAL,calcDtp,EXTEND_EXP, false);
 	    }
-	    if (debug()) nodep->dumpTree(cout,"  CastSizeClc: ");
+	    //if (debug()) nodep->dumpTree(cout,"  CastSizeClc: ");
 	    // Next step, make the proper output width
 	    {
                 AstNodeDType* outDtp = (underDtp->isFourstate()
