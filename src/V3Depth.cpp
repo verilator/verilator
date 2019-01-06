@@ -102,7 +102,11 @@ private:
 	m_stmtp = NULL;
     }
     virtual void visit(AstNodeStmt* nodep) {
-	visitStmt(nodep);
+        if (!nodep->isStatement()) {
+            iterateChildren(nodep);
+        } else {
+            visitStmt(nodep);
+        }
     }
     // Operators
     virtual void visit(AstNodeTermop* nodep) {

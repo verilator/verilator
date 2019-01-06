@@ -452,10 +452,10 @@ implementation is not found, the system will look in turn for overloaded
 implementations up the inheritance hierarchy. For example calling C<accept>
 on C<AstIf> will look in turn for:
 
-  void visit (AstIf* nodep)
-  void visit (AstNodeIf* nodep)
-  void visit (AstNodeStmt* nodep)
-  void visit (AstNode* nodep)
+  void visit(AstIf* nodep)
+  void visit(AstNodeIf* nodep)
+  void visit(AstNodeStmt* nodep)
+  void visit(AstNode* nodep)
 
 There are three ways data is passed between visitor functions.
 

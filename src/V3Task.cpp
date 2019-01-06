@@ -1256,6 +1256,10 @@ private:
 	nodep->v3fatalSrc("For statements should have been converted to while statements in V3Begin.cpp");
     }
     virtual void visit(AstNodeStmt* nodep) {
+        if (!nodep->isStatement()) {
+            iterateChildren(nodep);
+            return;
+        }
 	m_insMode = IM_BEFORE;
 	m_insStmtp = nodep;
         iterateChildren(nodep);

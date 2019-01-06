@@ -2026,6 +2026,7 @@ public:
     AstTaskRef(FileLine* fl, const string& name, AstNode* pinsp)
 	:AstNodeFTaskRef(fl, name, pinsp) {}
     ASTNODE_NODE_FUNCS(TaskRef)
+    virtual bool isStatement() const { return true; }  // A statement, unlike FuncRef
 };
 
 class AstFuncRef : public AstNodeFTaskRef {
@@ -2036,6 +2037,7 @@ public:
     AstFuncRef(FileLine* fl, const string& name, AstNode* pinsp)
 	:AstNodeFTaskRef(fl, name, pinsp) {}
     ASTNODE_NODE_FUNCS(FuncRef)
+    virtual bool isStatement() const { return false; }  // Not a statement, unlike TaskRef
     virtual bool hasDType() const { return true; }
 };
 

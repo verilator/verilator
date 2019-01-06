@@ -1642,6 +1642,7 @@ public:
 	: AstNode(fl) {}
     ASTNODE_BASE_FUNCS(NodeStmt)
     // METHODS
+    virtual bool isStatement() const { return true; }  // Really a statement
     virtual void addNextStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here
     virtual void addBeforeStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here
 };
@@ -2067,8 +2068,9 @@ public:
     bool pure() const { return m_pure; }
 };
 
-class AstNodeFTaskRef : public AstNode {
+class AstNodeFTaskRef : public AstNodeStmt {
     // A reference to a task (or function)
+    // Functions are not statements, while tasks are. AstNodeStmt needs isStatement() to deal.
 private:
     AstNodeFTask*	m_taskp;	// [AfterLink] Pointer to task referenced
     string		m_name;		// Name of variable
@@ -2077,12 +2079,12 @@ private:
     AstPackage*		m_packagep;	// Package hierarchy
 public:
     AstNodeFTaskRef(FileLine* fl, AstNode* namep, AstNode* pinsp)
-        : AstNode(fl)
+        : AstNodeStmt(fl)
         , m_taskp(NULL), m_packagep(NULL) {
         setOp1p(namep); addNOp2p(pinsp);
     }
     AstNodeFTaskRef(FileLine* fl, const string& name, AstNode* pinsp)
-        : AstNode(fl)
+        : AstNodeStmt(fl)
         , m_taskp(NULL), m_name(name), m_packagep(NULL) {
         addNOp2p(pinsp);
     }

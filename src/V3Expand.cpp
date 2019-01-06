@@ -871,6 +871,10 @@ private:
 
     virtual void visit(AstNodeStmt* nodep) {
 	if (nodep->user1SetOnce()) return;  // Process once
+        if (!nodep->isStatement()) {
+            iterateChildren(nodep);
+            return;
+        }
 	m_stmtp = nodep;
         iterateChildren(nodep);
 	m_stmtp = NULL;

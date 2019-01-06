@@ -107,7 +107,11 @@ private:
 	m_depth--;
     }
     virtual void visit(AstNodeStmt* nodep) {
-	visitStmt(nodep);
+        if (!nodep->isStatement()) {
+            iterateChildren(nodep);
+        } else {
+            visitStmt(nodep);
+        }
     }
 
     virtual void visit(AstNodeMath* nodep) {}  // Accelerate

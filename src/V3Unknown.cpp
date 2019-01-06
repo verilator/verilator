@@ -135,10 +135,10 @@ private:
                                                     new AstVarRef(fl, varp, false)))),
                                     NULL);
             newp->branchPred(AstBranchPred::BP_LIKELY);
-	    if (debug()>=9) newp->dumpTree(cout,"     _new: ");
-	    abovep->addNextStmt(newp,abovep);
-	    prep->user2p(newp);  // Save so we may LogAnd it next time
-	}
+            if (debug()>=9) newp->dumpTree(cout,"     _new: ");
+            abovep->addNextStmt(newp, abovep);
+            prep->user2p(newp);  // Save so we may LogAnd it next time
+        }
     }
 
     // VISITORS

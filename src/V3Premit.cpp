@@ -241,8 +241,12 @@ private:
 	m_stmtp = NULL;
     }
     virtual void visit(AstNodeStmt* nodep) {
-	UINFO(4,"  STMT  "<<nodep<<endl);
-	startStatement(nodep);
+        if (!nodep->isStatement()) {
+            iterateChildren(nodep);
+            return;
+        }
+        UINFO(4,"  STMT  "<<nodep<<endl);
+        startStatement(nodep);
         iterateChildren(nodep);
 	m_stmtp = NULL;
     }

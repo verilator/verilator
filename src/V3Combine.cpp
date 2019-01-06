@@ -433,6 +433,10 @@ private:
 	m_funcp = NULL;
     }
     virtual void visit(AstNodeStmt* nodep) {
+        if (!nodep->isStatement()) {
+            iterateChildren(nodep);
+            return;
+        }
 	if (m_state == STATE_HASH && m_funcp) {
 	    hashStatement(nodep);
 	}

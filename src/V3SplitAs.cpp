@@ -96,6 +96,10 @@ private:
 	}
     }
     virtual void visit(AstNodeStmt* nodep) {
+        if (!nodep->isStatement()) {
+            iterateChildren(nodep);
+            return;
+        }
 	UINFO(6,"     CL STMT "<<nodep<<endl);
 	bool oldKeep = m_keepStmt;
 	{

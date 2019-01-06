@@ -273,6 +273,10 @@ class GaterBodyVisitor : public GaterBaseVisitor {
     // (We may get empty IFs but the constant propagater will rip them up for us)
 
     virtual void visit(AstNodeStmt* nodep) {
+        if (!nodep->isStatement()) {
+            iterateChildren(nodep);
+            return;
+        }
 	uint32_t oldstate = m_state;
 	// Find if children want to delete this or not.
 	// Note children may bicker, and want to both keep and delete (branches on a if)
