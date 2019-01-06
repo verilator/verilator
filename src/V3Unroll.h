@@ -28,11 +28,28 @@
 #include "V3Ast.h"
 
 //============================================================================
+/// Unroller with saved state, so caller can determine when pushDelete's are executed.
+
+class UnrollVisitor;
+
+class UnrollStateful {
+    // MEMBERS
+    UnrollVisitor* m_unrollerp;
+    VL_UNCOPYABLE(UnrollStateful);
+public:
+    // CONSTRUCTORS
+    UnrollStateful();
+    ~UnrollStateful();
+    // METHODS
+    void unrollGen(AstNodeFor* nodep, const string& beginName);
+    void unrollAll(AstNetlist* nodep);
+};
+
+//============================================================================
 
 class V3Unroll {
 public:
     static void unrollAll(AstNetlist* nodep);
-    static void unrollGen(AstNodeFor* nodep, const string& beginName);
 };
 
 #endif // Guard

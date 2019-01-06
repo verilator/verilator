@@ -453,7 +453,13 @@ private:
 
 public:
     // CONSTUCTORS
-    UnrollVisitor(AstNode* nodep, bool generate, const string& beginName) {
+    UnrollVisitor() { init(false, ""); }
+    virtual ~UnrollVisitor() {
+        V3Stats::addStatSum("Optimizations, Unrolled Loops", m_statLoops);
+        V3Stats::addStatSum("Optimizations, Unrolled Iterations", m_statIters);
+    }
+    // METHORS
+    void init(bool generate, const string& beginName) {
 	m_forVarp = NULL;
 	m_forVscp = NULL;
         m_varValuep = NULL;
@@ -463,27 +469,33 @@ public:
         m_varAssignHit = false;
 	m_generate = generate;
 	m_beginName = beginName;
-	//
-        iterate(nodep);
     }
-    virtual ~UnrollVisitor() {
-	V3Stats::addStatSum("Optimizations, Unrolled Loops", m_statLoops);
-	V3Stats::addStatSum("Optimizations, Unrolled Iterations", m_statIters);
+    void process(AstNode* nodep, bool generate, const string& beginName) {
+        init(generate, beginName);
+        iterate(nodep);
     }
 };
 
 //######################################################################
 // Unroll class functions
 
+UnrollStateful::UnrollStateful() : m_unrollerp(new UnrollVisitor) { }
+UnrollStateful::~UnrollStateful() { delete m_unrollerp; }
+
+void UnrollStateful::unrollGen(AstNodeFor* nodep, const string& beginName) {
+    UINFO(5,__FUNCTION__<<": "<<endl);
+    m_unrollerp->process(nodep, true, beginName);
+}
+
+void UnrollStateful::unrollAll(AstNetlist* nodep) {
+    m_unrollerp->process(nodep, false, "");
+}
+
 void V3Unroll::unrollAll(AstNetlist* nodep) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     {
-        UnrollVisitor visitor (nodep, false, "");
+        UnrollStateful unroller;
+        unroller.unrollAll(nodep);
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("unroll", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
-}
-
-void V3Unroll::unrollGen(AstNodeFor* nodep, const string& beginName) {
-    UINFO(5,__FUNCTION__<<": "<<endl);
-    UnrollVisitor visitor (nodep, true, beginName);
 }

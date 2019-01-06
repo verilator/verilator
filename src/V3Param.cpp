@@ -111,6 +111,8 @@ private:
 
     string m_unlinkedTxt;	// Text for AstUnlinkedRef
 
+    UnrollStateful m_unroller;  // Loop unroller
+
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
@@ -443,9 +445,11 @@ private:
 	    // a BEGIN("zzz__BRA__{loop#}__KET__")
 	    string beginName = nodep->name();
 	    // Leave the original Begin, as need a container for the (possible) GENVAR
-	    // Note V3Unroll will replace some AstVarRef's to the loop variable with constants
-	    V3Unroll::unrollGen(forp, beginName); VL_DANGLING(forp);
-	    // Blocks were constructed under the special begin, move them up
+            // Note V3Unroll will replace some AstVarRef's to the loop variable with constants
+            // Don't remove any deleted nodes in m_unroller until whole process finishes,
+            // (are held in m_unroller), as some AstXRefs may still point to old nodes.
+            m_unroller.unrollGen(forp, beginName); VL_DANGLING(forp);
+            // Blocks were constructed under the special begin, move them up
 	    // Note forp is null, so grab statements again
 	    if (AstNode* stmtsp = nodep->genforp()) {
 		stmtsp->unlinkFrBackWithNext();
