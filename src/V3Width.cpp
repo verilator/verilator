@@ -1043,12 +1043,24 @@ private:
 	UINFO(4,"dtWidthed "<<nodep<<endl);
     }
     virtual void visit(AstRefDType* nodep) {
-	if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
-	userIterateChildren(nodep, NULL);
-	if (nodep->subDTypep()) nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
-	nodep->dtypeFrom(nodep->dtypeSkipRefp());
-	nodep->widthFromSub(nodep->subDTypep());
-	UINFO(4,"dtWidthed "<<nodep<<endl);
+        if (nodep->doingWidth()) {  // Early exit if have circular parameter definition
+            nodep->v3error("Typedef's type is circular: "<<nodep->prettyName());
+            nodep->dtypeSetLogicBool();
+            nodep->doingWidth(false);
+            return;
+        }
+        if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
+        nodep->doingWidth(true);
+        userIterateChildren(nodep, NULL);
+        if (nodep->subDTypep()) nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        // Effectively nodep->dtypeFrom(nodep->dtypeSkipRefp());
+        // But might be recursive, so instead manually recurse into the referenced type
+        if (!nodep->defp()) nodep->v3fatalSrc("Unlinked");
+        nodep->dtypeFrom(nodep->defp());
+        userIterate(nodep->defp(), NULL);
+        nodep->widthFromSub(nodep->subDTypep());
+        UINFO(4,"dtWidthed "<<nodep<<endl);
+        nodep->doingWidth(false);
     }
     virtual void visit(AstTypedef* nodep) {
 	if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
