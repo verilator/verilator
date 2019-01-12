@@ -1197,6 +1197,7 @@ void AstCFunc::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (slow()) str<<" [SLOW]";
     if (pure()) str<<" [PURE]";
+    if (isStatic()) str<<" [STATIC]";
     if (dpiImport()) str<<" [DPII]";
     if (dpiExport()) str<<" [DPIX]";
     if (dpiExportWrapper()) str<<" [DPIXWR]";
