@@ -26,7 +26,11 @@
 //======================================================================
 
 #if defined(VERILATOR)
-# include "Vt_dpi_export__Dpi.h"
+# ifdef T_DPI_EXPORT_NOOPT
+#  include "Vt_dpi_export_noopt__Dpi.h"
+# else
+#  include "Vt_dpi_export__Dpi.h"
+# endif
 #elif defined(VCS)
 # include "../vc_hdrs.h"
 #elif defined(CADENCE)
@@ -93,10 +97,11 @@ static int check_sub(const char* name, int i) {
     svScope sout = svSetScope(scope);
     CHECK_RESULT(svScope, sout, prev);
     CHECK_RESULT(svScope, svGetScope(), scope);
+#ifndef T_DPI_EXPORT_NOOPT
     int out = dpix_sub_inst(100*i);
     CHECK_RESULT(int, out, 100*i + i);
-
-    return 0; // OK
+#endif
+    return 0;  // OK
 }
 
 // Called from our Verilog code to run the tests

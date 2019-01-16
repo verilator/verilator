@@ -510,6 +510,36 @@ public:
 
 //######################################################################
 
+/// Boolean or unknown
+class VBoolOrUnknown {
+public:
+    enum en {
+        BU_FALSE=0,
+        BU_TRUE=1,
+        BU_UNKNOWN=2,
+        _ENUM_END
+    };
+    enum en m_e;
+    // CONSTRUCTOR - note defaults to *UNKNOWN*
+    inline VBoolOrUnknown() : m_e(BU_UNKNOWN) {}
+    // cppcheck-suppress noExplicitConstructor
+    inline VBoolOrUnknown(en _e) : m_e(_e) {}
+    explicit inline VBoolOrUnknown(int _e) : m_e(static_cast<en>(_e)) {}
+    const char* ascii() const {
+        static const char* const names[] = {
+            "FALSE","TRUE","UNK"};
+        return names[m_e]; }
+    bool trueU() const { return m_e == BU_TRUE || m_e == BU_UNKNOWN; }
+    bool falseU() const { return m_e == BU_FALSE || m_e == BU_UNKNOWN; }
+    bool unknown() const { return m_e == BU_UNKNOWN; }
+  };
+  inline bool operator== (VBoolOrUnknown lhs, VBoolOrUnknown rhs) { return (lhs.m_e == rhs.m_e); }
+  inline bool operator== (VBoolOrUnknown lhs, VBoolOrUnknown::en rhs) { return (lhs.m_e == rhs); }
+  inline bool operator== (VBoolOrUnknown::en lhs, VBoolOrUnknown rhs) { return (lhs == rhs.m_e); }
+  inline std::ostream& operator<<(std::ostream& os, const VBoolOrUnknown& rhs) { return os<<rhs.ascii(); }
+
+//######################################################################
+
 class AstVarType {
 public:
     enum en {

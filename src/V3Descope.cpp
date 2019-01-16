@@ -52,8 +52,9 @@ private:
     // STATE
     AstNodeModule*	m_modp;		// Current module
     AstScope*		m_scopep;	// Current scope
-    bool		m_modSingleton; // m_modp is only instanced once
-    bool		m_needThis;	// Make function non-static
+    bool                m_modSingleton; // m_modp is only instanced once
+    bool                m_allowThis;    // Allow function non-static
+    bool                m_needThis;     // Make function non-static
     FuncMmap		m_modFuncs;	// Name of public functions added
 
     // METHODS
@@ -93,7 +94,11 @@ private:
         // "vlTOPp" is declared "restrict" so better compilers understand
         // that it won't alias with "this".
         bool relativeRefOk = v3Global.opt.relativeCFuncs();
+        //
+        // Static functions can't use this
+        if (!m_allowThis) relativeRefOk = false;
 
+        //
         // Use absolute refs in top-scoped routines, keep them static.
         // The DPI callback registration depends on representing top-level
         // static routines as plain function pointers. That breaks if those
@@ -104,7 +109,7 @@ private:
         if (m_modp->isTop()) {
             relativeRefOk = false;
         }
-
+        //
         // Use absolute refs if this scope is the only instance of the module.
         // Saves a bit of overhead on passing the 'this' pointer, and there's no
         // need to be nice to V3Combine when we have only a single instance.
@@ -266,9 +271,10 @@ private:
     virtual void visit(AstCFunc* nodep) {
 	if (!nodep->user1()) {
 	    m_needThis = false;
+            m_allowThis = nodep->isStatic().falseU();  // Non-static or unknown if static
             iterateChildren(nodep);
-	    nodep->user1(true);
-	    if (m_needThis) {
+            nodep->user1(true);
+            if (m_needThis) {
                 nodep->isStatic(false);
 	    }
 	    // If it's under a scope, move it up to the top
@@ -295,6 +301,7 @@ public:
         : m_modp(NULL),
           m_scopep(NULL),
           m_modSingleton(false),
+          m_allowThis(false),
           m_needThis(false) {
         iterate(nodep);
     }

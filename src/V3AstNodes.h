@@ -5528,15 +5528,15 @@ private:
     string	m_cname;		// C name, for dpiExports
     string	m_rtnType;		// void, bool, or other return type
     string	m_argTypes;
-    string	m_ifdef;		// #ifdef symbol around this function
-    bool	m_dontCombine:1;	// V3Combine shouldn't compare this func tree, it's special
+    string      m_ifdef;                // #ifdef symbol around this function
+    VBoolOrUnknown m_isStatic;          // Function is declared static (no this)
+    bool        m_dontCombine:1;        // V3Combine shouldn't compare this func tree, it's special
     bool	m_skipDecl:1;		// Don't declare it
     bool	m_declPrivate:1;	// Declare it private
     bool	m_formCallTree:1;	// Make a global function to call entire tree of functions
     bool	m_slow:1;		// Slow routine, called once or just at init time
     bool	m_funcPublic:1;		// From user public task/function
     bool	m_isInline:1;		// Inline function
-    bool	m_isStatic:1;		// Function is declared static (no this)
     bool	m_symProlog:1;		// Setup symbol table for later instructions
     bool	m_entryPoint:1;		// User may call into this top level function
     bool	m_pure:1;		// Pure function
@@ -5547,8 +5547,9 @@ private:
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType="")
 	: AstNode(fl) {
-	m_funcType = AstCFuncType::FT_NORMAL;
-	m_scopep = scopep;
+        m_funcType = AstCFuncType::FT_NORMAL;
+        m_isStatic = VBoolOrUnknown::BU_UNKNOWN;  // Unknown until see where thisp needed
+        m_scopep = scopep;
 	m_name = name;
 	m_rtnType = rtnType;
 	m_dontCombine = false;
@@ -5558,7 +5559,6 @@ public:
 	m_slow = false;
 	m_funcPublic = false;
 	m_isInline = false;
-	m_isStatic = true;	// Note defaults to static, later we see where thisp is needed
 	m_symProlog = false;
 	m_entryPoint = false;
 	m_pure = false;
@@ -5582,7 +5582,10 @@ public:
 		    || name() == asamep->name())); }
     //
     virtual void name(const string& name) { m_name = name; }
-    virtual int instrCount()	const { return dpiImport() ? instrCountDpi() : 0; }
+    virtual int instrCount() const { return dpiImport() ? instrCountDpi() : 0; }
+    VBoolOrUnknown isStatic() const { return m_isStatic; }
+    void isStatic(bool flag) { m_isStatic = flag ? VBoolOrUnknown::BU_TRUE : VBoolOrUnknown::BU_FALSE; }
+    void isStatic(VBoolOrUnknown flag) { m_isStatic = flag; }
     void	cname(const string& name) { m_cname = name; }
     string	cname() const { return m_cname; }
     AstScope*	scopep() const { return m_scopep; }
@@ -5609,8 +5612,6 @@ public:
     AstCFuncType funcType() const { return m_funcType; }
     bool	isInline() const { return m_isInline; }
     void	isInline(bool flag) { m_isInline = flag; }
-    bool	isStatic() const { return m_isStatic; }
-    void	isStatic(bool flag) { m_isStatic = flag; }
     bool	symProlog() const { return m_symProlog; }
     void	symProlog(bool flag) { m_symProlog = flag; }
     bool	entryPoint() const { return m_entryPoint; }

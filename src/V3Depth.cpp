@@ -130,10 +130,10 @@ private:
 
     //--------------------
     // Marking of non-static functions (because they might need "this")
-    // (Here just to avoid another iteration)
+    // (Here instead of new vistor after V3Descope just to avoid another visitor)
     void needNonStaticFunc(AstNode* nodep) {
-	if (!m_funcp) nodep->v3fatalSrc("Non-static accessor not under a function");
-	if (m_funcp->isStatic()) {
+        if (!m_funcp) nodep->v3fatalSrc("Non-static accessor not under a function");
+        if (m_funcp->isStatic().trueU()) {
 	    UINFO(5,"Mark non-public due to "<<nodep<<endl);
 	    m_funcp->isStatic(false);
 	}
