@@ -1193,6 +1193,9 @@ sub _make_main {
     print $fh "// Test defines\n";
     print $fh "#define VL_TIME_MULTIPLIER $self->{vl_time_multiplier}\n" if $self->{vl_time_multiplier};
 
+    print $fh "// OS header\n";
+    print $fh "#include \"verilatedos.h\"\n";
+
     print $fh "// Generated header\n";
     my $VM_PREFIX = $self->{VM_PREFIX};
     print $fh "#include \"$VM_PREFIX.h\"\n";

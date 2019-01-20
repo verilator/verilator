@@ -196,7 +196,7 @@ if(nam) /* cppcheck warning fix: nam is always defined, so this is not needed */
         dwRetVal = GetTempPath(MAX_PATH, lpTempPathBuffer);
         if((dwRetVal > MAX_PATH) || (dwRetVal == 0))
                 {
-                fprintf(stderr, FST_APIMESS"GetTempPath() failed in "__FILE__" line %d, exiting.\n", __LINE__);
+                fprintf(stderr, FST_APIMESS "GetTempPath() failed in " __FILE__ " line %d, exiting.\n", __LINE__);
                 exit(255);
                 }
                 else
@@ -204,7 +204,7 @@ if(nam) /* cppcheck warning fix: nam is always defined, so this is not needed */
                 uRetVal = GetTempFileName(lpTempPathBuffer, TEXT("FSTW"), 0, szTempFileName);
                 if (uRetVal == 0)
                         {
-                        fprintf(stderr, FST_APIMESS"GetTempFileName() failed in "__FILE__" line %d, exiting.\n", __LINE__);
+                        fprintf(stderr, FST_APIMESS "GetTempFileName() failed in " __FILE__ " line %d, exiting.\n", __LINE__);
                         exit(255);
                         }
                         else
@@ -808,7 +808,7 @@ if(rc<0)
         {
         xc->fseek_failed = 1;
 #ifdef FST_DEBUG
-        fprintf(stderr, FST_APIMESS"Seek to #%" PRId64 " (whence = %d) failed!\n", offset, whence);
+        fprintf(stderr, FST_APIMESS "Seek to #%" PRId64 " (whence = %d) failed!\n", offset, whence);
         perror("Why");
 #endif
         }
@@ -1668,7 +1668,7 @@ if(zerocnt)
         /* fpos += */ fstWriterVarint(f, (zerocnt << 1)); /* scan-build */
         }
 #ifdef FST_DEBUG
-fprintf(stderr, FST_APIMESS"value chains: %d\n", cnt);
+fprintf(stderr, FST_APIMESS "value chains: %d\n", cnt);
 #endif
 
 xc->vchg_mem[0] = '!';
@@ -1743,7 +1743,7 @@ if(xc->dump_size_limit)
                 xc2->size_limit_locked = 1;
                 xc2->is_initial_time = 1; /* to trick emit value and emit time change */
 #ifdef FST_DEBUG
-                fprintf(stderr, FST_APIMESS"<< dump file size limit reached, stopping dumping >>\n");
+                fprintf(stderr, FST_APIMESS "<< dump file size limit reached, stopping dumping >>\n");
 #endif
                 }
         }
@@ -2483,7 +2483,7 @@ if(xc)
 #ifndef FST_WRITER_PARALLEL
         if(xc->parallel_enabled)
                 {
-                fprintf(stderr, FST_APIMESS"fstWriterSetParallelMode(), FST_WRITER_PARALLEL not enabled during compile, exiting.\n");
+                fprintf(stderr, FST_APIMESS "fstWriterSetParallelMode(), FST_WRITER_PARALLEL not enabled during compile, exiting.\n");
                 exit(255);
                 }
 #endif
@@ -2808,8 +2808,8 @@ if(ctx && name && literal_arr && val_arr && (elem_count != 0))
 	attr_str[pos-1] = 0;
 
 #ifdef FST_DEBUG
-	fprintf(stderr, FST_APIMESS"fstWriterCreateEnumTable() total_len: %d, pos: %d\n", total_len, pos);
-	fprintf(stderr, FST_APIMESS"*%s*\n", attr_str);
+	fprintf(stderr, FST_APIMESS "fstWriterCreateEnumTable() total_len: %d, pos: %d\n", total_len, pos);
+	fprintf(stderr, FST_APIMESS "*%s*\n", attr_str);
 #endif
 
 	fstWriterSetAttrBegin(xc, FST_AT_MISC, FST_MT_ENUMTABLE, attr_str, handle = ++xc->max_enumhandle);
@@ -2870,7 +2870,7 @@ if((xc) && (handle <= xc->maxhandle))
                                 xc->vchg_mem = (unsigned char *)realloc(xc->vchg_mem, xc->vchg_alloc_siz);
                                 if(!xc->vchg_mem)
                                         {
-                                        fprintf(stderr, FST_APIMESS"Could not realloc() in fstWriterEmitValueChange, exiting.\n");
+                                        fprintf(stderr, FST_APIMESS "Could not realloc() in fstWriterEmitValueChange, exiting.\n");
                                         exit(255);
                                         }
                                 }
@@ -2984,7 +2984,7 @@ if((xc) && (handle <= xc->maxhandle))
                         xc->vchg_mem = (unsigned char *)realloc(xc->vchg_mem, xc->vchg_alloc_siz);
                         if(!xc->vchg_mem)
                                 {
-                                fprintf(stderr, FST_APIMESS"Could not realloc() in fstWriterEmitVariableLengthValueChange, exiting.\n");
+                                fprintf(stderr, FST_APIMESS "Could not realloc() in fstWriterEmitVariableLengthValueChange, exiting.\n");
                                 exit(255);
                                 }
                         }
@@ -3229,7 +3229,7 @@ if(rc<0)
         {
         xc->fseek_failed = 1;
 #ifdef FST_DEBUG
-        fprintf(stderr, FST_APIMESS"Seek to #%" PRId64 " (whence = %d) failed!\n", offset, whence);
+        fprintf(stderr, FST_APIMESS "Seek to #%" PRId64 " (whence = %d) failed!\n", offset, whence);
         perror("Why");
 #endif
         }
@@ -4549,7 +4549,7 @@ if(gzread_pass_status)
 
                                         if(rc != Z_OK)
                                                 {
-                                                fprintf(stderr, FST_APIMESS"fstReaderInit(), geom uncompress rc = %d, exiting.\n", rc);
+                                                fprintf(stderr, FST_APIMESS "fstReaderInit(), geom uncompress rc = %d, exiting.\n", rc);
                                                 exit(255);
                                                 }
 
@@ -4840,7 +4840,7 @@ for(;;)
         if((sectype == EOF) || (sectype == FST_BL_SKIP))
                 {
 #ifdef FST_DEBUG
-                fprintf(stderr, FST_APIMESS"<< EOF >>\n");
+                fprintf(stderr, FST_APIMESS "<< EOF >>\n");
 #endif
                 break;
                 }
@@ -4879,9 +4879,9 @@ for(;;)
         mem_required_for_traversal = fstReaderUint64(xc->f);
         mem_for_traversal = (unsigned char *)malloc(mem_required_for_traversal + 66); /* add in potential fastlz overhead */
 #ifdef FST_DEBUG
-        fprintf(stderr, FST_APIMESS"sec: %u seclen: %d begtim: %d endtim: %d\n",
+        fprintf(stderr, FST_APIMESS "sec: %u seclen: %d begtim: %d endtim: %d\n",
                 secnum, (int)seclen, (int)beg_tim, (int)end_tim);
-        fprintf(stderr, FST_APIMESS"mem_required_for_traversal: %d\n", (int)mem_required_for_traversal);
+        fprintf(stderr, FST_APIMESS "mem_required_for_traversal: %d\n", (int)mem_required_for_traversal);
 #endif
         /* process time block */
         {
@@ -4899,7 +4899,7 @@ for(;;)
         tsec_clen = fstReaderUint64(xc->f);
         tsec_nitems = fstReaderUint64(xc->f);
 #ifdef FST_DEBUG
-        fprintf(stderr, FST_APIMESS"time section unc: %d, com: %d (%d items)\n",
+        fprintf(stderr, FST_APIMESS "time section unc: %d, com: %d (%d items)\n",
                 (int)tsec_uclen, (int)tsec_clen, (int)tsec_nitems);
 #endif
         if(tsec_clen > seclen) break; /* corrupted tsec_clen: by definition it can't be larger than size of section */
@@ -4919,7 +4919,7 @@ for(;;)
 
                 if(rc != Z_OK)
                         {
-                        fprintf(stderr, FST_APIMESS"fstReaderIterBlocks2(), tsec uncompress rc = %d, exiting.\n", rc);
+                        fprintf(stderr, FST_APIMESS "fstReaderIterBlocks2(), tsec uncompress rc = %d, exiting.\n", rc);
                         exit(255);
                         }
 
@@ -4995,7 +4995,7 @@ for(;;)
                                 rc = uncompress(mu, &destlen, mc, sourcelen);
                                 if(rc != Z_OK)
                                         {
-                                        fprintf(stderr, FST_APIMESS"fstReaderIterBlocks2(), frame uncompress rc: %d, exiting.\n", rc);
+                                        fprintf(stderr, FST_APIMESS "fstReaderIterBlocks2(), frame uncompress rc: %d, exiting.\n", rc);
                                         exit(255);
                                         }
                                 free(mc);
@@ -5158,9 +5158,9 @@ for(;;)
         packtype = fgetc(xc->f);
 
 #ifdef FST_DEBUG
-        fprintf(stderr, FST_APIMESS"frame_uclen: %d, frame_clen: %d, frame_maxhandle: %d\n",
+        fprintf(stderr, FST_APIMESS "frame_uclen: %d, frame_clen: %d, frame_maxhandle: %d\n",
                 (int)frame_uclen, (int)frame_clen, (int)frame_maxhandle);
-        fprintf(stderr, FST_APIMESS"vc_maxhandle: %d, packtype: %c\n", (int)vc_maxhandle, packtype);
+        fprintf(stderr, FST_APIMESS "vc_maxhandle: %d, packtype: %c\n", (int)vc_maxhandle, packtype);
 #endif
 
         indx_pntr = blkpos + seclen - 24 -tsec_clen -8;
@@ -5168,7 +5168,7 @@ for(;;)
         chain_clen = fstReaderUint64(xc->f);
         indx_pos = indx_pntr - chain_clen;
 #ifdef FST_DEBUG
-        fprintf(stderr, FST_APIMESS"indx_pos: %d (%d bytes)\n", (int)indx_pos, (int)chain_clen);
+        fprintf(stderr, FST_APIMESS "indx_pos: %d (%d bytes)\n", (int)indx_pos, (int)chain_clen);
 #endif
         chain_cmem = (unsigned char *)malloc(chain_clen);
         if(!chain_cmem) goto block_err;
@@ -5287,7 +5287,7 @@ for(;;)
                 }
 
 #ifdef FST_DEBUG
-        fprintf(stderr, FST_APIMESS"decompressed chain idx len: %" PRIu32 "\n", idx);
+        fprintf(stderr, FST_APIMESS "decompressed chain idx len: %" PRIu32 "\n", idx);
 #endif
 
         mc_mem_len = 16384;
@@ -5355,7 +5355,7 @@ for(;;)
 
                                 if(rc != Z_OK)
                                         {
-                                        fprintf(stderr, FST_APIMESS"fstReaderIterBlocks2(), fac: %d clen: %d (rc=%d), exiting.\n", (int)i, (int)val, rc);
+                                        fprintf(stderr, FST_APIMESS "fstReaderIterBlocks2(), fac: %d clen: %d (rc=%d), exiting.\n", (int)i, (int)val, rc);
                                         exit(255);
                                         }
 
@@ -5907,9 +5907,9 @@ mem_required_for_traversal =
         fstReaderUint64(xc->f);
 
 #ifdef FST_DEBUG
-fprintf(stderr, FST_APIMESS"rvat sec: %u seclen: %d begtim: %d endtim: %d\n",
+fprintf(stderr, FST_APIMESS "rvat sec: %u seclen: %d begtim: %d endtim: %d\n",
         secnum, (int)seclen, (int)beg_tim, (int)end_tim);
-fprintf(stderr, FST_APIMESS"mem_required_for_traversal: %d\n", (int)mem_required_for_traversal);
+fprintf(stderr, FST_APIMESS "mem_required_for_traversal: %d\n", (int)mem_required_for_traversal);
 #endif
 
 /* process time block */
@@ -5928,7 +5928,7 @@ tsec_uclen = fstReaderUint64(xc->f);
 tsec_clen = fstReaderUint64(xc->f);
 tsec_nitems = fstReaderUint64(xc->f);
 #ifdef FST_DEBUG
-fprintf(stderr, FST_APIMESS"time section unc: %d, com: %d (%d items)\n",
+fprintf(stderr, FST_APIMESS "time section unc: %d, com: %d (%d items)\n",
         (int)tsec_uclen, (int)tsec_clen, (int)tsec_nitems);
 #endif
 ucdata = (unsigned char *)malloc(tsec_uclen);
@@ -5945,7 +5945,7 @@ if(tsec_uclen != tsec_clen)
 
         if(rc != Z_OK)
                 {
-                fprintf(stderr, FST_APIMESS"fstReaderGetValueFromHandleAtTime(), tsec uncompress rc = %d, exiting.\n", rc);
+                fprintf(stderr, FST_APIMESS "fstReaderGetValueFromHandleAtTime(), tsec uncompress rc = %d, exiting.\n", rc);
                 exit(255);
                 }
 
@@ -5993,7 +5993,7 @@ if(frame_uclen == frame_clen)
         rc = uncompress(xc->rvat_frame_data, &destlen, mc, sourcelen);
         if(rc != Z_OK)
                 {
-                fprintf(stderr, FST_APIMESS"fstReaderGetValueFromHandleAtTime(), frame decompress rc: %d, exiting.\n", rc);
+                fprintf(stderr, FST_APIMESS "fstReaderGetValueFromHandleAtTime(), frame decompress rc: %d, exiting.\n", rc);
                 exit(255);
                 }
         free(mc);
@@ -6004,9 +6004,9 @@ xc->rvat_vc_start = ftello(xc->f);      /* points to '!' character */
 xc->rvat_packtype = fgetc(xc->f);
 
 #ifdef FST_DEBUG
-fprintf(stderr, FST_APIMESS"frame_uclen: %d, frame_clen: %d, frame_maxhandle: %d\n",
+fprintf(stderr, FST_APIMESS "frame_uclen: %d, frame_clen: %d, frame_maxhandle: %d\n",
         (int)frame_uclen, (int)frame_clen, (int)xc->rvat_frame_maxhandle);
-fprintf(stderr, FST_APIMESS"vc_maxhandle: %d\n", (int)xc->rvat_vc_maxhandle);
+fprintf(stderr, FST_APIMESS "vc_maxhandle: %d\n", (int)xc->rvat_vc_maxhandle);
 #endif
 
 indx_pntr = blkpos + seclen - 24 -tsec_clen -8;
@@ -6014,7 +6014,7 @@ fstReaderFseeko(xc, xc->f, indx_pntr, SEEK_SET);
 chain_clen = fstReaderUint64(xc->f);
 indx_pos = indx_pntr - chain_clen;
 #ifdef FST_DEBUG
-fprintf(stderr, FST_APIMESS"indx_pos: %d (%d bytes)\n", (int)indx_pos, (int)chain_clen);
+fprintf(stderr, FST_APIMESS "indx_pos: %d (%d bytes)\n", (int)indx_pos, (int)chain_clen);
 #endif
 chain_cmem = (unsigned char *)malloc(chain_clen);
 fstReaderFseeko(xc, xc->f, indx_pos, SEEK_SET);
@@ -6125,7 +6125,7 @@ for(i=0;i<idx;i++)
         }
 
 #ifdef FST_DEBUG
-fprintf(stderr, FST_APIMESS"decompressed chain idx len: %" PRIu32 "\n", idx);
+fprintf(stderr, FST_APIMESS "decompressed chain idx len: %" PRIu32 "\n", idx);
 #endif
 
 xc->rvat_data_valid = 1;
@@ -6185,7 +6185,7 @@ if(!xc->rvat_chain_mem)
 
                 if(rc != Z_OK)
                         {
-                        fprintf(stderr, FST_APIMESS"fstReaderGetValueFromHandleAtTime(), rvat decompress clen: %d (rc=%d), exiting.\n", (int)xc->rvat_chain_len, rc);
+                        fprintf(stderr, FST_APIMESS "fstReaderGetValueFromHandleAtTime(), rvat decompress clen: %d (rc=%d), exiting.\n", (int)xc->rvat_chain_len, rc);
                         exit(255);
                         }
 

@@ -271,6 +271,7 @@ typedef unsigned long long	vluint64_t;	///< 64-bit unsigned type
 // Alas cinttypes isn't that standard yet
 
 #ifdef _WIN32
+# define __STDC_FORMAT_MACROS 1  // Otherwise MinGW doesn't get PRId64 for fstapi.c
 # define VL_PRI64 "I64"
 #else  // Linux or compliant Unix flavors
 # if defined(__WORDSIZE) && (__WORDSIZE == 64)
