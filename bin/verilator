@@ -416,19 +416,27 @@ Specifies the Verilog file containing the top module to be Verilated.
 
 =item {file.c/.cc/.cpp/.cxx}
 
-Specifies optional C++ files to be linked in with the Verilog code.  If any
-C++ files are specified in this way, Verilator will include a make rule
-that generates a I<module> executable.  Without any C++ files, Verilator
-will stop at the I<module>__ALL.a library, and presume you'll continue
-linking with make rules you write yourself.  See also the -CFLAGS option.
+Specifies optional C++ files to be linked in with the Verilog code.  The
+file path should either be absolute, or relative to where the make will be
+executed from, or add to your makefile's VPATH the appropriate directory to
+find the file.
+
+If any C++ files are specified in this way, Verilator will include a make
+rule that generates a I<module> executable.  Without any C++ files,
+Verilator will stop at the I<module>__ALL.a library, and presume you'll
+continue linking with make rules you write yourself.  See also the -CFLAGS
+option.
 
 =item {file.a/.o/.so}
 
 Specifies optional object or library files to be linked in with the Verilog
-code, as a shorthand for -LDFLAGS "<file>".  If any files are specified in
-this way, Verilator will include a make rule that uses these files when
-linking the I<module> executable.  This generally is only useful when used
-with the --exe option.
+code, as a shorthand for -LDFLAGS "<file>". The file path should either be
+absolute, or relative to where the make will be executed from, or add to
+your makefile's VPATH the appropriate directory to find the file.
+
+If any files are specified in this way, Verilator will include a make rule
+that uses these files when linking the I<module> executable.  This
+generally is only useful when used with the --exe option.
 
 =item +1364-1995ext+I<ext>
 
