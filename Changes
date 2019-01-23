@@ -11,6 +11,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Add circular typedef error, bug1388.  [Al Grant]
 
+****  Add unsupported for loops error, msg2692. [Yu Sheng Lin]
+
 ****  Fix FST tracing of wide arrays, bug1376. [Aleksander Osman]
 
 ****  Fix error when pattern assignment has too few elements, bug1378. [Viktor Tomov]

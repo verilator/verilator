@@ -1,0 +1,10 @@
+%Error: t/t_for_comma_bad.v:13: Unsupported: for loop step after the first comma
+%Error: t/t_for_comma_bad.v:16: Unsupported: for loop step after the first comma
+%Error: t/t_for_comma_bad.v:19: Unsupported: for loop step after the first comma
+%Error: t/t_for_comma_bad.v:22: Unsupported: for loop step after the first comma
+%Error: t/t_for_comma_bad.v:25: Unsupported: for loop step after the first comma
+%Error: t/t_for_comma_bad.v:26: Unsupported: for loop initialization after the first comma
+%Error: t/t_for_comma_bad.v:27: Unsupported: for loop initialization after the first comma
+%Error: t/t_for_comma_bad.v:28: Unsupported: for loop initialization after the first comma
+%Error: t/t_for_comma_bad.v:28: Unsupported: for loop step after the first comma
+%Error: Exiting due to
