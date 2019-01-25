@@ -40,6 +40,16 @@
 #define VL_VALUE_STRING_MAX_WIDTH 8192  ///< Max static char array for VL_VALUE_STRING
 
 //===========================================================================
+// Static sanity checks (when get C++11 can use static_assert)
+
+typedef union {
+    char vluint8_incorrect[(sizeof(vluint8_t) == 1) ? 1:-1];
+    char vluint16_incorrect[(sizeof(vluint16_t) == 2) ? 1:-1];
+    char vluint32_incorrect[(sizeof(vluint32_t) == 4) ? 1:-1];
+    char vluint64_incorrect[(sizeof(vluint64_t) == 8) ? 1:-1];
+} vl_static_checks_t;
+
+//===========================================================================
 // Global variables
 
 // Slow path variables
