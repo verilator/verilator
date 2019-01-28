@@ -3,7 +3,7 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in []. Thanks!
 
 
-* Verilator 4.009 devel
+* Verilator 4.010 2019-01-27
 
 ***   Removed --trace-lxt2, use --trace-fst instead.
 
