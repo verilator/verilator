@@ -1599,6 +1599,11 @@ When a model was Verilated using "-x-inital unique", sets the
 initialization technique.  0 = Reset to zeros. 1 = Reset to all-ones.  2 =
 Randomize.  See L</"Unknown states">.
 
+=item +verilator+seed+I<value>
+
+For $random and "-x-initial unique", set the random seed value.  If zero or
+not specified picks a value from the system random number generator.
+
 =item +verilator+V
 
 Shows the verbose version, including configuration information.
