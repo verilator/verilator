@@ -900,7 +900,7 @@ sub execute {
 	$param{executable} ||= "$self->{obj_dir}/$param{VM_PREFIX}";
 	$self->_run(logfile=>"$self->{obj_dir}/vlt_sim.log",
 		    cmd=>[($run_env
-			   .($opt_gdbsim ? ("gdb"||$ENV{VERILATOR_GDB})." " : "")
+			   .($opt_gdbsim ? ($ENV{VERILATOR_GDB}||"gdb")." " : "")
 			   .$param{executable}
 			   .($opt_gdbsim ? " -ex 'run " : "")),
 			  @{$param{all_run_flags}},

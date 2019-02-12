@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Add +verilator+seed, bug1396. [Stan Sokorac]
 
+****  Fix VERILATOR_GDB being ignored, msg2860. [Yu Sheng Lin]
+
 
 * Verilator 4.010 2019-01-27
 

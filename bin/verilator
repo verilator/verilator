@@ -85,7 +85,7 @@ if ($opt_gdbbt && !gdb_works()) {
 my @quoted_sw = map {sh_escape($_)} @Opt_Verilator_Sw;
 if ($opt_gdb) {
     # Generic GDB interactive
-    run (("gdb"||$ENV{VERILATOR_GDB})
+    run (($ENV{VERILATOR_GDB}||"gdb")
          ." ".verilator_bin()
          # Note, uncomment to set breakpoints before running:
          #  ." -ex 'break main'"
