@@ -8,6 +8,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix VERILATOR_GDB being ignored, msg2860. [Yu Sheng Lin]
 
+****  Fix $value$plus$args missing verilated_heavy.h. [Yi-Chung Chen]
+
 
 * Verilator 4.010 2019-01-27
 
