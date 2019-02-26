@@ -399,7 +399,8 @@ detailed descriptions in L</"RUNTIME ARGUMENTS"> for more information.
      +verilator+prof+threads+file+I<filename>  Set profile filename
      +verilator+prof+threads+start+I<value>    Set profile starting point
      +verilator+prof+threads+window+I<value>   Set profile duration
-     +verilator+rand+reset+<value>     Set random reset technique
+     +verilator+rand+reset+I<value>    Set random reset technique
+     +verilator+seed+I<value>          Set random seed
      +verilator+V                      Verbose version and config
      +verilator+version                Show version and exit
 
@@ -3023,9 +3024,10 @@ from a four state simulator.  An === comparison to X will always be false,
 so that Verilog code which checks for uninitialized logic will not fire.
 
 Assigning a variable to a X will actually assign the variable to a random
-value (see the --x-assign switch.)  Thus if the value is actually used, the
-random value should cause downstream errors.  Integers also randomize, even
-though the Verilog 2001 specification says they initialize to zero.
+value (see the --x-assign switch and +verilator+rand+reset runtime switch.)
+Thus if the value is actually used, the random value should cause
+downstream errors.  Integers also randomize, even though the Verilog 2001
+specification says they initialize to zero.
 
 All variables, depending on --x-initial setting, are typically randomly
 initialized using a function.  By running several random simulation runs
