@@ -1455,10 +1455,10 @@ Enable all code style related warning messages.  This is equivalent to
 =item --x-assign unique
 
 Controls the two-state value that is replaced when an assignment to X is
-encountered.  --x-assign=fast, the default, converts all Xs to whatever is
-best for performance.  --x-assign=0 converts all Xs to 0s, and is also fast.
---x-assign=1 converts all Xs to 1s, this is nearly as fast as 0, but more
-likely to find reset bugs as active high logic will fire.  --x-assign=unique
+encountered. C<--x-assign fast>, the default, converts all Xs to whatever is
+best for performance.  C<--x-assign 0> converts all Xs to 0s, and is also fast.
+C<--x-assign 1> converts all Xs to 1s, this is nearly as fast as 0, but more
+likely to find reset bugs as active high logic will fire.  C<--x-assign unique>
 will call a function to determine the value, this allows randomization of
 all Xs to find reset bugs and is the slowest, but safest for finding reset
 bugs in code.
@@ -1483,13 +1483,13 @@ variables are controlled with --x-initial.
 Controls the two-state value that is used to initialize variables that are
 not otherwise initialized.
 
---x-initial=0, initializes all otherwise uninitialized variables to zero.
+C<--x-initial 0>, initializes all otherwise uninitialized variables to zero.
 
---x-initial=unique, the default, initializes variables using a function,
+C<--x-initial unique>, the default, initializes variables using a function,
 which determines the value to use each initialization. This gives greatest
 flexibility and allows finding reset bugs.  See L</"Unknown states">.
 
---x-initial=fast, is best for performance, and initializes all variables to
+C<--x-initial fast>, is best for performance, and initializes all variables to
 a state Verilator determines is optimal.  This may allow further code
 optimizations, but will likely hide any code bugs relating to missing
 resets.
@@ -1764,8 +1764,8 @@ the examples directory in the distribution.
 =head1 BENCHMARKING & OPTIMIZATION
 
 For best performance, run Verilator with the "-O3 --x-assign=fast
---x-initial=fast --noassert" flags.  The -O3 flag will require longer
-compile times, and --x-assign=fast --x-initial=fast may increase the risk
+--x-initial fast --noassert" flags.  The -O3 flag will require longer
+compile times, and "--x-assign fast --x-initial fast" may increase the risk
 of reset bugs in trade for performance; see the above documentation for
 these flags.
 
