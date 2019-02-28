@@ -17,9 +17,7 @@ compile(
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect =>
-'%Error: t/t_lint_setout_bad.v:\d+: Output port is connected to a constant pin, electrical short
-.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

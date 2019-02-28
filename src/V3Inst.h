@@ -35,6 +35,7 @@ public:
     static void dearrayAll(AstNetlist* nodep);
     static AstAssignW* pinReconnectSimple(AstPin* pinp, AstCell* cellp,
                                           bool forTristate, bool alwaysCvt=false);
+    static void checkOutputShort(AstPin* nodep);
 };
 
 #endif // Guard

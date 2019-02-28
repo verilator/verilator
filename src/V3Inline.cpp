@@ -550,14 +550,11 @@ private:
 		AstVar* pinNewVarp = pinOldVarp->clonep();
 		if (!pinNewVarp) pinOldVarp->v3fatalSrc("Cloning failed");
 
-		AstNode* connectRefp = pinp->exprp();
+                AstNode* connectRefp = pinp->exprp();
                 if (!VN_IS(connectRefp, Const) && !VN_IS(connectRefp, VarRef)) {
                     pinp->v3fatalSrc("Unknown interconnect type; pinReconnectSimple should have cleared up");
                 }
-                if (pinNewVarp->direction() == VDirection::OUTPUT
-                    && VN_IS(connectRefp, Const)) {
-                    pinp->v3error("Output port is connected to a constant pin, electrical short");
-                }
+                V3Inst::checkOutputShort(pinp);
 
 		// Propagate any attributes across the interconnect
 		pinNewVarp->propagateAttrFrom(pinOldVarp);

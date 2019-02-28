@@ -68,10 +68,7 @@ private:
         UINFO(4,"   PIN  "<<nodep<<endl);
         if (!nodep->exprp()) return;  // No-connect
         if (debug()>=9) nodep->dumpTree(cout,"  Pin_oldb: ");
-        if (nodep->modVarp()->direction() == VDirection::OUTPUT
-            && VN_IS(nodep->exprp(), Const)) {
-            nodep->v3error("Output port is connected to a constant pin, electrical short");
-        }
+        V3Inst::checkOutputShort(nodep);
         // Use user1p on the PIN to indicate we created an assign for this pin
         if (!nodep->user1SetOnce()) {
             // Simplify it
@@ -513,8 +510,9 @@ public:
 	    // Done. Constant.
 	} else {
 	    // Make a new temp wire
-	    //if (1||debug()>=9) { pinp->dumpTree(cout,"-in_pin:"); }
-	    AstNode* pinexprp = pinp->exprp()->unlinkFrBack();
+            //if (1||debug()>=9) { pinp->dumpTree(cout,"-in_pin:"); }
+            V3Inst::checkOutputShort(pinp);
+            AstNode* pinexprp = pinp->exprp()->unlinkFrBack();
             string newvarname = (string(pinVarp->isWritable() ? "__Vcellout" : "__Vcellinp")
                                  // Prevent name conflict if both tri & non-tri add signals
                                  +(forTristate?"t":"")
@@ -555,8 +553,21 @@ public:
 // Inst class functions
 
 AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp,
-				       bool forTristate, bool alwaysCvt) {
+                                       bool forTristate, bool alwaysCvt) {
     return InstStatic::pinReconnectSimple(pinp, cellp, forTristate, alwaysCvt);
+}
+
+void V3Inst::checkOutputShort(AstPin* nodep) {
+    if (nodep->modVarp()->direction() == VDirection::OUTPUT) {
+        if (VN_IS(nodep->exprp(), Const)
+            || VN_IS(nodep->exprp(), Extend)
+            || (VN_IS(nodep->exprp(), Concat)
+                && (VN_IS(VN_CAST(nodep->exprp(), Concat)->lhsp(), Const)))) {
+            // Uses v3warn for error, as might be found multiple times
+            nodep->v3warn(E_PORTSHORT, "Output port is connected to a constant pin,"
+                          " electrical short");
+        }
+    }
 }
 
 //######################################################################

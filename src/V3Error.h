@@ -49,8 +49,9 @@ public:
 	I_DEF_NETTYPE_WIRE,  // `default_nettype is WIRE (false=NONE)
 	// Error codes:
 	E_DETECTARRAY,	// Error: Unsupported: Can't detect changes on arrayed variable
-	E_MULTITOP,	// Error: Multiple top level modules
-	E_TASKNSVAR,	// Error: Task I/O not simple
+        E_MULTITOP,     // Error: Multiple top level modules
+        E_PORTSHORT,    // Error: Output port is connected to a constant, electrical short
+        E_TASKNSVAR,    // Error: Task I/O not simple
 	//
 	// Warning codes:
 	EC_FIRST_WARN,	// Just a code so the program knows where to start warnings
@@ -128,9 +129,9 @@ public:
 	    " MIN", " INFO", " FATAL", " FATALSRC", " ERROR",
 	    // Boolean
 	    " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE",
-	    // Errors
-	    "DETECTARRAY", "MULTITOP", "TASKNSVAR",
-	    // Warnings
+            // Errors
+            "DETECTARRAY", "MULTITOP", "PORTSHORT", "TASKNSVAR",
+            // Warnings
 	    " EC_FIRST_WARN",
 	    "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN",
 	    "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",

@@ -1,0 +1,4 @@
+%Error-PORTSHORT: t/t_lint_subout_bad.v:11: Output port is connected to a constant pin, electrical short
+%Error-PORTSHORT: t/t_lint_subout_bad.v:12: Output port is connected to a constant pin, electrical short
+%Error-PORTSHORT: t/t_lint_subout_bad.v:10: Output port is connected to a constant pin, electrical short
+%Error: Exiting due to
