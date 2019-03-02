@@ -24,14 +24,18 @@ int sc_main(int argc, char* argv[]) {
 
     // Prevent unused variable warnings
     if (0 && argc && argv) {}
-    // Pass arguments so Verilated code can see them, e.g. $value$plusargs
-    Verilated::commandArgs(argc, argv);
 
     // Set debug level, 0 is off, 9 is highest presently used
+    // May be overridden by commandArgs
     Verilated::debug(0);
 
     // Randomization reset policy
+    // May be overridden by commandArgs
     Verilated::randReset(2);
+
+    // Pass arguments so Verilated code can see them, e.g. $value$plusargs
+    // This needs to be called before you create any model
+    Verilated::commandArgs(argc, argv);
 
     // General logfile
     ios::sync_with_stdio();

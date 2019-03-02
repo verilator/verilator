@@ -438,7 +438,9 @@ public:
     static void flushCb(VerilatedVoidCb cb) VL_MT_SAFE;
     static void flushCall() VL_MT_SAFE;
 
-    /// Record command line arguments, for retrieval by $test$plusargs/$value$plusargs
+    /// Record command line arguments, for retrieval by $test$plusargs/$value$plusargs,
+    /// and for parsing +verilator+ run-time arguments.
+    /// This should be called before the first model is created.
     static void commandArgs(int argc, const char** argv) VL_MT_SAFE;
     static void commandArgs(int argc, char** argv) VL_MT_SAFE {
         commandArgs(argc, const_cast<const char**>(argv)); }
@@ -563,13 +565,13 @@ extern void VL_PRINTF_MT(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
 /// Print a debug message from internals with standard prefix, with printf style format
 extern void VL_DBG_MSGF(const char* formatp, ...) VL_ATTR_PRINTF(1) VL_MT_SAFE;
 
-extern IData  VL_RANDOM_I(int obits);  ///< Randomize a signal
-extern QData  VL_RANDOM_Q(int obits);  ///< Randomize a signal
+extern IData VL_RANDOM_I(int obits);  ///< Randomize a signal
+extern QData VL_RANDOM_Q(int obits);  ///< Randomize a signal
 extern WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp);  ///< Randomize a signal
 
 /// Init time only, so slow is fine
-extern IData  VL_RAND_RESET_I(int obits);  ///< Random reset a signal
-extern QData  VL_RAND_RESET_Q(int obits);  ///< Random reset a signal
+extern IData VL_RAND_RESET_I(int obits);  ///< Random reset a signal
+extern QData VL_RAND_RESET_Q(int obits);  ///< Random reset a signal
 extern WDataOutP VL_RAND_RESET_W(int obits, WDataOutP outwp);  ///< Random reset a signal
 extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp);  ///< Zero reset a signal (slow - else use VL_ZERO_W)
 
