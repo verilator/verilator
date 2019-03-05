@@ -33,7 +33,7 @@
 #include <cctype>
 #include <sys/stat.h>  // mkdir
 
-#if defined(WIN32) || defined(__MINGW32__)
+#if defined(_WIN32) || defined(__MINGW32__)
 # include <direct.h>  // mkdir
 #endif
 

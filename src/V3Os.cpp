@@ -36,7 +36,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
-#if defined(WIN32) || defined(__MINGW32__)
+#if defined(_WIN32) || defined(__MINGW32__)
 # include <direct.h>  // mkdir
 #endif
 

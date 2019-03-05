@@ -12,6 +12,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix $value$plus$args missing verilated_heavy.h. [Yi-Chung Chen]
 
+****  Fix MSVC compile error, bug1406. [Benjamin Gartner]
+
 
 * Verilator 4.010 2019-01-27
 
