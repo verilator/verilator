@@ -8,7 +8,7 @@
 `define STRINGIFY(x) `"x`"
 
 module t;
-   `verilator_file_descriptor file;
+   integer file;
 
    integer	chars;
    reg [1*8:1]	letterl;

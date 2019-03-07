@@ -15,8 +15,8 @@ module t (/*AUTOARG*/
    input clk;
 
    reg [63:0] crc;
-   `verilator_file_descriptor	  fd;
-   `verilator_file_descriptor	  fdtmp;
+   integer fd;
+   integer fdtmp;
 
    t_case_write2_tasks tasks ();
 
@@ -33,14 +33,14 @@ module t (/*AUTOARG*/
       cyc <= cyc + 1;
       crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
       if (cyc==1) begin
-	 crc <= 64'h00000000_00000097;
+         crc <= 64'h00000000_00000097;
          $write("%s", {"Open ", `STRINGIFY(`TEST_OBJ_DIR), "/t_case_write2_logger.log\n"});
          fdtmp = $fopen({`STRINGIFY(`TEST_OBJ_DIR), "/t_case_write2_logger.log"}, "w");
          fd <= fdtmp;
       end
       if (cyc==90) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

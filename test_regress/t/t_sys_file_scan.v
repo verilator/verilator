@@ -8,7 +8,7 @@
 `define STRINGIFY(x) `"x`"
 
 module t;
-   `verilator_file_descriptor infile, outfile;
+   integer infile, outfile;
    integer count, a;
 
    initial begin
