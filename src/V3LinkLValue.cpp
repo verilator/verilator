@@ -131,6 +131,15 @@ private:
 	}
 	m_setRefLvalue = last_setRefLvalue;
     }
+    virtual void visit(AstFRead* nodep) {
+        bool last_setRefLvalue = m_setRefLvalue;
+        {
+            m_setRefLvalue = true;
+            iterateAndNextNull(nodep->memp());
+            iterateAndNextNull(nodep->filep());
+        }
+        m_setRefLvalue = last_setRefLvalue;
+    }
     virtual void visit(AstFScanF* nodep) {
 	bool last_setRefLvalue = m_setRefLvalue;
 	{

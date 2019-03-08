@@ -2232,6 +2232,19 @@ private:
 	    userIterateAndNext(nodep->strgp(), WidthVP(SELF,BOTH).p());
 	}
     }
+    virtual void visit(AstFRead* nodep) {
+        if (m_vup->prelim()) {
+            nodep->dtypeSetSigned32();  // Spec says integer return
+            userIterateAndNext(nodep->memp(), WidthVP(SELF,BOTH).p());
+            iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
+            if (nodep->startp()) {
+                iterateCheckSigned32(nodep, "$fread start", nodep->startp(), BOTH);
+            }
+            if (nodep->countp()) {
+                iterateCheckSigned32(nodep, "$fread count", nodep->countp(), BOTH);
+            }
+        }
+    }
     virtual void visit(AstFScanF* nodep) {
 	if (m_vup->prelim()) {
 	    nodep->dtypeSetSigned32();  // Spec says integer return
@@ -3171,6 +3184,18 @@ private:
 	AstNodeDType* expDTypep = underp->findUInt32DType();
 	underp = iterateCheck(nodep,"file_descriptor",underp,SELF,FINAL,expDTypep,EXTEND_EXP);
 	if (underp) {} // cppcheck
+    }
+    void iterateCheckSigned32(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
+        // Coerce child to signed32 if not already. Child is self-determined
+        // underp may change as a result of replacement
+        if (stage & PRELIM) {
+            underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, PRELIM).p());
+        }
+        if (stage & FINAL) {
+            AstNodeDType* expDTypep = nodep->findSigned32DType();
+            underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
+        }
+        if (underp) {}  // cppcheck
     }
     void iterateCheckReal(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
 	// Coerce child to real if not already. Child is self-determined

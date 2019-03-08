@@ -1384,6 +1384,59 @@ void VL_WRITEMEM_N(
     fclose(fp);
 }
 
+IData VL_FREAD_I(int width, int array_lsb, int array_size,
+                 void* memp, IData fpi, IData start, IData count) VL_MT_SAFE {
+    // While threadsafe, each thread can only access different file handles
+    FILE* fp = VL_CVT_I_FP(fpi);
+    if (VL_UNLIKELY(!fp)) return 0;
+    if (count > (array_size - (start - array_lsb))) count = array_size - (start - array_lsb);
+    // Prep for reading
+    IData read_count = 0;
+    IData read_elements = 0;
+    int start_shift = (width-1) & ~7;  // bit+7:bit gets first character
+    int shift = start_shift;
+    // Read the data
+    // We process a character at a time, as then we don't need to deal
+    // with changing buffer sizes dynamically, etc.
+    while (1) {
+        int c = fgetc(fp);
+        if (VL_UNLIKELY(c==EOF)) break;
+        // Shift value in
+        IData entry = read_elements + start - array_lsb;
+        if (width <= 8) {
+            CData* datap = &(reinterpret_cast<CData*>(memp))[entry];
+            if (shift == start_shift) { *datap = 0; }
+            *datap |= (c << shift) & VL_MASK_I(width);
+        } else if (width <= 16) {
+            SData* datap = &(reinterpret_cast<SData*>(memp))[entry];
+            if (shift == start_shift) { *datap = 0; }
+            *datap |= (c << shift) & VL_MASK_I(width);
+        } else if (width <= VL_WORDSIZE) {
+            IData* datap = &(reinterpret_cast<IData*>(memp))[entry];
+            if (shift == start_shift) { *datap = 0; }
+            *datap |= (c << shift) & VL_MASK_I(width);
+        } else if (width <= VL_QUADSIZE) {
+            QData* datap = &(reinterpret_cast<QData*>(memp))[entry];
+            if (shift == start_shift) { *datap = 0; }
+            *datap |= ((static_cast<QData>(c) << static_cast<QData>(shift))
+                       & VL_MASK_Q(width));
+            } else {
+            WDataOutP datap = &(reinterpret_cast<WDataOutP>(memp))[ entry*VL_WORDS_I(width) ];
+            if (shift == start_shift) { VL_ZERO_RESET_W(width, datap); }
+            datap[VL_BITWORD_I(shift)] |= (c << VL_BITBIT_I(shift));
+        }
+        // Prep for next
+        ++read_count;
+        shift -= 8;
+        if (shift < 0) {
+            shift = start_shift;
+            ++read_elements;
+            if (VL_UNLIKELY(read_elements >= count)) break;
+        }
+    }
+    return read_count;
+}
+
 void VL_READMEM_Q(bool hex, int width, int depth, int array_lsb, int,
                   QData filename, void* memp, IData start, IData end) VL_MT_SAFE {
     WData fnw[2];  VL_SET_WQ(fnw, filename);

@@ -362,6 +362,10 @@ private:
         iterateChildren(nodep);
         expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
     }
+    virtual void visit(AstFRead* nodep) {
+        iterateChildren(nodep);
+        expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
+    }
     virtual void visit(AstFScanF* nodep) {
         iterateChildren(nodep);
 	expectFormat(nodep, nodep->text(), nodep->exprsp(), true);

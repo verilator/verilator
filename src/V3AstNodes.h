@@ -2741,6 +2741,42 @@ public:
     void filep(AstNodeVarRef* nodep) { setNOp2p(nodep); }
 };
 
+class AstFRead : public AstNodeMath {
+    // Parents: expr
+    // Children: varrefs to load
+    // Children: file which must be a varref
+    // Children: low index
+    // Children: count
+public:
+    AstFRead(FileLine* fileline, AstNode* memp, AstNode* filep,
+             AstNode* startp, AstNode* countp)
+        : AstNodeMath(fileline) {
+        setOp1p(memp);
+        setOp2p(filep);
+        setNOp3p(startp);
+        setNOp4p(countp);
+    }
+    ASTNODE_NODE_FUNCS(FRead)
+    virtual string verilogKwd() const { return "$fread"; }
+    virtual string emitVerilog() { V3ERROR_NA; return ""; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual bool isGateOptimizable() const { return false; }
+    virtual bool isPredictOptimizable() const { return false; }
+    virtual bool isPure() const { return false; }  // SPECIAL: has 'visual' ordering
+    virtual bool isOutputter() const { return true; }  // SPECIAL: makes output
+    virtual bool cleanOut() { return false; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const { return true; }
+    AstNode* memp() const { return op1p(); }
+    void memp(AstNode* nodep) { setOp1p(nodep); }
+    AstNode* filep() const { return op2p(); }
+    void filep(AstNode* nodep) { setOp2p(nodep); }
+    AstNode* startp() const { return op3p(); }
+    void startp(AstNode* nodep) { setNOp3p(nodep); }
+    AstNode* countp() const { return op4p(); }
+    void countp(AstNode* nodep) { setNOp4p(nodep); }
+};
+
 class AstFScanF : public AstNodeMath {
     // Parents: expr
     // Children: file which must be a varref

@@ -387,6 +387,45 @@ public:
 	    puts(")); }\n");
 	}
     }
+    virtual void visit(AstFRead* nodep) {
+        puts("VL_FREAD_I(");
+        puts(cvtToStr(nodep->memp()->widthMin()));  // Need real storage width
+        putbs(",");
+        bool memory = false;
+        uint32_t array_lsb = 0;
+        uint32_t array_size = 0;
+        {
+            const AstVarRef* varrefp = VN_CAST(nodep->memp(), VarRef);
+            if (!varrefp) { nodep->v3error(nodep->verilogKwd() << " loading non-variable"); }
+            else if (VN_CAST(varrefp->varp()->dtypeSkipRefp(), BasicDType)) { }
+            else if (const AstUnpackArrayDType* adtypep
+                     = VN_CAST(varrefp->varp()->dtypeSkipRefp(), UnpackArrayDType)) {
+                memory = true;
+                array_lsb = adtypep->lsb();
+                array_size = adtypep->elementsConst();
+            }
+            else {
+                nodep->v3error(nodep->verilogKwd()
+                               << " loading other than unpacked-array variable");
+            }
+        }
+        puts(cvtToStr(array_lsb));
+        putbs(",");
+        puts(cvtToStr(array_size));
+        putbs(", ");
+        if (!memory) puts("&(");
+        iterateAndNextNull(nodep->memp());
+        if (!memory) puts(")");
+        putbs(", ");
+        iterateAndNextNull(nodep->filep());
+        putbs(", ");
+        if (nodep->startp()) iterateAndNextNull(nodep->startp());
+        else puts(cvtToStr(array_lsb));
+        putbs(", ");
+        if (nodep->countp()) iterateAndNextNull(nodep->countp());
+        else puts(cvtToStr(array_size));
+        puts(");\n");
+    }
     virtual void visit(AstSysFuncAsTask* nodep) {
         if (!nodep->lhsp()->isWide()) puts("(void)");
         iterateAndNextNull(nodep->lhsp());

@@ -1,0 +1,27 @@
+Dump:
+  r_i: 00010203
+  r_upb: 0e 0d 0c 0b 0a 09 08 07 06 05 04
+  r_dnb: 19 18 17 16 15 14 13 12 11 10 0f
+  r_ups: 2e2f 2c2d 2a2b 2829 2627 2425 2223 2021 1e1f 1c1d 1a1b
+  r_dns: 3031 3233 3435 3637 3839 3a3b 3c3d 3e3f 0041 0243 0445
+  r_upi: 6e6f7071 6a6b6c6d 66676869 62636465 5e5f6061 5a5b5c5d 56575859 52535455 4e4f5051 4a4b4c4d 46474849
+  r_dni: 72737475 76777879 7a7b7c7d 7e7f8081 02838485 06878889 0a8b8c8d 0e8f9091 12939495 16979899 1a9b9c9d
+  r_upq: 2eeff0f1f2f3f4f5 26e7e8e9eaebeced 1edfe0e1e2e3e4e5 16d7d8d9dadbdcdd 0ecfd0d1d2d3d4d5 06c7c8c9cacbcccd 3ebfc0c1c2c3c4c5 36b7b8b9babbbcbd 2eafb0b1b2b3b4b5 26a7a8a9aaabacad 1e9fa0a1a2a3a4a5
+  r_dnq: 36f7f8f9fafbfcfd 3eff000102030405 060708090a0b0c0d 0e0f101112131415 161718191a1b1c1d 1e1f202122232425 262728292a2b2c2d 2e2f303132333435 363738393a3b3c3d 3e3f404142434445 064748494a4b4c4d
+  r_upw: a8a9aaabacadaeafb0 9fa0a1a2a3a4a5a6a7 969798999a9b9c9d9e 8d8e8f909192939495 8485868788898a8b8c 7b7c7d7e7f80818283 72737475767778797a 696a6b6c6d6e6f7071 606162636465666768 5758595a5b5c5d5e5f 4e4f50515253545556
+  r_dnw: b1b2b3b4b5b6b7b8b9 babbbcbdbebfc0c1c2 c3c4c5c6c7c8c9cacb cccdcecfd0d1d2d3d4 d5d6d7d8d9dadbdcdd dedfe0e1e2e3e4e5e6 e7e8e9eaebecedeeef f0f1f2f3f4f5f6f7f8 f9fafbfcfdfeff0001 02030405060708090a 0b0c0d0e0f10111213
+
+Dump:
+  r_i: ffffffff
+  r_upb: 05 04 03 02 01 00 ff ff ff ff ff
+  r_dnb: ff ff ff ff ff ff ff ff ff ff ff
+  r_ups: 3fff 3fff 3fff 3fff 0809 0607 3fff 3fff 3fff 3fff 3fff
+  r_dns: 3fff 3fff 3fff 3fff 3fff 3fff 3fff 3fff 3fff 3fff 3fff
+  r_upi: 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff
+  r_dni: 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff 7fffffff
+  r_upq: 3fffffffffffffff 3fffffffffffffff 3fffffffffffffff 3fffffffffffffff 3fffffffffffffff 3fffffffffffffff 3fffffffffffffff 3fffffffffffffff 3fffffffffffffff 3fffffffffffffff 3fffffffffffffff
+  r_dnq: 3fffffffffffffff 3fffffffffffffff 3fffffffffffffff 3fffffffffffffff 3fffffffffffffff 3fffffffffffffff 3fffffffffffffff 3fffffffffffffff 3fffffffffffffff 3fffffffffffffff 3fffffffffffffff
+  r_upw: ffffffffffffffffff ffffffffffffffffff ffffffffffffffffff ffffffffffffffffff ffffffffffffffffff ffffffffffffffffff ffffffffffffffffff ffffffffffffffffff ffffffffffffffffff ffffffffffffffffff ffffffffffffffffff
+  r_dnw: ffffffffffffffffff ffffffffffffffffff ffffffffffffffffff ffffffffffffffffff ffffffffffffffffff ffffffffffffffffff ffffffffffffffffff ffffffffffffffffff ffffffffffffffffff ffffffffffffffffff ffffffffffffffffff
+
+*-* All Finished *-*

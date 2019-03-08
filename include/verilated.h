@@ -594,6 +594,9 @@ inline IData VL_FOPEN_II(IData filename, IData mode) VL_MT_SAFE {
 
 extern void VL_FCLOSE_I(IData fdi);
 
+extern IData VL_FREAD_I(int width, int array_lsb, int array_size,
+                        void* memp, IData fpi, IData start, IData count);
+
 extern void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
                          WDataInP filenamep, void* memp, IData start, IData end);
 extern void VL_READMEM_Q(bool hex, int width, int depth, int array_lsb, int fnwords,

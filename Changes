@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Add +verilator+seed, bug1396. [Stan Sokorac]
 
+***   Support $fread.  [Leendert van Doorn]
+
 ****  Report PORTSHORT errors on concat constants, bug 1400. [Will Korteland]
 
 ****  Fix VERILATOR_GDB being ignored, msg2860. [Yu Sheng Lin]
