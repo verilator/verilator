@@ -77,8 +77,8 @@ our $Opt_Unsupported;
 our $Opt_Verilation = 1;
 our @Opt_Driver_Verilator_Flags;
 
-Getopt::Long::config ("pass_through");
-if (! GetOptions (
+Getopt::Long::config("pass_through");
+if (! GetOptions(
           "benchmark:i" => sub { $opt_benchmark = $_[1] ? $_[1] : 1; },
           "debug"       => \&debug,
           #debugi          see parameter()
@@ -153,7 +153,7 @@ foreach my $testpl (@opt_tests) {
     }
 }
 
-$Fork->wait_all();   # Wait for all children to finish
+$Fork->wait_all();  # Wait for all children to finish
 
 sub one_test {
     my @params = @_;
@@ -218,7 +218,7 @@ exit(10) if $FailCnt;
 
 sub usage {
     pod2usage(-verbose=>2, -exitval=>2, -output=>\*STDOUT);
-    exit (1);
+    exit(1);
 }
 
 sub debug {
@@ -310,7 +310,7 @@ use Cwd;
 use Data::Dumper;
 use File::Spec;
 
-use vars qw ($Self $Self);
+use vars qw($Self $Self);
 use strict;
 
 sub new {
@@ -366,9 +366,9 @@ sub new {
 				 .($opt_benchmark ? " +define+TEST_BENCHMARK=$opt_benchmark":"")
 				 .($opt_trace ? " +define+WAVES=1":"")
 				 ))],
-	v_flags2 => [],  # Overridden in some sim files
-	v_other_filenames => [],	# After the filename so we can spec multiple files
-	all_run_flags => [],
+        v_flags2 => [],  # Overridden in some sim files
+        v_other_filenames => [],  # After the filename so we can spec multiple files
+        all_run_flags => [],
 	pli_flags => ["-I$ENV{VERILATOR_ROOT}/include/vltstd -fPIC -shared"
 		      .(($^O eq "darwin" )
 			? " -Wl,-undefined,dynamic_lookup"
@@ -390,9 +390,9 @@ sub new {
         # IV
 	iv => 0,
 	iv_flags => [split(/\s+/,"+define+iverilog -o $self->{obj_dir}/simiv")],
-	iv_flags2 => [],  # Overridden in some sim files
-	iv_pli => 0, # need to use pli
-	iv_run_flags => [],
+        iv_flags2 => [],  # Overridden in some sim files
+        iv_pli => 0,  # need to use pli
+        iv_run_flags => [],
 	# VCS
 	vcs => 0,
 	vcs_flags => [split(/\s+/,"+vcs+lic+wait +cli -debug_access +define+VCS+1 -q -sverilog -CFLAGS '-DVCS' ")],
@@ -420,9 +420,9 @@ sub new {
 	verilator_flags2 => [],
 	verilator_flags3 => ["--clk clk"],
 	verilator_make_gcc => 1,
-	verilated_debug => $Opt_Verilated_Debug,
-	stdout_filename => undef,	# Redirect stdout
-	%$self};
+        verilated_debug => $Opt_Verilated_Debug,
+        stdout_filename => undef,  # Redirect stdout
+        %$self};
     bless $self, $class;
 
     $self->{vlt_all} = $self->{vlt} || $self->{vltmt};  # Any Verilator scenario
@@ -435,8 +435,8 @@ sub new {
     $self->{main_filename} ||= "$self->{obj_dir}/$self->{VM_PREFIX}__main.cpp";
     ($self->{top_filename} ||= $self->{pl_filename}) =~ s/\.pl$//;
     ($self->{golden_filename} ||= $self->{pl_filename}) =~ s/\.pl$/.out/;
-    if (-e ($self->{top_filename}.".vhd")) { # If VHDL file exists
-	$self->{vhdl} = 1;
+    if (-e ($self->{top_filename}.".vhd")) {  # If VHDL file exists
+        $self->{vhdl} = 1;
         $self->{top_filename} .= ".vhd";
     } else {
         $self->{top_filename} .= ".v";
@@ -580,7 +580,7 @@ sub _read_status {
 
 sub compile_vlt_flags {
     my $self = (ref $_[0]? shift : $Self);
-    my %param = (%{$self}, @_);	   # Default arguments are from $self
+    my %param = (%{$self}, @_);  # Default arguments are from $self
     return 1 if $self->errors || $self->skips || $self->unsupporteds;
 
     my $checkflags = join(' ',@{$param{v_flags}},
@@ -637,7 +637,7 @@ sub compile_vlt_flags {
 
 sub compile {
     my $self = (ref $_[0]? shift : $Self);
-    my %param = (%{$self}, @_);	   # Default arguments are from $self
+    my %param = (%{$self}, @_);  # Default arguments are from $self
     return 1 if $self->errors || $self->skips || $self->unsupporteds;
     $self->oprint("Compile\n");
 
@@ -676,7 +676,7 @@ sub compile {
 			  @{$param{ghdl_flags}},
 			  @{$param{ghdl_flags2}},
 			  #@{$param{v_flags}},  # Not supported
-			  #@{$param{v_flags2}}, # Not supported
+			  #@{$param{v_flags2}},  # Not supported
 			  $param{top_filename},
 			  $param{top_shell_filename},
 			  @{$param{v_other_filenames}},
@@ -809,8 +809,8 @@ sub compile {
 sub execute {
     my $self = (ref $_[0]? shift : $Self);
     return 1 if $self->errors || $self->skips || $self->unsupporteds;
-    my %param = (%{$self}, @_);	   # Default arguments are from $self
-    #   params may be expect or {tool}_expect
+    my %param = (%{$self}, @_);  # Default arguments are from $self
+    # params may be expect or {tool}_expect
     $self->oprint("Run\n");
 
     my $run_env = $param{run_env};
@@ -845,10 +845,11 @@ sub execute {
 		   @{$param{iv_run_flags}},
 		   @{$param{all_run_flags}},
 		          );
-	if ($param{iv_pli}) {
-	    unshift @cmd, "vvp -n -m $self->{obj_dir}/libvpi.so"; # don't enter command line on $stop, include vpi
-	}
-	$self->_run(logfile=>"$self->{obj_dir}/iv_sim.log",
+        if ($param{iv_pli}) {
+            # don't enter command line on $stop, include vpi
+            unshift @cmd, "vvp -n -m $self->{obj_dir}/libvpi.so";
+        }
+        $self->_run(logfile=>"$self->{obj_dir}/iv_sim.log",
 		    fails=>$param{fails},
 		    cmd=> \@cmd,
 		    %param,
@@ -921,7 +922,7 @@ sub inline_checks {
     return 1 if $self->errors || $self->skips || $self->unsupporteds;
     return 1 if !$self->{vlt_all};
 
-    my %param = (%{$self}, @_);	   # Default arguments are from $self
+    my %param = (%{$self}, @_);  # Default arguments are from $self
 
     my $covfn = $Self->{coverage_filename};
     my $contents = $self->file_contents($covfn);
@@ -1057,9 +1058,9 @@ sub _run {
 	if ($param{logfile}) {
 	    $logfh = IO::File->new(">$param{logfile}") or die "%Error: Can't open $param{logfile}";
 	}
-	my $pid=fork();
-	if ($pid) { # Parent
-	    close CHILDWR;
+        my $pid=fork();
+        if ($pid) {  # Parent
+            close CHILDWR;
 	    while (1) {
 		my $buf = '';
 		my $got = sysread PARENTRD,$buf,10000;
@@ -1069,9 +1070,9 @@ sub _run {
 	    }
 	    close PARENTRD;
 	    close $logfh if $logfh;
-	}
-	else { # Child
-	    close PARENTRD;
+        }
+        else {  # Child
+            close PARENTRD;
 	    close $logfh if $logfh;
 	    # Reset signals
 	    $SIG{ALRM} = 'DEFAULT';
@@ -1082,9 +1083,9 @@ sub _run {
 	    autoflush STDOUT 1;
 	    autoflush STDERR 1;
 	    system "$command";
-	    exit ($? ? 10 : 0);  # $?<<8 misses coredumps
-	}
-	waitpid($pid,0);
+            exit($? ? 10 : 0);  # $?<<8 misses coredumps
+        }
+        waitpid($pid,0);
 	$status = $? || 0;
     }
     flush STDOUT;
@@ -1131,8 +1132,8 @@ sub _run {
                 $wholefile =~ s/^- [a-z.0-9]+:\d+:[^\n]+\n//mig;
                 $wholefile =~ s/^dot [^\n]+\n//mig;
 
-		# Compare
-		my $quoted = quotemeta ($param{expect});
+                # Compare
+                my $quoted = quotemeta($param{expect});
                 my $ok = ($wholefile eq $param{expect}
 			  || _try_regex($wholefile, $param{expect}) == 1
 			  || $wholefile =~ /$quoted/ms);
@@ -1503,9 +1504,9 @@ sub _read_inputs_v {
 	    if ($line =~ /^\s*(function|task|endmodule)/) {
 		$get_sigs = 0;
 	    }
-	}
-	if ($line =~ /^\s*module\s+t\b/) { # Ignore any earlier inputs; Module 't' has precedence
-	    %inputs = ();
+        }
+        if ($line =~ /^\s*module\s+t\b/) {  # Ignore any earlier inputs; Module 't' has precedence
+            %inputs = ();
 	    $get_sigs = 1;
 	}
     }
@@ -1685,7 +1686,7 @@ sub _vcd_read {
     my $self = (ref $_[0]? shift : $Self);
     my $filename = shift;
     my $data = {};
-    my $fh = IO::File->new ("<$filename");
+    my $fh = IO::File->new("<$filename");
     if (!$fh) { warn "%Error: $! $filename\n"; return $data; }
     my @hier = ($data);
     my $lasthier;
@@ -1865,7 +1866,7 @@ successful tests and then returns 1 as its result.
 Both C<compile> and C<execute> take an optional argument hash table to
 control their behavior. For example:
 
-  compile (
+  compile(
      verilator_flags2 => ["--lint-only"],
      fails => 1,
   );
@@ -1981,7 +1982,7 @@ require their own C++ or SystemC test harness. This is commonly given the
 same name as the test, but with .cpp as suffix
 (C<test_regress/t/t_EXAMPLE.cpp>). This can be specified as follows:
 
-  compile (
+  compile(
       make_top_shell   => 0,
       make_main        => 0,
       verilator_flags2 => ["--exe $Self->{t_dir}/$Self->{name}.cpp"], );
@@ -1994,22 +1995,22 @@ Verilog C<$stop>) as that signals an error.
 If termination should be triggered from the C++ wrapper, the following code
 can be used:
 
-  vl_fatal (__FILE__, __LINE__, "dut", "<error message goes here>");
-  exit (1);
+  vl_fatal(__FILE__, __LINE__, "dut", "<error message goes here>");
+  exit(1);
 
 This can be particularly useful if checking that the Verilator model has
 not unexpectedly terminated.
 
-  if (Verilated::gotFinish ()) {
-      vl_fatal (__FILE__, __LINE__, "dut", "<error message goes here>");
-      exit (1);
+  if (Verilated::gotFinish()) {
+      vl_fatal(__FILE__, __LINE__, "dut", "<error message goes here>");
+      exit(1);
   }
 
 Where it might be useful for a test to produce output, it should qualify
 this with C<TEST_VERBOSE>. For example in Verilog:
 
   `ifdef TEST_VERBOSE
-        $write ("Conditional generate if MASK [%1d] = %d\n", g, MASK[g]);
+        $write("Conditional generate if MASK [%1d] = %d\n", g, MASK[g]);
   `endif
 
 Or in a hand-written C++ wrapper:
