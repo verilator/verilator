@@ -136,6 +136,9 @@ if ($#opt_tests<0) {
 if ($#opt_tests>=2 && $opt_jobs>=2) {
     # Without this tests such as t_debug_sigsegv_bt_bad.pl will occasionally
     # block on input and cause a SIGSTOP, then a "fg" was needed to resume testing.
+    if (!$::Have_Forker) {
+        print STDERR "driver.pl: NO_FORKER: For faster testing 'sudo cpan install Parallel::Forker'\n";
+    }
     print STDERR "== Many jobs; redirecting STDIN\n";
     open(STDIN,  "+>/dev/null");
 }
@@ -173,9 +176,10 @@ sub one_test {
              # Don't put anything other than _exit after _read,
              # as may call _exit via another path
              $test->_exit;
-	 },
-	 run_on_finish => sub {
-	     my $test = VTest->new(@params);
+         },
+         run_on_finish => sub {
+             # RUnning in context of parent
+             my $test = VTest->new(@params);
              $test->_read_status;
 	     if ($test->ok) {
 		 $OkCnt++;
@@ -1814,8 +1818,14 @@ sub new {
 sub schedule {
     my $self = shift;
     my %params = (@_);
-    &{$params{run_on_start}}();
-    &{$params{run_on_finish}}();
+
+    if (my $pid = fork()) {  # Parent
+        waitpid($pid, 0);
+    } else {  # Child
+        $params{run_on_start}->($self);
+        exit(0);  # Don't close anything
+    }
+    $params{run_on_finish}->($self);
     return $self;
 }
 sub max_proc {}

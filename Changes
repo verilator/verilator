@@ -16,6 +16,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix MSVC compile error, bug1406. [Benjamin Gartner]
 
+****  Fix maintainer test when no Parallel::Forker, msg2630. [Enzo Chi]
+
 
 * Verilator 4.010 2019-01-27
 
