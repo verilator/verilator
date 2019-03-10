@@ -325,7 +325,7 @@ sub clean_input {
 	foreach my $line (@linesin) {
 	    $l++;
 	    if ($line =~ /BISONPRE_NOT/) {
-		($line =~ s/BISONPRE_NOT\((\S+)\)\s*({[^}]+})\s*$//)
+		($line =~ s/BISONPRE_NOT\((\S+)\)\s*(\{[^}]+})\s*$//)
 		    or die "%Error: $filename:$l: Bad form of BISONPRE_NOT: $line\n";
 		my $endtok = $1;  my $action = $2;
 		my @endtoks = split (/,/, $endtok);
@@ -412,7 +412,7 @@ sub _bisonpre_copy {
     my $l  = shift;
     my $depth = shift;
     while ($text =~ /BISONPRE_COPY/) {
-	($text =~ s/BISONPRE_COPY(_ONCE)?\((\S+)\s*,\s*{([^}]*)}\s*\)/{HERE}/)
+	($text =~ s/BISONPRE_COPY(_ONCE)?\((\S+)\s*,\s*\{([^}]*)}\s*\)/{HERE}/)
 	    or die "%Error: $Self->{filename}:$l: Bad form of BISONPRE_NOT: $text\n";
 	my $once = $1; my $rule = $2;  my $code = $3;
 	$Self->{rules}{$rule} or die "%Error: $Self->{filename}:$l: Can't find definition for rule: $rule\n";
