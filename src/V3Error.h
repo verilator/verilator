@@ -78,7 +78,8 @@ public:
 	ENDLABEL,	// End lable name mismatch
 	GENCLK,		// Generated Clock
 	IFDEPTH,	// If statements too deep
-	IMPERFECTSCH,	// Imperfect schedule (disabled by default)
+        IGNOREDRETURN,  // Ignoring return value (funcation as task)
+        IMPERFECTSCH,   // Imperfect schedule (disabled by default)
         IMPLICIT,       // Implicit wire
         IMPORTSTAR,     // Import::* in $unit
         IMPURE,         // Impure function not being inlined
@@ -139,7 +140,8 @@ public:
             "CMPCONST", "COLONPLUS", "COMBDLY", "CONTASSREG",
             "DEFPARAM", "DECLFILENAME",
             "ENDLABEL", "GENCLK",
-            "IFDEPTH", "IMPERFECTSCH", "IMPLICIT", "IMPORTSTAR", "IMPURE",
+            "IFDEPTH", "IGNOREDRETURN",
+            "IMPERFECTSCH", "IMPLICIT", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY",
             "LITENDIAN", "MODDUP",
             "MULTIDRIVEN",

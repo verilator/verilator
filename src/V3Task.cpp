@@ -1170,11 +1170,15 @@ private:
 	    nodep->replaceWith(outrefp);
 	    // Insert new statements
             visitp = insertBeforeStmt(nodep, beginp);
-	} else {
-	    // outvscp maybe non-NULL if calling a function in a taskref,
-	    // but if so we want to simply ignore the function result
-	    nodep->replaceWith(beginp);
-	}
+        } else {
+            if (nodep->taskp()->isFunction()) {
+                nodep->v3warn(IGNOREDRETURN,
+                              "Ignoring return value of non-void function (IEEE 2017 13.4.1)");
+            }
+            // outvscp maybe non-NULL if calling a function in a taskref,
+            // but if so we want to simply ignore the function result
+            nodep->replaceWith(beginp);
+        }
 	// Cleanup
 	nodep->deleteTree(); VL_DANGLING(nodep);
 	UINFO(4,"  FTask REF Done.\n");

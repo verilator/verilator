@@ -8,6 +8,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support $fread.  [Leendert van Doorn]
 
+***   Add IGNOREDRETURN warning.
+
 ****  Report PORTSHORT errors on concat constants, bug 1400. [Will Korteland]
 
 ****  Fix VERILATOR_GDB being ignored, msg2860. [Yu Sheng Lin]

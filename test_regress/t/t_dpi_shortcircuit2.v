@@ -46,7 +46,9 @@ module t (/*AUTOARG*/);
    // Test loop
    initial begin
       // bug963
+      // verilator lint_off IGNOREDRETURN
       dpii_clear();
+      // verilator lint_on IGNOREDRETURN
       j = 0;
       for (i=0; i<64; i++) begin
 	 if (i[0])

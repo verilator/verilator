@@ -3580,6 +3580,14 @@ code to a case statement, or a SystemVerilog 'unique if' or 'priority if'.
 Disabled by default as this is a code style warning; it will simulate
 correctly.
 
+=item IGNOREDRETURN
+
+Warns that a non-void function is being called as a task, and hence the
+return value is being ignored. This warning is required by IEEE.
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
+
 =item IMPERFECTSCH
 
 Warns that the scheduling of the model is not absolutely perfect, and some

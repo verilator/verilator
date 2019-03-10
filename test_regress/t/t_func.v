@@ -50,12 +50,15 @@ module t;
       if (n !== 10) $stop;
 
       // Functions called as tasks
+      // verilator lint_off IGNOREDRETURN
       rglobal = 32'h4;
       if (inc_and_return(32'h2) != 32'h6) $stop;
       if (rglobal !== 32'h6) $stop;
       rglobal = 32'h6;
+
       inc_and_return(32'h3);
       if (rglobal !== 32'h9) $stop;
+      // verilator lint_on IGNOREDRETURN
 
       $write("*-* All Finished *-*\n");
       $finish;

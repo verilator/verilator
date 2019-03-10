@@ -6,6 +6,7 @@
 module t (/*AUTOARG*/);
 
    initial begin
+      // verilator lint_off IGNOREDRETURN
       func(0, 1'b1);
    end
 
