@@ -18,6 +18,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix maintainer test when no Parallel::Forker, msg2630. [Enzo Chi]
 
+****  Fix +1364-1995ext flags applying too late, bug1384. [Al Grant]
+
 
 * Verilator 4.010 2019-01-27
 

@@ -102,8 +102,20 @@ protected:
 
 	// Preprocess
 	s_filterp = filterp;
-	bool ok = preprocOpen(fl, s_filterp, modname, "", errmsg);
-	if (!ok) return false;
+	string modfilename = preprocOpen(fl, s_filterp, modname, "", errmsg);
+	if (modfilename.empty()) return false;
+
+	// Set language standard up front
+	if (!v3Global.opt.preprocOnly()) {
+	    // Leting lex parse this saves us from having to specially en/decode
+	    // from the V3LangCode to the various Lex BEGIN states. The language
+	    // of this source file is updated here, in case there have been any
+	    // intervening +<lang>ext+ options since it was first ecountered.
+	    FileLine* modfileline = new FileLine(modfilename, 0);
+	    modfileline->language(v3Global.opt.fileLanguage(modfilename));
+	    V3Parse::ppPushText(parsep, (string("`begin_keywords \"")
+					 +modfileline->language().ascii()+"\"\n"));
+	}
 
 	while (!s_preprocp->isEof()) {
 	    string line = s_preprocp->getline();
@@ -116,12 +128,15 @@ protected:
 	if (modname[0]=='/' || modname[0]=='\\') {
 	    fl->v3warn(INCABSPATH,"Suggest `include with absolute path be made relative, and use +include: "<<modname);
 	}
-	preprocOpen(fl, s_filterp, modname, V3Os::filenameDir(fl->filename()), "Cannot find include file: ");
+	preprocOpen(fl, s_filterp, modname, V3Os::filenameDir(fl->filename()),
+		    "Cannot find include file: ");
     }
 
-    bool preprocOpen(FileLine* fl, V3InFilter* filterp, const string& modname, const string& lastpath,
-                     const string& errmsg) {  // Error message or "" to suppress
-	// Returns true if successful
+private:
+    string preprocOpen(FileLine* fl, V3InFilter* filterp,
+                       const string& modname, const string& lastpath,
+                       const string& errmsg) {  // Error message or "" to suppress
+	// Returns filename if successful
 	// Try a pure name in case user has a bogus `filename they don't expect
         string filename = v3Global.opt.filePath(fl, modname, lastpath, errmsg);
 	if (filename=="") {
@@ -131,13 +146,14 @@ protected:
 
             filename = v3Global.opt.filePath(fl, ppmodname, lastpath, errmsg);
 	}
-	if (filename=="") return false;  // Not found
+	if (filename=="") return "";  // Not found
 
 	UINFO(2,"    Reading "<<filename<<endl);
 	s_preprocp->openFile(fl, filterp, filename);
-	return true;
+	return filename;
     }
 
+public:
     // CONSTRUCTORS
     V3PreShellImp() {}
     ~V3PreShellImp() {}

@@ -91,6 +91,7 @@ protected:
     friend class V3ParseImp;
     friend class V3PreLex;
     friend class V3PreProcImp;
+    friend class V3PreShellImp;
     void lineno(int num) { m_lineno = num; }
     void language(V3LangCode lang) { singleton().numberToLang(m_filenameno, lang); }
     void filename(const string& name) { m_filenameno = singleton().nameToNumber(name); }

@@ -115,17 +115,6 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
     m_fileline = new FileLine(fileline);
     m_inLibrary = inLibrary;
 
-    // Set language standard up front
-    if (!v3Global.opt.preprocOnly()) {
-	// Leting lex parse this saves us from having to specially en/decode
-	// from the V3LangCode to the various Lex BEGIN states. The language
-	// of this source file is updated here, in case there have been any
-	// intervening +<lang>ext+ options since it was first ecountered.
-        FileLine *modfileline = new FileLine(modfilename, 0);
-	modfileline->language(v3Global.opt.fileLanguage(modfilename));
-        ppPushText(string("`begin_keywords \"")+modfileline->language().ascii()+"\"\n");
-    }
-
     // Preprocess into m_ppBuffer
     bool ok = V3PreShell::preproc(fileline, modfilename, m_filterp, this, errmsg);
     if (!ok) {
