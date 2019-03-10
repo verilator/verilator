@@ -8,7 +8,9 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support $fread.  [Leendert van Doorn]
 
-***   Add IGNOREDRETURN warning.
+***   Support void' cast on functions called as tasks, bug1383. [Al Grant]
+
+***   Add IGNOREDRETURN warning, bug1383.
 
 ****  Report PORTSHORT errors on concat constants, bug 1400. [Will Korteland]
 

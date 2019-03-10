@@ -26,8 +26,8 @@ module t (clk);
       // verilator lint_on IGNOREDRETURN
       if (side_effect != 33) $stop;
       //
-//      void'f1(30);
-//      if (side_effect != 64) $stop;
+      void'(f1(30));
+      if (side_effect != 64) $stop;
       //
       $write("*-* All Finished *-*\n");
       $finish;

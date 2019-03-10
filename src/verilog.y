@@ -2391,8 +2391,21 @@ statement_item<nodep>:		// IEEE: statement_item
 	//			// Below under expr
 	//
 	//			// IEEE: subroutine_call_statement
-	//UNSUP	yVOID yP_TICK '(' function_subroutine_callNoMethod ')' ';' { }
-	//UNSUP	yVOID yP_TICK '(' expr '.' function_subroutine_callNoMethod ')' ';' { }
+	//			// IEEE says we then expect a function call
+	//			// (function_subroutine_callNoMethod), but rest of
+	//			// the code expects an AstTask when used as a statement,
+	//			// so parse as if task
+	//			// Alternative would be shim with new AstVoidStmt.
+	|	yVOID yP_TICK '(' task_subroutine_callNoMethod ')' ';'
+							{ $$ = $4;
+							  FileLine* newfl = new FileLine($$->fileline());
+							  newfl->warnOff(V3ErrorCode::IGNOREDRETURN, true);
+							  $$->fileline(newfl); }
+	|	yVOID yP_TICK '(' expr '.' task_subroutine_callNoMethod ')' ';'
+							{ $$ = new AstDot($5, $4, $6);
+							  FileLine* newfl = new FileLine($6->fileline());
+							  newfl->warnOff(V3ErrorCode::IGNOREDRETURN, true);
+							  $6->fileline(newfl); }
 	//			// Expr included here to resolve our not knowing what is a method call
 	//			// Expr here must result in a subroutine_call
 	|	task_subroutine_callNoMethod ';'	{ $$ = $1; }
@@ -3965,7 +3978,7 @@ void V3ParseGrammar::argWrapList(AstNodeFTaskRef* nodep) {
 }
 
 AstNode* V3ParseGrammar::createSupplyExpr(FileLine* fileline, string name, int value) {
-    FileLine* newfl = new FileLine (fileline);
+    FileLine* newfl = new FileLine(fileline);
     newfl->warnOff(V3ErrorCode::WIDTH, true);
     AstNode* nodep = new AstConst(newfl, V3Number(newfl));
     // Adding a NOT is less work than figuring out how wide to make it
