@@ -3295,6 +3295,13 @@ exprOkLvalue<nodep>:		// expression that's also OK to use as a variable_lvalue
 	//			// IEEE: concatenation/constant_concatenation
 	//			// Replicate(1) required as otherwise "{a}" would not be self-determined
 	|	'{' cateList '}'			{ $$ = new AstReplicate($1,$2,1); }
+	|	'{' cateList '}' '[' expr ']'		{ $$ = new AstSelBit($4, new AstReplicate($1,$2,1), $5); }
+	|	'{' cateList '}' '[' constExpr ':' constExpr ']'
+							{ $$ = new AstSelExtract($4, new AstReplicate($1,$2,1), $5, $7); }
+	|	'{' cateList '}' '[' expr yP_PLUSCOLON constExpr ']'
+							{ $$ = new AstSelPlus($4, new AstReplicate($1,$2,1), $5, $7); }
+	|	'{' cateList '}' '[' expr yP_MINUSCOLON constExpr ']'
+							{ $$ = new AstSelMinus($4, new AstReplicate($1,$2,1), $5, $7); }
 	//			// IEEE: assignment_pattern_expression
 	//			// IEEE: [ assignment_pattern_expression_type ] == [ ps_type_id /ps_paremeter_id/data_type]
 	//			// We allow more here than the spec requires
