@@ -558,19 +558,20 @@ int AstNodeDType::widthPow2() const {
     return 1;
 }
 
-AstNode* AstArraySel::baseFromp(AstNode* nodep) {	///< What is the base variable (or const) this dereferences?
+AstNode* AstArraySel::baseFromp(AstNode* nodep) {  ///< What is the base variable (or const) this dereferences?
     // Else AstArraySel etc; search for the base
     while (nodep) {
-        if (VN_IS(nodep, ArraySel)) { nodep=VN_CAST(nodep, ArraySel)->fromp(); continue; }
-        else if (VN_IS(nodep, Sel)) { nodep=VN_CAST(nodep, Sel)->fromp(); continue; }
-	// AstNodeSelPre stashes the associated variable under an ATTROF of AstAttrType::VAR_BASE/MEMBER_BASE so it isn't constified
-        else if (VN_IS(nodep, AttrOf)) { nodep=VN_CAST(nodep, AttrOf)->fromp(); continue; }
+        if (VN_IS(nodep, ArraySel)) { nodep = VN_CAST(nodep, ArraySel)->fromp(); continue; }
+        else if (VN_IS(nodep, Sel)) { nodep = VN_CAST(nodep, Sel)->fromp(); continue; }
+        // AstNodeSelPre stashes the associated variable under an ATTROF
+        // of AstAttrType::VAR_BASE/MEMBER_BASE so it isn't constified
+        else if (VN_IS(nodep, AttrOf)) { nodep = VN_CAST(nodep, AttrOf)->fromp(); continue; }
         else if (VN_IS(nodep, NodePreSel)) {
             if (VN_CAST(nodep, NodePreSel)->attrp()) {
-                nodep=VN_CAST(nodep, NodePreSel)->attrp();
-	    } else {
-                nodep=VN_CAST(nodep, NodePreSel)->lhsp();
-	    }
+                nodep = VN_CAST(nodep, NodePreSel)->attrp();
+            } else {
+                nodep = VN_CAST(nodep, NodePreSel)->lhsp();
+            }
 	    continue;
 	}
 	else break;

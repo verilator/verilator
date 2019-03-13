@@ -927,7 +927,7 @@ class AstSelPlus : public AstNodePreSel {
     // Gets replaced during link with AstSel
 public:
     AstSelPlus(FileLine* fl, AstNode* fromp, AstNode* bitp, AstNode* widthp)
-	:AstNodePreSel(fl, fromp, bitp, widthp) {}
+        : AstNodePreSel(fl, fromp, bitp, widthp) {}
     ASTNODE_NODE_FUNCS(SelPlus)
     AstNode*	bitp() const { return rhsp(); }
     AstNode*	widthp() const { return thsp(); }
@@ -938,7 +938,7 @@ class AstSelMinus : public AstNodePreSel {
     // Gets replaced during link with AstSel
 public:
     AstSelMinus(FileLine* fl, AstNode* fromp, AstNode* bitp, AstNode* widthp)
-	:AstNodePreSel(fl, fromp, bitp, widthp) {}
+        : AstNodePreSel(fl, fromp, bitp, widthp) {}
     ASTNODE_NODE_FUNCS(SelMinus)
     AstNode*	bitp() const { return rhsp(); }
     AstNode*	widthp() const { return thsp(); }
@@ -955,8 +955,8 @@ private:
     int		m_declElWidth;	// If a packed array, the number of bits per element
 public:
     AstSel(FileLine* fl, AstNode* fromp, AstNode* lsbp, AstNode* widthp)
-	:AstNodeTriop(fl, fromp, lsbp, widthp) {
-	m_declElWidth = 1;
+        : AstNodeTriop(fl, fromp, lsbp, widthp) {
+        m_declElWidth = 1;
         if (VN_IS(widthp, Const)) {
             dtypeSetLogicSized(VN_CAST(widthp, Const)->toUInt(),
                                VN_CAST(widthp, Const)->toUInt(),
@@ -964,9 +964,9 @@ public:
 	}
     }
     AstSel(FileLine* fl, AstNode* fromp, int lsb, int bitwidth)
-	:AstNodeTriop(fl, fromp,
-		      new AstConst(fl,lsb), new AstConst(fl,bitwidth)) {
-	m_declElWidth = 1;
+        : AstNodeTriop(fl, fromp,
+                      new AstConst(fl,lsb), new AstConst(fl,bitwidth)) {
+        m_declElWidth = 1;
 	dtypeSetLogicSized(bitwidth,bitwidth,AstNumeric::UNSIGNED);
     }
     ASTNODE_NODE_FUNCS(Sel)
@@ -1076,9 +1076,9 @@ public:
 	addNOp2p(pinsp);
     }
     AstMethodSel(FileLine* fl, AstNode* fromp, const string& name, AstNode* pinsp)
-	:AstNode(fl), m_name(name) {
-	setOp1p(fromp);
-	addNOp2p(pinsp);
+        : AstNode(fl), m_name(name) {
+        setOp1p(fromp);
+        addNOp2p(pinsp);
     }
     ASTNODE_NODE_FUNCS(MethodSel)
     virtual string name() const { return m_name; }		// * = Var name
@@ -1144,9 +1144,9 @@ private:
     }
 public:
     AstVar(FileLine* fl, AstVarType type, const string& name, VFlagChildDType, AstNodeDType* dtp)
-	:AstNode(fl)
-	, m_name(name), m_origName(name) {
-	init();
+        : AstNode(fl)
+        , m_name(name), m_origName(name) {
+        init();
 	combineType(type);
 	childDTypep(dtp);  // Only for parser
 	dtypep(NULL);  // V3Width will resolve
@@ -1154,9 +1154,9 @@ public:
         else m_declKwd = AstBasicDTypeKwd::LOGIC;
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, AstNodeDType* dtp)
-	:AstNode(fl)
-	, m_name(name), m_origName(name) {
-	init();
+        : AstNode(fl)
+        , m_name(name), m_origName(name) {
+        init();
 	combineType(type);
 	UASSERT(dtp,"AstVar created with no dtype");
 	dtypep(dtp);
@@ -1164,24 +1164,24 @@ public:
         else m_declKwd = AstBasicDTypeKwd::LOGIC;
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, VFlagLogicPacked, int wantwidth)
-	:AstNode(fl)
-	, m_name(name), m_origName(name) {
-	init();
-	combineType(type);
-	dtypeSetLogicSized(wantwidth,wantwidth,AstNumeric::UNSIGNED);
+        : AstNode(fl)
+        , m_name(name), m_origName(name) {
+        init();
+        combineType(type);
+        dtypeSetLogicSized(wantwidth,wantwidth,AstNumeric::UNSIGNED);
         m_declKwd = AstBasicDTypeKwd::LOGIC;
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, VFlagBitPacked, int wantwidth)
-	:AstNode(fl)
-	, m_name(name), m_origName(name) {
-	init();
-	combineType(type);
-	dtypeSetLogicSized(wantwidth,wantwidth,AstNumeric::UNSIGNED);
+        : AstNode(fl)
+        , m_name(name), m_origName(name) {
+        init();
+        combineType(type);
+        dtypeSetLogicSized(wantwidth,wantwidth,AstNumeric::UNSIGNED);
         m_declKwd = AstBasicDTypeKwd::BIT;
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, AstVar* examplep)
-	:AstNode(fl)
-	, m_name(name), m_origName(name) {
+        : AstNode(fl)
+        , m_name(name), m_origName(name) {
 	init();
 	combineType(type);
 	if (examplep->childDTypep()) {
@@ -1396,9 +1396,9 @@ private:
     AstNodeModule*	m_modp;		// Module scope corresponds to
 public:
     AstScope(FileLine* fl, AstNodeModule* modp, const string& name,
-	     AstScope* aboveScopep, AstCell* aboveCellp)
-	:AstNode(fl)
-	,m_name(name) ,m_aboveScopep(aboveScopep) ,m_aboveCellp(aboveCellp), m_modp(modp) {}
+             AstScope* aboveScopep, AstCell* aboveCellp)
+        : AstNode(fl)
+        ,m_name(name) ,m_aboveScopep(aboveScopep) ,m_aboveCellp(aboveCellp), m_modp(modp) {}
     ASTNODE_NODE_FUNCS(Scope)
     virtual void cloneRelink();
     virtual const char* broken() const;
@@ -1426,8 +1426,8 @@ class AstTopScope : public AstNode {
     // Children: SCOPEs
 public:
     AstTopScope(FileLine* fl, AstScope* ascopep)
-	:AstNode(fl)
-	{addNOp2p(ascopep);}
+        : AstNode(fl)
+        {addNOp2p(ascopep);}
     ASTNODE_NODE_FUNCS(TopScope)
     AstNode*	stmtsp() 	const { return op1p(); }
     void addStmtsp(AstNode* nodep) { addOp1p(nodep); }
@@ -1446,9 +1446,9 @@ private:
     bool	m_trace:1;	// Tracing is turned on for this scope
 public:
     AstVarScope(FileLine* fl, AstScope* scopep, AstVar* varp)
-	:AstNode(fl)
-	, m_scopep(scopep), m_varp(varp) {
-	m_circular = false;
+        : AstNode(fl)
+        , m_scopep(scopep), m_varp(varp) {
+        m_circular = false;
 	m_trace = true;
 	dtypeFrom(varp);
     }
@@ -1517,10 +1517,10 @@ private:
     string	m_inlinedDots;	// Dotted hierarchy flattened out
 public:
     AstVarXRef(FileLine* fl, const string& name, const string& dotted, bool lvalue)
-	:AstNodeVarRef(fl, name, NULL, lvalue)
-	, m_dotted(dotted) { }
+        : AstNodeVarRef(fl, name, NULL, lvalue)
+        , m_dotted(dotted) { }
     AstVarXRef(FileLine* fl, AstVar* varp, const string& dotted, bool lvalue)
-	:AstNodeVarRef(fl, varp->name(), varp, lvalue)
+        : AstNodeVarRef(fl, varp->name(), varp, lvalue)
 	, m_dotted(dotted) {
 	dtypeFrom(varp);
     }
@@ -1555,16 +1555,16 @@ private:
     bool	m_svImplicit;	// Pin is SystemVerilog .name'ed
 public:
     AstPin(FileLine* fl, int pinNum, const string& name, AstNode* exprp)
-	:AstNode(fl)
-	,m_name(name), m_param(false), m_svImplicit(false) {
-	m_pinNum = pinNum;
-	m_modVarp = NULL;
-	m_modPTypep = NULL;
-	setNOp1p(exprp);
+        : AstNode(fl)
+        ,m_name(name), m_param(false), m_svImplicit(false) {
+        m_pinNum = pinNum;
+        m_modVarp = NULL;
+        m_modPTypep = NULL;
+        setNOp1p(exprp);
     }
     AstPin(FileLine* fl, int pinNum, AstVarRef* varname, AstNode* exprp)
-	:AstNode(fl), m_param(false), m_svImplicit(false) {
-	m_name = varname->name();
+        : AstNode(fl), m_param(false), m_svImplicit(false) {
+        m_name = varname->name();
 	m_pinNum = pinNum;
 	m_modVarp = NULL;
 	m_modPTypep = NULL;
@@ -1903,8 +1903,8 @@ private:
     string	m_name;		// Name of pin
 public:
     AstPort(FileLine* fl, int pinnum, const string& name)
-	:AstNode(fl)
-	,m_pinNum(pinnum) ,m_name(name) {}
+        : AstNode(fl)
+        ,m_pinNum(pinnum) ,m_name(name) {}
     ASTNODE_NODE_FUNCS(Port)
     virtual string name()	const { return m_name; }		// * = Port name
     int pinNum()		const { return m_pinNum; }		// * = Pin number, for order based instantiation
@@ -1939,7 +1939,7 @@ private:
     string		m_name;
 public:
     AstParseRef(FileLine* fl, AstParseRefExp expect, const string& name, AstNode* lhsp, AstNodeFTaskRef* ftaskrefp)
-	:AstNode(fl), m_expect(expect), m_name(name) { setNOp1p(lhsp); setNOp2p(ftaskrefp); }
+        : AstNode(fl), m_expect(expect), m_name(name) { setNOp1p(lhsp); setNOp2p(ftaskrefp); }
     ASTNODE_NODE_FUNCS(ParseRef)
     virtual void dump(std::ostream& str);
     virtual string name() const { return m_name; }		// * = Var name
@@ -1984,7 +1984,7 @@ class AstDot : public AstNode {
     // These are eliminated in the link stage
 public:
     AstDot(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
-	:AstNode(fl) { setOp1p(lhsp); setOp2p(rhsp); }
+        : AstNode(fl) { setOp1p(lhsp); setOp2p(rhsp); }
     ASTNODE_NODE_FUNCS(Dot)
     static AstNode* newIfPkg(FileLine*fl, AstPackage* packagep, AstNode* rhsp) {  // For parser, make only if non-null package
 	if (!packagep) return rhsp;
@@ -2003,7 +2003,7 @@ class AstTask : public AstNodeFTask {
     // A task inside a module
 public:
     AstTask(FileLine* fl, const string& name, AstNode* stmtp)
-	:AstNodeFTask(fl, name, stmtp) {}
+        : AstNodeFTask(fl, name, stmtp) {}
     ASTNODE_NODE_FUNCS(Task)
 };
 
@@ -2011,8 +2011,8 @@ class AstFunc : public AstNodeFTask {
     // A function inside a module
 public:
     AstFunc(FileLine* fl, const string& name, AstNode* stmtp, AstNode* fvarsp)
-	:AstNodeFTask(fl, name, stmtp) {
-	addNOp1p(fvarsp);
+        : AstNodeFTask(fl, name, stmtp) {
+        addNOp1p(fvarsp);
     }
     ASTNODE_NODE_FUNCS(Func)
     virtual bool hasDType() const { return true; }
@@ -2022,9 +2022,9 @@ class AstTaskRef : public AstNodeFTaskRef {
     // A reference to a task
 public:
     AstTaskRef(FileLine* fl, AstParseRef* namep, AstNode* pinsp)
-	:AstNodeFTaskRef(fl, namep, pinsp) {}
+        : AstNodeFTaskRef(fl, namep, pinsp) {}
     AstTaskRef(FileLine* fl, const string& name, AstNode* pinsp)
-	:AstNodeFTaskRef(fl, name, pinsp) {}
+        : AstNodeFTaskRef(fl, name, pinsp) {}
     ASTNODE_NODE_FUNCS(TaskRef)
     virtual bool isStatement() const { return true; }  // A statement, unlike FuncRef
 };
@@ -2033,9 +2033,9 @@ class AstFuncRef : public AstNodeFTaskRef {
     // A reference to a function
 public:
     AstFuncRef(FileLine* fl, AstParseRef* namep, AstNode* pinsp)
-	:AstNodeFTaskRef(fl, namep, pinsp) {}
+        : AstNodeFTaskRef(fl, namep, pinsp) {}
     AstFuncRef(FileLine* fl, const string& name, AstNode* pinsp)
-	:AstNodeFTaskRef(fl, name, pinsp) {}
+        : AstNodeFTaskRef(fl, name, pinsp) {}
     ASTNODE_NODE_FUNCS(FuncRef)
     virtual bool isStatement() const { return false; }  // Not a statement, unlike TaskRef
     virtual bool hasDType() const { return true; }
@@ -2050,7 +2050,7 @@ private:
     string	m_cname;	// Name of function on c side
 public:
     AstDpiExport(FileLine* fl, const string& vname, const string& cname)
-	:AstNode(fl), m_name(vname), m_cname(cname) { }
+        : AstNode(fl), m_name(vname), m_cname(cname) { }
     ASTNODE_NODE_FUNCS(DpiExport)
     virtual string name() const { return m_name; }
     virtual void name(const string& name) { m_name = name; }
