@@ -5,6 +5,8 @@
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
 
+# SRecord style comment
+
 010
 0_1_1
 100/*Space*/101// Space

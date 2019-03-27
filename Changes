@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.013 devel
 
+****  Support '#' comments in $readmem, bug1411. [Frederick Requin]
+
 
 * Verilator 4.012 2019-3-23
 

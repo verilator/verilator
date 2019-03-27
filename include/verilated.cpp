@@ -1494,6 +1494,7 @@ void VL_READMEM_N(
             if (lastc=='/' && c=='*') { ignore_to_cmt = true; }
             else if (lastc=='/' && c=='/') { ignore_to_eol = true; }
             else if (c=='/') {}  // Part of /* or //
+            else if (c=='#') { ignore_to_eol = true; }
             else if (c=='_') {}
             else if (c=='@') { reading_addr = true; innum=false; needinc=false; }
             // Check for hex or binary digits as file format requests
