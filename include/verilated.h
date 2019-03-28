@@ -1919,6 +1919,14 @@ static inline IData VL_SHIFTL_IIW(int obits,int,int rbits,IData lhs, WDataInP rw
     }
     return VL_CLEAN_II(obits,obits,lhs<<rwp[0]);
 }
+static inline QData VL_SHIFTL_QQW(int obits,int,int rbits,IData lhs, WDataInP rwp) VL_MT_SAFE {
+    for (int i=1; i < VL_WORDS_I(rbits); ++i) {
+        if (VL_UNLIKELY(rwp[i])) {  // Huge shift 1>>32 or more
+            return 0;
+        }
+    }
+    return VL_CLEAN_QQ(obits,obits,lhs<<rwp[0]);
+}
 
 // EMIT_RULE: VL_SHIFTR:  oclean=lclean; rclean==clean;
 // Important: Unlike most other funcs, the shift might well be a computed

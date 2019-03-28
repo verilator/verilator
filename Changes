@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support '#' comments in $readmem, bug1411. [Frederick Requin]
 
+****  Fix missing VL_SHIFTL_QQW error, bug1412. [Larry Lee]
+
 
 * Verilator 4.012 2019-3-23
 
