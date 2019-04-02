@@ -37,11 +37,7 @@
 # define VL_ATTR_ALIGNED(alignment) __attribute__ ((aligned (alignment)))
 # define VL_ATTR_ALWINLINE __attribute__ ((always_inline))
 # define VL_ATTR_NORETURN __attribute__ ((noreturn))
-# ifdef _WIN32
-#  define VL_ATTR_PRINTF(fmtArgNum)  // GCC with MS runtime will fool the print arg checker
-# else
-#  define VL_ATTR_PRINTF(fmtArgNum) __attribute__ ((format (printf, (fmtArgNum), (fmtArgNum)+1)))
-# endif
+# define VL_ATTR_PRINTF(fmtArgNum) __attribute__ ((format (printf, (fmtArgNum), (fmtArgNum)+1)))
 # define VL_ATTR_PURE __attribute__ ((pure))
 # define VL_ATTR_UNUSED __attribute__ ((unused))
 # define VL_FUNC  __func__
@@ -270,10 +266,14 @@ typedef unsigned long long	vluint64_t;	///< 64-bit unsigned type
 // Printing printf/scanf formats
 // Alas cinttypes isn't that standard yet
 
-#ifdef _WIN32
-# define __STDC_FORMAT_MACROS 1  // Otherwise MinGW doesn't get PRId64 for fstapi.c
+// Use Microsoft-specific format specifiers for Microsoft Visual C++ only
+#ifdef _MSC_VER
 # define VL_PRI64 "I64"
-#else  // Linux or compliant Unix flavors
+#else  // use standard C99 format specifiers
+# ifdef __MINGW32__
+#  define __USE_MINGW_ANSI_STDIO 1  // Force old MinGW (GCC 5 and older) to use C99 formats
+#  define __STDC_FORMAT_MACROS   1  // Otherwise MinGW doesn't get PRId64 for fstapi.c
+# endif
 # if defined(__WORDSIZE) && (__WORDSIZE == 64)
 #  define VL_PRI64 "l"
 # else

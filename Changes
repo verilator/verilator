@@ -8,6 +8,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix missing VL_SHIFTL_QQW error, bug1412. [Larry Lee]
 
+****  Fix MinGW GCC 6 printf formats, bug1413. [Sergey Kvachonok]
+
 
 * Verilator 4.012 2019-3-23
 
