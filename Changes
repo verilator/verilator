@@ -6,7 +6,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support '#' comments in $readmem, bug1411. [Frederick Requin]
 
-****  Fix missing VL_SHIFTL_QQW error, bug1412. [Larry Lee]
+****  Fix missing VL_SHIFTL_ errors, bug1412, bug1415. [Larry Lee]
 
 ****  Fix MinGW GCC 6 printf formats, bug1413. [Sergey Kvachonok]
 
