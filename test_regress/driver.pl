@@ -1562,6 +1562,7 @@ sub files_identical {
     my $fn1 = shift;
     my $fn2 = shift;
     my $fn1_is_logfile = shift;
+    return 1 if $self->errors || $self->skips || $self->unsupporteds;
 
     my $tries = $self->tries;
   try:
@@ -1625,6 +1626,7 @@ sub vcd_identical {
     my $self = (ref $_[0]? shift : $Self);
     my $fn1 = shift;
     my $fn2 = shift;
+    return 0 if $self->errors || $self->skips || $self->unsupporteds;
     if (!-r $fn1) { $self->error("Vcd_identical file does not exist $fn1\n"); return 0; }
     if (!-r $fn2) { $self->error("Vcd_identical file does not exist $fn2\n"); return 0; }
     {
@@ -1632,7 +1634,7 @@ sub vcd_identical {
 	my $cmd = qq{vcddiff --help};
 	print "\t$cmd\n" if $::Debug;
 	my $out = `$cmd`;
-	if (!$out || $out !~ /Usage:/) { $self->skip("No vcddiff installed\n"); return 0; }
+	if (!$out || $out !~ /Usage:/) { $self->skip("No vcddiff installed\n"); return 1; }
 
 	$cmd = qq{vcddiff "$fn1" "$fn2"};
 	print "\t$cmd\n" if $::Debug;
@@ -1678,7 +1680,7 @@ sub fst2vcd {
     my $cmd = qq{fst2vcd --help};
     print "\t$cmd\n" if $::Debug;
     my $out = `$cmd`;
-    if (!$out || $out !~ /Usage:/) { $self->skip("No fst2vcd installed\n"); return 0; }
+    if (!$out || $out !~ /Usage:/) { $self->skip("No fst2vcd installed\n"); return 1; }
 
     $cmd = qq{fst2vcd -e "$fn1" -o "$fn2"};
     print "\t$cmd\n" if $::Debug;

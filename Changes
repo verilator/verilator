@@ -10,6 +10,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix MinGW GCC 6 printf formats, bug1413. [Sergey Kvachonok]
 
+****  Fix test problems when missing fst2vcd, bug1417. [Todd Strader]
+
 
 * Verilator 4.012 2019-3-23
 
