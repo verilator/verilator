@@ -4233,7 +4233,8 @@ trace file if you want all data to land in the same output file.
 
 FST a format by GTKWave.
 This version provides a basic FST support.
-To dump FST format, add the --trace switch to Verilator and change the include path in the testbench to:
+To dump FST format, add the --trace-fst switch to Verilator and change the include
+path in the testbench to:
 
     #include "verilated_fst_c.h"
     VerilatedFstC* tfp = new VerilatedFstC;
