@@ -12,6 +12,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix test problems when missing fst2vcd, bug1417. [Todd Strader]
 
+****  Fix GTKWave register warning, bug1421. [Pieter Kapsenberg]
+
 
 * Verilator 4.012 2019-3-23
 
