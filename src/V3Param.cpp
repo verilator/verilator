@@ -271,21 +271,29 @@ private:
 
     // Make sure all parameters are constantified
     virtual void visit(AstVar* nodep) {
-	if (!nodep->user5SetOnce()) {  // Process once
+        if (!nodep->user5SetOnce()) {  // Process once
             iterateChildren(nodep);
-	    if (nodep->isParam()) {
-		if (!nodep->valuep()) { nodep->v3fatalSrc("Parameter without initial value"); }
-		V3Const::constifyParamsEdit(nodep);  // The variable, not just the var->init()
-                if (!VN_IS(nodep->valuep(), Const)) {  // Complex init, like an array
-		    // Make a new INITIAL to set the value.
-		    // This allows the normal array/struct handling code to properly initialize the parameter
-		    nodep->addNext(new AstInitial(nodep->fileline(),
-						  new AstAssign(nodep->fileline(),
-								new AstVarRef(nodep->fileline(), nodep, true),
-								nodep->valuep()->cloneTree(true))));
-		}
-	    }
-	}
+            if (nodep->isParam()) {
+                if (!nodep->valuep()) {
+                    nodep->v3error("Parameter without initial value is never given value"
+                                   <<" (IEEE 1800-2017 6.20.1): "
+                                   <<nodep->prettyName());
+                } else {
+                    V3Const::constifyParamsEdit(nodep);  // The variable, not just the var->init()
+                    if (!VN_IS(nodep->valuep(), Const)) {  // Complex init, like an array
+                        // Make a new INITIAL to set the value.
+                        // This allows the normal array/struct handling code to properly
+			// initialize the parameter.
+                        nodep->addNext(
+                            new AstInitial(nodep->fileline(),
+                                           new AstAssign(
+                                               nodep->fileline(),
+                                               new AstVarRef(nodep->fileline(), nodep, true),
+                                               nodep->valuep()->cloneTree(true))));
+                    }
+                }
+            }
+        }
     }
     // Make sure varrefs cause vars to constify before things above
     virtual void visit(AstVarRef* nodep) {

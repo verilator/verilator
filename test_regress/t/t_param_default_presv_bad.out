@@ -1,0 +1,2 @@
+%Error: t/t_param_default_bad.v:6: Parameter requires default value, or use IEEE 1800-2009 or later.
+%Error: Exiting due to

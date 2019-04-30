@@ -1,0 +1,2 @@
+%Error: t/t_param_default_bad.v:6: Parameter without initial value is never given value (IEEE 1800-2017 6.20.1): Foo
+%Error: Exiting due to

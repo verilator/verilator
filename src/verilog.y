@@ -2085,7 +2085,9 @@ param_assignment<varp>:		// ==IEEE: param_assignment
 		id/*new-parameter*/ variable_dimensionListE sigAttrListE '=' exprOrDataType
 	/**/		{ $$ = VARDONEA($<fl>1,*$1, $2, $3); $$->valuep($5); }
 	|	id/*new-parameter*/ variable_dimensionListE sigAttrListE
-	/**/		{ $$ = VARDONEA($<fl>1,*$1, $2, $3); }
+	/**/		{ $$ = VARDONEA($<fl>1,*$1, $2, $3);
+		          if ($<fl>1->language() < V3LangCode::L1800_2009) {
+			     $<fl>1->v3error("Parameter requires default value, or use IEEE 1800-2009 or later."); } }
 	;
 
 list_of_param_assignments<varp>:	// ==IEEE: list_of_param_assignments
