@@ -1,5 +1,6 @@
 \.clang-tidy
 \.git/
+\.git$
 \.svn/
 \.(bak|old)/
 \.(bak|old)$
