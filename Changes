@@ -16,6 +16,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix GTKWave register warning, bug1421. [Pieter Kapsenberg]
 
+****  Fix FST enums not displaying, bug1426. [Danilo Ramos]
+
 
 * Verilator 4.012 2019-3-23
 

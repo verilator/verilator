@@ -2956,7 +2956,7 @@ class EmitCTrace : EmitCStmts {
         // Return enum number or -1 for none
         if (v3Global.opt.traceFormat() == TraceFormat::FST) {
             // Skip over refs-to-refs, but stop before final ref so can get data type name
-            // Alternatively back in V3Width we could have push enum names from upper typedefs
+            // Alternatively back in V3Width we could push enum names from upper typedefs
             if (AstEnumDType* enump = VN_CAST(nodep->skipRefToEnump(), EnumDType)) {
                 int enumNum = enump->user1();
                 if (!enumNum) {

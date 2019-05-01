@@ -230,6 +230,10 @@ private:
 	}
         insureCleanAndNext(nodep->bodysp());
     }
+    virtual void visit(AstTraceDecl* nodep) {
+        // No cleaning, or would loose pointer to enum
+        iterateChildren(nodep);
+    }
     virtual void visit(AstTraceInc* nodep) {
         iterateChildren(nodep);
         insureCleanAndNext(nodep->valuep());
