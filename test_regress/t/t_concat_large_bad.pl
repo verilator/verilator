@@ -12,10 +12,7 @@ scenarios(simulator => 1);
 compile(
     v_flags2 => ["--lint-only"],
     fails => 1,
-    expect =>
-'%Warning-WIDTHCONCAT: t/t_concat_large_bad.v:\d+: More than a 8k bit replication is probably wrong: 32768
-%Warning-WIDTHCONCAT: Use .*
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

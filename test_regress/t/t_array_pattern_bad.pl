@@ -11,9 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     fails => 1,
-    expect =>
-q{%Error: t/t_array_pattern_bad.v:23: Assignment pattern key 'valids' not found as member
-.*%Error: Exiting due to.*},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

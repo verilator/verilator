@@ -15,9 +15,7 @@ compile(
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect =>
-'%Error: t/t_param_circ_bad.v:\d+: Variable\'s initial value is circular: X
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

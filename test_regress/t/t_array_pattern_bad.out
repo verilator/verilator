@@ -1,0 +1,2 @@
+%Error: t/t_array_pattern_bad.v:23: Assignment pattern key 'valids' not found as member
+%Error: Exiting due to

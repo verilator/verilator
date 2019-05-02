@@ -1,0 +1,2 @@
+%Error: t/t_inst_recurse2_bad.v:17: Unsupported: Identically recursive module (module instantiates itself, without changing parameters): looped
+%Error: Exiting due to

@@ -12,9 +12,7 @@ scenarios(simulator => 1);
 compile(
     v_flags2 => ["--lint-only"],
     fails => $Self->{vlt_all},
-    expect =>
-q{%Error: t/t_select_bad_tri.v:\d+: Selection index is constantly unknown or tristated: lsb=7'bxxxxxxx width=32'sh47
-%Error: Exiting due to.*},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

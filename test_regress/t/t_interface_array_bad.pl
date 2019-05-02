@@ -11,10 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     fails => 1,
-    expect =>
-'%Error: t/t_interface_array_bad.v:\d+: Expecting expression to be constant, but variable isn\'t const: bar
-%Error: t/t_interface_array_bad.v:\d+: Could not expand constant selection inside dotted reference: bar
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

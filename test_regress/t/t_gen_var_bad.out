@@ -1,0 +1,2 @@
+%Error: t/t_gen_var_bad.v:9: Non-genvar used in generate for: i
+%Error: Exiting due to

@@ -14,9 +14,7 @@ top_filename("t/t_struct_init.v");
 compile(
     v_flags2 => ['+define+T_STRUCT_INIT_BAD'],
     fails => 1,
-    expect =>
-'%Error: t/t_struct_init.v:\d+: Assignment pattern contains duplicate entry: b1
-%Error: Exiting due to.*'
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

@@ -11,10 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     fails => $Self->{vlt_all},
-    expect =>
-'%Error: t/t_tri_pull2_bad.v:\d+: Unsupported: Conflicting pull directions.
-%Error: t/t_tri_pull2_bad.v:\d+: ... Location of conflicting pull.
-%Error: Exiting due to',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

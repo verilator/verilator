@@ -12,9 +12,7 @@ scenarios(simulator => 1);
 compile(
     v_flags2 => ["--lint-only"],
     fails => 1,
-    expect =>
-'.*%Error: t/t_gen_var_bad.v:\d+: Non-genvar used in generate for: i
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

@@ -15,9 +15,7 @@ compile(
     make_top_shell => 0,
     make_main => 0,
     fails => 1,
-    expect =>
-q{%Error: t/t_var_ref_bad1.v:\d+: Ref connection 'bad_sub_ref' requires matching types; ref requires BASICDTYPE 'real' but connection is BASICDTYPE 'bit'.
-.*%Error: Exiting due to.*},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

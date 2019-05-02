@@ -1,0 +1,6 @@
+%Error-PROCASSWIRE: t/t_lint_always_comb_bad.v:28: Procedural assignment to wire, perhaps intended var (IEEE 2017 6.5): temp1
+%Error-PROCASSWIRE: t/t_lint_always_comb_bad.v:30: Procedural assignment to wire, perhaps intended var (IEEE 2017 6.5): temp1
+%Warning-ALWCOMBORDER: t/t_lint_always_comb_bad.v:31: Always_comb variable driven after use: mid
+%Warning-ALWCOMBORDER: Use "/* verilator lint_off ALWCOMBORDER */" and lint_on around source to disable this message.
+%Error-PROCASSWIRE: t/t_lint_always_comb_bad.v:45: Procedural assignment to wire, perhaps intended var (IEEE 2017 6.5): temp1_d1r
+%Error: Exiting due to

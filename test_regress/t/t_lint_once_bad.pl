@@ -15,11 +15,7 @@ compile(
     make_top_shell => 0,
     make_main => 0,
     fails => 1,
-    expect =>
-'%Warning-UNUSED: t/t_lint_once_bad.v:\d+: Signal is not driven, nor used: unus1
-%Warning-UNUSED: Use .* to disable this message.
-%Warning-UNUSED: t/t_lint_once_bad.v:\d+: Signal is not driven, nor used: unus2
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

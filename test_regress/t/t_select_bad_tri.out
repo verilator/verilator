@@ -1,0 +1,2 @@
+%Error: t/t_select_bad_tri.v:10: Selection index is constantly unknown or tristated: lsb=7'bxxxxxxx width=32'sh47
+%Error: Exiting due to

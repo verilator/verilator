@@ -15,9 +15,7 @@ compile(
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect =>
-'%Error: t/t_lint_modport_dir_bad.v:\d+: Attempt to drive input-only modport: signal
-%Error: Exiting due to .*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

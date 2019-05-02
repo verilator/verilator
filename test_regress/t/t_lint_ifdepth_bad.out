@@ -1,0 +1,3 @@
+%Warning-IFDEPTH: t/t_lint_ifdepth_bad.v:21: Deep 'if' statement; suggest unique/priority to avoid slow logic
+%Warning-IFDEPTH: Use "/* verilator lint_off IFDEPTH */" and lint_on around source to disable this message.
+%Error: Exiting due to

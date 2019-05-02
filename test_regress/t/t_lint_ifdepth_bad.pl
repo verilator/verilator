@@ -15,10 +15,7 @@ compile(
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect =>
-'%Warning-IFDEPTH: t/t_lint_ifdepth_bad.v:\d+: Deep \'if\' statement; suggest unique/priority to avoid slow logic
-%Warning-IFDEPTH: Use .* to disable this message.
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

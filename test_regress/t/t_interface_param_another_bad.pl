@@ -11,9 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     fails => 1,
-    expect =>
-q{%Error: t/t_interface_param_another_bad.v:\d+: Parameter-resolved constants must not use dotted references: dummy
-%Error: Exiting due to.*},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

@@ -1,0 +1,2 @@
+%Error-WIDTH: t/t_flag_werror.v:9: Operator ASSIGNW expects 4 bits on the Assign RHS, but Assign RHS's CONST '6'h2e' generates 6 bits.
+%Error: Exiting due to

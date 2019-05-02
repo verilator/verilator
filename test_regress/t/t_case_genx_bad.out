@@ -1,0 +1,2 @@
+%Error: t/t_case_genx_bad.v:13: Use of x/? constant in generate case statement, (no such thing as 'generate casez')
+%Error: Exiting due to

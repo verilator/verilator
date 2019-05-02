@@ -12,10 +12,7 @@ scenarios(simulator => 1);
 compile(
     v_flags2 => ["--lint-only"],
     fails => 1,
-    expect =>
-q{%Warning-WIDTH: t/t_lint_repeat_bad.v:17: Operator ASSIGNW expects 1 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 2 bits.
-%Warning-WIDTH: Use \"\/\* verilator lint_off WIDTH \*\/\" and lint_on around source to disable this message.
-%Error: Exiting due to 1 warning}
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

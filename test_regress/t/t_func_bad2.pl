@@ -11,9 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     fails => $Self->{vlt_all},
-    expect =>
-'%Error: t/t_func_bad2.v:\d+: Unsupported: Recursive function or task call
-%Error: Exiting due to',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

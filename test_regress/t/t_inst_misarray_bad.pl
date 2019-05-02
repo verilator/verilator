@@ -15,9 +15,7 @@ compile(
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect =>
-q{%Error: t/t_inst_misarray_bad.v:16: VARREF 't.foo' is not an unpacked array, but is in an unpacked array context
-%Error: Exiting due to.*},
+    expect_filename => $Self->{golden_filename},
     );
 
 

@@ -17,10 +17,7 @@ compile(
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect =>
-q{%Warning-WIDTH: t/t_flag_wfatal.v:\d+: Operator ASSIGNW expects 4 bits on the Assign RHS, but Assign RHS.s CONST '6'h2e' generates 6 bits.
-%Warning-WIDTH: Use .* and lint_on around source to disable this message.
-},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

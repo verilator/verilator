@@ -1,0 +1,3 @@
+%Error-ASSIGNIN: t/t_var_in_assign_bad.v:11: Assigning to input/const variable: value
+%Error-ASSIGNIN: t/t_var_in_assign_bad.v:20: Assigning to input/const variable: valueSub
+%Error: Exiting due to

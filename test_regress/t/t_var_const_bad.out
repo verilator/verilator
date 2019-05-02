@@ -1,0 +1,2 @@
+%Error: t/t_var_const_bad.v:16: Assigning to const variable: five
+%Error: Exiting due to

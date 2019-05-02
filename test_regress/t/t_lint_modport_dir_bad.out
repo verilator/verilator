@@ -1,0 +1,2 @@
+%Error: t/t_lint_modport_dir_bad.v:25: Attempt to drive input-only modport: signal
+%Error: Exiting due to

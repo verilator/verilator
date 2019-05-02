@@ -1,0 +1,2 @@
+%Error: t/t_param_circ_bad.v:10: Variable's initial value is circular: X
+%Error: Exiting due to

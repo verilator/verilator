@@ -17,10 +17,7 @@ compile(
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect =>
-'%Warning-SELRANGE: t/t_param_sel_range.v:\d+: Selection index out of range: 7:7 outside 4:0
-%Warning-SELRANGE: Use .* to disable this message.
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

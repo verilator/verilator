@@ -1,0 +1,3 @@
+%Warning-WIDTHCONCAT: t/t_concat_large_bad.v:8: More than a 8k bit replication is probably wrong: 32768
+%Warning-WIDTHCONCAT: Use "/* verilator lint_off WIDTHCONCAT */" and lint_on around source to disable this message.
+%Error: Exiting due to

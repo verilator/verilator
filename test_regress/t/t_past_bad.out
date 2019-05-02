@@ -1,0 +1,4 @@
+%Error: t/t_past_bad.v:11: $past tick value must be constant and >= 1 (IEEE 2017 16.9.3)
+%Warning-TICKCOUNT: t/t_past_bad.v:12: $past tick value of 10000 may have a large performance cost
+%Warning-TICKCOUNT: Use "/* verilator lint_off TICKCOUNT */" and lint_on around source to disable this message.
+%Error: Exiting due to

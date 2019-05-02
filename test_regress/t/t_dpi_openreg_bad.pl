@@ -12,10 +12,7 @@ scenarios(simulator => 1);
 compile(
     v_flags2 => ["--lint-only"],
     fails => $Self->{vlt_all},
-    expect =>
-'%Error: t/t_dpi_openreg_bad.v:\d+: Unsized/open arrays \(\'\[\]\'\) are only supported in DPI imports
-%Error: t/t_dpi_openreg_bad.v:\d+: Unsized/open arrays \(\'\[\]\'\) are only supported in DPI imports
-%Error: Exiting due to .*'
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

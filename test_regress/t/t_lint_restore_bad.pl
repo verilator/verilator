@@ -12,10 +12,7 @@ scenarios(vlt_all => 1);
 compile(
     v_flags2 => ["--lint-only"],
     fails => 1,
-    expect =>
-q{.*%Warning-WIDTH: t/t_lint_restore_bad.v:\d+: Operator ASSIGN expects 5 bits on the Assign RHS, but Assign RHS's CONST '64'h1' generates 64 bits.
-%Warning-WIDTH: Use .*
-%Error: Exiting due to.*},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

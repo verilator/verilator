@@ -11,9 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     fails => 1,
-    expect =>
-'%Error: t/t_struct_notfound_bad.v:\d+: Member \'nfmember\' not found in structure
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

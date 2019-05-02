@@ -1,0 +1,2 @@
+%Error: t/t_interface_param_another_bad.v:8: Parameter-resolved constants must not use dotted references: dummy
+%Error: Exiting due to

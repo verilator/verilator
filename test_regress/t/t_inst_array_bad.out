@@ -1,0 +1,2 @@
+%Error: t/t_inst_array_bad.v:18: Input port connection 'onebit' as part of a module instance array requires 1 or 8 bits, but connection's VARREF 'onebitbad' generates 9 bits.
+%Error: Exiting due to

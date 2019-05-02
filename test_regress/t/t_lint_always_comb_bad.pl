@@ -15,9 +15,7 @@ compile(
     make_top_shell => 0,
     make_main => 0,
     fails => 1,
-    expect =>
-'%Warning-ALWCOMBORDER: t/t_lint_always_comb_bad.v:\d+: Always_comb variable driven after use: mid
-.*%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

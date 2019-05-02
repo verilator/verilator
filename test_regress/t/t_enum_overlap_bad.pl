@@ -12,10 +12,7 @@ scenarios(vlt => 1);
 compile(
     v_flags2 => ["--lint-only"],
     fails => 1,
-    expect =>
-'%Error: t/t_enum_overlap_bad.v:\d+: Overlapping enumeration value: e1b
-%Error: t/t_enum_overlap_bad.v:\d+: ... Location of original declaration
-%Error: Exiting due to',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

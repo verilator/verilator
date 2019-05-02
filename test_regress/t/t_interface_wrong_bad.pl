@@ -11,8 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     fails => 1,
-    expect =>
-q{%Error: t/t_interface_wrong_bad.v:\d+: Port 'foo_port' expects 'foo_intf' interface but pin connects 'bar_intf' interface},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

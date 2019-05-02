@@ -12,9 +12,7 @@ scenarios(vlt_all => 1);
 compile(
     v_flags2 => ["--lint-only"],
     fails => 1,
-    expect =>
-'%Error: t/t_var_const_bad.v:\d+: Assigning to const variable: five
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

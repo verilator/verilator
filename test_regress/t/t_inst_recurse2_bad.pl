@@ -11,9 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     fails => 1,
-    expect =>
-'.*%Error: t/t_inst_recurse2_bad.v:\d+: Unsupported: Identically recursive module \(module instantiates itself, without changing parameters\): looped
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

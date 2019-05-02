@@ -12,10 +12,7 @@ scenarios(simulator => 1);
 compile(
     v_flags2 => ["--lint-only"],
     fails => $Self->{vlt_all},
-    expect =>
-'%Warning-SELRANGE: t/t_select_bad_range3.v:\d+: Selection index out of range: 13 outside 12:10
-%Warning-SELRANGE: Use .*
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

@@ -1,0 +1,4 @@
+%Warning-UNUSED: t/t_lint_once_bad.v:18: Signal is not driven, nor used: unus1
+%Warning-UNUSED: Use "/* verilator lint_off UNUSED */" and lint_on around source to disable this message.
+%Warning-UNUSED: t/t_lint_once_bad.v:18: Signal is not driven, nor used: unus2
+%Error: Exiting due to
