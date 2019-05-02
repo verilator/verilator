@@ -8,6 +8,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support "'dx" constants, bug1423. [Udi Finkelstein]
 
+****  For FST tracing use LZ4 compression. [Tony Bybell]
+
 ****  Add error when use parameters without value, bug1424. [Peter Gerst]
 
 ****  Fix missing VL_SHIFTL_ errors, bug1412, bug1415. [Larry Lee]
