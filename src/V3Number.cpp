@@ -153,18 +153,16 @@ V3Number::V3Number(FileLine* fileline, const char* sourcep) {
 		got_01 = 1;
 		break;
 	    }
-	    case 'z': case '?': {
-		if (!m_sized)  m_fileline->v3error("Unsized X/Z/? not legal in decimal constant: "<<*cp);
-		setAllBitsZ();
-		got_z = 1;
-		break;
-	    }
-	    case 'x': {
-		if (!m_sized)  m_fileline->v3error("Unsized X/Z/? not legal in decimal constant: "<<*cp);
-		got_x = 1;
-		setAllBitsX();
-		break;
-	    }
+            case 'z': case '?': {
+                got_z = 1;
+                setAllBitsZ();
+                break;
+            }
+            case 'x': {
+                got_x = 1;
+                setAllBitsX();
+                break;
+            }
 	    case '_': break;
 	    default: {
 		m_fileline->v3error("Illegal character in decimal constant: "<<*cp);
