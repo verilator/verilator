@@ -20,7 +20,7 @@ run(cmd => ["../bin/verilator_coverage",
     tee => 0,
     );
 
-files_identical("$Self->{obj_dir}/vlcov.log", "t/$Self->{name}.out");
+files_identical("$Self->{obj_dir}/vlcov.log", $Self->{golden_filename});
 
 ok(1);
 1;

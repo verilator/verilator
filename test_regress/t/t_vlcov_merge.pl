@@ -27,7 +27,7 @@ run(cmd => ["sort",
             "> $Self->{obj_dir}/coverage-sort.dat",
     ]);
 
-files_identical("$Self->{obj_dir}/coverage-sort.dat", "t/$Self->{name}.out");
+files_identical("$Self->{obj_dir}/coverage-sort.dat", $Self->{golden_filename});
 
 ok(1);
 1;

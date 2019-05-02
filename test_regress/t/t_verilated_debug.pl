@@ -20,7 +20,7 @@ execute(
     );
 
 if (!$Self->{vltmt}) {  # vltmt output may vary between thread exec order
-    files_identical("$Self->{obj_dir}/vlt_sim.log", "t/$Self->{name}.out");
+    files_identical("$Self->{obj_dir}/vlt_sim.log", $Self->{golden_filename});
 }
 
 ok(1);

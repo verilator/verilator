@@ -27,7 +27,7 @@ file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_arru_arru\(/);
 file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_arru_arrp\(/);
 file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_arru_strp\(/);
 
-vcd_identical ("$Self->{obj_dir}/simx.vcd", "t/$Self->{name}.out");
+vcd_identical ("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
 
 ok(1);
 1;

@@ -25,7 +25,7 @@ if ($Self->{vlt_all}) {
     file_grep     ("$Self->{obj_dir}/simx.vcd", qr/\$enddefinitions/x);
     file_grep_not ("$Self->{obj_dir}/simx.vcd", qr/inside_sub/x);
 
-    vcd_identical("$Self->{obj_dir}/simx.vcd", "t/$Self->{name}.out");
+    vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
 }
 
 ok(1);

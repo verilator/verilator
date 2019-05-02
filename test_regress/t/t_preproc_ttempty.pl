@@ -23,7 +23,7 @@ compile(
     stdout_filename => $stdout_filename,
     );
 
-files_identical($stdout_filename, "t/$Self->{name}.out");
+files_identical($stdout_filename, $Self->{golden_filename});
 
 ok(1);
 1;

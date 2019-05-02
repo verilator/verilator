@@ -21,7 +21,7 @@ execute(
     );
 
 vcd_identical("$Self->{obj_dir}/simx.vcd",
-              "t/$Self->{name}.out");
+              $Self->{golden_filename});
 
 ok(1);
 1;

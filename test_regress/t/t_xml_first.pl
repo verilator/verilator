@@ -18,7 +18,7 @@ compile(
     make_main => 0,
     );
 
-files_identical("$out_filename", "t/$Self->{name}.out");
+files_identical("$out_filename", $Self->{golden_filename});
 
 ok(1);
 1;

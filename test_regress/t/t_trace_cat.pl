@@ -22,7 +22,7 @@ execute(
 system("cat $Self->{obj_dir}/simpart*.vcd > $Self->{obj_dir}/simall.vcd");
 
 vcd_identical("$Self->{obj_dir}/simall.vcd",
-              "t/$Self->{name}.out");
+              $Self->{golden_filename});
 
 ok(1);
 1;

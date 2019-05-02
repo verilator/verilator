@@ -20,7 +20,7 @@ execute(
     );
 
 fst2vcd($Self->trace_filename, "$Self->{obj_dir}/simx-fst2vcd.vcd");
-vcd_identical("$Self->{obj_dir}/simx-fst2vcd.vcd", "t/$Self->{name}.out");
+vcd_identical("$Self->{obj_dir}/simx-fst2vcd.vcd", $Self->{golden_filename});
 
 ok(1);
 1;

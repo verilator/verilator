@@ -19,7 +19,7 @@ compile(verilator_flags2 => ["--trace"]);
 
 execute(check_finished => 1);
 
-vcd_identical("$Self->{obj_dir}/simx.vcd", "t/$Self->{name}.out");
+vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
 
 ok(1);
 1;

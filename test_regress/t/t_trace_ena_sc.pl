@@ -27,7 +27,7 @@ else {
         # Note more checks in _cc.pl
         file_grep     ("$Self->{obj_dir}/simx.vcd", qr/\$enddefinitions/x);
 
-        vcd_identical("$Self->{obj_dir}/simx.vcd", "t/$Self->{name}.out");
+        vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
     }
 }
 

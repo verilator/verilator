@@ -25,7 +25,7 @@ if ($Self->{vlt_all}) {
     file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ other\.cyc /);
     file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ module mod\.with_dot /);
     vcd_identical ("$Self->{obj_dir}/simx.vcd",
-                   "t/$Self->{name}.out");
+                   $Self->{golden_filename});
 }
 
 ok(1);
