@@ -27,7 +27,8 @@ if (!-r "$root/.git") {
         my $lineno = 0;
         foreach my $line ((split /\n/, $diff), "+++ b/_the_end") {
             if ($line =~ m!^\+\+\+ b/(.*)!) {
-                if ($file && !$atab && $btab) {
+                if ($file && !$atab && $btab
+                    && $file !~ /\.out$/) {
                     $summary = "File modifications adds new tabs (please untabify the patch):";
                     $warns{$file} = "File modification adds new tabs (please untabify the patch): $file";
                 }
