@@ -361,6 +361,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --top-module <topname>      Name of top level input module
     --trace                     Enable waveform creation
     --trace-fst                 Enable FST waveform creation
+    --trace-fst-thread          Enable FST threaded waveform creation
     --trace-depth <levels>      Depth of tracing
     --trace-max-array <depth>   Maximum bit width for tracing
     --trace-max-width <width>   Maximum array depth for tracing
@@ -1291,7 +1292,14 @@ even when waveforms are not turned on during model execution.
 
 =item --trace-fst
 
-Enable FST waveform tracing in the model. This overrides C<--trace>.
+Enable FST waveform tracing in the model. This overrides C<--trace> and
+C<--trace-fst-thread>.  See also C<--trace-fst-thread>.
+
+=item --trace-fst-thread
+
+Enable FST waveform tracing in the model, using a separate thread. This is
+typically faster in runtime but slower in total computes than
+C<--trace-fst>.  This overrides C<--trace> and C<--trace-fst>.
 
 =item --trace-depth I<levels>
 
@@ -2347,6 +2355,9 @@ oversubscribe the available CPU cores. Under CPU oversubscription, the
 Verilated model should not livelock nor deadlock, however, you can expect
 performance to be far worse than it would be with proper stoichiometry of
 threads and CPU cores.
+
+With --trace-fst-thread, tracing occurs in a separate thread from the main
+simulation thread(s). This option is orthogonal to --threads.
 
 The remainder of this section describe behavior with --threads 1 or
 --threads N (not --no-threads).

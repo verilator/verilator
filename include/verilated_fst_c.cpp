@@ -24,6 +24,12 @@
 #include "verilated.h"
 #include "verilated_fst_c.h"
 
+// GTKWave configuration
+#ifdef VL_TRACE_THREADED
+# define HAVE_LIBPTHREAD
+# define FST_WRITER_PARALLEL
+#endif
+
 // Include the GTKWave implementation directly
 #include "gtkwave/fastlz.c"
 #include "gtkwave/fstapi.c"
@@ -73,6 +79,9 @@ void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
     m_assertOne.check();
     m_fst = fstWriterCreate(filename, 1);
     fstWriterSetPackType(m_fst, FST_WR_PT_LZ4);
+#ifdef VL_TRACE_THREADED
+    fstWriterSetParallelMode(m_fst, 1);
+#endif
     m_curScope.clear();
 
     for (vluint32_t ent = 0; ent< m_callbacks.size(); ++ent) {

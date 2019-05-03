@@ -41,14 +41,18 @@ class TraceFormat {
 public:
     enum en {
         VCD = 0,
-        FST
+        FST,
+        FST_THREAD
     } m_e;
     inline TraceFormat(en _e = VCD) : m_e(_e) {}
     explicit inline TraceFormat(int _e) : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
+    bool fstFlavor() const { return m_e == FST || m_e == FST_THREAD; }
+    bool threaded() const { return m_e == FST_THREAD; }
     string classBase() const {
         static const char* const names[] = {
             "VerilatedVcd",
+            "VerilatedFst",
             "VerilatedFst"
         };
         return names[m_e];
@@ -56,6 +60,7 @@ public:
     string sourceName() const {
         static const char* const names[] = {
             "verilated_vcd",
+            "verilated_fst",
             "verilated_fst"
         };
         return names[m_e];

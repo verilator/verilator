@@ -2887,7 +2887,7 @@ class EmitCTrace : EmitCStmts {
 	puts(",");
 	putsQuoted(nodep->showname());
         // Direction
-        if (v3Global.opt.traceFormat() == TraceFormat::FST) {
+        if (v3Global.opt.traceFormat().fstFlavor()) {
             puts(","+cvtToStr(enumNum));
             // fstVarDir
             if (nodep->declDirection().isInoutish()) puts(",FST_VD_INOUT");
@@ -2954,7 +2954,7 @@ class EmitCTrace : EmitCStmts {
 
     int emitTraceDeclDType(AstNodeDType* nodep) {
         // Return enum number or -1 for none
-        if (v3Global.opt.traceFormat() == TraceFormat::FST) {
+        if (v3Global.opt.traceFormat().fstFlavor()) {
             // Skip over refs-to-refs, but stop before final ref so can get data type name
             // Alternatively back in V3Width we could push enum names from upper typedefs
             if (AstEnumDType* enump = VN_CAST(nodep->skipRefToEnump(), EnumDType)) {

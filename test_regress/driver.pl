@@ -594,8 +594,9 @@ sub compile_vlt_flags {
 			  @{$param{verilator_flags3}});
     $self->{sc} = 1 if ($checkflags =~ /-sc\b/);
     $self->{trace} = ($opt_trace || $checkflags =~ /-trace\b/
-                      || $checkflags =~ /-trace-fst\b/);
-    $self->{trace_format} = (($checkflags =~ /-trace-fst\b/ && 'fst-c')
+                      || $checkflags =~ /-trace-fst\b/
+                      || $checkflags =~ /-trace-fst-thread\b/);
+    $self->{trace_format} = (($checkflags =~ /-trace-fst/ && 'fst-c')
                              || ($self->{sc} && 'vcd-sc')
                              || (!$self->{sc} && 'vcd-c'));
     $self->{savable} = 1 if ($checkflags =~ /-savable\b/);
@@ -607,6 +608,7 @@ sub compile_vlt_flags {
     unshift @verilator_flags, "--x-assign unique";  # More likely to be buggy
     unshift @verilator_flags, "--trace" if $opt_trace;
     unshift @verilator_flags, "--threads 3" if $param{vltmt};
+    unshift @verilator_flags, "--trace-fst-thread" if $param{vltmt} && $checkflags =~ /-trace-fst/;
     unshift @verilator_flags, "--debug-partition" if $param{vltmt};
     if (defined $opt_optimize) {
 	my $letters = "";

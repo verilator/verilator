@@ -699,10 +699,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( onoff   (sw, "-stats-vars", flag/*ref*/) )	{ m_statsVars = flag; m_stats |= flag; }
 	    else if ( !strcmp (sw, "-sv") )				{ m_defaultLanguage = V3LangCode::L1800_2005; }
             else if ( onoff   (sw, "-threads-coarsen", flag/*ref*/))    { m_threadsCoarsen = flag; }  // Undocumented, debug
-	    else if ( onoff   (sw, "-trace", flag/*ref*/) )		{ m_trace = flag; }
-            else if ( onoff   (sw, "-trace-fst", flag/*ref*/) )         { m_trace = flag; m_traceFormat = TraceFormat::FST; addLdLibs("-lz"); }
-	    else if ( onoff   (sw, "-trace-dups", flag/*ref*/) )	{ m_traceDups = flag; }
-	    else if ( onoff   (sw, "-trace-params", flag/*ref*/) )	{ m_traceParams = flag; }
+            else if ( onoff   (sw, "-trace", flag/*ref*/) )             { m_trace = flag; }
+            else if ( onoff   (sw, "-trace-dups", flag/*ref*/) )        { m_traceDups = flag; }
+            else if ( onoff   (sw, "-trace-params", flag/*ref*/) )      { m_traceParams = flag; }
 	    else if ( onoff   (sw, "-trace-structs", flag/*ref*/) )	{ m_traceStructs = flag; }
 	    else if ( onoff   (sw, "-trace-underscore", flag/*ref*/) )	{ m_traceUnderscore = flag; }
 	    else if ( onoff   (sw, "-underline-zero", flag/*ref*/) )	{ m_underlineZero = flag; }  // Undocumented, old Verilator-2
@@ -869,6 +868,16 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 		shift;
 		m_outputSplitCTrace = atoi(argv[i]);
 	    }
+            else if (!strcmp(sw, "-trace-fst")) {
+                m_trace = true;
+                m_traceFormat = TraceFormat::FST;
+                addLdLibs("-lz");
+            }
+            else if (!strcmp(sw, "-trace-fst-thread")) {
+                m_trace = true;
+                m_traceFormat = TraceFormat::FST_THREAD;
+                addLdLibs("-lz");
+            }
 	    else if ( !strcmp (sw, "-trace-depth") && (i+1)<argc ) {
 		shift;
 		m_traceDepth = atoi(argv[i]);
