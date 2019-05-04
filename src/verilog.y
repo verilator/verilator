@@ -3987,14 +3987,8 @@ void V3ParseGrammar::argWrapList(AstNodeFTaskRef* nodep) {
 }
 
 AstNode* V3ParseGrammar::createSupplyExpr(FileLine* fileline, string name, int value) {
-    FileLine* newfl = new FileLine(fileline);
-    newfl->warnOff(V3ErrorCode::WIDTH, true);
-    AstNode* nodep = new AstConst(newfl, V3Number(newfl));
-    // Adding a NOT is less work than figuring out how wide to make it
-    if (value) nodep = new AstNot(newfl, nodep);
-    nodep = new AstAssignW(newfl, new AstVarRef(fileline, name, true),
-			   nodep);
-    return nodep;
+    return new AstAssignW(fileline, new AstVarRef(fileline, name, true),
+                          new AstConst(fileline, V3Number(fileline, (value ? "'1" : "'0"))));
 }
 
 AstRange* V3ParseGrammar::scrubRange(AstNodeRange* nrangep) {
