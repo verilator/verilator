@@ -226,7 +226,9 @@ private:
     }
 
     void createTableVars(AstNode* nodep) {
-	// Create table for each output
+        // Create table for each output
+        typedef std::map<string,int> NameCounts;
+        NameCounts namecounts;
         for (std::deque<AstVarScope*>::iterator it = m_outVarps.begin(); it!=m_outVarps.end(); ++it) {
 	    AstVarScope* outvscp = *it;
 	    AstVar* outvarp = outvscp->varp();
@@ -234,11 +236,17 @@ private:
 	    AstNodeArrayDType* dtypep
                 = new AstUnpackArrayDType(fl, outvarp->dtypep(),
                                           new AstRange(fl, VL_MASK_I(m_inWidth), 0));
-	    v3Global.rootp()->typeTablep()->addTypesp(dtypep);
-	    AstVar* tablevarp
-                = new AstVar(fl, AstVarType::MODULETEMP,
-                             "__Vtable" + cvtToStr(m_modTables) +"_"+outvarp->name(),
-                             dtypep);
+            v3Global.rootp()->typeTablep()->addTypesp(dtypep);
+            string name = "__Vtable"+cvtToStr(m_modTables)+"_"+outvarp->name();
+            NameCounts::iterator nit = namecounts.find(name);
+            if (nit != namecounts.end()) {
+                // Multiple scopes can have same var name. We could append the
+                // scope name but that is very long, so just deduplicate.
+                name += "__dedup"+cvtToStr(++nit->second);
+            } else {
+                namecounts[name] = 0;
+            }
+            AstVar* tablevarp = new AstVar(fl, AstVarType::MODULETEMP, name, dtypep);
 	    tablevarp->isConst(true);
 	    tablevarp->isStatic(true);
             tablevarp->valuep(new AstInitArray(nodep->fileline(), dtypep, NULL));

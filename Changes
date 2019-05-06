@@ -24,6 +24,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix FST enums not displaying, bug1426. [Danilo Ramos]
 
+****  Fix table compile error with multiinterfaces, bug1431. [Bogdan Vukobratovic]
+
 
 * Verilator 4.012 2019-3-23
 
