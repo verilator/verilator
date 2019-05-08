@@ -26,12 +26,12 @@ my $opt_filename;
 my $opt_circle;
 autoflush STDOUT 1;
 autoflush STDERR 1;
-if (! GetOptions (
-		  "help"	=> \&usage,
-		  "debug"	=> \&debug,
-		  "<>"		=> \&parameter,
-		  "circle=s"	=> \$opt_circle,
-		  )) {
+if (! GetOptions(
+          "help"        => \&usage,
+          "debug"       => \&debug,
+          "<>"          => \&parameter,
+          "circle=s"    => \$opt_circle,
+    )) {
     usage();
 }
 
@@ -54,9 +54,9 @@ sub debug {
 sub parameter {
     my $param = shift;
     if (!$opt_filename) {
-	$opt_filename = $param;
+        $opt_filename = $param;
     } else {
-	die "%Error: Unknown parameter: $param\n";
+        die "%Error: Unknown parameter: $param\n";
     }
 }
 
@@ -68,16 +68,16 @@ sub dotread {
     my $fh = IO::File->new($filename) or die "%Error: $! $filename,";
     my $header = 1;
     while (defined (my $line = $fh->getline)) {
-	if ($line =~ /^\t([a-zA-Z0-9_]+)\t(.*)$/) {
-	    $header = 0;
-	    $Vertexes{$1} = $2;
-	}
-	elsif ($line =~ /^\t([a-zA-Z0-9_]+)\s+->\s+([a-zA-Z0-9_]+)\s+(.*)$/) {
-	    $Edges{$1}{$2} = $3;
-	}
-	elsif ($header) {
-	    push @Header, $line;
-	}
+        if ($line =~ /^\t([a-zA-Z0-9_]+)\t(.*)$/) {
+            $header = 0;
+            $Vertexes{$1} = $2;
+        }
+        elsif ($line =~ /^\t([a-zA-Z0-9_]+)\s+->\s+([a-zA-Z0-9_]+)\s+(.*)$/) {
+            $Edges{$1}{$2} = $3;
+        }
+        elsif ($header) {
+            push @Header, $line;
+        }
     }
 }
 
@@ -85,12 +85,12 @@ sub dotread {
 
 sub simplify {
     foreach my $ver (sort (keys %Vertexes)) {
-	$Vertexes{$ver} = _simplify($Vertexes{$ver});
+        $Vertexes{$ver} = _simplify($Vertexes{$ver});
     }
     foreach my $v1 (sort (keys %Edges)) {
-	foreach my $v2 (sort (keys %{$Edges{$v1}})) {
-	    $Edges{$v1}{$v2} = _simplify($Edges{$v1}{$v2});
-	}
+        foreach my $v2 (sort (keys %{$Edges{$v1}})) {
+            $Edges{$v1}{$v2} = _simplify($Edges{$v1}{$v2});
+        }
     }
 }
 
@@ -103,15 +103,15 @@ sub _simplify {
 
 sub dotwrite {
     foreach my $line (@Header) {
-	print "$line";
+        print "$line";
     }
     foreach my $ver (sort (keys %Vertexes)) {
-	print "\t$ver\t$Vertexes{$ver}\n";
+        print "\t$ver\t$Vertexes{$ver}\n";
     }
     foreach my $v1 (sort (keys %Edges)) {
-	foreach my $v2 (sort (keys %{$Edges{$v1}})) {
-	    print "\t$v1 -> $v2\t$Edges{$v1}{$v2}\n";
-	}
+        foreach my $v2 (sort (keys %{$Edges{$v1}})) {
+            print "\t$v1 -> $v2\t$Edges{$v1}{$v2}\n";
+        }
     }
     print "}\n";
 }
@@ -125,15 +125,15 @@ sub circle {
     _circle_recurse($node, 1);
 
     foreach my $ver (keys %Vertexes) {
-	if (!$User{$ver}) {
-	    delete $Vertexes{$ver};
-	    delete $Edges{$ver};
-	}
+        if (!$User{$ver}) {
+            delete $Vertexes{$ver};
+            delete $Edges{$ver};
+        }
     }
     foreach my $v1 (sort (keys %Edges)) {
-	foreach my $v2 (sort (keys %{$Edges{$v1}})) {
-	    if (!$Vertexes{$v2}) { delete $Edges{$v1}{$v2}; }
-	}
+        foreach my $v2 (sort (keys %{$Edges{$v1}})) {
+            if (!$Vertexes{$v2}) { delete $Edges{$v1}{$v2}; }
+        }
     }
 }
 
@@ -148,7 +148,7 @@ sub _circle_recurse {
     $User2{$node} = 1;
     my $r = 0;
     foreach my $v2 (keys %{$Edges{$node}}) {
-	$r |= _circle_recurse($v2,$level++)||0;
+        $r |= _circle_recurse($v2,$level++)||0;
     }
     $User{$node} = 1 if $r;
     $User2{$node} = 2;

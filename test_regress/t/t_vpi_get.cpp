@@ -53,37 +53,37 @@ unsigned int main_time = false;
 
 #define CHECK_RESULT_VH(got, exp) \
     if ((got) != (exp)) { \
-	printf("%%Error: %s:%d: GOT = %p   EXP = %p\n", \
-	       FILENM,__LINE__, (got), (exp)); \
-	return __LINE__; \
+        printf("%%Error: %s:%d: GOT = %p   EXP = %p\n", \
+               FILENM,__LINE__, (got), (exp)); \
+        return __LINE__; \
     }
 
 #define CHECK_RESULT_NZ(got) \
     if (!(got)) { \
-	printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM,__LINE__); \
-	return __LINE__; \
+        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM,__LINE__); \
+        return __LINE__; \
     }
 
 // Use cout to avoid issues with %d/%lx etc
 #define CHECK_RESULT(got, exp) \
-    if ((got) != (exp)) {			     \
-	cout<<dec<<"%Error: "<<FILENM<<":"<<__LINE__ \
-	   <<": GOT = "<<(got)<<"   EXP = "<<(exp)<<endl;	\
-	return __LINE__; \
+    if ((got) != (exp)) {                            \
+        cout<<dec<<"%Error: "<<FILENM<<":"<<__LINE__ \
+           <<": GOT = "<<(got)<<"   EXP = "<<(exp)<<endl;       \
+        return __LINE__; \
     }
 
 #define CHECK_RESULT_HEX(got, exp) \
-    if ((got) != (exp)) {				  \
-	cout<<dec<<"%Error: "<<FILENM<<":"<<__LINE__<<hex \
-	   <<": GOT = "<<(got)<<"   EXP = "<<(exp)<<endl;	\
-	return __LINE__; \
+    if ((got) != (exp)) {                                 \
+        cout<<dec<<"%Error: "<<FILENM<<":"<<__LINE__<<hex \
+           <<": GOT = "<<(got)<<"   EXP = "<<(exp)<<endl;       \
+        return __LINE__; \
     }
 
 #define CHECK_RESULT_CSTR(got, exp) \
     if (strcmp((got),(exp))) { \
-	printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", \
-	       FILENM,__LINE__, (got)?(got):"<null>", (exp)?(exp):"<null>"); \
-	return __LINE__; \
+        printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", \
+               FILENM,__LINE__, (got)?(got):"<null>", (exp)?(exp):"<null>"); \
+        return __LINE__; \
     }
 
 #define CHECK_RESULT_CSTR_STRIP(got, exp) \
@@ -91,7 +91,7 @@ unsigned int main_time = false;
 
 static int _mon_check_props(TestVpiHandle& handle, int size, int direction, int scalar, int type) {
     s_vpi_value value = {
-	vpiIntVal, .value = {.integer = 0}
+        vpiIntVal, .value = {.integer = 0}
     };
     // check size of object
     int vpisize = vpi_get(vpiSize, handle);
@@ -145,7 +145,7 @@ static int _mon_check_props(TestVpiHandle& handle, int size, int direction, int 
       CHECK_RESULT(vpitype, type);
     }
 
-    return 0; // Ok
+    return 0;  // Ok
 }
 
 struct params {
@@ -201,7 +201,7 @@ int mon_check_props() {
 int mon_check() {
     // Callback from initial block in monitor
     if (int status = mon_check_props()) return status;
-    return 0; // Ok
+    return 0;  // Ok
 }
 
 //======================================================================
@@ -267,17 +267,17 @@ int main(int argc, char **argv, char **env) {
     main_time += 10;
 
     while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
-	main_time += 1;
-	topp->eval();
-	VerilatedVpi::callValueCbs();
-	topp->clk = !topp->clk;
-	//mon_do();
+        main_time += 1;
+        topp->eval();
+        VerilatedVpi::callValueCbs();
+        topp->clk = !topp->clk;
+        //mon_do();
 #if VM_TRACE
-	if (tfp) tfp->dump (main_time);
+        if (tfp) tfp->dump (main_time);
 #endif
     }
     if (!Verilated::gotFinish()) {
-	vl_fatal(FILENM,__LINE__,"main", "%Error: Timeout; never got a $finish");
+        vl_fatal(FILENM,__LINE__,"main", "%Error: Timeout; never got a $finish");
     }
     topp->final();
 

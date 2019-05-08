@@ -19,8 +19,8 @@ require 5.006_001;
 use warnings;
 BEGIN {
     if ($ENV{DIRPROJECT} && $ENV{DIRPROJECT_PERL_BOOT}) {
-	# Magic to allow author testing of perl packages in local directory
-	require $ENV{DIRPROJECT}."/".$ENV{DIRPROJECT_PERL_BOOT};
+        # Magic to allow author testing of perl packages in local directory
+        require $ENV{DIRPROJECT}."/".$ENV{DIRPROJECT_PERL_BOOT};
     }
 }
 
@@ -56,12 +56,12 @@ foreach my $sw (@ARGV) {
 
 Getopt::Long::config("no_auto_abbrev","pass_through");
 if (! GetOptions (
-	  # Major operating modes
-	  "help"	=> \&usage,
-	  "debug:s"	=> \&debug,
-	  # "version!"	=> \&version,	# Also passthru'ed
-	  # Additional parameters
-	  "<>"		=> sub {},	# Ignored
+          # Major operating modes
+          "help"        => \&usage,
+          "debug:s"     => \&debug,
+          # "version!"  => \&version,   # Also passthru'ed
+          # Additional parameters
+          "<>"          => sub {},      # Ignored
     )) {
     pod2usage(-exitstatus=>2, -verbose=>0);
 }
@@ -90,25 +90,25 @@ sub verilator_coverage_bin {
     my $bin = "";
     # Use VERILATOR_ROOT if defined, else assume verilator_bin is in the search path
     my $basename = ($ENV{VERILATOR_COVERAGE_BIN}
-		    || "verilator_coverage_bin_dbg");
+                    || "verilator_coverage_bin_dbg");
     if (defined($ENV{VERILATOR_ROOT})) {
-	my $dir = $ENV{VERILATOR_ROOT};
+        my $dir = $ENV{VERILATOR_ROOT};
         if (-x "$dir/bin/$basename"
             || -x "$dir/bin/$basename.exe") {  # From a "make install" into VERILATOR_ROOT
-	    $bin = "$dir/bin/$basename";
-	} else {
-	    $bin = "$dir/$basename";  # From pointing to kit directory
-	}
+            $bin = "$dir/bin/$basename";
+        } else {
+            $bin = "$dir/$basename";  # From pointing to kit directory
+        }
     } else {
         if (-x "$RealBin/$basename"
             || -x "$RealBin/$basename.exe") {
-	    $bin = "$RealBin/$basename";  # From path/to/verilator with verilator_bin installed
-	} else {
-	    $bin = $basename;  # Find in PATH
-	}
-	# Note we don't look under bin/$basename which would be right if running
-	# in the kit dir. Running that would likely break, since
-	# VERILATOR_ROOT wouldn't be set and Verilator won't find internal files.
+            $bin = "$RealBin/$basename";  # From path/to/verilator with verilator_bin installed
+        } else {
+            $bin = $basename;  # Find in PATH
+        }
+        # Note we don't look under bin/$basename which would be right if running
+        # in the kit dir. Running that would likely break, since
+        # VERILATOR_ROOT wouldn't be set and Verilator won't find internal files.
     }
     return $bin;
 }
@@ -125,23 +125,23 @@ sub run {
     system($command);
     my $status = $?;
     if ($status) {
-	if ($! =~ /no such file or directory/i) {
-	    warn "%Error: verilator_coverage: Misinstalled, or VERILATOR_ROOT might need to be in environment\n";
-	}
-	if ($Debug) {  # For easy rerunning
-	    warn "%Error: export VERILATOR_ROOT=".($ENV{VERILATOR_ROOT}||"")."\n";
-	    warn "%Error: $command\n";
-	}
-	if ($status & 127) {
-	    if (($status & 127) == 8 || ($status & 127) == 11) { # SIGFPA or SIGSEGV
-		warn "%Error: Verilator_coverage internal fault, sorry.\n" if !$Debug;
-	    } elsif (($status & 127) == 6) {  # SIGABRT
-		warn "%Error: Verilator_coverage aborted.\n" if !$Debug;
-	    } else {
-		warn "%Error: Verilator_coverage threw signal $status.\n" if !$Debug;
-	    }
-	}
-	die "%Error: Command Failed $command\n";
+        if ($! =~ /no such file or directory/i) {
+            warn "%Error: verilator_coverage: Misinstalled, or VERILATOR_ROOT might need to be in environment\n";
+        }
+        if ($Debug) {  # For easy rerunning
+            warn "%Error: export VERILATOR_ROOT=".($ENV{VERILATOR_ROOT}||"")."\n";
+            warn "%Error: $command\n";
+        }
+        if ($status & 127) {
+            if (($status & 127) == 8 || ($status & 127) == 11) { # SIGFPA or SIGSEGV
+                warn "%Error: Verilator_coverage internal fault, sorry.\n" if !$Debug;
+            } elsif (($status & 127) == 6) {  # SIGABRT
+                warn "%Error: Verilator_coverage aborted.\n" if !$Debug;
+            } else {
+                warn "%Error: Verilator_coverage threw signal $status.\n" if !$Debug;
+            }
+        }
+        die "%Error: Command Failed $command\n";
     }
 }
 

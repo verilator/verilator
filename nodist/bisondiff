@@ -23,9 +23,9 @@ our $Debug;
 our $Opt_Unsup;
 
 if (! GetOptions (
-	  #"help"	=> \&usage,
-	  "debug"	=> sub { $Debug = 1; },
-	  "unsup!"	=> \$Opt_Unsup,		# Ignore unsupported
+          #"help"       => \&usage,
+          "debug"       => sub { $Debug = 1; },
+          "unsup!"      => \$Opt_Unsup,  # Ignore unsupported
     )) {
     die "usage();"
 }
@@ -59,24 +59,24 @@ sub prep {
     my $rule = "";
     my $skip = 1;
     while (defined(my $line = $fh->getline)) {
-	if ($skip == 1) {
-	    next if $line !~ /%token/;
-	    $skip = 2;
-	}
+        if ($skip == 1) {
+            next if $line !~ /%token/;
+            $skip = 2;
+        }
 
-	if ($Opt_Unsup) {
-	    $line =~ s!//UNSUP!|!g;
-	    $line =~ s!(\s+)\|(\s+)!$1$2!g;  # As "UNSUP" often replaces "|"
-	}
+        if ($Opt_Unsup) {
+            $line =~ s!//UNSUP!|!g;
+            $line =~ s!(\s+)\|(\s+)!$1$2!g;  # As "UNSUP" often replaces "|"
+        }
 
-	# %type<foo>
-	$line =~ s/^(%\S+)<(\S+)>/$1/;
-	# rule<foo>
-	$line =~ s/^([a-zA-Z0-9_]+)<\S+>:/$1:/;
-	# Productions
-	$line =~ s/[ \t]{[^}]*?}/\t{}/g;
+        # %type<foo>
+        $line =~ s/^(%\S+)<(\S+)>/$1/;
+        # rule<foo>
+        $line =~ s/^([a-zA-Z0-9_]+)<\S+>:/$1:/;
+        # Productions
+        $line =~ s/[ \t]{[^}]*?}/\t{}/g;
 
-	$fho->print($line);
+        $fho->print($line);
     }
 }
 

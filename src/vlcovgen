@@ -7,7 +7,7 @@ use Getopt::Long;
 use IO::File;
 use Pod::Usage;
 use strict;
-use vars qw ($Debug);
+use vars qw($Debug);
 
 our @Items;
 
@@ -16,12 +16,12 @@ our @Items;
 
 $Debug = 0;
 my $Opt_Srcdir = ".";
-Getopt::Long::config ("pass_through", "no_auto_abbrev");
-if (! GetOptions (
-	  "help"	=> \&usage,
-	  "debug"	=> sub { $Debug = 1; },
-	  "srcdir=s"	=> \$Opt_Srcdir,
-	  "<>"		=> sub { die "%Error: Unknown parameter: $_[0],"; },
+Getopt::Long::config("pass_through", "no_auto_abbrev");
+if (! GetOptions(
+          "help"        => \&usage,
+          "debug"       => sub { $Debug = 1; },
+          "srcdir=s"    => \$Opt_Srcdir,
+          "<>"          => sub { die "%Error: Unknown parameter: $_[0],"; },
     )) {
     usage();
 }
@@ -34,7 +34,7 @@ write_keys("$Opt_Srcdir/../include/verilated_cov_key.h");
 
 sub usage {
     pod2usage(-verbose=>2, -exitval=>2, -output=>\*STDOUT);
-    exit (1);
+    exit(1);
 }
 
 #######################################################################
@@ -44,17 +44,17 @@ sub read_keys {
 
     my $fh = IO::File->new("<$filename") or die "%Error: $! $filename,";
     while (defined (my $line = $fh->getline())) {
-	$line =~ s/\/\/.*$//;
-	next if $line =~ /^\s*$/;
-	if ($line =~ /^\s*VLCOVGEN_ITEM/) {
-	    $line =~ /^\s*VLCOVGEN_ITEM *\( *"([^"]+)" *\)/
-		or die "%Error: $filename:$.: Misformed VLCOVGEN_ITEM line,";
-	    my @data;
-	    my $code = "\@data = ($1);";
-	    eval $code;
-	    die "%Error: $filename:$.: Parsing '$code': $@," if $@;
-	    push @Items, {@data};
-	}
+        $line =~ s/\/\/.*$//;
+        next if $line =~ /^\s*$/;
+        if ($line =~ /^\s*VLCOVGEN_ITEM/) {
+            $line =~ /^\s*VLCOVGEN_ITEM *\( *"([^"]+)" *\)/
+                or die "%Error: $filename:$.: Misformed VLCOVGEN_ITEM line,";
+            my @data;
+            my $code = "\@data = ($1);";
+            eval $code;
+            die "%Error: $filename:$.: Parsing '$code': $@," if $@;
+            push @Items, {@data};
+        }
     }
 }
 
@@ -64,11 +64,11 @@ sub lint {
     my %shorts;
     my $ok = 1;
     foreach my $itemref (@Items) {
-	if ($shorts{$itemref->{short}}) {
-	    warn "%Error: Duplicate short code: $itemref->{short},";
-	    $ok = 0;
-	}
-	$shorts{$itemref->{short}} = 1;
+        if ($shorts{$itemref->{short}}) {
+            warn "%Error: Duplicate short code: $itemref->{short},";
+            $ok = 0;
+        }
+        $shorts{$itemref->{short}} = 1;
     }
     return $ok;
 }
@@ -82,40 +82,40 @@ sub write_keys {
     my @out;
     my $deleting;
     while (defined(my $line = $fh->getline)) {
-	push @in, $line;
-	if ($line =~ /VLCOVGEN_CIK_AUTO_EDIT_BEGIN/) {
-	    $deleting = 1;
-	    push @out, $line;
-	    foreach my $keyref (sort {$a->{name} cmp $b->{name}} @Items) {
-		push @out, sprintf("#define VL_CIK_%s \"%s\"\n",
-				   uc $keyref->{name}, $keyref->{short});
-	    }
-	}
-	elsif ($line =~ /VLCOVGEN_SHORT_AUTO_EDIT_BEGIN/) {
-	    $deleting = 1;
-	    push @out, $line;
-	    foreach my $keyref (sort {$a->{name} cmp $b->{name}} @Items) {
+        push @in, $line;
+        if ($line =~ /VLCOVGEN_CIK_AUTO_EDIT_BEGIN/) {
+            $deleting = 1;
+            push @out, $line;
+            foreach my $keyref (sort {$a->{name} cmp $b->{name}} @Items) {
+                push @out, sprintf("#define VL_CIK_%s \"%s\"\n",
+                                   uc $keyref->{name}, $keyref->{short});
+            }
+        }
+        elsif ($line =~ /VLCOVGEN_SHORT_AUTO_EDIT_BEGIN/) {
+            $deleting = 1;
+            push @out, $line;
+            foreach my $keyref (sort {$a->{name} cmp $b->{name}} @Items) {
                 push @out, sprintf("        if (key == \"%s\") return VL_CIK_%s;\n",
-				   $keyref->{name}, uc $keyref->{name});
-	    }
-	}
-	elsif ($line =~ /VLCOVGEN_.*AUTO_EDIT_END/) {
-	    $deleting = 0;
-	    push @out, $line;
-	}
-	elsif ($deleting) {
-	}
-	else {
-	    push @out, $line;
-	}
+                                   $keyref->{name}, uc $keyref->{name});
+            }
+        }
+        elsif ($line =~ /VLCOVGEN_.*AUTO_EDIT_END/) {
+            $deleting = 0;
+            push @out, $line;
+        }
+        elsif ($deleting) {
+        }
+        else {
+            push @out, $line;
+        }
     }
     $fh->close;
 
     my $ok = join("", @out) eq join("", @in);
     if (!$ok) {
-	my $fh = IO::File->new(">$filename") or die "%Error: $! writing $filename\n";
-	$fh->print(join "", @out);
-	$fh->close;
+        my $fh = IO::File->new(">$filename") or die "%Error: $! writing $filename\n";
+        $fh->print(join "", @out);
+        $fh->close;
     }
 }
 

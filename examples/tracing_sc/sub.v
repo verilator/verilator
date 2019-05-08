@@ -49,7 +49,7 @@ module sub
 
    // An example assertion
    always_ff @ (posedge clk) begin
-      AssertionExample: assert (!reset_l || count_c<100);
+      AssertionExample: assert(!reset_l || count_c<100);
    end
 
    // And example coverage analysis

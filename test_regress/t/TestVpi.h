@@ -24,7 +24,7 @@ class TestVpiHandle {
 public:
     TestVpiHandle() : m_handle(NULL), m_free(true) { }
     TestVpiHandle(vpiHandle h) : m_handle(h), m_free(true) { }
-    ~TestVpiHandle() { if (m_handle && m_free) { vpi_free_object(m_handle); m_handle=NULL; } } // icarus has yet to catch up with 1800-2009
+    ~TestVpiHandle() { if (m_handle && m_free) { vpi_free_object(m_handle); m_handle=NULL; } }
     operator vpiHandle() const { return m_handle; }
     inline TestVpiHandle& operator= (vpiHandle h) { m_handle = h; return *this; }
     TestVpiHandle& nofree() {

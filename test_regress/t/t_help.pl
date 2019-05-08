@@ -22,7 +22,7 @@ foreach my $prog (
         logfile => "$Self->{obj_dir}/t_help.log",
         tee => 0,
         );
-    file_grep ("$Self->{obj_dir}/t_help.log", qr/DISTRIBUTION/i);
+    file_grep("$Self->{obj_dir}/t_help.log", qr/DISTRIBUTION/i);
 }
 
 ok(1);

@@ -7,7 +7,7 @@ use Getopt::Long;
 use IO::File;
 use Pod::Usage;
 use strict;
-use vars qw ($Debug $VERSION);
+use vars qw($Debug $VERSION);
 
 $VERSION = '3.404';
 
@@ -28,21 +28,21 @@ our $Opt_Input;
 
 autoflush STDOUT 1;
 autoflush STDERR 1;
-Getopt::Long::config ("no_auto_abbrev");
-if (! GetOptions (
-	  # Local options
-	  "help"		=> \&usage,
-	  "version"		=> sub { print "Version $VERSION\n"; exit(0); },
-	  "yacc=s"		=> \$Opt_Yacc,
-	  # Passed to Bison
-	  "t|debug"		=> sub { $Opt_Debug = 1; },
-	  "b|file-prefix=s"	=> \$Opt_File_Prefix,
-	  "d"			=> \$Opt_Definitions,
-	  "k|token-table"	=> \$Opt_Token_Table,
-	  "o=s"			=> \$Opt_Output,
-	  "p|name-prefix=s"	=> \$Opt_Name_Prefix,
-	  "v|verbose"		=> \$Opt_Verbose,
-	  "<>"			=> \&parameter,
+Getopt::Long::config("no_auto_abbrev");
+if (! GetOptions(
+          # Local options
+          "help"                => \&usage,
+          "version"             => sub { print "Version $VERSION\n"; exit(0); },
+          "yacc=s"              => \$Opt_Yacc,
+          # Passed to Bison
+          "t|debug"             => sub { $Opt_Debug = 1; },
+          "b|file-prefix=s"     => \$Opt_File_Prefix,
+          "d"                   => \$Opt_Definitions,
+          "k|token-table"       => \$Opt_Token_Table,
+          "o=s"                 => \$Opt_Output,
+          "p|name-prefix=s"     => \$Opt_Name_Prefix,
+          "v|verbose"           => \$Opt_Verbose,
+          "<>"                  => \&parameter,
     )) {
     die "%Error: Bad usage, try 'bisonpre --help'\n";
 }
@@ -57,15 +57,15 @@ process();
 sub usage {
     print "Version $VERSION\n";
     pod2usage(-verbose=>2, -exitval=>2, -output=>\*STDOUT, -noperldoc=>1);
-    exit (1);
+    exit(1);
 }
 
 sub parameter {
     my $param = shift;
     if (!defined $Opt_Input) {
-	$Opt_Input = $param;
+        $Opt_Input = $param;
     } else {
-	die "bisonpre: %Error: Unknown parameter: $param\n";
+        die "bisonpre: %Error: Unknown parameter: $param\n";
     }
 }
 
@@ -81,31 +81,31 @@ sub process {
 
     # Run bison
     my $command = ($Opt_Yacc
-		   .($Opt_Debug?" -t":"")
-		   .($Opt_Definitions?" -d":"")
-		   .($Opt_Token_Table?" -k":"")
-		   .($Opt_Verbose?" -v":"")
-		   .(($Opt_Verbose && $supports_report)?" --report=itemset --report=lookahead":"")
-		   # -p required for GLR parsers; they write to -p basename, not -o
-		   .($Opt_Name_Prefix?" -p $Opt_Name_Prefix":"")
-		   ." -b ".tmp_prefix()
-		   ." -o ".tmp_prefix().".c"
-		   ." ".tmp_prefix().".y" );
+                   .($Opt_Debug?" -t":"")
+                   .($Opt_Definitions?" -d":"")
+                   .($Opt_Token_Table?" -k":"")
+                   .($Opt_Verbose?" -v":"")
+                   .(($Opt_Verbose && $supports_report)?" --report=itemset --report=lookahead":"")
+                   # -p required for GLR parsers; they write to -p basename, not -o
+                   .($Opt_Name_Prefix?" -p $Opt_Name_Prefix":"")
+                   ." -b ".tmp_prefix()
+                   ." -o ".tmp_prefix().".c"
+                   ." ".tmp_prefix().".y" );
 
     print "  $command\n";
     system $command;
     my $status = $?;
     if ($status != 0) {
-	remove_outputs();
-	my $v = bison_version_check();
-	die "bisonpre: %Error: $Opt_Yacc version $v run failed due to errors\n";
+        remove_outputs();
+        my $v = bison_version_check();
+        die "bisonpre: %Error: $Opt_Yacc version $v run failed due to errors\n";
     }
 
     clean_output(tmp_prefix().".output",output_prefix().".output", 1,0);
     warning_check(output_prefix().".output");
 
-    clean_output(tmp_prefix().".c",	output_prefix().".c", 0,1);
-    clean_output(tmp_prefix().".h",	output_prefix().".h", 0,1);
+    clean_output(tmp_prefix().".c",     output_prefix().".c", 0,1);
+    clean_output(tmp_prefix().".h",     output_prefix().".h", 0,1);
     remove_tmp();
 }
 
@@ -116,10 +116,10 @@ sub tmp_prefix {
 sub output_prefix {
     my $o;
     if ($Opt_Output) {
-	(my $o = $Opt_Output) =~ s!\.[^.]*$!!;
-	return $o;
+        (my $o = $Opt_Output) =~ s!\.[^.]*$!!;
+        return $o;
     } else {
-	return $Opt_File_Prefix.".tab";
+        return $Opt_File_Prefix.".tab";
     }
 }
 
@@ -139,11 +139,11 @@ sub remove_outputs {
 sub bison_version_check {
     my $v = `$Opt_Yacc --version`;
     if ($v && $v =~ /([0-9]+\.[0-9]+)/) {
-	my $v = $1;
-	($v >= 1.875) or die "bisonpre: %Error: '$Opt_Yacc' is version $v; version 1.875 or newer is required\n";
-	return $v;
+        my $v = $1;
+        ($v >= 1.875) or die "bisonpre: %Error: '$Opt_Yacc' is version $v; version 1.875 or newer is required\n";
+        return $v;
     } else {
-	die "bisonpre: %Error: '$Opt_Yacc' is not installed, or not working\n";
+        die "bisonpre: %Error: '$Opt_Yacc' is not installed, or not working\n";
     }
 }
 
@@ -164,55 +164,55 @@ sub clean_output {
     $newbase =~ s/\.y/./;
 
     if ($is_output) {
-	my %state_line; my $l=0;
-	foreach my $line (@lines) {
-	    $l++;
-	    # We add a colon so it's easy to search for the definition
-	    $state_line{$1} = $l if $line =~ s/^state (\d+)\s*$/state $1:/;
-	}
-	my @out;
-	foreach my $line (@lines) {
-	    if ($line =~ /^State (\d+) (conflicts)/) {
-		chomp $line;
-		$line .= " // line $state_line{$1}" if $state_line{$1};
-		$line .= "\n";
-	    }
-	    push @out, $line;
-	}
-	@lines = @out; @out = ();
+        my %state_line; my $l=0;
+        foreach my $line (@lines) {
+            $l++;
+            # We add a colon so it's easy to search for the definition
+            $state_line{$1} = $l if $line =~ s/^state (\d+)\s*$/state $1:/;
+        }
+        my @out;
+        foreach my $line (@lines) {
+            if ($line =~ /^State (\d+) (conflicts)/) {
+                chomp $line;
+                $line .= " // line $state_line{$1}" if $state_line{$1};
+                $line .= "\n";
+            }
+            push @out, $line;
+        }
+        @lines = @out; @out = ();
     }
     if ($is_c) {
-	my %token_values;
-	my $in_en=0;
-	foreach my $line (@lines) {
-	    $in_en=1 if $line =~ /enum\s+yytokentype/;
-	    $in_en=0 if $line =~ /;/;
-	    $token_values{$2} = $1 if $in_en && $line =~ /\b(\S+) = (\d+)/;
-	}
-	my @out;
-	foreach my $line (@lines) {
-	    if ($line =~ /BISONPRE_TOKEN_NAMES/) {
-		push @out, $line;
-		foreach my $tv (sort keys %token_values) {
-		    push @out, sprintf("\tcase %d: return \"%s\";\n",
-				       $tv, $token_values{$tv});
-		}
-		next;
-	    }
-	    push @out, $line;
-	}
-	@lines = @out; @out = ();
+        my %token_values;
+        my $in_en=0;
+        foreach my $line (@lines) {
+            $in_en=1 if $line =~ /enum\s+yytokentype/;
+            $in_en=0 if $line =~ /;/;
+            $token_values{$2} = $1 if $in_en && $line =~ /\b(\S+) = (\d+)/;
+        }
+        my @out;
+        foreach my $line (@lines) {
+            if ($line =~ /BISONPRE_TOKEN_NAMES/) {
+                push @out, $line;
+                foreach my $tv (sort keys %token_values) {
+                    push @out, sprintf("\tcase %d: return \"%s\";\n",
+                                       $tv, $token_values{$tv});
+                }
+                next;
+            }
+            push @out, $line;
+        }
+        @lines = @out; @out = ();
     }
 
     $fh = IO::File->new(">$outname") or die "%Error: $! writing $outname\n";
     foreach my $line (@lines) {
-	# Fix filename refs
-	$line =~ s!$basename!$newbase!g;
-	# Fix bison 2.3 and GCC 4.2.1
-	$line =~ s!\(YY_\("!(YY_((char*)"!g;
-	# Fix bison 2.3 glr-parser warning about yyerrorloc.YYTYPE::yydummy uninit
-	$line =~ s!(YYLTYPE yyerrloc;)!$1 yyerrloc.yydummy=0;/*bisonpre*/!g;
-	$fh->write($line);
+        # Fix filename refs
+        $line =~ s!$basename!$newbase!g;
+        # Fix bison 2.3 and GCC 4.2.1
+        $line =~ s!\(YY_\("!(YY_((char*)"!g;
+        # Fix bison 2.3 glr-parser warning about yyerrorloc.YYTYPE::yydummy uninit
+        $line =~ s!(YYLTYPE yyerrloc;)!$1 yyerrloc.yydummy=0;/*bisonpre*/!g;
+        $fh->write($line);
     }
     $fh->close;
 }
@@ -222,9 +222,9 @@ sub warning_check {
 
     my $fh = IO::File->new("<$filename") or die "%Error: $! $filename\n";
     while (defined(my $line = $fh->getline)) {
-	if ($line =~ /(conflicts|warning:|^useless)/i) {
-	    die "%Error: $filename:$.: $line\n";
-	}
+        if ($line =~ /(conflicts|warning:|^useless)/i) {
+            die "%Error: $filename:$.: $line\n";
+        }
     }
     $fh->close;
 }
@@ -249,160 +249,160 @@ sub clean_input {
     my $last_rule;
     my $section = 1;
     {
-	my @linesin = @lines;  @lines=();  my $l=0;
-	foreach my $line (@linesin) {
-	    $l++;
-	    #  ^/ to prevent comments from matching
-	    $line =~ m!^[a-zA-Z0-9_<>]+:[^/]*[a-zA-Z]! and die "%Error: $filename:$l: Move text on rule line to next line: $line\n";
-	    if ($line =~ /^%%/) {
-		$section++;
-		if ($section==2) { $last_rule = undef; }
-	    }
-	    elsif ($line =~ s/^([a-zA-Z0-9_]+)<(\S*)>:/$1:/) {
-		!$rules{$1}{name} or die "%Error: $filename:$l: Redeclaring '$1': $line\n";
-		$types{$2}{$1} = 1;
-		$rules{$1}{name} = $1;
-		$rules{$1}{type} = $2;
-		!$last_rule or die "%Error: $filename:$l: Unterminated previous rule\n";
-		$last_rule = $1;
-	    } elsif ($line =~ /^([a-zA-Z0-9_]+):/) {
-		!$rules{$1}{name} or die "%Error: $filename:$l: Redeclaring '$1': $line\n";
-		$rules{$1}{name} = $1;
-		$rules{$1}{type} = "";
-		!$last_rule or die "%Error: $filename:$l: Unterminated previous rule\n";
-		$last_rule = $1;
-	    }
-	    push @lines, $line;
-	    # Now clean the line and extract some more info
-	    (my $cline = $line) =~ s/\/\/.*$/\n/;
-	    (my $rline = $line) =~ s/\/\/.*$/\n/;
-	    if ($cline =~ /^\s*;/) {
-		$last_rule or die "%Error: $filename:$l: Stray semicolon\n";
-		$last_rule = undef;
-	    } elsif ($last_rule) {
-		$rules{$last_rule}{rules_and_productions} .= $cline;
-	    }
-	    if ($cline =~ /^%token\s*<(\S+)>\s*(\S+)/) {
-		!$tokens{$2} or die "%Error: $filename:$l: Redeclaring '$2': $line\n";
-		$tokens{$2} = $1;
-	    }
-	    foreach my $tok (split /[^a-zA-Z0-9_]+/, $cline) {
-		if ($last_rule && $tok=~/^[a-zA-Z]/) {
-		    #print "TT $last_rule $tok\n";
-		    $rules{$last_rule}{subrules}{$tok} = 1;
-		    $rules{$tok}{parentrules}{$last_rule} = 1;
-		}
-	    }
-	}
+        my @linesin = @lines;  @lines=();  my $l=0;
+        foreach my $line (@linesin) {
+            $l++;
+            #  ^/ to prevent comments from matching
+            $line =~ m!^[a-zA-Z0-9_<>]+:[^/]*[a-zA-Z]! and die "%Error: $filename:$l: Move text on rule line to next line: $line\n";
+            if ($line =~ /^%%/) {
+                $section++;
+                if ($section==2) { $last_rule = undef; }
+            }
+            elsif ($line =~ s/^([a-zA-Z0-9_]+)<(\S*)>:/$1:/) {
+                !$rules{$1}{name} or die "%Error: $filename:$l: Redeclaring '$1': $line\n";
+                $types{$2}{$1} = 1;
+                $rules{$1}{name} = $1;
+                $rules{$1}{type} = $2;
+                !$last_rule or die "%Error: $filename:$l: Unterminated previous rule\n";
+                $last_rule = $1;
+            } elsif ($line =~ /^([a-zA-Z0-9_]+):/) {
+                !$rules{$1}{name} or die "%Error: $filename:$l: Redeclaring '$1': $line\n";
+                $rules{$1}{name} = $1;
+                $rules{$1}{type} = "";
+                !$last_rule or die "%Error: $filename:$l: Unterminated previous rule\n";
+                $last_rule = $1;
+            }
+            push @lines, $line;
+            # Now clean the line and extract some more info
+            (my $cline = $line) =~ s/\/\/.*$/\n/;
+            (my $rline = $line) =~ s/\/\/.*$/\n/;
+            if ($cline =~ /^\s*;/) {
+                $last_rule or die "%Error: $filename:$l: Stray semicolon\n";
+                $last_rule = undef;
+            } elsif ($last_rule) {
+                $rules{$last_rule}{rules_and_productions} .= $cline;
+            }
+            if ($cline =~ /^%token\s*<(\S+)>\s*(\S+)/) {
+                !$tokens{$2} or die "%Error: $filename:$l: Redeclaring '$2': $line\n";
+                $tokens{$2} = $1;
+            }
+            foreach my $tok (split /[^a-zA-Z0-9_]+/, $cline) {
+                if ($last_rule && $tok=~/^[a-zA-Z]/) {
+                    #print "TT $last_rule $tok\n";
+                    $rules{$last_rule}{subrules}{$tok} = 1;
+                    $rules{$tok}{parentrules}{$last_rule} = 1;
+                }
+            }
+        }
     }
 
     #use Data::Dumper; print Dumper(\%rules);
 
     # Replace BISONPRE_VERSION(ver,,...) with expanded list
     {
-	my @linesin = @lines;  @lines=();  my $l=0;
-	foreach my $line (@linesin) {
-	    $l++;
-	    if ($line =~ /BISONPRE_VERSION/) {
-		#                            1         3             4
-		($line =~ /BISONPRE_VERSION\((\S+)\s*,\s*((\S+)\s*,)?\s*([^\),]+)\)\s*$/)
-		    or die "%Error: $filename:$l: Bad form of BISONPRE_VERSION: $line\n";
-		my $ver=$1;  my $ver_max=$3;  my $cmd=$4;
-		if ($Self->{bison_version} >= $1
-		    && (!$ver_max || $Self->{bison_version} <= $ver_max)) {
-		    $line = $cmd."\n";
-		} else {
-		    $line = "//NOP: $line";
-		}
-	    }
-	    push @lines, $line;
-	}
+        my @linesin = @lines;  @lines=();  my $l=0;
+        foreach my $line (@linesin) {
+            $l++;
+            if ($line =~ /BISONPRE_VERSION/) {
+                #                            1         3             4
+                ($line =~ /BISONPRE_VERSION\((\S+)\s*,\s*((\S+)\s*,)?\s*([^\),]+)\)\s*$/)
+                    or die "%Error: $filename:$l: Bad form of BISONPRE_VERSION: $line\n";
+                my $ver=$1;  my $ver_max=$3;  my $cmd=$4;
+                if ($Self->{bison_version} >= $1
+                    && (!$ver_max || $Self->{bison_version} <= $ver_max)) {
+                    $line = $cmd."\n";
+                } else {
+                    $line = "//NOP: $line";
+                }
+            }
+            push @lines, $line;
+        }
     }
 
     # Replace BISONPRE_NOT(type,...) with expanded list
     {
-	my @linesin = @lines;  @lines=();  my $l=0;
-	foreach my $line (@linesin) {
-	    $l++;
-	    if ($line =~ /BISONPRE_NOT/) {
-		($line =~ s/BISONPRE_NOT\((\S+)\)\s*(\{[^}]+})\s*$//)
-		    or die "%Error: $filename:$l: Bad form of BISONPRE_NOT: $line\n";
-		my $endtok = $1;  my $action = $2;
-		my @endtoks = split (/,/, $endtok);
-		map { $tokens{$_} or die "%Error: $filename:$l: Can't find definition for token: $_\n"
-		} @endtoks;
-		# Push it all onto one line to avoid error messages changing
-		my $bar = "";
-	      tok:
-		foreach my $tok (sort keys %tokens) {
-		    foreach (@endtoks) {
-			next tok if $tok eq $_;
-		    }
-		    if ($endtok ne $tok) {
-			$line .= "\t$bar $tok $action";
-			$bar = "|";
-		    }
-		}
-		$line .= "\n";
-	    }
-	    push @lines, $line;
-	}
+        my @linesin = @lines;  @lines=();  my $l=0;
+        foreach my $line (@linesin) {
+            $l++;
+            if ($line =~ /BISONPRE_NOT/) {
+                ($line =~ s/BISONPRE_NOT\((\S+)\)\s*(\{[^}]+})\s*$//)
+                    or die "%Error: $filename:$l: Bad form of BISONPRE_NOT: $line\n";
+                my $endtok = $1;  my $action = $2;
+                my @endtoks = split(/,/, $endtok);
+                map { $tokens{$_} or die "%Error: $filename:$l: Can't find definition for token: $_\n"
+                } @endtoks;
+                # Push it all onto one line to avoid error messages changing
+                my $bar = "";
+              tok:
+                foreach my $tok (sort keys %tokens) {
+                    foreach (@endtoks) {
+                        next tok if $tok eq $_;
+                    }
+                    if ($endtok ne $tok) {
+                        $line .= "\t$bar $tok $action";
+                        $bar = "|";
+                    }
+                }
+                $line .= "\n";
+            }
+            push @lines, $line;
+        }
     }
 
     # Replace BISONPRE_COPY(type,{code})
     {
-	my @linesin = @lines;  @lines=();  my $l=0;
-	foreach my $line (@linesin) {
-	    $l++;
-	    if ($line =~ /BISONPRE_COPY/) {
-		$line = _bisonpre_copy($line,$l,0);
-	    }
-	    push @lines, $line;
-	}
+        my @linesin = @lines;  @lines=();  my $l=0;
+        foreach my $line (@linesin) {
+            $l++;
+            if ($line =~ /BISONPRE_COPY/) {
+                $line = _bisonpre_copy($line,$l,0);
+            }
+            push @lines, $line;
+        }
     }
 
     # Replace ~[x]~  - must be after BISONPRE_COPY expansion
     {
-	my @linesin = @lines;  @lines=();  my $l=0;
-	foreach my $line (@linesin) {
-	    $l++;
-	    $line =~ s/~[a-zA-Z0-9_]+~//g;
-	    push @lines, $line;
-	}
+        my @linesin = @lines;  @lines=();  my $l=0;
+        foreach my $line (@linesin) {
+            $l++;
+            $line =~ s/~[a-zA-Z0-9_]+~//g;
+            push @lines, $line;
+        }
     }
 
     # Find "BISONPRE_TYPES"
     {
-	my @linesin = @lines;  @lines=();  my $l=0;
-	my $needmore = 0;
-	foreach my $line (@linesin) {
-	    $l++;
-	    if ($line =~ m!//BISONPRE_TYPES!) {
-		push @lines, $line;
-		foreach my $type (sort keys %types) {
-		    next if !$type;
-		    my $line = "%type<$type>\t";
-		    foreach my $rule (sort keys %{$types{$type}}) {
-			$line.=" ".$rule;
-		    }
-		    $line .= "\n";
-		    push @lines, $line;
-		    $needmore++
-		}
-	    } elsif ($needmore) {
-		# Bison doesn't have a #line directive, so we need somewhere to insert into
-		$line =~ s!^\s*//.*$!!;
-		($line =~ m/^\s*$/) or die "%Error: $filename:$l: Need $needmore more blank lines to insure line numbers are constant\n";
-		$needmore--;
-	    } else {
-		push @lines, $line;
-	    }
-	}
+        my @linesin = @lines;  @lines=();  my $l=0;
+        my $needmore = 0;
+        foreach my $line (@linesin) {
+            $l++;
+            if ($line =~ m!//BISONPRE_TYPES!) {
+                push @lines, $line;
+                foreach my $type (sort keys %types) {
+                    next if !$type;
+                    my $line = "%type<$type>\t";
+                    foreach my $rule (sort keys %{$types{$type}}) {
+                        $line.=" ".$rule;
+                    }
+                    $line .= "\n";
+                    push @lines, $line;
+                    $needmore++
+                }
+            } elsif ($needmore) {
+                # Bison doesn't have a #line directive, so we need somewhere to insert into
+                $line =~ s!^\s*//.*$!!;
+                ($line =~ m/^\s*$/) or die "%Error: $filename:$l: Need $needmore more blank lines to insure line numbers are constant\n";
+                $needmore--;
+            } else {
+                push @lines, $line;
+            }
+        }
     }
 
     $fh = IO::File->new(">$outname") or die "%Error: $! writing $outname\n";
     foreach my $line (@lines) {
-	$fh->write($line);
+        $fh->write($line);
     }
     $fh->close;
 }
@@ -412,28 +412,28 @@ sub _bisonpre_copy {
     my $l  = shift;
     my $depth = shift;
     while ($text =~ /BISONPRE_COPY/) {
-	($text =~ s/BISONPRE_COPY(_ONCE)?\((\S+)\s*,\s*\{([^}]*)}\s*\)/{HERE}/)
-	    or die "%Error: $Self->{filename}:$l: Bad form of BISONPRE_NOT: $text\n";
-	my $once = $1; my $rule = $2;  my $code = $3;
-	$Self->{rules}{$rule} or die "%Error: $Self->{filename}:$l: Can't find definition for rule: $rule\n";
-	if ($depth > 0 && $once) {
-	    # _ONCE means don't inherit
-	    $text =~ s/\|[ \t]+{HERE}//;	# Don't OR in nothing
-	    $text =~ s/{HERE}//;
-	} else {
-	    # Push it all onto one line to avoid error messages changing
-	    my $insert = $Self->{rules}{$rule}{rules_and_productions};
-	    $insert =~ s/^\S+://g;	# Strip rule name
-	    # Recurse so BISONPRE under B
-	    #print "COPY $l code $code\n";
-	    #print "COPY $l in   $insert\n";
-	    $_=$insert; eval("$code; \$_;");  $insert = $_;
-	    #print "COPY $l out  $insert\n";
-	    while ($insert =~ s/[ \t\n]+\n/\n/go) {}
-	    while ($insert =~ s/\n/ /go) {}   # Optional - preserve line numbering
-	    $text =~ s/{HERE}/$insert/;
-	}
-	$depth++;
+        ($text =~ s/BISONPRE_COPY(_ONCE)?\((\S+)\s*,\s*\{([^}]*)}\s*\)/{HERE}/)
+            or die "%Error: $Self->{filename}:$l: Bad form of BISONPRE_NOT: $text\n";
+        my $once = $1; my $rule = $2;  my $code = $3;
+        $Self->{rules}{$rule} or die "%Error: $Self->{filename}:$l: Can't find definition for rule: $rule\n";
+        if ($depth > 0 && $once) {
+            # _ONCE means don't inherit
+            $text =~ s/\|[ \t]+{HERE}//;        # Don't OR in nothing
+            $text =~ s/{HERE}//;
+        } else {
+            # Push it all onto one line to avoid error messages changing
+            my $insert = $Self->{rules}{$rule}{rules_and_productions};
+            $insert =~ s/^\S+://g;      # Strip rule name
+            # Recurse so BISONPRE under B
+            #print "COPY $l code $code\n";
+            #print "COPY $l in   $insert\n";
+            $_=$insert; eval("$code; \$_;");  $insert = $_;
+            #print "COPY $l out  $insert\n";
+            while ($insert =~ s/[ \t\n]+\n/\n/go) {}
+            while ($insert =~ s/\n/ /go) {}   # Optional - preserve line numbering
+            $text =~ s/{HERE}/$insert/;
+        }
+        $depth++;
     }
     return $text;
 }

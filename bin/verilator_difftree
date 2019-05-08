@@ -38,11 +38,11 @@ my $Opt_Lineno = 1;
 autoflush STDOUT 1;
 autoflush STDERR 1;
 Getopt::Long::config("no_auto_abbrev");
-if (! GetOptions (
-	  "help"	=> \&usage,
-	  "debug"	=> \&debug,
-	  "<>"		=> \&parameter,
-	  "lineno!"	=> \$Opt_Lineno,
+if (! GetOptions(
+          "help"        => \&usage,
+          "debug"       => \&debug,
+          "<>"          => \&parameter,
+          "lineno!"     => \$Opt_Lineno,
     )) {
     die "%Error: Bad usage, try 'verilator_difftree --help'\n";
 }
@@ -68,22 +68,22 @@ sub diff_dir {
     my %files;
 
     foreach my $fn (glob("$a/*.tree")) {
-	(my $base = $fn) =~ s!.*/!!;
-	$files{$base}{a} = $fn;
+        (my $base = $fn) =~ s!.*/!!;
+        $files{$base}{a} = $fn;
     }
     foreach my $fn (glob("$b/*.tree")) {
-	(my $base = $fn) =~ s!.*/!!;
-	$files{$base}{b} = $fn;
+        (my $base = $fn) =~ s!.*/!!;
+        $files{$base}{b} = $fn;
     }
     my $any;
     foreach my $base (sort (keys %files)) {
-	my $a = $files{$base}{a};
-	my $b = $files{$base}{b};
-	next if !$a || !$b;
-	print "="x70,"\n";
-	print "= $a <-> $b\n";
-	diff_file($a,$b);
-	$any = 1;
+        my $a = $files{$base}{a};
+        my $b = $files{$base}{b};
+        next if !$a || !$b;
+        print "="x70,"\n";
+        print "= $a <-> $b\n";
+        diff_file($a,$b);
+        $any = 1;
     }
     $any or warn("%Warning: No .tree files found that have similar base names:\n    "
                  .join("\n    ", sort keys %files),"\n");
@@ -101,7 +101,7 @@ sub diff_file {
     my $vera = version_from($a);
     my $verb = version_from($b);
     my $verCvt = (($vera < 0x3900 && $verb >= 0x3900)
-		  || ($vera >= 0x3900 && $verb < 0x3900));
+                  || ($vera >= 0x3900 && $verb < 0x3900));
 
     filter($a, $tmp_a, $verCvt);
     filter($b, $tmp_b, $verCvt);
@@ -115,8 +115,8 @@ sub version_from {
     # Return dump format
     my $f1 = IO::File->new ($fn) or die "%Error: $! $fn,";
     while (defined (my $line=$f1->getline())) {
-	last if $. > 10;
-	return hex $1 if $line =~ /\(format (0x[0-9.]+)\)/;
+        last if $. > 10;
+        return hex $1 if $line =~ /\(format (0x[0-9.]+)\)/;
     }
     return 1.0;
 }
@@ -130,36 +130,36 @@ sub filter {
     my $f2 = IO::File->new ($fn2,"w") or die "%Error: $! $fn2,";
     while (defined (my $line=$f1->getline())) {
       same_line:
-	next if $line =~ / This=/;
-	$line =~ s/0x[a-f0-9]+/0x/g;
-	$line =~ s/<e[0-9]+\#?>/<e>/g;
-	$line =~ s/{[a-z]*\d+}/{}/g if !$Opt_Lineno;
-	if ($verCvt) {
-	    next if $line =~ /^     NETLIST/;
-	    $line =~ s!\@dt=0x\(G?/?([^)]+)\)!$1!g;  # NEW: @dt -> OLD: non @dt format
-	    #					     # Below Ver1_Non_Dtyped may replace above further
-	    if ($line =~ /: ([A-Z]+) /) {
-		my $type = $1;
-		next if $type =~ 'DTYPE';
-		if ($type eq 'TYPETABLE' || $type eq 'RANGE') {
-		    $line =~ /^(\s+\S+:) /; my $prefix = $1;
-		    while (defined ($line=$f1->getline())) {
-			next if $line =~ /^\s+[a-z]/;  # Table body
-			next if $line =~ /^${prefix}[0-9]:/;
-			goto same_line;
-		    }
-		    next;
-		}
-		if ($Ver1_Non_Dtyped{$type}) {
-		    $line =~ s! w[0-9]+!!g;
-		}
-	    }
-	    $line =~ s!\@dt=0$!NoW!g;   # NEW: dt=null -> common format
-	    $line =~ s!\@dt=0 !NoW !g;  # NEW: dt=null -> common format
-	    $line =~ s! s?w0$! NoW!g;   # OLD: no width -> common format
-	    $line =~ s! s?w0 ! NoW !g;  # OLD: no width -> common format
-	}
-	print $f2 $line;
+        next if $line =~ / This=/;
+        $line =~ s/0x[a-f0-9]+/0x/g;
+        $line =~ s/<e[0-9]+\#?>/<e>/g;
+        $line =~ s/{[a-z]*\d+}/{}/g if !$Opt_Lineno;
+        if ($verCvt) {
+            next if $line =~ /^     NETLIST/;
+            $line =~ s!\@dt=0x\(G?/?([^)]+)\)!$1!g;  # NEW: @dt -> OLD: non @dt format
+            #                                        # Below Ver1_Non_Dtyped may replace above further
+            if ($line =~ /: ([A-Z]+) /) {
+                my $type = $1;
+                next if $type =~ 'DTYPE';
+                if ($type eq 'TYPETABLE' || $type eq 'RANGE') {
+                    $line =~ /^(\s+\S+:) /; my $prefix = $1;
+                    while (defined ($line=$f1->getline())) {
+                        next if $line =~ /^\s+[a-z]/;  # Table body
+                        next if $line =~ /^${prefix}[0-9]:/;
+                        goto same_line;
+                    }
+                    next;
+                }
+                if ($Ver1_Non_Dtyped{$type}) {
+                    $line =~ s! w[0-9]+!!g;
+                }
+            }
+            $line =~ s!\@dt=0$!NoW!g;   # NEW: dt=null -> common format
+            $line =~ s!\@dt=0 !NoW !g;  # NEW: dt=null -> common format
+            $line =~ s! s?w0$! NoW!g;   # OLD: no width -> common format
+            $line =~ s! s?w0 ! NoW !g;  # OLD: no width -> common format
+        }
+        print $f2 $line;
     }
     $f1->close;
     $f2->close;
@@ -179,11 +179,11 @@ sub debug {
 sub parameter {
     my $param = shift;
     if (!defined $Opt_A) {
-	$Opt_A = $param;
+        $Opt_A = $param;
     } elsif (!defined $Opt_B) {
-	$Opt_B = $param;
+        $Opt_B = $param;
     } else {
-	die "%Error: Unknown parameter: $param\n";
+        die "%Error: Unknown parameter: $param\n";
     }
 }
 

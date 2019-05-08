@@ -52,7 +52,7 @@ my $global_mtask_ct = 0;
         $gantt_line_ct++;
         my $this_thread_mtask_ct = 0;
         my @mtasks = split(/\[/, $line);
-        shift @mtasks; # throw the '>>  ' away
+        shift @mtasks;  # throw the '>>  ' away
         foreach my $mtask (@mtasks) {
             # Format of each mtask is "[123--]" where the hyphens
             # number or ] may or may not appear; it depends on exact timing.

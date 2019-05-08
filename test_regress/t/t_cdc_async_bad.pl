@@ -18,7 +18,7 @@ compile(
     expect_filename => $Self->{golden_filename},
     );
 
-file_grep ("$Self->{obj_dir}/V$Self->{name}__cdc.txt", qr/CDC Report/);
+file_grep("$Self->{obj_dir}/V$Self->{name}__cdc.txt", qr/CDC Report/);
 
 ok(1);
 1;

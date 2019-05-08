@@ -36,11 +36,11 @@ int main(int argc, char **argv, char **env) {
 
     while (main_time < 190*VL_TIME_MULTIPLIER) {
         top->clk = !top->clk;
-	top->eval();
-	tfp->dump((unsigned int)(main_time));
-	// Advance by 0.5 time units, to make sure our fractional
-	// time is working correctly
-	main_time += VL_TIME_MULTIPLIER/2;
+        top->eval();
+        tfp->dump((unsigned int)(main_time));
+        // Advance by 0.5 time units, to make sure our fractional
+        // time is working correctly
+        main_time += VL_TIME_MULTIPLIER/2;
     }
     tfp->close();
     top->final();

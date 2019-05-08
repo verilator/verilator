@@ -33,13 +33,13 @@ int main(int argc, char **argv, char **env) {
     tfp->open(STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 
     while (main_time <= 20) {
-	top->CLK   = (main_time/dt_2)%2;
-	top->eval();
+        top->CLK   = (main_time/dt_2)%2;
+        top->eval();
 
-	top->t->glbl->GSR = (main_time < 7);
+        top->t->glbl->GSR = (main_time < 7);
 
-	tfp->dump((unsigned int)(main_time));
-	++main_time;
+        tfp->dump((unsigned int)(main_time));
+        ++main_time;
     }
     tfp->close();
     top->final();

@@ -35,7 +35,7 @@ int main(int argc, char **argv, char **env) {
     topp->eval();
     main_time += 10;
 
-    topp->clk = 0x2; // ILLEGAL
+    topp->clk = 0x2;  // ILLEGAL
     topp->eval();
     topp->final();
 

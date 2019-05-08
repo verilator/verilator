@@ -7,7 +7,7 @@ use Getopt::Long;
 use IO::File;
 use Pod::Usage;
 use strict;
-use vars qw ($Debug $VERSION);
+use vars qw($Debug $VERSION);
 
 $VERSION = '3.881';
 
@@ -23,12 +23,12 @@ our $Opt_Debug;
 
 autoflush STDOUT 1;
 autoflush STDERR 1;
-Getopt::Long::config ("no_auto_abbrev","pass_through");
+Getopt::Long::config("no_auto_abbrev","pass_through");
 our @Opt_Args = ("cppcheck", @ARGV);
-if (! GetOptions (
-	  # Local options
-	  "help"		=> \&usage,
-	  "version"		=> sub { print "Version $VERSION\n"; system("cppcheck","--version"); exit(0); },
+if (! GetOptions(
+          # Local options
+          "help"                => \&usage,
+          "version"             => sub { print "Version $VERSION\n"; system("cppcheck","--version"); exit(0); },
     )) {
     die "%Error: Bad usage, try 'cppcheck_filtered --help'\n";
 }
@@ -40,7 +40,7 @@ process();
 sub usage {
     print "Version $VERSION\n";
     pod2usage(-verbose=>2, -exitval=>2, -output=>\*STDOUT, -noperldoc=>1);
-    exit (1);
+    exit(1);
 }
 
 #######################################################################
@@ -54,72 +54,72 @@ sub process {
     my %errs;
     my $last_error = "";
     while (defined(my $line = $fh->getline())) {
-	$line =~ s/^\s+//;
-	$line =~ s/Checking usage of global functions\.+//;  # Sometimes tacked at end-of-line
-	# General gunk
-	next if $uniq{$line}++;
-	next if $line =~ m!^<\?xml version!;
-	next if $line =~ m!^<cppcheck!;
-	next if $line =~ m!^<results!;
-	next if $line =~ m!^</results>!;
-	next if $line =~ m!^<errors!;
-	next if $line =~ m!^</error>!;
-	next if $line =~ m!^</errors>!;
-	next if $line =~ m!^<error.*id="unmatchedSuppression"!;  # --suppress=unmatchedSuppression doesn't work
-	next if $line =~ m!Cppcheck cannot find all the include files!; # An earlier id line is more specific
-	next if $line =~ m!^Checking !;
-	next if $line =~ m!^make.*Entering directory !;
-	next if $line =~ m!^make.*Leaving directory !;
-	next if $line =~ m!^\s+$!g;
+        $line =~ s/^\s+//;
+        $line =~ s/Checking usage of global functions\.+//;  # Sometimes tacked at end-of-line
+        # General gunk
+        next if $uniq{$line}++;
+        next if $line =~ m!^<\?xml version!;
+        next if $line =~ m!^<cppcheck!;
+        next if $line =~ m!^<results!;
+        next if $line =~ m!^</results>!;
+        next if $line =~ m!^<errors!;
+        next if $line =~ m!^</error>!;
+        next if $line =~ m!^</errors>!;
+        next if $line =~ m!^<error.*id="unmatchedSuppression"!;  # --suppress=unmatchedSuppression doesn't work
+        next if $line =~ m!Cppcheck cannot find all the include files!; # An earlier id line is more specific
+        next if $line =~ m!^Checking !;
+        next if $line =~ m!^make.*Entering directory !;
+        next if $line =~ m!^make.*Leaving directory !;
+        next if $line =~ m!^\s+$!g;
 
         # Specific suppressions (see _suppress also)
         next if $line =~ m!id="unusedPrivateFunction" .*::debug!;  # Doesn't know UINFO will use it
 
-	# Output
-	if ($line =~ /^cppcheck --/) {
-	    print $line if $Debug;
-	} elsif ($line =~ m!^\d+/\d+ files checked!) {
-	    print $line;
-	} else {
-	    my $suppress;
-	    # --xml-format=1
-	    if ($line =~ /file="([^"]+)"\s+line="(\d+)"\s+id="([^"]+)"/) {
-		my $file = $1; my $linenum = $2; my $id = $3;
-		$suppress = 1 if _suppress($file,$linenum,$id);
-	    }
-	    # --xml-format=2
-	    if ($line =~ /<error id.*/) {
-		$last_error = $line;
-		chomp $last_error;
-		$suppress = 1;
-	    }
-	    elsif ($line =~ /<location.* file="([^"]+)"\s+line="(\d+)"/) {
-		my $file = $1; my $linenum = $2; my $id;
-		if ($last_error =~ / id="([^"]+)"/) {
-		    $id = $1;
-		} else {
-		    $id = "?";
-		}
-		$suppress = 1 if _suppress($file,$linenum,$id);
-		$suppress = 1 if $file eq "*";
-		if (!$suppress) {
-		    chomp $line;
-		    print "$file:$linenum: ".$last_error."\n";
-		    $suppress = 1;
-		}
-	    }
-	    if (!$suppress) {
-		my $eline = "%Error: cppcheck: $line";
-		print $eline;
-		$errs{$eline}++;
-	    }
-	}
+        # Output
+        if ($line =~ /^cppcheck --/) {
+            print $line if $Debug;
+        } elsif ($line =~ m!^\d+/\d+ files checked!) {
+            print $line;
+        } else {
+            my $suppress;
+            # --xml-format=1
+            if ($line =~ /file="([^"]+)"\s+line="(\d+)"\s+id="([^"]+)"/) {
+                my $file = $1; my $linenum = $2; my $id = $3;
+                $suppress = 1 if _suppress($file,$linenum,$id);
+            }
+            # --xml-format=2
+            if ($line =~ /<error id.*/) {
+                $last_error = $line;
+                chomp $last_error;
+                $suppress = 1;
+            }
+            elsif ($line =~ /<location.* file="([^"]+)"\s+line="(\d+)"/) {
+                my $file = $1; my $linenum = $2; my $id;
+                if ($last_error =~ / id="([^"]+)"/) {
+                    $id = $1;
+                } else {
+                    $id = "?";
+                }
+                $suppress = 1 if _suppress($file,$linenum,$id);
+                $suppress = 1 if $file eq "*";
+                if (!$suppress) {
+                    chomp $line;
+                    print "$file:$linenum: ".$last_error."\n";
+                    $suppress = 1;
+                }
+            }
+            if (!$suppress) {
+                my $eline = "%Error: cppcheck: $line";
+                print $eline;
+                $errs{$eline}++;
+            }
+        }
     }
     if (scalar(keys %errs)) {
-	#my $all = join('',sort(keys %errs));
-	#$Self->error("Cppcheck errors:\n$all");
-	#die "%Error: cppcheck_filtered found errors\n";
-	exit(1);
+        #my $all = join('',sort(keys %errs));
+        #$Self->error("Cppcheck errors:\n$all");
+        #die "%Error: cppcheck_filtered found errors\n";
+        exit(1);
     }
 }
 
@@ -143,32 +143,32 @@ sub _suppress {
 
     my $fh = IO::File->new("<$filename");
     if (!$fh) {
-	warn "%Warning: $! $filename,";
-	return undef;
+        warn "%Warning: $! $filename,";
+        return undef;
     }
     my $l = 0;
     while (defined(my $line = $fh->getline())) {
-	++$l;
-	if ($l+1 == $linenum) {
-	    if ($line =~ /cppcheck-suppress((\s+\S+)+)/) {
-		my $supids = $1;
-		foreach my $supid (split /\s+/, $supids) {
-		    if ($supid eq $id
-			|| $supid eq ($SuppressMap{$id}||'')) {
-			return 1;
-		    }
-		}
-		warn "%Warning: $filename: $l: Found suppress for ids='$supids', not expected id='$id'\n";
-	    }
-	}
-	if ($l == $linenum) {
-	    if (0 &&   # We now use VL_DANGLING instead of this rule
-		$id eq "uselessAssignmentPtrArg"
-		&& $line =~ /(delete|Delete|Edit).*p *= *(NULL|nullptr);/) {
-		# delete(nodep); nodep=NULL;   # This is ok, it's how we prevent later using nodep
-		return 1;
-	    }
-	}
+        ++$l;
+        if ($l+1 == $linenum) {
+            if ($line =~ /cppcheck-suppress((\s+\S+)+)/) {
+                my $supids = $1;
+                foreach my $supid (split /\s+/, $supids) {
+                    if ($supid eq $id
+                        || $supid eq ($SuppressMap{$id}||'')) {
+                        return 1;
+                    }
+                }
+                warn "%Warning: $filename: $l: Found suppress for ids='$supids', not expected id='$id'\n";
+            }
+        }
+        if ($l == $linenum) {
+            if (0 &&   # We now use VL_DANGLING instead of this rule
+                $id eq "uselessAssignmentPtrArg"
+                && $line =~ /(delete|Delete|Edit).*p *= *(NULL|nullptr);/) {
+                # delete(nodep); nodep=NULL;   # This is ok, it's how we prevent later using nodep
+                return 1;
+            }
+        }
     }
     return undef;
 }

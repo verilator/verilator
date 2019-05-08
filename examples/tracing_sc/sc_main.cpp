@@ -115,9 +115,9 @@ int sc_main(int argc, char* argv[]) {
 
         // Apply inputs
         if (VL_TIME_Q() > 1 && VL_TIME_Q() < 10) {
-            reset_l = !1;       // Assert reset
+            reset_l = !1;  // Assert reset
         } else if (VL_TIME_Q() > 1) {
-            reset_l = !0;       // Deassert reset
+            reset_l = !0;  // Deassert reset
         }
 
         // Simulate 1ns

@@ -21,16 +21,16 @@ bool check() {
 #endif
 
     if(tb->W == c && tb->X == c && tb->Y == c && tb->Z == c) {
-	pass = true;
-	if (verbose) printf("-  pass: ");
+        pass = true;
+        if (verbose) printf("-  pass: ");
     } else {
-	pass = false;
-	verbose = true;
-	printf("%%E-FAIL: ");
+        pass = false;
+        verbose = true;
+        printf("%%E-FAIL: ");
     }
     if (verbose) {
-	printf("SEL=%d A=%d   got: W=%d X=%d Y=%d Z=%d  exp: WXYZ=%d\n",
-	       tb->SEL, tb->A, tb->W, tb->X, tb->Y, tb->Z, c);
+        printf("SEL=%d A=%d   got: W=%d X=%d Y=%d Z=%d  exp: WXYZ=%d\n",
+               tb->SEL, tb->A, tb->W, tb->X, tb->Y, tb->Z, c);
     }
     return pass;
 }
@@ -43,19 +43,19 @@ int main() {
 
     // loop through every possibility and check the result
     for (tb->SEL=0; tb->SEL<2; tb->SEL++) {
-	for (tb->A=0; tb->A<4; tb->A++) {
-	    tb->eval();
-	    if(!check()) {
-		pass =false;
-	    }
-	}
+        for (tb->A=0; tb->A<4; tb->A++) {
+            tb->eval();
+            if(!check()) {
+                pass =false;
+            }
+        }
     }
 
     if(pass) {
-	VL_PRINTF("*-* All Finished *-*\n");
-	tb->final();
+        VL_PRINTF("*-* All Finished *-*\n");
+        tb->final();
     } else {
-	vl_fatal(__FILE__,__LINE__,"top", "Unexpected results from tristate test\n");
+        vl_fatal(__FILE__,__LINE__,"top", "Unexpected results from tristate test\n");
     }
     return 0;
 }

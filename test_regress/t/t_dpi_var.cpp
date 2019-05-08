@@ -42,7 +42,7 @@ void mon_do(MyMon* monp) {
 
 #ifdef TEST_VERBOSE
     VL_PRINTF("-     mon_do(%08x(&%p) -> %08x(&%p));\n",
-	      *(monp->sigsp[0]), monp->sigsp[0], *(monp->sigsp[1]), monp->sigsp[1]);
+              *(monp->sigsp[0]), monp->sigsp[0], *(monp->sigsp[1]), monp->sigsp[1]);
 #endif
 }
 
@@ -74,13 +74,13 @@ void mon_register_b(const char* namep, int isOut) {
     const VerilatedScope* scopep = Verilated::dpiScope();
     const VerilatedVar* varp = scopep->varFind(namep);
     if (!varp) {
-	VL_PRINTF("%%Warning: mon_register_b signal not found: \"%s\"\n", namep);
+        VL_PRINTF("%%Warning: mon_register_b signal not found: \"%s\"\n", namep);
     } else if (varp->vltype() != VLVT_UINT32) {
-	VL_PRINTF("%%Warning: wrong type for signal: \"%s\"\n", namep);
+        VL_PRINTF("%%Warning: wrong type for signal: \"%s\"\n", namep);
     } else {
-	vluint32_t* datap = (vluint32_t*)(varp->datap());
-	VL_PRINTF("-     mon_register_b('%s', \"%s\", %p, %d);\n", modp, namep, datap, isOut);
-	mons[1].sigsp[isOut] = (vluint32_t*)(varp->datap());
+        vluint32_t* datap = (vluint32_t*)(varp->datap());
+        VL_PRINTF("-     mon_register_b('%s', \"%s\", %p, %d);\n", modp, namep, datap, isOut);
+        mons[1].sigsp[isOut] = (vluint32_t*)(varp->datap());
     }
 }
 
@@ -93,10 +93,10 @@ void mon_register_done() {
     // Print list of all signals - if we didn't register2 anything we'd pick them off here
     const VerilatedScope* scopep = Verilated::dpiScope();
     if (VerilatedVarNameMap* varsp = scopep->varsp()) {
-	for (VerilatedVarNameMap::const_iterator it = varsp->begin();
-	     it != varsp->end(); ++it) {
-	    VL_PRINTF("-       mon2: %s\n", it->first);
-	}
+        for (VerilatedVarNameMap::const_iterator it = varsp->begin();
+             it != varsp->end(); ++it) {
+            VL_PRINTF("-       mon2: %s\n", it->first);
+        }
     }
 }
 
@@ -132,13 +132,13 @@ int main(int argc, char **argv, char **env) {
     main_time += 10;
 
     while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
-	main_time += 1;
-	topp->eval();
-	topp->clk = !topp->clk;
-	//mon_do();
+        main_time += 1;
+        topp->eval();
+        topp->clk = !topp->clk;
+        //mon_do();
     }
     if (!Verilated::gotFinish()) {
-	vl_fatal(__FILE__,__LINE__,"main", "%Error: Timeout; never got a $finish");
+        vl_fatal(__FILE__,__LINE__,"main", "%Error: Timeout; never got a $finish");
     }
     topp->final();
 

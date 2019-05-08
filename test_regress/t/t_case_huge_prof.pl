@@ -15,8 +15,8 @@ compile(
     verilator_flags2 => ["--stats --prof-cfuncs -CFLAGS '-pg' -LDFLAGS '-pg'"],
     );
 
-file_grep ($Self->{stats}, qr/Optimizations, Tables created\s+(\d+)/i, 10);
-file_grep ($Self->{stats}, qr/Optimizations, Combined CFuncs\s+(\d+)/i, 10);
+file_grep($Self->{stats}, qr/Optimizations, Tables created\s+(\d+)/i, 10);
+file_grep($Self->{stats}, qr/Optimizations, Combined CFuncs\s+(\d+)/i, 10);
 
 unlink $_ foreach (glob "$Self->{obj_dir}/gmon.out.*");
 $ENV{GMON_OUT_PREFIX} = "$Self->{obj_dir}/gmon.out";
@@ -36,7 +36,7 @@ run(cmd => ["cd $Self->{obj_dir} && gprof $Self->{VM_PREFIX} $gmon_base > gprof.
 run(cmd => ["cd $Self->{obj_dir} && $ENV{VERILATOR_ROOT}/bin/verilator_profcfunc gprof.out > cfuncs.out"],
     check_finished => 0);
 
-file_grep ("$Self->{obj_dir}/cfuncs.out", qr/Overall summary by/);
+file_grep("$Self->{obj_dir}/cfuncs.out", qr/Overall summary by/);
 
 ok(1);
 1;

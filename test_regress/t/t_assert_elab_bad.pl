@@ -23,7 +23,7 @@ execute(
     fails => $Self->{vlt_all},
 );
 
-file_grep ("$Self->{obj_dir}/vlt_compile.log",
+file_grep("$Self->{obj_dir}/vlt_compile.log",
 qr/%Warning-USERFATAL: Parameter   5 is invalid...string and constant both work/);
 
 ok(1);

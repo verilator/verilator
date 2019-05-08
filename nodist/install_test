@@ -18,11 +18,11 @@ our $Opt_Jobs = calc_jobs();
 autoflush STDOUT 1;
 autoflush STDERR 1;
 Getopt::Long::config("no_auto_abbrev");
-if (! GetOptions (
-	  "debug"	=> sub { $Debug = 1; },
-	  "<>"		=> sub { die "%Error: Unknown parameter: $_[0]\n"; },
-	  "stage=i"	=> \$Opt_Stage,
-	  "j=i"		=> \$Opt_Jobs,
+if (! GetOptions(
+          "debug"       => sub { $Debug = 1; },
+          "<>"          => sub { die "%Error: Unknown parameter: $_[0]\n"; },
+          "stage=i"     => \$Opt_Stage,
+          "j=i"         => \$Opt_Jobs,
     )) {
     die "%Error: Bad usage, try 'install_test --help'\n";
 }
@@ -46,51 +46,51 @@ sub test {
     my $testdirn= $srcdir."/test_regress/obj_dir/install_test_testn";
 
     if ($Opt_Stage <= 0) {
-	run("/bin/rm -rf $blddir");
-	run("/bin/mkdir -p $blddir");
-	run("cd $blddir && $srcdir/configure --prefix $prefix");
-	run("cd $blddir && make -j $Opt_Jobs");
+        run("/bin/rm -rf $blddir");
+        run("/bin/mkdir -p $blddir");
+        run("cd $blddir && $srcdir/configure --prefix $prefix");
+        run("cd $blddir && make -j $Opt_Jobs");
     }
 
     # Install it under the prefix
     if ($Opt_Stage <= 1) {
-	run("/bin/rm -rf $prefix");
-	run("/bin/mkdir -p $prefix");
-	run("cd $blddir && make install");
-	run("test -e $prefix/share/man/man1/verilator.1");
+        run("/bin/rm -rf $prefix");
+        run("/bin/mkdir -p $prefix");
+        run("cd $blddir && make install");
+        run("test -e $prefix/share/man/man1/verilator.1");
         run("test -e $prefix/share/verilator/examples/tracing_c/Makefile");
-	run("test -e $prefix/share/verilator/include/verilated.h");
-	run("test -e $prefix/bin/verilator");
-	run("test -e $prefix/bin/verilator_bin");
-	run("test -e $prefix/bin/verilator_bin_dbg");
+        run("test -e $prefix/share/verilator/include/verilated.h");
+        run("test -e $prefix/bin/verilator");
+        run("test -e $prefix/bin/verilator_bin");
+        run("test -e $prefix/bin/verilator_bin_dbg");
         run("test -e $prefix/bin/verilator_gantt");
-	run("test -e $prefix/bin/verilator_profcfunc");
+        run("test -e $prefix/bin/verilator_profcfunc");
     }
 
     # Run a test using just the path
     if ($Opt_Stage <= 2) {
-	my $dir = $testdirp;
-	run("/bin/rm -rf   $dir");
-	run("/bin/mkdir -p $dir");
-	my $bin1 = $prefix."/bin";
-	my $bin2 = $prefix."/share/bin";
-	write_verilog($dir);
-	run("cd $dir && PATH=$bin1:$bin2:\$PATH verilator --cc foo.v --exe foo.cpp");
-	run("cd $dir/obj_dir && PATH=$bin1:$bin2:\$PATH make -f Vfoo.mk");
-	run("cd $dir && PATH=$bin1:$bin2:\$PATH obj_dir/Vfoo");
+        my $dir = $testdirp;
+        run("/bin/rm -rf   $dir");
+        run("/bin/mkdir -p $dir");
+        my $bin1 = $prefix."/bin";
+        my $bin2 = $prefix."/share/bin";
+        write_verilog($dir);
+        run("cd $dir && PATH=$bin1:$bin2:\$PATH verilator --cc foo.v --exe foo.cpp");
+        run("cd $dir/obj_dir && PATH=$bin1:$bin2:\$PATH make -f Vfoo.mk");
+        run("cd $dir && PATH=$bin1:$bin2:\$PATH obj_dir/Vfoo");
     }
 
     # Run a test using exact path to binary
     if ($Opt_Stage <= 3) {
-	my $dir = $testdirn;
-	run("/bin/rm -rf   $dir");
-	run("/bin/mkdir -p $dir");
-	write_verilog($dir);
-	my $bin1 = $prefix."/bin";
-	my $bin2 = $prefix."/share/bin";
-	run("cd $dir && $bin1/verilator --cc foo.v --exe foo.cpp");
-	run("cd $dir/obj_dir && make -f Vfoo.mk");
-	run("cd $dir/obj_dir && ./Vfoo");
+        my $dir = $testdirn;
+        run("/bin/rm -rf   $dir");
+        run("/bin/mkdir -p $dir");
+        write_verilog($dir);
+        my $bin1 = $prefix."/bin";
+        my $bin2 = $prefix."/share/bin";
+        run("cd $dir && $bin1/verilator --cc foo.v --exe foo.cpp");
+        run("cd $dir/obj_dir && make -f Vfoo.mk");
+        run("cd $dir/obj_dir && ./Vfoo");
     }
 
     if ($Opt_Stage <= 9) {
@@ -102,29 +102,29 @@ sub write_verilog {
     my $dir = shift;
     IO::File->new(">$dir/foo.v")->print('module t; initial begin $display("HELLO WORLD"); $finish; end endmodule'."\n");
     my $fh = IO::File->new(">$dir/foo.cpp");
-    $fh->print('#include "Vfoo.h"'		,"\n");
-    $fh->print('unsigned int main_time = 0;'	,"\n");
+    $fh->print('#include "Vfoo.h"'              ,"\n");
+    $fh->print('unsigned int main_time = 0;'    ,"\n");
     $fh->print('double sc_time_stamp() {'       ,"\n");
-    $fh->print('    return main_time;'		,"\n");
-    $fh->print('}'				,"\n");
-    $fh->print('int main() {'			,"\n");
-    $fh->print('    Vfoo *top = new Vfoo;'	,"\n");
+    $fh->print('    return main_time;'          ,"\n");
+    $fh->print('}'                              ,"\n");
+    $fh->print('int main() {'                   ,"\n");
+    $fh->print('    Vfoo *top = new Vfoo;'      ,"\n");
     $fh->print('    while (!Verilated::gotFinish()) {',"\n");
     $fh->print('        top->eval();'           ,"\n");
     $fh->print('        main_time++;'           ,"\n");
-    $fh->print('    }'				,"\n");
-    $fh->print('    top->final();'		,"\n");
-    $fh->print('}'				,"\n");
+    $fh->print('    }'                          ,"\n");
+    $fh->print('    top->final();'              ,"\n");
+    $fh->print('}'                              ,"\n");
 }
 
 sub cleanenv {
     foreach my $var (keys %ENV) {
-	if ($var eq "VERILATOR_ROOT"
+        if ($var eq "VERILATOR_ROOT"
             || $var eq "VERILATOR_INCLUDE"
             || $var eq "VERILATOR_NO_OPT_BUILD") {
-	    print "unset $var # Was '$ENV{$var}'\n";
-	    delete $ENV{$var}
-	}
+            print "unset $var # Was '$ENV{$var}'\n";
+            delete $ENV{$var}
+        }
     }
 }
 
@@ -132,8 +132,8 @@ sub cleanenv {
 
 sub calc_jobs {
     my $ok = eval "
-	use Unix::Processors;
-	return Unix::Processors->new->max_online;
+        use Unix::Processors;
+        return Unix::Processors->new->max_online;
     ";
     $ok && !$@ or return 1;
     print "driver.pl: Found $ok cores, using -j ",$ok+1,"\n" if $Debug;

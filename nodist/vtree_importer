@@ -23,11 +23,11 @@ $Debug = 0;
 my $opt_filename;
 autoflush STDOUT 1;
 autoflush STDERR 1;
-if (! GetOptions (
-		  "help"	=> \&usage,
-		  "debug"	=> \&debug,
-		  "<>"		=> \&parameter,
-		  )) {
+if (! GetOptions(
+          "help"        => \&usage,
+          "debug"       => \&debug,
+          "<>"          => \&parameter,
+    )) {
     usage();
 }
 
@@ -51,9 +51,9 @@ sub debug {
 sub parameter {
     my $param = shift;
     if (!$opt_filename) {
-	$opt_filename = $param;
+        $opt_filename = $param;
     } else {
-	die "%Error: Unknown parameter: $param\n";
+        die "%Error: Unknown parameter: $param\n";
     }
 }
 
@@ -64,45 +64,45 @@ sub vread {
     my $fh = IO::File->new($filename) or die "%Error: $! $filename,";
     my $lasthier="";
     $Tree = {
-	op => 'NETLIST',
-	t => [[],[],[],[],[],],
+        op => 'NETLIST',
+        t => [[],[],[],[],[],],
     };
     my @stack;
     $stack[1] = $Tree;
     while (defined (my $line = $fh->getline)) {
-	if ($line =~ /^\s+(\S+):\s+(\S+)\s+0x\S+\s+{(\d+)}\s+w(\d+)\s+(.*)$/) {
-	    my $hier = $1;
-	    my $op = $2;
-	    my $lineno = $3;
-	    my $width = $4;
-	    my $etc = $5;
+        if ($line =~ /^\s+(\S+):\s+(\S+)\s+0x\S+\s+{(\d+)}\s+w(\d+)\s+(.*)$/) {
+            my $hier = $1;
+            my $op = $2;
+            my $lineno = $3;
+            my $width = $4;
+            my $etc = $5;
 
-	    $etc =~ s/__DOT__/./g;
-	    $etc =~ s/__PVT__//g;
+            $etc =~ s/__DOT__/./g;
+            $etc =~ s/__PVT__//g;
 
-	    my $self = {
-		op => $op,
-		#width =>  $width,
-		#lineno => $lineno,
-		#line => $line,
-		etc => $etc,
-		args => [split(/[ \t]+/,$etc)],
-		t => [[],[],[],[],[],],
-	    };
+            my $self = {
+                op => $op,
+                #width =>  $width,
+                #lineno => $lineno,
+                #line => $line,
+                etc => $etc,
+                args => [split(/[ \t]+/,$etc)],
+                t => [[],[],[],[],[],],
+            };
 
-	    my @hiers = (1,split(/:/,$hier));
-	    my $depth = $#hiers+1;
-	    my $newchild = $hiers[$#hiers];
+            my @hiers = (1,split(/:/,$hier));
+            my $depth = $#hiers+1;
+            my $newchild = $hiers[$#hiers];
 
-	    #print "DD $depth $newchild $op\n";
+            #print "DD $depth $newchild $op\n";
 
-	    push @{$stack[$depth-1]->{t}[$newchild]}, $self;
-	    $stack[$depth] = $self;
+            push @{$stack[$depth-1]->{t}[$newchild]}, $self;
+            $stack[$depth] = $self;
 
-	    $lasthier = $hier;
-	    #print "   $lasthier\n";
-	    #print Dumper($Tree);
-	}
+            $lasthier = $hier;
+            #print "   $lasthier\n";
+            #print Dumper($Tree);
+        }
     }
 }
 
@@ -168,125 +168,125 @@ sub nl { p "\n"," "x$Indent; }
 
 sub gentree {
 %OpMap = (
-  'NULLNODE'	=> sub { "" },
-  'NETLIST'	=> sub { nl;t1;t2;t3;t4;t5; },
-  'ACTIVE'	=> sub { p "always_act @(";t1;p ") begin";indentInc;nl;t2;t3;t4;t5;indentDec;p "end";nl; },
-  'ADD'		=> sub { p1;p " + ";p2; },
-  'ALWAYS'	=> sub { p "always @(";t1;p ") begin";indentInc;nl;t2;t3;t4;t5;indentDec;p "end";nl; },
-  'ALWAYSPOST'	=> sub { p "ALWAYSPOST what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'AND'		=> sub { p1;p " & ";p2; },
-  'ARRAYSEL'	=> sub { t1;p "[";t2;p "]"; },
-  'ASSIGN'	=> sub { t2;p " = ";t1;p ";";nl; },
-  'ASSIGNDLY'	=> sub { t2;p " <= ";t1;p ";";nl; },
-  'ASSIGNPOST'	=> sub { p "ASSIGNPOST what{";t1;p " = ";t2;p ";";nl; },
-  'ASSIGNPRE'	=> sub { p "ASSIGNPRE what{";t1;p " = ";t2;p ";";nl; },
-  'ASSIGNW'	=> sub { p "assign ";t2;p " = ";t1;p ";";nl; },
-  'ATTROF'	=> sub { p "ATTROF what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'BEGIN'	=> sub { p "begin";indentInc;nl;t1;t2;t3;t4;t5;indentDec;p "end";nl; },
-  'BITSEL'	=> sub { t1;local $Avoid_Hex=1; p "[";t2;p "]"; },
-  'CASE'	=> sub { p "CASE what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'CASEITEM'	=> sub { p "CASEITEM what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'CAST'	=> sub { p "CAST what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'CCALL'	=> sub { p "CCALL what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'CELL'	=> sub { a1;p " ";a7;p " (/*CELL*/);"; nl; },
-  'CFUNC'	=> sub { p "CFUNC what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'CHANGEDET'	=> sub { p "CHANGEDET what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'CINCLUDE'	=> sub { p "CINCLUDE what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'COMMENT'	=> sub { p "//COMMENT what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl;nl; },
-  'CONCAT'	=> sub { p "{";p1;p ",";p2;p "}"; },
-  'CONDITIONAL'	=> sub { p1;p " ? ";p2;p " : ";p3; },
-  'CONST'	=> sub { p_const(); },
-  'COVER'	=> sub { p "COVER what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'CRETURN'	=> sub { p "CRETURN what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'CSTMT'	=> sub { p "CSTMT what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'DEFPARAM'	=> sub { p "defparam ";p1;p " = ";p2;p ";";nl; },
-  'DISPLAY'	=> sub { p '$write("';p1;p "\",";p2;p3;p4;p5;p ");";nl; },
-  'DIV'		=> sub { p1;p " / ";p2; },
-  'EQ'		=> sub { p1;p " == ";p2; },
-  'EQCASE'	=> sub { p1;p " === ";p2; },
-  'EXTEND'	=> sub { t1; },
-  'EXTRACT'	=> sub { t1;local $Avoid_Hex=1; p "[";t2;p ":";t3;p "]"; },
-  'FINISH'	=> sub { p '$finish;';nl },
-  'FOR'		=> sub { p "for (";p1;p ",";p2;p ",";p3;p ") begin";indentInc;nl;p4;p5;indentDec;p "end";nl; },
-  'FUNC'	=> sub { p "FUNC what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'FUNCREF'	=> sub { p "FUNCREF what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'GT'		=> sub { p1;p " > ";p2; },
-  'GTE'		=> sub { p1;p " >= ";p2; },
-  'IF'		=> sub { p "if (";p1;p ") begin";indentInc;nl;t2;indentDec;if (exists3) {p "end else begin";indentInc;nl;t3;indentDec;} p "end"; nl; },
-  'INITARRAY'	=> sub { p "INITARRAY what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'INITIAL'	=> sub { p "initial begin";indentInc;nl;t1;t2;t3;t4;t5;indentDec;p "end";nl; },
-  'LOGAND'	=> sub { p1;p " && ";p2; },
-  'LOGNOT'	=> sub { p1;p " || ";p2; },
-  'LOGOR'	=> sub { p "!";p1; },
-  'LT'		=> sub { p1;p " < ";p2; },
-  'LTE'		=> sub { p1;p " <= ";p2; },
-  'MODDIV'	=> sub { p1;p " % ";p2; },
-  'MODULE'	=> sub { p "module ";a1;p " (/*AUTOARG*/);";indentInc;nl;t1;t2;t3;t4;t5;indentDec;nl;p "endmodule";nl; },
-  'MUL'		=> sub { p1;p " * ";p2; },
-  'NEQ'		=> sub { p1;p " != ";p2; },
-  'NEQCASE'	=> sub { p1;p " !== ";p2; },
-  'NOT'		=> sub { p " ~";p1; },
-  'OR'		=> sub { p1;p " | ";p2; },
-  'PIN'		=> sub { p ";p ";p1;p " (";p2;p "),";nl; },
-  'PORT'	=> sub { p ""; },
-  'PRAGMA'	=> sub { p "PRAGMA what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'RAND'	=> sub { p '$rand'; },
-  'RANGE'	=> sub { t1; local $Avoid_Hex=1; p "[";t2;p ":";t3;p "]"; },
-  'REDAND'	=> sub { p "&(";p1;p ")"; },
-  'REDOR'	=> sub { p "|(";p1;p ")"; },
-  'REDXNOR'	=> sub { p "~|(";p1;p ")"; },
-  'REDXOR'	=> sub { p "~^(";p1;p ")"; },
-  'REPLICATE'	=> sub { p "{";p1;p "{";p2;p "}}"; },
-  'SCCTOR'	=> sub { p "SCCTOR what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'SCHDR'	=> sub { p "SCHDR what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'SCIMP'	=> sub { p "SCIMP what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'SCINT'	=> sub { p "SCINT what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'SCOPE'	=> sub { t1;t2;t3;t4;t5; },
-  'SENITEM'	=> sub { a1;p " ";t1; },
-  'SENTREE'	=> sub { t1;t2;t3;t4;t5; },
-  'SHIFTL'	=> sub { p1;p " << ";p2; },
-  'SHIFTR'	=> sub { p1;p " >> ";p2; },
-  'STOP'	=> sub { p '$stop;';nl; },
-  'SUB'		=> sub { p1;p " - ";p2; },
-  'TASK'	=> sub { p "TASK what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'TASKREF'	=> sub { p "TASKREF what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'TEXT'	=> sub { p "TEXT what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'TIME'	=> sub { p '$time'; },
-  'TOPSCOPE'	=> sub { t1;t2;t3;t4;t5; },
-  'TRACE'	=> sub { p "TRACE what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'UCFUNC'	=> sub { p '$c(';p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p ")"; },
-  'UCSTMT'	=> sub { p '$c(';p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p ");";nl; },
-  'NEGATE'	=> sub { p " -";p1; },
-  'VAR'		=> sub { p_var(); },
-  'VARPIN'	=> sub { p "VARPIN what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
-  'VARREF'	=> sub { a1; },
-  'VARSCOPE'	=> sub { },
-  'WHILE'	=> sub { t1; p "while (";t2;p ") begin";indentInc;nl;t3;t4;indentDec;p "end";nl; },
-  'WORDSEL'	=> sub { p1;p "[";p2;p ":";p3;p "]"; },
-  'XNOR'	=> sub { p1;p " ~^ ";p2; },
-  'XOR'		=> sub { p1;p " ^";p2; },
+  'NULLNODE'    => sub { "" },
+  'NETLIST'     => sub { nl;t1;t2;t3;t4;t5; },
+  'ACTIVE'      => sub { p "always_act @(";t1;p ") begin";indentInc;nl;t2;t3;t4;t5;indentDec;p "end";nl; },
+  'ADD'         => sub { p1;p " + ";p2; },
+  'ALWAYS'      => sub { p "always @(";t1;p ") begin";indentInc;nl;t2;t3;t4;t5;indentDec;p "end";nl; },
+  'ALWAYSPOST'  => sub { p "ALWAYSPOST what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'AND'         => sub { p1;p " & ";p2; },
+  'ARRAYSEL'    => sub { t1;p "[";t2;p "]"; },
+  'ASSIGN'      => sub { t2;p " = ";t1;p ";";nl; },
+  'ASSIGNDLY'   => sub { t2;p " <= ";t1;p ";";nl; },
+  'ASSIGNPOST'  => sub { p "ASSIGNPOST what{";t1;p " = ";t2;p ";";nl; },
+  'ASSIGNPRE'   => sub { p "ASSIGNPRE what{";t1;p " = ";t2;p ";";nl; },
+  'ASSIGNW'     => sub { p "assign ";t2;p " = ";t1;p ";";nl; },
+  'ATTROF'      => sub { p "ATTROF what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'BEGIN'       => sub { p "begin";indentInc;nl;t1;t2;t3;t4;t5;indentDec;p "end";nl; },
+  'BITSEL'      => sub { t1;local $Avoid_Hex=1; p "[";t2;p "]"; },
+  'CASE'        => sub { p "CASE what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'CASEITEM'    => sub { p "CASEITEM what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'CAST'        => sub { p "CAST what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'CCALL'       => sub { p "CCALL what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'CELL'        => sub { a1;p " ";a7;p " (/*CELL*/);"; nl; },
+  'CFUNC'       => sub { p "CFUNC what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'CHANGEDET'   => sub { p "CHANGEDET what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'CINCLUDE'    => sub { p "CINCLUDE what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'COMMENT'     => sub { p "//COMMENT what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl;nl; },
+  'CONCAT'      => sub { p "{";p1;p ",";p2;p "}"; },
+  'CONDITIONAL' => sub { p1;p " ? ";p2;p " : ";p3; },
+  'CONST'       => sub { p_const(); },
+  'COVER'       => sub { p "COVER what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'CRETURN'     => sub { p "CRETURN what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'CSTMT'       => sub { p "CSTMT what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'DEFPARAM'    => sub { p "defparam ";p1;p " = ";p2;p ";";nl; },
+  'DISPLAY'     => sub { p '$write("';p1;p "\",";p2;p3;p4;p5;p ");";nl; },
+  'DIV'         => sub { p1;p " / ";p2; },
+  'EQ'          => sub { p1;p " == ";p2; },
+  'EQCASE'      => sub { p1;p " === ";p2; },
+  'EXTEND'      => sub { t1; },
+  'EXTRACT'     => sub { t1;local $Avoid_Hex=1; p "[";t2;p ":";t3;p "]"; },
+  'FINISH'      => sub { p '$finish;';nl },
+  'FOR'         => sub { p "for (";p1;p ",";p2;p ",";p3;p ") begin";indentInc;nl;p4;p5;indentDec;p "end";nl; },
+  'FUNC'        => sub { p "FUNC what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'FUNCREF'     => sub { p "FUNCREF what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'GT'          => sub { p1;p " > ";p2; },
+  'GTE'         => sub { p1;p " >= ";p2; },
+  'IF'          => sub { p "if (";p1;p ") begin";indentInc;nl;t2;indentDec;if (exists3) {p "end else begin";indentInc;nl;t3;indentDec;} p "end"; nl; },
+  'INITARRAY'   => sub { p "INITARRAY what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'INITIAL'     => sub { p "initial begin";indentInc;nl;t1;t2;t3;t4;t5;indentDec;p "end";nl; },
+  'LOGAND'      => sub { p1;p " && ";p2; },
+  'LOGNOT'      => sub { p1;p " || ";p2; },
+  'LOGOR'       => sub { p "!";p1; },
+  'LT'          => sub { p1;p " < ";p2; },
+  'LTE'         => sub { p1;p " <= ";p2; },
+  'MODDIV'      => sub { p1;p " % ";p2; },
+  'MODULE'      => sub { p "module ";a1;p " (/*AUTOARG*/);";indentInc;nl;t1;t2;t3;t4;t5;indentDec;nl;p "endmodule";nl; },
+  'MUL'         => sub { p1;p " * ";p2; },
+  'NEQ'         => sub { p1;p " != ";p2; },
+  'NEQCASE'     => sub { p1;p " !== ";p2; },
+  'NOT'         => sub { p " ~";p1; },
+  'OR'          => sub { p1;p " | ";p2; },
+  'PIN'         => sub { p ";p ";p1;p " (";p2;p "),";nl; },
+  'PORT'        => sub { p ""; },
+  'PRAGMA'      => sub { p "PRAGMA what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'RAND'        => sub { p '$rand'; },
+  'RANGE'       => sub { t1; local $Avoid_Hex=1; p "[";t2;p ":";t3;p "]"; },
+  'REDAND'      => sub { p "&(";p1;p ")"; },
+  'REDOR'       => sub { p "|(";p1;p ")"; },
+  'REDXNOR'     => sub { p "~|(";p1;p ")"; },
+  'REDXOR'      => sub { p "~^(";p1;p ")"; },
+  'REPLICATE'   => sub { p "{";p1;p "{";p2;p "}}"; },
+  'SCCTOR'      => sub { p "SCCTOR what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'SCHDR'       => sub { p "SCHDR what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'SCIMP'       => sub { p "SCIMP what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'SCINT'       => sub { p "SCINT what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'SCOPE'       => sub { t1;t2;t3;t4;t5; },
+  'SENITEM'     => sub { a1;p " ";t1; },
+  'SENTREE'     => sub { t1;t2;t3;t4;t5; },
+  'SHIFTL'      => sub { p1;p " << ";p2; },
+  'SHIFTR'      => sub { p1;p " >> ";p2; },
+  'STOP'        => sub { p '$stop;';nl; },
+  'SUB'         => sub { p1;p " - ";p2; },
+  'TASK'        => sub { p "TASK what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'TASKREF'     => sub { p "TASKREF what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'TEXT'        => sub { p "TEXT what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'TIME'        => sub { p '$time'; },
+  'TOPSCOPE'    => sub { t1;t2;t3;t4;t5; },
+  'TRACE'       => sub { p "TRACE what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'UCFUNC'      => sub { p '$c(';p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p ")"; },
+  'UCSTMT'      => sub { p '$c(';p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p ");";nl; },
+  'NEGATE'      => sub { p " -";p1; },
+  'VAR'         => sub { p_var(); },
+  'VARPIN'      => sub { p "VARPIN what{";p1;p ",";p2;p ",";p3;p ",";p4;p ",";p5;p "}";nl; },
+  'VARREF'      => sub { a1; },
+  'VARSCOPE'    => sub { },
+  'WHILE'       => sub { t1; p "while (";t2;p ") begin";indentInc;nl;t3;t4;indentDec;p "end";nl; },
+  'WORDSEL'     => sub { p1;p "[";p2;p ":";p3;p "]"; },
+  'XNOR'        => sub { p1;p " ~^ ";p2; },
+  'XOR'         => sub { p1;p " ^";p2; },
 );
 }
 
 sub p_var {
     my $self = $Code_Self;
     if ($self->{etc} =~ /\[I\]/) {
-	print "input";
+        print "input";
     } elsif ($self->{etc} =~ /\[O\]/) {
-	print "output";
+        print "output";
     } else {
-	print "reg";
+        print "reg";
     }
     p "\t";
     {
-	local $Avoid_Hex=1;
-	t1;
+        local $Avoid_Hex=1;
+        t1;
     }
     p "\t";
     a1;
     if (exists2()) {
-	p " = ";
-	t2;
+        p " = ";
+        t2;
     }
     p ";";
     nl;
@@ -295,10 +295,10 @@ sub p_var {
 sub p_const {
     my $v = $Code_Self->{args}[0];
     if ($v =~ /\?32\?h(.*)$/
-	|| ($Avoid_Hex && $v =~ /^[0-9?]*h(.*)$/)) {
-	print hex $1;
+        || ($Avoid_Hex && $v =~ /^[0-9?]*h(.*)$/)) {
+        print hex $1;
     } else {
-	print $v;
+        print $v;
     }
 }
 

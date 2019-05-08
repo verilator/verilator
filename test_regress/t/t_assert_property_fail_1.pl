@@ -20,9 +20,9 @@ execute(
     fails => 1
     );
 
-file_grep ($Self->{run_log_filename}, qr/'assert property' failed/);
+file_grep($Self->{run_log_filename}, qr/'assert property' failed/);
 # We expect to get a message when this assert fires:
-file_grep ($Self->{run_log_filename}, qr/cyc != 3/);
+file_grep($Self->{run_log_filename}, qr/cyc != 3/);
 
 ok(1);
 1;

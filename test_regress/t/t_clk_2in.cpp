@@ -38,16 +38,16 @@ int main(int argc, char *argv[]) {
     Verilated::debug(0);
 
     for (int i = 0; i < 2; i++) {
-	clockit(0, 0);
-	clockit(0, 1);
-	clockit(1, 1);
-	clockit(0, 0);
-	clockit(1, 1);
-	clockit(1, 0);
-	clockit(0, 0);
-	clockit(0, 1);
-	clockit(1, 0);
-	clockit(0, 0);
+        clockit(0, 0);
+        clockit(0, 1);
+        clockit(1, 1);
+        clockit(0, 0);
+        clockit(1, 1);
+        clockit(1, 0);
+        clockit(0, 0);
+        clockit(0, 1);
+        clockit(1, 0);
+        clockit(0, 0);
     }
     topp->check = 1;
     clockit(0,0);

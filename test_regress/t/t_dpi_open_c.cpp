@@ -85,7 +85,7 @@ int dpii_failure() { return failure; }
 
 #ifdef _WIN32
 # define T_PRI64 "I64"
-#else // Linux or compliant Unix flavors
+#else  // Linux or compliant Unix flavors
 # define T_PRI64 "ll"
 #endif
 

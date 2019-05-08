@@ -7,7 +7,7 @@ use Getopt::Long;
 use IO::File;
 use Pod::Usage;
 use strict;
-use vars qw ($Debug @Types %Classes %Children %ClassRefs %Stages);
+use vars qw($Debug @Types %Classes %Children %ClassRefs %Stages);
 
 #======================================================================
 # main
@@ -17,8 +17,8 @@ my $opt_classes;
 my $opt_report;
 my @Opt_Cpt;
 my @Opt_I;
-Getopt::Long::config ("pass_through", "no_auto_abbrev");
-if (! GetOptions (
+Getopt::Long::config("pass_through", "no_auto_abbrev");
+if (! GetOptions(
           "help"        => \&usage,
           "debug"       => sub { $Debug = 1; },
           "classes!"    => \$opt_classes,
@@ -51,17 +51,17 @@ foreach my $cpt (@Opt_Cpt) {
 
 sub usage {
     pod2usage(-verbose=>2, -exitval=>2, -output=>\*STDOUT);
-    exit (1);
+    exit(1);
 }
 
 sub parameter {
     my $param = shift;
     if ($param =~ /^-+I(\S+)/) {
-	push @Opt_I, $1;
+        push @Opt_I, $1;
     } elsif ($param =~ s/\.cpp$//) {
-	push @Opt_Cpt, $param;
+        push @Opt_Cpt, $param;
     } else {
-	die "%Error: Unknown parameter: $param,";
+        die "%Error: Unknown parameter: $param,";
     }
 }
 
@@ -72,21 +72,21 @@ sub read_types {
 
     my $fh = IO::File->new($filename) or die "%Error: $! $filename,";
     while (defined (my $line = $fh->getline())) {
-	$line =~ s/\/\/.*$//;
-	next if $line =~ /^\s*$/;
-	if ($line =~ /^\s*(class|struct)\s*(\S+)/) {
-	    my $class = $2;
-	    my $inh = "";
-	    $inh = $1 if ($line =~ /:\s*public\s+(\S+)/);
-	    print "class $class : $inh\n" if $Debug;
-	    $inh = "" if $class eq "AstNode";
-	    if ($inh =~ /Ast/ || $class eq "AstNode") {
-		$class =~ s/^Ast//;
-		$inh =~ s/^Ast//;
-		$Classes{$class} = $inh;
-		$Children{$inh}{$class} = 1;
-	    }
-	}
+        $line =~ s/\/\/.*$//;
+        next if $line =~ /^\s*$/;
+        if ($line =~ /^\s*(class|struct)\s*(\S+)/) {
+            my $class = $2;
+            my $inh = "";
+            $inh = $1 if ($line =~ /:\s*public\s+(\S+)/);
+            print "class $class : $inh\n" if $Debug;
+            $inh = "" if $class eq "AstNode";
+            if ($inh =~ /Ast/ || $class eq "AstNode") {
+                $class =~ s/^Ast//;
+                $inh =~ s/^Ast//;
+                $Classes{$class} = $inh;
+                $Children{$inh}{$class} = 1;
+            }
+        }
     }
 }
 
@@ -96,14 +96,14 @@ sub read_stages {
     my $fh = IO::File->new($filename) or die "%Error: $! $filename,";
     my $n = 0;
     while (defined (my $line = $fh->getline())) {
-	$line =~ s/\/\/.*$//;
-	next if $line =~ /^\s*$/;
-	if ($line =~ /^\s*([A-Za-z0-9]+)::/) {
-	    my $stage = $1.".cpp";
-	    if (!defined ($Stages{$stage})) {
-		$Stages{$stage} = $n++;
-	    }
-	}
+        $line =~ s/\/\/.*$//;
+        next if $line =~ /^\s*$/;
+        if ($line =~ /^\s*([A-Za-z0-9]+)::/) {
+            my $stage = $1.".cpp";
+            if (!defined ($Stages{$stage})) {
+                $Stages{$stage} = $n++;
+            }
+        }
     }
 }
 
@@ -111,17 +111,17 @@ sub read_refs {
     my @filenames = @_;
 
     foreach my $filename (@filenames) {
-	(my $basename = $filename) =~ s!.*/!!;
-	my $fh = IO::File->new($filename) or die "%Error: $! $filename,";
-	while (defined (my $line = $fh->getline())) {
-	    $line =~ s/\/\/.*$//;
-	    while ($line =~ /\bnew\s*(Ast[A-Za-z0-9_]+)/g) {
-		$ClassRefs{$1}{newed}{$basename} = 1;
-	    }
-	    while ($line =~ /\b(Ast[A-Za-z0-9_]+)/g) {
-		$ClassRefs{$1}{used}{$basename} = 1;
-	    }
-	}
+        (my $basename = $filename) =~ s!.*/!!;
+        my $fh = IO::File->new($filename) or die "%Error: $! $filename,";
+        while (defined (my $line = $fh->getline())) {
+            $line =~ s/\/\/.*$//;
+            while ($line =~ /\bnew\s*(Ast[A-Za-z0-9_]+)/g) {
+                $ClassRefs{$1}{newed}{$basename} = 1;
+            }
+            while ($line =~ /\b(Ast[A-Za-z0-9_]+)/g) {
+                $ClassRefs{$1}{used}{$basename} = 1;
+            }
+        }
     }
     #use Data::Dumper;print Dumper(\%ClassRefs);
 }
@@ -142,8 +142,8 @@ sub subclasses_of {
 
     my @cllist;
     for (my $subclass = $::Classes{$type}; $subclass; ) {
-	push @cllist, $subclass;
-	$subclass = $::Classes{$subclass};
+        push @cllist, $subclass;
+        $subclass = $::Classes{$subclass};
     }
 
     return (reverse @cllist);
@@ -156,10 +156,10 @@ sub children_of {
     my @todo;
     push @todo, $type;
     while (my $subclass = shift @todo) {
-	foreach my $child (sort keys %{$::Children{$subclass}}) {
-	    push @todo, $child;
-	    push @cllist, $child;
-	}
+        foreach my $child (sort keys %{$::Children{$subclass}}) {
+            push @todo, $child;
+            push @cllist, $child;
+        }
     }
 
     return (@cllist);
@@ -173,39 +173,39 @@ sub write_report {
 
     $fh->print("Processing stages (approximate, based on order in Verilator.cpp):\n");
     foreach my $class (sort {$Stages{$a} <=> $Stages{$b}} keys %Stages) {
-	$fh->print("\t$class\n");
+        $fh->print("\t$class\n");
     }
 
     $fh->print("\nProcessing stages (approximate, based on order in Verilator.cpp):\n");
     foreach my $type (sort (keys %Classes)) {
-	printf $fh "  class %-20s\n", "Ast${type}";
-	$fh->print("\tparent:\t");
-	foreach my $subclass (subclasses_of($type)) {
-	    next if $subclass eq 'Node';
-	    printf $fh "Ast%-12s ",$subclass;
-	}
-	printf $fh "\n";
-	$fh->print("\tchilds:\t");
-	foreach my $subclass (children_of($type)) {
-	    next if $subclass eq 'Node';
-	    printf $fh "Ast%-12s ",$subclass;
-	}
-	printf $fh "\n";
-	if (my $refs = $ClassRefs{"Ast${type}"}) {
-	    $fh->print("\tnewed:\t");
-	    foreach my $stage (sort {($Stages{$a}||-1) <=> ($Stages{$b}||-1)}
-			       keys %{$refs->{newed}}) {
-		$fh->print($stage."  ");
-	    }
-	    $fh->print("\n");
-	    $fh->print("\tused:\t");
-	    foreach my $stage (sort {($Stages{$a}||-1) <=> ($Stages{$b}||-1)}
-			       keys %{$refs->{used}}) {
-		$fh->print($stage."  ");
-	    }
-	    $fh->print("\n");
-	}
-	$fh->print("\n");
+        printf $fh "  class %-20s\n", "Ast${type}";
+        $fh->print("\tparent:\t");
+        foreach my $subclass (subclasses_of($type)) {
+            next if $subclass eq 'Node';
+            printf $fh "Ast%-12s ",$subclass;
+        }
+        printf $fh "\n";
+        $fh->print("\tchilds:\t");
+        foreach my $subclass (children_of($type)) {
+            next if $subclass eq 'Node';
+            printf $fh "Ast%-12s ",$subclass;
+        }
+        printf $fh "\n";
+        if (my $refs = $ClassRefs{"Ast${type}"}) {
+            $fh->print("\tnewed:\t");
+            foreach my $stage (sort {($Stages{$a}||-1) <=> ($Stages{$b}||-1)}
+                               keys %{$refs->{newed}}) {
+                $fh->print($stage."  ");
+            }
+            $fh->print("\n");
+            $fh->print("\tused:\t");
+            foreach my $stage (sort {($Stages{$a}||-1) <=> ($Stages{$b}||-1)}
+                               keys %{$refs->{used}}) {
+                $fh->print($stage."  ");
+            }
+            $fh->print("\n");
+        }
+        $fh->print("\n");
     }
 }
 
@@ -213,11 +213,11 @@ sub write_classes {
     my $fh = open_file(@_);
     printf $fh "class AstNode;\n";
     foreach my $type (sort (keys %Classes)) {
-	printf $fh "class %-20s // ", "Ast${type};";
-	foreach my $subclass (subclasses_of($type)) {
-	    printf $fh "Ast%-12s ",$subclass;
-	}
-	printf $fh "\n";
+        printf $fh "class %-20s // ", "Ast${type};";
+        foreach my $subclass (subclasses_of($type)) {
+            printf $fh "Ast%-12s ",$subclass;
+        }
+        printf $fh "\n";
     }
     $fh->close();
 }
@@ -225,12 +225,12 @@ sub write_classes {
 sub write_visitor {
     my $fh = open_file(@_);
     foreach my $type (sort (keys %Classes)) {
-	my $base = $Classes{$type};
-	if ($base) {
-	    printf $fh "    virtual void visit(Ast${type}* nodep) { visit((Ast${base}*)(nodep)); }\n";
-	} else {
-	    printf $fh "    virtual void visit(Ast${type}*) = 0;\n";
-	}
+        my $base = $Classes{$type};
+        if ($base) {
+            printf $fh "    virtual void visit(Ast${type}* nodep) { visit((Ast${base}*)(nodep)); }\n";
+        } else {
+            printf $fh "    virtual void visit(Ast${type}*) = 0;\n";
+        }
     }
     $fh->close();
 }
@@ -262,11 +262,11 @@ sub write_impl {
     print $fh "\n";
     print $fh "    // These for use by VN_IS macro only\n";
     foreach my $type (sort (keys %Classes)) {
-	if (children_of($type)) {
+        if (children_of($type)) {
             print $fh "inline bool AstNode::privateIs",$type,"(const AstNode* nodep) { return (bool)(dynamic_cast<const Ast",$type,"*>(nodep)); }\n";
-	} else {
+        } else {
             print $fh "inline bool AstNode::privateIs",$type,"(const AstNode* nodep) { return nodep && nodep->type() == AstType::at",$type,"; }\n";
-	}
+        }
     }
 
     foreach my $type (sort (keys %Classes)) {
@@ -285,16 +285,16 @@ sub write_types {
     printf $fh "    enum en {\n";
     # Add "at" prefix to avoid conflicting with FOPEN and other macros in include files
     foreach my $type (sort (keys %Classes)) {
-	next if $type =~ /^Node/;
-	print $fh "\tat",$type,",\n";
+        next if $type =~ /^Node/;
+        print $fh "\tat",$type,",\n";
     }
     printf $fh "\t_ENUM_END\n";
     printf $fh "    };\n";
     printf $fh "    const char* ascii() const {\n";
     printf $fh "        const char* const names[] = {\n";
     foreach my $type (sort (keys %Classes)) {
-	next if $type =~ /^Node/;
-	print $fh "\t\"", uc $type, "\",\n";
+        next if $type =~ /^Node/;
+        print $fh "\t\"", uc $type, "\",\n";
     }
     printf $fh "\t\"_ENUM_END\"\n";
     printf $fh "        };\n";
@@ -332,11 +332,11 @@ sub _output_line {
 
 sub process {
     my $self = {
-	in_filename => undef,
-	out_filename => undef,
-	out_lines => [],
-	out_linenum => 1,
-	@_,
+        in_filename => undef,
+        out_filename => undef,
+        out_lines => [],
+        out_linenum => 1,
+        @_,
     };
     bless $self, __PACKAGE__;
 
@@ -346,25 +346,25 @@ sub process {
     # Read the file and parse into list of functions that generate output
     my $fhi = IO::File->new($self->{in_filename}) or die "%Error: $! $self->{in_filename},";
     while (defined(my $line = $fhi->getline)) {
-	if (!$didln) {
-	    $self->print("#line $. \"$self->{in_filename}\"\n");
-	    $didln = 1;
-	}
-	if ($line =~ /^\s+(TREE.*)$/) {
-	    my $func = $1;
-	    $self->{in_linenum} = $.;
-	    $self->print("//$line");
-	    $self->output_func(sub{my $self=shift; $self->_output_line(); });
-	    $self->tree_line ($func);
-	    $didln = 0;
-	}
-	elsif ($line !~ /^\s*\/[\/\*]\s*TREE/
-	       && $line =~ /\s+TREE/) {
-	    $self->error("Unknown astgen line: $line");
-	}
-	else {
-	    $self->print($line);
-	}
+        if (!$didln) {
+            $self->print("#line $. \"$self->{in_filename}\"\n");
+            $didln = 1;
+        }
+        if ($line =~ /^\s+(TREE.*)$/) {
+            my $func = $1;
+            $self->{in_linenum} = $.;
+            $self->print("//$line");
+            $self->output_func(sub{my $self=shift; $self->_output_line(); });
+            $self->tree_line($func);
+            $didln = 0;
+        }
+        elsif ($line !~ /^\s*\/[\/\*]\s*TREE/
+               && $line =~ /\s+TREE/) {
+            $self->error("Unknown astgen line: $line");
+        }
+        else {
+            $self->print($line);
+        }
     }
     $fhi->close;
 
@@ -373,16 +373,16 @@ sub process {
     my $fho = ::open_file($self->{out_filename});
     my @togen = @{$self->{out_lines}};
     foreach my $line (@togen) {
-	if (ref $line) {
-	    $self->{out_lines} = [];
-	    &$line($self);
-	} else {
-	    $self->{out_lines} = [$line];
-	}
-	foreach my $out (@{$self->{out_lines}}) {
-	    $self->{out_linenum}++ while ($out =~ /\n/smg);
-	    print $fho $out;
-	}
+        if (ref $line) {
+            $self->{out_lines} = [];
+            &$line($self);
+        } else {
+            $self->{out_lines} = [$line];
+        }
+        foreach my $out (@{$self->{out_lines}}) {
+            $self->{out_linenum}++ while ($out =~ /\n/smg);
+            print $fho $out;
+        }
     }
     $fho->close;
 }
@@ -396,64 +396,64 @@ sub tree_line {
 
     # doflag "S" indicates an op specifying short-circuiting for a type.
     if ($func =~ /TREEOP(1?)([VCS]?)\s*\(\s*  \"([^\"]*)\"  \s*,\s* \"([^\"]*)\"  \s*\)/sx) {
-	my $order = $1; my $doflag = $2; my $from = $3; my $to = $4;
-	#$self->print("// $from $to\n");
-	if (!$self->{did_out_tree}) {
-	    $self->{did_out_tree} = 1;
-	    $self->output_func(sub{ my $self=shift;
-				    $self->tree_match();
-				    $self->tree_base();
-				});
-	}
-	$from =~ /Ast([a-zA-Z0-9]+)\s*\{(.*)\}\s*$/
-	    or $self->error("Can't parse from function: $func");
-	my $type = $1;
-	my $subnodes = $2;
-	(::subclasses_of($type)) or $self->error("Unknown AstNode type: $type: in $func");
+        my $order = $1; my $doflag = $2; my $from = $3; my $to = $4;
+        #$self->print("// $from $to\n");
+        if (!$self->{did_out_tree}) {
+            $self->{did_out_tree} = 1;
+            $self->output_func(sub{ my $self=shift;
+                                    $self->tree_match();
+                                    $self->tree_base();
+                                });
+        }
+        $from =~ /Ast([a-zA-Z0-9]+)\s*\{(.*)\}\s*$/
+            or $self->error("Can't parse from function: $func");
+        my $type = $1;
+        my $subnodes = $2;
+        (::subclasses_of($type)) or $self->error("Unknown AstNode type: $type: in $func");
 
-	my $mif;
-	if ($doflag eq '') { $mif = "m_doNConst"; }
-	elsif ($doflag eq 'V') { $mif = "m_doV"; }
-	elsif ($doflag eq 'C') { $mif = ""; }
-	elsif ($doflag eq 'S') { $mif = "m_doNConst"; } # Not just for m_doGenerate
-	else { die; }
-	$subnodes =~ s/,,/__ESCAPEDCOMMA__/g;
-	foreach my $subnode (split /\s*,\s*/, $subnodes) {
-	    $subnode =~ s/__ESCAPEDCOMMA__/,/g;
-	    next if $subnode =~ /^\$([a-z0-9]+)$/gi;   # "$lhs" is just a comment that this op has a lhs
-	    $mif .= " && " if $mif;
-	    my $subnodeif = $subnode;
+        my $mif;
+        if ($doflag eq '') { $mif = "m_doNConst"; }
+        elsif ($doflag eq 'V') { $mif = "m_doV"; }
+        elsif ($doflag eq 'C') { $mif = ""; }
+        elsif ($doflag eq 'S') { $mif = "m_doNConst"; } # Not just for m_doGenerate
+        else { die; }
+        $subnodes =~ s/,,/__ESCAPEDCOMMA__/g;
+        foreach my $subnode (split /\s*,\s*/, $subnodes) {
+            $subnode =~ s/__ESCAPEDCOMMA__/,/g;
+            next if $subnode =~ /^\$([a-z0-9]+)$/gi;   # "$lhs" is just a comment that this op has a lhs
+            $mif .= " && " if $mif;
+            my $subnodeif = $subnode;
             $subnodeif =~ s/\$([a-zA-Z0-9]+)\.cast([A-Z][A-Za-z0-9]+)$/VN_IS(nodep->$1(),$2)/g;
-	    $subnodeif =~ s/\$([a-zA-Z0-9]+)\.([a-zA-Z0-9]+)$/nodep->$1()->$2()/g;
-	    $subnodeif = add_nodep($subnodeif);
-	    $mif .= $subnodeif;
-	}
+            $subnodeif =~ s/\$([a-zA-Z0-9]+)\.([a-zA-Z0-9]+)$/nodep->$1()->$2()/g;
+            $subnodeif = add_nodep($subnodeif);
+            $mif .= $subnodeif;
+        }
 
-	my $exec_func = treeop_exec_func($self, $to);
+        my $exec_func = treeop_exec_func($self, $to);
         while ($exec_func =~ s/([-()a-zA-Z0-9_>]+)->cast([A-Z][A-Za-z0-9]+)\(\)/VN_CAST($1,$2)/) {}
 
-	$self->{treeop}{$type} ||= [];
-	my $n = $#{$self->{treeop}{$type}} + 1;
-	my $typefunc = {
-	    order => $order,
-	    comment => $func,
-	    match_func => "match_${type}_${n}",
-	    match_if => $mif,
-	    exec_func => $exec_func,
-	    uinfo_level => ($to =~ /^!/ ? 0:7),
-	    short_circuit => ($doflag eq 'S'),
-	};
+        $self->{treeop}{$type} ||= [];
+        my $n = $#{$self->{treeop}{$type}} + 1;
+        my $typefunc = {
+            order => $order,
+            comment => $func,
+            match_func => "match_${type}_${n}",
+            match_if => $mif,
+            exec_func => $exec_func,
+            uinfo_level => ($to =~ /^!/ ? 0:7),
+            short_circuit => ($doflag eq 'S'),
+        };
 
-	($typefunc->{uinfo} = $func) =~ s/[ \t\"\{\}]+/ /g;
-	push @{$self->{treeop}{$type}}, $typefunc;
+        ($typefunc->{uinfo} = $func) =~ s/[ \t\"\{\}]+/ /g;
+        push @{$self->{treeop}{$type}}, $typefunc;
     }
     elsif ($func =~ /TREE_SKIP_VISIT\s*\(\s*  \"([^\"]*)\"  \s*\)/sx) {
-	my $type = $1;
-	$self->{tree_skip_visit}{$type} = 1;
-	$::Classes{$type} or $self->error("Unknown node type: $type");
+        my $type = $1;
+        $self->{tree_skip_visit}{$type} = 1;
+        $::Classes{$type} or $self->error("Unknown node type: $type");
     }
     else {
-	$self->error("Unknown astgen op: $func");
+        $self->error("Unknown astgen op: $func");
     }
 }
 
@@ -468,12 +468,12 @@ our $_Exec_Nsyms;
 sub _exec_syms_recurse {
     my $aref = shift;
     foreach my $sym (@{$aref}) {
-	if (ref $sym) { _exec_syms_recurse($sym); }
-	elsif ($sym =~ /^\$.*/) {
-	    if (!defined $_Exec_Syms{$sym}) {
-		$_Exec_Syms{$sym} = "arg".(++$_Exec_Nsyms)."p";
-	    }
-	}
+        if (ref $sym) { _exec_syms_recurse($sym); }
+        elsif ($sym =~ /^\$.*/) {
+            if (!defined $_Exec_Syms{$sym}) {
+                $_Exec_Syms{$sym} = "arg".(++$_Exec_Nsyms)."p";
+            }
+        }
     }
 }
 
@@ -482,14 +482,14 @@ sub _exec_new_recurse {
     my $out = "new ".$aref->[0]."(nodep->fileline()";
     my $first = 1;
     foreach my $sym (@{$aref}) {
-	if ($first) { $first=0; next; }
-	$out .= ", ";
-	if (ref $sym) { $out.=_exec_new_recurse($sym); }
-	elsif ($sym =~ /^\$.*/) {
-	    $out .= $_Exec_Syms{$sym};
-	} else {
-	    $out .= $sym;
-	}
+        if ($first) { $first=0; next; }
+        $out .= ", ";
+        if (ref $sym) { $out.=_exec_new_recurse($sym); }
+        elsif ($sym =~ /^\$.*/) {
+            $out .= $_Exec_Syms{$sym};
+        } else {
+            $out .= $sym;
+        }
     }
     return $out.")";
 }
@@ -500,142 +500,142 @@ sub treeop_exec_func {
     my $out = "";
     $func =~ s/^!//;
     if ($func =~ /^\s*[a-zA-Z0-9]+\s*\(/) {  # Function call
-	(my $outl = $func) =~ s/\$([a-zA-Z0-9]+)/nodep->$1()/g;
-	$out .= $outl.";";
+        (my $outl = $func) =~ s/\$([a-zA-Z0-9]+)/nodep->$1()/g;
+        $out .= $outl.";";
     }
     elsif ($func    =~ /^\s*Ast([a-zA-Z0-9]+) \s*\{\s* (.*) \s* \}$/x) {
 
-	my $nargs = 0;
-	my %argnums;  # Number for each argument name
+        my $nargs = 0;
+        my %argnums;  # Number for each argument name
 
-	my $aref = undef;	# Recursive array with structure to form
-	my @astack;
-	my $forming = "";
-	my $argtext = $func . "\000";   # EOF character
-	#print "FF $func\n" if $Debug;
-	while ($argtext =~ s/^(.)//) {
-	    my $tok = $1;
-	    #print "TOK: $tok $forming\n" if $tok !~ /[a-zA-Z0-9]/;
+        my $aref = undef;       # Recursive array with structure to form
+        my @astack;
+        my $forming = "";
+        my $argtext = $func . "\000";   # EOF character
+        #print "FF $func\n" if $Debug;
+        while ($argtext =~ s/^(.)//) {
+            my $tok = $1;
+            #print "TOK: $tok $forming\n" if $tok !~ /[a-zA-Z0-9]/;
 
-	    if ($tok eq "\000") {
-	    } elsif ($tok =~ /\s+/) {
-	    } elsif ($tok eq "{") {
-		my $newref = [$forming];
-		push @{$aref}, $newref;
-		push @astack, $aref if $aref;
-		$aref = $newref;
-		$forming = "";
-	    } elsif ($tok eq "}") {
-		push @{$aref}, $forming if $forming;
-		$aref = pop @astack;
-		$aref or $self->error("Too many } in execution function: $func\n");
-		$forming = "";
-	    } elsif ($tok eq ",") {
-		push @{$aref}, $forming if $forming;
-		$forming = "";
-	    } else {
-		$forming .= $tok;
-	    }
-	}
-	($aref && ref $aref->[0] && !$aref->[1]) or $self->error("Badly formed execution function: $func\n");
-	$aref = $aref->[0];
-	#use Data::Dumper; print Dumper($aref),"\n";
+            if ($tok eq "\000") {
+            } elsif ($tok =~ /\s+/) {
+            } elsif ($tok eq "{") {
+                my $newref = [$forming];
+                push @{$aref}, $newref;
+                push @astack, $aref if $aref;
+                $aref = $newref;
+                $forming = "";
+            } elsif ($tok eq "}") {
+                push @{$aref}, $forming if $forming;
+                $aref = pop @astack;
+                $aref or $self->error("Too many } in execution function: $func\n");
+                $forming = "";
+            } elsif ($tok eq ",") {
+                push @{$aref}, $forming if $forming;
+                $forming = "";
+            } else {
+                $forming .= $tok;
+            }
+        }
+        ($aref && ref $aref->[0] && !$aref->[1]) or $self->error("Badly formed execution function: $func\n");
+        $aref = $aref->[0];
+        #use Data::Dumper; print Dumper($aref),"\n";
 
-	# Assign numbers to each $ symbol
-	%_Exec_Syms = ();
-	$_Exec_Nsyms = 0;
-	_exec_syms_recurse($aref);
+        # Assign numbers to each $ symbol
+        %_Exec_Syms = ();
+        $_Exec_Nsyms = 0;
+        _exec_syms_recurse($aref);
 
-	foreach my $sym (sort {$_Exec_Syms{$a} cmp $_Exec_Syms{$b}} (keys %_Exec_Syms)) {
-	    my $argnp = $_Exec_Syms{$sym};
-	    my $arg = add_nodep($sym);
-	    $out .= "AstNode* ${argnp} = ${arg}->unlinkFrBack();\n";
-	}
+        foreach my $sym (sort {$_Exec_Syms{$a} cmp $_Exec_Syms{$b}} (keys %_Exec_Syms)) {
+            my $argnp = $_Exec_Syms{$sym};
+            my $arg = add_nodep($sym);
+            $out .= "AstNode* ${argnp} = ${arg}->unlinkFrBack();\n";
+        }
 
-	$out .= "AstNode* newp = " . _exec_new_recurse($aref).";\n";
-	$out .= "nodep->replaceWith(newp);";
-	$out .= "nodep->deleteTree(); VL_DANGLING(nodep);";
-	#print "FF $out\n" if $Debug;
+        $out .= "AstNode* newp = " . _exec_new_recurse($aref).";\n";
+        $out .= "nodep->replaceWith(newp);";
+        $out .= "nodep->deleteTree(); VL_DANGLING(nodep);";
+        #print "FF $out\n" if $Debug;
     } elsif ($func eq "NEVER") {
-	$out .= "nodep->v3fatalSrc(\"Executing transform that was NEVERed\");";
+        $out .= "nodep->v3fatalSrc(\"Executing transform that was NEVERed\");";
     } elsif ($func eq "DONE") {
     } else {
-	$self->error("Unknown execution function format: $func\n");
+        $self->error("Unknown execution function format: $func\n");
     }
     return $out;
 }
 
 sub tree_match {
     my $self = shift;
-    $self->print ("    // TREEOP functions, each return true if they matched & transformed\n");
+    $self->print("    // TREEOP functions, each return true if they matched & transformed\n");
     #use Data::Dumper; print Dumper($self);
     foreach my $base (sort (keys %{$self->{treeop}})) {
-	foreach my $typefunc (@{$self->{treeop}{$base}}) {
-	    $self->print("    // Generated by astgen\n");
-	    $self->print("    bool $typefunc->{match_func}(Ast${base}* nodep) {\n",
-			 "\t// $typefunc->{comment}\n",);
-	    $self->print(	"\tif ($typefunc->{match_if}) {\n");
+        foreach my $typefunc (@{$self->{treeop}{$base}}) {
+            $self->print("    // Generated by astgen\n");
+            $self->print("    bool $typefunc->{match_func}(Ast${base}* nodep) {\n",
+                         "\t// $typefunc->{comment}\n",);
+            $self->print(       "\tif ($typefunc->{match_if}) {\n");
             $self->print(       "\t    UINFO($typefunc->{uinfo_level},cvtToHex(nodep)"
                                 ."<<\" $typefunc->{uinfo}\\n\");\n");
-	    $self->print(	"\t    $typefunc->{exec_func}\n");
-	    $self->print(	"\t    return true;\n");
-	    $self->print(	"\t}\n");
-	    $self->print(	"\treturn false;\n");
-	    $self->print("    }\n",);
-	}
+            $self->print(       "\t    $typefunc->{exec_func}\n");
+            $self->print(       "\t    return true;\n");
+            $self->print(       "\t}\n");
+            $self->print(       "\treturn false;\n");
+            $self->print("    }\n",);
+        }
     }
 }
 
 sub tree_base {
     my $self = shift;
-    $self->print ("    // TREEOP visitors, call each base type's match\n");
-    $self->print ("    // Bottom class up, as more simple transforms are generally better\n");
+    $self->print("    // TREEOP visitors, call each base type's match\n");
+    $self->print("    // Bottom class up, as more simple transforms are generally better\n");
     foreach my $type (sort (keys %::Classes)) {
-	my $base = $::Classes{$type};
-	my @out_for_type_sc;
-	my @out_for_type;
-	foreach my $base (::subclasses_of($type), $type) {
-	    foreach my $typefunc (@{$self->{treeop}{$base}}) {
+        my $base = $::Classes{$type};
+        my @out_for_type_sc;
+        my @out_for_type;
+        foreach my $base (::subclasses_of($type), $type) {
+            foreach my $typefunc (@{$self->{treeop}{$base}}) {
                 my @lines = ("        if ($typefunc->{match_func}(nodep)) return;\n",);
-		if ($typefunc->{short_circuit}) {	# short-circuit match fn
-		    push @out_for_type_sc, @lines;
-		} else {				# Standard match fn
-		    if ($typefunc->{order}) {
-			unshift @out_for_type, @lines;   # TREEOP1's go in front of others
-		    } else {
-			push @out_for_type, @lines;
-		    }
-		}
-	    }
-	}
+                if ($typefunc->{short_circuit}) {       # short-circuit match fn
+                    push @out_for_type_sc, @lines;
+                } else {                                # Standard match fn
+                    if ($typefunc->{order}) {
+                        unshift @out_for_type, @lines;   # TREEOP1's go in front of others
+                    } else {
+                        push @out_for_type, @lines;
+                    }
+                }
+            }
+        }
 
-	# We need to deal with two cases. For short circuited functions we
-	# evaluate the LHS, then apply the short-circuit matches, then
-	# evaluate the RHS and possibly THS (ternary operators may
-	# short-circuit) and apply all the other matches.
+        # We need to deal with two cases. For short circuited functions we
+        # evaluate the LHS, then apply the short-circuit matches, then
+        # evaluate the RHS and possibly THS (ternary operators may
+        # short-circuit) and apply all the other matches.
 
-	# For types without short-circuits, we just use iterateChildren, which
-	# saves one comparison.
-	if ($out_for_type_sc[0]) {	# Short-circuited types
-	    $self->print("    // Generated by astgen with short-circuiting\n",
-			 "    virtual void visit(Ast${type}* nodep) {\n",
+        # For types without short-circuits, we just use iterateChildren, which
+        # saves one comparison.
+        if ($out_for_type_sc[0]) {      # Short-circuited types
+            $self->print("    // Generated by astgen with short-circuiting\n",
+                         "    virtual void visit(Ast${type}* nodep) {\n",
                          "      iterateAndNextNull(nodep->lhsp());\n",
-			 @out_for_type_sc);
+                         @out_for_type_sc);
             $self->print("      iterateAndNextNull(nodep->rhsp());\n",
                          "      AstNodeTriop *tnp = VN_CAST(nodep, NodeTriop);\n",
                          "      if (tnp && tnp->thsp()) iterateAndNextNull(tnp->thsp());\n",
-			 @out_for_type,
-			 "    }\n") if ($out_for_type[0]);
-	} elsif ($out_for_type[0]) {	# Other types with something to print
-	    my $skip = $self->{tree_skip_visit}{$type};
-	    my $gen = $skip ? "Gen" : "";
-	    $self->print("    // Generated by astgen\n",
-			 "    virtual void visit$gen(Ast${type}* nodep) {\n",
-			 ($skip?"":
+                         @out_for_type,
+                         "    }\n") if ($out_for_type[0]);
+        } elsif ($out_for_type[0]) {    # Other types with something to print
+            my $skip = $self->{tree_skip_visit}{$type};
+            my $gen = $skip ? "Gen" : "";
+            $self->print("    // Generated by astgen\n",
+                         "    virtual void visit$gen(Ast${type}* nodep) {\n",
+                         ($skip?"":
                           "        iterateChildren(nodep);\n"),
-			 @out_for_type,
-			 "    }\n");
-	}
+                         @out_for_type,
+                         "    }\n");
+        }
     }
 }
 

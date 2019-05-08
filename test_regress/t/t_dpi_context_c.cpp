@@ -51,58 +51,58 @@ extern "C" {
 int dpic_line() {
     svScope scope = svGetScope();
     if (!scope) {
-	printf("%%Warning: svGetScope failed\n");
-	return 0;
+        printf("%%Warning: svGetScope failed\n");
+        return 0;
     }
 
 #ifdef VERILATOR
     static int didDump = 0;
     if (didDump++ == 0) {
-	Verilated::scopesDump();
+        Verilated::scopesDump();
     }
 #endif
 
     const char* scopenamep = svGetNameFromScope(scope);
     if (!scopenamep) {
-	printf("%%Warning: svGetNameFromScope failed\n");
-	return 0;
+        printf("%%Warning: svGetNameFromScope failed\n");
+        return 0;
     }
     if (scope != svGetScopeFromName(scopenamep)) {
-	printf("%%Warning: svGetScopeFromName repeat failed\n");
-	return 0;
+        printf("%%Warning: svGetScopeFromName repeat failed\n");
+        return 0;
     }
 
     const char* filenamep = "";
     int lineno = 0;
     if (svGetCallerInfo(&filenamep, &lineno)) {
-	printf("Call from %s:%d:%s\n", filenamep, lineno, scopenamep);
+        printf("Call from %s:%d:%s\n", filenamep, lineno, scopenamep);
     } else {
-	printf("%%Warning: svGetCallerInfo failed\n");
-	return 0;
+        printf("%%Warning: svGetCallerInfo failed\n");
+        return 0;
     }
     return lineno;
 }
 
 extern int Dpic_Unique;
-int Dpic_Unique = 0;	// Address used for uniqueness
+int Dpic_Unique = 0;  // Address used for uniqueness
 
 int dpic_save(int value) {
     svScope scope = svGetScope();
     if (!scope) {
-	printf("%%Warning: svGetScope failed\n");
-	return 0;
+        printf("%%Warning: svGetScope failed\n");
+        return 0;
     }
 
     // Use union to avoid cast to different size pointer warnings
     union valpack {
-	void* ptr;
-	int i;
+        void* ptr;
+        int i;
     } vp;
 
     vp.i = value;
     if (svPutUserData(scope, &Dpic_Unique, vp.ptr)) {
-	printf("%%Warning: svPutUserData failed\n");
-	return 0;
+        printf("%%Warning: svPutUserData failed\n");
+        return 0;
     }
     return 1;
 }
@@ -110,21 +110,21 @@ int dpic_save(int value) {
 int dpic_restore() {
     svScope scope = svGetScope();
     if (!scope) {
-	printf("%%Warning: svGetScope failed\n");
-	return 0;
+        printf("%%Warning: svGetScope failed\n");
+        return 0;
     }
 
     if (void* userp = svGetUserData(scope, (void*)&Dpic_Unique)) {
-	// Use union to avoid cast to different size pointer warnings
-	union valpack {
-	    void* ptr;
-	    int i;
-	} vp;
-	vp.ptr = userp;
-	return vp.i;
+        // Use union to avoid cast to different size pointer warnings
+        union valpack {
+            void* ptr;
+            int i;
+        } vp;
+        vp.ptr = userp;
+        return vp.i;
     } else {
-	printf("%%Warning: svGetUserData failed\n");
-	return 0;
+        printf("%%Warning: svGetUserData failed\n");
+        return 0;
     }
 }
 

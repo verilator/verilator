@@ -58,17 +58,17 @@ foreach my $sw (@ARGV) {
 }
 
 Getopt::Long::config("no_auto_abbrev","pass_through");
-if (! GetOptions (
-                  # Major operating modes
-                  "help"        => \&usage,
-                  "debug:s"     => \&debug,
-                  # "version!"  => \&version,   # Also passthru'ed
-                  # Switches
-                  "gdb!"        => \$opt_gdb,
-                  "gdbbt!"      => \$opt_gdbbt,
-                  # Additional parameters
-                  "<>"          => sub {},      # Ignored
-                  )) {
+if (! GetOptions(
+          # Major operating modes
+          "help"        => \&usage,
+          "debug:s"     => \&debug,
+          # "version!"  => \&version,   # Also passthru'ed
+          # Switches
+          "gdb!"        => \$opt_gdb,
+          "gdbbt!"      => \$opt_gdbbt,
+          # Additional parameters
+          "<>"          => sub {},      # Ignored
+    )) {
     pod2usage(-exitstatus=>2, -verbose=>0);
 }
 
@@ -2082,7 +2082,7 @@ command line, or the link), you'd then:
 
     #include "svdpi.h"
     #include "Vour__Dpi.h"
-    int add (int a, int b) { return a+b; }
+    int add(int a, int b) { return a+b; }
 
 =head2 DPI System Task/Functions
 
@@ -2132,7 +2132,7 @@ respect to that top level module, then the scope could be set with
 
     #include "svdpi.h"
     ...
-    svSetScope (svGetScopeFromName ("dut"));
+    svSetScope(svGetScopeFromName("dut"));
 
 (Remember that Verilator adds a "V" to the top of the module hierarchy.)
 
@@ -2146,7 +2146,7 @@ comments within the svdpi.h header for more information.
 Verilator allows writing $display like functions using this syntax:
 
    import "DPI-C" function void
-         \$my_display (input string formatted /*verilator sformat*/ );
+         \$my_display(input string formatted /*verilator sformat*/ );
 
 The /*verilator sformat*/ indicates that this function accepts a $display
 like format specifier followed by any number of arguments to satisfy the
@@ -2254,7 +2254,7 @@ accesses the above signal "readme" would be:
       #include "verilated_vpi.h"  // Required to get definitions
 
       vluint64_t main_time = 0;   // See comments in first example
-      double sc_time_stamp () { return main_time; }
+      double sc_time_stamp() { return main_time; }
 
       void read_and_check() {
           vpiHandle vh1 = vpi_handle_by_name((PLI_BYTE8*)"TOP.our.readme", NULL);
@@ -3416,7 +3416,7 @@ it's a bit slower than a non-delayed assignment.)  Here's an example
         always @ (posedge clk)
             if (~reset_l) begin
                 for (i=0; i<`ARRAY_SIZE; i++) begin
-                    array[i] = 0;        // Non-delayed for verilator
+                    array[i] = 0;  // Non-delayed for verilator
                 end
 
 This message is only seen on large or complicated loops because Verilator

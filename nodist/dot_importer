@@ -24,11 +24,11 @@ $Debug = 0;
 my $opt_filename;
 autoflush STDOUT 1;
 autoflush STDERR 1;
-if (! GetOptions (
-		  "help"	=> \&usage,
-		  "debug"	=> \&debug,
-		  "<>"		=> \&parameter,
-		  )) {
+if (! GetOptions(
+          "help"        => \&usage,
+          "debug"       => \&debug,
+          "<>"          => \&parameter,
+    )) {
     usage();
 }
 
@@ -49,9 +49,9 @@ sub debug {
 sub parameter {
     my $param = shift;
     if (!$opt_filename) {
-	$opt_filename = $param;
+        $opt_filename = $param;
     } else {
-	die "%Error: Unknown parameter: $param\n";
+        die "%Error: Unknown parameter: $param\n";
     }
 }
 
@@ -64,30 +64,30 @@ sub dotread {
     my $header = 1;
     my $vnum = 0;
     while (defined (my $line = $fh->getline)) {
-	if ($line =~ /^\t([a-zA-Z0-9_]+)\t(.*)$/) {
-	    next if $1 eq 'nTITLE';
-	    $header = 0;
-	    $Vertexes{$1} = {num => $vnum++,
-			     line => $line,
-			     name => $1,};
-	}
-	elsif ($line =~ /^\t([a-zA-Z0-9_]+)\s+->\s+([a-zA-Z0-9_]+)\s+(.*)$/) {
-	    my $from=$1; my $to=$2;
-	    my $weight = 1; $weight = $1 if $line =~ /weight=(\d+)/;
-	    my $cutable = undef; $cutable = $1 if $line =~ /style=(\S+)/;
-	    my $edge =  {num => $vnum++,
-			 line => $line,
-			 weight => $weight,
-			 cutable => $cutable,
-			 from => $from,
-			 to => $to,};
-	    push @Edges, $edge;
-	    $Edges{$from}{$to} = $edge;
-	}
-	elsif ($header) {
-	    push @Header, $line;
-	    print "IGNORE: $line";
-	}
+        if ($line =~ /^\t([a-zA-Z0-9_]+)\t(.*)$/) {
+            next if $1 eq 'nTITLE';
+            $header = 0;
+            $Vertexes{$1} = {num => $vnum++,
+                             line => $line,
+                             name => $1,};
+        }
+        elsif ($line =~ /^\t([a-zA-Z0-9_]+)\s+->\s+([a-zA-Z0-9_]+)\s+(.*)$/) {
+            my $from=$1; my $to=$2;
+            my $weight = 1; $weight = $1 if $line =~ /weight=(\d+)/;
+            my $cutable = undef; $cutable = $1 if $line =~ /style=(\S+)/;
+            my $edge =  {num => $vnum++,
+                         line => $line,
+                         weight => $weight,
+                         cutable => $cutable,
+                         from => $from,
+                         to => $to,};
+            push @Edges, $edge;
+            $Edges{$from}{$to} = $edge;
+        }
+        elsif ($header) {
+            push @Header, $line;
+            print "IGNORE: $line";
+        }
     }
 }
 
@@ -100,14 +100,14 @@ sub cwrite {
     $fh->print("void V3GraphTestImport::dotImport() {\n");
     $fh->print("    DfaGraph* gp = &m_graph;\n");
     foreach my $ver (sort {$a->{num} <=> $b->{num}} (values %Vertexes)) {
-	$fh->printf("    V3GraphTestVertex* %s = new V3GraphTestVertex(gp, \"%s\");  if (%s) {}\n",
-		    $ver->{name}, $ver->{name}, $ver->{name});
+        $fh->printf("    V3GraphTestVertex* %s = new V3GraphTestVertex(gp, \"%s\");  if (%s) {}\n",
+                    $ver->{name}, $ver->{name}, $ver->{name});
     }
     $fh->print("\n");
     foreach my $edge (@Edges) {
-	$fh->printf("    new V3GraphEdge(gp, %s, %s, %s, %s);\n",
-		    $edge->{from}, $edge->{to},
-		    $edge->{weight}, $edge->{cutable}?"true":"false");
+        $fh->printf("    new V3GraphEdge(gp, %s, %s, %s, %s);\n",
+                    $edge->{from}, $edge->{to},
+                    $edge->{weight}, $edge->{cutable}?"true":"false");
     }
     $fh->print("}\n");
 }

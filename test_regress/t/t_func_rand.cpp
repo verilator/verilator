@@ -15,13 +15,13 @@ int main(int argc, char *argv[]) {
 
     printf("\nTesting\n");
     for (int i = 0; i < 10; i++) {
-	topp->clk          = 0;
-	topp->eval();
-	topp->clk          = 1;
-	topp->eval();
+        topp->clk = 0;
+        topp->eval();
+        topp->clk = 1;
+        topp->eval();
     }
     if (topp->Rand != 0xfeed0fad) {
-	vl_fatal(__FILE__,__LINE__,"top", "Unexpected value for Rand output\n");
+        vl_fatal(__FILE__,__LINE__,"top", "Unexpected value for Rand output\n");
     }
     printf("*-* All Finished *-*\n");
 }

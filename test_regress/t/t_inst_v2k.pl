@@ -11,7 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     v_flags2 => ['+libext+.vi+.extranoneed'],
-    nc => 0, # Error: Multiple +libext flags found
+    nc => 0,  # Error: Multiple +libext flags found
     vcs => 0,
     );
 

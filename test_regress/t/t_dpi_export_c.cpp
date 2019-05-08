@@ -19,7 +19,7 @@
 
 #ifdef _WIN32
 # define T_PRI64 "I64"
-#else // Linux or compliant Unix flavors
+#else  // Linux or compliant Unix flavors
 # define T_PRI64 "ll"
 #endif
 
@@ -71,20 +71,20 @@ extern "C" {
 
 //======================================================================
 
-#define CHECK_RESULT(type, got, exp)		\
-    if ((got) != (exp)) { 			\
-	printf("%%Error: %s:%d:", __FILE__,__LINE__);	\
-	union { type a; long long l; } u;	\
-	u.l = 0; u.a = got;			\
-	printf(" GOT = %" T_PRI64 "x", u.l);	\
-	u.l = 0; u.a = exp;			\
-	printf("  EXP = %" T_PRI64 "x\n", u.l); \
-	return __LINE__; \
+#define CHECK_RESULT(type, got, exp)            \
+    if ((got) != (exp)) {                       \
+        printf("%%Error: %s:%d:", __FILE__,__LINE__);   \
+        union { type a; long long l; } u;       \
+        u.l = 0; u.a = got;                     \
+        printf(" GOT = %" T_PRI64 "x", u.l);    \
+        u.l = 0; u.a = exp;                     \
+        printf("  EXP = %" T_PRI64 "x\n", u.l); \
+        return __LINE__; \
     }
 #define CHECK_RESULT_NNULL(got) \
     if (!(got)) { \
-	printf("%%Error: %s:%d: GOT = %p   EXP = !NULL\n", __FILE__,__LINE__, (got)); \
-	return __LINE__; \
+        printf("%%Error: %s:%d: GOT = %p   EXP = !NULL\n", __FILE__,__LINE__, (got)); \
+        return __LINE__; \
     }
 
 static int check_sub(const char* name, int i) {
@@ -112,69 +112,69 @@ int dpix_run_tests() {
     static int didDump = 0;
     if (didDump++ == 0) {
 # ifdef TEST_VERBOSE
-	Verilated::internalsDump();
+        Verilated::internalsDump();
 # endif
     }
 #endif
 
-#ifndef CADENCE // Unimplemented; how hard is it?
+#ifndef CADENCE  // Unimplemented; how hard is it?
     printf("svDpiVersion: %s\n",svDpiVersion());
-    CHECK_RESULT (bool,
-		  strcmp(svDpiVersion(), "1800-2005")==0
-		  || strcmp(svDpiVersion(), "P1800-2005")==0
-		  , 1);
+    CHECK_RESULT(bool,
+                 strcmp(svDpiVersion(), "1800-2005")==0
+                 || strcmp(svDpiVersion(), "P1800-2005")==0
+                 , 1);
 #endif
 
-    CHECK_RESULT (int, dpix_int123(), 0x123 );
+    CHECK_RESULT(int, dpix_int123(), 0x123 );
 
 #ifndef CADENCE  // No export calls from an import
     int o;
     dpix_t_int(0x456, &o);
-    CHECK_RESULT (unsigned long, o, ~0x456UL);
+    CHECK_RESULT(unsigned long, o, ~0x456UL);
 
     dpix_t_renamed(0x456, &o);
-    CHECK_RESULT (int, o, 0x458UL);
+    CHECK_RESULT(int, o, 0x458UL);
 #endif
 
     svBitVecVal vec10[1] = {0x10};
 
-    CHECK_RESULT (int, dpix_f_bit(1), 0x0);
-    CHECK_RESULT (int, dpix_f_bit(0), 0x1);
-    CHECK_RESULT (int, dpix_f_bit15(vec10) & 0x7fUL, 0x6f);
+    CHECK_RESULT(int, dpix_f_bit(1), 0x0);
+    CHECK_RESULT(int, dpix_f_bit(0), 0x1);
+    CHECK_RESULT(int, dpix_f_bit15(vec10) & 0x7fUL, 0x6f);
     // Simulators disagree over the next three's sign extension unless we mask the upper bits
-    CHECK_RESULT (int, dpix_f_int(1) & 0xffffffffUL, 0xfffffffeUL);
-    CHECK_RESULT (int, dpix_f_byte(1) & 0xffUL, 0xfe);
-    CHECK_RESULT (int, dpix_f_shortint(1) & 0xffffUL, 0xfffeUL);
+    CHECK_RESULT(int, dpix_f_int(1) & 0xffffffffUL, 0xfffffffeUL);
+    CHECK_RESULT(int, dpix_f_byte(1) & 0xffUL, 0xfe);
+    CHECK_RESULT(int, dpix_f_shortint(1) & 0xffffUL, 0xfffeUL);
 
-    CHECK_RESULT (unsigned long long, dpix_f_longint(1), 0xfffffffffffffffeULL);
-    CHECK_RESULT (void*, dpix_f_chandle((void*)(12345)), (void*)(12345));
+    CHECK_RESULT(unsigned long long, dpix_f_longint(1), 0xfffffffffffffffeULL);
+    CHECK_RESULT(void*, dpix_f_chandle((void*)(12345)), (void*)(12345));
 
     {
-	svBitVecVal i_vec48[2] = {0xab782a12,0x8a413bd9};
-	svBitVecVal o_vec48[2] = {0,0};
-	dpix_t_bit48(i_vec48, o_vec48);
-	CHECK_RESULT(int, o_vec48[0], ~i_vec48[0]);
+        svBitVecVal i_vec48[2] = {0xab782a12,0x8a413bd9};
+        svBitVecVal o_vec48[2] = {0,0};
+        dpix_t_bit48(i_vec48, o_vec48);
+        CHECK_RESULT(int, o_vec48[0], ~i_vec48[0]);
 #ifdef VCS  // VCS has bug where doesn't clean input
-	CHECK_RESULT(int, o_vec48[1], (~i_vec48[1]));
+        CHECK_RESULT(int, o_vec48[1], (~i_vec48[1]));
 #else
-	CHECK_RESULT(int, o_vec48[1], (~i_vec48[1])&0x0000ffffUL);
+        CHECK_RESULT(int, o_vec48[1], (~i_vec48[1])&0x0000ffffUL);
 #endif
     }
     {
-	svBitVecVal i_vec95[3] = {0x72912312,0xab782a12,0x8a413bd9};
-	svBitVecVal o_vec95[3] = {0,0,0};
-	dpix_t_bit95(i_vec95, o_vec95);
-	CHECK_RESULT(int, o_vec95[0], ~i_vec95[0]);
-	CHECK_RESULT(int, o_vec95[1], ~i_vec95[1]);
-	CHECK_RESULT(int, o_vec95[2], (~i_vec95[2])&0x7fffffffUL);
+        svBitVecVal i_vec95[3] = {0x72912312,0xab782a12,0x8a413bd9};
+        svBitVecVal o_vec95[3] = {0,0,0};
+        dpix_t_bit95(i_vec95, o_vec95);
+        CHECK_RESULT(int, o_vec95[0], ~i_vec95[0]);
+        CHECK_RESULT(int, o_vec95[1], ~i_vec95[1]);
+        CHECK_RESULT(int, o_vec95[2], (~i_vec95[2])&0x7fffffffUL);
     }
     {
-	svBitVecVal i_vec96[3] = {0xf2912312,0xab782a12,0x8a413bd9};
-	svBitVecVal o_vec96[3] = {0,0,0};
-	dpix_t_bit96(i_vec96, o_vec96);
-	CHECK_RESULT(int, o_vec96[0], ~i_vec96[0]);
-	CHECK_RESULT(int, o_vec96[1], ~i_vec96[1]);
-	CHECK_RESULT(int, o_vec96[2], ~i_vec96[2]);
+        svBitVecVal i_vec96[3] = {0xf2912312,0xab782a12,0x8a413bd9};
+        svBitVecVal o_vec96[3] = {0,0,0};
+        dpix_t_bit96(i_vec96, o_vec96);
+        CHECK_RESULT(int, o_vec96[0], ~i_vec96[0]);
+        CHECK_RESULT(int, o_vec96[1], ~i_vec96[1]);
+        CHECK_RESULT(int, o_vec96[2], ~i_vec96[2]);
     }
 
     extern void dpix_t_reg(svLogic i, svLogic* o);

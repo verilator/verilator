@@ -30,9 +30,9 @@ unsigned int StepSim(Vt_mem_slot *sim, unsigned int slot, unsigned int bit, unsi
     }
 
     if (val)
-	Array[slot] |= (1 << bit);
+        Array[slot] |= (1 << bit);
     else
-	Array[slot] &= ~(1 << bit);
+        Array[slot] &= ~(1 << bit);
 
     return sim->OutputVal;
 }
@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 
     /* clear all bits in the array */
     for (slot = 0; slot < 3; slot++)
-	for (bit = 0; bit < 2; bit++)
+        for (bit = 0; bit < 2; bit++)
             StepSim(sim, slot, bit, 0, 0);
 
     printf("\nTesting\n");

@@ -53,37 +53,37 @@ unsigned int main_time = false;
 
 #define CHECK_RESULT_VH(got, exp) \
     if ((got) != (exp)) { \
-	printf("%%Error: %s:%d: GOT = %p   EXP = %p\n", \
-	       FILENM,__LINE__, (got), (exp)); \
-	return __LINE__; \
+        printf("%%Error: %s:%d: GOT = %p   EXP = %p\n", \
+               FILENM,__LINE__, (got), (exp)); \
+        return __LINE__; \
     }
 
 #define CHECK_RESULT_NZ(got) \
     if (!(got)) { \
-	printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM,__LINE__); \
-	return __LINE__; \
+        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM,__LINE__); \
+        return __LINE__; \
     }
 
 // Use cout to avoid issues with %d/%lx etc
 #define CHECK_RESULT(got, exp) \
     if ((got) != (exp)) { \
-	cout<<dec<<"%Error: "<<FILENM<<":"<<__LINE__ \
-	   <<": GOT = "<<(got)<<"   EXP = "<<(exp)<<endl;	\
-	return __LINE__; \
+        cout<<dec<<"%Error: "<<FILENM<<":"<<__LINE__ \
+           <<": GOT = "<<(got)<<"   EXP = "<<(exp)<<endl;       \
+        return __LINE__; \
     }
 
 #define CHECK_RESULT_HEX(got, exp) \
     if ((got) != (exp)) { \
-	cout<<dec<<"%Error: "<<FILENM<<":"<<__LINE__<<hex \
-	   <<": GOT = "<<(got)<<"   EXP = "<<(exp)<<endl;	\
-	return __LINE__; \
+        cout<<dec<<"%Error: "<<FILENM<<":"<<__LINE__<<hex \
+           <<": GOT = "<<(got)<<"   EXP = "<<(exp)<<endl;       \
+        return __LINE__; \
     }
 
 #define CHECK_RESULT_CSTR(got, exp) \
     if (strcmp((got),(exp))) { \
-	printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", \
-	       FILENM,__LINE__, (got)?(got):"<null>", (exp)?(exp):"<null>"); \
-	return __LINE__; \
+        printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", \
+               FILENM,__LINE__, (got)?(got):"<null>", (exp)?(exp):"<null>"); \
+        return __LINE__; \
     }
 
 #define CHECK_RESULT_CSTR_STRIP(got, exp) \
@@ -92,7 +92,7 @@ unsigned int main_time = false;
 int _mon_check_range(TestVpiHandle& handle, int size, int left, int right) {
     TestVpiHandle iter_h, left_h, right_h;
     s_vpi_value value = {
-	vpiIntVal, .value = {.integer = 0}
+        vpiIntVal, .value = {.integer = 0}
     };
     // check size of object
     int vpisize = vpi_get(vpiSize, handle);
@@ -115,15 +115,15 @@ int _mon_check_range(TestVpiHandle& handle, int size, int left, int right) {
     // calculate size & check
     coherency = abs(coherency) + 1;
     CHECK_RESULT(coherency, size);
-    return 0; // Ok
+    return 0;  // Ok
 }
 
 int _mon_check_memory() {
     int cnt;
     TestVpiHandle mem_h, lcl_h;
-    vpiHandle iter_h; // icarus does not like auto free of iterator handles
+    vpiHandle iter_h;  // Icarus does not like auto free of iterator handles
     s_vpi_value value = {
-	vpiIntVal, .value = {.integer = 0}
+        vpiIntVal, .value = {.integer = 0}
     };
     vpi_printf((PLI_BYTE8*)"Check memory vpi ...\n");
     mem_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted("mem0"), NULL);
@@ -136,12 +136,12 @@ int _mon_check_memory() {
     iter_h = vpi_iterate(vpiMemoryWord, mem_h);
     cnt = 0;
     while ((lcl_h = vpi_scan(iter_h))) {
-	value.value.integer = ++cnt;
+        value.value.integer = ++cnt;
         vpi_put_value(lcl_h, &value, NULL, vpiNoDelay);
         // check size and range
         if (int status = _mon_check_range(lcl_h, 32, 31, 0)) return status;
     }
-    CHECK_RESULT(cnt, 16); // should be 16 addresses
+    CHECK_RESULT(cnt, 16);  // should be 16 addresses
     // iterate and accumulate
     iter_h = vpi_iterate(vpiMemoryWord, mem_h);
     cnt = 0;
@@ -150,12 +150,12 @@ int _mon_check_memory() {
       vpi_get_value(lcl_h, &value);
       CHECK_RESULT(value.value.integer, cnt);
     }
-    CHECK_RESULT(cnt, 16); // should be 16 addresses
+    CHECK_RESULT(cnt, 16);  // should be 16 addresses
     // don't care for non verilator
     // (crashes on Icarus)
     if (TestSimulator::is_icarus()) {
-	vpi_printf((PLI_BYTE8*)"Skipping property checks for simulator %s\n", TestSimulator::get_info().product);
-        return 0; // Ok
+        vpi_printf((PLI_BYTE8*)"Skipping property checks for simulator %s\n", TestSimulator::get_info().product);
+        return 0;  // Ok
     }
     // make sure trying to get properties that don't exist
     // doesn't crash
@@ -169,13 +169,13 @@ int _mon_check_memory() {
     CHECK_RESULT(should_be_NULL, 0);
     should_be_NULL = vpi_handle(vpiScope, iter_h);
     CHECK_RESULT(should_be_NULL, 0);
-    return 0; // Ok
+    return 0;  // Ok
 }
 
 int mon_check() {
     // Callback from initial block in monitor
     if (int status = _mon_check_memory()) return status;
-    return 0; // Ok
+    return 0;  // Ok
 }
 
 //======================================================================
@@ -220,7 +220,8 @@ int main(int argc, char **argv, char **env) {
     double sim_time = 1100;
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
-    Verilated::fatalOnVpiError(0); // we're going to be checking for these errors do don't crash out
+    // we're going to be checking for these errors do don't crash out
+    Verilated::fatalOnVpiError(0);
 
     VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
 
@@ -243,17 +244,17 @@ int main(int argc, char **argv, char **env) {
     main_time += 10;
 
     while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
-	main_time += 1;
-	topp->eval();
-	VerilatedVpi::callValueCbs();
-	topp->clk = !topp->clk;
-	//mon_do();
+        main_time += 1;
+        topp->eval();
+        VerilatedVpi::callValueCbs();
+        topp->clk = !topp->clk;
+        //mon_do();
 #if VM_TRACE
-	if (tfp) tfp->dump (main_time);
+        if (tfp) tfp->dump (main_time);
 #endif
     }
     if (!Verilated::gotFinish()) {
-	vl_fatal(FILENM,__LINE__,"main", "%Error: Timeout; never got a $finish");
+        vl_fatal(FILENM,__LINE__,"main", "%Error: Timeout; never got a $finish");
     }
     topp->final();
 
@@ -266,4 +267,3 @@ int main(int argc, char **argv, char **env) {
 }
 
 #endif
-

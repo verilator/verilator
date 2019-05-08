@@ -17,7 +17,7 @@ execute(
     check_finished => 1,
     );
 
-file_grep     ("$Self->{obj_dir}/simx.vcd", qr/\$enddefinitions/x);
+file_grep("$Self->{obj_dir}/simx.vcd", qr/\$enddefinitions/x);
 
 ok(1);
 1;

@@ -13,7 +13,7 @@ top_filename("t/t_sys_readmem.v");
 
 # Use random reset to ensure we're fully initializing arrays before
 # $writememh, to avoid miscompares with X's on 4-state simulators.
-$Self->{verilated_randReset} = 2; # 2 == truly random
+$Self->{verilated_randReset} = 2;  # 2 == truly random
 
 compile(v_flags2 => [
             "+define+WRITEMEM_READ_BACK=1",

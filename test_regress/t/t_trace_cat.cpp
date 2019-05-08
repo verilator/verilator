@@ -39,26 +39,26 @@ int main(int argc, char **argv, char **env) {
 
     while (main_time < 190) {  // Creates 2 files
         top->clk = !top->clk;
-	top->eval();
+        top->eval();
 
-	if ((main_time % 100) == 0) {
+        if ((main_time % 100) == 0) {
 #if defined(T_TRACE_CAT)
-	    tfp->openNext(true);
+            tfp->openNext(true);
 #elif defined(T_TRACE_CAT_REOPEN)
-	    tfp->close();
-	    tfp->open(trace_name());
+            tfp->close();
+            tfp->open(trace_name());
 #elif defined(T_TRACE_CAT_RENEW)
-	    tfp->close();
-	    delete tfp;
-	    tfp = new VerilatedVcdC;
-	    top->trace(tfp,99);
-	    tfp->open(trace_name());
+            tfp->close();
+            delete tfp;
+            tfp = new VerilatedVcdC;
+            top->trace(tfp,99);
+            tfp->open(trace_name());
 #else
 # error "Unknown test"
 #endif
-	}
-	tfp->dump((unsigned int)(main_time));
-	++main_time;
+        }
+        tfp->dump((unsigned int)(main_time));
+        ++main_time;
     }
     tfp->close();
     top->final();

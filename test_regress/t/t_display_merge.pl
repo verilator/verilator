@@ -18,8 +18,8 @@ execute(
     expect_filename => $Self->{golden_filename},
     );
 
-file_grep ("$Self->{obj_dir}/$Self->{VM_PREFIX}__stats.txt",
-           qr/Node count, DISPLAY \s+ 32 \s+ 25 \s+ 25 \s+ 25/);
+file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}__stats.txt",
+          qr/Node count, DISPLAY \s+ 32 \s+ 25 \s+ 25 \s+ 25/);
 
 ok(1);
 1;

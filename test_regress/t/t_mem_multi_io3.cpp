@@ -25,9 +25,9 @@ int main()
     bool pass = true;
 
     if (pass) {
-	VL_PRINTF("*-* All Finished *-*\n");
+        VL_PRINTF("*-* All Finished *-*\n");
     } else {
-	vl_fatal(__FILE__,__LINE__,"top", "Unexpected results from test\n");
+        vl_fatal(__FILE__,__LINE__,"top", "Unexpected results from test\n");
     }
     return 0;
 }

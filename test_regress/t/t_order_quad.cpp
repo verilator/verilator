@@ -21,8 +21,8 @@ bool fail = false;
 
 void check(QData got, QData exp) {
     if (got != exp) {
-	VL_PRINTF("%%Error: got=0x%" VL_PRI64 "x exp=0x%" VL_PRI64 "x\n", got, exp);
-	fail = true;
+        VL_PRINTF("%%Error: got=0x%" VL_PRI64 "x exp=0x%" VL_PRI64 "x\n", got, exp);
+        fail = true;
     }
 }
 
@@ -41,10 +41,10 @@ int main(int argc, char *argv[]) {
 
     topp->final();
     if (!fail) {
-	VL_PRINTF("*-* All Finished *-*\n");
-	topp->final();
+        VL_PRINTF("*-* All Finished *-*\n");
+        topp->final();
     } else {
-	vl_fatal(__FILE__,__LINE__,"top", "Unexpected results\n");
+        vl_fatal(__FILE__,__LINE__,"top", "Unexpected results\n");
     }
     return 0;
 }

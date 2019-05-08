@@ -24,11 +24,11 @@ my $Opt_File;
 autoflush STDOUT 1;
 autoflush STDERR 1;
 Getopt::Long::config("no_auto_abbrev");
-if (! GetOptions (
-		  "help"	=> \&usage,
-		  "debug"	=> \&debug,
-		  "<>"		=> \&parameter,
-		  )) {
+if (! GetOptions(
+          "help"        => \&usage,
+          "debug"       => \&debug,
+          "<>"          => \&parameter,
+    )) {
     die "%Error: Bad usage, try 'verilator_profcfunc --help'\n";
 }
 
@@ -50,9 +50,9 @@ sub debug {
 sub parameter {
     my $param = shift;
     if (!defined $Opt_File) {
-	$Opt_File = $param;
+        $Opt_File = $param;
     } else {
-	die "%Error: Unknown parameter: $param\n";
+        die "%Error: Unknown parameter: $param\n";
     }
 }
 
@@ -66,13 +66,13 @@ sub profcfunc {
     my %funcs;
 
     while (defined (my $line=$fh->getline())) {
-	#                  %time      cumesec   selfsec     calls     {stuff}   name
-	if ($line =~ /^\s*([0-9.]+)\s+[0-9.]+\s+([0-9.]+)\s+([0-9.]+)\s+[^a-zA-Z_]*([a-zA-Z_].*)$/) {
-	    my $pct=$1; my $sec=$2; my $calls=$3; my $func=$4;
-	    $funcs{$func}{pct} += $pct;
-	    $funcs{$func}{sec} += $sec;
-	    $funcs{$func}{calls} += $calls;
-	}
+        #                  %time      cumesec   selfsec     calls     {stuff}   name
+        if ($line =~ /^\s*([0-9.]+)\s+[0-9.]+\s+([0-9.]+)\s+([0-9.]+)\s+[^a-zA-Z_]*([a-zA-Z_].*)$/) {
+            my $pct=$1; my $sec=$2; my $calls=$3; my $func=$4;
+            $funcs{$func}{pct} += $pct;
+            $funcs{$func}{sec} += $sec;
+            $funcs{$func}{calls} += $calls;
+        }
         # Older gprofs have no call column for single-call functions
         #                  %time      cumesec   selfsec      {stuff}   name
         elsif ($line =~ /^\s*([0-9.]+)\s+[0-9.]+\s+([0-9.]+)\s+[^a-zA-Z_]*([a-zA-Z_].*)$/) {
@@ -88,10 +88,10 @@ sub profcfunc {
     my %pointer_mods;
     my %verilated_mods;
     foreach my $func (keys %funcs) {
-	if ($func =~ /(.*)::_eval\(([a-zA-Z_0-9]+__Syms).*\)$/) {
-	    $verilated_mods{$1} = qr/^$1/;
-	    $pointer_mods{$2} = $1;
-	}
+        if ($func =~ /(.*)::_eval\(([a-zA-Z_0-9]+__Syms).*\)$/) {
+            $verilated_mods{$1} = qr/^$1/;
+            $pointer_mods{$2} = $1;
+        }
     }
     #print Dumper(\%pointer_mods, \%verilated_mods);
 
@@ -99,72 +99,72 @@ sub profcfunc {
     my %vfuncs;
     my %groups;
     foreach my $func (keys %funcs) {
-	my $pct = $funcs{$func}{pct};
-	my $vfunc = $func;
-	my $design;
+        my $pct = $funcs{$func}{pct};
+        my $vfunc = $func;
+        my $design;
 
-	if ($func =~ /\(([a-zA-Z_0-9]+__Syms)/) {
-	    $design = $pointer_mods{$1};
-	}
+        if ($func =~ /\(([a-zA-Z_0-9]+__Syms)/) {
+            $design = $pointer_mods{$1};
+        }
 
-	foreach my $vde (keys %verilated_mods) {
-	    last if $design;
-	    if ($func =~ /$verilated_mods{$vde}/) {
-		$design=$vde;
-		last;
-	    }
-	}
+        foreach my $vde (keys %verilated_mods) {
+            last if $design;
+            if ($func =~ /$verilated_mods{$vde}/) {
+                $design=$vde;
+                last;
+            }
+        }
 
-	if ($vfunc =~ /__PROF__([a-zA-Z_0-9]+)__l?([0-9]+)\(/) {
-	    $vfunc     = sprintf("VBlock    %s:%d", $1, $2);
-	    $groups{type}{"Verilog Blocks under $design"} += $pct;
-	    $groups{design}{$design} += $pct;
-	    $groups{module}{$1} += $pct;
-	} else {
-	    if ($design) {
-		$vfunc = sprintf("VCommon   %s", $func);
-		$groups{type}{"Common code under $design"} += $pct;
-		$groups{design}{$design} += $pct;
-		$groups{module}{$design." common code"} += $pct;
-	    } elsif ($func =~ /^VL_[A-Z0-9_]+/
-		     || $func =~ /^_?vl_[a-zA-Z0-9_]+/
-		     || $func =~ /^verilated/i) {
-		$vfunc = sprintf("VLib      %s", $func);
-		$groups{type}{'VLib'} += $pct;
-		$groups{design}{'VLib'} += $pct;
-		$groups{module}{'VLib'} += $pct;
-	    } elsif ($func =~ /^_mcount_private/) {
-		$vfunc = sprintf("Prof      %s", $func);
-		$groups{type}{'Prof'} += $pct;
-		$groups{design}{'Prof'} += $pct;
-		$groups{module}{'Prof'} += $pct;
-	    } else {
-		$vfunc = sprintf("C++       %s", $func);
-		$groups{type}{'C++'} += $pct;
-		$groups{design}{'C++'} += $pct;
-		$groups{module}{'C++'} += $pct;
-	    }
-	}
-	$vfuncs{$vfunc} = $funcs{$func};
+        if ($vfunc =~ /__PROF__([a-zA-Z_0-9]+)__l?([0-9]+)\(/) {
+            $vfunc     = sprintf("VBlock    %s:%d", $1, $2);
+            $groups{type}{"Verilog Blocks under $design"} += $pct;
+            $groups{design}{$design} += $pct;
+            $groups{module}{$1} += $pct;
+        } else {
+            if ($design) {
+                $vfunc = sprintf("VCommon   %s", $func);
+                $groups{type}{"Common code under $design"} += $pct;
+                $groups{design}{$design} += $pct;
+                $groups{module}{$design." common code"} += $pct;
+            } elsif ($func =~ /^VL_[A-Z0-9_]+/
+                     || $func =~ /^_?vl_[a-zA-Z0-9_]+/
+                     || $func =~ /^verilated/i) {
+                $vfunc = sprintf("VLib      %s", $func);
+                $groups{type}{'VLib'} += $pct;
+                $groups{design}{'VLib'} += $pct;
+                $groups{module}{'VLib'} += $pct;
+            } elsif ($func =~ /^_mcount_private/) {
+                $vfunc = sprintf("Prof      %s", $func);
+                $groups{type}{'Prof'} += $pct;
+                $groups{design}{'Prof'} += $pct;
+                $groups{module}{'Prof'} += $pct;
+            } else {
+                $vfunc = sprintf("C++       %s", $func);
+                $groups{type}{'C++'} += $pct;
+                $groups{design}{'C++'} += $pct;
+                $groups{module}{'C++'} += $pct;
+            }
+        }
+        $vfuncs{$vfunc} = $funcs{$func};
     }
 
 
     foreach my $type (qw(type design module)) {
-	my $missing = 100;
-	foreach (sort (keys %{$groups{$type}})) {
-	    $missing -= $groups{$type}{$_};
-	}
-	if ($missing) {
-	    $groups{$type}{"\377Unaccounted for/rounding error"} = $missing;
-	}
+        my $missing = 100;
+        foreach (sort (keys %{$groups{$type}})) {
+            $missing -= $groups{$type}{$_};
+        }
+        if ($missing) {
+            $groups{$type}{"\377Unaccounted for/rounding error"} = $missing;
+        }
 
-	print("Overall summary by $type:\n");
-	printf("  %-6s  %s\n","% time",$type);
-	foreach my $what (sort (keys %{$groups{$type}})) {
-	    (my $pwhat = $what) =~ s/^\377//;  # Just used to establish sort order
-	    printf("  %6.2f  %s\n", $groups{$type}{$what}, $pwhat);
-	}
-	print("\n");
+        print("Overall summary by $type:\n");
+        printf("  %-6s  %s\n","% time",$type);
+        foreach my $what (sort (keys %{$groups{$type}})) {
+            (my $pwhat = $what) =~ s/^\377//;  # Just used to establish sort order
+            printf("  %6.2f  %s\n", $groups{$type}{$what}, $pwhat);
+        }
+        print("\n");
     }
 
     print("Verilog code profile:\n");
@@ -181,14 +181,14 @@ sub profcfunc {
 
     my $cume = 0;
     foreach my $func (sort {$vfuncs{$b}{sec} <=> $vfuncs{$a}{sec}
-			    || $a cmp $b}
-		      (keys %vfuncs)) {
-	$cume += $vfuncs{$func}{sec};
-	printf +("%6.2f %9.2f %8.2f %8d   %s\n",
-		 $vfuncs{$func}{pct},
-		 $cume, $vfuncs{$func}{sec},
-		 $vfuncs{$func}{calls},
-		 $func);
+                            || $a cmp $b}
+                      (keys %vfuncs)) {
+        $cume += $vfuncs{$func}{sec};
+        printf +("%6.2f %9.2f %8.2f %8d   %s\n",
+                 $vfuncs{$func}{pct},
+                 $cume, $vfuncs{$func}{sec},
+                 $vfuncs{$func}{calls},
+                 $func);
     }
 }
 

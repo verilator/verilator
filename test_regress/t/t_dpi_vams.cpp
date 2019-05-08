@@ -47,10 +47,10 @@ int main(int argc, char *argv[]) {
     topp->in = 1.1;
     topp->eval();
     if (topp->out != 1.2) {
-	VL_PRINTF("*-* All Finished *-*\n");
-	topp->final();
+        VL_PRINTF("*-* All Finished *-*\n");
+        topp->final();
     } else {
-	vl_fatal(__FILE__,__LINE__,"top", "Unexpected results\n");
+        vl_fatal(__FILE__,__LINE__,"top", "Unexpected results\n");
     }
     return 0;
 }

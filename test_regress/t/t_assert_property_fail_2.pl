@@ -20,7 +20,7 @@ execute(
     fails => 1
     );
 
-file_grep ($Self->{run_log_filename}, qr/'assert property' failed/);
+file_grep($Self->{run_log_filename}, qr/'assert property' failed/);
 
 ok(1);
 1;

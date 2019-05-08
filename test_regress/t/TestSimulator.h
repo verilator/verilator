@@ -19,34 +19,35 @@
 class TestSimulator {
 private:
     struct SimTypes {
-	int verilator;
-	int icarus;
-	int mti;
-	int ncsim;
-	int vcs;
+        int verilator;
+        int icarus;
+        int mti;
+        int ncsim;
+        int vcs;
     };
-    s_vpi_vlog_info   m_info;
-    SimTypes          m_simulators;
+    s_vpi_vlog_info m_info;
+    SimTypes m_simulators;
 public:
     TestSimulator() {
-	vpi_get_vlog_info(&m_info);
-	if (0 == strcmp(m_info.product, "Verilator")) {
-	    m_simulators.verilator = true;
-	} else if (0 == strcmp(m_info.product, "Verilator")) {
-	    m_simulators.icarus = true;
-	} else if (0 == strncmp(m_info.product, "Chronologic Simulation VCS", strlen("Chronologic Simulation VCS"))) {
-	    m_simulators.vcs = true;
-	} else {
-	    printf("%%Warning: %s:%d: Unknown simulator in TestSimulator.h: %s\n",
-		   __FILE__, __LINE__, m_info.product);
-	}
+        vpi_get_vlog_info(&m_info);
+        if (0 == strcmp(m_info.product, "Verilator")) {
+            m_simulators.verilator = true;
+        } else if (0 == strcmp(m_info.product, "Verilator")) {
+            m_simulators.icarus = true;
+        } else if (0 == strncmp(m_info.product, "Chronologic Simulation VCS",
+                                strlen("Chronologic Simulation VCS"))) {
+            m_simulators.vcs = true;
+        } else {
+            printf("%%Warning: %s:%d: Unknown simulator in TestSimulator.h: %s\n",
+                   __FILE__, __LINE__, m_info.product);
+        }
     }
     ~TestSimulator() { }
     // METHORS
 private:
     static TestSimulator& singleton() {
-	static TestSimulator s_singleton;
-	return s_singleton;
+        static TestSimulator s_singleton;
+        return s_singleton;
     }
     static const SimTypes& simulators() { return singleton().m_simulators; }
 public:
@@ -62,19 +63,19 @@ public:
     static bool has_get_scalar() { return !simulators().icarus; }
     // return test level scope
     static const char* top() {
-	if (simulators().verilator) {
-	    return "t";
-	} else {
-	    return "top.t";
-	}
+        if (simulators().verilator) {
+            return "t";
+        } else {
+            return "top.t";
+        }
     }
     // return absolute scope of obj
     static const char* rooted(const char *obj) {
-	static string buf;
-	ostringstream os;
-	os<<top()<<"."<<obj;
-	buf = os.str();
-	return buf.c_str();
+        static string buf;
+        ostringstream os;
+        os<<top()<<"."<<obj;
+        buf = os.str();
+        return buf.c_str();
     }
 };
 

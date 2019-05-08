@@ -32,27 +32,27 @@ foreach my $line (<STDIN>) {
     $line =~ s!\s+! !g;
     next if $line eq '';
     if ($line =~ m!^\%\%!) {
-	$body++;
+        $body++;
     } elsif ($body == 1) {
-	$rule .= $line;
-	if ($line =~ m!^\s*;\s*$!) {
-	    #print "Rule: $rule\n";
-	    ($rule =~ /^([a-zA-Z0-9_]+)(<\S+>)?:(.*)$/) or die "%Error: No rule name: $1\n";
-	    my $rulename = $1; my $preaction = $3;
-	    $declared{$rulename} = $lineno;
-	    $preaction =~ s/\{[^\}]*\}/ /g;
-	    #print "RULEN $rulename PA $preaction\n" if $Debug;
-	    $rule = '';
-	    foreach my $ref (split /\s+/, $preaction) {
-		next if $ref !~ /^[a-zA-Z]/;
-		next if $ref eq $rulename;
-		if (!$used{$ref} && $declared{$ref}) {
-		    print "   %Warning: $lineno: $ref used by $rulename after declaration\n";
-		}
-		$used{$ref} = $lineno;
-		print "  ref $ref\n" if $Debug;
-	    }
-	}
+        $rule .= $line;
+        if ($line =~ m!^\s*;\s*$!) {
+            #print "Rule: $rule\n";
+            ($rule =~ /^([a-zA-Z0-9_]+)(<\S+>)?:(.*)$/) or die "%Error: No rule name: $1\n";
+            my $rulename = $1; my $preaction = $3;
+            $declared{$rulename} = $lineno;
+            $preaction =~ s/\{[^\}]*\}/ /g;
+            #print "RULEN $rulename PA $preaction\n" if $Debug;
+            $rule = '';
+            foreach my $ref (split /\s+/, $preaction) {
+                next if $ref !~ /^[a-zA-Z]/;
+                next if $ref eq $rulename;
+                if (!$used{$ref} && $declared{$ref}) {
+                    print "   %Warning: $lineno: $ref used by $rulename after declaration\n";
+                }
+                $used{$ref} = $lineno;
+                print "  ref $ref\n" if $Debug;
+            }
+        }
     }
 }
 

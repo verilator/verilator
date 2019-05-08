@@ -17,7 +17,7 @@ scenarios(vlt => 1);
     print "Old mtime=",$oldstats[9],"\n";
     $oldstats[9] or error("No output file found: $outfile\n");
 
-    sleep (1);  # Or else it might take < 1 second to compile and see no diff.
+    sleep(1);  # Or else it might take < 1 second to compile and see no diff.
 
     compile();
 
