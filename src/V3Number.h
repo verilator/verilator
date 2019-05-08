@@ -199,6 +199,7 @@ public:
     bool isLtXZ(const V3Number& rhs) const;  // operator< with XZ compared
     void isSigned(bool ssigned) { m_signed=ssigned; }
     bool isUnknown() const;
+    bool isMsbXZ() const { return bitIsXZ(m_width); }
     uint32_t toUInt() const;
     vlsint32_t toSInt() const;
     vluint64_t toUQuad() const;
@@ -231,8 +232,9 @@ public:
     V3Number& opBitsZ	(const V3Number& lhs); // Z->1, 0/1/X->0
     V3Number& opBitsNonZ(const V3Number& lhs); // Z->0, 0/1/X->1
     //
-    V3Number& opAssign	(const V3Number& lhs);
-    V3Number& opExtendS	(const V3Number& lhs, uint32_t lbits); // Sign extension
+    V3Number& opAssign  (const V3Number& lhs);
+    V3Number& opExtendS (const V3Number& lhs, uint32_t lbits);  // Sign extension
+    V3Number& opExtendXZ(const V3Number& lhs, uint32_t lbits);  // X/Z extension
     V3Number& opRedOr 	(const V3Number& lhs);
     V3Number& opRedAnd	(const V3Number& lhs);
     V3Number& opRedXor	(const V3Number& lhs);

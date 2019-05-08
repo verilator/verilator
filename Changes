@@ -14,6 +14,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Add error when use parameters without value, bug1424. [Peter Gerst]
 
+****  Auto-extend and WIDTH warn on unsized X/Zs, bug1423. [Udi Finkelstein]
+
 ****  Fix missing VL_SHIFTL_ errors, bug1412, bug1415. [Larry Lee]
 
 ****  Fix MinGW GCC 6 printf formats, bug1413. [Sergey Kvachonok]

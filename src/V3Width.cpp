@@ -3170,8 +3170,26 @@ private:
 		nodepr = newp;
 		return true;
 	    }
-	}
-	return false; // No change
+            // X/Z also upper bit extend.  In pre-SV only to 32-bits, SV forever.
+            else if (!constp->num().sized()
+                     // Make it the proper size.  Careful of proper extension of 0's/1's
+                     && expWidth > 32 && constp->num().isMsbXZ()) {
+                constp->v3warn(WIDTH, "Unsized constant being X/Z extended to "
+                               <<expWidth<<" bits: "<<constp->prettyName());
+                V3Number num (constp->fileline(), expWidth);
+                num.opExtendXZ(constp->num(), constp->width());
+                AstNode* newp = new AstConst(constp->fileline(), num);
+                // Spec says always unsigned with proper width
+                if (debug()>4) constp->dumpTree(cout,"  fixUnszExtend_old: ");
+                if (debug()>4)   newp->dumpTree(cout,"               _new: ");
+                constp->replaceWith(newp);
+                constp->deleteTree(); VL_DANGLING(constp);
+                // Tell caller the new constp, and that we changed it.
+                nodepr = newp;
+                return true;
+            }
+        }
+        return false;  // No change
     }
 
     bool similarDTypeRecurse(AstNodeDType* node1p, AstNodeDType* node2p) {

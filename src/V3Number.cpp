@@ -1656,8 +1656,20 @@ V3Number& V3Number::opAssign(const V3Number& lhs) {
 V3Number& V3Number::opExtendS(const V3Number& lhs, uint32_t lbits) {
     // Note may be a width change during the sign extension
     setZero();
-    for(int bit=0; bit<this->width(); bit++) {
-	setBit(bit,lhs.bitIsExtend(bit, lbits));
+    for (int bit=0; bit < width(); bit++) {
+        char extendWith = lhs.bitIsExtend(bit, lbits);
+        setBit(bit, extendWith);
+    }
+    return *this;
+}
+
+V3Number& V3Number::opExtendXZ(const V3Number& lhs, uint32_t lbits) {
+    // Note may be a width change during the X/Z extension
+    setZero();
+    for (int bit=0; bit < width(); bit++) {
+        char extendWith = lhs.bitIsExtend(bit, lbits);
+        if (extendWith == '1' || extendWith == 1) extendWith = 0;
+        setBit(bit, lhs.bitIsExtend(bit, lbits));
     }
     return *this;
 }
