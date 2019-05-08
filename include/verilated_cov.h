@@ -44,31 +44,31 @@
 /// The value may be a string, or another type which will be auto-converted to a string.
 ///
 /// Some typical keys:
-///	filename	File the recording occurs in.  Defaults to __FILE__
-///	lineno		Line number the recording occurs in.  Defaults to __LINE__
-///	column		Column number (or occurrence# for dup file/lines).  Defaults to undef.
-///	hier		Hierarchical name.  Defaults to name()
-///	type		Type of coverage.  Defaults to "user"
-///			Other types are 'block', 'fsm', 'toggle'.
-///	comment		Description of the coverage event.  Should be set by the user.
-///			Comments for type==block: 'if', 'else', 'elsif', 'case'
-///	thresh		Threshold to consider fully covered.
-///			If unspecified, downstream tools will determine it.
+///     filename        File the recording occurs in.  Defaults to __FILE__
+///     lineno          Line number the recording occurs in.  Defaults to __LINE__
+///     column          Column number (or occurrence# for dup file/lines).  Defaults to undef.
+///     hier            Hierarchical name.  Defaults to name()
+///     type            Type of coverage.  Defaults to "user"
+///                     Other types are 'block', 'fsm', 'toggle'.
+///     comment         Description of the coverage event.  Should be set by the user.
+///                     Comments for type==block: 'if', 'else', 'elsif', 'case'
+///     thresh          Threshold to consider fully covered.
+///                     If unspecified, downstream tools will determine it.
 ///
 /// Examples:
 ///
-///	vluint32_t m_cases[10];
-///	constructor {
-///	    for (int i=0; i<10; ++i) { m_cases[i]=0; }
+///     vluint32_t m_cases[10];
+///     constructor {
+///         for (int i=0; i<10; ++i) { m_cases[i]=0; }
 ///     }
-///	for (int i=0; i<10; ++i) {
-///		VL_COVER_INSERT(&m_cases[i], "comment", "Coverage Case", "i", cvtToNumStr(i));
-///	}
+///     for (int i=0; i<10; ++i) {
+///             VL_COVER_INSERT(&m_cases[i], "comment", "Coverage Case", "i", cvtToNumStr(i));
+///     }
 
 #define VL_COVER_INSERT(countp,args...) \
-    VL_IF_COVER(VerilatedCov::_inserti(countp);	\
-		VerilatedCov::_insertf(__FILE__,__LINE__);	\
-		VerilatedCov::_insertp("hier", name(), args))
+    VL_IF_COVER(VerilatedCov::_inserti(countp); \
+                VerilatedCov::_insertf(__FILE__,__LINE__);      \
+                VerilatedCov::_insertp("hier", name(), args))
 
 //=============================================================================
 /// Convert VL_COVER_INSERT value arguments to strings

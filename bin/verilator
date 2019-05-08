@@ -1712,7 +1712,7 @@ This is an example similar to the above, but using SystemC.
       #include "Vour.h"
       int sc_main(int argc, char **argv) {
           Verilated::commandArgs(argc, argv);
-          sc_clock clk ("clk",10, 0.5, 3, true);
+          sc_clock clk ("clk", 10, 0.5, 3, true);
           Vour* top;
           top = new Vour("top");
           top->clk(clk);
@@ -3894,7 +3894,7 @@ Often UNOPTFLAT is caused by logic that isn't truly circular as viewed by
 synthesis which analyzes interconnection per-bit, but is circular to
 simulation which analyzes per-bus:
 
-      wire [2:0] x = {x[1:0],shift_in};
+      wire [2:0] x = {x[1:0], shift_in};
 
 This statement needs to be evaluated multiple times, as a change in
 "shift_in" requires "x" to be computed 3 times before it becomes stable.
@@ -3903,12 +3903,12 @@ causes the warning.
 
 For significantly better performance, split this into 2 separate signals:
 
-      wire [2:0] xout = {x[1:0],shift_in};
+      wire [2:0] xout = {x[1:0], shift_in};
 
 and change all receiving logic to instead receive "xout".  Alternatively,
 change it to
 
-      wire [2:0] x = {xin[1:0],shift_in};
+      wire [2:0] x = {xin[1:0], shift_in};
 
 and change all driving logic to instead drive "xin".
 
@@ -4024,7 +4024,7 @@ Concatenate leading zeros when doing arithmetic.  In the statement
 
 The best fix, which clarifies intent and will also make all tools happy is:
 
-        wire [5:0] plus_one = from[5:0] + 6'd1 + {5'd0,carry[0]};
+        wire [5:0] plus_one = from[5:0] + 6'd1 + {5'd0, carry[0]};
 
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
@@ -4036,12 +4036,12 @@ has an indeterminate width.  In most cases this violates the Verilog rule
 that widths inside concatenates and replicates must be sized, and should be
 fixed in the code.
 
-    wire [63:0] concat = {1,2};
+    wire [63:0] concat = {1, 2};
 
 An example where this is technically legal (though still bad form) is:
 
     parameter PAR = 1;
-    wire [63:0] concat = {PAR,PAR};
+    wire [63:0] concat = {PAR, PAR};
 
 The correct fix is to either size the 1 ("32'h1"), or add the width to the
 parameter definition ("parameter [31:0]"), or add the width to the

@@ -38,13 +38,13 @@ typedef std::set<string> VlStringSet;
 
 class VlcOptions {
     // MEMBERS (general options)
-    string	m_annotateOut;	// main switch: --annotate I<output_directory>
-    bool	m_annotateAll;	// main switch: --annotate-all
-    int		m_annotateMin;	// main switch: --annotate-min I<count>
-    VlStringSet	m_readFiles;	// main switch: --read
-    bool	m_rank;		// main switch: --rank
-    bool	m_unlink;	// main switch: --unlink
-    string	m_writeFile;	// main switch: --write
+    string m_annotateOut;       // main switch: --annotate I<output_directory>
+    bool m_annotateAll;         // main switch: --annotate-all
+    int m_annotateMin;          // main switch: --annotate-min I<count>
+    VlStringSet m_readFiles;    // main switch: --read
+    bool m_rank;                // main switch: --rank
+    bool m_unlink;              // main switch: --unlink
+    string m_writeFile;         // main switch: --write
 
 private:
     // METHODS
@@ -54,10 +54,10 @@ private:
 public:
     // CONSTRUCTORS
     VlcOptions() {
-	m_annotateAll = false;
-	m_annotateMin = 10;
-	m_rank = false;
-	m_unlink = false;
+        m_annotateAll = false;
+        m_annotateMin = 10;
+        m_rank = false;
+        m_unlink = false;
     }
     ~VlcOptions() {}
     void setDebugMode(int level);
@@ -81,4 +81,4 @@ public:
 
 //######################################################################
 
-#endif // guard
+#endif  // guard

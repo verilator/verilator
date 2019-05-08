@@ -36,23 +36,23 @@
 class VlcTest {
 private:
     // MEMBERS
-    string	m_name;		//< Name of the test
-    double	m_computrons;	//< Runtime for the test
-    vluint64_t	m_testrun;	//< Test run number, for database use
-    vluint64_t	m_rank;		//< Execution rank suggestion
-    vluint64_t	m_rankPoints;	//< Ranked additional points
-    vluint64_t	m_user;		//< User data for algorithms (not persisted in .dat file)
-    VlcBuckets	m_buckets;	//< Coverage data for each coverage point
+    string m_name;  //< Name of the test
+    double m_computrons;  //< Runtime for the test
+    vluint64_t m_testrun;  //< Test run number, for database use
+    vluint64_t m_rank;  //< Execution rank suggestion
+    vluint64_t m_rankPoints;  //< Ranked additional points
+    vluint64_t m_user;  //< User data for algorithms (not persisted in .dat file)
+    VlcBuckets m_buckets; //< Coverage data for each coverage point
 
 public:
     // CONSTRUCTORS
     VlcTest(const string& name, vluint64_t testrun, double comp) {
-	m_name = name;
-	m_computrons = comp;
-	m_testrun = testrun;
-	m_rank = 0;
-	m_rankPoints = 0;
-	m_user = 0;
+        m_name = name;
+        m_computrons = comp;
+        m_testrun = testrun;
+        m_rank = 0;
+        m_rankPoints = 0;
+        m_user = 0;
     }
     ~VlcTest() {}
 
@@ -71,20 +71,20 @@ public:
 
     // METHODS
     static void dumpHeader() {
-	cout<<"Tests:\n";
-	//cout<<"  Testrun, Computrons,";  // Currently not loaded
-	cout<<"  Covered,     Rank,  RankPts,  Filename"<<endl;
+        cout<<"Tests:\n";
+        //cout<<"  Testrun, Computrons,";  // Currently not loaded
+        cout<<"  Covered,     Rank,  RankPts,  Filename"<<endl;
     }
     void dump(bool bucketsToo) {
-	if (testrun() || computrons()!=0.0) {
+        if (testrun() || computrons()!=0.0) {
             cout<<"  "<<std::setw(8)<<std::setfill('0')<<testrun()
                 <<",  "<<std::setw(7)<<std::setfill(' ')<<computrons()<<",";
-	}
+        }
         cout<<"  "<<std::setw(7)<<std::setfill(' ')<<bucketsCovered()
             <<",  "<<std::setw(7)<<std::setfill(' ')<<rank()
             <<",  "<<std::setw(7)<<std::setfill(' ')<<rankPoints()
-	    <<",  \""<<name()<<"\""<<endl;
-	if (bucketsToo)	m_buckets.dump();
+            <<",  \""<<name()<<"\""<<endl;
+        if (bucketsToo) m_buckets.dump();
     }
 };
 
@@ -97,7 +97,7 @@ public:
     typedef std::vector<VlcTest*> ByName;
 private:
     // MEMBERS
-    ByName	m_tests;	//< List of all tests
+    ByName m_tests;  //< List of all tests
 
 public:
     // ITERATORS
@@ -109,31 +109,31 @@ public:
     // CONSTRUCTORS
     VlcTests() {}
     ~VlcTests() {
-	for (VlcTests::ByName::iterator it=begin(); it!=end(); ++it) {
-	    delete *it;  *it=NULL;
-	}
+        for (VlcTests::ByName::iterator it=begin(); it!=end(); ++it) {
+            delete *it;  *it=NULL;
+        }
     }
 
     // METHODS
     void dump(bool bucketsToo) {
-	UINFO(2,"dumpTests...\n");
-	VlcTest::dumpHeader();
-	for (VlcTests::ByName::iterator it=begin(); it!=end(); ++it) {
-	    (*it)->dump(bucketsToo);
-	}
+        UINFO(2,"dumpTests...\n");
+        VlcTest::dumpHeader();
+        for (VlcTests::ByName::iterator it=begin(); it!=end(); ++it) {
+            (*it)->dump(bucketsToo);
+        }
     }
     VlcTest* newTest(const string& name, vluint64_t testrun, double comp) {
-	VlcTest* testp = new VlcTest(name, testrun, comp);
-	m_tests.push_back(testp);
-	return testp;
+        VlcTest* testp = new VlcTest(name, testrun, comp);
+        m_tests.push_back(testp);
+        return testp;
     }
     void clearUser() {
-	for (ByName::iterator it = m_tests.begin(); it != m_tests.end(); ++it) {
-	    (*it)->user(0);
-	}
+        for (ByName::iterator it = m_tests.begin(); it != m_tests.end(); ++it) {
+            (*it)->user(0);
+        }
     }
 };
 
 //######################################################################
 
-#endif // Guard
+#endif  // Guard

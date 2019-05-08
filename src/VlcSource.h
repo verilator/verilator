@@ -33,18 +33,18 @@
 class VlcSourceCount {
 private:
     // MEMBERS
-    int		m_lineno;	///< Line number
-    int		m_column;	///< Column number
-    vluint64_t	m_count;	///< Count
-    bool	m_ok;		///< Coverage is above threshold
+    int m_lineno;  ///< Line number
+    int m_column;  ///< Column number
+    vluint64_t  m_count;  ///< Count
+    bool m_ok;  ///< Coverage is above threshold
 
 public:
     // CONSTRUCTORS
     VlcSourceCount(int lineno, int column) {
-	m_lineno = lineno;
-	m_column = column;
-	m_count = 0;
-	m_ok = false;
+        m_lineno = lineno;
+        m_column = column;
+        m_count = 0;
+        m_ok = false;
     }
     ~VlcSourceCount() {}
 
@@ -56,8 +56,8 @@ public:
 
     // METHODS
     void incCount(vluint64_t count, bool ok) {
-	m_count += count;
-	if (ok) m_ok = true;
+        m_count += count;
+        if (ok) m_ok = true;
     }
 };
 
@@ -72,15 +72,15 @@ public:
 
 private:
     // MEMBERS
-    string	m_name;		//< Name of the source file
-    bool	m_needed;	//< Need to annotate; has low coverage
-    LinenoMap	m_lines;	//< Map of each annotated line
+    string m_name;  //< Name of the source file
+    bool m_needed;  //< Need to annotate; has low coverage
+    LinenoMap m_lines;  //< Map of each annotated line
 
 public:
     // CONSTRUCTORS
     explicit VlcSource(const string& name) {
-	m_name = name;
-	m_needed = false;
+        m_name = name;
+        m_needed = false;
     }
     ~VlcSource() {}
 
@@ -92,17 +92,17 @@ public:
 
     // METHODS
     void incCount(int lineno, int column, vluint64_t count, bool ok) {
-	LinenoMap::iterator lit = m_lines.find(lineno);
-	if (lit == m_lines.end()) {
-	    lit = m_lines.insert(make_pair(lineno,ColumnMap())).first;
-	}
-	ColumnMap& cmap = lit->second;
-	ColumnMap::iterator cit = cmap.find(column);
-	if (cit == cmap.end()) {
-	    cit = cmap.insert(make_pair(column,VlcSourceCount(lineno, column))).first;
-	}
-	VlcSourceCount& sc = cit->second;
-	sc.incCount(count,ok);
+        LinenoMap::iterator lit = m_lines.find(lineno);
+        if (lit == m_lines.end()) {
+            lit = m_lines.insert(make_pair(lineno, ColumnMap())).first;
+        }
+        ColumnMap& cmap = lit->second;
+        ColumnMap::iterator cit = cmap.find(column);
+        if (cit == cmap.end()) {
+            cit = cmap.insert(make_pair(column, VlcSourceCount(lineno, column))).first;
+        }
+        VlcSourceCount& sc = cit->second;
+        sc.incCount(count, ok);
     }
 };
 
@@ -115,7 +115,7 @@ public:
     typedef std::map<string,VlcSource> NameMap;
 private:
     // MEMBERS
-    NameMap	m_sources;	//< List of all sources
+    NameMap m_sources;  //< List of all sources
 
 public:
     // ITERATORS
@@ -130,17 +130,17 @@ public:
 
     // METHODS
     VlcSource& findNewSource(const string& name) {
-	NameMap::iterator iter = m_sources.find(name);
-	if (iter != m_sources.end()) {
-	    return iter->second;
-	}
-	else {
-	    iter = m_sources.insert(make_pair(name, VlcSource(name))).first;
-	    return iter->second;
-	}
+        NameMap::iterator iter = m_sources.find(name);
+        if (iter != m_sources.end()) {
+            return iter->second;
+        }
+        else {
+            iter = m_sources.insert(make_pair(name, VlcSource(name))).first;
+            return iter->second;
+        }
     }
 };
 
 //######################################################################
 
-#endif // Guard
+#endif  // Guard

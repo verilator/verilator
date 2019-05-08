@@ -34,10 +34,10 @@ class VerilatedSerialize {
 protected:
     // MEMBERS
     // For speed, keep m_cp as the first member of this structure
-    vluint8_t*		m_cp;		///< Current pointer into m_bufp buffer
-    vluint8_t*		m_bufp;		///< Output buffer
-    bool 		m_isOpen;	///< True indicates open file/stream
-    std::string		m_filename;	///< Filename, for error messages
+    vluint8_t*          m_cp;           ///< Current pointer into m_bufp buffer
+    vluint8_t*          m_bufp;         ///< Output buffer
+    bool                m_isOpen;       ///< True indicates open file/stream
+    std::string         m_filename;     ///< Filename, for error messages
     VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
 
     inline static size_t bufferSize() { return 256*1024; }  // See below for slack calculation
@@ -50,13 +50,13 @@ protected:
     VL_UNCOPYABLE(VerilatedSerialize);
 public:
     VerilatedSerialize() {
-	m_isOpen = false;
-	m_bufp = new vluint8_t [bufferSize()];
-	m_cp = m_bufp;
+        m_isOpen = false;
+        m_bufp = new vluint8_t [bufferSize()];
+        m_cp = m_bufp;
     }
     virtual ~VerilatedSerialize() {
-	close();
-	if (m_bufp) { delete m_bufp; m_bufp=NULL; }
+        close();
+        if (m_bufp) { delete m_bufp; m_bufp=NULL; }
     }
     // METHODS
     bool isOpen() const { return m_isOpen; }
@@ -64,24 +64,24 @@ public:
     virtual void close() VL_MT_UNSAFE_ONE { flush(); }
     virtual void flush() VL_MT_UNSAFE_ONE {}
     inline VerilatedSerialize& write(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
-	const vluint8_t* __restrict dp = (const vluint8_t* __restrict)datap;
-	while (size) {
-	    bufferCheck();
-	    size_t blk = size;  if (blk>bufferInsertSize()) blk = bufferInsertSize();
-	    const vluint8_t* __restrict maxp = dp + blk;
-	    while (dp < maxp) *m_cp++ = *dp++;
-	    size -= blk;
-	}
-	return *this;  // For function chaining
+        const vluint8_t* __restrict dp = (const vluint8_t* __restrict)datap;
+        while (size) {
+            bufferCheck();
+            size_t blk = size;  if (blk>bufferInsertSize()) blk = bufferInsertSize();
+            const vluint8_t* __restrict maxp = dp + blk;
+            while (dp < maxp) *m_cp++ = *dp++;
+            size -= blk;
+        }
+        return *this;  // For function chaining
     }
 private:
     VerilatedSerialize& bufferCheck() VL_MT_UNSAFE_ONE {
-	// Flush the write buffer if there's not enough space left for new information
-	// We only call this once per vector, so we need enough slop for a very wide "b###" line
-	if (VL_UNLIKELY(m_cp > (m_bufp+(bufferSize()-bufferInsertSize())))) {
-	    flush();
-	}
-	return *this;  // For function chaining
+        // Flush the write buffer if there's not enough space left for new information
+        // We only call this once per vector, so we need enough slop for a very wide "b###" line
+        if (VL_UNLIKELY(m_cp > (m_bufp+(bufferSize()-bufferInsertSize())))) {
+            flush();
+        }
+        return *this;  // For function chaining
     }
 };
 
@@ -93,12 +93,12 @@ class VerilatedDeserialize {
 protected:
     // MEMBERS
     // For speed, keep m_cp as the first member of this structure
-    vluint8_t*		m_cp;		///< Current pointer into m_bufp buffer
-    vluint8_t*		m_bufp;		///< Output buffer
-    vluint8_t*		m_endp;		///< Last valid byte in m_bufp buffer
-    bool 		m_isOpen;	///< True indicates open file/stream
-    std::string		m_filename;	///< Filename, for error messages
-    VerilatedAssertOneThread m_assertOne;	///< Assert only called from single thread
+    vluint8_t*          m_cp;           ///< Current pointer into m_bufp buffer
+    vluint8_t*          m_bufp;         ///< Output buffer
+    vluint8_t*          m_endp;         ///< Last valid byte in m_bufp buffer
+    bool                m_isOpen;       ///< True indicates open file/stream
+    std::string         m_filename;     ///< Filename, for error messages
+    VerilatedAssertOneThread m_assertOne;       ///< Assert only called from single thread
 
     inline static size_t bufferSize() { return 256*1024; }  // See below for slack calculation
     inline static size_t bufferInsertSize() { return 16*1024; }
@@ -111,14 +111,14 @@ protected:
     VL_UNCOPYABLE(VerilatedDeserialize);
 public:
     VerilatedDeserialize() {
-	m_isOpen = false;
-	m_bufp = new vluint8_t [bufferSize()];
-	m_cp = m_bufp;
-	m_endp = NULL;
+        m_isOpen = false;
+        m_bufp = new vluint8_t [bufferSize()];
+        m_cp = m_bufp;
+        m_endp = NULL;
     }
     virtual ~VerilatedDeserialize() {
-	close();
-	if (m_bufp) { delete m_bufp; m_bufp=NULL; }
+        close();
+        if (m_bufp) { delete m_bufp; m_bufp=NULL; }
     }
     // METHODS
     bool isOpen() const { return m_isOpen; }
@@ -126,15 +126,15 @@ public:
     virtual void close() VL_MT_UNSAFE_ONE { flush(); }
     virtual void flush() VL_MT_UNSAFE_ONE {}
     inline VerilatedDeserialize& read(void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
-	vluint8_t* __restrict dp = (vluint8_t* __restrict)datap;
-	while (size) {
-	    bufferCheck();
-	    size_t blk = size;  if (blk>bufferInsertSize()) blk = bufferInsertSize();
-	    const vluint8_t* __restrict maxp = dp + blk;
-	    while (dp < maxp) *dp++ = *m_cp++;
-	    size -= blk;
-	}
-	return *this;  // For function chaining
+        vluint8_t* __restrict dp = (vluint8_t* __restrict)datap;
+        while (size) {
+            bufferCheck();
+            size_t blk = size;  if (blk>bufferInsertSize()) blk = bufferInsertSize();
+            const vluint8_t* __restrict maxp = dp + blk;
+            while (dp < maxp) *dp++ = *m_cp++;
+            size -= blk;
+        }
+        return *this;  // For function chaining
     }
     // Read a datum and compare with expected value
     VerilatedDeserialize& readAssert(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE;
@@ -143,12 +143,12 @@ public:
 private:
     bool readDiffers(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE;
     VerilatedDeserialize& bufferCheck() VL_MT_UNSAFE_ONE {
-	// Flush the write buffer if there's not enough space left for new information
-	// We only call this once per vector, so we need enough slop for a very wide "b###" line
-	if (VL_UNLIKELY((m_cp+bufferInsertSize()) > m_endp)) {
-	    fill();
-	}
-	return *this;  // For function chaining
+        // Flush the write buffer if there's not enough space left for new information
+        // We only call this once per vector, so we need enough slop for a very wide "b###" line
+        if (VL_UNLIKELY((m_cp+bufferInsertSize()) > m_endp)) {
+            fill();
+        }
+        return *this;  // For function chaining
     }
 };
 
@@ -158,7 +158,7 @@ private:
 
 class VerilatedSave : public VerilatedSerialize {
 private:
-    int			m_fd;		///< File descriptor we're writing to
+    int                 m_fd;           ///< File descriptor we're writing to
 
 public:
     // CONSTRUCTORS
@@ -177,7 +177,7 @@ public:
 
 class VerilatedRestore : public VerilatedDeserialize {
 private:
-    int			m_fd;		///< File descriptor we're writing to
+    int                 m_fd;           ///< File descriptor we're writing to
 
 public:
     // CONSTRUCTORS
@@ -237,12 +237,12 @@ inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, float& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
 inline VerilatedSerialize&   operator<<(VerilatedSerialize& os,   std::string& rhs) {
-    vluint32_t len=rhs.length();
+    vluint32_t len = rhs.length();
     os<<len;
     return os.write(rhs.data(), len);
 }
 inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, std::string& rhs) {
-    vluint32_t len=0;
+    vluint32_t len = 0;
     os>>len;
     rhs.resize(len);
     return os.read((void*)rhs.data(), len);

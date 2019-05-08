@@ -50,10 +50,10 @@ public:  // But only local to this file
     // CONSTRUCTORS
     // Derived classes should call zero() in their constructor
     VerilatedCovImpItem() {
-	for (int i=0; i<MAX_KEYS; ++i) {
-	    m_keys[i]=KEY_UNDEF;
-	    m_vals[i]=0;
-	}
+        for (int i=0; i<MAX_KEYS; ++i) {
+            m_keys[i] = KEY_UNDEF;
+            m_vals[i] = 0;
+        }
     }
     virtual ~VerilatedCovImpItem() {}
     virtual vluint64_t count() const = 0;
@@ -96,7 +96,7 @@ private:
 
 private:
     // MEMBERS
-    VerilatedMutex	m_mutex;  ///< Protects all members, when VL_THREADED. Wrapper deals with setting it.
+    VerilatedMutex      m_mutex;  ///< Protects all members, when VL_THREADED. Wrapper deals with setting it.
     ValueIndexMap       m_valueIndexes VL_GUARDED_BY(m_mutex);  ///< For each key/value a unique arbitrary index value
     IndexValueMap       m_indexValues VL_GUARDED_BY(m_mutex);  ///< For each key/value a unique arbitrary index value
     ItemList            m_items VL_GUARDED_BY(m_mutex);  ///< List of all items
@@ -107,294 +107,294 @@ private:
 
     // CONSTRUCTORS
     VerilatedCovImp() {
-	m_insertp = NULL;
-	m_insertFilenamep = NULL;
-	m_insertLineno = 0;
+        m_insertp = NULL;
+        m_insertFilenamep = NULL;
+        m_insertLineno = 0;
     }
     VL_UNCOPYABLE(VerilatedCovImp);
 public:
     ~VerilatedCovImp() { clearGuts(); }
     static VerilatedCovImp& imp() VL_MT_SAFE {
-	static VerilatedCovImp s_singleton;
-	return s_singleton;
+        static VerilatedCovImp s_singleton;
+        return s_singleton;
     }
 
 private:
     // PRIVATE METHODS
     int valueIndex(const std::string& value) VL_REQUIRES(m_mutex) {
-	static int nextIndex = KEY_UNDEF+1;
-	ValueIndexMap::iterator iter = m_valueIndexes.find(value);
-	if (iter != m_valueIndexes.end()) return iter->second;
-	nextIndex++;  assert(nextIndex>0);
-	m_valueIndexes.insert(std::make_pair(value, nextIndex));
-	m_indexValues.insert(std::make_pair(nextIndex, value));
-	return nextIndex;
+        static int nextIndex = KEY_UNDEF+1;
+        ValueIndexMap::iterator iter = m_valueIndexes.find(value);
+        if (iter != m_valueIndexes.end()) return iter->second;
+        nextIndex++;  assert(nextIndex>0);
+        m_valueIndexes.insert(std::make_pair(value, nextIndex));
+        m_indexValues.insert(std::make_pair(nextIndex, value));
+        return nextIndex;
     }
     static std::string dequote(const std::string& text) VL_PURE {
-	// Quote any special characters
-	std::string rtn;
-	for (const char* pos = text.c_str(); *pos; ++pos) {
-	    if (!isprint(*pos) || *pos=='%' || *pos=='"') {
-		char hex[10]; sprintf(hex,"%%%02X",pos[0]);
-		rtn += hex;
-	    } else {
-		rtn += *pos;
-	    }
-	}
-	return rtn;
+        // Quote any special characters
+        std::string rtn;
+        for (const char* pos = text.c_str(); *pos; ++pos) {
+            if (!isprint(*pos) || *pos=='%' || *pos=='"') {
+                char hex[10]; sprintf(hex, "%%%02X", pos[0]);
+                rtn += hex;
+            } else {
+                rtn += *pos;
+            }
+        }
+        return rtn;
     }
     static bool legalKey(const std::string& key) VL_PURE {
-	// Because we compress long keys to a single letter, and
-	// don't want applications to either get confused if they use
-	// a letter differently, nor want them to rely on our compression...
-	// (Considered using numeric keys, but will remain back compatible.)
-	if (key.length()<2) return false;
-	if (key.length()==2 && isdigit(key[1])) return false;
-	return true;
+        // Because we compress long keys to a single letter, and
+        // don't want applications to either get confused if they use
+        // a letter differently, nor want them to rely on our compression...
+        // (Considered using numeric keys, but will remain back compatible.)
+        if (key.length()<2) return false;
+        if (key.length()==2 && isdigit(key[1])) return false;
+        return true;
     }
     static std::string keyValueFormatter(const std::string& key, const std::string& value) VL_PURE {
-	std::string name;
-	if (key.length()==1 && isalpha(key[0])) {
-	    name += std::string("\001")+key;
-	} else {
-	    name += std::string("\001")+dequote(key);
-	}
-	name += std::string("\002")+dequote(value);
-	return name;
+        std::string name;
+        if (key.length()==1 && isalpha(key[0])) {
+            name += std::string("\001")+key;
+        } else {
+            name += std::string("\001")+dequote(key);
+        }
+        name += std::string("\002")+dequote(value);
+        return name;
     }
     static std::string combineHier(const std::string& old, const std::string& add) VL_PURE {
-	// (foo.a.x, foo.b.x) => foo.*.x
-	// (foo.a.x, foo.b.y) => foo.*
-	// (foo.a.x, foo.b)   => foo.*
-	if (old == add) return add;
+        // (foo.a.x, foo.b.x) => foo.*.x
+        // (foo.a.x, foo.b.y) => foo.*
+        // (foo.a.x, foo.b)   => foo.*
+        if (old == add) return add;
         if (old.empty()) return add;
         if (add.empty()) return old;
 
-	const char* a = old.c_str();
-	const char* b = add.c_str();
+        const char* a = old.c_str();
+        const char* b = add.c_str();
 
-	// Scan forward to first mismatch
-	const char* apre = a;
-	const char* bpre = b;
-	while (*apre == *bpre) { apre++; bpre++; }
+        // Scan forward to first mismatch
+        const char* apre = a;
+        const char* bpre = b;
+        while (*apre == *bpre) { apre++; bpre++; }
 
-	// We used to backup and split on only .'s but it seems better to be verbose
-	// and not assume . is the separator
-	std::string prefix = std::string(a,apre-a);
+        // We used to backup and split on only .'s but it seems better to be verbose
+        // and not assume . is the separator
+        std::string prefix = std::string(a, apre-a);
 
-	// Scan backward to last mismatch
-	const char* apost = a+strlen(a)-1;
-	const char* bpost = b+strlen(b)-1;
-	while (*apost == *bpost
-	       && apost>apre && bpost>bpre) { apost--; bpost--; }
+        // Scan backward to last mismatch
+        const char* apost = a+strlen(a)-1;
+        const char* bpost = b+strlen(b)-1;
+        while (*apost == *bpost
+               && apost>apre && bpost>bpre) { apost--; bpost--; }
 
-	// Forward to . so we have a whole word
-	std::string suffix = *bpost ? std::string(bpost+1) : "";
+        // Forward to . so we have a whole word
+        std::string suffix = *bpost ? std::string(bpost+1) : "";
 
-	std::string out = prefix+"*"+suffix;
+        std::string out = prefix+"*"+suffix;
 
-	//cout << "\nch pre="<<prefix<<"  s="<<suffix<<"\nch a="<<old<<"\nch b="<<add<<"\nch o="<<out<<endl;
-	return out;
+        //cout << "\nch pre="<<prefix<<"  s="<<suffix<<"\nch a="<<old<<"\nch b="<<add<<"\nch o="<<out<<endl;
+        return out;
     }
     bool itemMatchesString(VerilatedCovImpItem* itemp, const std::string& match) VL_REQUIRES(m_mutex) {
-	for (int i=0; i<MAX_KEYS; ++i) {
-	    if (itemp->m_keys[i] != KEY_UNDEF) {
-		// We don't compare keys, only values
-		std::string val = m_indexValues[itemp->m_vals[i]];
-		if (std::string::npos != val.find(match)) {  // Found
-		    return true;
-		}
-	    }
-	}
-	return false;
+        for (int i=0; i<MAX_KEYS; ++i) {
+            if (itemp->m_keys[i] != KEY_UNDEF) {
+                // We don't compare keys, only values
+                std::string val = m_indexValues[itemp->m_vals[i]];
+                if (std::string::npos != val.find(match)) {  // Found
+                    return true;
+                }
+            }
+        }
+        return false;
     }
     static void selftest() VL_MT_SAFE {
-	// Little selftest
-	if (combineHier ("a.b.c","a.b.c")	!="a.b.c") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
-	if (combineHier ("a.b.c","a.b")		!="a.b*") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
-	if (combineHier ("a.x.c","a.y.c")	!="a.*.c") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
-	if (combineHier ("a.z.z.z.c","a.b.c")	!="a.*.c") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
-	if (combineHier ("z","a")		!="*") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
-	if (combineHier ("q.a","q.b")		!="q.*") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
-	if (combineHier ("q.za","q.zb")		!="q.z*") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
-	if (combineHier ("1.2.3.a","9.8.7.a")	!="*.a") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
+        // Little selftest
+        if (combineHier("a.b.c","a.b.c")     !="a.b.c") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
+        if (combineHier("a.b.c","a.b")       !="a.b*") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
+        if (combineHier("a.x.c","a.y.c")     !="a.*.c") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
+        if (combineHier("a.z.z.z.c","a.b.c") !="a.*.c") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
+        if (combineHier("z","a")             !="*") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
+        if (combineHier("q.a","q.b")         !="q.*") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
+        if (combineHier("q.za","q.zb")       !="q.z*") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
+        if (combineHier("1.2.3.a","9.8.7.a") !="*.a") VL_FATAL_MT(__FILE__,__LINE__,"","%Error: selftest\n");
     }
     void clearGuts() VL_REQUIRES(m_mutex) {
-	for (ItemList::const_iterator it=m_items.begin(); it!=m_items.end(); ++it) {
-	    VerilatedCovImpItem* itemp = *(it);
-	    delete itemp;
-	}
-	m_items.clear();
-	m_indexValues.clear();
-	m_valueIndexes.clear();
+        for (ItemList::const_iterator it=m_items.begin(); it!=m_items.end(); ++it) {
+            VerilatedCovImpItem* itemp = *(it);
+            delete itemp;
+        }
+        m_items.clear();
+        m_indexValues.clear();
+        m_valueIndexes.clear();
     }
 
 public:
     // PUBLIC METHODS
     void clear() VL_EXCLUDES(m_mutex) {
-	Verilated::quiesce();
-	VerilatedLockGuard lock(m_mutex);
-	clearGuts();
+        Verilated::quiesce();
+        VerilatedLockGuard lock(m_mutex);
+        clearGuts();
     }
     void clearNonMatch(const char* matchp) VL_EXCLUDES(m_mutex) {
-	Verilated::quiesce();
-	VerilatedLockGuard lock(m_mutex);
-	if (matchp && matchp[0]) {
-	    ItemList newlist;
-	    for (ItemList::iterator it=m_items.begin(); it!=m_items.end(); ++it) {
-		VerilatedCovImpItem* itemp = *(it);
-		if (!itemMatchesString(itemp, matchp)) {
-		    delete itemp;
-		} else {
-		    newlist.push_back(itemp);
-		}
-	    }
-	    m_items = newlist;
-	}
+        Verilated::quiesce();
+        VerilatedLockGuard lock(m_mutex);
+        if (matchp && matchp[0]) {
+            ItemList newlist;
+            for (ItemList::iterator it=m_items.begin(); it!=m_items.end(); ++it) {
+                VerilatedCovImpItem* itemp = *(it);
+                if (!itemMatchesString(itemp, matchp)) {
+                    delete itemp;
+                } else {
+                    newlist.push_back(itemp);
+                }
+            }
+            m_items = newlist;
+        }
     }
     void zero() VL_EXCLUDES(m_mutex) {
-	Verilated::quiesce();
-	VerilatedLockGuard lock(m_mutex);
-	for (ItemList::const_iterator it=m_items.begin(); it!=m_items.end(); ++it) {
-	    (*it)->zero();
-	}
+        Verilated::quiesce();
+        VerilatedLockGuard lock(m_mutex);
+        for (ItemList::const_iterator it=m_items.begin(); it!=m_items.end(); ++it) {
+            (*it)->zero();
+        }
     }
 
     // We assume there's always call to i/f/p in that order
     void inserti(VerilatedCovImpItem* itemp) VL_EXCLUDES(m_mutex) {
-	VerilatedLockGuard lock(m_mutex);
-	assert(!m_insertp);
- 	m_insertp = itemp;
+        VerilatedLockGuard lock(m_mutex);
+        assert(!m_insertp);
+        m_insertp = itemp;
     }
     void insertf(const char* filenamep, int lineno) VL_EXCLUDES(m_mutex) {
-	VerilatedLockGuard lock(m_mutex);
-	m_insertFilenamep = filenamep;
-	m_insertLineno = lineno;
+        VerilatedLockGuard lock(m_mutex);
+        m_insertFilenamep = filenamep;
+        m_insertLineno = lineno;
     }
     void insertp(const char* ckeyps[MAX_KEYS],
                  const char* valps[MAX_KEYS]) VL_EXCLUDES(m_mutex) {
-	VerilatedLockGuard lock(m_mutex);
-	assert(m_insertp);
-	// First two key/vals are filename
-	ckeyps[0]="filename";	valps[0]=m_insertFilenamep;
-	std::string linestr = vlCovCvtToStr(m_insertLineno);
-	ckeyps[1]="lineno";	valps[1]=linestr.c_str();
-	// Default page if not specified
-	const char* fnstartp = m_insertFilenamep;
-	while (const char* foundp = strchr(fnstartp,'/')) fnstartp=foundp+1;
-	const char* fnendp = fnstartp;
-	while (*fnendp && *fnendp!='.') fnendp++;
-	std::string page_default = "sp_user/"+std::string(fnstartp,fnendp-fnstartp);
-	ckeyps[2]="page";	valps[2]=page_default.c_str();
+        VerilatedLockGuard lock(m_mutex);
+        assert(m_insertp);
+        // First two key/vals are filename
+        ckeyps[0]="filename";   valps[0]=m_insertFilenamep;
+        std::string linestr = vlCovCvtToStr(m_insertLineno);
+        ckeyps[1]="lineno";     valps[1]=linestr.c_str();
+        // Default page if not specified
+        const char* fnstartp = m_insertFilenamep;
+        while (const char* foundp = strchr(fnstartp,'/')) fnstartp = foundp+1;
+        const char* fnendp = fnstartp;
+        while (*fnendp && *fnendp!='.') fnendp++;
+        std::string page_default = "sp_user/"+std::string(fnstartp, fnendp-fnstartp);
+        ckeyps[2]="page";       valps[2]=page_default.c_str();
 
-	// Keys -> strings
-	std::string keys[MAX_KEYS];
-	for (int i=0; i<MAX_KEYS; ++i) {
-	    if (ckeyps[i] && ckeyps[i][0]) {
-		keys[i] = ckeyps[i];
-	    }
-	}
-	// Ignore empty keys
-	for (int i=0; i<MAX_KEYS; ++i) {
+        // Keys -> strings
+        std::string keys[MAX_KEYS];
+        for (int i=0; i<MAX_KEYS; ++i) {
+            if (ckeyps[i] && ckeyps[i][0]) {
+                keys[i] = ckeyps[i];
+            }
+        }
+        // Ignore empty keys
+        for (int i=0; i<MAX_KEYS; ++i) {
             if (!keys[i].empty()) {
-		for (int j=i+1; j<MAX_KEYS; ++j) {
-		    if (keys[i] == keys[j]) {  // Duplicate key.  Keep the last one
-			keys[i] = "";
-			break;
-		    }
-		}
-	    }
-	}
-	// Insert the values
-	int addKeynum=0;
-	for (int i=0; i<MAX_KEYS; ++i) {
-	    const std::string key = keys[i];
+                for (int j=i+1; j<MAX_KEYS; ++j) {
+                    if (keys[i] == keys[j]) {  // Duplicate key.  Keep the last one
+                        keys[i] = "";
+                        break;
+                    }
+                }
+            }
+        }
+        // Insert the values
+        int addKeynum = 0;
+        for (int i=0; i<MAX_KEYS; ++i) {
+            const std::string key = keys[i];
             if (!keys[i].empty()) {
-		const std::string val = valps[i];
-		//cout<<"   "<<__FUNCTION__<<"  "<<key<<" = "<<val<<endl;
-		m_insertp->m_keys[addKeynum] = valueIndex(key);
-		m_insertp->m_vals[addKeynum] = valueIndex(val);
-		addKeynum++;
-		if (!legalKey(key)) {
-		    std::string msg = "%Error: Coverage keys of one character, or letter+digit are illegal: "+key;
-		    VL_FATAL_MT("",0,"",msg.c_str());
-		}
-	    }
-	}
-	m_items.push_back(m_insertp);
-	// Prepare for next
-	m_insertp = NULL;
+                const std::string val = valps[i];
+                //cout<<"   "<<__FUNCTION__<<"  "<<key<<" = "<<val<<endl;
+                m_insertp->m_keys[addKeynum] = valueIndex(key);
+                m_insertp->m_vals[addKeynum] = valueIndex(val);
+                addKeynum++;
+                if (!legalKey(key)) {
+                    std::string msg = "%Error: Coverage keys of one character, or letter+digit are illegal: "+key;
+                    VL_FATAL_MT("", 0, "", msg.c_str());
+                }
+            }
+        }
+        m_items.push_back(m_insertp);
+        // Prepare for next
+        m_insertp = NULL;
     }
 
     void write(const char* filename) VL_EXCLUDES(m_mutex) {
-	Verilated::quiesce();
-	VerilatedLockGuard lock(m_mutex);
+        Verilated::quiesce();
+        VerilatedLockGuard lock(m_mutex);
 #ifndef VM_COVERAGE
-	VL_FATAL_MT("",0,"","%Error: Called VerilatedCov::write when VM_COVERAGE disabled\n");
+        VL_FATAL_MT("", 0, "", "%Error: Called VerilatedCov::write when VM_COVERAGE disabled\n");
 #endif
-	selftest();
+        selftest();
 
         std::ofstream os(filename);
-	if (os.fail()) {
-	    std::string msg = std::string("%Error: Can't write '")+filename+"'";
-	    VL_FATAL_MT("",0,"",msg.c_str());
-	    return;
-	}
-	os << "# SystemC::Coverage-3\n";
+        if (os.fail()) {
+            std::string msg = std::string("%Error: Can't write '")+filename+"'";
+            VL_FATAL_MT("", 0, "", msg.c_str());
+            return;
+        }
+        os << "# SystemC::Coverage-3\n";
 
-	// Build list of events; totalize if collapsing hierarchy
-	typedef std::map<std::string,std::pair<std::string,vluint64_t> > EventMap;
-	EventMap eventCounts;
-	for (ItemList::iterator it=m_items.begin(); it!=m_items.end(); ++it) {
-	    VerilatedCovImpItem* itemp = *(it);
-	    std::string name;
-	    std::string hier;
-	    bool per_instance = false;
+        // Build list of events; totalize if collapsing hierarchy
+        typedef std::map<std::string,std::pair<std::string,vluint64_t> > EventMap;
+        EventMap eventCounts;
+        for (ItemList::iterator it=m_items.begin(); it!=m_items.end(); ++it) {
+            VerilatedCovImpItem* itemp = *(it);
+            std::string name;
+            std::string hier;
+            bool per_instance = false;
 
-	    for (int i=0; i<MAX_KEYS; ++i) {
-		if (itemp->m_keys[i] != KEY_UNDEF) {
-		    std::string key = VerilatedCovKey::shortKey(m_indexValues[itemp->m_keys[i]]);
-		    std::string val = m_indexValues[itemp->m_vals[i]];
-		    if (key == VL_CIK_PER_INSTANCE) {
-			if (val != "0") per_instance = true;
-		    }
-		    if (key == VL_CIK_HIER) {
-			hier = val;
-		    } else {
-			// Print it
-			name += keyValueFormatter(key,val);
-		    }
-		}
-	    }
-	    if (per_instance) {  // Not collapsing hierarchies
-		name += keyValueFormatter(VL_CIK_HIER,hier);
-		hier = "";
-	    }
+            for (int i=0; i<MAX_KEYS; ++i) {
+                if (itemp->m_keys[i] != KEY_UNDEF) {
+                    std::string key = VerilatedCovKey::shortKey(m_indexValues[itemp->m_keys[i]]);
+                    std::string val = m_indexValues[itemp->m_vals[i]];
+                    if (key == VL_CIK_PER_INSTANCE) {
+                        if (val != "0") per_instance = true;
+                    }
+                    if (key == VL_CIK_HIER) {
+                        hier = val;
+                    } else {
+                        // Print it
+                        name += keyValueFormatter(key, val);
+                    }
+                }
+            }
+            if (per_instance) {  // Not collapsing hierarchies
+                name += keyValueFormatter(VL_CIK_HIER, hier);
+                hier = "";
+            }
 
-	    // Group versus point labels don't matter here, downstream
-	    // deals with it.  Seems bad for sizing though and doesn't
-	    // allow easy addition of new group codes (would be
-	    // inefficient)
+            // Group versus point labels don't matter here, downstream
+            // deals with it.  Seems bad for sizing though and doesn't
+            // allow easy addition of new group codes (would be
+            // inefficient)
 
-	    // Find or insert the named event
-	    EventMap::iterator cit = eventCounts.find(name);
-	    if (cit != eventCounts.end()) {
-		const std::string& oldhier = cit->second.first;
-		cit->second.second += itemp->count();
-		cit->second.first  = combineHier(oldhier, hier);
-	    } else {
-		eventCounts.insert(std::make_pair(name, make_pair(hier,itemp->count())));
-	    }
-	}
+            // Find or insert the named event
+            EventMap::iterator cit = eventCounts.find(name);
+            if (cit != eventCounts.end()) {
+                const std::string& oldhier = cit->second.first;
+                cit->second.second += itemp->count();
+                cit->second.first  = combineHier(oldhier, hier);
+            } else {
+                eventCounts.insert(std::make_pair(name, make_pair(hier, itemp->count())));
+            }
+        }
 
-	// Output body
-	for (EventMap::const_iterator it=eventCounts.begin(); it!=eventCounts.end(); ++it) {
-	    os<<"C '"<<std::dec;
-	    os<<it->first;
-            if (!it->second.first.empty()) os<<keyValueFormatter(VL_CIK_HIER,it->second.first);
-	    os<<"' "<<it->second.second;
-	    os<<std::endl;
-	}
+        // Output body
+        for (EventMap::const_iterator it=eventCounts.begin(); it!=eventCounts.end(); ++it) {
+            os<<"C '"<<std::dec;
+            os<<it->first;
+            if (!it->second.first.empty()) os<<keyValueFormatter(VL_CIK_HIER, it->second.first);
+            os<<"' "<<it->second.second;
+            os<<std::endl;
+        }
     }
 };
 
@@ -420,7 +420,7 @@ void VerilatedCov::_inserti(vluint64_t* itemp) VL_MT_SAFE {
     VerilatedCovImp::imp().inserti(new VerilatedCoverItemSpec<vluint64_t>(itemp));
 }
 void VerilatedCov::_insertf(const char* filename, int lineno) VL_MT_SAFE {
-    VerilatedCovImp::imp().insertf(filename,lineno);
+    VerilatedCovImp::imp().insertf(filename, lineno);
 }
 
 #define K(n) const char* key ## n
@@ -446,14 +446,14 @@ void VerilatedCov::_insertp(A(0),A(1),A(2),A(3),A(4),A(5),A(6),A(7),A(8),A(9),
 // And versions with fewer arguments  (oh for a language with named parameters!)
 void VerilatedCov::_insertp(A(0),A(1),A(2),A(3),A(4),A(5),A(6),A(7),A(8),A(9)) VL_MT_SAFE {
     _insertp(C(0),C(1),C(2),C(3),C(4),C(5),C(6),C(7),C(8),C(9),
-	     N(10),N(11),N(12),N(13),N(14),N(15),N(16),N(17),N(18),N(19),
-	     N(20),N(21),N(22),N(23),N(24),N(25),N(26),N(27),N(28),N(29));
+             N(10),N(11),N(12),N(13),N(14),N(15),N(16),N(17),N(18),N(19),
+             N(20),N(21),N(22),N(23),N(24),N(25),N(26),N(27),N(28),N(29));
 }
 void VerilatedCov::_insertp(A(0),A(1),A(2),A(3),A(4),A(5),A(6),A(7),A(8),A(9),
                             A(10),A(11),A(12),A(13),A(14),A(15),A(16),A(17),A(18),A(19)) VL_MT_SAFE {
     _insertp(C(0),C(1),C(2),C(3),C(4),C(5),C(6),C(7),C(8),C(9),
-	     C(10),C(11),C(12),C(13),C(14),C(15),C(16),C(17),C(18),C(19),
-	     N(20),N(21),N(22),N(23),N(24),N(25),N(26),N(27),N(28),N(29));
+             C(10),C(11),C(12),C(13),C(14),C(15),C(16),C(17),C(18),C(19),
+             N(20),N(21),N(22),N(23),N(24),N(25),N(26),N(27),N(28),N(29));
 }
 // Backward compatibility for Verilator
 void VerilatedCov::_insertp(A(0), A(1),  K(2),int val2,  K(3),int val3,
@@ -461,10 +461,10 @@ void VerilatedCov::_insertp(A(0), A(1),  K(2),int val2,  K(3),int val3,
     std::string val2str = vlCovCvtToStr(val2);
     std::string val3str = vlCovCvtToStr(val3);
     _insertp(C(0),C(1),
-	     key2,val2str.c_str(),  key3,val3str.c_str(),  key4, val4.c_str(),
-	     C(5),C(6),N(7),N(8),N(9),
-	     N(10),N(11),N(12),N(13),N(14),N(15),N(16),N(17),N(18),N(19),
-	     N(20),N(21),N(22),N(23),N(24),N(25),N(26),N(27),N(28),N(29));
+             key2,val2str.c_str(),  key3,val3str.c_str(),  key4, val4.c_str(),
+             C(5),C(6),N(7),N(8),N(9),
+             N(10),N(11),N(12),N(13),N(14),N(15),N(16),N(17),N(18),N(19),
+             N(20),N(21),N(22),N(23),N(24),N(25),N(26),N(27),N(28),N(29));
 }
 #undef A
 #undef C

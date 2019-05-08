@@ -1420,16 +1420,16 @@ sub _make_top_v {
     # Test
     print $fh "\n";
     print $fh "    initial begin\n";
-    print $fh "        fastclk=0;\n" if $self->{inputs}{fastclk};
-    print $fh "        clk=0;\n" if $self->{inputs}{clk};
+    print $fh "        fastclk = 0;\n" if $self->{inputs}{fastclk};
+    print $fh "        clk = 0;\n" if $self->{inputs}{clk};
     print $fh "        #10;\n";
-    print $fh "        fastclk=1;\n" if $self->{inputs}{fastclk};
-    print $fh "        clk=1;\n" if $self->{inputs}{clk};
+    print $fh "        fastclk = 1;\n" if $self->{inputs}{fastclk};
+    print $fh "        clk = 1;\n" if $self->{inputs}{clk};
     print $fh "        while (\$time < $self->{sim_time}) begin\n";
     for (my $i=0; $i<5; $i++) {
         print $fh "          #1;\n";
-        print $fh "          fastclk=!fastclk;\n" if $self->{inputs}{fastclk};
-        print $fh "          clk=!clk;\n" if $i==4 && $self->{inputs}{clk};
+        print $fh "          fastclk = !fastclk;\n" if $self->{inputs}{fastclk};
+        print $fh "          clk = !clk;\n" if $i==4 && $self->{inputs}{clk};
     }
     print $fh "        end\n";
     print $fh "    end\n";
@@ -1657,7 +1657,7 @@ sub vcd_identical {
         # Also provides backup if vcddiff not installed
         my $h1 = $self->_vcd_read($fn1);
         my $h2 = $self->_vcd_read($fn2);
-        $Data::Dumper::Sortkeys=1;
+        $Data::Dumper::Sortkeys = 1;
         my $a = Dumper($h1);
         my $b = Dumper($h2);
         if ($a ne $b) {

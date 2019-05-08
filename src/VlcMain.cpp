@@ -43,7 +43,7 @@
 
 void VlcOptions::addReadFile(const string& filename) {
     if (m_readFiles.find(filename) == m_readFiles.end()) {
-	m_readFiles.insert(filename);
+        m_readFiles.insert(filename);
     }
 }
 
@@ -59,9 +59,9 @@ bool VlcOptions::onoff(const char* sw, const char* arg, bool& flag) {
     // if sw=="-noarg", then return true (found it), and flag=false
     // else return false
     if (arg[0]!='-') v3fatalSrc("OnOff switches must have leading dash.");
-    if (0==strcmp(sw,arg)) { flag=true; return true; }
-    else if (0==strncmp(sw,"-no",3) && (0==strcmp(sw+3,arg+1))) { flag=false; return true; }
-    else if (0==strncmp(sw,"-no-",4) && (0==strcmp(sw+4,arg+1))) { flag=false; return true; }
+    if (0==strcmp(sw,arg)) { flag = true; return true; }
+    else if (0==strncmp(sw,"-no",3) && (0==strcmp(sw+3,arg+1))) { flag = false; return true; }
+    else if (0==strncmp(sw,"-no-",4) && (0==strcmp(sw+4,arg+1))) { flag = false; return true; }
     return false;
 }
 
@@ -71,58 +71,58 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
     // May be called recursively when there are -f files.
 #define shift { ++i; }
     for (int i=0; i<argc; )  {
-	UINFO(9, " Option: "<<argv[i]<<endl);
-	if (argv[i][0]=='-') {
-	    const char *sw = argv[i];
-	    bool flag = true;
-	    // Allow gnu -- switches
-	    if (sw[0]=='-' && sw[1]=='-') ++sw;
-	    if (0) {}
-	    // Single switches
-	    else if ( onoff   (sw, "-annotate-all", flag/*ref*/) ) { m_annotateAll = flag; }
-	    else if ( onoff   (sw, "-rank", flag/*ref*/) ) { m_rank = flag; }
-	    else if ( onoff   (sw, "-unlink", flag/*ref*/) )	{ m_unlink = flag; }
-	    // Parameterized switches
+        UINFO(9, " Option: "<<argv[i]<<endl);
+        if (argv[i][0]=='-') {
+            const char *sw = argv[i];
+            bool flag = true;
+            // Allow gnu -- switches
+            if (sw[0]=='-' && sw[1]=='-') ++sw;
+            if (0) {}
+            // Single switches
+            else if ( onoff   (sw, "-annotate-all", flag/*ref*/) ) { m_annotateAll = flag; }
+            else if ( onoff   (sw, "-rank", flag/*ref*/) ) { m_rank = flag; }
+            else if ( onoff   (sw, "-unlink", flag/*ref*/) )    { m_unlink = flag; }
+            // Parameterized switches
             else if ( !strcmp (sw, "-annotate-min") && (i+1)<argc ) {
                 shift;
                 m_annotateMin = atoi(argv[i]);
             }
-	    else if ( !strcmp (sw, "-annotate") && (i+1)<argc ) {
-		shift;
-		m_annotateOut = argv[i];
-	    }
-	    else if ( !strcmp (sw, "-debug") ) {
-		V3Error::debugDefault(3);
-	    }
-	    else if ( !strcmp (sw, "-debugi") && (i+1)<argc ) {
-		shift;
-		V3Error::debugDefault(atoi(argv[i]));
-	    }
-	    else if ( !strcmp (sw, "-V") ) {
-		showVersion(true);
-		exit(0);
-	    }
-	    else if ( !strcmp (sw, "-version") ) {
-		showVersion(false);
-		exit(0);
-	    }
-	    else if ( !strcmp (sw, "-write") && (i+1)<argc ) {
-		shift;
-		m_writeFile = argv[i];
-	    }
-	    else {
+            else if ( !strcmp (sw, "-annotate") && (i+1)<argc ) {
+                shift;
+                m_annotateOut = argv[i];
+            }
+            else if ( !strcmp (sw, "-debug") ) {
+                V3Error::debugDefault(3);
+            }
+            else if ( !strcmp (sw, "-debugi") && (i+1)<argc ) {
+                shift;
+                V3Error::debugDefault(atoi(argv[i]));
+            }
+            else if ( !strcmp (sw, "-V") ) {
+                showVersion(true);
+                exit(0);
+            }
+            else if ( !strcmp (sw, "-version") ) {
+                showVersion(false);
+                exit(0);
+            }
+            else if ( !strcmp (sw, "-write") && (i+1)<argc ) {
+                shift;
+                m_writeFile = argv[i];
+            }
+            else {
                 v3fatal("Invalid option: "<<argv[i]);
-	    }
-	    shift;
-	} // - options
-	else if (1) {
-	    addReadFile(argv[i]);
-	    shift;
-	}
-	else {
+            }
+            shift;
+        }  // - options
+        else if (1) {
+            addReadFile(argv[i]);
+            shift;
+        }
+        else {
             v3fatal("Invalid argument: "<<argv[i]);
-	    shift;
-	}
+            shift;
+        }
     }
 #undef shift
 }
@@ -154,20 +154,20 @@ int main(int argc, char** argv, char** env) {
     top.opt.parseOptsList(argc-1, argv+1);
 
     if (top.opt.readFiles().empty()) {
-	top.opt.addReadFile("vlt_coverage.dat");
+        top.opt.addReadFile("vlt_coverage.dat");
     }
 
     {
-	const VlStringSet& readFiles = top.opt.readFiles();
-	for (VlStringSet::iterator it = readFiles.begin(); it != readFiles.end(); ++it) {
-	    string filename = *it;
-	    top.readCoverage(filename);
-	}
+        const VlStringSet& readFiles = top.opt.readFiles();
+        for (VlStringSet::iterator it = readFiles.begin(); it != readFiles.end(); ++it) {
+            string filename = *it;
+            top.readCoverage(filename);
+        }
     }
 
     if (debug() >= 9) {
-	top.tests().dump(true);
-	top.points().dump();
+        top.tests().dump(true);
+        top.points().dump();
     }
 
     V3Error::abortIfWarnings();
@@ -176,19 +176,19 @@ int main(int argc, char** argv, char** env) {
     }
 
     if (top.opt.rank()) {
-	top.rank();
-	top.tests().dump(false);
+        top.rank();
+        top.tests().dump(false);
     }
 
     if (!top.opt.writeFile().empty()) {
-	top.writeCoverage(top.opt.writeFile());
-	V3Error::abortIfWarnings();
+        top.writeCoverage(top.opt.writeFile());
+        V3Error::abortIfWarnings();
         if (top.opt.unlink()) {
-	    const VlStringSet& readFiles = top.opt.readFiles();
-	    for (VlStringSet::iterator it = readFiles.begin(); it != readFiles.end(); ++it) {
-		string filename = *it;
-		unlink(filename.c_str());
-	    }
+            const VlStringSet& readFiles = top.opt.readFiles();
+            for (VlStringSet::iterator it = readFiles.begin(); it != readFiles.end(); ++it) {
+                string filename = *it;
+                unlink(filename.c_str());
+            }
         }
     }
 
@@ -201,4 +201,3 @@ int main(int argc, char** argv, char** env) {
 // Local Variables:
 // compile-command: "v4make bin/verilator_coverage --debugi 9 test_regress/t/t_vlcov_data_*.dat"
 // End:
-
