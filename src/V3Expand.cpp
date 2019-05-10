@@ -59,13 +59,13 @@ private:
 	return (nodep->width()+(VL_WORDSIZE-1)) & ~(VL_WORDSIZE-1);
     }
     V3Number notWideMask(AstNode* nodep) {
-        return V3Number(nodep->fileline(), VL_WORDSIZE, ~VL_MASK_I(nodep->widthMin()));
+        return V3Number(nodep, VL_WORDSIZE, ~VL_MASK_I(nodep->widthMin()));
     }
     V3Number wordMask(AstNode* nodep) {
-	if (nodep->isWide()) {
-            return V3Number(nodep->fileline(), VL_WORDSIZE, VL_MASK_I(nodep->widthMin()));
-	} else {
-	    V3Number mask (nodep->fileline(), longOrQuadWidth(nodep));
+        if (nodep->isWide()) {
+            return V3Number(nodep, VL_WORDSIZE, VL_MASK_I(nodep->widthMin()));
+        } else {
+            V3Number mask (nodep, longOrQuadWidth(nodep));
 	    mask.setMask(nodep->widthMin());
 	    return mask;
 	}
@@ -222,8 +222,8 @@ private:
 	if (rhsp->num().isFourState()) {
 	    rhsp->v3error("Unsupported: 4-state numbers in this context");
 	}
-	for (int w=0; w<nodep->widthWords(); w++) {
-	    V3Number num (nodep->fileline(), VL_WORDSIZE, rhsp->num().dataWord(w));
+        for (int w=0; w<nodep->widthWords(); w++) {
+            V3Number num (nodep, VL_WORDSIZE, rhsp->num().dataWord(w));
             addWordAssign(nodep, w, new AstConst(nodep->fileline(), num));
 	}
 	return true;
@@ -368,9 +368,9 @@ private:
                                           newSelBitBit(nodep->lsbp()),
                                           nodep->width());
 	    // If > 1 bit, we might be crossing the word boundary
-	    AstNode* midp=NULL;
-	    V3Number zero (nodep->fileline(), longOrQuadWidth(nodep));
-	    if (nodep->widthConst() > 1) {
+            AstNode* midp=NULL;
+            V3Number zero (nodep, longOrQuadWidth(nodep));
+            if (nodep->widthConst() > 1) {
 		AstNode* midwordp = // SEL(from,[1+wordnum])
                     new AstWordSel(nodep->fromp()->fileline(),
                                    nodep->fromp()->cloneTree(true),
@@ -475,9 +475,9 @@ private:
                                               lowwordp,
                                               newSelBitBit(rhsp->lsbp()),
                                               VL_WORDSIZE);
-		// Upper bits
-		V3Number zero (nodep->fileline(), VL_WORDSIZE, 0);
-		AstNode* midwordp = // SEL(from,[1+wordnum])
+                // Upper bits
+                V3Number zero (nodep, VL_WORDSIZE, 0);
+                AstNode* midwordp = // SEL(from,[1+wordnum])
                     new AstWordSel(rhsp->fromp()->fileline(),
                                    rhsp->fromp()->cloneTree(true),
                                    newSelBitWord(rhsp->lsbp(), w+1));
@@ -517,9 +517,9 @@ private:
 	    AstNode* destp = lhsp->fromp()->unlinkFrBack();
 	    int lsb = lhsp->lsbConst();
 	    int msb = lhsp->msbConst();
-	    V3Number maskset (nodep->fileline(), destp->widthMin());
-	    for (int bit=lsb; bit<(msb+1); bit++) maskset.setBit(bit,1);
-	    V3Number maskold (nodep->fileline(), destp->widthMin()); maskold.opNot(maskset);
+            V3Number maskset (nodep, destp->widthMin());
+            for (int bit=lsb; bit<(msb+1); bit++) maskset.setBit(bit, 1);
+            V3Number maskold (nodep, destp->widthMin()); maskold.opNot(maskset);
 	    if (destwide) {
 		UINFO(8,"    ASSIGNSEL(const,wide) "<<nodep<<endl);
 		for (int w=0; w<destp->widthWords(); w++) {
@@ -624,7 +624,7 @@ private:
 		AstNode* oldvalp = destp->cloneTree(true);
 		fixCloneLvalue(oldvalp);
 
-		V3Number maskwidth (nodep->fileline(), destp->widthMin());
+                V3Number maskwidth (nodep, destp->widthMin());
                 for (int bit=0; bit < lhsp->widthConst(); bit++) maskwidth.setBit(bit,1);
 
 		if (destp->isQuad() && !rhsp->isQuad()) rhsp = new AstCCast(nodep->fileline(), rhsp, nodep);
@@ -811,8 +811,8 @@ private:
 	    replaceWithDelete(nodep,newp); VL_DANGLING(nodep);
 	} else {
 	    UINFO(8,"    REDOR->EQ "<<nodep<<endl);
-	    AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
-	    V3Number zero (nodep->fileline(), longOrQuadWidth(nodep));
+            AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
+            V3Number zero (nodep, longOrQuadWidth(nodep));
             AstNode* newp = new AstNeq(nodep->fileline(),
                                        new AstConst(nodep->fileline(), zero),
                                        lhsp);

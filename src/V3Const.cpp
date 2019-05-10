@@ -385,9 +385,9 @@ private:
 	extendp->unlinkFrBack()->deleteTree();  // aka nodep->lhsp.
 	nodep->rhsp(smallerp);
 
-	constp->unlinkFrBack();
-	V3Number num (constp->fileline(), subsize);
-	num.opAssign(constp->num());
+        constp->unlinkFrBack();
+        V3Number num (constp, subsize);
+        num.opAssign(constp->num());
 	nodep->lhsp(new AstConst(constp->fileline(), num));
 	constp->deleteTree(); VL_DANGLING(constp);
 	if (debug()>=9) nodep->dumpTree(cout,"BI(EXTEND)-ou:");
@@ -597,8 +597,8 @@ private:
 	oldp->deleteTree(); VL_DANGLING(oldp);
     }
     void replaceNum(AstNode* nodep, uint32_t val) {
-	V3Number num (nodep->fileline(), nodep->width(), val);
-	replaceNum(nodep, num); VL_DANGLING(nodep);
+        V3Number num (nodep, nodep->width(), val);
+        replaceNum(nodep, num); VL_DANGLING(nodep);
     }
     void replaceNumSigned(AstNodeBiop* nodep, uint32_t val) {
 	// We allow both sides to be constant, as one may have come from parameter propagation, etc.
@@ -631,24 +631,24 @@ private:
 	}
     }
     void replaceAllOnes(AstNode* nodep) {
-	V3Number ones (nodep->fileline(), nodep->width(), 0);
-	ones.setMask(nodep->width());
-	replaceNum(nodep, ones); VL_DANGLING(nodep);
+        V3Number ones (nodep, nodep->width(), 0);
+        ones.setMask(nodep->width());
+        replaceNum(nodep, ones); VL_DANGLING(nodep);
     }
     void replaceConst(AstNodeUniop* nodep) {
-	V3Number num (nodep->fileline(), nodep->width());
+        V3Number num (nodep, nodep->width());
         nodep->numberOperate(num, VN_CAST(nodep->lhsp(), Const)->num());
-	UINFO(4,"UNICONST -> "<<num<<endl);
-	replaceNum(nodep, num); VL_DANGLING(nodep);
+        UINFO(4,"UNICONST -> "<<num<<endl);
+        replaceNum(nodep, num); VL_DANGLING(nodep);
     }
     void replaceConst(AstNodeBiop* nodep) {
-	V3Number num (nodep->fileline(), nodep->width());
+        V3Number num (nodep, nodep->width());
         nodep->numberOperate(num, VN_CAST(nodep->lhsp(), Const)->num(), VN_CAST(nodep->rhsp(), Const)->num());
-	UINFO(4,"BICONST -> "<<num<<endl);
-	replaceNum(nodep, num); VL_DANGLING(nodep);
+        UINFO(4,"BICONST -> "<<num<<endl);
+        replaceNum(nodep, num); VL_DANGLING(nodep);
     }
     void replaceConst(AstNodeTriop* nodep) {
-	V3Number num (nodep->fileline(), nodep->width());
+        V3Number num (nodep, nodep->width());
         nodep->numberOperate(num, VN_CAST(nodep->lhsp(), Const)->num(),
                              VN_CAST(nodep->rhsp(), Const)->num(),
                              VN_CAST(nodep->thsp(), Const)->num());
@@ -915,20 +915,20 @@ private:
 	    shift1p->deleteTree(); VL_DANGLING(shift1p);
 	    shift2p->deleteTree(); VL_DANGLING(shift2p);
 	    AstNode* newp;
-	    V3Number mask1 (nodep->fileline(), nodep->width());
-	    V3Number ones (nodep->fileline(), nodep->width());
-	    ones.setMask(nodep->width());
-	    if (shift1<0) {
-		mask1.opShiftR(ones,V3Number(nodep->fileline(),VL_WORDSIZE,-shift1));
-	    } else {
-		mask1.opShiftL(ones,V3Number(nodep->fileline(),VL_WORDSIZE,shift1));
-	    }
-	    V3Number mask (nodep->fileline(), nodep->width());
-	    if (shift2<0) {
-		mask.opShiftR(mask1,V3Number(nodep->fileline(),VL_WORDSIZE,-shift2));
-	    } else {
-		mask.opShiftL(mask1,V3Number(nodep->fileline(),VL_WORDSIZE,shift2));
-	    }
+            V3Number mask1 (nodep, nodep->width());
+            V3Number ones (nodep, nodep->width());
+            ones.setMask(nodep->width());
+            if (shift1<0) {
+                mask1.opShiftR(ones, V3Number(nodep, VL_WORDSIZE, -shift1));
+            } else {
+                mask1.opShiftL(ones, V3Number(nodep, VL_WORDSIZE, shift1));
+            }
+            V3Number mask (nodep, nodep->width());
+            if (shift2<0) {
+                mask.opShiftR(mask1, V3Number(nodep, VL_WORDSIZE, -shift2));
+            } else {
+                mask.opShiftL(mask1, V3Number(nodep, VL_WORDSIZE, shift2));
+            }
 	    if (newshift<0) {
 		newp = new AstShiftR(nodep->fileline(), ap,
 				     new AstConst(nodep->fileline(), -newshift));
@@ -1194,9 +1194,9 @@ private:
         AstConst* andConstp = VN_CAST(VN_CAST(nodep, And)->lhsp(), Const);
         AstNode* fromp = VN_CAST(VN_CAST(nodep, And)->rhsp(), ShiftR)->lhsp()->unlinkFrBack();
         AstConst* shiftConstp = VN_CAST(VN_CAST(VN_CAST(nodep, And)->rhsp(), ShiftR)->rhsp(), Const);
-	V3Number val (andConstp->fileline(), andConstp->width());
-	val.opShiftL(andConstp->num(), shiftConstp->num());
-	AstAnd* newp = new AstAnd(nodep->fileline(),
+        V3Number val (andConstp, andConstp->width());
+        val.opShiftL(andConstp->num(), shiftConstp->num());
+        AstAnd* newp = new AstAnd(nodep->fileline(),
 				  new AstConst(nodep->fileline(), val),
 				  fromp);
         // widthMin no longer applicable if different C-expanded width
@@ -2002,9 +2002,10 @@ private:
 			if (argp) {
 			    AstNode* nextp=argp->nextp();
                             if (argp && VN_IS(argp, Const)) {  // Convert it
-                                string out = VN_CAST(argp, Const)->num().displayed(nodep->fileline(), fmt);
-				UINFO(9,"     DispConst: "<<fmt<<" -> "<<out<<"  for "<<argp<<endl);
-				// fmt = out w/ replace % with %% as it must be literal.
+                                string out = VN_CAST(argp, Const)->num().displayed(nodep, fmt);
+                                UINFO(9,"     DispConst: "<<fmt<<" -> "<<out
+                                      <<"  for "<<argp<<endl);
+                                // fmt = out w/ replace % with %% as it must be literal.
 				fmt = VString::quotePercent(out);
 				argp->unlinkFrBack()->deleteTree(); VL_DANGLING(argp);
 			    }

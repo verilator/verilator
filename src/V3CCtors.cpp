@@ -125,9 +125,9 @@ void V3CCtors::evalAsserts() {
 			    newp = new AstWordSel(varp->fileline(), newp,
 						  new AstConst(varp->fileline(), varp->widthWords()-1));
 			}
-			uint64_t value = VL_MASK_Q(storedWidth) & ~VL_MASK_Q(lastWordWidth);
-			V3Number num (varp->fileline(), storedWidth, value);
-			newp = new AstAnd(varp->fileline(), newp,
+                        uint64_t value = VL_MASK_Q(storedWidth) & ~VL_MASK_Q(lastWordWidth);
+                        V3Number num (varp, storedWidth, value);
+                        newp = new AstAnd(varp->fileline(), newp,
 					  new AstConst(varp->fileline(), num));
 			AstNodeIf* ifp = new AstIf(varp->fileline(), newp,
                                                    new AstCStmt(varp->fileline(),

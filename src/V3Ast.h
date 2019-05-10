@@ -1628,19 +1628,19 @@ public:
 	else if (expr2p) dtypeFrom(expr2p);
     }
     ASTNODE_BASE_FUNCS(NodeCond)
-    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs, const V3Number& ths) {
-	if (lhs.isNeqZero()) out.opAssign(rhs); else out.opAssign(ths); }
-    AstNode*	condp() 	const { return op1p(); }	// op1 = Condition
-    AstNode*	expr1p() 	const { return op2p(); }	// op2 = If true...
-    AstNode*	expr2p() 	const { return op3p(); }	// op3 = If false...
+    virtual void numberOperate(V3Number& out, const V3Number& lhs,
+                               const V3Number& rhs, const V3Number& ths);
+    AstNode* condp() const { return op1p(); }  // op1 = Condition
+    AstNode* expr1p() const { return op2p(); }  // op2 = If true...
+    AstNode* expr2p() const { return op3p(); }  // op3 = If false...
     virtual string emitVerilog() { return "%k(%l %f? %r %k: %t)"; }
     virtual string emitC() { return "VL_COND_%nq%lq%rq%tq(%nw,%lw,%rw,%tw, %P, %li, %ri, %ti)"; }
-    virtual bool cleanOut() { return false; } // clean if e1 & e2 clean
+    virtual bool cleanOut() { return false; }  // clean if e1 & e2 clean
     virtual bool cleanLhs() { return true; }
     virtual bool cleanRhs() { return false; } virtual bool cleanThs() { return false; } // Propagates up
     virtual bool sizeMattersLhs() { return false; } virtual bool sizeMattersRhs() { return false; }
     virtual bool sizeMattersThs() { return false; }
-    virtual int instrCount()	const { return instrCountBranch(); }
+    virtual int instrCount() const { return instrCountBranch(); }
     virtual AstNode* cloneType(AstNode* condp, AstNode* expr1p, AstNode* expr2p) = 0;
 };
 

@@ -1321,8 +1321,8 @@ private:
 	// Assign widths
 	userIterateAndNext(nodep->itemsp(), WidthVP(nodep->dtypep(),BOTH).p());
 	// Assign missing values
-	V3Number num (nodep->fileline(), nodep->width(), 0);
-	V3Number one (nodep->fileline(), nodep->width(), 1);
+        V3Number num (nodep, nodep->width(), 0);
+        V3Number one (nodep, nodep->width(), 1);
         std::map<V3Number,AstEnumItem*> inits;
         for (AstEnumItem* itemp = nodep->itemsp(); itemp; itemp=VN_CAST(itemp->nextp(), EnumItem)) {
 	    if (itemp->valuep()) {
@@ -2923,9 +2923,9 @@ private:
 	    if (nodep->rhsp()->width()>32) {
                 AstConst* shiftp = VN_CAST(nodep->rhsp(), Const);
 		if (shiftp && shiftp->num().mostSetBitP1() <= 32) {
-		    // If (number)<<96'h1, then make it into (number)<<32'h1
-		    V3Number num (shiftp->fileline(), 32, 0); num.opAssign(shiftp->num());
-		    AstNode* shiftp = nodep->rhsp();
+                    // If (number)<<96'h1, then make it into (number)<<32'h1
+                    V3Number num (shiftp, 32, 0); num.opAssign(shiftp->num());
+                    AstNode* shiftp = nodep->rhsp();
 		    nodep->rhsp()->replaceWith(new AstConst(shiftp->fileline(), num));
 		    shiftp->deleteTree(); VL_DANGLING(shiftp);
 		}
@@ -3082,9 +3082,9 @@ private:
         AstConst* constp = VN_CAST(nodep, Const);
 	int expWidth = expDTypep->width();
 	if (constp && !constp->num().isNegative()) {
-	    // Save later constant propagation work, just right-size it.
-	    V3Number num (nodep->fileline(), expWidth);
-	    num.opAssign(constp->num());
+            // Save later constant propagation work, just right-size it.
+            V3Number num (nodep, expWidth);
+            num.opAssign(constp->num());
 	    num.isSigned(false);
 	    AstNode* newp = new AstConst(nodep->fileline(), num);
 	    constp->replaceWith(newp);
@@ -3134,9 +3134,9 @@ private:
 	int expSigned = false;
 	UINFO(4,"  widthReduce_old: "<<nodep<<endl);
         AstConst* constp = VN_CAST(nodep, Const);
-	if (constp) {
-	    V3Number num (nodep->fileline(), expWidth);
-	    num.opRedOr(constp->num());
+        if (constp) {
+            V3Number num (nodep, expWidth);
+            num.opRedOr(constp->num());
 	    num.isSigned(expSigned);
 	    AstNode* newp = new AstConst(nodep->fileline(), num);
 	    constp->replaceWith(newp);
@@ -3157,9 +3157,9 @@ private:
 	// For SystemVerilog '0,'1,'x,'z, autoextend and don't warn
         if (AstConst* constp = VN_CAST(nodepr, Const)) {
 	    if (constp->num().autoExtend() && !constp->num().sized() && constp->width()==1) {
-		// Make it the proper size.  Careful of proper extension of 0's/1's
-		V3Number num (constp->fileline(), expWidth);
-		num.opRepl(constp->num(), expWidth);  // {width{'1}}
+                // Make it the proper size.  Careful of proper extension of 0's/1's
+                V3Number num (constp, expWidth);
+                num.opRepl(constp->num(), expWidth);  // {width{'1}}
 		AstNode* newp = new AstConst(constp->fileline(), num);
 		// Spec says always unsigned with proper width
 		if (debug()>4) constp->dumpTree(cout,"  fixAutoExtend_old: ");
@@ -3176,7 +3176,7 @@ private:
                      && expWidth > 32 && constp->num().isMsbXZ()) {
                 constp->v3warn(WIDTH, "Unsized constant being X/Z extended to "
                                <<expWidth<<" bits: "<<constp->prettyName());
-                V3Number num (constp->fileline(), expWidth);
+                V3Number num (constp, expWidth);
                 num.opExtendXZ(constp->num(), constp->width());
                 AstNode* newp = new AstConst(constp->fileline(), num);
                 // Spec says always unsigned with proper width
@@ -3802,9 +3802,9 @@ private:
 	if (attrType == AstAttrType::ENUM_NAME) {
 	    initp->defaultp(new AstConst(nodep->fileline(), AstConst::String(), ""));
 	} else if (attrType == AstAttrType::ENUM_NEXT
-		   || attrType == AstAttrType::ENUM_PREV) {
-	    initp->defaultp(new AstConst(nodep->fileline(), V3Number(nodep->fileline(), nodep->width(), 0)));
-	} else {
+                   || attrType == AstAttrType::ENUM_PREV) {
+            initp->defaultp(new AstConst(nodep->fileline(), V3Number(nodep, nodep->width(), 0)));
+        } else {
 	    nodep->v3fatalSrc("Bad case");
 	}
 

@@ -280,9 +280,9 @@ private:
                 = new AstAssign(nodep->fileline(),
                                 new AstVarRef(nodep->fileline(), setvscp, true),
                                 new AstConst(nodep->fileline(),
-                                             V3Number(nodep->fileline(),1,true)));
-	    nodep->addNextHere(setassignp);
-	}
+                                             V3Number(nodep, 1, true)));
+            nodep->addNextHere(setassignp);
+        }
 	if (m_nextDlyp) {  // Tell next assigndly it can share the variable
 	    m_nextDlyp->user3p(setvscp);
 	}

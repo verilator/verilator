@@ -170,10 +170,10 @@ private:
 		if (neverItem(nodep, iconstp)) {
 		    // X in casez can't ever be executed
 		} else {
-		    V3Number nummask (itemp->fileline(), iconstp->width());
-		    nummask.opBitsNonX(iconstp->num());
-		    uint32_t mask = nummask.toUInt();
-		    V3Number numval  (itemp->fileline(), iconstp->width());
+                    V3Number nummask (itemp, iconstp->width());
+                    nummask.opBitsNonX(iconstp->num());
+                    uint32_t mask = nummask.toUInt();
+                    V3Number numval (itemp, iconstp->width());
 		    numval.opBitsOne(iconstp->num());
 		    uint32_t val  = numval.toUInt();
                     for (uint32_t i=0; i<(1UL<<m_caseWidth); ++i) {
@@ -248,9 +248,9 @@ private:
 	    if (tree0p && !tree0p->user3()) tree0p = tree0p->cloneTree(true);
 	    if (tree1p && !tree1p->user3()) tree1p = tree1p->cloneTree(true);
 
-	    // Alternate scheme if we ever do multiple bits at a time:
-	    //V3Number nummask (cexprp->fileline(), cexprp->width(), (1UL<<msb));
-	    //AstNode* and1p = new AstAnd(cexprp->fileline(), cexprp->cloneTree(false),
+            // Alternate scheme if we ever do multiple bits at a time:
+            //V3Number nummask (cexprp, cexprp->width(), (1UL<<msb));
+            //AstNode* and1p = new AstAnd(cexprp->fileline(), cexprp->cloneTree(false),
 	    //                            new AstConst(cexprp->fileline(), nummask));
 	    AstNode* and1p = new AstSel(cexprp->fileline(), cexprp->cloneTree(false),
 					msb, 1);
@@ -334,9 +334,9 @@ private:
 			condp = new AstAnd(itemp->fileline(), ap, bp);
 		    } else if (iconstp && iconstp->num().isFourState()
 			       && (nodep->casex() || nodep->casez() || nodep->caseInside())) {
-			V3Number nummask (itemp->fileline(), iconstp->width());
-			nummask.opBitsNonX(iconstp->num());
-			V3Number numval  (itemp->fileline(), iconstp->width());
+                        V3Number nummask (itemp, iconstp->width());
+                        nummask.opBitsNonX(iconstp->num());
+                        V3Number numval  (itemp, iconstp->width());
 			numval.opBitsOne(iconstp->num());
 			AstNode* and1p = new AstAnd(itemp->fileline(), cexprp->cloneTree(false),
 						    new AstConst(itemp->fileline(), nummask));

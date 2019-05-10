@@ -2979,7 +2979,7 @@ class EmitCTrace : EmitCStmts {
                          itemp=VN_CAST(itemp->nextp(), EnumItem)) {
                         AstConst* constp = VN_CAST(itemp->valuep(), Const);
                         if (++nvals > 1) puts(", ");
-                        putbs("\""+constp->num().displayed(nodep->fileline(), "%0b")+"\"");
+                        putbs("\""+constp->num().displayed(nodep, "%0b")+"\"");
                     }
                     puts("};\n");
                     puts("vcdp->declDTypeEnum("+cvtToStr(enumNum)

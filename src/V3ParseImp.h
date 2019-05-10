@@ -183,9 +183,9 @@ public:
 	return strp;
     }
     V3Number* newNumber(FileLine* fl, const char* text) {
-        V3Number* nump = new V3Number(fl, text);
-	m_numberps.push_back(nump);
-	return nump;
+        V3Number* nump = new V3Number(V3Number::FileLined(), fl, text);
+        m_numberps.push_back(nump);
+        return nump;
     }
 
     // Return next token, for bison, since bison isn't class based, use a global THIS

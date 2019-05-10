@@ -231,12 +231,12 @@ private:
 
     bool countLoops(AstAssign *initp, AstNode *condp, AstNode *incp, int max, int &outLoopsr) {
 	outLoopsr = 0;
-	V3Number loopValue = V3Number(initp->fileline());
-	if (!simulateTree(initp->rhsp(), NULL, initp, loopValue)) {
-	    return false;
-	}
-	while (1) {
-	    V3Number res = V3Number(initp->fileline());
+        V3Number loopValue = V3Number(initp);
+        if (!simulateTree(initp->rhsp(), NULL, initp, loopValue)) {
+            return false;
+        }
+        while (1) {
+            V3Number res = V3Number(initp);
 	    if (!simulateTree(condp, &loopValue, NULL, res)) {
 		return false;
 	    }
@@ -248,10 +248,10 @@ private:
 
 	    // Run inc
             AstAssign* incpass = VN_CAST(incp, Assign);
-	    V3Number newLoopValue = V3Number(initp->fileline());
-	    if (!simulateTree(incpass->rhsp(), &loopValue, incpass, newLoopValue)) {
-		return false;
-	    }
+            V3Number newLoopValue = V3Number(initp);
+            if (!simulateTree(incpass->rhsp(), &loopValue, incpass, newLoopValue)) {
+                return false;
+            }
 	    loopValue.opAssign(newLoopValue);
 	    if (outLoopsr > max) {
 		return false;
@@ -265,9 +265,9 @@ private:
 		     AstNode* condp,
 		     AstNode* precondsp,
 		     AstNode* incp, AstNode* bodysp) {
-	UINFO(9, "forUnroller "<<nodep<<endl);
-	V3Number loopValue = V3Number(nodep->fileline());
-	if (!simulateTree(initp->rhsp(), NULL, initp, loopValue)) {
+        UINFO(9, "forUnroller "<<nodep<<endl);
+        V3Number loopValue = V3Number(nodep);
+        if (!simulateTree(initp->rhsp(), NULL, initp, loopValue)) {
 	    return false;
 	}
 	AstNode* stmtsp = NULL;
@@ -295,9 +295,9 @@ private:
 	if (stmtsp) {
 	    int times = 0;
 	    while (1) {
-		UINFO(8,"      Looping "<<loopValue<<endl);
-		V3Number res = V3Number(nodep->fileline());
-		if (!simulateTree(condp, &loopValue, NULL, res)) {
+                UINFO(8,"      Looping "<<loopValue<<endl);
+                V3Number res = V3Number(nodep);
+                if (!simulateTree(condp, &loopValue, NULL, res)) {
 		    nodep->v3error("Loop unrolling failed.");
 		    return false;
 		}
@@ -337,9 +337,9 @@ private:
 
 		    // loopValue += valInc
                     AstAssign *incpass = VN_CAST(incp, Assign);
-		    V3Number newLoopValue = V3Number(nodep->fileline());
-		    if (!simulateTree(incpass->rhsp(), &loopValue, incpass, newLoopValue)) {
-			nodep->v3error("Loop unrolling failed");
+                    V3Number newLoopValue = V3Number(nodep);
+                    if (!simulateTree(incpass->rhsp(), &loopValue, incpass, newLoopValue)) {
+                        nodep->v3error("Loop unrolling failed");
 			return false;
 		    }
 		    loopValue.opAssign(newLoopValue);

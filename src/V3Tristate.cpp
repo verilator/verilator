@@ -365,9 +365,9 @@ class TristateVisitor : public TristateBaseVisitor {
     AstNode* getEnp(AstNode* nodep) {
 	// checks if user1p() is null, and if so, adds a constant output
 	// enable driver of all 1's. Otherwise returns the user1p() data.
-	if (!nodep->user1p()) {
-	    V3Number num(nodep->fileline(), nodep->width());
-	    num.setAllBits1();
+        if (!nodep->user1p()) {
+            V3Number num(nodep, nodep->width());
+            num.setAllBits1();
 	    AstNode* enp = new AstConst(nodep->fileline(), num);
 	    nodep->user1p(enp);
 	}
@@ -479,9 +479,9 @@ class TristateVisitor : public TristateBaseVisitor {
 		VarMap::iterator it = m_lhsmap.find(varp);
 		if (it == m_lhsmap.end()) {
 		    // set output enable to always be off on this assign statement so that this var is floating
-		    UINFO(8,"  Adding driver to var "<<varp<<endl);
-		    V3Number zeros (varp->fileline(), varp->width());
-		    zeros.setAllBits0();
+                    UINFO(8,"  Adding driver to var "<<varp<<endl);
+                    V3Number zeros (varp, varp->width());
+                    zeros.setAllBits0();
 		    AstConst* constp = new AstConst(varp->fileline(), zeros);
 		    AstVarRef* varrefp = new AstVarRef(varp->fileline(), varp, true);
 		    AstNode* newp = new AstAssignW(varp->fileline(), varrefp, constp);
@@ -592,13 +592,13 @@ class TristateVisitor : public TristateBaseVisitor {
 			     : new AstAnd(refp->fileline(), tmp, undrivenp));
 	    }
 	    if (!undrivenp) {  // No drivers on the bus
-		V3Number ones(invarp->fileline(), lhsp->width()); ones.setAllBits1();
-		undrivenp = new AstConst(invarp->fileline(), ones);
-	    }
-	    if (!outvarp) {
-		// This is the final resolution of the tristate, so we apply
-		// the pull direction to any undriven pins.
-		V3Number pull(invarp->fileline(), lhsp->width());
+                V3Number ones(invarp, lhsp->width()); ones.setAllBits1();
+                undrivenp = new AstConst(invarp->fileline(), ones);
+            }
+            if (!outvarp) {
+                // This is the final resolution of the tristate, so we apply
+                // the pull direction to any undriven pins.
+                V3Number pull(invarp, lhsp->width());
                 AstPull* pullp = static_cast<AstPull*>(lhsp->user3p());
 		if (pullp && pullp->direction() == 1) {
 		    pull.setAllBits1();
@@ -654,9 +654,12 @@ class TristateVisitor : public TristateBaseVisitor {
 	    else if (m_tgraph.isTristate(nodep)) {
 		m_tgraph.didProcess(nodep);
 		FileLine* fl = nodep->fileline();
-		V3Number numz (fl,nodep->width()); numz.opBitsZ(nodep->num());  //Z->1, else 0
-		V3Number numz0(fl,nodep->width()); numz0.opNot(numz); // Z->0, else 1
-		V3Number num1 (fl,nodep->width()); num1.opAnd(nodep->num(),numz0);  // 01X->01X, Z->0
+                V3Number numz (nodep, nodep->width());
+                numz.opBitsZ(nodep->num());  // Z->1, else 0
+                V3Number numz0(nodep, nodep->width());
+                numz0.opNot(numz);  // Z->0, else 1
+                V3Number num1 (nodep, nodep->width());
+                num1.opAnd(nodep->num(), numz0);  // 01X->01X, Z->0
 		AstConst* newconstp = new AstConst(fl, num1);
 		AstConst* enp       = new AstConst(fl, numz0);
 		nodep->replaceWith(newconstp);

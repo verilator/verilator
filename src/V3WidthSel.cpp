@@ -120,9 +120,9 @@ private:
 	    return lhsp;
         } else if (VN_IS(lhsp, Const)) {
 	    // Optional vs just making add/sub below, but saves constification some work
-	    V3Number num (lhsp->fileline(), lhsp->width());
-            num.opSub(VN_CAST(lhsp, Const)->num(), V3Number(lhsp->fileline(), 32, rhs));
-	    num.isSigned(lhsp->isSigned());
+            V3Number num (lhsp, lhsp->width());
+            num.opSub(VN_CAST(lhsp, Const)->num(), V3Number(lhsp, 32, rhs));
+            num.isSigned(lhsp->isSigned());
 	    AstNode* newp = new AstConst(lhsp->fileline(), num);
 	    return newp;
 	} else if (rhs > 0) {

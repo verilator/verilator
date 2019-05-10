@@ -25,11 +25,12 @@
 #include "verilatedos.h"
 
 #include "V3Error.h"
-#include "V3FileLine.h"
 
 #include <vector>
 
 //============================================================================
+
+class AstNode;
 
 class V3Number {
     // Large 4-state number handling
@@ -39,8 +40,8 @@ class V3Number {
     bool	m_double:1;	// True if double real value
     bool	m_isString:1;	// True if string
     bool	m_fromString:1;	// True if from string literal
-    bool	m_autoExtend:1;	// True if SystemVerilog extend-to-any-width
-    FileLine*	m_fileline;
+    bool        m_autoExtend:1; // True if SystemVerilog extend-to-any-width
+    FileLine*   m_fileline;
     std::vector<uint32_t> m_value;  // The Value, with bit 0 being in bit 0 of this vector (unless X/Z)
     std::vector<uint32_t> m_valueX;  // Each bit is true if it's X or Z, 10=z, 11=x
     string		m_stringVal;	// If isString, the value of the string
@@ -49,8 +50,8 @@ class V3Number {
     V3Number& setString(const string& str) { m_isString=true; m_stringVal=str; return *this; }
     void opCleanThis(bool warnOnTruncation = false);
 public:
-    FileLine*	fileline() const { return m_fileline; }
-    void	fileline(FileLine* fl) { m_fileline=fl; }
+    void nodep(AstNode* nodep) { setNames(nodep); }
+    FileLine* fileline() const { return m_fileline; };
     V3Number& setZero();
     V3Number& setQuad(vluint64_t value);
     V3Number& setLong(uint32_t value);
@@ -131,18 +132,34 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit V3Number(FileLine* fileline) { init(fileline, 1); }
-    V3Number(FileLine* fileline, int width) { init(fileline, width); }  // 0=unsized
-    V3Number(FileLine* fileline, int width, uint32_t value) { init(fileline, width); m_value[0]=value; opCleanThis(); }
-    V3Number(FileLine* fileline, const char* sourcep);  // Create from a verilog 32'hxxxx number.
+    explicit V3Number(AstNode* nodep) { init(nodep, 1); }
+    V3Number(AstNode* nodep, int width) { init(nodep, width); }  // 0=unsized
+    V3Number(AstNode* nodep, int width, uint32_t value) {
+        init(nodep, width); m_value[0]=value; opCleanThis();
+    }
+    // Create from a verilog 32'hxxxx number.
+    V3Number(AstNode* nodep, const char* sourcep) { V3NumberCreate(nodep, sourcep, NULL); }
+    class FileLined {};  // Fileline based errors, for parsing only, otherwise pass nodep
+    V3Number(FileLined, FileLine* fl, const char* sourcep) { V3NumberCreate(NULL, sourcep, fl); }
     class VerilogStringLiteral {};  // For creator type-overload selection
-    V3Number(VerilogStringLiteral, FileLine* fileline, const string& str);
+    V3Number(VerilogStringLiteral, AstNode* nodep, const string& str);
     class String {};
-    V3Number(String, FileLine* fileline, const string& value) { init(fileline, 0); setString(value); }
+    V3Number(String, AstNode* nodep, const string& value) { init(nodep, 0); setString(value); }
+    V3Number(const V3Number* nump, int width = 1) {
+        init(NULL, width);
+        m_fileline = nump->fileline();
+    }
+    V3Number(const V3Number* nump, int width, uint32_t value) {
+        init(NULL, width);
+        m_value[0]=value;
+        opCleanThis();
+        m_fileline = nump->fileline();
+    }
 
 private:
-    void init(FileLine* fileline, int swidth) {
-	m_fileline = fileline;
+    void V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl);
+    void init(AstNode* nodep, int swidth) {
+        setNames(nodep);
 	m_signed = false;
 	m_double = false;
 	m_isString = false;
@@ -151,7 +168,13 @@ private:
 	width(swidth);
 	for (int i=0; i<words(); i++) m_value[i]=m_valueX[i] = 0;
     }
+    void setNames(AstNode* nodep);
+    string displayed(FileLine* fl, const string& vformat) const;
+    string displayed(const string& vformat) const {
+        return displayed(m_fileline, vformat);
+    }
 public:
+    void v3errorEnd(std::ostringstream& sstr);
     void width(int width, bool sized=true) {
 	// Set width.  Only set m_width here, as we need to tweak vector size
 	if (width) { m_sized = sized; m_width=width; }
@@ -173,10 +196,10 @@ public:
     // ACCESSORS
     string ascii(bool prefixed=true, bool cleanVerilog=false) const;
     static string quoteNameControls(const string& namein); // Add backslash quotes to strings
-    string displayed(FileLine* fl, const string& vformat) const;
+    string displayed(AstNode* nodep, const string& vformat) const;
     static bool displayedFmtLegal(char format);  // Is this a valid format letter?
     int width() const { return m_width; }
-    int widthMin() const;	// Minimum width that can represent this number (~== log2(num)+1)
+    int widthMin() const;  // Minimum width that can represent this number (~== log2(num)+1)
     bool sized() const { return m_sized; }
     bool autoExtend() const { return m_autoExtend; }
     bool isFromString() const { return m_fromString; }

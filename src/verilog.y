@@ -1936,10 +1936,10 @@ genvar_iteration<nodep>:	// ==IEEE: genvar_iteration
 	|	varRefBase yP_SSRIGHTEQ	expr		{ $$ = new AstAssign($2,$1,new AstShiftRS($2,$1->cloneTree(true),$3)); }
 	//			// inc_or_dec_operator
 	// When support ++ as a real AST type, maybe AstWhile::precondsp() becomes generic AstNodeMathStmt?
-	|	yP_PLUSPLUS   varRefBase		{ $$ = new AstAssign($1,$2,new AstAdd    ($1,$2->cloneTree(true),new AstConst($1,V3Number($1,"'b1")))); }
-	|	yP_MINUSMINUS varRefBase		{ $$ = new AstAssign($1,$2,new AstSub    ($1,$2->cloneTree(true),new AstConst($1,V3Number($1,"'b1")))); }
-	|	varRefBase yP_PLUSPLUS			{ $$ = new AstAssign($2,$1,new AstAdd    ($2,$1->cloneTree(true),new AstConst($2,V3Number($2,"'b1")))); }
-	|	varRefBase yP_MINUSMINUS		{ $$ = new AstAssign($2,$1,new AstSub    ($2,$1->cloneTree(true),new AstConst($2,V3Number($2,"'b1")))); }
+	|	yP_PLUSPLUS   varRefBase		{ $$ = new AstAssign($1,$2,new AstAdd    ($1,$2->cloneTree(true), new AstConst($1, AstConst::StringToParse(), "'b1"))); }
+	|	yP_MINUSMINUS varRefBase		{ $$ = new AstAssign($1,$2,new AstSub    ($1,$2->cloneTree(true), new AstConst($1, AstConst::StringToParse(), "'b1"))); }
+	|	varRefBase yP_PLUSPLUS			{ $$ = new AstAssign($2,$1,new AstAdd    ($2,$1->cloneTree(true), new AstConst($2, AstConst::StringToParse(), "'b1"))); }
+	|	varRefBase yP_MINUSMINUS		{ $$ = new AstAssign($2,$1,new AstSub    ($2,$1->cloneTree(true), new AstConst($2, AstConst::StringToParse(), "'b1"))); }
 	;
 
 case_generate_itemListE<nodep>:	// IEEE: [{ case_generate_itemList }]
@@ -2520,10 +2520,10 @@ foperator_assignment<nodep>:	// IEEE: operator_assignment (for first part of exp
 
 finc_or_dec_expression<nodep>:	// ==IEEE: inc_or_dec_expression
 	//UNSUP: Generic scopes in incrementes
-		fexprLvalue yP_PLUSPLUS			{ $$ = new AstAssign($2,$1,new AstAdd    ($2,$1->cloneTree(true),new AstConst($2,V3Number($2,"'b1")))); }
-	|	fexprLvalue yP_MINUSMINUS		{ $$ = new AstAssign($2,$1,new AstSub    ($2,$1->cloneTree(true),new AstConst($2,V3Number($2,"'b1")))); }
-	|	yP_PLUSPLUS   fexprLvalue		{ $$ = new AstAssign($1,$2,new AstAdd    ($1,$2->cloneTree(true),new AstConst($1,V3Number($1,"'b1")))); }
-	|	yP_MINUSMINUS fexprLvalue		{ $$ = new AstAssign($1,$2,new AstSub    ($1,$2->cloneTree(true),new AstConst($1,V3Number($1,"'b1")))); }
+		fexprLvalue yP_PLUSPLUS			{ $$ = new AstAssign($2,$1,new AstAdd    ($2,$1->cloneTree(true),new AstConst($2, AstConst::StringToParse(), "'b1"))); }
+	|	fexprLvalue yP_MINUSMINUS		{ $$ = new AstAssign($2,$1,new AstSub    ($2,$1->cloneTree(true),new AstConst($2, AstConst::StringToParse(), "'b1"))); }
+	|	yP_PLUSPLUS   fexprLvalue		{ $$ = new AstAssign($1,$2,new AstAdd    ($1,$2->cloneTree(true),new AstConst($1, AstConst::StringToParse(), "'b1"))); }
+	|	yP_MINUSMINUS fexprLvalue		{ $$ = new AstAssign($1,$2,new AstSub    ($1,$2->cloneTree(true),new AstConst($1, AstConst::StringToParse(), "'b1"))); }
 	;
 
 //************************************************
@@ -2798,8 +2798,8 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	;
 
 system_f_call<nodep>:		// IEEE: system_tf_call (as func)
-		yaD_IGNORE parenE			{ $$ = new AstConst($<fl>1,V3Number($<fl>1,"'b0")); } // Unsized 0
-	|	yaD_IGNORE '(' exprList ')'		{ $$ = new AstConst($2,V3Number($2,"'b0")); } // Unsized 0
+		yaD_IGNORE parenE			{ $$ = new AstConst($<fl>1, AstConst::StringToParse(), "'b0"); } // Unsized 0
+	|	yaD_IGNORE '(' exprList ')'		{ $$ = new AstConst($2, AstConst::StringToParse(), "'b0"); } // Unsized 0
 	//
 	|	yaD_DPI parenE				{ $$ = new AstFuncRef($<fl>1,*$1,NULL); }
 	|	yaD_DPI '(' exprList ')'		{ $$ = new AstFuncRef($2,*$1,$3); GRAMMARP->argWrapList(VN_CAST($$, FuncRef)); }
@@ -3781,7 +3781,7 @@ str<strp>:			// yaSTRING but with \{escapes} need decoded
 	;
 
 strAsInt<nodep>:
-		yaSTRING				{ $$ = new AstConst($<fl>1,V3Number(V3Number::VerilogStringLiteral(),$<fl>1,GRAMMARP->deQuote($<fl>1,*$1)));}
+		yaSTRING				{ $$ = new AstConst($<fl>1, AstConst::VerilogStringLiteral(), GRAMMARP->deQuote($<fl>1, *$1));}
 	;
 
 strAsIntIgnore<nodep>:		// strAsInt, but never matches for when expr shouldn't parse strings
@@ -3988,7 +3988,8 @@ void V3ParseGrammar::argWrapList(AstNodeFTaskRef* nodep) {
 
 AstNode* V3ParseGrammar::createSupplyExpr(FileLine* fileline, string name, int value) {
     return new AstAssignW(fileline, new AstVarRef(fileline, name, true),
-                          new AstConst(fileline, V3Number(fileline, (value ? "'1" : "'0"))));
+                          new AstConst(fileline, AstConst::StringToParse(),
+				       (value ? "'1" : "'0")));
 }
 
 AstRange* V3ParseGrammar::scrubRange(AstNodeRange* nrangep) {

@@ -185,7 +185,7 @@ private:
 	    // If we got ==1'bx it can never be true (but 1'bx==1'bx can be!)
             if (((VN_IS(lhsp, Const) && VN_CAST(lhsp, Const)->num().isFourState())
                  || (VN_IS(rhsp, Const) && VN_CAST(rhsp, Const)->num().isFourState()))) {
-                V3Number num(nodep->fileline(), 1, (VN_IS(nodep, EqCase) ? 0:1));
+                V3Number num(nodep, 1, (VN_IS(nodep, EqCase) ? 0:1));
                 newp = new AstConst(nodep->fileline(), num);
 		lhsp->deleteTree(); VL_DANGLING(lhsp);
 		rhsp->deleteTree(); VL_DANGLING(rhsp);
@@ -218,9 +218,9 @@ private:
                 newp = new AstEq(nodep->fileline(), lhsp, rhsp);
 	    } else {
 		// X or Z's become mask, ala case statements.
-		V3Number nummask  (rhsp->fileline(), rhsp->width());
+                V3Number nummask (rhsp, rhsp->width());
                 nummask.opBitsNonX(VN_CAST(rhsp, Const)->num());
-		V3Number numval   (rhsp->fileline(), rhsp->width());
+                V3Number numval (rhsp, rhsp->width());
                 numval.opBitsOne(VN_CAST(rhsp, Const)->num());
 		AstNode* and1p = new AstAnd(nodep->fileline(), lhsp,
 					    new AstConst(nodep->fileline(), nummask));
@@ -252,8 +252,8 @@ private:
     virtual void visit(AstIsUnknown* nodep) {
         iterateChildren(nodep);
 	// Ahh, we're two state, so this is easy
-	UINFO(4," ISUNKNOWN->0 "<<nodep<<endl);
-	V3Number zero (nodep->fileline(), 1, 0);
+        UINFO(4," ISUNKNOWN->0 "<<nodep<<endl);
+        V3Number zero (nodep, 1, 0);
         AstConst* newp = new AstConst(nodep->fileline(), zero);
 	nodep->replaceWith(newp);
 	nodep->deleteTree(); VL_DANGLING(nodep);
@@ -266,13 +266,13 @@ private:
 	    // CONST(num) -> VARREF(newvarp)
 	    //		-> VAR(newvarp)
 	    //		-> INITIAL(VARREF(newvarp, OR(num_No_Xs,AND(random,num_1s_Where_X))
-	    V3Number numb1 (nodep->fileline(), nodep->width());
-	    numb1.opBitsOne(nodep->num());
-	    V3Number numbx (nodep->fileline(), nodep->width());
-	    numbx.opBitsXZ(nodep->num());
-	    if (v3Global.opt.xAssign()!="unique") {
-		// All X bits just become 0; fastest simulation, but not nice
-		V3Number numnew (nodep->fileline(), numb1.width());
+            V3Number numb1 (nodep, nodep->width());
+            numb1.opBitsOne(nodep->num());
+            V3Number numbx (nodep, nodep->width());
+            numbx.opBitsXZ(nodep->num());
+            if (v3Global.opt.xAssign()!="unique") {
+                // All X bits just become 0; fastest simulation, but not nice
+                V3Number numnew (nodep, numb1.width());
 		if (v3Global.opt.xAssign()=="1") {
 		    numnew.opOr(numb1, numbx);
 		} else {
@@ -334,8 +334,8 @@ private:
 	    // Find range of dtype we are selecting from
 	    // Similar code in V3Const::warnSelect
 	    int maxmsb = nodep->fromp()->dtypep()->width()-1;
-	    if (debug()>=9) nodep->dumpTree(cout,"sel_old: ");
-	    V3Number maxmsbnum (nodep->fileline(), nodep->lsbp()->width(), maxmsb);
+            if (debug()>=9) nodep->dumpTree(cout,"sel_old: ");
+            V3Number maxmsbnum (nodep, nodep->lsbp()->width(), maxmsb);
 
 	    // If (maxmsb >= selected), we're in bound
             AstNode* condp = new AstGte(nodep->fileline(),
@@ -351,9 +351,9 @@ private:
 	    else if (!lvalue) {
 		// SEL(...) -> COND(LTE(bit<=maxmsb), ARRAYSEL(...), {width{1'bx}})
 		AstNRelinker replaceHandle;
-		nodep->unlinkFrBack(&replaceHandle);
-		V3Number xnum (nodep->fileline(), nodep->width());
-		xnum.setAllBitsX();
+                nodep->unlinkFrBack(&replaceHandle);
+                V3Number xnum (nodep, nodep->width());
+                xnum.setAllBitsX();
                 AstNode* newp = new AstCondBound(nodep->fileline(),
                                                  condp,
                                                  nodep,
@@ -396,8 +396,8 @@ private:
 	    } else {
 		nodep->v3error("Select from non-array "<<dtypep->prettyTypeName());
 	    }
-	    if (debug()>=9) nodep->dumpTree(cout,"arraysel_old: ");
-	    V3Number widthnum (nodep->fileline(), nodep->bitp()->width(), declElements-1);
+            if (debug()>=9) nodep->dumpTree(cout,"arraysel_old: ");
+            V3Number widthnum (nodep, nodep->bitp()->width(), declElements-1);
 
 	    // See if the condition is constant true
             AstNode* condp = new AstGte(nodep->fileline(),
@@ -414,9 +414,9 @@ private:
 		// ARRAYSEL(...) -> COND(LT(bit<maxbit), ARRAYSEL(...), {width{1'bx}})
 		AstNRelinker replaceHandle;
 		nodep->unlinkFrBack(&replaceHandle);
-		V3Number xnum (nodep->fileline(), nodep->width());
-		if (nodep->isString()) {
-		    xnum = V3Number(V3Number::String(), nodep->fileline(), "");
+                V3Number xnum (nodep, nodep->width());
+                if (nodep->isString()) {
+                    xnum = V3Number(V3Number::String(), nodep, "");
 		} else {
 		    xnum.setAllBitsX();
 		}
@@ -432,8 +432,8 @@ private:
 	    else if (!lvalue) {  // Mid-multidimension read, just use zero
 		// ARRAYSEL(...) -> ARRAYSEL(COND(LT(bit<maxbit), bit, 0))
 		AstNRelinker replaceHandle;
-		AstNode* bitp = nodep->bitp()->unlinkFrBack(&replaceHandle);
-		V3Number zeronum (nodep->fileline(), bitp->width(), 0);
+                AstNode* bitp = nodep->bitp()->unlinkFrBack(&replaceHandle);
+                V3Number zeronum (nodep, bitp->width(), 0);
                 AstNode* newp = new AstCondBound(bitp->fileline(),
                                                  condp, bitp,
                                                  new AstConst(bitp->fileline(), zeronum));

@@ -494,9 +494,9 @@ private:
 	    if (!itemp->isDefault()) {
 		for (AstNode* ep = itemp->condsp(); ep; ep=ep->nextp()) {
                     if (const AstConst* ccondp = VN_CAST(ep, Const)) {
-			V3Number match (nodep->fileline(), 1);
-			match.opEq(ccondp->num(), exprp->num());
-			if (!keepp && match.isNeqZero()) {
+                        V3Number match (nodep, 1);
+                        match.opEq(ccondp->num(), exprp->num());
+                        if (!keepp && match.isNeqZero()) {
 			    keepp = itemp->bodysp();
 			}
 		    } else {
@@ -575,11 +575,13 @@ void ParamVisitor::visitCell(AstCell* nodep) {
 		} else {
                     AstConst* exprp = VN_CAST(pinp->exprp(), Const);
                     AstConst* origp = VN_CAST(modvarp->valuep(), Const);
-		    if (!exprp) {
-			//if (debug()) pinp->dumpTree(cout,"error:");
-			pinp->v3error("Can't convert defparam value to constant: Param "<<pinp->name()<<" of "<<nodep->prettyName());
-			pinp->exprp()->replaceWith(new AstConst(pinp->fileline(), V3Number(pinp->fileline(), modvarp->width(), 0)));
-		    } else if (origp && exprp->sameTree(origp)) {
+                    if (!exprp) {
+                        //if (debug()) pinp->dumpTree(cout,"error:");
+                        pinp->v3error("Can't convert defparam value to constant: Param "
+                                      <<pinp->name()<<" of "<<nodep->prettyName());
+                        pinp->exprp()->replaceWith(
+                            new AstConst(pinp->fileline(), V3Number(pinp, modvarp->width(), 0)));
+                    } else if (origp && exprp->sameTree(origp)) {
 			// Setting parameter to its default value.  Just ignore it.
 			// This prevents making additional modules, and makes coverage more
 			// obvious as it won't show up under a unique module page name.

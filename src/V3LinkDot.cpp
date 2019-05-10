@@ -609,8 +609,7 @@ class LinkDotFindVisitor : public AstNVisitor {
         if (literal[0] == '"') {
 	    // This is a string
             string v = literal.substr(1, literal.find('"', 1) - 1);
-            V3Number n(V3Number::VerilogStringLiteral(), fl, v);
-            return new AstConst(fl,n);
+            return new AstConst(fl, AstConst::VerilogStringLiteral(), v);
         } else if ((literal.find('.') != string::npos)
                    || (literal.find('e') != string::npos)) {
 	    // This may be a real
@@ -629,12 +628,10 @@ class LinkDotFindVisitor : public AstNVisitor {
             // the Verilog literal parser.
             char* endp;
             int v = strtol(literal.c_str(), &endp, 0);
-            if ((v != 0) && (endp[0] == 0)) { // C literal
-                V3Number n(fl, 32, v);
-                return new AstConst(fl, n);
-            } else { // Try a Verilog literal (fatals if not)
-                V3Number n(fl, literal.c_str());
-                return new AstConst(fl, n);
+            if ((v != 0) && (endp[0] == 0)) {  // C literal
+                return new AstConst(fl, AstConst::WidthedValue(), 32, v);
+            } else {  // Try a Verilog literal (fatals if not)
+                return new AstConst(fl, AstConst::StringToParse(), literal.c_str());
             }
         }
 	return NULL;

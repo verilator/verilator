@@ -84,6 +84,11 @@ const char* AstNodeClassDType::broken() const {
     return NULL;
 }
 
+void AstNodeCond::numberOperate(V3Number& out, const V3Number& lhs,
+                                const V3Number& rhs, const V3Number& ths) {
+    if (lhs.isNeqZero()) out.opAssign(rhs); else out.opAssign(ths);
+}
+
 int AstBasicDType::widthAlignBytes() const {
     if (width()<=8) return 1;
     else if (width()<=16) return 2;
