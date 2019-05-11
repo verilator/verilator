@@ -1533,7 +1533,7 @@ ensure that X E<rarr> 1 triggers a C<posedge>.
 B<Note.> Some users have reported that using this option can affect
 convergence, and that it may be necessary to use --converge-limit to
 increase the number of convergence iterations. This may be another
-indication of problems with the modelled design that should be addressed.
+indication of problems with the modeled design that should be addressed.
 
 =item --xml-only
 
@@ -1604,7 +1604,7 @@ posedge eval() and one negedge eval().
 
 =item +verilator+rand+reset+I<value>
 
-When a model was Verilated using "-x-inital unique", sets the
+When a model was Verilated using "-x-initial unique", sets the
 initialization technique.  0 = Reset to zeros. 1 = Reset to all-ones.  2 =
 Randomize.  See L</"Unknown states">.
 
@@ -2353,7 +2353,7 @@ provides one of those threads, and the generated model will create and
 manage the other N-1 threads. It's the client's responsibility not to
 oversubscribe the available CPU cores. Under CPU oversubscription, the
 Verilated model should not livelock nor deadlock, however, you can expect
-performance to be far worse than it would be with proper stoichiometry of
+performance to be far worse than it would be with proper ratio of
 threads and CPU cores.
 
 With --trace-fst-thread, tracing occurs in a separate thread from the main
@@ -2404,7 +2404,7 @@ completing after the $stop or $finish.
 If using --coverage, the coverage routines are fully thread safe.
 
 If using --dpi, Verilator assumes pure DPI imports are thread safe,
-balancing performance versus saftey. See --threads-dpi.
+balancing performance versus safety. See --threads-dpi.
 
 If using --savable, the save/restore classes are not multithreaded and are
 must be called only by the eval thread.
@@ -2909,7 +2909,7 @@ clock pins to be sc_clocks and this is no longer needed.
 
 Used after a port declaration.  It sets the port to be of sc_bv<I<width>>
 type, instead of bool, vluint32_t or vluint64_t.  This may be useful if
-the port width is parametrized and different of such modules interface
+the port width is parameterized and different of such modules interface
 a templated module (such as a transactor) or for other reasons.  In general
 you should avoid using this attribute when not necessary as with increasing
 usage of sc_bv the performance increases significantly.
@@ -3300,7 +3300,7 @@ $value$plusargs.
 
 Not supported as Verilator needs to determine all formatting at compile
 time.  Generally you can just ifdef them out for no ill effect.  Note also
-VL_TIME_MULTIPLER can be defined at compile time to move the decimal point
+VL_TIME_MULTIPLIER can be defined at compile time to move the decimal point
 when displaying all times, model wide.
 
 =back

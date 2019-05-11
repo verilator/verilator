@@ -302,7 +302,7 @@ serial mode; that is a possible area for improvement.)
 
 =item C<Wave Scheduling>
 
-To allow the verilated model to run in parallel with the testbench, it
+To allow the Verilated model to run in parallel with the testbench, it
 might be nice to support "wave" scheduling, in which work on a cycle begins
 before eval() is called or continues after eval() returns.  For now all
 work on a cycle happens during the eval() call, leaving Verilator's threads
@@ -826,7 +826,7 @@ level. For example after inlining:
 
 The textual name of this node AST type (always in capitals). Many of these
 correspond directly to Verilog entities (for example C<MODULE> and
-C<TASK>), but others are internal to Verialtor (for example C<NETLIST> and
+C<TASK>), but others are internal to Verilator (for example C<NETLIST> and
 C<BASICDTYPE>).
 
 =item Address of the node

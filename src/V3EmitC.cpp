@@ -373,7 +373,7 @@ public:
 	puts("VL_FCLOSE_I(");
         iterateAndNextNull(nodep->filep());
 	puts("); ");
-        iterateAndNextNull(nodep->filep());  // For saftey, so user doesn't later WRITE with it.
+        iterateAndNextNull(nodep->filep());  // For safety, so user doesn't later WRITE with it.
 	puts("=0;\n");
     }
     virtual void visit(AstFFlush* nodep) {

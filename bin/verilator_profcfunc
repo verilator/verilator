@@ -212,7 +212,7 @@ verilator_profcfunc - Read gprof report created with --prof-cfuncs
 =head1 DESCRIPTION
 
 Verilator_profcfunc reads a profile report created by gprof.  The names of
-the functions are then transformed, assuming the user used verilator's
+the functions are then transformed, assuming the user used Verilator's
 --prof-cfuncs, and a report printed showing the percentage of time, etc,
 in each Verilog block.
 

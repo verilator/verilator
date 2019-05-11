@@ -2368,7 +2368,7 @@ public:
 };
 
 class AstCondBound : public AstNodeCond {
-    // Conditional ?: statement, specially made for saftey checking of array bounds
+    // Conditional ?: statement, specially made for safety checking of array bounds
     // Parents:  MATH
     // Children: MATH
 public:
