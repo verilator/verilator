@@ -77,11 +77,11 @@ public:
         fstWriterClose(m_fst);
         m_fst = NULL;
     }
-    // void set_time_unit(const char* unitp);  ///< Set time units (s/ms, defaults to ns)
-    // void set_time_unit(const std::string& unit) { set_time_unit(unit.c_str()); }
+    void set_time_unit(const char* unitp) { fstWriterSetTimescaleFromString(m_fst, unitp); }
+    void set_time_unit(const std::string& unit) { set_time_unit(unit.c_str()); }
 
-    // void set_time_resolution(const char* unitp);  ///< Set time resolution (s/ms, defaults to ns)
-    // void set_time_resolution(const std::string& unit) { set_time_resolution(unit.c_str()); }
+    void set_time_resolution(const char* unitp) { if (unitp) {} }
+    void set_time_resolution(const std::string& unit) { set_time_resolution(unit.c_str()); }
 
     // double timescaleToDouble(const char* unitp);
     // std::string doubleToTimescale(double value);
@@ -216,11 +216,11 @@ public:
     void dump(int timestamp) { dump(static_cast<vluint64_t>(timestamp)); }
     /// Set time units (s/ms, defaults to ns)
     /// See also VL_TIME_PRECISION, and VL_TIME_MULTIPLIER in verilated.h
-    void set_time_unit(const char* unit) { /* TODO */ }
+    void set_time_unit(const char* unitp) { m_sptrace.set_time_unit(unitp); }
     void set_time_unit(const std::string& unit) { set_time_unit(unit.c_str()); }
     /// Set time resolution (s/ms, defaults to ns)
     /// See also VL_TIME_PRECISION, and VL_TIME_MULTIPLIER in verilated.h
-    void set_time_resolution(const char* unit) { /* TODO */ }
+    void set_time_resolution(const char* unitp) { m_sptrace.set_time_resolution(unitp); }
     void set_time_resolution(const std::string& unit) { set_time_resolution(unit.c_str()); }
 
     /// Internal class access

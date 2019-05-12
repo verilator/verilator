@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.015 devel
 
+****  Support VerilatedFstC set_time_unit, bug1433. [Pieter Kapsenberg]
+
 
 * Verilator 4.014 2019-05-08
 
