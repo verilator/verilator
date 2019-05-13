@@ -276,9 +276,10 @@ private:
 	    this->visit(varrefp);
 	    m_rightClkWidth = varrefp->width();
 	    if (varrefp->varp()->attrClocker() == AstVarAttrClocker::CLOCKER_YES) {
-		if (m_inClocked) {
-		    varrefp->v3warn(CLKDATA, "Clock used as data (on rhs of assignment) in sequential block "<<varrefp<<endl);
-		} else {
+                if (m_inClocked) {
+                    varrefp->v3warn(CLKDATA, "Clock used as data (on rhs of assignment) in sequential block "
+                                    <<varrefp->prettyName()<<endl);
+                } else {
 		    m_hasClk = true;
 		    UINFO(5, "node is already marked as clocker "<<varrefp<<endl);
 		}
