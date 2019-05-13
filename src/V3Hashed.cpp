@@ -217,4 +217,3 @@ V3Hashed::iterator V3Hashed::findDuplicate(AstNode* nodep, V3HashedUserCheck* ch
     }
     return end();
 }
-

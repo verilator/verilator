@@ -89,4 +89,3 @@ module mycheck (/*AUTOARG*/
       $finish;
    end
 endmodule
-

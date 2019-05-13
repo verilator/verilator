@@ -49,4 +49,3 @@ module sub (/*AUTOARG*/
    endgenerate
 
 endmodule
-

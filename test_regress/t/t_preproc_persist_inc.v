@@ -7,4 +7,3 @@
  `define COMMON_GUARD 1
 Inside `__FILE__.
 `endif
-

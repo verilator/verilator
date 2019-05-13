@@ -8,10 +8,9 @@ module top
   (
    output logic [1:0] q,
    input logic [1:0]  d,
-   input logic 	      clk
+   input logic        clk
    );
 
-   genvar 	     i;
-   assign 	     q[i] = d[i];
+   genvar             i;
+   assign            q[i] = d[i];
 endmodule
-

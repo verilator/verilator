@@ -23,4 +23,3 @@ module t (
    initial struct2 = 64'h123456789_abcdef0;
    always_comb s2 = struct2;
 endmodule
-

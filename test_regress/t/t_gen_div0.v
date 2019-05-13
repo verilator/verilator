@@ -36,4 +36,3 @@ module Test ();
         end
    endgenerate
 endmodule
-

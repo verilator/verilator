@@ -186,5 +186,4 @@ class V3LanguageWords {
     }
 };
 
-#endif // Guard
-
+#endif  // Guard

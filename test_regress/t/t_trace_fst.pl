@@ -19,4 +19,3 @@ vcd_identical("$Self->{obj_dir}/simx-fst2vcd.vcd", $Self->{golden_filename});
 
 ok(1);
 1;
-

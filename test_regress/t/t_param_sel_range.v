@@ -46,5 +46,3 @@ module submod (/*AUTOARG*/
    wire out = r_rst[STAGES-1];
 
 endmodule
-
-

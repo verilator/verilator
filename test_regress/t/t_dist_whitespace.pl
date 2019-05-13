@@ -22,9 +22,14 @@ foreach my $file (sort keys %files) {
         # Ignore golden files
     } elsif ($contents =~ /[\001\002\003\004\005\006]/) {
         # Ignore binrary files
-    } elsif ($contents =~ /[ \t]\n/) {
+    } elsif ($contents =~ /[ \t]\n/
+             || $contents =~ m/\n\n+$/) {  # Regexp repeated below
+        my $eol_ws_exempt = ($file =~ /(\.txt|\.html)$/
+                             || $file =~ m!^README$!
+                             || $file =~ m!/gtkwave/!);
         if ($ENV{HARNESS_UPDATE_GOLDEN}) {
             $contents =~ s/[ \t]+\n/\n/g;
+            $contents =~ s/\n\n+$/\n/g unless $eol_ws_exempt;
             $warns{$file} = "Updated whitespace at $file";
             write_wholefile($filename, $contents);
             next;
@@ -40,6 +45,9 @@ foreach my $file (sort keys %files) {
                 $warns{$file} = "Trailing whitespace at $file:$line_no";
                 $warns{$file} .= " (last character is ASCII " . ord(substr($line, -1, 1)) . ")";
             }
+        }
+        if ($contents =~ m/\n\n+$/ && !$eol_ws_exempt) {  # Regexp repeated above
+            $warns{$file} = "Trailing newlines at EOF in $file";
         }
     }
 }

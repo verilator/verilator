@@ -97,4 +97,3 @@ module drv4
    assign datao = colSelB & colSelA & colSelC & colSelD;
 
 endmodule
-

@@ -276,4 +276,3 @@ module clz(
   assign out = {4'b0000, clz_byte1};
 
 endmodule // clz
-

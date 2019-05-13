@@ -17,4 +17,3 @@ module t;
    wire C = 15'd1234;
 
 endmodule
-
