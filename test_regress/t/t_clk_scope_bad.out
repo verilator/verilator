@@ -1,0 +1,3 @@
+%Warning-CLKDATA: t/t_clk_scope_bad.v:35: Clock used as data (on rhs of assignment) in sequential block clk
+%Warning-CLKDATA: Use "/* verilator lint_off CLKDATA */" and lint_on around source to disable this message.
+%Error: Exiting due to
