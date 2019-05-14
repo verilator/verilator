@@ -59,7 +59,7 @@ foreach my $sw (@ARGV) {
 }
 
 Getopt::Long::config("no_auto_abbrev","pass_through");
-if (! GetOptions (
+if (! GetOptions(
           # Major operating modes
           "help"        => \&usage,
           "debug:s"     => \&debug,
@@ -187,9 +187,9 @@ sub run {
             warn "%Error: $command\n";
         }
         if ($status & 127) {
-            if (($status & 127) == 4 # SIGILL
-                || ($status & 127) == 8 # SIGFPA
-                || ($status & 127) == 11) { # SIGSEGV
+            if (($status & 127) == 4  # SIGILL
+                || ($status & 127) == 8  # SIGFPA
+                || ($status & 127) == 11) {  # SIGSEGV
                 warn "%Error: Verilator internal fault, sorry.  Consider trying --debug --gdbbt\n" if !$Debug;
             } elsif (($status & 127) == 6) {  # SIGABRT
                 warn "%Error: Verilator aborted.  Consider trying --debug --gdbbt\n" if !$Debug;
@@ -199,9 +199,9 @@ sub run {
         }
         if ($opt_quiet_exit) {
             # Same return code as die
-            exit $! if $!;              # errno
-            exit $? >> 8 if $? >> 8;    # child exit status
-            exit 255;                   # last resort
+            exit $! if $!;  # errno
+            exit $? >> 8 if $? >> 8;  # child exit status
+            exit 255;  # last resort
         } else {
             die "%Error: Command Failed $command\n";
         }
