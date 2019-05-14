@@ -1303,35 +1303,52 @@ void VL_WRITEMEM_N(
     const std::string& filename,  // Output file name
     const void* memp,  // Array state
     IData start,  // First array row address to write
-    IData end  // Last address to write
+    IData end  // Last address to write, or ~0 when not specified
     ) VL_MT_SAFE {
     if (VL_UNLIKELY(!hex)) {
         VL_FATAL_MT(filename.c_str(), 0, "",
                     "VL_WRITEMEM_N only supports hex format for now, sorry!");
         return;
     }
+
+    // Calculate row address limits
+    size_t row_min = array_lsb;
+    size_t row_max = row_min + depth - 1;
+
+    // Normalize the last address argument: ~0 => row_max
+    size_t nend = (end == ~0u) ? row_max : end;
+
+    // Bounds check the write address range
+    if (VL_UNLIKELY((start < row_min) || (start > row_max)
+                    || (nend < row_min) ||  (nend > row_max))) {
+        VL_FATAL_MT(filename.c_str(), 0, "",
+                    "$writemem specified address out-of-bounds");
+        return;
+    }
+
+    if (VL_UNLIKELY(start > nend)) {
+        VL_FATAL_MT(filename.c_str(), 0, "",
+                    "$writemem invalid address range");
+        return;
+    }
+
+    // Calculate row offset range
+    size_t row_start = start - row_min;
+    size_t row_end   = nend  - row_min;
+
+    // Bail out on possible 32-bit size_t overflow
+    if (VL_UNLIKELY(row_end + 1 == 0)) {
+        VL_FATAL_MT(filename.c_str(), 0, "", "$writemem address is too large");
+        return;
+    }
+
     FILE* fp = fopen(filename.c_str(), "w");
     if (VL_UNLIKELY(!fp)) {
         VL_FATAL_MT(filename.c_str(), 0, "", "$writemem file not found");
         return;
     }
 
-    for (int row_addr = start; row_addr <= end; ++row_addr) {
-        if ((row_addr < array_lsb)
-            || (row_addr > array_lsb + depth - 1)) {
-            vluint32_t endmax = ~0;
-            if (end != endmax) {
-                VL_FATAL_MT(filename.c_str(), 0, "",
-                            "$writemem specified address out-of-bounds");
-            }
-            // else, it's not an error to overflow due to end == endmax,
-            // just return cleanly.
-            goto cleanup;
-        }
-
-        // Compute the offset into the memp array.
-        int row_offset = row_addr - array_lsb;
-
+    for (size_t row_offset = row_start; row_offset <= row_end; ++row_offset) {
         if (width <= 8) {
             const CData* datap
                 = &(reinterpret_cast<const CData*>(memp))[row_offset];
@@ -1380,7 +1397,6 @@ void VL_WRITEMEM_N(
         }
     }
 
-  cleanup:
     fclose(fp);
 }
 

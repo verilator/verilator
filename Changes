@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support VerilatedFstC set_time_unit, bug1433. [Pieter Kapsenberg]
 
+****  Fix sign-compare warning in verilated.cpp, bug1437. [Sergey Kvachonok]
+
 
 * Verilator 4.014 2019-05-08
 
