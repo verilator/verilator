@@ -42,6 +42,7 @@ autoflush STDERR 1;
 $Debug = 0;
 my $opt_gdb;
 my $opt_gdbbt;
+my $opt_quiet_exit;
 
 # No arguments can't do anything useful.  Give help
 if ($#ARGV < 0) {
@@ -58,7 +59,7 @@ foreach my $sw (@ARGV) {
 }
 
 Getopt::Long::config("no_auto_abbrev","pass_through");
-if (! GetOptions(
+if (! GetOptions (
           # Major operating modes
           "help"        => \&usage,
           "debug:s"     => \&debug,
@@ -66,6 +67,7 @@ if (! GetOptions(
           # Switches
           "gdb!"        => \$opt_gdb,
           "gdbbt!"      => \$opt_gdbbt,
+          "quiet-exit!" => \$opt_quiet_exit,
           # Additional parameters
           "<>"          => sub {},      # Ignored
     )) {
@@ -195,7 +197,14 @@ sub run {
                 warn "%Error: Verilator threw signal $status.  Consider trying --debug --gdbbt\n" if !$Debug;
             }
         }
-        die "%Error: Command Failed $command\n";
+        if ($opt_quiet_exit) {
+            # Same return code as die
+            exit $! if $!;              # errno
+            exit $? >> 8 if $? >> 8;    # child exit status
+            exit 255;                   # last resort
+        } else {
+            die "%Error: Command Failed $command\n";
+        }
     }
 }
 
@@ -346,6 +355,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --private                   Debugging; see docs
     --public                    Debugging; see docs
      -pvalue+<name>=<value>     Overwrite toplevel parameter
+    --quiet-exit                Don't print the command on failure
     --relative-includes         Resolve includes relative to current file
     --no-relative-cfuncs        Disallow 'this->' in generated functions
     --report-unoptflat          Extra diagnostics for UNOPTFLAT
@@ -1156,6 +1166,10 @@ inlining.  This will also turn off inlining as if all modules had a
 
 Overwrites the given parameter(s) of the toplevel module. See -G for a
 detailed description.
+
+=item --quiet-exit
+
+When exiting due to an error, do not display the "Command Failed" message.
 
 =item --relative-includes
 

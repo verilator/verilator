@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.015 devel
 
+***   Add --quiet-exit, bug1436. [Todd Strader]
+
 ****  Support VerilatedFstC set_time_unit, bug1433. [Pieter Kapsenberg]
 
 ****  Fix sign-compare warning in verilated.cpp, bug1437. [Sergey Kvachonok]

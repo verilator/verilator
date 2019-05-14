@@ -1014,6 +1014,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
 	    else if ( !strcmp (sw, "-gdbbt")) {
 		// Used only in perl shell
 	    }
+            else if ( !strcmp (sw, "-quiet-exit")) {
+                // Used only in perl shell
+            }
 	    else if ( !strcmp (sw, "-mod-prefix") && (i+1)<argc ) {
 		shift; m_modPrefix = argv[i];
 	    }
