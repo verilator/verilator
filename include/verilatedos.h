@@ -36,6 +36,8 @@
 #ifdef __GNUC__
 # define VL_ATTR_ALIGNED(alignment) __attribute__ ((aligned (alignment)))
 # define VL_ATTR_ALWINLINE __attribute__ ((always_inline))
+# define VL_ATTR_COLD __attribute__ ((cold))
+# define VL_ATTR_HOT __attribute__ ((hot))
 # define VL_ATTR_NORETURN __attribute__ ((noreturn))
 # define VL_ATTR_PRINTF(fmtArgNum) __attribute__ ((format (printf, (fmtArgNum), (fmtArgNum)+1)))
 # define VL_ATTR_PURE __attribute__ ((pure))
@@ -69,6 +71,12 @@
 #endif
 #ifndef VL_ATTR_ALWINLINE
 # define VL_ATTR_ALWINLINE              ///< Inline, even when not optimizing
+#endif
+#ifndef VL_ATTR_COLD
+# define VL_ATTR_COLD                   ///< Function is rarely executed
+#endif
+#ifndef VL_ATTR_HOT
+# define VL_ATTR_HOT                    ///< Function is highly executed
 #endif
 #ifndef VL_ATTR_NORETURN
 # define VL_ATTR_NORETURN               ///< Function does not ever return

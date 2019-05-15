@@ -1034,15 +1034,15 @@ developers.
 
 =item --output-split I<bytes>
 
-Enables splitting the output .cpp files into multiple outputs.  When a
-C++ file exceeds the specified number of operations, a new file will be
-created at the next function boundary.  In addition, any slow routines will
-be placed into __Slow files.  This accelerates compilation by as
-optimization can be disabled on the slow routines, and the remaining files
-can be compiled on parallel machines.  Using --output-split should have
-only a trivial impact on performance.  With GCC 3.3 on a 2GHz Opteron,
---output-split 20000 will result in splitting into approximately
-one-minute-compile chunks.
+Enables splitting the output .cpp files into multiple outputs.  When a C++
+file exceeds the specified number of operations, a new file will be created
+at the next function boundary.  In addition, any infrequently executed
+"cold" routines will be placed into __Slow files.  This accelerates
+compilation by as optimization can be disabled on the routines in __Slow,
+and the remaining files can be compiled on parallel machines.  Using
+--output-split should have only a trivial impact on performance.  With GCC
+3.3 on a 2GHz Opteron, --output-split 20000 will result in splitting into
+approximately one-minute-compile chunks.
 
 =item --output-split-cfuncs I<statements>
 
@@ -1871,7 +1871,7 @@ For -cc and -sc mode, it also creates:
 
     {prefix}.cpp                        // Top level C++ file
     {prefix}.h                          // Top level header
-    {prefix}__Slow{__n}.cpp             // Constructors and infrequent routines
+    {prefix}__Slow{__n}.cpp             // Constructors and infrequent cold routines
     {prefix}{__n}.cpp                   // Additional top C++ files (--output-split)
     {prefix}{each_verilog_module}.cpp   // Lower level internal C++ files
     {prefix}{each_verilog_module}.h     // Lower level internal header files

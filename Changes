@@ -10,6 +10,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix sign-compare warning in verilated.cpp, bug1437. [Sergey Kvachonok]
 
+****  Mark infrequently called functions with GCC cold attribute.
+
 
 * Verilator 4.014 2019-05-08
 

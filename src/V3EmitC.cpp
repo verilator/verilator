@@ -2367,7 +2367,9 @@ void EmitCImp::emitIntFuncDecls(AstNodeModule* modp) {
             if (funcp->ifdef()!="") puts("#ifdef "+funcp->ifdef()+"\n");
             if (funcp->isStatic().trueU()) puts("static ");
             puts(funcp->rtnTypeVoid()); puts(" ");
-	    puts(funcp->name()); puts("("+cFuncArgs(funcp)+");\n");
+	    puts(funcp->name()); puts("("+cFuncArgs(funcp)+")");
+	    if (funcp->slow()) puts(" VL_ATTR_COLD");
+	    puts(";\n");
 	    if (funcp->ifdef()!="") puts("#endif // "+funcp->ifdef()+"\n");
 	}
     }
