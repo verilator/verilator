@@ -170,7 +170,7 @@ public:
 	fileline()->v3errorEnd(str);
     }
 
-    const char* tokenName(int tok);
+    static const char* tokenName(int tok);
     void debugToken(int tok, const char* cmtp);
     void parseTop();
     void parseUndef();

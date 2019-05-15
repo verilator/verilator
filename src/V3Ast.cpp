@@ -690,9 +690,6 @@ void AstNode::deleteNode() {
     // and we can debug easier.
 }
 
-AstNode::~AstNode() {
-}
-
 void AstNode::deleteTreeIter() {
     // private: Delete list of nodes. Publicly call deleteTree() instead.
     // Audited to make sure this is never NULL

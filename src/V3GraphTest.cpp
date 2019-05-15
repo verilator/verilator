@@ -327,8 +327,11 @@ public:
 
 class V3GraphTestImport : public V3GraphTest {
 
-    // cppcheck-suppress functionConst
+#ifdef GRAPH_IMPORT
     void dotImport();
+#else
+    void dotImport() {}
+#endif
 
 public:
     virtual string name() { return "import"; }
@@ -344,11 +347,8 @@ public:
     }
 };
 
-#if 0
+#ifdef GRAPH_IMPORT
 # include "graph_export.cpp"
-#else
-void V3GraphTestImport::dotImport() {
-}
 #endif
 
 //======================================================================

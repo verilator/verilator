@@ -1229,7 +1229,7 @@ public:
     bool	brokeExistsAbove() const;
 
     // CONSTRUCTORS
-    virtual ~AstNode();
+    virtual ~AstNode() {}
 #ifdef VL_LEAK_CHECKS
     static void* operator new(size_t size);
     static void operator delete(void* obj, size_t size);

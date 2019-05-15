@@ -287,8 +287,8 @@ void V3Number::setNames(AstNode* nodep) {
 
 int V3Number::log2b(uint32_t num) {
     // See also opCLog2
-    for (int bit=31; bit>0; bit--) if (num & (VL_ULL(1)<<bit)) return(bit);
-    return(0);
+    for (int bit=31; bit>0; bit--) if (num & (VL_ULL(1)<<bit)) return bit;
+    return 0;
 }
 
 //======================================================================
