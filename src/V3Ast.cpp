@@ -1067,7 +1067,9 @@ void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump) {
     editCountSetLast();
 }
 
-void AstNode::v3errorEndFatal(std::ostringstream& str) const { v3errorEnd(str); assert(0); }
+void AstNode::v3errorEndFatal(std::ostringstream& str) const {
+    v3errorEnd(str); assert(0); VL_UNREACHABLE
+}
 
 void AstNode::v3errorEnd(std::ostringstream& str) const {
     if (!m_fileline) {

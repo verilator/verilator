@@ -172,6 +172,8 @@ private:
 };
 std::ostream& operator<<(std::ostream& os, FileLine* fileline);
 
-inline void FileLine::v3errorEndFatal(std::ostringstream& str) { v3errorEnd(str); assert(0); }
+inline void FileLine::v3errorEndFatal(std::ostringstream& str) {
+    v3errorEnd(str); assert(0); VL_UNREACHABLE
+}
 
-#endif // Guard
+#endif  // Guard

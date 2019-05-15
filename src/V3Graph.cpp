@@ -147,7 +147,7 @@ void V3GraphVertex::v3errorEnd(std::ostringstream& str) const {
     }
 }
 void V3GraphVertex::v3errorEndFatal(std::ostringstream& str) const {
-    v3errorEnd(str); assert(0);
+    v3errorEnd(str); assert(0); VL_UNREACHABLE
 }
 
 std::ostream& operator<<(std::ostream& os, V3GraphVertex* vertexp) {
