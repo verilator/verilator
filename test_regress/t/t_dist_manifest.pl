@@ -10,7 +10,6 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(dist => 1);
 
 my $root = "..";
-my $Debug;
 
 ### Must trim output before and after our file list
 my %files = %{get_manifest_files($root)};
@@ -33,18 +32,35 @@ foreach my $file (sort keys %files) {
     }
 }
 
+# The repo may be a Git worktree
+my $git_dir = `cd $root ; git rev-parse --git-common-dir`;
+chomp $git_dir;
+if (! -d $git_dir) {
+    $git_dir = ".git";
+}
+
+# Ignore files localy excluded
+my $git_exclude = `cd $root && git ls-files --others --ignored --exclude-from $git_dir/info/exclude`;
+foreach my $exclude (split /\s+/, $git_exclude) {
+    if (exists $files{$exclude}) {
+	$files{$exclude} |= 8;
+    }
+}
+
 my %warns;
 foreach my $file (sort keys %files) {
     my $tar = $files{$file}&1;
     my $dir = $files{$file}&2;
     my $skip = $files{$file}&4;
+    my $exclude = $files{$file}&8;
 
     print +(($tar ? "TAR ":"    ")
             .($dir ? "DIR ":"    ")
             .($skip ? "SKIP ":"     ")
-            ."  $file\n") if $Debug;
+            .($exclude ? "EXCL ":"     ")
+            ."  $file\n") if $Self->{verbose};
 
-    if ($dir && !$tar && !$skip) {
+    if ($dir && !$tar && !$skip && !$exclude) {
         $warns{$file} = "File not in manifest or MANIFEST.SKIP: $file";
     } elsif (!$dir && $tar && !$skip) {
         $warns{$file} = "File in manifest, but not directory: $file";
