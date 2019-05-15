@@ -71,9 +71,11 @@ VerilatedImp VerilatedImp::s_s;
 #ifndef VL_USER_FINISH  ///< Define this to override this function
 void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
     if (0 && hier) {}
-    VL_PRINTF("- %s:%d: Verilog $finish\n", filename, linenum);  // Not VL_PRINTF_MT, already on main thread
+    VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
+        "- %s:%d: Verilog $finish\n", filename, linenum);
     if (Verilated::gotFinish()) {
-        VL_PRINTF("- %s:%d: Second verilog $finish, exiting\n", filename, linenum);  // Not VL_PRINTF_MT, already on main thread
+        VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
+            "- %s:%d: Second verilog $finish, exiting\n", filename, linenum);
         Verilated::flushCall();
         exit(0);
     }
@@ -93,7 +95,8 @@ void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
 void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_UNSAFE {
     if (0 && hier) {}
     Verilated::gotFinish(true);
-    VL_PRINTF("%%Error: %s:%d: %s\n", filename, linenum, msg);  // Not VL_PRINTF_MT, already on main thread
+    VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
+        "%%Error: %s:%d: %s\n", filename, linenum, msg);
     Verilated::flushCall();
 
     VL_PRINTF("Aborting...\n");  // Not VL_PRINTF_MT, already on main thread
@@ -167,7 +170,8 @@ vluint64_t _vl_dbg_sequence_number() VL_MT_SAFE {
 
 vluint32_t VL_THREAD_ID() VL_MT_SAFE {
 #ifdef VL_THREADED
-    // Alternative is to use std::this_thread::get_id, but that returns a hard-to-read number and is very slow
+    // Alternative is to use std::this_thread::get_id, but that returns a
+    // hard-to-read number and is very slow
     static std::atomic<vluint32_t> s_nextId(0);
     static VL_THREAD_LOCAL vluint32_t t_myId = ++s_nextId;
     return t_myId;
@@ -338,7 +342,8 @@ void _VL_DEBUG_PRINT_W(int lbits, WDataInP iwp) VL_MT_SAFE {
 //===========================================================================
 // Slow math
 
-WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, bool is_modulus) VL_MT_SAFE {
+WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp,
+                       bool is_modulus) VL_MT_SAFE {
     // See Knuth Algorithm D.  Computes u/v = q.r
     // This isn't massively tuned, as wide division is rare
     // for debug see V3Number version
@@ -398,7 +403,8 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, boo
     // Main loop
     for (int j = uw - vw; j >= 0; --j) {
         // Estimate
-        vluint64_t unw64 = (static_cast<vluint64_t>(un[j+vw])<<VL_ULL(32) | static_cast<vluint64_t>(un[j+vw-1]));
+        vluint64_t unw64 = (static_cast<vluint64_t>(un[j+vw])<<VL_ULL(32)
+                            | static_cast<vluint64_t>(un[j+vw-1]));
         vluint64_t qhat = unw64 / static_cast<vluint64_t>(vn[vw-1]);
         vluint64_t rhat = unw64 - qhat*static_cast<vluint64_t>(vn[vw-1]);
 
@@ -447,7 +453,8 @@ WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, boo
     }
 }
 
-WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
+WDataOutP VL_POW_WWW(int obits, int, int rbits,
+                     WDataOutP owp, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
     // obits==lbits, rbits can be different
     owp[0] = 1;
     for (int i=1; i < VL_WORDS_I(obits); i++) owp[i] = 0;
@@ -469,7 +476,8 @@ WDataOutP VL_POW_WWW(int obits, int, int rbits, WDataOutP owp, WDataInP lwp, WDa
     }
     return owp;
 }
-WDataOutP VL_POW_WWQ(int obits, int lbits, int rbits, WDataOutP owp, WDataInP lwp, QData rhs) VL_MT_SAFE {
+WDataOutP VL_POW_WWQ(int obits, int lbits, int rbits,
+                     WDataOutP owp, WDataInP lwp, QData rhs) VL_MT_SAFE {
     WData rhsw[2];  VL_SET_WQ(rhsw, rhs);
     return VL_POW_WWW(obits, lbits, rbits, owp, lwp, rhsw);
 }
@@ -512,7 +520,8 @@ WDataOutP VL_POWSS_WWQ(int obits, int lbits, int rbits,
     WData rhsw[2];  VL_SET_WQ(rhsw, rhs);
     return VL_POWSS_WWW(obits, lbits, rbits, owp, lwp, rhsw, lsign, rsign);
 }
-QData VL_POWSS_QQW(int obits, int, int rbits, QData lhs, WDataInP rwp, bool lsign, bool rsign) VL_MT_SAFE {
+QData VL_POWSS_QQW(int obits, int, int rbits,
+                   QData lhs, WDataInP rwp, bool lsign, bool rsign) VL_MT_SAFE {
     // Skip check for rhs == 0, as short-circuit doesn't save time
     if (rsign && VL_SIGN_W(rbits, rwp)) {
         if (lhs==0) return 0;  // "X"
@@ -805,7 +814,8 @@ static inline void _vl_vsss_advance(FILE* fp, int& floc) VL_MT_SAFE {
     if (fp) fgetc(fp);
     else floc -= 8;
 }
-static inline int  _vl_vsss_peek(FILE* fp, int& floc, WDataInP fromp, const std::string& fstr) VL_MT_SAFE {
+static inline int  _vl_vsss_peek(FILE* fp, int& floc, WDataInP fromp,
+                                 const std::string& fstr) VL_MT_SAFE {
     // Get a character without advancing
     if (fp) {
         int data = fgetc(fp);
@@ -822,7 +832,8 @@ static inline int  _vl_vsss_peek(FILE* fp, int& floc, WDataInP fromp, const std:
         }
     }
 }
-static inline void _vl_vsss_skipspace(FILE* fp, int& floc, WDataInP fromp, const std::string& fstr) VL_MT_SAFE {
+static inline void _vl_vsss_skipspace(FILE* fp, int& floc,
+                                      WDataInP fromp, const std::string& fstr) VL_MT_SAFE {
     while (1) {
         int c = _vl_vsss_peek(fp, floc, fromp, fstr);
         if (c==EOF || !isspace(c)) return;
@@ -845,16 +856,19 @@ static inline void _vl_vsss_read(FILE* fp, int& floc, WDataInP fromp, const std:
     *cp++ = '\0';
     //VL_DBG_MSGF(" _read got='"<<tmpp<<"'\n");
 }
-static inline void _vl_vsss_setbit(WDataOutP owp, int obits, int lsb, int nbits, IData ld) VL_MT_SAFE {
+static inline void _vl_vsss_setbit(WDataOutP owp, int obits, int lsb,
+                                   int nbits, IData ld) VL_MT_SAFE {
     for (; nbits && lsb<obits; nbits--, lsb++, ld>>=1) {
         VL_ASSIGNBIT_WI(0, lsb, owp, ld & 1);
     }
 }
 static inline void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2,
-                                  const char* strp, size_t posstart, size_t posend) VL_MT_SAFE {
+                                  const char* strp,
+                                  size_t posstart, size_t posend) VL_MT_SAFE {
     // Read in base "2^^baseLog2" digits from strp[posstart..posend-1] into owp of size obits.
     int lsb = 0;
-    for (int i=0, pos=static_cast<int>(posend)-1; i<obits && pos>=static_cast<int>(posstart); --pos) {
+    for (int i=0, pos = static_cast<int>(posend)-1;
+         i<obits && pos>=static_cast<int>(posstart); --pos) {
         switch (tolower (strp[pos])) {
         case 'x': case 'z': case '?':  // FALLTHRU
         case '0': lsb += baseLog2; break;
@@ -1501,8 +1515,15 @@ void VL_READMEM_N(
         if (VL_UNLIKELY(c==EOF)) break;
         //printf("%d: Got '%c' Addr%x IN%d IgE%d IgC%d ninc%d\n",
         //       linenum, c, addr, innum, ignore_to_eol, ignore_to_cmt, needinc);
-        if (c=='\n') { linenum++; ignore_to_eol=false; if (innum) reading_addr=false; innum=false; }
-        else if (c=='\t' || c==' ' || c=='\r' || c=='\f') { if (innum) reading_addr=false; innum=false; }
+        if (c=='\n') {
+            linenum++; ignore_to_eol = false;
+            if (innum) reading_addr = false;
+            innum = false;
+        }
+        else if (c=='\t' || c==' ' || c=='\r' || c=='\f') {
+            if (innum) reading_addr = false;
+            innum = false;
+        }
         // Skip // comments and detect /* comments
         else if (ignore_to_cmt && lastc=='*' && c=='/') {
             ignore_to_cmt = false; if (innum) reading_addr=false; innum=false;
@@ -1553,7 +1574,8 @@ void VL_READMEM_N(
                             *datap = ((*datap << static_cast<QData>(shift))
                                       + static_cast<QData>(value)) & VL_MASK_Q(width);
                         } else {
-                            WDataOutP datap = &(reinterpret_cast<WDataOutP>(memp))[ entry*VL_WORDS_I(width) ];
+                            WDataOutP datap = &(reinterpret_cast<WDataOutP>(memp))
+                                [ entry*VL_WORDS_I(width) ];
                             if (!innum) { VL_ZERO_RESET_W(width, datap); }
                             _VL_SHIFTL_INPLACE_W(width, datap, static_cast<IData>(shift));
                             datap[0] |= value;
@@ -1738,9 +1760,11 @@ void Verilated::debug(int level) VL_MT_SAFE {
     s_s.s_debug = level;
     if (level) {
 #ifdef VL_DEBUG
-        VL_DEBUG_IF(VL_DBG_MSGF("- Verilated::debug is on. Message prefix indicates {<thread>,<sequence_number>}.\n"););
+        VL_DEBUG_IF(VL_DBG_MSGF("- Verilated::debug is on."
+                                " Message prefix indicates {<thread>,<sequence_number>}.\n"););
 #else
-        VL_PRINTF_MT("- Verilated::debug attempted, but compiled without VL_DEBUG, so messages suppressed.\n");
+        VL_PRINTF_MT("- Verilated::debug attempted,"
+                     " but compiled without VL_DEBUG, so messages suppressed.\n");
 #endif
     }
 }
@@ -1967,11 +1991,13 @@ void VerilatedImp::commandArgVl(const std::string& arg) {
         }
         else if (arg == "+verilator+V") {
             versionDump();  // Someday more info too
-            VL_FATAL_MT("COMMAND_LINE", 0, "", "Exiting due to command line argument (not an error)");
+            VL_FATAL_MT("COMMAND_LINE", 0, "",
+                        "Exiting due to command line argument (not an error)");
         }
         else if (arg == "+verilator+version") {
             versionDump();
-            VL_FATAL_MT("COMMAND_LINE", 0, "", "Exiting due to command line argument (not an error)");
+            VL_FATAL_MT("COMMAND_LINE", 0, "",
+                        "Exiting due to command line argument (not an error)");
         }
         else {
             VL_PRINTF_MT("%%Warning: Unknown +verilator runtime argument: '%s'\n", arg.c_str());
@@ -2074,7 +2100,8 @@ VerilatedScope::~VerilatedScope() {
     m_funcnumMax = 0;  // Force callback table to empty
 }
 
-void VerilatedScope::configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp) VL_MT_UNSAFE {
+void VerilatedScope::configure(VerilatedSyms* symsp, const char* prefixp,
+                               const char* suffixp) VL_MT_UNSAFE {
     // Slowpath - called once/scope at construction
     // We don't want the space and reference-count access overhead of strings.
     m_symsp = symsp;
@@ -2110,7 +2137,8 @@ void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) VL_
 void VerilatedScope::varInsert(int finalize, const char* namep, void* datap,
                                VerilatedVarType vltype, int vlflags, int dims, ...) VL_MT_UNSAFE {
     // Grab dimensions
-    // In the future we may just create a large table at emit time and statically construct from that.
+    // In the future we may just create a large table at emit time and
+    // statically construct from that.
     if (!finalize) return;
 
     if (!m_varsp) m_varsp = new VerilatedVarNameMap();

@@ -157,12 +157,18 @@ public:
         fstWriterEmitValueChange(m_fst, m_code2symbol[code], array2Str(newval, bits));
     }
 
-    void fullBit(vluint32_t code, const vluint32_t newval) { chgBit(code, newval); }
-    void fullBus(vluint32_t code, const vluint32_t newval, int bits) { chgBus(code, newval, bits); }
-    void fullDouble(vluint32_t code, const double newval) { chgDouble(code, newval); }
-    void fullFloat(vluint32_t code, const float newval) { chgFloat(code, newval); }
-    void fullQuad(vluint32_t code, const vluint64_t newval, int bits) { chgQuad(code, newval, bits); }
-    void fullArray(vluint32_t code, const vluint32_t* newval, int bits) { chgArray(code, newval, bits); }
+    void fullBit(vluint32_t code, const vluint32_t newval) {
+        chgBit(code, newval); }
+    void fullBus(vluint32_t code, const vluint32_t newval, int bits) {
+        chgBus(code, newval, bits); }
+    void fullDouble(vluint32_t code, const double newval) {
+        chgDouble(code, newval); }
+    void fullFloat(vluint32_t code, const float newval) {
+        chgFloat(code, newval); }
+    void fullQuad(vluint32_t code, const vluint64_t newval, int bits) {
+        chgQuad(code, newval, bits); }
+    void fullArray(vluint32_t code, const vluint32_t* newval, int bits) {
+        chgArray(code, newval, bits); }
 
     void declTriBit   (vluint32_t code, const char* name, int arraynum);
     void declTriBus   (vluint32_t code, const char* name, int arraynum, int msb, int lsb);

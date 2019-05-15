@@ -316,7 +316,9 @@ public:
                 m_insertp->m_vals[addKeynum] = valueIndex(val);
                 addKeynum++;
                 if (!legalKey(key)) {
-                    std::string msg = "%Error: Coverage keys of one character, or letter+digit are illegal: "+key;
+                    std::string msg
+                        = ("%Error: Coverage keys of one character, or letter+digit are illegal: "
+                           +key);
                     VL_FATAL_MT("", 0, "", msg.c_str());
                 }
             }

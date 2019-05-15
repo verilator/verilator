@@ -47,7 +47,8 @@ public:
         sc_get_curr_simcontext()->add_trace_file(this);
 # if (SYSTEMC_VERSION>=20060505)
         // We want to avoid a depreciated warning, but still be back compatible.
-        // Turning off the message just for this still results in an annoying "to turn off" message.
+        // Turning off the message just for this still results in an
+        // annoying "to turn off" message.
         sc_time t1sec(1,SC_SEC);
         if (t1sec.to_default_time_units()!=0) {
             sc_time tunits(1.0/t1sec.to_default_time_units(),SC_SEC);
@@ -69,7 +70,8 @@ public:
 # if (SYSTEMC_VERSION>20011000)
         if (!delta_cycle) { this->dump(sc_time_stamp().to_double()); }
 # else
-        // VCD files must have integer timestamps, so we write all times in increments of time_resolution
+        // VCD files must have integer timestamps, so we write all times in
+        // increments of time_resolution
         if (!delta_cycle) { this->dump(sc_time_stamp().to_double()); }
 # endif
     }

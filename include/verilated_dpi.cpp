@@ -320,7 +320,8 @@ static void _vl_svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s,
         return;
     }
     default:
-        _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n", varp->vltype());
+        _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n",
+                       varp->vltype());
         return;
     }
 }
@@ -348,7 +349,8 @@ static void _vl_svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandl
         return;
     }
     default:
-        _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n", varp->vltype());
+        _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n",
+                       varp->vltype());
         return;
     }
 }
@@ -370,7 +372,8 @@ static void _vl_svPutBitArrElemVecVal(const svOpenArrayHandle d, const svBitVecV
         return;
     }
     default:
-        _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n", varp->vltype());
+        _VL_SVDPI_WARN("%%Warning: DPI svOpenArrayHandle function unsupported datatype (%d).\n",
+                       varp->vltype());
         return;
     }
 }
@@ -707,11 +710,13 @@ void svPutLogicArrElem1(const svOpenArrayHandle d, svLogic value, int indx1) {
     // Verilator doesn't support X/Z so can just call Bit version
     svPutBitArrElem1(d, value, indx1);
 }
-void svPutLogicArrElem2(const svOpenArrayHandle d, svLogic value, int indx1, int indx2) {
+void svPutLogicArrElem2(const svOpenArrayHandle d, svLogic value,
+                        int indx1, int indx2) {
     // Verilator doesn't support X/Z so can just call Bit version
     svPutBitArrElem2(d, value, indx1, indx2);
 }
-void svPutLogicArrElem3(const svOpenArrayHandle d, svLogic value, int indx1, int indx2, int indx3) {
+void svPutLogicArrElem3(const svOpenArrayHandle d, svLogic value,
+                        int indx1, int indx2, int indx3) {
     // Verilator doesn't support X/Z so can just call Bit version
     svPutBitArrElem3(d, value, indx1, indx2, indx3);
 }

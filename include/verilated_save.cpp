@@ -61,10 +61,11 @@ bool VerilatedDeserialize::readDiffers(const void* __restrict datap, size_t size
     return (miss!=0);
 }
 
-VerilatedDeserialize& VerilatedDeserialize::readAssert(const void* __restrict datap, size_t size) VL_MT_UNSAFE_ONE {
+VerilatedDeserialize& VerilatedDeserialize::readAssert(const void* __restrict datap,
+                                                       size_t size) VL_MT_UNSAFE_ONE {
     if (VL_UNLIKELY(readDiffers(datap, size))) {
         std::string fn = filename();
-        std::string msg = std::string("Can't deserialize save-restore file as was made from different model");
+        std::string msg = "Can't deserialize save-restore file as was made from different model";
         VL_FATAL_MT(fn.c_str(), 0, "", msg.c_str());
         close();
     }

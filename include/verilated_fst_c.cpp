@@ -174,7 +174,8 @@ void VerilatedFst::addCallback(
     VerilatedFstCallback_t changecb, void* userthis) VL_MT_UNSAFE_ONE {
     m_assertOne.check();
     if (VL_UNLIKELY(isOpen())) {
-        std::string msg = std::string("Internal: ")+__FILE__+"::"+__FUNCTION__+" called with already open file";
+        std::string msg = (std::string("Internal: ")+__FILE__+"::"+__FUNCTION__
+                           +" called with already open file");
         VL_FATAL_MT(__FILE__,__LINE__,"",msg.c_str());
     }
     VerilatedFstCallInfo* vci = new VerilatedFstCallInfo(initcb, fullcb, changecb, userthis, 1);

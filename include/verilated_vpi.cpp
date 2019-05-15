@@ -417,8 +417,9 @@ public:
                 void* newDatap = varop->varDatap();
                 void* prevDatap = varop->prevDatap();  // Was malloced when we added the callback
                 VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: value_test %s v[0]=%d/%d %p %p\n",
-                                             varop->fullname(), *((CData*)newDatap), *((CData*)prevDatap),
-                                             newDatap, prevDatap););
+                                            varop->fullname(),
+                                            *((CData*)newDatap), *((CData*)prevDatap),
+                                            newDatap, prevDatap););
                 if (memcmp(prevDatap, newDatap, varop->entSize())) {
                     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: value_callback %p %s v[0]=%d\n",
                                                 vop, varop->fullname(), *((CData*)newDatap)););
@@ -454,8 +455,9 @@ class VerilatedVpiError {
             // Stop on vpi error/unsupported
             vpi_unsupported();
         }
-        // We need to run above code first because in the case that the callback executes further vpi
-        // functions we will loose the error as it will be overwritten.
+        // We need to run above code first because in the case that the
+        // callback executes further vpi functions we will loose the error
+        // as it will be overwritten.
         VerilatedVpiImp::callCbs(cbPLIError);
     }
 public:
@@ -937,16 +939,16 @@ vpiHandle vpi_register_cb(p_cb_data cb_data_p) {
         VerilatedVpiImp::cbTimedAdd(vop);
         return vop->castVpiHandle();
     }
-    case cbReadWriteSynch:              // FALLTHRU // Supported via vlt_main.cpp
-    case cbReadOnlySynch:               // FALLTHRU // Supported via vlt_main.cpp
-    case cbNextSimTime:                 // FALLTHRU // Supported via vlt_main.cpp
-    case cbStartOfSimulation:           // FALLTHRU // Supported via vlt_main.cpp
-    case cbEndOfSimulation:             // FALLTHRU // Supported via vlt_main.cpp
-    case cbValueChange:                 // FALLTHRU // Supported via vlt_main.cpp
-    case cbPLIError:                    // FALLTHRU // NOP, but need to return handle, so make object
-    case cbEnterInteractive:            // FALLTHRU // NOP, but need to return handle, so make object
-    case cbExitInteractive:             // FALLTHRU // NOP, but need to return handle, so make object
-    case cbInteractiveScopeChange: {    // FALLTHRU // NOP, but need to return handle, so make object
+    case cbReadWriteSynch:            // FALLTHRU // Supported via vlt_main.cpp
+    case cbReadOnlySynch:             // FALLTHRU // Supported via vlt_main.cpp
+    case cbNextSimTime:               // FALLTHRU // Supported via vlt_main.cpp
+    case cbStartOfSimulation:         // FALLTHRU // Supported via vlt_main.cpp
+    case cbEndOfSimulation:           // FALLTHRU // Supported via vlt_main.cpp
+    case cbValueChange:               // FALLTHRU // Supported via vlt_main.cpp
+    case cbPLIError:                  // FALLTHRU // NOP, but need to return handle, so make object
+    case cbEnterInteractive:          // FALLTHRU // NOP, but need to return handle, so make object
+    case cbExitInteractive:           // FALLTHRU // NOP, but need to return handle, so make object
+    case cbInteractiveScopeChange: {  // FALLTHRU // NOP, but need to return handle, so make object
         VerilatedVpioCb* vop = new VerilatedVpioCb(cb_data_p, 0);
         VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_register_cb %d %p\n", cb_data_p->reason, vop););
         VerilatedVpiImp::cbReasonAdd(vop);
@@ -1099,7 +1101,8 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
         if (VL_UNLIKELY(!vop)) return 0;
         if (vop->varp()->dims() < 2) return 0;
         if (vop->varp()->dims() > 2) {
-            _VL_VPI_WARNING(__FILE__, __LINE__, "%s: %s, object %s has unsupported number of indices (%d)",
+            _VL_VPI_WARNING(__FILE__, __LINE__,
+                            "%s: %s, object %s has unsupported number of indices (%d)",
                             VL_FUNC, VerilatedVpiError::strFromVpiMethod(type),
                             vop->fullname() , vop->varp()->dims());
         }
@@ -1111,7 +1114,8 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
         if (vop->varp()->dims() < 2) return 0;
         // Unsupported is multidim list
         if (vop->varp()->dims() > 2) {
-            _VL_VPI_WARNING(__FILE__, __LINE__, "%s: %s, object %s has unsupported number of indices (%d)",
+            _VL_VPI_WARNING(__FILE__, __LINE__,
+                            "%s: %s, object %s has unsupported number of indices (%d)",
                             VL_FUNC, VerilatedVpiError::strFromVpiMethod(type),
                             vop->fullname() , vop->varp()->dims());
         }
@@ -1252,7 +1256,8 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
             case VLVT_WDATA: {
                 int words = VL_WORDS_I(vop->varp()->packed().elements());
                 if (VL_UNLIKELY(words >= VL_MULS_MAX_WORDS)) {
-                    VL_FATAL_MT(__FILE__, __LINE__, "", "vpi_get_value with more than VL_MULS_MAX_WORDS; increase and recompile");
+                    VL_FATAL_MT(__FILE__, __LINE__, "",
+                                "vpi_get_value with more than VL_MULS_MAX_WORDS; increase and recompile");
                 }
                 WDataInP datap = (reinterpret_cast<IData*>(vop->varDatap()));
                 for (int i=0; i<words; ++i) {
@@ -1271,7 +1276,8 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
             }
             default: {
                 _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s",
-                              VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
+                              VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format),
+                              vop->fullname());
                 return;
             }
             }
@@ -1354,7 +1360,8 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
             default:
                 strcpy(outStr, "0");
                 _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s",
-                              VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
+                              VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format),
+                              vop->fullname());
                 return;
             }
         } else if (value_p->format == vpiDecStrVal) {
@@ -1363,19 +1370,24 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
             // outStrSz does not include NULL termination so add one
             case VLVT_UINT8:
                 VL_SNPRINTF(outStr, outStrSz+1, "%hhu",
-                            static_cast<unsigned char>(*(reinterpret_cast<CData*>(vop->varDatap())))); return;
+                            static_cast<unsigned char>(*(reinterpret_cast<CData*>(vop->varDatap()))));
+                return;
             case VLVT_UINT16:
                 VL_SNPRINTF(outStr, outStrSz+1, "%hu",
-                            static_cast<unsigned short>(*(reinterpret_cast<SData*>(vop->varDatap())))); return;
+                            static_cast<unsigned short>(*(reinterpret_cast<SData*>(vop->varDatap()))));
+                return;
             case VLVT_UINT32:
                 VL_SNPRINTF(outStr, outStrSz+1, "%u",
-                            static_cast<unsigned int>(*(reinterpret_cast<IData*>(vop->varDatap())))); return;
+                            static_cast<unsigned int>(*(reinterpret_cast<IData*>(vop->varDatap()))));
+                return;
             case VLVT_UINT64:
                 VL_SNPRINTF(outStr, outStrSz+1, "%llu",
-                            static_cast<unsigned long long>(*(reinterpret_cast<QData*>(vop->varDatap())))); return;
+                            static_cast<unsigned long long>(*(reinterpret_cast<QData*>(vop->varDatap()))));
+                return;
             default:
                 strcpy(outStr, "-1");
-                _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s, maximum limit is 64 bits",
+                _VL_VPI_ERROR(__FILE__, __LINE__,
+                              "%s: Unsupported format (%s) for %s, maximum limit is 64 bits",
                               VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
                 return;
             }
@@ -1416,7 +1428,8 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
             }
             default:
                 _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s",
-                              VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
+                              VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format),
+                              vop->fullname());
                 return;
             }
         } else if (value_p->format == vpiStringVal) {
@@ -1448,7 +1461,8 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
             }
             default:
                 _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s",
-                              VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
+                              VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format),
+                              vop->fullname());
                 return;
             }
         } else if (value_p->format == vpiIntVal) {
@@ -1467,7 +1481,8 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
             default:
                 value_p->value.integer = 0;
                 _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s",
-                              VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
+                              VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format),
+                              vop->fullname());
                 return;
             }
         } else if (value_p->format == vpiSuppressVal) {
@@ -1505,7 +1520,8 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
                         VL_DBG_MSGF("- vpi:   varp=%p  putatp=%p\n",
                                      vop->varp()->datap(), vop->varDatap()););
         if (VL_UNLIKELY(!vop->varp()->isPublicRW())) {
-            _VL_VPI_WARNING(__FILE__, __LINE__, "Ignoring vpi_put_value to signal marked read-only,"
+            _VL_VPI_WARNING(__FILE__, __LINE__,
+                            "Ignoring vpi_put_value to signal marked read-only,"
                             " use public_flat_rw instead: ",
                             vop->fullname());
             return 0;
@@ -1544,7 +1560,8 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
             }
             default: {
                 _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s",
-                              VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
+                              VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format),
+                              vop->fullname());
                 return NULL;
             }
             }
@@ -1572,7 +1589,8 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
             }
             default:
                 _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s",
-                              VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
+                              VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format),
+                              vop->fullname());
                 return 0;
             }
         } else if (value_p->format == vpiOctStrVal) {
@@ -1600,9 +1618,11 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
                         if (digit >= '0' && digit <= '7') {
                             val.half = digit-'0';
                         } else {
-                            _VL_VPI_WARNING(__FILE__, __LINE__, "%s: Non octal character '%c' in '%s' as value %s for %s",
+                            _VL_VPI_WARNING(__FILE__, __LINE__,
+                                            "%s: Non octal character '%c' in '%s' as value %s for %s",
                                             VL_FUNC, digit, value_p->value.str,
-                                            VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
+                                            VerilatedVpiError::strFromVpiVal(value_p->format),
+                                            vop->fullname());
                             val.half = 0;
                         }
                     } else {
@@ -1634,7 +1654,8 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
             }
             default:
                 _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s",
-                              VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
+                              VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format),
+                              vop->fullname());
                 return 0;
             }
         } else if (value_p->format == vpiDecStrVal) {
@@ -1642,12 +1663,15 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
             unsigned long long val;
             int success = sscanf(value_p->value.str, "%30llu%15s", &val, remainder);
             if (success < 1) {
-                _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Parsing failed for '%s' as value %s for %s",
-                              VL_FUNC, value_p->value.str, VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
+                _VL_VPI_ERROR(__FILE__, __LINE__,
+                              "%s: Parsing failed for '%s' as value %s for %s",
+                              VL_FUNC, value_p->value.str,
+                              VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
                 return 0;
             }
             if (success > 1) {
-                _VL_VPI_WARNING(__FILE__, __LINE__, "%s: Trailing garbage '%s' in '%s' as value %s for %s",
+                _VL_VPI_WARNING(__FILE__, __LINE__,
+                                "%s: Trailing garbage '%s' in '%s' as value %s for %s",
                                 VL_FUNC, remainder, value_p->value.str,
                                 VerilatedVpiError::strFromVpiVal(value_p->format),
                                 vop->fullname());
@@ -1663,8 +1687,10 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
                 (reinterpret_cast<IData*>(vop->varDatap()))[1] &= vop->mask(); break;
             case VLVT_WDATA:
             default:
-                _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported format (%s) for %s, maximum limit is 64 bits",
-                              VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format), vop->fullname());
+                _VL_VPI_ERROR(__FILE__, __LINE__,
+                              "%s: Unsupported format (%s) for %s, maximum limit is 64 bits",
+                              VL_FUNC, VerilatedVpiError::strFromVpiVal(value_p->format),
+                              vop->fullname());
                 return 0;
             }
             return object;

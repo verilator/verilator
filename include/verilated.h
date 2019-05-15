@@ -404,7 +404,8 @@ public:
     static void debug(int level) VL_MT_SAFE;
 #ifdef VL_DEBUG
     /// Return debug level
-    /// When multithreaded this may not immediately react to another thread changing the level (no mutex)
+    /// When multithreaded this may not immediately react to another thread
+    /// changing the level (no mutex)
     static inline int debug() VL_MT_SAFE { return s_s.s_debug; }
 #else
     static inline int debug() VL_PURE { return 0; }  ///< Return constant 0 debug level, so C++'s optimizer rips up
@@ -581,7 +582,8 @@ inline QData VL_RDTSC_Q() { vluint64_t val; VL_RDTSC(val); return val; }
 #endif
 
 /// Math
-extern WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp, WDataInP lwp, WDataInP rwp, bool is_modulus);
+extern WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp,
+                              WDataInP lwp, WDataInP rwp, bool is_modulus);
 
 /// File I/O
 extern IData VL_FGETS_IXI(int obits, void* destp, IData fpi);
@@ -1292,7 +1294,8 @@ static inline WDataOutP VL_ADD_W(int words, WDataOutP owp, WDataInP lwp, WDataIn
 static inline WDataOutP VL_SUB_W(int words, WDataOutP owp, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
     QData carry = 0;
     for (int i=0; i<words; ++i) {
-        carry = carry + static_cast<QData>(lwp[i]) + static_cast<QData>(static_cast<IData>(~rwp[i]));
+        carry = (carry + static_cast<QData>(lwp[i])
+                 + static_cast<QData>(static_cast<IData>(~rwp[i])));
         if (i==0) ++carry;  // Negation of temp2
         owp[i] = (carry & VL_ULL(0xffffffff));
         carry = (carry >> VL_ULL(32)) & VL_ULL(0xffffffff);
@@ -1344,7 +1347,8 @@ static inline QData VL_MULS_QQQ(int, int lbits, int, QData lhs, QData rhs) VL_PU
     return lhs_signed * rhs_signed;
 }
 
-static inline WDataOutP VL_MULS_WWW(int, int lbits, int, WDataOutP owp, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
+static inline WDataOutP VL_MULS_WWW(int, int lbits, int,
+                                    WDataOutP owp, WDataInP lwp, WDataInP rwp) VL_MT_SAFE {
     int words = VL_WORDS_I(lbits);
     // cppcheck-suppress variableScope
     WData lwstore[VL_MULS_MAX_WORDS];  // Fixed size, as MSVC++ doesn't allow [words] here
@@ -1774,7 +1778,8 @@ static inline QData VL_STREAML_QQI(int, int lbits, int, QData ld, IData rd) VL_P
     return ret;
 }
 
-static inline WDataOutP VL_STREAML_WWI(int, int lbits, int, WDataOutP owp, WDataInP lwp, IData rd) VL_MT_SAFE {
+static inline WDataOutP VL_STREAML_WWI(int, int lbits, int,
+                                       WDataOutP owp, WDataInP lwp, IData rd) VL_MT_SAFE {
     VL_ZERO_W(lbits, owp);
     // Slice size should never exceed the lhs width
     int ssize = (rd < static_cast<IData>(lbits)) ? rd : (static_cast<IData>(lbits));
@@ -1888,7 +1893,8 @@ static inline void _VL_SHIFTL_INPLACE_W(int obits, WDataOutP iowp, IData rd/*1 o
 // EMIT_RULE: VL_SHIFTL:  oclean=lclean; rclean==clean;
 // Important: Unlike most other funcs, the shift might well be a computed
 // expression.  Thus consider this when optimizing.  (And perhaps have 2 funcs?)
-static inline WDataOutP VL_SHIFTL_WWI(int obits, int, int, WDataOutP owp, WDataInP lwp, IData rd) VL_MT_SAFE {
+static inline WDataOutP VL_SHIFTL_WWI(int obits, int, int,
+                                      WDataOutP owp, WDataInP lwp, IData rd) VL_MT_SAFE {
     int word_shift = VL_BITWORD_I(rd);
     int bit_shift = VL_BITBIT_I(rd);
     if (rd >= static_cast<IData>(obits)) {  // rd may be huge with MSB set
@@ -2142,7 +2148,8 @@ static inline QData VL_SEL_QWII(int, int lbits, int, int,
 }
 
 static inline WDataOutP VL_SEL_WWII(int obits, int lbits, int, int,
-                                    WDataOutP owp, WDataInP lwp, IData lsb, IData width) VL_MT_SAFE {
+                                    WDataOutP owp, WDataInP lwp,
+                                    IData lsb, IData width) VL_MT_SAFE {
     int msb = lsb+width-1;
     int word_shift = VL_BITWORD_I(lsb);
     if (VL_UNLIKELY(msb>lbits)) {  // Outside bounds,

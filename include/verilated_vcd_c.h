@@ -268,7 +268,8 @@ public:
         *m_writep++=' '; printCode(code); *m_writep++='\n';
         bufferCheck();
     }
-    void fullTriQuad(vluint32_t code, const vluint64_t newval, const vluint32_t newtri, int bits) {
+    void fullTriQuad(vluint32_t code, const vluint64_t newval,
+                     const vluint32_t newtri, int bits) {
         (*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code]))) = newval;
         (*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code+1]))) = newtri;
         *m_writep++='b';
@@ -279,7 +280,8 @@ public:
         *m_writep++=' '; printCode(code); *m_writep++='\n';
         bufferCheck();
     }
-    void fullTriArray(vluint32_t code, const vluint32_t* newvalp, const vluint32_t* newtrip, int bits) {
+    void fullTriArray(vluint32_t code, const vluint32_t* newvalp,
+                      const vluint32_t* newtrip, int bits) {
         for (int word=0; word<(((bits-1)/32)+1); ++word) {
             m_sigs_oldvalp[code+word*2]   = newvalp[word];
             m_sigs_oldvalp[code+word*2+1] = newtrip[word];
@@ -319,7 +321,8 @@ public:
     inline void chgBit(vluint32_t code, const vluint32_t newval) {
         vluint32_t diff = m_sigs_oldvalp[code] ^ newval;
         if (VL_UNLIKELY(diff)) {
-            // Verilator 3.510 and newer provide clean input, so the below is only for back compatibility
+            // Verilator 3.510 and newer provide clean input, so the below
+            // is only for back compatibility
             if (VL_UNLIKELY(diff & 1)) {  // Change after clean?
                 fullBit(code, newval);
             }
@@ -349,17 +352,20 @@ public:
             }
         }
     }
-    inline void chgTriBit(vluint32_t code, const vluint32_t newval, const vluint32_t newtri) {
+    inline void chgTriBit(vluint32_t code, const vluint32_t newval,
+                          const vluint32_t newtri) {
         vluint32_t diff = ((m_sigs_oldvalp[code] ^ newval)
                          | (m_sigs_oldvalp[code+1] ^ newtri));
         if (VL_UNLIKELY(diff)) {
-            // Verilator 3.510 and newer provide clean input, so the below is only for back compatibility
+            // Verilator 3.510 and newer provide clean input, so the below
+            // is only for back compatibility
             if (VL_UNLIKELY(diff & 1)) {  // Change after clean?
                 fullTriBit(code, newval, newtri);
             }
         }
     }
-    inline void chgTriBus(vluint32_t code, const vluint32_t newval, const vluint32_t newtri, int bits) {
+    inline void chgTriBus(vluint32_t code, const vluint32_t newval,
+                          const vluint32_t newtri, int bits) {
         vluint32_t diff = ((m_sigs_oldvalp[code] ^ newval)
                          | (m_sigs_oldvalp[code+1] ^ newtri));
         if (VL_UNLIKELY(diff)) {
@@ -368,7 +374,8 @@ public:
             }
         }
     }
-    inline void chgTriQuad(vluint32_t code, const vluint64_t newval, const vluint32_t newtri, int bits) {
+    inline void chgTriQuad(vluint32_t code, const vluint64_t newval,
+                           const vluint32_t newtri, int bits) {
         vluint64_t diff = ( ((*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code]))) ^ newval)
                             | ((*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code+1]))) ^ newtri));
         if (VL_UNLIKELY(diff)) {
@@ -377,7 +384,8 @@ public:
             }
         }
     }
-    inline void chgTriArray(vluint32_t code, const vluint32_t* newvalp, const vluint32_t* newtrip, int bits) {
+    inline void chgTriArray(vluint32_t code, const vluint32_t* newvalp,
+                            const vluint32_t* newtrip, int bits) {
         for (int word=0; word<(((bits-1)/32)+1); ++word) {
             if (VL_UNLIKELY((m_sigs_oldvalp[code+word*2] ^ newvalp[word])
                             | (m_sigs_oldvalp[code+word*2+1] ^ newtrip[word]))) {

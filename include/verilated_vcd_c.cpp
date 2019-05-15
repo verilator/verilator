@@ -68,14 +68,17 @@ public:
     }
     static void removeVcd(const VerilatedVcd* vcdp) VL_EXCLUDES(singleton().s_vcdMutex) {
         VerilatedLockGuard lock(singleton().s_vcdMutex);
-        VcdVec::iterator pos = find(singleton().s_vcdVecp.begin(), singleton().s_vcdVecp.end(), vcdp);
+        VcdVec::iterator pos = find(singleton().s_vcdVecp.begin(),
+                                    singleton().s_vcdVecp.end(), vcdp);
         if (pos != singleton().s_vcdVecp.end()) { singleton().s_vcdVecp.erase(pos); }
     }
     static void flush_all() VL_EXCLUDES(singleton().s_vcdMutex) VL_MT_UNSAFE_ONE {
-        // Thread safety: Although this function is protected by a mutex so perhaps
-        // in the future we can allow tracing in separate threads, vcdp->flush() assumes call from single thread
+        // Thread safety: Although this function is protected by a mutex so
+        // perhaps in the future we can allow tracing in separate threads,
+        // vcdp->flush() assumes call from single thread
         VerilatedLockGuard lock(singleton().s_vcdMutex);
-        for (VcdVec::const_iterator it=singleton().s_vcdVecp.begin(); it!=singleton().s_vcdVecp.end(); ++it) {
+        for (VcdVec::const_iterator it = singleton().s_vcdVecp.begin();
+             it != singleton().s_vcdVecp.end(); ++it) {
             VerilatedVcd* vcdp = *it;
             vcdp->flush();
         }
@@ -523,7 +526,8 @@ void VerilatedVcd::module(const std::string& name) {
 
 void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep,
                            int arraynum, bool tri, bool bussed, int msb, int lsb) {
-    if (!code) { VL_FATAL_MT(__FILE__,__LINE__,"","Internal: internal trace problem, code 0 is illegal"); }
+    if (!code) { VL_FATAL_MT(__FILE__, __LINE__, "",
+                             "Internal: internal trace problem, code 0 is illegal"); }
 
     int bits = ((msb>lsb)?(msb-lsb):(lsb-msb))+1;
     int codesNeeded = 1+int(bits/32);
@@ -644,10 +648,12 @@ void VerilatedVcd::addCallback(
 {
     m_assertOne.check();
     if (VL_UNLIKELY(isOpen())) {
-        std::string msg = std::string("Internal: ")+__FILE__+"::"+__FUNCTION__+" called with already open file";
-        VL_FATAL_MT(__FILE__,__LINE__,"",msg.c_str());
+        std::string msg = std::string("Internal: ")+__FILE__+"::"+__FUNCTION__
+            +" called with already open file";
+        VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
     }
-    VerilatedVcdCallInfo* vci = new VerilatedVcdCallInfo(initcb, fullcb, changecb, userthis, m_nextCode);
+    VerilatedVcdCallInfo* vci
+        = new VerilatedVcdCallInfo(initcb, fullcb, changecb, userthis, m_nextCode);
     m_callbacks.push_back(vci);
 }
 
