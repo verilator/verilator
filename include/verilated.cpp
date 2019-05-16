@@ -642,14 +642,28 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
             }
             case 'e':
             case 'f':
-            case 'g': {
+            case 'g':
+            case '^': {  // Realtime
                 const int lbits = va_arg(ap, int);
                 double d = va_arg(ap, double);
                 if (lbits) {}  // UNUSED - always 64
-                strncpy(tmpf, pctp, pos-pctp+1);
-                tmpf[pos-pctp+1] = '\0';
-                sprintf(tmp, tmpf, d);
-                output += tmp;
+                switch (fmt) {
+                case '^': {  // Realtime
+                    int digits = sprintf(tmp, "%g", d/VL_TIME_MULTIPLIER);
+                    int needmore = width-digits;
+                    if (needmore>0) output.append(needmore, ' ');  // Pre-pad spaces
+                    output += tmp;
+                    break;
+                }
+                default: {
+                    strncpy(tmpf, pctp, pos-pctp+1);
+                    tmpf[pos-pctp+1] = '\0';
+                    sprintf(tmp, tmpf, d);
+                    output += tmp;
+                    break;
+                }
+                break;
+                }  // switch
                 break;
             }
             default: {

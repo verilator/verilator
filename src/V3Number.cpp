@@ -582,8 +582,9 @@ string V3Number::displayed(FileLine*fl, const string& vformat) const {
     }
     case 'e':
     case 'f':
-    case 'g': {
-	char tmp[MAX_SPRINTF_DOUBLE_SIZE];
+    case 'g':
+    case '^': {  // Realtime
+        char tmp[MAX_SPRINTF_DOUBLE_SIZE];
 	sprintf(tmp, vformat.c_str(), toDouble());
 	return tmp;
     }

@@ -2172,6 +2172,13 @@ private:
 		    if (argp) argp=argp->nextp();
 		    break;
 		}
+                case 't': {  // Convert decimal time to realtime
+                    if (argp && argp->isDouble()) {  // Convert it
+                        ch = '^';
+                    }
+                    if (argp) argp = argp->nextp();
+                    break;
+                }
 		default: {  // Most operators, just move to next argument
 		    if (argp) argp=argp->nextp();
 		    break;

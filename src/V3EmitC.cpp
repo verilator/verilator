@@ -1638,8 +1638,9 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep,
 	    case 's': displayArg(nodep,&elistp,isScan, vfmt,'s'); break;
 	    case 'e': displayArg(nodep,&elistp,isScan, vfmt,'e'); break;
 	    case 'f': displayArg(nodep,&elistp,isScan, vfmt,'f'); break;
-	    case 'g': displayArg(nodep,&elistp,isScan, vfmt,'g'); break;
-	    case 'v': displayArg(nodep,&elistp,isScan, vfmt,'v'); break;
+            case 'g': displayArg(nodep,&elistp,isScan, vfmt,'g'); break;
+            case '^': displayArg(nodep,&elistp,isScan, vfmt,'^'); break;  // Realtime
+            case 'v': displayArg(nodep,&elistp,isScan, vfmt,'v'); break;
 	    case 'm': {
 		if (!scopenamep) nodep->v3fatalSrc("Display with %m but no AstScopeName");
 		string suffix = scopenamep->scopePrettySymName();
