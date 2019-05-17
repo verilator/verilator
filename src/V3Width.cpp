@@ -2179,6 +2179,17 @@ private:
                     if (argp) argp = argp->nextp();
                     break;
                 }
+                case '?': {  // Unspecified by user, guess
+                    if (argp && argp->isDouble()) {
+                        ch = 'g';
+                    } else if (argp && argp->isString()) {
+                        ch = '@';
+                    } else {
+                        ch = 'h';
+                    }
+                    if (argp) argp = argp->nextp();
+                    break;
+                }
 		default: {  // Most operators, just move to next argument
 		    if (argp) argp=argp->nextp();
 		    break;

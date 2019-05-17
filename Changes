@@ -14,6 +14,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix fault on $realtime with %t, bug1443. [Julien Margetts]
 
+****  Fix $display with string without %s, bug1441. [Denis Rystsov]
+
 ****  Fix parameter function string returns, bug1441. [Denis Rystsov]
 
 

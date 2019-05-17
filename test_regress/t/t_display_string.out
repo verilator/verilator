@@ -1,5 +1,7 @@
 String: '          1'
+foo(1): '          1'
 s f(1): '          1'
 s parm: '          1'
 s strg: '          1'
+r: 1.234
 *-* All Finished *-*

@@ -341,13 +341,13 @@ private:
 		    AstNode *nextp = argp->nextp();
 		    argp->unlinkFrBack(); pushDeletep(argp); VL_DANGLING(argp);
 		    argp = nextp;
-		} else {
-		    newFormat.append("%h");
-		    argp = argp->nextp();
-		}
-	    }
-	}
-	return newFormat;
+                } else {
+                    newFormat.append("%?");  // V3Width to figure it out
+                    argp = argp->nextp();
+                }
+            }
+        }
+        return newFormat;
     }
 
     void expectDescriptor(AstNode* nodep, AstNodeVarRef* filep) {
