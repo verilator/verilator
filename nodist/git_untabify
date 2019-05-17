@@ -87,27 +87,30 @@ sub find_edits {
         my $hunk = $editlines->{$lineno}{hunk};
         $hunk_lastlines{$hunk} ||= $lineno if $editlines->{$lineno}{user_edit};
     }
-    # Expand to include }'s that finish basic block
-    foreach my $hunk (keys %hunk_lastlines) {
-        while (my $lineno = $hunk_lastlines{$hunk}) {
-            ++$lineno;
-            if (($editlines->{$lineno}{line} || "")
-                =~ /^[+ ]\s+}[ \t};]*$/) {
-                $hunk_lastlines{$hunk} = $lineno;
-            } else {
-                last;
+
+    if ($Opt_Widen) {
+        # Expand to include }'s that finish basic block
+        foreach my $hunk (keys %hunk_lastlines) {
+            while (my $lineno = $hunk_lastlines{$hunk}) {
+                ++$lineno;
+                if (($editlines->{$lineno}{line} || "")
+                    =~ /^[+ ]\s+}[ \t};]*$/) {
+                    $hunk_lastlines{$hunk} = $lineno;
+                } else {
+                    last;
+                }
             }
         }
-    }
-    # Expand to always untabify at least 3 lines (so that future diff will
-    # have non-tabs within a edit hunk distance
-    foreach my $hunk (keys %hunk_firstlines) {
-        if ($hunk_firstlines{$hunk} == $hunk_lastlines{$hunk}) {
-            --$hunk_firstlines{$hunk};
-            ++$hunk_lastlines{$hunk};
-        }
-        elsif ($hunk_firstlines{$hunk}+1 == $hunk_lastlines{$hunk}) {
-            ++$hunk_lastlines{$hunk};
+        # Expand to always untabify at least 3 lines (so that future diff will
+        # have non-tabs within a edit hunk distance
+        foreach my $hunk (keys %hunk_firstlines) {
+            if ($hunk_firstlines{$hunk} == $hunk_lastlines{$hunk}) {
+                --$hunk_firstlines{$hunk};
+                ++$hunk_lastlines{$hunk};
+            }
+            elsif ($hunk_firstlines{$hunk}+1 == $hunk_lastlines{$hunk}) {
+                ++$hunk_lastlines{$hunk};
+            }
         }
     }
 
