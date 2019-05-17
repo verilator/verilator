@@ -846,7 +846,7 @@ void AstNode::dump(std::ostream& str) {
     }
     if (name()!="") {
         if (VN_IS(this, Const)) str<<"  "<<name();  // Already quoted
-	else str<<"  "<<V3Number::quoteNameControls(name());
+        else str<<"  "<<V3OutFormatter::quoteNameControls(name());
     }
 }
 

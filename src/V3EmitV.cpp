@@ -52,7 +52,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
 	// Don't use to quote a filename for #include - #include doesn't \ escape.
 	// Duplicate in V3File - here so we can print to string
 	putsNoTracking("\"");
-	putsNoTracking(V3Number::quoteNameControls(str));
+        putsNoTracking(V3OutFormatter::quoteNameControls(str));
 	putsNoTracking("\"");
     }
 

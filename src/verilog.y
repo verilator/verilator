@@ -4097,7 +4097,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name, AstNodeR
 
 string V3ParseGrammar::deQuote(FileLine* fileline, string text) {
     // Fix up the quoted strings the user put in, for example "\"" becomes "
-    // Reverse is V3Number::quoteNameControls(...)
+    // Reverse is V3OutFormatter::quoteNameControls(...)
     bool quoted = false;
     string newtext;
     unsigned char octal_val = 0;

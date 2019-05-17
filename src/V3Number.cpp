@@ -429,31 +429,6 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
     return out.str();
 }
 
-string V3Number::quoteNameControls(const string& namein) {
-    // Encode control chars into C style escapes
-    // Reverse is V3Parse::deQuote
-    string out;
-    for (string::const_iterator pos=namein.begin(); pos!=namein.end(); ++pos) {
-	if (pos[0]=='\\' || pos[0]=='"') {
-	    out += string("\\")+pos[0];
-	} else if (pos[0]=='\n') {
-	    out += "\\n";
-	} else if (pos[0]=='\r') {
-	    out += "\\r";
-	} else if (pos[0]=='\t') {
-	    out += "\\t";
-	} else if (isprint(pos[0])) {
-	    out += pos[0];
-	} else {
-	    // This will also cover \a etc
-	    // Can't use %03o as messes up when signed
-	    char octal[10]; sprintf(octal,"\\%o%o%o",(pos[0]>>6)&3, (pos[0]>>3)&7, pos[0]&7);
-	    out += octal;
-	}
-    }
-    return out;
-}
-
 bool V3Number::displayedFmtLegal(char format) {
     // Is this a valid format letter?
     switch (tolower(format)) {

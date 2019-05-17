@@ -195,7 +195,6 @@ public:
 
     // ACCESSORS
     string ascii(bool prefixed=true, bool cleanVerilog=false) const;
-    static string quoteNameControls(const string& namein); // Add backslash quotes to strings
     string displayed(AstNode* nodep, const string& vformat) const;
     static bool displayedFmtLegal(char format);  // Is this a valid format letter?
     int width() const { return m_width; }
