@@ -220,8 +220,9 @@ private:
             nump = new V3Number(nodep, nodep->width(), value);
 	    m_numAllps.push_back(nump);
 	}
-	nump->isDouble(nodep->isDouble());
-	return nump;
+        nump->isDouble(nodep->isDouble());
+        nump->isString(nodep->isString());
+        return nump;
     }
 public:
     V3Number* newNumber(AstNode* nodep, uint32_t value=0) {

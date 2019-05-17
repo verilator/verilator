@@ -1674,8 +1674,12 @@ V3Number& V3Number::opBufIf1(const V3Number& ens, const V3Number& if1s) {
 V3Number& V3Number::opAssign(const V3Number& lhs) {
     // Note may be a width change during the assign
     setZero();
-    for(int bit=0; bit<this->width(); bit++) {
-	setBit(bit,lhs.bitIs(bit));
+    if (isString()) {
+        m_stringVal = lhs.m_stringVal;
+    } else {
+        for (int bit=0; bit < this->width(); bit++) {
+            setBit(bit, lhs.bitIs(bit));
+        }
     }
     return *this;
 }
