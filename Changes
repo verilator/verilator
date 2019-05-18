@@ -18,6 +18,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix parameter function string returns, bug1441. [Denis Rystsov]
 
+****  Fix real parameter assignment, bug1427. [Todd Strader]
+
 
 * Verilator 4.014 2019-05-08
 

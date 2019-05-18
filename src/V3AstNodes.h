@@ -607,6 +607,7 @@ public:
     virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     virtual bool similarDType(AstNodeDType* samep) const { return this==samep; }
+    virtual V3Hash sameHash() const { return V3Hash(m_cellp); }
     virtual int widthAlignBytes() const { return 1; }
     virtual int widthTotalBytes() const { return 1; }
     string cellName() const { return m_cellName; }

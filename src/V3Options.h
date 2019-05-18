@@ -114,6 +114,7 @@ class V3Options {
     bool	m_coverageUnderscore;// main switch: --coverage-underscore
     bool	m_coverageUser;	// main switch: --coverage-func
     bool	m_debugCheck;	// main switch: --debug-check
+    bool        m_debugCollision;  // main switch: --debug-collision
     bool        m_debugLeak;    // main switch: --debug-leak
     bool        m_debugNondeterminism;  // main switch: --debug-nondeterminism
     bool        m_debugPartition;  // main switch: --debug-partition
@@ -281,6 +282,7 @@ class V3Options {
     bool coverageUnderscore() const { return m_coverageUnderscore; }
     bool coverageUser() const { return m_coverageUser; }
     bool debugCheck() const { return m_debugCheck; }
+    bool debugCollision() const { return m_debugCollision; }
     bool debugLeak() const { return m_debugLeak; }
     bool debugNondeterminism() const { return m_debugNondeterminism; }
     bool debugPartition() const { return m_debugPartition; }
