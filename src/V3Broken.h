@@ -36,4 +36,4 @@ public:
     static void deleted(AstNode* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

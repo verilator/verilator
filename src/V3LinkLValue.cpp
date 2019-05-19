@@ -18,8 +18,8 @@
 //
 //*************************************************************************
 // LinkLValue TRANSFORMATIONS:
-//	Top-down traversal
-//	    Set lvalue() attributes on appropriate VARREFs.
+//      Top-down traversal
+//          Set lvalue() attributes on appropriate VARREFs.
 //*************************************************************************
 
 #include "config_build.h"
@@ -42,8 +42,8 @@ private:
     // NODE STATE
 
     // STATE
-    bool	m_setRefLvalue;	// Set VarRefs to lvalues for pin assignments
-    AstNodeFTask* m_ftaskp;	// Function or task we're inside
+    bool        m_setRefLvalue;  // Set VarRefs to lvalues for pin assignments
+    AstNodeFTask* m_ftaskp;      // Function or task we're inside
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -51,14 +51,14 @@ private:
     // VISITs
     // Result handing
     virtual void visit(AstNodeVarRef* nodep) {
-	// VarRef: LValue its reference
-	if (m_setRefLvalue) {
-	    nodep->lvalue(true);
-	}
-	if (nodep->varp()) {
+        // VarRef: LValue its reference
+        if (m_setRefLvalue) {
+            nodep->lvalue(true);
+        }
+        if (nodep->varp()) {
             if (nodep->lvalue() && !m_ftaskp
                 && nodep->varp()->isReadOnly()) {
-                nodep->v3warn(ASSIGNIN,"Assigning to input/const variable: "
+                nodep->v3warn(ASSIGNIN, "Assigning to input/const variable: "
                               <<nodep->prettyName());
             }
         }
@@ -72,64 +72,64 @@ private:
             // Now that we do, and it's from a output, we know it's a lvalue
             m_setRefLvalue = true;
             iterateChildren(nodep);
-	    m_setRefLvalue = false;
-	} else {
+            m_setRefLvalue = false;
+        } else {
             iterateChildren(nodep);
-	}
+        }
     }
     virtual void visit(AstNodeAssign* nodep) {
-	bool last_setRefLvalue = m_setRefLvalue;
-	{
-	    m_setRefLvalue = true;
+        bool last_setRefLvalue = m_setRefLvalue;
+        {
+            m_setRefLvalue = true;
             iterateAndNextNull(nodep->lhsp());
-	    m_setRefLvalue = false;
+            m_setRefLvalue = false;
             iterateAndNextNull(nodep->rhsp());
-	}
-	m_setRefLvalue = last_setRefLvalue;
+        }
+        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstFOpen* nodep) {
-	bool last_setRefLvalue = m_setRefLvalue;
-	{
-	    m_setRefLvalue = true;
+        bool last_setRefLvalue = m_setRefLvalue;
+        {
+            m_setRefLvalue = true;
             iterateAndNextNull(nodep->filep());
-	    m_setRefLvalue = false;
+            m_setRefLvalue = false;
             iterateAndNextNull(nodep->filenamep());
             iterateAndNextNull(nodep->modep());
-	}
-	m_setRefLvalue = last_setRefLvalue;
+        }
+        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstFClose* nodep) {
-	bool last_setRefLvalue = m_setRefLvalue;
-	{
-	    m_setRefLvalue = true;
+        bool last_setRefLvalue = m_setRefLvalue;
+        {
+            m_setRefLvalue = true;
             iterateAndNextNull(nodep->filep());
-	}
-	m_setRefLvalue = last_setRefLvalue;
+        }
+        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstFFlush* nodep) {
-	bool last_setRefLvalue = m_setRefLvalue;
-	{
-	    m_setRefLvalue = true;
+        bool last_setRefLvalue = m_setRefLvalue;
+        {
+            m_setRefLvalue = true;
             iterateAndNextNull(nodep->filep());
-	}
-	m_setRefLvalue = last_setRefLvalue;
+        }
+        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstFGetC* nodep) {
-	bool last_setRefLvalue = m_setRefLvalue;
-	{
-	    m_setRefLvalue = true;
+        bool last_setRefLvalue = m_setRefLvalue;
+        {
+            m_setRefLvalue = true;
             iterateAndNextNull(nodep->filep());
-	}
-	m_setRefLvalue = last_setRefLvalue;
+        }
+        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstFGetS* nodep) {
-	bool last_setRefLvalue = m_setRefLvalue;
-	{
-	    m_setRefLvalue = true;
+        bool last_setRefLvalue = m_setRefLvalue;
+        {
+            m_setRefLvalue = true;
             iterateAndNextNull(nodep->filep());
             iterateAndNextNull(nodep->strgp());
-	}
-	m_setRefLvalue = last_setRefLvalue;
+        }
+        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstFRead* nodep) {
         bool last_setRefLvalue = m_setRefLvalue;
@@ -141,111 +141,111 @@ private:
         m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstFScanF* nodep) {
-	bool last_setRefLvalue = m_setRefLvalue;
-	{
-	    m_setRefLvalue = true;
+        bool last_setRefLvalue = m_setRefLvalue;
+        {
+            m_setRefLvalue = true;
             iterateAndNextNull(nodep->filep());
             iterateAndNextNull(nodep->exprsp());
-	}
-	m_setRefLvalue = last_setRefLvalue;
+        }
+        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstSScanF* nodep) {
-	bool last_setRefLvalue = m_setRefLvalue;
-	{
-	    m_setRefLvalue = true;
+        bool last_setRefLvalue = m_setRefLvalue;
+        {
+            m_setRefLvalue = true;
             iterateAndNextNull(nodep->exprsp());
-	}
-	m_setRefLvalue = last_setRefLvalue;
+        }
+        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstSysIgnore* nodep) {
-	// Can't know if lvalue or not; presume so as stricter
-	bool last_setRefLvalue = m_setRefLvalue;
+        // Can't know if lvalue or not; presume so as stricter
+        bool last_setRefLvalue = m_setRefLvalue;
         iterateChildren(nodep);
-	m_setRefLvalue = last_setRefLvalue;
+        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstReadMem* nodep) {
-	bool last_setRefLvalue = m_setRefLvalue;
-	{
-	    m_setRefLvalue = true;
+        bool last_setRefLvalue = m_setRefLvalue;
+        {
+            m_setRefLvalue = true;
             iterateAndNextNull(nodep->memp());
-	    m_setRefLvalue = false;
+            m_setRefLvalue = false;
             iterateAndNextNull(nodep->filenamep());
             iterateAndNextNull(nodep->lsbp());
             iterateAndNextNull(nodep->msbp());
-	}
-	m_setRefLvalue = last_setRefLvalue;
+        }
+        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstValuePlusArgs* nodep) {
-	bool last_setRefLvalue = m_setRefLvalue;
-	{
-	    m_setRefLvalue = false;
+        bool last_setRefLvalue = m_setRefLvalue;
+        {
+            m_setRefLvalue = false;
             iterateAndNextNull(nodep->searchp());
-	    m_setRefLvalue = true;
+            m_setRefLvalue = true;
             iterateAndNextNull(nodep->outp());
-	}
-	m_setRefLvalue = last_setRefLvalue;
+        }
+        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstSFormat* nodep) {
-	bool last_setRefLvalue = m_setRefLvalue;
-	{
-	    m_setRefLvalue = true;
+        bool last_setRefLvalue = m_setRefLvalue;
+        {
+            m_setRefLvalue = true;
             iterateAndNextNull(nodep->lhsp());
-	    m_setRefLvalue = false;
+            m_setRefLvalue = false;
             iterateAndNextNull(nodep->fmtp());
-	}
-	m_setRefLvalue = last_setRefLvalue;
+        }
+        m_setRefLvalue = last_setRefLvalue;
     }
 
     // Nodes that change LValue state
     virtual void visit(AstSel* nodep) {
-	bool last_setRefLvalue = m_setRefLvalue;
-	{
+        bool last_setRefLvalue = m_setRefLvalue;
+        {
             iterateAndNextNull(nodep->lhsp());
-	    // Only set lvalues on the from
-	    m_setRefLvalue = false;
+            // Only set lvalues on the from
+            m_setRefLvalue = false;
             iterateAndNextNull(nodep->rhsp());
             iterateAndNextNull(nodep->thsp());
-	}
-	m_setRefLvalue = last_setRefLvalue;
+        }
+        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstNodeSel* nodep) {
-	bool last_setRefLvalue = m_setRefLvalue;
-	{   // Only set lvalues on the from
+        bool last_setRefLvalue = m_setRefLvalue;
+        {   // Only set lvalues on the from
             iterateAndNextNull(nodep->lhsp());
-	    m_setRefLvalue = false;
+            m_setRefLvalue = false;
             iterateAndNextNull(nodep->rhsp());
-	}
-	m_setRefLvalue = last_setRefLvalue;
+        }
+        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstCellArrayRef* nodep) {
-	bool last_setRefLvalue = m_setRefLvalue;
-	{   // selp is not an lvalue
-	    m_setRefLvalue = false;
+        bool last_setRefLvalue = m_setRefLvalue;
+        {   // selp is not an lvalue
+            m_setRefLvalue = false;
             iterateAndNextNull(nodep->selp());
-	}
-	m_setRefLvalue = last_setRefLvalue;
+        }
+        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstNodePreSel* nodep) {
-	bool last_setRefLvalue = m_setRefLvalue;
-	{   // Only set lvalues on the from
+        bool last_setRefLvalue = m_setRefLvalue;
+        {   // Only set lvalues on the from
             iterateAndNextNull(nodep->lhsp());
-	    m_setRefLvalue = false;
+            m_setRefLvalue = false;
             iterateAndNextNull(nodep->rhsp());
             iterateAndNextNull(nodep->thsp());
-	}
-	m_setRefLvalue = last_setRefLvalue;
+        }
+        m_setRefLvalue = last_setRefLvalue;
     }
     virtual void visit(AstNodeFTask* nodep) {
-	m_ftaskp = nodep;
+        m_ftaskp = nodep;
         iterateChildren(nodep);
-	m_ftaskp = NULL;
+        m_ftaskp = NULL;
     }
     virtual void visit(AstNodeFTaskRef* nodep) {
-	AstNode* pinp = nodep->pinsp();
-	AstNodeFTask* taskp = nodep->taskp();
-	// We'll deal with mismatching pins later
-	if (!taskp) return;
-	for (AstNode* stmtp = taskp->stmtsp(); stmtp && pinp; stmtp=stmtp->nextp()) {
+        AstNode* pinp = nodep->pinsp();
+        AstNodeFTask* taskp = nodep->taskp();
+        // We'll deal with mismatching pins later
+        if (!taskp) return;
+        for (AstNode* stmtp = taskp->stmtsp(); stmtp && pinp; stmtp=stmtp->nextp()) {
             if (const AstVar* portp = VN_CAST(stmtp, Var)) {
                 if (portp->isIO()) {
                     if (portp->isWritable()) {
@@ -255,23 +255,23 @@ private:
                     } else {
                         iterate(pinp);
                     }
-		    // Advance pin
-		    pinp = pinp->nextp();
-		}
-	    }
-	}
+                    // Advance pin
+                    pinp = pinp->nextp();
+                }
+            }
+        }
     }
 
     virtual void visit(AstNode* nodep) {
-	// Default: Just iterate
+        // Default: Just iterate
         iterateChildren(nodep);
     }
 
 public:
     // CONSTUCTORS
     LinkLValueVisitor(AstNode* nodep, bool start) {
-	m_setRefLvalue = start;
-	m_ftaskp = NULL;
+        m_setRefLvalue = start;
+        m_ftaskp = NULL;
         iterate(nodep);
     }
     virtual ~LinkLValueVisitor() {}

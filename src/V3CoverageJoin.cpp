@@ -18,7 +18,7 @@
 //
 //*************************************************************************
 // COVERAGEJOIN TRANSFORMATIONS:
-//	If two COVERTOGGLEs have same VARSCOPE, combine them
+//      If two COVERTOGGLEs have same VARSCOPE, combine them
 //*************************************************************************
 
 
@@ -40,72 +40,76 @@ class CoverageJoinVisitor : public AstNVisitor {
 private:
     // NODE STATE
     // V3Hashed
-    //  AstCoverToggle->VarRef::user4()	// V3Hashed calculation
+    //  AstCoverToggle->VarRef::user4() // V3Hashed calculation
 
-    //AstUser4InUse	In V3Hashed
+    //AstUser4InUse     In V3Hashed
 
     // TYPES
     typedef std::vector<AstCoverToggle*> ToggleList;
 
     // STATE
-    ToggleList		m_toggleps;	// List of of all AstCoverToggle's
+    ToggleList          m_toggleps;     // List of of all AstCoverToggle's
 
-    V3Double0		m_statToggleJoins;	// Statistic tracking
+    V3Double0           m_statToggleJoins;  // Statistic tracking
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
     void detectDuplicates() {
-	UINFO(9,"Finding duplicates\n");
-	// Note uses user4
-	V3Hashed  hashed;	// Duplicate code detection
-	// Hash all of the original signals we toggle cover
-	for (ToggleList::iterator it = m_toggleps.begin(); it != m_toggleps.end(); ++it) {
-	    AstCoverToggle* nodep = *it;
-	    hashed.hashAndInsert(nodep->origp());
-	}
-	// Find if there are any duplicates
-	for (ToggleList::iterator it = m_toggleps.begin(); it != m_toggleps.end(); ++it) {
-	    AstCoverToggle* nodep = *it;
-	    if (nodep->backp()) {   // nodep->backp() is null if we already detected it's a duplicate and unlinked it
-		// Want to choose a base node, and keep finding duplicates that are identical
-		// This prevents making chains where a->b, then c->d, then b->c, as we'll find a->b, a->c, a->d directly.
-		while (1) {
-		    V3Hashed::iterator dupit = hashed.findDuplicate(nodep->origp());
-		    if (dupit == hashed.end()) break;
-		    //
-		    AstNode* duporigp = hashed.iteratorNodep(dupit);
-		    // Note hashed will point to the original variable (what's duplicated), not the covertoggle,
-		    // but we need to get back to the covertoggle which is immediately above, so:
+        UINFO(9,"Finding duplicates\n");
+        // Note uses user4
+        V3Hashed  hashed;  // Duplicate code detection
+        // Hash all of the original signals we toggle cover
+        for (ToggleList::iterator it = m_toggleps.begin(); it != m_toggleps.end(); ++it) {
+            AstCoverToggle* nodep = *it;
+            hashed.hashAndInsert(nodep->origp());
+        }
+        // Find if there are any duplicates
+        for (ToggleList::iterator it = m_toggleps.begin(); it != m_toggleps.end(); ++it) {
+            AstCoverToggle* nodep = *it;
+            // nodep->backp() is null if we already detected it's a duplicate and unlinked it.
+            if (nodep->backp()) {
+                // Want to choose a base node, and keep finding duplicates that are identical.
+                // This prevents making chains where a->b, then c->d, then b->c, as we'll
+                // find a->b, a->c, a->d directly.
+                while (1) {
+                    V3Hashed::iterator dupit = hashed.findDuplicate(nodep->origp());
+                    if (dupit == hashed.end()) break;
+                    //
+                    AstNode* duporigp = hashed.iteratorNodep(dupit);
+                    // Note hashed will point to the original variable (what's
+                    // duplicated), not the covertoggle, but we need to get back to the
+                    // covertoggle which is immediately above, so:
                     AstCoverToggle* removep = VN_CAST(duporigp->backp(), CoverToggle);
-		    if (!removep) nodep->v3fatalSrc("CoverageJoin duplicate of wrong type");
-		    UINFO(8,"  Orig "<<nodep<<" -->> "<<nodep->incp()->declp()<<endl);
-		    UINFO(8,"   dup "<<removep<<" -->> "<<removep->incp()->declp()<<endl);
-		    // The CoverDecl the duplicate pointed to now needs to point to the original's data
-		    // IE the duplicate will get the coverage number from the non-duplicate
-		    AstCoverDecl* datadeclp = nodep->incp()->declp()->dataDeclThisp();
+                    if (!removep) nodep->v3fatalSrc("CoverageJoin duplicate of wrong type");
+                    UINFO(8,"  Orig "<<nodep<<" -->> "<<nodep->incp()->declp()<<endl);
+                    UINFO(8,"   dup "<<removep<<" -->> "<<removep->incp()->declp()<<endl);
+                    // The CoverDecl the duplicate pointed to now needs to point to the
+                    // original's data. I.e. the duplicate will get the coverage number
+                    // from the non-duplicate
+                    AstCoverDecl* datadeclp = nodep->incp()->declp()->dataDeclThisp();
                     removep->incp()->declp()->dataDeclp(datadeclp);
-		    UINFO(8,"   new "<<removep->incp()->declp()<<endl);
-		    // Mark the found node as a duplicate of the first node
-		    // (Not vice-versa as we have the iterator for the found node)
-		    removep->unlinkFrBack();  pushDeletep(removep); VL_DANGLING(removep);
-		    // Remove node from comparison so don't hit it again
-		    hashed.erase(dupit);
-		    ++m_statToggleJoins;
-		}
-	    }
-	}
+                    UINFO(8,"   new "<<removep->incp()->declp()<<endl);
+                    // Mark the found node as a duplicate of the first node
+                    // (Not vice-versa as we have the iterator for the found node)
+                    removep->unlinkFrBack();  pushDeletep(removep); VL_DANGLING(removep);
+                    // Remove node from comparison so don't hit it again
+                    hashed.erase(dupit);
+                    ++m_statToggleJoins;
+                }
+            }
+        }
     }
 
     // VISITORS
     virtual void visit(AstNetlist* nodep) {
-	// Find all Coverage's
+        // Find all Coverage's
         iterateChildren(nodep);
-	// Simplify
-	detectDuplicates();
+        // Simplify
+        detectDuplicates();
     }
     virtual void visit(AstCoverToggle* nodep) {
-	m_toggleps.push_back(nodep);
+        m_toggleps.push_back(nodep);
         iterateChildren(nodep);
     }
     //--------------------
@@ -120,7 +124,7 @@ public:
         iterate(nodep);
     }
     virtual ~CoverageJoinVisitor() {
-	V3Stats::addStat("Coverage, Toggle points joined", m_statToggleJoins);
+        V3Stats::addStat("Coverage, Toggle points joined", m_statToggleJoins);
     }
 };
 

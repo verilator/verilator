@@ -18,11 +18,11 @@
 //
 //*************************************************************************
 // DESCOPE TRANSFORMATIONS:
-//	All modules:
-//	    Each VARREF/FUNCCALL
-//		Change varref name() to be relative to current module
-//		Remove varScopep()
-//	    This allows for better V3Combine'ing.
+//      All modules:
+//          Each VARREF/FUNCCALL
+//              Change varref name() to be relative to current module
+//              Remove varScopep()
+//          This allows for better V3Combine'ing.
 //
 //*************************************************************************
 
@@ -43,19 +43,19 @@ class DescopeVisitor : public AstNVisitor {
 private:
     // NODE STATE
     //  Cleared entire netlist
-    //   AstCFunc::user()		// bool.  Indicates processing completed
-    AstUser1InUse	m_inuser1;
+    //   AstCFunc::user()               // bool.  Indicates processing completed
+    AstUser1InUse       m_inuser1;
 
     // TYPES
-    typedef std::multimap<string,AstCFunc*>     FuncMmap;
+    typedef std::multimap<string,AstCFunc*> FuncMmap;
 
     // STATE
-    AstNodeModule*	m_modp;		// Current module
-    AstScope*		m_scopep;	// Current scope
+    AstNodeModule*      m_modp;         // Current module
+    AstScope*           m_scopep;       // Current scope
     bool                m_modSingleton; // m_modp is only instanced once
     bool                m_allowThis;    // Allow function non-static
     bool                m_needThis;     // Make function non-static
-    FuncMmap		m_modFuncs;	// Name of public functions added
+    FuncMmap            m_modFuncs;     // Name of public functions added
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -84,7 +84,7 @@ private:
     string descopedName(const AstScope* scopep, bool& hierThisr,
                         const AstVar* varp=NULL) {
         UASSERT(scopep, "Var/Func not scoped");
-	hierThisr = (scopep == m_scopep);
+        hierThisr = (scopep == m_scopep);
 
         // It's possible to disable relative references. This is a concession
         // to older compilers (gcc < 4.5.x) that don't understand __restrict__
@@ -119,9 +119,9 @@ private:
             relativeRefOk = false;
         }
 
-	if (varp && varp->isFuncLocal()) {
+        if (varp && varp->isFuncLocal()) {
             hierThisr = true;
-	    return "";  // Relative to function, not in this
+            return "";  // Relative to function, not in this
         } else if (relativeRefOk && scopep == m_scopep) {
             m_needThis = true;
             return "this->";
@@ -131,7 +131,7 @@ private:
             string name = scopep->name();
             string::size_type pos;
             if ((pos = name.rfind('.')) != string::npos) {
-                name.erase(0,pos+1);
+                name.erase(0, pos+1);
             }
             m_needThis = true;
             return name+"->";
@@ -141,7 +141,7 @@ private:
             UINFO(8,"      Descope "<<scopep<<endl);
             UINFO(8,"           to "<<scopep->name()<<endl);
             UINFO(8,"        under "<<m_scopep->name()<<endl);
-            if (!scopep->aboveScopep()) { // Top
+            if (!scopep->aboveScopep()) {  // Top
                 // We could also return "vlSymsp->TOPp->" here, but GCC would
                 // suspect aliases.
                 return "vlTOPp->";
@@ -152,41 +152,43 @@ private:
     }
 
     void makePublicFuncWrappers() {
-	// We recorded all public functions in m_modFuncs.
-	// If for any given name only one function exists, we can use that function directly.
-	// If multiple functions exist, we need to select the appropriate scope.
-	for (FuncMmap::iterator it = m_modFuncs.begin(); it!=m_modFuncs.end(); ++it) {
-	    string name = it->first;
-	    AstCFunc* topFuncp = it->second;
-	    FuncMmap::iterator nextIt1 = it; ++nextIt1;
-	    bool moreOfSame1 =  (nextIt1!=m_modFuncs.end() && nextIt1->first == name);
-	    if (moreOfSame1) {
-		// Multiple functions under this name, need a wrapper function
-		UINFO(6,"  Wrapping "<<name<<" multifuncs\n");
-		AstCFunc* newfuncp = topFuncp->cloneTree(false);
-		if (newfuncp->initsp())  newfuncp->initsp()->unlinkFrBackWithNext()->deleteTree();
-		if (newfuncp->stmtsp())  newfuncp->stmtsp()->unlinkFrBackWithNext()->deleteTree();
-		if (newfuncp->finalsp()) newfuncp->finalsp()->unlinkFrBackWithNext()->deleteTree();
-		newfuncp->name(name);
-		newfuncp->isStatic(false);
-		newfuncp->addInitsp(
-		    new AstCStmt(newfuncp->fileline(),
-				 EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp;\n"));
-		newfuncp->addInitsp(new AstCStmt(newfuncp->fileline(), EmitCBaseVisitor::symTopAssign()+"\n"));
-		topFuncp->addNextHere(newfuncp);
-		// In the body, call each function if it matches the given scope
-		for (FuncMmap::iterator eachIt = it; eachIt!=m_modFuncs.end() && eachIt->first==name; ++eachIt) {
-		    it = eachIt;
-		    AstCFunc* funcp = eachIt->second;
-		    FuncMmap::iterator nextIt2 = eachIt; ++nextIt2;
-		    bool moreOfSame =  (nextIt2!=m_modFuncs.end() && nextIt2->first == name);
-		    if (!funcp->scopep()) funcp->v3fatalSrc("Not scoped");
+        // We recorded all public functions in m_modFuncs.
+        // If for any given name only one function exists, we can use that function directly.
+        // If multiple functions exist, we need to select the appropriate scope.
+        for (FuncMmap::iterator it = m_modFuncs.begin(); it!=m_modFuncs.end(); ++it) {
+            string name = it->first;
+            AstCFunc* topFuncp = it->second;
+            FuncMmap::iterator nextIt1 = it; ++nextIt1;
+            bool moreOfSame1 =  (nextIt1!=m_modFuncs.end() && nextIt1->first == name);
+            if (moreOfSame1) {
+                // Multiple functions under this name, need a wrapper function
+                UINFO(6,"  Wrapping "<<name<<" multifuncs\n");
+                AstCFunc* newfuncp = topFuncp->cloneTree(false);
+                if (newfuncp->initsp())  newfuncp->initsp()->unlinkFrBackWithNext()->deleteTree();
+                if (newfuncp->stmtsp())  newfuncp->stmtsp()->unlinkFrBackWithNext()->deleteTree();
+                if (newfuncp->finalsp()) newfuncp->finalsp()->unlinkFrBackWithNext()->deleteTree();
+                newfuncp->name(name);
+                newfuncp->isStatic(false);
+                newfuncp->addInitsp(
+                    new AstCStmt(newfuncp->fileline(),
+                                 EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp;\n"));
+                newfuncp->addInitsp(new AstCStmt(newfuncp->fileline(),
+                                                 EmitCBaseVisitor::symTopAssign()+"\n"));
+                topFuncp->addNextHere(newfuncp);
+                // In the body, call each function if it matches the given scope
+                for (FuncMmap::iterator eachIt = it;
+                     eachIt != m_modFuncs.end() && eachIt->first==name; ++eachIt) {
+                    it = eachIt;
+                    AstCFunc* funcp = eachIt->second;
+                    FuncMmap::iterator nextIt2 = eachIt; ++nextIt2;
+                    bool moreOfSame =  (nextIt2!=m_modFuncs.end() && nextIt2->first == name);
+                    if (!funcp->scopep()) funcp->v3fatalSrc("Not scoped");
 
-		    UINFO(6,"     Wrapping "<<name<<" "<<funcp<<endl);
-		    UINFO(6,"  at "<<newfuncp->argTypes()<<" und "<<funcp->argTypes()<<endl);
-		    funcp->declPrivate(true);
-		    AstNode* argsp = NULL;
-		    for (AstNode* stmtp = newfuncp->argsp(); stmtp; stmtp=stmtp->nextp()) {
+                    UINFO(6,"     Wrapping "<<name<<" "<<funcp<<endl);
+                    UINFO(6,"  at "<<newfuncp->argTypes()<<" und "<<funcp->argTypes()<<endl);
+                    funcp->declPrivate(true);
+                    AstNode* argsp = NULL;
+                    for (AstNode* stmtp = newfuncp->argsp(); stmtp; stmtp=stmtp->nextp()) {
                         if (AstVar* portp = VN_CAST(stmtp, Var)) {
                             if (portp->isIO() && !portp->isFuncReturn()) {
                                 AstNode* newp = new AstVarRef(portp->fileline(),
@@ -201,7 +203,7 @@ private:
                                                       new AstCCall(funcp->fileline(),
                                                                    funcp, argsp));
 
-		    if (moreOfSame) {
+                    if (moreOfSame) {
                         AstIf* ifp = new AstIf(funcp->fileline(),
                                                new AstEq(funcp->fileline(),
                                                          new AstCMath(funcp->fileline(),
@@ -210,86 +212,89 @@ private:
                                                                       string("&(")
                                                                       +funcp->scopep()->nameVlSym()
                                                                       +")", 64)),
-						returnp, NULL);
-			newfuncp->addStmtsp(ifp);
-		    } else {
-			newfuncp->addStmtsp(returnp);
-		    }
-		}
-		// Not really any way the user could do this, and we'd need to come up with some return value
-		//newfuncp->addStmtsp(new AstDisplay (newfuncp->fileline(), AstDisplayType::DT_WARNING,
-		//				      string("%%Error: ")+name+"() called with bad scope", NULL));
-		//newfuncp->addStmtsp(new AstStop (newfuncp->fileline()));
-		if (debug()>=9) newfuncp->dumpTree(cout,"   newfunc: ");
-	    } else {
-		// Only a single function under this name, we can simply rename it
-		UINFO(6,"  Wrapping "<<name<<" just one "<<topFuncp<<endl);
-		topFuncp->name(name);
-	    }
-	}
+                                                returnp, NULL);
+                        newfuncp->addStmtsp(ifp);
+                    } else {
+                        newfuncp->addStmtsp(returnp);
+                    }
+                }
+                // Not really any way the user could do this, and we'd need
+                // to come up with some return value
+                //newfuncp->addStmtsp(new AstDisplay(newfuncp->fileline(),
+                //                                   AstDisplayType::DT_WARNING,
+                //                                   string("%%Error: ")+name+"() called with bad scope", NULL));
+                //newfuncp->addStmtsp(new AstStop(newfuncp->fileline()));
+                if (debug()>=9) newfuncp->dumpTree(cout, "   newfunc: ");
+            } else {
+                // Only a single function under this name, we can simply rename it
+                UINFO(6,"  Wrapping "<<name<<" just one "<<topFuncp<<endl);
+                topFuncp->name(name);
+            }
+        }
     }
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) {
-	m_modp = nodep;
-	m_modFuncs.clear();
+        m_modp = nodep;
+        m_modFuncs.clear();
         m_modSingleton = modIsSingleton(m_modp);
         iterateChildren(nodep);
-	makePublicFuncWrappers();
-	m_modp = NULL;
+        makePublicFuncWrappers();
+        m_modp = NULL;
     }
     virtual void visit(AstScope* nodep) {
-	m_scopep = nodep;
+        m_scopep = nodep;
         iterateChildren(nodep);
-	m_scopep = NULL;
+        m_scopep = NULL;
     }
     virtual void visit(AstVarScope* nodep) {
-	// Delete the varscope when we're finished
-	nodep->unlinkFrBack();
-	pushDeletep(nodep);
+        // Delete the varscope when we're finished
+        nodep->unlinkFrBack();
+        pushDeletep(nodep);
     }
     virtual void visit(AstNodeVarRef* nodep) {
         iterateChildren(nodep);
-	// Convert the hierch name
-	if (!m_scopep) nodep->v3fatalSrc("Node not under scope");
-	bool hierThis;
-	nodep->hiername(descopedName(nodep->varScopep()->scopep(), hierThis/*ref*/, nodep->varScopep()->varp()));
-	nodep->hierThis(hierThis);
-	nodep->varScopep(NULL);
+        // Convert the hierch name
+        if (!m_scopep) nodep->v3fatalSrc("Node not under scope");
+        bool hierThis;
+        nodep->hiername(descopedName(nodep->varScopep()->scopep(), hierThis/*ref*/,
+                                     nodep->varScopep()->varp()));
+        nodep->hierThis(hierThis);
+        nodep->varScopep(NULL);
     }
     virtual void visit(AstCCall* nodep) {
-	//UINFO(9,"       "<<nodep<<endl);
+        //UINFO(9,"       "<<nodep<<endl);
         iterateChildren(nodep);
-	// Convert the hierch name
-	if (!m_scopep) nodep->v3fatalSrc("Node not under scope");
-	if (!nodep->funcp()->scopep()) nodep->v3fatalSrc("CFunc not under scope");
-	bool hierThis;
-	nodep->hiername(descopedName(nodep->funcp()->scopep(), hierThis/*ref*/));
-	// Can't do this, as we may have more calls later
-	// nodep->funcp()->scopep(NULL);
+        // Convert the hierch name
+        if (!m_scopep) nodep->v3fatalSrc("Node not under scope");
+        if (!nodep->funcp()->scopep()) nodep->v3fatalSrc("CFunc not under scope");
+        bool hierThis;
+        nodep->hiername(descopedName(nodep->funcp()->scopep(), hierThis/*ref*/));
+        // Can't do this, as we may have more calls later
+        // nodep->funcp()->scopep(NULL);
     }
     virtual void visit(AstCFunc* nodep) {
-	if (!nodep->user1()) {
-	    m_needThis = false;
+        if (!nodep->user1()) {
+            m_needThis = false;
             m_allowThis = nodep->isStatic().falseU();  // Non-static or unknown if static
             iterateChildren(nodep);
             nodep->user1(true);
             if (m_needThis) {
                 nodep->isStatic(false);
-	    }
-	    // If it's under a scope, move it up to the top
-	    if (m_scopep) {
-		nodep->unlinkFrBack();
-		m_modp->addStmtp(nodep);
+            }
+            // If it's under a scope, move it up to the top
+            if (m_scopep) {
+                nodep->unlinkFrBack();
+                m_modp->addStmtp(nodep);
 
-		if (nodep->funcPublic()) {
-		    // There may be multiple public functions by the same name;
-		    // record for later correction or making of shells
-		    m_modFuncs.insert(make_pair(nodep->name(), nodep));
-		    nodep->name(m_scopep->nameDotless() +"__" + nodep->name());
-		}
-	    }
-	}
+                if (nodep->funcPublic()) {
+                    // There may be multiple public functions by the same name;
+                    // record for later correction or making of shells
+                    m_modFuncs.insert(make_pair(nodep->name(), nodep));
+                    nodep->name(m_scopep->nameDotless() +"__" + nodep->name());
+                }
+            }
+        }
     }
     virtual void visit(AstVar*) {}
     virtual void visit(AstNode* nodep) {

@@ -34,4 +34,4 @@ public:
     static void inlineAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

@@ -34,4 +34,4 @@ public:
     static void undrivenAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

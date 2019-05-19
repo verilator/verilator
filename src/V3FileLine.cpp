@@ -63,7 +63,7 @@ int FileLineSingleton::nameToNumber(const string& filename) {
     int num = m_names.size();
     m_names.push_back(filename);
     m_languages.push_back(V3LangCode::mostRecent());
-    m_namemap.insert(make_pair(filename,num));
+    m_namemap.insert(make_pair(filename, num));
     return num;
 }
 
@@ -73,9 +73,9 @@ int FileLineSingleton::nameToNumber(const string& filename) {
 void FileLineSingleton::fileNameNumMapDumpXml(std::ostream& os) {
     os<<"<files>\n";
     for (FileNameNumMap::const_iterator it = m_namemap.begin(); it != m_namemap.end(); ++it) {
-	os<<"<file id=\""<<filenameLetters(it->second)
-	  <<"\" filename=\""<<it->first
-	  <<"\" language=\""<<numberToLang(it->second).ascii()<<"\"/>\n";
+        os<<"<file id=\""<<filenameLetters(it->second)
+          <<"\" filename=\""<<it->first
+          <<"\" language=\""<<numberToLang(it->second).ascii()<<"\"/>\n";
     }
     os<<"</files>\n";
 }
@@ -85,10 +85,10 @@ void FileLineSingleton::fileNameNumMapDumpXml(std::ostream& os) {
 
 FileLine::FileLine(FileLine::EmptySecret) {
     // Sort of a singleton
-    m_lineno=0;
-    m_filenameno=singleton().nameToNumber("AstRoot");
+    m_lineno = 0;
+    m_filenameno = singleton().nameToNumber("AstRoot");
 
-    m_warnOn=0;
+    m_warnOn = 0;
     for (int codei=V3ErrorCode::EC_MIN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
         V3ErrorCode code = V3ErrorCode(codei);
         warnOff(code, code.defaultsOff());
@@ -112,7 +112,7 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
     const char *ln = textp;
     while (*textp && !isspace(*textp)) textp++;
     if (isdigit(*ln)) {
-	lineno(atoi(ln));
+        lineno(atoi(ln));
     }
     while (*textp && (isspace(*textp) || *textp=='"')) textp++;
 
@@ -120,9 +120,9 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
     const char *fn = textp;
     while (*textp && !(isspace(*textp) || *textp=='"')) textp++;
     if (textp != fn) {
-	string strfn = fn;
-	strfn = strfn.substr(0, textp-fn);
-	filename(strfn);
+        string strfn = fn;
+        strfn = strfn.substr(0, textp-fn);
+        filename(strfn);
     }
 
     // Grab level
@@ -143,7 +143,7 @@ FileLine* FileLine::copyOrSameFileLine() {
 #endif
     static FileLine* lastNewp = NULL;
     if (lastNewp && *lastNewp == *this) {  // Compares lineno, filename, etc
-	return lastNewp;
+        return lastNewp;
     }
     FileLine* newp = new FileLine(this);
     lastNewp = newp;
@@ -154,7 +154,7 @@ const string FileLine::filebasename() const {
     string name = filename();
     string::size_type pos;
     if ((pos = name.rfind('/')) != string::npos) {
-	name.erase(0,pos+1);
+        name.erase(0, pos+1);
     }
     return name;
 }
@@ -163,7 +163,7 @@ const string FileLine::filebasenameNoExt() const {
     string name = filebasename();
     string::size_type pos;
     if ((pos = name.find('.')) != string::npos) {
-	name = name.substr(0,pos);
+        name = name.substr(0, pos);
     }
     return name;
 }
@@ -173,8 +173,8 @@ const string FileLine::profileFuncname() const {
     string name  = filebasenameNoExt();
     string::size_type pos;
     while ((pos = name.find_first_not_of("abcdefghijlkmnopqrstuvwxyzABCDEFGHIJLKMNOPQRSTUVWXYZ0123456789_"))
-	   != string::npos) {
-	name.replace(pos, 1, "_");
+           != string::npos) {
+        name.replace(pos, 1, "_");
     }
     name += "__l"+cvtToStr(lineno());
     return name;
@@ -191,15 +191,15 @@ std::ostream& operator<<(std::ostream& os, FileLine* fileline) {
 bool FileLine::warnOff(const string& msg, bool flag) {
     V3ErrorCode code (msg.c_str());
     if (code < V3ErrorCode::EC_FIRST_WARN) {
-	return false;
+        return false;
 #ifndef _V3ERROR_NO_GLOBAL_
-    } else if (v3Global.opt.lintOnly()   // Lint mode is allowed to suppress some errors
-	       && code < V3ErrorCode::EC_MIN) {
-	return false;
+    } else if (v3Global.opt.lintOnly()  // Lint mode is allowed to suppress some errors
+               && code < V3ErrorCode::EC_MIN) {
+        return false;
 #endif
     } else {
-	warnOff(code, flag);
-	return true;
+        warnOff(code, flag);
+        return true;
     }
 }
 
@@ -222,7 +222,8 @@ bool FileLine::warnIsOff(V3ErrorCode code) const {
     if (!defaultFileLine().m_warnOn.test(code)) return true;  // Global overrides local
     // UNOPTFLAT implies UNOPT
     if (code==V3ErrorCode::UNOPT && !m_warnOn.test(V3ErrorCode::UNOPTFLAT)) return true;
-    if ((code.lintError() || code.styleError()) && !m_warnOn.test(V3ErrorCode::I_LINT)) return true;
+    if ((code.lintError() || code.styleError())
+        && !m_warnOn.test(V3ErrorCode::I_LINT)) return true;
     return false;
 }
 
@@ -244,9 +245,9 @@ void FileLine::v3errorEnd(std::ostringstream& str) {
 
 string FileLine::warnMore() const {
     if (m_lineno) {
-	return V3Error::warnMore()+ascii()+": ";
+        return V3Error::warnMore()+ascii()+": ";
     } else {
-	return V3Error::warnMore();
+        return V3Error::warnMore();
     }
 }
 
@@ -265,9 +266,9 @@ void FileLine::operator delete(void* objp, size_t size) {
     FileLine* flp = static_cast<FileLine*>(objp);
     FileLineCheckSet::iterator it = fileLineLeakChecks.find(flp);
     if (it != fileLineLeakChecks.end()) {
-	fileLineLeakChecks.erase(it);
+        fileLineLeakChecks.erase(it);
     } else {
-	flp->v3fatalSrc("Deleting FileLine object that was never tracked");
+        flp->v3fatalSrc("Deleting FileLine object that was never tracked");
     }
     ::operator delete(objp);
 }
@@ -279,11 +280,11 @@ void FileLine::deleteAllRemaining() {
     // that way.  Unfortunately this makes our leak checking a big mess, so
     // only when leak checking we'll track them all and cleanup.
     while (1) {
-	FileLineCheckSet::iterator it=fileLineLeakChecks.begin();
-	if (it==fileLineLeakChecks.end()) break;
-	delete *it;
-	// Operator delete will remove the iterated object from the list.
-	// Eventually the list will be empty and terminate the loop.
+        FileLineCheckSet::iterator it = fileLineLeakChecks.begin();
+        if (it==fileLineLeakChecks.end()) break;
+        delete *it;
+        // Operator delete will remove the iterated object from the list.
+        // Eventually the list will be empty and terminate the loop.
     }
     fileLineLeakChecks.clear();
     singleton().clear();

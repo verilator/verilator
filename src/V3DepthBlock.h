@@ -34,4 +34,4 @@ public:
     static void depthBlockAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

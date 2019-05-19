@@ -34,4 +34,4 @@ public:
     static void genClkAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

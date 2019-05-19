@@ -34,4 +34,4 @@ public:
     static void assertAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

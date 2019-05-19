@@ -35,4 +35,4 @@ public:
     static void branchAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

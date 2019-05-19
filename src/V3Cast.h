@@ -34,4 +34,4 @@ public:
     static void castAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

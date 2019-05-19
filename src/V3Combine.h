@@ -34,4 +34,4 @@ public:
     static void combineAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

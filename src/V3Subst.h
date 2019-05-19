@@ -34,4 +34,4 @@ public:
     static void substituteAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

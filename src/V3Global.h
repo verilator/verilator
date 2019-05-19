@@ -45,9 +45,9 @@ class AstNetlist;
 class VWidthMinUsage {
 public:
     enum en {
-	LINT_WIDTH,
-	MATCHES_WIDTH,
-	VERILOG_WIDTH
+        LINT_WIDTH,
+        MATCHES_WIDTH,
+        VERILOG_WIDTH
     };
     enum en m_e;
     inline VWidthMinUsage() : m_e(LINT_WIDTH) {}
@@ -56,40 +56,40 @@ public:
     explicit inline VWidthMinUsage(int _e) : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
   };
-  inline bool operator== (VWidthMinUsage lhs, VWidthMinUsage rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator== (VWidthMinUsage lhs, VWidthMinUsage::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator== (VWidthMinUsage::en lhs, VWidthMinUsage rhs) { return (lhs == rhs.m_e); }
+  inline bool operator==(VWidthMinUsage lhs, VWidthMinUsage rhs) { return (lhs.m_e == rhs.m_e); }
+  inline bool operator==(VWidthMinUsage lhs, VWidthMinUsage::en rhs) { return (lhs.m_e == rhs); }
+  inline bool operator==(VWidthMinUsage::en lhs, VWidthMinUsage rhs) { return (lhs == rhs.m_e); }
 
 //######################################################################
 // V3Global - The top level class for the entire program
 
 class V3Global {
     // Globals
-    AstNetlist*	m_rootp;		// Root of entire netlist
-    VWidthMinUsage m_widthMinUsage;	// What AstNode::widthMin() is used for
+    AstNetlist* m_rootp;                // Root of entire netlist
+    VWidthMinUsage m_widthMinUsage;     // What AstNode::widthMin() is used for
 
-    int		m_debugFileNumber;	// Number to append to debug files created
-    bool	m_assertDTypesResolved;	// Tree should have dtypep()'s
-    bool	m_constRemoveXs;	// Const needs to strip any Xs
-    bool	m_needHInlines;		// Need __Inlines file
-    bool	m_needHeavy;		// Need verilated_heavy.h include
-    bool	m_dpi;			// Need __Dpi include files
+    int         m_debugFileNumber;      // Number to append to debug files created
+    bool        m_assertDTypesResolved; // Tree should have dtypep()'s
+    bool        m_constRemoveXs;        // Const needs to strip any Xs
+    bool        m_needHInlines;         // Need __Inlines file
+    bool        m_needHeavy;            // Need verilated_heavy.h include
+    bool        m_dpi;                  // Need __Dpi include files
 
 public:
     // Options
-    V3Options	opt;		// All options; let user see them directly
+    V3Options opt;  // All options; let user see them directly
 
   public:
     // CONSTRUCTORS
     V3Global() {
-	m_debugFileNumber = 0;
-	m_widthMinUsage = VWidthMinUsage::LINT_WIDTH;
-	m_assertDTypesResolved = false;
-	m_constRemoveXs = false;
-	m_needHInlines = false;
-	m_needHeavy = false;
-	m_dpi = false;
-	m_rootp = NULL;  // created by makeInitNetlist() so static constructors run first
+        m_debugFileNumber = 0;
+        m_widthMinUsage = VWidthMinUsage::LINT_WIDTH;
+        m_assertDTypesResolved = false;
+        m_constRemoveXs = false;
+        m_needHInlines = false;
+        m_needHeavy = false;
+        m_dpi = false;
+        m_rootp = NULL;  // created by makeInitNetlist() so static constructors run first
     }
     AstNetlist* makeNetlist();
     void boot() { UASSERT(!m_rootp,"call once"); m_rootp = makeNetlist(); }
@@ -108,10 +108,10 @@ public:
     bool constRemoveXs() const { return m_constRemoveXs; }
     void constRemoveXs(bool flag) { m_constRemoveXs = flag; }
     string debugFilename(const string& nameComment, int newNumber=0) {
-	++m_debugFileNumber;
-	if (newNumber) m_debugFileNumber = newNumber;
-	char digits[100]; sprintf(digits, "%03d", m_debugFileNumber);
-	return opt.makeDir()+"/"+opt.prefix()+"_"+digits+"_"+nameComment;
+        ++m_debugFileNumber;
+        if (newNumber) m_debugFileNumber = newNumber;
+        char digits[100]; sprintf(digits, "%03d", m_debugFileNumber);
+        return opt.makeDir()+"/"+opt.prefix()+"_"+digits+"_"+nameComment;
     }
     bool needHInlines() const { return m_needHInlines; }
     void needHInlines(bool flag) { m_needHInlines=flag; }

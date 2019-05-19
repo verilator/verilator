@@ -37,4 +37,4 @@ public:
     static void emitcTrace();
 };
 
-#endif // Guard
+#endif  // Guard

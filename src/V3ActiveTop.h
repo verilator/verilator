@@ -34,4 +34,4 @@ public:
     static void activeTopAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

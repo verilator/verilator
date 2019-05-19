@@ -46,20 +46,20 @@
 
 string V3Os::getenvStr(const string& envvar, const string& defaultValue) {
     if (const char* envvalue = getenv(envvar.c_str())) {
-	return envvalue;
+        return envvalue;
     } else {
-	return defaultValue;
+        return defaultValue;
     }
 }
 
 void V3Os::setenvStr(const string& envvar, const string& value, const string& why) {
     if (why != "") {
-	UINFO(1,"export "<<envvar<<"="<<value<<" # "<<why<<endl);
+        UINFO(1,"export "<<envvar<<"="<<value<<" # "<<why<<endl);
     } else {
-	UINFO(1,"export "<<envvar<<"="<<value<<endl);
+        UINFO(1,"export "<<envvar<<"="<<value<<endl);
     }
 #if !defined(__MINGW32__) && (defined(_BSD_SOURCE) || (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L))
-    setenv(envvar.c_str(),value.c_str(),true);
+    setenv(envvar.c_str(), value.c_str(), true);
 #else
     //setenv() replaced by putenv() in MinGW/Solaris environment. Prototype is different
     //putenv() requires NAME=VALUE format
@@ -80,18 +80,18 @@ string V3Os::filenameFromDirBase(const string& dir, const string& basename) {
 string V3Os::filenameDir(const string& filename) {
     string::size_type pos;
     if ((pos = filename.rfind('/')) != string::npos) {
-	return filename.substr(0,pos);
+        return filename.substr(0, pos);
     } else {
-	return ".";
+        return ".";
     }
 }
 
 string V3Os::filenameNonDir(const string& filename) {
     string::size_type pos;
     if ((pos = filename.rfind('/')) != string::npos) {
-	return filename.substr(pos+1);
+        return filename.substr(pos+1);
     } else {
-	return filename;
+        return filename;
     }
 }
 
@@ -99,7 +99,7 @@ string V3Os::filenameNonExt(const string& filename) {
     string base = filenameNonDir(filename);
     string::size_type pos;
     if ((pos = base.find('.')) != string::npos) {
-	base.erase(pos);
+        base.erase(pos);
     }
     return base;
 }
@@ -109,36 +109,37 @@ string V3Os::filenameSubstitute(const string& filename) {
     enum { NONE, PAREN, CURLY } brackets = NONE;
     for (string::size_type pos = 0; pos < filename.length(); ++pos) {
         if ((filename[pos] == '$') && (pos+1 < filename.length())) {
-	    switch (filename[pos+1]) {
-	        case '{': brackets = CURLY; break;
-	        case '(': brackets = PAREN; break;
-	        default: brackets = NONE; break;
-	    }
-	    if (brackets != NONE) pos = pos+1;
-	    string::size_type endpos = pos+1;
-	    while (((endpos+1) < filename.length()) &&
-		   (((brackets==NONE) && (isalnum(filename[endpos+1]) || filename[endpos+1]=='_')) ||
-		    ((brackets==CURLY) && (filename[endpos+1]!='}')) ||
-		    ((brackets==PAREN) && (filename[endpos+1]!=')'))))
-		++endpos;
-	    // Catch bracket errors
-	    if (((brackets==CURLY) && (filename[endpos+1]!='}')) ||
-		((brackets==PAREN) && (filename[endpos+1]!=')'))) {
-	      v3fatal("Unmatched brackets in variable substitution in file: "+filename);
-	    }
-	    string envvar = filename.substr(pos+1,endpos-pos);
-	    const char* envvalue = NULL;
-	    if (envvar != "") envvalue = getenv(envvar.c_str());
-	    if (envvalue) {
-		out += envvalue;
-		if (brackets==NONE) pos = endpos;
-		else pos = endpos+1;
-	    } else {
-		out += filename[pos];  // *pos == '$'
-	    }
-	} else {
-	    out += filename[pos];
-	}
+            switch (filename[pos+1]) {
+                case '{': brackets = CURLY; break;
+                case '(': brackets = PAREN; break;
+                default: brackets = NONE; break;
+            }
+            if (brackets != NONE) pos = pos+1;
+            string::size_type endpos = pos+1;
+            while (((endpos+1) < filename.length()) &&
+                   (((brackets==NONE) && (isalnum(filename[endpos+1])
+                                          || filename[endpos+1]=='_'))
+                    || ((brackets==CURLY) && (filename[endpos+1]!='}'))
+                    || ((brackets==PAREN) && (filename[endpos+1]!=')'))))
+                ++endpos;
+            // Catch bracket errors
+            if (((brackets==CURLY) && (filename[endpos+1]!='}')) ||
+                ((brackets==PAREN) && (filename[endpos+1]!=')'))) {
+              v3fatal("Unmatched brackets in variable substitution in file: "+filename);
+            }
+            string envvar = filename.substr(pos+1, endpos-pos);
+            const char* envvalue = NULL;
+            if (envvar != "") envvalue = getenv(envvar.c_str());
+            if (envvalue) {
+                out += envvalue;
+                if (brackets==NONE) pos = endpos;
+                else pos = endpos+1;
+            } else {
+                out += filename[pos];  // *pos == '$'
+            }
+        } else {
+            out += filename[pos];
+        }
     }
     return out;
 
@@ -150,14 +151,14 @@ string V3Os::filenameRealPath(const string& filename) {
     char retpath[PATH_MAX];
     if (
 #if defined( _MSC_VER ) || defined( __MINGW32__ )
-	::_fullpath(retpath,filename.c_str(),PATH_MAX)
+        ::_fullpath(retpath, filename.c_str(), PATH_MAX)
 #else
-	realpath(filename.c_str(), retpath)
+        realpath(filename.c_str(), retpath)
 #endif
-	) {
-	return string(retpath);
+        ) {
+        return string(retpath);
     } else {
-	return filename;
+        return filename;
     }
 }
 
@@ -193,13 +194,13 @@ void V3Os::createDir(const string& dirname) {
 
 void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
     if (DIR* dirp = opendir(dir.c_str())) {
-	while (struct dirent* direntp = readdir(dirp)) {
-	    if (VString::wildmatch(direntp->d_name, regexp.c_str())) {
-		string fullname = dir + "/" + string(direntp->d_name);
+        while (struct dirent* direntp = readdir(dirp)) {
+            if (VString::wildmatch(direntp->d_name, regexp.c_str())) {
+                string fullname = dir + "/" + string(direntp->d_name);
                 unlink(fullname.c_str());
-	    }
-	}
-	closedir(dirp);
+            }
+        }
+        closedir(dirp);
     }
 }
 
@@ -236,16 +237,16 @@ uint64_t V3Os::memUsageBytes() {
 #else
     // Highly unportable. Sorry
     const char* const statmFilename = "/proc/self/statm";
-    FILE* fp = fopen(statmFilename,"r");
+    FILE* fp = fopen(statmFilename, "r");
     if (!fp) {
-	return 0;
+        return 0;
     }
     vluint64_t size, resident, share, text, lib, data, dt;  // All in pages
     if (7 != fscanf(fp, "%" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %"
                     VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u %" VL_PRI64 "u",
-		    &size, &resident, &share, &text, &lib, &data, &dt)) {
-	fclose(fp);
-	return 0;
+                    &size, &resident, &share, &text, &lib, &data, &dt)) {
+        fclose(fp);
+        return 0;
     }
     fclose(fp);
     return (text + data) * getpagesize();

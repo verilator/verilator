@@ -55,14 +55,14 @@ void V3GraphVertex::verticesPushBack(V3Graph* graphp) {
 
 void V3GraphVertex::unlinkEdges(V3Graph* graphp) {
     for (V3GraphEdge* edgep = outBeginp(); edgep; /*BELOW*/) {
-	V3GraphEdge* nextp = edgep->outNextp();
-	edgep->unlinkDelete();
-	edgep = nextp;
+        V3GraphEdge* nextp = edgep->outNextp();
+        edgep->unlinkDelete();
+        edgep = nextp;
     }
     for (V3GraphEdge* edgep = inBeginp(); edgep; /*BELOW*/) {
-	V3GraphEdge* nextp = edgep->inNextp();
-	edgep->unlinkDelete();
-	edgep = nextp;
+        V3GraphEdge* nextp = edgep->inNextp();
+        edgep->unlinkDelete();
+        edgep = nextp;
     }
 }
 
@@ -72,17 +72,17 @@ void V3GraphVertex::unlinkDelete(V3Graph* graphp) {
     // Unlink from vertex list
     m_vertices.unlink(graphp->m_vertices, this);
     // Delete
-    delete this; //this=NULL;
+    delete this;  //this=NULL;
 }
 
 void V3GraphVertex::rerouteEdges(V3Graph* graphp) {
     // Make new edges for each from/to pair
     for (V3GraphEdge* iedgep = inBeginp(); iedgep; iedgep=iedgep->inNextp()) {
-	for (V3GraphEdge* oedgep = outBeginp(); oedgep; oedgep=oedgep->outNextp()) {
+        for (V3GraphEdge* oedgep = outBeginp(); oedgep; oedgep=oedgep->outNextp()) {
             new V3GraphEdge(graphp, iedgep->fromp(), oedgep->top(),
-                            std::min(iedgep->weight(),oedgep->weight()),
+                            std::min(iedgep->weight(), oedgep->weight()),
                             iedgep->cutable() && oedgep->cutable());
-	}
+        }
     }
     // Remove old edges
     unlinkEdges(graphp);
@@ -101,17 +101,17 @@ uint32_t V3GraphVertex::inHash() const {
     // So we need an associative operator, like XOR.
     // However with XOR multiple edges to the same source will cancel out,
     // so we use ADD.  (Generally call this only after removing duplicates though)
-    uint32_t hash=0;
+    uint32_t hash = 0;
     for (V3GraphEdge* edgep = this->inBeginp(); edgep; edgep=edgep->inNextp()) {
-	hash += cvtToHash(edgep->fromp());
+        hash += cvtToHash(edgep->fromp());
     }
     return hash;
 }
 
 uint32_t V3GraphVertex::outHash() const {
-    uint32_t hash=0;
+    uint32_t hash = 0;
     for (V3GraphEdge* edgep = this->outBeginp(); edgep; edgep=edgep->outNextp()) {
-	hash += cvtToHash(edgep->top());
+        hash += cvtToHash(edgep->top());
     }
     return hash;
 }
@@ -163,8 +163,8 @@ std::ostream& operator<<(std::ostream& os, V3GraphVertex* vertexp) {
 // Edges
 
 void V3GraphEdge::init(V3Graph* graphp,
-		       V3GraphVertex* fromp, V3GraphVertex* top, int weight,
-		       bool cutable) {
+                       V3GraphVertex* fromp, V3GraphVertex* top, int weight,
+                       bool cutable) {
     UASSERT(fromp, "Null from pointer");
     UASSERT(top, "Null to pointer");
     m_fromp = fromp;
@@ -191,7 +191,7 @@ void V3GraphEdge::unlinkDelete() {
     // Unlink to side
     m_ins.unlink(m_top->m_ins, this);
     // Delete
-    delete this; //this=NULL;
+    delete this;  //this=NULL;
 }
 
 void V3GraphEdge::outPushBack() {
@@ -222,18 +222,18 @@ void V3Graph::clear() {
     // Empty it of all points, as if making a new object
     // Delete the old edges
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
-	for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; /*BELOW*/) {
-	    V3GraphEdge* nextp = edgep->outNextp();
-	    delete edgep;
-	    edgep = nextp;
-	}
-	vertexp->outUnlink();
+        for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; /*BELOW*/) {
+            V3GraphEdge* nextp = edgep->outNextp();
+            delete edgep;
+            edgep = nextp;
+        }
+        vertexp->outUnlink();
     }
     // Delete the old vertices
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; /*BELOW*/) {
-	V3GraphVertex* nextp = vertexp->verticesNextp();
-	delete vertexp;
-	vertexp = nextp;
+        V3GraphVertex* nextp = vertexp->verticesNextp();
+        delete vertexp;
+        vertexp = nextp;
     }
     verticesUnlink();
 }
@@ -246,25 +246,25 @@ void V3Graph::userClearVertices() {
     // the extra code on each read of user() would probably slow things
     // down more than help.
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
-	vertexp->user(0);
-	vertexp->userp(NULL);	 // Its a union, but might be different size than user()
+        vertexp->user(0);
+        vertexp->userp(NULL);  // Its a union, but might be different size than user()
     }
 }
 
 void V3Graph::userClearEdges() {
     // Clear user() in all of tree
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
-	for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
-	    edgep->user(0);
-	    edgep->userp(NULL);	 // Its a union, but might be different size than user()
-	}
+        for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
+            edgep->user(0);
+            edgep->userp(NULL);  // Its a union, but might be different size than user()
+        }
     }
 }
 
 void V3Graph::clearColors() {
     // Reset colors
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
-	vertexp->m_color = 0;
+        vertexp->m_color = 0;
     }
 }
 
@@ -285,34 +285,34 @@ void V3Graph::dump(std::ostream& os) {
     os<<" Graph:\n";
     // Print vertices
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
-	os<<"\tNode: "<<vertexp->name();
-	if (vertexp->color()) os<<"  color="<<vertexp->color();
-	os<<endl;
-	// Print edges
-	for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep=edgep->inNextp()) {
+        os<<"\tNode: "<<vertexp->name();
+        if (vertexp->color()) os<<"  color="<<vertexp->color();
+        os<<endl;
+        // Print edges
+        for (V3GraphEdge* edgep = vertexp->inBeginp(); edgep; edgep=edgep->inNextp()) {
             dumpEdge(os, vertexp, edgep);
-	}
-	for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
+        }
+        for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
             dumpEdge(os, vertexp, edgep);
-	}
+        }
     }
 }
 
 void V3Graph::dumpEdge(std::ostream& os, V3GraphVertex* vertexp, V3GraphEdge* edgep) {
     if (edgep->weight()
-	&& (edgep->fromp() == vertexp
-	    || edgep->top() == vertexp)) {
-	os<<"\t\t";
-	if (edgep->fromp() == vertexp) os << "-> "<<edgep->top()->name();
-	if (edgep->top() == vertexp) os << "<- "<<edgep->fromp()->name();
-	if (edgep->cutable()) os<<"  [CUTABLE]";
-	os<<endl;
+        && (edgep->fromp() == vertexp
+            || edgep->top() == vertexp)) {
+        os<<"\t\t";
+        if (edgep->fromp() == vertexp) os << "-> "<<edgep->top()->name();
+        if (edgep->top() == vertexp) os << "<- "<<edgep->fromp()->name();
+        if (edgep->cutable()) os<<"  [CUTABLE]";
+        os<<endl;
     }
 }
 
 void V3Graph::dumpDotFilePrefixed(const string& nameComment, bool colorAsSubgraph) const {
     if (v3Global.opt.dumpTree()) {
-	dumpDotFile(v3Global.debugFilename(nameComment)+".dot", colorAsSubgraph);
+        dumpDotFile(v3Global.debugFilename(nameComment)+".dot", colorAsSubgraph);
     }
 }
 
@@ -338,8 +338,9 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     typedef std::multimap<string,V3GraphVertex*> SubgraphMmap;
     SubgraphMmap subgraphs;
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
-	string vertexSubgraph = (colorAsSubgraph && vertexp->color()) ? cvtToStr(vertexp->color()) : "";
-	subgraphs.insert(make_pair(vertexSubgraph, vertexp));
+        string vertexSubgraph
+            = (colorAsSubgraph && vertexp->color()) ? cvtToStr(vertexp->color()) : "";
+        subgraphs.insert(make_pair(vertexSubgraph, vertexp));
     }
 
     // We use a map here, as we don't want to corrupt anything (userp) in the graph,
@@ -347,50 +348,51 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     std::map<V3GraphVertex*,int>  numMap;
 
     // Print vertices
-    int n=0;
+    int n = 0;
     string subgr;
     for (SubgraphMmap::iterator it = subgraphs.begin(); it!=subgraphs.end(); ++it) {
-	string vertexSubgraph = it->first;
-	V3GraphVertex* vertexp = it->second;
-	numMap[vertexp] = n;
-	if (subgr != vertexSubgraph) {
-	    if (subgr!="") *logp<<"\t};\n";
-	    subgr = vertexSubgraph;
-	    if (subgr!="") *logp<<"\tsubgraph cluster_"<<subgr<<" {\n";
-	}
-	if (subgr!="") *logp<<"\t";
-	*logp<<"\tn"<<vertexp->dotName()<<(n++)
-	     <<"\t[fontsize=8 "
-	     <<"label=\""<<(vertexp->name()!="" ? vertexp->name() : "\\N");
-	if (vertexp->rank()) *logp<<" r"<<vertexp->rank();
-	if (vertexp->fanout()!=0.0) *logp<<" f"<<vertexp->fanout();
-	if (vertexp->color()) *logp<<"\\n c"<<vertexp->color();
-	*logp<<"\"";
-	*logp<<", color="<<vertexp->dotColor();
-	if (vertexp->dotStyle()!="") *logp<<", style="<<vertexp->dotStyle();
-	if (vertexp->dotShape()!="") *logp<<", shape="<<vertexp->dotShape();
-	*logp<<"];\n";
+        string vertexSubgraph = it->first;
+        V3GraphVertex* vertexp = it->second;
+        numMap[vertexp] = n;
+        if (subgr != vertexSubgraph) {
+            if (subgr!="") *logp<<"\t};\n";
+            subgr = vertexSubgraph;
+            if (subgr!="") *logp<<"\tsubgraph cluster_"<<subgr<<" {\n";
+        }
+        if (subgr!="") *logp<<"\t";
+        *logp<<"\tn"<<vertexp->dotName()<<(n++)
+             <<"\t[fontsize=8 "
+             <<"label=\""<<(vertexp->name()!="" ? vertexp->name() : "\\N");
+        if (vertexp->rank()) *logp<<" r"<<vertexp->rank();
+        if (vertexp->fanout()!=0.0) *logp<<" f"<<vertexp->fanout();
+        if (vertexp->color()) *logp<<"\\n c"<<vertexp->color();
+        *logp<<"\"";
+        *logp<<", color="<<vertexp->dotColor();
+        if (vertexp->dotStyle()!="") *logp<<", style="<<vertexp->dotStyle();
+        if (vertexp->dotShape()!="") *logp<<", shape="<<vertexp->dotShape();
+        *logp<<"];\n";
     }
     if (subgr!="") *logp<<"\t};\n";
 
     // Print edges
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
-	for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
-	    if (edgep->weight()) {
-		int fromVnum = numMap[edgep->fromp()];
-		int toVnum   = numMap[edgep->top()];
-		*logp<<"\tn"<<edgep->fromp()->dotName()<<fromVnum
-		     <<" -> n"<<edgep->top()->dotName()<<toVnum
-		     <<" ["
-		    //<<"fontsize=8 label=\""<<(edgep->name()!="" ? edgep->name() : "\\E")<<"\""
-		     <<"fontsize=8 label=\""<<(edgep->dotLabel()!="" ? edgep->dotLabel() : "")<<"\""
-		     <<" weight="<<edgep->weight()
-		     <<" color="<<edgep->dotColor();
-		if (edgep->dotStyle()!="") *logp<<" style="<<edgep->dotStyle();
-		//if (edgep->cutable()) { *logp<<",constraint=false"; }    // to rank without following edges
-		*logp<<"];\n";
-	    }
-	}
+        for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
+            if (edgep->weight()) {
+                int fromVnum = numMap[edgep->fromp()];
+                int toVnum   = numMap[edgep->top()];
+                *logp<<"\tn"<<edgep->fromp()->dotName()<<fromVnum
+                     <<" -> n"<<edgep->top()->dotName()<<toVnum
+                     <<" ["
+                    //<<"fontsize=8 label=\""<<(edgep->name()!="" ? edgep->name() : "\\E")<<"\""
+                     <<"fontsize=8 label=\""
+                     <<(edgep->dotLabel()!="" ? edgep->dotLabel() : "")<<"\""
+                     <<" weight="<<edgep->weight()
+                     <<" color="<<edgep->dotColor();
+                if (edgep->dotStyle()!="") *logp<<" style="<<edgep->dotStyle();
+                //if (edgep->cutable()) { *logp<<",constraint=false"; }    // to rank without following edges
+                *logp<<"];\n";
+            }
+        }
     }
     // Vertex::m_user end, now unused
 

@@ -34,4 +34,4 @@ public:
     static void clkGaterAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

@@ -20,10 +20,10 @@
 // V3Depth's Transformations:
 //
 // Each module:
-//	For each wide OP, assign a temporary variable.
-//	For each deep expression, assign expression to temporary.
+//      For each wide OP, assign a temporary variable.
+//      For each deep expression, assign expression to temporary.
 // Each CFunc:
-//	Any statements that need "this" are marked non-static
+//      Any statements that need "this" are marked non-static
 //
 //*************************************************************************
 
@@ -44,62 +44,64 @@ private:
     // NODE STATE
 
     // STATE
-    AstNodeModule*	m_modp;		// Current module
-    AstCFunc*		m_funcp;	// Current block
-    AstNode*		m_stmtp;	// Current statement
-    int			m_depth;	// How deep in an expression
-    int			m_maxdepth;	// Maximum depth in an expression
+    AstNodeModule*      m_modp;         // Current module
+    AstCFunc*           m_funcp;        // Current block
+    AstNode*            m_stmtp;        // Current statement
+    int                 m_depth;        // How deep in an expression
+    int                 m_maxdepth;     // Maximum depth in an expression
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
     void createDeepTemp(AstNode* nodep) {
-	UINFO(6,"  Deep  "<<nodep<<endl);
-	//if (debug()>=9) nodep->dumpTree(cout,"deep:");
+        UINFO(6,"  Deep  "<<nodep<<endl);
+        //if (debug()>=9) nodep->dumpTree(cout, "deep:");
 
         string newvarname = (string("__Vdeeptemp")+cvtToStr(m_modp->varNumGetInc()));
         AstVar* varp = new AstVar(nodep->fileline(), AstVarType::STMTTEMP, newvarname,
-                                  // Width, not widthMin, as we may be in middle of BITSEL expression which
-                                  // though it's one bit wide, needs the mask in the upper bits.
-                                  // (Someday we'll have a valid bitmask instead of widths....)
+                                  // Width, not widthMin, as we may be in
+                                  // middle of BITSEL expression which though
+                                  // it's one bit wide, needs the mask in the
+                                  // upper bits.  (Someday we'll have a valid
+                                  // bitmask instead of widths....)
                                   // See t_func_crc for an example test that requires this
                                   VFlagLogicPacked(), nodep->width());
-	if (!m_funcp) nodep->v3fatalSrc("Deep expression not under a function");
-	m_funcp->addInitsp(varp);
-	// Replace node tree with reference to var
+        if (!m_funcp) nodep->v3fatalSrc("Deep expression not under a function");
+        m_funcp->addInitsp(varp);
+        // Replace node tree with reference to var
         AstVarRef* newp = new AstVarRef(nodep->fileline(), varp, false);
-	nodep->replaceWith(newp);
-	// Put assignment before the referencing statement
+        nodep->replaceWith(newp);
+        // Put assignment before the referencing statement
         AstAssign* assp = new AstAssign(nodep->fileline(),
                                         new AstVarRef(nodep->fileline(), varp, true),
                                         nodep);
-	AstNRelinker linker2;
-	m_stmtp->unlinkFrBack(&linker2);
-	assp->addNext(m_stmtp);
-	linker2.relink(assp);
+        AstNRelinker linker2;
+        m_stmtp->unlinkFrBack(&linker2);
+        assp->addNext(m_stmtp);
+        linker2.relink(assp);
     }
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) {
-	UINFO(4," MOD   "<<nodep<<endl);
-	m_modp = nodep;
-	m_funcp = NULL;
+        UINFO(4," MOD   "<<nodep<<endl);
+        m_modp = nodep;
+        m_funcp = NULL;
         iterateChildren(nodep);
-	m_modp = NULL;
+        m_modp = NULL;
     }
     virtual void visit(AstCFunc* nodep) {
-	m_funcp = nodep;
-	m_depth = 0;
-	m_maxdepth = 0;
+        m_funcp = nodep;
+        m_depth = 0;
+        m_maxdepth = 0;
         iterateChildren(nodep);
-	m_funcp = NULL;
+        m_funcp = NULL;
     }
     void visitStmt(AstNodeStmt* nodep) {
-	m_depth = 0;
-	m_maxdepth = 0;
-	m_stmtp = nodep;
+        m_depth = 0;
+        m_maxdepth = 0;
+        m_stmtp = nodep;
         iterateChildren(nodep);
-	m_stmtp = NULL;
+        m_stmtp = NULL;
     }
     virtual void visit(AstNodeStmt* nodep) {
         if (!nodep->isStatement()) {
@@ -112,20 +114,20 @@ private:
     virtual void visit(AstNodeTermop* nodep) {
     }
     virtual void visit(AstNodeMath* nodep) {
-	// We have some operator defines that use 2 parens, so += 2.
-	m_depth += 2;
-	if (m_depth>m_maxdepth) m_maxdepth=m_depth;
+        // We have some operator defines that use 2 parens, so += 2.
+        m_depth += 2;
+        if (m_depth>m_maxdepth) m_maxdepth = m_depth;
         iterateChildren(nodep);
-	m_depth -= 2;
+        m_depth -= 2;
 
-	if (m_stmtp
-	    && (v3Global.opt.compLimitParens() >= 1)	// Else compiler doesn't need it
-	    && (m_maxdepth-m_depth) > v3Global.opt.compLimitParens()
+        if (m_stmtp
+            && (v3Global.opt.compLimitParens() >= 1)  // Else compiler doesn't need it
+            && (m_maxdepth-m_depth) > v3Global.opt.compLimitParens()
             && !VN_IS(nodep->backp(), NodeStmt)  // Not much point if we're about to use it
-	    ) {
-	    m_maxdepth = m_depth;
-	    createDeepTemp(nodep);
-	}
+            ) {
+            m_maxdepth = m_depth;
+            createDeepTemp(nodep);
+        }
     }
 
     //--------------------
@@ -134,22 +136,22 @@ private:
     void needNonStaticFunc(AstNode* nodep) {
         if (!m_funcp) nodep->v3fatalSrc("Non-static accessor not under a function");
         if (m_funcp->isStatic().trueU()) {
-	    UINFO(5,"Mark non-public due to "<<nodep<<endl);
-	    m_funcp->isStatic(false);
-	}
+            UINFO(5,"Mark non-public due to "<<nodep<<endl);
+            m_funcp->isStatic(false);
+        }
     }
     virtual void visit(AstUCFunc* nodep) {
-	needNonStaticFunc(nodep);
+        needNonStaticFunc(nodep);
         iterateChildren(nodep);
     }
     virtual void visit(AstUCStmt* nodep) {
-	needNonStaticFunc(nodep);
-	visitStmt(nodep);
+        needNonStaticFunc(nodep);
+        visitStmt(nodep);
     }
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstVar* nodep) {}	// Don't hit varrefs under vars
+    virtual void visit(AstVar* nodep) {}  // Don't hit varrefs under vars
     virtual void visit(AstNode* nodep) {
         iterateChildren(nodep);
     }
@@ -157,12 +159,12 @@ private:
 public:
     // CONSTUCTORS
     explicit DepthVisitor(AstNetlist* nodep) {
-	m_modp=NULL;
-	m_funcp=NULL;
-	m_stmtp=NULL;
-	m_depth=0;
-	m_maxdepth=0;
-	//
+        m_modp = NULL;
+        m_funcp = NULL;
+        m_stmtp = NULL;
+        m_depth = 0;
+        m_maxdepth = 0;
+        //
         iterate(nodep);
     }
     virtual ~DepthVisitor() {}

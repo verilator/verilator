@@ -30,4 +30,4 @@
 #define deleteTree       error_no_deleteTree_in_ConstOnlyVisitor
 #define unlinkFrBack     error_no_unlinkFrBack_in_ConstOnlyVisitor
 
-#endif // Guard
+#endif  // Guard

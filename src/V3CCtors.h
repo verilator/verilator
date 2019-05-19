@@ -37,4 +37,4 @@ private:
 };
 
 
-#endif // Guard
+#endif  // Guard

@@ -24,7 +24,7 @@
 //              ASSIGN(Vdly, a)
 //              ... {no reads or writes of a after the first write to Vdly}
 //              ... {no reads of a after the first write to Vdly}
-//              ASSIGNPOST(Vdly,tmp)
+//              ASSIGNPOST(Vdly, tmp)
 //
 //*************************************************************************
 
@@ -51,7 +51,8 @@ private:
 
     // NODE STATE
     // INPUT:
-    //  AstVarScope::user4p()   -> AstVarScope*, If set, replace this varscope with specified new one
+    //  AstVarScope::user4p()   -> AstVarScope*, If set, replace this
+    //                             varscope with specified new one
     // STATE
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -223,7 +224,7 @@ private:
             // Proof (1)
             const std::set<LifeLocation>& dlyVarReads = m_reads[dlyVarp];
             if (!dlyVarReads.empty()) {
-                continue; // do not scrunch, go to next LifePostLocation
+                continue;  // do not scrunch, go to next LifePostLocation
             }
 
             // Proof (2)

@@ -34,4 +34,4 @@ public:
     static void scopeAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

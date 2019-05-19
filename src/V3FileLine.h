@@ -46,9 +46,9 @@ class FileLineSingleton {
     typedef std::map<string,int> FileNameNumMap;
     typedef std::map<string,V3LangCode> FileLangNumMap;
     // MEMBERS
-    FileNameNumMap	m_namemap;	// filenameno for each filename
+    FileNameNumMap      m_namemap;      // filenameno for each filename
     std::deque<string>  m_names;        // filename text for each filenameno
-    std::deque<V3LangCode>      m_languages;    // language for each filenameno
+    std::deque<V3LangCode> m_languages;  // language for each filenameno
     // COSNTRUCTORS
     FileLineSingleton() { }
     ~FileLineSingleton() { }
@@ -70,19 +70,19 @@ protected:
 //! millions). To save space, per-file information (e.g. filename, source
 //! language is held in tables in the FileLineSingleton class.
 class FileLine {
-    int		m_lineno;
-    int		m_filenameno;
+    int m_lineno;
+    int m_filenameno;
     std::bitset<V3ErrorCode::_ENUM_MAX> m_warnOn;
 
 private:
     struct EmptySecret {};
     inline static FileLineSingleton& singleton() {
-	static FileLineSingleton s;
-	return s;
+        static FileLineSingleton s;
+        return s;
     }
     inline static FileLine& defaultFileLine() {
-	static FileLine* defFilelinep = new FileLine(FileLine::EmptySecret());
-	return *defFilelinep;
+        static FileLine* defFilelinep = new FileLine(FileLine::EmptySecret());
+        return *defFilelinep;
     }
 protected:
     // User routines should never need to change line numbers
@@ -101,13 +101,18 @@ protected:
     FileLine* copyOrSameFileLine();
 public:
     FileLine(const string& filename, int lineno) {
-	m_lineno=lineno; m_filenameno = singleton().nameToNumber(filename);
-	m_warnOn=defaultFileLine().m_warnOn; }
+        m_lineno = lineno;
+        m_filenameno = singleton().nameToNumber(filename);
+        m_warnOn = defaultFileLine().m_warnOn;
+    }
     explicit FileLine(FileLine* fromp) {
-	m_lineno=fromp->m_lineno; m_filenameno = fromp->m_filenameno; m_warnOn=fromp->m_warnOn; }
+        m_lineno = fromp->m_lineno;
+        m_filenameno = fromp->m_filenameno;
+        m_warnOn = fromp->m_warnOn;
+    }
     explicit FileLine(EmptySecret);
     ~FileLine() { }
-    FileLine* create(const string& filename, int lineno) { return new FileLine(filename,lineno); }
+    FileLine* create(const string& filename, int lineno) { return new FileLine(filename, lineno); }
     FileLine* create(int lineno) { return create(filename(), lineno); }
     static void deleteAllRemaining();
 #ifdef VL_LEAK_CHECKS
@@ -125,32 +130,33 @@ public:
     const string profileFuncname() const;
     const string xml() const { return "fl=\""+filenameLetters()+cvtToStr(lineno())+"\""; }
     string lineDirectiveStrg(int enterExit) const;
-    void warnOn(V3ErrorCode code, bool flag) { m_warnOn.set(code,flag); }	// Turn on/off warning messages on this line.
-    void warnOff(V3ErrorCode code, bool flag) { warnOn(code,!flag); }
+    // Turn on/off warning messages on this line.
+    void warnOn(V3ErrorCode code, bool flag) { m_warnOn.set(code, flag); }
+    void warnOff(V3ErrorCode code, bool flag) { warnOn(code, !flag); }
     bool warnOff(const string& msg, bool flag);  // Returns 1 if ok
     bool warnIsOff(V3ErrorCode code) const;
     void warnLintOff(bool flag);
     void warnStyleOff(bool flag);
-    void warnStateFrom(const FileLine& from) { m_warnOn=from.m_warnOn; }
+    void warnStateFrom(const FileLine& from) { m_warnOn = from.m_warnOn; }
     void warnResetDefault() { warnStateFrom(defaultFileLine()); }
 
     // Specific flag ACCESSORS/METHODS
     bool coverageOn() const { return m_warnOn.test(V3ErrorCode::I_COVERAGE); }
-    void coverageOn(bool flag) { warnOn(V3ErrorCode::I_COVERAGE,flag); }
+    void coverageOn(bool flag) { warnOn(V3ErrorCode::I_COVERAGE, flag); }
     bool tracingOn() const { return m_warnOn.test(V3ErrorCode::I_TRACING); }
-    void tracingOn(bool flag) { warnOn(V3ErrorCode::I_TRACING,flag); }
+    void tracingOn(bool flag) { warnOn(V3ErrorCode::I_TRACING, flag); }
 
     // METHODS - Global
     static void globalWarnLintOff(bool flag) {
-	defaultFileLine().warnLintOff(flag); }
+        defaultFileLine().warnLintOff(flag); }
     static void globalWarnStyleOff(bool flag) {
-	defaultFileLine().warnStyleOff(flag); }
+        defaultFileLine().warnStyleOff(flag); }
     static void globalWarnOff(V3ErrorCode code, bool flag) {
-	defaultFileLine().warnOff(code, flag); }
+        defaultFileLine().warnOff(code, flag); }
     static bool globalWarnOff(const string& code, bool flag) {
-	return defaultFileLine().warnOff(code, flag); }
+        return defaultFileLine().warnOff(code, flag); }
     static void fileNameNumMapDumpXml(std::ostream& os) {
-	singleton().fileNameNumMapDumpXml(os); }
+        singleton().fileNameNumMapDumpXml(os); }
 
     // METHODS - Called from netlist
     // Merge warning disables from another fileline
@@ -158,14 +164,15 @@ public:
     // Change the current fileline due to actions discovered after parsing
     // and may have side effects on other nodes sharing this FileLine.
     // Use only when this is intended
-    void modifyWarnOff(V3ErrorCode code, bool flag) { warnOff(code,flag); }
+    void modifyWarnOff(V3ErrorCode code, bool flag) { warnOff(code, flag); }
 
     // OPERATORS
     void v3errorEnd(std::ostringstream& str);
     void v3errorEndFatal(std::ostringstream& str);
     string warnMore() const;
     inline bool operator==(FileLine rhs) const {
-	return (m_lineno==rhs.m_lineno && m_filenameno==rhs.m_filenameno && m_warnOn==rhs.m_warnOn);
+        return (m_lineno==rhs.m_lineno && m_filenameno==rhs.m_filenameno
+                && m_warnOn==rhs.m_warnOn);
     }
 private:
     void v3errorEndFatalGuts(std::ostringstream& str);

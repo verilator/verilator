@@ -44,4 +44,4 @@ public:
     static AstNode* widthSelNoIterEdit(AstNode* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

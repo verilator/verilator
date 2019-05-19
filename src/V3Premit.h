@@ -34,4 +34,4 @@ public:
     static void premitAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

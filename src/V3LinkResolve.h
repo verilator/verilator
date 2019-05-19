@@ -34,4 +34,4 @@ public:
     static void linkResolve(AstNetlist* rootp);
 };
 
-#endif // Guard
+#endif  // Guard

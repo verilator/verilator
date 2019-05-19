@@ -34,4 +34,4 @@ public:
     static void splitAsAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

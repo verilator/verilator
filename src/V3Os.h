@@ -58,7 +58,7 @@ public:
 
     // METHODS (performance)
     static uint64_t timeUsecs();  ///< Return wall time since epoch in microseconds, or 0 if not implemented
-    static uint64_t memUsageBytes(); ///< Return memory usage in bytes, or 0 if not implemented
+    static uint64_t memUsageBytes();  ///< Return memory usage in bytes, or 0 if not implemented
 };
 
-#endif // Guard
+#endif  // Guard

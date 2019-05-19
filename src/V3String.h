@@ -53,10 +53,10 @@ class VHashSha1 {
     // Or improve to store 0-63 bytes of data between calls to input().
 
     // MEMBERS
-    uint32_t	m_inthash[5];		// Intermediate hash, in host order
-    string	m_remainder;		// Unhashed data
-    bool	m_final;		// Finalized
-    size_t	m_totLength;		// Total all-chunk length as needed by output digest
+    uint32_t    m_inthash[5];           // Intermediate hash, in host order
+    string      m_remainder;            // Unhashed data
+    bool        m_final;                // Finalized
+    size_t      m_totLength;            // Total all-chunk length as needed by output digest
 public:
     // CONSTRUCTORS
     VHashSha1() { init(); }
@@ -64,11 +64,11 @@ public:
     ~VHashSha1() {}
 
     // METHODS
-    string digestBinary();		// Return digest as 20 character binary
-    string digestHex();			// Return digest formatted as a hex string
-    string digestSymbol();		// Return digest formatted as C symbol/base64ish
-    uint64_t digestUInt64();		// Return 64-bits of digest
-    static void selfTest();		// Test this class
+    string digestBinary();  // Return digest as 20 character binary
+    string digestHex();  // Return digest formatted as a hex string
+    string digestSymbol();  // Return digest formatted as C symbol/base64ish
+    uint64_t digestUInt64();  // Return 64-bits of digest
+    static void selfTest();  // Test this class
 
     // Inerting hash data
     void insert(const void* datap, size_t length);  // Process data into the digest
@@ -77,14 +77,14 @@ public:
 
 private:
     void init() {
-	m_inthash[0] = 0x67452301; m_inthash[1] = 0xefcdab89; m_inthash[2] = 0x98badcfe;
-	m_inthash[3] = 0x10325476; m_inthash[4] = 0xc3d2e1f0;
-	m_final = false;
-	m_totLength = 0;
+        m_inthash[0] = 0x67452301; m_inthash[1] = 0xefcdab89; m_inthash[2] = 0x98badcfe;
+        m_inthash[3] = 0x10325476; m_inthash[4] = 0xc3d2e1f0;
+        m_final = false;
+        m_totLength = 0;
     }
     static void selfTestOne(const string& data, const string& data2,
-			    const string& exp, const string& exp64);
-    void finalize();			// Process remaining data
+                            const string& exp, const string& exp64);
+    void finalize();  // Process remaining data
 };
 
 //######################################################################
@@ -95,8 +95,8 @@ class VName {
     string m_name;
     string m_hashed;
 
-    static size_t s_maxLength;		// Length at which to start hashing
-    static size_t s_minLength;		// Length to preserve if over maxLength
+    static size_t s_maxLength;  // Length at which to start hashing
+    static size_t s_minLength;  // Length to preserve if over maxLength
 public:
     // CONSTRUCTORS
     explicit VName(const string& name) : m_name(name) {}
@@ -106,10 +106,11 @@ public:
     string name() const { return m_name; }
     string hashedName();
     // CONFIG STATIC METHORS
-    static void maxLength(size_t flag) { s_maxLength=flag; } // Length at which to start hashing, 0=disable
+    // Length at which to start hashing, 0=disable
+    static void maxLength(size_t flag) { s_maxLength = flag; }
     static size_t maxLength() { return s_maxLength; }
 };
 
 //######################################################################
 
-#endif // guard
+#endif  // guard

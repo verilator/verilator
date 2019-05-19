@@ -34,4 +34,4 @@ public:
     static void localizeAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

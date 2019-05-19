@@ -35,4 +35,4 @@ public:
     static void coverageJoin(AstNetlist* rootp);
 };
 
-#endif // Guard
+#endif  // Guard

@@ -34,4 +34,4 @@ public:
     static void emitxml();
 };
 
-#endif // Guard
+#endif  // Guard

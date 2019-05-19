@@ -34,4 +34,4 @@ public:
     static void debeginAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

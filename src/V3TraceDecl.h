@@ -34,4 +34,4 @@ public:
     static void traceDeclAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

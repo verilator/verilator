@@ -21,9 +21,9 @@
 //
 // Note this can be called multiple times.
 //   Across all ACTIVES
-//	SenTrees are now under each ACTIVE statement, we want them global:
-//	    Find SenTree in under global TopScope, or create it there
-//	    Move SenTree the global SenTree
+//      SenTrees are now under each ACTIVE statement, we want them global:
+//          Find SenTree in under global TopScope, or create it there
+//          Move SenTree the global SenTree
 //
 //*************************************************************************
 
@@ -43,91 +43,95 @@ class ActiveTopVisitor : public AstNVisitor {
 private:
     // NODE STATE
     //  Entire netlist
-    //   AstNode::user()		bool. True if processed
+    //   AstNode::user()                bool. True if processed
     //  Each call to V3Const::constify
-    //   AstNode::user4()		Used by V3Const::constify, called below
-    AstUser1InUse	m_inuser1;
+    //   AstNode::user4()               Used by V3Const::constify, called below
+    AstUser1InUse       m_inuser1;
 
     // STATE
-    AstTopScope*	m_topscopep;	// Top scope for adding sentrees under
-    SenTreeFinder	m_finder;	// Find global sentree's and add them
+    AstTopScope*        m_topscopep;    // Top scope for adding sentrees under
+    SenTreeFinder       m_finder;       // Find global sentree's and add them
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
     virtual void visit(AstTopScope* nodep) {
-	m_topscopep = nodep;
-	m_finder.main(m_topscopep);
+        m_topscopep = nodep;
+        m_finder.main(m_topscopep);
         iterateChildren(nodep);
-	m_topscopep = NULL;
+        m_topscopep = NULL;
     }
     virtual void visit(AstNodeModule* nodep) {
-	// Create required actives and add to module
-	// We can start ordering at a module, or a scope
-	UINFO(4," MOD   "<<nodep<<endl);
+        // Create required actives and add to module
+        // We can start ordering at a module, or a scope
+        UINFO(4," MOD   "<<nodep<<endl);
         iterateChildren(nodep);
     }
     virtual void visit(AstActive* nodep) {
-	UINFO(4,"   ACTIVE "<<nodep<<endl);
-	V3Const::constifyExpensiveEdit(nodep); // Remove duplicate clocks and such; sensesp() may change!
-	AstSenTree* sensesp = nodep->sensesp();
-	if (!sensesp) nodep->v3fatalSrc("NULL");
-	if (sensesp->sensesp()
+        UINFO(4,"   ACTIVE "<<nodep<<endl);
+        V3Const::constifyExpensiveEdit(nodep);  // Remove duplicate clocks and such; sensesp() may change!
+        AstSenTree* sensesp = nodep->sensesp();
+        if (!sensesp) nodep->v3fatalSrc("NULL");
+        if (sensesp->sensesp()
             && VN_IS(sensesp->sensesp(), SenItem)
             && VN_CAST(sensesp->sensesp(), SenItem)->isNever()) {
-	    // Never executing.  Kill it.
-	    if (sensesp->sensesp()->nextp()) nodep->v3fatalSrc("Never senitem should be alone, else the never should be eliminated.");
-	    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
-	    return;
-	}
-	// Copy combo tree to settlement tree with duplicated statements
-	if (sensesp->hasCombo()) {
-	    AstSenTree* newsentreep
+            // Never executing.  Kill it.
+            if (sensesp->sensesp()->nextp()) {
+                nodep->v3fatalSrc("Never senitem should be alone, else the never should be eliminated.");
+            }
+            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            return;
+        }
+        // Copy combo tree to settlement tree with duplicated statements
+        if (sensesp->hasCombo()) {
+            AstSenTree* newsentreep
                 = new AstSenTree(nodep->fileline(),
-                                 new AstSenItem (nodep->fileline(), AstSenItem::Settle()));
-	    AstActive* newp = new AstActive(nodep->fileline(),"settle", newsentreep);
-	    newp->sensesStorep(newsentreep);
-	    if (nodep->stmtsp()) newp->addStmtsp(nodep->stmtsp()->cloneTree(true));
-	    nodep->addNextHere(newp);
-	}
-	// Move the SENTREE for each active up to the global level.
-	// This way we'll easily see what clock domains are identical
-	AstSenTree* wantp = m_finder.getSenTree(nodep->fileline(), sensesp);
-	UINFO(4,"   lookdone\n");
-	if (wantp != sensesp) {
-	    // Move the active's contents to the other active
-	    UINFO(4,"   merge active "<<sensesp<<" into "<<wantp<<endl);
-	    if (nodep->sensesStorep()) {
-		if (sensesp != nodep->sensesStorep()) nodep->v3fatalSrc("sensesStore should have been deleted earlier if different");
-		sensesp->unlinkFrBack();
-		// There may be other references to same sense tree,
-		// we'll be removing all references when we get to them,
-		// but don't dangle our pointer yet!
-		pushDeletep(sensesp);
-	    }
-	    nodep->sensesp(wantp);
-	}
-	// No need to do statements under it, they're already moved.
+                                 new AstSenItem(nodep->fileline(), AstSenItem::Settle()));
+            AstActive* newp = new AstActive(nodep->fileline(),"settle", newsentreep);
+            newp->sensesStorep(newsentreep);
+            if (nodep->stmtsp()) newp->addStmtsp(nodep->stmtsp()->cloneTree(true));
+            nodep->addNextHere(newp);
+        }
+        // Move the SENTREE for each active up to the global level.
+        // This way we'll easily see what clock domains are identical
+        AstSenTree* wantp = m_finder.getSenTree(nodep->fileline(), sensesp);
+        UINFO(4,"   lookdone\n");
+        if (wantp != sensesp) {
+            // Move the active's contents to the other active
+            UINFO(4,"   merge active "<<sensesp<<" into "<<wantp<<endl);
+            if (nodep->sensesStorep()) {
+                if (sensesp != nodep->sensesStorep()) {
+                    nodep->v3fatalSrc("sensesStore should have been deleted earlier if different");
+                }
+                sensesp->unlinkFrBack();
+                // There may be other references to same sense tree,
+                // we'll be removing all references when we get to them,
+                // but don't dangle our pointer yet!
+                pushDeletep(sensesp);
+            }
+            nodep->sensesp(wantp);
+        }
+        // No need to do statements under it, they're already moved.
         //iterateChildren(nodep);
     }
     virtual void visit(AstInitial* nodep) {
-	nodep->v3fatalSrc("Node should have been under ACTIVE");
+        nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
     virtual void visit(AstAssignAlias* nodep) {
-	nodep->v3fatalSrc("Node should have been under ACTIVE");
+        nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
     virtual void visit(AstAssignW* nodep) {
-	nodep->v3fatalSrc("Node should have been under ACTIVE");
+        nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
     virtual void visit(AstAlways* nodep) {
-	nodep->v3fatalSrc("Node should have been under ACTIVE");
+        nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
     virtual void visit(AstAlwaysPublic* nodep) {
-	nodep->v3fatalSrc("Node should have been under ACTIVE");
+        nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
     virtual void visit(AstFinal* nodep) {
-	nodep->v3fatalSrc("Node should have been deleted");
+        nodep->v3fatalSrc("Node should have been deleted");
     }
     // Empty visitors, speed things up
     virtual void visit(AstNodeMath* nodep) {}
@@ -139,7 +143,7 @@ private:
 public:
     // CONSTUCTORS
     explicit ActiveTopVisitor(AstNetlist* nodep) {
-	m_topscopep = NULL;
+        m_topscopep = NULL;
         iterate(nodep);
     }
     virtual ~ActiveTopVisitor() {}

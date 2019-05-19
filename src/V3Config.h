@@ -35,4 +35,4 @@ public:
     static void applyIgnores(FileLine* filelinep);
 };
 
-#endif // Guard
+#endif  // Guard

@@ -35,4 +35,4 @@ public:
     static void caseLint(AstNodeCase* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

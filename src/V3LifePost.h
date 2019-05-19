@@ -34,4 +34,4 @@ public:
     static void lifepostAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

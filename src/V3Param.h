@@ -34,4 +34,4 @@ public:
     static void param(AstNetlist* rootp);
 };
 
-#endif // Guard
+#endif  // Guard

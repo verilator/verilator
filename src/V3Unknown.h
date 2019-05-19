@@ -34,4 +34,4 @@ public:
     static void unknownAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

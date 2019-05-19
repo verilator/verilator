@@ -38,4 +38,4 @@ public:
     static void wrapTop(AstNetlist* rootp);
 };
 
-#endif // Guard
+#endif  // Guard

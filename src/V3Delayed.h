@@ -34,4 +34,4 @@ public:
     static void delayedAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

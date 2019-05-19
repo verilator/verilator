@@ -40,9 +40,9 @@
 # define INFILTER_PIPE  // Allow pipe filtering.  Needs fork()
 #endif
 
-#ifdef HAVE_STAT_NSEC // i.e. Linux 2.6, from configure
-# define VL_STAT_CTIME_NSEC(stat) ((stat).st_ctim.tv_nsec) // Nanoseconds
-# define VL_STAT_MTIME_NSEC(stat) ((stat).st_mtim.tv_nsec) // Nanoseconds
+#ifdef HAVE_STAT_NSEC  // i.e. Linux 2.6, from configure
+# define VL_STAT_CTIME_NSEC(stat) ((stat).st_ctim.tv_nsec)  // Nanoseconds
+# define VL_STAT_MTIME_NSEC(stat) ((stat).st_mtim.tv_nsec)  // Nanoseconds
 #else
 # define VL_STAT_CTIME_NSEC(stat) (0)
 # define VL_STAT_MTIME_NSEC(stat) (0)
@@ -63,38 +63,38 @@
 class V3FileDependImp {
     // TYPES
     class DependFile {
-	// A single file
-	bool		m_target;	// True if write, else read
-	string		m_filename;	// Filename
-	struct stat	m_stat;		// Stat information
+        // A single file
+        bool            m_target;       // True if write, else read
+        string          m_filename;     // Filename
+        struct stat     m_stat;         // Stat information
     public:
-	DependFile(const string& filename, bool target)
-	    : m_target(target), m_filename(filename) {
-	    m_stat.st_ctime = 0;
-	    m_stat.st_mtime = 0;
-	}
-	~DependFile() {}
-	const string& filename() const { return m_filename; }
-	bool target() const { return m_target; }
-	off_t size() const { return m_stat.st_size; }
-	ino_t ino() const { return m_stat.st_ino; }
-	time_t cstime() const { return m_stat.st_ctime; } // Seconds
-	time_t cnstime() const { return VL_STAT_CTIME_NSEC(m_stat); } // Nanoseconds
-	time_t mstime() const { return m_stat.st_mtime; } // Seconds
-	time_t mnstime() const { return VL_STAT_MTIME_NSEC(m_stat); } // Nanoseconds
-	void loadStats() {
-	    if (!m_stat.st_mtime) {
-		string fn = filename();
-		int err = stat(fn.c_str(), &m_stat);
+        DependFile(const string& filename, bool target)
+            : m_target(target), m_filename(filename) {
+            m_stat.st_ctime = 0;
+            m_stat.st_mtime = 0;
+        }
+        ~DependFile() {}
+        const string& filename() const { return m_filename; }
+        bool target() const { return m_target; }
+        off_t size() const { return m_stat.st_size; }
+        ino_t ino() const { return m_stat.st_ino; }
+        time_t cstime() const { return m_stat.st_ctime; }  // Seconds
+        time_t cnstime() const { return VL_STAT_CTIME_NSEC(m_stat); }  // Nanoseconds
+        time_t mstime() const { return m_stat.st_mtime; }  // Seconds
+        time_t mnstime() const { return VL_STAT_MTIME_NSEC(m_stat); }  // Nanoseconds
+        void loadStats() {
+            if (!m_stat.st_mtime) {
+                string fn = filename();
+                int err = stat(fn.c_str(), &m_stat);
                 if (err!=0) {
                     memset(&m_stat, 0, sizeof(m_stat));
                     m_stat.st_mtime = 1;
                     // Not an error... This can occur due to `line directives in the .vpp files
-		    UINFO(1,"-Info: File not statable: "<<filename()<<endl);
-		}
-	    }
-	}
-	bool operator<(const DependFile& rhs) const { return filename()<rhs.filename(); }
+                    UINFO(1,"-Info: File not statable: "<<filename()<<endl);
+                }
+            }
+        }
+        bool operator<(const DependFile& rhs) const { return filename()<rhs.filename(); }
     };
 
     // MEMBERS
@@ -102,34 +102,34 @@ class V3FileDependImp {
     std::set<DependFile> m_filenameList;  // Files sourced/generated
 
     static string stripQuotes(const string& in) {
-	string pretty = in;
-	string::size_type pos;
+        string pretty = in;
+        string::size_type pos;
         while ((pos = pretty.find('\"')) != string::npos) pretty.replace(pos, 1, "_");
         while ((pos = pretty.find('\n')) != string::npos) pretty.replace(pos, 1, "_");
-	return pretty;
+        return pretty;
     }
 public:
     // ACCESSOR METHODS
     void addSrcDepend(const string& filename) {
-	if (m_filenameSet.find(filename) == m_filenameSet.end()) {
-	    m_filenameSet.insert(filename);
-	    DependFile df (filename, false);
-	    df.loadStats();  // Get size now, in case changes during the run
-	    m_filenameList.insert(df);
-	}
+        if (m_filenameSet.find(filename) == m_filenameSet.end()) {
+            m_filenameSet.insert(filename);
+            DependFile df (filename, false);
+            df.loadStats();  // Get size now, in case changes during the run
+            m_filenameList.insert(df);
+        }
     }
     void addTgtDepend(const string& filename) {
-	if (m_filenameSet.find(filename) == m_filenameSet.end()) {
-	    m_filenameSet.insert(filename);
+        if (m_filenameSet.find(filename) == m_filenameSet.end()) {
+            m_filenameSet.insert(filename);
             m_filenameList.insert(DependFile(filename, true));
-	}
+        }
     }
     void writeDepend(const string& filename);
     void writeTimes(const string& filename, const string& cmdlineIn);
     bool checkTimes(const string& filename, const string& cmdlineIn);
 };
 
-V3FileDependImp  dependImp;	// Depend implementation class
+V3FileDependImp  dependImp;  // Depend implementation class
 
 //######################################################################
 // V3FileDependImp
@@ -139,10 +139,10 @@ inline void V3FileDependImp::writeDepend(const string& filename) {
     if (ofp->fail()) v3fatal("Can't write "<<filename);
 
     for (std::set<DependFile>::iterator iter=m_filenameList.begin();
-	 iter!=m_filenameList.end(); ++iter) {
-	if (iter->target()) {
-	    *ofp<<iter->filename()<<" ";
-	}
+         iter!=m_filenameList.end(); ++iter) {
+        if (iter->target()) {
+            *ofp<<iter->filename()<<" ";
+        }
     }
     *ofp<<" : ";
     *ofp<<v3Global.opt.bin();
@@ -151,22 +151,22 @@ inline void V3FileDependImp::writeDepend(const string& filename) {
     *ofp<<"  ";
 
     for (std::set<DependFile>::iterator iter=m_filenameList.begin();
-	 iter!=m_filenameList.end(); ++iter) {
-	if (!iter->target()) {
-	    *ofp<<iter->filename()<<" ";
-	}
+         iter!=m_filenameList.end(); ++iter) {
+        if (!iter->target()) {
+            *ofp<<iter->filename()<<" ";
+        }
     }
 
     *ofp<<endl;
 
     if (v3Global.opt.makePhony()) {
-	*ofp<<endl;
+        *ofp<<endl;
         for (std::set<DependFile>::iterator iter=m_filenameList.begin();
-	     iter!=m_filenameList.end(); ++iter) {
-	    if (!iter->target()) {
-		*ofp<<iter->filename()<<":"<<endl;
-	    }
-	}
+             iter!=m_filenameList.end(); ++iter) {
+            if (!iter->target()) {
+                *ofp<<iter->filename()<<":"<<endl;
+            }
+        }
     }
 }
 
@@ -179,32 +179,35 @@ inline void V3FileDependImp::writeTimes(const string& filename, const string& cm
     *ofp<<"C \""<<cmdline<<"\""<<endl;
 
     for (std::set<DependFile>::iterator iter=m_filenameList.begin();
-	 iter!=m_filenameList.end(); ++iter) {
-	// Read stats of files we create after we're done making them (execpt for this file, of course)
+         iter!=m_filenameList.end(); ++iter) {
+        // Read stats of files we create after we're done making them
+        // (execpt for this file, of course)
         DependFile* dfp = const_cast<DependFile*>(&(*iter));
-	V3Options::fileNfsFlush(dfp->filename());
-	dfp->loadStats();
-	off_t showSize = iter->size();
-	ino_t showIno = iter->ino();
-	if (dfp->filename() == filename) { showSize=0; showIno=0; }  // We're writing it, so need to ignore it
+        V3Options::fileNfsFlush(dfp->filename());
+        dfp->loadStats();
+        off_t showSize = iter->size();
+        ino_t showIno = iter->ino();
+        if (dfp->filename() == filename) {
+            showSize = 0; showIno = 0;  // We're writing it, so need to ignore it
+        }
 
-	*ofp<<(iter->target()?"T":"S")<<" ";
+        *ofp<<(iter->target()?"T":"S")<<" ";
         *ofp<<" "<<std::setw(8)<<showSize;
         *ofp<<" "<<std::setw(8)<<showIno;
         *ofp<<" "<<std::setw(11)<<iter->cstime();
         *ofp<<" "<<std::setw(11)<<iter->cnstime();
         *ofp<<" "<<std::setw(11)<<iter->mstime();
         *ofp<<" "<<std::setw(11)<<iter->mnstime();
-	*ofp<<" \""<<iter->filename()<<"\"";
-	*ofp<<endl;
+        *ofp<<" \""<<iter->filename()<<"\"";
+        *ofp<<endl;
     }
 }
 
 inline bool V3FileDependImp::checkTimes(const string& filename, const string& cmdlineIn) {
     const vl_unique_ptr<std::ifstream> ifp (V3File::new_ifstream_nodepend(filename));
     if (ifp->fail()) {
-	UINFO(2,"   --check-times failed: no input "<<filename<<endl);
-	return false;
+        UINFO(2,"   --check-times failed: no input "<<filename<<endl);
+        return false;
     }
     {
         string ignore = V3Os::getline(*ifp);
@@ -213,59 +216,59 @@ inline bool V3FileDependImp::checkTimes(const string& filename, const string& cm
         char   chkDir;   *ifp>>chkDir;
         char   quote;    *ifp>>quote;
         string chkCmdline = V3Os::getline(*ifp, '"');
-	string cmdline = stripQuotes(cmdlineIn);
-	if (cmdline != chkCmdline) {
-	    UINFO(2,"   --check-times failed: different command line\n");
-	    return false;
-	}
+        string cmdline = stripQuotes(cmdlineIn);
+        if (cmdline != chkCmdline) {
+            UINFO(2,"   --check-times failed: different command line\n");
+            return false;
+        }
     }
 
     while (!ifp->eof()) {
-	char   chkDir;   *ifp>>chkDir;
-	off_t  chkSize;  *ifp>>chkSize;
-	ino_t  chkIno;   *ifp>>chkIno;
-	if (ifp->eof()) break;  // Needed to read final whitespace before found eof
-	time_t chkCstime; *ifp>>chkCstime;
-	time_t chkCnstime; *ifp>>chkCnstime;
-	time_t chkMstime; *ifp>>chkMstime;
-	time_t chkMnstime; *ifp>>chkMnstime;
+        char   chkDir;   *ifp>>chkDir;
+        off_t  chkSize;  *ifp>>chkSize;
+        ino_t  chkIno;   *ifp>>chkIno;
+        if (ifp->eof()) break;  // Needed to read final whitespace before found eof
+        time_t chkCstime; *ifp>>chkCstime;
+        time_t chkCnstime; *ifp>>chkCnstime;
+        time_t chkMstime; *ifp>>chkMstime;
+        time_t chkMnstime; *ifp>>chkMnstime;
         char   quote;    *ifp>>quote;
         string chkFilename = V3Os::getline(*ifp, '"');
 
-	V3Options::fileNfsFlush(chkFilename);
+        V3Options::fileNfsFlush(chkFilename);
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-	struct stat chkStat;
-	int err = stat(chkFilename.c_str(), &chkStat);
-	if (err!=0) {
-	    UINFO(2,"   --check-times failed: missing "<<chkFilename<<endl);
-	    return false;
-	}
+        struct stat chkStat;
+        int err = stat(chkFilename.c_str(), &chkStat);
+        if (err!=0) {
+            UINFO(2,"   --check-times failed: missing "<<chkFilename<<endl);
+            return false;
+        }
         //UINFO(9," got d="<<chkDir<<" s="<<chkSize<<" ct="<<chkCstime<<"."
         //        <<chkCnstime<<" mt="<<chkMstime<<"."<<chkMnstime<<" fn = "<<chkFilename<<endl);
-	//UINFO(9," nowSt  s="<<chkStat.st_size<<" mt="<<chkStat.st_mtime<<" ct="<<chkStat.st_ctime<<" fn = "<<chkFilename<<endl);
-	if (filename != chkFilename) {  // Other then the .dat file itself, as we were writing it at the time...
-	    // We'd like this rule:
-	    //if (!(chkStat.st_size == chkSize
-	    //      && chkStat.st_mtime == chkMstime) {
-	    // However NFS messes us up, as there might be some data outstanding when
-	    // we determined the original size.  For safety, we know the creation time
-	    // must be within a few second window... call it 20 sec.
-	    if (!(chkStat.st_size >= chkSize
-		  && chkStat.st_ino == chkIno
-		  && chkStat.st_ctime == chkCstime
-		  && VL_STAT_CTIME_NSEC(chkStat) == chkCnstime
-		  && chkStat.st_mtime <= (chkMstime + 20)
-		  // Not comparing chkMnstime
-		    )) {
-		UINFO(2,"   --check-times failed: out-of-date "<<chkFilename
-		      <<"; "<<chkStat.st_size<<"=?"<<chkSize
-		      <<" "<<chkStat.st_ctime<<"."<<VL_STAT_CTIME_NSEC(chkStat)
-		      <<"=?"<<chkCstime<<"."<<chkCnstime
-		      <<" "<<chkStat.st_mtime<<"."<<VL_STAT_MTIME_NSEC(chkStat)
-		      <<"=?"<<chkMstime<<"."<<chkMnstime<<endl);
-		return false;
-	    }
-	}
+        //UINFO(9," nowSt  s="<<chkStat.st_size<<" mt="<<chkStat.st_mtime<<" ct="<<chkStat.st_ctime<<" fn = "<<chkFilename<<endl);
+        if (filename != chkFilename) {  // Other then the .dat file itself, as we were writing it at the time...
+            // We'd like this rule:
+            //if (!(chkStat.st_size == chkSize
+            //      && chkStat.st_mtime == chkMstime) {
+            // However NFS messes us up, as there might be some data outstanding when
+            // we determined the original size.  For safety, we know the creation time
+            // must be within a few second window... call it 20 sec.
+            if (!(chkStat.st_size >= chkSize
+                  && chkStat.st_ino == chkIno
+                  && chkStat.st_ctime == chkCstime
+                  && VL_STAT_CTIME_NSEC(chkStat) == chkCnstime
+                  && chkStat.st_mtime <= (chkMstime + 20)
+                  // Not comparing chkMnstime
+                    )) {
+                UINFO(2,"   --check-times failed: out-of-date "<<chkFilename
+                      <<"; "<<chkStat.st_size<<"=?"<<chkSize
+                      <<" "<<chkStat.st_ctime<<"."<<VL_STAT_CTIME_NSEC(chkStat)
+                      <<"=?"<<chkCstime<<"."<<chkCnstime
+                      <<" "<<chkStat.st_mtime<<"."<<VL_STAT_MTIME_NSEC(chkStat)
+                      <<"=?"<<chkMstime<<"."<<chkMnstime<<endl);
+                return false;
+            }
+        }
     }
     return true;
 }
@@ -292,8 +295,8 @@ bool V3File::checkTimes(const string& filename, const string& cmdlineIn) {
 void V3File::createMakeDir() {
     static bool created = false;
     if (!created) {
-	created = true;
-	V3Os::createDir(v3Global.opt.makeDir());
+        created = true;
+        V3Os::createDir(v3Global.opt.makeDir());
     }
 }
 
@@ -304,214 +307,215 @@ class V3InFilterImp {
     typedef std::map<string,string> FileContentsMap;
     typedef V3InFilter::StrList StrList;
 
-    FileContentsMap	m_contentsMap;	// Cache of file contents
-    bool		m_readEof;	// Received EOF on read
+    FileContentsMap     m_contentsMap;  // Cache of file contents
+    bool                m_readEof;      // Received EOF on read
 #ifdef INFILTER_PIPE
-    pid_t		m_pid;		// fork() process id
+    pid_t               m_pid;          // fork() process id
 #else
-    int			m_pid;		// fork() process id - always zero as disabled
+    int                 m_pid;          // fork() process id - always zero as disabled
 #endif
-    bool		m_pidExited;
-    int			m_pidStatus;
-    int			m_writeFd;	// File descriptor TO filter
-    int			m_readFd;	// File descriptor FROM filter
+    bool                m_pidExited;
+    int                 m_pidStatus;
+    int                 m_writeFd;      // File descriptor TO filter
+    int                 m_readFd;       // File descriptor FROM filter
 
 private:
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
     bool readContents(const string& filename, StrList& outl) {
-	if (m_pid) return readContentsFilter(filename,outl);
-	else return readContentsFile(filename,outl);
+        if (m_pid) return readContentsFilter(filename, outl);
+        else return readContentsFile(filename, outl);
     }
     bool readContentsFile(const string& filename, StrList& outl) {
         int fd = open(filename.c_str(), O_RDONLY);
-	if (fd<0) return false;
-	m_readEof = false;
-	readBlocks(fd, -1, outl);
-	close(fd);
-	return true;
+        if (fd<0) return false;
+        m_readEof = false;
+        readBlocks(fd, -1, outl);
+        close(fd);
+        return true;
     }
     bool readContentsFilter(const string& filename, StrList& outl) {
-	if (filename!="" || outl.empty()) {}  // Prevent unused
+        if (filename!="" || outl.empty()) {}  // Prevent unused
 #ifdef INFILTER_PIPE
-	writeFilter("read \""+filename+"\"\n");
-	string line = readFilterLine();
-	if (line.find("Content-Length") != string::npos) {
-	    int len = 0;
-	    sscanf(line.c_str(), "Content-Length: %d\n", &len);
-	    readBlocks(m_readFd, len, outl);
-	    return true;
-	} else {
-	    if (line!="") v3error("--pipe-filter protocol error, unexpected: "<<line);
-	    return false;
-	}
+        writeFilter("read \""+filename+"\"\n");
+        string line = readFilterLine();
+        if (line.find("Content-Length") != string::npos) {
+            int len = 0;
+            sscanf(line.c_str(), "Content-Length: %d\n", &len);
+            readBlocks(m_readFd, len, outl);
+            return true;
+        } else {
+            if (line!="") v3error("--pipe-filter protocol error, unexpected: "<<line);
+            return false;
+        }
 #else
-	v3fatalSrc("--pipe-filter not implemented on this platform");
-	return false;
+        v3fatalSrc("--pipe-filter not implemented on this platform");
+        return false;
 #endif
     }
 
     // cppcheck-suppress functionConst
     void checkFilter(bool hang) {
 #ifdef INFILTER_PIPE
-	if (!m_pidExited && waitpid(m_pid, &m_pidStatus, hang?0:WNOHANG)) {
-	    UINFO(1,"--pipe-filter: Exited, status "<<m_pidStatus<<" exit="<<WEXITSTATUS(m_pidStatus)<<" err"<<strerror(errno)<<endl);
-	    m_readEof = true;
-	    m_pidExited = true;
-	}
+        if (!m_pidExited && waitpid(m_pid, &m_pidStatus, hang?0:WNOHANG)) {
+            UINFO(1,"--pipe-filter: Exited, status "<<m_pidStatus
+                  <<" exit="<<WEXITSTATUS(m_pidStatus)<<" err"<<strerror(errno)<<endl);
+            m_readEof = true;
+            m_pidExited = true;
+        }
 #endif
     }
 
     string readBlocks(int fd, int size, StrList& outl) {
-	string out;
-	char buf[INFILTER_IPC_BUFSIZ];
-	ssize_t sizegot = 0;
-	while (!m_readEof && (size<0 || size>sizegot)) {
-	    ssize_t todo = INFILTER_IPC_BUFSIZ;
-	    if (size>0 && size<todo) todo = size;
-	    errno = 0;
+        string out;
+        char buf[INFILTER_IPC_BUFSIZ];
+        ssize_t sizegot = 0;
+        while (!m_readEof && (size<0 || size>sizegot)) {
+            ssize_t todo = INFILTER_IPC_BUFSIZ;
+            if (size>0 && size<todo) todo = size;
+            errno = 0;
             ssize_t got = read(fd, buf, todo);
-	    //UINFO(9,"RD GOT g "<< got<<" e "<<errno<<" "<<strerror(errno)<<endl);  usleep(50*1000);
-	    if (got>0) {
-		outl.push_back(string(buf, got));
-		sizegot += got;
-	    }
-	    else if (errno == EINTR || errno == EAGAIN
+            //UINFO(9,"RD GOT g "<< got<<" e "<<errno<<" "<<strerror(errno)<<endl);  usleep(50*1000);
+            if (got>0) {
+                outl.push_back(string(buf, got));
+                sizegot += got;
+            }
+            else if (errno == EINTR || errno == EAGAIN
 #ifdef EWOULDBLOCK
-		     || errno == EWOULDBLOCK
+                     || errno == EWOULDBLOCK
 #endif
-		) {
-		// cppcheck-suppress obsoleteFunctionsusleep
-		checkFilter(false); usleep(1000); continue;
-	    } else { m_readEof = true; break; }
-	}
-	return out;
+                ) {
+                // cppcheck-suppress obsoleteFunctionsusleep
+                checkFilter(false); usleep(1000); continue;
+            } else { m_readEof = true; break; }
+        }
+        return out;
     }
     // cppcheck-suppress unusedFunction unusedPrivateFunction
     string readFilterLine() {
-	// Slow, but we don't need it much
-	UINFO(9,"readFilterLine\n");
-	string line;
-	while (!m_readEof) {
-	    StrList outl;
-	    readBlocks(m_readFd, 1, outl);
-	    string onechar = listString(outl);
-	    line += onechar;
-	    if (onechar == "\n") {
-		if (line == "\n") { line=""; continue; }
-		else break;
-	    }
-	}
-	UINFO(6,"filter-line-in: "<<line);
-	return line;
+        // Slow, but we don't need it much
+        UINFO(9,"readFilterLine\n");
+        string line;
+        while (!m_readEof) {
+            StrList outl;
+            readBlocks(m_readFd, 1, outl);
+            string onechar = listString(outl);
+            line += onechar;
+            if (onechar == "\n") {
+                if (line == "\n") { line = ""; continue; }
+                else break;
+            }
+        }
+        UINFO(6,"filter-line-in: "<<line);
+        return line;
     }
     // cppcheck-suppress unusedFunction unusedPrivateFunction
     void writeFilter(const string& out) {
-	if (debug()>=6) { UINFO(6,"filter-out: "<<out); if (out[out.length()-1]!='\n') cout<<endl; }
-	if (!m_pid) { v3error("--pipe-filter: write to closed file\n"); m_readEof = true; stop(); }
-	unsigned offset = 0;
-	while (!m_readEof && out.length()>offset) {
-	    errno = 0;
+        if (debug()>=6) { UINFO(6,"filter-out: "<<out); if (out[out.length()-1]!='\n') cout<<endl; }
+        if (!m_pid) { v3error("--pipe-filter: write to closed file\n"); m_readEof = true; stop(); }
+        unsigned offset = 0;
+        while (!m_readEof && out.length()>offset) {
+            errno = 0;
             int got = write(m_writeFd, (out.c_str())+offset, out.length()-offset);
-	    //UINFO(9,"WR GOT g "<< got<<" e "<<errno<<" "<<strerror(errno)<<endl);  usleep(50*1000);
-	    if (got>0) offset += got;
-	    else if (errno == EINTR || errno == EAGAIN
+            //UINFO(9,"WR GOT g "<< got<<" e "<<errno<<" "<<strerror(errno)<<endl);  usleep(50*1000);
+            if (got>0) offset += got;
+            else if (errno == EINTR || errno == EAGAIN
 #ifdef EWOULDBLOCK
-		     || errno == EWOULDBLOCK
+                     || errno == EWOULDBLOCK
 #endif
-		) {
-		// cppcheck-suppress obsoleteFunctionsusleep
-		checkFilter(false); usleep(1000); continue;
-	    }
-	    else break;
-	}
+                ) {
+                // cppcheck-suppress obsoleteFunctionsusleep
+                checkFilter(false); usleep(1000); continue;
+            }
+            else break;
+        }
     }
 
     // Start the filter
     void start(const string& command) {
-	if (command=="") {
-	    m_pid = 0;  // Disabled
-	} else {
-	    startFilter(command);
-	}
+        if (command=="") {
+            m_pid = 0;  // Disabled
+        } else {
+            startFilter(command);
+        }
     }
     void startFilter(const string& command) {
-	if (command=="") {} // Prevent Unused
+        if (command=="") {}  // Prevent Unused
 #ifdef INFILTER_PIPE
-	int fd_stdin[2], fd_stdout[2];
-	static const int P_RD = 0;
-	static const int P_WR = 1;
+        int fd_stdin[2], fd_stdout[2];
+        static const int P_RD = 0;
+        static const int P_WR = 1;
 
-	if (pipe(fd_stdin) != 0 || pipe(fd_stdout) != 0) {
-	    v3fatal("--pipe-filter: Can't pipe: "<<strerror(errno));
-	}
-	if (fd_stdin[P_RD]<=2 || fd_stdin[P_WR]<=2
-	    || fd_stdout[P_RD]<=2 || fd_stdout[P_WR]<=2) {
-	    // We'd have to rearrange all of the FD usages in this case.
-	    // Too unlikely; verilator isn't a daemon.
-	    v3fatal("--pipe-filter: stdin/stdout closed before pipe opened\n");
-	}
+        if (pipe(fd_stdin) != 0 || pipe(fd_stdout) != 0) {
+            v3fatal("--pipe-filter: Can't pipe: "<<strerror(errno));
+        }
+        if (fd_stdin[P_RD]<=2 || fd_stdin[P_WR]<=2
+            || fd_stdout[P_RD]<=2 || fd_stdout[P_WR]<=2) {
+            // We'd have to rearrange all of the FD usages in this case.
+            // Too unlikely; verilator isn't a daemon.
+            v3fatal("--pipe-filter: stdin/stdout closed before pipe opened\n");
+        }
 
-	UINFO(1,"--pipe-filter: /bin/sh -c "<<command<<endl);
+        UINFO(1,"--pipe-filter: /bin/sh -c "<<command<<endl);
 
-	pid_t pid = fork();
-	if (pid < 0) v3fatal("--pipe-filter: fork failed: "<<strerror(errno));
-	if (pid == 0) {  // Child
-	    UINFO(6,"In child\n");
-	    close(fd_stdin[P_WR]);
-	    dup2(fd_stdin[P_RD], 0);
-	    close(fd_stdout[P_RD]);
-	    dup2(fd_stdout[P_WR], 1);
-	    // And stderr comes from parent
+        pid_t pid = fork();
+        if (pid < 0) v3fatal("--pipe-filter: fork failed: "<<strerror(errno));
+        if (pid == 0) {  // Child
+            UINFO(6,"In child\n");
+            close(fd_stdin[P_WR]);
+            dup2(fd_stdin[P_RD], 0);
+            close(fd_stdout[P_RD]);
+            dup2(fd_stdout[P_WR], 1);
+            // And stderr comes from parent
 
             execl("/bin/sh", "sh", "-c", command.c_str(), static_cast<char*>(NULL));
-	    // Don't use v3fatal, we don't share the common structures any more
-	    fprintf(stderr,"--pipe-filter: exec failed: %s\n",strerror(errno));
-	    _exit(10);
-	}
-	else {  // Parent
-	    UINFO(6,"In parent, child pid "<<pid
-		  <<" stdin "<<fd_stdin[P_WR]<<"->"<<fd_stdin[P_RD]
-		  <<" stdout "<<fd_stdout[P_WR]<<"->"<<fd_stdout[P_RD]<<endl);
-	    m_pid = pid;
-	    m_pidExited = false;
-	    m_pidStatus = 0;
-	    m_writeFd = fd_stdin[P_WR];
-	    m_readFd = fd_stdout[P_RD];
-	    m_readEof = false;
+            // Don't use v3fatal, we don't share the common structures any more
+            fprintf(stderr, "--pipe-filter: exec failed: %s\n", strerror(errno));
+            _exit(10);
+        }
+        else {  // Parent
+            UINFO(6,"In parent, child pid "<<pid
+                  <<" stdin "<<fd_stdin[P_WR]<<"->"<<fd_stdin[P_RD]
+                  <<" stdout "<<fd_stdout[P_WR]<<"->"<<fd_stdout[P_RD]<<endl);
+            m_pid = pid;
+            m_pidExited = false;
+            m_pidStatus = 0;
+            m_writeFd = fd_stdin[P_WR];
+            m_readFd = fd_stdout[P_RD];
+            m_readEof = false;
 
-	    close(fd_stdin[P_RD]);
-	    close(fd_stdout[P_WR]);
+            close(fd_stdin[P_RD]);
+            close(fd_stdout[P_WR]);
 
-	    int flags = fcntl(m_readFd,F_GETFL,0);
-	    fcntl(m_readFd, F_SETFL, flags | O_NONBLOCK);
+            int flags = fcntl(m_readFd, F_GETFL, 0);
+            fcntl(m_readFd, F_SETFL, flags | O_NONBLOCK);
 
-	    flags = fcntl(m_writeFd,F_GETFL,0);
-	    fcntl(m_writeFd, F_SETFL, flags | O_NONBLOCK);
-	}
-	UINFO(6,"startFilter complete\n");
+            flags = fcntl(m_writeFd, F_GETFL, 0);
+            fcntl(m_writeFd, F_SETFL, flags | O_NONBLOCK);
+        }
+        UINFO(6,"startFilter complete\n");
 #else
-	v3fatalSrc("--pipe-filter not implemented on this platform");
+        v3fatalSrc("--pipe-filter not implemented on this platform");
 #endif
     }
 
     void stop() {
-	if (m_pid) stopFilter();
+        if (m_pid) stopFilter();
     }
     void stopFilter() {
-	UINFO(6,"Stopping filter process\n");
+        UINFO(6,"Stopping filter process\n");
 #ifdef INFILTER_PIPE
-	close(m_writeFd);
-	checkFilter(true);
-	if (!WIFEXITED(m_pidStatus) || WEXITSTATUS(m_pidStatus)!=0) {
-	    v3fatal("--pipe-filter returned bad status");
-	}
-	m_pid = 0;
-	close(m_readFd);
-	UINFO(6,"Closed\n");
+        close(m_writeFd);
+        checkFilter(true);
+        if (!WIFEXITED(m_pidStatus) || WEXITSTATUS(m_pidStatus)!=0) {
+            v3fatal("--pipe-filter returned bad status");
+        }
+        m_pid = 0;
+        close(m_readFd);
+        UINFO(6,"Closed\n");
 #else
-	v3fatalSrc("--pipe-filter not implemented on this platform");
+        v3fatalSrc("--pipe-filter not implemented on this platform");
 #endif
     }
 
@@ -519,43 +523,43 @@ protected:
     friend class V3InFilter;
     // Read file contents and return it
     bool readWholefile(const string& filename, StrList& outl) {
-	FileContentsMap::iterator it = m_contentsMap.find(filename);
-	if (it != m_contentsMap.end()) {
-	    outl.push_back(it->second);
-	    return true;
-	}
-	if (!readContents(filename, outl)) return false;
-	if (listSize(outl) < INFILTER_CACHE_MAX) {
-	    // Cache small files (only to save space)
-	    // It's quite common to `include "timescale" thousands of times
-	    // This isn't so important if it's just a open(), but filtering can be slow
-	    m_contentsMap.insert(make_pair(filename,listString(outl)));
-	}
-	return true;
+        FileContentsMap::iterator it = m_contentsMap.find(filename);
+        if (it != m_contentsMap.end()) {
+            outl.push_back(it->second);
+            return true;
+        }
+        if (!readContents(filename, outl)) return false;
+        if (listSize(outl) < INFILTER_CACHE_MAX) {
+            // Cache small files (only to save space)
+            // It's quite common to `include "timescale" thousands of times
+            // This isn't so important if it's just a open(), but filtering can be slow
+            m_contentsMap.insert(make_pair(filename, listString(outl)));
+        }
+        return true;
     }
     size_t listSize(StrList& sl) {
-	size_t out = 0;
-	for (StrList::iterator it=sl.begin(); it!=sl.end(); ++it) {
-	    out += it->length();
-	}
-	return out;
+        size_t out = 0;
+        for (StrList::iterator it=sl.begin(); it!=sl.end(); ++it) {
+            out += it->length();
+        }
+        return out;
     }
     string listString(StrList& sl) {
-	string out;
-	for (StrList::iterator it=sl.begin(); it!=sl.end(); ++it) {
-	    out += *it;
-	}
-	return out;
+        string out;
+        for (StrList::iterator it=sl.begin(); it!=sl.end(); ++it) {
+            out += *it;
+        }
+        return out;
     }
     // CONSTRUCTORS
     explicit V3InFilterImp(const string& command) {
-	m_readEof = false;
-	m_pid = 0;
-	m_pidExited = false;
-	m_pidStatus = 0;
-	m_writeFd = 0;
-	m_readFd = 0;
-	start(command);
+        m_readEof = false;
+        m_pid = 0;
+        m_pidExited = false;
+        m_pidStatus = 0;
+        m_writeFd = 0;
+        m_readFd = 0;
+        start(command);
     }
     ~V3InFilterImp() { stop(); }
 };
@@ -565,7 +569,7 @@ protected:
 // Just dispatch to the implementation
 
 V3InFilter::V3InFilter(const string& command) { m_impp = new V3InFilterImp(command); }
-V3InFilter::~V3InFilter() { if (m_impp) delete m_impp; m_impp=NULL; }
+V3InFilter::~V3InFilter() { if (m_impp) delete m_impp; m_impp = NULL; }
 
 bool V3InFilter::readWholefile(const string& filename, V3InFilter::StrList& outl) {
     if (!m_impp) v3fatalSrc("readWholefile on invalid filter");
@@ -589,16 +593,16 @@ const char* V3OutFormatter::indentStr(int num) {
     // Indent the specified number of spaces.  Use tabs as possible.
     static char str[MAXSPACE+20];
     char* cp = str;
-    if (num>MAXSPACE) num=MAXSPACE;
+    if (num>MAXSPACE) num = MAXSPACE;
     if (m_lang!=LA_VERILOG && m_lang!=LA_XML) {  // verilogPrefixedTree doesn't want tabs
-	while (num>=8) {
-	    *cp++ = '\t';
-	    num -= 8;
-	}
+        while (num>=8) {
+            *cp++ = '\t';
+            num -= 8;
+        }
     }
     while (num>0) {
-	*cp++ = ' ';
-	num --;
+        *cp++ = ' ';
+        num --;
     }
     *cp++ = '\0';
     return (str);
@@ -608,10 +612,10 @@ const string V3OutFormatter::indentSpaces(int num) {
     // Indent the specified number of spaces.  Use spaces.
     static char str[MAXSPACE+20];
     char* cp = str;
-    if (num>MAXSPACE) num=MAXSPACE;
+    if (num>MAXSPACE) num = MAXSPACE;
     while (num>0) {
-	*cp++ = ' ';
-	num --;
+        *cp++ = ' ';
+        num --;
     }
     *cp++ = '\0';
     string st (str);
@@ -626,153 +630,153 @@ bool V3OutFormatter::tokenStart(const char* cp, const char* cmp) {
 }
 
 bool V3OutFormatter::tokenEnd(const char* cp) {
-    return (tokenStart(cp,"end")
-	    || tokenStart(cp,"endcase")
-	    || tokenStart(cp,"endmodule"));
+    return (tokenStart(cp, "end")
+            || tokenStart(cp, "endcase")
+            || tokenStart(cp, "endmodule"));
 }
 
 int V3OutFormatter::endLevels(const char *strg) {
-    int levels=m_indentLevel;
+    int levels = m_indentLevel;
     {
-	const char* cp=strg;
-	while (isspace(*cp)) cp++;
-	switch (*cp) {
-	case '\n':  // Newlines.. No need for whitespace before it
-	    return (0);
-	case '#':	// Preproc directive
-	    return (0);
-	}
-	{
-	    // label/public/private:  Deindent by 2 spaces
-	    const char* mp=cp;
-	    for (; isalnum(*mp); mp++) ;
-	    if (mp[0]==':' && mp[1]!=':') return (levels-m_blockIndent/2);
-	}
+        const char* cp = strg;
+        while (isspace(*cp)) cp++;
+        switch (*cp) {
+        case '\n':  // Newlines.. No need for whitespace before it
+            return (0);
+        case '#':  // Preproc directive
+            return (0);
+        }
+        {
+            // label/public/private:  Deindent by 2 spaces
+            const char* mp = cp;
+            for (; isalnum(*mp); mp++) ;
+            if (mp[0]==':' && mp[1]!=':') return (levels-m_blockIndent/2);
+        }
     }
     // We want "} else {" to be one level to the left of normal
     for (const char* cp=strg; *cp; cp++) {
-	switch (*cp) {
-	case '}':
-	case ')':
-	    levels-=m_blockIndent;
-	    break;
-	case '<':
-	    if (m_lang==LA_XML) {
-		if (cp[1] == '/') levels-=m_blockIndent;
-	    }
-	    break;
-	case 'e':
-	    if (m_lang==LA_VERILOG && tokenEnd(cp)) {
-		levels-=m_blockIndent;
-	    }
-	    break;
-	case '\t':
-	case ' ':
-	    break;  // Continue
-	default:
-	    return (levels);  // Letter
-	}
+        switch (*cp) {
+        case '}':
+        case ')':
+            levels -= m_blockIndent;
+            break;
+        case '<':
+            if (m_lang==LA_XML) {
+                if (cp[1] == '/') levels -= m_blockIndent;
+            }
+            break;
+        case 'e':
+            if (m_lang==LA_VERILOG && tokenEnd(cp)) {
+                levels -= m_blockIndent;
+            }
+            break;
+        case '\t':
+        case ' ':
+            break;  // Continue
+        default:
+            return (levels);  // Letter
+        }
     }
     return (levels);
 }
 
 void V3OutFormatter::puts(const char *strg) {
     if (m_prependIndent) {
-	putsNoTracking(indentStr(endLevels(strg)));
-	m_prependIndent = false;
+        putsNoTracking(indentStr(endLevels(strg)));
+        m_prependIndent = false;
     }
     bool wordstart = true;
     bool equalsForBracket = false;  // Looking for "= {"
     for (const char* cp=strg; *cp; cp++) {
         putcNoTracking(*cp);
-	switch (*cp) {
-	case '\n':
-	    m_lineno++;
-	    wordstart = true;
-	    if (cp[1]=='\0') {
-		m_prependIndent = true;	// Add the indent later, may be a indentInc/indentDec called between now and then
-	    } else {
-		m_prependIndent = false;
-		putsNoTracking(indentStr(endLevels(cp+1)));
-	    }
-	    break;
-	case ' ':
-	    wordstart = true;
-	    break;
-	case '\t':
-	    wordstart = true;
-	    break;
-	case '{':
+        switch (*cp) {
+        case '\n':
+            m_lineno++;
+            wordstart = true;
+            if (cp[1]=='\0') {
+                m_prependIndent = true;  // Add the indent later, may be a indentInc/indentDec called between now and then
+            } else {
+                m_prependIndent = false;
+                putsNoTracking(indentStr(endLevels(cp+1)));
+            }
+            break;
+        case ' ':
+            wordstart = true;
+            break;
+        case '\t':
+            wordstart = true;
+            break;
+        case '{':
             if (m_lang==LA_C && (equalsForBracket || m_bracketLevel)) {
                 // Break up large code inside "= { ..."
                 m_parenVec.push(m_indentLevel*m_blockIndent);  // Line up continuation with block+1
                 ++m_bracketLevel;
             }
-	    indentInc();
-	    break;
-	case '}':
+            indentInc();
+            break;
+        case '}':
             if (m_bracketLevel>0) {
                 m_parenVec.pop();
                 --m_bracketLevel;
             }
-	    indentDec();
-	    break;
-	case '(':
-	    indentInc();
-	    if (v3Global.opt.decoration()) {
-		m_parenVec.push(m_column);  // Line up continuation with open paren, plus one indent
-	    } else {
-		m_parenVec.push(m_indentLevel*m_blockIndent); // Line up continuation with block+1
-	    }
-	    break;
-	case ')':
-	    if (!m_parenVec.empty()) m_parenVec.pop();
-	    indentDec();
-	    break;
-	case '<':
-	    if (m_lang==LA_XML) {
-		if (cp[1] == '/') {} // Zero as the > will result in net decrease by one
-		else if (cp[1] == '!' || cp[1] == '?') { indentInc(); } // net same indent
-		else { indentInc(); indentInc(); }  // net increase by one
-	    }
-	    break;
-	case '>':
-	    if (m_lang==LA_XML) {
-		indentDec();
-		if (cp>strg && cp[-1]=='/') indentDec();   // < ..... /> stays same level
-	    }
-	    break;
-	case 'b':
-	    if (wordstart && m_lang==LA_VERILOG && tokenStart(cp,"begin")) {
-		indentInc();
-	    }
-	    wordstart = false;
-	    break;
-	case 'c':
-	    if (wordstart && m_lang==LA_VERILOG
-		&& (tokenStart(cp,"case")
-		    || tokenStart(cp,"casex")
-		    || tokenStart(cp,"casez"))) {
-		indentInc();
-	    }
-	    wordstart = false;
-	    break;
-	case 'e':
-	    if (wordstart && m_lang==LA_VERILOG && tokenEnd(cp)) {
-		indentDec();
-	    }
-	    wordstart = false;
-	    break;
-	case 'm':
-	    if (wordstart && m_lang==LA_VERILOG && tokenStart(cp,"module")) {
-		indentInc();
-	    }
-	    wordstart = false;
-	    break;
-	default:
-	    wordstart = false;
-	    break;
-	}
+            indentDec();
+            break;
+        case '(':
+            indentInc();
+            if (v3Global.opt.decoration()) {
+                m_parenVec.push(m_column);  // Line up continuation with open paren, plus one indent
+            } else {
+                m_parenVec.push(m_indentLevel*m_blockIndent);  // Line up continuation with block+1
+            }
+            break;
+        case ')':
+            if (!m_parenVec.empty()) m_parenVec.pop();
+            indentDec();
+            break;
+        case '<':
+            if (m_lang==LA_XML) {
+                if (cp[1] == '/') {}  // Zero as the > will result in net decrease by one
+                else if (cp[1] == '!' || cp[1] == '?') { indentInc(); }  // net same indent
+                else { indentInc(); indentInc(); }  // net increase by one
+            }
+            break;
+        case '>':
+            if (m_lang==LA_XML) {
+                indentDec();
+                if (cp>strg && cp[-1]=='/') indentDec();  // < ..... /> stays same level
+            }
+            break;
+        case 'b':
+            if (wordstart && m_lang==LA_VERILOG && tokenStart(cp, "begin")) {
+                indentInc();
+            }
+            wordstart = false;
+            break;
+        case 'c':
+            if (wordstart && m_lang==LA_VERILOG
+                && (tokenStart(cp, "case")
+                    || tokenStart(cp, "casex")
+                    || tokenStart(cp, "casez"))) {
+                indentInc();
+            }
+            wordstart = false;
+            break;
+        case 'e':
+            if (wordstart && m_lang==LA_VERILOG && tokenEnd(cp)) {
+                indentDec();
+            }
+            wordstart = false;
+            break;
+        case 'm':
+            if (wordstart && m_lang==LA_VERILOG && tokenStart(cp, "module")) {
+                indentInc();
+            }
+            wordstart = false;
+            break;
+        default:
+            wordstart = false;
+            break;
+        }
 
         switch (*cp) {
         case '=':
@@ -794,11 +798,11 @@ void V3OutFormatter::putBreakExpr() {
 // Add a line break if too wide
 void V3OutFormatter::putBreak() {
     if (!m_nobreak) {
-	//char s[1000]; sprintf(s,"{%d,%d}",m_column,m_parenVec.top()); putsNoTracking(s);
-	if (exceededWidth()) {
-	    putcNoTracking('\n');
-	    if (!m_parenVec.empty()) putsNoTracking(indentStr(m_parenVec.top()));
-	}
+        //char s[1000]; sprintf(s, "{%d,%d}", m_column, m_parenVec.top()); putsNoTracking(s);
+        if (exceededWidth()) {
+            putcNoTracking('\n');
+            if (!m_parenVec.empty()) putsNoTracking(indentStr(m_parenVec.top()));
+        }
     }
 }
 
@@ -822,23 +826,23 @@ void V3OutFormatter::putsNoTracking(const string& strg) {
 void V3OutFormatter::putcNoTracking(char chr) {
     switch (chr) {
     case '\n':
-	m_lineno++;
-	m_column=0;
-	m_nobreak=true;
-	break;
+        m_lineno++;
+        m_column = 0;
+        m_nobreak = true;
+        break;
     case '\t':
-	m_column = ((m_column + 9)/8)*8;
-	break;
+        m_column = ((m_column + 9)/8)*8;
+        break;
     case ' ':
     case '(':
     case '|':
     case '&':
-	m_column++;
-	break;
+        m_column++;
+        break;
     default:
-	m_column++;
-	m_nobreak=false;
-	break;
+        m_column++;
+        m_nobreak = false;
+        break;
     }
     putcOutput(chr);
 }
@@ -874,8 +878,8 @@ string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::L
 void V3OutFormatter::printf(const char *fmt...) {
     char sbuff[5000];
     va_list ap;
-    va_start(ap,fmt);
-    vsprintf(sbuff,fmt,ap);
+    va_start(ap, fmt);
+    vsprintf(sbuff, fmt, ap);
     va_end(ap);
     this->puts(sbuff);
 }
@@ -886,7 +890,7 @@ void V3OutFormatter::printf(const char *fmt...) {
 V3OutFile::V3OutFile(const string& filename, V3OutFormatter::Language lang)
     : V3OutFormatter(filename, lang) {
     if ((m_fp = V3File::new_fopen_w(filename)) == NULL) {
-	v3fatal("Cannot write "<<filename);
+        v3fatal("Cannot write "<<filename);
     }
 }
 
@@ -898,6 +902,6 @@ V3OutFile::~V3OutFile() {
 void V3OutFile::putsForceIncs() {
     const V3StringList& forceIncs = v3Global.opt.forceIncs();
     for (V3StringList::const_iterator it = forceIncs.begin(); it != forceIncs.end(); ++it) {
-	puts("#include \""+*it+"\"\n");
+        puts("#include \""+*it+"\"\n");
     }
 }

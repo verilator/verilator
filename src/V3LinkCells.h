@@ -37,4 +37,4 @@ public:
     static void link(AstNetlist* nodep, V3InFilter* filterp, V3ParseSym* parseSymp);
 };
 
-#endif // Guard
+#endif  // Guard

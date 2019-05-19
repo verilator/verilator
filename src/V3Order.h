@@ -34,4 +34,4 @@ public:
     static void orderAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

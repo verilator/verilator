@@ -34,4 +34,4 @@ public:
     static void tristateAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

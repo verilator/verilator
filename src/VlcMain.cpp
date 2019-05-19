@@ -59,9 +59,9 @@ bool VlcOptions::onoff(const char* sw, const char* arg, bool& flag) {
     // if sw=="-noarg", then return true (found it), and flag=false
     // else return false
     if (arg[0]!='-') v3fatalSrc("OnOff switches must have leading dash.");
-    if (0==strcmp(sw,arg)) { flag = true; return true; }
-    else if (0==strncmp(sw,"-no",3) && (0==strcmp(sw+3,arg+1))) { flag = false; return true; }
-    else if (0==strncmp(sw,"-no-",4) && (0==strcmp(sw+4,arg+1))) { flag = false; return true; }
+    if (0==strcmp(sw, arg)) { flag = true; return true; }
+    else if (0==strncmp(sw, "-no", 3) && (0==strcmp(sw+3, arg+1))) { flag = false; return true; }
+    else if (0==strncmp(sw, "-no-", 4) && (0==strcmp(sw+4, arg+1))) { flag = false; return true; }
     return false;
 }
 
@@ -79,34 +79,34 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
             if (sw[0]=='-' && sw[1]=='-') ++sw;
             if (0) {}
             // Single switches
-            else if ( onoff   (sw, "-annotate-all", flag/*ref*/) ) { m_annotateAll = flag; }
-            else if ( onoff   (sw, "-rank", flag/*ref*/) ) { m_rank = flag; }
-            else if ( onoff   (sw, "-unlink", flag/*ref*/) )    { m_unlink = flag; }
+            else if (onoff  (sw, "-annotate-all", flag/*ref*/) ) { m_annotateAll = flag; }
+            else if (onoff  (sw, "-rank", flag/*ref*/) ) { m_rank = flag; }
+            else if (onoff  (sw, "-unlink", flag/*ref*/) )    { m_unlink = flag; }
             // Parameterized switches
-            else if ( !strcmp (sw, "-annotate-min") && (i+1)<argc ) {
+            else if (!strcmp(sw, "-annotate-min") && (i+1)<argc ) {
                 shift;
                 m_annotateMin = atoi(argv[i]);
             }
-            else if ( !strcmp (sw, "-annotate") && (i+1)<argc ) {
+            else if (!strcmp(sw, "-annotate") && (i+1)<argc ) {
                 shift;
                 m_annotateOut = argv[i];
             }
-            else if ( !strcmp (sw, "-debug") ) {
+            else if (!strcmp(sw, "-debug") ) {
                 V3Error::debugDefault(3);
             }
-            else if ( !strcmp (sw, "-debugi") && (i+1)<argc ) {
+            else if (!strcmp(sw, "-debugi") && (i+1)<argc ) {
                 shift;
                 V3Error::debugDefault(atoi(argv[i]));
             }
-            else if ( !strcmp (sw, "-V") ) {
+            else if (!strcmp(sw, "-V") ) {
                 showVersion(true);
                 exit(0);
             }
-            else if ( !strcmp (sw, "-version") ) {
+            else if (!strcmp(sw, "-version") ) {
                 showVersion(false);
                 exit(0);
             }
-            else if ( !strcmp (sw, "-write") && (i+1)<argc ) {
+            else if (!strcmp(sw, "-write") && (i+1)<argc ) {
                 shift;
                 m_writeFile = argv[i];
             }

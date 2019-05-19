@@ -41,4 +41,4 @@ public:
     static void deadifyAllScoped(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

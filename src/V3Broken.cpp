@@ -20,8 +20,8 @@
 // V3Broken's Transformations:
 //
 // Entire netlist
-//	Mark all nodes
-//	Check all links point to marked nodes
+//      Mark all nodes
+//      Check all links point to marked nodes
 //
 //*************************************************************************
 
@@ -47,125 +47,125 @@ private:
     // MEMBERS
     //   For each node, we keep if it exists or not.
     typedef vl_unordered_map<const AstNode*,int> NodeMap;  // Performance matters (when --debug)
-    static NodeMap s_nodes;	// Set of all nodes that exist
+    static NodeMap s_nodes;  // Set of all nodes that exist
     // BITMASK
-    enum { FLAG_ALLOCATED	= 0x01 };	// new() and not delete()ed
-    enum { FLAG_IN_TREE		= 0x02 };	// Is in netlist tree
-    enum { FLAG_LINKABLE	= 0x04 };	// Is in netlist tree, can be linked to
-    enum { FLAG_LEAKED		= 0x08 };	// Known to have been leaked
-    enum { FLAG_UNDER_NOW	= 0x10 };	// Is in tree as parent of current node
+    enum { FLAG_ALLOCATED       = 0x01 };  // new() and not delete()ed
+    enum { FLAG_IN_TREE         = 0x02 };  // Is in netlist tree
+    enum { FLAG_LINKABLE        = 0x04 };  // Is in netlist tree, can be linked to
+    enum { FLAG_LEAKED          = 0x08 };  // Known to have been leaked
+    enum { FLAG_UNDER_NOW       = 0x10 };  // Is in tree as parent of current node
 public:
     // METHODS
     static void deleted(const AstNode* nodep) {
-	// Called by operator delete on any node - only if VL_LEAK_CHECKS
+        // Called by operator delete on any node - only if VL_LEAK_CHECKS
         if (debug()>=9) cout<<"-nodeDel:  "<<cvtToHex(nodep)<<endl;
-	NodeMap::iterator iter = s_nodes.find(nodep);
-	if (iter==s_nodes.end() || !(iter->second & FLAG_ALLOCATED)) {
+        NodeMap::iterator iter = s_nodes.find(nodep);
+        if (iter==s_nodes.end() || !(iter->second & FLAG_ALLOCATED)) {
             reinterpret_cast<const AstNode*>(nodep)
                 ->v3fatalSrc("Deleting AstNode object that was never tracked or already deleted");
-	}
-	if (iter!=s_nodes.end()) s_nodes.erase(iter);
+        }
+        if (iter!=s_nodes.end()) s_nodes.erase(iter);
     }
 #if defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 4
     // GCC 4.4.* compiler warning bug, https://gcc.gnu.org/bugzilla/show_bug.cgi?id=39390
 # pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #endif
     static void addNewed(const AstNode* nodep) {
-	// Called by operator new on any node - only if VL_LEAK_CHECKS
+        // Called by operator new on any node - only if VL_LEAK_CHECKS
         if (debug()>=9) cout<<"-nodeNew:  "<<cvtToHex(nodep)<<endl;
-	NodeMap::iterator iter = s_nodes.find(nodep);
-	if (iter!=s_nodes.end() || (iter->second & FLAG_ALLOCATED)) {
-	    nodep->v3fatalSrc("Newing AstNode object that is already allocated");
-	}
-	if (iter == s_nodes.end()) {
-	    int flags = FLAG_ALLOCATED;  // This int needed to appease GCC 4.1.2
-	    s_nodes.insert(make_pair(nodep,flags));
-	}
+        NodeMap::iterator iter = s_nodes.find(nodep);
+        if (iter!=s_nodes.end() || (iter->second & FLAG_ALLOCATED)) {
+            nodep->v3fatalSrc("Newing AstNode object that is already allocated");
+        }
+        if (iter == s_nodes.end()) {
+            int flags = FLAG_ALLOCATED;  // This int needed to appease GCC 4.1.2
+            s_nodes.insert(make_pair(nodep, flags));
+        }
     }
     static void setUnder(const AstNode* nodep, bool flag) {
-	// Called by BrokenCheckVisitor when each node entered/exited
-	if (!okIfLinkedTo(nodep)) return;
-	NodeMap::iterator iter = s_nodes.find(nodep);
-	if (iter!=s_nodes.end()) {
-	    iter->second &= ~FLAG_UNDER_NOW;
-	    if (flag) iter->second |=  FLAG_UNDER_NOW;
-	}
+        // Called by BrokenCheckVisitor when each node entered/exited
+        if (!okIfLinkedTo(nodep)) return;
+        NodeMap::iterator iter = s_nodes.find(nodep);
+        if (iter!=s_nodes.end()) {
+            iter->second &= ~FLAG_UNDER_NOW;
+            if (flag) iter->second |=  FLAG_UNDER_NOW;
+        }
     }
     static void addInTree(AstNode* nodep, bool linkable) {
 #ifndef VL_LEAK_CHECKS
-	if (!linkable) return;  // save some time, else the map will get huge!
+        if (!linkable) return;  // save some time, else the map will get huge!
 #endif
-	NodeMap::iterator iter = s_nodes.find(nodep);
-	if (iter == s_nodes.end()) {
+        NodeMap::iterator iter = s_nodes.find(nodep);
+        if (iter == s_nodes.end()) {
 #ifdef VL_LEAK_CHECKS
-	    nodep->v3fatalSrc("AstNode is in tree, but not allocated");
+            nodep->v3fatalSrc("AstNode is in tree, but not allocated");
 #endif
-	} else {
-	    if (!(iter->second & FLAG_ALLOCATED)) {
+        } else {
+            if (!(iter->second & FLAG_ALLOCATED)) {
 #ifdef VL_LEAK_CHECKS
-		nodep->v3fatalSrc("AstNode is in tree, but not allocated");
+                nodep->v3fatalSrc("AstNode is in tree, but not allocated");
 #endif
-	    }
-	    if (iter->second & FLAG_IN_TREE) {
-		nodep->v3fatalSrc("AstNode is already in tree at another location");
-	    }
-	}
-	int or_flags = FLAG_IN_TREE | (linkable?FLAG_LINKABLE:0);
-	if (iter == s_nodes.end()) {
-	    s_nodes.insert(make_pair(nodep,or_flags));
-	} else {
-	    iter->second |= or_flags;
-	}
+            }
+            if (iter->second & FLAG_IN_TREE) {
+                nodep->v3fatalSrc("AstNode is already in tree at another location");
+            }
+        }
+        int or_flags = FLAG_IN_TREE | (linkable?FLAG_LINKABLE:0);
+        if (iter == s_nodes.end()) {
+            s_nodes.insert(make_pair(nodep, or_flags));
+        } else {
+            iter->second |= or_flags;
+        }
     }
     static bool okIfLinkedTo(const AstNode* nodep) {
-	// Someone has a pointer to this node.  Is it kosher?
-	NodeMap::iterator iter = s_nodes.find(nodep);
-	if (iter == s_nodes.end()) return false;
+        // Someone has a pointer to this node.  Is it kosher?
+        NodeMap::iterator iter = s_nodes.find(nodep);
+        if (iter == s_nodes.end()) return false;
 #ifdef VL_LEAK_CHECKS
-	if (!(iter->second & FLAG_ALLOCATED)) return false;
+        if (!(iter->second & FLAG_ALLOCATED)) return false;
 #endif
-	if (!(iter->second & FLAG_IN_TREE)) return false;
-	if (!(iter->second & FLAG_LINKABLE)) return false;
-	return true;
+        if (!(iter->second & FLAG_IN_TREE)) return false;
+        if (!(iter->second & FLAG_LINKABLE)) return false;
+        return true;
     }
     static bool okIfBelow(const AstNode* nodep) {
-	// Must be linked to and below current node
-	if (!okIfLinkedTo(nodep)) return false;
-	NodeMap::iterator iter = s_nodes.find(nodep);
-	if (iter == s_nodes.end()) return false;
-	if (!(iter->second & FLAG_UNDER_NOW)) return false;
-	return true;
+        // Must be linked to and below current node
+        if (!okIfLinkedTo(nodep)) return false;
+        NodeMap::iterator iter = s_nodes.find(nodep);
+        if (iter == s_nodes.end()) return false;
+        if (!(iter->second & FLAG_UNDER_NOW)) return false;
+        return true;
     }
     static void prepForTree() {
 #ifndef VL_LEAK_CHECKS
-	s_nodes.clear();
+        s_nodes.clear();
 #endif
-	for (NodeMap::iterator it = s_nodes.begin(); it != s_nodes.end(); ++it) {
-	    it->second &= ~FLAG_IN_TREE;
-	    it->second &= ~FLAG_LINKABLE;
-	}
+        for (NodeMap::iterator it = s_nodes.begin(); it != s_nodes.end(); ++it) {
+            it->second &= ~FLAG_IN_TREE;
+            it->second &= ~FLAG_LINKABLE;
+        }
     }
     static void doneWithTree() {
-	for (int backs=0; backs<2; backs++) {  // Those with backp() are probably under one leaking without
-	    for (NodeMap::iterator it = s_nodes.begin(); it != s_nodes.end(); ++it) {
-		if ((it->second & FLAG_ALLOCATED)
-		    && !(it->second & FLAG_IN_TREE)
-		    && !(it->second & FLAG_LEAKED)
-		    && (it->first->backp() ? backs==1 : backs==0)) {
-		    // Use only AstNode::dump instead of the virtual one, as there
-		    // may be varp() and other cross links that are bad.
-		    if (v3Global.opt.debugCheck()) {
+        for (int backs=0; backs<2; backs++) {  // Those with backp() are probably under one leaking without
+            for (NodeMap::iterator it = s_nodes.begin(); it != s_nodes.end(); ++it) {
+                if ((it->second & FLAG_ALLOCATED)
+                    && !(it->second & FLAG_IN_TREE)
+                    && !(it->second & FLAG_LEAKED)
+                    && (it->first->backp() ? backs==1 : backs==0)) {
+                    // Use only AstNode::dump instead of the virtual one, as there
+                    // may be varp() and other cross links that are bad.
+                    if (v3Global.opt.debugCheck()) {
                         std::cerr<<"%Error: LeakedNode"<<(it->first->backp()?"Back: ":": ");
                         AstNode* rawp = const_cast<AstNode*>
                             (static_cast<const AstNode*>(it->first));
                         rawp->AstNode::dump(std::cerr);
                         std::cerr<<endl;
-			V3Error::incErrors();
-		    }
-		    it->second |= FLAG_LEAKED;
-		}
-	    }
-	}
+                        V3Error::incErrors();
+                    }
+                    it->second |= FLAG_LEAKED;
+                }
+            }
+        }
     }
 public:
     // CONSTUCTORS
@@ -190,16 +190,16 @@ class BrokenMarkVisitor : public AstNVisitor {
     // Mark every node in the tree
 private:
     // NODE STATE
-    //  Nothing!	// This may be called deep inside other routines
-    //			// so userp and friends may not be used
+    //  Nothing!        // This may be called deep inside other routines
+    //                  // so userp and friends may not be used
     // METHODS
     void processAndIterate(AstNode* nodep) {
-	BrokenTable::addInTree(nodep, nodep->maybePointedTo());
+        BrokenTable::addInTree(nodep, nodep->maybePointedTo());
         iterateChildrenConst(nodep);
     }
     // VISITORS
     virtual void visit(AstNode* nodep) {
-	processAndIterate(nodep);
+        processAndIterate(nodep);
     }
 public:
     // CONSTUCTORS
@@ -215,17 +215,17 @@ public:
 class BrokenCheckVisitor : public AstNVisitor {
 private:
     void checkWidthMin(const AstNode* nodep) {
-	if (nodep->width() != nodep->widthMin()
-	    && v3Global.widthMinUsage()==VWidthMinUsage::MATCHES_WIDTH) {
-	    nodep->v3fatalSrc("Width != WidthMin");
-	}
+        if (nodep->width() != nodep->widthMin()
+            && v3Global.widthMinUsage()==VWidthMinUsage::MATCHES_WIDTH) {
+            nodep->v3fatalSrc("Width != WidthMin");
+        }
     }
     void processAndIterate(AstNode* nodep) {
-	BrokenTable::setUnder(nodep,true);
-	if (const char* whyp=nodep->broken()) {
-	    nodep->v3fatalSrc("Broken link in node (or something without maybePointedTo): "<<whyp);
-	}
-	if (nodep->dtypep()) {
+        BrokenTable::setUnder(nodep, true);
+        if (const char* whyp=nodep->broken()) {
+            nodep->v3fatalSrc("Broken link in node (or something without maybePointedTo): "<<whyp);
+        }
+        if (nodep->dtypep()) {
             if (!nodep->dtypep()->brokeExists()) {
                 nodep->v3fatalSrc("Broken link in node->dtypep() to "
                                   <<cvtToHex(nodep->dtypep()));
@@ -233,31 +233,34 @@ private:
                 nodep->v3fatalSrc("Non-dtype link in node->dtypep() to "
                                   <<cvtToHex(nodep->dtypep()));
             }
-	}
-	if (v3Global.assertDTypesResolved()) {
-	    if (nodep->hasDType()) {
-		if (!nodep->dtypep()) nodep->v3fatalSrc("No dtype on node with hasDType(): "<<nodep->prettyTypeName());
-	    } else {
-		if (nodep->dtypep()) nodep->v3fatalSrc("DType on node without hasDType(): "<<nodep->prettyTypeName());
-	    }
-	    if (nodep->getChildDTypep()) nodep->v3fatalSrc("childDTypep() non-null on node after should have removed");
+        }
+        if (v3Global.assertDTypesResolved()) {
+            if (nodep->hasDType()) {
+                if (!nodep->dtypep()) nodep->v3fatalSrc(
+                    "No dtype on node with hasDType(): "<<nodep->prettyTypeName());
+            } else {
+                if (nodep->dtypep()) nodep->v3fatalSrc(
+                    "DType on node without hasDType(): "<<nodep->prettyTypeName());
+            }
+            if (nodep->getChildDTypep()) nodep->v3fatalSrc(
+                "childDTypep() non-null on node after should have removed");
             if (const AstNodeDType* dnodep = VN_CAST(nodep, NodeDType)) checkWidthMin(dnodep);
-	}
-	checkWidthMin(nodep);
+        }
+        checkWidthMin(nodep);
         iterateChildrenConst(nodep);
-	BrokenTable::setUnder(nodep,false);
+        BrokenTable::setUnder(nodep, false);
     }
     virtual void visit(AstNodeAssign* nodep) {
-	processAndIterate(nodep);
-	if (v3Global.assertDTypesResolved()
-	    && nodep->brokeLhsMustBeLvalue()
+        processAndIterate(nodep);
+        if (v3Global.assertDTypesResolved()
+            && nodep->brokeLhsMustBeLvalue()
             && VN_IS(nodep->lhsp(), NodeVarRef)
             && !VN_CAST(nodep->lhsp(), NodeVarRef)->lvalue()) {
-	    nodep->v3fatalSrc("Assignment LHS is not an lvalue");
-	}
+            nodep->v3fatalSrc("Assignment LHS is not an lvalue");
+        }
     }
     virtual void visit(AstNode* nodep) {
-	processAndIterate(nodep);
+        processAndIterate(nodep);
     }
 public:
     // CONSTUCTORS
@@ -274,15 +277,15 @@ void V3Broken::brokenAll(AstNetlist* nodep) {
     //UINFO(9,__FUNCTION__<<": "<<endl);
     static bool inBroken = false;
     if (inBroken) {
-	// A error called by broken can recurse back into broken; avoid this
-	UINFO(1,"Broken called under broken, skipping recursion.\n");
+        // A error called by broken can recurse back into broken; avoid this
+        UINFO(1,"Broken called under broken, skipping recursion.\n");
     } else {
-	inBroken = true;
-	BrokenTable::prepForTree();
-	BrokenMarkVisitor mvisitor (nodep);
-	BrokenCheckVisitor cvisitor (nodep);
-	BrokenTable::doneWithTree();
-	inBroken = false;
+        inBroken = true;
+        BrokenTable::prepForTree();
+        BrokenMarkVisitor mvisitor (nodep);
+        BrokenCheckVisitor cvisitor (nodep);
+        BrokenTable::doneWithTree();
+        inBroken = false;
     }
 }
 

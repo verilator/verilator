@@ -34,4 +34,4 @@ public:
     static void clockAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

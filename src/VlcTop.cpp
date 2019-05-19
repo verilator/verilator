@@ -175,7 +175,7 @@ void VlcTop::annotateCalcNeeded() {
             VlcSource::ColumnMap& cmap = lit->second;
             for (VlcSource::ColumnMap::iterator cit=cmap.begin(); cit!=cmap.end(); ++cit) {
                 VlcSourceCount& col = cit->second;
-                //UINFO(0,"Source "<<source.name()<<" lineno="<<col.lineno()<<" col="<<col.column()<<endl);
+                //UINFO(0,"Source "<<source.name()<<":"<<col.lineno()<<":"<<col.column()<<endl);
                 ++totCases;
                 if (col.ok()) {
                     ++totOk;
@@ -229,7 +229,7 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
                 VlcSource::ColumnMap& cmap = lit->second;
                 for (VlcSource::ColumnMap::iterator cit=cmap.begin(); cit!=cmap.end(); ++cit) {
                     VlcSourceCount& col = cit->second;
-                    //UINFO(0,"Source "<<source.name()<<" lineno="<<col.lineno()<<" col="<<col.column()<<endl);
+                    //UINFO(0,"Source "<<source.name()<<":"<<col.lineno()<<":"<<col.column()<<endl);
                     os<<(col.ok()?" ":"%")
                       <<std::setfill('0')<<std::setw(6)<<col.count()
                       <<"\t"<<line<<endl;

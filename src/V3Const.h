@@ -49,4 +49,4 @@ public:
     static AstNode* constifyExpensiveEdit(AstNode* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

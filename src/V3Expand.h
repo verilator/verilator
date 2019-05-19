@@ -34,4 +34,4 @@ public:
     static void expandAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

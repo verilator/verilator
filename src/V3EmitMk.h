@@ -34,4 +34,4 @@ public:
     static void emitmk(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

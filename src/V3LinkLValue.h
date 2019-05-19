@@ -35,4 +35,4 @@ public:
     static void linkLValueSet(AstNode* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

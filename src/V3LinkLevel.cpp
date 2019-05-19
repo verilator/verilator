@@ -18,9 +18,9 @@
 //
 //*************************************************************************
 // LINKTOP TRANSFORMATIONS:
-//	Utility functions
-//	    Sort cells by depth
-//	    Create new MODULE TOP with connections to below signals
+//      Utility functions
+//          Sort cells by depth
+//          Create new MODULE TOP with connections to below signals
 //*************************************************************************
 
 #include "config_build.h"
@@ -40,7 +40,7 @@
 
 struct CmpLevel {
     inline bool operator() (const AstNodeModule* lhsp, const AstNodeModule* rhsp) const {
-	return lhsp->level() < rhsp->level();
+        return lhsp->level() < rhsp->level();
     }
 };
 
@@ -55,28 +55,30 @@ void V3LinkLevel::modSortByLevel() {
 
     ModVec vec;
     AstNodeModule* topp = NULL;
-    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep; nodep=VN_CAST(nodep->nextp(), NodeModule)) {
-	if (nodep->level()<=2) {
-	    if (topp) {
-		nodep->v3warn(E_MULTITOP, "Unsupported: Multiple top level modules: "
-			      <<nodep->prettyName()<<" and "<<topp->prettyName());
-		nodep->v3warn(E_MULTITOP, "Fix, or use --top-module option to select which you want.");
-	    }
-	    topp = nodep;
-	}
-	vec.push_back(nodep);
+    for (AstNodeModule* nodep = v3Global.rootp()->modulesp();
+         nodep; nodep=VN_CAST(nodep->nextp(), NodeModule)) {
+        if (nodep->level()<=2) {
+            if (topp) {
+                nodep->v3warn(E_MULTITOP, "Unsupported: Multiple top level modules: "
+                              <<nodep->prettyName()<<" and "<<topp->prettyName());
+                nodep->v3warn(E_MULTITOP, "Fix, or use --top-module option to select which you want.");
+            }
+            topp = nodep;
+        }
+        vec.push_back(nodep);
     }
-    stable_sort(vec.begin(), vec.end(), CmpLevel()); // Sort the vector
+    stable_sort(vec.begin(), vec.end(), CmpLevel());  // Sort the vector
     UINFO(9,"modSortByLevel() sorted\n");  // Comment required for gcc4.6.3 / bug666
     for (ModVec::iterator it = vec.begin(); it != vec.end(); ++it) {
-	AstNodeModule* nodep = *it;
-	nodep->clearIter();  // Because we didn't iterate to find the node pointers, may have a stale m_iterp() needing cleanup
-	nodep->unlinkFrBack();
+        AstNodeModule* nodep = *it;
+        nodep->clearIter();  // Because we didn't iterate to find the node
+        // pointers, may have a stale m_iterp() needing cleanup
+        nodep->unlinkFrBack();
     }
     if (v3Global.rootp()->modulesp()) v3Global.rootp()->v3fatalSrc("Unlink didn't work");
     for (ModVec::iterator it = vec.begin(); it != vec.end(); ++it) {
-	AstNodeModule* nodep = *it;
-	v3Global.rootp()->addModulep(nodep);
+        AstNodeModule* nodep = *it;
+        v3Global.rootp()->addModulep(nodep);
     }
     UINFO(9,"modSortByLevel() done\n");  // Comment required for gcc4.6.3 / bug666
     V3Global::dumpCheckGlobalTree("cells", false, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
@@ -113,20 +115,21 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
 
     // Add instance
     AstCell* cellp = new AstCell(newmodp->fileline(),
-				 ((v3Global.opt.l2Name()!="") ? v3Global.opt.l2Name() : oldmodp->name()),
-				 oldmodp->name(),
-				 NULL, NULL, NULL);
+                                 (!v3Global.opt.l2Name().empty()
+                                  ? v3Global.opt.l2Name() : oldmodp->name()),
+                                 oldmodp->name(),
+                                 NULL, NULL, NULL);
     cellp->modp(oldmodp);
     newmodp->addStmtp(cellp);
 
     // Add pins
     for (AstNode* subnodep=oldmodp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {
-        if (AstVar* oldvarp=VN_CAST(subnodep, Var)) {
-	    UINFO(8,"VARWRAP "<<oldvarp<<endl);
-	    if (oldvarp->isIO()) {
-		AstVar* varp = oldvarp->cloneTree(false);
-		newmodp->addStmtp(varp);
-		varp->sigPublic(true);	// User needs to be able to get to it...
+        if (AstVar* oldvarp = VN_CAST(subnodep, Var)) {
+            UINFO(8,"VARWRAP "<<oldvarp<<endl);
+            if (oldvarp->isIO()) {
+                AstVar* varp = oldvarp->cloneTree(false);
+                newmodp->addStmtp(varp);
+                varp->sigPublic(true);  // User needs to be able to get to it...
                 if (oldvarp->isIO()) {
                     oldvarp->primaryIO(false);
                     varp->primaryIO(true);
@@ -135,36 +138,36 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                     varp->v3error("Unsupported: ref/const ref as primary input/output: "
                                   <<varp->prettyName());
                 }
-		if (varp->isIO() && v3Global.opt.systemC()) {
-		    varp->sc(true);
-		    // User can see trace one level down from the wrapper
-		    // Avoids packing & unpacking SC signals a second time
-		    varp->trace(false);
-		}
+                if (varp->isIO() && v3Global.opt.systemC()) {
+                    varp->sc(true);
+                    // User can see trace one level down from the wrapper
+                    // Avoids packing & unpacking SC signals a second time
+                    varp->trace(false);
+                }
 
-		AstPin* pinp = new AstPin(oldvarp->fileline(),0,oldvarp->name(),
+                AstPin* pinp = new AstPin(oldvarp->fileline(), 0, oldvarp->name(),
                                           new AstVarRef(varp->fileline(),
                                                         varp, oldvarp->isWritable()));
                 // Skip length and width comp; we know it's a direct assignment
-		pinp->modVarp(oldvarp);
-		cellp->addPinsp(pinp);
-	    }
-	}
+                pinp->modVarp(oldvarp);
+                cellp->addPinsp(pinp);
+            }
+        }
     }
 
     // Instantiate all packages under the top wrapper
     // This way all later SCOPE based optimizations can ignore packages
     for (AstNodeModule* modp = rootp->modulesp(); modp; modp=VN_CAST(modp->nextp(), NodeModule)) {
         if (VN_IS(modp, Package)
-	    && modp != oldmodp) {  // Don't duplicate if didn't find a top module
-	    AstCell* cellp = new AstCell(modp->fileline(),
-					 // Could add __03a__03a="::" to prevent conflict
-					 // with module names/"v"
-					 modp->name(),
-					 modp->name(),
-					 NULL, NULL, NULL);
-	    cellp->modp(modp);
-	    newmodp->addStmtp(cellp);
-	}
+            && modp != oldmodp) {  // Don't duplicate if didn't find a top module
+            AstCell* cellp = new AstCell(modp->fileline(),
+                                         // Could add __03a__03a="::" to prevent conflict
+                                         // with module names/"v"
+                                         modp->name(),
+                                         modp->name(),
+                                         NULL, NULL, NULL);
+            cellp->modp(modp);
+            newmodp->addStmtp(cellp);
+        }
     }
 }

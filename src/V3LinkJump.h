@@ -34,4 +34,4 @@ public:
     static void linkJump(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

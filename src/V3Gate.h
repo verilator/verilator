@@ -34,4 +34,4 @@ public:
     static void gateAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

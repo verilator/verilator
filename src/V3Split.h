@@ -35,4 +35,4 @@ public:
     static void splitAlwaysAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

@@ -58,4 +58,4 @@ public:
     }
 };
 
-#endif // Guard
+#endif  // Guard

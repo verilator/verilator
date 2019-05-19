@@ -116,8 +116,9 @@ bom		[\357\273\277]
 <STRMODE>[\\]{wsn}+{crnl}  { yyless(1); LEXP->curFilelinep()->v3warn(BSSPACE, "Backslash followed by whitespace, perhaps the whitespace is accidental?"); }
 <STRMODE>[\\].		{ yymore(); }
 <STRMODE>{quote} 	{ yy_pop_state();
-			  if (LEXP->m_parenLevel || LEXP->m_defQuote) { LEXP->m_defQuote=false; appendDefValue(yytext,yyleng); yyleng=0; }
-			  else return (VP_STRING); }
+			  if (LEXP->m_parenLevel || LEXP->m_defQuote) {
+			      LEXP->m_defQuote=false; appendDefValue(yytext, yyleng); yyleng=0;
+			  } else return (VP_STRING); }
 
 	/* Stringification */
 <INITIAL>{tickquote}	{ yy_push_state(STRIFY); return VP_STRIFY; }
@@ -159,7 +160,8 @@ bom		[\357\273\277]
 
 	/* Reading definition formals (declaration of a define) */
 <DEFFORM>[(]		{ appendDefValue(yytext,yyleng); yyleng=0; ++LEXP->m_formalLevel; }
-<DEFFORM>[)]		{ appendDefValue(yytext,yyleng); yyleng=0; if ((--LEXP->m_formalLevel)==0) { yy_pop_state(); return VP_DEFFORM; } }
+<DEFFORM>[)]		{ appendDefValue(yytext,yyleng); yyleng=0;
+	 		  if ((--LEXP->m_formalLevel)==0) { yy_pop_state(); return VP_DEFFORM; } }
 <DEFFORM>"/*"		{ yy_push_state(CMTMODE); yymore(); }
 <DEFFORM>"//"[^\n\r]*	{ return (VP_COMMENT);}
 <DEFFORM>{drop}		{ }
@@ -356,7 +358,7 @@ size_t V3PreLex::inputToLex(char* buf, size_t max_size) {
 	    if (again) goto again;
 	}
     }
-    if (debug()>=10) { cout<<"-  pp::inputToLex  got="<<got<<" '"<<string(buf,got)<<"'"<<endl; }
+    if (debug()>=10) { cout<<"-  pp::inputToLex  got="<<got<<" '"<<string(buf, got)<<"'"<<endl; }
     return got;
 }
 

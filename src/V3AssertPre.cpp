@@ -18,7 +18,7 @@
 //
 //*************************************************************************
 //  Pre steps:
-//	Attach clocks to each assertion
+//      Attach clocks to each assertion
 //*************************************************************************
 
 #include "config_build.h"
@@ -51,37 +51,37 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     AstSenTree* newSenTree(AstNode* nodep) {
-	// Create sentree based on clocked or default clock
-	// Return NULL for always
-	AstSenTree* newp = NULL;
+        // Create sentree based on clocked or default clock
+        // Return NULL for always
+        AstSenTree* newp = NULL;
         AstNodeSenItem* senip = m_senip;
         if (!senip) senip = m_seniDefaultp;
         if (!senip) senip = m_seniAlwaysp;
-	if (!senip) {
-	    nodep->v3error("Unsupported: Unclocked assertion");
-	    newp = new AstSenTree(nodep->fileline(), NULL);
-	} else {
-	    newp = new AstSenTree(nodep->fileline(), senip->cloneTree(true));
-	}
-	return newp;
+        if (!senip) {
+            nodep->v3error("Unsupported: Unclocked assertion");
+            newp = new AstSenTree(nodep->fileline(), NULL);
+        } else {
+            newp = new AstSenTree(nodep->fileline(), senip->cloneTree(true));
+        }
+        return newp;
     }
     void clearAssertInfo() {
-	m_senip = NULL;
+        m_senip = NULL;
     }
 
     // VISITORS
     //========== Statements
     virtual void visit(AstClocking* nodep) {
-	UINFO(8,"   CLOCKING"<<nodep<<endl);
-	// Store the new default clock, reset on new module
-	m_seniDefaultp = nodep->sensesp();
-	// Trash it, keeping children
-	if (nodep->bodysp()) {
-	    nodep->replaceWith(nodep->bodysp()->unlinkFrBack());
-	} else {
-	    nodep->unlinkFrBack();
-	}
-	pushDeletep(nodep); VL_DANGLING(nodep);
+        UINFO(8,"   CLOCKING"<<nodep<<endl);
+        // Store the new default clock, reset on new module
+        m_seniDefaultp = nodep->sensesp();
+        // Trash it, keeping children
+        if (nodep->bodysp()) {
+            nodep->replaceWith(nodep->bodysp()->unlinkFrBack());
+        } else {
+            nodep->unlinkFrBack();
+        }
+        pushDeletep(nodep); VL_DANGLING(nodep);
     }
     virtual void visit(AstAlways* nodep) {
         iterateAndNextNull(nodep->sensesp());
@@ -93,12 +93,12 @@ private:
     }
 
     virtual void visit(AstNodePslCoverOrAssert* nodep) {
-	if (nodep->sentreep()) return;  // Already processed
-	clearAssertInfo();
+        if (nodep->sentreep()) return;  // Already processed
+        clearAssertInfo();
         // Find PslClocking's burried under nodep->exprsp
         iterateChildren(nodep);
-	nodep->sentreep(newSenTree(nodep));
-	clearAssertInfo();
+        nodep->sentreep(newSenTree(nodep));
+        clearAssertInfo();
     }
     virtual void visit(AstPast* nodep) {
         if (nodep->sentreep()) return;  // Already processed
@@ -108,26 +108,26 @@ private:
     virtual void visit(AstPslClocked* nodep) {
         // No need to iterate the body, once replace will get iterated
         iterateAndNextNull(nodep->sensesp());
-	if (m_senip) {
-	    nodep->v3error("Unsupported: Only one PSL clock allowed per assertion");
-	}
-	// Block is the new expression to evaluate
-	AstNode* blockp = nodep->propp()->unlinkFrBack();
-	if (nodep->disablep()) {
-	    blockp = new AstAnd(nodep->disablep()->fileline(),
-				new AstNot(nodep->disablep()->fileline(),
-					   nodep->disablep()->unlinkFrBack()),
-				blockp);
-	}
-	// Unlink and just keep a pointer to it, convert to sentree as needed
-	m_senip = nodep->sensesp();
-	nodep->replaceWith(blockp);
-	pushDeletep(nodep); VL_DANGLING(nodep);
+        if (m_senip) {
+            nodep->v3error("Unsupported: Only one PSL clock allowed per assertion");
+        }
+        // Block is the new expression to evaluate
+        AstNode* blockp = nodep->propp()->unlinkFrBack();
+        if (nodep->disablep()) {
+            blockp = new AstAnd(nodep->disablep()->fileline(),
+                                new AstNot(nodep->disablep()->fileline(),
+                                           nodep->disablep()->unlinkFrBack()),
+                                blockp);
+        }
+        // Unlink and just keep a pointer to it, convert to sentree as needed
+        m_senip = nodep->sensesp();
+        nodep->replaceWith(blockp);
+        pushDeletep(nodep); VL_DANGLING(nodep);
     }
     virtual void visit(AstNodeModule* nodep) {
         iterateChildren(nodep);
-	// Reset defaults
-	m_seniDefaultp = NULL;
+        // Reset defaults
+        m_seniDefaultp = NULL;
     }
     virtual void visit(AstNode* nodep) {
         iterateChildren(nodep);
@@ -136,10 +136,10 @@ private:
 public:
     // CONSTRUCTORS
     explicit AssertPreVisitor(AstNetlist* nodep) {
-	m_seniDefaultp = NULL;
+        m_seniDefaultp = NULL;
         m_seniAlwaysp = NULL;
-	clearAssertInfo();
-	// Process
+        clearAssertInfo();
+        // Process
         iterate(nodep);
     }
     virtual ~AssertPreVisitor() {}

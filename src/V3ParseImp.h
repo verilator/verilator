@@ -49,46 +49,46 @@ typedef enum { iprop_NONE, iprop_CONTEXT, iprop_PURE } V3ImportProperty;
 // We can't use bison's %union as we want to pass the fileline with all tokens
 
 struct V3ParseBisonYYSType {
-    FileLine*	fl;
-    AstNode*	scp;	// Symbol table scope for future lookups
-    int		token;	// Read token, aka tok
+    FileLine*   fl;
+    AstNode*    scp;    // Symbol table scope for future lookups
+    int         token;  // Read token, aka tok
     union {
-	V3Number*	nump;
-	string*		strp;
-	int 		cint;
-	double		cdouble;
-	bool		cbool;
-	V3UniqState	uniqstate;
-	VSignedState	signstate;
-	V3ImportProperty iprop;
-	V3ErrorCode::en	errcodeen;
+        V3Number*       nump;
+        string*         strp;
+        int             cint;
+        double          cdouble;
+        bool            cbool;
+        V3UniqState     uniqstate;
+        VSignedState    signstate;
+        V3ImportProperty iprop;
+        V3ErrorCode::en errcodeen;
 
-	AstNode*	nodep;
+        AstNode*        nodep;
 
-	AstBasicDType*	bdtypep;
-	AstBegin*	beginp;
-	AstCase*	casep;
-	AstCaseItem*	caseitemp;
-	AstCell*	cellp;
-	AstConst*	constp;
-	AstMemberDType*	memberp;
-	AstNodeModule*	modulep;
-	AstNodeClassDType* classp;
-	AstNodeDType*	dtypep;
-	AstNodeFTask*	ftaskp;
-	AstNodeFTaskRef* ftaskrefp;
+        AstBasicDType*  bdtypep;
+        AstBegin*       beginp;
+        AstCase*        casep;
+        AstCaseItem*    caseitemp;
+        AstCell*        cellp;
+        AstConst*       constp;
+        AstMemberDType* memberp;
+        AstNodeModule*  modulep;
+        AstNodeClassDType* classp;
+        AstNodeDType*   dtypep;
+        AstNodeFTask*   ftaskp;
+        AstNodeFTaskRef* ftaskrefp;
         AstNodeRange*   rangep;
-	AstNodeSenItem*	senitemp;
-	AstNodeVarRef*	varnodep;
-	AstPackage*	packagep;
-	AstPackageRef*	packagerefp;
-	AstParseRef*	parserefp;
-	AstPatMember*	patmemberp;
-	AstPattern*	patternp;
-	AstPin*		pinp;
-	AstSenTree*	sentreep;
-	AstVar*		varp;
-	AstVarRef*	varrefp;
+        AstNodeSenItem* senitemp;
+        AstNodeVarRef*  varnodep;
+        AstPackage*     packagep;
+        AstPackageRef*  packagerefp;
+        AstParseRef*    parserefp;
+        AstPatMember*   patmemberp;
+        AstPattern*     patternp;
+        AstPin*         pinp;
+        AstSenTree*     sentreep;
+        AstVar*         varp;
+        AstVarRef*      varrefp;
     };
 };
 
@@ -98,43 +98,43 @@ struct V3ParseBisonYYSType {
 
 class V3ParseImp {
     // MEMBERS
-    AstNetlist* 	m_rootp;	// Root of the design
-    V3InFilter*		m_filterp;	// Reading filter
-    V3ParseSym*		m_symp;		// Symbol table
+    AstNetlist*         m_rootp;        // Root of the design
+    V3InFilter*         m_filterp;      // Reading filter
+    V3ParseSym*         m_symp;         // Symbol table
 
-    V3Lexer*		m_lexerp;	// Current FlexLexer
-    static V3ParseImp*	s_parsep;	// Current THIS, bison() isn't class based
-    FileLine*		m_fileline;	// Filename/linenumber currently active
+    V3Lexer*            m_lexerp;       // Current FlexLexer
+    static V3ParseImp*  s_parsep;       // Current THIS, bison() isn't class based
+    FileLine*           m_fileline;     // Filename/linenumber currently active
 
-    bool	m_inCellDefine;		// Inside a `celldefine
-    bool	m_inLibrary;		// Currently reading a library vs. regular file
-    int		m_inBeginKwd;		// Inside a `begin_keywords
-    int		m_lastVerilogState;	// Last LEX state in `begin_keywords
+    bool        m_inCellDefine;         // Inside a `celldefine
+    bool        m_inLibrary;            // Currently reading a library vs. regular file
+    int         m_inBeginKwd;           // Inside a `begin_keywords
+    int         m_lastVerilogState;     // Last LEX state in `begin_keywords
 
-    int		m_prevLexToken;		// previous parsed token (for lexer)
-    bool	m_ahead;		// aheadval is valid
-    V3ParseBisonYYSType m_aheadVal;	// ahead token value
-    V3ParseBisonYYSType m_curBisonVal;	// current token for error reporting
-    V3ParseBisonYYSType m_prevBisonVal;	// previous token for error reporting
+    int         m_prevLexToken;         // previous parsed token (for lexer)
+    bool        m_ahead;                // aheadval is valid
+    V3ParseBisonYYSType m_aheadVal;     // ahead token value
+    V3ParseBisonYYSType m_curBisonVal;  // current token for error reporting
+    V3ParseBisonYYSType m_prevBisonVal; // previous token for error reporting
 
-    std::deque<string*>   m_stringps;   // Created strings for later cleanup
+    std::deque<string*> m_stringps;     // Created strings for later cleanup
     std::deque<V3Number*> m_numberps;   // Created numbers for later cleanup
-    std::deque<FileLine>  m_lintState;  // Current lint state for save/restore
-    std::deque<string>    m_ppBuffers;  // Preprocessor->lex buffer of characters to process
+    std::deque<FileLine> m_lintState;   // Current lint state for save/restore
+    std::deque<string> m_ppBuffers;     // Preprocessor->lex buffer of characters to process
 
     string m_tag;                       // Contents (if any) of current verilator tag
     AstNode* m_tagNodep;                // Points to the node to set to m_tag or NULL to not set.
 public:
     // Note these are an exception to using the filename as the debug type
     static int debugBison() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel("bison");
-	return level;
+        static int level = -1;
+        if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel("bison");
+        return level;
     }
     static int debugFlex() {
-	static int level = -1;
-	if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel("flex");
-	return level;
+        static int level = -1;
+        if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel("flex");
+        return level;
     }
     static int debug() { return debugBison() ? debugFlex() : 0; }
 
@@ -153,8 +153,9 @@ public:
     AstNode* tagNodep() const { return m_tagNodep;}
 
     static double parseDouble(const char* text, size_t length, bool* successp = NULL);
-    void pushBeginKeywords(int state) { m_inBeginKwd++; m_lastVerilogState=state; }
-    bool popBeginKeywords() { if (m_inBeginKwd) { m_inBeginKwd--; return true; } else return false; }
+    void pushBeginKeywords(int state) { m_inBeginKwd++; m_lastVerilogState = state; }
+    bool popBeginKeywords() {
+        if (m_inBeginKwd) { m_inBeginKwd--; return true; } else return false; }
     int lastVerilogState() const { return m_lastVerilogState; }
     static const char* tokenName(int tok);
 
@@ -166,21 +167,21 @@ public:
     // TODO: Many of these functions are the old interface; they'd be better as non-static
     // and called as READP->newString(...) etc.
     string* newString(const string& text) {
-	// Allocate a string, remembering it so we can reclaim storage at lex end
+        // Allocate a string, remembering it so we can reclaim storage at lex end
         string* strp = new string(text);
-	m_stringps.push_back(strp);
-	return strp;
+        m_stringps.push_back(strp);
+        return strp;
     }
     string* newString(const char* text) {
-	// Allocate a string, remembering it so we can reclaim storage at lex end
+        // Allocate a string, remembering it so we can reclaim storage at lex end
         string* strp = new string(text);
-	m_stringps.push_back(strp);
-	return strp;
+        m_stringps.push_back(strp);
+        return strp;
     }
     string* newString(const char* text, size_t length) {
         string* strp = new string(text, length);
-	m_stringps.push_back(strp);
-	return strp;
+        m_stringps.push_back(strp);
+        return strp;
     }
     V3Number* newNumber(FileLine* fl, const char* text) {
         V3Number* nump = new V3Number(V3Number::FileLined(), fl, text);
@@ -202,10 +203,10 @@ public:
     // Interactions with lexer
     void lexNew();
     void lexDestroy();
-    void statePop();		// Parser -> lexer communication
-    static int stateVerilogRecent();	// Parser -> lexer communication
-    int	prevLexToken() { return m_prevLexToken; } // Parser -> lexer communication
-    size_t flexPpInputToLex(char* buf, size_t max_size) { return ppInputToLex(buf,max_size); }
+    void statePop();  // Parser -> lexer communication
+    static int stateVerilogRecent();  // Parser -> lexer communication
+    int prevLexToken() { return m_prevLexToken; }  // Parser -> lexer communication
+    size_t flexPpInputToLex(char* buf, size_t max_size) { return ppInputToLex(buf, max_size); }
     const V3ParseBisonYYSType curBisonVal() const { return m_curBisonVal; }
     const V3ParseBisonYYSType prevBisonVal() const { return m_prevBisonVal; }
 
@@ -215,18 +216,18 @@ public:
 public:
     // CONSTRUCTORS
     V3ParseImp(AstNetlist* rootp, V3InFilter* filterp, V3ParseSym* parserSymp)
-	: m_rootp(rootp), m_filterp(filterp), m_symp(parserSymp) {
-	m_fileline = NULL;
-	m_lexerp = NULL;
-	m_inCellDefine = false;
-	m_inLibrary = false;
-	m_inBeginKwd = 0;
-	m_lastVerilogState = stateVerilogRecent();
-	m_prevLexToken = 0;
-	m_ahead = false;
-	m_curBisonVal.token = 0;
-	m_prevBisonVal.token = 0;
-	// m_aheadVal not used as m_ahead = false, and not all compilers support initing it
+        : m_rootp(rootp), m_filterp(filterp), m_symp(parserSymp) {
+        m_fileline = NULL;
+        m_lexerp = NULL;
+        m_inCellDefine = false;
+        m_inLibrary = false;
+        m_inBeginKwd = 0;
+        m_lastVerilogState = stateVerilogRecent();
+        m_prevLexToken = 0;
+        m_ahead = false;
+        m_curBisonVal.token = 0;
+        m_prevBisonVal.token = 0;
+        // m_aheadVal not used as m_ahead = false, and not all compilers support initing it
         m_tagNodep = NULL;
     }
     ~V3ParseImp();
@@ -238,13 +239,13 @@ public:
     int lexToBison();  // Pass token to bison
 
     void parseFile(FileLine* fileline, const string& modfilename, bool inLibrary,
-		   const string& errmsg);
+                   const string& errmsg);
 
 private:
     void lexFile(const string& modname);
     int yylexReadTok();
-    void lexToken(); // Internal; called from lexToBison
+    void lexToken();  // Internal; called from lexToBison
     void preprocDumps(std::ostream& os);
 };
 
-#endif // Guard
+#endif  // Guard

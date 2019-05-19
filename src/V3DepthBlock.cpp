@@ -20,7 +20,7 @@
 // V3DepthBlock's Transformations:
 //
 // Each module:
-//	For each deep block, create cfunc including that block.
+//      For each deep block, create cfunc including that block.
 //
 //*************************************************************************
 
@@ -42,69 +42,69 @@ private:
     // NODE STATE
 
     // STATE
-    AstNodeModule*	m_modp;		// Current module
-    AstCFunc*		m_funcp;	// Current function
-    int			m_depth;	// How deep in an expression
-    int			m_deepNum;	// How many functions made
+    AstNodeModule*      m_modp;         // Current module
+    AstCFunc*           m_funcp;        // Current function
+    int                 m_depth;        // How deep in an expression
+    int                 m_deepNum;      // How many functions made
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
     AstCFunc* createDeepFunc(AstNode* nodep) {
-	AstNRelinker relinkHandle;
-	nodep->unlinkFrBack(&relinkHandle);
-	// Create function
-	string name = m_funcp->name()+"__deep"+cvtToStr(++m_deepNum);
-	AstCFunc* funcp = new AstCFunc(nodep->fileline(), name, NULL);
-	funcp->argTypes(EmitCBaseVisitor::symClassVar());
-	funcp->symProlog(true);
-	funcp->slow(m_funcp->slow());
-	funcp->addStmtsp(nodep);
-	m_modp->addStmtp(funcp);
-	// Call it at the point where the body was removed from
-	AstCCall* callp = new AstCCall(nodep->fileline(), funcp);
-	callp->argTypes("vlSymsp");
-	UINFO(6,"      New "<<callp<<endl);
-	//
-	relinkHandle.relink(callp);
-	return funcp;
+        AstNRelinker relinkHandle;
+        nodep->unlinkFrBack(&relinkHandle);
+        // Create function
+        string name = m_funcp->name()+"__deep"+cvtToStr(++m_deepNum);
+        AstCFunc* funcp = new AstCFunc(nodep->fileline(), name, NULL);
+        funcp->argTypes(EmitCBaseVisitor::symClassVar());
+        funcp->symProlog(true);
+        funcp->slow(m_funcp->slow());
+        funcp->addStmtsp(nodep);
+        m_modp->addStmtp(funcp);
+        // Call it at the point where the body was removed from
+        AstCCall* callp = new AstCCall(nodep->fileline(), funcp);
+        callp->argTypes("vlSymsp");
+        UINFO(6,"      New "<<callp<<endl);
+        //
+        relinkHandle.relink(callp);
+        return funcp;
     }
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) {
-	UINFO(4," MOD   "<<nodep<<endl);
-	m_modp = nodep;
-	m_deepNum = 0;
+        UINFO(4," MOD   "<<nodep<<endl);
+        m_modp = nodep;
+        m_deepNum = 0;
         iterateChildren(nodep);
-	m_modp = NULL;
+        m_modp = NULL;
     }
     virtual void visit(AstCFunc* nodep) {
-	// We recurse into this.
-	int lastDepth = m_depth;
-	AstCFunc* lastFuncp = m_funcp;
-	{
-	    m_depth = 0;
-	    m_funcp = nodep;
+        // We recurse into this.
+        int lastDepth = m_depth;
+        AstCFunc* lastFuncp = m_funcp;
+        {
+            m_depth = 0;
+            m_funcp = nodep;
             iterateChildren(nodep);
-	}
-	m_depth = lastDepth;
-	m_funcp = lastFuncp;
+        }
+        m_depth = lastDepth;
+        m_funcp = lastFuncp;
     }
     void visitStmt(AstNodeStmt* nodep) {
-	m_depth++;
-	if (m_depth > v3Global.opt.compLimitBlocks()
+        m_depth++;
+        if (m_depth > v3Global.opt.compLimitBlocks()
             && !VN_IS(nodep, CCall)) {  // Already done
-	    UINFO(4, "DeepBlocks "<<m_depth<<" "<<nodep<<endl);
-	    AstNode* backp = nodep->backp();  // Only for debug
-	    if (debug()>=9) backp->dumpTree(cout,"-   pre : ");
-	    AstCFunc* funcp = createDeepFunc(nodep);
+            UINFO(4, "DeepBlocks "<<m_depth<<" "<<nodep<<endl);
+            AstNode* backp = nodep->backp();  // Only for debug
+            if (debug()>=9) backp->dumpTree(cout, "-   pre : ");
+            AstCFunc* funcp = createDeepFunc(nodep);
             iterate(funcp);
-	    if (debug()>=9) backp->dumpTree(cout,"-   post: ");
-	    if (debug()>=9) funcp->dumpTree(cout,"-   func: ");
-	} else {
+            if (debug()>=9) backp->dumpTree(cout, "-   post: ");
+            if (debug()>=9) funcp->dumpTree(cout, "-   func: ");
+        } else {
             iterateChildren(nodep);
-	}
-	m_depth--;
+        }
+        m_depth--;
     }
     virtual void visit(AstNodeStmt* nodep) {
         if (!nodep->isStatement()) {
@@ -117,7 +117,7 @@ private:
     virtual void visit(AstNodeMath* nodep) {}  // Accelerate
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstVar* nodep) {}	// Don't hit varrefs under vars
+    virtual void visit(AstVar* nodep) {}  // Don't hit varrefs under vars
     virtual void visit(AstNode* nodep) {
         iterateChildren(nodep);
     }
@@ -129,7 +129,7 @@ public:
         m_funcp = NULL;
         m_depth = 0;
         m_deepNum = 0;
-	//
+        //
         iterate(nodep);
     }
     virtual ~DepthBlockVisitor() {}

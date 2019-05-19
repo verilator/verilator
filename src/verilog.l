@@ -49,7 +49,7 @@ extern void yyerrorf(const char* format, ...);
 #define FL { yylval.fl = CRELINE(); }
 
 #define RETURN_BBOX_SYS_OR_MSG(msg,yytext) {	\
-	if (!v3Global.opt.bboxSys()) yyerrorf(msg,yytext); \
+	if (!v3Global.opt.bboxSys()) yyerrorf(msg, yytext); \
 	return yaD_IGNORE; }
 
 void V3ParseImp::ppline (const char* textp) {

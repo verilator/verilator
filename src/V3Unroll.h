@@ -52,4 +52,4 @@ public:
     static void unrollAll(AstNetlist* nodep);
 };
 
-#endif // Guard
+#endif  // Guard

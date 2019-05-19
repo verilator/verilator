@@ -19,9 +19,9 @@
 //*************************************************************************
 // V3Hashed's Transformations:
 //
-//	    Hash each node depth first
-//		Hash includes varp name and operator type, and constants
-//		Form lookup table based on hash of each statement  w/ nodep and next nodep
+//          Hash each node depth first
+//              Hash includes varp name and operator type, and constants
+//              Form lookup table based on hash of each statement  w/ nodep and next nodep
 //
 //*************************************************************************
 
@@ -46,11 +46,11 @@ class HashedVisitor : public AstNVisitor {
 private:
     // NODE STATE
     // Entire netlist:
-    //  AstNodeStmt::user4()	-> V3Hash.  Hash value of this node (hash of 0 is illegal)
-    //AstUser4InUse	in V3Hashed.h
+    //  AstNodeStmt::user4()    -> V3Hash.  Hash value of this node (hash of 0 is illegal)
+    //AstUser4InUse     in V3Hashed.h
 
     // STATE
-    V3Hash		m_lowerHash;	// Hash of the statement we're building
+    V3Hash              m_lowerHash;    // Hash of the statement we're building
     bool                m_cacheInUser4; // Use user4 to cache each V3Hash?
 
     // METHODS
@@ -61,26 +61,28 @@ private:
         if (!m_cacheInUser4 || !nodep->user4()) {
             if (VN_IS(nodep->backp(), CFunc)
                 && !(VN_IS(nodep, NodeStmt) || VN_IS(nodep, CFunc))) {
-		nodep->v3fatalSrc("Node "<<nodep->prettyTypeName()<<" in statement position but not marked stmt (node under function)");
-	    }
+                nodep->v3fatalSrc("Node "<<nodep->prettyTypeName()<<" in statement position but not marked stmt (node under function)");
+            }
             V3Hash oldHash = m_lowerHash;
-	    {
-		m_lowerHash = nodep->sameHash();
-		if (m_lowerHash.isIllegal()) {
-		    nodep->v3fatalSrc("sameHash function undefined (returns 0) for node under CFunc.");
-		}
-		// For identical nodes, the type should be the same thus dtypep should be the same too
-		m_lowerHash = V3Hash(m_lowerHash, V3Hash(nodep->type()<<6, V3Hash(nodep->dtypep())));
-		// Now update m_lowerHash for our children's (and next children) contributions
+            {
+                m_lowerHash = nodep->sameHash();
+                if (m_lowerHash.isIllegal()) {
+                    nodep->v3fatalSrc("sameHash function undefined (returns 0) for node under CFunc.");
+                }
+                // For identical nodes, the type should be the same thus
+                // dtypep should be the same too
+                m_lowerHash = V3Hash(m_lowerHash, V3Hash(nodep->type()<<6,
+                                                         V3Hash(nodep->dtypep())));
+                // Now update m_lowerHash for our children's (and next children) contributions
                 iterateChildren(nodep);
-		// Store the hash value
-		nodep->user4(m_lowerHash.fullValue());
-		//UINFO(9, "    hashnode "<<m_lowerHash<<"  "<<nodep<<endl);
-	    }
+                // Store the hash value
+                nodep->user4(m_lowerHash.fullValue());
+                //UINFO(9, "    hashnode "<<m_lowerHash<<"  "<<nodep<<endl);
+            }
             thisHash = m_lowerHash;
-	    m_lowerHash = oldHash;
-	}
-	// Update what will become the above node's hash
+            m_lowerHash = oldHash;
+        }
+        // Update what will become the above node's hash
         m_lowerHash += m_cacheInUser4
             ? V3Hashed::nodeHash(nodep) : thisHash;
     }
@@ -91,15 +93,15 @@ private:
     virtual void visit(AstTypedef*) {}
     virtual void visit(AstParamTypeDType*) {}
     virtual void visit(AstNode* nodep) {
-	nodeHashIterate(nodep);
+        nodeHashIterate(nodep);
     }
 
 public:
     // CONSTUCTORS
     explicit HashedVisitor(AstNode* nodep) {
         m_cacheInUser4 = true;
-	nodeHashIterate(nodep);
-	//UINFO(9,"  stmthash "<<hex<<V3Hashed::nodeHash(nodep)<<"  "<<nodep<<endl);
+        nodeHashIterate(nodep);
+        //UINFO(9,"  stmthash "<<hex<<V3Hashed::nodeHash(nodep)<<"  "<<nodep<<endl);
     }
     explicit HashedVisitor(const AstNode* nodep) {
         m_cacheInUser4 = false;
@@ -125,7 +127,7 @@ V3Hashed::iterator V3Hashed::hashAndInsert(AstNode* nodep) {
 void V3Hashed::hash(AstNode* nodep) {
     UINFO(8,"   hashI "<<nodep<<endl);
     if (!nodep->user4p()) {
-	HashedVisitor visitor (nodep);
+        HashedVisitor visitor (nodep);
     }
 }
 
@@ -133,7 +135,7 @@ bool V3Hashed::sameNodes(AstNode* node1p, AstNode* node2p) {
     if (!node1p->user4p()) node1p->v3fatalSrc("Called isIdentical on non-hashed nodes");
     if (!node2p->user4p()) node2p->v3fatalSrc("Called isIdentical on non-hashed nodes");
     return (node1p->user4p() == node2p->user4p()  // Same hash
-	    && node1p->sameTree(node2p));
+            && node1p->sameTree(node2p));
 }
 
 void V3Hashed::erase(iterator it) {
@@ -141,12 +143,12 @@ void V3Hashed::erase(iterator it) {
     UINFO(8,"   erase "<<nodep<<endl);
     if (!nodep->user4p()) nodep->v3fatalSrc("Called removeNode on non-hashed node");
     m_hashMmap.erase(it);
-    nodep->user4p(NULL);   // So we don't allow removeNode again
+    nodep->user4p(NULL);  // So we don't allow removeNode again
 }
 
 void V3Hashed::dumpFilePrefixed(const string& nameComment, bool tree) {
     if (v3Global.opt.dumpTree()) {
-	dumpFile(v3Global.debugFilename(nameComment)+".hash", tree);
+        dumpFile(v3Global.debugFilename(nameComment)+".hash", tree);
     }
 }
 
@@ -159,19 +161,19 @@ void V3Hashed::dumpFile(const string& filename, bool tree) {
     V3Hash lasthash;
     int num_in_bucket = 0;
     for (HashMmap::iterator it=begin(); 1; ++it) {
-	if (lasthash != it->first || it==end()) {
-	    if (it!=end()) lasthash = it->first;
-	    if (num_in_bucket) {
-		if (dist.find(num_in_bucket)==dist.end()) {
-		    dist.insert(make_pair(num_in_bucket,1));
-		} else {
-		    ++dist[num_in_bucket];
-		}
-	    }
-	    num_in_bucket = 0;
-	}
-	if (it==end()) break;
-	num_in_bucket++;
+        if (lasthash != it->first || it==end()) {
+            if (it!=end()) lasthash = it->first;
+            if (num_in_bucket) {
+                if (dist.find(num_in_bucket)==dist.end()) {
+                    dist.insert(make_pair(num_in_bucket, 1));
+                } else {
+                    ++dist[num_in_bucket];
+                }
+            }
+            num_in_bucket = 0;
+        }
+        if (it==end()) break;
+        num_in_bucket++;
     }
     *logp <<"\n*** STATS:\n"<<endl;
     *logp<<"    #InBucket   Occurrences\n";
@@ -181,14 +183,14 @@ void V3Hashed::dumpFile(const string& filename, bool tree) {
 
     *logp <<"\n*** Dump:\n"<<endl;
     for (HashMmap::iterator it=begin(); it!=end(); ++it) {
-	if (lasthash != it->first) {
-	    lasthash = it->first;
-	    *logp <<"    "<<it->first<<endl;
-	}
-	*logp <<"\t"<<it->second<<endl;
-	// Dumping the entire tree may make nearly N^2 sized dumps,
-	// because the nodes under this one may also be in the hash table!
-	if (tree) it->second->dumpTree(*logp,"\t\t");
+        if (lasthash != it->first) {
+            lasthash = it->first;
+            *logp <<"    "<<it->first<<endl;
+        }
+        *logp <<"\t"<<it->second<<endl;
+        // Dumping the entire tree may make nearly N^2 sized dumps,
+        // because the nodes under this one may also be in the hash table!
+        if (tree) it->second->dumpTree(*logp, "\t\t");
     }
 }
 
@@ -197,10 +199,10 @@ V3Hashed::iterator V3Hashed::findDuplicate(AstNode* nodep) {
     if (!nodep->user4p()) nodep->v3fatalSrc("Called findDuplicate on non-hashed node");
     std::pair<HashMmap::iterator,HashMmap::iterator> eqrange = mmap().equal_range(nodeHash(nodep));
     for (HashMmap::iterator eqit = eqrange.first; eqit != eqrange.second; ++eqit) {
-	AstNode* node2p = eqit->second;
-	if (nodep != node2p && sameNodes(nodep, node2p)) {
-	    return eqit;
-	}
+        AstNode* node2p = eqit->second;
+        if (nodep != node2p && sameNodes(nodep, node2p)) {
+            return eqit;
+        }
     }
     return end();
 }
@@ -208,12 +210,13 @@ V3Hashed::iterator V3Hashed::findDuplicate(AstNode* nodep) {
 V3Hashed::iterator V3Hashed::findDuplicate(AstNode* nodep, V3HashedUserCheck* checkp) {
     UINFO(8,"   findD "<<nodep<<endl);
     if (!nodep->user4p()) nodep->v3fatalSrc("Called findDuplicate on non-hashed node");
-    std::pair<HashMmap::iterator,HashMmap::iterator> eqrange = mmap().equal_range(nodeHash(nodep));
+    std::pair<HashMmap::iterator,HashMmap::iterator> eqrange
+        = mmap().equal_range(nodeHash(nodep));
     for (HashMmap::iterator eqit = eqrange.first; eqit != eqrange.second; ++eqit) {
-	AstNode* node2p = eqit->second;
-	if (nodep != node2p && checkp->check(nodep,node2p) && sameNodes(nodep, node2p)) {
-	    return eqit;
-	}
+        AstNode* node2p = eqit->second;
+        if (nodep != node2p && checkp->check(nodep, node2p) && sameNodes(nodep, node2p)) {
+            return eqit;
+        }
     }
     return end();
 }

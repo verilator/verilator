@@ -38,4 +38,4 @@ public:
     static void checkOutputShort(AstPin* nodep);
 };
 
-#endif // Guard
+#endif  // Guard
