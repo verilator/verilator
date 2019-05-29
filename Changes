@@ -20,6 +20,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix real parameter assignment, bug1427. [Todd Strader]
 
+****  Fix invalid XML output due to special chars, bug1444. [Kanad Kanhere]
+
 
 * Verilator 4.014 2019-05-08
 

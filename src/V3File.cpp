@@ -847,26 +847,49 @@ void V3OutFormatter::putcNoTracking(char chr) {
     putcOutput(chr);
 }
 
-string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::Language) {
-    // Encode control chars into C style escapes
+string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::Language lang) {
+    // Encode control chars into output-appropriate escapes
     // Reverse is V3Parse::deQuote
     string out;
-    for (string::const_iterator pos=namein.begin(); pos!=namein.end(); ++pos) {
-        if (pos[0]=='\\' || pos[0]=='"') {
-            out += string("\\")+pos[0];
-        } else if (pos[0]=='\n') {
-            out += "\\n";
-        } else if (pos[0]=='\r') {
-            out += "\\r";
-        } else if (pos[0]=='\t') {
-            out += "\\t";
-        } else if (isprint(pos[0])) {
-            out += pos[0];
-        } else {
-            // This will also cover \a etc
-            // Can't use %03o as messes up when signed
-            char octal[10]; sprintf(octal, "\\%o%o%o", (pos[0]>>6)&3, (pos[0]>>3)&7, pos[0]&7);
-            out += octal;
+    if (lang==LA_XML) {
+        // Encode chars into XML string
+        for (string::const_iterator pos=namein.begin(); pos!=namein.end(); ++pos) {
+            if (pos[0]=='"') {
+                out += string("&quot;");
+            } else if (pos[0]=='\'') {
+                out += string("&apos;");
+            } else if (pos[0]=='<') {
+                out += string("&lt;");
+            } else if (pos[0]=='>') {
+                out += string("&gt;");
+            } else if (pos[0]=='&') {
+                out += string("&amp;");
+            } else if (isprint(pos[0])) {
+                out += pos[0];
+            } else {
+                char decimal[10]; sprintf(decimal, "&#%u;", (unsigned char)pos[0]);
+                out += decimal;
+            }
+        }
+    } else {
+        // Encode control chars into C style escapes
+        for (string::const_iterator pos=namein.begin(); pos!=namein.end(); ++pos) {
+            if (pos[0]=='\\' || pos[0]=='"') {
+                out += string("\\")+pos[0];
+            } else if (pos[0]=='\n') {
+                out += "\\n";
+            } else if (pos[0]=='\r') {
+                out += "\\r";
+            } else if (pos[0]=='\t') {
+                out += "\\t";
+            } else if (isprint(pos[0])) {
+                out += pos[0];
+            } else {
+                // This will also cover \a etc
+                // Can't use %03o as messes up when signed
+                char octal[10]; sprintf(octal, "\\%o%o%o", (pos[0]>>6)&3, (pos[0]>>3)&7, pos[0]&7);
+                out += octal;
+            }
         }
     }
     return out;

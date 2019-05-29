@@ -31,6 +31,24 @@
         <varxref fl="f32" name="value" dtype_id="6" dotted="itop"/>
         <varref fl="f32" name="dotted" dtype_id="5"/>
       </contassign>
+      <func fl="f34" name="f" dtype_id="1">
+        <var fl="f34" name="f" dtype_id="1" dir="output" vartype="logic" origName="f"/>
+        <var fl="f34" name="m" dtype_id="7" dir="input" vartype="string" origName="m"/>
+        <display fl="f35" displaytype="$display">
+          <sformatf fl="f35" name="%@" dtype_id="7">
+            <varref fl="f35" name="m" dtype_id="7"/>
+          </sformatf>
+        </display>
+      </func>
+      <initial fl="f38">
+        <begin fl="f38">
+          <taskref fl="f40" name="f">
+            <arg fl="f40">
+              <const fl="f40" name="&quot;&#1;&#2;&#3;&#4;&#5;&#6;&#7;&#8;&#9;&#10;&#11;&#12;&#13;&#14;&#15;&#16;&#17;&#18;&#19;&#20;&#21;&#22;&#23;&#24;&#25;&#26;&#27;&#28;&#29;&#30;&#31; !&quot;#$%&amp;&apos;()*+,-./0123456789:;&lt;=&gt;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~&#127;&#128;&#129;&#130;&#131;&#132;&#133;&#134;&#135;&#136;&#137;&#138;&#139;&#140;&#141;&#142;&#143;&#144;&#145;&#146;&#147;&#148;&#149;&#150;&#151;&#152;&#153;&#154;&#155;&#156;&#157;&#158;&#159;&#160;&#161;&#162;&#163;&#164;&#165;&#166;&#167;&#168;&#169;&#170;&#171;&#172;&#173;&#174;&#175;&#176;&#177;&#178;&#179;&#180;&#181;&#182;&#183;&#184;&#185;&#186;&#187;&#188;&#189;&#190;&#191;&#192;&#193;&#194;&#195;&#196;&#197;&#198;&#199;&#200;&#201;&#202;&#203;&#204;&#205;&#206;&#207;&#208;&#209;&#210;&#211;&#212;&#213;&#214;&#215;&#216;&#217;&#218;&#219;&#220;&#221;&#222;&#223;&#224;&#225;&#226;&#227;&#228;&#229;&#230;&#231;&#232;&#233;&#234;&#235;&#236;&#237;&#238;&#239;&#240;&#241;&#242;&#243;&#244;&#245;&#246;&#247;&#248;&#249;&#250;&#251;&#252;&#253;&#254;&#255;&quot;" dtype_id="7"/>
+            </arg>
+          </taskref>
+        </begin>
+      </initial>
     </module>
     <iface fl="f6" name="ifc" origName="ifc">
       <var fl="f7" name="value" dtype_id="6" vartype="integer" origName="value"/>
@@ -43,23 +61,24 @@
       <basicdtype  fl="f7" id="6" name="integer" left="31" right="0"/>
       <basicdtype  fl="f13" id="1" name="logic"/>
       <structdtype fl="f19" id="2" name="m.my_struct">
-        <memberdtype fl="f20" id="7" name="clk" tag="this is clk" sub_dtype_id="8"/>
-        <memberdtype fl="f21" id="9" name="k" sub_dtype_id="10"/>
-        <memberdtype fl="f22" id="11" name="enable" tag="enable" sub_dtype_id="12"/>
-        <memberdtype fl="f23" id="13" name="data" tag="data" sub_dtype_id="14"/>
+        <memberdtype fl="f20" id="8" name="clk" tag="this is clk" sub_dtype_id="9"/>
+        <memberdtype fl="f21" id="10" name="k" sub_dtype_id="11"/>
+        <memberdtype fl="f22" id="12" name="enable" tag="enable" sub_dtype_id="13"/>
+        <memberdtype fl="f23" id="14" name="data" tag="data" sub_dtype_id="15"/>
       </structdtype>
-      <basicdtype  fl="f20" id="8" name="logic"/>
-      <basicdtype  fl="f21" id="10" name="logic"/>
-      <basicdtype  fl="f22" id="12" name="logic"/>
-      <basicdtype  fl="f23" id="14" name="logic"/>
+      <basicdtype  fl="f20" id="9" name="logic"/>
+      <basicdtype  fl="f21" id="11" name="logic"/>
+      <basicdtype  fl="f22" id="13" name="logic"/>
+      <basicdtype  fl="f23" id="15" name="logic"/>
       <ifacerefdtype fl="f28" id="3" modportname=""/>
       <unpackarraydtype fl="f30" id="4" sub_dtype_id="2">
         <range fl="f30">
-          <const fl="f30" name="32'h1" dtype_id="5"/>
-          <const fl="f30" name="32'h0" dtype_id="5"/>
+          <const fl="f30" name="32&apos;h1" dtype_id="5"/>
+          <const fl="f30" name="32&apos;h0" dtype_id="5"/>
         </range>
       </unpackarraydtype>
-      <refdtype fl="f30" id="15" name="my_struct" sub_dtype_id="2"/>
+      <refdtype fl="f30" id="16" name="my_struct" sub_dtype_id="2"/>
+      <basicdtype  fl="f34" id="7" name="string"/>
     </typetable>
   </netlist>
 </verilator_xml>
