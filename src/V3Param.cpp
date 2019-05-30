@@ -599,7 +599,8 @@ void ParamVisitor::visitCell(AstCell* nodep) {
                         pinp->v3error("Can't convert defparam value to constant: Param "
                                       <<pinp->name()<<" of "<<nodep->prettyName());
                         pinp->exprp()->replaceWith(
-                            new AstConst(pinp->fileline(), V3Number(pinp, modvarp->width(), 0)));
+                            new AstConst(pinp->fileline(),
+                                         AstConst::WidthedValue(), modvarp->width(), 0));
                     } else if (origp && exprp->sameTree(origp)) {
                         // Setting parameter to its default value.  Just ignore it.
                         // This prevents making additional modules, and makes coverage more

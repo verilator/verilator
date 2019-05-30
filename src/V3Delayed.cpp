@@ -288,8 +288,7 @@ private:
             AstAssign* setassignp
                 = new AstAssign(nodep->fileline(),
                                 new AstVarRef(nodep->fileline(), setvscp, true),
-                                new AstConst(nodep->fileline(),
-                                             V3Number(nodep, 1, true)));
+                                new AstConst(nodep->fileline(), AstConst::LogicTrue()));
             nodep->addNextHere(setassignp);
         }
         if (m_nextDlyp) {  // Tell next assigndly it can share the variable

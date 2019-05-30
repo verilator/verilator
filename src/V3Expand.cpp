@@ -223,8 +223,9 @@ private:
             rhsp->v3error("Unsupported: 4-state numbers in this context");
         }
         for (int w=0; w<nodep->widthWords(); w++) {
-            V3Number num (nodep, VL_WORDSIZE, rhsp->num().dataWord(w));
-            addWordAssign(nodep, w, new AstConst(nodep->fileline(), num));
+            addWordAssign(nodep, w, new AstConst(nodep->fileline(),
+                                                 AstConst::WidthedValue(),
+                                                 VL_WORDSIZE, rhsp->num().dataWord(w)));
         }
         return true;
     }
@@ -834,9 +835,9 @@ private:
         } else {
             UINFO(8,"    REDOR->EQ "<<nodep<<endl);
             AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
-            V3Number zero (nodep, longOrQuadWidth(nodep));
             AstNode* newp = new AstNeq(nodep->fileline(),
-                                       new AstConst(nodep->fileline(), zero),
+                                       new AstConst(nodep->fileline(), AstConst::WidthedValue(),
+                                                    longOrQuadWidth(nodep), 0),
                                        lhsp);
             replaceWithDelete(nodep, newp); VL_DANGLING(nodep);
         }

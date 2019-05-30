@@ -186,8 +186,8 @@ private:
             // If we got ==1'bx it can never be true (but 1'bx==1'bx can be!)
             if (((VN_IS(lhsp, Const) && VN_CAST(lhsp, Const)->num().isFourState())
                  || (VN_IS(rhsp, Const) && VN_CAST(rhsp, Const)->num().isFourState()))) {
-                V3Number num(nodep, 1, (VN_IS(nodep, EqCase) ? 0:1));
-                newp = new AstConst(nodep->fileline(), num);
+                newp = new AstConst(nodep->fileline(), AstConst::WidthedValue(),
+                                    1, (VN_IS(nodep, EqCase) ? 0 : 1));
                 lhsp->deleteTree(); VL_DANGLING(lhsp);
                 rhsp->deleteTree(); VL_DANGLING(rhsp);
             } else {
@@ -254,8 +254,7 @@ private:
         iterateChildren(nodep);
         // Ahh, we're two state, so this is easy
         UINFO(4," ISUNKNOWN->0 "<<nodep<<endl);
-        V3Number zero (nodep, 1, 0);
-        AstConst* newp = new AstConst(nodep->fileline(), zero);
+        AstConst* newp = new AstConst(nodep->fileline(), AstConst::LogicFalse());
         nodep->replaceWith(newp);
         nodep->deleteTree(); VL_DANGLING(nodep);
     }
@@ -336,11 +335,12 @@ private:
             // Similar code in V3Const::warnSelect
             int maxmsb = nodep->fromp()->dtypep()->width()-1;
             if (debug()>=9) nodep->dumpTree(cout, "sel_old: ");
-            V3Number maxmsbnum (nodep, nodep->lsbp()->width(), maxmsb);
 
             // If (maxmsb >= selected), we're in bound
             AstNode* condp = new AstGte(nodep->fileline(),
-                                        new AstConst(nodep->fileline(), maxmsbnum),
+                                        new AstConst(nodep->fileline(),
+                                                     AstConst::WidthedValue(),
+                                                     nodep->lsbp()->width(), maxmsb),
                                         nodep->lsbp()->cloneTree(false));
             // See if the condition is constant true (e.g. always in bound due to constant select)
             // Note below has null backp(); the Edit function knows how to deal with that.
@@ -398,11 +398,11 @@ private:
                 nodep->v3error("Select from non-array "<<dtypep->prettyTypeName());
             }
             if (debug()>=9) nodep->dumpTree(cout, "arraysel_old: ");
-            V3Number widthnum (nodep, nodep->bitp()->width(), declElements-1);
 
             // See if the condition is constant true
             AstNode* condp = new AstGte(nodep->fileline(),
-                                        new AstConst(nodep->fileline(), widthnum),
+                                        new AstConst(nodep->fileline(), AstConst::WidthedValue(),
+                                                     nodep->bitp()->width(), declElements-1),
                                         nodep->bitp()->cloneTree(false));
             // Note below has null backp(); the Edit function knows how to deal with that.
             condp = V3Const::constifyEdit(condp);
@@ -437,7 +437,9 @@ private:
                 V3Number zeronum (nodep, bitp->width(), 0);
                 AstNode* newp = new AstCondBound(bitp->fileline(),
                                                  condp, bitp,
-                                                 new AstConst(bitp->fileline(), zeronum));
+                                                 new AstConst(bitp->fileline(),
+                                                              AstConst::WidthedValue(),
+                                                              bitp->width(), 0));
                 // Added X's, tristate them too
                 if (debug()>=9) newp->dumpTree(cout, "        _new: ");
                 replaceHandle.relink(newp);

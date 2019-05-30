@@ -490,13 +490,13 @@ class TristateVisitor : public TristateBaseVisitor {
                     // set output enable to always be off on this assign
                     // statement so that this var is floating
                     UINFO(8,"  Adding driver to var "<<varp<<endl);
-                    V3Number zeros (varp, varp->width());
-                    zeros.setAllBits0();
-                    AstConst* constp = new AstConst(varp->fileline(), zeros);
+                    AstConst* constp = new AstConst(varp->fileline(),
+                                                    AstConst::WidthedValue(), varp->width(), 0);
                     AstVarRef* varrefp = new AstVarRef(varp->fileline(), varp, true);
                     AstNode* newp = new AstAssignW(varp->fileline(), varrefp, constp);
                     UINFO(9,"       newoev "<<newp<<endl);
-                    varrefp->user1p(new AstConst(varp->fileline(), zeros));
+                    varrefp->user1p(new AstConst(varp->fileline(),
+                                                 AstConst::WidthedValue(), varp->width(), 0));
                     nodep->addStmtp(newp);
                     mapInsertLhsVarRef(varrefp);  // insertTristates will convert
                     //                            // to a varref to the __out# variable

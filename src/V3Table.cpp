@@ -334,7 +334,7 @@ private:
                     m_outNotSet[outnum] = true;
                     // Value in table is arbitrary, but we need something
                     setp = new AstConst(outvscp->fileline(),
-                                        V3Number(outvscp, outvscp->width(), 0));
+                                        AstConst::WidthedValue(), outvscp->width(), 0);
                 } else {
                     UINFO(8,"   Output "<<outvscp->name()<<" = "<<*outnump<<endl);
                     //  m_tableVarps[inValue] = num;

@@ -286,13 +286,13 @@ private:
                                                                           m1value),
                                                              nodep->width()));
                 } else {
-                    V3Number zeronum (nodep, nodep->width(), 0);
-                    constzerop = new AstConst(nodep->fileline(), zeronum);
+                    constzerop = new AstConst(nodep->fileline(), AstConst::WidthedValue(),
+                                              nodep->width(), 0);
                 }
                 constzerop->dtypeFrom(nodep);  // unsigned
 
-                V3Number widthnum (nodep, nodep->rhsp()->widthMin(), m1value);
-                AstNode* constwidthp = new AstConst(nodep->fileline(), widthnum);
+                AstNode* constwidthp = new AstConst(nodep->fileline(), AstConst::WidthedValue(),
+                                                    nodep->rhsp()->widthMin(), m1value);
                 constwidthp->dtypeFrom(nodep->rhsp());  // unsigned
                 AstCond* newp =
                     new AstCond(nodep->fileline(),
