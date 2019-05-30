@@ -34,6 +34,7 @@ public:
     static void brokenAll(AstNetlist* nodep);
     static void addNewed(AstNode* nodep);
     static void deleted(AstNode* nodep);
+    static bool isAllocated(AstNode* nodep);
 };
 
 #endif  // Guard

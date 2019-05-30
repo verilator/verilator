@@ -1540,6 +1540,7 @@ private:
                     fromp->dtypeFrom(VN_CAST(fromp->dtypep()->skipRefp(),
                                              NodeArrayDType)->subDTypep());
                 }
+                nodep->deleteTree(); VL_DANGLING(nodep);
             }
         }
         m_selp = NULL;

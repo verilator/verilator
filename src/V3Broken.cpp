@@ -74,7 +74,7 @@ public:
         // Called by operator new on any node - only if VL_LEAK_CHECKS
         if (debug()>=9) cout<<"-nodeNew:  "<<cvtToHex(nodep)<<endl;
         NodeMap::iterator iter = s_nodes.find(nodep);
-        if (iter!=s_nodes.end() || (iter->second & FLAG_ALLOCATED)) {
+        if (iter !=s_nodes.end() && (iter->second & FLAG_ALLOCATED)) {
             nodep->v3fatalSrc("Newing AstNode object that is already allocated");
         }
         if (iter == s_nodes.end()) {
@@ -117,8 +117,18 @@ public:
             iter->second |= or_flags;
         }
     }
+    static bool isAllocated(const AstNode* nodep) {
+        // Some generic node has a pointer to this node.  Is it allocated?
+        // Use this when might not be in tree; otherwise use okIfLinkedTo().
+#ifdef VL_LEAK_CHECKS
+        NodeMap::iterator iter = s_nodes.find(nodep);
+        if (iter == s_nodes.end()) return false;
+        if (!(iter->second & FLAG_ALLOCATED)) return false;
+#endif
+        return true;
+    }
     static bool okIfLinkedTo(const AstNode* nodep) {
-        // Someone has a pointer to this node.  Is it kosher?
+        // Some node in tree has a pointer to this node.  Is it kosher?
         NodeMap::iterator iter = s_nodes.find(nodep);
         if (iter == s_nodes.end()) return false;
 #ifdef VL_LEAK_CHECKS
@@ -155,6 +165,11 @@ public:
                     // Use only AstNode::dump instead of the virtual one, as there
                     // may be varp() and other cross links that are bad.
                     if (v3Global.opt.debugCheck()) {
+                        // When get this message, find what forgot to delete the
+                        // node by running GDB, where for node "<e###>" use:
+                        //    watch AstNode::s_editCntGbl==####
+                        //    run
+                        //    bt
                         std::cerr<<"%Error: LeakedNode"<<(it->first->backp()?"Back: ":": ");
                         AstNode* rawp = const_cast<AstNode*>
                             (static_cast<const AstNode*>(it->first));
@@ -294,4 +309,7 @@ void V3Broken::addNewed(AstNode* nodep) {
 }
 void V3Broken::deleted(AstNode* nodep) {
     BrokenTable::deleted(nodep);
+}
+bool V3Broken::isAllocated(AstNode* nodep) {
+    return BrokenTable::isAllocated(nodep);
 }

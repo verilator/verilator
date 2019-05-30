@@ -189,44 +189,48 @@ private:
 
     bool simulateTree(AstNode *nodep, const V3Number *loopValue,
                       AstNode *dtypep, V3Number &outNum) {
-        AstNode* clone = nodep->cloneTree(true);
-        if (!clone) {
+        AstNode* clonep = nodep->cloneTree(true);
+        if (!clonep) {
             nodep->v3fatalSrc("Failed to clone tree");
             return false;
         }
         if (loopValue) {
             m_varValuep = new AstConst(nodep->fileline(), *loopValue);
             // Iteration requires a back, so put under temporary node
-            AstBegin* tempp = new AstBegin(nodep->fileline(), "[EditWrapper]", clone);
+            AstBegin* tempp = new AstBegin(nodep->fileline(), "[EditWrapper]", clonep);
             m_varModeReplace = true;
             iterateAndNextNull(tempp->stmtsp());
             m_varModeReplace = false;
-            clone = tempp->stmtsp()->unlinkFrBackWithNext();
+            clonep = tempp->stmtsp()->unlinkFrBackWithNext();
             tempp->deleteTree();
             tempp = NULL;
             pushDeletep(m_varValuep); m_varValuep = NULL;
         }
         SimulateVisitor simvis;
-        simvis.mainParamEmulate(clone);
+        simvis.mainParamEmulate(clonep);
         if (!simvis.optimizable()) {
             UINFO(3, "Unable to simulate" << endl);
             if (debug()>=9) nodep->dumpTree(cout, "- _simtree: ");
+            clonep->deleteTree(); VL_DANGLING(clonep);
             return false;
         }
         // Fetch the result
-        V3Number* res = simvis.fetchNumberNull(clone);
+        V3Number* res = simvis.fetchNumberNull(clonep);
         if (!res) {
             UINFO(3, "No number returned from simulation" << endl);
+            clonep->deleteTree(); VL_DANGLING(clonep);
             return false;
         }
         // Patch up datatype
         if (dtypep) {
-            AstConst new_con (clone->fileline(), *res);
+            AstConst new_con (clonep->fileline(), *res);
             new_con.dtypeFrom(dtypep);
             outNum = new_con.num();
+            clonep->deleteTree(); VL_DANGLING(clonep);
             return true;
         }
         outNum = *res;
+        clonep->deleteTree(); VL_DANGLING(clonep);
         return true;
     }
 
