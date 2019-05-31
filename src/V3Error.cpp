@@ -158,7 +158,7 @@ void V3Error::suppressThisWarning() {
 }
 
 string V3Error::warnMore() {
-    return msgPrefix();
+    return string(msgPrefix().size(), ' ');
 }
 
 void V3Error::v3errorEnd(std::ostringstream& sstr) {
@@ -182,13 +182,13 @@ void V3Error::v3errorEnd(std::ostringstream& sstr) {
             && !s_pretendError[s_errorCode]) {
             s_describedEachWarn[s_errorCode] = true;
             if (s_errorCode>=V3ErrorCode::EC_FIRST_WARN && !s_describedWarnings) {
-                std::cerr<<msgPrefix()<<"Use \"/* verilator lint_off "<<s_errorCode.ascii()
+                std::cerr<<warnMore()<<"... Use \"/* verilator lint_off "<<s_errorCode.ascii()
                          <<" */\" and lint_on around source to disable this message."<<endl;
                 s_describedWarnings = true;
             }
             if (s_errorCode.dangerous()) {
-                std::cerr<<msgPrefix()<<"*** See the manual before disabling this,"<<endl;
-                std::cerr<<msgPrefix()<<"else you may end up with different sim results."<<endl;
+                std::cerr<<warnMore()<<"*** See the manual before disabling this,"<<endl;
+                std::cerr<<warnMore()<<"else you may end up with different sim results."<<endl;
             }
         }
         // If first warning is not the user's fault (internal/unsupported) then give the website
@@ -209,7 +209,7 @@ void V3Error::v3errorEnd(std::ostringstream& sstr) {
             if (!inFatal) {
                 inFatal = true;
                 if (s_tellManual==1) {
-                    std::cerr<<msgPrefix()<<"See the manual and http://www.veripool.org/verilator for more assistance."<<endl;
+                    std::cerr<<warnMore()<<"... See the manual and http://www.veripool.org/verilator for more assistance."<<endl;
                     s_tellManual = 2;
                 }
 #ifndef _V3ERROR_NO_GLOBAL_

@@ -186,7 +186,8 @@ public:
             for (std::deque<SimStackNode*>::iterator it=m_callStack.begin();
                  it != m_callStack.end(); ++it) {
                 AstFuncRef* funcp = (*it)->m_funcp;
-                stack<<"\nCalled from:\n"<<funcp->fileline()<<" "
+                stack<<"\n        "<<funcp->fileline()
+                     <<"... Called from "
                      <<funcp->prettyName()<<"() with parameters:";
                 V3TaskConnects* tconnects = (*it)->m_tconnects;
                 for (V3TaskConnects::iterator conIt = tconnects->begin();
@@ -194,7 +195,7 @@ public:
                     AstVar* portp = conIt->first;
                     AstNode* pinp = conIt->second->exprp();
                     AstNodeDType* dtypep = pinp->dtypep();
-                    stack<<"\n    "<<portp->prettyName(
+                    stack<<"\n           "<<portp->prettyName(
                         )<<" = "<<prettyNumber(fetchNumber(pinp), dtypep);
                 }
             }

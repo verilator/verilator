@@ -11,10 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     fails => $Self->{vlt_all},
-    expect =>
-q{%Warning-UNPACKED: t/t_struct_unpacked_bad.v:\d+: Unsupported: Unpacked struct/union
-%Warning-UNPACKED: Use .*
-.*%Error: Exiting due to.*},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

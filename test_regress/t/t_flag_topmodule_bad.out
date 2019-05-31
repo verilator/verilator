@@ -1,0 +1,4 @@
+%Error-MULTITOP: t/t_flag_topmodule.v:14: Unsupported: Multiple top level modules: a2 and a
+                 t/t_flag_topmodule.v:14: ... Fix, or use --top-module option to select which you want.
+%Error-MULTITOP: t/t_flag_topmodule.v:21: Unsupported: Multiple top level modules: b and a2
+%Error: Exiting due to

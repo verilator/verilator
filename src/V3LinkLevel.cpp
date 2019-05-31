@@ -59,9 +59,13 @@ void V3LinkLevel::modSortByLevel() {
          nodep; nodep=VN_CAST(nodep->nextp(), NodeModule)) {
         if (nodep->level()<=2) {
             if (topp) {
+                static int warnedOnce = 0;
                 nodep->v3warn(E_MULTITOP, "Unsupported: Multiple top level modules: "
-                              <<nodep->prettyName()<<" and "<<topp->prettyName());
-                nodep->v3warn(E_MULTITOP, "Fix, or use --top-module option to select which you want.");
+                              <<nodep->prettyName()<<" and "<<topp->prettyName()<<endl
+                              <<(!warnedOnce++
+                                 ? (nodep->warnMore()
+                                    +"... Fix, or use --top-module option to select which you want.")
+                                 : ""));
             }
             topp = nodep;
         }

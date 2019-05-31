@@ -1,0 +1,6 @@
+%Warning-MODDUP: t/t_mod_dup_bad.v:13: Duplicate declaration of module: a
+                 t/t_mod_dup_bad.v:6: ... Location of original declaration
+                 ... Use "/* verilator lint_off MODDUP */" and lint_on around source to disable this message.
+%Error-MULTITOP: t/t_mod_dup_bad.v:16: Unsupported: Multiple top level modules: b and test
+                 t/t_mod_dup_bad.v:16: ... Fix, or use --top-module option to select which you want.
+%Error: Exiting due to

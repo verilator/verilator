@@ -239,7 +239,7 @@ public:
             }
         }
         if (scopes=="") scopes="<no cells found>";
-        std::cerr<<V3Error::msgPrefix()<<"     Known scopes under '"<<prettyName<<"': "
+        std::cerr<<V3Error::warnMore()<<"... Known scopes under '"<<prettyName<<"': "
                  <<scopes<<endl;
         if (debug()) dump(std::cerr,"\t\t      KnownScope: ", 1);
     }

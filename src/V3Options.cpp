@@ -375,13 +375,13 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
         if (m_impp->m_incDirUsers.empty()) {
             fl->v3error("This may be because there's no search path specified with -I<dir>."<<endl);
         }
-        fl->v3error("Looked in:"<<endl);
+        std::cerr<<V3Error::warnMore()<<"... Looked in:"<<endl;
         for (std::list<string>::iterator dirIter=m_impp->m_incDirUsers.begin();
              dirIter!=m_impp->m_incDirUsers.end(); ++dirIter) {
             for (std::list<string>::iterator extIter=m_impp->m_libExtVs.begin();
                  extIter != m_impp->m_libExtVs.end(); ++extIter) {
                 string fn = V3Os::filenameFromDirBase(*dirIter, modname+*extIter);
-                fl->v3error("      "<<fn<<endl);
+                std::cerr<<V3Error::warnMore()<<"     "<<fn<<endl;
             }
         }
         for (std::list<string>::iterator dirIter=m_impp->m_incDirFallbacks.begin();
@@ -389,7 +389,7 @@ void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
             for (std::list<string>::iterator extIter=m_impp->m_libExtVs.begin();
                  extIter != m_impp->m_libExtVs.end(); ++extIter) {
                 string fn = V3Os::filenameFromDirBase(*dirIter, modname+*extIter);
-                fl->v3error("      "<<fn<<endl);
+                std::cerr<<V3Error::warnMore()<<"     "<<fn<<endl;
             }
         }
     }

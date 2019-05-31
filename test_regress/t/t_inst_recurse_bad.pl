@@ -11,10 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     fails => 1,
-    expect =>
-'.*%Error: t/t_inst_recurse_bad.v:\d+: Unsupported: Recursive multiple modules \(module instantiates something leading back to itself\): looped
-%Error: t/t_inst_recurse_bad.v:\d+: Note self-recursion \(module instantiating itself directly\) is supported.
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

@@ -15,7 +15,7 @@ compile(
     fails => 1,
     expect =>
 '%Error: Internal Error: .*: --debug-fatal-src
-%Error: Internal Error: See the manual and http://www.veripool.org/verilator for more assistance.
+.*See the manual and http://www.veripool.org/verilator for more assistance.
 .*in V3Options::.*
 .*%Error: Command Failed.*',
     );

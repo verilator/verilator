@@ -7,15 +7,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-scenarios(vlt_all => 1);
+scenarios(vlt => 1);
 
 compile(
     fails => 1,
-    expect =>
-'%Warning-MODDUP: t/t_mod_dup_bad.v:\d+: Duplicate declaration of module: a
-%Warning-MODDUP: t/t_mod_dup_bad.v:\d+: ... Location of original declaration
-.*
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

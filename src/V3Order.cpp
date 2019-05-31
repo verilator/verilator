@@ -117,12 +117,14 @@ static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top);
 void OrderGraph::loopsVertexCb(V3GraphVertex* vertexp) {
     if (debug()) cout<<"-Info-Loop: "<<vertexp<<" "<<endl;
     if (OrderLogicVertex* vvertexp = dynamic_cast<OrderLogicVertex*>(vertexp)) {
-        std::cerr<<V3Error::msgPrefix()<<"     Example path: "
-                 <<vvertexp->nodep()->fileline()<<" "<<vvertexp->nodep()->typeName()<<endl;
+        std::cerr<<vvertexp->nodep()->fileline()->warnMore()
+                 <<"     Example path: "
+                 <<vvertexp->nodep()->typeName()<<endl;
     }
     if (OrderVarVertex* vvertexp = dynamic_cast<OrderVarVertex*>(vertexp)) {
-        std::cerr<<V3Error::msgPrefix()<<"     Example path: "
-                 <<vvertexp->varScp()->fileline()<<" "<<vvertexp->varScp()->prettyName()<<endl;
+        std::cerr<<vvertexp->varScp()->fileline()->warnMore()
+                 <<"     Example path: "
+                 <<vvertexp->varScp()->prettyName()<<endl;
     }
 };
 

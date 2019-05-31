@@ -199,8 +199,13 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
 
 static void ERRSVKWD(FileLine* fileline, const string& tokname) {
     static int toldonce = 0;
-    fileline->v3error(string("Unexpected \"")+tokname+"\": \""+tokname+"\" is a SystemVerilog keyword misused as an identifier.");
-    if (!toldonce++) fileline->v3error("Modify the Verilog-2001 code to avoid SV keywords, or use `begin_keywords or --language.");
+    fileline->v3error(string("Unexpected \"")+tokname+"\": \""+tokname
+                      +"\" is a SystemVerilog keyword misused as an identifier."
+                      +(!toldonce++
+                        ? "\n"+V3Error::warnMore()
+                          +"... Modify the Verilog-2001 code to avoid SV keywords,"
+                          +" or use `begin_keywords or --language."
+                        : ""));
 }
 
 //======================================================================

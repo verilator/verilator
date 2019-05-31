@@ -15,10 +15,7 @@ compile(
     make_top_shell => 0,
     make_main => 0,
     fails => 1,
-    expect =>
-q{%Warning-COLONPLUS: t/t_lint_colonplus_bad.v:\d+: Perhaps instead of ':\+' the intent was '\+:'\?
-%Warning-COLONPLUS: Use .*
-.*%Error: Exiting due to.*},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

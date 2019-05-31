@@ -277,7 +277,7 @@ void V3Graph::loopsMessageCb(V3GraphVertex* vertexp) {
 
 void V3Graph::loopsVertexCb(V3GraphVertex* vertexp) {
     // Needed here as V3GraphVertex<< isn't defined until later in header
-    std::cerr<<"-Info-Loop: "<<cvtToHex(vertexp)<<" "<<vertexp<<endl;
+    if (debug()) std::cerr<<"-Info-Loop: "<<cvtToHex(vertexp)<<" "<<vertexp<<endl;
 }
 
 void V3Graph::dump(std::ostream& os) {

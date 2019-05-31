@@ -7,7 +7,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-scenarios(vlt_all => 1);
+scenarios(vlt => 1);
 
 top_filename("t/t_lint_declfilename.v");
 
@@ -17,10 +17,7 @@ compile(
     verilator_make_gcc => 0,
     make_top_shell => 0,
     make_main => 0,
-    expect =>
-'%Warning-DECLFILENAME: t/t_lint_declfilename.v:6: Filename \'t_lint_declfilename\' does not match MODULE name: t
-%Warning-DECLFILENAME: Use .* to disable this message.
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

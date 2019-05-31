@@ -14,7 +14,7 @@ compile(
     fails => $Self->{vlt_all},
     expect =>
 '%Error: Internal Error: .*: --debug-fatal-src
-%Error: Internal Error: See the manual and http://www.veripool.org/verilator for more assistance.
+.* See the manual and http://www.veripool.org/verilator for more assistance.
 %Error: Command Failed.*',
     );
 

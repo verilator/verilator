@@ -11,13 +11,20 @@ module a;
    end
 endmodule
 
+module a2;
+   initial begin
+      $write("Bad top modules\n");
+      $stop;
+   end
+endmodule
+
 module b;
    d d ();
 endmodule
 
 module c;
    initial begin
-      $write("Bad top modules\n");
+      $write("Bad mid modules\n");
       $stop;
    end
 endmodule
