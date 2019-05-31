@@ -28,8 +28,10 @@ foreach my $file (sort keys %files) {
                              || $file =~ m!^README$!
                              || $file =~ m!/gtkwave/!);
         if ($ENV{HARNESS_UPDATE_GOLDEN}) {
-            $contents =~ s/[ \t]+\n/\n/g;
-            $contents =~ s/\n\n+$/\n/g unless $eol_ws_exempt;
+            my $changes = undef;
+            $changes = 1 if ($contents =~ s/[ \t]+\n/\n/g);
+            $changes = 1 if (!$eol_ws_exempt && $contents =~ s/\n\n+$/\n/g);
+            next if (!$changes);
             $warns{$file} = "Updated whitespace at $file";
             write_wholefile($filename, $contents);
             next;
