@@ -64,6 +64,10 @@ module Test
    cover property (@(posedge clk) disable iff (!toggle) cyc==8)
      $stop;
 
+   // Innediate assert
+   labeled_imas: assert #0 (1);
+   assert final (1);
+
    //============================================================
    // Using a macro and generate
    wire reset = (cyc < 2);
