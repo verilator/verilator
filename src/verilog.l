@@ -298,16 +298,24 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "endspecify"		{ FL; return yENDSPECIFY; }
   "endtable"		{ yyerrorf("Syntax error: ENDTABLE outside of TABLE"); }
   "endtask"		{ FL; return yENDTASK; }
+  "event"		{ FL; return yEVENT; }
   "for"			{ FL; return yFOR; }
+  "force"		{ FL; return yFORCE; }
   "foreach"		{ FL; return yFOREACH; }
   "forever"		{ FL; return yFOREVER; }
+  "fork"		{ FL; return yFORK; }
   "function"		{ FL; return yFUNCTION; }
+  "highz0"		{ FL; return ygenSTRENGTH; }
+  "highz1"		{ FL; return ygenSTRENGTH; }
   "if"			{ FL; return yIF; }
   "initial"		{ FL; return yINITIAL; }
   "inout"		{ FL; return yINOUT; }
   "input"		{ FL; return yINPUT; }
   "integer"		{ FL; return yINTEGER; }
+  "join"		{ FL; return yJOIN; }
+  "large"		{ FL; return ygenSTRENGTH; }
   "macromodule"		{ FL; return yMODULE; }
+  "medium"		{ FL; return ygenSTRENGTH; }
   "module"		{ FL; return yMODULE; }
   "nand"		{ FL; return yNAND; }
   "negedge"		{ FL; return yNEGEDGE; }
@@ -322,12 +330,15 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "pmos"		{ FL; return yPMOS; }
   "posedge"		{ FL; return yPOSEDGE; }
   "primitive"		{ FL; return yPRIMITIVE; }
+  "pull0"		{ FL; return ygenSTRENGTH; }
+  "pull1"		{ FL; return ygenSTRENGTH; }
   "pulldown"		{ FL; return yPULLDOWN; }
   "pullup"		{ FL; return yPULLUP; }
   "rcmos"		{ FL; return yRCMOS; }
   "real"		{ FL; return yREAL; }
   "realtime"		{ FL; return yREALTIME; }
   "reg"			{ FL; return yREG; }
+  "release"		{ FL; return yRELEASE; }
   "repeat"		{ FL; return yREPEAT; }
   "rnmos"		{ FL; return yRNMOS; }
   "rpmos"		{ FL; return yRPMOS; }
@@ -335,8 +346,11 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "rtranif0"		{ FL; return yRTRANIF0; }
   "rtranif1"		{ FL; return yRTRANIF1; }
   "scalared"		{ FL; return ySCALARED; }
+  "small"		{ FL; return ygenSTRENGTH; }
   "specify"		{ FL; return ySPECIFY; }
   "specparam"		{ FL; return ySPECPARAM; }
+  "strong0"		{ FL; return ygenSTRENGTH; }
+  "strong1"		{ FL; return ygenSTRENGTH; }
   "supply0"		{ FL; return ySUPPLY0; }
   "supply1"		{ FL; return ySUPPLY1; }
   "table"		{ yy_push_state(TABLE); FL; return yTABLE; }
@@ -348,9 +362,17 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "tri"			{ FL; return yTRI; }
   "tri0"		{ FL; return yTRI0; }
   "tri1"		{ FL; return yTRI1; }
+  "triand"		{ FL; return yTRIAND; }
+  "trior"		{ FL; return yTRIOR; }
+  "trireg"		{ FL; return yTRIREG; }
   "vectored"		{ FL; return yVECTORED; }
+  "wait"		{ FL; return yWAIT; }
+  "wand"		{ FL; return yWAND; }
+  "weak0"		{ FL; return ygenSTRENGTH; }
+  "weak1"		{ FL; return ygenSTRENGTH; }
   "while"		{ FL; return yWHILE; }
   "wire"		{ FL; return yWIRE; }
+  "wor"			{ FL; return yWOR; }
   "xnor"		{ FL; return yXNOR; }
   "xor"			{ FL; return yXOR; }
   /*     Special errors */
@@ -366,29 +388,6 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$writeb"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%b format instead: %s",yytext); }
   "$writeh"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%x format instead: %s",yytext); }
   "$writeo"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%o format instead: %s",yytext); }
-  /*     Generic unsupported warnings */
-  "event"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "force"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "fork"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "highz0"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "highz1"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "join"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "large"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "medium"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "pull0"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "pull1"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "release"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "small"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "strong0"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "strong1"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "triand"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "trior"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "trireg"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "wait"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "wand"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "weak0"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "weak1"		{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
-  "wor"			{ yyerrorf("Unsupported: Verilog 1995 reserved word not implemented: %s",yytext); }
 }
 
   /* Verilog 2001 */
@@ -453,6 +452,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$warning"		{ FL; return yD_WARNING; }
   /*     SV2005 Keywords */
   "$unit"		{ FL; return yD_UNIT; }  /* Yes, a keyword, not task */
+  "alias"		{ FL; return yALIAS; }
   "always_comb"		{ FL; return yALWAYS_COMB; }
   "always_ff"		{ FL; return yALWAYS_FF; }
   "always_latch"	{ FL; return yALWAYS_LATCH; }
@@ -487,6 +487,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "logic"		{ FL; return yLOGIC; }
   "longint"		{ FL; return yLONGINT; }
   "modport"		{ FL; return yMODPORT; }
+  "null"		{ FL; return yNULL; }
   "package"		{ FL; return yPACKAGE; }
   "packed"		{ FL; return yPACKED; }
   "priority"		{ FL; return yPRIORITY; }
@@ -495,6 +496,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "pure"		{ FL; return yPURE; }
   "rand"		{ FL; return yRAND; }
   "randc"		{ FL; return yRANDC; }
+  "randcase"		{ FL; return yRANDCASE; }
   "ref"			{ FL; return yREF; }
   "restrict"		{ FL; return yRESTRICT; }
   "return"		{ FL; return yRETURN; }
@@ -514,7 +516,6 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /*     Generic unsupported warnings */
   /* Note assert_strobe was in SystemVerilog 3.1, but removed for SystemVerilog 2005 */
   "$root"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "alias"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "before"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "bins"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "binsof"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
@@ -538,9 +539,7 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "local"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "matches"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "new"			{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "null"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "protected"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "randcase"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "randomize"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "randsequence"	{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
   "sequence"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
@@ -1056,7 +1055,8 @@ void V3ParseImp::lexToken() {
 	//yylval // Set by yylexReadTok()
     }
     // If a paren, read another
-    if (token == yCONST__LEX
+    if (token == '('
+	|| token == yCONST__LEX
 	|| token == yGLOBAL__LEX
 	// Never put yID_* here; below symbol table resolution would break
 	) {
@@ -1067,8 +1067,13 @@ void V3ParseImp::lexToken() {
 	m_aheadVal = yylval;
 	m_aheadVal.token = nexttok;
 	yylval = curValue;
-	// Now potentially munge the current token
-	if (token == yCONST__LEX) {
+        // Now potentially munge the current token
+        if (token == '(' && (nexttok == ygenSTRENGTH
+                             || nexttok == ySUPPLY0
+                             || nexttok == ySUPPLY1)) {
+            token = yP_PAR__STRENGTH;
+        }
+        else if (token == yCONST__LEX) {
 	    if (nexttok == yREF) token = yCONST__REF;
 	    else token = yCONST__ETC;
 	}

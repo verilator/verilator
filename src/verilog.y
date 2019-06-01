@@ -35,7 +35,8 @@
 
 // Pick up new lexer
 #define yylex PARSEP->lexToBison
-#define GATEUNSUP(fl,tok) { if (!v3Global.opt.bboxUnsup()) { (fl)->v3error("Unsupported: Verilog 1995 gate primitive: "<<(tok)); } }
+#define BBUNSUP(fl,msg) { if (!v3Global.opt.bboxUnsup()) { (fl)->v3error(msg); } }
+#define GATEUNSUP(fl,tok) { BBUNSUP((fl), "Unsupported: Verilog 1995 gate primitive: "<<(tok)); }
 
 extern void yyerror(const char* errmsg);
 extern void yyerrorf(const char* format, ...);
@@ -242,6 +243,8 @@ class AstSenTree;
 
 %token<fl>		yaTIMINGSPEC	"TIMING SPEC ELEMENT"
 
+%token<fl>		ygenSTRENGTH	"STRENGTH keyword (strong1/etc)"
+
 %token<strp>		yaTABLELINE	"TABLE LINE"
 
 %token<strp>		yaSCHDR		"`systemc_header BLOCK"
@@ -299,9 +302,10 @@ class AstSenTree;
 // for example yP_ for punctuation based operators.
 // Double underscores "yX__Y" means token X followed by Y,
 // and "yX__ETC" means X folled by everything but Y(s).
+%token<fl>		yALIAS		"alias"
 %token<fl>		yALWAYS		"always"
-%token<fl>		yALWAYS_FF	"always_ff"
 %token<fl>		yALWAYS_COMB	"always_comb"
+%token<fl>		yALWAYS_FF	"always_ff"
 %token<fl>		yALWAYS_LATCH	"always_latch"
 %token<fl>		yAND		"and"
 %token<fl>		yASSERT		"assert"
@@ -321,10 +325,10 @@ class AstSenTree;
 %token<fl>		yCASEZ		"casez"
 %token<fl>		yCHANDLE	"chandle"
 %token<fl>		yCLOCKING	"clocking"
+%token<fl>		yCMOS		"cmos"
 %token<fl>		yCONST__ETC	"const"
 %token<fl>		yCONST__LEX	"const-in-lex"
 %token<fl>		yCONST__REF	"const-then-ref"
-%token<fl>		yCMOS		"cmos"
 %token<fl>		yCONTEXT	"context"
 %token<fl>		yCONTINUE	"continue"
 %token<fl>		yCOVER		"cover"
@@ -350,12 +354,15 @@ class AstSenTree;
 %token<fl>		yENDTABLE	"endtable"
 %token<fl>		yENDTASK	"endtask"
 %token<fl>		yENUM		"enum"
+%token<fl>		yEVENT		"event"
 %token<fl>		yEXPORT		"export"
 %token<fl>		yEXTERN		"extern"
 %token<fl>		yFINAL		"final"
 %token<fl>		yFOR		"for"
+%token<fl>		yFORCE		"force"
 %token<fl>		yFOREACH	"foreach"
 %token<fl>		yFOREVER	"forever"
+%token<fl>		yFORK		"fork"
 %token<fl>		yFORKJOIN	"forkjoin"
 %token<fl>		yFUNCTION	"function"
 %token<fl>		yGENERATE	"generate"
@@ -372,6 +379,7 @@ class AstSenTree;
 %token<fl>		yINT		"int"
 %token<fl>		yINTEGER	"integer"
 %token<fl>		yINTERFACE	"interface"
+%token<fl>		yJOIN		"join"
 %token<fl>		yLOCALPARAM	"localparam"
 %token<fl>		yLOGIC		"logic"
 %token<fl>		yLONGINT	"longint"
@@ -384,6 +392,7 @@ class AstSenTree;
 %token<fl>		yNOT		"not"
 %token<fl>		yNOTIF0		"notif0"
 %token<fl>		yNOTIF1		"notif1"
+%token<fl>		yNULL		"null"
 %token<fl>		yOR		"or"
 %token<fl>		yOUTPUT		"output"
 %token<fl>		yPACKAGE	"package"
@@ -400,11 +409,13 @@ class AstSenTree;
 %token<fl>		yPURE		"pure"
 %token<fl>		yRAND		"rand"
 %token<fl>		yRANDC		"randc"
+%token<fl>		yRANDCASE	"randcase"
 %token<fl>		yRCMOS		"rcmos"
 %token<fl>		yREAL		"real"
 %token<fl>		yREALTIME	"realtime"
 %token<fl>		yREF		"ref"
 %token<fl>		yREG		"reg"
+%token<fl>		yRELEASE	"release"
 %token<fl>		yREPEAT		"repeat"
 %token<fl>		yRESTRICT	"restrict"
 %token<fl>		yRETURN		"return"
@@ -435,6 +446,9 @@ class AstSenTree;
 %token<fl>		yTRI		"tri"
 %token<fl>		yTRI0		"tri0"
 %token<fl>		yTRI1		"tri1"
+%token<fl>		yTRIAND 	"triand"
+%token<fl>		yTRIOR 		"trior"
+%token<fl>		yTRIREG 	"trireg"
 %token<fl>		yTRUE		"true"
 %token<fl>		yTYPE		"type"
 %token<fl>		yTYPEDEF	"typedef"
@@ -445,8 +459,11 @@ class AstSenTree;
 %token<fl>		yVAR		"var"
 %token<fl>		yVECTORED	"vectored"
 %token<fl>		yVOID		"void"
+%token<fl>		yWAIT		"wait"
+%token<fl>		yWAND 		"wand"
 %token<fl>		yWHILE		"while"
 %token<fl>		yWIRE		"wire"
+%token<fl>		yWOR 		"wor"
 %token<fl>		yWREAL		"wreal"
 %token<fl>		yXNOR		"xnor"
 %token<fl>		yXOR		"xor"
@@ -568,6 +585,8 @@ class AstSenTree;
 %token<fl>		yP_SSRIGHT	">>>"
 %token<fl>		yP_POW		"**"
 
+%token<fl>		yP_PAR__STRENGTH "(-for-strength"
+
 %token<fl>		yP_PLUSCOLON	"+:"
 %token<fl>		yP_MINUSCOLON	"-:"
 %token<fl>		yP_MINUSGT	"->"
@@ -609,6 +628,9 @@ class AstSenTree;
 // '( is not a operator, as "' (" is legal
 
 //********************
+// These prevent other conflicts
+%left		yP_ANDANDAND
+
 // PSL op precedence
 %right	 	yP_MINUSGT  yP_LOGIFF
 %right		yP_ORMINUSGT  yP_OREQGT
@@ -822,7 +844,7 @@ module_declaration:		// ==IEEE: module_declaration
 			  GRAMMARP->endLabel($<fl>7,$1,$7); }
 	//
 	|	yEXTERN modFront parameter_port_listE portsStarE ';'
-			{ $<fl>1->v3error("Unsupported: extern module"); }
+			{ BBUNSUP($<fl>1, "Unsupported: extern module"); }
 	;
 
 modFront<modulep>:
@@ -913,9 +935,9 @@ port<nodep>:			// ==IEEE: port
 			  VARDTYPE(new AstIfaceRefDType($<fl>2,"",*$2,*$4));
 			  $$->addNextNull(VARDONEP($$,$6,$7)); }
 	|	portDirNetE yINTERFACE                           portSig rangeListE sigAttrListE
-			{ $<fl>2->v3error("Unsupported: virtual or generic interfaces"); $$=NULL; }
+			{ $$ = NULL; BBUNSUP($<fl>2, "Unsupported: virtual or generic interfaces"); }
 	|	portDirNetE yINTERFACE      '.' idAny/*modport*/ portSig rangeListE sigAttrListE
-			{ $<fl>2->v3error("Unsupported: virtual or generic interfaces"); $$=NULL; }
+			{ $$ = NULL; BBUNSUP($<fl>2, "Unsupported: virtual or generic interfaces"); }
 	//
 	//			// IEEE: ansi_port_declaration, with [port_direction] removed
 	//			//   IEEE: [ net_port_header | interface_port_header ] port_identifier { unpacked_dimension } [ '=' constant_expression ]
@@ -1007,7 +1029,7 @@ interface_declaration:		// IEEE: interface_declaration + interface_nonansi_heade
 			  if ($5) $1->addStmtp($5);
 			  SYMP->popScope($1); }
 	|	yEXTERN intFront parameter_port_listE portsStarE ';'
-			{ $<fl>1->v3error("Unsupported: extern interface"); }
+			{ BBUNSUP($<fl>1, "Unsupported: extern interface"); }
 	;
 
 intFront<modulep>:
@@ -1034,8 +1056,10 @@ interface_item<nodep>:		// IEEE: interface_item + non_port_interface_item
 	//			// IEEE: generate_region
 	|	interface_generate_region		{ $$ = $1; }
 	|	interface_or_generate_item		{ $$ = $1; }
-	//UNSUP	program_declaration			{ $$ = $1; }
-	//UNSUP	interface_declaration			{ $$ = $1; }
+	|	program_declaration			{ $$ = NULL; v3error("Unsupported: program decls within interface decls"); }
+	//			// IEEE 1800-2017: modport_item
+	//			// See instead old 2012 position in interface_or_generate_item
+	|	interface_declaration			{ $$ = NULL; v3error("Unsupported: interface decls within interface decls"); }
 	|	timeunits_declaration			{ $$ = $1; }
 	//			// See note in interface_or_generate item
 	|	module_common_item			{ $$ = $1; }
@@ -1090,7 +1114,7 @@ program_declaration:		// IEEE: program_declaration + program_nonansi_header + pr
 			  SYMP->popScope($1);
 			  GRAMMARP->endLabel($<fl>7,$1,$7); }
 	|	yEXTERN	pgmFront parameter_port_listE portsStarE ';'
-			{ $<fl>1->v3error("Unsupported: extern program");
+			{ BBUNSUP($<fl>1, "Unsupported: extern program");
 			  SYMP->popScope($2); }
 	;
 
@@ -1135,9 +1159,9 @@ program_generate_item<nodep>:		// ==IEEE: program_generate_item
 	;
 
 extern_tf_declaration<nodep>:		// ==IEEE: extern_tf_declaration
-		yEXTERN task_prototype ';'		{ $<fl>1->v3error("Unsupported: extern task"); $$ = NULL; }
-	|	yEXTERN function_prototype ';'		{ $<fl>1->v3error("Unsupported: extern function"); $$ = NULL; }
-	|	yEXTERN yFORKJOIN task_prototype ';'	{ $<fl>1->v3error("Unsupported: extern forkjoin"); $$ = NULL; }
+		yEXTERN task_prototype ';'		{ $$ = NULL; BBUNSUP($<fl>1, "Unsupported: extern task"); }
+	|	yEXTERN function_prototype ';'		{ $$ = NULL; BBUNSUP($<fl>1, "Unsupported: extern function"); }
+	|	yEXTERN yFORKJOIN task_prototype ';'	{ $$ = NULL; BBUNSUP($<fl>1, "Unsupported: extern forkjoin"); }
 	;
 
 modport_declaration<nodep>:		// ==IEEE: modport_declaration
@@ -1167,14 +1191,14 @@ modportPortsDecl<nodep>:
 	//			// IEEE: modport_simple_ports_declaration
 		port_direction modportSimplePort	{ $$ = new AstModportVarRef($<fl>1,*$2,GRAMMARP->m_varIO); }
 	//			// IEEE: modport_clocking_declaration
-	|	yCLOCKING idAny/*clocking_identifier*/	{ $1->v3error("Unsupported: Modport clocking"); }
+	|	yCLOCKING idAny/*clocking_identifier*/	{ $$ = NULL; BBUNSUP($<fl>1, "Unsupported: Modport clocking"); }
 	//			// IEEE: yIMPORT modport_tf_port
 	//			// IEEE: yEXPORT modport_tf_port
 	//			// modport_tf_port expanded here
 	|	yIMPORT id/*tf_identifier*/		{ $$ = new AstModportFTaskRef($<fl>1,*$2,false); }
 	|	yEXPORT id/*tf_identifier*/		{ $$ = new AstModportFTaskRef($<fl>1,*$2,true); }
-	|	yIMPORT method_prototype		{ $1->v3error("Unsupported: Modport import with prototype"); }
-	|	yEXPORT method_prototype		{ $1->v3error("Unsupported: Modport export with prototype"); }
+	|	yIMPORT method_prototype		{ $$ = NULL; BBUNSUP($<fl>1, "Unsupported: Modport import with prototype"); }
+	|	yEXPORT method_prototype		{ $$ = NULL; BBUNSUP($<fl>1, "Unsupported: Modport export with prototype"); }
 	// Continuations of above after a comma.
 	//			// IEEE: modport_simple_ports_declaration
 	|	modportSimplePort			{ $$ = new AstModportVarRef($<fl>1,*$1,GRAMMARP->m_varIO); }
@@ -1263,7 +1287,7 @@ net_declRESET:
 
 net_scalaredE:
 		/* empty */ 				{ }
-	//UNSUP: ySCALARED/yVECTORED ignored
+	//			//UNSUP: ySCALARED/yVECTORED ignored
 	|	ySCALARED			 	{ }
 	|	yVECTORED				{ }
 	;
@@ -1284,12 +1308,12 @@ net_type:			// ==IEEE: net_type
 	|	yTRI 					{ VARDECL(TRIWIRE); }
 	|	yTRI0 					{ VARDECL(TRI0); }
 	|	yTRI1 					{ VARDECL(TRI1); }
-	//UNSUP	yTRIAND 				{ VARDECL(TRIAND); }
-	//UNSUP	yTRIOR 					{ VARDECL(TRIOR); }
-	//UNSUP	yTRIREG 				{ VARDECL(TRIREG); }
-	//UNSUP	yWAND 					{ VARDECL(WAND); }
+	|	yTRIAND 				{ VARDECL(WIRE); BBUNSUP($1, "Unsupported: triand"); }
+	|	yTRIOR 					{ VARDECL(WIRE); BBUNSUP($1, "Unsupported: trior"); }
+	|	yTRIREG 				{ VARDECL(WIRE); BBUNSUP($1, "Unsupported: trireg"); }
+	|	yWAND 					{ VARDECL(WIRE); BBUNSUP($1, "Unsupported: wand"); }
 	|	yWIRE 					{ VARDECL(WIRE); }
-	//UNSUP	yWOR 					{ VARDECL(WOR); }
+	|	yWOR 					{ VARDECL(WIRE); BBUNSUP($1, "Unsupported: wor"); }
 	//			// VAMS - somewhat hackish
 	|	yWREAL 					{ VARDECL(WREAL); }
 	;
@@ -1373,7 +1397,7 @@ integer_vector_type<bdtypep>:	// ==IEEE: integer_atom_type
 non_integer_type<bdtypep>:	// ==IEEE: non_integer_type
 		yREAL					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
 	|	yREALTIME				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
-	|	ySHORTREAL				{ $<fl>1->v3error("Unsupported: shortreal (use real instead)");
+	|	ySHORTREAL				{ BBUNSUP($1, "Unsupported: shortreal (use real instead)");
 							  $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
 	;
 
@@ -1441,7 +1465,7 @@ data_typeNoRef<dtypep>:		// ==IEEE: data_type, excluding class_type etc referenc
 										       SYMP,VFlagChildDType(),$1); }
 	|	ySTRING					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::STRING); }
 	|	yCHANDLE				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::CHANDLE); }
-	//UNSUP	yEVENT					{ UNSUP }
+	|	yEVENT					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::BIT); BBUNSUP($1, "Unsupported: event data types"); }
 	//UNSUP	yVIRTUAL__INTERFACE yINTERFACE id/*interface*/	{ UNSUP }
 	//UNSUP	yVIRTUAL__anyID                id/*interface*/	{ UNSUP }
 	//UNSUP	type_reference				{ UNSUP }
@@ -1742,9 +1766,9 @@ non_port_module_item<nodep>:	// ==IEEE: non_port_module_item
 	|	module_or_generate_item 		{ $$ = $1; }
 	|	specify_block 				{ $$ = $1; }
 	|	specparam_declaration			{ $$ = $1; }
-	//UNSUP	program_declaration			{ $$ = $1; }
-	//UNSUP	module_declaration			{ $$ = $1; }
-	//UNSUP	interface_declaration			{ $$ = $1; }
+	|	program_declaration			{ $$ = NULL; v3error("Unsupported: program decls within module decls"); }
+	|	module_declaration			{ $$ = NULL; v3error("Unsupported: module decls within module decls"); }
+	|	interface_declaration			{ $$ = NULL; v3error("Unsupported: interface decls within module decls"); }
 	|	timeunits_declaration			{ $$ = $1; }
 	//			// Verilator specific
 	|	yaSCHDR					{ $$ = new AstScHdr($<fl>1,*$1); }
@@ -1779,7 +1803,7 @@ module_common_item<nodep>:	// ==IEEE: module_common_item
 	|	bind_directive				{ $$ = $1; }
 	|	continuous_assign			{ $$ = $1; }
 	//			// IEEE: net_alias
-	//UNSUP	yALIAS variable_lvalue aliasEqList ';'	{ UNSUP }
+	|	yALIAS variable_lvalue aliasEqList ';'	{ $$ = NULL; BBUNSUP($1, "Unsupported: alias statements"); }
 	|	initial_construct			{ $$ = $1; }
 	|	final_construct				{ $$ = $1; }
 	//			// IEEE: always_construct
@@ -1812,14 +1836,20 @@ module_or_generate_item_declaration<nodep>:	// ==IEEE: module_or_generate_item_d
 		package_or_generate_item_declaration	{ $$ = $1; }
 	| 	genvar_declaration			{ $$ = $1; }
 	|	clocking_declaration			{ $$ = $1; }
-	//UNSUP	yDEFAULT yCLOCKING idAny/*new-clocking_identifier*/ ';'	{ $$ = $1; }
+	|	yDEFAULT yCLOCKING idAny/*new-clocking_identifier*/ ';'	{ $$ = NULL; BBUNSUP($1, "Unsupported: default clocking identifier"); }
+	;
+
+aliasEqList:			// IEEE: part of net_alias
+		'=' variable_lvalue			{ }
+	|	aliasEqList '=' variable_lvalue		{ }
 	;
 
 bind_directive<nodep>:		// ==IEEE: bind_directive + bind_target_scope
 	//			// ';' - Note IEEE grammar is wrong, includes extra ';' - it's already in module_instantiation
 	//			// We merged the rules - id may be a bind_target_instance or module_identifier or interface_identifier
 		yBIND bind_target_instance bind_instantiation	{ $$ = new AstBind($<fl>1,*$2,$3); }
-	|	yBIND bind_target_instance ':' bind_target_instance_list bind_instantiation	{ $$=NULL; $1->v3error("Unsupported: Bind with instance list"); }
+	|	yBIND bind_target_instance ':' bind_target_instance_list bind_instantiation	{
+	    		$$=NULL; BBUNSUP($1, "Unsupported: Bind with instance list"); }
 	;
 
 bind_target_instance_list:	// ==IEEE: bind_target_instance_list
@@ -2077,7 +2107,7 @@ packed_dimensionList<rangep>:	// IEEE: { packed_dimension }
 
 packed_dimension<rangep>:	// ==IEEE: packed_dimension
 		anyrange				{ $$ = $1; }
-	|	'[' ']'					{ $<fl>1->v3error("Unsupported: [] dimensions"); $$ = NULL; }
+	|	'[' ']'					{ $$ = NULL; $<fl>1->v3error("Unsupported: [] dimensions"); }
 	;
 
 //************************************************
@@ -2306,9 +2336,21 @@ seq_block<nodep>:		// ==IEEE: seq_block
 	|	seq_blockFront /**/		 yEND endLabelE	{ $$=$1; SYMP->popScope($1); GRAMMARP->endLabel($<fl>3,$1,$3); }
 	;
 
-seq_blockFront<beginp>:		// IEEE: part of par_block
+par_block<nodep>:		// ==IEEE: par_block
+		par_blockFront blockDeclStmtList yJOIN endLabelE { $$=$1; $1->addStmtsp($2); SYMP->popScope($1); GRAMMARP->endLabel($<fl>4,$1,$4); }
+	|	par_blockFront /**/		 yJOIN endLabelE { $$=$1; SYMP->popScope($1); GRAMMARP->endLabel($<fl>3,$1,$3); }
+	;
+
+seq_blockFront<beginp>:		// IEEE: part of seq_block
 		yBEGIN					 { $$ = new AstBegin($1,"",NULL);  SYMP->pushNew($$); }
 	|	yBEGIN ':' idAny/*new-block_identifier*/ { $$ = new AstBegin($1,*$3,NULL); SYMP->pushNew($$); }
+	;
+
+par_blockFront<beginp>:		// IEEE: part of par_block
+		yFORK					{ $$ = new AstBegin($1, "", NULL);  SYMP->pushNew($$);
+							  BBUNSUP($1, "Unsupported: fork statements"); }
+	|	yFORK ':' idAny/*new-block_identifier*/	{ $$ = new AstBegin($1,*$3,NULL); SYMP->pushNew($$);
+							  BBUNSUP($1, "Unsupported: fork statements"); }
 	;
 
 blockDeclStmtList<nodep>:	// IEEE: { block_item_declaration } { statement or null }
@@ -2360,10 +2402,9 @@ statement_item<nodep>:		// IEEE: statement_item
 	//			// IEEE: procedural_continuous_assignment
 	|	yASSIGN idClassSel '=' delayE expr ';'	{ $$ = new AstAssign($1,$2,$5); }
 	//UNSUP:			delay_or_event_controlE above
-	|	yDEASSIGN variable_lvalue ';'		{ if (!v3Global.opt.bboxUnsup()) $1->v3error("Unsupported: Verilog 1995 deassign"); $$ = NULL; }
-
-	//UNSUP	yFORCE expr '=' expr ';'		{ UNSUP }
-	//UNSUP	yRELEASE variable_lvalue ';'		{ UNSUP }
+	|	yDEASSIGN variable_lvalue ';'		{ $$ = NULL; BBUNSUP($1, "Unsupported: Verilog 1995 deassign"); }
+	|	yFORCE expr '=' expr ';'		{ $$ = NULL; BBUNSUP($1, "Unsupported: Verilog 1995 force"); }
+	|	yRELEASE variable_lvalue ';'		{ $$ = NULL; BBUNSUP($1, "Unsupported: Verilog 1995 release"); }
 	//
 	//			// IEEE: case_statement
 	|	unique_priorityE caseStart caseAttrE case_itemListE yENDCASE	{ $$ = $2; if ($4) $2->addItemsp($4);
@@ -2428,7 +2469,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	//
 	//			// IEEE: disable_statement
 	|	yDISABLE idAny/*hierarchical_identifier-task_or_block*/ ';'	{ $$ = new AstDisable($1,*$2); }
-	//UNSUP	yDISABLE yFORK ';'			{ UNSUP }
+	|	yDISABLE yFORK ';'			{ $$ = NULL; BBUNSUP($1, "Unsupported: disable fork statements"); }
 	//			// IEEE: event_trigger
 	//UNSUP	yP_MINUSGT hierarchical_identifier/*event*/ ';'	{ UNSUP }
 	//UNSUP	yP_MINUSGTGT delay_or_event_controlE hierarchical_identifier/*event*/ ';'	{ UNSUP }
@@ -2452,7 +2493,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	|	yBREAK ';'				{ $$ = new AstBreak($1); }
 	|	yCONTINUE ';'				{ $$ = new AstContinue($1); }
 	//
-	//UNSUP	par_block				{ $$ = $1; }
+	|	par_block				{ $$ = $1; }
 	//			// IEEE: procedural_timing_control_statement + procedural_timing_control
 	|	delay_control stmtBlock			{ $$ = $2; $1->v3warn(STMTDLY,"Unsupported: Ignoring delay on this delayed statement."); }
 	//UNSUP	event_control stmtBlock			{ UNSUP }
@@ -2461,8 +2502,8 @@ statement_item<nodep>:		// IEEE: statement_item
 	|	seq_block				{ $$ = $1; }
 	//
 	//			// IEEE: wait_statement
-	//UNSUP	yWAIT '(' expr ')' stmtBlock		{ UNSUP }
-	//UNSUP	yWAIT yFORK ';'				{ UNSUP }
+	|	yWAIT '(' expr ')' stmtBlock		{ $$ = NULL; BBUNSUP($1, "Unsupported: wait statements"); }
+	|	yWAIT yFORK ';'				{ $$ = NULL; BBUNSUP($1, "Unsupported: wait fork statements"); }
 	//UNSUP	yWAIT_ORDER '(' hierarchical_identifierList ')' action_block	{ UNSUP }
 	//
 	//			// IEEE: procedural_assertion_statement
@@ -2478,7 +2519,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	//UNSUP	randsequence_statement			{ $$ = $1; }
 	//
 	//			// IEEE: randcase_statement
-	//UNSUP	yRANDCASE case_itemList yENDCASE	{ UNSUP }
+	|	yRANDCASE case_itemList yENDCASE	{ $$ = NULL; BBUNSUP($1, "Unsupported: SystemVerilog 2005 randcase statements"); }
 	//
 	//UNSUP	expect_property_statement		{ $$ = $1; }
 	//
@@ -2596,11 +2637,11 @@ caseCondList<nodep>:		// IEEE: part of case_item
 	;
 
 patternNoExpr<nodep>:		// IEEE: pattern **Excluding Expr*
-		'.' id/*variable*/			{ $1->v3error("Unsupported: '{} tagged patterns"); $$=NULL; }
-	|	yP_DOTSTAR				{ $1->v3error("Unsupported: '{} tagged patterns"); $$=NULL; }
+		'.' id/*variable*/			{ $$ = NULL; $1->v3error("Unsupported: '{} tagged patterns"); }
+	|	yP_DOTSTAR				{ $$ = NULL; $1->v3error("Unsupported: '{} tagged patterns"); }
 	//			// IEEE: "expr" excluded; expand in callers
 	//			// "yTAGGED id [expr]" Already part of expr
-	//UNSUP	yTAGGED id/*member_identifier*/ patternNoExpr		{ $1->v3error("Unsupported: '{} tagged patterns"); $$=NULL; }
+	//UNSUP	yTAGGED id/*member_identifier*/ patternNoExpr		{ $$ = NULL; $1->v3error("Unsupported: '{} tagged patterns"); }
 	//			// "yP_TICKBRA patternList '}'" part of expr under assignment_pattern
 	;
 
@@ -2622,10 +2663,10 @@ patternMemberList<nodep>:	// IEEE: part of pattern and assignment_pattern
 
 patternMemberOne<patmemberp>:	// IEEE: part of pattern and assignment_pattern
 		patternKey ':' expr			{ $$ = new AstPatMember($2,$3,$1,NULL); }
-	|	patternKey ':' patternNoExpr		{ $2->v3error("Unsupported: '{} .* patterns"); $$=NULL; }
+	|	patternKey ':' patternNoExpr		{ $$ = NULL; $2->v3error("Unsupported: '{} .* patterns"); }
 	//			// From assignment_pattern_key
 	|	yDEFAULT ':' expr			{ $$ = new AstPatMember($2,$3,NULL,NULL); $$->isDefault(true); }
-	|	yDEFAULT ':' patternNoExpr		{ $2->v3error("Unsupported: '{} .* patterns"); $$=NULL; }
+	|	yDEFAULT ':' patternNoExpr		{ $$ = NULL; $2->v3error("Unsupported: '{} .* patterns"); }
 	;
 
 patternKey<nodep>:		// IEEE: merge structure_pattern_key, array_pattern_key, assignment_pattern_key
@@ -2657,7 +2698,7 @@ assignment_pattern<patternp>:	// ==IEEE: assignment_pattern
 	//			// also IEEE "''{' array_pattern_key ':' ...
 	|	yP_TICKBRA patternMemberList '}'	{ $$ = new AstPattern($1,$2); }
 	//			// IEEE: Not in grammar, but in VMM
-	|	yP_TICKBRA '}'				{ $1->v3error("Unsupported: Empty '{}"); $$=NULL; }
+	|	yP_TICKBRA '}'				{ $$ = NULL; $1->v3error("Unsupported: Empty '{}"); }
 	;
 
 // "datatype id = x {, id = x }"  |  "yaId = x {, id=x}" is legal
@@ -2755,7 +2796,7 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_SYSTEM  '(' expr ')'				{ $$ = new AstSystemT($1,$3); }
 	//
 	|	yD_FCLOSE '(' idClassSel ')'		{ $$ = new AstFClose($1, $3); }
-	|	yD_FFLUSH parenE			{ $1->v3error("Unsupported: $fflush of all handles does not map to C++."); }
+	|	yD_FFLUSH parenE			{ $$ = NULL; BBUNSUP($1, "Unsupported: $fflush of all handles does not map to C++."); }
 	|	yD_FFLUSH '(' expr ')'			{ $$ = new AstFFlush($1, $3); }
 	|	yD_FINISH parenE			{ $$ = new AstFinish($1); }
 	|	yD_FINISH '(' expr ')'			{ $$ = new AstFinish($1); DEL($3); }
@@ -2856,7 +2897,7 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_PAST '(' expr ',' expr ',' expr ')'		{ $1->v3error("Unsupported: $past expr2 and clock arguments"); $$ = $3; }
 	|	yD_PAST '(' expr ',' expr ',' expr ',' expr')'	{ $1->v3error("Unsupported: $past expr2 and clock arguments"); $$ = $3; }
 	|	yD_POW '(' expr ',' expr ')'		{ $$ = new AstPowD($1,$3,$5); }
-	|	yD_RANDOM '(' expr ')'			{ $1->v3error("Unsupported: Seeding $random doesn't map to C++, use $c(\"srand\")"); $$ = NULL; }
+	|	yD_RANDOM '(' expr ')'			{ $$ = NULL; $1->v3error("Unsupported: Seeding $random doesn't map to C++, use $c(\"srand\")"); }
 	|	yD_RANDOM parenE			{ $$ = new AstRand($1); }
 	|	yD_REALTIME parenE			{ $$ = new AstTimeD($1); }
 	|	yD_REALTOBITS '(' expr ')'		{ $$ = new AstRealToBits($1,$3); }
@@ -3218,7 +3259,8 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// IEEE: "... hierarchical_identifier select"  see below
 	//
 	//			// IEEE: empty_queue (IEEE 1800-2017 empty_unpacked_array_concatenation)
-	//UNSUP	'{' '}'
+	|	'{' '}'					{ $$ = new AstConst($1, AstConst::LogicFalse());
+							  $<fl>1->v3error("Unsupported: empty queues (\"{ }\")"); }
 	//
 	//			// IEEE: concatenation/constant_concatenation
 	//			// Part of exprOkLvalue below
@@ -3237,7 +3279,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//
 	//			// IEEE: '(' mintypmax_expression ')'
 	|	~noPar__IGNORE~'(' expr ')'		{ $$ = $2; }
-	//UNSUP	~noPar__IGNORE~'(' expr ':' expr ':' expr ')'	{ $$ = $4; }
+	|	~noPar__IGNORE~'(' expr ':' expr ':' expr ')'	{ $$ = $2; BBUNSUP($1, "Unsupported: min typ max expressions"); }
 	//			// PSL rule
 	|	'_' '(' expr ')'			{ $$ = $3; }	// Arbitrary Verilog inside PSL
 	//
@@ -3257,8 +3299,10 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// IEEE: sequence_method_call
 	//			// Indistinguishable from function_subroutine_call:method_call
 	//
-	//UNSUP	'$'					{ UNSUP }
-	//UNSUP	yNULL					{ UNSUP }
+	|	'$'					{ $$ = new AstConst($<fl>1, AstConst::LogicFalse());
+							  $<fl>1->v3error("Unsupported: $ expression"); }
+	|	yNULL					{ $$ = new AstConst($1, AstConst::LogicFalse());
+							  $<fl>1->v3error("Unsupported: null expression"); }
 	//			// IEEE: yTHIS
 	//			// See exprScope
 	//
@@ -3271,7 +3315,8 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//
 	//			// IEEE: cond_predicate - here to avoid reduce problems
 	//			// Note expr includes cond_pattern
-	//UNSUP	~l~expr yP_ANDANDAND ~r~expr		{ UNSUP }
+	|	~l~expr yP_ANDANDAND ~r~expr		{ $$ = new AstConst($2, AstConst::LogicFalse());
+							  $<fl>2->v3error("Unsupported: &&& expression"); }
 	//
 	//			// IEEE: cond_pattern - here to avoid reduce problems
 	//			// "expr yMATCHES pattern"
@@ -3630,9 +3675,21 @@ gatePinExpr<nodep>:
 		expr					{ $$ = GRAMMARP ->createGatePin($1); }
 	;
 
+// This list is also hardcoded in VParseLex.l
+strength:			// IEEE: strength0+strength1 - plus HIGHZ/SMALL/MEDIUM/LARGE
+		ygenSTRENGTH				{ BBUNSUP($1, "Unsupported: Verilog 1995 strength specifiers"); }
+	|	ySUPPLY0				{ BBUNSUP($1, "Unsupported: Verilog 1995 strength specifiers"); }
+	|	ySUPPLY1				{ BBUNSUP($1, "Unsupported: Verilog 1995 strength specifiers"); }
+	;
+
 strengthSpecE:			// IEEE: drive_strength + pullup_strength + pulldown_strength + charge_strength - plus empty
 		/* empty */				{ }
-	//UNSUP	strengthSpec				{ }
+	|	strengthSpec				{ }
+	;
+
+strengthSpec:			// IEEE: drive_strength + pullup_strength + pulldown_strength + charge_strength - plus empty
+		yP_PAR__STRENGTH strength ')'			{ }
+	|	yP_PAR__STRENGTH strength ',' strength ')'	{ }
 	;
 
 //************************************************
@@ -3826,7 +3883,7 @@ procedural_assertion_statement<nodep>:	// ==IEEE: procedural_assertion_statement
 	|	immediate_assertion_statement		{ $$ = $1; }
 	//			// IEEE: checker_instantiation
 	//			// Unlike modules, checkers are the only "id id (...)" form in statements.
-	//UNSUP	checker_instantiation			{ }
+	//UNSUP	checker_instantiation			{ $$ = $1; }
 	;
 
 immediate_assertion_statement<nodep>:	// ==IEEE: immediate_assertion_statement
@@ -3844,7 +3901,7 @@ simple_immediate_assertion_statement<nodep>:	// ==IEEE: simple_immediate_asserti
 	|	yASSUME '(' expr ')'           yELSE stmtBlock		{ $$ = new AstVAssert($1,$3,NULL,$6); }
 	|	yASSUME '(' expr ')' stmtBlock yELSE stmtBlock		{ $$ = new AstVAssert($1,$3,$5,$7);   }
 	//			// IEEE: simple_immediate_cover_statement
-	|	yCOVER '(' expr ')' stmt 		{ $<fl>1->v3error("Unsupported: immediate cover"); $$=NULL; }
+	|	yCOVER '(' expr ')' stmt 		{ $$ = NULL; BBUNSUP($<fl>1, "Unsupported: immediate cover"); }
 	;
 
 final_zero:			// IEEE: part of deferred_immediate_assertion_statement
@@ -3864,7 +3921,7 @@ deferred_immediate_assertion_statement<nodep>:	// ==IEEE: deferred_immediate_ass
 	|	yASSUME final_zero '(' expr ')'           yELSE stmtBlock		{ $$ = new AstVAssert($1,$4,NULL,$7); }
 	|	yASSUME final_zero '(' expr ')' stmtBlock yELSE stmtBlock		{ $$ = new AstVAssert($1,$4,$6,$8);   }
 	//			// IEEE: deferred_immediate_cover_statement
-	|	yCOVER final_zero '(' expr ')' stmt	{ $<fl>1->v3error("Unsupported: immediate cover"); $$=NULL; }
+	|	yCOVER final_zero '(' expr ')' stmt	{ $$ = NULL; BBUNSUP($<fl>1, "Unsupported: immediate cover"); }
 	;
 
 concurrent_assertion_item<nodep>:	// IEEE: concurrent_assertion_item
