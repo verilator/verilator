@@ -843,6 +843,11 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "["{ws}*"->"		{ FL; return yP_BRAMINUSGT; }
 }
 
+  /* SystemVerilog 2009 Operators */
+<S09,S12,S17,SAX,VLT>{
+  "<->"			{ FL; return yP_LTMINUSGT; }
+}
+
   /* Identifiers and numbers */
 <V95,V01,V05,VA5,S05,S09,S12,S17,SAX,VLT>{
   {escid}		{ FL; yylval.strp = PARSEP->newString

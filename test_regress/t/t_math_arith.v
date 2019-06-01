@@ -134,8 +134,18 @@ module t (/*AUTOARG*/
 	 if (4'bz !== 4'bzzzz) $stop;
 	 if (4'b1 !== 4'b0001) $stop;
 
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         if ((0 -> 0) != 1'b1) $stop;
+         if ((0 -> 1) != 1'b1) $stop;
+         if ((1 -> 0) != 1'b0) $stop;
+         if ((1 -> 1) != 1'b1) $stop;
+
+         if ((0 <-> 0) != 1'b1) $stop;
+         if ((0 <-> 1) != 1'b0) $stop;
+         if ((1 <-> 0) != 1'b0) $stop;
+         if ((1 <-> 1) != 1'b1) $stop;
+
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

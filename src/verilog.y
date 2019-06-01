@@ -587,6 +587,7 @@ class AstSenTree;
 
 %token<fl>		yP_PAR__STRENGTH "(-for-strength"
 
+%token<fl>		yP_LTMINUSGT	"<->"
 %token<fl>		yP_PLUSCOLON	"+:"
 %token<fl>		yP_MINUSCOLON	"-:"
 %token<fl>		yP_MINUSGT	"->"
@@ -621,8 +622,6 @@ class AstSenTree;
 %token<fl>		yP_SRIGHTEQ	">>="
 %token<fl>		yP_SSRIGHTEQ	">>>="
 
-%token<fl>	 	yP_LOGIFF
-
 // [* is not a operator, as "[ * ]" is legal
 // [= and [-> could be repitition operators, but to match [* we don't add them.
 // '( is not a operator, as "' (" is legal
@@ -632,10 +631,10 @@ class AstSenTree;
 %left		yP_ANDANDAND
 
 // PSL op precedence
-%right	 	yP_MINUSGT  yP_LOGIFF
-%right		yP_ORMINUSGT  yP_OREQGT
+%right		yP_ORMINUSGT yP_OREQGT
 
 // Verilog op precedence
+%right		yP_MINUSGT yP_LTMINUSGT
 %right		'?' ':'
 %left		yP_OROR
 %left		yP_ANDAND
@@ -1812,6 +1811,7 @@ module_common_item<nodep>:	// ==IEEE: module_common_item
 	|	yALWAYS_FF    event_controlE stmtBlock	{ $$ = new AstAlways($1,VAlwaysKwd::ALWAYS_FF, $2,$3); }
 	|	yALWAYS_LATCH event_controlE stmtBlock	{ $$ = new AstAlways($1,VAlwaysKwd::ALWAYS_LATCH, $2,$3); }
 	|	yALWAYS_COMB  stmtBlock			{ $$ = new AstAlways($1,VAlwaysKwd::ALWAYS_COMB, NULL, $2); }
+	//
 	|	loop_generate_construct			{ $$ = $1; }
 	|	conditional_generate_construct		{ $$ = $1; }
 	|	elaboration_system_task			{ $$ = $1; }
@@ -1820,8 +1820,7 @@ module_common_item<nodep>:	// ==IEEE: module_common_item
 	;
 
 continuous_assign<nodep>:	// IEEE: continuous_assign
-		yASSIGN delayE assignList ';'		{ $$ = $3; }
-	//UNSUP: strengthSpecE not in above assign
+		yASSIGN strengthSpecE delayE assignList ';'	{ $$ = $4; }
 	;
 
 initial_construct<nodep>:	// IEEE: initial_construct
@@ -1837,6 +1836,7 @@ module_or_generate_item_declaration<nodep>:	// ==IEEE: module_or_generate_item_d
 	| 	genvar_declaration			{ $$ = $1; }
 	|	clocking_declaration			{ $$ = $1; }
 	|	yDEFAULT yCLOCKING idAny/*new-clocking_identifier*/ ';'	{ $$ = NULL; BBUNSUP($1, "Unsupported: default clocking identifier"); }
+	//UNSUP	yDEFAULT yDISABLE yIFF expr/*expression_or_dist*/ ';'	{ }
 	;
 
 aliasEqList:			// IEEE: part of net_alias
@@ -3229,6 +3229,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	|	~l~expr yP_SLEFT ~r~expr		{ $$ = new AstShiftL	($2,$1,$3); }
 	|	~l~expr yP_SRIGHT ~r~expr		{ $$ = new AstShiftR	($2,$1,$3); }
 	|	~l~expr yP_SSRIGHT ~r~expr		{ $$ = new AstShiftRS	($2,$1,$3); }
+	|	~l~expr yP_LTMINUSGT ~r~expr		{ $$ = new AstLogEq     ($2,$1,$3); }
 	//			// <= is special, as we need to disambiguate it with <= assignment
 	//			// We copy all of expr to fexpr and rename this token to a fake one.
 	|	~l~expr yP_LTE~f__IGNORE~ ~r~expr	{ $$ = new AstLte	($2,$1,$3); }
@@ -3246,7 +3247,6 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//======================// PSL expressions
 	//
 	|	~l~expr yP_MINUSGT ~r~expr		{ $$ = new AstLogIf	($2,$1,$3); }
-	|	~l~expr yP_LOGIFF ~r~expr		{ $$ = new AstLogIff	($2,$1,$3); }
 	//
 	//======================// IEEE: primary/constant_primary
 	//
@@ -3770,7 +3770,6 @@ variable_lvalue<nodep>:		// IEEE: variable_lvalue or net_lvalue
 	//UNSUP	data_type  yP_TICKBRA variable_lvalueList '}'	{ UNSUP }
 	//UNSUP	idClassSel yP_TICKBRA variable_lvalueList '}'	{ UNSUP }
 	//UNSUP	/**/       yP_TICKBRA variable_lvalueList '}'	{ UNSUP }
-	//UNSUP	streaming_concatenation			{ UNSUP }
 	|	streaming_concatenation			{ $$ = $1; }
 	;
 
@@ -3955,10 +3954,16 @@ property_spec<nodep>:			// IEEE: property_spec
 	;
 
 //************************************************
+// Let
+
+//************************************************
 // Covergroup
 
 //**********************************************************************
 // Randsequence
+
+//**********************************************************************
+// Checker
 
 //**********************************************************************
 // Class
@@ -3999,6 +4004,9 @@ package_scopeIdFollows<packagep>:	// IEEE: package_scope
 	//UNSUP	yLOCAL__COLONCOLON { PARSEP->symTableNextId($<scp>1); }
 	//UNSUP	/*cont*/	yP_COLONCOLON	{ UNSUP }
 	;
+
+//**********************************************************************
+// Constraints
 
 //**********************************************************************
 // VLT Files

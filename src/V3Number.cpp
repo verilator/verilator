@@ -1115,14 +1115,17 @@ last:
 
 V3Number& V3Number::opLogIf(const V3Number& lhs, const V3Number& rhs) {
     // i op j, 1 bit return, max(L(lhs),L(rhs)) calculation, careful need to
-    // X/Z extend. Use opLogNot and opLogOr to do this for us.
-    return opLogOr(opLogNot(lhs), rhs);
+    // X/Z extend. Use definition in IEEE to do this for us.
+    V3Number lnot = lhs; lnot.opLogNot(lhs);
+    return opLogOr(lnot, rhs);
 }
 
-V3Number& V3Number::opLogIff(const V3Number& lhs, const V3Number& rhs) {
+V3Number& V3Number::opLogEq(const V3Number& lhs, const V3Number& rhs) {
     // i op j, 1 bit return, max(L(lhs),L(rhs)) calculation, careful need to
-    // X/Z extend. Use opLogNot and opLogXor to do this for us.
-    return opLogNot(opXor(lhs, rhs));
+    // X/Z extend. Use definition in IEEE to do this for us.
+    V3Number ifa = lhs; ifa.opLogIf(lhs, rhs);
+    V3Number ifb = rhs; ifb.opLogIf(rhs, lhs);
+    return opLogAnd(ifa, ifb);
 }
 
 V3Number& V3Number::opEq(const V3Number& lhs, const V3Number& rhs) {

@@ -8,6 +8,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Error continuation lines no longer have %Error prefix.
 
+****  Support logical equivalence operator <->.
+
 ****  Support VerilatedFstC set_time_unit, bug1433. [Pieter Kapsenberg]
 
 ****  Support deferred assertions, bug1449. [Charles Eddleston]

@@ -1345,6 +1345,23 @@ private:
         iterateChildren(nodep);
     }
 
+    void replaceLogEq(AstLogEq* nodep) {
+        // LOGEQ(a,b) => AstLogAnd{AstLogOr{AstLogNot{a},b},AstLogOr{AstLogNot{b},a}}
+        AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
+        AstNode* rhsp = nodep->rhsp()->unlinkFrBack();
+        // Do exactly as IEEE says, might result in extra terms, so in future may do differently
+        AstLogAnd* newp = new AstLogAnd(nodep->fileline(),
+                                        new AstLogOr(nodep->fileline(),
+                                                     new AstLogNot(nodep->fileline(), lhsp),
+                                                     rhsp),
+                                        new AstLogOr(nodep->fileline(),
+                                                     new AstLogNot(nodep->fileline(),
+                                                                   rhsp->cloneTree(false)),
+                                                     lhsp->cloneTree(false)));
+        newp->dtypeFrom(nodep);
+        nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+    }
+
     void replaceSelSel(AstSel* nodep) {
         // SEL(SEL({x},a,b),c,d) => SEL({x},a+c,d)
         AstSel* belowp = VN_CAST(nodep->fromp(), Sel);
@@ -2455,9 +2472,9 @@ private:
     // Conversions
     TREEOPV("AstRedXnor{$lhsp}",                "AstNot{AstRedXor{$lhsp}}");  // Just eliminate XNOR's
     // This visit function here must allow for short-circuiting.
-    TREEOPS("AstLogIf {$lhsp.isZero}",          "replaceNum(nodep, 1)");
-    TREEOPV("AstLogIf {$lhsp, $rhsp}",          "AstLogOr{AstLogNot{$lhsp},$rhsp}");
-    TREEOPV("AstLogIff{$lhsp, $rhsp}",          "AstLogNot{AstXor{$lhsp,$rhsp}}");
+    TREEOPS("AstLogIf{$lhsp.isZero}",  "replaceNum(nodep, 1)");
+    TREEOPV("AstLogIf{$lhsp, $rhsp}",  "AstLogOr{AstLogNot{$lhsp},$rhsp}");
+    TREEOPV("AstLogEq{$lhsp, $rhsp}",  "replaceLogEq(nodep)");
     // Strings
     TREEOPC("AstCvtPackString{$lhsp.castConst}", "replaceConstString(nodep, VN_CAST(nodep->lhsp(), Const)->num().toString())");
 

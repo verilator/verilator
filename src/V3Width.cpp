@@ -223,8 +223,8 @@ private:
     // Widths: 1 bit out, lhs 1 bit, rhs 1 bit; Real: converts via compare with 0
     virtual void visit(AstLogAnd* nodep) {      visit_log_and_or(nodep); }
     virtual void visit(AstLogOr* nodep) {       visit_log_and_or(nodep); }
+    virtual void visit(AstLogEq* nodep) {       visit_log_and_or(nodep); }  // Conversion from real not in IEEE, but a fallout
     virtual void visit(AstLogIf* nodep) {       visit_log_and_or(nodep); }  // Conversion from real not in IEEE, but a fallout
-    virtual void visit(AstLogIff* nodep) {      visit_log_and_or(nodep); }  // Conversion from real not in IEEE, but a fallout
 
     // Widths: 1 bit out, Any width lhs
     virtual void visit(AstRedAnd* nodep) {      visit_red_and_or(nodep); }
@@ -2803,7 +2803,7 @@ private:
         }
     }
     void visit_log_and_or(AstNodeBiop* nodep) {
-        // CALLER: LogAnd, LogOr, LogIf, LogIff
+        // CALLER: LogAnd, LogOr, LogEq, LogIf
         // Widths: 1 bit out, lhs 1 bit, rhs 1 bit
         // IEEE-2012 Table 11-21:
         //   LHS is self-determined
