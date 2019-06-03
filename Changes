@@ -28,6 +28,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix invalid XML output due to special chars, bug1444. [Kanad Kanhere]
 
+****  Fix performance when mulithreaded on 1 CPU, bug1455. [Stefan Wallentowitz]
+
 
 * Verilator 4.014 2019-05-08
 
