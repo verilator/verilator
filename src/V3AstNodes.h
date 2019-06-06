@@ -3580,6 +3580,7 @@ public:
     AstNode* fromp() const { return op1p(); }
     AstNode* dimp() const { return op2p(); }
     AstAttrType attrType() const { return m_attrType; }
+    virtual V3Hash sameHash() const { return V3Hash(m_attrType); }
     virtual void dump(std::ostream& str=std::cout);
 };
 

@@ -15,8 +15,6 @@ module t();
          for (r = 0; r <= 1; r++) begin : gen_r
             localparam real lparam = m + (r + 0.5);
             initial begin
-                $display("%m lparam = %f foo bar = %f",  // TODO -- remove
-                         lparam, foo_inst.bar);
                 if (lparam != foo_inst.bar) begin
                    $display("%m: lparam != foo_inst.bar (%f, %f)",
                             lparam, foo_inst.bar);
