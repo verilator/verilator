@@ -105,7 +105,7 @@ protected:
     VerilatedVcdCallInfo(VerilatedVcdCallback_t icb, VerilatedVcdCallback_t fcb,
                          VerilatedVcdCallback_t changecb,
                          void* ut, vluint32_t code)
-        : m_initcb(icb), m_fullcb(fcb), m_changecb(changecb), m_userthis(ut), m_code(code) {};
+        : m_initcb(icb), m_fullcb(fcb), m_changecb(changecb), m_userthis(ut), m_code(code) {}
     ~VerilatedVcdCallInfo() {}
 };
 

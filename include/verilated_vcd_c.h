@@ -162,7 +162,7 @@ public:
 
     // ACCESSORS
     /// Set size in megabytes after which new file should be created
-    void rolloverMB(vluint64_t rolloverMB) { m_rolloverMB=rolloverMB; };
+    void rolloverMB(vluint64_t rolloverMB) { m_rolloverMB=rolloverMB; }
     /// Is file open?
     bool isOpen() const { return m_isOpen; }
     /// Change character that splits scopes.  Note whitespace are ALWAYS escapes.
@@ -440,7 +440,7 @@ public:
     /// "cat" to be used to combine the header plus any number of data files.
     void openNext(bool incFilename=true) VL_MT_UNSAFE_ONE { m_sptrace.openNext(incFilename); }
     /// Set size in megabytes after which new file should be created
-    void rolloverMB(size_t rolloverMB) { m_sptrace.rolloverMB(rolloverMB); };
+    void rolloverMB(size_t rolloverMB) { m_sptrace.rolloverMB(rolloverMB); }
     /// Close dump
     void close() VL_MT_UNSAFE_ONE { m_sptrace.close(); }
     /// Flush dump
@@ -462,7 +462,7 @@ public:
     void set_time_resolution(const std::string& unit) { set_time_resolution(unit.c_str()); }
 
     /// Internal class access
-    inline VerilatedVcd* spTrace() { return &m_sptrace; };
+    inline VerilatedVcd* spTrace() { return &m_sptrace; }
 };
 
 #endif  // guard

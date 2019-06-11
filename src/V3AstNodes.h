@@ -693,7 +693,7 @@ public:
     AstStructDType(FileLine* fl, AstNumeric numericUnpack)
         : AstNodeClassDType(fl, numericUnpack) {}
     ASTNODE_NODE_FUNCS(StructDType)
-    virtual string verilogKwd() const { return "struct"; };
+    virtual string verilogKwd() const { return "struct"; }
 };
 
 class AstUnionDType : public AstNodeClassDType {
@@ -702,7 +702,7 @@ public:
     AstUnionDType(FileLine* fl, AstNumeric numericUnpack)
         : AstNodeClassDType(fl, numericUnpack) {}
     ASTNODE_NODE_FUNCS(UnionDType)
-    virtual string verilogKwd() const { return "union"; };
+    virtual string verilogKwd() const { return "union"; }
 };
 
 class AstMemberDType : public AstNodeDType {
@@ -3095,7 +3095,7 @@ public:
     explicit AstBreak(FileLine* fileline)
         : AstNodeStmt(fileline) {}
     ASTNODE_NODE_FUNCS(Break)
-    virtual string verilogKwd() const { return "break"; };
+    virtual string verilogKwd() const { return "break"; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool isBrancher() const { return true; }  // SPECIAL: We don't process code after breaks
 };
@@ -3105,7 +3105,7 @@ public:
     explicit AstContinue(FileLine* fileline)
         : AstNodeStmt(fileline) {}
     ASTNODE_NODE_FUNCS(Continue)
-    virtual string verilogKwd() const { return "continue"; };
+    virtual string verilogKwd() const { return "continue"; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool isBrancher() const { return true; }  // SPECIAL: We don't process code after breaks
 };
@@ -3129,7 +3129,7 @@ public:
         setNOp1p(lhsp);
     }
     ASTNODE_NODE_FUNCS(Return)
-    virtual string verilogKwd() const { return "return"; };
+    virtual string verilogKwd() const { return "return"; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     AstNode* lhsp() const { return op1p(); }
     virtual bool isBrancher() const { return true; }  // SPECIAL: We don't process code after breaks

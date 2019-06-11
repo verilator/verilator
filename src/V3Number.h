@@ -51,7 +51,7 @@ class V3Number {
     void opCleanThis(bool warnOnTruncation = false);
 public:
     void nodep(AstNode* nodep) { setNames(nodep); }
-    FileLine* fileline() const { return m_fileline; };
+    FileLine* fileline() const { return m_fileline; }
     V3Number& setZero();
     V3Number& setQuad(vluint64_t value);
     V3Number& setLong(uint32_t value);

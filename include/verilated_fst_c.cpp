@@ -63,7 +63,7 @@ protected:
     VerilatedFstCallInfo(VerilatedFstCallback_t icb, VerilatedFstCallback_t fcb,
                          VerilatedFstCallback_t changecb,
                          void* ut, vluint32_t code)
-        : m_initcb(icb), m_fullcb(fcb), m_changecb(changecb), m_userthis(ut), m_code(code) {};
+        : m_initcb(icb), m_fullcb(fcb), m_changecb(changecb), m_userthis(ut), m_code(code) {}
     ~VerilatedFstCallInfo() {}
 };
 
