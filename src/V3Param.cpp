@@ -633,6 +633,7 @@ void ParamVisitor::visitCell(AstCell* nodep) {
                         // This prevents making additional modules, and makes coverage more
                         // obvious as it won't show up under a unique module page name.
                     } else {
+                        V3Const::constifyParamsEdit(exprp);
                         longname += "_" + paramSmallName(srcModp, modvarp) + paramValueNumber(exprp);
                         any_overrides = true;
                     }

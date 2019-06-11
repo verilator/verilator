@@ -24,13 +24,11 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix parameter function string returns, bug1441. [Denis Rystsov]
 
-****  Fix real parameter assignment, bug1427. [Todd Strader]
-
 ****  Fix invalid XML output due to special chars, bug1444. [Kanad Kanhere]
 
 ****  Fix performance when mulithreaded on 1 CPU, bug1455. [Stefan Wallentowitz]
 
-****  Fix sameHash error on type parameters, bug1456. [Todd Strader]
+****  Fix type and real parameter issues, bug1427, bug1456, bug1458. [Todd Strader]
 
 
 * Verilator 4.014 2019-05-08
