@@ -1630,7 +1630,7 @@ enumDecl<dtypep>:
 	;
 
 enum_base_typeE<dtypep>:	// IEEE: enum_base_type
-		/* empty */				{ $$ = new AstBasicDType(CRELINE(),AstBasicDTypeKwd::INT); }
+		/* empty */				{ $$ = new AstBasicDType(CRELINE(), AstBasicDTypeKwd::INT); }
 	//			// Not in spec, but obviously "enum [1:0]" should work
 	//			// implicit_type expanded, without empty
 	//			// Note enum base types are always packed data types
@@ -2223,7 +2223,7 @@ cellpinItList<pinp>:		// IEEE: list_of_port_connections
 
 cellparamItemE<pinp>:		// IEEE: named_parameter_assignment + empty
 				// Note empty can match either () or (,); V3LinkCells cleans up ()
-		/* empty: ',,' is legal */		{ $$ = new AstPin(CRELINE(),PINNUMINC(),"",NULL); }
+		/* empty: ',,' is legal */		{ $$ = new AstPin(CRELINE(), PINNUMINC(), "", NULL); }
 	|	yP_DOTSTAR				{ $$ = new AstPin($1,PINNUMINC(),".*",NULL); }
 	|	'.' idSVKwd				{ $$ = new AstPin($1,PINNUMINC(),*$2,new AstParseRef($1,AstParseRefExp::PX_TEXT,*$2,NULL,NULL)); $$->svImplicit(true);}
 	|	'.' idAny				{ $$ = new AstPin($1,PINNUMINC(),*$2,new AstParseRef($1,AstParseRefExp::PX_TEXT,*$2,NULL,NULL)); $$->svImplicit(true);}
@@ -2244,7 +2244,7 @@ cellparamItemE<pinp>:		// IEEE: named_parameter_assignment + empty
 
 cellpinItemE<pinp>:		// IEEE: named_port_connection + empty
 				// Note empty can match either () or (,); V3LinkCells cleans up ()
-		/* empty: ',,' is legal */		{ $$ = new AstPin(CRELINE(),PINNUMINC(),"",NULL); }
+		/* empty: ',,' is legal */		{ $$ = new AstPin(CRELINE(), PINNUMINC(), "", NULL); }
 	|	yP_DOTSTAR				{ $$ = new AstPin($1,PINNUMINC(),".*",NULL); }
 	|	'.' idSVKwd				{ $$ = new AstPin($1,PINNUMINC(),*$2,new AstParseRef($1,AstParseRefExp::PX_TEXT,*$2,NULL,NULL)); $$->svImplicit(true);}
 	|	'.' idAny				{ $$ = new AstPin($1,PINNUMINC(),*$2,new AstParseRef($1,AstParseRefExp::PX_TEXT,*$2,NULL,NULL)); $$->svImplicit(true);}
@@ -3009,23 +3009,23 @@ funcId<ftaskp>:			// IEEE: function_data_type_or_implicit + part of function_bod
 	//			// IEEE: function_data_type_or_implicit must be expanded here to prevent conflict
 	//			// function_data_type expanded here to prevent conflicts with implicit_type:empty vs data_type:ID
 		/**/			tfIdScoped
-			{ $$ = new AstFunc ($<fl>1,*$<strp>1,NULL,
-					    new AstBasicDType($<fl>1, LOGIC_IMPLICIT));
+			{ $$ = new AstFunc($<fl>1,*$<strp>1,NULL,
+					   new AstBasicDType($<fl>1, LOGIC_IMPLICIT));
 			  SYMP->pushNewUnder($$, NULL); }
 	|	signingE rangeList	tfIdScoped
-			{ $$ = new AstFunc ($<fl>3,*$<strp>3,NULL,
-					    GRAMMARP->addRange(new AstBasicDType($<fl>3, LOGIC_IMPLICIT, $1), $2,true));
+			{ $$ = new AstFunc($<fl>3,*$<strp>3,NULL,
+					   GRAMMARP->addRange(new AstBasicDType($<fl>3, LOGIC_IMPLICIT, $1), $2,true));
 			  SYMP->pushNewUnder($$, NULL); }
 	|	signing			tfIdScoped
-			{ $$ = new AstFunc ($<fl>2,*$<strp>2,NULL,
-					    new AstBasicDType($<fl>2, LOGIC_IMPLICIT, $1));
+			{ $$ = new AstFunc($<fl>2,*$<strp>2,NULL,
+					   new AstBasicDType($<fl>2, LOGIC_IMPLICIT, $1));
 			  SYMP->pushNewUnder($$, NULL); }
 	|	data_type		tfIdScoped
-			{ $$ = new AstFunc ($<fl>2,*$<strp>2,NULL,$1);
+			{ $$ = new AstFunc($<fl>2,*$<strp>2,NULL,$1);
 			  SYMP->pushNewUnder($$, NULL); }
 	//			// To verilator tasks are the same as void functions (we separately detect time passing)
 	|	yVOID			tfIdScoped
-			{ $$ = new AstTask ($<fl>2,*$<strp>2,NULL);
+			{ $$ = new AstTask($<fl>2,*$<strp>2,NULL);
 			  SYMP->pushNewUnder($$, NULL); }
 	;
 
@@ -3180,8 +3180,8 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	|	'~' ~r~expr	%prec prNEGATION	{ $$ = new AstNot	($1,$2); }
 	|	'|' ~r~expr	%prec prREDUCTION	{ $$ = new AstRedOr	($1,$2); }
 	|	'^' ~r~expr	%prec prREDUCTION	{ $$ = new AstRedXor	($1,$2); }
-	|	yP_NAND ~r~expr	%prec prREDUCTION	{ $$ = new AstLogNot($1,new AstRedAnd($1,$2)); }
-	|	yP_NOR  ~r~expr	%prec prREDUCTION	{ $$ = new AstLogNot($1,new AstRedOr ($1,$2)); }
+	|	yP_NAND ~r~expr	%prec prREDUCTION	{ $$ = new AstLogNot($1, new AstRedAnd($1, $2)); }
+	|	yP_NOR  ~r~expr	%prec prREDUCTION	{ $$ = new AstLogNot($1, new AstRedOr($1, $2)); }
 	|	yP_XNOR ~r~expr	%prec prREDUCTION	{ $$ = new AstRedXnor	($1,$2); }
 	//
 	//			// IEEE: inc_or_dec_expression
@@ -3444,8 +3444,8 @@ argsExprListE<nodep>:		// IEEE: part of list_of_arguments
 	;
 
 argsExprOneE<nodep>:		// IEEE: part of list_of_arguments
-		/*empty*/				{ $$ = new AstArg(CRELINE(),"",NULL); }
-	|	expr					{ $$ = new AstArg(CRELINE(),"",$1); }
+		/*empty*/				{ $$ = new AstArg(CRELINE(), "", NULL); }
+	|	expr					{ $$ = new AstArg(CRELINE(), "", $1); }
 	;
 
 argsDottedList<nodep>:		// IEEE: part of list_of_arguments
@@ -3593,60 +3593,60 @@ gateRangeE<nodep>:
 
 gateBuf<nodep>:
 		gateIdE gateRangeE '(' variable_lvalue ',' gatePinExpr ')'
-			{ $$ = new AstAssignW ($3,$4,$6); DEL($2); }
+			{ $$ = new AstAssignW($3,$4,$6); DEL($2); }
 	;
 gateBufif0<nodep>:
 		gateIdE gateRangeE '(' variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
-			{ $$ = new AstAssignW ($3,$4,new AstBufIf1($3,new AstNot($3,$8),$6)); DEL($2); }
+			{ $$ = new AstAssignW($3,$4,new AstBufIf1($3,new AstNot($3,$8),$6)); DEL($2); }
 	;
 gateBufif1<nodep>:
 		gateIdE gateRangeE '(' variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
-			{ $$ = new AstAssignW ($3,$4,new AstBufIf1($3,$8,$6)); DEL($2); }
+			{ $$ = new AstAssignW($3,$4,new AstBufIf1($3,$8,$6)); DEL($2); }
 	;
 gateNot<nodep>:
 		gateIdE gateRangeE '(' variable_lvalue ',' gatePinExpr ')'
-			{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); DEL($2); }
+			{ $$ = new AstAssignW($3,$4,new AstNot($5,$6)); DEL($2); }
 	;
 gateNotif0<nodep>:
 		gateIdE gateRangeE '(' variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
-			{ $$ = new AstAssignW ($3,$4,new AstBufIf1($3,new AstNot($3,$8), new AstNot($3, $6))); DEL($2); }
+			{ $$ = new AstAssignW($3,$4,new AstBufIf1($3,new AstNot($3,$8), new AstNot($3, $6))); DEL($2); }
 	;
 gateNotif1<nodep>:
 		gateIdE gateRangeE '(' variable_lvalue ',' gatePinExpr ',' gatePinExpr ')'
-			{ $$ = new AstAssignW ($3,$4,new AstBufIf1($3,$8, new AstNot($3,$6))); DEL($2); }
+			{ $$ = new AstAssignW($3,$4,new AstBufIf1($3,$8, new AstNot($3,$6))); DEL($2); }
 	;
 gateAnd<nodep>:
 		gateIdE gateRangeE '(' variable_lvalue ',' gateAndPinList ')'
-			{ $$ = new AstAssignW ($3,$4,$6); DEL($2); }
+			{ $$ = new AstAssignW($3,$4,$6); DEL($2); }
 	;
 gateNand<nodep>:
 		gateIdE gateRangeE '(' variable_lvalue ',' gateAndPinList ')'
-			{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); DEL($2); }
+			{ $$ = new AstAssignW($3,$4,new AstNot($5,$6)); DEL($2); }
 	;
 gateOr<nodep>:
 		gateIdE gateRangeE '(' variable_lvalue ',' gateOrPinList ')'
-			{ $$ = new AstAssignW ($3,$4,$6); DEL($2); }
+			{ $$ = new AstAssignW($3,$4,$6); DEL($2); }
 	;
 gateNor<nodep>:
 		gateIdE gateRangeE '(' variable_lvalue ',' gateOrPinList ')'
-			{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); DEL($2); }
+			{ $$ = new AstAssignW($3,$4,new AstNot($5,$6)); DEL($2); }
 	;
 gateXor<nodep>:
 		gateIdE gateRangeE '(' variable_lvalue ',' gateXorPinList ')'
-			{ $$ = new AstAssignW ($3,$4,$6); DEL($2); }
+			{ $$ = new AstAssignW($3,$4,$6); DEL($2); }
 	;
 gateXnor<nodep>:
 		gateIdE gateRangeE '(' variable_lvalue ',' gateXorPinList ')'
-			{ $$ = new AstAssignW ($3,$4,new AstNot($5,$6)); DEL($2); }
+			{ $$ = new AstAssignW($3,$4,new AstNot($5,$6)); DEL($2); }
 	;
 gatePullup<nodep>:
-		gateIdE gateRangeE '(' variable_lvalue ')'	{ $$ = new AstPull ($3, $4, true); DEL($2); }
+		gateIdE gateRangeE '(' variable_lvalue ')'	{ $$ = new AstPull($3, $4, true); DEL($2); }
 	;
 gatePulldown<nodep>:
-		gateIdE gateRangeE '(' variable_lvalue ')'	{ $$ = new AstPull ($3, $4, false); DEL($2); }
+		gateIdE gateRangeE '(' variable_lvalue ')'	{ $$ = new AstPull($3, $4, false); DEL($2); }
 	;
 gateUnsup<nodep>:
-		gateIdE gateRangeE '(' gateUnsupPinList ')'	{ $$ = new AstImplicit ($3,$4); DEL($2); }
+		gateIdE gateRangeE '(' gateUnsupPinList ')'	{ $$ = new AstImplicit($3,$4); DEL($2); }
 	;
 
 gateIdE:

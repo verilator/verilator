@@ -52,7 +52,7 @@ extern void yyerrorf(const char* format, ...);
 	if (!v3Global.opt.bboxSys()) yyerrorf(msg, yytext); \
 	return yaD_IGNORE; }
 
-void V3ParseImp::ppline (const char* textp) {
+void V3ParseImp::ppline(const char* textp) {
     // Handle `line directive
     int enterExit;
     fileline()->lineDirective(textp, enterExit/*ref*/);
