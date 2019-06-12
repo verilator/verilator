@@ -206,6 +206,11 @@
 //=========================================================================
 // Basic integer types
 
+#ifdef __MINGW32__
+# define __USE_MINGW_ANSI_STDIO 1  // Force old MinGW (GCC 5 and older) to use C99 formats
+# define __STDC_FORMAT_MACROS   1  // Otherwise MinGW doesn't get PRId64 for fstapi.c
+#endif
+
 #if defined(__CYGWIN__)
 
 # include <stdint.h>
@@ -278,10 +283,6 @@ typedef unsigned long long      vluint64_t;     ///< 64-bit unsigned type
 #ifdef _MSC_VER
 # define VL_PRI64 "I64"
 #else  // use standard C99 format specifiers
-# ifdef __MINGW32__
-#  define __USE_MINGW_ANSI_STDIO 1  // Force old MinGW (GCC 5 and older) to use C99 formats
-#  define __STDC_FORMAT_MACROS   1  // Otherwise MinGW doesn't get PRId64 for fstapi.c
-# endif
 # if defined(__WORDSIZE) && (__WORDSIZE == 64)
 #  define VL_PRI64 "l"
 # else

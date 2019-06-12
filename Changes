@@ -30,6 +30,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix type and real parameter issues, bug1427, bug1456, bug1458. [Todd Strader]
 
+****  Fix build error on MinGW, bug1460. [Richard Myers]
+
 
 * Verilator 4.014 2019-05-08
 
