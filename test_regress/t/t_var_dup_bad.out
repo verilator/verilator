@@ -1,0 +1,16 @@
+%Error: t/t_var_dup_bad.v:14: Duplicate declaration of signal: a
+        t/t_var_dup_bad.v:13: ... Location of original declaration
+%Error: t/t_var_dup_bad.v:17: Duplicate declaration of signal: l
+        t/t_var_dup_bad.v:16: ... Location of original declaration
+%Error: t/t_var_dup_bad.v:20: Duplicate declaration of signal: b
+        t/t_var_dup_bad.v:19: ... Location of original declaration
+%Error: t/t_var_dup_bad.v:26: Duplicate declaration of signal: o
+        t/t_var_dup_bad.v:25: ... Location of original declaration
+%Error: t/t_var_dup_bad.v:29: Duplicate declaration of signal: i
+        t/t_var_dup_bad.v:28: ... Location of original declaration
+%Error: t/t_var_dup_bad.v:32: Duplicate declaration of signal: oi
+        t/t_var_dup_bad.v:31: ... Location of original declaration
+%Error: t/t_var_dup_bad.v:39: Duplicate declaration of signal: org
+        t/t_var_dup_bad.v:38: ... Location of original declaration
+%Error: t/t_var_dup_bad.v:31: Input/output/inout does not appear in port list: oi
+%Error: Exiting due to

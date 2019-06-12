@@ -933,10 +933,12 @@ class LinkDotFindVisitor : public AstNVisitor {
                       <<" ;; parent=se"<<cvtToHex(foundp->parentp())<<endl);
                 if (foundp && foundp->parentp() == m_curSymp  // Only when on same level
                     && !foundp->imported()) {  // and not from package
-                    if ((findvarp->isIO() && nodep->isSignal())
-                        || (findvarp->isSignal() && nodep->isIO())) {
+                    if (!(findvarp->isIO() && nodep->isIO())  // e.g. !(output && output)
+                        && ((findvarp->isIO() && nodep->isSignal())  // e.g. output && reg
+                            || (findvarp->isSignal() && nodep->isIO()))  // e.g. reg && output
+                        && !(findvarp->isSignal() && !nodep->isSignal())) {  // e.g. !(reg && reg)
                         findvarp->combineType(nodep);
-                        nodep->fileline()->modifyStateInherit(nodep->fileline());
+                        findvarp->fileline()->modifyStateInherit(nodep->fileline());
                         AstBasicDType* bdtypep = VN_CAST(findvarp->childDTypep(), BasicDType);
                         if (bdtypep && bdtypep->implicit()) {
                             // Then have "input foo" and "real foo" so the
@@ -947,12 +949,15 @@ class LinkDotFindVisitor : public AstNVisitor {
                             newdtypep->unlinkFrBack();
                             findvarp->childDTypep(newdtypep);
                         }
-                        nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
                     } else {
                         nodep->v3error("Duplicate declaration of signal: "
                                        <<nodep->prettyName()<<endl
                                        <<findvarp->warnMore()<<"... Location of original declaration");
+                        // Combining most likely reduce other errors
+                        findvarp->combineType(nodep);
+                        findvarp->fileline()->modifyStateInherit(nodep->fileline());
                     }
+                    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
                 } else {
                     // User can disable the message at either point
                     if (!(m_ftaskp && m_ftaskp->dpiImport())

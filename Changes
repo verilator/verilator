@@ -32,6 +32,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix build error on MinGW, bug1460. [Richard Myers]
 
+****  Fix not reporting some duplicate signals, bug1462. [Peter Gerst]
+
 
 * Verilator 4.014 2019-05-08
 
