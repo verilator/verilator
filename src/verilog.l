@@ -988,7 +988,7 @@ void V3ParseImp::lexToken() {
 	|| token == yGLOBAL__LEX
 	// Never put yID_* here; below symbol table resolution would break
 	) {
-	if (debugFlex()) { cout<<"   lexToken: reading ahead to find possible strength"<<endl; }
+	if (debugFlex()>=6) { cout<<"   lexToken: reading ahead to find possible strength"<<endl; }
 	V3ParseBisonYYSType curValue = yylval;  // Remember value, as about to read ahead
 	int nexttok = yylexReadTok();
 	m_ahead = true;
