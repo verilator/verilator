@@ -72,8 +72,8 @@
       </contassign>
     </module>
     <typetable fl="a0">
-      <basicdtype  fl="e46" id="1" name="logic"/>
-      <basicdtype  fl="e13" id="2" name="logic" left="3" right="0"/>
+      <basicdtype fl="e46" id="1" name="logic"/>
+      <basicdtype fl="e13" id="2" name="logic" left="3" right="0"/>
     </typetable>
   </netlist>
 </verilator_xml>

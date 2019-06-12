@@ -56,19 +56,19 @@
       </modport>
     </iface>
     <typetable fl="a0">
-      <basicdtype  fl="e30" id="5" name="logic" left="31" right="0"/>
-      <basicdtype  fl="e7" id="6" name="integer" left="31" right="0"/>
-      <basicdtype  fl="e13" id="1" name="logic"/>
+      <basicdtype fl="e30" id="5" name="logic" left="31" right="0"/>
+      <basicdtype fl="e7" id="6" name="integer" left="31" right="0"/>
+      <basicdtype fl="e13" id="1" name="logic"/>
       <structdtype fl="e19" id="2" name="m.my_struct">
         <memberdtype fl="e20" id="8" name="clk" tag="this is clk" sub_dtype_id="9"/>
         <memberdtype fl="e21" id="10" name="k" sub_dtype_id="11"/>
         <memberdtype fl="e22" id="12" name="enable" tag="enable" sub_dtype_id="13"/>
         <memberdtype fl="e23" id="14" name="data" tag="data" sub_dtype_id="15"/>
       </structdtype>
-      <basicdtype  fl="e20" id="9" name="logic"/>
-      <basicdtype  fl="e21" id="11" name="logic"/>
-      <basicdtype  fl="e22" id="13" name="logic"/>
-      <basicdtype  fl="e23" id="15" name="logic"/>
+      <basicdtype fl="e20" id="9" name="logic"/>
+      <basicdtype fl="e21" id="11" name="logic"/>
+      <basicdtype fl="e22" id="13" name="logic"/>
+      <basicdtype fl="e23" id="15" name="logic"/>
       <ifacerefdtype fl="e28" id="3" modportname=""/>
       <unpackarraydtype fl="e30" id="4" sub_dtype_id="2">
         <range fl="e30">
@@ -77,7 +77,7 @@
         </range>
       </unpackarraydtype>
       <refdtype fl="e30" id="16" name="my_struct" sub_dtype_id="2"/>
-      <basicdtype  fl="e34" id="7" name="string"/>
+      <basicdtype fl="e34" id="7" name="string"/>
     </typetable>
   </netlist>
 </verilator_xml>

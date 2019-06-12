@@ -161,7 +161,7 @@ class EmitXmlFileVisitor : public AstNVisitor {
 
     // Data types
     virtual void visit(AstBasicDType* nodep) {
-        outputTag(nodep, "basicdtype ");
+        outputTag(nodep, "basicdtype");
         if (nodep->isRanged()) {
             puts(" left=\""+cvtToStr(nodep->left())+"\"");
             puts(" right=\""+cvtToStr(nodep->right())+"\"");
