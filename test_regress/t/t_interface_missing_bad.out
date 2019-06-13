@@ -1,0 +1,4 @@
+%Error: t/t_interface_missing_bad.v:13: Cannot find file containing interface: foo_intf
+%Error: t/t_interface_missing_bad.v:19: Cannot find file containing interface: foo_intf
+%Error: t/t_interface_missing_bad.v:24: Found definition of 'the_foo' as a CELL but expected a variable
+%Error: Exiting due to

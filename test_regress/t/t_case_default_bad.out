@@ -1,0 +1,2 @@
+%Error: t/t_case_default_bad.v:12: Multiple default statements in case statement.
+%Error: Exiting due to

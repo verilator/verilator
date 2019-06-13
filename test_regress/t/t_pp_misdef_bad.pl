@@ -11,9 +11,7 @@ scenarios(vlt => 1);
 
 lint(
     fails => 1,
-    expect =>
-'%Error: t/t_pp_misdef_bad.v:\d+: Define or directive not defined: `NOTDEF
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

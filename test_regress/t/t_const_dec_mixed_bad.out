@@ -1,0 +1,2 @@
+%Error: t/t_const_dec_mixed_bad.v:8: Mixing X/Z/? with digits not legal in decimal constant: x_1
+%Error: Exiting due to

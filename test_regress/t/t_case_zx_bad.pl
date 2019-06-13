@@ -11,10 +11,7 @@ scenarios(linter => 1);
 
 lint(
     fails => 1,
-    expect =>
-'%Warning-CASEWITHX: t/t_case_zx_bad.v:\d+: Use of x constant in casez statement, \(perhaps intended \?/z in constant\)
-.*
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

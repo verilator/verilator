@@ -15,9 +15,7 @@ compile(
     fails => 1,
     v_flags2 => ["--top-module notfound"],
     nc => 0,  # Need to get it not to give the prompt
-    expect =>
-'%Error: Specified --top-module \'notfound\' was not found in design.
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

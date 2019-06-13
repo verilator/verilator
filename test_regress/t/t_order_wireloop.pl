@@ -13,6 +13,7 @@ compile(
     fails => $Self->{vlt_all},
     # Used to be %Error: t/t_order_wireloop.v:\d+: Wire inputs its own output, creating circular logic .wire x=x.
     # However we no longer gate optimize this
+    # Can't use expect_filename here as unstable output
     expect =>
 '%Warning-UNOPT: t/t_order_wireloop.v:\d+: Signal unoptimizable: Feedback to public clock or circular logic: bar
 ',

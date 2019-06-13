@@ -1,0 +1,4 @@
+%Warning-BSSPACE: t/t_lint_bsspace_bad.v:9: Backslash followed by whitespace, perhaps the whitespace is accidental?
+                  ... Use "/* verilator lint_off BSSPACE */" and lint_on around source to disable this message.
+%Error: t/t_lint_bsspace_bad.v:10: syntax error, unexpected IDENTIFIER
+%Error: Exiting due to

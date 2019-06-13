@@ -11,9 +11,7 @@ scenarios(vlt => 1);
 
 lint(
     fails => 1,
-    expect =>
-'%Warning-BSSPACE: t/t_lint_bsspace_bad.v:\d+: Backslash followed by whitespace, perhaps the whitespace is accidental\?
-.*%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

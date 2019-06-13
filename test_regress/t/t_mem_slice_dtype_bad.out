@@ -1,0 +1,2 @@
+%Error: t/t_mem_slice_dtype_bad.v:22: ADD unexpected in assignment to unpacked array
+%Error: Exiting due to

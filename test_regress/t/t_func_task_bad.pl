@@ -11,9 +11,7 @@ scenarios(linter => 1);
 
 lint(
     fails => 1,
-    expect =>
-q{%Error: t/t_func_task_bad.v:\d+: Illegal call of a task as a function: task_as_func
-%Error: Exiting due to.*},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

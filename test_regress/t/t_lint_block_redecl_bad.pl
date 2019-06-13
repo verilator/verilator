@@ -12,9 +12,7 @@ $Self->{vlt_all} and unsupported("Verilator unsupported, bug485, false begin due
 
 lint(
     fails => 1,
-    expect =>
-'%Warning: duplicate...
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

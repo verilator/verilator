@@ -1,0 +1,2 @@
+%Error: t/t_bitsel_wire_array_bad.v:20: Illegal assignment of constant to unpacked array
+%Error: Exiting due to

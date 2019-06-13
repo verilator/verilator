@@ -11,9 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     fails => 1,
-    expect =>
-qr{%Error: t/t_interface_missing_bad.v:\d+: Cannot find file containing interface: foo_intf
-.*},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

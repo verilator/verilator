@@ -11,9 +11,7 @@ scenarios(linter => 1);
 
 lint(
     fails => 1,
-    expect =>
-'%Error: t/t_param_up_bad.v:\d+: Can\'t find definition of scope/variable: bar
-.*%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

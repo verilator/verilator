@@ -1,0 +1,2 @@
+%Error: t/t_var_port_bad.v:15: Input/output/inout does not appear in port list: b
+%Error: Exiting due to

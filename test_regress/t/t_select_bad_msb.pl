@@ -11,10 +11,7 @@ scenarios(vlt_all => 1);
 
 compile(
     fails => 1,
-    expect =>
-'%Warning-LITENDIAN: t/t_select_bad_msb.v:\d+: Little bit endian vector: MSB < LSB of bit range: 0:22
-.*
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

@@ -1,0 +1,9 @@
+%Warning-IMPERFECTSCH: t/t_order_clkinst.v:17: Imperfect scheduling of variable: t.c1_start
+                       ... Use "/* verilator lint_off IMPERFECTSCH */" and lint_on around source to disable this message.
+%Warning-IMPERFECTSCH: t/t_order_clkinst.v:18: Imperfect scheduling of variable: t.c1_count
+%Warning-IMPERFECTSCH: t/t_order_clkinst.v:22: Imperfect scheduling of variable: t.s2_count
+%Warning-IMPERFECTSCH: t/t_order_clkinst.v:26: Imperfect scheduling of variable: t.c3_count
+%Warning-IMPERFECTSCH: t/t_order_clkinst.v:70: Imperfect scheduling of variable: t.c1.runner
+%Warning-IMPERFECTSCH: t/t_order_clkinst.v:99: Imperfect scheduling of variable: t.s2.runner
+%Warning-IMPERFECTSCH: t/t_order_clkinst.v:70: Imperfect scheduling of variable: t.c3.runner
+%Error: Exiting due to

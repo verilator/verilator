@@ -1,0 +1,2 @@
+%Error: t/t_func_task_bad.v:9: Illegal call of a task as a function: task_as_func
+%Error: Exiting due to

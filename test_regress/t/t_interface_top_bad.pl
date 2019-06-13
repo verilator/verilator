@@ -11,8 +11,7 @@ scenarios(vlt => 1);
 
 lint(
     fails => 1,
-    expect =>
-'%Error: t/t_interface_top_bad.v:\d+: Unsupported: Interfaced port on top level module',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

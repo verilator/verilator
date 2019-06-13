@@ -14,14 +14,7 @@ top_filename("t/t_package_export.v");
 lint(
     v_flags2 => ['+define+T_PACKAGE_EXPORT_BAD',],
     fails => 1,
-    expect =>
-'%Error: t/t_package_export.v:\d+: Can\'t find definition of scope/variable: PARAM2
-%Error: t/t_package_export.v:\d+: Can\'t find definition of scope/variable: PARAM3
-%Error: t/t_package_export.v:\d+: Can\'t find definition of scope/variable: PARAM2
-%Error: t/t_package_export.v:\d+: Can\'t find definition of scope/variable: PARAM3
-%Error: t/t_package_export.v:\d+: Can\'t find definition of scope/variable: PARAM2
-%Error: t/t_package_export.v:\d+: Can\'t find definition of scope/variable: PARAM3
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 

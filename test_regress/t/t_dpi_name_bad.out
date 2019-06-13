@@ -1,0 +1,2 @@
+%Error: t/t_dpi_name_bad.v:11: DPI function has illegal characters in C identifier name: badly.named
+%Error: Exiting due to

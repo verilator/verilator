@@ -11,9 +11,7 @@ scenarios(linter => 1);
 
 lint(
     fails => 1,
-    expect =>
-'%Error: Internal Error: .*: Value too wide for 32-bits expected in this context 64\'h123456789abcdef
-.',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

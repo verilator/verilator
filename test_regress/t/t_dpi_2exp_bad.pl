@@ -11,9 +11,7 @@ scenarios(linter => 1);
 
 lint(
     fails => $Self->{vlt_all},
-    expect =>
-'%Error: t/t_dpi_2exp_bad.v:11: Function was already DPI Exported, duplicate not allowed: dpix_twice
-%Error: Exiting due to .*'
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

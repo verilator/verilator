@@ -12,9 +12,7 @@ scenarios(vlt => 1);
 compile(
     v_flags2 => ["--top-module a "],
     fails => 1,
-    expect =>
-'%Error: Specified --top-module \'a\' isn.t at the top level, it.s under another cell \'a_top\'
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

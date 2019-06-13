@@ -241,7 +241,7 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     void genChangeDet(AstVarScope* vscp) {
-        vscp->v3warn(IMPERFECTSCH, "Imperfect scheduling of variable: "<<vscp);
+        vscp->v3warn(IMPERFECTSCH, "Imperfect scheduling of variable: "<<vscp->prettyName());
         ChangedInsertVisitor visitor (vscp, m_statep);
     }
 

@@ -13,9 +13,7 @@ scenarios(linter => 1);
 
 lint(
     fails => 1,
-    expect =>
-'.*%Error: t/t_bitsel_wire_array_bad.v:\d+: Illegal assignment of constant to unpacked array
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

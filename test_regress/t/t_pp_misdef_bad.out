@@ -1,0 +1,2 @@
+%Error: t/t_pp_misdef_bad.v:10: Define or directive not defined: `NOTDEF
+%Error: Exiting due to

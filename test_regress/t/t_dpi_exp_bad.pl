@@ -11,9 +11,7 @@ scenarios(linter => 1);
 
 lint(
     fails => 1,
-    expect =>
-'%Error: t/t_dpi_exp_bad.v:\d+: DPI functions cannot return > 32 bits or four-state; use a two-state type or task instead: dpix_f_bit48__Vfuncrtn
-%Error: Exiting due to .*'
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

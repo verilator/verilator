@@ -11,9 +11,7 @@ scenarios(linter => 1);
 
 lint(
     fails => 1,
-    expect =>
-q{%Error: t/t_func_tie_bad.v:\d+: Function/task output connected to constant instead of variable: b
-%Error: Exiting due to.*},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

@@ -1,0 +1,2 @@
+%Error: t/t_dpi_2exp_bad.v:11: Function was already DPI Exported, duplicate not allowed: dpix_twice
+%Error: Exiting due to

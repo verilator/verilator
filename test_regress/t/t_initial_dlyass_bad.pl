@@ -13,10 +13,8 @@ top_filename("t_initial_dlyass.v");
 
 lint(
     fails => 1,
-    expect =>
-qr{%Warning-INITIALDLY: t/t_initial_dlyass.v:\d+: Delayed assignments .*
-%Error: Exiting due to.*},
-     );
+    expect_filename => $Self->{golden_filename},
+    );
 
 ok(1);
 1;

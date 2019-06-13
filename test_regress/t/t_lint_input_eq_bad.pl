@@ -11,9 +11,7 @@ scenarios(vlt => 1);
 
 lint(
     fails => 1,
-    expect =>
-'%Error: t/t_lint_input_eq_bad.v:\d+: Unsupported: Default value on module input: i2
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

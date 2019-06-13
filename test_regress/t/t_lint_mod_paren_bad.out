@@ -1,0 +1,2 @@
+%Error: t/t_lint_mod_paren_bad.v:13: syntax error, unexpected '(', expecting ';'
+%Error: Exiting due to

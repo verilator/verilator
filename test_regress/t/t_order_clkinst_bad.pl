@@ -14,9 +14,7 @@ top_filename("t/t_order_clkinst.v");
 compile(
     v_flags2 => ["-Wwarn-IMPERFECTSCH"],
     fails => 1,
-    expect =>
-q{.*%Warning-IMPERFECTSCH: .*
-.*%Error: Exiting due to.*},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

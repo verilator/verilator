@@ -11,9 +11,7 @@ scenarios(linter => 1);
 
 lint(
     fails => 1,
-    expect =>
-'%Error: t/t_const_dec_mixed_bad.v:\d+: Mixing X/Z/\? with digits not legal in decimal constant: x_1
-%Error: Exiting due to.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

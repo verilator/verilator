@@ -13,11 +13,7 @@ lint(
     fails => 1,
     # Used to be %Error: t/t_order_wireloop.v:\d+: Wire inputs its own output, creating circular logic .wire x=x.
     # However we no longer gate optimize this
-    expect =>
-q{%Error: t/t_interface_typo_bad.v:\d+: Parent cell's interface is not found: foo_intf
-%Error: t/t_interface_typo_bad.v:\d+: Cannot find file containing interface: fo_intf
-%Error: t/t_interface_typo_bad.v:\d+: Found definition of 'the_foo' as a CELL but expected a variable
-.*},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

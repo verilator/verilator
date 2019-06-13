@@ -1,0 +1,3 @@
+%Error: t/t_interface_top_bad.v:16: Unsupported: Interfaced port on top level module
+%Error: t/t_interface_top_bad.v:16: Parent cell's interface is not found: ifc
+%Error: Exiting due to

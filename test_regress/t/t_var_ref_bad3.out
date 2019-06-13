@@ -1,0 +1,2 @@
+%Error: t/t_var_ref_bad3.v:9: Unsupported: ref/const ref as primary input/output: bad_primary_ref
+%Error: Exiting due to

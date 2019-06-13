@@ -1,0 +1,3 @@
+%Error: Internal Error: ../V3Number.cpp:668: Value too wide for 32-bits expected in this context 64'h123456789abcdef
+                        ... See the manual and http://www.veripool.org/verilator for more assistance.
+%Error: Command Failed

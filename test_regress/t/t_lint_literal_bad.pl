@@ -11,9 +11,7 @@ scenarios(vlt_all => 1);
 
 compile(
     fails => 1,
-    expect =>
-'%Warning-WIDTH: t/t_lint_literal_bad.v:9: Value too large for 8 bit number: 256
-',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

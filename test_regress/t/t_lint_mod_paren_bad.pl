@@ -12,9 +12,7 @@ scenarios(vlt => 1);
 lint(
     verilator_flags2 => ["--lint-only -Wno-DECLFILENAME"],
     fails => 1,
-    expect =>
-q{%Error: t/t_lint_mod_paren_bad.v:\d+: syntax error, unexpected '\(', expecting ';'
-%Error: Exiting due to .*},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

@@ -11,6 +11,7 @@ scenarios(vlt => 1);
 
 lint(
     fails => 1,
+    # Can't use expect_filename here as unstable output
     expect =>
 '%Error: Circular logic when ordering code .*
  *t/t_order_loop_bad.v:\d+: + Example path: ALWAYS

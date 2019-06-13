@@ -1,0 +1,2 @@
+%Error: t/t_func_tie_bad.v:10: Function/task output connected to constant instead of variable: b
+%Error: Exiting due to

@@ -11,9 +11,7 @@ scenarios(vlt => 1);
 
 lint(
     fails => 1,
-    expect =>
-'%Error: No top level module found
-%Error: Exiting due to',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

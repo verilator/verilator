@@ -11,9 +11,7 @@ scenarios(vlt => 1);
 
 lint(
     fails => 1,
-    expect =>
-q{%Error: t/t_lint_comb_bad.v:\d+: syntax error, unexpected '@'
-.*},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

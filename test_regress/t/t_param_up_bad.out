@@ -1,0 +1,2 @@
+%Error: t/t_param_up_bad.v:15: Can't find definition of scope/variable: bar
+%Error: Exiting due to

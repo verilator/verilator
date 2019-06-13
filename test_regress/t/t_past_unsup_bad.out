@@ -1,0 +1,2 @@
+%Error: t/t_past_unsup_bad.v:12: Unsupported: $past expr2 and clock arguments
+%Error: Exiting due to

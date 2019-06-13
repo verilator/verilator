@@ -11,9 +11,7 @@ scenarios(vlt => 1);
 
 lint(
     fails => 1,
-    expect =>
-q{%Error: t/t_var_ref_bad3.v:\d+: Unsupported: ref/const ref as primary input/output: bad_primary_ref
-.*%Error: Exiting due to.*},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

@@ -11,9 +11,7 @@ scenarios(linter => 1);
 
 lint(
     fails => 1,
-    expect =>
-q{%Error: t/t_mem_packed_bad.v:\d+: CONST '28'h0' unexpected in assignment to unpacked array
-%Error: Exiting due to.*},
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

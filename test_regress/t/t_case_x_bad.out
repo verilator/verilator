@@ -1,0 +1,4 @@
+%Warning-CASEX: t/t_case_x_bad.v:13: Suggest casez (with ?'s) in place of casex (with X's)
+                ... Use "/* verilator lint_off CASEX */" and lint_on around source to disable this message.
+%Warning-CASEWITHX: t/t_case_x_bad.v:18: Use of x/? constant in case statement, (perhaps intended casex/casez)
+%Error: Exiting due to
