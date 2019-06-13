@@ -28,8 +28,8 @@ module t (/*AUTOARG*/
       $write("cyc%0d c:%0x a0:%0x a1:%0x a2:%0x a3:%0x\n", cyc, arr_c, arr[0], arr[1], arr[2], arr[3]);
 `endif
       if (cyc==99) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

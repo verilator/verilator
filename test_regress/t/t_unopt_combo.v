@@ -19,18 +19,18 @@ module t (/*AUTOARG*/
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [31:0]		b;			// From file of file.v
-   wire [31:0]		c;			// From file of file.v
-   wire [31:0]		d;			// From file of file.v
+   wire [31:0]          b;                      // From file of file.v
+   wire [31:0]          c;                      // From file of file.v
+   wire [31:0]          d;                      // From file of file.v
    // End of automatics
 
    file file (/*AUTOINST*/
-	      // Outputs
-	      .b			(b[31:0]),
-	      .c			(c[31:0]),
-	      .d			(d[31:0]),
-	      // Inputs
-	      .crc			(crc[31:0]));
+              // Outputs
+              .b                        (b[31:0]),
+              .c                        (c[31:0]),
+              .d                        (d[31:0]),
+              // Inputs
+              .crc                      (crc[31:0]));
 
    always @ (posedge clk) begin
 `ifdef TEST_VERBOSE

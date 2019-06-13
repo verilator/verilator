@@ -5,8 +5,8 @@
 
 interface pads_if();
    modport mp_dig(
-		  import        fIn,
-		  import        fOut );
+                  import        fIn,
+                  import        fOut );
 
    integer exists[8];
    function automatic integer fIn (integer i);

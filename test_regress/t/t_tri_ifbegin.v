@@ -6,8 +6,8 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   tri 	 pad_io_h;
-   tri 	 pad_io_l;
+   tri   pad_io_h;
+   tri   pad_io_l;
 
    sub sub (.*);
 

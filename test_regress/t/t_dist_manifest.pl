@@ -43,7 +43,7 @@ if (! -d $git_dir) {
 my $git_exclude = `cd $root && git ls-files --others --ignored --exclude-from $git_dir/info/exclude`;
 foreach my $exclude (split /\s+/, $git_exclude) {
     if (exists $files{$exclude}) {
-	$files{$exclude} |= 8;
+        $files{$exclude} |= 8;
     }
 }
 

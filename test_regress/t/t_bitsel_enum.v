@@ -12,8 +12,8 @@ module t_bitsel_enum
    localparam [6:0] CNST_VAL = 7'h22;
 
    enum   logic [6:0] {
-		       ENUM_VAL = 7'h33
-		       } MyEnum;
+                       ENUM_VAL = 7'h33
+                       } MyEnum;
 
    assign out0 = CNST_VAL[0];
    // Not supported by NC-verilog nor VCS, but other simulators do

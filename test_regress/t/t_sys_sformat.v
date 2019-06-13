@@ -13,13 +13,13 @@ module t;
    reg [63:0] q;
    reg [16*8:1] wide;
 
-   reg [8:1] 	ochar;
+   reg [8:1]    ochar;
    reg [48*8:1] str;
    reg [48*8:1] str2;
    string str3;
 
 
-   real 	r;
+   real         r;
 
    initial begin
       n = 4'b1100;
