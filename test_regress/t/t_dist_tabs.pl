@@ -11,13 +11,15 @@ scenarios(dist => 1);
 
 my $root = "..";
 
+my $Tabs_Exempt_Re = qr!(\.out$)|(/gtkwave)|(Makefile)|(\.mk$)!;
+
 if (!-r "$root/.git") {
     skip("Not in a git repository");
 } else {
     ### Must trim output before and after our file list
     my %warns;
     my $prefix;
-    my $summary;
+    my $summary = "";
     {
         my $diff = `cd $root && git diff HEAD`;
         #print "DS $diff\n" if $Debug;
@@ -28,8 +30,7 @@ if (!-r "$root/.git") {
         foreach my $line ((split /\n/, $diff), "+++ b/_the_end") {
             if ($line =~ m!^\+\+\+ b/(.*)!) {
                 if ($file && !$atab && $btab
-                    && $file !~ m!\.out$!
-                    && $file !~ m!/gtkwave!) {
+                    && $file !~ $Tabs_Exempt_Re) {
                     $summary = "File modifications adds new tabs (please untabify the patch):";
                     $warns{$file} = "File modification adds new tabs (please untabify the patch): $file";
                 }
@@ -64,6 +65,7 @@ if (!-r "$root/.git") {
                 if ($len >= 100
                     && $file !~ /\.out$/) {
                     print"  Wide $line\n" if $Self->{verbose};
+                    $summary = "File modification adds a new >100 column line:" if !$summary;
                     $warns{$file} = "File modification adds a new >100 column line: $file:$lineno";
                 }
             }

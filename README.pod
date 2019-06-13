@@ -187,25 +187,28 @@ Detailed documentation and the man page can be seen by running:
 
     bin/verilator --help
 
-or reading verilator.txt in the same directory as this README.
+or reading verilator.pdf in the same directory as this README.
 
 =head1 DIRECTORY STRUCTURE
 
 The directories in the kit after de-taring are as follows:
 
     bin/verilator               => Compiler Wrapper invoked to Verilate code
-    include/                    => Files that should be in your -I compiler path
-    include/verilated*.cpp      => Global routines to link into your simulator
-    include/verilated*.h        => Global headers
-    include/verilated.v         => Stub defines for linting
-    include/verilated.mk        => Common makefile
-    src/                        => Translator source code
+    docs/                       => Additional documentation
     examples/hello_world_c      => Example simple Verilog->C++ conversion
     examples/hello_world_sc     => Example simple Verilog->SystemC conversion
     examples/tracing_c          => Example Verilog->C++ with tracing
     examples/tracing_sc         => Example Verilog->SystemC with tracing
+    include/                    => Files that should be in your -I compiler path
+    include/verilated*.cpp      => Global routines to link into your simulator
+    include/verilated*.h        => Global headers
+    include/verilated.mk        => Common makefile
+    include/verilated.v         => Stub defines for linting
+    src/                        => Translator source code
     test_regress                => Internal tests
+    verilator.pdf               => Primary documentation
+    verilator.txt               => Primary documentation (text)
 
 =head1 LIMITATIONS
 
-See verilator.txt (or execute C<bin/verilator --help>) for limitations.
+See verilator.pdf (or execute C<bin/verilator --help>) for limitations.

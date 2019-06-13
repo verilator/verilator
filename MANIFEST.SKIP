@@ -28,6 +28,8 @@
 ^Makefile$
 bin/verilator_bin.*
 bin/verilator_coverage_bin.*
+docs/Makefile$
+docs/doxygen-doc/.*
 src/Makefile$
 src/Makefile_obj$
 include/verilated.mk$
@@ -47,7 +49,6 @@ nodist/
 /simv.daidir/
 /vc_hdrs.h$
 /csrc/
-doxygen-doc/.*
 obj_dir/.*
 TAGS
 .*~

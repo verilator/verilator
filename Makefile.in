@@ -114,9 +114,9 @@ INFOS = README README.html README.pdf internals.txt internals.html \
 # Files that can be generated, but should be up to date for a distribution.
 DISTDEP = info Makefile
 
-DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
+DISTFILES_INC = $(INFOS) .gitignore \
 	*.in *.ac \
-	Changes TODO \
+	Changes \
 	MANIFEST.SKIP \
 	bin/verilator \
 	bin/verilator_coverage \
@@ -124,8 +124,16 @@ DISTFILES_INC = $(INFOS) .gitignore Artistic COPYING COPYING.LESSER \
 	bin/verilator_gantt \
 	bin/verilator_includer \
 	bin/verilator_profcfunc \
+	docs/.gitignore \
+	docs/Artistic \
 	docs/CONTRIBUTORS \
-	doxygen-mainpage doxygen.config verilator_logo.png \
+	docs/COPYING \
+	docs/COPYING.LESSER \
+	docs/Makefile.in \
+	docs/TODO \
+	docs/doxygen-mainpage \
+	docs/doxygen.config \
+	docs/verilator_logo.png \
 	install-sh configure *.pod \
 	include/*.[chv]* \
 	include/*.in \
@@ -223,9 +231,11 @@ examples: all_nomsg
 	  $(MAKE) -C $$p VERILATOR_ROOT=`pwd` || exit 10; \
 	done
 
+.PHONY: docs
+docs: info
+
 info: $(INFOS)
 
-# Use --no-split to avoid creating filenames > 14 chars.
 %.1: ${srcdir}/bin/%
 	pod2man $< $@
 
@@ -531,7 +541,7 @@ TAGS:	$(TAGFILES)
 .PHONY: doxygen
 
 doxygen:
-	$(DOXYGEN) doxygen.config
+	$(MAKE) -C docs doxygen
 
 ######################################################################
 # Test targets
