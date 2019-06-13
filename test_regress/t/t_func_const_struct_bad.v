@@ -31,9 +31,9 @@ module t;
    function integer f_add2(input [31:0] a, input [31:0] b, input [31:0] c);
       params_t params;
       params = '{
-		 a: a,
-		 b: b
-		 };
+                 a: a,
+                 b: b
+                 };
       f_add2 = f_add(params)+c;
    endfunction
 endmodule

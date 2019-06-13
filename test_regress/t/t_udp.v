@@ -9,36 +9,33 @@ module t (/*AUTOARG*/
    );
    input clk;
 
-   integer 	cyc=0;
-   reg [63:0] 	crc;
-   reg [63:0] 	sum;
+   integer      cyc=0;
+   reg [63:0]   crc;
+   reg [63:0]   sum;
 
    // Take CRC data and apply to testblock inputs
    wire [31:0]  in = crc[31:0];
 
    /*AUTOWIRE*/
-   // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [31:0] 		out;			// From test of Test.v
-   // End of automatics
 
    // Async clears must not race with clocks if we want repeatable results
-   reg 		set_l = in[20];
-   reg 		clr_l = in[21];
+   reg          set_l = in[20];
+   reg          clr_l = in[21];
    always @ (negedge clk) begin
       set_l <= in[20];
       clr_l <= in[21];
    end
 
    //====== Mux
-   wire [1:0] 		qm;
+   wire [1:0]           qm;
    //       delay      z      a      b      sel
    udp_mux2 #(0.1) m0 (qm[0], in[0], in[2], in[4]);
    udp_mux2 #0.1   m1 (qm[1], in[1], in[3], in[4]);
 
 `define verilatorxx
 `ifdef verilatorxx
-   reg [1:0] 		ql;
-   reg [1:0] 		qd;
+   reg [1:0]            ql;
+   reg [1:0]            qd;
 
    // No sequential tables, yet
 //   always @* begin
@@ -51,13 +48,13 @@ module t (/*AUTOARG*/
    end
 `else
    //====== Latch
-//   wire [1:0] 		ql;
+//   wire [1:0]                 ql;
 //   //            q      clk    d
 //   udp_latch l0 (ql[0], !in[8], in[12]);
 //   udp_latch l1 (ql[1], !in[8], in[13]);
 
    //====== DFF
-   wire [1:0] 		qd;
+   wire [1:0]           qd;
    //always @* $display("UL q=%b c=%b d=%b", ql[1:0], in[8], in[13:12]);
    //            q      clk     d      set_l  clr_l
    udp_dff   d0 (qd[0], in[8], in[16], set_l, clr_l);
@@ -77,24 +74,24 @@ module t (/*AUTOARG*/
       crc <= {crc[62:0], crc[63]^crc[2]^crc[0]};
       sum <= result ^ {sum[62:0],sum[63]^sum[2]^sum[0]};
       if (cyc==0) begin
-	 // Setup
-	 crc <= 64'h5aef0c8d_d70a4497;
-	 sum <= 64'h0;
+         // Setup
+         crc <= 64'h5aef0c8d_d70a4497;
+         sum <= 64'h0;
       end
       else if (cyc<10) begin
-	 sum <= 64'h0;
+         sum <= 64'h0;
       end
       else if (cyc<90) begin
       end
       else if (cyc==99) begin
-	 $write("[%0t] cyc==%0d crc=%x sum=%x\n",$time, cyc, crc, sum);
-	 if (crc !== 64'hc77bb9b3784ea091) $stop;
-	 // What checksum will we end up with (above print should match)
-	 // Note not all simulators agree about the latch result.  Maybe have a race?
+         $write("[%0t] cyc==%0d crc=%x sum=%x\n",$time, cyc, crc, sum);
+         if (crc !== 64'hc77bb9b3784ea091) $stop;
+         // What checksum will we end up with (above print should match)
+         // Note not all simulators agree about the latch result.  Maybe have a race?
 `define EXPECTED_SUM 64'hb73acf228acaeaa3
-	 if (sum !== `EXPECTED_SUM) $stop;
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         if (sum !== `EXPECTED_SUM) $stop;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

@@ -35,7 +35,7 @@ module t (/*AUTOARG*/
    clk
    );
    input clk;
-   integer 	cyc=0;
+   integer      cyc=0;
 
    tag tag ();
    b b ();
@@ -48,8 +48,8 @@ module t (/*AUTOARG*/
    always @(posedge clk) begin
       cyc <= cyc + 1;
       if (cyc==99) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 endmodule
@@ -58,8 +58,8 @@ module b ();
    genvar g;
    generate
       for (g=0; g<2; g++) begin : gen
-	 tag tag ();
-	 c c ();
+         tag tag ();
+         c c ();
       end
    endgenerate
    always @ (t.cyc) begin

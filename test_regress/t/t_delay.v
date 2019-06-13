@@ -21,16 +21,16 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc==1) begin
-	 dly0 <= #0 32'h11;
+         dly0 <= #0 32'h11;
       end
       else if (cyc==2) begin
-	 dly0 <= #0.12 dly0 + 32'h12;
+         dly0 <= #0.12 dly0 + 32'h12;
       end
       else if (cyc==3) begin
-	 if (dly0 !== 32'h23) $stop;
-	 if (dly2 !== 32'h25) $stop;
-	 $write("*-* All Finished *-*\n");
-	 #100 $finish;
+         if (dly0 !== 32'h23) $stop;
+         if (dly2 !== 32'h25) $stop;
+         $write("*-* All Finished *-*\n");
+         #100 $finish;
       end
    end
 

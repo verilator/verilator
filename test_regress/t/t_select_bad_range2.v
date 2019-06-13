@@ -31,8 +31,8 @@ module t (/*AUTOARG*/
       $write("[%0t] in=%d out32=%d out10=%d\n",$time, in, out32, out10);
 `endif
       if (in==3) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 endmodule

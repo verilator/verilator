@@ -11,9 +11,9 @@ module t (/*AUTOARG*/
    input [3:0] value;
    always @ (/*AS*/value) begin
       casez (value)
-	4'b0000: $stop;
-	4'b1xxx: $stop;
-	default: $stop;
+        4'b0000: $stop;
+        4'b1xxx: $stop;
+        default: $stop;
       endcase
    end
 

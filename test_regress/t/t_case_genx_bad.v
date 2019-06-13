@@ -9,9 +9,9 @@ module t (/*AUTOARG*/);
 
    generate
       case (P)
-	32'b0:    initial begin end
-	32'b1xxx: initial begin end
-	default:  initial begin end
+        32'b0:    initial begin end
+        32'b1xxx: initial begin end
+        default:  initial begin end
       endcase
    endgenerate
 

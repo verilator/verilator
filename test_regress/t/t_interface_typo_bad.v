@@ -23,7 +23,7 @@ module t (/*AUTOARG*/);
    submod
      submod_inst
        (
-	.foo (the_foo)
-	);
+        .foo (the_foo)
+        );
 
 endmodule

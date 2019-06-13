@@ -5,9 +5,9 @@
 
 package pkg;
    typedef struct packed {
-      logic 	  t1;
-      logic 	  t2;
-      logic 	  t3;
+      logic       t1;
+      logic       t2;
+      logic       t3;
    } type_t;
 endpackage : pkg
 

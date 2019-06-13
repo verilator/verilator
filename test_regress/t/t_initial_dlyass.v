@@ -21,10 +21,10 @@ module t (/*AUTOARG*/
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc==99) begin
-	 if (a != 22) $stop;
-	 if (b != 33) $stop;
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         if (a != 22) $stop;
+         if (b != 33) $stop;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 

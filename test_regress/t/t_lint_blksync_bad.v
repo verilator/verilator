@@ -11,13 +11,13 @@ module t (/*AUTOARG*/
 
    integer i;
 
-   reg 	 sync_blk;
-   reg 	 sync_blk2;
-   reg 	 sync_nblk;
+   reg   sync_blk;
+   reg   sync_blk2;
+   reg   sync_nblk;
    reg   sync2_ok;
    reg   sync3_ok;
-   reg 	 combo_blk;
-   reg 	 combo_nblk;
+   reg   combo_blk;
+   reg   combo_nblk;
 
    always @(posedge clk) begin
       sync_blk = 1'b1;
@@ -32,7 +32,7 @@ module t (/*AUTOARG*/
 
    always @(posedge clk) begin
       for (int i=0; i<20; i++) begin
-	 sync2_ok <= 1'b1;
+         sync2_ok <= 1'b1;
       end
    end
 

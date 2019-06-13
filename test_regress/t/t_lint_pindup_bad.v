@@ -13,9 +13,9 @@ module t
    sub
      #(, .P(2), .P(3))
    sub (.o(o),
-	.i(i),
-	.i(i2),
-	);
+        .i(i),
+        .i(i2),
+        );
 
 endmodule
 

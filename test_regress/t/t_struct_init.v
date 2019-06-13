@@ -6,37 +6,37 @@
 module t;
 
    //Several simulators don't support this.
-   //typedef struct pack2;	// Forward declaration
+   //typedef struct pack2;      // Forward declaration
 
    typedef struct packed { // [3:0]
-      bit	b3;
-      bit	b2;
-      bit	b1;
-      bit	b0;
+      bit       b3;
+      bit       b2;
+      bit       b1;
+      bit       b0;
    } b4_t;
 
    typedef struct packed { // [3:0]
-      b4_t	x1;
-      b4_t	x0;
+      b4_t      x1;
+      b4_t      x0;
    } b4x2_t;
 
    typedef union packed { // [3:0]
-      bit [3:0]	quad0;
-      b4_t	quad1;
+      bit [3:0] quad0;
+      b4_t      quad1;
    } q4_t;
 
    typedef struct packed { // [5:0]
-      bit	msb;
-      q4_t	four;
-      bit	lsb;
+      bit       msb;
+      q4_t      four;
+      bit       lsb;
    } pack2_t;
 
    typedef union packed { // [5:0]
-      pack2_t	pack2;
+      pack2_t   pack2;
       bit [6:1] pvec;
       // Vector not allowed in packed structure, per spec:
-      //      bit	vec[6];
-      //      bit 	vec2d[2][3];
+      //      bit       vec[6];
+      //      bit       vec2d[2][3];
    } pack3_t;
 
    const b4_t b4_const_a = '{1'b1, 1'b0, 1'b0, 1'b1};
@@ -81,32 +81,32 @@ module t;
       //
       // Initialization
       begin
-	 b4_t q = '{1'b1, 1'b1, 1'b0, 1'b0};
-	 if (q != 4'b1100) $stop;
+         b4_t q = '{1'b1, 1'b1, 1'b0, 1'b0};
+         if (q != 4'b1100) $stop;
       end
       begin
-	 b4_t q = '{3{1'b1}, 1'b0};
-	 if (q != 4'b1110) $stop;
+         b4_t q = '{3{1'b1}, 1'b0};
+         if (q != 4'b1110) $stop;
       end
       begin
-	 b4_t q = '{4{1'b1}};	// Repeats the {}
-	 if (q != 4'b1111) $stop;
+         b4_t q = '{4{1'b1}};   // Repeats the {}
+         if (q != 4'b1111) $stop;
       end
       begin
-	 b4x2_t m = '{4'b1001, '{1'b1, 1'b0, 1'b1, 1'b1}};
-	 if (m != 8'b10011011) $stop;
+         b4x2_t m = '{4'b1001, '{1'b1, 1'b0, 1'b1, 1'b1}};
+         if (m != 8'b10011011) $stop;
       end
       begin
-	 b4_t q = '{default:1'b1};
-	 if (q != 4'b1111) $stop;
+         b4_t q = '{default:1'b1};
+         if (q != 4'b1111) $stop;
       end
       begin
-	 b4_t q = '{b0:1'b1, b2:1'b1, b3:1'b1, b1:1'b0};
-	 if (q != 4'b1101) $stop;
+         b4_t q = '{b0:1'b1, b2:1'b1, b3:1'b1, b1:1'b0};
+         if (q != 4'b1101) $stop;
       end
       begin
-	 b4_t q = '{b2:1'b0, default:1'b1};
-	 if (q != 4'b1011) $stop;
+         b4_t q = '{b2:1'b0, default:1'b1};
+         if (q != 4'b1011) $stop;
       end
 
       if (b4_const_a != 4'b1001) $stop;

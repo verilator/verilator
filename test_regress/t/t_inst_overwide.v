@@ -18,14 +18,14 @@ module t (/*AUTOARG*/
    output [72:0] outd_w73;
 
    sub sub (
-	    // Outputs
-	    .outy_w92	(outc_w30),	// .large => (small)
-	    .outz_w22	(outd_w73),	// .small => (large)
-	    // Inputs
-	    .clk	(clk),
-	    .inw_w31	(ina_w1),	// .large <= (small)
-	    .inx_w11	(inb_w61)	// .small <= (large)
-	    );
+            // Outputs
+            .outy_w92   (outc_w30),     // .large => (small)
+            .outz_w22   (outd_w73),     // .small => (large)
+            // Inputs
+            .clk        (clk),
+            .inw_w31    (ina_w1),       // .large <= (small)
+            .inx_w11    (inb_w61)       // .small <= (large)
+            );
 
 endmodule
 
@@ -36,9 +36,9 @@ module sub (/*AUTOARG*/
    clk, inw_w31, inx_w11
    );
 
-   input 	clk;
-   input [30:0]	inw_w31;
-   input [10:0]	inx_w11;
+   input        clk;
+   input [30:0] inw_w31;
+   input [10:0] inx_w11;
    output reg [91:0] outy_w92  /*verilator public*/;
    output reg [21:0] outz_w22  /*verilator public*/;
 

@@ -18,7 +18,7 @@ module t (/*AUTOARG*/
    Flop flop0 (.q(q0), .rst_n(rst0_n), .clk(clk), .d(d));
 
    // OK -- from flop
-   reg 	 rst1_n;
+   reg   rst1_n;
    always @ (posedge clk) rst1_n <= rst0_n;
    output wire  q1;
    Flop flop1 (.q(q1), .rst_n(rst1_n), .clk(clk), .d(d));
@@ -64,10 +64,10 @@ module t (/*AUTOARG*/
 endmodule
 
 module Flop (
-	     input clk,
-	     input d,
-	     input rst_n,
-	     output q);
+             input clk,
+             input d,
+             input rst_n,
+             output q);
 
    always @ (posedge clk or negedge rst_n) begin
       if (!rst_n) q <= 1'b0;
@@ -76,6 +76,6 @@ module Flop (
 endmodule
 
 module Sub (input a, b,
-	    output z);
-   wire 	   z = a|b;
+            output z);
+   wire            z = a|b;
 endmodule

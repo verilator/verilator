@@ -45,12 +45,12 @@ module sub1 (/*AUTOARG*/
 
    always @(posedge clk) begin
       if (~rst_sync_l) begin
-	 /*AUTORESET*/
+         /*AUTORESET*/
 	 // Beginning of autoreset for uninitialized flops
 	 q1 <= 1'h0;
 	 // End of automatics
       end else begin
-	 q1 <= d;
+         q1 <= d;
       end
    end
 
@@ -71,18 +71,18 @@ module sub2 (/*AUTOARG*/
    //input rst_sync_l;
    input rst_async_l;
    input d;
-   reg 	 q1;
-   reg 	 q2;
-   reg 	 q3;
+   reg   q1;
+   reg   q2;
+   reg   q3;
 
    always @(posedge clk or negedge rst_async_l) begin
       if (~rst_async_l) begin
-	 /*AUTORESET*/
+         /*AUTORESET*/
 	 // Beginning of autoreset for uninitialized flops
 	 q1 <= 1'h0;
 	 // End of automatics
       end else begin
-	 q1 <= d;
+         q1 <= d;
       end
    end
 

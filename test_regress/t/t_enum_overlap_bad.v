@@ -6,10 +6,10 @@
 module t (/*AUTOARG*/);
 
    enum { e0,
-	  e1,
-	  e2,
-	  e1b=1
-	  } BAD1;
+          e1,
+          e2,
+          e1b=1
+          } BAD1;
 
    initial begin
       $stop;

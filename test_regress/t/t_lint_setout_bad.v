@@ -19,16 +19,16 @@ endmodule
 
 module sub
   (
-   input wire	clk, reset_l,
-   output reg	cpu_if_timeout
+   input wire   clk, reset_l,
+   output reg   cpu_if_timeout
    );
 
    always @(posedge clk) begin
       if (!reset_l) begin
-	 cpu_if_timeout <= 1'b0;
+         cpu_if_timeout <= 1'b0;
       end
       else begin
-	 cpu_if_timeout <= 1'b0;
+         cpu_if_timeout <= 1'b0;
       end
    end
 endmodule

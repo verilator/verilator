@@ -14,17 +14,17 @@ module t;
    initial begin
       // Display formatting
       $display("[%0t] lp %%x=%x %%x=%x %%o=%o %%b=%b %%0d=%0d %%d=%d", $time,
-	       longp, longp, longp, longp, longp, longp);
+               longp, longp, longp, longp, longp, longp);
       $display("[%0t] ln %%x=%x %%x=%x %%o=%o %%b=%b %%0d=%0d %%d=%d", $time,
-	       longn, longn, longn, longn, longn, longn);
+               longn, longn, longn, longn, longn, longn);
       $display("[%0t] qp %%x=%x %%x=%x %%o=%o %%b=%b %%0d=%0d %%d=%d", $time,
-	       quadp, quadp, quadp, quadp, quadp, quadp);
+               quadp, quadp, quadp, quadp, quadp, quadp);
       $display("[%0t] qn %%x=%x %%x=%x %%o=%o %%b=%b %%0d=%0d %%d=%d", $time,
-	       quadn, quadn, quadn, quadn, quadn, quadn);
+               quadn, quadn, quadn, quadn, quadn, quadn);
       $display("[%0t] wp %%x=%x %%x=%x %%o=%o %%b=%b", $time,
-	       widep, widep, widep, widep);
+               widep, widep, widep, widep);
       $display("[%0t] wn %%x=%x %%x=%x %%o=%o %%b=%b", $time,
-	       widen, widen, widen, widen);
+               widen, widen, widen, widen);
       $display;
       $write("*-* All Finished *-*\n");
       $finish;

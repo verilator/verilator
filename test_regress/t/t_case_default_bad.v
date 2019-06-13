@@ -10,9 +10,9 @@ module t (/*AUTOARG*/
    input [3:0] value;
    always @ (/*AS*/value) begin
       case (value)
-	default: $stop;
-	4'd0000: $stop;
-	default: $stop;
+        default: $stop;
+        4'd0000: $stop;
+        default: $stop;
       endcase
    end
 endmodule

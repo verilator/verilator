@@ -67,25 +67,25 @@ module t;
 
       // Display formatting
       $display("[%0t] %%b=%b %%0b=%0b  %%b=%b %%0b=%0b  %%b=%b %%0b=%0b", $time,
-	       nine, nine, quad, quad, wide, wide);
+               nine, nine, quad, quad, wide, wide);
       $display("[%0t] %%B=%B %%0B=%0B  %%B=%B %%0B=%0B  %%B=%B %%0B=%0B", $time,
-	       nine, nine, quad, quad, wide, wide);
+               nine, nine, quad, quad, wide, wide);
       $display("[%0t] %%d=%d %%0d=%0d  %%d=%d %%0d=%0d  %%d=%d %%0d=%0d", $time,
                nine, nine, quad, quad, wide, wide);
       $display("[%0t] %%D=%D %%0D=%0D  %%D=%D %%0D=%0D  %%D=%D %%0D=%0D", $time,
                nine, nine, quad, quad, wide, wide);
       $display("[%0t] %%h=%h %%0h=%0h  %%h=%h %%0h=%0h  %%h=%h %%0h=%0h", $time,
-	       nine, nine, quad, quad, wide, wide);
+               nine, nine, quad, quad, wide, wide);
       $display("[%0t] %%H=%H %%0H=%0H  %%H=%H %%0H=%0H  %%H=%H %%0H=%0H", $time,
-	       nine, nine, quad, quad, wide, wide);
+               nine, nine, quad, quad, wide, wide);
       $display("[%0t] %%o=%o %%0o=%0o  %%o=%o %%0o=%0o  %%o=%o %%0o=%0o", $time,
-	       nine, nine, quad, quad, wide, wide);
+               nine, nine, quad, quad, wide, wide);
       $display("[%0t] %%O=%O %%0O=%0O  %%O=%O %%0O=%0O  %%O=%O %%0O=%0o", $time,
-	       nine, nine, quad, quad, wide, wide);
+               nine, nine, quad, quad, wide, wide);
       $display("[%0t] %%x=%x %%0x=%0x  %%x=%x %%0x=%0x  %%x=%x %%0x=%0x", $time,
-	       nine, nine, quad, quad, wide, wide);
+               nine, nine, quad, quad, wide, wide);
       $display("[%0t] %%X=%X %%0X=%0X  %%X=%X %%0X=%0X  %%X=%X %%0X=%0X", $time,
-	       nine, nine, quad, quad, wide, wide);
+               nine, nine, quad, quad, wide, wide);
 
       $display("[%0t] %%d=%d %%0d=%0d  %%d=%d %%0d=%0d  %%d=%d %%0d=%0d", $time,
                nines, nines, quads, quads, wides, wides);
@@ -94,39 +94,39 @@ module t;
       //
       // verilator lint_off WIDTH
       $display("[%0t] %%C=%C %%0C=%0C", $time,
-	       "a"+nine, "a"+nine);
+               "a"+nine, "a"+nine);
       $display("[%0t] %%c=%c %%0c=%0c", $time,
-	       "a"+nine, "a"+nine);
+               "a"+nine, "a"+nine);
       // verilator lint_on WIDTH
 
       $display("[%0t] %%v=%v %%0v=%0v  %%v=%v %%0v=%0v  %%v=%v %%0v=%0v <", $time,
-	       nine, nine, quad, quad, wide, wide);
+               nine, nine, quad, quad, wide, wide);
       $display("[%0t] %%V=%V %%0V=%0V  %%V=%V %%0V=%0V  %%V=%V %%0V=%0V <", $time,
-	       nine, nine, quad, quad, wide, wide);
+               nine, nine, quad, quad, wide, wide);
       $display("[%0t] %%p=%p %%0p=%0p  %%p=%p %%0p=%0p  %%p=%p %%0p=%0p", $time,
-	       nine, nine, quad, quad, wide, wide);
+               nine, nine, quad, quad, wide, wide);
       $display("[%0t] %%P=%P %%0P=%0P  %%P=%P %%0P=%0P  %%P=%P %%0P=%0P", $time,
-	       nine, nine, quad, quad, wide, wide);
+               nine, nine, quad, quad, wide, wide);
       $display("[%0t] %%P=%P", $time,
-	       svs);
+               svs);
 
       $display("[%0t] %%u=%u %%0u=%0u", $time,
-	       {"a","b","c","d"}, {"a","b","c","d"});  // Avoid binary output
+               {"a","b","c","d"}, {"a","b","c","d"});  // Avoid binary output
       $display("[%0t] %%U=%U %%0U=%0U", $time,
-	       {"a","b","c","d"}, {"a","b","c","d"});  // Avoid binary output
+               {"a","b","c","d"}, {"a","b","c","d"});  // Avoid binary output
       // %z is tested in t_sys_sformat.v
 
       $display("[%0t] %%D=%D %%d=%d %%01d=%01d %%06d=%06d %%6d=%6d", $time,
-	       nine, nine, nine, nine, nine);
+               nine, nine, nine, nine, nine);
       $display("[%0t] %%t=%t %%03t=%03t %%0t=%0t", $time,
-	       $time, $time, $time);
+               $time, $time, $time);
       $display;
       // Not testing %0s, it does different things in different simulators
       $display("[%0t] %%s=%s %%s=%s %%s=%s", $time,
-	       str2[7:0], str2, str3);
+               str2[7:0], str2, str3);
 
       $display("[%0t] %s%s%s", $time,
-	       "hel", "lo, fr", "om a very long string. Percent %s are literally substituted in.");
+               "hel", "lo, fr", "om a very long string. Percent %s are literally substituted in.");
       $display("hel", "lo, fr", "om a concatenated string.");
       $write("hel", "lo, fr", "om a concatenated format string [%0t].\n", $time);
       $display("extra argument: ", $time);
@@ -136,7 +136,7 @@ module t;
 multiline", $time);
 
       // Str check
-`ifndef NC	// NC-Verilog 5.3 chokes on this test
+`ifndef NC      // NC-Verilog 5.3 chokes on this test
       if (str !== 32'h00_bf_11_0a) $stop;
 `endif
       $write("*-* All Finished *-*\n");
@@ -147,10 +147,10 @@ endmodule
 module sub;
    task write_m;
       begin
-	 $write("[%0t] In %m (%l)\n", $time);
-	 begin : subblock
-	    $write("[%0t] In %M (%L)\n", $time); // Uppercase %M test
-	 end
+         $write("[%0t] In %m (%l)\n", $time);
+         begin : subblock
+            $write("[%0t] In %M (%L)\n", $time); // Uppercase %M test
+         end
       end
    endtask
 endmodule
@@ -159,10 +159,10 @@ module sub2;
    // verilator no_inline_module
    task write_m;
       begin
-	 $write("[%0t] In %m (%l)\n", $time);
-	 begin : subblock2
-	    $write("[%0t] In %m (%L)\n", $time);
-	 end
+         $write("[%0t] In %m (%l)\n", $time);
+         begin : subblock2
+            $write("[%0t] In %m (%L)\n", $time);
+         end
       end
    endtask
 endmodule
