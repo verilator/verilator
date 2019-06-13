@@ -11,8 +11,7 @@ scenarios(vlt => 1);
 
 top_filename("t/t_flag_werror.v");
 
-compile(
-    v_flags2 => ["--lint-only"],
+lint(
     fails => 1,
     verilator_flags => [qw(-cc -Werror-WIDTH)],
     expect_filename => $Self->{golden_filename},

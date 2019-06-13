@@ -7,16 +7,12 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-scenarios(simulator => 1);
+scenarios(linter => 1);
 
 top_filename("t/t_inst_overwide.v");
 
-compile(
-    v_flags2 => ["--lint-only"],
+lint(
     verilator_flags => [qw(-cc)],
-    verilator_make_gcc => 0,
-    make_top_shell => 0,
-    make_main => 0,
     fails => $Self->{vlt_all},
     expect_filename => $Self->{golden_filename},
     );

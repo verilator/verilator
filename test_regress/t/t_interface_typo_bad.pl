@@ -7,13 +7,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-scenarios(simulator => 1);
+scenarios(linter => 1);
 
-compile(
-    verilator_flags2 => ["--lint-only"],
-    verilator_make_gcc => 0,
-    make_top_shell => 0,
-    make_main => 0,
+lint(
     fails => 1,
     # Used to be %Error: t/t_order_wireloop.v:\d+: Wire inputs its own output, creating circular logic .wire x=x.
     # However we no longer gate optimize this

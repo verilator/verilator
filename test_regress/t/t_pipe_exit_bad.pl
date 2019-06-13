@@ -11,11 +11,8 @@ scenarios(vlt => 1);
 
 top_filename("t/t_pipe_filter.v");
 
-compile(
+lint(
     verilator_flags2 => ['-E --pipe-filter \'perl t/t_pipe_exit_bad.pf\' '],
-    verilator_make_gcc => 0,
-    make_top_shell => 0,
-    make_main => 0,
     stdout_filename => $stdout_filename,
     fails => 1,
     expect =>

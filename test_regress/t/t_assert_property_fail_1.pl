@@ -17,7 +17,7 @@ compile(
     );
 
 execute(
-    fails => 1
+    fails => 1,
     );
 
 file_grep($Self->{run_log_filename}, qr/'assert property' failed/);

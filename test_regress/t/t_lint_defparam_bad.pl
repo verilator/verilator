@@ -11,12 +11,9 @@ scenarios(vlt => 1);
 
 top_filename("t/t_lint_defparam.v");
 
-compile(
-    v_flags2 => ["--lint-only -Wwarn-style -Wno-DECLFILENAME"],
+lint(
+    verilator_flags2 => ["--lint-only -Wwarn-style -Wno-DECLFILENAME"],
     fails => 1,
-    verilator_make_gcc => 0,
-    make_top_shell => 0,
-    make_main => 0,
     expect_filename => $Self->{golden_filename},
     );
 

@@ -11,9 +11,8 @@ scenarios(vlt => 1);
 
 top_filename("t/t_flag_werror.v");
 
-compile(
-    v_flags2 => ["--lint-only"],
-    fails => $Self->{vlt_all},
+lint(
+    fails => 1,
     expect_filename => $Self->{golden_filename},
     );
 

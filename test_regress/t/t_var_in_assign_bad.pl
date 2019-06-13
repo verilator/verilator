@@ -9,12 +9,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-compile(
-    v_flags2 => ["--lint-only --Mdir obj_lint_only"],
+lint(
+    verilator_flags2 => ["--lint-only --Mdir obj_lint_only"],
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );
 
 (!-d "obj_lint_only") or error("%Error: lint-only shouldn't make output directory");
+
 ok(1);
 1;

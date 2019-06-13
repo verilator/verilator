@@ -37,15 +37,15 @@ $SIG{TERM} = sub { $Fork->kill_tree_all('TERM') if $Fork; die "Quitting...\n"; }
 
 # Map of all scenarios, with the names used to enable them
 our %All_Scenarios
-    = (dist  => [             "dist"],
-       atsim => ["simulator", "atsim"],
-       ghdl  => ["simulator", "ghdl"],
-       iv    => ["simulator", "iv"],
-       ms    => ["simulator", "ms"],
-       nc    => ["simulator", "nc"],
-       vcs   => ["simulator", "vcs"],
-       vlt   => ["simulator", "vlt_all", "vlt"],
-       vltmt => ["simulator", "vlt_all", "vltmt"],
+    = (dist  => [                       "dist"],
+       atsim => [          "simulator", "atsim"],
+       ghdl  => ["linter", "simulator", "ghdl"],
+       iv    => [          "simulator", "iv"],
+       ms    => ["linter", "simulator", "ms"],
+       nc    => ["linter", "simulator", "nc"],
+       vcs   => ["linter", "simulator", "vcs"],
+       vlt   => ["linter", "simulator", "vlt_all", "vlt"],
+       vltmt => [          "simulator", "vlt_all", "vltmt"],
     );
 
 #======================================================================
@@ -639,6 +639,19 @@ sub compile_vlt_flags {
                    ($param{stdout_filename}?"> ".$param{stdout_filename}:""),
         );
     return @cmdargs;
+}
+
+sub lint {
+    my $self = (ref $_[0] ? shift : $Self);
+    my %param = (#
+                 %{$self},  # Default arguments are from $self
+                 # Lint specific default overrides
+                 make_main => 0,
+                 make_top_shell => 0,
+                 verilator_flags2 => ["--lint-only"],
+                 verilator_make_gcc => 0,
+                 @_);
+    $self->compile(%param);
 }
 
 sub compile {
@@ -1912,9 +1925,9 @@ should be used.
 
 =item fails
 
-Set to 1 to indicate this step (C<compile> or C<execute>) is expected to
-fail.  Tests that are expected to fail generally have _bad in their
-filename.
+Set to 1 to indicate this step (C<compile> or C<execute> or C<lint>) is
+expected to fail.  Tests that are expected to fail generally have _bad in
+their filename.
 
 =item make_main
 
@@ -2039,10 +2052,9 @@ has succeeded. However, in the case of tests that are designed to fail at
 compile time, it is the only option. For example:
 
   compile(
-          v_flags2 => ["--lint-only"],
-          fails=>1,
-          expect_filename => $Self->{golden_filename},
-          );
+      fails => 1,
+      expect_filename => $Self->{golden_filename},
+      );
 
 Note expect_filename strips some debugging information from the logfile
 when comparing.

@@ -11,12 +11,9 @@ scenarios(vlt => 1);
 
 top_filename("t/t_flag_wfatal.v");
 
-compile(
-    v_flags2 => ["--lint-only -Wno-fatal"],
+lint(
+    verilator_flags2 => ["--lint-only -Wno-fatal"],
     fails => 0,
-    verilator_make_gcc => 0,
-    make_top_shell => 0,
-    make_main => 0,
     expect_filename => $Self->{golden_filename},
     );
 

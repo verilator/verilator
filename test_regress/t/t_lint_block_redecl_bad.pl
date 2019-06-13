@@ -10,12 +10,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt_all => 1);
 $Self->{vlt_all} and unsupported("Verilator unsupported, bug485, false begin due to WHILE conversion blocks duplicate name detection");
 
-compile(
-    v_flags2 => ["--lint-only"],
+lint(
     fails => 1,
-    verilator_make_gcc => 0,
-    make_top_shell => 0,
-    make_main => 0,
     expect =>
 '%Warning: duplicate...
 %Error: Exiting due to.*',

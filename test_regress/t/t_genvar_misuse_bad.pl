@@ -10,8 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 $Self->{vlt_all} and unsupported("Verilator unsupported, bug408");
 
-compile(
-    v_flags2 => ["--lint-only"],
+lint(
     fails => 1,
     expect =>
 '.*%Error: t/t_genvar_misuse_bad.v:\d+: Use of genvar where not convertible to constant: i

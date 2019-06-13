@@ -7,10 +7,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-scenarios(simulator => 1);
+scenarios(linter => 1);
 
-compile(
-    v_flags2 => ["--lint-only"],
+lint(
     fails => 1,
     expect =>
 '%Error: t/t_const_dec_mixed_bad.v:\d+: Mixing X/Z/\? with digits not legal in decimal constant: x_1

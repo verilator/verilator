@@ -7,14 +7,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-scenarios(vlt_all => 1);
+scenarios(vlt => 1);
 
-compile(
-    v_flags2 => ["--lint-only"],
-    verilator_make_gcc => 0,
-    make_top_shell => 0,
-    make_main => 0,
-    );
+lint();
 
 foreach my $file (glob("$Self->{obj_dir}/*t_lint_only*")) {
     next if $file =~ /simx_compile.log/;  # Made by driver.pl, not Verilator

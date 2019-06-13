@@ -10,8 +10,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(vlt => 1);
 $ENV{VERILATOR_TEST_NO_GDB} and skip("Skipping due to VERILATOR_TEST_NO_GDB");
 
-compile(
-    v_flags2 => ["--lint-only --debug --gdbbt --debug-sigsegv"],
+lint(
+    verilator_flags2 => ["--lint-only --debug --gdbbt --debug-sigsegv"],
     fails => $Self->{vlt_all},
     expect =>
 '.*

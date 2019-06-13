@@ -11,8 +11,7 @@ scenarios(vlt => 1);
 
 top_filename("t/t_pp_dupdef.v");
 
-compile(
-    v_flags2 => ["--lint-only"],
+lint(
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );
