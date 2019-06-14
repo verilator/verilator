@@ -30,8 +30,10 @@ module sub (/*AUTOARG*/
    reg [1:0] 	save2;
    reg [255:0] 	cycdone;  // Make sure each cycle executes exactly once
    reg [31:0]	vec[2:1][2:1];
-   real		r;
-   string	s,s2;
+   reg [2:1][2:1][31:0] pvec;
+   real         r;
+   string       s,s2;
+   string       sarr[2:1];
 
    string 	si;
 
@@ -53,8 +55,14 @@ module sub (/*AUTOARG*/
 	 vec[1][2] <= 32'h0102;
 	 vec[2][1] <= 32'h0201;
 	 vec[2][2] <= 32'h0202;
-	 r <= 1.234;
-	 s <= "hello";
+         pvec[1][1] <= 32'h10101;
+         pvec[1][2] <= 32'h10102;
+         pvec[2][1] <= 32'h10201;
+         pvec[2][2] <= 32'h10202;
+         r <= 1.234;
+         s <= "hello";
+         sarr[1] <= "sarr[1]";
+         sarr[2] <= "sarr[2]";
       end
       if (cyc==1) begin
 	 if ($test$plusargs("save_restore")!=0) begin
@@ -72,8 +80,14 @@ module sub (/*AUTOARG*/
 	 if (vec[1][2] !== 32'h0102) $stop;
 	 if (vec[2][1] !== 32'h0201) $stop;
 	 if (vec[2][2] !== 32'h0202) $stop;
-	 if (r != 1.234) $stop;
-	 $display("%s",s);
+         if (pvec[1][1] !== 32'h10101) $stop;
+         if (pvec[1][2] !== 32'h10102) $stop;
+         if (pvec[2][1] !== 32'h10201) $stop;
+         if (pvec[2][2] !== 32'h10202) $stop;
+         if (r != 1.234) $stop;
+         $display("%s",s);
+         $display("%s",sarr[1]);
+         $display("%s",sarr[2]);
 	 $write("*-* All Finished *-*\n");
 	 $finish;
       end

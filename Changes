@@ -34,6 +34,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix not reporting some duplicate signals, bug1462. [Peter Gerst]
 
+****  Fix --savable invalid C++ on packed arrays, bug1465. [Alex Chadwick]
+
 
 * Verilator 4.014 2019-05-08
 

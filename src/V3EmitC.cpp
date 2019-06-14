@@ -1955,11 +1955,10 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
                     else if (varp->isStatic() && varp->isConst()) {}
                     else {
                         int vects = 0;
-                        // This isn't very robust and may need cleanup for other data types
-                        for (AstUnpackArrayDType* arrayp
-                                 = VN_CAST(varp->dtypeSkipRefp(), UnpackArrayDType);
+                        AstNodeDType* elementp = varp->dtypeSkipRefp();
+                        for (AstUnpackArrayDType* arrayp = VN_CAST(elementp, UnpackArrayDType);
                              arrayp;
-                             arrayp = VN_CAST(arrayp->subDTypep()->skipRefp(), UnpackArrayDType)) {
+                             arrayp = VN_CAST(elementp, UnpackArrayDType)) {
                             int vecnum = vects++;
                             if (arrayp->msb() < arrayp->lsb()) {
                                 varp->v3fatalSrc("Should have swapped msb & lsb earlier.");
@@ -1970,19 +1969,22 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
                             puts("{ int __Vi"+cvtToStr(vecnum)+"="+cvtToStr(0)+";");
                             puts(" for (; "+ivar+"<"+cvtToStr(arrayp->elementsConst()));
                             puts("; ++"+ivar+") {\n");
+                            elementp = arrayp->subDTypep()->skipRefp();
                         }
-                        if (varp->basicp() && (varp->basicp()->keyword() == AstBasicDTypeKwd::STRING
-                                               || !varp->basicp()->isWide())) {
-                            puts("os"+op+varp->name());
-                            for (int v=0; v<vects; ++v) puts( "[__Vi"+cvtToStr(v)+"]");
-                            puts(";\n");
-                        } else {
-                            puts("os."+writeread+"(&"+varp->name());
-                            for (int v=0; v<vects; ++v) puts( "[__Vi"+cvtToStr(v)+"]");
-                            puts(",sizeof("+varp->name());
-                            for (int v=0; v<vects; ++v) puts( "[__Vi"+cvtToStr(v)+"]");
-                            puts("));\n");
+                        // Want to detect types that are represented as arrays
+                        // (i.e. packed types of more than 64 bits).
+                        AstBasicDType* basicp = elementp->basicp();
+                        if (elementp->isWide()
+                            && !(basicp && basicp->keyword() == AstBasicDTypeKwd::STRING)) {
+                            int vecnum = vects++;
+                            string ivar = string("__Vi")+cvtToStr(vecnum);
+                            puts("{ int __Vi"+cvtToStr(vecnum)+"="+cvtToStr(0)+";");
+                            puts(" for (; "+ivar+"<"+cvtToStr(elementp->widthWords()));
+                            puts("; ++"+ivar+") {\n");
                         }
+                        puts("os"+op+varp->name());
+                        for (int v=0; v<vects; ++v) puts( "[__Vi"+cvtToStr(v)+"]");
+                        puts(";\n");
                         for (int v=0; v<vects; ++v) puts( "}}\n");
                     }
                 }
