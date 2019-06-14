@@ -8,7 +8,7 @@
 Welcome to Verilator.  This is the Verilator package's README file.
 
 This document describes how to initially install Verilator.  For more
-general information see L<http://verilator.org>.
+general information please see L<http://verilator.org>.
 
 =head1 DESCRIPTION
 
@@ -37,7 +37,8 @@ MSVC++ 2008 and newer.
 
 =head1 INSTALLATION
 
-For a summary see
+The following are detailed installation instructions.
+Alternatively, for a quick summary please see
 L<http://www.veripool.org/projects/verilator/wiki/Installing>.
 
 =over 4
