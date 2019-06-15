@@ -119,8 +119,11 @@ VlThreadPool::VlThreadPool(int nThreads, bool profiling)
     // --threads N passes nThreads=N-1, as the "main" threads counts as 1
     unsigned cpus = std::thread::hardware_concurrency();
     if (cpus < nThreads+1) {
-        VL_PRINTF_MT("%%Warning: System has %u CPUs but model Verilated with"
-                     " --threads %d; may run slow.\n", cpus, nThreads+1);
+        static int warnedOnce = 0;
+        if (!warnedOnce++) {
+            VL_PRINTF_MT("%%Warning: System has %u CPUs but model Verilated with"
+                         " --threads %d; may run slow.\n", cpus, nThreads+1);
+        }
     }
     // Create'em
     for (int i=0; i<nThreads; ++i) {
