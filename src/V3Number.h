@@ -179,7 +179,7 @@ private:
         return displayed(m_fileline, vformat);
     }
 public:
-    void v3errorEnd(std::ostringstream& sstr);
+    void v3errorEnd(std::ostringstream& sstr) const;
     void width(int width, bool sized=true) {
         // Set width.  Only set m_width here, as we need to tweak vector size
         if (width) { m_sized = sized; m_width = width; }

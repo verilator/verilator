@@ -35,7 +35,7 @@
 //======================================================================
 // Errors
 
-void V3Number::v3errorEnd(std::ostringstream& str) {
+void V3Number::v3errorEnd(std::ostringstream& str) const {
     std::ostringstream nsstr;
     nsstr<<str.str();
     m_fileline->v3errorEnd(nsstr);
@@ -665,7 +665,10 @@ uint32_t V3Number::toUInt() const {
     UASSERT(!isFourState(), "toUInt with 4-state "<<*this);
     // We allow wide numbers that represent values <= 32 bits
     for (int i=1; i<words(); ++i) {
-        UASSERT(!m_value[i], "Value too wide for 32-bits expected in this context "<<*this);
+        if (m_value[i]) {
+            v3error("Value too wide for 32-bits expected in this context "<<*this);
+            break;
+        }
     }
     return m_value[0];
 }
@@ -699,7 +702,10 @@ vluint64_t V3Number::toUQuad() const {
     UASSERT(!isFourState(), "toUQuad with 4-state "<<*this);
     // We allow wide numbers that represent values <= 64 bits
     for (int i=2; i<words(); ++i) {
-        UASSERT(!m_value[i], "Value too wide for 64-bits expected in this context "<<*this);
+        if (m_value[i]) {
+            v3error("Value too wide for 64-bits expected in this context "<<*this);
+            break;
+        }
     }
     if (width()<=32) return (static_cast<vluint64_t>(toUInt()));
     return ((static_cast<vluint64_t>(m_value[1])<<VL_ULL(32))
