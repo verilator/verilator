@@ -127,8 +127,7 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	docs/.gitignore \
 	docs/Artistic \
 	docs/CONTRIBUTORS \
-	docs/COPYING \
-	docs/COPYING.LESSER \
+	docs/LICENSE \
 	docs/Makefile.in \
 	docs/TODO \
 	docs/doxygen-mainpage \
