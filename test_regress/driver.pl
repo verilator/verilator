@@ -20,6 +20,7 @@ use Getopt::Long;
 use IO::File;
 use Pod::Usage;
 use Data::Dumper; $Data::Dumper::Sortkeys=1;
+use FindBin qw($RealBin);
 use strict;
 use vars qw($Debug %Vars $Driver $Fork);
 use POSIX qw(strftime);
@@ -125,7 +126,7 @@ our @Test_Dirs = "t";
 push @Test_Dirs, split(/:/,$ENV{VERILATOR_TESTS_SITE})
     if (($#opt_tests<0 ? $opt_site : 1) && $ENV{VERILATOR_TESTS_SITE});
 
-if ($#opt_tests<0) {
+if ($#opt_tests<0) {  # Run everything
     my %uniq;
     foreach my $dir (@Test_Dirs) {
         my @stats = stat($dir);  # Uniquify by inode, so different paths to same place get combined
@@ -313,6 +314,7 @@ use Carp;
 use Cwd;
 use Data::Dumper;
 use File::Spec;
+use File::Path qw(mkpath);
 
 use vars qw($Self $Self);
 use strict;
@@ -334,10 +336,6 @@ sub new {
     $self->{scenario} ||= "ms" if $self->{ms};
     $self->{scenario} ||= "iv" if $self->{iv};
 
-    # For backward compatibility, the verilator tests have no prefix
-    mkdir "obj_$self->{scenario}";
-    $self->{obj_dir} ||= ("obj_$self->{scenario}/$self->{name}");
-
     foreach my $dir (@::Test_Dirs) {
         # t_dir used both absolutely and under obj_dir
         if (-e "$dir/$self->{name}.pl") {
@@ -351,6 +349,13 @@ sub new {
     }
     $self->{t_dir} or die "%Error: Can't locate dir for $self->{name},";
 
+    if (!$self->{obj_dir}) {
+        my $scen_dir = File::Spec->abs2rel("$self->{t_dir}/../obj_$self->{scenario}");
+        $scen_dir =~ s!^t/\.\./!!;  # Simplify filenames on local runs
+        mkdir $scen_dir;  # Not a mkpath so find out if trying to build somewhere odd
+        $self->{obj_dir} ="$scen_dir/$self->{name}";
+    }
+
     $self = {
         name => undef,          # Set below, name of this test
         pl_filename => undef,   # Name of .pl file to get setup from
@@ -362,14 +367,15 @@ sub new {
         verbose => $opt_verbose,
         run_env => '',
         # All compilers
-        v_flags => [split(/\s+/,(" -f input.vc "
-                                 .($self->{t_dir} !~ m!/test_regress!  # Don't include standard dir, only site's
-                                   ? " +incdir+$self->{t_dir} -y $self->{t_dir}" : "")
-                                 . " +define+TEST_OBJ_DIR=$self->{obj_dir}"
-                                 .($opt_verbose ? " +define+TEST_VERBOSE=1":"")
-                                 .($opt_benchmark ? " +define+TEST_BENCHMARK=$opt_benchmark":"")
-                                 .($opt_trace ? " +define+WAVES=1":"")
-                                 ))],
+        v_flags => [split(/\s+/,
+                          ((-r 'input.vc' ? " -f input.vc " : "")
+                           .($self->{t_dir} !~ m!/test_regress!  # Don't include standard dir, only site's
+                             ? " +incdir+$self->{t_dir} -y $self->{t_dir}" : "")
+                           . " +define+TEST_OBJ_DIR=$self->{obj_dir}"
+                           .($opt_verbose ? " +define+TEST_VERBOSE=1":"")
+                           .($opt_benchmark ? " +define+TEST_BENCHMARK=$opt_benchmark":"")
+                           .($opt_trace ? " +define+WAVES=1":"")
+                          ))],
         v_flags2 => [],  # Overridden in some sim files
         v_other_filenames => [],  # After the filename so we can spec multiple files
         all_run_flags => [],
@@ -624,7 +630,7 @@ sub compile_vlt_flags {
         unshift @verilator_flags, "--O".$letters;
     }
 
-    my @cmdargs = ("perl","../bin/verilator",
+    my @cmdargs = ("perl", "$ENV{VERILATOR_ROOT}/bin/verilator",
                    "--prefix ".$param{VM_PREFIX},
                    @verilator_flags,
                    @{$param{verilator_flags2}},
@@ -797,7 +803,7 @@ sub compile {
             $self->_run(logfile=>"$self->{obj_dir}/vlt_gcc.log",
                        cmd=>["make",
                              "-C ".$self->{obj_dir},
-                             "-f ".getcwd()."/Makefile_obj",
+                             "-f ".$::RealBin."/Makefile_obj",
                               "VM_PREFIX=$self->{VM_PREFIX}",
                               "TEST_OBJ_DIR=$self->{obj_dir}",
                               "CPPFLAGS_DRIVER=-D".uc($self->{name}),
@@ -1560,7 +1566,7 @@ sub _read_inputs_vhdl {
 our $_Verilator_Version;
 sub verilator_version {
     if (!defined $_Verilator_Version) {
-        my @args = ("perl","../bin/verilator", "--version");
+        my @args = ("perl", "$ENV{VERILATOR_ROOT}/bin/verilator", "--version");
         my $args = join(' ',@args);
         $_Verilator_Version = `$args`;
         $_Verilator_Version or die "can't fork: $! ".join(' ',@args);
@@ -2224,7 +2230,7 @@ Command to use to invoke ncverilog.
 
 =item VERILATOR_TESTS_SITE
 
-With --site, directory of tests to be added to testlist.
+Used with --site, a colon-separated list of directories with tests to be added to testlist.
 
 =item VERILATOR_VCS
 
