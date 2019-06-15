@@ -1658,13 +1658,17 @@ V3Number& V3Number::opBufIf1(const V3Number& ens, const V3Number& if1s) {
 }
 
 V3Number& V3Number::opAssign(const V3Number& lhs) {
-    // Note may be a width change during the assign
-    setZero();
-    if (isString()) {
-        m_stringVal = lhs.m_stringVal;
-    } else {
-        for (int bit=0; bit<this->width(); bit++) {
-            setBit(bit, lhs.bitIs(bit));
+    // Note may be a width change during the assign.
+    // Special case: opAssign unlike other ops, allows this an assignment
+    // to itself; V3Simulate does this when hits "foo=foo;"
+    if (this != &lhs) {
+        setZero();
+        if (isString()) {
+            m_stringVal = lhs.m_stringVal;
+        } else {
+            for (int bit=0; bit<this->width(); bit++) {
+                setBit(bit, lhs.bitIs(bit));
+            }
         }
     }
     return *this;

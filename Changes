@@ -36,6 +36,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix --savable invalid C++ on packed arrays, bug1465. [Alex Chadwick]
 
+****  Fix constant function return of function var, bug1467. [Roman Popov]
+
 
 * Verilator 4.014 2019-05-08
 
