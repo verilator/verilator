@@ -116,7 +116,9 @@ DISTDEP = info Makefile
 
 DISTFILES_INC = $(INFOS) .gitignore \
 	*.in *.ac \
+	Artistic \
 	Changes \
+	LICENSE \
 	MANIFEST.SKIP \
 	bin/verilator \
 	bin/verilator_coverage \
@@ -125,9 +127,7 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	bin/verilator_includer \
 	bin/verilator_profcfunc \
 	docs/.gitignore \
-	docs/Artistic \
 	docs/CONTRIBUTORS \
-	docs/LICENSE \
 	docs/Makefile.in \
 	docs/TODO \
 	docs/doxygen-mainpage \
