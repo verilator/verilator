@@ -2,6 +2,9 @@ Revision history for Verilator
 
 The contributors that suggested a given feature are shown in []. Thanks!
 
+* Verilator 4.017 devel
+
+
 * Verilator 4.016 2016-06-16
 
 ***   Add --quiet-exit, bug1436. [Todd Strader]
