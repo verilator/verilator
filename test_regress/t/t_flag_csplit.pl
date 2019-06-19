@@ -9,6 +9,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt_all => 1);
 
+# Thi rule requires GNU make > 4.1 (or so, known broken in 3.81)
+#%__Slow.o: %__Slow.cpp
+#        $(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_SLOW) -c -o $@ $<
+make_version() < 4.1 and unsupported("Verilator unsupported, require GNU Make version >= 4.1");
+
 compile(
     v_flags2 => ["--trace --output-split 1 --output-split-cfuncs 1 --exe ../$Self->{main_filename}"],
     verilator_make_gcc => 0,
@@ -47,6 +52,15 @@ check_gcc_flags("$Self->{obj_dir}/vlt_gcc.log");
 
 ok(1);
 1;
+
+sub make_version {
+    my $ver = `make --version`;
+    if ($ver =~ /make ([0-9]+\.[0-9]+)/i) {
+        return $1;
+    } else {
+        return -1;
+    }
+}
 
 sub check_cpp {
     my $filename = shift;
