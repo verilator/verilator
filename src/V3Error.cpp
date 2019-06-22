@@ -177,9 +177,15 @@ void V3Error::v3errorEnd(std::ostringstream& sstr) {
             msg += "...";
         }
     }
-    // Trailing newline
-    if (msg[msg.length()-1] != '\n') msg += '\n';
-    // Suppress duplicates
+    // Trailing newline (generally not on messages) & remove dup newlines
+    {
+        msg += '\n';  // Trailing newlines generally not put on messages so add
+        string::size_type pos;
+        while ((pos = msg.find("\n\n")) != string::npos) {
+            msg.erase(pos+1, 1);
+        }
+    }
+    // Suppress duplicate messages
     if (s_messages.find(msg) != s_messages.end()) return;
     s_messages.insert(msg);
     // Output

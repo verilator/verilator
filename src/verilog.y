@@ -218,7 +218,7 @@ static void ERRSVKWD(FileLine* fileline, const string& tokname) {
                       +"\" is a SystemVerilog keyword misused as an identifier."
                       +(!toldonce++
                         ? "\n"+V3Error::warnMore()
-                          +"... Modify the Verilog-2001 code to avoid SV keywords,"
+                          +"... Suggest modify the Verilog-2001 code to avoid SV keywords,"
                           +" or use `begin_keywords or --language."
                         : ""));
 }
