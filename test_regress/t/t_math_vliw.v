@@ -62,7 +62,7 @@ module vliw (
 	     input[2:0]    szlfpf,
 	     input[15:0]   dzosui,
 	     input[31:0]   zndrba,
-	     output [223:0] bxiouf
+	     output wire [223:0] bxiouf
 	     );
 
    wire [463:0] zhknfc  =   ({29{~apqrli}} & {mglehy, drricx[215:8]})
@@ -71,7 +71,7 @@ module vliw (
 		| ({21{dzosui}}  & zhknfc[335:0]);
    wire [335:0] viuvoc = umntwz << {szlfpf, 4'b0000};
    wire [223:0] rzyeut = viuvoc[335:112];
-   wire [223:0] bxiouf = {rzyeut[7:0],
+   assign bxiouf       = {rzyeut[7:0],
              		  rzyeut[15:8],
              		  rzyeut[23:16],
              		  rzyeut[31:24],

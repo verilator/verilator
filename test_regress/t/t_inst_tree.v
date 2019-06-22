@@ -65,40 +65,40 @@ module ps (input printclk);
    always @ (posedge printclk) $write("[%0t] %m: Clocked\n", $time);
 endmodule
 
-module l1 (input [7:0] a, output [7:0] z);
+module l1 (input [7:0] a, output [7:0] z `PUBLIC);
    `INLINE_MODULE
    wire [7:0] z0 `PUBLIC; wire [7:0] z1 `PUBLIC;
-   wire [7:0] z `PUBLIC; assign z = z0+z1;
+   assign z = z0+z1;
    l2 u0 (a, z0);   l2 u1 (a, z1);
 endmodule
 
-module l2 (input [7:0] a, output [7:0] z);
+module l2 (input [7:0] a, output [7:0] z `PUBLIC);
    `INLINE_MODULE
    wire [7:0] z0 `PUBLIC; wire [7:0] z1 `PUBLIC;
-   wire [7:0] z `PUBLIC; assign z = z0+z1;
+   assign z = z0+z1;
    wire [7:0] a1 = a+8'd1;
    l3 u0 (a, z0);   l3 u1 (a1, z1);
 endmodule
 
-module l3 (input [7:0] a, output [7:0] z);
+module l3 (input [7:0] a, output [7:0] z `PUBLIC);
    `INLINE_MODULE
    wire [7:0] z0 `PUBLIC; wire [7:0] z1 `PUBLIC;
-   wire [7:0] z `PUBLIC; assign z = z0+z1;
+   assign z = z0+z1;
    wire [7:0] a1 = a+8'd1;
    l4 u0 (a, z0);   l4 u1 (a1, z1);
 endmodule
 
-module l4 (input [7:0] a, output [7:0] z);
+module l4 (input [7:0] a, output [7:0] z `PUBLIC);
    `INLINE_MODULE
    wire [7:0] z0 `PUBLIC; wire [7:0] z1 `PUBLIC;
-   wire [7:0] z `PUBLIC; assign z = z0+z1;
+   assign z = z0+z1;
    wire [7:0] a1 = a+8'd1;
    l5 #(1) u0 (a, z0);   l5 #(2) u1 (a1, z1);
 endmodule
 
-module l5 (input [7:0] a, output [7:0] z);
+module l5 (input [7:0] a, output [7:0] z `PUBLIC);
    `INLINE_MODULE
    parameter PARAM = 5;
    wire [7:0] z0 `PUBLIC; wire [7:0] z1 `PUBLIC;
-   wire [7:0] z `PUBLIC; assign z = a;
+   assign z = a;
 endmodule

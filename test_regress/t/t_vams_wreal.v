@@ -105,7 +105,7 @@ module within_range
    parameter real V_MAX = 10;
 
    wreal in_int = vpass - gnd;
-   wire out = (V_MIN <= in_int && in_int <= V_MAX);
+   assign out = (V_MIN <= in_int && in_int <= V_MAX);
 endmodule
 
 
@@ -128,9 +128,9 @@ module first_level
    second_level second_level(.in(in), .out(out));
 endmodule
 
-module second_level
-  (input in,
-   output out);
+module second_level(in, out);
+   input in;
+   output out;
    wreal out;
    assign out = in ? 1.23456: 7.8910;
 endmodule

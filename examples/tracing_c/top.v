@@ -14,18 +14,18 @@ module top
    input         fastclk,
    input         reset_l,
 
-   output [1:0]  out_small,
-   output [39:0] out_quad,
-   output [69:0] out_wide,
+   output wire [1:0]  out_small,
+   output wire [39:0] out_quad,
+   output wire [69:0] out_wide,
    input [1:0]   in_small,
    input [39:0]  in_quad,
    input [69:0]  in_wide
    );
 
    // Connect up the outputs, using some trivial logic
-   wire [1:0]    out_small = ~reset_l ? '0 : (in_small + 2'b1);
-   wire [39:0]   out_quad  = ~reset_l ? '0 : (in_quad + 40'b1);
-   wire [69:0]   out_wide  = ~reset_l ? '0 : (in_wide + 70'b1);
+   assign out_small = ~reset_l ? '0 : (in_small + 2'b1);
+   assign out_quad  = ~reset_l ? '0 : (in_quad + 40'b1);
+   assign out_wide  = ~reset_l ? '0 : (in_wide + 70'b1);
 
    // And an example sub module. The submodule will print stuff.
    sub sub (/*AUTOINST*/

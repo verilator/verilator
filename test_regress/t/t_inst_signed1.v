@@ -40,8 +40,8 @@ endmodule
 //msg2540
 module sub1 (
              input signed  i,
-             output signed o);
-   wire signed o = ~i;
+             output wire signed o);
+   assign o = ~i;
 endmodule
 
 module sub2 (i,o);

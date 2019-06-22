@@ -25,5 +25,5 @@ module t (/*AUTOARG*/
 endmodule
 
 module sub (input [7:0] allbits, input onebit, output bitout);
-   wire bitout = onebit ^ (^ allbits);
+   assign bitout = onebit ^ (^ allbits);
 endmodule

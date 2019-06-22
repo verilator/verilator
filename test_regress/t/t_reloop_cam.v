@@ -112,7 +112,6 @@ module cam
    output logic         rdat_val_d2r
    );
 
-   logic [30:0]         rdat_d2r;
    logic                camen_d1r;
    logic                inval_d1r;
    logic                ren_d1r;
@@ -121,8 +120,6 @@ module cam
    logic [30:0]         cdat_d1r;
    logic [30:0]         wdat_d1r;
    logic                wdat_val_d1r;
-
-   logic [30:0]         wdat;
 
    always_ff @(posedge clk) begin
       camen_d1r <= camen;

@@ -14,6 +14,6 @@ module t
 	output [P&7 - 1:0] out
 	);
 
-   wire out = in;
+   assign out = in;
 
 endmodule

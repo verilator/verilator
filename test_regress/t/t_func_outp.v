@@ -47,9 +47,9 @@ endmodule // mytop
 
 module inv(
              input [ 7:0 ]  a,
-             output  [ 7:0 ]  z
+             output wire [ 7:0 ]  z
              );
-   wire [7:0] 		      z = ~a;
+   assign z = ~a;
 endmodule
 
 
@@ -57,11 +57,10 @@ module ftest(
              input [ 7:0 ]  a,
                             b,   // Test legal syntax
              input clk,
-             output  [ 7:0 ]  z
+             output reg [ 7:0 ]  z
              );
 
    wire [7:0] 		      zi;
-   reg [7:0] 		      z;
 
    inv u1 (.a(myadd(a,b)),
 	   .z(zi));

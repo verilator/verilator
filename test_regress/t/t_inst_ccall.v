@@ -45,10 +45,10 @@ endmodule
 module sub (input [7:0] narrow, input [63:0] quad, output [31:0] longout, output [63:0] quadout);
    // verilator public_module
 `ifdef verilator
-   wire [31:0] longout = $c32("(",narrow,"+1)");
-   wire [63:0] quadout = $c64("(",quad,"+1)");
+   assign longout = $c32("(",narrow,"+1)");
+   assign quadout = $c64("(",quad,"+1)");
 `else
-   wire [31:0] longout = narrow + 8'd1;
-   wire [63:0] quadout = quad + 64'd1;
+   assign longout = narrow + 8'd1;
+   assign quadout = quad + 64'd1;
 `endif
 endmodule

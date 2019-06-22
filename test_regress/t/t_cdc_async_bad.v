@@ -77,5 +77,5 @@ endmodule
 
 module Sub (input a, b,
             output z);
-   wire            z = a|b;
+   assign z = a|b;
 endmodule
