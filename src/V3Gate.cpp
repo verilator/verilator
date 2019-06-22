@@ -824,7 +824,9 @@ void GateVisitor::warnSignals() {
                     vscp->v3warn(SYNCASYNCNET, "Signal flopped as both synchronous and async: "
                                  <<vscp->prettyName()<<endl
                                  <<ap->warnMore()<<"... Location of async usage"<<endl
-                                 <<sp->warnMore()<<"... Location of sync usage"<<endl);
+                                 <<ap->warnContextPrimary()<<endl
+                                 <<sp->warnMore()<<"... Location of sync usage"<<endl
+                                 <<sp->warnContextSecondary());
                 }
             }
         }

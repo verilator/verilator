@@ -38,6 +38,7 @@ bool V3Error::s_warnFatal = true;
 int V3Error::s_tellManual = 0;
 std::ostringstream V3Error::s_errorStr;  // Error string being formed
 V3ErrorCode V3Error::s_errorCode = V3ErrorCode::EC_FATAL;
+bool V3Error::s_errorContexted = false;
 bool V3Error::s_errorSuppressed = false;
 bool V3Error::s_describedEachWarn[V3ErrorCode::_ENUM_MAX];
 bool V3Error::s_describedWarnings = false;

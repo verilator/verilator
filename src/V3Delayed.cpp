@@ -166,7 +166,10 @@ private:
                     MULTIDRIVEN, "Signal has multiple driving blocks with different clocking: "
                     <<varrefp->varp()->prettyName()<<endl
                     <<varrefp->warnMore()<<"... Location of first driving block"<<endl
-                    <<oldactivep->warnMore()<<"... Location of other driving block");
+                    <<varrefp->varp()->warnContextPrimary()<<endl
+                    <<oldactivep->warnMore()<<"... Location of other driving block"<<endl
+                    <<oldactivep->warnContextSecondary()
+                    );
                 varrefp->varp()->user2(true);
             }
             UINFO(4,"AssignDupDlyVar: "<<varrefp<<endl);

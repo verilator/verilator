@@ -145,8 +145,10 @@ public:
         if (!vxp->pure()) {
             nodep->v3warn(IMPURE, "Unsupported: External variable referenced by non-inlined function/task: "
                           <<nodep->prettyName()<<endl
+                          <<nodep->warnContextPrimary()<<endl
                           <<vxp->impureNode()->warnMore()<<"... Location of the external reference: "
-                          <<vxp->impureNode()->prettyName());
+                          <<vxp->impureNode()->prettyName()<<endl
+                          <<vxp->impureNode()->warnContextSecondary());
         }
         // And, we need to check all tasks this task calls
         for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep=edgep->outNextp()) {
@@ -840,9 +842,11 @@ private:
         else if (iter->second.second != dpiproto) {
             nodep->v3error("Duplicate declaration of DPI function with different formal arguments: "
                            <<nodep->prettyName()<<endl
+                           <<nodep->warnContextPrimary()<<endl
                            <<nodep->warnMore()<<"... New prototype:      "<<dpiproto<<endl
                            <<iter->second.first->warnMore()<<"... Original prototype: "
-                           <<iter->second.second);
+                           <<iter->second.second<<endl
+                           <<iter->second.first->warnContextSecondary());
             return true;
         }
         else {

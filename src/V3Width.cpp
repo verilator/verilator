@@ -1382,9 +1382,12 @@ private:
             num.opAssign(VN_CAST(itemp->valuep(), Const)->num());
             // Look for duplicates
             if (inits.find(num) != inits.end()) {  // IEEE says illegal
+                AstNode* otherp = inits.find(num)->second;
                 itemp->v3error("Overlapping enumeration value: "<<itemp->prettyName()<<endl
-                               <<inits.find(num)->second->warnMore()
-                               <<"... Location of original declaration");
+                               <<itemp->warnContextPrimary()<<endl
+                               <<otherp->warnMore()
+                               <<"... Location of original declaration\n"
+                               <<otherp->warnContextSecondary());
             } else {
                 inits.insert(make_pair(num, itemp));
             }

@@ -74,8 +74,16 @@ V3ParseImp::~V3ParseImp() {
 
 void V3ParseImp::ppline(const char* textp) {
     // Handle `line directive
+    FileLine* prevFl = copyOrSameFileLine();
     int enterExit;
     fileline()->lineDirective(textp, enterExit/*ref*/);
+    if (enterExit == 1) {  // Enter
+        fileline()->parent(prevFl);
+    } else if (enterExit == 2) {  // Exit
+        FileLine* upFl = fileline()->parent();
+        if (upFl) upFl = upFl->parent();
+        if (upFl) fileline()->parent(upFl);
+    }
 }
 
 void V3ParseImp::verilatorCmtLintSave() {

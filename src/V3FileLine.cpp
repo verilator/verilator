@@ -87,6 +87,7 @@ FileLine::FileLine(FileLine::EmptySecret) {
     // Sort of a singleton
     m_lineno = 0;
     m_filenameno = singleton().nameToNumber("AstRoot");
+    m_parent = NULL;
 
     m_warnOn = 0;
     for (int codei=V3ErrorCode::EC_MIN; codei<V3ErrorCode::_ENUM_MAX; codei++) {
@@ -239,7 +240,9 @@ void FileLine::v3errorEnd(std::ostringstream& str) {
     std::ostringstream nsstr;
     if (m_lineno) nsstr<<this;
     nsstr<<str.str();
+    nsstr<<endl;
     if (warnIsOff(V3Error::errorCode())) V3Error::suppressThisWarning();
+    else if (!V3Error::errorContexted()) nsstr<<warnContextPrimary();
     V3Error::v3errorEnd(nsstr);
 }
 
@@ -249,6 +252,20 @@ string FileLine::warnMore() const {
     } else {
         return V3Error::warnMore();
     }
+}
+
+string FileLine::warnContext(bool secondary) const {
+    V3Error::errorContexted(true);
+    string out = "";
+    // TODO: Eventually print the original source code here
+    if (!secondary) {  // Avoid printing long paths on informational part of error
+        for (FileLine* parentFl = parent(); parentFl; parentFl = parentFl->parent()) {
+            if (parentFl->filenameIsGlobal()) break;
+            out += parentFl->warnMore()+"... note: In file included from "
+                +parentFl->filebasename()+"\n";
+        }
+    }
+    return out;
 }
 
 #ifdef VL_LEAK_CHECKS

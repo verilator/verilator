@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.017 devel
 
+****  Show included-from filenames in warnings, bug1439. [Todd Strader]
+
 ****  Fix not reporting some duplicate signals/ports, bug1462. [Peter Gerst]
 
 

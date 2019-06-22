@@ -1408,7 +1408,10 @@ public:
     // METHODS - dump and error
     void v3errorEnd(std::ostringstream& str) const;
     void v3errorEndFatal(std::ostringstream& str) const VL_ATTR_NORETURN;
-    string warnMore() const;
+    string warnContextPrimary() const { return fileline()->warnContextPrimary(); }
+    string warnContextSecondary() const { return fileline()->warnContextSecondary(); }
+    string warnMore() const { return fileline()->warnMore(); }
+
     virtual void dump(std::ostream& str=std::cout);
     void dumpGdb();  // For GDB only
     void dumpGdbHeader() const;

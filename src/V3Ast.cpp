@@ -1092,10 +1092,6 @@ void AstNode::v3errorEnd(std::ostringstream& str) const {
     }
 }
 
-string AstNode::warnMore() const {
-    return fileline()->warnMore();
-}
-
 //======================================================================
 // Data type conversion
 

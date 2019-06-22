@@ -225,6 +225,7 @@ class V3Error {
     static int          s_tellManual;           // Tell user to see manual, 0=not yet, 1=doit, 2=disable
     static std::ostringstream s_errorStr;       // Error string being formed
     static V3ErrorCode  s_errorCode;            // Error string being formed will abort
+    static bool         s_errorContexted;       // Error being formed got context
     static bool         s_errorSuppressed;      // Error being formed should be suppressed
     static MessagesSet  s_messages;             // What errors we've outputted
     static ErrorExitCb  s_errorExitCb;          // Callback when error occurs for dumping
@@ -246,6 +247,8 @@ class V3Error {
     static int errorCount() { return s_errCount; }
     static int warnCount() { return s_warnCount; }
     static int errorOrWarnCount() { return errorCount()+warnCount(); }
+    static bool errorContexted() { return s_errorContexted; }
+    static void errorContexted(bool flag) { s_errorContexted = flag; }
     // METHODS
     static void incErrors();
     static void incWarnings() { s_warnCount++; }
@@ -257,7 +260,7 @@ class V3Error {
     static bool isError(V3ErrorCode code, bool supp);
     static string lineStr(const char* filename, int lineno);
     static V3ErrorCode errorCode() { return s_errorCode; }
-    static void         errorExitCb(ErrorExitCb cb) { s_errorExitCb = cb; }
+    static void errorExitCb(ErrorExitCb cb) { s_errorExitCb = cb; }
 
     // When printing an error/warning, print prefix for multiline message
     static string warnMore();
@@ -265,7 +268,8 @@ class V3Error {
     // Internals for v3error()/v3fatal() macros only
     // Error end takes the string stream to output, be careful to seek() as needed
     static void v3errorPrep(V3ErrorCode code) {
-        s_errorStr.str(""); s_errorCode = code; s_errorSuppressed = false; }
+        s_errorStr.str(""); s_errorCode = code;
+        s_errorContexted = false; s_errorSuppressed = false; }
     static std::ostringstream& v3errorStr() { return s_errorStr; }
     static void vlAbort();
     static void v3errorEnd(std::ostringstream& sstr);  // static, but often overridden in classes.

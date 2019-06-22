@@ -464,7 +464,9 @@ private:
                       || nodep->fileline()->warnIsOff(V3ErrorCode::MODDUP))) {
                     nodep->v3warn(MODDUP, "Duplicate declaration of module: "
                                   <<nodep->prettyName()<<endl
-                                  <<foundp->warnMore()<<"... Location of original declaration");
+                                  <<nodep->warnContextPrimary()<<endl
+                                  <<foundp->warnMore()<<"... Location of original declaration"<<endl
+                                  <<foundp->warnContextSecondary());
                 }
                 nodep->unlinkFrBack();
                 pushDeletep(nodep); VL_DANGLING(nodep);

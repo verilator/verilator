@@ -72,6 +72,7 @@ protected:
 class FileLine {
     int m_lineno;
     int m_filenameno;
+    FileLine* m_parent;  // Parent line that included this line
     std::bitset<V3ErrorCode::_ENUM_MAX> m_warnOn;
 
 private:
@@ -95,6 +96,7 @@ protected:
     void lineno(int num) { m_lineno = num; }
     void language(V3LangCode lang) { singleton().numberToLang(m_filenameno, lang); }
     void filename(const string& name) { m_filenameno = singleton().nameToNumber(name); }
+    void parent(FileLine* fileline) { m_parent = fileline; }
     void lineDirective(const char* textp, int& enterExitRef);
     void linenoInc() { m_lineno++; }
     void linenoIncInPlace() { m_lineno++; }
@@ -103,11 +105,13 @@ public:
     FileLine(const string& filename, int lineno) {
         m_lineno = lineno;
         m_filenameno = singleton().nameToNumber(filename);
+        m_parent = NULL;
         m_warnOn = defaultFileLine().m_warnOn;
     }
     explicit FileLine(FileLine* fromp) {
         m_lineno = fromp->m_lineno;
         m_filenameno = fromp->m_filenameno;
+        m_parent = fromp->m_parent;
         m_warnOn = fromp->m_warnOn;
     }
     explicit FileLine(EmptySecret);
@@ -121,6 +125,7 @@ public:
 #endif
 
     int lineno() const { return m_lineno; }
+    FileLine* parent() const { return m_parent; }
     V3LangCode language() const { return singleton().numberToLang(m_filenameno); }
     string ascii() const;
     const string filename() const { return singleton().numberToName(m_filenameno); }
@@ -132,6 +137,7 @@ public:
     const string profileFuncname() const;
     const string xml() const { return "fl=\""+filenameLetters()+cvtToStr(lineno())+"\""; }
     string lineDirectiveStrg(int enterExit) const;
+
     // Turn on/off warning messages on this line.
     void warnOn(V3ErrorCode code, bool flag) { m_warnOn.set(code, flag); }
     void warnOff(V3ErrorCode code, bool flag) { warnOn(code, !flag); }
@@ -173,13 +179,21 @@ public:
     // OPERATORS
     void v3errorEnd(std::ostringstream& str);
     void v3errorEndFatal(std::ostringstream& str);
+    /// When building an error, prefix for printing continuation lines
     string warnMore() const;
+    /// When building an error, current location in include etc
+    /// If not used in a given error, automatically pasted at end of error
+    string warnContextPrimary() const { return warnContext(false); }
+    /// When building an error, additional location for additional references
+    /// Simplified information vs warnContextPrimary() to make dump clearer
+    string warnContextSecondary() const { return warnContext(true); }
     inline bool operator==(FileLine rhs) const {
         return (m_lineno==rhs.m_lineno && m_filenameno==rhs.m_filenameno
                 && m_warnOn==rhs.m_warnOn);
     }
 private:
     void v3errorEndFatalGuts(std::ostringstream& str);
+    string warnContext(bool secondary) const;
 };
 std::ostream& operator<<(std::ostream& os, FileLine* fileline);
 
