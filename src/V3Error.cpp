@@ -170,6 +170,14 @@ void V3Error::v3errorEnd(std::ostringstream& sstr) {
         // On debug, show only non default-off warning to prevent pages of warnings
         && (!debug() || s_errorCode.defaultsOff())) return;
     string msg = msgPrefix()+sstr.str();
+    if (s_errorSuppressed) {  // If suppressed print only first line to reduce verbosity
+        string::size_type pos;
+        if ((pos = msg.find('\n')) != string::npos) {
+            msg.erase(pos, msg.length()-pos);
+            msg += "...";
+        }
+    }
+    // Trailing newline
     if (msg[msg.length()-1] != '\n') msg += '\n';
     // Suppress duplicates
     if (s_messages.find(msg) != s_messages.end()) return;
