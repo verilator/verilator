@@ -1,16 +1,36 @@
-%Error: t/t_var_dup_bad.v:14: Duplicate declaration of signal: a
-        t/t_var_dup_bad.v:13: ... Location of original declaration
-%Error: t/t_var_dup_bad.v:17: Duplicate declaration of signal: l
-        t/t_var_dup_bad.v:16: ... Location of original declaration
-%Error: t/t_var_dup_bad.v:20: Duplicate declaration of signal: b
-        t/t_var_dup_bad.v:19: ... Location of original declaration
-%Error: t/t_var_dup_bad.v:26: Duplicate declaration of signal: o
-        t/t_var_dup_bad.v:25: ... Location of original declaration
-%Error: t/t_var_dup_bad.v:29: Duplicate declaration of signal: i
-        t/t_var_dup_bad.v:28: ... Location of original declaration
-%Error: t/t_var_dup_bad.v:32: Duplicate declaration of signal: oi
-        t/t_var_dup_bad.v:31: ... Location of original declaration
-%Error: t/t_var_dup_bad.v:39: Duplicate declaration of signal: org
-        t/t_var_dup_bad.v:38: ... Location of original declaration
-%Error: t/t_var_dup_bad.v:31: Input/output/inout does not appear in port list: oi
+%Error: t/t_var_dup_bad.v:16: Duplicate declaration of signal: a
+        t/t_var_dup_bad.v:15: ... Location of original declaration
+%Error: t/t_var_dup_bad.v:19: Duplicate declaration of signal: l
+        t/t_var_dup_bad.v:18: ... Location of original declaration
+%Error: t/t_var_dup_bad.v:22: Duplicate declaration of signal: b
+        t/t_var_dup_bad.v:21: ... Location of original declaration
+%Error: t/t_var_dup_bad.v:25: Duplicate declaration of signal: o
+        t/t_var_dup_bad.v:24: ... Location of original declaration
+%Error: t/t_var_dup_bad.v:28: Duplicate declaration of signal: i
+        t/t_var_dup_bad.v:27: ... Location of original declaration
+%Error: t/t_var_dup_bad.v:31: Duplicate declaration of signal: oi
+        t/t_var_dup_bad.v:30: ... Location of original declaration
+%Error: t/t_var_dup_bad.v:38: Duplicate declaration of signal: org
+        t/t_var_dup_bad.v:37: ... Location of original declaration
+%Error: t/t_var_dup_bad.v:65: Duplicate declaration of signal: bad_reout_port
+        t/t_var_dup_bad.v:63: ... Location of original declaration
+%Error: t/t_var_dup_bad.v:72: Duplicate declaration of signal: bad_rewire
+        t/t_var_dup_bad.v:69: ... Location of original declaration
+%Error: t/t_var_dup_bad.v:73: Duplicate declaration of signal: bad_rereg
+        t/t_var_dup_bad.v:70: ... Location of original declaration
+%Error: t/t_var_dup_bad.v:12: Duplicate declaration of port: oi
+        t/t_var_dup_bad.v:30: ... Location of original declaration
+%Error: t/t_var_dup_bad.v:49: Duplicate declaration of port: bad_duport
+        t/t_var_dup_bad.v:51: ... Location of original declaration
+%Error: t/t_var_dup_bad.v:57: Duplicate declaration of port: bad_mixport
+        t/t_var_dup_bad.v:57: ... Location of original declaration
+%Error: t/t_var_dup_bad.v:40: Can't find definition of variable: bad_duport
+%Error: t/t_var_dup_bad.v:40: Duplicate pin connection: bad_duport
+        t/t_var_dup_bad.v:40: ... Location of original pin connection
+%Error: t/t_var_dup_bad.v:41: Can't find definition of variable: bad_mixport
+%Error: t/t_var_dup_bad.v:41: Duplicate pin connection: bad_mixport
+        t/t_var_dup_bad.v:41: ... Location of original pin connection
+%Error: t/t_var_dup_bad.v:42: Can't find definition of variable: bad_reout_port
+%Error: t/t_var_dup_bad.v:43: Can't find definition of variable: bad_rewire
+%Error: t/t_var_dup_bad.v:43: Can't find definition of variable: bad_rereg
 %Error: Exiting due to

@@ -1139,6 +1139,8 @@ private:
     VDirection  m_direction;    // Direction input/output etc
     VDirection  m_declDirection;    // Declared direction input/output etc
     AstBasicDTypeKwd m_declKwd;  // Keyword at declaration time
+    bool        m_ansi:1;       // ANSI port list variable (for dedup check)
+    bool        m_declTyped:1;  // Declared as type (for dedup check)
     bool        m_tristate:1;   // Inout or triwire or trireg
     bool        m_primaryIO:1;  // In/out to top level (or directly assigned from same)
     bool        m_sc:1;         // SystemC variable
@@ -1171,6 +1173,7 @@ private:
     MTaskIdSet  m_mtaskIds;  // MTaskID's that read or write this var
 
     void init() {
+        m_ansi = false; m_declTyped = false;
         m_tristate = false; m_primaryIO = false;
         m_sc = false; m_scClocked = false; m_scSensitive = false;
         m_usedClock = false; m_usedParam = false; m_usedLoopIdx = false;
@@ -1273,6 +1276,8 @@ public:
     AstNode* attrsp() const { return op4p(); }  // op4 = Attributes during early parse
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     virtual AstNodeDType* subDTypep() const { return dtypep() ? dtypep() : childDTypep(); }
+    void ansi(bool flag) { m_ansi = flag; }
+    void declTyped(bool flag) { m_declTyped = flag; }
     void attrClockEn(bool flag) { m_attrClockEn = flag; }
     void attrClocker(AstVarAttrClocker flag) { m_attrClocker = flag; }
     void attrFileDescr(bool flag) { m_fileDescr = flag; }
@@ -1306,6 +1311,8 @@ public:
     virtual void name(const string& name) { m_name = name; }
     virtual void tag(const string& text) { m_tag = text;}
     virtual string tag() const { return m_tag; }
+    bool isAnsi() const { return m_ansi; }
+    bool isDeclTyped() const { return m_declTyped; }
     bool isInoutish() const { return m_direction.isInoutish(); }
     bool isNonOutput() const { return m_direction.isNonOutput(); }
     bool isReadOnly() const { return m_direction.isReadOnly(); }

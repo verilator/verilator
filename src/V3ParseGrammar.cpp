@@ -166,6 +166,8 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name,
 
     AstVar* nodep = new AstVar(fileline, type, name, VFlagChildDType(), arrayDTypep);
     nodep->addAttrsp(attrsp);
+    nodep->ansi(m_pinAnsi);
+    nodep->declTyped(m_varDeclTyped);
     if (GRAMMARP->m_varDecl != AstVarType::UNKNOWN) nodep->combineType(GRAMMARP->m_varDecl);
     if (GRAMMARP->m_varIO != VDirection::NONE) {
         nodep->declDirection(GRAMMARP->m_varIO);

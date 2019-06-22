@@ -933,10 +933,23 @@ class LinkDotFindVisitor : public AstNVisitor {
                       <<" ;; parent=se"<<cvtToHex(foundp->parentp())<<endl);
                 if (foundp && foundp->parentp() == m_curSymp  // Only when on same level
                     && !foundp->imported()) {  // and not from package
-                    if (!(findvarp->isIO() && nodep->isIO())  // e.g. !(output && output)
-                        && ((findvarp->isIO() && nodep->isSignal())  // e.g. output && reg
-                            || (findvarp->isSignal() && nodep->isIO()))  // e.g. reg && output
-                        && !(findvarp->isSignal() && !nodep->isSignal())) {  // e.g. !(reg && reg)
+                    bool nansiBad = ((findvarp->isDeclTyped() && nodep->isDeclTyped())
+                                     || (findvarp->isIO() && nodep->isIO()));  // e.g. !(output && output)
+                    bool ansiBad = findvarp->isAnsi() || nodep->isAnsi();  // dup illegal with ANSI
+                    if (ansiBad || nansiBad) {
+                        static int didAnsiWarn = false;
+                        bool ansiWarn = ansiBad && !nansiBad;
+                        if (ansiWarn) { if (didAnsiWarn++) ansiWarn = false; }
+                        nodep->v3error("Duplicate declaration of signal: "
+                                       <<nodep->prettyName()<<endl
+                                       <<findvarp->warnMore()<<"... Location of original declaration"<<endl
+                                       <<(ansiWarn
+                                          ? findvarp->warnMore()+"... Note: ANSI ports must have type declared with the I/O (IEEE 2017 23.2.2.2)"
+                                          : ""));
+                        // Combining most likely reduce other errors
+                        findvarp->combineType(nodep);
+                        findvarp->fileline()->modifyStateInherit(nodep->fileline());
+                    } else {
                         findvarp->combineType(nodep);
                         findvarp->fileline()->modifyStateInherit(nodep->fileline());
                         AstBasicDType* bdtypep = VN_CAST(findvarp->childDTypep(), BasicDType);
@@ -949,13 +962,6 @@ class LinkDotFindVisitor : public AstNVisitor {
                             newdtypep->unlinkFrBack();
                             findvarp->childDTypep(newdtypep);
                         }
-                    } else {
-                        nodep->v3error("Duplicate declaration of signal: "
-                                       <<nodep->prettyName()<<endl
-                                       <<findvarp->warnMore()<<"... Location of original declaration");
-                        // Combining most likely reduce other errors
-                        findvarp->combineType(nodep);
-                        findvarp->fileline()->modifyStateInherit(nodep->fileline());
                     }
                     nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
                 } else {
@@ -1221,6 +1227,10 @@ private:
         } else if (!refp->isIO() && !refp->isIfaceRef()) {
             nodep->v3error("Pin is not an in/out/inout/interface: "<<nodep->prettyName());
         } else {
+            if (refp->user4()) {
+                nodep->v3error("Duplicate declaration of port: "<<nodep->prettyName()<<endl
+                               <<refp->warnMore()<<"... Location of original declaration");
+            }
             refp->user4(true);
             VSymEnt* symp = m_statep->insertSym(m_statep->getNodeSym(m_modp),
                                                 "__pinNumber"+cvtToStr(nodep->pinNum()),

@@ -52,12 +52,14 @@ class V3ParseGrammar {
 public:
     bool	m_impliedDecl;	// Allow implied wire declarations
     AstVarType	m_varDecl;	// Type for next signal declaration (reg/wire/etc)
+    bool        m_varDeclTyped; // Var got reg/wire for dedup check
     VDirection  m_varIO;        // Direction for next signal declaration (reg/wire/etc)
     AstVar*	m_varAttrp;	// Current variable for attribute adding
     AstRange*	m_gateRangep;	// Current range for gate declarations
     AstCase*	m_caseAttrp;	// Current case statement for attribute adding
     AstNodeDType* m_varDTypep;	// Pointer to data type for next signal declaration
     AstNodeDType* m_memDTypep;	// Pointer to data type for next member declaration
+    bool        m_pinAnsi;      // In ANSI port list
     int		m_pinNum;	// Pin number currently parsing
     string	m_instModule;	// Name of module referenced for instantiations
     AstPin*	m_instParamp;	// Parameters for instantiations
@@ -69,10 +71,12 @@ public:
     V3ParseGrammar() {
 	m_impliedDecl = false;
 	m_varDecl = AstVarType::UNKNOWN;
+        m_varDeclTyped = false;
 	m_varIO = VDirection::NONE;
 	m_varDTypep = NULL;
 	m_gateRangep = NULL;
 	m_memDTypep = NULL;
+	m_pinAnsi = false;
 	m_pinNum = -1;
 	m_instModule = "";
 	m_instParamp = NULL;
@@ -114,6 +118,12 @@ public:
 	    && name != AstNode::prettyName(*endnamep)) {
 	    fl->v3warn(ENDLABEL,"End label '"<<*endnamep<<"' does not match begin label '"<<name<<"'");
 	}
+    }
+    void setVarDecl(AstVarType type) {
+        m_varDecl = type;
+        if (type != AstVarType::UNKNOWN && type != AstVarType::PORT) {
+            m_varDeclTyped = true;
+        }
     }
     void setDType(AstNodeDType* dtypep) {
 	if (m_varDTypep) { m_varDTypep->deleteTree(); m_varDTypep=NULL; } // It was cloned, so this is safe.
@@ -181,12 +191,16 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
 
 #define CRELINE() (PARSEP->copyOrSameFileLine())  // Only use in empty rules, so lines point at beginnings
 
-#define VARRESET_LIST(decl)    { GRAMMARP->m_pinNum=1; VARRESET(); VARDECL(decl); }	// Start of pinlist
-#define VARRESET_NONLIST(decl) { GRAMMARP->m_pinNum=0; VARRESET(); VARDECL(decl); }	// Not in a pinlist
-#define VARRESET() { VARDECL(UNKNOWN); VARIO(NONE); VARDTYPE(NULL); }
-#define VARDECL(type) { GRAMMARP->m_varDecl = AstVarType::type; }
+#define VARRESET_LIST(decl)    { GRAMMARP->m_pinNum=1; GRAMMARP->m_pinAnsi=false; \
+                                 VARRESET(); VARDECL(decl); }  // Start of pinlist
+#define VARRESET_NONLIST(decl) { GRAMMARP->m_pinNum=0; GRAMMARP->m_pinAnsi=false; \
+                                 VARRESET(); VARDECL(decl); }  // Not in a pinlist
+#define VARRESET() { VARDECL(UNKNOWN); VARIO(NONE); VARDTYPE_NDECL(NULL); \
+                     GRAMMARP->m_varDeclTyped = false; }
+#define VARDECL(type) { GRAMMARP->setVarDecl(AstVarType::type); }
 #define VARIO(type) { GRAMMARP->m_varIO = VDirection::type; }
-#define VARDTYPE(dtypep) { GRAMMARP->setDType(dtypep); }
+#define VARDTYPE(dtypep) { GRAMMARP->setDType(dtypep); GRAMMARP->m_varDeclTyped = true; }
+#define VARDTYPE_NDECL(dtypep) { GRAMMARP->setDType(dtypep); }  // Port that is range or signed only (not a decl)
 
 #define VARDONEA(fl,name,array,attrs) GRAMMARP->createVariable((fl),(name),(array),(attrs))
 #define VARDONEP(portp,array,attrs) GRAMMARP->createVariable((portp)->fileline(),(portp)->name(),(array),(attrs))
@@ -981,9 +995,9 @@ port<nodep>:			// ==IEEE: port
 	|	portDirNetE yVAR implicit_typeE portSig variable_dimensionListE sigAttrListE
 			{ $$=$4; VARDTYPE($3); $$->addNextNull(VARDONEP($$,$5,$6)); }
 	|	portDirNetE signing             portSig variable_dimensionListE sigAttrListE
-			{ $$=$3; VARDTYPE(new AstBasicDType($3->fileline(), LOGIC_IMPLICIT, $2)); $$->addNextNull(VARDONEP($$,$4,$5)); }
+			{ $$=$3; VARDTYPE_NDECL(new AstBasicDType($3->fileline(), LOGIC_IMPLICIT, $2)); $$->addNextNull(VARDONEP($$,$4,$5)); }
 	|	portDirNetE signingE rangeList  portSig variable_dimensionListE sigAttrListE
-			{ $$=$4; VARDTYPE(GRAMMARP->addRange(new AstBasicDType($3->fileline(), LOGIC_IMPLICIT, $2), $3,true)); $$->addNextNull(VARDONEP($$,$5,$6)); }
+			{ $$=$4; VARDTYPE_NDECL(GRAMMARP->addRange(new AstBasicDType($3->fileline(), LOGIC_IMPLICIT, $2), $3,true)); $$->addNextNull(VARDONEP($$,$5,$6)); }
 	|	portDirNetE /*implicit*/        portSig variable_dimensionListE sigAttrListE
 			{ $$=$2; /*VARDTYPE-same*/ $$->addNextNull(VARDONEP($$,$3,$4)); }
 	//
@@ -1001,8 +1015,8 @@ portDirNetE:			// IEEE: part of port, optional net type and/or direction
 		/* empty */				{ }
 	//			// Per spec, if direction given default the nettype.
 	//			// The higher level rule may override this VARDTYPE with one later in the parse.
-	|	port_direction					{ VARDECL(PORT); VARDTYPE(NULL/*default_nettype*/); }
-	|	port_direction { VARDECL(PORT); } net_type	{ VARDTYPE(NULL/*default_nettype*/); } // net_type calls VARDECL
+	|	port_direction					{ VARDECL(PORT); VARDTYPE_NDECL(NULL/*default_nettype*/); }
+	|	port_direction { VARDECL(PORT); } net_type	{ VARDTYPE_NDECL(NULL/*default_nettype*/); }  // net_type calls VARDECL
 	|	net_type					{ } // net_type calls VARDECL
  	;
 
@@ -1327,11 +1341,12 @@ varLParamReset:
 
 port_direction:			// ==IEEE: port_direction + tf_port_direction
 	//			// IEEE 19.8 just "input" FIRST forces type to wire - we'll ignore that here
-		yINPUT					{ VARIO(INPUT); }
-	|	yOUTPUT					{ VARIO(OUTPUT); }
-	|	yINOUT					{ VARIO(INOUT); }
-	|	yREF					{ VARIO(REF); }
-	|	yCONST__REF yREF			{ VARIO(CONSTREF); }
+	//			// Only used for ANSI declarations
+		yINPUT					{ GRAMMARP->m_pinAnsi=true; VARIO(INPUT); }
+	|	yOUTPUT					{ GRAMMARP->m_pinAnsi=true; VARIO(OUTPUT); }
+	|	yINOUT					{ GRAMMARP->m_pinAnsi=true; VARIO(INOUT); }
+	|	yREF					{ GRAMMARP->m_pinAnsi=true; VARIO(REF); }
+	|	yCONST__REF yREF			{ GRAMMARP->m_pinAnsi=true; VARIO(CONSTREF); }
 	;
 
 port_directionReset:		// IEEE: port_direction that starts a port_declaraiton
@@ -1344,7 +1359,7 @@ port_directionReset:		// IEEE: port_direction that starts a port_declaraiton
 	;
 
 port_declaration<nodep>:	// ==IEEE: port_declaration
-	//			// Used inside block; followed by ';'
+	//			// Non-ANSI; used inside block followed by ';'
 	//			// SIMILAR to tf_port_declaration
 	//
 	//			// IEEE: inout_declaration
@@ -1357,11 +1372,11 @@ port_declaration<nodep>:	// ==IEEE: port_declaration
 			list_of_variable_decl_assignments			{ $$ = $6; }
 	|	port_directionReset port_declNetE yVAR implicit_typeE { VARDTYPE($4); }
 			list_of_variable_decl_assignments			{ $$ = $6; }
-	|	port_directionReset port_declNetE signingE rangeList { VARDTYPE(GRAMMARP->addRange(new AstBasicDType($4->fileline(), LOGIC_IMPLICIT, $3),$4,true)); }
+	|	port_directionReset port_declNetE signingE rangeList { VARDTYPE_NDECL(GRAMMARP->addRange(new AstBasicDType($4->fileline(), LOGIC_IMPLICIT, $3), $4, true)); }
 			list_of_variable_decl_assignments			{ $$ = $6; }
-	|	port_directionReset port_declNetE signing	     { VARDTYPE(new AstBasicDType($<fl>3, LOGIC_IMPLICIT, $3)); }
+	|	port_directionReset port_declNetE signing	     { VARDTYPE_NDECL(new AstBasicDType($<fl>3, LOGIC_IMPLICIT, $3)); }
 			list_of_variable_decl_assignments			{ $$ = $5; }
-	|	port_directionReset port_declNetE /*implicit*/       { VARDTYPE(NULL);/*default_nettype*/}
+	|	port_directionReset port_declNetE /*implicit*/       { VARDTYPE_NDECL(NULL);/*default_nettype*/}
 			list_of_variable_decl_assignments			{ $$ = $4; }
 	//			// IEEE: interface_declaration
 	//			// Looks just like variable declaration unless has a period
@@ -1373,7 +1388,7 @@ tf_port_declaration<nodep>:	// ==IEEE: tf_port_declaration
 	//			// SIMILAR to port_declaration
 	//
 		port_directionReset      data_type      { VARDTYPE($2); }  list_of_tf_variable_identifiers ';'	{ $$ = $4; }
-	|	port_directionReset      implicit_typeE { VARDTYPE($2); }  list_of_tf_variable_identifiers ';'	{ $$ = $4; }
+	|	port_directionReset      implicit_typeE { VARDTYPE_NDECL($2); }  list_of_tf_variable_identifiers ';'	{ $$ = $4; }
 	|	port_directionReset yVAR data_type      { VARDTYPE($3); }  list_of_tf_variable_identifiers ';'	{ $$ = $5; }
 	|	port_directionReset yVAR implicit_typeE { VARDTYPE($3); }  list_of_tf_variable_identifiers ';'	{ $$ = $5; }
 	;
