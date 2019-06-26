@@ -17,13 +17,6 @@ eval 'exec perl -wS $0 ${1+"$@"}'
 
 require 5.006_001;
 use warnings;
-BEGIN {
-    if ($ENV{DIRPROJECT} && $ENV{DIRPROJECT_PERL_BOOT}) {
-        # Magic to allow author testing of perl packages in local directory
-        require $ENV{DIRPROJECT}."/".$ENV{DIRPROJECT_PERL_BOOT};
-    }
-}
-
 use Getopt::Long;
 use FindBin qw($RealBin $RealScript);
 use IO::File;

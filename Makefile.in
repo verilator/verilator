@@ -377,33 +377,8 @@ install-here: installman ftp
 ifeq ($(VERILATOR_AUTHOR_SITE),1)	# Local... Else don't burden users
 DISTNAMEREV = $(shell sed -e '/DTVERSION/!d' -e 's/.*verilator_\([^"]*\).*/\1/' -e q ${srcdir}/src/config_rev.h)
 
-DIRPROJECT := $(shell project_dir --project)
 VERILATOR_CAD_DIR = $(CAD_DIR)/verilator/$(DISTNAMEREV)/$(DIRPROJECT_ARCH)
 INST_PROJ_CVS = cp_if_cvs_diff
-
-install-project: dist
-	@echo "Install-project to $(DIRPROJECT)"
-	strip bin/verilator_bin*
-	strip bin/verilator_coverage_bin*
-	$(MAKE) install-project-quick
-	for p in $(VL_INST_MAN_FILES) ; do \
-	  $(INSTALL_DATA) $$p $(DIRPROJECT_PREFIX)/man/man1/$$p; \
-	done
-	$(INST_PROJ_CVS) $(DISTNAME).tgz $(DIRPROJECT)/hw/utils/verilator/verilator.tgz
-	rm $(DISTNAME).tgz
-
-install-project-quick:
-ifeq ($(CFG_WITH_DEFENV),yes)
-	@echo "%Error: Reconfigure with './configure --disable-defenv' to avoid hardcoded paths."
-	false
-endif
-	@echo "Install-project-quick (no strip) to $(DIRPROJECT)"
-	for p in $(INST_PROJ_FILES) ; do \
-	  $(INST_PROJ_CVS) $$p $(DIRPROJECT)/hw/utils/verilator/$$p; \
-	done
-	for p in $(INST_PROJ_BIN_FILES) ; do \
-	  $(INST_PROJ_CVS) $$p $(DIRPROJECT)/hw/utils/verilator/$$p-$(DIRPROJECT_ARCH); \
-	done
 
 install-cadtools: dist
 	@echo "Install-project to $(CAD_DIR)"
