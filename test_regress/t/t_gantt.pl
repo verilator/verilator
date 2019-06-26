@@ -20,7 +20,8 @@ scenarios(vltmt => 1);
 top_filename("t/t_gen_alw.v");
 
 compile(
-    v_flags2 => ["--prof-threads"]
+    # Checks below care about thread count, so use 2 (minimum reasonable)
+    v_flags2 => ["--prof-threads --threads 2"]
     );
 
 execute(
@@ -62,7 +63,7 @@ my $global_mtask_ct = 0;
         if ($this_thread_mtask_ct % 2 != 0) { error("odd number of mtasks found"); }
     }
 }
-if ($gantt_line_ct != 3) { error("wrong number of gantt lines"); }
+if ($gantt_line_ct != 2) { error("wrong number of gantt lines"); }
 if ($global_mtask_ct == 0) { error("wrong number of mtasks, should be > 0"); }
 print "Found $gantt_line_ct lines of gantt data with $global_mtask_ct mtasks\n"
     if $Self->{verbose};
