@@ -42,9 +42,11 @@ endif
 
 ######################################################################
 
+SCENARIOS ?= "--vlt --vltmt --dist"
+
 .PHONY: test
 test:
-	$(PERL) driver.pl $(DRIVER_FLAGS) --vlt --vltmt --dist
+	$(PERL) driver.pl $(DRIVER_FLAGS) $(SCENARIOS)
 
 ######################################################################
 

@@ -11,6 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     verilator_flags2 => ["-unroll-count 1024",
+                         $Self->wno_unopthreads_for_few_cores(),
                          "--stats"],
     );
 

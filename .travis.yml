@@ -1,0 +1,37 @@
+# DESCRIPTION: Travis-CI config
+#
+# Copyright 2003-2019 by Todd Strader. Verilator is free software; you can
+# redistribute it and/or modify it under the terms of either the GNU Lesser
+# General Public License Version 3 or the Perl Artistic License Version 2.0.
+
+language: cpp
+compiler: gcc
+cache: ccache
+
+# Some tests require gdb
+addons:
+  apt:
+    packages:
+    - gdb
+
+# Run three test slices in parallel
+env:
+  - TEST=--dist
+  - TEST=--vlt
+  - TEST=--vltmt
+
+before_install:
+# Perl modules needed for testing
+  - yes yes | sudo cpan -fi Unix::Processors Parallel::Forker Bit::Vector
+before_script:
+  - export VLT_JOBS=$((`nproc` + 1))
+  - export OBJCACHE=ccache
+  - export VERILATOR_ROOT=`pwd`
+  - autoconf
+script:
+  - >
+    ./configure --enable-maintainer-mode --enable-longtests &&
+    make -j $VLT_JOBS &&
+    make test SCENARIOS=$TEST
+after_script:
+  - ccache -s

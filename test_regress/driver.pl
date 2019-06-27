@@ -48,6 +48,7 @@ autoflush STDERR 1;
 our @Orig_ARGV = @ARGV;
 our @Orig_ARGV_Sw;  foreach (@Orig_ARGV) { push @Orig_ARGV_Sw, $_ if /^-/ && !/^-j/; }
 our $Start = time();
+our $Vltmt_threads = 3;
 
 $Debug = 0;
 my $opt_benchmark;
@@ -246,11 +247,23 @@ sub parameter {
     }
 }
 
-sub calc_jobs {
+sub max_procs {
     my $ok = eval "
         use Unix::Processors;
         return Unix::Processors->new->max_online;
     ";
+    return $ok;
+}
+
+sub calc_threads {
+    my $default = shift;
+    my $ok = max_procs();
+    $ok && !$@ or return $default;
+    return ($ok < $default) ? $ok : $default;
+}
+
+sub calc_jobs {
+    my $ok = max_procs();
     $ok && !$@ or die "%Error: Can't use -j: $@\n";
     print "driver.pl: Found $ok cores, using -j ",$ok+1,"\n";
     return $ok + 1;
@@ -603,7 +616,8 @@ sub compile_vlt_flags {
     unshift @verilator_flags, "--gdbbt" if $opt_gdbbt;
     unshift @verilator_flags, "--x-assign unique";  # More likely to be buggy
     unshift @verilator_flags, "--trace" if $opt_trace;
-    unshift @verilator_flags, "--threads 3" if $param{vltmt};
+    my $threads = ::calc_threads($Vltmt_threads);
+    unshift @verilator_flags, "--threads $threads" if $param{vltmt};
     unshift @verilator_flags, "--trace-fst-thread" if $param{vltmt} && $checkflags =~ /-trace-fst/;
     unshift @verilator_flags, "--debug-partition" if $param{vltmt};
     if (defined $opt_optimize) {
@@ -1044,6 +1058,30 @@ sub trace_filename {
     my $self = shift;
     return "$self->{obj_dir}/simx.fst" if $self->{trace_format} =~ /^fst/;
     return "$self->{obj_dir}/simx.vcd";
+}
+
+sub get_default_vltmt_threads {
+    return $Vltmt_threads;
+}
+
+sub too_few_cores {
+    my $threads = ::calc_threads($Vltmt_threads);
+    return $threads < $Vltmt_threads;
+}
+
+sub skip_if_too_few_cores {
+    my $self = (ref $_[0]? shift : $Self);
+    if (too_few_cores()) {
+        $self->skip("Skipping due to too few cores\n");
+    }
+}
+
+sub wno_unopthreads_for_few_cores {
+    if (too_few_cores()) {
+        warn "Too few cores, using -Wno-UNOPTTHREADS\n";
+        return "-Wno-UNOPTTHREADS";
+    }
+    return "";
 }
 
 #----------------------------------------------------------------------

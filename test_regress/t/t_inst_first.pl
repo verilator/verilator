@@ -10,6 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 compile(
+    verilator_flags2 => [$Self->wno_unopthreads_for_few_cores()]
     );
 
 execute(

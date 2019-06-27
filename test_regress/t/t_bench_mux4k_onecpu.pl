@@ -7,12 +7,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-scenarios(vltmt => 1);
+scenarios(simulator => 1);
 
 top_filename("t/t_bench_mux4k.v");
 
 compile(
-    v_flags2 => ["--stats"],
+    v_flags2 => ["--stats",
+                 $Self->wno_unopthreads_for_few_cores()]
     );
 
 if (`numactl --show` !~ /cpu/) {
