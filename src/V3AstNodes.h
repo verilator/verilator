@@ -6118,7 +6118,7 @@ private:
     AstExecGraph* m_execGraphp;  // Execution MTask graph for threads>1 mode
 public:
     AstNetlist()
-        : AstNode(new FileLine("AstRoot", 0))
+        : AstNode(new FileLine(FileLine::builtInFilename(), 0))
         , m_typeTablep(NULL)
         , m_dollarUnitPkgp(NULL)
         , m_evalp(NULL)

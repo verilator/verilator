@@ -28,6 +28,7 @@
 # include "V3Global.h"
 # include "V3Stats.h"
 # include "V3Config.h"
+# include "V3File.h"
 #endif
 
 #include <cstdarg>
@@ -68,13 +69,12 @@ int FileLineSingleton::nameToNumber(const string& filename) {
 }
 
 //! Support XML output
-
 //! Experimental. Updated to also put out the language.
 void FileLineSingleton::fileNameNumMapDumpXml(std::ostream& os) {
     os<<"<files>\n";
     for (FileNameNumMap::const_iterator it = m_namemap.begin(); it != m_namemap.end(); ++it) {
         os<<"<file id=\""<<filenameLetters(it->second)
-          <<"\" filename=\""<<it->first
+          <<"\" filename=\""<<V3OutFormatter::quoteNameControls(it->first, V3OutFormatter::LA_XML)
           <<"\" language=\""<<numberToLang(it->second).ascii()<<"\"/>\n";
     }
     os<<"</files>\n";
@@ -86,7 +86,7 @@ void FileLineSingleton::fileNameNumMapDumpXml(std::ostream& os) {
 FileLine::FileLine(FileLine::EmptySecret) {
     // Sort of a singleton
     m_lineno = 0;
-    m_filenameno = singleton().nameToNumber("AstRoot");
+    m_filenameno = singleton().nameToNumber(FileLine::builtInFilename());
     m_parent = NULL;
 
     m_warnOn = 0;

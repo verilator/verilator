@@ -64,7 +64,7 @@ protected:
             s_preprocp = V3PreProc::createPreProc(cmdfl);
             s_preprocp->debug(debug());
             // Default defines
-            FileLine* prefl = new FileLine(FileLine::internalDefineFilename(), 0);
+            FileLine* prefl = new FileLine(FileLine::builtInFilename(), 0);
             s_preprocp->defineCmdLine(prefl, "VERILATOR", "1");  // LEAK_OK
             s_preprocp->defineCmdLine(prefl, "verilator", "1");  // LEAK_OK
             s_preprocp->defineCmdLine(prefl, "verilator3", "1");  // LEAK_OK
