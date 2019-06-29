@@ -73,7 +73,9 @@ module t (/*AUTOARG*/
 	 $stop;
       end
 
+`ifdef TEST_VERBOSE
       $write("Addr=%d datao_check=%d datao=%d\n", addr, datao_check, datao);
+`endif
       // only run the first 10 addresses for now
       if (addr > 10) begin
 	 $write("*-* All Finished *-*\n");

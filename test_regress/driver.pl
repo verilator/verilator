@@ -668,7 +668,7 @@ sub compile {
     my $self = (ref $_[0]? shift : $Self);
     my %param = (%{$self}, @_);  # Default arguments are from $self
     return 1 if $self->errors || $self->skips || $self->unsupporteds;
-    $self->oprint("Compile\n");
+    $self->oprint("Compile\n") if $self->{verbose};
 
     compile_vlt_flags(%param);
 
@@ -803,11 +803,12 @@ sub compile {
         return 1 if $self->errors || $self->skips || $self->unsupporteds;
 
         if (!$param{fails} && $param{verilator_make_gcc}) {
-            $self->oprint("GCC\n");
+            $self->oprint("GCC\n") if $self->{verbose};
             $self->_run(logfile=>"$self->{obj_dir}/vlt_gcc.log",
-                       cmd=>["make",
-                             "-C ".$self->{obj_dir},
-                             "-f ".$::RealBin."/Makefile_obj",
+                        cmd=>["make",
+                              "-C ".$self->{obj_dir},
+                              "-f ".$::RealBin."/Makefile_obj",
+                              ($self->{verbose} ? "" : "--no-print-directory"),
                               "VM_PREFIX=$self->{VM_PREFIX}",
                               "TEST_OBJ_DIR=$self->{obj_dir}",
                               "CPPFLAGS_DRIVER=-D".uc($self->{name}),
@@ -816,7 +817,7 @@ sub compile {
                               ($param{benchmark}?"OPT_FAST=-O2":""),
                               "$self->{VM_PREFIX}",  # bypass default rule, as we don't need archive
                               ($param{make_flags}||""),
-                              ]);
+                        ]);
         }
     }
     else {
@@ -824,7 +825,7 @@ sub compile {
     }
 
     if ($param{make_pli}) {
-        $self->oprint("Compile vpi\n");
+        $self->oprint("Compile vpi\n") if $self->{verbose};
         my @cmd = ('c++', @{$param{pli_flags}}, "-DIS_VPI", "$self->{t_dir}/$self->{name}.cpp");
 
         $self->_run(logfile=>"$self->{obj_dir}/pli_compile.log",
@@ -840,7 +841,10 @@ sub execute {
     return 1 if $self->errors || $self->skips || $self->unsupporteds;
     my %param = (%{$self}, @_);  # Default arguments are from $self
     # params may be expect or {tool}_expect
-    $self->oprint("Run\n");
+    $self->oprint("Run\n") if $self->{verbose};
+
+    delete $ENV{SYSTEMC_DISABLE_COPYRIGHT_MESSAGE};
+    $ENV{SYSTEMC_DISABLE_COPYRIGHT_MESSAGE} = "DISABLE" if !$self->{verbose};
 
     my $run_env = $param{run_env};
     $run_env .= ' ' if $run_env;
@@ -956,7 +960,7 @@ sub inline_checks {
     my $covfn = $Self->{coverage_filename};
     my $contents = $self->file_contents($covfn);
 
-    $self->oprint("Extract checks\n");
+    $self->oprint("Extract checks\n") if $self->{verbose};
     my $fh = IO::File->new("<$self->{top_filename}");
     while (defined(my $line = $fh->getline)) {
         if ($line =~ /CHECK/) {
