@@ -42,7 +42,7 @@ endif
 
 ######################################################################
 
-SCENARIOS ?= "--vlt --vltmt --dist"
+SCENARIOS ?= --vlt --vltmt --dist
 
 .PHONY: test
 test:
