@@ -32,6 +32,6 @@ script:
   - >
     ./configure --enable-maintainer-mode --enable-longtests &&
     make -j $VLT_JOBS &&
-    make test SCENARIOS=$TEST
+    make test SCENARIOS=$TEST DRIVER_FLAGS="-j 0 --quiet --rerun"
 after_script:
   - ccache -s

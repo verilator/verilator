@@ -59,6 +59,8 @@ my $opt_gdbbt;
 my $opt_gdbsim;
 my $opt_jobs = 1;
 my $opt_optimize;
+my $opt_quiet;
+my $opt_rerun;
 my %opt_scenarios;
 my $opt_site;
 my $opt_stop;
@@ -81,6 +83,8 @@ if (! GetOptions(
           "help"        => \&usage,
           "j=i"         => \$opt_jobs,
           "optimize:s"  => \$opt_optimize,
+          "quiet!"      => \$opt_quiet,
+          "rerun!"      => \$opt_rerun,
           "site!"       => \$opt_site,
           "stop!"       => \$opt_stop,
           "trace!"      => \$opt_trace,
@@ -105,7 +109,6 @@ if (! GetOptions(
 }
 
 $opt_jobs = calc_jobs() if defined $opt_jobs && $opt_jobs==0;
-
 $Fork->max_proc($opt_jobs);
 
 if ((scalar keys %opt_scenarios) < 1) {
@@ -132,28 +135,50 @@ if ($#opt_tests>=2 && $opt_jobs>=2) {
         print STDERR "driver.pl: NO_FORKER: For faster testing 'sudo cpan install Parallel::Forker'\n";
     }
     print STDERR "== Many jobs; redirecting STDIN\n";
-    open(STDIN,  "+>/dev/null");
+    open(STDIN, "+>/dev/null");
 }
 
 
 mkdir "obj_dist";
-our $Log_Filename = "obj_dist/driver_".strftime("%Y%m%d_%H%M%S.log", localtime);
-my $LeftCnt=0; my $OkCnt=0; my $FailCnt=0; my $SkipCnt=0; my $UnsupCnt=0;
-my @fails;
+my $timestart = strftime("%Y%m%d_%H%M%S", localtime);
 
-foreach my $testpl (@opt_tests) {
-    foreach my $scenario (sort keys %opt_scenarios) {
-        next if !$opt_scenarios{$scenario};
-        one_test(pl_filename => $testpl, $scenario=>1);
+my $runner;
+{
+    $runner = Runner->new(
+        driver_log_filename => "obj_dist/driver_${timestart}.log",
+        quiet => $opt_quiet);
+    foreach my $testpl (@opt_tests) {
+        foreach my $scenario (sort keys %opt_scenarios) {
+            next if !$opt_scenarios{$scenario};
+            $runner->one_test(pl_filename => $testpl,
+                              $scenario => 1);
+        }
     }
+    $runner->wait_and_report;
 }
 
-$Fork->wait_all();  # Wait for all children to finish
+if ($opt_rerun && $runner->fail_count) {
+    print("="x70,"\n");
+    print("="x70,"\n");
+    print("RERUN  ==\n\n");
 
-report(\@fails, undef);
-report(\@fails, $Log_Filename);
+    # Avoid parallel run to ensure that isn't causing problems
+    # If > 10 failures something more wrong and get results quickly
+    $Fork->max_proc(1) unless $runner->fail_count > 10;
 
-exit(10) if $FailCnt;
+    my $orig_runner = $runner;
+    $runner = Runner->new(
+        driver_log_filename => "obj_dist/driver_${timestart}_rerun.log",
+        quiet => 0,
+        fail1_cnt => $orig_runner->fail_count);
+    foreach my $test (@{$orig_runner->{fail_tests}}) {
+        $runner->one_test(pl_filename => $test->{pl_filename},
+                          $test->{scenario} => 1);
+    }
+    $runner->wait_and_report;
+}
+
+exit(10) if $runner->fail_count;
 
 #----------------------------------------------------------------------
 
@@ -214,15 +239,50 @@ sub calc_jobs {
     return $ok + 1;
 }
 
+#######################################################################
+#######################################################################
+#######################################################################
+#######################################################################
+# Runner class
+
+package Runner;
+
+sub new {
+    my $class = shift;
+    my $self = {
+        # Parameters
+        driver_log_filename => undef,
+        quiet => 0,
+        # Counts
+        left_cnt => 0,
+        ok_cnt => 0,
+        fail1_cnt => 0,
+        fail_cnt => 0,
+        skip_cnt => 0,
+        unsup_cnt => 0,
+        fail_msgs => [],
+        fail_tests => [],
+        @_};
+    bless $self, $class;
+    return $self;
+}
+
+sub fail_count { return $_[0]->{fail_cnt}; }
+
 sub one_test {
+    my $self = shift;
     my @params = @_;
     my %params = (@params);
-    $LeftCnt++;
-    $Fork->schedule
+    $self->{left_cnt}++;
+    $::Fork->schedule
         (
          test_pl_filename => $params{pl_filename},
          run_on_start => sub {
              # Running in context of child, so can't pass data to parent directly
+             if ($self->{quiet}) {
+                 open(STDOUT, ">/dev/null");
+                 open(STDERR, ">&STDOUT");
+             }
              print("="x70,"\n");
              my $test = VTest->new(@params);
              $test->oprint("="x50,"\n");
@@ -234,43 +294,52 @@ sub one_test {
              $test->_exit;
          },
          run_on_finish => sub {
-             # RUnning in context of parent
+             # Running in context of parent
              my $test = VTest->new(@params);
              $test->_read_status;
              if ($test->ok) {
-                 $OkCnt++;
+                 $self->{ok_cnt}++;
              } elsif ($test->scenario_off && !$test->errors) {
              } elsif ($test->skips && !$test->errors) {
-                 $SkipCnt++;
+                 $self->{skip_cnt}++;
              } elsif ($test->unsupporteds && !$test->errors) {
-                 $UnsupCnt++;
+                 $self->{unsup_cnt}++;
              } else {
-                 $test->oprint("FAILED: ","*"x60,"\n");
+                 $test->oprint("FAILED: $test->{errors}\n");
                  my $j = ($opt_jobs>1?" -j":"");
                  my $makecmd = $ENV{VERILATOR_MAKE} || "make$j &&";
-                 push @fails, ("\t#".$test->soprint("%Error: $test->{errors}\n")
-                               ."\t\t$makecmd test_regress/"
-                               .$test->{pl_filename}
-                               ." ".join(' ', _args_scenario())
-                               ." --".$test->{scenario}."\n");
-                 $FailCnt++;
-                 report(\@fails, $Log_Filename);
+                 push @{$self->{fail_msgs}},
+                     ("\t#".$test->soprint("%Error: $test->{errors}\n")
+                      ."\t\t$makecmd test_regress/"
+                      .$test->{pl_filename}
+                      ." ".join(' ', _args_scenario())
+                      ." --".$test->{scenario}."\n");
+                 push @{$self->{fail_tests}}, $test;
+                 $self->{fail_cnt}++;
+                 $self->report($self->{driver_log_filename});
                  my $other = "";
-                 foreach my $proc ($Fork->running) {
+                 foreach my $proc ($::Fork->running) {
                      $other .= "  ".$proc->{test_pl_filename};
                  }
                  $test->oprint("Simultaneous running tests:",$other,"\n") if $other;
                  if ($opt_stop) { die "%Error: --stop and errors found\n"; }
              }
-             $LeftCnt--;
-             my $LeftMsg = $::Have_Forker ? $LeftCnt : "NO-FORKER";
-             print STDERR "==SUMMARY: Left $LeftMsg  Passed $OkCnt  Unsup $UnsupCnt  Skipped $SkipCnt  Failed $FailCnt\n";
+             $self->{left_cnt}--;
+             $self->print_summary;
          },
          )->ready();
 }
 
+sub wait_and_report {
+    my $self = shift;
+    $self->print_summary(force=>1);
+    $::Fork->wait_all();  # Wait for all children to finish
+    $runner->report(undef);
+    $runner->report($self->{driver_log_filename});
+}
+
 sub report {
-    my $fails = shift;
+    my $self = shift;
     my $filename = shift;
 
     my $fh = \*STDOUT;
@@ -278,17 +347,39 @@ sub report {
         $fh = IO::File->new(">$filename") or die "%Error: $! writing $filename,";
     }
 
-    my $delta = time() - $Start;
     $fh->print("\n");
     $fh->print("="x70,"\n");
-    $fh->printf("TESTS Passed $OkCnt  Unsup $UnsupCnt  Skipped $SkipCnt  Failed $FailCnt  Time %d:%02d\n",
-               int($delta/60),$delta%60);
-    foreach my $f (sort @$fails) {
+    foreach my $f (sort @{$self->{fail_msgs}}) {
         chomp $f;
         $fh->print("$f\n");
     }
-    $fh->printf("TESTS Passed $OkCnt  Unsup $UnsupCnt  Skipped $SkipCnt  Failed $FailCnt  Time %d:%02d\n",
-               int($delta/60),$delta%60);
+    $fh->print("TESTS DONE: ".$self->sprint_summary."\n");
+}
+
+sub print_summary {
+    my $self = shift;
+    my %params = (force => 0, # Force printing
+                  @_);
+    my $leftmsg = $::Have_Forker ? $self->{left_cnt} : "NO-FORKER";
+    print STDERR ("==SUMMARY: ".$self->sprint_summary."\n")
+        if !$self->{quiet} || !$self->{left_cnt} || $params{force};
+}
+
+sub sprint_summary {
+    my $self = shift;
+
+    my $delta = time() - $Start;
+    my $leftmsg = $::Have_Forker ? $self->{left_cnt} : "NO-FORKER";
+    # Ordered below most severe to least severe
+    my $out = "";
+    $out .= "  Left $leftmsg" if $self->{left_cnt};
+    $out .= "  Failed $self->{fail_cnt}";
+    $out .= "  Failed-First $self->{fail1_cnt}";
+    $out .= "  Skipped $self->{skip_cnt}";
+    $out .= "  Unsup $self->{unsup_cnt}";
+    $out .= "  Passed $self->{ok_cnt}";
+    $out .= sprintf("  Time %d:%02d", int($delta/60), $delta%60);
+    return $out;
 }
 
 sub _args_scenario {
@@ -568,6 +659,8 @@ sub _write_status {
     my $self = shift;
     my $filename = $self->{status_filename};
     my $fh = IO::File->new(">$filename") or die "%Error: $! $filename,";
+    $Data::Dumper::Indent = 1;
+    $Data::Dumper::Sortkeys = 1;
     print $fh Dumper($self);
     print $fh "1;";
     $fh->close();
@@ -582,9 +675,15 @@ sub _read_status {
         $self->error("driver.pl _read_status file missing: $filename");
         return;
     }
-    require $filename or die "%Error: $! $filename,";
+    {
+        local %INC = ();
+        require $filename or die "%Error: $! $filename,";
+    }
     if ($VAR1) {
         %{$self} = %{$VAR1};
+    } else {
+        $self->error("driver.pl _read_status file empty: $filename");
+        return;
     }
 }
 
@@ -2158,6 +2257,17 @@ number of cores installed.  Requires Perl's Parallel::Forker package.
 
 Randomly turn on/off different optimizations.  With specific flags,
 use those optimization settings
+
+=item --quiet
+
+Suppress all output except for pass/fail.  Intended for use only in
+automated regressions.  See also C<--rerun>, and C<--verbose> which is not
+the opposite of C<--quiet>.
+
+=item --rerun
+
+Rerun all tests that failed in this run. Reruns force the flags
+C<--no-quiet --j 1>.
 
 =item --site
 
