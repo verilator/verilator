@@ -947,7 +947,7 @@ class LinkDotFindVisitor : public AstNVisitor {
                         nodep->v3error("Duplicate declaration of signal: "
                                        <<nodep->prettyName()<<endl
                                        <<(ansiWarn
-                                          ? findvarp->warnMore()+"... note: ANSI ports must have type declared with the I/O (IEEE 2017 23.2.2.2)\n"
+                                          ? nodep->warnMore()+"... note: ANSI ports must have type declared with the I/O (IEEE 2017 23.2.2.2)\n"
                                           : "")
                                        <<nodep->warnContextPrimary()<<endl
                                        <<findvarp->warnMore()<<"... Location of original declaration"<<endl
