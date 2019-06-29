@@ -9,48 +9,47 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt_all => 1);
 
-# Thi rule requires GNU make > 4.1 (or so, known broken in 3.81)
-#%__Slow.o: %__Slow.cpp
-#        $(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_SLOW) -c -o $@ $<
-make_version() < 4.1 and unsupported("Verilator unsupported, require GNU Make version >= 4.1");
-
-compile(
-    v_flags2 => ["--trace --output-split 1 --output-split-cfuncs 1 --exe ../$Self->{main_filename}"],
-    verilator_make_gcc => 0,
-    );
-
-# We don't use the standard test_regress rules, as want to test the rules
-# properly build
-run(logfile=>"$Self->{obj_dir}/vlt_gcc.log",
-    cmd=>["make",
-          "-C ".$Self->{obj_dir},
-          "-f $Self->{VM_PREFIX}.mk",
-          "-j 4",
-          "VM_PARALLEL_BUILDS=1",  # Important to this test
-          "VM_PREFIX=$Self->{VM_PREFIX}",
-          "TEST_OBJ_DIR=$Self->{obj_dir}",
-          "CPPFLAGS_DRIVER=-D".uc($Self->{name}),
-          ($opt_verbose ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1":""),
-          "OPT_FAST=-O2",
-          "OPT_SLOW=-O0",
-          ($param{make_flags}||""),
-    ]);
-
-execute(
-    check_finished => 1,
-    );
-
-{
-    my $got1;
-    foreach my $file (glob("$Self->{obj_dir}/*.cpp")) {
-        $got1 = 1 if $file =~ /__1/;
-        check_cpp($file);
+while (1) {
+    # Thi rule requires GNU make > 4.1 (or so, known broken in 3.81)
+    #%__Slow.o: %__Slow.cpp
+    #        $(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_SLOW) -c -o $@ $<
+    if (make_version() < 4.1) {
+        skip("Test requires GNU Make version >= 4.1");
+        last;
     }
-    $got1 or error("No __1 split file found");
-}
-check_gcc_flags("$Self->{obj_dir}/vlt_gcc.log");
 
-ok(1);
+    compile(
+        v_flags2 => ["--trace --output-split 1 --output-split-cfuncs 1 --exe ../$Self->{main_filename}"],
+        verilator_make_gcc => 0,
+        );
+
+    # We don't use the standard test_regress rules, as want to test the rules
+    # properly build
+    run(logfile=>"$Self->{obj_dir}/vlt_gcc.log",
+        cmd=>["make",
+              "-C ".$Self->{obj_dir},
+              "-f $Self->{VM_PREFIX}.mk",
+              "-j 4",
+              "VM_PARALLEL_BUILDS=1",  # Important to this test
+              "VM_PREFIX=$Self->{VM_PREFIX}",
+              "TEST_OBJ_DIR=$Self->{obj_dir}",
+              "CPPFLAGS_DRIVER=-D".uc($Self->{name}),
+              ($opt_verbose ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1":""),
+              "OPT_FAST=-O2",
+              "OPT_SLOW=-O0",
+              ($param{make_flags}||""),
+        ]);
+
+    execute(
+        check_finished => 1,
+        );
+
+    check_splits();
+    check_gcc_flags("$Self->{obj_dir}/vlt_gcc.log");
+
+    ok(1);
+    last;
+}
 1;
 
 sub make_version {
@@ -60,6 +59,15 @@ sub make_version {
     } else {
         return -1;
     }
+}
+
+sub check_splits {
+    my $got1;
+    foreach my $file (glob("$Self->{obj_dir}/*.cpp")) {
+        $got1 = 1 if $file =~ /__1/;
+        check_cpp($file);
+    }
+    $got1 or error("No __1 split file found");
 }
 
 sub check_cpp {
