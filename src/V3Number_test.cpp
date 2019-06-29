@@ -38,11 +38,12 @@ void test(const string& lhss, const string& op, const string& rhss, const string
     char* r1 = strdup(rhss.c_str());
     char* e1 = strdup(exps.c_str());
 
-    V3Number lhnum (new FileLine("ck", __LINE__), l1);
-    V3Number rhnum (new FileLine("ck", __LINE__), r1);
-    V3Number expnum (new FileLine("ck", __LINE__), e1);
+    FileLine fl = new FileLine(FileLine::internalDefineFinename(), 0);
 
-    V3Number gotnum (new FileLine("ck", __LINE__), expnum.width());
+    V3Number lhnum (fl, l1);
+    V3Number rhnum (fl, r1);
+    V3Number expnum (fl, e1);
+    V3Number gotnum (fl, expnum.width());
 
     if (op=="redOr")            gotnum.opRedOr   (lhnum);
     else if (op=="redAnd")      gotnum.opRedAnd  (lhnum);
@@ -82,7 +83,7 @@ void test(const string& lhss, const string& op, const string& rhss, const string
           <<"     = "<<expnum<<endl
           <<"    =? "<<gotnum<<endl);
 
-    V3Number ok (new FileLine("ck", __LINE__), 1);
+    V3Number ok (fl, 1);
     ok.opCaseEq(expnum, gotnum);
     if (ok.toUInt()!=1) {
         v3fatalSrc("%Error:Test FAILED");

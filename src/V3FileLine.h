@@ -70,8 +70,8 @@ protected:
 //! millions). To save space, per-file information (e.g. filename, source
 //! language is held in tables in the FileLineSingleton class.
 class FileLine {
-    int m_lineno;
-    int m_filenameno;
+    int m_lineno;  // `line corrected line number
+    int m_filenameno;  // `line corrected filename number
     FileLine* m_parent;  // Parent line that included this line
     std::bitset<V3ErrorCode::_ENUM_MAX> m_warnOn;
 
