@@ -246,6 +246,7 @@ sub calc_jobs {
 # Runner class
 
 package Runner;
+use strict;
 
 sub new {
     my $class = shift;
@@ -361,14 +362,17 @@ sub print_summary {
     my %params = (force => 0, # Force printing
                   @_);
     my $leftmsg = $::Have_Forker ? $self->{left_cnt} : "NO-FORKER";
-    print STDERR ("==SUMMARY: ".$self->sprint_summary."\n")
-        if !$self->{quiet} || !$self->{left_cnt} || $params{force};
+    if (!$self->{quiet} || !$self->{left_cnt} || $params{force}
+        || time() > ($self->{_next_summary_time} || 0)) {
+        $self->{_next_summary_time} = time() + 15;
+        print STDERR ("==SUMMARY: ".$self->sprint_summary."\n")
+    }
 }
 
 sub sprint_summary {
     my $self = shift;
 
-    my $delta = time() - $Start;
+    my $delta = time() - $::Start;
     my $leftmsg = $::Have_Forker ? $self->{left_cnt} : "NO-FORKER";
     # Ordered below most severe to least severe
     my $out = "";
@@ -2260,9 +2264,9 @@ use those optimization settings
 
 =item --quiet
 
-Suppress all output except for pass/fail.  Intended for use only in
-automated regressions.  See also C<--rerun>, and C<--verbose> which is not
-the opposite of C<--quiet>.
+Suppress all output except for failures and progress messages every 15
+seconds.  Intended for use only in automated regressions.  See also
+C<--rerun>, and C<--verbose> which is not the opposite of C<--quiet>.
 
 =item --rerun
 
