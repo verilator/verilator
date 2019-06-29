@@ -411,7 +411,8 @@ private:
                 condp->deleteTree();
             }
             else if (!lvalue
-                     && !VN_IS(nodep->backp(), ArraySel)) {  // Too complicated and slow if mid-multidimension
+                     // Making a scalar would break if we're making an array
+                     && !VN_IS(nodep->dtypep()->skipRefp(), NodeArrayDType)) {
                 // ARRAYSEL(...) -> COND(LT(bit<maxbit), ARRAYSEL(...), {width{1'bx}})
                 AstNRelinker replaceHandle;
                 nodep->unlinkFrBack(&replaceHandle);

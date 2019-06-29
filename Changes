@@ -8,6 +8,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix not reporting some duplicate signals/ports, bug1462. [Peter Gerst]
 
+****  Fix not in array context on non-power-of-two slices, msg2946. [Yu Sheng Lin]
+
 
 * Verilator 4.016 2016-06-16
 

@@ -17,16 +17,8 @@ module t (/*AUTOARG*/
    int A [7][1], B [8][1];
    int a    [1], b    [1];
    always_ff @(posedge clk) begin
-`ifdef verilator  // msg2946
- `define WORK_AROUND
-`endif
-`ifdef WORK_AROUND
-      a <= A[0];
-      b <= B[crc[2:0]];
-`else
       a <= A[crc[2:0]];
-      b <= B[0];
-`endif
+      b <= B[crc[2:0]];
    end
    wire [63:0] result = {a[0], b[0]};
 
@@ -67,7 +59,7 @@ module t (/*AUTOARG*/
          $write("[%0t] cyc==%0d crc=%x sum=%x\n",$time, cyc, crc, sum);
          if (crc !== 64'hc77bb9b3784ea091) $stop;
          // What checksum will we end up with (above print should match)
-`define EXPECTED_SUM 64'had01cfb7e84da129
+`define EXPECTED_SUM 64'h619f75c3a6d948bd
          if (sum !== `EXPECTED_SUM) $stop;
          $write("*-* All Finished *-*\n");
          $finish;
