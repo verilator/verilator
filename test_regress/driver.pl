@@ -172,6 +172,12 @@ if ($opt_rerun && $runner->fail_count) {
         quiet => 0,
         fail1_cnt => $orig_runner->fail_count);
     foreach my $test (@{$orig_runner->{fail_tests}}) {
+        if (0) {  # TBD if this is required - rare that intermediate results are bad
+            # Remove old results to force hard rebuild
+            system("rm", "-rf", "$test->{obj_dir}__fail1");
+            system("mv", "$test->{obj_dir}", "$test->{obj_dir}__fail1");
+        }
+        # Reschedule test
         $runner->one_test(pl_filename => $test->{pl_filename},
                           $test->{scenario} => 1);
     }
@@ -313,7 +319,7 @@ sub one_test {
                      ("\t#".$test->soprint("%Error: $test->{errors}\n")
                       ."\t\t$makecmd test_regress/"
                       .$test->{pl_filename}
-                      ." ".join(' ', _args_scenario())
+                      ." ".join(' ', _manual_args())
                       ." --".$test->{scenario}."\n");
                  push @{$self->{fail_tests}}, $test;
                  $self->{fail_cnt}++;
@@ -374,19 +380,19 @@ sub sprint_summary {
 
     my $delta = time() - $::Start;
     my $leftmsg = $::Have_Forker ? $self->{left_cnt} : "NO-FORKER";
-    # Ordered below most severe to least severe
     my $out = "";
     $out .= "  Left $leftmsg" if $self->{left_cnt};
+    $out .= "  Passed $self->{ok_cnt}";
+    # Ordered below most severe to least severe
     $out .= "  Failed $self->{fail_cnt}";
     $out .= "  Failed-First $self->{fail1_cnt}";
     $out .= "  Skipped $self->{skip_cnt}";
     $out .= "  Unsup $self->{unsup_cnt}";
-    $out .= "  Passed $self->{ok_cnt}";
     $out .= sprintf("  Time %d:%02d", int($delta/60), $delta%60);
     return $out;
 }
 
-sub _args_scenario {
+sub _manual_args {
     # Return command line with scenarios stripped
     my @out;
   arg:
@@ -396,6 +402,9 @@ sub _args_scenario {
                 next arg if ("--$allscarg" eq $arg);
             }
         }
+        # Also strip certain flags that per-test debugging won't want
+        next arg if $arg eq '--rerun';
+        next arg if $arg eq '--quiet';
         push @out, $arg;
     }
     return @out;
