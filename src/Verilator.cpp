@@ -624,8 +624,8 @@ int main(int argc, char** argv, char** env) {
     // and after removing files as may make debug output)
     VHashSha1::selfTest();
     AstBasicDTypeKwd::selfTest();
-    V3Graph::selfTest();
     if (v3Global.opt.debugSelfTest()) {
+        V3Graph::selfTest();
         V3TSP::selfTest();
         V3ScoreboardBase::selfTest();
         V3Partition::selfTest();

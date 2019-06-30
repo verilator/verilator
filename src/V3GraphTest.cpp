@@ -32,15 +32,6 @@
 // Test class
 
 class V3GraphTest {
-public:
-    // ***These tests only run with DEBUG ON***
-    static int debug() {
-        static int level = -1;
-        // Note setting just --debug will not enable this, as we exit when we run the test
-        if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__, 0);
-        return level;
-    }
-
 protected:
     // MEMBERS
     DfaGraph m_graph;
@@ -59,9 +50,8 @@ protected:
 public:
     V3GraphTest() {}
     virtual ~V3GraphTest() {}
-    void run() {
-        if (debug()) runTest();
-    }
+    VL_DEBUG_FUNC;  // Declare debug()
+    void run() { runTest(); }
 };
 
 //######################################################################
@@ -69,7 +59,7 @@ public:
 // Vertices and nodes
 
 class V3GraphTestVertex : public V3GraphVertex {
-    string      m_name;
+    string m_name;
 public:
     V3GraphTestVertex(V3Graph* graphp, const string& name)
         : V3GraphVertex(graphp), m_name(name) {}
@@ -363,5 +353,4 @@ void V3Graph::selfTest() {
     { V3GraphTestVars test; test.run(); }
     { V3GraphTestDfa test; test.run(); }
     { V3GraphTestImport test; test.run(); }
-    if (V3GraphTest::debug()) v3fatalSrc("Exiting due to graph testing enabled");
 }
