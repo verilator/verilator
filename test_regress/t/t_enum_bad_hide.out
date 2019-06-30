@@ -1,0 +1,4 @@
+%Warning-VARHIDDEN: t/t_enum_bad_hide.v:10: Declaration of enum value hides declaration in upper scope: HIDE_VALUE
+                    t/t_enum_bad_hide.v:6: ... Location of original declaration
+                    ... Use "/* verilator lint_off VARHIDDEN */" and lint_on around source to disable this message.
+%Error: Exiting due to

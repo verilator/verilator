@@ -173,7 +173,7 @@ void V3Options::checkParameters() {
                 it != m_parameters.end(); ++it) {
             msg << " " << it->first;
         }
-        v3fatal(msg.str()<<endl);
+        v3error(msg.str());
     }
 }
 

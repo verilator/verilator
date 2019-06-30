@@ -381,8 +381,8 @@ sub sprint_summary {
     my $delta = time() - $::Start;
     my $leftmsg = $::Have_Forker ? $self->{left_cnt} : "NO-FORKER";
     my $out = "";
-    $out .= "  Left $leftmsg" if $self->{left_cnt};
-    $out .= "  Passed $self->{ok_cnt}";
+    $out .= "Left $leftmsg  " if $self->{left_cnt};
+    $out .= "Passed $self->{ok_cnt}";
     # Ordered below most severe to least severe
     $out .= "  Failed $self->{fail_cnt}";
     $out .= "  Failed-First $self->{fail1_cnt}";
@@ -778,7 +778,8 @@ sub lint {
 
 sub compile {
     my $self = (ref $_[0]? shift : $Self);
-    my %param = (%{$self}, @_);  # Default arguments are from $self
+    my %param = (tee => 1,
+                 %{$self}, @_);  # Default arguments are from $self
     return 1 if $self->errors || $self->skips || $self->unsupporteds;
     $self->oprint("Compile\n") if $self->{verbose};
 
@@ -909,6 +910,7 @@ sub compile {
 
         $self->_run(logfile=>"$self->{obj_dir}/vlt_compile.log",
                     fails=>$param{fails},
+                    tee=>$param{tee},
                     expect=>$param{expect},
                     expect_filename=>$param{expect_filename},
                     cmd=>\@cmdargs) if $::Opt_Verilation;

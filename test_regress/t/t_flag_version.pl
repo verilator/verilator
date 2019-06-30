@@ -10,19 +10,19 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(dist => 1);
 
 foreach my $prog (
+    # See also t_flag_help.pl
     "../bin/verilator",
     "../bin/verilator_coverage",
-    "../bin/verilator_difftree",
-    "../bin/verilator_gantt",
-    "../bin/verilator_profcfunc",
+    #"../bin/verilator_difftree",
+    #"../bin/verilator_gantt",
+    #"../bin/verilator_profcfunc",
     ) {
-    run(fails => 1,
-        cmd => ["perl",$prog,
-                "--help"],
+    run(fails => 0,
+        cmd => ["perl", $prog,
+                "--version"],
         logfile => "$Self->{obj_dir}/t_help.log",
-        tee => 0,
+        expect => qr/^Verilator/,
         );
-    file_grep("$Self->{obj_dir}/t_help.log", qr/DISTRIBUTION/i);
 }
 
 ok(1);

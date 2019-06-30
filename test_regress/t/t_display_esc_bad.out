@@ -1,0 +1,2 @@
+%Error: t/t_display_esc_bad.v:8: Unknown escape sequence: \x
+%Error: Exiting due to

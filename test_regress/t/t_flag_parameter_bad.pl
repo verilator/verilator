@@ -7,13 +7,15 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-scenarios(vlt_all => 1);
+scenarios(vlt => 1);
 
-compile(
-    v_flags2 => ["--debug --no-debug-leak"],
-    verilator_make_gcc => 0,
-    make_top_shell => 0,
-    make_main => 0,
+top_filename("t/t_flag_parameter.v");
+
+lint(
+    fails => 1,
+    # It is not possible to put them into the options file
+    v_flags2 => ['-GPARAM_THAT_DOES_NON_EXIST=1'],
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);
