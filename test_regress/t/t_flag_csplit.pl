@@ -25,7 +25,8 @@ while (1) {
 
     # We don't use the standard test_regress rules, as want to test the rules
     # properly build
-    run(logfile=>"$Self->{obj_dir}/vlt_gcc.log",
+    run(logfile => "$Self->{obj_dir}/vlt_gcc.log",
+        tee => $self->{verbose},
         cmd=>["make",
               "-C ".$Self->{obj_dir},
               "-f $Self->{VM_PREFIX}.mk",
