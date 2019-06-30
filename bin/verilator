@@ -1280,7 +1280,7 @@ good value.
 When the input Verilog contains more than one top level module, specifies
 the name of the top level Verilog module to become the top, and sets the
 default for if --prefix is not used.  This is not needed with standard
-designs with only one top.
+designs with only one top.  See also the MULTITOP warning section.
 
 =item --trace
 
@@ -3718,14 +3718,31 @@ correctly.
 
 =item MULTITOP
 
-Error that there are multiple top level modules, that is modules not
-instantiated by any other module.  Verilator only supports a single top
-level, if you need more, create a module that wraps all of the top modules.
+Warns that there are multiple top level modules, that is modules not
+instantiated by any other module, and both modules were put on the command
+line (not in a library). Three likely cases:
 
-Often this error is because some low level cell is being read in, but is
-not really needed.  The best solution is to insure that each module is in a
-unique file by the same name.  Otherwise, make sure all library files are
-read in as libraries with -v, instead of automatically with -y.
+1. A single module is intended to be the top. This warning then occurs
+because some low level cell is being read in, but is not really needed as
+part of the design.  The best solution for this situation is to ensure that
+only the top module is put on the command line without any flags, and all
+remaining library files are read in as libraries with -v, or are
+automatically resolved by having filenames that match the module names.
+
+2. A single module is intended to be the top, the name of it is known, and
+all other modules should be ignored if not part of the design.  The best
+solution is to use the --top-module option to specify the top module's
+name. All other modules that are not part of the design will be for the
+most part ignored (they must be clean in syntax and their contents will be
+removed as part of the Verilog module elaboration process.)
+
+3. Multiple modules are intended to be design tops, e.g. when linting a
+library file.  As multiple modules are desired, disable the MULTITOP
+warning.  All input/outputs will go uniquely to each module, with any
+conflicting and identical signal names being uniquified by adding a prefix
+based on the top module name followed by __02E (a Verilator-encoded ASCII
+".').  This renaming is done even if the two modules' signals seem
+identical, e.g. multiple modules with a "clk" input.
 
 =item PINCONNECTEMPTY
 

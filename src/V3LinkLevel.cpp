@@ -60,17 +60,18 @@ void V3LinkLevel::modSortByLevel() {
         if (nodep->level()<=2) {
             if (topp) {
                 static int warnedOnce = 0;
-                nodep->v3warn(E_MULTITOP, "Unsupported: Multiple top level modules: "
-                              <<nodep->prettyName()<<" and "<<topp->prettyName()<<endl
+                nodep->v3warn(MULTITOP, "Multiple top level modules: "
+                              <<nodep->prettyName()<<" and "<<topp->prettyName()
                               <<(!warnedOnce++
-                                 ? (nodep->warnMore()
-                                    +"... Fix, or use --top-module option to select which you want.")
+                                 ? ("\n"+nodep->warnMore()
+                                    +"... Suggest see manual; fix the duplicates, or use --top-module to select top.")
                                  : ""));
             }
             topp = nodep;
         }
         vec.push_back(nodep);
     }
+    // Reorder the netlist's modules to have modules in level sorted order
     stable_sort(vec.begin(), vec.end(), CmpLevel());  // Sort the vector
     UINFO(9,"modSortByLevel() sorted\n");  // Comment required for gcc4.6.3 / bug666
     for (ModVec::iterator it = vec.begin(); it != vec.end(); ++it) {
@@ -95,7 +96,10 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
     UINFO(2,__FUNCTION__<<": "<<endl);
     // We do ONLY the top module
     AstNodeModule* oldmodp = rootp->modulesp();
-    if (!oldmodp) rootp->v3fatalSrc("No module found to process");
+    if (!oldmodp) {  // Later V3LinkDot will warn
+        UINFO(1,"No module found to wrap\n");
+        return;
+    }
     AstNodeModule* newmodp = new AstModule(oldmodp->fileline(), string("TOP"));
     // Make the new module first in the list
     oldmodp->unlinkFrBackWithNext();
@@ -108,62 +112,10 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
     // the rest must be done after data type resolution
     wrapTopCell(rootp);
 
-    V3Global::dumpCheckGlobalTree("wraptop", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
-}
-
-void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
-    AstNodeModule* newmodp = rootp->modulesp();
-    if (!newmodp || !newmodp->isTop()) rootp->v3fatalSrc("No TOP module found to process");
-    AstNodeModule* oldmodp = VN_CAST(newmodp->nextp(), NodeModule);
-    if (!oldmodp) rootp->v3fatalSrc("No module found to process");
-
-    // Add instance
-    AstCell* cellp = new AstCell(newmodp->fileline(),
-                                 (!v3Global.opt.l2Name().empty()
-                                  ? v3Global.opt.l2Name() : oldmodp->name()),
-                                 oldmodp->name(),
-                                 NULL, NULL, NULL);
-    cellp->modp(oldmodp);
-    newmodp->addStmtp(cellp);
-
-    // Add pins
-    for (AstNode* subnodep=oldmodp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {
-        if (AstVar* oldvarp = VN_CAST(subnodep, Var)) {
-            UINFO(8,"VARWRAP "<<oldvarp<<endl);
-            if (oldvarp->isIO()) {
-                AstVar* varp = oldvarp->cloneTree(false);
-                newmodp->addStmtp(varp);
-                varp->sigPublic(true);  // User needs to be able to get to it...
-                if (oldvarp->isIO()) {
-                    oldvarp->primaryIO(false);
-                    varp->primaryIO(true);
-                }
-                if (varp->direction().isRefOrConstRef()) {
-                    varp->v3error("Unsupported: ref/const ref as primary input/output: "
-                                  <<varp->prettyName());
-                }
-                if (varp->isIO() && v3Global.opt.systemC()) {
-                    varp->sc(true);
-                    // User can see trace one level down from the wrapper
-                    // Avoids packing & unpacking SC signals a second time
-                    varp->trace(false);
-                }
-
-                AstPin* pinp = new AstPin(oldvarp->fileline(), 0, oldvarp->name(),
-                                          new AstVarRef(varp->fileline(),
-                                                        varp, oldvarp->isWritable()));
-                // Skip length and width comp; we know it's a direct assignment
-                pinp->modVarp(oldvarp);
-                cellp->addPinsp(pinp);
-            }
-        }
-    }
-
     // Instantiate all packages under the top wrapper
     // This way all later SCOPE based optimizations can ignore packages
     for (AstNodeModule* modp = rootp->modulesp(); modp; modp=VN_CAST(modp->nextp(), NodeModule)) {
-        if (VN_IS(modp, Package)
-            && modp != oldmodp) {  // Don't duplicate if didn't find a top module
+        if (VN_IS(modp, Package)) {
             AstCell* cellp = new AstCell(modp->fileline(),
                                          // Could add __03a__03a="::" to prevent conflict
                                          // with module names/"v"
@@ -172,6 +124,91 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                                          NULL, NULL, NULL);
             cellp->modp(modp);
             newmodp->addStmtp(cellp);
+        }
+    }
+
+    V3Global::dumpCheckGlobalTree("wraptop", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
+}
+
+void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
+    AstNodeModule* newmodp = rootp->modulesp();
+    if (!newmodp || !newmodp->isTop()) rootp->v3fatalSrc("No TOP module found to insert under");
+
+    // Find all duplicate signal names (if multitop)
+    typedef vl_unordered_set<std::string> NameSet;
+    NameSet ioNames;
+    NameSet dupNames;
+    // For all modulues, skipping over new top
+    for (AstNodeModule* oldmodp = VN_CAST(rootp->modulesp()->nextp(), NodeModule);
+         oldmodp && oldmodp->level() <= 2;
+         oldmodp = VN_CAST(oldmodp->nextp(), NodeModule)) {
+        for (AstNode* subnodep = oldmodp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {
+            if (AstVar* oldvarp = VN_CAST(subnodep, Var)) {
+                if (oldvarp->isIO()) {
+                    if (ioNames.find(oldvarp->name()) != ioNames.end()) {
+                        //UINFO(8, "Multitop dup I/O found: "<<oldvarp<<endl);
+                        dupNames.insert(oldvarp->name());
+                    } else {
+                        ioNames.insert(oldvarp->name());
+                    }
+                }
+            }
+        }
+    }
+
+    // For all modulues, skipping over new top
+    for (AstNodeModule* oldmodp = VN_CAST(rootp->modulesp()->nextp(), NodeModule);
+         oldmodp && oldmodp->level() <= 2;
+         oldmodp = VN_CAST(oldmodp->nextp(), NodeModule)) {
+        if (VN_IS(oldmodp, Package)) continue;
+        // Add instance
+        UINFO(5,"LOOP "<<oldmodp<<endl);
+        AstCell* cellp = new AstCell(newmodp->fileline(),
+                                     (!v3Global.opt.l2Name().empty()
+                                      ? v3Global.opt.l2Name() : oldmodp->name()),
+                                     oldmodp->name(),
+                                     NULL, NULL, NULL);
+        cellp->modp(oldmodp);
+        newmodp->addStmtp(cellp);
+
+        // Add pins
+        for (AstNode* subnodep=oldmodp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {
+            if (AstVar* oldvarp = VN_CAST(subnodep, Var)) {
+                UINFO(8,"VARWRAP "<<oldvarp<<endl);
+                if (oldvarp->isIO()) {
+                    string name = oldvarp->name();
+                    if (dupNames.find(name) != dupNames.end()) {
+                        // __02E=. while __DOT__ looks nicer but will break V3LinkDot
+                        name = oldmodp->name()+"__02E"+name;
+                    }
+
+                    AstVar* varp = oldvarp->cloneTree(false);
+                    varp->name(name);
+                    newmodp->addStmtp(varp);
+                    varp->sigPublic(true);  // User needs to be able to get to it...
+                    if (oldvarp->isIO()) {
+                        oldvarp->primaryIO(false);
+                        varp->primaryIO(true);
+                    }
+                    if (varp->direction().isRefOrConstRef()) {
+                        varp->v3error("Unsupported: ref/const ref as primary input/output: "
+                                      <<varp->prettyName());
+                    }
+                    if (varp->isIO() && v3Global.opt.systemC()) {
+                        varp->sc(true);
+                        // User can see trace one level down from the wrapper
+                        // Avoids packing & unpacking SC signals a second time
+                        varp->trace(false);
+                    }
+
+                    AstPin* pinp = new AstPin(oldvarp->fileline(), 0, varp->name(),
+                                              new AstVarRef(varp->fileline(),
+                                                            varp, oldvarp->isWritable()));
+                    // Skip length and width comp; we know it's a direct assignment
+                    pinp->modVarp(oldvarp);
+                    cellp->addPinsp(pinp);
+                }
+            }
         }
     }
 }

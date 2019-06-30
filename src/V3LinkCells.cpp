@@ -141,7 +141,8 @@ private:
             // We'll throw the error when we know the module will really be needed.
             string prettyName = AstNode::prettyName(modName);
             V3Parse parser (v3Global.rootp(), m_filterp, m_parseSymp);
-            parser.parseFile(nodep->fileline(), prettyName, false, "");
+            // true below -> other simulators treat modules in link-found files as library cells
+            parser.parseFile(nodep->fileline(), prettyName, true, "");
             V3Error::abortIfErrors();
             // We've read new modules, grab new pointers to their names
             readModNames();

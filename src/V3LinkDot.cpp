@@ -674,18 +674,20 @@ class LinkDotFindVisitor : public AstNVisitor {
         // packages before using packages
         iterateChildrenBackwards(nodep);
 
-        // The first module in the list is always the top module (sorted before this is called).
+        // The first modules in the list are always the top modules
+        // (sorted before this is called).
         // This may not be the module with isTop() set, as early in the steps,
         // wrapTop may have not been created yet.
-        AstNodeModule* topmodp = nodep->modulesp();
-        if (!topmodp) {
+        if (!nodep->modulesp()) {
             nodep->v3error("No top level module found");
-        } else {
-            UINFO(8,"Top Module: "<<topmodp<<endl);
+        }
+        for (AstNodeModule* modp = nodep->modulesp(); modp && modp->level() <= 2;
+             modp = VN_CAST(modp->nextp(), NodeModule)) {
+            UINFO(8,"Top Module: "<<modp<<endl);
             m_scope = "TOP";
-            m_curSymp = m_modSymp = m_statep->insertTopCell(topmodp, m_scope);
+            m_curSymp = m_modSymp = m_statep->insertTopCell(modp, m_scope);
             {
-                iterate(topmodp);
+                iterate(modp);
             }
             m_scope = "";
             m_curSymp = m_modSymp = NULL;

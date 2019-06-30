@@ -90,7 +90,7 @@ private:
     // VISITORS
     virtual void visit(AstNetlist* nodep) {
         AstNodeModule* modp = nodep->topModulep();
-        if (!modp) { nodep->v3error("No root module specified"); return; }
+        if (!modp) { nodep->v3error("No top level module found"); return; }
         // Operate starting at the top of the hierarchy
         m_aboveCellp = NULL;
         m_aboveScopep = NULL;

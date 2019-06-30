@@ -1,4 +1,5 @@
-%Error-MULTITOP: t/t_flag_topmodule.v:14: Unsupported: Multiple top level modules: a2 and a
-                 t/t_flag_topmodule.v:14: ... Fix, or use --top-module option to select which you want.
-%Error-MULTITOP: t/t_flag_topmodule.v:21: Unsupported: Multiple top level modules: b and a2
+%Warning-MULTITOP: t/t_flag_topmodule.v:14: Multiple top level modules: a2 and a
+                   t/t_flag_topmodule.v:14: ... Suggest see manual; fix the duplicates, or use --top-module to select top.
+                   ... Use "/* verilator lint_off MULTITOP */" and lint_on around source to disable this message.
+%Warning-MULTITOP: t/t_flag_topmodule.v:21: Multiple top level modules: b and a2
 %Error: Exiting due to

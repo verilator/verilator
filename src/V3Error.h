@@ -49,7 +49,6 @@ public:
         I_DEF_NETTYPE_WIRE,  // `default_nettype is WIRE (false=NONE)
         // Error codes:
         E_DETECTARRAY,  // Error: Unsupported: Can't detect changes on arrayed variable
-        E_MULTITOP,     // Error: Multiple top level modules
         E_PORTSHORT,    // Error: Output port is connected to a constant, electrical short
         E_TASKNSVAR,    // Error: Task I/O not simple
         //
@@ -89,6 +88,7 @@ public:
         LITENDIAN,      // Little bit endian vector
         MODDUP,         // Duplicate module
         MULTIDRIVEN,    // Driven from multiple blocks
+        MULTITOP,       // Multiple top level modules
         PINMISSING,     // Cell pin not specified
         PINNOCONNECT,   // Cell pin not connected
         PINCONNECTEMPTY,// Cell pin connected by name with empty reference
@@ -131,7 +131,7 @@ public:
             // Boolean
             " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE",
             // Errors
-            "DETECTARRAY", "MULTITOP", "PORTSHORT", "TASKNSVAR",
+            "DETECTARRAY", "PORTSHORT", "TASKNSVAR",
             // Warnings
             " EC_FIRST_WARN",
             "ALWCOMBORDER", "ASSIGNDLY", "ASSIGNIN",
@@ -144,7 +144,7 @@ public:
             "IMPERFECTSCH", "IMPLICIT", "IMPORTSTAR", "IMPURE",
             "INCABSPATH", "INFINITELOOP", "INITIALDLY",
             "LITENDIAN", "MODDUP",
-            "MULTIDRIVEN",
+            "MULTIDRIVEN", "MULTITOP",
             "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY", "PROCASSWIRE",
             "REALCVT", "REDEFMACRO",
             "SELRANGE", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",

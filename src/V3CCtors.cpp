@@ -106,7 +106,7 @@ private:
 //######################################################################
 
 void V3CCtors::evalAsserts() {
-    AstNodeModule* modp = v3Global.rootp()->modulesp();  // Top module
+    AstNodeModule* modp = v3Global.rootp()->modulesp();  // Top module wrapper
     AstCFunc* funcp = new AstCFunc(modp->fileline(), "_eval_debug_assertions", NULL, "void");
     funcp->declPrivate(true);
     funcp->isStatic(false);
