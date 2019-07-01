@@ -220,19 +220,23 @@ private:
 
         // Expand the nfasWithInput list to include epsilon states
         // reachable by those on nfasWithInput
-        for (DfaStates::iterator nfaIt=nfasWithInput.begin();
-             nfaIt!=nfasWithInput.end(); ++nfaIt) {
-            DfaVertex* nfaStatep = *nfaIt;
-            // Foreach epsilon-reachable (on this nfaStatep)
-            for (V3GraphEdge* nfaEdgep = nfaStatep->outBeginp();
-                 nfaEdgep; nfaEdgep=nfaEdgep->outNextp()) {
-                DfaEdge* cNfaEdgep = static_cast<DfaEdge*>(nfaEdgep);
-                if (cNfaEdgep->epsilon()) {
-                    DfaVertex* nextStatep = static_cast<DfaVertex*>(cNfaEdgep->top());
-                    if (unseenNfaThisStep(nextStatep)) {  // Not processed?
-                        nfasWithInput.push_back(nextStatep);
-                        nextStatep->user(m_step);
-                        UINFO(9,"      Epsilon Reachable "<<nextStatep<<endl);
+        {
+            DfaStates nfasTodo = nfasWithInput;
+            nfasWithInput.clear();  // Now the completed list
+            while (!nfasTodo.empty()) {
+                DfaVertex* nfaStatep = nfasTodo.front(); nfasTodo.pop_front();
+                nfasWithInput.push_back(nfaStatep);
+                // Foreach epsilon-reachable (on this nfaStatep)
+                for (V3GraphEdge* nfaEdgep = nfaStatep->outBeginp();
+                     nfaEdgep; nfaEdgep=nfaEdgep->outNextp()) {
+                    DfaEdge* cNfaEdgep = static_cast<DfaEdge*>(nfaEdgep);
+                    if (cNfaEdgep->epsilon()) {
+                        DfaVertex* nextStatep = static_cast<DfaVertex*>(cNfaEdgep->top());
+                        if (unseenNfaThisStep(nextStatep)) {  // Not processed?
+                            nfasTodo.push_back(nextStatep);
+                            nextStatep->user(m_step);
+                            UINFO(9,"      Epsilon Reachable "<<nextStatep<<endl);
+                        }
                     }
                 }
             }
