@@ -20,6 +20,22 @@ foreach my $prog (
     run(fails => 0,
         cmd => ["perl", $prog,
                 "--version"],
+        tee => $self->{verbose},
+        logfile => "$Self->{obj_dir}/t_help.log",
+        expect => qr/^Verilator/,
+        );
+
+    run(fails => 0,
+        cmd => ["perl", $prog,
+                "-V"],
+        tee => $self->{verbose},
+        logfile => "$Self->{obj_dir}/t_help.log",
+        expect => qr/^Verilator/,
+        );
+
+    run(fails => 0,
+        cmd => ["perl", $prog,
+                "-V"],
         logfile => "$Self->{obj_dir}/t_help.log",
         expect => qr/^Verilator/,
         );

@@ -1425,6 +1425,8 @@ sub _make_main {
     print $fh "    srand48(5);\n";  # Ensure determinism
     print $fh "    Verilated::randReset(".$self->{verilated_randReset}.");\n" if defined $self->{verilated_randReset};
     print $fh "    topp = new $VM_PREFIX(\"top\");\n";
+    print $fh "    Verilated::internalsDump()\n;" if $self->{verilated_debug};
+
     my $set;
     if ($self->sc) {
         print $fh "    topp->fastclk(fastclk);\n" if $self->{inputs}{fastclk};
@@ -1762,6 +1764,7 @@ sub files_identical {
                 # Don't put control chars into our source repository
                 $l1[$l] =~ s/\r/<#013>/mig;
                 $l1[$l] =~ s/Command Failed[^\n]+/Command Failed/mig;
+                $l1[$l] =~ s/Version: Verilator[^\n]+/Version: Verilator ###/mig;
                 if ($l1[$l] =~ s/Exiting due to.*/Exiting due to/mig) {
                     splice @l1, $l+1;  # Trunc rest
                     last;

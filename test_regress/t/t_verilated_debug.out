@@ -1,5 +1,10 @@
 -V{t0,1}- Verilated::debug is on. Message prefix indicates {<thread>,<sequence_number>}.
 -V{t0,2}+    Vt_verilated_debug::_ctor_var_reset
+internalsDump:
+  Version: Verilator ###
+  Argv: obj_vlt/t_verilated_debug/Vt_verilated_debug
+  scopesDump:
+
 -V{t0,3}+++++TOP Evaluate Vt_verilated_debug::eval
 -V{t0,4}+    Vt_verilated_debug::_eval_debug_assertions
 -V{t0,5}+    Vt_verilated_debug::_eval_initial
@@ -15,6 +20,5 @@
 -V{t0,15}+    Vt_verilated_debug::_eval
 -V{t0,16}+    Vt_verilated_debug::_sequent__TOP__1
 *-* All Finished *-*
-- t/t_verilated_debug.v:16: Verilog $finish
 -V{t0,17}+    Vt_verilated_debug::_change_request
 -V{t0,18}+    Vt_verilated_debug::final
