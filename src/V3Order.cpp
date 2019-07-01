@@ -1781,10 +1781,7 @@ AstActive* OrderVisitor::processMoveOneLogic(const OrderLogicVertex* lvertexp,
     AstNode* nodep = lvertexp->nodep();
     AstNodeModule* modp = VN_CAST(scopep->user1p(), NodeModule);  // Stashed by visitor func
     UASSERT(modp, "NULL");
-    if (VN_IS(nodep, UntilStable)) {
-        nodep->v3fatalSrc("Not implemented");
-    }
-    else if (VN_IS(nodep, SenTree)) {
+    if (VN_IS(nodep, SenTree)) {
         // Just ignore sensitivities, we'll deal with them when we move statements that need them
     }
     else {  // Normal logic

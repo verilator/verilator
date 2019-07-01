@@ -3216,27 +3216,6 @@ public:
     AstJumpLabel* labelp() const { return m_labelp; }
 };
 
-class AstUntilStable : public AstNodeStmt {
-    // Quasi-while loop until given signals are stable
-    // Parents: CFUNC (generally)
-    // Children: VARREF, statements
-public:
-    AstUntilStable(FileLine* fileline, AstVarRef* stablesp, AstNode* bodysp)
-        : AstNodeStmt(fileline) {
-        addNOp2p(stablesp); addNOp3p(bodysp);
-    }
-    ASTNODE_NODE_FUNCS(UntilStable)
-    AstVarRef* stablesp() const { return VN_CAST(op2p(), VarRef); }  // op2 = list of variables that must become stable
-    AstNode* bodysp() const { return op3p(); }  // op3 = body of loop
-    void addStablesp(AstVarRef* newp) { addOp2p(newp); }
-    void addBodysp(AstNode* newp) { addOp3p(newp); }
-    virtual bool isGateOptimizable() const { return false; }  // Not relevant
-    virtual bool isPredictOptimizable() const { return false; }  // Not relevant
-    virtual int instrCount() const { return instrCountBranch(); }
-    virtual V3Hash sameHash() const { return V3Hash(); }
-    virtual bool same(const AstNode* samep) const { return true; }
-};
-
 class AstChangeXor : public AstNodeBiComAsv {
     // A comparison to determine change detection, common & must be fast.
     // Returns 32-bit or 64-bit value where 0 indicates no change.
