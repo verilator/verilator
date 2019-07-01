@@ -65,7 +65,8 @@ VerilatedDeserialize& VerilatedDeserialize::readAssert(const void* __restrict da
                                                        size_t size) VL_MT_UNSAFE_ONE {
     if (VL_UNLIKELY(readDiffers(datap, size))) {
         std::string fn = filename();
-        std::string msg = "Can't deserialize save-restore file as was made from different model";
+        std::string msg = "Can't deserialize save-restore file as was made from different model:"
+            +filename();
         VL_FATAL_MT(fn.c_str(), 0, "", msg.c_str());
         close();
     }
@@ -86,7 +87,8 @@ void VerilatedDeserialize::header() VL_MT_UNSAFE_ONE {
     VerilatedDeserialize& os = *this;  // So can cut and paste standard >> code below
     if (VL_UNLIKELY(os.readDiffers(VLTSAVE_HEADER_STR, strlen(VLTSAVE_HEADER_STR)))) {
         std::string fn = filename();
-        std::string msg = std::string("Can't deserialize; file has wrong header signature");
+        std::string msg = std::string("Can't deserialize; file has wrong header signature: ")
+            +filename();
         VL_FATAL_MT(fn.c_str(), 0, "", msg.c_str());
         close();
     }
@@ -103,7 +105,8 @@ void VerilatedDeserialize::trailer() VL_MT_UNSAFE_ONE {
     VerilatedDeserialize& os = *this;  // So can cut and paste standard >> code below
     if (VL_UNLIKELY(os.readDiffers(VLTSAVE_TRAILER_STR, strlen(VLTSAVE_TRAILER_STR)))) {
         std::string fn = filename();
-        std::string msg = std::string("Can't deserialize; file has wrong end-of-file signature");
+        std::string msg = std::string("Can't deserialize; file has wrong end-of-file signature: ")
+            +filename();
         VL_FATAL_MT(fn.c_str(), 0, "", msg.c_str());
         close();
     }
