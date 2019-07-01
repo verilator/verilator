@@ -1570,10 +1570,10 @@ void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan,
                             const string& vfmt, char fmtLetter) {
     // Print display argument, edits elistp
     AstNode* argp = *elistp;
-    if (!argp) {
+    if (VL_UNCOVERABLE(!argp)) {
         // expectDisplay() checks this first, so internal error if found here
-        dispp->v3error("Internal: Missing arguments for $display-like format");
-        return;
+        dispp->v3error("Internal: Missing arguments for $display-like format");  // LCOV_EXCL_LINE
+        return;  // LCOV_EXCL_LINE
     }
     if (argp->widthMin() > VL_VALUE_STRING_MAX_WIDTH) {
         dispp->v3error("Exceeded limit of "+cvtToStr(VL_VALUE_STRING_MAX_WIDTH)+" bits for any $display-like arguments");
@@ -1673,9 +1673,9 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep,
             }
         }
     }
-    if (elistp != NULL) {
+    if (VL_UNCOVERABLE(elistp)) {
         // expectFormat also checks this, and should have found it first, so internal
-        elistp->v3error("Internal: Extra arguments for $display-like format");
+        elistp->v3error("Internal: Extra arguments for $display-like format");  // LCOV_EXCL_LINE
     }
     displayEmit(nodep, isScan);
 }
@@ -1722,7 +1722,9 @@ void EmitCImp::emitVarReset(AstVar* varp) {
              arrayp;
              arrayp = VN_CAST(arrayp->subDTypep()->skipRefp(), UnpackArrayDType)) {
             int vecnum = vects++;
-            if (arrayp->msb() < arrayp->lsb()) varp->v3fatalSrc("Should have swapped msb & lsb earlier.");
+            if (VL_UNCOVERABLE(arrayp->msb() < arrayp->lsb())) {
+                varp->v3fatalSrc("Should have swapped msb & lsb earlier.");
+            }
             string ivar = string("__Vi")+cvtToStr(vecnum);
             // MSVC++ pre V7 doesn't support 'for (int ...)', so declare in sep block
             puts("{ int __Vi"+cvtToStr(vecnum)+"="+cvtToStr(0)+";");
@@ -1960,7 +1962,7 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
                              arrayp;
                              arrayp = VN_CAST(elementp, UnpackArrayDType)) {
                             int vecnum = vects++;
-                            if (arrayp->msb() < arrayp->lsb()) {
+                            if (VL_UNCOVERABLE(arrayp->msb() < arrayp->lsb())) {
                                 varp->v3fatalSrc("Should have swapped msb & lsb earlier.");
                             }
                             string ivar = string("__Vi")+cvtToStr(vecnum);
@@ -2060,7 +2062,7 @@ void EmitCImp::emitSensitives() {
                          arrayp;
                          arrayp = VN_CAST(arrayp->subDTypep()->skipRefp(), UnpackArrayDType)) {
                         int vecnum = vects++;
-                        if (arrayp->msb() < arrayp->lsb()) {
+                        if (VL_UNCOVERABLE(arrayp->msb() < arrayp->lsb())) {
                             varp->v3fatalSrc("Should have swapped msb & lsb earlier.");
                         }
                         string ivar = string("__Vi")+cvtToStr(vecnum);

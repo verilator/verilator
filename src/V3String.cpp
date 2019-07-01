@@ -276,15 +276,15 @@ void VHashSha1::selfTestOne(const string& data, const string& data2,
                              const string& exp, const string& exp64) {
     VHashSha1 digest (data);
     if (data2!="") digest.insert(data2);
-    if (digest.digestHex() != exp) {
-        std::cerr << "%Error: When hashing '"<<data+data2<<"'"<<endl;
-        std::cerr << "%Error: got="<<digest.digestHex()<<endl;
-        std::cerr << "%Error: exp="<<exp<<endl;
+    if (VL_UNCOVERABLE(digest.digestHex() != exp)) {
+        std::cerr << "%Error: When hashing '"<<data+data2<<"'"<<endl  // LCOV_EXCL_LINE
+                  << "        ... got="<<digest.digestHex()<<endl  // LCOV_EXCL_LINE
+                  << "        ... exp="<<exp<<endl;  // LCOV_EXCL_LINE
     }
-    if (digest.digestSymbol() != exp64) {
-        std::cerr << "%Error: When hashing '"<<data+data2<<"'"<<endl;
-        std::cerr << "%Error: got="<<digest.digestSymbol()<<endl;
-        std::cerr << "%Error: exp="<<exp64<<endl;
+    if (VL_UNCOVERABLE(digest.digestSymbol() != exp64)) {
+        std::cerr << "%Error: When hashing '"<<data+data2<<"'"<<endl  // LCOV_EXCL_LINE
+                  << "        ... got="<<digest.digestSymbol()<<endl  // LCOV_EXCL_LINE
+                  << "        ... exp="<<exp64<<endl;  // LCOV_EXCL_LINE
     }
 }
 

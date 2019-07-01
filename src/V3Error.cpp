@@ -73,8 +73,7 @@ void V3Error::init() {
         s_describedEachWarn[i] = false;
         s_pretendError[i] = V3ErrorCode(i).pretendError();
     }
-
-    if (string(V3ErrorCode(V3ErrorCode::_ENUM_MAX).ascii()) != " MAX") {
+    if (VL_UNCOVERABLE(string(V3ErrorCode(V3ErrorCode::_ENUM_MAX).ascii()) != " MAX")) {
         v3fatalSrc("Enum table in V3ErrorCode::EC_ascii() is munged");
     }
 }

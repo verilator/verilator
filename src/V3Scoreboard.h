@@ -125,7 +125,7 @@ public:
                 return;
             }
             // Try the previous value?
-            if (m_valIt == m_sbvmp->m_vals.begin()) {
+            if (VL_UNCOVERABLE(m_valIt == m_sbvmp->m_vals.begin())) {
                 // No more values but it's not defined to decrement an
                 // iterator past the beginning.
                 v3fatalSrc("Decremented iterator past beginning");

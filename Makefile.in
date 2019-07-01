@@ -496,8 +496,9 @@ clean mostlyclean distclean maintainer-clean::
 	rm -f *.pg *.pgs *.toc *.tp *.tps *.vr *.vrs *.idx
 	rm -f *.ev *.evs *.ov *.ovs *.cv *.cvs *.ma *.mas
 	rm -f *.tex
-	rm -rf test_*/obj_dir
 	rm -rf examples/*/obj_dir examples/*/logs
+	rm -rf test_*/obj_dir
+	rm -rf nodist/obj_dir
 
 distclean maintainer-clean::
 	rm -f *.info* *.1 $(INFOS)

@@ -51,7 +51,7 @@ typedef std::set<int> MTaskIdSet;  // Set of mtaskIds for Var sorting
 //######################################################################
 
 // For broken() function, return error string if have a match
-#define BROKEN_RTN(test) do { if (VL_UNLIKELY(test)) return # test; } while(0)
+#define BROKEN_RTN(test) do { if (VL_UNCOVERABLE(test)) return # test; } while(0)
 
 // (V)erilator (N)ode is: True if AstNode is of a a given AstType
 #define VN_IS(nodep,nodetypename) (AstNode::privateIs ## nodetypename(nodep))

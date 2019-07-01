@@ -60,7 +60,9 @@ private:
         // Decrement blocking edges count, return true if the vertex is
         // newly unblocked
         bool unblock() {
-            if (m_numBlockingEdges <= 0) vertexp()->v3fatalSrc("Underflow of blocking edges");
+            if (VL_UNCOVERABLE(m_numBlockingEdges <= 0)) {
+                vertexp()->v3fatalSrc("Underflow of blocking edges");
+            }
             m_numBlockingEdges--;
             return (m_numBlockingEdges == 0);
         }
@@ -208,7 +210,7 @@ private:
 
                 typename WaitingVertices::iterator it =
                     m_waitingVertices.find(toVertexp);
-                if (it == m_waitingVertices.end()) {
+                if (VL_UNCOVERABLE(it == m_waitingVertices.end())) {
                     toVertexp->v3fatalSrc("Found edge into vertex not in waiting list.");
                 }
                 if (it->second.unblock()) {
@@ -223,7 +225,7 @@ private:
 
                 typename WaitingVertices::iterator it =
                     m_waitingVertices.find(fromVertexp);
-                if (it == m_waitingVertices.end()) {
+                if (VL_UNCOVERABLE(it == m_waitingVertices.end())) {
                     fromVertexp->v3fatalSrc("Found edge into vertex not in waiting list.");
                 }
                 if (it->second.unblock()) {

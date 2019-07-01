@@ -76,7 +76,7 @@ const char* AstNodeClassDType::broken() const {
         exists.insert(itemp);
     }
     for (MemberNameMap::const_iterator it=m_members.begin(); it!=m_members.end(); ++it) {
-        if (VL_UNLIKELY(exists.find(it->second) == exists.end())) {
+        if (VL_UNCOVERABLE(exists.find(it->second) == exists.end())) {
             this->v3error("Internal: Structure member broken: "<<it->first);
             return "member broken";
         }

@@ -772,14 +772,14 @@ void AstNode::iterateAndNext(AstNVisitor& v) {
     // there's no lower level reason yet though the back must exist.
     AstNode* nodep = this;
 #ifdef VL_DEBUG  // Otherwise too hot of a function for debug
-    if (VL_UNLIKELY(nodep && !nodep->m_backp)) nodep->v3fatalSrc("iterateAndNext node has no back");
+    if (VL_UNCOVERABLE(nodep && !nodep->m_backp)) nodep->v3fatalSrc("iterateAndNext node has no back");
 #endif
     if (nodep) ASTNODE_PREFETCH(nodep->m_nextp);
     while (nodep) {   // effectively: if (!this) return;  // Callers rely on this
         if (nodep->m_nextp) ASTNODE_PREFETCH(nodep->m_nextp->m_nextp);
         AstNode* niterp = nodep;  // This address may get stomped via m_iterpp if the node is edited
         // Desirable check, but many places where multiple iterations are OK
-        //if (VL_UNLIKELY(niterp->m_iterpp)) niterp->v3fatalSrc("IterateAndNext under iterateAndNext may miss edits");
+        //if (VL_UNCOVERABLE(niterp->m_iterpp)) niterp->v3fatalSrc("IterateAndNext under iterateAndNext may miss edits");
         // Optimization note: Doing PREFETCH_RW on m_iterpp is a net even
         // cppcheck-suppress nullPointer
         niterp->m_iterpp = &niterp;
@@ -973,21 +973,21 @@ void AstNode::checkTree() {
     }
 }
 
-void AstNode::dumpGdb() {  // For GDB only
-    dumpGdbHeader();
-    cout<<"  "; dump(cout); cout<<endl;
+void AstNode::dumpGdb() {  // For GDB only  // LCOV_EXCL_LINE
+    dumpGdbHeader();  // LCOV_EXCL_LINE
+    cout<<"  "; dump(cout); cout<<endl;  // LCOV_EXCL_LINE
 }
-void AstNode::dumpGdbHeader() const {  // For GDB only
-    dumpPtrs(cout);
-    cout<<"  Fileline = "<<fileline()<<endl;
+void AstNode::dumpGdbHeader() const {  // For GDB only  // LCOV_EXCL_LINE
+    dumpPtrs(cout);  // LCOV_EXCL_LINE
+    cout<<"  Fileline = "<<fileline()<<endl;  // LCOV_EXCL_LINE
 }
-void AstNode::dumpTreeGdb() {  // For GDB only
-    dumpGdbHeader();
-    dumpTree(cout);
+void AstNode::dumpTreeGdb() {  // For GDB only  // LCOV_EXCL_LINE
+    dumpGdbHeader();  // LCOV_EXCL_LINE
+    dumpTree(cout);  // LCOV_EXCL_LINE
 }
-void AstNode::dumpTreeFileGdb(const char* filenamep) {  // For GDB only
-    string filename = filenamep ? filenamep : v3Global.debugFilename("debug.tree", 98);
-    v3Global.rootp()->dumpTreeFile(filename);
+void AstNode::dumpTreeFileGdb(const char* filenamep) {  // For GDB only  // LCOV_EXCL_LINE
+    string filename = filenamep ? filenamep : v3Global.debugFilename("debug.tree", 98);  // LCOV_EXCL_LINE
+    v3Global.rootp()->dumpTreeFile(filename);  // LCOV_EXCL_LINE
 }
 
 void AstNode::checkIter() const {

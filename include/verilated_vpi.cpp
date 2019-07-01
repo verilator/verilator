@@ -74,7 +74,7 @@ public:
         // We reserve word zero for the next pointer, as that's safer in case a
         // dangling reference to the original remains around.
         static const size_t chunk = 96;
-        if (VL_UNLIKELY(size>chunk)) VL_FATAL_MT(__FILE__, __LINE__, "", "increase chunk");
+        if (VL_UNCOVERABLE(size>chunk)) VL_FATAL_MT(__FILE__, __LINE__, "", "increase chunk");
         if (VL_LIKELY(t_freeHead)) {
             vluint8_t* newp = t_freeHead;
             t_freeHead = *((vluint8_t**)newp);
@@ -348,7 +348,7 @@ public:
                 varop->createPrevDatap();
             }
         }
-        if (VL_UNLIKELY(vop->reason() >= CB_ENUM_MAX_VALUE)) {
+        if (VL_UNCOVERABLE(vop->reason() >= CB_ENUM_MAX_VALUE)) {
             VL_FATAL_MT(__FILE__, __LINE__, "", "vpi bb reason too large");
         }
         s_s.m_cbObjLists[vop->reason()].push_back(vop);
@@ -1255,7 +1255,7 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
                 return;
             case VLVT_WDATA: {
                 int words = VL_WORDS_I(vop->varp()->packed().elements());
-                if (VL_UNLIKELY(words >= VL_MULS_MAX_WORDS)) {
+                if (VL_UNCOVERABLE(words >= VL_MULS_MAX_WORDS)) {
                     VL_FATAL_MT(__FILE__, __LINE__, "",
                                 "vpi_get_value with more than VL_MULS_MAX_WORDS; increase and recompile");
                 }

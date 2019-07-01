@@ -189,8 +189,8 @@ public:
     // METHODS
     /// Check that the current thread ID is the same as the construction thread ID
     void check() VL_MT_UNSAFE_ONE {
-        if (!VL_LIKELY(m_threadid == VL_THREAD_ID())) {
-            fatal_different();
+        if (VL_UNCOVERABLE(m_threadid != VL_THREAD_ID())) {
+            fatal_different();  // LCOV_EXCL_LINE
         }
     }
     static void fatal_different() VL_MT_SAFE;

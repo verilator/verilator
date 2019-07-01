@@ -94,7 +94,7 @@ void GraphPathChecker::initHalfCriticalPaths(GraphWay way, bool checkOnly) {
 
         GraphPCNode* ourUserp = static_cast<GraphPCNode*>(vertexp->userp());
         if (checkOnly) {
-            if (ourUserp->m_cp[way] != critPathCost) {
+            if (VL_UNCOVERABLE(ourUserp->m_cp[way] != critPathCost)) {
                 vertexp->v3fatalSrc("Validation of critical paths failed");
             }
         } else {

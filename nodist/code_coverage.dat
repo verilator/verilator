@@ -1,0 +1,42 @@
+# -*- Perl -*-
+# DESCRIPTION: Verilator: Internal C++ code lcov control file
+#
+# Copyright 2019-2019 by Wilson Snyder. This program is free software; you can
+# redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
+
+source_globs("src/*.cpp",
+             "src/*.h",
+             "src/*.l",
+             "src/*.y",
+             "src/obj_dbg/*.h",
+             "src/obj_dbg/*.cpp",
+             "include/*.c",
+             "include/*.cpp",
+             "include/*.h",
+             "include/*/*.h",
+             "include/*/*.cpp",
+             "include/*/*.c",
+    );
+
+remove_source("/usr/include/*");
+remove_source("*/include/sysc/*");
+remove_source("*/V3ClkGater.cpp");
+remove_source("*/V3ClkGater.h");
+remove_source("*/V3GraphDfa.cpp");
+remove_source("*/V3GraphDfa.h");
+remove_source("*/V3Lexer_pregen.yy.cpp");
+remove_source("*/V3PreLex_pregen.yy.cpp");
+remove_source("*/verilog.c");
+remove_source("*include/gtkwave/*");
+# Something wrong in generation, unfortunately as would like this
+#genhtml: ERROR: cannot read /svaha/wsnyder/SandBox/homecvs/v4/verilator/src/obj_dbg/verilog.y
+#remove_source("*/src/obj_dbg/verilog.y");
+remove_source("*test_regress/*");
+remove_source("*examples/*");
+
+
+exclude_line_regexp(qr/(\bv3fatalSrc\b|\bVL_UNCOVERABLE\b)/);
+
+1;

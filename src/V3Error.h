@@ -301,8 +301,8 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
     ::v3errorEndFatal((V3Error::v3errorPrep(V3ErrorCode::EC_FATAL), \
                        (V3Error::v3errorStr()<<msg), V3Error::v3errorStr()));
 
-#define UINFO(level,stmsg) {if(VL_UNLIKELY(debug()>=(level))) { cout<<"- "<<V3Error::lineStr(__FILE__,__LINE__)<<stmsg; }}
-#define UINFONL(level,stmsg) {if(VL_UNLIKELY(debug()>=(level))) { cout<<stmsg; } }
+#define UINFO(level,stmsg) {if (VL_UNCOVERABLE(debug()>=(level))) { cout<<"- "<<V3Error::lineStr(__FILE__,__LINE__)<<stmsg; }}
+#define UINFONL(level,stmsg) {if (VL_UNCOVERABLE(debug()>=(level))) { cout<<stmsg; } }
 
 #ifdef VL_DEBUG
 # define UDEBUGONLY(stmts) {stmts}
@@ -310,10 +310,10 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
 # define UDEBUGONLY(stmts) {if (0) {stmts}}
 #endif
 
-#define UASSERT(condition,stmsg) { if (VL_UNLIKELY(!(condition))) { v3fatalSrc(stmsg); }}
+#define UASSERT(condition,stmsg) { if (VL_UNCOVERABLE(!(condition))) { v3fatalSrc(stmsg); }}
 // For use in V3Ast static functions only
 #define UASSERT_STATIC(condition,stmsg) \
-    { if (VL_UNLIKELY(!(condition))) { \
+    { if (VL_UNCOVERABLE(!(condition))) { \
             std::cerr<<"Internal Error: "<<__FILE__<<":"<<std::dec<<__LINE__<<":"<<(stmsg)<<std::endl; abort(); } }
 // Check self test values for expected value.  Safe from side-effects.
 // Type argument can be removed when go to C++11 (use auto).

@@ -331,7 +331,7 @@ V3Number& V3Number::setLongS(vlsint32_t value) {
     return *this;
 }
 V3Number& V3Number::setDouble(double value) {
-    if (VL_UNLIKELY(width()!=64)) {
+    if (VL_UNCOVERABLE(width()!=64)) {
         v3fatalSrc("Real operation on wrong sized number");
     }
     m_double = true;
@@ -685,11 +685,8 @@ uint32_t V3Number::toUInt() const {
 }
 
 double V3Number::toDouble() const {
-    if (VL_UNLIKELY(!isDouble())) {
-        v3fatalSrc("Real conversion on non-real number");
-    }
-    if (VL_UNLIKELY(width()!=64)) {
-        v3fatalSrc("Real operation on wrong sized number");
+    if (VL_UNCOVERABLE(!isDouble() || width()!=64)) {
+        v3fatalSrc("Real operation on wrong sized/non-real number");
     }
     union { double d; uint32_t u[2]; } u;
     u.u[0] = m_value[0]; u.u[1] = m_value[1];

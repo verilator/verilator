@@ -215,9 +215,9 @@ private:
     }
     void statePop() {
         m_states.pop();
-        if (m_states.empty()) {
-            error("InternalError: Pop of parser state with nothing on stack");
-            m_states.push(ps_TOP);
+        if (VL_UNCOVERABLE(m_states.empty())) {
+            error("InternalError: Pop of parser state with nothing on stack");  // LCOV_EXCL_LINE
+            m_states.push(ps_TOP);  // LCOV_EXCL_LINE
         }
     }
     void stateChange(ProcState state) {

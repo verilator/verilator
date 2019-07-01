@@ -161,7 +161,7 @@ class SliceVisitor : public AstNVisitor {
     }
 
     virtual void visit(AstInitArray* nodep) {
-        if (m_assignp) {
+        if (VL_UNCOVERABLE(m_assignp)) {
             nodep->v3fatalSrc("Array initialization should have been removed earlier");
         }
     }

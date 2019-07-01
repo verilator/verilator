@@ -152,7 +152,7 @@ private:
         iterateChildren(nodep);
         nodep->virtRefDTypep(editOneDType(nodep->virtRefDTypep()));
     }
-    virtual void visit(AstNodePreSel* nodep) {
+    virtual void visit(AstNodePreSel* nodep) {  // LCOV_EXCL_LINE
         // This check could go anywhere after V3Param
         nodep->v3fatalSrc("Presels should have been removed before this point");
     }

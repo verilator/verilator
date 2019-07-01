@@ -598,7 +598,7 @@ void V3TSP::selfTestStates() {
         expect.push_back(&s20);
         expect.push_back(&s10);
         expect.push_back(&s5);
-        if (expect != result) {
+        if (VL_UNCOVERABLE(expect != result)) {
             for (V3TSP::StateVec::iterator it = result.begin();
                  it != result.end(); ++it) {
                 const TspTestState* statep = dynamic_cast<const TspTestState*>(*it);
@@ -641,7 +641,7 @@ void V3TSP::selfTestStates() {
         expect.push_back(&d);
         expect.push_back(&e);
 
-        if (expect != result) {
+        if (VL_UNCOVERABLE(expect != result)) {
             for (V3TSP::StateVec::iterator it = result.begin();
                  it != result.end(); ++it) {
                 const TspTestState* statep = dynamic_cast<const TspTestState*>(*it);
@@ -689,7 +689,7 @@ void V3TSP::selfTestString() {
     expect.push_back("2");
     expect.push_back("3");
 
-    if (expect != result) {
+    if (VL_UNCOVERABLE(expect != result)) {
         for (std::vector<string>::iterator it = result.begin(); it != result.end(); ++it) {
             cout<<*it<<" ";
         }

@@ -228,7 +228,7 @@ public:
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("No visitors implemented.");
     }
 

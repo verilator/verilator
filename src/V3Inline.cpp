@@ -124,7 +124,7 @@ private:
         if (nodep->pragType() == AstPragmaType::INLINE_MODULE) {
             //UINFO(0,"PRAG MARK "<<m_modp<<endl);
             if (!m_modp) {
-                nodep->v3error("Inline pragma not under a module");
+                nodep->v3error("Inline pragma not under a module");  // LCOV_EXCL_LINE
             } else if (m_modp->user2() == CIL_MAYBE
                        || m_modp->user2() == CIL_NOTSOFT) {
                 m_modp->user2(CIL_USER);
@@ -132,7 +132,7 @@ private:
             nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);  // Remove so don't propagate to upper cell...
         } else if (nodep->pragType() == AstPragmaType::NO_INLINE_MODULE) {
             if (!m_modp) {
-                nodep->v3error("Inline pragma not under a module");
+                nodep->v3error("Inline pragma not under a module");  // LCOV_EXCL_LINE
             } else {
                 cantInline("Pragma NO_INLINE_MODULE", false);
             }

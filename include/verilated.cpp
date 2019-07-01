@@ -1093,8 +1093,8 @@ IData VL_FGETS_IXI(int obits, void* destp, IData fpi) VL_MT_SAFE {
     IData bytes = VL_BYTES_I(obits);
     char buffer[VL_TO_STRING_MAX_WORDS*VL_WORDSIZE+1];
     // V3Emit has static check that bytes < VL_TO_STRING_MAX_WORDS, but be safe
-    if (VL_UNLIKELY(bytes > VL_TO_STRING_MAX_WORDS*VL_WORDSIZE)) {
-        VL_FATAL_MT(__FILE__, __LINE__, "", "Internal: fgets buffer overrun");
+    if (VL_UNCOVERABLE(bytes > VL_TO_STRING_MAX_WORDS*VL_WORDSIZE)) {
+        VL_FATAL_MT(__FILE__, __LINE__, "", "Internal: fgets buffer overrun");  // LCOV_EXCL_LINE
     }
 
     // We don't use fgets, as we must read \0s.
@@ -1317,7 +1317,7 @@ const char* memhFormat(int nBits) {
     case 5: VL_SNPRINTF(buf, 32, "%%06x"); break;
     case 6: VL_SNPRINTF(buf, 32, "%%07x"); break;
     case 7: VL_SNPRINTF(buf, 32, "%%08x"); break;
-    default: assert(false); break;
+    default: assert(false); break;  // LCOV_EXCL_LINE
     }
     return buf;
 }
@@ -1842,9 +1842,9 @@ void Verilated::flushCb(VerilatedVoidCb cb) VL_MT_SAFE {
     VerilatedLockGuard lock(m_mutex);
     if (s_flushCb == cb) {}  // Ok - don't duplicate
     else if (!s_flushCb) { s_flushCb=cb; }
-    else {
+    else {  // LCOV_EXCL_LINE
         // Someday we may allow multiple callbacks ala atexit(), but until then
-        VL_FATAL_MT("unknown", 0, "",
+        VL_FATAL_MT("unknown", 0, "",  // LCOV_EXCL_LINE
                     "Verilated::flushCb called twice with different callbacks");
     }
 }
@@ -2136,8 +2136,8 @@ void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) VL_
         // Alternative is to dynamically stretch the array, which is more code, and slower.
         if (funcnum >= m_funcnumMax) { m_funcnumMax = funcnum+1; }
     } else {
-        if (VL_UNLIKELY(funcnum >= m_funcnumMax)) {
-            VL_FATAL_MT(__FILE__, __LINE__, "",
+        if (VL_UNCOVERABLE(funcnum >= m_funcnumMax)) {
+            VL_FATAL_MT(__FILE__, __LINE__, "",  // LCOV_EXCL_LINE
                         "Internal: Bad funcnum vs. pre-finalize maximum");
         }
         if (VL_UNLIKELY(!m_callbacksp)) {  // First allocation

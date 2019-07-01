@@ -77,7 +77,7 @@ private:
             && VN_IS(sensesp->sensesp(), SenItem)
             && VN_CAST(sensesp->sensesp(), SenItem)->isNever()) {
             // Never executing.  Kill it.
-            if (sensesp->sensesp()->nextp()) {
+            if (VL_UNCOVERABLE(sensesp->sensesp()->nextp())) {
                 nodep->v3fatalSrc("Never senitem should be alone, else the never should be eliminated.");
             }
             nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
@@ -115,22 +115,22 @@ private:
         // No need to do statements under it, they're already moved.
         //iterateChildren(nodep);
     }
-    virtual void visit(AstInitial* nodep) {
+    virtual void visit(AstInitial* nodep) {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstAssignAlias* nodep) {
+    virtual void visit(AstAssignAlias* nodep) {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstAssignW* nodep) {
+    virtual void visit(AstAssignW* nodep) {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstAlways* nodep) {
+    virtual void visit(AstAlways* nodep) {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstAlwaysPublic* nodep) {
+    virtual void visit(AstAlwaysPublic* nodep) {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstFinal* nodep) {
+    virtual void visit(AstFinal* nodep) {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been deleted");
     }
     // Empty visitors, speed things up

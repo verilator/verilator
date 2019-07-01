@@ -110,6 +110,7 @@
 # define VL_LIKELY(x)   (!!(x))         ///< Boolean expression more often true than false
 # define VL_UNLIKELY(x) (!!(x))         ///< Boolean expression more often false than true
 #endif
+#define VL_UNCOVERABLE(x) VL_UNLIKELY(x)  ///< Boolean expression never hit by users (no coverage)
 #ifndef VL_UNREACHABLE
 # define VL_UNREACHABLE                 ///< Point that may never be reached
 #endif

@@ -1,0 +1,260 @@
+#!/usr/bin/perl -w
+# See copyright, etc in below POD section.
+######################################################################
+
+use Cwd;
+use File::Copy qw(cp);
+use File::Path qw(mkpath);
+use Getopt::Long;
+use IO::File;
+use Pod::Usage;
+use strict;
+use vars qw($Debug);
+
+our $Exclude_Line_Regexp;
+our @Remove_Sources;
+our @Source_Globs;
+
+#======================================================================
+# main
+
+our $Opt_Stage = 0;
+
+autoflush STDOUT 1;
+autoflush STDERR 1;
+Getopt::Long::config("no_auto_abbrev");
+if (! GetOptions(
+          "debug"       => sub { $Debug = 1; },
+          "<>"          => sub { die "%Error: Unknown parameter: $_[0]\n"; },
+          "stage=i"     => \$Opt_Stage,
+    )) {
+    die "%Error: Bad usage, try 'install_test --help'\n";
+}
+
+test();
+exit(0);
+
+#######################################################################
+
+sub test {
+    -r "nodist/code_coverage.dat" or die "%Error: Run from the top of the verilator kit,";
+    require "./nodist/code_coverage.dat";
+
+    if ($Opt_Stage <= 0) {
+        print "Stage 0: configure (coverage on)\n";
+        run("make distclean");
+        run("./configure --enable-longtests CXX='g++ --coverage'");
+        run("make -k");
+        # The optimized versions will not collect good coverage, overwrite them
+        run("cp bin/verilator_bin_dbg bin/verilator_bin");
+        run("cp bin/verilator_coverage_bin_dbg bin/verilator_coverage_bin");
+    }
+
+    if ($Opt_Stage <= 1) {
+        print "Stage 1: make examples (with coverage on)\n";
+        run("make examples");
+    }
+
+    my $cc_dir = "nodist/obj_dir/coverage";
+    if ($Opt_Stage <= 2) {
+        print "Stage 2: Create info files under $cc_dir\n";
+        mkpath($cc_dir);
+        mkpath("$cc_dir/info");
+        my $dats = `find . -print | grep .gcda`;
+        my %dirs;
+        foreach my $dat (split '\n', $dats) {
+            $dat =~ s!/[^/]+$!!;
+            $dirs{$dat} = 1;
+        }
+        foreach my $dir (sort keys %dirs) {
+            (my $outname = $dir) =~ s![^a-zA-Z0-9]+!_!g;
+            run("cd $cc_dir/info ; lcov -c -d ../../../$dir -o app_test_${outname}.info");
+        }
+    }
+    
+    if ($Opt_Stage <= 3) {
+        # lcov doesn't have a control file to override single lines, so replicate the sources
+        print "Stage 3: Clone sources under $cc_dir\n";
+        clone_sources($cc_dir);
+    }
+
+    if ($Opt_Stage <= 4) {
+        print "Stage 4: Copy .gcno files\n";
+        my $dats = `find . -print | grep .gcno`;
+        foreach my $dat (split '\n', $dats) {
+            next if $dat =~ /$cc_dir/;
+            my $outdat = $cc_dir."/".$dat;
+            #print "cp $dat, $outdat);\n";
+            cp($dat, $outdat);
+        }
+    }
+
+    if ($Opt_Stage <= 5) {
+        print "Stage 5: Combine data files\n";
+        run("cd $cc_dir ; lcov -c -i -d src/obj_dbg -o app_base.info");
+        run("cd $cc_dir ; lcov -a app_base.info -o app_total.info");
+        my $infos = `cd $cc_dir ; find info -print | grep .info`;
+        my $comb = "";
+        my @infos = (split /\n/, $infos);
+        foreach my $info (@infos) {
+            $comb .= " -a $info";
+            # Need to batch them to avoid overrunning shell command length limit
+            if (length($comb) > 10000 || $info eq $infos[$#infos]) {
+                run("cd $cc_dir ; lcov -a app_total.info $comb -o app_total.info");
+                $comb = "";
+            }
+        }
+    }
+
+    if ($Opt_Stage <= 6) {
+        print "Stage 6: Filter processed source files\n";
+        my $cmd = '';
+        foreach my $glob (@Remove_Sources) {
+            $cmd .= " '$glob'";
+        }
+        run("cd $cc_dir ; lcov --remove app_total.info $cmd -o app_total.info");
+    }
+
+    if ($Opt_Stage <= 7) {
+        print "Stage 7: Create HTML\n";
+        cleanup_abs_paths($cc_dir, "$cc_dir/app_total.info", "$cc_dir/app_total.info");
+        run("cd $cc_dir ; genhtml app_total.info --demangle-cpp"
+            ." --rc lcov_branch_coverage=1 --rc genhtml_hi_limit=100 --output-directory html");
+    }
+
+    if ($Opt_Stage <= 9) {
+        print "*-* All Finished *-*\n";
+    }
+}
+
+sub clone_sources {
+    my $cc_dir = shift;
+    my $excluded_lines = 0;
+    foreach my $glob (@Source_Globs) {
+        foreach my $infile (glob $glob) {
+            $infile !~ m!^/!
+                or die "%Error: source globs should be relative not absolute filenames,";
+            my $outfile = $cc_dir."/".$infile;
+            (my $outpath = $outfile) =~ s!/[^/]*$!!;
+            mkpath($outpath);
+            my $fh = IO::File->new("<$infile") or die "%Error: $! $infile,";
+            my $ofh = IO::File->new(">$outfile") or die "%Error: $! $outfile,";
+            my $lineno = 0;
+            while (defined(my $line = $fh->getline)) {
+                $lineno++;
+                chomp $line;
+                if ($line !~ m!// LCOV_EXCL_LINE!
+                    && $line =~ /$Exclude_Line_Regexp/) {
+                    $line .= "  //code_coverage: // LCOV_EXCL_LINE\n";
+                    $excluded_lines++;
+                    #print "$infile:$lineno: $line";
+                } else {
+                }
+                $ofh->print("$line\n");
+            }
+        }
+    }
+    print "Source code lines automatically LCOV_EXCL_LINE'ed: $excluded_lines\n";
+}
+
+sub cleanup_abs_paths {
+    my $cc_dir = shift;
+    my $infile = shift;
+    my $outfile = shift;
+    my $fh = IO::File->new("<$infile") or die "%Error: $! $infile,";
+    my @lines;
+    while (defined(my $line = $fh->getline)) {
+        if ($line =~ m!^SF:/!) {
+            $line =~ s!$ENV{VERILATOR_ROOT}/!!;
+            $line =~ s!$cc_dir/!!;
+        }
+        push @lines, $line;
+    }
+    my $ofh = IO::File->new(">$outfile") or die "%Error: $! $outfile,";
+    $ofh->print(@lines);
+}
+
+#######################################################################
+# .dat file callbacks
+
+sub exclude_line_regexp {
+    $Exclude_Line_Regexp = shift;
+}
+
+sub remove_source {
+    my @srcs = @_;
+    push @Remove_Sources, @srcs;
+}
+
+sub source_globs {
+    my @dirs = @_;
+    push @Source_Globs, @dirs;
+}
+
+#######################################################################
+
+sub run {
+    # Run a system command, check errors
+    my $command = shift;
+    print "\t$command\n";
+    system "$command";
+    my $status = $?;
+    ($status == 0) or die "%Error: Command Failed $command, $status, stopped";
+}
+
+#######################################################################
+__END__
+
+=pod
+
+=head1 NAME
+
+code_coverage - Build and collect Verilator coverage
+
+=head1 SYNOPSIS
+
+  cd $VERILATOR_ROOT
+  nodist/code_coverage
+
+=head1 DESCRIPTION
+
+code_coverage builds Verilator with C++ coverage support and runs tests
+with coverage enabled.
+
+This will rebuild the current object files.
+
+=head1 ARGUMENTS
+
+=over 4
+
+=item --help
+
+Displays this message and program version and exits.
+
+=item -stage I<stage>
+
+Runs a specific stage (see the script).
+
+=back
+
+=head1 DISTRIBUTION
+
+Copyright 2019-2019 by Wilson Snyder.  This package is free software; you
+can redistribute it and/or modify it under the terms of either the GNU
+Lesser General Public License Version 3 or the Perl Artistic License
+Version 2.0.
+
+=head1 AUTHORS
+
+Wilson Snyder <wsnyder@wsnyder.org>
+
+=head1 SEE ALSO
+
+C<lcov>
+
+=cut
+
+######################################################################
+### Local Variables:
+### compile-command: "cd .. ; nodist/code_coverage "
+### End:

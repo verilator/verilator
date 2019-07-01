@@ -4033,7 +4033,7 @@ private:
     //----------------------------------------------------------------------
     // METHODS - special type detection
     void assertAtStatement(AstNode* nodep) {
-        if (VL_UNLIKELY(m_vup && !m_vup->selfDtm())) {
+        if (VL_UNCOVERABLE(m_vup && !m_vup->selfDtm())) {
             UINFO(1,"-: "<<m_vup<<endl);
             nodep->v3fatalSrc("No dtype expected at statement "<<nodep->prettyTypeName());
         }

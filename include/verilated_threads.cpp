@@ -221,8 +221,7 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed) {
                         eit->m_cpu,
                         thread_id);
                 break;
-            default: assert(false);
-                break;
+            default: assert(false); break;  // LCOV_EXCL_LINE
             }
         }
     }
