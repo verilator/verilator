@@ -1,0 +1,5 @@
+%Error: t/t_flag_errorlimit_bad.v:9: Duplicate declaration of signal: u1
+        t/t_flag_errorlimit_bad.v:8: ... Location of original declaration
+%Error: t/t_flag_errorlimit_bad.v:10: Duplicate declaration of signal: u1
+        t/t_flag_errorlimit_bad.v:8: ... Location of original declaration
+%Error: Exiting due to

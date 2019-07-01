@@ -768,8 +768,8 @@ will also go to standard out.
 
 =item --error-limit I<value>
 
-After this number of errors or warnings are encountered, exit.  Defaults to
-50.
+After this number of errors are encountered, exit.  Warnings are not
+counted in this limit.  Defaults to 50.
 
 =item --exe
 
