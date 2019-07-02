@@ -3,6 +3,8 @@
 
 =pod
 
+=for html <a href="https://travis-ci.com/verilator/verilator"><img src="https://travis-ci.com/verilator/verilator.svg?branch=master"></a>
+
 =head1 NAME
 
 Welcome to Verilator.  This is the Verilator package's README file.
