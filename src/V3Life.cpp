@@ -304,6 +304,7 @@ private:
         AstVarScope* vscp = nodep->varScopep();
         if (!vscp) nodep->v3fatalSrc("Scope not assigned");
         if (nodep->lvalue()) {
+            m_sideEffect = true;  // $sscanf etc may have RHS vars that are lvalues
             m_lifep->complexAssign(vscp);
         } else {
             m_lifep->varUsageReplace(vscp, nodep); VL_DANGLING(nodep);
