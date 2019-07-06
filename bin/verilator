@@ -2444,6 +2444,10 @@ Configuration files are parsed after the normal Verilog preprocessing, so
 `ifdefs, `defines, and comments may be used as if it were normal Verilog
 code.
 
+Note that file or line-specific configuration only applies to files read
+after the configuration file. It is therefore recommended to pass the
+configuration file to Verilator as first file.
+
 The grammar of configuration commands is as follows:
 
 =over 4
