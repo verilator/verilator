@@ -1406,8 +1406,8 @@ private:
         if (nodep->valuep()) {  // else the value will be assigned sequentially
             // Default type is int, but common to assign narrower values, so minwidth from value
             userIterateAndNext(nodep->valuep(), WidthVP(CONTEXT, PRELIM).p());
-            int mwidth = nodep->valuep()->widthMin();  // Value determines minwidth
-            nodep->dtypeChgWidth(nodep->width(), mwidth);
+            // Minwidth does not come from value, as spec says set based on parent
+            // and if we keep minwidth we'll consider it unsized which is incorrect
             iterateCheck(nodep, "Enum value", nodep->valuep(), CONTEXT, FINAL, nodep->dtypep(), EXTEND_EXP);
         }
     }

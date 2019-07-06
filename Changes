@@ -14,6 +14,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix system compile flags injection. [Gianfranco Costamagna]
 
+****  Fix enum values not being sized based on parent, bug1442. [Dan Petrisko]
+
 
 * Verilator 4.016 2016-06-16
 
