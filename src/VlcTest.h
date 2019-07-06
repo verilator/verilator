@@ -76,9 +76,9 @@ public:
         cout<<"  Covered,     Rank,  RankPts,  Filename"<<endl;
     }
     void dump(bool bucketsToo) {
-        if (testrun() || computrons()!=0.0) {
-            cout<<"  "<<std::setw(8)<<std::setfill('0')<<testrun()
-                <<",  "<<std::setw(7)<<std::setfill(' ')<<computrons()<<",";
+        if (testrun() || computrons()!=0.0) {  // currently unused // LCOV_EXCL_LINE
+            cout<<"  "<<std::setw(8)<<std::setfill('0')<<testrun()  // LCOV_EXCL_LINE
+                <<",  "<<std::setw(7)<<std::setfill(' ')<<computrons()<<",";  // LCOV_EXCL_LINE
         }
         cout<<"  "<<std::setw(7)<<std::setfill(' ')<<bucketsCovered()
             <<",  "<<std::setw(7)<<std::setfill(' ')<<rank()

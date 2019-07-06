@@ -318,8 +318,8 @@ public:  // But internals only - called from VerilatedModule's
         if (VL_LIKELY(funcnum < scopep->m_funcnumMax)) {
             // m_callbacksp must be declared, as Max'es are > 0
             return scopep->m_callbacksp[funcnum];
-        } else {
-            return scopep->exportFindError(funcnum);
+        } else {  // LCOV_EXCL_LINE
+            return scopep->exportFindError(funcnum);  // LCOV_EXCL_LINE
         }
     }
 };

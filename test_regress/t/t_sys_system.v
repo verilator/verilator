@@ -22,6 +22,8 @@ module t;
       if (i!==0) $stop;
       i = $system("exit 10");
       if (i!==10) $stop;
+      i = $system("exit     20"); // Wide
+      if (i!==20) $stop;
 `endif
 
       $write("*-* All Finished *-*\n");

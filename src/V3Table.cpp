@@ -219,7 +219,7 @@ private:
             nodeap->bodysp()->unlinkFrBackWithNext()->deleteTree();
             nodeap->addStmtp(stmtsp);
             if (debug()>=6) nodeap->dumpTree(cout, "  table_new: ");
-        } else {
+        } else {  // LCOV_EXCL_LINE
             nodep->v3fatalSrc("Creating table under unknown node type");
         }
 
@@ -316,7 +316,7 @@ private:
 
             // Simulate
             simvis.mainTableEmulate(nodep);
-            if (!simvis.optimizable()) {
+            if (VL_UNCOVERABLE(!simvis.optimizable())) {
                 simvis.whyNotNodep()->v3fatalSrc("Optimizable cleared, even though earlier test run said not: "
                                                  <<simvis.whyNotMessage());
             }
@@ -348,8 +348,9 @@ private:
             }
 
             {   // Set changed table
-                if (inValue != inValueNextInitArray++)
+                if (VL_UNCOVERABLE(inValue != inValueNextInitArray++)) {
                     nodep->v3fatalSrc("InitArray requires us to have the values in inValue order");
+                }
                 AstNode* setp = new AstConst(nodep->fileline(), outputChgMask);
                 VN_CAST(chgVscp->varp()->valuep(), InitArray)->addValuep(setp);
             }

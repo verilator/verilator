@@ -109,7 +109,7 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep,
             if (prevp) nrangep->unlinkFrBack();
             AstRange* rangep = VN_CAST(nrangep, Range);
             if (!rangep) {
-                if (!VN_IS(nrangep, UnsizedRange)) {
+                if (VL_UNCOVERABLE(!VN_IS(nrangep, UnsizedRange))) {
                     nrangep->v3fatalSrc("Expected range or unsized range");
                 }
                 arrayp = new AstUnsizedArrayDType

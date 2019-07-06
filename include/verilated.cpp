@@ -285,6 +285,7 @@ IData VL_RANDOM_I(int obits) VL_MT_SAFE {
 QData VL_RANDOM_Q(int obits) VL_MT_SAFE {
     return vl_rand64() & VL_MASK_Q(obits);
 }
+// VL_RANDOM_W currently unused as $random always 32 bits
 WDataOutP VL_RANDOM_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     for (int i=0; i<VL_WORDS_I(obits); ++i) {
         if (i<(VL_WORDS_I(obits)-1)) {

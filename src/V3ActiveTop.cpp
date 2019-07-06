@@ -101,7 +101,7 @@ private:
             // Move the active's contents to the other active
             UINFO(4,"   merge active "<<sensesp<<" into "<<wantp<<endl);
             if (nodep->sensesStorep()) {
-                if (sensesp != nodep->sensesStorep()) {
+                if (VL_UNCOVERABLE(sensesp != nodep->sensesStorep())) {
                     nodep->v3fatalSrc("sensesStore should have been deleted earlier if different");
                 }
                 sensesp->unlinkFrBack();

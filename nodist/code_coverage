@@ -53,6 +53,7 @@ sub test {
     if ($Opt_Stage <= 1) {
         print "Stage 1: make examples (with coverage on)\n";
         run("make examples");
+        run("make test_regress");
     }
 
     my $cc_dir = "nodist/obj_dir/coverage";
@@ -68,7 +69,7 @@ sub test {
         }
         foreach my $dir (sort keys %dirs) {
             (my $outname = $dir) =~ s![^a-zA-Z0-9]+!_!g;
-            run("cd $cc_dir/info ; lcov -c -d ../../../$dir -o app_test_${outname}.info");
+            run("cd $cc_dir/info ; lcov -c -d ../../../../$dir -o app_test_${outname}.info");
         }
     }
     
@@ -145,7 +146,7 @@ sub clone_sources {
                 chomp $line;
                 if ($line !~ m!// LCOV_EXCL_LINE!
                     && $line =~ /$Exclude_Line_Regexp/) {
-                    $line .= "  //code_coverage: // LCOV_EXCL_LINE\n";
+                    $line .= "  //code_coverage: // LCOV_EXCL_LINE";
                     $excluded_lines++;
                     #print "$infile:$lineno: $line";
                 } else {
@@ -164,9 +165,11 @@ sub cleanup_abs_paths {
     my $fh = IO::File->new("<$infile") or die "%Error: $! $infile,";
     my @lines;
     while (defined(my $line = $fh->getline)) {
-        if ($line =~ m!^SF:/!) {
+        if ($line =~ m!^SF:!) {
             $line =~ s!$ENV{VERILATOR_ROOT}/!!;
             $line =~ s!$cc_dir/!!;
+            $line =~ s!obj_dbg/verilog.y$!verilog.y!;
+            #print "Remaining SF: ",$line;
         }
         push @lines, $line;
     }

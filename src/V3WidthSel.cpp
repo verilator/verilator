@@ -227,9 +227,11 @@ private:
                     subp = newSubNeg(subp, fromRange.lo());
                 }
             }
-            if (!fromRange.elements() || (adtypep->width() % fromRange.elements())!=0)
+            if (VL_UNCOVERABLE(!fromRange.elements()
+                               || (adtypep->width() % fromRange.elements())!=0)) {
                 adtypep->v3fatalSrc("Array extraction with width miscomputed "
                                     <<adtypep->width()<<"/"<<fromRange.elements());
+            }
             int elwidth = adtypep->width() / fromRange.elements();
             AstSel* newp
                 = new AstSel(nodep->fileline(),
@@ -316,9 +318,11 @@ private:
         else if (AstPackArrayDType* adtypep = VN_CAST(ddtypep, PackArrayDType)) {
             // SELEXTRACT(array, msb, lsb) -> SEL(array,
             //             lsb*width-of-subindex, width-of-subindex*(msb-lsb))
-            if (!fromRange.elements() || (adtypep->width() % fromRange.elements())!=0)
+            if (VL_UNCOVERABLE(!fromRange.elements()
+                               || (adtypep->width() % fromRange.elements())!=0)) {
                 adtypep->v3fatalSrc("Array extraction with width miscomputed "
                                     <<adtypep->width()<<"/"<<fromRange.elements());
+            }
             if (fromRange.littleEndian()) {
                 // Below code assumes big bit endian; just works out if we swap
                 int x = msb; msb = lsb; lsb = x;
@@ -478,7 +482,7 @@ private:
 
     //--------------------
     // Default
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) {  // LCOV_EXCL_LINE
         // See notes above; we never iterate
         nodep->v3fatalSrc("Shouldn't iterate in V3WidthSel");
     }
