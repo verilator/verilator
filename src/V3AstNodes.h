@@ -87,9 +87,7 @@ public:
     AstConst(FileLine* fl, uint32_t num)
         : AstNodeMath(fl)
         , m_num(V3Number(this, 32, num)) {
-        dtypeSetLogicSized(m_num.width(),
-                           m_num.sized() ? 0 : m_num.widthMin(),
-                           AstNumeric::UNSIGNED);
+        dtypeSetLogicSized(m_num.width(), 0, AstNumeric::UNSIGNED);
     }
     class Unsized32 {};  // for creator type-overload selection
     AstConst(FileLine* fl, Unsized32, uint32_t num)  // Unsized 32-bit integer of specified value

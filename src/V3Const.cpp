@@ -1630,7 +1630,7 @@ private:
         UASSERT_OBJ(nodep->itemp(), nodep, "Not linked");
         bool did = false;
         if (nodep->itemp()->valuep()) {
-            //if (debug()) nodep->varp()->valuep()->dumpTree(cout, "  visitvaref: ");
+            //if (debug()) nodep->itemp()->valuep()->dumpTree(cout, "  visitvaref: ");
             iterateAndNextNull(nodep->itemp()->valuep());
             if (AstConst* valuep = VN_CAST(nodep->itemp()->valuep(), Const)) {
                 const V3Number& num = valuep->num();

@@ -1887,7 +1887,7 @@ public:
     //
     // Changing the width may confuse the data type resolution, so must clear
     // TypeTable cache after use.
-    void widthForce(int width, int sized) { m_width = width; m_widthMin = sized; }
+    void widthForce(int width, int widthMin) { m_width = width; m_widthMin = widthMin; }
     // For backward compatibility inherit width and signing from the subDType/base type
     void widthFromSub(AstNodeDType* nodep) { m_width = nodep->m_width; m_widthMin = nodep->m_widthMin; m_numeric = nodep->m_numeric; }
     //
