@@ -12,6 +12,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix not in array context on non-power-of-two slices, msg2946. [Yu Sheng Lin]
 
+****  Fix system compile flags injection. [Gianfranco Costamagna]
+
 
 * Verilator 4.016 2016-06-16
 

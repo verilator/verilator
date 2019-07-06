@@ -91,10 +91,10 @@ AC_SUBST(CFG_WITH_PREC11)
 AC_MSG_RESULT($CFG_WITH_PREC11)
 
 # Compiler flags
-CFLAGS=-I${includedir}
-CPPFLAGS=-I${includedir}
-CXXFLAGS=-I${includedir}
-LDFLAGS=-L${libdir}
+CFLAGS+=" -I${includedir}"
+CPPFLAGS+=" -I${includedir}"
+CXXFLAGS+=" -I${includedir}"
+LDFLAGS+=" -L${libdir}"
 
 # Checks for programs.
 AC_PROG_CC
