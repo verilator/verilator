@@ -110,7 +110,7 @@ private:
         // Already exists; rather than IF(a,... IF(b... optimize to IF(a&&b,
         // Saves us teaching V3Const how to optimize, and it won't be needed again.
         if (AstIf* ifp = VN_CAST(prep->user2p(), If)) {
-            if (needDly) prep->v3fatalSrc("Should have already converted to non-delay");
+            UASSERT_OBJ(!needDly, prep, "Should have already converted to non-delay");
             AstNRelinker replaceHandle;
             AstNode* earliercondp = ifp->condp()->unlinkFrBack(&replaceHandle);
             AstNode* newp = new AstLogAnd(condp->fileline(),
@@ -285,7 +285,7 @@ private:
             } else {
                 // Make a Vxrand variable
                 // We use the special XTEMP type so it doesn't break pure functions
-                if (!m_modp) nodep->v3fatalSrc("X number not under module");
+                UASSERT_OBJ(m_modp, nodep, "X number not under module");
                 string newvarname = (string("__Vxrand")
                                      +cvtToStr(m_modp->varNumGetInc()));
                 AstVar* newvarp
@@ -391,7 +391,7 @@ private:
             // Find range of dtype we are selecting from
             int declElements = -1;
             AstNodeDType* dtypep = nodep->fromp()->dtypep()->skipRefp();
-            if (!dtypep) nodep->v3fatalSrc("Select of non-selectable type");
+            UASSERT_OBJ(dtypep, nodep, "Select of non-selectable type");
             if (const AstNodeArrayDType* adtypep = VN_CAST(dtypep, NodeArrayDType)) {
                 declElements = adtypep->elementsConst();
             } else {

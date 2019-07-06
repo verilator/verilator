@@ -141,7 +141,7 @@ private:
 
             // Remap var names and replace lower Begins
             iterateAndNextNull(nodep->stmtsp());
-            if (nodep->genforp()) nodep->v3fatalSrc("GENFORs should have been expanded earlier");
+            UASSERT_OBJ(!nodep->genforp(), nodep, "GENFORs should have been expanded earlier");
         }
         m_namedScope = oldScope;
         m_unnamedScope = oldUnnamed;

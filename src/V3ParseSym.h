@@ -60,7 +60,7 @@ public:
 private:
     // METHODS
     static VSymEnt* getTable(AstNode* nodep) {
-        if (!nodep->user4p()) nodep->v3fatalSrc("Current symtable not found");
+        UASSERT_OBJ(nodep->user4p(), nodep, "Current symtable not found");
         return nodep->user4u().toSymEnt();
     }
 
@@ -116,7 +116,7 @@ public:
             return;
         }
         m_sympStack.pop_back();
-        if (m_sympStack.empty()) { nodep->v3fatalSrc("symbol stack underflow"); return; }
+        UASSERT_OBJ(!m_sympStack.empty(), nodep, "symbol stack underflow");
         m_symCurrentp = m_sympStack.back();
     }
     void showUpward() {
@@ -139,10 +139,9 @@ public:
     void importItem(AstNode* packagep, const string& id_or_star) {
         // Import from package::id_or_star to this
         VSymEnt* symp = getTable(packagep);
-        if (!symp) {  // Internal problem, because we earlier found pkg to label it an ID__aPACKAGE
-            packagep->v3fatalSrc("Import package not found");
-            return;
-        }
+        UASSERT_OBJ(symp, packagep,
+                    // Internal problem, because we earlier found pkg to label it an ID__aPACKAGE
+                    "Import package not found");
         // Walk old sym table and reinsert into current table
         // We let V3LinkDot report the error instead of us
         symCurrentp()->importFromPackage(&m_syms, symp, id_or_star);
@@ -150,10 +149,9 @@ public:
     void exportItem(AstNode* packagep, const string& id_or_star) {
         // Export from this the remote package::id_or_star
         VSymEnt* symp = getTable(packagep);
-        if (!symp) {  // Internal problem, because we earlier found pkg to label it an ID__aPACKAGE
-            packagep->v3fatalSrc("Export package not found");
-            return;
-        }
+        UASSERT_OBJ(symp, packagep,
+                    // Internal problem, because we earlier found pkg to label it an ID__aPACKAGE
+                    "Export package not found");
         symCurrentp()->exportFromPackage(&m_syms, symp, id_or_star);
     }
     void exportStarStar(AstNode* packagep) {

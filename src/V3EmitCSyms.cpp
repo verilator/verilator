@@ -206,7 +206,7 @@ class EmitCSyms : EmitCBaseVisitor {
             m_scopeNames.insert(make_pair(name, ScopeNameData(name, nodep->scopePrettySymName())));
         }
         if (nodep->dpiExport()) {
-            if (!m_funcp) nodep->v3fatalSrc("ScopeName not under DPI function");
+            UASSERT_OBJ(m_funcp, nodep, "ScopeName not under DPI function");
             m_scopeFuncs.insert(make_pair(name + " " + m_funcp->name(),
                                           ScopeFuncData(nodep, m_funcp, m_modp)));
         } else {

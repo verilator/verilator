@@ -179,7 +179,7 @@ private:
     }
     AstIf* makeActiveIf(AstSenTree* sensesp) {
         AstNode* senEqnp = createSenseEquation(sensesp->sensesp());
-        if (!senEqnp) sensesp->v3fatalSrc("No sense equation, shouldn't be in sequent activation.");
+        UASSERT_OBJ(senEqnp, sensesp, "No sense equation, shouldn't be in sequent activation.");
         AstIf* newifp = new AstIf(sensesp->fileline(), senEqnp, NULL, NULL);
         return (newifp);
     }
@@ -193,7 +193,8 @@ private:
         UINFO(4," TOPSCOPE   "<<nodep<<endl);
         m_topScopep = nodep;
         m_scopep = nodep->scopep();
-        if (!m_scopep) nodep->v3fatalSrc("No scope found on top level, perhaps you have no statements?");
+        UASSERT_OBJ(m_scopep, nodep,
+                    "No scope found on top level, perhaps you have no statements?");
         //VV*****  We reset all user1p()
         AstNode::user1ClearTree();
         // Make top functions
@@ -263,7 +264,7 @@ private:
         m_scopep = nodep;
         iterateChildren(nodep);
         if (AstNode* movep = nodep->finalClksp()) {
-            if (!m_topScopep) nodep->v3fatalSrc("Final clocks under non-top scope");
+            UASSERT_OBJ(m_topScopep, nodep, "Final clocks under non-top scope");
             movep->unlinkFrBackWithNext();
             m_evalFuncp->addFinalsp(movep);
         }
@@ -346,13 +347,14 @@ private:
         if (!m_topScopep || !nodep->stmtsp()) {
             // Not at the top or empty block...
             // Only empty blocks should be leftover on the non-top.  Killem.
-            if (nodep->stmtsp()) nodep->v3fatalSrc("Non-empty lower active");
+            UASSERT_OBJ(!nodep->stmtsp(), nodep, "Non-empty lower active");
             nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
         } else if (m_mtaskBodyp) {
             UINFO(4,"  TR ACTIVE  "<<nodep<<endl);
             AstNode* stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
             if (nodep->hasClocked()) {
-                if (nodep->hasInitial()) nodep->v3fatalSrc("Initial block should not have clock sensitivity");
+                UASSERT_OBJ(!nodep->hasInitial(), nodep,
+                            "Initial block should not have clock sensitivity");
                 if (m_lastSenp && nodep->sensesp()->sameTree(m_lastSenp)) {
                     UINFO(4,"    sameSenseTree\n");
                 } else {
@@ -377,7 +379,8 @@ private:
             AstNode* stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
             if (nodep->hasClocked()) {
                 // Remember the latest sensitivity so we can compare it next time
-                if (nodep->hasInitial()) nodep->v3fatalSrc("Initial block should not have clock sensitivity");
+                UASSERT_OBJ(!nodep->hasInitial(), nodep,
+                            "Initial block should not have clock sensitivity");
                 if (m_lastSenp && nodep->sensesp()->sameTree(m_lastSenp)) {
                     UINFO(4,"    sameSenseTree\n");
                 } else {

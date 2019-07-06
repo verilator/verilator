@@ -309,7 +309,7 @@ private:
         //UINFO(9,"    push "<<nodep<<endl);
         SplitLogicVertex* vertexp = new SplitLogicVertex(&m_graph, nodep);
         m_stmtStackps.push_back(vertexp);
-        if (nodep->user3p()) nodep->v3fatalSrc("user3p should not be used; cleared in processBlock");
+        UASSERT_OBJ(!nodep->user3p(), nodep, "user3p should not be used; cleared in processBlock");
         nodep->user3p(vertexp);
     }
     void scoreboardPopStmt() {
@@ -365,7 +365,7 @@ protected:
     virtual void visit(AstVarRef* nodep) {
         if (!m_stmtStackps.empty()) {
             AstVarScope* vscp = nodep->varScopep();
-            if (!vscp) nodep->v3fatalSrc("Not linked");
+            UASSERT_OBJ(vscp, nodep, "Not linked");
             if (!nodep->varp()->isConst()) {  // Constant lookups can be ignored
                 // ---
                 // NOTE: Formerly at this location we would avoid
@@ -518,7 +518,7 @@ protected:
         for (AstNode* nextp=nodep; nextp; nextp=nextp->nextp()) {
             SplitLogicVertex* vvertexp = reinterpret_cast<SplitLogicVertex*>(nextp->user3p());
             uint32_t color = vvertexp->color();
-            if (!color) nextp->v3fatalSrc("No node color assigned");
+            UASSERT_OBJ(color, nextp, "No node color assigned");
             if (lastOfColor[color]) {
                 new SplitStrictEdge(&m_graph, lastOfColor[color], vvertexp);
             }
@@ -580,9 +580,8 @@ protected:
         AstNode* firstp = nodep;  // We may reorder, and nodep is no longer first.
         void* oldBlockUser3 = nodep->user3p();  // May be overloaded in below loop, save it
         nodep->user3p(NULL);
-        if (!nodep->firstAbovep()) {
-            nodep->v3fatalSrc("Node passed is in next list; should have processed all list at once");
-        }
+        UASSERT_OBJ(nodep->firstAbovep(), nodep,
+                    "Node passed is in next list; should have processed all list at once");
         // Process it
         if (!nodep->nextp()) {
             // Just one, so can't reorder.  Just look for more blocks/statements.
@@ -656,7 +655,7 @@ public:
     const ColorSet& colors() const { return m_colors; }
     const ColorSet& colors(AstNodeIf* nodep) const {
         IfColorMap::const_iterator it = m_ifColors.find(nodep);
-        if (it == m_ifColors.end()) nodep->v3fatalSrc("Unknown node in split color() map");
+        UASSERT_OBJ(it != m_ifColors.end(), nodep, "Unknown node in split color() map");
         return it->second;
     }
 
@@ -758,7 +757,7 @@ protected:
         // for such an embedded if.
 
         // Each leaf must have a user3p
-        if (!nodep->user3p()) nodep->v3fatalSrc("null user3p in V3Split leaf");
+        UASSERT_OBJ(nodep->user3p(), nodep, "null user3p in V3Split leaf");
 
         // Clone the leaf into its new always block
         SplitLogicVertex* vxp = reinterpret_cast<SplitLogicVertex*>(nodep->user3p());

@@ -248,7 +248,7 @@ public:
         symp->fallbackp(NULL);
         rootEntp()->insert("$unit ", symp);  // Space so can never name conflict with user code
         //
-        if (m_dunitEntp) nodep->v3fatalSrc("Call insertDUnit only once");
+        UASSERT_OBJ(!m_dunitEntp, nodep, "Call insertDUnit only once");
         m_dunitEntp = symp;
     }
     VSymEnt* insertTopCell(AstNodeModule* nodep, const string& scopename) {
@@ -265,7 +265,7 @@ public:
     }
     VSymEnt* insertCell(VSymEnt* abovep, VSymEnt* modSymp,
                         AstCell* nodep, const string& scopename) {
-        if (!abovep) nodep->v3fatalSrc("Null symbol table inserting node");
+        UASSERT_OBJ(abovep, nodep, "Null symbol table inserting node");
         VSymEnt* symp = new VSymEnt(&m_syms, nodep);
         UINFO(9,"      INSERTcel se"<<cvtToHex(symp)<<"  "<<scopename
               <<" above=se"<<cvtToHex(abovep)
@@ -289,7 +289,7 @@ public:
                           AstCellInline* nodep, const string& basename) {
         // A fake point in the hierarchy, corresponding to an inlined module
         // This refrences to another Sym, and eventually resolves to a module with a prefix
-        if (!abovep) nodep->v3fatalSrc("Null symbol table inserting node");
+        UASSERT_OBJ(abovep, nodep, "Null symbol table inserting node");
         VSymEnt* symp = new VSymEnt(&m_syms, nodep);
         UINFO(9,"      INSERTinl se"<<cvtToHex(symp)
               <<"  "<<basename<<" above=se"<<cvtToHex(abovep)
@@ -312,7 +312,7 @@ public:
         // After we remove begins these will go away
         // Note we fallback to the symbol table of the parent, as we want to find variables there
         // However, cells walk the graph, so cells will appear under the begin/ftask itself
-        if (!abovep) nodep->v3fatalSrc("Null symbol table inserting node");
+        UASSERT_OBJ(abovep, nodep, "Null symbol table inserting node");
         VSymEnt* symp = new VSymEnt(&m_syms, nodep);
         UINFO(9,"      INSERTblk se"<<cvtToHex(symp)
               <<"  above=se"<<cvtToHex(abovep)<<"  node="<<nodep<<endl);
@@ -329,7 +329,7 @@ public:
     }
     VSymEnt* insertSym(VSymEnt* abovep, const string& name,
                        AstNode* nodep, AstPackage* packagep) {
-        if (!abovep) nodep->v3fatalSrc("Null symbol table inserting node");
+        UASSERT_OBJ(abovep, nodep, "Null symbol table inserting node");
         VSymEnt* symp = new VSymEnt(&m_syms, nodep);
         UINFO(9,"      INSERTsym se"<<cvtToHex(symp)<<"  name='"<<name
               <<"' above=se"<<cvtToHex(abovep)<<"  node="<<nodep<<endl);
@@ -350,14 +350,13 @@ public:
         // Don't use this in ResolveVisitor, as we need to pick up the proper
         // reference under each SCOPE
         VSymEnt* symp = nodep->user1u().toSymEnt();
-        if (!symp) nodep->v3fatalSrc("Module/etc never assigned a symbol entry?");
+        UASSERT_OBJ(symp, nodep, "Module/etc never assigned a symbol entry?");
         return symp;
     }
     VSymEnt* getScopeSym(AstScope* nodep) {
         NameScopeSymMap::iterator it = m_nameScopeSymMap.find(nodep->name());
-        if (it == m_nameScopeSymMap.end()) {
-            nodep->v3fatalSrc("Scope never assigned a symbol entry?");
-        }
+        UASSERT_OBJ(it != m_nameScopeSymMap.end(), nodep,
+                    "Scope never assigned a symbol entry?");
         return it->second;
     }
     void implicitOkAdd(AstNodeModule* nodep, const string& varname) {
@@ -401,7 +400,7 @@ public:
             AstVar* varp = varSymp ? VN_CAST(varSymp->nodep(), Var) : NULL;
             UINFO(9, "  insAllIface se"<<cvtToHex(varSymp)<<" "<<varp<<endl);
             AstIfaceRefDType* ifacerefp = ifaceRefFromArray(varp->subDTypep());
-            if (!ifacerefp) varp->v3fatalSrc("Non-ifacerefs on list!");
+            UASSERT_OBJ(ifacerefp, varp, "Non-ifacerefs on list!");
             if (!ifacerefp->ifaceViaCellp()) {
                 if (!ifacerefp->cellp()) {  // Probably a NotFoundModule, or a normal module if made mistake
                     ifacerefp->v3error("Cannot find file containing interface: "
@@ -444,10 +443,9 @@ public:
         // a child cell connecting to that interface
         // Typically lhsp=VAR w/dtype IFACEREF, rhsp=IFACE cell
         UINFO(9,"   insertScopeAlias se"<<cvtToHex(lhsp)<<" se"<<cvtToHex(rhsp)<<endl);
-        if (VN_IS(rhsp->nodep(), Cell)
-            && !VN_IS(VN_CAST(rhsp->nodep(), Cell)->modp(), Iface)) {
-            rhsp->nodep()->v3fatalSrc("Got a non-IFACE alias RHS");
-        }
+        UASSERT_OBJ(!(VN_IS(rhsp->nodep(), Cell)
+                      && !VN_IS(VN_CAST(rhsp->nodep(), Cell)->modp(), Iface)),
+                    rhsp->nodep(), "Got a non-IFACE alias RHS");
         m_scopeAliasMap[samn].insert(make_pair(lhsp, rhsp));
     }
     void computeScopeAliases() {
@@ -714,7 +712,7 @@ class LinkDotFindVisitor : public AstNVisitor {
                            <<AstNode::prettyName(nodep->origName()));
         } else if (doit) {
             UINFO(4,"     Link Module: "<<nodep<<endl);
-            if (nodep->dead()) nodep->v3fatalSrc("Module in cell tree mislabeled as dead?");
+            UASSERT_OBJ(!nodep->dead(), nodep, "Module in cell tree mislabeled as dead?");
             VSymEnt* upperSymp = m_curSymp ? m_curSymp : m_statep->rootEntp();
             m_packagep = VN_CAST(nodep, Package);
             if (standalonePkg) {
@@ -757,7 +755,8 @@ class LinkDotFindVisitor : public AstNVisitor {
         m_packagep = NULL;
     }
     virtual void visit(AstScope* nodep) {
-        if (!m_statep->forScopeCreation()) v3fatalSrc("Scopes should only exist right after V3Scope");
+        UASSERT_OBJ(m_statep->forScopeCreation(), nodep,
+                    "Scopes should only exist right after V3Scope");
         // Ignored.  Processed in next step
     }
     virtual void visit(AstCell* nodep) {
@@ -782,10 +781,9 @@ class LinkDotFindVisitor : public AstNVisitor {
             string baddot;
             VSymEnt* okSymp;
             aboveSymp = m_statep->findDotted(aboveSymp, scope, baddot, okSymp);
-            if (!aboveSymp) {
-                nodep->v3fatalSrc("Can't find cell insertion point at '"
-                                  <<baddot<<"' in: "<<nodep->prettyName());
-            }
+            UASSERT_OBJ(aboveSymp, nodep,
+                        "Can't find cell insertion point at '"
+                        <<baddot<<"' in: "<<nodep->prettyName());
         }
         {
             m_scope = m_scope+"."+nodep->name();
@@ -814,10 +812,9 @@ class LinkDotFindVisitor : public AstNVisitor {
             string baddot;
             VSymEnt* okSymp;
             aboveSymp = m_statep->findDotted(aboveSymp, dotted, baddot, okSymp);
-            if (!aboveSymp) {
-                nodep->v3fatalSrc("Can't find cellinline insertion point at '"
-                                  <<baddot<<"' in: "<<nodep->prettyName());
-            }
+            UASSERT_OBJ(aboveSymp, nodep,
+                        "Can't find cellinline insertion point at '"
+                        <<baddot<<"' in: "<<nodep->prettyName());
             m_statep->insertInline(aboveSymp, m_modSymp, nodep, ident);
         } else {  // No __DOT__, just directly underneath
             m_statep->insertInline(aboveSymp, m_modSymp, nodep, nodep->name());
@@ -882,7 +879,7 @@ class LinkDotFindVisitor : public AstNVisitor {
     virtual void visit(AstNodeFTask* nodep) {
         // NodeTask: Remember its name for later resolution
         UINFO(5,"   "<<nodep<<endl);
-        if (!m_curSymp || !m_modSymp) nodep->v3fatalSrc("Function/Task not under module?");
+        UASSERT_OBJ(m_curSymp && m_modSymp, nodep, "Function/Task not under module?");
         // Remember the existing symbol table scope
         VSymEnt* oldCurSymp = m_curSymp;
         {
@@ -917,7 +914,7 @@ class LinkDotFindVisitor : public AstNVisitor {
     }
     virtual void visit(AstVar* nodep) {
         // Var: Remember its name for later resolution
-        if (!m_curSymp || !m_modSymp) nodep->v3fatalSrc("Var not under module?");
+        UASSERT_OBJ(m_curSymp && m_modSymp, nodep, "Var not under module?");
         iterateChildren(nodep);
         if (!m_statep->forScopeCreation()) {
             // Find under either a task or the module's vars
@@ -965,7 +962,8 @@ class LinkDotFindVisitor : public AstNVisitor {
                             // Then have "input foo" and "real foo" so the
                             // dtype comes from the other side.
                             AstNodeDType* newdtypep = nodep->subDTypep();
-                            if (!newdtypep || !nodep->childDTypep()) findvarp->v3fatalSrc("No child type?");
+                            UASSERT_OBJ(newdtypep && nodep->childDTypep(), findvarp,
+                                        "No child type?");
                             bdtypep->unlinkFrBack()->deleteTree();
                             newdtypep->unlinkFrBack();
                             findvarp->childDTypep(newdtypep);
@@ -1027,18 +1025,18 @@ class LinkDotFindVisitor : public AstNVisitor {
     }
     virtual void visit(AstTypedef* nodep) {
         // Remember its name for later resolution
-        if (!m_curSymp) nodep->v3fatalSrc("Typedef not under module?");
+        UASSERT_OBJ(m_curSymp, nodep, "Typedef not under module?");
         iterateChildren(nodep);
         m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_packagep);
     }
     virtual void visit(AstParamTypeDType* nodep) {
-        if (!m_curSymp) nodep->v3fatalSrc("Parameter type not under module?");
+        UASSERT_OBJ(m_curSymp, nodep, "Parameter type not under module?");
         iterateChildren(nodep);
         m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_packagep);
     }
     virtual void visit(AstCFunc* nodep) {
         // For dotted resolution, ignore all AstVars under functions, otherwise shouldn't exist
-        if (m_statep->forScopeCreation()) nodep->v3fatalSrc("No CFuncs expected in tree yet");
+        UASSERT_OBJ(!m_statep->forScopeCreation(), nodep, "No CFuncs expected in tree yet");
     }
     virtual void visit(AstEnumItem* nodep) {
         // EnumItem: Remember its name for later resolution
@@ -1186,7 +1184,8 @@ private:
         UINFO(5,"   "<<nodep<<endl);
         if (nodep->dead() || !nodep->user4()) {
             UINFO(4,"Mark dead module "<<nodep<<endl);
-            if (!m_statep->forPrearray()) nodep->v3fatalSrc("Dead module persisted past where should have removed");
+            UASSERT_OBJ(m_statep->forPrearray(), nodep,
+                        "Dead module persisted past where should have removed");
             // Don't remove now, because we may have a tree of
             // parameterized modules with VARXREFs into the deleted module
             // region.  V3Dead should cleanup.
@@ -1266,7 +1265,7 @@ private:
     virtual void visit(AstAssignAlias* nodep) {
         // tran gates need implicit creation
         // As VarRefs don't exist in forPrimary, sanity check
-        if (m_statep->forPrimary()) nodep->v3fatalSrc("Assign aliases unexpected pre-dot");
+        UASSERT_OBJ(!m_statep->forPrimary(), nodep, "Assign aliases unexpected pre-dot");
         if (AstVarRef* forrefp = VN_CAST(nodep->lhsp(), VarRef)) {
             pinImplicitExprRecurse(forrefp);
         }
@@ -1317,7 +1316,8 @@ class LinkDotScopeVisitor : public AstNVisitor {
     }
     virtual void visit(AstScope* nodep) {
         UINFO(8,"  SCOPE "<<nodep<<endl);
-        if (!m_statep->forScopeCreation()) v3fatalSrc("Scopes should only exist right after V3Scope");
+        UASSERT_OBJ(m_statep->forScopeCreation(), nodep,
+                    "Scopes should only exist right after V3Scope");
         // Using the CELL names, we created all hierarchy.  We now need to match this Scope
         // up with the hierarchy created by the CELL names.
         m_modSymp = m_statep->getScopeSym(nodep);
@@ -1335,20 +1335,21 @@ class LinkDotScopeVisitor : public AstNVisitor {
                 // Find the interface cell the var references
                 AstIfaceRefDType* dtypep
                     = LinkDotState::ifaceRefFromArray(nodep->varp()->dtypep());
-                if (!dtypep) nodep->v3fatalSrc("Non AstIfaceRefDType on isIfaceRef() var");
+                UASSERT_OBJ(dtypep, nodep, "Non AstIfaceRefDType on isIfaceRef() var");
                 UINFO(9,"Iface parent dtype "<<dtypep<<endl);
                 string ifcellname = dtypep->cellName();
                 string baddot; VSymEnt* okSymp;
                 VSymEnt* cellSymp = m_statep->findDotted(m_modSymp, ifcellname, baddot, okSymp);
-                if (!cellSymp) nodep->v3fatalSrc("No symbol for interface cell: "
-                                                 <<nodep->prettyName(ifcellname));
+                UASSERT_OBJ(cellSymp, nodep,
+                            "No symbol for interface cell: "<<nodep->prettyName(ifcellname));
                 UINFO(5, "       Found interface cell: se"<<cvtToHex(cellSymp)
                       <<" "<<cellSymp->nodep()<<endl);
                 if (dtypep->modportName()!="") {
                     VSymEnt* mpSymp = m_statep->findDotted(m_modSymp, ifcellname, baddot, okSymp);
-                    if (!mpSymp) { nodep->v3fatalSrc("No symbol for interface modport: "
-                                                     <<nodep->prettyName(dtypep->modportName())); }
-                    else cellSymp = mpSymp;
+                    UASSERT_OBJ(mpSymp, nodep,
+                                "No symbol for interface modport: "
+                                <<nodep->prettyName(dtypep->modportName()));
+                    cellSymp = mpSymp;
                     UINFO(5, "       Found modport cell: se"
                           <<cvtToHex(cellSymp)<<" "<<mpSymp->nodep()<<endl);
                 }
@@ -1370,7 +1371,7 @@ class LinkDotScopeVisitor : public AstNVisitor {
         if (debug()>=9) nodep->dumpTree(cout, "-\t\t\t\talias: ");
         AstVarScope* fromVscp = VN_CAST(nodep->lhsp(), VarRef)->varScopep();
         AstVarScope* toVscp   = VN_CAST(nodep->rhsp(), VarRef)->varScopep();
-        if (!fromVscp || !toVscp) nodep->v3fatalSrc("Bad alias scopes");
+        UASSERT_OBJ(fromVscp && toVscp, nodep, "Bad alias scopes");
         fromVscp->user2p(toVscp);
         iterateChildren(nodep);
     }
@@ -1381,7 +1382,8 @@ class LinkDotScopeVisitor : public AstNVisitor {
         {
             AstVarRef* refp = VN_CAST(nodep->rhsp(), VarRef);
             AstVarXRef* xrefp = VN_CAST(nodep->rhsp(), VarXRef);
-            if (!refp && !xrefp) nodep->v3fatalSrc("Unsupported: Non Var(X)Ref attached to interface pin");
+            UASSERT_OBJ(refp || xrefp, nodep,
+                        "Unsupported: Non Var(X)Ref attached to interface pin");
             string inl = ((xrefp && xrefp->inlinedDots().size())
                           ? (xrefp->inlinedDots() + "__DOT__") : "");
             VSymEnt* symp = NULL;
@@ -1397,7 +1399,7 @@ class LinkDotScopeVisitor : public AstNVisitor {
             }
             if (!symp) UINFO(9,"No symbol for interface alias rhs ("
                              <<string(refp?"VARREF ":"VARXREF ")<<scopename<<")"<<endl);
-            if (!symp) nodep->v3fatalSrc("No symbol for interface alias rhs");
+            UASSERT_OBJ(symp, nodep, "No symbol for interface alias rhs");
             UINFO(5, "       Found a linked scope RHS: "<<scopename<<"  se"
                   <<cvtToHex(symp)<<" "<<symp->nodep()<<endl);
             rhsSymp = symp;
@@ -1407,11 +1409,12 @@ class LinkDotScopeVisitor : public AstNVisitor {
             const AstVarXRef* xrefp = VN_CAST(nodep->lhsp(), VarXRef);
             const AstVarRef* refp = VN_CAST(nodep->lhsp(), VarRef);
 
-            if (!refp && !xrefp) nodep->v3fatalSrc("Unsupported: Non Var(X)Ref attached to interface pin");
+            UASSERT_OBJ(refp || xrefp, nodep,
+                        "Unsupported: Non Var(X)Ref attached to interface pin");
             string scopename = refp ? refp->varp()->name() : xrefp->dotted()+"."+xrefp->name();
             string baddot; VSymEnt* okSymp;
             VSymEnt* symp = m_statep->findDotted(m_modSymp, scopename, baddot, okSymp);
-            if (!symp) nodep->v3fatalSrc("No symbol for interface alias lhs");
+            UASSERT_OBJ(symp, nodep, "No symbol for interface alias lhs");
             UINFO(5, "       Found a linked scope LHS: "<<scopename
                   <<"  se"<<cvtToHex(symp)<<" "<<symp->nodep()<<endl);
             lhsSymp = symp;
@@ -1721,10 +1724,9 @@ private:
         checkNoDot(nodep);
         m_cellp = nodep;
         AstNode::user5ClearTree();
-        if (!nodep->modp()) {
-            nodep->v3fatalSrc("Cell has unlinked module");  // V3LinkCell should have errored out
-        }
-        else {
+        UASSERT_OBJ(nodep->modp(), nodep,
+                    "Cell has unlinked module");  // V3LinkCell should have errored out
+        {
             if (VN_IS(nodep->modp(), NotFoundModule)) {
                 // Prevent warnings about missing pin connects
                 if (nodep->pinsp()) nodep->pinsp()->unlinkFrBackWithNext()->deleteTree();
@@ -1751,7 +1753,7 @@ private:
         checkNoDot(nodep);
         iterateChildren(nodep);
         if (!nodep->modVarp()) {
-            if (!m_pinSymp) nodep->v3fatalSrc("Pin not under cell?");
+            UASSERT_OBJ(m_pinSymp, nodep, "Pin not under cell?");
             VSymEnt* foundp = m_pinSymp->findIdFlat(nodep->name());
             const char* whatp = nodep->param() ? "parameter pin" : "pin";
             if (!foundp) {
@@ -1852,8 +1854,8 @@ private:
         UINFO(9,"   linkPARSEREF "<<m_ds.ascii()<<"  n="<<nodep<<endl);
         // m_curSymp is symbol table of outer expression
         // m_ds.m_dotSymp is symbol table relative to "."'s above now
-        if (!m_ds.m_dotSymp) nodep->v3fatalSrc("NULL lookup symbol table");
-        if (!m_statep->forPrimary()) nodep->v3fatalSrc("ParseRefs should no longer exist");
+        UASSERT_OBJ(m_ds.m_dotSymp, nodep, "NULL lookup symbol table");
+        UASSERT_OBJ(m_statep->forPrimary(), nodep, "ParseRefs should no longer exist");
         DotStates lastStates = m_ds;
         bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
         if (start) {
@@ -1879,11 +1881,10 @@ private:
                 expectWhat = "scope/variable";
                 allowScope = true;
                 allowVar = true;
-                if (!VN_IS(m_ds.m_dotp->lhsp(), PackageRef)) {
-                    m_ds.m_dotp->lhsp()->v3fatalSrc("Bad package link");
-                }
+                UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), PackageRef),
+                            m_ds.m_dotp->lhsp(), "Bad package link");
                 packagep = VN_CAST(m_ds.m_dotp->lhsp(), PackageRef)->packagep();
-                if (!packagep) m_ds.m_dotp->lhsp()->v3fatalSrc("Bad package link");
+                UASSERT_OBJ(packagep, m_ds.m_dotp->lhsp(), "Bad package link");
                 m_ds.m_dotSymp = m_statep->getNodeSym(packagep);
                 m_ds.m_dotPos = DP_SCOPE;
             } else if (m_ds.m_dotPos == DP_SCOPE) {
@@ -1931,13 +1932,13 @@ private:
                     if (VN_IS(cellp->modp(), Iface)) {
                         // Interfaces can be referenced like a variable for interconnect
                         VSymEnt* cellEntp = m_statep->getNodeSym(cellp);
-                        if (!cellEntp) nodep->v3fatalSrc("No interface sym entry");
+                        UASSERT_OBJ(cellEntp, nodep, "No interface sym entry");
                         VSymEnt* parentEntp = cellEntp->parentp();  // Container of the var; probably a module or generate begin
                         string findName = nodep->name()+"__Viftop";
                         VSymEnt* ifaceSymp = parentEntp->findIdFallback(findName);
                         AstVar* ifaceRefVarp = ifaceSymp ? VN_CAST(ifaceSymp->nodep(), Var) : NULL;
-                        if (!ifaceRefVarp) nodep->v3fatalSrc("Can't find interface var ref: "
-                                                             <<findName);
+                        UASSERT_OBJ(ifaceRefVarp, nodep,
+                                    "Can't find interface var ref: "<<findName);
                         //
                         ok = true;
                         m_ds.m_dotText = VString::dot(m_ds.m_dotText, ".", nodep->name());
@@ -1956,7 +1957,7 @@ private:
             else if (AstVar* varp = foundToVarp(foundp, nodep, false)) {
                 AstIfaceRefDType* ifacerefp = LinkDotState::ifaceRefFromArray(varp->subDTypep());
                 if (ifacerefp) {
-                    if (!ifacerefp->ifaceViaCellp()) ifacerefp->v3fatalSrc("Unlinked interface");
+                    UASSERT_OBJ(ifacerefp->ifaceViaCellp(), ifacerefp, "Unlinked interface");
                     // Really this is a scope reference into an interface
                     UINFO(9,"varref-ifaceref "<<m_ds.m_dotText<<"  "<<nodep<<endl);
                     m_ds.m_dotText = VString::dot(m_ds.m_dotText, ".", nodep->name());
@@ -2011,7 +2012,7 @@ private:
                                    <<modportp->prettyName());
                 } else {
                     AstCell* cellp = VN_CAST(m_ds.m_dotSymp->nodep(), Cell);
-                    if (!cellp) nodep->v3fatalSrc("Modport not referenced from a cell");
+                    UASSERT_OBJ(cellp, nodep, "Modport not referenced from a cell");
                     AstIface* ifacep = VN_CAST(cellp->modp(), Iface);
                     //string cellName = m_ds.m_dotText;  // Use cellp->name
                     m_ds.m_dotText = VString::dot(m_ds.m_dotText, ".", nodep->name());
@@ -2081,7 +2082,7 @@ private:
         iterateChildren(nodep);
         if (!nodep->varp()) {
             UINFO(9," linkVarRef se"<<cvtToHex(m_curSymp)<<"  n="<<nodep<<endl);
-            if (!m_curSymp) nodep->v3fatalSrc("NULL lookup symbol table");
+            UASSERT_OBJ(m_curSymp, nodep, "NULL lookup symbol table");
             VSymEnt* foundp = m_curSymp->findIdFallback(nodep->name());
             if (AstVar* varp = foundp ? foundToVarp(foundp, nodep, nodep->lvalue()) : NULL) {
                 nodep->varp(varp);
@@ -2110,10 +2111,9 @@ private:
                 dotSymp = m_modSymp;  // Dotted lookup is always relative to module, as maybe variable name lower down with same scope name we want to ignore (t_math_divw)
                 string inl = AstNode::dedotName(nodep->inlinedDots());
                 dotSymp = m_statep->findDotted(dotSymp, inl, baddot, okSymp);
-                if (!dotSymp) {
-                    nodep->v3fatalSrc("Couldn't resolve inlined scope '"
-                                      <<baddot<<"' in: "<<nodep->inlinedDots());
-                }
+                UASSERT_OBJ(dotSymp, nodep,
+                            "Couldn't resolve inlined scope '"
+                            <<baddot<<"' in: "<<nodep->inlinedDots());
             }
             dotSymp = m_statep->findDotted(dotSymp, nodep->dotted(), baddot, okSymp);  // Maybe NULL
             if (!m_statep->forScopeCreation()) {
@@ -2190,12 +2190,10 @@ private:
         if (nodep->user3SetOnce()) return;
         UINFO(8,"     "<<nodep<<endl);
         if (m_ds.m_dotp && m_ds.m_dotPos == DP_PACKAGE) {
-            if (!VN_IS(m_ds.m_dotp->lhsp(), PackageRef)) {
-                m_ds.m_dotp->lhsp()->v3fatalSrc("Bad package link");
-            }
-            if (!VN_CAST(m_ds.m_dotp->lhsp(), PackageRef)->packagep()) {
-                m_ds.m_dotp->lhsp()->v3fatalSrc("Bad package link");
-            }
+            UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), PackageRef),
+                        m_ds.m_dotp->lhsp(), "Bad package link");
+            UASSERT_OBJ(VN_CAST(m_ds.m_dotp->lhsp(), PackageRef)->packagep(),
+                        m_ds.m_dotp->lhsp(), "Bad package link");
             nodep->packagep(VN_CAST(m_ds.m_dotp->lhsp(), PackageRef)->packagep());
             m_ds.m_dotPos = DP_SCOPE;
             m_ds.m_dotp = NULL;
@@ -2369,12 +2367,10 @@ private:
         // Resolve its reference
         if (nodep->user3SetOnce()) return;
         if (m_ds.m_dotp && m_ds.m_dotPos == DP_PACKAGE) {
-            if (!VN_IS(m_ds.m_dotp->lhsp(), PackageRef)) {
-                m_ds.m_dotp->lhsp()->v3fatalSrc("Bad package link");
-            }
-            if (!VN_CAST(m_ds.m_dotp->lhsp(), PackageRef)->packagep()) {
-                m_ds.m_dotp->lhsp()->v3fatalSrc("Bad package link");
-            }
+            UASSERT_OBJ(VN_IS(m_ds.m_dotp->lhsp(), PackageRef),
+                        m_ds.m_dotp->lhsp(), "Bad package link");
+            UASSERT_OBJ(VN_CAST(m_ds.m_dotp->lhsp(), PackageRef)->packagep(),
+                        m_ds.m_dotp->lhsp(), "Bad package link");
             nodep->packagep(VN_CAST(m_ds.m_dotp->lhsp(), PackageRef)->packagep());
             m_ds.m_dotPos = DP_SCOPE;
             m_ds.m_dotp = NULL;

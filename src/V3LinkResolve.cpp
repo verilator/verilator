@@ -240,12 +240,12 @@ private:
 
     virtual void visit(AstPragma* nodep) {
         if (nodep->pragType() == AstPragmaType::PUBLIC_MODULE) {
-            if (!m_modp) nodep->v3fatalSrc("PUBLIC_MODULE not under a module");
+            UASSERT_OBJ(m_modp, nodep, "PUBLIC_MODULE not under a module");
             m_modp->modPublic(true);
             nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
         }
         else if (nodep->pragType() == AstPragmaType::PUBLIC_TASK) {
-            if (!m_ftaskp) nodep->v3fatalSrc("PUBLIC_TASK not under a task");
+            UASSERT_OBJ(m_ftaskp, nodep, "PUBLIC_TASK not under a task");
             m_ftaskp->taskPublic(true);
             m_modp->modPublic(true);  // Need to get to the task...
             nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
@@ -387,7 +387,7 @@ private:
         iterateChildren(nodep);
         // Cleanup old-school displays without format arguments
         if (!nodep->hasFormat()) {
-            if (nodep->text()!="") nodep->v3fatalSrc("Non-format $sformatf should have \"\" format");
+            UASSERT_OBJ(nodep->text()=="", nodep, "Non-format $sformatf should have \"\" format");
             if (VN_IS(nodep->exprsp(), Const)
                 && VN_CAST(nodep->exprsp(), Const)->num().isFromString()) {
                 AstConst* fmtp = VN_CAST(nodep->exprsp()->unlinkFrBack(), Const);

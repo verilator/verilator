@@ -115,7 +115,7 @@ private:
     }
     // VISITORS
     virtual void visit(AstConst* nodep) {
-        if (!nodep->dtypep()) nodep->v3fatalSrc("No dtype");
+        UASSERT_OBJ(nodep->dtypep(), nodep, "No dtype");
         iterate(nodep->dtypep());  // Do datatype first
         if (AstConst* newp = newIfConstCommitSize(nodep)) {
             nodep->replaceWith(newp);

@@ -120,12 +120,12 @@ public:
     // METHODS
     AstScope* getScope(AstNodeFTask* nodep) {
         AstScope* scopep = VN_CAST(nodep->user3p(), Scope);
-        if (!scopep) nodep->v3fatalSrc("No scope for function");
+        UASSERT_OBJ(scopep, nodep, "No scope for function");
         return scopep;
     }
     AstVarScope* findVarScope(AstScope* scopep, AstVar* nodep) {
         VarToScopeMap::iterator iter = m_varToScopeMap.find(make_pair(scopep, nodep));
-        if (iter == m_varToScopeMap.end()) nodep->v3fatalSrc("No scope for var");
+        UASSERT_OBJ(iter != m_varToScopeMap.end(), nodep, "No scope for var");
         return iter->second;
     }
     bool ftaskNoInline(AstNodeFTask* nodep) {
@@ -199,7 +199,7 @@ private:
             pushDeletep(m_assignwp); m_assignwp = NULL;
         }
         // We make multiple edges if a task is called multiple times from another task.
-        if (!nodep->taskp()) nodep->v3fatalSrc("Unlinked task");
+        UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked task");
         new TaskEdge(&m_callGraph, m_curVxp, getFTaskVertex(nodep->taskp()));
     }
     virtual void visit(AstNodeFTask* nodep) {
@@ -269,7 +269,7 @@ private:
         if (nodep->varp()->user2p()) {  // It's being converted to an alias.
             UINFO(9, "    relinkVar "<<cvtToHex(nodep->varp()->user2p())<<" "<<nodep<<endl);
             AstVarScope* newvscp = VN_CAST(nodep->varp()->user2p(), VarScope);
-            if (!newvscp) nodep->v3fatalSrc("not linked");
+            UASSERT_OBJ(newvscp, nodep, "not linked");
             nodep->varScopep(newvscp);
             nodep->varp(nodep->varScopep()->varp());
             nodep->name(nodep->varp()->name());
@@ -362,7 +362,7 @@ private:
     AstNode* createInlinedFTask(AstNodeFTaskRef* refp,
                                 const string& namePrefix, AstVarScope* outvscp) {
         // outvscp is the variable for functions only, if NULL, it's a task
-        if (!refp->taskp()) refp->v3fatalSrc("Unlinked?");
+        UASSERT_OBJ(refp->taskp(), refp, "Unlinked?");
         AstNode* newbodysp = AstNode::cloneTreeNull(refp->taskp()->stmtsp(), true);  // Maybe NULL
         AstNode* beginp = new AstComment(refp->fileline(), string("Function: ")+refp->name());
         if (newbodysp) beginp->addNext(newbodysp);
@@ -397,7 +397,7 @@ private:
                     if (AstVarRef* varrefp = VN_CAST(pinp, VarRef)) {
                         // Connect to this exact variable
                         AstVarScope* localVscp = varrefp->varScopep();
-                        if (!localVscp) varrefp->v3fatalSrc("Null var scope");
+                        UASSERT_OBJ(localVscp, varrefp, "Null var scope");
                         portp->user2p(localVscp);
                         pushDeletep(pinp);
                     } else {
@@ -442,7 +442,7 @@ private:
                 }
             }
         }
-        if (refp->pinsp()) refp->v3fatalSrc("Pin wasn't removed by above loop");
+        UASSERT_OBJ(!refp->pinsp(), refp, "Pin wasn't removed by above loop");
         {
             AstNode* nextstmtp;
             for (AstNode* stmtp = beginp; stmtp; stmtp=nextstmtp) {
@@ -479,9 +479,9 @@ private:
     AstNode* createNonInlinedFTask(AstNodeFTaskRef* refp, const string& namePrefix,
                                    AstVarScope* outvscp) {
         // outvscp is the variable for functions only, if NULL, it's a task
-        if (!refp->taskp()) refp->v3fatalSrc("Unlinked?");
+        UASSERT_OBJ(refp->taskp(), refp, "Unlinked?");
         AstCFunc* cfuncp = m_statep->ftaskCFuncp(refp->taskp());
-        if (!cfuncp) refp->v3fatalSrc("No non-inline task associated with this task call?");
+        UASSERT_OBJ(cfuncp, refp, "No non-inline task associated with this task call?");
         //
         AstNode* beginp = new AstComment(refp->fileline(), string("Function: ")+refp->name());
         AstCCall* ccallp = new AstCCall(refp->fileline(), cfuncp, NULL);
@@ -543,7 +543,7 @@ private:
         if (refp->taskp()->dpiContext()) {
             // __Vscopep
             AstNode* snp = refp->scopeNamep()->unlinkFrBack();
-            if (!snp) refp->v3fatalSrc("Missing scoping context");
+            UASSERT_OBJ(snp, refp, "Missing scoping context");
             ccallp->addArgsp(snp);
             // __Vfilenamep
             ccallp->addArgsp(new AstCMath(refp->fileline(),
@@ -967,7 +967,7 @@ private:
         AstVar* rtnvarp = NULL;
         if (nodep->isFunction()) {
             AstVar* portp = VN_CAST(nodep->fvarp(), Var);
-            if (!portp) nodep->v3fatalSrc("function without function output variable");
+            UASSERT_OBJ(portp, nodep, "function without function output variable");
             if (!portp->isFuncReturn()) nodep->v3error("Not marked as function return var");
             if (portp->isWide()) nodep->v3error("Unsupported: Public functions with return > 64 bits wide. (Make it a output instead.)");
             if (ftaskNoInline || nodep->dpiExport()) portp->funcReturn(false);  // Converting return to 'outputs'
@@ -986,7 +986,8 @@ private:
 
         if (nodep->dpiImport()) {
             if (nodep->dpiOpenChild()) {  // The parent will make the dpi proto
-                if (nodep->dpiOpenParent()) nodep->v3fatalSrc("DPI task should be parent or wrapper, not both");
+                UASSERT_OBJ(!nodep->dpiOpenParent(), nodep,
+                            "DPI task should be parent or wrapper, not both");
             }
             else {  // Parent or not open child, make wrapper
                 string dpiproto = dpiprotoName(nodep, rtnvarp);
@@ -1066,7 +1067,8 @@ private:
         }
 
         if (nodep->dpiExport()) {
-            AstScopeName* snp = nodep->scopeNamep();  if (!snp) nodep->v3fatalSrc("Missing scoping context");
+            AstScopeName* snp = nodep->scopeNamep();
+            UASSERT_OBJ(snp, nodep, "Missing scoping context");
             snp->dpiExport(true);  // The AstScopeName is really a statement(ish) for tracking, not a function
             snp->unlinkFrBack();
             cfuncp->addInitsp(snp);
@@ -1138,7 +1140,7 @@ private:
         // Return node that must be visited, if any
         // See also AstNode::addBeforeStmt; this predates that function
         if (debug()>=9) { nodep->dumpTree(cout, "-newstmt:"); }
-        if (!m_insStmtp) nodep->v3fatalSrc("Function not underneath a statement");
+        UASSERT_OBJ(m_insStmtp, nodep, "Function not underneath a statement");
         AstNode* visitp = NULL;
         if (m_insMode == IM_BEFORE) {
             // Add the whole thing before insertAt
@@ -1153,7 +1155,7 @@ private:
         else if (m_insMode == IM_WHILE_PRECOND) {
             UINFO(5,"     IM_While_Precond "<<m_insStmtp<<endl);
             AstWhile* whilep = VN_CAST(m_insStmtp, While);
-            if (!whilep) nodep->v3fatalSrc("Insert should be under WHILE");
+            UASSERT_OBJ(whilep, nodep, "Insert should be under WHILE");
             whilep->addPrecondsp(newp);
             visitp = newp;
         }
@@ -1184,11 +1186,11 @@ private:
         m_scopep = NULL;
     }
     virtual void visit(AstNodeFTaskRef* nodep) {
-        if (!nodep->taskp()) nodep->v3fatalSrc("Unlinked?");
+        UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked?");
         iterateIntoFTask(nodep->taskp());  // First, do hierarchical funcs
         UINFO(4," FTask REF   "<<nodep<<endl);
         if (debug()>=9) { nodep->dumpTree(cout, "-inlfunc:"); }
-        if (!m_scopep) nodep->v3fatalSrc("func ref not under scope");
+        UASSERT_OBJ(m_scopep, nodep, "func ref not under scope");
         string namePrefix = ((VN_IS(nodep, FuncRef) ? "__Vfunc_":"__Vtask_")
                              +nodep->taskp()->shortName()+"__"+cvtToStr(m_modNCalls++));
         // Create output variable
@@ -1209,7 +1211,7 @@ private:
         // Replace the ref
         AstNode* visitp = NULL;
         if (VN_IS(nodep, FuncRef)) {
-            if (!nodep->taskp()->isFunction()) nodep->v3fatalSrc("func reference to non-function");
+            UASSERT_OBJ(nodep->taskp()->isFunction(), nodep, "func reference to non-function");
             AstVarRef* outrefp = new AstVarRef(nodep->fileline(), outvscp, false);
             nodep->replaceWith(outrefp);
             // Insert new statements
@@ -1349,7 +1351,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     typedef std::map<string,int> NameToIndex;
     NameToIndex nameToIndex;
     V3TaskConnects tconnects;
-    if (!nodep->taskp()) nodep->v3fatalSrc("unlinked");
+    UASSERT_OBJ(nodep->taskp(), nodep, "unlinked");
 
     // Find ports
     int tpinnum = 0;
@@ -1374,7 +1376,8 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     bool reorganize = false;
     for (AstNode* nextp, *pinp = nodep->pinsp(); pinp; pinp=nextp) {
         nextp = pinp->nextp();
-        AstArg* argp = VN_CAST(pinp, Arg); if (!argp) pinp->v3fatalSrc("Non-arg under ftask reference");
+        AstArg* argp = VN_CAST(pinp, Arg);
+        UASSERT_OBJ(argp, pinp, "Non-arg under ftask reference");
         if (argp->name() != "") {
             // By name
             NameToIndex::iterator it = nameToIndex.find(argp->name());
@@ -1460,7 +1463,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
         while (nodep->pinsp()) nodep->pinsp()->unlinkFrBack();  // Must unlink each pin, not all pins linked together as one list
         for (int i=0; i<tpinnum; ++i) {
             AstArg* argp = tconnects[i].second;
-            if (!argp) nodep->v3fatalSrc("Lost argument in func conversion");
+            UASSERT_OBJ(argp, nodep, "Lost argument in func conversion");
             nodep->addPinsp(argp);
         }
     }

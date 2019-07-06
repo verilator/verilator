@@ -60,10 +60,9 @@ public:
         // Called by operator delete on any node - only if VL_LEAK_CHECKS
         if (debug()>=9) cout<<"-nodeDel:  "<<cvtToHex(nodep)<<endl;
         NodeMap::iterator iter = s_nodes.find(nodep);
-        if (VL_UNCOVERABLE(iter==s_nodes.end() || !(iter->second & FLAG_ALLOCATED))) {
-            reinterpret_cast<const AstNode*>(nodep)
-                ->v3fatalSrc("Deleting AstNode object that was never tracked or already deleted");
-        }
+        UASSERT_OBJ(!(iter==s_nodes.end() || !(iter->second & FLAG_ALLOCATED)),
+                    reinterpret_cast<const AstNode*>(nodep),
+                    "Deleting AstNode object that was never tracked or already deleted");
         if (iter!=s_nodes.end()) s_nodes.erase(iter);
     }
 #if defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ == 4
@@ -74,9 +73,8 @@ public:
         // Called by operator new on any node - only if VL_LEAK_CHECKS
         if (debug()>=9) cout<<"-nodeNew:  "<<cvtToHex(nodep)<<endl;
         NodeMap::iterator iter = s_nodes.find(nodep);
-        if (VL_UNCOVERABLE(iter !=s_nodes.end() && (iter->second & FLAG_ALLOCATED))) {
-            nodep->v3fatalSrc("Newing AstNode object that is already allocated");
-        }
+        UASSERT_OBJ(!(iter !=s_nodes.end() && (iter->second & FLAG_ALLOCATED)),
+                    nodep, "Newing AstNode object that is already allocated");
         if (iter == s_nodes.end()) {
             int flags = FLAG_ALLOCATED;  // This int needed to appease GCC 4.1.2
             s_nodes.insert(make_pair(nodep, flags));
@@ -101,14 +99,12 @@ public:
             nodep->v3fatalSrc("AstNode is in tree, but not allocated");
 #endif
         } else {
-            if (VL_UNCOVERABLE(!(iter->second & FLAG_ALLOCATED))) {
 #ifdef VL_LEAK_CHECKS
-                nodep->v3fatalSrc("AstNode is in tree, but not allocated");
+            UASSERT_OBJ(iter->second & FLAG_ALLOCATED, nodep,
+                        "AstNode is in tree, but not allocated");
 #endif
-            }
-            if (VL_UNCOVERABLE(iter->second & FLAG_IN_TREE)) {
-                nodep->v3fatalSrc("AstNode is already in tree at another location");
-            }
+            UASSERT_OBJ(!(iter->second & FLAG_IN_TREE), nodep,
+                        "AstNode is already in tree at another location");
         }
         int or_flags = FLAG_IN_TREE | (linkable?FLAG_LINKABLE:0);
         if (iter == s_nodes.end()) {
@@ -230,36 +226,31 @@ public:
 class BrokenCheckVisitor : public AstNVisitor {
 private:
     void checkWidthMin(const AstNode* nodep) {
-        if (VL_UNCOVERABLE(nodep->width() != nodep->widthMin()
-                           && v3Global.widthMinUsage()==VWidthMinUsage::MATCHES_WIDTH)) {
-            nodep->v3fatalSrc("Width != WidthMin");
-        }
+        UASSERT_OBJ(nodep->width() == nodep->widthMin()
+                    || v3Global.widthMinUsage() != VWidthMinUsage::MATCHES_WIDTH,
+                    nodep, "Width != WidthMin");
     }
     void processAndIterate(AstNode* nodep) {
         BrokenTable::setUnder(nodep, true);
         const char* whyp = nodep->broken();
-        if (VL_UNCOVERABLE(whyp)) {
-            nodep->v3fatalSrc("Broken link in node (or something without maybePointedTo): "<<whyp);
-        }
+        UASSERT_OBJ(!whyp, nodep,
+                    "Broken link in node (or something without maybePointedTo): "<<whyp);
         if (nodep->dtypep()) {
-            if (VL_UNCOVERABLE(!nodep->dtypep()->brokeExists())) {
-                nodep->v3fatalSrc("Broken link in node->dtypep() to "
-                                  <<cvtToHex(nodep->dtypep()));
-            } else if (VL_UNCOVERABLE(!VN_IS(nodep->dtypep(), NodeDType))) {
-                nodep->v3fatalSrc("Non-dtype link in node->dtypep() to "
-                                  <<cvtToHex(nodep->dtypep()));
-            }
+            UASSERT_OBJ(nodep->dtypep()->brokeExists(), nodep,
+                        "Broken link in node->dtypep() to "<<cvtToHex(nodep->dtypep()));
+            UASSERT_OBJ(VN_IS(nodep->dtypep(), NodeDType), nodep,
+                        "Non-dtype link in node->dtypep() to "<<cvtToHex(nodep->dtypep()));
         }
         if (v3Global.assertDTypesResolved()) {
             if (nodep->hasDType()) {
-                if (VL_UNCOVERABLE(!nodep->dtypep())) nodep->v3fatalSrc(
-                    "No dtype on node with hasDType(): "<<nodep->prettyTypeName());
+                UASSERT_OBJ(nodep->dtypep(), nodep,
+                            "No dtype on node with hasDType(): "<<nodep->prettyTypeName());
             } else {
-                if (VL_UNCOVERABLE(nodep->dtypep())) nodep->v3fatalSrc(
-                    "DType on node without hasDType(): "<<nodep->prettyTypeName());
+                UASSERT_OBJ(!nodep->dtypep(), nodep,
+                            "DType on node without hasDType(): "<<nodep->prettyTypeName());
             }
-            if (VL_UNCOVERABLE(nodep->getChildDTypep())) nodep->v3fatalSrc(
-                "childDTypep() non-null on node after should have removed");
+            UASSERT_OBJ(!nodep->getChildDTypep(), nodep,
+                        "childDTypep() non-null on node after should have removed");
             if (const AstNodeDType* dnodep = VN_CAST(nodep, NodeDType)) checkWidthMin(dnodep);
         }
         checkWidthMin(nodep);
@@ -268,12 +259,11 @@ private:
     }
     virtual void visit(AstNodeAssign* nodep) {
         processAndIterate(nodep);
-        if (VL_UNCOVERABLE(v3Global.assertDTypesResolved()
-                           && nodep->brokeLhsMustBeLvalue()
-                           && VN_IS(nodep->lhsp(), NodeVarRef)
-                           && !VN_CAST(nodep->lhsp(), NodeVarRef)->lvalue())) {
-            nodep->v3fatalSrc("Assignment LHS is not an lvalue");
-        }
+        UASSERT_OBJ(!(v3Global.assertDTypesResolved()
+                      && nodep->brokeLhsMustBeLvalue()
+                      && VN_IS(nodep->lhsp(), NodeVarRef)
+                      && !VN_CAST(nodep->lhsp(), NodeVarRef)->lvalue()),
+                    nodep, "Assignment LHS is not an lvalue");
     }
     virtual void visit(AstNode* nodep) {
         processAndIterate(nodep);

@@ -89,7 +89,7 @@ public:
         puts(nodep->dtypep()->charIQWN());
     }
     void emitScIQW(AstVar* nodep) {
-        if (!nodep->isSc()) nodep->v3fatalSrc("emitting SystemC operator on non-SC variable");
+        UASSERT_OBJ(nodep->isSc(), nodep, "emitting SystemC operator on non-SC variable");
         puts(nodep->isScBigUint() ? "SB"
              : nodep->isScUint()  ? "SU"
              : nodep->isScBv()    ? "SW"
@@ -632,9 +632,9 @@ public:
     }
     virtual void visit(AstReplicate* nodep) {
         if (nodep->lhsp()->widthMin() == 1 && !nodep->isWide()) {
-            if ((static_cast<int>(VN_CAST(nodep->rhsp(), Const)->toUInt())
-                 * nodep->lhsp()->widthMin()) != nodep->widthMin())
-                nodep->v3fatalSrc("Replicate non-constant or width miscomputed");
+            UASSERT_OBJ((static_cast<int>(VN_CAST(nodep->rhsp(), Const)->toUInt())
+                         * nodep->lhsp()->widthMin()) == nodep->widthMin(),
+                        nodep, "Replicate non-constant or width miscomputed");
             puts("VL_REPLICATE_");
             emitIQW(nodep);
             puts("OI(");
@@ -798,7 +798,7 @@ public:
     }
     virtual void visit(AstConst* nodep) {
         if (nodep->isWide()) {
-            if (!m_wideTempRefp) nodep->v3fatalSrc("Wide Constant w/ no temp");
+            UASSERT_OBJ(m_wideTempRefp, nodep, "Wide Constant w/ no temp");
             emitConstant(nodep, m_wideTempRefp, "");
             m_wideTempRefp = NULL;  // We used it, barf if set it a second time
         } else {
@@ -909,8 +909,8 @@ class EmitCImp : EmitCStmts {
         else {
             AstNode* lhsp = changep->lhsp();
             AstNode* rhsp = changep->rhsp();
-            if (!VN_IS(lhsp, VarRef) && !VN_IS(lhsp, ArraySel)) changep->v3fatalSrc("Not ref?");
-            if (!VN_IS(rhsp, VarRef) && !VN_IS(rhsp, ArraySel)) changep->v3fatalSrc("Not ref?");
+            UASSERT_OBJ(VN_IS(lhsp, VarRef) || VN_IS(lhsp, ArraySel), changep, "Not ref?");
+            UASSERT_OBJ(VN_IS(rhsp, VarRef) || VN_IS(rhsp, ArraySel), changep, "Not ref?");
             for (int word=0;
                  word < (changep->lhsp()->isWide() ? changep->lhsp()->widthWords() : 1);
                  ++word) {
@@ -1164,9 +1164,8 @@ class EmitCImp : EmitCStmts {
     }
 
     virtual void visit(AstExecGraph* nodep) {
-        if (nodep != v3Global.rootp()->execGraphp()) {
-            nodep->v3fatalSrc("ExecGraph should be a singleton!");
-        }
+        UASSERT_OBJ(nodep == v3Global.rootp()->execGraphp(), nodep,
+                    "ExecGraph should be a singleton!");
         // The location of the AstExecGraph within the containing _eval()
         // function is where we want to invoke the graph and wait for it to
         // complete. Do that now.
@@ -1185,10 +1184,8 @@ class EmitCImp : EmitCStmts {
             const ExecMTask* etp = dynamic_cast<const ExecMTask*>(vxp);
             if (etp->threadRoot()) execMTasks.push_back(etp);
         }
-        if (execMTasks.size() >
-            static_cast<unsigned>(v3Global.opt.threads())) {
-            nodep->v3fatalSrc("More root mtasks than available threads");
-        }
+        UASSERT_OBJ(execMTasks.size() <= static_cast<unsigned>(v3Global.opt.threads()),
+                    nodep, "More root mtasks than available threads");
 
         if (!execMTasks.empty()) {
             for (uint32_t i = 0; i < execMTasks.size(); ++i) {
@@ -1256,7 +1253,7 @@ public:
 
 void EmitCStmts::emitVarDecl(const AstVar* nodep, const string& prefixIfImp) {
     AstBasicDType* basicp = nodep->basicp();
-    if (!basicp) nodep->v3fatalSrc("Unimplemented: Outputting this data type");
+    UASSERT_OBJ(basicp, nodep, "Unimplemented: Outputting this data type");
     if (nodep->isIO()) {
         if (nodep->isSc()) {
             m_ctorVarsVec.push_back(nodep);
@@ -1417,7 +1414,8 @@ void EmitCStmts::emitOpName(AstNode* nodep, const string& format,
             case 't': detail = true; detailp = thsp; break;
             case 'P':
                 if (nodep->isWide()) {
-                    if (!m_wideTempRefp) nodep->v3fatalSrc("Wide Op w/ no temp, perhaps missing op in V3EmitC?");
+                    UASSERT_OBJ(m_wideTempRefp, nodep,
+                                "Wide Op w/ no temp, perhaps missing op in V3EmitC?");
                     COMMA;
                     puts(m_wideTempRefp->hiername());
                     puts(m_wideTempRefp->varp()->name());
@@ -1448,8 +1446,8 @@ void EmitCStmts::emitOpName(AstNode* nodep, const string& format,
                     break;
                 case 'i':
                     COMMA;
-                    if (!detailp) { nodep->v3fatalSrc("emitOperator() references undef node"); }
-                    else iterateAndNextNull(detailp);
+                    UASSERT_OBJ(detailp, nodep, "emitOperator() references undef node");
+                    iterateAndNextNull(detailp);
                     needComma = true;
                     break;
                 default:
@@ -1654,7 +1652,7 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep,
             case '^': displayArg(nodep,&elistp,isScan, vfmt,'^'); break;  // Realtime
             case 'v': displayArg(nodep, &elistp, isScan, vfmt, 'v'); break;
             case 'm': {
-                if (!scopenamep) nodep->v3fatalSrc("Display with %m but no AstScopeName");
+                UASSERT_OBJ(scopenamep, nodep, "Display with %m but no AstScopeName");
                 string suffix = scopenamep->scopePrettySymName();
                 if (suffix=="") emitDispState.pushFormat("%S");
                 else emitDispState.pushFormat("%N");  // Add a . when needed
@@ -1687,7 +1685,7 @@ void EmitCImp::emitVarReset(AstVar* varp) {
     if (varp->isIO() && m_modp->isTop() && optSystemC()) {
         // System C top I/O doesn't need loading, as the lower level subinst code does it.}
     } else if (varp->isParam()) {
-        if (!varp->valuep()) varp->v3fatalSrc("No init for a param?");
+        UASSERT_OBJ(varp->valuep(), varp, "No init for a param?");
         // If a simple CONST value we initialize it using an enum
         // If an ARRAYINIT we initialize it using an initial block similar to a signal
         //puts("// parameter "+varp->name()+" = "+varp->valuep()->name()+"\n");
@@ -1705,7 +1703,8 @@ void EmitCImp::emitVarReset(AstVar* varp) {
             int pos = 0;
             for (AstNode* itemp = initarp->initsp(); itemp; ++pos, itemp=itemp->nextp()) {
                 int index = initarp->posIndex(pos);
-                if (!initarp->defaultp() && index!=pos) initarp->v3fatalSrc("Not enough values in array initalizement");
+                UASSERT_OBJ(initarp->defaultp() || index==pos, initarp,
+                            "Not enough values in array initalizement");
                 emitSetVarConstant(varp->name()+"["+cvtToStr(index)+"]", VN_CAST(itemp, Const));
             }
         } else {
@@ -1722,9 +1721,8 @@ void EmitCImp::emitVarReset(AstVar* varp) {
              arrayp;
              arrayp = VN_CAST(arrayp->subDTypep()->skipRefp(), UnpackArrayDType)) {
             int vecnum = vects++;
-            if (VL_UNCOVERABLE(arrayp->msb() < arrayp->lsb())) {
-                varp->v3fatalSrc("Should have swapped msb & lsb earlier.");
-            }
+            UASSERT_OBJ(arrayp->msb() >= arrayp->lsb(), varp,
+                        "Should have swapped msb & lsb earlier.");
             string ivar = string("__Vi")+cvtToStr(vecnum);
             // MSVC++ pre V7 doesn't support 'for (int ...)', so declare in sep block
             puts("{ int __Vi"+cvtToStr(vecnum)+"="+cvtToStr(0)+";");
@@ -1780,7 +1778,7 @@ void EmitCImp::emitCoverageDecl(AstNodeModule* modp) {
 
 void EmitCImp::emitMTaskVertexCtors(bool* firstp) {
     AstExecGraph* execGraphp = v3Global.rootp()->execGraphp();
-    if (!execGraphp) v3Global.rootp()->v3fatalSrc("Should have an execGraphp");
+    UASSERT_OBJ(execGraphp, v3Global.rootp(), "Root should have an execGraphp");
     const V3Graph* depGraphp = execGraphp->depGraphp();
 
     unsigned finalEdgesInCt = 0;
@@ -1962,9 +1960,8 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
                              arrayp;
                              arrayp = VN_CAST(elementp, UnpackArrayDType)) {
                             int vecnum = vects++;
-                            if (VL_UNCOVERABLE(arrayp->msb() < arrayp->lsb())) {
-                                varp->v3fatalSrc("Should have swapped msb & lsb earlier.");
-                            }
+                            UASSERT_OBJ(arrayp->msb() >= arrayp->lsb(), varp,
+                                        "Should have swapped msb & lsb earlier.");
                             string ivar = string("__Vi")+cvtToStr(vecnum);
                             // MSVC++ pre V7 doesn't support 'for (int ...)',
                             // so declare in sep block
@@ -2062,9 +2059,8 @@ void EmitCImp::emitSensitives() {
                          arrayp;
                          arrayp = VN_CAST(arrayp->subDTypep()->skipRefp(), UnpackArrayDType)) {
                         int vecnum = vects++;
-                        if (VL_UNCOVERABLE(arrayp->msb() < arrayp->lsb())) {
-                            varp->v3fatalSrc("Should have swapped msb & lsb earlier.");
-                        }
+                        UASSERT_OBJ(arrayp->msb() >= arrayp->lsb(), varp,
+                                    "Should have swapped msb & lsb earlier.");
                         string ivar = string("__Vi")+cvtToStr(vecnum);
                         // MSVC++ pre V7 doesn't support 'for (int ...)', so declare in sep block
                         puts("{ int __Vi"+cvtToStr(vecnum)+"="+cvtToStr(arrayp->lsb())+";");
@@ -2404,7 +2400,7 @@ void EmitCImp::emitIntFuncDecls(AstNodeModule* modp) {
     if (modp->isTop() && v3Global.opt.mtasks()) {
         // Emit the mtask func prototypes.
         AstExecGraph* execGraphp = v3Global.rootp()->execGraphp();
-        if (!execGraphp) v3Global.rootp()->v3fatalSrc("Root should have an execGraphp");
+        UASSERT_OBJ(execGraphp, v3Global.rootp(), "Root should have an execGraphp");
         const V3Graph* depGraphp = execGraphp->depGraphp();
         for (const V3GraphVertex* vxp = depGraphp->verticesBeginp();
              vxp; vxp = vxp->verticesNextp()) {
@@ -2424,7 +2420,7 @@ void EmitCImp::emitIntFuncDecls(AstNodeModule* modp) {
 void EmitCImp::emitMTaskState() {
     ofp()->putsPrivate(true);
     AstExecGraph* execGraphp = v3Global.rootp()->execGraphp();
-    if (!execGraphp) v3Global.rootp()->v3fatalSrc("Root should have an execGraphp");
+    UASSERT_OBJ(execGraphp, v3Global.rootp(), "Root should have an execGraphp");
 
     const V3Graph* depGraphp = execGraphp->depGraphp();
     for (const V3GraphVertex* vxp = depGraphp->verticesBeginp();
@@ -2566,7 +2562,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
         if (const AstVar* varp = VN_CAST(nodep, Var)) {
             if (varp->isParam() && (varp->isUsedParam() || varp->isSigPublic())) {
-                if (!varp->valuep()) nodep->v3fatalSrc("No init for a param?");
+                UASSERT_OBJ(varp->valuep(), nodep, "No init for a param?");
                 // These should be static const values, however microsloth VC++ doesn't
                 // support them.  They also cause problems with GDB under GCC2.95.
                 if (varp->isWide()) {  // Unsupported for output

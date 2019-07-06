@@ -204,16 +204,14 @@ private:
                 // Find it in the clone structure
                 //UINFO(8,"Clone find 0x"<<hex<<(uint32_t)pinp->modVarp()<<endl);
                 CloneMap::iterator cloneiter = clonemapp->find(pinp->modVarp());
-                if (cloneiter == clonemapp->end()) {
-                    pinp->v3fatalSrc("Couldn't find pin in clone list");
-                }
+                UASSERT_OBJ(cloneiter != clonemapp->end(), pinp,
+                            "Couldn't find pin in clone list");
                 pinp->modVarp(VN_CAST(cloneiter->second, Var));
             }
             else if (pinp->modPTypep()) {
                 CloneMap::iterator cloneiter = clonemapp->find(pinp->modPTypep());
-                if (cloneiter == clonemapp->end()) {
-                    pinp->v3fatalSrc("Couldn't find pin in clone list");
-                }
+                UASSERT_OBJ(cloneiter != clonemapp->end(), pinp,
+                            "Couldn't find pin in clone list");
                 pinp->modPTypep(VN_CAST(cloneiter->second, ParamTypeDType));
             }
             else {
@@ -318,7 +316,7 @@ private:
                     return true;
                 } else if (AstPin* pinp = VN_CAST(candp, Pin)) {
                     UINFO(9,"Found interface parameter: "<<pinp<<endl);
-                    if (!pinp->exprp()) pinp->v3fatalSrc("Interface parameter pin missing expression");
+                    UASSERT_OBJ(pinp->exprp(), pinp, "Interface parameter pin missing expression");
                     nodep->replaceWith(pinp->exprp()->cloneTree(false)); VL_DANGLING(nodep);
                     return true;
                 }
@@ -455,7 +453,7 @@ private:
     virtual void visit(AstBegin* nodep) {
         if (nodep->genforp()) {
             AstGenFor* forp = VN_CAST(nodep->genforp(), GenFor);
-            if (!forp) nodep->v3fatalSrc("Non-GENFOR under generate-for BEGIN");
+            UASSERT_OBJ(forp, nodep, "Non-GENFOR under generate-for BEGIN");
             // We should have a GENFOR under here.  We will be replacing the begin,
             // so process here rather than at the generate to avoid iteration problems
             UINFO(9,"  BEGIN "<<nodep<<endl);
@@ -560,7 +558,7 @@ public:
 void ParamVisitor::visitCell(AstCell* nodep) {
     // Cell: Check for parameters in the instantiation.
     iterateChildren(nodep);
-    if (!nodep->modp()) nodep->v3fatalSrc("Not linked?");
+    UASSERT_OBJ(nodep->modp(), nodep, "Not linked?");
     // We always run this, even if no parameters, as need to look for interfaces,
     // and remove any recursive references
     {
@@ -777,7 +775,8 @@ void ParamVisitor::visitCell(AstCell* nodep) {
                     AstIfaceRefDType* cloneIrefp = portIrefp->clonep();
                     UINFO(8,"     IfaceOld "<<portIrefp<<endl);
                     UINFO(8,"     IfaceTo  "<<pinIrefp<<endl);
-                    if (!cloneIrefp) portIrefp->v3fatalSrc("parameter clone didn't hit AstIfaceRefDType");
+                    UASSERT_OBJ(cloneIrefp, portIrefp,
+                                "parameter clone didn't hit AstIfaceRefDType");
                     UINFO(8,"     IfaceClo "<<cloneIrefp<<endl);
                     cloneIrefp->ifacep(pinIrefp->ifaceViaCellp());
                     UINFO(8,"     IfaceNew "<<cloneIrefp<<endl);
@@ -796,7 +795,7 @@ void ParamVisitor::visitCell(AstCell* nodep) {
                         }
                         else if (AstParamTypeDType* modptp = pinp->modPTypep()) {
                             AstNodeDType* dtypep = VN_CAST(pinp->exprp(), NodeDType);
-                            if (!dtypep) pinp->v3fatalSrc("unlinked param dtype");
+                            UASSERT_OBJ(dtypep, pinp, "unlinked param dtype");
                             if (modptp->childDTypep()) {
                                 pushDeletep(modptp->childDTypep()->unlinkFrBack());
                             }

@@ -241,62 +241,62 @@ private:
         iterateChildren(nodep);
         if (nodep->attrType() == AstAttrType::DT_PUBLIC) {
             AstTypedef* typep = VN_CAST(nodep->backp(), Typedef);
-            if (!typep) nodep->v3fatalSrc("Attribute not attached to typedef");
+            UASSERT_OBJ(typep, nodep, "Attribute not attached to typedef");
             typep->attrPublic(true);
             nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_CLOCK) {
-            if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrScClocked(true);
             nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_CLOCK_ENABLE) {
-            if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrClockEn(true);
             nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_PUBLIC) {
-            if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRWPublic(true); m_varp->sigModPublic(true);
             nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_PUBLIC_FLAT) {
-            if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRWPublic(true);
             nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_PUBLIC_FLAT_RD) {
-            if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRdPublic(true);
             nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_PUBLIC_FLAT_RW) {
-            if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRWPublic(true);
             nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_ISOLATE_ASSIGNMENTS) {
-            if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrIsolateAssign(true);
             nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_SFORMAT) {
-            if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrSFormat(true);
             nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_SC_BV) {
-            if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrScBv(true);
             nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_CLOCKER) {
-            if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrClocker(AstVarAttrClocker::CLOCKER_YES);
             nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_NO_CLOCKER) {
-            if (!m_varp) nodep->v3fatalSrc("Attribute not attached to variable");
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrClocker(AstVarAttrClocker::CLOCKER_NO);
             nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
         }
@@ -337,7 +337,8 @@ private:
                 else if (VN_IS(backp, Typedef)) break;
                 else if (VN_IS(backp, NodeFTask)) break;
             }
-            if (!backp) nodep->v3fatalSrc("Implicit enum/struct type created under unexpected node type");
+            UASSERT_OBJ(backp, nodep,
+                        "Implicit enum/struct type created under unexpected node type");
             AstNodeDType* dtypep = nodep->childDTypep(); dtypep->unlinkFrBack();
             if (VN_IS(backp, Typedef)) {  // A typedef doesn't need us to make yet another level of typedefing
                 // For typedefs just remove the AstRefDType level of abstraction

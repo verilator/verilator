@@ -310,16 +310,15 @@ private:
                 shift += invscp->width();
                 // We're just using32 bit arithmetic, because there's no
                 // way the input table can be 2^32 bytes!
-                if (shift>31) nodep->v3fatalSrc("shift overflow");
+                UASSERT_OBJ(shift <= 32, nodep, "shift overflow");
                 UINFO(8,"   Input "<<invscp->name()<<" = "<<*(simvis.fetchNumber(invscp))<<endl);
             }
 
             // Simulate
             simvis.mainTableEmulate(nodep);
-            if (VL_UNCOVERABLE(!simvis.optimizable())) {
-                simvis.whyNotNodep()->v3fatalSrc("Optimizable cleared, even though earlier test run said not: "
-                                                 <<simvis.whyNotMessage());
-            }
+            UASSERT_OBJ(simvis.optimizable(), simvis.whyNotNodep(),
+                        "Optimizable cleared, even though earlier test run said not: "
+                        <<simvis.whyNotMessage());
 
             // If a output changed, add it to table
             int outnum = 0;
@@ -348,9 +347,9 @@ private:
             }
 
             {   // Set changed table
-                if (VL_UNCOVERABLE(inValue != inValueNextInitArray++)) {
-                    nodep->v3fatalSrc("InitArray requires us to have the values in inValue order");
-                }
+                UASSERT_OBJ(inValue == inValueNextInitArray, nodep,
+                            "InitArray requires us to have the values in inValue order");
+                inValueNextInitArray++;
                 AstNode* setp = new AstConst(nodep->fileline(), outputChgMask);
                 VN_CAST(chgVscp->varp()->valuep(), InitArray)->addValuep(setp);
             }

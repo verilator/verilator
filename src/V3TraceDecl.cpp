@@ -157,7 +157,7 @@ private:
             // it uses spaces to separate hierarchy components.
             m_traShowname = AstNode::vcdName(scopep->name() + " " + varp->name());
             if (m_traShowname.substr(0, 4) == "TOP ") m_traShowname.replace(0, 4, "");
-            if (!m_initSubFuncp) nodep->v3fatalSrc("NULL");
+            UASSERT_OBJ(m_initSubFuncp, nodep, "NULL");
 
             m_traVscp = nodep;
             m_traValuep = NULL;

@@ -131,7 +131,8 @@ public:
     virtual FileLine* fileline() const { return nodep()->fileline(); }
     TraceTraceVertex* duplicatep() const { return m_duplicatep; }
     void duplicatep(TraceTraceVertex* dupp) {
-        if (duplicatep()) nodep()->v3fatalSrc("Assigning duplicatep() to already duplicated node");
+        UASSERT_OBJ(!duplicatep(), nodep(),
+                    "Assigning duplicatep() to already duplicated node");
         m_duplicatep = dupp;
     }
 };
@@ -205,10 +206,9 @@ private:
             if (TraceTraceVertex* vvertexp = dynamic_cast<TraceTraceVertex*>(itp)) {
                 AstTraceInc* nodep = vvertexp->nodep();
                 if (nodep->valuep()) {
-                    if (nodep->valuep()->backp() != nodep) {
-                        nodep->v3fatalSrc("Trace duplicate back needs consistency,"
-                                          " so we can map duplicates back to TRACEINCs");
-                    }
+                    UASSERT_OBJ(nodep->valuep()->backp() == nodep, nodep,
+                                "Trace duplicate back needs consistency,"
+                                " so we can map duplicates back to TRACEINCs");
                     hashed.hash(nodep->valuep());
                     UINFO(8, "  Hashed "<<std::hex<<hashed.nodeHash(nodep->valuep())
                           <<" "<<nodep<<endl);
@@ -229,7 +229,7 @@ private:
                     if (dupit != hashed.end()) {
                         AstTraceInc* dupincp
                             = VN_CAST(hashed.iteratorNodep(dupit)->backp(), TraceInc);
-                        if (!dupincp) nodep->v3fatalSrc("Trace duplicate of wrong type");
+                        UASSERT_OBJ(dupincp, nodep, "Trace duplicate of wrong type");
                         TraceTraceVertex* dupvertexp
                             = dynamic_cast<TraceTraceVertex*>(dupincp->user1u().toGraphVertex());
                         UINFO(8,"  Orig "<<nodep<<endl);
@@ -275,7 +275,8 @@ private:
                 for (V3GraphEdge* edgep = vvertexp->inBeginp(); edgep; edgep=edgep->inNextp()) {
                     TraceActivityVertex* actVtxp
                         = dynamic_cast<TraceActivityVertex*>(edgep->fromp());
-                    if (!actVtxp) vvertexp->nodep()->v3fatalSrc("Tracing a node with FROM non activity");
+                    UASSERT_OBJ(actVtxp, vvertexp->nodep(),
+                                "Tracing a node with FROM non activity");
                     if (actVtxp->activityAlways()) {
                         alwaysEdgep = edgep;
                         break;
@@ -438,7 +439,8 @@ private:
                 for (V3GraphEdge* edgep = vvertexp->inBeginp(); edgep; edgep=edgep->inNextp()) {
                     TraceActivityVertex* cfvertexp
                         = dynamic_cast<TraceActivityVertex*>(edgep->fromp());
-                    if (!cfvertexp) vvertexp->nodep()->v3fatalSrc("Should have been function pointing to this trace");
+                    UASSERT_OBJ(cfvertexp, vvertexp->nodep(),
+                                "Should have been function pointing to this trace");
                     UINFO(9,"   Activity: "<<cfvertexp<<endl);
                     if (cfvertexp->activityAlways()) {
                         // If code 0, we always trace; ignore other codes
@@ -550,7 +552,8 @@ private:
             dupvertexp = dupvertexp->duplicatep();
             UINFO(9,"   dupOf "<<cvtToHex(dupvertexp)<<" "<<cvtToHex(dupvertexp->nodep())
                   <<" "<<dupvertexp<<endl);
-            if (dupvertexp->duplicatep()) dupvertexp->nodep()->v3fatalSrc("Original node was marked as a duplicate");
+            UASSERT_OBJ(!dupvertexp->duplicatep(), dupvertexp->nodep(),
+                        "Original node was marked as a duplicate");
         }
 
         if (dupvertexp != vvertexp) {
@@ -644,7 +647,7 @@ private:
     }
     virtual void visit(AstTopScope* nodep) {
         AstScope* scopep = nodep->scopep();
-        if (!scopep) nodep->v3fatalSrc("No scope found on top level");
+        UASSERT_OBJ(scopep, nodep, "No scope found on top level");
         m_highScopep = scopep;
         iterateChildren(nodep);
     }
@@ -692,21 +695,21 @@ private:
     }
     virtual void visit(AstTraceInc* nodep) {
         UINFO(8,"   TRACE "<<nodep<<endl);
-        if (m_finding) nodep->v3fatalSrc("Traces should have been removed in prev step.");
+        UASSERT_OBJ(!m_finding, nodep, "Traces should have been removed in prev step.");
         nodep->unlinkFrBack();
 
         V3GraphVertex* vertexp = new TraceTraceVertex(&m_graph, nodep);
         nodep->user1p(vertexp);
 
-        if (!m_funcp || (!m_chgFuncp || !m_fullFuncp)) nodep->v3fatalSrc("Trace not under func");
+        UASSERT_OBJ(m_funcp && m_chgFuncp && m_fullFuncp, nodep, "Trace not under func");
         m_tracep = nodep;
         iterateChildren(nodep);
         m_tracep = NULL;
     }
     virtual void visit(AstVarRef* nodep) {
         if (m_tracep) {
-            if (!nodep->varScopep()) nodep->v3fatalSrc("No var scope?");
-            if (nodep->lvalue()) nodep->v3fatalSrc("Lvalue in trace?  Should be const.");
+            UASSERT_OBJ(nodep->varScopep(), nodep, "No var scope?");
+            UASSERT_OBJ(!nodep->lvalue(), nodep, "Lvalue in trace?  Should be const.");
             V3GraphVertex* varVtxp = nodep->varScopep()->user1u().toGraphVertex();
             if (!varVtxp) {
                 varVtxp = new TraceVarVertex(&m_graph, nodep->varScopep());
@@ -720,7 +723,7 @@ private:
             }
         }
         else if (m_funcp && m_finding && nodep->lvalue()) {
-            if (!nodep->varScopep()) nodep->v3fatalSrc("No var scope?");
+            UASSERT_OBJ(nodep->varScopep(), nodep, "No var scope?");
             V3GraphVertex* funcVtxp = getCFuncVertexp(m_funcp);
             V3GraphVertex* varVtxp = nodep->varScopep()->user1u().toGraphVertex();
             if (varVtxp) {  // else we're not tracing this signal

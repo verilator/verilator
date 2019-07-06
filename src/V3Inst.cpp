@@ -75,9 +75,8 @@ private:
             V3Inst::pinReconnectSimple(nodep, m_cellp, false);
             // Make an ASSIGNW (expr, pin)
             AstNode* exprp = nodep->exprp()->cloneTree(false);
-            if (exprp->width() != nodep->modVarp()->width()) {
-                nodep->v3fatalSrc("Width mismatch, should have been handled in pinReconnectSimple");
-            }
+            UASSERT_OBJ(exprp->width() == nodep->modVarp()->width(), nodep,
+                        "Width mismatch, should have been handled in pinReconnectSimple");
             if (nodep->modVarp()->isInoutish()) {
                 nodep->v3fatalSrc("Unsupported: Verilator is a 2-state simulator");
             } else if (nodep->modVarp()->isWritable()) {
@@ -104,7 +103,8 @@ private:
                                                nodep->modVarp(), m_cellp->name(), false);
                 const AstVarRef* refp = VN_CAST(exprp, VarRef);
                 const AstVarXRef* xrefp = VN_CAST(exprp, VarXRef);
-                if (!refp && !xrefp) exprp->v3fatalSrc("Interfaces: Pin is not connected to a VarRef or VarXRef");
+                UASSERT_OBJ(refp || xrefp, exprp,
+                            "Interfaces: Pin is not connected to a VarRef or VarXRef");
                 AstAssignVarScope* assp = new AstAssignVarScope(exprp->fileline(), lhsp, exprp);
                 m_cellp->addNextHere(assp);
             } else {
@@ -249,7 +249,7 @@ private:
     virtual void visit(AstCell* nodep) {
         UINFO(4,"  CELL   "<<nodep<<endl);
         // Find submodule vars
-        if (!nodep->modp()) nodep->v3fatalSrc("Unlinked");
+        UASSERT_OBJ(nodep->modp(), nodep, "Unlinked");
         m_deModVars.main(nodep->modp());
         //
         if (nodep->rangep()) {

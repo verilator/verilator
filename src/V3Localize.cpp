@@ -173,7 +173,7 @@ private:
         for (; nodep; nodep=nodep->nextp()) {
             if (VN_IS(nodep, NodeAssign)) {
                 if (AstVarRef* varrefp = VN_CAST(VN_CAST(nodep, NodeAssign)->lhsp(), VarRef)) {
-                    if (!varrefp->lvalue()) varrefp->v3fatalSrc("LHS assignment not lvalue");
+                    UASSERT_OBJ(varrefp->lvalue(), varrefp, "LHS assignment not lvalue");
                     if (!varrefp->varp()->user4p()) {
                         UINFO(4,"      FuncAsn "<<varrefp<<endl);
                         varrefp->varp()->user4p(varrefp);

@@ -248,7 +248,7 @@ inline void AstNode::debugTreeChange(const char* prefix, int lineno, bool next) 
 
 AstNode* AstNode::addNext(AstNode* nodep, AstNode* newp) {
     // Add to m_nextp, returns this
-    UDEBUGONLY(if (!newp) nodep->v3fatalSrc("Null item passed to addNext"););
+    UDEBUGONLY(UASSERT_OBJ(newp, nodep, "Null item passed to addNext"););
     nodep->debugTreeChange("-addNextThs: ", __LINE__, false);
     newp->debugTreeChange("-addNextNew: ", __LINE__, true);
     if (!nodep) {  // verilog.y and lots of other places assume this
@@ -259,7 +259,8 @@ AstNode* AstNode::addNext(AstNode* nodep, AstNode* newp) {
         if (oldtailp->m_nextp) {
             if (oldtailp->m_headtailp) {
                 oldtailp = oldtailp->m_headtailp;  // This=beginning of list, jump to end
-                UDEBUGONLY(if (oldtailp->m_nextp) nodep->v3fatalSrc("Node had next, but headtail says it shouldn't"););
+                UDEBUGONLY(UASSERT_OBJ(!oldtailp->m_nextp, nodep,
+                                       "Node had next, but headtail says it shouldn't"););
             } else {
                 // Though inefficent, we are occasionally passed a addNext in the middle of a list.
                 while (oldtailp->m_nextp != NULL) oldtailp = oldtailp->m_nextp;
@@ -337,9 +338,9 @@ void AstNode::addNextHere(AstNode* newp) {
 
 void AstNode::setOp1p(AstNode* newp) {
     UASSERT(newp, "Null item passed to setOp1p");
-    UDEBUGONLY(if (m_op1p) this->v3fatalSrc("Adding to non-empty, non-list op1"););
-    UDEBUGONLY(if (newp->m_backp) newp->v3fatalSrc("Adding already linked node"););
-    UDEBUGONLY(if (newp->m_nextp) newp->v3fatalSrc("Adding list to non-list op1"););
+    UDEBUGONLY(UASSERT_OBJ(!m_op1p, this, "Adding to non-empty, non-list op1"););
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_nextp, newp, "Adding list to non-list op1"););
     this->debugTreeChange("-setOp1pThs: ", __LINE__, false);
     newp->debugTreeChange("-setOp1pNew: ", __LINE__, true);
     m_op1p = newp;
@@ -350,9 +351,9 @@ void AstNode::setOp1p(AstNode* newp) {
 
 void AstNode::setOp2p(AstNode* newp) {
     UASSERT(newp, "Null item passed to setOp2p");
-    UDEBUGONLY(if (m_op2p) this->v3fatalSrc("Adding to non-empty, non-list op2"););
-    UDEBUGONLY(if (newp->m_backp) newp->v3fatalSrc("Adding already linked node"););
-    UDEBUGONLY(if (newp->m_nextp) newp->v3fatalSrc("Adding list to non-list op2"););
+    UDEBUGONLY(UASSERT_OBJ(!m_op2p, this, "Adding to non-empty, non-list op2"););
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_nextp, newp, "Adding list to non-list op2"););
     this->debugTreeChange("-setOp2pThs: ", __LINE__, false);
     newp->debugTreeChange("-setOp2pNew: ", __LINE__, true);
     m_op2p = newp;
@@ -363,9 +364,9 @@ void AstNode::setOp2p(AstNode* newp) {
 
 void AstNode::setOp3p(AstNode* newp) {
     UASSERT(newp, "Null item passed to setOp3p");
-    UDEBUGONLY(if (m_op3p) this->v3fatalSrc("Adding to non-empty, non-list op3"););
-    UDEBUGONLY(if (newp->m_backp) newp->v3fatalSrc("Adding already linked node"););
-    UDEBUGONLY(if (newp->m_nextp) newp->v3fatalSrc("Adding list to non-list op3"););
+    UDEBUGONLY(UASSERT_OBJ(!m_op3p, this, "Adding to non-empty, non-list op3"););
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_nextp, newp, "Adding list to non-list op3"););
     this->debugTreeChange("-setOp3pThs: ", __LINE__, false);
     newp->debugTreeChange("-setOp3pNew: ", __LINE__, true);
     m_op3p = newp;
@@ -376,9 +377,9 @@ void AstNode::setOp3p(AstNode* newp) {
 
 void AstNode::setOp4p(AstNode* newp) {
     UASSERT(newp, "Null item passed to setOp4p");
-    UDEBUGONLY(if (m_op4p) this->v3fatalSrc("Adding to non-empty, non-list op4"););
-    UDEBUGONLY(if (newp->m_backp) newp->v3fatalSrc("Adding already linked node"););
-    UDEBUGONLY(if (newp->m_nextp) newp->v3fatalSrc("Adding list to non-list op4"););
+    UDEBUGONLY(UASSERT_OBJ(!m_op4p, this, "Adding to non-empty, non-list op4"););
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_nextp, newp, "Adding list to non-list op4"););
     this->debugTreeChange("-setOp4pThs: ", __LINE__, false);
     newp->debugTreeChange("-setOp4pNew: ", __LINE__, true);
     m_op4p = newp;
@@ -580,9 +581,11 @@ void AstNode::relinkOneLink(AstNode*& pointpr,  // Ref to pointer that gets set 
         // Insert the whole old list following the new node's list.
         // Thus a unlink without next, followed by relink, gives the same list.
         AstNode* newlistlastp = newp->m_headtailp;
-        if (newlistlastp->m_nextp && newlistlastp!=newp) newp->v3fatalSrc("Headtailp tail isn't at the tail");
+        UASSERT_OBJ(!(newlistlastp->m_nextp && newlistlastp!=newp), newp,
+                    "Headtailp tail isn't at the tail");
         AstNode* oldlistlastp = pointpr->m_headtailp;
-        if (oldlistlastp->m_nextp && oldlistlastp!=pointpr) newp->v3fatalSrc("Old headtailp tail isn't at the tail");
+        UASSERT_OBJ(!(oldlistlastp->m_nextp && oldlistlastp!=pointpr), newp,
+                    "Old headtailp tail isn't at the tail");
         // Next links
         newlistlastp->m_nextp = pointpr;
         pointpr->m_backp = newlistlastp;
@@ -772,14 +775,15 @@ void AstNode::iterateAndNext(AstNVisitor& v) {
     // there's no lower level reason yet though the back must exist.
     AstNode* nodep = this;
 #ifdef VL_DEBUG  // Otherwise too hot of a function for debug
-    if (VL_UNCOVERABLE(nodep && !nodep->m_backp)) nodep->v3fatalSrc("iterateAndNext node has no back");
+    UASSERT_OBJ(!(nodep && !nodep->m_backp), nodep,
+                "iterateAndNext node has no back");
 #endif
     if (nodep) ASTNODE_PREFETCH(nodep->m_nextp);
     while (nodep) {   // effectively: if (!this) return;  // Callers rely on this
         if (nodep->m_nextp) ASTNODE_PREFETCH(nodep->m_nextp->m_nextp);
         AstNode* niterp = nodep;  // This address may get stomped via m_iterpp if the node is edited
         // Desirable check, but many places where multiple iterations are OK
-        //if (VL_UNCOVERABLE(niterp->m_iterpp)) niterp->v3fatalSrc("IterateAndNext under iterateAndNext may miss edits");
+        // UASSERT_OBJ(!niterp->m_iterpp, niterp, "IterateAndNext under iterateAndNext may miss edits");
         // Optimization note: Doing PREFETCH_RW on m_iterpp is a net even
         // cppcheck-suppress nullPointer
         niterp->m_iterpp = &niterp;
@@ -856,7 +860,7 @@ AstNode* AstNode::iterateSubtreeReturnEdits(AstNVisitor& v) {
         else if (this->m_backp->m_op3p == this) nextnodepp = &(this->m_backp->m_op3p);
         else if (this->m_backp->m_op4p == this) nextnodepp = &(this->m_backp->m_op4p);
         else if (this->m_backp->m_nextp == this) nextnodepp = &(this->m_backp->m_nextp);
-        if (!nextnodepp) this->v3fatalSrc("Node's back doesn't point to forward to node itself");
+        UASSERT_OBJ(nextnodepp, this, "Node's back doesn't point to forward to node itself");
         {
             nodep->accept(v); VL_DANGLING(nodep);  // nodep to null as may be replaced
         }
@@ -934,13 +938,11 @@ V3Hash::V3Hash(const string& name) {
 
 void AstNode::checkTreeIter(AstNode* backp) {
     // private: Check a tree and children
-    if (backp != this->backp()) {
-        this->v3fatalSrc("Back node inconsistent");
-    }
+    UASSERT_OBJ(backp == this->backp(), this, "Back node inconsistent");
     if (VN_IS(this, NodeTermop) || VN_IS(this, NodeVarRef)) {
         // Termops have a short-circuited iterateChildren, so check usage
-        if (op1p()||op2p()||op3p()||op4p())
-            this->v3fatalSrc("Terminal operation with non-terminals");
+        UASSERT_OBJ(!(op1p()||op2p()||op3p()||op4p()), this,
+                    "Terminal operation with non-terminals");
     }
     if (m_op1p) m_op1p->checkTreeIterList(this);
     if (m_op2p) m_op2p->checkTreeIterList(this);
@@ -955,12 +957,13 @@ void AstNode::checkTreeIterList(AstNode* backp) {
     AstNode* tailp = this;
     for (AstNode* nodep=headp; nodep; nodep=nodep->nextp()) {
         nodep->checkTreeIter(backp);
-        if (headp!=this && nextp()) this->v3fatalSrc("Headtailp should be null in middle of lists");
+        UASSERT_OBJ(headp==this || !nextp(), this,
+                    "Headtailp should be null in middle of lists");
         tailp = nodep;
         backp = nodep;
     }
-    if (headp->m_headtailp != tailp) headp->v3fatalSrc("Tail in headtailp is inconsistent");
-    if (tailp->m_headtailp != headp) tailp->v3fatalSrc("Head in headtailp is inconsistent");
+    UASSERT_OBJ(headp->m_headtailp == tailp, headp, "Tail in headtailp is inconsistent");
+    UASSERT_OBJ(tailp->m_headtailp == headp, tailp, "Head in headtailp is inconsistent");
 }
 
 void AstNode::checkTree() {
@@ -1096,12 +1099,13 @@ void AstNode::v3errorEnd(std::ostringstream& str) const {
 // Data type conversion
 
 void AstNode::dtypeChgSigned(bool flag) {
-    if (!dtypep()) this->v3fatalSrc("No dtype when changing to (un)signed");
+    UASSERT_OBJ(dtypep(), this, "No dtype when changing to (un)signed");
     dtypeChgWidthSigned(dtypep()->width(), dtypep()->widthMin(),
                         flag ? AstNumeric::SIGNED : AstNumeric::UNSIGNED);
 }
 void AstNode::dtypeChgWidth(int width, int widthMin) {
-    if (!dtypep()) this->v3fatalSrc("No dtype when changing width");  // Use ChgWidthSigned(...UNSIGNED) otherwise
+    UASSERT_OBJ(dtypep(), this,
+                "No dtype when changing width");  // Use ChgWidthSigned(...UNSIGNED) otherwise
     dtypeChgWidthSigned(width, widthMin, dtypep()->numeric());
 }
 

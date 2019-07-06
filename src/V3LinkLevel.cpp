@@ -80,7 +80,7 @@ void V3LinkLevel::modSortByLevel() {
         // pointers, may have a stale m_iterp() needing cleanup
         nodep->unlinkFrBack();
     }
-    if (v3Global.rootp()->modulesp()) v3Global.rootp()->v3fatalSrc("Unlink didn't work");
+    UASSERT_OBJ(!v3Global.rootp()->modulesp(), v3Global.rootp(), "Unlink didn't work");
     for (ModVec::iterator it = vec.begin(); it != vec.end(); ++it) {
         AstNodeModule* nodep = *it;
         v3Global.rootp()->addModulep(nodep);
@@ -132,7 +132,7 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
 
 void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
     AstNodeModule* newmodp = rootp->modulesp();
-    if (!newmodp || !newmodp->isTop()) rootp->v3fatalSrc("No TOP module found to insert under");
+    UASSERT_OBJ(newmodp && newmodp->isTop(), rootp, "No TOP module found to insert under");
 
     // Find all duplicate signal names (if multitop)
     typedef vl_unordered_set<std::string> NameSet;

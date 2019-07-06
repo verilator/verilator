@@ -435,9 +435,9 @@ private:
     }
     virtual void visit(AstNodeVarRef* nodep) {
         if (m_scopep) {
-            if (!m_logicVertexp) nodep->v3fatalSrc("Var ref not under a logic block");
+            UASSERT_OBJ(m_logicVertexp, nodep, "Var ref not under a logic block");
             AstVarScope* varscp = nodep->varScopep();
-            if (!varscp) nodep->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp");
+            UASSERT_OBJ(varscp, nodep, "Var didn't get varscoped in V3Scope.cpp");
             GateVarVertex* vvertexp = makeVarVertex(varscp);
             UINFO(5," VARREF to "<<varscp<<endl);
             if (m_inSenItem) vvertexp->setIsClock();
@@ -509,10 +509,9 @@ private:
         m_inSlow = lastslow;
     }
     virtual void visit(AstConcat* nodep) {
-        if (VN_IS(nodep->backp(), NodeAssign)
-            && VN_CAST(nodep->backp(), NodeAssign)->lhsp()==nodep) {
-            nodep->v3fatalSrc("Concat on LHS of assignment; V3Const should have deleted it");
-        }
+        UASSERT_OBJ(!(VN_IS(nodep->backp(), NodeAssign)
+                      && VN_CAST(nodep->backp(), NodeAssign)->lhsp()==nodep),
+                    nodep, "Concat on LHS of assignment; V3Const should have deleted it");
         iterateChildren(nodep);
     }
 
@@ -850,14 +849,14 @@ private:
             // It's possible we substitute into something that will be reduced more later,
             // however, as we never delete the top Always/initial statement, all should be well.
             m_didReplace = true;
-            if (nodep->lvalue()) nodep->v3fatalSrc("Can't replace lvalue assignments with const var");
+            UASSERT_OBJ(!nodep->lvalue(), nodep,
+                        "Can't replace lvalue assignments with const var");
             AstNode* substp = m_replaceTreep->cloneTree(false);
-            if (VN_IS(nodep, NodeVarRef)
-                && VN_IS(substp, NodeVarRef)
-                && nodep->same(substp)) {
-                // Prevent an infinite loop...
-                substp->v3fatalSrc("Replacing node with itself; perhaps circular logic?");
-            }
+            UASSERT_OBJ(!(VN_IS(nodep, NodeVarRef)
+                          && VN_IS(substp, NodeVarRef)
+                          && nodep->same(substp)),
+                        // Prevent an infinite loop...
+                        substp, "Replacing node with itself; perhaps circular logic?");
             // Which fileline() to use?
             // If replacing with logic, an error/warning is likely to want to point to the logic
             // IE what we're replacing with.
@@ -1044,9 +1043,8 @@ public:
             AstNode* lhsp = m_assignp->lhsp();
             // Possible todo, handle more complex lhs expressions
             if (AstNodeVarRef* lhsVarRefp = VN_CAST(lhsp, NodeVarRef)) {
-                if (lhsVarRefp->varScopep() != consumerVarScopep) {
-                    consumerVarScopep->v3fatalSrc("Consumer doesn't match lhs of assign");
-                }
+                UASSERT_OBJ(lhsVarRefp->varScopep() == consumerVarScopep,
+                            consumerVarScopep, "Consumer doesn't match lhs of assign");
                 if (AstNodeAssign* dup = m_ghash.hashAndFindDupe(m_assignp, activep, m_ifCondp)) {
                     return static_cast<AstNodeVarRef*>(dup->lhsp());
                 }
@@ -1081,7 +1079,8 @@ private:
             if (dupVarRefp) {  // visit(GateLogicVertex*...) returned match
                 V3GraphEdge* edgep = vvertexp->inBeginp();
                 GateLogicVertex* lvertexp = static_cast<GateLogicVertex*>(edgep->fromp());
-                if (!vvertexp->dedupable()) vvertexp->varScp()->v3fatalSrc("GateLogicVertex* visit should have returned NULL if consumer var vertex is not dedupable.");
+                UASSERT_OBJ(vvertexp->dedupable(), vvertexp->varScp(),
+                            "GateLogicVertex* visit should have returned NULL if consumer var vertex is not dedupable.");
                 GateOkVisitor okVisitor(lvertexp->nodep(), false, true);
                 if (okVisitor.isSimple()) {
                     AstVarScope* dupVarScopep = dupVarRefp->varScopep();

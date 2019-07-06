@@ -239,9 +239,8 @@ private:
     }
     bool expandWide(AstNodeAssign* nodep, AstArraySel* rhsp) {
         UINFO(8,"    Wordize ASSIGN(ARRAYSEL) "<<nodep<<endl);
-        if (VL_UNCOVERABLE(VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType))) {
-            nodep->v3fatalSrc("ArraySel with unpacked arrays should have been removed in V3Slice");
-        }
+        UASSERT_OBJ(!VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType), nodep,
+                    "ArraySel with unpacked arrays should have been removed in V3Slice");
         for (int w=0; w<nodep->widthWords(); w++) {
             addWordAssign(nodep, w, newAstWordSelClone(rhsp, w));
         }
@@ -324,11 +323,9 @@ private:
                     newp = new AstCCast(nodep->fileline(), lhsp, nodep);
                 }
             } else {  // Long
-                if (lhsp->isQuad() || lhsp->isWide()) {
-                    nodep->v3fatalSrc("extending larger thing into smaller?");
-                } else {
-                    lhsp->dtypeFrom(nodep);  // Just mark it, else nop
-                }
+                UASSERT_OBJ(!(lhsp->isQuad() || lhsp->isWide()), nodep,
+                            "extending larger thing into smaller?");
+                lhsp->dtypeFrom(nodep);  // Just mark it, else nop
             }
             replaceWithDelete(nodep, newp); VL_DANGLING(nodep);
         }
@@ -349,7 +346,7 @@ private:
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         // Remember, Sel's may have non-integer rhs, so need to optimize for that!
-        if (nodep->widthMin() != nodep->widthConst()) nodep->v3fatalSrc("Width mismatch");
+        UASSERT_OBJ(nodep->widthMin() == nodep->widthConst(), nodep, "Width mismatch");
         if (VN_IS(nodep->backp(), NodeAssign)
             && nodep==VN_CAST(nodep->backp(), NodeAssign)->lhsp()) {
             // Sel is an LHS assignment select
@@ -468,7 +465,7 @@ private:
     }
 
     bool expandWide(AstNodeAssign* nodep, AstSel* rhsp) {
-        if (nodep->widthMin() != rhsp->widthConst()) nodep->v3fatalSrc("Width mismatch");
+        UASSERT_OBJ(nodep->widthMin() == rhsp->widthConst(), nodep, "Width mismatch");
         if (VN_IS(rhsp->lsbp(), Const) && VL_BITBIT_I(rhsp->lsbConst())==0) {
             int lsb = rhsp->lsbConst();
             UINFO(8,"    Wordize ASSIGN(SEL,align) "<<nodep<<endl);
@@ -729,7 +726,8 @@ private:
             } else {
                 UINFO(8,"    REPLICATE "<<nodep<<endl);
                 const AstConst* constp = VN_CAST(nodep->rhsp(), Const);
-                if (!constp) nodep->v3fatalSrc("Replication value isn't a constant.  Checked earlier!");
+                UASSERT_OBJ(constp, nodep,
+                            "Replication value isn't a constant.  Checked earlier!");
                 uint32_t times = constp->toUInt();
                 if (nodep->isQuad() && !lhsp->isQuad()) {
                     lhsp = new AstCCast(nodep->fileline(), lhsp, nodep);
@@ -756,7 +754,7 @@ private:
         AstNode* lhsp = rhsp->lhsp();
         int lhswidth = lhsp->widthMin();
         const AstConst* constp = VN_CAST(rhsp->rhsp(), Const);
-        if (!constp) rhsp->v3fatalSrc("Replication value isn't a constant.  Checked earlier!");
+        UASSERT_OBJ(constp, rhsp, "Replication value isn't a constant.  Checked earlier!");
         uint32_t times = constp->toUInt();
         for (int w=0; w<rhsp->widthWords(); w++) {
             AstNode* newp;

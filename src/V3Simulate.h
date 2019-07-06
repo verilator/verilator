@@ -267,13 +267,13 @@ public:
     }
     V3Number* fetchNumber(AstNode* nodep) {
         V3Number* nump = fetchNumberNull(nodep);
-        if (!nump) nodep->v3fatalSrc("No value found for node.");
+        UASSERT_OBJ(nump, nodep, "No value found for node.");
         //UINFO(9,"     fetch num "<<*nump<<" on "<<nodep<<endl);
         return nump;
     }
     V3Number* fetchOutNumber(AstNode* nodep) {
         V3Number* nump = fetchOutNumberNull(nodep);
-        if (!nump) nodep->v3fatalSrc("No value found for node.");
+        UASSERT_OBJ(nump, nodep, "No value found for node.");
         return nump;
     }
 private:
@@ -314,7 +314,7 @@ private:
         AstNode* vscp;
         if (m_scoped) vscp = nodep->varScopep();
         else vscp = nodep->varp();
-        if (!vscp) nodep->v3fatalSrc("Not linked");
+        UASSERT_OBJ(vscp, nodep, "Not linked");
         return vscp;
     }
     int unrollCount() {
@@ -347,7 +347,7 @@ private:
     virtual void visit(AstVarRef* nodep) {
         if (jumpingOver(nodep)) return;
         if (!optimizable()) return;  // Accelerate
-        if (!nodep->varp()) nodep->v3fatalSrc("Unlinked");
+        UASSERT_OBJ(nodep->varp(), nodep, "Unlinked");
         iterateChildren(nodep->varp());
         AstNode* vscp = varOrScope(nodep);
 
@@ -391,9 +391,9 @@ private:
             }
         }
         if (!m_checkOnly && optimizable()) {  // simulating
-            if (nodep->lvalue()) {
-                nodep->v3fatalSrc("LHS varref should be handled in AstAssign visitor.");
-            } else {
+            UASSERT_OBJ(!nodep->lvalue(), nodep,
+                        "LHS varref should be handled in AstAssign visitor.");
+            {
                 // Return simulation value - copy by reference instead of value for speed
                 V3Number* nump = fetchNumberNull(vscp);
                 if (!nump) {
@@ -447,7 +447,7 @@ private:
     }
     virtual void visit(AstEnumItemRef* nodep) {
         checkNodeInfo(nodep);
-        if (!nodep->itemp()) nodep->v3fatalSrc("Not linked");
+        UASSERT_OBJ(nodep->itemp(), nodep, "Not linked");
         if (!m_checkOnly && optimizable()) {
             AstNode* valuep = nodep->itemp()->valuep();
             if (valuep) {
@@ -572,9 +572,8 @@ private:
         iterateAndNextNull(nodep->rhsp());  // Value to assign
         handleAssignSelRecurse(nodep, selp, varrefp/*ref*/, lsb/*ref*/, 0);
         if (!m_checkOnly && optimizable()) {
-            if (!varrefp) {
-                nodep->v3fatalSrc("Indicated optimizable, but no variable found on RHS of select");
-            }
+            UASSERT_OBJ(varrefp, nodep,
+                        "Indicated optimizable, but no variable found on RHS of select");
             AstNode* vscp = varOrScope(varrefp);
             V3Number outnum = V3Number(nodep);
             if (V3Number* vscpnump = fetchOutNumberNull(vscp)) {
@@ -796,9 +795,9 @@ private:
         UINFO(5,"   FUNCREF "<<nodep<<endl);
         if (!m_params) { badNodeType(nodep); return; }
         AstNodeFTask* funcp = VN_CAST(nodep->taskp(), NodeFTask);
-        if (!funcp) nodep->v3fatalSrc("Not linked");
+        UASSERT_OBJ(funcp, nodep, "Not linked");
         if (m_params) { V3Width::widthParamsEdit(funcp); } VL_DANGLING(funcp);  // Make sure we've sized the function
-        funcp = VN_CAST(nodep->taskp(), NodeFTask); if (!funcp) nodep->v3fatalSrc("Not linked");
+        funcp = VN_CAST(nodep->taskp(), NodeFTask); UASSERT_OBJ(funcp, nodep, "Not linked");
         // Apply function call values to function
         V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
         // Must do this in two steps, eval all params, then apply them
@@ -832,7 +831,7 @@ private:
         m_callStack.pop_front();
         if (!m_checkOnly && optimizable()) {
             // Grab return value from output variable (if it's a function)
-            if (!funcp->fvarp()) nodep->v3fatalSrc("Function reference points at non-function");
+            UASSERT_OBJ(funcp->fvarp(), nodep, "Function reference points at non-function");
             newNumber(nodep, *fetchNumber(funcp->fvarp()));
         }
     }
@@ -947,10 +946,7 @@ private:
     }
     void mainGuts(AstNode* nodep) {
         iterate(nodep);
-        if (m_jumpp) {
-            m_jumpp->v3fatalSrc("JumpGo branched to label that wasn't found");
-            m_jumpp = NULL;
-        }
+        UASSERT_OBJ(!m_jumpp, m_jumpp, "JumpGo branched to label that wasn't found");
     }
 public:
     // CONSTRUCTORS

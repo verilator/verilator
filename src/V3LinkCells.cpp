@@ -250,7 +250,7 @@ private:
     virtual void visit(AstPackageImport* nodep) {
         // Package Import: We need to do the package before the use of a package
         iterateChildren(nodep);
-        if (!nodep->packagep()) nodep->v3fatalSrc("Unlinked package");  // Parser should set packagep
+        UASSERT_OBJ(nodep->packagep(), nodep, "Unlinked package");  // Parser should set packagep
         new V3GraphEdge(&m_graph, vertex(m_modp), vertex(nodep->packagep()), 1, false);
     }
 

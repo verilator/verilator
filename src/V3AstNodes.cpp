@@ -642,28 +642,28 @@ string AstScopeName::scopeNameFormatter(AstText* scopeTextp) const {
 }
 
 bool AstSenTree::hasClocked() const {
-    if (!sensesp()) this->v3fatalSrc("SENTREE without any SENITEMs under it");
+    UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
     for (AstNodeSenItem* senp = sensesp(); senp; senp=VN_CAST(senp->nextp(), NodeSenItem)) {
         if (senp->isClocked()) return true;
     }
     return false;
 }
 bool AstSenTree::hasSettle() const {
-    if (!sensesp()) this->v3fatalSrc("SENTREE without any SENITEMs under it");
+    UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
     for (AstNodeSenItem* senp = sensesp(); senp; senp=VN_CAST(senp->nextp(), NodeSenItem)) {
         if (senp->isSettle()) return true;
     }
     return false;
 }
 bool AstSenTree::hasInitial() const {
-    if (!sensesp()) this->v3fatalSrc("SENTREE without any SENITEMs under it");
+    UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
     for (AstNodeSenItem* senp = sensesp(); senp; senp=VN_CAST(senp->nextp(), NodeSenItem)) {
         if (senp->isInitial()) return true;
     }
     return false;
 }
 bool AstSenTree::hasCombo() const {
-    if (!sensesp()) this->v3fatalSrc("SENTREE without any SENITEMs under it");
+    UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
     for (AstNodeSenItem* senp = sensesp(); senp; senp=VN_CAST(senp->nextp(), NodeSenItem)) {
         if (senp->isCombo()) return true;
     }
@@ -764,12 +764,12 @@ AstBasicDType* AstTypeTable::findInsertSameDType(AstBasicDType* nodep) {
 // Special walking tree inserters
 
 void AstNode::addBeforeStmt(AstNode* newp, AstNode*) {
-    if (!backp()) newp->v3fatalSrc("Can't find current statement to addBeforeStmt");
+    UASSERT_OBJ(backp(), newp, "Can't find current statement to addBeforeStmt");
     // Look up; virtual call will find where to put it
     this->backp()->addBeforeStmt(newp, this);
 }
 void AstNode::addNextStmt(AstNode* newp, AstNode*) {
-    if (!backp()) newp->v3fatalSrc("Can't find current statement to addNextStmt");
+    UASSERT_OBJ(backp(), newp, "Can't find current statement to addNextStmt");
     // Look up; virtual call will find where to put it
     this->backp()->addNextStmt(newp, this);
 }

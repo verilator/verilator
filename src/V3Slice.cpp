@@ -161,9 +161,8 @@ class SliceVisitor : public AstNVisitor {
     }
 
     virtual void visit(AstInitArray* nodep) {
-        if (VL_UNCOVERABLE(m_assignp)) {
-            nodep->v3fatalSrc("Array initialization should have been removed earlier");
-        }
+        UASSERT_OBJ(!m_assignp, nodep,
+                    "Array initialization should have been removed earlier");
     }
 
     void expandBiOp(AstNodeBiop* nodep) {
@@ -202,7 +201,7 @@ class SliceVisitor : public AstNVisitor {
                         }
                     }
                 }
-                if (!logp) nodep->v3fatalSrc("Unpacked array with empty indices range");
+                UASSERT_OBJ(logp, nodep, "Unpacked array with empty indices range");
                 nodep->replaceWith(logp);
                 pushDeletep(nodep); VL_DANGLING(nodep);
                 nodep = logp;

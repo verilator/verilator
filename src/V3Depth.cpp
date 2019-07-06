@@ -66,7 +66,7 @@ private:
                                   // bitmask instead of widths....)
                                   // See t_func_crc for an example test that requires this
                                   VFlagLogicPacked(), nodep->width());
-        if (!m_funcp) nodep->v3fatalSrc("Deep expression not under a function");
+        UASSERT_OBJ(m_funcp, nodep, "Deep expression not under a function");
         m_funcp->addInitsp(varp);
         // Replace node tree with reference to var
         AstVarRef* newp = new AstVarRef(nodep->fileline(), varp, false);
@@ -134,7 +134,7 @@ private:
     // Marking of non-static functions (because they might need "this")
     // (Here instead of new vistor after V3Descope just to avoid another visitor)
     void needNonStaticFunc(AstNode* nodep) {
-        if (!m_funcp) nodep->v3fatalSrc("Non-static accessor not under a function");
+        UASSERT_OBJ(m_funcp, nodep, "Non-static accessor not under a function");
         if (m_funcp->isStatic().trueU()) {
             UINFO(5,"Mark non-public due to "<<nodep<<endl);
             m_funcp->isStatic(false);

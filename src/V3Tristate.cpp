@@ -300,12 +300,12 @@ class TristatePinVisitor : public TristateBaseVisitor {
     }
     virtual void visit(AstArraySel* nodep) {
         // Doesn't work because we'd set lvalue on the array index's var
-        if (m_lvalue) nodep->v3fatalSrc("ArraySel conversion to output, under tristate node");
+        UASSERT_OBJ(!m_lvalue, nodep, "ArraySel conversion to output, under tristate node");
         iterateChildren(nodep);
     }
     virtual void visit(AstSliceSel* nodep) {
         // Doesn't work because we'd set lvalue on the array index's var
-        if (m_lvalue) nodep->v3fatalSrc("SliceSel conversion to output, under tristate node");
+        UASSERT_OBJ(!m_lvalue, nodep, "SliceSel conversion to output, under tristate node");
         iterateChildren(nodep);
     }
     virtual void visit(AstNode* nodep) {
@@ -1155,7 +1155,7 @@ class TristateVisitor : public TristateBaseVisitor {
             AstVar* outModVarp = static_cast<AstVar*>(nodep->modVarp()->user4p());
             if (!outModVarp) {
                 // At top, no need for __out as might be input only. Otherwise resolvable.
-                if (!m_modp->isTop()) nodep->v3fatalSrc("Unlinked");
+                UASSERT_OBJ(m_modp->isTop(), nodep, "Unlinked");
             } else {
                 AstNode* outexprp = nodep->exprp()->cloneTree(false);  // Note has lvalue() set
                 outpinp = new AstPin(nodep->fileline(),
@@ -1305,7 +1305,8 @@ class TristateVisitor : public TristateBaseVisitor {
 
     virtual void visit(AstNodeModule* nodep) {
         UINFO(8, nodep<<endl);
-        if (m_graphing) nodep->v3fatalSrc("Modules under modules not supported");  // Lots of per-module state breaks
+        UASSERT_OBJ(!m_graphing, nodep,
+                    "Modules under modules not supported");  // Lots of per-module state breaks
         // Clear state
         m_tgraph.clear();
         m_unique = 0;

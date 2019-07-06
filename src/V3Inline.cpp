@@ -306,9 +306,8 @@ private:
             AstConst*  exprconstp  = VN_CAST(nodep->user2p(), Const);
             AstVarRef* exprvarrefp = VN_CAST(nodep->user2p(), VarRef);
             UINFO(8,"connectto: "<<nodep->user2p()<<endl);
-            if (!exprconstp && !exprvarrefp) {
-                nodep->v3fatalSrc("Unknown interconnect type; pinReconnectSimple should have cleared up");
-            }
+            UASSERT_OBJ(exprconstp || exprvarrefp, nodep,
+                        "Unknown interconnect type; pinReconnectSimple should have cleared up");
             if (exprconstp) {
                 m_modp->addStmtp(new AstAssignW(nodep->fileline(),
                                                 new AstVarRef(nodep->fileline(), nodep, true),
@@ -318,7 +317,7 @@ private:
                 // the logic changes up and down; if we aliased, we might
                 // remove the change detection on the output variable.
                 UINFO(9,"public pin assign: "<<exprvarrefp<<endl);
-                if (nodep->isNonOutput()) nodep->v3fatalSrc("Outputs only - inputs use AssignAlias");
+                UASSERT_OBJ(!nodep->isNonOutput(), nodep, "Outputs only - inputs use AssignAlias");
                 m_modp->addStmtp(
                     new AstAssignW(nodep->fileline(),
                                    new AstVarRef(nodep->fileline(), exprvarrefp->varp(), true),
@@ -555,12 +554,11 @@ private:
                 // delete it in later optimizations.
                 AstVar* pinOldVarp = pinp->modVarp();
                 AstVar* pinNewVarp = pinOldVarp->clonep();
-                if (!pinNewVarp) pinOldVarp->v3fatalSrc("Cloning failed");
+                UASSERT_OBJ(pinNewVarp, pinOldVarp, "Cloning failed");
 
                 AstNode* connectRefp = pinp->exprp();
-                if (!VN_IS(connectRefp, Const) && !VN_IS(connectRefp, VarRef)) {
-                    pinp->v3fatalSrc("Unknown interconnect type; pinReconnectSimple should have cleared up");
-                }
+                UASSERT_OBJ(VN_IS(connectRefp, Const) || VN_IS(connectRefp, VarRef), pinp,
+                            "Unknown interconnect type; pinReconnectSimple should have cleared up");
                 V3Inst::checkOutputShort(pinp);
 
                 // Propagate any attributes across the interconnect

@@ -72,14 +72,13 @@ private:
         UINFO(4,"   ACTIVE "<<nodep<<endl);
         V3Const::constifyExpensiveEdit(nodep);  // Remove duplicate clocks and such; sensesp() may change!
         AstSenTree* sensesp = nodep->sensesp();
-        if (!sensesp) nodep->v3fatalSrc("NULL");
+        UASSERT_OBJ(sensesp, nodep, "NULL");
         if (sensesp->sensesp()
             && VN_IS(sensesp->sensesp(), SenItem)
             && VN_CAST(sensesp->sensesp(), SenItem)->isNever()) {
             // Never executing.  Kill it.
-            if (VL_UNCOVERABLE(sensesp->sensesp()->nextp())) {
-                nodep->v3fatalSrc("Never senitem should be alone, else the never should be eliminated.");
-            }
+            UASSERT_OBJ(!sensesp->sensesp()->nextp(), nodep,
+                        "Never senitem should be alone, else the never should be eliminated.");
             nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
             return;
         }
@@ -101,9 +100,8 @@ private:
             // Move the active's contents to the other active
             UINFO(4,"   merge active "<<sensesp<<" into "<<wantp<<endl);
             if (nodep->sensesStorep()) {
-                if (VL_UNCOVERABLE(sensesp != nodep->sensesStorep())) {
-                    nodep->v3fatalSrc("sensesStore should have been deleted earlier if different");
-                }
+                UASSERT_OBJ(sensesp == nodep->sensesStorep(), nodep,
+                            "sensesStore should have been deleted earlier if different");
                 sensesp->unlinkFrBack();
                 // There may be other references to same sense tree,
                 // we'll be removing all references when we get to them,

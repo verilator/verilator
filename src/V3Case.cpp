@@ -171,7 +171,7 @@ private:
             for (AstNode* icondp = itemp->condsp(); icondp!=NULL; icondp=icondp->nextp()) {
                 //if (debug()>=9) icondp->dumpTree(cout, " caseitem: ");
                 AstConst* iconstp = VN_CAST(icondp, Const);
-                if (!iconstp) nodep->v3fatalSrc("above 'can't parse' should have caught this");
+                UASSERT_OBJ(iconstp, nodep, "above 'can't parse' should have caught this");
                 if (neverItem(nodep, iconstp)) {
                     // X in casez can't ever be executed
                 } else {

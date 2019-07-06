@@ -589,9 +589,8 @@ private:
     void replaceNum(AstNode* oldp, const V3Number& num) {
         // Replace oldp node with a constant set to specified value
         UASSERT(oldp, "Null old");
-        if (VN_IS(oldp, Const) && !VN_CAST(oldp, Const)->num().isFourState()) {
-            oldp->v3fatalSrc("Already constant??");
-        }
+        UASSERT_OBJ(!(VN_IS(oldp, Const) && !VN_CAST(oldp, Const)->num().isFourState()),
+                    oldp, "Already constant??");
         AstNode* newp = new AstConst(oldp->fileline(), num);
         newp->dtypeFrom(oldp);
         if (debug()>5) oldp->dumpTree(cout, "  const_old: ");
@@ -810,7 +809,8 @@ private:
         int rstart = rselp->lsbConst();
         int rwidth = rselp->widthConst();
 
-        if ((rstart + rwidth) != lstart) nodep->v3fatalSrc("tried to merge two selects which are not adjacent");
+        UASSERT_OBJ((rstart + rwidth) == lstart, nodep,
+                    "tried to merge two selects which are not adjacent");
         AstSel* newselp = new AstSel(lselp->fromp()->fileline(),
                                      rselp->fromp()->cloneTree(false), rstart, lwidth+rwidth);
         UINFO(5, "merged two adjacent sel "<<lselp <<" and "<<rselp<< " to one "<<newselp<<endl);
@@ -1066,7 +1066,7 @@ private:
             int msb2 = lsb2+lc2p->width()-1;
             int lsb1 = msb2+1;
             int msb1 = lsb1+lc1p->width()-1;
-            if (msb1!=(conp->width()-1)) nodep->v3fatalSrc("Width calc mismatch");
+            UASSERT_OBJ(msb1 == (conp->width()-1), nodep, "Width calc mismatch");
             // Form ranges
             AstSel*  sel1p = new AstSel(conp->fileline(), rhsp,  lsb1, msb1-lsb1+1);
             AstSel*  sel2p = new AstSel(conp->fileline(), rhs2p, lsb2, msb2-lsb2+1);
@@ -1081,7 +1081,7 @@ private:
                 newp = AstNode::addNext(newp, asn1ap);
                 newp = AstNode::addNext(newp, asn2ap);
             } else {
-                if (!m_modp) nodep->v3fatalSrc("Not under module");
+                UASSERT_OBJ(m_modp, nodep, "Not under module");
                 // We could create just one temp variable, but we'll get better optimization
                 // if we make one per term.
                 string name1 = (string("__Vconcswap")+cvtToStr(m_modp->varNumGetInc()));
@@ -1234,7 +1234,7 @@ private:
         } else {
             // Fetch the result
             V3Number* outnump = simvis.fetchNumberNull(nodep);
-            if (!outnump) nodep->v3fatalSrc("No number returned from simulation");
+            UASSERT_OBJ(outnump, nodep, "No number returned from simulation");
             // Replace it
             replaceNum(nodep,*outnump); VL_DANGLING(nodep);
         }
@@ -1440,7 +1440,7 @@ private:
         AstNode* fromp = repp->lhsp();
         AstConst* lsbp = VN_CAST(nodep->lsbp(), Const); if (!lsbp) return false;
         AstNode* widthp = nodep->widthp(); if (!VN_IS(widthp, Const)) return false;
-        if (!fromp->width()) nodep->v3fatalSrc("Not widthed");
+        UASSERT_OBJ(fromp->width(), nodep, "Not widthed");
         if ((lsbp->toUInt() / fromp->width())
             != ((lsbp->toUInt()+nodep->width()-1) / fromp->width())) return false;
         //
@@ -1500,7 +1500,7 @@ private:
     void replaceSelIntoBiop(AstSel* nodep) {
         // SEL(BUFIF1(a,b),1,bit) => BUFIF1(SEL(a,1,bit),SEL(b,1,bit))
         AstNodeBiop* fromp = VN_CAST(nodep->fromp()->unlinkFrBack(), NodeBiop);
-        if (!fromp) nodep->v3fatalSrc("Called on non biop");
+        UASSERT_OBJ(fromp, nodep, "Called on non biop");
         AstNode* lsbp = nodep->lsbp()->unlinkFrBack();
         AstNode* widthp = nodep->widthp()->unlinkFrBack();
         //
@@ -1517,7 +1517,7 @@ private:
     void replaceSelIntoUniop(AstSel* nodep) {
         // SEL(NOT(a),1,bit) => NOT(SEL(a,bit))
         AstNodeUniop* fromp = VN_CAST(nodep->fromp()->unlinkFrBack(), NodeUniop);
-        if (!fromp) nodep->v3fatalSrc("Called on non biop");
+        UASSERT_OBJ(fromp, nodep, "Called on non biop");
         AstNode* lsbp = nodep->lsbp()->unlinkFrBack();
         AstNode* widthp = nodep->widthp()->unlinkFrBack();
         //
@@ -1564,7 +1564,7 @@ private:
     }
     virtual void visit(AstNodeVarRef* nodep) {
         iterateChildren(nodep);
-        if (!nodep->varp()) nodep->v3fatalSrc("Not linked");
+        UASSERT_OBJ(nodep->varp(), nodep, "Not linked");
         bool did = false;
         if (m_doV && nodep->varp()->valuep() && !m_attrp) {
             //if (debug()) valuep->dumpTree(cout, "  visitvaref: ");
@@ -1627,7 +1627,7 @@ private:
     }
     virtual void visit(AstEnumItemRef* nodep) {
         iterateChildren(nodep);
-        if (!nodep->itemp()) nodep->v3fatalSrc("Not linked");
+        UASSERT_OBJ(nodep->itemp(), nodep, "Not linked");
         bool did = false;
         if (nodep->itemp()->valuep()) {
             //if (debug()) nodep->varp()->valuep()->dumpTree(cout, "  visitvaref: ");
@@ -1682,7 +1682,7 @@ private:
             UINFO(8,"senItem(NOT...) "<<nodep<<" "<<invert<<endl);
             if (invert) nodep->edgeType( nodep->edgeType().invert() );
             AstNodeVarRef* senvarp = VN_CAST(lastSensp->unlinkFrBack(), NodeVarRef);
-            if (!senvarp) sensp->v3fatalSrc("Non-varref sensitivity variable");
+            UASSERT_OBJ(senvarp, sensp, "Non-varref sensitivity variable");
             sensp->replaceWith(senvarp);
             sensp->deleteTree(); VL_DANGLING(sensp);
         } else if (!m_doNConst  // Deal with later when doNConst missing
@@ -1690,7 +1690,8 @@ private:
                        || VN_IS(nodep->sensp(), Const))) {
         } else if (nodep->isIllegal()) {  // Deal with later
         } else {
-            if (nodep->hasVar() && !nodep->varrefp()) nodep->v3fatalSrc("Null sensitivity variable");
+            UASSERT_OBJ(!(nodep->hasVar() && !nodep->varrefp()), nodep,
+                        "Null sensitivity variable");
         }
     }
     virtual void visit(AstSenGate* nodep) {

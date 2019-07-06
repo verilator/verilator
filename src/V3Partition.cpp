@@ -314,7 +314,7 @@ private:
         // important property of PartPropagateCp which allows it to be far
         // faster than a recursive algorithm on some graphs.
         CpMap::iterator it = m_seen.find(vxp);
-        if (it != m_seen.end()) vxp->v3fatalSrc("Set CP on node twice");
+        UASSERT_OBJ(it == m_seen.end(), vxp, "Set CP on node twice");
         m_seen[vxp] = cost;
     }
     uint32_t critPathCost(V3GraphVertex* vxp, GraphWay way) const {
@@ -452,7 +452,7 @@ public:
             // This is mtaskp's relative with longest !wayward inclusive CP:
             EdgeSet::reverse_iterator edgeIt = edges.rbegin();
             uint32_t edgeCp = (*edgeIt).value();
-            if (edgeCp != cp) vxp->v3fatalSrc("CP doesn't match longest wayward edge");
+            UASSERT_OBJ(edgeCp == cp, vxp, "CP doesn't match longest wayward edge");
         }
     private:
         VL_UNCOPYABLE(CpCostAccessor);
@@ -988,12 +988,10 @@ static void partInitHalfCriticalPaths(GraphWay way, V3Graph* mtasksp, bool check
              edgep; edgep = edgep->nextp(rev)) {
             // Run a few asserts on the initial mtask graph,
             // while we're iterating through...
-            if (edgep->weight() == 0) {
-                mtaskp->v3fatalSrc("Should be no cut edges in mtasks graph");
-            }
-            if (relatives.find(edgep->furtherp(rev)) != relatives.end()) {
-                mtaskp->v3fatalSrc("Should be no redundant edges in mtasks graph");
-            }
+            UASSERT_OBJ(edgep->weight() != 0, mtaskp,
+                        "Should be no cut edges in mtasks graph");
+            UASSERT_OBJ(relatives.find(edgep->furtherp(rev)) == relatives.end(), mtaskp,
+                        "Should be no redundant edges in mtasks graph");
             relatives.insert(edgep->furtherp(rev));
 
             LogicMTask* relativep
@@ -1187,9 +1185,8 @@ public:
             for (V3GraphEdge* edgep = itp->outBeginp(); edgep;
                  edgep=edgep->outNextp()) {
                 m_sb.addElem(MTaskEdge::cast(edgep));
-                if (neighbors.find(edgep->top()) != neighbors.end()) {
-                    itp->v3fatalSrc("Redundant edge found in input to PartContraction()");
-                }
+                UASSERT_OBJ(neighbors.find(edgep->top()) == neighbors.end(), itp,
+                            "Redundant edge found in input to PartContraction()");
                 neighbors.insert(edgep->top());
             }
             siblingPairFromRelatives(GraphWay::REVERSE, itp, true);
@@ -1352,12 +1349,12 @@ private:
             LogicMTask* otherp = (pairp->bp() == mtaskp) ?
                 pairp->ap() : pairp->bp();
             size_t erased = m_mtask2sibs[otherp].erase(pairp);
-            if (erased <= 0) otherp->v3fatalSrc("Expected existing mtask");
+            UASSERT_OBJ(erased > 0, otherp, "Expected existing mtask");
             erased = m_pairs.erase(*pairp);
-            if (erased <= 0) mtaskp->v3fatalSrc("Expected existing mtask");
+            UASSERT_OBJ(erased > 0, mtaskp, "Expected existing mtask");
         }
         size_t erased = m_mtask2sibs.erase(mtaskp);
-        if (erased <= 0) mtaskp->v3fatalSrc("Expected existing mtask");
+        UASSERT_OBJ(erased > 0, mtaskp, "Expected existing mtask");
     }
 
     void contract(MergeCandidate* mergeCanp) {
@@ -1571,24 +1568,21 @@ private:
         } else if (m_slowAsserts) {
             // It's fine if we already have this SiblingMC, we may have
             // created it earlier. Just confirm that we have associated data.
-            if (m_mtask2sibs.find(ap) == m_mtask2sibs.end()) {
-                ap->v3fatalSrc("Sibling not found");
-            }
-            if (m_mtask2sibs.find(bp) == m_mtask2sibs.end()) {
-                bp->v3fatalSrc("Sibling not found");
-            }
+            UASSERT_OBJ(m_mtask2sibs.find(ap) != m_mtask2sibs.end(), ap,
+                        "Sibling not found");
+            UASSERT_OBJ(m_mtask2sibs.find(bp) != m_mtask2sibs.end(), bp,
+                        "Sibling not found");
             bool found = false;
             for (SibpSet::iterator it = m_mtask2sibs[ap].begin();
                  it != m_mtask2sibs[ap].end(); ++it) {
                 const SiblingMC* sibsp = *it;
-                if (!sibsp->removedFromSb() && !m_sb.contains(sibsp)) {
-                    ap->v3fatalSrc("One sibling must be the one we collided with");
-                }
+                UASSERT_OBJ(!(!sibsp->removedFromSb() && !m_sb.contains(sibsp)), ap,
+                            "One sibling must be the one we collided with");
                 if (   (sibsp->ap() == ap && sibsp->bp() == bp)
                     || (sibsp->bp() == ap && sibsp->ap() == bp))
                     found = true;
             }
-            if (!found) ap->v3fatalSrc("Sibling not found");
+            UASSERT_OBJ(found, ap, "Sibling not found");
         }
     };
 
@@ -1955,7 +1949,7 @@ private:
             while (!rankIt->second.empty()) {
                 LogicMTaskSet::iterator begin = rankIt->second.begin();
                 LogicMTask* donorp = *begin;
-                if (donorp == mergedp) donorp->v3fatalSrc("Donor can't be merged edge");
+                UASSERT_OBJ(donorp != mergedp, donorp, "Donor can't be merged edge");
                 rankIt->second.erase(begin);
                 // Merge donorp into mergedp.
                 // Fix up the map, so donor's OLVs map to mergedp
@@ -1976,9 +1970,8 @@ private:
             }
 
             if (lastMergedp) {
-                if (lastMergedp->rank() >= mergedp->rank()) {
-                    mergedp->v3fatalSrc("Merging must be on lower rank");
-                }
+                UASSERT_OBJ(lastMergedp->rank() < mergedp->rank(), mergedp,
+                            "Merging must be on lower rank");
                 if (!lastMergedp->hasRelative(GraphWay::FORWARD, mergedp)) {
                     new MTaskEdge(m_mtasksp, lastMergedp, mergedp, 1);
                 }
@@ -2309,7 +2302,7 @@ public:
 
             // Update the ready list
             size_t erased = m_ready.erase(bestMtaskp);
-            if (erased <= 0) bestMtaskp->v3fatalSrc("Should have erased something?");
+            UASSERT_OBJ(erased > 0, bestMtaskp, "Should have erased something?");
             for (V3GraphEdge* edgeOutp = bestMtaskp->outBeginp();
                  edgeOutp; edgeOutp = edgeOutp->outNextp()) {
                 ExecMTask* nextp = dynamic_cast<ExecMTask*>(edgeOutp->top());
@@ -2318,9 +2311,8 @@ public:
                         "Tasks after one being assigned should not be assigned yet");
                 // They also should not be ready yet, since they only now
                 // may become ready
-                if (m_ready.find(nextp) != m_ready.end()) {
-                    nextp->v3fatalSrc("Tasks after one being assigned should not be ready");
-                }
+                UASSERT_OBJ(m_ready.find(nextp) == m_ready.end(), nextp,
+                            "Tasks after one being assigned should not be ready");
                 bool isReady = true;
                 for (V3GraphEdge* edgeInp = nextp->inBeginp();
                      edgeInp; edgeInp = edgeInp->inNextp()) {
@@ -2514,7 +2506,7 @@ void V3Partition::setupMTaskDeps(V3Graph* mtasksp, const Vx2MTaskMap* vx2mtaskp)
                 UASSERT(it != vx2mtaskp->end(), "MTask map can't find id");
                 LogicMTask* otherMTaskp = it->second;
                 UASSERT(otherMTaskp, "NULL other Mtask");
-                if (otherMTaskp == mtaskp) mtaskp->v3fatalSrc("Would create a cycle edge");
+                UASSERT_OBJ(otherMTaskp != mtaskp, mtaskp, "Would create a cycle edge");
 
                 // Don't create redundant edges.
                 if (mtaskp->hasRelative(GraphWay::FORWARD, otherMTaskp)) {
@@ -2543,7 +2535,7 @@ void V3Partition::go(V3Graph* mtasksp) {
         for (V3GraphVertex* vxp = m_fineDepsGraphp->verticesBeginp();
              vxp; vxp = vxp->verticesNextp()) {
             MTaskMoveVertex* mtmvVxp = dynamic_cast<MTaskMoveVertex*>(vxp);
-            if (!mtmvVxp) vxp->v3fatalSrc("Every vertex here should be an MTaskMoveVertex");
+            UASSERT_OBJ(mtmvVxp, vxp, "Every vertex here should be an MTaskMoveVertex");
 
             LogicMTask* mtaskp = new LogicMTask(mtasksp, mtmvVxp);
             vx2mtask[mtmvVxp] = mtaskp;

@@ -96,7 +96,8 @@ public:
             AstCCall* callp = eqit->second;
             if (!callp->user3()) {  // !already done
                 UINFO(4, "     Called "<<callp<<endl);
-                if (callp->funcp() != oldfuncp) callp->v3fatalSrc("Call list broken, points to call w/different func");
+                UASSERT_OBJ(callp->funcp() == oldfuncp, callp,
+                            "Call list broken, points to call w/different func");
                 if (newfuncp) {
                     AstCCall* newp = new AstCCall(callp, newfuncp);
                     // Special new AstCCall form above transfers children of callp to newfuncp
@@ -236,7 +237,7 @@ private:
             V3Hash hashval = it->first;
             AstNode* node1p = it->second;
             if (!VN_IS(node1p, CFunc)) continue;
-            if (hashval.isIllegal()) node1p->v3fatalSrc("Illegal (unhashed) nodes");
+            UASSERT_OBJ(!hashval.isIllegal(), node1p, "Illegal (unhashed) nodes");
             for (V3Hashed::iterator eqit = it; eqit != m_hashed.end(); ++eqit) {
                 AstNode* node2p = eqit->second;
                 if (!(eqit->first == hashval)) break;

@@ -403,23 +403,23 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
                 case 'f': putfs(nodep, "");  break;
                 case 'k': putbs("");  break;
                 case 'l': {
-                    if (!lhsp) { nodep->v3fatalSrc("emitVerilog() references undef node"); }
-                    else iterateAndNextNull(lhsp);
+                    UASSERT_OBJ(lhsp, nodep, "emitVerilog() references undef node");
+                    iterateAndNextNull(lhsp);
                     break;
                 }
                 case 'r': {
-                    if (!rhsp) { nodep->v3fatalSrc("emitVerilog() references undef node"); }
-                    else iterateAndNextNull(rhsp);
+                    UASSERT_OBJ(rhsp, nodep, "emitVerilog() references undef node");
+                    iterateAndNextNull(rhsp);
                     break;
                 }
                 case 't': {
-                    if (!thsp) { nodep->v3fatalSrc("emitVerilog() references undef node"); }
-                    else iterateAndNextNull(thsp);
+                    UASSERT_OBJ(thsp, nodep, "emitVerilog() references undef node");
+                    iterateAndNextNull(thsp);
                     break;
                 }
                 case 'd': {
-                    if (!nodep->dtypep()) { nodep->v3fatalSrc("emitVerilog() references undef node"); }
-                    else iterateAndNextNull(nodep->dtypep());
+                    UASSERT_OBJ(nodep->dtypep(), nodep, "emitVerilog() references undef node");
+                    iterateAndNextNull(nodep->dtypep());
                     break;
                 }
                 default:

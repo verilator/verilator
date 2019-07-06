@@ -202,7 +202,7 @@ public:
     // METHODS
     OrderVarVertex* newVarUserVertex(V3Graph* graphp, AstScope* scopep,
                                      AstVarScope* varscp, WhichVertex type, bool* createdp=NULL) {
-        if (type>=WV_MAX) varscp->v3fatalSrc("Bad case");
+        UASSERT_OBJ(type < WV_MAX, varscp, "Bad case");
         OrderVarVertex* vertexp = m_vertexp[type];
         if (!vertexp) {
             UINFO(6,"New vertex "<<varscp<<endl);
@@ -735,7 +735,7 @@ private:
             UINFO(4,"   STMT "<<nodep<<endl);
             //VV*****  We reset user4p()
             AstNode::user4ClearTree();
-            if (!m_activep || !m_activep->sensesp()) nodep->v3fatalSrc("NULL");
+            UASSERT_OBJ(m_activep && m_activep->sensesp(), nodep, "NULL");
             // If inside combo logic, ignore the domain, we'll assign one based on interconnect
             AstSenTree* startDomainp = m_activep->sensesp();
             if (startDomainp->hasCombo()) startDomainp=NULL;
@@ -963,7 +963,7 @@ private:
     }
     virtual void visit(AstTopScope* nodep) {
         // Process the last thing we're finishing
-        if (m_topScopep) nodep->v3fatalSrc("Only one topscope should ever be created");
+        UASSERT_OBJ(!m_topScopep, nodep, "Only one topscope should ever be created");
         UINFO(2,"  Loading tree...\n");
         //VV*****  We reset userp()
         AstNode::user1ClearTree();
@@ -1022,7 +1022,8 @@ private:
         m_activeSenVxp = NULL;
         m_inClocked = nodep->hasClocked();
         // Grab the sensitivity list
-        if (nodep->sensesStorep()) nodep->v3fatalSrc("Senses should have been activeTop'ed to be global!");
+        UASSERT_OBJ(!nodep->sensesStorep(), nodep,
+                    "Senses should have been activeTop'ed to be global!");
         iterate(nodep->sensesp());
         // Collect statements under it
         iterateChildren(nodep);
@@ -1040,15 +1041,15 @@ private:
     virtual void visit(AstNodeVarRef* nodep) {
         if (m_scopep) {
             AstVarScope* varscp = nodep->varScopep();
-            if (!varscp) nodep->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp");
+            UASSERT_OBJ(varscp, nodep, "Var didn't get varscoped in V3Scope.cpp");
             if (m_inSenTree) {
                 // Add CLOCK dependency... This is a root of the tree we'll trace
-                if (nodep->lvalue()) nodep->v3fatalSrc("How can a sensitivity be setting a var?");
+                UASSERT_OBJ(!nodep->lvalue(), nodep, "How can a sensitivity be setting a var?");
                 OrderVarVertex* varVxp = newVarUserVertex(varscp, WV_STD);
                 varVxp->isClock(true);
                 new OrderEdge(&m_graph, varVxp, m_activeSenVxp, WEIGHT_MEDIUM);
             } else {
-                if (!m_logicVxp) nodep->v3fatalSrc("Var ref not under a logic block");
+                UASSERT_OBJ(m_logicVxp, nodep, "Var ref not under a logic block");
                 // What new directions is this used
                 // We don't want to add extra edges if the logic block has many usages of same var
                 bool gen = false;
@@ -1307,8 +1308,8 @@ static bool domainsExclusive(const AstSenTree* fromp, const AstSenTree* top) {
     const AstSenItem* toSenListp = VN_CAST(top->sensesp(), SenItem);
     // If clk gating is ever reenabled, we may need to update this to handle
     // AstSenGate also.
-    if (!fromSenListp) fromp->v3fatalSrc("sensitivity list item is not an AstSenItem");
-    if (!toSenListp) top->v3fatalSrc("sensitivity list item is not an AstSenItem");
+    UASSERT_OBJ(fromSenListp, fromp, "sensitivity list item is not an AstSenItem");
+    UASSERT_OBJ(toSenListp, top, "sensitivity list item is not an AstSenItem");
 
     if (fromSenListp->nextp()) return false;
     if (toSenListp->nextp()) return false;
@@ -1337,9 +1338,8 @@ inline void OrderMoveDomScope::ready(OrderVisitor* ovp) {
 
 // Mark one vertex as finished, remove from ready list if done
 inline void OrderMoveDomScope::movedVertex(OrderVisitor* ovp, OrderMoveVertex* vertexp) {
-    if (!m_onReadyList) {
-        vertexp->v3fatalSrc("Moving vertex from ready when nothing was on que as ready.");
-    }
+    UASSERT_OBJ(m_onReadyList, vertexp,
+                "Moving vertex from ready when nothing was on que as ready.");
     if (m_readyVertices.empty()) {  // Else more work to get to later
         m_onReadyList = false;
         m_readyDomScopeE.unlink(ovp->m_pomReadyDomScope, this);
@@ -1406,9 +1406,8 @@ void OrderVisitor::processInputsOutIterate(OrderEitherVertex* vertexp, VertexVec
     // First make sure input path is fully recursed
     processInputsInIterate(vertexp, todoVec);
     // Propagate PrimaryIn through simple assignments
-    if (!vertexp->isFromInput()) {
-        vertexp->v3fatalSrc("processInputsOutIterate only for input marked vertexes");
-    }
+    UASSERT_OBJ(vertexp->isFromInput(), vertexp,
+                "processInputsOutIterate only for input marked vertexes");
     vertexp->user(3);  // out-edges processed
 
     {
@@ -1460,7 +1459,7 @@ void OrderVisitor::processCircular() {
             for (V3GraphEdge* edgep = vvertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
                 if (edgep->weight()==0) {  // was cut
                     OrderEdge* oedgep = dynamic_cast<OrderEdge*>(edgep);
-                    if (!oedgep) vvertexp->varScp()->v3fatalSrc("Cuttable edge not of proper type");
+                    UASSERT_OBJ(oedgep, vvertexp->varScp(), "Cuttable edge not of proper type");
                     UINFO(6,"      CutCircularO: "<<vvertexp->name()<<endl);
                     nodeMarkCircular(vvertexp, oedgep);
                 }
@@ -1468,7 +1467,7 @@ void OrderVisitor::processCircular() {
             for (V3GraphEdge* edgep = vvertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
                 if (edgep->weight()==0) {  // was cut
                     OrderEdge* oedgep = dynamic_cast<OrderEdge*>(edgep);
-                    if (!oedgep) vvertexp->varScp()->v3fatalSrc("Cuttable edge not of proper type");
+                    UASSERT_OBJ(oedgep, vvertexp->varScp(), "Cuttable edge not of proper type");
                     UINFO(6,"      CutCircularI: "<<vvertexp->name()<<endl);
                     nodeMarkCircular(vvertexp, oedgep);
                 }
@@ -1563,7 +1562,8 @@ void OrderVisitor::processDomainsIterate(OrderEitherVertex* vertexp) {
                     }
                     AstSenTree* newtreep = domainp->cloneTree(false);
                     AstNodeSenItem* newtree2p = fromVertexp->domainp()->sensesp()->cloneTree(true);
-                    if (!newtree2p) fromVertexp->domainp()->v3fatalSrc("No senitem found under clocked domain");
+                    UASSERT_OBJ(newtree2p, fromVertexp->domainp(),
+                                "No senitem found under clocked domain");
                     newtreep->addSensesp(newtree2p);
                     newtree2p = NULL;  // Below edit may replace it
                     V3Const::constifyExpensiveEdit(newtreep);  // Remove duplicates
@@ -1759,9 +1759,7 @@ void OrderVisitor::processMoveDoneOne(OrderMoveVertex* vertexp) {
 
 void OrderVisitor::processMoveOne(OrderMoveVertex* vertexp,
                                   OrderMoveDomScope* domScopep, int level) {
-    if (vertexp->domScopep() != domScopep) {
-        vertexp->v3fatalSrc("Domain mismatch; list misbuilt?");
-    }
+    UASSERT_OBJ(vertexp->domScopep() == domScopep, vertexp, "Domain mismatch; list misbuilt?");
     const OrderLogicVertex* lvertexp = vertexp->logicp();
     const AstScope* scopep = lvertexp->scopep();
     UINFO(5,"    POSmove l"<<std::setw(3)<<level<<" d="<<cvtToHex(lvertexp->domainp())

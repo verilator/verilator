@@ -87,7 +87,7 @@ private:
         AstNode::user2ClearTree();  // user2p() used on entire tree
 
         AstScope* scopep = nodep->scopep();
-        if (!scopep) nodep->v3fatalSrc("No scope found on top level");
+        UASSERT_OBJ(scopep, nodep, "No scope found on top level");
         m_scopetopp = scopep;
 
         iterateChildren(nodep);
@@ -96,7 +96,7 @@ private:
     virtual void visit(AstVarRef* nodep) {
         // Consumption/generation of a variable,
         AstVarScope* vscp = nodep->varScopep();
-        if (!vscp) nodep->v3fatalSrc("Scope not assigned");
+        UASSERT_OBJ(vscp, nodep, "Scope not assigned");
         if (m_activep && !nodep->user3()) {
             nodep->user3(true);
             if (vscp->isCircular()) {
@@ -111,7 +111,7 @@ private:
     }
     virtual void visit(AstActive* nodep) {
         m_activep = nodep;
-        if (!nodep->sensesp()) nodep->v3fatalSrc("Unlinked");
+        UASSERT_OBJ(nodep->sensesp(), nodep, "Unlinked");
         iterateChildren(nodep->sensesp());  // iterateAndNext?
         m_activep = NULL;
         iterateChildren(nodep);
@@ -191,7 +191,7 @@ private:
     virtual void visit(AstVarRef* nodep) {
         // Consumption/generation of a variable,
         AstVarScope* vscp = nodep->varScopep();
-        if (!vscp) nodep->v3fatalSrc("Scope not assigned");
+        UASSERT_OBJ(vscp, nodep, "Scope not assigned");
         if (m_activep) {
             UINFO(8,"  VarAct "<<nodep<<endl);
             vscp->user1(true);
@@ -212,7 +212,7 @@ private:
     virtual void visit(AstActive* nodep) {
         UINFO(8,"ACTIVE "<<nodep<<endl);
         m_activep = nodep;
-        if (!nodep->sensesp()) nodep->v3fatalSrc("Unlinked");
+        UASSERT_OBJ(nodep->sensesp(), nodep, "Unlinked");
         iterateChildren(nodep->sensesp());  // iterateAndNext?
         m_activep = NULL;
         iterateChildren(nodep);

@@ -557,11 +557,10 @@ class GaterVisitor : public GaterBaseVisitor {
         for (V3GraphVertex* vertexp = m_graph.verticesBeginp();
              vertexp; vertexp=vertexp->verticesNextp()) {
             if (GaterVarVertex* vVxp = dynamic_cast<GaterVarVertex*>(vertexp)) {
-                if (!vVxp->inBeginp()) {
-                    // At this point, any variable not linked is an error
-                    // (It should have at least landed under the Head node)
-                    vVxp->nodep()->v3fatalSrc("Variable became stranded in clk gate detection");
-                }
+                // At this point, any variable not linked is an error
+                // (It should have at least landed under the Head node)
+                UASSERT_OBJ(vVxp->inBeginp(), vVxp->nodep(),
+                            "Variable became stranded in clk gate detection");
                 if (!lastVxp || vVxp->sortCmp(lastVxp)) {
                     // Different sources for this new node
                     color++;
@@ -612,7 +611,7 @@ class GaterVisitor : public GaterBaseVisitor {
                     // Edges from IFs represent a real IF branch in the equation tree
                     //UINFO(9,"  ifver "<<cvtToHex(edgep)<<" cc"<<edgep->dotColor()<<endl);
                     eqnp = cVxp->nodep()->condp()->cloneTree(true);
-                    if (!eqnp) cVxp->nodep()->v3fatalSrc("null condition");
+                    UASSERT_OBJ(eqnp, cVxp->nodep(), "null condition");
                     if (cedgep->ifelseFalse()) {
                         eqnp = new AstNot(eqnp->fileline(), eqnp);
                     }
@@ -646,7 +645,8 @@ class GaterVisitor : public GaterBaseVisitor {
                     lastExprp = newExprFromGraph(vVxp);
                 }
                 // Mark variable to move
-                if (vVxp->nodep()->user2p()) vVxp->nodep()->v3fatalSrc("One variable got marked under two gaters");
+                UASSERT_OBJ(!vVxp->nodep()->user2p(), vVxp->nodep(),
+                            "One variable got marked under two gaters");
                 vVxp->nodep()->user2p(lastExprp);
                 m_statBits += vVxp->nodep()->width();  // Moving a wide bus counts more!
                 // There shouldn't be two possibilities we want to
@@ -675,7 +675,7 @@ class GaterVisitor : public GaterBaseVisitor {
 #else
         // Make a SenGate
         AstSenItem* oldsenitemsp = VN_CAST(nodep->sensesp()->sensesp(), SenItem);
-        if (!oldsenitemsp) nodep->v3fatalSrc("SenTree doesn't have any SenItem under it");
+        UASSERT_OBJ(oldsenitemsp, nodep, "SenTree doesn't have any SenItem under it");
 
         AstSenTree* sensesp = new AstSenTree(nodep->fileline(),
                                              new AstSenGate(nodep->fileline(),

@@ -182,7 +182,7 @@ private:
                     AstCFunc* funcp = eachIt->second;
                     FuncMmap::iterator nextIt2 = eachIt; ++nextIt2;
                     bool moreOfSame =  (nextIt2!=m_modFuncs.end() && nextIt2->first == name);
-                    if (!funcp->scopep()) funcp->v3fatalSrc("Not scoped");
+                    UASSERT_OBJ(funcp->scopep(), funcp, "Not scoped");
 
                     UINFO(6,"     Wrapping "<<name<<" "<<funcp<<endl);
                     UINFO(6,"  at "<<newfuncp->argTypes()<<" und "<<funcp->argTypes()<<endl);
@@ -255,7 +255,7 @@ private:
     virtual void visit(AstNodeVarRef* nodep) {
         iterateChildren(nodep);
         // Convert the hierch name
-        if (!m_scopep) nodep->v3fatalSrc("Node not under scope");
+        UASSERT_OBJ(m_scopep, nodep, "Node not under scope");
         bool hierThis;
         nodep->hiername(descopedName(nodep->varScopep()->scopep(), hierThis/*ref*/,
                                      nodep->varScopep()->varp()));
@@ -266,8 +266,8 @@ private:
         //UINFO(9,"       "<<nodep<<endl);
         iterateChildren(nodep);
         // Convert the hierch name
-        if (!m_scopep) nodep->v3fatalSrc("Node not under scope");
-        if (!nodep->funcp()->scopep()) nodep->v3fatalSrc("CFunc not under scope");
+        UASSERT_OBJ(m_scopep, nodep, "Node not under scope");
+        UASSERT_OBJ(nodep->funcp()->scopep(), nodep, "CFunc not under scope");
         bool hierThis;
         nodep->hiername(descopedName(nodep->funcp()->scopep(), hierThis/*ref*/));
         // Can't do this, as we may have more calls later

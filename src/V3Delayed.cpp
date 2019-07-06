@@ -120,7 +120,7 @@ private:
     AstVarScope* createVarSc(AstVarScope* oldvarscp, const string& name,
                              int width/*0==fromoldvar*/, AstNodeDType* newdtypep) {
         // Because we've already scoped it, we may need to add both the AstVar and the AstVarScope
-        if (!oldvarscp->scopep()) oldvarscp->v3fatalSrc("Var unscoped");
+        UASSERT_OBJ(oldvarscp->scopep(), oldvarscp, "Var unscoped");
         AstVar* varp;
         AstNodeModule* addmodp = oldvarscp->scopep()->modp();
         // We need a new AstVar, but only one for all scopes, to match the new AstVarScope
@@ -158,7 +158,7 @@ private:
     }
     void checkActivePost(AstVarRef* varrefp, AstActive* oldactivep) {
         // Check for MULTIDRIVEN, and if so make new sentree that joins old & new sentree
-        if (!oldactivep) varrefp->v3fatalSrc("<= old dly assignment not put under sensitivity block");
+        UASSERT_OBJ(oldactivep, varrefp, "<= old dly assignment not put under sensitivity block");
         if (oldactivep->sensesp() != m_activep->sensesp()) {
             if (!varrefp->varp()->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVEN)
                 && !varrefp->varp()->user2()) {
@@ -203,10 +203,9 @@ private:
         } else {
             arrayselp = VN_CAST(lhsp, ArraySel);
         }
-        if (!arrayselp) nodep->v3fatalSrc("No arraysel under bitsel?");
-        if (VN_IS(arrayselp->dtypep()->skipRefp(), UnpackArrayDType)) {
-            nodep->v3fatalSrc("ArraySel with unpacked arrays should have been removed in V3Slice");
-        }
+        UASSERT_OBJ(arrayselp, nodep, "No arraysel under bitsel?");
+        UASSERT_OBJ(!VN_IS(arrayselp->dtypep()->skipRefp(), UnpackArrayDType), nodep,
+                    "ArraySel with unpacked arrays should have been removed in V3Slice");
         UINFO(4,"AssignDlyArray: "<<nodep<<endl);
         //
         //=== Dimensions: __Vdlyvdim__
@@ -217,8 +216,8 @@ private:
             dimvalp.push_front(valp);
         }
         AstVarRef* varrefp = VN_CAST(dimselp, VarRef);
-        if (!varrefp) nodep->v3fatalSrc("No var underneath arraysels");
-        if (!varrefp->varScopep()) varrefp->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp");
+        UASSERT_OBJ(varrefp, nodep, "No var underneath arraysels");
+        UASSERT_OBJ(varrefp->varScopep(), varrefp, "Var didn't get varscoped in V3Scope.cpp");
         varrefp->unlinkFrBack();
         AstVar* oldvarp = varrefp->varp();
         int modVecNum = m_scopeVecMap[varrefp->varScopep()]++;
@@ -333,7 +332,8 @@ private:
             // Optimize as above; if sharing Vdlyvset *ON SAME VARIABLE*,
             // we can share the IF statement too
             postLogicp = VN_CAST(finalp->user4p(), If);
-            if (!postLogicp) nodep->v3fatalSrc("Delayed assignment misoptimized; prev var found w/o associated IF");
+            UASSERT_OBJ(postLogicp, nodep,
+                        "Delayed assignment misoptimized; prev var found w/o associated IF");
         } else {
             postLogicp = new AstIf(nodep->fileline(),
                                    new AstVarRef(nodep->fileline(), setvscp, false),
@@ -400,12 +400,12 @@ private:
             if (m_inDly && nodep->lvalue()) {
                 UINFO(4,"AssignDlyVar: "<<nodep<<endl);
                 markVarUsage(nodep->varScopep(), VU_DLY);
-                if (!m_activep) nodep->v3fatalSrc("<= not under sensitivity block");
+                UASSERT_OBJ(m_activep, nodep, "<= not under sensitivity block");
                 if (!m_activep->hasClocked()) {
                     nodep->v3error("Internal: Blocking <= assignment in non-clocked block, should have converted in V3Active");
                 }
                 AstVarScope* oldvscp = nodep->varScopep();
-                if (!oldvscp) nodep->v3fatalSrc("Var didn't get varscoped in V3Scope.cpp");
+                UASSERT_OBJ(oldvscp, nodep, "Var didn't get varscoped in V3Scope.cpp");
                 AstVarScope* dlyvscp = VN_CAST(oldvscp->user1p(), VarScope);
                 if (dlyvscp) {  // Multiple use of delayed variable
                     AstActive* oldactivep = VN_CAST(dlyvscp->user2p(), Active);

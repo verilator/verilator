@@ -136,7 +136,7 @@ public:
         if (!m_varp->isWide()
             && !m_whole.m_complex && m_whole.m_assignp && !m_wordAssign) {
             AstNodeAssign* assp = m_whole.m_assignp;
-            if (!assp) errp->v3fatalSrc("Reading whole that was never assigned");
+            UASSERT_OBJ(assp, errp, "Reading whole that was never assigned");
             return (assp->rhsp());
         } else {
             return NULL;
@@ -145,7 +145,7 @@ public:
     AstNode* substWord(AstNode* errp, int word) {  // Return what to substitute given word number for
         if (!m_whole.m_complex && !m_whole.m_assignp && !m_words[word].m_complex) {
             AstNodeAssign* assp = getWordAssignp(word);
-            if (!assp) errp->v3fatalSrc("Reading a word that was never assigned, or bad word #");
+            UASSERT_OBJ(assp, errp, "Reading a word that was never assigned, or bad word #");
             return (assp->rhsp());
         } else {
             return NULL;

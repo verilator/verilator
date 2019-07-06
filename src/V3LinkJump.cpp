@@ -81,12 +81,10 @@ private:
         // Also this would otherwise prevent us from using a label twice
         // see t_func_return test.
         while (underp && VN_IS(underp, Var)) underp = underp->nextp();
-        if (underp) UINFO(5,"  Underpoint is "<<underp<<endl);
+        UASSERT_OBJ(underp, nodep, "Break/disable/continue not under expected statement");
+        UINFO(5,"  Underpoint is "<<underp<<endl);
 
-        if (!underp) {
-            nodep->v3fatalSrc("Break/disable/continue not under expected statement");
-            return NULL;
-        } else if (VN_IS(underp, JumpLabel)) {
+        if (VN_IS(underp, JumpLabel)) {
             return VN_CAST(underp, JumpLabel);
         } else {  // Move underp stuff to be under a new label
             AstJumpLabel* labelp = new AstJumpLabel(nodep->fileline(), NULL);

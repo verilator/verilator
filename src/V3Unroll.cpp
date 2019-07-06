@@ -107,16 +107,17 @@ private:
         // Initial value check
         AstAssign* initAssp = VN_CAST(initp, Assign);
         if (!initAssp) return cantUnroll(nodep, "no initial assignment");
-        if (initp->nextp() && initp->nextp()!=nodep) nodep->v3fatalSrc("initial assignment shouldn't be a list");
+        UASSERT_OBJ(!(initp->nextp() && initp->nextp()!=nodep), nodep,
+                    "initial assignment shouldn't be a list");
         if (!VN_IS(initAssp->lhsp(), VarRef)) return cantUnroll(nodep, "no initial assignment to simple variable");
         //
         // Condition check
-        if (condp->nextp()) nodep->v3fatalSrc("conditional shouldn't be a list");
+        UASSERT_OBJ(!condp->nextp(), nodep, "conditional shouldn't be a list");
         //
         // Assignment of next value check
         AstAssign* incAssp = VN_CAST(incp, Assign);
         if (!incAssp) return cantUnroll(nodep, "no increment assignment");
-        if (incAssp->nextp()) nodep->v3fatalSrc("increment shouldn't be a list");
+        UASSERT_OBJ(!incAssp->nextp(), nodep, "increment shouldn't be a list");
 
         m_forVarp = VN_CAST(initAssp->lhsp(), VarRef)->varp();
         m_forVscp = VN_CAST(initAssp->lhsp(), VarRef)->varScopep();
@@ -190,10 +191,7 @@ private:
     bool simulateTree(AstNode *nodep, const V3Number *loopValue,
                       AstNode *dtypep, V3Number &outNum) {
         AstNode* clonep = nodep->cloneTree(true);
-        if (!clonep) {
-            nodep->v3fatalSrc("Failed to clone tree");
-            return false;
-        }
+        UASSERT_OBJ(clonep, nodep, "Failed to clone tree");
         if (loopValue) {
             m_varValuep = new AstConst(nodep->fileline(), *loopValue);
             // Iteration requires a back, so put under temporary node

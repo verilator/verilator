@@ -561,7 +561,7 @@ private:
         // LSB is self-determined (IEEE 2012 11.5.1)
         // We also use SELs to shorten a signed constant etc, in this case they are signed.
         if (nodep->didWidth()) return;
-        if (!m_vup) nodep->v3fatalSrc("Select under an unexpected context");
+        UASSERT_OBJ(m_vup, nodep, "Select under an unexpected context");
         if (m_vup->prelim()) {
             if (debug()>=9) nodep->dumpTree(cout, "-selWidth: ");
             userIterateAndNext(nodep->fromp(), WidthVP(CONTEXT, PRELIM).p());
@@ -576,7 +576,7 @@ private:
                 nodep->dtypeSetLogicBool(); return;
             }
             int width = nodep->widthConst();
-            if (!nodep->dtypep()) nodep->v3fatalSrc("dtype wasn't set")  // by V3WidthSel
+            UASSERT_OBJ(nodep->dtypep(), nodep, "dtype wasn't set");  // by V3WidthSel
             if (VN_IS(nodep->lsbp(), Const)
                 && nodep->msbConst() < nodep->lsbConst()) {
                 nodep->v3error("Unsupported: MSB < LSB of bit extract: "
@@ -952,7 +952,8 @@ private:
             break;
         case AstAttrType::DIM_DIMENSIONS:
         case AstAttrType::DIM_UNPK_DIMENSIONS: {
-            if (!nodep->fromp() || !nodep->fromp()->dtypep()) nodep->v3fatalSrc("Unsized expression");
+            UASSERT_OBJ(nodep->fromp() && nodep->fromp()->dtypep(), nodep,
+                        "Unsized expression");
             std::pair<uint32_t,uint32_t> dim = nodep->fromp()->dtypep()->dimensions(true);
             int val = (nodep->attrType()==AstAttrType::DIM_UNPK_DIMENSIONS
                        ? dim.second : (dim.first+dim.second));
@@ -967,7 +968,8 @@ private:
         case AstAttrType::DIM_LOW:
         case AstAttrType::DIM_RIGHT:
         case AstAttrType::DIM_SIZE: {
-            if (!nodep->fromp() || !nodep->fromp()->dtypep()) nodep->v3fatalSrc("Unsized expression");
+            UASSERT_OBJ(nodep->fromp() && nodep->fromp()->dtypep(), nodep,
+                        "Unsized expression");
             std::pair<uint32_t,uint32_t> dim
                 = nodep->fromp()->dtypep()->skipRefp()->dimensions(true);
             uint32_t msbdim = dim.first+dim.second;
@@ -977,7 +979,8 @@ private:
                 nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
             }
             else {  // Need a runtime lookup table.  Yuk.
-                if (!nodep->fromp() || !nodep->fromp()->dtypep()) nodep->v3fatalSrc("Unsized expression");
+                UASSERT_OBJ(nodep->fromp() && nodep->fromp()->dtypep(), nodep,
+                            "Unsized expression");
                 AstVar* varp = dimensionVarp(nodep->fromp()->dtypep(), nodep->attrType(), msbdim);
                 AstNode* dimp = nodep->dimp()->unlinkFrBack();
                 AstVarRef* varrefp = new AstVarRef(nodep->fileline(), varp, false);
@@ -1083,7 +1086,7 @@ private:
         if (nodep->subDTypep()) nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
         // Effectively nodep->dtypeFrom(nodep->dtypeSkipRefp());
         // But might be recursive, so instead manually recurse into the referenced type
-        if (!nodep->defp()) nodep->v3fatalSrc("Unlinked");
+        UASSERT_OBJ(nodep->defp(), nodep, "Unlinked");
         nodep->dtypeFrom(nodep->defp());
         userIterate(nodep->defp(), NULL);
         nodep->widthFromSub(nodep->subDTypep());
@@ -1129,7 +1132,7 @@ private:
         // The cast may change signing, but we don't know the sign yet.  Make it so.
         // Note we don't sign lhsp() that would make the algorithm O(n^2) if lots of casting.
         AstBasicDType* basicp = nodep->dtypep()->basicp();
-        if (!basicp) nodep->v3fatalSrc("Unimplemented: Casting non-simple data type");
+        UASSERT_OBJ(basicp, nodep, "Unimplemented: Casting non-simple data type");
         // When implement more complicated types need to convert childDTypep to
         // dtypep() not as a child
         if (!basicp->isDouble() && !nodep->lhsp()->isDouble()) {
@@ -1162,7 +1165,8 @@ private:
     virtual void visit(AstCastSize* nodep) {
         // IEEE: Signedness of result is same as self-determined signedness
         // However, the result is same as BITSEL, so we do not sign extend the LHS
-        if (!VN_IS(nodep->rhsp(), Const)) nodep->v3fatalSrc("Unsupported: Non-const cast of size");
+        UASSERT_OBJ(VN_IS(nodep->rhsp(), Const), nodep,
+                    "Unsupported: Non-const cast of size");
         //if (debug()) nodep->dumpTree(cout, "  CastSizePre: ");
         if (m_vup->prelim()) {
             int width = VN_CAST(nodep->rhsp(), Const)->toSInt();
@@ -1215,7 +1219,7 @@ private:
         // with non-constant range gets size 1, not size 0.  So use didWidth().
         if (nodep->didWidth()) return;
         if (nodep->doingWidth()) {  // Early exit if have circular parameter definition
-            if (!nodep->valuep()) nodep->v3fatalSrc("circular, but without value");
+            UASSERT_OBJ(nodep->valuep(), nodep, "circular, but without value");
             nodep->v3error("Variable's initial value is circular: "<<nodep->prettyName());
             pushDeletep(nodep->valuep()->unlinkFrBack());
             nodep->valuep(new AstConst(nodep->fileline(), AstConst::LogicTrue()));
@@ -1227,7 +1231,7 @@ private:
         // Make sure dtype is sized
         if (nodep->childDTypep()) nodep->dtypep(moveChildDTypeEdit(nodep));
         nodep->dtypep(iterateEditDTypep(nodep, nodep->dtypep()));
-        if (!nodep->dtypep()) nodep->v3fatalSrc("No dtype determined for var");
+        UASSERT_OBJ(nodep->dtypep(), nodep, "No dtype determined for var");
         if (VN_IS(nodep->dtypeSkipRefp(), UnsizedArrayDType)) {
             if (!(m_ftaskp && m_ftaskp->dpiImport())) {
                 nodep->v3error("Unsized/open arrays ('[]') are only supported in DPI imports");
@@ -1328,7 +1332,7 @@ private:
         // Note genvar's are also entered as integers
         nodep->dtypeFrom(nodep->varp());
         if (VN_IS(nodep->backp(), NodeAssign) && nodep->lvalue()) {  // On LHS
-            if (!nodep->widthMin()) nodep->v3fatalSrc("LHS var should be size complete");
+            UASSERT_OBJ(nodep->widthMin(), nodep, "LHS var should be size complete");
         }
         //if (debug()>=9) nodep->dumpTree(cout, "  VRout ");
         if (nodep->lvalue() && nodep->varp()->direction() == VDirection::CONSTREF) {
@@ -1397,7 +1401,7 @@ private:
     virtual void visit(AstEnumItem* nodep) {
         UINFO(5,"   ENUMITEM "<<nodep<<endl);
         AstNodeDType* vdtypep = m_vup->dtypep();
-        if (!vdtypep) nodep->v3fatalSrc("ENUMITEM not under ENUM");
+        UASSERT_OBJ(vdtypep, nodep, "ENUMITEM not under ENUM");
         nodep->dtypep(vdtypep);
         if (nodep->valuep()) {  // else the value will be assigned sequentially
             // Default type is int, but common to assign narrower values, so minwidth from value
@@ -1411,11 +1415,11 @@ private:
         if (!nodep->itemp()->didWidth()) {
             // We need to do the whole enum en-mass
             AstNode* enump = nodep->itemp();
-            if (!enump) nodep->v3fatalSrc("EnumItemRef not linked");
+            UASSERT_OBJ(enump, nodep, "EnumItemRef not linked");
             for (; enump; enump=enump->backp()) {
                 if (VN_IS(enump, EnumDType)) break;
             }
-            if (!enump) nodep->v3fatalSrc("EnumItemRef can't deref back to an Enum");
+            UASSERT_OBJ(enump, nodep, "EnumItemRef can't deref back to an Enum");
             userIterate(enump, m_vup); VL_DANGLING(enump);  // parent's connection to enump may be relinked
         }
         nodep->dtypeFrom(nodep->itemp());
@@ -1424,7 +1428,7 @@ private:
         // InitArray has type of the array; children are array values
         if (m_vup->prelim()) {  // First stage evaluation
             AstNodeDType* vdtypep = m_vup->dtypep();
-            if (!vdtypep) nodep->v3fatalSrc("InitArray type not assigned by AstPattern/Var visitor");
+            UASSERT_OBJ(vdtypep, nodep, "InitArray type not assigned by AstPattern/Var visitor");
             nodep->dtypep(vdtypep);
             if (AstNodeArrayDType* arrayp = VN_CAST(vdtypep->skipRefp(), NodeArrayDType)) {
                 userIterateChildren(nodep, WidthVP(arrayp->subDTypep(), BOTH).p());
@@ -1602,7 +1606,8 @@ private:
             if (argp->exprp()) userIterate(argp->exprp(), WidthVP(SELF, BOTH).p());
         }
         // Find the fromp dtype - should be a class
-        if (!nodep->fromp() || !nodep->fromp()->dtypep()) nodep->v3fatalSrc("Unsized expression");
+        UASSERT_OBJ(nodep->fromp() && nodep->fromp()->dtypep(), nodep,
+                    "Unsized expression");
         AstNodeDType* fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
         AstBasicDType* basicp = fromDtp ? fromDtp->basicp() : NULL;
         UINFO(9,"     from dt "<<fromDtp<<endl);
@@ -1632,7 +1637,7 @@ private:
                         nodep->fileline(), AstConst::Signed32(), 0);  // Spec doesn't say what to do
                     else newp = VN_CAST(itemp->valuep()->cloneTree(false), Const);  // A const
                 }
-                if (!newp) nodep->v3fatalSrc("Enum method (perhaps enum item) not const");
+                UASSERT_OBJ(newp, nodep, "Enum method (perhaps enum item) not const");
                 newp->fileline(nodep->fileline());  // Use method's filename/line number to be clearer; may have warning disables
                 nodep->replaceWith(newp);
                 pushDeletep(nodep); VL_DANGLING(nodep);
@@ -1665,7 +1670,7 @@ private:
                     for (AstEnumItem* itemp = adtypep->itemsp();
                          itemp; itemp = VN_CAST(itemp->nextp(), EnumItem)) {
                         const AstConst* vconstp = VN_CAST(itemp->valuep(), Const);
-                        if (!vconstp) nodep->v3fatalSrc("Enum item without constified value");
+                        UASSERT_OBJ(vconstp, nodep, "Enum item without constified value");
                         if (vconstp->toUQuad() >= msbdim) msbdim = vconstp->toUQuad();
                     }
                     if (adtypep->itemsp()->width() > 64 || msbdim >= (1<<16)) {
@@ -2053,10 +2058,11 @@ private:
     }
     virtual void visit(AstPatMember* nodep) {
         AstNodeDType* vdtypep = m_vup->dtypeNullp();
-        if (!vdtypep) nodep->v3fatalSrc("Pattern member type not assigned by AstPattern visitor");
+        UASSERT_OBJ(vdtypep, nodep, "Pattern member type not assigned by AstPattern visitor");
         nodep->dtypep(vdtypep);
         UINFO(9,"   PATMEMBER "<<nodep<<endl);
-        if (nodep->lhssp()->nextp()) nodep->v3fatalSrc("PatMember value should be singular w/replicates removed");
+        UASSERT_OBJ(!nodep->lhssp()->nextp(), nodep,
+                    "PatMember value should be singular w/replicates removed");
         // Need to propagate assignment type downwards, even on prelim
         userIterateChildren(nodep, WidthVP(nodep->dtypep(), PRELIM).p());
         iterateCheck(nodep, "Pattern value", nodep->lhssp(), ASSIGN, FINAL, vdtypep, EXTEND_LHS);
@@ -2174,8 +2180,9 @@ private:
         {
             //if (debug()) nodep->dumpTree(cout, "-    assin:  ");
             userIterateAndNext(nodep->lhsp(), WidthVP(SELF, BOTH).p());
-            if (!nodep->lhsp()->dtypep()) nodep->v3fatalSrc("How can LHS be untyped?");
-            if (!nodep->lhsp()->dtypep()->widthSized()) nodep->v3fatalSrc("How can LHS be unsized?");
+            UASSERT_OBJ(nodep->lhsp()->dtypep(), nodep, "How can LHS be untyped?");
+            UASSERT_OBJ(nodep->lhsp()->dtypep()->widthSized(), nodep,
+                        "How can LHS be unsized?");
             nodep->dtypeFrom(nodep->lhsp());
             //
             // AstPattern needs to know the proposed data type of the lhs, so pass on the prelim
@@ -2559,7 +2566,7 @@ private:
         userIterateChildren(nodep, NULL);
         if (nodep->fvarp()) {
             m_funcp = VN_CAST(nodep, Func);
-            if (!m_funcp) nodep->v3fatalSrc("FTask with function variable, but isn't a function");
+            UASSERT_OBJ(m_funcp, nodep, "FTask with function variable, but isn't a function");
             nodep->dtypeFrom(nodep->fvarp());  // Which will get it from fvarp()->dtypep()
         }
         nodep->didWidth(true);
@@ -2599,7 +2606,7 @@ private:
         // For arguments, is assignment-like context; see IEEE rules in AstNodeAssign
         // Function hasn't been widthed, so make it so.
         UINFO(5, "  FTASKREF "<<nodep<<endl);
-        if (!nodep->taskp()) nodep->v3fatalSrc("Unlinked");
+        UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked");
         if (nodep->didWidth()) return;
         userIterate(nodep->taskp(), NULL);
         //
@@ -2737,8 +2744,8 @@ private:
     }
     virtual void visit(AstNode* nodep) {
         // Default: Just iterate
-        if (m_vup) nodep->v3fatalSrc("Visit function missing? Widthed expectation for this node: "
-                                     <<nodep);
+        UASSERT_OBJ(!m_vup, nodep,
+                    "Visit function missing? Widthed expectation for this node: "<<nodep);
         userIterateChildren(nodep, NULL);
     }
 
@@ -2799,7 +2806,7 @@ private:
         //   LHS is self-determined
         //   Width: 1 bit out
         //   Sign: unsigned out (11.8.1)
-        if (nodep->op2p()) nodep->v3fatalSrc("For unary ops only!");
+        UASSERT_OBJ(!nodep->op2p(), nodep, "For unary ops only!");
         if (m_vup->prelim()) {
             iterateCheckBool(nodep, "LHS", nodep->op1p(), BOTH);
             nodep->dtypeSetLogicBool();
@@ -2854,7 +2861,7 @@ private:
         //   TODO: chandle/class handle/iface handle: WildEq/WildNeq same as Eq/Neq
         //   TODO: chandle/class handle/iface handle only allowed to self-compare or against null
         //   TODO: chandle/class handle/iface handle no relational compares
-        if (!nodep->rhsp()) nodep->v3fatalSrc("For binary ops only!");
+        UASSERT_OBJ(nodep->rhsp(), nodep, "For binary ops only!");
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP(CONTEXT, PRELIM).p());
             userIterateAndNext(nodep->rhsp(), WidthVP(CONTEXT, PRELIM).p());
@@ -2895,7 +2902,7 @@ private:
         // Real if and only if real_allow set
         // IEEE, 11.4.4: relational compares (<,>,<=,>=,==,===,!=,!==) use
         // "zero padding" on unsigned
-        if (!nodep->rhsp()) nodep->v3fatalSrc("For binary ops only!");
+        UASSERT_OBJ(nodep->rhsp(), nodep, "For binary ops only!");
         if (m_vup->prelim()) {
             // See similar handling in visit_cmp_eq_gt where created
             iterateCheckReal(nodep, "LHS", nodep->lhsp(), BOTH);
@@ -2908,7 +2915,7 @@ private:
         // Widths: 1 bit out, lhs width == rhs width
         // String compare (not output)
         // Real if and only if real_allow set
-        if (!nodep->rhsp()) nodep->v3fatalSrc("For binary ops only!");
+        UASSERT_OBJ(nodep->rhsp(), nodep, "For binary ops only!");
         if (m_vup->prelim()) {
             // See similar handling in visit_cmp_eq_gt where created
             iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
@@ -2919,7 +2926,7 @@ private:
     void visit_Os32_string(AstNodeUniop* nodep) {
         // CALLER: LenN
         // Widths: 32 bit out
-        if (!nodep->lhsp()) nodep->v3fatalSrc("For unary ops only!");
+        UASSERT_OBJ(nodep->lhsp(), nodep, "For unary ops only!");
         if (m_vup->prelim()) {
             // See similar handling in visit_cmp_eq_gt where created
             iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
@@ -2933,7 +2940,7 @@ private:
         // Signed: From lhs
         // IEEE-2012 Table 11-21:
         //    Widths: out width = lhs width
-        if (nodep->op2p()) nodep->v3fatalSrc("For unary ops only!");
+        UASSERT_OBJ(!nodep->op2p(), nodep, "For unary ops only!");
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP(CONTEXT, PRELIM).p());
             if (!real_ok) checkCvtUS(nodep->lhsp());
@@ -2968,7 +2975,7 @@ private:
         //   Width: Returns packed array, of size $bits(expression).
         //   Sign: Output sign is as specified by operation
         //   TODO: Type: Two-state if input is two-state, else four-state
-        if (nodep->op2p()) nodep->v3fatalSrc("For unary ops only!");
+        UASSERT_OBJ(!nodep->op2p(), nodep, "For unary ops only!");
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP(SELF, PRELIM).p());
             checkCvtUS(nodep->lhsp());
@@ -3039,7 +3046,7 @@ private:
         // Signed: if lhs & rhs signed
         // IEEE-2012 Table 11-21:
         //    Width: max(LHS, RHS)
-        if (!nodep->rhsp()) nodep->v3fatalSrc("For binary ops only!");
+        UASSERT_OBJ(nodep->rhsp(), nodep, "For binary ops only!");
         // If errors are off, we need to follow the spec; thus we really need to do the max()
         // because the rhs could be larger, and we need to have proper editing to get the widths
         // to be the same for our operations.
@@ -3152,12 +3159,15 @@ private:
     bool widthBad(AstNode* nodep, AstNodeDType* expDTypep) {
         int expWidth = expDTypep->width();
         int expWidthMin = expDTypep->widthMin();
-        if (!nodep->dtypep()) nodep->v3fatalSrc("Under node "<<nodep->prettyTypeName()
-                                                <<" has no dtype?? Missing Visitor func?");
-        if (nodep->width()==0) nodep->v3fatalSrc("Under node "<<nodep->prettyTypeName()
-                                                 <<" has no expected width?? Missing Visitor func?");
-        if (expWidth==0) nodep->v3fatalSrc("Node "<<nodep->prettyTypeName()
-                                           <<" has no expected width?? Missing Visitor func?");
+        UASSERT_OBJ(nodep->dtypep(), nodep,
+                    "Under node "<<nodep->prettyTypeName()
+                    <<" has no dtype?? Missing Visitor func?");
+        UASSERT_OBJ(nodep->width() != 0, nodep,
+                    "Under node "<<nodep->prettyTypeName()
+                    <<" has no expected width?? Missing Visitor func?");
+        UASSERT_OBJ(expWidth != 0, nodep,
+                    "Node "<<nodep->prettyTypeName()
+                    <<" has no expected width?? Missing Visitor func?");
         if (expWidthMin==0) expWidthMin = expWidth;
         if (nodep->dtypep()->width() == expWidth) return false;
         if (nodep->dtypep()->widthSized()  && nodep->width() != expWidthMin) return true;
@@ -3296,7 +3306,7 @@ private:
         return node1p->skipRefp()->similarDType(node2p->skipRefp());
     }
     void iterateCheckFileDesc(AstNode* nodep, AstNode* underp, Stage stage) {
-        if (stage != BOTH) nodep->v3fatalSrc("Bad call");
+        UASSERT_OBJ(stage == BOTH, nodep, "Bad call");
         // underp may change as a result of replacement
         underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, PRELIM).p());
         AstNodeDType* expDTypep = underp->findUInt32DType();
@@ -3346,8 +3356,8 @@ private:
         // Coerce child to any sized-number data type; child is self-determined
         // i.e. isolated from expected type.
         // e.g. nodep=CONCAT, underp=lhs in CONCAT(lhs,rhs)
-        if (determ != SELF) nodep->v3fatalSrc("Bad call");
-        if (stage != FINAL && stage != BOTH) nodep->v3fatalSrc("Bad call");
+        UASSERT_OBJ(determ == SELF, nodep, "Bad call");
+        UASSERT_OBJ(stage == FINAL || stage == BOTH, nodep, "Bad call");
         // underp may change as a result of replacement
         if (stage & PRELIM) underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, PRELIM).p());
         underp = checkCvtUS(underp);
@@ -3359,7 +3369,7 @@ private:
                             AstNode* rhsp, Stage stage, AstNodeDType* lhsDTypep) {
         // Check using assignment-like context rules
         //if (debug()) nodep->dumpTree(cout, "-checkass: ");
-        if (stage != FINAL) nodep->v3fatalSrc("Bad width call");
+        UASSERT_OBJ(stage == FINAL, nodep, "Bad width call");
         // We iterate and size the RHS based on the result of RHS evaluation
         bool lhsStream = (VN_IS(nodep, NodeAssign)
                           && VN_IS(VN_CAST(nodep, NodeAssign)->lhsp(), NodeStream));
@@ -3370,14 +3380,16 @@ private:
     }
 
     void iterateCheckBool(AstNode* nodep, const char* side, AstNode* underp, Stage stage) {
-        if (stage != BOTH) nodep->v3fatalSrc("Bad call");  // Booleans always self-determined so do BOTH at once
+        UASSERT_OBJ(stage == BOTH, nodep,
+                    "Bad call");  // Booleans always self-determined so do BOTH at once
         // Underp is used in a self-determined but boolean context, reduce a
         // multibit number to one bit
         // stage is always BOTH so not passed as argument
         // underp may change as a result of replacement
-        if (!underp) nodep->v3fatalSrc("Node has no type");
+        UASSERT_OBJ(underp, nodep, "Node has no type");
         underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, BOTH).p());
-        if (!underp || !underp->dtypep()) nodep->v3fatalSrc("Node has no type");  // Perhaps forgot to do a prelim visit on it?
+        UASSERT_OBJ(underp && underp->dtypep(), nodep,
+                    "Node has no type");  // Perhaps forgot to do a prelim visit on it?
         //
         // For DOUBLE under a logical op, add implied test against zero, never a warning
         if (underp && underp->isDouble()) {
@@ -3417,8 +3429,9 @@ private:
         // Perform data type check on underp, which is underneath nodep used for error reporting
         // Returns the new underp
         // Conversion to/from doubles and integers are before iterating.
-        if (stage != FINAL) nodep->v3fatalSrc("Bad state to iterateCheck");
-        if (!underp || !underp->dtypep()) nodep->v3fatalSrc("Node has no type");  // Perhaps forgot to do a prelim visit on it?
+        UASSERT_OBJ(stage == FINAL, nodep, "Bad state to iterateCheck");
+        UASSERT_OBJ(underp && underp->dtypep(), nodep,
+                    "Node has no type");  // Perhaps forgot to do a prelim visit on it?
         if (expDTypep == underp->dtypep()) {  // Perfect
             underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
         } else if (expDTypep->isDouble() && underp->isDouble()) {  // Also good
@@ -3757,7 +3770,7 @@ private:
         // DTypes at parse time get added as a childDType to some node types such as AstVars.
         // We move them to global scope, so removing/changing a variable won't lose the dtype.
         AstNodeDType* dtnodep = nodep->getChildDTypep();
-        if (!dtnodep) nodep->v3fatalSrc("Caller should check for NULL before calling moveChild");
+        UASSERT_OBJ(dtnodep, nodep, "Caller should check for NULL before calling moveChild");
         UINFO(9,"moveChildDTypeEdit  "<<dtnodep<<endl);
         dtnodep->unlinkFrBack();  // Make non-child
         v3Global.rootp()->typeTablep()->addTypesp(dtnodep);
@@ -3773,7 +3786,7 @@ private:
         // Alternative is to have WidthVP return information.
         // or have a call outside of normal visitor land.
         // or have a m_return type (but need to return if width called multiple times)
-        if (!nodep) parentp->v3fatalSrc("Null dtype when widthing dtype");
+        UASSERT_OBJ(nodep, parentp, "Null dtype when widthing dtype");
         userIterate(nodep, NULL);
         return nodep;
     }
@@ -3924,7 +3937,7 @@ private:
         }
 
         // Find valid values and populate
-        if (!nodep->itemsp()) nodep->v3fatalSrc("enum without items");
+        UASSERT_OBJ(nodep->itemsp(), nodep, "enum without items");
         std::vector<AstNode*> values;
         values.resize(msbdim+1);
         for (unsigned i=0; i<(msbdim+1); ++i) {
@@ -3937,7 +3950,7 @@ private:
             for (AstEnumItem* itemp = firstp; itemp;) {
                 AstEnumItem* nextp = VN_CAST(itemp->nextp(), EnumItem);
                 const AstConst* vconstp = VN_CAST(itemp->valuep(), Const);
-                if (!vconstp) nodep->v3fatalSrc("Enum item without constified value");
+                UASSERT_OBJ(vconstp, nodep, "Enum item without constified value");
                 uint32_t i = vconstp->toUInt();
                 if (attrType == AstAttrType::ENUM_NAME) {
                     values[i] = new AstConst(nodep->fileline(), AstConst::String(), itemp->name());
@@ -3989,7 +4002,8 @@ private:
         UINFO(4,"Replicate openarray function "<<nodep->taskp()<<endl);
         AstNodeFTask* oldTaskp = nodep->taskp();
         oldTaskp->dpiOpenParentInc();
-        if (oldTaskp->dpiOpenChild()) oldTaskp->v3fatalSrc("DPI task should be parent or child, not both");
+        UASSERT_OBJ(!oldTaskp->dpiOpenChild(), oldTaskp,
+                    "DPI task should be parent or child, not both");
         AstNodeFTask* newTaskp = oldTaskp->cloneTree(false);
         newTaskp->dpiOpenChild(true);
         newTaskp->dpiOpenParentClear();

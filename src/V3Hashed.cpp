@@ -59,16 +59,15 @@ private:
     void nodeHashIterate(AstNode* nodep) {
         V3Hash thisHash;
         if (!m_cacheInUser4 || !nodep->user4()) {
-            if (VN_IS(nodep->backp(), CFunc)
-                && !(VN_IS(nodep, NodeStmt) || VN_IS(nodep, CFunc))) {
-                nodep->v3fatalSrc("Node "<<nodep->prettyTypeName()<<" in statement position but not marked stmt (node under function)");
-            }
+            UASSERT_OBJ(!(VN_IS(nodep->backp(), CFunc)
+                          && !(VN_IS(nodep, NodeStmt) || VN_IS(nodep, CFunc))), nodep,
+                        "Node "<<nodep->prettyTypeName()
+                        <<" in statement position but not marked stmt (node under function)");
             V3Hash oldHash = m_lowerHash;
             {
                 m_lowerHash = nodep->sameHash();
-                if (m_lowerHash.isIllegal()) {
-                    nodep->v3fatalSrc("sameHash function undefined (returns 0) for node under CFunc.");
-                }
+                UASSERT_OBJ(!m_lowerHash.isIllegal(), nodep,
+                            "sameHash function undefined (returns 0) for node under CFunc.");
                 // For identical nodes, the type should be the same thus
                 // dtypep should be the same too
                 m_lowerHash = V3Hash(m_lowerHash, V3Hash(nodep->type()<<6,
@@ -132,8 +131,8 @@ void V3Hashed::hash(AstNode* nodep) {
 }
 
 bool V3Hashed::sameNodes(AstNode* node1p, AstNode* node2p) {
-    if (!node1p->user4p()) node1p->v3fatalSrc("Called isIdentical on non-hashed nodes");
-    if (!node2p->user4p()) node2p->v3fatalSrc("Called isIdentical on non-hashed nodes");
+    UASSERT_OBJ(node1p->user4p(), node1p, "Called isIdentical on non-hashed nodes");
+    UASSERT_OBJ(node2p->user4p(), node2p, "Called isIdentical on non-hashed nodes");
     return (node1p->user4p() == node2p->user4p()  // Same hash
             && node1p->sameTree(node2p));
 }
@@ -141,7 +140,7 @@ bool V3Hashed::sameNodes(AstNode* node1p, AstNode* node2p) {
 void V3Hashed::erase(iterator it) {
     AstNode* nodep = iteratorNodep(it);
     UINFO(8,"   erase "<<nodep<<endl);
-    if (!nodep->user4p()) nodep->v3fatalSrc("Called removeNode on non-hashed node");
+    UASSERT_OBJ(nodep->user4p(), nodep, "Called removeNode on non-hashed node");
     m_hashMmap.erase(it);
     nodep->user4p(NULL);  // So we don't allow removeNode again
 }
@@ -196,7 +195,7 @@ void V3Hashed::dumpFile(const string& filename, bool tree) {
 
 V3Hashed::iterator V3Hashed::findDuplicate(AstNode* nodep) {
     UINFO(8,"   findD "<<nodep<<endl);
-    if (!nodep->user4p()) nodep->v3fatalSrc("Called findDuplicate on non-hashed node");
+    UASSERT_OBJ(nodep->user4p(), nodep, "Called findDuplicate on non-hashed node");
     std::pair<HashMmap::iterator,HashMmap::iterator> eqrange = mmap().equal_range(nodeHash(nodep));
     for (HashMmap::iterator eqit = eqrange.first; eqit != eqrange.second; ++eqit) {
         AstNode* node2p = eqit->second;
@@ -209,7 +208,7 @@ V3Hashed::iterator V3Hashed::findDuplicate(AstNode* nodep) {
 
 V3Hashed::iterator V3Hashed::findDuplicate(AstNode* nodep, V3HashedUserCheck* checkp) {
     UINFO(8,"   findD "<<nodep<<endl);
-    if (!nodep->user4p()) nodep->v3fatalSrc("Called findDuplicate on non-hashed node");
+    UASSERT_OBJ(nodep->user4p(), nodep, "Called findDuplicate on non-hashed node");
     std::pair<HashMmap::iterator,HashMmap::iterator> eqrange
         = mmap().equal_range(nodeHash(nodep));
     for (HashMmap::iterator eqit = eqrange.first; eqit != eqrange.second; ++eqit) {

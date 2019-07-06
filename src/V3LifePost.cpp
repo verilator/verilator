@@ -60,7 +60,7 @@ private:
     // VISITORS
     virtual void visit(AstVarRef* nodep) {
         AstVarScope* vscp = nodep->varScopep();
-        if (!vscp) nodep->v3fatalSrc("Scope not assigned");
+        UASSERT_OBJ(vscp, nodep, "Scope not assigned");
         if (AstVarScope* newvscp = reinterpret_cast<AstVarScope*>(vscp->user4p())) {
             UINFO(9, "  Replace "<<nodep<<" to "<<newvscp<<endl);
             AstVarRef* newrefp = new AstVarRef(nodep->fileline(), newvscp, nodep->lvalue());
@@ -267,14 +267,12 @@ private:
         iterateChildren(nodep);
 
         if (v3Global.opt.mtasks()) {
-            if (!m_mtasksGraphp) {
-                nodep->v3fatalSrc("Should have initted m_mtasksGraphp by now");
-            }
+            UASSERT_OBJ(m_mtasksGraphp, nodep,
+                        "Should have initted m_mtasksGraphp by now");
             m_checker.reset(new GraphPathChecker(m_mtasksGraphp));
         } else {
-            if (m_mtasksGraphp) {
-                nodep->v3fatalSrc("Did not expect any m_mtasksGraphp in serial mode");
-            }
+            UASSERT_OBJ(!m_mtasksGraphp, nodep,
+                        "Did not expect any m_mtasksGraphp in serial mode");
         }
 
         // Find all assignposts. Determine which ones can be
@@ -289,7 +287,7 @@ private:
     virtual void visit(AstVarRef* nodep) {
         // Consumption/generation of a variable,
         AstVarScope* vscp = nodep->varScopep();
-        if (!vscp) nodep->v3fatalSrc("Scope not assigned");
+        UASSERT_OBJ(vscp, nodep, "Scope not assigned");
 
         LifeLocation loc(m_execMTaskp, ++m_sequence);
         if (nodep->lvalue()) {
@@ -311,9 +309,8 @@ private:
         if (AstVarRef* rhsp = VN_CAST(nodep->rhsp(), VarRef)) {
             // rhsp is the dly var
             AstVarScope* dlyVarp = rhsp->varScopep();
-            if (m_assignposts.find(dlyVarp) != m_assignposts.end()) {
-                nodep->v3fatalSrc("LifePostLocation attempted duplicate dlyvar map addition");
-            }
+            UASSERT_OBJ(m_assignposts.find(dlyVarp) == m_assignposts.end(), nodep,
+                        "LifePostLocation attempted duplicate dlyvar map addition");
             LifeLocation loc(m_execMTaskp, ++m_sequence);
             m_assignposts[dlyVarp] = LifePostLocation(loc, nodep);
         }

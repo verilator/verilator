@@ -120,7 +120,7 @@ private:
             } else {
                 // V3Coverage assigned us a bucket to increment.
                 AstCoverInc* covincp = VN_CAST(snodep->coverincp(), CoverInc);
-                if (!covincp) snodep->v3fatalSrc("Missing AstCoverInc under assertion");
+                UASSERT_OBJ(covincp, snodep, "Missing AstCoverInc under assertion");
                 covincp->unlinkFrBack();
                 if (message!="") covincp->declp()->comment(message);
                 bodysp = covincp;
@@ -317,10 +317,11 @@ private:
         iterateChildren(nodep);
         uint32_t ticks = 1;
         if (nodep->ticksp()) {
-            if (!VN_IS(nodep->ticksp(), Const)) nodep->v3fatalSrc("Expected constant ticks, checked in V3Width");
+            UASSERT_OBJ(VN_IS(nodep->ticksp(), Const), nodep,
+                        "Expected constant ticks, checked in V3Width");
             ticks = VN_CAST(nodep->ticksp(), Const)->toUInt();
         }
-        if (ticks<1) nodep->v3fatalSrc("0 tick should have been checked in V3Width");
+        UASSERT_OBJ(ticks>=1, nodep, "0 tick should have been checked in V3Width");
         AstNode* inp = nodep->exprp()->unlinkFrBack();
         AstVar* invarp = NULL;
         AstSenTree* sentreep = nodep->sentreep(); sentreep->unlinkFrBack();

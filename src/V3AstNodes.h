@@ -1941,7 +1941,7 @@ public:
     AstBind(FileLine* fl, const string& name, AstNode* cellsp)
         : AstNode(fl)
         , m_name(name) {
-        if (!VN_IS(cellsp, Cell)) cellsp->v3fatalSrc("Only cells allowed to be bound");
+        UASSERT_OBJ(VN_IS(cellsp, Cell), cellsp, "Only cells allowed to be bound");
         addNOp1p(cellsp);
     }
     ASTNODE_NODE_FUNCS(Bind)

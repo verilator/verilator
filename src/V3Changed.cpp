@@ -87,7 +87,7 @@ public:
                 m_tlChgFuncp->addStmtsp(new AstCReturn(m_scopetopp->fileline(), callp));
             } else {
                 AstCReturn* returnp = VN_CAST(m_tlChgFuncp->stmtsp(), CReturn);
-                if (!returnp) m_scopetopp->v3fatalSrc("Lost CReturn in top change function");
+                UASSERT_OBJ(returnp, m_scopetopp, "Lost CReturn in top change function");
                 // This is currently using AstLogOr which will shortcut the
                 // evaluation if any function returns true. This is likely what
                 // we want and is similar to the logic already in use inside
@@ -260,8 +260,8 @@ private:
         AstNode::user1ClearTree();
         // Create the change detection function
         AstScope* scopep = nodep->scopep();
-        if (!scopep) nodep->v3fatalSrc("No scope found on top level,"
-                                       " perhaps you have no statements?");
+        UASSERT_OBJ(scopep, nodep,
+                    "No scope found on top level, perhaps you have no statements?");
         m_statep->m_scopetopp = scopep;
 
         // Create a wrapper change detection function that calls each change detection function

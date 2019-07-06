@@ -81,7 +81,7 @@ private:
                     // duplicated), not the covertoggle, but we need to get back to the
                     // covertoggle which is immediately above, so:
                     AstCoverToggle* removep = VN_CAST(duporigp->backp(), CoverToggle);
-                    if (!removep) nodep->v3fatalSrc("CoverageJoin duplicate of wrong type");
+                    UASSERT_OBJ(removep, nodep, "CoverageJoin duplicate of wrong type");
                     UINFO(8,"  Orig "<<nodep<<" -->> "<<nodep->incp()->declp()<<endl);
                     UINFO(8,"   dup "<<removep<<" -->> "<<removep->incp()->declp()<<endl);
                     // The CoverDecl the duplicate pointed to now needs to point to the

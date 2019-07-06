@@ -66,7 +66,7 @@ private:
 
     // METHODS
     void addActive(AstActive* nodep) {
-        if (!m_scopep) nodep->v3fatalSrc("NULL scope");
+        UASSERT_OBJ(m_scopep, nodep, "NULL scope");
         m_scopep->addActivep(nodep);
     }
     // VISITORS
@@ -314,7 +314,8 @@ private:
             && VN_IS(oldsensesp->sensesp(), SenItem)
             && VN_CAST(oldsensesp->sensesp(), SenItem)->isNever()) {
             // Never executing.  Kill it.
-            if (oldsensesp->sensesp()->nextp()) nodep->v3fatalSrc("Never senitem should be alone, else the never should be eliminated.");
+            UASSERT_OBJ(!oldsensesp->sensesp()->nextp(), nodep,
+                        "Never senitem should be alone, else the never should be eliminated.");
             nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
             return;
         }
@@ -391,11 +392,10 @@ private:
     }
     virtual void visit(AstSenGate* nodep) {
         AstSenItem* subitemp = nodep->sensesp();
-        if (subitemp->edgeType() != AstEdgeType::ET_ANYEDGE
-            && subitemp->edgeType() != AstEdgeType::ET_POSEDGE
-            && subitemp->edgeType() != AstEdgeType::ET_NEGEDGE) {
-            nodep->v3fatalSrc("Strange activity type under SenGate");
-        }
+        UASSERT_OBJ(subitemp->edgeType() == AstEdgeType::ET_ANYEDGE
+                    || subitemp->edgeType() == AstEdgeType::ET_POSEDGE
+                    || subitemp->edgeType() == AstEdgeType::ET_NEGEDGE,
+                    nodep, "Strange activity type under SenGate");
         iterateChildren(nodep);
     }
     virtual void visit(AstSenItem* nodep) {

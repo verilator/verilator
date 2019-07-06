@@ -77,11 +77,11 @@ private:
             AstScope* scopep = it->second;
             if (nodep->packagep()) {
                 PackageScopeMap::iterator it2 = m_packageScopes.find(nodep->packagep());
-                if (it2==m_packageScopes.end()) nodep->v3fatalSrc("Can't locate package scope");
+                UASSERT_OBJ(it2 != m_packageScopes.end(), nodep, "Can't locate package scope");
                 scopep = it2->second;
             }
             VarScopeMap::iterator it3 = m_varScopes.find(make_pair(nodep->varp(), scopep));
-            if (it3==m_varScopes.end()) nodep->v3fatalSrc("Can't locate varref scope");
+            UASSERT_OBJ(it3 != m_varScopes.end(), nodep, "Can't locate varref scope");
             AstVarScope* varscp = it3->second;
             nodep->varScopep(varscp);
         }
@@ -124,7 +124,7 @@ private:
                     m_aboveCellp = cellp;
                     m_aboveScopep = m_scopep;
                     AstNodeModule* modp = cellp->modp();
-                    if (!modp) cellp->v3fatalSrc("Unlinked mod");
+                    UASSERT_OBJ(modp, cellp, "Unlinked mod");
                     iterate(modp);  // Recursive call to visit(AstNodeModule)
                 }
                 // Done, restore vars
@@ -251,7 +251,7 @@ private:
             if (v3Global.opt.isNoClocker(varscp->prettyName())) {
                 nodep->attrClocker(AstVarAttrClocker::CLOCKER_NO);
             }
-            if (!m_scopep) nodep->v3fatalSrc("No scope for var");
+            UASSERT_OBJ(m_scopep, nodep, "No scope for var");
             m_varScopes.insert(make_pair(make_pair(nodep, m_scopep), varscp));
             m_scopep->addVarp(varscp);
         }
@@ -259,7 +259,7 @@ private:
     virtual void visit(AstVarRef* nodep) {
         // VarRef needs to point to VarScope
         // Make sure variable has made user1p.
-        if (!nodep->varp()) nodep->v3fatalSrc("Unlinked");
+        UASSERT_OBJ(nodep->varp(), nodep, "Unlinked");
         if (nodep->varp()->isIfaceRef()) {
             nodep->varScopep(NULL);
         } else {
@@ -378,9 +378,9 @@ private:
         UINFO(9,"   Old pkg-taskref "<<nodep<<endl);
         if (nodep->packagep()) {
             // Point to the clone
-            if (!nodep->taskp()) nodep->v3fatalSrc("Unlinked");
+            UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked");
             AstNodeFTask* newp = VN_CAST(nodep->taskp()->user2p(), NodeFTask);
-            if (!newp) nodep->v3fatalSrc("No clone for package function");
+            UASSERT_OBJ(newp, nodep, "No clone for package function");
             nodep->taskp(newp);
             UINFO(9,"   New pkg-taskref "<<nodep<<endl);
         } else {

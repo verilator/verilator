@@ -40,7 +40,7 @@ DfaVertex* DfaGraph::findStart() {
          vertexp; vertexp=vertexp->verticesNextp()) {
         if (DfaVertex* vvertexp = dynamic_cast<DfaVertex*>(vertexp)) {
             if (vvertexp->start()) {
-                if (startp) vertexp->v3fatalSrc("Multiple start points in NFA graph");
+                UASSERT_OBJ(!startp, vertexp, "Multiple start points in NFA graph");
                 startp = vvertexp;
             }
         } else {
@@ -118,9 +118,8 @@ private:
                 DfaVertex* nfaStatep = static_cast<DfaVertex*>(dfaEdgep->top());
                 hash ^= hashVertex(nfaStatep);
                 if (debug()) {
-                    if (nfaStatep->user()==m_step) {
-                        nfaStatep->v3fatalSrc("DFA state points to duplicate NFA state.");
-                    }
+                    UASSERT_OBJ(nfaStatep->user() != m_step, nfaStatep,
+                                "DFA state points to duplicate NFA state.");
                     nfaStatep->user(m_step);
                 }
             }

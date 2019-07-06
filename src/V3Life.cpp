@@ -299,10 +299,10 @@ private:
     virtual void visit(AstVarRef* nodep) {
         // Consumption/generation of a variable,
         // it's used so can't elim assignment before this use.
-        if (!nodep->varScopep()) nodep->v3fatalSrc("NULL");
+        UASSERT_OBJ(nodep->varScopep(), nodep, "NULL");
         //
         AstVarScope* vscp = nodep->varScopep();
-        if (!vscp) nodep->v3fatalSrc("Scope not assigned");
+        UASSERT_OBJ(vscp, nodep, "Scope not assigned");
         if (nodep->lvalue()) {
             m_sideEffect = true;  // $sscanf etc may have RHS vars that are lvalues
             m_lifep->complexAssign(vscp);
@@ -324,7 +324,7 @@ private:
         // Has to be direct assignment without any EXTRACTing.
         if (VN_IS(nodep->lhsp(), VarRef) && !m_sideEffect && !m_noopt) {
             AstVarScope* vscp = VN_CAST(nodep->lhsp(), VarRef)->varScopep();
-            if (!vscp) nodep->v3fatalSrc("Scope lost on variable");
+            UASSERT_OBJ(vscp, nodep, "Scope lost on variable");
             m_lifep->simpleAssign(vscp, nodep);
         } else {
             iterateAndNextNull(nodep->lhsp());

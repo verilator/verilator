@@ -84,7 +84,7 @@ private:
             }
             break;
         }
-        if (!basefromp || !basefromp->dtypep()) nodep->v3fatalSrc("Select with no from dtype");
+        UASSERT_OBJ(basefromp && basefromp->dtypep(), nodep, "Select with no from dtype");
         AstNodeDType* ddtypep = basefromp->dtypep()->skipRefp();
         AstNode* errp = ddtypep;
         UINFO(9,"  fromData.ddtypep = "<<ddtypep<<endl);
@@ -96,10 +96,10 @@ private:
         }
         else if (AstBasicDType* adtypep = VN_CAST(ddtypep, BasicDType)) {
             if (adtypep->isRanged()) {
-                if (adtypep->rangep()
-                    && (!VN_IS(adtypep->rangep()->msbp(), Const)
-                        || !VN_IS(adtypep->rangep()->lsbp(), Const)))
-                    nodep->v3fatalSrc("Non-constant variable range; errored earlier");  // in constifyParam(bfdtypep)
+                UASSERT_OBJ(!(adtypep->rangep()
+                              && (!VN_IS(adtypep->rangep()->msbp(), Const)
+                                  || !VN_IS(adtypep->rangep()->lsbp(), Const))),
+                            nodep, "Non-constant variable range; errored earlier");  // in constifyParam(bfdtypep)
                 fromRange = adtypep->declRange();
             } else {
                 nodep->v3error("Illegal bit or array select; type does not have a bit range, or bad dimension: type is "
@@ -227,11 +227,10 @@ private:
                     subp = newSubNeg(subp, fromRange.lo());
                 }
             }
-            if (VL_UNCOVERABLE(!fromRange.elements()
-                               || (adtypep->width() % fromRange.elements())!=0)) {
-                adtypep->v3fatalSrc("Array extraction with width miscomputed "
-                                    <<adtypep->width()<<"/"<<fromRange.elements());
-            }
+            UASSERT_OBJ(!(!fromRange.elements()
+                          || (adtypep->width() % fromRange.elements())!=0), adtypep,
+                        "Array extraction with width miscomputed "
+                        <<adtypep->width()<<"/"<<fromRange.elements());
             int elwidth = adtypep->width() / fromRange.elements();
             AstSel* newp
                 = new AstSel(nodep->fileline(),
@@ -318,11 +317,10 @@ private:
         else if (AstPackArrayDType* adtypep = VN_CAST(ddtypep, PackArrayDType)) {
             // SELEXTRACT(array, msb, lsb) -> SEL(array,
             //             lsb*width-of-subindex, width-of-subindex*(msb-lsb))
-            if (VL_UNCOVERABLE(!fromRange.elements()
-                               || (adtypep->width() % fromRange.elements())!=0)) {
-                adtypep->v3fatalSrc("Array extraction with width miscomputed "
-                                    <<adtypep->width()<<"/"<<fromRange.elements());
-            }
+            UASSERT_OBJ(!(!fromRange.elements()
+                          || (adtypep->width() % fromRange.elements())!=0), adtypep,
+                        "Array extraction with width miscomputed "
+                        <<adtypep->width()<<"/"<<fromRange.elements());
             if (fromRange.littleEndian()) {
                 // Below code assumes big bit endian; just works out if we swap
                 int x = msb; msb = lsb; lsb = x;
@@ -344,7 +342,7 @@ private:
             newp->declElWidth(elwidth);
             newp->dtypeFrom(sliceDType(adtypep, msb, lsb));
             //if (debug()>=9) newp->dumpTree(cout, "--EXTBTn: ");
-            if (newp->widthMin() != newp->widthConst()) nodep->v3fatalSrc("Width mismatch");
+            UASSERT_OBJ(newp->widthMin() == newp->widthConst(), nodep, "Width mismatch");
             nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
         }
         else if (VN_IS(ddtypep, BasicDType)) {
