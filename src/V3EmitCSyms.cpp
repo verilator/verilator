@@ -272,7 +272,8 @@ void EmitCSyms::emitSymHdr() {
     ofp()->putsHeader();
     puts("// DESCR" "IPTION: Verilator output: Symbol table internal header\n");
     puts("//\n");
-    puts("// Internal details; most calling programs do not need this header\n");
+    puts("// Internal details; most calling programs do not need this header,\n");
+    puts("// unless using verilator public meta comments.\n");
     puts("\n");
 
     puts("#ifndef _"+symClassName()+"_H_\n");
