@@ -951,8 +951,8 @@ class AstSelBit : public AstNodePreSel {
 public:
     AstSelBit(FileLine* fl, AstNode* fromp, AstNode* bitp)
         :AstNodePreSel(fl, fromp, bitp, NULL) {
-        if (v3Global.assertDTypesResolved()) { v3fatalSrc("not coded to create after dtypes resolved"); }
-    }
+        UASSERT_OBJ(!v3Global.assertDTypesResolved(), this,
+                    "not coded to create after dtypes resolved"); }
     ASTNODE_NODE_FUNCS(SelBit)
     AstNode* bitp() const { return rhsp(); }
 };
@@ -3860,8 +3860,8 @@ class AstSigned : public AstNodeUniop {
     // $signed(lhs)
 public:
     AstSigned(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-        if (v3Global.assertDTypesResolved()) { v3fatalSrc("not coded to create after dtypes resolved"); }
-    }
+        UASSERT_OBJ(!v3Global.assertDTypesResolved(), this,
+                    "not coded to create after dtypes resolved"); }
     ASTNODE_NODE_FUNCS(Signed)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opAssign(lhs); out.isSigned(false); }
     virtual string emitVerilog() { return "%f$signed(%l)"; }
@@ -3875,8 +3875,8 @@ class AstUnsigned : public AstNodeUniop {
     // $unsigned(lhs)
 public:
     AstUnsigned(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
-        if (v3Global.assertDTypesResolved()) { v3fatalSrc("not coded to create after dtypes resolved"); }
-    }
+        UASSERT_OBJ(!v3Global.assertDTypesResolved(), this,
+                    "not coded to create after dtypes resolved"); }
     ASTNODE_NODE_FUNCS(Unsigned)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opAssign(lhs); out.isSigned(false); }
     virtual string emitVerilog() { return "%f$unsigned(%l)"; }

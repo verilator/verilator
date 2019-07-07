@@ -215,8 +215,8 @@ string AstVar::verilogKwd() const {
 }
 
 string AstVar::vlArgType(bool named, bool forReturn, bool forFunc) const {
-    if (forReturn) named = false;
-    if (forReturn) v3fatalSrc("verilator internal data is never passed as return, but as first argument");
+    UASSERT_OBJ(!forReturn, this,
+                "Internal data is never passed as return, but as first argument");
     string otype;
     AstBasicDType* bdtypep = basicp();
     bool strtype = bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::STRING;
