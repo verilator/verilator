@@ -100,7 +100,7 @@ if ($opt_gdb) {
          ." --batch --quiet --return-child-result"
          ." -ex \"run ".join(' ', @quoted_sw)."\""
          ." -ex 'set width 0'"
-         ." -ex 'bt'");
+         ." -ex 'bt' -ex 'quit'");
 } else {
     # Normal, non gdb
     run(verilator_bin()." ".join(' ',@quoted_sw));
@@ -159,7 +159,8 @@ sub gdb_works {
            ." --batch-silent --quiet --return-child-result"
            ." -ex 'run -n'"  # `echo -n`
            ." -ex 'set width 0'"
-           ." -ex 'bt'");
+           ." -ex 'bt'"
+           ." -ex 'quit'");
     my $status = $?;
     return $status==0;
 }
