@@ -321,8 +321,8 @@ size_t V3PreLex::inputToLex(char* buf, size_t max_size) {
     //
     VPreStream* streamp = curStreamp();
     if (debug()>=10) {
-	cout<<"-  pp:inputToLex ITL s="<<max_size<<" bs="<<streamp->m_buffers.size()<<endl;
-	dumpStack();
+        cout<<"-  pp:inputToLex ITL s="<<max_size<<" bs="<<streamp->m_buffers.size()<<endl;
+        dumpStack();
     }
     // For testing, use really small chunks
     //if (max_size > 13) max_size=13;
@@ -369,7 +369,7 @@ string V3PreLex::endOfStream(bool& againr) {
     // Switch to file or next unputString
     againr = false;
     if (yy_flex_debug) {
-	cout<<"-EOS state="<<curStreamp()->m_termState<<" at "<<curFilelinep()<<endl;
+        cout<<"-EOS state="<<curStreamp()->m_termState<<" at "<<curFilelinep()<<endl;
     }
     if (curStreamp()->m_eof) return "";  // Don't delete the final "EOF" stream
     bool exited_file = curStreamp()->m_file;

@@ -1023,7 +1023,7 @@ void V3ParseImp::lexToken() {
             SYMP->nextId(NULL);
         } else {
             UINFO(7,"   lexToken: find upward "<<SYMP->symCurrentp()
-		  <<" for '"<<*(yylval.strp)<<"'"<<endl);
+                  <<" for '"<<*(yylval.strp)<<"'"<<endl);
             //if (debug()>=9) SYMP->symCurrentp()->dump(cout,"     -findtree: ", true);
             foundp = SYMP->symCurrentp()->findIdFallback(*(yylval.strp));
         }
@@ -1057,8 +1057,8 @@ int V3ParseImp::lexToBison() {
         cout<<"   {"<<yylval.fl->filenameLetters()<<yylval.fl->lineno()
             <<"} lexToBison  TOKEN="<<yylval.token<<" "<<tokenName(yylval.token);
         if (yylval.token == yaID__ETC
-	    || yylval.token == yaID__LEX
-	    || yylval.token == yaID__aTYPE) {
+            || yylval.token == yaID__LEX
+            || yylval.token == yaID__aTYPE) {
             cout<<"   strp='"<<*(yylval.strp)<<"'";
         }
         cout<<endl;
