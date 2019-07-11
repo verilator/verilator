@@ -265,7 +265,7 @@ public:
     void configure(FileLine* filelinep) {
         // configure() separate from constructor to avoid calling abstract functions
         m_preprocp = this;  // Silly, but to make code more similar to Verilog-Perl
-        m_finFilelinep = filelinep->create(1);
+        m_finFilelinep = new FileLine(filelinep->filename(), 1);
         // Create lexer
         m_lexp = new V3PreLex(this, filelinep);
         m_lexp->m_keepComments = m_preprocp->keepComments();
@@ -767,7 +767,7 @@ void V3PreProcImp::openFile(FileLine* fl, V3InFilter* filterp, const string& fil
     }
 
     // Create new stream structure
-    m_lexp->scanNewFile(m_preprocp->fileline()->create(filename, 1));
+    m_lexp->scanNewFile(new FileLine(filename, 1));
     addLineComment(1);  // Enter
 
     // Filter all DOS CR's en-mass.  This avoids bugs with lexing CRs in the wrong places.
@@ -1460,8 +1460,8 @@ int V3PreProcImp::getFinalToken(string& buf) {
                             m_lexp->m_tokFilelinep->lineno(),
                             m_finFilelinep->lineno(), m_lexp->m_tokFilelinep->lineno());
                 }
-                m_finFilelinep = m_finFilelinep->create(m_lexp->m_tokFilelinep->filename(),
-                                                        m_lexp->m_tokFilelinep->lineno());
+                m_finFilelinep = new FileLine(m_lexp->m_tokFilelinep->filename(),
+                                              m_lexp->m_tokFilelinep->lineno());
                 if (outBehind > 0
                     && (outBehind <= static_cast<int>(V3PreProc::NEWLINES_VS_TICKLINE))) {
                     // Output stream is behind, send newlines to get back in sync

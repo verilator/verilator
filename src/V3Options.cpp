@@ -1157,7 +1157,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     whole_file += "\n";  // So string match below is simplified
     if (inCmt) fl->v3error("Unterminated /* comment inside -f file.");
 
-    fl = new FileLine(filename, 0);
+    fl = new FileLine(filename);
 
     // Split into argument list and process
     // Note we don't respect quotes.  It seems most simulators dont.

@@ -49,7 +49,7 @@ class FileLineSingleton {
     FileNameNumMap      m_namemap;      // filenameno for each filename
     std::deque<string>  m_names;        // filename text for each filenameno
     std::deque<V3LangCode> m_languages;  // language for each filenameno
-    // COSNTRUCTORS
+    // CONSTRUCTORS
     FileLineSingleton() { }
     ~FileLineSingleton() { }
 protected:
@@ -70,21 +70,12 @@ protected:
 //! millions). To save space, per-file information (e.g. filename, source
 //! language is held in tables in the FileLineSingleton class.
 class FileLine {
+    // MEMBERS
     int m_lineno;  // `line corrected line number
     int m_filenameno;  // `line corrected filename number
     FileLine* m_parent;  // Parent line that included this line
     std::bitset<V3ErrorCode::_ENUM_MAX> m_warnOn;
 
-private:
-    struct EmptySecret {};
-    inline static FileLineSingleton& singleton() {
-        static FileLineSingleton s;
-        return s;
-    }
-    inline static FileLine& defaultFileLine() {
-        static FileLine* defFilelinep = new FileLine(FileLine::EmptySecret());
-        return *defFilelinep;
-    }
 protected:
     // User routines should never need to change line numbers
     // We are storing pointers, so we CAN'T change them after initial reading.
@@ -93,15 +84,23 @@ protected:
     friend class V3PreLex;
     friend class V3PreProcImp;
     friend class V3PreShellImp;
-    void lineno(int num) { m_lineno = num; }
-    void language(V3LangCode lang) { singleton().numberToLang(m_filenameno, lang); }
-    void filename(const string& name) { m_filenameno = singleton().nameToNumber(name); }
-    void parent(FileLine* fileline) { m_parent = fileline; }
-    void lineDirective(const char* textp, int& enterExitRef);
-    void linenoInc() { m_lineno++; }
-    void linenoIncInPlace() { m_lineno++; }
-    FileLine* copyOrSameFileLine();
+private:
+    // CONSTRUCTORS
+    static FileLineSingleton& singleton() {
+        static FileLineSingleton s;
+        return s;
+    }
+    static FileLine& defaultFileLine() {
+        static FileLine* defFilelinep = new FileLine(FileLine::EmptySecret());
+        return *defFilelinep;
+    }
 public:
+    FileLine(const string& filename) {
+        m_lineno = 0;
+        m_filenameno = singleton().nameToNumber(filename);
+        m_parent = NULL;
+        m_warnOn = defaultFileLine().m_warnOn;
+    }
     FileLine(const string& filename, int lineno) {
         m_lineno = lineno;
         m_filenameno = singleton().nameToNumber(filename);
@@ -114,15 +113,23 @@ public:
         m_parent = fromp->m_parent;
         m_warnOn = fromp->m_warnOn;
     }
+    struct EmptySecret {};  // Constructor selection
     explicit FileLine(EmptySecret);
-    ~FileLine() { }
-    FileLine* create(const string& filename, int lineno) { return new FileLine(filename, lineno); }
-    FileLine* create(int lineno) { return create(filename(), lineno); }
+    FileLine* copyOrSameFileLine();
     static void deleteAllRemaining();
+    ~FileLine() { }
 #ifdef VL_LEAK_CHECKS
     static void* operator new(size_t size);
     static void operator delete(void* obj, size_t size);
 #endif
+    // METHODS
+    void lineno(int num) { m_lineno = num; }
+    void language(V3LangCode lang) { singleton().numberToLang(m_filenameno, lang); }
+    void filename(const string& name) { m_filenameno = singleton().nameToNumber(name); }
+    void parent(FileLine* fileline) { m_parent = fileline; }
+    void lineDirective(const char* textp, int& enterExitRef);
+    void linenoInc() { m_lineno++; }
+    void linenoIncInPlace() { m_lineno++; }
 
     int lineno() const { return m_lineno; }
     FileLine* parent() const { return m_parent; }
@@ -188,9 +195,10 @@ public:
     /// When building an error, additional location for additional references
     /// Simplified information vs warnContextPrimary() to make dump clearer
     string warnContextSecondary() const { return warnContext(true); }
-    inline bool operator==(FileLine rhs) const {
-        return (m_lineno==rhs.m_lineno && m_filenameno==rhs.m_filenameno
-                && m_warnOn==rhs.m_warnOn);
+    bool operator==(FileLine rhs) const {
+        return (m_lineno == rhs.m_lineno
+                && m_filenameno == rhs.m_filenameno
+                && m_warnOn == rhs.m_warnOn);
     }
 private:
     void v3errorEndFatalGuts(std::ostringstream& str);
