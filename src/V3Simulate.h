@@ -131,7 +131,7 @@ private:
                     int width = itemp->width();
                     int lsb = itemp->lsb();
                     int msb = lsb + width - 1;
-                    V3Number fieldNum = V3Number(nump, width);
+                    V3Number fieldNum(nump, width);
                     fieldNum.opSel(*nump, msb, lsb);
                     out<<itemp->name()<<": ";
                     if (AstNodeDType * childTypep = itemp->subDTypep()) {
@@ -153,7 +153,7 @@ private:
                     int width = childTypep->width();
                     int lsb = width * element;
                     int msb = lsb + width - 1;
-                    V3Number fieldNum = V3Number(nump, width);
+                    V3Number fieldNum(nump, width);
                     fieldNum.opSel(*nump, msb, lsb);
                     int arrayElem = arrayp->lsb() + element;
                     out<<arrayElem<<" = "<<prettyNumber(&fieldNum, childTypep);
@@ -568,14 +568,14 @@ private:
 
     void handleAssignSel(AstNodeAssign* nodep, AstSel* selp) {
         AstVarRef* varrefp = NULL;
-        V3Number lsb = V3Number(nodep);
+        V3Number lsb(nodep);
         iterateAndNextNull(nodep->rhsp());  // Value to assign
         handleAssignSelRecurse(nodep, selp, varrefp/*ref*/, lsb/*ref*/, 0);
         if (!m_checkOnly && optimizable()) {
             UASSERT_OBJ(varrefp, nodep,
                         "Indicated optimizable, but no variable found on RHS of select");
             AstNode* vscp = varOrScope(varrefp);
-            V3Number outnum = V3Number(nodep);
+            V3Number outnum(nodep);
             if (V3Number* vscpnump = fetchOutNumberNull(vscp)) {
                 outnum = *vscpnump;
             } else if (V3Number* vscpnump = fetchNumberNull(vscp)) {
@@ -606,7 +606,7 @@ private:
             lsbRef = *fetchNumber(selp->lsbp());
             return;  // And presumably still optimizable()
         } else if (AstSel* subselp = VN_CAST(selp->lhsp(), Sel)) {
-            V3Number sublsb = V3Number(nodep);
+            V3Number sublsb(nodep);
             handleAssignSelRecurse(nodep, subselp, outVarrefpRef, sublsb/*ref*/, depth+1);
             if (optimizable()) {
                 lsbRef = sublsb;

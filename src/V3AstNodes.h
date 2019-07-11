@@ -86,42 +86,42 @@ public:
     }
     AstConst(FileLine* fl, uint32_t num)
         : AstNodeMath(fl)
-        , m_num(V3Number(this, 32, num)) {
+        , m_num(this, 32, num) {
         dtypeSetLogicSized(m_num.width(), 0, AstNumeric::UNSIGNED);
     }
     class Unsized32 {};  // for creator type-overload selection
     AstConst(FileLine* fl, Unsized32, uint32_t num)  // Unsized 32-bit integer of specified value
         : AstNodeMath(fl)
-        , m_num(V3Number(this, 32, num)) {
+        , m_num(this, 32, num) {
         m_num.width(32, false);
         dtypeSetLogicSized(32, m_num.widthMin(), AstNumeric::UNSIGNED);
     }
     class Signed32 {};  // for creator type-overload selection
     AstConst(FileLine* fl, Signed32, int32_t num)  // Signed 32-bit integer of specified value
         : AstNodeMath(fl)
-        , m_num(V3Number(this, 32, num)) {
+        , m_num(this, 32, num) {
         m_num.width(32, 32);
         dtypeSetLogicSized(32, m_num.widthMin(), AstNumeric::SIGNED);
     }
     class RealDouble {};  // for creator type-overload selection
     AstConst(FileLine* fl, RealDouble, double num)
         : AstNodeMath(fl)
-        , m_num(V3Number(this, 64)) { m_num.setDouble(num); dtypeSetDouble(); }
+        , m_num(this, 64) { m_num.setDouble(num); dtypeSetDouble(); }
     class String {};  // for creator type-overload selection
     AstConst(FileLine* fl, String, const string& num)
         : AstNodeMath(fl)
-        , m_num(V3Number(V3Number::String(), this, num)) { dtypeSetString(); }
+        , m_num(V3Number::String(), this, num) { dtypeSetString(); }
     class LogicFalse {};
     AstConst(FileLine* fl, LogicFalse)  // Shorthand const 0, dtype should be a logic of size 1
         : AstNodeMath(fl)
-        , m_num(V3Number(this, 1, 0)) { dtypeSetLogicBool(); }
+        , m_num(this, 1, 0) { dtypeSetLogicBool(); }
     class LogicTrue {};
     AstConst(FileLine* fl, LogicTrue)  // Shorthand const 1, dtype should be a logic of size 1
         : AstNodeMath(fl)
-        , m_num(V3Number(this, 1, 1)) { dtypeSetLogicBool(); }
+        , m_num(this, 1, 1) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(Const)
     virtual string name() const { return num().ascii(); }  // * = Value
-    virtual const V3Number& num() const { return m_num; }  // * = Value
+    const V3Number& num() const { return m_num; }  // * = Value
     uint32_t toUInt() const { return num().toUInt(); }
     vlsint32_t toSInt() const { return num().toSInt(); }
     vluint64_t toUQuad() const { return num().toUQuad(); }
