@@ -1389,7 +1389,7 @@ private:
                 AstNode* otherp = inits.find(num)->second;
                 itemp->v3error("Overlapping enumeration value: "<<itemp->prettyName()<<endl
                                <<itemp->warnContextPrimary()<<endl
-                               <<otherp->warnMore()
+                               <<otherp->warnOther()
                                <<"... Location of original declaration\n"
                                <<otherp->warnContextSecondary());
             } else {

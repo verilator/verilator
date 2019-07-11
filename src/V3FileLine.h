@@ -188,7 +188,11 @@ public:
     void v3errorEnd(std::ostringstream& str);
     void v3errorEndFatal(std::ostringstream& str);
     /// When building an error, prefix for printing continuation lines
+    /// e.g. information referring to the same FileLine as before
     string warnMore() const;
+    /// When building an error, prefix for printing secondary information
+    /// from a different FileLine than the original error
+    string warnOther() const;
     /// When building an error, current location in include etc
     /// If not used in a given error, automatically pasted at end of error
     string warnContextPrimary() const { return warnContext(false); }

@@ -146,7 +146,7 @@ public:
             nodep->v3warn(IMPURE, "Unsupported: External variable referenced by non-inlined function/task: "
                           <<nodep->prettyName()<<endl
                           <<nodep->warnContextPrimary()<<endl
-                          <<vxp->impureNode()->warnMore()<<"... Location of the external reference: "
+                          <<vxp->impureNode()->warnOther()<<"... Location of the external reference: "
                           <<vxp->impureNode()->prettyName()<<endl
                           <<vxp->impureNode()->warnContextSecondary());
         }
@@ -844,7 +844,7 @@ private:
                            <<nodep->prettyName()<<endl
                            <<nodep->warnContextPrimary()<<endl
                            <<nodep->warnMore()<<"... New prototype:      "<<dpiproto<<endl
-                           <<iter->second.first->warnMore()<<"... Original prototype: "
+                           <<iter->second.first->warnOther()<<"... Original prototype: "
                            <<iter->second.second<<endl
                            <<iter->second.first->warnContextSecondary());
             return true;

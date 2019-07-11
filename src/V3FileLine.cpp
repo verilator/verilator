@@ -248,6 +248,13 @@ void FileLine::v3errorEnd(std::ostringstream& str) {
 
 string FileLine::warnMore() const {
     if (m_lineno) {
+        return V3Error::warnMore()+string(ascii().size(), ' ')+": ";
+    } else {
+        return V3Error::warnMore();
+    }
+}
+string FileLine::warnOther() const {
+    if (m_lineno) {
         return V3Error::warnMore()+ascii()+": ";
     } else {
         return V3Error::warnMore();
@@ -261,7 +268,7 @@ string FileLine::warnContext(bool secondary) const {
     if (!secondary) {  // Avoid printing long paths on informational part of error
         for (FileLine* parentFl = parent(); parentFl; parentFl = parentFl->parent()) {
             if (parentFl->filenameIsGlobal()) break;
-            out += parentFl->warnMore()+"... note: In file included from "
+            out += parentFl->warnOther()+"... note: In file included from "
                 +parentFl->filebasename()+"\n";
         }
     }

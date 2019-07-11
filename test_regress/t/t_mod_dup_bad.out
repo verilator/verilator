@@ -2,5 +2,5 @@
                  t/t_mod_dup_bad.v:6: ... Location of original declaration
                  ... Use "/* verilator lint_off MODDUP */" and lint_on around source to disable this message.
 %Warning-MULTITOP: t/t_mod_dup_bad.v:16: Multiple top level modules: b and test
-                   t/t_mod_dup_bad.v:16: ... Suggest see manual; fix the duplicates, or use --top-module to select top.
+                                       : ... Suggest see manual; fix the duplicates, or use --top-module to select top.
 %Error: Exiting due to

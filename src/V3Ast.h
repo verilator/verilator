@@ -1411,6 +1411,7 @@ public:
     string warnContextPrimary() const { return fileline()->warnContextPrimary(); }
     string warnContextSecondary() const { return fileline()->warnContextSecondary(); }
     string warnMore() const { return fileline()->warnMore(); }
+    string warnOther() const { return fileline()->warnOther(); }
 
     virtual void dump(std::ostream& str=std::cout);
     void dumpGdb();  // For GDB only

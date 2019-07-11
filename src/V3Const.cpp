@@ -1228,7 +1228,7 @@ private:
             AstNode* errorp = simvis.whyNotNodep(); if (!errorp) errorp = nodep;
             nodep->v3error("Expecting expression to be constant, but can't determine constant for "
                            <<nodep->prettyTypeName()<<endl
-                           <<errorp->warnMore()<<"... Location of non-constant "
+                           <<errorp->warnOther()<<"... Location of non-constant "
                            <<errorp->prettyTypeName()<<": "<<simvis.whyNotMessage());
             replaceZero(nodep); VL_DANGLING(nodep);
         } else {

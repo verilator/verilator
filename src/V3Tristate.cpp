@@ -457,7 +457,7 @@ class TristateVisitor : public TristateBaseVisitor {
             if (oldpullp->direction() != pullp->direction()) {
                 pullp->v3error("Unsupported: Conflicting pull directions.\n"
                                <<pullp->warnContextPrimary()<<endl
-                               <<oldpullp->warnMore()<<"... Location of conflicting pull.\n"
+                               <<oldpullp->warnOther()<<"... Location of conflicting pull.\n"
                                <<oldpullp->warnContextSecondary());
             }
         }

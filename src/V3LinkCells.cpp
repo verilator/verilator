@@ -466,7 +466,7 @@ private:
                     nodep->v3warn(MODDUP, "Duplicate declaration of module: "
                                   <<nodep->prettyName()<<endl
                                   <<nodep->warnContextPrimary()<<endl
-                                  <<foundp->warnMore()<<"... Location of original declaration"<<endl
+                                  <<foundp->warnOther()<<"... Location of original declaration"<<endl
                                   <<foundp->warnContextSecondary());
                 }
                 nodep->unlinkFrBack();

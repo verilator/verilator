@@ -165,9 +165,9 @@ private:
                 varrefp->varp()->v3warn(
                     MULTIDRIVEN, "Signal has multiple driving blocks with different clocking: "
                     <<varrefp->varp()->prettyName()<<endl
-                    <<varrefp->warnMore()<<"... Location of first driving block"<<endl
+                    <<varrefp->warnOther()<<"... Location of first driving block"<<endl
                     <<varrefp->varp()->warnContextPrimary()<<endl
-                    <<oldactivep->warnMore()<<"... Location of other driving block"<<endl
+                    <<oldactivep->warnOther()<<"... Location of other driving block"<<endl
                     <<oldactivep->warnContextSecondary()
                     );
                 varrefp->varp()->user2(true);

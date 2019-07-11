@@ -228,14 +228,14 @@ public:
                 nodep->v3error("Duplicate declaration of "<<nodeTextType(fnodep)
                                <<": "<<nodep->prettyName()<<endl
                                <<nodep->warnContextPrimary()<<endl
-                               <<fnodep->warnMore()<<"... Location of original declaration\n"
+                               <<fnodep->warnOther()<<"... Location of original declaration\n"
                                <<fnodep->warnContextSecondary());
             } else {
                 nodep->v3error("Unsupported in C: "<<ucfirst(nodeTextType(nodep))
                                <<" has the same name as "
                                <<nodeTextType(fnodep)<<": "<<nodep->prettyName()<<endl
                                <<nodep->warnContextPrimary()<<endl
-                               <<fnodep->warnMore()<<"... Location of original declaration\n"
+                               <<fnodep->warnOther()<<"... Location of original declaration\n"
                                <<fnodep->warnContextSecondary());
             }
         }
@@ -949,7 +949,7 @@ class LinkDotFindVisitor : public AstNVisitor {
                                           ? nodep->warnMore()+"... note: ANSI ports must have type declared with the I/O (IEEE 2017 23.2.2.2)\n"
                                           : "")
                                        <<nodep->warnContextPrimary()<<endl
-                                       <<findvarp->warnMore()<<"... Location of original declaration"<<endl
+                                       <<findvarp->warnOther()<<"... Location of original declaration"<<endl
                                        <<findvarp->warnContextSecondary());
                         // Combining most likely reduce other errors
                         findvarp->combineType(nodep);
@@ -979,7 +979,7 @@ class LinkDotFindVisitor : public AstNVisitor {
                         nodep->v3warn(VARHIDDEN, "Declaration of signal hides declaration in upper scope: "
                                       <<nodep->prettyName()<<endl
                                       <<nodep->warnContextPrimary()<<endl
-                                      <<foundp->nodep()->warnMore()
+                                      <<foundp->nodep()->warnOther()
                                       <<"... Location of original declaration\n"
                                       <<foundp->nodep()->warnContextSecondary());
                     }
@@ -1056,7 +1056,7 @@ class LinkDotFindVisitor : public AstNVisitor {
                 && !foundp->imported()) {  // and not from package
                 nodep->v3error("Duplicate declaration of enum value: "<<nodep->prettyName()<<endl
                                <<nodep->warnContextPrimary()<<endl
-                               <<findvarp->warnMore()<<"... Location of original declaration\n"
+                               <<findvarp->warnOther()<<"... Location of original declaration\n"
                                <<findvarp->warnContextSecondary());
             } else {
                 // User can disable the message at either point
@@ -1065,7 +1065,7 @@ class LinkDotFindVisitor : public AstNVisitor {
                     nodep->v3warn(VARHIDDEN, "Declaration of enum value hides declaration in upper scope: "
                                   <<nodep->prettyName()<<endl
                                   <<nodep->warnContextPrimary()<<endl
-                                  <<foundp->nodep()->warnMore()
+                                  <<foundp->nodep()->warnOther()
                                   <<"... Location of original declaration\n"
                                   <<nodep->warnContextSecondary());
                 }
@@ -1243,7 +1243,7 @@ private:
             if (refp->user4()) {
                 nodep->v3error("Duplicate declaration of port: "<<nodep->prettyName()<<endl
                                <<nodep->warnContextPrimary()<<endl
-                               <<refp->warnMore()<<"... Location of original declaration\n"
+                               <<refp->warnOther()<<"... Location of original declaration\n"
                                <<refp->warnContextSecondary());
             }
             refp->user4(true);
@@ -1675,7 +1675,7 @@ private:
         if (refp->user5p() && refp->user5p()!=nodep) {
             nodep->v3error("Duplicate "<<whatp<<" connection: "<<nodep->prettyName()<<endl
                            <<nodep->warnContextPrimary()<<endl
-                           <<refp->user5p()->warnMore()
+                           <<refp->user5p()->warnOther()
                            <<"... Location of original "<<whatp<<" connection\n"
                            <<nodep->warnContextSecondary());
         } else {
