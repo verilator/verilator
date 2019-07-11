@@ -37,20 +37,20 @@ extern void yyerrorf(const char* format, ...);
 #define SYMP PARSEP->symp()
 
 #define YY_INPUT(buf,result,max_size) \
-    result = PARSEP->flexPpInputToLex(buf,max_size);
+    result = PARSEP->flexPpInputToLex(buf, max_size);
 
 //======================================================================
 
 #define NEXTLINE() {PARSEP->linenoInc();}
 #define LINECHECKS(textp,len)  { const char* cp=textp; for (int n=len; n; --n) if (cp[n]=='\n') NEXTLINE(); }
-#define LINECHECK()  LINECHECKS(yytext,yyleng)
+#define LINECHECK()  LINECHECKS(yytext, yyleng)
 #define CRELINE() (PARSEP->copyOrSameFileLine())
 
 #define FL { yylval.fl = CRELINE(); }
 
-#define RETURN_BBOX_SYS_OR_MSG(msg,yytext) {	\
-	if (!v3Global.opt.bboxSys()) yyerrorf(msg, yytext); \
-	return yaD_IGNORE; }
+#define RETURN_BBOX_SYS_OR_MSG(msg,yytext) {    \
+        if (!v3Global.opt.bboxSys()) yyerrorf(msg, yytext); \
+        return yaD_IGNORE; }
 
 // See V3Read.cpp
 //void V3ParseImp::statePop() { yy_pop_state(); }
@@ -62,15 +62,15 @@ void yyerror(const char* errmsg) {
     static const char* const colonmsg = "syntax error, unexpected ::, ";
     //tokens;
     if (0==strncmp(errmsg, colonmsg, strlen(colonmsg))
-	&& PARSEP->prevBisonVal().token == yaID__ETC
-	&& PARSEP->curBisonVal().token == yP_COLONCOLON) {
-	static int warned = false;
-	if (!warned++) {
-	    std::cerr<<PARSEP->fileline()->warnMore()
-		     <<("... Perhaps '"+*PARSEP->prevBisonVal().strp
-			+"' is a package which needs to be predeclared? (IEEE 2017 26.3)")
-		     <<std::endl;
-	}
+        && PARSEP->prevBisonVal().token == yaID__ETC
+        && PARSEP->curBisonVal().token == yP_COLONCOLON) {
+        static int warned = false;
+        if (!warned++) {
+            std::cerr<<PARSEP->fileline()->warnMore()
+                     <<("... Perhaps '"+*PARSEP->prevBisonVal().strp
+                        +"' is a package which needs to be predeclared? (IEEE 2017 26.3)")
+                     <<std::endl;
+        }
     }
 }
 
@@ -79,8 +79,8 @@ void yyerrorf(const char* format, ...) {
     char msg[maxlen];
 
     va_list ap;
-    va_start(ap,format);
-    VL_VSNPRINTF(msg,maxlen,format,ap);
+    va_start(ap, format);
+    VL_VSNPRINTF(msg, maxlen, format, ap);
     msg[maxlen-1] = '\0';
     va_end(ap);
 
@@ -103,435 +103,435 @@ void yyerrorf(const char* format, ...) {
 %s SYSCHDR SYSCINT SYSCIMP SYSCIMPH SYSCCTOR SYSCDTOR
 %s IGNORE
 
-ws	[ \t\f\r]+
-wsnr	[ \t\f]+
-crnl	[\r]*[\n]
-	/* identifier */
-id	[a-zA-Z_][a-zA-Z0-9_$]*
-	/* escaped identifier */
-escid	\\[^ \t\f\r\n]+
-word	[a-zA-Z0-9_]+
-	/* verilog numbers, constructed to not match the ' that begins a '(  or '{ */
-vnum1	[0-9]*?['']s?[bcodhBCODH][ \t\n]*[A-Fa-f0-9xXzZ_?]*
-vnum2	[0-9]*?['']s?[01xXzZ]
-vnum3	[0-9][_0-9]*[ \t\n]*['']s?[bcodhBCODH]?[ \t\n]*[A-Fa-f0-9xXzZ_?]+
-vnum4	[0-9][_0-9]*[ \t\n]*['']s?[bcodhBCODH]
-vnum5	[0-9][_0-9]*[ \t\n]*['']s
-vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
+ws      [ \t\f\r]+
+wsnr    [ \t\f]+
+crnl    [\r]*[\n]
+        /* identifier */
+id      [a-zA-Z_][a-zA-Z0-9_$]*
+        /* escaped identifier */
+escid   \\[^ \t\f\r\n]+
+word    [a-zA-Z0-9_]+
+        /* verilog numbers, constructed to not match the ' that begins a '(  or '{ */
+vnum1   [0-9]*?['']s?[bcodhBCODH][ \t\n]*[A-Fa-f0-9xXzZ_?]*
+vnum2   [0-9]*?['']s?[01xXzZ]
+vnum3   [0-9][_0-9]*[ \t\n]*['']s?[bcodhBCODH]?[ \t\n]*[A-Fa-f0-9xXzZ_?]+
+vnum4   [0-9][_0-9]*[ \t\n]*['']s?[bcodhBCODH]
+vnum5   [0-9][_0-9]*[ \t\n]*['']s
+vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
 %%
 
-<INITIAL>.|\n 		{BEGIN STATE_VERILOG_RECENT; yyless(0); }
+<INITIAL>.|\n           {BEGIN STATE_VERILOG_RECENT; yyless(0); }
 
   /************************************************************************/
   /* Verilator control files */
 <VLT>{
-  {ws}			{ }	/* otherwise ignore white-space */
-  {crnl}		{ NEXTLINE(); }		/* Count line numbers */
+  {ws}                  { }     /* otherwise ignore white-space */
+  {crnl}                { NEXTLINE(); }         /* Count line numbers */
 
-  "coverage_off"	{ FL; return yVLT_COVERAGE_OFF; }
-  "coverage_on"		{ FL; return yVLT_COVERAGE_ON; }
-  "lint_off"		{ FL; return yVLT_LINT_OFF; }
-  "lint_on"		{ FL; return yVLT_LINT_ON; }
-  "tracing_off"		{ FL; return yVLT_TRACING_OFF; }
-  "tracing_on"		{ FL; return yVLT_TRACING_ON; }
+  "coverage_off"        { FL; return yVLT_COVERAGE_OFF; }
+  "coverage_on"         { FL; return yVLT_COVERAGE_ON; }
+  "lint_off"            { FL; return yVLT_LINT_OFF; }
+  "lint_on"             { FL; return yVLT_LINT_ON; }
+  "tracing_off"         { FL; return yVLT_TRACING_OFF; }
+  "tracing_on"          { FL; return yVLT_TRACING_ON; }
 
-  -?"-file"		{ FL; return yVLT_D_FILE; }
-  -?"-lines"		{ FL; return yVLT_D_LINES; }
-  -?"-msg"		{ FL; return yVLT_D_MSG; }
+  -?"-file"             { FL; return yVLT_D_FILE; }
+  -?"-lines"            { FL; return yVLT_D_LINES; }
+  -?"-msg"              { FL; return yVLT_D_MSG; }
 }
 
   /************************************************************************/
   /* Verilog 1995 */
 <V95,V01,V05,VA5,S05,S09,S12,S17,SAX>{
-  {ws}			{ }	/* otherwise ignore white-space */
-  {crnl}		{ NEXTLINE(); }		/* Count line numbers */
+  {ws}                  { }     /* otherwise ignore white-space */
+  {crnl}                { NEXTLINE(); }         /* Count line numbers */
   /*     Extensions to Verilog set, some specified by PSL */
-  "$c"[0-9]*		{ FL; return yD_C; }		/*Verilator only*/
+  "$c"[0-9]*            { FL; return yD_C; }            /*Verilator only*/
   /*     System Tasks */
-  "$acos"		{ FL; return yD_ACOS; }
-  "$acosh"		{ FL; return yD_ACOSH; }
-  "$asin"		{ FL; return yD_ASIN; }
-  "$asinh"		{ FL; return yD_ASINH; }
-  "$atan"		{ FL; return yD_ATAN; }
-  "$atan2"		{ FL; return yD_ATAN2; }
-  "$atanh"		{ FL; return yD_ATANH; }
-  "$bitstoreal"		{ FL; return yD_BITSTOREAL; }
-  "$ceil"		{ FL; return yD_CEIL; }
-  "$cos"		{ FL; return yD_COS; }
-  "$cosh"		{ FL; return yD_COSH; }
-  "$display"		{ FL; return yD_DISPLAY; }
-  "$exp"		{ FL; return yD_EXP; }
-  "$fclose"		{ FL; return yD_FCLOSE; }
-  "$fdisplay"		{ FL; return yD_FDISPLAY; }
-  "$feof"		{ FL; return yD_FEOF; }
-  "$fflush"		{ FL; return yD_FFLUSH; }
-  "$fgetc"		{ FL; return yD_FGETC; }
-  "$fgets"		{ FL; return yD_FGETS; }
-  "$finish"		{ FL; return yD_FINISH; }
-  "$floor"		{ FL; return yD_FLOOR; }
-  "$fopen"		{ FL; return yD_FOPEN; }
-  "$fread"		{ FL; return yD_FREAD; }
-  "$fscanf"		{ FL; return yD_FSCANF; }
-  "$fullskew"		{ FL; return yaTIMINGSPEC; }
-  "$fwrite"		{ FL; return yD_FWRITE; }
-  "$hold"		{ FL; return yaTIMINGSPEC; }
-  "$hypot"		{ FL; return yD_HYPOT; }
-  "$itor"		{ FL; return yD_ITOR; }
-  "$ln"			{ FL; return yD_LN; }
-  "$log10"		{ FL; return yD_LOG10; }
-  "$nochange"		{ FL; return yaTIMINGSPEC; }
-  "$period"		{ FL; return yaTIMINGSPEC; }
-  "$pow"		{ FL; return yD_POW; }
-  "$random"		{ FL; return yD_RANDOM; }
-  "$readmemb"		{ FL; return yD_READMEMB; }
-  "$readmemh"		{ FL; return yD_READMEMH; }
-  "$realtime"		{ FL; return yD_REALTIME; }
-  "$realtobits"		{ FL; return yD_REALTOBITS; }
-  "$recovery"		{ FL; return yaTIMINGSPEC; }
-  "$recrem"		{ FL; return yaTIMINGSPEC; }
-  "$removal"		{ FL; return yaTIMINGSPEC; }
-  "$rtoi"		{ FL; return yD_RTOI; }
-  "$setup"		{ FL; return yaTIMINGSPEC; }
-  "$setuphold"		{ FL; return yaTIMINGSPEC; }
-  "$sformat"		{ FL; return yD_SFORMAT; }
-  "$sformatf"		{ FL; return yD_SFORMATF; }
-  "$sin"		{ FL; return yD_SIN; }
-  "$sinh"		{ FL; return yD_SINH; }
-  "$skew"		{ FL; return yaTIMINGSPEC; }
-  "$sqrt"		{ FL; return yD_SQRT; }
-  "$sscanf"		{ FL; return yD_SSCANF; }
-  "$stime"		{ FL; return yD_STIME; }
-  "$stop"		{ FL; return yD_STOP; }
-  "$swrite"		{ FL; return yD_SWRITE; }
-  "$system"		{ FL; return yD_SYSTEM; }
-  "$tan"		{ FL; return yD_TAN; }
-  "$tanh"		{ FL; return yD_TANH; }
-  "$test$plusargs"	{ FL; return yD_TESTPLUSARGS; }
-  "$time"		{ FL; return yD_TIME; }
-  "$timeskew"		{ FL; return yaTIMINGSPEC; }
-  "$value$plusargs"	{ FL; return yD_VALUEPLUSARGS; }
-  "$width"		{ FL; return yaTIMINGSPEC; }
-  "$write"		{ FL; return yD_WRITE; }
-  "$writememh"		{ FL; return yD_WRITEMEMH; }
+  "$acos"               { FL; return yD_ACOS; }
+  "$acosh"              { FL; return yD_ACOSH; }
+  "$asin"               { FL; return yD_ASIN; }
+  "$asinh"              { FL; return yD_ASINH; }
+  "$atan"               { FL; return yD_ATAN; }
+  "$atan2"              { FL; return yD_ATAN2; }
+  "$atanh"              { FL; return yD_ATANH; }
+  "$bitstoreal"         { FL; return yD_BITSTOREAL; }
+  "$ceil"               { FL; return yD_CEIL; }
+  "$cos"                { FL; return yD_COS; }
+  "$cosh"               { FL; return yD_COSH; }
+  "$display"            { FL; return yD_DISPLAY; }
+  "$exp"                { FL; return yD_EXP; }
+  "$fclose"             { FL; return yD_FCLOSE; }
+  "$fdisplay"           { FL; return yD_FDISPLAY; }
+  "$feof"               { FL; return yD_FEOF; }
+  "$fflush"             { FL; return yD_FFLUSH; }
+  "$fgetc"              { FL; return yD_FGETC; }
+  "$fgets"              { FL; return yD_FGETS; }
+  "$finish"             { FL; return yD_FINISH; }
+  "$floor"              { FL; return yD_FLOOR; }
+  "$fopen"              { FL; return yD_FOPEN; }
+  "$fread"              { FL; return yD_FREAD; }
+  "$fscanf"             { FL; return yD_FSCANF; }
+  "$fullskew"           { FL; return yaTIMINGSPEC; }
+  "$fwrite"             { FL; return yD_FWRITE; }
+  "$hold"               { FL; return yaTIMINGSPEC; }
+  "$hypot"              { FL; return yD_HYPOT; }
+  "$itor"               { FL; return yD_ITOR; }
+  "$ln"                 { FL; return yD_LN; }
+  "$log10"              { FL; return yD_LOG10; }
+  "$nochange"           { FL; return yaTIMINGSPEC; }
+  "$period"             { FL; return yaTIMINGSPEC; }
+  "$pow"                { FL; return yD_POW; }
+  "$random"             { FL; return yD_RANDOM; }
+  "$readmemb"           { FL; return yD_READMEMB; }
+  "$readmemh"           { FL; return yD_READMEMH; }
+  "$realtime"           { FL; return yD_REALTIME; }
+  "$realtobits"         { FL; return yD_REALTOBITS; }
+  "$recovery"           { FL; return yaTIMINGSPEC; }
+  "$recrem"             { FL; return yaTIMINGSPEC; }
+  "$removal"            { FL; return yaTIMINGSPEC; }
+  "$rtoi"               { FL; return yD_RTOI; }
+  "$setup"              { FL; return yaTIMINGSPEC; }
+  "$setuphold"          { FL; return yaTIMINGSPEC; }
+  "$sformat"            { FL; return yD_SFORMAT; }
+  "$sformatf"           { FL; return yD_SFORMATF; }
+  "$sin"                { FL; return yD_SIN; }
+  "$sinh"               { FL; return yD_SINH; }
+  "$skew"               { FL; return yaTIMINGSPEC; }
+  "$sqrt"               { FL; return yD_SQRT; }
+  "$sscanf"             { FL; return yD_SSCANF; }
+  "$stime"              { FL; return yD_STIME; }
+  "$stop"               { FL; return yD_STOP; }
+  "$swrite"             { FL; return yD_SWRITE; }
+  "$system"             { FL; return yD_SYSTEM; }
+  "$tan"                { FL; return yD_TAN; }
+  "$tanh"               { FL; return yD_TANH; }
+  "$test$plusargs"      { FL; return yD_TESTPLUSARGS; }
+  "$time"               { FL; return yD_TIME; }
+  "$timeskew"           { FL; return yaTIMINGSPEC; }
+  "$value$plusargs"     { FL; return yD_VALUEPLUSARGS; }
+  "$width"              { FL; return yaTIMINGSPEC; }
+  "$write"              { FL; return yD_WRITE; }
+  "$writememh"          { FL; return yD_WRITEMEMH; }
   /*     Keywords */
-  "always"		{ FL; return yALWAYS; }
-  "and"			{ FL; return yAND; }
-  "assign"		{ FL; return yASSIGN; }
-  "begin"		{ FL; return yBEGIN; }
-  "buf"			{ FL; return yBUF; }
-  "bufif0"		{ FL; return yBUFIF0; }
-  "bufif1"		{ FL; return yBUFIF1; }
-  "case"		{ FL; return yCASE; }
-  "casex"		{ FL; return yCASEX; }
-  "casez"		{ FL; return yCASEZ; }
-  "cmos"		{ FL; return yCMOS; }
-  "deassign"		{ FL; return yDEASSIGN; }
-  "default"		{ FL; return yDEFAULT; }
-  "defparam"		{ FL; return yDEFPARAM; }
-  "disable"		{ FL; return yDISABLE; }
-  "edge"		{ FL; return yEDGE; }
-  "else"		{ FL; return yELSE; }
-  "end"			{ FL; return yEND; }
-  "endcase"		{ FL; return yENDCASE; }
-  "endfunction"		{ FL; return yENDFUNCTION; }
-  "endmodule"		{ FL; return yENDMODULE; }
-  "endprimitive"	{ FL; return yENDPRIMITIVE; }
-  "endspecify"		{ FL; return yENDSPECIFY; }
-  "endtable"		{ yyerrorf("Syntax error: ENDTABLE outside of TABLE"); }
-  "endtask"		{ FL; return yENDTASK; }
-  "event"		{ FL; return yEVENT; }
-  "for"			{ FL; return yFOR; }
-  "force"		{ FL; return yFORCE; }
-  "foreach"		{ FL; return yFOREACH; }
-  "forever"		{ FL; return yFOREVER; }
-  "fork"		{ FL; return yFORK; }
-  "function"		{ FL; return yFUNCTION; }
-  "highz0"		{ FL; return ygenSTRENGTH; }
-  "highz1"		{ FL; return ygenSTRENGTH; }
-  "if"			{ FL; return yIF; }
-  "initial"		{ FL; return yINITIAL; }
-  "inout"		{ FL; return yINOUT; }
-  "input"		{ FL; return yINPUT; }
-  "integer"		{ FL; return yINTEGER; }
-  "join"		{ FL; return yJOIN; }
-  "large"		{ FL; return ygenSTRENGTH; }
-  "macromodule"		{ FL; return yMODULE; }
-  "medium"		{ FL; return ygenSTRENGTH; }
-  "module"		{ FL; return yMODULE; }
-  "nand"		{ FL; return yNAND; }
-  "negedge"		{ FL; return yNEGEDGE; }
-  "nmos"		{ FL; return yNMOS; }
-  "nor"			{ FL; return yNOR; }
-  "not"			{ FL; return yNOT; }
-  "notif0"		{ FL; return yNOTIF0; }
-  "notif1"		{ FL; return yNOTIF1; }
-  "or"			{ FL; return yOR; }
-  "output"		{ FL; return yOUTPUT; }
-  "parameter"		{ FL; return yPARAMETER; }
-  "pmos"		{ FL; return yPMOS; }
-  "posedge"		{ FL; return yPOSEDGE; }
-  "primitive"		{ FL; return yPRIMITIVE; }
-  "pull0"		{ FL; return ygenSTRENGTH; }
-  "pull1"		{ FL; return ygenSTRENGTH; }
-  "pulldown"		{ FL; return yPULLDOWN; }
-  "pullup"		{ FL; return yPULLUP; }
-  "rcmos"		{ FL; return yRCMOS; }
-  "real"		{ FL; return yREAL; }
-  "realtime"		{ FL; return yREALTIME; }
-  "reg"			{ FL; return yREG; }
-  "release"		{ FL; return yRELEASE; }
-  "repeat"		{ FL; return yREPEAT; }
-  "rnmos"		{ FL; return yRNMOS; }
-  "rpmos"		{ FL; return yRPMOS; }
-  "rtran"		{ FL; return yRTRAN; }
-  "rtranif0"		{ FL; return yRTRANIF0; }
-  "rtranif1"		{ FL; return yRTRANIF1; }
-  "scalared"		{ FL; return ySCALARED; }
-  "small"		{ FL; return ygenSTRENGTH; }
-  "specify"		{ FL; return ySPECIFY; }
-  "specparam"		{ FL; return ySPECPARAM; }
-  "strong0"		{ FL; return ygenSTRENGTH; }
-  "strong1"		{ FL; return ygenSTRENGTH; }
-  "supply0"		{ FL; return ySUPPLY0; }
-  "supply1"		{ FL; return ySUPPLY1; }
-  "table"		{ yy_push_state(TABLE); FL; return yTABLE; }
-  "task"		{ FL; return yTASK; }
-  "time"		{ FL; return yTIME; }
-  "tran"		{ FL; return yTRAN; }
-  "tranif0"		{ FL; return yTRANIF0; }
-  "tranif1"		{ FL; return yTRANIF1; }
-  "tri"			{ FL; return yTRI; }
-  "tri0"		{ FL; return yTRI0; }
-  "tri1"		{ FL; return yTRI1; }
-  "triand"		{ FL; return yTRIAND; }
-  "trior"		{ FL; return yTRIOR; }
-  "trireg"		{ FL; return yTRIREG; }
-  "vectored"		{ FL; return yVECTORED; }
-  "wait"		{ FL; return yWAIT; }
-  "wand"		{ FL; return yWAND; }
-  "weak0"		{ FL; return ygenSTRENGTH; }
-  "weak1"		{ FL; return ygenSTRENGTH; }
-  "while"		{ FL; return yWHILE; }
-  "wire"		{ FL; return yWIRE; }
-  "wor"			{ FL; return yWOR; }
-  "xnor"		{ FL; return yXNOR; }
-  "xor"			{ FL; return yXOR; }
+  "always"              { FL; return yALWAYS; }
+  "and"                 { FL; return yAND; }
+  "assign"              { FL; return yASSIGN; }
+  "begin"               { FL; return yBEGIN; }
+  "buf"                 { FL; return yBUF; }
+  "bufif0"              { FL; return yBUFIF0; }
+  "bufif1"              { FL; return yBUFIF1; }
+  "case"                { FL; return yCASE; }
+  "casex"               { FL; return yCASEX; }
+  "casez"               { FL; return yCASEZ; }
+  "cmos"                { FL; return yCMOS; }
+  "deassign"            { FL; return yDEASSIGN; }
+  "default"             { FL; return yDEFAULT; }
+  "defparam"            { FL; return yDEFPARAM; }
+  "disable"             { FL; return yDISABLE; }
+  "edge"                { FL; return yEDGE; }
+  "else"                { FL; return yELSE; }
+  "end"                 { FL; return yEND; }
+  "endcase"             { FL; return yENDCASE; }
+  "endfunction"         { FL; return yENDFUNCTION; }
+  "endmodule"           { FL; return yENDMODULE; }
+  "endprimitive"        { FL; return yENDPRIMITIVE; }
+  "endspecify"          { FL; return yENDSPECIFY; }
+  "endtable"            { yyerrorf("Syntax error: ENDTABLE outside of TABLE"); }
+  "endtask"             { FL; return yENDTASK; }
+  "event"               { FL; return yEVENT; }
+  "for"                 { FL; return yFOR; }
+  "force"               { FL; return yFORCE; }
+  "foreach"             { FL; return yFOREACH; }
+  "forever"             { FL; return yFOREVER; }
+  "fork"                { FL; return yFORK; }
+  "function"            { FL; return yFUNCTION; }
+  "highz0"              { FL; return ygenSTRENGTH; }
+  "highz1"              { FL; return ygenSTRENGTH; }
+  "if"                  { FL; return yIF; }
+  "initial"             { FL; return yINITIAL; }
+  "inout"               { FL; return yINOUT; }
+  "input"               { FL; return yINPUT; }
+  "integer"             { FL; return yINTEGER; }
+  "join"                { FL; return yJOIN; }
+  "large"               { FL; return ygenSTRENGTH; }
+  "macromodule"         { FL; return yMODULE; }
+  "medium"              { FL; return ygenSTRENGTH; }
+  "module"              { FL; return yMODULE; }
+  "nand"                { FL; return yNAND; }
+  "negedge"             { FL; return yNEGEDGE; }
+  "nmos"                { FL; return yNMOS; }
+  "nor"                 { FL; return yNOR; }
+  "not"                 { FL; return yNOT; }
+  "notif0"              { FL; return yNOTIF0; }
+  "notif1"              { FL; return yNOTIF1; }
+  "or"                  { FL; return yOR; }
+  "output"              { FL; return yOUTPUT; }
+  "parameter"           { FL; return yPARAMETER; }
+  "pmos"                { FL; return yPMOS; }
+  "posedge"             { FL; return yPOSEDGE; }
+  "primitive"           { FL; return yPRIMITIVE; }
+  "pull0"               { FL; return ygenSTRENGTH; }
+  "pull1"               { FL; return ygenSTRENGTH; }
+  "pulldown"            { FL; return yPULLDOWN; }
+  "pullup"              { FL; return yPULLUP; }
+  "rcmos"               { FL; return yRCMOS; }
+  "real"                { FL; return yREAL; }
+  "realtime"            { FL; return yREALTIME; }
+  "reg"                 { FL; return yREG; }
+  "release"             { FL; return yRELEASE; }
+  "repeat"              { FL; return yREPEAT; }
+  "rnmos"               { FL; return yRNMOS; }
+  "rpmos"               { FL; return yRPMOS; }
+  "rtran"               { FL; return yRTRAN; }
+  "rtranif0"            { FL; return yRTRANIF0; }
+  "rtranif1"            { FL; return yRTRANIF1; }
+  "scalared"            { FL; return ySCALARED; }
+  "small"               { FL; return ygenSTRENGTH; }
+  "specify"             { FL; return ySPECIFY; }
+  "specparam"           { FL; return ySPECPARAM; }
+  "strong0"             { FL; return ygenSTRENGTH; }
+  "strong1"             { FL; return ygenSTRENGTH; }
+  "supply0"             { FL; return ySUPPLY0; }
+  "supply1"             { FL; return ySUPPLY1; }
+  "table"               { yy_push_state(TABLE); FL; return yTABLE; }
+  "task"                { FL; return yTASK; }
+  "time"                { FL; return yTIME; }
+  "tran"                { FL; return yTRAN; }
+  "tranif0"             { FL; return yTRANIF0; }
+  "tranif1"             { FL; return yTRANIF1; }
+  "tri"                 { FL; return yTRI; }
+  "tri0"                { FL; return yTRI0; }
+  "tri1"                { FL; return yTRI1; }
+  "triand"              { FL; return yTRIAND; }
+  "trior"               { FL; return yTRIOR; }
+  "trireg"              { FL; return yTRIREG; }
+  "vectored"            { FL; return yVECTORED; }
+  "wait"                { FL; return yWAIT; }
+  "wand"                { FL; return yWAND; }
+  "weak0"               { FL; return ygenSTRENGTH; }
+  "weak1"               { FL; return ygenSTRENGTH; }
+  "while"               { FL; return yWHILE; }
+  "wire"                { FL; return yWIRE; }
+  "wor"                 { FL; return yWOR; }
+  "xnor"                { FL; return yXNOR; }
+  "xor"                 { FL; return yXOR; }
   /*     Special errors */
-  "$displayb"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $display with %%b format instead: %s",yytext); }
-  "$displayh"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $display with %%x format instead: %s",yytext); }
-  "$displayo"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $display with %%o format instead: %s",yytext); }
-  "$fdisplayb"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fdisplay with %%b format instead: %s",yytext); }
-  "$fdisplayh"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fdisplay with %%x format instead: %s",yytext); }
-  "$fdisplayo"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fdisplay with %%o format instead: %s",yytext); }
-  "$fwriteb"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fwrite with %%b format instead: %s",yytext); }
-  "$fwriteh"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fwrite with %%x format instead: %s",yytext); }
-  "$fwriteo"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fwrite with %%o format instead: %s",yytext); }
-  "$writeb"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%b format instead: %s",yytext); }
-  "$writeh"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%x format instead: %s",yytext); }
-  "$writeo"		{ FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%o format instead: %s",yytext); }
+  "$displayb"           { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $display with %%b format instead: %s", yytext); }
+  "$displayh"           { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $display with %%x format instead: %s", yytext); }
+  "$displayo"           { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $display with %%o format instead: %s", yytext); }
+  "$fdisplayb"          { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fdisplay with %%b format instead: %s", yytext); }
+  "$fdisplayh"          { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fdisplay with %%x format instead: %s", yytext); }
+  "$fdisplayo"          { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fdisplay with %%o format instead: %s", yytext); }
+  "$fwriteb"            { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fwrite with %%b format instead: %s", yytext); }
+  "$fwriteh"            { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fwrite with %%x format instead: %s", yytext); }
+  "$fwriteo"            { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fwrite with %%o format instead: %s", yytext); }
+  "$writeb"             { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%b format instead: %s", yytext); }
+  "$writeh"             { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%x format instead: %s", yytext); }
+  "$writeo"             { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%o format instead: %s", yytext); }
 }
 
   /* Verilog 2001 */
 <V01,V05,VA5,S05,S09,S12,S17,SAX>{
   /*     System Tasks */
-  "$signed"		{ FL; return yD_SIGNED; }
-  "$unsigned"		{ FL; return yD_UNSIGNED; }
+  "$signed"             { FL; return yD_SIGNED; }
+  "$unsigned"           { FL; return yD_UNSIGNED; }
   /*     Keywords */
-  "automatic"		{ FL; return yAUTOMATIC; }
-  "endgenerate"		{ FL; return yENDGENERATE; }
-  "generate"		{ FL; return yGENERATE; }
-  "genvar"		{ FL; return yGENVAR; }
-  "ifnone"		{ FL; return yaTIMINGSPEC; }
-  "localparam"		{ FL; return yLOCALPARAM; }
-  "noshowcancelled"	{ FL; return yaTIMINGSPEC; }
-  "pulsestyle_ondetect"	{ FL; return yaTIMINGSPEC; }
-  "pulsestyle_onevent"	{ FL; return yaTIMINGSPEC; }
-  "showcancelled"	{ FL; return yaTIMINGSPEC; }
-  "signed"		{ FL; return ySIGNED; }
-  "unsigned"		{ FL; return yUNSIGNED; }
+  "automatic"           { FL; return yAUTOMATIC; }
+  "endgenerate"         { FL; return yENDGENERATE; }
+  "generate"            { FL; return yGENERATE; }
+  "genvar"              { FL; return yGENVAR; }
+  "ifnone"              { FL; return yaTIMINGSPEC; }
+  "localparam"          { FL; return yLOCALPARAM; }
+  "noshowcancelled"     { FL; return yaTIMINGSPEC; }
+  "pulsestyle_ondetect" { FL; return yaTIMINGSPEC; }
+  "pulsestyle_onevent"  { FL; return yaTIMINGSPEC; }
+  "showcancelled"       { FL; return yaTIMINGSPEC; }
+  "signed"              { FL; return ySIGNED; }
+  "unsigned"            { FL; return yUNSIGNED; }
   /*     Generic unsupported keywords */
-  "cell"		{ yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s",yytext); }
-  "config"		{ yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s",yytext); }
-  "design"		{ yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s",yytext); }
-  "endconfig"		{ yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s",yytext); }
-  "incdir"		{ yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s",yytext); }
-  "include"		{ yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented; probably you want `include instead: %s",yytext); }
-  "instance"		{ yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s",yytext); }
-  "liblist"		{ yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s",yytext); }
-  "library"		{ yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s",yytext); }
-  "use"			{ yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s",yytext); }
+  "cell"                { yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s", yytext); }
+  "config"              { yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s", yytext); }
+  "design"              { yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s", yytext); }
+  "endconfig"           { yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s", yytext); }
+  "incdir"              { yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s", yytext); }
+  "include"             { yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented; probably you want `include instead: %s", yytext); }
+  "instance"            { yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s", yytext); }
+  "liblist"             { yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s", yytext); }
+  "library"             { yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s", yytext); }
+  "use"                 { yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s", yytext); }
 }
 
   /* Verilog 2005 */
 <V05,S05,S09,S12,S17,SAX>{
   /*     System Tasks */
-  "$clog2"		{ FL; return yD_CLOG2; }
+  "$clog2"              { FL; return yD_CLOG2; }
   /*     Keywords */
-  "uwire"		{ FL; return yWIRE; }
+  "uwire"               { FL; return yWIRE; }
 }
 
   /* System Verilog 2005 */
 <S05,S09,S12,S17,SAX>{
   /*     System Tasks */
-  "$bits"		{ FL; return yD_BITS; }
-  "$countones"		{ FL; return yD_COUNTONES; }
-  "$dimensions"		{ FL; return yD_DIMENSIONS; }
-  "$error"		{ FL; return yD_ERROR; }
-  "$fatal"		{ FL; return yD_FATAL; }
-  "$high"		{ FL; return yD_HIGH; }
-  "$increment"		{ FL; return yD_INCREMENT; }
-  "$info"		{ FL; return yD_INFO; }
-  "$isunknown"		{ FL; return yD_ISUNKNOWN; }
-  "$left"		{ FL; return yD_LEFT; }
-  "$low"		{ FL; return yD_LOW; }
-  "$onehot"		{ FL; return yD_ONEHOT; }
-  "$onehot0"		{ FL; return yD_ONEHOT0; }
-  "$past"		{ FL; return yD_PAST; }
-  "$right"		{ FL; return yD_RIGHT; }
-  "$size"		{ FL; return yD_SIZE; }
+  "$bits"               { FL; return yD_BITS; }
+  "$countones"          { FL; return yD_COUNTONES; }
+  "$dimensions"         { FL; return yD_DIMENSIONS; }
+  "$error"              { FL; return yD_ERROR; }
+  "$fatal"              { FL; return yD_FATAL; }
+  "$high"               { FL; return yD_HIGH; }
+  "$increment"          { FL; return yD_INCREMENT; }
+  "$info"               { FL; return yD_INFO; }
+  "$isunknown"          { FL; return yD_ISUNKNOWN; }
+  "$left"               { FL; return yD_LEFT; }
+  "$low"                { FL; return yD_LOW; }
+  "$onehot"             { FL; return yD_ONEHOT; }
+  "$onehot0"            { FL; return yD_ONEHOT0; }
+  "$past"               { FL; return yD_PAST; }
+  "$right"              { FL; return yD_RIGHT; }
+  "$size"               { FL; return yD_SIZE; }
   "$unpacked_dimensions" { FL; return yD_UNPACKED_DIMENSIONS; }
-  "$warning"		{ FL; return yD_WARNING; }
+  "$warning"            { FL; return yD_WARNING; }
   /*     SV2005 Keywords */
-  "$unit"		{ FL; return yD_UNIT; }  /* Yes, a keyword, not task */
-  "alias"		{ FL; return yALIAS; }
-  "always_comb"		{ FL; return yALWAYS_COMB; }
-  "always_ff"		{ FL; return yALWAYS_FF; }
-  "always_latch"	{ FL; return yALWAYS_LATCH; }
-  "assume"		{ FL; return yASSUME; }
-  "assert"		{ FL; return yASSERT; }
-  "bind"		{ FL; return yBIND; }
-  "bit"			{ FL; return yBIT; }
-  "break"		{ FL; return yBREAK; }
-  "byte"		{ FL; return yBYTE; }
-  "chandle"		{ FL; return yCHANDLE; }
-  "clocking"		{ FL; return yCLOCKING; }
-  "const"		{ FL; return yCONST__LEX; }
-  "context"		{ FL; return yCONTEXT; }
-  "continue"		{ FL; return yCONTINUE; }
-  "cover"		{ FL; return yCOVER; }
-  "do"			{ FL; return yDO; }
-  "endclocking"		{ FL; return yENDCLOCKING; }
-  "endinterface"	{ FL; return yENDINTERFACE; }
-  "endpackage"		{ FL; return yENDPACKAGE; }
-  "endprogram"		{ FL; return yENDPROGRAM; }
-  "endproperty"		{ FL; return yENDPROPERTY; }
-  "enum"		{ FL; return yENUM; }
-  "export"		{ FL; return yEXPORT; }
-  "extern"		{ FL; return yEXTERN; }
-  "final"		{ FL; return yFINAL; }
-  "forkjoin"		{ FL; return yFORKJOIN; }
-  "iff"			{ FL; return yIFF; }
-  "import"		{ FL; return yIMPORT; }
-  "inside"		{ FL; return yINSIDE; }
-  "int"			{ FL; return yINT; }
-  "interface"		{ FL; return yINTERFACE; }
-  "logic"		{ FL; return yLOGIC; }
-  "longint"		{ FL; return yLONGINT; }
-  "modport"		{ FL; return yMODPORT; }
-  "null"		{ FL; return yNULL; }
-  "package"		{ FL; return yPACKAGE; }
-  "packed"		{ FL; return yPACKED; }
-  "priority"		{ FL; return yPRIORITY; }
-  "program"		{ FL; return yPROGRAM; }
-  "property"		{ FL; return yPROPERTY; }
-  "pure"		{ FL; return yPURE; }
-  "rand"		{ FL; return yRAND; }
-  "randc"		{ FL; return yRANDC; }
-  "randcase"		{ FL; return yRANDCASE; }
-  "ref"			{ FL; return yREF; }
-  "restrict"		{ FL; return yRESTRICT; }
-  "return"		{ FL; return yRETURN; }
-  "shortint"		{ FL; return ySHORTINT; }
-  "shortreal"		{ FL; return ySHORTREAL; }
-  "static"		{ FL; return ySTATIC; }
-  "string"		{ FL; return ySTRING; }
-  "struct"		{ FL; return ySTRUCT; }
-  "timeprecision"	{ FL; return yTIMEPRECISION; }
-  "timeunit"		{ FL; return yTIMEUNIT; }
-  "type"		{ FL; return yTYPE; }
-  "typedef"		{ FL; return yTYPEDEF; }
-  "union"		{ FL; return yUNION; }
-  "unique"		{ FL; return yUNIQUE; }
-  "var"			{ FL; return yVAR; }
-  "void"		{ FL; return yVOID; }
+  "$unit"               { FL; return yD_UNIT; }  /* Yes, a keyword, not task */
+  "alias"               { FL; return yALIAS; }
+  "always_comb"         { FL; return yALWAYS_COMB; }
+  "always_ff"           { FL; return yALWAYS_FF; }
+  "always_latch"        { FL; return yALWAYS_LATCH; }
+  "assume"              { FL; return yASSUME; }
+  "assert"              { FL; return yASSERT; }
+  "bind"                { FL; return yBIND; }
+  "bit"                 { FL; return yBIT; }
+  "break"               { FL; return yBREAK; }
+  "byte"                { FL; return yBYTE; }
+  "chandle"             { FL; return yCHANDLE; }
+  "clocking"            { FL; return yCLOCKING; }
+  "const"               { FL; return yCONST__LEX; }
+  "context"             { FL; return yCONTEXT; }
+  "continue"            { FL; return yCONTINUE; }
+  "cover"               { FL; return yCOVER; }
+  "do"                  { FL; return yDO; }
+  "endclocking"         { FL; return yENDCLOCKING; }
+  "endinterface"        { FL; return yENDINTERFACE; }
+  "endpackage"          { FL; return yENDPACKAGE; }
+  "endprogram"          { FL; return yENDPROGRAM; }
+  "endproperty"         { FL; return yENDPROPERTY; }
+  "enum"                { FL; return yENUM; }
+  "export"              { FL; return yEXPORT; }
+  "extern"              { FL; return yEXTERN; }
+  "final"               { FL; return yFINAL; }
+  "forkjoin"            { FL; return yFORKJOIN; }
+  "iff"                 { FL; return yIFF; }
+  "import"              { FL; return yIMPORT; }
+  "inside"              { FL; return yINSIDE; }
+  "int"                 { FL; return yINT; }
+  "interface"           { FL; return yINTERFACE; }
+  "logic"               { FL; return yLOGIC; }
+  "longint"             { FL; return yLONGINT; }
+  "modport"             { FL; return yMODPORT; }
+  "null"                { FL; return yNULL; }
+  "package"             { FL; return yPACKAGE; }
+  "packed"              { FL; return yPACKED; }
+  "priority"            { FL; return yPRIORITY; }
+  "program"             { FL; return yPROGRAM; }
+  "property"            { FL; return yPROPERTY; }
+  "pure"                { FL; return yPURE; }
+  "rand"                { FL; return yRAND; }
+  "randc"               { FL; return yRANDC; }
+  "randcase"            { FL; return yRANDCASE; }
+  "ref"                 { FL; return yREF; }
+  "restrict"            { FL; return yRESTRICT; }
+  "return"              { FL; return yRETURN; }
+  "shortint"            { FL; return ySHORTINT; }
+  "shortreal"           { FL; return ySHORTREAL; }
+  "static"              { FL; return ySTATIC; }
+  "string"              { FL; return ySTRING; }
+  "struct"              { FL; return ySTRUCT; }
+  "timeprecision"       { FL; return yTIMEPRECISION; }
+  "timeunit"            { FL; return yTIMEUNIT; }
+  "type"                { FL; return yTYPE; }
+  "typedef"             { FL; return yTYPEDEF; }
+  "union"               { FL; return yUNION; }
+  "unique"              { FL; return yUNIQUE; }
+  "var"                 { FL; return yVAR; }
+  "void"                { FL; return yVOID; }
   /*     Generic unsupported warnings */
   /* Note assert_strobe was in SystemVerilog 3.1, but removed for SystemVerilog 2005 */
-  "$root"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "before"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "bins"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "binsof"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "class"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "constraint"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "covergroup"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "coverpoint"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "cross"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "dist"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "endclass"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "endgroup"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "endsequence"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "expect"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "extends"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "first_match"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "ignore_bins"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "illegal_bins"	{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "intersect"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "join_any"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "join_none"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "local"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "matches"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "new"			{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "protected"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "randomize"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "randsequence"	{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "sequence"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "solve"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "super"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "tagged"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "this"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "throughout"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "virtual"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "wait_order"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "wildcard"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "with"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
-  "within"		{ yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s",yytext); }
+  "$root"               { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "before"              { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "bins"                { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "binsof"              { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "class"               { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "constraint"          { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "covergroup"          { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "coverpoint"          { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "cross"               { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "dist"                { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "endclass"            { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "endgroup"            { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "endsequence"         { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "expect"              { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "extends"             { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "first_match"         { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "ignore_bins"         { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "illegal_bins"        { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "intersect"           { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "join_any"            { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "join_none"           { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "local"               { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "matches"             { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "new"                 { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "protected"           { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "randomize"           { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "randsequence"        { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "sequence"            { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "solve"               { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "super"               { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "tagged"              { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "this"                { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "throughout"          { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "virtual"             { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "wait_order"          { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "wildcard"            { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "with"                { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "within"              { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
 }
 
   /* SystemVerilog 2009 */
 <S09,S12,S17,SAX>{
   /*     Keywords */
-  "global"	 	{ FL; return yGLOBAL__LEX; }
-  "unique0"	 	{ FL; return yUNIQUE0; }
+  "global"              { FL; return yGLOBAL__LEX; }
+  "unique0"             { FL; return yUNIQUE0; }
   /*     Generic unsupported warnings */
-  "accept_on"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
-  "checker"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
-  "endchecker"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
-  "eventually"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
-  "implies"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
-  "let"		 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
-  "nexttime"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
-  "reject_on"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
-  "s_always"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
-  "s_eventually" 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
-  "s_nexttime"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
-  "s_until"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
-  "s_until_with" 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
-  "strong"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
-  "sync_accept_on" 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
-  "sync_reject_on" 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
-  "until"		{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
-  "until_with"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
-  "untyped"	 	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
-  "weak"            	{ yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s",yytext); }
+  "accept_on"           { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
+  "checker"             { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
+  "endchecker"          { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
+  "eventually"          { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
+  "implies"             { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
+  "let"                 { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
+  "nexttime"            { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
+  "reject_on"           { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
+  "s_always"            { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
+  "s_eventually"        { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
+  "s_nexttime"          { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
+  "s_until"             { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
+  "s_until_with"        { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
+  "strong"              { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
+  "sync_accept_on"      { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
+  "sync_reject_on"      { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
+  "until"               { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
+  "until_with"          { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
+  "untyped"             { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
+  "weak"                { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
 }
 
   /* System Verilog 2012 */
 <S12,S17,SAX>{
   /*     Keywords */
-  "implements"	 	{ yyerrorf("Unsupported: SystemVerilog 2012 reserved word not implemented: %s",yytext); }
-  "interconnect" 	{ yyerrorf("Unsupported: SystemVerilog 2012 reserved word not implemented: %s",yytext); }
-  "nettype"	 	{ yyerrorf("Unsupported: SystemVerilog 2012 reserved word not implemented: %s",yytext); }
-  "soft"	 	{ yyerrorf("Unsupported: SystemVerilog 2012 reserved word not implemented: %s",yytext); }
+  "implements"          { yyerrorf("Unsupported: SystemVerilog 2012 reserved word not implemented: %s", yytext); }
+  "interconnect"        { yyerrorf("Unsupported: SystemVerilog 2012 reserved word not implemented: %s", yytext); }
+  "nettype"             { yyerrorf("Unsupported: SystemVerilog 2012 reserved word not implemented: %s", yytext); }
+  "soft"                { yyerrorf("Unsupported: SystemVerilog 2012 reserved word not implemented: %s", yytext); }
 }
 
   /* System Verilog 2017 */
@@ -539,13 +539,13 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /* Default PLI rule */
 <V95,V01,V05,VA5,S05,S09,S12,S17,SAX>{
-  "$"[a-zA-Z_$][a-zA-Z0-9_$]*	{ string str (yytext,yyleng);
-				  yylval.strp = PARSEP->newString(AstNode::encodeName(str));
-				  // Lookup unencoded name including the $, to avoid hitting normal signals
-				  if (SYMP->symCurrentp()->findIdFallback(str)) {
-				      FL; return yaD_DPI;
-				  } else { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported or unknown PLI call: %s",yytext); }
-				}
+  "$"[a-zA-Z_$][a-zA-Z0-9_$]*   { string str (yytext, yyleng);
+                                  yylval.strp = PARSEP->newString(AstNode::encodeName(str));
+                                  // Lookup unencoded name including the $, to avoid hitting normal signals
+                                  if (SYMP->symCurrentp()->findIdFallback(str)) {
+                                      FL; return yaD_DPI;
+                                  } else { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported or unknown PLI call: %s", yytext); }
+                                }
 }
 
   /************************************************************************/
@@ -553,92 +553,92 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
 <VA5,SAX>{
   /*     Generic unsupported warnings */
-   "above"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "abs"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "absdelay"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "abstol"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "ac_stim"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "access"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "acos"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "acosh"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "aliasparam"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "analog"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "analysis"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "asin"		{ FL; return yD_ASIN; }
-   "asinh"		{ FL; return yD_ASINH; }
-   "assert"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "atan"		{ FL; return yD_ATAN; }
-   "atan2"		{ FL; return yD_ATAN2; }
-   "atanh"		{ FL; return yD_ATANH; }
-   "branch"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "ceil"		{ FL; return yD_CEIL; }
-   "connect"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "connectmodule"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "connectrules"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "continuous"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "cos"		{ FL; return yD_COS; }
-   "cosh"		{ FL; return yD_COSH; }
-   "cross"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "ddt"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "ddt_nature"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "ddx"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "discipline"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "discrete"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "domain"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "driver_update"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "endconnectrules"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "enddiscipline"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "endnature"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "endparamset"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "exclude"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "exp"		{ FL; return yD_EXP; }
-   "final_step"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "flicker_noise"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "floor"		{ FL; return yD_FLOOR; }
-   "flow"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "from"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "ground"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "hypot"		{ FL; return yD_HYPOT; }
-   "idt"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "idt_nature"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "idtmod"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "inf"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "initial_step"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "laplace_nd"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "laplace_np"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "laplace_zd"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "laplace_zp"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "last_crossing"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "limexp"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "ln"			{ FL; return yD_LN; }
-   "log"		{ FL; return yD_LOG10; }
-   "max"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "merged"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "min"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "nature"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "net_resolution"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "noise_table"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "paramset"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "potential"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "pow"		{ FL; return yD_POW; }
-   "resolveto"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "sin"		{ FL; return yD_SIN; }
-   "sinh"		{ FL; return yD_SINH; }
-   "slew"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "split"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "sqrt"		{ FL; return yD_SQRT; }
-   "string"		{ FL; return ySTRING; }
-   "tan"		{ FL; return yD_TAN; }
-   "tanh"		{ FL; return yD_TANH; }
-   "timer"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "transition"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "units"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "white_noise"	{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "wreal"		{ FL; return yWREAL; }
-   "zi_nd"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "zi_np"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "zi_zd"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
-   "zi_zp"		{ yyerrorf("Unsupported: AMS reserved word not implemented: %s",yytext); }
+   "above"              { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "abs"                { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "absdelay"           { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "abstol"             { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "ac_stim"            { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "access"             { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "acos"               { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "acosh"              { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "aliasparam"         { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "analog"             { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "analysis"           { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "asin"               { FL; return yD_ASIN; }
+   "asinh"              { FL; return yD_ASINH; }
+   "assert"             { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "atan"               { FL; return yD_ATAN; }
+   "atan2"              { FL; return yD_ATAN2; }
+   "atanh"              { FL; return yD_ATANH; }
+   "branch"             { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "ceil"               { FL; return yD_CEIL; }
+   "connect"            { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "connectmodule"      { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "connectrules"       { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "continuous"         { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "cos"                { FL; return yD_COS; }
+   "cosh"               { FL; return yD_COSH; }
+   "cross"              { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "ddt"                { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "ddt_nature"         { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "ddx"                { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "discipline"         { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "discrete"           { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "domain"             { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "driver_update"      { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "endconnectrules"    { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "enddiscipline"      { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "endnature"          { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "endparamset"        { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "exclude"            { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "exp"                { FL; return yD_EXP; }
+   "final_step"         { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "flicker_noise"      { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "floor"              { FL; return yD_FLOOR; }
+   "flow"               { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "from"               { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "ground"             { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "hypot"              { FL; return yD_HYPOT; }
+   "idt"                { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "idt_nature"         { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "idtmod"             { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "inf"                { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "initial_step"       { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "laplace_nd"         { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "laplace_np"         { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "laplace_zd"         { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "laplace_zp"         { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "last_crossing"      { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "limexp"             { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "ln"                 { FL; return yD_LN; }
+   "log"                { FL; return yD_LOG10; }
+   "max"                { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "merged"             { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "min"                { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "nature"             { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "net_resolution"     { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "noise_table"        { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "paramset"           { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "potential"          { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "pow"                { FL; return yD_POW; }
+   "resolveto"          { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "sin"                { FL; return yD_SIN; }
+   "sinh"               { FL; return yD_SINH; }
+   "slew"               { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "split"              { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "sqrt"               { FL; return yD_SQRT; }
+   "string"             { FL; return ySTRING; }
+   "tan"                { FL; return yD_TAN; }
+   "tanh"               { FL; return yD_TANH; }
+   "timer"              { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "transition"         { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "units"              { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "white_noise"        { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "wreal"              { FL; return yWREAL; }
+   "zi_nd"              { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "zi_np"              { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "zi_zd"              { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "zi_zp"              { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
 }
 
   /************************************************************************/
@@ -646,71 +646,71 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /* Converted from //{cmt}verilator ...{cmt} by preprocessor */
 <V95,V01,V05,VA5,S05,S09,S12,S17,SAX>{
-  "/*verilator"{ws}*"*/"		{}	/* Ignore empty comments, may be `endif // verilator */
-  "/*verilator clock_enable*/"		{ FL; return yVL_CLOCK_ENABLE; }
-  "/*verilator coverage_block_off*/"	{ FL; return yVL_COVERAGE_BLOCK_OFF; }
-  "/*verilator full_case*/"		{ FL; return yVL_FULL_CASE; }
-  "/*verilator inline_module*/"		{ FL; return yVL_INLINE_MODULE; }
-  "/*verilator isolate_assignments*/"	{ FL; return yVL_ISOLATE_ASSIGNMENTS; }
-  "/*verilator no_inline_module*/"	{ FL; return yVL_NO_INLINE_MODULE; }
-  "/*verilator no_inline_task*/"	{ FL; return yVL_NO_INLINE_TASK; }
-  "/*verilator parallel_case*/"		{ FL; return yVL_PARALLEL_CASE; }
-  "/*verilator public*/"		{ FL; return yVL_PUBLIC; }
-  "/*verilator public_flat*/"		{ FL; return yVL_PUBLIC_FLAT; }
-  "/*verilator public_flat_rd*/"	{ FL; return yVL_PUBLIC_FLAT_RD; }
-  "/*verilator public_flat_rw*/"	{ FL; return yVL_PUBLIC_FLAT_RW; }  // The @(edge) is converted by the preproc
-  "/*verilator public_module*/"		{ FL; return yVL_PUBLIC_MODULE; }
-  "/*verilator sc_clock*/"		{ FL; return yVL_CLOCK; }
-  "/*verilator clocker*/"		{ FL; return yVL_CLOCKER; }
-  "/*verilator no_clocker*/"		{ FL; return yVL_NO_CLOCKER; }
-  "/*verilator sc_bv*/"			{ FL; return yVL_SC_BV; }
-  "/*verilator sformat*/"		{ FL; return yVL_SFORMAT; }
-  "/*verilator systemc_clock*/"		{ FL; return yVL_CLOCK; }
-  "/*verilator tracing_off*/"		{PARSEP->fileline()->tracingOn(false); }
-  "/*verilator tracing_on*/"		{PARSEP->fileline()->tracingOn(true); }
-  "/*verilator coverage_off*/"		{PARSEP->fileline()->coverageOn(false); }
-  "/*verilator coverage_on*/"		{PARSEP->fileline()->coverageOn(true); }
-  "/*verilator lint_off"[^*]*"*/"	{PARSEP->verilatorCmtLint(yytext, true); }
-  "/*verilator lint_on"[^*]*"*/"	{PARSEP->verilatorCmtLint(yytext, false); }
-  "/*verilator lint_restore*/"		{PARSEP->verilatorCmtLintRestore(); }
-  "/*verilator lint_save*/"		{PARSEP->verilatorCmtLintSave(); }
+  "/*verilator"{ws}*"*/"                { }  /* Ignore empty comments, may be `endif // verilator */
+  "/*verilator clock_enable*/"          { FL; return yVL_CLOCK_ENABLE; }
+  "/*verilator coverage_block_off*/"    { FL; return yVL_COVERAGE_BLOCK_OFF; }
+  "/*verilator full_case*/"             { FL; return yVL_FULL_CASE; }
+  "/*verilator inline_module*/"         { FL; return yVL_INLINE_MODULE; }
+  "/*verilator isolate_assignments*/"   { FL; return yVL_ISOLATE_ASSIGNMENTS; }
+  "/*verilator no_inline_module*/"      { FL; return yVL_NO_INLINE_MODULE; }
+  "/*verilator no_inline_task*/"        { FL; return yVL_NO_INLINE_TASK; }
+  "/*verilator parallel_case*/"         { FL; return yVL_PARALLEL_CASE; }
+  "/*verilator public*/"                { FL; return yVL_PUBLIC; }
+  "/*verilator public_flat*/"           { FL; return yVL_PUBLIC_FLAT; }
+  "/*verilator public_flat_rd*/"        { FL; return yVL_PUBLIC_FLAT_RD; }
+  "/*verilator public_flat_rw*/"        { FL; return yVL_PUBLIC_FLAT_RW; }  // The @(edge) is converted by the preproc
+  "/*verilator public_module*/"         { FL; return yVL_PUBLIC_MODULE; }
+  "/*verilator sc_clock*/"              { FL; return yVL_CLOCK; }
+  "/*verilator clocker*/"               { FL; return yVL_CLOCKER; }
+  "/*verilator no_clocker*/"            { FL; return yVL_NO_CLOCKER; }
+  "/*verilator sc_bv*/"                 { FL; return yVL_SC_BV; }
+  "/*verilator sformat*/"               { FL; return yVL_SFORMAT; }
+  "/*verilator systemc_clock*/"         { FL; return yVL_CLOCK; }
+  "/*verilator tracing_off*/"           {PARSEP->fileline()->tracingOn(false); }
+  "/*verilator tracing_on*/"            {PARSEP->fileline()->tracingOn(true); }
+  "/*verilator coverage_off*/"          {PARSEP->fileline()->coverageOn(false); }
+  "/*verilator coverage_on*/"           {PARSEP->fileline()->coverageOn(true); }
+  "/*verilator lint_off"[^*]*"*/"       {PARSEP->verilatorCmtLint(yytext, true); }
+  "/*verilator lint_on"[^*]*"*/"        {PARSEP->verilatorCmtLint(yytext, false); }
+  "/*verilator lint_restore*/"          {PARSEP->verilatorCmtLintRestore(); }
+  "/*verilator lint_save*/"             {PARSEP->verilatorCmtLintSave(); }
   "/*verilator tag"[^*]*"*/"            {PARSEP->tag(yytext); }
 
-  "/**/"				{ }
-  "/*"[^*]+"*/"				{PARSEP->verilatorCmtBad(yytext); }
+  "/**/"                                { }
+  "/*"[^*]+"*/"                         {PARSEP->verilatorCmtBad(yytext); }
 }
 
   /************************************************************************/
 
   /* Single character operator thingies */
 <V95,V01,V05,VA5,S05,S09,S12,S17,SAX>{
-  "{"			{ FL; return yytext[0]; }
-  "}"			{ FL; return yytext[0]; }
-  "!"			{ FL; return yytext[0]; }
-  "#"			{ FL; return yytext[0]; }
-  "$"			{ FL; return yytext[0]; }
-  "%"			{ FL; return yytext[0]; }
-  "&"			{ FL; return yytext[0]; }
-  "("			{ FL; return yytext[0]; }
-  ")"			{ FL; return yytext[0]; }
-  "*"			{ FL; return yytext[0]; }
-  "+"			{ FL; return yytext[0]; }
-  ","			{ FL; return yytext[0]; }
-  "-"			{ FL; return yytext[0]; }
-  "."			{ FL; return yytext[0]; }
-  "/"			{ FL; return yytext[0]; }
-  ":"			{ FL; return yytext[0]; }
-  ";"			{ FL; return yytext[0]; }
-  "<"			{ FL; return yytext[0]; }
-  "="			{ FL; return yytext[0]; }
-  ">"			{ FL; return yytext[0]; }
-  "?"			{ FL; return yytext[0]; }
-  "@"			{ FL; return yytext[0]; }
-  "["			{ FL; return yytext[0]; }
-  "]"			{ FL; return yytext[0]; }
-  "^"			{ FL; return yytext[0]; }
-  "|"			{ FL; return yytext[0]; }
-  "~"			{ FL; return yytext[0]; }
+  "{"                   { FL; return yytext[0]; }
+  "}"                   { FL; return yytext[0]; }
+  "!"                   { FL; return yytext[0]; }
+  "#"                   { FL; return yytext[0]; }
+  "$"                   { FL; return yytext[0]; }
+  "%"                   { FL; return yytext[0]; }
+  "&"                   { FL; return yytext[0]; }
+  "("                   { FL; return yytext[0]; }
+  ")"                   { FL; return yytext[0]; }
+  "*"                   { FL; return yytext[0]; }
+  "+"                   { FL; return yytext[0]; }
+  ","                   { FL; return yytext[0]; }
+  "-"                   { FL; return yytext[0]; }
+  "."                   { FL; return yytext[0]; }
+  "/"                   { FL; return yytext[0]; }
+  ":"                   { FL; return yytext[0]; }
+  ";"                   { FL; return yytext[0]; }
+  "<"                   { FL; return yytext[0]; }
+  "="                   { FL; return yytext[0]; }
+  ">"                   { FL; return yytext[0]; }
+  "?"                   { FL; return yytext[0]; }
+  "@"                   { FL; return yytext[0]; }
+  "["                   { FL; return yytext[0]; }
+  "]"                   { FL; return yytext[0]; }
+  "^"                   { FL; return yytext[0]; }
+  "|"                   { FL; return yytext[0]; }
+  "~"                   { FL; return yytext[0]; }
 }
 
   /************************************************************************/
@@ -718,253 +718,253 @@ vnum	{vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /* Verilog 1995 Operators */
 <V95,V01,V05,VA5,S05,S09,S12,S17,SAX>{
-  "&&"			{ FL; return yP_ANDAND; }
-  "||"			{ FL; return yP_OROR; }
-  "<="			{ FL; return yP_LTE; }
-  ">="			{ FL; return yP_GTE; }
-  "<<"			{ FL; return yP_SLEFT; }
-  ">>"			{ FL; return yP_SRIGHT; }
-  "=="			{ FL; return yP_EQUAL; }
-  "!="			{ FL; return yP_NOTEQUAL; }
-  "==="			{ FL; return yP_CASEEQUAL; }
-  "!=="			{ FL; return yP_CASENOTEQUAL; }
-  "^~"			{ FL; return yP_XNOR; }
-  "~^"			{ FL; return yP_XNOR; }
-  "~&"			{ FL; return yP_NAND; }
-  "~|"			{ FL; return yP_NOR; }
-  "->"			{ FL; return yP_MINUSGT; }
-  "=>"			{ FL; return yP_EQGT; }
-  "*>"			{ FL; return yP_ASTGT; }
-  "&&&"			{ FL; return yP_ANDANDAND; }
+  "&&"                  { FL; return yP_ANDAND; }
+  "||"                  { FL; return yP_OROR; }
+  "<="                  { FL; return yP_LTE; }
+  ">="                  { FL; return yP_GTE; }
+  "<<"                  { FL; return yP_SLEFT; }
+  ">>"                  { FL; return yP_SRIGHT; }
+  "=="                  { FL; return yP_EQUAL; }
+  "!="                  { FL; return yP_NOTEQUAL; }
+  "==="                 { FL; return yP_CASEEQUAL; }
+  "!=="                 { FL; return yP_CASENOTEQUAL; }
+  "^~"                  { FL; return yP_XNOR; }
+  "~^"                  { FL; return yP_XNOR; }
+  "~&"                  { FL; return yP_NAND; }
+  "~|"                  { FL; return yP_NOR; }
+  "->"                  { FL; return yP_MINUSGT; }
+  "=>"                  { FL; return yP_EQGT; }
+  "*>"                  { FL; return yP_ASTGT; }
+  "&&&"                 { FL; return yP_ANDANDAND; }
 }
 
   /* Verilog 2001 Operators */
 <V01,V05,VA5,S05,S09,S12,S17,SAX>{
-  "<<<"			{ FL; return yP_SLEFT; }
-  ">>>"			{ FL; return yP_SSRIGHT; }
-  "**"			{ FL; return yP_POW; }
-  "+:"			{ FL; return yP_PLUSCOLON; }
-  "-:"			{ FL; return yP_MINUSCOLON; }
-  ".*"			{ FL; return yP_DOTSTAR; }
-  ":+"			{ FL; yyless(1);
+  "<<<"                 { FL; return yP_SLEFT; }
+  ">>>"                 { FL; return yP_SSRIGHT; }
+  "**"                  { FL; return yP_POW; }
+  "+:"                  { FL; return yP_PLUSCOLON; }
+  "-:"                  { FL; return yP_MINUSCOLON; }
+  ".*"                  { FL; return yP_DOTSTAR; }
+  ":+"                  { FL; yyless(1);
                           PARSEP->fileline()->v3warn(COLONPLUS, "Perhaps instead of ':+' the intent was '+:'?");
                           return ':'; }
 }
 
   /* SystemVerilog Operators */
 <S05,S09,S12,S17,SAX>{
-  "'"			{ FL; return yP_TICK; }
-  "'{"			{ FL; return yP_TICKBRA; }
-  "==?"			{ FL; return yP_WILDEQUAL; }
-  "!=?"			{ FL; return yP_WILDNOTEQUAL; }
-  "++"			{ FL; return yP_PLUSPLUS; }
-  "--"			{ FL; return yP_MINUSMINUS; }
-  "+="			{ FL; return yP_PLUSEQ; }
-  "-="			{ FL; return yP_MINUSEQ; }
-  "*="			{ FL; return yP_TIMESEQ; }
-  "/="			{ FL; return yP_DIVEQ; }
-  "%="			{ FL; return yP_MODEQ; }
-  "&="			{ FL; return yP_ANDEQ; }
-  "|="			{ FL; return yP_OREQ; }
-  "^="			{ FL; return yP_XOREQ; }
-  "<<="			{ FL; return yP_SLEFTEQ; }
-  ">>="			{ FL; return yP_SRIGHTEQ; }
-  "<<<="		{ FL; return yP_SLEFTEQ; }
-  ">>>="		{ FL; return yP_SSRIGHTEQ; }
-  "->>"			{ FL; return yP_MINUSGTGT; }
-  "##"			{ FL; return yP_POUNDPOUND; }
-  "@@"			{ FL; return yP_ATAT; }
-  "::"			{ FL; return yP_COLONCOLON; }
-  ":="			{ FL; return yP_COLONEQ; }
-  ":/"[^\/\*]		{ FL; return yP_COLONDIV; }  /* : then comment is not ":/" */
-  "|->"			{ FL; return yP_ORMINUSGT; }
-  "|=>"			{ FL; return yP_OREQGT; }
+  "'"                   { FL; return yP_TICK; }
+  "'{"                  { FL; return yP_TICKBRA; }
+  "==?"                 { FL; return yP_WILDEQUAL; }
+  "!=?"                 { FL; return yP_WILDNOTEQUAL; }
+  "++"                  { FL; return yP_PLUSPLUS; }
+  "--"                  { FL; return yP_MINUSMINUS; }
+  "+="                  { FL; return yP_PLUSEQ; }
+  "-="                  { FL; return yP_MINUSEQ; }
+  "*="                  { FL; return yP_TIMESEQ; }
+  "/="                  { FL; return yP_DIVEQ; }
+  "%="                  { FL; return yP_MODEQ; }
+  "&="                  { FL; return yP_ANDEQ; }
+  "|="                  { FL; return yP_OREQ; }
+  "^="                  { FL; return yP_XOREQ; }
+  "<<="                 { FL; return yP_SLEFTEQ; }
+  ">>="                 { FL; return yP_SRIGHTEQ; }
+  "<<<="                { FL; return yP_SLEFTEQ; }
+  ">>>="                { FL; return yP_SSRIGHTEQ; }
+  "->>"                 { FL; return yP_MINUSGTGT; }
+  "##"                  { FL; return yP_POUNDPOUND; }
+  "@@"                  { FL; return yP_ATAT; }
+  "::"                  { FL; return yP_COLONCOLON; }
+  ":="                  { FL; return yP_COLONEQ; }
+  ":/"[^\/\*]           { FL; return yP_COLONDIV; }  /* : then comment is not ":/" */
+  "|->"                 { FL; return yP_ORMINUSGT; }
+  "|=>"                 { FL; return yP_OREQGT; }
   /* Some simulators allow whitespace here. Grr */
-  "["{ws}*"*"		{ FL; return yP_BRASTAR; }
-  "["{ws}*"="		{ FL; return yP_BRAEQ; }
-  "["{ws}*"->"		{ FL; return yP_BRAMINUSGT; }
+  "["{ws}*"*"           { FL; return yP_BRASTAR; }
+  "["{ws}*"="           { FL; return yP_BRAEQ; }
+  "["{ws}*"->"          { FL; return yP_BRAMINUSGT; }
 }
 
   /* SystemVerilog 2009 Operators */
 <S09,S12,S17,SAX,VLT>{
-  "<->"			{ FL; return yP_LTMINUSGT; }
+  "<->"                 { FL; return yP_LTMINUSGT; }
 }
 
   /* Identifiers and numbers */
 <V95,V01,V05,VA5,S05,S09,S12,S17,SAX,VLT>{
-  {escid}		{ FL; yylval.strp = PARSEP->newString
-	  			(AstNode::encodeName(string(yytext+1))); // +1 to skip the backslash
-			  return yaID__LEX;
-			}
-  {id}			{ FL; yylval.strp = PARSEP->newString(AstNode::encodeName(string(yytext)));
-			  return yaID__LEX;
-			}
-  \"[^\"\\]*\"		{ FL; yylval.strp = PARSEP->newString(yytext+1,yyleng-2);
-			  return yaSTRING;
-			}
-  \" 			{ yy_push_state(STRING); yymore(); }
+  {escid}               { FL; yylval.strp = PARSEP->newString
+                                (AstNode::encodeName(string(yytext+1)));  // +1 to skip the backslash
+                          return yaID__LEX;
+                        }
+  {id}                  { FL; yylval.strp = PARSEP->newString(AstNode::encodeName(string(yytext)));
+                          return yaID__LEX;
+                        }
+  \"[^\"\\]*\"          { FL; yylval.strp = PARSEP->newString(yytext+1, yyleng-2);
+                          return yaSTRING;
+                        }
+  \"                    { yy_push_state(STRING); yymore(); }
 
-  {vnum}		{
-			  /* "# 1'b0" is a delay value so must lex as "#" "1" "'b0" */
-			  if (PARSEP->prevLexToken()=='#') {
-			      int shortlen = 0;
-			      while (isdigit(yytext[shortlen])) shortlen++;
-			      if (shortlen) {
-				  // Push rest for later parse
-				  PARSEP->unputString(yytext+shortlen, yyleng-shortlen);
-				  FL; LINECHECKS(yytext,shortlen);
-				  // Return is stuff before the tick
-				  yytext[shortlen] = '\0';
-				  yylval.nump = PARSEP->newNumber(yylval.fl, (char*)yytext);
-				  return yaINTNUM;
-			      }
-			  }
-			  FL; LINECHECK(); yylval.nump = PARSEP->newNumber(yylval.fl,(char*)yytext);
+  {vnum}                {
+                          /* "# 1'b0" is a delay value so must lex as "#" "1" "'b0" */
+                          if (PARSEP->prevLexToken()=='#') {
+                              int shortlen = 0;
+                              while (isdigit(yytext[shortlen])) shortlen++;
+                              if (shortlen) {
+                                  // Push rest for later parse
+                                  PARSEP->unputString(yytext+shortlen, yyleng-shortlen);
+                                  FL; LINECHECKS(yytext, shortlen);
+                                  // Return is stuff before the tick
+                                  yytext[shortlen] = '\0';
+                                  yylval.nump = PARSEP->newNumber(yylval.fl, (char*)yytext);
+                                  return yaINTNUM;
+                              }
+                          }
+                          FL; LINECHECK(); yylval.nump = PARSEP->newNumber(yylval. fl, (char*)yytext);
                           return yaINTNUM;
-			}
-  [0-9][_0-9]*		{
-			  FL; yylval.nump = PARSEP->newNumber(yylval.fl,(char*)yytext);
+                        }
+  [0-9][_0-9]*          {
+                          FL; yylval.nump = PARSEP->newNumber(yylval.fl, (char*)yytext);
                           return yaINTNUM;
-			}
+                        }
   [0-9][_0-9]*(\.[_0-9]+)([eE][-+]?[_0-9]+)? {
-			  FL; yylval.cdouble = PARSEP->parseDouble(yytext, yyleng);
+                          FL; yylval.cdouble = PARSEP->parseDouble(yytext, yyleng);
                           return yaFLOATNUM;
-			}
+                        }
   [0-9][_0-9]*(\.[_0-9]+)?([eE][-+]?[_0-9]+) {
-			  FL; yylval.cdouble = PARSEP->parseDouble(yytext, yyleng);
+                          FL; yylval.cdouble = PARSEP->parseDouble(yytext, yyleng);
                           return yaFLOATNUM;
-			}
+                        }
   [0-9][_0-9]*(\.[_0-9]+)?(fs|ps|ns|us|ms|s|step) {
-			  FL; yylval.cdouble = 0;  /* Only for times, not used yet */
+                          FL; yylval.cdouble = 0;  /* Only for times, not used yet */
                           return yaTIMENUM;
-			}
+                        }
 }
 
   /************************************************************************/
   /* STRINGS */
-<STRING><<EOF>>		{ yyerrorf("EOF in unterminated string"); yyleng = 0; yy_pop_state(); }
-<STRING>{crnl}		{ yyerrorf("Unterminated string"); NEXTLINE(); }
-<STRING>\\{crnl}	{ yymore(); NEXTLINE(); }
-<STRING>\\.	 	{ yymore(); }
-<STRING>\" 		{ yy_pop_state();
-			  FL; yylval.strp = PARSEP->newString(yytext+1,yyleng-2);
-			  return yaSTRING; }
-<STRING>{word}		{ yymore(); }
-<STRING>.		{ yymore(); }
+<STRING><<EOF>>         { yyerrorf("EOF in unterminated string"); yyleng = 0; yy_pop_state(); }
+<STRING>{crnl}          { yyerrorf("Unterminated string"); NEXTLINE(); }
+<STRING>\\{crnl}        { yymore(); NEXTLINE(); }
+<STRING>\\.             { yymore(); }
+<STRING>\"              { yy_pop_state();
+                          FL; yylval.strp = PARSEP->newString(yytext+1, yyleng-2);
+                          return yaSTRING; }
+<STRING>{word}          { yymore(); }
+<STRING>.               { yymore(); }
 
   /************************************************************************/
   /* Attributes */
-<ATTRMODE>{crnl}	{ yymore(); NEXTLINE(); }
-<ATTRMODE>"*)"		{ yy_pop_state(); }
-<ATTRMODE>{word}	{ yymore(); }
-<ATTRMODE>. 		{ yymore(); }
-<ATTRMODE><<EOF>>	{ yyerrorf("EOF in (*");
-			  yyleng = 0; yy_pop_state(); }
+<ATTRMODE>{crnl}        { yymore(); NEXTLINE(); }
+<ATTRMODE>"*)"          { yy_pop_state(); }
+<ATTRMODE>{word}        { yymore(); }
+<ATTRMODE>.             { yymore(); }
+<ATTRMODE><<EOF>>       { yyerrorf("EOF in (*");
+                          yyleng = 0; yy_pop_state(); }
 
   /************************************************************************/
   /* Attributes */
   /* Note simulators vary in support for "(* /_*something*_/ foo*)" where _ doesn't exist */
 <V95,V01,V05,VA5,S05,S09,S12,S17,SAX>{
-    "(*"({ws}|{crnl})*({id}|{escid})	{ yymore(); yy_push_state(ATTRMODE); }	/* Doesn't match (*), but (* attr_spec */
+    "(*"({ws}|{crnl})*({id}|{escid})    { yymore(); yy_push_state(ATTRMODE); }  /* Doesn't match (*), but (* attr_spec */
 }
 
   /************************************************************************/
   /* Tables */
-<TABLE>\\{crnl}		{ yymore(); NEXTLINE(); }
-<TABLE>{crnl}		{ NEXTLINE(); yymore(); }
-<TABLE>";"		{ FL; yylval.strp = PARSEP->newString(yytext,yyleng); return yaTABLELINE; }
-<TABLE>"endtable"	{ yy_pop_state(); FL; return yENDTABLE; }
-<TABLE>. 		{ yymore(); }
-<TABLE><<EOF>>		{ yyerrorf("EOF in TABLE"); yyleng = 0; yy_pop_state(); }
+<TABLE>\\{crnl}         { yymore(); NEXTLINE(); }
+<TABLE>{crnl}           { NEXTLINE(); yymore(); }
+<TABLE>";"              { FL; yylval.strp = PARSEP->newString(yytext, yyleng); return yaTABLELINE; }
+<TABLE>"endtable"       { yy_pop_state(); FL; return yENDTABLE; }
+<TABLE>.                { yymore(); }
+<TABLE><<EOF>>          { yyerrorf("EOF in TABLE"); yyleng = 0; yy_pop_state(); }
 
   /************************************************************************/
   /* Preprocessor */
   /* Common for all SYSC header states */
   /* OPTIMIZE: we return one per line, make it one for the entire block */
 <V95,V01,V05,VA5,S05,S09,S12,S17,SAX,VLT,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
-  "`accelerate"				{ } // Verilog-XL compatibility
-  "`autoexpand_vectornets"		{ } // Verilog-XL compatibility
-  "`celldefine"				{ PARSEP->inCellDefine(true); }
-  "`default_decay_time"{ws}+[^\n\r]*	{ } // Verilog spec - delays only
-  "`default_nettype"{ws}+"wire"		{ PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE,true); }
-  "`default_nettype"{ws}+"none"		{ PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE,false); }
-  "`default_nettype"{ws}+[a-zA-Z0-9]*	{ yyerrorf("Unsupported: `default_nettype of other than none or wire: %s",yytext); }
-  "`default_trireg_strength"{ws}+[^\n\r]*	{ yyerrorf("Unsupported: Verilog optional directive not implemented: %s",yytext); }
-  "`delay_mode_distributed"		{ } // Verilog spec - delays only
-  "`delay_mode_path"			{ } // Verilog spec - delays only
-  "`delay_mode_unit"			{ } // Verilog spec - delays only
-  "`delay_mode_zero"			{ } // Verilog spec - delays only
-  "`disable_portfaults"			{ } // Verilog-XL compatibility
-  "`enable_portfaults"			{ } // Verilog-XL compatibility
-  "`endcelldefine"			{ PARSEP->inCellDefine(false); }
-  "`endprotect"				{ }
-  "`expand_vectornets"			{ } // Verilog-XL compatibility
-  "`inline"				{ }
-  "`line"{ws}+[^\n\r]*{crnl}		{ PARSEP->ppline(yytext); }
-  "`noaccelerate"			{ } // Verilog-XL compatibility
-  "`noexpand_vectornets"		{ } // Verilog-XL compatibility
-  "`noremove_gatenames"			{ } // Verilog-XL compatibility
-  "`noremove_netnames"			{ } // Verilog-XL compatibility
-  "`nosuppress_faults"			{ } // Verilog-XL compatibility
-  "`nounconnected_drive"		{ } // Verilog-XL compatibility
-  "`portcoerce"				{ }
-  "`pragma"{ws}+[^\n\r]*		{ } // Verilog 2005
-  "`protect"				{ }
-  "`remove_gatenames"			{ } // Verilog-XL compatibility
-  "`remove_netnames"			{ } // Verilog-XL compatibility
-  "`resetall"				{ PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE,true); } // Rest handled by preproc
-  "`suppress_faults"			{ } // Verilog-XL compatibility
-  "`timescale"{ws}+[^\n\r]*		{ } // Verilog spec - not supported
+  "`accelerate"                         { }  // Verilog-XL compatibility
+  "`autoexpand_vectornets"              { }  // Verilog-XL compatibility
+  "`celldefine"                         { PARSEP->inCellDefine(true); }
+  "`default_decay_time"{ws}+[^\n\r]*    { }  // Verilog spec - delays only
+  "`default_nettype"{ws}+"wire"         { PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, true); }
+  "`default_nettype"{ws}+"none"         { PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, false); }
+  "`default_nettype"{ws}+[a-zA-Z0-9]*   { yyerrorf("Unsupported: `default_nettype of other than none or wire: %s", yytext); }
+  "`default_trireg_strength"{ws}+[^\n\r]*       { yyerrorf("Unsupported: Verilog optional directive not implemented: %s", yytext); }
+  "`delay_mode_distributed"             { }  // Verilog spec - delays only
+  "`delay_mode_path"                    { }  // Verilog spec - delays only
+  "`delay_mode_unit"                    { }  // Verilog spec - delays only
+  "`delay_mode_zero"                    { }  // Verilog spec - delays only
+  "`disable_portfaults"                 { }  // Verilog-XL compatibility
+  "`enable_portfaults"                  { }  // Verilog-XL compatibility
+  "`endcelldefine"                      { PARSEP->inCellDefine(false); }
+  "`endprotect"                         { }
+  "`expand_vectornets"                  { }  // Verilog-XL compatibility
+  "`inline"                             { }
+  "`line"{ws}+[^\n\r]*{crnl}            { PARSEP->ppline(yytext); }
+  "`noaccelerate"                       { }  // Verilog-XL compatibility
+  "`noexpand_vectornets"                { }  // Verilog-XL compatibility
+  "`noremove_gatenames"                 { }  // Verilog-XL compatibility
+  "`noremove_netnames"                  { }  // Verilog-XL compatibility
+  "`nosuppress_faults"                  { }  // Verilog-XL compatibility
+  "`nounconnected_drive"                { }  // Verilog-XL compatibility
+  "`portcoerce"                         { }
+  "`pragma"{ws}+[^\n\r]*                { }  // Verilog 2005
+  "`protect"                            { }
+  "`remove_gatenames"                   { }  // Verilog-XL compatibility
+  "`remove_netnames"                    { }  // Verilog-XL compatibility
+  "`resetall"                           { PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, true); }  // Rest handled by preproc
+  "`suppress_faults"                    { }  // Verilog-XL compatibility
+  "`timescale"{ws}+[^\n\r]*             { }  // Verilog spec - not supported
 
   /* See also setLanguage below */
-  "`begin_keywords"[ \t]*\"1364-1995\"		{ yy_push_state(V95); PARSEP->pushBeginKeywords(YY_START); }
-  "`begin_keywords"[ \t]*\"1364-2001\"		{ yy_push_state(V01); PARSEP->pushBeginKeywords(YY_START); }
-  "`begin_keywords"[ \t]*\"1364-2001-noconfig\"	{ yy_push_state(V01); PARSEP->pushBeginKeywords(YY_START); }
-  "`begin_keywords"[ \t]*\"1364-2005\"		{ yy_push_state(V05); PARSEP->pushBeginKeywords(YY_START); }
-  "`begin_keywords"[ \t]*\"VAMS[-0-9.]*\"	{ yy_push_state(VA5); PARSEP->pushBeginKeywords(YY_START); }
-  "`begin_keywords"[ \t]*\"1800-2005\"		{ yy_push_state(S05); PARSEP->pushBeginKeywords(YY_START); }
-  "`begin_keywords"[ \t]*\"1800-2009\"		{ yy_push_state(S09); PARSEP->pushBeginKeywords(YY_START); }
-  "`begin_keywords"[ \t]*\"1800-2012\"		{ yy_push_state(S12); PARSEP->pushBeginKeywords(YY_START); }
-  "`begin_keywords"[ \t]*\"1800-2017\"		{ yy_push_state(S17); PARSEP->pushBeginKeywords(YY_START); }
-  "`begin_keywords"[ \t]*\"1800[+]VAMS\"	{ yy_push_state(SAX); PARSEP->pushBeginKeywords(YY_START); } /*Latest SV*/
-  "`end_keywords"				{ yy_pop_state(); if (!PARSEP->popBeginKeywords()) yyerrorf("`end_keywords when not inside `begin_keywords block"); }
+  "`begin_keywords"[ \t]*\"1364-1995\"          { yy_push_state(V95); PARSEP->pushBeginKeywords(YY_START); }
+  "`begin_keywords"[ \t]*\"1364-2001\"          { yy_push_state(V01); PARSEP->pushBeginKeywords(YY_START); }
+  "`begin_keywords"[ \t]*\"1364-2001-noconfig\" { yy_push_state(V01); PARSEP->pushBeginKeywords(YY_START); }
+  "`begin_keywords"[ \t]*\"1364-2005\"          { yy_push_state(V05); PARSEP->pushBeginKeywords(YY_START); }
+  "`begin_keywords"[ \t]*\"VAMS[-0-9.]*\"       { yy_push_state(VA5); PARSEP->pushBeginKeywords(YY_START); }
+  "`begin_keywords"[ \t]*\"1800-2005\"          { yy_push_state(S05); PARSEP->pushBeginKeywords(YY_START); }
+  "`begin_keywords"[ \t]*\"1800-2009\"          { yy_push_state(S09); PARSEP->pushBeginKeywords(YY_START); }
+  "`begin_keywords"[ \t]*\"1800-2012\"          { yy_push_state(S12); PARSEP->pushBeginKeywords(YY_START); }
+  "`begin_keywords"[ \t]*\"1800-2017\"          { yy_push_state(S17); PARSEP->pushBeginKeywords(YY_START); }
+  "`begin_keywords"[ \t]*\"1800[+]VAMS\"        { yy_push_state(SAX); PARSEP->pushBeginKeywords(YY_START); }  /*Latest SV*/
+  "`end_keywords"                               { yy_pop_state(); if (!PARSEP->popBeginKeywords()) yyerrorf("`end_keywords when not inside `begin_keywords block"); }
 
   /* Verilator */
-  "`systemc_ctor"			{ BEGIN SYSCCTOR; }
-  "`systemc_dtor"			{ BEGIN SYSCDTOR; }
-  "`systemc_header"			{ BEGIN SYSCHDR; }
-  "`systemc_imp_header"			{ BEGIN SYSCIMPH; }
-  "`systemc_implementation"		{ BEGIN SYSCIMP; }
-  "`systemc_interface"			{ BEGIN SYSCINT; }
-  "`verilator_config"			{ BEGIN VLT; }
-  "`verilog"				{ BEGIN PARSEP->lastVerilogState(); }
+  "`systemc_ctor"                       { BEGIN SYSCCTOR; }
+  "`systemc_dtor"                       { BEGIN SYSCDTOR; }
+  "`systemc_header"                     { BEGIN SYSCHDR; }
+  "`systemc_imp_header"                 { BEGIN SYSCIMPH; }
+  "`systemc_implementation"             { BEGIN SYSCIMP; }
+  "`systemc_interface"                  { BEGIN SYSCINT; }
+  "`verilator_config"                   { BEGIN VLT; }
+  "`verilog"                            { BEGIN PARSEP->lastVerilogState(); }
 }
 
-<SYSCHDR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ FL; NEXTLINE(); yylval.strp = PARSEP->newString(yytext); return yaSCHDR; }
-<SYSCINT>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ FL; NEXTLINE(); yylval.strp = PARSEP->newString(yytext); return yaSCINT; }
-<SYSCIMP>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ FL; NEXTLINE(); yylval.strp = PARSEP->newString(yytext); return yaSCIMP; }
-<SYSCIMPH>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ FL; NEXTLINE(); yylval.strp = PARSEP->newString(yytext); return yaSCIMPH; }
-<SYSCCTOR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ FL; NEXTLINE(); yylval.strp = PARSEP->newString(yytext); return yaSCCTOR; }
-<SYSCDTOR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}	{ FL; NEXTLINE(); yylval.strp = PARSEP->newString(yytext); return yaSCDTOR; }
-<IGNORE>[ \t]*[^` \t\n\r][^\n\r]*{crnl}		{ NEXTLINE(); }
+<SYSCHDR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}        { FL; NEXTLINE(); yylval.strp = PARSEP->newString(yytext); return yaSCHDR; }
+<SYSCINT>[ \t]*[^` \t\n\r][^\n\r]*{crnl}        { FL; NEXTLINE(); yylval.strp = PARSEP->newString(yytext); return yaSCINT; }
+<SYSCIMP>[ \t]*[^` \t\n\r][^\n\r]*{crnl}        { FL; NEXTLINE(); yylval.strp = PARSEP->newString(yytext); return yaSCIMP; }
+<SYSCIMPH>[ \t]*[^` \t\n\r][^\n\r]*{crnl}       { FL; NEXTLINE(); yylval.strp = PARSEP->newString(yytext); return yaSCIMPH; }
+<SYSCCTOR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}       { FL; NEXTLINE(); yylval.strp = PARSEP->newString(yytext); return yaSCCTOR; }
+<SYSCDTOR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}       { FL; NEXTLINE(); yylval.strp = PARSEP->newString(yytext); return yaSCDTOR; }
+<IGNORE>[ \t]*[^` \t\n\r][^\n\r]*{crnl}         { NEXTLINE(); }
 
   /* Pick up text-type data */
 <SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
-  {wsnr}*		{ yymore(); }
-  {crnl}		{ NEXTLINE(); yymore(); }
+  {wsnr}*               { yymore(); }
+  {crnl}                { NEXTLINE(); yymore(); }
 }
 
   /************************************************************************/
   /* Default rules - leave last */
 
 <V95,V01,V05,VA5,S05,S09,S12,S17,SAX,VLT>{
-  "`"[a-zA-Z_0-9]+	{ FL; yyerrorf("Define or directive not defined: %s",yytext); }
-  "//"[^\n]*		{ }  /* throw away single line comments */
-  .			{ FL; return yytext[0]; }	/* return single char ops. */
+  "`"[a-zA-Z_0-9]+      { FL; yyerrorf("Define or directive not defined: %s", yytext); }
+  "//"[^\n]*            { }  /* throw away single line comments */
+  .                     { FL; return yytext[0]; }       /* return single char ops. */
 }
 
   /* Catch all - absolutely last */
-<*>.|\n     		{ yyerrorf("Missing verilog.l rule: Default rule invoked in state %d: %s", YY_START, yytext); }
+<*>.|\n                 { yyerrorf("Missing verilog.l rule: Default rule invoked in state %d: %s", YY_START, yytext); }
 %%
 int V3ParseImp::stateVerilogRecent() { return STATE_VERILOG_RECENT; }
 
@@ -973,28 +973,28 @@ void V3ParseImp::lexToken() {
     // Fetch next token from prefetch or real lexer
     int token;
     if (m_ahead) {
-	// We prefetched an extra token, give it back
-	m_ahead = false;
-	token = m_aheadVal.token;
-	yylval = m_aheadVal;
+        // We prefetched an extra token, give it back
+        m_ahead = false;
+        token = m_aheadVal.token;
+        yylval = m_aheadVal;
     } else {
-	// Parse new token
-	token = yylexReadTok();
-	//yylval // Set by yylexReadTok()
+        // Parse new token
+        token = yylexReadTok();
+        //yylval // Set by yylexReadTok()
     }
     // If a paren, read another
     if (token == '('
-	|| token == yCONST__LEX
-	|| token == yGLOBAL__LEX
-	// Never put yID_* here; below symbol table resolution would break
-	) {
-	if (debugFlex()>=6) { cout<<"   lexToken: reading ahead to find possible strength"<<endl; }
-	V3ParseBisonYYSType curValue = yylval;  // Remember value, as about to read ahead
-	int nexttok = yylexReadTok();
-	m_ahead = true;
-	m_aheadVal = yylval;
-	m_aheadVal.token = nexttok;
-	yylval = curValue;
+        || token == yCONST__LEX
+        || token == yGLOBAL__LEX
+        // Never put yID_* here; below symbol table resolution would break
+        ) {
+        if (debugFlex()>=6) { cout<<"   lexToken: reading ahead to find possible strength"<<endl; }
+        V3ParseBisonYYSType curValue = yylval;  // Remember value, as about to read ahead
+        int nexttok = yylexReadTok();
+        m_ahead = true;
+        m_aheadVal = yylval;
+        m_aheadVal.token = nexttok;
+        yylval = curValue;
         // Now potentially munge the current token
         if (token == '(' && (nexttok == ygenSTRENGTH
                              || nexttok == ySUPPLY0
@@ -1002,44 +1002,45 @@ void V3ParseImp::lexToken() {
             token = yP_PAR__STRENGTH;
         }
         else if (token == yCONST__LEX) {
-	    if (nexttok == yREF) token = yCONST__REF;
-	    else token = yCONST__ETC;
-	}
-	else if (token == yGLOBAL__LEX) {
-	    if (nexttok == yCLOCKING) token = yGLOBAL__CLOCKING;
-	    // Avoid 2009 "global" conflicting with old code when we can
-	    else { token = yaID__LEX; yylval.strp = PARSEP->newString("global"); }
-	}
-	// If add to above "else if", also add to "if (token" further above
+            if (nexttok == yREF) token = yCONST__REF;
+            else token = yCONST__ETC;
+        }
+        else if (token == yGLOBAL__LEX) {
+            if (nexttok == yCLOCKING) token = yGLOBAL__CLOCKING;
+            // Avoid 2009 "global" conflicting with old code when we can
+            else { token = yaID__LEX; yylval.strp = PARSEP->newString("global"); }
+        }
+        // If add to above "else if", also add to "if (token" further above
     }
     // If an id, change the type based on symbol table
     // Note above sometimes converts yGLOBAL to a yaID__LEX
     if (token == yaID__LEX) {
-	VSymEnt* foundp;
-	if (VSymEnt* look_underp = SYMP->nextId()) {
-	    UINFO(7,"   lexToken: next id lookup forced under "<<look_underp<<endl);
-	    foundp = look_underp->findIdFallback(*(yylval.strp));
-	    // "consume" it.  Must set again if want another token under temp scope
-	    SYMP->nextId(NULL);
-	} else {
-	    UINFO(7,"   lexToken: find upward "<<SYMP->symCurrentp()<<" for '"<<*(yylval.strp)<<"'"<<endl);
-	    //if (debug()>=9) SYMP->symCurrentp()->dump(cout,"     -findtree: ",true);
-	    foundp = SYMP->symCurrentp()->findIdFallback(*(yylval.strp));
-	}
-	if (foundp) {
-	    AstNode* scp = foundp->nodep();
-	    yylval.scp = scp;
-	    UINFO(7,"   lexToken: Found "<<scp<<endl);
-	    if (VN_IS(scp, Typedef)) token = yaID__aTYPE;
-	    else if (VN_IS(scp, TypedefFwd)) token = yaID__aTYPE;
-	    else if (VN_IS(scp, Package)) token = yaID__aPACKAGE;
-	    //UNSUP else if (VN_IS(scp, NodeClass)) token = yaID__aCLASS;
-	    //UNSUP else if (VN_IS(scp, CoverGroup)) token = yaID__aCOVERGROUP;
-	    else token = yaID__ETC;
-	} else {  // Not found
-	    yylval.scp = NULL;
-	    token = yaID__ETC;
-	}
+        VSymEnt* foundp;
+        if (VSymEnt* look_underp = SYMP->nextId()) {
+            UINFO(7,"   lexToken: next id lookup forced under "<<look_underp<<endl);
+            foundp = look_underp->findIdFallback(*(yylval.strp));
+            // "consume" it.  Must set again if want another token under temp scope
+            SYMP->nextId(NULL);
+        } else {
+            UINFO(7,"   lexToken: find upward "<<SYMP->symCurrentp()
+		  <<" for '"<<*(yylval.strp)<<"'"<<endl);
+            //if (debug()>=9) SYMP->symCurrentp()->dump(cout,"     -findtree: ", true);
+            foundp = SYMP->symCurrentp()->findIdFallback(*(yylval.strp));
+        }
+        if (foundp) {
+            AstNode* scp = foundp->nodep();
+            yylval.scp = scp;
+            UINFO(7,"   lexToken: Found "<<scp<<endl);
+            if (VN_IS(scp, Typedef)) token = yaID__aTYPE;
+            else if (VN_IS(scp, TypedefFwd)) token = yaID__aTYPE;
+            else if (VN_IS(scp, Package)) token = yaID__aPACKAGE;
+            //UNSUP else if (VN_IS(scp, NodeClass)) token = yaID__aCLASS;
+            //UNSUP else if (VN_IS(scp, CoverGroup)) token = yaID__aCOVERGROUP;
+            else token = yaID__ETC;
+        } else {  // Not found
+            yylval.scp = NULL;
+            token = yaID__ETC;
+        }
     }
     yylval.token = token;
     // effectively returns yylval
@@ -1053,12 +1054,14 @@ int V3ParseImp::lexToBison() {
 
     //yylval.scp = NULL;   // Symbol table not yet needed - no packages
     if (debugFlex()>=6 || debugBison()>=6) {
-	cout<<"   {"<<yylval.fl->filenameLetters()<<yylval.fl->lineno()
-	    <<"} lexToBison  TOKEN="<<yylval.token<<" "<<tokenName(yylval.token);
-	if (yylval.token == yaID__ETC || yylval.token == yaID__LEX || yylval.token == yaID__aTYPE) {
-	    cout<<"   strp='"<<*(yylval.strp)<<"'";
-	}
-	cout<<endl;
+        cout<<"   {"<<yylval.fl->filenameLetters()<<yylval.fl->lineno()
+            <<"} lexToBison  TOKEN="<<yylval.token<<" "<<tokenName(yylval.token);
+        if (yylval.token == yaID__ETC
+	    || yylval.token == yaID__LEX
+	    || yylval.token == yaID__aTYPE) {
+            cout<<"   strp='"<<*(yylval.strp)<<"'";
+        }
+        cout<<endl;
     }
     return yylval.token;
 }
