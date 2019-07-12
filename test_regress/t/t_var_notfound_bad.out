@@ -1,7 +1,9 @@
-%Error: t/t_var_notfound_bad.v:14: Can't find definition of variable: nf
-%Error: t/t_var_notfound_bad.v:15: Can't find definition of 'subsubz' in dotted scope/variable: sub.subsubz
+%Error: t/t_var_notfound_bad.v:17: Can't find definition of variable: nf
+%Error: t/t_var_notfound_bad.v:18: Can't find definition of 'subsubz' in dotted scope/variable: sub.subsubz
         ... Known scopes under 'sub': subsub
-%Error: t/t_var_notfound_bad.v:16: Can't find definition of task/function: nofunc
-%Error: t/t_var_notfound_bad.v:17: Can't find definition of task/function: notask
-%Error: t/t_var_notfound_bad.v:18: Found definition of 'a_var' as a VAR but expected a task/function
+%Error: t/t_var_notfound_bad.v:19: Can't find definition of task/function: nofunc
+%Error: t/t_var_notfound_bad.v:20: Can't find definition of 'nofuncs' in dotted task/function: sub.nofuncs
+        ... Known scopes under 'nofuncs': <no cells found>
+%Error: t/t_var_notfound_bad.v:21: Can't find definition of task/function: notask
+%Error: t/t_var_notfound_bad.v:22: Found definition of 'a_var' as a VAR but expected a task/function
 %Error: Exiting due to
