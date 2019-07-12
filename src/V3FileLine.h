@@ -129,7 +129,6 @@ public:
     void parent(FileLine* fileline) { m_parent = fileline; }
     void lineDirective(const char* textp, int& enterExitRef);
     void linenoInc() { m_lineno++; }
-    void linenoIncInPlace() { m_lineno++; }
 
     int lineno() const { return m_lineno; }
     FileLine* parent() const { return m_parent; }

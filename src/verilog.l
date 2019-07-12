@@ -52,6 +52,9 @@ extern void yyerrorf(const char* format, ...);
         if (!v3Global.opt.bboxSys()) yyerrorf(msg, yytext); \
         return yaD_IGNORE; }
 
+#define ERROR_RSVD_WORD(language) \
+    yyerrorf("Unsupported: " language " reserved word not implemented: '%s'", yytext)
+
 // See V3Read.cpp
 //void V3ParseImp::statePop() { yy_pop_state(); }
 
@@ -351,16 +354,16 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "signed"              { FL; return ySIGNED; }
   "unsigned"            { FL; return yUNSIGNED; }
   /*     Generic unsupported keywords */
-  "cell"                { yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s", yytext); }
-  "config"              { yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s", yytext); }
-  "design"              { yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s", yytext); }
-  "endconfig"           { yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s", yytext); }
-  "incdir"              { yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s", yytext); }
+  "cell"                { ERROR_RSVD_WORD("Verilog 2001-config"); }
+  "config"              { ERROR_RSVD_WORD("Verilog 2001-config"); }
+  "design"              { ERROR_RSVD_WORD("Verilog 2001-config"); }
+  "endconfig"           { ERROR_RSVD_WORD("Verilog 2001-config"); }
+  "incdir"              { ERROR_RSVD_WORD("Verilog 2001-config"); }
   "include"             { yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented; probably you want `include instead: %s", yytext); }
-  "instance"            { yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s", yytext); }
-  "liblist"             { yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s", yytext); }
-  "library"             { yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s", yytext); }
-  "use"                 { yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented: %s", yytext); }
+  "instance"            { ERROR_RSVD_WORD("Verilog 2001-config"); }
+  "liblist"             { ERROR_RSVD_WORD("Verilog 2001-config"); }
+  "library"             { ERROR_RSVD_WORD("Verilog 2001-config"); }
+  "use"                 { ERROR_RSVD_WORD("Verilog 2001-config"); }
 }
 
   /* Verilog 2005 */
@@ -457,44 +460,44 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "void"                { FL; return yVOID; }
   /*     Generic unsupported warnings */
   /* Note assert_strobe was in SystemVerilog 3.1, but removed for SystemVerilog 2005 */
-  "$root"               { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "before"              { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "bins"                { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "binsof"              { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "class"               { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "constraint"          { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "covergroup"          { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "coverpoint"          { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "cross"               { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "dist"                { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "endclass"            { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "endgroup"            { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "endsequence"         { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "expect"              { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "extends"             { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "first_match"         { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "ignore_bins"         { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "illegal_bins"        { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "intersect"           { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "join_any"            { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "join_none"           { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "local"               { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "matches"             { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "new"                 { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "protected"           { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "randomize"           { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "randsequence"        { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "sequence"            { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "solve"               { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "super"               { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "tagged"              { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "this"                { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "throughout"          { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "virtual"             { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "wait_order"          { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "wildcard"            { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "with"                { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
-  "within"              { yyerrorf("Unsupported: SystemVerilog 2005 reserved word not implemented: %s", yytext); }
+  "$root"               { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "before"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "bins"                { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "binsof"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "class"               { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "constraint"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "covergroup"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "coverpoint"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "cross"               { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "dist"                { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "endclass"            { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "endgroup"            { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "endsequence"         { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "expect"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "extends"             { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "first_match"         { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "ignore_bins"         { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "illegal_bins"        { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "intersect"           { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "join_any"            { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "join_none"           { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "local"               { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "matches"             { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "new"                 { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "protected"           { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "randomize"           { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "randsequence"        { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "sequence"            { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "solve"               { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "super"               { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "tagged"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "this"                { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "throughout"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "virtual"             { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "wait_order"          { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "wildcard"            { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "with"                { ERROR_RSVD_WORD("SystemVerilog 2005"); }
+  "within"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
 }
 
   /* SystemVerilog 2009 */
@@ -503,35 +506,35 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "global"              { FL; return yGLOBAL__LEX; }
   "unique0"             { FL; return yUNIQUE0; }
   /*     Generic unsupported warnings */
-  "accept_on"           { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
-  "checker"             { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
-  "endchecker"          { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
-  "eventually"          { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
-  "implies"             { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
-  "let"                 { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
-  "nexttime"            { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
-  "reject_on"           { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
-  "s_always"            { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
-  "s_eventually"        { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
-  "s_nexttime"          { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
-  "s_until"             { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
-  "s_until_with"        { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
-  "strong"              { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
-  "sync_accept_on"      { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
-  "sync_reject_on"      { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
-  "until"               { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
-  "until_with"          { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
-  "untyped"             { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
-  "weak"                { yyerrorf("Unsupported: SystemVerilog 2009 reserved word not implemented: %s", yytext); }
+  "accept_on"           { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "checker"             { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "endchecker"          { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "eventually"          { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "implies"             { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "let"                 { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "nexttime"            { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "reject_on"           { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "s_always"            { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "s_eventually"        { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "s_nexttime"          { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "s_until"             { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "s_until_with"        { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "strong"              { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "sync_accept_on"      { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "sync_reject_on"      { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "until"               { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "until_with"          { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "untyped"             { ERROR_RSVD_WORD("SystemVerilog 2009"); }
+  "weak"                { ERROR_RSVD_WORD("SystemVerilog 2009"); }
 }
 
   /* System Verilog 2012 */
 <S12,S17,SAX>{
   /*     Keywords */
-  "implements"          { yyerrorf("Unsupported: SystemVerilog 2012 reserved word not implemented: %s", yytext); }
-  "interconnect"        { yyerrorf("Unsupported: SystemVerilog 2012 reserved word not implemented: %s", yytext); }
-  "nettype"             { yyerrorf("Unsupported: SystemVerilog 2012 reserved word not implemented: %s", yytext); }
-  "soft"                { yyerrorf("Unsupported: SystemVerilog 2012 reserved word not implemented: %s", yytext); }
+  "implements"          { ERROR_RSVD_WORD("SystemVerilog 2012"); }
+  "interconnect"        { ERROR_RSVD_WORD("SystemVerilog 2012"); }
+  "nettype"             { ERROR_RSVD_WORD("SystemVerilog 2012"); }
+  "soft"                { ERROR_RSVD_WORD("SystemVerilog 2012"); }
 }
 
   /* System Verilog 2017 */
@@ -553,92 +556,92 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
 <VA5,SAX>{
   /*     Generic unsupported warnings */
-   "above"              { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "abs"                { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "absdelay"           { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "abstol"             { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "ac_stim"            { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "access"             { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "acos"               { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "acosh"              { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "aliasparam"         { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "analog"             { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "analysis"           { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "above"              { ERROR_RSVD_WORD("AMS"); }
+   "abs"                { ERROR_RSVD_WORD("AMS"); }
+   "absdelay"           { ERROR_RSVD_WORD("AMS"); }
+   "abstol"             { ERROR_RSVD_WORD("AMS"); }
+   "ac_stim"            { ERROR_RSVD_WORD("AMS"); }
+   "access"             { ERROR_RSVD_WORD("AMS"); }
+   "acos"               { ERROR_RSVD_WORD("AMS"); }
+   "acosh"              { ERROR_RSVD_WORD("AMS"); }
+   "aliasparam"         { ERROR_RSVD_WORD("AMS"); }
+   "analog"             { ERROR_RSVD_WORD("AMS"); }
+   "analysis"           { ERROR_RSVD_WORD("AMS"); }
    "asin"               { FL; return yD_ASIN; }
    "asinh"              { FL; return yD_ASINH; }
-   "assert"             { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "assert"             { ERROR_RSVD_WORD("AMS"); }
    "atan"               { FL; return yD_ATAN; }
    "atan2"              { FL; return yD_ATAN2; }
    "atanh"              { FL; return yD_ATANH; }
-   "branch"             { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "branch"             { ERROR_RSVD_WORD("AMS"); }
    "ceil"               { FL; return yD_CEIL; }
-   "connect"            { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "connectmodule"      { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "connectrules"       { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "continuous"         { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "connect"            { ERROR_RSVD_WORD("AMS"); }
+   "connectmodule"      { ERROR_RSVD_WORD("AMS"); }
+   "connectrules"       { ERROR_RSVD_WORD("AMS"); }
+   "continuous"         { ERROR_RSVD_WORD("AMS"); }
    "cos"                { FL; return yD_COS; }
    "cosh"               { FL; return yD_COSH; }
-   "cross"              { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "ddt"                { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "ddt_nature"         { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "ddx"                { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "discipline"         { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "discrete"           { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "domain"             { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "driver_update"      { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "endconnectrules"    { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "enddiscipline"      { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "endnature"          { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "endparamset"        { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "exclude"            { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "cross"              { ERROR_RSVD_WORD("AMS"); }
+   "ddt"                { ERROR_RSVD_WORD("AMS"); }
+   "ddt_nature"         { ERROR_RSVD_WORD("AMS"); }
+   "ddx"                { ERROR_RSVD_WORD("AMS"); }
+   "discipline"         { ERROR_RSVD_WORD("AMS"); }
+   "discrete"           { ERROR_RSVD_WORD("AMS"); }
+   "domain"             { ERROR_RSVD_WORD("AMS"); }
+   "driver_update"      { ERROR_RSVD_WORD("AMS"); }
+   "endconnectrules"    { ERROR_RSVD_WORD("AMS"); }
+   "enddiscipline"      { ERROR_RSVD_WORD("AMS"); }
+   "endnature"          { ERROR_RSVD_WORD("AMS"); }
+   "endparamset"        { ERROR_RSVD_WORD("AMS"); }
+   "exclude"            { ERROR_RSVD_WORD("AMS"); }
    "exp"                { FL; return yD_EXP; }
-   "final_step"         { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "flicker_noise"      { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "final_step"         { ERROR_RSVD_WORD("AMS"); }
+   "flicker_noise"      { ERROR_RSVD_WORD("AMS"); }
    "floor"              { FL; return yD_FLOOR; }
-   "flow"               { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "from"               { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "ground"             { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "flow"               { ERROR_RSVD_WORD("AMS"); }
+   "from"               { ERROR_RSVD_WORD("AMS"); }
+   "ground"             { ERROR_RSVD_WORD("AMS"); }
    "hypot"              { FL; return yD_HYPOT; }
-   "idt"                { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "idt_nature"         { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "idtmod"             { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "inf"                { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "initial_step"       { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "laplace_nd"         { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "laplace_np"         { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "laplace_zd"         { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "laplace_zp"         { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "last_crossing"      { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "limexp"             { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "idt"                { ERROR_RSVD_WORD("AMS"); }
+   "idt_nature"         { ERROR_RSVD_WORD("AMS"); }
+   "idtmod"             { ERROR_RSVD_WORD("AMS"); }
+   "inf"                { ERROR_RSVD_WORD("AMS"); }
+   "initial_step"       { ERROR_RSVD_WORD("AMS"); }
+   "laplace_nd"         { ERROR_RSVD_WORD("AMS"); }
+   "laplace_np"         { ERROR_RSVD_WORD("AMS"); }
+   "laplace_zd"         { ERROR_RSVD_WORD("AMS"); }
+   "laplace_zp"         { ERROR_RSVD_WORD("AMS"); }
+   "last_crossing"      { ERROR_RSVD_WORD("AMS"); }
+   "limexp"             { ERROR_RSVD_WORD("AMS"); }
    "ln"                 { FL; return yD_LN; }
    "log"                { FL; return yD_LOG10; }
-   "max"                { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "merged"             { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "min"                { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "nature"             { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "net_resolution"     { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "noise_table"        { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "paramset"           { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "potential"          { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "max"                { ERROR_RSVD_WORD("AMS"); }
+   "merged"             { ERROR_RSVD_WORD("AMS"); }
+   "min"                { ERROR_RSVD_WORD("AMS"); }
+   "nature"             { ERROR_RSVD_WORD("AMS"); }
+   "net_resolution"     { ERROR_RSVD_WORD("AMS"); }
+   "noise_table"        { ERROR_RSVD_WORD("AMS"); }
+   "paramset"           { ERROR_RSVD_WORD("AMS"); }
+   "potential"          { ERROR_RSVD_WORD("AMS"); }
    "pow"                { FL; return yD_POW; }
-   "resolveto"          { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "resolveto"          { ERROR_RSVD_WORD("AMS"); }
    "sin"                { FL; return yD_SIN; }
    "sinh"               { FL; return yD_SINH; }
-   "slew"               { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "split"              { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "slew"               { ERROR_RSVD_WORD("AMS"); }
+   "split"              { ERROR_RSVD_WORD("AMS"); }
    "sqrt"               { FL; return yD_SQRT; }
    "string"             { FL; return ySTRING; }
    "tan"                { FL; return yD_TAN; }
    "tanh"               { FL; return yD_TANH; }
-   "timer"              { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "transition"         { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "units"              { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "white_noise"        { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "timer"              { ERROR_RSVD_WORD("AMS"); }
+   "transition"         { ERROR_RSVD_WORD("AMS"); }
+   "units"              { ERROR_RSVD_WORD("AMS"); }
+   "white_noise"        { ERROR_RSVD_WORD("AMS"); }
    "wreal"              { FL; return yWREAL; }
-   "zi_nd"              { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "zi_np"              { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "zi_zd"              { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
-   "zi_zp"              { yyerrorf("Unsupported: AMS reserved word not implemented: %s", yytext); }
+   "zi_nd"              { ERROR_RSVD_WORD("AMS"); }
+   "zi_np"              { ERROR_RSVD_WORD("AMS"); }
+   "zi_zd"              { ERROR_RSVD_WORD("AMS"); }
+   "zi_zp"              { ERROR_RSVD_WORD("AMS"); }
 }
 
   /************************************************************************/

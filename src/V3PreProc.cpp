@@ -1482,7 +1482,7 @@ int V3PreProcImp::getFinalToken(string& buf) {
             if (*cp == '\n') {
                 m_finAtBol = true;
                 // Increment in place to avoid new/delete calls.  It's private data.
-                m_finFilelinep->linenoIncInPlace();
+                m_finFilelinep->linenoInc();
             } else {
                 m_finAtBol = false;
             }

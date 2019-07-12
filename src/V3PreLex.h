@@ -199,6 +199,7 @@ class V3PreLex {
     void lineDirective(const char* textp);
     void linenoInc() { if (curStreamp()->m_ignNewlines) curStreamp()->m_ignNewlines--;
         else curFilelinep()->linenoInc(); }
+    void warnBackslashSpace();
     // Called by V3PreProc.cpp to inform lexer
     void pushStateDefArg(int level);
     void pushStateDefForm();

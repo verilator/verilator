@@ -113,7 +113,7 @@ bom             [\357\273\277]
 <STRMODE>{word}         { yymore(); }
 <STRMODE>[^\"\\]        { yymore(); }
 <STRMODE>[\\]{crnl}     { linenoInc(); yymore(); }
-<STRMODE>[\\]{wsn}+{crnl}  { yyless(1); LEXP->curFilelinep()->v3warn(BSSPACE, "Backslash followed by whitespace, perhaps the whitespace is accidental?"); }
+<STRMODE>[\\]{wsn}+{crnl}  { yyless(1); LEXP->warnBackslashSpace(); }
 <STRMODE>[\\].          { yymore(); }
 <STRMODE>{quote}        { yy_pop_state();
                           if (LEXP->m_parenLevel || LEXP->m_defQuote) {
@@ -167,7 +167,7 @@ bom             [\357\273\277]
 <DEFFORM>{drop}         { }
 <DEFFORM><<EOF>>        { linenoInc(); yy_pop_state(); yyerrorf("Unterminated ( in define formal arguments."); yyleng=0; return VP_DEFFORM; }
 <DEFFORM>{crnl}         { linenoInc(); appendDefValue((char*)"\n", 1); }  /* Include return so can maintain output line count */
-<DEFFORM>[\\]{wsn}+{crnl}  { yyless(1); LEXP->curFilelinep()->v3warn(BSSPACE, "Backslash followed by whitespace, perhaps the whitespace is accidental?"); }
+<DEFFORM>[\\]{wsn}+{crnl}  { yyless(1); LEXP->warnBackslashSpace(); }
 <DEFFORM>[\\]{crnl}     { linenoInc(); appendDefValue((char*)"\\\n", 2); }  /* Include return so can maintain output line count */
 <DEFFORM>{quote}        { LEXP->m_defQuote=true; yy_push_state(STRMODE); yymore(); }  /* Legal only in default values */
 <DEFFORM>"`\\`\""       { appendDefValue(yytext, yyleng); }  /* Maybe illegal, otherwise in default value */
@@ -185,7 +185,7 @@ bom             [\357\273\277]
 <DEFVAL>{drop}          { }
 <DEFVAL><<EOF>>         { linenoInc(); yy_pop_state(); yytext=(char*)"\n"; yyleng=1; return VP_DEFVALUE; }  /* Technically illegal, but people complained */
 <DEFVAL>{crnl}          { linenoInc(); yy_pop_state(); yytext=(char*)"\n"; yyleng=1; return VP_DEFVALUE; }
-<DEFVAL>[\\]{wsn}+{crnl}  { yyless(1); LEXP->curFilelinep()->v3warn(BSSPACE, "Backslash followed by whitespace, perhaps the whitespace is accidental?"); }
+<DEFVAL>[\\]{wsn}+{crnl}  { yyless(1); LEXP->warnBackslashSpace(); }
 <DEFVAL>[\\]{crnl}      { linenoInc(); appendDefValue((char*)"\\\n", 2); }  /* Return, AND \ is part of define value */
 <DEFVAL>{quote}         { LEXP->m_defQuote = true; yy_push_state(STRMODE); yymore(); }
 <DEFVAL>[^\/\*\n\r\\\"]+        |
@@ -196,7 +196,7 @@ bom             [\357\273\277]
         /* - if no \{crnl} ending then the comment belongs to the next line, as a non-embedded comment */
         /* - if all but (say) 3rd line is missing \ then it's indeterminate */
 <DEFCMT>"*/"            { yy_pop_state(); appendDefValue(yytext, yyleng); }
-<DEFCMT>[\\]{wsn}+{crnl}  { yyless(1); LEXP->curFilelinep()->v3warn(BSSPACE, "Backslash followed by whitespace, perhaps the whitespace is accidental?"); }
+<DEFCMT>[\\]{wsn}+{crnl}  { yyless(1); LEXP->warnBackslashSpace(); }
 <DEFCMT>[\\]{crnl}      { linenoInc(); LEXP->m_defCmtSlash=true;
                           appendDefValue(yytext, yyleng-2); appendDefValue((char*)"\n", 1); }  /* Return but not \ */
 <DEFCMT>{crnl}          { linenoInc(); yymore(); if (LEXP->m_defCmtSlash) yyerrorf("One line of /* ... */ is missing \\ before newline");
@@ -506,6 +506,10 @@ void V3PreLex::lineDirective(const char* textp) {
     curFilelinep()->lineDirective(textp, m_enterExit/*ref*/);
     // Make sure we have a dependency on whatever file was specified
     V3File::addSrcDepend(curFilelinep()->filename());
+}
+
+void V3PreLex::warnBackslashSpace() {
+    curFilelinep()->v3warn(BSSPACE, "Backslash followed by whitespace, perhaps the whitespace is accidental?");
 }
 
 void V3PreLex::dumpSummary() {
