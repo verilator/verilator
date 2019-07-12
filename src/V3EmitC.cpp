@@ -1666,7 +1666,7 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep,
                 break;
             }
             default:
-                nodep->v3error("Unknown $display-like format code: %"<<pos[0]);
+                nodep->v3error("Unknown $display-like format code: '%"<<pos[0]<<"'");
                 break;
             }
         }

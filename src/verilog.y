@@ -214,8 +214,8 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
 
 static void ERRSVKWD(FileLine* fileline, const string& tokname) {
     static int toldonce = 0;
-    fileline->v3error(string("Unexpected \"")+tokname+"\": \""+tokname
-                      +"\" is a SystemVerilog keyword misused as an identifier."
+    fileline->v3error(string("Unexpected '")+tokname+"': '"+tokname
+                      +"' is a SystemVerilog keyword misused as an identifier."
                       +(!toldonce++
                         ? "\n"+V3Error::warnMore()
                           +"... Suggest modify the Verilog-2001 code to avoid SV keywords,"

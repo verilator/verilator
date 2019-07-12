@@ -287,7 +287,7 @@ private:
                     break;
                 default:  // Most operators, just move to next argument
                     if (!V3Number::displayedFmtLegal(ch)) {
-                        nodep->v3error("Unknown $display-like format code: %"<<ch);
+                        nodep->v3error("Unknown $display-like format code: '%"<<ch<<"'");
                     } else {
                         if (!argp) {
                             nodep->v3error("Missing arguments for $display-like format");
