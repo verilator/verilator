@@ -1889,13 +1889,13 @@ sub _vcd_read {
 
 our $_Cxx_Version;
 sub cxx_version {
-    $_Cxx_Version ||= `make -f Makefile print-cxx-version`;
+    $_Cxx_Version ||= `make -C $ENV{VERILATOR_ROOT}/test_regress -f Makefile print-cxx-version`;
     return $_Cxx_Version;
 }
 
 our $_Cfg_With_Threaded;
 sub cfg_with_threaded {
-    $_Cfg_With_Threaded ||= `make -f ../Makefile print-cfg-with-threaded`;
+    $_Cfg_With_Threaded ||= `make -C $ENV{VERILATOR_ROOT} -f Makefile print-cfg-with-threaded`;
     return ($_Cfg_With_Threaded =~ /yes/i) ? 1:0;
 }
 
