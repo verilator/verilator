@@ -61,7 +61,7 @@ void V3LinkLevel::modSortByLevel() {
             if (topp) {
                 static int warnedOnce = 0;
                 nodep->v3warn(MULTITOP, "Multiple top level modules: "
-                              <<nodep->prettyName()<<" and "<<topp->prettyName()
+                              <<nodep->prettyNameQ()<<" and "<<topp->prettyNameQ()
                               <<(!warnedOnce++
                                  ? ("\n"+nodep->warnMore()
                                     +"... Suggest see manual; fix the duplicates, or use --top-module to select top.")
@@ -192,7 +192,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                     }
                     if (varp->direction().isRefOrConstRef()) {
                         varp->v3error("Unsupported: ref/const ref as primary input/output: "
-                                      <<varp->prettyName());
+                                      <<varp->prettyNameQ());
                     }
                     if (varp->isIO() && v3Global.opt.systemC()) {
                         varp->sc(true);

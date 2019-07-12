@@ -1,2 +1,2 @@
-%Error: t/t_interface_modport_bad.v:22: Modport not found under interface 'ifc': oop_modport
+%Error: t/t_interface_modport_bad.v:22: Modport not found under interface 'ifc': 'oop_modport'
 %Error: Exiting due to

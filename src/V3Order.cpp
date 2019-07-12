@@ -282,7 +282,7 @@ private:
             if (varrefp->varp()->attrClocker() == AstVarAttrClocker::CLOCKER_YES) {
                 if (m_inClocked) {
                     varrefp->v3warn(CLKDATA, "Clock used as data (on rhs of assignment) in sequential block "
-                                    <<varrefp->prettyName()<<endl);
+                                    <<varrefp->prettyNameQ()<<endl);
                 } else {
                     m_hasClk = true;
                     UINFO(5, "node is already marked as clocker "<<varrefp<<endl);
@@ -320,7 +320,7 @@ private:
             if (m_inClocked) {
                 nodep->v3warn(CLKDATA,
                               "Clock used as data (on rhs of assignment) in sequential block "
-                              <<nodep->prettyName());
+                              <<nodep->prettyNameQ());
             } else {
                 m_hasClk = true;
                 m_childClkWidth = nodep->width();  // Pass up
@@ -833,10 +833,10 @@ private:
             //
             if (vertexp->isClock()) {
                 // Seems obvious; no warning yet
-                //nodep->v3warn(GENCLK,"Signal unoptimizable: Generated clock: "<<nodep->prettyName());
+                //nodep->v3warn(GENCLK, "Signal unoptimizable: Generated clock: "<<nodep->prettyNameQ());
             } else if (nodep->varp()->isSigPublic()) {
                 nodep->v3warn(UNOPT, "Signal unoptimizable: Feedback to public clock or circular logic: "
-                              <<nodep->prettyName());
+                              <<nodep->prettyNameQ());
                 if (!nodep->fileline()->warnIsOff(V3ErrorCode::UNOPT)) {
                     nodep->fileline()->modifyWarnOff(V3ErrorCode::UNOPT, true);  // Complain just once
                     // Give the user an example.
@@ -850,7 +850,7 @@ private:
                 // it was needed, that aren't any more
                 // First v3warn not inside warnIsOff so we can see the suppressions with --debug
                 nodep->v3warn(UNOPTFLAT, "Signal unoptimizable: Feedback to clock or circular logic: "
-                              <<nodep->prettyName());
+                              <<nodep->prettyNameQ());
                 if (!nodep->fileline()->warnIsOff(V3ErrorCode::UNOPTFLAT)) {
                     nodep->fileline()->modifyWarnOff(V3ErrorCode::UNOPTFLAT, true);  // Complain just once
                     // Give the user an example.

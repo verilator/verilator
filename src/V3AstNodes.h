@@ -1634,7 +1634,7 @@ public:
         return modVarp() ? ((modVarp()->direction().isAny()
                              ? modVarp()->direction().prettyName()+" "
                              : "")
-                            +"port connection '"+modVarp()->prettyName()+"'")
+                            +"port connection "+modVarp()->prettyNameQ())
             : "port connection"; }
     bool dotStar() const { return name() == ".*"; }  // Fake name for .* connections until linked
     int pinNum() const { return m_pinNum; }

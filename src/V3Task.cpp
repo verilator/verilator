@@ -144,10 +144,10 @@ public:
     void checkPurity(AstNodeFTask* nodep, TaskBaseVertex* vxp) {
         if (!vxp->pure()) {
             nodep->v3warn(IMPURE, "Unsupported: External variable referenced by non-inlined function/task: "
-                          <<nodep->prettyName()<<endl
+                          <<nodep->prettyNameQ()<<endl
                           <<nodep->warnContextPrimary()<<endl
                           <<vxp->impureNode()->warnOther()<<"... Location of the external reference: "
-                          <<vxp->impureNode()->prettyName()<<endl
+                          <<vxp->impureNode()->prettyNameQ()<<endl
                           <<vxp->impureNode()->warnContextSecondary());
         }
         // And, we need to check all tasks this task calls
@@ -388,7 +388,7 @@ private:
                     pinp->v3error("Function/task "
                                   +portp->direction().prettyName()  // e.g. "output"
                                   +" connected to constant instead of variable: "
-                                  +portp->prettyName());
+                                  +portp->prettyNameQ());
                 }
                 else if (portp->isInoutish()) {
                     // Correct lvalue; see comments below
@@ -501,7 +501,7 @@ private:
                     pinp->v3error("Function/task "
                                   +portp->direction().prettyName()  // e.g. "output"
                                   +" connected to constant instead of variable: "
-                                  +portp->prettyName());
+                                  +portp->prettyNameQ());
                 }
                 else if (portp->isInoutish()) {
                     // Correct lvalue; see comments below
@@ -617,7 +617,7 @@ private:
         bool logicvec = (portp->basicp()->keyword().isDpiLogicVal() && portp->width() > 1);
         if (isRtn && (bitvec || logicvec)) {
             portp->v3error("DPI functions cannot return > 32 bits or four-state;"
-                           " use a two-state type or task instead: "<<portp->prettyName());
+                           " use a two-state type or task instead: "<<portp->prettyNameQ());
             // Code below works, but won't compile right, and IEEE illegal
         }
         string stmt;
@@ -810,7 +810,7 @@ private:
     void makeDpiImportProto(AstNodeFTask* nodep, AstVar* rtnvarp) {
         if (nodep->cname() != AstNode::prettyName(nodep->cname())) {
             nodep->v3error("DPI function has illegal characters in C identifier name: "
-                           <<AstNode::prettyName(nodep->cname()));
+                           <<AstNode::prettyNameQ(nodep->cname()));
         }
         AstCFunc* dpip = new AstCFunc(nodep->fileline(),
                                       nodep->cname(),
@@ -841,7 +841,7 @@ private:
         }
         else if (iter->second.second != dpiproto) {
             nodep->v3error("Duplicate declaration of DPI function with different formal arguments: "
-                           <<nodep->prettyName()<<endl
+                           <<nodep->prettyNameQ()<<endl
                            <<nodep->warnContextPrimary()<<endl
                            <<nodep->warnMore()<<"... New prototype:      "<<dpiproto<<endl
                            <<iter->second.first->warnOther()<<"... Original prototype: "
@@ -1244,7 +1244,7 @@ private:
             if (nodep->dpiExport()) modes++;
             if (nodep->taskPublic()) modes++;
             if (modes > 1) nodep->v3error("Cannot mix DPI import, DPI export and/or public on same function: "
-                                          <<nodep->prettyName());
+                                          <<nodep->prettyNameQ());
 
             if (nodep->dpiImport() || nodep->dpiExport()
                 || nodep->taskPublic() || m_statep->ftaskNoInline(nodep)) {
@@ -1382,14 +1382,14 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
             // By name
             NameToIndex::iterator it = nameToIndex.find(argp->name());
             if (it == nameToIndex.end()) {
-                pinp->v3error("No such argument '"<<argp->prettyName()
-                              <<"' in function call to "<<nodep->taskp()->prettyTypeName());
+                pinp->v3error("No such argument "<<argp->prettyNameQ()
+                              <<" in function call to "<<nodep->taskp()->prettyTypeName());
                 // We'll just delete it; seems less error prone than making a false argument
                 pinp->unlinkFrBack()->deleteTree(); VL_DANGLING(pinp);
             } else {
                 if (tconnects[it->second].second) {
-                    pinp->v3error("Duplicate argument '"<<argp->prettyName()
-                                  <<"' in function call to "<<nodep->taskp()->prettyTypeName());
+                    pinp->v3error("Duplicate argument "<<argp->prettyNameQ()
+                                  <<" in function call to "<<nodep->taskp()->prettyTypeName());
                 }
                 argp->name("");  // Can forget name as will add back in pin order
                 tconnects[it->second].second = argp;
@@ -1420,8 +1420,8 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
         if (!tconnects[i].second || !tconnects[i].second->exprp()) {
             AstNode* newvaluep = NULL;
             if (!portp->valuep()) {
-                nodep->v3error("Missing argument on non-defaulted argument '"<<portp->prettyName()
-                               <<"' in function call to "<<nodep->taskp()->prettyTypeName());
+                nodep->v3error("Missing argument on non-defaulted argument "<<portp->prettyNameQ()
+                               <<" in function call to "<<nodep->taskp()->prettyTypeName());
                 newvaluep = new AstConst(nodep->fileline(), AstConst::Unsized32(), 0);
             } else if (!VN_IS(portp->valuep(), Const)) {
                 // The default value for this port might be a constant
@@ -1432,9 +1432,9 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
                     // Problem otherwise is we might have a varref, task
                     // call, or something else that only makes sense in the
                     // domain of the function, not the callee.
-                    nodep->v3error("Unsupported: Non-constant default value in missing argument '"
-                                   <<portp->prettyName()
-                                   <<"' in function call to "<<nodep->taskp()->prettyTypeName());
+                    nodep->v3error("Unsupported: Non-constant default value in missing argument "
+                                   <<portp->prettyNameQ()
+                                   <<" in function call to "<<nodep->taskp()->prettyTypeName());
                     newvaluep = new AstConst(nodep->fileline(), AstConst::Unsized32(), 0);
                 }
                 else {

@@ -182,7 +182,7 @@ private:
             if (debug()) nodep->dumpTree(cout, "-DETECTARRAY-class-");
             m_vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect changes on complex variable"
                            " (probably with UNOPTFLAT warning suppressed): "
-                           <<m_vscp->varp()->prettyName());
+                           <<m_vscp->varp()->prettyNameQ());
         }
     }
     virtual void visit(AstNode* nodep) {
@@ -190,7 +190,7 @@ private:
         if (debug()) nodep->dumpTree(cout, "-DETECTARRAY-general-");
         m_vscp->v3warn(E_DETECTARRAY, "Unsupported: Can't detect changes on complex variable"
                        " (probably with UNOPTFLAT warning suppressed): "
-                       <<m_vscp->varp()->prettyName());
+                       <<m_vscp->varp()->prettyNameQ());
     }
 public:
     // CONSTUCTORS
@@ -241,7 +241,7 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     void genChangeDet(AstVarScope* vscp) {
-        vscp->v3warn(IMPERFECTSCH, "Imperfect scheduling of variable: "<<vscp->prettyName());
+        vscp->v3warn(IMPERFECTSCH, "Imperfect scheduling of variable: "<<vscp->prettyNameQ());
         ChangedInsertVisitor visitor (vscp, m_statep);
     }
 

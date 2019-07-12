@@ -179,7 +179,7 @@ private:
             if (m_splitVscp && m_splitVscp == lastSplitVscp) {
                 // We did this last time!  Something's stuck!
                 nodep->v3fatalSrc("Infinite loop in isolate_assignments removal for: "
-                                  <<m_splitVscp->prettyName())
+                                  <<m_splitVscp->prettyNameQ())
                 m_splitVscp = NULL;
             }
             lastSplitVscp = m_splitVscp;

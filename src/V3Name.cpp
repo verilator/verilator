@@ -62,7 +62,7 @@ private:
                 string rsvd = m_words.isKeyword(nodep->name());
                 if (rsvd != "") {
                     nodep->v3warn(SYMRSVDWORD, "Symbol matches "+rsvd
-                                  +": '"<<nodep->prettyName()<<"'");
+                                  +": "<<nodep->prettyNameQ());
                     string newname = string("__SYM__")+nodep->name();
                     nodep->name(newname);
                 }

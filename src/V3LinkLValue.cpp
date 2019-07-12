@@ -59,7 +59,7 @@ private:
             if (nodep->lvalue() && !m_ftaskp
                 && nodep->varp()->isReadOnly()) {
                 nodep->v3warn(ASSIGNIN, "Assigning to input/const variable: "
-                              <<nodep->prettyName());
+                              <<nodep->prettyNameQ());
             }
         }
         iterateChildren(nodep);

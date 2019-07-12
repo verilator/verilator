@@ -409,7 +409,7 @@ private:
                 if (!varNewp) {
                     if (debug()>=9) m_deModVars.dump();
                     nodep->v3fatalSrc("Module dearray failed for "
-                                      <<AstNode::prettyName(varNewName));
+                                      <<AstNode::prettyNameQ(varNewName));
                 }
 
                 // But clone the pin for each module instance

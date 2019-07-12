@@ -1,4 +1,4 @@
-%Warning-UNOPTFLAT: t/t_unoptflat_simple_2.v:14: Signal unoptimizable: Feedback to clock or circular logic: t.x
+%Warning-UNOPTFLAT: t/t_unoptflat_simple_2.v:14: Signal unoptimizable: Feedback to clock or circular logic: 't.x'
                     ... Use "/* verilator lint_off UNOPTFLAT */" and lint_on around source to disable this message.
                     t/t_unoptflat_simple_2.v:14:      Example path: t.x
                     t/t_unoptflat_simple_2.v:16:      Example path: ASSIGNW

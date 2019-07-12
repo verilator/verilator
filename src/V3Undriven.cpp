@@ -183,33 +183,34 @@ public:
                 // UNDRIVEN is considered more serious - as is more likely a bug,
                 // thus undriven+unused bits get UNUSED warnings, as they're not as buggy.
                 if (!unusedMatch(nodep)) {
-                    nodep->v3warn(UNUSED, "Signal is not driven, nor used: "<<nodep->prettyName());
+                    nodep->v3warn(UNUSED, "Signal is not driven, nor used: "
+                                  <<nodep->prettyNameQ());
                     nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);  // Warn only once
                 }
             } else if (allD && !anyU) {
                 if (!unusedMatch(nodep)) {
-                    nodep->v3warn(UNUSED, "Signal is not used: "<<nodep->prettyName());
+                    nodep->v3warn(UNUSED, "Signal is not used: "<<nodep->prettyNameQ());
                     nodep->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);  // Warn only once
                 }
             } else if (!anyD && allU) {
-                nodep->v3warn(UNDRIVEN, "Signal is not driven: "<<nodep->prettyName());
+                nodep->v3warn(UNDRIVEN, "Signal is not driven: "<<nodep->prettyNameQ());
                 nodep->fileline()->modifyWarnOff(V3ErrorCode::UNDRIVEN, true);  // Warn only once
             } else {
                 // Bits have different dispositions
                 bool setU=false; bool setD=false;
                 if (anynotDU && !unusedMatch(nodep)) {
                     nodep->v3warn(UNUSED, "Bits of signal are not driven, nor used: "
-                                  <<nodep->prettyName()
+                                  <<nodep->prettyNameQ()
                                   <<bitNames(BN_BOTH));
                     setU = true;
                 }
                 if (anyDnotU && !unusedMatch(nodep)) {
-                    nodep->v3warn(UNUSED, "Bits of signal are not used: "<<nodep->prettyName()
+                    nodep->v3warn(UNUSED, "Bits of signal are not used: "<<nodep->prettyNameQ()
                                   <<bitNames(BN_UNUSED));
                     setU = true;
                 }
                 if (anyUnotD) {
-                    nodep->v3warn(UNDRIVEN, "Bits of signal are not driven: "<<nodep->prettyName()
+                    nodep->v3warn(UNDRIVEN, "Bits of signal are not driven: "<<nodep->prettyNameQ()
                                   <<bitNames(BN_UNDRIVEN));
                     setD = true;
                 }
@@ -267,7 +268,7 @@ private:
             && !VN_IS(nodep, VarXRef)  // Xrefs might point at two different instances
             && !varp->fileline()->warnIsOff(V3ErrorCode::ALWCOMBORDER)) {  // Warn only once per variable
             nodep->v3warn(ALWCOMBORDER, "Always_comb variable driven after use: "
-                          <<nodep->prettyName());
+                          <<nodep->prettyNameQ());
             varp->fileline()->modifyWarnOff(V3ErrorCode::ALWCOMBORDER, true);  // Complain just once for any usage
         }
     }
@@ -333,13 +334,13 @@ private:
             if (m_inProcAssign && !nodep->varp()->varType().isProcAssignable()) {
                 nodep->v3warn(PROCASSWIRE, "Procedural assignment to wire, perhaps intended var"
                               " (IEEE 2017 6.5): "
-                              +nodep->prettyName());
+                              +nodep->prettyNameQ());
             }
             if (m_inContAssign && !nodep->varp()->varType().isContAssignable()
                 && !nodep->fileline()->language().systemVerilog()) {
                 nodep->v3warn(CONTASSREG, "Continuous assignment to reg, perhaps intended wire"
                               " (IEEE 2005 6.1; Verilog only, legal in SV): "
-                              +nodep->prettyName());
+                              +nodep->prettyNameQ());
             }
         }
         for (int usr=1; usr<(m_alwaysCombp?3:2); ++usr) {

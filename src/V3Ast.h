@@ -1264,10 +1264,13 @@ public:
     string shortName() const;  // Name with __PVT__ removed for concatenating scopes
     static string dedotName(const string& namein);  // Name with dots removed
     static string prettyName(const string& namein);  // Name for printing out to the user
+    static string prettyNameQ(const string& namein) {  // Quoted pretty name (for errors)
+        return string("'")+prettyName(namein)+"'"; }
     static string encodeName(const string& namein);  // Encode user name into internal C representation
     static string encodeNumber(vlsint64_t num);  // Encode number into internal C representation
     static string vcdName(const string& namein);  // Name for printing out to vcd files
     string prettyName() const { return prettyName(name()); }
+    string prettyNameQ() const { return prettyNameQ(name()); }
     string prettyTypeName() const;  // "VARREF" for error messages
     virtual string prettyOperatorName() const { return "operator "+prettyTypeName(); }
     FileLine* fileline() const { return m_fileline; }

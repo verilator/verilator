@@ -114,7 +114,7 @@ private:
         nodep->user5( nodep->user5() | flags );
         if ((nodep->user5() & VU_DLY) && (nodep->user5() & VU_NONDLY)) {
             nodep->v3warn(BLKANDNBLK, "Unsupported: Blocked and non-blocking assignments to same variable: "
-                          <<nodep->varp()->prettyName());
+                          <<nodep->varp()->prettyNameQ());
         }
     }
     AstVarScope* createVarSc(AstVarScope* oldvarscp, const string& name,
@@ -164,7 +164,7 @@ private:
                 && !varrefp->varp()->user2()) {
                 varrefp->varp()->v3warn(
                     MULTIDRIVEN, "Signal has multiple driving blocks with different clocking: "
-                    <<varrefp->varp()->prettyName()<<endl
+                    <<varrefp->varp()->prettyNameQ()<<endl
                     <<varrefp->warnOther()<<"... Location of first driving block"<<endl
                     <<varrefp->varp()->warnContextPrimary()<<endl
                     <<oldactivep->warnOther()<<"... Location of other driving block"<<endl

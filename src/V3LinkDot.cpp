@@ -226,14 +226,14 @@ public:
             UINFO(4,"Var2 "<<fnodep<<endl);
             if (nodep->type() == fnodep->type()) {
                 nodep->v3error("Duplicate declaration of "<<nodeTextType(fnodep)
-                               <<": "<<nodep->prettyName()<<endl
+                               <<": "<<nodep->prettyNameQ()<<endl
                                <<nodep->warnContextPrimary()<<endl
                                <<fnodep->warnOther()<<"... Location of original declaration\n"
                                <<fnodep->warnContextSecondary());
             } else {
                 nodep->v3error("Unsupported in C: "<<ucfirst(nodeTextType(nodep))
                                <<" has the same name as "
-                               <<nodeTextType(fnodep)<<": "<<nodep->prettyName()<<endl
+                               <<nodeTextType(fnodep)<<": "<<nodep->prettyNameQ()<<endl
                                <<nodep->warnContextPrimary()<<endl
                                <<fnodep->warnOther()<<"... Location of original declaration\n"
                                <<fnodep->warnContextSecondary());
@@ -404,14 +404,14 @@ public:
             if (!ifacerefp->ifaceViaCellp()) {
                 if (!ifacerefp->cellp()) {  // Probably a NotFoundModule, or a normal module if made mistake
                     ifacerefp->v3error("Cannot find file containing interface: "
-                                       <<AstNode::prettyName(ifacerefp->ifaceName()));
+                                       <<AstNode::prettyNameQ(ifacerefp->ifaceName()));
                     continue;
                 } else {
                     ifacerefp->v3fatalSrc("Unlinked interface");
                 }
             } else if (ifacerefp->ifaceViaCellp()->dead()) {
                 ifacerefp->v3error("Parent cell's interface is not found: "
-                                   <<AstNode::prettyName(ifacerefp->ifaceName()));
+                                   <<AstNode::prettyNameQ(ifacerefp->ifaceName()));
                 continue;
             }
             VSymEnt* ifaceSymp = getNodeSym(ifacerefp->ifaceViaCellp());
@@ -428,9 +428,9 @@ public:
                         ok = true;
                     }
                 }
-                if (!ok) ifacerefp->v3error("Modport not found under interface '"
-                                            <<ifacerefp->prettyName(ifacerefp->ifaceName())
-                                            <<"': "<<ifacerefp->prettyName(ifacerefp->modportName()));
+                if (!ok) ifacerefp->v3error("Modport not found under interface "
+                                            <<ifacerefp->prettyNameQ(ifacerefp->ifaceName())
+                                            <<": "<<ifacerefp->prettyNameQ(ifacerefp->modportName()));
             }
             // Alias won't expand until interfaces and modport names are known; see notes at top
             insertScopeAlias(SAMN_IFTOP, varSymp, ifOrPortSymp);
@@ -709,7 +709,7 @@ class LinkDotFindVisitor : public AstNVisitor {
         int      oldModBeginNum = m_modBeginNum;
         if (doit && nodep->user2()) {
             nodep->v3error("Unsupported: Identically recursive module (module instantiates itself, without changing parameters): "
-                           <<AstNode::prettyName(nodep->origName()));
+                           <<AstNode::prettyNameQ(nodep->origName()));
         } else if (doit) {
             UINFO(4,"     Link Module: "<<nodep<<endl);
             UASSERT_OBJ(!nodep->dead(), nodep, "Module in cell tree mislabeled as dead?");
@@ -783,7 +783,7 @@ class LinkDotFindVisitor : public AstNVisitor {
             aboveSymp = m_statep->findDotted(aboveSymp, scope, baddot, okSymp);
             UASSERT_OBJ(aboveSymp, nodep,
                         "Can't find cell insertion point at '"
-                        <<baddot<<"' in: "<<nodep->prettyName());
+                        <<baddot<<"' in: "<<nodep->prettyNameQ());
         }
         {
             m_scope = m_scope+"."+nodep->name();
@@ -814,7 +814,7 @@ class LinkDotFindVisitor : public AstNVisitor {
             aboveSymp = m_statep->findDotted(aboveSymp, dotted, baddot, okSymp);
             UASSERT_OBJ(aboveSymp, nodep,
                         "Can't find cellinline insertion point at '"
-                        <<baddot<<"' in: "<<nodep->prettyName());
+                        <<baddot<<"' in: "<<nodep->prettyNameQ());
             m_statep->insertInline(aboveSymp, m_modSymp, nodep, ident);
         } else {  // No __DOT__, just directly underneath
             m_statep->insertInline(aboveSymp, m_modSymp, nodep, nodep->name());
@@ -929,7 +929,7 @@ class LinkDotFindVisitor : public AstNVisitor {
             } else if (!findvarp && foundp && m_curSymp->findIdFlat(nodep->name())) {
                 nodep->v3error("Unsupported in C: Variable has same name as "
                                <<LinkDotState::nodeTextType(foundp->nodep())
-                               <<": "<<nodep->prettyName());
+                               <<": "<<nodep->prettyNameQ());
             } else if (findvarp != nodep) {
                 UINFO(4,"DupVar: "<<nodep<<" ;; "<<foundp->nodep()<<endl);
                 UINFO(4,"    found  cur=se"<<cvtToHex(m_curSymp)
@@ -944,7 +944,7 @@ class LinkDotFindVisitor : public AstNVisitor {
                         bool ansiWarn = ansiBad && !nansiBad;
                         if (ansiWarn) { if (didAnsiWarn++) ansiWarn = false; }
                         nodep->v3error("Duplicate declaration of signal: "
-                                       <<nodep->prettyName()<<endl
+                                       <<nodep->prettyNameQ()<<endl
                                        <<(ansiWarn
                                           ? nodep->warnMore()+"... note: ANSI ports must have type declared with the I/O (IEEE 2017 23.2.2.2)\n"
                                           : "")
@@ -977,7 +977,7 @@ class LinkDotFindVisitor : public AstNVisitor {
                         && !nodep->fileline()->warnIsOff(V3ErrorCode::VARHIDDEN)
                         && !foundp->nodep()->fileline()->warnIsOff(V3ErrorCode::VARHIDDEN)) {
                         nodep->v3warn(VARHIDDEN, "Declaration of signal hides declaration in upper scope: "
-                                      <<nodep->prettyName()<<endl
+                                      <<nodep->prettyNameQ()<<endl
                                       <<nodep->warnContextPrimary()<<endl
                                       <<foundp->nodep()->warnOther()
                                       <<"... Location of original declaration\n"
@@ -1086,8 +1086,8 @@ class LinkDotFindVisitor : public AstNVisitor {
         } else {
             VSymEnt* impp = srcp->findIdFlat(nodep->name());
             if (!impp) {
-                nodep->v3error("Import object not found: "
-                               <<nodep->packagep()->prettyName()<<"::"<<nodep->prettyName());
+                nodep->v3error("Import object not found: '"
+                               <<nodep->packagep()->prettyName()<<"::"<<nodep->prettyName()<<"'");
             }
         }
         m_curSymp->importFromPackage(m_statep->symsp(), srcp, nodep->name());
@@ -1100,8 +1100,8 @@ class LinkDotFindVisitor : public AstNVisitor {
         if (nodep->name()!="*") {
             VSymEnt* impp = srcp->findIdFlat(nodep->name());
             if (!impp) {
-                nodep->v3error("Export object not found: "
-                               <<nodep->packagep()->prettyName()<<"::"<<nodep->prettyName());
+                nodep->v3error("Export object not found: '"
+                               <<nodep->packagep()->prettyName()<<"::"<<nodep->prettyName()<<"'");
             }
         }
         m_curSymp->exportFromPackage(m_statep->symsp(), srcp, nodep->name());
@@ -1236,12 +1236,12 @@ private:
         AstVar* refp = foundp ? VN_CAST(foundp->nodep(), Var) : NULL;
         if (!refp) {
             nodep->v3error("Input/output/inout declaration not found for port: "
-                           <<nodep->prettyName());
+                           <<nodep->prettyNameQ());
         } else if (!refp->isIO() && !refp->isIfaceRef()) {
-            nodep->v3error("Pin is not an in/out/inout/interface: "<<nodep->prettyName());
+            nodep->v3error("Pin is not an in/out/inout/interface: "<<nodep->prettyNameQ());
         } else {
             if (refp->user4()) {
-                nodep->v3error("Duplicate declaration of port: "<<nodep->prettyName()<<endl
+                nodep->v3error("Duplicate declaration of port: "<<nodep->prettyNameQ()<<endl
                                <<nodep->warnContextPrimary()<<endl
                                <<refp->warnOther()<<"... Location of original declaration\n"
                                <<refp->warnContextSecondary());
@@ -1341,14 +1341,14 @@ class LinkDotScopeVisitor : public AstNVisitor {
                 string baddot; VSymEnt* okSymp;
                 VSymEnt* cellSymp = m_statep->findDotted(m_modSymp, ifcellname, baddot, okSymp);
                 UASSERT_OBJ(cellSymp, nodep,
-                            "No symbol for interface cell: "<<nodep->prettyName(ifcellname));
+                            "No symbol for interface cell: "<<nodep->prettyNameQ(ifcellname));
                 UINFO(5, "       Found interface cell: se"<<cvtToHex(cellSymp)
                       <<" "<<cellSymp->nodep()<<endl);
                 if (dtypep->modportName()!="") {
                     VSymEnt* mpSymp = m_statep->findDotted(m_modSymp, ifcellname, baddot, okSymp);
                     UASSERT_OBJ(mpSymp, nodep,
                                 "No symbol for interface modport: "
-                                <<nodep->prettyName(dtypep->modportName()));
+                                <<nodep->prettyNameQ(dtypep->modportName()));
                     cellSymp = mpSymp;
                     UINFO(5, "       Found modport cell: se"
                           <<cvtToHex(cellSymp)<<" "<<mpSymp->nodep()<<endl);
@@ -1478,7 +1478,7 @@ class LinkDotIfaceVisitor : public AstNVisitor {
         if (nodep->isExport()) nodep->v3error("Unsupported: modport export");
         VSymEnt* symp = m_curSymp->findIdFallback(nodep->name());
         if (!symp) {
-            nodep->v3error("Modport item not found: "<<nodep->prettyName());
+            nodep->v3error("Modport item not found: "<<nodep->prettyNameQ());
         } else if (AstNodeFTask* ftaskp = VN_CAST(symp->nodep(), NodeFTask)) {
             // Make symbol under modport that points at the _interface_'s var, not the modport.
             nodep->ftaskp(ftaskp);
@@ -1486,7 +1486,7 @@ class LinkDotIfaceVisitor : public AstNVisitor {
                                                    ftaskp, NULL/*package*/);
             m_statep->insertScopeAlias(LinkDotState::SAMN_MODPORT, subSymp, symp);
         } else {
-            nodep->v3error("Modport item is not a function/task: "<<nodep->prettyName());
+            nodep->v3error("Modport item is not a function/task: "<<nodep->prettyNameQ());
         }
         if (m_statep->forScopeCreation()) {
             // Done with AstModportFTaskRef.
@@ -1499,7 +1499,7 @@ class LinkDotIfaceVisitor : public AstNVisitor {
         iterateChildren(nodep);
         VSymEnt* symp = m_curSymp->findIdFallback(nodep->name());
         if (!symp) {
-            nodep->v3error("Modport item not found: "<<nodep->prettyName());
+            nodep->v3error("Modport item not found: "<<nodep->prettyNameQ());
         } else if (AstVar* varp = VN_CAST(symp->nodep(), Var)) {
             // Make symbol under modport that points at the _interface_'s var via the modport.
             // (Need modport still to test input/output markings)
@@ -1510,7 +1510,7 @@ class LinkDotIfaceVisitor : public AstNVisitor {
             nodep->varp(vscp->varp());
             m_statep->insertSym(m_curSymp, nodep->name(), vscp, NULL/*package*/);
         } else {
-            nodep->v3error("Modport item is not a variable: "<<nodep->prettyName());
+            nodep->v3error("Modport item is not a variable: "<<nodep->prettyNameQ());
         }
         if (m_statep->forScopeCreation()) {
             // Done with AstModportVarRef.
@@ -1612,10 +1612,10 @@ private:
             if (!noWarn) {
                 if (nodep->fileline()->warnIsOff(V3ErrorCode::I_DEF_NETTYPE_WIRE)) {
                     nodep->v3error("Signal definition not found, and implicit disabled with `default_nettype: "
-                                   <<nodep->prettyName());
+                                   <<nodep->prettyNameQ());
                 } else {
                     nodep->v3warn(IMPLICIT, "Signal definition not found, creating implicitly: "
-                                  <<nodep->prettyName());
+                                  <<nodep->prettyNameQ());
                 }
             }
             AstVar* newp = new AstVar(nodep->fileline(), AstVarType::WIRE,
@@ -1638,7 +1638,7 @@ private:
             AstModportVarRef* snodep = VN_CAST(symp->nodep(), ModportVarRef);
             AstVar* varp = snodep->varp();
             if (lvalue && snodep->direction().isReadOnly()) {
-                nodep->v3error("Attempt to drive input-only modport: "<<nodep->prettyName());
+                nodep->v3error("Attempt to drive input-only modport: "<<nodep->prettyNameQ());
             }  // else other simulators don't warn about reading, and IEEE doesn't say illegal
             return varp;
         } else {
@@ -1648,7 +1648,7 @@ private:
     void taskFuncSwapCheck(AstNodeFTaskRef* nodep) {
         if (nodep->taskp() && VN_IS(nodep->taskp(), Task)
             && VN_IS(nodep, FuncRef)) nodep->v3error("Illegal call of a task as a function: "
-                                                     <<nodep->prettyName());
+                                                     <<nodep->prettyNameQ());
     }
     inline void checkNoDot(AstNode* nodep) {
         if (VL_UNLIKELY(m_ds.m_dotPos != DP_NONE)) {
@@ -1673,7 +1673,7 @@ private:
     }
     void markAndCheckPinDup(AstNode* nodep, AstNode* refp, const char* whatp) {
         if (refp->user5p() && refp->user5p()!=nodep) {
-            nodep->v3error("Duplicate "<<whatp<<" connection: "<<nodep->prettyName()<<endl
+            nodep->v3error("Duplicate "<<whatp<<" connection: "<<nodep->prettyNameQ()<<endl
                            <<nodep->warnContextPrimary()<<endl
                            <<refp->user5p()->warnOther()
                            <<"... Location of original "<<whatp<<" connection\n"
@@ -1762,12 +1762,12 @@ private:
                     nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
                     return;
                 }
-                nodep->v3error(ucfirst(whatp)<<" not found: "<<nodep->prettyName());
+                nodep->v3error(ucfirst(whatp)<<" not found: "<<nodep->prettyNameQ());
             }
             else if (AstVar* refp = VN_CAST(foundp->nodep(), Var)) {
                 if (!refp->isIO() && !refp->isParam() && !refp->isIfaceRef()) {
                     nodep->v3error(ucfirst(whatp)<<" is not an in/out/inout/param/interface: "
-                                   <<nodep->prettyName());
+                                   <<nodep->prettyNameQ());
                 } else {
                     nodep->modVarp(refp);
                     markAndCheckPinDup(nodep, refp, whatp);
@@ -1778,7 +1778,7 @@ private:
                 markAndCheckPinDup(nodep, refp, whatp);
             }
             else {
-                nodep->v3error(ucfirst(whatp)<<" not found: "<<nodep->prettyName());
+                nodep->v3error(ucfirst(whatp)<<" not found: "<<nodep->prettyNameQ());
             }
         }
         // Early return() above when deleted
@@ -1950,7 +1950,7 @@ private:
                         nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
                     } else if (VN_IS(cellp->modp(), NotFoundModule)) {
                         cellp->v3error("Cannot find file containing interface: "
-                                       <<AstNode::prettyName(cellp->modp()->name()));
+                                       <<cellp->modp()->prettyNameQ());
                     }
                 }
             }
@@ -2005,11 +2005,11 @@ private:
                     || !VN_CAST(m_ds.m_dotSymp->nodep(), Cell)->modp()
                     || !VN_IS(VN_CAST(m_ds.m_dotSymp->nodep(), Cell)->modp(), Iface)) {
                     nodep->v3error("Modport not referenced as <interface>."
-                                   <<modportp->prettyName());
+                                   <<modportp->prettyNameQ());
                 } else if (!VN_CAST(m_ds.m_dotSymp->nodep(), Cell)->modp()
                            || !VN_IS(VN_CAST(m_ds.m_dotSymp->nodep(), Cell)->modp(), Iface)) {
                     nodep->v3error("Modport not referenced from underneath an interface: "
-                                   <<modportp->prettyName());
+                                   <<modportp->prettyNameQ());
                 } else {
                     AstCell* cellp = VN_CAST(m_ds.m_dotSymp->nodep(), Cell);
                     UASSERT_OBJ(cellp, nodep, "Modport not referenced from a cell");
@@ -2051,12 +2051,12 @@ private:
                         UINFO(7,"   ErrParseRef curSymp=se"<<cvtToHex(m_curSymp)
                               <<" ds="<<m_ds.ascii()<<endl);
                         nodep->v3error("Can't find definition of "<<expectWhat
-                                       <<": "<<nodep->prettyName());
+                                       <<": "<<nodep->prettyNameQ());
                     } else {
                         nodep->v3error("Can't find definition of '"
                                        <<(baddot!="" ? baddot : nodep->prettyName())
-                                       <<"' in dotted "
-                                       <<expectWhat<<": "<<m_ds.m_dotText+"."+nodep->prettyName());
+                                       <<"' in dotted "<<expectWhat
+                                       <<": '"<<m_ds.m_dotText+"."+nodep->prettyName()<<"'");
                         okSymp->cellErrorScopes(nodep, AstNode::prettyName(m_ds.m_dotText));
                     }
                     m_ds.m_dotErr = true;
@@ -2089,7 +2089,7 @@ private:
                 nodep->packagep(foundp->packagep());  // Generally set by parse, but might be an import
             }
             if (!nodep->varp()) {
-                nodep->v3error("Can't find definition of signal, again: "<<nodep->prettyName());
+                nodep->v3error("Can't find definition of signal, again: "<<nodep->prettyNameQ());
             }
         }
     }
@@ -2123,8 +2123,8 @@ private:
                 UINFO(7,"         Resolved "<<nodep<<endl);  // Also prints varp
                 if (!nodep->varp()) {
                     nodep->v3error("Can't find definition of '"
-                                   <<baddot<<"' in dotted signal: "
-                                   <<nodep->dotted()+"."+nodep->prettyName());
+                                   <<baddot<<"' in dotted signal: '"
+                                   <<nodep->dotted()+"."+nodep->prettyName()<<"'");
                     okSymp->cellErrorScopes(nodep);
                 }
                 // V3Inst may have expanded arrays of interfaces to
@@ -2144,8 +2144,8 @@ private:
                 AstVarScope* vscp = foundp ? VN_CAST(foundp->nodep(), VarScope) : NULL;
                 if (!vscp) {
                     nodep->v3error("Can't find varpin scope of '"<<baddot
-                                   <<"' in dotted signal: "
-                                   <<nodep->dotted()+"."+nodep->prettyName());
+                                   <<"' in dotted signal: '"
+                                   <<nodep->dotted()+"."+nodep->prettyName()<<"'");
                     okSymp->cellErrorScopes(nodep);
                 } else {
                     while (vscp->user2p()) {  // If V3Inline aliased it, pick up the new signal
@@ -2183,7 +2183,7 @@ private:
         iterateChildren(nodep);
         if (m_statep->forPrimary() && nodep->isIO() && !m_ftaskp && !nodep->user4()) {
             nodep->v3error("Input/output/inout does not appear in port list: "
-                           <<nodep->prettyName());
+                           <<nodep->prettyNameQ());
         }
     }
     virtual void visit(AstNodeFTaskRef* nodep) {
@@ -2275,11 +2275,11 @@ private:
                                    <<" but expected a task/function");
                 } else if (nodep->dotted() == "") {
                     nodep->v3error("Can't find definition of task/function: "
-                                   <<nodep->prettyName());
+                                   <<nodep->prettyNameQ());
                 } else {
                     nodep->v3error("Can't find definition of '"<<baddot
-                                   <<"' in dotted task/function: "
-                                   <<nodep->dotted()+"."+nodep->prettyName());
+                                   <<"' in dotted task/function: '"
+                                   <<nodep->dotted()+"."+nodep->prettyName()<<"'");
                     okSymp->cellErrorScopes(nodep);
                 }
             }
@@ -2394,7 +2394,7 @@ private:
                 nodep->packagep(foundp->packagep());
             }
             else {
-                nodep->v3error("Can't find typedef: "<<nodep->prettyName());
+                nodep->v3error("Can't find typedef: "<<nodep->prettyNameQ());
             }
         }
         iterateChildren(nodep);
@@ -2406,10 +2406,10 @@ private:
         VSymEnt* foundp = m_curSymp->findIdFallback(nodep->name());
         AstNodeFTask* taskp = foundp ? VN_CAST(foundp->nodep(), NodeFTask) : NULL;
         if (!taskp) { nodep->v3error("Can't find definition of exported task/function: "
-                                     <<nodep->prettyName()); }
+                                     <<nodep->prettyNameQ()); }
         else if (taskp->dpiExport()) {
             nodep->v3error("Function was already DPI Exported, duplicate not allowed: "
-                           <<nodep->prettyName());
+                           <<nodep->prettyNameQ());
         } else {
             taskp->dpiExport(true);
             if (nodep->cname()!="") taskp->cname(nodep->cname());

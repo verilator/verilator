@@ -177,7 +177,7 @@ private:
             AstNodeDType* dtypep = VN_CAST(nodep->valuep(), NodeDType);
             if (!dtypep) {
                 nodep->v3error("Parameter type's initial value isn't a type: "
-                               <<nodep->prettyName());
+                               <<nodep->prettyNameQ());
                 nodep->unlinkFrBack();
             } else {
                 dtypep->unlinkFrBack();
@@ -209,7 +209,8 @@ private:
             if (nodep->isParam() || (m_ftaskp && nodep->isNonOutput())) {
             }
             else if (!m_ftaskp && nodep->isNonOutput()) {
-                nodep->v3error("Unsupported: Default value on module input: "<<nodep->prettyName());
+                nodep->v3error("Unsupported: Default value on module input: "
+                               <<nodep->prettyNameQ());
                 nodep->valuep()->unlinkFrBack()->deleteTree();
             }  // 2. Under modules, it's an initial value to be loaded at time 0 via an AstInitial
             else if (m_valueModp) {

@@ -424,7 +424,7 @@ private:
         }
         //UINFO(9," finalflop  "<<targetp->name()<<" "<<targetp->nodep()->fileline()<<endl);
         warnAndFile(markp->nodep(), V3ErrorCode::CDCRSTLOGIC,
-                    "Logic in path that feeds async reset, via signal: "+nodep->prettyName());
+                    "Logic in path that feeds async reset, via signal: "+nodep->prettyNameQ());
         dumpAsyncRecurse(targetp, "", "   ", 0);
     }
     bool dumpAsyncRecurse(CdcEitherVertex* vertexp, const string& prefix,

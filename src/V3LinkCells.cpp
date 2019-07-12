@@ -79,7 +79,7 @@ public:
 void LinkCellsGraph::loopsMessageCb(V3GraphVertex* vertexp) {
     if (LinkCellsVertex* vvertexp = dynamic_cast<LinkCellsVertex*>(vertexp)) {
         vvertexp->modp()->v3error("Unsupported: Recursive multiple modules (module instantiates something leading back to itself): "
-                                  <<vvertexp->modp()->prettyName()<<endl
+                                  <<vvertexp->modp()->prettyNameQ()<<endl
                                   <<V3Error::warnMore()
                                   <<"... note: self-recursion (module instantiating itself directly) is supported.");
         V3Error::abortIfErrors();
@@ -151,7 +151,7 @@ private:
             if (!modp) {
                 // This shouldn't throw a message as parseFile will create
                 // a AstNotFoundModule for us
-                nodep->v3error("Can't resolve module reference: "<<prettyName);
+                nodep->v3error("Can't resolve module reference: '"<<prettyName<<"'");
             }
         }
         return modp;
@@ -204,7 +204,7 @@ private:
                 m_declfnWarned.insert(nodep->fileline()->filename());
                 nodep->v3warn(DECLFILENAME, "Filename '"<<nodep->fileline()->filebasenameNoExt()
                               <<"' does not match "<<nodep->typeName()
-                              <<" name: "<<nodep->prettyName());
+                              <<" name: "<<nodep->prettyNameQ());
             }
         }
         if (VN_IS(nodep, Iface) || VN_IS(nodep, Package)) nodep->inLibrary(true);  // Interfaces can't be at top, unless asked
@@ -241,7 +241,7 @@ private:
                 if (!nodep->cellp()) nodep->ifacep(VN_CAST(modp, Iface));
             } else if (VN_IS(modp, NotFoundModule)) {  // Will error out later
             } else {
-                nodep->v3error("Non-interface used as an interface: "<<nodep->prettyName());
+                nodep->v3error("Non-interface used as an interface: "<<nodep->prettyNameQ());
             }
         }
         // Note cannot do modport resolution here; modports are allowed underneath generates
@@ -374,11 +374,11 @@ private:
                 if (!pinp->exprp()) {
                     if (pinp->name().substr(0, 11) == "__pinNumber") {
                         pinp->v3warn(PINNOCONNECT, "Cell pin is not connected: "
-                                     <<pinp->prettyName());
+                                     <<pinp->prettyNameQ());
                     } else {
                         pinp->v3warn(PINCONNECTEMPTY,
                                      "Cell pin connected by name with empty reference: "
-                                     <<pinp->prettyName());
+                                     <<pinp->prettyNameQ());
                     }
                 }
                 if (ports.find(pinp->name()) == ports.end()) {
@@ -403,7 +403,7 @@ private:
                             nodep->addPinsp(newp);
                         } else {  // warn on the CELL that needs it, not the port
                             nodep->v3warn(PINMISSING, "Cell has missing pin: "
-                                          <<portp->prettyName());
+                                          <<portp->prettyNameQ());
                             AstPin* newp = new AstPin(nodep->fileline(), 0, portp->name(), NULL);
                             nodep->addPinsp(newp);
                         }
@@ -464,7 +464,7 @@ private:
                 if (!(foundp->fileline()->warnIsOff(V3ErrorCode::MODDUP)
                       || nodep->fileline()->warnIsOff(V3ErrorCode::MODDUP))) {
                     nodep->v3warn(MODDUP, "Duplicate declaration of module: "
-                                  <<nodep->prettyName()<<endl
+                                  <<nodep->prettyNameQ()<<endl
                                   <<nodep->warnContextPrimary()<<endl
                                   <<foundp->warnOther()<<"... Location of original declaration"<<endl
                                   <<foundp->warnContextSecondary());

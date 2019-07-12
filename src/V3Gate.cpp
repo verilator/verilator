@@ -559,9 +559,9 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
                         // reasonable logic may have disappeared.  Issuing a warning would
                         // thus be confusing.  V3Undriven now handles this.
                         vvertexp->varScp()->varp()->v3warn
-                            (UNDRIVEN, "Signal has no drivers "
+                            (UNDRIVEN, "Signal has no drivers: '"
                              <<vvertexp->scopep()->prettyName()<<"."
-                             <<vvertexp->varScp()->varp()->prettyName());
+                             <<vvertexp->varScp()->varp()->prettyName()<<"'");
                     }
                 }
             }
@@ -821,7 +821,7 @@ void GateVisitor::warnSignals() {
                     ) {
                     vscp->varp()->user2(true);  // Warn only once per signal
                     vscp->v3warn(SYNCASYNCNET, "Signal flopped as both synchronous and async: "
-                                 <<vscp->prettyName()<<endl
+                                 <<vscp->prettyNameQ()<<endl
                                  <<ap->warnOther()<<"... Location of async usage"<<endl
                                  <<ap->warnContextPrimary()<<endl
                                  <<sp->warnOther()<<"... Location of sync usage"<<endl

@@ -285,7 +285,7 @@ private:
                 if (!nodep->valuep()) {
                     nodep->v3error("Parameter without initial value is never given value"
                                    <<" (IEEE 1800-2017 6.20.1): "
-                                   <<nodep->prettyName());
+                                   <<nodep->prettyNameQ());
                 } else {
                     V3Const::constifyParamsEdit(nodep);  // The variable, not just the var->init()
                     if (!VN_IS(nodep->valuep(), Const)) {  // Complex init, like an array
@@ -400,7 +400,7 @@ private:
                                   nodep->name()+"__BRA__"+index+"__KET__");
         } else {
             nodep->v3error("Could not expand constant selection inside dotted reference: "
-                           <<nodep->selp()->prettyName());
+                           <<nodep->selp()->prettyNameQ());
             return;
         }
     }
@@ -582,7 +582,7 @@ void ParamVisitor::visitCell(AstCell* nodep) {
             if (AstVar* modvarp = pinp->modVarp()) {
                 if (!modvarp->isGParam()) {
                     pinp->v3error("Attempted parameter setting of non-parameter: Param "
-                                  <<pinp->prettyName()<<" of "<<nodep->prettyName());
+                                  <<pinp->prettyNameQ()<<" of "<<nodep->prettyNameQ());
                 } else if (VN_IS(pinp->exprp(), InitArray)
                            && VN_IS(modvarp->subDTypep(), UnpackArrayDType)) {
                     // Array assigned to array
@@ -595,7 +595,7 @@ void ParamVisitor::visitCell(AstCell* nodep) {
                     if (!exprp) {
                         //if (debug()) pinp->dumpTree(cout, "error:");
                         pinp->v3error("Can't convert defparam value to constant: Param "
-                                      <<pinp->name()<<" of "<<nodep->prettyName());
+                                      <<pinp->prettyNameQ()<<" of "<<nodep->prettyNameQ());
                         pinp->exprp()->replaceWith(
                             new AstConst(pinp->fileline(),
                                          AstConst::WidthedValue(), modvarp->width(), 0));
@@ -620,10 +620,10 @@ void ParamVisitor::visitCell(AstCell* nodep) {
                 AstNodeDType* origp = modvarp->subDTypep();
                 if (!exprp) {
                     pinp->v3error("Parameter type pin value isn't a type: Param "
-                                  <<pinp->prettyName()<<" of "<<nodep->prettyName());
+                                  <<pinp->prettyNameQ()<<" of "<<nodep->prettyNameQ());
                 } else if (!origp) {
                     pinp->v3error("Parameter type variable isn't a type: Param "
-                                  <<modvarp->prettyName());
+                                  <<modvarp->prettyNameQ());
                 } else {
                     UINFO(9,"Parameter type assignment expr="<<exprp<<" to "<<origp<<endl);
                     if (origp && exprp->sameTree(origp)) {
@@ -638,7 +638,7 @@ void ParamVisitor::visitCell(AstCell* nodep) {
                 }
             } else {
                 pinp->v3error("Parameter not found in sub-module: Param "
-                              <<pinp->prettyName()<<" of "<<nodep->prettyName());
+                              <<pinp->prettyNameQ()<<" of "<<nodep->prettyNameQ());
             }
         }
         IfaceRefRefs ifaceRefRefs;
@@ -680,11 +680,11 @@ void ParamVisitor::visitCell(AstCell* nodep) {
                 UINFO(9,"     portIfaceRef "<<portIrefp<<endl);
 
                 if (!portIrefp) {
-                    pinp->v3error("Interface port '"<<modvarp->prettyName()
-                                  <<"' is not an interface " << modvarp);
+                    pinp->v3error("Interface port "<<modvarp->prettyNameQ()
+                                  <<" is not an interface " << modvarp);
                 } else if (!pinIrefp) {
-                    pinp->v3error("Interface port '"<<modvarp->prettyName()
-                                  <<"' is not connected to interface/modport pin expression");
+                    pinp->v3error("Interface port "<<modvarp->prettyNameQ()
+                                  <<" is not connected to interface/modport pin expression");
                 } else {
                     UINFO(9,"     pinIfaceRef "<<pinIrefp<<endl);
                     if (portIrefp->ifaceViaCellp() != pinIrefp->ifaceViaCellp()) {
@@ -696,10 +696,11 @@ void ParamVisitor::visitCell(AstCell* nodep) {
                         if (portIrefp->ifacep() != pinIrefp->ifacep()
                             // Might be different only due to param cloning, so check names too
                             && portIrefp->ifaceName() != pinIrefp->ifaceName()) {
-                            pinp->v3error("Port '"<<pinp->prettyName()<<"' expects '"
-                                          <<AstNode::prettyName(portIrefp->ifaceName())
-                                          <<"' interface but pin connects '"
-                                          <<AstNode::prettyName(pinIrefp->ifaceName())<<"' interface");
+                            pinp->v3error("Port "<<pinp->prettyNameQ()<<" expects "
+                                          <<AstNode::prettyNameQ(portIrefp->ifaceName())
+                                          <<" interface but pin connects "
+                                          <<AstNode::prettyNameQ(pinIrefp->ifaceName())
+                                          <<" interface");
                         }
                     }
                 }

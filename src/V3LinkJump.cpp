@@ -230,7 +230,7 @@ private:
         }
         //if (debug()>=9) { UINFO(0,"\n"); beginp->dumpTree(cout, "  labeli: "); }
         if (!beginp) { nodep->v3error("disable isn't underneath a begin with name: "
-                                      <<nodep->prettyName()); }
+                                      <<nodep->prettyNameQ()); }
         else {
             // Jump to the end of the named begin
             AstJumpLabel* labelp = findAddLabel(beginp, false);

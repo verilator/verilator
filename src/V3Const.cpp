@@ -1622,7 +1622,7 @@ private:
         }
         if (!did && m_required) {
             nodep->v3error("Expecting expression to be constant, but variable isn't const: "
-                           <<nodep->varp()->prettyName());
+                           <<nodep->varp()->prettyNameQ());
         }
     }
     virtual void visit(AstEnumItemRef* nodep) {
@@ -1640,7 +1640,7 @@ private:
         }
         if (!did && m_required) {
             nodep->v3error("Expecting expression to be constant, but variable isn't const: "
-                           <<nodep->itemp()->prettyName());
+                           <<nodep->itemp()->prettyNameQ());
         }
     }
 

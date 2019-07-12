@@ -106,7 +106,7 @@ class EmitCSyms : EmitCBaseVisitor {
                 // We'll still check here because the compiler errors
                 // resulting if we miss this warning are SO nasty
                 nodep->v3error("Symbol matching "+rsvd+" reserved word reached emitter,"
-                               " should have hit SYMRSVDWORD: '"<<nodep->prettyName()<<"'");
+                               " should have hit SYMRSVDWORD: "<<nodep->prettyNameQ());
             }
         }
     }
