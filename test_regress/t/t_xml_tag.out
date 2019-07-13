@@ -20,7 +20,7 @@
       <var fl="d13" name="clk_ip" tag="clk_ip" dtype_id="1" dir="input" vartype="logic" origName="clk_ip"/>
       <var fl="d14" name="rst_ip" dtype_id="1" dir="input" vartype="logic" origName="rst_ip"/>
       <var fl="d15" name="foo_op" tag="foo_op" dtype_id="1" dir="output" vartype="logic" origName="foo_op"/>
-      <typedef fl="d19" name="my_struct" tag="my_struct" dtype_id="2"/>
+      <typedef fl="d24" name="my_struct" tag="my_struct" dtype_id="2"/>
       <instance fl="d28" name="itop" defName="ifc" origName="itop"/>
       <var fl="d28" name="itop__Viftop" dtype_id="3" vartype="ifaceref" origName="itop__Viftop"/>
       <var fl="d30" name="this_struct" tag="this_struct" dtype_id="4" vartype="" origName="this_struct"/>
