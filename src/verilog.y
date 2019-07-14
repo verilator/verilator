@@ -61,6 +61,7 @@ public:
     AstNodeDType* m_memDTypep;	// Pointer to data type for next member declaration
     bool        m_pinAnsi;      // In ANSI port list
     int		m_pinNum;	// Pin number currently parsing
+    FileLine*   m_instModuleFl; // Fileline of module referenced for instantiations
     string	m_instModule;	// Name of module referenced for instantiations
     AstPin*	m_instParamp;	// Parameters for instantiations
     bool	m_tracingParse;	// Tracing disable for parser
@@ -78,6 +79,7 @@ public:
 	m_memDTypep = NULL;
 	m_pinAnsi = false;
 	m_pinNum = -1;
+	m_instModuleFl = NULL;
 	m_instModule = "";
 	m_instParamp = NULL;
 	m_varAttrp = NULL;
@@ -208,7 +210,10 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
 
 #define GATERANGE(rangep) { GRAMMARP->m_gateRangep = rangep; }
 
-#define INSTPREP(modname,paramsp) { GRAMMARP->m_impliedDecl = true; GRAMMARP->m_instModule = modname; GRAMMARP->m_instParamp = paramsp; }
+#define INSTPREP(modfl,modname,paramsp) { \
+	GRAMMARP->m_impliedDecl = true; \
+	GRAMMARP->m_instModuleFl = modfl; GRAMMARP->m_instModule = modname; \
+	GRAMMARP->m_instParamp = paramsp; }
 
 #define DEL(nodep) { if (nodep) nodep->deleteTree(); }
 
@@ -948,7 +953,7 @@ port<nodep>:			// ==IEEE: port
 			  $$->addNextNull(VARDONEP($$,$4,$5)); }
 	|	portDirNetE id/*interface*/ '.' idAny/*modport*/ portSig variable_dimensionListE sigAttrListE
 			{ $$ = $5; VARDECL(AstVarType::IFACEREF); VARIO(NONE);
-			  VARDTYPE(new AstIfaceRefDType($<fl>2,"",*$2,*$4));
+			  VARDTYPE(new AstIfaceRefDType($<fl>2, $<fl>4, "", *$2, *$4));
 			  $$->addNextNull(VARDONEP($$,$6,$7)); }
 	|	portDirNetE yINTERFACE                           portSig rangeListE sigAttrListE
 			{ $$ = NULL; BBUNSUP($<fl>2, "Unsupported: virtual or generic interfaces"); }
@@ -2175,13 +2180,13 @@ etcInst<nodep>:			// IEEE: module_instantiation + gate_instantiation + udp_insta
 	;
 
 instDecl<nodep>:
-		id parameter_value_assignmentE {INSTPREP(*$1,$2);} instnameList ';'
+		id parameter_value_assignmentE {INSTPREP($<fl>1,*$1,$2);} instnameList ';'
 			{ $$ = $4; GRAMMARP->m_impliedDecl=false;
 			  if (GRAMMARP->m_instParamp) { GRAMMARP->m_instParamp->deleteTree(); GRAMMARP->m_instParamp = NULL; } }
 	//			// IEEE: interface_identifier' .' modport_identifier list_of_interface_identifiers
 	|	id/*interface*/ '.' id/*modport*/
 			{ VARRESET_NONLIST(AstVarType::IFACEREF);
-			  VARDTYPE(new AstIfaceRefDType($<fl>1,"",*$1,*$3)); }
+			  VARDTYPE(new AstIfaceRefDType($<fl>1, $<fl>3, "", *$1, *$3)); }
 		mpInstnameList ';'
 			{ $$ = VARDONEP($5,NULL,NULL); }
 	//UNSUP: strengthSpecE for udp_instantiations
@@ -2203,11 +2208,13 @@ instnameList<nodep>:
 
 instnameParen<cellp>:
 	//			// Must clone m_instParamp as may be comma'ed list of instances
-		id instRangeE '(' cellpinList ')'	{ $$ = new AstCell($<fl>1, *$1, GRAMMARP->m_instModule, $4,
+		id instRangeE '(' cellpinList ')'	{ $$ = new AstCell($<fl>1, GRAMMARP->m_instModuleFl,
+									   *$1, GRAMMARP->m_instModule, $4,
 									   AstPin::cloneTreeNull(GRAMMARP->m_instParamp, true),
                                                                            GRAMMARP->scrubRange($2));
 						          $$->trace(GRAMMARP->allTracingOn($<fl>1)); }
-	|	id instRangeE 				{ $$ = new AstCell($<fl>1, *$1, GRAMMARP->m_instModule, NULL,
+	|	id instRangeE 				{ $$ = new AstCell($<fl>1, GRAMMARP->m_instModuleFl,
+									   *$1, GRAMMARP->m_instModule, NULL,
 									   AstPin::cloneTreeNull(GRAMMARP->m_instParamp, true),
                                                                            GRAMMARP->scrubRange($2));
 						          $$->trace(GRAMMARP->allTracingOn($<fl>1)); }

@@ -475,10 +475,11 @@ public:
                 if (!ok) {
                     string suggest = suggestSymFallback(
                         ifaceSymp, ifacerefp->modportName(), LinkNodeMatcherModport());
-                    ifacerefp->v3error("Modport not found under interface "
-                                       <<ifacerefp->prettyNameQ(ifacerefp->ifaceName())<<": "
-                                       <<ifacerefp->prettyNameQ(ifacerefp->modportName())<<endl
-                                       <<(suggest.empty() ? "" : ifacerefp->warnMore()+suggest));
+                    ifacerefp->modportFileline()
+                        ->v3error("Modport not found under interface "
+                                  <<ifacerefp->prettyNameQ(ifacerefp->ifaceName())<<": "
+                                  <<ifacerefp->prettyNameQ(ifacerefp->modportName())<<endl
+                                  <<(suggest.empty() ? "" : ifacerefp->warnMore()+suggest));
                 }
             }
             // Alias won't expand until interfaces and modport names are known; see notes at top
@@ -1740,7 +1741,8 @@ private:
         string varName
             = ifacep->name()+"__Vmp__"+modportp->name()+"__Viftop"+cvtToStr(++m_modportNum);
         AstIfaceRefDType* idtypep
-            = new AstIfaceRefDType(fl, cellp->name(), ifacep->name(), modportp->name());
+            = new AstIfaceRefDType(fl, modportp->fileline(),
+                                   cellp->name(), ifacep->name(), modportp->name());
         idtypep->cellp(cellp);
         AstVar* varp = new AstVar(fl, AstVarType::IFACEREF, varName, VFlagChildDType(), idtypep);
         varp->isIfaceParent(true);
@@ -2032,8 +2034,8 @@ private:
                                                       ifaceRefVarp, false);
                         nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
                     } else if (VN_IS(cellp->modp(), NotFoundModule)) {
-                        cellp->v3error("Cannot find file containing interface: "
-                                       <<cellp->modp()->prettyNameQ());
+                        cellp->modNameFileline()->v3error("Cannot find file containing interface: "
+                                                          <<cellp->modp()->prettyNameQ());
                     }
                 }
             }

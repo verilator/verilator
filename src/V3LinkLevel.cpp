@@ -53,35 +53,41 @@ void V3LinkLevel::modSortByLevel() {
 
     typedef std::vector<AstNodeModule*> ModVec;
 
-    ModVec vec;
-    AstNodeModule* topp = NULL;
+    ModVec mods;  // Modules
+    ModVec tops;  // Top level modules
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp();
          nodep; nodep=VN_CAST(nodep->nextp(), NodeModule)) {
         if (nodep->level()<=2) {
-            if (topp) {
-                static int warnedOnce = 0;
-                nodep->v3warn(MULTITOP, "Multiple top level modules: "
-                              <<nodep->prettyNameQ()<<" and "<<topp->prettyNameQ()
-                              <<(!warnedOnce++
-                                 ? ("\n"+nodep->warnMore()
-                                    +"... Suggest see manual; fix the duplicates, or use --top-module to select top.")
-                                 : ""));
-            }
-            topp = nodep;
+            tops.push_back(nodep);
         }
-        vec.push_back(nodep);
+        mods.push_back(nodep);
     }
+    if (tops.size() >= 2) {
+        AstNode* secp = tops[1];  // Complain about second one, as first often intended
+        if (!secp->fileline()->warnIsOff(V3ErrorCode::MULTITOP)) {
+            secp->v3warn(MULTITOP, "Multiple top level modules\n"
+                         <<secp->warnMore()
+                         <<"... Suggest see manual; fix the duplicates, or use --top-module to select top."
+                         <<V3Error::warnContextNone());
+            for (ModVec::iterator it = tops.begin(); it != tops.end(); ++it) {
+                AstNode* alsop = *it;
+                std::cout<<secp->warnMore()<<"... Top module "<<alsop->prettyNameQ()<<endl
+                         <<alsop->warnContextSecondary();
+            }
+        }
+    }
+
     // Reorder the netlist's modules to have modules in level sorted order
-    stable_sort(vec.begin(), vec.end(), CmpLevel());  // Sort the vector
+    stable_sort(mods.begin(), mods.end(), CmpLevel());  // Sort the vector
     UINFO(9,"modSortByLevel() sorted\n");  // Comment required for gcc4.6.3 / bug666
-    for (ModVec::iterator it = vec.begin(); it != vec.end(); ++it) {
+    for (ModVec::iterator it = mods.begin(); it != mods.end(); ++it) {
         AstNodeModule* nodep = *it;
         nodep->clearIter();  // Because we didn't iterate to find the node
         // pointers, may have a stale m_iterp() needing cleanup
         nodep->unlinkFrBack();
     }
     UASSERT_OBJ(!v3Global.rootp()->modulesp(), v3Global.rootp(), "Unlink didn't work");
-    for (ModVec::iterator it = vec.begin(); it != vec.end(); ++it) {
+    for (ModVec::iterator it = mods.begin(); it != mods.end(); ++it) {
         AstNodeModule* nodep = *it;
         v3Global.rootp()->addModulep(nodep);
     }
@@ -117,6 +123,7 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
     for (AstNodeModule* modp = rootp->modulesp(); modp; modp=VN_CAST(modp->nextp(), NodeModule)) {
         if (VN_IS(modp, Package)) {
             AstCell* cellp = new AstCell(modp->fileline(),
+                                         modp->fileline(),
                                          // Could add __03a__03a="::" to prevent conflict
                                          // with module names/"v"
                                          modp->name(),
@@ -164,6 +171,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
         // Add instance
         UINFO(5,"LOOP "<<oldmodp<<endl);
         AstCell* cellp = new AstCell(newmodp->fileline(),
+                                     newmodp->fileline(),
                                      (!v3Global.opt.l2Name().empty()
                                       ? v3Global.opt.l2Name() : oldmodp->name()),
                                      oldmodp->name(),

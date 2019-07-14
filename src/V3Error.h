@@ -264,6 +264,8 @@ class V3Error {
 
     // When printing an error/warning, print prefix for multiline message
     static string warnMore();
+    /// When building an error, don't show context info
+    static string warnContextNone() { V3Error::errorContexted(true); return ""; }
 
     // Internals for v3error()/v3fatal() macros only
     // Error end takes the string stream to output, be careful to seek() as needed

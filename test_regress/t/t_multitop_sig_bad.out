@@ -1,5 +1,7 @@
-%Warning-MULTITOP: t/t_multitop_sig.v:14: Multiple top level modules: 'b' and 'a'
+%Warning-MULTITOP: t/t_multitop_sig.v:14: Multiple top level modules
                                         : ... Suggest see manual; fix the duplicates, or use --top-module to select top.
                    ... Use "/* verilator lint_off MULTITOP */" and lint_on around source to disable this message.
-%Warning-MULTITOP: t/t_multitop_sig.v:22: Multiple top level modules: 'c' and 'b'
+                                        : ... Top module 'a'
+                                        : ... Top module 'b'
+                                        : ... Top module 'c'
 %Error: Exiting due to

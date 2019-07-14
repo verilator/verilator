@@ -586,6 +586,7 @@ public:
 class AstIfaceRefDType : public AstNodeDType {
     // Reference to an interface, either for a port, or inside parent cell
 private:
+    FileLine*           m_modportFileline;  // Where modport token was
     string              m_cellName;     // "" = no cell, such as when connects to 'input' iface
     string              m_ifaceName;    // Interface name
     string              m_modportName;  // "" = no modport
@@ -593,11 +594,15 @@ private:
     AstCell*            m_cellp;        // When exact parent cell known; not a guess
     AstModport*         m_modportp;     // NULL = unlinked or no modport
 public:
-    AstIfaceRefDType(FileLine* fl, const string& cellName, const string& ifaceName)
-        : AstNodeDType(fl), m_cellName(cellName), m_ifaceName(ifaceName), m_modportName(""),
+    AstIfaceRefDType(FileLine* fl,
+                     const string& cellName, const string& ifaceName)
+        : AstNodeDType(fl), m_modportFileline(NULL),
+          m_cellName(cellName), m_ifaceName(ifaceName), m_modportName(""),
           m_ifacep(NULL), m_cellp(NULL), m_modportp(NULL) { }
-    AstIfaceRefDType(FileLine* fl, const string& cellName, const string& ifaceName, const string& modport)
-        : AstNodeDType(fl), m_cellName(cellName), m_ifaceName(ifaceName), m_modportName(modport),
+    AstIfaceRefDType(FileLine* fl, FileLine* modportFl,
+                     const string& cellName, const string& ifaceName, const string& modport)
+        : AstNodeDType(fl), m_modportFileline(modportFl),
+          m_cellName(cellName), m_ifaceName(ifaceName), m_modportName(modport),
           m_ifacep(NULL), m_cellp(NULL), m_modportp(NULL) { }
     ASTNODE_NODE_FUNCS(IfaceRefDType)
     // METHODS
@@ -613,6 +618,7 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(m_cellp); }
     virtual int widthAlignBytes() const { return 1; }
     virtual int widthTotalBytes() const { return 1; }
+    FileLine* modportFileline() const { return m_modportFileline; }
     string cellName() const { return m_cellName; }
     void cellName(const string& name) { m_cellName = name; }
     string ifaceName() const { return m_ifaceName; }
@@ -1820,6 +1826,7 @@ public:
 class AstCell : public AstNode {
     // A instantiation cell or interface call (don't know which until link)
 private:
+    FileLine*   m_modNameFileline;  // Where module the cell instances token was
     string      m_name;         // Cell name
     string      m_origName;     // Original name before dot addition
     string      m_modName;      // Module the cell instances
@@ -1828,9 +1835,11 @@ private:
     bool        m_recursive:1;  // Self-recursive module
     bool        m_trace:1;      // Trace this cell
 public:
-    AstCell(FileLine* fl, const string& instName, const string& modName,
+    AstCell(FileLine* fl, FileLine* mfl,
+            const string& instName, const string& modName,
             AstPin* pinsp, AstPin* paramsp, AstRange* rangep)
         : AstNode(fl)
+        , m_modNameFileline(mfl)
         , m_name(instName), m_origName(instName), m_modName(modName)
         , m_modp(NULL), m_hasIfaceVar(false), m_recursive(false), m_trace(true) {
         addNOp1p(pinsp); addNOp2p(paramsp); setNOp3p(rangep); }
@@ -1846,6 +1855,7 @@ public:
     void origName(const string& name) { m_origName = name; }
     string modName() const { return m_modName; }  // * = Instance name
     void modName(const string& name) { m_modName = name; }
+    FileLine* modNameFileline() const { return m_modNameFileline; }
     AstPin* pinsp() const { return VN_CAST(op1p(), Pin); }  // op1 = List of cell ports
     AstPin* paramsp() const { return VN_CAST(op2p(), Pin); }  // op2 = List of parameter #(##) values
     AstRange* rangep() const { return VN_CAST(op3p(), Range); }  // op3 = Range of arrayed instants (NULL=not ranged)

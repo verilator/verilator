@@ -421,7 +421,8 @@ private:
         if (m_vup->final()) {
             if (!nodep->dtypep()->widthSized()) {
                 // See also error in V3Number
-                nodep->v3warn(WIDTHCONCAT, "Unsized numbers/parameters not allowed in concatenations.");
+                nodeForUnsizedWarning(nodep)
+                    ->v3warn(WIDTHCONCAT, "Unsized numbers/parameters not allowed in concatenations.");
             }
         }
     }
@@ -436,7 +437,8 @@ private:
         if (m_vup->final()) {
             if (!nodep->dtypep()->widthSized()) {
                 // See also error in V3Number
-                nodep->v3warn(WIDTHCONCAT, "Unsized numbers/parameters not allowed in concatenations.");
+                nodeForUnsizedWarning(nodep)
+                    ->v3warn(WIDTHCONCAT, "Unsized numbers/parameters not allowed in concatenations.");
             }
         }
     }
@@ -470,7 +472,8 @@ private:
         if (m_vup->final()) {
             if (!nodep->dtypep()->widthSized()) {
                 // See also error in V3Number
-                nodep->v3warn(WIDTHCONCAT, "Unsized numbers/parameters not allowed in replications.");
+                nodeForUnsizedWarning(nodep)
+                    ->v3warn(WIDTHCONCAT, "Unsized numbers/parameters not allowed in replications.");
             }
         }
     }
@@ -491,7 +494,8 @@ private:
         if (m_vup->final()) {
             if (!nodep->dtypep()->widthSized()) {
                 // See also error in V3Number
-                nodep->v3warn(WIDTHCONCAT, "Unsized numbers/parameters not allowed in replications.");
+                nodeForUnsizedWarning(nodep)
+                    ->v3warn(WIDTHCONCAT, "Unsized numbers/parameters not allowed in replications.");
             }
         }
     }
@@ -518,7 +522,8 @@ private:
         if (m_vup->final()) {
             if (!nodep->dtypep()->widthSized()) {
                 // See also error in V3Number
-                nodep->v3warn(WIDTHCONCAT, "Unsized numbers/parameters not allowed in streams.");
+                nodeForUnsizedWarning(nodep)
+                    ->v3warn(WIDTHCONCAT, "Unsized numbers/parameters not allowed in streams.");
             }
         }
     }
@@ -2516,8 +2521,9 @@ private:
                 // We've resolved parameters and hit a module that we couldn't resolve.  It's
                 // finally time to report it.
                 // Note only here in V3Width as this is first visitor after V3Dead.
-                nodep->v3error("Cannot find file containing module: '"<<nodep->modName()<<"'");
-                v3Global.opt.filePathLookedMsg(nodep->fileline(), nodep->modName());
+                nodep->modNameFileline()
+                    ->v3error("Cannot find file containing module: '"<<nodep->modName()<<"'");
+                v3Global.opt.filePathLookedMsg(nodep->modNameFileline(), nodep->modName());
             }
             if (nodep->rangep()) {
                 m_cellRangep = nodep->rangep();
@@ -4063,6 +4069,17 @@ private:
             nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::Unsized32(), 1));
             pushDeletep(nodep); VL_DANGLING(nodep);
         }
+    }
+    AstNode* nodeForUnsizedWarning(AstNode* nodep) {
+        // Return a nodep to use for unsized warnings, reporting on child if can
+        if (nodep->op1p() && nodep->op1p()->dtypep()
+            && !nodep->op1p()->dtypep()->widthSized()) {
+            return nodep->op1p();
+        } else if (nodep->op2p() && nodep->op2p()->dtypep()
+                   && !nodep->op2p()->dtypep()->widthSized()) {
+            return nodep->op2p();
+        }
+        return nodep;  // By default return this
     }
 
     //----------------------------------------------------------------------
