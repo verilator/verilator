@@ -57,7 +57,7 @@ typedef std::set<int> MTaskIdSet;  // Set of mtaskIds for Var sorting
 #define VN_IS(nodep,nodetypename) (AstNode::privateIs ## nodetypename(nodep))
 
 // (V)erilator (N)ode cast: Cast to given type if can; effectively
-// dynamic_cast(nodep)(nodetypename)
+// dynamic_cast<nodetypename>(nodep)
 #define VN_CAST(nodep,nodetypename) (AstNode::privateCast ## nodetypename(nodep))
 #define VN_CAST_CONST(nodep,nodetypename) (AstNode::privateConstCast ## nodetypename(nodep) )
 
@@ -1113,6 +1113,14 @@ public:
         setBoth(1, ((h1.hshval()*31+h2.hshval())*31+h3.hshval())*31+h4.hshval()); }
 };
 std::ostream& operator<<(std::ostream& os, const V3Hash& rhs);
+
+//######################################################################
+// Callback base class to determine if node matches some formula
+
+class VNodeMatcher {
+public:
+    virtual bool nodeMatch(const AstNode* nodep) const { return true; }
+};
 
 //######################################################################
 // AstNode -- Base type of all Ast types

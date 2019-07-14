@@ -884,6 +884,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* Preprocessor */
   /* Common for all SYSC header states */
   /* OPTIMIZE: we return one per line, make it one for the entire block */
+  /* If add to this list also add to V3LanguageWords.h */
 <V95,V01,V05,VA5,S05,S09,S12,S17,SAX,VLT,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
   "`accelerate"                         { }  // Verilog-XL compatibility
   "`autoexpand_vectornets"              { }  // Verilog-XL compatibility
@@ -941,6 +942,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`systemc_interface"                  { BEGIN SYSCINT; }
   "`verilator_config"                   { BEGIN VLT; }
   "`verilog"                            { BEGIN PARSEP->lastVerilogState(); }
+
+  /* If add to this list also add to V3LanguageWords.h */
 }
 
 <SYSCHDR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}        { FL; NEXTLINE(); yylval.strp = PARSEP->newString(yytext); return yaSCHDR; }
@@ -961,7 +964,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* Default rules - leave last */
 
 <V95,V01,V05,VA5,S05,S09,S12,S17,SAX,VLT>{
-  "`"[a-zA-Z_0-9]+      { FL; yyerrorf("Define or directive not defined: %s", yytext); }
+  "`"[a-zA-Z_0-9]+      { FL; PARSEP->errorPreprocDirective(yytext); }
   "//"[^\n]*            { }  /* throw away single line comments */
   .                     { FL; return yytext[0]; }       /* return single char ops. */
 }

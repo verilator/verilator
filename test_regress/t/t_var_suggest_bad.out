@@ -1,3 +1,5 @@
 %Error: t/t_var_suggest_bad.v:12: Can't find definition of variable: 'foobat'
+                                : ... Suggested alternative: 'foobar'
 %Error: t/t_var_suggest_bad.v:13: Can't find definition of task/function: 'boobat'
+                                : ... Suggested alternative: 'boobar'
 %Error: Exiting due to

@@ -4,12 +4,13 @@
 // without warranty, 2004 by Wilson Snyder.
 
 module t;
-`define A B
+`define DEFINED
 
-   // NOTDEF isn't defined here:
-   `NOTDEF
+   // NDEFINED isn't defined here:
+   `NDEFINED
 
-//`include "notfound"
+     // Botched directive (`timescale)
+     `imescale
 
      initial $stop; // Should have failed
 

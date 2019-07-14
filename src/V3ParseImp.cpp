@@ -36,6 +36,7 @@
 #include "V3File.h"
 #include "V3ParseImp.h"
 #include "V3PreShell.h"
+#include "V3LanguageWords.h"
 
 #include <cstdarg>
 #include <fstream>
@@ -130,6 +131,21 @@ void V3ParseImp::verilatorCmtBad(const char* textp) {
     if (!parsep()->optFuture(cmtname)) {
         yyerrorf("Unknown verilator comment: %s", textp);
     }
+}
+
+void V3ParseImp::errorPreprocDirective(const char* textp) {
+    // Find all `preprocessor spelling candidates
+    // Can't make this static as might get more defines later when read cells
+    VSpellCheck speller;
+    V3LanguageWords words;
+    for (V3LanguageWords::const_iterator it = words.begin(); it != words.end(); ++it) {
+        string ppDirective = it->first;
+        if (ppDirective[0] == '`') speller.pushCandidate(ppDirective);
+    }
+    V3PreShell::candidateDefines(&speller);
+    string suggest = speller.bestCandidateMsg(textp);
+    fileline()->v3error("Define or directive not defined: '"<<textp<<"'\n"
+                        <<(suggest.empty() ? "" : fileline()->warnMore()+suggest));
 }
 
 void V3ParseImp::tag(const char* text) {

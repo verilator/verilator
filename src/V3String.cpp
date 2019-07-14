@@ -25,6 +25,8 @@
 #include "V3String.h"
 #include "V3Error.h"
 
+#include <algorithm>
+
 size_t VName::s_minLength = 32;
 size_t VName::s_maxLength = 0;  // Disabled
 
@@ -273,7 +275,7 @@ string VHashSha1::digestSymbol() {
 }
 
 void VHashSha1::selfTestOne(const string& data, const string& data2,
-                             const string& exp, const string& exp64) {
+                            const string& exp, const string& exp64) {
     VHashSha1 digest (data);
     if (data2!="") digest.insert(data2);
     if (VL_UNCOVERABLE(digest.digestHex() != exp)) {
@@ -327,5 +329,140 @@ string VName::hashedName() {
             m_hashed = suffix;
         }
         return m_hashed;
+    }
+}
+
+//######################################################################
+// VSpellCheck - Algorithm same as GCC's spellcheck.c
+
+VSpellCheck::EditDistance VSpellCheck::editDistance(const string& s, const string& t) {
+    // Wagner-Fischer algorithm for the Damerau-Levenshtein distance
+    size_t sLen = s.length();
+    size_t tLen = t.length();
+    if (sLen == 0) return tLen;
+    if (tLen == 0) return sLen;
+    if (sLen >= LENGTH_LIMIT) return sLen;
+    if (tLen >= LENGTH_LIMIT) return tLen;
+
+    static EditDistance s_v_two_ago[LENGTH_LIMIT + 1];
+    static EditDistance s_v_one_ago[LENGTH_LIMIT + 1];
+    static EditDistance s_v_next[LENGTH_LIMIT + 1];
+
+    for (int i = 0; i < sLen + 1; i++) s_v_one_ago[i] = i;
+
+    for (int i = 0; i < tLen; i++) {
+        s_v_next[0] = i + 1;
+        for (int j = 0; j < sLen; j++) {
+            EditDistance cost =(s[j] == t[i] ? 0 : 1);
+            EditDistance deletion     = s_v_next[j] + 1;
+            EditDistance insertion    = s_v_one_ago[j + 1] + 1;
+            EditDistance substitution = s_v_one_ago[j] + cost;
+            EditDistance cheapest = std::min(deletion, insertion);
+            cheapest = std::min(cheapest, substitution);
+            if (i > 0 && j > 0 && s[j] == t[i - 1] && s[j - 1] == t[i]) {
+                EditDistance transposition = s_v_two_ago[j - 1] + 1;
+                cheapest = std::min(cheapest, transposition);
+            }
+            s_v_next[j + 1] = cheapest;
+        }
+        for (int j = 0; j < sLen + 1; j++) {
+            s_v_two_ago[j] = s_v_one_ago[j];
+            s_v_one_ago[j] = s_v_next[j];
+        }
+    }
+
+    EditDistance result = s_v_next[sLen];
+    return result;
+}
+
+VSpellCheck::EditDistance VSpellCheck::cutoffDistance(size_t goal_len, size_t candidate_len) {
+    // Return max acceptable edit distance
+    size_t max_length = std::max(goal_len, candidate_len);
+    size_t min_length = std::min(goal_len, candidate_len);
+    if (max_length <= 1) return 0;
+    if (max_length - min_length <= 1) return std::max(max_length / 3, (size_t)1);
+    return (max_length + 2) / 3;
+}
+
+string VSpellCheck::bestCandidateInfo(const string& goal,
+                                         EditDistance& distancer) {
+    string bestCandidate;
+    size_t gLen = goal.length();
+    distancer = LENGTH_LIMIT*10;
+    int suggestionLimit = 1000;  // Avoid searching massive netlists
+    for (Candidates::const_iterator it = m_candidates.begin();
+         it != m_candidates.end(); ++it) {
+        const string candidate = *it;
+        size_t cLen = candidate.length();
+
+        // Min distance must be inserting/deleting to make lengths match
+        EditDistance min_distance = (cLen > gLen ? (cLen - gLen) : (gLen - cLen));
+        if (min_distance >= distancer) continue;  // Short-circuit if already better
+
+        EditDistance cutoff = cutoffDistance(gLen, cLen);
+        if (min_distance > cutoff) continue;  // Short-circuit if already too bad
+
+        EditDistance dist = editDistance(goal, candidate);
+        UINFO(9, "EditDistance dist="<<dist<<" cutoff="<<cutoff
+              <<" goal="<<goal<<" candidate="<<candidate<<endl);
+        if (dist < distancer && dist <= cutoff) {
+            distancer = dist;
+            bestCandidate = candidate;
+        }
+    }
+
+    // If goal matches candidate avoid suggesting replacing with self
+    if (distancer == 0) return "";
+    return bestCandidate;
+}
+
+void VSpellCheck::selfTestDistanceOne(const string& a, const string& b,
+                                      EditDistance expected) {
+    UASSERT_SELFTEST(EditDistance, editDistance(a, b), expected);
+    UASSERT_SELFTEST(EditDistance, editDistance(b, a), expected);
+}
+
+void VSpellCheck::selfTestSuggestOne(bool matches, const string& c, const string& goal,
+                                     EditDistance dist) {
+    EditDistance gdist;
+    VSpellCheck speller;
+    speller.pushCandidate(c);
+    string got = speller.bestCandidateInfo(goal, gdist/*ref*/);
+    if (matches) {
+        UASSERT_SELFTEST(string, got, c);
+        UASSERT_SELFTEST(EditDistance, gdist, dist);
+    } else {
+        UASSERT_SELFTEST(string, got, "");
+    }
+}
+
+void VSpellCheck::selfTest() {
+    {
+        selfTestDistanceOne("ab", "ac", 1);
+        selfTestDistanceOne("ab", "a", 1);
+        selfTestDistanceOne("a", "b", 1);
+    }
+    {
+        selfTestSuggestOne(true, "DEL_ETE", "DELETE", 1);
+        selfTestSuggestOne(true, "abcdef", "acbdef", 1);
+        selfTestSuggestOne(true, "db", "dc", 1);
+        selfTestSuggestOne(true, "db", "dba", 1);
+        // Negative suggestions
+        selfTestSuggestOne(false, "x", "y", 1);
+        selfTestSuggestOne(false, "sqrt", "assert", 3);
+    }
+    {
+        VSpellCheck speller;
+        UASSERT_SELFTEST(string, "", speller.bestCandidate(""));
+    }
+    {
+        VSpellCheck speller;
+        speller.pushCandidate("fred");
+        speller.pushCandidate("wilma");
+        speller.pushCandidate("barney");
+        UASSERT_SELFTEST(string, "fred", speller.bestCandidate("fre"));
+        UASSERT_SELFTEST(string, "wilma", speller.bestCandidate("whilma"));
+        UASSERT_SELFTEST(string, "barney", speller.bestCandidate("Barney"));
+        UASSERT_SELFTEST(string, "", speller.bestCandidate("nothing close"));
     }
 }

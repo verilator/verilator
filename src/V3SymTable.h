@@ -27,6 +27,7 @@
 #include "V3Global.h"
 #include "V3Ast.h"
 #include "V3File.h"
+#include "V3String.h"
 
 #include <cstdarg>
 #include <map>
@@ -157,6 +158,23 @@ public:
         // Then scan the upper begin/end block or module for the name
         if (m_fallbackp) return m_fallbackp->findIdFallback(name);
         return NULL;
+    }
+    void candidateIdFlat(VSpellCheck* spellerp, const VNodeMatcher* matcherp) const {
+        // Suggest alternative symbol candidates without looking upward through symbol hierarchy
+        for (IdNameMap::const_iterator it = m_idNameMap.begin();
+             it != m_idNameMap.end(); ++it) {
+            const AstNode* nodep = it->second->nodep();
+            if (nodep && (!matcherp || matcherp->nodeMatch(nodep))) {
+                spellerp->pushCandidate(nodep->prettyName());
+            }
+        }
+    }
+    void candidateIdFallback(VSpellCheck* spellerp, const VNodeMatcher* matcherp) const {
+        // Suggest alternative symbol candidates with looking upward through symbol hierarchy
+        // Note VSpellCheck wants the most important (closest) items pushed first
+        candidateIdFlat(spellerp, matcherp);
+        // Then suggest the upper begin/end block or module
+        if (m_fallbackp) m_fallbackp->candidateIdFallback(spellerp, matcherp);
     }
 private:
     void importOneSymbol(VSymGraph* graphp, const string& name, const VSymEnt* srcp) {

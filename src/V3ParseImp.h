@@ -148,6 +148,7 @@ public:
     void verilatorCmtLintSave();
     void verilatorCmtLintRestore();
     void verilatorCmtBad(const char* text);
+    void errorPreprocDirective(const char* textp);
     void tag(const char* text);
     void tagNodep(AstNode* nodep) { m_tagNodep = nodep; }
     AstNode* tagNodep() const { return m_tagNodep;}

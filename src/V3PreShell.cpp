@@ -187,3 +187,6 @@ void V3PreShell::undef(const string& name) {
 void V3PreShell::dumpDefines(std::ostream& os) {
     V3PreShellImp::s_preprocp->dumpDefines(os);
 }
+void V3PreShell::candidateDefines(VSpellCheck* spellerp) {
+    V3PreShellImp::s_preprocp->candidateDefines(spellerp);
+}

@@ -11,19 +11,25 @@ module t
    );
 
    sub
-     #(, .P(2), .P(3))
+     #(,  // Not found
+       .NEXIST(1),  // Not found
+       .P(2),
+       .P(3))  // Dup
    sub (.o(o),
         .i(i),
-        .i(i2),
+        .i(i2),  // Dup
+        .nexist(i2)  // Not found
         );
 
 endmodule
 
 module sub
-  #(parameter P=1)
+  #(parameter P=1,
+    parameter EXIST=9)
   (
    output wire o,
-   input wire i
+   input wire i,
+   input wire exists
    );
 
    assign o = ~i;

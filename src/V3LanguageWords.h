@@ -41,7 +41,10 @@ class V3LanguageWords {
         void init();
     };
   public:
+    typedef KeywordMap::const_iterator const_iterator;
     // METHODS
+    static const_iterator begin() { return s().s_kwdMap.begin(); }
+    static const_iterator end() { return s().s_kwdMap.end(); }
     static string isKeyword(const string& kwd) {
         KeywordMap::iterator it = s().s_kwdMap.find(kwd);
         if (it == s().s_kwdMap.end()) return "";
@@ -187,6 +190,62 @@ inline void V3LanguageWords::Singleton::init() {
     addKwd("sensitive",             "SystemC common word");
     addKwd("sensitive_neg",         "SystemC common word");
     addKwd("sensitive_pos",         "SystemC common word");
+    // Preprocessor defined words
+    addKwd("`__FILE__",                 "Verilog preprocessor directive");
+    addKwd("`__LINE__",                 "Verilog preprocessor directive");
+    addKwd("`accelerate",               "Verilog-XL preprocessor directive");
+    addKwd("`autoexpand_vectornets",    "Verilog-XL preprocessor directive");
+    addKwd("`begin_keywords",           "Verilog preprocessor directive");
+    addKwd("`celldefine",               "Verilog preprocessor directive");
+    addKwd("`default_decay_time",       "Verilog preprocessor directive");
+    addKwd("`default_nettype",          "Verilog preprocessor directive");
+    addKwd("`default_trireg_strength",  "Verilog preprocessor directive");
+    addKwd("`define",                   "Verilog preprocessor directive");
+    addKwd("`delay_mode_distributed",   "Verilog preprocessor directive");
+    addKwd("`delay_mode_path",          "Verilog preprocessor directive");
+    addKwd("`delay_mode_unit",          "Verilog preprocessor directive");
+    addKwd("`delay_mode_zero",          "Verilog preprocessor directive");
+    addKwd("`disable_portfaults",       "Verilog-XL preprocessor directive");
+    addKwd("`else",                     "Verilog preprocessor directive");
+    addKwd("`elsif",                    "Verilog preprocessor directive");
+    addKwd("`enable_portfaults",        "Verilog-XL preprocessor directive");
+    addKwd("`end_keywords",             "Verilog preprocessor directive");
+    addKwd("`endcelldefine",            "Verilog preprocessor directive");
+    addKwd("`endif",                    "Verilog preprocessor directive");
+    addKwd("`endprotect",               "Verilog preprocessor directive");
+    addKwd("`endprotected",             "Verilog preprocessor directive");
+    addKwd("`error",                    "Verilog preprocessor directive");
+    addKwd("`expand_vectornets",        "Verilog-XL preprocessor directive");
+    addKwd("`ifdef",                    "Verilog preprocessor directive");
+    addKwd("`ifndef",                   "Verilog preprocessor directive");
+    addKwd("`include",                  "Verilog preprocessor directive");
+    addKwd("`inline",                   "Verilog preprocessor directive");
+    addKwd("`line",                     "Verilog preprocessor directive");
+    addKwd("`noaccelerate",             "Verilog-XL preprocessor directive");
+    addKwd("`noexpand_vectornets",      "Verilog-XL preprocessor directive");
+    addKwd("`noremove_gatenames",       "Verilog-XL preprocessor directive");
+    addKwd("`noremove_netnames",        "Verilog-XL preprocessor directive");
+    addKwd("`nosuppress_faults",        "Verilog-XL preprocessor directive");
+    addKwd("`nounconnected_drive",      "Verilog-XL preprocessor directive");
+    addKwd("`portcoerce",               "Verilog preprocessor directive");
+    addKwd("`pragma",                   "Verilog preprocessor directive");
+    addKwd("`protect",                  "Verilog preprocessor directive");
+    addKwd("`protected",                "Verilog preprocessor directive");
+    addKwd("`remove_gatenames",         "Verilog-XL preprocessor directive");
+    addKwd("`remove_netnames",          "Verilog-XL preprocessor directive");
+    addKwd("`resetall",                 "Verilog preprocessor directive");
+    addKwd("`suppress_faults",          "Verilog-XL preprocessor directive");
+    addKwd("`systemc_ctor",             "Verilator preprocessor directive");
+    addKwd("`systemc_dtor",             "Verilator preprocessor directive");
+    addKwd("`systemc_header",           "Verilator preprocessor directive");
+    addKwd("`systemc_imp_header",       "Verilator preprocessor directive");
+    addKwd("`systemc_implementation",   "Verilator preprocessor directive");
+    addKwd("`systemc_interface",        "Verilator preprocessor directive");
+    addKwd("`timescale",                "Verilog preprocessor directive");
+    addKwd("`undef",                    "Verilog preprocessor directive");
+    addKwd("`undefineall",              "Verilog preprocessor directive");
+    addKwd("`verilator_config",         "Verilator preprocessor directive");
+    addKwd("`verilog",                  "Verilator preprocessor directive");
 }
 
 #endif  // Guard

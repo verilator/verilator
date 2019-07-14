@@ -1,7 +1,13 @@
 %Error: t/t_package_export.v:56: Can't find definition of scope/variable: 'PARAM2'
+                               : ... Suggested alternative: 'PARAM1'
 %Error: t/t_package_export.v:57: Can't find definition of scope/variable: 'PARAM3'
+                               : ... Suggested alternative: 'PARAM1'
 %Error: t/t_package_export.v:60: Can't find definition of scope/variable: 'PARAM2'
+                               : ... Suggested alternative: 'PARAM1'
 %Error: t/t_package_export.v:61: Can't find definition of scope/variable: 'PARAM3'
+                               : ... Suggested alternative: 'PARAM1'
 %Error: t/t_package_export.v:64: Can't find definition of scope/variable: 'PARAM2'
+                               : ... Suggested alternative: 'PARAM1'
 %Error: t/t_package_export.v:65: Can't find definition of scope/variable: 'PARAM3'
+                               : ... Suggested alternative: 'PARAM1'
 %Error: Exiting due to

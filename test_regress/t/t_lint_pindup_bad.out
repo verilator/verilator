@@ -1,6 +1,13 @@
-%Error: t/t_lint_pindup_bad.v:17: Duplicate pin connection: 'i'
-        t/t_lint_pindup_bad.v:16: ... Location of original pin connection
-%Error: t/t_lint_pindup_bad.v:18: Pin not found: '__pinNumber4'
-%Error: t/t_lint_pindup_bad.v:14: Duplicate parameter pin connection: 'P'
+%Warning-PINMISSING: t/t_lint_pindup_bad.v:18: Cell has missing pin: 'exists'
+                     ... Use "/* verilator lint_off PINMISSING */" and lint_on around source to disable this message.
+%Error: t/t_lint_pindup_bad.v:20: Duplicate pin connection: 'i'
+        t/t_lint_pindup_bad.v:19: ... Location of original pin connection
+%Error: t/t_lint_pindup_bad.v:21: Pin not found: 'nexist'
+                                : ... Suggested alternative: 'exists'
+%Error: t/t_lint_pindup_bad.v:15: Parameter pin not found: 'NEXIST'
+                                : ... Suggested alternative: 'EXIST'
+%Error: t/t_lint_pindup_bad.v:16: Duplicate parameter pin connection: 'P'
+        t/t_lint_pindup_bad.v:14: ... Location of original parameter pin connection
+%Error: t/t_lint_pindup_bad.v:17: Duplicate parameter pin connection: 'P'
         t/t_lint_pindup_bad.v:14: ... Location of original parameter pin connection
 %Error: Exiting due to

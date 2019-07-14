@@ -80,6 +80,50 @@
 #include <vector>
 
 //######################################################################
+// Matcher classes (for suggestion matching)
+
+class LinkNodeMatcherFTask : public VNodeMatcher {
+public:
+    virtual bool nodeMatch(const AstNode* nodep) const {
+        return VN_IS(nodep, NodeFTask);
+    }
+};
+class LinkNodeMatcherModport : public VNodeMatcher {
+public:
+    virtual bool nodeMatch(const AstNode* nodep) const {
+        return VN_IS(nodep, Modport);
+    }
+};
+class LinkNodeMatcherVar : public VNodeMatcher {
+public:
+    virtual bool nodeMatch(const AstNode* nodep) const {
+        return VN_IS(nodep, Var);
+    }
+};
+class LinkNodeMatcherVarIO : public VNodeMatcher {
+public:
+    virtual bool nodeMatch(const AstNode* nodep) const {
+        const AstVar* varp = VN_CAST_CONST(nodep, Var);
+        if (!varp) return false;
+        return varp->isIO();
+    }
+};
+class LinkNodeMatcherVarParam : public VNodeMatcher {
+public:
+    virtual bool nodeMatch(const AstNode* nodep) const {
+        const AstVar* varp = VN_CAST_CONST(nodep, Var);
+        if (!varp) return false;
+        return varp->isParam();
+    }
+};
+class LinkNodeMatcherVarOrScope : public VNodeMatcher {
+public:
+    virtual bool nodeMatch(const AstNode* nodep) const {
+        return VN_IS(nodep, Var) || VN_IS(nodep, Scope);
+    }
+};
+
+//######################################################################
 // LinkDot state, as a visitor of each AstNode
 
 class LinkDotState {
@@ -428,9 +472,14 @@ public:
                         ok = true;
                     }
                 }
-                if (!ok) ifacerefp->v3error("Modport not found under interface "
-                                            <<ifacerefp->prettyNameQ(ifacerefp->ifaceName())
-                                            <<": "<<ifacerefp->prettyNameQ(ifacerefp->modportName()));
+                if (!ok) {
+                    string suggest = suggestSymFallback(
+                        ifaceSymp, ifacerefp->modportName(), LinkNodeMatcherModport());
+                    ifacerefp->v3error("Modport not found under interface "
+                                       <<ifacerefp->prettyNameQ(ifacerefp->ifaceName())<<": "
+                                       <<ifacerefp->prettyNameQ(ifacerefp->modportName())<<endl
+                                       <<(suggest.empty() ? "" : ifacerefp->warnMore()+suggest));
+                }
             }
             // Alias won't expand until interfaces and modport names are known; see notes at top
             insertScopeAlias(SAMN_IFTOP, varSymp, ifOrPortSymp);
@@ -600,6 +649,23 @@ public:
         }
         if (!foundp) baddot = dotname;
         return foundp;
+    }
+    string suggestSymFallback(VSymEnt* lookupSymp, const string& name,
+                              const VNodeMatcher& matcher) {
+        // Suggest alternative symbol in given point in hierarchy
+        // Does not support inline, as we find user-level errors before inlining
+        // For simplicity lookupSymp may be passed NULL result from findDotted
+        if (!lookupSymp) return "";
+        VSpellCheck speller;
+        lookupSymp->candidateIdFallback(&speller, &matcher);
+        return speller.bestCandidateMsg(name);
+    }
+    string suggestSymFlat(VSymEnt* lookupSymp, const string& name,
+                          const VNodeMatcher& matcher) {
+        if (!lookupSymp) return "";
+        VSpellCheck speller;
+        lookupSymp->candidateIdFlat(&speller, &matcher);
+        return speller.bestCandidateMsg(name);
     }
 };
 
@@ -1611,11 +1677,21 @@ private:
         if (!nodep->varp()) {
             if (!noWarn) {
                 if (nodep->fileline()->warnIsOff(V3ErrorCode::I_DEF_NETTYPE_WIRE)) {
+                    string suggest = m_statep->suggestSymFallback(
+                        moduleSymp, nodep->name(), LinkNodeMatcherVar());
                     nodep->v3error("Signal definition not found, and implicit disabled with `default_nettype: "
-                                   <<nodep->prettyNameQ());
-                } else {
+                                   <<nodep->prettyNameQ()<<endl
+                                   <<(suggest.empty() ? "" : nodep->warnMore()+suggest));
+
+                }
+                // Bypass looking for suggestions if IMPLICIT is turned off
+                // as there could be thousands of these suppressed in large netlists
+                else if (!nodep->fileline()->warnIsOff(V3ErrorCode::IMPLICIT)) {
+                    string suggest = m_statep->suggestSymFallback(
+                        moduleSymp, nodep->name(), LinkNodeMatcherVar());
                     nodep->v3warn(IMPLICIT, "Signal definition not found, creating implicitly: "
-                                  <<nodep->prettyNameQ());
+                                  <<nodep->prettyNameQ()<<endl
+                                  <<(suggest.empty() ? "" : nodep->warnMore()+suggest));
                 }
             }
             AstVar* newp = new AstVar(nodep->fileline(), AstVarType::WIRE,
@@ -1762,7 +1838,14 @@ private:
                     nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
                     return;
                 }
-                nodep->v3error(ucfirst(whatp)<<" not found: "<<nodep->prettyNameQ());
+                string suggest
+                    = (nodep->param()
+                       ? m_statep->suggestSymFlat(
+                           m_pinSymp, nodep->name(), LinkNodeMatcherVarParam())
+                       : m_statep->suggestSymFlat(
+                           m_pinSymp, nodep->name(), LinkNodeMatcherVarIO()));
+                nodep->v3error(ucfirst(whatp)<<" not found: "<<nodep->prettyNameQ()<<endl
+                               <<(suggest.empty() ? "" : nodep->warnMore()+suggest));
             }
             else if (AstVar* refp = VN_CAST(foundp->nodep(), Var)) {
                 if (!refp->isIO() && !refp->isParam() && !refp->isIfaceRef()) {
@@ -2050,8 +2133,11 @@ private:
                     } else if (m_ds.m_dotText=="") {
                         UINFO(7,"   ErrParseRef curSymp=se"<<cvtToHex(m_curSymp)
                               <<" ds="<<m_ds.ascii()<<endl);
+                        string suggest = m_statep->suggestSymFallback(
+                            m_ds.m_dotSymp, nodep->name(), VNodeMatcher());
                         nodep->v3error("Can't find definition of "<<expectWhat
-                                       <<": "<<nodep->prettyNameQ());
+                                       <<": "<<nodep->prettyNameQ()<<endl
+                                       <<(suggest.empty() ? "" : nodep->warnMore()+suggest));
                     } else {
                         nodep->v3error("Can't find definition of '"
                                        <<(baddot!="" ? baddot : nodep->prettyName())
@@ -2274,12 +2360,18 @@ private:
                                    <<"'"<<" as a "<<foundp->nodep()->typeName()
                                    <<" but expected a task/function");
                 } else if (nodep->dotted() == "") {
+                    string suggest = m_statep->suggestSymFallback(
+                        dotSymp, nodep->name(), LinkNodeMatcherFTask());
                     nodep->v3error("Can't find definition of task/function: "
-                                   <<nodep->prettyNameQ());
+                                   <<nodep->prettyNameQ()<<endl
+                                   <<(suggest.empty() ? "" : nodep->warnMore()+suggest));
                 } else {
+                    string suggest = m_statep->suggestSymFallback(
+                        dotSymp, nodep->name(), LinkNodeMatcherFTask());
                     nodep->v3error("Can't find definition of '"<<baddot
                                    <<"' in dotted task/function: '"
-                                   <<nodep->dotted()+"."+nodep->prettyName()<<"'");
+                                   <<nodep->dotted()+"."+nodep->prettyName()<<"'\n"
+                                   <<(suggest.empty() ? "" : nodep->warnMore()+suggest));
                     okSymp->cellErrorScopes(nodep);
                 }
             }

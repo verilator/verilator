@@ -29,6 +29,7 @@
 
 class V3ParseImp;
 class V3InFilter;
+class VSpellCheck;
 
 //============================================================================
 
@@ -43,6 +44,7 @@ public:
     static void defineCmdLine(const string& name, const string& value);
     static void undef(const string& name);
     static void dumpDefines(std::ostream& os);
+    static void candidateDefines(VSpellCheck* spellerp);
 };
 
 #endif  // Guard

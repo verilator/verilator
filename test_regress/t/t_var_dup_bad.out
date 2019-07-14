@@ -28,9 +28,12 @@
 %Error: t/t_var_dup_bad.v:40: Duplicate pin connection: 'bad_duport'
         t/t_var_dup_bad.v:40: ... Location of original pin connection
 %Error: t/t_var_dup_bad.v:41: Can't find definition of variable: 'bad_mixport'
+                            : ... Suggested alternative: 'bad_duport'
 %Error: t/t_var_dup_bad.v:41: Duplicate pin connection: 'bad_mixport'
         t/t_var_dup_bad.v:41: ... Location of original pin connection
 %Error: t/t_var_dup_bad.v:42: Can't find definition of variable: 'bad_reout_port'
+                            : ... Suggested alternative: 'bad_duport'
 %Error: t/t_var_dup_bad.v:43: Can't find definition of variable: 'bad_rewire'
 %Error: t/t_var_dup_bad.v:43: Can't find definition of variable: 'bad_rereg'
+                            : ... Suggested alternative: 'bad_rewire'
 %Error: Exiting due to

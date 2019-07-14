@@ -622,9 +622,10 @@ int main(int argc, char** argv, char** env) {
 
     // Internal tests (after option parsing as need debug() setting,
     // and after removing files as may make debug output)
-    VHashSha1::selfTest();
     AstBasicDTypeKwd::selfTest();
     if (v3Global.opt.debugSelfTest()) {
+        VHashSha1::selfTest();
+        VSpellCheck::selfTest();
         V3Graph::selfTest();
         V3TSP::selfTest();
         V3ScoreboardBase::selfTest();

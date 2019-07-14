@@ -27,6 +27,7 @@
 #include "V3PreLex.h"
 #include "V3PreProc.h"
 #include "V3PreShell.h"
+#include "V3String.h"
 
 #include <cstdarg>
 #include <cstdlib>
@@ -233,6 +234,7 @@ public:
     void insertUnreadbackAtBol(const string& text);
     void addLineComment(int enterExit);
     void dumpDefines(std::ostream& os);
+    void candidateDefines(VSpellCheck* spellerp);
 
     // METHODS, callbacks
     virtual void comment(const string& text);  // Comment detected (if keepComments==2)
@@ -818,12 +820,18 @@ void V3PreProcImp::addLineComment(int enterExit) {
 }
 
 void V3PreProcImp::dumpDefines(std::ostream& os) {
-    for (DefinesMap::iterator it = m_defines.begin(); it != m_defines.end(); ++it) {
+    for (DefinesMap::const_iterator it = m_defines.begin(); it != m_defines.end(); ++it) {
         os<<"`define "<<it->first;
         // No need to print "()" below as already part of params()
         if (!it->second.params().empty()) os<<it->second.params();
         if (!it->second.value().empty()) os<<" "<<it->second.value();
         os<<endl;
+    }
+}
+
+void V3PreProcImp::candidateDefines(VSpellCheck* spellerp) {
+    for (DefinesMap::const_iterator it = m_defines.begin(); it != m_defines.end(); ++it) {
+        spellerp->pushCandidate(string("`") + it->first);
     }
 }
 

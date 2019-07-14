@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.017 devel
 
+**    Offer suggestions on bad identifier errors.
+
 ***   Change MULTITOP to warning to help linting, see manual.
 
 ****  Show included-from filenames in warnings, bug1439. [Todd Strader]
