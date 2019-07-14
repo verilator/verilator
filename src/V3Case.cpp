@@ -72,7 +72,7 @@ private:
              itemp; itemp=VN_CAST(itemp->nextp(), CaseItem)) {
             if (itemp->isDefault()) {
                 if (hitDefault) {
-                    nodep->v3error("Multiple default statements in case statement.");
+                    itemp->v3error("Multiple default statements in case statement.");
                 }
                 hitDefault = true;
             }
@@ -186,8 +186,8 @@ private:
                             if (!m_valueItem[i]) {
                                 m_valueItem[i] = itemp;
                             } else if (!itemp->ignoreOverlap() && !bitched) {
-                                itemp->v3warn(CASEOVERLAP, "Case values overlap (example pattern 0x"
-                                              <<std::hex<<i<<")");
+                                icondp->v3warn(CASEOVERLAP, "Case values overlap (example pattern 0x"
+                                               <<std::hex<<i<<")");
                                 bitched = true;
                                 m_caseNoOverlapsAllCovered = false;
                             }

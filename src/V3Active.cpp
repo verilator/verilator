@@ -168,13 +168,14 @@ private:
             // Convert to a non-delayed assignment
             UINFO(5,"    ASSIGNDLY "<<nodep<<endl);
             if (m_check == CT_INITIAL) {
-                nodep->v3warn(INITIALDLY, "Delayed assignments (<=) in initial"
-                              " or final block; suggest blocking assignments (=).");
+                nodep->v3warn(INITIALDLY, "Delayed assignments (<=) in initial or final block\n"
+                              <<nodep->warnMore()<<"... Suggest blocking assignments (=)");
             } else if (m_check == CT_LATCH) {
                 // Suppress. Shouldn't matter that the interior of the latch races
             } else {
                 nodep->v3warn(COMBDLY, "Delayed assignments (<=) in non-clocked"
-                              " (non flop or latch) block; suggest blocking assignments (=).");
+                              " (non flop or latch) block\n"
+                              <<nodep->warnMore()<<"... Suggest blocking assignments (=)");
             }
             AstNode* newp = new AstAssign(nodep->fileline(),
                                           nodep->lhsp()->unlinkFrBack(),
@@ -196,16 +197,15 @@ private:
         if (m_check == CT_SEQ
             && m_assignp
             && !varp->isUsedLoopIdx()  // Ignore loop indicies
-            && !varp->isTemp()
-            ) {
+            && !varp->isTemp()) {
             // Allow turning off warnings on the always, or the variable also
             if (!m_alwaysp->fileline()->warnIsOff(V3ErrorCode::BLKSEQ)
                 && !m_assignp->fileline()->warnIsOff(V3ErrorCode::BLKSEQ)
-                && !varp->fileline()->warnIsOff(V3ErrorCode::BLKSEQ)
-                ) {
+                && !varp->fileline()->warnIsOff(V3ErrorCode::BLKSEQ)) {
+                m_assignp->v3warn(BLKSEQ, "Blocking assignments (=) in sequential (flop or latch) block\n"
+                                  <<m_assignp->warnMore()<<"... Suggest delayed assignments (<=)");
                 m_alwaysp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);  // Complain just once for the entire always
                 varp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);
-                nodep->v3warn(BLKSEQ, "Blocking assignments (=) in sequential (flop or latch) block; suggest delayed assignments (<=).");
             }
         }
     }

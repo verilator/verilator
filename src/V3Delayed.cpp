@@ -166,7 +166,7 @@ private:
                     MULTIDRIVEN, "Signal has multiple driving blocks with different clocking: "
                     <<varrefp->varp()->prettyNameQ()<<endl
                     <<varrefp->warnOther()<<"... Location of first driving block"<<endl
-                    <<varrefp->varp()->warnContextPrimary()<<endl
+                    <<varrefp->warnContextPrimary()<<endl
                     <<oldactivep->warnOther()<<"... Location of other driving block"<<endl
                     <<oldactivep->warnContextSecondary()
                     );

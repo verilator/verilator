@@ -829,12 +829,15 @@ private:
                 V3Const::constifyParamsEdit(nodep->ticksp());  // ticksp may change
                 const AstConst* constp = VN_CAST(nodep->ticksp(), Const);
                 if (!constp || constp->toSInt() < 1) {
-                    nodep->v3error("$past tick value must be constant and >= 1 (IEEE 2017 16.9.3)");
+                    nodep->v3error("$past tick value must be constant (IEEE 2017 16.9.3)");
+                    nodep->ticksp()->unlinkFrBack()->deleteTree();
+                } else if (constp->toSInt() < 1) {
+                    constp->v3error("$past tick value must be >= 1 (IEEE 2017 16.9.3)");
                     nodep->ticksp()->unlinkFrBack()->deleteTree();
                 } else {
                     if (constp->toSInt() > 10) {
-                        nodep->v3warn(TICKCOUNT, "$past tick value of "<<constp->toSInt()
-                                      <<" may have a large performance cost");
+                        constp->v3warn(TICKCOUNT, "$past tick value of "<<constp->toSInt()
+                                       <<" may have a large performance cost");
                     }
                 }
             }

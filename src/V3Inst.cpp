@@ -337,8 +337,10 @@ private:
                 // Arrayed instants: one bit for each of the instants (each
                 // assign is 1 pinwidth wide)
                 if (m_cellRangep->littleEndian()) {
-                    nodep->v3warn(LITENDIAN, "Little endian cell range connecting to vector: MSB < LSB of cell range: "
-                                  <<m_cellRangep->lsbConst()<<":"<<m_cellRangep->msbConst());
+                    nodep->exprp()->v3warn(
+                        LITENDIAN,
+                        "Little endian cell range connecting to vector: MSB < LSB of cell range: "
+                        <<m_cellRangep->lsbConst()<<":"<<m_cellRangep->msbConst());
                 }
                 AstNode* exprp = nodep->exprp()->unlinkFrBack();
                 bool inputPin = nodep->modVarp()->isNonOutput();
