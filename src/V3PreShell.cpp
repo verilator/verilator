@@ -110,7 +110,7 @@ protected:
             // Leting lex parse this saves us from having to specially en/decode
             // from the V3LangCode to the various Lex BEGIN states. The language
             // of this source file is updated here, in case there have been any
-            // intervening +<lang>ext+ options since it was first ecountered.
+            // intervening +<lang>ext+ options since it was first encountered.
             FileLine* modfileline = new FileLine(modfilename);
             modfileline->language(v3Global.opt.fileLanguage(modfilename));
             V3Parse::ppPushText(parsep, (string("`begin_keywords \"")

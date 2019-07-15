@@ -669,7 +669,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-covsp", flag/*ref*/))        { }  // TBD
             else if (!strcmp(sw, "-debug-abort")) { abort(); }  // Undocumented, see also --debug-sigsegv
             else if ( onoff (sw, "-debug-check", flag/*ref*/))  { m_debugCheck = flag; }
-            else if ( onoff   (sw, "-debug-collision", flag/*ref*/) ){ m_debugCollision = flag; }  // Undocumented
+            else if ( onoff (sw, "-debug-collision", flag/*ref*/)) { m_debugCollision = flag; }  // Undocumented
             else if ( onoff (sw, "-debug-leak", flag/*ref*/))   { m_debugLeak = flag; }
             else if ( onoff (sw, "-debug-nondeterminism", flag/*ref*/)){ m_debugNondeterminism = flag; }
             else if ( onoff (sw, "-debug-partition", flag/*ref*/)){ m_debugPartition = flag; }  // Undocumented

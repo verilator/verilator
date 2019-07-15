@@ -479,7 +479,7 @@ void V3PreLex::scanSwitchStream(VPreStream* streamp) {
 void V3PreLex::scanBytesBack(const string& str) {
     // Initial creation, that will pull from YY_INPUT==inputToLex
     // Note buffers also appended in ::scanBytes
-    if (curStreamp()->m_eof) yyerrorf("scanBytesBack without being under scanNewFile");
+    if (VL_UNCOVERABLE(curStreamp()->m_eof)) yyerrorf("scanBytesBack not under scanNewFile");
     curStreamp()->m_buffers.push_back(str);
 }
 

@@ -147,8 +147,6 @@ inline void V3FileDependImp::writeDepend(const string& filename) {
     *ofp<<" : ";
     *ofp<<v3Global.opt.bin();
     *ofp<<" ";
-    *ofp<<V3PreShell::dependFiles();
-    *ofp<<"  ";
 
     for (std::set<DependFile>::iterator iter=m_filenameList.begin();
          iter!=m_filenameList.end(); ++iter) {
@@ -532,7 +530,7 @@ protected:
         if (listSize(outl) < INFILTER_CACHE_MAX) {
             // Cache small files (only to save space)
             // It's quite common to `include "timescale" thousands of times
-            // This isn't so important if it's just a open(), but filtering can be slow
+            // This isn't so important if it's just an open(), but filtering can be slow
             m_contentsMap.insert(make_pair(filename, listString(outl)));
         }
         return true;

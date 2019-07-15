@@ -1275,7 +1275,7 @@ private:
     }
     virtual void visit(AstDefParam* nodep) {
         iterateChildren(nodep);
-        nodep->v3warn(DEFPARAM, "Suggest replace defparam with Verilog 2001 #(."
+        nodep->v3warn(DEFPARAM, "Suggest replace defparam assignment with Verilog 2001 #(."
                       <<nodep->prettyName()<<"(...etc...))");
         VSymEnt* foundp = m_statep->getNodeSym(nodep)->findIdFallback(nodep->path());
         AstCell* cellp = foundp ? VN_CAST(foundp->nodep(), Cell) : NULL;
@@ -1755,7 +1755,7 @@ private:
                            <<nodep->warnContextPrimary()<<endl
                            <<refp->user5p()->warnOther()
                            <<"... Location of original "<<whatp<<" connection\n"
-                           <<nodep->warnContextSecondary());
+                           <<refp->user5p()->warnContextSecondary());
         } else {
             refp->user5p(nodep);
         }
