@@ -160,7 +160,10 @@ public:
     int lastVerilogState() const { return m_lastVerilogState; }
     static const char* tokenName(int tok);
 
-    void ppPushText(const string& text) { m_ppBuffers.push_back(text); }
+    void ppPushText(const string& text) {
+        m_ppBuffers.push_back(text);
+        if (fileline()->contentp()) fileline()->contentp()->pushText(text);
+    }
     size_t ppInputToLex(char* buf, size_t max_size);
 
     static V3ParseImp* parsep() { return s_parsep; }

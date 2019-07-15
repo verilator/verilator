@@ -41,6 +41,9 @@ public:
     static string downcase(const string& str);
     // Replace any %'s with %%
     static string quotePercent(const string& str);
+    // Replace any unprintable with space
+    // This includes removing tabs, so column tracking is correct
+    static string spaceUnprintable(const string& str);
 };
 
 //######################################################################

@@ -1,2 +1,4 @@
 %Error: t/t_lint_modport_dir_bad.v:25: Attempt to drive input-only modport: 'signal'
+   assign dummy_in.signal = signal_i;
+                   ^~~~~~
 %Error: Exiting due to

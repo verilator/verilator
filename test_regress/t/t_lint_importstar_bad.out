@@ -1,3 +1,5 @@
 %Warning-IMPORTSTAR: t/t_lint_importstar_bad.v:10: Import::* in $unit scope may pollute global namespace
+import defs::*;
+           ^~
                      ... Use "/* verilator lint_off IMPORTSTAR */" and lint_on around source to disable this message.
 %Error: Exiting due to

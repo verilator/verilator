@@ -41,19 +41,22 @@ extern void yyerrorf(const char* format, ...);
 
 //======================================================================
 
-#define NEXTLINE() {PARSEP->linenoInc();}
-#define LINECHECKS(textp,len)  { const char* cp=textp; for (int n=len; n; --n) if (cp[n]=='\n') NEXTLINE(); }
-#define LINECHECK()  LINECHECKS(yytext, yyleng)
+#define FL_FWD { PARSEP->fileline()->forwardToken(yytext, yyleng, true); }
+// Use this to break between tokens whereever not return'ing a token (e.g. skipping inside lexer)
+#define FL_BRK { PARSEP->fileline()->startToken(); }
+
 #define CRELINE() (PARSEP->copyOrSameFileLine())
 
-#define FL { yylval.fl = CRELINE(); }
+#define FL { FL_FWD; yylval.fl = CRELINE(); }
 
 #define RETURN_BBOX_SYS_OR_MSG(msg,yytext) {    \
-        if (!v3Global.opt.bboxSys()) yyerrorf(msg, yytext); \
+        if (!v3Global.opt.bboxSys()) { yyerrorf(msg, yytext); FL_BRK; }  \
         return yaD_IGNORE; }
 
 #define ERROR_RSVD_WORD(language) \
-    yyerrorf("Unsupported: " language " reserved word not implemented: '%s'", yytext)
+        do { FL_FWD; \
+             yyerrorf("Unsupported: " language " reserved word not implemented: '%s'", yytext); \
+             FL_BRK; } while(0)
 
 // See V3Read.cpp
 //void V3ParseImp::statePop() { yy_pop_state(); }
@@ -129,8 +132,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /************************************************************************/
   /* Verilator control files */
 <VLT>{
-  {ws}                  { }     /* otherwise ignore white-space */
-  {crnl}                { NEXTLINE(); }         /* Count line numbers */
+  {ws}                  { FL_FWD; FL_BRK; }  /* otherwise ignore white-space */
+  {crnl}                { FL_FWD; FL_BRK; }  /* Count line numbers */
 
   "coverage_off"        { FL; return yVLT_COVERAGE_OFF; }
   "coverage_on"         { FL; return yVLT_COVERAGE_ON; }
@@ -147,10 +150,10 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /************************************************************************/
   /* Verilog 1995 */
 <V95,V01,V05,VA5,S05,S09,S12,S17,SAX>{
-  {ws}                  { }     /* otherwise ignore white-space */
-  {crnl}                { NEXTLINE(); }         /* Count line numbers */
+  {ws}                  { FL_FWD; FL_BRK; }  /* otherwise ignore white-space */
+  {crnl}                { FL_FWD; FL_BRK; }  /* Count line numbers */
   /*     Extensions to Verilog set, some specified by PSL */
-  "$c"[0-9]*            { FL; return yD_C; }            /*Verilator only*/
+  "$c"[0-9]*            { FL; return yD_C; }  /*Verilator only*/
   /*     System Tasks */
   "$acos"               { FL; return yD_ACOS; }
   "$acosh"              { FL; return yD_ACOSH; }
@@ -241,7 +244,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "endmodule"           { FL; return yENDMODULE; }
   "endprimitive"        { FL; return yENDPRIMITIVE; }
   "endspecify"          { FL; return yENDSPECIFY; }
-  "endtable"            { yyerrorf("Syntax error: ENDTABLE outside of TABLE"); }
+  "endtable"            { FL_FWD; yyerrorf("Syntax error: ENDTABLE outside of TABLE"); FL_BRK; }
   "endtask"             { FL; return yENDTASK; }
   "event"               { FL; return yEVENT; }
   "for"                 { FL; return yFOR; }
@@ -298,7 +301,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "strong1"             { FL; return ygenSTRENGTH; }
   "supply0"             { FL; return ySUPPLY0; }
   "supply1"             { FL; return ySUPPLY1; }
-  "table"               { yy_push_state(TABLE); FL; return yTABLE; }
+  "table"               { FL; yy_push_state(TABLE); return yTABLE; }
   "task"                { FL; return yTASK; }
   "time"                { FL; return yTIME; }
   "tran"                { FL; return yTRAN; }
@@ -359,7 +362,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "design"              { ERROR_RSVD_WORD("Verilog 2001-config"); }
   "endconfig"           { ERROR_RSVD_WORD("Verilog 2001-config"); }
   "incdir"              { ERROR_RSVD_WORD("Verilog 2001-config"); }
-  "include"             { yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented; probably you want `include instead: %s", yytext); }
+  "include"             { FL_FWD; yyerrorf("Unsupported: Verilog 2001-config reserved word not implemented; suggest you want `include instead: %s", yytext); FL_BRK; }
   "instance"            { ERROR_RSVD_WORD("Verilog 2001-config"); }
   "liblist"             { ERROR_RSVD_WORD("Verilog 2001-config"); }
   "library"             { ERROR_RSVD_WORD("Verilog 2001-config"); }
@@ -649,7 +652,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /* Converted from //{cmt}verilator ...{cmt} by preprocessor */
 <V95,V01,V05,VA5,S05,S09,S12,S17,SAX>{
-  "/*verilator"{ws}*"*/"                { }  /* Ignore empty comments, may be `endif // verilator */
+  "/*verilator"{ws}*"*/"                { FL_FWD; FL_BRK; }  /* Ignore empty comments, may be `endif // verilator */
   "/*verilator clock_enable*/"          { FL; return yVL_CLOCK_ENABLE; }
   "/*verilator coverage_block_off*/"    { FL; return yVL_COVERAGE_BLOCK_OFF; }
   "/*verilator full_case*/"             { FL; return yVL_FULL_CASE; }
@@ -669,18 +672,18 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator sc_bv*/"                 { FL; return yVL_SC_BV; }
   "/*verilator sformat*/"               { FL; return yVL_SFORMAT; }
   "/*verilator systemc_clock*/"         { FL; return yVL_CLOCK; }
-  "/*verilator tracing_off*/"           {PARSEP->fileline()->tracingOn(false); }
-  "/*verilator tracing_on*/"            {PARSEP->fileline()->tracingOn(true); }
-  "/*verilator coverage_off*/"          {PARSEP->fileline()->coverageOn(false); }
-  "/*verilator coverage_on*/"           {PARSEP->fileline()->coverageOn(true); }
-  "/*verilator lint_off"[^*]*"*/"       {PARSEP->verilatorCmtLint(yytext, true); }
-  "/*verilator lint_on"[^*]*"*/"        {PARSEP->verilatorCmtLint(yytext, false); }
-  "/*verilator lint_restore*/"          {PARSEP->verilatorCmtLintRestore(); }
-  "/*verilator lint_save*/"             {PARSEP->verilatorCmtLintSave(); }
-  "/*verilator tag"[^*]*"*/"            {PARSEP->tag(yytext); }
+  "/*verilator tracing_off*/"           { FL_FWD; PARSEP->fileline()->tracingOn(false); FL_BRK; }
+  "/*verilator tracing_on*/"            { FL_FWD; PARSEP->fileline()->tracingOn(true); FL_BRK; }
+  "/*verilator coverage_off*/"          { FL_FWD; PARSEP->fileline()->coverageOn(false); FL_BRK; }
+  "/*verilator coverage_on*/"           { FL_FWD; PARSEP->fileline()->coverageOn(true); FL_BRK; }
+  "/*verilator lint_off"[^*]*"*/"       { FL_FWD; PARSEP->verilatorCmtLint(yytext, true); FL_BRK; }
+  "/*verilator lint_on"[^*]*"*/"        { FL_FWD; PARSEP->verilatorCmtLint(yytext, false); FL_BRK; }
+  "/*verilator lint_restore*/"          { FL_FWD; PARSEP->verilatorCmtLintRestore(); FL_BRK; }
+  "/*verilator lint_save*/"             { FL_FWD; PARSEP->verilatorCmtLintSave(); FL_BRK; }
+  "/*verilator tag"[^*]*"*/"            { FL_FWD; PARSEP->tag(yytext); FL_BRK; }
 
-  "/**/"                                { }
-  "/*"[^*]+"*/"                         {PARSEP->verilatorCmtBad(yytext); }
+  "/**/"                                { FL_FWD; FL_BRK; }
+  "/*"[^*]+"*/"                         { FL_FWD; PARSEP->verilatorCmtBad(yytext); FL_BRK; }
 }
 
   /************************************************************************/
@@ -806,23 +809,22 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                           return yaSTRING;
                         }
   \"                    { yy_push_state(STRING); yymore(); }
-
   {vnum}                {
                           /* "# 1'b0" is a delay value so must lex as "#" "1" "'b0" */
                           if (PARSEP->prevLexToken()=='#') {
                               int shortlen = 0;
                               while (isdigit(yytext[shortlen])) shortlen++;
                               if (shortlen) {
-                                  // Push rest for later parse
+                                  // Push rest past numbers for later parse
                                   PARSEP->unputString(yytext+shortlen, yyleng-shortlen);
-                                  FL; LINECHECKS(yytext, shortlen);
                                   // Return is stuff before the tick
-                                  yytext[shortlen] = '\0';
-                                  yylval.nump = PARSEP->newNumber(yylval.fl, (char*)yytext);
+                                  yyleng = shortlen;
+                                  yytext[yyleng] = '\0';
+                                  FL; yylval.nump = PARSEP->newNumber(yylval.fl, (char*)yytext);
                                   return yaINTNUM;
                               }
                           }
-                          FL; LINECHECK(); yylval.nump = PARSEP->newNumber(yylval. fl, (char*)yytext);
+                          FL; yylval.nump = PARSEP->newNumber(yylval. fl, (char*)yytext);
                           return yaINTNUM;
                         }
   [0-9][_0-9]*          {
@@ -845,9 +847,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /************************************************************************/
   /* STRINGS */
-<STRING><<EOF>>         { yyerrorf("EOF in unterminated string"); yyleng = 0; yy_pop_state(); }
-<STRING>{crnl}          { yyerrorf("Unterminated string"); NEXTLINE(); }
-<STRING>\\{crnl}        { yymore(); NEXTLINE(); }
+<STRING><<EOF>>         { FL_FWD; yyerrorf("EOF in unterminated string"); yyleng = 0; yy_pop_state(); FL_BRK; }
+<STRING>{crnl}          { FL_FWD; yyerrorf("Unterminated string"); FL_BRK; }
+<STRING>\\{crnl}        { yymore(); }
 <STRING>\\.             { yymore(); }
 <STRING>\"              { yy_pop_state();
                           FL; yylval.strp = PARSEP->newString(yytext+1, yyleng-2);
@@ -857,12 +859,12 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /************************************************************************/
   /* Attributes */
-<ATTRMODE>{crnl}        { yymore(); NEXTLINE(); }
-<ATTRMODE>"*)"          { yy_pop_state(); }
+<ATTRMODE>{crnl}        { yymore(); }
+<ATTRMODE>"*)"          { FL_FWD; yy_pop_state(); FL_BRK; }
 <ATTRMODE>{word}        { yymore(); }
 <ATTRMODE>.             { yymore(); }
-<ATTRMODE><<EOF>>       { yyerrorf("EOF in (*");
-                          yyleng = 0; yy_pop_state(); }
+<ATTRMODE><<EOF>>       { FL_FWD; yyerrorf("EOF in (*");
+			  yyleng = 0; yy_pop_state(); FL_BRK; }
 
   /************************************************************************/
   /* Attributes */
@@ -873,12 +875,12 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /************************************************************************/
   /* Tables */
-<TABLE>\\{crnl}         { yymore(); NEXTLINE(); }
-<TABLE>{crnl}           { NEXTLINE(); yymore(); }
+<TABLE>\\{crnl}         { yymore(); }
+<TABLE>{crnl}           { yymore(); }
 <TABLE>";"              { FL; yylval.strp = PARSEP->newString(yytext, yyleng); return yaTABLELINE; }
 <TABLE>"endtable"       { yy_pop_state(); FL; return yENDTABLE; }
 <TABLE>.                { yymore(); }
-<TABLE><<EOF>>          { yyerrorf("EOF in TABLE"); yyleng = 0; yy_pop_state(); }
+<TABLE><<EOF>>          { FL_FWD; yyerrorf("EOF in TABLE"); yyleng = 0; yy_pop_state(); FL_BRK; }
 
   /************************************************************************/
   /* Preprocessor */
@@ -886,91 +888,94 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /* OPTIMIZE: we return one per line, make it one for the entire block */
   /* If add to this list also add to V3LanguageWords.h */
 <V95,V01,V05,VA5,S05,S09,S12,S17,SAX,VLT,SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
-  "`accelerate"                         { }  // Verilog-XL compatibility
-  "`autoexpand_vectornets"              { }  // Verilog-XL compatibility
-  "`celldefine"                         { PARSEP->inCellDefine(true); }
-  "`default_decay_time"{ws}+[^\n\r]*    { }  // Verilog spec - delays only
-  "`default_nettype"{ws}+"wire"         { PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, true); }
-  "`default_nettype"{ws}+"none"         { PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, false); }
-  "`default_nettype"{ws}+[a-zA-Z0-9]*   { yyerrorf("Unsupported: `default_nettype of other than none or wire: %s", yytext); }
-  "`default_trireg_strength"{ws}+[^\n\r]*       { yyerrorf("Unsupported: Verilog optional directive not implemented: %s", yytext); }
-  "`delay_mode_distributed"             { }  // Verilog spec - delays only
-  "`delay_mode_path"                    { }  // Verilog spec - delays only
-  "`delay_mode_unit"                    { }  // Verilog spec - delays only
-  "`delay_mode_zero"                    { }  // Verilog spec - delays only
-  "`disable_portfaults"                 { }  // Verilog-XL compatibility
-  "`enable_portfaults"                  { }  // Verilog-XL compatibility
-  "`endcelldefine"                      { PARSEP->inCellDefine(false); }
-  "`endprotect"                         { }
-  "`expand_vectornets"                  { }  // Verilog-XL compatibility
-  "`inline"                             { }
-  "`line"{ws}+[^\n\r]*{crnl}            { PARSEP->ppline(yytext); }
-  "`noaccelerate"                       { }  // Verilog-XL compatibility
-  "`noexpand_vectornets"                { }  // Verilog-XL compatibility
-  "`noremove_gatenames"                 { }  // Verilog-XL compatibility
-  "`noremove_netnames"                  { }  // Verilog-XL compatibility
-  "`nosuppress_faults"                  { }  // Verilog-XL compatibility
-  "`nounconnected_drive"                { }  // Verilog-XL compatibility
-  "`portcoerce"                         { }
-  "`pragma"{ws}+[^\n\r]*                { }  // Verilog 2005
-  "`protect"                            { }
-  "`remove_gatenames"                   { }  // Verilog-XL compatibility
-  "`remove_netnames"                    { }  // Verilog-XL compatibility
-  "`resetall"                           { PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, true); }  // Rest handled by preproc
-  "`suppress_faults"                    { }  // Verilog-XL compatibility
-  "`timescale"{ws}+[^\n\r]*             { }  // Verilog spec - not supported
+  "`accelerate"                         { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
+  "`autoexpand_vectornets"              { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
+  "`celldefine"                         { FL_FWD; PARSEP->inCellDefine(true); FL_BRK; }
+  "`default_decay_time"{ws}+[^\n\r]*    { FL_FWD; FL_BRK; }  // Verilog spec - delays only
+  "`default_nettype"{ws}+"wire"         { FL_FWD; PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, true); FL_BRK; }
+  "`default_nettype"{ws}+"none"         { FL_FWD; PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, false); FL_BRK; }
+  "`default_nettype"{ws}+[a-zA-Z0-9]*   { FL_FWD; yyerrorf("Unsupported: `default_nettype of other than none or wire: %s", yytext); FL_BRK; }
+  "`default_trireg_strength"{ws}+[^\n\r]*       { FL_FWD; yyerrorf("Unsupported: Verilog optional directive not implemented: %s", yytext); FL_BRK; }
+  "`delay_mode_distributed"             { FL_FWD; FL_BRK; }  // Verilog spec - delays only
+  "`delay_mode_path"                    { FL_FWD; FL_BRK; }  // Verilog spec - delays only
+  "`delay_mode_unit"                    { FL_FWD; FL_BRK; }  // Verilog spec - delays only
+  "`delay_mode_zero"                    { FL_FWD; FL_BRK; }  // Verilog spec - delays only
+  "`disable_portfaults"                 { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
+  "`enable_portfaults"                  { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
+  "`endcelldefine"                      { FL_FWD; PARSEP->inCellDefine(false); FL_BRK; }
+  "`endprotect"                         { FL_FWD; FL_BRK; }
+  "`expand_vectornets"                  { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
+  "`inline"                             { FL_FWD; FL_BRK; }
+  "`line"{ws}+[^\n\r]*{crnl}            { FL_FWD; PARSEP->ppline(yytext); FL_BRK; }
+  "`noaccelerate"                       { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
+  "`noexpand_vectornets"                { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
+  "`noremove_gatenames"                 { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
+  "`noremove_netnames"                  { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
+  "`nosuppress_faults"                  { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
+  "`nounconnected_drive"                { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
+  "`portcoerce"                         { FL_FWD; FL_BRK; }
+  "`pragma"{ws}+[^\n\r]*                { FL_FWD; FL_BRK; }  // Verilog 2005
+  "`protect"                            { FL_FWD; FL_BRK; }
+  "`remove_gatenames"                   { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
+  "`remove_netnames"                    { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
+  "`resetall"                           { FL_FWD; PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, true);
+                                          FL_BRK; }  // Rest handled by preproc
+  "`suppress_faults"                    { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
+  "`timescale"{ws}+[^\n\r]*             { FL_FWD; FL_BRK; }  // Verilog spec - not supported
 
   /* See also setLanguage below */
-  "`begin_keywords"[ \t]*\"1364-1995\"          { yy_push_state(V95); PARSEP->pushBeginKeywords(YY_START); }
-  "`begin_keywords"[ \t]*\"1364-2001\"          { yy_push_state(V01); PARSEP->pushBeginKeywords(YY_START); }
-  "`begin_keywords"[ \t]*\"1364-2001-noconfig\" { yy_push_state(V01); PARSEP->pushBeginKeywords(YY_START); }
-  "`begin_keywords"[ \t]*\"1364-2005\"          { yy_push_state(V05); PARSEP->pushBeginKeywords(YY_START); }
-  "`begin_keywords"[ \t]*\"VAMS[-0-9.]*\"       { yy_push_state(VA5); PARSEP->pushBeginKeywords(YY_START); }
-  "`begin_keywords"[ \t]*\"1800-2005\"          { yy_push_state(S05); PARSEP->pushBeginKeywords(YY_START); }
-  "`begin_keywords"[ \t]*\"1800-2009\"          { yy_push_state(S09); PARSEP->pushBeginKeywords(YY_START); }
-  "`begin_keywords"[ \t]*\"1800-2012\"          { yy_push_state(S12); PARSEP->pushBeginKeywords(YY_START); }
-  "`begin_keywords"[ \t]*\"1800-2017\"          { yy_push_state(S17); PARSEP->pushBeginKeywords(YY_START); }
-  "`begin_keywords"[ \t]*\"1800[+]VAMS\"        { yy_push_state(SAX); PARSEP->pushBeginKeywords(YY_START); }  /*Latest SV*/
-  "`end_keywords"                               { yy_pop_state(); if (!PARSEP->popBeginKeywords()) yyerrorf("`end_keywords when not inside `begin_keywords block"); }
+  "`begin_keywords"[ \t]*\"1364-1995\"          { FL_FWD; yy_push_state(V95); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }
+  "`begin_keywords"[ \t]*\"1364-2001\"          { FL_FWD; yy_push_state(V01); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }
+  "`begin_keywords"[ \t]*\"1364-2001-noconfig\" { FL_FWD; yy_push_state(V01); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }
+  "`begin_keywords"[ \t]*\"1364-2005\"          { FL_FWD; yy_push_state(V05); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }
+  "`begin_keywords"[ \t]*\"VAMS[-0-9.]*\"       { FL_FWD; yy_push_state(VA5); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }
+  "`begin_keywords"[ \t]*\"1800-2005\"          { FL_FWD; yy_push_state(S05); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }
+  "`begin_keywords"[ \t]*\"1800-2009\"          { FL_FWD; yy_push_state(S09); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }
+  "`begin_keywords"[ \t]*\"1800-2012\"          { FL_FWD; yy_push_state(S12); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }
+  "`begin_keywords"[ \t]*\"1800-2017\"          { FL_FWD; yy_push_state(S17); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }
+  "`begin_keywords"[ \t]*\"1800[+]VAMS\"        { FL_FWD; yy_push_state(SAX); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }  /*Latest SV*/
+  "`end_keywords"                               { FL_FWD; yy_pop_state();
+                                                  if (!PARSEP->popBeginKeywords()) yyerrorf("`end_keywords when not inside `begin_keywords block");
+                                                  FL_BRK; }
 
   /* Verilator */
-  "`systemc_ctor"                       { BEGIN SYSCCTOR; }
-  "`systemc_dtor"                       { BEGIN SYSCDTOR; }
-  "`systemc_header"                     { BEGIN SYSCHDR; }
-  "`systemc_imp_header"                 { BEGIN SYSCIMPH; }
-  "`systemc_implementation"             { BEGIN SYSCIMP; }
-  "`systemc_interface"                  { BEGIN SYSCINT; }
-  "`verilator_config"                   { BEGIN VLT; }
-  "`verilog"                            { BEGIN PARSEP->lastVerilogState(); }
+  "`systemc_ctor"                       { FL_FWD; BEGIN SYSCCTOR; FL_BRK; }
+  "`systemc_dtor"                       { FL_FWD; BEGIN SYSCDTOR; FL_BRK; }
+  "`systemc_header"                     { FL_FWD; BEGIN SYSCHDR; FL_BRK; }
+  "`systemc_imp_header"                 { FL_FWD; BEGIN SYSCIMPH; FL_BRK; }
+  "`systemc_implementation"             { FL_FWD; BEGIN SYSCIMP; FL_BRK; }
+  "`systemc_interface"                  { FL_FWD; BEGIN SYSCINT; FL_BRK; }
+  "`verilator_config"                   { FL_FWD; BEGIN VLT; FL_BRK; }
+  "`verilog"                            { FL_FWD; BEGIN PARSEP->lastVerilogState(); FL_BRK; }
 
   /* If add to this list also add to V3LanguageWords.h */
 }
 
-<SYSCHDR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}        { FL; NEXTLINE(); yylval.strp = PARSEP->newString(yytext); return yaSCHDR; }
-<SYSCINT>[ \t]*[^` \t\n\r][^\n\r]*{crnl}        { FL; NEXTLINE(); yylval.strp = PARSEP->newString(yytext); return yaSCINT; }
-<SYSCIMP>[ \t]*[^` \t\n\r][^\n\r]*{crnl}        { FL; NEXTLINE(); yylval.strp = PARSEP->newString(yytext); return yaSCIMP; }
-<SYSCIMPH>[ \t]*[^` \t\n\r][^\n\r]*{crnl}       { FL; NEXTLINE(); yylval.strp = PARSEP->newString(yytext); return yaSCIMPH; }
-<SYSCCTOR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}       { FL; NEXTLINE(); yylval.strp = PARSEP->newString(yytext); return yaSCCTOR; }
-<SYSCDTOR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}       { FL; NEXTLINE(); yylval.strp = PARSEP->newString(yytext); return yaSCDTOR; }
-<IGNORE>[ \t]*[^` \t\n\r][^\n\r]*{crnl}         { NEXTLINE(); }
+<SYSCHDR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}        { FL; yylval.strp = PARSEP->newString(yytext); return yaSCHDR; }
+<SYSCINT>[ \t]*[^` \t\n\r][^\n\r]*{crnl}        { FL; yylval.strp = PARSEP->newString(yytext); return yaSCINT; }
+<SYSCIMP>[ \t]*[^` \t\n\r][^\n\r]*{crnl}        { FL; yylval.strp = PARSEP->newString(yytext); return yaSCIMP; }
+<SYSCIMPH>[ \t]*[^` \t\n\r][^\n\r]*{crnl}       { FL; yylval.strp = PARSEP->newString(yytext); return yaSCIMPH; }
+<SYSCCTOR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}       { FL; yylval.strp = PARSEP->newString(yytext); return yaSCCTOR; }
+<SYSCDTOR>[ \t]*[^` \t\n\r][^\n\r]*{crnl}       { FL; yylval.strp = PARSEP->newString(yytext); return yaSCDTOR; }
+<IGNORE>[ \t]*[^` \t\n\r][^\n\r]*{crnl}         { FL_FWD; FL_BRK; }
 
   /* Pick up text-type data */
 <SYSCHDR,SYSCINT,SYSCIMP,SYSCIMPH,SYSCCTOR,SYSCDTOR,IGNORE>{
   {wsnr}*               { yymore(); }
-  {crnl}                { NEXTLINE(); yymore(); }
+  {crnl}                { yymore(); }
 }
 
   /************************************************************************/
   /* Default rules - leave last */
 
 <V95,V01,V05,VA5,S05,S09,S12,S17,SAX,VLT>{
-  "`"[a-zA-Z_0-9]+      { FL; PARSEP->errorPreprocDirective(yytext); }
-  "//"[^\n]*            { }  /* throw away single line comments */
+  "`"[a-zA-Z_0-9]+      { FL_FWD; PARSEP->errorPreprocDirective(yytext); FL_BRK; }
+  "//"[^\n]*            { FL_FWD; FL_BRK; }  /* throw away single line comments */
   .                     { FL; return yytext[0]; }       /* return single char ops. */
 }
 
   /* Catch all - absolutely last */
-<*>.|\n                 { yyerrorf("Missing verilog.l rule: Default rule invoked in state %d: %s", YY_START, yytext); }
+<*>.|\n                 { FL_FWD; yyerrorf("Missing verilog.l rule: Default rule invoked in state %d: %s", YY_START, yytext); FL_BRK; }
 %%
 int V3ParseImp::stateVerilogRecent() { return STATE_VERILOG_RECENT; }
 
@@ -1059,8 +1064,8 @@ int V3ParseImp::lexToBison() {
     m_curBisonVal = yylval;
 
     //yylval.scp = NULL;   // Symbol table not yet needed - no packages
-    if (debugFlex()>=6 || debugBison()>=6) {
-        cout<<"   {"<<yylval.fl->filenameLetters()<<yylval.fl->lineno()
+    if (debugFlex()>=6 || debugBison()>=6) {  // --debugi-flex and --debugi-bison
+        cout<<"   {"<<yylval.fl->filenameLetters()<<yylval.fl->asciiLineCol()
             <<"} lexToBison  TOKEN="<<yylval.token<<" "<<tokenName(yylval.token);
         if (yylval.token == yaID__ETC
             || yylval.token == yaID__LEX

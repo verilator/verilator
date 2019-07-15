@@ -54,7 +54,6 @@ class FileLineSingleton {
     ~FileLineSingleton() { }
 protected:
     friend class FileLine;
-    // METHODS
     int nameToNumber(const string& filename);
     const string numberToName(int filenameno) const { return m_names[filenameno]; }
     const V3LangCode numberToLang(int filenameno) const { return m_languages[filenameno]; }
@@ -64,15 +63,40 @@ protected:
     static const string filenameLetters(int fileno);
 };
 
+//! All source lines from a file/stream, to enable errors to show sources
+class VFileContent {
+    // MEMBERS
+    int m_id;  // Content ID number
+    std::deque<string> m_lines;  // Source text lines
+public:
+    VFileContent() { static int s_id = 0; m_id = ++s_id; }
+    ~VFileContent() { }
+    // METHODS
+    void pushText(const string& text);  // Add arbitrary text (need not be line-by-line)
+    string getLine(int lineno) const;
+    string ascii() const { return "ct"+cvtToStr(m_id); }
+    static int debug();
+};
+std::ostream& operator<<(std::ostream& os, VFileContent* contentp);
+
 //! File and line number of an object, mostly for error reporting
 
 //! This class is instantiated for every source code line (potentially
 //! millions). To save space, per-file information (e.g. filename, source
 //! language is held in tables in the FileLineSingleton class.
 class FileLine {
+    // CONSTANTS
+    enum { SHOW_SOURCE_MAX_LENGTH = 400 };  // Don't show source lines > this long
+
     // MEMBERS
-    int m_lineno;  // `line corrected line number
+    // Columns here means number of chars from beginning (i.e. tabs count as one)
+    int m_firstLineno;  // `line corrected token's first line number
+    int m_firstColumn;  // `line corrected token's first column number
+    int m_lastLineno;  // `line corrected token's last line number
+    int m_lastColumn;  // `line corrected token's last column number
     int m_filenameno;  // `line corrected filename number
+    int m_contentLineno;  // Line number within source stream
+    VFileContent* m_contentp;  // Source text contents line is within
     FileLine* m_parent;  // Parent line that included this line
     std::bitset<V3ErrorCode::_ENUM_MAX> m_warnOn;
 
@@ -96,20 +120,22 @@ private:
     }
 public:
     FileLine(const string& filename) {
-        m_lineno = 0;
+        m_lastLineno = m_firstLineno = 0;
+        m_lastColumn = m_firstColumn = 0;
         m_filenameno = singleton().nameToNumber(filename);
-        m_parent = NULL;
-        m_warnOn = defaultFileLine().m_warnOn;
-    }
-    FileLine(const string& filename, int lineno) {
-        m_lineno = lineno;
-        m_filenameno = singleton().nameToNumber(filename);
+        m_contentLineno = 0;
+        m_contentp = NULL;
         m_parent = NULL;
         m_warnOn = defaultFileLine().m_warnOn;
     }
     explicit FileLine(FileLine* fromp) {
-        m_lineno = fromp->m_lineno;
+        m_firstLineno = fromp->m_firstLineno;
+        m_firstColumn = fromp->m_firstColumn;
+        m_lastLineno = fromp->m_lastLineno;
+        m_lastColumn = fromp->m_lastColumn;
         m_filenameno = fromp->m_filenameno;
+        m_contentLineno = fromp->m_contentLineno;
+        m_contentp = fromp->m_contentp;
         m_parent = fromp->m_parent;
         m_warnOn = fromp->m_warnOn;
     }
@@ -122,18 +148,33 @@ public:
     static void* operator new(size_t size);
     static void operator delete(void* obj, size_t size);
 #endif
+    void newContent() { m_contentp = new VFileContent; m_contentLineno = 1; }
     // METHODS
-    void lineno(int num) { m_lineno = num; }
+    void lineno(int num) { m_firstLineno = num; m_lastLineno = num;
+        m_firstColumn = m_lastColumn = 1; }
     void language(V3LangCode lang) { singleton().numberToLang(m_filenameno, lang); }
     void filename(const string& name) { m_filenameno = singleton().nameToNumber(name); }
     void parent(FileLine* fileline) { m_parent = fileline; }
     void lineDirective(const char* textp, int& enterExitRef);
-    void linenoInc() { m_lineno++; }
-
-    int lineno() const { return m_lineno; }
+    void linenoInc() { m_lastLineno++; m_lastColumn = 1; m_contentLineno++; }
+    void startToken() { m_firstLineno = m_lastLineno;
+        m_firstColumn = m_lastColumn; }
+    // Advance last line/column based on given text
+    void forwardToken(const char* textp, size_t size, bool trackLines=true);
+    int firstLineno() const { return m_firstLineno; }
+    int firstColumn() const { return m_firstColumn; }
+    int lastLineno() const { return m_lastLineno; }
+    int lastColumn() const { return m_lastColumn; }
+    VFileContent* contentp() const { return m_contentp; }
+    // If not otherwise more specific, use last lineno for errors etc,
+    // as the parser errors etc generally make more sense pointing at the last parse point
+    int lineno() const { return m_lastLineno; }
+    string source() const;
+    string prettySource() const;  // Source, w/stripped unprintables and newlines
     FileLine* parent() const { return m_parent; }
     V3LangCode language() const { return singleton().numberToLang(m_filenameno); }
     string ascii() const;
+    string asciiLineCol() const;
     const string filename() const { return singleton().numberToName(m_filenameno); }
     bool filenameIsGlobal() const { return (filename() == commandLineFilename()
                                             || filename() == builtInFilename()); }
@@ -141,7 +182,7 @@ public:
     const string filebasename() const;
     const string filebasenameNoExt() const;
     const string profileFuncname() const;
-    const string xml() const { return "fl=\""+filenameLetters()+cvtToStr(lineno())+"\""; }
+    const string xml() const { return "fl=\""+filenameLetters()+cvtToStr(lastLineno())+"\""; }
     string lineDirectiveStrg(int enterExit) const;
 
     // Turn on/off warning messages on this line.
@@ -199,7 +240,10 @@ public:
     /// Simplified information vs warnContextPrimary() to make dump clearer
     string warnContextSecondary() const { return warnContext(true); }
     bool operator==(FileLine rhs) const {
-        return (m_lineno == rhs.m_lineno
+        return (m_firstLineno == rhs.m_firstLineno
+                && m_firstColumn == rhs.m_firstColumn
+                && m_lastLineno == rhs.m_lastLineno
+                && m_lastColumn == rhs.m_lastColumn
                 && m_filenameno == rhs.m_filenameno
                 && m_warnOn == rhs.m_warnOn);
     }

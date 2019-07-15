@@ -1,3 +1,7 @@
 %Error: t/t_enum_overlap_bad.v:11: Overlapping enumeration value: 'e1b'
+          e1b=1
+          ^~~
         t/t_enum_overlap_bad.v:9: ... Location of original declaration
+          e1,
+          ^~
 %Error: Exiting due to

@@ -1024,8 +1024,12 @@ void AstNode::dumpPtrs(std::ostream& os) const {
 }
 
 void AstNode::dumpTree(std::ostream& os, const string& indent, int maxDepth) {
+    static int s_debugFileline = v3Global.opt.debugSrcLevel("fileline");  // --debugi-fileline 9
     os<<indent<<" "<<this<<endl;
     if (debug()>8) { os<<indent<<"     "; dumpPtrs(os); }
+    if (s_debugFileline >= 9) {
+        os<<fileline()->warnContextSecondary();
+    }
     if (maxDepth==1) {
         if (op1p()||op2p()||op3p()||op4p()) { os<<indent<<"1: ...(maxDepth)"<<endl; }
     } else {

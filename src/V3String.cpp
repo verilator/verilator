@@ -97,6 +97,15 @@ string VString::quotePercent(const string& str) {
     return out;
 }
 
+string VString::spaceUnprintable(const string& str) {
+    string out;
+    for (string::const_iterator pos = str.begin(); pos != str.end(); ++pos) {
+        if (isprint(*pos)) out += *pos;
+        else out += ' ';
+    }
+    return out;
+}
+
 //######################################################################
 // VHashSha1
 

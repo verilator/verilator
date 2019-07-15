@@ -9,4 +9,6 @@
            a = ?32?sh7
            b = ?32?sh8
            c = ?32?sh9
+   localparam P24 = f_add2(7, 8, 9);
+                    ^~~~~~
 %Error: Exiting due to

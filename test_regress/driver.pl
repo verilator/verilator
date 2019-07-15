@@ -368,7 +368,8 @@ sub print_summary {
     my %params = (force => 0, # Force printing
                   @_);
     my $leftmsg = $::Have_Forker ? $self->{left_cnt} : "NO-FORKER";
-    if (!$self->{quiet} || !$self->{left_cnt} || $params{force}
+    if (!$self->{quiet} || $params{force}
+        || ($self->{left_cnt} < 5)
         || time() > ($self->{_next_summary_time} || 0)) {
         $self->{_next_summary_time} = time() + 15;
         print STDERR ("==SUMMARY: ".$self->sprint_summary."\n")

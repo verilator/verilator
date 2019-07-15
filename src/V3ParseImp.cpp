@@ -225,7 +225,9 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
     string modname = V3Os::filenameNonExt(modfilename);
 
     UINFO(2,__FUNCTION__<<": "<<modname<<(inLibrary?" [LIB]":"")<<endl);
+    VFileContent* contentp = new VFileContent;
     m_fileline = new FileLine(fileline);
+    m_fileline->newContent();
     m_inLibrary = inLibrary;
 
     // Preprocess into m_ppBuffer

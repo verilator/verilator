@@ -1,8 +1,12 @@
 %Warning-BLKSEQ: t/t_lint_blksync_bad.v:23: Blocking assignments (=) in sequential (flop or latch) block
                                           : ... Suggest delayed assignments (<=)
+      sync_blk = 1'b1;
+               ^
                  ... Use "/* verilator lint_off BLKSEQ */" and lint_on around source to disable this message.
 %Warning-COMBDLY: t/t_lint_blksync_bad.v:30: Delayed assignments (<=) in non-clocked (non flop or latch) block
                                            : ... Suggest blocking assignments (=)
+      combo_nblk <= 1'b1;
+                 ^~
                   *** See the manual before disabling this,
                   else you may end up with different sim results.
 %Error: Exiting due to

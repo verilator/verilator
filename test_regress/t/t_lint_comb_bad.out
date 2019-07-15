@@ -1,3 +1,5 @@
 %Error: t/t_lint_comb_bad.v:13: syntax error, unexpected '@'
+   always_comb @(*) begin
+               ^
 %Error: Cannot continue
 %Error: Command Failed

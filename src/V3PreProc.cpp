@@ -267,7 +267,8 @@ public:
     void configure(FileLine* filelinep) {
         // configure() separate from constructor to avoid calling abstract functions
         m_preprocp = this;  // Silly, but to make code more similar to Verilog-Perl
-        m_finFilelinep = new FileLine(filelinep->filename(), 1);
+        m_finFilelinep = new FileLine(filelinep->filename());
+        m_finFilelinep->lineno(1);
         // Create lexer
         m_lexp = new V3PreLex(this, filelinep);
         m_lexp->m_keepComments = m_preprocp->keepComments();
@@ -768,8 +769,16 @@ void V3PreProcImp::openFile(FileLine* fl, V3InFilter* filterp, const string& fil
         addLineComment(0);
     }
 
+    // Save file contents for future error reporting
+    FileLine* flsp = new FileLine(filename);
+    flsp->lineno(1);
+    flsp->newContent();
+    for (StrList::iterator it=wholefile.begin(); it!=wholefile.end(); ++it) {
+        flsp->contentp()->pushText(*it);
+    }
+
     // Create new stream structure
-    m_lexp->scanNewFile(new FileLine(filename, 1));
+    m_lexp->scanNewFile(flsp);
     addLineComment(1);  // Enter
 
     // Filter all DOS CR's en-mass.  This avoids bugs with lexing CRs in the wrong places.
@@ -868,6 +877,7 @@ int V3PreProcImp::getRawToken() {
         if (isEof()) return (VP_EOF);
 
         // Snarf next token from the file
+        m_lexp->curFilelinep()->startToken();
         int tok = m_lexp->lex();
 
         if (debug()>=5) debugToken(tok, "RAW");
@@ -883,16 +893,22 @@ int V3PreProcImp::getRawToken() {
 }
 
 void V3PreProcImp::debugToken(int tok, const char* cmtp) {
-    if (debug()>=5) {
+    static int s_debugFileline = v3Global.opt.debugSrcLevel("fileline");  // --debugi-fileline 9
+    if (debug() >= 5) {
         string buf = string(yyourtext(), yyourleng());
         string::size_type pos;
         while ((pos = buf.find('\n')) != string::npos) { buf.replace(pos, 1, "\\n"); }
         while ((pos = buf.find('\r')) != string::npos) { buf.replace(pos, 1, "\\r"); }
-        fprintf(stderr, "%d: %s %s %s(%d) dr%d:  <%d>%-10s: %s\n",
-                m_lexp->m_tokFilelinep->lineno(), cmtp, m_off?"of":"on",
+        string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
+        fprintf(stderr, "%s: %s %s %s(%d) dr%d:  <%d>%-10s: %s\n",
+                flcol.c_str(),
+                cmtp, (m_off ? "of" : "on"),
                 procStateName(state()), static_cast<int>(m_states.size()),
                 static_cast<int>(m_defRefs.size()),
                 m_lexp->currentStartState(), tokenName(tok), buf.c_str());
+        if (s_debugFileline >= 9) {
+            std::cerr<<m_lexp->m_tokFilelinep->warnContextSecondary()<<endl;
+        }
     }
 }
 
@@ -1449,8 +1465,10 @@ int V3PreProcImp::getFinalToken(string& buf) {
     buf = m_finBuf;
     if (0 && debug()>=5) {
         string bufcln = V3PreLex::cleanDbgStrg(buf);
-        fprintf(stderr, "%d: FIN:      %-10s: %s\n",
-                m_lexp->m_tokFilelinep->lineno(), tokenName(tok), bufcln.c_str());
+        string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
+        fprintf(stderr, "%s: FIN:      %-10s: %s\n",
+                flcol.c_str(),
+                tokenName(tok), bufcln.c_str());
     }
     // Track `line
     const char* bufp = buf.c_str();
@@ -1462,14 +1480,17 @@ int V3PreProcImp::getFinalToken(string& buf) {
     else {
         if (m_finAtBol && !(tok==VP_TEXT && buf=="\n")
             && m_preprocp->lineDirectives()) {
-            if (int outBehind = m_lexp->m_tokFilelinep->lineno() - m_finFilelinep->lineno()) {
+            if (int outBehind = (m_lexp->m_tokFilelinep->lastLineno()
+                                 - m_finFilelinep->lastLineno())) {
                 if (debug()>=5) {
-                    fprintf(stderr, "%d: FIN: readjust, fin at %d  request at %d\n",
-                            m_lexp->m_tokFilelinep->lineno(),
-                            m_finFilelinep->lineno(), m_lexp->m_tokFilelinep->lineno());
+                    string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
+                    fprintf(stderr, "%s: FIN: readjust, fin at %d  request at %d\n",
+                            flcol.c_str(),
+                            m_finFilelinep->lastLineno(),
+                            m_lexp->m_tokFilelinep->lastLineno());
                 }
-                m_finFilelinep = new FileLine(m_lexp->m_tokFilelinep->filename(),
-                                              m_lexp->m_tokFilelinep->lineno());
+                m_finFilelinep->filename(m_lexp->m_tokFilelinep->filename());
+                m_finFilelinep->lineno(m_lexp->m_tokFilelinep->lastLineno());
                 if (outBehind > 0
                     && (outBehind <= static_cast<int>(V3PreProc::NEWLINES_VS_TICKLINE))) {
                     // Output stream is behind, send newlines to get back in sync
@@ -1509,8 +1530,10 @@ string V3PreProcImp::getline() {
         int tok = getFinalToken(buf/*ref*/);
         if (debug()>=5) {
             string bufcln = V3PreLex::cleanDbgStrg(buf);
-            fprintf(stderr, "%d: GETFETC:  %-10s: %s\n",
-                    m_lexp->m_tokFilelinep->lineno(), tokenName(tok), bufcln.c_str());
+            string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
+            fprintf(stderr, "%s: GETFETC:  %-10s: %s\n",
+                    flcol.c_str(),
+                    tokenName(tok), bufcln.c_str());
         }
         if (tok==VP_EOF) {
             // Add a final newline, if the user forgot the final \n.
@@ -1530,8 +1553,10 @@ string V3PreProcImp::getline() {
     m_lineChars = m_lineChars.erase(0, len);  // Remove returned characters
     if (debug()>=4) {
         string lncln = V3PreLex::cleanDbgStrg(theLine);
-        fprintf(stderr, "%d: GETLINE:  %s\n",
-                m_lexp->m_tokFilelinep->lineno(), lncln.c_str());
+        string flcol = m_lexp->m_tokFilelinep->asciiLineCol();
+        fprintf(stderr, "%s: GETLINE:  %s\n",
+                flcol.c_str(),
+                lncln.c_str());
     }
     return theLine;
 }

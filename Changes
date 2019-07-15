@@ -4,7 +4,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.017 devel
 
-**    Offer suggestions on bad identifier errors.
+**    When showing an error, show source code and offer suggestions of replacements.
 
 ***   Change MULTITOP to warning to help linting, see manual.
 

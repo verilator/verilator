@@ -1,2 +1,4 @@
 %Error: t/t_case_genx_bad.v:13: Use of x/? constant in generate case statement, (no such thing as 'generate casez')
+        32'b1xxx: initial begin end
+        ^~~~~~~~
 %Error: Exiting due to

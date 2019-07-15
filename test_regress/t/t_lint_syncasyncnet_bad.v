@@ -55,7 +55,7 @@ module sub1 (/*AUTOARG*/
    end
 
    always @(posedge clk) begin
-      q2 <= (~rst_both_l) ? 1'b0 : d;
+      q2 <= (rst_both_l) ? d : 1'b0;
       if (0 && q1 && q2) ;
    end
 

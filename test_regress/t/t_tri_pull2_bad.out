@@ -1,3 +1,7 @@
 %Error: t/t_tri_pull2_bad.v:9: Unsupported: Conflicting pull directions.
+   pullup p1(A);
+          ^~
         t/t_tri_pull2_bad.v:19: ... Location of conflicting pull.
+   pulldown p2(A);
+            ^~
 %Error: Exiting due to

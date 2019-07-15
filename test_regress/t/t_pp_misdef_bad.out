@@ -1,5 +1,9 @@
 %Error: t/t_pp_misdef_bad.v:10: Define or directive not defined: '`NDEFINED'
                               : ... Suggested alternative: '`DEFINED'
+   `NDEFINED
+   ^~~~~~~~~
 %Error: t/t_pp_misdef_bad.v:13: Define or directive not defined: '`imescale'
                               : ... Suggested alternative: '`timescale'
+     `imescale
+     ^~~~~~~~~
 %Error: Exiting due to

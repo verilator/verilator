@@ -40,6 +40,12 @@ char* yyourtext() { return yytext; }
 size_t yyourleng() { return yyleng; }
 void yyourtext(const char* textp, size_t size) { yytext=(char*)textp; yyleng=size; }
 
+// FL_FWD only tracks columns; preproc uses linenoInc() to track lines, so
+// insertion of a \n does not mess up line count
+#define FL_FWDC { LEXP->curFilelinep()->forwardToken(yytext, yyleng, false); }
+// Use this to break between tokens whereever not return'ing a token (e.g. skipping inside lexer)
+#define FL_BRK { LEXP->curFilelinep()->startToken(); }
+
 // Prevent conflicts from perl version
 static void linenoInc()  {LEXP->linenoInc();}
 static bool pedantic() { return LEXP->m_pedantic; }
@@ -83,197 +89,210 @@ bom             [\357\273\277]
 %%
 
 <INITIAL>{bom}          { }
-<INITIAL,STRIFY>^{ws}*"`line"{ws}+.*{crnl}      { LEXP->lineDirective(yytext);
+<INITIAL,STRIFY>^{ws}*"`line"{ws}+.*{crnl}      { FL_FWDC; LEXP->lineDirective(yytext);
                                                   return VP_LINE; }
 
         /* Special directives we recognize */
-<INITIAL>"`define"      { return VP_DEFINE; }
-<INITIAL>"`else"        { return VP_ELSE; }
-<INITIAL>"`elsif"       { return VP_ELSIF; }
-<INITIAL>"`endif"       { return VP_ENDIF; }
-<INITIAL>"`ifdef"       { return VP_IFDEF; }
-<INITIAL>"`ifndef"      { return VP_IFNDEF; }
-<INITIAL>"`include"     { return VP_INCLUDE; }
-<INITIAL>"`undef"       { return VP_UNDEF; }
-<INITIAL>"`undefineall" { return VP_UNDEFINEALL; }
-<INITIAL>"`error"       { if (!pedantic()) return VP_ERROR; else return VP_DEFREF; }
-<INITIAL,STRIFY>"`__FILE__"     { static string rtnfile;
+<INITIAL>"`define"      { FL_FWDC; return VP_DEFINE; }
+<INITIAL>"`else"        { FL_FWDC; return VP_ELSE; }
+<INITIAL>"`elsif"       { FL_FWDC; return VP_ELSIF; }
+<INITIAL>"`endif"       { FL_FWDC; return VP_ENDIF; }
+<INITIAL>"`ifdef"       { FL_FWDC; return VP_IFDEF; }
+<INITIAL>"`ifndef"      { FL_FWDC; return VP_IFNDEF; }
+<INITIAL>"`include"     { FL_FWDC; return VP_INCLUDE; }
+<INITIAL>"`undef"       { FL_FWDC; return VP_UNDEF; }
+<INITIAL>"`undefineall" { FL_FWDC; return VP_UNDEFINEALL; }
+<INITIAL>"`error"       { FL_FWDC; if (!pedantic()) return VP_ERROR; else return VP_DEFREF; }
+<INITIAL,STRIFY>"`__FILE__"     { FL_FWDC;
+                          static string rtnfile;
                           rtnfile = '"'; rtnfile += LEXP->curFilelinep()->filename();
                           rtnfile += '"'; yytext = (char*)rtnfile.c_str(); yyleng = rtnfile.length();
                           return VP_STRING; }
-<INITIAL,STRIFY>"`__LINE__"     { static char buf[10];
-                          sprintf(buf, "%d", LEXP->curFilelinep()->lineno());
+<INITIAL,STRIFY>"`__LINE__"     { FL_FWDC;
+                          static char buf[10];
+                          sprintf(buf, "%d", LEXP->curFilelinep()->lastLineno());
                           yytext = buf; yyleng = strlen(yytext);
                           return VP_TEXT; }
 
         /* Pass-through strings */
 <INITIAL>{quote}        { yy_push_state(STRMODE); yymore(); }
-<STRMODE><<EOF>>        { linenoInc(); yyerrorf("EOF in unterminated string"); yyleng=0; yyterminate(); }
-<STRMODE>{crnl}         { linenoInc(); yyerrorf("Unterminated string"); BEGIN(INITIAL); }
+<STRMODE><<EOF>>        { FL_FWDC; linenoInc(); yyerrorf("EOF in unterminated string");
+                          yyleng=0; yyterminate(); }
+<STRMODE>{crnl}         { FL_FWDC; linenoInc(); yyerrorf("Unterminated string");
+                          FL_BRK; BEGIN(INITIAL); }
 <STRMODE>{word}         { yymore(); }
 <STRMODE>[^\"\\]        { yymore(); }
 <STRMODE>[\\]{crnl}     { linenoInc(); yymore(); }
-<STRMODE>[\\]{wsn}+{crnl}  { yyless(1); LEXP->warnBackslashSpace(); }
+<STRMODE>[\\]{wsn}+{crnl}  { LEXP->warnBackslashSpace(); yyless(1); }
 <STRMODE>[\\].          { yymore(); }
-<STRMODE>{quote}        { yy_pop_state();
+<STRMODE>{quote}        { FL_FWDC; yy_pop_state();
                           if (LEXP->m_parenLevel || LEXP->m_defQuote) {
-                              LEXP->m_defQuote=false; appendDefValue(yytext, yyleng); yyleng=0;
+                              LEXP->m_defQuote=false; appendDefValue(yytext, yyleng);
+                              yyleng=0; FL_BRK;
                           } else return VP_STRING; }
 
         /* Stringification */
-<INITIAL>{tickquote}    { yy_push_state(STRIFY); return VP_STRIFY; }
-<STRIFY><<EOF>>         { linenoInc(); yyerrorf("EOF in unterminated '\""); yyleng=0; yyterminate(); }
-<STRIFY>"`\\`\""        { return VP_BACKQUOTE; }
+<INITIAL>{tickquote}    { FL_FWDC; yy_push_state(STRIFY); return VP_STRIFY; }
+<STRIFY><<EOF>>         { FL_FWDC; linenoInc(); yyerrorf("EOF in unterminated '\"");
+                          yyleng=0; yyterminate(); }
+<STRIFY>"`\\`\""        { FL_FWDC; return VP_BACKQUOTE; }
 <STRIFY>{quote}         { yy_push_state(STRMODE); yymore(); }
-<STRIFY>{tickquote}     { yy_pop_state(); return VP_STRIFY; }
-<STRIFY>{symbdef}       { return VP_SYMBOL; }
-<STRIFY>{symbdef}``     { yyleng-=2; return VP_SYMBOL_JOIN; }
-<STRIFY>"`"{symbdef}    { return VP_DEFREF; }
-<STRIFY>"`"{symbdef}``  { yyleng-=2; return VP_DEFREF_JOIN; }
-<STRIFY>``              { yyleng-=2; return VP_JOIN; }
-<STRIFY>{crnl}          { linenoInc(); yytext = (char*)"\n"; yyleng = 1; return VP_WHITE; }
-<STRIFY>{wsn}+          { return VP_WHITE; }
-<STRIFY>{drop}          { }
-<STRIFY>[\r]            { }
-<STRIFY>.               { return VP_TEXT; }
+<STRIFY>{tickquote}     { FL_FWDC; yy_pop_state(); return VP_STRIFY; }
+<STRIFY>{symbdef}       { FL_FWDC; return VP_SYMBOL; }
+<STRIFY>{symbdef}``     { FL_FWDC; yyleng-=2; return VP_SYMBOL_JOIN; }
+<STRIFY>"`"{symbdef}    { FL_FWDC; return VP_DEFREF; }
+<STRIFY>"`"{symbdef}``  { FL_FWDC; yyleng-=2; return VP_DEFREF_JOIN; }
+<STRIFY>``              { FL_FWDC; yyleng-=2; return VP_JOIN; }
+<STRIFY>{crnl}          { FL_FWDC; linenoInc(); yytext = (char*)"\n"; yyleng = 1; return VP_WHITE; }
+<STRIFY>{wsn}+          { FL_FWDC; return VP_WHITE; }
+<STRIFY>{drop}          { FL_FWDC; FL_BRK; }
+<STRIFY>[\r]            { FL_FWDC; FL_BRK; }
+<STRIFY>.               { FL_FWDC; return VP_TEXT; }
 
         /* Protected blocks */
 <INITIAL>"`protected"   { yy_push_state(PRTMODE); yymore(); }
-<PRTMODE><<EOF>>        { linenoInc(); yyerrorf("EOF in `protected"); yyleng = 0; yyterminate(); }
-<PRTMODE>{crnl}         { linenoInc(); return VP_TEXT; }
+<PRTMODE><<EOF>>        { FL_FWDC; linenoInc(); yyerrorf("EOF in `protected");
+                          yyleng = 0; yyterminate(); }
+<PRTMODE>{crnl}         { FL_FWDC; linenoInc(); return VP_TEXT; }
 <PRTMODE>.              { yymore(); }
-<PRTMODE>"`endprotected" { yy_pop_state(); return VP_TEXT; }
+<PRTMODE>"`endprotected" { FL_FWDC; yy_pop_state(); return VP_TEXT; }
 
         /* Pass-through include <> filenames */
-<INCMODE><<EOF>>        { linenoInc(); yyerrorf("EOF in unterminated include filename"); yyleng = 0; yyterminate(); }
-<INCMODE>{crnl}         { linenoInc(); yyerrorf("Unterminated include filename"); BEGIN(INITIAL); }
+<INCMODE><<EOF>>        { FL_FWDC; linenoInc(); yyerrorf("EOF in unterminated include filename");
+                          yyleng = 0; yyterminate(); }
+<INCMODE>{crnl}         { FL_FWDC; linenoInc(); yyerrorf("Unterminated include filename");
+                          FL_BRK; BEGIN(INITIAL); }
 <INCMODE>[^\>\\]        { yymore(); }
 <INCMODE>[\\].          { yymore(); }
-<INCMODE>[\>]           { yy_pop_state(); return VP_STRING; }
+<INCMODE>[\>]           { FL_FWDC; yy_pop_state(); return VP_STRING; }
 
         /* Reading definition formal parenthesis (or not) to begin formal arguments */
         /* Note '(' must IMMEDIATELY follow definition name */
-<DEFFPAR>[(]            { appendDefValue("(", 1); LEXP->m_formalLevel=1; BEGIN(DEFFORM); }
-<DEFFPAR>{crnl}         { yy_pop_state(); unput('\n'); yyleng=0; return VP_DEFFORM; }  /* DEFVAL will later grab the return */
-<DEFFPAR><<EOF>>        { yy_pop_state(); return VP_DEFFORM; }  /* empty formals */
-<DEFFPAR>.              { yy_pop_state(); unput(yytext[yyleng-1]); yyleng=0; return VP_DEFFORM; }  /* empty formals */
+<DEFFPAR>[(]            { FL_FWDC; appendDefValue("(", 1); LEXP->m_formalLevel=1;
+                          FL_BRK; BEGIN(DEFFORM); }
+<DEFFPAR>{crnl}         { FL_FWDC; yy_pop_state(); unput('\n'); yyleng=0; return VP_DEFFORM; }  /* DEFVAL will later grab the return */
+<DEFFPAR><<EOF>>        { FL_FWDC; yy_pop_state(); return VP_DEFFORM; }  /* empty formals */
+<DEFFPAR>.              { FL_FWDC; yy_pop_state(); unput(yytext[yyleng-1]); yyleng=0; return VP_DEFFORM; }  /* empty formals */
 
         /* Reading definition formals (declaration of a define) */
-<DEFFORM>[(]            { appendDefValue(yytext, yyleng); yyleng=0; ++LEXP->m_formalLevel; }
-<DEFFORM>[)]            { appendDefValue(yytext, yyleng); yyleng=0;
-                          if ((--LEXP->m_formalLevel)==0) { yy_pop_state(); return VP_DEFFORM; } }
+<DEFFORM>[(]            { FL_FWDC; appendDefValue(yytext, yyleng); FL_BRK; yyleng=0; ++LEXP->m_formalLevel; }
+<DEFFORM>[)]            { FL_FWDC; appendDefValue(yytext, yyleng); yyleng=0;
+                          if ((--LEXP->m_formalLevel)==0) { yy_pop_state(); return VP_DEFFORM; }
+                          FL_BRK; }
 <DEFFORM>"/*"           { yy_push_state(CMTMODE); yymore(); }
-<DEFFORM>"//"[^\n\r]*   { return VP_COMMENT;}
-<DEFFORM>{drop}         { }
-<DEFFORM><<EOF>>        { linenoInc(); yy_pop_state(); yyerrorf("Unterminated ( in define formal arguments."); yyleng=0; return VP_DEFFORM; }
-<DEFFORM>{crnl}         { linenoInc(); appendDefValue((char*)"\n", 1); }  /* Include return so can maintain output line count */
-<DEFFORM>[\\]{wsn}+{crnl}  { yyless(1); LEXP->warnBackslashSpace(); }
-<DEFFORM>[\\]{crnl}     { linenoInc(); appendDefValue((char*)"\\\n", 2); }  /* Include return so can maintain output line count */
+<DEFFORM>"//"[^\n\r]*   { FL_FWDC; return VP_COMMENT;}
+<DEFFORM>{drop}         { FL_FWDC; FL_BRK; }
+<DEFFORM><<EOF>>        { FL_FWDC; linenoInc(); yy_pop_state(); yyerrorf("Unterminated ( in define formal arguments.");
+                          yyleng=0; return VP_DEFFORM; }
+<DEFFORM>{crnl}         { FL_FWDC; linenoInc(); appendDefValue((char*)"\n", 1); FL_BRK; }  /* Include return so can maintain output line count */
+<DEFFORM>[\\]{wsn}+{crnl}  { LEXP->warnBackslashSpace(); yyless(1); }
+<DEFFORM>[\\]{crnl}     { FL_FWDC; linenoInc(); appendDefValue((char*)"\\\n", 2); FL_BRK; }  /* Include return so can maintain output line count */
 <DEFFORM>{quote}        { LEXP->m_defQuote=true; yy_push_state(STRMODE); yymore(); }  /* Legal only in default values */
-<DEFFORM>"`\\`\""       { appendDefValue(yytext, yyleng); }  /* Maybe illegal, otherwise in default value */
-<DEFFORM>{tickquote}    { appendDefValue(yytext, yyleng); }  /* Maybe illegal, otherwise in default value */
-<DEFFORM>[{\[]          { LEXP->m_formalLevel++; appendDefValue(yytext, yyleng); }
-<DEFFORM>[}\]]          { LEXP->m_formalLevel--; appendDefValue(yytext, yyleng); }
+<DEFFORM>"`\\`\""       { FL_FWDC; appendDefValue(yytext, yyleng); FL_BRK; }  /* Maybe illegal, otherwise in default value */
+<DEFFORM>{tickquote}    { FL_FWDC; appendDefValue(yytext, yyleng); FL_BRK; }  /* Maybe illegal, otherwise in default value */
+<DEFFORM>[{\[]          { FL_FWDC; LEXP->m_formalLevel++; appendDefValue(yytext, yyleng); FL_BRK; }
+<DEFFORM>[}\]]          { FL_FWDC; LEXP->m_formalLevel--; appendDefValue(yytext, yyleng); FL_BRK; }
 <DEFFORM>[^\/\*\n\r\\(){}\[\]\"]+       |
 <DEFFORM>[\\][^\n\r]    |
-<DEFFORM>.              { appendDefValue(yytext, yyleng); }
+<DEFFORM>.              { FL_FWDC; appendDefValue(yytext, yyleng); FL_BRK; }
 
         /* Reading definition value (declaration of a define's text) */
 <DEFVAL>"/*"            { LEXP->m_defCmtSlash=false; yy_push_state(DEFCMT); yymore(); }  /* Special comment parser */
-<DEFVAL>"//"[^\n\r]*[\\]{crnl}  { linenoInc(); appendDefValue((char*)"\n", 1); }  /* Spec says // not part of define value */
-<DEFVAL>"//"[^\n\r]*    { return VP_COMMENT;}
-<DEFVAL>{drop}          { }
-<DEFVAL><<EOF>>         { linenoInc(); yy_pop_state(); yytext=(char*)"\n"; yyleng=1; return VP_DEFVALUE; }  /* Technically illegal, but people complained */
-<DEFVAL>{crnl}          { linenoInc(); yy_pop_state(); yytext=(char*)"\n"; yyleng=1; return VP_DEFVALUE; }
-<DEFVAL>[\\]{wsn}+{crnl}  { yyless(1); LEXP->warnBackslashSpace(); }
-<DEFVAL>[\\]{crnl}      { linenoInc(); appendDefValue((char*)"\\\n", 2); }  /* Return, AND \ is part of define value */
+<DEFVAL>"//"[^\n\r]*[\\]{crnl}  { FL_FWDC; linenoInc(); appendDefValue((char*)"\n", 1); FL_BRK; }  /* Spec says // not part of define value */
+<DEFVAL>"//"[^\n\r]*    { FL_FWDC; return VP_COMMENT;}
+<DEFVAL>{drop}          { FL_FWDC; FL_BRK; }
+<DEFVAL><<EOF>>         { FL_FWDC; linenoInc(); yy_pop_state(); yytext=(char*)"\n"; yyleng=1; return VP_DEFVALUE; }  /* Technically illegal, but people complained */
+<DEFVAL>{crnl}          { FL_FWDC; linenoInc(); yy_pop_state(); yytext=(char*)"\n"; yyleng=1; return VP_DEFVALUE; }
+<DEFVAL>[\\]{wsn}+{crnl}  { LEXP->warnBackslashSpace(); yyless(1); }
+<DEFVAL>[\\]{crnl}      { FL_FWDC; linenoInc(); appendDefValue((char*)"\\\n", 2); FL_BRK; }  /* Return, AND \ is part of define value */
 <DEFVAL>{quote}         { LEXP->m_defQuote = true; yy_push_state(STRMODE); yymore(); }
 <DEFVAL>[^\/\*\n\r\\\"]+        |
 <DEFVAL>[\\][^\n\r]     |
-<DEFVAL>.               { appendDefValue(yytext, yyleng); }
+<DEFVAL>.               { FL_FWDC; appendDefValue(yytext, yyleng); FL_BRK; }
 
         /* Comments inside define values - if embedded get added to define value per spec */
         /* - if no \{crnl} ending then the comment belongs to the next line, as a non-embedded comment */
         /* - if all but (say) 3rd line is missing \ then it's indeterminate */
-<DEFCMT>"*/"            { yy_pop_state(); appendDefValue(yytext, yyleng); }
-<DEFCMT>[\\]{wsn}+{crnl}  { yyless(1); LEXP->warnBackslashSpace(); }
-<DEFCMT>[\\]{crnl}      { linenoInc(); LEXP->m_defCmtSlash=true;
-                          appendDefValue(yytext, yyleng-2); appendDefValue((char*)"\n", 1); }  /* Return but not \ */
+<DEFCMT>"*/"            { FL_FWDC; yy_pop_state(); appendDefValue(yytext, yyleng); FL_BRK; }
+<DEFCMT>[\\]{wsn}+{crnl}  { LEXP->warnBackslashSpace(); yyless(1); }
+<DEFCMT>[\\]{crnl}      { FL_FWDC; linenoInc(); LEXP->m_defCmtSlash=true;
+                          appendDefValue(yytext, yyleng-2); appendDefValue((char*)"\n", 1);  /* Return but not \ */
+                          FL_BRK; }
 <DEFCMT>{crnl}          { linenoInc(); yymore(); if (LEXP->m_defCmtSlash) yyerrorf("One line of /* ... */ is missing \\ before newline");
                           BEGIN(CMTMODE); }
 <DEFCMT>{word}          { yymore(); }
 <DEFCMT>.               { yymore(); }
-<DEFCMT><<EOF>>         { yyerrorf("EOF in '/* ... */' block comment\n"); yyleng=0; yyterminate(); }
+<DEFCMT><<EOF>>         { FL_FWDC; yyerrorf("EOF in '/* ... */' block comment\n"); yyleng=0; yyterminate(); }
 
         /* Define arguments (use of a define) */
 <ARGMODE>"/*"           { yy_push_state(CMTMODE); yymore(); }
-<ARGMODE>"//"[^\n\r]*   { return VP_COMMENT;}
-<ARGMODE>{drop}         { }
-<ARGMODE><<EOF>>        { yyerrorf("EOF in define argument list\n"); yyleng = 0; yyterminate(); }
-<ARGMODE>{crnl}         { linenoInc(); yytext=(char*)"\n"; yyleng=1; return VP_WHITE; }
+<ARGMODE>"//"[^\n\r]*   { FL_FWDC; return VP_COMMENT; }
+<ARGMODE>{drop}         { FL_FWDC; FL_BRK; }
+<ARGMODE><<EOF>>        { FL_FWDC; yyerrorf("EOF in define argument list\n"); yyleng = 0; yyterminate(); }
+<ARGMODE>{crnl}         { FL_FWDC; linenoInc(); yytext=(char*)"\n"; yyleng=1; return VP_WHITE; }
 <ARGMODE>{quote}        { yy_push_state(STRMODE); yymore(); }
-<ARGMODE>"`\\`\""       { appendDefValue(yytext, yyleng); }  /* Literal text */
-<ARGMODE>{tickquote}    { yy_push_state(STRIFY); return VP_STRIFY; }
-<ARGMODE>[{\[]          { LEXP->m_parenLevel++; appendDefValue(yytext, yyleng); }
-<ARGMODE>[}\]]          { LEXP->m_parenLevel--; appendDefValue(yytext, yyleng); }
-<ARGMODE>[(]            { LEXP->m_parenLevel++;
+<ARGMODE>"`\\`\""       { FL_FWDC; appendDefValue(yytext, yyleng); FL_BRK; }  /* Literal text */
+<ARGMODE>{tickquote}    { FL_FWDC; yy_push_state(STRIFY); return VP_STRIFY; }
+<ARGMODE>[{\[]          { FL_FWDC; LEXP->m_parenLevel++; appendDefValue(yytext, yyleng); FL_BRK; }
+<ARGMODE>[}\]]          { FL_FWDC; LEXP->m_parenLevel--; appendDefValue(yytext, yyleng); FL_BRK; }
+<ARGMODE>[(]            { FL_FWDC; LEXP->m_parenLevel++;
                           // Note paren level 0 means before "(" of starting args
                           // Level 1 means "," between arguments
                           // Level 2+ means one inside the () of an argument
                           if (LEXP->m_parenLevel>1) {
-                              appendDefValue(yytext, yyleng);
+                              appendDefValue(yytext, yyleng); FL_BRK;
                           } else {
                               return VP_TEXT;
                         }}
-<ARGMODE>[)]            { LEXP->m_parenLevel--;
+<ARGMODE>[)]            { FL_FWDC; LEXP->m_parenLevel--;
                           if (LEXP->m_parenLevel>0) {
-                              appendDefValue(yytext, yyleng);
+                              appendDefValue(yytext, yyleng); FL_BRK;
                           } else {
                               yy_pop_state(); return VP_DEFARG;
                         }}
-<ARGMODE>[,]            { if (LEXP->m_parenLevel>1) {
-                              appendDefValue(yytext, yyleng);
+<ARGMODE>[,]            { FL_FWDC; if (LEXP->m_parenLevel>1) {
+                              appendDefValue(yytext, yyleng); FL_BRK;
                           } else {
                               yy_pop_state(); return VP_DEFARG;
                         }}
-<ARGMODE>"`"{symbdef}   { appendDefValue(yytext, yyleng); }  /* defref in defref - outer macro expands first */
-<ARGMODE>"`"{symbdef}`` { appendDefValue(yytext, yyleng); }  /* defref in defref - outer macro expands first */
-<ARGMODE>``             { appendDefValue(yytext, yyleng); }  /* defref in defref - outer macro expands first */
+<ARGMODE>"`"{symbdef}   { FL_FWDC; appendDefValue(yytext, yyleng); FL_BRK; }  /* defref in defref - outer macro expands first */
+<ARGMODE>"`"{symbdef}`` { FL_FWDC; appendDefValue(yytext, yyleng); FL_BRK; }  /* defref in defref - outer macro expands first */
+<ARGMODE>``             { FL_FWDC; appendDefValue(yytext, yyleng); FL_BRK; }  /* defref in defref - outer macro expands first */
 <ARGMODE>[^\/\*\n\r\\(,){}\[\]\"`]+     |
-<ARGMODE>.              { appendDefValue(yytext, yyleng); }
+<ARGMODE>.              { FL_FWDC; appendDefValue(yytext, yyleng); FL_BRK; }
 
         /* One line comments. */
-<INITIAL>"//"{ws}*{crnl} { linenoInc(); yytext=(char*)"\n"; yyleng=1; return VP_WHITE; }
+<INITIAL>"//"{ws}*{crnl} { FL_FWDC; linenoInc(); yytext=(char*)"\n"; yyleng=1; return VP_WHITE; }
 <INITIAL>"//"           { yy_push_state(CMTONEM); yymore(); }
-<CMTONEM>[^\n\r]*       { yy_pop_state(); return VP_COMMENT; }
+<CMTONEM>[^\n\r]*       { FL_FWDC; yy_pop_state(); return VP_COMMENT; }
 
         /* C-style comments. */
         /**** See also DEFCMT */
         /* We distinguish between the start of a comment, and later, to look for prefix comments (deprecated) */
 <INITIAL>"/*"           { yy_push_state(CMTMODE); yymore(); }
 <CMTBEGM>{ws}+          { yymore(); }
-<CMTBEGM,CMTMODE>"*/"           { yy_pop_state(); return VP_COMMENT; }
+<CMTBEGM,CMTMODE>"*/"           { FL_FWDC; yy_pop_state(); return VP_COMMENT; }
 <CMTBEGM,CMTMODE>{crnl}         { linenoInc(); yymore(); }
-<CMTBEGM,CMTMODE><<EOF>>        { yyerrorf("EOF in '/* ... */' block comment\n"); yyleng=0; yyterminate(); }
+<CMTBEGM,CMTMODE><<EOF>>        { FL_FWDC; yyerrorf("EOF in '/* ... */' block comment\n"); yyleng=0; yyterminate(); }
 <CMTMODE>{word}                 { yymore(); }
-<CMTBEGM>.                      { BEGIN CMTMODE; yymore(); }    /* beginning in comment */
+<CMTBEGM>.                      { yymore(); BEGIN CMTMODE; }    /* beginning in comment */
 <CMTMODE>.                      { yymore(); }
 
         /* Define calls */
         /* symbdef prevents normal lex rules from making `\`"foo a symbol {`"foo} instead of a BACKQUOTE */
-<INITIAL>"`"{symbdef}   { return VP_DEFREF; }
-<INITIAL>"`"{symbdef}`` { yyleng-=2; return VP_DEFREF_JOIN; }
+<INITIAL>"`"{symbdef}   { FL_FWDC; return VP_DEFREF; }
+<INITIAL>"`"{symbdef}`` { FL_FWDC; yyleng-=2; return VP_DEFREF_JOIN; }
 
         /* Generics */
-<INITIAL>{crnl}         { linenoInc(); yytext=(char*)"\n"; yyleng=1; return VP_WHITE; }
-<INITIAL><<EOF>>        { yyterminate(); }  /* A "normal" EOF */
-<INITIAL>{symb}         { return VP_SYMBOL; }
-<INITIAL>{symb}``       { yyleng-=2; return VP_SYMBOL_JOIN; }
-<INITIAL>``             { yyleng-=2; return VP_JOIN; }
-<INITIAL>{wsn}+         { return VP_WHITE; }
-<INITIAL>{drop}         { }
-<INITIAL>[\r]           { }
-<INITIAL>.              { return VP_TEXT; }
+<INITIAL>{crnl}         { FL_FWDC; linenoInc(); yytext=(char*)"\n"; yyleng=1; return VP_WHITE; }
+<INITIAL><<EOF>>        { FL_FWDC; yyterminate(); }  /* A "normal" EOF */
+<INITIAL>{symb}         { FL_FWDC; return VP_SYMBOL; }
+<INITIAL>{symb}``       { FL_FWDC; yyleng-=2; return VP_SYMBOL_JOIN; }
+<INITIAL>``             { FL_FWDC; yyleng-=2; return VP_JOIN; }
+<INITIAL>{wsn}+         { FL_FWDC; return VP_WHITE; }
+<INITIAL>{drop}         { FL_FWDC; FL_BRK; }
+<INITIAL>[\r]           { FL_FWDC; FL_BRK; }
+<INITIAL>.              { FL_FWDC; return VP_TEXT; }
 %%
 
 void V3PreLex::pushStateDefArg(int level) {
@@ -509,6 +528,7 @@ void V3PreLex::lineDirective(const char* textp) {
 }
 
 void V3PreLex::warnBackslashSpace() {
+    // Make fileline highlight the specific backslash and space
     curFilelinep()->v3warn(BSSPACE, "Backslash followed by whitespace, perhaps the whitespace is accidental?");
 }
 

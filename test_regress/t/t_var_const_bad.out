@@ -1,2 +1,4 @@
 %Error: t/t_var_const_bad.v:16: Assigning to const variable: 'five'
+      five = 3'd4;
+      ^~~~
 %Error: Exiting due to

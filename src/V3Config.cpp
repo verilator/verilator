@@ -119,7 +119,7 @@ public:
     }
     inline void applyIgnores(FileLine* filelinep) {
         // HOT routine, called each parsed token line
-        if (m_lastLineno != filelinep->lineno()
+        if (m_lastLineno != filelinep->lastLineno()
             || m_lastFilename != filelinep->filename()) {
             //UINFO(9,"   ApplyIgnores for "<<filelinep->ascii()<<endl);
             if (VL_UNLIKELY(m_lastFilename != filelinep->filename())) {
@@ -127,7 +127,7 @@ public:
                 m_lastFilename = filelinep->filename();
             }
             // Process all on/offs for lines up to and including the current line
-            int curlineno = filelinep->lineno();
+            int curlineno = filelinep->lastLineno();
             for (; m_lastIt != m_lastEnd; ++m_lastIt) {
                 if (m_lastIt->m_lineno > curlineno) break;
                 //UINFO(9,"     Hit "<<*m_lastIt<<endl);
@@ -138,7 +138,7 @@ public:
                     UINFO(9,"     NXT "<<*it<<endl);
                 }
             }
-            m_lastLineno = filelinep->lineno();
+            m_lastLineno = filelinep->lastLineno();
         }
     }
 };

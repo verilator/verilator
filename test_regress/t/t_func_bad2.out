@@ -1,2 +1,4 @@
 %Error: t/t_func_bad2.v:7: Unsupported: Recursive function or task call
+   function recurse;
+            ^~~~~~~
 %Error: Exiting due to
