@@ -273,7 +273,9 @@ AC_SUBST(CFG_CXXFLAGS_PARSER)
 # without this flag, even though there's a conditional to prevent the divide.
 # We still don't add no-div-by-zero as it throws message to stdout, though doesn't die.
 #_MY_CXX_CHECK_OPT(-Wno-div-by-zero)
-_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-faligned-new)
+# For some reason -faligned-new does not work under Travis w/ clang but the
+# configure test doesn't catch this either
+AS_IF([test "x$TRAVIS_COMPILER" != xclang], [_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-faligned-new)])
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-fbracket-depth=4096)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-Qunused-arguments)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_UNUSED,-Wno-bool-operation)

@@ -5,20 +5,94 @@
 # General Public License Version 3 or the Perl Artistic License Version 2.0.
 
 language: cpp
-compiler: gcc
+
+matrix:
+  include:
+# Non-cron build will just run on whatever linux flavor we get
+    - if: type != cron
+      os: linux
+      compiler: gcc
+      env:
+        - SCENARIOS=--dist
+    - if: type != cron
+      os: linux
+      compiler: gcc
+      env:
+        - SCENARIOS=--vlt
+    - if: type != cron
+      os: linux
+      compiler: gcc
+      env:
+        - SCENARIOS=--vltmt
+# Cron builds try different OS/compiler combinations
+    - if: type = cron
+      dist: xenial
+      compiler: gcc
+      env:
+        - SCENARIOS=--dist
+    - if: type = cron
+      dist: xenial
+      compiler: gcc
+      env:
+        - SCENARIOS=--vlt
+    - if: type = cron
+      dist: xenial
+      compiler: gcc
+      env:
+        - SCENARIOS=--vltmt
+    - if: type = cron
+      dist: xenial
+      compiler: clang
+      env:
+        - SCENARIOS=--dist
+    - if: type = cron
+      dist: xenial
+      compiler: clang
+      env:
+        - SCENARIOS=--vlt
+    - if: type = cron
+      dist: xenial
+      compiler: clang
+      env:
+        - SCENARIOS=--vltmt
+#    - if: type = cron
+#      os: osx
+#      compiler: gcc
+#      env:
+#        - SCENARIOS=--dist
+#    - if: type = cron
+#      os: osx
+#      compiler: gcc
+#      env:
+#        - SCENARIOS=--vlt
+#    - if: type = cron
+#      os: osx
+#      compiler: gcc
+#      env:
+#        - SCENARIOS=--vltmt
+    - if: type = cron
+      dist: trusty
+      compiler: gcc
+      env:
+        - SCENARIOS=--dist
+    - if: type = cron
+      dist: trusty
+      compiler: gcc
+      env:
+        - SCENARIOS=--vlt
+    - if: type = cron
+      dist: trusty
+      compiler: gcc
+      env:
+        - SCENARIOS=--vltmt
+
 cache: ccache
 
 # Some tests require gdb
 addons:
   apt:
     packages:
-    - gdb
-
-# Run three test slices in parallel
-env:
-  - TEST=--dist
-  - TEST=--vlt
-  - TEST=--vltmt
+      - gdb
 
 before_install:
 # Perl modules needed for testing
@@ -32,6 +106,6 @@ script:
   - >
     ./configure --enable-maintainer-mode --enable-longtests &&
     make -j $VLT_JOBS &&
-    make test SCENARIOS=$TEST DRIVER_FLAGS="-j 0 --quiet --rerun"
+    make test_regress DRIVER_FLAGS="-j 0 --quiet --rerun"
 after_script:
   - ccache -s
