@@ -24,7 +24,7 @@ execute(
 );
 
 file_grep("$Self->{obj_dir}/vlt_compile.log",
-qr/%Warning-USERFATAL: Parameter   5 is invalid...string and constant both work/);
+qr/%Warning-USERFATAL: "Parameter   5 is invalid...string and constant both work"/);
 
 ok(1);
 1;

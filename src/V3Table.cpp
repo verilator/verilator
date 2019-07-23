@@ -304,9 +304,9 @@ private:
                  it != m_inVarps.end(); ++it) {
                 AstVarScope* invscp = *it;
                 // LSB is first variable, so extract it that way
-                simvis.newNumber(invscp,
-                                 V3Number(invscp, invscp->width(),
-                                          VL_MASK_I(invscp->width()) & (inValue>>shift)));
+                AstConst cnst(invscp->fileline(), AstConst::WidthedValue(), invscp->width(),
+                              VL_MASK_I(invscp->width()) & (inValue>>shift));
+                simvis.newValue(invscp, &cnst);
                 shift += invscp->width();
                 // We're just using32 bit arithmetic, because there's no
                 // way the input table can be 2^32 bytes!

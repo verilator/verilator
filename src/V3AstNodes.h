@@ -122,6 +122,7 @@ public:
     ASTNODE_NODE_FUNCS(Const)
     virtual string name() const { return num().ascii(); }  // * = Value
     const V3Number& num() const { return m_num; }  // * = Value
+    V3Number& num() { return m_num; }  // * = Value
     uint32_t toUInt() const { return num().toUInt(); }
     vlsint32_t toSInt() const { return num().toSInt(); }
     vluint64_t toUQuad() const { return num().toUQuad(); }
