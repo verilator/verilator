@@ -16,13 +16,10 @@ compile(
     verilator_flags2 => ["--cc",
                          "--coverage-toggle --coverage-line --coverage-user",
                          "--trace --vpi ",
+                         ($Self->have_pybind11 ? "--python "  : ""),
                          ($Self->cfg_with_threaded
                           ? "--threads 2 $root/include/verilated_threads.cpp" : ""),
                          "$root/include/verilated_save.cpp"],
-    );
-
-execute(
-    check_finished => 1,
     );
 
 my %hit;
@@ -44,6 +41,12 @@ foreach my $dfile (glob("$Self->{obj_dir}/*.d")) {
         print "USED: $file\n" if $Self->{verbose};
         $hit{$file} = 1;
     }
+}
+
+if (!$Self->have_pybind11) {
+    # If pybind11 is not present, artificially mark the python includes as hit
+    $hit{"verilated_py.cpp"} = 1;
+    $hit{"verilated_py.h"} = 1;
 }
 
 foreach my $file (sort keys %hit) {

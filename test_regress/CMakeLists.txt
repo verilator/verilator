@@ -20,6 +20,10 @@ foreach(var ${TEST_REQUIRED_VARS})
   endif()
 endforeach()
 
+if (TEST_CMAKE_OVERRIDE_SCRIPT)
+  message("Using override script: ${TEST_CMAKE_OVERRIDE_SCRIPT}")
+endif()
+
 project("${TEST_NAME}")
 
 if(TEST_VERBOSE)
@@ -82,24 +86,28 @@ endif()
 
 set(TARGET_NAME "V${TEST_NAME}")
 
-add_executable(${TARGET_NAME} ${TEST_CSOURCES})
+if(TEST_CMAKE_OVERRIDE_SCRIPT)
+  include(${TEST_CMAKE_OVERRIDE_SCRIPT})
+else()
+  add_executable(${TARGET_NAME} ${TEST_CSOURCES})
 
-if(TEST_VERILATION)
-  verilate(${TARGET_NAME} ${verilate_ARGS}
-           VERILATOR_ARGS ${TEST_VERILATOR_ARGS}
-           DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-           SOURCES ${TEST_VERILATOR_SOURCES})
+  if(TEST_VERILATION)
+    verilate(${TARGET_NAME} ${verilate_ARGS}
+             VERILATOR_ARGS ${TEST_VERILATOR_ARGS}
+             DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+             SOURCES ${TEST_VERILATOR_SOURCES})
+  endif()
+
+  if(TEST_SYSTEMC)
+    verilator_link_systemc("${TARGET_NAME}")
+  endif()
+
+  string(TOUPPER "${TEST_NAME}" TEST_NAME_UC)
+
+  target_compile_definitions(${TARGET_NAME} PRIVATE
+    "TEST_OBJ_DIR=${CMAKE_CURRENT_BINARY_DIR}"
+    "VM_PREFIX=${TEST_PREFIX}"
+    "VM_PREFIX_INCLUDE=<${TEST_PREFIX}.h>"
+    "${TEST_NAME_UC}"
+  )
 endif()
-
-if(TEST_SYSTEMC)
-  verilator_link_systemc("${TARGET_NAME}")
-endif()
-
-string(TOUPPER "${TEST_NAME}" TEST_NAME_UC)
-
-target_compile_definitions(${TARGET_NAME} PRIVATE
-  "TEST_OBJ_DIR=${CMAKE_CURRENT_BINARY_DIR}"
-  "VM_PREFIX=${TEST_PREFIX}"
-  "VM_PREFIX_INCLUDE=<${TEST_PREFIX}.h>"
-  "${TEST_NAME_UC}"
-)

@@ -1249,10 +1249,13 @@ better performing.
 
 =item --python
 
-This generates a file wraps the toplevel module into a python module using
-pybind11 (https://github.com/pybind/pybind11). You will need to use CMake and
-write a small C++ file to make use of it. There is an example that could be used
-as a starting point in examples/python.
+This generates a file wraps the toplevel module into a Python module using
+pybind11 (https://github.com/pybind/pybind11). Python support is only available
+for C++ output, not SystemC. The CMake build system is preferred if you
+want to combine multiple verilator modules or add your own C++ code to the
+python module.
+
+Please read the CMake section for more information.
 
 =item -pvalue+I<name>=I<value>
 
@@ -2469,7 +2472,7 @@ function. verilate() will automatically create custom commands to run
 Verilator and add the generated C++ sources to the target specified.
 
     verilate(target SOURCES source ... [TOP_MODULE top] [PREFIX name]
-             [TRACE] [TRACE_FST] [SYSTEMC] [COVERAGE]
+             [TRACE] [TRACE_FST] [PYTHON] [SYSTEMC] [COVERAGE]
              [INCLUDE_DIRS dir ...] [OPT_SLOW ...] [OPT_FAST ...]
              [DIRECTORY dir] [VERILATOR_ARGS ...])
 
@@ -2509,6 +2512,23 @@ CMAKE_PREFIX_PATH variable during CMake configuration.
 Don't forget to set the same C++ standard for the Verilated sources as the
 SystemC library. This can be specified using the SYSTEMC_CXX_FLAGS environment
 variable.
+
+When generating a Verilated Python module, you should configure
+the target correct. This includes: creating a C++ source that will define
+the Python module using pybind11, using the MODULE library target type,
+include the python include directories, link to the python library,
+include the pybind11 include directories, set the suffix of the python
+module such that python will recognize it, and many more.
+
+Verilator's CMake support provides a convenience function to automatically
+create a Verilated Python target.
+
+    verilator_add_python_module(target [DOC ...])
+
+It will look for a pybind11 installation and use pybind11's CMake support
+to configure the CMake target. It will also automatically generate a C++
+source that defined the Python module. Using the DOC argument,
+a documentation string for the Python module can be passed.
 
 =over 4
 

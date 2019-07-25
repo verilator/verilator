@@ -98,6 +98,14 @@ VM_CLASSES += $(VM_CLASSES_FAST) $(VM_CLASSES_SLOW)
 VM_SUPPORT += $(VM_SUPPORT_FAST) $(VM_SUPPORT_SLOW)
 
 #######################################################################
+##### Python builds
+
+ifeq ($(VM_PYTHON),1)
+  CPPFLAGS += $(shell python3-config --includes) -fPIC -DVL_PYTHON -DVL_USER_FINISH -DVL_USER_STOP -DVL_USER_FATAL
+  LDFLAGS  += $(shell python3-config --ldflags) --shared
+endif
+
+#######################################################################
 ##### SystemC builds
 
 ifeq ($(VM_SC),1)

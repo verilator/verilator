@@ -165,6 +165,7 @@ class VerilatedMutex {
 public:
     void lock() {}
     void unlock() {}
+    bool try_lock() { return true; }
 };
 
 /// Empty non-threaded lock guard to avoid #ifdefs in consuming code
@@ -272,6 +273,19 @@ public:
 // Functions overridable by user defines
 // (Internals however must use VL_PRINTF_MT, which calls these.)
 
+#ifdef VL_PYTHON
+namespace vl_py {
+int vl_printf(const char* , ...);
+int vl_vprintf(const char* fmt, va_list args);
+}
+#ifndef VL_PRINTF
+# define VL_PRINTF ::vl_py::vl_printf
+#endif
+#ifndef VL_VPRINTF
+# define VL_VPRINTF ::vl_py::vl_vprintf
+#endif
+#endif
+
 #ifndef VL_PRINTF
 # define VL_PRINTF printf  ///< Print ala printf, called from main thread; may redefine if desired
 #endif
@@ -353,7 +367,11 @@ class Verilated {
     // Slow path variables
     static VerilatedMutex m_mutex;  ///< Mutex for s_s/s_ns members, when VL_THREADED
 
-    static VerilatedVoidCb  s_flushCb;  ///< Flush callback function
+    struct VerilatedVoidCb_list {  ///< Struct holding a list of Flush callback functions
+        VerilatedVoidCb cb;                 ///< Flush callback function
+        struct VerilatedVoidCb_list *next;  ///< Pointer to next flush callback function
+    };
+    static VerilatedVoidCb_list* s_flushCb_list;  ///< List of Flush callback functions
 
     static struct Serialized {  // All these members serialized/deserialized
         // Fast path

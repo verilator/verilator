@@ -58,7 +58,7 @@ typedef union {
 
 // Slow path variables
 VerilatedMutex Verilated::m_mutex;
-VerilatedVoidCb Verilated::s_flushCb = NULL;
+Verilated::VerilatedVoidCb_list* Verilated::s_flushCb_list = NULL;
 
 // Keep below together in one cache line
 Verilated::Serialized Verilated::s_s;
@@ -1847,18 +1847,23 @@ const char* Verilated::catName(const char* n1, const char* n2) VL_MT_SAFE {
 
 void Verilated::flushCb(VerilatedVoidCb cb) VL_MT_SAFE {
     VerilatedLockGuard lock(m_mutex);
-    if (s_flushCb == cb) {}  // Ok - don't duplicate
-    else if (!s_flushCb) { s_flushCb=cb; }
-    else {  // LCOV_EXCL_LINE
-        // Someday we may allow multiple callbacks ala atexit(), but until then
-        VL_FATAL_MT("unknown", 0, "",  // LCOV_EXCL_LINE
-                    "Verilated::flushCb called twice with different callbacks");
+    if (cb == NULL) return;
+    for (VerilatedVoidCb_list* curr = s_flushCb_list; curr; curr = curr->next) {
+        if (curr->cb == cb) {  // Ok - don't duplicate
+            return;
+        }
     }
+    VerilatedVoidCb_list* item = new VerilatedVoidCb_list;
+    item->cb = cb;
+    item->next = s_flushCb_list;
+    s_flushCb_list = item;
 }
 
 void Verilated::flushCall() VL_MT_SAFE {
     VerilatedLockGuard lock(m_mutex);
-    if (s_flushCb) (*s_flushCb)();
+    for (VerilatedVoidCb_list* curr = s_flushCb_list; curr; curr = curr->next) {
+        (*curr->cb)();
+    }
     fflush(stderr);
     fflush(stdout);
 }

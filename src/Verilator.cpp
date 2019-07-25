@@ -607,6 +607,13 @@ int main(int argc, char** argv, char** env) {
     // Validate settings (aka Boost.Program_options)
     v3Global.opt.notify();
 
+
+    if (v3Global.opt.python()) {
+        if (v3Global.opt.systemC()) {
+            v3fatal("SystemC does not support python\n");
+        }
+    }
+
     V3Error::abortIfErrors();
 
     // Can we skip doing everything if times are ok?

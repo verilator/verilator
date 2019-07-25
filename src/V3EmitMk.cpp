@@ -26,6 +26,8 @@
 #include "V3EmitMk.h"
 #include "V3EmitCBase.h"
 
+#include <memory>  // for vl_unique_ptr -> auto_ptr or unique_ptr
+
 //######################################################################
 // Emit statements and math operators
 
@@ -99,6 +101,10 @@ public:
                     }
                 }
                 else if (support==2 && slow) {
+                    if (v3Global.opt.python()) {
+                        putMakeClassEntry(of, "verilated_py.cpp");
+                        putMakeClassEntry(of, globalPythonPath());
+                    }
                 }
                 else {
                     for (AstFile* nodep = v3Global.rootp()->filesp();
@@ -131,6 +137,8 @@ public:
 
         if (v3Global.opt.exe()) {
             of.puts("default: "+v3Global.opt.exeName()+"\n");
+        } else if (v3Global.opt.python()) {
+            of.puts("default: "+v3Global.opt.prefix()+"__PYTHON\n");
         } else if (!v3Global.opt.protectLib().empty()) {
             of.puts("default: lib"+v3Global.opt.protectLib()+"\n");
         } else {
@@ -149,6 +157,8 @@ public:
         of.puts("\n### Switches...\n");
         of.puts("# SystemC output mode?  0/1 (from --sc)\n");
         of.puts(string("VM_SC = ")+((v3Global.opt.systemC())?"1":"0")+"\n");
+        of.puts("# Python support?  0/1 (from --python)\n");
+        of.puts(string("VM_PYTHON = ")+(v3Global.opt.python()?"1":"0")+"\n");
         of.puts("# Legacy or SystemC output mode?  0/1 (from --sc)\n");
         of.puts(string("VM_SP_OR_SC = $(VM_SC)\n"));
         of.puts("# Deprecated\n");
@@ -245,9 +255,38 @@ public:
         of.puts("\n");
         of.putsHeader();
     }
+    string globalPythonPath() const {
+        return v3Global.opt.makeDir()+"/"+ v3Global.opt.prefix() + "_pymain.cpp";
+    }
+    void emitGlobalPythonModule() {
+        string filename = globalPythonPath();
+        EmitCBaseVisitor::newCFile(filename, false, false);
+        vl_unique_ptr<V3OutCFile> ofp(new V3OutCFile(filename));
+
+        ofp->putsHeader();
+
+        ofp->puts("// DESCR" "IPTION: Verilator output: Global python module\n\n");
+
+        ofp->puts("#include \""+v3Global.opt.prefix()+"_py.h\"\n\n");
+        ofp->puts("#include <pybind11/pybind11.h>\n\n");
+
+        ofp->puts("// Declare a pybind11 module\n");
+        ofp->puts("PYBIND11_MODULE("+v3Global.opt.prefix()+", m) {\n");
+        ofp->puts("m.doc() = \"A Verilated Python module\";\n\n");
+
+        ofp->puts("// declare the common parts of Verilator (Verilated class and tracing classes)\n");
+        ofp->puts("vl_py::declare_globals(m);\n\n");
+
+        ofp->puts("// declare "+v3Global.opt.prefix()+"\n");
+        ofp->puts("vl_py::declare_"+v3Global.opt.prefix()+"(m);\n");
+        ofp->puts("}\n");
+    }
 
 public:
     explicit EmitMk() {
+        if (v3Global.opt.python()) {
+            emitGlobalPythonModule();
+        }
         emitClassMake();
         emitOverallMake();
     }

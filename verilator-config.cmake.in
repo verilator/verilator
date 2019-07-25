@@ -112,8 +112,20 @@ define_property(TARGET
   FULL_DOCS "Verilator SystemC enabled"
 )
 
+define_property(TARGET
+  PROPERTY VERILATOR_PYTHON
+  BRIEF_DOCS "Verilator python enabled"
+  FULL_DOCS "Verilator python enabled"
+)
+
+define_property(TARGET
+  PROPERTY VERILATOR_PYTHON_PREFIXES
+  BRIEF_DOCS "List of Python Verilated prefixes added to this target"
+  FULL_DOCS "List of Python Verilated prefixes added to this target"
+)
+
 function(verilate TARGET)
-  cmake_parse_arguments(VERILATE "COVERAGE;TRACE;TRACE_FST;SYSTEMC"
+  cmake_parse_arguments(VERILATE "COVERAGE;TRACE;TRACE_FST;SYSTEMC;PYTHON"
                                  "PREFIX;TOP_MODULE;THREADS;DIRECTORY"
                                  "SOURCES;VERILATOR_ARGS;INCLUDE_DIRS;OPT_SLOW;OPT_FAST"
                                  ${ARGN})
@@ -155,6 +167,10 @@ function(verilate TARGET)
     list(APPEND VERILATOR_ARGS --sc)
   else()
     list(APPEND VERILATOR_ARGS --cc)
+  endif()
+
+  if (VERILATE_PYTHON)
+    list(APPEND VERILATOR_ARGS --python)
   endif()
 
   foreach(INC ${VERILATE_INCLUDE_DIRS})
@@ -265,7 +281,14 @@ function(verilate TARGET)
     set_property(TARGET ${TARGET} PROPERTY VERILATOR_SYSTEMC ON)
   endif()
 
-    # Add the compile flags only on Verilated sources
+  if (${VERILATE_PREFIX}_PYTHON)
+    # If any verilate() call specifies PYTHON, pass appropriate compile
+    # flags and set C++ standard to 14
+    set_property(TARGET ${TARGET} PROPERTY VERILATOR_PYTHON ON)
+    set_property(TARGET ${TARGET} APPEND PROPERTY
+                 VERILATOR_PYTHON_PREFIXES "${VERILATE_PREFIX}")
+  endif()
+
   target_include_directories(${TARGET} PUBLIC ${VDIR})
   target_sources(${TARGET} PRIVATE ${GENERATED_SOURCES} "${VCMAKE_COPY}"
                                    ${${VERILATE_PREFIX}_GLOBAL}
@@ -277,6 +300,14 @@ function(verilate TARGET)
   target_sources(${TARGET} PRIVATE ${VHD_SOURCES})
 
   # Add the compile flags only on Verilated sources
+  foreach(C_SOURCE ${${VERILATE_PREFIX}_GLOBAL} ${${VERILATE_PREFIX}_USER_CLASSES})
+    set_property(SOURCE "${C_SOURCE}" APPEND PROPERTY COMPILE_DEFINITIONS
+                 "$<$<BOOL:$<TARGET_PROPERTY:VERILATOR_PYTHON>>:VL_USER_FINISH>")
+    set_property(SOURCE "${C_SOURCE}" APPEND PROPERTY COMPILE_DEFINITIONS
+                 "$<$<BOOL:$<TARGET_PROPERTY:VERILATOR_PYTHON>>:VL_USER_STOP>")
+    set_property(SOURCE "${C_SOURCE}" APPEND PROPERTY COMPILE_DEFINITIONS
+                 "$<$<BOOL:$<TARGET_PROPERTY:VERILATOR_PYTHON>>:VL_USER_FATAL>")
+  endforeach()
   foreach(VSLOW ${${VERILATE_PREFIX}_CLASSES_SLOW} ${${VERILATE_PREFIX}_SUPPORT_SLOW})
     foreach(OPT_SLOW ${VERILATE_OPT_SLOW} ${${VERILATE_PREFIX}_USER_CFLAGS})
       set_property(SOURCE "${VSLOW}" APPEND_STRING PROPERTY COMPILE_FLAGS " ${OPT_SLOW}")
@@ -297,6 +328,7 @@ function(verilate TARGET)
     VM_TRACE=$<BOOL:$<TARGET_PROPERTY:VERILATOR_TRACE>>
     VM_TRACE_VCD=$<BOOL:$<TARGET_PROPERTY:VERILATOR_TRACE_VCD>>
     VM_TRACE_FST=$<BOOL:$<TARGET_PROPERTY:VERILATOR_TRACE_FST>>
+    $<$<BOOL:$<TARGET_PROPERTY:VERILATOR_PYTHON>>:VL_PYTHON>
   )
 
   target_link_libraries(${TARGET} PUBLIC
@@ -389,4 +421,34 @@ function(verilator_generate_key OUTPUT_VARIABLE)
   endif()
   string(STRIP ${KEY_VAL} KEY_VAL)
   set(${OUTPUT_VARIABLE} ${KEY_VAL} PARENT_SCOPE)
+endfunction()
+
+function(verilator_add_python_module TARGET)
+  set(SCRIPT_PATH "${VERILATOR_ROOT}/include/verilated_py.cmake")
+
+  cmake_parse_arguments(VPYMOD "MAIN" "DOC" "" ${ARGN})
+
+  find_package(pybind11 HINTS $ENV{PYBIND11_ROOT})
+  if (NOT pybind11_FOUND)
+    if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/pybind11)
+      add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/pybind11)
+    else()
+      message(FATAL_ERROR "pybind11 not found. Either install it using your system package manager (e.g. conda install pybind11) or download it locally (git clone https://github.com/pybind/pybind11.git).")
+    endif()
+  endif()
+  pybind11_add_module("${TARGET}" ${VPYMOD_UNPARSED_ARGUMENTS})
+
+  if (VPYMOD_MAIN)
+    get_target_property(BINARY_DIR "${TARGET}" BINARY_DIR)
+    get_target_property(TARGET_NAME "${TARGET}" NAME)
+
+    set(OUTPUT "${BINARY_DIR}/CMakeFiles/${TARGET_NAME}.dir/pymain.cpp")
+
+    add_custom_command(OUTPUT ${OUTPUT}
+               COMMAND "${CMAKE_COMMAND}" "-DOUTPUT=${OUTPUT}" "-DNAME=${TARGET_NAME}"
+                       "-DPREFIXES=$<TARGET_PROPERTY:${TARGET},VERILATOR_PYTHON_PREFIXES>"
+                       "-DDOCUMENTATION=${VPYMOD_DOC}" -P "${SCRIPT_PATH}"
+               DEPENDS "${SCRIPT_PATH}" VERBATIM)
+    target_sources("${TARGET}" PRIVATE "${OUTPUT}")
+  endif()
 endfunction()
