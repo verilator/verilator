@@ -257,6 +257,9 @@ The directories in the package directory are as follows:
     examples/make_tracing_c     => Example GNU-make Verilog->C++ with tracing
     examples/make_tracing_sc    => Example GNU-make Verilog->SystemC with tracing
     examples/cmake_hello_c      => Example building make_hello_c with CMake
+    examples/cmake_hello_sc     => Example building make_hello_sc with CMake
+    examples/cmake_tracing_c    => Example building make_tracing_c with CMake
+    examples/cmake_tracing_sc   => Example building make_tracing_sc with CMake
     examples/make_protect_lib   => Example using --protect-lib
     include/                    => Files that should be in your -I compiler path
     include/verilated*.cpp      => Global routines to link into your simulator

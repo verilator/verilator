@@ -17,7 +17,7 @@ mkdir $child_dir;
 
 # Compile the child
 {
-    my @cmdargs = $Self->compile_vlt_flags
+    my @cmdargs = $Self->compile_vlt_cmd
         (VM_PREFIX => "$Self->{VM_PREFIX}_child",
          top_filename => "$Self->{name}_child.v",
          verilator_flags => ["-cc", "-Mdir", "${child_dir}", "--debug-check"],

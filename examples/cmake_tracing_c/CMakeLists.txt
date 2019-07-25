@@ -1,6 +1,6 @@
 ######################################################################
 #
-# DESCRIPTION: Verilator CMake Example: Small CMakeLists.txt
+# DESCRIPTION: Verilator CMake Example: Small CMakeLists.txt with tracing
 #
 # This is an example cmake script to build a verilog to systemc project
 # using cmake and verilator.
@@ -12,16 +12,16 @@
 #
 ######################################################################
 
-# This example builds the tracing_c example using CMake
+# This example builds the make_tracing_c example using CMake
 # To use it, run the following:
 
-# cd /path/to/verilator/examples/cmake_c
+# cd /path/to/verilator/examples/cmake_tracing_c
 # rm -rf build && mkdir build && cd build
 # cmake ..
 # cmake --build .
 
 cmake_minimum_required(VERSION 3.8)
-project(cmake_hello_c)
+project(cmake_tracing_c)
 
 find_package(verilator HINTS $ENV{VERILATOR_ROOT} ${VERILATOR_ROOT})
 if (NOT verilator_FOUND)
@@ -29,9 +29,10 @@ if (NOT verilator_FOUND)
 endif()
 
 # Create a new executable target that will contain all your sources
-add_executable(example ../make_hello_c/sim_main.cpp)
+add_executable(example ../make_tracing_c/sim_main.cpp)
 
 # Add the Verilated circuit to the target
-verilate(example
-  INCLUDE_DIRS "../make_hello_c"
-  SOURCES ../make_hello_c/top.v)
+verilate(example COVERAGE TRACE
+  INCLUDE_DIRS "../make_tracing_c"
+  VERILATOR_ARGS -f ../make_tracing_c/input.vc -O2 -x-assign 0
+  SOURCES ../make_tracing_c/top.v)

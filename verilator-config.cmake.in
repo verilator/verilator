@@ -1,0 +1,383 @@
+######################################################################
+#
+# DESCRIPTION: CMake configuration file for Verilator
+#
+# Include it in your CMakeLists.txt using:
+#
+#     find_package(verilate)
+#
+#  This script adds a verilate function.
+#
+#     add_executable(simulator <your-c-sources>)
+#     verilate(simulator SOURCES <your-hdl-sources>)
+#
+# Copyright 2003-2019 by Wilson Snyder. This program is free software; you can
+# redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
+#
+######################################################################
+
+cmake_minimum_required(VERSION 3.8)
+
+# Prefer VERILATOR_ROOT from environment
+if (DEFINED ENV{VERILATOR_ROOT})
+  set(VERILATOR_ROOT "$ENV{VERILATOR_ROOT}" CACHE PATH "VERILATOR_ROOT")
+endif()
+
+set(VERILATOR_ROOT "${CMAKE_CURRENT_LIST_DIR}" CACHE PATH "VERILATOR_ROOT")
+
+find_program(VERILATOR_BIN NAMES verilator_bin verilator_bin.exe
+  HINTS ${VERILATOR_ROOT}/bin ENV VERILATOR_ROOT
+  NO_CMAKE_PATH NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
+
+if (NOT VERILATOR_ROOT)
+  message(FATAL_ERROR "VERILATOR_ROOT cannot be detected. Set it to the appropriate directory (e.g. /usr/share/verilator) as an environment variable or CMake define.")
+endif()
+
+if (NOT VERILATOR_BIN)
+  message(FATAL_ERROR "Cannot find verilator_bin excecutable.")
+endif()
+
+set(verilator_FOUND 1)
+
+include(CheckCXXSourceCompiles)
+function(_verilator_check_cxx_libraries LIBRARIES RESVAR)
+  # Check whether a particular link option creates a valid executable
+  set(_VERILATOR_CHECK_CXX_LINK_OPTIONS_SRC "int main() {return 0;}\n")
+  set(CMAKE_REQUIRED_FLAGS)
+  set(CMAKE_REQUIRED_DEFINITIONS)
+  set(CMAKE_REQUIRED_INCLUDES)
+  set(CMAKE_REQUIRED_LINK_OPTIONS)
+  set(CMAKE_REQUIRED_LIBRARIES ${LIBRARIES})
+  set(CMAKE_REQUIRED_QUIET)
+  check_cxx_source_compiles("${_VERILATOR_CHECK_CXX_LINK_OPTIONS_SRC}" "${RESVAR}")
+  set("${RESVAR}" "${${RESVAR}}" PARENT_SCOPE)
+endfunction()
+
+# Check compiler flag support. Skip on MSVC, these are all GCC flags.
+if (NOT CMAKE_CXX_COMPILER_ID MATCHES MSVC)
+  if (NOT DEFINED VERILATOR_CFLAGS OR NOT DEFINED VERILATOR_MT_CFLAGS)
+    include(CheckCXXCompilerFlag)
+    foreach (FLAG @CFG_CXX_FLAGS_CMAKE@)
+      string(MAKE_C_IDENTIFIER ${FLAG} FLAGNAME)
+      check_cxx_compiler_flag(${FLAG} ${FLAGNAME})
+      if (${FLAGNAME})
+        list(APPEND VERILATOR_CFLAGS ${FLAG})
+      endif()
+    endforeach()
+    foreach (FLAG @CFG_LDFLAGS_THREADS_CMAKE@)
+      string(MAKE_C_IDENTIFIER ${FLAG} FLAGNAME)
+      _verilator_check_cxx_libraries("${FLAG}" ${FLAGNAME})
+      if (${FLAGNAME})
+        list(APPEND VERILATOR_MT_CFLAGS ${FLAG})
+      endif()
+    endforeach()
+  endif()
+endif()
+
+define_property(TARGET
+  PROPERTY VERILATOR
+  BRIEF_DOCS "Verilator"
+  FULL_DOCS "Verilator"
+)
+
+define_property(TARGET
+  PROPERTY VERILATOR_PREFIXES
+  BRIEF_DOCS "List of Verilated prefixes added to this target"
+  FULL_DOCS "List of Verilated prefixes added to this target"
+)
+
+define_property(TARGET
+  PROPERTY VERILATOR_PATHS
+  BRIEF_DOCS "List of paths of Verilated prefixes added to this target"
+  FULL_DOCS "List of paths of Verilated prefixes added to this target"
+)
+
+define_property(TARGET
+  PROPERTY VERILATOR_THREADED
+  BRIEF_DOCS "Verilator multithreading enabled"
+  FULL_DOCS "Verilator multithreading enabled"
+)
+
+define_property(TARGET
+  PROPERTY VERILATOR_COVERAGE
+  BRIEF_DOCS "Verilator coverage enabled"
+  FULL_DOCS "Verilator coverage enabled"
+)
+
+define_property(TARGET
+  PROPERTY VERILATOR_TRACE_VCD
+  BRIEF_DOCS "Verilator VCD trace enabled"
+  FULL_DOCS "Verilator VCD trace enabled"
+)
+
+define_property(TARGET
+  PROPERTY VERILATOR_TRACE_FST
+  BRIEF_DOCS "Verilator FST trace enabled"
+  FULL_DOCS "Verilator FST trace enabled"
+)
+
+define_property(TARGET
+  PROPERTY VERILATOR_SYSTEMC
+  BRIEF_DOCS "Verilator SystemC enabled"
+  FULL_DOCS "Verilator SystemC enabled"
+)
+
+function(verilate TARGET)
+  cmake_parse_arguments(VERILATE "COVERAGE;TRACE;TRACE_FST;SYSTEMC"
+                                 "PREFIX;TOP_MODULE;THREADS"
+                                 "SOURCES;VERILATOR_ARGS;INCLUDE_DIRS;OPT_SLOW;OPT_FAST"
+                                 ${ARGN})
+  if (NOT VERILATE_SOURCES)
+    message(FATAL_ERROR "Need at least one source")
+  endif()
+
+  if (NOT VERILATE_PREFIX)
+    list(GET VERILATE_SOURCES 0 TOPSRC)
+    get_filename_component(_SRC_NAME ${TOPSRC} NAME_WE)
+    set(VERILATE_PREFIX V${_SRC_NAME})
+  endif()
+
+  if (VERILATE_TOP_MODULE)
+    list(APPEND VERILATOR_ARGS --top-module ${VERILATE_TOP_MODULE})
+  endif()
+
+  if (VERILATE_THREADS)
+    list(APPEND VERILATOR_ARGS --threads ${VERILATE_THREADS})
+  endif()
+
+  if (VERILATE_COVERAGE)
+    list(APPEND VERILATOR_ARGS --coverage)
+  endif()
+
+  if (VERILATE_TRACE AND VERILATE_TRACE_FST)
+    message(FATAL_ERROR "Cannot have both TRACE and TRACE_FST")
+  endif()
+
+  if (VERILATE_TRACE)
+    list(APPEND VERILATOR_ARGS --trace)
+  endif()
+
+  if (VERILATE_TRACE_FST)
+    list(APPEND VERILATOR_ARGS --trace-fst)
+  endif()
+
+  if (VERILATE_SYSTEMC)
+    list(APPEND VERILATOR_ARGS --sc)
+  else()
+    list(APPEND VERILATOR_ARGS --cc)
+  endif()
+
+  foreach(INC ${VERILATE_INCLUDE_DIRS})
+    list(APPEND VERILATOR_ARGS -y "${INC}")
+  endforeach()
+
+  string(TOLOWER ${CMAKE_CXX_COMPILER_ID} COMPILER)
+  if (NOT COMPILER MATCHES "msvc|clang")
+    set(COMPILER gcc)
+  endif()
+
+  get_target_property(BINARY_DIR "${TARGET}" BINARY_DIR)
+  get_target_property(TARGET_NAME "${TARGET}" NAME)
+  set(VDIR "${BINARY_DIR}/CMakeFiles/${TARGET_NAME}.dir/${VERILATE_PREFIX}.dir")
+  file(MAKE_DIRECTORY ${VDIR})
+
+  set(VERILATOR_COMMAND "${VERILATOR_BIN}" -Wall -Wno-fatal --compiler ${COMPILER}
+                        --prefix ${VERILATE_PREFIX} --Mdir ${VDIR} --make cmake
+                        ${VERILATOR_ARGS} ${VERILATE_VERILATOR_ARGS}
+                        ${VERILATE_SOURCES})
+
+  set(VARGS_FILE "${VDIR}/verilator_args.txt")
+  set(VCMAKE "${VDIR}/${VERILATE_PREFIX}.cmake")
+  set(VCMAKE_COPY "${VDIR}/${VERILATE_PREFIX}_copy.cmake")
+
+  if (NOT EXISTS "${VARGS_FILE}" OR NOT EXISTS "${VCMAKE_COPY}")
+    set(VERILATOR_OUTDATED ON)
+  else()
+    file(READ "${VARGS_FILE}" PREVIOUS_VERILATOR_COMMAND)
+    if(NOT VERILATOR_COMMAND STREQUAL PREVIOUS_VERILATOR_COMMAND)
+      set(VERILATOR_OUTDATED ON)
+    endif()
+  endif()
+
+  if (VERILATOR_OUTDATED)
+    message(STATUS "Executing Verilator...")
+    execute_process(
+      COMMAND ${VERILATOR_COMMAND}
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+      RESULT_VARIABLE _VERILATOR_RC
+      OUTPUT_VARIABLE _VERILATOR_OUTPUT
+      ERROR_VARIABLE _VERILATOR_OUTPUT)
+    if (_VERILATOR_RC)
+      string(REPLACE ";" " " VERILATOR_COMMAND_READABLE "${VERILATOR_COMMAND}")
+      message("Verilator command: \"${VERILATOR_COMMAND_READABLE}\"")
+      message("Output:\n${_VERILATOR_OUTPUT}")
+      message(FATAL_ERROR "Verilator command failed (return code=${_VERILATOR_RC})")
+    endif()
+    execute_process(COMMAND "${CMAKE_COMMAND}" -E copy "${VCMAKE}" "${VCMAKE_COPY}")
+  endif()
+  file(WRITE "${VARGS_FILE}" "${VERILATOR_COMMAND}")
+
+  include("${VCMAKE_COPY}")
+
+  set(GENERATED_C_SOURCES ${${VERILATE_PREFIX}_CLASSES_FAST}
+                          ${${VERILATE_PREFIX}_CLASSES_SLOW}
+                          ${${VERILATE_PREFIX}_SUPPORT_FAST}
+                          ${${VERILATE_PREFIX}_SUPPORT_SLOW})
+  foreach(GENERATED_C_SOURCE ${GENERATED_C_SOURCES})
+    get_filename_component(C_OUTPUT_NAME_WE "${GENERATED_C_SOURCE}" NAME_WE)
+    if(C_OUTPUT_NAME_WE MATCHES ".*Trace.*")
+      continue()
+    endif()
+    list(APPEND GENERATED_H_SOURCES "${VDIR}/${C_OUTPUT_NAME_WE}.h")
+  endforeach()
+  set(GENERATED_SOURCES ${GENERATED_C_SOURCES} ${GENERATED_H_SOURCES})
+
+  add_custom_command(OUTPUT ${GENERATED_SOURCES} "${VCMAKE}"
+                     COMMAND ${VERILATOR_COMMAND}
+                     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+                     DEPENDS "${VERILATOR_BIN}" ${${VERILATE_PREFIX}_DEPS} VERBATIM)
+  # Reconfigure if file list has changed
+  # (check contents rather than modified time to avoid unnecessary reconfiguration)
+  add_custom_command(OUTPUT "${VCMAKE_COPY}"
+                     COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+                     "${VCMAKE}" "${VCMAKE_COPY}"
+                     DEPENDS "${VCMAKE}" VERBATIM)
+
+  set_property(TARGET ${TARGET} PROPERTY VERILATOR ON)
+  set_property(TARGET ${TARGET} APPEND PROPERTY VERILATOR_PREFIXES "${VERILATE_PREFIX}")
+  set_property(TARGET ${TARGET} APPEND PROPERTY VERILATOR_PATHS "${VDIR}")
+
+  if (${VERILATE_PREFIX}_THREADS)
+    # If any verilate() call specifies THREADS, define VL_THREADED in the final build
+    set_property(TARGET ${TARGET} PROPERTY VERILATOR_THREADED ON)
+  endif()
+
+  if (${VERILATE_PREFIX}_COVERAGE)
+    # If any verilate() call specifies COVERAGE, define VM_COVERAGE in the final build
+    set_property(TARGET ${TARGET} PROPERTY VERILATOR_COVERAGE ON)
+  endif()
+
+  if (${VERILATE_PREFIX}_TRACE_VCD)
+    # If any verilate() call specifies TRACE, define VM_TRACE in the final build
+    set_property(TARGET ${TARGET} PROPERTY VERILATOR_TRACE_VCD ON)
+  endif()
+
+  if (${VERILATE_PREFIX}_TRACE_FST)
+    # If any verilate() call specifies TRACE_FST, define VM_TRACE_FST in the final build
+    set_property(TARGET ${TARGET} PROPERTY VERILATOR_TRACE_FST ON)
+  endif()
+
+  if (${VERILATE_PREFIX}_SC)
+    # If any verilate() call specifies SYSTEMC, define VM_SC in the final build
+    set_property(TARGET ${TARGET} PROPERTY VERILATOR_SYSTEMC ON)
+  endif()
+
+    # Add the compile flags only on Verilated sources
+  target_include_directories(${TARGET} PUBLIC ${VDIR})
+  target_sources(${TARGET} PRIVATE ${GENERATED_SOURCES} "${VCMAKE_COPY}"
+                                   ${${VERILATE_PREFIX}_GLOBAL}
+                                   ${${VERILATE_PREFIX}_USER_CLASSES})
+  foreach(_VSOURCE ${VERILATE_SOURCES} ${${VERILATE_PREFIX}_DEPS})
+    get_filename_component(_VSOURCE "${_VSOURCE}" ABSOLUTE BASE_DIR)
+    list(APPEND VHD_SOURCES "${_VSOURCE}")
+  endforeach()
+  target_sources(${TARGET} PRIVATE ${VHD_SOURCES})
+
+  # Add the compile flags only on Verilated sources
+  foreach(VSLOW ${${VERILATE_PREFIX}_CLASSES_SLOW} ${${VERILATE_PREFIX}_SUPPORT_SLOW})
+    foreach(OPT_SLOW ${VERILATE_OPT_SLOW} ${${VERILATE_PREFIX}_USER_CFLAGS})
+      set_property(SOURCE "${VSLOW}" APPEND_STRING PROPERTY COMPILE_FLAGS " ${OPT_SLOW}")
+    endforeach()
+  endforeach()
+  foreach(VFAST ${${VERILATE_PREFIX}_CLASSES_FAST} ${${VERILATE_PREFIX}_SUPPORT_FAST})
+    foreach(OPT_FAST ${VERILATE_OPT_FAST} ${${VERILATE_PREFIX}_USER_CFLAGS})
+      set_property(SOURCE "${VFAST}" APPEND_STRING PROPERTY COMPILE_FLAGS " ${OPT_FAST}")
+    endforeach()
+  endforeach()
+
+  target_include_directories(${TARGET} PUBLIC "${VERILATOR_ROOT}/include"
+                                               "${VERILATOR_ROOT}/include/vltstd")
+  target_compile_definitions(${TARGET} PRIVATE
+    VM_COVERAGE=$<BOOL:$<TARGET_PROPERTY:VERILATOR_COVERAGE>>
+    VM_SC=$<BOOL:$<TARGET_PROPERTY:VERILATOR_SYSTEMC>>
+    $<$<BOOL:$<TARGET_PROPERTY:VERILATOR_THREADED>>:VL_THREADED>
+    VM_TRACE_VCD=$<BOOL:$<TARGET_PROPERTY:VERILATOR_TRACE_VCD>>
+    VM_TRACE_FST=$<BOOL:$<TARGET_PROPERTY:VERILATOR_TRACE_FST>>
+  )
+
+  target_link_libraries(${TARGET} PUBLIC
+    "$<$<BOOL:$<TARGET_PROPERTY:VERILATOR_THREADED>>:${VERILATOR_MT_CFLAGS}>")
+  target_link_libraries(${TARGET} PUBLIC
+    "$<$<BOOL:$<TARGET_PROPERTY:VERILATOR>>:${${VERILATE_PREFIX}_USER_LDLIBS}>")
+  target_compile_features(${TARGET} PRIVATE
+    $<$<BOOL:$<TARGET_PROPERTY:VERILATOR_THREADED>>:cxx_std_11>)
+endfunction()
+
+function(_verilator_find_systemc)
+  if (NOT TARGET Verilator::systemc)
+    # Find SystemC include file "systemc.h" in the following order:
+    # 1. SYSTEMC_INCLUDE (environment) variable
+    # 2. SYSTEMC_ROOT (environment) variable
+    # 3. SYSTEMC (environment) variable
+    # 4. Use CMake module provided by SystemC installation
+    #    (eventually requires CMAKE_PREFIX_PATH set)
+
+    find_path(SYSTEMC_INCLUDEDIR NAMES systemc.h
+      HINTS "${SYSTEMC_INCLUDE}   " ENV SYSTEMC_INCLUDE)
+    find_path(SYSTEMC_INCLUDEDIR NAMES systemc.h
+      HINTS "${SYSTEMC_ROOT}" ENV SYSTEMC_ROOT
+      PATH_SUFFIXES include)
+    find_path(SYSTEMC_INCLUDEDIR NAMES systemc.h
+      HINTS "${SYSTEMC}" ENV SYSTEMC
+      PATH_SUFFIXES include)
+
+    # Find SystemC library in the following order:
+    # 1. SYSTEMC_LIBDIR (environment) variable
+    # 2. SYSTEMC_ROOT (environment) variable
+    # 3. SYSTEMC (environment) variable
+    # 4. Use CMake module provided by SystemC installation
+    #    (eventually requires CMAKE_PREFIX_PATH set)
+
+    # Find SystemC using include and library paths
+    find_library(SYSTEMC_LIBRARY NAMES systemc
+      HINTS "${SYSTEMC_LIBDIR}" ENV SYSTEMC_LIBDIR)
+    find_library(SYSTEMC_LIBRARY NAMES systemc
+      HINTS "${SYSTEMC_ROOT}" ENV SYSTEMC_ROOT
+      PATH_SUFFIXES lib)
+    find_library(SYSTEMC_LIBRARY NAMES systemc
+      HINTS "${SYSTEMC}" ENV SYSTEMC
+      PATH_SUFFIXES lib)
+
+    if (SYSTEMC_INCLUDEDIR AND SYSTEMC_LIBRARY)
+      add_library(Verilator::systemc INTERFACE IMPORTED)
+      set_target_properties(Verilator::systemc
+        PROPERTIES
+          INTERFACE_INCLUDE_DIRECTORIES "${SYSTEMC_INCLUDEDIR}"
+          INTERFACE_LINK_LIBRARIES "${SYSTEMC_LIBRARY}")
+      return()
+    endif()
+
+    find_package(SystemCLanguage QUIET)
+    if (SystemCLanguage_FOUND)
+      add_library(Verilator::systemc INTERFACE IMPORTED)
+      set_target_properties(Verilator::systemc
+        PROPERTIES
+          INTERFACE_LINK_LIBRARIES "SystemC::systemc")
+      return()
+    endif()
+
+    message("SystemC not found. This can be fixed by doing either of the following steps:")
+    message("- set the SYSTEMC_INCLUDE and SYSTEMC_LIBDIR (environment) variables; or")
+    message("- set SYSTEMC_ROOT (environment) variable; or")
+    message("- set SYSTEMC (environment) variable; or")
+    message("- use the CMake module of your SystemC installation (may require CMAKE_PREFIX_PATH)")
+    message(FATAL_ERROR "SystemC not found")
+  endif()
+endfunction()
+
+function(verilator_link_systemc TARGET)
+  _verilator_find_systemc()
+  target_link_libraries("${TARGET}" PUBLIC Verilator::systemc)
+endfunction()

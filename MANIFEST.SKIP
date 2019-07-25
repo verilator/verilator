@@ -15,6 +15,7 @@
 .*\.vcd
 .*\.1
 \.travis\.yml
+/build/
 /obj_dir/
 /obj_dbg/
 /obj_nc/
@@ -39,6 +40,8 @@ config.cache$
 config.status$
 verilator\.log
 verilator\.tex
+verilator-config.cmake$
+verilator-config-version.cmake$
 verilator.pc$
 verilator_bin.*
 verilator_coverage_bin.*

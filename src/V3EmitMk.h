@@ -24,14 +24,11 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
-#include "V3Error.h"
-#include "V3Ast.h"
-
 //============================================================================
 
 class V3EmitMk {
 public:
-    static void emitmk(AstNetlist* nodep);
+    static void emitmk();
 };
 
 #endif  // Guard

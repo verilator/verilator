@@ -109,7 +109,7 @@ class V3Options {
     bool        m_bboxSys;      // main switch: --bbox-sys
     bool        m_bboxUnsup;    // main switch: --bbox-unsup
     bool        m_cdc;          // main switch: --cdc
-    bool        m_cmake;        // main switch: --cmake
+    bool        m_cmake;        // main switch: --make cmake
     bool        m_coverageLine; // main switch: --coverage-block
     bool        m_coverageToggle;// main switch: --coverage-toggle
     bool        m_coverageUnderscore;// main switch: --coverage-underscore
@@ -128,6 +128,7 @@ class V3Options {
     bool        m_ignc;         // main switch: --ignc
     bool        m_inhibitSim;   // main switch: --inhibit-sim
     bool        m_lintOnly;     // main switch: --lint-only
+    bool        m_gmake;        // main switch: --make gmake
     bool        m_orderClockDly;// main switch: --order-clock-delay
     bool        m_outFormatOk;  // main switch: --cc, --sc or --sp was specified
     bool        m_pinsScUint;   // main switch: --pins-sc-uint
@@ -300,6 +301,7 @@ class V3Options {
     bool dpiHdrOnly() const { return m_dpiHdrOnly; }
     bool dumpDefines() const { return m_dumpDefines; }
     bool exe() const { return m_exe; }
+    bool gmake() const { return m_gmake; }
     bool threadsDpiPure() const { return m_threadsDpiPure; }
     bool threadsDpiUnpure() const { return m_threadsDpiUnpure; }
     bool threadsCoarsen() const { return m_threadsCoarsen; }

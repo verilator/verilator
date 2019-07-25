@@ -567,9 +567,10 @@ void process() {
         && !v3Global.opt.dpiHdrOnly()) {
         // Makefile must be after all other emitters
         if (v3Global.opt.cmake()) {
-            V3EmitCMake::emit(v3Global.rootp());
-        } else {
-            V3EmitMk::emitmk(v3Global.rootp());
+            V3EmitCMake::emit();
+        }
+        if (v3Global.opt.gmake()) {
+            V3EmitMk::emitmk();
         }
     }
 
@@ -601,6 +602,7 @@ int main(int argc, char** argv, char** env) {
 
     // Validate settings (aka Boost.Program_options)
     v3Global.opt.notify();
+
     V3Error::abortIfErrors();
 
     // Can we skip doing everything if times are ok?
