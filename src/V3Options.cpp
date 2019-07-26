@@ -1018,6 +1018,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if (!strcmp(sw, "-gdb")) {
                 // Used only in perl shell
             }
+            else if (!strcmp(sw, "-rr")) {
+                // Used only in perl shell
+            }
             else if (!strcmp(sw, "-gdbbt")) {
                 // Used only in perl shell
             }

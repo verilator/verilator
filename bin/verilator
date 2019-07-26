@@ -34,6 +34,7 @@ autoflush STDERR 1;
 
 $Debug = 0;
 my $opt_gdb;
+my $opt_rr;
 my $opt_gdbbt;
 my $opt_quiet_exit;
 
@@ -61,6 +62,7 @@ if (! GetOptions(
           "gdb!"        => \$opt_gdb,
           "gdbbt!"      => \$opt_gdbbt,
           "quiet-exit!" => \$opt_quiet_exit,
+          "rr!"         => \$opt_rr,
           # Additional parameters
           "<>"          => sub {},      # Ignored
     )) {
@@ -93,6 +95,10 @@ if ($opt_gdb) {
          ." -ex \"run ".join(' ', @quoted_sw)."\""
          ." -ex 'set width 0'"
          ." -ex 'bt'");
+} elsif ($opt_rr) {
+    # Record with rr
+    run ("rr record ".verilator_bin()
+         ." ".join(' ', @quoted_sw));
 } elsif ($opt_gdbbt && $Debug) {
     # Run under GDB to get gdbbt
     run ("gdb"
@@ -353,6 +359,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --relative-includes         Resolve includes relative to current file
     --no-relative-cfuncs        Disallow 'this->' in generated functions
     --report-unoptflat          Extra diagnostics for UNOPTFLAT
+    --rr                        Run Verilator and record with rr
     --savable                   Enable model save-restore
     --sc                        Create SystemC output
     --stats                     Create statistics file
@@ -1191,6 +1198,10 @@ printing. For example:
 
 will generate a PDF Vt_unoptflat_simple_2_35_unoptflat.dot.pdf from the DOT
 file.
+
+=item --rr
+
+Run Verilator and record with rr.  See: rr-project.org.
 
 =item --savable
 

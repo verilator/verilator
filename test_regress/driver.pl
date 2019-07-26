@@ -55,12 +55,14 @@ my $opt_benchmark;
 my @opt_tests;
 my $opt_dist;
 my $opt_gdb;
+my $opt_rr;
 my $opt_gdbbt;
 my $opt_gdbsim;
 my $opt_jobs = 1;
 my $opt_optimize;
 my $opt_quiet;
 my $opt_rerun;
+my $opt_rrsim;
 my %opt_scenarios;
 my $opt_site;
 my $opt_stop;
@@ -85,6 +87,8 @@ if (! GetOptions(
           "optimize:s"  => \$opt_optimize,
           "quiet!"      => \$opt_quiet,
           "rerun!"      => \$opt_rerun,
+          "rr!"         => \$opt_rr,
+          "rrsim!"      => \$opt_rrsim,
           "site!"       => \$opt_site,
           "stop!"       => \$opt_stop,
           "trace!"      => \$opt_trace,
@@ -727,6 +731,7 @@ sub compile_vlt_flags {
     my @verilator_flags = @{$param{verilator_flags}};
     unshift @verilator_flags, "--gdb" if $opt_gdb;
     unshift @verilator_flags, "--gdbbt" if $opt_gdbbt;
+    unshift @verilator_flags, "--rr" if $opt_rr;
     unshift @verilator_flags, "--x-assign unique";  # More likely to be buggy
     unshift @verilator_flags, "--trace" if $opt_trace;
     my $threads = ::calc_threads($Vltmt_threads);
@@ -1047,9 +1052,15 @@ sub execute {
         #&& (!$param{needs_v4} || -r "$ENV{VERILATOR_ROOT}/src/V3Gate.cpp")
         ) {
         $param{executable} ||= "$self->{obj_dir}/$param{VM_PREFIX}";
+        my $debugger = "";
+        if ($opt_gdbsim) {
+            $debugger = ($ENV{VERILATOR_GDB}||"gdb")." ";
+        } elsif ($opt_rrsim) {
+            $debugger = "rr record ";
+        }
         $self->_run(logfile=>"$self->{obj_dir}/vlt_sim.log",
                     cmd=>[($run_env
-                           .($opt_gdbsim ? ($ENV{VERILATOR_GDB}||"gdb")." " : "")
+                           .$debugger
                            .$param{executable}
                            .($opt_gdbsim ? " -ex 'run " : "")),
                           @{$param{all_run_flags}},
@@ -2287,6 +2298,14 @@ C<--rerun>, and C<--verbose> which is not the opposite of C<--quiet>.
 
 Rerun all tests that failed in this run. Reruns force the flags
 C<--no-quiet --j 1>.
+
+=item --rr
+
+Same as C<verilator --rr>: Run Verilator and record with rr.
+
+=item --rrsim
+
+Run Verilator generated executable and record with rr.
 
 =item --site
 
