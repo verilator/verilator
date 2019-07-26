@@ -34,6 +34,7 @@
 
 #include <algorithm>
 #include <cstdarg>
+#include <iomanip>
 #include VL_INCLUDE_UNORDERED_SET
 
 //######################################################################
@@ -320,14 +321,18 @@ void FileLine::modifyStateInherit(const FileLine* fromp) {
     }
 }
 
-void FileLine::v3errorEnd(std::ostringstream& str) {
+void FileLine::v3errorEnd(std::ostringstream& str, const string& locationStr) {
     std::ostringstream nsstr;
     if (lastLineno()) nsstr<<this;
     nsstr<<str.str();
     nsstr<<endl;
+    std::ostringstream lstr;
+    if (!locationStr.empty()) {
+        lstr<<std::setw(ascii().length())<<" "<<": "<<locationStr;
+    }
     if (warnIsOff(V3Error::errorCode())) V3Error::suppressThisWarning();
     else if (!V3Error::errorContexted()) nsstr<<warnContextPrimary();
-    V3Error::v3errorEnd(nsstr);
+    V3Error::v3errorEnd(nsstr, lstr.str());
 }
 
 string FileLine::warnMore() const {

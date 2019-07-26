@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    When showing an error, show source code and offer suggestions of replacements.
 
+**    When showing an error, show the instance location, bug1305. [Todd Strader]
+
 ***   Add --rr, bug1481. [Todd Strader]
 
 ***   Change MULTITOP to warning to help linting, see manual.

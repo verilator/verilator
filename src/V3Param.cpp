@@ -77,6 +77,7 @@ private:
     //   AstVar::user4()        // int    Global parameter number (for naming new module)
     //                          //        (0=not processed, 1=iterated, but no number,
     //                          //         65+ parameter numbered)
+    //   AstCell::user5p()      // string* Generate portion of hierarchical name
     AstUser4InUse       m_inuser4;
     AstUser5InUse       m_inuser5;
     // User1/2/3 used by constant function simulations
@@ -114,6 +115,8 @@ private:
     string m_unlinkedTxt;       // Text for AstUnlinkedRef
 
     UnrollStateful m_unroller;  // Loop unroller
+
+    string m_generateHierName;  // Generate portion of hierarchical name
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -219,7 +222,7 @@ private:
             }
         }
     }
-    void visitCell(AstCell* nodep);
+    void visitCell(AstCell* nodep, const string& hierName);
     void visitModules() {
         // Loop on all modules left to process
         // Hitting a cell adds to the appropriate level of this level-sorted list,
@@ -231,6 +234,7 @@ private:
             if (!nodep->user5SetOnce()) {  // Process once; note clone() must clear so we do it again
                 m_modp = nodep;
                 UINFO(4," MOD   "<<nodep<<endl);
+                if (m_modp->hierName().empty()) m_modp->hierName(m_modp->origName());
                 iterateChildren(nodep);
                 // Note above iterate may add to m_todoModps
                 //
@@ -240,8 +244,19 @@ private:
                         AstCell* nodep = *it;
                         if ((nonIf==0 && VN_IS(nodep->modp(), Iface))
                             || (nonIf==1 && !VN_IS(nodep->modp(), Iface))) {
-                            visitCell(nodep);
+                            string fullName (m_modp->hierName());
+                            if (string* genHierNamep = (string *) nodep->user5p()) {
+                                fullName += *genHierNamep;
+                            }
+                            visitCell(nodep, fullName);
                         }
+                    }
+                }
+                for (CellList::iterator it=m_cellps.begin(); it!=m_cellps.end(); ++it) {
+                    AstCell* cellp = *it;
+                    if (string* genHierNamep = (string *) cellp->user5p()) {
+                        cellp->user5p(NULL);
+                        delete genHierNamep; VL_DANGLING(genHierNamep);
                     }
                 }
                 m_cellps.clear();
@@ -265,6 +280,7 @@ private:
                    || VN_IS(nodep, Package)) {  // Likewise haven't done wrapTopPackages yet
             // Add request to END of modules left to process
             m_todoModps.insert(make_pair(nodep->level(), nodep));
+            m_generateHierName = "";
             visitModules();
         } else if (nodep->user5()) {
             UINFO(4," MOD-done   "<<nodep<<endl);  // Already did it
@@ -274,6 +290,8 @@ private:
     }
     virtual void visit(AstCell* nodep) {
         // Must do ifaces first, so push to list and do in proper order
+        string* genHierNamep = new string(m_generateHierName);
+        nodep->user5p(genHierNamep);
         m_cellps.push_back(nodep);
     }
 
@@ -477,7 +495,10 @@ private:
                 // Note this clears nodep->genforp(), so begin is no longer special
             }
         } else {
+            string rootHierName(m_generateHierName);
+            m_generateHierName += "." + nodep->prettyName();
             iterateChildren(nodep);
+            m_generateHierName = rootHierName;
         }
     }
     virtual void visit(AstGenFor* nodep) {
@@ -555,7 +576,7 @@ public:
 //----------------------------------------------------------------------
 // VISITs
 
-void ParamVisitor::visitCell(AstCell* nodep) {
+void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
     // Cell: Check for parameters in the instantiation.
     iterateChildren(nodep);
     UASSERT_OBJ(nodep->modp(), nodep, "Not linked?");
@@ -568,6 +589,7 @@ void ParamVisitor::visitCell(AstCell* nodep) {
         // Evaluate all module constants
         V3Const::constifyParamsEdit(nodep);
         AstNodeModule* srcModp = nodep->modp();
+        srcModp->hierName(hierName + "." + nodep->name());
 
         // Make sure constification worked
         // Must be a separate loop, as constant conversion may have changed some pointers.

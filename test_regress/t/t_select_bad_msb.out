@@ -3,6 +3,7 @@
        ^
                     ... Use "/* verilator lint_off LITENDIAN */" and lint_on around source to disable this message.
 %Error: t/t_select_bad_msb.v:15: [1:4] Range extract has backward bit ordering, perhaps you wanted [4:1]
+                               : ... In instance t
       sel2 = mi[1:4];
                ^
 %Error: Exiting due to

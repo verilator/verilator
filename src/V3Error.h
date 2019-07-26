@@ -274,7 +274,7 @@ class V3Error {
         s_errorContexted = false; s_errorSuppressed = false; }
     static std::ostringstream& v3errorStr() { return s_errorStr; }
     static void vlAbort();
-    static void v3errorEnd(std::ostringstream& sstr);  // static, but often overridden in classes.
+    static void v3errorEnd(std::ostringstream& sstr, const string& locationStr = "");  // static, but often overridden in classes.
 };
 
 // Global versions, so that if the class doesn't define a operator, we get the functions anyways.

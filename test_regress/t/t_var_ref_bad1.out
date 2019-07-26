@@ -1,4 +1,5 @@
 %Error: t/t_var_ref_bad1.v:13: Ref connection 'bad_sub_ref' requires matching types; ref requires BASICDTYPE 'real' but connection is BASICDTYPE 'bit'.
+                             : ... In instance t
      (.bad_sub_ref(bad_parent));   
        ^~~~~~~~~~~
 %Error: Exiting due to

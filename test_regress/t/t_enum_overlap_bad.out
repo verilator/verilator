@@ -1,4 +1,5 @@
 %Error: t/t_enum_overlap_bad.v:11: Overlapping enumeration value: 'e1b'
+                                 : ... In instance t
           e1b=1
           ^~~
         t/t_enum_overlap_bad.v:9: ... Location of original declaration
