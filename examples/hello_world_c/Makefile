@@ -24,7 +24,7 @@ endif
 # e.g. examples/tracing_c.
 
 # If $VERILATOR_ROOT isn't in the environment, we assume it is part of a
-# package inatall, and verilator is in your path. Otherwise find the
+# package install, and verilator is in your path. Otherwise find the
 # binary relative to $VERILATOR_ROOT (such as when inside the git sources).
 ifeq ($(VERILATOR_ROOT),)
 VERILATOR = verilator

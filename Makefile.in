@@ -83,7 +83,7 @@ infodir = @infodir@
 pkgdatadir = @pkgdatadir@
 
 # Directory in which to install pkgconfig file
-# Generall ${prefix}/share/pkgconfig
+# Generally ${prefix}/share/pkgconfig
 pkgconfigdir = @pkgconfigdir@
 
 # Directory in which to install data across multiple architectures
