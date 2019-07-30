@@ -39,7 +39,7 @@ if (! -d $git_dir) {
     $git_dir = ".git";
 }
 
-# Ignore files localy excluded
+# Ignore files locally excluded
 my $git_exclude = `cd $root && git ls-files --others --ignored --exclude-from $git_dir/info/exclude`;
 foreach my $exclude (split /\s+/, $git_exclude) {
     if (exists $files{$exclude}) {
