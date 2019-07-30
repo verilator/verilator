@@ -2109,7 +2109,7 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     puts("#ifdef VL_DEBUG\n");
     putsDecoration("// Debug assertions\n");
     puts("_eval_debug_assertions();\n");
-    puts("#endif // VL_DEBUG\n");
+    puts("#endif  // VL_DEBUG\n");
     putsDecoration("// Initialize\n");
     puts("if (VL_UNLIKELY(!vlSymsp->__Vm_didInit)) _eval_initial_loop(vlSymsp);\n");
     if (v3Global.opt.inhibitSim()) {

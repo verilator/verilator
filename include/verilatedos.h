@@ -407,4 +407,4 @@ typedef unsigned long long      vluint64_t;     ///< 64-bit unsigned type
 
 //=========================================================================
 
-#endif /*guard*/
+#endif  // Guard
