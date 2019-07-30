@@ -56,7 +56,7 @@ Getopt::Long::config("no_auto_abbrev","pass_through");
 if (! GetOptions(
           # Major operating modes
           "help"        => \&usage,
-          "debug:s"     => \&debug,
+          "debug"       => \&debug,
           # "version!"  => \&version,   # Also passthru'ed
           # Switches
           "gdb!"        => \$opt_gdb,
