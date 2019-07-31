@@ -271,6 +271,7 @@ sub new {
         fail_cnt => 0,
         skip_cnt => 0,
         unsup_cnt => 0,
+        skip_msgs => [],
         fail_msgs => [],
         fail_tests => [],
         @_};
@@ -312,6 +313,8 @@ sub one_test {
                  $self->{ok_cnt}++;
              } elsif ($test->scenario_off && !$test->errors) {
              } elsif ($test->skips && !$test->errors) {
+                 push @{$self->{skip_msgs}},
+                     ("\t#".$test->soprint("-Skip:  $test->{skips}\n"));
                  $self->{skip_cnt}++;
              } elsif ($test->unsupporteds && !$test->errors) {
                  $self->{unsup_cnt}++;
@@ -364,7 +367,14 @@ sub report {
         chomp $f;
         $fh->print("$f\n");
     }
-    $fh->print("TESTS DONE: ".$self->sprint_summary."\n");
+    foreach my $f (sort @{$self->{skip_msgs}}) {
+        chomp $f;
+        $fh->print("$f\n");
+    }
+    my $sum = ($self->{fail_cnt} && "FAILED"
+               || $self->{skip_cnt} && "PASSED w/SKIPS"
+               || "PASSED");
+    $fh->print("TESTS DONE, $sum: ".$self->sprint_summary."\n");
 }
 
 sub print_summary {

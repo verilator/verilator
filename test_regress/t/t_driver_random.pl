@@ -13,7 +13,7 @@ use Time::HiRes;
 scenarios(dist => 1);
 
 if (!$ENV{VERILATOR_TEST_RANDOM_FAILURE}) {
-    skip("Test is for harness checking only, setenv VERILATOR_TEST_RANDOM_FAILURE=1 ");
+    ok("Test is for harness checking only, setenv VERILATOR_TEST_RANDOM_FAILURE=1 ");
 } else {
     # Randomly fail to test driver.pl
     my ($ign, $t) = Time::HiRes::gettimeofday();
