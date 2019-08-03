@@ -902,12 +902,12 @@ void GateVisitor::optimizeElimVar(AstVarScope* varscp, AstNode* substp, AstNode*
 //######################################################################
 // Auxiliary hash class for GateDedupeVarVisitor
 
-class GateDedupeHash : public V3HashedUserCheck {
+class GateDedupeHash : public V3HashedUserSame {
 private:
     // NODE STATE
     // Ast*::user2p     -> parent AstNodeAssign* for this rhsp
-    // Ast*::user3p     -> AstActive* of assign, for check() in test for duplicate
-    // Ast*::user5p     -> AstNode* of assign if condition, for check() in test for duplicate
+    // Ast*::user3p     -> AstActive* of assign, for isSame() in test for duplicate
+    // Ast*::user5p     -> AstNode* of assign if condition, for isSame() in test for duplicate
     // AstUser2InUse    m_inuser2;      (Allocated for use in GateVisitor)
     AstUser3InUse       m_inuser3;
     // AstUser4InUse    m_inuser4;      (Allocated for use in V3Hashed)
@@ -930,7 +930,7 @@ private:
         return node1p == node2p || sameHash(node1p, node2p);
     }
 public:
-    bool check(AstNode* node1p, AstNode* node2p)  {
+    bool isSame(AstNode* node1p, AstNode* node2p)  {
         return same(node1p->user3p(), node2p->user3p())
             && same(node1p->user5p(), node2p->user5p())
             && node1p->user2p()->type() == node2p->user2p()->type();

@@ -40,11 +40,11 @@ public:
 
 //============================================================================
 
-struct V3HashedUserCheck {
+struct V3HashedUserSame {
     // Functor for V3Hashed::findDuplicate
-    virtual bool check(AstNode*, AstNode*) = 0;
-    V3HashedUserCheck() {}
-    virtual ~V3HashedUserCheck() {}
+    virtual bool isSame(AstNode*, AstNode*) = 0;
+    V3HashedUserSame() {}
+    virtual ~V3HashedUserSame() {}
 };
 
 class V3Hashed : public VHashedBase {
@@ -76,8 +76,8 @@ public:
     void hash(AstNode* nodep);  // Only hash the node
     bool sameNodes(AstNode* node1p, AstNode* node2p);  // After hashing, and tell if identical
     void erase(iterator it);  // Remove node from structures
-    iterator findDuplicate(AstNode* nodep);  // Return duplicate in hash, if any
-    iterator findDuplicate(AstNode* nodep, V3HashedUserCheck* checkp);  // Extra user checks for sameness
+    // Return duplicate in hash, if any, with optional user check for sameness
+    iterator findDuplicate(AstNode* nodep, V3HashedUserSame* checkp=NULL);
     AstNode* iteratorNodep(iterator it) { return it->second; }
     void dumpFile(const string& filename, bool tree);
     void dumpFilePrefixed(const string& nameComment, bool tree=false);

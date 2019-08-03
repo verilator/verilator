@@ -193,27 +193,16 @@ void V3Hashed::dumpFile(const string& filename, bool tree) {
     }
 }
 
-V3Hashed::iterator V3Hashed::findDuplicate(AstNode* nodep) {
-    UINFO(8,"   findD "<<nodep<<endl);
-    UASSERT_OBJ(nodep->user4p(), nodep, "Called findDuplicate on non-hashed node");
-    std::pair<HashMmap::iterator,HashMmap::iterator> eqrange = mmap().equal_range(nodeHash(nodep));
-    for (HashMmap::iterator eqit = eqrange.first; eqit != eqrange.second; ++eqit) {
-        AstNode* node2p = eqit->second;
-        if (nodep != node2p && sameNodes(nodep, node2p)) {
-            return eqit;
-        }
-    }
-    return end();
-}
-
-V3Hashed::iterator V3Hashed::findDuplicate(AstNode* nodep, V3HashedUserCheck* checkp) {
+V3Hashed::iterator V3Hashed::findDuplicate(AstNode* nodep, V3HashedUserSame* checkp) {
     UINFO(8,"   findD "<<nodep<<endl);
     UASSERT_OBJ(nodep->user4p(), nodep, "Called findDuplicate on non-hashed node");
     std::pair<HashMmap::iterator,HashMmap::iterator> eqrange
         = mmap().equal_range(nodeHash(nodep));
     for (HashMmap::iterator eqit = eqrange.first; eqit != eqrange.second; ++eqit) {
         AstNode* node2p = eqit->second;
-        if (nodep != node2p && checkp->check(nodep, node2p) && sameNodes(nodep, node2p)) {
+        if (nodep != node2p
+            && (!checkp || checkp->isSame(nodep, node2p))
+            && sameNodes(nodep, node2p)) {
             return eqit;
         }
     }
