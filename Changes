@@ -23,7 +23,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 ****  Fix enum values not being sized based on parent, bug1442. [Dan Petrisko]
 
 
-* Verilator 4.016 2016-06-16
+* Verilator 4.016 2019-06-16
 
 ***   Add --quiet-exit, bug1436. [Todd Strader]
 
