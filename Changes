@@ -22,6 +22,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix enum values not being sized based on parent, bug1442. [Dan Petrisko]
 
+****  Fix internal error on gate optimization of assign, bug1475. [Oyvind Harboe]
+
 
 * Verilator 4.016 2019-06-16
 

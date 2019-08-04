@@ -53,8 +53,8 @@ class V3Hashed : public VHashedBase {
     AstUser4InUse m_inuser4;
 
     // TYPES
-    typedef std::multimap<V3Hash,AstNode*> HashMmap;
 public:
+    typedef std::multimap<V3Hash,AstNode*> HashMmap;
     typedef HashMmap::iterator iterator;
 private:
     // MEMBERS
@@ -72,6 +72,7 @@ public:
 
     // METHODS
     void clear() { m_hashMmap.clear(); AstNode::user4ClearTree(); }
+    void check();  // Check assertions on structure
     iterator hashAndInsert(AstNode* nodep);  // Hash the node, and insert into map. Return iterator to inserted
     void hash(AstNode* nodep);  // Only hash the node
     bool sameNodes(AstNode* node1p, AstNode* node2p);  // After hashing, and tell if identical

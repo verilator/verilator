@@ -61,6 +61,9 @@ typedef std::set<int> MTaskIdSet;  // Set of mtaskIds for Var sorting
 #define VN_CAST(nodep,nodetypename) (AstNode::privateCast ## nodetypename(nodep))
 #define VN_CAST_CONST(nodep,nodetypename) (AstNode::privateConstCast ## nodetypename(nodep) )
 
+// (V)erilator (N)ode deleted: Reference to deleted child (for assertions only)
+#define VN_DELETED(nodep) VL_UNLIKELY((vluint64_t)(nodep) == 0x1)
+
 //######################################################################
 
 class AstType {

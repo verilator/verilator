@@ -145,6 +145,13 @@ void V3Hashed::erase(iterator it) {
     nodep->user4p(NULL);  // So we don't allow removeNode again
 }
 
+void V3Hashed::check() {
+    for (HashMmap::iterator it = begin(); it != end(); ++it) {
+        AstNode* nodep = it->second;
+        UASSERT_OBJ(nodep->user4p(), nodep, "V3Hashed check failed, non-hashed node");
+    }
+}
+
 void V3Hashed::dumpFilePrefixed(const string& nameComment, bool tree) {
     if (v3Global.opt.dumpTree()) {
         dumpFile(v3Global.debugFilename(nameComment)+".hash", tree);

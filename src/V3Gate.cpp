@@ -835,6 +835,8 @@ void GateVisitor::warnSignals() {
 //######################################################################
 // Push constant into expressions and reevaluate
 
+class GateDedupeVarVisitor;
+
 class GateElimVisitor : public GateBaseVisitor {
 private:
     // NODE STATE
@@ -842,6 +844,11 @@ private:
     AstVarScope* m_elimVarScp;          // Variable being eliminated
     AstNode*     m_replaceTreep;        // What to replace the variable with
     bool         m_didReplace;          // Did we do any replacements
+    GateDedupeVarVisitor* m_varVisp;    // Callback to keep hash up to date
+
+    // METHODS
+    void hashReplace(AstNode* oldp, AstNode* newp);
+
     // VISITORS
     virtual void visit(AstNodeVarRef* nodep) {
         if (nodep->varScopep() == m_elimVarScp) {
@@ -865,6 +872,7 @@ private:
             if (VN_IS(substp, VarRef)) substp->fileline(nodep->fileline());
             // Make the substp an rvalue like nodep. This facilitate the hashing in dedupe.
             if (AstNodeVarRef* varrefp = VN_CAST(substp, NodeVarRef)) varrefp->lvalue(false);
+            hashReplace(nodep, substp);
             nodep->replaceWith(substp);
             nodep->deleteTree(); VL_DANGLING(nodep);
         }
@@ -875,10 +883,12 @@ private:
 public:
     // CONSTUCTORS
     virtual ~GateElimVisitor() {}
-    GateElimVisitor(AstNode* nodep, AstVarScope* varscp, AstNode* replaceTreep) {
+    GateElimVisitor(AstNode* nodep, AstVarScope* varscp, AstNode* replaceTreep,
+                    GateDedupeVarVisitor* varVisp) {
         m_didReplace = false;
         m_elimVarScp = varscp;
         m_replaceTreep = replaceTreep;
+        m_varVisp = varVisp;
         iterate(nodep);
     }
     bool didReplace() const { return m_didReplace; }
@@ -886,7 +896,7 @@ public:
 
 void GateVisitor::optimizeElimVar(AstVarScope* varscp, AstNode* substp, AstNode* consumerp) {
     if (debug()>=5) consumerp->dumpTree(cout, "\telimUsePre: ");
-    GateElimVisitor elimVisitor (consumerp, varscp, substp);
+    GateElimVisitor elimVisitor (consumerp, varscp, substp, NULL);
     if (elimVisitor.didReplace()) {
         if (debug()>=9) consumerp->dumpTree(cout, "\telimUseCns: ");
         //Caution: Can't let V3Const change our handle to consumerp, such as by
@@ -903,16 +913,27 @@ void GateVisitor::optimizeElimVar(AstVarScope* varscp, AstNode* substp, AstNode*
 // Auxiliary hash class for GateDedupeVarVisitor
 
 class GateDedupeHash : public V3HashedUserSame {
+public:
+    // TYPES
+    typedef std::set<AstNode*> NodeSet;
+
 private:
     // NODE STATE
     // Ast*::user2p     -> parent AstNodeAssign* for this rhsp
     // Ast*::user3p     -> AstActive* of assign, for isSame() in test for duplicate
+    //                     Set to NULL if this assign's tree was later replaced
     // Ast*::user5p     -> AstNode* of assign if condition, for isSame() in test for duplicate
+    //                     Set to NULL if this assign's tree was later replaced
+    // AstUser1InUse    m_inuser1;      (Allocated for use in GateVisitor)
     // AstUser2InUse    m_inuser2;      (Allocated for use in GateVisitor)
     AstUser3InUse       m_inuser3;
     // AstUser4InUse    m_inuser4;      (Allocated for use in V3Hashed)
     AstUser5InUse       m_inuser5;
+
     V3Hashed            m_hashed;       // Hash, contains rhs of assigns
+    NodeSet             m_nodeDeleteds;  // Any node in this hash was deleted
+
+    VL_DEBUG_FUNC;  // Declare debug()
 
     void hash(AstNode* nodep) {
         // !NULL && the object is hashable
@@ -930,13 +951,46 @@ private:
         return node1p == node2p || sameHash(node1p, node2p);
     }
 public:
+    GateDedupeHash() { }
+    ~GateDedupeHash() {
+        if (v3Global.opt.debugCheck()) check();
+    }
+
+    // About to replace a node; any node we're tracking refers to oldp, change it to newp.
+    // This might be a variable on the lhs of the duplicate tree,
+    // or could be a rhs variable in a tree we're not replacing (or not yet anyways)
+    void hashReplace(AstNode* oldp, AstNode* newp) {
+        UINFO(9,"replacing "<<(void*)oldp<<" with "<<(void*)newp<<endl);
+        // We could update the user3p and user5p but the resulting node
+        // still has incorrect hash.  We really need to remove all hash on
+        // the whole hash entry tree involving the replaced node and
+        // rehash.  That's complicated and this is rare, so just remove it
+        // from consideration.
+        m_nodeDeleteds.insert(oldp);
+    }
+    bool isReplaced(AstNode* nodep) {
+        // Assignment may have been hashReplaced, if so consider non-match (effectively removed)
+        UASSERT_OBJ(!VN_IS(nodep, NodeAssign), nodep, "Dedup attempt on non-assign");
+        AstNode* extra1p = nodep->user3p();
+        AstNode* extra2p = nodep->user5p();
+        return ((extra1p && m_nodeDeleteds.find(extra1p) != m_nodeDeleteds.end())
+                || (extra2p && m_nodeDeleteds.find(extra2p) != m_nodeDeleteds.end()));
+    }
+
+    // Callback from V3Hashed::findDuplicate
     bool isSame(AstNode* node1p, AstNode* node2p)  {
+        // Assignment may have been hashReplaced, if so consider non-match (effectively removed)
+        if (isReplaced(node1p) || isReplaced(node2p)) {
+            //UINFO(9, "isSame hit on replaced "<<(void*)node1p<<" "<<(void*)node2p<<endl);
+            return false;
+        }
         return same(node1p->user3p(), node2p->user3p())
             && same(node1p->user5p(), node2p->user5p())
             && node1p->user2p()->type() == node2p->user2p()->type();
     }
 
     AstNodeAssign* hashAndFindDupe(AstNodeAssign* assignp, AstNode* extra1p, AstNode* extra2p) {
+        // Legal for extra1p/2p to be NULL, we'll compare with other assigns with extras also NULL
         AstNode *rhsp = assignp->rhsp();
         rhsp->user2p(assignp);
         rhsp->user3p(extra1p);
@@ -954,7 +1008,25 @@ public:
             m_hashed.erase(inserted);
             return VN_CAST(m_hashed.iteratorNodep(dupit)->user2p(), NodeAssign);
         }
+        // Retain new inserted information
         return NULL;
+    }
+
+    void check() {
+        m_hashed.check();
+        for (V3Hashed::HashMmap::iterator it = m_hashed.begin(); it != m_hashed.end(); ++it) {
+            AstNode* nodep = it->second;
+            AstNode* activep = nodep->user3p();
+            AstNode* condVarp = nodep->user5p();
+            if (!isReplaced(nodep)) {
+                // This class won't break if activep isn't an active, or
+                // ifVar isn't a var, but this is checking the caller's construction.
+                UASSERT_OBJ(!activep || (!VN_DELETED(activep) && VN_IS(activep, Active)),
+                            nodep, "V3Hashed check failed, lost active pointer");
+                UASSERT_OBJ(!condVarp || !VN_DELETED(condVarp),
+                            nodep, "V3Hashed check failed, lost if pointer");
+            }
+        }
     }
 };
 
@@ -1032,6 +1104,7 @@ public:
         m_always = false;
         m_dedupable = true;
     }
+    ~GateDedupeVarVisitor() { }
     // PUBLIC METHODS
     AstNodeVarRef* findDupe(AstNode* nodep, AstVarScope* consumerVarScopep, AstActive* activep) {
         m_assignp = NULL;
@@ -1052,7 +1125,19 @@ public:
         }
         return NULL;
     }
+    void hashReplace(AstNode* oldp, AstNode* newp) {
+        m_ghash.hashReplace(oldp, newp);
+    }
 };
+
+//######################################################################
+
+void GateElimVisitor::hashReplace(AstNode* oldp, AstNode* newp) {
+    UINFO(9,"hashReplace "<<(void*)oldp<<" -> "<<(void*)newp<<endl);
+    if (m_varVisp) {
+        m_varVisp->hashReplace(oldp, newp);
+    }
+}
 
 //######################################################################
 // Recurse through the graph, looking for duplicate expressions on the rhs of an assign
@@ -1093,7 +1178,7 @@ private:
                         GateLogicVertex* consumeVertexp
                             = dynamic_cast<GateLogicVertex*>(outedgep->top());
                         AstNode* consumerp = consumeVertexp->nodep();
-                        GateElimVisitor elimVisitor(consumerp, vvertexp->varScp(), dupVarRefp);
+                        GateElimVisitor elimVisitor(consumerp, vvertexp->varScp(), dupVarRefp, &m_varVisitor);
                         outedgep = outedgep->relinkFromp(dupVvertexp);
                     }
 
@@ -1299,6 +1384,7 @@ public:
 //----------------------------------------------------------------------
 
 void GateVisitor::mergeAssigns() {
+    UINFO(6, "mergeAssigns\n");
     GateMergeAssignsGraphVisitor merger(&m_graph);
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
         if (GateVarVertex* vvertexp = dynamic_cast<GateVarVertex*>(itp)) {
