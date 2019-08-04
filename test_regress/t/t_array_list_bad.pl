@@ -7,9 +7,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-scenarios(simulator => 1);
+scenarios(linter => 1);
 
-compile(
+lint(
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );

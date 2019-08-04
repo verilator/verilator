@@ -12,7 +12,6 @@ scenarios(linter => 1);
 top_filename("t/t_inst_overwide.v");
 
 lint(
-    verilator_flags => [qw(-cc)],
     fails => $Self->{vlt_all},
     expect_filename => $Self->{golden_filename},
     );

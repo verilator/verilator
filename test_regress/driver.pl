@@ -335,7 +335,8 @@ sub one_test {
                  foreach my $proc ($::Fork->running) {
                      $other .= "  ".$proc->{test_pl_filename};
                  }
-                 $test->oprint("Simultaneous running tests:",$other,"\n") if $other;
+                 $test->oprint("Simultaneous running tests:",$other,"\n")
+                     if $other && !$opt_quiet;
                  if ($opt_stop) { die "%Error: --stop and errors found\n"; }
              }
              $self->{left_cnt}--;
