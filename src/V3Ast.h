@@ -1396,10 +1396,12 @@ public:
     void dtypeChgSigned(bool flag=true);
     void dtypeChgWidth(int width, int widthMin);
     void dtypeChgWidthSigned(int width, int widthMin, AstNumeric numeric);
-    void dtypeSetBitSized(int width, int widthMin, AstNumeric numeric) {
+    void dtypeSetBitUnsized(int width, int widthMin, AstNumeric numeric) {
         dtypep(findBitDType(width, widthMin, numeric)); }
-    void dtypeSetLogicSized(int width, int widthMin, AstNumeric numeric) {
+    void dtypeSetLogicUnsized(int width, int widthMin, AstNumeric numeric) {
         dtypep(findLogicDType(width, widthMin, numeric)); }
+    void dtypeSetLogicSized(int width, AstNumeric numeric) {
+        dtypep(findLogicDType(width, width, numeric)); }  // Since sized, widthMin is width
     void dtypeSetLogicBool()     { dtypep(findLogicBoolDType()); }
     void dtypeSetDouble()        { dtypep(findDoubleDType()); }
     void dtypeSetString()        { dtypep(findStringDType()); }
@@ -2055,7 +2057,7 @@ class AstNodeStream : public AstNodeBiop {
 public:
     AstNodeStream(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
         if (lhsp->dtypep()) {
-            dtypeSetLogicSized(lhsp->dtypep()->width(), lhsp->dtypep()->width(), AstNumeric::UNSIGNED);
+            dtypeSetLogicSized(lhsp->dtypep()->width(), AstNumeric::UNSIGNED);
         }
     }
     ASTNODE_BASE_FUNCS(NodeStream)

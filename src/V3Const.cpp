@@ -1150,9 +1150,8 @@ private:
             AstNode* srcp    = nodep->rhsp()->unlinkFrBack();
             // Connect the rhs to the stream operator and update its width
             VN_CAST(streamp, StreamL)->lhsp(srcp);
-            streamp->dtypeSetLogicSized((srcp->width()),
-                                        (srcp->widthMin()),
-                                        AstNumeric::UNSIGNED);
+            streamp->dtypeSetLogicUnsized(srcp->width(), srcp->widthMin(),
+                                          AstNumeric::UNSIGNED);
             // Shrink the RHS if necessary
             if (sWidth > dWidth) {
                 streamp = new AstSel(streamp->fileline(), streamp, sWidth-dWidth, dWidth);
@@ -1214,7 +1213,7 @@ private:
                                   new AstConst(nodep->fileline(), val),
                                   fromp);
         // widthMin no longer applicable if different C-expanded width
-        newp->dtypeSetLogicSized(nodep->width(), nodep->width(), AstNumeric::UNSIGNED);
+        newp->dtypeSetLogicSized(nodep->width(), AstNumeric::UNSIGNED);
         nodep->replaceWith(newp);
         nodep->deleteTree(); VL_DANGLING(nodep);
         if (debug()>=9) newp->dumpTree(cout, "       _new: ");

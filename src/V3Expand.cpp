@@ -120,13 +120,15 @@ private:
                                   new AstConst(nodep->fileline(), word));
         } else if (nodep->isQuad() && word==0) {
             AstNode* quadfromp = nodep->cloneTree(true);
-            quadfromp->dtypeSetBitSized(VL_QUADSIZE, quadfromp->widthMin(), AstNumeric::UNSIGNED);
+            quadfromp->dtypeSetBitUnsized(VL_QUADSIZE, quadfromp->widthMin(),
+                                          AstNumeric::UNSIGNED);
             return new AstCCast(nodep->fileline(),
                                 quadfromp,
                                 VL_WORDSIZE);
         } else if (nodep->isQuad() && word==1) {
             AstNode* quadfromp = nodep->cloneTree(true);
-            quadfromp->dtypeSetBitSized(VL_QUADSIZE, quadfromp->widthMin(), AstNumeric::UNSIGNED);
+            quadfromp->dtypeSetBitUnsized(VL_QUADSIZE, quadfromp->widthMin(),
+                                          AstNumeric::UNSIGNED);
             return new AstCCast(nodep->fileline(),
                                 new AstShiftR(nodep->fileline(),
                                               quadfromp,
@@ -760,7 +762,8 @@ private:
             AstNode* newp;
             if (lhswidth==1) {
                 newp = new AstNegate(nodep->fileline(), lhsp->cloneTree(true));
-                newp->dtypeSetLogicSized(VL_WORDSIZE, VL_WORDSIZE, AstNumeric::UNSIGNED);  // Replicate always unsigned
+                newp->dtypeSetLogicSized(VL_WORDSIZE,
+                                         AstNumeric::UNSIGNED);  // Replicate always unsigned
             } else {
                 newp = newAstWordSelClone(lhsp, w);
                 for (unsigned repnum=1; repnum<times; repnum++) {
