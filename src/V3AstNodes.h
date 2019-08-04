@@ -58,6 +58,7 @@ private:
             dtypeSetLogicUnsized(m_num.width(), (m_num.sized() ? 0 : m_num.widthMin()),
                                  AstNumeric::fromBool(m_num.isSigned()));
         }
+        m_num.nodep(this);
     }
 public:
     AstConst(FileLine* fl, const V3Number& num)
