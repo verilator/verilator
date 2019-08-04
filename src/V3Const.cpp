@@ -833,7 +833,7 @@ private:
             // use the lhs to replace the parent concat
             lp->lhsp()->replaceWith(newlp);
             lp->rhsp()->replaceWith(newrp);
-            lp->dtypeChgWidthSigned(newlp->width(), newlp->width(), AstNumeric::SIGNED);
+            lp->dtypeChgWidthSigned(newlp->width(), newlp->width(), AstNumeric::UNSIGNED);
             UINFO(5, "merged "<< nodep <<endl);
             rp->unlinkFrBack()->deleteTree(); VL_DANGLING(rp);
             nodep->replaceWith(lp->unlinkFrBack()); nodep->deleteTree(); VL_DANGLING(nodep);
