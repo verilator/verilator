@@ -676,12 +676,6 @@ void AstTypeTable::clearCache() {
     for (int i=0; i < static_cast<int>(AstBasicDTypeKwd::_ENUM_MAX); ++i) {
         m_basicps[i] = NULL;
     }
-    for (int isbit=0; isbit<_IDX0_MAX; ++isbit) {
-        for (int numer=0; numer<AstNumeric::_ENUM_MAX; ++numer) {
-            LogicMap& mapr = m_logicMap[isbit][numer];
-            mapr.clear();
-        }
-    }
     m_detailedMap.clear();
     // Clear generic()'s so dead detection will work
     for (AstNode* nodep = typesp(); nodep; nodep=nodep->nextp()) {
@@ -718,24 +712,10 @@ AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd) 
 
 AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd,
                                                int width, int widthMin, AstNumeric numeric) {
-    int idx = IDX0_LOGIC;
-    if (kwd == AstBasicDTypeKwd::LOGIC) idx = IDX0_LOGIC;
-    else if (kwd == AstBasicDTypeKwd::BIT) idx = IDX0_BIT;
-    else fl->v3fatalSrc("Bad kwd for findLogicBitDType");
-    std::pair<int,int> widths = make_pair(width, widthMin);
-    LogicMap& mapr = m_logicMap[idx][static_cast<int>(numeric)];
-    LogicMap::const_iterator it = mapr.find(widths);
-    if (it != mapr.end()) return it->second;
-    //
     AstBasicDType* new1p = new AstBasicDType(fl, kwd, numeric, width, widthMin);
-    // Because the detailed map doesn't update this map,
-    // check the detailed map for this same node, and if found update this map
-    // Also adds this new node to the detailed map
     AstBasicDType* newp = findInsertSameDType(new1p);
     if (newp != new1p) new1p->deleteTree();
     else addTypesp(newp);
-    //
-    mapr.insert(make_pair(widths, newp));
     return newp;
 }
 
@@ -1028,22 +1008,6 @@ void AstTypeTable::dump(std::ostream& str) {
             str<<"\t\t"<<std::setw(8)<<AstBasicDTypeKwd(i).ascii();
             str<<"  -> ";
             subnodep->dump(str);
-        }
-    }
-    for (int isbit=0; isbit<2; ++isbit) {
-        for (int issigned=0; issigned<AstNumeric::_ENUM_MAX; ++issigned) {
-            LogicMap& mapr = m_logicMap[isbit][issigned];
-            for (LogicMap::const_iterator it = mapr.begin(); it != mapr.end(); ++it) {
-                AstBasicDType* dtypep = it->second;
-                str<<endl;  // Newline from caller, so newline first
-                std::stringstream nsstr;
-                nsstr<<(isbit?"bw":"lw")
-                     <<it->first.first<<"/"<<it->first.second;
-                str<<"\t\t"<<std::setw(8)<<nsstr.str();
-                if (issigned) str<<" s"; else str<<" u";
-                str<<"  ->  ";
-                dtypep->dump(str);
-            }
         }
     }
     {

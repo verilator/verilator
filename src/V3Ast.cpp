@@ -1139,7 +1139,7 @@ void AstNode::v3errorEnd(std::ostringstream& str) const {
 void AstNode::dtypeChgSigned(bool flag) {
     UASSERT_OBJ(dtypep(), this, "No dtype when changing to (un)signed");
     dtypeChgWidthSigned(dtypep()->width(), dtypep()->widthMin(),
-                        flag ? AstNumeric::SIGNED : AstNumeric::UNSIGNED);
+                        AstNumeric::fromBool(flag));
 }
 void AstNode::dtypeChgWidth(int width, int widthMin) {
     UASSERT_OBJ(dtypep(), this,

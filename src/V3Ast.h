@@ -1942,7 +1942,7 @@ public:
         // AstNumeric::NOSIGN overloaded to indicate not packed
         m_packed = (numericUnpack != AstNumeric::NOSIGN);
         m_isFourstate = false;  // V3Width computes
-        numeric(numericUnpack.isSigned() ? AstNumeric::SIGNED : AstNumeric::UNSIGNED);
+        numeric(AstNumeric::fromBool(numericUnpack.isSigned()));
     }
     ASTNODE_BASE_FUNCS(NodeClassDType)
     virtual const char* broken() const;

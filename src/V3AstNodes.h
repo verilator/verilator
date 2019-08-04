@@ -56,8 +56,7 @@ private:
             dtypeSetString();
         } else {
             dtypeSetLogicSized(m_num.width(), (m_num.sized() ? 0 : m_num.widthMin()),
-                               m_num.isSigned() ? AstNumeric::SIGNED
-                               : AstNumeric::UNSIGNED);
+                               AstNumeric::fromBool(m_num.isSigned()));
         }
     }
 public:
@@ -6066,11 +6065,7 @@ public:
 class AstTypeTable : public AstNode {
     // Container for hash of standard data types
     // Children:  NODEDTYPEs
-    typedef std::map<std::pair<int,int>,AstBasicDType*> LogicMap;
     AstBasicDType* m_basicps[AstBasicDTypeKwd::_ENUM_MAX];
-    //
-    enum { IDX0_LOGIC, IDX0_BIT, _IDX0_MAX };
-    LogicMap m_logicMap[_IDX0_MAX][AstNumeric::_ENUM_MAX];  // uses above IDX enums
     //
     typedef std::map<VBasicTypeKey,AstBasicDType*> DetailedMap;
     DetailedMap m_detailedMap;
