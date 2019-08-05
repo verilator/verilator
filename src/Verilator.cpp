@@ -593,11 +593,6 @@ int main(int argc, char** argv, char** env) {
         && !v3Global.opt.cdc()) {
         v3fatal("verilator: Need --cc, --sc, --cdc, --lint-only, --xml_only or --E option");
     }
-    // Check environment
-    V3Options::getenvSYSTEMC();
-    V3Options::getenvSYSTEMC_ARCH();
-    V3Options::getenvSYSTEMC_INCLUDE();
-    V3Options::getenvSYSTEMC_LIBDIR();
 
     V3Error::abortIfErrors();
 
