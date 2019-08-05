@@ -1,5 +1,6 @@
 [0] -Info: t_assert_comp_bad.v:9: Assertion failed in top.t.genblk1: User compile-time info
 [0] %Warning: t_assert_comp_bad.v:10: Assertion failed in top.t.genblk1: User compile-time warning
-[0] %Error: t_assert_comp_bad.v:11: Assertion failed in top.t.genblk1: User compile-time error
-%Error: t/t_assert_comp_bad.v:11: Verilog $stop
+[0] %Warning: t_assert_comp_bad.v:11: Assertion failed in top.t.genblk1: 00000001
+[0] %Error: t_assert_comp_bad.v:12: Assertion failed in top.t.genblk1: User compile-time error
+%Error: t/t_assert_comp_bad.v:12: Verilog $stop
 Aborting...

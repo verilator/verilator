@@ -2838,22 +2838,22 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_SFORMAT '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
 	|	yD_SWRITE  '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
 	//
-	|	yD_DISPLAY  parenE				{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY,NULL,NULL); }
-	|	yD_DISPLAY  '(' exprList ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY,NULL,$3); }
-	|	yD_WRITE    parenE				{ $$ = NULL; } // NOP
-	|	yD_WRITE    '(' exprList ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,  NULL,$3); }
-	|	yD_FDISPLAY '(' expr ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY,$3,NULL); }
-	|	yD_FDISPLAY '(' expr ',' exprListE ')' 		{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY,$3,$5); }
-	|	yD_FWRITE   '(' expr ',' exprListE ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,  $3,$5); }
-	|	yD_INFO	    parenE				{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,   "", NULL,NULL); }
-	|	yD_INFO	    '(' str commaEListE ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,   *$3,NULL,$4); }
-	|	yD_WARNING  parenE				{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING,"", NULL,NULL); }
-	|	yD_WARNING  '(' str commaEListE ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING,*$3,NULL,$4); }
-	|	yD_ERROR    parenE				{ $$ = GRAMMARP->createDisplayError($1); }
-	|	yD_ERROR    '(' str commaEListE ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_ERROR,  *$3,NULL,$4);   $$->addNext(new AstStop($1)); }
-	|	yD_FATAL    parenE				{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); }
-	|	yD_FATAL    '(' expr ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); DEL($3); }
-	|	yD_FATAL    '(' expr ',' str commaEListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,  *$5,NULL,$6);   $$->addNext(new AstStop($1)); DEL($3); }
+	|	yD_DISPLAY  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, NULL, NULL); }
+	|	yD_DISPLAY  '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, NULL, $3); }
+	|	yD_WRITE    parenE			{ $$ = NULL; }  // NOP
+	|	yD_WRITE    '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   NULL, $3); }
+	|	yD_FDISPLAY '(' expr ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, NULL); }
+	|	yD_FDISPLAY '(' expr ',' exprListE ')' 	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, $5); }
+	|	yD_FWRITE   '(' expr ',' exprListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   $3, $5); }
+	|	yD_INFO	    parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,    NULL, NULL); }
+	|	yD_INFO	    '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,    NULL, $3); }
+	|	yD_WARNING  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING, NULL, NULL); }
+	|	yD_WARNING  '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING, NULL, $3); }
+	|	yD_ERROR    parenE			{ $$ = GRAMMARP->createDisplayError($1); }
+	|	yD_ERROR    '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_ERROR,   NULL, $3);   $$->addNext(new AstStop($1)); }
+	|	yD_FATAL    parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, NULL); $$->addNext(new AstStop($1)); }
+	|	yD_FATAL    '(' expr ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, NULL); $$->addNext(new AstStop($1)); DEL($3); }
+	|	yD_FATAL    '(' expr ',' exprListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, $5);   $$->addNext(new AstStop($1)); DEL($3); }
 	//
 	|	yD_READMEMB '(' expr ',' idClassSel ')'				{ $$ = new AstReadMem($1,false,$3,$5,NULL,NULL); }
 	|	yD_READMEMB '(' expr ',' idClassSel ',' expr ')'		{ $$ = new AstReadMem($1,false,$3,$5,$7,NULL); }
@@ -2961,15 +2961,15 @@ elaboration_system_task<nodep>:	// IEEE: elaboration_system_task (1800-2009)
 
 elaboration_system_task_guts<nodep>:	// IEEE: part of elaboration_system_task (1800-2009)
 	//			// $fatal first argument is exit number, must be constant
-		yD_INFO	    parenE				{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,   "", NULL,NULL); }
-	|	yD_INFO	    '(' str commaEListE ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,   *$3,NULL,$4); }
-	|	yD_WARNING  parenE				{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING,"", NULL,NULL); }
-	|	yD_WARNING  '(' str commaEListE ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING,*$3,NULL,$4); }
-	|	yD_ERROR    parenE				{ $$ = GRAMMARP->createDisplayError($1); }
-	|	yD_ERROR    '(' str commaEListE ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_ERROR,  *$3,NULL,$4);   $$->addNext(new AstStop($1)); }
-	|	yD_FATAL    parenE				{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); }
-	|	yD_FATAL    '(' expr ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,  "", NULL,NULL); $$->addNext(new AstStop($1)); DEL($3); }
-	|	yD_FATAL    '(' expr ',' str commaEListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,  *$5,NULL,$6);   $$->addNext(new AstStop($1)); DEL($3); }
+		yD_INFO	   parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,    NULL, NULL); }
+	|	yD_INFO	   '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,    NULL, $3); }
+	|	yD_WARNING parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING, NULL, NULL); }
+	|	yD_WARNING '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING, NULL, $3); }
+	|	yD_ERROR   parenE			{ $$ = GRAMMARP->createDisplayError($1); }
+	|	yD_ERROR   '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_ERROR,   NULL, $3);   $$->addNext(new AstStop($1)); }
+	|	yD_FATAL   parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, NULL); $$->addNext(new AstStop($1)); }
+	|	yD_FATAL   '(' expr ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, NULL); $$->addNext(new AstStop($1)); DEL($3); }
+	|	yD_FATAL   '(' expr ',' exprListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, $5);   $$->addNext(new AstStop($1)); DEL($3); }
 	;
 
 exprOrDataType<nodep>:		// expr | data_type: combined to prevent conflicts
