@@ -180,6 +180,12 @@ INST_PROJ_BIN_FILES = \
 
 DISTFILES := $(DISTFILES_INC)
 
+EXAMPLES_FIRST = \
+	examples/hello_world_c \
+	examples/hello_world_sc \
+
+EXAMPLES = $(EXAMPLES_FIRST) $(filter-out $(EXAMPLES_FIRST), $(sort $(wildcard examples/*)))
+
 ifeq ($(OBJCACHE_JOBS),)
 ifneq ($(OBJCACHE_HOSTS),)
 export OBJCACHE_JOBS := -j $(shell objcache --jobs "$(OBJCACHE_HOSTS)")
@@ -226,7 +232,7 @@ test_regress: all_nomsg
 	$(MAKE) -C test_regress
 
 examples: all_nomsg
-	for p in examples/* ; do \
+	for p in $(EXAMPLES) ; do \
 	  $(MAKE) -C $$p VERILATOR_ROOT=`pwd` || exit 10; \
 	done
 
