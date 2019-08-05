@@ -6,6 +6,7 @@
 module t (/*AUTOARG*/);
 
    if (0) begin
+      $info("User compile-time info");
       $warning("User compile-time warning");
       $error("User compile-time error");
    end
