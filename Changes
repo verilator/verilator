@@ -14,6 +14,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Show included-from filenames in warnings, bug1439. [Todd Strader]
 
+****  Fix elaboration time errors, bug1429. [Udi Finkelstein]
+
 ****  Fix not reporting some duplicate signals/ports, bug1462. [Peter Gerst]
 
 ****  Fix not in array context on non-power-of-two slices, msg2946. [Yu Sheng Lin]

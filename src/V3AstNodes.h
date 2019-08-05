@@ -2674,6 +2674,35 @@ public:
     void filep(AstNodeVarRef* nodep) { setNOp3p(nodep); }
 };
 
+class AstElabDisplay : public AstNode {
+    // Parents: stmtlist
+    // Children: SFORMATF to generate print string
+private:
+    AstDisplayType m_displayType;
+public:
+    AstElabDisplay(FileLine* fileline, AstDisplayType dispType, AstNode* exprsp)
+        : AstNode(fileline) {
+        setOp1p(new AstSFormatF(fileline, AstSFormatF::NoFormat(), exprsp));
+        m_displayType = dispType;
+    }
+    ASTNODE_NODE_FUNCS(ElabDisplay)
+    virtual const char* broken() const { BROKEN_RTN(!fmtp()); return NULL; }
+    virtual string verilogKwd() const { return (string("$")+string(displayType().ascii())); }
+    virtual bool isGateOptimizable() const { return false; }
+    virtual bool isPredictOptimizable() const { return false; }
+    virtual bool isPure() const { return false; }  // SPECIAL: $display has 'visual' ordering
+    virtual bool isOutputter() const { return true; }  // SPECIAL: $display makes output
+    virtual bool isUnlikely() const { return true; }
+    virtual V3Hash sameHash() const { return V3Hash(displayType()); }
+    virtual bool same(const AstNode* samep) const {
+        return displayType()==static_cast<const AstElabDisplay*>(samep)->displayType(); }
+    virtual int instrCount() const { return instrCountPli(); }
+    AstDisplayType displayType() const { return m_displayType; }
+    void displayType(AstDisplayType type) { m_displayType = type; }
+    void fmtp(AstSFormatF* nodep) { addOp1p(nodep); }  // op1 = To-String formatter
+    AstSFormatF* fmtp() const { return VN_CAST(op1p(), SFormatF); }
+};
+
 class AstSFormat : public AstNodeStmt {
     // Parents: statement container
     // Children: string to load

@@ -404,9 +404,6 @@ private:
             nodep->scopeNamep(new AstScopeName(nodep->fileline()));
         }
     }
-    virtual void visit(AstDisplay* nodep) {
-        iterateChildren(nodep);
-    }
 
     virtual void visit(AstUdpTable* nodep) {
         UINFO(5,"UDPTABLE  "<<nodep<<endl);

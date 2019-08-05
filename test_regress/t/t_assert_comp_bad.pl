@@ -13,10 +13,6 @@ compile(
     verilator_flags2 => ['--assert'],
     nc_flags2 => ['+assert'],
     vcs_flags2 => ['-assert svaext'],
-    );
-
-execute(
-    check_finished => 0,
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );

@@ -1,6 +1,18 @@
-[0] -Info: t_assert_comp_bad.v:9: Assertion failed in top.t.genblk1: User compile-time info
-[0] %Warning: t_assert_comp_bad.v:10: Assertion failed in top.t.genblk1: User compile-time warning
-[0] %Warning: t_assert_comp_bad.v:11: Assertion failed in top.t.genblk1: 00000001
-[0] %Error: t_assert_comp_bad.v:12: Assertion failed in top.t.genblk1: User compile-time error
-%Error: t/t_assert_comp_bad.v:12: Verilog $stop
-Aborting...
+-Info: t/t_assert_comp_bad.v:9: User compile-time info
+                              : ... In instance t
+      $info("User compile-time info");
+      ^~~~~
+%Warning-USERWARN: t/t_assert_comp_bad.v:10: User compile-time warning
+                                           : ... In instance t
+      $warning("User compile-time warning");
+      ^~~~~~~~
+                   ... Use "/* verilator lint_off USERWARN */" and lint_on around source to disable this message.
+%Warning-USERWARN: t/t_assert_comp_bad.v:11: 00000001
+                                           : ... In instance t
+      $warning(1);   
+      ^~~~~~~~
+%Warning-USERERROR: t/t_assert_comp_bad.v:12: User compile-time error
+                                            : ... In instance t
+      $error("User compile-time error");
+      ^~~~~~
+%Error: Exiting due to

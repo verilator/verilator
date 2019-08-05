@@ -2295,6 +2295,30 @@ private:
         // Just let all arguments seek their natural sizes
         userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
     }
+    virtual void visit(AstElabDisplay* nodep) {
+        assertAtStatement(nodep);
+        // Just let all arguments seek their natural sizes
+        userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
+        if (!m_paramsOnly) {
+            V3Const::constifyParamsEdit(nodep->fmtp());  // fmtp may change
+            switch (nodep->displayType()) {
+            case AstDisplayType::DT_INFO:
+                nodep->v3warn(USERINFO, nodep->fmtp()->text());
+                break;
+            case AstDisplayType::DT_ERROR:
+                nodep->v3warn(USERERROR, nodep->fmtp()->text());
+                break;
+            case AstDisplayType::DT_WARNING:
+                nodep->v3warn(USERWARN, nodep->fmtp()->text());
+                break;
+            case AstDisplayType::DT_FATAL:
+                nodep->v3warn(USERFATAL, nodep->fmtp()->text());
+                break;
+            default: UASSERT_OBJ(false, nodep, "Unexpected elaboration display type");
+            }
+            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+        }
+    }
     virtual void visit(AstFOpen* nodep) {
         // Although a system function in IEEE, here a statement which sets the file pointer (MCD)
         assertAtStatement(nodep);

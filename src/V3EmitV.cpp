@@ -222,6 +222,9 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     virtual void visit(AstDisplay* nodep) {
         visitNodeDisplay(nodep, nodep->filep(), nodep->fmtp()->text(), nodep->fmtp()->exprsp());
     }
+    virtual void visit(AstElabDisplay* nodep) {
+        visitNodeDisplay(nodep, NULL, nodep->fmtp()->text(), nodep->fmtp()->exprsp());
+    }
     virtual void visit(AstFScanF* nodep) {
         visitNodeDisplay(nodep, nodep->filep(), nodep->text(), nodep->exprsp());
     }

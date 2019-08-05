@@ -180,6 +180,11 @@ class EmitXmlFileVisitor : public AstNVisitor {
         puts(" displaytype="); putsQuoted(nodep->verilogKwd());
         outputChildrenEnd(nodep, "");
     }
+    virtual void visit(AstElabDisplay* nodep) {
+        outputTag(nodep, "");
+        puts(" displaytype="); putsQuoted(nodep->verilogKwd());
+        outputChildrenEnd(nodep, "");
+    }
     virtual void visit(AstExtend* nodep) {
         outputTag(nodep, "");
         puts(" width="); putsQuoted(cvtToStr(nodep->width()));

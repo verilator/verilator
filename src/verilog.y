@@ -2961,15 +2961,15 @@ elaboration_system_task<nodep>:	// IEEE: elaboration_system_task (1800-2009)
 
 elaboration_system_task_guts<nodep>:	// IEEE: part of elaboration_system_task (1800-2009)
 	//			// $fatal first argument is exit number, must be constant
-		yD_INFO	   parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,    NULL, NULL); }
-	|	yD_INFO	   '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,    NULL, $3); }
-	|	yD_WARNING parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING, NULL, NULL); }
-	|	yD_WARNING '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING, NULL, $3); }
-	|	yD_ERROR   parenE			{ $$ = GRAMMARP->createDisplayError($1); }
-	|	yD_ERROR   '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_ERROR,   NULL, $3);   $$->addNext(new AstStop($1)); }
-	|	yD_FATAL   parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, NULL); $$->addNext(new AstStop($1)); }
-	|	yD_FATAL   '(' expr ')'			{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, NULL); $$->addNext(new AstStop($1)); DEL($3); }
-	|	yD_FATAL   '(' expr ',' exprListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, $5);   $$->addNext(new AstStop($1)); DEL($3); }
+		yD_INFO	   parenE			{ $$ = new AstElabDisplay($1, AstDisplayType::DT_INFO, NULL); }
+	|	yD_INFO	   '(' exprList ')'		{ $$ = new AstElabDisplay($1, AstDisplayType::DT_INFO, $3); }
+	|	yD_WARNING parenE			{ $$ = new AstElabDisplay($1, AstDisplayType::DT_WARNING, NULL); }
+	|	yD_WARNING '(' exprList ')'		{ $$ = new AstElabDisplay($1, AstDisplayType::DT_WARNING, $3); }
+	|	yD_ERROR   parenE			{ $$ = new AstElabDisplay($1, AstDisplayType::DT_ERROR, NULL); }
+	|	yD_ERROR   '(' exprList ')'		{ $$ = new AstElabDisplay($1, AstDisplayType::DT_ERROR, $3); }
+	|	yD_FATAL   parenE			{ $$ = new AstElabDisplay($1, AstDisplayType::DT_FATAL, NULL); }
+	|	yD_FATAL   '(' expr ')'			{ $$ = new AstElabDisplay($1, AstDisplayType::DT_FATAL, NULL); DEL($3); }
+	|	yD_FATAL   '(' expr ',' exprListE ')'	{ $$ = new AstElabDisplay($1, AstDisplayType::DT_FATAL, $5); DEL($3); }
 	;
 
 exprOrDataType<nodep>:		// expr | data_type: combined to prevent conflicts
