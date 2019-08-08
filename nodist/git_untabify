@@ -132,7 +132,7 @@ sub edit_file {
     foreach my $lineno (sort {$a <=> $b} keys %$editlines) {
         push @editits, $lineno if $editlines->{$lineno}{editit};
     }
-    
+
     return if $#editits < 0;
     if (ignore($filename)) {
         print "%Warning: Ignoring $filename\n";

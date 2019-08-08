@@ -72,7 +72,7 @@ sub test {
             run("cd $cc_dir/info ; lcov -c -d ../../../../$dir -o app_test_${outname}.info");
         }
     }
-    
+
     if ($Opt_Stage <= 3) {
         # lcov doesn't have a control file to override single lines, so replicate the sources
         print "Stage 3: Clone sources under $cc_dir\n";
