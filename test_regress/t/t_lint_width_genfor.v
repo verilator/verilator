@@ -1,0 +1,33 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed into the Public Domain, for any use,
+// without warranty, 2019 by Wilson Snyder.
+
+module t (/*AUTOARG*/
+   // Outputs
+   rc, rg, ri, rp
+   );
+
+   parameter P = 15;
+
+   output reg [3:0] rc;
+   output reg [3:0] rg;
+   output reg [3:0] ri;
+   output reg [3:0] rp;
+
+   for (genvar g=0; g < 15; ++g) begin
+      // bug1487
+      // This isn't a width violation, as genvars are generally 32 bits
+      initial begin
+         rg = g;
+         rp = P;
+         rc = 1;
+      end
+   end
+   initial begin
+      for (integer i=0; i < 15; ++i) begin
+         ri = i;
+      end
+   end
+
+endmodule
