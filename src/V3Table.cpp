@@ -311,7 +311,7 @@ private:
                 // We're just using32 bit arithmetic, because there's no
                 // way the input table can be 2^32 bytes!
                 UASSERT_OBJ(shift <= 32, nodep, "shift overflow");
-                UINFO(8,"   Input "<<invscp->name()<<" = "<<*(simvis.fetchNumber(invscp))<<endl);
+                UINFO(8,"   Input "<<invscp->name()<<" = "<<cnst.name()<<endl);
             }
 
             // Simulate

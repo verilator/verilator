@@ -205,7 +205,7 @@ public:
             m_whyNotOptimizable += stack.str();
         }
     }
-    inline bool optimizable() const { return m_whyNotNodep==NULL; }
+    bool optimizable() const { return m_whyNotNodep==NULL; }
     string whyNotMessage() const { return m_whyNotOptimizable; }
     AstNode* whyNotNodep() const { return m_whyNotNodep; }
 
@@ -215,7 +215,7 @@ public:
 
     // Simulation METHODS
 private:
-    AstConst* allocConst(AstNode* nodep, uint32_t value) {
+    AstConst* allocConst(AstNode* nodep) {
         // Save time - kept a list of allocated but unused values
         // It would be more efficient to do this by size, but the extra accounting
         // slows things down more than we gain.
@@ -225,10 +225,9 @@ private:
             //UINFO(7,"Num Reuse "<<nodep->width()<<endl);
             constp = m_constFreeps[dtypep].back(); m_constFreeps[dtypep].pop_back();
             constp->num().nodep(nodep);
-            constp->num().setLong(value);
         } else {
             //UINFO(7,"Num New "<<nodep->width()<<endl);
-            constp = new AstConst(nodep->fileline(), AstConst::WidthedValue(), nodep->width(), value);
+            constp = new AstConst(nodep->fileline(), AstConst::WidthedValue(), nodep->width(), 0);
             UASSERT_OBJ(dtypep == constp->dtypep(), nodep, "Unexpected dtype");
             m_constAllps[constp->dtypep()].push_back(constp);
         }
@@ -237,24 +236,24 @@ private:
         return constp;
     }
 private:
-    AstConst* newValue(AstNode* nodep, uint32_t value=0) {
+    AstConst* newValue(AstNode* nodep) {
         // Set a constant value for this node
         if (!nodep->user3p()) {
-            AstConst* constp = allocConst(nodep, value);
+            AstConst* constp = allocConst(nodep);
             setValue(nodep, constp);
             return constp;
         } else {
-            return (fetchConst(nodep));
+            return fetchConst(nodep);
         }
     }
-    AstConst* newOutValue(AstNode* nodep, uint32_t value=0) {
+    AstConst* newOutValue(AstNode* nodep) {
         // Set a constant value for this node
         if (!nodep->user2p()) {
-            AstConst* constp = allocConst(nodep, value);
+            AstConst* constp = allocConst(nodep);
             setOutValue(nodep, constp);
             return constp;
         } else {
-            return (fetchOutConst(nodep));
+            return fetchOutConst(nodep);
         }
     }
     void newOutValue(AstNode* nodep, const AstConst* constr) {
@@ -281,35 +280,27 @@ public:
     void newValue(AstNode* nodep, const AstConst* constp) {
         newValue(nodep)->num().opAssign(constp->num());
     }
-    V3Number* fetchNumber(AstNode* nodep) {
-        return &fetchConst(nodep)->num();
-    }
     V3Number* fetchNumberNull(AstNode* nodep) {
         AstConst* constp = fetchConstNull(nodep);
         if (constp) {
             return &constp->num();
         }
-
         return NULL;
-    }
-    V3Number* fetchOutNumber(AstNode* nodep) {
-        return &fetchOutConst(nodep)->num();
     }
     V3Number* fetchOutNumberNull(AstNode* nodep) {
         AstConst* constp = fetchOutConstNull(nodep);
         if (constp) {
             return &constp->num();
         }
-
         return NULL;
     }
 private:
-    inline void setValue(AstNode* nodep, const AstConst* constp) {
+    void setValue(AstNode* nodep, const AstConst* constp) {
         UINFO(9,"     set num "<<constp->name()<<" on "<<nodep<<endl);
         nodep->user3p((void*)constp);
     }
-    inline void setOutValue(AstNode* nodep, const AstConst* constp) {
-        UINFO(9,"     set num "<<constp->name()<<" on "<<nodep<<endl);
+    void setOutValue(AstNode* nodep, const AstConst* constp) {
+        UINFO(9,"     set onum "<<constp->name()<<" on "<<nodep<<endl);
         nodep->user2p((void*)constp);
     }
 
@@ -429,7 +420,7 @@ private:
                     } else {
                         nodep->v3fatalSrc("Variable value should have been set before any visitor called.");
                     }
-                    constp = allocConst(nodep, 0);  // Any value; just so recover from error
+                    constp = allocConst(nodep);  // Any value; just so recover from error
                 }
                 setValue(nodep, constp);
             }
@@ -631,14 +622,14 @@ private:
         iterateAndNextNull(selp->lsbp());  // Bit index
         if (AstVarRef* varrefp = VN_CAST(selp->fromp(), VarRef)) {
             outVarrefpRef = varrefp;
-            lsbRef = *fetchNumber(selp->lsbp());
+            lsbRef = fetchConst(selp->lsbp())->num();
             return;  // And presumably still optimizable()
         } else if (AstSel* subselp = VN_CAST(selp->lhsp(), Sel)) {
             V3Number sublsb(nodep);
             handleAssignSelRecurse(nodep, subselp, outVarrefpRef, sublsb/*ref*/, depth+1);
             if (optimizable()) {
                 lsbRef = sublsb;
-                lsbRef.opAdd(sublsb, *fetchNumber(selp->lsbp()));
+                lsbRef.opAdd(sublsb, fetchConst(selp->lsbp())->num());
             }
         } else {
             clearOptimizable(nodep, "Select LHS isn't simple variable");
@@ -925,7 +916,6 @@ private:
             AstConst* resultConstp = new AstConst(nodep->fileline(), AstConst::String(), result);
             setValue(nodep, resultConstp);
             m_stringValuesp.push_back(resultConstp);
-
         }
     }
 
