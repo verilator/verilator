@@ -220,15 +220,14 @@ private:
         // It would be more efficient to do this by size, but the extra accounting
         // slows things down more than we gain.
         AstConst* constp;
-        AstNodeDType* dtypep = nodep->findLogicDType(nodep->width(), 0, AstNumeric::UNSIGNED);
+        AstNodeDType* dtypep = nodep->dtypep();
         if (!m_constFreeps[dtypep].empty()) {
             //UINFO(7,"Num Reuse "<<nodep->width()<<endl);
             constp = m_constFreeps[dtypep].back(); m_constFreeps[dtypep].pop_back();
             constp->num().nodep(nodep);
         } else {
             //UINFO(7,"Num New "<<nodep->width()<<endl);
-            constp = new AstConst(nodep->fileline(), AstConst::WidthedValue(), nodep->width(), 0);
-            UASSERT_OBJ(dtypep == constp->dtypep(), nodep, "Unexpected dtype");
+            constp = new AstConst(nodep->fileline(), AstConst::DtypedValue(), nodep->dtypep(), 0);
             m_constAllps[constp->dtypep()].push_back(constp);
         }
         constp->num().isDouble(nodep->isDouble());

@@ -26,7 +26,9 @@ module t (/*AUTOARG*/
    end
    initial begin
       for (integer i=0; i < 15; ++i) begin
+         /* verilator lint_off WIDTH */
          ri = i;
+         /* verilator lint_on WIDTH */
       end
    end
 

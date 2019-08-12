@@ -72,6 +72,12 @@ public:
         , m_num(this, width, value) {
         initWithNumber();
     }
+    class DtypedValue{};  // for creator type-overload selection
+    AstConst(FileLine* fl, DtypedValue, AstNodeDType* nodedtypep, uint32_t value)
+        : AstNodeMath(fl)
+        , m_num(this, nodedtypep->width(), value, nodedtypep->widthSized()) {
+        initWithNumber();
+    }
     class StringToParse {};  // for creator type-overload selection
     AstConst(FileLine* fl, StringToParse, const char* sourcep)
         : AstNodeMath(fl)

@@ -140,8 +140,8 @@ public:
     // CONSTRUCTORS
     explicit V3Number(AstNode* nodep) { init(nodep, 1); }
     V3Number(AstNode* nodep, int width) { init(nodep, width); }  // 0=unsized
-    V3Number(AstNode* nodep, int width, uint32_t value) {
-        init(nodep, width); m_value[0] = value; opCleanThis();
+    V3Number(AstNode* nodep, int width, uint32_t value, bool sized=true) {
+        init(nodep, width, sized); m_value[0] = value; opCleanThis();
     }
     // Create from a verilog 32'hxxxx number.
     V3Number(AstNode* nodep, const char* sourcep) { V3NumberCreate(nodep, sourcep, NULL); }
@@ -164,14 +164,14 @@ public:
 
 private:
     void V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl);
-    void init(AstNode* nodep, int swidth) {
+    void init(AstNode* nodep, int swidth, bool sized=true) {
         setNames(nodep);
         m_signed = false;
         m_double = false;
         m_isString = false;
         m_autoExtend = false;
         m_fromString = false;
-        width(swidth);
+        width(swidth, sized);
         for (int i=0; i<words(); i++) m_value[i] = m_valueX[i] = 0;
     }
     void setNames(AstNode* nodep);

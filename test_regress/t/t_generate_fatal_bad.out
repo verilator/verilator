@@ -4,14 +4,14 @@
                                    : ... In instance t.genloop[0].foo_inst
         t/t_generate_fatal_bad.v:8: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
         t/t_generate_fatal_bad.v:12: ... Called from get_baz() with parameters:
-           bar = 32'h0
+           bar = ?32?h0
    localparam integer BAZ = get_baz(BAR);
                             ^~~~~~~
 %Error: t/t_generate_fatal_bad.v:12: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
                                    : ... In instance t.genloop[1].foo_inst
         t/t_generate_fatal_bad.v:8: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
         t/t_generate_fatal_bad.v:12: ... Called from get_baz() with parameters:
-           bar = 32'h1
+           bar = ?32?h1
    localparam integer BAZ = get_baz(BAR);
                             ^~~~~~~
 %Error: t/t_generate_fatal_bad.v:12: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
@@ -46,14 +46,14 @@
                                    : ... In instance t.cond_true.foo_inst3
         t/t_generate_fatal_bad.v:8: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
         t/t_generate_fatal_bad.v:12: ... Called from get_baz() with parameters:
-           bar = 32'h6
+           bar = ?32?h6
    localparam integer BAZ = get_baz(BAR);
                             ^~~~~~~
 %Error: t/t_generate_fatal_bad.v:12: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
                                    : ... In instance t.genblk1.foo_inst4
         t/t_generate_fatal_bad.v:8: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
         t/t_generate_fatal_bad.v:12: ... Called from get_baz() with parameters:
-           bar = 32'h7
+           bar = ?32?h7
    localparam integer BAZ = get_baz(BAR);
                             ^~~~~~~
 %Error: t/t_generate_fatal_bad.v:12: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'

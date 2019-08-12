@@ -6,9 +6,9 @@
         t/t_func_const_packed_struct_bad2.v:42: ... Called from f_add() with parameters:
            params = [0 = '{a: 32'h7, foo: 6'hb, sub_params: '{b: 32'h37, bar: 8'h6f}}, 1 = '{a: 32'h3039, foo: 6'hc, sub_params: '{b: 32'h8, bar: 8'h70}}]
         t/t_func_const_packed_struct_bad2.v:19: ... Called from f_add2() with parameters:
-           a = 32'h7
-           b = 32'h8
-           c = 32'h9
+           a = ?32?h7
+           b = ?32?h8
+           c = ?32?h9
    localparam P24 = f_add2(7, 8, 9);
                     ^~~~~~
 %Error: Exiting due to
