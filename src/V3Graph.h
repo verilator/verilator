@@ -118,11 +118,6 @@ public:
     /// (I.E. all loops will occur within each color, not between them.)
     void stronglyConnected(V3EdgeFuncP edgeFuncp);
 
-    /// Assign same color to all destination vertices that have same
-    /// subgraph feeding into them
-    /// (I.E. all "from" nodes are common within each color)
-    /// See V3ClkGater if this is needed again; it got specialized
-
     /// Assign a ordering number to all vertexes in a tree.
     /// All nodes with no inputs will get rank 1
     void rank(V3EdgeFuncP edgeFuncp);

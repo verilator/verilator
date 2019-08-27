@@ -31,7 +31,6 @@
 #include "V3Cast.h"
 #include "V3Changed.h"
 #include "V3Clean.h"
-#include "V3ClkGater.h"
 #include "V3Clock.h"
 #include "V3Combine.h"
 #include "V3Const.h"
@@ -331,12 +330,6 @@ void process() {
         V3Const::constifyAll(v3Global.rootp());
         V3Dead::deadifyDTypesScoped(v3Global.rootp());
         v3Global.checkTree();
-
-        // Detect clock enables and mode into sensitives, and split always based on clocks
-        // (so this is a good prelude to splitAlways.)
-        if (v3Global.opt.oFlopGater()) {
-            V3ClkGater::clkGaterAll(v3Global.rootp());
-        }
 
         // Move assignments/sensitives into a SBLOCK for each unique sensitivity list
         // (May convert some ALWAYS to combo blocks, so should be before V3Gate step.)

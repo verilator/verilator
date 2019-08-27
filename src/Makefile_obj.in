@@ -169,7 +169,6 @@ RAW_OBJS = \
 	V3Cdc.o \
 	V3Changed.o \
 	V3Clean.o \
-	V3ClkGater.o \
 	V3Clock.o \
 	V3Combine.o \
 	V3Config.o \
