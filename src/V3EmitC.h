@@ -33,7 +33,7 @@ class V3EmitC {
 public:
     static void emitc();
     static void emitcInlines();
-    static void emitcSyms();
+    static void emitcSyms(bool dpiHdrOnly = false);
     static void emitcTrace();
 };
 

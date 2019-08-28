@@ -1201,6 +1201,11 @@ sub trace_filename {
     return "$self->{obj_dir}/simx.vcd";
 }
 
+sub obj_dir {
+    my $self = shift;
+    return $self->{obj_dir};
+}
+
 sub get_default_vltmt_threads {
     return $Vltmt_threads;
 }

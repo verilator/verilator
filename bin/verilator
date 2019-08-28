@@ -298,6 +298,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --debugi-<srcfile> <level>  Enable debugging a source file at a level
     --default-language <lang>   Default language to parse
      +define+<var>=<value>      Set preprocessor define
+    --dpi-hdr-only              Only produce the DPI header file
     --dump-defines              Show preprocessor defines with -E
     --dump-tree                 Enable dumping .tree files
     --dump-treei <level>        Enable dumping .tree files at a level
@@ -740,6 +741,11 @@ then the latest SystemVerilog language (IEEE 1800-2017) is used.
 Defines the given preprocessor symbol, or multiple symbols if separated by
 plusses.  Similar to -D; +define is fairly standard across Verilog tools
 while -D is an alias for GCC compatibility.
+
+=item --dpi-hdr-only
+
+Only generate the DPI header file.  This option has no effect on the name
+or location of the file.
 
 =item --dump-defines
 

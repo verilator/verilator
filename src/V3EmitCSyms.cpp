@@ -90,6 +90,7 @@ class EmitCSyms : EmitCBaseVisitor {
     V3LanguageWords     m_words;        // Reserved word detector
     int         m_coverBins;            // Coverage bin number
     int         m_labelNum;             // Next label number
+    bool        m_dpiHdrOnly;           // Only emit the DPI header
 
     // METHODS
     void emitSymHdr();
@@ -181,11 +182,13 @@ class EmitCSyms : EmitCBaseVisitor {
         stable_sort(m_dpis.begin(), m_dpis.end(), CmpDpi());
 
         // Output
-        emitSymHdr();
-        emitSymImp();
+        if (!m_dpiHdrOnly) {
+            emitSymHdr();
+            emitSymImp();
+        }
         if (v3Global.dpi()) {
             emitDpiHdr();
-            emitDpiImp();
+            if (!m_dpiHdrOnly) emitDpiImp();
         }
     }
     virtual void visit(AstNodeModule* nodep) {
@@ -253,7 +256,9 @@ class EmitCSyms : EmitCBaseVisitor {
     //---------------------------------------
     // ACCESSORS
 public:
-    explicit EmitCSyms(AstNetlist* nodep) {
+    explicit EmitCSyms(AstNetlist* nodep, bool dpiHdrOnly):
+        m_dpiHdrOnly(dpiHdrOnly)
+    {
         m_funcp = NULL;
         m_modp = NULL;
         m_coverBins = 0;
@@ -661,7 +666,7 @@ void EmitCSyms::emitDpiImp() {
 //######################################################################
 // EmitC class functions
 
-void V3EmitC::emitcSyms() {
+void V3EmitC::emitcSyms(bool dpiHdrOnly) {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    EmitCSyms syms (v3Global.rootp());
+    EmitCSyms syms (v3Global.rootp(), dpiHdrOnly);
 }

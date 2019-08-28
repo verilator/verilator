@@ -26,6 +26,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix internal error on gate optimization of assign, bug1475. [Oyvind Harboe]
 
+****  Add --dpi-hdr-only, bug1491. [Todd Strader]
+
 
 * Verilator 4.016 2019-06-16
 
