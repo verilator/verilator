@@ -13,3 +13,6 @@ INCA_libs
 logs
 .vcsmx_rebuild
 vc_hdrs.h
+xsim.*/
+*.jou
+*.pb

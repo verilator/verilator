@@ -12,6 +12,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Change MULTITOP to warning to help linting, see manual.
 
+***   Add XSim support to driver.pl, bug1493. [Todd Strader]
+
 ****  Show included-from filenames in warnings, bug1439. [Todd Strader]
 
 ****  Fix elaboration time errors, bug1429. [Udi Finkelstein]

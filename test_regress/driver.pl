@@ -35,6 +35,7 @@ our %All_Scenarios
        ms    => ["linter", "simulator", "ms"],
        nc    => ["linter", "simulator", "nc"],
        vcs   => ["linter", "simulator", "vcs"],
+       xsim  => ["linter", "simulator", "xsim"],
        vlt   => ["linter", "simulator", "vlt_all", "vlt"],
        vltmt => [          "simulator", "vlt_all", "vltmt"],
     );
@@ -107,6 +108,7 @@ if (! GetOptions(
           "vlt!"        => sub { $opt_scenarios{vlt} = $_[1]; },
           "vltmt!"      => sub { $opt_scenarios{vltmt} = $_[1]; },
           "vcs!"        => sub { $opt_scenarios{vcs} = $_[1]; },
+          "xsim!"       => sub { $opt_scenarios{xsim} = $_[1]; },
           "<>"          => \&parameter,
     )) {
     die "%Error: Bad usage, try '$0 --help'\n";
@@ -442,6 +444,11 @@ use File::Path qw(mkpath);
 use vars qw($Self $Self);
 use strict;
 
+sub defineOpt {
+    my $xsim = shift;
+    return $xsim ? "--define " : "+define+";
+}
+
 sub new {
     my $class = shift;
     my $self = {@_};
@@ -458,6 +465,7 @@ sub new {
     $self->{scenario} ||= "nc" if $self->{nc};
     $self->{scenario} ||= "ms" if $self->{ms};
     $self->{scenario} ||= "iv" if $self->{iv};
+    $self->{scenario} ||= "xsim" if $self->{xsim};
 
     foreach my $dir (@::Test_Dirs) {
         # t_dir used both absolutely and under obj_dir
@@ -479,6 +487,8 @@ sub new {
         $self->{obj_dir} ="$scen_dir/$self->{name}";
     }
 
+    my $define_opt = defineOpt($self->{xsim});
+
     $self = {
         name => undef,          # Set below, name of this test
         pl_filename => undef,   # Name of .pl file to get setup from
@@ -491,13 +501,14 @@ sub new {
         run_env => '',
         # All compilers
         v_flags => [split(/\s+/,
-                          ((-r 'input.vc' ? " -f input.vc " : "")
+                          (($self->{xsim} ? " -f input.xsim.vc " :
+                            (-r 'input.vc' ? " -f input.vc " : ""))
                            .($self->{t_dir} !~ m!/test_regress!  # Don't include standard dir, only site's
                              ? " +incdir+$self->{t_dir} -y $self->{t_dir}" : "")
-                           . " +define+TEST_OBJ_DIR=$self->{obj_dir}"
-                           .($opt_verbose ? " +define+TEST_VERBOSE=1":"")
-                           .($opt_benchmark ? " +define+TEST_BENCHMARK=$opt_benchmark":"")
-                           .($opt_trace ? " +define+WAVES=1":"")
+                           . " ".$define_opt."TEST_OBJ_DIR=$self->{obj_dir}"
+                           .($opt_verbose ? " ".$define_opt."TEST_VERBOSE=1":"")
+                           .($opt_benchmark ? " ".$define_opt."TEST_BENCHMARK=$opt_benchmark":"")
+                           .($opt_trace ? " ".$define_opt."WAVES=1":"")
                           ))],
         v_flags2 => [],  # Overridden in some sim files
         v_other_filenames => [],  # After the filename so we can spec multiple files
@@ -542,6 +553,11 @@ sub new {
         ms_flags => [split(/\s+/,("-sv -work $self->{obj_dir}/work"))],
         ms_flags2 => [],  # Overridden in some sim files
         ms_run_flags => [split(/\s+/,"-lib $self->{obj_dir}/work -c -do 'run -all;quit' ")],
+        # XSim
+        xsim => 0,
+        xsim_flags => [split(/\s+/,("--nolog --sv --define XSIM --work $self->{name}=$self->{obj_dir}/xsim"))],
+        xsim_flags2 => [],  # Overridden in some sim files
+        xsim_run_flags => [split(/\s+/,"--nolog --runall --lib $self->{name}=$self->{obj_dir}/xsim ")],
         # Verilator
         vlt => 0,
         vltmt => 0,
@@ -908,6 +924,20 @@ sub compile {
                     fails=>$param{fails},
                     cmd=>\@cmd);
     }
+    elsif ($param{xsim}) {
+        $self->_make_top();
+        $self->_run(logfile=>"$self->{obj_dir}/xsim_compile.log",
+                    fails=>$param{fails},
+                    cmd=>[($ENV{VERILATOR_XVLOG}||"xvlog"),
+                          @{$param{xsim_flags}},
+                          @{$param{xsim_flags2}},
+                          @{$param{v_flags}},
+                          @{$param{v_flags2}},
+                          $param{top_filename},
+                          $param{top_shell_filename},
+                          @{$param{v_other_filenames}}
+                          ]);
+    }
     elsif ($param{vlt_all}) {
         my @cmdargs = $self->compile_vlt_flags(%param);
 
@@ -1057,6 +1087,19 @@ sub execute {
                     %param,
                     expect=>$param{vcs_run_expect},  # non-verilator expect isn't the same
                     expect_filename=>$param{vcs_run_expect_filename},
+                    );
+    }
+    elsif ($param{xsim}) {
+        $self->_run(logfile=>"$self->{obj_dir}/xsim_sim.log",
+                    fails=>$param{fails},
+                    cmd=>[$run_env.($ENV{VERILATOR_XELAB}||"xelab"),
+                          @{$param{xsim_run_flags}},
+                          @{$param{all_run_flags}},
+                          (" $self->{name}.top")
+                          ],
+                    %param,
+                    expect=>$param{xsim_run_expect},  # non-verilator expect isn't the same
+                    expect_filename=>$param{xsim_expect_filename},
                     );
     }
     elsif ($param{vlt_all}
@@ -2182,6 +2225,15 @@ The equivalent of C<v_flags> and C<v_flags2>, but only for use with
 Verilator.  If a flag is a standard flag (+incdir for example) v_flags2
 should be used instead.
 
+=item xsim_flags
+
+=item xsim_flags2
+
+=item xsim_run_flags
+
+The equivalent of C<v_flags>, C<v_flags2> and C<all_run_flags>, but only
+for use with the Xilinx XSim simulator.
+
 =back
 
 =head2 HINTS ON WRITING TESTS
@@ -2390,6 +2442,10 @@ Run Verilator tests in single-threaded mode.  Default unless another scenario fl
 
 Run Verilator tests in multithreaded mode.
 
+=item --xsim
+
+Run Xilinx XSim simulator tests.
+
 =back
 
 =head1 ENVIRONMENT
@@ -2431,6 +2487,14 @@ Used with --site, a colon-separated list of directories with tests to be added t
 =item VERILATOR_VCS
 
 Command to use to invoke VCS.
+
+=item VERILATOR_XELAB
+
+Command to use to invoke XSim xelab
+
+=item VERILATOR_XVLOG
+
+Command to use to invoke XSim xvlog
 
 =back
 
