@@ -2,7 +2,7 @@ Revision history for Verilator
 
 The contributors that suggested a given feature are shown in []. Thanks!
 
-* Verilator 4.017 devel
+* Verilator 4.018 2019-08-29
 
 **    When showing an error, show source code and offer suggestions of replacements.
 
