@@ -6,6 +6,12 @@ eval 'exec perl -wS $0 ${1+"$@"}'
 
 require 5.006_001;
 use Cwd;
+BEGIN {
+    if (!$ENV{VERILATOR_ROOT} && -x "../bin/verilator") {
+        $ENV{VERILATOR_ROOT} = Cwd::getcwd()."/..";
+    }
+}
+
 use Getopt::Long;
 use IO::File;
 use Pod::Usage;

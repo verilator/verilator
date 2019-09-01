@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.019 devel
 
+****  Fix make test with no VERILATOR_ROOT, bug1494. [Ahmed El-Mahmoudy]
+
 
 * Verilator 4.018 2019-08-29
 
