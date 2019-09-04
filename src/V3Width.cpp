@@ -2342,6 +2342,20 @@ private:
             iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
         }
     }
+    virtual void visit(AstFRewind* nodep) {
+        iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
+        nodep->dtypeSetLogicUnsized(32, 1, AstNumeric::SIGNED);  // Spec says integer return
+    }
+    virtual void visit(AstFTell* nodep) {
+        iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
+        nodep->dtypeSetLogicUnsized(32, 1, AstNumeric::SIGNED);  // Spec says integer return
+    }
+    virtual void visit(AstFSeek* nodep) {
+        iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
+        iterateCheckSigned32(nodep, "$fseek offset", nodep->offset(), BOTH);
+        iterateCheckSigned32(nodep, "$fseek operation", nodep->operation(), BOTH);
+        nodep->dtypeSetLogicUnsized(32, 1, AstNumeric::SIGNED);  // Spec says integer return
+    }
     virtual void visit(AstFGetC* nodep) {
         if (m_vup->prelim()) {
             iterateCheckFileDesc(nodep, nodep->filep(), BOTH);

@@ -179,6 +179,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$fopen"              { FL; return yD_FOPEN; }
   "$fread"              { FL; return yD_FREAD; }
   "$fscanf"             { FL; return yD_FSCANF; }
+  "$fseek"              { FL; return yD_FSEEK; }
+  "$ftell"              { FL; return yD_FTELL; }
+  "$frewind"            { FL; return yD_FREWIND; }
   "$fullskew"           { FL; return yaTIMINGSPEC; }
   "$fwrite"             { FL; return yD_FWRITE; }
   "$hold"               { FL; return yaTIMINGSPEC; }

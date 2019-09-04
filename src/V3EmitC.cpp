@@ -395,6 +395,25 @@ public:
             puts(")); }\n");
         }
     }
+    virtual void visit(AstFSeek* nodep) {
+        puts("(fseek(VL_CVT_I_FP(");
+        iterateAndNextNull(nodep->filep());
+        puts("),");
+        iterateAndNextNull(nodep->offset());
+        puts(",");
+        iterateAndNextNull(nodep->operation());
+        puts(")==-1?-1:0)");
+    }
+    virtual void visit(AstFTell* nodep) {
+        puts("ftell(VL_CVT_I_FP(");
+        iterateAndNextNull(nodep->filep());
+        puts("))");
+    }
+    virtual void visit(AstFRewind* nodep) {
+        puts("(fseek(VL_CVT_I_FP(");
+        iterateAndNextNull(nodep->filep());
+        puts("), 0, 0)==-1?-1:0)");
+    }
     virtual void visit(AstFRead* nodep) {
         puts("VL_FREAD_I(");
         puts(cvtToStr(nodep->memp()->widthMin()));  // Need real storage width

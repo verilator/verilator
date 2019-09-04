@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.019 devel
 
+***   Support $fseek, $ftell, $frewind, bug1496. [Howard Su]
+
 ****  Fix make test with no VERILATOR_ROOT, bug1494. [Ahmed El-Mahmoudy]
 
 

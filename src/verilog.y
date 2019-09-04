@@ -517,7 +517,10 @@ class AstSenTree;
 %token<fl>		yD_FLOOR	"$floor"
 %token<fl>		yD_FOPEN	"$fopen"
 %token<fl>		yD_FREAD	"$fread"
+%token<fl>		yD_FREWIND	"$frewind"
 %token<fl>		yD_FSCANF	"$fscanf"
+%token<fl>		yD_FSEEK	"$fseek"
+%token<fl>		yD_FTELL	"$ftell"
 %token<fl>		yD_FWRITE	"$fwrite"
 %token<fl>		yD_HIGH		"$high"
 %token<fl>		yD_HYPOT	"$hypot"
@@ -2907,8 +2910,11 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_FREAD '(' idClassSel ',' expr ')'	{ $$ = new AstFRead($1,$3,$5,NULL,NULL); }
 	|	yD_FREAD '(' idClassSel ',' expr ',' expr ')'	{ $$ = new AstFRead($1,$3,$5,$7,NULL); }
 	|	yD_FREAD '(' idClassSel ',' expr ',' expr ',' expr ')'	{ $$ = new AstFRead($1,$3,$5,$7,$9); }
+	|	yD_FREWIND '(' idClassSel ')'		{ $$ = new AstFRewind($1, $3); }
 	|	yD_FLOOR '(' expr ')'			{ $$ = new AstFloorD($1,$3); }
 	|	yD_FSCANF '(' expr ',' str commaVRDListE ')'	{ $$ = new AstFScanF($1,*$5,$3,$6); }
+	|	yD_FSEEK '(' idClassSel ',' expr ',' expr ')'	{ $$ = new AstFSeek($1,$3,$5,$7); }
+	|	yD_FTELL '(' idClassSel ')'		{ $$ = new AstFTell($1, $3); }
 	|	yD_HIGH '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_HIGH,$3,NULL); }
 	|	yD_HIGH '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_HIGH,$3,$5); }
 	|	yD_HYPOT '(' expr ',' expr ')'		{ $$ = new AstHypotD($1,$3,$5); }

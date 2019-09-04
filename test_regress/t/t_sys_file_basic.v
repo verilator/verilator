@@ -24,6 +24,8 @@ module t;
    reg [31:0] 	v_worda;
    reg [31:0] 	v_wordb;
 
+   integer v_length, v_off;
+
 `ifdef TEST_VERBOSE
  `define verbose 1'b1
 `else
@@ -224,6 +226,27 @@ module t;
 	 if (v_wordb != "9876") $stop;
 
 	 if ($fgetc(file) != "\n") $stop;
+
+
+	v_length = $ftell(file);
+	$frewind(file);
+	v_off = $ftell(file);
+	if (v_off != 0) $stop;
+	$fseek(file, 10, 0);
+	v_off = $ftell(file);
+	if (v_off != 10) $stop;
+	$fseek(file, 1, 1);
+	v_off = $ftell(file);
+	if (v_off != 11) $stop;
+	$fseek(file, -1, 1);
+	v_off = $ftell(file);
+	if (v_off != 10) $stop;
+	$fseek(file, v_length, 0);
+	v_off = $ftell(file);
+	if (v_off != v_length) $stop;
+	if ($fseek(file, 0, 2) != 0) $stop;
+	v_off = $ftell(file);
+	if (v_off < v_length) $stop;
 
 	 $fclose(file);
       end
