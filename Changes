@@ -8,6 +8,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix make test with no VERILATOR_ROOT, bug1494. [Ahmed El-Mahmoudy]
 
+****  Make Syms file honor --output-split-cfuncs, bug1499. [Todd Strader]
+
 
 * Verilator 4.018 2019-08-29
 

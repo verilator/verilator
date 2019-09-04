@@ -64,11 +64,17 @@ sub make_version {
 
 sub check_splits {
     my $got1;
+    my $gotSyms1;
     foreach my $file (glob("$Self->{obj_dir}/*.cpp")) {
-        $got1 = 1 if $file =~ /__1/;
+        if ($file =~ /Syms__1/) {
+            $gotSyms1 = 1;
+        } elsif ($file =~ /__1/) {
+            $got1 = 1;
+        }
         check_cpp($file);
     }
     $got1 or error("No __1 split file found");
+    $gotSyms1 or error("No Syms__1 split file found");
 }
 
 sub check_cpp {

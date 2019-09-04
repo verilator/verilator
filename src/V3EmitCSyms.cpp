@@ -91,9 +91,16 @@ class EmitCSyms : EmitCBaseVisitor {
     int         m_coverBins;            // Coverage bin number
     int         m_labelNum;             // Next label number
     bool        m_dpiHdrOnly;           // Only emit the DPI header
+    int         m_numStmts;             // Number of statements output
+    int         m_funcNum;              // CFunc split function number
+    V3OutCFile* m_ofpBase;              // Base (not split) C file
+    std::map<int,bool> m_usesVfinal;    // Split method uses __Vfinal
 
     // METHODS
     void emitSymHdr();
+    void checkSplit(bool usesVfinal);
+    void closeSplit();
+    void emitSymImpPreamble();
     void emitSymImp();
     void emitDpiHdr();
     void emitDpiImp();
@@ -183,8 +190,9 @@ class EmitCSyms : EmitCBaseVisitor {
 
         // Output
         if (!m_dpiHdrOnly) {
-            emitSymHdr();
+            // Must emit implementation first to determine number of splits
             emitSymImp();
+            emitSymHdr();
         }
         if (v3Global.dpi()) {
             emitDpiHdr();
@@ -263,6 +271,8 @@ public:
         m_modp = NULL;
         m_coverBins = 0;
         m_labelNum = 0;
+        m_numStmts = 0;
+        m_funcNum = 0;
         iterate(nodep);
     }
 };
@@ -358,6 +368,17 @@ void EmitCSyms::emitSymHdr() {
     puts(symClassName()+"("+topClassName()+"* topp, const char* namep);\n");
     puts(string("~")+symClassName()+"() {}\n");
 
+    for (std::map<int,bool>::iterator it = m_usesVfinal.begin();
+         it != m_usesVfinal.end(); ++it) {
+        puts("void "+symClassName()+"_"+cvtToStr(it->first)+"(");
+        if (it->second) {
+            puts("int __Vfinal");
+        } else {
+            puts(topClassName()+"* topp");
+        }
+        puts(");\n");
+    }
+
     puts("\n// METHODS\n");
     puts("inline const char* name() { return __Vm_namep; }\n");
     if (v3Global.opt.trace()) {
@@ -373,13 +394,46 @@ void EmitCSyms::emitSymHdr() {
     puts("#endif  // guard\n");
 }
 
-void EmitCSyms::emitSymImp() {
-    UINFO(6,__FUNCTION__<<": "<<endl);
-    string filename = v3Global.opt.makeDir()+"/"+symClassName()+".cpp";
+void EmitCSyms::closeSplit() {
+    if (!m_ofp || m_ofp == m_ofpBase) return;
+
+    puts("}\n");
+    delete m_ofp;
+    m_ofp = NULL;
+}
+
+void EmitCSyms::checkSplit(bool usesVfinal) {
+    if (m_ofp && (!v3Global.opt.outputSplitCFuncs() ||
+                  m_numStmts < v3Global.opt.outputSplitCFuncs())) return;
+
+    m_numStmts = 0;
+    string filename = v3Global.opt.makeDir()+"/"+symClassName()+"__"+cvtToStr(++m_funcNum)+".cpp";
     AstCFile* cfilep = newCFile(filename, true/*slow*/, true/*source*/);
     cfilep->support(true);
-    V3OutCFile cf (filename);
-    m_ofp = &cf;
+    m_usesVfinal[m_funcNum] = usesVfinal;
+    closeSplit();
+
+    m_ofp = new V3OutCFile(filename);
+
+    m_ofpBase->puts(symClassName()+"_"+cvtToStr(m_funcNum)+"(");
+    if (usesVfinal) {
+        m_ofpBase->puts("__Vfinal");
+    } else {
+        m_ofpBase->puts("topp");
+    }
+    m_ofpBase->puts(");\n");
+
+    emitSymImpPreamble();
+    puts("void "+symClassName()+"::"+symClassName()+"_"+cvtToStr(m_funcNum)+"(");
+    if (usesVfinal) {
+        puts("int __Vfinal");
+    } else {
+        puts(topClassName()+"* topp");
+    }
+    puts(") {\n");
+}
+
+void EmitCSyms::emitSymImpPreamble() {
     ofp()->putsHeader();
     puts("// DESCR" "IPTION: Verilator output: Symbol table implementation internals\n");
     puts("\n");
@@ -390,8 +444,49 @@ void EmitCSyms::emitSymImp() {
          nodep; nodep=VN_CAST(nodep->nextp(), NodeModule)) {
         puts("#include \""+modClassName(nodep)+".h\"\n");
     }
+}
+
+void EmitCSyms::emitSymImp() {
+    UINFO(6,__FUNCTION__<<": "<<endl);
+    string filename = v3Global.opt.makeDir()+"/"+symClassName()+".cpp";
+    AstCFile* cfilep = newCFile(filename, true/*slow*/, true/*source*/);
+    cfilep->support(true);
+    V3OutCFile cf (filename);
+    m_ofp = &cf;
+    m_ofpBase = m_ofp;
+    emitSymImpPreamble();
 
     //puts("\n// GLOBALS\n");
+
+    puts("\n");
+
+    if (v3Global.opt.savable() ) {
+        puts("\n");
+        for (int de=0; de<2; ++de) {
+            string classname = de ? "VerilatedDeserialize" : "VerilatedSerialize";
+            string funcname = de ? "__Vdeserialize" : "__Vserialize";
+            string op = de ? ">>" : "<<";
+            // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
+            puts("void "+symClassName()+"::"+funcname+"("+classname+"& os) {\n");
+            puts(   "// LOCAL STATE\n");
+            // __Vm_namep presumably already correct
+            if (v3Global.opt.trace()) {
+                puts(   "os"+op+"__Vm_activity;\n");
+            }
+            puts(   "os"+op+"__Vm_didInit;\n");
+            puts(   "// SUBCELL STATE\n");
+            for (std::vector<ScopeModPair>::iterator it = m_scopes.begin();
+                 it != m_scopes.end(); ++it) {
+                AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
+                if (!modp->isTop()) {
+                    puts(   scopep->nameDotless()+"."+funcname+"(os);\n");
+                }
+            }
+            puts("}\n");
+        }
+    }
+
+    puts("\n");
 
     puts("\n// FUNCTIONS\n");
     puts(symClassName()+"::"+symClassName()+"("+topClassName()+"* topp, const char* namep)\n");
@@ -414,6 +509,7 @@ void EmitCSyms::emitSymImp() {
             putsQuoted(scopep->prettyName());
             puts("))\n");
             comma=',';
+            ++m_numStmts;
         }
     }
     puts("{\n");
@@ -424,6 +520,7 @@ void EmitCSyms::emitSymImp() {
     for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
         AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
         if (!modp->isTop()) {
+            checkSplit(false);
             string arrow = scopep->name();
             string::size_type pos;
             while ((pos = arrow.find('.')) != string::npos) {
@@ -433,6 +530,7 @@ void EmitCSyms::emitSymImp() {
             ofp()->printf("%-30s ", arrow.c_str());
             puts(" = &");
             puts(scopep->nameDotless()+";\n");
+            ++m_numStmts;
         }
     }
 
@@ -441,12 +539,14 @@ void EmitCSyms::emitSymImp() {
     for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
         AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
         if (!modp->isTop()) {
+            checkSplit(false);
             // first is used by AstCoverDecl's call to __vlCoverInsert
             bool first = !modp->user1();
             modp->user1(true);
             puts(scopep->nameDotless()+".__Vconfigure(this, "
                  +(first?"true":"false")
                  +");\n");
+            ++m_numStmts;
         }
     }
 
@@ -457,20 +557,26 @@ void EmitCSyms::emitSymImp() {
                 did = true;
                 puts("// Setup scope names\n");
             }
+            checkSplit(false);
             puts("__Vscope_"+it->second.m_symName+".configure(this,name(),");
             putsQuoted(it->second.m_prettyName);
             puts(");\n");
+            ++m_numStmts;
         }
     }
 
+    // Everything past here is in the __Vfinal loop, so start a new split file if needed
+    closeSplit();
+
     if (v3Global.dpi()) {
-        puts("// Setup export functions\n");
-        puts("for (int __Vfinal=0; __Vfinal<2; __Vfinal++) {\n");
+        m_ofpBase->puts("// Setup export functions\n");
+        m_ofpBase->puts("for (int __Vfinal=0; __Vfinal<2; __Vfinal++) {\n");
         for (ScopeFuncs::iterator it = m_scopeFuncs.begin(); it != m_scopeFuncs.end(); ++it) {
             AstScopeName* scopep = it->second.m_scopep;
             AstCFunc* funcp = it->second.m_funcp;
             AstNodeModule* modp = it->second.m_modp;
             if (funcp->dpiExport()) {
+                checkSplit(true);
                 puts("__Vscope_"+scopep->scopeSymName()+".exportInsert(__Vfinal,");
                 putsQuoted(funcp->cname());
                 puts(", (void*)(&");
@@ -478,11 +584,13 @@ void EmitCSyms::emitSymImp() {
                 puts("::");
                 puts(funcp->name());
                 puts("));\n");
+                ++m_numStmts;
             }
         }
         // It would be less code if each module inserted its own variables.
         // Someday.  For now public isn't common.
         for (ScopeVars::iterator it = m_scopeVars.begin(); it != m_scopeVars.end(); ++it) {
+            checkSplit(true);
             AstNodeModule* modp = it->second.m_modp;
             AstScope* scopep = it->second.m_scopep;
             AstVar* varp = it->second.m_varp;
@@ -531,37 +639,13 @@ void EmitCSyms::emitSymImp() {
             puts(cvtToStr(pdim+udim));
             puts(bounds);
             puts(");\n");
+            ++m_numStmts;
         }
-        puts("}\n");
+        m_ofpBase->puts("}\n");
     }
 
-    puts("}\n");
-
-    if (v3Global.opt.savable() ) {
-        puts("\n");
-        for (int de=0; de<2; ++de) {
-            string classname = de ? "VerilatedDeserialize" : "VerilatedSerialize";
-            string funcname = de ? "__Vdeserialize" : "__Vserialize";
-            string op = de ? ">>" : "<<";
-            // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
-            puts("void "+symClassName()+"::"+funcname+"("+classname+"& os) {\n");
-            puts(   "// LOCAL STATE\n");
-            // __Vm_namep presumably already correct
-            if (v3Global.opt.trace()) {
-                puts(   "os"+op+"__Vm_activity;\n");
-            }
-            puts(   "os"+op+"__Vm_didInit;\n");
-            puts(   "// SUBCELL STATE\n");
-            for (std::vector<ScopeModPair>::iterator it = m_scopes.begin();
-                 it != m_scopes.end(); ++it) {
-                AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
-                if (!modp->isTop()) {
-                    puts(   scopep->nameDotless()+"."+funcname+"(os);\n");
-                }
-            }
-            puts("}\n");
-        }
-    }
+    m_ofpBase->puts("}\n");
+    closeSplit();
 }
 
 //######################################################################

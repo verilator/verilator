@@ -46,6 +46,10 @@ module t (/*AUTOARG*/
 endmodule
 
 module sub (input clk, input [31:0] i, output [31:0] z);
+   logic [31:0] z_tmp /* verilator public */;
+
    always @(posedge clk)
-     z <= i+1+$c("0");  // $c so doesn't optimize away
+     z_tmp <= i+1+$c("0");  // $c so doesn't optimize away
+
+   assign z = z_tmp;
 endmodule
