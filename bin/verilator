@@ -321,7 +321,6 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --inhibit-sim               Create function to turn off sim
     --inline-mult <value>       Tune module inlining
      -LDFLAGS <flags>           Linker pre-object flags for makefile
-     -LDLIBS <flags>            Linker library flags for makefile
     --l2-name <value>           Verilog scope name of the top module
     --language <lang>           Default language standard to parse
      +libext+<ext>+[ext]...     Extensions for finding modules
