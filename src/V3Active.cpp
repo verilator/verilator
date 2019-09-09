@@ -196,7 +196,7 @@ private:
         AstVar* varp = nodep->varp();
         if (m_check == CT_SEQ
             && m_assignp
-            && !varp->isUsedLoopIdx()  // Ignore loop indicies
+            && !varp->isUsedLoopIdx()  // Ignore loop indices
             && !varp->isTemp()) {
             // Allow turning off warnings on the always, or the variable also
             if (!m_alwaysp->fileline()->warnIsOff(V3ErrorCode::BLKSEQ)
@@ -320,7 +320,7 @@ private:
             return;
         }
 
-        // Read sensitivitues
+        // Read sensitivities
         m_itemCombo = false;
         m_itemSequent = false;
         iterateAndNextNull(oldsensesp);

@@ -88,8 +88,8 @@ private:
 
     // MEMBERS
     VxHolderCmp m_vxHolderCmp;  // Vertext comparison functor
-    ReadyVertices m_readyVertices;  // List of ready verticies
-    WaitingVertices m_waitingVertices;  // List of wiating verticies
+    ReadyVertices m_readyVertices;  // List of ready vertices
+    WaitingVertices m_waitingVertices;  // List of waiting vertices
     typename ReadyVertices::iterator m_last;  // Previously returned element
     GraphWay m_way;  // FORWARD or REVERSE order of traversal
 

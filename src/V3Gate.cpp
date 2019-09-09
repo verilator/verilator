@@ -484,7 +484,7 @@ private:
     }
     virtual void visit(AstSenGate* nodep) {
         // First handle the clock part will be handled in a minute by visit AstSenItem
-        // The logic gating term is delt with as logic
+        // The logic gating term is dealt with as logic
         iterateNewStmt(nodep, "Clock gater", "Clock gater");
     }
     virtual void visit(AstInitial* nodep) {

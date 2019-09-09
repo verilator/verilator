@@ -538,7 +538,7 @@ public:
     bool littleEndian() const { return (rangep() ? rangep()->littleEndian() : m.m_nrange.littleEndian()); }
     bool implicit() const { return keyword() == AstBasicDTypeKwd::LOGIC_IMPLICIT; }
     VNumRange declRange() const { return isRanged() ? VNumRange(msb(), lsb(), littleEndian()) : VNumRange(); }
-    void cvtRangeConst() {  // Convert to smaller represenation
+    void cvtRangeConst() {  // Convert to smaller representation
         if (rangep() && VN_IS(rangep()->msbp(), Const) && VN_IS(rangep()->lsbp(), Const)) {
             m.m_nrange.init(rangep()->msbConst(), rangep()->lsbConst(),
                             rangep()->littleEndian());
@@ -3192,7 +3192,7 @@ public:
     ASTNODE_NODE_FUNCS(Repeat)
     AstNode* countp() const { return op2p(); }  // op2 = condition to continue
     AstNode* bodysp() const { return op3p(); }  // op3 = body of loop
-    virtual bool isGateOptimizable() const { return false; }  // Not releavant - converted to FOR
+    virtual bool isGateOptimizable() const { return false; }  // Not relevant - converted to FOR
     virtual int instrCount() const { return instrCountBranch(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode* samep) const { return true; }

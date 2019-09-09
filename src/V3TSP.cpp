@@ -545,7 +545,7 @@ public:
     }
     virtual int cost(const TspTestState* otherp) const {
         // For test purposes, each TspTestState is merely a point
-        // on the cartesian plane; cost is the linear distance
+        // on the Cartesian plane; cost is the linear distance
         // between two points.
         unsigned xabs, yabs;
         xabs = diff(otherp->m_xpos, m_xpos);

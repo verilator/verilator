@@ -256,7 +256,7 @@ string VHashSha1::digestSymbol() {
     // Make a symbol name from hash.  Similar to base64, however base 64
     // has + and / for last two digits, but need C symbol, and we also
     // avoid conflicts with use of _, so use "AB" at the end.
-    // Thus this function is non-reversable.
+    // Thus this function is non-reversible.
     static const char digits[64+1]
         = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789AB";
     const string& binhash = digestBinary();

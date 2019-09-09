@@ -169,7 +169,7 @@ private:
             UINFO(8,"  "<<why<<"   "<<origEdgep->fromp()<<" ->"<<origEdgep->top()<<endl);
         }
     }
-    // Work Que
+    // Work Queue
     void workPush(V3GraphVertex* vertexp) {
         GraphAcycVertex* avertexp = static_cast<GraphAcycVertex*>(vertexp);
         // Add vertex to list of nodes needing further optimization trials
@@ -507,7 +507,7 @@ void GraphAcyc::placeTryEdge(V3GraphEdge* edgep) {
         edgep->cutable(true);  // So graph still looks pretty
         cutOrigEdge(edgep, "  Cut loop");
         edgep->unlinkDelete(); VL_DANGLING(edgep);
-        // Backout the ranks we calculated
+        // Back out the ranks we calculated
         while (GraphAcycVertex* vertexp = workBeginp()) {
             workPop();
             vertexp->rank(vertexp->m_storedRank);

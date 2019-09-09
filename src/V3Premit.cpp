@@ -23,7 +23,7 @@
 //      For each wide OP, make a a temporary variable with the wide value
 //      For each deep expression, assign expression to temporary.
 //
-// Each display (independant transformation; here as Premit is a good point)
+// Each display (independent transformation; here as Premit is a good point)
 //      If autoflush, insert a flush
 //
 //*************************************************************************

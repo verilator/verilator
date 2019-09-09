@@ -94,7 +94,7 @@ private:
         // If we have uint64 = CAST(uint64(x)) then the upcasting
         // really needs to be CAST(uint64(CAST(uint32(x))).
         // Otherwise a (uint64)(a>b) would return wrong value, as
-        // less than has undeterministic signedness.
+        // less than has nondeterministic signedness.
         if (nodep->isQuad() && !nodep->lhsp()->isQuad()
             && !VN_IS(nodep->lhsp(), CCast)) {
             insertCast(nodep->lhsp(), VL_WORDSIZE);
@@ -154,7 +154,7 @@ private:
         nodep->user1(1);
     }
     virtual void visit(AstConst* nodep) {
-        // Constants are of unknown size if smaller than 33 bits, becase
+        // Constants are of unknown size if smaller than 33 bits, because
         // we're too lazy to wrap every constant in the universe in
         // ((IData)#).
         nodep->user1(nodep->isQuad() || nodep->isWide());

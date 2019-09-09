@@ -77,7 +77,7 @@ private:
             nodep->v3fatalSrc("Unknown jump point for break/disable/continue");
             return NULL;
         }
-        // Skip over variables as we'll just move them in a momement
+        // Skip over variables as we'll just move them in a moment
         // Also this would otherwise prevent us from using a label twice
         // see t_func_return test.
         while (underp && VN_IS(underp, Var)) underp = underp->nextp();

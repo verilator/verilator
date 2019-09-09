@@ -555,7 +555,7 @@ string V3Options::argString(int argc, char** argv) {
 
 void V3Options::parseOpts(FileLine* fl, int argc, char** argv) {
     // Parse all options
-    // Inital entry point from Verilator.cpp
+    // Initial entry point from Verilator.cpp
     parseOptsList(fl, ".", argc, argv);
 
     // Default certain options and error check

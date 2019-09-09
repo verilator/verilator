@@ -238,7 +238,7 @@ private:
     std::vector<UndrivenVarEntry*> m_entryps[3];  // Nodes to delete when we are finished
     bool                m_inBBox;       // In black box; mark as driven+used
     bool                m_inContAssign;  // In continuous assignment
-    bool                m_inProcAssign;  // In procedual assignment
+    bool                m_inProcAssign;  // In procedural assignment
     AstNodeFTask*       m_taskp;        // Current task
     AstAlways*          m_alwaysCombp;  // Current always if combo, otherwise NULL
 

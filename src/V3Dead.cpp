@@ -407,7 +407,7 @@ public:
         iterate(nodep);
 
         deadCheckVar();
-        // We only elimate scopes when in a flattened structure
+        // We only eliminate scopes when in a flattened structure
         // Otherwise we have no easy way to know if a scope is used
         if (elimScopes) deadCheckScope();
         if (elimCells) deadCheckCells();

@@ -925,7 +925,7 @@ class TristateVisitor : public TristateBaseVisitor {
             UINFO(9,dbgState()<<nodep<<endl);
             if (debug()>=9) nodep->dumpTree(cout, "-assign: ");
             // if the rhsp of this assign statement has an output enable driver,
-            // then propage the corresponding output enable assign statement.
+            // then propagate the corresponding output enable assign statement.
             // down the lvalue tree by recursion for eventual attachment to
             // the appropriate output signal's VarRef.
             if (nodep->rhsp()->user1p()) {
@@ -1031,7 +1031,7 @@ class TristateVisitor : public TristateBaseVisitor {
                 // the complexity of merging tristate drivers at any level, the
                 // current limitation of this implementation is that a pullup/down
                 // gets applied to all bits of a bus and a bus cannot have drivers
-                // in opposite directions on indvidual pins.
+                // in opposite directions on individual pins.
                 varrefp->lvalue(true);
                 m_tgraph.didProcess(nodep);
                 m_tgraph.didProcess(varrefp->varp());
@@ -1261,7 +1261,7 @@ class TristateVisitor : public TristateBaseVisitor {
                      && m_tgraph.isTristate(nodep->varp())
                      // and in a position where it feeds upstream to another tristate
                      && m_tgraph.feedsTri(nodep)) {
-                // Then propage the enable from the original variable
+                // Then propagate the enable from the original variable
                 UINFO(9,"     Ref-to-tri "<<nodep<<endl);
                 AstVar* enVarp = getCreateEnVarp(nodep->varp());
                 nodep->user1p(new AstVarRef(nodep->fileline(), enVarp, false));

@@ -97,7 +97,7 @@ private:
     // AstJumpLabel::user4      -> bool.  Set when AstJumpGo uses this label
 
     // STATE
-    bool        m_params;       // If true, propogate parameterized and true numbers only
+    bool        m_params;       // If true, propagate parameterized and true numbers only
     bool        m_required;     // If true, must become a constant
     bool        m_wremove;      // Inside scope, no assignw removal
     bool        m_warn;         // Output warnings
@@ -557,7 +557,7 @@ private:
         return false;
     }
     bool concatMergeable(const AstNode* lhsp, const AstNode* rhsp) {
-        // determine if {a OP b, c OP d} => {a, c} OP {b, d} is advantagous
+        // determine if {a OP b, c OP d} => {a, c} OP {b, d} is advantageous
         if (!v3Global.opt.oAssemble()) return false;  // opt disabled
         if (lhsp->type() != rhsp->type()) return false;
         if (!ifConcatMergeableBiop(lhsp)) return false;
@@ -677,21 +677,21 @@ private:
         // NODE(..., CHILD(...)) -> CHILD(...)
         childp->unlinkFrBackWithNext();
         // If replacing a SEL for example, the data type comes from the parent (is less wide).
-        // This may adversly affect the operation of the node being replaced.
+        // This may adversely affect the operation of the node being replaced.
         childp->dtypeFrom(nodep);
         nodep->replaceWith(childp);
         nodep->deleteTree(); VL_DANGLING(nodep);
     }
 
     //! Replace a ternary node with its RHS after iterating
-    //! Used with short-circuting, where the RHS has not yet been iterated.
+    //! Used with short-circuiting, where the RHS has not yet been iterated.
     void replaceWIteratedRhs(AstNodeTriop* nodep) {
         if (AstNode* rhsp = nodep->rhsp()) iterateAndNextNull(rhsp);
         replaceWChild(nodep, nodep->rhsp());  // May have changed
     }
 
     //! Replace a ternary node with its THS after iterating
-    //! Used with short-circuting, where the THS has not yet been iterated.
+    //! Used with short-circuiting, where the THS has not yet been iterated.
     void replaceWIteratedThs(AstNodeTriop* nodep) {
         if (AstNode* thsp = nodep->thsp()) iterateAndNextNull(thsp);
         replaceWChild(nodep, nodep->thsp());  // May have changed
@@ -1658,7 +1658,7 @@ private:
                 || VN_IS(nodep->sensp(), EnumItemRef)
                 || (nodep->varrefp() && nodep->varrefp()->varp()->isParam()))) {
             // Constants in sensitivity lists may be removed (we'll simplify later)
-            if (nodep->isClocked()) {  // A constant can never get a pos/negexge
+            if (nodep->isClocked()) {  // A constant can never get a pos/negedge
                 if (onlySenItemInSenTree(nodep)) {
                     nodep->replaceWith(new AstSenItem(nodep->fileline(), AstSenItem::Never()));
                     nodep->deleteTree(); VL_DANGLING(nodep);
@@ -2192,7 +2192,7 @@ private:
     //    v--- *1* These ops are always first, as we warn before replacing
     //    v--- *V* This op is a verilog op, only in m_doV mode
     //    v--- *C* This op works on all constant children, allowed in m_doConst mode
-    //    v--- *S* This op specifies a type should use short-circuting of its lhs op
+    //    v--- *S* This op specifies a type should use short-circuiting of its lhs op
 
     TREEOP1("AstSel{warnSelect(nodep)}",        "NEVER");
     // Generic constants on both side.  Do this first to avoid other replacements
@@ -2586,7 +2586,7 @@ AstNode* V3Const::constifyParamsEdit(AstNode* nodep) {
 //! trigger warnings when we deal with the width. It is possible that these
 //! are spurious, existing within sub-expressions that will not actually be
 //! generated. Since such occurrences, must be constant, in order to be
-//! someting a generate block can depend on, we can wait until later to do the
+//! something a generate block can depend on, we can wait until later to do the
 //! width check.
 //! @return  Pointer to the edited node.
 AstNode* V3Const::constifyGenerateParamsEdit(AstNode* nodep) {

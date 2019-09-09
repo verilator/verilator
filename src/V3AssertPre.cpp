@@ -95,7 +95,7 @@ private:
     virtual void visit(AstNodePslCoverOrAssert* nodep) {
         if (nodep->sentreep()) return;  // Already processed
         clearAssertInfo();
-        // Find PslClocking's burried under nodep->exprsp
+        // Find PslClocking's buried under nodep->exprsp
         iterateChildren(nodep);
         nodep->sentreep(newSenTree(nodep));
         clearAssertInfo();

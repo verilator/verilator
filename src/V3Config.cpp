@@ -35,7 +35,7 @@ class V3ConfigLine {
 public:
     int         m_lineno;       // Line number to make change at
     V3ErrorCode m_code;         // Error code
-    bool        m_on;           // True to enaable message
+    bool        m_on;           // True to enable message
     V3ConfigLine(V3ErrorCode code, int lineno, bool on)
         : m_lineno(lineno), m_code(code), m_on(on) {}
     ~V3ConfigLine() {}

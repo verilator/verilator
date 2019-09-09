@@ -4230,7 +4230,7 @@ AstNode* V3Width::widthParamsEdit(AstNode* nodep) {
 //! trigger warnings when we deal with the width. It is possible that
 //! these are spurious, existing within sub-expressions that will not
 //! actually be generated. Since such occurrences, must be constant, in
-//! order to be someting a generate block can depend on, we can wait until
+//! order to be something a generate block can depend on, we can wait until
 //! later to do the width check.
 //! @return  Pointer to the edited node.
 AstNode* V3Width::widthGenerateParamsEdit(

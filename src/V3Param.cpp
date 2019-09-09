@@ -464,7 +464,7 @@ private:
         }
     }
 
-    //! Parameter subsitution for generated for loops.
+    //! Parameter substitution for generated for loops.
     //! @todo Unlike generated IF, we don't have to worry about short-circuiting the conditional
     //!       expression, since this is currently restricted to simple comparisons. If we ever do
     //!       move to more generic constant expressions, such code will be needed here.

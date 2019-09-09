@@ -246,7 +246,7 @@ public:
         // If this isn't the first instantiation of this module under this
         // design, don't really count the bucket, and rely on verilator_cov to
         // aggregate counts.  This is because Verilator combines all
-        // hiearchies itself, and if verilator_cov also did it, you'd end up
+        // hierarchies itself, and if verilator_cov also did it, you'd end up
         // with (number-of-instant) times too many counts in this bin.
         puts(", first");  // Enable, passed from __Vconfigure parameter
         puts(", ");     putsQuoted(nodep->fileline()->filename());
@@ -1865,7 +1865,7 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
         //
         // For example: suppose models A and B are each compiled to run on
         // 4 threads. The client might create a single thread pool with 3
-        // threads and pass it to both models. If the client can ensure tht
+        // threads and pass it to both models. If the client can ensure that
         // A.eval() and B.eval() do NOT run concurrently, there will be no
         // contention for the threads. This mode is missing for now.  (Is
         // there demand for such a setup?)
@@ -3103,7 +3103,7 @@ class EmitCTrace : EmitCStmts {
     }
 
     // VISITORS
-    using EmitCStmts::visit;  // Suppress hidden overloaded virtual function warnng
+    using EmitCStmts::visit;  // Suppress hidden overloaded virtual function warning
     virtual void visit(AstNetlist* nodep) {
         // Top module only
         iterate(nodep->topModulep());

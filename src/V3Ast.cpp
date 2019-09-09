@@ -262,7 +262,7 @@ AstNode* AstNode::addNext(AstNode* nodep, AstNode* newp) {
                 UDEBUGONLY(UASSERT_OBJ(!oldtailp->m_nextp, nodep,
                                        "Node had next, but headtail says it shouldn't"););
             } else {
-                // Though inefficent, we are occasionally passed a addNext in the middle of a list.
+                // Though inefficient, we are occasionally passed a addNext in the middle of a list.
                 while (oldtailp->m_nextp != NULL) oldtailp = oldtailp->m_nextp;
             }
         }
@@ -1090,7 +1090,7 @@ string AstNode::locationStr() const {
         const AstScope* scopep;
         if ((scopep = VN_CAST_CONST(backp, Scope))) {
             // The design is flattened and there are no useful scopes
-            // This is probably because of inilining
+            // This is probably because of inlining
             if (scopep->isTop()) break;
 
             str += scopep->prettyName();

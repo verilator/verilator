@@ -332,7 +332,7 @@ public:
     VSymEnt* insertInline(VSymEnt* abovep, VSymEnt* modSymp,
                           AstCellInline* nodep, const string& basename) {
         // A fake point in the hierarchy, corresponding to an inlined module
-        // This refrences to another Sym, and eventually resolves to a module with a prefix
+        // This references to another Sym, and eventually resolves to a module with a prefix
         UASSERT_OBJ(abovep, nodep, "Null symbol table inserting node");
         VSymEnt* symp = new VSymEnt(&m_syms, nodep);
         UINFO(9,"      INSERTinl se"<<cvtToHex(symp)
@@ -955,7 +955,7 @@ class LinkDotFindVisitor : public AstNVisitor {
             m_curSymp->fallbackp(oldCurSymp);
             // Convert the func's range to the output variable
             // This should probably be done in the Parser instead, as then we could
-            // just attact normal signal attributes to it.
+            // just attach normal signal attributes to it.
             if (nodep->fvarp()
                 && !VN_IS(nodep->fvarp(), Var)) {
                 AstNodeDType* dtypep = VN_CAST(nodep->fvarp(), NodeDType);

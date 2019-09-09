@@ -210,7 +210,7 @@ private:
                 return false;
             }
         }
-        if (m_caseItems <= 3) return false;  // Not worth simplifing
+        if (m_caseItems <= 3) return false;  // Not worth simplifying
         // Convert valueItem from AstCaseItem* to the expression
         // Not done earlier, as we may now have a NULL because it's just a ";" NOP branch
         for (uint32_t i=0; i<(1UL<<m_caseWidth); ++i) {
@@ -223,7 +223,7 @@ private:
         if (msb<0) {
             // There's no space for a IF.  We know upperValue is thus down to a specific
             // exact value, so just return the tree value
-            // Note can't clone here, as we're going to check for equivelence above
+            // Note can't clone here, as we're going to check for equivalence above
             return m_valueItem[upperValue];
         }
         else {

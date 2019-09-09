@@ -73,7 +73,7 @@ public:
     //   enum en {...};
     //   const char* ascii() const {...};
     enum en m_e;
-    // cppcheck-suppress uninitVar  // responsiblity of each subclass
+    // cppcheck-suppress uninitVar  // responsibility of each subclass
     inline AstType() {}
     // cppcheck-suppress noExplicitConstructor
     inline AstType(en _e) : m_e(_e) {}
@@ -776,7 +776,7 @@ public:
   inline std::ostream& operator<<(std::ostream& os, const AstParseRefExp& rhs) { return os<<rhs.ascii(); }
 
 //######################################################################
-// VNumRange - Structure containing numberic range information
+// VNumRange - Structure containing numeric range information
 // See also AstRange, which is a symbolic version of this
 
 struct VNumRange {
@@ -910,7 +910,7 @@ public:
 //
 //      AstUser2InUse  m_userres;
 //
-//  This will clear the tree, and prevent another visitor from clobering
+//  This will clear the tree, and prevent another visitor from clobbering
 //  user2.  When the member goes out of scope it will be automagically
 //  freed up.
 
@@ -1262,7 +1262,7 @@ public:
     static int instrCountPli() { return 20; }          ///< Instruction cycles to call pli routines
     static int instrCountDouble() { return 8; }        ///< Instruction cycles to convert or do floats
     static int instrCountDoubleDiv() { return 40; }    ///< Instruction cycles to divide floats
-    static int instrCountDoubleTrig() { return 200; }  ///< Instruction cycles to do triganomics
+    static int instrCountDoubleTrig() { return 200; }  ///< Instruction cycles to do trigonomics
     static int instrCountString() { return 100; }      ///< Instruction cycles to do string ops
     static int instrCountCall() { return instrCountBranch()+10; }  ///< Instruction cycles to call subroutine
     static int instrCountTime() { return instrCountCall()+5; }     ///< Instruction cycles to determine simulation time
@@ -2189,7 +2189,7 @@ class AstNodeModule : public AstNode {
 private:
     string      m_name;         // Name of the module
     string      m_origName;     // Name of the module, ignoring name() changes, for dot lookup
-    string      m_hierName;     // Hierachical name for errors, etc.
+    string      m_hierName;     // Hierarchical name for errors, etc.
     bool        m_modPublic:1;  // Module has public references
     bool        m_modTrace:1;   // Tracing this module
     bool        m_inLibrary:1;  // From a library, no error if not used, never top level

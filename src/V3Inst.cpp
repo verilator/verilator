@@ -270,7 +270,7 @@ private:
                 nodep->addNextHere(newp);
                 // Remove ranging and fix name
                 newp->rangep()->unlinkFrBack()->deleteTree();
-                // Somewhat illogically, we need to rename the orignal name of the cell too.
+                // Somewhat illogically, we need to rename the original name of the cell too.
                 // as that is the name users expect for dotting
                 // The spec says we add [x], but that won't work in C...
                 newp->name(newp->name()+"__BRA__"+cvtToStr(instNum)+"__KET__");

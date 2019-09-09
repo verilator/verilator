@@ -262,7 +262,7 @@ private:
             }
         }
         else if (AstUnionDType* adtypep = VN_CAST(dtypep, UnionDType)) {
-            // Arbitrarially handle only the first member of the union
+            // Arbitrarily handle only the first member of the union
             if (AstMemberDType* itemp = adtypep->membersp()) {
                 AstNodeDType* subtypep = itemp->subDTypep()->skipRefp();
                 ToggleEnt newent (above.m_comment+string(".")+itemp->name(),

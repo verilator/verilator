@@ -156,7 +156,7 @@ public:
     string      m_strify;       ///< Text to be stringified
 
     // For defines
-    std::stack<V3DefineRef> m_defRefs;  ///< Pending definine substitution
+    std::stack<V3DefineRef> m_defRefs;  ///< Pending define substitution
     std::stack<VPreIfEntry> m_ifdefStack;   ///< Stack of true/false emitting evaluations
     unsigned    m_defDepth;     ///< How many `defines deep
     bool        m_defPutJoin;   ///< Insert `` after substitution
@@ -564,7 +564,7 @@ string V3PreProcImp::defineSubst(V3DefineRef* refp) {
     // and would make recursive definitions and parameter handling nasty.
     //
     // Note we parse the definition parameters and value here.  If a
-    // parametrized define is used many, many times, we could cache the
+    // parameterized define is used many, many times, we could cache the
     // parsed result.
     UINFO(4,"defineSubstIn  `"<<refp->name()<<" "<<refp->params()<<endl);
     for (unsigned i=0; i<refp->args().size(); i++) {
@@ -598,7 +598,7 @@ string V3PreProcImp::defineSubst(V3DefineRef* refp) {
                     // Parse it
                     if (argName!="") {
                         if (refp->args().size() > numArgs) {
-                            // A call `def( a ) must be equivelent to `def(a ), so trimWhitespace
+                            // A call `def( a ) must be equivalent to `def(a ), so trimWhitespace
                             // At one point we didn't trim trailing
                             // whitespace, but this confuses `"
                             string arg = trimWhitespace(refp->args()[numArgs], true);
@@ -954,7 +954,7 @@ int V3PreProcImp::getStateToken() {
 
         if (tok==VP_DEFREF_JOIN) {
             // Here's something fun and unspecified as yet:
-            // The existance of non-existance of a base define changes `` expansion
+            // The existence of non-existance of a base define changes `` expansion
             //  `define QA_b zzz
             //  `define Q1 `QA``_b
             //   1Q1 -> zzz
@@ -1048,7 +1048,7 @@ int V3PreProcImp::getStateToken() {
                 else goto next_tok;
             }
             else if (tok==VP_DEFREF) {
-                // IE, `ifdef `MACRO(x): Substitue and come back here when state pops.
+                // IE, `ifdef `MACRO(x): Substitute and come back here when state pops.
                 break;
             }
             else {
@@ -1288,7 +1288,7 @@ int V3PreProcImp::getStateToken() {
             }
             else if (tok==VP_DEFREF) {
                 // Spec says to expand macros inside `"
-                // Substitue it into the stream, then return here
+                // Substitute it into the stream, then return here
                 break;
             }
             else {

@@ -650,7 +650,7 @@ string V3Number::toDecimalU() const {
         for (int nibble_bit = 0; nibble_bit < maxdecwidth; nibble_bit += 4) {
             if (bcd.bitsValue(nibble_bit, 4) >= 5) {
                 tmp2.setAllBits0();
-                tmp2.setBit(nibble_bit, 1);  // Add 3, decompsed as two bits
+                tmp2.setBit(nibble_bit, 1);  // Add 3, decomposed as two bits
                 tmp2.setBit(nibble_bit+1, 1);
                 tmp.opAssign(bcd);
                 bcd.opAdd(tmp, tmp2);

@@ -393,7 +393,7 @@ private:
             // How to recover?  We'll strip a dimension.
             nodep->replaceWith(fromp); pushDeletep(nodep); VL_DANGLING(nodep);
         }
-        // delete whataver we didn't use in reconstruction
+        // delete whatever we didn't use in reconstruction
         if (!fromp->backp()) { pushDeletep(fromp); VL_DANGLING(fromp); }
         if (!msbp->backp()) { pushDeletep(msbp); VL_DANGLING(msbp); }
         if (!lsbp->backp()) { pushDeletep(lsbp); VL_DANGLING(lsbp); }
@@ -465,7 +465,7 @@ private:
             // How to recover?  We'll strip a dimension.
             nodep->replaceWith(fromp); pushDeletep(nodep); VL_DANGLING(nodep);
         }
-        // delete whataver we didn't use in reconstruction
+        // delete whatever we didn't use in reconstruction
         if (!fromp->backp()) { pushDeletep(fromp); VL_DANGLING(fromp); }
         if (!rhsp->backp()) { pushDeletep(rhsp); VL_DANGLING(rhsp); }
         if (!widthp->backp()) { pushDeletep(widthp); VL_DANGLING(widthp); }

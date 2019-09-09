@@ -120,7 +120,7 @@ class EmitCSyms : EmitCBaseVisitor {
     }
 
     void varsExpand() {
-        // We didn'e have all m_scopes loaded when we encountered variables, so expand them now
+        // We didn't have all m_scopes loaded when we encountered variables, so expand them now
         // It would be less code if each module inserted its own variables.
         // Someday.  For now public isn't common.
         for (std::vector<ScopeModPair>::iterator itsc = m_scopes.begin();

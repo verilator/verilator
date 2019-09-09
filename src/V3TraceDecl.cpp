@@ -197,7 +197,7 @@ private:
                 addIgnore("Wide memory > --trace-max-array ents");
             } else if (VN_IS(nodep->subDTypep()->skipRefp(), BasicDType)  // Nothing lower than this array
                        && m_traVscp->dtypep()->skipRefp() == nodep) {  // Nothing above this array
-                // Simple 1-D array, use exising V3EmitC runtime loop rather than unrolling
+                // Simple 1-D array, use existing V3EmitC runtime loop rather than unrolling
                 // This will put "(index)" at end of signal name for us
                 if (m_traVscp->dtypep()->skipRefp()->isString()) {
                     addIgnore("Unsupported: strings");

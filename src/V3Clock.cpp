@@ -301,7 +301,7 @@ private:
                                            changep),
                                 incp, NULL);
         // We could add another IF to detect posedges, and only increment if so.
-        // It's another whole branch though verus a potential memory miss.
+        // It's another whole branch though versus a potential memory miss.
         // We'll go with the miss.
         newp->addIfsp(new AstAssign(nodep->fileline(),
                                     changep->cloneTree(false),

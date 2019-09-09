@@ -145,7 +145,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
     typedef vl_unordered_set<std::string> NameSet;
     NameSet ioNames;
     NameSet dupNames;
-    // For all modulues, skipping over new top
+    // For all modules, skipping over new top
     for (AstNodeModule* oldmodp = VN_CAST(rootp->modulesp()->nextp(), NodeModule);
          oldmodp && oldmodp->level() <= 2;
          oldmodp = VN_CAST(oldmodp->nextp(), NodeModule)) {
@@ -163,7 +163,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
         }
     }
 
-    // For all modulues, skipping over new top
+    // For all modules, skipping over new top
     for (AstNodeModule* oldmodp = VN_CAST(rootp->modulesp()->nextp(), NodeModule);
          oldmodp && oldmodp->level() <= 2;
          oldmodp = VN_CAST(oldmodp->nextp(), NodeModule)) {

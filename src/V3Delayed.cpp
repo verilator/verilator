@@ -99,7 +99,7 @@ private:
     AstAssignDly*       m_nextDlyp;     // Next delayed assignment in a list of assignments
     bool                m_inDly;        // True in delayed assignments
     bool                m_inLoop;       // True in for loops
-    bool                m_inInitial;    // True in intial blocks
+    bool                m_inInitial;    // True in initial blocks
     typedef std::map<std::pair<AstNodeModule*,string>,AstVar*> VarMap;
     VarMap              m_modVarMap;    // Table of new var names created under module
     V3Double0           m_statSharedSet;// Statistic tracking

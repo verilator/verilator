@@ -65,7 +65,7 @@ private:
 
     PackageScopeMap     m_packageScopes;        // Scopes for each package
     VarScopeMap         m_varScopes;            // Varscopes created for each scope and var
-    VarRefScopeSet      m_varRefScopes;         // Varrefs-in-scopes needing fixup when donw
+    VarRefScopeSet      m_varRefScopes;         // Varrefs-in-scopes needing fixup when done
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()

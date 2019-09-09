@@ -107,7 +107,7 @@ protected:
 
         // Set language standard up front
         if (!v3Global.opt.preprocOnly()) {
-            // Leting lex parse this saves us from having to specially en/decode
+            // Letting lex parse this saves us from having to specially en/decode
             // from the V3LangCode to the various Lex BEGIN states. The language
             // of this source file is updated here, in case there have been any
             // intervening +<lang>ext+ options since it was first encountered.

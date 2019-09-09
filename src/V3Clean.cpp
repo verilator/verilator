@@ -72,7 +72,7 @@ private:
         int width = cppWidth(nodep);  // widthMin is unchanged
         if (old_dtypep->width() != width) {
             // Since any given dtype's cppWidth() is the same, we can just
-            // remember one convertion for each, and reuse it
+            // remember one conversion for each, and reuse it
             if (AstNodeDType* new_dtypep = VN_CAST(old_dtypep->user3p(), NodeDType)) {
                 nodep->dtypep(new_dtypep);
             } else {

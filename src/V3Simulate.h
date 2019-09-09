@@ -946,7 +946,7 @@ private:
     }
 
     // default
-    // These types are definately not reducable
+    // These types are definitely not reducible
     //   AstCoverInc, AstArraySel, AstFinish,
     //   AstRand, AstTime, AstUCFunc, AstCCall, AstCStmt, AstUCStmt
     virtual void visit(AstNode* nodep) {

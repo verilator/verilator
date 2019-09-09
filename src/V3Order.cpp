@@ -1071,7 +1071,7 @@ private:
                         con = false;
                     }
                     if (varscp->varp()->attrClockEn() && !m_inPre && !m_inPost && !m_inClocked) {
-                        // clock_enable attribute: user's worring about it for us
+                        // clock_enable attribute: user's worrying about it for us
                         con = false;
                     }
                     if (m_inClkAss && (varscp->varp()->attrClocker()
@@ -1411,7 +1411,7 @@ void OrderVisitor::processInputsOutIterate(OrderEitherVertex* vertexp, VertexVec
     vertexp->user(3);  // out-edges processed
 
     {
-        // Propagate PrimaryIn through simple assignments, followint target of vertex
+        // Propagate PrimaryIn through simple assignments, following target of vertex
         for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
             OrderEitherVertex* toVertexp = static_cast<OrderEitherVertex*>(edgep->top());
             if (OrderVarStdVertex* vvertexp = dynamic_cast<OrderVarStdVertex*>(toVertexp)) {

@@ -522,7 +522,7 @@ void DfaGraph::dfaReduce() {
 // this so we just create a edge for each case and mark it "complemented."
 //
 // 3. Delete temp vertex (old accept/new reject) and related edges.
-// The user's old accept is now the new accept.  This is imporant as
+// The user's old accept is now the new accept.  This is important as
 // we want the virtual type of it to be intact.
 
 class DfaGraphComplement : GraphAlg<> {

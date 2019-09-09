@@ -103,7 +103,7 @@ class MergeCandidate;
 // should cost almost nothing in terms of partitioner quality.
 //
 // If you want the most aggressive possible partition, set it "false" and
-// be prepared to be dissappointed when the improvement in the partition is
+// be prepared to be disappointed when the improvement in the partition is
 // negligible / in the noise.
 //
 // Q) Why retain the control, if there is really no downside?
@@ -2204,7 +2204,7 @@ public:
         , m_ready(m_mtaskCmp) {}
     ~PartPackMTasks() {}
 
-    // METHOS
+    // METHODS
     uint32_t completionTime(const ExecMTask* mtaskp, uint32_t thread) {
         const MTaskState& state = m_mtaskState[mtaskp];
         UASSERT(mtaskp->thread() != 0xffffffff, "Mtask should have assigned thread");

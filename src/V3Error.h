@@ -77,7 +77,7 @@ public:
         ENDLABEL,       // End lable name mismatch
         GENCLK,         // Generated Clock
         IFDEPTH,        // If statements too deep
-        IGNOREDRETURN,  // Ignoring return value (funcation as task)
+        IGNOREDRETURN,  // Ignoring return value (function as task)
         IMPERFECTSCH,   // Imperfect schedule (disabled by default)
         IMPLICIT,       // Implicit wire
         IMPORTSTAR,     // Import::* in $unit
