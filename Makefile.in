@@ -108,8 +108,7 @@ SUBDIRS = src test_regress \
 	examples/tracing_c  examples/tracing_sc \
 
 INFOS = README README.html README.pdf internals.txt internals.html \
-        internals.pdf verilator.txt verilator.html verilator.pdf \
-	$(VL_INST_MAN_FILES)
+        internals.pdf verilator.txt verilator.html verilator.pdf
 
 # Files that can be generated, but should be up to date for a distribution.
 DISTDEP = info Makefile
@@ -191,6 +190,9 @@ ifneq ($(OBJCACHE_HOSTS),)
 export OBJCACHE_JOBS := -j $(shell objcache --jobs "$(OBJCACHE_HOSTS)")
 endif
 endif
+
+# See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
+VL_INST_MAN_FILES = verilator.1 verilator_coverage.1 verilator_gantt.1 verilator_profcfunc.1
 
 default: all
 all: all_nomsg msg_test
@@ -296,9 +298,6 @@ VL_INST_BIN_FILES = verilator verilator_bin verilator_bin_dbg verilator_coverage
 	verilator_coverage verilator_gantt verilator_includer verilator_profcfunc
 # Some scripts go into both the search path and pkgdatadir,
 # so they can be found by the user, and under $VERILATOR_ROOT.
-
-# See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
-VL_INST_MAN_FILES = verilator.1 verilator_coverage.1 verilator_gantt.1 verilator_profcfunc.1
 
 VL_INST_INC_BLDDIR_FILES = \
 	include/verilated_config.h \
@@ -507,7 +506,7 @@ clean mostlyclean distclean maintainer-clean::
 	rm -rf nodist/obj_dir
 
 distclean maintainer-clean::
-	rm -f *.info* *.1 $(INFOS)
+	rm -f *.info* *.1 $(INFOS) $(VL_INST_MAN_FILES)
 	rm -f Makefile config.status config.cache config.log TAGS
 	rm -f verilator_bin* verilator_coverage_bin*
 	rm -f bin/verilator_bin* bin/verilator_coverage_bin*
