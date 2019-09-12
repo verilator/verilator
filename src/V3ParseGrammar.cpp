@@ -88,11 +88,16 @@ AstNode* V3ParseGrammar::createSupplyExpr(FileLine* fileline, string name, int v
 AstRange* V3ParseGrammar::scrubRange(AstNodeRange* nrangep) {
     // Remove any UnsizedRange's from list
     for (AstNodeRange* nodep = nrangep, *nextp; nodep; nodep = nextp) {
-        nextp = VN_CAST(nrangep->nextp(), NodeRange);
+        nextp = VN_CAST(nodep->nextp(), NodeRange);
         if (!VN_IS(nodep, Range)) {
             nodep->v3error("Unsupported or syntax error: Unsized range in cell or other declaration");
             nodep->unlinkFrBack(); nodep->deleteTree(); VL_DANGLING(nodep);
         }
+    }
+    if (nrangep && nrangep->nextp()) {
+        // Not supported by at least 2 of big 3
+        nrangep->nextp()->v3error("Unsupported: Multidimensional cells/interfaces.");
+        nrangep->nextp()->unlinkFrBackWithNext()->deleteTree();
     }
     return VN_CAST(nrangep, Range);
 }

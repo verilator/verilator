@@ -2201,7 +2201,7 @@ mpInstnameList<nodep>:		// Similar to instnameList, but for modport instantiatio
 	;
 
 mpInstnameParen<nodep>:		// Similar to instnameParen, but for modport instantiations which have no parenthesis
-		id instRangeE sigAttrListE		{ $$ = VARDONEA($<fl>1,*$1,$2,$3); }
+		id instRangeListE sigAttrListE		{ $$ = VARDONEA($<fl>1,*$1,$2,$3); }
 	;
 
 instnameList<nodep>:
@@ -2211,25 +2211,34 @@ instnameList<nodep>:
 
 instnameParen<cellp>:
 	//			// Must clone m_instParamp as may be comma'ed list of instances
-		id instRangeE '(' cellpinList ')'	{ $$ = new AstCell($<fl>1, GRAMMARP->m_instModuleFl,
+		id instRangeListE '(' cellpinList ')'	{ $$ = new AstCell($<fl>1, GRAMMARP->m_instModuleFl,
 									   *$1, GRAMMARP->m_instModule, $4,
 									   AstPin::cloneTreeNull(GRAMMARP->m_instParamp, true),
                                                                            GRAMMARP->scrubRange($2));
 						          $$->trace(GRAMMARP->allTracingOn($<fl>1)); }
-	|	id instRangeE 				{ $$ = new AstCell($<fl>1, GRAMMARP->m_instModuleFl,
+	|	id instRangeListE 			{ $$ = new AstCell($<fl>1, GRAMMARP->m_instModuleFl,
 									   *$1, GRAMMARP->m_instModule, NULL,
 									   AstPin::cloneTreeNull(GRAMMARP->m_instParamp, true),
                                                                            GRAMMARP->scrubRange($2));
 						          $$->trace(GRAMMARP->allTracingOn($<fl>1)); }
-	//UNSUP	instRangeE '(' cellpinList ')'		{ UNSUP } // UDP
+	//UNSUP	instRangeListE '(' cellpinList ')'	{ UNSUP } // UDP
 	//			// Adding above and switching to the Verilog-Perl syntax
 	//			// causes a shift conflict due to use of idClassSel inside exprScope.
 	//			// It also breaks allowing "id foo;" instantiation syntax.
 	;
 
-instRangeE<rangep>:
+instRangeListE<rangep>:
 		/* empty */				{ $$ = NULL; }
-	|	'[' constExpr ']'			{ $$ = new AstRange($1, new AstConst($1, 0), new AstSub($1, $2, new AstConst($1, 1))); }
+	|	instRangeList				{ $$ = $1; }
+	;
+
+instRangeList<rangep>:
+		instRange				{ $$ = $1; }
+	|	instRangeList instRange			{ $$ = VN_CAST($1->addNextNull($2), Range); }
+	;
+
+instRange<rangep>:
+		'[' constExpr ']'			{ $$ = new AstRange($1, new AstConst($1, 0), new AstSub($1, $2, new AstConst($1, 1))); }
 	|	'[' constExpr ':' constExpr ']'		{ $$ = new AstRange($1,$2,$4); }
 	;
 
@@ -3626,7 +3635,7 @@ gateUnsupList<nodep>:
 	;
 
 gateRangeE<nodep>:
-		instRangeE 				{ $$ = $1; GATERANGE(GRAMMARP->scrubRange($1)); }
+		instRangeListE 				{ $$ = $1; GATERANGE(GRAMMARP->scrubRange($1)); }
 	;
 
 gateBuf<nodep>:

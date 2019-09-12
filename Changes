@@ -10,6 +10,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Make Syms file honor --output-split-cfuncs, bug1499. [Todd Strader]
 
+****  Fix error on multidimensional cells, bug1505. [Anderson Ignacio Da Silva]
+
 
 * Verilator 4.018 2019-08-29
 

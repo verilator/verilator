@@ -9,14 +9,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-top_filename("t/t_mod_interface_array.v");
-
 compile(
-    v_flags2 => ["-Oi"],
-    );
-
-execute(
-    check_finished => 1,
+    fails => 1,
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);
