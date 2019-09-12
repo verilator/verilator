@@ -431,7 +431,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit ClockVisitor(AstNetlist* nodep) {
         m_modp = NULL;
         m_evalFuncp = NULL;

@@ -248,7 +248,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit LinkJumpVisitor(AstNetlist* nodep) {
         m_modp = NULL;
         m_ftaskp = NULL;

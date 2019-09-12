@@ -157,7 +157,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit DepthVisitor(AstNetlist* nodep) {
         m_modp = NULL;
         m_funcp = NULL;

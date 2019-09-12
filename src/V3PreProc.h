@@ -99,7 +99,7 @@ public:
     virtual void candidateDefines(VSpellCheck* spellerp) = 0;  ///< Spell check candidate defines
 
 protected:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     V3PreProc() {
         m_debug=0;
     };

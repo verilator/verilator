@@ -1198,7 +1198,7 @@ public:
     void        debugTreeChange(const char* prefix, int lineno, bool next);
 
 protected:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     AstNode() {init(); }
     explicit AstNode(FileLine* fileline) {init(); m_fileline = fileline; }
     virtual AstNode* clone() = 0;  // Generally, cloneTree is what you want instead

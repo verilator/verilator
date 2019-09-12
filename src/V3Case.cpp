@@ -110,7 +110,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit CaseLintVisitor(AstNodeCase* nodep) {
         m_caseExprp = NULL;
         iterate(nodep);
@@ -474,7 +474,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit CaseVisitor(AstNetlist* nodep) {
         m_caseWidth = 0;
         m_caseItems = 0;

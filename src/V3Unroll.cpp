@@ -458,13 +458,13 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     UnrollVisitor() { init(false, ""); }
     virtual ~UnrollVisitor() {
         V3Stats::addStatSum("Optimizations, Unrolled Loops", m_statLoops);
         V3Stats::addStatSum("Optimizations, Unrolled Iterations", m_statIters);
     }
-    // METHORS
+    // METHODS
     void init(bool generate, const string& beginName) {
         m_forVarp = NULL;
         m_forVscp = NULL;

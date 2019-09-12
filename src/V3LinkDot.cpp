@@ -1187,7 +1187,7 @@ class LinkDotFindVisitor : public AstNVisitor {
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     LinkDotFindVisitor(AstNetlist* rootp, LinkDotState* statep) {
         UINFO(4,__FUNCTION__<<": "<<endl);
         m_packagep = NULL;
@@ -1353,7 +1353,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     LinkDotParamVisitor(AstNetlist* rootp, LinkDotState* statep) {
         UINFO(4,__FUNCTION__<<": "<<endl);
         m_statep = statep;
@@ -1503,7 +1503,7 @@ class LinkDotScopeVisitor : public AstNVisitor {
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     LinkDotScopeVisitor(AstNetlist* rootp, LinkDotState* statep) {
         UINFO(4,__FUNCTION__<<": "<<endl);
         m_modSymp = NULL;
@@ -1591,7 +1591,7 @@ class LinkDotIfaceVisitor : public AstNVisitor {
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     LinkDotIfaceVisitor(AstIface* nodep, VSymEnt* curSymp, LinkDotState* statep) {
         UINFO(4,__FUNCTION__<<": "<<endl);
         m_curSymp = curSymp;
@@ -2544,7 +2544,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     LinkDotResolveVisitor(AstNetlist* rootp, LinkDotState* statep) {
         UINFO(4,__FUNCTION__<<": "<<endl);
         m_statep = statep;

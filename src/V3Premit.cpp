@@ -403,7 +403,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit PremitVisitor(AstNetlist* nodep) {
         m_modp = NULL;
         m_funcp = NULL;

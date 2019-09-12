@@ -151,7 +151,7 @@ public:
         return treep;
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     SenTreeFinder() {
         clear();
     }

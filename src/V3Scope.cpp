@@ -295,7 +295,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit ScopeVisitor(AstNetlist* nodep) {
         m_aboveCellp = NULL;
         m_aboveScopep = NULL;
@@ -401,7 +401,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit ScopeCleanupVisitor(AstNetlist* nodep) {
         m_scopep = NULL;
         iterate(nodep);

@@ -123,7 +123,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit DepthBlockVisitor(AstNetlist* nodep) {
         m_modp = NULL;
         m_funcp = NULL;

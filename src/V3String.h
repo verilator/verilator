@@ -108,7 +108,7 @@ public:
     void name(const string& name) { m_name = name; m_hashed = ""; }
     string name() const { return m_name; }
     string hashedName();
-    // CONFIG STATIC METHORS
+    // CONFIG STATIC METHODS
     // Length at which to start hashing, 0=disable
     static void maxLength(size_t flag) { s_maxLength = flag; }
     static size_t maxLength() { return s_maxLength; }

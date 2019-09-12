@@ -461,7 +461,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit CombineVisitor(AstNetlist* nodep) {
         m_state = STATE_IDLE;
         m_modp = NULL;

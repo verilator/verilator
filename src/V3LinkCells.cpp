@@ -479,7 +479,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     LinkCellsVisitor(AstNetlist* nodep, V3InFilter* filterp, V3ParseSym* parseSymp)
         : m_mods(nodep) {
         m_filterp = filterp;

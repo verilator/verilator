@@ -428,7 +428,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit UndrivenVisitor(AstNetlist* nodep) {
         m_inBBox = false;
         m_inContAssign = false;

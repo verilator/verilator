@@ -32,7 +32,7 @@ The resulting executable will perform the actual simulation.
 
 Verilator is developed and has primary testing on Ubuntu.  Versions have
 also built on Redhat Linux, Macs OS-X, HPUX and Solaris.  It should run
-with minor porting on any Linix-ish platform.  Verilator also works on
+with minor porting on any Linux-ish platform.  Verilator also works on
 Windows under Cygwin, and Windows under MinGW (gcc -mno-cygwin).  Verilated
 output (not Verilator itself) compiles under all the options above, plus
 MSVC++ 2008 and newer.
@@ -100,7 +100,7 @@ To use Verilator you will need the C<perl>, C<make> (or C<gmake>), and
 C<g++> (or C<clang>) packages. To compile Verilator in addition to the above you need the C<flex>,
 C<bison> and C<texi2html> packages installed.
 
-  sudo apt-get install git make autoconf g++ flex bisonz   # First time prerequisites
+  sudo apt-get install git make autoconf g++ flex bison   # First time prerequisites
   sudo apt-get install libgz   # Non-Ubuntu (ignore if gives error)
   sudo apt-get install libfl2 libfl-dev zlibc zlib1g zlib1g-dev  # Ubuntu only (ignore if gives error)
 
@@ -166,7 +166,7 @@ needed files.
 
 =item 2.
 
-You may eventually be instaling onto a project/company-wide "CAD" tools
+You may eventually be installing onto a project/company-wide "CAD" tools
 disk that may support multiple versions of every tool.
 
     unset VERILATOR_ROOT      # if your shell is bash

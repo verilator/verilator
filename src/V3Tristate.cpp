@@ -133,7 +133,7 @@ private:
     V3Graph m_graph;  // Logic graph
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     TristateGraph() { clear(); }
     virtual ~TristateGraph() { clear(); }
 
@@ -312,7 +312,7 @@ class TristatePinVisitor : public TristateBaseVisitor {
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     TristatePinVisitor(AstNode* nodep, TristateGraph& tgraph, bool lvalue)
         : m_tgraph(tgraph), m_lvalue(lvalue) {
         iterate(nodep);
@@ -1355,7 +1355,7 @@ class TristateVisitor : public TristateBaseVisitor {
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit TristateVisitor(AstNode* nodep) {
         m_graphing = false;
         m_modp  = NULL;

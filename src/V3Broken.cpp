@@ -179,7 +179,7 @@ public:
         }
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     BrokenTable() {}
     virtual ~BrokenTable() {}
 };
@@ -213,7 +213,7 @@ private:
         processAndIterate(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit BrokenMarkVisitor(AstNetlist* nodep) {
         iterate(nodep);
     }
@@ -269,7 +269,7 @@ private:
         processAndIterate(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit BrokenCheckVisitor(AstNetlist* nodep) {
         iterate(nodep);
     }

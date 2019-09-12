@@ -1723,7 +1723,7 @@ void EmitCImp::emitVarReset(AstVar* varp) {
             for (AstNode* itemp = initarp->initsp(); itemp; ++pos, itemp=itemp->nextp()) {
                 int index = initarp->posIndex(pos);
                 UASSERT_OBJ(initarp->defaultp() || index==pos, initarp,
-                            "Not enough values in array initalizement");
+                            "Not enough values in array initialization");
                 emitSetVarConstant(varp->name()+"["+cvtToStr(index)+"]", VN_CAST(itemp, Const));
             }
         } else {

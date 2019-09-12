@@ -239,7 +239,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit TaskStateVisitor(AstNetlist* nodep) {
         m_assignwp = NULL;
         m_curVxp = new TaskCodeVertex(&m_callGraph);
@@ -282,7 +282,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit TaskRelinkVisitor(AstBegin* nodep) {  // Passed temporary tree
         iterate(nodep);
     }
@@ -1324,7 +1324,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     TaskVisitor(AstNetlist* nodep, TaskStateVisitor* statep)
         : m_statep(statep) {
         m_modp = NULL;

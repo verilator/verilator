@@ -737,7 +737,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit TraceVisitor(AstNetlist* nodep) {
         m_funcp = NULL;
         m_tracep = NULL;

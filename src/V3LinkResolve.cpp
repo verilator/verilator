@@ -458,7 +458,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit LinkResolveVisitor(AstNetlist* rootp) {
         m_ftaskp = NULL;
         m_modp = NULL;
@@ -506,7 +506,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit LinkBotupVisitor(AstNetlist* rootp) {
         m_modp = NULL;
         //

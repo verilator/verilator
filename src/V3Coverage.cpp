@@ -380,7 +380,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit CoverageVisitor(AstNetlist* rootp) {
         // Operate on all modules
         m_checkBlock = true;

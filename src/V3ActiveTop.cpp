@@ -139,7 +139,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit ActiveTopVisitor(AstNetlist* nodep) {
         m_topscopep = NULL;
         iterate(nodep);

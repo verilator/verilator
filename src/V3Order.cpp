@@ -370,7 +370,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit OrderClkMarkVisitor(AstNode* nodep) {
         m_hasClk    = false;
         m_inClocked = false;
@@ -412,7 +412,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit OrderClkAssVisitor(AstNode* nodep) {
         m_clkAss = false;
         iterate(nodep);
@@ -1238,7 +1238,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     OrderVisitor() {
         m_topScopep = NULL;
         m_scopetopp = NULL;

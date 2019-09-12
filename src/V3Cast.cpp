@@ -170,7 +170,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit CastVisitor(AstNetlist* nodep) {
         iterate(nodep);
     }

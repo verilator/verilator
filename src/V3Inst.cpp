@@ -134,7 +134,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit InstVisitor(AstNetlist* nodep) {
         m_cellp = NULL;
         //
@@ -188,7 +188,7 @@ public:
         }
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit InstDeModVarVisitor() {}
     void main(AstNodeModule* nodep) {
         UINFO(8,"  dmMODULE    "<<nodep<<endl);
@@ -450,7 +450,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit InstDeVisitor(AstNetlist* nodep) {
         m_cellRangep = NULL;
         m_instSelNum = 0;

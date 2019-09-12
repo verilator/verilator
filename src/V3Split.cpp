@@ -265,7 +265,7 @@ protected:
     bool                m_inDly;        // Inside ASSIGNDLY
     V3Double0           m_statSplits;   // Statistic tracking
 
-    // CONSTUCTORS
+    // CONSTRUCTORS
 public:
     SplitReorderBaseVisitor() {
         scoreboardClear();

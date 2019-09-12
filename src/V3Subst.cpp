@@ -211,7 +211,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     SubstUseVisitor(AstNode* nodep, int origStep) {
         UINFO(9, "        SubstUseVisitor "<<origStep<<" "<<nodep<<endl);
         m_ok = true;
@@ -376,7 +376,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit SubstVisitor(AstNode* nodep) {
         AstNode::user1ClearTree();  // user1p() used on entire tree
         AstNode::user2ClearTree();  // user2p() used on entire tree

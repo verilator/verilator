@@ -1978,7 +1978,7 @@ loop_generate_construct<nodep>:	// ==IEEE: loop_generate_construct
 			}
 	;
 
-genvar_initialization<nodep>:	// ==IEEE: genvar_initalization
+genvar_initialization<nodep>:	// ==IEEE: genvar_initialization
 		varRefBase '=' expr			{ $$ = new AstAssign($2,$1,$3); }
 	|	yGENVAR genvar_identifierDecl '=' constExpr	{ $$ = $2; $2->addNext(new AstAssign($3,new AstVarRef($2->fileline(),$2,true), $4)); }
 	;
@@ -2511,7 +2511,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	|	yFOREVER stmtBlock			{ $$ = new AstWhile($1,new AstConst($1,AstConst::LogicTrue()),$2); }
 	|	yREPEAT '(' expr ')' stmtBlock		{ $$ = new AstRepeat($1,$3,$5);}
 	|	yWHILE '(' expr ')' stmtBlock		{ $$ = new AstWhile($1,$3,$5);}
-	//			// for's first ';' is in for_initalization
+	//			// for's first ';' is in for_initialization
 	|	statementFor				{ $$ = $1; }
 	|	yDO stmtBlock yWHILE '(' expr ')' ';'	{ if ($2) {
 							     $$ = $2->cloneTree(true);

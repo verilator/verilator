@@ -227,7 +227,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     BeginVisitor(AstNetlist* nodep, BeginState* statep) {
         m_statep = statep;
         m_modp = NULL;
@@ -276,7 +276,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     BeginRelinkVisitor(AstNetlist* nodep, BeginState*) {
         iterate(nodep);
     }

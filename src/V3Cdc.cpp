@@ -154,7 +154,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     CdcDumpVisitor(AstNode* nodep, std::ofstream* ofp, const string& prefix) {
         m_ofp = ofp;
         m_prefix = prefix;
@@ -181,7 +181,7 @@ private:
         }
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit CdcWidthVisitor(AstNode* nodep) {
         m_maxLineno = 0;
         m_maxFilenameLen = 0;
@@ -729,7 +729,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit CdcVisitor(AstNode* nodep) {
         m_logicVertexp = NULL;
         m_scopep = NULL;

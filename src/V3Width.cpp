@@ -166,7 +166,7 @@ class WidthClearVisitor {
         }
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit WidthClearVisitor(AstNetlist* nodep) {
         clearWidthRecurse(nodep);
     }
@@ -4171,7 +4171,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     WidthVisitor(bool paramsOnly,  // [in] TRUE if we are considering parameters only.
                  bool doGenerate) {  // [in] TRUE if we are inside a generate statement and
         //                           // don't wish to trigger errors

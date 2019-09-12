@@ -285,7 +285,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit CleanVisitor(AstNetlist* nodep) {
         m_modp = NULL;
         iterate(nodep);

@@ -140,7 +140,7 @@ public:
         return activep;
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     ActiveNamer() {
         m_scopep = NULL;
         m_iActivep = NULL;
@@ -214,7 +214,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     ActiveDlyVisitor(AstNode* nodep, CheckType check) {
         m_alwaysp = nodep;
         m_check = check;
@@ -423,7 +423,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit ActiveVisitor(AstNetlist* nodep) {
         m_scopeFinalp = NULL;
         m_itemCombo = false;

@@ -105,7 +105,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit EmitCBaseCounterVisitor(AstNode* nodep) {
         m_count = 0;
         iterate(nodep);

@@ -96,7 +96,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit HashedVisitor(AstNode* nodep) {
         m_cacheInUser4 = true;
         nodeHashIterate(nodep);

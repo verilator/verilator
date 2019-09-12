@@ -53,7 +53,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit ConstVarMarkVisitor(AstNode* nodep) {
         AstNode::user4ClearTree();  // Check marked InUse before we're called
         iterate(nodep);
@@ -75,7 +75,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit ConstVarFindVisitor(AstNode* nodep) {
         m_found = false;
         iterateAndNextNull(nodep);
@@ -1268,7 +1268,7 @@ private:
     }
 
     void swapSides(AstNodeBiCom* nodep) {
-        // COMMUNATIVE({a},CONST) -> COMMUNATIVE(CONST,{a})
+        // COMMUTATIVE({a},CONST) -> COMMUTATIVE(CONST,{a})
         // This simplifies later optimizations
         AstNode* lhsp = nodep->lhsp()->unlinkFrBackWithNext();
         AstNode* rhsp = nodep->rhsp()->unlinkFrBackWithNext();
@@ -1597,7 +1597,7 @@ private:
                             if (initarp->defaultp()) {
                                 itemp = initarp->defaultp();
                             } else {
-                                initarp->v3fatalSrc("Not enough values in array initalizement");
+                                initarp->v3fatalSrc("Not enough values in array initialization");
                             }
                         }
                     }
@@ -2518,7 +2518,7 @@ public:
         PROC_CPP
     };
 
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit ConstVisitor(ProcMode pmode) {
         m_params = false;
         m_required = false;

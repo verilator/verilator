@@ -212,7 +212,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit InlineMarkVisitor(AstNode* nodep) {
         m_modp = NULL;
         iterate(nodep);
@@ -251,7 +251,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit InlineCollectVisitor(AstNodeModule* nodep) {  // passed OLD module, not new one
         iterate(nodep);
     }
@@ -462,7 +462,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     InlineRelinkVisitor(AstNodeModule* cloneModp, AstNodeModule* oldModp, AstCell* cellp) {
         m_modp = oldModp;
         m_cellp = cellp;
@@ -603,7 +603,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit InlineVisitor(AstNode* nodep) {
         m_modp = NULL;
         iterate(nodep);

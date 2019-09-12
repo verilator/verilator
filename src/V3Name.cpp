@@ -132,7 +132,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit NameVisitor(AstNetlist* nodep) {
         m_modp = NULL;
         iterate(nodep);

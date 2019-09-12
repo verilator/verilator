@@ -122,7 +122,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit BranchVisitor(AstNetlist* nodep) {
         reset();
         iterateChildren(nodep);

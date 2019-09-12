@@ -956,7 +956,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit ExpandVisitor(AstNetlist* nodep) {
         m_stmtp = NULL;
         iterate(nodep);

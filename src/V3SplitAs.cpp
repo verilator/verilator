@@ -65,7 +65,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit SplitAsFindVisitor(AstAlways* nodep) {
         m_splitVscp = NULL;
         iterate(nodep);
@@ -125,7 +125,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     SplitAsCleanVisitor(AstAlways* nodep, AstVarScope* vscp, bool modeMatch) {
         m_splitVscp = vscp;
         m_modeMatch = modeMatch;
@@ -201,7 +201,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit SplitAsVisitor(AstNetlist* nodep) {
         m_splitVscp = NULL;
         AstNode::user1ClearTree();  // user1p() used on entire tree

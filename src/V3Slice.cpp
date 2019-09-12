@@ -228,7 +228,7 @@ class SliceVisitor : public AstNVisitor {
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit SliceVisitor(AstNetlist* nodep) {
         m_assignp = NULL;
         m_assignError = false;

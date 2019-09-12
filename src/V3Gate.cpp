@@ -217,7 +217,7 @@ private:
         } else {
             if (m_rhsVarRefs.size()>1) {
                 AstNodeVarRef* lastRefp = m_rhsVarRefs.back();
-                if (0) {  // Diable the multiple-input optimization
+                if (0) {  // Disable the multiple-input optimization
                     clearSimple(">1 rhs varRefs");
                 } else {
                     if (m_buffersOnly) clearSimple(">1 rhs varRefs");
@@ -269,7 +269,7 @@ private:
         else iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     GateOkVisitor(AstNode* nodep, bool buffersOnly, bool dedupe) {
         m_isSimple = true;
         m_substTreep = NULL;
@@ -523,7 +523,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit GateVisitor(AstNode* nodep) {
         AstNode::user1ClearTree();
         m_logicVertexp = NULL;
@@ -881,7 +881,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     virtual ~GateElimVisitor() {}
     GateElimVisitor(AstNode* nodep, AstVarScope* varscp, AstNode* replaceTreep,
                     GateDedupeVarVisitor* varVisp) {
@@ -1097,7 +1097,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     GateDedupeVarVisitor() {
         m_assignp = NULL;
         m_ifCondp = NULL;
@@ -1429,7 +1429,7 @@ private:
         iterateChildren(nodep);
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     GateConcatVisitor() {
         m_vscp = NULL;
         m_offset = 0;
@@ -1616,7 +1616,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit GateDeassignVisitor(AstNode* nodep) {
         iterate(nodep);
     }

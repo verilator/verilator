@@ -1788,7 +1788,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit DpiImportCallVisitor(AstNode* nodep)
         : m_hasDpiHazard(false)
         , m_tracingCall(false) {

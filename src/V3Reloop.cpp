@@ -233,7 +233,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit ReloopVisitor(AstNetlist* nodep) {
         m_cfuncp = NULL;
         m_mgCfuncp = NULL;

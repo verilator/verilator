@@ -193,7 +193,7 @@ private:
                        <<m_vscp->varp()->prettyNameQ());
     }
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     ChangedInsertVisitor(AstVarScope* vscp, ChangedState* statep) {
         m_statep = statep;
         m_vscp = vscp;
@@ -296,7 +296,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     ChangedVisitor(AstNetlist* nodep, ChangedState* statep) {
         m_statep = statep;
         iterate(nodep);

@@ -119,7 +119,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit CoverageJoinVisitor(AstNetlist* nodep) {
         iterate(nodep);
     }

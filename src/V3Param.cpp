@@ -562,7 +562,7 @@ private:
     }
 
 public:
-    // CONSTUCTORS
+    // CONSTRUCTORS
     explicit ParamVisitor(AstNetlist* nodep) {
         m_longId = 0;
         m_modp = NULL;
