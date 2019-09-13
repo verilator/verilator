@@ -20,13 +20,18 @@ chdir $dir;
 
 my $rev = 'UNKNOWN_REV';
 my $data = `git describe`;
-if ($data =~ /(verilator.*)/i) {
+if ($data =~ /^(v[0-9].*)/i) {
     $rev = $1;
+}
+elsif ($data =~ /verilator_?(.*)/i) {
+    $rev = "v".$1;
+    $rev =~ s/_/./g;
 }
 
 $data = `git status`;
 if ($data =~ /Changed but not updated/i
-    || $data =~ /Changes to be committed/i) {
+    || $data =~ /Changes to be committed/i
+    || $data =~ /Changes not staged/i) {
     $rev .= " (mod)";
 }
 

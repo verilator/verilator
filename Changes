@@ -12,6 +12,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix error on multidimensional cells, bug1505. [Anderson Ignacio Da Silva]
 
+****  Fix config_rev revision detection on old versions.
+
 
 * Verilator 4.018 2019-08-29
 
