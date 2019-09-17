@@ -14,6 +14,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix config_rev revision detection on old versions.
 
+****  Fix false warning on backward indexing, bug1507. [Hao Shi]
+
 
 * Verilator 4.018 2019-08-29
 

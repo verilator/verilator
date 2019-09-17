@@ -755,7 +755,8 @@ private:
                                    <<" outside data type's '"<< adtypep->declRange() << "'");
                 }
                 else if ((nodep->declRange().littleEndian()
-                          != adtypep->declRange().littleEndian())) {
+                          != adtypep->declRange().littleEndian())
+                         && nodep->declRange().hi() != nodep->declRange().lo()) {
                     nodep->v3error("Slice selection '"<< nodep->declRange() << "'"
                                    <<" has backward indexing versus data type's '"
                                    <<adtypep->declRange() << "'");

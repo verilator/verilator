@@ -15,6 +15,8 @@ module t (/*AUTOARG*/);
 
       array_assign[4:3] = '{32'd4, 32'd3};
       array_assign[1:-1] = '{32'd4, 32'd3};
+      array_assign[1:1] = '{32'd4};  // Ok
+      larray_assign[1:1] = '{32'd4};  // Ok
 
       $write("*-* All Finished *-*\n");
       $finish;
