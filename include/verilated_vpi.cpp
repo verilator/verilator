@@ -1154,7 +1154,7 @@ PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
         return VL_TIME_PRECISION;
     }
     case vpiType: {
-        VerilatedVpio* vop = VerilatedVpioVar::castp(object);
+        VerilatedVpio* vop = VerilatedVpio::castp(object);
         if (VL_UNLIKELY(!vop)) return 0;
         return vop->type();
     }
