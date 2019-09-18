@@ -235,6 +235,8 @@ int _mon_check_var() {
     CHECK_RESULT_CSTR(p, "t");
     p = vpi_get_str(vpiFullName, vh2);
     CHECK_RESULT_CSTR(p, TestSimulator::top());
+    p = vpi_get_str(vpiType, vh2);
+    CHECK_RESULT_CSTR (p, "*undefined*");
 
     TestVpiHandle vh3 = vpi_handle_by_name((PLI_BYTE8*)"onebit", vh2);
     CHECK_RESULT_NZ(vh3);
@@ -252,6 +254,8 @@ int _mon_check_var() {
     CHECK_RESULT_CSTR(p, "onebit");
     p = vpi_get_str(vpiFullName, vh3);
     CHECK_RESULT_CSTR(p, TestSimulator::rooted("onebit"));
+    p = vpi_get_str(vpiType, vh3);
+    CHECK_RESULT_CSTR(p, "vpiReg");
 
     // array attributes
     TestVpiHandle vh4 = VPI_HANDLE("fourthreetwoone");
@@ -259,6 +263,8 @@ int _mon_check_var() {
     if (TestSimulator::has_get_scalar()) {
       d = vpi_get(vpiVector, vh4);
       CHECK_RESULT(d, 1);
+      p = vpi_get_str(vpiType, vh4);
+      CHECK_RESULT_CSTR(p, "vpiMemory");
     }
 
     t_vpi_value tmpValue;
@@ -268,26 +274,38 @@ int _mon_check_var() {
         CHECK_RESULT_NZ(vh10);
         vpi_get_value(vh10, &tmpValue);
         CHECK_RESULT(tmpValue.value.integer,4);
+        p = vpi_get_str(vpiType, vh10);
+        CHECK_RESULT_CSTR(p, "*undefined*");
     }
     {
         TestVpiHandle vh10 = vpi_handle(vpiRightRange, vh4);
         CHECK_RESULT_NZ(vh10);
         vpi_get_value(vh10, &tmpValue);
         CHECK_RESULT(tmpValue.value.integer,3);
+        p = vpi_get_str(vpiType, vh10);
+        CHECK_RESULT_CSTR(p, "*undefined*");
     }
     {
         TestVpiHandle vh10 = vpi_iterate(vpiMemoryWord, vh4);
         CHECK_RESULT_NZ(vh10);
+        p = vpi_get_str(vpiType, vh10);
+        CHECK_RESULT_CSTR(p, "vpiIterator");
         TestVpiHandle vh11 = vpi_scan(vh10);
         CHECK_RESULT_NZ(vh11);
+        p = vpi_get_str(vpiType, vh11);
+        CHECK_RESULT_CSTR(p, "vpiMemoryWord");
         TestVpiHandle vh12 = vpi_handle(vpiLeftRange, vh11);
         CHECK_RESULT_NZ(vh12);
         vpi_get_value(vh12, &tmpValue);
         CHECK_RESULT(tmpValue.value.integer,2);
+        p = vpi_get_str(vpiType, vh12);
+        CHECK_RESULT_CSTR(p, "*undefined*");
         TestVpiHandle vh13 = vpi_handle(vpiRightRange, vh11);
         CHECK_RESULT_NZ(vh13);
         vpi_get_value(vh13, &tmpValue);
         CHECK_RESULT(tmpValue.value.integer,1);
+        p = vpi_get_str(vpiType, vh13);
+        CHECK_RESULT_CSTR(p, "*undefined*");
     }
 
     return 0;

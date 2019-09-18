@@ -16,7 +16,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix false warning on backward indexing, bug1507. [Hao Shi]
 
-****  Fix vpiType accessor, bug1509. [Stefan Wallentowitz]
+****  Fix vpiType accessor, bug1509, bug1510. [Stefan Wallentowitz]
 
 
 * Verilator 4.018 2019-08-29

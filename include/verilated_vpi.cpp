@@ -1203,6 +1203,9 @@ PLI_BYTE8 *vpi_get_str(PLI_INT32 property, vpiHandle object) {
     case vpiDefName: {
         return (PLI_BYTE8*)vop->defname();
     }
+    case vpiType: {
+        return (PLI_BYTE8*) VerilatedVpiError::strFromVpiObjType(vop->type());
+    }
     default:
         _VL_VPI_WARNING(__FILE__, __LINE__, "%s: Unsupported type %s, nothing will be returned",
                         VL_FUNC, VerilatedVpiError::strFromVpiProp(property));
