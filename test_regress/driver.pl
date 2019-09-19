@@ -601,6 +601,7 @@ sub new {
     } else {
         $self->{top_shell_filename} = "$self->{obj_dir}/$self->{VM_PREFIX}__top.v";
     }
+    $self->{pli_filename} ||= $self->{name}.".cpp";
     return $self;
 }
 
@@ -993,7 +994,8 @@ sub compile {
 
     if ($param{make_pli}) {
         $self->oprint("Compile vpi\n") if $self->{verbose};
-        my @cmd = ('c++', @{$param{pli_flags}}, "-DIS_VPI", "$self->{t_dir}/$self->{name}.cpp");
+        my @cmd = ('c++', @{$param{pli_flags}}, "-DIS_VPI",
+                   "$self->{t_dir}/$self->{pli_filename}");
 
         $self->_run(logfile=>"$self->{obj_dir}/pli_compile.log",
                     fails=>$param{fails},
@@ -1257,6 +1259,12 @@ sub obj_dir {
 
 sub get_default_vltmt_threads {
     return $Vltmt_threads;
+}
+
+sub pli_filename {
+    my $self = (ref $_[0]? shift : $Self);
+    $self->{pli_filename} = shift if defined $_[0];
+    return $self->{pli_filename};
 }
 
 sub too_few_cores {
