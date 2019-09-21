@@ -390,8 +390,9 @@ public:
         }
         return ~VL_ULL(0);  // maxquad
     }
-    static void callCbs(vluint32_t reason) {
+    static bool callCbs(vluint32_t reason) VL_MT_UNSAFE_ONE {
         VpioCbList& cbObjList = s_s.m_cbObjLists[reason];
+        bool called = false;
         for (VpioCbList::iterator it=cbObjList.begin(); it!=cbObjList.end();) {
             if (VL_UNLIKELY(!*it)) {  // Deleted earlier, cleanup
                 it = cbObjList.erase(it);
@@ -400,7 +401,9 @@ public:
             VerilatedVpioCb* vop = *it++;
             VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: reason_callback %d %p\n", reason, vop););
             (vop->cb_rtnp()) (vop->cb_datap());
+            called = true;
         }
+        return called;
     }
     static void callValueCbs() VL_MT_UNSAFE_ONE {
         assertOneCheck();
@@ -519,6 +522,10 @@ void VerilatedVpi::callTimedCbs() VL_MT_UNSAFE_ONE {
 
 void VerilatedVpi::callValueCbs() VL_MT_UNSAFE_ONE {
     VerilatedVpiImp::callValueCbs();
+}
+
+bool VerilatedVpi::callCbs(vluint32_t reason) VL_MT_UNSAFE_ONE {
+    return VerilatedVpiImp::callCbs(reason);
 }
 
 //======================================================================
