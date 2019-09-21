@@ -1287,6 +1287,12 @@ sub wno_unopthreads_for_few_cores {
     return "";
 }
 
+sub VM_PREFIX {
+    my $self = (ref $_[0]? shift : $Self);
+    $self->{VM_PREFIX} = shift if defined $_[0];
+    return $self->{VM_PREFIX};
+}
+
 #----------------------------------------------------------------------
 
 sub run {
