@@ -189,6 +189,17 @@ private:
             return;
         }
 
+        if (v3Global.opt.publicFlatRW()) {
+            switch (nodep->varType()) {
+            case AstVarType::VAR:
+            case AstVarType::PORT:
+            case AstVarType::WIRE:
+                nodep->sigUserRWPublic(true);
+                break;
+            default: break;
+            }
+        }
+
         // We used modTrace before leveling, and we may now
         // want to turn it off now that we know the levelizations
         if (v3Global.opt.traceDepth()
@@ -198,6 +209,7 @@ private:
             nodep->trace(false);
         }
         m_varp = nodep;
+
         iterateChildren(nodep);
         m_varp = NULL;
         // temporaries under an always aren't expected to be blocking

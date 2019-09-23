@@ -354,6 +354,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --prof-threads              Enable generating gantt chart data for threads
     --private                   Debugging; see docs
     --public                    Debugging; see docs
+    --public-flat-rw            Mark all variables, etc as public_flat_rw
      -pvalue+<name>=<value>     Overwrite toplevel parameter
     --quiet-exit                Don't print the command on failure
     --relative-includes         Resolve includes relative to current file
@@ -1167,6 +1168,16 @@ optimizations as if all signals had a /*verilator public*/ comments and
 inlining.  This will also turn off inlining as if all modules had a
 /*verilator public_module*/, unless the module specifically enabled it with
 /*verilator inline_module*/.
+
+=item --public-flat-rw
+
+Declares all variables, ports and wires public as if they had /*verilator
+public_flat_rw*/ comments.  This will make them VPI accessible by their
+flat name, but not turn off module inlining.  This is particularly useful
+in combination with --vpi. This may also in some rare cases result in
+mis-simulation of generated clocks.  Instead of this global switch, marking
+only those signals that need public_flat_rw is typically significantly
+better performing.
 
 =item -pvalue+I<name>=I<value>
 
@@ -2916,7 +2927,8 @@ signal should be declared public_flat (see above), but read-only.
 Used after an input, output, register, or wire declaration to indicate the
 signal should be declared public_flat_rd (see above), and also writable,
 where writes should be considered to have the timing specified by the given
-sensitivity edge list.
+sensitivity edge list.  Set for all variables, ports and wires using the
+--public-flat-rw switch.
 
 =item /*verilator public_module*/
 

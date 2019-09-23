@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support $fseek, $ftell, $frewind, bug1496. [Howard Su]
 
+***   Add --public-flat-rw, bug1511. [Stefan Wallentowitz]
+
 ****  Fix make test with no VERILATOR_ROOT, bug1494. [Ahmed El-Mahmoudy]
 
 ****  Make Syms file honor --output-split-cfuncs, bug1499. [Todd Strader]

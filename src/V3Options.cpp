@@ -696,6 +696,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-profile-cfuncs", flag/*ref*/))    { m_profCFuncs = flag; }  // Undocumented, for backward compat
             else if ( onoff (sw, "-prof-threads", flag/*ref*/))      { m_profThreads = flag; }
             else if ( onoff (sw, "-public", flag/*ref*/))            { m_public = flag; }
+            else if ( onoff (sw, "-public-flat-rw", flag/*ref*/) )   { m_publicFlatRW = flag; v3Global.dpi(true); }
             else if (!strncmp(sw, "-pvalue+", strlen("-pvalue+")))     { addParameter(string(sw+strlen("-pvalue+")), false); }
             else if ( onoff (sw, "-relative-cfuncs", flag/*ref*/))   { m_relativeCFuncs = flag; }
             else if ( onoff (sw, "-relative-includes", flag/*ref*/)) { m_relativeIncludes = flag; }
@@ -1297,6 +1298,7 @@ V3Options::V3Options() {
     m_preprocOnly = false;
     m_preprocNoLine = false;
     m_public = false;
+    m_publicFlatRW = false;
     m_relativeCFuncs = true;
     m_relativeIncludes = false;
     m_reportUnoptflat = false;
