@@ -684,7 +684,7 @@ private:
                 || nodep == v3Global.rootp()->evalp()) {
                 // Need a non-null place to remember to later add a statement; make one
                 if (!nodep->stmtsp()) nodep->addStmtsp(
-                    new AstComment(nodep->fileline(), "Tracing activity check"));
+                    new AstComment(nodep->fileline(), "Tracing activity check", true));
                 V3GraphVertex* activityVtxp = getActivityVertexp(nodep->stmtsp(), nodep->slow());
                 new V3GraphEdge(&m_graph, activityVtxp, funcVtxp, 1);
             }

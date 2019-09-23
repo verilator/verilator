@@ -130,7 +130,8 @@ private:
     void addIgnore(const char* why) {
         ++m_statIgnSigs;
         m_initSubFuncp->addStmtsp(
-            new AstComment(m_traVscp->fileline(), "Tracing: "+m_traShowname+" // Ignored: "+why));
+            new AstComment(m_traVscp->fileline(),
+                           "Tracing: "+m_traShowname+" // Ignored: "+why, true));
     }
 
     // VISITORS

@@ -364,7 +364,8 @@ private:
         // outvscp is the variable for functions only, if NULL, it's a task
         UASSERT_OBJ(refp->taskp(), refp, "Unlinked?");
         AstNode* newbodysp = AstNode::cloneTreeNull(refp->taskp()->stmtsp(), true);  // Maybe NULL
-        AstNode* beginp = new AstComment(refp->fileline(), string("Function: ")+refp->name());
+        AstNode* beginp = new AstComment(refp->fileline(),
+                                         string("Function: ")+refp->name(), true);
         if (newbodysp) beginp->addNext(newbodysp);
         if (debug()>=9) { beginp->dumpTreeAndNext(cout, "-newbegi:"); }
         //
@@ -483,7 +484,8 @@ private:
         AstCFunc* cfuncp = m_statep->ftaskCFuncp(refp->taskp());
         UASSERT_OBJ(cfuncp, refp, "No non-inline task associated with this task call?");
         //
-        AstNode* beginp = new AstComment(refp->fileline(), string("Function: ")+refp->name());
+        AstNode* beginp = new AstComment(refp->fileline(),
+                                         string("Function: ")+refp->name(), true);
         AstCCall* ccallp = new AstCCall(refp->fileline(), cfuncp, NULL);
         beginp->addNext(ccallp);
         // Convert complicated outputs to temp signals

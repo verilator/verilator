@@ -301,7 +301,7 @@ private:
             m_namer.scopep()->addActivep(m_scopeFinalp);
         }
         nodep->unlinkFrBack();
-        m_scopeFinalp->addStmtsp(new AstComment(nodep->fileline(), nodep->typeName()));
+        m_scopeFinalp->addStmtsp(new AstComment(nodep->fileline(), nodep->typeName(), true));
         m_scopeFinalp->addStmtsp(nodep->bodysp()->unlinkFrBackWithNext());
         nodep->deleteTree(); VL_DANGLING(nodep);
     }

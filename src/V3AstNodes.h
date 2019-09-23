@@ -2387,15 +2387,17 @@ class AstComment : public AstNodeStmt {
     // Parents:  {statement list}
     // Children: none
 private:
+    bool m_showAt;  // Show "at <fileline>"
     string m_name;  // Text of comment
 public:
-    AstComment(FileLine* fl, const string& name)
+    AstComment(FileLine* fl, const string& name, bool showAt=false)
         : AstNodeStmt(fl)
-        , m_name(name) {}
+        , m_showAt(showAt), m_name(name) {}
     ASTNODE_NODE_FUNCS(Comment)
     virtual string name() const { return m_name; }  // * = Text
     virtual V3Hash sameHash() const { return V3Hash(); }  // Ignore name in comments
     virtual bool same(const AstNode* samep) const { return true; }  // Ignore name in comments
+    virtual bool showAt() const { return m_showAt; }
 };
 
 class AstCond : public AstNodeCond {

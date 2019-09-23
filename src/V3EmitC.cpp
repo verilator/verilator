@@ -236,7 +236,9 @@ public:
         nodep->v3fatalSrc("Case statements should have been reduced out");
     }
     virtual void visit(AstComment* nodep) {
-        putsDecoration(string("// ")+nodep->name()+" at "+nodep->fileline()->ascii()+"\n");
+        string at;
+        if (nodep->showAt()) at = " at "+nodep->fileline()->ascii();
+        putsDecoration(string("// ")+nodep->name()+at+"\n");
         iterateChildren(nodep);
     }
     virtual void visit(AstCoverDecl* nodep) {

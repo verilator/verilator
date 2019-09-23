@@ -271,7 +271,7 @@ private:
         m_scopep = NULL;
     }
     virtual void visit(AstAlways* nodep) {
-        AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName());
+        AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName(), true);
         nodep->replaceWith(cmtp);
         if (AstNode* stmtsp = nodep->bodysp()) {
             stmtsp->unlinkFrBackWithNext();
@@ -280,7 +280,7 @@ private:
         nodep->deleteTree(); VL_DANGLING(nodep);
     }
     virtual void visit(AstAlwaysPost* nodep) {
-        AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName());
+        AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName(), true);
         nodep->replaceWith(cmtp);
         if (AstNode* stmtsp = nodep->bodysp()) {
             stmtsp->unlinkFrBackWithNext();
@@ -309,7 +309,7 @@ private:
         nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
     }
     virtual void visit(AstInitial* nodep) {
-        AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName());
+        AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName(), true);
         nodep->replaceWith(cmtp);
         if (AstNode* stmtsp = nodep->bodysp()) {
             stmtsp->unlinkFrBackWithNext();
