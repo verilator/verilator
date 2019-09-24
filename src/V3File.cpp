@@ -704,6 +704,15 @@ void V3OutFormatter::puts(const char *strg) {
         case '\t':
             wordstart = true;
             break;
+        case '/':
+            if (m_lang==LA_C || m_lang==LA_VERILOG) {
+                if (cp>strg && cp[-1]=='/') {
+                    // Output ignoring contents to EOL
+                    cp++;
+                    while (*cp && cp[1] && cp[1] != '\n') putcNoTracking(*cp++);
+                }
+            }
+            break;
         case '{':
             if (m_lang==LA_C && (equalsForBracket || m_bracketLevel)) {
                 // Break up large code inside "= { ..."
