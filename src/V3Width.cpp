@@ -3520,6 +3520,12 @@ private:
                 // child node's width to end up correct for the assignment (etc)
                 widthCheckSized(nodep, side, underp, expDTypep, extendRule, warnOn);
             }
+            else if (!VN_IS(expDTypep, IfaceRefDType)
+                     && VN_IS(underp->dtypep(), IfaceRefDType)) {
+                underp->v3error(ucfirst(nodep->prettyOperatorName())
+                                <<" expected non-interface on "<<side
+                                <<" but '"<<underp->name()<<"' is an interface.");
+            }
             else {
                 // Hope it just works out
             }

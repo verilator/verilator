@@ -20,6 +20,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix vpiType accessor, bug1509, bug1510. [Stefan Wallentowitz]
 
+****  Fix ugly error on interface misuse, bug1525. [Bogdan Vukobratovic]
+
 
 * Verilator 4.018 2019-08-29
 
