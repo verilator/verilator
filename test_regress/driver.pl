@@ -564,6 +564,7 @@ sub new {
         xsim_flags => [split(/\s+/,("--nolog --sv --define XSIM --work $self->{name}=$self->{obj_dir}/xsim"))],
         xsim_flags2 => [],  # Overridden in some sim files
         xsim_run_flags => [split(/\s+/,"--nolog --runall --lib $self->{name}=$self->{obj_dir}/xsim ")],
+        xsim_run_flags2 => [],  # Overridden in some sim files
         # Verilator
         vlt => 0,
         vltmt => 0,
@@ -1102,6 +1103,7 @@ sub execute {
                     fails=>$param{fails},
                     cmd=>[$run_env.($ENV{VERILATOR_XELAB}||"xelab"),
                           @{$param{xsim_run_flags}},
+                          @{$param{xsim_run_flags2}},
                           @{$param{all_run_flags}},
                           (" $self->{name}.top")
                           ],
