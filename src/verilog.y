@@ -2584,7 +2584,7 @@ statementVerilatorPragmas<nodep>:
 
 foperator_assignment<nodep>:	// IEEE: operator_assignment (for first part of expression)
 		fexprLvalue '=' delayE expr	{ $$ = new AstAssign($2,$1,$4); }
-	|	fexprLvalue '=' yD_FOPEN '(' expr ')'		{ $$ = NULL; $3->v3error("Unsupported: $fopen with multichannel descriptor.  Add ,\"w\" as second argument to open a file descriptor."); }
+	|	fexprLvalue '=' yD_FOPEN '(' expr ')'		{ $$ = NULL; BBUNSUP($3, "Unsupported: $fopen with multichannel descriptor.  Add ,\"w\" as second argument to open a file descriptor."); }
 	|	fexprLvalue '=' yD_FOPEN '(' expr ',' expr ')'	{ $$ = new AstFOpen($3,$1,$5,$7); }
 	//
 	//UNSUP	~f~exprLvalue '=' delay_or_event_controlE expr { UNSUP }
