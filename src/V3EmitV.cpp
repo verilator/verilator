@@ -356,7 +356,18 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
         putfs(nodep, "$finish;\n");
     }
     virtual void visit(AstText* nodep) {
-        putsNoTracking(nodep->text());
+        if (nodep->tracking() || m_trackText) {
+            puts(nodep->text());
+        } else {
+            putsNoTracking(nodep->text());
+        }
+    }
+    virtual void visit(AstTextBlock* nodep) {
+        visit(VN_CAST(nodep, Text));
+        for (AstNode* childp = nodep->nodesp(); childp; childp = childp->nextp()) {
+            iterate(childp);
+            if (nodep->commas() && childp->nextp()) puts(", ");
+        }
     }
     virtual void visit(AstScopeName* nodep) {
     }
@@ -628,8 +639,9 @@ class EmitVFileVisitor : public EmitVBaseVisitor {
     virtual void putqs(AstNode*, const string& str) { putbs(str); }
     virtual void putsNoTracking(const string& str) { ofp()->putsNoTracking(str); }
 public:
-    EmitVFileVisitor(AstNode* nodep, V3OutFile* ofp) {
+    EmitVFileVisitor(AstNode* nodep, V3OutFile* ofp, bool trackText=false) {
         m_ofp = ofp;
+        m_trackText = trackText;
         iterate(nodep);
     }
     virtual ~EmitVFileVisitor() {}
@@ -757,4 +769,17 @@ void V3EmitV::verilogPrefixedTree(AstNode* nodep, std::ostream& os,
                                   const string& prefix, int flWidth,
                                   AstSenTree* domainp, bool user3mark) {
     EmitVPrefixedVisitor(nodep, os, prefix, flWidth, domainp, user3mark);
+}
+
+void V3EmitV::emitvFiles() {
+    UINFO(2,__FUNCTION__<<": "<<endl);
+    for (AstFile* filep = v3Global.rootp()->filesp(); filep;
+         filep = VN_CAST(filep->nextp(), File)) {
+        AstVFile* vfilep = VN_CAST(filep, VFile);
+        if (vfilep && vfilep->tblockp()) {
+            V3OutVFile of(vfilep->name());
+            of.puts("// DESCR" "IPTION: Verilator generated Verilog\n");
+            EmitVFileVisitor visitor(vfilep->tblockp(), &of, true);
+        }
+    }
 }

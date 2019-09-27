@@ -107,11 +107,13 @@ public:
                 else if (support==2 && slow) {
                 }
                 else {
-                    for (AstCFile* nodep = v3Global.rootp()->filesp();
-                         nodep; nodep = VN_CAST(nodep->nextp(), CFile)) {
-                        if (nodep->source() && nodep->slow()==(slow!=0)
-                            && nodep->support()==(support!=0)) {
-                            putMakeClassEntry(of, nodep->name());
+                    for (AstFile* nodep = v3Global.rootp()->filesp();
+                         nodep; nodep = VN_CAST(nodep->nextp(), File)) {
+                        AstCFile* cfilep = VN_CAST(nodep, CFile);
+                        if (cfilep && cfilep->source()
+                            && cfilep->slow()==(slow!=0)
+                            && cfilep->support()==(support!=0)) {
+                            putMakeClassEntry(of, cfilep->name());
                         }
                     }
                 }

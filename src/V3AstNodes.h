@@ -334,7 +334,7 @@ public:
 };
 
 class AstPackArrayDType : public AstNodeArrayDType {
-    // Array data type, ie "some_dtype var_name [2:0]"
+    // Packed array data type, ie "some_dtype [2:0] var_name"
     // Children: DTYPE (moved to refDTypep() in V3Width)
     // Children: RANGE (array bounds)
 public:
@@ -5772,6 +5772,23 @@ public:
     bool tracking() const { return m_tracking; }
 };
 
+class AstTextBlock : public AstText {
+private:
+    bool m_commas;  // Comma separate emitted children
+public:
+    AstTextBlock(FileLine* fl, const string& textp="", bool tracking=false,
+                 bool commas=false)
+        : AstText(fl, textp, tracking), m_commas(commas) {}
+    ASTNODE_NODE_FUNCS(TextBlock)
+    void commas(bool flag) { m_commas = flag; }
+    bool commas() const { return m_commas; }
+    AstNode* nodesp() const { return op1p(); }
+    void addNodep(AstNode* nodep) { addOp1p(nodep); }
+    void addText(FileLine* fl, const string& textp, bool tracking=false) {
+        addNodep(new AstText(fl, textp, tracking));
+    }
+};
+
 class AstScCtor : public AstNodeText {
 public:
     AstScCtor(FileLine* fl, const string& textp)
@@ -5844,29 +5861,58 @@ public:
 };
 
 //======================================================================
-// Emit C nodes
+// Emitted file nodes
 
-class AstCFile : public AstNode {
-    // C++ output file
+class AstFile : public AstNode {
+    // Emitted Otput file
     // Parents:  NETLIST
-    // Children: nothing yet
+    // Children: AstTextBlock
 private:
     string      m_name;         ///< Filename
+public:
+    AstFile(FileLine* fl, const string& name)
+        : AstNode(fl) {
+        m_name = name;
+    }
+    ASTNODE_BASE_FUNCS(File)
+    virtual string name() const { return m_name; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const { return true; }
+    void tblockp(AstTextBlock* tblockp) { setOp1p(tblockp); }
+    AstTextBlock* tblockp() { return VN_CAST(op1p(), TextBlock); }
+};
+
+//======================================================================
+// Emit V nodes
+
+class AstVFile : public AstFile {
+    // Verilog output file
+    // Parents:  NETLIST
+public:
+    AstVFile(FileLine* fl, const string& name)
+        : AstFile(fl, name) { }
+    ASTNODE_NODE_FUNCS(VFile)
+    virtual void dump(std::ostream& str=std::cout);
+};
+
+//======================================================================
+// Emit C nodes
+
+class AstCFile : public AstFile {
+    // C++ output file
+    // Parents:  NETLIST
+private:
     bool        m_slow:1;       ///< Compile w/o optimization
     bool        m_source:1;     ///< Source file (vs header file)
     bool        m_support:1;    ///< Support file (non systemc)
 public:
     AstCFile(FileLine* fl, const string& name)
-        : AstNode(fl) {
-        m_name = name;
+        : AstFile(fl, name) {
         m_slow = false;
         m_source = false;
         m_support = false;
     }
     ASTNODE_NODE_FUNCS(CFile)
-    virtual string name() const { return m_name; }
-    virtual V3Hash sameHash() const { return V3Hash(); }
-    virtual bool same(const AstNode* samep) const { return true; }
     virtual void dump(std::ostream& str=std::cout);
     bool slow() const { return m_slow; }
     void slow(bool flag) { m_slow = flag; }
@@ -6232,8 +6278,8 @@ public:
     AstNodeModule* topModulep() const {  // * = Top module in hierarchy (first one added, for now)
         return VN_CAST(op1p(), NodeModule); }
     void addModulep(AstNodeModule* modulep) { addOp1p(modulep); }
-    AstCFile* filesp() const { return VN_CAST(op2p(), CFile);}  // op2 = List of files
-    void addFilesp(AstCFile* filep) { addOp2p(filep); }
+    AstFile* filesp() const { return VN_CAST(op2p(), File);}  // op2 = List of files
+    void addFilesp(AstFile* filep) { addOp2p(filep); }
     AstNode* miscsp() const { return op3p(); }  // op3 = List of dtypes etc
     void addMiscsp(AstNode* nodep) { addOp3p(nodep); }
     AstTypeTable* typeTablep() { return m_typeTablep; }

@@ -1155,6 +1155,10 @@ void AstNodeText::dump(std::ostream& str) {
     str<<" \""<<out<<"\"";
 }
 
+void AstVFile::dump(std::ostream& str) {
+    this->AstNode::dump(str);
+}
+
 void AstCFile::dump(std::ostream& str) {
     this->AstNode::dump(str);
     if (source()) str<<" [SRC]";
