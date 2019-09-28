@@ -400,16 +400,28 @@ changed; if clear, checking those signals for changes may be skipped.
 
 =head2 Indentation style
 
-To match the indentation of Verilator C++ sources, use 4 spaces per level,
-and leave tabs at 8 columns, so every other indent level is a tab stop.
+We will work with contributors to fix up indentation style issues, but it
+is appreciated if you could match our style:
 
 All files should contain the magic header to insure standard indentation:
+
+=over 4
 
     // -*- mode: C++; c-file-style: "cc-mode" -*-
 
 This sets indentation to the cc-mode defaults.  (Verilator predates a
 CC-mode change of several years ago which overrides the defaults with GNU
 style indentation; the c-set-style undoes that.)
+
+=back
+
+Use 4 spaces per level, and no tabs.
+
+Use 2 spaces between the end of source and the beginning of a comment.
+
+Use "mixedCapsSymbols" instead of "underlined_symbls".
+
+Comment every member variable.
 
 =head2 The C<astgen> script
 
@@ -530,11 +542,11 @@ function.
 Applies the C<accept> method of each C<AstNode> in a list (i.e. connected
 by C<nextp> and C<backp> pointers).
 
-=item C<iterateAndNext>
+=item C<iterateAndNextNull>
 
-Applies the C<accept> method of each C<AstNode> in a list. If a node is
-edited by the call to C<accept>, apply C<accept> again, until the node does
-not change.
+Applies the C<accept> method of each C<AstNode> in a list, only if the
+provided node is non-NULL. If a node is edited by the call to C<accept>,
+apply C<accept> again, until the node does not change.
 
 =item C<iterateListBackwards>
 
@@ -543,8 +555,8 @@ the last one.
 
 =item C<iterateChildren>
 
-Apply the C<iterateAndNext> method on each child C<op1p> through C<op4p> in
-turn.
+Apply the C<iterateAndNextNull> method on each child C<op1p> through
+C<op4p> in turn.
 
 =item C<iterateChildrenBackwards>
 
