@@ -4164,17 +4164,32 @@ code to add appropriate prints to see what is going on.
 
 =over 4
 
-=item Does it run under Windows?
+=item Can I contribute?
+
+Please contribute!  Just file an issue asking for a merge, or ask on the
+forums if looking for something to help on.  For more information see our
+contributor agreement.
+
+=item How commonly is Verilator used?
+
+Verilator is used by many of the largest silicon design companies, and all
+the way down to college projects.  Verilator is a "big 4" simulator,
+meaning one of the 4 main SystemVerilog simulators available, namely the
+commercial products Synopsys' VCS (tm), Mentor's ModelSim (tm), Cadence
+Incisive/NC-Verilog/NC-Sim, and the open-source Verilator.  The three
+commercial choices are commonly collectively called the "big 3" simulators.
+
+=item Does Verilator run under Windows?
 
 Yes, using Cygwin.  Verilated output also compiles under Microsoft Visual
-C++ Version 7 or newer, but this is not tested every release.
+C++, but this is not tested every release.
 
 =item Can you provide binaries?
 
-Verilator is available as a RPM for Debian/Ubuntu, SuSE, Fedora, and
-perhaps other systems; this is done by porters and may slightly lag the
-primary distribution.  If there isn't a binary build for your distribution,
-how about you set one up?  Please contact the authors for assistance.
+Verilator is available as a RPM for Debian/Ubuntu, SuSE, Fedora, and other
+distributions; this is done by porters and may slightly lag the primary
+distribution.  If there isn't a binary build for your distribution, how
+about you set one up?  Please contact the authors for assistance.
 
 Note people sometimes request binaries when they are having problems with
 their C++ compiler. Alas, binaries won't help this, as in the end a fully
@@ -4218,7 +4233,7 @@ placed under the Verilator copyright and LGPL/Artistic license.  Small test
 cases will be released into the public domain so they can be used anywhere,
 and large tests under the LGPL/Artistic, unless requested otherwise.
 
-=item Why is Verilation so slow?
+=item Why is running Verilator (to create a model) so slow?
 
 Verilator needs more memory than the resulting simulator will require, as
 Verilator creates internally all of the state of the resulting generated
