@@ -618,7 +618,7 @@ int main(int argc, char** argv, char** env) {
     // and after removing files as may make debug output)
     AstBasicDTypeKwd::selfTest();
     if (v3Global.opt.debugSelfTest()) {
-        VHashSha1::selfTest();
+        VHashSha256::selfTest();
         VSpellCheck::selfTest();
         V3Graph::selfTest();
         V3TSP::selfTest();

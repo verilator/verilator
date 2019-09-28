@@ -47,27 +47,27 @@ public:
 };
 
 //######################################################################
-// VHashSha1 - Compute Sha1 hashes
+// VHashSha256 - Compute Sha256 hashes
 
-class VHashSha1 {
+class VHashSha256 {
     // As blocks must be processed in 64 byte chunks, this does not at present
     // support calling input() on multiple non-64B chunks and getting the correct
     // hash. To do that first combine the string before calling here.
     // Or improve to store 0-63 bytes of data between calls to input().
 
     // MEMBERS
-    uint32_t    m_inthash[5];           // Intermediate hash, in host order
+    uint32_t    m_inthash[8];           // Intermediate hash, in host order
     string      m_remainder;            // Unhashed data
     bool        m_final;                // Finalized
     size_t      m_totLength;            // Total all-chunk length as needed by output digest
 public:
     // CONSTRUCTORS
-    VHashSha1() { init(); }
-    explicit VHashSha1(const string& data) { init(); insert(data); }
-    ~VHashSha1() {}
+    VHashSha256() { init(); }
+    explicit VHashSha256(const string& data) { init(); insert(data); }
+    ~VHashSha256() {}
 
     // METHODS
-    string digestBinary();  // Return digest as 20 character binary
+    string digestBinary();  // Return digest as 32 character binary
     string digestHex();  // Return digest formatted as a hex string
     string digestSymbol();  // Return digest formatted as C symbol/base64ish
     uint64_t digestUInt64();  // Return 64-bits of digest
@@ -80,8 +80,10 @@ public:
 
 private:
     void init() {
-        m_inthash[0] = 0x67452301; m_inthash[1] = 0xefcdab89; m_inthash[2] = 0x98badcfe;
-        m_inthash[3] = 0x10325476; m_inthash[4] = 0xc3d2e1f0;
+        m_inthash[0] = 0x6a09e667; m_inthash[1] = 0xbb67ae85;
+        m_inthash[2] = 0x3c6ef372; m_inthash[3] = 0xa54ff53a;
+        m_inthash[4] = 0x510e527f; m_inthash[5] = 0x9b05688c;
+        m_inthash[6] = 0x1f83d9ab; m_inthash[7] = 0x5be0cd19;
         m_final = false;
         m_totLength = 0;
     }

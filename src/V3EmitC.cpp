@@ -1966,7 +1966,7 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
             // Place a computed checksum to insure proper structure save/restore formatting
             // OK if this hash includes some things we won't dump, since
             // just looking for loading the wrong model
-            VHashSha1 hash;
+            VHashSha256 hash;
             for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
                 if (const AstVar* varp = VN_CAST(nodep, Var)) {
                     hash.insert(varp->name());

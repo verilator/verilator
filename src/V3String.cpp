@@ -107,57 +107,74 @@ string VString::spaceUnprintable(const string& str) {
 }
 
 //######################################################################
-// VHashSha1
+// VHashSha256
 
-static inline uint32_t sha1Rotl32(uint32_t lhs, uint32_t rhs) VL_ATTR_ALWINLINE;
-static inline uint32_t sha1Rotl32(uint32_t lhs, uint32_t rhs) {
-    return ((lhs << rhs) | (lhs >> (32 - rhs)));
+static const uint32_t sha256K[] = {
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+};
+
+static inline uint32_t shaRotr32(uint32_t lhs, uint32_t rhs) VL_ATTR_ALWINLINE;
+static inline uint32_t shaRotr32(uint32_t lhs, uint32_t rhs) {
+    return lhs >> rhs | lhs << (32 - rhs);
 }
 
-static inline void sha1Block(uint32_t* h, uint32_t* w) VL_ATTR_ALWINLINE;
-static inline void sha1Block(uint32_t* h, uint32_t* w) {
-#define SHA1ITER(func, roundConst) do { \
-            uint32_t t = sha1Rotl32(a, 5) + (func) + e + (roundConst) + w[round]; \
-            e = d;  d = c;  c = sha1Rotl32(b, 30);  b = a;  a = t; \
-        } while (0)
+static inline void sha256Block(uint32_t* h, uint32_t* chunk) VL_ATTR_ALWINLINE;
+static inline void sha256Block(uint32_t* h, uint32_t* chunk) {
+    uint32_t ah[8];
+    const uint32_t* p = chunk;
 
-    uint32_t a = h[0];
-    uint32_t b = h[1];
-    uint32_t c = h[2];
-    uint32_t d = h[3];
-    uint32_t e = h[4];
-    int round = 0;
+    // Initialize working variables to current hash value
+    for (unsigned i = 0; i < 8; i++) {
+        ah[i] = h[i];
+    }
+    // Compression function main loop
+    for (unsigned i = 0; i < 4; ++i) {
+        uint32_t w[16];
 
-    for (; round < 16; ++round) {
-        SHA1ITER((b & c) | (~b & d), 0x5a827999);
-    }
-    for (; round < 20; ++round) {
-        w[round] = sha1Rotl32((w[round - 3] ^ w[round - 8] ^ w[round - 14] ^ w[round - 16]), 1);
-        SHA1ITER((b & c) | (~b & d), 0x5a827999);
-    }
-    for (; round < 40; ++round) {
-        w[round] = sha1Rotl32((w[round - 3] ^ w[round - 8] ^ w[round - 14] ^ w[round - 16]), 1);
-        SHA1ITER(b ^ c ^ d, 0x6ed9eba1);
-    }
-    for (; round < 60; ++round) {
-        w[round] = sha1Rotl32((w[round - 3] ^ w[round - 8] ^ w[round - 14] ^ w[round - 16]), 1);
-        SHA1ITER((b & c) | (b & d) | (c & d), 0x8f1bbcdc);
-    }
-    for (; round < 80; ++round) {
-        w[round] = sha1Rotl32((w[round - 3] ^ w[round - 8] ^ w[round - 14] ^ w[round - 16]), 1);
-        SHA1ITER(b ^ c ^ d, 0xca62c1d6);
-    }
+        for (unsigned j = 0; j < 16; ++j) {
+            if (i == 0) {
+                w[j] = *p++;
+            } else {
+                // Extend the first 16 words into the remaining
+                // 48 words w[16..63] of the message schedule array:
+                const uint32_t s0 = shaRotr32(w[(j + 1) & 0xf], 7)
+                    ^ shaRotr32(w[(j + 1) & 0xf], 18) ^ (w[(j + 1) & 0xf] >> 3);
+                const uint32_t s1 = shaRotr32(w[(j + 14) & 0xf], 17)
+                    ^ shaRotr32(w[(j + 14) & 0xf], 19) ^ (w[(j + 14) & 0xf] >> 10);
+                w[j] = w[j] + s0 + w[(j + 9) & 0xf] + s1;
+            }
+            const uint32_t s1 = shaRotr32(ah[4], 6)
+                ^ shaRotr32(ah[4], 11) ^ shaRotr32(ah[4], 25);
+            const uint32_t ch = (ah[4] & ah[5]) ^ (~ah[4] & ah[6]);
+            const uint32_t temp1 = ah[7] + s1 + ch + sha256K[i << 4 | j] + w[j];
+            const uint32_t s0 = shaRotr32(ah[0], 2)
+                ^ shaRotr32(ah[0], 13) ^ shaRotr32(ah[0], 22);
+            const uint32_t maj = (ah[0] & ah[1]) ^ (ah[0] & ah[2]) ^ (ah[1] & ah[2]);
+            const uint32_t temp2 = s0 + maj;
 
-    h[0] += a;
-    h[1] += b;
-    h[2] += c;
-    h[3] += d;
-    h[4] += e;
-#undef SHA1ITER
+            ah[7] = ah[6];
+            ah[6] = ah[5];
+            ah[5] = ah[4];
+            ah[4] = ah[3] + temp1;
+            ah[3] = ah[2];
+            ah[2] = ah[1];
+            ah[1] = ah[0];
+            ah[0] = temp1 + temp2;
+        }
+    }
+    for (unsigned i = 0; i < 8; ++i) h[i] += ah[i];
 }
 
-void VHashSha1::insert(const void* datap, size_t length) {
-    UASSERT(!m_final, "Called VHashSha1::insert after finalized the hash value");
+
+void VHashSha256::insert(const void* datap, size_t length) {
+    UASSERT(!m_final, "Called VHashSha256::insert after finalized the hash value");
     m_totLength += length;
 
     string tempData;
@@ -176,7 +193,7 @@ void VHashSha1::insert(const void* datap, size_t length) {
     }
 
     // See wikipedia SHA-1 algorithm summary
-    uint32_t w[80];  // Round buffer, [0..15] are input data, rest used by rounds
+    uint32_t w[64];  // Round buffer, [0..15] are input data, rest used by rounds
     int posBegin = 0;  // Position in buffer for start of this block
     int posEnd = 0;  // Position in buffer for end of this block
 
@@ -190,20 +207,20 @@ void VHashSha1::insert(const void* datap, size_t length) {
                               | (static_cast<uint32_t>(chunkp[posBegin + 1]) << 16)
                               | (static_cast<uint32_t>(chunkp[posBegin]) << 24));
         }
-        sha1Block(m_inthash, w);
+        sha256Block(m_inthash, w);
     }
 
     m_remainder = string(reinterpret_cast<const char*>(chunkp+posBegin), chunkLen-posEnd);
 }
 
-void VHashSha1::finalize() {
+void VHashSha256::finalize() {
     if (!m_final) {
         // Make sure no 64 byte blocks left
         insert("");
         m_final = true;
 
         // Process final possibly non-complete 64-byte block
-        uint32_t w[80];  // Round buffer, [0..15] are input data, rest used by rounds
+        uint32_t w[16];  // Round buffer, [0..15] are input data
         for (int i=0; i<16; ++i) w[i] = 0;
         size_t blockPos = 0;
         for (; blockPos < m_remainder.length(); ++blockPos) {
@@ -212,26 +229,26 @@ void VHashSha1::finalize() {
         }
         w[blockPos >> 2] |= 0x80 << ((3 - (blockPos & 3)) << 3);
         if (m_remainder.length() >= 56) {
-            sha1Block(m_inthash, w);
+            sha256Block(m_inthash, w);
             for (int i=0; i<16; ++i) w[i] = 0;
         }
         w[15] = m_totLength << 3;
-        sha1Block(m_inthash, w);
+        sha256Block(m_inthash, w);
 
         m_remainder.clear();
     }
 }
 
-string VHashSha1::digestBinary() {
+string VHashSha256::digestBinary() {
     finalize();
-    string out; out.reserve(20);
-    for (size_t i=0; i<20; ++i) {
+    string out; out.reserve(32);
+    for (size_t i=0; i<32; ++i) {
         out += (m_inthash[i >> 2] >> (((3 - i) & 0x3) << 3)) & 0xff;
     }
     return out;
 }
 
-uint64_t VHashSha1::digestUInt64() {
+uint64_t VHashSha256::digestUInt64() {
     const string& binhash = digestBinary();
     uint64_t out = 0;
     for (size_t byte=0; byte<sizeof(uint64_t); ++byte) {
@@ -241,18 +258,18 @@ uint64_t VHashSha1::digestUInt64() {
     return out;
 }
 
-string VHashSha1::digestHex() {
+string VHashSha256::digestHex() {
     static const char digits[16+1] = "0123456789abcdef";
     const string& binhash = digestBinary();
-    string out; out.reserve(40);
-    for (size_t byte=0; byte<20; ++byte) {
+    string out; out.reserve(70);
+    for (size_t byte=0; byte<32; ++byte) {
         out += digits[ (binhash[byte]>>4) & 0xf ];
         out += digits[ (binhash[byte]>>0) & 0xf ];
     }
     return out;
 }
 
-string VHashSha1::digestSymbol() {
+string VHashSha256::digestSymbol() {
     // Make a symbol name from hash.  Similar to base64, however base 64
     // has + and / for last two digits, but need C symbol, and we also
     // avoid conflicts with use of _, so use "AB" at the end.
@@ -262,7 +279,7 @@ string VHashSha1::digestSymbol() {
     const string& binhash = digestBinary();
     string out; out.reserve(28);
     int pos = 0;
-    for (; pos < (160/8) - 2; pos += 3) {
+    for (; pos < (256/8) - 2; pos += 3) {
         out += digits[((binhash[pos] >> 2) & 0x3f)];
         out += digits[((binhash[pos] & 0x3) << 4)
                       | (static_cast<int>(binhash[pos + 1] & 0xf0) >> 4)];
@@ -270,22 +287,13 @@ string VHashSha1::digestSymbol() {
                       | (static_cast<int>(binhash[pos + 2] & 0xc0) >> 6)];
         out += digits[((binhash[pos + 2] & 0x3f))];
     }
-    if (0) {  // Not needed for 160 bit hash
-        out += digits[((binhash[pos] >> 2) & 0x3f)];
-        out += digits[((binhash[pos] & 0x3) << 4)];
-    }
-    else {
-        out += digits[((binhash[pos] >> 2) & 0x3f)];
-        out += digits[((binhash[pos] & 0x3) << 4)
-                      | (static_cast<int>(binhash[pos + 1] & 0xf0) >> 4)];
-        out += digits[((binhash[pos + 1] & 0xf) << 2)];
-    }
+    // Any leftover bits don't matter for our purpose
     return out;
 }
 
-void VHashSha1::selfTestOne(const string& data, const string& data2,
-                            const string& exp, const string& exp64) {
-    VHashSha1 digest (data);
+void VHashSha256::selfTestOne(const string& data, const string& data2,
+                              const string& exp, const string& exp64) {
+    VHashSha256 digest (data);
     if (data2!="") digest.insert(data2);
     if (VL_UNCOVERABLE(digest.digestHex() != exp)) {
         std::cerr << "%Error: When hashing '"<<data+data2<<"'"<<endl  // LCOV_EXCL_LINE
@@ -299,25 +307,25 @@ void VHashSha1::selfTestOne(const string& data, const string& data2,
     }
 }
 
-void VHashSha1::selfTest() {
+void VHashSha256::selfTest() {
     selfTestOne("", "",
-                "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-                "2jmj7l5rSw0yVbBvlWAYkKBYBwk");
+                "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "47DEQpj8HBSaABTImWA5JCeuQeRkm5NMpJWZG3hS");
     selfTestOne("a", "",
-                "86f7e437faa5a7fce15d1ddcb9eaeaea377667b8",
-                "hvfkNBqlpBzhXR3cuerq6jd2Z7g");
+                "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+                "ypeBEsobvcr6wjGzmiPcTaeG7BgUfE5yuYB3haBu");
     selfTestOne("The quick brown fox jumps over the lazy dog", "",
-                "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12",
-                "L9ThxnotKPzthJ7hu3bnORuT6xI");
+                "d7a8fbb307d7809469ca9abcb0082e4f8d5651e46d3cdb762d02d0bf37c9e592",
+                "16j7swfXgJRpypq8sAguT41WUeRtPNt2LQLQvzfJ");
     selfTestOne("The quick brown fox jumps over the lazy", " dog",
-                "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12",
-                "L9ThxnotKPzthJ7hu3bnORuT6xI");
+                "d7a8fbb307d7809469ca9abcb0082e4f8d5651e46d3cdb762d02d0bf37c9e592",
+                "16j7swfXgJRpypq8sAguT41WUeRtPNt2LQLQvzfJ");
     selfTestOne("Test using larger than block-size key and larger than one block-size data", "",
-                "9026e8faed6ef4ec5ae3ff049020d7f0af7abbbf",
-                "kCboAu1u9Oxa4B8EkCDX8K96u78");
+                "9dc35674a024b28e8440080b5331652e985f2d61d7a1fca80a648b7f9ffa0dd3",
+                "ncNWdKAkso6EQAgLUzFlLphfLWHXofyoCmSLf5B6");
     selfTestOne("Test using", " larger than block-size key and larger than one block-size data",
-                "9026e8faed6ef4ec5ae3ff049020d7f0af7abbbf",
-                "kCboAu1u9Oxa4B8EkCDX8K96u78");
+                "9dc35674a024b28e8440080b5331652e985f2d61d7a1fca80a648b7f9ffa0dd3",
+                "ncNWdKAkso6EQAgLUzFlLphfLWHXofyoCmSLf5B6");
 }
 
 //######################################################################
@@ -330,7 +338,7 @@ string VName::hashedName() {
         m_hashed = m_name;
         return m_hashed;
     } else {
-        VHashSha1 hash(m_name);
+        VHashSha256 hash(m_name);
         string suffix = "__Vhsh"+hash.digestSymbol();
         if (s_minLength < s_maxLength) {
             m_hashed = m_name.substr(0, s_minLength) + suffix;
@@ -394,7 +402,7 @@ VSpellCheck::EditDistance VSpellCheck::cutoffDistance(size_t goal_len, size_t ca
 }
 
 string VSpellCheck::bestCandidateInfo(const string& goal,
-                                         EditDistance& distancer) {
+                                      EditDistance& distancer) {
     string bestCandidate;
     size_t gLen = goal.length();
     distancer = LENGTH_LIMIT*10;
