@@ -1,9 +1,8 @@
 = Verilator Internals Documentation
 :toc: right
 
-== Logo:
-
-image::https://www.veripool.org/img/verilator_256_200_min.png[]
+// Github doesn't render unless absolute URL
+image::https://www.veripool.org/img/verilator_256_200_min.png[Logo,256,200,role="right"]
 
 == Introduction
 
