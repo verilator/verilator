@@ -126,13 +126,13 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	bin/verilator_includer \
 	bin/verilator_profcfunc \
 	docs/.gitignore \
-	docs/CONTRIBUTING.md \
+	docs/CONTRIBUTING.adoc \
 	docs/CONTRIBUTORS \
-	docs/INTERNALS.md \
 	docs/Makefile.in \
 	docs/TODO \
 	docs/doxygen-mainpage \
 	docs/doxygen.config \
+	docs/internals.adoc \
 	docs/verilator_logo.png \
 	install-sh configure *.pod \
 	include/*.[chv]* \
