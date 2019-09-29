@@ -17,11 +17,13 @@ contributions flow more efficiently.
     demonstrating the bug and expected behavior that is not occurring.
 
   * The ideal example works against other simulators, and is in the
-    test_regress/t test format, as described in link:internals.adoc[docs/internals].
+    test_regress/t test format, as described in
+    link:internals.adoc[docs/internals].
 
 ==== Did you write a patch that fixes a bug?
 
-* Please https://www.veripool.org/projects/verilator/issues/new[Open a new issue].
+* Please https://www.veripool.org/projects/verilator/issues/new[Open a new
+  issue].
 
 * You may attach a patch to the issue, or (preferred) may point to a github
   repository branch within your github account.
