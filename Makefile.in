@@ -107,8 +107,8 @@ SUBDIRS = src test_regress \
 	examples/hello_world_c  examples/hello_world_sc \
 	examples/tracing_c  examples/tracing_sc \
 
-INFOS = README README.html README.pdf internals.txt internals.html \
-        internals.pdf verilator.txt verilator.html verilator.pdf
+INFOS = README README.html README.pdf \
+        verilator.txt verilator.html verilator.pdf
 
 # Files that can be generated, but should be up to date for a distribution.
 DISTDEP = info Makefile
@@ -126,7 +126,9 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	bin/verilator_includer \
 	bin/verilator_profcfunc \
 	docs/.gitignore \
+	docs/CONTRIBUTING.md \
 	docs/CONTRIBUTORS \
+	docs/INTERNALS.md \
 	docs/Makefile.in \
 	docs/TODO \
 	docs/doxygen-mainpage \
@@ -276,22 +278,6 @@ README.pdf: README.pod Makefile $(POD2LATEXFIX)
 	pdflatex README.tex
 	pdflatex README.tex
 	-rm -f README.toc README.aux README.idx README.out
-
-internals.txt: internals.pod
-	-rm -f $@
-	$(POD2TEXT) --loose $< > $@
-
-internals.html: internals.pod
-	pod2html $< >$@
-
-# PDF needs DIST variables; but having configure.ac as dependency isn't detected
-internals.pdf: internals.pod Makefile $(POD2LATEXFIX)
-	pod2latex --full --out internals.tex $<
-	$(PERL) $(POD2LATEXFIX) "$(DISTTITLE) Internals Manual" "${DISTDATE}" < internals.tex > internals2.tex
-	mv internals2.tex internals.tex
-	pdflatex internals.tex
-	pdflatex internals.tex
-	-rm -f internals.toc internals.aux internals.idx internals.out
 
 # See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
 VL_INST_BIN_FILES = verilator verilator_bin verilator_bin_dbg verilator_coverage_bin_dbg \
