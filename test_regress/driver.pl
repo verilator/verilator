@@ -273,6 +273,7 @@ sub new {
         driver_log_filename => undef,
         quiet => 0,
         # Counts
+        all_cnt => 0,
         left_cnt => 0,
         ok_cnt => 0,
         fail1_cnt => 0,
@@ -293,6 +294,7 @@ sub one_test {
     my $self = shift;
     my @params = @_;
     my %params = (@params);
+    $self->{all_cnt}++;
     $self->{left_cnt}++;
     $::Fork->schedule
         (
@@ -390,7 +392,6 @@ sub print_summary {
     my $self = shift;
     my %params = (force => 0, # Force printing
                   @_);
-    my $leftmsg = $::Have_Forker ? $self->{left_cnt} : "NO-FORKER";
     if (!$self->{quiet} || $params{force}
         || ($self->{left_cnt} < 5)
         || time() > ($self->{_next_summary_time} || 0)) {
@@ -404,6 +405,9 @@ sub sprint_summary {
 
     my $delta = time() - $::Start;
     my $leftmsg = $::Have_Forker ? $self->{left_cnt} : "NO-FORKER";
+    my $pct = int(100*($self->{left_cnt} / $self->{all_cnt}) + 0.999);
+    my $eta = ($self->{all_cnt}
+               * ($delta / (($self->{all_cnt} - $self->{left_cnt})+0.001))) - $delta;
     my $out = "";
     $out .= "Left $leftmsg  " if $self->{left_cnt};
     $out .= "Passed $self->{ok_cnt}";
@@ -412,6 +416,7 @@ sub sprint_summary {
     $out .= "  Failed-First $self->{fail1_cnt}";
     $out .= "  Skipped $self->{skip_cnt}";
     $out .= "  Unsup $self->{unsup_cnt}";
+    $out .= sprintf("  Eta %d:%02d", int($eta/60), $eta%60)  if $self->{left_cnt} && $eta > 10;
     $out .= sprintf("  Time %d:%02d", int($delta/60), $delta%60);
     return $out;
 }
