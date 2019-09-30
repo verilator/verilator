@@ -2694,7 +2694,7 @@ patternList<nodep>:		// IEEE: part of pattern
 	;
 
 patternOne<nodep>:		// IEEE: part of pattern
-		expr					{ $$ = new AstPatMember($1->fileline(),$1,NULL,NULL); }
+		expr					{ if ($1) { $$ = new AstPatMember($1->fileline(),$1,NULL,NULL); } else { $$=NULL; } }
 	|	expr '{' argsExprList '}'		{ $$ = new AstPatMember($2,$3,NULL,$1); }
 	|	patternNoExpr				{ $$ = $1; }
 	;
