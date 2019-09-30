@@ -33,11 +33,8 @@ sub check {
     read_authors();
     for my $author (sort keys %Authors) {
         print "Check: $author\n" if $Self->{verbose};
-        if ($author =~ /(<[^>]+>)/) {
-            my $email = $1;
-            if (!$Contributors{$email}) {
-                error("Certify your contribution by appending '$author' to CONTRIBUTORS");
-            }
+        if (!$Contributors{$author}) {
+            error("Certify your contribution by appending '$author' to CONTRIBUTORS");
         }
     }
 }
@@ -48,7 +45,7 @@ sub read_contributors {
         or error("$! $filename");
     # Assumes git .mailmap format
     while (my $line = ($fh && $fh->getline)) {
-        while ($line =~ /(<[^>]+>)/g) {
+        while ($line =~ /(.*)/g) {
             $line =~ s/ *<[^>]+>//;
             $Contributors{$1} = 1;
         }
