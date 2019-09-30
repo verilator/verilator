@@ -850,7 +850,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /************************************************************************/
   /* STRINGS */
-<STRING><<EOF>>         { FL_FWD; yyerrorf("EOF in unterminated string"); yyleng = 0; yy_pop_state(); FL_BRK; }
+<STRING><<EOF>>         { FL_FWD; yyerrorf("EOF in unterminated string");
+                          yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
 <STRING>{crnl}          { FL_FWD; yyerrorf("Unterminated string"); FL_BRK; }
 <STRING>\\{crnl}        { yymore(); }
 <STRING>\\.             { yymore(); }
@@ -867,7 +868,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <ATTRMODE>{word}        { yymore(); }
 <ATTRMODE>.             { yymore(); }
 <ATTRMODE><<EOF>>       { FL_FWD; yyerrorf("EOF in (*");
-			  yyleng = 0; yy_pop_state(); FL_BRK; }
+                          yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
 
   /************************************************************************/
   /* Attributes */
@@ -883,7 +884,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <TABLE>";"              { FL; yylval.strp = PARSEP->newString(yytext, yyleng); return yaTABLELINE; }
 <TABLE>"endtable"       { yy_pop_state(); FL; return yENDTABLE; }
 <TABLE>.                { yymore(); }
-<TABLE><<EOF>>          { FL_FWD; yyerrorf("EOF in TABLE"); yyleng = 0; yy_pop_state(); FL_BRK; }
+<TABLE><<EOF>>          { FL_FWD; yyerrorf("EOF in TABLE");
+                          yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
 
   /************************************************************************/
   /* Preprocessor */

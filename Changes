@@ -22,6 +22,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix ugly error on interface misuse, bug1525. [Bogdan Vukobratovic]
 
+****  Fix misc bad-syntax crashes, bug1532. [Eric Rippey]
+
 
 * Verilator 4.018 2019-08-29
 
