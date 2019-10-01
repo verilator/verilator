@@ -113,7 +113,8 @@ string AstNode::encodeName(const string& namein) {
             // a user identifier nor a temp we create in Verilator.
             // We also do *NOT* use __DOT__ etc, as we search for those
             // in some replacements, and don't want to mangle the user's names.
-            char hex[10]; sprintf(hex, "__0%02X", pos[0]);
+            unsigned val = pos[0] & 0xff;  // Mask to avoid sign extension
+            char hex[10]; sprintf(hex, "__0%02X", val);
             out += hex;
         }
     }
