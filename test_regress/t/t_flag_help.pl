@@ -17,7 +17,7 @@ foreach my $prog (
     "../bin/verilator_gantt",
     "../bin/verilator_profcfunc",
     ) {
-    run(fails => 1,
+    run(fails => 0,
         cmd => ["perl", $prog,
                 "--help"],
         logfile => "$Self->{obj_dir}/t_help.log",

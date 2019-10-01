@@ -115,7 +115,7 @@ if ($opt_gdb) {
 #----------------------------------------------------------------------
 
 sub usage {
-    pod2usage(-verbose=>2, -exitval=>2, -output=>\*STDOUT);
+    pod2usage(-verbose=>2, -exitval=>0, -output=>\*STDOUT);
 }
 
 sub debug {

@@ -201,8 +201,8 @@ exit(10) if $runner->fail_count;
 #----------------------------------------------------------------------
 
 sub usage {
-    pod2usage(-verbose=>2, -exitval=>2, -output=>\*STDOUT);
-    exit(1);
+    pod2usage(-verbose=>2, -exitval=>0, -output=>\*STDOUT);
+    exit(1);  # Unreachable
 }
 
 sub debug {

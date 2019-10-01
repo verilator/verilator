@@ -22,7 +22,8 @@ Getopt::Long::config("no_auto_abbrev");
 if (! GetOptions (
           "debug"       => sub { $Debug = 1; },
           "help"        => sub { print "Version $VERSION\n";
-                                 pod2usage(-verbose=>2, -exitval => 2, output=>\*STDOUT, -noperldoc=>1); },
+                                 pod2usage(-verbose=>2, -exitval => 0,
+                                           output=>\*STDOUT, -noperldoc=>1); },
           "narrow!"     => sub { $Opt_Widen = 0; },
           "version"     => sub { print "Version $VERSION\n"; exit(0); },
           "widen!"      => sub { $Opt_Widen = 1; },  # Default, undocumented

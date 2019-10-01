@@ -39,8 +39,8 @@ process();
 
 sub usage {
     print "Version $VERSION\n";
-    pod2usage(-verbose=>2, -exitval=>2, -output=>\*STDOUT, -noperldoc=>1);
-    exit(1);
+    pod2usage(-verbose=>2, -exitval=>0, -output=>\*STDOUT, -noperldoc=>1);
+    exit(1);  # Unreachable
 }
 
 #######################################################################
