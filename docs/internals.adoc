@@ -699,6 +699,23 @@ respectively 16,384 and 4,096. The method of doing this is system
 dependent, but on Fedora Linux it would require editing the
 `/etc/security/limits.conf` file as root.
 
+=== Continuous Integration
+
+Verilator has a https://travis-ci.com/verilator/verilator[Travis CI environment]
+which automatically tests the master branch for test failures on new commits. It
+also runs a daily cron job to validate all of the tests against different OS and
+compiler versions.
+
+Developers can connect Travis CI to their GitHub account so that the CI
+enviroment can check their branches too by doing the following:
+
+* Go to https://github.com/marketplace/travis-ci and follow the prompts
+
+* Only the Open Source (FREE) version of Travis CI is required
+
+* Under a Travis CI project click More options > Settings in order to set up a
+cron job on a particular branch
+
 == Debugging
 
 === --debug
