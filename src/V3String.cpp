@@ -365,11 +365,11 @@ VSpellCheck::EditDistance VSpellCheck::editDistance(const string& s, const strin
     static EditDistance s_v_one_ago[LENGTH_LIMIT + 1];
     static EditDistance s_v_next[LENGTH_LIMIT + 1];
 
-    for (int i = 0; i < sLen + 1; i++) s_v_one_ago[i] = i;
+    for (size_t i = 0; i < sLen + 1; i++) s_v_one_ago[i] = i;
 
-    for (int i = 0; i < tLen; i++) {
+    for (size_t i = 0; i < tLen; i++) {
         s_v_next[0] = i + 1;
-        for (int j = 0; j < sLen; j++) {
+        for (size_t j = 0; j < sLen; j++) {
             EditDistance cost =(s[j] == t[i] ? 0 : 1);
             EditDistance deletion     = s_v_next[j] + 1;
             EditDistance insertion    = s_v_one_ago[j + 1] + 1;
@@ -382,7 +382,7 @@ VSpellCheck::EditDistance VSpellCheck::editDistance(const string& s, const strin
             }
             s_v_next[j + 1] = cheapest;
         }
-        for (int j = 0; j < sLen + 1; j++) {
+        for (size_t j = 0; j < sLen + 1; j++) {
             s_v_two_ago[j] = s_v_one_ago[j];
             s_v_one_ago[j] = s_v_next[j];
         }
@@ -406,7 +406,6 @@ string VSpellCheck::bestCandidateInfo(const string& goal,
     string bestCandidate;
     size_t gLen = goal.length();
     distancer = LENGTH_LIMIT*10;
-    int suggestionLimit = 1000;  // Avoid searching massive netlists
     for (Candidates::const_iterator it = m_candidates.begin();
          it != m_candidates.end(); ++it) {
         const string candidate = *it;

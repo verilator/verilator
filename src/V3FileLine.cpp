@@ -102,7 +102,6 @@ void VFileContent::pushText(const string& text) {
     string leftover = m_lines.back() + text; m_lines.pop_back();
 
     // Insert line-by-line
-    string::size_type pos = 0;
     string::size_type line_start = 0;
     while (1) {
         string::size_type line_end = leftover.find("\n", line_start);
@@ -374,7 +373,7 @@ string FileLine::warnContext(bool secondary) const {
         // Don't show super-long lines as can fill screen and unlikely to help user
         if (!sourceLine.empty()
             && sourceLine.length() < SHOW_SOURCE_MAX_LENGTH
-            && sourceLine.length() >= (lastColumn()-1)) {
+            && sourceLine.length() >= (size_t)(lastColumn()-1)) {
             out += sourceLine+"\n";
             out += string((firstColumn()-1), ' ')+'^';
             // Can't use UASSERT_OBJ used in warnings already inside the error end handler
