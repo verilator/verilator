@@ -203,6 +203,8 @@ public:
 //=========================================================================
 /// Base class for all Verilated module classes
 
+class VerilatedScope;
+
 class VerilatedModule {
     VL_UNCOPYABLE(VerilatedModule);
 private:
@@ -290,6 +292,11 @@ public:  // But for internal use only
 /// This class is initialized by main thread only. Reading post-init is thread safe.
 
 class VerilatedScope {
+public:
+    typedef enum {
+        SCOPE_MODULE, SCOPE_OTHER
+    } Type;  // Type of a scope, currently module is only interesting
+private:
     // Fastpath:
     VerilatedSyms*      m_symsp;        ///< Symbol table
     void**              m_callbacksp;   ///< Callback table pointer (Fastpath)
@@ -297,16 +304,20 @@ class VerilatedScope {
     // 4 bytes padding (on -m64), for rent.
     VerilatedVarNameMap* m_varsp;       ///< Variable map
     const char*         m_namep;        ///< Scope name (Slowpath)
+    const char*         m_identifierp;  ///< Identifier of scope (with escapes removed)
+    Type                m_type;         ///< Type of the scope
 
 public:  // But internals only - called from VerilatedModule's
     VerilatedScope();
     ~VerilatedScope();
-    void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp) VL_MT_UNSAFE;
+    void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffix,
+                   const char* identifier, const Type type) VL_MT_UNSAFE;
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
     void varInsert(int finalize, const char* namep, void* datap,
                    VerilatedVarType vltype, int vlflags, int dims, ...) VL_MT_UNSAFE;
     // ACCESSORS
     const char* name() const { return m_namep; }
+    const char* identifier() const { return m_identifierp; }
     inline VerilatedSyms* symsp() const { return m_symsp; }
     VerilatedVar* varFind(const char* namep) const VL_MT_SAFE_POSTINIT;
     VerilatedVarNameMap* varsp() const VL_MT_SAFE_POSTINIT { return m_varsp; }
@@ -322,6 +333,12 @@ public:  // But internals only - called from VerilatedModule's
             return scopep->exportFindError(funcnum);  // LCOV_EXCL_LINE
         }
     }
+    Type type() { return m_type; }
+};
+
+class VerilatedHierarchy {
+public:
+    void add(VerilatedScope* fromp, VerilatedScope* top);
 };
 
 //===========================================================================

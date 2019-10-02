@@ -1879,21 +1879,27 @@ public:
 
 class AstCellInline : public AstNode {
     // A instantiation cell that was removed by inlining
-    // For communication between V3Inline and V3LinkDot only
+    // For communication between V3Inline and V3LinkDot,
+    // except for VPI runs where it exists until the end.
+    // It is augmented with the scope in V3Scope for VPI.
     // Children: When 2 levels inlined, other CellInline under this
 private:
     string      m_name;         // Cell name, possibly {a}__DOT__{b}...
     string      m_origModName;  // Original name of the module, ignoring name() changes, for dot lookup
+    AstScope*   m_scopep;       // The scope that the cell is inlined into
 public:
     AstCellInline(FileLine* fl, const string& name, const string& origModName)
         : AstNode(fl)
-        , m_name(name), m_origModName(origModName) {}
+        , m_name(name), m_origModName(origModName), m_scopep(NULL) {}
     ASTNODE_NODE_FUNCS(CellInline)
     virtual void dump(std::ostream& str);
+    virtual const char* broken() const { BROKEN_RTN(m_scopep && !m_scopep->brokeExists()); return NULL; }
     // ACCESSORS
     virtual string name() const { return m_name; }  // * = Cell name
     string origModName() const { return m_origModName; }  // * = modp()->origName() before inlining
     virtual void name(const string& name) { m_name = name; }
+    void scopep(AstScope* scp) { m_scopep = scp; }
+    AstScope* scopep() const { return m_scopep; }
 };
 
 class AstCellRef : public AstNode {

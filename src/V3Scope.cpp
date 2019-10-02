@@ -151,6 +151,9 @@ private:
 
         // ***Note m_scopep is passed back to the caller of the routine (above)
     }
+    virtual void visit(AstCellInline* nodep) {
+        nodep->scopep(m_scopep);
+    }
     virtual void visit(AstActive* nodep) {
         nodep->v3fatalSrc("Actives now made after scoping");
     }

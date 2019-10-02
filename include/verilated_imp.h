@@ -24,7 +24,7 @@
 #ifndef _VERILATED_IMP_H_
 #define _VERILATED_IMP_H_ 1  ///< Header Guard
 
-#if !defined(_VERILATED_CPP_) && !defined(_VERILATED_DPI_CPP_)
+#if !defined(_VERILATED_CPP_) && !defined(_VERILATED_DPI_CPP_) && !defined(_VERILATED_VPI_CPP_)
 # error "verilated_imp.h only to be included by verilated*.cpp internals"
 #endif
 
@@ -187,6 +187,10 @@ class VerilatedImp {
 
     VerilatedMutex      m_nameMutex;  ///< Protect m_nameMap
     VerilatedScopeNameMap m_nameMap VL_GUARDED_BY(m_nameMutex);  ///< Map of <scope_name, scope pointer>
+
+    VerilatedMutex      m_hierMapMutex;  ///< Protect m_hierMap
+    VerilatedHierarchyMap m_hierMap VL_GUARDED_BY(m_hierMapMutex);  ///< Map the represents scope hierarchy
+
     // Slow - somewhat static:
     VerilatedMutex      m_exportMutex;  ///< Protect m_nameMap
     ExportNameMap       m_exportMap VL_GUARDED_BY(m_exportMutex);  ///< Map of <export_func_proto, func number>
@@ -319,6 +323,18 @@ public:  // But only for verilated*.cpp
     static const VerilatedScopeNameMap* scopeNameMap() VL_MT_SAFE_POSTINIT {
         // Thread save only assuming this is called only after model construction completed
         return &s_s.m_nameMap;
+    }
+
+public:  // But only for verilated*.cpp
+    // METHODS - hierarchy
+    static void hierarchyAdd(const VerilatedScope* fromp, const VerilatedScope* top) VL_MT_SAFE {
+        // Slow ok - called at construction for VPI accessible elements
+        VerilatedLockGuard lock(s_s.m_hierMapMutex);
+        s_s.m_hierMap[fromp].push_back(top);
+    }
+    static const VerilatedHierarchyMap* hierarchyMap() VL_MT_SAFE_POSTINIT {
+        // Thread save only assuming this is called only after model construction completed
+        return &s_s.m_hierMap;
     }
 
 public:  // But only for verilated*.cpp

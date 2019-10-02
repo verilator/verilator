@@ -43,9 +43,9 @@ class EmitCSyms : EmitCBaseVisitor {
     AstUser1InUse       m_inuser1;
 
     // TYPES
-    struct ScopeNameData { string m_symName; string m_prettyName;
-        ScopeNameData(const string& symName, const string& prettyName)
-            : m_symName(symName), m_prettyName(prettyName) {}
+    struct ScopeData { string m_symName; string m_prettyName; string m_type;
+        ScopeData(const string& symName, const string& prettyName, const string& type)
+            : m_symName(symName), m_prettyName(prettyName), m_type(type) {}
     };
     struct ScopeFuncData { AstScopeName* m_scopep; AstCFunc* m_funcp; AstNodeModule* m_modp;
         ScopeFuncData(AstScopeName* scopep, AstCFunc* funcp, AstNodeModule* modp)
@@ -60,9 +60,11 @@ class EmitCSyms : EmitCBaseVisitor {
     };
     typedef std::map<string,ScopeFuncData> ScopeFuncs;
     typedef std::map<string,ScopeVarData> ScopeVars;
-    typedef std::map<string,ScopeNameData> ScopeNames;
+    typedef std::map<string,ScopeData> ScopeNames;
     typedef std::pair<AstScope*,AstNodeModule*> ScopeModPair;
     typedef std::pair<AstNodeModule*,AstVar*> ModVarPair;
+    typedef std::vector<string> ScopeNameList;
+    typedef std::map<string, ScopeNameList> ScopeNameHierarchy;
     struct CmpName {
         inline bool operator() (const ScopeModPair& lhsp, const ScopeModPair& rhsp) const {
             return lhsp.first->name() < rhsp.first->name();
@@ -81,12 +83,14 @@ class EmitCSyms : EmitCBaseVisitor {
     // STATE
     AstCFunc*           m_funcp;        // Current function
     AstNodeModule*      m_modp;         // Current module
-    std::vector<ScopeModPair> m_scopes; // Every scope by module
+    std::vector<ScopeModPair> m_scopes;  // Every scope by module
     std::vector<AstCFunc*>    m_dpis;   // DPI functions
     std::vector<ModVarPair>   m_modVars;  // Each public {mod,var}
     ScopeNames          m_scopeNames;   // Each unique AstScopeName
     ScopeFuncs          m_scopeFuncs;   // Each {scope,dpi-export-func}
     ScopeVars           m_scopeVars;    // Each {scope,public-var}
+    ScopeNames          m_vpiScopeCandidates;  // All scopes for VPI
+    ScopeNameHierarchy  m_vpiScopeHierarchy;  // The actual hierarchy of scopes
     V3LanguageWords     m_words;        // Reserved word detector
     int         m_coverBins;            // Coverage bin number
     int         m_labelNum;             // Next label number
@@ -116,6 +120,57 @@ class EmitCSyms : EmitCBaseVisitor {
                 nodep->v3error("Symbol matching "+rsvd+" reserved word reached emitter,"
                                " should have hit SYMRSVDWORD: "<<nodep->prettyNameQ());
             }
+        }
+    }
+
+    string scopeSymString(const string& scpname) {
+        string out = scpname;
+        string::size_type pos;
+        while ((pos = out.find("__PVT__")) != string::npos) {
+            out.replace(pos, 7, "");
+        }
+        if (out.substr(0, 10) == "TOP__DOT__") out.replace(0, 10, "");
+        if (out.substr(0, 4) == "TOP.") out.replace(0, 4, "");
+        while ((pos = out.find('.')) != string::npos) {
+            out.replace(pos, 1, "__");
+        }
+        while ((pos = out.find("__DOT__")) != string::npos) {
+            out.replace(pos, 7, "__");
+        }
+        return out;
+    }
+
+    string scopeDecodeIdentifier(const string& scpname) {
+        string out = scpname;
+        // Remove hierarchy
+        string::size_type  pos = out.rfind(".");
+        if (pos != std::string::npos) out.erase(0, pos + 1);
+        // Decode all escaped characters
+        while ((pos = out.find("__0")) != string::npos) {
+            unsigned int x;
+            std::stringstream ss;
+            ss << std::hex << out.substr(pos+3, 2);
+            ss >> x;
+            out.replace(pos, 5, 1, (char) x);
+        }
+        return out;
+    }
+
+    void varHierarchyScopes(string scp) {
+        while (!scp.empty()) {
+            ScopeNames::const_iterator scpit = m_vpiScopeCandidates.find(scp);
+            if ((scpit != m_vpiScopeCandidates.end())
+                 && (m_scopeNames.find(scp) == m_scopeNames.end())) {
+                m_scopeNames.insert(make_pair(scpit->second.m_symName, scpit->second));
+            }
+            string::size_type pos = scp.rfind("__DOT__");
+            if (pos == string::npos) {
+                pos = scp.rfind(".");
+                if (pos == string::npos) {
+                    break;
+                }
+            }
+            scp.resize(pos);
         }
     }
 
@@ -149,26 +204,14 @@ class EmitCSyms : EmitCBaseVisitor {
                     //UINFO(9,"For "<<scopep->name()<<" - "<<varp->name()<<"  Scp "<<scpName<<"  Var "<<varBase<<endl);
                     string varBasePretty = AstNode::prettyName(varBase);
                     string scpPretty = AstNode::prettyName(scpName);
-                    string scpSym;
-                    {
-                        string out = scpName;
-                        string::size_type pos;
-                        while ((pos = out.find("__PVT__")) != string::npos) {
-                            out.replace(pos, 7, "");
-                        }
-                        if (out.substr(0, 10) == "TOP__DOT__") out.replace(0, 10, "");
-                        if (out.substr(0, 4) == "TOP.") out.replace(0, 4, "");
-                        while ((pos = out.find('.')) != string::npos) {
-                            out.replace(pos, 1, "__");
-                        }
-                        while ((pos = out.find("__DOT__")) != string::npos) {
-                            out.replace(pos, 7, "__");
-                        }
-                        scpSym = out;
-                    }
+                    string scpSym = scopeSymString(scpName);
                     //UINFO(9," scnameins sp "<<scpName<<" sp "<<scpPretty<<" ss "<<scpSym<<endl);
+                    if (v3Global.opt.vpi()) {
+                        varHierarchyScopes(scpName);
+                    }
                     if (m_scopeNames.find(scpSym) == m_scopeNames.end()) {
-                        m_scopeNames.insert(make_pair(scpSym, ScopeNameData(scpSym, scpPretty)));
+                        m_scopeNames.insert(make_pair(scpSym, ScopeData(scpSym, scpPretty,
+                                                      "SCOPE_OTHER")));
                     }
                     m_scopeVars.insert(
                         make_pair(scpSym + " " + varp->name(),
@@ -178,11 +221,38 @@ class EmitCSyms : EmitCBaseVisitor {
         }
     }
 
+    void buildVpiHierarchy() {
+        for (ScopeNames::const_iterator it = m_scopeNames.begin(); it != m_scopeNames.end(); ++it) {
+            if (it->second.m_type != "SCOPE_MODULE") continue;
+
+            string name = it->second.m_prettyName;
+            if (name.substr(0, 4) == "TOP.") name.replace(0, 4, "");
+
+            string above = name;
+            while (!above.empty()) {
+                string::size_type pos = above.rfind(".");
+                if (pos == string::npos) {
+                    break;
+                }
+                above.resize(pos);
+                if (m_vpiScopeHierarchy.find(above) != m_vpiScopeHierarchy.end()) {
+                    m_vpiScopeHierarchy[above].push_back(name);
+                    break;
+                }
+            }
+            m_vpiScopeHierarchy[name] = std::vector<string>();
+        }
+    }
+
     // VISITORS
     virtual void visit(AstNetlist* nodep) {
         // Collect list of scopes
         iterateChildren(nodep);
         varsExpand();
+
+        if (v3Global.opt.vpi()) {
+            buildVpiHierarchy();
+        }
 
         // Sort by names, so line/process order matters less
         stable_sort(m_scopes.begin(), m_scopes.end(), CmpName());
@@ -206,15 +276,33 @@ class EmitCSyms : EmitCBaseVisitor {
         iterateChildren(nodep);
         m_modp = NULL;
     }
+    virtual void visit(AstCellInline* nodep) {
+        if (v3Global.opt.vpi()) {
+            string type = (nodep->origModName() == "__BEGIN__") ? "SCOPE_OTHER"
+                                                                : "SCOPE_MODULE";
+            string name = nodep->scopep()->name() + "__DOT__" + nodep->name();
+            string name_dedot = AstNode::dedotName(name);
+            m_vpiScopeCandidates.insert(make_pair(name, ScopeData(scopeSymString(name),
+                                                                  name_dedot, type)));
+        }
+    }
     virtual void visit(AstScope* nodep) {
         nameCheck(nodep);
+
         m_scopes.push_back(make_pair(nodep, m_modp));
+
+        if (v3Global.opt.vpi() && !nodep->isTop()) {
+            m_vpiScopeCandidates.insert(make_pair(nodep->name(),
+                                                  ScopeData(scopeSymString(nodep->name()),
+                                                            nodep->name(), "SCOPE_MODULE")));
+        }
     }
     virtual void visit(AstScopeName* nodep) {
         string name = nodep->scopeSymName();
         //UINFO(9,"scnameins sp "<<nodep->name()<<" sp "<<nodep->scopePrettySymName()<<" ss "<<name<<endl);
         if (m_scopeNames.find(name) == m_scopeNames.end()) {
-            m_scopeNames.insert(make_pair(name, ScopeNameData(name, nodep->scopePrettySymName())));
+            m_scopeNames.insert(make_pair(name, ScopeData(name, nodep->scopePrettySymName(),
+                                                          "SCOPE_OTHER")));
         }
         if (nodep->dpiExport()) {
             UASSERT_OBJ(m_funcp, nodep, "ScopeName not under DPI function");
@@ -223,8 +311,9 @@ class EmitCSyms : EmitCBaseVisitor {
         } else {
             if (m_scopeNames.find(nodep->scopeDpiName()) == m_scopeNames.end()) {
                 m_scopeNames.insert(make_pair(nodep->scopeDpiName(),
-                                              ScopeNameData(nodep->scopeDpiName(),
-                                                            nodep->scopePrettyDpiName())));
+                                              ScopeData(nodep->scopeDpiName(),
+                                                            nodep->scopePrettyDpiName(),
+                                                            "SCOPE_OTHER")));
             }
         }
     }
@@ -353,15 +442,16 @@ void EmitCSyms::emitSymHdr() {
         puts("uint32_t __Vcoverage["); puts(cvtToStr(m_coverBins)); puts("];\n");
     }
 
-    {  // Scope names
-        bool did = false;
+    if (!m_scopeNames.empty()) {  // Scope names
+        puts("\n// SCOPE NAMES\n");
         for (ScopeNames::iterator it = m_scopeNames.begin(); it != m_scopeNames.end(); ++it) {
-            if (!did) {
-                did = true;
-                puts("\n// SCOPE NAMES\n");
-            }
             puts("VerilatedScope __Vscope_"+it->second.m_symName+";\n");
         }
+    }
+
+    if (v3Global.opt.vpi()) {
+        puts("\n// SCOPE HIERARCHY\n");
+        puts("VerilatedHierarchy __Vhier;\n");
     }
 
     puts("\n// CREATORS\n");
@@ -550,19 +640,47 @@ void EmitCSyms::emitSymImp() {
         }
     }
 
-    {  // Setup scope names
-        bool did = false;
+    if (!m_scopeNames.empty()) {  // Setup scope names
+        puts("// Setup scopes\n");
         for (ScopeNames::iterator it = m_scopeNames.begin(); it != m_scopeNames.end(); ++it) {
-            if (!did) {
-                did = true;
-                puts("// Setup scope names\n");
-            }
             checkSplit(false);
             puts("__Vscope_"+it->second.m_symName+".configure(this,name(),");
             putsQuoted(it->second.m_prettyName);
-            puts(");\n");
+            puts(", ");
+            putsQuoted(scopeDecodeIdentifier(it->second.m_prettyName));
+            puts(", VerilatedScope::"+it->second.m_type+");\n");
             ++m_numStmts;
         }
+    }
+
+    if (v3Global.opt.vpi()) {
+        puts("\n// Setup scope hierarchy\n");
+        for (ScopeNames::const_iterator it = m_scopeNames.begin();
+            it != m_scopeNames.end(); ++it) {
+            string name = it->second.m_prettyName;
+            if (it->first == "TOP") continue;
+            name = name.replace(0, 4, "");  // Remove the "TOP."
+            if ((name.find(".") == string::npos) && (it->second.m_type == "SCOPE_MODULE")) {
+                puts("__Vhier.add(0, &__Vscope_" + it->second.m_symName + ");\n");
+            }
+        }
+
+        for (ScopeNameHierarchy::const_iterator it = m_vpiScopeHierarchy.begin();
+             it != m_vpiScopeHierarchy.end(); ++it) {
+            for (ScopeNameList::const_iterator lit = it->second.begin();
+                lit != it->second.end(); ++lit) {
+                string fromname = scopeSymString(it->first);
+                string toname = scopeSymString(*lit);
+                ScopeNames::const_iterator from = m_scopeNames.find(fromname);
+                ScopeNames::const_iterator to = m_scopeNames.find(toname);
+                UASSERT(from != m_scopeNames.end(), fromname+" not in m_scopeNames");
+                UASSERT(to != m_scopeNames.end(), toname+" not in m_scopeNames");
+                puts("__Vhier.add(");
+                puts("&__Vscope_"+from->second.m_symName+", ");
+                puts("&__Vscope_"+to->second.m_symName+");\n");
+            }
+        }
+        puts("\n");
     }
 
     // Everything past here is in the __Vfinal loop, so start a new split file if needed

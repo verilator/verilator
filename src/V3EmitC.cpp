@@ -853,6 +853,7 @@ public:
     virtual void visit(AstTraceDecl*) {}  // Handled outside the Visit class
     virtual void visit(AstTraceInc*) {}  // Handled outside the Visit class
     virtual void visit(AstCFile*) {}  // Handled outside the Visit class
+    virtual void visit(AstCellInline*) {}  // Handled outside the Visit class (EmitCSyms)
     // Default
     virtual void visit(AstNode* nodep) {
         puts(string("\n???? // ")+nodep->prettyTypeName()+"\n");

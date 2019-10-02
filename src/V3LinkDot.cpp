@@ -1793,7 +1793,7 @@ private:
     }
     virtual void visit(AstCellInline* nodep) {
         checkNoDot(nodep);
-        if (m_statep->forScopeCreation()) {
+        if (m_statep->forScopeCreation() && !v3Global.opt.vpi()) {
             nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
         }
     }

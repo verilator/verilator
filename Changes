@@ -8,6 +8,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Add --public-flat-rw, bug1511. [Stefan Wallentowitz]
 
+***   Support vpiModule, bug1469. [Stefan Wallentowitz]
+
 ****  Fix make test with no VERILATOR_ROOT, bug1494. [Ahmed El-Mahmoudy]
 
 ****  Make Syms file honor --output-split-cfuncs, bug1499. [Todd Strader]

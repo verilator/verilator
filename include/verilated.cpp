@@ -2101,6 +2101,7 @@ void* VerilatedVarProps::datapAdjustIndex(void* datap, int dim, int indx) const 
 VerilatedScope::VerilatedScope() {
     m_callbacksp = NULL;
     m_namep = NULL;
+    m_identifierp = NULL;
     m_funcnumMax = 0;
     m_symsp = NULL;
     m_varsp = NULL;
@@ -2116,15 +2117,18 @@ VerilatedScope::~VerilatedScope() {
 }
 
 void VerilatedScope::configure(VerilatedSyms* symsp, const char* prefixp,
-                               const char* suffixp) VL_MT_UNSAFE {
+                               const char* suffixp, const char* identifier,
+                               const Type type) VL_MT_UNSAFE {
     // Slowpath - called once/scope at construction
     // We don't want the space and reference-count access overhead of strings.
     m_symsp = symsp;
+    m_type = type;
     char* namep = new char[strlen(prefixp)+strlen(suffixp)+2];
     strcpy(namep, prefixp);
     if (*prefixp && *suffixp) strcat(namep, ".");
     strcat(namep, suffixp);
     m_namep = namep;
+    m_identifierp = identifier;
     VerilatedImp::scopeInsert(this);
 }
 
@@ -2227,6 +2231,10 @@ void VerilatedScope::scopeDump() const {
             VL_PRINTF_MT("       VAR %p: %s\n", &(it->second), it->first);
         }
     }
+}
+
+void VerilatedHierarchy::add(VerilatedScope* fromp, VerilatedScope* top) {
+    VerilatedImp::hierarchyAdd(fromp, top);
 }
 
 //===========================================================================
