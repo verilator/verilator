@@ -339,7 +339,7 @@ routines in the sources to rely more heavily on randomness, and generally
 try harder not to keep input nodes together when we have the option to
 scramble things.
 
-===== Performance Regression>
+===== Performance Regression
 
 It would be nice if we had a regression of large designs, with some
 diversity of design styles, to test on both single- and multi-threaded
