@@ -413,8 +413,8 @@ sub sprint_summary {
     $out .= "Passed $self->{ok_cnt}";
     # Ordered below most severe to least severe
     $out .= "  Failed $self->{fail_cnt}";
-    $out .= "  Failed-First $self->{fail1_cnt}";
-    $out .= "  Skipped $self->{skip_cnt}";
+    $out .= "  Failed-First $self->{fail1_cnt}" if $self->{fail1_cnt};
+    $out .= "  Skipped $self->{skip_cnt}" if $self->{skip_cnt};
     $out .= "  Unsup $self->{unsup_cnt}";
     $out .= sprintf("  Eta %d:%02d", int($eta/60), $eta%60) if $self->{left_cnt} > 10 && $eta > 10;
     $out .= sprintf("  Time %d:%02d", int($delta/60), $delta%60);
