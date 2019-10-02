@@ -236,7 +236,7 @@ int _mon_check_var() {
     p = vpi_get_str(vpiFullName, vh2);
     CHECK_RESULT_CSTR(p, TestSimulator::top());
     p = vpi_get_str(vpiType, vh2);
-    CHECK_RESULT_CSTR (p, "*undefined*");
+    CHECK_RESULT_CSTR (p, "vpiModule");
 
     TestVpiHandle vh3 = vpi_handle_by_name((PLI_BYTE8*)"onebit", vh2);
     CHECK_RESULT_NZ(vh3);

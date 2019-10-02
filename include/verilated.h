@@ -333,7 +333,7 @@ public:  // But internals only - called from VerilatedModule's
             return scopep->exportFindError(funcnum);  // LCOV_EXCL_LINE
         }
     }
-    Type type() { return m_type; }
+    Type type() const { return m_type; }
 };
 
 class VerilatedHierarchy {

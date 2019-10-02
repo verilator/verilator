@@ -164,6 +164,7 @@ public:
 };
 
 class VerilatedVpioScope : public VerilatedVpio {
+protected:
     const VerilatedScope*       m_scopep;
 public:
     explicit VerilatedVpioScope(const VerilatedScope* scopep)
@@ -310,21 +311,19 @@ public:
     }
 };
 
-class VerilatedVpioModule : public VerilatedVpio {
-    const VerilatedScope* m_modulep;
+class VerilatedVpioModule : public VerilatedVpioScope {
     const char* m_name;
     const char* m_fullname;
 public:
     explicit VerilatedVpioModule(const VerilatedScope* modulep)
-            : m_modulep(modulep) {
-        m_fullname = m_modulep->name();
+            : VerilatedVpioScope(modulep) {
+        m_fullname = m_scopep->name();
         if (strncmp(m_fullname, "TOP.", 4) == 0) m_fullname += 4;
-        m_name = m_modulep->identifier();
+        m_name = m_scopep->identifier();
     }
     static inline VerilatedVpioModule* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioModule*>((VerilatedVpio*)h); }
     virtual vluint32_t type() const { return vpiModule; }
-    const VerilatedScope* modulep() const { return m_modulep; }
     virtual const char* name() const { return m_name; }
     virtual const char* fullname() const { return m_fullname; }
 };
@@ -1040,9 +1039,9 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
     _VL_VPI_ERROR_RESET();
     if (VL_UNLIKELY(!namep)) return NULL;
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_handle_by_name %s %p\n", namep, scope););
-    VerilatedVpioScope* voScopep = VerilatedVpioScope::castp(scope);
     const VerilatedVar* varp = NULL;
     const VerilatedScope* scopep;
+    VerilatedVpioScope* voScopep = VerilatedVpioScope::castp(scope);
     std::string scopeAndName = namep;
     if (voScopep) {
         scopeAndName = std::string(voScopep->fullname()) + "." + namep;
@@ -1052,7 +1051,11 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
         // This doesn't yet follow the hierarchy in the proper way
         scopep = Verilated::scopeFind(namep);
         if (scopep) {  // Whole thing found as a scope
-            return (new VerilatedVpioScope(scopep))->castVpiHandle();
+            if (scopep->type() == VerilatedScope::SCOPE_MODULE) {
+                return (new VerilatedVpioModule(scopep))->castVpiHandle();
+            } else {
+                return (new VerilatedVpioScope(scopep))->castVpiHandle();
+            }
         }
         const char* baseNamep = scopeAndName.c_str();
         std::string scopename;
@@ -1188,7 +1191,7 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
     case vpiModule: {
         VerilatedVpioModule* vop = VerilatedVpioModule::castp(object);
         const VerilatedHierarchyMap* map = VerilatedImp::hierarchyMap();
-        const VerilatedScope *mod = vop ? vop->modulep() : NULL;
+        const VerilatedScope *mod = vop ? vop->scopep() : NULL;
         VerilatedHierarchyMap::const_iterator it = map->find((VerilatedScope*) mod);
         if (it == map->end()) return 0;
         return  ((new VerilatedVpioModuleIter(it->second))->castVpiHandle());
