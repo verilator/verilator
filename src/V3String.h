@@ -24,7 +24,35 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+// No V3 headers here - this is a base class for Vlc etc
+
 #include <string>
+#include <sstream>
+#include <vector>
+
+//######################################################################
+// Global string-related functions
+
+template <class T> std::string cvtToStr(const T& t) {
+    std::ostringstream os; os<<t; return os.str();
+}
+template <class T> std::string cvtToHex(const T* tp) {
+    std::ostringstream os; os<<static_cast<const void*>(tp); return os.str();
+}
+
+inline uint32_t cvtToHash(const void* vp) {
+    // We can shove a 64 bit pointer into a 32 bit bucket
+    // On 32-bit systems, lower is always 0, but who cares?
+    union { const void* up; struct {uint32_t upper; uint32_t lower;} l;} u;
+    u.l.upper = 0; u.l.lower = 0; u.up = vp;
+    return u.l.upper^u.l.lower;
+}
+
+inline string ucfirst(const string& text) {
+    string out = text;
+    out[0] = toupper(out[0]);
+    return out;
+}
 
 //######################################################################
 // VString - String manipulation

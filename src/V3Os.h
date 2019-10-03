@@ -24,6 +24,7 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+// Limited V3 headers here - this is a base class for Vlc etc
 #include "V3Error.h"
 
 //============================================================================
