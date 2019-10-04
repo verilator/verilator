@@ -21,5 +21,7 @@ if ($Self->have_pybind11 && $Self->have_cmake) {
         cmd     => [ "python3 $Self->{t_dir}/t_python_cmake.py $Self->{obj_dir}" ]);
 }
 
+vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
+
 ok(1);
 1;

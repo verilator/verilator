@@ -21,9 +21,9 @@ if (NOT verilator_FOUND)
 endif()
 
 verilator_add_python_module(Vtop MAIN DOC "An example Verilated Python module")
-verilate(Vtop PREFIX Vtop THREADS 4 TOP_MODULE top PYTHON SOURCES top.v)
+verilate(Vtop PREFIX Vtop THREADS 4 PYTHON SOURCES top.v)
 
 # A Python module can contain multiple Verilated designs
 verilator_add_python_module(example2 MAIN DOC "An example Python module3" EXCLUDE_FROM_ALL)
-verilate(example2 PREFIX Vtop THREADS 4 TOP_MODULE top PYTHON SOURCES top.v)
-verilate(example2 PREFIX Vtop2 THREADS 4 TOP_MODULE top PYTHON SOURCES top.v)
+verilate(example2 PREFIX Vtop THREADS 4 PYTHON SOURCES top.v)
+verilate(example2 PREFIX Vtop2 THREADS 4 PYTHON SOURCES top.v)

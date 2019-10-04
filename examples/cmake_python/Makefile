@@ -23,10 +23,10 @@ CMAKE_MINOR := $(shell echo $(CMAKE_VERSION) | cut -f2 -d.)
 CMAKE_GT_3_8 := $(shell [ $(CMAKE_MAJOR) -gt 3 -o \( $(CMAKE_MAJOR) -eq 3 -a $(CMAKE_MINOR) -ge 8 \) ] && echo true)
 ifeq ($(CMAKE_GT_3_8),true)
 # Check if pybind11 is available
-ifneq (,${PYBIND11_ROOT})
-TARGET := run
-else
+ifeq (1,${PYBIND11_ROOT}$(shell python3 -m pybind11 >/dev/null 2>&1; echo $$?))
 TARGET := nopybind11
+else
+TARGET := run
 endif
 else
 TARGET := oldcmake
@@ -55,7 +55,7 @@ run:
 	@echo "-- DONE --------------------"
 	@echo
 
-clean:
+clean mostlyclean distclean maintainer-clean:
 	@rm -rf build
 
 nocmake:
@@ -71,5 +71,6 @@ oldcmake:
 nopybind11:
 	@echo
 	@echo "%Skip: Python example disabled because the PYBIND11_ROOT environment variable was not set."
-	@echo "%This example can be enabled by install pybind11 and setting the PYBIND11_ROOT environment variable."
+	@echo "%This example can be enabled by installing pybind11 using your system package manager"
+	@echo "%or setting the PYBIND11_ROOT environment variable to a local copy."
 	@echo

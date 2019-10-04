@@ -290,7 +290,7 @@ def test_example2_vadd():
     example2.Verilated.set_callback(None)
 
     a = Add2()
-    a.trace_start("test_example.vcd")
+    a.trace_start(os.path.join(sys.argv[1], "simx.vcd"))
     a.rst = 1
     a.cycle()
     a.rst = 0
@@ -305,7 +305,6 @@ def test_example2_vadd():
     except example2.VerilatedException as e:
         print("An exception was thrown: {}".format(repr(e)))
     a.trace_stop()
-    os.unlink("test_example.vcd")
 
 
 def test_multiple_python_modules_independence():
@@ -658,13 +657,23 @@ def test_overflow_width_8():
         pass
 
 
+def test_signed_width_12():
+    """Test properties of a signed 12 bit signal"""
+    a = Add2()
+
+    a.in12_s = -1000
+    a.cycle()
+    assert a.in12_s == -1000
+    assert a.out12_s == -1000
+
+
 def test_signed_width_16():
     """Test properties of a signed 16 bit signal"""
     a = Add2()
 
-    a.in16_s = -1
+    a.in16_s = -10000
     a.cycle()
-    assert a.out16_s == -1
+    assert a.out16_s == -10000
 
 
 def test_unsigned_width_16():
@@ -693,9 +702,9 @@ def test_signed_width_32():
     """Test properties of a signed 32 bit signal"""
     a = Add2()
 
-    a.in32_s = -1
+    a.in32_s = -1000000000
     a.cycle()
-    assert a.out32_s == -1
+    assert a.out32_s == -1000000000
 
 
 def test_unsigned_width_32():
@@ -724,9 +733,9 @@ def test_signed_width_64():
     """Test properties of a signed 64 bit signal"""
     a = Add2()
 
-    a.in64_s = -1
+    a.in64_s = -0x10000000000
     a.cycle()
-    assert a.out64_s == -1
+    assert a.out64_s == -0x10000000000
 
 
 def test_unsigned_width_64():
@@ -751,13 +760,22 @@ def test_overflow_width_64():
         pass
 
 
+def test_signed_width_124():
+    """Test properties of a signed 124 bit signal"""
+    a = Add2()
+
+    a.in124_s = -0x100000000000000000000
+    a.cycle()
+    assert a.out124_s == -0x100000000000000000000
+
+
 def test_signed_width_128():
     """Test properties of a signed 128 bit signal"""
     a = Add2()
 
-    a.in128_s = -1
+    a.in128_s = -0x100000000000000000000
     a.cycle()
-    assert a.out128_s == -1
+    assert a.out128_s == -0x100000000000000000000
 
 
 def test_unsigned_width_128():

@@ -103,6 +103,7 @@ VM_SUPPORT += $(VM_SUPPORT_FAST) $(VM_SUPPORT_SLOW)
 ifeq ($(VM_PYTHON),1)
   CPPFLAGS += $(shell python3-config --includes) -fPIC -DVL_PYTHON -DVL_USER_FINISH -DVL_USER_STOP -DVL_USER_FATAL
   LDFLAGS  += $(shell python3-config --ldflags) --shared
+  PYTHON_EXT = $(shell python3-config --extension-suffix)
 endif
 
 #######################################################################
@@ -183,6 +184,12 @@ $(VM_PREFIX)__ALL.a: $(VK_OBJS)
 	@echo "      Archiving" $@ ...
 	$(AR) r $@ $^
 	$(RANLIB) $@
+
+ifeq ($(VM_PYTHON),1)
+  $(VM_PREFIX)$(PYTHON_EXT): $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(VM_PREFIX)__ALL.a
+	$(LINK) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) $(SC_LIBS)
+  $(VM_PREFIX)__PYTHON: $(VM_PREFIX)$(PYTHON_EXT)
+endif
 
 ######################################################################
 ### Compile rules

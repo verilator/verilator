@@ -27,7 +27,7 @@ endif
 ######################################################################
 
 # Check if pybind11 is available
-ifeq (${PYBIND11_ROOT},)
+ifeq (1,${PYBIND11_ROOT}$(shell python3 -m pybind11 >/dev/null 2>&1; echo $$?))
 TARGET := nopybind11
 else
 TARGET := run
@@ -36,7 +36,7 @@ endif
 default: $(TARGET)
 
 run:
-	@echo "-- Verilator Python example using nake"
+	@echo "-- Verilator Python example using make"
 	@echo "PYBIND11_ROOT is $(PYBIND11_ROOT)"
 
 	@echo "-- VERILATE ----------------"
@@ -59,5 +59,6 @@ clean mostlyclean distclean maintainer-clean::
 nopybind11:
 	@echo
 	@echo "%Skip: Python example disabled because the PYBIND11_ROOT environment variable was not set."
-	@echo "%This example can be enabled by install pybind11 and setting the PYBIND11_ROOT environment variable."
+	@echo "%This example can be enabled by installing pybind11 using your system package manager"
+	@echo "%or setting the PYBIND11_ROOT environment variable to a local copy."
 	@echo

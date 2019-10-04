@@ -41,41 +41,34 @@ namespace py = pybind11;
 namespace vl_py {
 namespace impl {
 py::int_ read_port(const vluint32_t* words, size_t width, bool is_signed) {
-    const size_t nb_words = (width + 31) / 32;
-    const size_t nb_bytes = (width + 7) / 8;
-    vluint8_t bytes[nb_bytes];
-
-    for (size_t word_i = 0; word_i < nb_words; ++word_i) {
-        vluint32_t word = words[word_i];
-        for (size_t byte_i = 4 * word_i; byte_i < nb_bytes; ++byte_i) {
-            bytes[byte_i] = word & 0xff;
-            word >>= 8;
-        }
-    }
-    for (size_t byte_i = nb_bytes; byte_i < 4 * nb_words; ++byte_i) {
-        bytes[byte_i] = 0;
+    size_t msb = width - 1;
+    auto w = words + msb / 32;
+    py::int_ i(*w);
+    py::int_ s(32);
+    while (--w >= words) {
+        i = (i << s) | py::int_(*w);
     }
 
-    PyObject* obj = _PyLong_FromByteArray(bytes, nb_bytes, true, is_signed);
-    return py::reinterpret_steal<py::int_>(obj);
+    if (is_signed && (words[msb / 32] >> (msb % 32))) { //Negative
+        py::int_ one(1);
+        py::int_ msk(one << py::int_(msb));
+        return (i & (msk - one)) - msk;
+    }
+
+    return i;
 }
 
 void write_port(vluint32_t* words, size_t width, py::int_ v, bool is_signed) {
-    const size_t nb_words = (width + 31) / 32;
-    const size_t nb_bytes = (width + 7) / 8;
-    vluint8_t bytes[nb_bytes];
-
-    const int result = _PyLong_AsByteArray(reinterpret_cast<PyLongObject*>(v.ptr()), bytes, nb_bytes, true, is_signed);
-
-    if (result < 0) {
-        throw py::error_already_set{};
+    py::int_ s(32);
+    py::int_ msk(0xFFFFFFFF);
+    for (auto w = words; w < words + (width + 31) / 32; w++) {
+        *w = py::int_(v & msk);
+        v = v >> s;
     }
-    for (size_t word_i = 0; word_i < nb_words; ++word_i) {
-        vluint32_t word = 0;
-        for (size_t byte_offset = 0; (byte_offset < 4) && (4 * word_i + byte_offset < nb_bytes); ++byte_offset) {
-            word |= static_cast<vluint32_t>(bytes[4 * word_i + byte_offset]) << (8 * byte_offset);
-        }
-        words[word_i] = word;
+    int i = v;
+    if (!(i == 0 || (is_signed && i == -1))) {
+        PyErr_SetString(PyExc_OverflowError, "Integer overflow when assigning to wide port");
+        throw py::error_already_set();
     }
 }
 } // namespace impl
@@ -426,6 +419,21 @@ void declare_globals(py::module& m) {
             py::arg("unit"),
             "Set time resolution (s/ms, defaults to ns)\n"
             "See also VL_TIME_PRECISION, and VL_TIME_MULTIPLIER in verilated.h");
+#endif
+
+#if VM_COVERAGE
+    py::class_<VerilatedCov> vl_class_coverage(m, "VerilatedCov", py::module_local{});
+    vl_class_coverage
+        .def_static("write", &VerilatedCov::write,
+            py::arg("filename"),
+            "Write out coverage data to specified file")
+        .def_static("clear", &VerilatedCov::clear,
+            "Clear coverage points (and call delete on all items)")
+        .def_static("clearNonMatch", &VerilatedCov::clearNonMatch,
+            py::arg("match"),
+            "Clear items not matching the provided string")
+        .def_static("zero", &VerilatedCov::zero,
+            "Zero coverage points");
 #endif
 
     set_callback(m, py::none());

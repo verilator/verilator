@@ -1349,6 +1349,8 @@ sub have_cmake {
 
 sub have_pybind11 {
     return 1 if defined $ENV{PYBIND11_ROOT};
+    `which python3 && python3 -m pybind11`;
+    return 1 if $? == 0;
     return 0;
 }
 

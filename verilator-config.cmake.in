@@ -428,7 +428,7 @@ function(verilator_add_python_module TARGET)
 
   cmake_parse_arguments(VPYMOD "MAIN" "DOC" "" ${ARGN})
 
-  find_package(pybind11 HINTS $ENV{PYBIND11_ROOT})
+  find_package(pybind11 HINTS ${PYBIND11_ROOT} $ENV{PYBIND11_ROOT})
   if (NOT pybind11_FOUND)
     if (EXISTS ${CMAKE_CURRENT_LIST_DIR}/pybind11)
       add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/pybind11)

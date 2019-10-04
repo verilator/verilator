@@ -32,14 +32,18 @@ module add #( /* verilator lint_off DECLFILENAME */
     output wire signed out1_s,
     input wire signed [7:0] in8_s,
     output wire signed [7:0] out8_s,
-    input wire signed [7:0] in16_s,
-    output wire signed [7:0] out16_s,
-    input wire signed [7:0] in32_s,
-    output wire signed [7:0] out32_s,
-    input wire signed [7:0] in64_s,
-    output wire signed [7:0] out64_s,
-    input wire signed [7:0] in128_s,
-    output wire signed [7:0] out128_s
+    input wire signed [11:0] in12_s,
+    output wire signed [11:0] out12_s,
+    input wire signed [15:0] in16_s,
+    output wire signed [15:0] out16_s,
+    input wire signed [31:0] in32_s,
+    output wire signed [31:0] out32_s,
+    input wire signed [63:0] in64_s,
+    output wire signed [63:0] out64_s,
+    input wire signed [123:0] in124_s,
+    output wire signed [123:0] out124_s,
+    input wire signed [127:0] in128_s,
+    output wire signed [127:0] out128_s
 );
 
 always @(posedge clk) begin
@@ -67,9 +71,11 @@ assign out128_2 = in128_2;
 
 assign out1_s = in1_s;
 assign out8_s = in8_s;
+assign out12_s = in12_s;
 assign out16_s = in16_s;
 assign out32_s = in32_s;
 assign out64_s = in64_s;
+assign out124_s = in124_s;
 assign out128_s = in128_s;
 
 endmodule
