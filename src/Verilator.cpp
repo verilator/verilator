@@ -585,14 +585,9 @@ int main(int argc, char** argv, char** env) {
     string argString = V3Options::argString(argc-1, argv+1);
     v3Global.opt.parseOpts(new FileLine(FileLine::commandLineFilename()),
                            argc-1, argv+1);
-    if (!v3Global.opt.outFormatOk()
-        && !v3Global.opt.preprocOnly()
-        && !v3Global.opt.lintOnly()
-        && !v3Global.opt.xmlOnly()
-        && !v3Global.opt.cdc()) {
-        v3fatal("verilator: Need --cc, --sc, --cdc, --lint-only, --xml_only or --E option");
-    }
 
+    // Validate settings (aka Boost.Program_options)
+    v3Global.opt.notify();
     V3Error::abortIfErrors();
 
     // Can we skip doing everything if times are ok?

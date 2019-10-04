@@ -257,6 +257,7 @@ class V3Options {
     void addNoClocker(const string& signame);
     void addVFile(const string& filename);
     void addForceInc(const string& filename);
+    void notify();
 
     // ACCESSORS (options)
     bool preprocOnly() const { return m_preprocOnly; }

@@ -523,6 +523,20 @@ string V3Options::getenvVERILATOR_ROOT() {
 }
 
 //######################################################################
+// V3 Options notification methods
+
+void V3Options::notify() {
+    // Notify that all arguments have been passed and final modification can be made.
+    if (!outFormatOk()
+        && !preprocOnly()
+        && !lintOnly()
+        && !xmlOnly()
+        && !cdc()) {
+        v3fatal("verilator: Need --cc, --sc, --cdc, --lint-only, --xml_only or --E option");
+    }
+}
+
+//######################################################################
 // V3 Options accessors
 
 string V3Options::version() {
