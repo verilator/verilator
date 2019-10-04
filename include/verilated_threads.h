@@ -25,6 +25,7 @@
 #include "verilatedos.h"
 #include "verilated.h"  // for VerilatedMutex and clang annotations
 
+#include <condition_variable>
 #include <set>
 #include <vector>
 #if defined(__linux)
@@ -39,71 +40,12 @@
 // as a void* here.
 typedef void* VlThrSymTab;
 
-class VlNotification {
-    // MEMBERS
-    std::atomic<bool> m_notified;  // Notification pending
-    static std::atomic<vluint64_t> s_yields;  // Statistics
-
-public:
-    // CONSTRUCTORS
-    VlNotification()
-        : m_notified(false) {
-        assert(atomic_is_lock_free(&m_notified));
-    }
-    ~VlNotification() {}
-
-    // METHODS
-    static vluint64_t yields() { return s_yields; }
-    static void yieldThread() {
-        ++s_yields;  // Statistics
-        std::this_thread::yield();
-    }
-
-    // Block until notify() has occurred, then return.
-    // If notify() has already occurred, return immediately.
-    //
-    // This is logically const: the object will remain in notified state
-    // after WaitForNotification() returns, so you could notify more than
-    // one thread of the same event.
-    inline void waitForNotification() {
-        unsigned ct = 0;
-        while (VL_UNLIKELY(!notified())) {
-            VL_CPU_RELAX();
-            ++ct;
-            if (VL_UNLIKELY(ct > VL_LOCK_SPINS)) {
-                ct = 0;
-                yieldThread();
-            }
-        }
-    }
-
-    // The 'inline' keyword here means nothing to the compiler, it's
-    // implicit on methods defined within the class body anyway.
-    //
-    // 'inline' is attached the this method, and others in this file,
-    // to remind humans that some routines in this file are called many
-    // times per cycle in threaded mode. Such routines should be
-    // inlinable; that's why they're declared in the .h and not the .cpp.
-    inline bool notified() {
-        return m_notified.load(std::memory_order_acquire);
-    }
-    // Set notified state. If state is already notified,
-    // it remains so.
-    inline void notify() {
-        m_notified.store(true, std::memory_order_release);
-    }
-    // Reset the state to un-notified state, which is also the
-    // state of a new Notification object.
-    inline void reset() {
-        m_notified.store(false, std::memory_order_relaxed);
-    }
-};
-
 typedef void (*VlExecFnp)(bool, VlThrSymTab);
 
 /// Track dependencies for a single MTask.
 class VlMTaskVertex {
     // MEMBERS
+    static std::atomic<vluint64_t> s_yields;  // Statistics
 
     // On even cycles, _upstreamDepsDone increases as upstream
     // dependencies complete. When it reaches _upstreamDepCount,
@@ -133,6 +75,12 @@ public:
     explicit VlMTaskVertex(vluint32_t upstreamDepCount);
     ~VlMTaskVertex() {}
 
+    static vluint64_t yields() { return s_yields; }
+    static void yieldThread() {
+        ++s_yields;  // Statistics
+        std::this_thread::yield();
+    }
+
     // Upstream mtasks must call this when they complete.
     // Returns true when the current MTaskVertex becomes ready to execute,
     // false while it's still waiting on more dependencies.
@@ -160,7 +108,7 @@ public:
             ++ct;
             if (VL_UNLIKELY(ct > VL_LOCK_SPINS)) {
                 ct = 0;
-                VlNotification::yieldThread();
+                yieldThread();
             }
         }
     }
@@ -237,18 +185,18 @@ private:
 
     // MEMBERS
     VerilatedMutex m_mutex;
+    std::condition_variable_any m_cv;
+    // Only notify the condition_variable if the worker is waiting
+    bool m_waiting VL_GUARDED_BY(m_mutex);
 
     // Why a vector? We expect the pending list to be very short, typically
     // 0 or 1 or 2, so popping from the front shouldn't be
     // expensive. Revisit if we ever have longer queues...
     std::vector<ExecRec> m_ready VL_GUARDED_BY(m_mutex);
+    // Store the size atomically, so we can spin wait
+    std::atomic<size_t> m_ready_size;
 
     VlThreadPool* m_poolp;  // Our associated thread pool
-
-    // If values stored are non-NULL, the thread is asleep pending new
-    // work. If the thread is not asleep, both parts of m_sleepAlarm must
-    // be NULL.
-    std::pair<VlNotification*, ExecRec*> m_sleepAlarm VL_GUARDED_BY(m_mutex);
 
     bool m_profiling;  // Is profiling enabled?
     std::atomic<bool> m_exiting;  // Worker thread should exit
@@ -262,29 +210,38 @@ public:
     ~VlWorkerThread();
 
     // METHODS
-    inline void dequeWork(ExecRec* workp) VL_REQUIRES(m_mutex) {
+    inline void dequeWork(ExecRec* workp) {
+        // Spin for a while, waiting for new data
+        for (int i = 0; i < VL_LOCK_SPINS; ++i) {
+            if (VL_LIKELY(m_ready_size.load(std::memory_order_relaxed)))
+                break;
+            VL_CPU_RELAX();
+        }
+        VerilatedLockGuard lk(m_mutex);
+        while (m_ready.empty()) {
+            m_waiting = true;
+            m_cv.wait(lk);
+        }
+        m_waiting = false;
         // As noted above this is inefficient if our ready list is ever
         // long (but it shouldn't be)
         *workp = m_ready.front();
         m_ready.erase(m_ready.begin());
+        m_ready_size.fetch_sub(1, std::memory_order_relaxed);
     }
-    inline void wakeUp() VL_REQUIRES(m_mutex) {
-        VlNotification* notifyp = m_sleepAlarm.first;
-        m_sleepAlarm.first = NULL;  // NULL+NULL means wake
-        m_sleepAlarm.second = NULL;
-        notifyp->notify();
-    }
-    inline bool sleeping() VL_REQUIRES(m_mutex) {
-        return (m_sleepAlarm.first != NULL);
+    inline void wakeUp() {
+        addTask(nullptr, false, nullptr);
     }
     inline void addTask(VlExecFnp fnp, bool evenCycle, VlThrSymTab sym) {
-        VerilatedLockGuard lk(m_mutex);
-        m_ready.emplace_back(fnp, evenCycle, sym);
-        if (VL_LIKELY(sleeping())) {  // Generally queue is waiting for work
-            // Awaken thread
-            dequeWork(m_sleepAlarm.second);
-            wakeUp();
+        bool notify;
+        {
+            VerilatedLockGuard lk(m_mutex);
+            m_ready.emplace_back(fnp, evenCycle, sym);
+            m_ready_size.fetch_add(1, std::memory_order_relaxed);
+            notify = m_waiting;
         }
+        if (notify)
+            m_cv.notify_one();
     }
     void workerLoop();
     static void startWorker(VlWorkerThread* workerp);

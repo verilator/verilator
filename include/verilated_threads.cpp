@@ -24,7 +24,7 @@
 
 #include <cstdio>
 
-std::atomic<vluint64_t> VlNotification::s_yields;
+std::atomic<vluint64_t> VlMTaskVertex::s_yields;
 
 VL_THREAD_LOCAL VlThreadPool::ProfileTrace* VlThreadPool::t_profilep = NULL;
 
@@ -41,7 +41,8 @@ VlMTaskVertex::VlMTaskVertex(vluint32_t upstreamDepCount)
 // VlWorkerThread
 
 VlWorkerThread::VlWorkerThread(VlThreadPool* poolp, bool profiling)
-    : m_poolp(poolp)
+    : m_ready_size(0)
+    , m_poolp(poolp)
     , m_profiling(profiling)
     , m_exiting(false)
       // Must init this last -- after setting up fields that it might read:
@@ -49,12 +50,7 @@ VlWorkerThread::VlWorkerThread(VlThreadPool* poolp, bool profiling)
 
 VlWorkerThread::~VlWorkerThread() {
     m_exiting.store(true, std::memory_order_release);
-    {
-        VerilatedLockGuard lk(m_mutex);
-        if (sleeping()) {
-            wakeUp();
-        }
-    }
+    wakeUp();
     // The thread should exit; join it.
     m_cthread.join();
 }
@@ -64,38 +60,18 @@ void VlWorkerThread::workerLoop() {
         m_poolp->setupProfilingClientThread();
     }
 
-    VlNotification alarm;
     ExecRec work;
     work.m_fnp = NULL;
 
     while (1) {
-        bool sleep = false;
-        if (VL_UNLIKELY(!work.m_fnp)) {
-            // Look for work
-            VerilatedLockGuard lk(m_mutex);
-            if (VL_LIKELY(!m_ready.empty())) {
-                dequeWork(&work);
-            } else {
-                // No work available, prepare to sleep. Pass alarm/work
-                // into m_sleepAlarm so wakeUp will tall this function.
-                //
-                // Must modify m_sleepAlarm in the same critical section as
-                // the check for ready work, otherwise we could race with
-                // another thread enqueueing work and never be awoken.
-                m_sleepAlarm.first = &alarm;
-                m_sleepAlarm.second = &work;
-                sleep = true;
-            }
+        if (VL_LIKELY(!work.m_fnp)) {
+            dequeWork(&work);
         }
 
         // Do this here, not above, to avoid a race with the destructor.
         if (VL_UNLIKELY(m_exiting.load(std::memory_order_acquire)))
             break;
 
-        if (VL_UNLIKELY(sleep)) {
-            alarm.waitForNotification();  // ZZZzzzzz
-            alarm.reset();
-        }
         if (VL_LIKELY(work.m_fnp)) {
             work.m_fnp(work.m_evenCycle, work.m_sym);
             work.m_fnp = NULL;
@@ -194,7 +170,7 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed) {
     fprintf(fp, "VLPROF arg +verilator+prof+threads+window+%u\n",
             Verilated::profThreadsWindow());
     fprintf(fp, "VLPROF stat yields %" VL_PRI64 "u\n",
-            VlNotification::yields());
+            VlMTaskVertex::yields());
 
     vluint32_t thread_id = 0;
     for (ProfileSet::iterator pit = m_allProfiles.begin();
