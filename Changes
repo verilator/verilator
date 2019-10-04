@@ -10,9 +10,9 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support vpiModule, bug1469. [Stefan Wallentowitz]
 
-****  Fix make test with no VERILATOR_ROOT, bug1494. [Ahmed El-Mahmoudy]
-
 ****  Make Syms file honor --output-split-cfuncs, bug1499. [Todd Strader]
+
+****  Fix make test with no VERILATOR_ROOT, bug1494. [Ahmed El-Mahmoudy]
 
 ****  Fix error on multidimensional cells, bug1505. [Anderson Ignacio Da Silva]
 
@@ -25,6 +25,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 ****  Fix ugly error on interface misuse, bug1525. [Bogdan Vukobratovic]
 
 ****  Fix misc bad-syntax crashes, bug1529-bug1533. [Eric Rippey]
+
+****  Fix case statements with strings, bug1536. [Philipp Wagner]
 
 
 * Verilator 4.018 2019-08-29
