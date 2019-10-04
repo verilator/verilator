@@ -25,9 +25,11 @@
 #include "verilatedos.h"
 #include "verilated.h"  // for VerilatedMutex and clang annotations
 
-#include <sched.h>  // For sched_getcpu()
 #include <set>
 #include <vector>
+#if defined(__linux)
+#include <sched.h>  // For sched_getcpu()
+#endif
 #if defined(__APPLE__)
 # include <cpuid.h>  // For __cpuid_count()
 #endif
@@ -210,6 +212,8 @@ public:
         } else {
             return (unsigned)info[1] >> 24;
         }
+#elif defined(_WIN32)
+        return GetCurrentProcessorNumber();
 #else
         return 0;
 #endif
