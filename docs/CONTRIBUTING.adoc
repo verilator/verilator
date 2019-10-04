@@ -13,12 +13,12 @@ contributions flow more efficiently.
 * If you're unable to find an open issue addressing the problem,
   https://www.veripool.org/projects/verilator/issues/new[open a new issue].
 
-  * Be sure to include a **code sample** or an **executable test case**
-    demonstrating the bug and expected behavior that is not occurring.
+** Be sure to include a **code sample** or an **executable test case**
+   demonstrating the bug and expected behavior that is not occurring.
 
-  * The ideal example works against other simulators, and is in the
-    test_regress/t test format, as described in
-    link:internals.adoc[docs/internals].
+** The ideal example works against other simulators, and is in the
+   test_regress/t test format, as described in
+   link:internals.adoc[docs/internals].
 
 ==== Did you write a patch that fixes a bug?
 
@@ -28,32 +28,32 @@ contributions flow more efficiently.
 * You may attach a patch to the issue, or (preferred) may point to a github
   repository branch within your github account.
 
-  * Verilator uses Travis CI to provide continuous integration. You may
-    want to setup Travis CI on your github branch to ensure your changes
-    keep the tests passing.  See link:internals.adoc[docs/internals].
+** Verilator uses Travis CI to provide continuous integration. You may
+   want to setup Travis CI on your github branch to ensure your changes
+   keep the tests passing.  See link:internals.adoc[docs/internals].
 
 * Your source-code contributions must be certified as open source, under
   the https://developercertificate.org/[Developer Certificate of
   Origin]. On your first contribution, you must either:
 
-  * Have your patch include the addition of your name to
-    link:CONTRIBUTORS[docs/CONTRIBUTORS] (preferred).
+** Have your patch include the addition of your name to
+   link:CONTRIBUTORS[docs/CONTRIBUTORS] (preferred).
 
-  * Use "git -s" as part of your commit. This adds a "signed-of-by"
-    attribute which will certify your contribution as described in the
-    https://github.com/wking/signed-off-by/blob/master/Documentation/SubmittingPatches[Signed-of-By
-    convention].
+** Use "git -s" as part of your commit. This adds a "signed-of-by"
+   attribute which will certify your contribution as described in the
+   https://github.com/wking/signed-off-by/blob/master/Documentation/SubmittingPatches[Signed-of-By
+   convention].
 
-  * Email, or post in an issue a statement that you certify your
-    contributions.
+** Email, or post in an issue a statement that you certify your
+   contributions.
 
-  * In any of these cases your name will be added to
-    link:CONTRIBUTORS[docs/CONTRIBUTRORS] and you are agreeing all future
-    contributions are also certified.
+** In any of these cases your name will be added to
+   link:CONTRIBUTORS[docs/CONTRIBUTRORS] and you are agreeing all future
+   contributions are also certified.
 
-  * We occasionally accept contributions where people do not want their
-    name published. Please email us; you must still certify your
-    contribution using email.
+** We occasionally accept contributions where people do not want their
+   name published. Please email us; you must still certify your
+   contribution using email.
 
 * Your test contributions are generally considered released into the public
   domain, unless you request otherwise or put a GNU/Artistic license on
