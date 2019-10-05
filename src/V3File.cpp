@@ -620,8 +620,6 @@ int V3OutFormatter::endLevels(const char *strg) {
         const char* cp = strg;
         while (isspace(*cp)) cp++;
         switch (*cp) {
-        case '\0':  // End of string... No need for whitespace before it
-            return (0);
         case '\n':  // Newlines.. No need for whitespace before it
             return (0);
         case '#':  // Preproc directive
