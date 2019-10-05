@@ -24,7 +24,7 @@
 //      Replicate the Always, and remove mis-colored duplicate code.
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

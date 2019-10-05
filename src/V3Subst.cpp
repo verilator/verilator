@@ -25,7 +25,7 @@
 //      the RHS hasn't changed value.
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

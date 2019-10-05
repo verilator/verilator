@@ -37,7 +37,7 @@
 // here after scoping to allow more dead node
 // removal.
 // *************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

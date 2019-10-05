@@ -27,7 +27,7 @@
 //          Insert cell's module statements into the upper module
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

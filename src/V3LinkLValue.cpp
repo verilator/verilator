@@ -21,7 +21,7 @@
 //      Top-down traversal
 //          Set lvalue() attributes on appropriate VARREFs.
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

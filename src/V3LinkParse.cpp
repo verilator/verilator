@@ -21,7 +21,7 @@
 //      Top-down traversal
 //          Move some attributes around
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

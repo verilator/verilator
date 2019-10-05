@@ -23,7 +23,7 @@
 //      For each deep block, create cfunc including that block.
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

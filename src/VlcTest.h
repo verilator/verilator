@@ -17,7 +17,7 @@
 // GNU General Public License for more details.
 //
 //*************************************************************************
-
+
 #ifndef _VLCTEST_H_
 #define _VLCTEST_H_ 1
 

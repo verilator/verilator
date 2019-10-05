@@ -24,7 +24,7 @@
 //          Create a wire assign to interconnect to submodule
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

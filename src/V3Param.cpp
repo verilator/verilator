@@ -47,7 +47,7 @@
 //   and must be relinked.
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

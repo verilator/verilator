@@ -3338,7 +3338,7 @@ of input ports exists for tracing.
 * Verilator 0.0 1994/7/8
 
 **** First code written.
-
+
 ----------------------------------------------------------------------
 
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].

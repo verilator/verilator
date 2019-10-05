@@ -20,7 +20,7 @@
 // COVERAGEJOIN TRANSFORMATIONS:
 //      If two COVERTOGGLEs have same VARSCOPE, combine them
 //*************************************************************************
-
+
 
 #include "config_build.h"
 #include "verilatedos.h"

@@ -20,7 +20,7 @@
 //  Pre steps:
 //      Attach clocks to each assertion
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

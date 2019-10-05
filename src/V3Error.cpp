@@ -17,7 +17,7 @@
 // GNU General Public License for more details.
 //
 //*************************************************************************
-
+
 #include "V3Error.h"
 #ifndef _V3ERROR_NO_GLOBAL_
 # include "V3Ast.h"

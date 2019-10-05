@@ -28,7 +28,7 @@
 //          propagation across signals.
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

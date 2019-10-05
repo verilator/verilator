@@ -27,7 +27,7 @@
 //              ASSIGNPOST(Vdly, tmp)
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

@@ -80,7 +80,7 @@
 //  Also vars must not be "public" and we also scoreboard nodep->isPure()
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

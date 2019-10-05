@@ -27,7 +27,7 @@
 //              Convert normal var to FILE* type
 //          SenItems: Convert pos/negedge of non-simple signals to temporaries
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

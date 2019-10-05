@@ -24,7 +24,7 @@
 //      Check all links point to marked nodes
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

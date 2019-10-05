@@ -17,7 +17,7 @@
 // GNU General Public License for more details.
 //
 //*************************************************************************
-
+
 #ifndef _VLCTOP_H_
 #define _VLCTOP_H_ 1
 

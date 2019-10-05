@@ -38,7 +38,7 @@
 // TODO: This code was written before SLICESEL was a type it might be
 // simplified to look primarily for SLICESELs.
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

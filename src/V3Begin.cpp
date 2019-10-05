@@ -28,7 +28,7 @@
 // Unnamed BEGINs change only variable, not $display("%m") scope.
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

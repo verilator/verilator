@@ -22,7 +22,7 @@
 //          ASSIGNDLY to variable later used as clock requires change detect
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

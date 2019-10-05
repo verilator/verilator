@@ -57,7 +57,7 @@
 // long term this code should be scoped-based and resolve all nodes at once
 // rather than hierarchically.
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

@@ -24,7 +24,7 @@
 //      replace with lookup table
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

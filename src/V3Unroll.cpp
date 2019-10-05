@@ -27,7 +27,7 @@
 //      Convert remaining FORs to WHILEs
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

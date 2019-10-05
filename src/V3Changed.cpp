@@ -29,7 +29,7 @@
 //          we need to indicate a new clock has been created.
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

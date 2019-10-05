@@ -29,7 +29,7 @@
 //      WIRE: Move into SACTIVE(combo)
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

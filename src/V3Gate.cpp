@@ -24,7 +24,7 @@
 // Create VARSCOPEs for any variables we can rip out
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

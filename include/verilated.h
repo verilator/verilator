@@ -23,7 +23,7 @@
 /// Code available from: http://www.veripool.org/verilator
 ///
 //*************************************************************************
-
+
 
 #ifndef _VERILATED_H_
 #define _VERILATED_H_ 1  ///< Header Guard
@@ -753,7 +753,7 @@ extern double sc_time_stamp();
 # define SP_AUTO_COVER3(what,file,line)
 #endif
 
-
+
 //=========================================================================
 // Functional macros/routines
 // These all take the form

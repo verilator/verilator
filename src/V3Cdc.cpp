@@ -24,7 +24,7 @@
 // Trace back to previous flop
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

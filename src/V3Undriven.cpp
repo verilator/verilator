@@ -26,7 +26,7 @@
 //      Report unused/undriven nets
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

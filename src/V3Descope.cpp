@@ -25,7 +25,7 @@
 //          This allows for better V3Combine'ing.
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

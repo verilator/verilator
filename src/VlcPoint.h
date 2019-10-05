@@ -17,7 +17,7 @@
 // GNU General Public License for more details.
 //
 //*************************************************************************
-
+
 #ifndef _VLCPOINT_H_
 #define _VLCPOINT_H_ 1
 

@@ -25,7 +25,7 @@
 //             if non-public, set before used, and in single CFUNC, make it local
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

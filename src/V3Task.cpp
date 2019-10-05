@@ -26,7 +26,7 @@
 //          Remove them, they're inlined
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

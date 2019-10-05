@@ -25,7 +25,7 @@
 /// Code available from: http://www.veripool.org/verilator
 ///
 //*************************************************************************
-
+
 
 #ifndef _VERILATEDOS_H_
 #define _VERILATEDOS_H_ 1  ///< Header Guard

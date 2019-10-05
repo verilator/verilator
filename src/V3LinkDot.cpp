@@ -62,7 +62,7 @@
 //      a__DOT__aa (VSymEnt->AstCellInline) -- points to a.aa's symbol table
 //      b          (VSymEnt->AstCell)
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

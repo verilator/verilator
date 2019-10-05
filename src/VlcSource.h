@@ -17,7 +17,7 @@
 // GNU General Public License for more details.
 //
 //*************************************************************************
-
+
 #ifndef _VLCSOURCE_H_
 #define _VLCSOURCE_H_ 1
 

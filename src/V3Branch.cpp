@@ -26,7 +26,7 @@
 //      Then, if FTASK is called only once, add inline attribute
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

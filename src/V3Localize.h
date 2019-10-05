@@ -17,7 +17,7 @@
 // GNU General Public License for more details.
 //
 //*************************************************************************
-
+
 #ifndef _V3LOCALIZE_H_
 #define _V3LOCALIZE_H_ 1
 

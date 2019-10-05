@@ -29,7 +29,7 @@
 //      WIRE: Move into SBLOCK(combo)
 //
 //*************************************************************************
-
+
 #ifndef _V3SENTREE_H_
 #define _V3SENTREE_H_
 

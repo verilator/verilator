@@ -27,7 +27,7 @@
 //      If autoflush, insert a flush
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

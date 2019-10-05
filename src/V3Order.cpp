@@ -75,7 +75,7 @@
 //      and make a new block.  Add that new activation block to the list of calls to make.
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

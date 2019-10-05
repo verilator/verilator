@@ -30,7 +30,7 @@
 //   Create global calling function for any per-scope functions.  (For FINALs).
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

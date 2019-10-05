@@ -17,7 +17,7 @@
 // GNU General Public License for more details.
 //
 //*************************************************************************
-
+
 #ifndef _V3DESCOPE_H_
 #define _V3DESCOPE_H_ 1
 

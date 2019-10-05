@@ -32,7 +32,7 @@
 //   Likewise vector assign to the same constant converted to a loop.
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

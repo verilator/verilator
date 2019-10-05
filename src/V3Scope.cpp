@@ -24,7 +24,7 @@
 //                      {all blocked statements}
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

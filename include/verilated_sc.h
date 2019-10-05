@@ -22,7 +22,7 @@
 /// Code available from: http://www.veripool.org/verilator
 ///
 //*************************************************************************
-
+
 
 #ifndef _VERILATED_SC_H_
 #define _VERILATED_SC_H_ 1  ///< Header Guard

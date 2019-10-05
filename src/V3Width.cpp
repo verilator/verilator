@@ -66,7 +66,7 @@
 // See notes in internal.txt about misuse of iterateAndNext and use of
 // iterateSubtreeReturnEdits.
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

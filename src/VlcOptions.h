@@ -17,7 +17,7 @@
 // GNU General Public License for more details.
 //
 //*************************************************************************
-
+
 #ifndef _VLCOPTIONS_H_
 #define _VLCOPTIONS_H_ 1
 

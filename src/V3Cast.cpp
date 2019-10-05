@@ -40,7 +40,7 @@
 //      even if assigning to a unsigned.
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

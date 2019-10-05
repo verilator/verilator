@@ -26,7 +26,7 @@
 //          We don't do the opposite yet though (remove assigns in if followed by outside if)
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

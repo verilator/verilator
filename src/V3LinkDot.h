@@ -17,7 +17,7 @@
 // GNU General Public License for more details.
 //
 //*************************************************************************
-
+
 #ifndef _V3LINKDOT_H_
 #define _V3LINKDOT_H_ 1
 

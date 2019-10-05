@@ -26,7 +26,7 @@
 //      Copy all width() values to widthMin() so RANGE, etc can still see orig widths
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 

@@ -31,7 +31,7 @@
 //              OPTIMIZE: Must not collapse this initial back into the equation.
 //
 //*************************************************************************
-
+
 #include "config_build.h"
 #include "verilatedos.h"
 
