@@ -693,6 +693,7 @@ void V3OutFormatter::puts(const char *strg) {
                     // Output ignoring contents to EOL
                     cp++;
                     while (*cp && cp[1] && cp[1] != '\n') putcNoTracking(*cp++);
+                    if (*cp) putcNoTracking(*cp);
                 }
             }
             break;
