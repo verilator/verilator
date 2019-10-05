@@ -129,7 +129,6 @@ private:
     int         m_bracketLevel;  // Intenting = { block, indicates number of {'s seen.
 
     int endLevels(const char* strg);
-    const char* indentStr(int num);
     void putcNoTracking(char chr);
 
 public:

@@ -325,7 +325,7 @@ void VerilatedVcd::printQuad(vluint64_t n) {
 
 void VerilatedVcd::printTime(vluint64_t timeui) {
     // VCD file format specification does not allow non-integers for timestamps
-    // Dinotrace doesn't mind, but Cadence vvision seems to choke
+    // Dinotrace doesn't mind, but Cadence Vision seems to choke
     if (VL_UNLIKELY(timeui < m_timeLastDump)) {
         timeui = m_timeLastDump;
         static VL_THREAD_LOCAL bool backTime = false;
