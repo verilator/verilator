@@ -105,7 +105,7 @@ private:
     AstUser2InUse       m_inuser2;
 
     // STATE
-    V3InFilter*         m_filterp;      // Parser filter
+    VInFilter*          m_filterp;      // Parser filter
     V3ParseSym*         m_parseSymp;    // Parser symbol table
 
     // Below state needs to be preserved between each module call.
@@ -397,7 +397,7 @@ private:
                             // Create any not already connected
                             AstPin* newp = new AstPin(nodep->fileline(), 0, portp->name(),
                                                       new AstParseRef(nodep->fileline(),
-                                                                      AstParseRefExp::PX_TEXT,
+                                                                      VParseRefExp::PX_TEXT,
                                                                       portp->name(), NULL, NULL));
                             newp->svImplicit(true);
                             nodep->addPinsp(newp);
@@ -480,7 +480,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    LinkCellsVisitor(AstNetlist* nodep, V3InFilter* filterp, V3ParseSym* parseSymp)
+    LinkCellsVisitor(AstNetlist* nodep, VInFilter* filterp, V3ParseSym* parseSymp)
         : m_mods(nodep) {
         m_filterp = filterp;
         m_parseSymp = parseSymp;
@@ -495,7 +495,7 @@ public:
 //######################################################################
 // Link class functions
 
-void V3LinkCells::link(AstNetlist* nodep, V3InFilter* filterp, V3ParseSym* parseSymp) {
+void V3LinkCells::link(AstNetlist* nodep, VInFilter* filterp, V3ParseSym* parseSymp) {
     UINFO(4,__FUNCTION__<<": "<<endl);
     LinkCellsVisitor visitor (nodep, filterp, parseSymp);
 }

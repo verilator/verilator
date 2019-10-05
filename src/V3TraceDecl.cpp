@@ -53,8 +53,8 @@ private:
     AstNode*            m_traValuep;    // Signal being traced's value to trace in it
     string              m_traShowname;  // Signal being traced's component name
 
-    V3Double0           m_statSigs;     // Statistic tracking
-    V3Double0           m_statIgnSigs;  // Statistic tracking
+    VDouble0            m_statSigs;     // Statistic tracking
+    VDouble0            m_statIgnSigs;  // Statistic tracking
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()

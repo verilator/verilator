@@ -28,7 +28,7 @@
 #include "V3FileLine.h"
 
 class V3ParseImp;
-class V3InFilter;
+class VInFilter;
 class VSpellCheck;
 
 //============================================================================
@@ -37,7 +37,7 @@ class V3PreShell {
     // Static class for calling preprocessor
 public:
     static void boot(char** env);
-    static bool preproc(FileLine* fl, const string& modname, V3InFilter* filterp,
+    static bool preproc(FileLine* fl, const string& modname, VInFilter* filterp,
                         V3ParseImp* parsep, const string& errmsg);
     static void preprocInclude(FileLine* fl, const string& modname);
     static void defineCmdLine(const string& name, const string& value);

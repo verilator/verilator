@@ -239,7 +239,7 @@ private:
     std::vector<SubstVarEntry*> m_entryps;      // Nodes to delete when we are finished
     int                         m_ops;          // Number of operators on assign rhs
     int                         m_assignStep;   // Assignment number to determine var lifetime
-    V3Double0                   m_statSubsts;   // Statistic tracking
+    VDouble0                    m_statSubsts;   // Statistic tracking
 
     enum { SUBST_MAX_OPS_SUBST = 30,            // Maximum number of ops to substitute in
            SUBST_MAX_OPS_NA = 9999 };           // Not allowed to substitute

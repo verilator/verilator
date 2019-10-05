@@ -1984,7 +1984,7 @@ private:
                 allowVar = true;
             } else {
                 UINFO(1,"ds="<<m_ds.ascii()<<endl);
-                nodep->v3fatalSrc("Unhandled AstParseRefExp");
+                nodep->v3fatalSrc("Unhandled VParseRefExp");
             }
             // Lookup
             VSymEnt* foundp;

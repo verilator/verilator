@@ -28,7 +28,7 @@
 #include "V3Global.h"
 
 class AstNetlist;
-class V3InFilter;
+class VInFilter;
 class V3ParseImp;
 class V3ParseSym;
 
@@ -42,7 +42,7 @@ private:
     VL_UNCOPYABLE(V3Parse);
 public:
     // We must allow reading multiple files into one parser
-    V3Parse(AstNetlist* rootp, V3InFilter* filterp, V3ParseSym* symp);
+    V3Parse(AstNetlist* rootp, VInFilter* filterp, V3ParseSym* symp);
     ~V3Parse();
 
     // METHODS

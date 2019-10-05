@@ -34,7 +34,7 @@
 // Compatibility with Verilog-Perl's preprocessor
 #define fatalSrc(msg) v3fatalSrc(msg)
 
-class V3InFilter;
+class VInFilter;
 class VSpellCheck;
 
 class V3PreProc {
@@ -58,7 +58,7 @@ public:
 
     // ACCESSORS
     // Insert given file into this point in input stream
-    virtual void openFile(FileLine* fileline, V3InFilter* filterp, const string& filename) = 0;
+    virtual void openFile(FileLine* fileline, VInFilter* filterp, const string& filename) = 0;
     virtual string getline() = 0;  // Return next line/lines. (Null if done.)
     virtual bool isEof() const = 0;  // Return true on EOF.
     virtual void insertUnreadback(const string& text) = 0;

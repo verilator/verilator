@@ -134,7 +134,7 @@ void V3CCtors::evalAsserts() {
                         AstNodeIf* ifp = new AstIf(varp->fileline(), newp,
                                                    new AstCStmt(varp->fileline(),
                                                                 "Verilated::overWidthError(\""+varp->prettyName()+"\");"));
-                        ifp->branchPred(AstBranchPred::BP_UNLIKELY);
+                        ifp->branchPred(VBranchPred::BP_UNLIKELY);
                         newp = ifp;
                         funcp->addStmtsp(newp);
                     }

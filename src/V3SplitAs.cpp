@@ -146,8 +146,8 @@ private:
     AstUser1InUse       m_inuser1;
 
     // STATE
-    V3Double0   m_statSplits;   // Statistic tracking
-    AstVarScope* m_splitVscp;   // Variable we want to split
+    VDouble0 m_statSplits;  // Statistic tracking
+    AstVarScope* m_splitVscp;  // Variable we want to split
 
     // METHODS
     void splitAlways(AstAlways* nodep) {

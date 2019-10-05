@@ -285,7 +285,7 @@ void V3ParseImp::lexFile(const string& modname) {
 //======================================================================
 // V3Parse functions
 
-V3Parse::V3Parse(AstNetlist* rootp, V3InFilter* filterp, V3ParseSym* symp) {
+V3Parse::V3Parse(AstNetlist* rootp, VInFilter* filterp, V3ParseSym* symp) {
     m_impp = new V3ParseImp(rootp, filterp, symp);
 }
 V3Parse::~V3Parse() {

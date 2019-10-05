@@ -1179,7 +1179,7 @@ private:
     bool        m_noReset:1;    // Do not do automated reset/randomization
     bool        m_noSubst:1;    // Do not substitute out references
     bool        m_trace:1;      // Trace this variable
-    AstVarAttrClocker m_attrClocker;
+    VVarAttrClocker m_attrClocker;
     MTaskIdSet  m_mtaskIds;  // MTaskID's that read or write this var
 
     void init() {
@@ -1196,7 +1196,7 @@ private:
         m_isStatic = false; m_isPulldown = false; m_isPullup = false;
         m_isIfaceParent = false; m_isDpiOpenArray = false;
         m_noReset = false; m_noSubst = false; m_trace = false;
-        m_attrClocker = AstVarAttrClocker::CLOCKER_UNKNOWN;
+        m_attrClocker = VVarAttrClocker::CLOCKER_UNKNOWN;
     }
 public:
     AstVar(FileLine* fl, AstVarType type, const string& name, VFlagChildDType, AstNodeDType* dtp)
@@ -1289,7 +1289,7 @@ public:
     void ansi(bool flag) { m_ansi = flag; }
     void declTyped(bool flag) { m_declTyped = flag; }
     void attrClockEn(bool flag) { m_attrClockEn = flag; }
-    void attrClocker(AstVarAttrClocker flag) { m_attrClocker = flag; }
+    void attrClocker(VVarAttrClocker flag) { m_attrClocker = flag; }
     void attrFileDescr(bool flag) { m_fileDescr = flag; }
     void attrScClocked(bool flag) { m_scClocked = flag; }
     void attrScBv(bool flag) { m_attrScBv = flag; }
@@ -1374,7 +1374,7 @@ public:
     bool attrScClocked() const { return m_scClocked; }
     bool attrSFormat() const { return m_attrSFormat; }
     bool attrIsolateAssign() const { return m_attrIsolateAssign; }
-    AstVarAttrClocker attrClocker() const { return m_attrClocker; }
+    VVarAttrClocker attrClocker() const { return m_attrClocker; }
     virtual string verilogKwd() const;
     void propagateAttrFrom(AstVar* fromp) {
         // This is getting connected to fromp; keep attributes
@@ -2010,10 +2010,11 @@ class AstParseRef : public AstNode {
     // Parents: math|stmt
     // Children: TEXT|DOT|SEL*|TASK|FUNC (or expression under sel)
 private:
-    AstParseRefExp      m_expect;               // Type we think it should resolve to
-    string              m_name;
+    VParseRefExp m_expect;  // Type we think it should resolve to
+    string m_name;
 public:
-    AstParseRef(FileLine* fl, AstParseRefExp expect, const string& name, AstNode* lhsp, AstNodeFTaskRef* ftaskrefp)
+    AstParseRef(FileLine* fl, VParseRefExp expect, const string& name,
+                AstNode* lhsp, AstNodeFTaskRef* ftaskrefp)
         : AstNode(fl), m_expect(expect), m_name(name) { setNOp1p(lhsp); setNOp2p(ftaskrefp); }
     ASTNODE_NODE_FUNCS(ParseRef)
     virtual void dump(std::ostream& str);
@@ -2026,8 +2027,8 @@ public:
     virtual string emitVerilog() { V3ERROR_NA; return ""; }
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual void name(const string& name) { m_name = name; }
-    AstParseRefExp expect() const { return m_expect; }
-    void expect(AstParseRefExp exp) { m_expect = exp; }
+    VParseRefExp expect() const { return m_expect; }
+    void expect(VParseRefExp exp) { m_expect = exp; }
     // op1 = Components
     AstNode* lhsp() const { return op1p(); }  // op1 = List of statements
     AstNode* ftaskrefp() const { return op2p(); }  // op2 = Function/task reference
@@ -2139,53 +2140,53 @@ class AstSenItem : public AstNodeSenItem {
     // Parents:  SENTREE
     // Children: (optional) VARREF SENGATE
 private:
-    AstEdgeType m_edgeType;  // Edge type
+    VEdgeType m_edgeType;  // Edge type
 public:
     class Combo {};    // for creator type-overload selection
     class Illegal {};  // for creator type-overload selection
     class Initial {};  // for creator type-overload selection
     class Settle {};   // for creator type-overload selection
     class Never {};    // for creator type-overload selection
-    AstSenItem(FileLine* fl, AstEdgeType edgeType, AstNode* varrefp)
+    AstSenItem(FileLine* fl, VEdgeType edgeType, AstNode* varrefp)
         : AstNodeSenItem(fl), m_edgeType(edgeType) {
         setOp1p(varrefp);
     }
     AstSenItem(FileLine* fl, Combo)
         : AstNodeSenItem(fl) {
-        m_edgeType = AstEdgeType::ET_COMBO;
+        m_edgeType = VEdgeType::ET_COMBO;
     }
     AstSenItem(FileLine* fl, Illegal)
         : AstNodeSenItem(fl) {
-        m_edgeType = AstEdgeType::ET_ILLEGAL;
+        m_edgeType = VEdgeType::ET_ILLEGAL;
     }
     AstSenItem(FileLine* fl, Initial)
         : AstNodeSenItem(fl) {
-        m_edgeType = AstEdgeType::ET_INITIAL;
+        m_edgeType = VEdgeType::ET_INITIAL;
     }
     AstSenItem(FileLine* fl, Settle)
         : AstNodeSenItem(fl) {
-        m_edgeType = AstEdgeType::ET_SETTLE;
+        m_edgeType = VEdgeType::ET_SETTLE;
     }
     AstSenItem(FileLine* fl, Never)
         : AstNodeSenItem(fl) {
-        m_edgeType = AstEdgeType::ET_NEVER;
+        m_edgeType = VEdgeType::ET_NEVER;
     }
     ASTNODE_NODE_FUNCS(SenItem)
     virtual void dump(std::ostream& str);
     virtual V3Hash sameHash() const { return V3Hash(edgeType()); }
     virtual bool same(const AstNode* samep) const {
         return edgeType()==static_cast<const AstSenItem*>(samep)->edgeType(); }
-    AstEdgeType edgeType() const { return m_edgeType; }  // * = Posedge/negedge
-    void edgeType(AstEdgeType type) { m_edgeType = type; editCountInc(); }  // * = Posedge/negedge
+    VEdgeType edgeType() const { return m_edgeType; }  // * = Posedge/negedge
+    void edgeType(VEdgeType type) { m_edgeType = type; editCountInc(); }  // * = Posedge/negedge
     AstNode* sensp() const { return op1p(); }  // op1 = Signal sensitized
     AstNodeVarRef* varrefp() const { return VN_CAST(op1p(), NodeVarRef); }  // op1 = Signal sensitized
     //
     virtual bool isClocked() const { return edgeType().clockedStmt(); }
-    virtual bool isCombo() const { return edgeType()==AstEdgeType::ET_COMBO; }
-    virtual bool isInitial() const { return edgeType()==AstEdgeType::ET_INITIAL; }
-    virtual bool isIllegal() const { return edgeType()==AstEdgeType::ET_ILLEGAL; }
-    virtual bool isSettle() const { return edgeType()==AstEdgeType::ET_SETTLE; }
-    virtual bool isNever() const { return edgeType()==AstEdgeType::ET_NEVER; }
+    virtual bool isCombo() const { return edgeType()==VEdgeType::ET_COMBO; }
+    virtual bool isInitial() const { return edgeType()==VEdgeType::ET_INITIAL; }
+    virtual bool isIllegal() const { return edgeType()==VEdgeType::ET_ILLEGAL; }
+    virtual bool isSettle() const { return edgeType()==VEdgeType::ET_SETTLE; }
+    virtual bool isNever() const { return edgeType()==VEdgeType::ET_NEVER; }
     bool hasVar() const { return !(isCombo()||isInitial()||isSettle()||isNever()); }
 };
 

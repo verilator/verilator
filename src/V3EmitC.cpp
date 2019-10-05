@@ -505,11 +505,11 @@ public:
     }
     virtual void visit(AstNodeIf* nodep) {
         puts("if (");
-        if (nodep->branchPred() != AstBranchPred::BP_UNKNOWN) {
+        if (!nodep->branchPred().unknown()) {
             puts(nodep->branchPred().ascii()); puts("(");
         }
         iterateAndNextNull(nodep->condp());
-        if (nodep->branchPred() != AstBranchPred::BP_UNKNOWN) puts(")");
+        if (!nodep->branchPred().unknown()) puts(")");
         puts(") {\n");
         iterateAndNextNull(nodep->ifsp());
         if (nodep->elsesp()) {

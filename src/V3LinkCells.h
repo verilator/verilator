@@ -27,14 +27,14 @@
 #include "V3Error.h"
 #include "V3Ast.h"
 
-class V3InFilter;
+class VInFilter;
 class V3ParseSym;
 
 //============================================================================
 
 class V3LinkCells {
 public:
-    static void link(AstNetlist* nodep, V3InFilter* filterp, V3ParseSym* parseSymp);
+    static void link(AstNetlist* nodep, VInFilter* filterp, V3ParseSym* parseSymp);
 };
 
 #endif  // Guard

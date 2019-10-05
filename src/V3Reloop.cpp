@@ -58,8 +58,8 @@ private:
     AstUser1InUse       m_inuser1;
 
     // STATE
-    V3Double0           m_statReloops;  // Statistic tracking
-    V3Double0           m_statReItems;  // Statistic tracking
+    VDouble0            m_statReloops;  // Statistic tracking
+    VDouble0            m_statReItems;  // Statistic tracking
     AstCFunc*           m_cfuncp;       // Current block
 
     AssVec              m_mgAssignps;   // List of assignments merging

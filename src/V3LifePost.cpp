@@ -146,7 +146,7 @@ private:
     //                                  // local to the current MTask.
     const ExecMTask*    m_execMTaskp;   // Current ExecMTask being processed,
     //                                  // or NULL for serial code.
-    V3Double0           m_statAssnDel;  // Statistic tracking
+    VDouble0            m_statAssnDel;  // Statistic tracking
     bool                m_tracingCall;  // Currently tracing a CCall to a CFunc
 
     // Map each varscope to one or more locations where it's accessed.

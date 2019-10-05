@@ -44,10 +44,10 @@ private:
     AstNodeModule*      m_modp;         // Last module
     AstBegin*   m_beginp;       // Last begin
     unsigned    m_modPastNum;   // Module past numbering
-    V3Double0   m_statAsCover;  // Statistic tracking
-    V3Double0   m_statAsPsl;    // Statistic tracking
-    V3Double0   m_statAsFull;   // Statistic tracking
-    V3Double0   m_statAsSV;     // Statistic tracking
+    VDouble0    m_statAsCover;  // Statistic tracking
+    VDouble0    m_statAsPsl;    // Statistic tracking
+    VDouble0    m_statAsFull;   // Statistic tracking
+    VDouble0    m_statAsSV;     // Statistic tracking
 
     // METHODS
     string assertDisplayMessage(AstNode* nodep, const string& prefix, const string& message) {
@@ -143,7 +143,7 @@ private:
             ifp = new AstIf(nodep->fileline(), propp, NULL, stmtsp);
             // It's more LIKELY that we'll take the NULL if clause
             // than the sim-killing else clause:
-            ifp->branchPred(AstBranchPred::BP_LIKELY);
+            ifp->branchPred(VBranchPred::BP_LIKELY);
             bodysp = newIfAssertOn(ifp);
         } else if (VN_IS(nodep, PslRestrict)) {
             // IEEE says simulator ignores these
@@ -182,7 +182,7 @@ private:
 
         AstIf* ifp = new AstIf(nodep->fileline(), propp, passsp, failsp);
         AstNode* newp = ifp;
-        if (VN_IS(nodep, VAssert)) ifp->branchPred(AstBranchPred::BP_UNLIKELY);
+        if (VN_IS(nodep, VAssert)) ifp->branchPred(VBranchPred::BP_UNLIKELY);
         //
         // Install it
         nodep->replaceWith(newp);
@@ -242,7 +242,7 @@ private:
                                         new AstLogNot(nodep->fileline(), ohot),
                                         newFireAssert(nodep, "'unique if' statement violated"),
                                         newifp);
-            checkifp->branchPred(AstBranchPred::BP_UNLIKELY);
+            checkifp->branchPred(VBranchPred::BP_UNLIKELY);
             nodep->replaceWith(checkifp);
             pushDeletep(nodep);
         } else {
@@ -305,7 +305,7 @@ private:
                                            new AstLogNot(nodep->fileline(), ohot),
                                            newFireAssert(nodep, "synthesis parallel_case, but multiple matches found"),
                                            NULL);
-                    ifp->branchPred(AstBranchPred::BP_UNLIKELY);
+                    ifp->branchPred(VBranchPred::BP_UNLIKELY);
                     nodep->addNotParallelp(ifp);
                 }
             }

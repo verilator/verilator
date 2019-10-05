@@ -70,7 +70,7 @@ private:
 
     // STATE
     AstNodeModule*      m_modp;         // Current module
-    V3Double0           m_statUnsup;    // Statistic tracking
+    VDouble0            m_statUnsup;    // Statistic tracking
 
     typedef std::vector<AstNodeModule*> ModVec;
     ModVec m_allMods;  // All modules, in top-down order.
@@ -495,7 +495,7 @@ private:
 
     // STATE
     AstNodeModule*      m_modp;         // Current module
-    V3Double0           m_statCells;    // Statistic tracking
+    VDouble0            m_statCells;    // Statistic tracking
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()

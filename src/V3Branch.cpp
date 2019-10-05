@@ -87,10 +87,10 @@ private:
             int elseUnlikely = m_unlikely;
             // Compute
             int likeness = ifLikely - ifUnlikely - (elseLikely - elseUnlikely);
-            if (likeness>0) {
-                nodep->branchPred(AstBranchPred::BP_LIKELY);
-            } else if (likeness<0) {
-                nodep->branchPred(AstBranchPred::BP_UNLIKELY);
+            if (likeness > 0) {
+                nodep->branchPred(VBranchPred::BP_LIKELY);
+            } else if (likeness < 0) {
+                nodep->branchPred(VBranchPred::BP_UNLIKELY);
             }  // else leave unknown
         }
         m_likely = lastLikely;

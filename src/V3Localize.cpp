@@ -107,8 +107,8 @@ private:
     AstUser4InUse       m_inuser4;
 
     // STATE
-    V3Double0   m_statLocVars;  // Statistic tracking
-    AstCFunc*   m_cfuncp;       // Current active function
+    VDouble0 m_statLocVars;  // Statistic tracking
+    AstCFunc* m_cfuncp;  // Current active function
     std::vector<AstVar*> m_varps;  // List of variables to consider for deletion
 
     // METHODS

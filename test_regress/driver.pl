@@ -408,6 +408,7 @@ sub sprint_summary {
     my $pct = int(100*($self->{left_cnt} / $self->{all_cnt}) + 0.999);
     my $eta = ($self->{all_cnt}
                * ($delta / (($self->{all_cnt} - $self->{left_cnt})+0.001))) - $delta;
+    $eta = 0 if $delta < 10;
     my $out = "";
     $out .= "Left $leftmsg  " if $self->{left_cnt};
     $out .= "Passed $self->{ok_cnt}";

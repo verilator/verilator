@@ -2265,10 +2265,10 @@ cellparamItemE<pinp>:		// IEEE: named_parameter_assignment + empty
 		/* empty: ',,' is legal */		{ $$ = new AstPin(CRELINE(), PINNUMINC(), "", NULL); }
 	|	yP_DOTSTAR				{ $$ = new AstPin($1,PINNUMINC(),".*",NULL); }
 	|	'.' idSVKwd				{ $$ = new AstPin($<fl>2,PINNUMINC(), *$2,
-									  new AstParseRef($<fl>2,AstParseRefExp::PX_TEXT,*$2,NULL,NULL));
+									  new AstParseRef($<fl>2,VParseRefExp::PX_TEXT,*$2,NULL,NULL));
 									  $$->svImplicit(true);}
 	|	'.' idAny				{ $$ = new AstPin($<fl>2,PINNUMINC(), *$2,
-									  new AstParseRef($<fl>2,AstParseRefExp::PX_TEXT,*$2,NULL,NULL));
+									  new AstParseRef($<fl>2,VParseRefExp::PX_TEXT,*$2,NULL,NULL));
 									  $$->svImplicit(true);}
 	|	'.' idAny '(' ')'			{ $$ = new AstPin($<fl>2,PINNUMINC(),*$2,NULL); }
 	//			// mintypmax is expanded here, as it might be a UDP or gate primitive
@@ -2289,8 +2289,8 @@ cellpinItemE<pinp>:		// IEEE: named_port_connection + empty
 				// Note empty can match either () or (,); V3LinkCells cleans up ()
 		/* empty: ',,' is legal */		{ $$ = new AstPin(CRELINE(), PINNUMINC(), "", NULL); }
 	|	yP_DOTSTAR				{ $$ = new AstPin($1,PINNUMINC(),".*",NULL); }
-	|	'.' idSVKwd				{ $$ = new AstPin($<fl>2,PINNUMINC(),*$2,new AstParseRef($<fl>2,AstParseRefExp::PX_TEXT,*$2,NULL,NULL)); $$->svImplicit(true);}
-	|	'.' idAny				{ $$ = new AstPin($<fl>2,PINNUMINC(),*$2,new AstParseRef($<fl>2,AstParseRefExp::PX_TEXT,*$2,NULL,NULL)); $$->svImplicit(true);}
+	|	'.' idSVKwd				{ $$ = new AstPin($<fl>2,PINNUMINC(),*$2,new AstParseRef($<fl>2,VParseRefExp::PX_TEXT,*$2,NULL,NULL)); $$->svImplicit(true);}
+	|	'.' idAny				{ $$ = new AstPin($<fl>2,PINNUMINC(),*$2,new AstParseRef($<fl>2,VParseRefExp::PX_TEXT,*$2,NULL,NULL)); $$->svImplicit(true);}
 	|	'.' idAny '(' ')'			{ $$ = new AstPin($<fl>2,PINNUMINC(),*$2,NULL); }
 	//			// mintypmax is expanded here, as it might be a UDP or gate primitive
 	|	'.' idAny '(' expr ')'			{ $$ = new AstPin($<fl>2,PINNUMINC(),*$2,$4); }
@@ -2352,16 +2352,16 @@ senitem<senitemp>:		// IEEE: part of event_expression, non-'OR' ',' terms
 	;
 
 senitemVar<senitemp>:
-		idClassSel				{ $$ = new AstSenItem($1->fileline(),AstEdgeType::ET_ANYEDGE,$1); }
+		idClassSel				{ $$ = new AstSenItem($1->fileline(), VEdgeType::ET_ANYEDGE, $1); }
 	;
 
 senitemEdge<senitemp>:		// IEEE: part of event_expression
-		yPOSEDGE idClassSel			{ $$ = new AstSenItem($1,AstEdgeType::ET_POSEDGE,$2); }
-	|	yNEGEDGE idClassSel			{ $$ = new AstSenItem($1,AstEdgeType::ET_NEGEDGE,$2); }
-	|	yEDGE idClassSel			{ $$ = new AstSenItem($1,AstEdgeType::ET_BOTHEDGE,$2); }
-	|	yPOSEDGE '(' idClassSel ')'		{ $$ = new AstSenItem($1,AstEdgeType::ET_POSEDGE,$3); }
-	|	yNEGEDGE '(' idClassSel ')'		{ $$ = new AstSenItem($1,AstEdgeType::ET_NEGEDGE,$3); }
-	|	yEDGE '(' idClassSel ')'		{ $$ = new AstSenItem($1,AstEdgeType::ET_BOTHEDGE,$3); }
+		yPOSEDGE idClassSel			{ $$ = new AstSenItem($1, VEdgeType::ET_POSEDGE, $2); }
+	|	yNEGEDGE idClassSel			{ $$ = new AstSenItem($1, VEdgeType::ET_NEGEDGE, $2); }
+	|	yEDGE idClassSel			{ $$ = new AstSenItem($1, VEdgeType::ET_BOTHEDGE, $2); }
+	|	yPOSEDGE '(' idClassSel ')'		{ $$ = new AstSenItem($1, VEdgeType::ET_POSEDGE, $3); }
+	|	yNEGEDGE '(' idClassSel ')'		{ $$ = new AstSenItem($1, VEdgeType::ET_NEGEDGE, $3); }
+	|	yEDGE '(' idClassSel ')'		{ $$ = new AstSenItem($1, VEdgeType::ET_BOTHEDGE, $3); }
 	//UNSUP	yIFF...
 	;
 
@@ -3854,7 +3854,7 @@ idDottedMore<nodep>:
 // id below includes:
 //	 enum_identifier
 idArrayed<nodep>:		// IEEE: id + select
-		id						{ $$ = new AstParseRef($<fl>1,AstParseRefExp::PX_TEXT,*$1,NULL,NULL); }
+		id						{ $$ = new AstParseRef($<fl>1,VParseRefExp::PX_TEXT,*$1,NULL,NULL); }
 	//			// IEEE: id + part_select_range/constant_part_select_range
 	|	idArrayed '[' expr ']'				{ $$ = new AstSelBit($2,$1,$3); }  // Or AstArraySel, don't know yet.
 	|	idArrayed '[' constExpr ':' constExpr ']'	{ $$ = new AstSelExtract($2,$1,$3,$5); }

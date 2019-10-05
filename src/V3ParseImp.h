@@ -99,7 +99,7 @@ struct V3ParseBisonYYSType {
 class V3ParseImp {
     // MEMBERS
     AstNetlist*         m_rootp;        // Root of the design
-    V3InFilter*         m_filterp;      // Reading filter
+    VInFilter*          m_filterp;      // Reading filter
     V3ParseSym*         m_symp;         // Symbol table
 
     V3Lexer*            m_lexerp;       // Current FlexLexer
@@ -219,7 +219,7 @@ public:
 
 public:
     // CONSTRUCTORS
-    V3ParseImp(AstNetlist* rootp, V3InFilter* filterp, V3ParseSym* parserSymp)
+    V3ParseImp(AstNetlist* rootp, VInFilter* filterp, V3ParseSym* parserSymp)
         : m_rootp(rootp), m_filterp(filterp), m_symp(parserSymp) {
         m_fileline = NULL;
         m_lexerp = NULL;

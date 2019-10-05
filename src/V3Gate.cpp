@@ -326,10 +326,10 @@ private:
     bool                m_activeReducible;      // Is activation block reducible?
     bool                m_inSenItem;    // Underneath AstSenItem; any varrefs are clocks
     bool                m_inSlow;       // Inside a slow structure
-    V3Double0           m_statSigs;     // Statistic tracking
-    V3Double0           m_statRefs;     // Statistic tracking
-    V3Double0           m_statDedupLogic;       // Statistic tracking
-    V3Double0           m_statAssignMerged;     // Statistic tracking
+    VDouble0            m_statSigs;     // Statistic tracking
+    VDouble0            m_statRefs;     // Statistic tracking
+    VDouble0            m_statDedupLogic;  // Statistic tracking
+    VDouble0            m_statAssignMerged;  // Statistic tracking
 
     // METHODS
     void iterateNewStmt(AstNode* nodep, const char* nonReducibleReason, const char* consumeReason) {
@@ -1147,7 +1147,7 @@ private:
     // NODE STATE
     // AstVarScope::user2p      -> bool: already visited
     // AstUser2InUse            m_inuser2;      (Allocated for use in GateVisitor)
-    V3Double0                   m_numDeduped;   // Statistic tracking
+    VDouble0                    m_numDeduped;   // Statistic tracking
     GateDedupeVarVisitor        m_varVisitor;   // Looks for a dupe of the logic
     int                         m_depth;        // Iteration depth
 
@@ -1228,7 +1228,7 @@ public:
     void dedupeTree(GateVarVertex* vvertexp) {
         vvertexp->accept(*this);
     }
-    V3Double0 numDeduped() { return m_numDeduped; }
+    VDouble0 numDeduped() { return m_numDeduped; }
 };
 
 //----------------------------------------------------------------------
@@ -1268,7 +1268,7 @@ private:
     AstActive*     m_activep;
     GateLogicVertex* m_logicvp;
     V3Graph*         m_graphp;
-    V3Double0        m_numMergedAssigns;        // Statistic tracking
+    VDouble0         m_numMergedAssigns;  // Statistic tracking
 
 
     // assemble two Sel into one if possible
@@ -1377,7 +1377,7 @@ public:
     void mergeAssignsTree(GateVarVertex* vvertexp) {
         vvertexp->accept(*this);
     }
-    V3Double0 numMergedAssigns() { return m_numMergedAssigns; }
+    VDouble0 numMergedAssigns() { return m_numMergedAssigns; }
 };
 
 
@@ -1580,7 +1580,7 @@ void GateVisitor::decomposeClkVectors() {
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
         if (GateVarVertex* vertp = dynamic_cast<GateVarVertex*>(itp)) {
             AstVarScope* vsp = vertp->varScp();
-            if (vsp->varp()->attrClocker() == AstVarAttrClocker::CLOCKER_YES) {
+            if (vsp->varp()->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
                 if (vsp->varp()->width() > 1) {
                     UINFO(9,"Clocker > 1 bit, not decomposing: "<<vsp<<endl);
                 } else {

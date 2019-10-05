@@ -50,8 +50,8 @@ class LifeState {
 
     // STATE
 public:
-    V3Double0   m_statAssnDel;  // Statistic tracking
-    V3Double0   m_statAssnCon;  // Statistic tracking
+    VDouble0 m_statAssnDel;  // Statistic tracking
+    VDouble0 m_statAssnCon;  // Statistic tracking
     std::vector<AstNode*> m_unlinkps;
 
 public:

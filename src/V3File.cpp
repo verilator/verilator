@@ -299,11 +299,11 @@ void V3File::createMakeDir() {
 }
 
 //######################################################################
-// V3InFilterImp
+// VInFilterImp
 
-class V3InFilterImp {
+class VInFilterImp {
     typedef std::map<string,string> FileContentsMap;
-    typedef V3InFilter::StrList StrList;
+    typedef VInFilter::StrList StrList;
 
     FileContentsMap     m_contentsMap;  // Cache of file contents
     bool                m_readEof;      // Received EOF on read
@@ -518,7 +518,7 @@ private:
     }
 
 protected:
-    friend class V3InFilter;
+    friend class VInFilter;
     // Read file contents and return it
     bool readWholefile(const string& filename, StrList& outl) {
         FileContentsMap::iterator it = m_contentsMap.find(filename);
@@ -550,7 +550,7 @@ protected:
         return out;
     }
     // CONSTRUCTORS
-    explicit V3InFilterImp(const string& command) {
+    explicit VInFilterImp(const string& command) {
         m_readEof = false;
         m_pid = 0;
         m_pidExited = false;
@@ -559,17 +559,17 @@ protected:
         m_readFd = 0;
         start(command);
     }
-    ~V3InFilterImp() { stop(); }
+    ~VInFilterImp() { stop(); }
 };
 
 //######################################################################
-// V3InFilter
+// VInFilter
 // Just dispatch to the implementation
 
-V3InFilter::V3InFilter(const string& command) { m_impp = new V3InFilterImp(command); }
-V3InFilter::~V3InFilter() { if (m_impp) delete m_impp; m_impp = NULL; }
+VInFilter::VInFilter(const string& command) { m_impp = new VInFilterImp(command); }
+VInFilter::~VInFilter() { if (m_impp) delete m_impp; m_impp = NULL; }
 
-bool V3InFilter::readWholefile(const string& filename, V3InFilter::StrList& outl) {
+bool VInFilter::readWholefile(const string& filename, VInFilter::StrList& outl) {
     if (!m_impp) v3fatalSrc("readWholefile on invalid filter");
     return m_impp->readWholefile(filename, outl);
 }

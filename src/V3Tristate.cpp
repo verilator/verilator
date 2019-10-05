@@ -356,7 +356,7 @@ class TristateVisitor : public TristateBaseVisitor {
     TristateGraph       m_tgraph;       // Logic graph
 
     // STATS
-    V3Double0 m_statTriSigs;  // stat tracking
+    VDouble0 m_statTriSigs;  // stat tracking
 
     // METHODS
     string dbgState() {

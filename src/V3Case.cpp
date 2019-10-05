@@ -129,8 +129,8 @@ private:
     AstUser3InUse       m_inuser3;
 
     // STATE
-    V3Double0   m_statCaseFast; // Statistic tracking
-    V3Double0   m_statCaseSlow; // Statistic tracking
+    VDouble0 m_statCaseFast;  // Statistic tracking
+    VDouble0 m_statCaseSlow;  // Statistic tracking
 
     // Per-CASE
     int         m_caseWidth;    // Width of valueItems

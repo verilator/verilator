@@ -392,14 +392,14 @@ private:
     }
     virtual void visit(AstSenGate* nodep) {
         AstSenItem* subitemp = nodep->sensesp();
-        UASSERT_OBJ(subitemp->edgeType() == AstEdgeType::ET_ANYEDGE
-                    || subitemp->edgeType() == AstEdgeType::ET_POSEDGE
-                    || subitemp->edgeType() == AstEdgeType::ET_NEGEDGE,
+        UASSERT_OBJ(subitemp->edgeType() == VEdgeType::ET_ANYEDGE
+                    || subitemp->edgeType() == VEdgeType::ET_POSEDGE
+                    || subitemp->edgeType() == VEdgeType::ET_NEGEDGE,
                     nodep, "Strange activity type under SenGate");
         iterateChildren(nodep);
     }
     virtual void visit(AstSenItem* nodep) {
-        if (nodep->edgeType() == AstEdgeType::ET_ANYEDGE) {
+        if (nodep->edgeType() == VEdgeType::ET_ANYEDGE) {
             m_itemCombo = true;
             // Delete the sensitivity
             // We'll add it as a generic COMBO SenItem in a moment.

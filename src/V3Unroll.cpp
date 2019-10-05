@@ -56,8 +56,8 @@ private:
     bool                m_varAssignHit;         // Assign var hit
     bool                m_generate;             // Expand single generate For loop
     string              m_beginName;            // What name to give begin iterations
-    V3Double0           m_statLoops;            // Statistic tracking
-    V3Double0           m_statIters;            // Statistic tracking
+    VDouble0            m_statLoops;            // Statistic tracking
+    VDouble0            m_statIters;            // Statistic tracking
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()

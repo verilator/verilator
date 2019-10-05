@@ -50,7 +50,7 @@ private:
     // STATE
     ToggleList          m_toggleps;     // List of of all AstCoverToggle's
 
-    V3Double0           m_statToggleJoins;  // Statistic tracking
+    VDouble0            m_statToggleJoins;  // Statistic tracking
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()

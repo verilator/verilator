@@ -190,9 +190,9 @@ private:
     bool                m_finding;      // Pass one of algorithm?
     int                 m_funcNum;      // Function number being built
 
-    V3Double0           m_statChgSigs;  // Statistic tracking
-    V3Double0           m_statUniqSigs; // Statistic tracking
-    V3Double0           m_statUniqCodes;// Statistic tracking
+    VDouble0 m_statChgSigs;  // Statistic tracking
+    VDouble0 m_statUniqSigs;  // Statistic tracking
+    VDouble0 m_statUniqCodes;  // Statistic tracking
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -501,7 +501,7 @@ private:
                         else condp = selp;
                     }
                     AstIf* ifp = new AstIf(fl, condp, NULL, NULL);
-                    ifp->branchPred(AstBranchPred::BP_UNLIKELY);
+                    ifp->branchPred(VBranchPred::BP_UNLIKELY);
                     m_chgFuncp->addStmtsp(ifp);
                     lastactp = &actset;
                     ifnodep = ifp;

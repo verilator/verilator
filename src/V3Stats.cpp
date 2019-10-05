@@ -49,22 +49,22 @@ private:
     bool        m_fast;
 
     AstCFunc*   m_cfuncp;               // Current CFUNC
-    V3Double0   m_statInstrLong;        // Instruction count
+    VDouble0    m_statInstrLong;        // Instruction count
     bool        m_counting;             // Currently counting
     double      m_instrs;               // Current instr count (for determining branch direction)
     bool        m_tracingCall;          // Iterating into a CCall to a CFunc
 
-    std::vector<V3Double0> m_statTypeCount;     // Nodes of given type
-    V3Double0           m_statAbove[AstType::_ENUM_END][AstType::_ENUM_END];    // Nodes of given type
-    V3Double0           m_statPred[AstBranchPred::_ENUM_END];   // Nodes of given type
-    V3Double0           m_statInstr;            // Instruction count
-    V3Double0           m_statInstrFast;        // Instruction count, non-slow() eval functions only
-    std::vector<V3Double0> m_statVarWidths;     // Variables of given width
-    std::vector<NameMap>   m_statVarWidthNames; // Var names of given width
-    V3Double0           m_statVarArray;         // Statistic tracking
-    V3Double0           m_statVarBytes;         // Statistic tracking
-    V3Double0           m_statVarClock;         // Statistic tracking
-    V3Double0           m_statVarScpBytes;      // Statistic tracking
+    std::vector<VDouble0> m_statTypeCount;     // Nodes of given type
+    VDouble0           m_statAbove[AstType::_ENUM_END][AstType::_ENUM_END];  // Nodes of given type
+    VDouble0           m_statPred[VBranchPred::_ENUM_END];  // Nodes of given type
+    VDouble0           m_statInstr;            // Instruction count
+    VDouble0           m_statInstrFast;        // Instruction count, non-slow() eval functions only
+    std::vector<VDouble0> m_statVarWidths;     // Variables of given width
+    std::vector<NameMap>  m_statVarWidthNames;  // Var names of given width
+    VDouble0           m_statVarArray;         // Statistic tracking
+    VDouble0           m_statVarBytes;         // Statistic tracking
+    VDouble0           m_statVarClock;         // Statistic tracking
+    VDouble0           m_statVarScpBytes;      // Statistic tracking
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -140,7 +140,7 @@ private:
             // Need to do even if !m_counting because maybe determining upstream if/else
             double ifInstrs = 0.0;
             double elseInstrs = 0.0;
-            if (nodep->branchPred() != AstBranchPred::BP_UNLIKELY) {  // Check if
+            if (nodep->branchPred() != VBranchPred::BP_UNLIKELY) {  // Check if
                 double prevInstr = m_instrs;
                 bool prevCounting = m_counting;
                 {
@@ -152,7 +152,7 @@ private:
                 m_instrs = prevInstr;
                 m_counting = prevCounting;
             }
-            if (nodep->branchPred() != AstBranchPred::BP_LIKELY) {  // Check else
+            if (nodep->branchPred() != VBranchPred::BP_LIKELY) {  // Check else
                 double prevInstr = m_instrs;
                 bool prevCounting = m_counting;
                 {
@@ -258,8 +258,8 @@ public:
                 V3Stats::addStat(m_stage, string("Node count, ")+AstType(type).ascii(), count);
             }
         }
-        for (int type=0; type<AstType::_ENUM_END; type++) {
-            for (int type2=0; type2<AstType::_ENUM_END; type2++) {
+        for (int type=0; type < AstType::_ENUM_END; type++) {
+            for (int type2=0; type2 < AstType::_ENUM_END; type2++) {
                 double count = double(m_statAbove[type][type2]);
                 if (count != 0.0) {
                     V3Stats::addStat(m_stage, (string("Node pairs, ")
@@ -269,11 +269,11 @@ public:
             }
         }
         // Branch pred
-        for (int type=0; type<AstBranchPred::_ENUM_END; type++) {
+        for (int type=0; type < VBranchPred::_ENUM_END; type++) {
             double count = double(m_statPred[type]);
             if (count != 0.0) {
                 V3Stats::addStat(m_stage, (string("Branch prediction, ")
-                                           + AstBranchPred(type).ascii()), count);
+                                           + VBranchPred(type).ascii()), count);
             }
         }
     }

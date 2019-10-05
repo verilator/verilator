@@ -30,24 +30,24 @@ class AstNetlist;
 
 //============================================================================
 
-class V3Double0 {
+class VDouble0 {
     // Double counter, initializes to zero for easy use
     double m_d;  ///< Count of occurrences/ value
 public:
     // METHODS
-    V3Double0() : m_d(0) {}
-    ~V3Double0() {}
+    VDouble0() : m_d(0) {}
+    ~VDouble0() {}
 
     // Implicit conversion operators:
-    inline explicit V3Double0(const vluint64_t v) : m_d(v) { }
+    inline explicit VDouble0(const vluint64_t v) : m_d(v) { }
     inline operator double() const { return m_d; }
 
     // Explicit operators:
-    inline V3Double0& operator++() { ++m_d; return *this; }  // prefix
-    inline V3Double0  operator++(int) { V3Double0 old=*this; m_d++; return old; }  // postfix
-    inline V3Double0& operator= (const double v) { m_d = v; return *this; }
-    inline V3Double0& operator+=(const double v) { m_d += v; return *this; }
-    inline V3Double0& operator-=(const double v) { m_d -= v; return *this; }
+    inline VDouble0& operator++() { ++m_d; return *this; }  // prefix
+    inline VDouble0  operator++(int) { VDouble0 old=*this; m_d++; return old; }  // postfix
+    inline VDouble0& operator= (const double v) { m_d = v; return *this; }
+    inline VDouble0& operator+=(const double v) { m_d += v; return *this; }
+    inline VDouble0& operator-=(const double v) { m_d -= v; return *this; }
 };
 
 //============================================================================

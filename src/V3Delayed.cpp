@@ -102,7 +102,7 @@ private:
     bool                m_inInitial;    // True in initial blocks
     typedef std::map<std::pair<AstNodeModule*,string>,AstVar*> VarMap;
     VarMap              m_modVarMap;    // Table of new var names created under module
-    V3Double0           m_statSharedSet;// Statistic tracking
+    VDouble0            m_statSharedSet;  // Statistic tracking
     typedef std::map<AstVarScope*,int> ScopeVecMap;
     ScopeVecMap m_scopeVecMap;  // Next var number for each scope
 

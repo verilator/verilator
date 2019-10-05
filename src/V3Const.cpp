@@ -1830,16 +1830,16 @@ private:
                         || (!litemp->varrefp() && !ritemp->varrefp())) {
                         // We've sorted in the order ANY, BOTH, POS, NEG,
                         // so we don't need to try opposite orders
-                        if ((   litemp->edgeType()==AstEdgeType::ET_ANYEDGE)   // ANY  or {BOTH|POS|NEG} -> ANY
-                            || (litemp->edgeType()==AstEdgeType::ET_BOTHEDGE)  // BOTH or {POS|NEG} -> BOTH
-                            || (litemp->edgeType()==AstEdgeType::ET_POSEDGE    // POS  or NEG -> BOTH
-                                && ritemp->edgeType()==AstEdgeType::ET_NEGEDGE)
-                            || (litemp->edgeType()==ritemp->edgeType())  // Identical edges
+                        if ((   litemp->edgeType() == VEdgeType::ET_ANYEDGE)  // ANY  or {BOTH|POS|NEG} -> ANY
+                            || (litemp->edgeType() == VEdgeType::ET_BOTHEDGE)  // BOTH or {POS|NEG} -> BOTH
+                            || (litemp->edgeType() == VEdgeType::ET_POSEDGE  // POS  or NEG -> BOTH
+                                && ritemp->edgeType() == VEdgeType::ET_NEGEDGE)
+                            || (litemp->edgeType() == ritemp->edgeType())  // Identical edges
                             ) {
                             // Fix edge of old node
-                            if (litemp->edgeType()==AstEdgeType::ET_POSEDGE
-                                && ritemp->edgeType()==AstEdgeType::ET_NEGEDGE)
-                                litemp->edgeType(AstEdgeType::ET_BOTHEDGE);
+                            if (litemp->edgeType() == VEdgeType::ET_POSEDGE
+                                && ritemp->edgeType() == VEdgeType::ET_NEGEDGE)
+                                litemp->edgeType(VEdgeType::ET_BOTHEDGE);
                             // Remove redundant node
                             ritemp->unlinkFrBack()->deleteTree(); VL_DANGLING(ritemp); VL_DANGLING(cmpp);
                             // Try to collapse again

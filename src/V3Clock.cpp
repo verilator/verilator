@@ -110,14 +110,14 @@ private:
         // HIGHEDGE:  var
         // LOWEDGE:  ~var
         AstNode* newp = NULL;
-        if (nodep->edgeType()==AstEdgeType::ET_ILLEGAL) {
+        if (nodep->edgeType()==VEdgeType::ET_ILLEGAL) {
             if (!v3Global.opt.bboxUnsup()) {
                 nodep->v3error("Unsupported: Complicated event expression in sensitive activity list");
             }
             return NULL;
         }
         AstVarScope* clkvscp = nodep->varrefp()->varScopep();
-        if (nodep->edgeType()==AstEdgeType::ET_POSEDGE) {
+        if (nodep->edgeType() == VEdgeType::ET_POSEDGE) {
             AstVarScope* lastVscp = getCreateLastClk(clkvscp);
             newp = new AstAnd(nodep->fileline(),
                               new AstVarRef(nodep->fileline(),
@@ -125,23 +125,23 @@ private:
                               new AstNot(nodep->fileline(),
                                          new AstVarRef(nodep->fileline(),
                                                        lastVscp, false)));
-        } else if (nodep->edgeType()==AstEdgeType::ET_NEGEDGE) {
+        } else if (nodep->edgeType() == VEdgeType::ET_NEGEDGE) {
             AstVarScope* lastVscp = getCreateLastClk(clkvscp);
             newp = new AstAnd(nodep->fileline(),
                               new AstNot(nodep->fileline(),
                                          new AstVarRef(nodep->fileline(),
                                                        nodep->varrefp()->varScopep(), false)),
                               new AstVarRef(nodep->fileline(), lastVscp, false));
-        } else if (nodep->edgeType()==AstEdgeType::ET_BOTHEDGE) {
+        } else if (nodep->edgeType() == VEdgeType::ET_BOTHEDGE) {
             AstVarScope* lastVscp = getCreateLastClk(clkvscp);
             newp = new AstXor(nodep->fileline(),
                               new AstVarRef(nodep->fileline(),
                                             nodep->varrefp()->varScopep(), false),
                               new AstVarRef(nodep->fileline(), lastVscp, false));
-        } else if (nodep->edgeType()==AstEdgeType::ET_HIGHEDGE) {
+        } else if (nodep->edgeType() == VEdgeType::ET_HIGHEDGE) {
             newp = new AstVarRef(nodep->fileline(),
                                  clkvscp, false);
-        } else if (nodep->edgeType()==AstEdgeType::ET_LOWEDGE) {
+        } else if (nodep->edgeType() == VEdgeType::ET_LOWEDGE) {
             newp = new AstNot(nodep->fileline(),
                               new AstVarRef(nodep->fileline(),
                                             clkvscp, false));

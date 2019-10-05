@@ -185,7 +185,7 @@ public:
 
 //######################################################################
 
-class AstEdgeType {
+class VEdgeType {
 public:
 // REMEMBER to edit the strings below too
     enum en {
@@ -213,7 +213,7 @@ public:
         };
         return clocked[m_e];
     }
-    AstEdgeType invert() const {
+    VEdgeType invert() const {
         switch (m_e) {
         case ET_ANYEDGE:        return ET_ANYEDGE;
         case ET_BOTHEDGE:       return ET_BOTHEDGE;
@@ -223,7 +223,7 @@ public:
         case ET_LOWEDGE:        return ET_HIGHEDGE;
         default: UASSERT_STATIC(0, "Inverting bad edgeType()");
         };
-        return AstEdgeType::ET_ILLEGAL;
+        return VEdgeType::ET_ILLEGAL;
     }
     const char* ascii() const {
         static const char* const names[] = {
@@ -240,20 +240,20 @@ public:
         return names[m_e];
     }
     // Return true iff this and the other have mutually exclusive transitions
-    bool exclusiveEdge(const AstEdgeType& other) const {
+    bool exclusiveEdge(const VEdgeType& other) const {
         switch (m_e) {
-        case AstEdgeType::ET_POSEDGE:
+        case VEdgeType::ET_POSEDGE:
             switch (other.m_e) {
-            case AstEdgeType::ET_NEGEDGE:  // FALLTHRU
-            case AstEdgeType::ET_LOWEDGE:
+            case VEdgeType::ET_NEGEDGE:  // FALLTHRU
+            case VEdgeType::ET_LOWEDGE:
                 return true;
             default: {}
             }
             break;
-        case AstEdgeType::ET_NEGEDGE:
+        case VEdgeType::ET_NEGEDGE:
             switch (other.m_e) {
-            case AstEdgeType::ET_POSEDGE:  // FALLTHRU
-            case AstEdgeType::ET_HIGHEDGE:
+            case VEdgeType::ET_POSEDGE:  // FALLTHRU
+            case VEdgeType::ET_HIGHEDGE:
                 return true;
             default: {}
             }
@@ -262,15 +262,15 @@ public:
         }
         return false;
     }
-    inline AstEdgeType() : m_e(ET_ILLEGAL) {}
+    inline VEdgeType() : m_e(ET_ILLEGAL) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstEdgeType(en _e) : m_e(_e) {}
-    explicit inline AstEdgeType(int _e) : m_e(static_cast<en>(_e)) {}
+    inline VEdgeType(en _e) : m_e(_e) {}
+    explicit inline VEdgeType(int _e) : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
   };
-  inline bool operator==(AstEdgeType lhs, AstEdgeType rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(AstEdgeType lhs, AstEdgeType::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(AstEdgeType::en lhs, AstEdgeType rhs) { return (lhs == rhs.m_e); }
+  inline bool operator==(VEdgeType lhs, VEdgeType rhs) { return (lhs.m_e == rhs.m_e); }
+  inline bool operator==(VEdgeType lhs, VEdgeType::en rhs) { return (lhs.m_e == rhs); }
+  inline bool operator==(VEdgeType::en lhs, VEdgeType rhs) { return (lhs == rhs.m_e); }
 
 //######################################################################
 
@@ -613,7 +613,7 @@ public:
 
 //######################################################################
 
-class AstBranchPred {
+class VBranchPred {
 public:
     enum en {
         BP_UNKNOWN=0,
@@ -623,12 +623,15 @@ public:
     };
     enum en m_e;
     // CONSTRUCTOR - note defaults to *UNKNOWN*
-    inline AstBranchPred() : m_e(BP_UNKNOWN) {}
+    inline VBranchPred() : m_e(BP_UNKNOWN) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstBranchPred(en _e) : m_e(_e) {}
-    explicit inline AstBranchPred(int _e) : m_e(static_cast<en>(_e)) {}
+    inline VBranchPred(en _e) : m_e(_e) {}
+    explicit inline VBranchPred(int _e) : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
-    AstBranchPred invert() const {
+    bool unknown() const { return m_e == BP_UNKNOWN; }
+    bool likely() const { return m_e == BP_LIKELY; }
+    bool unlikely() const { return m_e == BP_UNLIKELY; }
+    VBranchPred invert() const {
         if (m_e==BP_UNLIKELY) return BP_LIKELY;
         else if (m_e==BP_LIKELY) return BP_UNLIKELY;
         else return m_e;
@@ -638,14 +641,14 @@ public:
             "", "VL_LIKELY", "VL_UNLIKELY"};
         return names[m_e]; }
   };
-  inline bool operator==(AstBranchPred lhs, AstBranchPred rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(AstBranchPred lhs, AstBranchPred::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(AstBranchPred::en lhs, AstBranchPred rhs) { return (lhs == rhs.m_e); }
-  inline std::ostream& operator<<(std::ostream& os, const AstBranchPred& rhs) { return os<<rhs.ascii(); }
+  inline bool operator==(VBranchPred lhs, VBranchPred rhs) { return (lhs.m_e == rhs.m_e); }
+  inline bool operator==(VBranchPred lhs, VBranchPred::en rhs) { return (lhs.m_e == rhs); }
+  inline bool operator==(VBranchPred::en lhs, VBranchPred rhs) { return (lhs == rhs.m_e); }
+  inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) { return os<<rhs.ascii(); }
 
 //######################################################################
 
-class AstVarAttrClocker {
+class VVarAttrClocker {
 public:
     enum en {
         CLOCKER_UNKNOWN=0,
@@ -655,13 +658,13 @@ public:
     };
     enum en m_e;
     // CONSTRUCTOR - note defaults to *UNKNOWN*
-    inline AstVarAttrClocker() : m_e(CLOCKER_UNKNOWN) {}
+    inline VVarAttrClocker() : m_e(CLOCKER_UNKNOWN) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstVarAttrClocker(en _e) : m_e(_e) {}
-    explicit inline AstVarAttrClocker(int _e) : m_e(static_cast<en>(_e)) {}
+    inline VVarAttrClocker(en _e) : m_e(_e) {}
+    explicit inline VVarAttrClocker(int _e) : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     bool unknown() const { return m_e==CLOCKER_UNKNOWN; }
-    AstVarAttrClocker invert() const {
+    VVarAttrClocker invert() const {
         if (m_e==CLOCKER_YES) return CLOCKER_NO;
         else if (m_e==CLOCKER_NO) return CLOCKER_YES;
         else return m_e;
@@ -671,10 +674,10 @@ public:
             "", "clker", "non_clker"};
         return names[m_e]; }
   };
-  inline bool operator==(AstVarAttrClocker lhs, AstVarAttrClocker rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(AstVarAttrClocker lhs, AstVarAttrClocker::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(AstVarAttrClocker::en lhs, AstVarAttrClocker rhs) { return (lhs == rhs.m_e); }
-  inline std::ostream& operator<<(std::ostream& os, const AstVarAttrClocker& rhs) { return os<<rhs.ascii(); }
+  inline bool operator==(VVarAttrClocker lhs, VVarAttrClocker rhs) { return (lhs.m_e == rhs.m_e); }
+  inline bool operator==(VVarAttrClocker lhs, VVarAttrClocker::en rhs) { return (lhs.m_e == rhs); }
+  inline bool operator==(VVarAttrClocker::en lhs, VVarAttrClocker rhs) { return (lhs == rhs.m_e); }
+  inline std::ostream& operator<<(std::ostream& os, const VVarAttrClocker& rhs) { return os<<rhs.ascii(); }
 
 //######################################################################
 
@@ -753,33 +756,34 @@ public:
 
 //######################################################################
 
-class AstParseRefExp {
+class VParseRefExp {
 public:
     enum en {
         PX_NONE,        // Used in V3LinkParse only
         PX_TEXT         // Unknown ID component
     };
     enum en m_e;
-    inline AstParseRefExp() : m_e(PX_NONE) {}
+    inline VParseRefExp() : m_e(PX_NONE) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstParseRefExp(en _e) : m_e(_e) {}
-    explicit inline AstParseRefExp(int _e) : m_e(static_cast<en>(_e)) {}
+    inline VParseRefExp(en _e) : m_e(_e) {}
+    explicit inline VParseRefExp(int _e) : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[] = {
             "", "TEXT", "PREDOT"};
         return names[m_e]; }
   };
-  inline bool operator==(AstParseRefExp lhs, AstParseRefExp rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(AstParseRefExp lhs, AstParseRefExp::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(AstParseRefExp::en lhs, AstParseRefExp rhs) { return (lhs == rhs.m_e); }
-  inline std::ostream& operator<<(std::ostream& os, const AstParseRefExp& rhs) { return os<<rhs.ascii(); }
+  inline bool operator==(VParseRefExp lhs, VParseRefExp rhs) { return (lhs.m_e == rhs.m_e); }
+  inline bool operator==(VParseRefExp lhs, VParseRefExp::en rhs) { return (lhs.m_e == rhs); }
+  inline bool operator==(VParseRefExp::en lhs, VParseRefExp rhs) { return (lhs == rhs.m_e); }
+  inline std::ostream& operator<<(std::ostream& os, const VParseRefExp& rhs) { return os<<rhs.ascii(); }
 
 //######################################################################
 // VNumRange - Structure containing numeric range information
 // See also AstRange, which is a symbolic version of this
 
-struct VNumRange {
+class VNumRange {
+public:
     int m_hi;  // HI part, HI always >= LO
     int m_lo;  // LO
     union {
@@ -834,7 +838,8 @@ inline std::ostream& operator<<(std::ostream& os, const VNumRange& rhs) { rhs.du
 
 //######################################################################
 
-struct VBasicTypeKey {
+class VBasicTypeKey {
+public:
     int         m_width;        // From AstNodeDType: Bit width of operation
     int         m_widthMin;     // From AstNodeDType: If unsized, bitwidth of minimum implementation
     AstNumeric  m_numeric;      // From AstNodeDType: Node is signed
@@ -1754,7 +1759,7 @@ public:
 
 class AstNodeIf : public AstNodeStmt {
 private:
-    AstBranchPred       m_branchPred;  // Branch prediction as taken/untaken?
+    VBranchPred m_branchPred;  // Branch prediction as taken/untaken?
 public:
     AstNodeIf(FileLine* fl, AstNode* condp, AstNode* ifsp, AstNode* elsesp)
         : AstNodeStmt(fl) {
@@ -1772,8 +1777,8 @@ public:
     virtual int instrCount() const { return instrCountBranch(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode* samep) const { return true; }
-    void branchPred(AstBranchPred flag) { m_branchPred = flag; }
-    AstBranchPred branchPred() const { return m_branchPred; }
+    void branchPred(VBranchPred flag) { m_branchPred = flag; }
+    VBranchPred branchPred() const { return m_branchPred; }
 };
 
 class AstNodeCase : public AstNodeStmt {

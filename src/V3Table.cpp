@@ -75,7 +75,7 @@ private:
 
     // STATE
     double      m_totalBytes;           // Total bytes in tables created
-    V3Double0   m_statTablesCre;        // Statistic tracking
+    VDouble0    m_statTablesCre;        // Statistic tracking
 
     //  State cleared on each module
     AstNodeModule*      m_modp;         // Current MODULE

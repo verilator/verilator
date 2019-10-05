@@ -73,23 +73,23 @@ public:
 };
 
 //============================================================================
-// V3InFilter: Read a input file, possibly filtering it, and caching contents
+// VInFilter: Read a input file, possibly filtering it, and caching contents
 
-class V3InFilterImp;
+class VInFilterImp;
 
-class V3InFilter {
+class VInFilter {
 public:
     // TYPES
     typedef std::list<string> StrList;
 
 private:
-    V3InFilterImp* m_impp;
+    VInFilterImp* m_impp;
 
     // CONSTRUCTORS
-    VL_UNCOPYABLE(V3InFilter);
+    VL_UNCOPYABLE(VInFilter);
 public:
-    explicit V3InFilter(const string& command);
-    ~V3InFilter();
+    explicit VInFilter(const string& command);
+    ~VInFilter();
 
     // METHODS
     // Read file contents and return it.  Return true on success.

@@ -118,7 +118,7 @@ void V3Global::readFiles() {
     //   AstNode::user4p()      // VSymEnt*    Package and typedef symbol names
     AstUser4InUse       inuser4;
 
-    V3InFilter filter (v3Global.opt.pipeFilter());
+    VInFilter filter (v3Global.opt.pipeFilter());
     V3ParseSym parseSyms (v3Global.rootp());  // Symbol table must be common across all parsing
 
     V3Parse parser (v3Global.rootp(), &filter, &parseSyms);

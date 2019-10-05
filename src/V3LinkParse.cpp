@@ -305,12 +305,12 @@ private:
         }
         else if (nodep->attrType() == AstAttrType::VAR_CLOCKER) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            m_varp->attrClocker(AstVarAttrClocker::CLOCKER_YES);
+            m_varp->attrClocker(VVarAttrClocker::CLOCKER_YES);
             nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_NO_CLOCKER) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            m_varp->attrClocker(AstVarAttrClocker::CLOCKER_NO);
+            m_varp->attrClocker(VVarAttrClocker::CLOCKER_NO);
             nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
         }
     }

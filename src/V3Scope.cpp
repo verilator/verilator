@@ -249,10 +249,10 @@ private:
             if (m_aboveCellp && !m_aboveCellp->isTrace()) varscp->trace(false);
             nodep->user1p(varscp);
             if (v3Global.opt.isClocker(varscp->prettyName())) {
-                nodep->attrClocker(AstVarAttrClocker::CLOCKER_YES);
+                nodep->attrClocker(VVarAttrClocker::CLOCKER_YES);
             }
             if (v3Global.opt.isNoClocker(varscp->prettyName())) {
-                nodep->attrClocker(AstVarAttrClocker::CLOCKER_NO);
+                nodep->attrClocker(VVarAttrClocker::CLOCKER_NO);
             }
             UASSERT_OBJ(m_scopep, nodep, "No scope for var");
             m_varScopes.insert(make_pair(make_pair(nodep, m_scopep), varscp));

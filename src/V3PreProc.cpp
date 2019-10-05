@@ -46,7 +46,7 @@
 
 //*************************************************************************
 
-class V3Define {
+class VDefine {
     // Define class.  One for each define.
     //string    m_name;         // Name of the define (list is keyed by this)
     FileLine*   m_fileline;     // Where it was declared
@@ -54,7 +54,7 @@ class V3Define {
     string      m_params;       // Parameters
     bool        m_cmdline;      // Set on command line, don't `undefineall
 public:
-    V3Define(FileLine* fl, const string& value, const string& params, bool cmdline)
+    VDefine(FileLine* fl, const string& value, const string& params, bool cmdline)
         : m_fileline(fl), m_value(value), m_params(params), m_cmdline(cmdline) {}
     FileLine* fileline() const { return m_fileline; }
     string value() const { return m_value; }
@@ -64,7 +64,7 @@ public:
 
 //*************************************************************************
 
-class V3DefineRef {
+class VDefineRef {
     // One for each pending define substitution
     string      m_name;         // Define last name being defined
     string      m_params;       // Define parameter list for next expansion
@@ -80,9 +80,9 @@ public:
     int parenLevel() const { return m_parenLevel; }
     void parenLevel(int value) { m_parenLevel = value; }
     std::vector<string>& args() { return m_args; }
-    V3DefineRef(const string& name, const string& params)
+    VDefineRef(const string& name, const string& params)
         : m_name(name), m_params(params), m_parenLevel(0) {}
-    ~V3DefineRef() {}
+    ~VDefineRef() {}
 };
 
 //*************************************************************************
@@ -106,8 +106,8 @@ public:
 class V3PreProcImp : public V3PreProc {
 public:
     // TYPES
-    typedef std::map<string,V3Define> DefinesMap;
-    typedef V3InFilter::StrList StrList;
+    typedef std::map<string,VDefine> DefinesMap;
+    typedef VInFilter::StrList StrList;
 
     // debug() -> see V3PreShellImp::debug; use --debugi-V3PreShell
 
@@ -156,7 +156,7 @@ public:
     string      m_strify;       ///< Text to be stringified
 
     // For defines
-    std::stack<V3DefineRef> m_defRefs;  ///< Pending define substitution
+    std::stack<VDefineRef> m_defRefs;  ///< Pending define substitution
     std::stack<VPreIfEntry> m_ifdefStack;   ///< Stack of true/false emitting evaluations
     unsigned    m_defDepth;     ///< How many `defines deep
     bool        m_defPutJoin;   ///< Insert `` after substitution
@@ -179,7 +179,7 @@ public:
 private:
     // Internal methods
     void endOfOneFile();
-    string defineSubst(V3DefineRef* refp);
+    string defineSubst(VDefineRef* refp);
 
     bool defExists(const string& name);
     string defValue(const string& name);
@@ -227,7 +227,7 @@ private:
 
 public:
     // METHODS, called from upper level shell
-    void openFile(FileLine* fl, V3InFilter* filterp, const string& filename);
+    void openFile(FileLine* fl, VInFilter* filterp, const string& filename);
     bool isEof() const { return m_lexp->curStreamp()->m_eof; }
     string getline();
     void insertUnreadback(const string& text) { m_lineCmt += text; }
@@ -341,7 +341,7 @@ void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
         }
         undef(name);
     }
-    m_defines.insert(make_pair(name, V3Define(fl, value, params, cmdline)));
+    m_defines.insert(make_pair(name, VDefine(fl, value, params, cmdline)));
 }
 
 string V3PreProcImp::removeDefines(const string& text) {
@@ -557,7 +557,7 @@ string V3PreProcImp::trimWhitespace(const string& strg, bool trailing) {
     return out;
 }
 
-string V3PreProcImp::defineSubst(V3DefineRef* refp) {
+string V3PreProcImp::defineSubst(VDefineRef* refp) {
     // Substitute out defines in a define reference.
     // (We also need to call here on non-param defines to handle `")
     // We could push the define text back into the lexer, but that's slow
@@ -746,7 +746,7 @@ string V3PreProcImp::defineSubst(V3DefineRef* refp) {
 //**********************************************************************
 // Parser routines
 
-void V3PreProcImp::openFile(FileLine* fl, V3InFilter* filterp, const string& filename) {
+void V3PreProcImp::openFile(FileLine* fl, VInFilter* filterp, const string& filename) {
     // Open a new file, possibly overriding the current one which is active.
     V3File::addSrcDepend(filename);
 
@@ -1121,7 +1121,7 @@ int V3PreProcImp::getStateToken() {
                 goto next_tok;
             } else {
                 if (m_defRefs.empty()) fatalSrc("Shouldn't be in DEFPAREN w/o active defref");
-                V3DefineRef* refp = &(m_defRefs.top());
+                VDefineRef* refp = &(m_defRefs.top());
                 error(string("Expecting ( to begin argument list for define reference `")+refp->name()+"\n");
                 statePop();
                 goto next_tok;
@@ -1129,7 +1129,7 @@ int V3PreProcImp::getStateToken() {
         }
         case ps_DEFARG: {
             if (m_defRefs.empty()) fatalSrc("Shouldn't be in DEFARG w/o active defref");
-            V3DefineRef* refp = &(m_defRefs.top());
+            VDefineRef* refp = &(m_defRefs.top());
             refp->nextarg(refp->nextarg()+m_lexp->m_defValue); m_lexp->m_defValue = "";
             UINFO(4,"defarg++ "<<refp->nextarg()<<endl);
             if (tok==VP_DEFARG && yyourleng()==1 && yyourtext()[0]==',') {
@@ -1371,7 +1371,7 @@ int V3PreProcImp::getStateToken() {
                 if (params=="0" || params=="") {  // Found, as simple substitution
                     string out;
                     if (!m_off) {
-                        V3DefineRef tempref(name, "");
+                        VDefineRef tempref(name, "");
                         out = defineSubst(&tempref);
                     }
                     // Similar code in parenthesized define (Search for END_OF_DEFARG)
@@ -1393,7 +1393,7 @@ int V3PreProcImp::getStateToken() {
                         // Can't subst now, or
                         // `define a x,y
                         // foo(`a,`b)  would break because a contains comma
-                        V3DefineRef* refp = &(m_defRefs.top());
+                        VDefineRef* refp = &(m_defRefs.top());
                         refp->nextarg(refp->nextarg()+m_lexp->m_defValue+out);
                         m_lexp->m_defValue = "";
                     }
@@ -1404,7 +1404,7 @@ int V3PreProcImp::getStateToken() {
                     // The CURRENT macro needs the paren saved, it's not a
                     // property of the child macro
                     if (!m_defRefs.empty()) m_defRefs.top().parenLevel(m_lexp->m_parenLevel);
-                    m_defRefs.push(V3DefineRef(name, params));
+                    m_defRefs.push(VDefineRef(name, params));
                     statePush(ps_DEFPAREN);
                     m_lexp->pushStateDefArg(0);
                     goto next_tok;

@@ -179,13 +179,13 @@ private:
         m_instrCount = 0;
         iterateAndNextNull(nodep->ifsp());
         uint32_t ifCount = m_instrCount;
-        if (nodep->branchPred() == AstBranchPred::BP_UNLIKELY) ifCount = 0;
+        if (nodep->branchPred().unlikely()) ifCount = 0;
 
         UINFO(8, "elsesp:\n");
         m_instrCount = 0;
         iterateAndNextNull(nodep->elsesp());
         uint32_t elseCount = m_instrCount;
-        if (nodep->branchPred() == AstBranchPred::BP_LIKELY) elseCount = 0;
+        if (nodep->branchPred().likely()) elseCount = 0;
 
         if (ifCount >= elseCount) {
             m_instrCount = savedCount + ifCount;

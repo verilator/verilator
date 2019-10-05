@@ -189,7 +189,7 @@ private:
 
     // STATE
     typedef enum {STATE_IDLE, STATE_HASH, STATE_DUP} CombineState;
-    V3Double0           m_statCombs;    // Statistic tracking
+    VDouble0            m_statCombs;    // Statistic tracking
     CombineState        m_state;        // Major state
     AstNodeModule*      m_modp;         // Current module
     AstCFunc*           m_funcp;        // Current function

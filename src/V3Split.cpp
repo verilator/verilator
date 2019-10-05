@@ -263,7 +263,7 @@ protected:
     SplitPliVertex*     m_pliVertexp;   // Element specifying PLI ordering
     V3Graph             m_graph;        // Scoreboard of var usages/dependencies
     bool                m_inDly;        // Inside ASSIGNDLY
-    V3Double0           m_statSplits;   // Statistic tracking
+    VDouble0            m_statSplits;   // Statistic tracking
 
     // CONSTRUCTORS
 public:
