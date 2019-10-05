@@ -473,7 +473,7 @@ AstVar* AstVar::scVarRecurse(AstNode* nodep) {
 
 string AstVar::mtasksString() const {
     std::ostringstream os;
-    os<<" all: ";
+    os<<"all: ";
     for (MTaskIdSet::const_iterator it = m_mtaskIds.begin();
          it != m_mtaskIds.end(); ++it) {
         os<<*it<<" ";
