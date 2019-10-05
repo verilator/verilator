@@ -584,7 +584,7 @@ public:
                         cellp   = lookupSymp ? VN_CAST(lookupSymp->nodep(), Cell) : NULL;  // Replicated above
                         inlinep = lookupSymp ? VN_CAST(lookupSymp->nodep(), CellInline) : NULL;  // Replicated above
                         if (lookupSymp) {
-                            UINFO(9,"\t\tUp to "<<lookupSymp<<endl);
+                            UINFO(9,"    Up to "<<lookupSymp<<endl);
                             if (cellp || inlinep) {
                                 crossedCell = true;
                             }
@@ -596,7 +596,7 @@ public:
                                      = findWithAltFallback(lookupSymp, ident, altIdent)) {
                                 lookupSymp = findSymp;
                                 if (crossedCell && VN_IS(lookupSymp->nodep(), Var)) {
-                                    UINFO(9,"\t\tNot found but matches var name in parent "
+                                    UINFO(9,"    Not found but matches var name in parent "
                                           <<lookupSymp<<endl);
                                     return NULL;  // Not found (but happens to be var name in parent)
                                 }
@@ -633,7 +633,7 @@ public:
         // Find symbol in given point in hierarchy, allowing prefix (post-Inline)
         // For simplicity lookupSymp may be passed NULL result from findDotted
         if (!lookupSymp) return NULL;
-        UINFO(8,"\t\tfindSymPrefixed "<<dotname
+        UINFO(8,"    findSymPrefixed "<<dotname
               <<" under se"<<cvtToHex(lookupSymp)
               <<((lookupSymp->symPrefix()=="") ? "" : " as ")
               <<((lookupSymp->symPrefix()=="") ? "" : lookupSymp->symPrefix()+dotname)
@@ -1435,7 +1435,7 @@ class LinkDotScopeVisitor : public AstNVisitor {
     virtual void visit(AstAssignAlias* nodep) {
         // Track aliases created by V3Inline; if we get a VARXREF(aliased_from)
         // we'll need to replace it with a VARXREF(aliased_to)
-        if (debug()>=9) nodep->dumpTree(cout, "-\t\t\t\talias: ");
+        if (debug()>=9) nodep->dumpTree(cout, "-    alias: ");
         AstVarScope* fromVscp = VN_CAST(nodep->lhsp(), VarRef)->varScopep();
         AstVarScope* toVscp   = VN_CAST(nodep->rhsp(), VarRef)->varScopep();
         UASSERT_OBJ(fromVscp && toVscp, nodep, "Bad alias scopes");
@@ -1444,7 +1444,7 @@ class LinkDotScopeVisitor : public AstNVisitor {
     }
     virtual void visit(AstAssignVarScope* nodep) {
         UINFO(5,"ASSIGNVARSCOPE  "<<nodep<<endl);
-        if (debug()>=9) nodep->dumpTree(cout, "-\t\t\t\tavs: ");
+        if (debug()>=9) nodep->dumpTree(cout, "-    avs: ");
         VSymEnt* rhsSymp;
         {
             AstVarRef* refp = VN_CAST(nodep->rhsp(), VarRef);
@@ -2334,7 +2334,7 @@ private:
                 if (nodep->inlinedDots()!="") {  // Correct for current scope
                     dotSymp = m_modSymp;  // Dotted lookup is always relative to module, as maybe variable name lower down with same scope name we want to ignore (t_math_divw)
                     string inl = AstNode::dedotName(nodep->inlinedDots());
-                    UINFO(8,"\t\tInlined "<<inl<<endl);
+                    UINFO(8,"    Inlined "<<inl<<endl);
                     dotSymp = m_statep->findDotted(dotSymp, inl, baddot, okSymp);
                     if (!dotSymp) {
                         okSymp->cellErrorScopes(nodep);

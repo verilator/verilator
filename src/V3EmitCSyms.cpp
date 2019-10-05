@@ -580,25 +580,24 @@ void EmitCSyms::emitSymImp() {
 
     puts("\n// FUNCTIONS\n");
     puts(symClassName()+"::"+symClassName()+"("+topClassName()+"* topp, const char* namep)\n");
-    puts("\t// Setup locals\n");
-    puts("\t: __Vm_namep(namep)\n");  // No leak, as we get destroyed when the top is destroyed
+    puts("    // Setup locals\n");
+    puts("    : __Vm_namep(namep)\n");  // No leak, as we get destroyed when the top is destroyed
     if (v3Global.opt.trace()) {
-        puts("\t, __Vm_activity(false)\n");
+        puts("    , __Vm_activity(false)\n");
     }
-    puts("\t, __Vm_didInit(false)\n");
-    puts("\t// Setup submodule names\n");
+    puts("    , __Vm_didInit(false)\n");
+    puts("    // Setup submodule names\n");
     char comma=',';
     for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
         AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
         if (modp->isTop()) {
         } else {
-            string nameDl = scopep->nameDotless();
-            ofp()->printf("\t%c %-30s ", comma, nameDl.c_str());
+            puts(string("    ")+comma+" "+scopep->nameDotless());
             puts("(Verilated::catName(topp->name(),");
             // The "." is added by catName
             putsQuoted(scopep->prettyName());
             puts("))\n");
-            comma=',';
+            comma = ',';
             ++m_numStmts;
         }
     }

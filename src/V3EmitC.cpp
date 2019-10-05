@@ -2559,7 +2559,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
                     if (modp->isTop()) puts("// Public to allow access to /*verilator_public*/ items;\n");
                     if (modp->isTop()) puts("// otherwise the application code can consider these internals.\n");
                 }
-                ofp()->putsCellDecl(modClassName(cellp->modp()), cellp->name());
+                puts(modClassName(cellp->modp())+"* "+cellp->name()+";\n");
             }
         }
     }

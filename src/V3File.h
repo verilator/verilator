@@ -192,10 +192,6 @@ public:
         resetPrivate();
     }
     virtual ~V3OutCFile() {}
-    virtual void putsCellDecl(const string& classname, const string& cellname) {
-        string classStar = classname + "*";
-        this->printf("%-19s\t%s;\n", classStar.c_str(), cellname.c_str());
-    }
     virtual void putsHeader() { puts("// Verilated -*- C++ -*-\n"); }
     virtual void putsIntTopInclude() {
         putsForceIncs();

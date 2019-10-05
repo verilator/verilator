@@ -585,7 +585,7 @@ void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
     {
         UINFO(4,"De-parameterize: "<<nodep<<endl);
         // Create new module name with _'s between the constants
-        if (debug()>=10) nodep->dumpTree(cout, "-cell:\t");
+        if (debug()>=10) nodep->dumpTree(cout, "-cell: ");
         // Evaluate all module constants
         V3Const::constifyParamsEdit(nodep);
         AstNodeModule* srcModp = nodep->modp();
@@ -593,12 +593,12 @@ void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
 
         // Make sure constification worked
         // Must be a separate loop, as constant conversion may have changed some pointers.
-        //if (debug()) nodep->dumpTree(cout, "-cel2:\t");
+        //if (debug()) nodep->dumpTree(cout, "-cel2: ");
         string longname = srcModp->name();
         bool any_overrides = false;
         if (nodep->recursive()) any_overrides = true;  // Must always clone __Vrcm (recursive modules)
         longname += "_";
-        if (debug()>8) nodep->paramsp()->dumpTreeAndNext(cout, "-cellparams:\t");
+        if (debug()>8) nodep->paramsp()->dumpTreeAndNext(cout, "-cellparams: ");
         for (AstPin* pinp = nodep->paramsp(); pinp; pinp=VN_CAST(pinp->nextp(), Pin)) {
             if (!pinp->exprp()) continue;  // No-connect
             if (AstVar* modvarp = pinp->modVarp()) {

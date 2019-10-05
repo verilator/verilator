@@ -290,7 +290,7 @@ public:
             }
         }
         if (debug()>=9 && !m_isSimple) {
-            nodep->dumpTree(cout, "\tgate!Ok: ");
+            nodep->dumpTree(cout, "    gate!Ok: ");
         }
     }
     virtual ~GateOkVisitor() {}
@@ -628,8 +628,8 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
                     }
                     else {
                         AstNode* substp = okVisitor.substTree();
-                        if (debug()>=5) logicp->dumpTree(cout, "\telimVar:  ");
-                        if (debug()>=5) substp->dumpTree(cout, "\t  subst:  ");
+                        if (debug()>=5) logicp->dumpTree(cout, "    elimVar:  ");
+                        if (debug()>=5) substp->dumpTree(cout, "      subst:  ");
                         ++m_statSigs;
                         bool removedAllUsages = true;
                         for (V3GraphEdge* edgep = vvertexp->outBeginp();
@@ -895,14 +895,14 @@ public:
 };
 
 void GateVisitor::optimizeElimVar(AstVarScope* varscp, AstNode* substp, AstNode* consumerp) {
-    if (debug()>=5) consumerp->dumpTree(cout, "\telimUsePre: ");
+    if (debug()>=5) consumerp->dumpTree(cout, "    elimUsePre: ");
     GateElimVisitor elimVisitor (consumerp, varscp, substp, NULL);
     if (elimVisitor.didReplace()) {
-        if (debug()>=9) consumerp->dumpTree(cout, "\telimUseCns: ");
+        if (debug()>=9) consumerp->dumpTree(cout, "    elimUseCns: ");
         //Caution: Can't let V3Const change our handle to consumerp, such as by
         // optimizing away this assignment, etc.
         consumerp = V3Const::constifyEdit(consumerp);
-        if (debug()>=5) consumerp->dumpTree(cout, "\telimUseDne: ");
+        if (debug()>=5) consumerp->dumpTree(cout, "    elimUseDne: ");
         // Some previous input edges may have disappeared, perhaps all of them.
         // If we remove the edges we can further optimize
         // See e.g t_var_overzero.v.

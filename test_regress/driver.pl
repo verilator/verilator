@@ -1565,8 +1565,8 @@ sub _make_main {
     } else {
         $fh->print("    {\n");
     }
-    print $fh "       ${set}fastclk = false;\n" if $self->{inputs}{fastclk};
-    print $fh "       ${set}clk = false;\n" if $self->{inputs}{clk};
+    print $fh "        ${set}fastclk = false;\n" if $self->{inputs}{fastclk};
+    print $fh "        ${set}clk = false;\n" if $self->{inputs}{clk};
     _print_advance_time($self, $fh, 10);
     print $fh "    }\n";
 
@@ -1574,11 +1574,11 @@ sub _make_main {
     for (my $i=0; $i<5; $i++) {
         my $action = 0;
         if ($self->{inputs}{fastclk}) {
-            print $fh "        ${set}fastclk=!${set}fastclk;\n";
+            print $fh "        ${set}fastclk = !${set}fastclk;\n";
             $action = 1;
         }
         if ($i==0 && $self->{inputs}{clk}) {
-            print $fh "        ${set}clk=!${set}clk;\n";
+            print $fh "        ${set}clk = !${set}clk;\n";
             $action = 1;
         }
         if ($self->{savable}) {
