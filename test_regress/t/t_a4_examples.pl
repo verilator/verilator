@@ -7,23 +7,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-# This test runs the very first time we've executed Verilator --sc
-# after building so we make sure to run with --gdbbt, so if it dumps we'll
-# get a trace.
+scenarios(dist => 1);
 
-scenarios(simulator => 1);
-
-top_filename("t/t_a_first_cc.v");
-
-$DEBUG_QUIET = "--debug --debugi 0 --gdbbt --no-dump-tree";
-
-compile(
-    verilator_flags2 => [$DEBUG_QUIET, "-sc --trace"],
-    );
-
-execute(
-    check_finished => 1,
-    );
+my $root = "..";
+run(cmd=>["cd $root && make examples"]);
 
 ok(1);
 1;

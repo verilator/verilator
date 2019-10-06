@@ -220,7 +220,9 @@ msg_test: all_nomsg
 
 .PHONY: test
 ifeq ($(CFG_WITH_LONGTESTS),yes)	# Local... Else don't burden users
-test: smoke-test examples test_regress
+test: smoke-test test_regress
+# examples is part of test_regress's test_regress/t/t_a2_examples.pl
+# (because that allows it to run in parallel with other test_regress's)
 else
 test: smoke-test examples
 endif
@@ -231,8 +233,8 @@ endif
 	@echo
 
 smoke-test: all_nomsg
-	test_regress/t/t_a_first_cc.pl
-	test_regress/t/t_a_first_sc.pl
+	test_regress/t/t_a1_first_cc.pl
+	test_regress/t/t_a2_first_sc.pl
 
 test_regress: all_nomsg
 	$(MAKE) -C test_regress
