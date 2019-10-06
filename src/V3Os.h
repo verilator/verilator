@@ -56,6 +56,7 @@ public:
 
     // METHODS (random)
     static vluint64_t rand64(vluint64_t* statep);
+    static string trueRandom(size_t size);
 
     // METHODS (performance)
     static uint64_t timeUsecs();  ///< Return wall time since epoch in microseconds, or 0 if not implemented

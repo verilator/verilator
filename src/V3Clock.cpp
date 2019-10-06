@@ -226,6 +226,7 @@ private:
             funcp->slow(true);
             funcp->isStatic(false);
             funcp->entryPoint(true);
+            funcp->protect(false);
             funcp->addInitsp(new AstCStmt
                              (nodep->fileline(),
                               EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp;\n"));

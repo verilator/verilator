@@ -182,9 +182,6 @@ private:
     virtual void putcOutput(char chr) { fputc(chr, m_fp); }
 };
 
-//######################################################################
-// V3OutCFile: A class for abstracting out SystemC/C++ details
-
 class V3OutCFile : public V3OutFile {
     int         m_private;
 public:
@@ -248,6 +245,23 @@ public:
     // No automatic indentation yet.
     void puts(const char* strg) { putsNoTracking(strg); }
     void puts(const string& strg) { putsNoTracking(strg); }
+};
+
+//============================================================================
+// VIdProtect: Hash identifier names in output files to protect them
+
+class VIdProtectImp;
+
+class VIdProtect {
+public:
+    // METHODS
+    // Rename to a new encoded string (unless earlier passthru'ed)
+    static string protect(const string& old) { return protectIf(old, true); }
+    static string protectIf(const string& old, bool doIt=true);
+    // Rename words to a new encoded string
+    static string protectWordsIf(const string& old, bool doIt=true);
+    // Write map of renames to output file
+    static void writeMapFile(const string& filename);
 };
 
 #endif  // Guard

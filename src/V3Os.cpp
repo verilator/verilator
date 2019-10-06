@@ -31,6 +31,7 @@
 #include <cstdarg>
 #include <dirent.h>
 #include <fcntl.h>
+#include <fstream>
 #include <iomanip>
 #include <memory>
 #include <sys/stat.h>
@@ -216,6 +217,18 @@ vluint64_t V3Os::rand64(vluint64_t* statep) {
                  ^ statep[1] ^ (statep[1] << 14));
     statep[1] = (statep[1] << 36) | (statep[1] >> 28);
     return result;
+}
+
+string V3Os::trueRandom(size_t size) {
+    string data; data.reserve(size);
+    std::ifstream is ("/dev/urandom", std::ios::in | std::ios::binary);
+    char bytes[size];
+    if (!is.read(bytes, size)) {
+        v3fatal("Could not open /dev/urandom, no source of randomness. Try specifing a key instead.");
+        return "";
+    }
+    data.append(bytes, size);
+    return data;
 }
 
 //######################################################################

@@ -81,6 +81,7 @@ void AstNode::init() {
     // Attributes
     m_didWidth = false;
     m_doingWidth = false;
+    m_protect = true;
     m_user1u = VNUser(0);
     m_user1Cnt = 0;
     m_user2u = VNUser(0);
@@ -131,6 +132,10 @@ string AstNode::encodeNumber(vlsint64_t num) {
     } else {
         return cvtToStr(num);
     }
+}
+
+string AstNode::nameProtect() const {
+    return VIdProtect::protectIf(name(), protect());
 }
 
 string AstNode::shortName() const {

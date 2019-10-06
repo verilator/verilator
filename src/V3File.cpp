@@ -917,3 +917,124 @@ void V3OutFile::putsForceIncs() {
         puts("#include \""+*it+"\"\n");
     }
 }
+
+//######################################################################
+// VIdProtect
+
+class VIdProtectImp {
+    // MEMBERS
+    typedef std::map<string,string> IdMap;
+    IdMap m_nameMap;  // Map of old name into new name
+    typedef vl_unordered_set<std::string> IdSet;
+    IdSet m_newIdSet;  // Which new names exist
+protected:
+    // CONSTRUCTORS
+    friend class VIdProtect;
+    static VIdProtectImp& singleton() { static VIdProtectImp s; return s; }
+public:
+    VIdProtectImp() {
+        passthru("this");
+        passthru("TOPp");
+        passthru("vlTOPp");
+        passthru("vlSymsp");
+    }
+    ~VIdProtectImp() {}
+    // METHODS
+    string passthru(const string& old) {
+        if (!v3Global.opt.protectIds()) return old;
+        IdMap::iterator it = m_nameMap.find(old);
+        if (it != m_nameMap.end()) {
+            // No way to go back and correct the older crypt name
+            UASSERT(old == it->second, "Passthru request for '"
+                    +old+"' after already --protect-ids of it.");
+        }
+        else {
+            m_nameMap.insert(make_pair(old, old));
+            m_newIdSet.insert(old);
+        }
+        return old;
+    }
+    string protectIf(const string& old, bool doIt) {
+        if (!v3Global.opt.protectIds() || old.empty() || !doIt) return old;
+        IdMap::iterator it = m_nameMap.find(old);
+        if (it != m_nameMap.end()) return it->second;
+        else {
+            string out;
+            if (v3Global.opt.debugProtect()) {
+                // This lets us see the symbol being protected to debug cases
+                // where e.g. the definition is protect() but reference is
+                // missing a protect()
+                out = "PS"+old;
+            } else {
+                VHashSha256 digest (v3Global.opt.protectKeyDefaulted());
+                digest.insert(old);
+                // Add "PS" prefix (Protect Symbols) as cannot start symbol with number
+                out = "PS"+digest.digestSymbol();
+                // See if we can shrink the digest symbol to something smaller
+                for (size_t len = 6; len < out.size() - 3; len += 3) {
+                    string tryout = out.substr(0, len);
+                    if (m_newIdSet.find(tryout) == m_newIdSet.end()) {
+                        out = tryout;
+                        break;
+                    }
+                }
+            }
+            m_nameMap.insert(make_pair(old, out));
+            m_newIdSet.insert(out);
+            return out;
+        }
+    }
+    string protectWordsIf(const string& old, bool doIt) {
+        // Split at " " (for traces), "." (for scopes), or "->" (for scopes)
+        if (!(doIt && v3Global.opt.protectIds())) return old;
+        string out;
+        string::size_type start = 0;
+        // space, ., ->
+        while (1) {
+            // When C++11, use find_if and lambda
+            string::size_type pos = string::npos;
+            string separator = "";
+            trySep(old, start, " ", pos/*ref*/, separator/*ref*/);
+            trySep(old, start, ".", pos/*ref*/, separator/*ref*/);
+            trySep(old, start, "->", pos/*ref*/, separator/*ref*/);
+            if (pos == string::npos) break;
+            out += protectIf(old.substr(start, pos-start), true) + separator;
+            start = pos + separator.length();
+        }
+        out += protectIf(old.substr(start), true);
+        return out;
+    }
+    void writeMapFile(const string& filename) const {
+        V3OutXmlFile of (filename);
+        of.putsHeader();
+        of.puts("<!-- DESCR" "IPTION: Verilator output: XML representation of netlist -->\n");
+        of.puts("<verilator_id_map>\n");
+        {
+            for (IdMap::const_iterator it = m_nameMap.begin(); it != m_nameMap.end(); ++it) {
+                of.puts("<map from=\""+it->second+"\" to=\""+it->first+"\"/>\n");
+            }
+        }
+        of.puts("</verilator_id_map>\n");
+    }
+private:
+    void trySep(const string& old, string::size_type start, const string& trySep,
+                string::size_type& posr, string& separatorr) {
+        string::size_type trypos = old.find(trySep, start);
+        if (trypos != string::npos) {
+            if (posr == string::npos || (posr > trypos)) {
+                posr = trypos;
+                separatorr = trySep;
+            }
+        }
+    }
+};
+
+string VIdProtect::protectIf(const string& old, bool doIt) {
+    return VIdProtectImp::singleton().protectIf(old, doIt);
+}
+string VIdProtect::protectWordsIf(const string& old, bool doIt) {
+    return VIdProtectImp::singleton().protectWordsIf(old, doIt);
+}
+void VIdProtect::writeMapFile(const string& filename) {
+    VIdProtectImp::singleton().writeMapFile(filename);
+}

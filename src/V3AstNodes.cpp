@@ -56,6 +56,10 @@ void AstNodeVarRef::cloneRelink() {
     if (m_varp && m_varp->clonep()) { m_varp = m_varp->clonep(); }
 }
 
+string AstNodeVarRef::hiernameProtect() const {
+    return VIdProtect::protectWordsIf(hiername(), protect());
+}
+
 int AstNodeSel::bitConst() const {
     AstConst* constp = VN_CAST(bitp(), Const);
     return (constp ? constp->toSInt() : 0);
@@ -269,7 +273,7 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc) const {
         oname += "&";
         mayparen = true;
     }
-    if (named) oname += " "+name();
+    if (named) oname += " "+VIdProtect::protectIf(name(), protect());
 
     string oarray;
     if (isDpiOpenArray() || direction().isRefOrConstRef()) {
@@ -592,6 +596,10 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep) {  ///< What is the base variabl
         else break;
     }
     return nodep;
+}
+
+string AstCCall::hiernameProtect() const {
+    return VIdProtect::protectWordsIf(hiername(), protect());
 }
 
 const char* AstScope::broken() const {

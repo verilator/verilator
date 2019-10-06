@@ -118,6 +118,7 @@ class V3Options {
     bool        m_debugLeak;    // main switch: --debug-leak
     bool        m_debugNondeterminism;  // main switch: --debug-nondeterminism
     bool        m_debugPartition;  // main switch: --debug-partition
+    bool        m_debugProtect;  // main switch: --debug-protect
     bool        m_debugSelfTest;  // main switch: --debug-self-test
     bool        m_decoration;   // main switch: --decoration
     bool        m_dpiHdrOnly;   // main switch: --dpi-hdr-only
@@ -134,6 +135,7 @@ class V3Options {
     bool        m_ppComments;   // main switch: --pp-comments
     bool        m_profCFuncs;   // main switch: --prof-cfuncs
     bool        m_profThreads;  // main switch: --prof-threads
+    bool        m_protectIds;   // main switch: --protect-ids
     bool        m_public;       // main switch: --public
     bool        m_publicFlatRW;  // main switch: --public-flat-rw
     bool        m_relativeCFuncs; // main switch: --relative-cfuncs
@@ -188,6 +190,7 @@ class V3Options {
     string      m_modPrefix;    // main switch: --mod-prefix
     string      m_pipeFilter;   // main switch: --pipe-filter
     string      m_prefix;       // main switch: --prefix
+    string      m_protectKey;   // main switch: --protect-key
     string      m_topModule;    // main switch: --top-module
     string      m_unusedRegexp; // main switch: --unused-regexp
     string      m_xAssign;      // main switch: --x-assign
@@ -288,6 +291,7 @@ class V3Options {
     bool debugLeak() const { return m_debugLeak; }
     bool debugNondeterminism() const { return m_debugNondeterminism; }
     bool debugPartition() const { return m_debugPartition; }
+    bool debugProtect() const { return m_debugProtect; }
     bool debugSelfTest() const { return m_debugSelfTest; }
     bool decoration() const { return m_decoration; }
     bool dpiHdrOnly() const { return m_dpiHdrOnly; }
@@ -310,6 +314,7 @@ class V3Options {
     bool ppComments() const { return m_ppComments; }
     bool profCFuncs() const { return m_profCFuncs; }
     bool profThreads() const { return m_profThreads; }
+    bool protectIds() const { return m_protectIds; }
     bool allPublic() const { return m_public; }
     bool publicFlatRW() const { return m_publicFlatRW; }
     bool lintOnly() const { return m_lintOnly; }
@@ -351,6 +356,8 @@ class V3Options {
     string modPrefix() const { return m_modPrefix; }
     string pipeFilter() const { return m_pipeFilter; }
     string prefix() const { return m_prefix; }
+    string protectKey() const { return m_protectKey; }
+    string protectKeyDefaulted();  // Set default key if not set by user
     string topModule() const { return m_topModule; }
     string unusedRegexp() const { return m_unusedRegexp; }
     string xAssign() const { return m_xAssign; }

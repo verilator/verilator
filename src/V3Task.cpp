@@ -711,6 +711,7 @@ private:
         dpip->entryPoint(true);
         dpip->isStatic(true);
         dpip->dpiExportWrapper(true);
+        dpip->protect(false);
         dpip->cname(nodep->cname());
         // Add DPI reference to top, since it's a global function
         m_topScopep->scopep()->addActivep(dpip);
@@ -733,7 +734,8 @@ private:
             // If the find fails, it will throw an error
             stmt += "const VerilatedScope* __Vscopep = Verilated::dpiScope();\n";
             // If dpiScope is fails and is null; the exportFind function throws and error
-            string cbtype = v3Global.opt.prefix()+"__Vcb_"+nodep->cname()+"_t";
+            string cbtype = VIdProtect::protect(v3Global.opt.prefix()
+                                                +"__Vcb_"+nodep->cname()+"_t");
             stmt += cbtype+" __Vcb = ("+cbtype+")(VerilatedScope::exportFind(__Vscopep, __Vfuncnum));\n";  // Can't use static_cast
             // If __Vcb is null the exportFind function throws and error
             dpip->addStmtsp(new AstCStmt(nodep->fileline(), stmt));
@@ -741,7 +743,8 @@ private:
 
         // Convert input/inout DPI arguments to Internal types
         string args;
-        args += "("+v3Global.opt.prefix()+"__Syms*)(__Vscopep->symsp())";  // Upcast w/o overhead
+        args += ("("+EmitCBaseVisitor::symClassName()
+                 +"*)(__Vscopep->symsp())");  // Upcast w/o overhead
         AstNode* argnodesp = NULL;
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
             if (AstVar* portp = VN_CAST(stmtp, Var)) {
@@ -755,6 +758,9 @@ private:
                         args = "";
                     }
                     AstVarScope* outvscp = createFuncVar(dpip, portp->name()+"__Vcvt", portp);
+                    // No information exposure; is already visible in import/export func template
+                    outvscp->varp()->protect(false);
+                    portp->protect(false);
                     AstVarRef* refp = new AstVarRef(portp->fileline(), outvscp,
                                                     portp->isWritable());
                     argnodesp = argnodesp->addNextNull(refp);
@@ -775,6 +781,8 @@ private:
                 args="";
             }
             AstVarScope* outvscp = createFuncVar(dpip, portp->name()+"__Vcvt", portp);
+            // No information exposure; is already visible in import/export func template
+            outvscp->varp()->protect(false);
             AstVarRef* refp = new AstVarRef(portp->fileline(), outvscp, portp->isWritable());
             argnodesp = argnodesp->addNextNull(refp);
         }
@@ -826,6 +834,7 @@ private:
         dpip->entryPoint(false);
         dpip->funcPublic(true);
         dpip->isStatic(false);
+        dpip->protect(false);
         dpip->pure(nodep->pure());
         dpip->dpiImport(true);
         // Add DPI reference to top, since it's a global function
@@ -952,6 +961,7 @@ private:
         // Convert output/inout arguments back to internal type
         for (AstNode* stmtp = cfuncp->argsp(); stmtp; stmtp=stmtp->nextp()) {
             if (AstVar* portp = VN_CAST(stmtp, Var)) {
+                portp->protect(false);  // No additional exposure - already part of shown proto
                 if (portp->isIO() && (portp->isWritable() || portp->isFuncReturn())
                     && !portp->isDpiOpenArray()) {
                     AstVarScope* portvscp = VN_CAST(portp->user2p(), VarScope);  // Remembered when we created it earlier
@@ -984,6 +994,7 @@ private:
             rtnvarp = portp;
             rtnvarp->funcLocal(true);
             rtnvarp->name(rtnvarp->name()+"__Vfuncrtn");  // Avoid conflict with DPI function name
+            if (nodep->dpiImport() || nodep->dpiExport()) rtnvarp->protect(false);
         }
 
         if (nodep->dpiImport()) {
@@ -1245,6 +1256,11 @@ private:
             if (nodep->dpiImport()) modes++;
             if (nodep->dpiExport()) modes++;
             if (nodep->taskPublic()) modes++;
+            if (v3Global.opt.protectIds() && nodep->taskPublic()) {
+                // We always call protect() on names, we don't check if public or not
+                // Hence any external references wouldn't be able to find the refed public object.
+                nodep->v3error("Unsupported: Using --protect-ids with public function");
+            }
             if (modes > 1) nodep->v3error("Cannot mix DPI import, DPI export and/or public on same function: "
                                           <<nodep->prettyNameQ());
 

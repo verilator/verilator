@@ -6094,6 +6094,7 @@ public:
     AstCFunc* funcp() const { return m_funcp; }
     string hiername() const { return m_hiername; }
     void hiername(const string& hn) { m_hiername = hn; }
+    string hiernameProtect() const;
     void argTypes(const string& str) { m_argTypes = str; }
     string argTypes() const { return m_argTypes; }
     //

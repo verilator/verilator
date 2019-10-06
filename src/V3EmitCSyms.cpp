@@ -405,7 +405,7 @@ void EmitCSyms::emitSymHdr() {
         for (ScopeFuncs::iterator it = m_scopeFuncs.begin(); it != m_scopeFuncs.end(); ++it) {
             AstCFunc* funcp = it->second.m_funcp;
             if (funcp->dpiExport()) {
-                string cbtype = v3Global.opt.prefix()+"__Vcb_"+funcp->cname()+"_t";
+                string cbtype = protect(v3Global.opt.prefix()+"__Vcb_"+funcp->cname()+"_t");
                 types["typedef void (*"+cbtype+") ("+cFuncArgs(funcp)+");\n"] = 1;
             }
         }
@@ -430,11 +430,11 @@ void EmitCSyms::emitSymHdr() {
         AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
         if (modp->isTop()) {
             ofp()->printf("%-30s ", (modClassName(modp)+"*").c_str());
-            puts(scopep->nameDotless()+"p;\n");
+            puts(protectIf(scopep->nameDotless()+"p", scopep->protect())+";\n");
         }
         else {
             ofp()->printf("%-30s ", (modClassName(modp)+"").c_str());
-            puts(scopep->nameDotless()+";\n");
+            puts(protectIf(scopep->nameDotless(), scopep->protect())+";\n");
         }
     }
 
@@ -446,7 +446,7 @@ void EmitCSyms::emitSymHdr() {
     if (!m_scopeNames.empty()) {  // Scope names
         puts("\n// SCOPE NAMES\n");
         for (ScopeNames::iterator it = m_scopeNames.begin(); it != m_scopeNames.end(); ++it) {
-            puts("VerilatedScope __Vscope_"+it->second.m_symName+";\n");
+            puts("VerilatedScope "+protect("__Vscope_"+it->second.m_symName)+";\n");
         }
     }
 
@@ -476,8 +476,8 @@ void EmitCSyms::emitSymHdr() {
         puts("inline bool getClearActivity() { bool r=__Vm_activity; __Vm_activity=false; return r; }\n");
     }
     if (v3Global.opt.savable() ) {
-        puts("void __Vserialize(VerilatedSerialize& os);\n");
-        puts("void __Vdeserialize(VerilatedDeserialize& os);\n");
+        puts("void "+protect("__Vserialize")+"(VerilatedSerialize& os);\n");
+        puts("void "+protect("__Vdeserialize")+"(VerilatedDeserialize& os);\n");
     }
     puts("\n");
     puts("} VL_ATTR_ALIGNED(64);\n");
@@ -558,7 +558,7 @@ void EmitCSyms::emitSymImp() {
             string funcname = de ? "__Vdeserialize" : "__Vserialize";
             string op = de ? ">>" : "<<";
             // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
-            puts("void "+symClassName()+"::"+funcname+"("+classname+"& os) {\n");
+            puts("void "+symClassName()+"::"+protect(funcname)+"("+classname+"& os) {\n");
             puts(   "// LOCAL STATE\n");
             // __Vm_namep presumably already correct
             if (v3Global.opt.trace()) {
@@ -570,7 +570,8 @@ void EmitCSyms::emitSymImp() {
                  it != m_scopes.end(); ++it) {
                 AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
                 if (!modp->isTop()) {
-                    puts(   scopep->nameDotless()+"."+funcname+"(os);\n");
+                    puts(protectIf(scopep->nameDotless(), scopep->protect())
+                         +"."+protect(funcname)+"(os);\n");
                 }
             }
             puts("}\n");
@@ -593,10 +594,10 @@ void EmitCSyms::emitSymImp() {
         AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
         if (modp->isTop()) {
         } else {
-            puts(string("    ")+comma+" "+scopep->nameDotless());
+            puts(string("    ")+comma+" "+protect(scopep->nameDotless()));
             puts("(Verilated::catName(topp->name(),");
             // The "." is added by catName
-            putsQuoted(scopep->prettyName());
+            putsQuoted(protectWordsIf(scopep->prettyName(), scopep->protect()));
             puts("))\n");
             comma = ',';
             ++m_numStmts;
@@ -617,15 +618,16 @@ void EmitCSyms::emitSymImp() {
                 arrow.replace(pos, 1, "->");
             }
             if (arrow.substr(0, 5) == "TOP->") arrow.replace(0, 5, "TOPp->");
-            ofp()->printf("%-30s ", arrow.c_str());
+            string arrowProt = protectWordsIf(arrow, scopep->protect());
+            ofp()->printf("%-30s ", arrowProt.c_str());
             puts(" = &");
-            puts(scopep->nameDotless()+";\n");
+            puts(protectIf(scopep->nameDotless(), scopep->protect())+";\n");
             ++m_numStmts;
         }
     }
 
     puts("// Setup each module's pointer back to symbol table (for public functions)\n");
-    puts("TOPp->__Vconfigure(this, true);\n");
+    puts("TOPp->"+protect("__Vconfigure")+"(this, true);\n");
     for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
         AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
         if (!modp->isTop()) {
@@ -633,7 +635,8 @@ void EmitCSyms::emitSymImp() {
             // first is used by AstCoverDecl's call to __vlCoverInsert
             bool first = !modp->user1();
             modp->user1(true);
-            puts(scopep->nameDotless()+".__Vconfigure(this, "
+            puts(protectIf(scopep->nameDotless(), scopep->protect())
+                 +"."+protect("__Vconfigure")+"(this, "
                  +(first?"true":"false")
                  +");\n");
             ++m_numStmts;
@@ -644,10 +647,11 @@ void EmitCSyms::emitSymImp() {
         puts("// Setup scopes\n");
         for (ScopeNames::iterator it = m_scopeNames.begin(); it != m_scopeNames.end(); ++it) {
             checkSplit(false);
-            puts("__Vscope_"+it->second.m_symName+".configure(this,name(),");
-            putsQuoted(it->second.m_prettyName);
+            puts(protect("__Vscope_"+it->second.m_symName)
+                 +".configure(this, name(), ");
+            putsQuoted(protectWordsIf(it->second.m_prettyName, true));
             puts(", ");
-            putsQuoted(scopeDecodeIdentifier(it->second.m_prettyName));
+            putsQuoted(protect(scopeDecodeIdentifier(it->second.m_prettyName)));
             puts(", VerilatedScope::"+it->second.m_type+");\n");
             ++m_numStmts;
         }
@@ -661,7 +665,7 @@ void EmitCSyms::emitSymImp() {
             if (it->first == "TOP") continue;
             name = name.replace(0, 4, "");  // Remove the "TOP."
             if ((name.find(".") == string::npos) && (it->second.m_type == "SCOPE_MODULE")) {
-                puts("__Vhier.add(0, &__Vscope_" + it->second.m_symName + ");\n");
+                puts("__Vhier.add(0, &"+protect("__Vscope_"+it->second.m_symName)+");\n");
             }
         }
 
@@ -676,8 +680,8 @@ void EmitCSyms::emitSymImp() {
                 UASSERT(from != m_scopeNames.end(), fromname+" not in m_scopeNames");
                 UASSERT(to != m_scopeNames.end(), toname+" not in m_scopeNames");
                 puts("__Vhier.add(");
-                puts("&__Vscope_"+from->second.m_symName+", ");
-                puts("&__Vscope_"+to->second.m_symName+");\n");
+                puts("&"+protect("__Vscope_"+from->second.m_symName)+", ");
+                puts("&"+protect("__Vscope_"+to->second.m_symName)+");\n");
             }
         }
         puts("\n");
@@ -695,12 +699,12 @@ void EmitCSyms::emitSymImp() {
             AstNodeModule* modp = it->second.m_modp;
             if (funcp->dpiExport()) {
                 checkSplit(true);
-                puts("__Vscope_"+scopep->scopeSymName()+".exportInsert(__Vfinal,");
-                putsQuoted(funcp->cname());
+                puts(protect("__Vscope_"+scopep->scopeSymName())+".exportInsert(__Vfinal, ");
+                putsQuoted(funcp->cname());  // Not protected - user asked for import/export
                 puts(", (void*)(&");
                 puts(modClassName(modp));
                 puts("::");
-                puts(funcp->name());
+                puts(funcp->nameProtect());
                 puts("));\n");
                 ++m_numStmts;
             }
@@ -738,17 +742,17 @@ void EmitCSyms::emitSymImp() {
             if (pdim>1 || udim>1) {
                 puts("//UNSUP ");  // VerilatedImp can't deal with >2d or packed arrays
             }
-            puts("__Vscope_"+it->second.m_scopeName+".varInsert(__Vfinal,");
-            putsQuoted(it->second.m_varBasePretty);
+            puts(protect("__Vscope_"+it->second.m_scopeName)+".varInsert(__Vfinal,");
+            putsQuoted(protect(it->second.m_varBasePretty));
             puts(", &(");
             if (modp->isTop()) {
-                puts(scopep->nameDotless());
-                puts("p->");
+                puts(protectIf(scopep->nameDotless()+"p", scopep->protect()));
+                puts("->");
             } else {
-                puts(scopep->nameDotless());
+                puts(protectIf(scopep->nameDotless(), scopep->protect()));
                 puts(".");
             }
-            puts(varp->name());
+            puts(varp->nameProtect());
             puts("), ");
             puts(varp->vlEnumType());  // VLVT_UINT32 etc
             puts(",");
@@ -796,13 +800,15 @@ void EmitCSyms::emitDpiHdr() {
         AstCFunc* nodep = *it;
         if (nodep->dpiExportWrapper()) {
             if (!firstExp++) puts("\n// DPI EXPORTS\n");
-            puts("// DPI export at "+nodep->fileline()->ascii()+"\n");
-            puts("extern "+nodep->rtnTypeVoid()+" "+nodep->name()+"("+cFuncArgs(nodep)+");\n");
+            puts("// DPI export"+ifNoProtect(" at "+nodep->fileline()->ascii())+"\n");
+            puts("extern "+nodep->rtnTypeVoid()+" "+nodep->nameProtect()
+                 +"("+cFuncArgs(nodep)+");\n");
         }
         else if (nodep->dpiImport()) {
             if (!firstImp++) puts("\n// DPI IMPORTS\n");
-            puts("// DPI import at "+nodep->fileline()->ascii()+"\n");
-            puts("extern "+nodep->rtnTypeVoid()+" "+nodep->name()+"("+cFuncArgs(nodep)+");\n");
+            puts("// DPI import"+ifNoProtect(" at "+nodep->fileline()->ascii())+"\n");
+            puts("extern "+nodep->rtnTypeVoid()+" "+nodep->nameProtect()
+                 +"("+cFuncArgs(nodep)+");\n");
         }
     }
 
@@ -846,7 +852,7 @@ void EmitCSyms::emitDpiImp() {
             puts("#ifndef _VL_DPIDECL_"+nodep->name()+"\n");
             puts("#define _VL_DPIDECL_"+nodep->name()+"\n");
             puts(nodep->rtnTypeVoid()+" "+nodep->name()+"("+cFuncArgs(nodep)+") {\n");
-            puts("// DPI Export at "+nodep->fileline()->ascii()+"\n");
+            puts("// DPI export"+ifNoProtect(" at "+nodep->fileline()->ascii())+"\n");
             puts("return "+topClassName()+"::"+nodep->name()+"(");
             string args;
             for (AstNode* stmtp = nodep->argsp(); stmtp; stmtp=stmtp->nextp()) {

@@ -88,6 +88,7 @@ public:
         INCABSPATH,     // Include has absolute path
         INFINITELOOP,   // Infinite loop
         INITIALDLY,     // Initial delayed statement
+        INSECURE,       // Insecure options
         LITENDIAN,      // Little bit endian vector
         MODDUP,         // Duplicate module
         MULTIDRIVEN,    // Driven from multiple blocks
@@ -145,7 +146,7 @@ public:
             "ENDLABEL", "GENCLK",
             "IFDEPTH", "IGNOREDRETURN",
             "IMPERFECTSCH", "IMPLICIT", "IMPORTSTAR", "IMPURE",
-            "INCABSPATH", "INFINITELOOP", "INITIALDLY",
+            "INCABSPATH", "INFINITELOOP", "INITIALDLY", "INSECURE",
             "LITENDIAN", "MODDUP",
             "MULTIDRIVEN", "MULTITOP",
             "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY", "PROCASSWIRE",

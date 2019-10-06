@@ -29,6 +29,7 @@
 #include "V3Global.h"
 #include "V3Name.h"
 #include "V3Ast.h"
+#include "V3File.h"
 #include "V3LanguageWords.h"
 
 #include <algorithm>

@@ -352,6 +352,8 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --prefix <topname>          Name of top level class
     --prof-cfuncs               Name functions for profiling
     --prof-threads              Enable generating gantt chart data for threads
+    --protect-key <key>         Key for symbol protection
+    --protect-ids               Hash identifier names for obscurity
     --private                   Debugging; see docs
     --public                    Debugging; see docs
     --public-flat-rw            Mark all variables, etc as public_flat_rw
@@ -1153,6 +1155,42 @@ When profiling is enabled, the runtime will emit a blurb of profiling data
 in non-human-friendly form. The C<verilator_gantt> script will transform
 this into a nicer visual format and produce some related statistics.
 
+=item --protect-key I<key>
+
+Specifies the private key for --protect-ids. For best security this key
+should be 16 or more random bytes, a reasonable medium-security choice is
+the output of uuidgen. Typically, a key would be created by the user once
+for a given protected design library, then every Verilator run for
+subsequent versions of that library would be passed the same
+--protect-key. Thus, if the input Verilog is similar between library
+versions (Verilator runs), the Verilated code will likewise be mostly
+similar.
+
+If --protect-key is not specified and a key is needed, Verilator will
+generate a new key for every Verilator run. As the key is not saved, this
+is best for security, but means every Verilator run will give vastly
+different output even for identical input, perhaps harming compile times
+(and certainly thrashing any I<ccache>).
+
+=item --protect-ids
+
+Hash any private identifiers (variable, module, and assertion block names
+that are not on the top level) into hashed random-looking identifiers,
+resulting after compilation in protected library binaries that expose less
+design information.  This hashing uses the provided or default
+--protect-key, see important details there.
+
+Verilator will also create a {prefix}__idmap.xml file which contains the
+mapping from the hashed identifiers back to the original identifiers. This
+idmap file is to be kept private, and is to assist mapping any runtime
+design assertions, coverage, or trace information, which will report the
+hashed identifiers, back to the original design's identifier names.
+
+Using DPI imports/exports is allowed and generally relatively safe in terms
+of information disclosed, which is limited to the DPI function prototyptes.
+Use of the VPI is not recommended as many design details may be exposed,
+and an INSECURE warning will be issued.
+
 =item --private
 
 Opposite of --public.  Is the default; this option exists for backwards
@@ -1910,6 +1948,7 @@ In certain debug and other modes, it also creates:
     {prefix}__Trace{__n}.cpp            // Wave file generation code (--trace)
     {prefix}__cdc.txt                   // Clock Domain Crossing checks (--cdc)
     {prefix}__stats.txt                 // Statistics (--stats)
+    {prefix}__idmap.txt                 // Symbol demangling (--protect-ids)
 
 It also creates internal files that can be mostly ignored:
 
@@ -3713,6 +3752,16 @@ non-delayed assignment.  See also the COMBDLY warning.
 
 Ignoring this warning may make Verilator simulations differ from other
 simulators.
+
+=item INSECURE
+
+Warns that the combination of options selected may be defeating the attempt
+to protect/obscure identifiers or hide information in the model.  Correct
+the options provided, or inspect the output code to see if the information
+exposed is acceptable.
+
+Ignoring this warning will only suppress the lint check, it will simulate
+correctly.
 
 =item LITENDIAN
 

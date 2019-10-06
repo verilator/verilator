@@ -1,0 +1,8 @@
+%Error: Unsupported: Using --protect-ids with --public
+        ... Suggest remove --public.
+%Warning-INSECURE: Using --protect-ids with --trace may expose private design details
+                   ... Suggest remove --trace.
+                   ... Use "/* verilator lint_off INSECURE */" and lint_on around source to disable this message.
+%Warning-INSECURE: Using --protect-ids with --vpi may expose private design details
+                   ... Suggest remove --vpi.
+%Error: Exiting due to

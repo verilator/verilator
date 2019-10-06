@@ -534,6 +534,25 @@ void V3Options::notify() {
         && !cdc()) {
         v3fatal("verilator: Need --cc, --sc, --cdc, --lint-only, --xml_only or --E option");
     }
+    if (protectIds()) {
+        FileLine* cmdfl = new FileLine(FileLine::commandLineFilename());
+        if (allPublic()) {
+            // We always call protect() on names, we don't check if public or not
+            // Hence any external references wouldn't be able to find the refed public object.
+            cmdfl->v3error("Unsupported: Using --protect-ids with --public\n"
+                           +V3Error::warnMore()+"... Suggest remove --public.");
+        }
+        if (trace()) {
+            cmdfl->v3warn(INSECURE,
+                          "Using --protect-ids with --trace may expose private design details\n"
+                          +V3Error::warnMore()+"... Suggest remove --trace.");
+        }
+        if (vpi()) {
+            cmdfl->v3warn(INSECURE,
+                          "Using --protect-ids with --vpi may expose private design details\n"
+                          +V3Error::warnMore()+"... Suggest remove --vpi.");
+        }
+    }
 }
 
 //######################################################################
@@ -543,6 +562,16 @@ string V3Options::version() {
     string ver = DTVERSION;
     ver += " rev "+cvtToStr(DTVERSION_rev);
     return ver;
+}
+
+string V3Options::protectKeyDefaulted() {
+    if (m_protectKey.empty()) {
+        // Create a key with a human-readable symbol-like name.
+        // This conversion drops ~2 bits of entropy out of 256, shouldn't matter.
+        VHashSha256 digest (V3Os::trueRandom(32));
+        m_protectKey = digest.digestSymbol();
+    }
+    return m_protectKey;
 }
 
 void V3Options::throwSigsegv() {
@@ -687,6 +716,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-debug-leak", flag/*ref*/))   { m_debugLeak = flag; }
             else if ( onoff (sw, "-debug-nondeterminism", flag/*ref*/)){ m_debugNondeterminism = flag; }
             else if ( onoff (sw, "-debug-partition", flag/*ref*/)){ m_debugPartition = flag; }  // Undocumented
+            else if ( onoff (sw, "-debug-protect", flag/*ref*/)){ m_debugProtect = flag; }  // Undocumented
             else if ( onoff (sw, "-debug-self-test", flag/*ref*/)){ m_debugSelfTest = flag; }  // Undocumented
             else if (!strcmp(sw, "-debug-sigsegv"))             { throwSigsegv(); }  // Undocumented, see also --debug-abort
             else if (!strcmp(sw, "-debug-fatalsrc"))            { v3fatalSrc("--debug-fatal-src"); }  // Undocumented, see also --debug-abort
@@ -709,6 +739,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-prof-cfuncs", flag/*ref*/))       { m_profCFuncs = flag; }
             else if ( onoff (sw, "-profile-cfuncs", flag/*ref*/))    { m_profCFuncs = flag; }  // Undocumented, for backward compat
             else if ( onoff (sw, "-prof-threads", flag/*ref*/))      { m_profThreads = flag; }
+            else if ( onoff (sw, "-protect-ids", flag/*ref*/))       { m_protectIds = flag; }
             else if ( onoff (sw, "-public", flag/*ref*/))            { m_public = flag; }
             else if ( onoff (sw, "-public-flat-rw", flag/*ref*/) )   { m_publicFlatRW = flag; v3Global.dpi(true); }
             else if (!strncmp(sw, "-pvalue+", strlen("-pvalue+")))     { addParameter(string(sw+strlen("-pvalue+")), false); }
@@ -1056,6 +1087,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 shift; m_prefix = argv[i];
                 if (m_modPrefix=="") m_modPrefix = m_prefix;
             }
+            else if (!strcmp(sw, "-protect-key") && (i+1)<argc) {
+                shift; m_protectKey = argv[i];
+            }
             else if (!strcmp(sw, "-no-threads")) { m_threads = 0; }  // Undocumented until functional
             else if (!strcmp(sw, "-threads") && (i+1)<argc) {  // Undocumented until functional
                 shift; m_threads = atoi(argv[i]);
@@ -1290,6 +1324,7 @@ V3Options::V3Options() {
     m_debugLeak = true;
     m_debugNondeterminism = false;
     m_debugPartition = false;
+    m_debugProtect = false;
     m_debugSelfTest = false;
     m_decoration = true;
     m_dpiHdrOnly = false;
@@ -1309,6 +1344,7 @@ V3Options::V3Options() {
     m_ppComments = false;
     m_profCFuncs = false;
     m_profThreads = false;
+    m_protectIds = false;
     m_preprocOnly = false;
     m_preprocNoLine = false;
     m_public = false;

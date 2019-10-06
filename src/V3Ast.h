@@ -1165,6 +1165,7 @@ class AstNode {
     // Attributes
     bool        m_didWidth:1;   // Did V3Width computation
     bool        m_doingWidth:1;  // Inside V3Width
+    bool        m_protect:1;    // Protect name if protection is on
     //          // Space for more bools here
 
     // This member ordering both allows 64 bit alignment and puts associated data together
@@ -1278,6 +1279,7 @@ public:
     virtual void tag(const string& text) {}
     virtual string tag() const { return ""; }
     virtual string verilogKwd() const { return ""; }
+    string nameProtect() const;  // Name with --protect-id applied
     string shortName() const;  // Name with __PVT__ removed for concatenating scopes
     static string dedotName(const string& namein);  // Name with dots removed
     static string prettyName(const string& namein);  // Name for printing out to the user
@@ -1297,8 +1299,10 @@ public:
     void didWidth(bool flag) { m_didWidth = flag; }
     bool didWidth() const { return m_didWidth; }
     bool didWidthAndSet() { if (didWidth()) return true; didWidth(true); return false; }
-    void doingWidth(bool flag) { m_doingWidth = flag; }
     bool doingWidth() const { return m_doingWidth; }
+    void doingWidth(bool flag) { m_doingWidth = flag; }
+    bool protect() const { return m_protect; }
+    void protect(bool flag) { m_protect = flag; }
 
     //TODO stomp these width functions out, and call via dtypep() instead
     int width() const;
@@ -1845,6 +1849,7 @@ public:
     AstVarScope* varScopep() const { return m_varScopep; }
     void varScopep(AstVarScope* varscp) { m_varScopep = varscp; }
     string hiername() const { return m_hiername; }
+    string hiernameProtect() const;
     void hiername(const string& hn) { m_hiername = hn; }
     bool hierThis() const { return m_hierThis; }
     void hierThis(bool flag) { m_hierThis = flag; }

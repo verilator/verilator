@@ -81,7 +81,9 @@ static void checkResult(bool p, const char *msg_fail) {
 // Main function instantiates the model and steps through the test.
 int main() {
     Vt_dpi_accessors *dut = new Vt_dpi_accessors ("dut");
-    svSetScope(svGetScopeFromName("dut.t"));
+    svScope scope = svGetScopeFromName("dut.t");
+    if (!scope) vl_fatal(__FILE__, __LINE__, "dut", "No svGetScopeFromName result");
+    svSetScope(scope);
 
     // evaluate the model with no signal changes to get the initial blocks
     // executed.

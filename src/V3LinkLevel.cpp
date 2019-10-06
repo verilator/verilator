@@ -112,6 +112,7 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
     newmodp->addNext(oldmodp);
     newmodp->level(1);
     newmodp->modPublic(true);
+    newmodp->protect(false);
     rootp->addModulep(newmodp);
 
     // TODO the module creation above could be done after linkcells, but
@@ -192,6 +193,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
 
                     AstVar* varp = oldvarp->cloneTree(false);
                     varp->name(name);
+                    varp->protect(false);
                     newmodp->addStmtp(varp);
                     varp->sigPublic(true);  // User needs to be able to get to it...
                     if (oldvarp->isIO()) {

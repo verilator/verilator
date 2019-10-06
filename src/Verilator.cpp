@@ -643,6 +643,9 @@ int main(int argc, char** argv, char** env) {
         V3File::writeTimes(v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()
                            +"__verFiles.dat", argString);
     }
+    if (v3Global.opt.protectIds()) {
+        VIdProtect::writeMapFile(v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"__idmap.xml");
+    }
 
     // Final writing shouldn't throw warnings, but...
     V3Error::abortIfWarnings();
