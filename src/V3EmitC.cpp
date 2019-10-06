@@ -2646,10 +2646,10 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
         if (modp->isTop()) puts("/// Destroy the model; called (often implicitly) by application code\n");
         puts("~"+modClassName(modp)+"();\n");
     }
-    if (v3Global.opt.trace()) {
-        if (modp->isTop()) puts("/// Trace signals in the model; called by application code\n");
+    if (v3Global.opt.trace() && modp->isTop()) {
+        puts("/// Trace signals in the model; called by application code\n");
         puts("void trace("+v3Global.opt.traceClassBase()+"C* tfp, int levels, int options=0);\n");
-        if (modp->isTop() && optSystemC()) {
+        if (optSystemC()) {
             puts("/// SC tracing; avoid overloaded virtual function lint warning\n");
             puts("virtual void trace(sc_trace_file* tfp) const { ::sc_core::sc_module::trace(tfp); }\n");
         }
