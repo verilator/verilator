@@ -362,6 +362,7 @@ public:
         m_labelNum = 0;
         m_numStmts = 0;
         m_funcNum = 0;
+        m_ofpBase = NULL;
         iterate(nodep);
     }
 };

@@ -927,9 +927,9 @@ void AstRange::dump(std::ostream& str) {
     if (littleEndian()) str<<" [LITTLE]";
 }
 void AstRefDType::dump(std::ostream& str) {
-    static bool s_recursing = false;
     this->AstNodeDType::dump(str);
     if (defp()) {
+        static bool s_recursing = false;
         if (!s_recursing) {  // Prevent infinite dump if circular typedefs
             s_recursing = true;
             str<<" -> "; defp()->dump(str);

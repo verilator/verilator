@@ -1007,9 +1007,11 @@ class LinkDotFindVisitor : public AstNVisitor {
                                      || (findvarp->isIO() && nodep->isIO()));  // e.g. !(output && output)
                     bool ansiBad = findvarp->isAnsi() || nodep->isAnsi();  // dup illegal with ANSI
                     if (ansiBad || nansiBad) {
-                        static int didAnsiWarn = false;
                         bool ansiWarn = ansiBad && !nansiBad;
-                        if (ansiWarn) { if (didAnsiWarn++) ansiWarn = false; }
+                        if (ansiWarn) {
+                            static int didAnsiWarn = false;
+                            if (didAnsiWarn++) ansiWarn = false;
+                        }
                         nodep->v3error("Duplicate declaration of signal: "
                                        <<nodep->prettyNameQ()<<endl
                                        <<(ansiWarn

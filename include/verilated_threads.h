@@ -186,6 +186,7 @@ public:
         m_mtaskId = 0;
         m_predictTime = 0;
         m_startTime = 0;
+        m_endTime = 0;
         m_cpu = getcpu();
     }
     void startRecord(vluint64_t time, uint32_t mtask, uint32_t predict) {

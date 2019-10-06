@@ -79,7 +79,7 @@ void V3ParseGrammar::argWrapList(AstNodeFTaskRef* nodep) {
     if (outp) nodep->addPinsp(outp);
 }
 
-AstNode* V3ParseGrammar::createSupplyExpr(FileLine* fileline, string name, int value) {
+AstNode* V3ParseGrammar::createSupplyExpr(FileLine* fileline, const string& name, int value) {
     return new AstAssignW(fileline, new AstVarRef(fileline, name, true),
                           new AstConst(fileline, AstConst::StringToParse(),
                                        (value ? "'1" : "'0")));
@@ -131,7 +131,7 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep,
     return arrayp;
 }
 
-AstVar* V3ParseGrammar::createVariable(FileLine* fileline, string name,
+AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
                                        AstNodeRange* arrayp, AstNode* attrsp) {
     AstNodeDType* dtypep = GRAMMARP->m_varDTypep;
     UINFO(5,"  creVar "<<name<<"  decl="<<GRAMMARP->m_varDecl

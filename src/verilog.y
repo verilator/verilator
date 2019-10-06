@@ -98,9 +98,9 @@ public:
     }
     AstRange* scrubRange(AstNodeRange* rangep);
     AstNodeDType* createArray(AstNodeDType* basep, AstNodeRange* rangep, bool isPacked);
-    AstVar*  createVariable(FileLine* fileline, string name, AstNodeRange* arrayp, AstNode* attrsp);
-    AstNode* createSupplyExpr(FileLine* fileline, string name, int value);
-    AstText* createTextQuoted(FileLine* fileline, string text) {
+    AstVar*  createVariable(FileLine* fileline, const string& name, AstNodeRange* arrayp, AstNode* attrsp);
+    AstNode* createSupplyExpr(FileLine* fileline, const string& name, int value);
+    AstText* createTextQuoted(FileLine* fileline, const string& text) {
 	string newtext = deQuote(fileline, text);
 	return new AstText(fileline, newtext);
     }

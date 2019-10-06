@@ -1960,7 +1960,6 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
         for (int de=0; de<2; ++de) {
             string classname = de ? "VerilatedDeserialize" : "VerilatedSerialize";
             string funcname = de ? "__Vdeserialize" : "__Vserialize";
-            string writeread = de ? "read" : "write";
             string op = de ? ">>" : "<<";
             // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
             puts("void "+modClassName(modp)+"::"+funcname+"("+classname+"& os) {\n");

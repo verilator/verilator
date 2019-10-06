@@ -43,9 +43,13 @@
 // Static sanity checks (when get C++11 can use static_assert)
 
 typedef union {
+    // cppcheck-suppress unusedStructMember  // Unused as is assertion
     char vluint8_incorrect[(sizeof(vluint8_t) == 1) ? 1:-1];
+    // cppcheck-suppress unusedStructMember  // Unused as is assertion
     char vluint16_incorrect[(sizeof(vluint16_t) == 2) ? 1:-1];
+    // cppcheck-suppress unusedStructMember  // Unused as is assertion
     char vluint32_incorrect[(sizeof(vluint32_t) == 4) ? 1:-1];
+    // cppcheck-suppress unusedStructMember  // Unused as is assertion
     char vluint64_incorrect[(sizeof(vluint64_t) == 8) ? 1:-1];
 } vl_static_checks_t;
 
@@ -1374,6 +1378,7 @@ void VL_WRITEMEM_N(
     FILE* fp = fopen(filename.c_str(), "w");
     if (VL_UNLIKELY(!fp)) {
         VL_FATAL_MT(filename.c_str(), 0, "", "$writemem file not found");
+        // cppcheck-suppress resourceLeak  // fp is NULL - bug in cppcheck
         return;
     }
 
@@ -1511,6 +1516,7 @@ void VL_READMEM_N(
     if (VL_UNLIKELY(!fp)) {
         // We don't report the Verilog source filename as it slow to have to pass it down
         VL_FATAL_MT(filename.c_str(), 0, "", "$readmem file not found");
+        // cppcheck-suppress resourceLeak  // fp is NULL - bug in cppcheck
         return;
     }
     // Prep for reading
@@ -2105,6 +2111,7 @@ VerilatedScope::VerilatedScope() {
     m_funcnumMax = 0;
     m_symsp = NULL;
     m_varsp = NULL;
+    m_type = SCOPE_OTHER;
 }
 
 VerilatedScope::~VerilatedScope() {

@@ -977,23 +977,28 @@ void AstNode::checkTree() {
     }
 }
 
+// cppcheck-suppress unusedFunction  // Debug only
 void AstNode::dumpGdb() {  // For GDB only  // LCOV_EXCL_LINE
     dumpGdbHeader();  // LCOV_EXCL_LINE
     cout<<"  "; dump(cout); cout<<endl;  // LCOV_EXCL_LINE
 }
+// cppcheck-suppress unusedFunction  // Debug only
 void AstNode::dumpGdbHeader() const {  // For GDB only  // LCOV_EXCL_LINE
     dumpPtrs(cout);  // LCOV_EXCL_LINE
     cout<<"  Fileline = "<<fileline()<<endl;  // LCOV_EXCL_LINE
 }
+// cppcheck-suppress unusedFunction  // Debug only
 void AstNode::dumpTreeGdb() {  // For GDB only  // LCOV_EXCL_LINE
     dumpGdbHeader();  // LCOV_EXCL_LINE
     dumpTree(cout);  // LCOV_EXCL_LINE
 }
+// cppcheck-suppress unusedFunction  // Debug only
 void AstNode::dumpTreeFileGdb(const char* filenamep) {  // For GDB only  // LCOV_EXCL_LINE
     string filename = filenamep ? filenamep : v3Global.debugFilename("debug.tree", 98);  // LCOV_EXCL_LINE
     v3Global.rootp()->dumpTreeFile(filename);  // LCOV_EXCL_LINE
 }
 
+// cppcheck-suppress unusedFunction  // Debug only
 void AstNode::checkIter() const {
     if (m_iterpp) {
         dumpPtrs(cout);

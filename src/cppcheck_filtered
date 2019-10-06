@@ -24,9 +24,10 @@ our $Opt_Debug;
 autoflush STDOUT 1;
 autoflush STDERR 1;
 Getopt::Long::config("no_auto_abbrev","pass_through");
-our @Opt_Args = ("cppcheck", @ARGV);
+our @Opt_Args = ("cppcheck", grep { $_ ne "--debug" } @ARGV);
 if (! GetOptions(
           # Local options
+          "debug!"		=> sub { $Debug = 9; },
           "help"                => \&usage,
           "version"             => sub { print "Version $VERSION\n"; system("cppcheck","--version"); exit(0); },
     )) {
@@ -46,7 +47,7 @@ sub usage {
 #######################################################################
 
 sub process {
-    my $cmd = join(' ',@Opt_Args);
+    my $cmd = join(' ', @Opt_Args);
     print "\t$cmd\n" if $Debug;
     my $fh = IO::File->new("$cmd 2>&1 |");
     $fh or die "%Error: '$cmd' failed: $!\n";
@@ -54,6 +55,7 @@ sub process {
     my %errs;
     my $last_error = "";
     while (defined(my $line = $fh->getline())) {
+        print ">>>$line" if $Debug;
         $line =~ s/^\s+//;
         $line =~ s/Checking usage of global functions\.+//;  # Sometimes tacked at end-of-line
         # General gunk
@@ -85,6 +87,7 @@ sub process {
             # --xml-format=1
             if ($line =~ /file="([^"]+)"\s+line="(\d+)"\s+id="([^"]+)"/) {
                 my $file = $1; my $linenum = $2; my $id = $3;
+                #$file = $1 if $line =~ /file0="([^"]+)"/;  # Still incorrect
                 $suppress = 1 if _suppress($file,$linenum,$id);
             }
             # --xml-format=2
@@ -95,6 +98,7 @@ sub process {
             }
             elsif ($line =~ /<location.* file="([^"]+)"\s+line="(\d+)"/) {
                 my $file = $1; my $linenum = $2; my $id;
+                #$file = $1 if $line =~ /file0="([^"]+)"/;  # Still incorrect
                 if ($last_error =~ / id="([^"]+)"/) {
                     $id = $1;
                 } else {
