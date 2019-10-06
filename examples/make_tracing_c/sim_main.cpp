@@ -23,7 +23,7 @@ double sc_time_stamp() {
 }
 
 int main(int argc, char** argv, char** env) {
-    // This is a more complicated example, please also see the simpler examples/hello_world_c.
+    // This is a more complicated example, please also see the simpler examples/make_hello_c.
 
     // Prevent unused variable warnings
     if (0 && argc && argv && env) {}

@@ -21,7 +21,7 @@ endif
 
 # This is intended to be a minimal example.  Before copying this to start a
 # real project, it is better to start with a more complete example,
-# e.g. examples/tracing_sc.
+# e.g. examples/make_tracing_c.
 
 # If $VERILATOR_ROOT isn't in the environment, we assume it is part of a
 # package install, and verilator is in your path. Otherwise find the
@@ -33,34 +33,19 @@ export VERILATOR_ROOT
 VERILATOR = $(VERILATOR_ROOT)/bin/verilator
 endif
 
-# Check if SC exists via a verilator call (empty if not)
-SYSTEMC_EXISTS := $(shell $(VERILATOR) --getenv SYSTEMC_INCLUDE)
-
-ifneq ($(SYSTEMC_EXISTS),)
-default: run
-else
-default: nosc
-endif
-
-run:
+default:
 	@echo "-- Verilator hello-world simple example"
 	@echo "-- VERILATE ----------------"
-	$(VERILATOR) -sc --exe top.v sc_main.cpp
+	$(VERILATOR) -cc --exe top.v sim_main.cpp
 	@echo "-- COMPILE -----------------"
 	$(MAKE) -j 4 -C obj_dir -f Vtop.mk
 	@echo "-- RUN ---------------------"
 	obj_dir/Vtop
 	@echo "-- DONE --------------------"
-	@echo "Note: Once this example is understood, see examples/tracing_sc."
+	@echo "Note: Once this example is understood, see examples/make_tracing_c."
 	@echo "Note: Also see the EXAMPLE section in the verilator manpage/document."
 
 ######################################################################
-
-nosc:
-	@echo
-	@echo "%Skip: SYSTEMC_INCLUDE not in environment"
-	@echo "(If you have SystemC see the README, and rebuild Verilator)"
-	@echo
 
 maintainer-copy::
 clean mostlyclean distclean maintainer-clean::

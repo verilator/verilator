@@ -58,7 +58,7 @@ sub test {
         run("/bin/mkdir -p $prefix");
         run("cd $blddir && make install");
         run("test -e $prefix/share/man/man1/verilator.1");
-        run("test -e $prefix/share/verilator/examples/tracing_c/Makefile");
+        run("test -e $prefix/share/verilator/examples/make_tracing_c/Makefile");
         run("test -e $prefix/share/verilator/include/verilated.h");
         run("test -e $prefix/bin/verilator");
         run("test -e $prefix/bin/verilator_bin");

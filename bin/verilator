@@ -4252,7 +4252,7 @@ Add the --trace switch to Verilator, and in your top level C code, call
 Verilated::traceEverOn(true).  Then create a VerilatedVcdC object, and
 in your main loop call "trace_object->dump(time)" every time step, and
 finally call "trace_object->close()".  For an example, see below and the
-examples/tracing_c/sim_main.cpp file of the distribution.
+examples/make_tracing_c/sim_main.cpp file of the distribution.
 
 You also need to compile verilated_vcd_c.cpp and add it to your link,
 preferably by adding the dependencies in $(VK_GLOBAL_OBJS) to your
@@ -4284,7 +4284,7 @@ Add the --trace switch to Verilator, and in your top level C sc_main code,
 include verilated_vcd_sc.h.  Then call Verilated::traceEverOn(true).  Then
 create a VerilatedVcdSc object as you would create a normal SystemC trace
 file.  For an example, see the call to VerilatedVcdSc in the
-examples/tracing_sc/sc_main.cpp file of the distribution, and below.
+examples/make_tracing_sc/sc_main.cpp file of the distribution, and below.
 
 Alternatively you may use the C++ trace mechanism described in the previous
 question, however the timescale and timeprecision will not inherited from
@@ -4372,7 +4372,7 @@ Verilator_coverage reads the logs/coverage.dat file(s), and creates an
 annotated source code listing showing code coverage details.
 
 For an example, after running 'make test' in the Verilator distribution,
-see the examples/tracing_c/logs directory.  Grep for lines starting
+see the examples/make_tracing_c/logs directory.  Grep for lines starting
 with '%' to see what lines Verilator believes need more coverage.
 
 =item Where is the translate_off command?  (How do I ignore a construct?)

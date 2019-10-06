@@ -5,7 +5,7 @@
 // ======================================================================
 
 // This is intended to be a complex example of several features, please also
-// see the simpler examples/hello_world_c.
+// see the simpler examples/make_hello_c.
 
 module top
   (

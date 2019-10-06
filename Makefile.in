@@ -104,8 +104,10 @@ PACKAGE_VERSION = @PACKAGE_VERSION@
 SHELL = /bin/sh
 
 SUBDIRS = src test_regress \
-	examples/hello_world_c  examples/hello_world_sc \
-	examples/tracing_c  examples/tracing_sc \
+	examples/make_hello_c \
+	examples/make_hello_sc \
+	examples/make_tracing_c \
+	examples/make_tracing_sc \
 
 INFOS = README README.html README.pdf \
         verilator.txt verilator.html verilator.pdf
@@ -182,8 +184,8 @@ INST_PROJ_BIN_FILES = \
 DISTFILES := $(DISTFILES_INC)
 
 EXAMPLES_FIRST = \
-	examples/hello_world_c \
-	examples/hello_world_sc \
+	examples/make_hello_c \
+	examples/make_hello_sc \
 
 EXAMPLES = $(EXAMPLES_FIRST) $(filter-out $(EXAMPLES_FIRST), $(sort $(wildcard examples/*)))
 
@@ -328,10 +330,10 @@ installdata:
 	; for p in $(VL_INST_INC_SRCDIR_FILES) ; do \
 	  $(INSTALL_DATA) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
 	done
-	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/hello_world_c
-	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/hello_world_sc
-	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/tracing_c
-	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/tracing_sc
+	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/make_hello_c
+	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/make_hello_sc
+	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/make_tracing_c
+	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/make_tracing_sc
 	cd $(srcdir) \
 	; for p in $(VL_INST_DATA_SRCDIR_FILES) ; do \
 	  $(INSTALL_DATA) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
@@ -352,10 +354,10 @@ uninstall:
 	-rmdir $(DESTDIR)$(pkgdatadir)/include/gtkwave
 	-rmdir $(DESTDIR)$(pkgdatadir)/include/vltstd
 	-rmdir $(DESTDIR)$(pkgdatadir)/include
-	-rmdir $(DESTDIR)$(pkgdatadir)/examples/hello_world_c
-	-rmdir $(DESTDIR)$(pkgdatadir)/examples/hello_world_sc
-	-rmdir $(DESTDIR)$(pkgdatadir)/examples/tracing_c
-	-rmdir $(DESTDIR)$(pkgdatadir)/examples/tracing_sc
+	-rmdir $(DESTDIR)$(pkgdatadir)/examples/make_hello_c
+	-rmdir $(DESTDIR)$(pkgdatadir)/examples/make_hello_sc
+	-rmdir $(DESTDIR)$(pkgdatadir)/examples/make_tracing_c
+	-rmdir $(DESTDIR)$(pkgdatadir)/examples/make_tracing_sc
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples
 	-rmdir $(DESTDIR)$(pkgdatadir)
 	-rmdir $(DESTDIR)$(pkgconfigdir)
