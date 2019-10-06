@@ -2878,7 +2878,7 @@ class EmitCTrace : EmitCStmts {
         puts("void "+topClassName()+"::traceInit("
              +v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code) {\n");
         putsDecoration("// Callback from vcd->open()\n");
-        puts(topClassName()+"* t=("+topClassName()+"*)userthis;\n");
+        puts(topClassName()+"* t = ("+topClassName()+"*)userthis;\n");
         puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp;  // Setup global symbol table\n");
         puts("if (!Verilated::calcUnusedSigs()) {\n");
         puts(    "VL_FATAL_MT(__FILE__,__LINE__,__FILE__,\"Turning on wave traces requires Verilated::traceEverOn(true) call before time 0.\");\n");
@@ -2892,7 +2892,7 @@ class EmitCTrace : EmitCStmts {
         puts("void "+topClassName()+"::traceFull("
              +v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code) {\n");
         putsDecoration("// Callback from vcd->dump()\n");
-        puts(topClassName()+"* t=("+topClassName()+"*)userthis;\n");
+        puts(topClassName()+"* t = ("+topClassName()+"*)userthis;\n");
         puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp;  // Setup global symbol table\n");
         puts("t->traceFullThis(vlSymsp, vcdp, code);\n");
         puts("}\n");
@@ -2907,7 +2907,7 @@ class EmitCTrace : EmitCStmts {
         puts("void "+topClassName()+"::traceChg("
              +v3Global.opt.traceClassBase()+"* vcdp, void* userthis, uint32_t code) {\n");
         putsDecoration("// Callback from vcd->dump()\n");
-        puts(topClassName()+"* t=("+topClassName()+"*)userthis;\n");
+        puts(topClassName()+"* t = ("+topClassName()+"*)userthis;\n");
         puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp;  // Setup global symbol table\n");
         puts("if (vlSymsp->getClearActivity()) {\n");
         puts("t->traceChgThis(vlSymsp, vcdp, code);\n");

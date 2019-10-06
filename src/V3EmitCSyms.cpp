@@ -796,12 +796,12 @@ void EmitCSyms::emitDpiHdr() {
         if (nodep->dpiExportWrapper()) {
             if (!firstExp++) puts("\n// DPI EXPORTS\n");
             puts("// DPI export at "+nodep->fileline()->ascii()+"\n");
-            puts("extern "+nodep->rtnTypeVoid()+" "+nodep->name()+" ("+cFuncArgs(nodep)+");\n");
+            puts("extern "+nodep->rtnTypeVoid()+" "+nodep->name()+"("+cFuncArgs(nodep)+");\n");
         }
         else if (nodep->dpiImport()) {
             if (!firstImp++) puts("\n// DPI IMPORTS\n");
             puts("// DPI import at "+nodep->fileline()->ascii()+"\n");
-            puts("extern "+nodep->rtnTypeVoid()+" "+nodep->name()+" ("+cFuncArgs(nodep)+");\n");
+            puts("extern "+nodep->rtnTypeVoid()+" "+nodep->name()+"("+cFuncArgs(nodep)+");\n");
         }
     }
 
@@ -844,7 +844,7 @@ void EmitCSyms::emitDpiImp() {
         if (nodep->dpiExportWrapper()) {
             puts("#ifndef _VL_DPIDECL_"+nodep->name()+"\n");
             puts("#define _VL_DPIDECL_"+nodep->name()+"\n");
-            puts(nodep->rtnTypeVoid()+" "+nodep->name()+" ("+cFuncArgs(nodep)+") {\n");
+            puts(nodep->rtnTypeVoid()+" "+nodep->name()+"("+cFuncArgs(nodep)+") {\n");
             puts("// DPI Export at "+nodep->fileline()->ascii()+"\n");
             puts("return "+topClassName()+"::"+nodep->name()+"(");
             string args;
