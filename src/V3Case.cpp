@@ -49,7 +49,7 @@
 #include <algorithm>
 #include <cstdarg>
 
-#define CASE_OVERLAP_WIDTH 12           // Maximum width we can check for overlaps in
+#define CASE_OVERLAP_WIDTH 16           // Maximum width we can check for overlaps in
 #define CASE_BARF          999999       // Magic width when non-constant
 #define CASE_ENCODER_GROUP_DEPTH 8      // Levels of priority to be ORed together in top IF tree
 

@@ -157,6 +157,7 @@ module cpu
       idec_mem_re  = 1'b0;
       idec_mem_we  = 1'b0;
 
+      // verilator lint_off CASEINCOMPLETE
       casez ( ir )
         16'h0000:;              // NOP (<=> Default)
 

@@ -8,6 +8,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Add --protect-ids to obscure information in objects, bug1521. [Todd Strader]
 
+****  Increase case duplicate/incomplete to 16 bit tables, bug1545. [Yossi Nivin]
+
 
 * Verilator 4.020 2019-10-06
 
