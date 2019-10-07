@@ -141,7 +141,7 @@ class VL_CAPABILITY("mutex") VerilatedMutex {
     bool try_lock() VL_TRY_ACQUIRE(true) { return m_mutex.try_lock(); }
 };
 
-/// Lock guard for mutex (ala std::lock_guard), wrapped to allow -fthread_safety checks
+/// Lock guard for mutex (ala std::unique_lock), wrapped to allow -fthread_safety checks
 class VL_SCOPED_CAPABILITY VerilatedLockGuard {
     VL_UNCOPYABLE(VerilatedLockGuard);
   private:
@@ -154,6 +154,8 @@ class VL_SCOPED_CAPABILITY VerilatedLockGuard {
     ~VerilatedLockGuard() VL_RELEASE() {
         m_mutexr.unlock();
     }
+    void lock() VL_ACQUIRE(mutexr) { m_mutexr.lock(); }
+    void unlock() VL_RELEASE() { m_mutexr.unlock(); }
 };
 
 #else  // !VL_THREADED
@@ -171,6 +173,8 @@ class VerilatedLockGuard {
 public:
     explicit VerilatedLockGuard(VerilatedMutex&) {}
     ~VerilatedLockGuard() {}
+    void lock() {}
+    void unlock() {}
 };
 
 #endif  // VL_THREADED

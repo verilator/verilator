@@ -12,6 +12,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Increase case duplicate/incomplete to 16 bit tables, bug1545. [Yossi Nivin]
 
+****  Fix multithreaded yield behavior when no work.  [Patrick Stewart]
+
 
 * Verilator 4.020 2019-10-06
 
