@@ -8,6 +8,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Add --protect-ids to obscure information in objects, bug1521. [Todd Strader]
 
+***   Support multithreading on Windows. [Patrick Stewart]
+
 ****  Increase case duplicate/incomplete to 16 bit tables, bug1545. [Yossi Nivin]
 
 

@@ -122,7 +122,9 @@
 #endif
 
 #ifdef VL_THREADED
-# ifdef __GNUC__
+# if defined(_MSC_VER) && _MSC_VER >= 1900
+#  define VL_THREAD_LOCAL thread_local
+# elif defined(__GNUC__)
 #  if (__cplusplus < 201103L) && !defined(VL_THREADED_NO_C11_WARNING)
 #    error "VL_THREADED/--threads support requires C++-11 or newer only; use newer compiler"
 #  endif
@@ -390,7 +392,12 @@ typedef unsigned long long      vluint64_t;     ///< 64-bit unsigned type
 // Threading related OS-specific functions
 
 #if VL_THREADED
-# if defined(__i386__) || defined(__x86_64__)
+# ifdef _WIN32
+#  define WIN32_LEAN_AND_MEAN
+#  define NOMINMAX
+#  include "Windows.h"
+#  define VL_CPU_RELAX() YieldProcessor()
+# elif defined(__i386__) || defined(__x86_64__)
 /// For more efficient busy waiting on SMT CPUs, let the processor know
 /// we're just waiting so it can let another thread run
 #  define VL_CPU_RELAX() asm volatile("rep; nop" ::: "memory")
