@@ -1845,7 +1845,7 @@ the examples directory in the distribution.
 
 =head1 BENCHMARKING & OPTIMIZATION
 
-For best performance, run Verilator with the "-O3 --x-assign=fast
+For best performance, run Verilator with the "-O3 --x-assign fast
 --x-initial fast --noassert" flags.  The -O3 flag will require longer
 compile times, and "--x-assign fast --x-initial fast" may increase the risk
 of reset bugs in trade for performance; see the above documentation for
