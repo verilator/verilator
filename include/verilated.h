@@ -147,15 +147,15 @@ class VL_SCOPED_CAPABILITY VerilatedLockGuard {
   private:
     VerilatedMutex& m_mutexr;
   public:
-    explicit VerilatedLockGuard(VerilatedMutex& mutexr) VL_ACQUIRE(m_mutexr)
+    explicit VerilatedLockGuard(VerilatedMutex& mutexr) VL_ACQUIRE(mutexr)
         : m_mutexr(mutexr) {
         m_mutexr.lock();
     }
-    ~VerilatedLockGuard() VL_RELEASE(m_mutexr) {
+    ~VerilatedLockGuard() VL_RELEASE() {
         m_mutexr.unlock();
     }
-    void lock() VL_ACQUIRE(m_mutexr) { m_mutexr.lock(); }
-    void unlock() VL_RELEASE(m_mutexr) { m_mutexr.unlock(); }
+    void lock() VL_ACQUIRE() { m_mutexr.lock(); }
+    void unlock() VL_RELEASE() { m_mutexr.unlock(); }
 };
 
 #else  // !VL_THREADED
