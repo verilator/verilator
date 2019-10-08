@@ -15,7 +15,7 @@ my $stdout_filename = "$Self->{obj_dir}/$Self->{name}__test.vpp";
 
 compile(
     verilator_flags2 => ['-DDEF_A0 -DPREDEF_COMMAND_LINE -E --dump-defines'],
-    verilator_make_gcc => 0,
+    verilator_make_gmake => 0,
     make_top_shell => 0,
     make_main => 0,
     stdout_filename => $stdout_filename,

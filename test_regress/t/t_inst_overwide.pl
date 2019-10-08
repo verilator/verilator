@@ -11,7 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     verilator_flags2 => [qw(-sc -Wno-WIDTH)],
-    verilator_make_gcc => 0,
+    verilator_make_gmake => 0,
     make_top_shell => 0,
     make_main => 0,
     );

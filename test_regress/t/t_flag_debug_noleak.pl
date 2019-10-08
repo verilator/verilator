@@ -11,7 +11,7 @@ scenarios(vlt_all => 1);
 
 compile(
     v_flags2 => ["--debug --no-debug-leak"],
-    verilator_make_gcc => 0,
+    verilator_make_gmake => 0,
     make_top_shell => 0,
     make_main => 0,
     );

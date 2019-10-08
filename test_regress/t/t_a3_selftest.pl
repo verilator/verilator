@@ -13,7 +13,7 @@ top_filename("t/t_EXAMPLE.v");
 
 compile(
     verilator_flags2 => ['--debug-self-test'],
-    verilator_make_gcc => 0,
+    verilator_make_gmake => 0,
     make_top_shell => 0,
     make_main => 0,
     );

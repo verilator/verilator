@@ -12,7 +12,7 @@ scenarios(vlt_all => 1);
 compile(
     v_flags2 => ["--lint-only -Wall -Wno-DECLFILENAME --if-depth 10"],
     fails => 1,
-    verilator_make_gcc => 0,
+    verilator_make_gmake => 0,
     make_top_shell => 0,
     make_main => 0,
     expect_filename => $Self->{golden_filename},

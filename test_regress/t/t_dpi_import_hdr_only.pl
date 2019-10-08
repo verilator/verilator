@@ -18,7 +18,7 @@ my $tmp_dir = File::Temp->newdir();
 
 compile(
     verilator_flags2 => ["-Wall -Wno-DECLFILENAME -Mdir " . $tmp_dir . " --dpi-hdr-only"],
-    verilator_make_gcc => 0,
+    verilator_make_gmake => 0,
     );
 
 my @files = glob($tmp_dir . "/*");
@@ -31,7 +31,7 @@ die "Unexpected file $tmp_header" unless $tmp_header =~ /__Dpi\.h$/;
 
 compile(
     verilator_flags2 => ["-Wall -Wno-DECLFILENAME"],
-    verilator_make_gcc => 0,
+    verilator_make_gmake => 0,
     );
 
 @files = glob($Self->obj_dir . "/*__Dpi.h");

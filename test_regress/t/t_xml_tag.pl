@@ -13,7 +13,7 @@ my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
 
 compile(
     verilator_flags2 => ['--xml-only'],
-    verilator_make_gcc => 0,
+    verilator_make_gmake => 0,
     make_top_shell => 0,
     make_main => 0,
     );

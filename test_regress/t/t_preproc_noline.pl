@@ -15,7 +15,7 @@ top_filename("t/t_preproc_noline.v");
 
 compile(
     verilator_flags2 => ['-E -P'],
-    verilator_make_gcc => 0,
+    verilator_make_gmake => 0,
     make_top_shell => 0,
     make_main => 0,
     stdout_filename => $stdout_filename,

@@ -20,7 +20,7 @@ while (1) {
 
     compile(
         v_flags2 => ["--trace --output-split 1 --output-split-cfuncs 1 --exe ../$Self->{main_filename}"],
-        verilator_make_gcc => 0,
+        verilator_make_gmake => 0,
         );
 
     # We don't use the standard test_regress rules, as want to test the rules

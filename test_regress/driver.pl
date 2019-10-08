@@ -581,7 +581,7 @@ sub new {
                             "--comp-limit-members 10", ],
         verilator_flags2 => [],
         verilator_flags3 => ["--clk clk"],
-        verilator_make_gcc => 1,
+        verilator_make_gmake => 1,
         verilated_debug => $Opt_Verilated_Debug,
         stdout_filename => undef,  # Redirect stdout
         %$self};
@@ -818,7 +818,7 @@ sub lint {
                  make_main => 0,
                  make_top_shell => 0,
                  verilator_flags2 => ["--lint-only"],
-                 verilator_make_gcc => 0,
+                 verilator_make_gmake => 0,
                  @_);
     $self->compile(%param);
 }
@@ -977,7 +977,7 @@ sub compile {
                     cmd=>\@cmdargs) if $::Opt_Verilation;
         return 1 if $self->errors || $self->skips || $self->unsupporteds;
 
-        if (!$param{fails} && $param{verilator_make_gcc}) {
+        if (!$param{fails} && $param{verilator_make_gmake}) {
             $self->oprint("GCC\n") if $self->{verbose};
             $self->_run(logfile=>"$self->{obj_dir}/vlt_gcc.log",
                         cmd=>["make",

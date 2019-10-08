@@ -13,7 +13,7 @@ top_filename("t/t_var_pinsizes.v");
 
 compile(
     verilator_flags2 => ['-cc'],
-    verilator_make_gcc => 0,
+    verilator_make_gmake => 0,
     make_top_shell => 0,
     make_main => 0,
     );
