@@ -21,6 +21,7 @@ endif
 
 include $(VM_PREFIX).mk
 
+# So t/t_foobar.cpp is found (due to test_regress using -Mdir)
 VPATH += ../../$(VM_USER_DIR)
 
 #######################################################################
@@ -58,10 +59,10 @@ endif
 
 .SUFFIXES:
 
-#Default compile, pick up OBJCACHE
-%.o:	%.cpp
-	$(OBJCACHE) $(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $<
-
+#Default compile, using verilator.mk rules
+#%.o: %.cpp
+# 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
+#
 #Default link, using normal make rules
 #$(VM_PREFIX): $(VK_GLOBAL_OBJS) $(VK_OBJS)
 #	$(LINK) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) 2>&1

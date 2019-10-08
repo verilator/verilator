@@ -30,7 +30,6 @@ CFG_LDLIBS_THREADS = @CFG_LDLIBS_THREADS@
 ######################################################################
 # Programs
 
-SP_INCLUDER	= $(VERILATOR_INCLUDER)
 VERILATOR_COVERAGE = $(PERL) $(VERILATOR_ROOT)/bin/verilator_coverage
 VERILATOR_INCLUDER = $(PERL) $(VERILATOR_ROOT)/bin/verilator_includer
 
