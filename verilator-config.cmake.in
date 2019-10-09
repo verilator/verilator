@@ -77,24 +77,6 @@ if (NOT CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 endif()
 
 define_property(TARGET
-  PROPERTY VERILATOR
-  BRIEF_DOCS "Verilator"
-  FULL_DOCS "Verilator"
-)
-
-define_property(TARGET
-  PROPERTY VERILATOR_PREFIXES
-  BRIEF_DOCS "List of Verilated prefixes added to this target"
-  FULL_DOCS "List of Verilated prefixes added to this target"
-)
-
-define_property(TARGET
-  PROPERTY VERILATOR_PATHS
-  BRIEF_DOCS "List of paths of Verilated prefixes added to this target"
-  FULL_DOCS "List of paths of Verilated prefixes added to this target"
-)
-
-define_property(TARGET
   PROPERTY VERILATOR_THREADED
   BRIEF_DOCS "Verilator multithreading enabled"
   FULL_DOCS "Verilator multithreading enabled"
@@ -104,6 +86,12 @@ define_property(TARGET
   PROPERTY VERILATOR_COVERAGE
   BRIEF_DOCS "Verilator coverage enabled"
   FULL_DOCS "Verilator coverage enabled"
+)
+
+define_property(TARGET
+  PROPERTY VERILATOR_TRACE
+  BRIEF_DOCS "Verilator trace enabled"
+  FULL_DOCS "Verilator trace enabled"
 )
 
 define_property(TARGET
@@ -126,7 +114,7 @@ define_property(TARGET
 
 function(verilate TARGET)
   cmake_parse_arguments(VERILATE "COVERAGE;TRACE;TRACE_FST;SYSTEMC"
-                                 "PREFIX;TOP_MODULE;THREADS"
+                                 "PREFIX;TOP_MODULE;THREADS;DIRECTORY"
                                  "SOURCES;VERILATOR_ARGS;INCLUDE_DIRS;OPT_SLOW;OPT_FAST"
                                  ${ARGN})
   if (NOT VERILATE_SOURCES)
@@ -181,9 +169,14 @@ function(verilate TARGET)
   get_target_property(BINARY_DIR "${TARGET}" BINARY_DIR)
   get_target_property(TARGET_NAME "${TARGET}" NAME)
   set(VDIR "${BINARY_DIR}/CMakeFiles/${TARGET_NAME}.dir/${VERILATE_PREFIX}.dir")
+
+  if (VERILATE_DIRECTORY)
+    set(VDIR "${VERILATE_DIRECTORY}")
+  endif()
+
   file(MAKE_DIRECTORY ${VDIR})
 
-  set(VERILATOR_COMMAND "${VERILATOR_BIN}" -Wall -Wno-fatal --compiler ${COMPILER}
+  set(VERILATOR_COMMAND "${VERILATOR_BIN}" --compiler ${COMPILER}
                         --prefix ${VERILATE_PREFIX} --Mdir ${VDIR} --make cmake
                         ${VERILATOR_ARGS} ${VERILATE_VERILATOR_ARGS}
                         ${VERILATE_SOURCES})
@@ -245,10 +238,6 @@ function(verilate TARGET)
                      "${VCMAKE}" "${VCMAKE_COPY}"
                      DEPENDS "${VCMAKE}" VERBATIM)
 
-  set_property(TARGET ${TARGET} PROPERTY VERILATOR ON)
-  set_property(TARGET ${TARGET} APPEND PROPERTY VERILATOR_PREFIXES "${VERILATE_PREFIX}")
-  set_property(TARGET ${TARGET} APPEND PROPERTY VERILATOR_PATHS "${VDIR}")
-
   if (${VERILATE_PREFIX}_THREADS)
     # If any verilate() call specifies THREADS, define VL_THREADED in the final build
     set_property(TARGET ${TARGET} PROPERTY VERILATOR_THREADED ON)
@@ -261,11 +250,13 @@ function(verilate TARGET)
 
   if (${VERILATE_PREFIX}_TRACE_VCD)
     # If any verilate() call specifies TRACE, define VM_TRACE in the final build
+    set_property(TARGET ${TARGET} PROPERTY VERILATOR_TRACE ON)
     set_property(TARGET ${TARGET} PROPERTY VERILATOR_TRACE_VCD ON)
   endif()
 
   if (${VERILATE_PREFIX}_TRACE_FST)
     # If any verilate() call specifies TRACE_FST, define VM_TRACE_FST in the final build
+    set_property(TARGET ${TARGET} PROPERTY VERILATOR_TRACE ON)
     set_property(TARGET ${TARGET} PROPERTY VERILATOR_TRACE_FST ON)
   endif()
 
@@ -303,16 +294,22 @@ function(verilate TARGET)
     VM_COVERAGE=$<BOOL:$<TARGET_PROPERTY:VERILATOR_COVERAGE>>
     VM_SC=$<BOOL:$<TARGET_PROPERTY:VERILATOR_SYSTEMC>>
     $<$<BOOL:$<TARGET_PROPERTY:VERILATOR_THREADED>>:VL_THREADED>
+    VM_TRACE=$<BOOL:$<TARGET_PROPERTY:VERILATOR_TRACE>>
     VM_TRACE_VCD=$<BOOL:$<TARGET_PROPERTY:VERILATOR_TRACE_VCD>>
     VM_TRACE_FST=$<BOOL:$<TARGET_PROPERTY:VERILATOR_TRACE_FST>>
   )
 
   target_link_libraries(${TARGET} PUBLIC
-    "$<$<BOOL:$<TARGET_PROPERTY:VERILATOR_THREADED>>:${VERILATOR_MT_CFLAGS}>")
-  target_link_libraries(${TARGET} PUBLIC
-    "$<$<BOOL:$<TARGET_PROPERTY:VERILATOR>>:${${VERILATE_PREFIX}_USER_LDLIBS}>")
+    ${${VERILATE_PREFIX}_USER_LDLIBS}
+    "$<$<BOOL:$<TARGET_PROPERTY:VERILATOR_THREADED>>:${VERILATOR_MT_CFLAGS}>"
+  )
+
+  # SystemC requires the C++ version to match the library version, avoid setting anything here
+  set(GEN_THREADED $<BOOL:$<TARGET_PROPERTY:VERILATOR_THREADED>>)
+  set(GEN_SYSTEMC $<BOOL:$<TARGET_PROPERTY:VERILATOR_SYSTEMC>>)
   target_compile_features(${TARGET} PRIVATE
-    $<$<BOOL:$<TARGET_PROPERTY:VERILATOR_THREADED>>:cxx_std_11>)
+    $<$<AND:${GEN_THREADED},$<NOT:${GEN_SYSTEMC}>>:cxx_std_11>
+  )
 endfunction()
 
 function(_verilator_find_systemc)
@@ -380,4 +377,16 @@ endfunction()
 function(verilator_link_systemc TARGET)
   _verilator_find_systemc()
   target_link_libraries("${TARGET}" PUBLIC Verilator::systemc)
+  target_compile_options(${TARGET} PRIVATE $ENV{SYSTEMC_CXX_FLAGS} ${SYSTEMC_CXX_FLAGS})
+endfunction()
+
+function(verilator_generate_key OUTPUT_VARIABLE)
+  execute_process(COMMAND ${VERILATOR_BIN} --generate-key
+                  OUTPUT_VARIABLE KEY_VAL
+                  RESULT_VARIABLE KEY_RET)
+  if (KEY_RET)
+    message(FATAL_ERROR "verilator --generate-key failed")
+  endif()
+  string(STRIP ${KEY_VAL} KEY_VAL)
+  set(${OUTPUT_VARIABLE} ${KEY_VAL} PARENT_SCOPE)
 endfunction()

@@ -128,7 +128,7 @@ class CMakeEmitter {
         for (AstFile* nodep = v3Global.rootp()->filesp(); nodep;
              nodep = VN_CAST(nodep->nextp(), File)) {
             AstCFile* cfilep = VN_CAST(nodep, CFile);
-            if (cfilep->source()) {
+            if (cfilep && cfilep->source()) {
                 if (cfilep->support()) {
                     if (cfilep->slow()) {
                         support_slow.push_back(cfilep->name());
@@ -164,13 +164,16 @@ class CMakeEmitter {
             if (v3Global.opt.systemC()) {
                 if (v3Global.opt.traceFormat() != TraceFormat::VCD) {
                     v3error("Unsupported: This trace format is not supported in SystemC, use VCD format.");
-                    global.push_back("${VERILATOR_ROOT}/include/"
-                                     + v3Global.opt.traceSourceName()+"_sc.cpp");
                 }
+                global.push_back("${VERILATOR_ROOT}/include/"
+                                    + v3Global.opt.traceSourceName()+"_sc.cpp");
             }
         }
         if (v3Global.opt.mtasks()) {
             global.push_back("${VERILATOR_ROOT}/include/verilated_threads.cpp");
+        }
+        if (!v3Global.opt.protectLib().empty()) {
+            global.push_back(v3Global.opt.makeDir()+"/"+v3Global.opt.protectLib()+".cpp");
         }
 
         *of << "# Global classes, need linked once per executable\n";

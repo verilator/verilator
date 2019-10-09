@@ -65,17 +65,19 @@ class V3FileDependImp {
     class DependFile {
         // A single file
         bool            m_target;       // True if write, else read
+        bool            m_exists;
         string          m_filename;     // Filename
         struct stat     m_stat;         // Stat information
     public:
         DependFile(const string& filename, bool target)
-            : m_target(target), m_filename(filename) {
+            : m_target(target), m_exists(true), m_filename(filename) {
             m_stat.st_ctime = 0;
             m_stat.st_mtime = 0;
         }
         ~DependFile() {}
         const string& filename() const { return m_filename; }
         bool target() const { return m_target; }
+        bool exists() const { return m_exists; }
         off_t size() const { return m_stat.st_size; }
         ino_t ino() const { return m_stat.st_ino; }
         time_t cstime() const { return m_stat.st_ctime; }  // Seconds
@@ -89,6 +91,7 @@ class V3FileDependImp {
                 if (err!=0) {
                     memset(&m_stat, 0, sizeof(m_stat));
                     m_stat.st_mtime = 1;
+                    m_exists = false;
                     // Not an error... This can occur due to `line directives in the .vpp files
                     UINFO(1,"-Info: File not statable: "<<filename()<<endl);
                 }
@@ -173,7 +176,7 @@ inline std::vector<string> V3FileDependImp::getAllDeps() const {
     std::vector<string> r;
     for (std::set<DependFile>::const_iterator iter=m_filenameList.begin();
          iter!=m_filenameList.end(); ++iter) {
-        if (!iter->target()) {
+        if (!iter->target() && iter->exists()) {
             r.push_back(iter->filename());
         }
     }

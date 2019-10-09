@@ -65,6 +65,9 @@ run:
 	@echo "-- DONE --------------------"
 	@echo
 
+clean mostlyclean distclean maintainer-clean:
+	@rm -rf build logs
+
 nocmake:
 	@echo
 	@echo "%Skip: CMake has not been found"

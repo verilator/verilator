@@ -1024,7 +1024,6 @@ sub compile {
             mkdir $self->{obj_dir};
             my @csources = ();
             unshift @csources, $self->{main_filename} if $param{make_main};
-            unlink "$self->{obj_dir}/CMakeCache.txt";
             $self->_run(logfile => "$self->{obj_dir}/vlt_cmake.log",
                         fails => $param{fails},
                         tee => $param{tee},
@@ -1037,12 +1036,11 @@ sub compile {
                                 "-DTEST_CSOURCES=\"@csources\"",
                                 "-DTEST_VERILATOR_ARGS=\"@vlt_args\"",
                                 "-DTEST_VERILATOR_SOURCES=\"$param{top_filename} @{$param{v_other_filenames}}\"",
-                                "-DTEST_VERBOSE=\"".($opt_verbose ? 1 : 0)."\"",
+                                "-DTEST_VERBOSE=\"".($self->{verbose} ? 1 : 0)."\"",
                                 "-DTEST_SYSTEMC=\"" .($self->sc ? 1 : 0). "\"",
                                 "-DCMAKE_PREFIX_PATH=\"".(($ENV{SYSTEMC_INCLUDE}||$ENV{SYSTEMC}||'')."/..\""),
                                 "-DTEST_OPT_FAST=\"" . ($param{benchmark}?"-O2":"") . "\"",
                                 "-DTEST_VERILATION=\"" . $::Opt_Verilation . "\"",
-                                ($self->{verbose} ? "--verbose" : ""),
                         ]);
             return 1 if $self->errors || $self->skips || $self->unsupporteds;
         }
@@ -1068,7 +1066,9 @@ sub compile {
         if (!$param{fails} && $param{verilator_make_cmake}) {
             $self->oprint("Running cmake --build\n") if $self->{verbose};
             $self->_run(logfile => "$self->{obj_dir}/vlt_cmake_build.log",
-                        cmd => ["cmake", "--build", $self->{obj_dir},
+                        cmd => ["cmake",
+                                "--build", $self->{obj_dir},
+                                ($self->{verbose}?"--verbose":""),
                         ]);
         }
     }
@@ -1337,11 +1337,13 @@ sub have_cmake {
 
 sub cmake_version {
     chomp(my $cmake_bin = `which cmake`);
-    if (!defined $cmake_bin) {
-        return;
+    if (!$cmake_bin) {
+        return undef;
     }
-    my $cmake_version = `$cmake_bin --version`;
-    $cmake_version =~ /cmake version (\d+)\.(\d+)/;
+    my $cmake_version = `cmake --version`;
+    if ($cmake_version !~ /cmake version (\d+)\.(\d+)/) {
+        return undef;
+    }
     $cmake_version = "$1.$2";
     return version->declare($cmake_version);
 }

@@ -2424,21 +2424,20 @@ as the build system.
 
 Verilator can be run using CMake, which takes care of both running
 Verilator and compiling the output. There is a CMake example in the
-examples/ directory. The following is a minimal CMakeLists.txt:
+examples/ directory. The following is a minimal CMakeLists.txt that
+would build the code listed in "EXAMPLE C++ EXECUTION":
 
     project(cmake_example)
     find_package(verilator HINTS $ENV{VERILATOR_ROOT})
-    add_executable(example main.cpp)
-    verilate(example SOURCES top.v)
+    add_executable(Vour sim_main.cpp)
+    verilate(Vour SOURCES our.v)
 
 find_package will automatically find an installed copy of Verilator, or use
 a local build if VERILATOR_ROOT is set.
 
 It is recommended to use CMake >= 3.12 and the Ninja generator, though
-other combinations should work. If you use the Makefile generator you may
-need to run 'make' twice after configuration to get a successful build due
-to limitations of the POSIX Makefiles CMake generates. To build with CMake,
-change to the folder containing CMakeLists.txt and run:
+other combinations should work. To build with CMake, change to the folder
+containing CMakeLists.txt and run:
 
     mkdir build
     cd build
@@ -2452,6 +2451,10 @@ Or to build with your system default generator:
     cmake ..
     cmake --build .
 
+If you're building the example you should have an executable to run:
+
+    ./Vour
+
 The package sets the CMake variables verilator_FOUND, VERILATOR_ROOT and
 VERILATOR_BIN to the appropriate values, and also creates a verilate()
 function. verilate() will automatically create custom commands to run
@@ -2460,11 +2463,14 @@ Verilator and add the generated C++ sources to the target specified.
     verilate(target SOURCES source ... [TOP_MODULE top] [PREFIX name]
              [TRACE] [TRACE_FST] [SYSTEMC] [COVERAGE]
              [INCLUDE_DIRS dir ...] [OPT_SLOW ...] [OPT_FAST ...]
-             [VERILATOR_ARGS ...])
+             [DIRECTORY dir] [VERILATOR_ARGS ...])
 
 Lowercase and ... should be replaced with arguments, the uppercase parts
 delimit the arguments and can be passed in any order, or left out entirely
 if optional.
+
+verilate(target ...) can be called multiple times to add other verilog
+modules to an executable or library target.
 
 When generating Verilated SystemC sources, you should also include the
 SystemC include directories and link to the SystemC libraries.
@@ -2493,7 +2499,8 @@ installation can be found by CMake. This can be configured by setting the
 CMAKE_PREFIX_PATH variable during CMake configuration.
 
 Don't forget to set the same C++ standard for the Verilated sources as the
-SystemC library.
+SystemC library. This can be specified using the SYSTEMC_CXX_FLAGS environment
+variable.
 
 =over 4
 
@@ -2510,7 +2517,8 @@ List of verilog files to Verilate. Must have at least one file.
 Optional. Sets the Verilator output prefix. Defaults to the name of the
 first hdl source with a "V" prepended. Must be unique in each call to
 verilate(), so this is necessary if you build a module multiple times with
-different parameters.
+different parameters. Must be a valid C++ identifer, i.e. contains no
+whitespace and only characters A-Z, a-z, 0-9 or _.
 
 =item TOP_MODULE
 
@@ -2546,9 +2554,15 @@ optimisation level to improve compile times with large designs.
 
 Optional. Set compiler flags for the fast path.
 
+=item DIRECTORY
+
+Optional. Set the verilator output directory. It is preferable to use the
+default, which will avoid collisions with other files.
+
 =item VERILATOR_ARGS
 
-Optional. Extra arguments to Verilator.
+Optional. Extra arguments to Verilator. Do not specify --Mdir or --prefix
+here, use DIRECTORY or PREFIX.
 
 =back
 

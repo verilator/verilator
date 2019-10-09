@@ -71,7 +71,7 @@ run:
 	@echo "To see waveforms, open vlt_dump.vcd in a waveform viewer"
 	@echo
 
-clean:
+clean mostlyclean distclean maintainer-clean:
 	@rm -rf build logs
 
 nocmake:

@@ -102,7 +102,7 @@ run:
 	@echo "Note: Once this example is understood, see examples/cmake_tracing_sc."
 	@echo "Note: Also see the EXAMPLE section in the verilator manpage/document."
 
-clean:
+clean mostlyclean distclean maintainer-clean:
 	@rm -rf build logs
 
 nocmake:

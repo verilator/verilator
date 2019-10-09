@@ -26,7 +26,7 @@ if(TEST_VERBOSE)
   add_definitions(-DTEST_VERBOSE=1)
 endif()
 
-separate_arguments(TEST_VERILATOR_ARGS)
+separate_arguments(TEST_VERILATOR_ARGS UNIX_COMMAND "${TEST_VERILATOR_ARGS}")
 
 # filter out empty arguments
 list(FILTER TEST_VERILATOR_ARGS EXCLUDE REGEX "$^")
@@ -49,11 +49,10 @@ string(REGEX REPLACE "(^|;)--" "\\1-"
        "${TEST_VERILATOR_ARGS}")
 
 getarg(TEST_VERILATOR_ARGS_NORM "-prefix" TEST_PREFIX)
-getarg(TEST_VERILATOR_ARGS_NORM "-top-module" TEST_TOP_MODULE)
 getarg(TEST_VERILATOR_ARGS_NORM "-threads" TEST_THREADS)
 
 # Strip unwanted args with 1 parameter
-string(REGEX REPLACE "(^|;)--?(Mdir|make|prefix|top-module|threads);[^;]*" ""
+string(REGEX REPLACE "(^|;)--?(Mdir|make|prefix|threads);[^;]*" ""
        TEST_VERILATOR_ARGS
        "${TEST_VERILATOR_ARGS}")
 # Strip unwanted args
@@ -61,17 +60,13 @@ string(REGEX REPLACE "(^|;)--?(sc|cc)" ""
        TEST_VERILATOR_ARGS
        "${TEST_VERILATOR_ARGS}")
 
-separate_arguments(TEST_VERILATOR_SOURCES)
+separate_arguments(TEST_VERILATOR_SOURCES UNIX_COMMAND "${TEST_VERILATOR_SOURCES}")
 # filter out empty sources
 list(FILTER TEST_VERILATOR_SOURCES EXCLUDE REGEX "$^")
 
 find_package(verilator REQUIRED HINTS ${TEST_VERILATOR_ROOT})
 
 set(verilate_ARGS MAIN)
-if(NOT TEST_TOP_MODULE)
-  set(TEST_TOP_MODULE t)
-endif()
-list(APPEND verilate_ARGS TOP_MODULE ${TEST_TOP_MODULE})
 if(TEST_PREFIX)
   list(APPEND verilate_ARGS PREFIX ${TEST_PREFIX})
 endif()
@@ -92,9 +87,19 @@ add_executable(${TARGET_NAME} ${TEST_CSOURCES})
 if(TEST_VERILATION)
   verilate(${TARGET_NAME} ${verilate_ARGS}
            VERILATOR_ARGS ${TEST_VERILATOR_ARGS}
+           DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
            SOURCES ${TEST_VERILATOR_SOURCES})
 endif()
 
 if(TEST_SYSTEMC)
   verilator_link_systemc("${TARGET_NAME}")
 endif()
+
+string(TOUPPER "${TEST_NAME}" TEST_NAME_UC)
+
+target_compile_definitions(${TARGET_NAME} PRIVATE
+  "TEST_OBJ_DIR=${CMAKE_CURRENT_BINARY_DIR}"
+  "VM_PREFIX=${TEST_PREFIX}"
+  "VM_PREFIX_INCLUDE=<${TEST_PREFIX}.h>"
+  "${TEST_NAME_UC}"
+)
