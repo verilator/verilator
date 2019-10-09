@@ -569,7 +569,7 @@ string V3Options::protectKeyDefaulted() {
         // Create a key with a human-readable symbol-like name.
         // This conversion drops ~2 bits of entropy out of 256, shouldn't matter.
         VHashSha256 digest (V3Os::trueRandom(32));
-        m_protectKey = digest.digestSymbol();
+        m_protectKey = "VL-KEY-"+digest.digestSymbol();
     }
     return m_protectKey;
 }
@@ -857,6 +857,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if (!strcmp(sw, "-gate-stmts") && (i+1)<argc) {
                 shift;
                 m_gateStmts = atoi(argv[i]);
+            }
+            else if (!strcmp(sw, "-generate-key")) {
+                cout<<protectKeyDefaulted()<<endl;
+                exit(0);
             }
             else if (!strcmp(sw, "-getenv") && (i+1)<argc) {
                 shift;

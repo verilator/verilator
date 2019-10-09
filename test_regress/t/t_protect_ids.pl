@@ -21,6 +21,7 @@ foreach my $filename (glob ("$Self->{obj_dir}/*_PS*.cpp"
 
 compile(
     verilator_flags2 => ["--protect-ids",
+                         "--protect-key SECRET_KEY",
                          "--trace",
                          "--coverage",
                          "-Wno-INSECURE",
@@ -39,10 +40,10 @@ if ($Self->{vlt_all}) {
     # Check for secret in any outputs
     my $any;
     foreach my $filename (glob $Self->{obj_dir}."/*.[ch]*") {
-        if ($filename =~ /secret/) {
+        if ($filename =~ /secret/i) {
             $Self->error("Secret found in a filename: ".$filename);
         }
-        file_grep_not($filename, qr/secret/);
+        file_grep_not($filename, qr/secret/i);
         $any = 1;
     }
     $any or $Self->error("No outputs found");

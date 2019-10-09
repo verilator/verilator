@@ -12,7 +12,7 @@ scenarios(vlt => 1);
 top_filename("t/t_protect_ids.v");
 
 compile(
-    verilator_flags2 => ["--protect-ids --protect-key MY_KEY",
+    verilator_flags2 => ["--protect-ids --protect-key SECRET_KEY",
                          "t/t_protect_ids_c.cpp"],
     );
 

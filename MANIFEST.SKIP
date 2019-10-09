@@ -50,6 +50,6 @@ nodist/
 /simv.daidir/
 /vc_hdrs.h$
 /csrc/
-obj_dir/.*
+obj_dir.*
 TAGS
 .*~
