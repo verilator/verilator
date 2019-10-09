@@ -921,6 +921,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 shift;
                 m_outputSplitCTrace = atoi(argv[i]);
             }
+            else if (!strcmp(sw, "-protect-lib") && (i+1)<argc) {
+                shift; m_protectLib = argv[i];
+                m_protectIds = true;
+            }
             else if (!strcmp(sw, "-trace-fst")) {
                 m_trace = true;
                 m_traceFormat = TraceFormat::FST;

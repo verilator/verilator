@@ -108,6 +108,7 @@ SUBDIRS = src test_regress \
 	examples/make_hello_sc \
 	examples/make_tracing_c \
 	examples/make_tracing_sc \
+	examples/make_protect_lib \
 
 INFOS = README README.html README.pdf \
         verilator.txt verilator.html verilator.pdf
@@ -336,6 +337,7 @@ installdata:
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/make_hello_sc
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/make_tracing_c
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/make_tracing_sc
+	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/make_protect_lib
 	cd $(srcdir) \
 	; for p in $(VL_INST_DATA_SRCDIR_FILES) ; do \
 	  $(INSTALL_DATA) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
@@ -360,6 +362,7 @@ uninstall:
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/make_hello_sc
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/make_tracing_c
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/make_tracing_sc
+	-rmdir $(DESTDIR)$(pkgdatadir)/examples/make_protect_lib
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples
 	-rmdir $(DESTDIR)$(pkgdatadir)
 	-rmdir $(DESTDIR)$(pkgconfigdir)
@@ -492,7 +495,7 @@ clean mostlyclean distclean maintainer-clean::
 	rm -f *.pg *.pgs *.toc *.tp *.tps *.vr *.vrs *.idx
 	rm -f *.ev *.evs *.ov *.ovs *.cv *.cvs *.ma *.mas
 	rm -f *.tex
-	rm -rf examples/*/obj_dir examples/*/logs
+	rm -rf examples/*/obj_dir* examples/*/logs
 	rm -rf test_*/obj_dir
 	rm -rf nodist/obj_dir
 

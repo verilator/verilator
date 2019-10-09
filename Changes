@@ -17,6 +17,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.020 2019-10-06
 
+**    Add --protect-lib, bug1490. [Todd Strader]
+
 ***   Support $fseek, $ftell, $frewind, bug1496. [Howard Su]
 
 ***   Add --public-flat-rw, bug1511. [Stefan Wallentowitz]

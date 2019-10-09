@@ -1,0 +1,5 @@
+%Error: Internal Error: t/t_prot_lib_unpacked_bad.v:6: ../V3ProtectLib.cpp:347: Unsupported: unpacked arrays with protect-lib
+      input  unpacked_in [7:0],
+             ^~~~~~~~~~~
+                        ... See the manual and http://www.veripool.org/verilator for more assistance.
+%Error: Command Failed

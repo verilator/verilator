@@ -73,6 +73,7 @@
 #include "V3Partition.h"
 #include "V3PreShell.h"
 #include "V3Premit.h"
+#include "V3ProtectLib.h"
 #include "V3Reloop.h"
 #include "V3Scope.h"
 #include "V3Scoreboard.h"
@@ -545,6 +546,13 @@ void process() {
         || (v3Global.opt.debugCheck() && !v3Global.opt.lintOnly()
             && !v3Global.opt.dpiHdrOnly())) {
         V3EmitXml::emitxml();
+    }
+
+    // Output DPI protected library files
+    if (!v3Global.opt.protectLib().empty()) {
+        V3ProtectLib::protect();
+        V3EmitV::emitvFiles();
+        V3EmitC::emitcFiles();
     }
 
     // Statistics

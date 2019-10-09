@@ -614,42 +614,7 @@ private:
 
     AstNode* createAssignInternalToDpi(AstVar* portp, bool isRtn, bool isPtr,
                                        const string& frSuffix, const string& toSuffix) {
-        // Create assignment from internal format into DPI temporary
-        bool bitvec = (portp->basicp()->keyword().isDpiBitVal() && portp->width() > 32);
-        bool logicvec = (portp->basicp()->keyword().isDpiLogicVal() && portp->width() > 1);
-        if (isRtn && (bitvec || logicvec)) {
-            portp->v3error("DPI functions cannot return > 32 bits or four-state;"
-                           " use a two-state type or task instead: "<<portp->prettyNameQ());
-            // Code below works, but won't compile right, and IEEE illegal
-        }
-        string stmt;
-        string ket;
-        // Someday we'll have better type support, and this can make variables and casts.
-        // But for now, we'll just text-bash it.
-        if (bitvec) {
-            if (portp->isWide()) {
-                stmt += ("VL_SET_SVBV_W("+cvtToStr(portp->width())
-                         +", "+portp->name()+toSuffix+", "+portp->name()+frSuffix+")");
-            } else {
-                stmt += "VL_SET_WQ("+portp->name()+toSuffix+", "+portp->name()+frSuffix+")";
-            }
-        } else if (logicvec) {
-            stmt += ("VL_SET_SVLV_" + string(portp->dtypep()->charIQWN()) + "("
-                     + cvtToStr(portp->width())
-                     + ", "+portp->name()+toSuffix+", "+portp->name()+frSuffix+")");
-        } else {
-            if (isPtr) stmt += "*";  // DPI outputs are pointers
-            stmt += portp->name()+toSuffix+" = ";
-            if (portp->basicp() && portp->basicp()->keyword()==AstBasicDTypeKwd::CHANDLE) {
-                stmt += "VL_CVT_Q_VP(";
-                ket += ")";
-            }
-            stmt += portp->name()+frSuffix;
-            if (portp->basicp() && portp->basicp()->keyword()==AstBasicDTypeKwd::STRING) {
-                stmt += ".c_str()";
-            }
-        }
-        stmt += ket + ";\n";
+        string stmt = V3Task::assignInternalToDpi(portp, isRtn, isPtr, frSuffix, toSuffix);
         return new AstCStmt(portp->fileline(), stmt);
     }
 
@@ -657,37 +622,12 @@ private:
         // Create assignment from DPI temporary into internal format
         AstVar* portp = portvscp->varp();
         string frstmt;
-        if (portp->basicp() && portp->basicp()->keyword()==AstBasicDTypeKwd::CHANDLE) {
-            frstmt = "VL_CVT_VP_Q("+frName+")";
-        }
-        else if (portp->basicp() && portp->basicp()->keyword().isDpiBitVal()
-                 && portp->width() != 1 && portp->isQuad()) {
-            // SV is vector, Verilator isn't
-            frstmt = "VL_SET_QW("+frName+")";
-        }
-        else if (portp->basicp() && portp->basicp()->keyword().isDpiLogicVal()
-                 && portp->width() != 1 && portp->isQuad()) {
-            frstmt = "VL_SET_Q_SVLV("+frName+")";
-        }
-        else if (portp->basicp() && portp->basicp()->keyword().isDpiLogicVal()
-                 && portp->width() != 1 && !portp->isWide()) {
-            frstmt = "VL_SET_I_SVLV("+frName+")";
-        }
-        else if (!cvt
-                 && portp->basicp() && portp->basicp()->keyword().isDpiBitVal()
-                 && portp->width() != 1 && !portp->isWide()) {
-            frstmt = "*"+frName;  // it's a svBitVecVal, which other code won't think is arrayed (as WData aren't), but really is
-        }
-        else if (portp->basicp() && portp->basicp()->keyword().isDpiLogicVal()
-                 && portp->width() != 1 && portp->isWide()) {
-            // Need to convert to wide, using special function
-            AstNode* linesp = new AstText(portp->fileline(), "VL_SET_W_SVLV("+cvtToStr(portp->width()) + ",");
+        bool useSetWSvlv = V3Task::dpiToInternalFrStmt(portp, frName, cvt, frstmt);
+        if (useSetWSvlv) {
+            AstNode* linesp = new AstText(portp->fileline(), frstmt);
             linesp->addNext(new AstVarRef(portp->fileline(), portvscp, true));
             linesp->addNext(new AstText(portp->fileline(), ","+frName+");"));
             return new AstCStmt(portp->fileline(), linesp);
-        }
-        else {
-            frstmt = frName;
         }
         // Use a AstCMath, as we want V3Clean to mask off bits that don't make sense.
         int cwidth = VL_WORDSIZE;
@@ -1493,6 +1433,84 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
         }
     }
     return tconnects;
+}
+
+string V3Task::assignInternalToDpi(AstVar* portp, bool isRtn, bool isPtr,
+                                   const string& frSuffix, const string& toSuffix,
+                                   const string& frPrefix) {
+    // Create assignment from internal format into DPI temporary
+    bool bitvec = (portp->basicp()->keyword().isDpiBitVal() && portp->width() > 32);
+    bool logicvec = (portp->basicp()->keyword().isDpiLogicVal() && portp->width() > 1);
+    if (isRtn && (bitvec || logicvec)) {
+        portp->v3error("DPI functions cannot return > 32 bits or four-state;"
+                       " use a two-state type or task instead: "<<portp->prettyNameQ());
+        // Code below works, but won't compile right, and IEEE illegal
+    }
+    string stmt;
+    string ket;
+    // Someday we'll have better type support, and this can make variables and casts.
+    // But for now, we'll just text-bash it.
+    string frName = frPrefix+portp->name()+frSuffix;
+    string toName = portp->name()+toSuffix;
+    if (bitvec) {
+        if (portp->isWide()) {
+            stmt += ("VL_SET_SVBV_W("+cvtToStr(portp->width())
+                     +", "+toName+", "+frName+")");
+        } else {
+            stmt += "VL_SET_WQ("+toName+", "+frName+")";
+        }
+    } else if (logicvec) {
+        stmt += ("VL_SET_SVLV_" + string(portp->dtypep()->charIQWN()) + "("
+                 + cvtToStr(portp->width())
+                 + ", "+toName+", "+frName+")");
+    } else {
+        if (isPtr) stmt += "*";  // DPI outputs are pointers
+        stmt += toName+" = ";
+        if (portp->basicp() && portp->basicp()->keyword()==AstBasicDTypeKwd::CHANDLE) {
+            stmt += "VL_CVT_Q_VP(";
+            ket += ")";
+        }
+        stmt += frName;
+        if (portp->basicp() && portp->basicp()->keyword()==AstBasicDTypeKwd::STRING) {
+            stmt += ".c_str()";
+        }
+    }
+    stmt += ket + ";\n";
+    return stmt;
+}
+
+bool V3Task::dpiToInternalFrStmt(AstVar* portp, const string& frName, bool cvt, string& frstmt) {
+    if (portp->basicp() && portp->basicp()->keyword()==AstBasicDTypeKwd::CHANDLE) {
+        frstmt = "VL_CVT_VP_Q("+frName+")";
+    }
+    else if (portp->basicp() && portp->basicp()->keyword().isDpiBitVal()
+             && portp->width() != 1 && portp->isQuad()) {
+        // SV is vector, Verilator isn't
+        frstmt = "VL_SET_QW("+frName+")";
+    }
+    else if (portp->basicp() && portp->basicp()->keyword().isDpiLogicVal()
+             && portp->width() != 1 && portp->isQuad()) {
+        frstmt = "VL_SET_Q_SVLV("+frName+")";
+    }
+    else if (portp->basicp() && portp->basicp()->keyword().isDpiLogicVal()
+             && portp->width() != 1 && !portp->isWide()) {
+        frstmt = "VL_SET_I_SVLV("+frName+")";
+    }
+    else if (!cvt
+             && portp->basicp() && portp->basicp()->keyword().isDpiBitVal()
+             && portp->width() != 1 && !portp->isWide()) {
+        frstmt = "*"+frName;  // it's a svBitVecVal, which other code won't think is arrayed (as WData aren't), but really is
+    }
+    else if (portp->basicp() && portp->basicp()->keyword().isDpiLogicVal()
+             && portp->width() != 1 && portp->isWide()) {
+        // Need to convert to wide, using special function
+        frstmt = "VL_SET_W_SVLV("+cvtToStr(portp->width()) + ",";
+        return true;
+    }
+    else {
+        frstmt = frName;
+    }
+    return false;
 }
 
 void V3Task::taskAll(AstNetlist* nodep) {

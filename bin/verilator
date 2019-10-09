@@ -354,6 +354,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --prof-threads              Enable generating gantt chart data for threads
     --protect-key <key>         Key for symbol protection
     --protect-ids               Hash identifier names for obscurity
+    --protect-lib <name>        Create a DPI protected library
     --private                   Debugging; see docs
     --public                    Debugging; see docs
     --public-flat-rw            Mark all variables, etc as public_flat_rw
@@ -1190,6 +1191,20 @@ Using DPI imports/exports is allowed and generally relatively safe in terms
 of information disclosed, which is limited to the DPI function prototyptes.
 Use of the VPI is not recommended as many design details may be exposed,
 and an INSECURE warning will be issued.
+
+=item --protect-lib I<name>
+
+Produces C++, Verilog wrappers and a Makefile which can in turn produce a
+DPI library which can be used by Verilator or other simulators along with
+the corresponding Verilog wrapper.  The Makefile will build both a static
+and dynamic version of the library named libI<name>.a and libI<name>.so
+respectively.  This is done because some simulators require a dynamic
+library, but the static library is arguably easier to use if possible.
+--protect-lib implies --protect-ids.
+
+This allows for the secure delivery of sensitive IP without the need for
+encrypted RTL (i.e. IEEE P1735).  See examples/make_protect_lib in the
+distribution for a demonstration of how to build and use the DPI library.
 
 =item --private
 
@@ -3229,6 +3244,12 @@ coverage section.
 Verilator does not support SEREs yet.  All assertion and coverage
 statements must be simple expressions that complete in one cycle.
 (Arguably SEREs are much of the point, but one must start somewhere.)
+
+=head2 Encrypted Verilog
+
+Open source simulators like Verilator are unable to use encrypted RTL
+(i.e. IEEE P1735).  Talk to your IP vendor about delivering IP blocks
+via Verilator's --protect-lib feature.
 
 =head2 Language Keyword Limitations
 

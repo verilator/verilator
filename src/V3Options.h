@@ -191,6 +191,7 @@ class V3Options {
     string      m_pipeFilter;   // main switch: --pipe-filter
     string      m_prefix;       // main switch: --prefix
     string      m_protectKey;   // main switch: --protect-key
+    string      m_protectLib;   // main switch: --protect-lib {lib_name}
     string      m_topModule;    // main switch: --top-module
     string      m_unusedRegexp; // main switch: --unused-regexp
     string      m_xAssign;      // main switch: --x-assign
@@ -358,6 +359,16 @@ class V3Options {
     string prefix() const { return m_prefix; }
     string protectKey() const { return m_protectKey; }
     string protectKeyDefaulted();  // Set default key if not set by user
+    string protectLib() const { return m_protectLib; }
+    string protectLibName(bool shared) {
+        string libName = "lib"+protectLib();
+        if (shared) {
+            libName += ".so";
+        } else {
+            libName += ".a";
+        }
+        return libName;
+    }
     string topModule() const { return m_topModule; }
     string unusedRegexp() const { return m_unusedRegexp; }
     string xAssign() const { return m_xAssign; }

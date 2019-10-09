@@ -1,0 +1,5 @@
+%Error: Internal Error: t/t_prot_lib_inout_bad.v:8: ../V3ProtectLib.cpp:359: Unsupported port direction for protect-lib: INOUT
+      inout  z,
+             ^
+                        ... See the manual and http://www.veripool.org/verilator for more assistance.
+%Error: Command Failed

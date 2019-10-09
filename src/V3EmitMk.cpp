@@ -137,6 +137,8 @@ public:
 
         if (v3Global.opt.exe()) {
             of.puts("default: "+v3Global.opt.exeName()+"\n");
+        } else if (!v3Global.opt.protectLib().empty()) {
+            of.puts("default: lib"+v3Global.opt.protectLib()+"\n");
         } else {
             of.puts("default: "+v3Global.opt.prefix()+"__ALL.a\n");
         }
@@ -168,6 +170,9 @@ public:
 
         of.puts("# User CFLAGS (from -CFLAGS on Verilator command line)\n");
         of.puts("VM_USER_CFLAGS = \\\n");
+        if (!v3Global.opt.protectLib().empty()) {
+            of.puts("\t-fPIC \\\n");
+        }
         const V3StringList& cFlags = v3Global.opt.cFlags();
         for (V3StringList::const_iterator it = cFlags.begin(); it != cFlags.end(); ++it) {
             of.puts("\t"+*it+" \\\n");
@@ -223,6 +228,24 @@ public:
             of.puts(v3Global.opt.exeName()+": $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(VM_PREFIX)__ALL.a\n");
             of.puts("\t$(LINK) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) $(SC_LIBS)\n");
             of.puts("\n");
+        }
+
+        if (!v3Global.opt.protectLib().empty()) {
+            of.puts("\n### Library rules... (from --protect-lib)\n");
+            of.puts("# Using -fPIC objects for both static and dynamic libraries "
+                    "(which appears to work)\n");
+            of.puts(v3Global.opt.protectLibName(false)+": $(VK_OBJS) $(VK_GLOBAL_OBJS)\n");
+            of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o "+
+                    v3Global.opt.protectLib()+".o "+v3Global.opt.protectLib()+".cpp\n");
+            of.puts("\tar rc $@ $^ "+v3Global.opt.protectLib()+".o\n");
+            of.puts("\n");
+
+            of.puts(v3Global.opt.protectLibName(true)+": $(VM_PREFIX)__ALL.a $(VK_GLOBAL_OBJS)\n");
+            of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -shared -o $@ "+v3Global.opt.protectLib()+".cpp $^\n");
+            of.puts("\n");
+
+            of.puts("lib"+v3Global.opt.protectLib()+": "+v3Global.opt.protectLibName(false)+
+                    " "+v3Global.opt.protectLibName(true)+"\n");
         }
 
         of.puts("\n");

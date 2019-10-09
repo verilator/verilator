@@ -41,6 +41,11 @@ public:
     static void taskAll(AstNetlist* nodep);
     /// Return vector of [port, pin-connects-to]  (SLOW)
     static V3TaskConnects taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp);
+    static string assignInternalToDpi(AstVar* portp, bool isRtn, bool isPtr,
+                                      const string& frSuffix, const string& toSuffix,
+                                      const string& frPrefix="");
+    static bool dpiToInternalFrStmt(AstVar* portp, const string& frName, bool cvt,
+                                    string& frstmt);
 };
 
 #endif  // Guard
