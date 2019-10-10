@@ -9,7 +9,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt_all => 1);
 
-top_filename("t_trace_cat.v");
+top_filename("t/t_trace_cat.v");
 
 compile(
     make_top_shell => 0,

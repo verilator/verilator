@@ -776,7 +776,7 @@ sub compile_vlt_flags {
     unshift @verilator_flags, "--x-assign unique";  # More likely to be buggy
     unshift @verilator_flags, "--trace" if $opt_trace;
     my $threads = ::calc_threads($Vltmt_threads);
-    unshift @verilator_flags, "--threads $threads" if $param{vltmt};
+    unshift @verilator_flags, "--threads $threads" if $param{vltmt} && $checkflags !~ /-threads /;
     unshift @verilator_flags, "--trace-fst-thread" if $param{vltmt} && $checkflags =~ /-trace-fst/;
     unshift @verilator_flags, "--debug-partition" if $param{vltmt};
     if (defined $opt_optimize) {

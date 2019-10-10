@@ -9,7 +9,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(linter => 1);
 
-top_filename("t_initial_dlyass.v");
+top_filename("t/t_initial_dlyass.v");
 
 lint(
     fails => 1,
