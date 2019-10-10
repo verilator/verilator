@@ -9,8 +9,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(dist => 1);
 
-my $root = "..";
-run(cmd=>["cd $root && make examples"]);
+my @examples = sort(glob("../examples/*"));
+for my $example (@examples) {
+    run(cmd=>["make -C $example"]);
+}
 
 ok(1);
 1;
