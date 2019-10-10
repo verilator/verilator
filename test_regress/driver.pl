@@ -21,6 +21,7 @@ use strict;
 use vars qw($Debug %Vars $Driver $Fork);
 use POSIX qw(strftime);
 use lib ".";
+use Time::HiRes qw(usleep);
 
 $::Driver = 1;
 $::Have_Forker = 0;
@@ -358,7 +359,14 @@ sub one_test {
 sub wait_and_report {
     my $self = shift;
     $self->print_summary(force=>1);
-    $::Fork->wait_all();  # Wait for all children to finish
+    # Wait for all children to finish
+    while ($::Have_Forker && $::Fork->is_any_left()) {
+        $::Fork->poll();
+        if (time() - ($self->{_last_summary_time} || 0) > 30) {
+            $self->print_summary(force=>1, show_running=>1);
+        }
+        Time::HiRes::usleep 100*1000;
+    };
     $runner->report(undef);
     $runner->report($self->{driver_log_filename});
 }
@@ -391,12 +399,20 @@ sub report {
 sub print_summary {
     my $self = shift;
     my %params = (force => 0, # Force printing
+                  show_running => 0, # Show running processes
                   @_);
     if (!$self->{quiet} || $params{force}
         || ($self->{left_cnt} < 5)
-        || time() > ($self->{_next_summary_time} || 0)) {
-        $self->{_next_summary_time} = time() + 15;
-        print STDERR ("==SUMMARY: ".$self->sprint_summary."\n")
+        || time() - ($self->{_last_summary_time} || 0) > 60 * 5) {
+        $self->{_last_summary_time} = time();
+        print STDERR ("==SUMMARY: ".$self->sprint_summary."\n");
+        if ($params{show_running}) {
+            my $other;
+            foreach my $proc ($::Fork->running) {
+                $other .= "  ".$proc->{test_pl_filename};
+            }
+            print STDERR ("==STILL RUNNING: ".$other."\n");
+        }
     }
 }
 
