@@ -1,0 +1,9 @@
+#!/bin/bash
+
+#Run all steps needed to start fuzzer
+
+set -e
+
+sudo ./setup_root
+./setup_user
+./run

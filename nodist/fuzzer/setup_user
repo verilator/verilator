@@ -1,0 +1,22 @@
+#!/bin/bash
+
+#This is the portion of the setup for fuzzing that does not require root access.
+
+set -e
+
+#build instrumented version of verilator
+pushd ../..
+autoconf
+AFL_HARDEN=1 CC=afl-gcc CXX=afl-g++ ./configure $(cd ..; pwd)
+make clean
+make -j $(ncpus)
+popd
+
+#Create a listing of likely snippets for the fuzzer to use.
+#Not essential, but makes things likely to be found faster.
+./generate_dictionary
+
+#Set up input directory
+mkdir in1
+echo "module m; initial \$display(\"Hello world!\n\"); endmodule" > in1/1.v
+
