@@ -1,11 +1,9 @@
-#!/usr/bin/env python
-
-#Tested with python 2.7. 
+#!/usr/bin/env python3
 
 #Attempt to pull a list of keywords out of the Flex input
 #This will be used to help the fuzzer pick interesting inputs more quickly.
 
-from commands import getstatusoutput
+from subprocess import getstatusoutput
 from os import system
 
 def take_while(f,a):

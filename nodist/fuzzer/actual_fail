@@ -1,11 +1,9 @@
-#!/usr/bin/python
-
-#Note: This assumes that this is Python 2.x
+#!/usr/bin/env python3
 
 #This script is designed to rerun examples to see whether they have unexpected types of output besides the ones that afl-fuzz detects as such.  
 
 from glob import glob
-from commands import getstatusoutput
+from subprocess import getstatusoutput
 from argparse import ArgumentParser
 
 def interesting(s):
@@ -32,9 +30,9 @@ def main():
         #Input filenames are known not to contain spaces or other unusual characters therefore this works.
         status,output=getstatusoutput('../../bin/verilator_bin --cc '+infile)
         if interesting(output):
-            print infile
-            print status
-            print output
+            print(infile)
+            print(status)
+            print(output)
 
 if __name__=='__main__':
     main()
