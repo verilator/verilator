@@ -1125,7 +1125,7 @@ anonymous_program_item<nodep>:	// ==IEEE: anonymous_program_item
 	//UNSUP	class_declaration			{ $$ = $1; }
 	//UNSUP	covergroup_declaration			{ $$ = $1; }
 	//			// class_constructor_declaration is part of function_declaration
-	|	';'					{ }
+	|	';'					{ $$ = NULL; }
 	;
 
 program_declaration:		// IEEE: program_declaration + program_nonansi_header + program_ansi_header:
@@ -3400,7 +3400,7 @@ exprOkLvalue<nodep>:		// expression that's also OK to use as a variable_lvalue
 	//			// IEEE: [ assignment_pattern_expression_type ] == [ ps_type_id /ps_paremeter_id/data_type]
 	//			// We allow more here than the spec requires
 	//UNSUP	~l~exprScope assignment_pattern		{ UNSUP }
-	|	data_type assignment_pattern		{ $$ = $2; $2->childDTypep($1); }
+	|	data_type assignment_pattern		{ $$ = $2; if ($2) $2->childDTypep($1); }
 	|	assignment_pattern			{ $$ = $1; }
 	//
 	|	streaming_concatenation			{ $$ = $1; }
@@ -3749,7 +3749,7 @@ combinational_body<nodep>:	// IEEE: combinational_body + sequential_body
 
 tableEntryList<nodep>:	// IEEE: { combinational_entry | sequential_entry }
 		tableEntry 				{ $$ = $1; }
-	|	tableEntryList tableEntry		{ $$ = $1->addNext($2); }
+	|	tableEntryList tableEntry		{ $$ = $1->addNextNull($2); }
 	;
 
 tableEntry<nodep>:	// IEEE: combinational_entry + sequential_entry

@@ -16,6 +16,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix multithreaded yield behavior when no work.  [Patrick Stewart]
 
+****  Fix misc bad-syntax crashes, bug1548, bug1550-1553. [Eric Rippey]
+
 
 * Verilator 4.020 2019-10-06
 

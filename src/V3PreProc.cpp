@@ -136,6 +136,7 @@ public:
 
     std::stack<ProcState> m_states;  ///< Current state of parser
     int         m_off;          ///< If non-zero, ifdef level is turned off, don't dump text
+    bool        m_incError;     ///< Include error found
     string      m_lastSym;      ///< Last symbol name found.
     string      m_formals;      ///< Last formals found
 
@@ -250,6 +251,7 @@ public:
         m_debug = 0;
         m_states.push(ps_TOP);
         m_off = 0;
+        m_incError = false;
         m_lineChars = "";
         m_lastSym = "";
         m_lineAdd = 0;
@@ -748,6 +750,7 @@ string V3PreProcImp::defineSubst(VDefineRef* refp) {
 
 void V3PreProcImp::openFile(FileLine* fl, VInFilter* filterp, const string& filename) {
     // Open a new file, possibly overriding the current one which is active.
+    if (m_incError) return;
     V3File::addSrcDepend(filename);
 
     // Read a list<string> with the whole file.
@@ -761,8 +764,11 @@ void V3PreProcImp::openFile(FileLine* fl, VInFilter* filterp, const string& file
     if (!m_preprocp->isEof()) {  // IE not the first file.
         // We allow the same include file twice, because occasionally it pops
         // up, with guards preventing a real recursion.
-        if (m_lexp->m_streampStack.size()>V3PreProc::INCLUDE_DEPTH_MAX) {
+        if (m_lexp->m_streampStack.size() > V3PreProc::INCLUDE_DEPTH_MAX) {
             error("Recursive inclusion of file: "+filename);
+            // Include might be a tree of includes that is O(n^2) or worse.
+            // Once hit this error then, ignore all further includes so can unwind.
+            m_incError = true;
             return;
         }
         // There's already a file active.  Push it to work on the new one.

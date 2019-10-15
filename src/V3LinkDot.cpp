@@ -1125,8 +1125,8 @@ class LinkDotFindVisitor : public AstNVisitor {
                 && !foundp->imported()) {  // and not from package
                 nodep->v3error("Duplicate declaration of enum value: "<<nodep->prettyName()<<endl
                                <<nodep->warnContextPrimary()<<endl
-                               <<findvarp->warnOther()<<"... Location of original declaration\n"
-                               <<findvarp->warnContextSecondary());
+                               <<foundp->nodep()->warnOther()<<"... Location of original declaration\n"
+                               <<foundp->nodep()->warnContextSecondary());
             } else {
                 // User can disable the message at either point
                 if (!nodep->fileline()->warnIsOff(V3ErrorCode::VARHIDDEN)
