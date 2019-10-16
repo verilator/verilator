@@ -6,106 +6,156 @@
 
 language: cpp
 
-matrix:
-  include:
-# Non-cron build will just run on whatever linux flavor we get
-    - if: type != cron
-      os: linux
-      compiler: gcc
-      env:
-        - SCENARIOS=--dist
-    - if: type != cron
-      os: linux
-      compiler: gcc
-      env:
-        - SCENARIOS=--vlt
-    - if: type != cron
-      os: linux
-      compiler: gcc
-      env:
-        - SCENARIOS=--vltmt
-# Cron builds try different OS/compiler combinations
-    - if: type = cron
-      dist: xenial
-      compiler: gcc
-      env:
-        - SCENARIOS=--dist
-    - if: type = cron
-      dist: xenial
-      compiler: gcc
-      env:
-        - SCENARIOS=--vlt
-    - if: type = cron
-      dist: xenial
-      compiler: gcc
-      env:
-        - SCENARIOS=--vltmt
-    - if: type = cron
-      dist: xenial
-      compiler: clang
-      env:
-        - SCENARIOS=--dist
-    - if: type = cron
-      dist: xenial
-      compiler: clang
-      env:
-        - SCENARIOS=--vlt
-    - if: type = cron
-      dist: xenial
-      compiler: clang
-      env:
-        - SCENARIOS=--vltmt
-#    - if: type = cron
-#      os: osx
-#      compiler: gcc
-#      env:
-#        - SCENARIOS=--dist
-#    - if: type = cron
-#      os: osx
-#      compiler: gcc
-#      env:
-#        - SCENARIOS=--vlt
-#    - if: type = cron
-#      os: osx
-#      compiler: gcc
-#      env:
-#        - SCENARIOS=--vltmt
-    - if: type = cron
-      dist: trusty
-      compiler: gcc
-      env:
-        - SCENARIOS=--dist
-    - if: type = cron
-      dist: trusty
-      compiler: gcc
-      env:
-        - SCENARIOS=--vlt
-    - if: type = cron
-      dist: trusty
-      compiler: gcc
-      env:
-        - SCENARIOS=--vltmt
-
 cache: ccache
 
-# Some tests require gdb
-addons:
-  apt:
-    packages:
-      - gdb
+env:
+  global:
+    - VERILATOR_CACHE=$HOME/verilator_cache
+    - VERILATOR_ROOT=$PWD
+    - VERILATOR_NUM_JOBS=$((`nproc` + 1))
+    - VERILATOR_CONFIG_FLAGS="--enable-maintainer-mode --enable-longtests"
+    - OBJCACHE=ccache
+
+cache:
+  directories:
+    - $VERILATOR_CACHE
 
 before_install:
 # Perl modules needed for testing
   - yes yes | sudo cpan -fi Unix::Processors Parallel::Forker Bit::Vector
+  - sudo apt-get install gdb
 before_script:
-  - export VLT_JOBS=$((`nproc` + 1))
-  - export OBJCACHE=ccache
-  - export VERILATOR_ROOT=`pwd`
-  - autoconf
-script:
-  - >
-    ./configure --enable-maintainer-mode --enable-longtests &&
-    make -j $VLT_JOBS &&
-    make test_regress DRIVER_FLAGS="-j 0 --quiet --rerun"
+  - bash -x ci/build_verilator.sh
 after_script:
   - ccache -s
+
+stages:
+  - "Build Verilator"
+  - test
+
+jobs:
+  include:
+    - if: type != cron
+      stage: "Build Verilator"
+      name: Build Verilator
+      os: linux
+      compiler: gcc
+      script: echo "Done building Verilator"
+# Non-cron build will just run on whatever linux flavor we get
+    - if: type != cron
+      stage: test
+      name: Dist test
+      os: linux
+      compiler: gcc
+      script: ci/test.sh dist
+    - if: type != cron
+      stage: test
+      name: Vlt test
+      os: linux
+      compiler: gcc
+      script: ci/test.sh vlt
+    - if: type != cron
+      stage: test
+      name: Vltmt test
+      os: linux
+      compiler: gcc
+      script: ci/test.sh vltmt
+# Cron builds try different OS/compiler combinations
+    - if: type = cron
+      stage: "Build Verilator"
+      name: Build xenial gcc Verilator
+      os: xenial
+      compiler: gcc
+      script: echo "Done building Verilator"
+    - if: type = cron
+      stage: test
+      name: Xenail gcc dist test
+      os: xenial
+      compiler: gcc
+      script: ci/test.sh dist
+    - if: type = cron
+      stage: test
+      name: Xenail gcc vlt test
+      os: xenial
+      compiler: gcc
+      script: ci/test.sh vlt
+    - if: type = cron
+      stage: test
+      name: Xenail gcc vltmt test
+      os: xenial
+      compiler: gcc
+      script: ci/test.sh vltmt
+    - if: type = cron
+      stage: "Build Verilator"
+      name: Build xenial clang Verilator
+      os: xenial
+      compiler: clang
+      script: echo "Done building Verilator"
+    - if: type = cron
+      stage: test
+      name: Xenail clang dist test
+      os: xenial
+      compiler: clang
+      script: ci/test.sh dist
+    - if: type = cron
+      stage: test
+      name: Xenail clang vlt test
+      os: xenial
+      compiler: clang
+      script: ci/test.sh vlt
+    - if: type = cron
+      stage: test
+      name: Xenail clang vltmt test
+      os: xenial
+      compiler: clang
+      script: ci/test.sh vltmt
+#    - if: type = cron
+#      stage: "Build Verilator"
+#      name: Build OSX gcc Verilator
+#      os: osx
+#      compiler: gcc
+#      script: echo "Done building Verilator"
+#    - if: type = cron
+#      stage: test
+#      name: OSX gcc dist test
+#      os: osx
+#      compiler: gcc
+#      script: ci/test.sh dist
+#    - if: type = cron
+#      stage: test
+#      name: OSX gcc vlt test
+#      os: osx
+#      os: osx
+#      compiler: gcc
+#      script: ci/test.sh vlt
+#    - if: type = cron
+#      stage: test
+#      name: OSX gcc vltmt test
+#      os: osx
+#      os: osx
+#      compiler: gcc
+#      script: ci/test.sh vltmt
+    - if: type = cron
+      stage: "Build Verilator"
+      name: Build trusty gcc Verilator
+      os: trusty
+      compiler: gcc
+      script: echo "Done building Verilator"
+    - if: type = cron
+      stage: test
+      name: Trusty gcc dist test
+      os: trusty
+      compiler: gcc
+      script: ci/test.sh dist
+    - if: type = cron
+      stage: test
+      name: Trusty gcc vlt test
+      os: trusty
+      compiler: gcc
+      script: ci/test.sh vlt
+    - if: type = cron
+      stage: test
+      os: trusty
+      name: Trusty gcc vltmt test
+      compiler: gcc
+      script: ci/test.sh vltmt

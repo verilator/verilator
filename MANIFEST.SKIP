@@ -46,6 +46,7 @@ verilator_coverage_bin.*
 ncverilog.history
 autom4te\.cache/
 nodist/
+ci/
 /simv$
 /simv.daidir/
 /vc_hdrs.h$
