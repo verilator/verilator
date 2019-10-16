@@ -716,6 +716,16 @@ enviroment can check their branches too by doing the following:
 * Under a Travis CI project click More options > Settings in order to set up a
 cron job on a particular branch
 
+=== Fuzzing
+
+There are scripts included to facilitate fuzzing of Verilator.  These have been
+successfully used in finding a number of bugs in the frontend.  
+
+The scripts are based on using http://lcamtuf.coredump.cx/afl/[American fuzzy lop]
+on a Debian-like system.
+
+To get started, go to "nodist/fuzzer/" and run "./all".
+
 == Debugging
 
 === --debug

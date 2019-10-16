@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 
-#This script is designed to rerun examples to see whether they have unexpected types of output besides the ones that afl-fuzz detects as such.  
+# DESCRIPTION: Fuzzer result checker
+#
+# Copyright 2019-2019 by Eric Rippey. This package is free software; you can
+# redistribute it and/or modify it under the terms of either the GNU Lesser
+# General Public License Version 3 or the Perl Artistic License Version 2.0.
+######################################################################
+
+# This script is designed to rerun examples to see whether they have unexpected types of output besides the ones that afl-fuzz detects as such.  
 
 from glob import glob
 from subprocess import getstatusoutput
@@ -22,13 +29,13 @@ def interesting(s):
 
 
 def main():
-    p=ArgumentParser()
+    p = ArgumentParser()
     p.add_argument('--dir',default='out1/queue')
-    args=p.parse_args()
+    args = p.parse_args()
 
     for infile in glob(args.dir+'/*'):
-        #Input filenames are known not to contain spaces or other unusual characters therefore this works.
-        status,output=getstatusoutput('../../bin/verilator_bin --cc '+infile)
+        # Input filenames are known not to contain spaces or other unusual characters therefore this works.
+        status,output = getstatusoutput('../../bin/verilator_bin --cc '+infile)
         if interesting(output):
             print(infile)
             print(status)
