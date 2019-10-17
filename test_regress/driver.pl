@@ -360,13 +360,13 @@ sub wait_and_report {
     my $self = shift;
     $self->print_summary(force=>1);
     # Wait for all children to finish
-    while ($::Have_Forker && $::Fork->is_any_left()) {
-        $::Fork->poll();
-        if (time() - ($self->{_last_summary_time} || 0) > 30) {
+    while ($::Fork->is_any_left) {
+        $::Fork->poll;
+        if (time() - ($self->{_last_summary_time} || 0) >= 30) {
             $self->print_summary(force=>1, show_running=>1);
         }
         Time::HiRes::usleep 100*1000;
-    };
+    }
     $runner->report(undef);
     $runner->report($self->{driver_log_filename});
 }
@@ -403,7 +403,7 @@ sub print_summary {
                   @_);
     if (!$self->{quiet} || $params{force}
         || ($self->{left_cnt} < 5)
-        || time() - ($self->{_last_summary_time} || 0) > 60 * 5) {
+        || time() - ($self->{_last_summary_time} || 0) >= 15) {
         $self->{_last_summary_time} = time();
         print STDERR ("==SUMMARY: ".$self->sprint_summary."\n");
         if ($params{show_running}) {
@@ -2121,6 +2121,7 @@ sub kill_tree_all {}
 sub wait_all {}
 sub ready {}
 sub running {}
+sub is_any_left { return 0; }
 
 #######################################################################
 1;
