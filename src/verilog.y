@@ -192,6 +192,7 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
 // Macro functions
 
 #define CRELINE() (PARSEP->copyOrSameFileLine())  // Only use in empty rules, so lines point at beginnings
+#define FILELINE_OR_CRE(nodep) ((nodep) ? (nodep)->fileline() : CRELINE())
 
 #define VARRESET_LIST(decl)    { GRAMMARP->m_pinNum=1; GRAMMARP->m_pinAnsi=false; \
                                  VARRESET(); VARDECL(decl); }  // Start of pinlist
@@ -2297,7 +2298,7 @@ cellpinItemE<pinp>:		// IEEE: named_port_connection + empty
 	//UNSUP	'.' idAny '(' expr ':' expr ')'		{ }
 	//UNSUP	'.' idAny '(' expr ':' expr ':' expr ')' { }
 	//
-	|	expr					{ $$ = new AstPin($1->fileline(),PINNUMINC(),"",$1); }
+	|	expr					{ $$ = new AstPin(FILELINE_OR_CRE($1),PINNUMINC(),"",$1); }
 	//UNSUP	expr ':' expr				{ }
 	//UNSUP	expr ':' expr ':' expr			{ }
 	;
@@ -2741,7 +2742,7 @@ assignment_pattern<patternp>:	// ==IEEE: assignment_pattern
 	//			// also IEEE "''{' array_pattern_key ':' ...
 	|	yP_TICKBRA patternMemberList '}'	{ $$ = new AstPattern($1,$2); }
 	//			// IEEE: Not in grammar, but in VMM
-	|	yP_TICKBRA '}'				{ $$ = NULL; $1->v3error("Unsupported: Empty '{}"); }
+	|	yP_TICKBRA '}'				{ $$ = new AstPattern($1, NULL); $1->v3error("Unsupported: Empty '{}"); }
 	;
 
 // "datatype id = x {, id = x }"  |  "yaId = x {, id=x}" is legal

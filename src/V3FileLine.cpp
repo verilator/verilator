@@ -377,8 +377,8 @@ string FileLine::warnContext(bool secondary) const {
             out += sourceLine+"\n";
             out += string((firstColumn()-1), ' ')+'^';
             // Can't use UASSERT_OBJ used in warnings already inside the error end handler
-            UASSERT_STATIC(lastColumn() >= firstColumn(), "Column numbers backwards");
-            if (lastColumn() != firstColumn()) {
+            if (lastColumn() > firstColumn()) {
+                // Note lastColumn() can be <= firstColumn() in some weird preproc expansions
                 out += string((lastColumn()-firstColumn()-1), '~');
             }
             out += "\n";
