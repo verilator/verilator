@@ -183,7 +183,10 @@ if ($opt_rerun && $runner->fail_count) {
     $runner = Runner->new(
         driver_log_filename => "obj_dist/driver_${timestart}_rerun.log",
         quiet => 0,
-        fail1_cnt => $orig_runner->fail_count);
+        fail1_cnt => $orig_runner->fail_count,
+        ok_cnt => $orig_runner->{ok_cnt},
+        skip_cnt => $orig_runner->{skip_cnt},
+        unsup_cnt => $orig_runner->{unsup_cnt});
     foreach my $test (@{$orig_runner->{fail_tests}}) {
         if (0) {  # TBD if this is required - rare that intermediate results are bad
             # Remove old results to force hard rebuild
