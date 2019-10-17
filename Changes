@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    Add --protect-lib, bug1490. [Todd Strader]
 
+**    Add cmake support, bug1363. [Patrick Stewart]
+
 ***   Examples have been renamed.
 
 ***   Add --protect-ids to obscure information in objects, bug1521. [Todd Strader]

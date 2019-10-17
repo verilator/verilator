@@ -183,6 +183,7 @@ RAW_OBJS = \
 	V3EmitC.o \
 	V3EmitCInlines.o \
 	V3EmitCSyms.o \
+	V3EmitCMake.o \
 	V3EmitMk.o \
 	V3EmitV.o \
 	V3EmitXml.o \

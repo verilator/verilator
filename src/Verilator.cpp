@@ -43,6 +43,7 @@
 #include "V3DepthBlock.h"
 #include "V3Descope.h"
 #include "V3EmitC.h"
+#include "V3EmitCMake.h"
 #include "V3EmitMk.h"
 #include "V3EmitV.h"
 #include "V3EmitXml.h"
@@ -565,7 +566,12 @@ void process() {
         && !v3Global.opt.xmlOnly()
         && !v3Global.opt.dpiHdrOnly()) {
         // Makefile must be after all other emitters
-        V3EmitMk::emitmk(v3Global.rootp());
+        if (v3Global.opt.cmake()) {
+            V3EmitCMake::emit();
+        }
+        if (v3Global.opt.gmake()) {
+            V3EmitMk::emitmk();
+        }
     }
 
     // Note early return above when opt.cdc()
@@ -596,6 +602,7 @@ int main(int argc, char** argv, char** env) {
 
     // Validate settings (aka Boost.Program_options)
     v3Global.opt.notify();
+
     V3Error::abortIfErrors();
 
     // Can we skip doing everything if times are ok?

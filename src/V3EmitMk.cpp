@@ -26,16 +26,10 @@
 #include "V3EmitMk.h"
 #include "V3EmitCBase.h"
 
-#include <algorithm>
-#include <cmath>
-#include <cstdarg>
-#include <map>
-#include <vector>
-
 //######################################################################
 // Emit statements and math operators
 
-class EmitMkVisitor : public EmitCBaseVisitor {
+class EmitMk {
 public:
 
     // METHODS
@@ -252,23 +246,18 @@ public:
         of.putsHeader();
     }
 
-    //--------------------
-    virtual void visit(AstNode* nodep) {  // LCOV_EXCL_LINE
-        nodep->v3fatalSrc("No visitors implemented.");
-    }
-
 public:
-    explicit EmitMkVisitor(AstNetlist*) {
+    explicit EmitMk() {
         emitClassMake();
         emitOverallMake();
     }
-    virtual ~EmitMkVisitor() {}
+    virtual ~EmitMk() {}
 };
 
 //######################################################################
 // Gate class functions
 
-void V3EmitMk::emitmk(AstNetlist* nodep) {
+void V3EmitMk::emitmk() {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    EmitMkVisitor visitor (nodep);
+    EmitMk emitter;
 }

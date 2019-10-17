@@ -534,6 +534,12 @@ void V3Options::notify() {
         && !cdc()) {
         v3fatal("verilator: Need --cc, --sc, --cdc, --lint-only, --xml_only or --E option");
     }
+
+    // Make sure at least one make system is enabled
+    if (!m_gmake && !m_cmake) {
+        m_gmake = true;
+    }
+
     if (protectIds()) {
         FileLine* cmdfl = new FileLine(FileLine::commandLineFilename());
         if (allPublic()) {
@@ -888,6 +894,16 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             }
             else if (!strcmp(sw, "-l2name")) {  // Historical and undocumented
                 m_l2Name = "v";
+            }
+            else if (!strcmp(sw, "-make")) {
+                shift;
+                if (!strcmp(argv[i], "cmake")) {
+                    m_cmake = true;
+                } else if (!strcmp(argv[i], "gmake")) {
+                    m_gmake = true;
+                } else {
+                    fl->v3fatal("Unknown --make system specified: '"<<argv[i]<<"'");
+                }
             }
             else if (!strcmp(sw, "-no-l2name")) {  // Historical and undocumented
                 m_l2Name = "";
@@ -1323,6 +1339,7 @@ V3Options::V3Options() {
     m_bboxSys = false;
     m_bboxUnsup = false;
     m_cdc = false;
+    m_cmake = false;
     m_coverageLine = false;
     m_coverageToggle = false;
     m_coverageUnderscore = false;
@@ -1341,6 +1358,7 @@ V3Options::V3Options() {
     m_ignc = false;
     m_inhibitSim = false;
     m_lintOnly = false;
+    m_gmake = false;
     m_makeDepend = true;
     m_makePhony = false;
     m_orderClockDly = true;

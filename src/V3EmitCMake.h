@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Emit Makefile
+// DESCRIPTION: Verilator: Emit CMake file list
 //
 // Code available from: http://www.veripool.org/verilator
 //
@@ -18,17 +18,17 @@
 //
 //*************************************************************************
 
-#ifndef _V3EMITMK_H_
-#define _V3EMITMK_H_ 1
+#ifndef _V3EMITCMAKE_H_
+#define _V3EMITCMAKE_H_ 1
 
 #include "config_build.h"
 #include "verilatedos.h"
 
 //============================================================================
 
-class V3EmitMk {
+class V3EmitCMake {
 public:
-    static void emitmk();
+    static void emit();
 };
 
 #endif  // Guard
