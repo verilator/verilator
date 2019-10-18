@@ -73,7 +73,9 @@ protected:
 VerilatedFst::VerilatedFst(void* fst)
     : m_fst(fst),
       m_fullDump(true),
-      m_scopeEscape('.') {}
+      m_scopeEscape('.') {
+    m_valueStrBuffer.reserve(64+1);  // Need enough room for quad
+}
 
 void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
     m_assertOne.check();
@@ -206,39 +208,41 @@ void VerilatedFst::dump(vluint64_t timeui) {
 // Helpers
 
 char* VerilatedFst::word2Str(vluint32_t newval, int bits) {
-    m_valueStrBuffer.resize(bits+1);
+    // Constructor makes sure m_valueStrBuffer.reserve() > 32+1
     char* s = m_valueStrBuffer.data();
     for (int i = 0; i < bits; ++i) {
-        *s = '0' + ((newval>>(bits-i-1))&1);
-        ++s;
+        *s++ = '0' + ((newval>>(bits-i-1))&1);
     }
     *s = '\0';
     return m_valueStrBuffer.data();
 }
 
 char* VerilatedFst::quad2Str(vluint64_t newval, int bits) {
-    m_valueStrBuffer.resize(bits+1);
+    // Constructor makes sure m_valueStrBuffer.reserve() > 64+1
     char* s = m_valueStrBuffer.data();
     for (int i = 0; i < bits; ++i) {
-        *s = '0' + ((newval>>(bits-i-1))&1);
-        ++s;
+        *s++ = '0' + ((newval>>(bits-i-1))&1);
     }
     *s = '\0';
     return m_valueStrBuffer.data();
 }
 
 char* VerilatedFst::array2Str(const vluint32_t* newval, int bits) {
-    int bq = bits/32, br = bits%32;
-    m_valueStrBuffer.resize(bits+1);
+    int bq = VL_BITWORD_I(bits), br = VL_BITBIT_I(bits);
+    m_valueStrBuffer.reserve(bits+1);
     char* s = m_valueStrBuffer.data();
+    vluint32_t v = newval[bq];
     for (int i = 0; i < br; ++i) {
-        *s = '0' + ((newval[bq]>>(br-i-1))&1);
-        ++s;
+        *s++ = '0' + ((v>>(br-i-1))&1);
     }
     for (int w = bq-1; w >= 0; --w) {
-        for (int i = 0; i < 32; ++i) {
-            *s = '0' + ((newval[w]>>(32-i-1))&1);
-            ++s;
+        v = newval[w];
+        for (int i = 28; i >= 0; i-=4) {
+            s[0] = '0' + ((v>>(i+3))&1);
+            s[1] = '0' + ((v>>(i+2))&1);
+            s[2] = '0' + ((v>>(i+1))&1);
+            s[3] = '0' + ((v>>(i+0))&1);
+            s+=4;
         }
     }
     *s = '\0';
