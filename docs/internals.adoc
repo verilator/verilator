@@ -399,6 +399,11 @@ style indentation; the `c-set-style` undoes that.)
 
 * Use 2 spaces between the end of source and the beginning of a comment.
 
+* Use 1 space after if/for/switch/while and similar keywords.
+
+* No spaces before semicolons, nor between a function's name and open
+parenthesis (only applies to functions; if/else has a following space).
+
 * Use "mixedCapsSymbols" instead of "underlined_symbls".
 
 * Comment every member variable.
