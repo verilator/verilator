@@ -279,6 +279,8 @@ AS_IF([test "x$TRAVIS_COMPILER" != xclang], [_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_NO_U
 CFG_CXX_FLAGS_CMAKE="-faligned-new"
 m4_foreach([cflag],[
         [-fbracket-depth=4096],
+        [-fcf-protection=none],
+        [-mno-cet],
         [-Qunused-arguments],
         [-Wno-bool-operation],
         [-Wno-parentheses-equality],
