@@ -404,7 +404,7 @@ style indentation; the `c-set-style` undoes that.)
 * No spaces before semicolons, nor between a function's name and open
 parenthesis (only applies to functions; if/else has a following space).
 
-* Use "mixedCapsSymbols" instead of "underlined_symbls".
+* Use "mixedCapsSymbols" instead of "underlined_symbols".
 
 * Comment every member variable.
 
@@ -712,7 +712,7 @@ also runs a daily cron job to validate all of the tests against different OS and
 compiler versions.
 
 Developers can connect Travis CI to their GitHub account so that the CI
-enviroment can check their branches too by doing the following:
+environment can check their branches too by doing the following:
 
 * Go to https://github.com/marketplace/travis-ci and follow the prompts
 

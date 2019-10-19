@@ -25,11 +25,11 @@ contributions flow more efficiently.
 * Please https://www.veripool.org/projects/verilator/issues/new[Open a new
   issue].
 
-* You may attach a patch to the issue, or (preferred) may point to a github
-  repository branch within your github account.
+* You may attach a patch to the issue, or (preferred) may point to a GitHub
+  repository branch within your GitHub account.
 
 ** Verilator uses Travis CI to provide continuous integration. You may
-   want to setup Travis CI on your github branch to ensure your changes
+   want to setup Travis CI on your GitHub branch to ensure your changes
    keep the tests passing.  See link:internals.adoc[docs/internals].
 
 * Your source-code contributions must be certified as open source, under
@@ -48,7 +48,7 @@ contributions flow more efficiently.
    contributions.
 
 ** In any of these cases your name will be added to
-   link:CONTRIBUTORS[docs/CONTRIBUTRORS] and you are agreeing all future
+   link:CONTRIBUTORS[docs/CONTRIBUTORS] and you are agreeing all future
    contributions are also certified.
 
 ** We occasionally accept contributions where people do not want their

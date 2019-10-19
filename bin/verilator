@@ -1064,9 +1064,9 @@ at the next function boundary.  In addition, any infrequently executed
 "cold" routines will be placed into __Slow files.  This accelerates
 compilation by as optimization can be disabled on the routines in __Slow,
 and the remaining files can be compiled on parallel machines.  Using
---output-split should have only a trivial impact on performance.  With GCC
-3.3 on a 2GHz Opteron, --output-split 20000 will result in splitting into
-approximately one-minute-compile chunks.
+--output-split should have only a trivial impact on performance.  On one
+design --output-split 20000 resulted in splitting into approximately
+one-minute-compile chunks.
 
 =item --output-split-cfuncs I<statements>
 
@@ -1429,7 +1429,7 @@ Disable tracing of parameters.
 =item --trace-structs
 
 Enable tracing to show the name of packed structure, union, and packed
-array fields, rather than a simgle combined packed bus.  Due to VCD file
+array fields, rather than a single combined packed bus.  Due to VCD file
 format constraints this may result in significantly slower trace times and
 larger trace files.
 
@@ -2517,7 +2517,7 @@ List of verilog files to Verilate. Must have at least one file.
 Optional. Sets the Verilator output prefix. Defaults to the name of the
 first hdl source with a "V" prepended. Must be unique in each call to
 verilate(), so this is necessary if you build a module multiple times with
-different parameters. Must be a valid C++ identifer, i.e. contains no
+different parameters. Must be a valid C++ identifier, i.e. contains no
 whitespace and only characters A-Z, a-z, 0-9 or _.
 
 =item TOP_MODULE
@@ -2548,7 +2548,7 @@ Optional. Sets directories that Verilator searches (same as -y).
 =item OPT_SLOW
 
 Optional. Set compiler flags for the slow path. You may want to reduce the
-optimisation level to improve compile times with large designs.
+optimization level to improve compile times with large designs.
 
 =item OPT_FAST
 
@@ -3821,7 +3821,7 @@ correctly.
 
 Error when Verilator tries to deal with a combinatorial loop that could not be
 flattened, and which involves a datatype which Verilator cannot handle, such
-as an unpacked struct or a large unpacked array. This typically ocurrs when
+as an unpacked struct or a large unpacked array. This typically occurs when
 -Wno-UNOPTFLAT has been used to override an UNOPTFLAT warning (see below).
 
 The solution is to break the loop, as described for UNOPTFLAT.
@@ -4262,8 +4262,8 @@ correctly.
 
 =item UNUSED
 
-Warns that the specified signal is never sinked.  Verilator is fairly
-liberal in the usage calculations; making a signal public, a signal
+Warns that the specified signal is never used/consumed.  Verilator is
+fairly liberal in the usage calculations; making a signal public, a signal
 matching --unused-regexp ("*unused*") or accessing only a single array
 element marks the entire signal as used.
 
