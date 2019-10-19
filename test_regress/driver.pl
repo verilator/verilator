@@ -1058,7 +1058,7 @@ sub compile {
                                 "VM_PREFIX=$self->{VM_PREFIX}",
                                 "TEST_OBJ_DIR=$self->{obj_dir}",
                                 "CPPFLAGS_DRIVER=-D".uc($self->{name}),
-                                ($opt_verbose ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1":""),
+                                ($self->{verbose} ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1":""),
                                 ($param{make_main}?"":"MAKE_MAIN=0"),
                                 ($param{benchmark}?"OPT_FAST=-O2":""),
                                 "$self->{VM_PREFIX}",  # bypass default rule, as we don't need archive
