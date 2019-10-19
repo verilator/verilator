@@ -3892,7 +3892,7 @@ correctly.
 =item IMPORTSTAR
 
 Warns that an "import I<package>::*" statement is in $unit scope. This
-causes the imported symbols to polute the global namespace, defeating much
+causes the imported symbols to pollute the global namespace, defeating much
 of the purpose of having a package. Generally "import ::*" should only be
 used inside a lower scope such as a package or module.
 
