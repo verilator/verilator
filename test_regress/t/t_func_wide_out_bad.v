@@ -23,7 +23,7 @@ module t ();
    function integer func (output bit [PAYLOAD_MAX_BITS-1:0] data);
       /*verilator no_inline_task*/
       data = {PAYLOAD_MAX_BITS{1'b1}};
-      return (1);
+      return 1;
    endfunction
 
 endmodule

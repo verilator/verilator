@@ -859,7 +859,7 @@ int V3PreProcImp::getRawToken() {
             m_rawAtBol = true;
             yyourtext("\n", 1);
             if (debug()>=5) debugToken(VP_WHITE, "LNA");
-            return (VP_WHITE);
+            return VP_WHITE;
         }
         if (m_lineCmt!="") {
             // We have some `line directive or other processed data to return to the user.
@@ -877,10 +877,10 @@ int V3PreProcImp::getRawToken() {
                 goto next_tok;
             } else {
                 if (debug()>=5) debugToken(VP_TEXT, "LCM");
-                return (VP_TEXT);
+                return VP_TEXT;
             }
         }
-        if (isEof()) return (VP_EOF);
+        if (isEof()) return VP_EOF;
 
         // Snarf next token from the file
         m_lexp->curFilelinep()->startToken();
@@ -929,7 +929,7 @@ int V3PreProcImp::getStateToken() {
         int tok = getRawToken();
 
         // Most states emit white space and comments between tokens. (Unless collecting a string)
-        if (tok==VP_WHITE && state() !=ps_STRIFY) return (tok);
+        if (tok==VP_WHITE && state() !=ps_STRIFY) return tok;
         if (tok==VP_BACKQUOTE && state() !=ps_STRIFY) { tok = VP_TEXT; }
         if (tok==VP_COMMENT) {
             if (!m_off) {
@@ -939,7 +939,7 @@ int V3PreProcImp::getStateToken() {
                     // Need to ensure "foo/**/bar" becomes two tokens
                     insertUnreadback(" ");
                 } else if (m_lexp->m_keepComments) {
-                    return (tok);
+                    return tok;
                 } else {
                     // Need to ensure "foo/**/bar" becomes two tokens
                     insertUnreadback(" ");
@@ -1369,7 +1369,7 @@ int V3PreProcImp::getStateToken() {
                 if (m_off) {
                     goto next_tok;
                 } else {
-                    return (VP_TEXT);
+                    return VP_TEXT;
                 }
             }
             else {

@@ -1658,7 +1658,7 @@ static inline IData VL_REPLICATE_III(int, int lbits, int, IData ld, IData rep) V
         returndata = returndata << lbits;
         returndata |= ld;
     }
-    return (returndata);
+    return returndata;
 }
 static inline QData VL_REPLICATE_QII(int, int lbits, int, IData ld, IData rep) VL_PURE {
     QData returndata = ld;
@@ -1666,7 +1666,7 @@ static inline QData VL_REPLICATE_QII(int, int lbits, int, IData ld, IData rep) V
         returndata = returndata << lbits;
         returndata |= static_cast<QData>(ld);
     }
-    return (returndata);
+    return returndata;
 }
 static inline WDataOutP VL_REPLICATE_WII(int obits, int lbits, int,
                                          WDataOutP owp, IData ld, IData rep) VL_MT_SAFE {

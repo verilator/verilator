@@ -258,7 +258,7 @@ AstNode* AstNode::addNext(AstNode* nodep, AstNode* newp) {
     nodep->debugTreeChange("-addNextThs: ", __LINE__, false);
     newp->debugTreeChange("-addNextNew: ", __LINE__, true);
     if (!nodep) {  // verilog.y and lots of other places assume this
-        return (newp);
+        return newp;
     } else {
         // Find end of old list
         AstNode* oldtailp = nodep;

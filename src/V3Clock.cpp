@@ -181,7 +181,7 @@ private:
         AstNode* senEqnp = createSenseEquation(sensesp->sensesp());
         UASSERT_OBJ(senEqnp, sensesp, "No sense equation, shouldn't be in sequent activation.");
         AstIf* newifp = new AstIf(sensesp->fileline(), senEqnp, NULL, NULL);
-        return (newifp);
+        return newifp;
     }
     void clearLastSen() {
         m_lastSenp = NULL;

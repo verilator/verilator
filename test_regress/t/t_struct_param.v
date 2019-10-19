@@ -26,7 +26,7 @@ package config_pkg;
       case (selector)
         1: return_config.mac.USE_QUAD1 = 5;
       endcase
-      return (return_config);
+      return return_config;
    endfunction
 endpackage : config_pkg
 

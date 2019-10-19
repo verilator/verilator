@@ -616,7 +616,7 @@ const string V3OutFormatter::indentSpaces(int num) {
     }
     *cp++ = '\0';
     string st (str);
-    return (st);
+    return st;
 }
 
 bool V3OutFormatter::tokenStart(const char* cp, const char* cmp) {
@@ -639,9 +639,9 @@ int V3OutFormatter::endLevels(const char *strg) {
         while (isspace(*cp)) cp++;
         switch (*cp) {
         case '\n':  // Newlines.. No need for whitespace before it
-            return (0);
+            return 0;
         case '#':  // Preproc directive
-            return (0);
+            return 0;
         }
         {
             // label/public/private:  Deindent by 2 spaces
@@ -671,10 +671,10 @@ int V3OutFormatter::endLevels(const char *strg) {
         case ' ':
             break;  // Continue
         default:
-            return (levels);  // Letter
+            return levels;  // Letter
         }
     }
-    return (levels);
+    return levels;
 }
 
 void V3OutFormatter::puts(const char *strg) {
