@@ -38,7 +38,8 @@ class V3PreProcImp;
 
 // Token codes
 // If changing, see V3PreProc.cpp's V3PreProcImp::tokenName()
-#define VP_EOF          0
+#define VP_EOF          0     // Must be zero, a.k.a. YY_NULL, a.k.a. yy_terminate();
+#define VP_EOF_ERROR    400
 
 #define VP_INCLUDE      256
 #define VP_IFDEF        257

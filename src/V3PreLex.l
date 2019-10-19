@@ -117,7 +117,7 @@ bom             [\357\273\277]
         /* Pass-through strings */
 <INITIAL>{quote}        { yy_push_state(STRMODE); yymore(); }
 <STRMODE><<EOF>>        { FL_FWDC; linenoInc(); yyerrorf("EOF in unterminated string");
-                          yyleng=0; yyterminate(); }
+                          yyleng=0; return VP_EOF_ERROR; }
 <STRMODE>{crnl}         { FL_FWDC; linenoInc(); yyerrorf("Unterminated string");
                           FL_BRK; BEGIN(INITIAL); }
 <STRMODE>{word}         { yymore(); }
@@ -134,7 +134,7 @@ bom             [\357\273\277]
         /* Stringification */
 <INITIAL>{tickquote}    { FL_FWDC; yy_push_state(STRIFY); return VP_STRIFY; }
 <STRIFY><<EOF>>         { FL_FWDC; linenoInc(); yyerrorf("EOF in unterminated '\"");
-                          yyleng=0; yyterminate(); }
+                          yyleng=0; return VP_EOF_ERROR; }
 <STRIFY>"`\\`\""        { FL_FWDC; return VP_BACKQUOTE; }
 <STRIFY>{quote}         { yy_push_state(STRMODE); yymore(); }
 <STRIFY>{tickquote}     { FL_FWDC; yy_pop_state(); return VP_STRIFY; }
@@ -152,14 +152,14 @@ bom             [\357\273\277]
         /* Protected blocks */
 <INITIAL>"`protected"   { yy_push_state(PRTMODE); yymore(); }
 <PRTMODE><<EOF>>        { FL_FWDC; linenoInc(); yyerrorf("EOF in `protected");
-                          yyleng = 0; yyterminate(); }
+                          yyleng = 0; return VP_EOF_ERROR; }
 <PRTMODE>{crnl}         { FL_FWDC; linenoInc(); return VP_TEXT; }
 <PRTMODE>.              { yymore(); }
 <PRTMODE>"`endprotected" { FL_FWDC; yy_pop_state(); return VP_TEXT; }
 
         /* Pass-through include <> filenames */
 <INCMODE><<EOF>>        { FL_FWDC; linenoInc(); yyerrorf("EOF in unterminated include filename");
-                          yyleng = 0; yyterminate(); }
+                          yyleng = 0; return VP_EOF_ERROR; }
 <INCMODE>{crnl}         { FL_FWDC; linenoInc(); yyerrorf("Unterminated include filename");
                           FL_BRK; BEGIN(INITIAL); }
 <INCMODE>[^\>\\]        { yymore(); }
@@ -222,13 +222,15 @@ bom             [\357\273\277]
                           BEGIN(CMTMODE); }
 <DEFCMT>{word}          { yymore(); }
 <DEFCMT>.               { yymore(); }
-<DEFCMT><<EOF>>         { FL_FWDC; yyerrorf("EOF in '/* ... */' block comment\n"); yyleng=0; yyterminate(); }
+<DEFCMT><<EOF>>         { FL_FWDC; yyerrorf("EOF in '/* ... */' block comment\n");
+                          yyleng=0; return VP_EOF_ERROR; }
 
         /* Define arguments (use of a define) */
 <ARGMODE>"/*"           { yy_push_state(CMTMODE); yymore(); }
 <ARGMODE>"//"[^\n\r]*   { FL_FWDC; return VP_COMMENT; }
 <ARGMODE>{drop}         { FL_FWDC; FL_BRK; }
-<ARGMODE><<EOF>>        { FL_FWDC; yyerrorf("EOF in define argument list\n"); yyleng = 0; yyterminate(); }
+<ARGMODE><<EOF>>        { FL_FWDC; yyerrorf("EOF in define argument list\n");
+                          yyleng = 0; return VP_EOF_ERROR; }
 <ARGMODE>{crnl}         { FL_FWDC; linenoInc(); yytext=(char*)"\n"; yyleng=1; return VP_WHITE; }
 <ARGMODE>{quote}        { yy_push_state(STRMODE); yymore(); }
 <ARGMODE>"`\\`\""       { FL_FWDC; appendDefValue(yytext, yyleng); FL_BRK; }  /* Literal text */
@@ -273,7 +275,8 @@ bom             [\357\273\277]
 <CMTBEGM>{ws}+          { yymore(); }
 <CMTBEGM,CMTMODE>"*/"           { FL_FWDC; yy_pop_state(); return VP_COMMENT; }
 <CMTBEGM,CMTMODE>{crnl}         { linenoInc(); yymore(); }
-<CMTBEGM,CMTMODE><<EOF>>        { FL_FWDC; yyerrorf("EOF in '/* ... */' block comment\n"); yyleng=0; yyterminate(); }
+<CMTBEGM,CMTMODE><<EOF>>        { FL_FWDC; yyerrorf("EOF in '/* ... */' block comment\n");
+                                  yyleng=0; return VP_EOF_ERROR; }
 <CMTMODE>{word}                 { yymore(); }
 <CMTBEGM>.                      { yymore(); BEGIN CMTMODE; }    /* beginning in comment */
 <CMTMODE>.                      { yymore(); }
@@ -285,7 +288,7 @@ bom             [\357\273\277]
 
         /* Generics */
 <INITIAL>{crnl}         { FL_FWDC; linenoInc(); yytext=(char*)"\n"; yyleng=1; return VP_WHITE; }
-<INITIAL><<EOF>>        { FL_FWDC; yyterminate(); }  /* A "normal" EOF */
+<INITIAL><<EOF>>        { FL_FWDC; return VP_EOF; }  /* A "normal" EOF */
 <INITIAL>{symb}         { FL_FWDC; return VP_SYMBOL; }
 <INITIAL>{symb}``       { FL_FWDC; yyleng-=2; return VP_SYMBOL_JOIN; }
 <INITIAL>``             { FL_FWDC; yyleng-=2; return VP_JOIN; }

@@ -230,6 +230,7 @@ public:
     // METHODS, called from upper level shell
     void openFile(FileLine* fl, VInFilter* filterp, const string& filename);
     bool isEof() const { return m_lexp->curStreamp()->m_eof; }
+    void forceEof() { m_lexp->curStreamp()->m_eof = true; }
     string getline();
     void insertUnreadback(const string& text) { m_lineCmt += text; }
     void insertUnreadbackAtBol(const string& text);
@@ -497,6 +498,7 @@ const char* V3PreProcImp::tokenName(int tok) {
     case VP_ELSIF       : return("ELSIF");
     case VP_ENDIF       : return("ENDIF");
     case VP_EOF         : return("EOF");
+    case VP_EOF_ERROR   : return("EOF_ERROR");
     case VP_ERROR       : return("ERROR");
     case VP_IFDEF       : return("IFDEF");
     case VP_IFNDEF      : return("IFNDEF");
@@ -885,12 +887,13 @@ int V3PreProcImp::getRawToken() {
         // Snarf next token from the file
         m_lexp->curFilelinep()->startToken();
         int tok = m_lexp->lex();
-
         if (debug()>=5) debugToken(tok, "RAW");
 
-        // A EOF on an include, so we can print `line and detect mis-matched "s
-        if (tok==VP_EOF) {
-            goto next_tok;  // find the EOF, after adding needed lines
+        if (tok==VP_EOF || tok==VP_EOF_ERROR) {
+            // An error might be in an unexpected point, so stop parsing
+            if (tok==VP_EOF_ERROR) forceEof();
+            // A EOF on an include, stream will find the EOF, after adding needed `lines
+            goto next_tok;
         }
 
         if (yyourleng()) m_rawAtBol = (yyourtext()[yyourleng()-1]=='\n');
