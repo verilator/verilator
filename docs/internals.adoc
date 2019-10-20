@@ -382,7 +382,7 @@ changed; if clear, checking those signals for changes may be skipped.
 
 == Coding Conventions
 
-=== Indentation style
+=== Indentation and Naming Style
 
 We will work with contributors to fix up indentation style issues, but it
 is appreciated if you could match our style:
@@ -406,9 +406,11 @@ parenthesis (only applies to functions; if/else has a following space).
 
 * Use "mixedCapsSymbols" instead of "underlined_symbols".
 
+* Uas a "p" suffix on variables that are pointers, e.g. "nodep".
+
 * Comment every member variable.
 
-=== The `astgen` script
+=== The `astgen` Script
 
 Some of the code implementing passes is extremely repetitive, and must be
 implemented for each sub-class of `AstNode`. However, while repetitive,
@@ -566,7 +568,7 @@ follow `nextp()` links.
 
    lp = acceptSubtreeReturnEdits(lp)
 
-=== Identifying derived classes
+=== Identifying Derived Classes
 
 A common requirement is to identify the specific `AstNode` class we are
 dealing with. For example a visitor might not implement separate `visit`
@@ -739,7 +741,7 @@ may be required to setup the system for fuzzing.
 When you run with `--debug` there are two primary output file types placed
 into the obj_dir, .tree and .dot files.
 
-=== .dot output
+=== .dot Output
 
 Dot files are dumps of internal graphs in
 http://www.graphviz.org/[Graphviz] dot format.  When a dot file is dumped,
@@ -755,7 +757,7 @@ For dynamic graph viewing consider ZGRViewer
 http://zvtm.sourceforge.net/zgrviewer.html.  If you know of better
 viewers let us know; ZGRViewer isn't great for large graphs.
 
-=== .tree output
+=== .tree Output
 
 Tree files are dumps of the AST Tree and are produced between every major
 algorithmic stage.  An example:
@@ -955,7 +957,7 @@ sections above on debugging.
 
 . Modify the later visitor functions to process the new feature as needed.
 
-=== Adding a new pass
+=== Adding a New Pass
 
 For more substantial changes you may need to add a new pass. The simplest
 way to do this is to copy the `.cpp` and `.h` files from an existing
