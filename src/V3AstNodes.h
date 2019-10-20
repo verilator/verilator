@@ -178,7 +178,7 @@ public:
     int leftToRightInc() const { return littleEndian()?1:-1; }
     bool littleEndian() const { return m_littleEndian; }
     void littleEndian(bool flag) { m_littleEndian = flag; }
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode* samep) const { return true; }
@@ -263,7 +263,7 @@ public:
         m_attrPublic = false;
     }
     ASTNODE_NODE_FUNCS(Typedef)
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }  // op1 = Type assigning to
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
@@ -410,7 +410,7 @@ public:
         const AstNodeArrayDType* asamep = static_cast<const AstNodeArrayDType*>(samep);
         return (subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
     }
-    virtual void dumpSmall(std::ostream& str);
+    virtual void dumpSmall(std::ostream& str) const;
     virtual V3Hash sameHash() const { return V3Hash(m_refDTypep); }
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }  // op1 = Range of variable
@@ -498,7 +498,7 @@ private:
     }
 public:
     ASTNODE_NODE_FUNCS(BasicDType)
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual V3Hash sameHash() const { return V3Hash(V3Hash(m.m_keyword), V3Hash(m.m_nrange.hi())); }
     virtual bool same(const AstNode* samep) const {  // width/widthMin/numeric compared elsewhere
         const AstBasicDType* sp = static_cast<const AstBasicDType*>(samep);
@@ -614,8 +614,8 @@ public:
     ASTNODE_NODE_FUNCS(IfaceRefDType)
     // METHODS
     virtual const char* broken() const;
-    virtual void dump(std::ostream& str=std::cout);
-    virtual void dumpSmall(std::ostream& str);
+    virtual void dump(std::ostream& str=std::cout) const;
+    virtual void dumpSmall(std::ostream& str) const;
     virtual void cloneRelink();
     virtual AstBasicDType* basicp() const { return NULL; }
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
@@ -669,7 +669,7 @@ public:
     virtual bool similarDType(AstNodeDType* samep) const {
         return skipRefp()->similarDType(samep->skipRefp()); }
     virtual V3Hash sameHash() const { return V3Hash(V3Hash(m_refDTypep), V3Hash(m_packagep)); }
-    virtual void dump(std::ostream& str=std::cout);
+    virtual void dump(std::ostream& str=std::cout) const;
     virtual string name() const { return m_name; }
     virtual AstBasicDType* basicp() const { return subDTypep() ? subDTypep()->basicp() : NULL; }
     virtual AstNodeDType* skipRefp() const {
@@ -803,7 +803,7 @@ public:
         dtypeFrom(m_itemp);
     }
     ASTNODE_NODE_FUNCS(EnumItemRef)
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual string name() const { return itemp()->name(); }
     virtual const char* broken() const { BROKEN_RTN(!itemp()); return NULL; }
     virtual int instrCount() const { return 0; }
@@ -1017,7 +1017,7 @@ public:
         dtypeSetLogicSized(bitwidth, AstNumeric::UNSIGNED);
     }
     ASTNODE_NODE_FUNCS(Sel)
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual void numberOperate(V3Number& out, const V3Number& from, const V3Number& bit, const V3Number& width) {
         out.opSel(from, bit.toUInt()+width.toUInt()-1, bit.toUInt()); }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
@@ -1042,6 +1042,7 @@ public:
     int lsbConst() const { return VN_CAST(lsbp(), Const)->toSInt(); }
     int msbConst() const { return lsbConst()+widthConst()-1; }
     VNumRange& declRange() { return m_declRange; }
+    const VNumRange& declRange() const { return m_declRange; }
     void declRange(const VNumRange& flag) { m_declRange = flag; }
     int declElWidth() const { return m_declElWidth; }
     void declElWidth(int flag) { m_declElWidth = flag; }
@@ -1060,7 +1061,7 @@ public:
                        new AstConst(fl, declRange.elements()))
         , m_declRange(declRange) { }
     ASTNODE_NODE_FUNCS(SliceSel)
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual void numberOperate(V3Number& out, const V3Number& from, const V3Number& lo, const V3Number& width) {
         V3ERROR_NA; }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
@@ -1078,6 +1079,7 @@ public:
     AstNode* fromp() const { return op1p(); }  // op1 = Extracting what (NULL=TBD during parsing)
     // For widthConst()/loConst etc, see declRange().elements() and other VNumRange methods
     VNumRange& declRange() { return m_declRange; }
+    const VNumRange& declRange() const { return m_declRange; }
     void declRange(const VNumRange& flag) { m_declRange = flag; }
 };
 
@@ -1247,7 +1249,7 @@ public:
         m_declKwd = examplep->declKwd();
     }
     ASTNODE_NODE_FUNCS(Var)
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual string name() const { return m_name; }  // * = Var name
     virtual bool hasDType() const { return true; }
     virtual bool maybePointedTo() const { return true; }
@@ -1526,7 +1528,7 @@ public:
         BROKEN_RTN(m_scopep && !m_scopep->brokeExists()); return NULL; }
     virtual bool maybePointedTo() const { return true; }
     virtual string name() const {return scopep()->name()+"->"+varp()->name();}  // * = Var name
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual bool hasDType() const { return true; }
     AstVar* varp() const { return m_varp; }  // [After Link] Pointer to variable
     AstScope* scopep() const { return m_scopep; }  // Pointer to scope it's under
@@ -1553,7 +1555,7 @@ public:
         varScopep(varscp);
     }
     ASTNODE_NODE_FUNCS(VarRef)
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual V3Hash sameHash() const { return V3Hash(V3Hash(varp()->name()), V3Hash(hiername())); }
     virtual bool same(const AstNode* samep) const {
         return same(static_cast<const AstVarRef*>(samep)); }
@@ -1589,7 +1591,7 @@ public:
         dtypeFrom(varp);
     }
     ASTNODE_NODE_FUNCS(VarXRef)
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     string dotted() const { return m_dotted; }
     void dotted(const string& dotted) { m_dotted = dotted; }
     string prettyDotted() const { return prettyName(dotted()); }
@@ -1635,7 +1637,7 @@ public:
         setNOp1p(exprp);
     }
     ASTNODE_NODE_FUNCS(Pin)
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual const char* broken() const {
         BROKEN_RTN(m_modVarp && !m_modVarp->brokeExists());
         BROKEN_RTN(m_modPTypep && !m_modPTypep->brokeExists());
@@ -1739,7 +1741,7 @@ public:
     ASTNODE_NODE_FUNCS(PackageExport)
     virtual const char* broken() const { BROKEN_RTN(!m_packagep || !m_packagep->brokeExists()); return NULL; }
     virtual void cloneRelink() { if (m_packagep && m_packagep->clonep()) m_packagep = m_packagep->clonep(); }
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual string name() const { return m_name; }
     AstPackage* packagep() const { return m_packagep; }
     void packagep(AstPackage* nodep) { m_packagep = nodep; }
@@ -1756,7 +1758,7 @@ public:
     ASTNODE_NODE_FUNCS(PackageImport)
     virtual const char* broken() const { BROKEN_RTN(!m_packagep || !m_packagep->brokeExists()); return NULL; }
     virtual void cloneRelink() { if (m_packagep && m_packagep->clonep()) m_packagep = m_packagep->clonep(); }
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual string name() const { return m_name; }
     AstPackage* packagep() const { return m_packagep; }
     void packagep(AstPackage* nodep) { m_packagep = nodep; }
@@ -1784,7 +1786,7 @@ public:
         : AstNode(fl), m_name(name), m_export(isExport), m_ftaskp(NULL) { }
     ASTNODE_NODE_FUNCS(ModportFTaskRef)
     virtual const char* broken() const { BROKEN_RTN(m_ftaskp && !m_ftaskp->brokeExists()); return NULL; }
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual string name() const { return m_name; }
     virtual void cloneRelink() { if (m_ftaskp && m_ftaskp->clonep()) m_ftaskp = m_ftaskp->clonep(); }
     bool isImport() const { return !m_export; }
@@ -1806,7 +1808,7 @@ public:
         : AstNode(fl), m_name(name), m_direction(direction), m_varp(NULL) { }
     ASTNODE_NODE_FUNCS(ModportVarRef)
     virtual const char* broken() const { BROKEN_RTN(m_varp && !m_varp->brokeExists()); return NULL; }
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual void cloneRelink() { if (m_varp && m_varp->clonep()) m_varp = m_varp->clonep(); }
     virtual string name() const { return m_name; }
     void direction(const VDirection& flag) { m_direction = flag; }
@@ -1851,7 +1853,7 @@ public:
         addNOp1p(pinsp); addNOp2p(paramsp); setNOp3p(rangep); }
     ASTNODE_NODE_FUNCS(Cell)
     // No cloneRelink, we presume cloneee's want the same module linkages
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual const char* broken() const { BROKEN_RTN(m_modp && !m_modp->brokeExists()); return NULL; }
     virtual bool maybePointedTo() const { return true; }
     // ACCESSORS
@@ -1892,7 +1894,7 @@ public:
         : AstNode(fl)
         , m_name(name), m_origModName(origModName), m_scopep(NULL) {}
     ASTNODE_NODE_FUNCS(CellInline)
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual const char* broken() const { BROKEN_RTN(m_scopep && !m_scopep->brokeExists()); return NULL; }
     // ACCESSORS
     virtual string name() const { return m_name; }  // * = Cell name
@@ -2017,7 +2019,7 @@ public:
                 AstNode* lhsp, AstNodeFTaskRef* ftaskrefp)
         : AstNode(fl), m_expect(expect), m_name(name) { setNOp1p(lhsp); setNOp2p(ftaskrefp); }
     ASTNODE_NODE_FUNCS(ParseRef)
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual string name() const { return m_name; }  // * = Var name
     virtual V3Hash sameHash() const { return V3Hash(V3Hash(m_expect), V3Hash(m_name)); }
     virtual bool same(const AstNode* samep) const {
@@ -2050,7 +2052,7 @@ public:
     virtual bool same(const AstNode* samep) const {
         return (m_packagep==static_cast<const AstPackageRef*>(samep)->m_packagep); }
     virtual V3Hash sameHash() const { return V3Hash(m_packagep); }
-    virtual void dump(std::ostream& str=std::cout);
+    virtual void dump(std::ostream& str=std::cout) const;
     AstPackage* packagep() const { return m_packagep; }
     void packagep(AstPackage* nodep) { m_packagep = nodep; }
 };
@@ -2066,7 +2068,7 @@ public:
         if (!packagep) return rhsp;
         return new AstDot(fl, new AstPackageRef(fl, packagep), rhsp);
     }
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual string emitVerilog() { V3ERROR_NA; return ""; }
     virtual string emitC() { V3ERROR_NA; return ""; }
     AstNode* lhsp() const { return op1p(); }
@@ -2172,7 +2174,7 @@ public:
         m_edgeType = VEdgeType::ET_NEVER;
     }
     ASTNODE_NODE_FUNCS(SenItem)
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual V3Hash sameHash() const { return V3Hash(edgeType()); }
     virtual bool same(const AstNode* samep) const {
         return edgeType()==static_cast<const AstSenItem*>(samep)->edgeType(); }
@@ -2225,7 +2227,7 @@ public:
         addNOp1p(sensesp);
     }
     ASTNODE_NODE_FUNCS(SenTree)
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual bool maybePointedTo() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     bool isMulti() const { return m_multi; }
@@ -2248,7 +2250,7 @@ public:
     }
     ASTNODE_NODE_FUNCS(Always)
     //
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     AstSenTree* sensesp() const { return VN_CAST(op1p(), SenTree); }  // op1 = Sensitivity list
     AstNode* bodysp() const { return op2p(); }  // op2 = Statements to evaluate
     void addStmtp(AstNode* nodep) { addOp2p(nodep); }
@@ -2457,7 +2459,7 @@ public:
         }
         return NULL; }
     virtual void cloneRelink() { if (m_dataDeclp && m_dataDeclp->clonep()) m_dataDeclp = m_dataDeclp->clonep(); }
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual int instrCount() const { return 1+2*instrCountLd(); }
     virtual bool maybePointedTo() const { return true; }
     int column() const { return m_column; }
@@ -2497,7 +2499,7 @@ public:
     ASTNODE_NODE_FUNCS(CoverInc)
     virtual const char* broken() const { BROKEN_RTN(!declp()->brokeExists()); return NULL; }
     virtual void cloneRelink() { if (m_declp->clonep()) m_declp = m_declp->clonep(); }
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual int instrCount() const { return 1+2*instrCountLd(); }
     virtual V3Hash sameHash() const { return V3Hash(declp()); }
     virtual bool same(const AstNode* samep) const {
@@ -2667,7 +2669,7 @@ public:
         m_displayType = dispType;
     }
     ASTNODE_NODE_FUNCS(Display)
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual const char* broken() const { BROKEN_RTN(!fmtp()); return NULL; }
     virtual string verilogKwd() const { return (filep() ? string("$f")+string(displayType().ascii())
                                                 : string("$")+string(displayType().ascii())); }
@@ -3338,7 +3340,7 @@ public:
     ASTNODE_NODE_FUNCS(JumpGo)
     virtual const char* broken() const { BROKEN_RTN(!labelp()->brokeExistsAbove()); return NULL; }
     virtual void cloneRelink() { if (m_labelp->clonep()) m_labelp = m_labelp->clonep(); }
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual int instrCount() const { return instrCountBranch(); }
     virtual V3Hash sameHash() const { return V3Hash(labelp()); }
     virtual bool same(const AstNode* samep) const {  // Also same if identical tree structure all the way down, but hard to detect
@@ -3411,7 +3413,7 @@ public:
         m_generate = generate;
     }
     ASTNODE_NODE_FUNCS(Begin)
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual string name() const { return m_name; }  // * = Block name
     virtual void name(const string& name) { m_name = name; }
     // op1 = Statements
@@ -3627,7 +3629,7 @@ public:
     ASTNODE_NODE_FUNCS(TraceInc)
     virtual const char* broken() const { BROKEN_RTN(!declp()->brokeExists()); return NULL; }
     virtual void cloneRelink() { if (m_declp->clonep()) m_declp = m_declp->clonep(); }
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual int instrCount() const { return 10+2*instrCountLd(); }
     virtual bool hasDType() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(declp()); }
@@ -3660,7 +3662,7 @@ public:
         m_sensesp = sensesp;
     }
     ASTNODE_NODE_FUNCS(Active)
-    virtual void dump(std::ostream& str=std::cout);
+    virtual void dump(std::ostream& str=std::cout) const;
     virtual string name() const { return m_name; }
     virtual const char* broken() const { BROKEN_RTN(m_sensesp && !m_sensesp->brokeExists()); return NULL; }
     virtual void cloneRelink() {
@@ -3699,7 +3701,7 @@ public:
     AstNode* dimp() const { return op2p(); }
     AstAttrType attrType() const { return m_attrType; }
     virtual V3Hash sameHash() const { return V3Hash(m_attrType); }
-    virtual void dump(std::ostream& str=std::cout);
+    virtual void dump(std::ostream& str=std::cout) const;
 };
 
 class AstScopeName : public AstNodeMath {
@@ -4232,7 +4234,7 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(size()); }
     virtual bool same(const AstNode* samep) const {
         return size() == static_cast<const AstCCast*>(samep)->size(); }
-    virtual void dump(std::ostream& str=std::cout);
+    virtual void dump(std::ostream& str=std::cout) const;
     //
     int size() const { return m_size; }
 };
@@ -5899,7 +5901,7 @@ public:
     AstVFile(FileLine* fl, const string& name)
         : AstFile(fl, name) { }
     ASTNODE_NODE_FUNCS(VFile)
-    virtual void dump(std::ostream& str=std::cout);
+    virtual void dump(std::ostream& str=std::cout) const;
 };
 
 //======================================================================
@@ -5920,7 +5922,7 @@ public:
         m_support = false;
     }
     ASTNODE_NODE_FUNCS(CFile)
-    virtual void dump(std::ostream& str=std::cout);
+    virtual void dump(std::ostream& str=std::cout) const;
     bool slow() const { return m_slow; }
     void slow(bool flag) { m_slow = flag; }
     bool source() const { return m_source; }
@@ -5983,7 +5985,7 @@ public:
     virtual string name() const { return m_name; }
     virtual const char* broken() const { BROKEN_RTN((m_scopep && !m_scopep->brokeExists())); return NULL; }
     virtual bool maybePointedTo() const { return true; }
-    virtual void dump(std::ostream& str=std::cout);
+    virtual void dump(std::ostream& str=std::cout) const;
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode* samep) const {
         const AstCFunc* asamep = static_cast<const AstCFunc*>(samep);
@@ -6075,7 +6077,7 @@ public:
         if (oldp->argsp()) addNOp1p(oldp->argsp()->unlinkFrBackWithNext());
     }
     ASTNODE_NODE_FUNCS(CCall)
-    virtual void dump(std::ostream& str=std::cout);
+    virtual void dump(std::ostream& str=std::cout) const;
     virtual void cloneRelink() { if (m_funcp && m_funcp->clonep()) {
         m_funcp = m_funcp->clonep();
     }}
@@ -6196,7 +6198,7 @@ public:
     void addStmtsp(AstNode* nodep) { addOp1p(nodep); }
     ExecMTask* execMTaskp() const { return m_execMTaskp; }
     void execMTaskp(ExecMTask* execMTaskp) { m_execMTaskp = execMTaskp; }
-    virtual void dump(std::ostream& str=std::cout);
+    virtual void dump(std::ostream& str=std::cout) const;
 };
 
 class AstExecGraph : public AstNode {
@@ -6253,7 +6255,7 @@ public:
     AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
     void clearCache();
     void repairCache();
-    virtual void dump(std::ostream& str=std::cout);
+    virtual void dump(std::ostream& str=std::cout) const;
 };
 
 //######################################################################

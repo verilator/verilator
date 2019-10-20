@@ -1034,7 +1034,7 @@ void AstNode::dumpPtrs(std::ostream& os) const {
     os<<endl;
 }
 
-void AstNode::dumpTree(std::ostream& os, const string& indent, int maxDepth) {
+void AstNode::dumpTree(std::ostream& os, const string& indent, int maxDepth) const {
     static int s_debugFileline = v3Global.opt.debugSrcLevel("fileline");  // --debugi-fileline 9
     os<<indent<<" "<<this<<endl;
     if (debug()>8) { os<<indent<<"     "; dumpPtrs(os); }
@@ -1044,25 +1044,26 @@ void AstNode::dumpTree(std::ostream& os, const string& indent, int maxDepth) {
     if (maxDepth==1) {
         if (op1p()||op2p()||op3p()||op4p()) { os<<indent<<"1: ...(maxDepth)"<<endl; }
     } else {
-        for (AstNode* nodep=op1p(); nodep; nodep=nodep->nextp()) {
+        for (const AstNode* nodep=op1p(); nodep; nodep=nodep->nextp()) {
             nodep->dumpTree(os, indent+"1:", maxDepth-1); }
-        for (AstNode* nodep=op2p(); nodep; nodep=nodep->nextp()) {
+        for (const AstNode* nodep=op2p(); nodep; nodep=nodep->nextp()) {
             nodep->dumpTree(os, indent+"2:", maxDepth-1); }
-        for (AstNode* nodep=op3p(); nodep; nodep=nodep->nextp()) {
+        for (const AstNode* nodep=op3p(); nodep; nodep=nodep->nextp()) {
             nodep->dumpTree(os, indent+"3:", maxDepth-1); }
-        for (AstNode* nodep=op4p(); nodep; nodep=nodep->nextp()) {
+        for (const AstNode* nodep=op4p(); nodep; nodep=nodep->nextp()) {
             nodep->dumpTree(os, indent+"4:", maxDepth-1); }
     }
 }
 
-void AstNode::dumpTreeAndNext(std::ostream& os, const string& indent, int maxDepth) {
+void AstNode::dumpTreeAndNext(std::ostream& os, const string& indent, int maxDepth) const {
     // Audited to make sure this is never NULL
-    for (AstNode* nodep=this; nodep; nodep=nodep->nextp()) {
+    for (const AstNode* nodep = this; nodep; nodep = nodep->nextp()) {
         nodep->dumpTree(os, indent, maxDepth);
     }
 }
 
 void AstNode::dumpTreeFile(const string& filename, bool append, bool doDump) {
+    // Not const function as calls checkTree
     if (doDump) {
         {   // Write log & close
             UINFO(2,"Dumping "<<filename<<endl);

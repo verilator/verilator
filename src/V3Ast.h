@@ -1439,7 +1439,7 @@ public:
     string warnMore() const { return fileline()->warnMore(); }
     string warnOther() const { return fileline()->warnOther(); }
 
-    virtual void dump(std::ostream& str=std::cout);
+    virtual void dump(std::ostream& str=std::cout) const;
     void dumpGdb();  // For GDB only
     void dumpGdbHeader() const;
 
@@ -1474,10 +1474,10 @@ public:
     void checkIter() const;
     void clearIter() { m_iterpp = NULL; }
     void dumpPtrs(std::ostream& os=std::cout) const;
-    void dumpTree(std::ostream& os=std::cout, const string& indent="    ", int maxDepth=0);
-    void dumpTree(const string& indent, int maxDepth=0) { dumpTree(cout, indent, maxDepth); }
+    void dumpTree(std::ostream& os=std::cout, const string& indent="    ", int maxDepth=0) const;
+    void dumpTree(const string& indent, int maxDepth=0) const { dumpTree(cout, indent, maxDepth); }
     void dumpTreeGdb();  // For GDB only
-    void dumpTreeAndNext(std::ostream& os=std::cout, const string& indent="    ", int maxDepth=0);
+    void dumpTreeAndNext(std::ostream& os=std::cout, const string& indent="    ", int maxDepth=0) const;
     void dumpTreeFile(const string& filename, bool append=false, bool doDump=true);
     static void dumpTreeFileGdb(const char* filenamep=NULL);
 
@@ -1524,7 +1524,7 @@ public:
     //  AstAlways*      castAlways();
 };
 
-inline std::ostream& operator<<(std::ostream& os, AstNode* rhs) {
+inline std::ostream& operator<<(std::ostream& os, const AstNode* rhs) {
     if (!rhs) os<<"NULL"; else rhs->dump(os); return os;
 }
 inline void AstNRelinker::relink(AstNode* newp) { newp->AstNode::relink(this); }
@@ -1871,7 +1871,7 @@ public:
         m_text = textp;  // Copy it
     }
     ASTNODE_BASE_FUNCS(NodeText)
-    virtual void dump(std::ostream& str=std::cout);
+    virtual void dump(std::ostream& str=std::cout) const;
     virtual V3Hash sameHash() const { return V3Hash(text()); }
     virtual bool same(const AstNode* samep) const {
         const AstNodeText* asamep = static_cast<const AstNodeText*>(samep);
@@ -1897,8 +1897,8 @@ public:
     }
     ASTNODE_BASE_FUNCS(NodeDType)
     // ACCESSORS
-    virtual void dump(std::ostream& str);
-    virtual void dumpSmall(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
+    virtual void dumpSmall(std::ostream& str) const;
     virtual bool hasDType() const { return true; }
     virtual AstBasicDType* basicp() const = 0;  // (Slow) recurse down to find basic data type
     virtual AstNodeDType* skipRefp() const = 0;  // recurses over typedefs/const/enum to next non-typeref type
@@ -1958,7 +1958,7 @@ public:
     }
     ASTNODE_BASE_FUNCS(NodeClassDType)
     virtual const char* broken() const;
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
     virtual AstBasicDType* basicp() const {
         return (isFourstate()
@@ -2004,8 +2004,8 @@ public:
         m_refDTypep = NULL;
     }
     ASTNODE_BASE_FUNCS(NodeArrayDType)
-    virtual void dump(std::ostream& str);
-    virtual void dumpSmall(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
+    virtual void dumpSmall(std::ostream& str) const;
     virtual const char* broken() const {
         BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
                      || (!m_refDTypep && childDTypep()))); return NULL; }
@@ -2102,7 +2102,7 @@ public:
         cname(name);  // Might be overridden by dpi import/export
     }
     ASTNODE_BASE_FUNCS(NodeFTask)
-    virtual void dump(std::ostream& str=std::cout);
+    virtual void dump(std::ostream& str=std::cout) const;
     virtual string name() const { return m_name; }  // * = Var name
     virtual bool maybePointedTo() const { return true; }
     virtual bool isGateOptimizable() const { return !((m_dpiExport || m_dpiImport) && !m_pure); }
@@ -2169,7 +2169,7 @@ public:
     virtual void cloneRelink() { if (m_taskp && m_taskp->clonep()) {
         m_taskp = m_taskp->clonep();
     }}
-    virtual void dump(std::ostream& str=std::cout);
+    virtual void dump(std::ostream& str=std::cout) const;
     virtual string name() const { return m_name; }  // * = Var name
     virtual bool isGateOptimizable() const { return m_taskp && m_taskp->isGateOptimizable(); }
     string dotted() const { return m_dotted; }  // * = Scope name or ""
@@ -2218,7 +2218,7 @@ public:
         , m_internal(false), m_recursive(false), m_recursiveClone(false)
         , m_level(0), m_varNum(0), m_typeNum(0) { }
     ASTNODE_BASE_FUNCS(NodeModule)
-    virtual void dump(std::ostream& str);
+    virtual void dump(std::ostream& str) const;
     virtual bool maybePointedTo() const { return true; }
     virtual string name() const { return m_name; }
     AstNode* stmtsp() const { return op2p(); }  // op2 = List of statements
