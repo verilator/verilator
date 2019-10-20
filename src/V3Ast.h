@@ -1551,7 +1551,7 @@ public:
     virtual string emitVerilog() = 0;  /// Format string for verilog writing; see V3EmitV
     virtual string emitC() = 0;
     virtual string emitSimpleOperator() { return ""; }
-    virtual bool cleanOut() = 0;  // True if output has extra upper bits zero
+    virtual bool cleanOut() const = 0;  // True if output has extra upper bits zero
     // Someday we will generically support data types on every math node
     // Until then isOpaque indicates we shouldn't constant optimize this node type
     bool isOpaque() { return VN_IS(this, CvtPackString); }
@@ -1581,8 +1581,8 @@ public:
     void lhsp(AstNode* nodep) { return setOp1p(nodep); }
     // METHODS
     virtual void numberOperate(V3Number& out, const V3Number& lhs) = 0;  // Set out to evaluation of a AstConst'ed lhs
-    virtual bool cleanLhs() = 0;
-    virtual bool sizeMattersLhs() = 0;  // True if output result depends on lhs size
+    virtual bool cleanLhs() const = 0;
+    virtual bool sizeMattersLhs() const = 0;  // True if output result depends on lhs size
     virtual bool doubleFlavor() const { return false; }  // D flavor of nodes with both flavors?
     virtual bool signedFlavor() const { return false; }  // Signed flavor of nodes with both flavors?
     virtual bool stringFlavor() const { return false; }  // N flavor of nodes with both flavors?
@@ -1606,10 +1606,10 @@ public:
     void rhsp(AstNode* nodep) { return setOp2p(nodep); }
     // METHODS
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) = 0;  // Set out to evaluation of a AstConst'ed
-    virtual bool cleanLhs() = 0;  // True if LHS must have extra upper bits zero
-    virtual bool cleanRhs() = 0;  // True if RHS must have extra upper bits zero
-    virtual bool sizeMattersLhs() = 0;  // True if output result depends on lhs size
-    virtual bool sizeMattersRhs() = 0;  // True if output result depends on rhs size
+    virtual bool cleanLhs() const = 0;  // True if LHS must have extra upper bits zero
+    virtual bool cleanRhs() const = 0;  // True if RHS must have extra upper bits zero
+    virtual bool sizeMattersLhs() const = 0;  // True if output result depends on lhs size
+    virtual bool sizeMattersRhs() const = 0;  // True if output result depends on rhs size
     virtual bool doubleFlavor() const { return false; }  // D flavor of nodes with both flavors?
     virtual bool signedFlavor() const { return false; }  // Signed flavor of nodes with both flavors?
     virtual bool stringFlavor() const { return false; }  // N flavor of nodes with both flavors?
@@ -1635,12 +1635,12 @@ public:
     // Set out to evaluation of a AstConst'ed
     virtual void numberOperate(V3Number& out, const V3Number& lhs,
                                const V3Number& rhs, const V3Number& ths) = 0;
-    virtual bool cleanLhs() = 0;  // True if LHS must have extra upper bits zero
-    virtual bool cleanRhs() = 0;  // True if RHS must have extra upper bits zero
-    virtual bool cleanThs() = 0;  // True if THS must have extra upper bits zero
-    virtual bool sizeMattersLhs() = 0;  // True if output result depends on lhs size
-    virtual bool sizeMattersRhs() = 0;  // True if output result depends on rhs size
-    virtual bool sizeMattersThs() = 0;  // True if output result depends on ths size
+    virtual bool cleanLhs() const = 0;  // True if LHS must have extra upper bits zero
+    virtual bool cleanRhs() const = 0;  // True if RHS must have extra upper bits zero
+    virtual bool cleanThs() const = 0;  // True if THS must have extra upper bits zero
+    virtual bool sizeMattersLhs() const = 0;  // True if output result depends on lhs size
+    virtual bool sizeMattersRhs() const = 0;  // True if output result depends on rhs size
+    virtual bool sizeMattersThs() const = 0;  // True if output result depends on ths size
     virtual int instrCount() const { return widthInstrs(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode*) const { return true; }
@@ -1676,13 +1676,13 @@ public:
     AstNode* expr2p() const { return op3p(); }  // op3 = If false...
     virtual string emitVerilog() { return "%k(%l %f? %r %k: %t)"; }
     virtual string emitC() { return "VL_COND_%nq%lq%rq%tq(%nw,%lw,%rw,%tw, %P, %li, %ri, %ti)"; }
-    virtual bool cleanOut() { return false; }  // clean if e1 & e2 clean
-    virtual bool cleanLhs() { return true; }
-    virtual bool cleanRhs() { return false; }
-    virtual bool cleanThs() { return false; }  // Propagates up
-    virtual bool sizeMattersLhs() { return false; }
-    virtual bool sizeMattersRhs() { return false; }
-    virtual bool sizeMattersThs() { return false; }
+    virtual bool cleanOut() const { return false; }  // clean if e1 & e2 clean
+    virtual bool cleanLhs() const { return true; }
+    virtual bool cleanRhs() const { return false; }
+    virtual bool cleanThs() const { return false; }  // Propagates up
+    virtual bool sizeMattersLhs() const { return false; }
+    virtual bool sizeMattersRhs() const { return false; }
+    virtual bool sizeMattersThs() const { return false; }
     virtual int instrCount() const { return instrCountBranch(); }
     virtual AstNode* cloneType(AstNode* condp, AstNode* expr1p, AstNode* expr2p) = 0;
 };
@@ -1735,7 +1735,7 @@ public:
     void rhsp(AstNode* np) { setOp1p(np); }
     void lhsp(AstNode* np) { setOp2p(np); }
     virtual bool hasDType() const { return true; }
-    virtual bool cleanRhs() { return true; }
+    virtual bool cleanRhs() const { return true; }
     virtual int instrCount() const { return widthInstrs(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode*) const { return true; }
