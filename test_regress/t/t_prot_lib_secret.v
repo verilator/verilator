@@ -2,31 +2,31 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2019 by Todd Strader.
 
-module secret_impl (
-		    input [31:0] 	      accum_in,
-		    output wire [31:0] 	      accum_out,
-		    input 		      accum_bypass,
-		    output [31:0] 	      accum_bypass_out,
-		    input 		      s1_in,
-		    output logic 	      s1_out,
-		    input [1:0] 	      s2_in,
-		    output logic [1:0] 	      s2_out,
-		    input [7:0] 	      s8_in,
-		    output logic [7:0] 	      s8_out,
-		    input [32:0] 	      s33_in,
-		    output logic [32:0]       s33_out,
-		    input [63:0] 	      s64_in,
-		    output logic [63:0]       s64_out,
-		    input [64:0] 	      s65_in,
-		    output logic [64:0]       s65_out,
-		    input [128:0] 	      s129_in,
-		    output logic [128:0]      s129_out,
-		    input [3:0] [31:0] 	      s4x32_in,
-		    output logic [3:0] [31:0] s4x32_out,
-		    input 		      clk);
+module secret (
+               input [31:0]              accum_in,
+               output wire [31:0]        accum_out,
+               input                     accum_bypass,
+               output [31:0]             accum_bypass_out,
+               input                     s1_in,
+               output logic              s1_out,
+               input [1:0]               s2_in,
+               output logic [1:0]        s2_out,
+               input [7:0]               s8_in,
+               output logic [7:0]        s8_out,
+               input [32:0]              s33_in,
+               output logic [32:0]       s33_out,
+               input [63:0]              s64_in,
+               output logic [63:0]       s64_out,
+               input [64:0]              s65_in,
+               output logic [64:0]       s65_out,
+               input [128:0]             s129_in,
+               output logic [128:0]      s129_out,
+               input [3:0] [31:0]        s4x32_in,
+               output logic [3:0] [31:0] s4x32_out,
+               input                     clk);
 
-   logic [31:0] 			      secret_accum_q = 0;
-   logic [31:0] 			      secret_value = 7;
+   logic [31:0]                          secret_accum_q = 0;
+   logic [31:0]                          secret_value = 7;
 
    initial $display("created %m");
 

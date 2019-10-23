@@ -15,10 +15,17 @@ if (cyc > 0 && sig``_in != sig``_out) begin \
        end
 
 module t (/*AUTOARG*/
-	  // Inputs
-	  clk
-	  );
+          // Inputs
+          clk
+          );
    input clk;
+
+   localparam last_cyc =
+`ifdef TEST_BENCHMARK
+        `TEST_BENCHMARK;
+`else
+        10;
+`endif
 
    genvar x;
    generate
@@ -27,12 +34,12 @@ module t (/*AUTOARG*/
          reg [63:0] crc = 64'h5aef0c8d_d70a4497;
          logic [31:0] accum_in;
          logic [31:0] accum_out;
-         logic 	      accum_bypass;
+         logic        accum_bypass;
          logic [31:0] accum_bypass_out;
          logic [31:0] accum_out_expect;
          logic [31:0] accum_bypass_out_expect;
-         logic 	      s1_in;
-         logic 	      s1_out;
+         logic        s1_in;
+         logic        s1_out;
          logic [1:0]  s2_in;
          logic [1:0]  s2_out;
          logic [7:0]  s8_in;
@@ -108,7 +115,8 @@ module t (/*AUTOARG*/
 
             if (cyc == 5) accum_bypass <= '1;
 
-            if (x == 0 && cyc == 10) begin
+            if (x == 0 && cyc == last_cyc) begin
+               $display("final cycle = %0d", cyc);
                $write("*-* All Finished *-*\n");
                $finish;
             end

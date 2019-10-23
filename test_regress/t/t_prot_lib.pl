@@ -1,4 +1,7 @@
 #!/usr/bin/perl
+# Makes the test run with tracing enabled by default, can be overridden
+# with --notrace
+unshift(@ARGV, "--trace");
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
@@ -11,6 +14,8 @@ scenarios(
     vlt => 1,
     xsim => 1,
     );
+
+$Self->{sim_time} = $Self->{benchmark} * 100 if $Self->{benchmark};
 
 # Always compile the secret file with Verilator no matter what simulator
 #   we are testing with
@@ -26,21 +31,19 @@ while (1) {
 
     compile(
         verilator_flags2 => ["$secret_dir/secret.sv",
-                             "--trace", "-LDFLAGS",
+                             "-LDFLAGS",
                              "'-L../$secret_prefix -lsecret -static'"],
         xsim_flags2 => ["$secret_dir/secret.sv"],
         );
 
     execute(
         check_finished => 1,
-        xsim_run_flags2 => ["--debug",
-                            "all",
-                            "--sv_lib",
+        xsim_run_flags2 => ["--sv_lib",
                             "$secret_dir/libsecret",
                             "--dpi_absolute"],
         );
 
-    if ($Self->{vlt}) {
+    if ($Self->{vlt} && $Self->{trace}) {
         # We can see the ports of the secret module
         file_grep("$Self->{obj_dir}/simx.vcd", qr/accum_in/);
         # but we can't see what's inside

@@ -589,7 +589,8 @@ sub new {
         xsim => 0,
         xsim_flags => [split(/\s+/,("--nolog --sv --define XSIM --work $self->{name}=$self->{obj_dir}/xsim"))],
         xsim_flags2 => [],  # Overridden in some sim files
-        xsim_run_flags => [split(/\s+/,"--nolog --runall --lib $self->{name}=$self->{obj_dir}/xsim ")],
+        xsim_run_flags => [split(/\s+/,("--nolog --runall --lib $self->{name}=$self->{obj_dir}/xsim"
+                                        .($opt_trace ? " --debug all":"")))],
         xsim_run_flags2 => [],  # Overridden in some sim files
         # Verilator
         vlt => 0,

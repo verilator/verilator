@@ -20,6 +20,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix bad-syntax crashes, bug1548, bug1550-1553, bug1557-1560, bug1563. [Eric Rippey]
 
+****  Benchmark --protect-lib runtime, bug1519. [Todd Strader]
+
 
 * Verilator 4.020 2019-10-06
 
