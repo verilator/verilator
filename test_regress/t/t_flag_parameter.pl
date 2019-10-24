@@ -11,7 +11,7 @@ scenarios(vlt => 1);
 
 compile(
     # It is not possible to put them into the options file
-    v_flags2 => ['-Gstring1="\"New String\"" -pvalue+string2="\"New String\"" -f t/t_flag_parameter.vc'],
+    v_flags2 => ['-f t/t_flag_parameter.vc'],
     );
 
 execute(

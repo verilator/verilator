@@ -16,6 +16,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Increase case duplicate/incomplete to 16 bit tables, bug1545. [Yossi Nivin]
 
+****  Support quoted arguments in -f files, bug1535. [Yves Mathieu]
+
 ****  Fix multithreaded yield behavior when no work.  [Patrick Stewart]
 
 ****  Fix bad-syntax crashes, bug1548, bug1550-1553, bug1557-1560, bug1563. [Eric Rippey]

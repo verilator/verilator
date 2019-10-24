@@ -1,3 +1,9 @@
+-Gstring1="\"New String\""
+-pvalue+string2="\"New String\""
+-Gstring11='"New String"'
+-pvalue+string12='"New String"'
+-Gstring21=\"New\ String\"
+-pvalue+string22=\"New\ String\"
 -Greal11=0.2
 -pvalue+real12=0.2
 -Greal21=4e2
@@ -12,3 +18,7 @@
 -pvalue+int32=123
 -Gint41=32'hdead_beef
 -pvalue+int42=32'hdead_beef
+-Gint51=32\'hdead_beef
+-pvalue+int52=32\'hdead_beef
+-Gint61="32'hdead_beef"
+-pvalue+int62="32'hdead_beef"

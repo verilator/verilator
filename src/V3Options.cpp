@@ -1236,25 +1236,85 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     fl = new FileLine(filename);
 
     // Split into argument list and process
-    // Note we don't respect quotes.  It seems most simulators dont.
-    // Woez those that expect it; we'll at least complain.
-    if (whole_file.find('\"') != string::npos) {
-        fl->v3error("Double quotes in -f files cause unspecified behavior.");
-    }
+    // Note we try to respect escaped char, double/simple quoted strings
+    // Other simulators don't respect a common syntax...
 
     // Strip off arguments and parse into words
     std::vector<string> args;
-    string::size_type startpos = 0;
-    while (startpos < whole_file.length()) {
-        while (isspace(whole_file[startpos])) ++startpos;
-        string::size_type endpos = startpos;
-        while (endpos < whole_file.length() && !isspace(whole_file[endpos])) ++endpos;
-        if (startpos != endpos) {
-            string arg (whole_file, startpos, endpos-startpos);
-            args.reserve(args.size()+1);
-            args.push_back(arg);
+
+    // Parse file using a state machine, taking into account quoted strings and escaped chars
+    enum state {ST_IN_OPTION,
+                ST_ESCAPED_CHAR,
+                ST_IN_QUOTED_STR,
+                ST_IN_DOUBLE_QUOTED_STR};
+
+    state st = ST_IN_OPTION;
+    state last_st;
+    string arg;
+    for (string::size_type pos = 0;
+         pos < whole_file.length(); ++pos) {
+        char curr_char = whole_file[pos];
+        switch (st) {
+        case ST_IN_OPTION:  // Get all chars up to a white space or a "="
+            if (isspace(curr_char)) {  // End of option
+                if (!arg.empty()) {  // End of word
+                    args.push_back(arg);
+                }
+                arg = "";
+                break;
+            }
+            if (curr_char == '\\') {  // Escape char, we wait for next char
+                last_st = st;  // Memorize current state
+                st = ST_ESCAPED_CHAR;
+                break;
+            }
+            if (curr_char == '\'') {  // Find begin of quoted string
+                // Examine next char in order to decide between
+                // a string or a base specifier for integer literal
+                ++pos;
+                if (pos < whole_file.length()) curr_char = whole_file[pos];
+                if (curr_char == '"') {  // String
+                    st = ST_IN_QUOTED_STR;
+                } else {  // Base specifier
+                    arg += '\'';
+                }
+                arg +=  curr_char;
+                break;
+            }
+            if (curr_char == '"') {  // Find begin of double quoted string
+                // Doesn't insert the quote
+                st = ST_IN_DOUBLE_QUOTED_STR;
+                break;
+            }
+            arg += curr_char;
+            break;
+        case ST_IN_QUOTED_STR:  // Just store all chars inside string
+            if (curr_char != '\'') {
+                arg += curr_char;
+            } else {  // End of quoted string
+                st = ST_IN_OPTION;
+            }
+            break;
+        case ST_IN_DOUBLE_QUOTED_STR:  // Take into account escaped chars
+            if (curr_char != '"') {
+                if (curr_char == '\\') {
+                    last_st = st;
+                    st = ST_ESCAPED_CHAR;
+                } else {
+                    arg += curr_char;
+                }
+            } else {  // End of double quoted string
+                st = ST_IN_OPTION;
+            }
+            break;
+        case ST_ESCAPED_CHAR:  // Just add the escaped char
+            arg += curr_char;
+            st = last_st;
+            break;
         }
-        startpos = endpos;
+    }
+    if (!arg.empty()) {  // Add last word
+        args.push_back(arg);
     }
 
     // Path

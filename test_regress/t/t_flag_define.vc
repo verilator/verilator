@@ -5,3 +5,9 @@
 +define+D5A=VALA+D5B=VALB
 // Quotes do NOT escape the plus
 //+define+D5A="VALA+D5B"+D5C
++define+STRING1="\"New String\""
++define+STRING2='"New String"'
++define+STRING3=\"New\ String\"
++define+LIT1=32'h600D600D
++define+LIT2=32\'h600D600D
++define+LIT3="32'h600D600D"
