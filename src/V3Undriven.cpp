@@ -379,18 +379,16 @@ private:
         {
             m_inProcAssign = true;
             iterateChildren(nodep);
-            m_inProcAssign = false;
         }
         m_inProcAssign = prevProc;
     }
     virtual void visit(AstAssignW* nodep) {
-        bool prevCont = m_inProcAssign;
+        bool prevCont = m_inContAssign;
         {
             m_inContAssign = true;
             iterateChildren(nodep);
-            m_inContAssign = false;
         }
-        m_inProcAssign = prevCont;
+        m_inContAssign = prevCont;
     }
     virtual void visit(AstAlways* nodep) {
         AstAlways* prevAlwp = m_alwaysCombp;
