@@ -23,7 +23,7 @@ void clockit(int clk1, int clk0) {
     topp->c0 = clk0;
 #endif
 #ifdef TEST_VERBOSE
-    printf("[%d] c1=%u c0=%u\n", main_time, clk1, clk0);
+    printf("[%u] c1=%d c0=%d\n", main_time, clk1, clk0);
 #endif
     topp->eval();
     main_time++;

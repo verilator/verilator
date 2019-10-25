@@ -377,14 +377,13 @@ private:
             m_lifep = condLifep;
             iterateAndNextNull(nodep->precondsp());
             iterateAndNextNull(nodep->condp());
-            m_lifep = prevLifep;
         }
         {
             m_lifep = bodyLifep;
             iterateAndNextNull(nodep->bodysp());
             iterateAndNextNull(nodep->incsp());
-            m_lifep = prevLifep;
         }
+        m_lifep = prevLifep;
         UINFO(4,"   joinfor"<<endl);
         // For the next assignments, clear any variables that were read or written in the block
         condLifep->lifeToAbove();

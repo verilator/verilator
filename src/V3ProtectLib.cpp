@@ -394,7 +394,6 @@ class ProtectVisitor : public AstNVisitor {
     }
 
     void handleInput(AstVar* varp) {
-        FileLine* fl = varp->fileline();
         m_modPortsp->addNodep(varp->cloneTree(false));
     }
 
@@ -433,7 +432,9 @@ class ProtectVisitor : public AstNVisitor {
     explicit ProtectVisitor(AstNode* nodep):
         m_vfilep(NULL), m_cfilep(NULL), m_modPortsp(NULL),
         m_comboPortsp(NULL), m_seqPortsp(NULL), m_comboIgnorePortsp(NULL), m_comboDeclsp(NULL),
-        m_seqDeclsp(NULL), m_tmpDeclsp(NULL), m_hashValuep(NULL), m_clkSensp(NULL),
+        m_seqDeclsp(NULL), m_tmpDeclsp(NULL), m_hashValuep(NULL),
+        m_comboParamsp(NULL),
+        m_clkSensp(NULL),
         m_comboIgnoreParamsp(NULL), m_seqParamsp(NULL), m_nbAssignsp(NULL), m_seqAssignsp(NULL),
         m_comboAssignsp(NULL), m_cHashValuep(NULL), m_cComboParamsp(NULL), m_cComboInsp(NULL),
         m_cComboOutsp(NULL), m_cSeqParamsp(NULL), m_cSeqClksp(NULL), m_cSeqOutsp(NULL),

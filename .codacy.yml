@@ -1,3 +1,4 @@
 ---
 exclude_paths:
+  - 'ci/build_verilator.sh'
   - 'include/vltstd/**'

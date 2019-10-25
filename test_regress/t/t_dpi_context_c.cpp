@@ -99,7 +99,7 @@ int dpic_save(int value) {
         int i;
     } vp;
 
-    vp.i = value;
+    vp.i = value; if (vp.i) { }
     if (svPutUserData(scope, &Dpic_Unique, vp.ptr)) {
         printf("%%Warning: svPutUserData failed\n");
         return 0;

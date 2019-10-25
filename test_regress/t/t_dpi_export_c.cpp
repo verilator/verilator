@@ -76,6 +76,7 @@ extern "C" {
         printf("%%Error: %s:%d:", __FILE__,__LINE__);   \
         union { type a; long long l; } u;       \
         u.l = 0; u.a = got;                     \
+        if (u.a) { } /*not unused*/             \
         printf(" GOT = %" T_PRI64 "x", u.l);    \
         u.l = 0; u.a = exp;                     \
         printf("  EXP = %" T_PRI64 "x\n", u.l); \
