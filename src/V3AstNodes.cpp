@@ -290,6 +290,7 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc) const {
         if (mayparen) { oname = " ("+oname+")"; mayparen = false; }
         oarray += "["+cvtToStr(widthWords())+"]";
     }
+    if (mayparen) { }
     return otype+oname+oarray;
 }
 

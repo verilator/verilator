@@ -223,7 +223,7 @@ inline bool V3FileDependImp::checkTimes(const string& filename, const string& cm
         return false;
     }
     {
-        string ignore = V3Os::getline(*ifp);
+        string ignore = V3Os::getline(*ifp);  if (ignore.empty()) { /*used*/ }
     }
     {
         char   chkDir;   *ifp>>chkDir;

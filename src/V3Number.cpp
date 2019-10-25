@@ -355,7 +355,7 @@ V3Number& V3Number::setLong(uint32_t value) {
 V3Number& V3Number::setLongS(vlsint32_t value) {
     for (int i=0; i<words(); i++) m_value[i]=m_valueX[i] = 0;
     union { uint32_t u; vlsint32_t s; } u;
-    u.s = value;
+    u.s = value; if (u.s) { }
     m_value[0] = u.u;
     opCleanThis();
     return *this;
@@ -366,7 +366,7 @@ V3Number& V3Number::setDouble(double value) {
     }
     m_double = true;
     union { double d; uint32_t u[2]; } u;
-    u.d = value;
+    u.d = value; if (u.d) { }
     for (int i=2; i<words(); i++) m_value[i]=m_valueX[i] = 0;
     m_value[0] = u.u[0]; m_value[1] = u.u[1];
     return *this;

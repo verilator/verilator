@@ -1388,7 +1388,7 @@ private:
             donorp = fromp;
             recipientp = top;
         }
-        fromp = top = NULL;  // Use donorp and recipientp now instead
+        VL_DANGLING(fromp); VL_DANGLING(top);  // Use donorp and recipientp now instead
 
         // Recursively update forward and reverse CP numbers.
         //

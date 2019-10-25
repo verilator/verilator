@@ -75,10 +75,9 @@ extern "C" {
     if ((got) != (exp)) {                       \
         printf("%%Error: %s:%d:", __FILE__,__LINE__);   \
         union { type a; long long l; } u;       \
-        u.l = 0; u.a = got;                     \
-        if (u.a) { } /*not unused*/             \
+        u.l = 0; u.a = got; if (u.a) {/*used*/} \
         printf(" GOT = %" T_PRI64 "x", u.l);    \
-        u.l = 0; u.a = exp;                     \
+        u.l = 0; u.a = exp; if (u.a) {/*used*/} \
         printf("  EXP = %" T_PRI64 "x\n", u.l); \
         return __LINE__; \
     }
