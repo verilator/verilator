@@ -346,13 +346,12 @@ private:
         {
             m_lifep = ifLifep;
             iterateAndNextNull(nodep->ifsp());
-            m_lifep = prevLifep;
         }
         {
             m_lifep = elseLifep;
             iterateAndNextNull(nodep->elsesp());
-            m_lifep = prevLifep;
         }
+        m_lifep = prevLifep;
         UINFO(4,"   join "<<endl);
         // Find sets on both flows
         m_lifep->dualBranch(ifLifep, elseLifep);

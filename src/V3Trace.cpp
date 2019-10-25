@@ -756,7 +756,6 @@ public:
         m_chgSubStmts = 0;
         m_activityNumber = 0;
         m_code = 0;
-        m_finding = false;
         m_funcNum = 0;
         iterate(nodep);
     }

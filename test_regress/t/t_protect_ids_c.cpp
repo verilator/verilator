@@ -45,7 +45,6 @@ int dpii_a_func(int i) {
 }
 
 int dpii_a_task(int i, int* op) {
-    int o = 0;
     (void)dpix_a_task(i, op);
     return 0;
 }

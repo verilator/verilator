@@ -176,16 +176,16 @@ void _dpii_all(int c, int p, int u, const svOpenArrayHandle i, const svOpenArray
                     vec[0].a = (~vec[0].a);
                     vec[1].a = (~vec[1].a);
                     vec[2].a = (~vec[2].a) & 0x7fffffff;
-                    vec[0].b = vec[0].b;
-                    vec[1].b = vec[1].b;
-                    vec[2].b = vec[2].b;
+                    //vec[0].b = vec[0].b;
+                    //vec[1].b = vec[1].b;
+                    //vec[2].b = vec[2].b;
 #else
                     vec[0].aval = (~vec[0].aval);
                     vec[1].aval = (~vec[1].aval);
                     vec[2].aval = (~vec[2].aval) & 0x7fffffff;
-                    vec[0].bval = vec[0].bval;
-                    vec[1].bval = vec[1].bval;
-                    vec[2].bval = vec[2].bval;
+                    //vec[0].bval = vec[0].bval;
+                    //vec[1].bval = vec[1].bval;
+                    //vec[2].bval = vec[2].bval;
 #endif
                     svPutLogicArrElemVecVal(o, vec, a, b, c);
                 }

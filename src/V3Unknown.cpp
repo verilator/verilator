@@ -435,7 +435,6 @@ private:
                 // ARRAYSEL(...) -> ARRAYSEL(COND(LT(bit<maxbit), bit, 0))
                 AstNRelinker replaceHandle;
                 AstNode* bitp = nodep->bitp()->unlinkFrBack(&replaceHandle);
-                V3Number zeronum (nodep, bitp->width(), 0);
                 AstNode* newp = new AstCondBound(bitp->fileline(),
                                                  condp, bitp,
                                                  new AstConst(bitp->fileline(),

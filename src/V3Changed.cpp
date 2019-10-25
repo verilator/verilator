@@ -222,6 +222,7 @@ public:
         m_newRvEqnp->deleteTree();
     }
     virtual ~ChangedInsertVisitor() {}
+    VL_UNCOPYABLE(ChangedInsertVisitor);
 };
 
 //######################################################################

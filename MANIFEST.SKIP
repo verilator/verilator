@@ -14,6 +14,7 @@
 .*\.key
 .*\.vcd
 .*\.1
+\.codacy\.yml
 \.travis\.yml
 /build/
 /obj_dir/

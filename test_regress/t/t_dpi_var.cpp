@@ -86,8 +86,8 @@ void mon_register_b(const char* namep, int isOut) {
 
 extern "C" void mon_register_done();
 void mon_register_done() {
-    const char* modp = svGetNameFromScope(svGetScope());
 #ifdef TEST_VERBOSE
+    const char* modp = svGetNameFromScope(svGetScope());
     VL_PRINTF("-     mon_register_done('%s');\n", modp);
 #endif
     // Print list of all signals - if we didn't register2 anything we'd pick them off here

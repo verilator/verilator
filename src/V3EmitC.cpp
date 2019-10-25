@@ -1622,7 +1622,7 @@ void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan,
     if (argp->widthMin() > VL_VALUE_STRING_MAX_WIDTH) {
         dispp->v3error("Exceeded limit of "+cvtToStr(VL_VALUE_STRING_MAX_WIDTH)+" bits for any $display-like arguments");
     }
-    if (argp && argp->widthMin()>8 && fmtLetter=='c') {
+    if (argp->widthMin() > 8 && fmtLetter == 'c') {
         // Technically legal, but surely not what the user intended.
         argp->v3warn(WIDTH, dispp->verilogKwd()<<"of %c format of > 8 bit value");
     }

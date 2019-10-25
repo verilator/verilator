@@ -253,7 +253,7 @@ public:
         // Xml output
         m_os<<"<module_files>\n";
         for (std::deque<FileLine*>::iterator it = m_nodeModules.begin();
-                it != m_nodeModules.end(); it++) {
+                it != m_nodeModules.end(); ++it) {
             m_os<<"<file id=\""<<(*it)->filenameLetters()
                 <<"\" filename=\""<<(*it)->filename()
                 <<"\" language=\""<<(*it)->language().ascii()<<"\"/>\n";

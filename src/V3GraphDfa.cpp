@@ -384,7 +384,11 @@ void DfaGraph::nfaToDfa() {
 class DfaGraphReduce : GraphAlg<> {
 private:
     // METHODS
+#ifdef VL_CPPCHECK
+    static int debug() { return 9; }
+#else
     static int debug() { return 0; }
+#endif
     DfaGraph* graphp() { return static_cast<DfaGraph*>(m_graphp); }
 
     bool isDead(DfaVertex* vertexp) {

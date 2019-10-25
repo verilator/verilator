@@ -648,7 +648,7 @@ void ParamVisitor::visitCell(AstCell* nodep, const string& hierName) {
                                   <<modvarp->prettyNameQ());
                 } else {
                     UINFO(9,"Parameter type assignment expr="<<exprp<<" to "<<origp<<endl);
-                    if (origp && exprp->sameTree(origp)) {
+                    if (exprp->sameTree(origp)) {
                         // Setting parameter to its default value.  Just ignore it.
                         // This prevents making additional modules, and makes coverage more
                         // obvious as it won't show up under a unique module page name.

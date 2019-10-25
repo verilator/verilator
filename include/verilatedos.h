@@ -162,7 +162,7 @@
 //=========================================================================
 // C++-2011
 
-#if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__)
+#if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__) || defined(VL_CPPCHECK)
 # define VL_EQ_DELETE = delete
 # define vl_unique_ptr std::unique_ptr
 // By default we use std:: types in C++11.

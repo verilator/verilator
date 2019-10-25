@@ -191,7 +191,7 @@ size_t V3ParseImp::ppInputToLex(char* buf, size_t max_size) {
             m_ppBuffers.push_front(remainder);  // Put back remainder for next time
             len = (max_size-got);
         }
-        strncpy(buf+got, front.c_str(), len);
+        memcpy(buf+got, front.c_str(), len);
         got += len;
     }
     if (debug()>=9) {

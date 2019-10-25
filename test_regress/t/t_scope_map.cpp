@@ -41,7 +41,8 @@ int main(int argc, char **argv, char **env) {
     ++main_time;
 
     const VerilatedScopeNameMap* scopeMapp = Verilated::scopeNameMap();
-    for (VerilatedScopeNameMap::const_iterator it = scopeMapp->begin(); it != scopeMapp->end(); it++) {
+    for (VerilatedScopeNameMap::const_iterator it = scopeMapp->begin();
+         it != scopeMapp->end(); ++it) {
 #ifdef TEST_VERBOSE
         VL_PRINTF("---------------------------------------------\n");
         VL_PRINTF("Scope = %s\n", it->first);

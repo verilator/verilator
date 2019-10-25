@@ -1121,7 +1121,7 @@ class LinkDotFindVisitor : public AstNVisitor {
             ins = true;
         } else if (findvarp != nodep) {
             UINFO(4,"DupVar: "<<nodep<<" ;; "<<foundp<<endl);
-            if (foundp && foundp->parentp() == m_curSymp  // Only when on same level
+            if (foundp->parentp() == m_curSymp  // Only when on same level
                 && !foundp->imported()) {  // and not from package
                 nodep->v3error("Duplicate declaration of enum value: "<<nodep->prettyName()<<endl
                                <<nodep->warnContextPrimary()<<endl
