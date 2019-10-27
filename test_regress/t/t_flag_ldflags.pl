@@ -11,7 +11,7 @@ scenarios(vlt => 1);
 
 run(cmd => ["cd $Self->{obj_dir}"
             ." && c++ -c ../../t/t_flag_ldflags_a.cpp"
-            ." && ar r t_flag_ldflags_a.a t_flag_ldflags_a.o"
+            ." && ar -cr t_flag_ldflags_a.a t_flag_ldflags_a.o"
             ." && ranlib t_flag_ldflags_a.a "],
     check_finished => 0);
 run(cmd => ["cd $Self->{obj_dir}"
