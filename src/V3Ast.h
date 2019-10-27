@@ -605,6 +605,9 @@ public:
                 || m_e==BLOCKTEMP || m_e==MODULETEMP || m_e==STMTTEMP
                 || m_e==XTEMP || m_e==IFACEREF);
     }
+    bool isTemp() const {
+        return (m_e==BLOCKTEMP || m_e==MODULETEMP || m_e==STMTTEMP || m_e==XTEMP);
+    }
   };
   inline bool operator==(AstVarType lhs, AstVarType rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator==(AstVarType lhs, AstVarType::en rhs) { return (lhs.m_e == rhs); }

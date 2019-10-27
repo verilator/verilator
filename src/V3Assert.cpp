@@ -121,7 +121,7 @@ private:
                 // V3Coverage assigned us a bucket to increment.
                 AstCoverInc* covincp = VN_CAST(snodep->coverincp(), CoverInc);
                 UASSERT_OBJ(covincp, snodep, "Missing AstCoverInc under assertion");
-                covincp->unlinkFrBack();
+                covincp->unlinkFrBackWithNext();  // next() might have  AstAssign for trace
                 if (message!="") covincp->declp()->comment(message);
                 bodysp = covincp;
             }

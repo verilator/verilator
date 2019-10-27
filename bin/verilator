@@ -377,12 +377,13 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --threads-max-mtasks <mtasks>  Tune maximum mtask partitioning
     --top-module <topname>      Name of top level input module
     --trace                     Enable waveform creation
+    --trace-depth <levels>      Depth of tracing
+    --trace-coverage            Enable tracing of coverage
     --trace-fst                 Enable FST waveform creation
     --trace-fst-thread          Enable FST threaded waveform creation
-    --trace-depth <levels>      Depth of tracing
     --trace-max-array <depth>   Maximum bit width for tracing
     --trace-max-width <width>   Maximum array depth for tracing
-    --trace-params              Enable tracing parameters
+    --trace-params              Enable tracing of parameters
     --trace-structs             Enable tracing structure names
     --trace-underscore          Enable tracing of _signals
      -U<var>                    Undefine preprocessor define
@@ -1392,6 +1393,25 @@ need to add these to your Makefile manually.
 Having tracing compiled in may result in some small performance losses,
 even when waveforms are not turned on during model execution.
 
+=item --trace-coverage
+
+With --trace and --coverage-*, enable tracing to include a traced signal
+for every --coverage-line or --coverage-user inserted coverage point, to
+assist in debugging coverage items.  Note --coverage-toggle does not get
+additional signals added, as the original signals being toggle-analyzed are
+already visible.
+
+The added signal will be a 32-bit value which will increment on each
+coverage occurrence. Due to this, this option may greatly increase trace
+file sizes and simulation time.
+
+=item --trace-depth I<levels>
+
+Specify the number of levels deep to enable tracing, for example
+--trace-level 1 to only see the top level's signals.  Defaults to the
+entire model.  Using a small number will decrease visibility, but greatly
+improve runtime and trace file size.
+
 =item --trace-fst
 
 Enable FST waveform tracing in the model. This overrides C<--trace> and
@@ -1402,13 +1422,6 @@ C<--trace-fst-thread>.  See also C<--trace-fst-thread>.
 Enable FST waveform tracing in the model, using a separate thread. This is
 typically faster in runtime but slower in total computes than
 C<--trace-fst>.  This overrides C<--trace> and C<--trace-fst>.
-
-=item --trace-depth I<levels>
-
-Specify the number of levels deep to enable tracing, for example
---trace-level 1 to only see the top level's signals.  Defaults to the
-entire model.  Using a small number will decrease visibility, but greatly
-improve runtime and trace file size.
 
 =item --trace-max-array I<depth>
 

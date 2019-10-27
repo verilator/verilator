@@ -152,6 +152,7 @@ class V3Options {
     bool        m_threadsDpiPure;  // main switch: --threads-dpi all/pure
     bool        m_threadsDpiUnpure;  // main switch: --threads-dpi all
     bool        m_trace;        // main switch: --trace
+    bool        m_traceCoverage;  // main switch: --trace-coverage
     bool        m_traceDups;    // main switch: --trace-dups
     bool        m_traceParams;  // main switch: --trace-params
     bool        m_traceStructs; // main switch: --trace-structs
@@ -306,6 +307,7 @@ class V3Options {
     bool threadsDpiUnpure() const { return m_threadsDpiUnpure; }
     bool threadsCoarsen() const { return m_threadsCoarsen; }
     bool trace() const { return m_trace; }
+    bool traceCoverage() const { return m_traceCoverage; }
     bool traceDups() const { return m_traceDups; }
     bool traceParams() const { return m_traceParams; }
     bool traceStructs() const { return m_traceStructs; }

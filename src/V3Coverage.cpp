@@ -96,7 +96,8 @@ private:
     }
 
     AstCoverInc* newCoverInc(FileLine* fl, const string& hier,
-                             const string& page_prefix, const string& comment) {
+                             const string& page_prefix, const string& comment,
+                             const string& trace_var_name) {
         // For line coverage, we may have multiple if's on one line, so disambiguate if
         // everything is otherwise identical
         // (Don't set column otherwise as it may result in making bins not match up with
@@ -123,9 +124,30 @@ private:
         declp->hier(hier);
         m_modp->addStmtp(declp);
 
-        return new AstCoverInc(fl, declp);
+        AstCoverInc* incp = new AstCoverInc(fl, declp);
+        if (!trace_var_name.empty() && v3Global.opt.traceCoverage()) {
+            AstVar* varp = new AstVar(incp->fileline(),
+                                      AstVarType::MODULETEMP, trace_var_name,
+                                      VFlagBitPacked(), 32);
+            varp->trace(true);
+            varp->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);
+            m_modp->addStmtp(varp);
+            UINFO(5, "New coverage trace: "<<varp<<endl);
+            AstAssign* assp  = new AstAssign(
+                incp->fileline(),
+                new AstVarRef(incp->fileline(), varp, true),
+                new AstAdd(incp->fileline(),
+                           new AstVarRef(incp->fileline(), varp, false),
+                           new AstConst(incp->fileline(), AstConst::WidthedValue(), 32, 1)));
+            incp->addNext(assp);
+        }
+        return incp;
     }
-
+    string traceNameForLine(AstNode* nodep, const string& type) {
+        return "vlCoverageLineTrace_"+nodep->fileline()->filebasenameNoExt()
+            +"__"+cvtToStr(nodep->fileline()->lineno())
+            +"_"+type;
+    }
     // VISITORS - BOTH
     virtual void visit(AstNodeModule* nodep) {
         m_modp = nodep;
@@ -190,7 +212,7 @@ private:
         AstCoverToggle* newp
             = new AstCoverToggle(varp->fileline(),
                                  newCoverInc(varp->fileline(), "", "v_toggle",
-                                             varp->name()+above.m_comment),
+                                             varp->name()+above.m_comment, ""),
                                  above.m_varRefp->cloneTree(true),
                                  above.m_chgRefp->cloneTree(true));
         m_modp->addStmtp(newp);
@@ -294,9 +316,11 @@ private:
                 && nodep->fileline()->coverageOn() && v3Global.opt.coverageLine()) {  // if a "if" branch didn't disable it
                 UINFO(4,"   COVER: "<<nodep<<endl);
                 if (nodep->user1()) {
-                    nodep->addIfsp(newCoverInc(nodep->fileline(), "", "v_line", "elsif"));
+                    nodep->addIfsp(newCoverInc(nodep->fileline(), "", "v_line", "elsif",
+                                               traceNameForLine(nodep, "elsif")));
                 } else {
-                    nodep->addIfsp(newCoverInc(nodep->fileline(), "", "v_line", "if"));
+                    nodep->addIfsp(newCoverInc(nodep->fileline(), "", "v_line", "if",
+                                               traceNameForLine(nodep, "if")));
                 }
             }
             // Don't do empty else's, only empty if/case's
@@ -308,7 +332,8 @@ private:
                     UINFO(4,"   COVER: "<<nodep<<endl);
                     if (!elsif) {  // elsif done inside if()
                         nodep->addElsesp(newCoverInc(nodep->elsesp()->fileline(),
-                                                     "", "v_line", "else"));
+                                                     "", "v_line", "else",
+                                                     traceNameForLine(nodep, "else")));
                     }
                 }
             }
@@ -322,7 +347,8 @@ private:
             iterateAndNextNull(nodep->bodysp());
             if (m_checkBlock) {  // if the case body didn't disable it
                 UINFO(4,"   COVER: "<<nodep<<endl);
-                nodep->addBodysp(newCoverInc(nodep->fileline(), "", "v_line", "case"));
+                nodep->addBodysp(newCoverInc(nodep->fileline(), "", "v_line", "case",
+                                             traceNameForLine(nodep, "case")));
             }
             m_checkBlock = true;  // Reset as a child may have cleared it
         }
@@ -333,7 +359,8 @@ private:
         iterateChildren(nodep);
         if (!nodep->coverincp()) {
             // Note the name may be overridden by V3Assert processing
-            nodep->coverincp(newCoverInc(nodep->fileline(), m_beginHier, "v_user", "cover"));
+            nodep->coverincp(newCoverInc(nodep->fileline(), m_beginHier, "v_user", "cover",
+                                         m_beginHier+"_vlCoverageUserTrace"));
         }
         m_checkBlock = true;  // Reset as a child may have cleared it
     }

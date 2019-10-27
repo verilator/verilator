@@ -148,8 +148,12 @@ private:
     }
     virtual void visit(AstVarScope* nodep) {
         iterateChildren(nodep);
-        // Avoid updating this if (), instead see varp->isTrace()
-        if (!nodep->varp()->isTemp() && !nodep->varp()->isFuncLocal()) {
+        // Prefilter - things that get through this if will either get
+        // traced or get a comment as to why not traced.
+        // Generally this equation doesn't need updating, instead use
+        // varp->isTrace() and/or vscIgnoreTrace.
+        if ((!nodep->varp()->isTemp() || nodep->varp()->isTrace())
+            && !nodep->varp()->isFuncLocal()) {
             UINFO(5, "    vsc "<<nodep<<endl);
             AstVar* varp = nodep->varp();
             AstScope* scopep = nodep->scopep();

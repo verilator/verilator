@@ -1335,9 +1335,7 @@ public:
     bool isIfaceRef() const { return (varType()==AstVarType::IFACEREF); }
     bool isIfaceParent() const { return m_isIfaceParent; }
     bool isSignal() const { return varType().isSignal(); }
-    bool isTemp() const {
-        return (varType()==AstVarType::BLOCKTEMP || varType()==AstVarType::MODULETEMP
-                || varType()==AstVarType::STMTTEMP || varType()==AstVarType::XTEMP); }
+    bool isTemp() const { return varType().isTemp(); }
     bool isToggleCoverable() const {
         return ((isIO() || isSignal())
                 && (isIO() || isBitLogic())

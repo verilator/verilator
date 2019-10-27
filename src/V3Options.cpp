@@ -760,6 +760,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if (!strcmp(sw, "-sv"))                             { m_defaultLanguage = V3LangCode::L1800_2005; }
             else if ( onoff (sw, "-threads-coarsen", flag/*ref*/))   { m_threadsCoarsen = flag; }  // Undocumented, debug
             else if ( onoff (sw, "-trace", flag/*ref*/))             { m_trace = flag; }
+            else if ( onoff (sw, "-trace-coverage", flag/*ref*/))    { m_traceCoverage = flag; }
             else if ( onoff (sw, "-trace-dups", flag/*ref*/))        { m_traceDups = flag; }
             else if ( onoff (sw, "-trace-params", flag/*ref*/))      { m_traceParams = flag; }
             else if ( onoff (sw, "-trace-structs", flag/*ref*/))     { m_traceStructs = flag; }
@@ -1449,8 +1450,9 @@ V3Options::V3Options() {
     m_threadsCoarsen = true;
     m_threadsMaxMTasks = 0;
     m_trace = false;
-    m_traceFormat = TraceFormat::VCD;
+    m_traceCoverage = false;
     m_traceDups = false;
+    m_traceFormat = TraceFormat::VCD;
     m_traceParams = true;
     m_traceStructs = false;
     m_traceUnderscore = false;

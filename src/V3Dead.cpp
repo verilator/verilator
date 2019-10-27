@@ -295,7 +295,7 @@ private:
     bool mightElimVar(AstVar* nodep) {
         return (!nodep->isSigPublic()  // Can't elim publics!
                 && !nodep->isIO()
-                && (nodep->isTemp()
+                && ((nodep->isTemp() && !nodep->isTrace())
                     || (nodep->isParam() && !nodep->isTrace())
                     || m_elimUserVars));  // Post-Trace can kill most anything
     }
