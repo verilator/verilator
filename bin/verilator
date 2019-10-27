@@ -1746,13 +1746,13 @@ We'll compile this example into C++.
     mkdir test_our
     cd test_our
 
-    cat <<EOF >our.v
+    cat >our.v <<'EOF'
       module our;
          initial begin $display("Hello World"); $finish; end
       endmodule
     EOF
 
-    cat <<EOF >sim_main.cpp
+    cat >sim_main.cpp <<'EOF'
       #include "Vour.h"
       #include "verilated.h"
       int main(int argc, char** argv, char** env) {
@@ -1815,7 +1815,7 @@ This is an example similar to the above, but using SystemC.
     mkdir test_our_sc
     cd test_our_sc
 
-    cat <<EOF >our.v
+    cat >our.v <<'EOF'
       module our (clk);
          input clk;  // Clock is required to get initial activation
          always @ (posedge clk)
@@ -1823,7 +1823,7 @@ This is an example similar to the above, but using SystemC.
       endmodule
     EOF
 
-    cat <<EOF >sc_main.cpp
+    cat >sc_main.cpp <<'EOF'
       #include "Vour.h"
       int sc_main(int argc, char **argv) {
           Verilated::commandArgs(argc, argv);
@@ -2359,7 +2359,7 @@ In the below example, we have readme marked read-only, and writeme which if
 written from outside the model will have the same semantics as if it
 changed on the specified clock edge.
 
-    cat <<EOF >our.v
+    cat >our.v <<'EOF'
       module our (input clk);
          reg readme   /*verilator public_flat_rd*/;
          reg writeme  /*verilator public_flat_rw @(posedge clk) */;
@@ -2370,7 +2370,7 @@ changed on the specified clock edge.
 There are many online tutorials and books on the VPI, but an example that
 accesses the above signal "readme" would be:
 
-    cat <<EOF >sim_main.cpp
+    cat >sim_main.cpp <<'<<EOF'
       #include "Vour.h"
       #include "verilated.h"
       #include "verilated_vpi.h"  // Required to get definitions
