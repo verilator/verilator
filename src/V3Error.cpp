@@ -141,7 +141,7 @@ void V3Error::vlAbort() {
         std::cerr<<msgPrefix()<<"Aborting since under --debug"<<endl;
         abort();
     } else {
-        exit(10);
+        exit(1);
     }
 }
 

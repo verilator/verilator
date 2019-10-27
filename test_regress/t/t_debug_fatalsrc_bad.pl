@@ -14,8 +14,7 @@ compile(
     fails => $Self->{vlt_all},
     expect =>
 '%Error: Internal Error: .*: --debug-fatal-src
-.* See the manual and .*
-%Error: Command Failed.*',
+.* See the manual and .*',
     );
 
 ok(1);

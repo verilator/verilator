@@ -16,6 +16,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support multithreading on Windows. [Patrick Stewart]
 
+***   Suppress 'command failed' on normal errors.
+
 ****  Increase case duplicate/incomplete to 16 bit tables, bug1545. [Yossi Nivin]
 
 ****  Support quoted arguments in -f files, bug1535. [Yves Mathieu]

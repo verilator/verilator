@@ -134,7 +134,12 @@ sub run {
                 warn "%Error: Verilator_coverage threw signal $status.\n" if !$Debug;
             }
         }
-        die "%Error: Command Failed $command\n";
+        if ($status != 256 || $Debug) {  # i.e. not normal exit(1)
+            warn "%Error: Command Failed $command\n";
+        }
+        exit $! if $!;  # errno
+        exit $? >> 8 if $? >> 8;  # child exit status
+        exit 255;  # last resort
     }
 }
 

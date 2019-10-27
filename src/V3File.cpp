@@ -488,7 +488,7 @@ private:
             execl("/bin/sh", "sh", "-c", command.c_str(), static_cast<char*>(NULL));
             // Don't use v3fatal, we don't share the common structures any more
             fprintf(stderr, "--pipe-filter: exec failed: %s\n", strerror(errno));
-            _exit(10);
+            _exit(1);
         }
         else {  // Parent
             UINFO(6,"In parent, child pid "<<pid

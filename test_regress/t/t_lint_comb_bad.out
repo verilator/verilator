@@ -2,4 +2,3 @@
    always_comb @(*) begin
                ^
 %Error: Cannot continue
-%Error: Command Failed

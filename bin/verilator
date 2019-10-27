@@ -197,14 +197,12 @@ sub run {
                 warn "%Error: Verilator threw signal $status.  Consider trying --debug --gdbbt\n" if !$Debug;
             }
         }
-        if ($opt_quiet_exit) {
-            # Same return code as die
-            exit $! if $!;  # errno
-            exit $? >> 8 if $? >> 8;  # child exit status
-            exit 255;  # last resort
-        } else {
-            die "%Error: Command Failed $command\n";
+        if (!$opt_quiet_exit && ($status != 256 || $Debug)) {  # i.e. not normal exit(1)
+            warn "%Error: Command Failed $command\n";
         }
+        exit $! if $!;  # errno
+        exit $? >> 8 if $? >> 8;  # child exit status
+        exit 255;  # last resort
     }
 }
 

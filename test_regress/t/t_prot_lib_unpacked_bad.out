@@ -2,4 +2,3 @@
                     input  unpacked_in [7:0],
                            ^~~~~~~~~~~
                         ... See the manual and http://www.veripool.org/verilator for more assistance.
-%Error: Command Failed
