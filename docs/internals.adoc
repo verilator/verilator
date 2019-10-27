@@ -103,7 +103,7 @@ the pass.
 A number of passes use graph algorithms, and the class `V3Graph` is
 provided to represent those graphs. Graphs are directed, and algorithms are
 provided to manipulate the graphs and to output them in
-http://www.graphviz.org/[GraphViz] dot format. `V3Graph.h` provides
+http://www.graphviz.org[GraphViz] dot format. `V3Graph.h` provides
 documentation of this class.
 
 ==== `V3GraphVertex`
@@ -431,7 +431,7 @@ into `V3Const__gen.cpp`.
 Verilator uses the "Visitor" design pattern to implement its refinement and
 optimization passes. This allows separation of the pass algorithm from the
 AST on which it operates. Wikipedia provides an introduction to the concept
-at http://en.wikipedia.org/wiki/Visitor_pattern.
+at https://en.wikipedia.org/wiki/Visitor_pattern.
 
 As noted above, all visitors are derived classes of `AstNVisitor`. All
 derived classes of `AstNode` implement the `accept` method, which takes as
@@ -744,7 +744,7 @@ into the obj_dir, .tree and .dot files.
 === .dot Output
 
 Dot files are dumps of internal graphs in
-http://www.graphviz.org/[Graphviz] dot format.  When a dot file is dumped,
+http://www.graphviz.org[Graphviz] dot format.  When a dot file is dumped,
 Verilator will also print a line on stdout that can be used to format the
 output, for example:
 
@@ -753,9 +753,9 @@ output, for example:
 You can then print a.ps.  You may prefer gif format, which doesn't get
 scaled so can be more useful with large graphs.
 
-For dynamic graph viewing consider ZGRViewer
-http://zvtm.sourceforge.net/zgrviewer.html.  If you know of better
-viewers let us know; ZGRViewer isn't great for large graphs.
+For dynamic graph viewing consider
+http://zvtm.sourceforge.net/zgrviewer.html[ZGRViewer].  If you know of
+better viewers let us know; ZGRViewer isn't great for large graphs.
 
 === .tree Output
 

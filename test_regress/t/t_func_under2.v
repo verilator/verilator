@@ -34,7 +34,6 @@ module t (/*AUTOARG*/
         func1(1'b1, dbg_addr) : val = 1;
         // This fails:
         // %Error: Internal Error: test.v:23: ../V3Task.cpp:993: Function not underneath a statement
-        // %Error: Internal Error: See the manual and http://www.veripool.org/verilator for more assistance.
         func2(1'b1, dbg_addr) : val = 2;
         default : val = 0;
       endcase

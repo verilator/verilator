@@ -15,7 +15,7 @@ lint(
     fails => 1,
     expect =>
 '%Error: Internal Error: .*: --debug-fatal-src
-.*See the manual and http://www.veripool.org/verilator for more assistance.
+.*See the manual and .*
 .*in V3Options::.*
 .*%Error: Command Failed.*',
     );

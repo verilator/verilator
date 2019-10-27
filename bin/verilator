@@ -227,7 +227,7 @@ __END__
 
 =head1 NAME
 
-Verilator - Convert Verilog code to C++/SystemC
+Verilator - Translate and simulate SystemVerilog code using C++/SystemC
 
 =head1 SYNOPSIS
 
@@ -241,7 +241,7 @@ Verilator - Convert Verilog code to C++/SystemC
 
 Verilator converts synthesizable (generally not behavioral) Verilog code,
 plus some Synthesis, SystemVerilog and a small subset of Verilog AMS into
-C++ or SystemC code.  It is not a complete simulator, but a compiler.
+C++ or SystemC code.  It is not a traditional simulator, but a compiler.
 
 Verilator is invoked with parameters similar to GCC, Cadence
 Verilog-XL/NC-Verilog, or Synopsys's VCS.  It reads the specified Verilog
@@ -3897,7 +3897,7 @@ output from a sub-module.)  While legal in Verilog, implicit declarations
 only work for single bit wide signals (not buses), do not allow using a
 signal before it is implicitly declared by a cell, and can lead to dangling
 nets.  A better option is the /*AUTOWIRE*/ feature of Verilog-Mode for
-Emacs, available from L<http://www.veripool.org/>
+Emacs, available from L<https://www.veripool.org/verilog-mode>
 
 Ignoring this warning will only suppress the lint check, it will simulate
 correctly.
