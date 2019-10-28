@@ -1547,7 +1547,8 @@ member_decl_assignment<memberp>:	// Derived from IEEE: variable_decl_assignment
                           PARSEP->tagNodep($$);
                           }
 	|	id variable_dimensionListE '=' variable_declExpr
-			{ $4->v3error("Unsupported: Initial values in struct/union members."); }
+			{ $4->v3error("Unsupported: Initial values in struct/union members.");
+			  $$ = NULL; }
 	|	idSVKwd					{ $$ = NULL; }
 	//
 	//			// IEEE: "dynamic_array_variable_identifier '[' ']' [ '=' dynamic_array_new ]"
