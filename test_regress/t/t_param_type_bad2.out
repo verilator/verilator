@@ -1,0 +1,4 @@
+%Error: t/t_param_type_bad2.v:8: Parameter type's initial value isn't a type: 'bad2'
+   localparam type bad2 = 2;   
+                   ^~~~
+%Error: Exiting due to

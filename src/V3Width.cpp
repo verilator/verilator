@@ -3491,6 +3491,10 @@ private:
         } else if (expDTypep->isString() && !underp->dtypep()->isString()) {
             underp = spliceCvtString(underp);
             underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
+        } else if (VN_IS(underp, NodeDType)) {  // Note the node itself, not node's data type
+            underp->v3error(ucfirst(nodep->prettyOperatorName())
+                            <<" expected non-datatype "<<side
+                            <<" but '"<<underp->name()<<"' is a datatype.");
         } else {
             AstBasicDType* expBasicp = expDTypep->basicp();
             AstBasicDType* underBasicp = underp->dtypep()->basicp();
