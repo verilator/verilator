@@ -25,7 +25,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 ****  Fix multithreaded yield behavior when no work.  [Patrick Stewart]
 
 ****  Fix bad-syntax crashes, bug1548, bug1550-1553, bug1557-1560, bug1563,
-      bug1573. [Eric Rippey]
+      bug1573, bug1574. [Eric Rippey]
 
 ****  Benchmark --protect-lib runtime, bug1519. [Todd Strader]
 

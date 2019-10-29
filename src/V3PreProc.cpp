@@ -118,6 +118,8 @@ public:
     V3PreProc* m_preprocp;  ///< Object we're holding data for
     V3PreLex* m_lexp;  ///< Current lexer state (NULL = closed)
     std::stack<V3PreLex*> m_includeStack;  ///< Stack of includers above current m_lexp
+    int m_lastLineno;  // Last line number (stall detection)
+    int m_tokensOnLine;  // Number of tokens on line (stall detection)
 
     enum ProcState { ps_TOP,
                      ps_DEFNAME_UNDEF, ps_DEFNAME_DEFINE,
@@ -266,6 +268,8 @@ public:
         m_finFilelinep = NULL;
         m_lexp = NULL;
         m_preprocp = NULL;
+        m_lastLineno = 0;
+        m_tokensOnLine = 0;
     }
     void configure(FileLine* filelinep) {
         // configure() separate from constructor to avoid calling abstract functions
@@ -888,6 +892,15 @@ int V3PreProcImp::getRawToken() {
         m_lexp->curFilelinep()->startToken();
         int tok = m_lexp->lex();
         if (debug()>=5) debugToken(tok, "RAW");
+
+        if (m_lastLineno != m_lexp->m_tokFilelinep->lineno()) {
+            m_lastLineno = m_lexp->m_tokFilelinep->lineno();
+            m_tokensOnLine = 0;
+        } else if (++m_tokensOnLine > LINE_TOKEN_MAX) {
+            error("Too many preprocessor tokens on a line (>"+cvtToStr(LINE_TOKEN_MAX)
+                  +"); perhaps recursive `define");
+            tok = VP_EOF_ERROR;
+        }
 
         if (tok==VP_EOF || tok==VP_EOF_ERROR) {
             // An error might be in an unexpected point, so stop parsing
