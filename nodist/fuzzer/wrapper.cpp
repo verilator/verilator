@@ -19,8 +19,8 @@
 // This does slow down the execution to some degree but makes the results
 // more reliable.
 
-int main(int argc, char **argv, char **envp) {
+int main(int argc, char** argv, char** envp) {
     auto r = system("rm -rf obj_dir");
-    assert(r==0);
-    return execve("../../bin/verilator_bin",argv,envp);
+    assert(r == 0);
+    return execve("../../bin/verilator_bin", argv, envp);
 }

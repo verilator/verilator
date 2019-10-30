@@ -528,16 +528,16 @@ public:
     virtual void visit(AstStop* nodep) {
         puts("VL_STOP_MT(");
         putsQuoted(protect(nodep->fileline()->filename()));
-        puts(",");
+        puts(", ");
         puts(cvtToStr(nodep->fileline()->lineno()));
-        puts(",\"\");\n");
+        puts(", \"\");\n");
     }
     virtual void visit(AstFinish* nodep) {
         puts("VL_FINISH_MT(");
         putsQuoted(protect(nodep->fileline()->filename()));
-        puts(",");
+        puts(", ");
         puts(cvtToStr(nodep->fileline()->lineno()));
-        puts(",\"\");\n");
+        puts(", \"\");\n");
     }
     virtual void visit(AstText* nodep) {
         if (nodep->tracking() || m_trackText) {
@@ -2138,7 +2138,7 @@ void EmitCImp::emitSettleLoop(const std::string& eval_call, bool initial) {
     puts(        "Verilated::debug(1);\n");
     puts(        "__Vchange = "+protect("_change_request")+"(vlSymsp);\n");
     puts(        "Verilated::debug(__Vsaved_debug);\n");
-    puts(        "VL_FATAL_MT(__FILE__,__LINE__,__FILE__,\"Verilated model didn't ");
+    puts(        "VL_FATAL_MT(__FILE__, __LINE__, __FILE__, \"Verilated model didn't ");
     if (initial) puts("DC ");
     puts(        "converge\");\n");
     puts(    "} else {\n");
@@ -2652,13 +2652,13 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
             puts("/// The special name "" may be used to make a wrapper with a\n");
             puts("/// single model invisible with respect to DPI scope names.\n");
         }
-        puts(modClassName(modp)+"(const char* name=\"TOP\");\n");
+        puts(modClassName(modp)+"(const char* name = \"TOP\");\n");
         if (modp->isTop()) puts("/// Destroy the model; called (often implicitly) by application code\n");
         puts("~"+modClassName(modp)+"();\n");
     }
     if (v3Global.opt.trace() && modp->isTop()) {
         puts("/// Trace signals in the model; called by application code\n");
-        puts("void trace("+v3Global.opt.traceClassBase()+"C* tfp, int levels, int options=0);\n");
+        puts("void trace("+v3Global.opt.traceClassBase()+"C* tfp, int levels, int options = 0);\n");
         if (optSystemC()) {
             puts("/// SC tracing; avoid overloaded virtual function lint warning\n");
             puts("virtual void trace(sc_trace_file* tfp) const { ::sc_core::sc_module::trace(tfp); }\n");
@@ -2892,7 +2892,8 @@ class EmitCTrace : EmitCStmts {
         puts(topClassName()+"* t = ("+topClassName()+"*)userthis;\n");
         puts(EmitCBaseVisitor::symClassVar()+" = t->__VlSymsp;  // Setup global symbol table\n");
         puts("if (!Verilated::calcUnusedSigs()) {\n");
-        puts(    "VL_FATAL_MT(__FILE__,__LINE__,__FILE__,\"Turning on wave traces requires Verilated::traceEverOn(true) call before time 0.\");\n");
+        puts(    "VL_FATAL_MT(__FILE__, __LINE__, __FILE__,\n");
+        puts(    "            \"Turning on wave traces requires Verilated::traceEverOn(true) call before time 0.\");\n");
         puts("}\n");
         puts("vcdp->scopeEscape(' ');\n");
         puts("t->"+protect("traceInitThis")+"(vlSymsp, vcdp, code);\n");
@@ -2974,7 +2975,7 @@ class EmitCTrace : EmitCStmts {
             if (nodep->declDirection().isInoutish()) puts(",FST_VD_INOUT");
             else if (nodep->declDirection().isWritable()) puts(",FST_VD_OUTPUT");
             else if (nodep->declDirection().isNonOutput()) puts(",FST_VD_INPUT");
-            else puts(",FST_VD_IMPLICIT");
+            else puts(", FST_VD_IMPLICIT");
             //
             // fstVarType
             AstVarType vartype = nodep->varType();
@@ -3165,7 +3166,7 @@ class EmitCTrace : EmitCStmts {
 
             if (nodep->symProlog()) puts(EmitCBaseVisitor::symTopAssign()+"\n");
 
-            puts("int c=code;\n");
+            puts("int c = code;\n");
             puts("if (0 && vcdp && c) {}  // Prevent unused\n");
             if (nodep->funcType() == AstCFuncType::TRACE_INIT) {
                 puts("vcdp->module(vlSymsp->name());  // Setup signal names\n");

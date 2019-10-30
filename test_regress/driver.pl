@@ -1577,12 +1577,10 @@ sub _make_main {
     print $fh "#include \"verilated_vcd_sc.h\"\n" if $self->{trace} && $self->{trace_format} eq 'vcd-sc';
     print $fh "#include \"verilated_save.h\"\n" if $self->{savable};
 
-    print $fh "$VM_PREFIX * topp;\n";
+    print $fh "$VM_PREFIX* topp;\n";
     if (!$self->sc) {
         print $fh "vluint64_t main_time = false;\n";
-        print $fh "double sc_time_stamp() {\n";
-        print $fh "    return main_time;\n";
-        print $fh "}\n";
+        print $fh "double sc_time_stamp() { return main_time; }\n";
     }
 
     if ($self->{savable}) {
@@ -1608,13 +1606,13 @@ sub _make_main {
 
     #### Main
     if ($self->sc) {
-        print $fh "extern int sc_main(int argc, char **argv);\n";
-        print $fh "int sc_main(int argc, char **argv) {\n";
+        print $fh "extern int sc_main(int argc, char** argv);\n";
+        print $fh "int sc_main(int argc, char** argv) {\n";
         print $fh "    sc_signal<bool> fastclk;\n" if $self->{inputs}{fastclk};
         print $fh "    sc_signal<bool> clk;\n"  if $self->{inputs}{clk};
         print $fh "    sc_time sim_time($self->{sim_time}, SC_NS);\n";
     } else {
-        print $fh "int main(int argc, char **argv, char **env) {\n";
+        print $fh "int main(int argc, char** argv, char** env) {\n";
         print $fh "    double sim_time = $self->{sim_time};\n";
     }
     print $fh "    Verilated::commandArgs(argc, argv);\n";
@@ -1690,7 +1688,7 @@ sub _make_main {
     }
     print $fh "    }\n";
     print $fh "    if (!Verilated::gotFinish()) {\n";
-    print $fh '       vl_fatal(__FILE__,__LINE__,"main", "%Error: Timeout; never got a $finish");',"\n";
+    print $fh '        vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");',"\n";
     print $fh "    }\n";
     print $fh "    topp->final();\n";
 

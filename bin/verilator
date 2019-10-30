@@ -1823,7 +1823,7 @@ This is an example similar to the above, but using SystemC.
 
     cat >sc_main.cpp <<'EOF'
       #include "Vour.h"
-      int sc_main(int argc, char **argv) {
+      int sc_main(int argc, char** argv) {
           Verilated::commandArgs(argc, argv);
           sc_clock clk ("clk", 10, 0.5, 3, true);
           Vour* top;
