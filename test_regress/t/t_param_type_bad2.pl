@@ -9,9 +9,9 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
-lint(
+compile(
     # Bug1575 required trace to crash
-    verilator_flags2 => ["--trace"],
+    verilator_flags2 => ["--trace --cc"],
     fails => 1,
     expect_filename => $Self->{golden_filename},
     );

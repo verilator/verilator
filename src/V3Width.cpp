@@ -3478,7 +3478,12 @@ private:
         UASSERT_OBJ(stage == FINAL, nodep, "Bad state to iterateCheck");
         UASSERT_OBJ(underp && underp->dtypep(), nodep,
                     "Node has no type");  // Perhaps forgot to do a prelim visit on it?
-        if (expDTypep == underp->dtypep()) {  // Perfect
+        if (VN_IS(underp, NodeDType)) {  // Note the node itself, not node's data type
+            // Must be near top of these checks as underp->dtypep() will look normal
+            underp->v3error(ucfirst(nodep->prettyOperatorName())
+                            <<" expected non-datatype "<<side
+                            <<" but '"<<underp->name()<<"' is a datatype.");
+        } else if (expDTypep == underp->dtypep()) {  // Perfect
             underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
         } else if (expDTypep->isDouble() && underp->isDouble()) {  // Also good
             underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
@@ -3491,10 +3496,6 @@ private:
         } else if (expDTypep->isString() && !underp->dtypep()->isString()) {
             underp = spliceCvtString(underp);
             underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
-        } else if (VN_IS(underp, NodeDType)) {  // Note the node itself, not node's data type
-            underp->v3error(ucfirst(nodep->prettyOperatorName())
-                            <<" expected non-datatype "<<side
-                            <<" but '"<<underp->name()<<"' is a datatype.");
         } else {
             AstBasicDType* expBasicp = expDTypep->basicp();
             AstBasicDType* underBasicp = underp->dtypep()->basicp();

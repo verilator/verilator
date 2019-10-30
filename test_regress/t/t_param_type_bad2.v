@@ -4,6 +4,6 @@
 // without warranty, 2019 by Wilson Snyder.
 
 module t;
-   localparam type t = logic;  // Fine
-   localparam type bad2 = 2;  // Bad
+   localparam t = logic;  // Bad
+   localparam t2 = realtime;  // Bad
 endmodule
