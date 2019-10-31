@@ -2147,7 +2147,9 @@ private:
                                        <<(baddot!="" ? baddot : nodep->prettyName())
                                        <<"' in dotted "<<expectWhat
                                        <<": '"<<m_ds.m_dotText+"."+nodep->prettyName()<<"'");
-                        okSymp->cellErrorScopes(nodep, AstNode::prettyName(m_ds.m_dotText));
+                        if (okSymp) {
+                            okSymp->cellErrorScopes(nodep, AstNode::prettyName(m_ds.m_dotText));
+                        }
                     }
                     m_ds.m_dotErr = true;
                 }
