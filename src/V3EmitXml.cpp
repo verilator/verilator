@@ -338,7 +338,10 @@ public:
 void V3EmitXml::emitxml() {
     UINFO(2,__FUNCTION__<<": "<<endl);
     // All-in-one file
-    V3OutXmlFile of (v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+".xml");
+    string filename = (v3Global.opt.xmlOutput().empty()
+                       ? v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+".xml"
+                       : v3Global.opt.xmlOutput());
+    V3OutXmlFile of(filename);
     of.putsHeader();
     of.puts("<!-- DESCR" "IPTION: Verilator output: XML representation of netlist -->\n");
     of.puts("<verilator_xml>\n");

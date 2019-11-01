@@ -567,14 +567,16 @@ void V3Options::notify() {
             !v3Global.opt.cdc()
             && !v3Global.opt.dpiHdrOnly()
             && !v3Global.opt.lintOnly()
-            && !v3Global.opt.preprocOnly());
+            && !v3Global.opt.preprocOnly()
+            && !v3Global.opt.xmlOnly());
     }
     if (v3Global.opt.makeDepend().isDefault()) {
         v3Global.opt.m_makeDepend.setTrueOrFalse(
             !v3Global.opt.cdc()
             && !v3Global.opt.dpiHdrOnly()
             && !v3Global.opt.lintOnly()
-            && !v3Global.opt.preprocOnly());
+            && !v3Global.opt.preprocOnly()
+            && !v3Global.opt.xmlOnly());
     }
 }
 
@@ -1188,6 +1190,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 else {
                     fl->v3fatal("Unknown setting for --x-initial: "<<argv[i]);
                 }
+            }
+            else if (!strcmp(sw, "-xml-output") && (i+1)<argc) {
+                shift; m_xmlOutput = argv[i];
+                m_xmlOnly = true;
             }
             else if (!strcmp(sw, "-y") && (i+1)<argc) {
                 shift; addIncDirUser(parseFileArg(optdir, string(argv[i])));

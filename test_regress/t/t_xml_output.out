@@ -1,0 +1,24 @@
+<?xml version="1.0" ?>
+<!-- DESCRIPTION: Verilator output: XML representation of netlist -->
+<verilator_xml>
+  <files>
+    <file id="a" filename="&lt;built-in&gt;" language="1800-2017"/>
+    <file id="b" filename="&lt;command-line&gt;" language="1800-2017"/>
+    <file id="c" filename="input.vc" language="1800-2017"/>
+    <file id="d" filename="t/t_xml_output.v" language="1800-2017"/>
+  </files>
+  <module_files>
+    <file id="d" filename="t/t_xml_output.v" language="1800-2017"/>
+  </module_files>
+  <cells>
+    <cell fl="d6" name="m" submodname="m" hier="m"/>
+  </cells>
+  <netlist>
+    <module fl="d6" name="m" origName="m">
+      <var fl="d7" name="clk" tag="foo_op" dtype_id="1" dir="input" vartype="logic" origName="clk"/>
+    </module>
+    <typetable fl="a0">
+      <basicdtype fl="d7" id="1" name="logic"/>
+    </typetable>
+  </netlist>
+</verilator_xml>

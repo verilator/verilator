@@ -232,6 +232,7 @@ class V3Options {
     string      m_unusedRegexp; // main switch: --unused-regexp
     string      m_xAssign;      // main switch: --x-assign
     string      m_xInitial;     // main switch: --x-initial
+    string      m_xmlOutput;    // main switch: --xml-output
 
     // Language is now held in FileLine, on a per-node basis. However we still
     // have a concept of the default language at a global level.
@@ -413,6 +414,7 @@ class V3Options {
     string unusedRegexp() const { return m_unusedRegexp; }
     string xAssign() const { return m_xAssign; }
     string xInitial() const { return m_xInitial; }
+    string xmlOutput() const { return m_xmlOutput; }
 
     const V3StringSet& cppFiles() const { return m_cppFiles; }
     const V3StringList& cFlags() const { return m_cFlags; }

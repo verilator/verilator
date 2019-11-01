@@ -307,7 +307,13 @@ void V3File::writeTimes(const string& filename, const string& cmdlineIn) {
 bool V3File::checkTimes(const string& filename, const string& cmdlineIn) {
     return dependImp.checkTimes(filename, cmdlineIn);
 }
-
+void V3File::createMakeDirFor(const string& filename) {
+    if (filename != VL_DEV_NULL
+        // If doesn't start with makeDir then some output file user requested
+        && filename.substr(0, v3Global.opt.makeDir().length()+1) == v3Global.opt.makeDir()+"/") {
+        createMakeDir();
+    }
+}
 void V3File::createMakeDir() {
     static bool created = false;
     if (!created) {

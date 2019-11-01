@@ -49,7 +49,7 @@ public:
         return new_ofstream_nodepend(filename, append);
     }
     static std::ofstream* new_ofstream_nodepend(const string& filename, bool append=false) {
-        if (filename != VL_DEV_NULL) createMakeDir();
+        createMakeDirFor(filename);
         if (append) {
             return new std::ofstream(filename.c_str(), std::ios::app);
         } else {
@@ -57,7 +57,7 @@ public:
         }
     }
     static FILE* new_fopen_w(const string& filename) {
-        if (filename != VL_DEV_NULL) createMakeDir();
+        createMakeDirFor(filename);
         addTgtDepend(filename);
         return fopen(filename.c_str(), "w");
     }
@@ -71,6 +71,7 @@ public:
     static bool checkTimes(const string& filename, const string& cmdlineIn);
 
     // Directory utilities
+    static void createMakeDirFor(const string& filename);
     static void createMakeDir();
 };
 
