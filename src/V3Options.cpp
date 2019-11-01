@@ -528,11 +528,12 @@ string V3Options::getenvVERILATOR_ROOT() {
 void V3Options::notify() {
     // Notify that all arguments have been passed and final modification can be made.
     if (!outFormatOk()
-        && !preprocOnly()
+        && !cdc()
+        && !dpiHdrOnly()
         && !lintOnly()
-        && !xmlOnly()
-        && !cdc()) {
-        v3fatal("verilator: Need --cc, --sc, --cdc, --lint-only, --xml_only or --E option");
+        && !preprocOnly()
+        && !xmlOnly()) {
+        v3fatal("verilator: Need --cc, --sc, --cdc, --dpi-hdr-only, --lint-only, --xml-only or --E option");
     }
 
     // Make sure at least one make system is enabled
@@ -558,6 +559,22 @@ void V3Options::notify() {
                           "Using --protect-ids with --vpi may expose private design details\n"
                           +V3Error::warnMore()+"... Suggest remove --vpi.");
         }
+    }
+
+    // Default some options if not turned on or off
+    if (v3Global.opt.skipIdentical().isDefault()) {
+        v3Global.opt.m_skipIdentical.setTrueOrFalse(
+            !v3Global.opt.cdc()
+            && !v3Global.opt.dpiHdrOnly()
+            && !v3Global.opt.lintOnly()
+            && !v3Global.opt.preprocOnly());
+    }
+    if (v3Global.opt.makeDepend().isDefault()) {
+        v3Global.opt.m_makeDepend.setTrueOrFalse(
+            !v3Global.opt.cdc()
+            && !v3Global.opt.dpiHdrOnly()
+            && !v3Global.opt.lintOnly()
+            && !v3Global.opt.preprocOnly());
     }
 }
 
@@ -638,6 +655,15 @@ bool V3Options::onoff(const char* sw, const char* arg, bool& flag) {
     else if (0==strncmp(sw, "-no-", 4) && (0==strcmp(sw+4, arg+1))) { flag = false; return true; }
     return false;
 }
+bool V3Options::onoffb(const char* sw, const char* arg, VOptionBool& bflag) {
+    bool flag;
+    if (onoff(sw, arg, flag/*ref*/)) {
+        bflag.setTrueOrFalse(flag);
+        return true;
+    } else {
+        return false;
+    }
+}
 
 bool V3Options::suffixed(const string& sw, const char* arg) {
     if (strlen(arg) > sw.length()) return false;
@@ -696,12 +722,13 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
         else if (argv[i][0]=='-') {
             const char *sw = argv[i];
             bool flag = true;
+            VOptionBool bflag;
             // Allow gnu -- switches
             if (sw[0]=='-' && sw[1]=='-') ++sw;
             if (0) {}
             // Single switches
             else if (!strcmp(sw, "-E"))                         { m_preprocOnly = true; }
-            else if ( onoff (sw, "-MMD", flag/*ref*/))          { m_makeDepend = flag; }
+            else if ( onoffb(sw, "-MMD", bflag/*ref*/))         { m_makeDepend = bflag; }
             else if ( onoff (sw, "-MP", flag/*ref*/))           { m_makePhony = flag; }
             else if (!strcmp(sw, "-P"))                         { m_preprocNoLine = true; }
             else if ( onoff (sw, "-assert", flag/*ref*/))       { m_assert = flag; }
@@ -748,13 +775,13 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-protect-ids", flag/*ref*/))       { m_protectIds = flag; }
             else if ( onoff (sw, "-public", flag/*ref*/))            { m_public = flag; }
             else if ( onoff (sw, "-public-flat-rw", flag/*ref*/) )   { m_publicFlatRW = flag; v3Global.dpi(true); }
-            else if (!strncmp(sw, "-pvalue+", strlen("-pvalue+")))     { addParameter(string(sw+strlen("-pvalue+")), false); }
+            else if (!strncmp(sw, "-pvalue+", strlen("-pvalue+")))   { addParameter(string(sw+strlen("-pvalue+")), false); }
             else if ( onoff (sw, "-relative-cfuncs", flag/*ref*/))   { m_relativeCFuncs = flag; }
             else if ( onoff (sw, "-relative-includes", flag/*ref*/)) { m_relativeIncludes = flag; }
             else if ( onoff (sw, "-report-unoptflat", flag/*ref*/))  { m_reportUnoptflat = flag; }
             else if ( onoff (sw, "-savable", flag/*ref*/))           { m_savable = flag; }
             else if (!strcmp(sw, "-sc"))                             { m_outFormatOk = true; m_systemC = true; }
-            else if ( onoff (sw, "-skip-identical", flag/*ref*/))    { m_skipIdentical = flag; }
+            else if ( onoffb(sw, "-skip-identical", bflag/*ref*/))   { m_skipIdentical = bflag; }
             else if ( onoff (sw, "-stats", flag/*ref*/))             { m_stats = flag; }
             else if ( onoff (sw, "-stats-vars", flag/*ref*/))        { m_statsVars = flag; m_stats |= flag; }
             else if (!strcmp(sw, "-sv"))                             { m_defaultLanguage = V3LangCode::L1800_2005; }
@@ -1420,7 +1447,6 @@ V3Options::V3Options() {
     m_inhibitSim = false;
     m_lintOnly = false;
     m_gmake = false;
-    m_makeDepend = true;
     m_makePhony = false;
     m_orderClockDly = true;
     m_outFormatOk = false;
@@ -1440,7 +1466,6 @@ V3Options::V3Options() {
     m_relativeIncludes = false;
     m_reportUnoptflat = false;
     m_savable = false;
-    m_skipIdentical = true;
     m_stats = false;
     m_statsVars = false;
     m_systemC = false;

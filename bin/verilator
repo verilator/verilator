@@ -964,9 +964,11 @@ If the design is not to be completely Verilated see also the --bbox-sys and
 --bbox-unsup options.
 
 =item --MMD
+=item --no-MMD
 
-Enable creation of .d dependency files, used for make dependency detection,
-similar to gcc -MMD option.  On by default, use --no-MMD to disable.
+Enable/disable creation of .d dependency files, used for make dependency
+detection, similar to gcc -MMD option.  By default this option is enabled
+for --cc or --sp modes.
 
 =item --MP
 
@@ -1017,9 +1019,11 @@ with extra loads and stores to handle the (imaginary) aliasing. Using only
 'vlTOPp->' references allows these old compilers to produce tight code.
 
 =item --no-skip-identical
+=item --skip-identical
 
-Rarely needed.  Disables skipping execution of Verilator if all source
-files are identical, and all output files exist with newer dates.
+Rarely needed.  Disables or enables skipping execution of Verilator if all
+source files are identical, and all output files exist with newer dates.
+By default this option is enabled for --cc or --sp modes only.
 
 =item +notimingchecks
 

@@ -17,14 +17,15 @@ top_filename("t/t_dpi_import.v");
 my $tmp_dir = File::Temp->newdir();
 
 compile(
-    verilator_flags2 => ["-Wall -Wno-DECLFILENAME -Mdir " . $tmp_dir . " --dpi-hdr-only"],
+    # Override default flags also
+    verilator_flags => ["-Wall -Wno-DECLFILENAME -Mdir " . $tmp_dir . " --dpi-hdr-only"],
     verilator_make_gmake => 0,
     );
 
 my @files = glob($tmp_dir . "/*");
 
 error("Did not produce DPI header") if scalar(@files) == 0;
-error("Too many files created") if scalar(@files) > 1;
+error("Too many files created:".join(', ', @files)) if scalar(@files) > 1;
 
 my $tmp_header = $files[0];
 print("============".$tmp_header."\n");

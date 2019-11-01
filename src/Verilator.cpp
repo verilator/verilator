@@ -607,10 +607,7 @@ int main(int argc, char** argv, char** env) {
 
     // Can we skip doing everything if times are ok?
     V3File::addSrcDepend(v3Global.opt.bin());
-    if (v3Global.opt.skipIdentical()
-        && !v3Global.opt.preprocOnly()
-        && !v3Global.opt.lintOnly()
-        && !v3Global.opt.cdc()
+    if (v3Global.opt.skipIdentical().isTrue()
         && V3File::checkTimes(v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()
                               +"__verFiles.dat", argString)) {
         UINFO(1,"--skip-identical: No change to any source files, exiting\n");
@@ -648,13 +645,10 @@ int main(int argc, char** argv, char** env) {
     V3Global::dumpCheckGlobalTree("final", 990, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
     V3Error::abortIfWarnings();
 
-    if (!v3Global.opt.lintOnly() && !v3Global.opt.cdc()
-        && !v3Global.opt.dpiHdrOnly() && v3Global.opt.makeDepend()) {
+    if (v3Global.opt.makeDepend().isTrue()) {
         V3File::writeDepend(v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()+"__ver.d");
     }
-    if (!v3Global.opt.lintOnly() && !v3Global.opt.cdc()
-        && !v3Global.opt.dpiHdrOnly()
-        && (v3Global.opt.skipIdentical() || v3Global.opt.makeDepend())) {
+    if (v3Global.opt.skipIdentical().isTrue() || v3Global.opt.makeDepend().isTrue()) {
         V3File::writeTimes(v3Global.opt.makeDir()+"/"+v3Global.opt.prefix()
                            +"__verFiles.dat", argString);
     }
