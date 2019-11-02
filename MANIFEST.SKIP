@@ -34,6 +34,8 @@ bin/verilator_bin.*
 bin/verilator_coverage_bin.*
 docs/Makefile$
 docs/doxygen-doc/.*
+examples/xml_py/copied/
+examples/xml_py/graph.*
 src/Makefile$
 src/Makefile_obj$
 include/verilated.mk$

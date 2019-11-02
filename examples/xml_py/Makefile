@@ -1,0 +1,49 @@
+######################################################################
+#
+# DESCRIPTION: Verilator Example: XML tests
+#
+# Copyright 2003-2019 by Wilson Snyder. This program is free software; you can
+# redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
+#
+######################################################################
+
+# This makefile is not intended to be useful as an example itself,
+# it is just to run the small example scripts in this directory.
+
+# If $VERILATOR_ROOT isn't in the environment, we assume it is part of a
+# package install, and verilator is in your path. Otherwise find the
+# binary relative to $VERILATOR_ROOT (such as when inside the git sources).
+ifeq ($(VERILATOR_ROOT),)
+VERILATOR = verilator
+else
+export VERILATOR_ROOT
+VERILATOR = $(VERILATOR_ROOT)/bin/verilator
+endif
+
+DOT = dot
+PYTHON = python3
+
+default: test
+
+test: \
+	test-vl_file_copy \
+	test-vl_hier_graph \
+
+test-vl_file_copy:
+	@echo "-- vl_file_copy example"
+	$(PYTHON) vl_file_copy -odir copied top.v
+	@cmp copied/top.v top.v
+	@cmp copied/sub.v sub.v
+
+test-vl_hier_graph:
+	@echo "-- vl_hier_graph example"
+	$(PYTHON) vl_hier_graph -o graph.dot top.v
+	$(DOT) -Tpdf -o graph.pdf graph.dot
+
+######################################################################
+
+maintainer-copy::
+clean mostlyclean distclean maintainer-clean::
+	-rm -rf obj_dir *.log *.csv *.dmp *.dot *.vpd *.pdf core copied

@@ -157,7 +157,7 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	src/.gdbinit \
 	src/*.pl src/*.pod \
 	examples/*/.*ignore examples/*/Makefile* \
-	examples/*/*.[chv]* examples/*/*.pl \
+	examples/*/*.[chv]* examples/*/vl_* \
 	examples/*/CMakeLists.txt \
 	test_*/.*ignore test_*/Makefile* test_*/*.cpp \
 	test_*/*.pl test_*/*.v test_*/*.vc test_*/*.vh \
