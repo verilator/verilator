@@ -40,7 +40,7 @@ test-vl_file_copy:
 test-vl_hier_graph:
 	@echo "-- vl_hier_graph example"
 	$(PYTHON) vl_hier_graph -o graph.dot top.v
-	$(DOT) -Tpdf -o graph.pdf graph.dot
+	@echo "Manually run: " $(DOT) -Tpdf -o graph.pdf graph.dot
 
 ######################################################################
 
