@@ -128,7 +128,7 @@ private:
         if (!trace_var_name.empty() && v3Global.opt.traceCoverage()) {
             AstVar* varp = new AstVar(incp->fileline(),
                                       AstVarType::MODULETEMP, trace_var_name,
-                                      VFlagBitPacked(), 32);
+                                      incp->findUInt32DType());
             varp->trace(true);
             varp->fileline()->modifyWarnOff(V3ErrorCode::UNUSED, true);
             m_modp->addStmtp(varp);
