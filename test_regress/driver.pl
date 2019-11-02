@@ -818,6 +818,10 @@ sub compile_vlt_flags {
     unshift @verilator_flags, "--debug-partition" if $param{vltmt};
     unshift @verilator_flags, "--make gmake" if $param{verilator_make_gmake};
     unshift @verilator_flags, "--make cmake" if $param{verilator_make_cmake};
+    unshift @verilator_flags, "--exe" if
+        $param{make_main} && $param{verilator_make_gmake};
+    unshift @verilator_flags, "../".$self->{main_filename} if
+        $param{make_main} && $param{verilator_make_gmake};
     if (defined $opt_optimize) {
         my $letters = "";
         if ($opt_optimize =~ /[a-zA-Z]/) {
@@ -1060,7 +1064,6 @@ sub compile {
                                 "TEST_OBJ_DIR=$self->{obj_dir}",
                                 "CPPFLAGS_DRIVER=-D".uc($self->{name}),
                                 ($self->{verbose} ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1":""),
-                                ($param{make_main}?"":"MAKE_MAIN=0"),
                                 ($param{benchmark}?"OPT_FAST=-O2":""),
                                 "$self->{VM_PREFIX}",  # bypass default rule, as we don't need archive
                                 ($param{make_flags}||""),

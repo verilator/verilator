@@ -14,15 +14,10 @@
 
 default: $(VM_PREFIX)
 
-ifneq ($(MAKE_MAIN),0)
-   # Add main to classes rather then SC_SRCS to save a compiler run
-   VM_CLASSES += ${VM_PREFIX}__main $(VM_USER_CLASSES) $(VM_GLOBAL_FAST) $(VM_GLOBAL_SLOW)
-endif
-
 include $(VM_PREFIX).mk
 
 # So t/t_foobar.cpp is found (due to test_regress using -Mdir)
-VPATH += ../../$(VM_USER_DIR)
+VPATH += ../..
 
 #######################################################################
 
@@ -51,30 +46,3 @@ ifeq ($(CFG_WITH_LONGTESTS),yes)
 endif
 
 #######################################################################
-# Linking final exe
-
-ifeq ($(VM_SC),1)
-   LIBS += $(SC_LIBS)
-endif
-
-.SUFFIXES:
-
-#Default compile, using verilator.mk rules
-#%.o: %.cpp
-# 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
-#
-#Default link, using normal make rules
-#$(VM_PREFIX): $(VK_GLOBAL_OBJS) $(VK_OBJS)
-#	$(LINK) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) 2>&1
-
-#Our own compile rules; Faster compile, all in one file
-$(VM_PREFIX)__ALLboth.cpp: $(VK_CLASSES_CPP) $(VK_SUPPORT_CPP)
-	$(VERILATOR_INCLUDER) -DVL_INLINE_OPT=inline $^ > $@
-
-$(VM_PREFIX)__ALLboth.o: $(VM_PREFIX)__ALLboth.cpp
-	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
-
-ifneq ($(MAKE_MAIN),0)
-   $(VM_PREFIX): $(VM_PREFIX)__ALLboth.o
-	$(LINK) $(LDFLAGS) -g $^ $(LOADLIBES) $(LDLIBS) -o $@ $(LIBS) 2>&1
-endif

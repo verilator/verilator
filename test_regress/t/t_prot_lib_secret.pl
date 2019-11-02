@@ -9,12 +9,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(vlt => 1);
 
+$Self->{make_main} = 0;
+$Self->{make_top_shell} = 0;
+
 compile (
     verilator_flags2 => ["--protect-lib",
                          "secret",
                          "--protect-key",
                          "SECRET_FAKE_KEY"],
     verilator_make_gcc => 0,
+    verilator_make_gmake => 0,
     );
 
 run(cmd=>["make",
