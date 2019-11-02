@@ -1410,6 +1410,8 @@ public:
     void dtypeChgWidthSigned(int width, int widthMin, AstNumeric numeric);
     void dtypeSetBitUnsized(int width, int widthMin, AstNumeric numeric) {
         dtypep(findBitDType(width, widthMin, numeric)); }
+    void dtypeSetBitSized(int width, AstNumeric numeric) {
+        dtypep(findBitDType(width, width, numeric)); }  // Since sized, widthMin is width
     void dtypeSetLogicUnsized(int width, int widthMin, AstNumeric numeric) {
         dtypep(findLogicDType(width, widthMin, numeric)); }
     void dtypeSetLogicSized(int width, AstNumeric numeric) {

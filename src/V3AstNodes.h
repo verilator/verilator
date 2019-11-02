@@ -1234,7 +1234,7 @@ public:
         , m_name(name), m_origName(name) {
         init();
         combineType(type);
-        dtypeSetLogicSized(wantwidth, AstNumeric::UNSIGNED);
+        dtypeSetBitSized(wantwidth, AstNumeric::UNSIGNED);
         m_declKwd = AstBasicDTypeKwd::BIT;
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, AstVar* examplep)
