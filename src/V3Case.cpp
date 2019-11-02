@@ -338,6 +338,8 @@ private:
                         AstNode* bp = AstLte::newTyped(itemp->fileline(),
                                                        cexprp->cloneTree(false),
                                                        irangep->rhsp()->unlinkFrBack());
+                        ap->fileline()->modifyWarnOff(V3ErrorCode::UNSIGNED, true);
+                        bp->fileline()->modifyWarnOff(V3ErrorCode::CMPCONST, true);
                         condp = new AstAnd(itemp->fileline(), ap, bp);
                     } else if (iconstp && iconstp->num().isFourState()
                                && (nodep->casex() || nodep->casez() || nodep->caseInside())) {

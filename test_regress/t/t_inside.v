@@ -32,6 +32,13 @@ module t;
       endcase
    endfunction
 
+   function automatic bit is_00_to_04 (input byte value);
+      return value inside { [ 8'h0 : 8'h04 ] };
+   endfunction
+   function automatic bit is_fe_to_ff (input byte value);
+      return value inside { [ 8'hfe : 8'hff ] };
+   endfunction
+
    initial begin
       `checkh ((4'd4 inside {4'd1,4'd5}), 1'b0);
       `checkh ((4'd4 inside {4'd1,4'd4}), 1'b1);
@@ -62,6 +69,15 @@ module t;
 `ifndef VERILATOR
       `checkh (is_odd(1'b1, XXX),  1'dx);
 `endif
+      //
+      // Should not give UNSIGNED/CMPCONST warnings
+      // (Verilator converts to 8'h00 >= 8'h00 which is always true)
+      `checkh(is_00_to_04(8'h00), 1'b1);
+      `checkh(is_00_to_04(8'h04), 1'b1);
+      `checkh(is_00_to_04(8'h05), 1'b0);
+      `checkh(is_fe_to_ff(8'hfd), 1'b0);
+      `checkh(is_fe_to_ff(8'hfe), 1'b1);
+      `checkh(is_fe_to_ff(8'hff), 1'b1);
       //
       $write("*-* All Finished *-*\n");
       $finish;

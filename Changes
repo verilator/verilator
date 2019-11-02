@@ -29,7 +29,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 ****  Fix bad-syntax crashes, bug1548, bug1550-1553, bug1557-1560, bug1563,
       bug1573-1577. [Eric Rippey]
 
-****  Benchmark --protect-lib runtime, bug1519. [Todd Strader]
+****  Fix false CMPCONST/UNSIGNED warnings on "inside", bug1581. [Mitch Hayenga]
 
 
 * Verilator 4.020 2019-10-06

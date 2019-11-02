@@ -1475,13 +1475,15 @@ private:
             AstNode* inewp;
             if (AstInsideRange* irangep = VN_CAST(itemp, InsideRange)) {
                 // Similar logic in V3Case
-                inewp = new AstAnd(itemp->fileline(),
-                                   new AstGte(itemp->fileline(),
-                                              nodep->exprp()->cloneTree(true),
-                                              irangep->lhsp()->unlinkFrBack()),
-                                   new AstLte(itemp->fileline(),
-                                              nodep->exprp()->cloneTree(true),
-                                              irangep->rhsp()->unlinkFrBack()));
+                AstNode* ap = new AstGte(itemp->fileline(),
+                                         nodep->exprp()->cloneTree(true),
+                                         irangep->lhsp()->unlinkFrBack());
+                AstNode* bp = new AstLte(itemp->fileline(),
+                                         nodep->exprp()->cloneTree(true),
+                                         irangep->rhsp()->unlinkFrBack());
+                ap->fileline()->modifyWarnOff(V3ErrorCode::UNSIGNED, true);
+                bp->fileline()->modifyWarnOff(V3ErrorCode::CMPCONST, true);
+                inewp = new AstAnd(itemp->fileline(), ap, bp);
             } else {
                 inewp = new AstEqWild(itemp->fileline(),
                                       nodep->exprp()->cloneTree(true),
