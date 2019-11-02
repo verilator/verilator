@@ -861,7 +861,6 @@ private:
 
     virtual void visit(AstScopeName *nodep) {
         if (jumpingOver(nodep)) return;
-        if (!m_params) { badNodeType(nodep); return; }
         // Ignore
     }
 
