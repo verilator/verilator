@@ -95,6 +95,7 @@ private:
     // ** must track down everywhere V3Const is called and make sure no overlaps.
     // AstVar::user4p           -> Used by ConstVarMarkVisitor/ConstVarFindVisitor
     // AstJumpLabel::user4      -> bool.  Set when AstJumpGo uses this label
+    // AstEnum::user4           -> bool.  Recursing.
 
     // STATE
     bool        m_params;       // If true, propagate parameterized and true numbers only
@@ -1630,7 +1631,13 @@ private:
         bool did = false;
         if (nodep->itemp()->valuep()) {
             //if (debug()) nodep->itemp()->valuep()->dumpTree(cout, "  visitvaref: ");
-            iterateAndNextNull(nodep->itemp()->valuep());
+            if (nodep->itemp()->user4()) {
+                nodep->v3error("Recursive enum value: "<<nodep->itemp()->prettyNameQ());
+            } else {
+                nodep->itemp()->user4(true);
+                iterateAndNextNull(nodep->itemp()->valuep());
+                nodep->itemp()->user4(false);
+            }
             if (AstConst* valuep = VN_CAST(nodep->itemp()->valuep(), Const)) {
                 const V3Number& num = valuep->num();
                 replaceNum(nodep, num); VL_DANGLING(nodep);
