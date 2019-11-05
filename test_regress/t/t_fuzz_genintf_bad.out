@@ -1,0 +1,9 @@
+%Error: t/t_fuzz_genintf_bad.v:23: Unsupported: Member call on non-enum object 'VARREF 'j'' which is a 'BASICDTYPE 'integer''
+                                 : ... In instance t
+         j.e(0),
+           ^
+%Error: Internal Error: t/t_fuzz_genintf_bad.v:23: ../V3Width.cpp:#: Unlinked pin data type
+                                                 : ... In instance t
+         j.e(0),
+          ^
+                        ... See the manual and http://www.veripool.org/verilator for more assistance.
