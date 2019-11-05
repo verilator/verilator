@@ -952,6 +952,7 @@ private:
         AstAttrOf* oldAttr = m_attrp;
         m_attrp = nodep;
         userIterateAndNext(nodep->fromp(), WidthVP(SELF, BOTH).p());
+        if (nodep->dimp()) userIterateAndNext(nodep->dimp(), WidthVP(SELF, BOTH).p());
         // Don't iterate children, don't want to lose VarRef.
         switch (nodep->attrType()) {
         case AstAttrType::VAR_BASE:
@@ -981,9 +982,13 @@ private:
                         "Unsized expression");
             std::pair<uint32_t,uint32_t> dim
                 = nodep->fromp()->dtypep()->skipRefp()->dimensions(true);
-            uint32_t msbdim = dim.first+dim.second;
-            if (!nodep->dimp() || VN_IS(nodep->dimp(), Const) || msbdim<1) {
-                int dim = !nodep->dimp() ? 1 : VN_CAST(nodep->dimp(), Const)->toSInt();
+            uint32_t msbdim = dim.first + dim.second;
+            if (!nodep->dimp() || msbdim < 1) {
+                int dim = 1;
+                AstConst* newp = dimensionValue(nodep->fromp()->dtypep(), nodep->attrType(), dim);
+                nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+            } else if (VN_IS(nodep->dimp(), Const)) {
+                int dim = VN_CAST(nodep->dimp(), Const)->toSInt();
                 AstConst* newp = dimensionValue(nodep->fromp()->dtypep(), nodep->attrType(), dim);
                 nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
             }
