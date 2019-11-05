@@ -17,22 +17,38 @@ scenarios(
 
 $Self->{sim_time} = $Self->{benchmark} * 100 if $Self->{benchmark};
 
-# Always compile the secret file with Verilator no matter what simulator
-#   we are testing with
-my $cmd = ["t/t_prot_lib_secret.pl", "--vlt"];
-my $secret_prefix = "t_prot_lib_secret";
-
-my $secret_dir = "$Self->{obj_dir}/../../obj_vlt/$secret_prefix";
+my $secret_prefix = "secret";
+my $secret_dir = "$Self->{obj_dir}/$secret_prefix";
+mkdir $secret_dir;
 
 while (1) {
-    run(logfile => "$Self->{obj_dir}/secret_compile.log",
-        cmd => $cmd);
+    # Always compile the secret file with Verilator no matter what simulator
+    #   we are testing with
+    run(logfile => "$secret_dir/vlt_compile.log",
+        cmd => ["perl",
+                "$ENV{VERILATOR_ROOT}/bin/verilator",
+                "--prefix",
+                "Vt_prot_lib_secret",
+                "-cc",
+                "-Mdir",
+                $secret_dir,
+                "--protect-lib",
+                $secret_prefix,
+                "t/t_prot_lib_secret.v"]);
+    last if $Self->{errors};
+
+    run(logfile => "$secret_dir/secret_gcc.log",
+        cmd=>["make",
+              "-C",
+              $secret_dir,
+              "-f",
+              "Vt_prot_lib_secret.mk"]);
     last if $Self->{errors};
 
     compile(
         verilator_flags2 => ["$secret_dir/secret.sv",
                              "-LDFLAGS",
-                             "'-L../$secret_prefix -lsecret -static'"],
+                             "'-L$secret_prefix -lsecret -static'"],
         xsim_flags2 => ["$secret_dir/secret.sv"],
         );
 
