@@ -1692,9 +1692,24 @@ IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_M
             _vl_vsss_setbit(rwp, rbits, lsb, 8, dp[posp]); lsb+=8;
         }
         break;
-    case 'e':  // FALLTHRU - Unsupported
-    case 'f':  // FALLTHRU - Unsupported
-    case 'g':  // FALLTHRU - Unsupported
+    case 'e': {
+        double temp = 0.f;
+        sscanf(dp, "%le", &temp);
+        VL_SET_WQ(rwp, VL_CVT_Q_D(temp));
+        break;
+    }
+    case 'f': {
+        double temp = 0.f;
+        sscanf(dp, "%lf", &temp);
+        VL_SET_WQ(rwp, VL_CVT_Q_D(temp));
+        break;
+    }
+    case 'g': {
+        double temp = 0.f;
+        sscanf(dp, "%lg", &temp);
+        VL_SET_WQ(rwp, VL_CVT_Q_D(temp));
+        break;
+    }
     default:  // Other simulators simply return 0 in these cases and don't error out
         return 0;
     }

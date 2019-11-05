@@ -100,6 +100,12 @@ inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, QData& rdr) 
     if (got) rdr = VL_SET_QW(rwp);
     return got;
 }
+inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, double& rdr) VL_MT_SAFE {
+    WData rwp[2];
+    IData got = VL_VALUEPLUSARGS_INW(rbits,ld,rwp);
+    if (got) rdr = VL_CVT_D_Q(VL_SET_QW(rwp));
+    return got;
+}
 extern IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) VL_MT_SAFE;
 
 #endif  // Guard
