@@ -1562,6 +1562,7 @@ private:
         userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
         if (debug()>=9) nodep->dumpTree("-mbs-ic: ");
         // Find the fromp dtype - should be a class
+        if (!nodep->fromp()->dtypep()) nodep->fromp()->v3fatalSrc("Unlinked data type");
         AstNodeDType* fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
         UINFO(9,"     from dt "<<fromDtp<<endl);
         AstMemberDType* memberp = NULL;  // NULL=error below
