@@ -344,7 +344,7 @@ class ProtectVisitor : public AstNVisitor {
     virtual void visit(AstVar* nodep) {
         if (!nodep->isIO()) return;
         if (VN_IS(nodep->dtypep(), UnpackArrayDType)) {
-            nodep->v3fatalSrc("Unsupported: unpacked arrays with protect-lib");
+            nodep->v3error("Unsupported: unpacked arrays with protect-lib on "<<nodep->prettyNameQ());
         }
         if (nodep->direction() == VDirection::INPUT) {
             if (nodep->isUsedClock()) {
@@ -355,8 +355,8 @@ class ProtectVisitor : public AstNVisitor {
         } else if (nodep->direction() == VDirection::OUTPUT) {
             handleOutput(nodep);
         } else {
-            nodep->v3fatalSrc("Unsupported port direction for protect-lib: "<<
-                              nodep->direction().ascii());
+            nodep->v3error("Unsupported: protect-lib port direction: "<<
+                           nodep->direction().ascii());
         }
     }
 

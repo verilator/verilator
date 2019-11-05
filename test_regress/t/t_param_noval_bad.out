@@ -23,7 +23,7 @@ module t #(parameter P);
                                : ... In instance t
       for (j=0; P; j++)
       ^~~
-%Error: Internal Error: t/t_param_noval_bad.v:9: ../V3Param.cpp:505: GENFOR should have been wrapped in BEGIN
+%Error: Internal Error: t/t_param_noval_bad.v:9: ../V3Param.cpp:#: GENFOR should have been wrapped in BEGIN
                                                : ... In instance t
       for (j=0; P; j++)
       ^~~

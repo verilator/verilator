@@ -1958,6 +1958,10 @@ sub files_identical {
                     && !/^-node:/
                     && !/^dot [^\n]+\n/
             } @l1;
+            @l1 = map {
+                s/(Internal Error: [^\n]+\.cpp):[0-9]+:/$1:#:/;
+                $_;
+            } @l1;
             for (my $l=0; $l<=$#l1; ++$l) {
                 # Don't put control chars into our source repository
                 $l1[$l] =~ s/\r/<#013>/mig;
