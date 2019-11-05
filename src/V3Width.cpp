@@ -1780,9 +1780,12 @@ private:
             nodep->dtypep(m_vup->dtypep());
         }
         AstNodeDType* vdtypep = nodep->dtypep();
-        if (!vdtypep) nodep->v3error("Unsupported/Illegal: Assignment pattern"
-                                     " member not underneath a supported construct: "
-                                     <<nodep->backp()->prettyTypeName());
+        if (!vdtypep) {
+            nodep->v3error("Unsupported/Illegal: Assignment pattern"
+                           " member not underneath a supported construct: "
+                           <<nodep->backp()->prettyTypeName());
+            return;
+        }
         {
             vdtypep = vdtypep->skipRefp();
             nodep->dtypep(vdtypep);
@@ -2469,6 +2472,7 @@ private:
             userIterateAndNext(nodep->exprp(), WidthVP(nodep->modVarp()->dtypep(), PRELIM).p());
             AstNodeDType* pinDTypep = nodep->modVarp()->dtypep();
             AstNodeDType* conDTypep = nodep->exprp()->dtypep();
+            if (!conDTypep) nodep->v3fatalSrc("Unlinked pin data type");
             AstNodeDType* subDTypep = pinDTypep;
             int pinwidth = pinDTypep->width();
             int conwidth = conDTypep->width();
