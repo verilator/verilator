@@ -1193,8 +1193,10 @@ class EmitCImp : EmitCStmts {
                     if (VN_IS(nodep->lhsp(), VarRef)) {
                         varname = ": "+VN_CAST(nodep->lhsp(), VarRef)->varp()->prettyName();
                     }
-                    puts(")) VL_DBG_MSGF(\"        CHANGE: "+nodep->fileline()->ascii()
-                         +varname+"\\n\"); );\n");
+                    puts(")) VL_DBG_MSGF(\"        CHANGE: ");
+                    puts(protect(nodep->fileline()->filename()));
+                    puts(":"+cvtToStr(nodep->fileline()->lineno()));
+                    puts(": "+varname+"\\n\"); );\n");
                 }
             }
         }
