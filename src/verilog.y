@@ -121,12 +121,7 @@ public:
 	    fl->v3warn(ENDLABEL,"End label '"<<*endnamep<<"' does not match begin label '"<<name<<"'");
 	}
     }
-    void setVarDecl(AstVarType type) {
-        m_varDecl = type;
-        if (type != AstVarType::UNKNOWN && type != AstVarType::PORT) {
-            m_varDeclTyped = true;
-        }
-    }
+    void setVarDecl(AstVarType type) { m_varDecl = type; }
     void setDType(AstNodeDType* dtypep) {
 	if (m_varDTypep) { m_varDTypep->deleteTree(); m_varDTypep=NULL; } // It was cloned, so this is safe.
 	m_varDTypep = dtypep;
@@ -1306,7 +1301,7 @@ net_declaration<nodep>:		// IEEE: net_declaration - excluding implict
 	;
 
 net_declarationFront:		// IEEE: beginning of net_declaration
-		net_declRESET net_type   strengthSpecE net_scalaredE net_dataTypeE { VARDTYPE($5); }
+		net_declRESET net_type   strengthSpecE net_scalaredE net_dataTypeE { VARDTYPE_NDECL($5); }
 	//UNSUP	net_declRESET yINTERCONNECT signingE rangeListE { VARNET($2); VARDTYPE(x); }
 	;
 

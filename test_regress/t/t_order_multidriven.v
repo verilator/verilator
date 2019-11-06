@@ -162,13 +162,13 @@ module FooMemImpl(
     input                   a_wen,
     input   [7:0]           a_addr,
     input   [7:0]           a_wdata,
-    output  [7:0]           a_rdata,
+    output reg [7:0]        a_rdata,
 
     input                   b_clk,
     input                   b_wen,
     input   [7:0]           b_addr,
     input   [7:0]           b_wdata,
-    output  [7:0]           b_rdata
+    output reg [7:0]        b_rdata
     );
 
     /* verilator lint_off MULTIDRIVEN */

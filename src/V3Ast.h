@@ -601,7 +601,6 @@ public:
     bool isProcAssignable() const {
         return (m_e==GPARAM || m_e==LPARAM || m_e==GENVAR
                 || m_e==VAR
-                || m_e==TRIWIRE || m_e==TRI0 || m_e==TRI1 || m_e==PORT
                 || m_e==BLOCKTEMP || m_e==MODULETEMP || m_e==STMTTEMP
                 || m_e==XTEMP || m_e==IFACEREF);
     }

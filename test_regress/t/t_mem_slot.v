@@ -12,7 +12,7 @@ module t_mem_slot (Clk, SlotIdx, BitToChange, BitVal, SlotToReturn, OutputVal);
    input        BitToChange;
    input        BitVal;
    input  [1:0] SlotToReturn;
-   output [1:0] OutputVal;
+   output reg [1:0] OutputVal;
 
    reg    [1:0] Array[2:0];
 

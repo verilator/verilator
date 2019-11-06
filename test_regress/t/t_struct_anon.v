@@ -15,8 +15,8 @@ struct packed {
 } struct2;
 
 module t (
-    output [63:0] 	s1,
-    output [63:0] 	s2
+    output logic [63:0] s1,
+    output logic [63:0] s2
 );
    initial struct1 = 64'h123456789_abcdef0;
    always_comb s1 = struct1;

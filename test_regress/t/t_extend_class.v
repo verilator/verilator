@@ -38,7 +38,7 @@ module t_extend_class_v (/*AUTOARG*/
    );
 
    input [31:0]  in;
-   output [31:0] out;
+   output logic [31:0] out;
 
    always @* begin
       // When "in" changes, call my method

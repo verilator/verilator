@@ -16,9 +16,9 @@ module t (/*AUTOARG*/
    res16
    );
    input clk;
-   output        res;
-   output [7:0]  res8;
-   output [15:0] res16;
+   output reg        res;
+   output reg [7:0]  res8;
+   output reg [15:0] res16;
 
 
    wire [7:0] clkSet;
