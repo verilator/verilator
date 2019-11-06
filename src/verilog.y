@@ -163,7 +163,7 @@ public:
                 }
                 if (AstRange* finalRangep = VN_CAST(finalp, Range)) {  // not an UnsizedRange
                     if (dtypep->implicit()) {
-                        // It's no longer implicit but a real logic type
+                        // It's no longer implicit but a wire logic type
                         AstBasicDType* newp = new AstBasicDType(dtypep->fileline(), AstBasicDTypeKwd::LOGIC,
                                                                 dtypep->numeric(), dtypep->width(), dtypep->widthMin());
                         dtypep->deleteTree(); VL_DANGLING(dtypep);
@@ -945,6 +945,9 @@ list_of_ports<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
 	;
 
 port<nodep>:			// ==IEEE: port
+	//			// SEE ALSO port_declaration, tf_port_declaration,
+	//			// data_declarationVarFront
+	//
 	//			// Though not type for interfaces, we factor out the port direction and type
 	//			// so we can simply handle it in one place
 	//
@@ -952,11 +955,11 @@ port<nodep>:			// ==IEEE: port
 	//			// Expanded interface_port_header
 	//			// We use instantCb here because the non-port form looks just like a module instantiation
 		portDirNetE id/*interface*/                      portSig variable_dimensionListE sigAttrListE
-			{ $$ = $3; VARDECL(AstVarType::IFACEREF); VARIO(NONE);
+			{ $$ = $3; VARDECL(IFACEREF); VARIO(NONE);
 			  VARDTYPE(new AstIfaceRefDType($<fl>2,"",*$2));
 			  $$->addNextNull(VARDONEP($$,$4,$5)); }
 	|	portDirNetE id/*interface*/ '.' idAny/*modport*/ portSig variable_dimensionListE sigAttrListE
-			{ $$ = $5; VARDECL(AstVarType::IFACEREF); VARIO(NONE);
+			{ $$ = $5; VARDECL(IFACEREF); VARIO(NONE);
 			  VARDTYPE(new AstIfaceRefDType($<fl>2, $<fl>4, "", *$2, *$4));
 			  $$->addNextNull(VARDONEP($$,$6,$7)); }
 	|	portDirNetE yINTERFACE                           portSig rangeListE sigAttrListE
@@ -1303,7 +1306,7 @@ net_declaration<nodep>:		// IEEE: net_declaration - excluding implict
 	;
 
 net_declarationFront:		// IEEE: beginning of net_declaration
-		net_declRESET net_type   strengthSpecE net_scalaredE net_dataType { VARDTYPE($5); }
+		net_declRESET net_type   strengthSpecE net_scalaredE net_dataTypeE { VARDTYPE($5); }
 	//UNSUP	net_declRESET yINTERCONNECT signingE rangeListE { VARNET($2); VARDTYPE(x); }
 	;
 
@@ -1318,7 +1321,7 @@ net_scalaredE:
 	|	yVECTORED				{ }
 	;
 
-net_dataType<dtypep>:
+net_dataTypeE<dtypep>:
 	//			// If there's a SV data type there shouldn't be a delay on this wire
 	//			// Otherwise #(...) can't be determined to be a delay or parameters
 	//			// Submit this as a footnote to the committee
@@ -1373,7 +1376,7 @@ port_directionReset:		// IEEE: port_direction that starts a port_declaraiton
 
 port_declaration<nodep>:	// ==IEEE: port_declaration
 	//			// Non-ANSI; used inside block followed by ';'
-	//			// SIMILAR to tf_port_declaration
+	//			// SEE ALSO port, tf_port_declaration, data_declarationVarFront
 	//
 	//			// IEEE: inout_declaration
 	//			// IEEE: input_declaration
@@ -1398,7 +1401,7 @@ port_declaration<nodep>:	// ==IEEE: port_declaration
 
 tf_port_declaration<nodep>:	// ==IEEE: tf_port_declaration
 	//			// Used inside function; followed by ';'
-	//			// SIMILAR to port_declaration
+	//			// SEE ALSO port_declaration, port, data_declarationVarFront
 	//
 		port_directionReset      data_type      { VARDTYPE($2); }  list_of_tf_variable_identifiers ';'	{ $$ = $4; }
 	|	port_directionReset      implicit_typeE { VARDTYPE_NDECL($2); }  list_of_tf_variable_identifiers ';'	{ $$ = $4; }
@@ -1716,6 +1719,9 @@ data_declarationVar<nodep>:	// IEEE: part of data_declaration
 	;
 
 data_declarationVarFront:	// IEEE: part of data_declaration
+	//			// Non-ANSI; used inside block followed by ';'
+	//			// SEE ALSO port_declaration, tf_port_declaration, port
+	//
 	//			// Expanded: "constE yVAR lifetimeE data_type"
 	//			// implicit_type expanded into /*empty*/ or "signingE rangeList"
 		/**/ 	    yVAR lifetimeE data_type	{ VARRESET_NONLIST(VAR); VARDTYPE($3); }
