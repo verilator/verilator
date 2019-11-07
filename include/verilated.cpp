@@ -1785,7 +1785,8 @@ void Verilated::debug(int level) VL_MT_SAFE {
                                 " Message prefix indicates {<thread>,<sequence_number>}.\n"););
 #else
         VL_PRINTF_MT("- Verilated::debug attempted,"
-                     " but compiled without VL_DEBUG, so messages suppressed.\n");
+                     " but compiled without VL_DEBUG, so messages suppressed.\n"
+                     "- Suggest remake using 'make ... CPPFLAGS=-DVL_DEBUG'\n");
 #endif
     }
 }

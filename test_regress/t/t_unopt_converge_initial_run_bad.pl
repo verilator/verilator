@@ -17,7 +17,7 @@ compile(
 
 execute(
     fails => 1,
-    expect => '%Error: \S+:\d+: Verilated model didn\'t DC converge',
+    expect_filename => $Self->{golden_filename},
     ) if $Self->{vlt_all};
 
 ok(1);

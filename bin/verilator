@@ -3847,6 +3847,43 @@ as an unpacked struct or a large unpacked array. This typically occurs when
 
 The solution is to break the loop, as described for UNOPTFLAT.
 
+=item DIDNOTCONVERGE
+
+Error at runtime when model did not properly settle.
+
+Verilator sometimes has to evaluate combinatorial logic multiple times,
+usually around code where a UNOPTFLAT warning was issued, but disabled.
+For example:
+
+   always_comb b = ~a;
+   always_comb a = b
+
+This code will toggle forever, and thus to prevent an infinite loop, the
+executable will give the didn't converge error.
+
+To debug this, first is to review any UNOPTFLAT warnings that were ignored.
+Though typically it is safe to ignore UNOPTFLAT (at a performance cost), at
+the time of issuing a UNOPTFLAT Verilator didn't know if they would
+eventually converge and assumed the would.
+
+Next, run Verilator with --prof-cfuncs.  Run make on the generated files
+with "CPP_FLAGS=-DVL_DEBUG", to allow enabling runtime debug messages.
+Rerun the test.  Now just before the convergence error you should see
+additional output similar to this:
+
+   CHANGE: filename.v:1: b
+   CHANGE: filename.v:2: a
+
+This means that signal b and signal a keep changing, inspect the code that
+modifies these signals.  Note if many signals are getting printed then most
+likely all of them are oscillating.  It may also be that e.g. "a" may be
+oscillating, then "a" feeds signal "c" which then is also reported as
+oscillating.
+
+Finally, rare, more difficult cases can be debugged like a "C" program;
+either enter GDB and use its tracing facilities, or edit the generated C++
+code to add appropriate prints to see what is going on.
+
 =item ENDLABEL
 
 Warns that a label attached to a "end"-something statement does not match
@@ -4377,42 +4414,6 @@ warnings or errors, submit a bug report.
 
 This error indicates that you are using a Verilog language construct
 that is not yet supported in Verilator.  See the Limitations chapter.
-
-=item Verilated model didn't converge
-
-Verilator sometimes has to evaluate combinatorial logic multiple times,
-usually around code where a UNOPTFLAT warning was issued, but disabled.
-For example:
-
-   always @ (a)  b=~a;
-   always @ (b)  a=b
-
-will toggle forever and thus the executable will give the didn't converge
-error to prevent an infinite loop.
-
-To debug this, first is to review any UNOPTFLAT warnings that were ignored,
-though typically these can be ignored (at a performance cost), convergence
-issues can also be flagged with this warning as Verilator didn't know if
-they would eventually converge.
-
-Next, run Verilator with --prof-cfuncs.  Run make on the generated
-files with "OPT=-DVL_DEBUG". Then call Verilated::debug(1) in your
-main.cpp.
-
-This will cause each change in a variable to print a message.  Near the
-bottom you'll see the variables that causes the problem.  For the program
-above:
-
-        CHANGE: filename.v:1: b
-        CHANGE: filename.v:2: a
-
-If many signals are getting printed then most likely each are oscillating
-(or there is a bug). It may also be that e.g. "a" may be oscillating, then
-"a" feeds signal "c" which then is also reported as oscillating.
-
-Finally, rare more difficult cases can be debugged like a "C" program;
-either enter GDB and use its tracing facilities, or edit the generated C++
-code to add appropriate prints to see what is going on.
 
 =back
 

@@ -1196,7 +1196,7 @@ class EmitCImp : EmitCStmts {
                     puts(")) VL_DBG_MSGF(\"        CHANGE: ");
                     puts(protect(nodep->fileline()->filename()));
                     puts(":"+cvtToStr(nodep->fileline()->lineno()));
-                    puts(": "+varname+"\\n\"); );\n");
+                    puts(varname+"\\n\"); );\n");
                 }
             }
         }
@@ -2056,7 +2056,7 @@ void EmitCImp::emitStaticDecl(AstNodeModule* modp) {
 
 void EmitCImp::emitTextSection(AstType type) {
     int last_line = -999;
-    for (AstNode* nodep = m_modp->stmtsp(); nodep != NULL; nodep = nodep->nextp()) {
+    for (AstNode* nodep = m_modp->stmtsp(); nodep; nodep = nodep->nextp()) {
         if (const AstNodeText* textp = VN_CAST(nodep, NodeText)) {
             if (nodep->type() == type) {
                 if (last_line != nodep->fileline()->lineno()) {
@@ -2131,7 +2131,7 @@ void EmitCImp::emitSettleLoop(const std::string& eval_call, bool initial) {
     puts("int __VclockLoop = 0;\n");
     puts("QData __Vchange = 1;\n");
     puts("do {\n");
-    puts(    eval_call + "\n");
+    puts(    eval_call+"\n");
     puts(    "if (VL_UNLIKELY(++__VclockLoop > "+cvtToStr(v3Global.opt.convergeLimit())
              +")) {\n");
     puts(        "// About to fail, so enable debug to see what's not settling.\n");
@@ -2140,9 +2140,15 @@ void EmitCImp::emitSettleLoop(const std::string& eval_call, bool initial) {
     puts(        "Verilated::debug(1);\n");
     puts(        "__Vchange = "+protect("_change_request")+"(vlSymsp);\n");
     puts(        "Verilated::debug(__Vsaved_debug);\n");
-    puts(        "VL_FATAL_MT(__FILE__, __LINE__, __FILE__, \"Verilated model didn't ");
+    puts(        "VL_FATAL_MT(");
+    putsQuoted(protect(m_modp->fileline()->filename()));
+    puts(", ");
+    puts(cvtToStr(m_modp->fileline()->lineno()));
+    puts(", \"\",\n");
+    puts("\"Verilated model didn't ");
     if (initial) puts("DC ");
-    puts(        "converge\");\n");
+    puts("converge\\n\"\n");
+    puts("\"- See DIDNOTCONVERGE in the Verilator manual\");\n");
     puts(    "} else {\n");
     puts(        "__Vchange = "+protect("_change_request")+"(vlSymsp);\n");
     puts(    "}\n");
