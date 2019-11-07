@@ -366,7 +366,8 @@ sub wait_and_report {
     # Wait for all children to finish
     while ($::Fork->is_any_left) {
         $::Fork->poll;
-        if (time() - ($self->{_last_summary_time} || 0) >= 30) {
+        if ((time() - ($self->{_last_summary_time} || 0) >= 30)
+            && (!$opt_gdb && !$opt_gdbsim)) {  # Don't show for interactive gdb etc
             $self->print_summary(force=>1, show_running=>1);
         }
         Time::HiRes::usleep 100*1000;
@@ -407,7 +408,7 @@ sub print_summary {
                   @_);
     if (!$self->{quiet} || $params{force}
         || ($self->{left_cnt} < 5)
-        || time() - ($self->{_last_summary_time} || 0) >= 15) {
+        || (time() - ($self->{_last_summary_time} || 0) >= 15)) {  # Don't show for interactive gdb etc
         $self->{_last_summary_time} = time();
         print STDERR ("==SUMMARY: ".$self->sprint_summary."\n");
         if ($params{show_running}) {
