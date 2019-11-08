@@ -95,9 +95,7 @@ https://verilator.org/verilator_doc.pdf[Verilator manual (PDF)], and also
 if possible post on the forums the results; there may be additional tweaks
 possible.)
 
-== Installation
-
-== Documentation
+== Installation & Documentation
 
 For more information:
 
@@ -108,6 +106,8 @@ For more information:
 or https://verilator.org/verilator_doc.pdf[Verilator manual (PDF)].
 
 * https://verilator.org/forum[Verilator forum].
+
+* https://verilator.org/issues[Verilator Issues].
 
 == Community Supported
 
