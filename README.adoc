@@ -13,7 +13,7 @@ ifdef::env-github[]
 :link_verilator_install: link:docs/install.adoc
 endif::[]
 ifndef::env-github[]
-:link_verilator_contributing: link:docs/CONTRIBUTING.adoc
+:link_verilator_contributing: https://github.com/verilator/verilator/blob/master/docs/CONTRIBUTING.adoc
 :link_verilator_install: https://verilator.org/install
 endif::[]
 
@@ -100,14 +100,14 @@ possible.)
 For more information:
 
 * {link_verilator_install}[Verilator installation and package directory
-  structure].
+  structure]
 
 * https://verilator.org/verilator_doc.html[Verilator manual (HTML)],
-or https://verilator.org/verilator_doc.pdf[Verilator manual (PDF)].
+or https://verilator.org/verilator_doc.pdf[Verilator manual (PDF)]
 
-* https://verilator.org/forum[Verilator forum].
+* https://verilator.org/forum[Verilator forum]
 
-* https://verilator.org/issues[Verilator Issues].
+* https://verilator.org/issues[Verilator Issues]
 
 == Community Supported
 
