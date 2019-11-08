@@ -20,6 +20,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Suppress 'command failed' on normal errors.
 
+***   Add interface port visibility in traces, bug1594. [Todd Strader]
+
 ****  Increase case duplicate/incomplete to 16 bit tables, bug1545. [Yossi Nivin]
 
 ****  Support quoted arguments in -f files, bug1535. [Yves Mathieu]

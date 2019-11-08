@@ -12,15 +12,15 @@ scenarios(simulator => 1);
 top_filename("t/t_interface1_modport.v");
 
 compile(
-    verilator_flags2 => ['--trace'],
+    verilator_flags2 => ['--trace-fst'],
     );
 
 execute(
     check_finished => 1,
     );
 
-vcd_identical($Self->trace_filename,
-              $Self->{golden_filename});
+fst2vcd($Self->trace_filename, "$Self->{obj_dir}/simx-fst2vcd.vcd");
+vcd_identical("$Self->{obj_dir}/simx-fst2vcd.vcd", $Self->{golden_filename});
 
 ok(1);
 1;
