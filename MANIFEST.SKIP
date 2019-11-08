@@ -30,8 +30,10 @@
 /cov_work/
 /logs/
 ^Makefile$
+README.html
 bin/verilator_bin.*
 bin/verilator_coverage_bin.*
+docs/.*\.html$
 docs/Makefile$
 docs/doxygen-doc/.*
 examples/xml_py/copied/

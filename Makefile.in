@@ -115,8 +115,9 @@ SUBDIRS = src test_regress \
 	examples/make_tracing_sc \
 	examples/make_protect_lib \
 
-INFOS = README README.html README.pdf \
-        verilator.txt verilator.html verilator.pdf
+INFOS = verilator.txt verilator.html verilator.pdf
+
+INFOS_OLD = README README.html README.pdf
 
 # Files that can be generated, but should be up to date for a distribution.
 DISTDEP = info Makefile
@@ -127,6 +128,7 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	Changes \
 	LICENSE \
 	MANIFEST.SKIP \
+	README.adoc \
 	verilator-config.cmake.in \
 	verilator-config-version.cmake.in \
 	bin/verilator \
@@ -142,6 +144,7 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	docs/TODO \
 	docs/doxygen-mainpage \
 	docs/doxygen.config \
+	docs/install.adoc \
 	docs/internals.adoc \
 	docs/verilator_logo.png \
 	install-sh configure *.pod \
@@ -280,22 +283,6 @@ verilator.pdf: ${srcdir}/bin/verilator Makefile $(POD2LATEXFIX)
 	pdflatex verilator.tex
 	pdflatex verilator.tex
 	-rm -f verilator.toc verilator.aux verilator.idx verilator.out
-
-README: README.pod
-	-rm -f $@
-	$(POD2TEXT) --loose $< > $@
-
-README.html: README.pod
-	pod2html $< >$@
-
-# PDF needs DIST variables; but having configure.ac as dependency isn't detected
-README.pdf: README.pod Makefile $(POD2LATEXFIX)
-	pod2latex --full --out README.tex $<
-	$(PERL) $(POD2LATEXFIX) "$(DISTTITLE) README File" "${DISTDATE}" < README.tex > README2.tex
-	mv README2.tex README.tex
-	pdflatex README.tex
-	pdflatex README.tex
-	-rm -f README.toc README.aux README.idx README.out
 
 # See uninstall also - don't put wildcards in this variable, it might uninstall other stuff
 VL_INST_BIN_FILES = verilator verilator_bin verilator_bin_dbg verilator_coverage_bin_dbg \
@@ -529,7 +516,7 @@ clean mostlyclean distclean maintainer-clean::
 	rm -rf nodist/obj_dir
 
 distclean maintainer-clean::
-	rm -f *.info* *.1 $(INFOS) $(VL_INST_MAN_FILES)
+	rm -f *.info* *.1 $(INFOS) $(INFOS_OLD) $(VL_INST_MAN_FILES)
 	rm -f Makefile config.status config.cache config.log TAGS
 	rm -f verilator_bin* verilator_coverage_bin*
 	rm -f bin/verilator_bin* bin/verilator_coverage_bin*
