@@ -7,7 +7,7 @@ image::https://www.veripool.org/img/verilator_256_200_min.png[Logo,256,200,role=
 == Introduction
 
 This discusses how to install Verilator.  For more general information
-please see http://verilator.org[verilator.org].
+please see https://verilator.org[verilator.org].
 
 == Quick-start
 
@@ -34,7 +34,7 @@ brief:
 #sudo apt-get install libfl2  # Ubuntu only (ignore if gives error)
 #sudo apt-get install libfl-dev  # Ubuntu only (ignore if gives error)
 
-git clone http://git.veripool.org/git/verilator   # Only first time
+git clone https://git.veripool.org/git/verilator   # Only first time
 ## Note the URL above is not a page you can see with a browser, it's for git only
 
 # Every time you need to build:
@@ -117,7 +117,7 @@ Downloads]; we presume you know how to use it, and is not described here.)
 
 Get the sources from the repository: (You need do this only once, ever.)
 
-   git clone http://git.veripool.org/git/verilator   # Only first time
+   git clone https://git.veripool.org/git/verilator   # Only first time
    ## Note the URL above is not a page you can see with a browser, it's for git only
 
 Enter the checkout and determine what version/branch to use:
@@ -254,8 +254,8 @@ set in your environment; it is built into the executable.
 == Announcements
 
 To get notified of new releases, login to
-http://www.veripool.org[Veripool], and click the "watch" button near the
-top right under http://www.veripool.org/projects/verilator/news[Verilator
+https://www.veripool.org[Veripool], and click the "watch" button near the
+top right under https://www.veripool.org/projects/verilator/news[Verilator
 News].
 
 == Directory Structure

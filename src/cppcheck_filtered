@@ -216,9 +216,9 @@ Print the version number and exit.
 
 =head1 DISTRIBUTION
 
-This is part of the L<http://www.veripool.org/> free Verilog EDA software
+This is part of the L<https://www.veripool.org/> free Verilog EDA software
 tool suite.  The latest version is available from CPAN and from
-L<http://www.veripool.org/>.
+L<https://www.veripool.org/>.
 
 Copyright 2014-2019 by Wilson Snyder.  This package is free software; you
 can redistribute it and/or modify it under the terms of either the GNU

@@ -139,7 +139,7 @@ void VlcOptions::showVersion(bool verbose) {
     cout << "License Version 2.0.\n";
 
     cout <<endl;
-    cout << "See http://www.veripool.org/verilator for documentation\n";
+    cout << "See https://verilator.org for documentation\n";
 }
 
 //######################################################################
