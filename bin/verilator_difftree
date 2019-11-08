@@ -234,7 +234,7 @@ Do not show differences in line numbering.
 
 =head1 DISTRIBUTION
 
-The latest version is available from L<http://www.veripool.org/verilator>.
+The latest version is available from L<https://verilator.org>.
 
 Copyright 2005-2019 by Wilson Snyder.  This package is free software; you can
 redistribute it and/or modify it under the terms of either the GNU Lesser

@@ -3,7 +3,7 @@
 // DESCRIPTION: Verilator: pre-C++11 replacements for std::unordered_set
 //                         and std::unordered_map.
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

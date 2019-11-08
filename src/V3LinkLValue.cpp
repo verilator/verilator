@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: LValue module/signal name references
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

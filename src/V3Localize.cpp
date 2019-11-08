@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Convert BLOCKTEMPs to local variables
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

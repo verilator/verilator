@@ -20,7 +20,7 @@
 ///     all C++ files it generates where DPI is used.  It contains
 ///     DPI interface functions required by the Verilated code.
 ///
-/// Code available from: http://www.veripool.org/verilator
+/// Code available from: https://verilator.org
 ///
 //*************************************************************************
 

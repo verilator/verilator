@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Change names for __PVT__'s
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

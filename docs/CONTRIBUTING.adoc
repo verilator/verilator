@@ -8,10 +8,10 @@ contributions flow more efficiently.
 ==== Did you find a bug?
 
 * Please **Ensure the bug was not already reported** by searching
-  https://www.veripool.org/projects/verilator/issues[Verilator Issues].
+  https://verilator.org/issues[Verilator Issues].
 
 * If you're unable to find an open issue addressing the problem,
-  https://www.veripool.org/projects/verilator/issues/new[open a new issue].
+  https://verilator.org/issues/new[open a new issue].
 
 ** Be sure to include a **code sample** or an **executable test case**
    demonstrating the bug and expected behavior that is not occurring.
@@ -22,8 +22,7 @@ contributions flow more efficiently.
 
 ==== Did you write a patch that fixes a bug?
 
-* Please https://www.veripool.org/projects/verilator/issues/new[Open a new
-  issue].
+* Please https://verilator.org/issues/new[Open a new issue].
 
 * You may attach a patch to the issue, or (preferred) may point to a GitHub
   repository branch within your GitHub account.
@@ -66,11 +65,12 @@ contributions flow more efficiently.
 
 ==== Do you have questions?
 
-* Please see the
-  https://www.veripool.org/projects/verilator/wiki/Faq[Verilator FAQ].
+* Please see FAQ section and rest of the
+  https://verilator.org/verilator_doc.html[Verilator manual],
+  or https://verilator.org/verilator_doc.pdf[Verilator manual (PDF)].
 
 * Ask any question in the
-  https://www.veripool.org/projects/verilator/boards[Verilator forums].
+  https://verilator.org/forum[Verilator forum].
 
 ==== Code of Conduct
 

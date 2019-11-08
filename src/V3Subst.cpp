@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Substitute constants and expressions in expr temp's
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

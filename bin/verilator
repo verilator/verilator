@@ -4832,9 +4832,8 @@ debugging enabled.  The full set of test options can be seen by running
 driver.pl --help as shown above.
 
 Finally, report the bug using the bug tracker at
-L<http://www.veripool.org/verilator>.  The bug will become publicly
-visible; if this is unacceptable, mail the bug report to
-C<wsnyder@wsnyder.org>.
+L<https://verilator.org/issues>.  The bug will become publicly visible; if
+this is unacceptable, mail the bug report to C<wsnyder@wsnyder.org>.
 
 
 =head1 HISTORY
@@ -4872,7 +4871,7 @@ faster than many popular commercial simulators.
 
 =head1 AUTHORS
 
-When possible, please instead report bugs to L<http://www.veripool.org/>.
+When possible, please instead report bugs to L<https://verilator.org/issues>.
 
 Wilson Snyder <wsnyder@wsnyder.org>
 
@@ -4955,7 +4954,7 @@ remain anonymous.
 
 =head1 DISTRIBUTION
 
-The latest version is available from L<http://www.veripool.org/>.
+The latest version is available from L<https://verilator.org>.
 
 Copyright 2003-2019 by Wilson Snyder.  Verilator is free software; you can
 redistribute it and/or modify the Verilator internals under the terms of

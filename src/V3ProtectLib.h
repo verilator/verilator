@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Buitd DPI protected C++ and SV
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

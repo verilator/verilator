@@ -23,7 +23,7 @@
 ///     These classes are thread safe and read only. It is constructed only
 ///     when a model is built (from the main thread).
 ///
-/// Code available from: http://www.veripool.org/verilator
+/// Code available from: https://verilator.org
 ///
 //*************************************************************************
 

@@ -3,7 +3,7 @@
 // DESCRIPTION: Verilator: Dependency graph iterator. Iterates over nodes
 //                         in any DAG, following dependency order.
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

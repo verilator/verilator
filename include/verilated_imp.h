@@ -16,7 +16,7 @@
 /// \file
 /// \brief Verilator: Implementation Header, only for verilated.cpp internals.
 ///
-/// Code available from: http://www.veripool.org/verilator
+/// Code available from: https://verilator.org
 ///
 //=========================================================================
 

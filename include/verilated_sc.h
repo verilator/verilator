@@ -19,7 +19,7 @@
 ///     This file is included automatically by Verilator at the top of
 ///     all SystemC files it generates.
 ///
-/// Code available from: http://www.veripool.org/verilator
+/// Code available from: https://verilator.org
 ///
 //*************************************************************************
 

@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: verilator_coverage: Coverage points
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

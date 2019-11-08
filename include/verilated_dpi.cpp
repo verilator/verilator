@@ -19,7 +19,7 @@
 ///     This file must be compiled and linked against all objects
 ///     created from Verilator or called by Verilator that use the DPI.
 ///
-/// Code available from: http://www.veripool.org/verilator
+/// Code available from: https://verilator.org
 ///
 //=========================================================================
 

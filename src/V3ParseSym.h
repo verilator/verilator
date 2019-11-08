@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Common header between parser and lex
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

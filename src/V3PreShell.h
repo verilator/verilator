@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Preprocessing wrapper program
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

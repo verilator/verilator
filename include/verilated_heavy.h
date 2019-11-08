@@ -21,7 +21,7 @@
 ///     heavyweight types are required; these contents are not part of
 ///     verilated.h to save compile time when such types aren't used.
 ///
-/// Code available from: http://www.veripool.org/verilator
+/// Code available from: https://verilator.org
 ///
 //*************************************************************************
 

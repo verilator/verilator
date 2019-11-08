@@ -3,7 +3,7 @@
 #
 # This file is part of Verilator.
 #
-# Code available from: http://www.veripool.org/verilator
+# Code available from: https://verilator.org
 #
 #*****************************************************************************
 #
@@ -472,7 +472,7 @@ install-msg:
 	@echo "Installed examples to $(DESTDIR)$(pkgdatadir)/examples"
 	@echo
 	@echo "For documentation see 'man verilator' or 'verilator --help'"
-	@echo "For forums and to report bugs see http://www.veripool.org/verilator"
+	@echo "For forums and to report bugs see https://verilator.org"
 	@echo
 
 IN_WILD := ${srcdir}/*.in ${srcdir}/*/*.in

@@ -20,7 +20,7 @@
 ///     all C++ files it generates.  It contains standard macros and
 ///     classes required by the Verilated code.
 ///
-/// Code available from: http://www.veripool.org/verilator
+/// Code available from: https://verilator.org
 ///
 //*************************************************************************
 

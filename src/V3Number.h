@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Large 4-state numbers
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

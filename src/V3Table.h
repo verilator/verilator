@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Make lookup tables
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

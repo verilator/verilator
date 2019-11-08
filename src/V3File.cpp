@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: File stream wrapper that understands indentation
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

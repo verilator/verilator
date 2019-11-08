@@ -21,7 +21,7 @@
 ///
 ///     Use "verilator --vpi" to add this to the Makefile for the linker.
 ///
-/// Code available from: http://www.veripool.org/verilator
+/// Code available from: https://verilator.org
 ///
 //=========================================================================
 

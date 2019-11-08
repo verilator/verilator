@@ -6,7 +6,7 @@ includedir=@pkgdatadir@/include
 
 Name: verilator
 Description: fast free Verilog simulator
-URL: http://www.veripool.org/verilator
+URL: https://verilator.org
 Version: @PACKAGE_VERSION@
 Requires:
 Libs:

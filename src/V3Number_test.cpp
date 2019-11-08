@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Netlist (top level) functions
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

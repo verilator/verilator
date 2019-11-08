@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Replace return/continue with jumps
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

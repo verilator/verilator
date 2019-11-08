@@ -3,7 +3,7 @@
 // DESCRIPTION: Verilator: Estimate instruction count to run the logic
 //                         we would generate for any given AST subtree.
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

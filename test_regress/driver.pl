@@ -2634,7 +2634,7 @@ Command to use to invoke XSim xvlog
 
 =head1 DISTRIBUTION
 
-The latest version is available from L<http://www.veripool.org/>.
+The latest version is available from L<https://verilator.org>.
 
 Copyright 2003-2019 by Wilson Snyder.  Verilator is free software; you can
 redistribute it and/or modify it under the terms of either the GNU Lesser

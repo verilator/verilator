@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Language rules
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
