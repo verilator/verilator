@@ -1749,13 +1749,13 @@ void EmitCImp::emitVarReset(AstVar* varp) {
                                    VN_CAST(initarp->defaultp(), Const));
                 puts("}}\n");
             }
-            int pos = 0;
-            for (AstNode* itemp = initarp->initsp(); itemp; ++pos, itemp=itemp->nextp()) {
-                int index = initarp->posIndex(pos);
-                UASSERT_OBJ(initarp->defaultp() || index==pos, initarp,
-                            "Not enough values in array initialization");
+            const AstInitArray::KeyItemMap& mapr = initarp->map();
+            for (AstInitArray::KeyItemMap::const_iterator it = mapr.begin();
+                 it != mapr.end(); ++it) {
+                AstNode* valuep = it->second->valuep();
                 emitSetVarConstant(varp->nameProtect()
-                                   +"["+cvtToStr(index)+"]", VN_CAST(itemp, Const));
+                                   +"["+cvtToStr(it->first)+"]",
+                                   VN_CAST(valuep, Const));
             }
         } else {
             varp->v3fatalSrc("InitArray under non-arrayed var");

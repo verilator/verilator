@@ -86,12 +86,9 @@ class SliceVisitor : public AstNVisitor {
         AstNode* newp;
         if (AstInitArray* initp = VN_CAST(nodep, InitArray)) {
             UINFO(9,"  cloneInitArray("<<elements<<","<<offset<<") "<<nodep<<endl);
-            AstNode* itemp = initp->initsp();
             int leOffset = !arrayp->rangep()->littleEndian()
                 ? arrayp->rangep()->elementsConst()-1-offset : offset;
-            for (int pos = 0; itemp && pos < leOffset; ++pos) {
-                itemp = itemp->nextp();
-            }
+            AstNode* itemp = initp->getIndexDefaultedValuep(leOffset);
             if (!itemp) {
                 nodep->v3error("Array initialization has too few elements, need element "<<offset);
                 itemp = initp->initsp();

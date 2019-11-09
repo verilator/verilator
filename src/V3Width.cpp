@@ -1438,6 +1438,9 @@ private:
         }
         nodep->dtypeFrom(nodep->itemp());
     }
+    virtual void visit(AstInitItem* nodep) {
+        userIterateChildren(nodep, m_vup);
+    }
     virtual void visit(AstInitArray* nodep) {
         // InitArray has type of the array; children are array values
         if (m_vup->prelim()) {  // First stage evaluation
@@ -1983,13 +1986,9 @@ private:
                             if (!newp) {
                                 AstInitArray* newap
                                     = new AstInitArray(nodep->fileline(), arrayp, NULL);
-                                newap->addValuep(valuep);
                                 newp = newap;
-                            } else {
-                                // We iterate hi()..lo() as that is what packed needs,
-                                // but INITARRAY needs lo() first
-                                VN_CAST(newp, InitArray)->addFrontValuep(valuep);
                             }
+                            VN_CAST(newp, InitArray)->addIndexValuep(ent - range.lo(), valuep);
                         } else {  // Packed. Convert to concat for now.
                             if (!newp) newp = valuep;
                             else {

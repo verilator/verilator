@@ -467,13 +467,15 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     }
     virtual void visit(AstInitArray* nodep) {
         putfs(nodep, "`{");
-        int pos = 0;
-        for (AstNode* itemp = nodep->initsp(); itemp; ++pos, itemp=itemp->nextp()) {
-            int index = nodep->posIndex(pos);
-            puts(cvtToStr(index));
+        int comma = 0;
+        const AstInitArray::KeyItemMap& mapr = nodep->map();
+        for (AstInitArray::KeyItemMap::const_iterator it = mapr.begin();
+             it != mapr.end(); ++it) {
+            if (comma++) putbs(", ");
+            puts(cvtToStr(it->first));
             puts(":");
-            iterate(itemp);
-            if (itemp->nextp()) putbs(",");
+            AstNode* valuep = it->second->valuep();
+            iterate(valuep);
         }
         puts("}");
     }

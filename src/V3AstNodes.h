@@ -805,7 +805,7 @@ public:
     ASTNODE_NODE_FUNCS(EnumItemRef)
     virtual void dump(std::ostream& str) const;
     virtual string name() const { return itemp()->name(); }
-    virtual const char* broken() const { BROKEN_RTN(!itemp()); return NULL; }
+    virtual const char* broken() const { BROKEN_RTN(!VN_IS(itemp(), EnumItem)); return NULL; }
     virtual int instrCount() const { return 0; }
     virtual void cloneRelink() { if (m_itemp->clonep()) m_itemp = VN_CAST(m_itemp->clonep(), EnumItem); }
     virtual bool same(const AstNode* samep) const {
@@ -3476,14 +3476,33 @@ public:
     virtual bool cleanOut() const { return false; }  // NA
 };
 
+class AstInitItem : public AstNode {
+    // Container for a item in an init array
+    // This container is present so that the value underneath may get replaced with a new nodep
+    // and the upper AstInitArray's map will remain correct (pointing to this InitItem)
+public:
+    // Parents: INITARRAY
+    AstInitItem(FileLine* fl, AstNode* valuep)
+        : AstNode(fl) { addOp1p(valuep); }
+    ASTNODE_NODE_FUNCS(InitItem)
+    virtual bool maybePointedTo() const { return true; }
+    virtual bool hasDType() const { return false; }  // See valuep()'s dtype instead
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    AstNode* valuep() const { return op1p(); }  // op1 = Value
+    void valuep(AstNode* nodep) { addOp1p(nodep); }
+};
+
 class AstInitArray : public AstNode {
-    // Set a var to a large list of values
-    // The values must be in sorted order, and not exceed the size of the var's array.
-    // The first value on the initsp() list is for the lo() index of the array.
+    // Set a var to a map of values
+    // The list of initsp() is not relevant
     // If default is specified, the vector may be sparse, and not provide each value.
+    // Key values are C++ array style, with lo() at index 0
     // Parents: ASTVAR::init()
-    // Children: CONSTs...
-    std::deque<uint32_t> m_indices;  // Which array index each entry in the list is for (if defaultp)
+    // Children: AstInitItem
+public:
+    typedef std::map<uint32_t, AstInitItem*> KeyItemMap;
+private:
+    KeyItemMap m_map;  // Node value for each array index
 public:
     AstInitArray(FileLine* fl, AstNodeArrayDType* newDTypep, AstNode* defaultp)
         : AstNode(fl) {
@@ -3491,27 +3510,55 @@ public:
         addNOp1p(defaultp);
     }
     ASTNODE_NODE_FUNCS(InitArray)
-    AstNode* defaultp() const { return op1p(); }  // op1 = Default if sparse
-    void defaultp(AstNode* newp) { setOp1p(newp); }
-    AstNode* initsp() const { return op2p(); }  // op2 = Initial value expressions
-    void addValuep(AstNode* newp) { addIndexValuep(m_indices.size(), newp); }
-    void addIndexValuep(uint32_t index, AstNode* newp) {
-        // Must insert in sorted order
-        if (!m_indices.empty()) UASSERT(index > m_indices.back(), "InitArray adding index <= previous index");
-        m_indices.push_back(index);
-        addOp2p(newp); }
-    void addFrontValuep(AstNode* newp) {  // Add to front of list, e.g. index 0.
-        // e.g. 0:100, 1:101  when addFront(200), get 0:200, 1:100, 2:101
-        initsp()->addHereThisAsNext(newp);
-        m_indices.push_back(m_indices.size());
+    virtual void dump(std::ostream& str) const;
+    virtual const char* broken() const {
+        for (KeyItemMap::const_iterator it = m_map.begin(); it != m_map.end(); ++it) {
+            BROKEN_RTN(!VN_IS(it->second, InitItem));
+            BROKEN_RTN(!it->second->brokeExists());
+        }
+        return NULL;
     }
-    int posIndex(int listPos) {
-        UASSERT(listPos < (int)m_indices.size(), "InitArray past end of indices list");
-        return m_indices[listPos]; }
+    virtual void cloneRelink() {
+        for (KeyItemMap::iterator it = m_map.begin(); it != m_map.end(); ++it) {
+            if (it->second->clonep()) it->second = it->second->clonep();
+        }
+    }
     virtual bool hasDType() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode* samep) const {
-        return m_indices == static_cast<const AstInitArray*>(samep)->m_indices; }
+        // Only works if exact same children, instead should override comparison
+        // of children list, and instead use map-vs-map key/value compare
+        return m_map == static_cast<const AstInitArray*>(samep)->m_map;
+    }
+    AstNode* defaultp() const { return op1p(); }  // op1 = Default if sparse
+    void defaultp(AstNode* newp) { setOp1p(newp); }
+    AstNode* initsp() const { return op2p(); }  // op2 = Initial value expressions
+    void addValuep(AstNode* newp) { addIndexValuep(m_map.size(), newp); }
+    const KeyItemMap& map() const { return m_map; }
+    AstNode* addIndexValuep(uint32_t index, AstNode* newp) {
+        // Returns old value, caller must garbage collect
+        AstNode* oldp = NULL;
+        KeyItemMap::iterator it = m_map.find(index);
+        if (it != m_map.end()) {
+            oldp = it->second->valuep();
+            it->second->valuep(newp);
+        } else {
+            AstInitItem* itemp = new AstInitItem(fileline(), newp);
+            m_map.insert(it, make_pair(index, itemp));
+            addOp2p(itemp);
+        }
+        return oldp;
+    }
+    AstNode* getIndexValuep(uint32_t index) const {
+        KeyItemMap::const_iterator it = m_map.find(index);
+        if (it == m_map.end()) return NULL;
+        else return it->second->valuep();
+    }
+    AstNode* getIndexDefaultedValuep(uint32_t index) const {
+        AstNode* valuep = getIndexValuep(index);
+        if (!valuep) valuep = defaultp();
+        return valuep;
+    }
 };
 
 class AstPragma : public AstNode {

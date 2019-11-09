@@ -902,6 +902,15 @@ void AstIfaceRefDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str<<"iface";
 }
+void AstInitArray::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    int n = 0;
+    const AstInitArray::KeyItemMap& mapr = map();
+    for (AstInitArray::KeyItemMap::const_iterator it = mapr.begin(); it != mapr.end(); ++it) {
+        if (n++ > 5) { str<<" ..."; break; }
+        str<<" ["<<it->first<<"]="<<(void*)it->second;
+    }
+}
 void AstJumpGo::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str<<" -> ";

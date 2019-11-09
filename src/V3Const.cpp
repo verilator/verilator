@@ -1589,19 +1589,7 @@ private:
                 else if (m_selp && VN_IS(valuep, InitArray)) {
                     AstInitArray* initarp = VN_CAST(valuep, InitArray);
                     uint32_t bit = m_selp->bitConst();
-                    int pos = 0;
-                    AstNode* itemp = initarp->initsp();
-                    for (; itemp; ++pos, itemp=itemp->nextp()) {
-                        uint32_t index = initarp->posIndex(pos);
-                        if (index == bit) break;
-                        if (index > bit) {
-                            if (initarp->defaultp()) {
-                                itemp = initarp->defaultp();
-                            } else {
-                                initarp->v3fatalSrc("Not enough values in array initialization");
-                            }
-                        }
-                    }
+                    AstNode* itemp = initarp->getIndexDefaultedValuep(bit);
                     if (VN_IS(itemp, Const)) {
                         const V3Number& num = VN_CAST(itemp, Const)->num();
                         //UINFO(2,"constVisit "<<cvtToHex(valuep)<<" "<<num<<endl);
@@ -2122,7 +2110,9 @@ private:
         }
     }
     virtual void visit(AstInitArray* nodep) {
-        // Constant if all children are constant
+        iterateChildren(nodep);
+    }
+    virtual void visit(AstInitItem* nodep) {
         iterateChildren(nodep);
     }
     // These are converted by V3Param.  Don't constify as we don't want the
