@@ -113,7 +113,7 @@ private:
     // Cleanup
     // V3Numbers that represents strings are a bit special and the API for
     // V3Number does not allow changing them.
-    std::deque<AstConst*> m_stringValuesp;  // List of allocated string numbers
+    std::deque<AstNode*> m_reclaimValuesp;  // List of allocated string numbers
 
     // Note level 8&9 include debugging each simulation value
     VL_DEBUG_FUNC;  // Declare debug()
@@ -232,7 +232,29 @@ private:
         constp->num().isString(nodep->isString());
         return constp;
     }
+public:
+    void newValue(AstNode* nodep, const AstNode* valuep) {
+        if (const AstConst* constp = VN_CAST_CONST(valuep, Const)) {
+            newConst(nodep)->num().opAssign(constp->num());
+        } else if (fetchValueNull(nodep) != valuep) {
+            // const_cast, as clonep() is set on valuep, but nothing should care
+            setValue(nodep, newTrackedClone(const_cast<AstNode*>(valuep)));
+        }
+    }
+    void newOutValue(AstNode* nodep, const AstNode* valuep) {
+        if (const AstConst* constp = VN_CAST_CONST(valuep, Const)) {
+            newOutConst(nodep)->num().opAssign(constp->num());
+        } else if (fetchOutValueNull(nodep) != valuep) {
+            // const_cast, as clonep() is set on valuep, but nothing should care
+            setOutValue(nodep, newTrackedClone(const_cast<AstNode*>(valuep)));
+        }
+    }
 private:
+    AstNode* newTrackedClone(AstNode* nodep) {
+        AstNode* newp = nodep->cloneTree(false);
+        m_reclaimValuesp.push_back(newp);
+        return newp;
+    }
     AstConst* newConst(AstNode* nodep) {
         // Set a constant value for this node
         if (!VN_IS(nodep->user3p(), Const)) {
@@ -244,7 +266,7 @@ private:
         }
     }
     AstConst* newOutConst(AstNode* nodep) {
-        // Set a constant value for this node
+        // Set a var-output constant value for this node
         if (!VN_IS(nodep->user2p(), Const)) {
             AstConst* constp = allocConst(nodep);
             setOutValue(nodep, constp);
@@ -253,12 +275,11 @@ private:
             return fetchOutConst(nodep);
         }
     }
-    void newOutConst(AstNode* nodep, const AstConst* constr) {
-        newOutConst(nodep)->num().opAssign(constr->num());
-    }
+public:
     AstNode* fetchValueNull(AstNode* nodep) {
         return (AstNode*)(nodep->user3p());
     }
+private:
     AstNode* fetchOutValueNull(AstNode* nodep) {
         return (AstNode*)(nodep->user2p());
     }
@@ -267,6 +288,12 @@ private:
     }
     AstConst* fetchOutConstNull(AstNode* nodep) {
         return VN_CAST(fetchOutValueNull(nodep), Const);
+    }
+    AstNode* fetchValue(AstNode* nodep) {
+        AstNode* valuep = fetchValueNull(nodep);
+        UASSERT_OBJ(valuep, nodep, "No value found for node.");
+        //UINFO(9, "     fetch val "<<*valuep<<" on "<<nodep<<endl);
+        return valuep;
     }
     AstConst* fetchConst(AstNode* nodep) {
         AstConst* constp = fetchConstNull(nodep);
@@ -280,12 +307,6 @@ private:
         return constp;
     }
 public:
-    void newValue(AstNode* nodep, const AstConst* constp) {
-        newConst(nodep, constp);
-    }
-    void newConst(AstNode* nodep, const AstConst* constp) {
-        newConst(nodep)->num().opAssign(constp->num());
-    }
     V3Number* fetchNumberNull(AstNode* nodep) {
         AstConst* constp = fetchConstNull(nodep);
         if (constp) return &constp->num();
@@ -298,10 +319,12 @@ public:
     }
 private:
     void setValue(AstNode* nodep, const AstNode* valuep) {
+        UASSERT_OBJ(valuep, nodep, "Simulate setting null value");
         UINFO(9, "     set val "<<valuep->name()<<" on "<<nodep<<endl);
         nodep->user3p((void*)valuep);
     }
     void setOutValue(AstNode* nodep, const AstNode* valuep) {
+        UASSERT_OBJ(valuep, nodep, "Simulate setting null value");
         UINFO(9, "     set oval "<<valuep->name()<<" on "<<nodep<<endl);
         nodep->user2p((void*)valuep);
     }
@@ -344,13 +367,13 @@ private:
         // True to jump over this node - all visitors must call this up front
         return (m_jumpp && m_jumpp->labelp() != nodep);
     }
-    void assignOutConst(AstNodeAssign* nodep, AstNode* vscp, const AstConst* valuep) {
+    void assignOutValue(AstNodeAssign* nodep, AstNode* vscp, const AstNode* valuep) {
         if (VN_IS(nodep, AssignDly)) {
             // Don't do setValue, as value isn't yet visible to following statements
-            newOutConst(vscp, valuep);
+            newOutValue(vscp, valuep);
         } else {
-            newConst(vscp, valuep);
-            newOutConst(vscp, valuep);
+            newValue(vscp, valuep);
+            newOutValue(vscp, valuep);
         }
     }
 
@@ -375,6 +398,7 @@ private:
         // Delayed is OK though, as we'll decode the next state separately.
         if (!VN_IS(nodep->varp()->dtypeSkipRefp(), BasicDType)
             && !VN_IS(nodep->varp()->dtypeSkipRefp(), PackArrayDType)
+            && !VN_IS(nodep->varp()->dtypeSkipRefp(), UnpackArrayDType)
             && !VN_IS(nodep->varp()->dtypeSkipRefp(), StructDType))
             clearOptimizable(nodep, "Array references/not basic");
         if (nodep->lvalue()) {
@@ -399,10 +423,10 @@ private:
                 }
                 vscp->user1(vscp->user1() | VU_RV);
                 bool isConst = nodep->varp()->isParam() && nodep->varp()->valuep();
-                AstConst* constp = isConst ? fetchConstNull(nodep->varp()->valuep()) : NULL;
-                if (isConst && constp) {  // Propagate PARAM constants for constant function analysis
+                AstNode* valuep = isConst ? fetchValueNull(nodep->varp()->valuep()) : NULL;
+                if (isConst && valuep) {  // Propagate PARAM constants for constant function analysis
                     if (!m_checkOnly && optimizable()) {
-                        newConst(vscp, constp);
+                        newValue(vscp, valuep);
                     }
                 } else {
                     if (m_checkOnly) varRefCb(nodep);
@@ -414,16 +438,16 @@ private:
                         "LHS varref should be handled in AstAssign visitor.");
             {
                 // Return simulation value - copy by reference instead of value for speed
-                AstConst* constp = fetchConstNull(vscp);
-                if (!constp) {
+                AstNode* valuep = fetchValueNull(vscp);
+                if (!valuep) {
                     if (m_params) {
                         clearOptimizable(nodep, "Language violation: reference to non-function-local variable");
                     } else {
                         nodep->v3fatalSrc("Variable value should have been set before any visitor called.");
                     }
-                    constp = allocConst(nodep);  // Any value; just so recover from error
+                    valuep = allocConst(nodep);  // Any value; just so recover from error
                 }
-                setValue(nodep, constp);
+                setValue(nodep, valuep);
             }
         }
     }
@@ -461,7 +485,13 @@ private:
     virtual void visit(AstConst* nodep) {
         checkNodeInfo(nodep);
         if (!m_checkOnly && optimizable()) {
-            newConst(nodep, nodep);
+            newValue(nodep, nodep);
+        }
+    }
+    virtual void visit(AstInitArray* nodep) {
+        checkNodeInfo(nodep);
+        if (!m_checkOnly && optimizable()) {
+            newValue(nodep, nodep);
         }
     }
     virtual void visit(AstEnumItemRef* nodep) {
@@ -472,7 +502,7 @@ private:
             if (valuep) {
                 iterateAndNextNull(valuep);
                 if (optimizable()) {
-                    newConst(nodep, fetchConst(valuep));
+                    newValue(nodep, fetchValue(valuep));
                 }
             } else {
                 clearOptimizable(nodep, "No value found for enum item");
@@ -520,9 +550,9 @@ private:
             if (optimizable()) {
                 if (fetchConst(nodep->lhsp())->num().isNeqZero()) {
                     iterate(nodep->rhsp());
-                    newConst(nodep, fetchConst(nodep->rhsp()));
+                    newValue(nodep, fetchValue(nodep->rhsp()));
                 } else {
-                    newConst(nodep, fetchConst(nodep->lhsp()));  // a zero
+                    newValue(nodep, fetchValue(nodep->lhsp()));  // a zero
                 }
             }
         }
@@ -537,10 +567,10 @@ private:
             iterate(nodep->lhsp());
             if (optimizable()) {
                 if (fetchConst(nodep->lhsp())->num().isNeqZero()) {
-                    newConst(nodep, fetchConst(nodep->lhsp()));  // a one
+                    newValue(nodep, fetchValue(nodep->lhsp()));  // a one
                 } else {
                     iterate(nodep->rhsp());
-                    newConst(nodep, fetchConst(nodep->rhsp()));
+                    newValue(nodep, fetchValue(nodep->rhsp()));
                 }
             }
         }
@@ -556,10 +586,10 @@ private:
             if (optimizable()) {
                 if (fetchConst(nodep->lhsp())->num().isEqZero()) {
                     AstConst cnst(nodep->fileline(), AstConst::WidthedValue(), 1, 1);  // a one
-                    newConst(nodep, &cnst);  // a one
+                    newValue(nodep, &cnst);  // a one
                 } else {
                     iterate(nodep->rhsp());
-                    newConst(nodep, fetchConst(nodep->rhsp()));
+                    newValue(nodep, fetchValue(nodep->rhsp()));
                 }
             }
         }
@@ -577,15 +607,63 @@ private:
             if (optimizable()) {
                 if (fetchConst(nodep->condp())->num().isNeqZero()) {
                     iterate(nodep->expr1p());
-                    newConst(nodep, fetchConst(nodep->expr1p()));
+                    newValue(nodep, fetchValue(nodep->expr1p()));
                 } else {
                     iterate(nodep->expr2p());
-                    newConst(nodep, fetchConst(nodep->expr2p()));
+                    newValue(nodep, fetchValue(nodep->expr2p()));
                 }
             }
         }
     }
 
+    void handleAssignArray(AstNodeAssign* nodep, AstArraySel* selp) {
+        iterateAndNextNull(nodep->rhsp());  // Value to assign
+        // At present we only handle single dimensional assignments
+        // To do better, we need the concept of lvalues, or similar, to know where/how to insert
+        checkNodeInfo(selp);
+        iterateAndNextNull(selp->bitp());  // Bit index
+        AstVarRef* varrefp = VN_CAST(selp->fromp(), VarRef);
+        if (!varrefp) {
+            clearOptimizable(nodep, "Array select LHS isn't simple variable");
+            return;
+        }
+        AstUnpackArrayDType* arrayp = VN_CAST(varrefp->varp()->dtypeSkipRefp(), UnpackArrayDType);
+        UASSERT_OBJ(arrayp, nodep, "Array select of non-array dtype");
+        AstBasicDType* basicp = VN_CAST(arrayp->subDTypep()->skipRefp(), BasicDType);
+        if (!basicp) {
+            clearOptimizable(nodep, "Array of non-basic dtype (e.g. array-of-array)");
+            return;
+        }
+        if (!m_checkOnly && optimizable()) {
+            AstNode* vscp = varOrScope(varrefp);
+            AstInitArray* initp = NULL;
+            if (AstInitArray* vscpnump = VN_CAST(fetchOutValueNull(vscp), InitArray)) {
+                initp = vscpnump;
+            } else if (AstInitArray* vscpnump = VN_CAST(fetchValueNull(vscp), InitArray)) {
+                initp = vscpnump;
+            } else {  // Assignment to unassigned variable, all bits are X
+                // TODO generic initialization which builds X/arrays by recursion
+                AstConst* outconstp = new AstConst(nodep->fileline(), AstConst::WidthedValue(),
+                                                   basicp->widthMin(), 0);
+                if (basicp->isZeroInit()) {
+                    outconstp->num().setAllBits0();
+                } else {
+                    outconstp->num().setAllBitsX();
+                }
+
+                initp = new AstInitArray(nodep->fileline(), arrayp, outconstp);
+                m_reclaimValuesp.push_back(initp);
+            }
+            uint32_t index = fetchConst(selp->bitp())->toUInt();
+            AstNode* valuep = newTrackedClone(fetchValue(nodep->rhsp()));
+            UINFO(9, "     set val["<<index<<"] = "<<valuep<<endl);
+            // Values are in the "real" tree under the InitArray so can eventually extract it,
+            // Not in the usual setValue (pointed to by user2/3p)
+            initp->addIndexValuep(index, valuep);
+            if (debug() >= 9) initp->dumpTree(cout, "-array-");
+            assignOutValue(nodep, vscp, initp);
+        }
+    }
     void handleAssignSel(AstNodeAssign* nodep, AstSel* selp) {
         AstVarRef* varrefp = NULL;
         V3Number lsb(nodep);
@@ -595,31 +673,31 @@ private:
             UASSERT_OBJ(varrefp, nodep,
                         "Indicated optimizable, but no variable found on RHS of select");
             AstNode* vscp = varOrScope(varrefp);
-            AstConst* outconst = NULL;
+            AstConst* outconstp = NULL;
             if (AstConst* vscpnump = fetchOutConstNull(vscp)) {
-                outconst = vscpnump;
+                outconstp = vscpnump;
             } else if (AstConst* vscpnump = fetchConstNull(vscp)) {
-                outconst = vscpnump;
+                outconstp = vscpnump;
             } else {  // Assignment to unassigned variable, all bits are X or 0
-                outconst = new AstConst(nodep->fileline(), AstConst::WidthedValue(),
-                                        varrefp->varp()->widthMin(), 0);
+                outconstp = new AstConst(nodep->fileline(), AstConst::WidthedValue(),
+                                         varrefp->varp()->widthMin(), 0);
                 if (varrefp->varp()->basicp() && varrefp->varp()->basicp()->isZeroInit()) {
-                    outconst->num().setAllBits0();
+                    outconstp->num().setAllBits0();
                 } else {
-                    outconst->num().setAllBitsX();
+                    outconstp->num().setAllBitsX();
                 }
             }
-            outconst->num().opSelInto(fetchConst(nodep->rhsp())->num(),
-                                      lsb,
-                                      selp->widthConst());
-            assignOutConst(nodep, vscp, outconst);
+            outconstp->num().opSelInto(fetchConst(nodep->rhsp())->num(),
+                                       lsb,
+                                       selp->widthConst());
+            assignOutValue(nodep, vscp, outconstp);
         }
     }
     void handleAssignSelRecurse(AstNodeAssign* nodep, AstSel* selp,
                                 AstVarRef*& outVarrefpRef, V3Number& lsbRef,
                                 int depth) {
         // Recurse down to find final variable being set (outVarrefp), with
-        // value to write on nodep->rhsp()
+        // lsb to be eventually set on lsbRef
         checkNodeInfo(selp);
         iterateAndNextNull(selp->lsbp());  // Bit index
         if (AstVarRef* varrefp = VN_CAST(selp->fromp(), VarRef)) {
@@ -654,6 +732,10 @@ private:
             if (!m_params) { clearOptimizable(nodep, "LHS has select"); return; }
             handleAssignSel(nodep, selp);
         }
+        else if (AstArraySel* selp = VN_CAST(nodep->lhsp(), ArraySel)) {
+            if (!m_params) { clearOptimizable(nodep, "LHS has select"); return; }
+            handleAssignArray(nodep, selp);
+        }
         else if (!VN_IS(nodep->lhsp(), VarRef)) {
             clearOptimizable(nodep, "LHS isn't simple variable");
         }
@@ -664,10 +746,27 @@ private:
             iterateAndNextNull(nodep->rhsp());
             if (optimizable()) {
                 AstNode* vscp = varOrScope(VN_CAST(nodep->lhsp(), VarRef));
-                assignOutConst(nodep, vscp, fetchConst(nodep->rhsp()));
+                assignOutValue(nodep, vscp, fetchValue(nodep->rhsp()));
             }
         }
         m_inDlyAssign = false;
+    }
+    virtual void visit(AstArraySel* nodep) {
+        checkNodeInfo(nodep);
+        iterateChildren(nodep);
+        if (AstInitArray* initp = VN_CAST(fetchValueNull(nodep->fromp()), InitArray)) {
+            AstConst* indexp = fetchConst(nodep->bitp());
+            uint32_t offset = indexp->num().toUInt();
+            AstNode* itemp = initp->getIndexDefaultedValuep(offset);
+            if (!itemp) {
+                clearOptimizable(nodep, "Array initialization has too few elements, need element "
+                                 +cvtToStr(offset));
+            } else {
+                setValue(nodep, itemp);
+            }
+        } else {
+            clearOptimizable(nodep, "Array select of non-array");
+        }
     }
     virtual void visit(AstBegin* nodep) {
         checkNodeInfo(nodep);
@@ -841,7 +940,7 @@ private:
             if (pinp) {  // Else too few arguments in function call - ignore it
                 // Apply value to the function
                 if (!m_checkOnly && optimizable()) {
-                    newConst(portp, fetchConst(pinp));
+                    newValue(portp, fetchValue(pinp));
                 }
             }
         }
@@ -853,7 +952,7 @@ private:
         if (!m_checkOnly && optimizable()) {
             // Grab return value from output variable (if it's a function)
             UASSERT_OBJ(funcp->fvarp(), nodep, "Function reference points at non-function");
-            newConst(nodep, fetchConst(funcp->fvarp()));
+            newValue(nodep, fetchValue(funcp->fvarp()));
         }
     }
 
@@ -914,7 +1013,7 @@ private:
 
             AstConst* resultConstp = new AstConst(nodep->fileline(), AstConst::String(), result);
             setValue(nodep, resultConstp);
-            m_stringValuesp.push_back(resultConstp);
+            m_reclaimValuesp.push_back(resultConstp);
         }
     }
 
@@ -938,7 +1037,7 @@ private:
 
     // default
     // These types are definitely not reducible
-    //   AstCoverInc, AstArraySel, AstFinish,
+    //   AstCoverInc, AstFinish,
     //   AstRand, AstTime, AstUCFunc, AstCCall, AstCStmt, AstUCStmt
     virtual void visit(AstNode* nodep) {
         if (jumpingOver(nodep)) return;
@@ -1004,11 +1103,11 @@ public:
                 delete (*it2);
             }
         }
-        for (std::deque<AstConst*>::iterator it = m_stringValuesp.begin();
-             it != m_stringValuesp.end(); ++it) {
+        for (std::deque<AstNode*>::iterator it = m_reclaimValuesp.begin();
+             it != m_reclaimValuesp.end(); ++it) {
             delete (*it);
         }
-        m_stringValuesp.clear();
+        m_reclaimValuesp.clear();
         m_constFreeps.clear();
         m_constAllps.clear();
     }

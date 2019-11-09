@@ -1233,10 +1233,14 @@ private:
             replaceZero(nodep); VL_DANGLING(nodep);
         } else {
             // Fetch the result
-            V3Number* outnump = simvis.fetchNumberNull(nodep);
-            UASSERT_OBJ(outnump, nodep, "No number returned from simulation");
+            AstNode* valuep = simvis.fetchValueNull(nodep);  // valuep is owned by Simulate
+            UASSERT_OBJ(valuep, nodep, "No value returned from simulation");
             // Replace it
-            replaceNum(nodep,*outnump); VL_DANGLING(nodep);
+            AstNode* newp = valuep->cloneTree(false);
+            newp->dtypeFrom(nodep);
+            newp->fileline(nodep->fileline());
+            UINFO(4, "Simulate->"<<newp<<endl);
+            nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
         }
     }
 

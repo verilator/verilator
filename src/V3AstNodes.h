@@ -919,7 +919,7 @@ public:
     virtual bool sizeMattersLhs() const { return false; }
     virtual bool sizeMattersRhs() const { return false; }
     virtual bool isGateOptimizable() const { return true; }  // esp for V3Const::ifSameAssign
-    virtual bool isPredictOptimizable() const { return false; }
+    virtual bool isPredictOptimizable() const { return true; }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode* samep) const { return true; }
     virtual int instrCount() const { return widthInstrs(); }
