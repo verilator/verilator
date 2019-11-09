@@ -233,9 +233,9 @@ private:
         return constp;
     }
 private:
-    AstConst* newValue(AstNode* nodep) {
+    AstConst* newConst(AstNode* nodep) {
         // Set a constant value for this node
-        if (!nodep->user3p()) {
+        if (!VN_IS(nodep->user3p(), Const)) {
             AstConst* constp = allocConst(nodep);
             setValue(nodep, constp);
             return constp;
@@ -243,9 +243,9 @@ private:
             return fetchConst(nodep);
         }
     }
-    AstConst* newOutValue(AstNode* nodep) {
+    AstConst* newOutConst(AstNode* nodep) {
         // Set a constant value for this node
-        if (!nodep->user2p()) {
+        if (!VN_IS(nodep->user2p(), Const)) {
             AstConst* constp = allocConst(nodep);
             setOutValue(nodep, constp);
             return constp;
@@ -253,14 +253,20 @@ private:
             return fetchOutConst(nodep);
         }
     }
-    void newOutValue(AstNode* nodep, const AstConst* constr) {
-        newOutValue(nodep)->num().opAssign(constr->num());
+    void newOutConst(AstNode* nodep, const AstConst* constr) {
+        newOutConst(nodep)->num().opAssign(constr->num());
+    }
+    AstNode* fetchValueNull(AstNode* nodep) {
+        return (AstNode*)(nodep->user3p());
+    }
+    AstNode* fetchOutValueNull(AstNode* nodep) {
+        return (AstNode*)(nodep->user2p());
     }
     AstConst* fetchConstNull(AstNode* nodep) {
-        return ((AstConst*)nodep->user3p());
+        return VN_CAST(fetchValueNull(nodep), Const);
     }
     AstConst* fetchOutConstNull(AstNode* nodep) {
-        return ((AstConst*)nodep->user2p());
+        return VN_CAST(fetchOutValueNull(nodep), Const);
     }
     AstConst* fetchConst(AstNode* nodep) {
         AstConst* constp = fetchConstNull(nodep);
@@ -275,30 +281,29 @@ private:
     }
 public:
     void newValue(AstNode* nodep, const AstConst* constp) {
-        newValue(nodep)->num().opAssign(constp->num());
+        newConst(nodep, constp);
+    }
+    void newConst(AstNode* nodep, const AstConst* constp) {
+        newConst(nodep)->num().opAssign(constp->num());
     }
     V3Number* fetchNumberNull(AstNode* nodep) {
         AstConst* constp = fetchConstNull(nodep);
-        if (constp) {
-            return &constp->num();
-        }
+        if (constp) return &constp->num();
         return NULL;
     }
     V3Number* fetchOutNumberNull(AstNode* nodep) {
         AstConst* constp = fetchOutConstNull(nodep);
-        if (constp) {
-            return &constp->num();
-        }
+        if (constp) return &constp->num();
         return NULL;
     }
 private:
-    void setValue(AstNode* nodep, const AstConst* constp) {
-        UINFO(9, "     set num "<<constp->name()<<" on "<<nodep<<endl);
-        nodep->user3p((void*)constp);
+    void setValue(AstNode* nodep, const AstNode* valuep) {
+        UINFO(9, "     set val "<<valuep->name()<<" on "<<nodep<<endl);
+        nodep->user3p((void*)valuep);
     }
-    void setOutValue(AstNode* nodep, const AstConst* constp) {
-        UINFO(9, "     set onum "<<constp->name()<<" on "<<nodep<<endl);
-        nodep->user2p((void*)constp);
+    void setOutValue(AstNode* nodep, const AstNode* valuep) {
+        UINFO(9, "     set oval "<<valuep->name()<<" on "<<nodep<<endl);
+        nodep->user2p((void*)valuep);
     }
 
     void checkNodeInfo(AstNode* nodep) {
@@ -339,13 +344,13 @@ private:
         // True to jump over this node - all visitors must call this up front
         return (m_jumpp && m_jumpp->labelp() != nodep);
     }
-    void assignOutValue(AstNodeAssign* nodep, AstNode* vscp, const AstConst* valuep) {
+    void assignOutConst(AstNodeAssign* nodep, AstNode* vscp, const AstConst* valuep) {
         if (VN_IS(nodep, AssignDly)) {
             // Don't do setValue, as value isn't yet visible to following statements
-            newOutValue(vscp, valuep);
+            newOutConst(vscp, valuep);
         } else {
-            newValue(vscp, valuep);
-            newOutValue(vscp, valuep);
+            newConst(vscp, valuep);
+            newOutConst(vscp, valuep);
         }
     }
 
@@ -397,7 +402,7 @@ private:
                 AstConst* constp = isConst ? fetchConstNull(nodep->varp()->valuep()) : NULL;
                 if (isConst && constp) {  // Propagate PARAM constants for constant function analysis
                     if (!m_checkOnly && optimizable()) {
-                        newValue(vscp, constp);
+                        newConst(vscp, constp);
                     }
                 } else {
                     if (m_checkOnly) varRefCb(nodep);
@@ -456,7 +461,7 @@ private:
     virtual void visit(AstConst* nodep) {
         checkNodeInfo(nodep);
         if (!m_checkOnly && optimizable()) {
-            newValue(nodep, nodep);
+            newConst(nodep, nodep);
         }
     }
     virtual void visit(AstEnumItemRef* nodep) {
@@ -467,7 +472,7 @@ private:
             if (valuep) {
                 iterateAndNextNull(valuep);
                 if (optimizable()) {
-                    newValue(nodep, fetchConst(valuep));
+                    newConst(nodep, fetchConst(valuep));
                 }
             } else {
                 clearOptimizable(nodep, "No value found for enum item");
@@ -479,7 +484,7 @@ private:
         checkNodeInfo(nodep);
         iterateChildren(nodep);
         if (!m_checkOnly && optimizable()) {
-            nodep->numberOperate(newValue(nodep)->num(),
+            nodep->numberOperate(newConst(nodep)->num(),
                                  fetchConst(nodep->lhsp())->num());
         }
     }
@@ -488,7 +493,7 @@ private:
         checkNodeInfo(nodep);
         iterateChildren(nodep);
         if (!m_checkOnly && optimizable()) {
-            nodep->numberOperate(newValue(nodep)->num(),
+            nodep->numberOperate(newConst(nodep)->num(),
                                  fetchConst(nodep->lhsp())->num(),
                                  fetchConst(nodep->rhsp())->num());
         }
@@ -498,7 +503,7 @@ private:
         checkNodeInfo(nodep);
         iterateChildren(nodep);
         if (!m_checkOnly && optimizable()) {
-            nodep->numberOperate(newValue(nodep)->num(),
+            nodep->numberOperate(newConst(nodep)->num(),
                                  fetchConst(nodep->lhsp())->num(),
                                  fetchConst(nodep->rhsp())->num(),
                                  fetchConst(nodep->thsp())->num());
@@ -515,9 +520,9 @@ private:
             if (optimizable()) {
                 if (fetchConst(nodep->lhsp())->num().isNeqZero()) {
                     iterate(nodep->rhsp());
-                    newValue(nodep, fetchConst(nodep->rhsp()));
+                    newConst(nodep, fetchConst(nodep->rhsp()));
                 } else {
-                    newValue(nodep, fetchConst(nodep->lhsp()));  // a zero
+                    newConst(nodep, fetchConst(nodep->lhsp()));  // a zero
                 }
             }
         }
@@ -532,10 +537,10 @@ private:
             iterate(nodep->lhsp());
             if (optimizable()) {
                 if (fetchConst(nodep->lhsp())->num().isNeqZero()) {
-                    newValue(nodep, fetchConst(nodep->lhsp()));  // a one
+                    newConst(nodep, fetchConst(nodep->lhsp()));  // a one
                 } else {
                     iterate(nodep->rhsp());
-                    newValue(nodep, fetchConst(nodep->rhsp()));
+                    newConst(nodep, fetchConst(nodep->rhsp()));
                 }
             }
         }
@@ -551,10 +556,10 @@ private:
             if (optimizable()) {
                 if (fetchConst(nodep->lhsp())->num().isEqZero()) {
                     AstConst cnst(nodep->fileline(), AstConst::WidthedValue(), 1, 1);  // a one
-                    newValue(nodep, &cnst);  // a one
+                    newConst(nodep, &cnst);  // a one
                 } else {
                     iterate(nodep->rhsp());
-                    newValue(nodep, fetchConst(nodep->rhsp()));
+                    newConst(nodep, fetchConst(nodep->rhsp()));
                 }
             }
         }
@@ -572,10 +577,10 @@ private:
             if (optimizable()) {
                 if (fetchConst(nodep->condp())->num().isNeqZero()) {
                     iterate(nodep->expr1p());
-                    newValue(nodep, fetchConst(nodep->expr1p()));
+                    newConst(nodep, fetchConst(nodep->expr1p()));
                 } else {
                     iterate(nodep->expr2p());
-                    newValue(nodep, fetchConst(nodep->expr2p()));
+                    newConst(nodep, fetchConst(nodep->expr2p()));
                 }
             }
         }
@@ -607,7 +612,7 @@ private:
             outconst->num().opSelInto(fetchConst(nodep->rhsp())->num(),
                                       lsb,
                                       selp->widthConst());
-            assignOutValue(nodep, vscp, outconst);
+            assignOutConst(nodep, vscp, outconst);
         }
     }
     void handleAssignSelRecurse(AstNodeAssign* nodep, AstSel* selp,
@@ -659,7 +664,7 @@ private:
             iterateAndNextNull(nodep->rhsp());
             if (optimizable()) {
                 AstNode* vscp = varOrScope(VN_CAST(nodep->lhsp(), VarRef));
-                assignOutValue(nodep, vscp, fetchConst(nodep->rhsp()));
+                assignOutConst(nodep, vscp, fetchConst(nodep->rhsp()));
             }
         }
         m_inDlyAssign = false;
@@ -836,7 +841,7 @@ private:
             if (pinp) {  // Else too few arguments in function call - ignore it
                 // Apply value to the function
                 if (!m_checkOnly && optimizable()) {
-                    newValue(portp, fetchConst(pinp));
+                    newConst(portp, fetchConst(pinp));
                 }
             }
         }
@@ -848,7 +853,7 @@ private:
         if (!m_checkOnly && optimizable()) {
             // Grab return value from output variable (if it's a function)
             UASSERT_OBJ(funcp->fvarp(), nodep, "Function reference points at non-function");
-            newValue(nodep, fetchConst(funcp->fvarp()));
+            newConst(nodep, fetchConst(funcp->fvarp()));
         }
     }
 
