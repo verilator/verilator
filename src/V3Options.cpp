@@ -1283,7 +1283,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
                 ST_IN_DOUBLE_QUOTED_STR};
 
     state st = ST_IN_OPTION;
-    state last_st;
+    state last_st = ST_IN_OPTION;
     string arg;
     for (string::size_type pos = 0;
          pos < whole_file.length(); ++pos) {
