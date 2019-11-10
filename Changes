@@ -2,7 +2,7 @@ Revision history for Verilator
 
 The contributors that suggested a given feature are shown in []. Thanks!
 
-* Verilator 4.021 devel
+* Verilator 4.022 2019-11-10
 
 **    Add --protect-lib, bug1490. [Todd Strader]
 
