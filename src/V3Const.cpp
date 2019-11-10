@@ -229,14 +229,14 @@ private:
         AstConst* maskp = VN_CAST(nodep->lhsp(), Const);
         if (!maskp) return false;
         UINFO(4, "AND(CONSTm, CONDcond(c, i, e))->CONDcond(c, AND(m,i), AND(m, e)) "<<nodep<<endl);
-        AstNodeCond* newp = (AstNodeCond*)condp->cloneType
-            (condp->condp()->unlinkFrBack(),
-             new AstAnd(nodep->fileline(),
-                        maskp->cloneTree(false),
-                        condp->expr1p()->unlinkFrBack()),
-             new AstAnd(nodep->fileline(),
-                        maskp->cloneTree(false),
-                        condp->expr2p()->unlinkFrBack()));
+        AstNodeCond* newp = static_cast<AstNodeCond*>(
+            condp->cloneType(condp->condp()->unlinkFrBack(),
+                             new AstAnd(nodep->fileline(),
+                                        maskp->cloneTree(false),
+                                        condp->expr1p()->unlinkFrBack()),
+                             new AstAnd(nodep->fileline(),
+                                        maskp->cloneTree(false),
+                                        condp->expr2p()->unlinkFrBack())));
         newp->dtypeFrom(nodep);
         newp->expr1p()->dtypeFrom(nodep);  // As And might have been to change widths
         newp->expr2p()->dtypeFrom(nodep);
