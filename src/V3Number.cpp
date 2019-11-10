@@ -366,7 +366,7 @@ V3Number& V3Number::setDouble(double value) {
     }
     m_double = true;
     union { double d; uint32_t u[2]; } u;
-    u.d = value; if (u.d) { }
+    u.d = value; if (u.d != 0.0) { }
     for (int i=2; i<words(); i++) m_value[i]=m_valueX[i] = 0;
     m_value[0] = u.u[0]; m_value[1] = u.u[1];
     return *this;
