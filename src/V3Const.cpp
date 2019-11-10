@@ -880,6 +880,17 @@ private:
         newp->dtypeFrom(nodep);
         nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
     }
+    void replaceModAnd(AstModDiv* nodep) {  // Mod, but not ModS as not simple shift
+        UINFO(5,"MOD(b,2^n)->AND(b,2^n-1) "<<nodep<<endl);
+        int amount = VN_CAST(nodep->rhsp(), Const)->num().mostSetBitP1()-1;  // 2^n->n+1
+        V3Number mask(nodep, nodep->width());
+        mask.setMask(amount);
+        AstNode* opp = nodep->lhsp()->unlinkFrBack();
+        AstAnd* newp = new AstAnd(nodep->fileline(),
+                                  opp, new AstConst(nodep->fileline(), mask));
+        newp->dtypeFrom(nodep);
+        nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+    }
     void replaceShiftOp(AstNodeBiop* nodep) {
         UINFO(5,"SHIFT(AND(a,b),CONST)->AND(SHIFT(a,CONST),SHIFT(b,CONST)) "<<nodep<<endl);
         AstNRelinker handle;
@@ -2257,6 +2268,7 @@ private:
     TREEOP ("AstDivS  {$lhsp, $rhsp.isOne}",    "replaceWLhs(nodep)");
     TREEOP ("AstMul   {operandIsPowTwo($lhsp), $rhsp}", "replaceMulShift(nodep)");  // a*2^n -> a<<n
     TREEOP ("AstDiv   {$lhsp, operandIsPowTwo($rhsp)}", "replaceDivShift(nodep)");  // a/2^n -> a>>n
+    TREEOP ("AstModDiv{$lhsp, operandIsPowTwo($rhsp)}", "replaceModAnd(nodep)");  // a % 2^n -> a&(2^n-1)
     TREEOP ("AstPow   {operandIsTwo($lhsp), $rhsp}",    "replacePowShift(nodep)");  // 2**a == 1<<a
     TREEOP ("AstSub   {$lhsp.castAdd, operandSubAdd(nodep)}", "AstAdd{AstSub{$lhsp->castAdd()->lhsp(),$rhsp}, $lhsp->castAdd()->rhsp()}");  // ((a+x)-y) -> (a+(x-y))
     // Trinary ops
