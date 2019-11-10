@@ -218,6 +218,31 @@ private:
         else nodep->rhsp(cp);
         return true;
     }
+    bool matchAndCond(AstAnd* nodep) {
+        // Push down a AND into conditional, when one side of conditional is constant
+        // (otherwise we'd be trading one operation for two operations)
+        // V3Clean often makes this pattern, as it postpones the AND until
+        // as high as possible, which is usally the right choice, except for this.
+        AstNodeCond* condp = VN_CAST(nodep->rhsp(), NodeCond);
+        if (!condp) return false;
+        if (!VN_IS(condp->expr1p(), Const) && !VN_IS(condp->expr2p(), Const)) return false;
+        AstConst* maskp = VN_CAST(nodep->lhsp(), Const);
+        if (!maskp) return false;
+        UINFO(4, "AND(CONSTm, CONDcond(c, i, e))->CONDcond(c, AND(m,i), AND(m, e)) "<<nodep<<endl);
+        AstNodeCond* newp = (AstNodeCond*)condp->cloneType
+            (condp->condp()->unlinkFrBack(),
+             new AstAnd(nodep->fileline(),
+                        maskp->cloneTree(false),
+                        condp->expr1p()->unlinkFrBack()),
+             new AstAnd(nodep->fileline(),
+                        maskp->cloneTree(false),
+                        condp->expr2p()->unlinkFrBack()));
+        newp->dtypeFrom(nodep);
+        newp->expr1p()->dtypeFrom(nodep);  // As And might have been to change widths
+        newp->expr2p()->dtypeFrom(nodep);
+        nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+        return true;
+    }
     static bool operandShiftSame(const AstNode* nodep) {
         const AstNodeBiop* np = VN_CAST_CONST(nodep, NodeBiop);
         {
@@ -2442,6 +2467,7 @@ private:
     TREEOPV("AstConcat{$lhsp.castSel, $rhsp.castSel, ifAdjacentSel(VN_CAST($lhsp,,Sel),,VN_CAST($rhsp,,Sel))}",  "replaceConcatSel(nodep)");
     TREEOPV("AstConcat{ifConcatMergeableBiop($lhsp), concatMergeable($lhsp,,$rhsp)}", "replaceConcatMerge(nodep)");
     // Common two-level operations that can be simplified
+    TREEOP ("AstAnd {$lhsp.castConst,matchAndCond(nodep)}",           "DONE");
     TREEOP ("AstAnd {$lhsp.castOr, $rhsp.castOr, operandAndOrSame(nodep)}",     "replaceAndOr(nodep)");
     TREEOP ("AstOr  {$lhsp.castAnd,$rhsp.castAnd,operandAndOrSame(nodep)}",     "replaceAndOr(nodep)");
     TREEOP ("AstOr  {matchOrAndNot(nodep)}",            "DONE");

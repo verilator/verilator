@@ -28,7 +28,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support quoted arguments in -f files, bug1535. [Yves Mathieu]
 
-****  Optimize modulus by power-of-two constants.
+****  Optimize modulus by power-of-two constants, and masked conditionals.
 
 ****  Fix detecting missing reg types, bug1570. [Jacko Dirks]
 
