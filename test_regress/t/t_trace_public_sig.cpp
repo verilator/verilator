@@ -16,24 +16,22 @@
 #define STRINGIFY2(x) #x
 
 unsigned long long main_time = 0;
-double sc_time_stamp() {
-    return (double)main_time;
-}
+double sc_time_stamp() { return (double)main_time; }
 
 const unsigned long long dt_2 = 3;
 
-int main(int argc, char **argv, char **env) {
-    Vt_trace_public_sig *top = new Vt_trace_public_sig("top");
+int main(int argc, char** argv, char** env) {
+    Vt_trace_public_sig* top = new Vt_trace_public_sig("top");
 
     Verilated::debug(0);
     Verilated::traceEverOn(true);
 
     VerilatedVcdC* tfp = new VerilatedVcdC;
-    top->trace(tfp,99);
+    top->trace(tfp, 99);
     tfp->open(STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 
     while (main_time <= 20) {
-        top->CLK   = (main_time/dt_2)%2;
+        top->CLK = (main_time / dt_2) % 2;
         top->eval();
 
         top->t->glbl->GSR = (main_time < 7);

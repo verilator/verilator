@@ -28,7 +28,6 @@
 ///
 //*************************************************************************
 
-
 #ifndef _VERILATED_SYM_PROPS_H_
 #define _VERILATED_SYM_PROPS_H_ 1  ///< Header Guard
 
@@ -128,7 +127,7 @@ public:
 public:
     ~VerilatedVarProps() {}
     // METHODS
-    bool magicOk() const { return m_magic==MAGIC; }
+    bool magicOk() const { return m_magic == MAGIC; }
     VerilatedVarType vltype() const { return m_vltype; }
     VerilatedVarFlags vldir() const {
         return static_cast<VerilatedVarFlags>(static_cast<int>(m_vlflags) & VLVF_MASK_DIR); }
@@ -177,13 +176,15 @@ public:
 class VerilatedDpiOpenVar {
     // MEMBERS
     const VerilatedVarProps* m_propsp;  // Variable properties
-    void*                    m_datap;  // Location of data (local to thread always, so safe)
+    void* m_datap;  // Location of data (local to thread always, so safe)
 public:
     // CONSTRUCTORS
     VerilatedDpiOpenVar(const VerilatedVarProps* propsp, void* datap)
-        : m_propsp(propsp), m_datap(datap) {}
+        : m_propsp(propsp)
+        , m_datap(datap) {}
     VerilatedDpiOpenVar(const VerilatedVarProps* propsp, const void* datap)
-        : m_propsp(propsp), m_datap(const_cast<void*>(datap)) {}
+        : m_propsp(propsp)
+        , m_datap(const_cast<void*>(datap)) {}
     ~VerilatedDpiOpenVar() {}
     // METHODS
     void* datap() const { return m_datap; }
@@ -211,7 +212,7 @@ public:
 
 class VerilatedVar : public VerilatedVarProps {
     // MEMBERS
-    void*       m_datap;  // Location of data
+    void* m_datap;  // Location of data
     const char* m_namep;  // Name - slowpath
 protected:
     friend class VerilatedScope;

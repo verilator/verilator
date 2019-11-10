@@ -47,8 +47,9 @@ extern "C" {
 struct state {
     std::atomic<bool> task_is_running;
     std::atomic<int> failure;
-    state() : task_is_running(false)
-            , failure(false) {}
+    state()
+        : task_is_running(false)
+        , failure(false) {}
 };
 
 static state st;
@@ -73,6 +74,4 @@ void dpii_sys_task() {
     atomic_exchange(&st.task_is_running, false);
 }
 
-int dpii_failure() {
-    return st.failure;
-}
+int dpii_failure() { return st.failure; }

@@ -20,11 +20,9 @@
 
 double main_time;
 
-double sc_time_stamp() {
-    return main_time;
-}
+double sc_time_stamp() { return main_time; }
 
-int main(int argc, char **argv, char **env) {
+int main(int argc, char** argv, char** env) {
     Verilated::debug(0);
 
     VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
@@ -39,6 +37,6 @@ int main(int argc, char **argv, char **env) {
     topp->eval();
     topp->final();
 
-    delete topp; topp=NULL;
+    delete topp; VL_DANGLING(topp);
     exit(0L);
 }

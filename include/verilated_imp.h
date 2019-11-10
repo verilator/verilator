@@ -20,7 +20,6 @@
 ///
 //=========================================================================
 
-
 #ifndef _VERILATED_IMP_H_
 #define _VERILATED_IMP_H_ 1  ///< Header Guard
 
@@ -62,7 +61,8 @@ private:
 public:
     // CONSTRUCTORS
     VerilatedMsg(const std::function<void()>& cb)
-        : m_mtaskId(Verilated::mtaskId()), m_cb(cb) {}
+        : m_mtaskId(Verilated::mtaskId())
+        , m_cb(cb) {}
     ~VerilatedMsg() {}
     // METHODS
     vluint32_t mtaskId() const { return m_mtaskId; }
@@ -73,7 +73,7 @@ public:
 /// Each thread has a queue it pushes to
 /// This assumes no thread starts pushing the next tick until the previous has drained.
 /// If more aggressiveness is needed, a double-buffered scheme might work well.
-class VerilatedEvalMsgQueue  {
+class VerilatedEvalMsgQueue {
     typedef std::multiset<VerilatedMsg, VerilatedMsg::Cmp> VerilatedThreadQueue;
 
     std::atomic<vluint64_t> m_depth;  ///< Current depth of queue (see comments below)
@@ -82,10 +82,12 @@ class VerilatedEvalMsgQueue  {
     VerilatedThreadQueue m_queue VL_GUARDED_BY(m_mutex);  ///< Message queue
 public:
     // CONSTRUCTORS
-    VerilatedEvalMsgQueue() : m_depth(0) {
+    VerilatedEvalMsgQueue()
+        : m_depth(0) {
         assert(atomic_is_lock_free(&m_depth));
     }
-    ~VerilatedEvalMsgQueue() { }
+    ~VerilatedEvalMsgQueue() {}
+
 private:
     VL_UNCOPYABLE(VerilatedEvalMsgQueue);
 public:
@@ -122,11 +124,11 @@ public:
 };
 
 /// Each thread has a local queue to build up messages until the end of the eval() call
-class VerilatedThreadMsgQueue  {
+class VerilatedThreadMsgQueue {
     std::queue<VerilatedMsg> m_queue;
 public:
     // CONSTRUCTORS
-    VerilatedThreadMsgQueue() { }
+    VerilatedThreadMsgQueue() {}
     ~VerilatedThreadMsgQueue() {
         // The only call of this with a non-empty queue is a fatal error.
         // So this does not flush the queue, as the destination queue is not known to this class.
@@ -170,8 +172,8 @@ class VerilatedImp {
 
     // TYPES
     typedef std::vector<std::string> ArgVec;
-    typedef std::map<std::pair<const void*,void*>,void*> UserMap;
-    typedef std::map<const char*, int, VerilatedCStrCmp>  ExportNameMap;
+    typedef std::map<std::pair<const void*, void*>, void*> UserMap;
+    typedef std::map<const char*, int, VerilatedCStrCmp> ExportNameMap;
 
     // MEMBERS
     static VerilatedImp s_s;  ///< Static Singleton; One and only static this
@@ -204,7 +206,8 @@ class VerilatedImp {
 public:  // But only for verilated*.cpp
     // CONSTRUCTORS
     VerilatedImp()
-        : m_argVecLoaded(false), m_exportNext(0) {
+        : m_argVecLoaded(false)
+        , m_exportNext(0) {
         m_fdps.resize(3);
         m_fdps[0] = stdin;
         m_fdps[1] = stdout;
@@ -232,9 +235,9 @@ public:
                         "%Error: Verilog called $test$plusargs or $value$plusargs without"
                         " testbench C first calling Verilated::commandArgs(argc,argv).");
         }
-        for (ArgVec::const_iterator it=s_s.m_argVec.begin(); it!=s_s.m_argVec.end(); ++it) {
-            if ((*it)[0]=='+') {
-                if (0==strncmp(prefixp, it->c_str()+1, len)) return *it;
+        for (ArgVec::const_iterator it = s_s.m_argVec.begin(); it != s_s.m_argVec.end(); ++it) {
+            if ((*it)[0] == '+') {
+                if (0 == strncmp(prefixp, it->c_str() + 1, len)) return *it;
             }
         }
         return "";
@@ -252,7 +255,7 @@ public:
     // per map overhead * N scopes would take much more space and cache thrashing.
     static inline void userInsert(const void* scopep, void* userKey, void* userData) VL_MT_SAFE {
         VerilatedLockGuard lock(s_s.m_userMapMutex);
-        UserMap::iterator it=s_s.m_userMap.find(std::make_pair(scopep, userKey));
+        UserMap::iterator it = s_s.m_userMap.find(std::make_pair(scopep, userKey));
         if (it != s_s.m_userMap.end()) it->second = userData;
         // When we support VL_THREADs, we need a lock around this insert, as it's runtime
         else s_s.m_userMap.insert(it, std::make_pair(std::make_pair(scopep, userKey), userData));
@@ -268,7 +271,7 @@ private:
     static void userEraseScope(const VerilatedScope* scopep) VL_MT_SAFE {
         // Slow ok - called once/scope on destruction, so we simply iterate.
         VerilatedLockGuard lock(s_s.m_userMapMutex);
-        for (UserMap::iterator it=s_s.m_userMap.begin(); it!=s_s.m_userMap.end(); ) {
+        for (UserMap::iterator it = s_s.m_userMap.begin(); it != s_s.m_userMap.end();) {
             if (it->first.first == scopep) {
                 s_s.m_userMap.erase(it++);
             } else {
@@ -291,7 +294,7 @@ public:  // But only for verilated*.cpp
     static void scopeInsert(const VerilatedScope* scopep) VL_MT_SAFE {
         // Slow ok - called once/scope at construction
         VerilatedLockGuard lock(s_s.m_nameMutex);
-        VerilatedScopeNameMap::iterator it=s_s.m_nameMap.find(scopep->name());
+        VerilatedScopeNameMap::iterator it = s_s.m_nameMap.find(scopep->name());
         if (it == s_s.m_nameMap.end()) {
             s_s.m_nameMap.insert(it, std::make_pair(scopep->name(), scopep));
         }
@@ -307,14 +310,14 @@ public:  // But only for verilated*.cpp
         // Slow ok - called once/scope at destruction
         VerilatedLockGuard lock(s_s.m_nameMutex);
         userEraseScope(scopep);
-        VerilatedScopeNameMap::iterator it=s_s.m_nameMap.find(scopep->name());
+        VerilatedScopeNameMap::iterator it = s_s.m_nameMap.find(scopep->name());
         if (it != s_s.m_nameMap.end()) s_s.m_nameMap.erase(it);
     }
     static void scopesDump() VL_MT_SAFE {
         VerilatedLockGuard lock(s_s.m_nameMutex);
         VL_PRINTF_MT("  scopesDump:\n");
-        for (VerilatedScopeNameMap::const_iterator it=s_s.m_nameMap.begin();
-             it!=s_s.m_nameMap.end(); ++it) {
+        for (VerilatedScopeNameMap::const_iterator it = s_s.m_nameMap.begin();
+             it != s_s.m_nameMap.end(); ++it) {
             const VerilatedScope* scopep = it->second;
             scopep->scopeDump();
         }
@@ -349,7 +352,7 @@ public:  // But only for verilated*.cpp
     static int exportInsert(const char* namep) VL_MT_SAFE {
         // Slow ok - called once/function at creation
         VerilatedLockGuard lock(s_s.m_exportMutex);
-        ExportNameMap::iterator it=s_s.m_exportMap.find(namep);
+        ExportNameMap::iterator it = s_s.m_exportMap.find(namep);
         if (it == s_s.m_exportMap.end()) {
             s_s.m_exportMap.insert(it, std::make_pair(namep, s_s.m_exportNext++));
             return s_s.m_exportNext++;
@@ -359,7 +362,7 @@ public:  // But only for verilated*.cpp
     }
     static int exportFind(const char* namep) VL_MT_SAFE {
         VerilatedLockGuard lock(s_s.m_exportMutex);
-        ExportNameMap::const_iterator it=s_s.m_exportMap.find(namep);
+        ExportNameMap::const_iterator it = s_s.m_exportMap.find(namep);
         if (VL_LIKELY(it != s_s.m_exportMap.end())) return it->second;
         std::string msg = (std::string("%Error: Testbench C called ")+namep
                            +" but no such DPI export function name exists in ANY model");
@@ -369,8 +372,8 @@ public:  // But only for verilated*.cpp
     static const char* exportName(int funcnum) VL_MT_SAFE {
         // Slowpath; find name for given export; errors only so no map to reverse-map it
         VerilatedLockGuard lock(s_s.m_exportMutex);
-        for (ExportNameMap::const_iterator it=s_s.m_exportMap.begin();
-             it!=s_s.m_exportMap.end(); ++it) {
+        for (ExportNameMap::const_iterator it = s_s.m_exportMap.begin();
+             it != s_s.m_exportMap.end(); ++it) {
             if (it->second == funcnum) return it->first;
         }
         return "*UNKNOWN*";

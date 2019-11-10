@@ -175,7 +175,7 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
     while (*textp && (isspace(*textp) || *textp=='"')) textp++;
 
     // Grab linenumber
-    const char *ln = textp;
+    const char* ln = textp;
     while (*textp && !isspace(*textp)) textp++;
     if (isdigit(*ln)) {
         lineno(atoi(ln));
@@ -183,7 +183,7 @@ void FileLine::lineDirective(const char* textp, int& enterExitRef) {
     while (*textp && (isspace(*textp) || *textp=='"')) textp++;
 
     // Grab filename
-    const char *fn = textp;
+    const char* fn = textp;
     while (*textp && !(isspace(*textp) || *textp=='"')) textp++;
     if (textp != fn) {
         string strfn = fn;

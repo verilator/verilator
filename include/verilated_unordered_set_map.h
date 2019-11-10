@@ -19,7 +19,6 @@
 //
 //*************************************************************************
 
-
 //*************************************************************************
 // This file has clones of the std::unordered_set and std::unordered_map
 // hash table types. They are here so that Verilator can use hash tables
@@ -114,7 +113,7 @@ class vl_unordered_set {
 public:
     // TYPES
     typedef std::list<T_Key> Bucket;
-    enum RehashType {GROW, SHRINK};
+    enum RehashType { GROW, SHRINK };
 
     template <class KK, class VV,
               class HH, class EQ> friend class vl_unordered_map;
@@ -197,7 +196,7 @@ public:
         , m_log2Buckets(initLog2Buckets())
         , m_bucketsp(NULL)
         , m_hash()
-        , m_equal() { }
+        , m_equal() {}
 
     vl_unordered_set(const vl_unordered_set& other)
         : m_numElements(other.m_numElements)
@@ -317,7 +316,7 @@ public:
         return find_internal(key, bucketIdx);
     }
 
-    std::pair<iterator, bool> insert(const T_Key &val) {
+    std::pair<iterator, bool> insert(const T_Key& val) {
         size_t bucketIdx;
         iterator existIt = find_internal(val, bucketIdx);
         if (existIt != end()) {
@@ -353,7 +352,7 @@ public:
         return next_it;
     }
 
-    size_t erase(const T_Key &key) {
+    size_t erase(const T_Key& key) {
         size_t bucketIdx;
         iterator it = find_internal(key, bucketIdx);
         if (it != end()) {
@@ -373,7 +372,7 @@ public:
 
     void clear() {
         if (m_bucketsp) {
-            delete [] m_bucketsp;
+            delete[] m_bucketsp;
             m_bucketsp = NULL;
         }
         m_numElements = 0;
@@ -417,7 +416,7 @@ private:
         size_t new_num_buckets = VL_ULL(1) << new_log2Buckets;
         Bucket* new_bucketsp = new Bucket[new_num_buckets];
 
-        for (size_t i=0; i<numBuckets(); i++) {
+        for (size_t i = 0; i < numBuckets(); i++) {
             while (!m_bucketsp[i].empty()) {
                 typename Bucket::iterator bit = m_bucketsp[i].begin();
                 size_t hash = m_hash.operator()(*bit);

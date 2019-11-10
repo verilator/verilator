@@ -23,7 +23,10 @@
 
 struct MyMon {
     vluint32_t* sigsp[2];
-    MyMon() { sigsp[0]=NULL; sigsp[1]=NULL; }
+    MyMon() {
+        sigsp[0] = NULL;
+        sigsp[1] = NULL;
+    }
 };
 MyMon mons[2];
 
@@ -36,13 +39,13 @@ void mon_register_a(const char* namep, void* sigp, bool isOut) {
 }
 
 void mon_do(MyMon* monp) {
-    if (!monp->sigsp[0]) vl_fatal(__FILE__,__LINE__,"","never registered");
-    if (!monp->sigsp[1]) vl_fatal(__FILE__,__LINE__,"","never registered");
-    *monp->sigsp[1] = (*(monp->sigsp[0]))+1;
+    if (!monp->sigsp[0]) vl_fatal(__FILE__, __LINE__, "", "never registered");
+    if (!monp->sigsp[1]) vl_fatal(__FILE__, __LINE__, "", "never registered");
+    *monp->sigsp[1] = (*(monp->sigsp[0])) + 1;
 
 #ifdef TEST_VERBOSE
-    VL_PRINTF("-     mon_do(%08x(&%p) -> %08x(&%p));\n",
-              *(monp->sigsp[0]), monp->sigsp[0], *(monp->sigsp[1]), monp->sigsp[1]);
+    VL_PRINTF("-     mon_do(%08x(&%p) -> %08x(&%p));\n", *(monp->sigsp[0]), monp->sigsp[0],
+              *(monp->sigsp[1]), monp->sigsp[1]);
 #endif
 }
 
@@ -51,7 +54,8 @@ void mon_class_name(const char* namep) {
     VL_PRINTF("-     mon_class_name(\"%s\");\n", namep);
 #endif
     // Check the C's calling name of "" doesn't lead to extra dots in the name()
-    if (namep && namep[0]=='.') vl_fatal(__FILE__,__LINE__,"", (std::string("Unexp class name ")+namep).c_str());
+    if (namep && namep[0] == '.')
+        vl_fatal(__FILE__, __LINE__, "", (std::string("Unexp class name ") + namep).c_str());
 }
 
 extern "C" void mon_scope_name(const char* namep);
@@ -60,8 +64,10 @@ void mon_scope_name(const char* namep) {
 #ifdef TEST_VERBOSE
     VL_PRINTF("-     mon_scope_name('%s', \"%s\");\n", modp, namep);
 #endif
-    if (strcmp(namep,"t.sub")) vl_fatal(__FILE__,__LINE__,"", (std::string("Unexp scope name ")+namep).c_str());
-    if (strcmp(modp,"t.sub")) vl_fatal(__FILE__,__LINE__,"", (std::string("Unexp dpiscope name ")+modp).c_str());
+    if (strcmp(namep, "t.sub"))
+        vl_fatal(__FILE__, __LINE__, "", (std::string("Unexp scope name ") + namep).c_str());
+    if (strcmp(modp, "t.sub"))
+        vl_fatal(__FILE__, __LINE__, "", (std::string("Unexp dpiscope name ") + modp).c_str());
 }
 
 extern "C" void mon_register_b(const char* namep, int isOut);
@@ -93,8 +99,7 @@ void mon_register_done() {
     // Print list of all signals - if we didn't register2 anything we'd pick them off here
     const VerilatedScope* scopep = Verilated::dpiScope();
     if (VerilatedVarNameMap* varsp = scopep->varsp()) {
-        for (VerilatedVarNameMap::const_iterator it = varsp->begin();
-             it != varsp->end(); ++it) {
+        for (VerilatedVarNameMap::const_iterator it = varsp->begin(); it != varsp->end(); ++it) {
             VL_PRINTF("-       mon2: %s\n", it->first);
         }
     }
@@ -111,10 +116,8 @@ void mon_eval() {
 
 unsigned int main_time = false;
 
-double sc_time_stamp() {
-    return main_time;
-}
-int main(int argc, char **argv, char **env) {
+double sc_time_stamp() { return main_time; }
+int main(int argc, char** argv, char** env) {
     double sim_time = 1100;
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
@@ -135,13 +138,13 @@ int main(int argc, char **argv, char **env) {
         main_time += 1;
         topp->eval();
         topp->clk = !topp->clk;
-        //mon_do();
+        // mon_do();
     }
     if (!Verilated::gotFinish()) {
-        vl_fatal(__FILE__,__LINE__,"main", "%Error: Timeout; never got a $finish");
+        vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
     topp->final();
 
-    delete topp; topp=NULL;
+    delete topp; VL_DANGLING(topp);
     exit(0L);
 }

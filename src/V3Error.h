@@ -307,8 +307,11 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
     ::v3errorEndFatal((V3Error::v3errorPrep(V3ErrorCode::EC_FATAL), \
                        (V3Error::v3errorStr()<<msg), V3Error::v3errorStr()));
 
-#define UINFO(level,stmsg) {if (VL_UNCOVERABLE(debug()>=(level))) { cout<<"- "<<V3Error::lineStr(__FILE__,__LINE__)<<stmsg; }}
-#define UINFONL(level,stmsg) {if (VL_UNCOVERABLE(debug()>=(level))) { cout<<stmsg; } }
+#define UINFO(level, stmsg) \
+    { if (VL_UNCOVERABLE(debug() >= (level))) { \
+            cout << "- " << V3Error::lineStr(__FILE__, __LINE__) << stmsg; } }
+#define UINFONL(level, stmsg) \
+    { if (VL_UNCOVERABLE(debug() >= (level))) { cout << stmsg; } }
 
 #ifdef VL_DEBUG
 # define UDEBUGONLY(stmts) {stmts}

@@ -24,7 +24,6 @@
 ///
 //*************************************************************************
 
-
 #ifndef _VERILATED_DPI_H_
 #define _VERILATED_DPI_H_ 1  ///< Header Guard
 

@@ -70,7 +70,7 @@ public:
         }
     }
     // return absolute scope of obj
-    static const char* rooted(const char *obj) {
+    static const char* rooted(const char* obj) {
         static string buf;
         ostringstream os;
         os<<top()<<"."<<obj;

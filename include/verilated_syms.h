@@ -27,7 +27,6 @@
 ///
 //*************************************************************************
 
-
 #ifndef _VERILATED_SYMS_H_
 #define _VERILATED_SYMS_H_ 1  ///< Header Guard
 
@@ -43,7 +42,7 @@
 
 /// Class to sort maps keyed by const char*'s
 struct VerilatedCStrCmp {
-    bool operator() (const char *a, const char *b) const {
+    bool operator() (const char* a, const char* b) const {
         return std::strcmp(a, b) < 0;
     }
 };

@@ -9,18 +9,16 @@
 #include <verilated.h>
 #include "Vt_multitop_sig.h"
 
-
 // Use cout to avoid issues with %d/%lx etc
-#define CHECK_RESULT(got, exp)  \
-    if ((got) != (exp)) {  \
-        std::cout<<std::dec<<"%Error: "<<__FILE__<<":"<<__LINE__  \
-                 <<": GOT = "<<(got)<<"   EXP = "<<(exp)<<std::endl;  \
-        return __LINE__;  \
+#define CHECK_RESULT(got, exp) \
+    if ((got) != (exp)) { \
+        std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << ": GOT = " << (got) \
+                  << "   EXP = " << (exp) << std::endl; \
+        return __LINE__; \
     }
 
-
-int main(int argc, char *argv[]) {
-    Vt_multitop_sig *topp = new Vt_multitop_sig("");
+int main(int argc, char* argv[]) {
+    Vt_multitop_sig* topp = new Vt_multitop_sig("");
 
     Verilated::debug(0);
 

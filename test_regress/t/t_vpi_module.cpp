@@ -42,61 +42,62 @@ using namespace std;
 // __FILE__ is too long
 #define FILENM "t_vpi_module.cpp"
 
-#define DEBUG if (0) printf
+#define DEBUG \
+    if (0) printf
 
 unsigned int main_time = false;
 
 #define CHECK_RESULT_NZ(got) \
     if (!(got)) { \
-        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM,__LINE__); \
+        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM, __LINE__); \
         return __LINE__; \
     }
 
 #define CHECK_RESULT_CSTR(got, exp) \
     if (strcmp((got), (exp))) { \
-        printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", \
-               FILENM, __LINE__, (got)?(got):"<null>", (exp)?(exp):"<null>"); \
+        printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", FILENM, __LINE__, \
+               (got) ? (got) : "<null>", (exp) ? (exp) : "<null>"); \
         return __LINE__; \
     }
 
 extern "C" {
-    int mon_check() {
-        vpiHandle it = vpi_iterate(vpiModule, NULL);
-        CHECK_RESULT_NZ(it);
+int mon_check() {
+    vpiHandle it = vpi_iterate(vpiModule, NULL);
+    CHECK_RESULT_NZ(it);
 
-        vpiHandle topmod = vpi_scan(it);
-        CHECK_RESULT_NZ(topmod);
+    vpiHandle topmod = vpi_scan(it);
+    CHECK_RESULT_NZ(topmod);
 
-        char* name = vpi_get_str(vpiName, topmod);
-        CHECK_RESULT_NZ(name);
-        CHECK_RESULT_CSTR(name, "t");
+    char* name = vpi_get_str(vpiName, topmod);
+    CHECK_RESULT_NZ(name);
+    CHECK_RESULT_CSTR(name, "t");
 
-        it = vpi_iterate(vpiModule, topmod);
-        CHECK_RESULT_NZ(it);
+    it = vpi_iterate(vpiModule, topmod);
+    CHECK_RESULT_NZ(it);
 
-        vpiHandle mod = vpi_scan(it);
-        CHECK_RESULT_NZ(mod);
+    vpiHandle mod = vpi_scan(it);
+    CHECK_RESULT_NZ(mod);
 
-        name = vpi_get_str(vpiName, mod);
-        CHECK_RESULT_CSTR(name, "mod_a");
+    name = vpi_get_str(vpiName, mod);
+    CHECK_RESULT_CSTR(name, "mod_a");
 
-        it = vpi_iterate(vpiModule, mod);
-        CHECK_RESULT_NZ(it);
+    it = vpi_iterate(vpiModule, mod);
+    CHECK_RESULT_NZ(it);
 
+    mod = vpi_scan(it);
+    CHECK_RESULT_NZ(mod);
+
+    name = vpi_get_str(vpiName, mod);
+    if (strcmp(name, "mod_b") == 0) {
+        // Full visibility in other simulators, skip mod_b
         mod = vpi_scan(it);
         CHECK_RESULT_NZ(mod);
-
         name = vpi_get_str(vpiName, mod);
-        if (strcmp(name, "mod_b") == 0) {
-            // Full visibility in other simulators, skip mod_b
-            mod = vpi_scan(it);
-            CHECK_RESULT_NZ(mod);
-            name = vpi_get_str(vpiName, mod);
-        }
-        CHECK_RESULT_CSTR(name, "mod_c.");
-
-        return 0;  // Ok
     }
+    CHECK_RESULT_CSTR(name, "mod_c.");
+
+    return 0;  // Ok
+}
 }
 //======================================================================
 
@@ -113,30 +114,25 @@ static int mon_check_vpi() {
     return 0;
 }
 
-static s_vpi_systf_data vpi_systf_data[] = {
-    {vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$mon_check", (PLI_INT32(*)(PLI_BYTE8*))mon_check_vpi, 0, 0, 0},
-    0
-};
+static s_vpi_systf_data vpi_systf_data[] = {{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$mon_check",
+                                             (PLI_INT32(*)(PLI_BYTE8*))mon_check_vpi, 0, 0, 0},
+                                            0};
 
 // cver entry
 void vpi_compat_bootstrap(void) {
     p_vpi_systf_data systf_data_p;
     systf_data_p = &(vpi_systf_data[0]);
-    while (systf_data_p->type != 0) vpi_register_systf(systf_data_p++);
+    while (systf_data_p->type != 0)
+        vpi_register_systf(systf_data_p++);
 }
 
 // icarus entry
-void (*vlog_startup_routines[])() = {
-    vpi_compat_bootstrap,
-    0
-};
+void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
 
 #else
 
-double sc_time_stamp() {
-    return main_time;
-}
-int main(int argc, char **argv, char **env) {
+double sc_time_stamp() { return main_time; }
+int main(int argc, char** argv, char** env) {
     double sim_time = 1100;
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
@@ -146,9 +142,9 @@ int main(int argc, char **argv, char **env) {
     VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
 
 #ifdef VERILATOR
-# ifdef TEST_VERBOSE
+#ifdef TEST_VERBOSE
     Verilated::scopesDump();
-# endif
+#endif
 #endif
 
 #if VM_TRACE
@@ -168,9 +164,9 @@ int main(int argc, char **argv, char **env) {
         topp->eval();
         VerilatedVpi::callValueCbs();
         topp->clk = !topp->clk;
-        //mon_do();
+        // mon_do();
 #if VM_TRACE
-        if (tfp) tfp->dump (main_time);
+        if (tfp) tfp->dump(main_time);
 #endif
     }
     if (!Verilated::gotFinish()) {
@@ -182,7 +178,7 @@ int main(int argc, char **argv, char **env) {
     if (tfp) tfp->close();
 #endif
 
-    delete topp; topp=NULL;
+    delete topp; VL_DANGLING(topp);
     exit(0L);
 }
 

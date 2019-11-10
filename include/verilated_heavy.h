@@ -25,7 +25,6 @@
 ///
 //*************************************************************************
 
-
 #ifndef _VERILATED_HEAVY_H_
 #define _VERILATED_HEAVY_H_ 1  ///< Header Guard
 
@@ -49,7 +48,7 @@ inline std::string VL_CVT_PACK_STR_NI(IData lhs) VL_PURE {
     return VL_CVT_PACK_STR_NW(1, lw);
 }
 inline std::string VL_CONCATN_NNN(const std::string& lhs, const std::string& rhs) VL_PURE {
-    return lhs+rhs;
+    return lhs + rhs;
 }
 inline std::string VL_REPLICATEN_NNQ(int,int,int, const std::string& lhs, IData rep) VL_PURE {
     std::string out; out.reserve(lhs.length() * rep);
@@ -78,13 +77,13 @@ extern std::string VL_SFORMATF_NX(const char* formatp, ...) VL_MT_SAFE;
 extern IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_MT_SAFE;
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, IData& rdr) VL_MT_SAFE {
     WData rwp[2];  // WData must always be at least 2
-    IData got = VL_VALUEPLUSARGS_INW(rbits,ld,rwp);
+    IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = rwp[0];
     return got;
 }
 inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, QData& rdr) VL_MT_SAFE {
     WData rwp[2];
-    IData got = VL_VALUEPLUSARGS_INW(rbits,ld,rwp);
+    IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = VL_SET_QW(rwp);
     return got;
 }

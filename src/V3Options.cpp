@@ -683,7 +683,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     for (int i=0; i<argc; )  {
         UINFO(9, " Option: "<<argv[i]<<endl);
         if (argv[i][0]=='+') {
-            char *sw = argv[i];
+            char* sw = argv[i];
             if (!strncmp (sw, "+define+", 8)) {
                 addDefine(string(sw+strlen("+define+")), true);
             }
@@ -722,7 +722,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             shift;
         }  // + options
         else if (argv[i][0]=='-') {
-            const char *sw = argv[i];
+            const char* sw = argv[i];
             bool flag = true;
             VOptionBool bflag;
             // Allow gnu -- switches

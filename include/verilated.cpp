@@ -607,7 +607,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
             width = 0;
         } else if (!inPct) {  // Normal text
             // Fast-forward to next escape and add to output
-            const char *ep = pos;
+            const char* ep = pos;
             while (ep[0] && ep[0]!='%') ep++;
             if (ep != pos) {
                 output.append(pos, ep-pos);

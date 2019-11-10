@@ -57,9 +57,7 @@ int dpic_line() {
 
 #ifdef VERILATOR
     static int didDump = 0;
-    if (didDump++ == 0) {
-        Verilated::scopesDump();
-    }
+    if (didDump++ == 0) { Verilated::scopesDump(); }
 #endif
 
     const char* scopenamep = svGetNameFromScope(scope);
@@ -130,6 +128,7 @@ int dpic_restore() {
 
 unsigned dpic_getcontext() {
     svScope scope = svGetScope();
-    printf("%%Info: svGetScope returned scope (%p) with name %s\n", scope, svGetNameFromScope(scope));
-    return (unsigned) (uintptr_t) scope;
+    printf("%%Info: svGetScope returned scope (%p) with name %s\n",
+           scope, svGetNameFromScope(scope));
+    return (unsigned)(uintptr_t)scope;
 }

@@ -73,7 +73,7 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
     for (int i=0; i<argc; )  {
         UINFO(9, " Option: "<<argv[i]<<endl);
         if (argv[i][0]=='-') {
-            const char *sw = argv[i];
+            const char* sw = argv[i];
             bool flag = true;
             // Allow gnu -- switches
             if (sw[0]=='-' && sw[1]=='-') ++sw;

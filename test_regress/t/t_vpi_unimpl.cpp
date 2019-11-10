@@ -29,7 +29,8 @@
 // __FILE__ is too long
 #define FILENM "t_vpi_unimpl.cpp"
 
-#define DEBUG if (0) printf
+#define DEBUG \
+    if (0) printf
 
 unsigned int main_time = false;
 unsigned int callback_count = false;
@@ -41,41 +42,39 @@ unsigned int callback_count = false;
 
 #define CHECK_RESULT_VH(got, exp) \
     if ((got) != (exp)) { \
-        printf("%%Error: %s:%d: GOT = %p   EXP = %p\n", \
-               FILENM,__LINE__, (got), (exp)); \
+        printf("%%Error: %s:%d: GOT = %p   EXP = %p\n", FILENM, __LINE__, (got), (exp)); \
         return __LINE__; \
     }
 
 #define CHECK_RESULT_NZ(got) \
     if (!(got)) { \
-        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM,__LINE__); \
+        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM, __LINE__); \
         return __LINE__; \
     }
 
 // Use cout to avoid issues with %d/%lx etc
 #define CHECK_RESULT(got, exp) \
     if ((got) != (exp)) { \
-        std::cout<<std::dec<<"%Error: "<<FILENM<<":"<<__LINE__  \
-                  <<": GOT = "<<(got)<<"   EXP = "<<(exp)<<std::endl;   \
+        std::cout << std::dec << "%Error: " << FILENM << ":" << __LINE__ << ": GOT = " << (got) \
+                  << "   EXP = " << (exp) << std::endl; \
         return __LINE__; \
     }
 
 #define CHECK_RESULT_HEX(got, exp) \
     if ((got) != (exp)) { \
-        std::cout<<std::dec<<"%Error: "<<FILENM<<":"<<__LINE__<<std::hex \
-                 <<": GOT = "<<(got)<<"   EXP = "<<(exp)<<std::endl;    \
+        std::cout << std::dec << "%Error: " << FILENM << ":" << __LINE__ << std::hex \
+                  << ": GOT = " << (got) << "   EXP = " << (exp) << std::endl; \
         return __LINE__; \
     }
 
 #define CHECK_RESULT_CSTR(got, exp) \
-    if (strcmp((got),(exp))) { \
-        printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", \
-               FILENM,__LINE__, (got)?(got):"<null>", (exp)?(exp):"<null>"); \
+    if (strcmp((got), (exp))) { \
+        printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", FILENM, __LINE__, \
+               (got) ? (got) : "<null>", (exp) ? (exp) : "<null>"); \
         return __LINE__; \
     }
 
-#define CHECK_RESULT_CSTR_STRIP(got, exp) \
-    CHECK_RESULT_CSTR(got+strspn(got, " "), exp)
+#define CHECK_RESULT_CSTR_STRIP(got, exp) CHECK_RESULT_CSTR(got + strspn(got, " "), exp)
 
 int _mon_check_unimpl(p_cb_data cb_data) {
     static TestVpiHandle cb, clk_h;
@@ -143,11 +142,8 @@ int mon_check() {
 
 //======================================================================
 
-
-double sc_time_stamp() {
-    return main_time;
-}
-int main(int argc, char **argv, char **env) {
+double sc_time_stamp() { return main_time; }
+int main(int argc, char** argv, char** env) {
     double sim_time = 1100;
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
@@ -157,9 +153,9 @@ int main(int argc, char **argv, char **env) {
     VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
 
 #ifdef VERILATOR
-# ifdef TEST_VERBOSE
+#ifdef TEST_VERBOSE
     Verilated::scopesDump();
-# endif
+#endif
 #endif
 
 #if VM_TRACE
@@ -177,16 +173,16 @@ int main(int argc, char **argv, char **env) {
     while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
         main_time += 1;
         topp->eval();
-        //VerilatedVpi::callValueCbs();   // Make sure can link without verilated_vpi.h included
+        // VerilatedVpi::callValueCbs();   // Make sure can link without verilated_vpi.h included
         topp->clk = !topp->clk;
-        //mon_do();
+        // mon_do();
 #if VM_TRACE
-        if (tfp) tfp->dump (main_time);
+        if (tfp) tfp->dump(main_time);
 #endif
     }
     CHECK_RESULT(callback_count, 17);
     if (!Verilated::gotFinish()) {
-        vl_fatal(FILENM,__LINE__,"main", "%Error: Timeout; never got a $finish");
+        vl_fatal(FILENM, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
     topp->final();
 
@@ -194,6 +190,6 @@ int main(int argc, char **argv, char **env) {
     if (tfp) tfp->close();
 #endif
 
-    delete topp; topp=NULL;
+    delete topp; VL_DANGLING(topp);
     exit(0L);
 }

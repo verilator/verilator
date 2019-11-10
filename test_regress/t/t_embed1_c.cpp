@@ -34,7 +34,6 @@
 
 #ifdef NEED_EXTERNS
 extern "C" {
-
     extern void t_embed_child_initial();
     extern void t_embed_child_final();
     extern void t_embed_child_eval();
@@ -50,7 +49,7 @@ int T_Embed_Child_Unique = 0;  // Address used for uniqueness
 Vt_embed1_child* __get_modelp() {
     svScope scope = svGetScope();
     if (!scope) {
-        vl_fatal(__FILE__,__LINE__,__FILE__,"svGetScope failed");
+        vl_fatal(__FILE__, __LINE__, __FILE__, "svGetScope failed");
         return NULL;
     }
 
@@ -58,29 +57,29 @@ Vt_embed1_child* __get_modelp() {
     if (!__modelp) {
         // Create the model
         const char* scopenamep = svGetNameFromScope(scope);
-        if (!scopenamep) vl_fatal(__FILE__,__LINE__,__FILE__,"svGetNameFromScope failed");
+        if (!scopenamep) vl_fatal(__FILE__, __LINE__, __FILE__, "svGetNameFromScope failed");
         __modelp = new Vt_embed1_child(scopenamep);
         if (svPutUserData(scope, &T_Embed_Child_Unique, __modelp)) {
-            vl_fatal(__FILE__,__LINE__,__FILE__,"svPutUserData failed");
+            vl_fatal(__FILE__, __LINE__, __FILE__, "svPutUserData failed");
         }
     }
     return (Vt_embed1_child*)(__modelp);
 }
 
 void t_embed_child_initial() {
-    VL_DEBUG_IF(VL_PRINTF("    t_embed1_child_initial\n"); );
+    VL_DEBUG_IF(VL_PRINTF("    t_embed1_child_initial\n"););
     Vt_embed1_child* __modelp = __get_modelp();
     __modelp->eval();
 }
 
 void t_embed_child_final() {
-    VL_DEBUG_IF(VL_PRINTF("    t_embed1_child_final\n"); );
+    VL_DEBUG_IF(VL_PRINTF("    t_embed1_child_final\n"););
     Vt_embed1_child* __modelp = __get_modelp();
     __modelp->final();
 }
 
 void t_embed_child_eval() {
-    VL_DEBUG_IF(VL_PRINTF("    t_embed1_child_eval\n"); );
+    VL_DEBUG_IF(VL_PRINTF("    t_embed1_child_eval\n"););
     Vt_embed1_child* __modelp = __get_modelp();
     __modelp->eval();
 }
@@ -94,7 +93,7 @@ void t_embed_child_io_eval(unsigned char clk,
                            svBitVecVal* vec_out,
                            svBitVecVal* wide_out,
                            unsigned char* did_init_out) {
-    VL_DEBUG_IF(VL_PRINTF("    t_embed1_child_io_eval\n"); );
+    VL_DEBUG_IF(VL_PRINTF("    t_embed1_child_io_eval\n"););
     Vt_embed1_child* __modelp = __get_modelp();
     VL_DEBUG_IF(VL_PRINTF("[%0ld]      in clk=%x b=%x V=%x R=%x\n",
                           (long int) (VL_TIME_Q()), clk, bit_in, vec_in[0],

@@ -8,9 +8,7 @@
 VM_PREFIX* tb = NULL;
 bool pass = true;
 
-double sc_time_stamp() {
-    return 0;
-}
+double sc_time_stamp() { return 0; }
 
 #ifdef SYSTEMC_VERSION
 int sc_main(int, char**)
@@ -27,7 +25,7 @@ int main()
     if (pass) {
         VL_PRINTF("*-* All Finished *-*\n");
     } else {
-        vl_fatal(__FILE__,__LINE__,"top", "Unexpected results from test\n");
+        vl_fatal(__FILE__, __LINE__, "top", "Unexpected results from test\n");
     }
     return 0;
 }

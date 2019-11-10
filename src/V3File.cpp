@@ -638,7 +638,7 @@ bool V3OutFormatter::tokenEnd(const char* cp) {
             || tokenStart(cp, "endmodule"));
 }
 
-int V3OutFormatter::endLevels(const char *strg) {
+int V3OutFormatter::endLevels(const char* strg) {
     int levels = m_indentLevel;
     {
         const char* cp = strg;
@@ -683,7 +683,7 @@ int V3OutFormatter::endLevels(const char *strg) {
     return levels;
 }
 
-void V3OutFormatter::puts(const char *strg) {
+void V3OutFormatter::puts(const char* strg) {
     if (m_prependIndent) {
         putsNoTracking(indentSpaces(endLevels(strg)));
         m_prependIndent = false;
@@ -911,7 +911,7 @@ string V3OutFormatter::quoteNameControls(const string& namein, V3OutFormatter::L
 //----------------------------------------------------------------------
 // Simple wrappers
 
-void V3OutFormatter::printf(const char *fmt...) {
+void V3OutFormatter::printf(const char* fmt...) {
     char sbuff[5000];
     va_list ap;
     va_start(ap, fmt);

@@ -52,7 +52,7 @@ module t (/*AUTOARG*/
       reg [63:0]   drev;
       begin
 	 drev = reverse(di);
-	 crc  = newcrc(drev, ci);
+	 crc = newcrc(drev, ci);
       end
    endfunction
 

@@ -46,16 +46,18 @@ int failure = 0;
 int dpii_failure() { return failure; }
 
 #define CHECK_RESULT_HEX(got, exp) \
-    do { if ((got) != (exp)) { \
-        std::cout<<std::dec<<"%Error: "<<__FILE__<<":"<<__LINE__<<std::hex \
-                 <<": GOT="<<(got)<<"   EXP="<<(exp)<<std::endl;       \
-        failure = __LINE__; \
-        }} while(0)
+    do { \
+        if ((got) != (exp)) { \
+            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
+                      << ": GOT=" << (got) << "   EXP=" << (exp) << std::endl; \
+            failure = __LINE__; \
+        } \
+    } while (0)
 
 //======================================================================
 
 void dpii_lib_bit_check() {
-    svBitVecVal bv [3];
+    svBitVecVal bv[3];
     bv[0] = 0xa3a2a1a0;  // 31..0
     bv[1] = 0xa7a6a5a4;  // 63..32
     bv[2] = 0xabaaa9a8;  // 95..64
@@ -76,7 +78,7 @@ void dpii_lib_bit_check() {
     CHECK_RESULT_HEX(bv[1], 0xa7a6a5ad);
     CHECK_RESULT_HEX(bv[2], 0xabaaa9a8);
 
-    svBitVecVal btmp [1];
+    svBitVecVal btmp[1];
     svGetPartselBit(btmp, bv, 40, 8);
     CHECK_RESULT_HEX(btmp[0], 0xa5);
 
@@ -87,7 +89,7 @@ void dpii_lib_bit_check() {
 }
 
 void dpii_lib_logic_check() {
-    svLogicVecVal lv [3];
+    svLogicVecVal lv[3];
     lv[0].aval = 0xb3b2b1b0;  // 31..0
     lv[1].aval = 0xb7b6b5b4;  // 63..32
     lv[2].aval = 0xbbbab9b8;  // 95..64
@@ -114,7 +116,7 @@ void dpii_lib_logic_check() {
     CHECK_RESULT_HEX(lv[1].bval, 0xc7c6c5c8);
     CHECK_RESULT_HEX(lv[2].bval, 0xcbcac9c8);
 
-    svLogicVecVal ltmp [1];
+    svLogicVecVal ltmp[1];
     svGetPartselLogic(ltmp, lv, 40, 8);
     CHECK_RESULT_HEX(ltmp[0].aval, 0xb5);
     CHECK_RESULT_HEX(ltmp[0].bval, 0xc5);

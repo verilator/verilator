@@ -10,26 +10,26 @@ QData MaskVal(int lbit, int hbit) {
     return val;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     Verilated::debug(0);
 
-    Vt_math_imm2 *sim = new Vt_math_imm2;
-    int   lbit, hbit;
+    Vt_math_imm2* sim = new Vt_math_imm2;
+    int lbit, hbit;
 
-    int errs=0;
+    int errs = 0;
     for (lbit = 0; lbit < 32; lbit++) {
         for (hbit = lbit; hbit < 32; hbit++) {
             QData expected;
 
-            sim->LowMaskSel_Bot  = lbit;
-            sim->LowMaskSel_Top  = lbit;
+            sim->LowMaskSel_Bot = lbit;
+            sim->LowMaskSel_Top = lbit;
             sim->HighMaskSel_Bot = hbit;
             sim->HighMaskSel_Top = hbit;
 
             sim->eval();
 
-            expected = (MaskVal(sim->LowMaskSel_Top, sim->HighMaskSel_Top) << 32ULL)
-                        | MaskVal(sim->LowMaskSel_Bot, sim->HighMaskSel_Bot);
+            expected = ((MaskVal(sim->LowMaskSel_Top, sim->HighMaskSel_Top) << 32ULL)
+                        | MaskVal(sim->LowMaskSel_Bot, sim->HighMaskSel_Bot));
 
             if (sim->LogicImm != expected) {
                 printf("%%Error: %d.%d,%d.%d -> %016" VL_PRI64 "x/%016" VL_PRI64 "x -> %016" VL_PRI64 "x (expected %016" VL_PRI64 "x)\n",

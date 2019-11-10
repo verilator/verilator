@@ -24,7 +24,6 @@
 ///
 //*************************************************************************
 
-
 #ifndef _VERILATED_H_
 #define _VERILATED_H_ 1  ///< Header Guard
 
@@ -353,7 +352,7 @@ class Verilated {
     // Slow path variables
     static VerilatedMutex m_mutex;  ///< Mutex for s_s/s_ns members, when VL_THREADED
 
-    static VerilatedVoidCb  s_flushCb;  ///< Flush callback function
+    static VerilatedVoidCb s_flushCb;  ///< Flush callback function
 
     static struct Serialized {  // All these members serialized/deserialized
         // Fast path
@@ -417,9 +416,9 @@ public:
     /// 1 = Set all bits to one
     /// 2 = Randomize all bits
     static void randReset(int val) VL_MT_SAFE;
-    static int  randReset() VL_MT_SAFE { return s_s.s_randReset; }  ///< Return randReset value
+    static int randReset() VL_MT_SAFE { return s_s.s_randReset; }  ///< Return randReset value
     static void randSeed(int val) VL_MT_SAFE;
-    static int  randSeed() VL_MT_SAFE { return s_s.s_randSeed; }  ///< Return randSeed value
+    static int randSeed() VL_MT_SAFE { return s_s.s_randSeed; }  ///< Return randSeed value
 
     /// Enable debug of internal verilated code
     static void debug(int level) VL_MT_SAFE;

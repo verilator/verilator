@@ -112,9 +112,7 @@ private:
     inline void bufferCheck() {
         // Flush the write buffer if there's not enough space left for new information
         // We only call this once per vector, so we need enough slop for a very wide "b###" line
-        if (VL_UNLIKELY(m_writep > m_wrFlushp)) {
-            bufferFlush();
-        }
+        if (VL_UNLIKELY(m_writep > m_wrFlushp)) { bufferFlush(); }
     }
     void closePrev();
     void closeErr();
@@ -157,18 +155,18 @@ private:
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedVcd);
 public:
-    explicit VerilatedVcd(VerilatedVcdFile* filep=NULL);
+    explicit VerilatedVcd(VerilatedVcdFile* filep = NULL);
     ~VerilatedVcd();
 
     // ACCESSORS
     /// Set size in megabytes after which new file should be created
-    void rolloverMB(vluint64_t rolloverMB) { m_rolloverMB=rolloverMB; }
+    void rolloverMB(vluint64_t rolloverMB) { m_rolloverMB = rolloverMB; }
     /// Is file open?
     bool isOpen() const { return m_isOpen; }
     /// Change character that splits scopes.  Note whitespace are ALWAYS escapes.
     void scopeEscape(char flag) { m_scopeEscape = flag; }
     /// Is this an escape?
-    inline bool isScopeEscape(char c) { return isspace(c) || c==m_scopeEscape; }
+    inline bool isScopeEscape(char c) { return isspace(c) || c == m_scopeEscape; }
 
     // METHODS
     void open(const char* filename) VL_MT_UNSAFE_ONE;  ///< Open the file; call isOpen() to see if errors
@@ -331,7 +329,7 @@ public:
     inline void chgBus(vluint32_t code, const vluint32_t newval, int bits) {
         vluint32_t diff = m_sigs_oldvalp[code] ^ newval;
         if (VL_UNLIKELY(diff)) {
-            if (VL_UNLIKELY(bits==32 || (diff & ((1U<<bits)-1) ))) {
+            if (VL_UNLIKELY(bits == 32 || (diff & ((1U << bits) - 1)))) {
                 fullBus(code, newval, bits);
             }
         }
@@ -339,15 +337,15 @@ public:
     inline void chgQuad(vluint32_t code, const vluint64_t newval, int bits) {
         vluint64_t diff = (*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code]))) ^ newval;
         if (VL_UNLIKELY(diff)) {
-            if (VL_UNLIKELY(bits==64 || (diff & ((1ULL<<bits)-1) ))) {
+            if (VL_UNLIKELY(bits == 64 || (diff & ((1ULL << bits) - 1)))) {
                 fullQuad(code, newval, bits);
             }
         }
     }
     inline void chgArray(vluint32_t code, const vluint32_t* newval, int bits) {
-        for (int word=0; word<(((bits-1)/32)+1); ++word) {
-            if (VL_UNLIKELY(m_sigs_oldvalp[code+word] ^ newval[word])) {
-                fullArray(code,newval,bits);
+        for (int word = 0; word < (((bits - 1) / 32) + 1); ++word) {
+            if (VL_UNLIKELY(m_sigs_oldvalp[code + word] ^ newval[word])) {
+                fullArray(code, newval, bits);
                 return;
             }
         }
@@ -379,7 +377,7 @@ public:
         vluint64_t diff = ( ((*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code]))) ^ newval)
                             | ((*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code+1]))) ^ newtri));
         if (VL_UNLIKELY(diff)) {
-            if (VL_UNLIKELY(bits==64 || (diff & ((1ULL<<bits)-1) ))) {
+            if (VL_UNLIKELY(bits == 64 || (diff & ((1ULL << bits) - 1)))) {
                 fullTriQuad(code, newval, newtri, bits);
             }
         }
@@ -424,7 +422,8 @@ class VerilatedVcdC {
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedVcdC);
 public:
-    explicit VerilatedVcdC(VerilatedVcdFile* filep=NULL) : m_sptrace(filep) {}
+    explicit VerilatedVcdC(VerilatedVcdFile* filep = NULL)
+        : m_sptrace(filep) {}
     ~VerilatedVcdC() {}
 public:
     // ACCESSORS
@@ -438,7 +437,7 @@ public:
     /// Continue a VCD dump by rotating to a new file name
     /// The header is only in the first file created, this allows
     /// "cat" to be used to combine the header plus any number of data files.
-    void openNext(bool incFilename=true) VL_MT_UNSAFE_ONE { m_sptrace.openNext(incFilename); }
+    void openNext(bool incFilename = true) VL_MT_UNSAFE_ONE { m_sptrace.openNext(incFilename); }
     /// Set size in megabytes after which new file should be created
     void rolloverMB(size_t rolloverMB) { m_sptrace.rolloverMB(rolloverMB); }
     /// Close dump

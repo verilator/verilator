@@ -4,21 +4,19 @@
 
 VM_PREFIX* tb = NULL;
 
-double sc_time_stamp() {
-    return 0;
-}
+double sc_time_stamp() { return 0; }
 
 int main() {
     Verilated::debug(0);
-    tb  = new VM_PREFIX("tb");
+    tb = new VM_PREFIX("tb");
 
     VL_PRINTF("*-* All Finished *-*\n");
     tb->final();
     return 0;
 }
 
-int sc_main(int argc, char *argv[]) {
-    tb  = new VM_PREFIX("tb");
+int sc_main(int argc, char* argv[]) {
+    tb = new VM_PREFIX("tb");
 
     VL_PRINTF("*-* All Finished *-*\n");
     tb->final();

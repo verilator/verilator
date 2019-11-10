@@ -146,9 +146,7 @@ public:
         m_startTime = time;
         m_cpu = getcpu();
     }
-    void endRecord(vluint64_t time) {
-        m_endTime = time;
-    }
+    void endRecord(vluint64_t time) { m_endTime = time; }
     static int getcpu() {  // Return current executing CPU
 #if defined(__linux)
         return sched_getcpu();
@@ -157,7 +155,7 @@ public:
         __cpuid_count(1, 0, info[0], info[1], info[2], info[3]);
         /* info[1] is EBX, bits 24-31 are APIC ID */
         if ((info[3] & (1 << 9)) == 0) {
-            return -1;  /* no APIC on chip */
+            return -1;  // no APIC on chip
         } else {
             return (unsigned)info[1] >> 24;
         }
@@ -167,7 +165,6 @@ public:
         return 0;
 #endif
     }
-
 };
 
 class VlThreadPool;
@@ -231,9 +228,7 @@ public:
         m_ready.erase(m_ready.begin());
         m_ready_size.fetch_sub(1, std::memory_order_relaxed);
     }
-    inline void wakeUp() {
-        addTask(nullptr, false, nullptr);
-    }
+    inline void wakeUp() { addTask(nullptr, false, nullptr); }
     inline void addTask(VlExecFnp fnp, bool evenCycle, VlThrSymTab sym) {
         bool notify;
         {
@@ -276,9 +271,7 @@ public:
     ~VlThreadPool();
 
     // METHODS
-    inline int numThreads() const {
-        return m_workers.size();
-    }
+    inline int numThreads() const { return m_workers.size(); }
     inline VlWorkerThread* workerp(int index) {
         assert(index >= 0);
         assert(index < m_workers.size());

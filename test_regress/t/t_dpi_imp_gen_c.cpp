@@ -34,6 +34,6 @@ extern "C" {
 
 // Called from our Verilog code to run the tests
 void dpi_genvarTest() {
-    const char *scopeName = svGetNameFromScope(svGetScope());
+    const char* scopeName = svGetNameFromScope(svGetScope());
     printf("scope name : %s\n", scopeName);
 }

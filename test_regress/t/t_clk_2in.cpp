@@ -10,14 +10,12 @@
 
 unsigned int main_time = false;
 
-double sc_time_stamp() {
-    return main_time;
-}
+double sc_time_stamp() { return main_time; }
 
 VM_PREFIX* topp = NULL;
 
 void clockit(int clk1, int clk0) {
-    topp->clks = clk1<<1 | clk0;
+    topp->clks = clk1 << 1 | clk0;
 #ifndef T_CLK_2IN_VEC
     topp->c1 = clk1;
     topp->c0 = clk0;
@@ -29,11 +27,11 @@ void clockit(int clk1, int clk0) {
     main_time++;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     topp = new VM_PREFIX;
     topp->check = 0;
-    clockit(0,0);
-    main_time+=10;
+    clockit(0, 0);
+    main_time += 10;
 
     Verilated::debug(0);
 
@@ -50,5 +48,5 @@ int main(int argc, char *argv[]) {
         clockit(0, 0);
     }
     topp->check = 1;
-    clockit(0,0);
+    clockit(0, 0);
 }
