@@ -110,7 +110,9 @@ public:
         string newVarCmt = varp->mtasksString();
         if (*curVarCmtp != newVarCmt) {
             *curVarCmtp = newVarCmt;
-            puts("// Begin mtask footprint "+*curVarCmtp+"\n");
+            if (v3Global.opt.threads()) {
+                puts("// Begin mtask footprint "+*curVarCmtp+"\n");
+            }
         }
     }
     void emitTypedefs(AstNode* firstp) {
