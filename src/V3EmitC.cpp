@@ -1277,7 +1277,6 @@ class EmitCImp : EmitCStmts {
     void emitIntFuncDecls(AstNodeModule* modp);
     // High level
     void emitImp(AstNodeModule* modp);
-    void emitStaticDecl(AstNodeModule* modp);
     void emitSettleLoop(const std::string& eval_call, bool initial);
     void emitWrapEval(AstNodeModule* modp);
     void emitMTaskState();
@@ -2049,13 +2048,6 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
     }
 }
 
-void EmitCImp::emitStaticDecl(AstNodeModule* modp) {
-    // Need implementation here.  Be careful of alignment code; needs to be uniquified
-    // with module name to avoid multiple symbols.
-    //emitVarList(modp->stmtsp(), EVL_FUNC_ALL, modp->name());
-    puts("");  // NOP for cppcheck, otherwise const function
-}
-
 void EmitCImp::emitTextSection(AstType type) {
     int last_line = -999;
     for (AstNode* nodep = m_modp->stmtsp(); nodep; nodep = nodep->nextp()) {
@@ -2758,7 +2750,6 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
 
     if (m_fast && splitFilenum()==0) {
         emitTextSection(AstType::atScImp);
-        emitStaticDecl(modp);
     }
 
     if (m_slow && splitFilenum()==0) {
@@ -2772,7 +2763,6 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
 
     if (m_fast && splitFilenum()==0) {
         if (modp->isTop()) {
-            emitStaticDecl(modp);
             puts("\n//--------------------\n");
             puts("\n");
             emitWrapEval(modp);
