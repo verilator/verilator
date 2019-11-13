@@ -226,72 +226,92 @@ string AstVar::verilogKwd() const {
     }
 }
 
-string AstVar::vlArgType(bool named, bool forReturn, bool forFunc) const {
+class AstVar::VlArgTypeRecurseInfo {
+public:
+    bool m_named;
+    bool m_forFunc;
+    bool m_mayParen;
+    string m_namespc;
+    string paren(const string& s) {
+        if (m_mayParen) { m_mayParen = false; return " ("+s+")"; }
+        else return s;
+    }
+};
+
+string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc) const {
     UASSERT_OBJ(!forReturn, this,
                 "Internal data is never passed as return, but as first argument");
-    string otype;
-    AstBasicDType* bdtypep = basicp();
-    bool strtype = bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::STRING;
-    if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::CHARPTR) {
-        otype += "const char*";
-    } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::SCOPEPTR) {
-        otype += "const VerilatedScope*";
-    } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::DOUBLE) {
-        if (forFunc && isReadOnly()) otype += "const ";
-        otype += "double";
-    } else if (bdtypep && bdtypep->keyword()==AstBasicDTypeKwd::FLOAT) {
-        if (forFunc && isReadOnly()) otype += "const ";
-        otype += "float";
-    } else if (strtype) {
-        if (forFunc && isReadOnly()) otype += "const ";
-        otype += "std::string";
-    } else if (widthMin() <= 8) {
-        if (forFunc && isReadOnly()) otype += "const ";
-        otype += "CData";
-    } else if (widthMin() <= 16) {
-        if (forFunc && isReadOnly()) otype += "const ";
-        otype += "SData";
-    } else if (widthMin() <= VL_WORDSIZE) {
-        if (forFunc && isReadOnly()) otype += "const ";
-        otype += "IData";
-    } else if (isQuad()) {
-        if (forFunc && isReadOnly()) otype += "const ";
-        otype += "QData";
-    } else if (isWide()) {
-        if (forFunc && isReadOnly()) otype += "const ";
-        otype += "WData";  // []'s added later
-    }
+    VlArgTypeRecurseInfo info;
+    info.m_named = named;
+    info.m_forFunc = forFunc;
+    info.m_mayParen = false;
+    info.m_namespc = namespc;
 
-    bool mayparen = false;  // Need paren, to handle building "(& name)[2]"
-    string oname;
-    if (isDpiOpenArray()
-        || (isWide() && !strtype)
-        || (forFunc && (isWritable()
-                        || direction()==VDirection::REF
-                        || direction()==VDirection::CONSTREF
-                        || (strtype && isNonOutput())))) {
-        oname += "&";
-        mayparen = true;
-    }
-    if (named) oname += " "+VIdProtect::protectIf(name(), protect());
+    string ostatic;
+    if (isStatic() && info.m_namespc.empty()) ostatic = "static ";
+    return ostatic + vlArgTypeRecurse(dtypep(), &info, "");
+}
 
-    string oarray;
-    if (isDpiOpenArray() || direction().isRefOrConstRef()) {
-        for (AstNodeDType* dtp=dtypep(); dtp; ) {
-            dtp = dtp->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
-            if (AstUnpackArrayDType* adtypep = VN_CAST(dtp, UnpackArrayDType)) {
-                if (mayparen) { oname = " ("+oname+")"; mayparen = false; }
-                oarray += "["+cvtToStr(adtypep->declRange().elements())+"]";
-                dtp = adtypep->subDTypep();
-            } else break;
+string AstVar::vlArgTypeRecurse(AstNodeDType* dtypep, VlArgTypeRecurseInfo* infop,
+                                const string& inarray) const {
+    dtypep = dtypep->skipRefp();
+    if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        string oarray = "["+cvtToStr(adtypep->declRange().elements())+"]";
+        return vlArgTypeRecurse(adtypep->subDTypep(), infop, inarray+oarray);
+    } else if (AstBasicDType* bdtypep = basicp()) {
+        string otype;
+        string oarray = inarray;
+        bool strtype = bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::STRING;
+        string bitvec;
+        if (bdtypep && !bdtypep->isOpaque() && !v3Global.opt.protectIds()) {
+            bitvec = ("/*"+cvtToStr(bdtypep->lsb()+bdtypep->width()-1)
+                      +":"+cvtToStr(bdtypep->lsb())+"*/");
         }
+        if ((infop->m_forFunc && isReadOnly())
+            || bdtypep->keyword() == AstBasicDTypeKwd::CHARPTR
+            || bdtypep->keyword() == AstBasicDTypeKwd::SCOPEPTR) otype += "const ";
+        if (bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::CHARPTR) {
+            otype += "char*";
+        } else if (bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::SCOPEPTR) {
+            otype += "VerilatedScope*";
+        } else if (bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::DOUBLE) {
+            otype += "double";
+        } else if (bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::FLOAT) {
+            otype += "float";
+        } else if (strtype) {
+            otype += "std::string";
+        } else if (widthMin() <= 8) {
+            otype += "CData"+bitvec;
+        } else if (widthMin() <= 16) {
+            otype += "SData"+bitvec;
+        } else if (widthMin() <= VL_WORDSIZE) {
+            otype += "IData"+bitvec;
+        } else if (isQuad()) {
+            otype += "QData"+bitvec;
+        } else if (isWide()) {
+            otype += "WData"+bitvec;  // []'s added later
+            oarray += "["+cvtToStr(widthWords())+"]";
+        }
+
+        string oname;
+        if (isDpiOpenArray()
+            || (infop->m_forFunc && (isWritable()
+                                     || direction() == VDirection::REF
+                                     || direction() == VDirection::CONSTREF
+                                     || (strtype && isNonOutput())))) {
+            oname += "&";
+            infop->m_mayParen = true;
+        }
+        if (infop->m_named) {
+            oname += " ";
+            if (!infop->m_namespc.empty()) oname += infop->m_namespc+"::";
+            oname += VIdProtect::protectIf(name(), protect());
+        }
+        if (!oarray.empty()) oname = infop->paren(oname);
+        return otype+oname+oarray;
+    } else {
+        v3fatalSrc("Unknown data type in var type emitter: "<<dtypep->prettyName());
     }
-    if (isWide() && !strtype) {
-        if (mayparen) { oname = " ("+oname+")"; mayparen = false; }
-        oarray += "["+cvtToStr(widthWords())+"]";
-    }
-    if (mayparen) { }
-    return otype+oname+oarray;
 }
 
 string AstVar::vlEnumType() const {

@@ -1271,7 +1271,7 @@ public:
     string cPubArgType(bool named, bool forReturn) const;  // Return C /*public*/ type for argument: bool, uint32_t, uint64_t, etc.
     string dpiArgType(bool named, bool forReturn) const;  // Return DPI-C type for argument
     // Return Verilator internal type for argument: CData, SData, IData, WData
-    string vlArgType(bool named, bool forReturn, bool forFunc) const;
+    string vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc="") const;
     string vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string vlEnumDir() const;  // Return VerilatorVarDir: VLVD_INOUT, etc
     string vlPropInit() const;  // Return VerilatorVarProps initializer
@@ -1410,6 +1410,10 @@ public:
     void addConsumingMTaskId(int id) { m_mtaskIds.insert(id); }
     const MTaskIdSet& mtaskIds() const { return m_mtaskIds; }
     string mtasksString() const;
+private:
+    class VlArgTypeRecurseInfo;
+    string vlArgTypeRecurse(AstNodeDType* dtypep, VlArgTypeRecurseInfo* infop,
+                            const string& oarray) const;
 };
 
 class AstDefParam : public AstNode {
