@@ -25,7 +25,20 @@ endif
 DOT = dot
 PYTHON = python3
 
+PYTHON_VERSION := $(shell ${PYTHON} --version 2>&1)
+PYTHON_VERSION_FULL := $(wordlist 2,4,$(subst ., ,${PYTHON_VERSION}))
+PYTHON_VERSION_MAJOR := $(word 1,${PYTHON_VERSION_FULL})
+PYTHON_VERSION_MINOR := $(word 2,${PYTHON_VERSION_FULL})
+PYTHON_GE_3_5 := $(shell [ ${PYTHON_VERSION_MAJOR} -eq 3 -a ${PYTHON_VERSION_MINOR} -ge 5 ] && echo true)
+
+ifeq (${PYTHON_GE_3_5},true)
 default: test
+else
+default: python_message
+endif
+
+python_message:
+	@echo "Found Python version ${PYTHON_VERSION}, but require >= 3.5"
 
 test: \
 	test-vl_file_copy \
