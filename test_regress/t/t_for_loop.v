@@ -94,6 +94,13 @@ module t (/*AUTOARG*/
 	 for (; ; ++i) begin ++loops; break; end
 	 if (loops !== 1) $stop;
 	 //
+	 // bug1605
+	 i = 1;
+	 for (i=20; 0; ) ;
+	 if (i != 20) $stop;
+	 for (i=30; i<10; i++) ;
+	 if (i != 30) $stop;
+	 //
 	 $write("*-* All Finished *-*\n");
 	 $finish;
       end

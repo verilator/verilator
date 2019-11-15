@@ -277,7 +277,7 @@ private:
         if (initp) {
             initp->unlinkFrBack();  // Always a single statement; nextp() may be nodep
             // Don't add to list, we do it once, and setting loop index isn't
-            // needed as we're constant propagating it
+            // needed if we have > 1 loop, as we're constant propagating it
         }
         if (precondsp) {
             precondsp->unlinkFrBackWithNext();
@@ -296,8 +296,8 @@ private:
 
         AstNode* newbodysp = NULL;
         ++m_statLoops;
+        int times = 0;
         if (stmtsp) {
-            int times = 0;
             while (1) {
                 UINFO(8,"      Looping "<<loopValue<<endl);
                 V3Number res = V3Number(nodep);
@@ -351,6 +351,10 @@ private:
                     loopValue.opAssign(newLoopValue);
                 }
             }
+        }
+        if (!newbodysp) {  // initp might have effects after the loop
+            newbodysp = initp;  // Maybe NULL
+            initp = NULL;
         }
         // Replace the FOR()
         if (newbodysp) nodep->replaceWith(newbodysp);
