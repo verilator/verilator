@@ -37,9 +37,10 @@
  *
  */
 
-// Verilator: use hardcoded config file
-//#include <config.h>
-#include "fst_config.h"
+#ifndef FST_CONFIG_INCLUDE
+# define FST_CONFIG_INCLUDE <config.h>
+#endif
+#include FST_CONFIG_INCLUDE
 
 #include "fstapi.h"
 #include "fastlz.h"

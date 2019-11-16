@@ -31,6 +31,7 @@
 #endif
 
 // Include the GTKWave implementation directly
+#define FST_CONFIG_INCLUDE "fst_config.h"
 #include "gtkwave/fastlz.c"
 #include "gtkwave/fstapi.c"
 #include "gtkwave/lz4.c"
