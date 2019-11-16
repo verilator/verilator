@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix for loop missing initializer, bug1605. [Andrew Holme]
 
+****  Add error on redefining preprocessor directives. [Piotr Binkowski]
+
 
 * Verilator 4.022 2019-11-10
 

@@ -24,6 +24,7 @@
 #include "V3Error.h"
 #include "V3Global.h"
 #include "V3File.h"
+#include "V3LanguageWords.h"
 #include "V3PreLex.h"
 #include "V3PreProc.h"
 #include "V3PreShell.h"
@@ -337,18 +338,23 @@ FileLine* V3PreProcImp::defFileline(const string& name) {
 void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
                           const string& params, bool cmdline) {
     UINFO(4,"DEFINE '"<<name<<"' as '"<<value<<"' params '"<<params<<"'"<<endl);
-    if (defExists(name)) {
-        if (!(defValue(name)==value && defParams(name)==params)) {  // Duplicate defs are OK
-            fl->v3warn(REDEFMACRO, "Redefining existing define: '"<<name<<"', with different value: "
-                       <<value<<(params=="" ? "":" ")<<params);
-            defFileline(name)->v3warn(REDEFMACRO, "Previous definition is here, with value: "
-                                      <<defValue(name)
-                                      <<(defParams(name)=="" ? "":" ")
-                                      <<defParams(name));
+    if (!V3LanguageWords::isKeyword(string("`") + name).empty()) {
+        fl->v3error("Attempting to define built-in directive: '`"<<name<<"' (IEEE 2017 22.5.1)");
+    } else {
+        if (defExists(name)) {
+            if (!(defValue(name) == value
+                  && defParams(name) == params)) {  // Duplicate defs are OK
+                fl->v3warn(REDEFMACRO, "Redefining existing define: '"<<name<<"', with different value: "
+                           <<value<<(params=="" ? "":" ")<<params);
+                defFileline(name)->v3warn(REDEFMACRO, "Previous definition is here, with value: "
+                                          << defValue(name)
+                                          << (defParams(name).empty() ? "" : " ")
+                                          << defParams(name));
+            }
+            undef(name);
         }
-        undef(name);
+        m_defines.insert(make_pair(name, VDefine(fl, value, params, cmdline)));
     }
-    m_defines.insert(make_pair(name, VDefine(fl, value, params, cmdline)));
 }
 
 string V3PreProcImp::removeDefines(const string& text) {
