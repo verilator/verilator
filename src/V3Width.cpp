@@ -3692,6 +3692,8 @@ private:
         case AstType::atNeq:    nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
         case AstType::atEqCase: nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
         case AstType::atNeqCase: nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
+        case AstType::atEqWild: nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
+        case AstType::atNeqWild: nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
         case AstType::atAdd:    nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
         case AstType::atSub:    nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
         case AstType::atShiftL: nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
