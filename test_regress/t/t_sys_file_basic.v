@@ -247,6 +247,9 @@ module t;
 	if ($fseek(file, 0, 2) != 0) $stop;
 	v_off = $ftell(file);
 	if (v_off < v_length) $stop;
+	if ($rewind(file) != 0) $stop;
+	v_off = $ftell(file);
+	if (v_off != 0) $stop;
 
 	 $fclose(file);
       end

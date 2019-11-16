@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.023 devel
 
+****  Support $rewind.
+
 ****  Add -Wpedantic for compliance testing.
 
 ****  Add error on redefining preprocessor directives. [Piotr Binkowski]

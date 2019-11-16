@@ -200,6 +200,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$recovery"           { FL; return yaTIMINGSPEC; }
   "$recrem"             { FL; return yaTIMINGSPEC; }
   "$removal"            { FL; return yaTIMINGSPEC; }
+  "$rewind"             { FL; return yD_REWIND; }
   "$rtoi"               { FL; return yD_RTOI; }
   "$setup"              { FL; return yaTIMINGSPEC; }
   "$setuphold"          { FL; return yaTIMINGSPEC; }
