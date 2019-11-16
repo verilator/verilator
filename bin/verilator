@@ -398,9 +398,10 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
      -Werror-<message>          Convert warnings to errors
      -Wfuture-<message>         Disable unknown message warnings
      -Wno-<message>             Disable warning
+     -Wno-fatal                 Disable fatal exit on warnings
      -Wno-lint                  Disable all lint warnings
      -Wno-style                 Disable all style warnings
-     -Wno-fatal                 Disable fatal exit on warnings
+     -Wpedantic                 Warn on compliance-test issues
     --x-assign <mode>           Assign non-initial Xs to this value
     --x-initial <mode>          Assign initial Xs to this value
     --x-initial-edge            Enable initial X->0 and X->1 edge triggers
@@ -511,10 +512,10 @@ calls.
 =item --bbox-sys
 
 Black box any unknown $system task or function calls.  System tasks will be
-simply NOPed, and system functions will be replaced by unsized zero.
-Arguments to such functions will be parsed, but not otherwise checked.
-This prevents errors when linting in the presence of company specific PLI
-calls.
+simply become no-operations, and system functions will be replaced by
+unsized zero.  Arguments to such functions will be parsed, but not
+otherwise checked.  This prevents errors when linting in the presence of
+company specific PLI calls.
 
 =item --bbox-unsup
 
@@ -1525,6 +1526,14 @@ Disable the specified warning message, or in some cases where noted here
 disable an error.  This will override any lint_on directives in the source,
 i.e. the warning will still not be printed.
 
+=item -Wno-fatal
+
+When warnings are detected, print them, but do not exit the simulator.
+
+Having warning messages in builds is sloppy.  It is strongly recommended
+you cleanup your code, use inline lint_off, or use -Wno-... flags rather
+than using this option.
+
 =item -Wno-lint
 
 Disable all lint related warning messages, and all style warnings.  This is
@@ -1545,13 +1554,12 @@ already disabled).  This is equivalent to "-Wno-DECLFILENAME -Wno-DEFPARAM
 -Wno-IMPORTSTAR -Wno-INCABSPATH -Wno-PINCONNECTEMPTY -Wno-PINNOCONNECT
 -Wno-SYNCASYNCNET -Wno-UNDRIVEN -Wno-UNUSED -Wno-VARHIDDEN".
 
-=item -Wno-fatal
+=item -Wpedantic
 
-When warnings are detected, print them, but do not exit the simulator.
-
-Having warning messages in builds is sloppy.  It is strongly recommended
-you cleanup your code, use inline lint_off, or use -Wno-... flags rather
-than using this option.
+Warn on any construct demanded by IEEE, and disable all Verilator
+extensions that may interfere with IEEE compliance to the standard defined
+with --language (etc).  Similar to GCC's -Wpedantic.  Rarely used, and
+intended only for strict compliance tests.
 
 =item -Wwarn-I<message>
 

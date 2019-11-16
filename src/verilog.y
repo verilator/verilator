@@ -383,6 +383,7 @@ class AstSenTree;
 %token<fl>		yGENERATE	"generate"
 %token<fl>		yGENVAR		"genvar"
 %token<fl>		yGLOBAL__CLOCKING "global-then-clocking"
+%token<fl>		yGLOBAL__ETC	"global"
 %token<fl>		yGLOBAL__LEX	"global-in-lex"
 %token<fl>		yIF		"if"
 %token<fl>		yIFF		"iff"

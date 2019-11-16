@@ -1023,6 +1023,7 @@ void V3ParseImp::lexToken() {
         }
         else if (token == yGLOBAL__LEX) {
             if (nexttok == yCLOCKING) token = yGLOBAL__CLOCKING;
+            else if (v3Global.opt.pedantic()) token = yGLOBAL__ETC;
             // Avoid 2009 "global" conflicting with old code when we can
             else { token = yaID__LEX; yylval.strp = PARSEP->newString("global"); }
         }

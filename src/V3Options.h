@@ -163,6 +163,7 @@ class V3Options {
     bool        m_gmake;        // main switch: --make gmake
     bool        m_orderClockDly;// main switch: --order-clock-delay
     bool        m_outFormatOk;  // main switch: --cc, --sc or --sp was specified
+    bool        m_pedantic;     // main switch: --Wpedantic
     bool        m_pinsScUint;   // main switch: --pins-sc-uint
     bool        m_pinsScBigUint;// main switch: --pins-sc-biguint
     bool        m_pinsUint8;    // main switch: --pins-uint8
@@ -348,6 +349,7 @@ class V3Options {
     bool orderClockDly() const { return m_orderClockDly; }
     bool outFormatOk() const { return m_outFormatOk; }
     bool keepTempFiles() const { return (V3Error::debugDefault()!=0); }
+    bool pedantic() const { return m_pedantic; }
     bool pinsScUint() const { return m_pinsScUint; }
     bool pinsScBigUint() const { return m_pinsScBigUint; }
     bool pinsUint8() const { return m_pinsUint8; }

@@ -4,9 +4,11 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.023 devel
 
-****  Fix for loop missing initializer, bug1605. [Andrew Holme]
+****  Add -Wpedantic for compliance testing.
 
 ****  Add error on redefining preprocessor directives. [Piotr Binkowski]
+
+****  Fix for loop missing initializer, bug1605. [Andrew Holme]
 
 
 * Verilator 4.022 2019-11-10

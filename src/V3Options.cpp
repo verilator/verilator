@@ -796,6 +796,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-trace-underscore", flag/*ref*/))  { m_traceUnderscore = flag; }
             else if ( onoff (sw, "-underline-zero", flag/*ref*/))    { m_underlineZero = flag; }  // Undocumented, old Verilator-2
             else if ( onoff (sw, "-vpi", flag/*ref*/))               { m_vpi = flag; }
+            else if ( onoff (sw, "-Wpedantic", flag/*ref*/))         { m_pedantic = flag; }
             else if ( onoff (sw, "-x-initial-edge", flag/*ref*/))    { m_xInitialEdge = flag; }
             else if ( onoff (sw, "-xml-only", flag/*ref*/))          { m_xmlOnly = flag; }  // Undocumented, still experimental
             // Optimization
@@ -1456,6 +1457,7 @@ V3Options::V3Options() {
     m_makePhony = false;
     m_orderClockDly = true;
     m_outFormatOk = false;
+    m_pedantic = false;
     m_pinsBv = 65;
     m_pinsScUint = false;
     m_pinsScBigUint = false;
