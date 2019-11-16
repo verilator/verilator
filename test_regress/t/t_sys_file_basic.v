@@ -90,6 +90,10 @@ module t;
 	 if ($fgetc(file) != "i") $stop;
 	 if ($fgetc(file) != "\n") $stop;
 
+	 // $ungetc
+	 if ($ungetc("x", file) != 0) $stop;
+	 if ($fgetc(file) != "x") $stop;
+
 	 // $fgets
 	 chars = $fgets(letterl, file);
 	 if (`verbose) $write("c=%0d l=%s\n", chars, letterl);

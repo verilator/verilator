@@ -4335,6 +4335,28 @@ public:
     AstNode* filep() const { return lhsp(); }
 };
 
+class AstFUngetC : public AstNodeBiop {
+public:
+    AstFUngetC(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : AstNodeBiop(fl, lhsp, rhsp) {}
+    ASTNODE_NODE_FUNCS(FUngetC)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { V3ERROR_NA; }
+    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) {
+        return new AstFUngetC(this->fileline(), lhsp, rhsp); }
+    virtual string emitVerilog() { return "%f$ungetc(%r, %l)"; }
+    // Non-existent filehandle returns EOF
+    virtual string emitC() { return "(%li ? (ungetc(%ri, VL_CVT_I_FP(%li)) >= 0 ? 0 : -1) : -1)"; }
+    virtual bool cleanOut() const { return false; }
+    virtual bool cleanLhs() const { return true; }
+    virtual bool cleanRhs() const { return true; }
+    virtual bool sizeMattersLhs() const { return false; }
+    virtual bool sizeMattersRhs() const { return false; }
+    virtual int instrCount() const { return widthInstrs() * 64; }
+    virtual bool isPure() const { return false; }  // SPECIAL: $display has 'visual' ordering
+    AstNode* filep() const { return lhsp(); }
+    AstNode* charp() const { return rhsp(); }
+};
+
 class AstNodeSystemUniop : public AstNodeUniop {
 public:
     AstNodeSystemUniop(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {

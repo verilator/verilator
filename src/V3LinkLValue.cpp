@@ -149,6 +149,14 @@ private:
         }
         m_setRefLvalue = last_setRefLvalue;
     }
+    virtual void visit(AstFUngetC* nodep) {
+        bool last_setRefLvalue = m_setRefLvalue;
+        {
+            m_setRefLvalue = true;
+            iterateAndNextNull(nodep->filep());
+        }
+        m_setRefLvalue = last_setRefLvalue;
+    }
     virtual void visit(AstSScanF* nodep) {
         bool last_setRefLvalue = m_setRefLvalue;
         {

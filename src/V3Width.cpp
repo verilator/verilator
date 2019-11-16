@@ -2380,6 +2380,13 @@ private:
             userIterateAndNext(nodep->strgp(), WidthVP(SELF, BOTH).p());
         }
     }
+    virtual void visit(AstFUngetC* nodep) {
+        if (m_vup->prelim()) {
+            iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
+            iterateCheckSigned32(nodep, "$fungetc character", nodep->charp(), BOTH);
+            nodep->dtypeSetLogicUnsized(32, 8, AstNumeric::SIGNED);  // Spec says integer return
+        }
+    }
     virtual void visit(AstFRead* nodep) {
         if (m_vup->prelim()) {
             nodep->dtypeSetSigned32();  // Spec says integer return
