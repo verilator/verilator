@@ -118,11 +118,11 @@ id      [a-zA-Z_][a-zA-Z0-9_$]*
 escid   \\[^ \t\f\r\n]+
 word    [a-zA-Z0-9_]+
         /* verilog numbers, constructed to not match the ' that begins a '(  or '{ */
-vnum1   [0-9]*?['']s?[bcodhBCODH][ \t\n]*[A-Fa-f0-9xXzZ_?]*
-vnum2   [0-9]*?['']s?[01xXzZ]
-vnum3   [0-9][_0-9]*[ \t\n]*['']s?[bcodhBCODH]?[ \t\n]*[A-Fa-f0-9xXzZ_?]+
-vnum4   [0-9][_0-9]*[ \t\n]*['']s?[bcodhBCODH]
-vnum5   [0-9][_0-9]*[ \t\n]*['']s
+vnum1   [0-9]*?[''][sS]?[bcodhBCODH][ \t\n]*[A-Fa-f0-9xXzZ_?]*
+vnum2   [0-9]*?[''][sS]?[01xXzZ]
+vnum3   [0-9][_0-9]*[ \t\n]*[''][sS]?[bcodhBCODH]?[ \t\n]*[A-Fa-f0-9xXzZ_?]+
+vnum4   [0-9][_0-9]*[ \t\n]*[''][sS]?[bcodhBCODH]
+vnum5   [0-9][_0-9]*[ \t\n]*[''][sS]
 vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
 %%
