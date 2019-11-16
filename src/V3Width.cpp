@@ -1576,7 +1576,8 @@ private:
                 nodep->v3error("Member "<<nodep->prettyNameQ()<<" not found in structure");
             }
         }
-        else if (VN_IS(fromDtp, EnumDType)) {
+        else if (VN_IS(fromDtp, EnumDType)
+                 || VN_IS(fromDtp, BasicDType)) {
             // Method call on enum without following parenthesis, e.g. "ENUM.next"
             // Convert this into a method call, and let that visitor figure out what to do next
             AstNode* newp = new AstMethodSel(nodep->fileline(),
@@ -2829,8 +2830,10 @@ private:
     //--------------------
     // Default
     virtual void visit(AstNodeMath* nodep) {
-        nodep->v3fatalSrc("Visit function missing? Widthed function missing for math node: "
-                          <<nodep);
+        if (!nodep->didWidth()) {
+            nodep->v3fatalSrc("Visit function missing? Widthed function missing for math node: "
+                              <<nodep);
+        }
         userIterateChildren(nodep, NULL);
     }
     virtual void visit(AstNode* nodep) {
