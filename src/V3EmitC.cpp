@@ -532,7 +532,9 @@ public:
         putsQuoted(protect(nodep->fileline()->filename()));
         puts(", ");
         puts(cvtToStr(nodep->fileline()->lineno()));
-        puts(", \"\");\n");
+        puts(", \"\"");
+        if (nodep->maybe()) puts(", true");
+        puts(");\n");
     }
     virtual void visit(AstFinish* nodep) {
         puts("VL_FINISH_MT(");

@@ -106,7 +106,7 @@ public:
     }
     AstDisplay* createDisplayError(FileLine* fileline) {
 	AstDisplay* nodep = new AstDisplay(fileline,AstDisplayType::DT_ERROR,  "", NULL,NULL);
-	nodep->addNext(new AstStop(fileline));
+	nodep->addNext(new AstStop(fileline, true));
 	return nodep;
     }
     AstNode* createGatePin(AstNode* exprp) {
@@ -2850,8 +2850,8 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_FFLUSH '(' expr ')'			{ $$ = new AstFFlush($1, $3); }
 	|	yD_FINISH parenE			{ $$ = new AstFinish($1); }
 	|	yD_FINISH '(' expr ')'			{ $$ = new AstFinish($1); DEL($3); }
-	|	yD_STOP parenE				{ $$ = new AstStop($1); }
-	|	yD_STOP '(' expr ')'			{ $$ = new AstStop($1); DEL($3); }
+	|	yD_STOP parenE				{ $$ = new AstStop($1, false); }
+	|	yD_STOP '(' expr ')'			{ $$ = new AstStop($1, false); DEL($3); }
 	//
 	|	yD_SFORMAT '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
 	|	yD_SWRITE  '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
@@ -2868,10 +2868,10 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_WARNING  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING, NULL, NULL); }
 	|	yD_WARNING  '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING, NULL, $3); }
 	|	yD_ERROR    parenE			{ $$ = GRAMMARP->createDisplayError($1); }
-	|	yD_ERROR    '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_ERROR,   NULL, $3);   $$->addNext(new AstStop($1)); }
-	|	yD_FATAL    parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, NULL); $$->addNext(new AstStop($1)); }
-	|	yD_FATAL    '(' expr ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, NULL); $$->addNext(new AstStop($1)); DEL($3); }
-	|	yD_FATAL    '(' expr ',' exprListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, $5);   $$->addNext(new AstStop($1)); DEL($3); }
+	|	yD_ERROR    '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_ERROR,   NULL, $3);   $$->addNext(new AstStop($1, true)); }
+	|	yD_FATAL    parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, NULL); $$->addNext(new AstStop($1, false)); }
+	|	yD_FATAL    '(' expr ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, NULL); $$->addNext(new AstStop($1, false)); DEL($3); }
+	|	yD_FATAL    '(' expr ',' exprListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, $5);   $$->addNext(new AstStop($1, false)); DEL($3); }
 	//
 	|	yD_READMEMB '(' expr ',' idClassSel ')'				{ $$ = new AstReadMem($1,false,$3,$5,NULL,NULL); }
 	|	yD_READMEMB '(' expr ',' idClassSel ',' expr ')'		{ $$ = new AstReadMem($1,false,$3,$5,$7,NULL); }

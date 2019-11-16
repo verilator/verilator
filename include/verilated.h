@@ -355,6 +355,8 @@ class Verilated {
         bool            s_assertOn;             ///< Assertions are enabled
         bool            s_fatalOnVpiError;      ///< Stop on vpi error/unsupported
         // Slow path
+        int s_errorCount;  ///< Number of errors
+        int s_errorLimit;  ///< Stop on error number
         int s_randReset;  ///< Random reset: 0=all 0s, 1=all 1s, 2=random
         int s_randSeed;  ///< Random seed: 0=random
         Serialized();
@@ -427,6 +429,13 @@ public:
     static void calcUnusedSigs(bool flag) VL_MT_SAFE;
     static bool calcUnusedSigs() VL_MT_SAFE {  ///< Return calcUnusedSigs value
         return s_s.s_calcUnusedSigs; }
+    /// Current number of errors/assertions
+    static void errorCount(int val) VL_MT_SAFE;
+    static void errorCountInc() VL_MT_SAFE;
+    static int errorCount() VL_MT_SAFE { return s_s.s_errorCount; }
+    /// Set number of errors/assertions before stop
+    static void errorLimit(int val) VL_MT_SAFE;
+    static int errorLimit() VL_MT_SAFE { return s_s.s_errorLimit; }
     /// Did the simulation $finish?
     static void gotFinish(bool flag) VL_MT_SAFE;
     static bool gotFinish() VL_MT_SAFE { return s_s.s_gotFinish; }  ///< Return if got a $finish
@@ -565,7 +574,8 @@ extern void vl_fatal(const char* filename, int linenum, const char* hier,
 /// Multithread safe wrapper for calls to $finish
 extern void VL_FINISH_MT(const char* filename, int linenum, const char* hier) VL_MT_SAFE;
 /// Multithread safe wrapper for calls to $stop
-extern void VL_STOP_MT(const char* filename, int linenum, const char* hier) VL_MT_SAFE;
+extern void VL_STOP_MT(const char* filename, int linenum, const char* hier,
+                       bool maybe = false) VL_MT_SAFE;
 /// Multithread safe wrapper to call for a couple of fatal messages
 extern void VL_FATAL_MT(const char* filename, int linenum, const char* hier,
                         const char* msg) VL_MT_SAFE;

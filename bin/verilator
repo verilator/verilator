@@ -795,8 +795,10 @@ will also go to standard out.
 
 =item --error-limit I<value>
 
-After this number of errors are encountered, exit.  Warnings are not
-counted in this limit.  Defaults to 50.
+After this number of errors are encountered during Verilator run, exit.
+Warnings are not counted in this limit.  Defaults to 50.
+
+Does not affect runtime errors, for those see +verilator+error+limit.
 
 =item --exe
 
@@ -1701,11 +1703,16 @@ may skip over all +verilator arguments when parsing its command line.
 
 =item +verilator+debug
 
-Enable debugging.  Equivalent to +verilator+debugi+4.
+Enable runtime debugging.  Equivalent to +verilator+debugi+4.
 
 =item +verilator+debugi+I<value>
 
-Enable debugging at the provided level.
+Enable runtime debugging at the provided level.
+
+=item +verilator+error+limit+I<value>
+
+Set number of non-fatal errors (e.g. assertion failures) before exiting
+simulation. Defaults to 1.
 
 =item +verilator+help
 
@@ -1713,20 +1720,20 @@ Display help and exit.
 
 =item +verilator+prof+threads+file+I<filename>
 
-When using --prof-threads, the filename to dump to.  Defaults to
+When using --prof-threads at runtime, the filename to dump to.  Defaults to
 "profile_threads.dat".
 
 =item +verilator+prof+threads+start+I<value>
 
-When using --prof-threads, Verilator will wait until $time is at this
-value, then start the profiling warmup, then capturing. Generally this
+When using --prof-threads at runtime, Verilator will wait until $time is at
+this value, then start the profiling warmup, then capturing. Generally this
 should be set to some time that is well within the normal operation of the
 simulation, i.e. outside of reset. If 0, the dump is disabled. Defaults to
 1.
 
 =item +verilator+prof+threads+window+I<value>
 
-When using --prof-threads, after $time reaches
+When using --prof-threads at runtime, after $time reaches
 +verilator+prof+threads+start, Verilator will warm up the profiling for
 this number of eval() calls, then will capture the profiling of this number
 of eval() calls.  Defaults to 2, which makes sense for a
@@ -1735,14 +1742,15 @@ posedge eval() and one negedge eval().
 
 =item +verilator+rand+reset+I<value>
 
-When a model was Verilated using "-x-initial unique", sets the
+When a model was Verilated using "-x-initial unique", sets the runtime
 initialization technique.  0 = Reset to zeros. 1 = Reset to all-ones.  2 =
 Randomize.  See L</"Unknown states">.
 
 =item +verilator+seed+I<value>
 
-For $random and "-x-initial unique", set the random seed value.  If zero or
-not specified picks a value from the system random number generator.
+For $random and "-x-initial unique", set the runtime random seed value.  If
+zero or not specified picks a value from the system random number
+generator.
 
 =item +verilator+V
 

@@ -3584,9 +3584,11 @@ public:
 };
 
 class AstStop : public AstNodeStmt {
+    bool m_maybe;  // Maybe stop, maybe not based on error count
 public:
-    explicit AstStop(FileLine* fl)
-        : AstNodeStmt(fl) {}
+    explicit AstStop(FileLine* fl, bool maybe)
+        : AstNodeStmt(fl)
+        , m_maybe(maybe) {}
     ASTNODE_NODE_FUNCS(Stop)
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
@@ -3597,6 +3599,7 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(fileline()->lineno()); }
     virtual bool same(const AstNode* samep) const {
         return fileline() == samep->fileline(); }
+    bool maybe() const { return m_maybe; }
 };
 
 class AstFinish : public AstNodeStmt {
