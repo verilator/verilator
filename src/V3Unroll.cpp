@@ -296,8 +296,8 @@ private:
 
         AstNode* newbodysp = NULL;
         ++m_statLoops;
-        int times = 0;
         if (stmtsp) {
+            int times = 0;
             while (1) {
                 UINFO(8,"      Looping "<<loopValue<<endl);
                 V3Number res = V3Number(nodep);
