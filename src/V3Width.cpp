@@ -1646,6 +1646,28 @@ private:
                            <<"' which is a '"<<nodep->fromp()->dtypep()->prettyTypeName()<<"'");
         }
     }
+    void methodOkArguments(AstMethodSel* nodep, int minArg, int maxArg) {
+        int narg = 0;
+        for (AstNode* argp = nodep->pinsp(); argp; argp = argp->nextp()) ++narg;
+        bool ok = (narg >= minArg) && (narg <= maxArg);
+        if (!ok) {
+            nodep->v3error("The "<<narg<<" arguments passed to ."<<nodep->prettyName()
+                           <<" method does not match its requiring "<<cvtToStr(minArg)
+                           <<(minArg == maxArg ? "" : " to " + cvtToStr(maxArg))
+                           <<" arguments");
+            // Adjust to required argument counts, very bogus, but avoids core dump
+            for (; narg < minArg; ++narg) {
+                nodep->addPinsp(new AstArg(nodep->fileline(), "",
+                                           new AstConst(nodep->fileline(), 0)));
+            }
+            for (; narg > maxArg; --narg) {
+                AstNode* argp = nodep->pinsp();
+                while (argp->nextp()) argp = argp->nextp();
+                argp->unlinkFrBack(); argp->deleteTree(); VL_DANGLING(argp);
+            }
+        }
+    }
+
     void methodCallEnum(AstMethodSel* nodep, AstEnumDType* adtypep) {
         // Method call on enum without following parenthesis, e.g. "ENUM.next"
         // Convert this into a method call, and let that visitor figure out what to do next
@@ -1655,7 +1677,7 @@ private:
             || nodep->name() == "last") {
             // Constant value
             AstConst* newp = NULL;
-            if (nodep->pinsp()) nodep->v3error("Arguments passed to enum.num method, but it does not take arguments");
+            methodOkArguments(nodep, 0, 0);
             if (nodep->name() == "num") {
                 int items = 0;
                 for (AstNode* itemp = adtypep->itemsp(); itemp; itemp = itemp->nextp()) ++items;
@@ -1685,8 +1707,8 @@ private:
             else if (nodep->name() == "prev") attrType = AstAttrType::ENUM_PREV;
             else nodep->v3fatalSrc("Bad case");
 
-            if (nodep->pinsp() && nodep->name() == "name") {
-                nodep->v3error("Arguments passed to enum.name method, but it does not take arguments");
+            if (nodep->name() == "name") {
+                methodOkArguments(nodep, 0, 0);
             } else if (nodep->pinsp()
                        && !(VN_IS(VN_CAST(nodep->pinsp(), Arg)->exprp(), Const)
                             && VN_CAST(VN_CAST(nodep->pinsp(), Arg)->exprp(), Const)->toUInt() == 1
@@ -1735,7 +1757,7 @@ private:
         else if (nodep->name() == "xor") methodId = ARRAY_XOR;
 
         if (methodId) {
-            if (nodep->pinsp()) nodep->v3error("Arguments passed to array method, but it does not take arguments");
+            methodOkArguments(nodep, 0, 0);
             FileLine* fl = nodep->fileline();
             AstNode* newp = NULL;
             for (int i = 0; i < adtypep->elementsConst(); ++i) {
@@ -1762,19 +1784,24 @@ private:
         // Method call on string
         if (nodep->name() == "len") {
             // Constant value
-            if (nodep->pinsp()) nodep->v3error("Arguments passed to string.len method, but it does not take arguments");
+            methodOkArguments(nodep, 0, 0);
             AstNode* newp = new AstLenN(nodep->fileline(), nodep->fromp()->unlinkFrBack());
             nodep->replaceWith(newp);
             pushDeletep(nodep); VL_DANGLING(nodep);
         } else if (nodep->name() == "itoa") {
+            methodOkArguments(nodep, 1, 1);
             replaceWithSFormat(nodep, "%0d"); VL_DANGLING(nodep);
         } else if (nodep->name() == "hextoa") {
+            methodOkArguments(nodep, 1, 1);
             replaceWithSFormat(nodep, "%0x"); VL_DANGLING(nodep);
         } else if (nodep->name() == "octtoa") {
+            methodOkArguments(nodep, 1, 1);
             replaceWithSFormat(nodep, "%0o"); VL_DANGLING(nodep);
         } else if (nodep->name() == "bintoa") {
+            methodOkArguments(nodep, 1, 1);
             replaceWithSFormat(nodep, "%0b"); VL_DANGLING(nodep);
         } else if (nodep->name() == "realtoa") {
+            methodOkArguments(nodep, 1, 1);
             replaceWithSFormat(nodep, "%g"); VL_DANGLING(nodep);
         } else {
             nodep->v3error("Unsupported: built-in string method "<<nodep->prettyNameQ());
