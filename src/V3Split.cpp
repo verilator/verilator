@@ -110,11 +110,7 @@ protected:
     // Do not make accessor for nodep(),  It may change due to
     // reordering a lower block, but we don't repair it
     virtual string name() const {
-        if (m_nodep->name() == "") {
-            return cvtToHex(m_nodep);
-        } else {
-            return m_nodep->name();
-        }
+        return cvtToHex(m_nodep) + ' ' + m_nodep->prettyTypeName();
     }
     virtual FileLine* fileline() const { return nodep()->fileline(); }
 public:
@@ -655,18 +651,12 @@ public:
     const ColorSet& colors() const { return m_colors; }
     const ColorSet& colors(AstNodeIf* nodep) const {
         IfColorMap::const_iterator it = m_ifColors.find(nodep);
-        UASSERT_OBJ(it != m_ifColors.end(), nodep, "Unknown node in split color() map");
+        UASSERT_OBJ(it != m_ifColors.end(), nodep, "Node missing from split color() map");
         return it->second;
     }
 
-protected:
-    virtual void visit(AstNodeIf* nodep) {
-        m_ifStack.push_back(nodep);
-        iterateChildren(nodep);
-        m_ifStack.pop_back();
-    }
-
-    virtual void visit(AstNode* nodep) {
+private:
+    void trackNode(AstNode* nodep) {
         if (nodep->user3p()) {
             SplitLogicVertex* vertexp = reinterpret_cast<SplitLogicVertex*>(nodep->user3p());
             uint32_t color = vertexp->color();
@@ -679,6 +669,17 @@ protected:
                 m_ifColors[*it].insert(color);
             }
         }
+    }
+
+protected:
+    virtual void visit(AstNodeIf* nodep) {
+        m_ifStack.push_back(nodep);
+        trackNode(nodep);
+        iterateChildren(nodep);
+        m_ifStack.pop_back();
+    }
+    virtual void visit(AstNode* nodep) {
+        trackNode(nodep);
         iterateChildren(nodep);
     }
 
@@ -944,15 +945,14 @@ protected:
             }
         }
 
-        if (debug()>=9) {
-            m_graph.dumpDotFilePrefixed("splitg_nodup", false);
-        }
+        if (debug()>=9) m_graph.dumpDotFilePrefixed("splitg_nodup", false);
 
         // Weak coloring to determine what needs to remain grouped
         // in a single always. This follows all edges excluding:
         //  - those we pruned above
         //  - PostEdges, which are done later
         m_graph.weaklyConnected(&SplitEdge::followScoreboard);
+        if (debug()>=9) m_graph.dumpDotFilePrefixed("splitg_colored", false);
     }
 
     virtual void visit(AstAlways* nodep) {

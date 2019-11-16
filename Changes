@@ -10,6 +10,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Add error on redefining preprocessor directives. [Piotr Binkowski]
 
+****  Fix color assertion on empty if, bug1604. [Andrew Holme]
+
 ****  Fix for loop missing initializer, bug1605. [Andrew Holme]
 
 
