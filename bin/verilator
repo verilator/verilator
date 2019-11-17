@@ -409,8 +409,9 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --xml-output                XML output filename
      -y <dir>                   Directory to search for modules
 
-This is a short summary of the arguments to run-time Verilated arguments.
-detailed descriptions in L</"RUNTIME ARGUMENTS"> for more information.
+This is a short summary of the arguments to simulation runtime Verilated
+arguments.  detailed descriptions in L</"SIMULATION RUNTIME ARGUMENTS"> for
+more information.
 
      +verilator+debug                  Enable debugging
      +verilator+debugi+<value>         Enable debugging at a level
@@ -798,7 +799,8 @@ will also go to standard out.
 After this number of errors are encountered during Verilator run, exit.
 Warnings are not counted in this limit.  Defaults to 50.
 
-Does not affect runtime errors, for those see +verilator+error+limit.
+Does not affect simulation runtime errors, for those see
++verilator+error+limit.
 
 =item --exe
 
@@ -919,8 +921,8 @@ Tune the inlining of modules.  The default value of 2000 specifies that up
 to 2000 new operations may be added to the model by inlining, if more than
 this number of operations would result, the module is not inlined.  Larger
 values, or a value < 1 will inline everything, will lead to longer compile
-times, but potentially faster runtimes.  This setting is ignored for very
-small modules; they will always be inlined, if allowed.
+times, but potentially faster simulation runtimes.  This setting is ignored
+for very small modules; they will always be inlined, if allowed.
 
 =item -LDFLAGS I<flags>
 
@@ -1173,9 +1175,10 @@ Verilator will record the start and end time of each macro-task across a
 number of calls to eval. (What is a macro-task? See the Verilator internals
 document.)
 
-When profiling is enabled, the runtime will emit a blurb of profiling data
-in non-human-friendly form. The C<verilator_gantt> script will transform
-this into a nicer visual format and produce some related statistics.
+When profiling is enabled, the simulation runtime will emit a blurb of
+profiling data in non-human-friendly form. The C<verilator_gantt> script
+will transform this into a nicer visual format and produce some related
+statistics.
 
 =item --protect-key I<key>
 
@@ -1204,9 +1207,10 @@ design information.  This hashing uses the provided or default
 
 Verilator will also create a {prefix}__idmap.xml file which contains the
 mapping from the hashed identifiers back to the original identifiers. This
-idmap file is to be kept private, and is to assist mapping any runtime
-design assertions, coverage, or trace information, which will report the
-hashed identifiers, back to the original design's identifier names.
+idmap file is to be kept private, and is to assist mapping any simulation
+runtime design assertions, coverage, or trace information, which will
+report the hashed identifiers, back to the original design's identifier
+names.
 
 Using DPI imports/exports is allowed and generally relatively safe in terms
 of information disclosed, which is limited to the DPI function prototyptes.
@@ -1409,14 +1413,14 @@ already visible.
 
 The added signal will be a 32-bit value which will increment on each
 coverage occurrence. Due to this, this option may greatly increase trace
-file sizes and simulation time.
+file sizes and simulation runtime.
 
 =item --trace-depth I<levels>
 
 Specify the number of levels deep to enable tracing, for example
 --trace-level 1 to only see the top level's signals.  Defaults to the
 entire model.  Using a small number will decrease visibility, but greatly
-improve runtime and trace file size.
+improve simulation runtime and trace file size.
 
 =item --trace-fst
 
@@ -1426,7 +1430,7 @@ C<--trace-fst-thread>.  See also C<--trace-fst-thread>.
 =item --trace-fst-thread
 
 Enable FST waveform tracing in the model, using a separate thread. This is
-typically faster in runtime but slower in total computes than
+typically faster in simulation runtime but slower in total computes than
 C<--trace-fst>.  This overrides C<--trace> and C<--trace-fst>.
 
 =item --trace-max-array I<depth>
@@ -1691,23 +1695,24 @@ are desired for error messages instead of relative filenames.
 =back
 
 
-=head1 RUNTIME ARGUMENTS
+=head1 SIMULATION RUNTIME ARGUMENTS
 
 The following are the arguments that may be passed to a Verilated
 executable, provided that executable calls Verilated::commandArgs().
 
-All runtime arguments begin with +verilator, so that the user's executable
-may skip over all +verilator arguments when parsing its command line.
+All simulation runtime arguments begin with +verilator, so that the user's
+executable may skip over all +verilator arguments when parsing its command
+line.
 
 =over 4
 
 =item +verilator+debug
 
-Enable runtime debugging.  Equivalent to +verilator+debugi+4.
+Enable simulation runtime debugging.  Equivalent to +verilator+debugi+4.
 
 =item +verilator+debugi+I<value>
 
-Enable runtime debugging at the provided level.
+Enable simulation runtime debugging at the provided level.
 
 =item +verilator+error+limit+I<value>
 
@@ -1720,20 +1725,20 @@ Display help and exit.
 
 =item +verilator+prof+threads+file+I<filename>
 
-When using --prof-threads at runtime, the filename to dump to.  Defaults to
-"profile_threads.dat".
+When using --prof-threads at simulation runtime, the filename to dump to.
+Defaults to "profile_threads.dat".
 
 =item +verilator+prof+threads+start+I<value>
 
-When using --prof-threads at runtime, Verilator will wait until $time is at
-this value, then start the profiling warmup, then capturing. Generally this
-should be set to some time that is well within the normal operation of the
-simulation, i.e. outside of reset. If 0, the dump is disabled. Defaults to
-1.
+When using --prof-threads at simulation runtime, Verilator will wait until
+$time is at this value, then start the profiling warmup, then
+capturing. Generally this should be set to some time that is well within
+the normal operation of the simulation, i.e. outside of reset. If 0, the
+dump is disabled. Defaults to 1.
 
 =item +verilator+prof+threads+window+I<value>
 
-When using --prof-threads at runtime, after $time reaches
+When using --prof-threads at simulation runtime, after $time reaches
 +verilator+prof+threads+start, Verilator will warm up the profiling for
 this number of eval() calls, then will capture the profiling of this number
 of eval() calls.  Defaults to 2, which makes sense for a
@@ -1742,15 +1747,15 @@ posedge eval() and one negedge eval().
 
 =item +verilator+rand+reset+I<value>
 
-When a model was Verilated using "-x-initial unique", sets the runtime
-initialization technique.  0 = Reset to zeros. 1 = Reset to all-ones.  2 =
-Randomize.  See L</"Unknown states">.
+When a model was Verilated using "-x-initial unique", sets the simulation
+runtime initialization technique.  0 = Reset to zeros. 1 = Reset to
+all-ones.  2 = Randomize.  See L</"Unknown states">.
 
 =item +verilator+seed+I<value>
 
-For $random and "-x-initial unique", set the runtime random seed value.  If
-zero or not specified picks a value from the system random number
-generator.
+For $random and "-x-initial unique", set the simulation runtime random seed
+value.  If zero or not specified picks a value from the system random
+number generator.
 
 =item +verilator+V
 
@@ -1931,7 +1936,7 @@ C++ compiler and size of your CPU's caches.
 
 By default, the lib/verilated.mk file has optimization turned off.  This is
 for the benefit of new users, as it improves compile times at the cost of
-runtimes.  To add optimization as the default, set one of three variables,
+simulation runtimes.  To add optimization as the default, set one of three variables,
 OPT, OPT_FAST, or OPT_SLOW lib/verilated.mk.  Or, use the -CFLAGS and/or
 -LDFLAGS option on the verilator command line to pass the flags directly to
 the compiler or linker.  Or, just for one run, pass them on the command
@@ -2053,7 +2058,7 @@ After running Make, the C++ compiler may produce the following:
 
 A generic Linux/OS variable specifying what directories have shared object
 (.so) files.  This path should include SystemC and any other shared objects
-needed at runtime.
+needed at simultion runtime.
 
 =item OBJCACHE
 
@@ -2370,9 +2375,9 @@ some test-benches that expect immediate propagation.
 Note the VPI by its specified implementation will always be much slower
 than accessing the Verilator values by direct reference
 (structure->module->signame), as the VPI accessors perform lookup in
-functions at runtime requiring at best hundreds of instructions, while the
-direct references are evaluated by the compiler and result in only a couple
-of instructions.
+functions at simulation runtime requiring at best hundreds of instructions,
+while the direct references are evaluated by the compiler and result in
+only a couple of instructions.
 
 For signal callbacks to work the main loop of the program must call
 VerilatedVpi::callValueCbs().
@@ -2844,8 +2849,8 @@ With the --assert switch, Verilator reads any "//synopsys full_case" or
 
 When these synthesis directives are discovered, Verilator will either
 formally prove the directive to be true, or failing that, will insert the
-appropriate code to detect failing cases at runtime and print an "Assertion
-failed" error message.
+appropriate code to detect failing cases at simulation runtime and print an
+"Assertion failed" error message.
 
 Verilator likewise also asserts any "unique" or "priority" SystemVerilog
 keywords on case statement, as well as "unique" on if statements.
@@ -3032,7 +3037,7 @@ appropriate --coverage flags are passed) after being disabled earlier with
 =item /*verilator inline_module*/
 
 Specifies the module the comment appears in may be inlined into any modules
-that use this module.  This is useful to speed up simulation time with some
+that use this module.  This is useful to speed up simulation runtime with some
 small loss of trace visibility and modularity.  Note signals under inlined
 submodules will be named I<submodule>__DOT__I<subsignal> as C++ does not
 allow "." in signal names.  When tracing such signals the tracing routines
@@ -3332,10 +3337,10 @@ from a four state simulator.  An === comparison to X will always be false,
 so that Verilog code which checks for uninitialized logic will not fire.
 
 Assigning a variable to a X will actually assign the variable to a random
-value (see the --x-assign switch and +verilator+rand+reset runtime switch.)
-Thus if the value is actually used, the random value should cause
-downstream errors.  Integers also randomize, even though the Verilog 2001
-specification says they initialize to zero.
+value (see the --x-assign switch and +verilator+rand+reset simulation
+runtime switch.)  Thus if the value is actually used, the random value
+should cause downstream errors.  Integers also randomize, even though the
+Verilog 2001 specification says they initialize to zero.
 
 All variables, depending on --x-initial setting, are typically randomly
 initialized using a function.  By running several random simulation runs
@@ -3864,7 +3869,7 @@ The solution is to break the loop, as described for UNOPTFLAT.
 
 =item DIDNOTCONVERGE
 
-Error at runtime when model did not properly settle.
+Error at simulation runtime when model did not properly settle.
 
 Verilator sometimes has to evaluate combinatorial logic multiple times,
 usually around code where a UNOPTFLAT warning was issued, but disabled.
@@ -3882,9 +3887,9 @@ the time of issuing a UNOPTFLAT Verilator didn't know if they would
 eventually converge and assumed the would.
 
 Next, run Verilator with --prof-cfuncs.  Run make on the generated files
-with "CPP_FLAGS=-DVL_DEBUG", to allow enabling runtime debug messages.
-Rerun the test.  Now just before the convergence error you should see
-additional output similar to this:
+with "CPP_FLAGS=-DVL_DEBUG", to allow enabling simulation runtime debug
+messages.  Rerun the test.  Now just before the convergence error you
+should see additional output similar to this:
 
    CHANGE: filename.v:1: b
    CHANGE: filename.v:2: a
@@ -4053,7 +4058,7 @@ discarded.
 
 Warns that the specified signal comes from multiple always blocks.  This is
 often unsupported by synthesis tools, and is considered bad style.  It will
-also cause longer runtimes due to reduced optimizations.
+also cause longer simulation runtimes due to reduced optimizations.
 
 Ignoring this warning will only slow simulations, it will simulate
 correctly.
@@ -4231,7 +4236,8 @@ correctly.
 =item UNOPT
 
 Warns that due to some construct, optimization of the specified signal or
-block is disabled.  The construct should be cleaned up to improve runtime.
+block is disabled.  The construct should be cleaned up to improve
+simulation runtime.
 
 A less obvious case of this is when a module instantiates two submodules.
 Inside submodule A, signal I is input and signal O is output.  Likewise in
@@ -4249,7 +4255,7 @@ correctly.
 Warns that due to some construct, optimization of the specified signal is
 disabled.  The signal specified includes a complete scope to the signal; it
 may be only one particular usage of a multiply instantiated block.  The
-construct should be cleaned up to improve runtime; two times better
+construct should be cleaned up to improve simulation runtime; two times better
 performance may be possible by fixing these warnings.
 
 Unlike the UNOPT warning, this occurs after netlist flattening, and
@@ -4310,10 +4316,11 @@ the requested number of threads.
 
 One workaround is to request fewer threads with C<--threads>.
 
-Another possible workaround is to allow more MTasks in the runtime, by
-increasing the value of --threads-max-mtasks. More MTasks will result in
-more communication and synchronization overhead at runtime; the scheduler
-attempts to minimize the number of MTasks for this reason.
+Another possible workaround is to allow more MTasks in the simulation
+runtime, by increasing the value of --threads-max-mtasks. More MTasks will
+result in more communication and synchronization overhead at simulation
+runtime; the scheduler attempts to minimize the number of MTasks for this
+reason.
 
 Ignoring this warning will only slow simulations, it will simulate
 correctly.
@@ -4352,7 +4359,7 @@ similar to the following:
                         1'b0};
 
 The reduction AND and constant zeros mean the net will always be zero, so
-won't use simulation time.  The redundant leading and trailing zeros avoid
+won't use simulation runtime.  The redundant leading and trailing zeros avoid
 syntax errors if there are no signals between them.  The magic name
 "unused" (-unused-regexp) is recognized by Verilator and suppresses
 warnings; if using other lint tools, either teach to tool to ignore signals
