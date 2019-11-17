@@ -2732,6 +2732,7 @@ patternKey<nodep>:		// IEEE: merge structure_pattern_key, array_pattern_key, ass
 		yaINTNUM				{ $$ = new AstConst($<fl>1,*$1); }
 	|	yaFLOATNUM				{ $$ = new AstConst($<fl>1,AstConst::RealDouble(),$1); }
 	|	yaID__ETC				{ $$ = new AstText($<fl>1,*$1); }
+	|	strAsInt				{ $$ = $1; }
 	;
 
 assignment_pattern<patternp>:	// ==IEEE: assignment_pattern

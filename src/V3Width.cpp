@@ -1661,7 +1661,10 @@ private:
     }
     void methodOkArguments(AstMethodSel* nodep, int minArg, int maxArg) {
         int narg = 0;
-        for (AstNode* argp = nodep->pinsp(); argp; argp = argp->nextp()) ++narg;
+        for (AstNode* argp = nodep->pinsp(); argp; argp = argp->nextp()) {
+            ++narg;
+            UASSERT_OBJ(VN_IS(argp, Arg), nodep, "Method arg without Arg type");
+        }
         bool ok = (narg >= minArg) && (narg <= maxArg);
         if (!ok) {
             nodep->v3error("The "<<narg<<" arguments passed to ."<<nodep->prettyName()
@@ -3903,15 +3906,17 @@ private:
     //----------------------------------------------------------------------
     // METHODS - data types
 
-    AstNodeDType* moveChildDTypeEdit(AstNode* nodep) {
-        // DTypes at parse time get added as a childDType to some node types such as AstVars.
-        // We move them to global scope, so removing/changing a variable won't lose the dtype.
-        AstNodeDType* dtnodep = nodep->getChildDTypep();
-        UASSERT_OBJ(dtnodep, nodep, "Caller should check for NULL before calling moveChild");
-        UINFO(9,"moveChildDTypeEdit  "<<dtnodep<<endl);
+    AstNodeDType* moveDTypeEdit(AstNode* nodep, AstNodeDType* dtnodep) {
+        // DTypes at parse time get added as a e.g. childDType to some node types such as AstVars.
+        // Move type to global scope, so removing/changing a variable won't lose the dtype.
+        UASSERT_OBJ(dtnodep, nodep, "Caller should check for NULL before calling moveDTypeEdit");
+        UINFO(9,"moveDTypeEdit  "<<dtnodep<<endl);
         dtnodep->unlinkFrBack();  // Make non-child
         v3Global.rootp()->typeTablep()->addTypesp(dtnodep);
         return dtnodep;
+    }
+    AstNodeDType* moveChildDTypeEdit(AstNode* nodep) {
+        return moveDTypeEdit(nodep, nodep->getChildDTypep());
     }
     AstNodeDType* iterateEditDTypep(AstNode* parentp, AstNodeDType* nodep) {
         // Iterate into a data type to resolve that type. This process
