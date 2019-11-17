@@ -4532,6 +4532,32 @@ public:
     virtual string emitVerilog() { return "%f$atanh(%l)"; }
     virtual string emitC() { return "atanh(%li)"; }
 };
+class AstToLowerN : public AstNodeUniop {
+    // string.tolower()
+public:
+    AstToLowerN(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
+        dtypeSetString(); }
+    ASTNODE_NODE_FUNCS(ToLowerN)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opToLowerN(lhs); }
+    virtual string emitVerilog() { return "%l.tolower()"; }
+    virtual string emitC() { return "VL_TOLOWER_NN(%li)"; }
+    virtual bool cleanOut() const { return true; }
+    virtual bool cleanLhs() const { return true; }
+    virtual bool sizeMattersLhs() const { return false; }
+};
+class AstToUpperN : public AstNodeUniop {
+    // string.toupper()
+public:
+    AstToUpperN(FileLine* fl, AstNode* lhsp) : AstNodeUniop(fl, lhsp) {
+        dtypeSetString(); }
+    ASTNODE_NODE_FUNCS(ToUpperN)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opToUpperN(lhs); }
+    virtual string emitVerilog() { return "%l.toupper()"; }
+    virtual string emitC() { return "VL_TOUPPER_NN(%li)"; }
+    virtual bool cleanOut() const { return true; }
+    virtual bool cleanLhs() const { return true; }
+    virtual bool sizeMattersLhs() const { return false; }
+};
 
 //======================================================================
 // Binary ops

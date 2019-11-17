@@ -2074,6 +2074,25 @@ V3Number& V3Number::opReplN(const V3Number& lhs, uint32_t rhsval) {
     }
     return setString(out);
 }
+V3Number& V3Number::opToLowerN(const V3Number& lhs) {
+    NUM_ASSERT_OP_ARGS1(lhs);
+    NUM_ASSERT_STRING_ARGS1(lhs);
+    std::string out = lhs.toString();
+    for (std::string::iterator it = out.begin(); it != out.end(); ++it) {
+        *it = tolower(*it);
+    }
+    return setString(out);
+}
+V3Number& V3Number::opToUpperN(const V3Number& lhs) {
+    NUM_ASSERT_OP_ARGS1(lhs);
+    NUM_ASSERT_STRING_ARGS1(lhs);
+    std::string out = lhs.toString();
+    for (std::string::iterator it = out.begin(); it != out.end(); ++it) {
+        *it = toupper(*it);
+    }
+    return setString(out);
+}
+
 V3Number& V3Number::opEqN(const V3Number& lhs, const V3Number& rhs) {
     NUM_ASSERT_OP_ARGS2(lhs, rhs);
     NUM_ASSERT_STRING_ARGS2(lhs, rhs);

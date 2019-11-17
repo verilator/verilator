@@ -20,11 +20,11 @@ module t (/*AUTOARG*/
    // Check constification
    initial begin
       s="1234"; `checkh(s.len(),4);
+      s="ab7CD"; `checks(s.toupper(), "AB7CD");
+      s="ab7CD"; `checks(s.tolower(), "ab7cd");
 `ifndef VERILATOR
       s="1234"; s.putc(2, "z"); `checks(s, "12z4");
       s="1234"; `checkh(s.getc(2), "3");
-      s="abCD"; `checks(s.toupper(), "ABCD");
-      s="abCD"; `checks(s.tolower(), "abcd");
       s="b"; if (s.compare("a") <= 0) $stop;
       s="b"; if (s.compare("b") != 0) $stop;
       s="b"; if (s.compare("c") >= 0) $stop;
@@ -42,6 +42,9 @@ module t (/*AUTOARG*/
       s.octtoa(123); `checks(s, "173");
       s.bintoa(123); `checks(s, "1111011");
       s.realtoa(1.23); `checks(s, "1.23");
+      s = "bAr";
+      s = s.toupper; `checks(s, "BAR");
+      s = s.tolower; `checks(s, "bar");
    end
 
    // Check runtime
@@ -54,40 +57,48 @@ module t (/*AUTOARG*/
       else if (cyc==1) begin
          `checkh(s.len(),4);
       end
-`ifndef VERILATOR
       else if (cyc==2) begin
+`ifndef VERILATOR
          s.putc(2, "z");
+`endif
       end
       else if (cyc==3) begin
+`ifndef VERILATOR
          `checks(s, "12z4");
          `checkh(s.getc(2), "z");
-         s="abCD";
+`endif
+         s="ab3CD";
       end
       else if (cyc==4) begin
-         `checks(s.toupper(), "ABCD");
-         `checks(s.tolower(), "abcd");
+         `checks(s.toupper(), "AB3CD");
+         `checks(s.tolower(), "ab3cd");
          s="b";
       end
       else if (cyc==5) begin
+`ifndef VERILATOR
          if (s.compare("a") <= 0) $stop;
          if (s.compare("b") != 0) $stop;
          if (s.compare("c") >= 0) $stop;
          if (s.icompare("A") < 0) $stop;
          if (s.icompare("B") != 0) $stop;
          if (s.icompare("C") >= 0) $stop;
+`endif
          s="101";
       end
       else if (cyc==7) begin
+`ifndef VERILATOR
          `checkh(s.atoi(), 'd101);
          `checkh(s.atohex(), 'h101);
          `checkh(s.atooct(), 'o101);
          `checkh(s.atobin(), 'b101);
+`endif
          s="1.23";
       end
       else if (cyc==8) begin
+`ifndef VERILATOR
          `checkg(s.atoreal(), 1.23);
-      end
 `endif
+      end
       else if (cyc==9) begin
          s.itoa(123);
       end

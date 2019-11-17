@@ -1754,7 +1754,22 @@ const char* vl_mc_scan_plusargs(const char* prefixp) VL_MT_SAFE {
 }
 
 //===========================================================================
-// Heavy functions
+// Heavy string functions
+
+std::string VL_TOLOWER_NN(const std::string& ld) VL_MT_SAFE {
+    std::string out = ld;
+    for (std::string::iterator it = out.begin(); it != out.end(); ++it) {
+        *it = tolower(*it);
+    }
+    return out;
+}
+std::string VL_TOUPPER_NN(const std::string& ld) VL_MT_SAFE {
+    std::string out = ld;
+    for (std::string::iterator it = out.begin(); it != out.end(); ++it) {
+        *it = toupper(*it);
+    }
+    return out;
+}
 
 std::string VL_CVT_PACK_STR_NW(int lwords, WDataInP lwp) VL_MT_SAFE {
     // See also _VL_VINT_TO_STRING

@@ -61,6 +61,8 @@ inline std::string VL_REPLICATEN_NNI(int obits,int lbits,int rbits,
 }
 
 inline IData VL_LEN_IN(const std::string& ld) { return ld.length(); }
+extern std::string VL_TOLOWER_NN(const std::string& ld);
+extern std::string VL_TOUPPER_NN(const std::string& ld);
 
 extern IData VL_FOPEN_NI(const std::string& filename, IData mode) VL_MT_SAFE;
 extern void VL_READMEM_N(bool hex, int width, int depth, int array_lsb,

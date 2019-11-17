@@ -442,6 +442,18 @@ private:
             }
         }
     }
+    virtual void visit(AstToLowerN* nodep) {
+        if (m_vup->prelim()) {
+            iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
+            nodep->dtypeSetString();
+        }
+    }
+    virtual void visit(AstToUpperN* nodep) {
+        if (m_vup->prelim()) {
+            iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
+            nodep->dtypeSetString();
+        }
+    }
     virtual void visit(AstReplicate* nodep) {
         // IEEE-2012 Table 11-21:
         //   LHS, RHS is self-determined
@@ -1804,8 +1816,26 @@ private:
         } else if (nodep->name() == "realtoa") {
             methodOkArguments(nodep, 1, 1);
             replaceWithSFormat(nodep, "%g"); VL_DANGLING(nodep);
-        } else {
+        } else if (nodep->name() == "tolower") {
+            methodOkArguments(nodep, 0, 0);
+            AstNode* newp = new AstToLowerN(nodep->fileline(), nodep->fromp()->unlinkFrBack());
+            nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+        } else if (nodep->name() == "toupper") {
+            methodOkArguments(nodep, 0, 0);
+            AstNode* newp = new AstToUpperN(nodep->fileline(), nodep->fromp()->unlinkFrBack());
+            nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+        } else if (nodep->name() == "atobin"
+                   || nodep->name() == "atohex"
+                   || nodep->name() == "atoi"
+                   || nodep->name() == "atooct"
+                   || nodep->name() == "atoreal"
+                   || nodep->name() == "compare"
+                   || nodep->name() == "icompare"
+                   || nodep->name() == "getc"
+                   || nodep->name() == "putc") {
             nodep->v3error("Unsupported: built-in string method "<<nodep->prettyNameQ());
+        } else {
+            nodep->v3error("Unknown built-in string method "<<nodep->prettyNameQ());
         }
     }
 

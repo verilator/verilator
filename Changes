@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Add +verilator+error+limit to see more assertion errors. [Peter Monsson]
 
+***   Support string.toupper and string.tolower.
+
 ***   Support $rewind and $ungetc.
 
 ****  Add -Wpedantic for compliance testing.
