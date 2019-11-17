@@ -1717,7 +1717,8 @@ Enable simulation runtime debugging at the provided level.
 =item +verilator+error+limit+I<value>
 
 Set number of non-fatal errors (e.g. assertion failures) before exiting
-simulation. Defaults to 1.
+simulation runtime. Also affects number of $stop calls needed before
+exit. Defaults to 1.
 
 =item +verilator+help
 

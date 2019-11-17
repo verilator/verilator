@@ -533,7 +533,6 @@ public:
         puts(", ");
         puts(cvtToStr(nodep->fileline()->lineno()));
         puts(", \"\"");
-        if (nodep->maybe()) puts(", true");
         puts(");\n");
     }
     virtual void visit(AstFinish* nodep) {

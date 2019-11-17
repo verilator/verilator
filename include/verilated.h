@@ -575,7 +575,7 @@ extern void vl_fatal(const char* filename, int linenum, const char* hier,
 extern void VL_FINISH_MT(const char* filename, int linenum, const char* hier) VL_MT_SAFE;
 /// Multithread safe wrapper for calls to $stop
 extern void VL_STOP_MT(const char* filename, int linenum, const char* hier,
-                       bool maybe = false) VL_MT_SAFE;
+                       bool maybe = true) VL_MT_SAFE;
 /// Multithread safe wrapper to call for a couple of fatal messages
 extern void VL_FATAL_MT(const char* filename, int linenum, const char* hier,
                         const char* msg) VL_MT_SAFE;

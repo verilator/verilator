@@ -1,5 +1,0 @@
-[0] %Error: t_runflag_errlimit.v:8: Assertion failed in top.t: One
-[0] %Error: t_runflag_errlimit.v:9: Assertion failed in top.t: Two
-[0] %Error: t_runflag_errlimit.v:10: Assertion failed in top.t: Three
-%Error: t/t_runflag_errlimit.v:10: Verilog $stop
-Aborting...

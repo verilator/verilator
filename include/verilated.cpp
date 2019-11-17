@@ -111,15 +111,17 @@ void vl_fatal(const char* filename, int linenum, const char* hier, const char* m
 }
 #endif
 
-//===========================================================================
-// Error handline
-
+#ifndef VL_USER_STOP_MAYBE  ///< Define this to override this function
 void vl_stop_maybe(const char* filename, int linenum, const char* hier, bool maybe) VL_MT_UNSAFE {
     Verilated::errorCountInc();
-    if (!maybe || Verilated::errorCount() >= Verilated::errorLimit()) {
+    if (maybe && Verilated::errorCount() < Verilated::errorLimit()) {
+        VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
+            "-Info: %s:%d: %s\n", filename, linenum, "Verilog $stop, ignored due to +verilator+error+limit");
+    } else {
         vl_stop(filename, linenum, hier);
     }
 }
+#endif
 
 //===========================================================================
 // Wrapper to call certain functions via messages when multithreaded
