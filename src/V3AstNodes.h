@@ -1114,25 +1114,25 @@ public:
     void fromp(AstNode* nodep) { setOp1p(nodep); }
 };
 
-class AstMethodSel : public AstNode {
+class AstMethodCall : public AstNode {
     // A reference to a member task (or function)
     // We do not support generic member calls yet, so this is only enough to
     // make built-in methods work
 private:
     string m_name;  // Name of variable
 public:
-    AstMethodSel(FileLine* fl, AstNode* fromp, VFlagChildDType, const string& name, AstNode* pinsp)
+    AstMethodCall(FileLine* fl, AstNode* fromp, VFlagChildDType, const string& name, AstNode* pinsp)
         : AstNode(fl), m_name(name) {
         setOp1p(fromp);
         dtypep(NULL);  // V3Width will resolve
         addNOp2p(pinsp);
     }
-    AstMethodSel(FileLine* fl, AstNode* fromp, const string& name, AstNode* pinsp)
+    AstMethodCall(FileLine* fl, AstNode* fromp, const string& name, AstNode* pinsp)
         : AstNode(fl), m_name(name) {
         setOp1p(fromp);
         addNOp2p(pinsp);
     }
-    ASTNODE_NODE_FUNCS(MethodSel)
+    ASTNODE_NODE_FUNCS(MethodCall)
     virtual string name() const { return m_name; }  // * = Var name
     virtual void name(const string& name) { m_name = name; }
     AstNode* fromp() const { return op1p(); }  // op1 = Extracting what (NULL=TBD during parsing)

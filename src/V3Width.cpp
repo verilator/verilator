@@ -1592,8 +1592,8 @@ private:
                  || VN_IS(fromDtp, BasicDType)) {
             // Method call on enum without following parenthesis, e.g. "ENUM.next"
             // Convert this into a method call, and let that visitor figure out what to do next
-            AstNode* newp = new AstMethodSel(nodep->fileline(),
-                                             nodep->fromp()->unlinkFrBack(), nodep->name(), NULL);
+            AstNode* newp = new AstMethodCall(nodep->fileline(),
+                                              nodep->fromp()->unlinkFrBack(), nodep->name(), NULL);
             nodep->replaceWith(newp);
             pushDeletep(nodep); VL_DANGLING(nodep);
             userIterate(newp, m_vup);
@@ -1629,7 +1629,7 @@ private:
         }
     }
 
-    virtual void visit(AstMethodSel* nodep) {
+    virtual void visit(AstMethodCall* nodep) {
         UINFO(5,"   METHODSEL "<<nodep<<endl);
         if (debug()>=9) nodep->dumpTree("-mts-in: ");
         // Should check types the method requires, but at present we don't do much
@@ -1659,7 +1659,7 @@ private:
                            <<"' which is a '"<<nodep->fromp()->dtypep()->prettyTypeName()<<"'");
         }
     }
-    void methodOkArguments(AstMethodSel* nodep, int minArg, int maxArg) {
+    void methodOkArguments(AstMethodCall* nodep, int minArg, int maxArg) {
         int narg = 0;
         for (AstNode* argp = nodep->pinsp(); argp; argp = argp->nextp()) {
             ++narg;
@@ -1684,7 +1684,7 @@ private:
         }
     }
 
-    void methodCallEnum(AstMethodSel* nodep, AstEnumDType* adtypep) {
+    void methodCallEnum(AstMethodCall* nodep, AstEnumDType* adtypep) {
         // Method call on enum without following parenthesis, e.g. "ENUM.next"
         // Convert this into a method call, and let that visitor figure out what to do next
         if (adtypep) {}
@@ -1764,7 +1764,7 @@ private:
             nodep->v3error("Unknown built-in enum method " << nodep->prettyNameQ());
         }
     }
-    void methodCallUnpack(AstMethodSel* nodep, AstUnpackArrayDType* adtypep) {
+    void methodCallUnpack(AstMethodCall* nodep, AstUnpackArrayDType* adtypep) {
         enum { UNKNOWN = 0, ARRAY_OR, ARRAY_AND, ARRAY_XOR } methodId;
 
         methodId = UNKNOWN;
@@ -1796,7 +1796,7 @@ private:
             nodep->v3error("Unknown built-in array method " << nodep->prettyNameQ());
         }
     }
-    void methodCallString(AstMethodSel* nodep, AstBasicDType* adtypep) {
+    void methodCallString(AstMethodCall* nodep, AstBasicDType* adtypep) {
         // Method call on string
         if (nodep->name() == "len") {
             // Constant value
@@ -3886,7 +3886,7 @@ private:
     //----------------------------------------------------------------------
     // METHODS - strings
 
-    void replaceWithSFormat(AstMethodSel* nodep, const string& format) {
+    void replaceWithSFormat(AstMethodCall* nodep, const string& format) {
         // For string.itoa and similar, replace with SFormatF
         AstArg* argp = VN_CAST(nodep->pinsp(), Arg);
         if (!argp) {

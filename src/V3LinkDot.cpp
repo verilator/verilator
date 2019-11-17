@@ -2264,7 +2264,7 @@ private:
         // EnumItemRef may be under a dot.  Should already be resolved.
         iterateChildren(nodep);
     }
-    virtual void visit(AstMethodSel* nodep) {
+    virtual void visit(AstMethodCall* nodep) {
         // Created here so should already be resolved.
         DotStates lastStates = m_ds;
         {
@@ -2312,8 +2312,8 @@ private:
             AstNode* varEtcp = m_ds.m_dotp->lhsp()->unlinkFrBack();
             AstNode* argsp = NULL;
             if (nodep->pinsp()) argsp = nodep->pinsp()->unlinkFrBackWithNext();
-            AstNode* newp = new AstMethodSel(nodep->fileline(), varEtcp,
-                                             VFlagChildDType(), nodep->name(), argsp);
+            AstNode* newp = new AstMethodCall(nodep->fileline(), varEtcp,
+                                              VFlagChildDType(), nodep->name(), argsp);
             nodep->replaceWith(newp);
             pushDeletep(nodep); VL_DANGLING(nodep);
             return;
