@@ -455,7 +455,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "return"              { FL; return yRETURN; }
   "shortint"            { FL; return ySHORTINT; }
   "shortreal"           { FL; return ySHORTREAL; }
-  "static"              { FL; return ySTATIC; }
+  "static"              { FL; return ySTATIC__ETC; }
   "string"              { FL; return ySTRING; }
   "struct"              { FL; return ySTRUCT; }
   "timeprecision"       { FL; return yTIMEPRECISION; }

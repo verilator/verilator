@@ -446,7 +446,7 @@ class AstSenTree;
 %token<fl>		ySIGNED		"signed"
 %token<fl>		ySPECIFY	"specify"
 %token<fl>		ySPECPARAM	"specparam"
-%token<fl>		ySTATIC		"static"
+%token<fl>		ySTATIC__ETC	"static"
 %token<fl>		ySTRING		"string"
 %token<fl>		ySTRUCT		"struct"
 %token<fl>		ySUPPLY0	"supply0"
@@ -1750,7 +1750,7 @@ type_declaration<nodep>:	// ==IEEE: type_declaration
 		yTYPEDEF data_type idAny variable_dimensionListE dtypeAttrListE ';'
 	/**/	{ $$ = new AstTypedef($<fl>3, *$3, $5, VFlagChildDType(), GRAMMARP->createArray($2,$4,false));
 		  SYMP->reinsert($$); PARSEP->tagNodep($$); }
-	//UNSUP	yTYPEDEF id/*interface*/ '.' idAny/*type*/ idAny/*type*/ ';'	{ $$ = NULL; $1->v3error("Unsupported: SystemVerilog 2005 typedef in this context"); } //UNSUP
+	|	yTYPEDEF id/*interface*/ '.' idAny/*type*/ idAny/*type*/ ';'	{ $$ = NULL; BBUNSUP($1, "Unsupported: SystemVerilog 2005 typedef in this context"); }
 	//			// Combines into above "data_type id" rule
 	//			// Verilator: Not important what it is in the AST, just need to make sure the yaID__aTYPE gets returned
 	|	yTYPEDEF id ';'				{ $$ = NULL; $$ = new AstTypedefFwd($<fl>2, *$2); SYMP->reinsert($$); PARSEP->tagNodep($$); }
@@ -3051,7 +3051,7 @@ lifetimeE:			// IEEE: [lifetime]
 
 lifetime:			// ==IEEE: lifetime
 	//			// Note lifetime used by members is instead under memberQual
-		ySTATIC			 		{ $1->v3error("Unsupported: Static in this context"); }
+		ySTATIC__ETC		 		{ BBUNSUP($1, "Unsupported: Static in this context"); }
 	|	yAUTOMATIC		 		{ }
 	;
 
@@ -3356,9 +3356,9 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// Indistinguishable from function_subroutine_call:method_call
 	//
 	|	'$'					{ $$ = new AstConst($<fl>1, AstConst::LogicFalse());
-							  $<fl>1->v3error("Unsupported: $ expression"); }
+							  BBUNSUP($<fl>1, "Unsupported: $ expression"); }
 	|	yNULL					{ $$ = new AstConst($1, AstConst::LogicFalse());
-							  $<fl>1->v3error("Unsupported: null expression"); }
+							  BBUNSUP($<fl>1, "Unsupported: null expression"); }
 	//			// IEEE: yTHIS
 	//			// See exprScope
 	//
@@ -3372,7 +3372,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// IEEE: cond_predicate - here to avoid reduce problems
 	//			// Note expr includes cond_pattern
 	|	~l~expr yP_ANDANDAND ~r~expr		{ $$ = new AstConst($2, AstConst::LogicFalse());
-							  $<fl>2->v3error("Unsupported: &&& expression"); }
+							  BBUNSUP($<fl>2, "Unsupported: &&& expression"); }
 	//
 	//			// IEEE: cond_pattern - here to avoid reduce problems
 	//			// "expr yMATCHES pattern"
