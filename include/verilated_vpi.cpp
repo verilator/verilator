@@ -416,7 +416,7 @@ public:
         for (VpioTimedCbs::iterator it=s_s.m_timedCbs.begin(); it!=s_s.m_timedCbs.end(); ) {
             if (VL_UNLIKELY(it->first <= time)) {
                 VerilatedVpioCb* vop = it->second;
-                VpioTimedCbs::iterator last_it=it; 
+                VpioTimedCbs::iterator last_it=it;
                 ++it;  // timed callbacks are one-shot
                 s_s.m_timedCbs.erase(last_it);
                 VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: timed_callback %p\n", vop););

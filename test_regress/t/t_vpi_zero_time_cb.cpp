@@ -91,8 +91,14 @@ unsigned int callback_count_start_of_sim = 0;
 #define STRINGIFY(x) STRINGIFY2(x)
 #define STRINGIFY2(x) #x
 
+
+//======================================================================
+
+#ifdef IS_VPI
+
 static int _zero_time_cb(p_cb_data cb_data) {
   callback_count_zero_time++;
+  return 0;
 }
 
 static int _start_of_sim_cb(p_cb_data cb_data) {
@@ -107,17 +113,15 @@ static int _start_of_sim_cb(p_cb_data cb_data) {
   cb_data_n.cb_rtn = _zero_time_cb;
   vpi_register_cb(&cb_data_n);
   callback_count_start_of_sim++;
+  return 0;
 }
 
 static int _end_of_sim_cb(p_cb_data cb_data) {
   CHECK_RESULT(callback_count_start_of_sim, 1);
   CHECK_RESULT(callback_count_zero_time, 1);
   fprintf(stdout, "*-* All Finished *-*\n");
+  return 0;
 }
-
-//======================================================================
-
-#ifdef IS_VPI
 
 // cver entry
 #ifdef __cplusplus
