@@ -1954,7 +1954,8 @@ private:
             AstNode* varEtcp = m_ds.m_dotp->lhsp()->unlinkFrBack();
             AstNode* newp = new AstMemberSel(nodep->fileline(), varEtcp,
                                              VFlagChildDType(), nodep->name());
-            nodep->replaceWith(newp);
+            if (m_ds.m_dotErr) nodep->unlinkFrBack();  // Avoid circular node loop on errors
+            else nodep->replaceWith(newp);
             pushDeletep(nodep); VL_DANGLING(nodep);
         }
         else {

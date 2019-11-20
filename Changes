@@ -18,6 +18,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix for loop missing initializer, bug1605. [Andrew Holme]
 
+****  Fix hang on concat error, bug1608. [Bogdan Vukobratovic]
+
 
 * Verilator 4.022 2019-11-10
 
