@@ -215,7 +215,7 @@ int main(int argc, char** argv, char** env) {
 
     // Load and initialize the PLI application
     {
-        void* lib = dlopen("./obj_vlt/t_vpi_time_cb/libvpi.so", RTLD_LAZY);
+        void* lib = dlopen(STRINGIFY(TEST_OBJ_DIR) "/libvpi.so", RTLD_LAZY);
         void* bootstrap = dlsym(lib, "vpi_compat_bootstrap");
         ((void (*)(void))bootstrap)();
     }
