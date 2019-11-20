@@ -110,7 +110,7 @@ if (! GetOptions(
           "atsim|athdl!"=> sub { $opt_scenarios{atsim} = $_[1]; },
           "dist!"       => sub { $opt_scenarios{dist} = $_[1]; },
           "ghdl!"       => sub { $opt_scenarios{ghdl} = $_[1]; },
-          "iverilog!"   => sub { $opt_scenarios{iverilog} = $_[1]; },
+          "iv!"         => sub { $opt_scenarios{iv} = $_[1]; },
           "ms!"         => sub { $opt_scenarios{ms} = $_[1]; },
           "nc!"         => sub { $opt_scenarios{nc} = $_[1]; },
           "vlt!"        => sub { $opt_scenarios{vlt} = $_[1]; },
@@ -585,6 +585,7 @@ sub new {
         ms => 0,
         ms_flags => [split(/\s+/,("-sv -work $self->{obj_dir}/work"))],
         ms_flags2 => [],  # Overridden in some sim files
+        ms_pli => 1,  # need to use pli
         ms_run_flags => [split(/\s+/,"-lib $self->{obj_dir}/work -c -do 'run -all;quit' ")],
         # XSim
         xsim => 0,
@@ -1152,11 +1153,16 @@ sub execute {
                     );
     }
     elsif ($param{ms}) {
+        my @pli_opt=();
+        if ($param{ms_pli}) {
+            unshift @pli_opt, "-pli $self->{obj_dir}/libvpi.so";
+        }
         $self->_run(logfile=>"$self->{obj_dir}/ms_sim.log",
                     fails=>$param{fails},
                     cmd=>["echo q | ".$run_env.($ENV{VERILATOR_MODELSIM}||"vsim"),
                           @{$param{ms_run_flags}},
                           @{$param{all_run_flags}},
+                          @{pli_opt},
                           (" top")
                           ],
                     %param,
