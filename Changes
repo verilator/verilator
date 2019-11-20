@@ -20,6 +20,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix hang on concat error, bug1608. [Bogdan Vukobratovic]
 
+****  Fix VPI timed callbacks to be one-shot, pull5. [Matthew Ballance]
+
 
 * Verilator 4.022 2019-11-10
 
