@@ -68,21 +68,21 @@ jobs:
       script: echo "Done building Verilator"
     - if: type = cron
       stage: test
-      name: Xenail gcc dist test
+      name: Xenial gcc dist test
       os: linux
       dist: xenial
       compiler: gcc
       script: ci/test.sh dist
     - if: type = cron
       stage: test
-      name: Xenail gcc vlt test
+      name: Xenial gcc vlt test
       os: linux
       dist: xenial
       compiler: gcc
       script: ci/test.sh vlt
     - if: type = cron
       stage: test
-      name: Xenail gcc vltmt test
+      name: Xenial gcc vltmt test
       os: linux
       dist: xenial
       compiler: gcc
@@ -96,21 +96,21 @@ jobs:
       script: echo "Done building Verilator"
     - if: type = cron
       stage: test
-      name: Xenail clang dist test
+      name: Xenial clang dist test
       os: linux
       dist: xenial
       compiler: clang
       script: ci/test.sh dist
     - if: type = cron
       stage: test
-      name: Xenail clang vlt test
+      name: Xenial clang vlt test
       os: linux
       dist: xenial
       compiler: clang
       script: ci/test.sh vlt
     - if: type = cron
       stage: test
-      name: Xenail clang vltmt test
+      name: Xenial clang vltmt test
       os: linux
       dist: xenial
       compiler: clang
