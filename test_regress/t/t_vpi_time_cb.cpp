@@ -40,9 +40,6 @@ using namespace std;
 #include "TestSimulator.h"
 #include "TestVpi.h"
 
-// __FILE__ is too long
-#define FILENM "t_vpi_time_cb.cpp"
-
 #define TEST_MSG \
     if (0) printf
 
@@ -55,34 +52,34 @@ unsigned int callback_count_start_of_sim = 0;
 
 #define CHECK_RESULT_VH(got, exp) \
     if ((got) != (exp)) { \
-        printf("%%Error: %s:%d: GOT = %p   EXP = %p\n", FILENM, __LINE__, (got), (exp)); \
+        printf("%%Error: %s:%d: GOT = %p   EXP = %p\n", __FILE__, __LINE__, (got), (exp)); \
         return __LINE__; \
     }
 
 #define CHECK_RESULT_NZ(got) \
     if (!(got)) { \
-        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM, __LINE__); \
+        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", __FILE__, __LINE__); \
         return __LINE__; \
     }
 
 // Use cout to avoid issues with %d/%lx etc
 #define CHECK_RESULT(got, exp) \
     if ((got) != (exp)) { \
-        cout << dec << "%Error: " << FILENM << ":" << __LINE__ << ": GOT = " << (got) \
+        cout << dec << "%Error: " << __FILE__ << ":" << __LINE__ << ": GOT = " << (got) \
              << "   EXP = " << (exp) << endl; \
         return __LINE__; \
     }
 
 #define CHECK_RESULT_HEX(got, exp) \
     if ((got) != (exp)) { \
-        cout << dec << "%Error: " << FILENM << ":" << __LINE__ << hex << ": GOT = " << (got) \
+        cout << dec << "%Error: " << __FILE__ << ":" << __LINE__ << hex << ": GOT = " << (got) \
              << "   EXP = " << (exp) << endl; \
         return __LINE__; \
     }
 
 #define CHECK_RESULT_CSTR(got, exp) \
     if (strcmp((got), (exp))) { \
-        printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", FILENM, __LINE__, \
+        printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", __FILE__, __LINE__, \
                (got) ? (got) : "<null>", (exp) ? (exp) : "<null>"); \
         return __LINE__; \
     }
@@ -105,6 +102,7 @@ static int _time_cb1(p_cb_data cb_data) {
     callback_count_time1++;
 
     t_cb_data cb_data_n;
+    bzero(&cb_data_n, sizeof(cb_data_n));
 
     cb_data_n.reason = cbAfterDelay;
     t.type = vpiSimTime;
@@ -125,6 +123,7 @@ static int _time_cb2(p_cb_data cb_data) {
     callback_count_time2++;
 
     t_cb_data cb_data_n;
+    bzero(&cb_data_n, sizeof(cb_data_n));
 
     cb_data_n.reason = cbAfterDelay;
     t.type = vpiSimTime;
@@ -138,6 +137,8 @@ static int _time_cb2(p_cb_data cb_data) {
 
 static int _start_of_sim_cb(p_cb_data cb_data) {
     t_cb_data cb_data_n1, cb_data_n2;
+    bzero(&cb_data_n1, sizeof(cb_data_n1));
+    bzero(&cb_data_n2, sizeof(cb_data_n2));
     s_vpi_time t1, t2;
 
     cb_data_n1.reason = cbAfterDelay;
@@ -172,6 +173,7 @@ extern "C"
 
 void vpi_compat_bootstrap(void) {
     t_cb_data cb_data;
+    bzero(&cb_data, sizeof(cb_data));
 
     // VL_PRINTF("register start-of-sim callback\n");
     cb_data.reason = cbStartOfSimulation;
@@ -215,8 +217,13 @@ int main(int argc, char** argv, char** env) {
 
     // Load and initialize the PLI application
     {
-        void* lib = dlopen(STRINGIFY(TEST_OBJ_DIR) "/libvpi.so", RTLD_LAZY);
+        const char* filenamep = STRINGIFY(TEST_OBJ_DIR) "/libvpi.so";
+        void* lib = dlopen(filenamep, RTLD_LAZY);
         void* bootstrap = dlsym(lib, "vpi_compat_bootstrap");
+        if (!bootstrap) {
+            string msg = string("%Error: Could not dlopen ") + filenamep;
+            vl_fatal(__FILE__, __LINE__, "main", msg.c_str());
+        }
         ((void (*)(void))bootstrap)();
     }
 
@@ -241,7 +248,7 @@ int main(int argc, char** argv, char** env) {
     VerilatedVpi::callCbs(cbEndOfSimulation);
 
     if (!Verilated::gotFinish()) {
-        vl_fatal(FILENM, __LINE__, "main", "%Error: Timeout; never got a $finish");
+        vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
     topp->final();
 

@@ -40,9 +40,6 @@ using namespace std;
 #include "TestSimulator.h"
 #include "TestVpi.h"
 
-// __FILE__ is too long
-#define FILENM "t_vpi_zero_time_cb.cpp"
-
 #define TEST_MSG \
     if (0) printf
 
@@ -54,34 +51,34 @@ unsigned int callback_count_start_of_sim = 0;
 
 #define CHECK_RESULT_VH(got, exp) \
     if ((got) != (exp)) { \
-        printf("%%Error: %s:%d: GOT = %p   EXP = %p\n", FILENM, __LINE__, (got), (exp)); \
+        printf("%%Error: %s:%d: GOT = %p   EXP = %p\n", __FILE__, __LINE__, (got), (exp)); \
         return __LINE__; \
     }
 
 #define CHECK_RESULT_NZ(got) \
     if (!(got)) { \
-        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", FILENM, __LINE__); \
+        printf("%%Error: %s:%d: GOT = NULL  EXP = !NULL\n", __FILE__, __LINE__); \
         return __LINE__; \
     }
 
 // Use cout to avoid issues with %d/%lx etc
 #define CHECK_RESULT(got, exp) \
     if ((got) != (exp)) { \
-        cout << dec << "%Error: " << FILENM << ":" << __LINE__ << ": GOT = " << (got) \
+        cout << dec << "%Error: " << __FILE__ << ":" << __LINE__ << ": GOT = " << (got) \
              << "   EXP = " << (exp) << endl; \
         return __LINE__; \
     }
 
 #define CHECK_RESULT_HEX(got, exp) \
     if ((got) != (exp)) { \
-        cout << dec << "%Error: " << FILENM << ":" << __LINE__ << hex << ": GOT = " << (got) \
+        cout << dec << "%Error: " << __FILE__ << ":" << __LINE__ << hex << ": GOT = " << (got) \
              << "   EXP = " << (exp) << endl; \
         return __LINE__; \
     }
 
 #define CHECK_RESULT_CSTR(got, exp) \
     if (strcmp((got), (exp))) { \
-        printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", FILENM, __LINE__, \
+        printf("%%Error: %s:%d: GOT = '%s'   EXP = '%s'\n", __FILE__, __LINE__, \
                (got) ? (got) : "<null>", (exp) ? (exp) : "<null>"); \
         return __LINE__; \
     }
@@ -102,6 +99,7 @@ static int _zero_time_cb(p_cb_data cb_data) {
 
 static int _start_of_sim_cb(p_cb_data cb_data) {
     t_cb_data cb_data_n;
+    bzero(&cb_data_n, sizeof(cb_data_n));
     s_vpi_time t;
 
     cb_data_n.reason = cbAfterDelay;
@@ -129,6 +127,7 @@ extern "C"
 
 void vpi_compat_bootstrap(void) {
     t_cb_data cb_data;
+    bzero(&cb_data, sizeof(cb_data));
 
     // VL_PRINTF("register start-of-sim callback\n");
     cb_data.reason = cbStartOfSimulation;
@@ -148,6 +147,7 @@ void (*vlog_startup_routines[])() = {vpi_compat_bootstrap, 0};
 #else
 
 double sc_time_stamp() { return main_time; }
+
 int main(int argc, char** argv, char** env) {
     double sim_time = 1100;
     Verilated::commandArgs(argc, argv);
@@ -156,9 +156,9 @@ int main(int argc, char** argv, char** env) {
     VM_PREFIX* topp = new VM_PREFIX("");  // Note null name - we're flattening it out
 
 #ifdef VERILATOR
-#ifdef TEST_VERBOSE
+# ifdef TEST_VERBOSE
     Verilated::scopesDump();
-#endif
+# endif
 #endif
 
 #if VM_TRACE
@@ -171,8 +171,13 @@ int main(int argc, char** argv, char** env) {
 
     // Load and initialize the PLI application
     {
-        void* lib = dlopen(STRINGIFY(TEST_OBJ_DIR) "/libvpi.so", RTLD_LAZY);
+        const char* filenamep = STRINGIFY(TEST_OBJ_DIR) "/libvpi.so";
+        void* lib = dlopen(filenamep, RTLD_LAZY);
         void* bootstrap = dlsym(lib, "vpi_compat_bootstrap");
+        if (!bootstrap) {
+            string msg = string("%Error: Could not dlopen ") + filenamep;
+            vl_fatal(__FILE__, __LINE__, "main", msg.c_str());
+        }
         ((void (*)(void))bootstrap)();
     }
 
@@ -180,7 +185,7 @@ int main(int argc, char** argv, char** env) {
 
     topp->eval();
     topp->clk = 0;
-    main_time += 10;
+    main_time += 1;
 
     while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
         main_time += 1;
@@ -197,7 +202,7 @@ int main(int argc, char** argv, char** env) {
     VerilatedVpi::callCbs(cbEndOfSimulation);
 
     if (!Verilated::gotFinish()) {
-        vl_fatal(FILENM, __LINE__, "main", "%Error: Timeout; never got a $finish");
+        vl_fatal(__FILE__, __LINE__, "main", "%Error: Timeout; never got a $finish");
     }
     topp->final();
 
