@@ -1461,7 +1461,13 @@ sub _run {
             autoflush STDOUT 1;
             autoflush STDERR 1;
             system "$command";
-            exit($? ? 10 : 0);  # $?<<8 misses coredumps
+            my $status = $?;
+            if (($status & 127) == 4  # SIGILL
+                || ($status & 127) == 8  # SIGFPA
+                || ($status & 127) == 11) {  # SIGSEGV
+                $Self->error("Exec failed with core dump");
+            }
+            exit($? ? 10 : 0);  # $?>>8 misses coredumps
         }
         waitpid($pid,0);
         $status = $? || 0;
@@ -1472,7 +1478,7 @@ sub _run {
     if (!$param{fails} && $status) {
         my $firstline = "";
         if (my $fh = IO::File->new("<$param{logfile}")) {
-            $firstline = $fh->getline;
+            $firstline = $fh->getline || '';
             chomp $firstline;
         }
         $self->error("Exec of $param{cmd}[0] failed: $firstline\n");
