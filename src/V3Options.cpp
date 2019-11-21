@@ -1247,13 +1247,15 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
         // Strip simple comments
         string oline;
         // cppcheck-suppress StlMissingComparison
-        for (string::const_iterator pos = line.begin(); pos != line.end(); ++pos) {
+        char lastch = ' ';
+        for (string::const_iterator pos = line.begin(); pos != line.end(); lastch = *pos++) {
             if (inCmt) {
                 if (*pos=='*' && *(pos+1)=='/') {
                     inCmt = false;
                     ++pos;
                 }
-            } else if (*pos=='/' && *(pos+1)=='/') {
+            } else if (*pos=='/' && *(pos+1)=='/'
+                       && (pos == line.begin() || isspace(lastch))) {    // But allow /file//path
                 break;  // Ignore to EOL
             } else if (*pos=='/' && *(pos+1)=='*') {
                 inCmt = true;

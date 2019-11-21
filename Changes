@@ -22,6 +22,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix VPI timed callbacks to be one-shot, pull5. [Matthew Ballance]
 
+****  Fix // in filenames, bug1610. [Peter Nelson]
+
 
 * Verilator 4.022 2019-11-10
 
