@@ -2307,13 +2307,17 @@ private:
                     break;
                 }
                 case 'p': {  // Packed
-                    // Very hacky and non-compliant; print strings as strings, otherwise as hex
-                    if (argp && argp->dtypep()->basicp()->isString()) {  // Convert it
+                    AstBasicDType* basicp = argp ? argp->dtypep()->basicp() : NULL;
+                    if (basicp->isString()) {
                         added = true;
                         newFormat += "\"%@\"";
+                    } else if (basicp->isDouble()) {
+                        added = true;
+                        newFormat += "%g";
                     } else {
                         added = true;
-                        newFormat += "'h%0h";
+                        if (fmt == "%0") newFormat += "'h%0h";  // IEEE our choice
+                        else newFormat += "%d";
                     }
                     if (argp) argp = argp->nextp();
                     break;
