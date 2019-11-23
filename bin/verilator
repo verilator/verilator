@@ -4163,6 +4163,17 @@ the access means the access out of bounds will never execute or be used.
         ...
         if (seven != 7) out = vec[seven];  // Never will use vec[7]
 
+=item SHORTREAL
+
+Warns that Verilator does not support "shortreal" and they will be
+automatically promoted to "real".  The recommendation is to replace any
+"shortreal" in the code with "real", as "shortreal" is not widely supported
+across industry tools.
+
+Ignoring this warning may make Verilator simulations differ from other
+simulators, if the increased precision of real affects your model or DPI
+calls.
+
 =item STMTDLY
 
 Warns that you have a statement with a delayed time in front of it, for

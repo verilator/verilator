@@ -1425,7 +1425,7 @@ integer_vector_type<bdtypep>:	// ==IEEE: integer_atom_type
 non_integer_type<bdtypep>:	// ==IEEE: non_integer_type
 		yREAL					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
 	|	yREALTIME				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
-	|	ySHORTREAL				{ BBUNSUP($1, "Unsupported: shortreal (use real instead)");
+	|	ySHORTREAL				{ $1->v3warn(SHORTREAL, "Unsupported: shortreal being promoted to real (suggest use real instead)");
 							  $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
 	;
 

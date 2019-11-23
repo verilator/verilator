@@ -13,15 +13,14 @@ module t (/*AUTOARG*/
    );
    input clk;
 
+   // verilator lint_off SHORTREAL
    integer i;
    reg [63:0] b;
-   real  r, r2;
+   shortreal    r, r2;
    integer      cyc=0;
 
    realtime  uninit;
    initial if (uninit != 0.0) $stop;
-
-   sub_cast_bug374 sub (.cyc5(cyc[4:0]), .*);
 
    initial begin
       if (1_00_0.0_1 != 1000.01) $stop;
@@ -140,12 +139,4 @@ module t (/*AUTOARG*/
          $finish;
       end
    end
-endmodule
-
-module sub_cast_bug374(input clk, input [4:0] cyc5);
-    integer i;
-
-    always @(posedge clk) begin
-       i <= integer'(cyc5);
-    end
 endmodule
