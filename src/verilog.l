@@ -163,6 +163,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$atan2"              { FL; return yD_ATAN2; }
   "$atanh"              { FL; return yD_ATANH; }
   "$bitstoreal"         { FL; return yD_BITSTOREAL; }
+  "$bitstoshortreal"    { FL; return yD_BITSTOSHORTREAL; }
   "$ceil"               { FL; return yD_CEIL; }
   "$cos"                { FL; return yD_COS; }
   "$cosh"               { FL; return yD_COSH; }
@@ -206,6 +207,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$setuphold"          { FL; return yaTIMINGSPEC; }
   "$sformat"            { FL; return yD_SFORMAT; }
   "$sformatf"           { FL; return yD_SFORMATF; }
+  "$shortrealtobits"    { FL; return yD_SHORTREALTOBITS; }
   "$sin"                { FL; return yD_SIN; }
   "$sinh"               { FL; return yD_SINH; }
   "$skew"               { FL; return yaTIMINGSPEC; }

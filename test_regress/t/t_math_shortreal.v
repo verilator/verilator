@@ -78,7 +78,7 @@ module t (/*AUTOARG*/
       for (r=1.0; r<2.0; r=r+0.1) i++;
       if (i!=10) $stop;
       // bug
-      r = $bitstoreal($realtobits(1.414));
+      r = $bitstoshortreal($shortrealtobits(1.414));
       if (r != 1.414) $stop;
    end
 

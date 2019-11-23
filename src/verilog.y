@@ -224,6 +224,10 @@ static void ERRSVKWD(FileLine* fileline, const string& tokname) {
                         : ""));
 }
 
+static void UNSUPREAL(FileLine* fileline) {
+    fileline->v3warn(SHORTREAL, "Unsupported: shortreal being promoted to real (suggest use real instead)");
+}
+							  
 //======================================================================
 
 class AstSenTree;
@@ -493,6 +497,7 @@ class AstSenTree;
 %token<fl>		yD_ATANH	"$atanh"
 %token<fl>		yD_BITS		"$bits"
 %token<fl>		yD_BITSTOREAL	"$bitstoreal"
+%token<fl>		yD_BITSTOSHORTREAL "$bitstoshortreal"
 %token<fl>		yD_C		"$c"
 %token<fl>		yD_CEIL		"$ceil"
 %token<fl>		yD_CLOG2	"$clog2"
@@ -543,6 +548,7 @@ class AstSenTree;
 %token<fl>		yD_RTOI		"$rtoi"
 %token<fl>		yD_SFORMAT	"$sformat"
 %token<fl>		yD_SFORMATF	"$sformatf"
+%token<fl>		yD_SHORTREALTOBITS "$shortrealtobits"
 %token<fl>		yD_SIGNED	"$signed"
 %token<fl>		yD_SIN		"$sin"
 %token<fl>		yD_SINH		"$sinh"
@@ -1425,8 +1431,7 @@ integer_vector_type<bdtypep>:	// ==IEEE: integer_atom_type
 non_integer_type<bdtypep>:	// ==IEEE: non_integer_type
 		yREAL					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
 	|	yREALTIME				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
-	|	ySHORTREAL				{ $1->v3warn(SHORTREAL, "Unsupported: shortreal being promoted to real (suggest use real instead)");
-							  $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
+	|	ySHORTREAL				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); UNSUPREAL($1); }
 	;
 
 signingE<signstate>:		// IEEE: signing - plus empty
@@ -2913,6 +2918,7 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_BITS '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3); }
 	|	yD_BITS '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3,$5); }
 	|	yD_BITSTOREAL '(' expr ')'		{ $$ = new AstBitsToRealD($1,$3); }
+	|	yD_BITSTOSHORTREAL '(' expr ')'		{ $$ = new AstBitsToRealD($1,$3); UNSUPREAL($1); }
 	|	yD_CEIL '(' expr ')'			{ $$ = new AstCeilD($1,$3); }
 	|	yD_CLOG2 '(' expr ')'			{ $$ = new AstCLog2($1,$3); }
 	|	yD_COS '(' expr ')'			{ $$ = new AstCosD($1,$3); }
@@ -2960,6 +2966,7 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_RIGHT '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,$5); }
 	|	yD_RTOI '(' expr ')'			{ $$ = new AstRToIS($1,$3); }
 	|	yD_SFORMATF '(' str commaEListE ')'	{ $$ = new AstSFormatF($1,*$3,false,$4); }
+	|	yD_SHORTREALTOBITS '(' expr ')'		{ $$ = new AstRealToBits($1,$3); UNSUPREAL($1); }
 	|	yD_SIGNED '(' expr ')'			{ $$ = new AstSigned($1,$3); }
 	|	yD_SIN '(' expr ')'			{ $$ = new AstSinD($1,$3); }
 	|	yD_SINH '(' expr ')'			{ $$ = new AstSinhD($1,$3); }
