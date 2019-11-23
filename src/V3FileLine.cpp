@@ -379,6 +379,7 @@ string FileLine::prettySource() const {
 
 string FileLine::warnContext(bool secondary) const {
     V3Error::errorContexted(true);
+    if (!v3Global.opt.context()) return "";
     string out = "";
     if (firstLineno()==lastLineno() && firstColumn()) {
         string sourceLine = prettySource();

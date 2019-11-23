@@ -1050,15 +1050,18 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 addFuture(msg);
             }
             else if (!strncmp (sw, "-Wno-", 5)) {
-                if (!strcmp(sw, "-Wno-lint")) {
+                if (!strcmp(sw, "-Wno-context")) {
+                    m_context = false;
+                }
+                else if (!strcmp(sw, "-Wno-fatal")) {
+                    V3Error::warnFatal(false);
+                }
+                else if (!strcmp(sw, "-Wno-lint")) {
                     FileLine::globalWarnLintOff(true);
                     FileLine::globalWarnStyleOff(true);
                 }
                 else if (!strcmp(sw, "-Wno-style")) {
                     FileLine::globalWarnStyleOff(true);
-                }
-                else if (!strcmp(sw, "-Wno-fatal")) {
-                    V3Error::warnFatal(false);
                 }
                 else {
                     string msg = sw+strlen("-Wno-");
@@ -1437,6 +1440,7 @@ V3Options::V3Options() {
     m_bboxUnsup = false;
     m_cdc = false;
     m_cmake = false;
+    m_context = true;
     m_coverageLine = false;
     m_coverageToggle = false;
     m_coverageUnderscore = false;

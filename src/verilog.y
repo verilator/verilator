@@ -227,7 +227,7 @@ static void ERRSVKWD(FileLine* fileline, const string& tokname) {
 static void UNSUPREAL(FileLine* fileline) {
     fileline->v3warn(SHORTREAL, "Unsupported: shortreal being promoted to real (suggest use real instead)");
 }
-							  
+
 //======================================================================
 
 class AstSenTree;

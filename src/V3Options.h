@@ -142,6 +142,7 @@ class V3Options {
     bool        m_bboxUnsup;    // main switch: --bbox-unsup
     bool        m_cdc;          // main switch: --cdc
     bool        m_cmake;        // main switch: --make cmake
+    bool        m_context;      // main switch: --Wcontext
     bool        m_coverageLine; // main switch: --coverage-block
     bool        m_coverageToggle;// main switch: --coverage-toggle
     bool        m_coverageUnderscore;// main switch: --coverage-underscore
@@ -320,6 +321,7 @@ class V3Options {
     bool bboxUnsup() const { return m_bboxUnsup; }
     bool cdc() const { return m_cdc; }
     bool cmake() const { return m_cmake; }
+    bool context() const { return m_context; }
     bool coverage() const { return m_coverageLine || m_coverageToggle || m_coverageUser; }
     bool coverageLine() const { return m_coverageLine; }
     bool coverageToggle() const { return m_coverageToggle; }

@@ -398,6 +398,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
      -Werror-<message>          Convert warnings to errors
      -Wfuture-<message>         Disable unknown message warnings
      -Wno-<message>             Disable warning
+     -Wno-context               Disable source context on warnings
      -Wno-fatal                 Disable fatal exit on warnings
      -Wno-lint                  Disable all lint warnings
      -Wno-style                 Disable all style warnings
@@ -1531,6 +1532,13 @@ supports which the older version does not support.
 Disable the specified warning message, or in some cases where noted here
 disable an error.  This will override any lint_on directives in the source,
 i.e. the warning will still not be printed.
+
+=item -Wno-context
+
+Disable showing the suspected context of the warning message by quoting the
+source text at the suspected location.  This is used to appease tools which
+process the error messages may get confused by lines from the original
+source.
 
 =item -Wno-fatal
 
