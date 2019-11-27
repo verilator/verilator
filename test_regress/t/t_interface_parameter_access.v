@@ -41,10 +41,15 @@ module t (/*AUTOARG*/
                       );
 
    localparam THE_TOP_FOO = the_interface.FOO;
+   localparam THE_TOP_FOO_BITS = $bits({the_interface.FOO, the_interface.FOO});
 
    initial begin
       if (THE_TOP_FOO != 5) begin
          $display("%%Error: THE_TOP_FOO = %0d", THE_TOP_FOO);
+	 $stop;
+      end
+      if (THE_TOP_FOO_BITS != 64) begin
+         $display("%%Error: THE_TOP_FOO_BITS = %0d", THE_TOP_FOO_BITS);
 	 $stop;
       end
    end

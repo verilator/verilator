@@ -11,8 +11,8 @@
 #include "Vt_enum_public_p3.h"
 #include "Vt_enum_public_p62.h"
 
-int main(int argc, char *argv[]) {
-    Vt_enum_public *topp = new Vt_enum_public;
+int main(int argc, char* argv[]) {
+    Vt_enum_public* topp = new Vt_enum_public;
 
     Verilated::debug(0);
 

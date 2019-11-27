@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: verilator_coverage: main()
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
@@ -73,7 +73,7 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
     for (int i=0; i<argc; )  {
         UINFO(9, " Option: "<<argv[i]<<endl);
         if (argv[i][0]=='-') {
-            const char *sw = argv[i];
+            const char* sw = argv[i];
             bool flag = true;
             // Allow gnu -- switches
             if (sw[0]=='-' && sw[1]=='-') ++sw;
@@ -139,7 +139,7 @@ void VlcOptions::showVersion(bool verbose) {
     cout << "License Version 2.0.\n";
 
     cout <<endl;
-    cout << "See http://www.veripool.org/verilator for documentation\n";
+    cout << "See https://verilator.org for documentation\n";
 }
 
 //######################################################################

@@ -29,7 +29,10 @@
 # error "Unknown simulator for DPI test"
 #endif
 
-typedef struct { int a; int b; } substruct_t;
+typedef struct {
+    int a;
+    int b;
+} substruct_t;
 
 #ifdef NEED_EXTERNS
 extern "C" {
@@ -157,7 +160,7 @@ void dpii_v_struct(const svBitVecVal* i, svBitVecVal* o) {
 void dpii_v_substruct(const svBitVecVal* i, int* o) {
     // To be most like other tools, this should automagically take the substruct_t
     // as an argument, and not require this cast...
-    substruct_t* issp = (substruct_t*) i;
+    substruct_t* issp = (substruct_t*)i;
     o[0] = issp->b - issp->a;
 }
 void dpii_v_bit64(const svBitVecVal* i, svBitVecVal* o) {
@@ -175,7 +178,7 @@ void dpii_v_bit96(const svBitVecVal* i, svBitVecVal* o) {
     o[2] = ~i[2];
 }
 
-int  dpii_f_strlen(const char* i) { return strlen(i); }
+int dpii_f_strlen(const char* i) { return strlen(i); }
 
 //======================================================================
 
@@ -184,18 +187,14 @@ void dpii_f_void() {}
 #ifdef VCS
 void dpii_t_void() {}
 void dpii_t_void_context() {}
-void dpii_t_int(int i, int *o) {
-    *o = i;
-}
+void dpii_t_int(int i, int* o) { *o = i; }
 #else
 int dpii_t_void() { return svIsDisabledState(); }
 int dpii_t_void_context() { return svIsDisabledState(); }
-int dpii_t_int(int i, int *o) {
+int dpii_t_int(int i, int* o) {
     *o = i;
     return svIsDisabledState();  // Tasks generally need this
 }
 #endif
 
-int dpii_fa_bit(int i) {
-    return ~i;
-}
+int dpii_fa_bit(int i) { return ~i; }

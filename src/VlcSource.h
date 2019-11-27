@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: verilator_coverage: Source file to annotate with line coverage
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
@@ -35,7 +35,7 @@ private:
     // MEMBERS
     int m_lineno;  ///< Line number
     int m_column;  ///< Column number
-    vluint64_t  m_count;  ///< Count
+    vluint64_t m_count;  ///< Count
     bool m_ok;  ///< Coverage is above threshold
 
 public:
@@ -67,8 +67,8 @@ public:
 class VlcSource {
 public:
     // TYPES
-    typedef std::map<int,VlcSourceCount> ColumnMap;  // Map of {column}
-    typedef std::map<int,ColumnMap> LinenoMap;  // Map of {lineno}{column}
+    typedef std::map<int, VlcSourceCount> ColumnMap;  // Map of {column}
+    typedef std::map<int, ColumnMap> LinenoMap;  // Map of {lineno}{column}
 
 private:
     // MEMBERS
@@ -112,7 +112,8 @@ public:
 class VlcSources {
 public:
     // TYPES
-    typedef std::map<string,VlcSource> NameMap;
+    typedef std::map<string, VlcSource> NameMap;
+
 private:
     // MEMBERS
     NameMap m_sources;  //< List of all sources
@@ -133,8 +134,7 @@ public:
         NameMap::iterator iter = m_sources.find(name);
         if (iter != m_sources.end()) {
             return iter->second;
-        }
-        else {
+        } else {
             iter = m_sources.insert(make_pair(name, VlcSource(name))).first;
             return iter->second;
         }

@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Error handling
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
@@ -228,7 +228,7 @@ void V3Error::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
             if (!inFatal) {
                 inFatal = true;
                 if (s_tellManual==1) {
-                    std::cerr<<warnMore()<<"... See the manual and http://www.veripool.org/verilator for more assistance."<<endl;
+                    std::cerr<<warnMore()<<"... See the manual and https://verilator.org for more assistance."<<endl;
                     s_tellManual = 2;
                 }
 #ifndef _V3ERROR_NO_GLOBAL_

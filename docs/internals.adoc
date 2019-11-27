@@ -9,7 +9,7 @@ image::https://www.veripool.org/img/verilator_256_200_min.png[Logo,256,200,role=
 This file discusses internal and programming details for Verilator.  It's a
 reference for developers and debugging problems.
 
-See also the Verilator internals presentation at http://www.veripool.org.
+See also the Verilator internals presentation at https://www.veripool.org.
 
 == Code Flows
 
@@ -103,7 +103,7 @@ the pass.
 A number of passes use graph algorithms, and the class `V3Graph` is
 provided to represent those graphs. Graphs are directed, and algorithms are
 provided to manipulate the graphs and to output them in
-http://www.graphviz.org[GraphViz] dot format. `V3Graph.h` provides
+https://www.graphviz.org[GraphViz] dot format. `V3Graph.h` provides
 documentation of this class.
 
 ==== `V3GraphVertex`
@@ -744,7 +744,7 @@ into the obj_dir, .tree and .dot files.
 === .dot Output
 
 Dot files are dumps of internal graphs in
-http://www.graphviz.org[Graphviz] dot format.  When a dot file is dumped,
+https://www.graphviz.org[Graphviz] dot format.  When a dot file is dumped,
 Verilator will also print a line on stdout that can be used to format the
 output, for example:
 
@@ -915,6 +915,10 @@ To break at a specific edit number which changed a node (presumably to find
 what made a <e####> line in the tree dumps):
 
    watch AstNode::s_editCntGbl==####
+
+Then, when the watch fires, to break at every following change to that node:
+
+   watch m_editCount
 
 To print a node:
 

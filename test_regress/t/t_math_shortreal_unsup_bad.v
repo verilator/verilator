@@ -1,14 +1,12 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2018 by Wilson Snyder.
+// without warranty, 2016 by Wilson Snyder.
 
 module t (/*AUTOARG*/);
 
-   wire w;
-   reg  r;
+   shortreal s;
 
-   assign r = 1'b1;
-   always @ (r) w = 1'b0;
+   initial s = 1.2345;
 
 endmodule

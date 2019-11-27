@@ -89,7 +89,7 @@ public:
     /// Change character that splits scopes.  Note whitespace are ALWAYS escapes.
     void scopeEscape(char flag) { m_scopeEscape = flag; }
     /// Is this an escape?
-    bool isScopeEscape(char c) { return isspace(c) || c==m_scopeEscape; }
+    bool isScopeEscape(char c) { return isspace(c) || c == m_scopeEscape; }
     /// Inside dumping routines, called each cycle to make the dump
     void dump(vluint64_t timeui);
     /// Inside dumping routines, declare callbacks for tracings

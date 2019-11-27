@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Expansion of wide operator macros to C operators
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

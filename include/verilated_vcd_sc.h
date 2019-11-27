@@ -96,8 +96,8 @@ private:
 # define DECL_TRACE_METHOD_B(tp) \
     virtual void trace(const tp& object, const std::string& name, int width);
 
-    virtual void write_comment(const std::string &);
-    virtual void trace(const unsigned int &, const std::string &, const char **);
+    virtual void write_comment(const std::string&);
+    virtual void trace(const unsigned int&, const std::string&, const char**);
 
 #if (SYSTEMC_VERSION>=20171012)
     DECL_TRACE_METHOD_A( sc_event )
@@ -145,8 +145,8 @@ private:
 # define DECL_TRACE_METHOD_B(tp) \
     virtual void trace(const tp& object, const sc_string& name, int width);
 
-    virtual void write_comment(const sc_string &);
-    virtual void trace(const unsigned int &, const sc_string &, const char **);
+    virtual void write_comment(const sc_string&);
+    virtual void trace(const unsigned int&, const sc_string&, const char**);
     virtual void delta_cycles(bool) {}
     virtual void space(int n) {}
 
@@ -189,8 +189,8 @@ private:
 # define DECL_TRACE_METHOD_B(tp) \
     virtual void trace(const tp& object, const sc_string& name, int width);
 
-    virtual void write_comment(const sc_string &);
-    virtual void trace(const unsigned int &, const sc_string &, const char **);
+    virtual void write_comment(const sc_string&);
+    virtual void trace(const unsigned int&, const sc_string&, const char**);
 
     DECL_TRACE_METHOD_A( bool )
     DECL_TRACE_METHOD_B( unsigned char )

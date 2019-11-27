@@ -90,6 +90,10 @@ module t;
 	 if ($fgetc(file) != "i") $stop;
 	 if ($fgetc(file) != "\n") $stop;
 
+	 // $ungetc
+	 if ($ungetc("x", file) != 0) $stop;
+	 if ($fgetc(file) != "x") $stop;
+
 	 // $fgets
 	 chars = $fgets(letterl, file);
 	 if (`verbose) $write("c=%0d l=%s\n", chars, letterl);
@@ -247,6 +251,9 @@ module t;
 	if ($fseek(file, 0, 2) != 0) $stop;
 	v_off = $ftell(file);
 	if (v_off < v_length) $stop;
+	if ($rewind(file) != 0) $stop;
+	v_off = $ftell(file);
+	if (v_off != 0) $stop;
 
 	 $fclose(file);
       end

@@ -1,6 +1,7 @@
 // Test that environment substitutions work
 -f $VERILATOR_ROOT/test_regress/t/t_flag_f__2.vc
 // Env var with .v file, and parens
-${VERILATOR_ROOT}/test_regress/t/t_flag_f__3.v
+// Double slash below is intentional, as allowed in other tools
+${VERILATOR_ROOT}/test_regress/t//t_flag_f__3.v
 // Test -f
 -F $VERILATOR_ROOT/test_regress/t/tsub/t_flag_f_tsub.vc

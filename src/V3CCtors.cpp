@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Generate C language constructors and AstCReset nodes.
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

@@ -19,7 +19,7 @@ endmodule
 
 module flop_gated_latch(q,d,clk,en);
   input d, clk, en;
-  output q;
+  output reg q;
   wire gated_clock;
   clock_gate_latch clock_gate(gated_clock, clk, en);
   always @(posedge gated_clock) begin
@@ -29,7 +29,7 @@ endmodule
 
 module flop_gated_flop(q,d,clk,en);
   input d, clk, en;
-  output q;
+  output reg q;
   wire gated_clock;
   clock_gate_flop clock_gate(gated_clock, clk, en);
   always @(posedge gated_clock) begin

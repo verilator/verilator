@@ -19,7 +19,7 @@
 ///     This file must be compiled and linked against all objects
 ///     created from Verilator.
 ///
-/// Code available from: http://www.veripool.org/verilator
+/// Code available from: https://verilator.org
 ///
 //=========================================================================
 
@@ -71,6 +71,8 @@ VerilatedImp VerilatedImp::s_s;
 
 //===========================================================================
 // User definable functions
+// Note a TODO is a future version of the API will pass a structure so that
+// the calling arguments allow for extension
 
 #ifndef VL_USER_FINISH  ///< Define this to override this function
 void vl_finish(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
@@ -109,6 +111,18 @@ void vl_fatal(const char* filename, int linenum, const char* hier, const char* m
 }
 #endif
 
+#ifndef VL_USER_STOP_MAYBE  ///< Define this to override this function
+void vl_stop_maybe(const char* filename, int linenum, const char* hier, bool maybe) VL_MT_UNSAFE {
+    Verilated::errorCountInc();
+    if (maybe && Verilated::errorCount() < Verilated::errorLimit()) {
+        VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
+            "-Info: %s:%d: %s\n", filename, linenum, "Verilog $stop, ignored due to +verilator+error+limit");
+    } else {
+        vl_stop(filename, linenum, hier);
+    }
+}
+#endif
+
 //===========================================================================
 // Wrapper to call certain functions via messages when multithreaded
 
@@ -122,13 +136,13 @@ void VL_FINISH_MT(const char* filename, int linenum, const char* hier) VL_MT_SAF
 #endif
 }
 
-void VL_STOP_MT(const char* filename, int linenum, const char* hier) VL_MT_SAFE {
+void VL_STOP_MT(const char* filename, int linenum, const char* hier, bool maybe) VL_MT_SAFE {
 #ifdef VL_THREADED
     VerilatedThreadMsgQueue::post(VerilatedMsg([=](){
-                vl_stop(filename, linenum, hier);
+                vl_stop_maybe(filename, linenum, hier, maybe);
             }));
 #else
-    vl_stop(filename, linenum, hier);
+    vl_stop_maybe(filename, linenum, hier, maybe);
 #endif
 }
 
@@ -215,13 +229,15 @@ void VL_PRINTF_MT(const char* formatp, ...) VL_MT_SAFE {
 // Overall class init
 
 Verilated::Serialized::Serialized() {
-    s_randReset = 0;
-    s_randSeed = 0;
     s_debug = 0;
     s_calcUnusedSigs = false;
     s_gotFinish = false;
     s_assertOn = true;
     s_fatalOnVpiError = true;  // retains old default behaviour
+    s_errorCount = 0;
+    s_errorLimit = 1;
+    s_randReset = 0;
+    s_randSeed = 0;
 }
 
 Verilated::NonSerialized::NonSerialized() {
@@ -607,7 +623,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
             width = 0;
         } else if (!inPct) {  // Normal text
             // Fast-forward to next escape and add to output
-            const char *ep = pos;
+            const char* ep = pos;
             while (ep[0] && ep[0]!='%') ep++;
             if (ep != pos) {
                 output.append(pos, ep-pos);
@@ -1755,7 +1771,22 @@ const char* vl_mc_scan_plusargs(const char* prefixp) VL_MT_SAFE {
 }
 
 //===========================================================================
-// Heavy functions
+// Heavy string functions
+
+std::string VL_TOLOWER_NN(const std::string& ld) VL_MT_SAFE {
+    std::string out = ld;
+    for (std::string::iterator it = out.begin(); it != out.end(); ++it) {
+        *it = tolower(*it);
+    }
+    return out;
+}
+std::string VL_TOUPPER_NN(const std::string& ld) VL_MT_SAFE {
+    std::string out = ld;
+    for (std::string::iterator it = out.begin(); it != out.end(); ++it) {
+        *it = toupper(*it);
+    }
+    return out;
+}
 
 std::string VL_CVT_PACK_STR_NW(int lwords, WDataInP lwp) VL_MT_SAFE {
     // See also _VL_VINT_TO_STRING
@@ -1800,7 +1831,8 @@ void Verilated::debug(int level) VL_MT_SAFE {
                                 " Message prefix indicates {<thread>,<sequence_number>}.\n"););
 #else
         VL_PRINTF_MT("- Verilated::debug attempted,"
-                     " but compiled without VL_DEBUG, so messages suppressed.\n");
+                     " but compiled without VL_DEBUG, so messages suppressed.\n"
+                     "- Suggest remake using 'make ... CPPFLAGS=-DVL_DEBUG'\n");
 #endif
     }
 }
@@ -1815,6 +1847,18 @@ void Verilated::randSeed(int val) VL_MT_SAFE {
 void Verilated::calcUnusedSigs(bool flag) VL_MT_SAFE {
     VerilatedLockGuard lock(m_mutex);
     s_s.s_calcUnusedSigs = flag;
+}
+void Verilated::errorCount(int val) VL_MT_SAFE {
+    VerilatedLockGuard lock(m_mutex);
+    s_s.s_errorCount = val;
+}
+void Verilated::errorCountInc() VL_MT_SAFE {
+    VerilatedLockGuard lock(m_mutex);
+    ++s_s.s_errorCount;
+}
+void Verilated::errorLimit(int val) VL_MT_SAFE {
+    VerilatedLockGuard lock(m_mutex);
+    s_s.s_errorLimit = val;
 }
 void Verilated::gotFinish(bool flag) VL_MT_SAFE {
     VerilatedLockGuard lock(m_mutex);
@@ -2004,6 +2048,9 @@ void VerilatedImp::commandArgVl(const std::string& arg) {
         }
         else if (commandArgVlValue(arg, "+verilator+debugi+", value/*ref*/)) {
             Verilated::debug(atoi(value.c_str()));
+        }
+        else if (commandArgVlValue(arg, "+verilator+error+limit+", value/*ref*/)) {
+            Verilated::errorLimit(atoi(value.c_str()));
         }
         else if (arg == "+verilator+help") {
             versionDump();

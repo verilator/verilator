@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Hash AST trees to find duplicates
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

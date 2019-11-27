@@ -20,13 +20,25 @@
 class TestVpiHandle {
     /// For testing, etc, wrap vpiHandle in an auto-releasing class
     vpiHandle m_handle;
-    bool      m_free;
+    bool m_free;
+
 public:
-    TestVpiHandle() : m_handle(NULL), m_free(true) { }
-    TestVpiHandle(vpiHandle h) : m_handle(h), m_free(true) { }
-    ~TestVpiHandle() { if (m_handle && m_free) { vpi_free_object(m_handle); m_handle=NULL; } }
+    TestVpiHandle()
+        : m_handle(NULL)
+        , m_free(true) {}
+    TestVpiHandle(vpiHandle h)
+        : m_handle(h)
+        , m_free(true) {}
+    ~TestVpiHandle() {
+        if (m_handle && m_free) {
+            { vpi_free_object(m_handle); m_handle = NULL; }
+        }
+    }
     operator vpiHandle() const { return m_handle; }
-    inline TestVpiHandle& operator= (vpiHandle h) { m_handle = h; return *this; }
+    inline TestVpiHandle& operator=(vpiHandle h) {
+        m_handle = h;
+        return *this;
+    }
     TestVpiHandle& nofree() {
         m_free = false;
         return *this;

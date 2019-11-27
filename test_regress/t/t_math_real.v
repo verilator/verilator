@@ -16,7 +16,7 @@ module t (/*AUTOARG*/
    integer i;
    reg [63:0] b;
    real  r, r2;
-   integer 	cyc=0;
+   integer      cyc=0;
 
    realtime  uninit;
    initial if (uninit != 0.0) $stop;
@@ -90,54 +90,54 @@ module t (/*AUTOARG*/
 `endif
       cyc <= cyc + 1;
       if (cyc==0) begin
-	 // Setup
+         // Setup
       end
       else if (cyc<90) begin
-	 if ($time != {32'h0, $rtoi($realtime)}) $stop;
-	 if ($itor(cyc) != cyc) $stop;
-	 //Unsup: if ((real `($time)) != $realtime) $stop;
-	 r = $itor(cyc*2);
-	 i = $rtoi(r);
-	 if (i!=cyc*2) $stop;
-	 //
-	 r = $itor(cyc)/1.5;
-	 b = $realtobits(r);
-	 r2 = $bitstoreal(b);
-	 if (r != r2) $stop;
-	 //
-	 // Trust the integer math as a comparison
-	 r = $itor(cyc);
-	 if ($rtoi(-r) != -cyc) $stop;
-	 if ($rtoi(+r) != cyc) $stop;
-	 if ($rtoi(r+2.0) != (cyc+2)) $stop;
-	 if ($rtoi(r-2.0) != (cyc-2)) $stop;
-	 if ($rtoi(r*2.0) != (cyc*2)) $stop;
-	 if ($rtoi(r/2.0) != (cyc/2)) $stop;
-	 r2 = (2.0/(r-60));  // When zero, result indeterminate, but no crash
-	 //
-	 r2 = $itor(cyc);
-	 case (r)
-	   (r2-1.0): $stop;
-	   r2: ;
-	   default: $stop;
-	 endcase
-	 //
-	 r = $itor(cyc);
-	 if ((r==50.0) != (cyc==50)) $stop;
-	 if ((r!=50.0) != (cyc!=50)) $stop;
-	 if ((r> 50.0) != (cyc> 50)) $stop;
-	 if ((r>=50.0) != (cyc>=50)) $stop;
-	 if ((r< 50.0) != (cyc< 50)) $stop;
-	 if ((r<=50.0) != (cyc<=50)) $stop;
-	 //
-	 if ($rtoi((r-50.0) ? 10.0 : 20.0)
-	     !=  (((cyc-50)!=0) ? 10 : 20)) $stop;
-	 //
-	 if ((!(r-50.0)) != (!((cyc-50) != 0))) $stop;
+         if ($time != {32'h0, $rtoi($realtime)}) $stop;
+         if ($itor(cyc) != cyc) $stop;
+         //Unsup: if ((real `($time)) != $realtime) $stop;
+         r = $itor(cyc*2);
+         i = $rtoi(r);
+         if (i!=cyc*2) $stop;
+         //
+         r = $itor(cyc)/1.5;
+         b = $realtobits(r);
+         r2 = $bitstoreal(b);
+         if (r != r2) $stop;
+         //
+         // Trust the integer math as a comparison
+         r = $itor(cyc);
+         if ($rtoi(-r) != -cyc) $stop;
+         if ($rtoi(+r) != cyc) $stop;
+         if ($rtoi(r+2.0) != (cyc+2)) $stop;
+         if ($rtoi(r-2.0) != (cyc-2)) $stop;
+         if ($rtoi(r*2.0) != (cyc*2)) $stop;
+         if ($rtoi(r/2.0) != (cyc/2)) $stop;
+         r2 = (2.0/(r-60));  // When zero, result indeterminate, but no crash
+         //
+         r2 = $itor(cyc);
+         case (r)
+           (r2-1.0): $stop;
+           r2: ;
+           default: $stop;
+         endcase
+         //
+         r = $itor(cyc);
+         if ((r==50.0) != (cyc==50)) $stop;
+         if ((r!=50.0) != (cyc!=50)) $stop;
+         if ((r> 50.0) != (cyc> 50)) $stop;
+         if ((r>=50.0) != (cyc>=50)) $stop;
+         if ((r< 50.0) != (cyc< 50)) $stop;
+         if ((r<=50.0) != (cyc<=50)) $stop;
+         //
+         if ($rtoi((r-50.0) ? 10.0 : 20.0)
+             !=  (((cyc-50)!=0) ? 10 : 20)) $stop;
+         //
+         if ((!(r-50.0)) != (!((cyc-50) != 0))) $stop;
       end
       else if (cyc==99) begin
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 endmodule

@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Node attributes/ expression widths
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

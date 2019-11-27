@@ -2,7 +2,34 @@ Revision history for Verilator
 
 The contributors that suggested a given feature are shown in []. Thanks!
 
-* Verilator 4.021 devel
+* Verilator 4.023 devel
+
+***   Add +verilator+error+limit to see more assertion errors. [Peter Monsson]
+
+***   Support string.toupper and string.tolower.
+
+***   Support $rewind and $ungetc.
+
+***   Support shortreal as real, with a SHORTREAL warning.
+
+****  Add -Wpedantic and -Wno-context for compliance testing.
+
+****  Add error on redefining preprocessor directives. [Piotr Binkowski]
+
+****  Fix color assertion on empty if, bug1604. [Andrew Holme]
+
+****  Fix for loop missing initializer, bug1605. [Andrew Holme]
+
+****  Fix hang on concat error, bug1608. [Bogdan Vukobratovic]
+
+****  Fix VPI timed callbacks to be one-shot, pull5. [Matthew Ballance]
+
+****  Fix // in filenames, bug1610. [Peter Nelson]
+
+****  Fix $display("%p") to be closer to IEEE.
+
+
+* Verilator 4.022 2019-11-10
 
 **    Add --protect-lib, bug1490. [Todd Strader]
 
@@ -20,14 +47,22 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Suppress 'command failed' on normal errors.
 
+***   Support some unpacked arrays in parameters, bug1315. [Marshal Qiao]
+
+***   Add interface port visibility in traces, bug1594. [Todd Strader]
+
 ****  Increase case duplicate/incomplete to 16 bit tables, bug1545. [Yossi Nivin]
 
 ****  Support quoted arguments in -f files, bug1535. [Yves Mathieu]
 
+****  Optimize modulus by power-of-two constants, and masked conditionals.
+
+****  Fix detecting missing reg types, bug1570. [Jacko Dirks]
+
 ****  Fix multithreaded yield behavior when no work.  [Patrick Stewart]
 
 ****  Fix bad-syntax crashes, bug1548, bug1550-1553, bug1557-1560, bug1563,
-      bug1573-1577. [Eric Rippey]
+      bug1573-1577, bug1579, bug1582-1591. [Eric Rippey]
 
 ****  Fix false CMPCONST/UNSIGNED warnings on "inside", bug1581. [Mitch Hayenga]
 

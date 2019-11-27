@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Constant folding
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
@@ -95,6 +95,7 @@ private:
     // ** must track down everywhere V3Const is called and make sure no overlaps.
     // AstVar::user4p           -> Used by ConstVarMarkVisitor/ConstVarFindVisitor
     // AstJumpLabel::user4      -> bool.  Set when AstJumpGo uses this label
+    // AstEnum::user4           -> bool.  Recursing.
 
     // STATE
     bool        m_params;       // If true, propagate parameterized and true numbers only
@@ -215,6 +216,31 @@ private:
         // Replace whichever branch is now dangling
         if (nodep->rhsp()) nodep->lhsp(cp);
         else nodep->rhsp(cp);
+        return true;
+    }
+    bool matchAndCond(AstAnd* nodep) {
+        // Push down a AND into conditional, when one side of conditional is constant
+        // (otherwise we'd be trading one operation for two operations)
+        // V3Clean often makes this pattern, as it postpones the AND until
+        // as high as possible, which is usally the right choice, except for this.
+        AstNodeCond* condp = VN_CAST(nodep->rhsp(), NodeCond);
+        if (!condp) return false;
+        if (!VN_IS(condp->expr1p(), Const) && !VN_IS(condp->expr2p(), Const)) return false;
+        AstConst* maskp = VN_CAST(nodep->lhsp(), Const);
+        if (!maskp) return false;
+        UINFO(4, "AND(CONSTm, CONDcond(c, i, e))->CONDcond(c, AND(m,i), AND(m, e)) "<<nodep<<endl);
+        AstNodeCond* newp = static_cast<AstNodeCond*>(
+            condp->cloneType(condp->condp()->unlinkFrBack(),
+                             new AstAnd(nodep->fileline(),
+                                        maskp->cloneTree(false),
+                                        condp->expr1p()->unlinkFrBack()),
+                             new AstAnd(nodep->fileline(),
+                                        maskp->cloneTree(false),
+                                        condp->expr2p()->unlinkFrBack())));
+        newp->dtypeFrom(nodep);
+        newp->expr1p()->dtypeFrom(nodep);  // As And might have been to change widths
+        newp->expr2p()->dtypeFrom(nodep);
+        nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
         return true;
     }
     static bool operandShiftSame(const AstNode* nodep) {
@@ -879,6 +905,17 @@ private:
         newp->dtypeFrom(nodep);
         nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
     }
+    void replaceModAnd(AstModDiv* nodep) {  // Mod, but not ModS as not simple shift
+        UINFO(5,"MOD(b,2^n)->AND(b,2^n-1) "<<nodep<<endl);
+        int amount = VN_CAST(nodep->rhsp(), Const)->num().mostSetBitP1()-1;  // 2^n->n+1
+        V3Number mask(nodep, nodep->width());
+        mask.setMask(amount);
+        AstNode* opp = nodep->lhsp()->unlinkFrBack();
+        AstAnd* newp = new AstAnd(nodep->fileline(),
+                                  opp, new AstConst(nodep->fileline(), mask));
+        newp->dtypeFrom(nodep);
+        nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+    }
     void replaceShiftOp(AstNodeBiop* nodep) {
         UINFO(5,"SHIFT(AND(a,b),CONST)->AND(SHIFT(a,CONST),SHIFT(b,CONST)) "<<nodep<<endl);
         AstNRelinker handle;
@@ -1232,10 +1269,14 @@ private:
             replaceZero(nodep); VL_DANGLING(nodep);
         } else {
             // Fetch the result
-            V3Number* outnump = simvis.fetchNumberNull(nodep);
-            UASSERT_OBJ(outnump, nodep, "No number returned from simulation");
+            AstNode* valuep = simvis.fetchValueNull(nodep);  // valuep is owned by Simulate
+            UASSERT_OBJ(valuep, nodep, "No value returned from simulation");
             // Replace it
-            replaceNum(nodep,*outnump); VL_DANGLING(nodep);
+            AstNode* newp = valuep->cloneTree(false);
+            newp->dtypeFrom(nodep);
+            newp->fileline(nodep->fileline());
+            UINFO(4, "Simulate->"<<newp<<endl);
+            nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
         }
     }
 
@@ -1588,19 +1629,7 @@ private:
                 else if (m_selp && VN_IS(valuep, InitArray)) {
                     AstInitArray* initarp = VN_CAST(valuep, InitArray);
                     uint32_t bit = m_selp->bitConst();
-                    int pos = 0;
-                    AstNode* itemp = initarp->initsp();
-                    for (; itemp; ++pos, itemp=itemp->nextp()) {
-                        uint32_t index = initarp->posIndex(pos);
-                        if (index == bit) break;
-                        if (index > bit) {
-                            if (initarp->defaultp()) {
-                                itemp = initarp->defaultp();
-                            } else {
-                                initarp->v3fatalSrc("Not enough values in array initialization");
-                            }
-                        }
-                    }
+                    AstNode* itemp = initarp->getIndexDefaultedValuep(bit);
                     if (VN_IS(itemp, Const)) {
                         const V3Number& num = VN_CAST(itemp, Const)->num();
                         //UINFO(2,"constVisit "<<cvtToHex(valuep)<<" "<<num<<endl);
@@ -1630,7 +1659,13 @@ private:
         bool did = false;
         if (nodep->itemp()->valuep()) {
             //if (debug()) nodep->itemp()->valuep()->dumpTree(cout, "  visitvaref: ");
-            iterateAndNextNull(nodep->itemp()->valuep());
+            if (nodep->itemp()->user4()) {
+                nodep->v3error("Recursive enum value: "<<nodep->itemp()->prettyNameQ());
+            } else {
+                nodep->itemp()->user4(true);
+                iterateAndNextNull(nodep->itemp()->valuep());
+                nodep->itemp()->user4(false);
+            }
             if (AstConst* valuep = VN_CAST(nodep->itemp()->valuep(), Const)) {
                 const V3Number& num = valuep->num();
                 replaceNum(nodep, num); VL_DANGLING(nodep);
@@ -2115,7 +2150,9 @@ private:
         }
     }
     virtual void visit(AstInitArray* nodep) {
-        // Constant if all children are constant
+        iterateChildren(nodep);
+    }
+    virtual void visit(AstInitItem* nodep) {
         iterateChildren(nodep);
     }
     // These are converted by V3Param.  Don't constify as we don't want the
@@ -2256,6 +2293,7 @@ private:
     TREEOP ("AstDivS  {$lhsp, $rhsp.isOne}",    "replaceWLhs(nodep)");
     TREEOP ("AstMul   {operandIsPowTwo($lhsp), $rhsp}", "replaceMulShift(nodep)");  // a*2^n -> a<<n
     TREEOP ("AstDiv   {$lhsp, operandIsPowTwo($rhsp)}", "replaceDivShift(nodep)");  // a/2^n -> a>>n
+    TREEOP ("AstModDiv{$lhsp, operandIsPowTwo($rhsp)}", "replaceModAnd(nodep)");  // a % 2^n -> a&(2^n-1)
     TREEOP ("AstPow   {operandIsTwo($lhsp), $rhsp}",    "replacePowShift(nodep)");  // 2**a == 1<<a
     TREEOP ("AstSub   {$lhsp.castAdd, operandSubAdd(nodep)}", "AstAdd{AstSub{$lhsp->castAdd()->lhsp(),$rhsp}, $lhsp->castAdd()->rhsp()}");  // ((a+x)-y) -> (a+(x-y))
     // Trinary ops
@@ -2429,6 +2467,7 @@ private:
     TREEOPV("AstConcat{$lhsp.castSel, $rhsp.castSel, ifAdjacentSel(VN_CAST($lhsp,,Sel),,VN_CAST($rhsp,,Sel))}",  "replaceConcatSel(nodep)");
     TREEOPV("AstConcat{ifConcatMergeableBiop($lhsp), concatMergeable($lhsp,,$rhsp)}", "replaceConcatMerge(nodep)");
     // Common two-level operations that can be simplified
+    TREEOP ("AstAnd {$lhsp.castConst,matchAndCond(nodep)}",           "DONE");
     TREEOP ("AstAnd {$lhsp.castOr, $rhsp.castOr, operandAndOrSame(nodep)}",     "replaceAndOr(nodep)");
     TREEOP ("AstOr  {$lhsp.castAnd,$rhsp.castAnd,operandAndOrSame(nodep)}",     "replaceAndOr(nodep)");
     TREEOP ("AstOr  {matchOrAndNot(nodep)}",            "DONE");

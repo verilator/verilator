@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Add temporaries, such as for unroll nodes
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
@@ -277,7 +277,7 @@ private:
         if (initp) {
             initp->unlinkFrBack();  // Always a single statement; nextp() may be nodep
             // Don't add to list, we do it once, and setting loop index isn't
-            // needed as we're constant propagating it
+            // needed if we have > 1 loop, as we're constant propagating it
         }
         if (precondsp) {
             precondsp->unlinkFrBackWithNext();
@@ -351,6 +351,10 @@ private:
                     loopValue.opAssign(newLoopValue);
                 }
             }
+        }
+        if (!newbodysp) {  // initp might have effects after the loop
+            newbodysp = initp;  // Maybe NULL
+            initp = NULL;
         }
         // Replace the FOR()
         if (newbodysp) nodep->replaceWith(newbodysp);

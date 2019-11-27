@@ -3,7 +3,7 @@
 #
 # This file is part of Verilator.
 #
-# Code available from: http://www.veripool.org/verilator
+# Code available from: https://verilator.org
 #
 #*****************************************************************************
 #
@@ -23,6 +23,7 @@
 
 #### Start of system configuration section. ####
 
+ASCIIDOCTOR = asciidoctor
 DOXYGEN = doxygen
 
 #### End of system configuration section. ####
@@ -33,6 +34,9 @@ DOXYGEN = doxygen
 default:
 	@echo "error: make not supported here, run 'make docs' from Verilator top-level"
 
+%.html: %.adoc
+	$(ASCIIDOCTOR) $< -n -o $@
+
 clean mostlyclean distclean maintainer-clean::
 	rm -f $(SCRIPTS) *.tmp
 	rm -f *.aux *.cp *.cps *.dvi *.fn *.fns *.ky *.kys *.log
@@ -41,7 +45,7 @@ clean mostlyclean distclean maintainer-clean::
 	rm -f *.tex
 
 distclean maintainer-clean::
-	rm -f *.info* *.1 $(INFOS)
+	rm -f *.info* *.1 *.html *.pdf $(INFOS)
 	rm -f Makefile
 
 .PHONY: doxygen

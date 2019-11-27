@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Expression width calculations
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
@@ -440,6 +440,18 @@ private:
                 nodeForUnsizedWarning(nodep)
                     ->v3warn(WIDTHCONCAT, "Unsized numbers/parameters not allowed in concatenations.");
             }
+        }
+    }
+    virtual void visit(AstToLowerN* nodep) {
+        if (m_vup->prelim()) {
+            iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
+            nodep->dtypeSetString();
+        }
+    }
+    virtual void visit(AstToUpperN* nodep) {
+        if (m_vup->prelim()) {
+            iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
+            nodep->dtypeSetString();
         }
     }
     virtual void visit(AstReplicate* nodep) {
@@ -952,6 +964,7 @@ private:
         AstAttrOf* oldAttr = m_attrp;
         m_attrp = nodep;
         userIterateAndNext(nodep->fromp(), WidthVP(SELF, BOTH).p());
+        if (nodep->dimp()) userIterateAndNext(nodep->dimp(), WidthVP(SELF, BOTH).p());
         // Don't iterate children, don't want to lose VarRef.
         switch (nodep->attrType()) {
         case AstAttrType::VAR_BASE:
@@ -981,9 +994,13 @@ private:
                         "Unsized expression");
             std::pair<uint32_t,uint32_t> dim
                 = nodep->fromp()->dtypep()->skipRefp()->dimensions(true);
-            uint32_t msbdim = dim.first+dim.second;
-            if (!nodep->dimp() || VN_IS(nodep->dimp(), Const) || msbdim<1) {
-                int dim = !nodep->dimp() ? 1 : VN_CAST(nodep->dimp(), Const)->toSInt();
+            uint32_t msbdim = dim.first + dim.second;
+            if (!nodep->dimp() || msbdim < 1) {
+                int dim = 1;
+                AstConst* newp = dimensionValue(nodep->fromp()->dtypep(), nodep->attrType(), dim);
+                nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+            } else if (VN_IS(nodep->dimp(), Const)) {
+                int dim = VN_CAST(nodep->dimp(), Const)->toSInt();
                 AstConst* newp = dimensionValue(nodep->fromp()->dtypep(), nodep->attrType(), dim);
                 nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
             }
@@ -1433,6 +1450,9 @@ private:
         }
         nodep->dtypeFrom(nodep->itemp());
     }
+    virtual void visit(AstInitItem* nodep) {
+        userIterateChildren(nodep, m_vup);
+    }
     virtual void visit(AstInitArray* nodep) {
         // InitArray has type of the array; children are array values
         if (m_vup->prelim()) {  // First stage evaluation
@@ -1557,6 +1577,7 @@ private:
         userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
         if (debug()>=9) nodep->dumpTree("-mbs-ic: ");
         // Find the fromp dtype - should be a class
+        if (!nodep->fromp()->dtypep()) nodep->fromp()->v3fatalSrc("Unlinked data type");
         AstNodeDType* fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
         UINFO(9,"     from dt "<<fromDtp<<endl);
         AstMemberDType* memberp = NULL;  // NULL=error below
@@ -1567,11 +1588,12 @@ private:
                 nodep->v3error("Member "<<nodep->prettyNameQ()<<" not found in structure");
             }
         }
-        else if (VN_IS(fromDtp, EnumDType)) {
+        else if (VN_IS(fromDtp, EnumDType)
+                 || VN_IS(fromDtp, BasicDType)) {
             // Method call on enum without following parenthesis, e.g. "ENUM.next"
             // Convert this into a method call, and let that visitor figure out what to do next
-            AstNode* newp = new AstMethodSel(nodep->fileline(),
-                                             nodep->fromp()->unlinkFrBack(), nodep->name(), NULL);
+            AstNode* newp = new AstMethodCall(nodep->fileline(),
+                                              nodep->fromp()->unlinkFrBack(), nodep->name(), NULL);
             nodep->replaceWith(newp);
             pushDeletep(nodep); VL_DANGLING(nodep);
             userIterate(newp, m_vup);
@@ -1607,7 +1629,7 @@ private:
         }
     }
 
-    virtual void visit(AstMethodSel* nodep) {
+    virtual void visit(AstMethodCall* nodep) {
         UINFO(5,"   METHODSEL "<<nodep<<endl);
         if (debug()>=9) nodep->dumpTree("-mts-in: ");
         // Should check types the method requires, but at present we don't do much
@@ -1623,152 +1645,200 @@ private:
         AstBasicDType* basicp = fromDtp ? fromDtp->basicp() : NULL;
         UINFO(9,"     from dt "<<fromDtp<<endl);
         if (AstEnumDType* adtypep = VN_CAST(fromDtp, EnumDType)) {
-            // Method call on enum without following parenthesis, e.g. "ENUM.next"
-            // Convert this into a method call, and let that visitor figure out what to do next
-            if (adtypep) {}
-            if (nodep->name() == "num"
-                || nodep->name() == "first"
-                || nodep->name() == "last") {
-                // Constant value
-                AstConst* newp = NULL;
-                if (nodep->pinsp()) nodep->v3error("Arguments passed to enum.num method, but it does not take arguments");
-                if (nodep->name() == "num") {
-                    int items = 0;
-                    for (AstNode* itemp = adtypep->itemsp(); itemp; itemp = itemp->nextp()) ++items;
-                    newp = new AstConst(nodep->fileline(), AstConst::Signed32(), items);
-                } else if (nodep->name() == "first") {
-                    AstEnumItem* itemp = adtypep->itemsp();
-                    if (!itemp) newp = new AstConst(
-                        nodep->fileline(), AstConst::Signed32(), 0);  // Spec doesn't say what to do
-                    else newp = VN_CAST(itemp->valuep()->cloneTree(false), Const);  // A const
-                } else if (nodep->name() == "last") {
-                    AstEnumItem* itemp = adtypep->itemsp();
-                    while (itemp && itemp->nextp()) itemp = VN_CAST(itemp->nextp(), EnumItem);
-                    if (!itemp) newp = new AstConst(
-                        nodep->fileline(), AstConst::Signed32(), 0);  // Spec doesn't say what to do
-                    else newp = VN_CAST(itemp->valuep()->cloneTree(false), Const);  // A const
-                }
-                UASSERT_OBJ(newp, nodep, "Enum method (perhaps enum item) not const");
-                newp->fileline(nodep->fileline());  // Use method's filename/line number to be clearer; may have warning disables
-                nodep->replaceWith(newp);
-                pushDeletep(nodep); VL_DANGLING(nodep);
-            }
-            else if (nodep->name() == "name"
-                     || nodep->name() == "next"
-                     || nodep->name() == "prev") {
-                AstAttrType attrType;
-                if (nodep->name() == "name") attrType = AstAttrType::ENUM_NAME;
-                else if (nodep->name() == "next") attrType = AstAttrType::ENUM_NEXT;
-                else if (nodep->name() == "prev") attrType = AstAttrType::ENUM_PREV;
-                else nodep->v3fatalSrc("Bad case");
-
-                if (nodep->pinsp() && nodep->name() == "name") {
-                    nodep->v3error("Arguments passed to enum.name method, but it does not take arguments");
-                } else if (nodep->pinsp()
-                           && !(VN_IS(VN_CAST(nodep->pinsp(), Arg)->exprp(), Const)
-                                && VN_CAST(VN_CAST(nodep->pinsp(), Arg)->exprp(), Const)->toUInt()==1
-                                && !nodep->pinsp()->nextp())) {
-                    nodep->v3error("Unsupported: Arguments passed to enum.next method");
-                }
-                // Need a runtime lookup table.  Yuk.
-                // Most enums unless overridden are 32 bits, so we size array
-                // based on max enum value used.
-                // Ideally we would have a fast algorithm when a number is
-                // of small width and complete and so can use an array, and
-                // a map for when the value is many bits and sparse.
-                uint64_t msbdim = 0;
-                {
-                    for (AstEnumItem* itemp = adtypep->itemsp();
-                         itemp; itemp = VN_CAST(itemp->nextp(), EnumItem)) {
-                        const AstConst* vconstp = VN_CAST(itemp->valuep(), Const);
-                        UASSERT_OBJ(vconstp, nodep, "Enum item without constified value");
-                        if (vconstp->toUQuad() >= msbdim) msbdim = vconstp->toUQuad();
-                    }
-                    if (adtypep->itemsp()->width() > 64 || msbdim >= (1<<16)) {
-                        nodep->v3error("Unsupported; enum next/prev method on enum with > 10 bits");
-                        return;
-                    }
-                }
-                int selwidth = V3Number::log2b(msbdim)+1;  // Width to address a bit
-                AstVar* varp = enumVarp(adtypep, attrType, (VL_ULL(1)<<selwidth)-1);
-                AstVarRef* varrefp = new AstVarRef(nodep->fileline(), varp, false);
-                varrefp->packagep(v3Global.rootp()->dollarUnitPkgAddp());
-                AstNode* newp = new AstArraySel(nodep->fileline(), varrefp,
-                                                // Select in case widths are
-                                                // off due to msblen!=width
-                                                new AstSel(nodep->fileline(),
-                                                           nodep->fromp()->unlinkFrBack(),
-                                                           0, selwidth));
-                nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
-            } else {
-                nodep->v3error("Unknown built-in enum method "<<nodep->prettyNameQ());
-            }
+            methodCallEnum(nodep, adtypep);
         }
-        else if (AstUnpackArrayDType* arrayType = VN_CAST(fromDtp, UnpackArrayDType)) {
-            enum {
-                UNKNOWN = 0,
-                ARRAY_OR,
-                ARRAY_AND,
-                ARRAY_XOR
-            } methodId;
-
-            methodId = UNKNOWN;
-            if      (nodep->name() == "or")  methodId = ARRAY_OR;
-            else if (nodep->name() == "and") methodId = ARRAY_AND;
-            else if (nodep->name() == "xor") methodId = ARRAY_XOR;
-
-            if (methodId) {
-                if (nodep->pinsp()) nodep->v3error("Arguments passed to array method, but it does not take arguments");
-
-                FileLine* fl = nodep->fileline();
-                AstNode* newp = NULL;
-                for (int i = 0; i < arrayType->elementsConst(); ++i) {
-                    AstNode* arrayRef = nodep->fromp()->cloneTree(false);
-                    AstNode* selector = new AstArraySel(fl, arrayRef, i);
-                    if (!newp) {
-                        newp = selector;
-                    } else {
-                        switch (methodId) {
-                            case ARRAY_OR: newp = new AstOr(fl, newp, selector); break;
-                            case ARRAY_AND: newp = new AstAnd(fl, newp, selector); break;
-                            case ARRAY_XOR: newp = new AstXor(fl, newp, selector); break;
-                            default: nodep->v3fatalSrc("bad case");
-                        }
-                    }
-                }
-                nodep->replaceWith(newp);
-                nodep->deleteTree(); VL_DANGLING(nodep);
-            }
-            else {
-                nodep->v3error("Unknown built-in array method "<<nodep->prettyNameQ());
-            }
+        else if (AstUnpackArrayDType* adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
+            methodCallUnpack(nodep, adtypep);
         }
         else if (basicp && basicp->isString()) {
-            // Method call on string
-            if (nodep->name() == "len") {
-                // Constant value
-                if (nodep->pinsp()) nodep->v3error("Arguments passed to string.len method, but it does not take arguments");
-                AstNode* newp = new AstLenN(nodep->fileline(), nodep->fromp()->unlinkFrBack());
-                nodep->replaceWith(newp);
-                pushDeletep(nodep); VL_DANGLING(nodep);
-            } else if (nodep->name() == "itoa") {
-                replaceWithSFormat(nodep, "%0d"); VL_DANGLING(nodep);
-            } else if (nodep->name() == "hextoa") {
-                replaceWithSFormat(nodep, "%0x"); VL_DANGLING(nodep);
-            } else if (nodep->name() == "octtoa") {
-                replaceWithSFormat(nodep, "%0o"); VL_DANGLING(nodep);
-            } else if (nodep->name() == "bintoa") {
-                replaceWithSFormat(nodep, "%0b"); VL_DANGLING(nodep);
-            } else if (nodep->name() == "realtoa") {
-                replaceWithSFormat(nodep, "%g"); VL_DANGLING(nodep);
-            } else {
-                nodep->v3error("Unsupported: built-in string method "<<nodep->prettyNameQ());
-            }
+            methodCallString(nodep, basicp);
         }
         else {
             nodep->v3error("Unsupported: Member call on non-enum object '"
                            <<nodep->fromp()->prettyTypeName()
                            <<"' which is a '"<<nodep->fromp()->dtypep()->prettyTypeName()<<"'");
+        }
+    }
+    void methodOkArguments(AstMethodCall* nodep, int minArg, int maxArg) {
+        int narg = 0;
+        for (AstNode* argp = nodep->pinsp(); argp; argp = argp->nextp()) {
+            ++narg;
+            UASSERT_OBJ(VN_IS(argp, Arg), nodep, "Method arg without Arg type");
+        }
+        bool ok = (narg >= minArg) && (narg <= maxArg);
+        if (!ok) {
+            nodep->v3error("The "<<narg<<" arguments passed to ."<<nodep->prettyName()
+                           <<" method does not match its requiring "<<cvtToStr(minArg)
+                           <<(minArg == maxArg ? "" : " to " + cvtToStr(maxArg))
+                           <<" arguments");
+            // Adjust to required argument counts, very bogus, but avoids core dump
+            for (; narg < minArg; ++narg) {
+                nodep->addPinsp(new AstArg(nodep->fileline(), "",
+                                           new AstConst(nodep->fileline(), 0)));
+            }
+            for (; narg > maxArg; --narg) {
+                AstNode* argp = nodep->pinsp();
+                while (argp->nextp()) argp = argp->nextp();
+                argp->unlinkFrBack(); argp->deleteTree(); VL_DANGLING(argp);
+            }
+        }
+    }
+
+    void methodCallEnum(AstMethodCall* nodep, AstEnumDType* adtypep) {
+        // Method call on enum without following parenthesis, e.g. "ENUM.next"
+        // Convert this into a method call, and let that visitor figure out what to do next
+        if (adtypep) {}
+        if (nodep->name() == "num"
+            || nodep->name() == "first"
+            || nodep->name() == "last") {
+            // Constant value
+            AstConst* newp = NULL;
+            methodOkArguments(nodep, 0, 0);
+            if (nodep->name() == "num") {
+                int items = 0;
+                for (AstNode* itemp = adtypep->itemsp(); itemp; itemp = itemp->nextp()) ++items;
+                newp = new AstConst(nodep->fileline(), AstConst::Signed32(), items);
+            } else if (nodep->name() == "first") {
+                AstEnumItem* itemp = adtypep->itemsp();
+                if (!itemp) newp = new AstConst(nodep->fileline(), AstConst::Signed32(),
+                                                0);  // Spec doesn't say what to do
+                else newp = VN_CAST(itemp->valuep()->cloneTree(false), Const);  // A const
+            } else if (nodep->name() == "last") {
+                AstEnumItem* itemp = adtypep->itemsp();
+                while (itemp && itemp->nextp()) itemp = VN_CAST(itemp->nextp(), EnumItem);
+                if (!itemp) newp = new AstConst(nodep->fileline(), AstConst::Signed32(),
+                                                0);  // Spec doesn't say what to do
+                else newp = VN_CAST(itemp->valuep()->cloneTree(false), Const);  // A const
+            }
+            UASSERT_OBJ(newp, nodep, "Enum method (perhaps enum item) not const");
+            newp->fileline(nodep->fileline());  // Use method's filename/line number to be clearer;
+                                                // may have warning disables
+            nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+        } else if (nodep->name() == "name"
+                   || nodep->name() == "next"
+                   || nodep->name() == "prev") {
+            AstAttrType attrType;
+            if (nodep->name() == "name") attrType = AstAttrType::ENUM_NAME;
+            else if (nodep->name() == "next") attrType = AstAttrType::ENUM_NEXT;
+            else if (nodep->name() == "prev") attrType = AstAttrType::ENUM_PREV;
+            else nodep->v3fatalSrc("Bad case");
+
+            if (nodep->name() == "name") {
+                methodOkArguments(nodep, 0, 0);
+            } else if (nodep->pinsp()
+                       && !(VN_IS(VN_CAST(nodep->pinsp(), Arg)->exprp(), Const)
+                            && VN_CAST(VN_CAST(nodep->pinsp(), Arg)->exprp(), Const)->toUInt() == 1
+                            && !nodep->pinsp()->nextp())) {
+                nodep->v3error("Unsupported: Arguments passed to enum.next method");
+            }
+            // Need a runtime lookup table.  Yuk.
+            // Most enums unless overridden are 32 bits, so we size array
+            // based on max enum value used.
+            // Ideally we would have a fast algorithm when a number is
+            // of small width and complete and so can use an array, and
+            // a map for when the value is many bits and sparse.
+            uint64_t msbdim = 0;
+            {
+                for (AstEnumItem* itemp = adtypep->itemsp(); itemp;
+                     itemp = VN_CAST(itemp->nextp(), EnumItem)) {
+                    const AstConst* vconstp = VN_CAST(itemp->valuep(), Const);
+                    UASSERT_OBJ(vconstp, nodep, "Enum item without constified value");
+                    if (vconstp->toUQuad() >= msbdim) msbdim = vconstp->toUQuad();
+                }
+                if (adtypep->itemsp()->width() > 64 || msbdim >= (1 << 16)) {
+                    nodep->v3error("Unsupported; enum next/prev method on enum with > 10 bits");
+                    return;
+                }
+            }
+            int selwidth = V3Number::log2b(msbdim) + 1;  // Width to address a bit
+            AstVar* varp = enumVarp(adtypep, attrType, (VL_ULL(1) << selwidth) - 1);
+            AstVarRef* varrefp = new AstVarRef(nodep->fileline(), varp, false);
+            varrefp->packagep(v3Global.rootp()->dollarUnitPkgAddp());
+            AstNode* newp = new AstArraySel(
+                nodep->fileline(), varrefp,
+                // Select in case widths are
+                // off due to msblen!=width
+                new AstSel(nodep->fileline(), nodep->fromp()->unlinkFrBack(), 0, selwidth));
+            nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+        } else {
+            nodep->v3error("Unknown built-in enum method " << nodep->prettyNameQ());
+        }
+    }
+    void methodCallUnpack(AstMethodCall* nodep, AstUnpackArrayDType* adtypep) {
+        enum { UNKNOWN = 0, ARRAY_OR, ARRAY_AND, ARRAY_XOR } methodId;
+
+        methodId = UNKNOWN;
+        if (nodep->name() == "or") methodId = ARRAY_OR;
+        else if (nodep->name() == "and") methodId = ARRAY_AND;
+        else if (nodep->name() == "xor") methodId = ARRAY_XOR;
+
+        if (methodId) {
+            methodOkArguments(nodep, 0, 0);
+            FileLine* fl = nodep->fileline();
+            AstNode* newp = NULL;
+            for (int i = 0; i < adtypep->elementsConst(); ++i) {
+                AstNode* arrayRef = nodep->fromp()->cloneTree(false);
+                AstNode* selector = new AstArraySel(fl, arrayRef, i);
+                if (!newp) {
+                    newp = selector;
+                } else {
+                    switch (methodId) {
+                    case ARRAY_OR: newp = new AstOr(fl, newp, selector); break;
+                    case ARRAY_AND: newp = new AstAnd(fl, newp, selector); break;
+                    case ARRAY_XOR: newp = new AstXor(fl, newp, selector); break;
+                    default: nodep->v3fatalSrc("bad case");
+                    }
+                }
+            }
+            nodep->replaceWith(newp);
+            nodep->deleteTree(); VL_DANGLING(nodep);
+        } else {
+            nodep->v3error("Unknown built-in array method " << nodep->prettyNameQ());
+        }
+    }
+    void methodCallString(AstMethodCall* nodep, AstBasicDType* adtypep) {
+        // Method call on string
+        if (nodep->name() == "len") {
+            // Constant value
+            methodOkArguments(nodep, 0, 0);
+            AstNode* newp = new AstLenN(nodep->fileline(), nodep->fromp()->unlinkFrBack());
+            nodep->replaceWith(newp);
+            pushDeletep(nodep); VL_DANGLING(nodep);
+        } else if (nodep->name() == "itoa") {
+            methodOkArguments(nodep, 1, 1);
+            replaceWithSFormat(nodep, "%0d"); VL_DANGLING(nodep);
+        } else if (nodep->name() == "hextoa") {
+            methodOkArguments(nodep, 1, 1);
+            replaceWithSFormat(nodep, "%0x"); VL_DANGLING(nodep);
+        } else if (nodep->name() == "octtoa") {
+            methodOkArguments(nodep, 1, 1);
+            replaceWithSFormat(nodep, "%0o"); VL_DANGLING(nodep);
+        } else if (nodep->name() == "bintoa") {
+            methodOkArguments(nodep, 1, 1);
+            replaceWithSFormat(nodep, "%0b"); VL_DANGLING(nodep);
+        } else if (nodep->name() == "realtoa") {
+            methodOkArguments(nodep, 1, 1);
+            replaceWithSFormat(nodep, "%g"); VL_DANGLING(nodep);
+        } else if (nodep->name() == "tolower") {
+            methodOkArguments(nodep, 0, 0);
+            AstNode* newp = new AstToLowerN(nodep->fileline(), nodep->fromp()->unlinkFrBack());
+            nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+        } else if (nodep->name() == "toupper") {
+            methodOkArguments(nodep, 0, 0);
+            AstNode* newp = new AstToUpperN(nodep->fileline(), nodep->fromp()->unlinkFrBack());
+            nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+        } else if (nodep->name() == "atobin"
+                   || nodep->name() == "atohex"
+                   || nodep->name() == "atoi"
+                   || nodep->name() == "atooct"
+                   || nodep->name() == "atoreal"
+                   || nodep->name() == "compare"
+                   || nodep->name() == "icompare"
+                   || nodep->name() == "getc"
+                   || nodep->name() == "putc") {
+            nodep->v3error("Unsupported: built-in string method "<<nodep->prettyNameQ());
+        } else {
+            nodep->v3error("Unknown built-in string method "<<nodep->prettyNameQ());
         }
     }
 
@@ -1780,9 +1850,12 @@ private:
             nodep->dtypep(m_vup->dtypep());
         }
         AstNodeDType* vdtypep = nodep->dtypep();
-        if (!vdtypep) nodep->v3error("Unsupported/Illegal: Assignment pattern"
-                                     " member not underneath a supported construct: "
-                                     <<nodep->backp()->prettyTypeName());
+        if (!vdtypep) {
+            nodep->v3error("Unsupported/Illegal: Assignment pattern"
+                           " member not underneath a supported construct: "
+                           <<nodep->backp()->prettyTypeName());
+            return;
+        }
         {
             vdtypep = vdtypep->skipRefp();
             nodep->dtypep(vdtypep);
@@ -1974,13 +2047,9 @@ private:
                             if (!newp) {
                                 AstInitArray* newap
                                     = new AstInitArray(nodep->fileline(), arrayp, NULL);
-                                newap->addValuep(valuep);
                                 newp = newap;
-                            } else {
-                                // We iterate hi()..lo() as that is what packed needs,
-                                // but INITARRAY needs lo() first
-                                VN_CAST(newp, InitArray)->addFrontValuep(valuep);
                             }
+                            VN_CAST(newp, InitArray)->addIndexValuep(ent - range.lo(), valuep);
                         } else {  // Packed. Convert to concat for now.
                             if (!newp) newp = valuep;
                             else {
@@ -2238,13 +2307,17 @@ private:
                     break;
                 }
                 case 'p': {  // Packed
-                    // Very hacky and non-compliant; print strings as strings, otherwise as hex
-                    if (argp && argp->dtypep()->basicp()->isString()) {  // Convert it
+                    AstBasicDType* basicp = argp ? argp->dtypep()->basicp() : NULL;
+                    if (basicp->isString()) {
                         added = true;
                         newFormat += "\"%@\"";
+                    } else if (basicp->isDouble()) {
+                        added = true;
+                        newFormat += "%g";
                     } else {
                         added = true;
-                        newFormat += "'h%0h";
+                        if (fmt == "%0") newFormat += "'h%0h";  // IEEE our choice
+                        else newFormat += "%d";
                     }
                     if (argp) argp = argp->nextp();
                     break;
@@ -2372,6 +2445,13 @@ private:
             userIterateAndNext(nodep->strgp(), WidthVP(SELF, BOTH).p());
         }
     }
+    virtual void visit(AstFUngetC* nodep) {
+        if (m_vup->prelim()) {
+            iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
+            iterateCheckSigned32(nodep, "$fungetc character", nodep->charp(), BOTH);
+            nodep->dtypeSetLogicUnsized(32, 8, AstNumeric::SIGNED);  // Spec says integer return
+        }
+    }
     virtual void visit(AstFRead* nodep) {
         if (m_vup->prelim()) {
             nodep->dtypeSetSigned32();  // Spec says integer return
@@ -2469,6 +2549,7 @@ private:
             userIterateAndNext(nodep->exprp(), WidthVP(nodep->modVarp()->dtypep(), PRELIM).p());
             AstNodeDType* pinDTypep = nodep->modVarp()->dtypep();
             AstNodeDType* conDTypep = nodep->exprp()->dtypep();
+            if (!conDTypep) nodep->v3fatalSrc("Unlinked pin data type");
             AstNodeDType* subDTypep = pinDTypep;
             int pinwidth = pinDTypep->width();
             int conwidth = conDTypep->width();
@@ -2786,8 +2867,10 @@ private:
     //--------------------
     // Default
     virtual void visit(AstNodeMath* nodep) {
-        nodep->v3fatalSrc("Visit function missing? Widthed function missing for math node: "
-                          <<nodep);
+        if (!nodep->didWidth()) {
+            nodep->v3fatalSrc("Visit function missing? Widthed function missing for math node: "
+                              <<nodep);
+        }
         userIterateChildren(nodep, NULL);
     }
     virtual void visit(AstNode* nodep) {
@@ -3683,6 +3766,8 @@ private:
         case AstType::atNeq:    nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
         case AstType::atEqCase: nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
         case AstType::atNeqCase: nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
+        case AstType::atEqWild: nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
+        case AstType::atNeqWild: nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
         case AstType::atAdd:    nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
         case AstType::atSub:    nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
         case AstType::atShiftL: nodep->dtypeChgSigned(signedFlavorNeeded); return NULL;
@@ -3805,7 +3890,7 @@ private:
     //----------------------------------------------------------------------
     // METHODS - strings
 
-    void replaceWithSFormat(AstMethodSel* nodep, const string& format) {
+    void replaceWithSFormat(AstMethodCall* nodep, const string& format) {
         // For string.itoa and similar, replace with SFormatF
         AstArg* argp = VN_CAST(nodep->pinsp(), Arg);
         if (!argp) {
@@ -3825,15 +3910,17 @@ private:
     //----------------------------------------------------------------------
     // METHODS - data types
 
-    AstNodeDType* moveChildDTypeEdit(AstNode* nodep) {
-        // DTypes at parse time get added as a childDType to some node types such as AstVars.
-        // We move them to global scope, so removing/changing a variable won't lose the dtype.
-        AstNodeDType* dtnodep = nodep->getChildDTypep();
-        UASSERT_OBJ(dtnodep, nodep, "Caller should check for NULL before calling moveChild");
-        UINFO(9,"moveChildDTypeEdit  "<<dtnodep<<endl);
+    AstNodeDType* moveDTypeEdit(AstNode* nodep, AstNodeDType* dtnodep) {
+        // DTypes at parse time get added as a e.g. childDType to some node types such as AstVars.
+        // Move type to global scope, so removing/changing a variable won't lose the dtype.
+        UASSERT_OBJ(dtnodep, nodep, "Caller should check for NULL before calling moveDTypeEdit");
+        UINFO(9,"moveDTypeEdit  "<<dtnodep<<endl);
         dtnodep->unlinkFrBack();  // Make non-child
         v3Global.rootp()->typeTablep()->addTypesp(dtnodep);
         return dtnodep;
+    }
+    AstNodeDType* moveChildDTypeEdit(AstNode* nodep) {
+        return moveDTypeEdit(nodep, nodep->getChildDTypep());
     }
     AstNodeDType* iterateEditDTypep(AstNode* parentp, AstNodeDType* nodep) {
         // Iterate into a data type to resolve that type. This process

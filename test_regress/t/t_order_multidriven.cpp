@@ -8,52 +8,52 @@
 #define STRINGIFY(x) STRINGIFY2(x)
 #define STRINGIFY2(x) #x
 
-Vt_order_multidriven *                  vcore;
-VerilatedVcdC *         vcd;
-vluint64_t                vtime;
+Vt_order_multidriven* vcore;
+VerilatedVcdC* vcd;
+vluint64_t vtime;
 
 #define PHASE_90
 
-static void half_cycle( int clk ) {
-    if ( clk & 1 ) vcore->i_clk_wr = !vcore->i_clk_wr;
-    if ( clk & 2 ) vcore->i_clk_rd = !vcore->i_clk_rd;
+static void half_cycle(int clk) {
+    if (clk & 1) vcore->i_clk_wr = !vcore->i_clk_wr;
+    if (clk & 2) vcore->i_clk_rd = !vcore->i_clk_rd;
 
     vtime += 10 / 2;
 
     vcore->eval();
     vcore->eval();
 
-    vcd->dump( vtime );
+    vcd->dump(vtime);
 }
 
 static void cycle() {
 #ifdef PHASE_90
-    half_cycle( 1 );
-    half_cycle( 2 );
-    half_cycle( 1 );
-    half_cycle( 2 );
+    half_cycle(1);
+    half_cycle(2);
+    half_cycle(1);
+    half_cycle(2);
 #else
-    half_cycle( 3 );
-    half_cycle( 3 );
+    half_cycle(3);
+    half_cycle(3);
 #endif
 }
 
 int main() {
 
-    Verilated::traceEverOn( true );
+    Verilated::traceEverOn(true);
 
-    vcore   = new Vt_order_multidriven;
-    vcd     = new VerilatedVcdC;
+    vcore = new Vt_order_multidriven;
+    vcd = new VerilatedVcdC;
 
-    vcore->trace( vcd, 99 );
-    vcd->open(STRINGIFY(TEST_OBJ_DIR) "/simx.vcd" );
+    vcore->trace(vcd, 99);
+    vcd->open(STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 
-    vcore->i_clk_wr     = 0;
-    vcore->i_clk_rd     = 0;
+    vcore->i_clk_wr = 0;
+    vcore->i_clk_rd = 0;
 
-    for ( int i = 0; i < 256; ++i )
-        cycle( );
+    for (int i = 0; i < 256; ++i)
+        cycle();
 
-    vcd->close( );
+    vcd->close();
     printf("*-* All Finished *-*\n");
 }

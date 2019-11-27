@@ -12,9 +12,7 @@
 
 unsigned int main_time = 0;
 
-double sc_time_stamp() {
-    return main_time;
-}
+double sc_time_stamp() { return main_time; }
 
 VM_PREFIX* topp = NULL;
 bool fail = false;
@@ -26,7 +24,7 @@ void check(QData got, QData exp) {
     }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     topp = new VM_PREFIX;
 
     Verilated::debug(0);
@@ -44,7 +42,7 @@ int main(int argc, char *argv[]) {
         VL_PRINTF("*-* All Finished *-*\n");
         topp->final();
     } else {
-        vl_fatal(__FILE__,__LINE__,"top", "Unexpected results\n");
+        vl_fatal(__FILE__, __LINE__, "top", "Unexpected results\n");
     }
     return 0;
 }

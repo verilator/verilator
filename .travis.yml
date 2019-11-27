@@ -4,15 +4,17 @@
 # redistribute it and/or modify it under the terms of either the GNU Lesser
 # General Public License Version 3 or the Perl Artistic License Version 2.0.
 
-language: cpp
+version: ~> 1.0
 
+os: linux
+language: cpp
 cache: ccache
 
 env:
   global:
     - VERILATOR_CACHE=$HOME/verilator_cache
     - VERILATOR_ROOT=$PWD
-    - VERILATOR_NUM_JOBS=$((`nproc` + 1))
+    - VERILATOR_NUM_JOBS=$(echo `nproc` + 1 | bc)
     - VERILATOR_CONFIG_FLAGS="--enable-maintainer-mode --enable-longtests"
     - OBJCACHE=ccache
 
@@ -23,7 +25,7 @@ cache:
 before_install:
 # Perl modules needed for testing
   - yes yes | sudo cpan -fi Unix::Processors Parallel::Forker Bit::Vector
-  - sudo apt-get install gdb
+  - sudo apt-get install gdb gtkwave
 before_script:
   - bash -x ci/build_verilator.sh
 after_script:
@@ -38,75 +40,79 @@ jobs:
     - if: type != cron
       stage: "Build Verilator"
       name: Build Verilator
-      os: linux
       compiler: gcc
       script: echo "Done building Verilator"
 # Non-cron build will just run on whatever linux flavor we get
     - if: type != cron
       stage: test
       name: Dist test
-      os: linux
       compiler: gcc
       script: ci/test.sh dist
     - if: type != cron
       stage: test
       name: Vlt test
-      os: linux
       compiler: gcc
       script: ci/test.sh vlt
     - if: type != cron
       stage: test
       name: Vltmt test
-      os: linux
       compiler: gcc
       script: ci/test.sh vltmt
 # Cron builds try different OS/compiler combinations
     - if: type = cron
       stage: "Build Verilator"
       name: Build xenial gcc Verilator
-      os: xenial
+      os: linux
+      dist: xenial
       compiler: gcc
       script: echo "Done building Verilator"
     - if: type = cron
       stage: test
-      name: Xenail gcc dist test
-      os: xenial
+      name: Xenial gcc dist test
+      os: linux
+      dist: xenial
       compiler: gcc
       script: ci/test.sh dist
     - if: type = cron
       stage: test
-      name: Xenail gcc vlt test
-      os: xenial
+      name: Xenial gcc vlt test
+      os: linux
+      dist: xenial
       compiler: gcc
       script: ci/test.sh vlt
     - if: type = cron
       stage: test
-      name: Xenail gcc vltmt test
-      os: xenial
+      name: Xenial gcc vltmt test
+      os: linux
+      dist: xenial
       compiler: gcc
       script: ci/test.sh vltmt
     - if: type = cron
       stage: "Build Verilator"
       name: Build xenial clang Verilator
-      os: xenial
+      os: linux
+      dist: xenial
       compiler: clang
       script: echo "Done building Verilator"
     - if: type = cron
       stage: test
-      name: Xenail clang dist test
-      os: xenial
+      name: Xenial clang dist test
+      os: linux
+      dist: xenial
       compiler: clang
       script: ci/test.sh dist
     - if: type = cron
       stage: test
-      name: Xenail clang vlt test
-      os: xenial
+      name: Xenial clang vlt test
+      os: linux
+      dist: xenial
       compiler: clang
       script: ci/test.sh vlt
     - if: type = cron
       stage: test
-      name: Xenail clang vltmt test
-      os: xenial
+      name: Xenial clang vltmt test
+      os: linux
+      dist: xenial
       compiler: clang
       script: ci/test.sh vltmt
 #    - if: type = cron
@@ -125,37 +131,45 @@ jobs:
 #      stage: test
 #      name: OSX gcc vlt test
 #      os: osx
-#      os: osx
 #      compiler: gcc
 #      script: ci/test.sh vlt
 #    - if: type = cron
 #      stage: test
 #      name: OSX gcc vltmt test
 #      os: osx
-#      os: osx
 #      compiler: gcc
 #      script: ci/test.sh vltmt
     - if: type = cron
       stage: "Build Verilator"
       name: Build trusty gcc Verilator
-      os: trusty
+      os: linux
+      dist: trusty
       compiler: gcc
       script: echo "Done building Verilator"
     - if: type = cron
       stage: test
       name: Trusty gcc dist test
-      os: trusty
+      os: linux
+      dist: trusty
       compiler: gcc
       script: ci/test.sh dist
     - if: type = cron
       stage: test
       name: Trusty gcc vlt test
-      os: trusty
+      os: linux
+      dist: trusty
       compiler: gcc
       script: ci/test.sh vlt
     - if: type = cron
       stage: test
-      os: trusty
+      os: linux
+      dist: trusty
       name: Trusty gcc vltmt test
       compiler: gcc
       script: ci/test.sh vltmt
+
+notifications:
+  email:
+    if: repo = verilator/verilator
+    recipients:
+      - todd.strader@gmail.com

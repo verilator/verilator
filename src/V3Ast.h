@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Ast node structure
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
@@ -601,7 +601,6 @@ public:
     bool isProcAssignable() const {
         return (m_e==GPARAM || m_e==LPARAM || m_e==GENVAR
                 || m_e==VAR
-                || m_e==TRIWIRE || m_e==TRI0 || m_e==TRI1 || m_e==PORT
                 || m_e==BLOCKTEMP || m_e==MODULETEMP || m_e==STMTTEMP
                 || m_e==XTEMP || m_e==IFACEREF);
     }
@@ -1208,11 +1207,11 @@ public:
 
 protected:
     // CONSTRUCTORS
-    AstNode() {init(); }
+    AstNode() { init(); }
     explicit AstNode(FileLine* fileline) {init(); m_fileline = fileline; }
     virtual AstNode* clone() = 0;  // Generally, cloneTree is what you want instead
     virtual void cloneRelink() {}
-    void        cloneRelinkTree();
+    void cloneRelinkTree();
 
     // METHODS
     void setOp1p(AstNode* newp);  // Set non-list-type op1 to non-list element
@@ -1468,9 +1467,10 @@ public:
     virtual void addBeforeStmt(AstNode* newp, AstNode* belowp);  // When calling, "this" is second argument
 
     // METHODS - Iterate on a tree
-    static AstNode* cloneTreeNull(AstNode* nodep, bool cloneNextLink) {  // Clone or return NULL if NULL
+    // Clone or return NULL if NULL
+    static AstNode* cloneTreeNull(AstNode* nodep, bool cloneNextLink) {
         return nodep ? nodep->cloneTree(cloneNextLink) : NULL; }
-    AstNode* cloneTree(bool cloneNextLink);
+    AstNode* cloneTree(bool cloneNextLink);  // Not const, as sets clonep() on original nodep
     bool gateTree() { return gateTreeIter(); }  // Is tree isGateOptimizable?
     bool sameTree(const AstNode* node2p) const;  // Does tree of this == node2p?
     bool sameGateTree(const AstNode* node2p) const;  // Does tree of this == node2p?, not allowing non-isGateOptimizable

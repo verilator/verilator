@@ -67,7 +67,7 @@ module Flop (
              input clk,
              input d,
              input rst_n,
-             output q);
+             output logic q);
 
    always @ (posedge clk or negedge rst_n) begin
       if (!rst_n) q <= 1'b0;

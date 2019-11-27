@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Graph optimizations
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
@@ -281,7 +281,7 @@ void V3Graph::loopsVertexCb(V3GraphVertex* vertexp) {
 }
 
 void V3Graph::dump(std::ostream& os) {
-    // This generates a file used by graphviz, http://www.graphviz.org
+    // This generates a file used by graphviz, https://www.graphviz.org
     os<<" Graph:\n";
     // Print vertices
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
@@ -322,7 +322,7 @@ void V3Graph::dumpDotFilePrefixedAlways(const string& nameComment, bool colorAsS
 }
 
 void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
-    // This generates a file used by graphviz, http://www.graphviz.org
+    // This generates a file used by graphviz, https://www.graphviz.org
     // "hardcoded" parameters:
     const vl_unique_ptr<std::ofstream> logp (V3File::new_ofstream(filename));
     if (logp->fail()) v3fatal("Can't write "<<filename);

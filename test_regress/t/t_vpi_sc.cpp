@@ -4,8 +4,8 @@
 
 VM_PREFIX* tb = NULL;
 
-int sc_main(int argc, char *argv[]) {
-    tb  = new VM_PREFIX("tb");
+int sc_main(int argc, char* argv[]) {
+    tb = new VM_PREFIX("tb");
 
     VL_PRINTF("*-* All Finished *-*\n");
     tb->final();

@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Bison grammer file
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
@@ -106,7 +106,7 @@ public:
     }
     AstDisplay* createDisplayError(FileLine* fileline) {
 	AstDisplay* nodep = new AstDisplay(fileline,AstDisplayType::DT_ERROR,  "", NULL,NULL);
-	nodep->addNext(new AstStop(fileline));
+	nodep->addNext(new AstStop(fileline, true));
 	return nodep;
     }
     AstNode* createGatePin(AstNode* exprp) {
@@ -121,12 +121,7 @@ public:
 	    fl->v3warn(ENDLABEL,"End label '"<<*endnamep<<"' does not match begin label '"<<name<<"'");
 	}
     }
-    void setVarDecl(AstVarType type) {
-        m_varDecl = type;
-        if (type != AstVarType::UNKNOWN && type != AstVarType::PORT) {
-            m_varDeclTyped = true;
-        }
-    }
+    void setVarDecl(AstVarType type) { m_varDecl = type; }
     void setDType(AstNodeDType* dtypep) {
 	if (m_varDTypep) { m_varDTypep->deleteTree(); m_varDTypep=NULL; } // It was cloned, so this is safe.
 	m_varDTypep = dtypep;
@@ -163,7 +158,7 @@ public:
                 }
                 if (AstRange* finalRangep = VN_CAST(finalp, Range)) {  // not an UnsizedRange
                     if (dtypep->implicit()) {
-                        // It's no longer implicit but a real logic type
+                        // It's no longer implicit but a wire logic type
                         AstBasicDType* newp = new AstBasicDType(dtypep->fileline(), AstBasicDTypeKwd::LOGIC,
                                                                 dtypep->numeric(), dtypep->width(), dtypep->widthMin());
                         dtypep->deleteTree(); VL_DANGLING(dtypep);
@@ -227,6 +222,10 @@ static void ERRSVKWD(FileLine* fileline, const string& tokname) {
                           +"... Suggest modify the Verilog-2001 code to avoid SV keywords,"
                           +" or use `begin_keywords or --language."
                         : ""));
+}
+
+static void UNSUPREAL(FileLine* fileline) {
+    fileline->v3warn(SHORTREAL, "Unsupported: shortreal being promoted to real (suggest use real instead)");
 }
 
 //======================================================================
@@ -388,6 +387,7 @@ class AstSenTree;
 %token<fl>		yGENERATE	"generate"
 %token<fl>		yGENVAR		"genvar"
 %token<fl>		yGLOBAL__CLOCKING "global-then-clocking"
+%token<fl>		yGLOBAL__ETC	"global"
 %token<fl>		yGLOBAL__LEX	"global-in-lex"
 %token<fl>		yIF		"if"
 %token<fl>		yIFF		"iff"
@@ -450,7 +450,7 @@ class AstSenTree;
 %token<fl>		ySIGNED		"signed"
 %token<fl>		ySPECIFY	"specify"
 %token<fl>		ySPECPARAM	"specparam"
-%token<fl>		ySTATIC		"static"
+%token<fl>		ySTATIC__ETC	"static"
 %token<fl>		ySTRING		"string"
 %token<fl>		ySTRUCT		"struct"
 %token<fl>		ySUPPLY0	"supply0"
@@ -497,6 +497,7 @@ class AstSenTree;
 %token<fl>		yD_ATANH	"$atanh"
 %token<fl>		yD_BITS		"$bits"
 %token<fl>		yD_BITSTOREAL	"$bitstoreal"
+%token<fl>		yD_BITSTOSHORTREAL "$bitstoshortreal"
 %token<fl>		yD_C		"$c"
 %token<fl>		yD_CEIL		"$ceil"
 %token<fl>		yD_CLOG2	"$clog2"
@@ -542,10 +543,12 @@ class AstSenTree;
 %token<fl>		yD_READMEMH	"$readmemh"
 %token<fl>		yD_REALTIME	"$realtime"
 %token<fl>		yD_REALTOBITS	"$realtobits"
+%token<fl>		yD_REWIND	"$rewind"
 %token<fl>		yD_RIGHT	"$right"
 %token<fl>		yD_RTOI		"$rtoi"
 %token<fl>		yD_SFORMAT	"$sformat"
 %token<fl>		yD_SFORMATF	"$sformatf"
+%token<fl>		yD_SHORTREALTOBITS "$shortrealtobits"
 %token<fl>		yD_SIGNED	"$signed"
 %token<fl>		yD_SIN		"$sin"
 %token<fl>		yD_SINH		"$sinh"
@@ -560,6 +563,7 @@ class AstSenTree;
 %token<fl>		yD_TANH		"$tanh"
 %token<fl>		yD_TESTPLUSARGS	"$test$plusargs"
 %token<fl>		yD_TIME		"$time"
+%token<fl>		yD_UNGETC	"$ungetc"
 %token<fl>		yD_UNIT		"$unit"
 %token<fl>		yD_UNPACKED_DIMENSIONS "$unpacked_dimensions"
 %token<fl>		yD_UNSIGNED	"$unsigned"
@@ -945,6 +949,9 @@ list_of_ports<nodep>:		// IEEE: list_of_ports + list_of_port_declarations
 	;
 
 port<nodep>:			// ==IEEE: port
+	//			// SEE ALSO port_declaration, tf_port_declaration,
+	//			// data_declarationVarFront
+	//
 	//			// Though not type for interfaces, we factor out the port direction and type
 	//			// so we can simply handle it in one place
 	//
@@ -952,11 +959,11 @@ port<nodep>:			// ==IEEE: port
 	//			// Expanded interface_port_header
 	//			// We use instantCb here because the non-port form looks just like a module instantiation
 		portDirNetE id/*interface*/                      portSig variable_dimensionListE sigAttrListE
-			{ $$ = $3; VARDECL(AstVarType::IFACEREF); VARIO(NONE);
+			{ $$ = $3; VARDECL(IFACEREF); VARIO(NONE);
 			  VARDTYPE(new AstIfaceRefDType($<fl>2,"",*$2));
 			  $$->addNextNull(VARDONEP($$,$4,$5)); }
 	|	portDirNetE id/*interface*/ '.' idAny/*modport*/ portSig variable_dimensionListE sigAttrListE
-			{ $$ = $5; VARDECL(AstVarType::IFACEREF); VARIO(NONE);
+			{ $$ = $5; VARDECL(IFACEREF); VARIO(NONE);
 			  VARDTYPE(new AstIfaceRefDType($<fl>2, $<fl>4, "", *$2, *$4));
 			  $$->addNextNull(VARDONEP($$,$6,$7)); }
 	|	portDirNetE yINTERFACE                           portSig rangeListE sigAttrListE
@@ -1303,7 +1310,7 @@ net_declaration<nodep>:		// IEEE: net_declaration - excluding implict
 	;
 
 net_declarationFront:		// IEEE: beginning of net_declaration
-		net_declRESET net_type   strengthSpecE net_scalaredE net_dataType { VARDTYPE($5); }
+		net_declRESET net_type   strengthSpecE net_scalaredE net_dataTypeE { VARDTYPE_NDECL($5); }
 	//UNSUP	net_declRESET yINTERCONNECT signingE rangeListE { VARNET($2); VARDTYPE(x); }
 	;
 
@@ -1318,7 +1325,7 @@ net_scalaredE:
 	|	yVECTORED				{ }
 	;
 
-net_dataType<dtypep>:
+net_dataTypeE<dtypep>:
 	//			// If there's a SV data type there shouldn't be a delay on this wire
 	//			// Otherwise #(...) can't be determined to be a delay or parameters
 	//			// Submit this as a footnote to the committee
@@ -1373,7 +1380,7 @@ port_directionReset:		// IEEE: port_direction that starts a port_declaraiton
 
 port_declaration<nodep>:	// ==IEEE: port_declaration
 	//			// Non-ANSI; used inside block followed by ';'
-	//			// SIMILAR to tf_port_declaration
+	//			// SEE ALSO port, tf_port_declaration, data_declarationVarFront
 	//
 	//			// IEEE: inout_declaration
 	//			// IEEE: input_declaration
@@ -1398,7 +1405,7 @@ port_declaration<nodep>:	// ==IEEE: port_declaration
 
 tf_port_declaration<nodep>:	// ==IEEE: tf_port_declaration
 	//			// Used inside function; followed by ';'
-	//			// SIMILAR to port_declaration
+	//			// SEE ALSO port_declaration, port, data_declarationVarFront
 	//
 		port_directionReset      data_type      { VARDTYPE($2); }  list_of_tf_variable_identifiers ';'	{ $$ = $4; }
 	|	port_directionReset      implicit_typeE { VARDTYPE_NDECL($2); }  list_of_tf_variable_identifiers ';'	{ $$ = $4; }
@@ -1424,8 +1431,7 @@ integer_vector_type<bdtypep>:	// ==IEEE: integer_atom_type
 non_integer_type<bdtypep>:	// ==IEEE: non_integer_type
 		yREAL					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
 	|	yREALTIME				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
-	|	ySHORTREAL				{ BBUNSUP($1, "Unsupported: shortreal (use real instead)");
-							  $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); }
+	|	ySHORTREAL				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::DOUBLE); UNSUPREAL($1); }
 	;
 
 signingE<signstate>:		// IEEE: signing - plus empty
@@ -1716,6 +1722,9 @@ data_declarationVar<nodep>:	// IEEE: part of data_declaration
 	;
 
 data_declarationVarFront:	// IEEE: part of data_declaration
+	//			// Non-ANSI; used inside block followed by ';'
+	//			// SEE ALSO port_declaration, tf_port_declaration, port
+	//
 	//			// Expanded: "constE yVAR lifetimeE data_type"
 	//			// implicit_type expanded into /*empty*/ or "signingE rangeList"
 		/**/ 	    yVAR lifetimeE data_type	{ VARRESET_NONLIST(VAR); VARDTYPE($3); }
@@ -1746,7 +1755,7 @@ type_declaration<nodep>:	// ==IEEE: type_declaration
 		yTYPEDEF data_type idAny variable_dimensionListE dtypeAttrListE ';'
 	/**/	{ $$ = new AstTypedef($<fl>3, *$3, $5, VFlagChildDType(), GRAMMARP->createArray($2,$4,false));
 		  SYMP->reinsert($$); PARSEP->tagNodep($$); }
-	//UNSUP	yTYPEDEF id/*interface*/ '.' idAny/*type*/ idAny/*type*/ ';'	{ $$ = NULL; $1->v3error("Unsupported: SystemVerilog 2005 typedef in this context"); } //UNSUP
+	|	yTYPEDEF id/*interface*/ '.' idAny/*type*/ idAny/*type*/ ';'	{ $$ = NULL; BBUNSUP($1, "Unsupported: SystemVerilog 2005 typedef in this context"); }
 	//			// Combines into above "data_type id" rule
 	//			// Verilator: Not important what it is in the AST, just need to make sure the yaID__aTYPE gets returned
 	|	yTYPEDEF id ';'				{ $$ = NULL; $$ = new AstTypedefFwd($<fl>2, *$2); SYMP->reinsert($$); PARSEP->tagNodep($$); }
@@ -2728,6 +2737,7 @@ patternKey<nodep>:		// IEEE: merge structure_pattern_key, array_pattern_key, ass
 		yaINTNUM				{ $$ = new AstConst($<fl>1,*$1); }
 	|	yaFLOATNUM				{ $$ = new AstConst($<fl>1,AstConst::RealDouble(),$1); }
 	|	yaID__ETC				{ $$ = new AstText($<fl>1,*$1); }
+	|	strAsInt				{ $$ = $1; }
 	;
 
 assignment_pattern<patternp>:	// ==IEEE: assignment_pattern
@@ -2846,8 +2856,8 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_FFLUSH '(' expr ')'			{ $$ = new AstFFlush($1, $3); }
 	|	yD_FINISH parenE			{ $$ = new AstFinish($1); }
 	|	yD_FINISH '(' expr ')'			{ $$ = new AstFinish($1); DEL($3); }
-	|	yD_STOP parenE				{ $$ = new AstStop($1); }
-	|	yD_STOP '(' expr ')'			{ $$ = new AstStop($1); DEL($3); }
+	|	yD_STOP parenE				{ $$ = new AstStop($1, false); }
+	|	yD_STOP '(' expr ')'			{ $$ = new AstStop($1, false); DEL($3); }
 	//
 	|	yD_SFORMAT '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
 	|	yD_SWRITE  '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
@@ -2864,10 +2874,10 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_WARNING  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING, NULL, NULL); }
 	|	yD_WARNING  '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING, NULL, $3); }
 	|	yD_ERROR    parenE			{ $$ = GRAMMARP->createDisplayError($1); }
-	|	yD_ERROR    '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_ERROR,   NULL, $3);   $$->addNext(new AstStop($1)); }
-	|	yD_FATAL    parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, NULL); $$->addNext(new AstStop($1)); }
-	|	yD_FATAL    '(' expr ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, NULL); $$->addNext(new AstStop($1)); DEL($3); }
-	|	yD_FATAL    '(' expr ',' exprListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, $5);   $$->addNext(new AstStop($1)); DEL($3); }
+	|	yD_ERROR    '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_ERROR,   NULL, $3);   $$->addNext(new AstStop($1, true)); }
+	|	yD_FATAL    parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, NULL); $$->addNext(new AstStop($1, false)); }
+	|	yD_FATAL    '(' expr ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, NULL); $$->addNext(new AstStop($1, false)); DEL($3); }
+	|	yD_FATAL    '(' expr ',' exprListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, $5);   $$->addNext(new AstStop($1, false)); DEL($3); }
 	//
 	|	yD_READMEMB '(' expr ',' idClassSel ')'				{ $$ = new AstReadMem($1,false,$3,$5,NULL,NULL); }
 	|	yD_READMEMB '(' expr ',' idClassSel ',' expr ')'		{ $$ = new AstReadMem($1,false,$3,$5,$7,NULL); }
@@ -2908,6 +2918,7 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_BITS '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3); }
 	|	yD_BITS '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_BITS,$3,$5); }
 	|	yD_BITSTOREAL '(' expr ')'		{ $$ = new AstBitsToRealD($1,$3); }
+	|	yD_BITSTOSHORTREAL '(' expr ')'		{ $$ = new AstBitsToRealD($1,$3); UNSUPREAL($1); }
 	|	yD_CEIL '(' expr ')'			{ $$ = new AstCeilD($1,$3); }
 	|	yD_CLOG2 '(' expr ')'			{ $$ = new AstCLog2($1,$3); }
 	|	yD_COS '(' expr ')'			{ $$ = new AstCosD($1,$3); }
@@ -2950,10 +2961,12 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_RANDOM parenE			{ $$ = new AstRand($1); }
 	|	yD_REALTIME parenE			{ $$ = new AstTimeD($1); }
 	|	yD_REALTOBITS '(' expr ')'		{ $$ = new AstRealToBits($1,$3); }
+	|	yD_REWIND '(' idClassSel ')'		{ $$ = new AstFSeek($1, $3, new AstConst($1, 0), new AstConst($1, 0)); }
 	|	yD_RIGHT '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,NULL); }
 	|	yD_RIGHT '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,$5); }
 	|	yD_RTOI '(' expr ')'			{ $$ = new AstRToIS($1,$3); }
 	|	yD_SFORMATF '(' str commaEListE ')'	{ $$ = new AstSFormatF($1,*$3,false,$4); }
+	|	yD_SHORTREALTOBITS '(' expr ')'		{ $$ = new AstRealToBits($1,$3); UNSUPREAL($1); }
 	|	yD_SIGNED '(' expr ')'			{ $$ = new AstSigned($1,$3); }
 	|	yD_SIN '(' expr ')'			{ $$ = new AstSinD($1,$3); }
 	|	yD_SINH '(' expr ')'			{ $$ = new AstSinhD($1,$3); }
@@ -2966,6 +2979,7 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_TANH '(' expr ')'			{ $$ = new AstTanhD($1,$3); }
 	|	yD_TESTPLUSARGS '(' str ')'		{ $$ = new AstTestPlusArgs($1,*$3); }
 	|	yD_TIME	parenE				{ $$ = new AstTime($1); }
+	|	yD_UNGETC '(' expr ',' expr ')'		{ $$ = new AstFUngetC($1, $5, $3); }  // Arg swap to file first
 	|	yD_UNPACKED_DIMENSIONS '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_UNPK_DIMENSIONS,$3); }
 	|	yD_UNSIGNED '(' expr ')'		{ $$ = new AstUnsigned($1,$3); }
 	|	yD_VALUEPLUSARGS '(' expr ',' expr ')'	{ $$ = new AstValuePlusArgs($1,$3,$5); }
@@ -3044,7 +3058,7 @@ lifetimeE:			// IEEE: [lifetime]
 
 lifetime:			// ==IEEE: lifetime
 	//			// Note lifetime used by members is instead under memberQual
-		ySTATIC			 		{ $1->v3error("Unsupported: Static in this context"); }
+		ySTATIC__ETC		 		{ BBUNSUP($1, "Unsupported: Static in this context"); }
 	|	yAUTOMATIC		 		{ }
 	;
 
@@ -3349,9 +3363,9 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// Indistinguishable from function_subroutine_call:method_call
 	//
 	|	'$'					{ $$ = new AstConst($<fl>1, AstConst::LogicFalse());
-							  $<fl>1->v3error("Unsupported: $ expression"); }
+							  BBUNSUP($<fl>1, "Unsupported: $ expression"); }
 	|	yNULL					{ $$ = new AstConst($1, AstConst::LogicFalse());
-							  $<fl>1->v3error("Unsupported: null expression"); }
+							  BBUNSUP($<fl>1, "Unsupported: null expression"); }
 	//			// IEEE: yTHIS
 	//			// See exprScope
 	//
@@ -3365,7 +3379,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// IEEE: cond_predicate - here to avoid reduce problems
 	//			// Note expr includes cond_pattern
 	|	~l~expr yP_ANDANDAND ~r~expr		{ $$ = new AstConst($2, AstConst::LogicFalse());
-							  $<fl>2->v3error("Unsupported: &&& expression"); }
+							  BBUNSUP($<fl>2, "Unsupported: &&& expression"); }
 	//
 	//			// IEEE: cond_pattern - here to avoid reduce problems
 	//			// "expr yMATCHES pattern"

@@ -6,23 +6,23 @@
 
 unsigned int Array[3];
 
-unsigned int StepSim(Vt_mem_slot *sim, unsigned int slot, unsigned int bit, unsigned int val, unsigned int rslot) {
+unsigned int StepSim(Vt_mem_slot* sim, unsigned int slot, unsigned int bit, unsigned int val,
+                     unsigned int rslot) {
 #ifdef TEST_VERBOSE
     printf("StepSim: slot=%u bit=%u val=%u rslot=%u\n", slot, bit, val, rslot);
 #endif
 
-    sim->SlotIdx      = slot;
-    sim->BitToChange  = bit;
-    sim->BitVal       = val;
+    sim->SlotIdx = slot;
+    sim->BitToChange = bit;
+    sim->BitVal = val;
     sim->SlotToReturn = rslot;
-    sim->Clk          = 0;
+    sim->Clk = 0;
 
     sim->eval();
 
-    sim->Clk          = 1;
+    sim->Clk = 1;
 
     sim->eval();
-
 
     if (sim->OutputVal != Array[rslot]) {
         printf("%%Error: got %x - expected %x\n", sim->OutputVal, Array[rslot]);
@@ -37,8 +37,8 @@ unsigned int StepSim(Vt_mem_slot *sim, unsigned int slot, unsigned int bit, unsi
     return sim->OutputVal;
 }
 
-int main(int argc, char *argv[]) {
-    Vt_mem_slot *sim = new Vt_mem_slot;
+int main(int argc, char* argv[]) {
+    Vt_mem_slot* sim = new Vt_mem_slot;
     int slot, bit, i;
 
     Verilated::debug(0);

@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Parse module/signal name references
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
@@ -86,12 +86,9 @@ class SliceVisitor : public AstNVisitor {
         AstNode* newp;
         if (AstInitArray* initp = VN_CAST(nodep, InitArray)) {
             UINFO(9,"  cloneInitArray("<<elements<<","<<offset<<") "<<nodep<<endl);
-            AstNode* itemp = initp->initsp();
             int leOffset = !arrayp->rangep()->littleEndian()
                 ? arrayp->rangep()->elementsConst()-1-offset : offset;
-            for (int pos = 0; itemp && pos < leOffset; ++pos) {
-                itemp = itemp->nextp();
-            }
+            AstNode* itemp = initp->getIndexDefaultedValuep(leOffset);
             if (!itemp) {
                 nodep->v3error("Array initialization has too few elements, need element "<<offset);
                 itemp = initp->initsp();
@@ -173,38 +170,48 @@ class SliceVisitor : public AstNVisitor {
             UINFO(9, "  Bi-Eq/Neq expansion "<<nodep<<endl);
             if (AstUnpackArrayDType* adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
                 AstNodeBiop* logp = NULL;
-                for (int index = 0; index < adtypep->rangep()->elementsConst(); ++index) {
-                    // EQ(a,b) -> LOGAND(EQ(ARRAYSEL(a,0), ARRAYSEL(b,0)), ...[1])
-                    AstNodeBiop* clonep
-                        = VN_CAST(nodep->cloneType
-                                  (new AstArraySel(nodep->fileline(),
-                                                   nodep->lhsp()->cloneTree(false),
-                                                   index),
-                                   new AstArraySel(nodep->fileline(),
-                                                   nodep->rhsp()->cloneTree(false),
-                                                   index)),
-                                  NodeBiop);
-                    if (!logp) logp = clonep;
-                    else {
-                        switch (nodep->type()) {
-                        case AstType::atEq:  // FALLTHRU
-                        case AstType::atEqCase:
-                            logp = new AstLogAnd(nodep->fileline(), logp, clonep);
-                            break;
-                        case AstType::atNeq:  // FALLTHRU
-                        case AstType::atNeqCase:
-                            logp = new AstLogOr(nodep->fileline(), logp, clonep);
-                            break;
-                        default:
-                            nodep->v3fatalSrc("Unknown node type processing array slice");
-                            break;
+                if (!VN_IS(nodep->lhsp()->dtypep()->skipRefp(), NodeArrayDType)) {
+                    nodep->lhsp()->v3error("Slice operatator "<<nodep->lhsp()->prettyTypeName()
+                                           <<" on non-slicable (e.g. non-vector) left-hand-side operand");
+                }
+                else if (!VN_IS(nodep->rhsp()->dtypep()->skipRefp(), NodeArrayDType)) {
+                    nodep->rhsp()->v3error("Slice operatator "<<nodep->rhsp()->prettyTypeName()
+                                           <<" on non-slicable (e.g. non-vector) right-hand-side operand");
+                }
+                else {
+                    for (int index = 0; index < adtypep->rangep()->elementsConst(); ++index) {
+                        // EQ(a,b) -> LOGAND(EQ(ARRAYSEL(a,0), ARRAYSEL(b,0)), ...[1])
+                        AstNodeBiop* clonep
+                            = VN_CAST(nodep->cloneType
+                                      (new AstArraySel(nodep->fileline(),
+                                                       nodep->lhsp()->cloneTree(false),
+                                                       index),
+                                       new AstArraySel(nodep->fileline(),
+                                                       nodep->rhsp()->cloneTree(false),
+                                                       index)),
+                                      NodeBiop);
+                        if (!logp) logp = clonep;
+                        else {
+                            switch (nodep->type()) {
+                            case AstType::atEq:  // FALLTHRU
+                            case AstType::atEqCase:
+                                logp = new AstLogAnd(nodep->fileline(), logp, clonep);
+                                break;
+                            case AstType::atNeq:  // FALLTHRU
+                            case AstType::atNeqCase:
+                                logp = new AstLogOr(nodep->fileline(), logp, clonep);
+                                break;
+                            default:
+                                nodep->v3fatalSrc("Unknown node type processing array slice");
+                                break;
+                            }
                         }
                     }
+                    UASSERT_OBJ(logp, nodep, "Unpacked array with empty indices range");
+                    nodep->replaceWith(logp);
+                    pushDeletep(nodep); VL_DANGLING(nodep);
+                    nodep = logp;
                 }
-                UASSERT_OBJ(logp, nodep, "Unpacked array with empty indices range");
-                nodep->replaceWith(logp);
-                pushDeletep(nodep); VL_DANGLING(nodep);
-                nodep = logp;
             }
             iterateChildren(nodep);
         }

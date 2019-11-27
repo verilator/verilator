@@ -2,7 +2,7 @@
 /**************************************************************************
  * DESCRIPTION: Verilator: Flex input file
  *
- * Code available from: http://www.veripool.org/verilator
+ * Code available from: https://verilator.org
  *
  **************************************************************************
  *
@@ -118,11 +118,11 @@ id      [a-zA-Z_][a-zA-Z0-9_$]*
 escid   \\[^ \t\f\r\n]+
 word    [a-zA-Z0-9_]+
         /* verilog numbers, constructed to not match the ' that begins a '(  or '{ */
-vnum1   [0-9]*?['']s?[bcodhBCODH][ \t\n]*[A-Fa-f0-9xXzZ_?]*
-vnum2   [0-9]*?['']s?[01xXzZ]
-vnum3   [0-9][_0-9]*[ \t\n]*['']s?[bcodhBCODH]?[ \t\n]*[A-Fa-f0-9xXzZ_?]+
-vnum4   [0-9][_0-9]*[ \t\n]*['']s?[bcodhBCODH]
-vnum5   [0-9][_0-9]*[ \t\n]*['']s
+vnum1   [0-9]*?[''][sS]?[bcodhBCODH][ \t\n]*[A-Fa-f0-9xXzZ_?]*
+vnum2   [0-9]*?[''][sS]?[01xXzZ]
+vnum3   [0-9][_0-9]*[ \t\n]*[''][sS]?[bcodhBCODH]?[ \t\n]*[A-Fa-f0-9xXzZ_?]+
+vnum4   [0-9][_0-9]*[ \t\n]*[''][sS]?[bcodhBCODH]
+vnum5   [0-9][_0-9]*[ \t\n]*[''][sS]
 vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
 %%
@@ -163,6 +163,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$atan2"              { FL; return yD_ATAN2; }
   "$atanh"              { FL; return yD_ATANH; }
   "$bitstoreal"         { FL; return yD_BITSTOREAL; }
+  "$bitstoshortreal"    { FL; return yD_BITSTOSHORTREAL; }
   "$ceil"               { FL; return yD_CEIL; }
   "$cos"                { FL; return yD_COS; }
   "$cosh"               { FL; return yD_COSH; }
@@ -200,11 +201,13 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$recovery"           { FL; return yaTIMINGSPEC; }
   "$recrem"             { FL; return yaTIMINGSPEC; }
   "$removal"            { FL; return yaTIMINGSPEC; }
+  "$rewind"             { FL; return yD_REWIND; }
   "$rtoi"               { FL; return yD_RTOI; }
   "$setup"              { FL; return yaTIMINGSPEC; }
   "$setuphold"          { FL; return yaTIMINGSPEC; }
   "$sformat"            { FL; return yD_SFORMAT; }
   "$sformatf"           { FL; return yD_SFORMATF; }
+  "$shortrealtobits"    { FL; return yD_SHORTREALTOBITS; }
   "$sin"                { FL; return yD_SIN; }
   "$sinh"               { FL; return yD_SINH; }
   "$skew"               { FL; return yaTIMINGSPEC; }
@@ -219,6 +222,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$test$plusargs"      { FL; return yD_TESTPLUSARGS; }
   "$time"               { FL; return yD_TIME; }
   "$timeskew"           { FL; return yaTIMINGSPEC; }
+  "$ungetc"             { FL; return yD_UNGETC; }
   "$value$plusargs"     { FL; return yD_VALUEPLUSARGS; }
   "$width"              { FL; return yaTIMINGSPEC; }
   "$write"              { FL; return yD_WRITE; }
@@ -453,7 +457,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "return"              { FL; return yRETURN; }
   "shortint"            { FL; return ySHORTINT; }
   "shortreal"           { FL; return ySHORTREAL; }
-  "static"              { FL; return ySTATIC; }
+  "static"              { FL; return ySTATIC__ETC; }
   "string"              { FL; return ySTRING; }
   "struct"              { FL; return ySTRUCT; }
   "timeprecision"       { FL; return yTIMEPRECISION; }
@@ -1023,6 +1027,7 @@ void V3ParseImp::lexToken() {
         }
         else if (token == yGLOBAL__LEX) {
             if (nexttok == yCLOCKING) token = yGLOBAL__CLOCKING;
+            else if (v3Global.opt.pedantic()) token = yGLOBAL__ETC;
             // Avoid 2009 "global" conflicting with old code when we can
             else { token = yaID__LEX; yylval.strp = PARSEP->newString("global"); }
         }

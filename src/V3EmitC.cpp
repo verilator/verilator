@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Emit C++ for tree
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
@@ -110,7 +110,9 @@ public:
         string newVarCmt = varp->mtasksString();
         if (*curVarCmtp != newVarCmt) {
             *curVarCmtp = newVarCmt;
-            puts("// Begin mtask footprint "+*curVarCmtp+"\n");
+            if (v3Global.opt.threads()) {
+                puts("// Begin mtask footprint "+*curVarCmtp+"\n");
+            }
         }
     }
     void emitTypedefs(AstNode* firstp) {
@@ -530,7 +532,8 @@ public:
         putsQuoted(protect(nodep->fileline()->filename()));
         puts(", ");
         puts(cvtToStr(nodep->fileline()->lineno()));
-        puts(", \"\");\n");
+        puts(", \"\"");
+        puts(");\n");
     }
     virtual void visit(AstFinish* nodep) {
         puts("VL_FINISH_MT(");
@@ -1193,8 +1196,10 @@ class EmitCImp : EmitCStmts {
                     if (VN_IS(nodep->lhsp(), VarRef)) {
                         varname = ": "+VN_CAST(nodep->lhsp(), VarRef)->varp()->prettyName();
                     }
-                    puts(")) VL_DBG_MSGF(\"        CHANGE: "+nodep->fileline()->ascii()
-                         +varname+"\\n\"); );\n");
+                    puts(")) VL_DBG_MSGF(\"        CHANGE: ");
+                    puts(protect(nodep->fileline()->filename()));
+                    puts(":"+cvtToStr(nodep->fileline()->lineno()));
+                    puts(varname+"\\n\"); );\n");
                 }
             }
         }
@@ -1273,7 +1278,6 @@ class EmitCImp : EmitCStmts {
     void emitIntFuncDecls(AstNodeModule* modp);
     // High level
     void emitImp(AstNodeModule* modp);
-    void emitStaticDecl(AstNodeModule* modp);
     void emitSettleLoop(const std::string& eval_call, bool initial);
     void emitWrapEval(AstNodeModule* modp);
     void emitMTaskState();
@@ -1300,71 +1304,34 @@ public:
 void EmitCStmts::emitVarDecl(const AstVar* nodep, const string& prefixIfImp) {
     AstBasicDType* basicp = nodep->basicp();
     UASSERT_OBJ(basicp, nodep, "Unimplemented: Outputting this data type");
-    if (nodep->isIO()) {
-        if (nodep->isSc()) {
-            m_ctorVarsVec.push_back(nodep);
-            if (nodep->attrScClocked() && nodep->isReadOnly()) {
-                puts("sc_in_clk ");
-            } else {
-                if (nodep->isInoutish()) puts("sc_inout<");
-                else if (nodep->isWritable()) puts("sc_out<");
-                else if (nodep->isNonOutput()) puts("sc_in<");
-                else nodep->v3fatalSrc("Unknown type");
-
-                puts(nodep->scType());
-                puts("> ");
-            }
-            puts(nodep->nameProtect());
-            emitDeclArrayBrackets(nodep);
-            puts(";\n");
-        } else if (basicp && basicp->isOpaque()) {
-            // strings and other fundamental c types; no VL_ macro can be used
-            puts(nodep->vlArgType(true, false, false));
-            emitDeclArrayBrackets(nodep);
-            puts(";\n");
-        } else {  // C++ signals
-            if (nodep->isInoutish()) puts("VL_INOUT");
-            else if (nodep->isWritable()) puts("VL_OUT");
-            else if (nodep->isNonOutput()) puts("VL_IN");
+    if (nodep->isIO() && nodep->isSc()) {
+        m_ctorVarsVec.push_back(nodep);
+        if (nodep->attrScClocked() && nodep->isReadOnly()) {
+            puts("sc_in_clk ");
+        } else {
+            if (nodep->isInoutish()) puts("sc_inout<");
+            else if (nodep->isWritable()) puts("sc_out<");
+            else if (nodep->isNonOutput()) puts("sc_in<");
             else nodep->v3fatalSrc("Unknown type");
 
-            if (nodep->isQuad()) puts("64");
-            else if (nodep->widthMin() <= 8) puts("8");
-            else if (nodep->widthMin() <= 16) puts("16");
-            else if (nodep->isWide()) puts("W");
-
-            puts("("+nodep->nameProtect());
-            emitDeclArrayBrackets(nodep);
-            // If it's a packed struct/array then nodep->width is the whole
-            // thing, msb/lsb is just lowest dimension
-            puts(","+cvtToStr(basicp->lsb()+nodep->width()-1)
-                 +","+cvtToStr(basicp->lsb()));
-            if (nodep->isWide()) puts(","+cvtToStr(nodep->widthWords()));
-            puts(");\n");
+            puts(nodep->scType());
+            puts("> ");
         }
-    } else if (basicp && basicp->isOpaque()) {
-        // strings and other fundamental c types
-        puts(nodep->vlArgType(true, false, false));
+        puts(nodep->nameProtect());
         emitDeclArrayBrackets(nodep);
         puts(";\n");
-    } else {
-        // Arrays need a small alignment, but may need different padding after.
-        // For example three VL_SIG8's needs alignment 1 but size 3.
-        if (nodep->isStatic() && prefixIfImp=="") puts("static ");
-        if (nodep->isStatic()) puts("VL_ST_"); else puts("VL_");
-        if (nodep->widthMin() <= 8) {
-            puts("SIG8(");
-        } else if (nodep->widthMin() <= 16) {
-            puts("SIG16(");
-        } else if (nodep->isQuad()) {
-            puts("SIG64(");
-        } else if (!nodep->isWide()) {
-            puts("SIG(");
-        } else {
-            puts("SIGW(");
-        }
-        if (prefixIfImp!="") { puts(prefixIfImp); puts("::"); }
-        puts(nodep->nameProtect());
+    } else if (nodep->isIO() && basicp && !basicp->isOpaque()) {
+        if (nodep->isInoutish()) puts("VL_INOUT");
+        else if (nodep->isWritable()) puts("VL_OUT");
+        else if (nodep->isNonOutput()) puts("VL_IN");
+        else nodep->v3fatalSrc("Unknown type");
+
+        if (nodep->isQuad()) puts("64");
+        else if (nodep->widthMin() <= 8) puts("8");
+        else if (nodep->widthMin() <= 16) puts("16");
+        else if (nodep->isWide()) puts("W");
+
+        puts("("+nodep->nameProtect());
         emitDeclArrayBrackets(nodep);
         // If it's a packed struct/array then nodep->width is the whole
         // thing, msb/lsb is just lowest dimension
@@ -1372,6 +1339,10 @@ void EmitCStmts::emitVarDecl(const AstVar* nodep, const string& prefixIfImp) {
              +","+cvtToStr(basicp->lsb()));
         if (nodep->isWide()) puts(","+cvtToStr(nodep->widthWords()));
         puts(");\n");
+    } else {
+        // strings and other fundamental c types
+        puts(nodep->vlArgType(true, false, false, prefixIfImp));
+        puts(";\n");
     }
 }
 
@@ -1747,13 +1718,13 @@ void EmitCImp::emitVarReset(AstVar* varp) {
                                    VN_CAST(initarp->defaultp(), Const));
                 puts("}}\n");
             }
-            int pos = 0;
-            for (AstNode* itemp = initarp->initsp(); itemp; ++pos, itemp=itemp->nextp()) {
-                int index = initarp->posIndex(pos);
-                UASSERT_OBJ(initarp->defaultp() || index==pos, initarp,
-                            "Not enough values in array initialization");
+            const AstInitArray::KeyItemMap& mapr = initarp->map();
+            for (AstInitArray::KeyItemMap::const_iterator it = mapr.begin();
+                 it != mapr.end(); ++it) {
+                AstNode* valuep = it->second->valuep();
                 emitSetVarConstant(varp->nameProtect()
-                                   +"["+cvtToStr(index)+"]", VN_CAST(itemp, Const));
+                                   +"["+cvtToStr(it->first)+"]",
+                                   VN_CAST(valuep, Const));
             }
         } else {
             varp->v3fatalSrc("InitArray under non-arrayed var");
@@ -2045,16 +2016,9 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
     }
 }
 
-void EmitCImp::emitStaticDecl(AstNodeModule* modp) {
-    // Need implementation here.  Be careful of alignment code; needs to be uniquified
-    // with module name to avoid multiple symbols.
-    //emitVarList(modp->stmtsp(), EVL_FUNC_ALL, modp->name());
-    puts("");  // NOP for cppcheck, otherwise const function
-}
-
 void EmitCImp::emitTextSection(AstType type) {
     int last_line = -999;
-    for (AstNode* nodep = m_modp->stmtsp(); nodep != NULL; nodep = nodep->nextp()) {
+    for (AstNode* nodep = m_modp->stmtsp(); nodep; nodep = nodep->nextp()) {
         if (const AstNodeText* textp = VN_CAST(nodep, NodeText)) {
             if (nodep->type() == type) {
                 if (last_line != nodep->fileline()->lineno()) {
@@ -2129,7 +2093,7 @@ void EmitCImp::emitSettleLoop(const std::string& eval_call, bool initial) {
     puts("int __VclockLoop = 0;\n");
     puts("QData __Vchange = 1;\n");
     puts("do {\n");
-    puts(    eval_call + "\n");
+    puts(    eval_call+"\n");
     puts(    "if (VL_UNLIKELY(++__VclockLoop > "+cvtToStr(v3Global.opt.convergeLimit())
              +")) {\n");
     puts(        "// About to fail, so enable debug to see what's not settling.\n");
@@ -2138,9 +2102,15 @@ void EmitCImp::emitSettleLoop(const std::string& eval_call, bool initial) {
     puts(        "Verilated::debug(1);\n");
     puts(        "__Vchange = "+protect("_change_request")+"(vlSymsp);\n");
     puts(        "Verilated::debug(__Vsaved_debug);\n");
-    puts(        "VL_FATAL_MT(__FILE__, __LINE__, __FILE__, \"Verilated model didn't ");
+    puts(        "VL_FATAL_MT(");
+    putsQuoted(protect(m_modp->fileline()->filename()));
+    puts(", ");
+    puts(cvtToStr(m_modp->fileline()->lineno()));
+    puts(", \"\",\n");
+    puts("\"Verilated model didn't ");
     if (initial) puts("DC ");
-    puts(        "converge\");\n");
+    puts("converge\\n\"\n");
+    puts("\"- See DIDNOTCONVERGE in the Verilator manual\");\n");
     puts(    "} else {\n");
     puts(        "__Vchange = "+protect("_change_request")+"(vlSymsp);\n");
     puts(    "}\n");
@@ -2748,7 +2718,6 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
 
     if (m_fast && splitFilenum()==0) {
         emitTextSection(AstType::atScImp);
-        emitStaticDecl(modp);
     }
 
     if (m_slow && splitFilenum()==0) {
@@ -2762,7 +2731,6 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
 
     if (m_fast && splitFilenum()==0) {
         if (modp->isTop()) {
-            emitStaticDecl(modp);
             puts("\n//--------------------\n");
             puts("\n");
             emitWrapEval(modp);

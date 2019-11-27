@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Threading's logic to mtask partitioner
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

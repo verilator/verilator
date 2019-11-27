@@ -21,10 +21,9 @@
 ///     heavyweight types are required; these contents are not part of
 ///     verilated.h to save compile time when such types aren't used.
 ///
-/// Code available from: http://www.veripool.org/verilator
+/// Code available from: https://verilator.org
 ///
 //*************************************************************************
-
 
 #ifndef _VERILATED_HEAVY_H_
 #define _VERILATED_HEAVY_H_ 1  ///< Header Guard
@@ -49,7 +48,7 @@ inline std::string VL_CVT_PACK_STR_NI(IData lhs) VL_PURE {
     return VL_CVT_PACK_STR_NW(1, lw);
 }
 inline std::string VL_CONCATN_NNN(const std::string& lhs, const std::string& rhs) VL_PURE {
-    return lhs+rhs;
+    return lhs + rhs;
 }
 inline std::string VL_REPLICATEN_NNQ(int,int,int, const std::string& lhs, IData rep) VL_PURE {
     std::string out; out.reserve(lhs.length() * rep);
@@ -62,6 +61,8 @@ inline std::string VL_REPLICATEN_NNI(int obits,int lbits,int rbits,
 }
 
 inline IData VL_LEN_IN(const std::string& ld) { return ld.length(); }
+extern std::string VL_TOLOWER_NN(const std::string& ld);
+extern std::string VL_TOUPPER_NN(const std::string& ld);
 
 extern IData VL_FOPEN_NI(const std::string& filename, IData mode) VL_MT_SAFE;
 extern void VL_READMEM_N(bool hex, int width, int depth, int array_lsb,
@@ -90,13 +91,13 @@ inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, SData& rdr) 
 }
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, IData& rdr) VL_MT_SAFE {
     WData rwp[2];  // WData must always be at least 2
-    IData got = VL_VALUEPLUSARGS_INW(rbits,ld,rwp);
+    IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = rwp[0];
     return got;
 }
 inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, QData& rdr) VL_MT_SAFE {
     WData rwp[2];
-    IData got = VL_VALUEPLUSARGS_INW(rbits,ld,rwp);
+    IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = VL_SET_QW(rwp);
     return got;
 }

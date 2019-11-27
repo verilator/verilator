@@ -19,7 +19,7 @@
 ///     This file must be compiled and linked against all objects
 ///     created from Verilator or called by Verilator that use the DPI.
 ///
-/// Code available from: http://www.veripool.org/verilator
+/// Code available from: https://verilator.org
 ///
 //=========================================================================
 
@@ -43,7 +43,8 @@
 
 // Not supported yet
 #define _VL_SVDPI_UNIMP() \
-    VL_FATAL_MT(__FILE__,__LINE__,"",(std::string("%%Error: Unsupported DPI function: ")+VL_FUNC).c_str())
+    VL_FATAL_MT(__FILE__, __LINE__, "", \
+                (std::string("%%Error: Unsupported DPI function: ")+VL_FUNC).c_str())
 
 #define _VL_SVDPI_WARN(message...) \
     VL_PRINTF_MT(message)

@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Options parsing
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
@@ -683,7 +683,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
     for (int i=0; i<argc; )  {
         UINFO(9, " Option: "<<argv[i]<<endl);
         if (argv[i][0]=='+') {
-            char *sw = argv[i];
+            char* sw = argv[i];
             if (!strncmp (sw, "+define+", 8)) {
                 addDefine(string(sw+strlen("+define+")), true);
             }
@@ -722,7 +722,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             shift;
         }  // + options
         else if (argv[i][0]=='-') {
-            const char *sw = argv[i];
+            const char* sw = argv[i];
             bool flag = true;
             VOptionBool bflag;
             // Allow gnu -- switches
@@ -796,6 +796,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-trace-underscore", flag/*ref*/))  { m_traceUnderscore = flag; }
             else if ( onoff (sw, "-underline-zero", flag/*ref*/))    { m_underlineZero = flag; }  // Undocumented, old Verilator-2
             else if ( onoff (sw, "-vpi", flag/*ref*/))               { m_vpi = flag; }
+            else if ( onoff (sw, "-Wpedantic", flag/*ref*/))         { m_pedantic = flag; }
             else if ( onoff (sw, "-x-initial-edge", flag/*ref*/))    { m_xInitialEdge = flag; }
             else if ( onoff (sw, "-xml-only", flag/*ref*/))          { m_xmlOnly = flag; }  // Undocumented, still experimental
             // Optimization
@@ -1049,15 +1050,18 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 addFuture(msg);
             }
             else if (!strncmp (sw, "-Wno-", 5)) {
-                if (!strcmp(sw, "-Wno-lint")) {
+                if (!strcmp(sw, "-Wno-context")) {
+                    m_context = false;
+                }
+                else if (!strcmp(sw, "-Wno-fatal")) {
+                    V3Error::warnFatal(false);
+                }
+                else if (!strcmp(sw, "-Wno-lint")) {
                     FileLine::globalWarnLintOff(true);
                     FileLine::globalWarnStyleOff(true);
                 }
                 else if (!strcmp(sw, "-Wno-style")) {
                     FileLine::globalWarnStyleOff(true);
-                }
-                else if (!strcmp(sw, "-Wno-fatal")) {
-                    V3Error::warnFatal(false);
                 }
                 else {
                     string msg = sw+strlen("-Wno-");
@@ -1246,13 +1250,15 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
         // Strip simple comments
         string oline;
         // cppcheck-suppress StlMissingComparison
-        for (string::const_iterator pos = line.begin(); pos != line.end(); ++pos) {
+        char lastch = ' ';
+        for (string::const_iterator pos = line.begin(); pos != line.end(); lastch = *pos++) {
             if (inCmt) {
                 if (*pos=='*' && *(pos+1)=='/') {
                     inCmt = false;
                     ++pos;
                 }
-            } else if (*pos=='/' && *(pos+1)=='/') {
+            } else if (*pos=='/' && *(pos+1)=='/'
+                       && (pos == line.begin() || isspace(lastch))) {    // But allow /file//path
                 break;  // Ignore to EOL
             } else if (*pos=='/' && *(pos+1)=='*') {
                 inCmt = true;
@@ -1283,7 +1289,7 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
                 ST_IN_DOUBLE_QUOTED_STR};
 
     state st = ST_IN_OPTION;
-    state last_st;
+    state last_st = ST_IN_OPTION;
     string arg;
     for (string::size_type pos = 0;
          pos < whole_file.length(); ++pos) {
@@ -1401,7 +1407,7 @@ void V3Options::showVersion(bool verbose) {
     cout << "License Version 2.0.\n";
 
     cout <<endl;
-    cout << "See http://www.veripool.org/verilator for documentation\n";
+    cout << "See https://verilator.org for documentation\n";
 
     cout <<endl;
     cout << "Summary of configuration:\n";
@@ -1434,6 +1440,7 @@ V3Options::V3Options() {
     m_bboxUnsup = false;
     m_cdc = false;
     m_cmake = false;
+    m_context = true;
     m_coverageLine = false;
     m_coverageToggle = false;
     m_coverageUnderscore = false;
@@ -1456,6 +1463,7 @@ V3Options::V3Options() {
     m_makePhony = false;
     m_orderClockDly = true;
     m_outFormatOk = false;
+    m_pedantic = false;
     m_pinsBv = 65;
     m_pinsScUint = false;
     m_pinsScBigUint = false;

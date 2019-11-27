@@ -41,9 +41,5 @@ extern "C" {
 
 static int hidden = 0;
 
-void dpii_sys_task(int i) {
-    hidden = i;
-}
-int dpii_sys_func(int i) {
-    return i + hidden;
-}
+void dpii_sys_task(int i) { hidden = i; }
+int dpii_sys_func(int i) { return i + hidden; }

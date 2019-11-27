@@ -51,7 +51,7 @@ protected:
 public:
     VerilatedSerialize() {
         m_isOpen = false;
-        m_bufp = new vluint8_t [bufferSize()];
+        m_bufp = new vluint8_t[bufferSize()];
         m_cp = m_bufp;
     }
     virtual ~VerilatedSerialize() {
@@ -112,7 +112,7 @@ protected:
 public:
     VerilatedDeserialize() {
         m_isOpen = false;
-        m_bufp = new vluint8_t [bufferSize()];
+        m_bufp = new vluint8_t[bufferSize()];
         m_cp = m_bufp;
         m_endp = NULL;
     }
@@ -158,11 +158,11 @@ private:
 
 class VerilatedSave : public VerilatedSerialize {
 private:
-    int                 m_fd;           ///< File descriptor we're writing to
+    int m_fd;  ///< File descriptor we're writing to
 
 public:
     // CONSTRUCTORS
-    VerilatedSave() { m_fd=-1; }
+    VerilatedSave() { m_fd = -1; }
     virtual ~VerilatedSave() { close(); }
     // METHODS
     void open(const char* filenamep) VL_MT_UNSAFE_ONE;  ///< Open the file; call isOpen() to see if errors
@@ -177,11 +177,11 @@ public:
 
 class VerilatedRestore : public VerilatedDeserialize {
 private:
-    int                 m_fd;           ///< File descriptor we're writing to
+    int m_fd;  ///< File descriptor we're writing to
 
 public:
     // CONSTRUCTORS
-    VerilatedRestore() { m_fd=-1; }
+    VerilatedRestore() { m_fd = -1; }
     virtual ~VerilatedRestore() { close(); }
 
     // METHODS

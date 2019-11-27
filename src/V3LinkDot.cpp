@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Resolve module/signal name references
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
@@ -849,8 +849,8 @@ class LinkDotFindVisitor : public AstNVisitor {
             VSymEnt* okSymp;
             aboveSymp = m_statep->findDotted(aboveSymp, scope, baddot, okSymp);
             UASSERT_OBJ(aboveSymp, nodep,
-                        "Can't find cell insertion point at '"
-                        <<baddot<<"' in: "<<nodep->prettyNameQ());
+                        "Can't find cell insertion point at "
+                        <<AstNode::prettyNameQ(baddot)<<" in: "<<nodep->prettyNameQ());
         }
         {
             m_scope = m_scope+"."+nodep->name();
@@ -880,8 +880,8 @@ class LinkDotFindVisitor : public AstNVisitor {
             VSymEnt* okSymp;
             aboveSymp = m_statep->findDotted(aboveSymp, dotted, baddot, okSymp);
             UASSERT_OBJ(aboveSymp, nodep,
-                        "Can't find cellinline insertion point at '"
-                        <<baddot<<"' in: "<<nodep->prettyNameQ());
+                        "Can't find cellinline insertion point at "
+                        <<AstNode::prettyNameQ(baddot)<<" in: "<<nodep->prettyNameQ());
             m_statep->insertInline(aboveSymp, m_modSymp, nodep, ident);
         } else {  // No __DOT__, just directly underneath
             m_statep->insertInline(aboveSymp, m_modSymp, nodep, nodep->name());
@@ -1954,7 +1954,8 @@ private:
             AstNode* varEtcp = m_ds.m_dotp->lhsp()->unlinkFrBack();
             AstNode* newp = new AstMemberSel(nodep->fileline(), varEtcp,
                                              VFlagChildDType(), nodep->name());
-            nodep->replaceWith(newp);
+            if (m_ds.m_dotErr) nodep->unlinkFrBack();  // Avoid circular node loop on errors
+            else nodep->replaceWith(newp);
             pushDeletep(nodep); VL_DANGLING(nodep);
         }
         else {
@@ -2143,9 +2144,10 @@ private:
                                        <<": "<<nodep->prettyNameQ()<<endl
                                        <<(suggest.empty() ? "" : nodep->warnMore()+suggest));
                     } else {
-                        nodep->v3error("Can't find definition of '"
-                                       <<(baddot!="" ? baddot : nodep->prettyName())
-                                       <<"' in dotted "<<expectWhat
+                        nodep->v3error("Can't find definition of "
+                                       <<(!baddot.empty() ? AstNode::prettyNameQ(baddot)
+                                          : nodep->prettyNameQ())
+                                       <<" in dotted "<<expectWhat
                                        <<": '"<<m_ds.m_dotText+"."+nodep->prettyName()<<"'");
                         if (okSymp) {
                             okSymp->cellErrorScopes(nodep, AstNode::prettyName(m_ds.m_dotText));
@@ -2204,8 +2206,8 @@ private:
                 string inl = AstNode::dedotName(nodep->inlinedDots());
                 dotSymp = m_statep->findDotted(dotSymp, inl, baddot, okSymp);
                 UASSERT_OBJ(dotSymp, nodep,
-                            "Couldn't resolve inlined scope '"
-                            <<baddot<<"' in: "<<nodep->inlinedDots());
+                            "Couldn't resolve inlined scope "
+                            <<AstNode::prettyNameQ(baddot)<<" in: "<<nodep->inlinedDots());
             }
             dotSymp = m_statep->findDotted(dotSymp, nodep->dotted(), baddot, okSymp);  // Maybe NULL
             if (!m_statep->forScopeCreation()) {
@@ -2214,10 +2216,11 @@ private:
                 nodep->varp(varp);
                 UINFO(7,"         Resolved "<<nodep<<endl);  // Also prints varp
                 if (!nodep->varp()) {
-                    nodep->v3error("Can't find definition of '"
-                                   <<baddot<<"' in dotted signal: '"
+                    nodep->v3error("Can't find definition of "
+                                   <<AstNode::prettyNameQ(baddot)<<" in dotted signal: '"
                                    <<nodep->dotted()+"."+nodep->prettyName()<<"'");
                     okSymp->cellErrorScopes(nodep);
+                    return;
                 }
                 // V3Inst may have expanded arrays of interfaces to
                 // AstVarXRef's even though they are in the same module detect
@@ -2235,8 +2238,9 @@ private:
                 VSymEnt* foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot);
                 AstVarScope* vscp = foundp ? VN_CAST(foundp->nodep(), VarScope) : NULL;
                 if (!vscp) {
-                    nodep->v3error("Can't find varpin scope of '"<<baddot
-                                   <<"' in dotted signal: '"
+                    nodep->v3error("Can't find varpin scope of "
+                                   <<AstNode::prettyNameQ(baddot)
+                                   <<" in dotted signal: '"
                                    <<nodep->dotted()+"."+nodep->prettyName()<<"'");
                     okSymp->cellErrorScopes(nodep);
                 } else {
@@ -2261,7 +2265,7 @@ private:
         // EnumItemRef may be under a dot.  Should already be resolved.
         iterateChildren(nodep);
     }
-    virtual void visit(AstMethodSel* nodep) {
+    virtual void visit(AstMethodCall* nodep) {
         // Created here so should already be resolved.
         DotStates lastStates = m_ds;
         {
@@ -2309,8 +2313,8 @@ private:
             AstNode* varEtcp = m_ds.m_dotp->lhsp()->unlinkFrBack();
             AstNode* argsp = NULL;
             if (nodep->pinsp()) argsp = nodep->pinsp()->unlinkFrBackWithNext();
-            AstNode* newp = new AstMethodSel(nodep->fileline(), varEtcp,
-                                             VFlagChildDType(), nodep->name(), argsp);
+            AstNode* newp = new AstMethodCall(nodep->fileline(), varEtcp,
+                                              VFlagChildDType(), nodep->name(), argsp);
             nodep->replaceWith(newp);
             pushDeletep(nodep); VL_DANGLING(nodep);
             return;
@@ -2342,8 +2346,9 @@ private:
                     dotSymp = m_statep->findDotted(dotSymp, inl, baddot, okSymp);
                     if (!dotSymp) {
                         okSymp->cellErrorScopes(nodep);
-                        nodep->v3fatalSrc("Couldn't resolve inlined scope '"
-                                          <<baddot<<"' in: "<<nodep->inlinedDots());
+                        nodep->v3fatalSrc("Couldn't resolve inlined scope "
+                                          <<AstNode::prettyNameQ(baddot)
+                                          <<" in: "<<nodep->inlinedDots());
                     }
                 }
                 dotSymp = m_statep->findDotted(dotSymp, nodep->dotted(),
@@ -2374,8 +2379,9 @@ private:
                 } else {
                     string suggest = m_statep->suggestSymFallback(
                         dotSymp, nodep->name(), LinkNodeMatcherFTask());
-                    nodep->v3error("Can't find definition of '"<<baddot
-                                   <<"' in dotted task/function: '"
+                    nodep->v3error("Can't find definition of "
+                                   <<AstNode::prettyNameQ(baddot)
+                                   <<" in dotted task/function: '"
                                    <<nodep->dotted()+"."+nodep->prettyName()<<"'\n"
                                    <<(suggest.empty() ? "" : nodep->warnMore()+suggest));
                     okSymp->cellErrorScopes(nodep);

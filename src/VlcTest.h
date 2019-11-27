@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: verilator_coverage: Test/coverage file container
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
@@ -42,7 +42,7 @@ private:
     vluint64_t m_rank;  //< Execution rank suggestion
     vluint64_t m_rankPoints;  //< Ranked additional points
     vluint64_t m_user;  //< User data for algorithms (not persisted in .dat file)
-    VlcBuckets m_buckets; //< Coverage data for each coverage point
+    VlcBuckets m_buckets;  //< Coverage data for each coverage point
 
 public:
     // CONSTRUCTORS

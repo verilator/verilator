@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Recreate loops to help pack caches
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

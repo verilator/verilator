@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Waves tracing
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
@@ -52,6 +52,7 @@ private:
     AstVarScope*        m_traVscp;      // Signal being trace constructed
     AstNode*            m_traValuep;    // Signal being traced's value to trace in it
     string              m_traShowname;  // Signal being traced's component name
+    string              m_ifShowname;   // Interface reference being traced's scope name
 
     VDouble0            m_statSigs;     // Statistic tracking
     VDouble0            m_statIgnSigs;  // Statistic tracking
@@ -160,8 +161,12 @@ private:
             // Compute show name
             // This code assumes SPTRACEVCDC_VERSION >= 1330;
             // it uses spaces to separate hierarchy components.
-            m_traShowname = AstNode::vcdName(scopep->name() + " " + varp->name());
-            if (m_traShowname.substr(0, 4) == "TOP ") m_traShowname.replace(0, 4, "");
+            if (m_ifShowname.empty()) {
+                m_traShowname = AstNode::vcdName(scopep->name() + " " + varp->name());
+                if (m_traShowname.substr(0, 4) == "TOP ") m_traShowname.replace(0, 4, "");
+            } else {
+                m_traShowname = AstNode::vcdName(m_ifShowname + " " + varp->name());
+            }
             UASSERT_OBJ(m_initSubFuncp, nodep, "NULL");
 
             m_traVscp = nodep;
@@ -193,6 +198,24 @@ private:
     virtual void visit(AstRefDType* nodep) {
         if (m_traVscp) {
             iterate(nodep->subDTypep()->skipRefp());
+        }
+    }
+    virtual void visit(AstIfaceRefDType* nodep) {
+        if (m_traVscp && nodep->ifacep()) {
+            // Stash the signal state because we're going to go through another VARSCOPE
+            AstVarScope* traVscp = m_traVscp;
+            AstNode* traValuep = m_traValuep;
+            {
+                m_traVscp = NULL;
+                m_traValuep = NULL;
+                m_ifShowname = m_traShowname;
+                m_traShowname = "";
+                iterate(nodep->ifacep());
+                m_traShowname = m_ifShowname;
+                m_ifShowname = "";
+            }
+            m_traVscp = traVscp;
+            m_traValuep = traValuep;
         }
     }
     virtual void visit(AstUnpackArrayDType* nodep) {

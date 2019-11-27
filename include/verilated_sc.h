@@ -19,10 +19,9 @@
 ///     This file is included automatically by Verilator at the top of
 ///     all SystemC files it generates.
 ///
-/// Code available from: http://www.veripool.org/verilator
+/// Code available from: https://verilator.org
 ///
 //*************************************************************************
-
 
 #ifndef _VERILATED_SC_H_
 #define _VERILATED_SC_H_ 1  ///< Header Guard

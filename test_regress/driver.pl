@@ -110,7 +110,7 @@ if (! GetOptions(
           "atsim|athdl!"=> sub { $opt_scenarios{atsim} = $_[1]; },
           "dist!"       => sub { $opt_scenarios{dist} = $_[1]; },
           "ghdl!"       => sub { $opt_scenarios{ghdl} = $_[1]; },
-          "iverilog!"   => sub { $opt_scenarios{iverilog} = $_[1]; },
+          "iv!"         => sub { $opt_scenarios{iv} = $_[1]; },
           "ms!"         => sub { $opt_scenarios{ms} = $_[1]; },
           "nc!"         => sub { $opt_scenarios{nc} = $_[1]; },
           "vlt!"        => sub { $opt_scenarios{vlt} = $_[1]; },
@@ -366,7 +366,8 @@ sub wait_and_report {
     # Wait for all children to finish
     while ($::Fork->is_any_left) {
         $::Fork->poll;
-        if (time() - ($self->{_last_summary_time} || 0) >= 30) {
+        if ((time() - ($self->{_last_summary_time} || 0) >= 30)
+            && (!$opt_gdb && !$opt_gdbsim)) {  # Don't show for interactive gdb etc
             $self->print_summary(force=>1, show_running=>1);
         }
         Time::HiRes::usleep 100*1000;
@@ -407,7 +408,7 @@ sub print_summary {
                   @_);
     if (!$self->{quiet} || $params{force}
         || ($self->{left_cnt} < 5)
-        || time() - ($self->{_last_summary_time} || 0) >= 15) {
+        || (time() - ($self->{_last_summary_time} || 0) >= 15)) {  # Don't show for interactive gdb etc
         $self->{_last_summary_time} = time();
         print STDERR ("==SUMMARY: ".$self->sprint_summary."\n");
         if ($params{show_running}) {
@@ -584,6 +585,7 @@ sub new {
         ms => 0,
         ms_flags => [split(/\s+/,("-sv -work $self->{obj_dir}/work"))],
         ms_flags2 => [],  # Overridden in some sim files
+        ms_pli => 1,  # need to use pli
         ms_run_flags => [split(/\s+/,"-lib $self->{obj_dir}/work -c -do 'run -all;quit' ")],
         # XSim
         xsim => 0,
@@ -1151,11 +1153,16 @@ sub execute {
                     );
     }
     elsif ($param{ms}) {
+        my @pli_opt=();
+        if ($param{ms_pli}) {
+            unshift @pli_opt, "-pli $self->{obj_dir}/libvpi.so";
+        }
         $self->_run(logfile=>"$self->{obj_dir}/ms_sim.log",
                     fails=>$param{fails},
                     cmd=>["echo q | ".$run_env.($ENV{VERILATOR_MODELSIM}||"vsim"),
                           @{$param{ms_run_flags}},
                           @{$param{all_run_flags}},
+                          @{pli_opt},
                           (" top")
                           ],
                     %param,
@@ -1454,7 +1461,13 @@ sub _run {
             autoflush STDOUT 1;
             autoflush STDERR 1;
             system "$command";
-            exit($? ? 10 : 0);  # $?<<8 misses coredumps
+            my $status = $?;
+            if (($status & 127) == 4  # SIGILL
+                || ($status & 127) == 8  # SIGFPA
+                || ($status & 127) == 11) {  # SIGSEGV
+                $Self->error("Exec failed with core dump");
+            }
+            exit($? ? 10 : 0);  # $?>>8 misses coredumps
         }
         waitpid($pid,0);
         $status = $? || 0;
@@ -1465,7 +1478,7 @@ sub _run {
     if (!$param{fails} && $status) {
         my $firstline = "";
         if (my $fh = IO::File->new("<$param{logfile}")) {
-            $firstline = $fh->getline;
+            $firstline = $fh->getline || '';
             chomp $firstline;
         }
         $self->error("Exec of $param{cmd}[0] failed: $firstline\n");
@@ -1957,6 +1970,11 @@ sub files_identical {
                     && !/^- [a-z.0-9]+:\d+:[^\n]+\n/
                     && !/^-node:/
                     && !/^dot [^\n]+\n/
+            } @l1;
+            @l1 = map {
+                s/(Internal Error: [^\n]+\.cpp):[0-9]+:/$1:#:/;
+                s/^-V\{t[0-9]+,[0-9]+\}/-V{t#,#}/;  # --vlt vs --vltmt run differences
+                $_;
             } @l1;
             for (my $l=0; $l<=$#l1; ++$l) {
                 # Don't put control chars into our source repository
@@ -2628,7 +2646,7 @@ Command to use to invoke XSim xvlog
 
 =head1 DISTRIBUTION
 
-The latest version is available from L<http://www.veripool.org/>.
+The latest version is available from L<https://verilator.org>.
 
 Copyright 2003-2019 by Wilson Snyder.  Verilator is free software; you can
 redistribute it and/or modify it under the terms of either the GNU Lesser

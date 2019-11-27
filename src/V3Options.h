@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Command line options
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
@@ -142,6 +142,7 @@ class V3Options {
     bool        m_bboxUnsup;    // main switch: --bbox-unsup
     bool        m_cdc;          // main switch: --cdc
     bool        m_cmake;        // main switch: --make cmake
+    bool        m_context;      // main switch: --Wcontext
     bool        m_coverageLine; // main switch: --coverage-block
     bool        m_coverageToggle;// main switch: --coverage-toggle
     bool        m_coverageUnderscore;// main switch: --coverage-underscore
@@ -163,6 +164,7 @@ class V3Options {
     bool        m_gmake;        // main switch: --make gmake
     bool        m_orderClockDly;// main switch: --order-clock-delay
     bool        m_outFormatOk;  // main switch: --cc, --sc or --sp was specified
+    bool        m_pedantic;     // main switch: --Wpedantic
     bool        m_pinsScUint;   // main switch: --pins-sc-uint
     bool        m_pinsScBigUint;// main switch: --pins-sc-biguint
     bool        m_pinsUint8;    // main switch: --pins-uint8
@@ -319,6 +321,7 @@ class V3Options {
     bool bboxUnsup() const { return m_bboxUnsup; }
     bool cdc() const { return m_cdc; }
     bool cmake() const { return m_cmake; }
+    bool context() const { return m_context; }
     bool coverage() const { return m_coverageLine || m_coverageToggle || m_coverageUser; }
     bool coverageLine() const { return m_coverageLine; }
     bool coverageToggle() const { return m_coverageToggle; }
@@ -348,6 +351,7 @@ class V3Options {
     bool orderClockDly() const { return m_orderClockDly; }
     bool outFormatOk() const { return m_outFormatOk; }
     bool keepTempFiles() const { return (V3Error::debugDefault()!=0); }
+    bool pedantic() const { return m_pedantic; }
     bool pinsScUint() const { return m_pinsScUint; }
     bool pinsScBigUint() const { return m_pinsScBigUint; }
     bool pinsUint8() const { return m_pinsUint8; }

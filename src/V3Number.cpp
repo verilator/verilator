@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Large 4-state numbers
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
@@ -366,7 +366,7 @@ V3Number& V3Number::setDouble(double value) {
     }
     m_double = true;
     union { double d; uint32_t u[2]; } u;
-    u.d = value; if (u.d) { }
+    u.d = value; if (u.d != 0.0) { }
     for (int i=2; i<words(); i++) m_value[i]=m_valueX[i] = 0;
     m_value[0] = u.u[0]; m_value[1] = u.u[1];
     return *this;
@@ -2074,6 +2074,25 @@ V3Number& V3Number::opReplN(const V3Number& lhs, uint32_t rhsval) {
     }
     return setString(out);
 }
+V3Number& V3Number::opToLowerN(const V3Number& lhs) {
+    NUM_ASSERT_OP_ARGS1(lhs);
+    NUM_ASSERT_STRING_ARGS1(lhs);
+    std::string out = lhs.toString();
+    for (std::string::iterator it = out.begin(); it != out.end(); ++it) {
+        *it = tolower(*it);
+    }
+    return setString(out);
+}
+V3Number& V3Number::opToUpperN(const V3Number& lhs) {
+    NUM_ASSERT_OP_ARGS1(lhs);
+    NUM_ASSERT_STRING_ARGS1(lhs);
+    std::string out = lhs.toString();
+    for (std::string::iterator it = out.begin(); it != out.end(); ++it) {
+        *it = toupper(*it);
+    }
+    return setString(out);
+}
+
 V3Number& V3Number::opEqN(const V3Number& lhs, const V3Number& rhs) {
     NUM_ASSERT_OP_ARGS2(lhs, rhs);
     NUM_ASSERT_STRING_ARGS2(lhs, rhs);

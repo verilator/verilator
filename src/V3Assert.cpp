@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Collect and print statistics
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
@@ -94,7 +94,7 @@ private:
                                            AstDisplayType::DT_ERROR, message, NULL, NULL);
         AstNode* bodysp = dispp;
         replaceDisplay(dispp, "%%Error");  // Convert to standard DISPLAY format
-        bodysp->addNext(new AstStop(nodep->fileline()));
+        bodysp->addNext(new AstStop(nodep->fileline(), true));
         return bodysp;
     }
 

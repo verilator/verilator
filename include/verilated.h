@@ -20,10 +20,9 @@
 ///     all C++ files it generates.  It contains standard macros and
 ///     classes required by the Verilated code.
 ///
-/// Code available from: http://www.veripool.org/verilator
+/// Code available from: https://verilator.org
 ///
 //*************************************************************************
-
 
 #ifndef _VERILATED_H_
 #define _VERILATED_H_ 1  ///< Header Guard
@@ -222,13 +221,6 @@ public:
 //=========================================================================
 // Declare nets
 
-#ifndef VL_ST_SIG
-# define VL_ST_SIG8(name, msb,lsb)      CData name              ///< Declare signal, 1-8 bits
-# define VL_ST_SIG16(name, msb,lsb)     SData name              ///< Declare signal, 9-16 bits
-# define VL_ST_SIG64(name, msb,lsb)     QData name              ///< Declare signal, 33-64 bits
-# define VL_ST_SIG(name, msb,lsb)       IData name              ///< Declare signal, 17-32 bits
-# define VL_ST_SIGW(name,msb,lsb,words) WData name[words]       ///< Declare signal, 65+ bits
-#endif
 #ifndef VL_SIG
 # define VL_SIG8(name, msb,lsb)         CData name              ///< Declare signal, 1-8 bits
 # define VL_SIG16(name, msb,lsb)        SData name              ///< Declare signal, 9-16 bits
@@ -353,7 +345,7 @@ class Verilated {
     // Slow path variables
     static VerilatedMutex m_mutex;  ///< Mutex for s_s/s_ns members, when VL_THREADED
 
-    static VerilatedVoidCb  s_flushCb;  ///< Flush callback function
+    static VerilatedVoidCb s_flushCb;  ///< Flush callback function
 
     static struct Serialized {  // All these members serialized/deserialized
         // Fast path
@@ -363,6 +355,8 @@ class Verilated {
         bool            s_assertOn;             ///< Assertions are enabled
         bool            s_fatalOnVpiError;      ///< Stop on vpi error/unsupported
         // Slow path
+        int s_errorCount;  ///< Number of errors
+        int s_errorLimit;  ///< Stop on error number
         int s_randReset;  ///< Random reset: 0=all 0s, 1=all 1s, 2=random
         int s_randSeed;  ///< Random seed: 0=random
         Serialized();
@@ -417,9 +411,9 @@ public:
     /// 1 = Set all bits to one
     /// 2 = Randomize all bits
     static void randReset(int val) VL_MT_SAFE;
-    static int  randReset() VL_MT_SAFE { return s_s.s_randReset; }  ///< Return randReset value
+    static int randReset() VL_MT_SAFE { return s_s.s_randReset; }  ///< Return randReset value
     static void randSeed(int val) VL_MT_SAFE;
-    static int  randSeed() VL_MT_SAFE { return s_s.s_randSeed; }  ///< Return randSeed value
+    static int randSeed() VL_MT_SAFE { return s_s.s_randSeed; }  ///< Return randSeed value
 
     /// Enable debug of internal verilated code
     static void debug(int level) VL_MT_SAFE;
@@ -435,6 +429,13 @@ public:
     static void calcUnusedSigs(bool flag) VL_MT_SAFE;
     static bool calcUnusedSigs() VL_MT_SAFE {  ///< Return calcUnusedSigs value
         return s_s.s_calcUnusedSigs; }
+    /// Current number of errors/assertions
+    static void errorCount(int val) VL_MT_SAFE;
+    static void errorCountInc() VL_MT_SAFE;
+    static int errorCount() VL_MT_SAFE { return s_s.s_errorCount; }
+    /// Set number of errors/assertions before stop
+    static void errorLimit(int val) VL_MT_SAFE;
+    static int errorLimit() VL_MT_SAFE { return s_s.s_errorLimit; }
     /// Did the simulation $finish?
     static void gotFinish(bool flag) VL_MT_SAFE;
     static bool gotFinish() VL_MT_SAFE { return s_s.s_gotFinish; }  ///< Return if got a $finish
@@ -573,7 +574,8 @@ extern void vl_fatal(const char* filename, int linenum, const char* hier,
 /// Multithread safe wrapper for calls to $finish
 extern void VL_FINISH_MT(const char* filename, int linenum, const char* hier) VL_MT_SAFE;
 /// Multithread safe wrapper for calls to $stop
-extern void VL_STOP_MT(const char* filename, int linenum, const char* hier) VL_MT_SAFE;
+extern void VL_STOP_MT(const char* filename, int linenum, const char* hier,
+                       bool maybe = true) VL_MT_SAFE;
 /// Multithread safe wrapper to call for a couple of fatal messages
 extern void VL_FATAL_MT(const char* filename, int linenum, const char* hier,
                         const char* msg) VL_MT_SAFE;

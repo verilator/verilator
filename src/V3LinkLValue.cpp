@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: LValue module/signal name references
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
@@ -146,6 +146,14 @@ private:
             m_setRefLvalue = true;
             iterateAndNextNull(nodep->filep());
             iterateAndNextNull(nodep->exprsp());
+        }
+        m_setRefLvalue = last_setRefLvalue;
+    }
+    virtual void visit(AstFUngetC* nodep) {
+        bool last_setRefLvalue = m_setRefLvalue;
+        {
+            m_setRefLvalue = true;
+            iterateAndNextNull(nodep->filep());
         }
         m_setRefLvalue = last_setRefLvalue;
     }

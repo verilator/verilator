@@ -7,7 +7,7 @@
 //         in perfectMatching(). True minimum-weight perfect matching
 //         would produce a better result. How much better is TBD.
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //

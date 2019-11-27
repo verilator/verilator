@@ -2,7 +2,7 @@
 //*************************************************************************
 // DESCRIPTION: Verilator: Error handling
 //
-// Code available from: http://www.veripool.org/verilator
+// Code available from: https://verilator.org
 //
 //*************************************************************************
 //
@@ -100,6 +100,7 @@ public:
         REALCVT,        // Real conversion
         REDEFMACRO,     // Redefining existing define macro
         SELRANGE,       // Selection index out of range
+        SHORTREAL,      // Shortreal not supported
         STMTDLY,        // Delayed statement
         SYMRSVDWORD,    // Symbol is Reserved Word
         SYNCASYNCNET,   // Mixed sync + async reset
@@ -151,7 +152,7 @@ public:
             "MULTIDRIVEN", "MULTITOP",
             "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY", "PROCASSWIRE",
             "REALCVT", "REDEFMACRO",
-            "SELRANGE", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
+            "SELRANGE", "SHORTREAL", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT",
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
             "UNPACKED", "UNSIGNED", "UNUSED",
@@ -307,8 +308,11 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
     ::v3errorEndFatal((V3Error::v3errorPrep(V3ErrorCode::EC_FATAL), \
                        (V3Error::v3errorStr()<<msg), V3Error::v3errorStr()));
 
-#define UINFO(level,stmsg) {if (VL_UNCOVERABLE(debug()>=(level))) { cout<<"- "<<V3Error::lineStr(__FILE__,__LINE__)<<stmsg; }}
-#define UINFONL(level,stmsg) {if (VL_UNCOVERABLE(debug()>=(level))) { cout<<stmsg; } }
+#define UINFO(level, stmsg) \
+    { if (VL_UNCOVERABLE(debug() >= (level))) { \
+            cout << "- " << V3Error::lineStr(__FILE__, __LINE__) << stmsg; } }
+#define UINFONL(level, stmsg) \
+    { if (VL_UNCOVERABLE(debug() >= (level))) { cout << stmsg; } }
 
 #ifdef VL_DEBUG
 # define UDEBUGONLY(stmts) {stmts}

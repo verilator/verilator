@@ -28,7 +28,7 @@ my $header =
      ."\n"
      ."\\title{\\includegraphics[width=6cm]{docs/verilator_logo.png}\\\\ ${Opt_DistTitle}}\n"
      ."\\date{${Opt_DistDate}}\n"
-     ."\\author{http:\/\/www.veripool.org}\n"
+     ."\\author{https:\/\/verilator.org}\n"
      ."\\lhead[${Opt_DistTitle}]{${Opt_DistTitle}}\n"
     );
 
