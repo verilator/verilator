@@ -65,6 +65,7 @@ class ProtectVisitor : public AstNVisitor {
     AstTextBlock* m_cIgnoreParamsp;     // Combo ignore parameter list
     string m_libName;
     string m_topName;
+    bool m_foundTop;                    // Have seen the top module
 
     // VISITORS
     virtual void visit(AstNetlist* nodep) {
@@ -78,7 +79,11 @@ class ProtectVisitor : public AstNVisitor {
     }
 
     virtual void visit(AstNodeModule* nodep) {
-        UASSERT_OBJ(!nodep->nextp(), nodep, "Multiple root modules");
+        if (!nodep->isTop()) {
+            return;
+        } else {
+            UASSERT_OBJ(!m_foundTop, nodep, "Multiple root modules");
+        }
         FileLine* fl = nodep->fileline();
         createSvFile(fl);
         createCppFile(fl);
@@ -88,6 +93,7 @@ class ProtectVisitor : public AstNVisitor {
         V3Hash hash = V3Hashed::uncachedHash(m_cfilep);
         m_hashValuep->addText(fl, cvtToStr(hash.fullValue())+";\n");
         m_cHashValuep->addText(fl, cvtToStr(hash.fullValue())+";\n");
+        m_foundTop = true;
     }
 
     void addComment(AstTextBlock* txtp, FileLine* fl, const string& comment) {
@@ -439,7 +445,7 @@ class ProtectVisitor : public AstNVisitor {
         m_comboAssignsp(NULL), m_cHashValuep(NULL), m_cComboParamsp(NULL), m_cComboInsp(NULL),
         m_cComboOutsp(NULL), m_cSeqParamsp(NULL), m_cSeqClksp(NULL), m_cSeqOutsp(NULL),
         m_cIgnoreParamsp(NULL), m_libName(v3Global.opt.protectLib()),
-        m_topName(v3Global.opt.prefix())
+        m_topName(v3Global.opt.prefix()), m_foundTop(false)
     {
         iterate(nodep);
     }
