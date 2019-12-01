@@ -1264,7 +1264,99 @@ class EmitCImp : EmitCStmts {
 
     // METHODS
     // Low level
-    void emitVarReset(AstVar* varp);
+    void emitVarReset(AstVar* varp) {
+        AstNodeDType* dtypep = varp->dtypep()->skipRefp();
+        if (varp->isIO() && m_modp->isTop() && optSystemC()) {
+            // System C top I/O doesn't need loading, as the lower level subinst code does it.}
+        } else if (varp->isParam()) {
+            UASSERT_OBJ(varp->valuep(), varp, "No init for a param?");
+            // If a simple CONST value we initialize it using an enum
+            // If an ARRAYINIT we initialize it using an initial block similar to a signal
+            //puts("// parameter "+varp->nameProtect()+" = "+varp->valuep()->name()+"\n");
+        } else if (AstInitArray* initarp = VN_CAST(varp->valuep(), InitArray)) {
+            if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+                if (initarp->defaultp()) {
+                    // MSVC++ pre V7 doesn't support 'for (int ...)', so declare in sep block
+                    puts("{ int __Vi=0;");
+                    puts(" for (; __Vi<"+cvtToStr(adtypep->elementsConst()));
+                    puts("; ++__Vi) {\n");
+                    emitSetVarConstant(varp->nameProtect()+"[__Vi]",
+                                       VN_CAST(initarp->defaultp(), Const));
+                    puts("}}\n");
+                }
+                const AstInitArray::KeyItemMap& mapr = initarp->map();
+                for (AstInitArray::KeyItemMap::const_iterator it = mapr.begin();
+                     it != mapr.end(); ++it) {
+                    AstNode* valuep = it->second->valuep();
+                    emitSetVarConstant(varp->nameProtect()
+                                       +"["+cvtToStr(it->first)+"]",
+                                       VN_CAST(valuep, Const));
+                }
+            } else {
+                varp->v3fatalSrc("InitArray under non-arrayed var");
+            }
+        } else {
+            puts(emitVarResetRecurse(varp, dtypep, 0, ""));
+        }
+    }
+    string emitVarResetRecurse(AstVar* varp, AstNodeDType* dtypep, int depth, string suffix) {
+        dtypep = dtypep->skipRefp();
+        AstBasicDType* basicp = dtypep->basicp();
+        // Returns string to do resetting, empty to do nothing (which caller should handle)
+        if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+            UASSERT_OBJ(adtypep->msb() >= adtypep->lsb(), varp,
+                        "Should have swapped msb & lsb earlier.");
+            string ivar = string("__Vi")+cvtToStr(depth);
+            // MSVC++ pre V7 doesn't support 'for (int ...)', so declare in sep block
+            string pre = ("{ int "+ivar+"="+cvtToStr(0)+";"
+                          +" for (; "+ivar+"<"+cvtToStr(adtypep->elementsConst())
+                          +"; ++"+ivar+") {\n");
+            string below = emitVarResetRecurse(varp, adtypep->subDTypep(), depth+1, suffix+"["+ivar+"]");
+            string post = "}}\n";
+            return below.empty() ? "" : pre + below + post;
+        }
+        else if (basicp && basicp->keyword() == AstBasicDTypeKwd::STRING) {
+            // String's constructor deals with it
+            return "";
+        }
+        else if (basicp) {
+            bool zeroit = (varp->attrFileDescr()  // Zero so we don't core dump if never $fopen
+                           || (basicp && basicp->isZeroInit())
+                           || (v3Global.opt.underlineZero()
+                               && !varp->name().empty() && varp->name()[0] == '_')
+                           || (v3Global.opt.xInitial() == "fast"
+                               || v3Global.opt.xInitial() == "0"));
+            splitSizeInc(1);
+            if (dtypep->isWide()) {  // Handle unpacked; not basicp->isWide
+                string out;
+                if (zeroit) out += "VL_ZERO_RESET_W(";
+                else out += "VL_RAND_RESET_W(";
+                out += cvtToStr(dtypep->widthMin());
+                out += ", "+varp->nameProtect()+suffix+");\n";
+                return out;
+            } else {
+                string out = varp->nameProtect() + suffix;
+                // If --x-initial-edge is set, we want to force an initial
+                // edge on uninitialized clocks (from 'X' to whatever the
+                // first value is). Since the class is instantiated before
+                // initial blocks are evaluated, this should not clash
+                // with any initial block settings.
+                if (zeroit || (v3Global.opt.xInitialEdge() && varp->isUsedClock())) {
+                    out += " = 0;\n";
+                } else {
+                    out += " = VL_RAND_RESET_";
+                    out += dtypep->charIQWN();
+                    out += "("+ cvtToStr(dtypep->widthMin())+");\n";
+                }
+                return out;
+            }
+        }
+        else {
+            v3fatalSrc("Unknown node type in reset generator: "<<varp->prettyTypeName());
+        }
+        return "";
+    }
+
     void emitCellCtors(AstNodeModule* modp);
     void emitSensitives();
     // Medium level
@@ -1303,8 +1395,8 @@ public:
 
 void EmitCStmts::emitVarDecl(const AstVar* nodep, const string& prefixIfImp) {
     AstBasicDType* basicp = nodep->basicp();
-    UASSERT_OBJ(basicp, nodep, "Unimplemented: Outputting this data type");
     if (nodep->isIO() && nodep->isSc()) {
+        UASSERT_OBJ(basicp, nodep, "Unimplemented: Outputting this data type");
         m_ctorVarsVec.push_back(nodep);
         if (nodep->attrScClocked() && nodep->isReadOnly()) {
             puts("sc_in_clk ");
@@ -1697,94 +1789,6 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep,
 
 //######################################################################
 // Internal EmitC
-
-void EmitCImp::emitVarReset(AstVar* varp) {
-    if (varp->isIO() && m_modp->isTop() && optSystemC()) {
-        // System C top I/O doesn't need loading, as the lower level subinst code does it.}
-    } else if (varp->isParam()) {
-        UASSERT_OBJ(varp->valuep(), varp, "No init for a param?");
-        // If a simple CONST value we initialize it using an enum
-        // If an ARRAYINIT we initialize it using an initial block similar to a signal
-        //puts("// parameter "+varp->nameProtect()+" = "+varp->valuep()->name()+"\n");
-    }
-    else if (AstInitArray* initarp = VN_CAST(varp->valuep(), InitArray)) {
-        if (AstUnpackArrayDType* arrayp = VN_CAST(varp->dtypeSkipRefp(), UnpackArrayDType)) {
-            if (initarp->defaultp()) {
-                // MSVC++ pre V7 doesn't support 'for (int ...)', so declare in sep block
-                puts("{ int __Vi=0;");
-                puts(" for (; __Vi<"+cvtToStr(arrayp->elementsConst()));
-                puts("; ++__Vi) {\n");
-                emitSetVarConstant(varp->nameProtect()+"[__Vi]",
-                                   VN_CAST(initarp->defaultp(), Const));
-                puts("}}\n");
-            }
-            const AstInitArray::KeyItemMap& mapr = initarp->map();
-            for (AstInitArray::KeyItemMap::const_iterator it = mapr.begin();
-                 it != mapr.end(); ++it) {
-                AstNode* valuep = it->second->valuep();
-                emitSetVarConstant(varp->nameProtect()
-                                   +"["+cvtToStr(it->first)+"]",
-                                   VN_CAST(valuep, Const));
-            }
-        } else {
-            varp->v3fatalSrc("InitArray under non-arrayed var");
-        }
-    }
-    else if (varp->basicp() && varp->basicp()->keyword() == AstBasicDTypeKwd::STRING) {
-        // Constructor deals with it
-    }
-    else {
-        int vects = 0;
-        // This isn't very robust and may need cleanup for other data types
-        for (AstUnpackArrayDType* arrayp=VN_CAST(varp->dtypeSkipRefp(), UnpackArrayDType);
-             arrayp;
-             arrayp = VN_CAST(arrayp->subDTypep()->skipRefp(), UnpackArrayDType)) {
-            int vecnum = vects++;
-            UASSERT_OBJ(arrayp->msb() >= arrayp->lsb(), varp,
-                        "Should have swapped msb & lsb earlier.");
-            string ivar = string("__Vi")+cvtToStr(vecnum);
-            // MSVC++ pre V7 doesn't support 'for (int ...)', so declare in sep block
-            puts("{ int __Vi"+cvtToStr(vecnum)+"="+cvtToStr(0)+";");
-            puts(" for (; "+ivar+"<"+cvtToStr(arrayp->elementsConst()));
-            puts("; ++"+ivar+") {\n");
-        }
-        bool zeroit = (varp->attrFileDescr()  // Zero it out, so we don't core dump if never call $fopen
-                       || (varp->basicp() && varp->basicp()->isZeroInit())
-                       || (v3Global.opt.underlineZero()
-                           && !varp->name().empty() && varp->name()[0]=='_')
-                       || (v3Global.opt.xInitial() == "fast" || v3Global.opt.xInitial() == "0"));
-        if (varp->isWide()) {
-            // DOCUMENT: We randomize everything.  If the user wants a _var to be zero,
-            // there should be a initial statement.  (Different from verilator2.)
-            if (zeroit) puts("VL_ZERO_RESET_W(");
-            else puts("VL_RAND_RESET_W(");
-            puts(cvtToStr(varp->widthMin()));
-            puts(",");
-            puts(varp->nameProtect());
-            for (int v=0; v<vects; ++v) puts( "[__Vi"+cvtToStr(v)+"]");
-            puts(");\n");
-        } else {
-            puts(varp->nameProtect());
-            for (int v=0; v<vects; ++v) puts( "[__Vi"+cvtToStr(v)+"]");
-            // If --x-initial-edge is set, we want to force an initial
-            // edge on uninitialized clocks (from 'X' to whatever the
-            // first value is). Since the class is instantiated before
-            // initial blocks are evaluated, this should not clash
-            // with any initial block settings.
-            if (zeroit || (v3Global.opt.xInitialEdge() && varp->isUsedClock())) {
-                puts(" = 0;\n");
-            } else {
-                puts(" = VL_RAND_RESET_");
-                emitIQW(varp);
-                puts("(");
-                puts(cvtToStr(varp->widthMin()));
-                puts(");\n");
-            }
-        }
-        for (int v=0; v<vects; ++v) puts( "}}\n");
-    }
-    splitSizeInc(1);
-}
 
 void EmitCImp::emitCoverageDecl(AstNodeModule* modp) {
     if (v3Global.opt.coverage()) {

@@ -113,17 +113,17 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep,
             AstNodeRange* prevp = VN_CAST(nrangep->backp(), NodeRange);
             if (prevp) nrangep->unlinkFrBack();
             AstRange* rangep = VN_CAST(nrangep, Range);
-            if (!rangep) {
-                UASSERT_OBJ(VN_IS(nrangep, UnsizedRange), nrangep,
-                            "Expected range or unsized range");
-                arrayp = new AstUnsizedArrayDType
-                    (nrangep->fileline(), VFlagChildDType(), arrayp);
-            } else if (isPacked) {
+            if (rangep && isPacked) {
                 arrayp = new AstPackArrayDType
                     (rangep->fileline(), VFlagChildDType(), arrayp, rangep);
-            } else {
+            } else if (rangep) {
                 arrayp = new AstUnpackArrayDType
                     (rangep->fileline(), VFlagChildDType(), arrayp, rangep);
+            } else if (VN_IS(nrangep, UnsizedRange)) {
+                arrayp = new AstUnsizedArrayDType
+                    (nrangep->fileline(), VFlagChildDType(), arrayp);
+            } else {
+                UASSERT_OBJ(0, nrangep, "Expected range or unsized range");
             }
             nrangep = prevp;
         }

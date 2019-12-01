@@ -1358,7 +1358,7 @@ private:
         // Note genvar's are also entered as integers
         nodep->dtypeFrom(nodep->varp());
         if (VN_IS(nodep->backp(), NodeAssign) && nodep->lvalue()) {  // On LHS
-            UASSERT_OBJ(nodep->widthMin(), nodep, "LHS var should be size complete");
+            UASSERT_OBJ(nodep->dtypep(), nodep, "LHS var should be dtype completed");
         }
         //if (debug()>=9) nodep->dumpTree(cout, "  VRout ");
         if (nodep->lvalue() && nodep->varp()->direction() == VDirection::CONSTREF) {
@@ -1631,6 +1631,7 @@ private:
 
     virtual void visit(AstMethodCall* nodep) {
         UINFO(5,"   METHODSEL "<<nodep<<endl);
+        if (nodep->didWidth()) return;
         if (debug()>=9) nodep->dumpTree("-mts-in: ");
         // Should check types the method requires, but at present we don't do much
         userIterate(nodep->fromp(), WidthVP(SELF, BOTH).p());
@@ -2308,10 +2309,10 @@ private:
                 }
                 case 'p': {  // Packed
                     AstBasicDType* basicp = argp ? argp->dtypep()->basicp() : NULL;
-                    if (basicp->isString()) {
+                    if (basicp && basicp->isString()) {
                         added = true;
                         newFormat += "\"%@\"";
-                    } else if (basicp->isDouble()) {
+                    } else if (basicp && basicp->isDouble()) {
                         added = true;
                         newFormat += "%g";
                     } else {
@@ -3478,6 +3479,16 @@ private:
         }
         if (stage & FINAL) {
             AstNodeDType* expDTypep = nodep->findStringDType();
+            underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
+        }
+        if (underp) {}  // cppcheck
+    }
+    void iterateCheckTyped(AstNode* nodep, const char* side, AstNode* underp,
+                           AstNodeDType* expDTypep, Stage stage) {
+        if (stage & PRELIM) {
+            underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, PRELIM).p());
+        }
+        if (stage & FINAL) {
             underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
         }
         if (underp) {}  // cppcheck

@@ -226,48 +226,56 @@ string AstVar::verilogKwd() const {
     }
 }
 
-class AstVar::VlArgTypeRecurseInfo {
+class AstVar::VlArgTypeRecursed {
 public:
-    bool m_named;
-    bool m_forFunc;
-    bool m_mayParen;
-    string m_namespc;
-    string paren(const string& s) {
-        if (m_mayParen) { m_mayParen = false; return " ("+s+")"; }
-        else return s;
+    string m_oref;  // To output, reference part before name, "&"
+    string m_osuffix;  // To output, suffixed after name, "[3]"
+    string m_oprefix;  // To output, prefixed before name, "Foo_t"
+    void clear() {
+        m_oref.clear();
+        m_osuffix.clear();
+        m_oprefix.clear();
+    }
+    string refParen(const string& name) {
+        return m_oref.empty() ? name : "("+m_oref+" "+name+")";
     }
 };
 
 string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string& namespc) const {
     UASSERT_OBJ(!forReturn, this,
                 "Internal data is never passed as return, but as first argument");
-    VlArgTypeRecurseInfo info;
-    info.m_named = named;
-    info.m_forFunc = forFunc;
-    info.m_mayParen = false;
-    info.m_namespc = namespc;
-
     string ostatic;
-    if (isStatic() && info.m_namespc.empty()) ostatic = "static ";
-    return ostatic + vlArgTypeRecurse(dtypep(), &info, "");
+    if (isStatic() && namespc.empty()) ostatic = "static ";
+
+    VlArgTypeRecursed info = vlArgTypeRecurse(forFunc, dtypep());
+
+    string oname;
+    if (named) {
+        oname += " ";
+        if (!namespc.empty()) oname += namespc+"::";
+        oname += VIdProtect::protectIf(name(), protect());
+    }
+    return ostatic + info.m_oprefix + info.refParen(oname) + info.m_osuffix;
 }
 
-string AstVar::vlArgTypeRecurse(AstNodeDType* dtypep, VlArgTypeRecurseInfo* infop,
-                                const string& inarray) const {
+AstVar::VlArgTypeRecursed AstVar::vlArgTypeRecurse(bool forFunc,
+                                                   const AstNodeDType* dtypep) const {
     dtypep = dtypep->skipRefp();
-    if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
-        string oarray = "["+cvtToStr(adtypep->declRange().elements())+"]";
-        return vlArgTypeRecurse(adtypep->subDTypep(), infop, inarray+oarray);
-    } else if (AstBasicDType* bdtypep = basicp()) {
+    if (const AstUnpackArrayDType* adtypep = VN_CAST_CONST(dtypep, UnpackArrayDType)) {
+        VlArgTypeRecursed info = vlArgTypeRecurse(forFunc, adtypep->subDTypep());
+        info.m_osuffix = "[" + cvtToStr(adtypep->declRange().elements()) + "]" + info.m_osuffix;
+        return info;
+    } else if (const AstBasicDType* bdtypep = dtypep->basicp()) {
         string otype;
-        string oarray = inarray;
+        string oarray;
         bool strtype = bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::STRING;
         string bitvec;
         if (bdtypep && !bdtypep->isOpaque() && !v3Global.opt.protectIds()) {
-            bitvec = ("/*"+cvtToStr(bdtypep->lsb()+bdtypep->width()-1)
-                      +":"+cvtToStr(bdtypep->lsb())+"*/");
+            // We don't print msb()/lsb() as multidim packed would require recursion,
+            // and may confuse users as C++ data is stored always with bit 0 used
+            bitvec += "/*"+cvtToStr(dtypep->width()-1)+":0*/";
         }
-        if ((infop->m_forFunc && isReadOnly())
+        if ((forFunc && isReadOnly())
             || bdtypep->keyword() == AstBasicDTypeKwd::CHARPTR
             || bdtypep->keyword() == AstBasicDTypeKwd::SCOPEPTR) otype += "const ";
         if (bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::CHARPTR) {
@@ -280,35 +288,35 @@ string AstVar::vlArgTypeRecurse(AstNodeDType* dtypep, VlArgTypeRecurseInfo* info
             otype += "float";
         } else if (strtype) {
             otype += "std::string";
-        } else if (widthMin() <= 8) {
+        } else if (dtypep->widthMin() <= 8) {  // Handle unpacked arrays; not bdtypep->width
             otype += "CData"+bitvec;
-        } else if (widthMin() <= 16) {
+        } else if (dtypep->widthMin() <= 16) {
             otype += "SData"+bitvec;
-        } else if (widthMin() <= VL_WORDSIZE) {
+        } else if (dtypep->widthMin() <= VL_WORDSIZE) {
             otype += "IData"+bitvec;
-        } else if (isQuad()) {
+        } else if (dtypep->isQuad()) {
             otype += "QData"+bitvec;
-        } else if (isWide()) {
+        } else if (dtypep->isWide()) {
             otype += "WData"+bitvec;  // []'s added later
-            oarray += "["+cvtToStr(widthWords())+"]";
+            oarray += "["+cvtToStr(dtypep->widthWords())+"]";
         }
 
-        string oname;
+        string oref;
         if (isDpiOpenArray()
-            || (infop->m_forFunc && (isWritable()
-                                     || direction() == VDirection::REF
-                                     || direction() == VDirection::CONSTREF
-                                     || (strtype && isNonOutput())))) {
-            oname += "&";
-            infop->m_mayParen = true;
+            || (forFunc && (isWritable()
+                            || direction() == VDirection::REF
+                            || direction() == VDirection::CONSTREF
+                            || (strtype && isNonOutput())))) {
+            oref = "&";
         }
-        if (infop->m_named) {
-            oname += " ";
-            if (!infop->m_namespc.empty()) oname += infop->m_namespc+"::";
-            oname += VIdProtect::protectIf(name(), protect());
-        }
-        if (!oarray.empty()) oname = infop->paren(oname);
-        return otype+oname+oarray;
+
+        VlArgTypeRecursed info;
+        info.m_oprefix = otype;
+        info.m_osuffix = oarray;
+        info.m_oref = oref;
+        //UINFO(9, "vlArgRec "<<"oprefix="<<info.m_oprefix<<" osuffix="<<info.m_osuffix
+        //      <<" oref="<<info.m_oref<<" "<<dtypep);
+        return info;
     } else {
         v3fatalSrc("Unknown data type in var type emitter: "<<dtypep->prettyName());
     }

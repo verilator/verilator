@@ -388,7 +388,8 @@ private:
         // Any strings sent to a display must be var of string data type,
         // to avoid passing a pointer to a temporary.
         for (AstNode* expp=nodep->exprsp(); expp; expp = expp->nextp()) {
-            if (expp->dtypep()->basicp()->isString()
+            if (expp->dtypep()->basicp()
+                && expp->dtypep()->basicp()->isString()
                 && !VN_IS(expp, VarRef)) {
                 createDeepTemp(expp, true);
             }

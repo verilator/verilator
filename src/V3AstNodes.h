@@ -1411,9 +1411,8 @@ public:
     const MTaskIdSet& mtaskIds() const { return m_mtaskIds; }
     string mtasksString() const;
 private:
-    class VlArgTypeRecurseInfo;
-    string vlArgTypeRecurse(AstNodeDType* dtypep, VlArgTypeRecurseInfo* infop,
-                            const string& oarray) const;
+    class VlArgTypeRecursed;
+    VlArgTypeRecursed vlArgTypeRecurse(bool forFunc, const AstNodeDType* dtypep) const;
 };
 
 class AstDefParam : public AstNode {
