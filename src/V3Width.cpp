@@ -880,6 +880,9 @@ private:
             nodep->dtypeSetSigned32();  // Says the spec
         }
     }
+    virtual void visit(AstUnbounded* nodep) {
+        nodep->v3error("Unsupported/illegal unbounded ('$') in this context.");
+    }
     virtual void visit(AstUCFunc* nodep) {
         // Give it the size the user wants.
         if (m_vup && m_vup->prelim()) {
@@ -1073,6 +1076,14 @@ private:
         // Iterate into subDTypep() to resolve that type and update pointer.
         nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
         nodep->keyDTypep(iterateEditDTypep(nodep, nodep->keyDTypep()));
+        nodep->dtypep(nodep);  // The array itself, not subDtype
+        UINFO(4,"dtWidthed "<<nodep<<endl);
+    }
+    virtual void visit(AstQueueDType* nodep) {
+        if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
+        if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
+        // Iterate into subDTypep() to resolve that type and update pointer.
+        nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
         nodep->dtypep(nodep);  // The array itself, not subDtype
         UINFO(4,"dtWidthed "<<nodep<<endl);
     }
@@ -1614,6 +1625,7 @@ private:
         }
         else if (VN_IS(fromDtp, EnumDType)
                  || VN_IS(fromDtp, AssocArrayDType)
+                 || VN_IS(fromDtp, QueueDType)
                  || VN_IS(fromDtp, BasicDType)) {
             // Method call on enum without following parenthesis, e.g. "ENUM.next"
             // Convert this into a method call, and let that visitor figure out what to do next
@@ -1680,6 +1692,9 @@ private:
         }
         else if (AstAssocArrayDType* adtypep = VN_CAST(fromDtp, AssocArrayDType)) {
             methodCallAssoc(nodep, adtypep);
+        }
+        else if (AstQueueDType* adtypep = VN_CAST(fromDtp, QueueDType)) {
+            methodCallQueue(nodep, adtypep);
         }
         else if (AstUnpackArrayDType* adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
             methodCallUnpack(nodep, adtypep);
@@ -1874,6 +1889,93 @@ private:
         } else {
             if (lvalue) varrefp->lvalue(true);
         }
+    }
+    void methodCallQueue(AstMethodCall* nodep, AstQueueDType* adtypep) {
+        AstCMethodCall* newp = NULL;
+        if (nodep->name() == "at") {  // Created internally for []
+            methodOkArguments(nodep, 1, 1);
+            methodCallLValue(nodep, nodep->fromp(), true);
+            newp = new AstCMethodCall(nodep->fileline(),
+                                      nodep->fromp()->unlinkFrBack(),
+                                      "at", NULL);
+            newp->dtypeFrom(adtypep->subDTypep());
+            newp->protect(false);
+            newp->didWidth(true);
+        } else if (nodep->name() == "num"  // function int num()
+            || nodep->name() == "size") {
+            methodOkArguments(nodep, 0, 0);
+            newp = new AstCMethodCall(nodep->fileline(),
+                                      nodep->fromp()->unlinkFrBack(),
+                                      "size", NULL);
+            newp->dtypeSetSigned32();
+            newp->didWidth(true);
+            newp->protect(false);
+        } else if (nodep->name() == "delete") {  // function void delete([input integer index])
+            methodOkArguments(nodep, 0, 1);
+            methodCallLValue(nodep, nodep->fromp(), true);
+            if (!nodep->pinsp()) {
+                newp = new AstCMethodCall(nodep->fileline(),
+                                          nodep->fromp()->unlinkFrBack(),
+                                          "clear", NULL);
+                newp->protect(false);
+                newp->makeStatement();
+            } else {
+                nodep->v3error("Unsupported: Queue .delete(index) method, as is O(n) complexity and slow.");
+                AstNode* index_exprp = methodCallQueueIndexExpr(nodep);
+                newp = new AstCMethodCall(nodep->fileline(),
+                                          nodep->fromp()->unlinkFrBack(),
+                                          "erase", index_exprp->unlinkFrBack());
+                newp->protect(false);
+                newp->makeStatement();
+            }
+        } else if (nodep->name() == "insert") {
+            nodep->v3error("Unsupported: Queue .insert method, as is O(n) complexity and slow.");
+            methodOkArguments(nodep, 2, 2);
+            methodCallLValue(nodep, nodep->fromp(), true);
+            AstNode* index_exprp = methodCallQueueIndexExpr(nodep);
+            AstArg* argp = VN_CAST(nodep->pinsp()->nextp(), Arg);
+            iterateCheckTyped(nodep, "insert value", argp->exprp(), adtypep->subDTypep(), BOTH);
+            newp = new AstCMethodCall(nodep->fileline(),
+                                      nodep->fromp()->unlinkFrBack(),
+                                      nodep->name(),
+                                      index_exprp->unlinkFrBack());
+            newp->addPinsp(argp->exprp()->unlinkFrBack());
+            newp->protect(false);
+            newp->makeStatement();
+        } else if (nodep->name() == "pop_front"
+                   || nodep->name() == "pop_back") {
+            methodOkArguments(nodep, 0, 0);
+            methodCallLValue(nodep, nodep->fromp(), true);
+            newp = new AstCMethodCall(nodep->fileline(),
+                                      nodep->fromp()->unlinkFrBack(),
+                                      nodep->name(), NULL);
+            newp->dtypeFrom(adtypep->subDTypep());
+            newp->protect(false);
+            newp->didWidth(true);
+        } else if (nodep->name() == "push_back"
+                   || nodep->name() == "push_front") {
+            methodOkArguments(nodep, 1, 1);
+            methodCallLValue(nodep, nodep->fromp(), true);
+            AstArg* argp = VN_CAST(nodep->pinsp(), Arg);
+            iterateCheckTyped(nodep, "push value", argp->exprp(), adtypep->subDTypep(), BOTH);
+            newp = new AstCMethodCall(nodep->fileline(),
+                                      nodep->fromp()->unlinkFrBack(),
+                                      nodep->name(), argp->exprp()->unlinkFrBack());
+            newp->protect(false);
+            newp->makeStatement();
+        } else {
+            nodep->v3error("Unsupported/unknown built-in associative array method "<<nodep->prettyNameQ());
+        }
+        if (newp) {
+            newp->didWidth(true);
+            nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+        }
+    }
+    AstNode* methodCallQueueIndexExpr(AstMethodCall* nodep) {
+        AstNode* index_exprp = VN_CAST(nodep->pinsp(), Arg)->exprp();
+        iterateCheckSigned32(nodep, "index", index_exprp, BOTH);
+        VL_DANGLING(index_exprp);  // May have been edited
+        return VN_CAST(nodep->pinsp(), Arg)->exprp();
     }
     void methodCallUnpack(AstMethodCall* nodep, AstUnpackArrayDType* adtypep) {
         enum { UNKNOWN = 0, ARRAY_OR, ARRAY_AND, ARRAY_XOR } methodId;
@@ -2432,7 +2534,8 @@ private:
                     } else if (basicp && basicp->isDouble()) {
                         added = true;
                         newFormat += "%g";
-                    } else if (VN_IS(dtypep, AssocArrayDType)) {
+                    } else if (VN_IS(dtypep, AssocArrayDType)
+                               || VN_IS(dtypep, QueueDType)) {
                         added = true;
                         newFormat += "%@";
                         AstNRelinker handle;
@@ -3881,7 +3984,8 @@ private:
     AstNode* spliceCvtString(AstNode* nodep) {
         // IEEE-2012 11.8.1: Signed: Type coercion creates signed
         // 11.8.2: Argument to convert is self-determined
-        if (nodep && !nodep->dtypep()->basicp()->isString()) {
+        if (nodep && !(nodep->dtypep()->basicp()
+                       && nodep->dtypep()->basicp()->isString())) {
             UINFO(6,"   spliceCvtString: "<<nodep<<endl);
             AstNRelinker linker;
             nodep->unlinkFrBack(&linker);

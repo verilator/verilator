@@ -200,6 +200,19 @@ public:
     AstNodeDType* keyDTypep() const { return VN_CAST(op1p(), NodeDType); }
 };
 
+class AstQueueRange : public AstNodeRange {
+    // Queue range specification
+    // Only for early parsing - becomes AstQueueDType
+public:
+    explicit AstQueueRange(FileLine* fl)
+        : AstNodeRange(fl) {}
+    ASTNODE_NODE_FUNCS(QueueRange)
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual string emitVerilog() { V3ERROR_NA; return ""; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const { return true; }
+};
+
 class AstUnsizedRange : public AstNodeRange {
     // Unsized range specification, for open arrays
 public:
@@ -715,6 +728,50 @@ public:
     AstModport* modportp() const { return m_modportp; }
     void modportp(AstModport* modportp) { m_modportp = modportp; }
     bool isModport() { return !m_modportName.empty(); }
+};
+
+class AstQueueDType : public AstNodeDType {
+    // Queue array data type, ie "[ $ ]"
+    // Children: DTYPE (moved to refDTypep() in V3Width)
+private:
+    AstNodeDType* m_refDTypep;  // Elements of this type (after widthing)
+public:
+    AstQueueDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp)
+        : AstNodeDType(fl) {
+        childDTypep(dtp);  // Only for parser
+        refDTypep(NULL);
+        dtypep(NULL);  // V3Width will resolve
+    }
+    ASTNODE_NODE_FUNCS(QueueDType)
+    virtual const char* broken() const {
+        BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
+                     || (!m_refDTypep && childDTypep())));
+        return NULL; }
+    virtual void cloneRelink() {
+        if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); } }
+    virtual bool same(const AstNode* samep) const {
+        const AstQueueDType* asamep = static_cast<const AstQueueDType*>(samep);
+        return (subDTypep() == asamep->subDTypep()); }
+    virtual bool similarDType(AstNodeDType* samep) const {
+        const AstQueueDType* asamep = static_cast<const AstQueueDType*>(samep);
+        return (subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
+    }
+    virtual void dumpSmall(std::ostream& str) const;
+    virtual V3Hash sameHash() const { return V3Hash(m_refDTypep); }
+    AstNodeDType* getChildDTypep() const { return childDTypep(); }
+    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }  // op1 = Range of variable
+    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    virtual AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); }
+    void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
+    virtual AstNodeDType* virtRefDTypep() const { return m_refDTypep; }
+    virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
+    // METHODS
+    virtual AstBasicDType* basicp() const { return NULL; }
+    virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
+    virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
+    virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
 };
 
 class AstRefDType : public AstNodeDType {
@@ -2245,6 +2302,16 @@ public:
     virtual string emitC() { V3ERROR_NA; return ""; }
     AstNode* lhsp() const { return op1p(); }
     AstNode* rhsp() const { return op2p(); }
+};
+
+class AstUnbounded : public AstNode {
+    // A $ in the parser, used for unbounded and queues
+public:
+    AstUnbounded(FileLine* fl)
+        : AstNode(fl) {}
+    ASTNODE_NODE_FUNCS(Unbounded)
+    virtual string emitVerilog() { return "$"; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
 };
 
 //######################################################################

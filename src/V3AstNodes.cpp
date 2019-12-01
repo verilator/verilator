@@ -278,6 +278,16 @@ AstVar::VlArgTypeRecursed AstVar::vlArgTypeRecurse(bool forFunc, const AstNodeDT
         VlArgTypeRecursed info;
         info.m_oprefix = out;
         return info;
+    } else if (const AstQueueDType* adtypep = VN_CAST_CONST(dtypep, QueueDType)) {
+        VlArgTypeRecursed sub = vlArgTypeRecurse(forFunc, adtypep->subDTypep(), true);
+        VlArgTypeRecursed info;
+        string out = "VlQueue<" + sub.m_oprefix;
+        if (!sub.m_osuffix.empty() || !sub.m_oref.empty()) {
+            out += " " + sub.m_osuffix + sub.m_oref;
+        }
+        out += ">";
+        info.m_oprefix = out;
+        return info;
     } else if (const AstUnpackArrayDType* adtypep = VN_CAST_CONST(dtypep, UnpackArrayDType)) {
         VlArgTypeRecursed info = vlArgTypeRecurse(forFunc, adtypep->subDTypep(), arrayed);
         info.m_osuffix = "[" + cvtToStr(adtypep->declRange().elements()) + "]" + info.m_osuffix;
@@ -1108,6 +1118,10 @@ void AstTypeTable::dump(std::ostream& str) const {
 void AstAssocArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str<<"[assoc-"<<(void*)keyDTypep()<<"]";
+}
+void AstQueueDType::dumpSmall(std::ostream& str) const {
+    this->AstNodeDType::dumpSmall(str);
+    str<<"[queue]";
 }
 void AstUnsizedArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);

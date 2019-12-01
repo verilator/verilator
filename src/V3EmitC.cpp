@@ -1348,6 +1348,9 @@ class EmitCImp : EmitCStmts {
             return emitVarResetRecurse(varp, adtypep->subDTypep(), depth+1,
                                        ".atDefault()" + cvtarray);
         }
+        else if (AstQueueDType* adtypep = VN_CAST(dtypep, QueueDType)) {
+            return emitVarResetRecurse(varp, adtypep->subDTypep(), depth+1, ".atDefault()");
+        }
         else if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             UASSERT_OBJ(adtypep->msb() >= adtypep->lsb(), varp,
                         "Should have swapped msb & lsb earlier.");

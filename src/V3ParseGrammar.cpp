@@ -117,6 +117,10 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep,
                 arrayp = new AstPackArrayDType
                     (rangep->fileline(), VFlagChildDType(), arrayp, rangep);
             } else if (rangep) {
+                if (VN_IS(rangep->leftp(), Unbounded)
+                    || VN_IS(rangep->rightp(), Unbounded)) {
+                    rangep->v3error("Unsupported: Bounded queues. Suggest use unbounded.");
+                }
                 arrayp = new AstUnpackArrayDType
                     (rangep->fileline(), VFlagChildDType(), arrayp, rangep);
             } else if (VN_IS(nrangep, UnsizedRange)) {
@@ -127,6 +131,9 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep,
                 AstNodeDType* keyp = arangep->keyDTypep(); keyp->unlinkFrBack();
                 arrayp = new AstAssocArrayDType
                     (nrangep->fileline(), VFlagChildDType(), arrayp, keyp);
+            } else if (VN_IS(nrangep, QueueRange)) {
+                arrayp = new AstQueueDType
+                    (nrangep->fileline(), VFlagChildDType(), arrayp);
             } else {
                 UASSERT_OBJ(0, nrangep, "Expected range or unsized range");
             }

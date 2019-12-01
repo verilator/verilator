@@ -30,9 +30,7 @@
 
 #include "verilated.h"
 
-//IFDEF C11
-#include <array>
-
+#include <deque>
 #include <map>
 #include <string>
 
@@ -179,6 +177,99 @@ public:
 
 template <class T_Key, class T_Value>
 std::string VL_TO_STRING(const VlAssocArray<T_Key, T_Value>& obj) {
+    return obj.to_string();
+}
+
+//===================================================================
+// Verilog queue container
+// There are no multithreaded locks on this; the base variable must
+// be protected by other means
+//
+template <class T_Value> class VlQueue {
+private:
+    // TYPES
+    typedef std::deque<T_Value> Deque;
+public:
+    typedef typename Deque::const_iterator const_iterator;
+
+private:
+    // MEMBERS
+    Deque m_deque;  // State of the assoc array
+    T_Value m_defaultValue;  // Default value
+
+public:
+    // CONSTRUCTORS
+    VlQueue() {
+        // m_defaultValue isn't defaulted. Caller's constructor must do it.
+    }
+    ~VlQueue() {}
+    // Standard copy constructor works. Verilog: assoca = assocb
+
+    // METHODS
+    T_Value& atDefault() { return m_defaultValue; }
+
+    // Size. Verilog: function int size(), or int num()
+    int size() const { return m_deque.size(); }
+    // Clear array. Verilog: function void delete([input index])
+    void clear() { m_deque.clear(); }
+    void erase(size_t index) { if (VL_LIKELY(index < m_deque.size())) m_deque.erase(index); }
+
+    // function void q.push_front(value)
+    void push_front(const T_Value& value) { m_deque.push_front(value); }
+    // function void q.push_back(value)
+    void push_back(const T_Value& value) { m_deque.push_back(value); }
+    // function value_t q.pop_front();
+    const T_Value& pop_front() {
+        if (m_deque.empty()) return m_defaultValue;
+        const T_Value& v = m_deque.front(); m_deque.pop_front(); return v;
+    }
+    // function value_t q.pop_back();
+    const T_Value& pop_back() {
+        if (m_deque.empty()) return m_defaultValue;
+        const T_Value& v = m_deque.back(); m_deque.pop_back(); return v;
+    }
+
+    // Setting. Verilog: assoc[index] = v
+    // Can't just overload operator[] or provide a "at" reference to set,
+    // because we need to be able to insert only when the value is set
+    T_Value& at(size_t index) {
+        static T_Value s_throwAway;
+        if (VL_UNLIKELY(index >= m_deque.size())) {
+            s_throwAway = atDefault();
+            return s_throwAway;
+        }
+        else return m_deque[index];
+    }
+    // Accessing. Verilog: v = assoc[index]
+    const T_Value& at(size_t index) const {
+        static T_Value s_throwAway;
+        if (VL_UNLIKELY(index >= m_deque.size())) return atDefault();
+        else return m_deque[index];
+    }
+    // function void q.insert(index, value);
+    void insert(size_t index, const T_Value& value) {
+        if (VL_UNLIKELY(index >= m_deque.size())) return;
+        m_deque[index] = value;
+    }
+
+    // For save/restore
+    const_iterator begin() const { return m_deque.begin(); }
+    const_iterator end() const { return m_deque.end(); }
+
+    // Dumping. Verilog: str = $sformatf("%p", assoc)
+    std::string to_string() const {
+        std::string out = "'{";
+        std::string comma;
+        for (typename Deque::const_iterator it = m_deque.begin(); it != m_deque.end(); ++it) {
+            out += comma + VL_TO_STRING(*it);
+            comma = ", ";
+        }
+        return out + "} ";
+    }
+};
+
+template <class T_Value>
+std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
     return obj.to_string();
 }
 
