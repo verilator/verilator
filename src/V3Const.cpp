@@ -2180,7 +2180,20 @@ private:
     virtual void visit(AstJumpGo* nodep) {
         iterateChildren(nodep);
         m_hasJumpGo = true;
-        if (m_doExpensive) { nodep->labelp()->user4(true); }
+        if (m_doExpensive) {
+            // If last statement in a jump label we have JumpLabel(...., JumpGo)
+            // Often caused by "return" in a Verilog function.  The Go is pointless, remove.
+            if (!nodep->nextp()) {
+                if (AstJumpLabel* aboveLabelp = VN_CAST(nodep->abovep(), JumpLabel)) {
+                    if (aboveLabelp == nodep->labelp()) {
+                        UINFO(4, "JUMPGO => last remove "<<nodep<<endl);
+                        nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+                        return;
+                    }
+                }
+            }
+            nodep->labelp()->user4(true);
+        }
     }
 
     virtual void visit(AstJumpLabel* nodep) {
