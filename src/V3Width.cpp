@@ -1914,7 +1914,7 @@ private:
                 patternBasic(nodep, dtypep, defaultp); VL_DANGLING(nodep);
             } else {
                 nodep->v3error("Unsupported: Assignment pattern applies against non struct/union: "
-                               <<vdtypep->prettyTypeName());
+                               <<dtypep->prettyTypeName());
             }
         }
     }
