@@ -1421,6 +1421,7 @@ public:
     void dtypeSetSigned32()      { dtypep(findSigned32DType()); }
     void dtypeSetUInt32()        { dtypep(findUInt32DType()); }  // Twostate
     void dtypeSetUInt64()        { dtypep(findUInt64DType()); }  // Twostate
+    void dtypeSetVoid() { dtypep(findVoidDType()); }
 
     // Data type locators
     AstNodeDType* findLogicBoolDType()  { return findBasicDType(AstBasicDTypeKwd::LOGIC); }
@@ -1429,6 +1430,7 @@ public:
     AstNodeDType* findSigned32DType()   { return findBasicDType(AstBasicDTypeKwd::INTEGER); }
     AstNodeDType* findUInt32DType()     { return findBasicDType(AstBasicDTypeKwd::UINT32); }  // Twostate
     AstNodeDType* findUInt64DType()     { return findBasicDType(AstBasicDTypeKwd::UINT64); }  // Twostate
+    AstNodeDType* findVoidDType() const;
     AstNodeDType* findBitDType(int width, int widthMin, AstNumeric numeric) const;
     AstNodeDType* findLogicDType(int width, int widthMin, AstNumeric numeric) const;
     AstNodeDType* findLogicRangeDType(VNumRange range, int widthMin, AstNumeric numeric) const;
@@ -1914,6 +1916,8 @@ public:
     virtual bool maybePointedTo() const { return true; }
     virtual AstNodeDType* virtRefDTypep() const { return NULL; }  // Iff has a non-null refDTypep(), as generic node function
     virtual void virtRefDTypep(AstNodeDType* nodep) { }  // Iff has refDTypep(), set as generic node function
+    virtual AstNodeDType* virtRefDType2p() const { return NULL; }  // Iff has a non-null second dtypep, as generic node function
+    virtual void virtRefDType2p(AstNodeDType* nodep) { }  // Iff has second dtype, set as generic node function
     virtual bool similarDType(AstNodeDType* samep) const = 0;  // Assignable equivalence.  Call skipRefp() on this and samep before calling
     virtual AstNodeDType* subDTypep() const { return NULL; }  // Iff has a non-null subDTypep(), as generic node function
     virtual bool isFourstate() const;

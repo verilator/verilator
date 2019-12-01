@@ -1199,6 +1199,10 @@ AstBasicDType* AstNode::findInsertSameDType(AstBasicDType* nodep) {
     return v3Global.rootp()->typeTablep()
         ->findInsertSameDType(nodep);
 }
+AstNodeDType* AstNode::findVoidDType() const {
+    return v3Global.rootp()->typeTablep()
+        ->findVoidDType(fileline());
+}
 
 //######################################################################
 // AstNVisitor

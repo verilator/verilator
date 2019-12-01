@@ -30,7 +30,157 @@
 
 #include "verilated.h"
 
+//IFDEF C11
+#include <array>
+
+#include <map>
 #include <string>
+
+//===================================================================
+// String formatters (required by below containers)
+
+extern std::string VL_TO_STRING(CData obj);
+extern std::string VL_TO_STRING(SData obj);
+extern std::string VL_TO_STRING(IData obj);
+extern std::string VL_TO_STRING(QData obj);
+inline std::string VL_TO_STRING(const std::string& obj) { return "\""+obj+"\""; }
+
+//===================================================================
+// Verilog array container
+// Similar to std::array<WData, N>, but:
+//   1. Doesn't require C++11
+//   2. Lighter weight, only methods needed by Verilator, to help compile time.
+//
+// This is only used when we need an upper-level container and so can't
+// simply use a C style array (which is just a pointer).
+
+template <std::size_t T_Words> class VlWide {
+    WData m_storage[T_Words];
+public:
+    // Default constructor/destructor/copy are fine
+    const WData& at(size_t index) const { return m_storage[index]; }
+    WData& at(size_t index) { return m_storage[index]; }
+    WData* data() { return &m_storage[0]; }
+    const WData* data() const { return &m_storage[0]; }
+    bool operator<(const VlWide<T_Words>& rhs) const {
+        return VL_LT_W(T_Words, data(), rhs.data());
+    }
+};
+
+// Convert a C array to std::array reference by pointer magic, without copy.
+// Data type (second argument) is so the function template can automatically generate.
+template <std::size_t T_Words>
+VlWide<T_Words>& VL_CVT_W_A(WDataInP inp, const VlWide<T_Words>&) {
+    return *((VlWide<T_Words>*)inp);
+}
+
+
+//===================================================================
+// Verilog associative array container
+// There are no multithreaded locks on this; the base variable must
+// be protected by other means
+//
+template <class T_Key, class T_Value> class VlAssocArray {
+private:
+    // TYPES
+    typedef std::map<T_Key, T_Value> Map;
+public:
+    typedef typename Map::const_iterator const_iterator;
+
+private:
+    // MEMBERS
+    Map m_map;  // State of the assoc array
+    T_Value m_defaultValue;  // Default value
+
+public:
+    // CONSTRUCTORS
+    VlAssocArray() {
+        // m_defaultValue isn't defaulted. Caller's constructor must do it.
+    }
+    ~VlAssocArray() {}
+    // Standard copy constructor works. Verilog: assoca = assocb
+
+    // METHODS
+    T_Value& atDefault() { return m_defaultValue; }
+
+    // Size of array. Verilog: function int size(), or int num()
+    int size() const { return m_map.size(); }
+    // Clear array. Verilog: function void delete([input index])
+    void clear() { m_map.clear(); }
+    void erase(const T_Key& index) { m_map.erase(index); }
+    // Return 0/1 if element exists. Verilog: function int exists(input index)
+    int exists(const T_Key& index) const { return m_map.find(index) != m_map.end(); }
+    // Return first element.  Verilog: function int first(ref index);
+    int first(T_Key& indexr) const {
+        typename Map::const_iterator it = m_map.begin();
+        if (it == m_map.end()) return 0;
+        indexr = it->first;
+        return 1;
+    }
+    // Return last element.  Verilog: function int last(ref index)
+    int last(T_Key& indexr) const {
+        typename Map::const_reverse_iterator it = m_map.rbegin();
+        if (it == m_map.rend()) return 0;
+        indexr = it->first;
+        return 1;
+    }
+    // Return next element. Verilog: function int next(ref index)
+    int next(T_Key& indexr) const {
+        typename Map::const_iterator it = m_map.find(indexr);
+        if (VL_UNLIKELY(it == m_map.end())) return 0;
+        it++;
+        if (VL_UNLIKELY(it == m_map.end())) return 0;
+        indexr = it->first;
+        return 1;
+    }
+    // Return prev element. Verilog: function int prev(ref index)
+    int prev(T_Key& indexr) const {
+        typename Map::const_iterator it = m_map.find(indexr);
+        if (VL_UNLIKELY(it == m_map.end())) return 0;
+        if (VL_UNLIKELY(it == m_map.begin())) return 0;
+        --it;
+        indexr = it->first;
+        return 1;
+    }
+    // Setting. Verilog: assoc[index] = v
+    // Can't just overload operator[] or provide a "at" reference to set,
+    // because we need to be able to insert only when the value is set
+    T_Value& at(const T_Key& index) {
+        typename Map::iterator it = m_map.find(index);
+        if (it == m_map.end()) {
+            std::pair<typename Map::iterator, bool> pit
+                = m_map.insert(std::make_pair(index, m_defaultValue));
+            return pit.first->second;
+        }
+        return it->second;
+    }
+    // Accessing. Verilog: v = assoc[index]
+    const T_Value& at(const T_Key& index) const {
+        typename Map::iterator it = m_map.find(index);
+        if (it == m_map.end()) return m_defaultValue;
+        else return it->second;
+    }
+    // For save/restore
+    const_iterator begin() const { return m_map.begin(); }
+    const_iterator end() const { return m_map.end(); }
+
+    // Dumping. Verilog: str = $sformatf("%p", assoc)
+    std::string to_string() const {
+        std::string out = "'{";
+        std::string comma;
+        for (typename Map::const_iterator it = m_map.begin(); it != m_map.end(); ++it) {
+            out += comma + VL_TO_STRING(it->first) + ":" + VL_TO_STRING(it->second);
+            comma = ", ";
+        }
+        // Default not printed - maybe random init data
+        return out + "} ";
+    }
+};
+
+template <class T_Key, class T_Value>
+std::string VL_TO_STRING(const VlAssocArray<T_Key, T_Value>& obj) {
+    return obj.to_string();
+}
 
 //======================================================================
 // Conversion functions

@@ -49,6 +49,9 @@ module t (clk);
    real         v_arr_real [2];
    string	v_string;
 
+   string       v_assoc[string];
+   initial v_assoc["key"] = "value";
+
    typedef struct packed {
       logic [31:0] data;
    } str32_t;

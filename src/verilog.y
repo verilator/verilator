@@ -1627,9 +1627,9 @@ variable_dimension<rangep>:	// ==IEEE: variable_dimension
 	|	anyrange				{ $$ = $1; }
 	|	'[' constExpr ']'			{ $$ = new AstRange($1, new AstConst($1, 0), new AstSub($1, $2, new AstConst($1, 1))); }
 	//			// IEEE: associative_dimension
-	//UNSUP	'[' data_type ']'			{ UNSUP }
-	//UNSUP	yP_BRASTAR ']'				{ UNSUP }
-	//UNSUP	'[' '*' ']'				{ UNSUP }
+	|	'[' data_type ']'			{ $$ = new AstAssocRange($1, $2); }
+	|	yP_BRASTAR ']'				{ $$ = NULL; v3error("Unsupported: [*] wildcard associative arrays"); }
+	|	'[' '*' ']'				{ $$ = NULL; v3error("Unsupported: [*] wildcard associative arrays"); }
 	//			// IEEE: queue_dimension
 	//			// '[' '$' ']' -- $ is part of expr
 	//			// '[' '$' ':' expr ']' -- anyrange:expr:$

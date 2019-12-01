@@ -127,6 +127,9 @@ private:
         if (AstNode* subnodep = nodep->virtRefDTypep()) {
             subnodep->user1Inc();
         }
+        if (AstNode* subnodep = nodep->virtRefDType2p()) {
+            subnodep->user1Inc();
+        }
     }
 
     // VISITORS

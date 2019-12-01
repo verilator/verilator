@@ -162,6 +162,7 @@ private:
         // Of a constant index
         AstConst* lbitp = VN_CAST(lselp->bitp(), Const);
         if (!lbitp) { mergeEnd(); return; }
+        if (lbitp->width() > 32) { mergeEnd(); return; }  // Assoc arrays can do this
         uint32_t index = lbitp->toUInt();
         // Of variable
         AstNodeVarRef* lvarrefp = VN_CAST(lselp->fromp(), NodeVarRef);

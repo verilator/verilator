@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.023 devel
 
+**    Support associative arrays (excluding [*] and pattern assignments).
+
 ***   Add +verilator+error+limit to see more assertion errors. [Peter Monsson]
 
 ***   Support string.toupper and string.tolower.

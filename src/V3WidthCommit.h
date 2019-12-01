@@ -151,6 +151,7 @@ private:
         if (nodep->numeric().isNosign()) nodep->numeric(AstNumeric::UNSIGNED);
         iterateChildren(nodep);
         nodep->virtRefDTypep(editOneDType(nodep->virtRefDTypep()));
+        nodep->virtRefDType2p(editOneDType(nodep->virtRefDType2p()));
     }
     virtual void visit(AstNodePreSel* nodep) {  // LCOV_EXCL_LINE
         // This check could go anywhere after V3Param

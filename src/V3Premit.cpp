@@ -349,6 +349,16 @@ private:
         }
         checkNode(nodep);
     }
+    virtual void visit(AstAssocSel* nodep) {
+        iterateAndNextNull(nodep->fromp());
+        {   // Only the 'from' is part of the assignment LHS
+            bool prevAssign = m_assignLhs;
+            m_assignLhs = false;
+            iterateAndNextNull(nodep->bitp());
+            m_assignLhs = prevAssign;
+        }
+        checkNode(nodep);
+    }
     virtual void visit(AstConst* nodep) {
         iterateChildren(nodep); checkNode(nodep);
     }

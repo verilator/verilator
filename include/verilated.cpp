@@ -1758,6 +1758,19 @@ const char* vl_mc_scan_plusargs(const char* prefixp) VL_MT_SAFE {
 //===========================================================================
 // Heavy string functions
 
+std::string VL_TO_STRING(CData lhs) {
+    return VL_SFORMATF_NX("'h%0x", 8, lhs);
+}
+std::string VL_TO_STRING(SData lhs) {
+    return VL_SFORMATF_NX("'h%0x", 16, lhs);
+}
+std::string VL_TO_STRING(IData lhs) {
+    return VL_SFORMATF_NX("'h%0x", 32, lhs);
+}
+std::string VL_TO_STRING(QData lhs) {
+    return VL_SFORMATF_NX("'h%0x", 64, lhs);
+}
+
 std::string VL_TOLOWER_NN(const std::string& ld) VL_MT_SAFE {
     std::string out = ld;
     for (std::string::iterator it = out.begin(); it != out.end(); ++it) {

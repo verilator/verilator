@@ -91,6 +91,8 @@ private:
         if (const AstNodeArrayDType* adtypep = VN_CAST(ddtypep, NodeArrayDType)) {
             fromRange = adtypep->declRange();
         }
+        else if (const AstAssocArrayDType* adtypep = VN_CAST(ddtypep, AssocArrayDType)) {
+        }
         else if (const AstNodeClassDType* adtypep = VN_CAST(ddtypep, NodeClassDType)) {
             fromRange = adtypep->declRange();
         }
@@ -242,6 +244,15 @@ private:
                              new AstConst(nodep->fileline(), AstConst::Unsized32(), elwidth));
             newp->declRange(fromRange);
             newp->declElWidth(elwidth);
+            newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
+            if (debug()>=9) newp->dumpTree(cout, "--SELBTn: ");
+            nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+        }
+        else if (AstAssocArrayDType* adtypep = VN_CAST(ddtypep, AssocArrayDType)) {
+            // SELBIT(array, index) -> ASSOCSEL(array, index)
+            AstNode* subp = rhsp;
+            AstAssocSel* newp = new AstAssocSel(nodep->fileline(),
+                                                fromp, subp);
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
             if (debug()>=9) newp->dumpTree(cout, "--SELBTn: ");
             nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);

@@ -184,6 +184,22 @@ public:
     virtual bool same(const AstNode* samep) const { return true; }
 };
 
+class AstAssocRange : public AstNodeRange {
+    // Associative array range specification
+    // Only for early parsing - becomes AstAssocDType
+public:
+    explicit AstAssocRange(FileLine* fl, AstNodeDType* dtp)
+        : AstNodeRange(fl) {
+        setOp1p(dtp);
+    }
+    ASTNODE_NODE_FUNCS(AssocRange)
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual string emitVerilog() { V3ERROR_NA; return ""; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const { return true; }
+    AstNodeDType* keyDTypep() const { return VN_CAST(op1p(), NodeDType); }
+};
+
 class AstUnsizedRange : public AstNodeRange {
     // Unsized range specification, for open arrays
 public:
@@ -331,6 +347,65 @@ public:
     virtual int widthTotalBytes() const { return dtypep()->widthTotalBytes(); }
     virtual string name() const { return m_name; }
     void name(const string& flag) { m_name = flag; }
+};
+
+class AstAssocArrayDType : public AstNodeDType {
+    // Associative array data type, ie "[some_dtype]"
+    // Children: DTYPE (moved to refDTypep() in V3Width)
+    // Children: DTYPE (the key, which remains here as a pointer)
+private:
+    AstNodeDType* m_refDTypep;  // Elements of this type (after widthing)
+    AstNodeDType* m_keyDTypep;  // Keys of this type (after widthing)
+public:
+    AstAssocArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstNodeDType* keyDtp)
+        : AstNodeDType(fl) {
+        childDTypep(dtp);  // Only for parser
+        keyChildDTypep(keyDtp);  // Only for parser
+        refDTypep(NULL);
+        keyDTypep(NULL);
+        dtypep(NULL);  // V3Width will resolve
+    }
+    ASTNODE_NODE_FUNCS(AssocArrayDType)
+    virtual const char* broken() const {
+        BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
+                     || (!m_refDTypep && childDTypep())));
+        BROKEN_RTN(!((m_keyDTypep && !childDTypep() && m_keyDTypep->brokeExists())
+                     || (!m_keyDTypep && childDTypep())));
+        return NULL; }
+    virtual void cloneRelink() {
+        if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); }
+        if (m_keyDTypep && m_keyDTypep->clonep()) { m_keyDTypep = m_keyDTypep->clonep(); } }
+    virtual bool same(const AstNode* samep) const {
+        const AstAssocArrayDType* asamep = static_cast<const AstAssocArrayDType*>(samep);
+        return (subDTypep() == asamep->subDTypep()
+                && keyDTypep() == asamep->keyDTypep()); }
+    virtual bool similarDType(AstNodeDType* samep) const {
+        const AstAssocArrayDType* asamep = static_cast<const AstAssocArrayDType*>(samep);
+        return (subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
+    }
+    virtual void dumpSmall(std::ostream& str) const;
+    virtual V3Hash sameHash() const { return V3Hash(m_refDTypep); }
+    AstNodeDType* getChildDTypep() const { return childDTypep(); }
+    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }  // op1 = Range of variable
+    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    virtual AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); }
+    void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
+    virtual AstNodeDType* virtRefDTypep() const { return m_refDTypep; }
+    virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
+    virtual AstNodeDType* virtRefDType2p() const { return m_keyDTypep; }
+    virtual void virtRefDType2p(AstNodeDType* nodep) { keyDTypep(nodep); }
+    //
+    AstNodeDType* keyDTypep() const { return m_keyDTypep ? m_keyDTypep : keyChildDTypep(); }
+    void keyDTypep(AstNodeDType* nodep) { m_keyDTypep = nodep; }
+    AstNodeDType* keyChildDTypep() const { return VN_CAST(op2p(), NodeDType); }  // op1 = Range of variable
+    void keyChildDTypep(AstNodeDType* nodep) { setOp2p(nodep); }
+    // METHODS
+    virtual AstBasicDType* basicp() const { return NULL; }  // (Slow) recurse down to find basic data type
+    virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
+    virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
+    virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
 };
 
 class AstPackArrayDType : public AstNodeArrayDType {
@@ -774,6 +849,28 @@ public:
     void lsb(int lsb) { m_lsb = lsb; }
 };
 
+class AstVoidDType : public AstNodeDType {
+    // For e.g. a function returning void
+public:
+    AstVoidDType(FileLine* fl)
+        : AstNodeDType(fl) { dtypep(this); }
+    ASTNODE_NODE_FUNCS(VoidDType)
+    virtual void dumpSmall(std::ostream& str) const;
+    virtual bool hasDType() const { return true; }
+    virtual bool maybePointedTo() const { return true; }
+    virtual AstNodeDType* subDTypep() const { return NULL; }
+    virtual AstNodeDType* virtRefDTypep() const { return NULL; }
+    virtual void virtRefDTypep(AstNodeDType* nodep) { }
+    virtual bool similarDType(AstNodeDType* samep) const { return this==samep; }
+    virtual AstBasicDType* basicp() const { return NULL; }
+    virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
+    virtual int widthAlignBytes() const { return 1; }
+    virtual int widthTotalBytes() const { return 1; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+};
+
 class AstEnumItem : public AstNode {
 private:
     string      m_name;
@@ -925,6 +1022,40 @@ public:
     virtual int instrCount() const { return widthInstrs(); }
     // Special operators
     static AstNode* baseFromp(AstNode* nodep);  ///< What is the base variable (or const) this dereferences?
+};
+
+class AstAssocSel : public AstNodeSel {
+    // Parents: math|stmt
+    // Children: varref|arraysel, math
+private:
+    void init(AstNode* fromp) {
+        if (fromp && VN_IS(fromp->dtypep()->skipRefp(), AssocArrayDType)) {
+            // Strip off array to find what array references
+            dtypeFrom(VN_CAST(fromp->dtypep()->skipRefp(), AssocArrayDType)->subDTypep());
+        }
+    }
+public:
+    AstAssocSel(FileLine* fl, AstNode* fromp, AstNode* bitp)
+        : AstNodeSel(fl, fromp, bitp) {
+        init(fromp);
+    }
+    ASTNODE_NODE_FUNCS(AssocSel)
+    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) {
+        return new AstAssocSel(this->fileline(), lhsp, rhsp); }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
+        V3ERROR_NA; }
+    virtual string emitVerilog() { return "%k(%l%f[%r])"; }
+    virtual string emitC() { return "%li%k[%ri]"; }
+    virtual bool cleanOut() const { return true; }
+    virtual bool cleanLhs() const { return false; }
+    virtual bool cleanRhs() const { return true; }
+    virtual bool sizeMattersLhs() const { return false; }
+    virtual bool sizeMattersRhs() const { return false; }
+    virtual bool isGateOptimizable() const { return true; }  // esp for V3Const::ifSameAssign
+    virtual bool isPredictOptimizable() const { return false; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const { return true; }
+    virtual int instrCount() const { return widthInstrs(); }
 };
 
 class AstWordSel : public AstNodeSel {
@@ -1119,7 +1250,7 @@ class AstMethodCall : public AstNode {
     // We do not support generic member calls yet, so this is only enough to
     // make built-in methods work
 private:
-    string m_name;  // Name of variable
+    string m_name;  // Name of method
 public:
     AstMethodCall(FileLine* fl, AstNode* fromp, VFlagChildDType, const string& name, AstNode* pinsp)
         : AstNode(fl), m_name(name) {
@@ -1135,6 +1266,45 @@ public:
     ASTNODE_NODE_FUNCS(MethodCall)
     virtual string name() const { return m_name; }  // * = Var name
     virtual void name(const string& name) { m_name = name; }
+    AstNode* fromp() const { return op1p(); }  // op1 = Extracting what (NULL=TBD during parsing)
+    void fromp(AstNode* nodep) { setOp1p(nodep); }
+    AstNode* pinsp() const { return op2p(); }  // op2 = Pin interconnection list
+    void addPinsp(AstNode* nodep) { addOp2p(nodep); }
+};
+
+class AstCMethodCall : public AstNodeStmt {
+    // A reference to a "C" hardocded member task (or function)
+    // PARENTS: stmt/math
+    // Not all calls are statments vs math.  AstNodeStmt needs isStatement() to deal.
+private:
+    string m_name;  // Name of method
+    bool m_pure;  // Pure optimizable
+    bool m_statement;  // Is a statement (AstNodeMath-like) versus AstNodeStmt-like
+public:
+    AstCMethodCall(FileLine* fl, AstNode* fromp, VFlagChildDType, const string& name,
+                   AstNode* pinsp)
+        : AstNodeStmt(fl), m_name(name), m_pure(false), m_statement(false) {
+        setOp1p(fromp);
+        dtypep(NULL);  // V3Width will resolve
+        addNOp2p(pinsp);
+    }
+    AstCMethodCall(FileLine* fl, AstNode* fromp, const string& name, AstNode* pinsp)
+        : AstNodeStmt(fl), m_name(name), m_statement(false) {
+        setOp1p(fromp);
+        addNOp2p(pinsp);
+    }
+    ASTNODE_NODE_FUNCS(CMethodCall)
+    virtual string name() const { return m_name; }  // * = Var name
+    virtual bool hasDType() const { return true; }
+    virtual void name(const string& name) { m_name = name; }
+    virtual V3Hash sameHash() const { return V3Hash(m_name); }
+    virtual bool same(const AstNode* samep) const {
+        const AstCMethodCall* asamep = static_cast<const AstCMethodCall*>(samep);
+        return (m_name == asamep->m_name); }
+    virtual bool isStatement() const { return m_statement; }
+    virtual bool isPure() const { return m_pure; }
+    void pure(bool flag) { m_pure = flag; }
+    void makeStatement() { m_statement = true; dtypeSetVoid(); }
     AstNode* fromp() const { return op1p(); }  // op1 = Extracting what (NULL=TBD during parsing)
     void fromp(AstNode* nodep) { setOp1p(nodep); }
     AstNode* pinsp() const { return op2p(); }  // op2 = Pin interconnection list
@@ -1412,7 +1582,8 @@ public:
     string mtasksString() const;
 private:
     class VlArgTypeRecursed;
-    VlArgTypeRecursed vlArgTypeRecurse(bool forFunc, const AstNodeDType* dtypep) const;
+    VlArgTypeRecursed vlArgTypeRecurse(bool forFunc, const AstNodeDType* dtypep,
+                                       bool arrayed) const;
 };
 
 class AstDefParam : public AstNode {
@@ -6333,17 +6504,19 @@ public:
 class AstTypeTable : public AstNode {
     // Container for hash of standard data types
     // Children:  NODEDTYPEs
+    AstVoidDType* m_voidp;
     AstBasicDType* m_basicps[AstBasicDTypeKwd::_ENUM_MAX];
     //
     typedef std::map<VBasicTypeKey,AstBasicDType*> DetailedMap;
     DetailedMap m_detailedMap;
 public:
-    explicit AstTypeTable(FileLine* fl) : AstNode(fl) {
+    explicit AstTypeTable(FileLine* fl) : AstNode(fl), m_voidp(NULL) {
         for (int i=0; i<AstBasicDTypeKwd::_ENUM_MAX; ++i) m_basicps[i] = NULL;
     }
     ASTNODE_NODE_FUNCS(TypeTable)
     AstNodeDType* typesp() const { return VN_CAST(op1p(), NodeDType);}  // op1 = List of dtypes
     void addTypesp(AstNodeDType* nodep) { addOp1p(nodep); }
+    AstVoidDType* findVoidDType(FileLine* fl);
     AstBasicDType* findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd);
     AstBasicDType* findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd,
                                      int width, int widthMin, AstNumeric numeric);

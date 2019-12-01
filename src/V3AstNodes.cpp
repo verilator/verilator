@@ -247,7 +247,7 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
     string ostatic;
     if (isStatic() && namespc.empty()) ostatic = "static ";
 
-    VlArgTypeRecursed info = vlArgTypeRecurse(forFunc, dtypep());
+    VlArgTypeRecursed info = vlArgTypeRecurse(forFunc, dtypep(), false);
 
     string oname;
     if (named) {
@@ -258,11 +258,28 @@ string AstVar::vlArgType(bool named, bool forReturn, bool forFunc, const string&
     return ostatic + info.m_oprefix + info.refParen(oname) + info.m_osuffix;
 }
 
-AstVar::VlArgTypeRecursed AstVar::vlArgTypeRecurse(bool forFunc,
-                                                   const AstNodeDType* dtypep) const {
+AstVar::VlArgTypeRecursed AstVar::vlArgTypeRecurse(bool forFunc, const AstNodeDType* dtypep,
+                                                   bool arrayed) const {
     dtypep = dtypep->skipRefp();
-    if (const AstUnpackArrayDType* adtypep = VN_CAST_CONST(dtypep, UnpackArrayDType)) {
-        VlArgTypeRecursed info = vlArgTypeRecurse(forFunc, adtypep->subDTypep());
+    if (const AstAssocArrayDType* adtypep = VN_CAST_CONST(dtypep, AssocArrayDType)) {
+        VlArgTypeRecursed key = vlArgTypeRecurse(forFunc, adtypep->keyDTypep(), true);
+        VlArgTypeRecursed sub = vlArgTypeRecurse(forFunc, adtypep->subDTypep(), true);
+        string out = "VlAssocArray<";
+        out += key.m_oprefix;
+        if (!key.m_osuffix.empty() || !key.m_oref.empty()) {
+            out += " " + key.m_osuffix + key.m_oref;
+        }
+        out += ", ";
+        out += sub.m_oprefix;
+        if (!sub.m_osuffix.empty() || !sub.m_oref.empty()) {
+            out += " " + sub.m_osuffix + sub.m_oref;
+        }
+        out += ">";
+        VlArgTypeRecursed info;
+        info.m_oprefix = out;
+        return info;
+    } else if (const AstUnpackArrayDType* adtypep = VN_CAST_CONST(dtypep, UnpackArrayDType)) {
+        VlArgTypeRecursed info = vlArgTypeRecurse(forFunc, adtypep->subDTypep(), arrayed);
         info.m_osuffix = "[" + cvtToStr(adtypep->declRange().elements()) + "]" + info.m_osuffix;
         return info;
     } else if (const AstBasicDType* bdtypep = dtypep->basicp()) {
@@ -297,8 +314,12 @@ AstVar::VlArgTypeRecursed AstVar::vlArgTypeRecurse(bool forFunc,
         } else if (dtypep->isQuad()) {
             otype += "QData"+bitvec;
         } else if (dtypep->isWide()) {
-            otype += "WData"+bitvec;  // []'s added later
-            oarray += "["+cvtToStr(dtypep->widthWords())+"]";
+            if (arrayed) {
+                otype += "VlWide<"+cvtToStr(dtypep->widthWords())+">";
+            } else {
+                otype += "WData"+bitvec;  // []'s added later
+                oarray += "["+cvtToStr(dtypep->widthWords())+"]";
+            }
         }
 
         string oref;
@@ -740,6 +761,15 @@ void AstTypeTable::repairCache() {
     }
 }
 
+AstVoidDType* AstTypeTable::findVoidDType(FileLine* fl) {
+    if (VL_UNLIKELY(!m_voidp)) {
+        AstVoidDType* newp = new AstVoidDType(fl);
+        addTypesp(newp);
+        m_voidp = newp;
+    }
+    return m_voidp;
+}
+
 AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd) {
     if (m_basicps[kwd]) return m_basicps[kwd];
     //
@@ -1075,9 +1105,17 @@ void AstTypeTable::dump(std::ostream& str) const {
     }
     // Note get newline from caller too.
 }
+void AstAssocArrayDType::dumpSmall(std::ostream& str) const {
+    this->AstNodeDType::dumpSmall(str);
+    str<<"[assoc-"<<(void*)keyDTypep()<<"]";
+}
 void AstUnsizedArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str<<"[]";
+}
+void AstVoidDType::dumpSmall(std::ostream& str) const {
+    this->AstNodeDType::dumpSmall(str);
+    str<<"void";
 }
 void AstVarScope::dump(std::ostream& str) const {
     this->AstNode::dump(str);

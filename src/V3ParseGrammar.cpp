@@ -122,6 +122,11 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep,
             } else if (VN_IS(nrangep, UnsizedRange)) {
                 arrayp = new AstUnsizedArrayDType
                     (nrangep->fileline(), VFlagChildDType(), arrayp);
+            } else if (VN_IS(nrangep, AssocRange)) {
+                AstAssocRange* arangep = VN_CAST(nrangep, AssocRange);
+                AstNodeDType* keyp = arangep->keyDTypep(); keyp->unlinkFrBack();
+                arrayp = new AstAssocArrayDType
+                    (nrangep->fileline(), VFlagChildDType(), arrayp, keyp);
             } else {
                 UASSERT_OBJ(0, nrangep, "Expected range or unsized range");
             }

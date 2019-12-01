@@ -34,6 +34,7 @@ module sub (/*AUTOARG*/
    real         r;
    string       s,s2;
    string       sarr[2:1];
+   string       assoc[string];
 
    string 	si;
 
@@ -63,6 +64,7 @@ module sub (/*AUTOARG*/
          s <= "hello";
          sarr[1] <= "sarr[1]";
          sarr[2] <= "sarr[2]";
+         assoc["mapped"] <= "Is mapped";
       end
       if (cyc==1) begin
 	 if ($test$plusargs("save_restore")!=0) begin
@@ -88,8 +90,9 @@ module sub (/*AUTOARG*/
          $display("%s",s);
          $display("%s",sarr[1]);
          $display("%s",sarr[2]);
-	 $write("*-* All Finished *-*\n");
-	 $finish;
+         if (assoc["mapped"] != "Is mapped") $stop;
+         $write("*-* All Finished *-*\n");
+         $finish;
       end
    end
 endmodule

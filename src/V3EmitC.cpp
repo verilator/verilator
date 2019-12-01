@@ -191,7 +191,9 @@ public:
         } else if (nodep->isWide()
                    && VN_IS(nodep->lhsp(), VarRef)
                    && !VN_IS(nodep->rhsp(), CMath)
+                   && !VN_IS(nodep->rhsp(), CMethodCall)
                    && !VN_IS(nodep->rhsp(), VarRef)
+                   && !VN_IS(nodep->rhsp(), AssocSel)
                    && !VN_IS(nodep->rhsp(), ArraySel)) {
             // Wide functions assign into the array directly, don't need separate assign statement
             m_wideTempRefp = VN_CAST(nodep->lhsp(), VarRef);
@@ -215,6 +217,27 @@ public:
     }
     virtual void visit(AstAlwaysPublic*) {
     }
+    virtual void visit(AstAssocSel* nodep) {
+        iterateAndNextNull(nodep->fromp());
+        putbs(".at(");
+        AstAssocArrayDType* adtypep = VN_CAST(nodep->fromp()->dtypep(), AssocArrayDType);
+        UASSERT_OBJ(adtypep, nodep, "Associative select on non-associative type");
+        if (adtypep->keyDTypep()->isWide()) {
+            // Container class must take non-C-array (pointer) argument, so convert
+            putbs("VL_CVT_W_A(");
+            iterateAndNextNull(nodep->bitp());
+            puts(", ");
+            iterateAndNextNull(nodep->fromp());
+            putbs(".atDefault()");  // Not accessed; only to get the proper type of values
+            puts(")");
+        } else {
+            iterateAndNextNull(nodep->bitp());
+        }
+        puts(")");
+        if (nodep->dtypep()->isWide()) {
+            puts(".data()");  // Access returned std::array as C array
+        }
+    }
     virtual void visit(AstCCall* nodep) {
         puts(nodep->hiernameProtect());
         puts(nodep->funcp()->nameProtect());
@@ -232,6 +255,23 @@ public:
         } else {
             puts(");\n");
         }
+    }
+    virtual void visit(AstCMethodCall* nodep) {
+        iterate(nodep->fromp());
+        puts(".");
+        puts(nodep->nameProtect());
+        puts("(");
+        bool comma = false;
+        for (AstNode* subnodep = nodep->pinsp(); subnodep; subnodep = subnodep->nextp()) {
+            if (comma) puts(", ");
+            iterate(subnodep);
+            comma = true;
+        }
+        puts(")");
+        // Some are statements some are math.
+        if (nodep->isStatement()) puts(";\n");
+        UASSERT_OBJ(!nodep->isStatement() || VN_IS(nodep->dtypep(), VoidDType),
+                    nodep, "Statement of non-void data type");
     }
     virtual void visit(AstNodeCase* nodep) {
         // In V3Case...
@@ -1303,7 +1343,12 @@ class EmitCImp : EmitCStmts {
         dtypep = dtypep->skipRefp();
         AstBasicDType* basicp = dtypep->basicp();
         // Returns string to do resetting, empty to do nothing (which caller should handle)
-        if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        if (AstAssocArrayDType* adtypep = VN_CAST(dtypep, AssocArrayDType)) {
+            string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");  // Access std::array as C array
+            return emitVarResetRecurse(varp, adtypep->subDTypep(), depth+1,
+                                       ".atDefault()" + cvtarray);
+        }
+        else if (AstUnpackArrayDType* adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
             UASSERT_OBJ(adtypep->msb() >= adtypep->lsb(), varp,
                         "Should have swapped msb & lsb earlier.");
             string ivar = string("__Vi")+cvtToStr(depth);

@@ -737,6 +737,20 @@ private:
         }
     }
 
+    virtual void visit(AstAssocSel* nodep) {
+        // Signed/Real: Output type based on array-declared type; binary operator
+        if (m_vup->prelim()) {
+            AstNodeDType* fromDtp = nodep->fromp()->dtypep()->skipRefp();
+            AstAssocArrayDType* adtypep = VN_CAST(fromDtp, AssocArrayDType);
+            if (!adtypep) {
+                UINFO(1,"    Related dtype: "<<fromDtp<<endl);
+                nodep->v3fatalSrc("Associative array reference is not to associative array");
+            }
+            iterateCheckTyped(nodep, "Associative select", nodep->bitp(), adtypep->keyDTypep(), BOTH);
+            nodep->dtypeFrom(adtypep->subDTypep());
+        }
+    }
+
     virtual void visit(AstSliceSel* nodep) {
         // Always creates as output an unpacked array
         if (m_vup->prelim()) {
@@ -1050,6 +1064,16 @@ private:
             int width = nodep->subDTypep()->width() * nodep->rangep()->elementsConst();
             nodep->widthForce(width, width);
         }
+        UINFO(4,"dtWidthed "<<nodep<<endl);
+    }
+    virtual void visit(AstAssocArrayDType* nodep) {
+        if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
+        if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
+        if (nodep->keyChildDTypep()) nodep->keyDTypep(moveDTypeEdit(nodep, nodep->keyChildDTypep()));
+        // Iterate into subDTypep() to resolve that type and update pointer.
+        nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        nodep->keyDTypep(iterateEditDTypep(nodep, nodep->keyDTypep()));
+        nodep->dtypep(nodep);  // The array itself, not subDtype
         UINFO(4,"dtWidthed "<<nodep<<endl);
     }
     virtual void visit(AstUnsizedArrayDType* nodep) {
@@ -1589,6 +1613,7 @@ private:
             }
         }
         else if (VN_IS(fromDtp, EnumDType)
+                 || VN_IS(fromDtp, AssocArrayDType)
                  || VN_IS(fromDtp, BasicDType)) {
             // Method call on enum without following parenthesis, e.g. "ENUM.next"
             // Convert this into a method call, and let that visitor figure out what to do next
@@ -1629,6 +1654,11 @@ private:
         }
     }
 
+    virtual void visit(AstCMethodCall* nodep) {
+        // Never created before V3Width, so no need to redo it
+        UASSERT_OBJ(nodep->dtypep(), nodep, "CMETHODCALLs should have already been sized");
+    }
+
     virtual void visit(AstMethodCall* nodep) {
         UINFO(5,"   METHODSEL "<<nodep<<endl);
         if (nodep->didWidth()) return;
@@ -1647,6 +1677,9 @@ private:
         UINFO(9,"     from dt "<<fromDtp<<endl);
         if (AstEnumDType* adtypep = VN_CAST(fromDtp, EnumDType)) {
             methodCallEnum(nodep, adtypep);
+        }
+        else if (AstAssocArrayDType* adtypep = VN_CAST(fromDtp, AssocArrayDType)) {
+            methodCallAssoc(nodep, adtypep);
         }
         else if (AstUnpackArrayDType* adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
             methodCallUnpack(nodep, adtypep);
@@ -1763,6 +1796,83 @@ private:
             nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
         } else {
             nodep->v3error("Unknown built-in enum method " << nodep->prettyNameQ());
+        }
+    }
+    void methodCallAssoc(AstMethodCall* nodep, AstAssocArrayDType* adtypep) {
+        AstCMethodCall* newp = NULL;
+        if (nodep->name() == "num"  // function int num()
+            || nodep->name() == "size") {
+            methodOkArguments(nodep, 0, 0);
+            newp = new AstCMethodCall(nodep->fileline(),
+                                      nodep->fromp()->unlinkFrBack(),
+                                      "size", NULL);  // So don't need num()
+            newp->dtypeSetSigned32();
+            newp->didWidth(true);
+            newp->protect(false);
+        } else if (nodep->name() == "first"  // function int first(ref index)
+                   || nodep->name() == "last"
+                   || nodep->name() == "next"
+                   || nodep->name() == "prev") {
+            methodOkArguments(nodep, 1, 1);
+            AstNode* index_exprp = methodCallAssocIndexExpr(nodep, adtypep);
+            newp = new AstCMethodCall(nodep->fileline(),
+                                      nodep->fromp()->unlinkFrBack(),
+                                      nodep->name(),  // first/last/next/prev
+                                      index_exprp->unlinkFrBack());
+            newp->dtypeSetSigned32();
+            newp->protect(false);
+            newp->didWidth(true);
+        } else if (nodep->name() == "exists") {  // function int exists(input index)
+            // IEEE really should have made this a "bit" return
+            methodOkArguments(nodep, 1, 1);
+            AstNode* index_exprp = methodCallAssocIndexExpr(nodep, adtypep);
+            newp = new AstCMethodCall(nodep->fileline(),
+                                      nodep->fromp()->unlinkFrBack(),
+                                      "exists", index_exprp->unlinkFrBack());
+            newp->dtypeSetSigned32();
+            newp->pure(true);
+            newp->protect(false);
+            newp->didWidth(true);
+        } else if (nodep->name() == "delete") {  // function void delete([input integer index])
+            methodOkArguments(nodep, 0, 1);
+            methodCallLValue(nodep, nodep->fromp(), true);
+            if (!nodep->pinsp()) {
+                newp = new AstCMethodCall(nodep->fileline(),
+                                          nodep->fromp()->unlinkFrBack(),
+                                          "clear", NULL);
+                newp->protect(false);
+                newp->makeStatement();
+            } else {
+                AstNode* index_exprp = methodCallAssocIndexExpr(nodep, adtypep);
+                newp = new AstCMethodCall(nodep->fileline(),
+                                          nodep->fromp()->unlinkFrBack(),
+                                          "erase",
+                                          index_exprp->unlinkFrBack());
+                newp->protect(false);
+                newp->makeStatement();
+            }
+        } else {
+            nodep->v3error("Unknown built-in associative array method "<<nodep->prettyNameQ());
+        }
+        if (newp) {
+            newp->didWidth(true);
+            nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+        }
+    }
+    AstNode* methodCallAssocIndexExpr(AstMethodCall* nodep, AstAssocArrayDType* adtypep) {
+        AstNode* index_exprp = VN_CAST(nodep->pinsp(), Arg)->exprp();
+        iterateCheck(nodep, "index", index_exprp, CONTEXT, FINAL,
+                     adtypep->keyDTypep(), EXTEND_EXP);
+        VL_DANGLING(index_exprp);  // May have been edited
+        return VN_CAST(nodep->pinsp(), Arg)->exprp();
+    }
+    void methodCallLValue(AstMethodCall* nodep, AstNode* childp, bool lvalue) {
+        AstNodeVarRef* varrefp = VN_CAST(childp, NodeVarRef);
+        if (!varrefp) {
+            nodep->v3error("Unsupported: Non-variable on LHS of built-in method '"
+                           <<nodep->prettyName()<<"'");
+        } else {
+            if (lvalue) varrefp->lvalue(true);
         }
     }
     void methodCallUnpack(AstMethodCall* nodep, AstUnpackArrayDType* adtypep) {
@@ -2314,13 +2424,25 @@ private:
                     break;
                 }
                 case 'p': {  // Packed
-                    AstBasicDType* basicp = argp ? argp->dtypep()->basicp() : NULL;
+                    AstNodeDType* dtypep = argp ? argp->dtypep()->skipRefp() : NULL;
+                    AstBasicDType* basicp = dtypep ? dtypep->basicp() : NULL;
                     if (basicp && basicp->isString()) {
                         added = true;
                         newFormat += "\"%@\"";
                     } else if (basicp && basicp->isDouble()) {
                         added = true;
                         newFormat += "%g";
+                    } else if (VN_IS(dtypep, AssocArrayDType)) {
+                        added = true;
+                        newFormat += "%@";
+                        AstNRelinker handle;
+                        argp->unlinkFrBack(&handle);
+                        AstCMethodCall* newp = new AstCMethodCall(
+                            nodep->fileline(), argp, "to_string", NULL);
+                        newp->dtypeSetString();
+                        newp->pure(true);
+                        newp->protect(false);
+                        handle.relink(newp);
                     } else {
                         added = true;
                         if (fmt == "%0") newFormat += "'h%0h";  // IEEE our choice
