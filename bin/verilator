@@ -339,7 +339,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
      -O<optimization-letter>    Selectable optimizations
      -o <executable>            Name of final executable
     --no-order-clock-delay      Disable ordering clock enable assignments
-    --output-split <bytes>      Split .cpp files into pieces
+    --output-split <statements>          Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split .cpp functions
     --output-split-ctrace <statements>   Split tracing functions
      -P                         Disable line numbers and blanks with -E
@@ -1066,7 +1066,7 @@ Rarely needed.  Disables a bug fix for ordering of clock enables with
 delayed assignments.  This flag should only be used when suggested by the
 developers.
 
-=item --output-split I<bytes>
+=item --output-split I<statements>
 
 Enables splitting the output .cpp files into multiple outputs.  When a C++
 file exceeds the specified number of operations, a new file will be created
@@ -1077,6 +1077,9 @@ and the remaining files can be compiled on parallel machines.  Using
 --output-split should have only a trivial impact on performance.  On one
 design --output-split 20000 resulted in splitting into approximately
 one-minute-compile chunks.
+
+Typically when using this, make with VM_PARALLEL_BUILD=1, and use
+I<ccache>.
 
 =item --output-split-cfuncs I<statements>
 
@@ -4745,6 +4748,9 @@ use $c to call a method inside your object.  The
 test_regress/t/t_extend_class files show an example of how to do this.
 
 =item How do I get faster build times?
+
+When running make pass the make variable VM_PARALLEL_BUILDS=1 so that
+builds occur in parallel.
 
 Use a recent compiler.  Newer compilers tend do be faster, with the
 now relatively old GCC 3.0 to 3.3 being horrible.
