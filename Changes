@@ -32,6 +32,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix $display("%p") to be closer to IEEE.
 
+****  Fix labels on functions with returns, bug1614. [Mitch Hayenga]
+
 
 * Verilator 4.022 2019-11-10
 

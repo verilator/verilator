@@ -51,6 +51,7 @@ private:
     bool        m_suppressSemi;
     AstVarRef*  m_wideTempRefp;         // Variable that _WW macros should be setting
     VarVec      m_ctorVarsVec;  // All variables in constructor order
+    int         m_labelNum;             // Next label number
     int         m_splitSize;    // # of cfunc nodes placed into output file
     int         m_splitFilenum; // File number being created, 0 = primary
 
@@ -537,7 +538,8 @@ public:
         puts("goto __Vlabel"+cvtToStr(nodep->labelp()->labelNum())+";\n");
     }
     virtual void visit(AstJumpLabel* nodep) {
-        puts("{\n");
+        nodep->labelNum(++m_labelNum);
+        puts("{\n");  // Make it visually obvious label jumps outside these
         iterateAndNextNull(nodep->stmtsp());
         puts("}\n");
         puts("__Vlabel"+cvtToStr(nodep->labelNum())+": ;\n");
@@ -914,6 +916,7 @@ public:
     void init() {
         m_suppressSemi = false;
         m_wideTempRefp = NULL;
+        m_labelNum = 0;
         m_splitSize = 0;
         m_splitFilenum = 0;
     }
