@@ -172,4 +172,5 @@ notifications:
   email:
     if: repo = verilator/verilator
     recipients:
+      - wsnyder@wsnyder.org
       - todd.strader@gmail.com
