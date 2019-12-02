@@ -274,7 +274,7 @@ AstVar::VlArgTypeRecursed AstVar::vlArgTypeRecurse(bool forFunc, const AstNodeDT
         if (!sub.m_osuffix.empty() || !sub.m_oref.empty()) {
             out += " " + sub.m_osuffix + sub.m_oref;
         }
-        out += ">";
+        out += "> ";
         VlArgTypeRecursed info;
         info.m_oprefix = out;
         return info;
@@ -285,7 +285,7 @@ AstVar::VlArgTypeRecursed AstVar::vlArgTypeRecurse(bool forFunc, const AstNodeDT
         if (!sub.m_osuffix.empty() || !sub.m_oref.empty()) {
             out += " " + sub.m_osuffix + sub.m_oref;
         }
-        out += ">";
+        out += "> ";
         info.m_oprefix = out;
         return info;
     } else if (const AstUnpackArrayDType* adtypep = VN_CAST_CONST(dtypep, UnpackArrayDType)) {
@@ -325,7 +325,7 @@ AstVar::VlArgTypeRecursed AstVar::vlArgTypeRecurse(bool forFunc, const AstNodeDT
             otype += "QData"+bitvec;
         } else if (dtypep->isWide()) {
             if (arrayed) {
-                otype += "VlWide<"+cvtToStr(dtypep->widthWords())+">";
+                otype += "VlWide<"+cvtToStr(dtypep->widthWords())+"> ";
             } else {
                 otype += "WData"+bitvec;  // []'s added later
                 oarray += "["+cvtToStr(dtypep->widthWords())+"]";
