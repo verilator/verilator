@@ -50,8 +50,18 @@ module t;
 
       // Check handling of 'double' type signals (Issue #1619)
       p_r = 0;
+      if (!$value$plusargs("REAL=%e", p_r)) $stop;
+      $display("r='%e'", p_r);
+      if (p_r !== 1.2345) $stop;
+
+      p_r = 0;
       if (!$value$plusargs("REAL=%f", p_r)) $stop;
       $display("r='%f'", p_r);
+      if (p_r !== 1.2345) $stop;
+
+      p_r = 0;
+      if (!$value$plusargs("REAL=%g", p_r)) $stop;
+      $display("r='%g'", p_r);
       if (p_r !== 1.2345) $stop;
 
       p_str = "none";
