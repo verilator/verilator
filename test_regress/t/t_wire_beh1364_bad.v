@@ -5,7 +5,7 @@
 
 module t (/*AUTOARG*/
    // Outputs
-   o, oa, ro, roa
+   o, oa, ro, roa, wo, woa
    );
 
    wire w;
@@ -14,6 +14,8 @@ module t (/*AUTOARG*/
    output [1:0] oa;
    output reg ro;
    output reg [1:0] roa;
+   output wire wo;
+   output wire [1:0] woa;
    //1800 only:
    //output var vo;
    //output var [1:0] voa;
@@ -22,6 +24,8 @@ module t (/*AUTOARG*/
       w = '0;  // Error
       o = '0;  // Error
       oa = '0;  // Error
+      wo = '0;  // Error
+      woa = '0;  // Error
       r = '0;  // Not an error
       ro = '0;  // Not an error
       roa = '0;  // Not an error
