@@ -318,6 +318,18 @@ extern void VL_SFORMAT_X(int obits_ignored, std::string& output,
                          const char* formatp, ...) VL_MT_SAFE;
 extern std::string VL_SFORMATF_NX(const char* formatp, ...) VL_MT_SAFE;
 extern IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_MT_SAFE;
+inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, CData& rdr) VL_MT_SAFE {
+    WData rwp[2];  // WData must always be at least 2
+    IData got = VL_VALUEPLUSARGS_INW(rbits,ld,rwp);
+    if (got) rdr = rwp[0];
+    return got;
+}
+inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, SData& rdr) VL_MT_SAFE {
+    WData rwp[2];  // WData must always be at least 2
+    IData got = VL_VALUEPLUSARGS_INW(rbits,ld,rwp);
+    if (got) rdr = rwp[0];
+    return got;
+}
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, IData& rdr) VL_MT_SAFE {
     WData rwp[2];  // WData must always be at least 2
     IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
@@ -328,6 +340,12 @@ inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, QData& rdr) 
     WData rwp[2];
     IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = VL_SET_QW(rwp);
+    return got;
+}
+inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, double& rdr) VL_MT_SAFE {
+    WData rwp[2];
+    IData got = VL_VALUEPLUSARGS_INW(rbits,ld,rwp);
+    if (got) rdr = VL_CVT_D_Q(VL_SET_QW(rwp));
     return got;
 }
 extern IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) VL_MT_SAFE;

@@ -5,7 +5,10 @@
 
 module t;
 
-   integer p_i;
+   integer p_i;     // signal type IData
+   reg [15:0] p_s;  // signal type SData
+   reg [7:0] p_c;   // signal type CData
+   real p_r;        // signal type double
    reg [7*8:1] p_str;
    string      sv_str;
    reg [7*8:1] p_in;
@@ -34,6 +37,32 @@ module t;
       // Check octal and WIDTH
       if (!$value$plusargs("INT=%o", p_i)) $stop;
       if (p_i !== 32'o1234) $stop;
+
+      // Check handling of 'SData' type signals (Issue #1592)
+      p_s = 0;
+      if (!$value$plusargs("INT=%d", p_s)) $stop;
+      if (p_s !== 16'd1234) $stop;
+
+      // Check handling of 'CData' type signals (Issue #1592)
+      p_c = 0;
+      if (!$value$plusargs("INT=%d", p_c)) $stop;
+      if (p_c !== 8'd210) $stop;
+
+      // Check handling of 'double' type signals (Issue #1619)
+      p_r = 0;
+      if (!$value$plusargs("REAL=%e", p_r)) $stop;
+      $display("r='%e'", p_r);
+      if (p_r !== 1.2345) $stop;
+
+      p_r = 0;
+      if (!$value$plusargs("REAL=%f", p_r)) $stop;
+      $display("r='%f'", p_r);
+      if (p_r !== 1.2345) $stop;
+
+      p_r = 0;
+      if (!$value$plusargs("REAL=%g", p_r)) $stop;
+      $display("r='%g'", p_r);
+      if (p_r !== 1.2345) $stop;
 
       p_str = "none";
       if ($value$plusargs("IN%s", p_str)!==1) $stop;
