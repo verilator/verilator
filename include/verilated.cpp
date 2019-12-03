@@ -545,10 +545,10 @@ QData VL_POWSS_QQW(int obits, int, int rbits,
                    QData lhs, WDataInP rwp, bool lsign, bool rsign) VL_MT_SAFE {
     // Skip check for rhs == 0, as short-circuit doesn't save time
     if (rsign && VL_SIGN_W(rbits, rwp)) {
-        if (lhs==0) return 0;  // "X"
-        else if (lhs==1) return 1;
-        else if (lsign && lhs==VL_MASK_I(obits)) {  // -1
-            if (rwp[0] & 1) return VL_MASK_I(obits);  // -1^odd=-1
+        if (lhs == 0) return 0;  // "X"
+        else if (lhs == 1) return 1;
+        else if (lsign && lhs == VL_MASK_Q(obits)) {  // -1
+            if (rwp[0] & 1) return VL_MASK_Q(obits);  // -1^odd=-1
             else return 1;  // -1^even=1
         }
         return 0;
@@ -1772,6 +1772,19 @@ const char* vl_mc_scan_plusargs(const char* prefixp) VL_MT_SAFE {
 
 //===========================================================================
 // Heavy string functions
+
+std::string VL_TO_STRING(CData lhs) {
+    return VL_SFORMATF_NX("'h%0x", 8, lhs);
+}
+std::string VL_TO_STRING(SData lhs) {
+    return VL_SFORMATF_NX("'h%0x", 16, lhs);
+}
+std::string VL_TO_STRING(IData lhs) {
+    return VL_SFORMATF_NX("'h%0x", 32, lhs);
+}
+std::string VL_TO_STRING(QData lhs) {
+    return VL_SFORMATF_NX("'h%0x", 64, lhs);
+}
 
 std::string VL_TOLOWER_NN(const std::string& ld) VL_MT_SAFE {
     std::string out = ld;

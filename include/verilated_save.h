@@ -23,6 +23,7 @@
 #define _VERILATED_SAVE_C_H_ 1
 
 #include "verilatedos.h"
+#include "verilated_heavy.h"
 
 #include <string>
 
@@ -246,6 +247,34 @@ inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, std::string& r
     os>>len;
     rhs.resize(len);
     return os.read((void*)rhs.data(), len);
+}
+template <class T_Key, class T_Value>
+VerilatedSerialize& operator<<(VerilatedSerialize& os, VlAssocArray<T_Key, T_Value>& rhs) {
+    os << rhs.atDefault();
+    vluint32_t len = rhs.size();
+    os << len;
+    for (typename VlAssocArray<T_Key, T_Value>::const_iterator it = rhs.begin();
+         it != rhs.end(); ++it) {
+        T_Key index = it->first;  // Copy to get around const_iterator
+        T_Value value = it->second;
+        os << index << value;
+    }
+    return os;
+}
+template <class T_Key, class T_Value>
+VerilatedDeserialize& operator>>(VerilatedDeserialize& os, VlAssocArray<T_Key, T_Value>& rhs) {
+    os >> rhs.atDefault();
+    vluint32_t len = 0;
+    os >> len;
+    rhs.clear();
+    for (vluint32_t i = 0; i < len; ++i) {
+        T_Key index;
+        T_Value value;
+        os >> index;
+        os >> value;
+        rhs.at(index) = value;
+    }
+    return os;
 }
 
 #endif  // Guard

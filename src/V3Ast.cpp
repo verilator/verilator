@@ -94,6 +94,15 @@ void AstNode::init() {
     m_user5Cnt = 0;
 }
 
+AstNode* AstNode::abovep() const {
+    // m_headtailp only valid at beginning or end of list
+    // Avoid supporting at other locations as would require walking
+    // list which is likely to cause performance issues.
+    UASSERT_OBJ(!m_nextp || firstAbovep(), this, "abovep() not allowed when in midlist");
+    const AstNode* firstp = firstAbovep() ? this : m_headtailp;
+    return firstp->backp();
+}
+
 string AstNode::encodeName(const string& namein) {
     // Encode signal name raw from parser, then not called again on same signal
     string out;
@@ -1198,6 +1207,10 @@ AstNodeDType* AstNode::findLogicRangeDType(VNumRange range, int widthMin,
 AstBasicDType* AstNode::findInsertSameDType(AstBasicDType* nodep) {
     return v3Global.rootp()->typeTablep()
         ->findInsertSameDType(nodep);
+}
+AstNodeDType* AstNode::findVoidDType() const {
+    return v3Global.rootp()->typeTablep()
+        ->findVoidDType(fileline());
 }
 
 //######################################################################

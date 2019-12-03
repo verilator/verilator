@@ -737,6 +737,20 @@ private:
         }
     }
 
+    virtual void visit(AstAssocSel* nodep) {
+        // Signed/Real: Output type based on array-declared type; binary operator
+        if (m_vup->prelim()) {
+            AstNodeDType* fromDtp = nodep->fromp()->dtypep()->skipRefp();
+            AstAssocArrayDType* adtypep = VN_CAST(fromDtp, AssocArrayDType);
+            if (!adtypep) {
+                UINFO(1,"    Related dtype: "<<fromDtp<<endl);
+                nodep->v3fatalSrc("Associative array reference is not to associative array");
+            }
+            iterateCheckTyped(nodep, "Associative select", nodep->bitp(), adtypep->keyDTypep(), BOTH);
+            nodep->dtypeFrom(adtypep->subDTypep());
+        }
+    }
+
     virtual void visit(AstSliceSel* nodep) {
         // Always creates as output an unpacked array
         if (m_vup->prelim()) {
@@ -865,6 +879,9 @@ private:
         if (m_vup->prelim()) {
             nodep->dtypeSetSigned32();  // Says the spec
         }
+    }
+    virtual void visit(AstUnbounded* nodep) {
+        nodep->v3error("Unsupported/illegal unbounded ('$') in this context.");
     }
     virtual void visit(AstUCFunc* nodep) {
         // Give it the size the user wants.
@@ -1050,6 +1067,24 @@ private:
             int width = nodep->subDTypep()->width() * nodep->rangep()->elementsConst();
             nodep->widthForce(width, width);
         }
+        UINFO(4,"dtWidthed "<<nodep<<endl);
+    }
+    virtual void visit(AstAssocArrayDType* nodep) {
+        if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
+        if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
+        if (nodep->keyChildDTypep()) nodep->keyDTypep(moveDTypeEdit(nodep, nodep->keyChildDTypep()));
+        // Iterate into subDTypep() to resolve that type and update pointer.
+        nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        nodep->keyDTypep(iterateEditDTypep(nodep, nodep->keyDTypep()));
+        nodep->dtypep(nodep);  // The array itself, not subDtype
+        UINFO(4,"dtWidthed "<<nodep<<endl);
+    }
+    virtual void visit(AstQueueDType* nodep) {
+        if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
+        if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
+        // Iterate into subDTypep() to resolve that type and update pointer.
+        nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        nodep->dtypep(nodep);  // The array itself, not subDtype
         UINFO(4,"dtWidthed "<<nodep<<endl);
     }
     virtual void visit(AstUnsizedArrayDType* nodep) {
@@ -1358,7 +1393,7 @@ private:
         // Note genvar's are also entered as integers
         nodep->dtypeFrom(nodep->varp());
         if (VN_IS(nodep->backp(), NodeAssign) && nodep->lvalue()) {  // On LHS
-            UASSERT_OBJ(nodep->widthMin(), nodep, "LHS var should be size complete");
+            UASSERT_OBJ(nodep->dtypep(), nodep, "LHS var should be dtype completed");
         }
         //if (debug()>=9) nodep->dumpTree(cout, "  VRout ");
         if (nodep->lvalue() && nodep->varp()->direction() == VDirection::CONSTREF) {
@@ -1589,6 +1624,8 @@ private:
             }
         }
         else if (VN_IS(fromDtp, EnumDType)
+                 || VN_IS(fromDtp, AssocArrayDType)
+                 || VN_IS(fromDtp, QueueDType)
                  || VN_IS(fromDtp, BasicDType)) {
             // Method call on enum without following parenthesis, e.g. "ENUM.next"
             // Convert this into a method call, and let that visitor figure out what to do next
@@ -1629,8 +1666,14 @@ private:
         }
     }
 
+    virtual void visit(AstCMethodCall* nodep) {
+        // Never created before V3Width, so no need to redo it
+        UASSERT_OBJ(nodep->dtypep(), nodep, "CMETHODCALLs should have already been sized");
+    }
+
     virtual void visit(AstMethodCall* nodep) {
         UINFO(5,"   METHODSEL "<<nodep<<endl);
+        if (nodep->didWidth()) return;
         if (debug()>=9) nodep->dumpTree("-mts-in: ");
         // Should check types the method requires, but at present we don't do much
         userIterate(nodep->fromp(), WidthVP(SELF, BOTH).p());
@@ -1646,6 +1689,12 @@ private:
         UINFO(9,"     from dt "<<fromDtp<<endl);
         if (AstEnumDType* adtypep = VN_CAST(fromDtp, EnumDType)) {
             methodCallEnum(nodep, adtypep);
+        }
+        else if (AstAssocArrayDType* adtypep = VN_CAST(fromDtp, AssocArrayDType)) {
+            methodCallAssoc(nodep, adtypep);
+        }
+        else if (AstQueueDType* adtypep = VN_CAST(fromDtp, QueueDType)) {
+            methodCallQueue(nodep, adtypep);
         }
         else if (AstUnpackArrayDType* adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
             methodCallUnpack(nodep, adtypep);
@@ -1764,6 +1813,170 @@ private:
             nodep->v3error("Unknown built-in enum method " << nodep->prettyNameQ());
         }
     }
+    void methodCallAssoc(AstMethodCall* nodep, AstAssocArrayDType* adtypep) {
+        AstCMethodCall* newp = NULL;
+        if (nodep->name() == "num"  // function int num()
+            || nodep->name() == "size") {
+            methodOkArguments(nodep, 0, 0);
+            newp = new AstCMethodCall(nodep->fileline(),
+                                      nodep->fromp()->unlinkFrBack(),
+                                      "size", NULL);  // So don't need num()
+            newp->dtypeSetSigned32();
+            newp->didWidth(true);
+            newp->protect(false);
+        } else if (nodep->name() == "first"  // function int first(ref index)
+                   || nodep->name() == "last"
+                   || nodep->name() == "next"
+                   || nodep->name() == "prev") {
+            methodOkArguments(nodep, 1, 1);
+            AstNode* index_exprp = methodCallAssocIndexExpr(nodep, adtypep);
+            newp = new AstCMethodCall(nodep->fileline(),
+                                      nodep->fromp()->unlinkFrBack(),
+                                      nodep->name(),  // first/last/next/prev
+                                      index_exprp->unlinkFrBack());
+            newp->dtypeSetSigned32();
+            newp->protect(false);
+            newp->didWidth(true);
+        } else if (nodep->name() == "exists") {  // function int exists(input index)
+            // IEEE really should have made this a "bit" return
+            methodOkArguments(nodep, 1, 1);
+            AstNode* index_exprp = methodCallAssocIndexExpr(nodep, adtypep);
+            newp = new AstCMethodCall(nodep->fileline(),
+                                      nodep->fromp()->unlinkFrBack(),
+                                      "exists", index_exprp->unlinkFrBack());
+            newp->dtypeSetSigned32();
+            newp->pure(true);
+            newp->protect(false);
+            newp->didWidth(true);
+        } else if (nodep->name() == "delete") {  // function void delete([input integer index])
+            methodOkArguments(nodep, 0, 1);
+            methodCallLValue(nodep, nodep->fromp(), true);
+            if (!nodep->pinsp()) {
+                newp = new AstCMethodCall(nodep->fileline(),
+                                          nodep->fromp()->unlinkFrBack(),
+                                          "clear", NULL);
+                newp->protect(false);
+                newp->makeStatement();
+            } else {
+                AstNode* index_exprp = methodCallAssocIndexExpr(nodep, adtypep);
+                newp = new AstCMethodCall(nodep->fileline(),
+                                          nodep->fromp()->unlinkFrBack(),
+                                          "erase",
+                                          index_exprp->unlinkFrBack());
+                newp->protect(false);
+                newp->makeStatement();
+            }
+        } else {
+            nodep->v3error("Unknown built-in associative array method "<<nodep->prettyNameQ());
+        }
+        if (newp) {
+            newp->didWidth(true);
+            nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+        }
+    }
+    AstNode* methodCallAssocIndexExpr(AstMethodCall* nodep, AstAssocArrayDType* adtypep) {
+        AstNode* index_exprp = VN_CAST(nodep->pinsp(), Arg)->exprp();
+        iterateCheck(nodep, "index", index_exprp, CONTEXT, FINAL,
+                     adtypep->keyDTypep(), EXTEND_EXP);
+        VL_DANGLING(index_exprp);  // May have been edited
+        return VN_CAST(nodep->pinsp(), Arg)->exprp();
+    }
+    void methodCallLValue(AstMethodCall* nodep, AstNode* childp, bool lvalue) {
+        AstNodeVarRef* varrefp = VN_CAST(childp, NodeVarRef);
+        if (!varrefp) {
+            nodep->v3error("Unsupported: Non-variable on LHS of built-in method '"
+                           <<nodep->prettyName()<<"'");
+        } else {
+            if (lvalue) varrefp->lvalue(true);
+        }
+    }
+    void methodCallQueue(AstMethodCall* nodep, AstQueueDType* adtypep) {
+        AstCMethodCall* newp = NULL;
+        if (nodep->name() == "at") {  // Created internally for []
+            methodOkArguments(nodep, 1, 1);
+            methodCallLValue(nodep, nodep->fromp(), true);
+            newp = new AstCMethodCall(nodep->fileline(),
+                                      nodep->fromp()->unlinkFrBack(),
+                                      "at", NULL);
+            newp->dtypeFrom(adtypep->subDTypep());
+            newp->protect(false);
+            newp->didWidth(true);
+        } else if (nodep->name() == "num"  // function int num()
+            || nodep->name() == "size") {
+            methodOkArguments(nodep, 0, 0);
+            newp = new AstCMethodCall(nodep->fileline(),
+                                      nodep->fromp()->unlinkFrBack(),
+                                      "size", NULL);
+            newp->dtypeSetSigned32();
+            newp->didWidth(true);
+            newp->protect(false);
+        } else if (nodep->name() == "delete") {  // function void delete([input integer index])
+            methodOkArguments(nodep, 0, 1);
+            methodCallLValue(nodep, nodep->fromp(), true);
+            if (!nodep->pinsp()) {
+                newp = new AstCMethodCall(nodep->fileline(),
+                                          nodep->fromp()->unlinkFrBack(),
+                                          "clear", NULL);
+                newp->protect(false);
+                newp->makeStatement();
+            } else {
+                nodep->v3error("Unsupported: Queue .delete(index) method, as is O(n) complexity and slow.");
+                AstNode* index_exprp = methodCallQueueIndexExpr(nodep);
+                newp = new AstCMethodCall(nodep->fileline(),
+                                          nodep->fromp()->unlinkFrBack(),
+                                          "erase", index_exprp->unlinkFrBack());
+                newp->protect(false);
+                newp->makeStatement();
+            }
+        } else if (nodep->name() == "insert") {
+            nodep->v3error("Unsupported: Queue .insert method, as is O(n) complexity and slow.");
+            methodOkArguments(nodep, 2, 2);
+            methodCallLValue(nodep, nodep->fromp(), true);
+            AstNode* index_exprp = methodCallQueueIndexExpr(nodep);
+            AstArg* argp = VN_CAST(nodep->pinsp()->nextp(), Arg);
+            iterateCheckTyped(nodep, "insert value", argp->exprp(), adtypep->subDTypep(), BOTH);
+            newp = new AstCMethodCall(nodep->fileline(),
+                                      nodep->fromp()->unlinkFrBack(),
+                                      nodep->name(),
+                                      index_exprp->unlinkFrBack());
+            newp->addPinsp(argp->exprp()->unlinkFrBack());
+            newp->protect(false);
+            newp->makeStatement();
+        } else if (nodep->name() == "pop_front"
+                   || nodep->name() == "pop_back") {
+            methodOkArguments(nodep, 0, 0);
+            methodCallLValue(nodep, nodep->fromp(), true);
+            newp = new AstCMethodCall(nodep->fileline(),
+                                      nodep->fromp()->unlinkFrBack(),
+                                      nodep->name(), NULL);
+            newp->dtypeFrom(adtypep->subDTypep());
+            newp->protect(false);
+            newp->didWidth(true);
+        } else if (nodep->name() == "push_back"
+                   || nodep->name() == "push_front") {
+            methodOkArguments(nodep, 1, 1);
+            methodCallLValue(nodep, nodep->fromp(), true);
+            AstArg* argp = VN_CAST(nodep->pinsp(), Arg);
+            iterateCheckTyped(nodep, "push value", argp->exprp(), adtypep->subDTypep(), BOTH);
+            newp = new AstCMethodCall(nodep->fileline(),
+                                      nodep->fromp()->unlinkFrBack(),
+                                      nodep->name(), argp->exprp()->unlinkFrBack());
+            newp->protect(false);
+            newp->makeStatement();
+        } else {
+            nodep->v3error("Unsupported/unknown built-in associative array method "<<nodep->prettyNameQ());
+        }
+        if (newp) {
+            newp->didWidth(true);
+            nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+        }
+    }
+    AstNode* methodCallQueueIndexExpr(AstMethodCall* nodep) {
+        AstNode* index_exprp = VN_CAST(nodep->pinsp(), Arg)->exprp();
+        iterateCheckSigned32(nodep, "index", index_exprp, BOTH);
+        VL_DANGLING(index_exprp);  // May have been edited
+        return VN_CAST(nodep->pinsp(), Arg)->exprp();
+    }
     void methodCallUnpack(AstMethodCall* nodep, AstUnpackArrayDType* adtypep) {
         enum { UNKNOWN = 0, ARRAY_OR, ARRAY_AND, ARRAY_XOR } methodId;
 
@@ -1849,18 +2062,18 @@ private:
         if (!nodep->dtypep() && m_vup->dtypeNullp()) {  // Get it from parent assignment/pin/etc
             nodep->dtypep(m_vup->dtypep());
         }
-        AstNodeDType* vdtypep = nodep->dtypep();
-        if (!vdtypep) {
+        AstNodeDType* dtypep = nodep->dtypep();
+        if (!dtypep) {
             nodep->v3error("Unsupported/Illegal: Assignment pattern"
                            " member not underneath a supported construct: "
                            <<nodep->backp()->prettyTypeName());
             return;
         }
         {
-            vdtypep = vdtypep->skipRefp();
-            nodep->dtypep(vdtypep);
-            UINFO(9,"  adtypep "<<vdtypep<<endl);
-            nodep->dtypep(vdtypep);
+            dtypep = dtypep->skipRefp();
+            nodep->dtypep(dtypep);
+            UINFO(9,"  dtypep "<<dtypep<<endl);
+            nodep->dtypep(dtypep);
             // Determine replication count, and replicate initial value as
             // widths need to be individually determined
             for (AstPatMember* patp = VN_CAST(nodep->itemsp(), PatMember);
@@ -1899,240 +2112,246 @@ private:
                     patp->unlinkFrBack();
                 }
             }
-            while (const AstConstDType* classp = VN_CAST(vdtypep, ConstDType)) {
-                vdtypep = classp->subDTypep()->skipRefp();
+            while (const AstConstDType* vdtypep = VN_CAST(dtypep, ConstDType)) {
+                dtypep = vdtypep->subDTypep()->skipRefp();
             }
-            if (AstNodeClassDType* classp = VN_CAST(vdtypep, NodeClassDType)) {
-                // Due to "default" and tagged patterns, we need to determine
-                // which member each AstPatMember corresponds to before we can
-                // determine the dtypep for that PatMember's value, and then
-                // width the initial value appropriately.
-                typedef std::map<AstMemberDType*,AstPatMember*> PatMap;
-                PatMap patmap;
-                {
-                    AstMemberDType* memp = classp->membersp();
-                    AstPatMember* patp = VN_CAST(nodep->itemsp(), PatMember);
-                    for (; memp || patp; ) {
-                        do {
-                            if (patp) {
-                                if (patp->keyp()) {
-                                    if (AstText* textp = VN_CAST(patp->keyp(), Text)) {
-                                        memp = classp->findMember(textp->text());
-                                        if (!memp) {
-                                            patp->keyp()->v3error(
-                                                "Assignment pattern key '"
-                                                <<textp->text()<<"' not found as member");
-                                            break;
-                                        }
-                                    } else {
-                                        patp->keyp()->v3error(
-                                            "Assignment pattern key not supported/understood: "
-                                            <<patp->keyp()->prettyTypeName());
-                                    }
-                                }
-                            }
-                            if (memp && !patp) {
-                                // Missing init elements, warn below
-                                memp = NULL; patp = NULL; break;
-                            } else if (!memp && patp) {
-                                patp->v3error("Assignment pattern contains too many elements");
-                                memp = NULL; patp = NULL; break;
-                            } else {
-                                std::pair<PatMap::iterator, bool> ret
-                                    = patmap.insert(make_pair(memp, patp));
-                                if (!ret.second) {
-                                    patp->v3error("Assignment pattern contains duplicate entry: "
-                                                  << VN_CAST(patp->keyp(), Text)->text());
-                                }
-                            }
-                        } while(0);
-                        // Next
-                        if (memp) memp = VN_CAST(memp->nextp(), MemberDType);
-                        if (patp) patp = VN_CAST(patp->nextp(), PatMember);
-                    }
-                }
-                AstNode* newp = NULL;
-                for (AstMemberDType* memp = classp->membersp();
-                     memp; memp = VN_CAST(memp->nextp(), MemberDType)) {
-                    PatMap::iterator it = patmap.find(memp);
-                    AstPatMember* newpatp = NULL;
-                    AstPatMember* patp = NULL;
-                    if (it == patmap.end()) {
-                        if (defaultp) {
-                            newpatp = defaultp->cloneTree(false);
-                            patp = newpatp;
-                        }
-                        else {
-                            if (!VN_IS(classp, UnionDType)) {
-                                nodep->v3error("Assignment pattern missed initializing elements: "
-                                               <<memp->prettyTypeName());
-                            }
-                        }
-                    } else {
-                        patp = it->second;
-                    }
-                    if (patp) {
-                        // Determine initial values
-                        vdtypep = memp;  if (vdtypep) {}
-                        patp->dtypep(memp);
-                        userIterate(patp, WidthVP(memp, BOTH).p());  // See visit(AstPatMember*
-
-                        // Convert to concat for now
-                        AstNode* valuep = patp->lhssp()->unlinkFrBack();
-                        if (VN_IS(valuep, Const)) {
-                            // Forming a AstConcat will cause problems with
-                            // unsized (uncommitted sized) constants
-                            if (AstNode* newp = WidthCommitVisitor::newIfConstCommitSize(VN_CAST(valuep, Const))) {
-                                pushDeletep(valuep); VL_DANGLING(valuep);
-                                valuep = newp;
-                            }
-                        }
-                        if (!newp) newp = valuep;
-                        else {
-                            AstConcat* concatp = new AstConcat(patp->fileline(), newp, valuep);
-                            newp = concatp;
-                            newp->dtypeSetLogicSized(
-                                concatp->lhsp()->width() + concatp->rhsp()->width(),
-                                nodep->dtypep()->numeric());
-                        }
-                    }
-                    if (newpatp) { pushDeletep(newpatp); VL_DANGLING(newpatp); }
-                }
-                if (newp) nodep->replaceWith(newp);
-                else nodep->v3error("Assignment pattern with no members");
-                pushDeletep(nodep); VL_DANGLING(nodep);  // Deletes defaultp also, if present
+            if (AstNodeClassDType* vdtypep = VN_CAST(dtypep, NodeClassDType)) {
+                patternClass(nodep, vdtypep, defaultp); VL_DANGLING(nodep);
             }
-            else if (VN_IS(vdtypep, NodeArrayDType)) {
-                AstNodeArrayDType* arrayp = VN_CAST(vdtypep, NodeArrayDType);
-                VNumRange range = arrayp->declRange();
-                PatVecMap patmap = patVectorMap(nodep, range);
-                UINFO(9,"ent "<<range.hi()<<" to "<<range.lo()<<endl);
-                AstNode* newp = NULL;
-                for (int ent=range.hi(); ent>=range.lo(); --ent) {
-                    AstPatMember* newpatp = NULL;
-                    AstPatMember* patp = NULL;
-                    PatVecMap::iterator it = patmap.find(ent);
-                    if (it == patmap.end()) {
-                        if (defaultp) {
-                            newpatp = defaultp->cloneTree(false);
-                            patp = newpatp;
-                        }
-                        else {
-                            nodep->v3error("Assignment pattern missed initializing elements: "
-                                           <<ent);
-                        }
-                    } else {
-                        patp = it->second;
-                        patmap.erase(it);
-                    }
-
-                    if (patp) {
-                        // Determine initial values
-                        vdtypep = arrayp->subDTypep();
-                        // Don't want the RHS an array
-                        patp->dtypep(vdtypep);
-                        // Determine values - might be another InitArray
-                        userIterate(patp, WidthVP(patp->dtypep(), BOTH).p());  // See visit(AstPatMember*
-                        // Convert to InitArray or constify immediately
-                        AstNode* valuep = patp->lhssp()->unlinkFrBack();
-                        if (VN_IS(valuep, Const)) {
-                            // Forming a AstConcat will cause problems with
-                            // unsized (uncommitted sized) constants
-                            if (AstNode* newp = WidthCommitVisitor::newIfConstCommitSize(VN_CAST(valuep, Const))) {
-                                pushDeletep(valuep); VL_DANGLING(valuep);
-                                valuep = newp;
-                            }
-                        }
-                        if (VN_IS(arrayp, UnpackArrayDType)) {
-                            if (!newp) {
-                                AstInitArray* newap
-                                    = new AstInitArray(nodep->fileline(), arrayp, NULL);
-                                newp = newap;
-                            }
-                            VN_CAST(newp, InitArray)->addIndexValuep(ent - range.lo(), valuep);
-                        } else {  // Packed. Convert to concat for now.
-                            if (!newp) newp = valuep;
-                            else {
-                                AstConcat* concatp = new AstConcat(patp->fileline(), newp, valuep);
-                                newp = concatp;
-                                newp->dtypeSetLogicSized(
-                                    concatp->lhsp()->width()+concatp->rhsp()->width(),
-                                    nodep->dtypep()->numeric());
-                            }
-                        }
-                    }
-                    if (newpatp) { pushDeletep(newpatp); VL_DANGLING(newpatp); }
-                }
-                if (!patmap.empty()) nodep->v3error("Assignment pattern with too many elements");
-                if (newp) nodep->replaceWith(newp);
-                else nodep->v3error("Assignment pattern with no members");
-                //if (debug()>=9) newp->dumpTree("-apat-out: ");
-                pushDeletep(nodep); VL_DANGLING(nodep);  // Deletes defaultp also, if present
+            else if (AstNodeArrayDType* vdtypep = VN_CAST(dtypep, NodeArrayDType)) {
+                patternArray(nodep, vdtypep, defaultp); VL_DANGLING(nodep);
             }
-            else if (VN_IS(vdtypep, BasicDType)
-                     && VN_CAST(vdtypep, BasicDType)->isRanged()) {
-                AstBasicDType* bdtypep = VN_CAST(vdtypep, BasicDType);
-                VNumRange range = bdtypep->declRange();
-                PatVecMap patmap = patVectorMap(nodep, range);
-                UINFO(9,"ent "<<range.hi()<<" to "<<range.lo()<<endl);
-                AstNode* newp = NULL;
-                for (int ent=range.hi(); ent>=range.lo(); --ent) {
-                    AstPatMember* newpatp = NULL;
-                    AstPatMember* patp = NULL;
-                    PatVecMap::iterator it = patmap.find(ent);
-                    if (it == patmap.end()) {
-                        if (defaultp) {
-                            newpatp = defaultp->cloneTree(false);
-                            patp = newpatp;
-                        }
-                        else {
-                            nodep->v3error("Assignment pattern missed initializing elements: "
-                                           <<ent);
-                        }
-                    } else {
-                        patp = it->second;
-                        patmap.erase(it);
-                    }
-                    if (patp) {
-                        // Determine initial values
-                        vdtypep = nodep->findLogicBoolDType();
-                        // Don't want the RHS an array
-                        patp->dtypep(vdtypep);
-                        // Determine values - might be another InitArray
-                        userIterate(patp, WidthVP(patp->dtypep(), BOTH).p());
-                        // Convert to InitArray or constify immediately
-                        AstNode* valuep = patp->lhssp()->unlinkFrBack();
-                        if (VN_IS(valuep, Const)) {
-                            // Forming a AstConcat will cause problems with
-                            // unsized (uncommitted sized) constants
-                            if (AstNode* newp = WidthCommitVisitor::newIfConstCommitSize(VN_CAST(valuep, Const))) {
-                                pushDeletep(valuep); VL_DANGLING(valuep);
-                                valuep = newp;
-                            }
-                        }
-                        {  // Packed. Convert to concat for now.
-                            if (!newp) newp = valuep;
-                            else {
-                                AstConcat* concatp = new AstConcat(patp->fileline(), newp, valuep);
-                                newp = concatp;
-                                newp->dtypeSetLogicSized(
-                                    concatp->lhsp()->width()+concatp->rhsp()->width(),
-                                    nodep->dtypep()->numeric());
-                            }
-                        }
-                    }
-                    if (newpatp) { pushDeletep(newpatp); VL_DANGLING(newpatp); }
-                }
-                if (!patmap.empty()) nodep->v3error("Assignment pattern with too many elements");
-                if (newp) nodep->replaceWith(newp);
-                else nodep->v3error("Assignment pattern with no members");
-                //if (debug()>=9) newp->dumpTree("-apat-out: ");
-                pushDeletep(nodep); VL_DANGLING(nodep);  // Deletes defaultp also, if present
+            else if (VN_IS(dtypep, BasicDType)
+                     && VN_CAST(dtypep, BasicDType)->isRanged()) {
+                patternBasic(nodep, dtypep, defaultp); VL_DANGLING(nodep);
             } else {
                 nodep->v3error("Unsupported: Assignment pattern applies against non struct/union: "
-                               <<vdtypep->prettyTypeName());
+                               <<dtypep->prettyTypeName());
             }
         }
+    }
+    void patternClass(AstPattern* nodep, AstNodeClassDType* vdtypep, AstPatMember* defaultp) {
+        // Due to "default" and tagged patterns, we need to determine
+        // which member each AstPatMember corresponds to before we can
+        // determine the dtypep for that PatMember's value, and then
+        // width the initial value appropriately.
+        typedef std::map<AstMemberDType*,AstPatMember*> PatMap;
+        PatMap patmap;
+        {
+            AstMemberDType* memp = vdtypep->membersp();
+            AstPatMember* patp = VN_CAST(nodep->itemsp(), PatMember);
+            for (; memp || patp; ) {
+                do {
+                    if (patp) {
+                        if (patp->keyp()) {
+                            if (AstText* textp = VN_CAST(patp->keyp(), Text)) {
+                                memp = vdtypep->findMember(textp->text());
+                                if (!memp) {
+                                    patp->keyp()->v3error(
+                                        "Assignment pattern key '"
+                                        <<textp->text()<<"' not found as member");
+                                    break;
+                                }
+                            } else {
+                                patp->keyp()->v3error(
+                                    "Assignment pattern key not supported/understood: "
+                                    <<patp->keyp()->prettyTypeName());
+                            }
+                        }
+                    }
+                    if (memp && !patp) {
+                        // Missing init elements, warn below
+                        memp = NULL; patp = NULL; break;
+                    } else if (!memp && patp) {
+                        patp->v3error("Assignment pattern contains too many elements");
+                        memp = NULL; patp = NULL; break;
+                    } else {
+                        std::pair<PatMap::iterator, bool> ret
+                            = patmap.insert(make_pair(memp, patp));
+                        if (!ret.second) {
+                            patp->v3error("Assignment pattern contains duplicate entry: "
+                                          << VN_CAST(patp->keyp(), Text)->text());
+                        }
+                    }
+                } while(0);
+                // Next
+                if (memp) memp = VN_CAST(memp->nextp(), MemberDType);
+                if (patp) patp = VN_CAST(patp->nextp(), PatMember);
+            }
+        }
+        AstNode* newp = NULL;
+        for (AstMemberDType* memp = vdtypep->membersp();
+             memp; memp = VN_CAST(memp->nextp(), MemberDType)) {
+            PatMap::iterator it = patmap.find(memp);
+            AstPatMember* newpatp = NULL;
+            AstPatMember* patp = NULL;
+            if (it == patmap.end()) {
+                if (defaultp) {
+                    newpatp = defaultp->cloneTree(false);
+                    patp = newpatp;
+                }
+                else {
+                    if (!VN_IS(vdtypep, UnionDType)) {
+                        nodep->v3error("Assignment pattern missed initializing elements: "
+                                       <<memp->prettyTypeName());
+                    }
+                }
+            } else {
+                patp = it->second;
+            }
+            if (patp) {
+                // Determine initial values
+                patp->dtypep(memp);
+                userIterate(patp, WidthVP(memp, BOTH).p());  // See visit(AstPatMember*
+
+                // Convert to concat for now
+                AstNode* valuep = patp->lhssp()->unlinkFrBack();
+                if (VN_IS(valuep, Const)) {
+                    // Forming a AstConcat will cause problems with
+                    // unsized (uncommitted sized) constants
+                    if (AstNode* newp = WidthCommitVisitor::newIfConstCommitSize(VN_CAST(valuep, Const))) {
+                        pushDeletep(valuep); VL_DANGLING(valuep);
+                        valuep = newp;
+                    }
+                }
+                if (!newp) newp = valuep;
+                else {
+                    AstConcat* concatp = new AstConcat(patp->fileline(), newp, valuep);
+                    newp = concatp;
+                    newp->dtypeSetLogicSized(
+                        concatp->lhsp()->width() + concatp->rhsp()->width(),
+                        nodep->dtypep()->numeric());
+                }
+            }
+            if (newpatp) { pushDeletep(newpatp); VL_DANGLING(newpatp); }
+        }
+        if (newp) nodep->replaceWith(newp);
+        else nodep->v3error("Assignment pattern with no members");
+        pushDeletep(nodep); VL_DANGLING(nodep);  // Deletes defaultp also, if present
+    }
+    void patternArray(AstPattern* nodep, AstNodeArrayDType* vdtypep, AstPatMember* defaultp) {
+        AstNodeArrayDType* arrayp = VN_CAST(vdtypep, NodeArrayDType);
+        VNumRange range = arrayp->declRange();
+        PatVecMap patmap = patVectorMap(nodep, range);
+        UINFO(9,"ent "<<range.hi()<<" to "<<range.lo()<<endl);
+        AstNode* newp = NULL;
+        for (int ent=range.hi(); ent>=range.lo(); --ent) {
+            AstPatMember* newpatp = NULL;
+            AstPatMember* patp = NULL;
+            PatVecMap::iterator it = patmap.find(ent);
+            if (it == patmap.end()) {
+                if (defaultp) {
+                    newpatp = defaultp->cloneTree(false);
+                    patp = newpatp;
+                }
+                else {
+                    nodep->v3error("Assignment pattern missed initializing elements: "
+                                   <<ent);
+                }
+            } else {
+                patp = it->second;
+                patmap.erase(it);
+            }
+
+            if (patp) {
+                // Don't want the RHS an array
+                patp->dtypep(arrayp->subDTypep());
+                // Determine values - might be another InitArray
+                userIterate(patp, WidthVP(patp->dtypep(), BOTH).p());  // See visit(AstPatMember*
+                // Convert to InitArray or constify immediately
+                AstNode* valuep = patp->lhssp()->unlinkFrBack();
+                if (VN_IS(valuep, Const)) {
+                    // Forming a AstConcat will cause problems with
+                    // unsized (uncommitted sized) constants
+                    if (AstNode* newp = WidthCommitVisitor::newIfConstCommitSize(VN_CAST(valuep, Const))) {
+                        pushDeletep(valuep); VL_DANGLING(valuep);
+                        valuep = newp;
+                    }
+                }
+                if (VN_IS(arrayp, UnpackArrayDType)) {
+                    if (!newp) {
+                        AstInitArray* newap
+                            = new AstInitArray(nodep->fileline(), arrayp, NULL);
+                        newp = newap;
+                    }
+                    VN_CAST(newp, InitArray)->addIndexValuep(ent - range.lo(), valuep);
+                } else {  // Packed. Convert to concat for now.
+                    if (!newp) newp = valuep;
+                    else {
+                        AstConcat* concatp = new AstConcat(patp->fileline(), newp, valuep);
+                        newp = concatp;
+                        newp->dtypeSetLogicSized(
+                            concatp->lhsp()->width()+concatp->rhsp()->width(),
+                            nodep->dtypep()->numeric());
+                    }
+                }
+            }
+            if (newpatp) { pushDeletep(newpatp); VL_DANGLING(newpatp); }
+        }
+        if (!patmap.empty()) nodep->v3error("Assignment pattern with too many elements");
+        if (newp) nodep->replaceWith(newp);
+        else nodep->v3error("Assignment pattern with no members");
+        //if (debug()>=9) newp->dumpTree("-apat-out: ");
+        pushDeletep(nodep); VL_DANGLING(nodep);  // Deletes defaultp also, if present
+    }
+    void patternBasic(AstPattern* nodep, AstNodeDType* vdtypep, AstPatMember* defaultp) {
+        AstBasicDType* bdtypep = VN_CAST(vdtypep, BasicDType);
+        VNumRange range = bdtypep->declRange();
+        PatVecMap patmap = patVectorMap(nodep, range);
+        UINFO(9,"ent "<<range.hi()<<" to "<<range.lo()<<endl);
+        AstNode* newp = NULL;
+        for (int ent=range.hi(); ent>=range.lo(); --ent) {
+            AstPatMember* newpatp = NULL;
+            AstPatMember* patp = NULL;
+            PatVecMap::iterator it = patmap.find(ent);
+            if (it == patmap.end()) {
+                if (defaultp) {
+                    newpatp = defaultp->cloneTree(false);
+                    patp = newpatp;
+                }
+                else {
+                    nodep->v3error("Assignment pattern missed initializing elements: "
+                                   <<ent);
+                }
+            } else {
+                patp = it->second;
+                patmap.erase(it);
+            }
+            if (patp) {
+                // Determine initial values
+                vdtypep = nodep->findLogicBoolDType();
+                // Don't want the RHS an array
+                patp->dtypep(vdtypep);
+                // Determine values - might be another InitArray
+                userIterate(patp, WidthVP(patp->dtypep(), BOTH).p());
+                // Convert to InitArray or constify immediately
+                AstNode* valuep = patp->lhssp()->unlinkFrBack();
+                if (VN_IS(valuep, Const)) {
+                    // Forming a AstConcat will cause problems with
+                    // unsized (uncommitted sized) constants
+                    if (AstNode* newp = WidthCommitVisitor::newIfConstCommitSize(VN_CAST(valuep, Const))) {
+                        pushDeletep(valuep); VL_DANGLING(valuep);
+                        valuep = newp;
+                    }
+                }
+                {  // Packed. Convert to concat for now.
+                    if (!newp) newp = valuep;
+                    else {
+                        AstConcat* concatp = new AstConcat(patp->fileline(), newp, valuep);
+                        newp = concatp;
+                        newp->dtypeSetLogicSized(
+                            concatp->lhsp()->width()+concatp->rhsp()->width(),
+                            nodep->dtypep()->numeric());
+                    }
+                }
+            }
+            if (newpatp) { pushDeletep(newpatp); VL_DANGLING(newpatp); }
+        }
+        if (!patmap.empty()) nodep->v3error("Assignment pattern with too many elements");
+        if (newp) nodep->replaceWith(newp);
+        else nodep->v3error("Assignment pattern with no members");
+        //if (debug()>=9) newp->dumpTree("-apat-out: ");
+        pushDeletep(nodep); VL_DANGLING(nodep);  // Deletes defaultp also, if present
     }
     virtual void visit(AstPatMember* nodep) {
         AstNodeDType* vdtypep = m_vup->dtypeNullp();
@@ -2307,13 +2526,26 @@ private:
                     break;
                 }
                 case 'p': {  // Packed
-                    AstBasicDType* basicp = argp ? argp->dtypep()->basicp() : NULL;
-                    if (basicp->isString()) {
+                    AstNodeDType* dtypep = argp ? argp->dtypep()->skipRefp() : NULL;
+                    AstBasicDType* basicp = dtypep ? dtypep->basicp() : NULL;
+                    if (basicp && basicp->isString()) {
                         added = true;
                         newFormat += "\"%@\"";
-                    } else if (basicp->isDouble()) {
+                    } else if (basicp && basicp->isDouble()) {
                         added = true;
                         newFormat += "%g";
+                    } else if (VN_IS(dtypep, AssocArrayDType)
+                               || VN_IS(dtypep, QueueDType)) {
+                        added = true;
+                        newFormat += "%@";
+                        AstNRelinker handle;
+                        argp->unlinkFrBack(&handle);
+                        AstCMethodCall* newp = new AstCMethodCall(
+                            nodep->fileline(), argp, "to_string", NULL);
+                        newp->dtypeSetString();
+                        newp->pure(true);
+                        newp->protect(false);
+                        handle.relink(newp);
                     } else {
                         added = true;
                         if (fmt == "%0") newFormat += "'h%0h";  // IEEE our choice
@@ -3482,6 +3714,16 @@ private:
         }
         if (underp) {}  // cppcheck
     }
+    void iterateCheckTyped(AstNode* nodep, const char* side, AstNode* underp,
+                           AstNodeDType* expDTypep, Stage stage) {
+        if (stage & PRELIM) {
+            underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, PRELIM).p());
+        }
+        if (stage & FINAL) {
+            underp = iterateCheck(nodep, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
+        }
+        if (underp) {}  // cppcheck
+    }
     void iterateCheckSizedSelf(AstNode* nodep, const char* side, AstNode* underp,
                                Determ determ, Stage stage) {
         // Coerce child to any sized-number data type; child is self-determined
@@ -3742,7 +3984,8 @@ private:
     AstNode* spliceCvtString(AstNode* nodep) {
         // IEEE-2012 11.8.1: Signed: Type coercion creates signed
         // 11.8.2: Argument to convert is self-determined
-        if (nodep && !nodep->dtypep()->basicp()->isString()) {
+        if (nodep && !(nodep->dtypep()->basicp()
+                       && nodep->dtypep()->basicp()->isString())) {
             UINFO(6,"   spliceCvtString: "<<nodep<<endl);
             AstNRelinker linker;
             nodep->unlinkFrBack(&linker);

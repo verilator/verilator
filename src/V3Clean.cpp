@@ -87,7 +87,10 @@ private:
     void computeCppWidth(AstNode* nodep) {
         if (!nodep->user2() && nodep->hasDType()) {
             if (VN_IS(nodep, Var) || VN_IS(nodep, NodeDType)  // Don't want to change variable widths!
-                || VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {  // Or arrays
+                || VN_IS(nodep->dtypep()->skipRefp(), AssocArrayDType)  // Or arrays
+                || VN_IS(nodep->dtypep()->skipRefp(), QueueDType)
+                || VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
+                || VN_IS(nodep->dtypep()->skipRefp(), VoidDType)) {
             } else {
                 setCppWidth(nodep);
             }
@@ -274,6 +277,11 @@ private:
     virtual void visit(AstCCall* nodep) {
         iterateChildren(nodep);
         insureCleanAndNext(nodep->argsp());
+        setClean(nodep, true);
+    }
+    virtual void visit(AstCMethodCall* nodep) {
+        iterateChildren(nodep);
+        insureCleanAndNext(nodep->pinsp());
         setClean(nodep, true);
     }
 

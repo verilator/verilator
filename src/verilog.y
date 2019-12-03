@@ -1625,13 +1625,15 @@ variable_dimension<rangep>:	// ==IEEE: variable_dimension
 		'[' ']'					{ $$ = new AstUnsizedRange($1); }
 	//			// IEEE: unpacked_dimension
 	|	anyrange				{ $$ = $1; }
-	|	'[' constExpr ']'			{ $$ = new AstRange($1, new AstConst($1, 0), new AstSub($1, $2, new AstConst($1, 1))); }
+	|	'[' constExpr ']'			{ if (VN_IS($2, Unbounded)) { $2->deleteTree(); $$ = new AstQueueRange($1); }
+							  else { $$ = new AstRange($1, new AstConst($1, 0),
+								 		   new AstSub($1, $2, new AstConst($1, 1))); } }
 	//			// IEEE: associative_dimension
-	//UNSUP	'[' data_type ']'			{ UNSUP }
-	//UNSUP	yP_BRASTAR ']'				{ UNSUP }
-	//UNSUP	'[' '*' ']'				{ UNSUP }
+	|	'[' data_type ']'			{ $$ = new AstAssocRange($1, $2); }
+	|	yP_BRASTAR ']'				{ $$ = NULL; v3error("Unsupported: [*] wildcard associative arrays"); }
+	|	'[' '*' ']'				{ $$ = NULL; v3error("Unsupported: [*] wildcard associative arrays"); }
 	//			// IEEE: queue_dimension
-	//			// '[' '$' ']' -- $ is part of expr
+	//			// '[' '$' ']' -- $ is part of expr, see '[' constExpr ']'
 	//			// '[' '$' ':' expr ']' -- anyrange:expr:$
 	;
 
@@ -3362,8 +3364,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// IEEE: sequence_method_call
 	//			// Indistinguishable from function_subroutine_call:method_call
 	//
-	|	'$'					{ $$ = new AstConst($<fl>1, AstConst::LogicFalse());
-							  BBUNSUP($<fl>1, "Unsupported: $ expression"); }
+	|	'$'					{ $$ = new AstUnbounded($<fl>1); }
 	|	yNULL					{ $$ = new AstConst($1, AstConst::LogicFalse());
 							  BBUNSUP($<fl>1, "Unsupported: null expression"); }
 	//			// IEEE: yTHIS

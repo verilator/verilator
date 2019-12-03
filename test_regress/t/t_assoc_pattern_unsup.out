@@ -1,0 +1,5 @@
+%Error: t/t_assoc_pattern_unsup.v:18: Unsupported: Assignment pattern applies against non struct/union: ASSOCARRAYDTYPE
+                                    : ... In instance t
+      a = '{ "f": "fooed", "b": "bared", default: "defaulted" };
+          ^~
+%Error: Exiting due to

@@ -46,6 +46,14 @@ class EmitCInlines : EmitCBaseVisitor {
             v3Global.needHeavy(true);
         }
     }
+    virtual void visit(AstAssocArrayDType* nodep) {
+        v3Global.needHeavy(true);
+        iterateChildren(nodep);
+    }
+    virtual void visit(AstQueueDType* nodep) {
+        v3Global.needHeavy(true);
+        iterateChildren(nodep);
+    }
     virtual void visit(AstValuePlusArgs* nodep) {
         v3Global.needHeavy(true);
         iterateChildren(nodep);

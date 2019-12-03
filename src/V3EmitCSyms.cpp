@@ -93,7 +93,6 @@ class EmitCSyms : EmitCBaseVisitor {
     ScopeNameHierarchy  m_vpiScopeHierarchy;  // The actual hierarchy of scopes
     V3LanguageWords     m_words;        // Reserved word detector
     int         m_coverBins;            // Coverage bin number
-    int         m_labelNum;             // Next label number
     bool        m_dpiHdrOnly;           // Only emit the DPI header
     int         m_numStmts;             // Number of statements output
     int         m_funcNum;              // CFunc split function number
@@ -272,7 +271,6 @@ class EmitCSyms : EmitCBaseVisitor {
     virtual void visit(AstNodeModule* nodep) {
         nameCheck(nodep);
         m_modp = nodep;
-        m_labelNum = 0;
         iterateChildren(nodep);
         m_modp = NULL;
     }
@@ -331,10 +329,6 @@ class EmitCSyms : EmitCBaseVisitor {
             nodep->binNum(m_coverBins++);
         }
     }
-    virtual void visit(AstJumpLabel* nodep) {
-        nodep->labelNum(++m_labelNum);
-        iterateChildren(nodep);
-    }
     virtual void visit(AstCFunc* nodep) {
         nameCheck(nodep);
         if (nodep->dpiImport() || nodep->dpiExportWrapper()) {
@@ -359,7 +353,6 @@ public:
         m_funcp = NULL;
         m_modp = NULL;
         m_coverBins = 0;
-        m_labelNum = 0;
         m_numStmts = 0;
         m_funcNum = 0;
         m_ofpBase = NULL;

@@ -91,6 +91,10 @@ private:
         if (const AstNodeArrayDType* adtypep = VN_CAST(ddtypep, NodeArrayDType)) {
             fromRange = adtypep->declRange();
         }
+        else if (const AstAssocArrayDType* adtypep = VN_CAST(ddtypep, AssocArrayDType)) {
+        }
+        else if (const AstQueueDType* adtypep = VN_CAST(ddtypep, QueueDType)) {
+        }
         else if (const AstNodeClassDType* adtypep = VN_CAST(ddtypep, NodeClassDType)) {
             fromRange = adtypep->declRange();
         }
@@ -244,6 +248,24 @@ private:
             newp->declElWidth(elwidth);
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
             if (debug()>=9) newp->dumpTree(cout, "--SELBTn: ");
+            nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+        }
+        else if (AstAssocArrayDType* adtypep = VN_CAST(ddtypep, AssocArrayDType)) {
+            // SELBIT(array, index) -> ASSOCSEL(array, index)
+            AstNode* subp = rhsp;
+            AstAssocSel* newp = new AstAssocSel(nodep->fileline(),
+                                                fromp, subp);
+            newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
+            if (debug()>=9) newp->dumpTree(cout, "--SELBTn: ");
+            nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+        }
+        else if (AstQueueDType* adtypep = VN_CAST(ddtypep, QueueDType)) {
+            // SELBIT(array, index) -> CMETHODCALL(queue, "at", index)
+            AstNode* subp = rhsp;
+            AstCMethodCall* newp = new AstCMethodCall(nodep->fileline(),
+                                                      fromp, "at", subp);
+            newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off queue reference
+            if (debug()>=9) newp->dumpTree(cout, "--SELBTq: ");
             nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
         }
         else if (VN_IS(ddtypep, BasicDType)) {

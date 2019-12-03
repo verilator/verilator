@@ -4,6 +4,10 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.023 devel
 
+**    Support associative arrays (excluding [*] and pattern assignments), bug544.
+
+**    Support queues (excluding {} notation and pattern assignments), bug545.
+
 ***   Add +verilator+error+limit to see more assertion errors. [Peter Monsson]
 
 ***   Support string.toupper and string.tolower.
@@ -27,6 +31,10 @@ The contributors that suggested a given feature are shown in []. Thanks!
 ****  Fix // in filenames, bug1610. [Peter Nelson]
 
 ****  Fix $display("%p") to be closer to IEEE.
+
+****  Fix labels on functions with returns, bug1614. [Mitch Hayenga]
+
+****  Fix false unused message on __Vemumtab, msg3180. [Tobias Rosenkranz]
 
 
 * Verilator 4.022 2019-11-10

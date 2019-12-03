@@ -349,6 +349,16 @@ private:
         }
         checkNode(nodep);
     }
+    virtual void visit(AstAssocSel* nodep) {
+        iterateAndNextNull(nodep->fromp());
+        {   // Only the 'from' is part of the assignment LHS
+            bool prevAssign = m_assignLhs;
+            m_assignLhs = false;
+            iterateAndNextNull(nodep->bitp());
+            m_assignLhs = prevAssign;
+        }
+        checkNode(nodep);
+    }
     virtual void visit(AstConst* nodep) {
         iterateChildren(nodep); checkNode(nodep);
     }
@@ -388,7 +398,8 @@ private:
         // Any strings sent to a display must be var of string data type,
         // to avoid passing a pointer to a temporary.
         for (AstNode* expp=nodep->exprsp(); expp; expp = expp->nextp()) {
-            if (expp->dtypep()->basicp()->isString()
+            if (expp->dtypep()->basicp()
+                && expp->dtypep()->basicp()->isString()
                 && !VN_IS(expp, VarRef)) {
                 createDeepTemp(expp, true);
             }
