@@ -292,6 +292,9 @@ private:
                 || (m_taskp && (m_taskp->dpiImport() || m_taskp->dpiExport()))) {
                 entryp->usedWhole();
             }
+            if (nodep->valuep()) {
+                entryp->drivenWhole();
+            }
         }
         // Discover variables used in bit definitions, etc
         iterateChildren(nodep);
