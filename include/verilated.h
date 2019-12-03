@@ -1519,11 +1519,11 @@ QData VL_POW_QQW(int obits, int, int rbits, QData lhs, WDataInP rwp);
 
 static inline IData VL_POWSS_III(int obits, int, int rbits,
                                  IData lhs, IData rhs, bool lsign, bool rsign) VL_MT_SAFE {
-    if (VL_UNLIKELY(rhs==0)) return 1;
+    if (VL_UNLIKELY(rhs == 0)) return 1;
     if (rsign && VL_SIGN_I(rbits, rhs)) {
-        if (lhs==0) return 0;  // "X"
-        else if (lhs==1) return 1;
-        else if (lsign && lhs==VL_MASK_I(obits)) {  // -1
+        if (lhs == 0) return 0;  // "X"
+        else if (lhs == 1) return 1;
+        else if (lsign && lhs == VL_MASK_I(obits)) {  // -1
             if (rhs & 1) return VL_MASK_I(obits);  // -1^odd=-1
             else return 1;  // -1^even=1
         }
@@ -1533,12 +1533,12 @@ static inline IData VL_POWSS_III(int obits, int, int rbits,
 }
 static inline QData VL_POWSS_QQQ(int obits, int, int rbits,
                                  QData lhs, QData rhs, bool lsign, bool rsign) VL_MT_SAFE {
-    if (VL_UNLIKELY(rhs==0)) return 1;
-    if (rsign && VL_SIGN_I(rbits, rhs)) {
-        if (lhs==0) return 0;  // "X"
-        else if (lhs==1) return 1;
-        else if (lsign && lhs==VL_MASK_I(obits)) {  // -1
-            if (rhs & 1) return VL_MASK_I(obits);  // -1^odd=-1
+    if (VL_UNLIKELY(rhs == 0)) return 1;
+    if (rsign && VL_SIGN_Q(rbits, rhs)) {
+        if (lhs == 0) return 0;  // "X"
+        else if (lhs == 1) return 1;
+        else if (lsign && lhs == VL_MASK_Q(obits)) {  // -1
+            if (rhs & 1) return VL_MASK_Q(obits);  // -1^odd=-1
             else return 1;  // -1^even=1
         }
         return 0;
