@@ -219,14 +219,14 @@ public:
     // function void q.push_back(value)
     void push_back(const T_Value& value) { m_deque.push_back(value); }
     // function value_t q.pop_front();
-    const T_Value& pop_front() {
+    T_Value pop_front() {
         if (m_deque.empty()) return m_defaultValue;
-        const T_Value& v = m_deque.front(); m_deque.pop_front(); return v;
+        T_Value v = m_deque.front(); m_deque.pop_front(); return v;
     }
     // function value_t q.pop_back();
-    const T_Value& pop_back() {
+    T_Value pop_back() {
         if (m_deque.empty()) return m_defaultValue;
-        const T_Value& v = m_deque.back(); m_deque.pop_back(); return v;
+        T_Value v = m_deque.back(); m_deque.pop_back(); return v;
     }
 
     // Setting. Verilog: assoc[index] = v
