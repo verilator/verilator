@@ -38,17 +38,17 @@ module t;
       if (!$value$plusargs("INT=%o", p_i)) $stop;
       if (p_i !== 32'o1234) $stop;
 
-      // Check handling of SData signals (Issue #1592)
+      // Check handling of 'SData' type signals (Issue #1592)
       p_s = 0;
       if (!$value$plusargs("INT=%d", p_s)) $stop;
       if (p_s !== 16'd1234) $stop;
 
-      // Check handling of CData signals (Issue #1592)
+      // Check handling of 'CData' type signals (Issue #1592)
       p_c = 0;
       if (!$value$plusargs("INT=%d", p_c)) $stop;
       if (p_c !== 8'd210) $stop;
 
-      // Check handling of CData signals (Issue #1619)
+      // Check handling of 'double' type signals (Issue #1619)
       p_r = 0;
       if (!$value$plusargs("REAL=%f", p_r)) $stop;
       $display("r='%f'", p_r);
