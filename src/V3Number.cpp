@@ -110,13 +110,12 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
     bool unbased = false;
     char base = '\0';
     if (value_startp != sourcep) {  // Has a '
-        char widthn[100]; char* wp=&widthn[0];
-        const char* cp=sourcep;
+        string widthn;
+        const char* cp = sourcep;
         for (; *cp; cp++) {
             if (*cp == '\'') { cp++ ; break; }
-            if (*cp != '_') *wp++ = *cp;
+            if (*cp != '_') widthn += *cp;
         }
-        *wp++ = '\0';
         while (*cp == '_') cp++;
         if (*cp && tolower(*cp)=='s') {
             cp++; isSigned(true);
@@ -124,13 +123,13 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
         if (*cp) { base=*cp; cp++; }
         value_startp = cp;
 
-        if (atoi(widthn)) {
-            if (atoi(widthn) < 0 || atoi(widthn) > MAX_WIDTH) {
+        if (atoi(widthn.c_str())) {
+            if (atoi(widthn.c_str()) < 0 || atoi(widthn.c_str()) > MAX_WIDTH) {
                 // atoi might convert large number to negative, so can't tell which
                 v3error("Unsupported: Width of number exceeds implementation limit: "<<sourcep);
                 width(MAX_WIDTH, true);
             } else {
-                width(atoi(widthn), true);
+                width(atoi(widthn.c_str()), true);
             }
         }
     } else {
@@ -138,7 +137,7 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
         base = 'd';
     }
 
-    for (int i=0; i<words(); i++) m_value[i]=m_valueX[i] = 0;
+    for (int i = 0; i < words(); ++i) m_value[i] = m_valueX[i] = 0;
 
     // Special SystemVerilog unsized constructs
     if (base == '0') {
@@ -162,6 +161,9 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
 
     // Ignore leading blanks
     while (*value_startp=='_' || isspace(*value_startp)) value_startp++;
+    if (!*value_startp && !m_autoExtend) {
+        v3error("Number is missing value digits: "<<sourcep);
+    }
 
     int obit = 0;  // Start at LSB
     if (tolower(base) == 'd') {
