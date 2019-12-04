@@ -132,6 +132,16 @@ void **JenkinsIns(void *base_i, const unsigned char *mem, uint32_t length, uint3
 #include <sys/sysctl.h>
 #endif
 
+#ifdef __GNUC__
+// Boolean expression more often true than false
+#define FST_LIKELY(x) __builtin_expect(!!(x), 1)
+// Boolean expression more often false than true
+#define FST_UNLIKELY(x) __builtin_expect(!!(x), 0)
+#else
+#define FST_LIKELY(x) (!!(x))
+#define FST_UNLIKELY(x) (!!(x))
+#endif
+
 #define FST_APIMESS "FSTAPI  | "
 
 /***********************/
@@ -1916,7 +1926,7 @@ if(xc && !xc->already_in_close && !xc->already_in_flush)
                 xc->skip_writing_section_hdr = 1;
                 if(!xc->size_limit_locked)
                         {
-                        if(xc->is_initial_time) /* simulation time never advanced so mock up the changes as time zero ones */
+                        if(FST_UNLIKELY(xc->is_initial_time)) /* simulation time never advanced so mock up the changes as time zero ones */
                                 {
                                 fstHandle dupe_idx;
 
@@ -2878,12 +2888,12 @@ const unsigned char *buf = (const unsigned char *)val;
 uint32_t offs;
 int len;
 
-if((xc) && (handle <= xc->maxhandle))
+if(FST_LIKELY((xc) && (handle <= xc->maxhandle)))
         {
         uint32_t fpos;
         uint32_t *vm4ip;
 
-        if(!xc->valpos_mem)
+        if(FST_UNLIKELY(!xc->valpos_mem))
                 {
                 xc->vc_emitted = 1;
                 fstWriterCreateMmaps(xc);
@@ -2893,17 +2903,17 @@ if((xc) && (handle <= xc->maxhandle))
         vm4ip = &(xc->valpos_mem[4*handle]);
 
         len  = vm4ip[1];
-        if(len) /* len of zero = variable length, use fstWriterEmitVariableLengthValueChange */
+        if(FST_LIKELY(len)) /* len of zero = variable length, use fstWriterEmitVariableLengthValueChange */
                 {
-                if(!xc->is_initial_time)
+                if(FST_LIKELY(!xc->is_initial_time))
                         {
                         fpos = xc->vchg_siz;
 
-                        if((fpos + len + 10) > xc->vchg_alloc_siz)
+                        if(FST_UNLIKELY((fpos + len + 10) > xc->vchg_alloc_siz))
                                 {
                                 xc->vchg_alloc_siz += (xc->fst_break_add_size + len); /* +len added in the case of extremely long vectors and small break add sizes */
                                 xc->vchg_mem = (unsigned char *)realloc(xc->vchg_mem, xc->vchg_alloc_siz);
-                                if(!xc->vchg_mem)
+                                if(VL_UNLIKELY(!xc->vchg_mem))
                                         {
                                         fprintf(stderr, FST_APIMESS "Could not realloc() in fstWriterEmitValueChange, exiting.\n");
                                         exit(255);
@@ -2994,12 +3004,12 @@ void fstWriterEmitVariableLengthValueChange(void *ctx, fstHandle handle, const v
 struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
 const unsigned char *buf = (const unsigned char *)val;
 
-if((xc) && (handle <= xc->maxhandle))
+if(FST_LIKELY((xc) && (handle <= xc->maxhandle)))
         {
         uint32_t fpos;
         uint32_t *vm4ip;
 
-        if(!xc->valpos_mem)
+        if(FST_UNLIKELY(!xc->valpos_mem))
                 {
                 xc->vc_emitted = 1;
                 fstWriterCreateMmaps(xc);
@@ -3009,15 +3019,15 @@ if((xc) && (handle <= xc->maxhandle))
         vm4ip = &(xc->valpos_mem[4*handle]);
 
         /* there is no initial time dump for variable length value changes */
-        if(!vm4ip[1]) /* len of zero = variable length */
+        if(FST_LIKELY(!vm4ip[1])) /* len of zero = variable length */
                 {
                 fpos = xc->vchg_siz;
 
-                if((fpos + len + 10 + 5) > xc->vchg_alloc_siz)
+                if(FST_UNLIKELY((fpos + len + 10 + 5) > xc->vchg_alloc_siz))
                         {
                         xc->vchg_alloc_siz += (xc->fst_break_add_size + len + 5); /* +len added in the case of extremely long vectors and small break add sizes */
                         xc->vchg_mem = (unsigned char *)realloc(xc->vchg_mem, xc->vchg_alloc_siz);
-                        if(!xc->vchg_mem)
+                        if(FST_UNLIKELY(!xc->vchg_mem))
                                 {
                                 fprintf(stderr, FST_APIMESS "Could not realloc() in fstWriterEmitVariableLengthValueChange, exiting.\n");
                                 exit(255);
@@ -3039,7 +3049,7 @@ unsigned int i;
 int skip = 0;
 if(xc)
         {
-        if(xc->is_initial_time)
+        if(FST_UNLIKELY(xc->is_initial_time))
                 {
                 if(xc->size_limit_locked)       /* this resets xc->is_initial_time to one */
                         {
