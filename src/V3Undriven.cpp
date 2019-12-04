@@ -375,7 +375,6 @@ private:
         {
             m_inProcAssign = true;
             iterateChildren(nodep);
-            m_inProcAssign = false;
         }
         m_inProcAssign = prevProc;
     }
