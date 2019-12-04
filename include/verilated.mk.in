@@ -48,7 +48,6 @@ VK_CPPFLAGS_ALWAYS += \
 		-MMD \
 		-I$(VERILATOR_ROOT)/include \
 		-I$(VERILATOR_ROOT)/include/vltstd \
-		-DVL_PRINTF=printf \
 		-DVM_COVERAGE=$(VM_COVERAGE) \
 		-DVM_SC=$(VM_SC) \
 		-DVM_TRACE=$(VM_TRACE) \

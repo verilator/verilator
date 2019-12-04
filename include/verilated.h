@@ -44,6 +44,11 @@
 # include <thread>
 #endif
 
+// Allow user to specify their own include file
+#ifdef VL_VERILATED_INCLUDE
+# include VL_VERILATED_INCLUDE
+#endif
+
 //=============================================================================
 // Switches
 

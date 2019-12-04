@@ -35,6 +35,10 @@ extern "C" {
 }
 #endif
 
+#ifndef VL_PRINTF
+# define VL_PRINTF printf
+#endif
+
 //======================================================================
 
 void dpii_display_call(const char* c) {
