@@ -38,6 +38,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix false unused message on __Vemumtab, msg3180. [Tobias Rosenkranz]
 
+****  Fix assertion on dotted parameter arrayed function, bug1620. [Rich Porter]
+
 
 * Verilator 4.022 2019-11-10
 

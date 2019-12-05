@@ -12,6 +12,9 @@ module t (/*AUTOARG*/
 
    ma ma0 ();
 
+   initial t.ma0.u_b[0].f(1);
+   initial t.ma0.u_b[0].f(clk);
+
    global_mod #(32'hf00d) global_cell ();
    global_mod #(32'hf22d) global_cell2 ();
 
@@ -138,3 +141,13 @@ module mc ();
       mc.checkName (mc.getName(1'b0));
    end
 endmodule
+
+module b;
+
+   function void f(bit v);
+      $display("%m");
+   endfunction : f;
+
+endmodule : b
+
+bind ma b u_b[0:1];

@@ -1942,7 +1942,9 @@ private:
         // m_curSymp is symbol table of outer expression
         // m_ds.m_dotSymp is symbol table relative to "."'s above now
         UASSERT_OBJ(m_ds.m_dotSymp, nodep, "NULL lookup symbol table");
-        UASSERT_OBJ(m_statep->forPrimary(), nodep, "ParseRefs should no longer exist");
+        // Generally resolved during Primay, but might be at param time under AstUnlinkedRef
+        UASSERT_OBJ(m_statep->forPrimary() || m_statep->forPrearray(),
+                    nodep, "ParseRefs should no longer exist");
         DotStates lastStates = m_ds;
         bool start = (m_ds.m_dotPos == DP_NONE);  // Save, as m_dotp will be changed
         if (start) {
