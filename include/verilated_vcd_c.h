@@ -231,20 +231,31 @@ public:
         (*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code]))) = newval;
         *m_writep++='b';
         for (int bit=bits-1; bit>=0; --bit) {
-            *m_writep++=((newval&(1ULL<<bit))?'1':'0');
+            *m_writep++ = ((newval & (VL_ULL(1) << bit)) ? '1' : '0');
         }
         *m_writep++=' '; printCode(code); *m_writep++='\n';
         bufferCheck();
     }
     void fullArray(vluint32_t code, const vluint32_t* newval, int bits) {
-        for (int word=0; word<(((bits-1)/32)+1); ++word) {
-            m_sigs_oldvalp[code+word] = newval[word];
+        for (int word = 0; word < (((bits - 1) / 32) + 1); ++word) {
+            m_sigs_oldvalp[code + word] = newval[word];
         }
-        *m_writep++='b';
-        for (int bit=bits-1; bit>=0; --bit) {
-            *m_writep++=((newval[(bit/32)]&(1L<<(bit&0x1f)))?'1':'0');
+        *m_writep++ = 'b';
+        for (int bit = bits - 1; bit >= 0; --bit) {
+            *m_writep++ = ((newval[(bit / 32)] & (1L << (bit & 0x1f))) ? '1' : '0');
         }
-        *m_writep++=' '; printCode(code); *m_writep++='\n';
+        *m_writep ++= ' '; printCode(code); *m_writep ++= '\n';
+        bufferCheck();
+    }
+    void fullArray(vluint32_t code, const vluint64_t* newval, int bits) {
+        for (int word = 0; word < (((bits - 1) / 64) + 1); ++word) {
+            m_sigs_oldvalp[code + word] = newval[word];
+        }
+        *m_writep ++= 'b';
+        for (int bit = bits - 1; bit >= 0; --bit) {
+            *m_writep++ = ((newval[(bit / 64)] & (VL_ULL(1) << (bit & 0x3f))) ? '1' : '0');
+        }
+        *m_writep ++= ' '; printCode(code); *m_writep ++= '\n';
         bufferCheck();
     }
     void fullTriBit(vluint32_t code, const vluint32_t newval, const vluint32_t newtri) {
@@ -272,8 +283,8 @@ public:
         (*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code+1]))) = newtri;
         *m_writep++='b';
         for (int bit=bits-1; bit>=0; --bit) {
-            *m_writep++ = "01zz"[((newval >> bit)&1ULL)
-                                 | (((newtri >> bit)&1ULL)<<1ULL)];
+            *m_writep++ = "01zz"[((newval >> bit) & VL_ULL(1))
+                                 | (((newtri >> bit) & VL_ULL(1)) << VL_ULL(1))];
         }
         *m_writep++=' '; printCode(code); *m_writep++='\n';
         bufferCheck();
@@ -337,13 +348,21 @@ public:
     inline void chgQuad(vluint32_t code, const vluint64_t newval, int bits) {
         vluint64_t diff = (*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code]))) ^ newval;
         if (VL_UNLIKELY(diff)) {
-            if (VL_UNLIKELY(bits == 64 || (diff & ((1ULL << bits) - 1)))) {
+            if (VL_UNLIKELY(bits == 64 || (diff & ((VL_ULL(1) << bits) - 1)))) {
                 fullQuad(code, newval, bits);
             }
         }
     }
     inline void chgArray(vluint32_t code, const vluint32_t* newval, int bits) {
         for (int word = 0; word < (((bits - 1) / 32) + 1); ++word) {
+            if (VL_UNLIKELY(m_sigs_oldvalp[code + word] ^ newval[word])) {
+                fullArray(code, newval, bits);
+                return;
+            }
+        }
+    }
+    inline void chgArray(vluint32_t code, const vluint64_t* newval, int bits) {
+        for (int word = 0; word < (((bits - 1) / 64) + 1); ++word) {
             if (VL_UNLIKELY(m_sigs_oldvalp[code + word] ^ newval[word])) {
                 fullArray(code, newval, bits);
                 return;
@@ -377,7 +396,7 @@ public:
         vluint64_t diff = ( ((*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code]))) ^ newval)
                             | ((*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code+1]))) ^ newtri));
         if (VL_UNLIKELY(diff)) {
-            if (VL_UNLIKELY(bits == 64 || (diff & ((1ULL << bits) - 1)))) {
+            if (VL_UNLIKELY(bits == 64 || (diff & ((VL_ULL(1) << bits) - 1)))) {
                 fullTriQuad(code, newval, newtri, bits);
             }
         }

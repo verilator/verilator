@@ -708,9 +708,12 @@ void VerilatedVcd::flush_all() VL_MT_UNSAFE_ONE {
 //======================================================================
 
 #ifdef VERILATED_VCD_TEST
+#include <iostream>
+
 vluint32_t v1, v2, s1, s2[3];
 vluint32_t tri96[3];
 vluint32_t tri96__tri[3];
+vluint64_t quad96[2];
 vluint8_t ch;
 vluint64_t timestamp = 1;
 double doub = 0;
@@ -734,6 +737,8 @@ void vcdInit(VerilatedVcd* vcdp, void* userthis, vluint32_t code) {
     // Note need to add 6 for next code.
      vcdp->declDouble  (0x1c, "doub",-1);
     // Note need to add 2 for next code.
+     vcdp->declArray(0x1e, "q2",-1, 95, 0);
+    // Note need to add 4 for next code.
 }
 
 void vcdFull(VerilatedVcd* vcdp, void* userthis, vluint32_t code) {
@@ -746,6 +751,7 @@ void vcdFull(VerilatedVcd* vcdp, void* userthis, vluint32_t code) {
     vcdp->fullTriBus  (0x12, tri96[0]&0x1f, tri96__tri[0]&0x1f,  5);
     vcdp->fullTriArray(0x16, tri96,         tri96__tri,          96);
     vcdp->fullDouble(0x1c, doub);
+    vcdp->fullArray(0x1e, &quad96[0], 96);
 }
 
 void vcdChange(VerilatedVcd* vcdp, void* userthis, vluint32_t code) {
@@ -758,15 +764,17 @@ void vcdChange(VerilatedVcd* vcdp, void* userthis, vluint32_t code) {
     vcdp->chgTriBus   (0x12, tri96[0]&0x1f, tri96__tri[0]&0x1f, 5);
     vcdp->chgTriArray (0x16, tri96,         tri96__tri,         96);
     vcdp->chgDouble   (0x1c, doub);
+    vcdp->chgArray(0x1e, &quad96[0], 96);
 }
 
 main() {
-    cout<<"test: O_LARGEFILE="<<O_LARGEFILE<<endl;
+    std::cout << "test: O_LARGEFILE=" << O_LARGEFILE << std::endl;
 
     v1 = v2 = s1 = 0;
     s2[0] = s2[1] = s2[2] = 0;
     tri96[2] = tri96[1] = tri96[0] = 0;
     tri96__tri[2] = tri96__tri[1] = tri96__tri[0] = ~0;
+    quad96[1] = quad96[0] = 0;
     ch = 0;
     doub = 0;
     {
@@ -778,11 +786,13 @@ main() {
         v1 = 0xfff;
         tri96[2] = 4; tri96[1] = 2; tri96[0] = 1;
         tri96__tri[2] = tri96__tri[1] = tri96__tri[0] = ~0;  // Still tri
+        quad96[1] = 0xffffffff ; quad96[0] = 0;
         doub = 1.5;
         vcdp->dump(timestamp++);
         v2 = 0x1;
         s2[1] = 2;
         tri96__tri[2] = tri96__tri[1] = tri96__tri[0] = 0;  // enable w/o data change
+        quad96[1] = 0 ; quad96[0] = ~0;
         doub = -1.66e13;
         vcdp->dump(timestamp++);
         ch = 2;
@@ -791,8 +801,8 @@ main() {
         vcdp->dump(timestamp++);
         vcdp->dump(timestamp++);
 # ifdef VERILATED_VCD_TEST_64BIT
-        vluint64_t bytesPerDump = 15ULL;
-        for (vluint64_t i=0; i<((1ULL<<32) / bytesPerDump); i++) {
+        vluint64_t bytesPerDump = VL_ULL(15);
+        for (vluint64_t i = 0; i < ((VL_ULL(1) << 32) / bytesPerDump); i++) {
             v1 = i;
             vcdp->dump(timestamp++);
         }
@@ -804,5 +814,5 @@ main() {
 
 //********************************************************************
 // Local Variables:
-// compile-command: "mkdir -p ../test_dir && cd ../test_dir && c++ -DVERILATED_VCD_TEST ../src/verilated_vcd_c.cpp -o verilated_vcd_c && ./verilated_vcd_c && cat test.vcd"
+// compile-command: "mkdir -p ../test_dir && cd ../test_dir && c++ -DVERILATED_VCD_TEST ../include/verilated_vcd_c.cpp -o verilated_vcd_c && ./verilated_vcd_c && cat test.vcd"
 // End:

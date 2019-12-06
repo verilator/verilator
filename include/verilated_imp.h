@@ -409,7 +409,7 @@ public:  // But only for verilated*.cpp
     static void fdDelete(IData fdi) VL_MT_SAFE {
         IData idx = VL_MASK_I(31) & fdi;
         VerilatedLockGuard lock(s_s.m_fdMutex);
-        if (VL_UNLIKELY(!(fdi & (1ULL<<31)) || idx >= s_s.m_fdps.size())) return;
+        if (VL_UNLIKELY(!(fdi & (VL_ULL(1) << 31)) || idx >= s_s.m_fdps.size())) return;
         if (VL_UNLIKELY(!s_s.m_fdps[idx])) return;  // Already free
         s_s.m_fdps[idx] = NULL;
         s_s.m_fdFree.push_back(idx);
@@ -417,7 +417,7 @@ public:  // But only for verilated*.cpp
     static inline FILE* fdToFp(IData fdi) VL_MT_SAFE {
         IData idx = VL_MASK_I(31) & fdi;
         VerilatedLockGuard lock(s_s.m_fdMutex);  // This might get slow, if it does we can cache it
-        if (VL_UNLIKELY(!(fdi & (1ULL<<31)) || idx >= s_s.m_fdps.size())) return NULL;
+        if (VL_UNLIKELY(!(fdi & (VL_ULL(1) << 31)) || idx >= s_s.m_fdps.size())) return NULL;
         return s_s.m_fdps[idx];
     }
 };
