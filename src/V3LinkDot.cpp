@@ -983,6 +983,11 @@ class LinkDotFindVisitor : public AstNVisitor {
         // Var: Remember its name for later resolution
         UASSERT_OBJ(m_curSymp && m_modSymp, nodep, "Var not under module?");
         iterateChildren(nodep);
+        if (m_ftaskp && nodep->isParam()) {
+            nodep->v3error("Unsupported: Parameters in functions.");  // Big3 unsupported too
+            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            return;
+        }
         if (!m_statep->forScopeCreation()) {
             // Find under either a task or the module's vars
             VSymEnt* foundp = m_curSymp->findIdFallback(nodep->name());
