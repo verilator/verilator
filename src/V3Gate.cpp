@@ -61,9 +61,13 @@ class GateLogicVertex;
 class GateVarVertex;
 class GateGraphBaseVisitor {
 public:
-    virtual VNUser visit(GateLogicVertex* vertexp, VNUser vu=VNUser(0)) = 0;
-    virtual VNUser visit(GateVarVertex* vertexp, VNUser vu=VNUser(0)) = 0;
+    V3Graph* m_graphp;  // Graph this class is visiting
+    GateGraphBaseVisitor(V3Graph* graphp)
+        : m_graphp(graphp) {}
     virtual ~GateGraphBaseVisitor() {}
+    virtual VNUser visit(GateLogicVertex* vertexp, VNUser vu = VNUser(0)) = 0;
+    virtual VNUser visit(GateVarVertex* vertexp, VNUser vu = VNUser(0)) = 0;
+    VL_DEBUG_FUNC;  // Declare debug()
 };
 
 //######################################################################
@@ -400,8 +404,14 @@ private:
         // Then propagate more complicated equations
         optimizeSignals(true);
         // Remove redundant logic
-        if (v3Global.opt.oDedupe()) dedupe();
-        if (v3Global.opt.oAssemble()) mergeAssigns();
+        if (v3Global.opt.oDedupe()) {
+            dedupe();
+            if (debug() >= 6) m_graph.dumpDotFilePrefixed("gate_dedup");
+        }
+        if (v3Global.opt.oAssemble()) {
+            mergeAssigns();
+            if (debug() >= 6) m_graph.dumpDotFilePrefixed("gate_assm");
+        }
         // Consumption warnings
         consumedMark();
         m_graph.dumpDotFilePrefixed("gate_opt");
@@ -870,7 +880,7 @@ private:
             // However a VARREF should point to the original as it's otherwise confusing
             // to throw warnings that point to a PIN rather than where the pin us used.
             if (VN_IS(substp, VarRef)) substp->fileline(nodep->fileline());
-            // Make the substp an rvalue like nodep. This facilitate the hashing in dedupe.
+            // Make the substp an rvalue like nodep. This facilitates the hashing in dedupe.
             if (AstNodeVarRef* varrefp = VN_CAST(substp, NodeVarRef)) varrefp->lvalue(false);
             hashReplace(nodep, substp);
             nodep->replaceWith(substp);
@@ -885,6 +895,9 @@ public:
     virtual ~GateElimVisitor() {}
     GateElimVisitor(AstNode* nodep, AstVarScope* varscp, AstNode* replaceTreep,
                     GateDedupeVarVisitor* varVisp) {
+        UINFO(9, "     elimvisitor " << nodep << endl);
+        UINFO(9, "     elim varscp " << varscp << endl);
+        UINFO(9, "     elim repce  " << replaceTreep << endl);
         m_didReplace = false;
         m_elimVarScp = varscp;
         m_replaceTreep = replaceTreep;
@@ -1211,7 +1224,7 @@ private:
         if (lvertexp->dedupable() && consumerVvertexpp->dedupable()) {
             AstNode* nodep = lvertexp->nodep();
             AstVarScope* consumerVarScopep = consumerVvertexpp->varScp();
-            // TODO: Doing a simple pointer comparison of  activep won't work
+            // TODO: Doing a simple pointer comparison of activep won't work
             // optimally for statements under generated clocks. Statements under
             // different generated clocks will never compare as equal, even if the
             // generated clocks are deduped into one clock.
@@ -1222,12 +1235,10 @@ private:
     }
 
 public:
-    GateDedupeGraphVisitor() {
-        m_depth = 0;
-    }
-    void dedupeTree(GateVarVertex* vvertexp) {
-        vvertexp->accept(*this);
-    }
+    explicit GateDedupeGraphVisitor(V3Graph* graphp)
+        : GateGraphBaseVisitor(graphp)
+        , m_depth(0) {}
+    void dedupeTree(GateVarVertex* vvertexp) { vvertexp->accept(*this); }
     VDouble0 numDeduped() { return m_numDeduped; }
 };
 
@@ -1235,7 +1246,7 @@ public:
 
 void GateVisitor::dedupe() {
     AstNode::user2ClearTree();
-    GateDedupeGraphVisitor deduper;
+    GateDedupeGraphVisitor deduper(&m_graph);
     // Traverse starting from each of the clocks
     UINFO(9,"Gate dedupe() clocks:\n");
     for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
@@ -1267,7 +1278,6 @@ private:
     AstNodeAssign* m_assignp;
     AstActive*     m_activep;
     GateLogicVertex* m_logicvp;
-    V3Graph*         m_graphp;
     VDouble0         m_numMergedAssigns;  // Statistic tracking
 
 
@@ -1367,7 +1377,8 @@ private:
     }
 
 public:
-    explicit GateMergeAssignsGraphVisitor(V3Graph* graphp) {
+    explicit GateMergeAssignsGraphVisitor(V3Graph* graphp)
+        : GateGraphBaseVisitor(graphp) {
         m_assignp = NULL;
         m_activep = NULL;
         m_logicvp = NULL;
@@ -1469,7 +1480,6 @@ class GateClkDecompGraphVisitor : public GateGraphBaseVisitor {
 private:
     // NODE STATE
     // AstVarScope::user2p      -> bool: already visited
-    V3Graph*                    m_graphp;
     int                         m_seen_clk_vectors;
     AstVarScope*                m_clk_vsp;
     GateVarVertex*              m_clk_vvertexp;
@@ -1551,8 +1561,8 @@ private:
     }
 
 public:
-    explicit GateClkDecompGraphVisitor(V3Graph* graphp) {
-        m_graphp = graphp;
+    explicit GateClkDecompGraphVisitor(V3Graph* graphp)
+        : GateGraphBaseVisitor(graphp) {
         m_seen_clk_vectors = 0;
         m_clk_vsp = NULL;
         m_clk_vvertexp = NULL;
