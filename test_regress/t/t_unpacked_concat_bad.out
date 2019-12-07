@@ -1,0 +1,17 @@
+%Warning-WIDTHCONCAT: t/t_typedef_logic_in_concat_bad.v:12: Unsized numbers/parameters not allowed in replications.
+                                                          : ... In instance t
+  typedef logic [15:0] count_t;
+          ^~~~~
+                      ... Use "/* verilator lint_off WIDTHCONCAT */" and lint_on around source to disable this message.
+%Error: Exiting due to 1 warning(s)
+
+# This warning message is pretty misleading. Instead of pointing out to the call to $bits() without a cast, it points to the type declaration of the argument to bits. It would be more useful if it looked like this:
+
+%Warning-WIDTHCONCAT: t/t_typedef_logic_in_concat_bad.v:15: Unsized numbers/parameters not allowed in replications.
+                                                      : ... In instance t
+  localparam bit_int_t [1:0] count_bits = {2{$bits(count_t)}};
+                                              ^~~~~
+                      ... Use "/* verilator lint_off WIDTHCONCAT */" and lint_on around source to disable this message.
+%Error: Exiting due to 1 warning(s)
+
+
