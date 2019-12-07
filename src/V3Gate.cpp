@@ -176,7 +176,7 @@ public:
     virtual ~GateLogicVertex() {}
     // ACCESSORS
     virtual string name() const { return (cvtToHex(m_nodep)+"@"+scopep()->prettyName()); }
-    virtual string dotColor() const { return "yellow"; }
+    virtual string dotColor() const { return "purple"; }
     virtual FileLine* fileline() const { return nodep()->fileline(); }
     AstNode* nodep() const { return m_nodep; }
     AstActive* activep() const { return m_activep; }
@@ -1191,10 +1191,18 @@ private:
                         GateLogicVertex* consumeVertexp
                             = dynamic_cast<GateLogicVertex*>(outedgep->top());
                         AstNode* consumerp = consumeVertexp->nodep();
-                        GateElimVisitor elimVisitor(consumerp, vvertexp->varScp(), dupVarRefp, &m_varVisitor);
+                        m_graphp->dumpDotFilePrefixed("gate_preelim");
+                        UINFO(9, "elim src vtx"<<lvertexp<<" node "<<lvertexp->nodep()<<endl);
+                        UINFO(9, "elim cons vtx"<<consumeVertexp<<" node "<<consumerp<<endl);
+                        UINFO(9, "elim var vtx "<<vvertexp<<" node "<<vvertexp->varScp()<<endl);
+                        UINFO(9, "replace with "<<dupVarRefp<<endl);
+                        if (lvertexp == consumeVertexp) {
+                            UINFO(9, "skipping as self-recirculates\n");
+                        } else {
+                            GateElimVisitor elimVisitor(consumerp, vvertexp->varScp(), dupVarRefp, &m_varVisitor);
+                        }
                         outedgep = outedgep->relinkFromp(dupVvertexp);
                     }
-
                     // Propagate attributes
                     dupVvertexp->propagateAttrClocksFrom(vvertexp);
                     // Remove inputs links
