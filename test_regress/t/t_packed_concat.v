@@ -13,8 +13,9 @@ module t (/*AUTOARG*/
    typedef logic [15:0] count_t;
    typedef bit [31:0]   bit_int_t;
 
-   localparam bit_int_t count_bits [1:0] = {2{$bits(count_t)}};
-   localparam bit_int_t count_bitsc [1:0] = {$bits(count_t), $bits(count_t)};
+   // bug1627
+   localparam bit_int_t [1:0] count_bits = {2{$bits(count_t)}};
+   localparam bit_int_t [1:0] count_bitsc = {$bits(count_t), $bits(count_t)};
 
    initial begin
       if (count_bits[0] != 16) $stop;

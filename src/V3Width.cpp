@@ -388,6 +388,13 @@ private:
         //   signed: Unsigned  (11.8.1)
         //   width: LHS + RHS
         if (m_vup->prelim()) {
+            AstNodeDType* vdtypep = m_vup->dtypeNullp();
+            if (vdtypep && (VN_IS(vdtypep, AssocArrayDType)
+                            || VN_IS(vdtypep, AssocArrayDType)
+                            || VN_IS(vdtypep, QueueDType))) {
+                nodep->v3error("Unsupported: Concatenation to form "<<vdtypep->prettyTypeName());
+            }
+
             iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
             iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
             nodep->dtypeSetLogicUnsized(nodep->lhsp()->width() + nodep->rhsp()->width(),
@@ -459,6 +466,12 @@ private:
         //   LHS, RHS is self-determined
         //   width: value(LHS) * width(RHS)
         if (m_vup->prelim()) {
+            AstNodeDType* vdtypep = m_vup->dtypeNullp();
+            if (vdtypep && (VN_IS(vdtypep, AssocArrayDType)
+                            || VN_IS(vdtypep, QueueDType)
+                            || VN_IS(vdtypep, UnpackArrayDType))) {
+                nodep->v3error("Unsupported: Replication to form "<<vdtypep->prettyTypeName());
+            }
             iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
             iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
             V3Const::constifyParamsEdit(nodep->rhsp());  // rhsp may change
@@ -1014,11 +1027,13 @@ private:
             uint32_t msbdim = dim.first + dim.second;
             if (!nodep->dimp() || msbdim < 1) {
                 int dim = 1;
-                AstConst* newp = dimensionValue(nodep->fromp()->dtypep(), nodep->attrType(), dim);
+                AstConst* newp = dimensionValue(nodep->fileline(),
+                                                nodep->fromp()->dtypep(), nodep->attrType(), dim);
                 nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
             } else if (VN_IS(nodep->dimp(), Const)) {
                 int dim = VN_CAST(nodep->dimp(), Const)->toSInt();
-                AstConst* newp = dimensionValue(nodep->fromp()->dtypep(), nodep->attrType(), dim);
+                AstConst* newp = dimensionValue(nodep->fileline(),
+                                                nodep->fromp()->dtypep(), nodep->attrType(), dim);
                 nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
             }
             else {  // Need a runtime lookup table.  Yuk.
@@ -4180,7 +4195,7 @@ private:
         return nodep;
     }
 
-    AstConst* dimensionValue(AstNodeDType* nodep, AstAttrType attrType, int dim) {
+    AstConst* dimensionValue(FileLine* fileline, AstNodeDType* nodep, AstAttrType attrType, int dim) {
         // Return the dimension value for the specified attribute and constant dimension
         AstNodeDType* dtypep = nodep->skipRefp();
         VNumRange declRange;  // ranged() set false
@@ -4251,7 +4266,7 @@ private:
             nodep->v3fatalSrc("Missing DIM ATTR type case");
             break;
         }
-        if (!valp) valp = new AstConst(nodep->fileline(), AstConst::Signed32(), val);
+        if (!valp) valp = new AstConst(fileline, AstConst::Signed32(), val);
         UINFO(9," $dimension "<<attrType.ascii()
               <<"("<<cvtToHex(dtypep)<<","<<dim<<")="<<valp<<endl);
         return valp;
@@ -4277,9 +4292,9 @@ private:
         // Add to root, as don't know module we are in, and aids later structure sharing
         v3Global.rootp()->dollarUnitPkgAddp()->addStmtp(varp);
         // Element 0 is a non-index and has speced values
-        initp->addValuep(dimensionValue(nodep, attrType, 0));
+        initp->addValuep(dimensionValue(nodep->fileline(), nodep, attrType, 0));
         for (unsigned i=1; i<msbdim+1; ++i) {
-            initp->addValuep(dimensionValue(nodep, attrType, i));
+            initp->addValuep(dimensionValue(nodep->fileline(), nodep, attrType, i));
         }
         userIterate(varp, NULL);  // May have already done $unit so must do this var
         m_tableMap.insert(make_pair(make_pair(nodep, attrType), varp));

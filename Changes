@@ -42,6 +42,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix interface reference tracing, bug1595. [Todd Strader]
 
+****  Fix error on unpacked concatenations, bug1627. [Driss Hafdi]
+
 
 * Verilator 4.022 2019-11-10
 
