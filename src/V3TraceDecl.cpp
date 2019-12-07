@@ -52,7 +52,7 @@ private:
     AstVarScope*        m_traVscp;      // Signal being trace constructed
     AstNode*            m_traValuep;    // Signal being traced's value to trace in it
     string              m_traShowname;  // Signal being traced's component name
-    string              m_ifShowname;   // Interface reference being traced's scope name
+    bool                m_interface;    // Currently tracing an interface
 
     VDouble0            m_statSigs;     // Statistic tracking
     VDouble0            m_statIgnSigs;  // Statistic tracking
@@ -83,25 +83,32 @@ private:
     AstCFunc* newCFunc(AstCFuncType type, const string& name, bool slow) {
         AstCFunc* funcp = new AstCFunc(m_scopetopp->fileline(), name, m_scopetopp);
         funcp->slow(slow);
-        funcp->argTypes(EmitCBaseVisitor::symClassVar()+", "+v3Global.opt.traceClassBase()+"* vcdp, uint32_t code");
+        string argTypes(EmitCBaseVisitor::symClassVar()+", "+v3Global.opt.traceClassBase()
+                        +"* vcdp, uint32_t code");
+        if (m_interface) argTypes += ", const char* scopep";
+        funcp->argTypes(argTypes);
         funcp->funcType(type);
         funcp->symProlog(true);
         m_scopetopp->addActivep(funcp);
         UINFO(5,"  Newfunc "<<funcp<<endl);
         return funcp;
     }
+    void callCFuncSub(AstCFunc* basep, AstCFunc* funcp, AstIntfRef* irp) {
+        AstCCall* callp = new AstCCall(funcp->fileline(), funcp);
+        callp->argTypes("vlSymsp, vcdp, code");
+        if (irp) callp->addArgsp(irp->unlinkFrBack());
+        basep->addStmtsp(callp);
+    }
     AstCFunc* newCFuncSub(AstCFunc* basep) {
         string name = basep->name()+"__"+cvtToStr(++m_funcNum);
         AstCFunc* funcp = NULL;
-        if (basep->funcType()==AstCFuncType::TRACE_INIT) {
+        if (basep->funcType()==AstCFuncType::TRACE_INIT
+            || basep->funcType()==AstCFuncType::TRACE_INIT_SUB) {
             funcp = newCFunc(AstCFuncType::TRACE_INIT_SUB, name, basep->slow());
         } else {
             basep->v3fatalSrc("Strange base function type");
         }
-        // cppcheck-suppress nullPointer  // above fatal prevents it
-        AstCCall* callp = new AstCCall(funcp->fileline(), funcp);
-        callp->argTypes("vlSymsp, vcdp, code");
-        basep->addStmtsp(callp);
+        if (!m_interface) callCFuncSub(basep, funcp, NULL);
         return funcp;
     }
     void addTraceDecl(const VNumRange& arrayRange,
@@ -112,10 +119,10 @@ private:
         else if (bdtypep) bitRange = bdtypep->nrange();
         AstTraceDecl* declp = new AstTraceDecl(m_traVscp->fileline(), m_traShowname,
                                                m_traVscp->varp(), m_traValuep,
-                                               bitRange, arrayRange);
+                                               bitRange, arrayRange, m_interface);
         UINFO(9,"Decl "<<declp<<endl);
 
-        if (m_initSubStmts && v3Global.opt.outputSplitCTrace()
+        if (!m_interface && v3Global.opt.outputSplitCTrace()
             && m_initSubStmts > v3Global.opt.outputSplitCTrace()) {
             m_initSubFuncp = newCFuncSub(m_initFuncp);
             m_initSubStmts = 0;
@@ -147,6 +154,44 @@ private:
         // And find variables
         iterateChildren(nodep);
     }
+    virtual void visit(AstScope* nodep) {
+        AstCell* cellp = VN_CAST(nodep->aboveCellp(), Cell);
+        if (cellp && VN_IS(cellp->modp(), Iface)) {
+            AstCFunc* origSubFunc = m_initSubFuncp;
+            int origSubStmts = m_initSubStmts;
+            {
+                m_interface = true;
+                m_initSubFuncp = newCFuncSub(origSubFunc);
+                string scopeName = nodep->prettyName();
+                size_t lastDot = scopeName.find_last_of('.');
+                UASSERT_OBJ(lastDot != string::npos, nodep,
+                            "Expected an interface scope name to have at least one dot");
+                scopeName = scopeName.substr(0, lastDot+1);
+                size_t scopeLen = scopeName.length();
+
+                AstIntfRef* nextIrp = cellp->intfRefp();
+                // While instead of for loop because interface references will
+                // be unlinked as we go
+                while (nextIrp) {
+                    AstIntfRef* irp = nextIrp;
+                    nextIrp = VN_CAST(irp->nextp(), IntfRef);
+
+                    string irpName = irp->prettyName();
+                    if (scopeLen > irpName.length()) continue;
+                    string intfScopeName = irpName.substr(0, scopeLen);
+                    if (scopeName != intfScopeName) continue;
+                    callCFuncSub(origSubFunc, m_initSubFuncp, irp);
+                    ++origSubStmts;
+                }
+                iterateChildren(nodep);
+            }
+            m_initSubFuncp = origSubFunc;
+            m_initSubStmts = origSubStmts;
+            m_interface = false;
+        } else {
+            iterateChildren(nodep);
+        }
+    }
     virtual void visit(AstVarScope* nodep) {
         iterateChildren(nodep);
         // Prefilter - things that get through this if will either get
@@ -161,11 +206,11 @@ private:
             // Compute show name
             // This code assumes SPTRACEVCDC_VERSION >= 1330;
             // it uses spaces to separate hierarchy components.
-            if (m_ifShowname.empty()) {
+            if (m_interface) {
+                m_traShowname = AstNode::vcdName(varp->name());
+            } else {
                 m_traShowname = AstNode::vcdName(scopep->name() + " " + varp->name());
                 if (m_traShowname.substr(0, 4) == "TOP ") m_traShowname.replace(0, 4, "");
-            } else {
-                m_traShowname = AstNode::vcdName(m_ifShowname + " " + varp->name());
             }
             UASSERT_OBJ(m_initSubFuncp, nodep, "NULL");
 
@@ -198,24 +243,6 @@ private:
     virtual void visit(AstRefDType* nodep) {
         if (m_traVscp) {
             iterate(nodep->subDTypep()->skipRefp());
-        }
-    }
-    virtual void visit(AstIfaceRefDType* nodep) {
-        if (m_traVscp && nodep->ifacep()) {
-            // Stash the signal state because we're going to go through another VARSCOPE
-            AstVarScope* traVscp = m_traVscp;
-            AstNode* traValuep = m_traValuep;
-            {
-                m_traVscp = NULL;
-                m_traValuep = NULL;
-                m_ifShowname = m_traShowname;
-                m_traShowname = "";
-                iterate(nodep->ifacep());
-                m_traShowname = m_ifShowname;
-                m_ifShowname = "";
-            }
-            m_traVscp = traVscp;
-            m_traValuep = traValuep;
         }
     }
     virtual void visit(AstUnpackArrayDType* nodep) {
@@ -346,6 +373,7 @@ public:
         m_funcNum = 0;
         m_traVscp = NULL;
         m_traValuep = NULL;
+        m_interface = false;
         iterate(nodep);
     }
     virtual ~TraceDeclVisitor() {

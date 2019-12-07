@@ -3,6 +3,11 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2019 by Wilson Snyder.
 
+interface secret_intf();
+   logic secret_a;
+   integer secret_b;
+endinterface
+
 module t (/*AUTOARG*/
    // Inputs
    clk
@@ -57,5 +62,7 @@ module secret_other
          $finish;
       end
    end
+
+   secret_intf secret_interface();
 
 endmodule

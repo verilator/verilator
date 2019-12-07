@@ -22,32 +22,18 @@ module t (/*AUTOARG*/
    ifc itop();
 
    sub  c1 (.isub(itop),
-	    .i_value(cyc));
-
-   sub2 c2 (.isub2(itop),
-	    .i_value(cyc));
-
-   always @(*) itop.hidden_from_isub = cyc + 1;
+	    .i_value(4));
 
    always @ (posedge clk) begin
       cyc <= cyc + 1;
       if (cyc==20) begin
-	 if (itop.value != 20) $stop;
-	 if (itop.hidden_from_isub != 21) $stop;
+	 if (itop.value != 4) $stop;
+	 itop.hidden_from_isub = 20;
+	 if (itop.hidden_from_isub != 20) $stop;
 	 $write("*-* All Finished *-*\n");
 	 $finish;
       end
    end
-endmodule
-
-module sub2
-  (
-   ifc.out_modport isub2,
-   input integer i_value
-   );
-
-   sub  c3 (.isub(isub2),
-	    .i_value(i_value));
 endmodule
 
 module sub

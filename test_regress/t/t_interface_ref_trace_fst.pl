@@ -9,15 +9,18 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-top_filename("t/t_interface1_modport.v");
+top_filename("t/t_interface_ref_trace.v");
 
 compile(
-    verilator_flags2 => ['--trace'],
+    verilator_flags2 => ['--trace-structs --trace-fst'],
     );
 
 execute(
     check_finished => 1,
     );
+
+fst2vcd($Self->trace_filename, "$Self->{obj_dir}/simx-fst2vcd.vcd");
+vcd_identical("$Self->{obj_dir}/simx-fst2vcd.vcd", $Self->{golden_filename});
 
 ok(1);
 1;

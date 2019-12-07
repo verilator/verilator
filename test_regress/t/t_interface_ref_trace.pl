@@ -9,15 +9,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-top_filename("t/t_interface1_modport.v");
-
 compile(
-    verilator_flags2 => ['--trace'],
+    verilator_flags2 => ['--trace-structs --trace'],
     );
 
 execute(
     check_finished => 1,
     );
+
+vcd_identical($Self->trace_filename,
+              $Self->{golden_filename});
 
 ok(1);
 1;

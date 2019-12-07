@@ -1900,19 +1900,19 @@ void Verilated::profThreadsFilenamep(const char* flagp) VL_MT_SAFE {
 }
 
 
-const char* Verilated::catName(const char* n1, const char* n2) VL_MT_SAFE {
+const char* Verilated::catName(const char* n1, const char* n2, const char* delimiter) VL_MT_SAFE {
     // Returns new'ed data
     // Used by symbol table creation to make module names
     static VL_THREAD_LOCAL char* strp = NULL;
     static VL_THREAD_LOCAL size_t len  = 0;
-    size_t newlen = strlen(n1)+strlen(n2)+2;
+    size_t newlen = strlen(n1)+strlen(n2)+strlen(delimiter)+1;
     if (!strp || newlen > len) {
         if (strp) delete [] strp;
         strp = new char[newlen];
         len = newlen;
     }
     strcpy(strp, n1);
-    if (*n1) strcat(strp, ".");
+    if (*n1) strcat(strp, delimiter);
     strcat(strp, n2);
     return strp;
 }

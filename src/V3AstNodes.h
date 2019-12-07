@@ -2060,6 +2060,17 @@ public:
     AstNode* varsp() const { return op1p(); }  // op1 = List of Vars
 };
 
+class AstIntfRef : public AstNode {
+    // An interface reference
+private:
+    string m_name;  // Name of the reference
+public:
+    AstIntfRef(FileLine* fl, const string& name)
+        : AstNode(fl), m_name(name) { }
+    virtual string name() const { return m_name; }
+    ASTNODE_NODE_FUNCS(IntfRef)
+};
+
 class AstCell : public AstNode {
     // A instantiation cell or interface call (don't know which until link)
 private:
@@ -2096,9 +2107,11 @@ public:
     AstPin* pinsp() const { return VN_CAST(op1p(), Pin); }  // op1 = List of cell ports
     AstPin* paramsp() const { return VN_CAST(op2p(), Pin); }  // op2 = List of parameter #(##) values
     AstRange* rangep() const { return VN_CAST(op3p(), Range); }  // op3 = Range of arrayed instants (NULL=not ranged)
+    AstIntfRef* intfRefp() const { return VN_CAST(op4p(), IntfRef); }  // op4 = List of interface references
     AstNodeModule* modp() const { return m_modp; }  // [AfterLink] = Pointer to module instantiated
     void addPinsp(AstPin* nodep) { addOp1p(nodep); }
     void addParamsp(AstPin* nodep) { addOp2p(nodep); }
+    void addIntfRefp(AstIntfRef* nodep) { addOp4p(nodep); }
     void modp(AstNodeModule* nodep) { m_modp = nodep; }
     bool hasIfaceVar() const { return m_hasIfaceVar; }
     void hasIfaceVar(bool flag) { m_hasIfaceVar = flag; }
@@ -3867,13 +3880,16 @@ private:
     AstVarType  m_varType;      // Type of variable (for localparam vs. param)
     AstBasicDTypeKwd m_declKwd;  // Keyword at declaration time
     VDirection  m_declDirection;  // Declared direction input/output etc
+    bool        m_isScoped;     // Uses run-time scope (for interfaces)
 public:
     AstTraceDecl(FileLine* fl, const string& showname,
                  AstVar* varp,  // For input/output state etc
                  AstNode* valuep,
-                 const VNumRange& bitRange, const VNumRange& arrayRange)
+                 const VNumRange& bitRange, const VNumRange& arrayRange,
+                 bool isScoped)
         : AstNodeStmt(fl)
-        , m_showname(showname), m_bitRange(bitRange), m_arrayRange(arrayRange) {
+        , m_showname(showname), m_bitRange(bitRange), m_arrayRange(arrayRange)
+        , m_isScoped(isScoped) {
         dtypeFrom(valuep);
         m_code = 0;
         m_codeInc = ((arrayRange.ranged() ? arrayRange.elements() : 1)
@@ -3898,6 +3914,7 @@ public:
     AstVarType varType() const { return m_varType; }
     AstBasicDTypeKwd declKwd() const { return m_declKwd; }
     VDirection declDirection() const { return m_declDirection; }
+    bool isScoped() const { return m_isScoped; }
 };
 
 class AstTraceInc : public AstNodeStmt {

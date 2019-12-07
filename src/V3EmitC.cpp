@@ -274,6 +274,10 @@ public:
         UASSERT_OBJ(!nodep->isStatement() || VN_IS(nodep->dtypep(), VoidDType),
                     nodep, "Statement of non-void data type");
     }
+    virtual void visit(AstIntfRef* nodep) {
+        putsQuoted(VIdProtect::protectWordsIf(AstNode::vcdName(nodep->name()),
+                                              nodep->protect()));
+    }
     virtual void visit(AstNodeCase* nodep) {
         // In V3Case...
         nodep->v3fatalSrc("Case statements should have been reduced out");
@@ -2990,7 +2994,13 @@ class EmitCTrace : EmitCStmts {
         puts("(c+"+cvtToStr(nodep->code()));
         if (nodep->arrayRange().ranged()) puts("+i*"+cvtToStr(nodep->widthWords()));
         puts(",");
+        if (nodep->isScoped()) {
+            puts("Verilated::catName(scopep,");
+        }
         putsQuoted(VIdProtect::protectWordsIf(nodep->showname(), nodep->protect()));
+        if (nodep->isScoped()) {
+            puts(",\" \")");
+        }
         // Direction
         if (v3Global.opt.traceFormat().fstFlavor()) {
             puts(","+cvtToStr(enumNum));

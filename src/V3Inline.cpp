@@ -614,6 +614,109 @@ public:
 };
 
 //######################################################################
+// Track interface references under the Cell they reference
+
+class InlineIntfRefVisitor : public AstNVisitor {
+private:
+    // NODE STATE
+    //   AstVar::user1p()   // AstCell which this Var points to
+
+    AstUser2InUse m_inuser2;
+
+    string m_scope;  // Scope name
+
+    // METHODS
+    VL_DEBUG_FUNC;  // Declare debug()
+
+    // VISITORS
+    virtual void visit(AstNetlist* nodep) {
+        iterateChildren(nodep);
+    }
+
+    virtual void visit(AstModule* nodep) {
+        if (nodep->isTop()) {
+            iterateChildren(nodep);
+        }
+    }
+
+    virtual void visit(AstCell* nodep) {
+        string oldScope = m_scope;
+        if (m_scope.empty()) {
+            m_scope = nodep->name();
+        } else {
+            m_scope += "__DOT__" + nodep->name();
+        }
+
+        if (AstModule* modp = VN_CAST(nodep->modp(), Module)) {
+            // Pass Cell pointers down to the next module
+            for (AstPin* pinp = nodep->pinsp(); pinp; pinp=VN_CAST(pinp->nextp(), Pin)) {
+                AstVar* varp = pinp->modVarp();
+                AstVarRef* varrefp = VN_CAST(pinp->exprp(), VarRef);
+                if (!varrefp) continue;
+                AstVar* fromVarp = varrefp->varp();
+                AstIfaceRefDType* irdtp = VN_CAST(fromVarp->dtypep(), IfaceRefDType);
+                if (!irdtp) continue;
+
+                AstCell* cellp;
+                if ((cellp = VN_CAST(fromVarp->user1p(), Cell))
+                    || (cellp = irdtp->cellp())) {
+                    varp->user1p(cellp);
+                    string alias = m_scope + "__DOT__" + pinp->name();
+                    cellp->addIntfRefp(new AstIntfRef(pinp->fileline(), alias));
+                }
+            }
+
+            iterateChildren(modp);
+        } else if (VN_IS(nodep->modp(), Iface)) {
+            nodep->addIntfRefp(new AstIntfRef(nodep->fileline(), m_scope));
+            // No need to iterate on interface cells
+        }
+
+        m_scope = oldScope;
+    }
+
+    virtual void visit(AstAssignVarScope* nodep) {
+        // Reference
+        AstVarRef* reflp = VN_CAST(nodep->lhsp(), VarRef);
+        // What the reference refers to
+        AstVarRef* refrp = VN_CAST(nodep->rhsp(), VarRef);
+        if (!(reflp && refrp)) return;
+
+        AstVar* varlp = reflp->varp();
+        AstVar* varrp = refrp->varp();
+        if (!(varlp && varrp)) return;
+
+        AstCell* cellp = VN_CAST(varrp->user1p(), Cell);
+        if (!cellp) {
+            AstIfaceRefDType* irdtp = VN_CAST(varrp->dtypep(), IfaceRefDType);
+            if (!irdtp) return;
+
+            cellp = irdtp->cellp();
+        }
+        if (!cellp) return;
+        string alias;
+        if (!m_scope.empty()) alias = m_scope + "__DOT__";
+        alias += varlp->name();
+        cellp->addIntfRefp(new AstIntfRef(varlp->fileline(), alias));
+    }
+
+    //--------------------
+    virtual void visit(AstNodeMath*) {}  // Accelerate
+    virtual void visit(AstNodeStmt*) {}  // Accelerate
+    virtual void visit(AstNode* nodep) {
+        iterateChildren(nodep);
+    }
+
+public:
+    // CONSTRUCTORS
+    explicit InlineIntfRefVisitor(AstNode* nodep) {
+        iterate(nodep);
+    }
+    virtual ~InlineIntfRefVisitor() {
+    }
+};
+
+//######################################################################
 // Inline class functions
 
 void V3Inline::inlineAll(AstNetlist* nodep) {
@@ -636,6 +739,9 @@ void V3Inline::inlineAll(AstNetlist* nodep) {
         if (modp->user1()) {  // Was inlined
             modp->unlinkFrBack()->deleteTree(); VL_DANGLING(modp);
         }
+    }
+    {
+        InlineIntfRefVisitor crvisitor (nodep);
     }
     V3Global::dumpCheckGlobalTree("inline", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

@@ -284,6 +284,10 @@ private:
         insureCleanAndNext(nodep->pinsp());
         setClean(nodep, true);
     }
+    virtual void visit(AstIntfRef* nodep) {
+        iterateChildren(nodep);
+        setClean(nodep, true);  // generates a string, so not relevant
+    }
 
     //--------------------
     // Default: Just iterate
