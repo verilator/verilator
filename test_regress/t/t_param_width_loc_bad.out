@@ -1,0 +1,19 @@
+%Warning-WIDTH: t/t_param_width_loc_bad.v:22: Operator VAR 'param' expects 1 bits on the Initial value, but Initial value's CONST '32'h0' generates 32 bits.
+                                              : ... In instance t.test_i
+    parameter logic param = 1'b0
+                    ^~~~~
+                ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
+%Error: Exiting due to
+
+# I believe this warning message should be pointing to line 12 instead, i.e., wherever the wrongly sized parameter is given as an input rather than the parameter definition.
+# It would be more informative if it looked like this:
+
+%Warning-WIDTH: t/t_param_width_loc_bad.v:12: Operator VAR 'param' expects 1 bits on the Initial value, but Initial value's CONST '32'h0' generates 32 bits.
+      test #(.param(32'd0)) test_i;
+                    ^~~~
+                ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
+%Error: Exiting due to
+
+
+
+
