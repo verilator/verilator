@@ -22,7 +22,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support $value$plusargs float and shorts, bug1592, bug1619. [Garrett Smith]
 
-****  Fix gate lvalue optimization error, bug831. [Jonathon Donaldson, Driss Halfdi]
+****  Fix gate lvalue optimization error, bug831. [Jonathon Donaldson, Driss Hafdi]
 
 ****  Fix color assertion on empty if, bug1604. [Andrew Holme]
 
