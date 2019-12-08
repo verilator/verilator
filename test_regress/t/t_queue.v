@@ -72,6 +72,15 @@ module t (/*AUTOARG*/
          i = q.size(); `checkh(i, 0);
          v = q.pop_front(); `checks(v, "");  // Was empty, optional warning
          v = q.pop_back(); `checks(v, "");  // Was empty, optional warning
+
+         // COnversion of insert/delete with zero to operator
+         q.push_front("front");
+         q.insert(0, "newfront");
+         i = q.size(); `checkh(i, 2);
+         q.delete(0);
+         i = q.size(); `checkh(i, 1);
+         `checks(q[0], "front");
+
       end
 
       // See t_queue_unsup_bad for more unsupported stuff

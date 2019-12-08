@@ -1935,28 +1935,46 @@ private:
                 newp->protect(false);
                 newp->makeStatement();
             } else {
-                nodep->v3error("Unsupported: Queue .delete(index) method, as is O(n) complexity and slow.");
                 AstNode* index_exprp = methodCallQueueIndexExpr(nodep);
-                newp = new AstCMethodCall(nodep->fileline(),
-                                          nodep->fromp()->unlinkFrBack(),
-                                          "erase", index_exprp->unlinkFrBack());
-                newp->protect(false);
-                newp->makeStatement();
+                if (index_exprp->isZero()) {  // delete(0) is a pop_front
+                    newp = new AstCMethodCall(nodep->fileline(),
+                                              nodep->fromp()->unlinkFrBack(),
+                                              "pop_front", NULL);
+                    newp->dtypeFrom(adtypep->subDTypep());
+                    newp->protect(false);
+                    newp->didWidth(true);
+                    newp->makeStatement();
+                } else {
+                    nodep->v3error("Unsupported: Queue .delete(index) method, as is O(n) complexity and slow.");
+                    newp = new AstCMethodCall(nodep->fileline(),
+                                              nodep->fromp()->unlinkFrBack(),
+                                              "erase", index_exprp->unlinkFrBack());
+                    newp->protect(false);
+                    newp->makeStatement();
+                }
             }
         } else if (nodep->name() == "insert") {
-            nodep->v3error("Unsupported: Queue .insert method, as is O(n) complexity and slow.");
             methodOkArguments(nodep, 2, 2);
             methodCallLValue(nodep, nodep->fromp(), true);
             AstNode* index_exprp = methodCallQueueIndexExpr(nodep);
             AstArg* argp = VN_CAST(nodep->pinsp()->nextp(), Arg);
             iterateCheckTyped(nodep, "insert value", argp->exprp(), adtypep->subDTypep(), BOTH);
-            newp = new AstCMethodCall(nodep->fileline(),
-                                      nodep->fromp()->unlinkFrBack(),
-                                      nodep->name(),
-                                      index_exprp->unlinkFrBack());
-            newp->addPinsp(argp->exprp()->unlinkFrBack());
-            newp->protect(false);
-            newp->makeStatement();
+            if (index_exprp->isZero()) {  // insert(0, ...) is a push_front
+                newp = new AstCMethodCall(nodep->fileline(),
+                                          nodep->fromp()->unlinkFrBack(),
+                                          "push_front", argp->exprp()->unlinkFrBack());
+                newp->protect(false);
+                newp->makeStatement();
+            } else {
+                nodep->v3error("Unsupported: Queue .insert method, as is O(n) complexity and slow.");
+                newp = new AstCMethodCall(nodep->fileline(),
+                                          nodep->fromp()->unlinkFrBack(),
+                                          nodep->name(),
+                                          index_exprp->unlinkFrBack());
+                newp->addPinsp(argp->exprp()->unlinkFrBack());
+                newp->protect(false);
+                newp->makeStatement();
+            }
         } else if (nodep->name() == "pop_front"
                    || nodep->name() == "pop_back") {
             methodOkArguments(nodep, 0, 0);

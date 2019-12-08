@@ -1,4 +1,5 @@
-%Error: t/t_queue_bounded_unsup_bad.v:7: Unsupported: Bounded queues. Suggest use unbounded.
+%Warning-UNBOUNDED: t/t_queue_bounded_unsup_bad.v:7: Unsupported: Bounded queues. Converting to unbounded.
    int q[$ : 3];
         ^
+                    ... Use "/* verilator lint_off UNBOUNDED */" and lint_on around source to disable this message.
 %Error: Exiting due to

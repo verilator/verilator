@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.025 devel
 
+***   Add BOUNDED warning and promote bounded queues to unbounded.
+
 
 * Verilator 4.024 2019-12-08
 

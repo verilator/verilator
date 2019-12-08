@@ -105,6 +105,7 @@ public:
         SYMRSVDWORD,    // Symbol is Reserved Word
         SYNCASYNCNET,   // Mixed sync + async reset
         TICKCOUNT,      // Too large tick count
+        UNBOUNDED,      // Unbounded queue
         UNDRIVEN,       // No drivers
         UNOPT,          // Unoptimizable block
         UNOPTFLAT,      // Unoptimizable block after flattening
@@ -154,7 +155,7 @@ public:
             "REALCVT", "REDEFMACRO",
             "SELRANGE", "SHORTREAL", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT",
-            "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
+            "UNBOUNDED", "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
             "UNPACKED", "UNSIGNED", "UNUSED",
             "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
             "VARHIDDEN", "WIDTH", "WIDTHCONCAT",
