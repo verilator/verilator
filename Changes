@@ -2,7 +2,7 @@ Revision history for Verilator
 
 The contributors that suggested a given feature are shown in []. Thanks!
 
-* Verilator 4.023 devel
+* Verilator 4.024 2019-12-08
 
 **    Support associative arrays (excluding [*] and pattern assignments), bug544.
 
