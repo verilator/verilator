@@ -3834,7 +3834,6 @@ public:
 };
 
 class AstStop : public AstNodeStmt {
-    bool m_maybe;  // Maybe stop, maybe not based on error count
 public:
     explicit AstStop(FileLine* fl, bool maybe)
         : AstNodeStmt(fl) {}
