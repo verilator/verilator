@@ -691,10 +691,10 @@ public:
     }
     virtual void visit(AstCCast* nodep) {
         // Extending a value of the same word width is just a NOP.
-        if (nodep->size()>VL_WORDSIZE) {
-            puts("(QData)(");
-        } else {
+        if (nodep->size() <= VL_IDATASIZE) {
             puts("(IData)(");
+        } else {
+            puts("(QData)(");
         }
         iterateAndNextNull(nodep->lhsp());
         puts(")");
@@ -788,11 +788,11 @@ public:
         } else if (nodep->isWide()) {
             int upWidth = nodep->num().widthMin();
             int chunks = 0;
-            if (upWidth > EMITC_NUM_CONSTW*VL_WORDSIZE) {
+            if (upWidth > EMITC_NUM_CONSTW * VL_EDATASIZE) {
                 // Output e.g. 8 words in groups of e.g. 8
-                chunks = (upWidth-1) / (EMITC_NUM_CONSTW*VL_WORDSIZE);
-                upWidth %= (EMITC_NUM_CONSTW*VL_WORDSIZE);
-                if (upWidth == 0) upWidth = (EMITC_NUM_CONSTW*VL_WORDSIZE);
+                chunks = (upWidth-1) / (EMITC_NUM_CONSTW * VL_EDATASIZE);
+                upWidth %= (EMITC_NUM_CONSTW * VL_EDATASIZE);
+                if (upWidth == 0) upWidth = (EMITC_NUM_CONSTW * VL_EDATASIZE);
             }
             {   // Upper e.g. 8 words
                 if (chunks) {
@@ -801,7 +801,7 @@ public:
                     puts("X(");
                     puts(cvtToStr(nodep->widthMin()));
                     puts(",");
-                    puts(cvtToStr(chunks*EMITC_NUM_CONSTW*VL_WORDSIZE));
+                    puts(cvtToStr(chunks * EMITC_NUM_CONSTW * VL_EDATASIZE));
                 } else {
                     putbs("VL_CONST_W_");
                     puts(cvtToStr(VL_WORDS_I(upWidth)));
@@ -820,8 +820,8 @@ public:
                 for (int word=VL_WORDS_I(upWidth)-1; word>=0; word--) {
                     // Only 32 bits - llx + long long here just to appease CPP format warning
                     ofp()->printf(",0x%08" VL_PRI64 "x",
-                                  static_cast<vluint64_t>(nodep->num().dataWord
-                                                          (word+chunks*EMITC_NUM_CONSTW)));
+                                  static_cast<vluint64_t>(nodep->num().edataWord
+                                                          (word+chunks * EMITC_NUM_CONSTW)));
                 }
                 puts(")");
             }
@@ -830,7 +830,7 @@ public:
                 putbs("VL_CONSTLO_W_");
                 puts(cvtToStr(EMITC_NUM_CONSTW));
                 puts("X(");
-                puts(cvtToStr(chunks*EMITC_NUM_CONSTW*VL_WORDSIZE));
+                puts(cvtToStr(chunks * EMITC_NUM_CONSTW * VL_EDATASIZE));
                 puts(",");
                 if (!assigntop) {
                     puts(assignString);
@@ -843,8 +843,8 @@ public:
                 for (int word=EMITC_NUM_CONSTW-1; word>=0; word--) {
                     // Only 32 bits - llx + long long here just to appease CPP format warning
                     ofp()->printf(",0x%08" VL_PRI64 "x",
-                                  static_cast<vluint64_t>(nodep->num().dataWord
-                                                          (word+chunks*EMITC_NUM_CONSTW)));
+                                  static_cast<vluint64_t>(nodep->num().edataWord
+                                                          (word+chunks * EMITC_NUM_CONSTW)));
                 }
                 puts(")");
             }

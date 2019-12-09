@@ -1333,7 +1333,7 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
                     VL_FATAL_MT(__FILE__, __LINE__, "",
                                 "vpi_get_value with more than VL_MULS_MAX_WORDS; increase and recompile");
                 }
-                WDataInP datap = (reinterpret_cast<IData*>(vop->varDatap()));
+                WDataInP datap = (reinterpret_cast<EData*>(vop->varDatap()));
                 for (int i=0; i<words; ++i) {
                     out[i].aval = datap[i];
                     out[i].bval = 0;
@@ -1617,7 +1617,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
                 return object;
             case VLVT_WDATA: {
                 int words = VL_WORDS_I(vop->varp()->packed().elements());
-                WDataOutP datap = (reinterpret_cast<IData*>(vop->varDatap()));
+                WDataOutP datap = (reinterpret_cast<EData*>(vop->varDatap()));
                 for (int i=0; i<words; ++i) {
                     datap[i] = value_p->value.vector[i].aval;
                     if (i==(words-1)) {

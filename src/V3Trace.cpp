@@ -341,8 +341,8 @@ private:
                                  AstVarType::MODULETEMP,
                                   "__Vm_traceActivity", newArrDtp);
         } else {
-            // For tighter code; round to next 32 bit point.
-            int activityBits = VL_WORDS_I(m_activityNumber)*VL_WORDSIZE;
+            // For tighter code; round to next word point.
+            int activityBits = VL_WORDS_I(m_activityNumber) * VL_EDATASIZE;
             newvarp = new AstVar(m_chgFuncp->fileline(), AstVarType::MODULETEMP,
                                  "__Vm_traceActivity", VFlagBitPacked(), activityBits);
         }

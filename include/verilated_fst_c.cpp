@@ -229,7 +229,8 @@ char* VerilatedFst::quad2Str(vluint64_t newval, int bits) {
 }
 
 char* VerilatedFst::array2Str(const vluint32_t* newval, int bits) {
-    int bq = VL_BITWORD_I(bits), br = VL_BITBIT_I(bits);
+    int bq = bits / 32;
+    int br = bits & 31;
     m_valueStrBuffer.reserve(bits+1);
     char* s = m_valueStrBuffer.data();
     vluint32_t v = newval[bq];
@@ -238,7 +239,7 @@ char* VerilatedFst::array2Str(const vluint32_t* newval, int bits) {
     }
     for (int w = bq-1; w >= 0; --w) {
         v = newval[w];
-        for (int i = 28; i >= 0; i-=4) {
+        for (int i = (32 - 4); i >= 0; i-=4) {
             s[0] = '0' + ((v>>(i+3))&1);
             s[1] = '0' + ((v>>(i+2))&1);
             s[2] = '0' + ((v>>(i+1))&1);

@@ -109,6 +109,13 @@ public:
         m_num.width(32, 32);
         dtypeSetLogicUnsized(32, m_num.widthMin(), AstNumeric::SIGNED);
     }
+    class SizedEData {};  // for creator type-overload selection
+    AstConst(FileLine* fl, SizedEData, vluint64_t num)
+        : AstNodeMath(fl)
+        , m_num(this, VL_EDATASIZE, 0) {
+        m_num.setQuad(num);
+        dtypeSetLogicSized(VL_EDATASIZE, AstNumeric::UNSIGNED);
+    }
     class RealDouble {};  // for creator type-overload selection
     AstConst(FileLine* fl, RealDouble, double num)
         : AstNodeMath(fl)
@@ -1119,8 +1126,8 @@ class AstWordSel : public AstNodeSel {
     // Select a single word from a multi-word wide value
 public:
     AstWordSel(FileLine* fl, AstNode* fromp, AstNode* bitp)
-        :AstNodeSel(fl, fromp, bitp) {
-        dtypeSetUInt32();  // Always used on IData arrays so returns word entities
+        : AstNodeSel(fl, fromp, bitp) {
+        dtypeSetUInt32();  // Always used on WData arrays so returns edata size
     }
     ASTNODE_NODE_FUNCS(WordSel)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstWordSel(this->fileline(), lhsp, rhsp); }
@@ -3893,7 +3900,8 @@ public:
         dtypeFrom(valuep);
         m_code = 0;
         m_codeInc = ((arrayRange.ranged() ? arrayRange.elements() : 1)
-                     * valuep->dtypep()->widthWords());
+                     * valuep->dtypep()->widthWords()
+                     * (VL_EDATASIZE / sizeof(uint32_t)));  // A code is always 32-bits
         m_varType = varp->varType();
         m_declKwd = varp->declKwd();
         m_declDirection = varp->declDirection();

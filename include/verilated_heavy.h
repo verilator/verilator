@@ -278,14 +278,14 @@ std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
 
 extern std::string VL_CVT_PACK_STR_NW(int lwords, WDataInP lwp) VL_MT_SAFE;
 inline std::string VL_CVT_PACK_STR_NQ(QData lhs) VL_PURE {
-    WData lw[2];  VL_SET_WQ(lw, lhs);
-    return VL_CVT_PACK_STR_NW(2, lw);
+    WData lw[VL_WQ_WORDS_E]; VL_SET_WQ(lw, lhs);
+    return VL_CVT_PACK_STR_NW(VL_WQ_WORDS_E, lw);
 }
 inline std::string VL_CVT_PACK_STR_NN(const std::string& lhs) VL_PURE {
     return lhs;
 }
 inline std::string VL_CVT_PACK_STR_NI(IData lhs) VL_PURE {
-    WData lw[1];  lw[0] = lhs;
+    WData lw[1];  VL_SET_WI(lw, lhs);
     return VL_CVT_PACK_STR_NW(1, lw);
 }
 inline std::string VL_CONCATN_NNN(const std::string& lhs, const std::string& rhs) VL_PURE {
@@ -331,7 +331,7 @@ inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, SData& rdr) 
     return got;
 }
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, IData& rdr) VL_MT_SAFE {
-    WData rwp[2];  // WData must always be at least 2
+    WData rwp[2];
     IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = rwp[0];
     return got;

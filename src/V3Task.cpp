@@ -630,10 +630,14 @@ private:
             return new AstCStmt(portp->fileline(), linesp);
         }
         // Use a AstCMath, as we want V3Clean to mask off bits that don't make sense.
-        int cwidth = VL_WORDSIZE;
-        if (portp->basicp()) cwidth = portp->basicp()->keyword().width();
-        if (portp->basicp()
-            && portp->basicp()->keyword().isBitLogic()) cwidth = VL_WORDSIZE*portp->widthWords();
+        int cwidth = VL_IDATASIZE;
+        if (portp->basicp()) {
+            if (portp->basicp()->keyword().isBitLogic()) {
+                cwidth = VL_EDATASIZE * portp->widthWords();
+            } else {
+                cwidth = portp->basicp()->keyword().width();
+            }
+        }
         AstNode* newp = new AstAssign(portp->fileline(),
                                       new AstVarRef(portp->fileline(), portvscp, true),
                                       new AstSel(portp->fileline(),

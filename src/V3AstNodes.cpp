@@ -104,14 +104,14 @@ int AstBasicDType::widthTotalBytes() const {
     if (width()<=8) return 1;
     else if (width()<=16) return 2;
     else if (isQuad()) return 8;
-    else return widthWords()*(VL_WORDSIZE/8);
+    else return widthWords() * (VL_EDATASIZE / 8);
 }
 
 int AstNodeClassDType::widthTotalBytes() const {
     if (width()<=8) return 1;
     else if (width()<=16) return 2;
     else if (isQuad()) return 8;
-    else return widthWords()*(VL_WORDSIZE/8);
+    else return widthWords() * (VL_EDATASIZE / 8);
 }
 
 int AstNodeClassDType::widthAlignBytes() const {
@@ -319,7 +319,7 @@ AstVar::VlArgTypeRecursed AstVar::vlArgTypeRecurse(bool forFunc, const AstNodeDT
             otype += "CData"+bitvec;
         } else if (dtypep->widthMin() <= 16) {
             otype += "SData"+bitvec;
-        } else if (dtypep->widthMin() <= VL_WORDSIZE) {
+        } else if (dtypep->widthMin() <= VL_IDATASIZE) {
             otype += "IData"+bitvec;
         } else if (dtypep->isQuad()) {
             otype += "QData"+bitvec;
@@ -367,7 +367,7 @@ string AstVar::vlEnumType() const {
         arg += "VLVT_UINT8";
     } else if (widthMin() <= 16) {
         arg += "VLVT_UINT16";
-    } else if (widthMin() <= VL_WORDSIZE) {
+    } else if (widthMin() <= VL_IDATASIZE) {
         arg += "VLVT_UINT32";
     } else if (isQuad()) {
         arg += "VLVT_UINT64";
@@ -429,12 +429,12 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
     if (isWide() && isReadOnly()) arg += "const ";
     if (widthMin() == 1) {
         arg += "bool";
-    } else if (widthMin() <= VL_WORDSIZE) {
+    } else if (widthMin() <= VL_IDATASIZE) {
         arg += "uint32_t";
-    } else if (isWide()) {
-        arg += "uint32_t";  // []'s added later
-    } else {
+    } else if (widthMin() <= VL_QUADSIZE) {
         arg += "vluint64_t";
+    } else {
+        arg += "uint32_t";  // []'s added later
     }
     if (isWide()) {
         if (forReturn) v3error("Unsupported: Public functions with >64 bit outputs; make an output of a public task instead");
@@ -501,7 +501,7 @@ string AstVar::scType() const {
         return (string("sc_bv<")+cvtToStr(widthMin())+"> ");  // Keep the space so don't get >>
     } else if (widthMin() == 1) {
         return "bool";
-    } else if (widthMin() <= VL_WORDSIZE) {
+    } else if (widthMin() <= VL_IDATASIZE) {
         if (widthMin() <= 8 && v3Global.opt.pinsUint8()) {
             return "uint8_t";
         } else if (widthMin() <= 16 && v3Global.opt.pinsUint8()) {

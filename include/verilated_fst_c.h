@@ -65,7 +65,7 @@ private:
     std::vector<char> m_valueStrBuffer;
     char* word2Str(vluint32_t newval, int bits);
     char* quad2Str(vluint64_t newval, int bits);
-    char* array2Str(const vluint32_t *newval, int bits);
+    char* array2Str(const vluint32_t* newval, int bits);
 public:
     explicit VerilatedFst(void* fst=NULL);
     ~VerilatedFst() { if (m_fst == NULL) { fstWriterClose(m_fst); } }

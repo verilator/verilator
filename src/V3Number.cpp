@@ -781,9 +781,13 @@ uint32_t V3Number::toHash() const {
     return m_value[0];
 }
 
-uint32_t V3Number::dataWord(int word) const {
-    UASSERT(!isFourState(), "dataWord with 4-state "<<*this);
-    return m_value[word];
+uint32_t V3Number::edataWord(int eword) const {
+    UASSERT(!isFourState(), "edataWord with 4-state "<<*this);
+    return m_value[eword];
+}
+
+uint8_t V3Number::dataByte(int byte) const {
+    return (edataWord(byte / (VL_EDATASIZE / 8)) >> ((byte * 8) % VL_EDATASIZE)) & 0xff;
 }
 
 bool V3Number::isEqZero() const {
@@ -1656,8 +1660,8 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
         return *this;
     }
 
-    int uw = VL_WORDS_I(umsbp1);  // aka "m" in the algorithm
-    int vw = VL_WORDS_I(vmsbp1);  // aka "n" in the algorithm
+    int uw = (umsbp1 + 31) / 32;  // aka "m" in the algorithm
+    int vw = (vmsbp1 + 31) / 32;  // aka "n" in the algorithm
 
     if (vw == 1) {  // Single divisor word breaks rest of algorithm
         vluint64_t k = 0;
@@ -1684,7 +1688,7 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
 
     // Algorithm requires divisor MSB to be set
     // Copy and shift to normalize divisor so MSB of vn[vw-1] is set
-    int s = 31-VL_BITBIT_I(vmsbp1-1);  // shift amount (0...31)
+    int s = 31 - ((vmsbp1-1) & 31);  // shift amount (0...31)
     uint32_t shift_mask = s ? 0xffffffff : 0;  // otherwise >> 32 won't mask the value
     for (int i = vw-1; i>0; i--) {
         vn[i] = (rhs.m_value[i] << s) | (shift_mask & (rhs.m_value[i-1] >> (32-s)));

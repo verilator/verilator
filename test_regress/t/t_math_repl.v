@@ -56,7 +56,7 @@ module t (/*AUTOARG*/
       if (cyc!=0) begin
 	 cyc <= cyc + 1;
 `ifdef TEST_VERBOSE
-	 $write("cyc=%0d d=%x %x %x %x %x %x\n", cyc, b, rf, rf2, dualasr, sl_mask, sr_mask);
+	 $write("cyc=%0d d=%x %x %x %x %x %x %x\n", cyc, b, rf, rf2, dualasr, sl_mask, sr_mask, widerep);
 `endif
 	 if (cyc==1) begin
 	    biu <= 64'h12451282_abadee00;
