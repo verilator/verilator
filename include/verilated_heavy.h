@@ -285,7 +285,7 @@ inline std::string VL_CVT_PACK_STR_NN(const std::string& lhs) VL_PURE {
     return lhs;
 }
 inline std::string VL_CVT_PACK_STR_NI(IData lhs) VL_PURE {
-    WData lw[1];  VL_SET_WI(lw, lhs);
+    WData lw[VL_WQ_WORDS_E];  VL_SET_WI(lw, lhs);
     return VL_CVT_PACK_STR_NW(1, lw);
 }
 inline std::string VL_CONCATN_NNN(const std::string& lhs, const std::string& rhs) VL_PURE {

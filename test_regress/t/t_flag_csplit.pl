@@ -108,6 +108,7 @@ sub check_gcc_flags {
     my $fh = IO::File->new("<$filename") or error("$! $filenme");
     while (defined (my $line = $fh->getline)) {
         chomp $line;
+        print ":log: $line\n" if $Self->{verbose};
         if ($line =~ /\.cpp/) {
             my $filetype = ($line =~ /Slow/) ? "slow":"fast";
             my $opt = ($line !~ /-O2/) ? "slow":"fast";
