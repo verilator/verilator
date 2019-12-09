@@ -139,6 +139,10 @@ multiline", $time);
 `ifndef NC      // NC-Verilog 5.3 chokes on this test
       if (str !== 32'h00_bf_11_0a) $stop;
 `endif
+
+      // $itord conversion bug, note a %d instead of proper float
+      $display("log10(2) = %d", $log10(100));
+
       $write("*-* All Finished *-*\n");
       $finish;
    end

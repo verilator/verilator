@@ -741,6 +741,7 @@ vlsint32_t V3Number::toSInt() const {
 vluint64_t V3Number::toUQuad() const {
     UASSERT(!isFourState(), "toUQuad with 4-state "<<*this);
     // We allow wide numbers that represent values <= 64 bits
+    if (isDouble()) return static_cast<vluint64_t>(toDouble());
     for (int i=2; i<words(); ++i) {
         if (m_value[i]) {
             v3error("Value too wide for 64-bits expected in this context "<<*this);
@@ -753,6 +754,7 @@ vluint64_t V3Number::toUQuad() const {
 }
 
 vlsint64_t V3Number::toSQuad() const {
+    if (isDouble()) return static_cast<vlsint64_t>(toDouble());
     vluint64_t v = toUQuad();
     vluint64_t signExtend = (-(v & (VL_ULL(1)<<(width()-1))));
     vluint64_t extended = v | signExtend;
