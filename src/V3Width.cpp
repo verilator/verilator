@@ -1452,6 +1452,8 @@ private:
             if (!itemp->valuep()) {
                 if (num.isEqZero() && itemp != nodep->itemsp())
                     itemp->v3error("Enum value illegally wrapped around (IEEE 2017 6.19)");
+                if (num.isFourState())
+                    itemp->v3error("Enum value that is unassigned cannot follow value with X/Zs (IEEE 2017 6.19)");
                 if (!nodep->dtypep()->basicp()
                     && !nodep->dtypep()->basicp()->keyword().isIntNumeric()) {
                     itemp->v3error("Enum names without values only allowed on numeric types");
@@ -1459,7 +1461,12 @@ private:
                 }
                 itemp->valuep(new AstConst(itemp->fileline(), num));
             }
-            num.opAssign(VN_CAST(itemp->valuep(), Const)->num());
+
+            AstConst* constp = VN_CAST(itemp->valuep(), Const);
+            if (constp->num().isFourState() && nodep->dtypep()->basicp()
+                && !nodep->dtypep()->basicp()->isFourstate())
+                itemp->v3error("Enum value with X/Zs cannot be assigned to non-fourstate type (IEEE 2019 6.19)");
+            num.opAssign(constp->num());
             // Look for duplicates
             if (inits.find(num) != inits.end()) {  // IEEE says illegal
                 AstNode* otherp = inits.find(num)->second;
@@ -1471,7 +1478,7 @@ private:
             } else {
                 inits.insert(make_pair(num, itemp));
             }
-            num.opAdd(one, VN_CAST(itemp->valuep(), Const)->num());
+            num.opAdd(one, constp->num());
         }
     }
     virtual void visit(AstEnumItem* nodep) {
