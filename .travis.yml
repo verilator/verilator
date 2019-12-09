@@ -27,6 +27,7 @@ before_install:
   - yes yes | sudo cpan -fi Unix::Processors Parallel::Forker Bit::Vector
   - sudo apt-get install gdb gtkwave
 before_script:
+  - bash -x ci/build_vcddiff.sh
   - bash -x ci/build_verilator.sh
 after_script:
   - ccache -s
