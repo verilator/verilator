@@ -30,7 +30,9 @@
 
 #include "verilated_config.h"
 
+#include <algorithm>
 #include <cctype>
+#include <cerrno>
 #include <sys/stat.h>  // mkdir
 
 #if defined(_WIN32) || defined(__MINGW32__)
@@ -1822,6 +1824,17 @@ std::string VL_CVT_PACK_STR_NW(int lwords, WDataInP lwp) VL_MT_SAFE {
         }
     }
     return std::string(destout, len);
+}
+
+IData VL_ATOI_N(const std::string& str, int base) VL_PURE {
+    std::string str_mod = str;  // create a new instance to modify later.
+    // IEEE 1800-2017 6.16.9 says '_' may exist.
+    str_mod.erase(std::remove(str_mod.begin(), str_mod.end(), '_'), str_mod.end());
+
+    errno = 0;
+    long v = std::strtol(str_mod.c_str(), NULL, base);
+    if (errno != 0) v = 0;
+    return static_cast<IData>(v);
 }
 
 //===========================================================================

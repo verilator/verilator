@@ -360,6 +360,8 @@ public:
     V3Number& opLteD    (const V3Number& lhs, const V3Number& rhs);
 
     // "N" - string operations
+    V3Number& opAtoN    (const V3Number& lhs, int base);
+    V3Number& opCompareNN(const V3Number& lhs,const V3Number& rhs, bool ignoreCase);
     V3Number& opConcatN (const V3Number& lhs, const V3Number& rhs);
     V3Number& opReplN   (const V3Number& lhs, const V3Number& rhs);
     V3Number& opReplN   (const V3Number& lhs, uint32_t rhsval);

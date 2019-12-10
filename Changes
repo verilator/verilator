@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Add BOUNDED warning and promote bounded queues to unbounded.
 
+***   Support string compare, icompare, ato* methods, bug1606. [Yutetsu TAKATSUKASA]
+
 
 * Verilator 4.024 2019-12-08
 

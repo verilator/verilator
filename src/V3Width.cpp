@@ -333,6 +333,30 @@ private:
 
     // Output integer, input string
     virtual void visit(AstLenN* nodep) { visit_Os32_string(nodep); }
+    virtual void visit(AstCompareNN* nodep) {
+        // CALLER: str.compare(), str.icompare()
+        // Widths: 32 bit out
+        UASSERT_OBJ(nodep->rhsp(), nodep, "For binary ops only!");
+        if (m_vup->prelim()) {
+            // See similar handling in visit_cmp_eq_gt where created
+            iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
+            iterateCheckString(nodep, "RHS", nodep->rhsp(), BOTH);
+            nodep->dtypeSetSigned32();
+        }
+    }
+    virtual void visit(AstAtoN* nodep) {
+        // CALLER: str.atobin(), atoi(), atohex(), atooct(), atoreal()
+        // Width: 64bit floating point for atoreal(), 32bit out for the others
+        if (m_vup->prelim()) {
+            // See similar handling in visit_cmp_eq_gt where created
+            iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
+            if (nodep->format() == AstAtoN::ATOREAL) {
+                nodep->dtypeSetDouble();
+            } else {
+                nodep->dtypeSetSigned32();
+            }
+        }
+    }
 
     // Widths: Constant, terminal
     virtual void visit(AstTime* nodep) { nodep->dtypeSetUInt64(); }
@@ -2080,14 +2104,30 @@ private:
             methodOkArguments(nodep, 0, 0);
             AstNode* newp = new AstToUpperN(nodep->fileline(), nodep->fromp()->unlinkFrBack());
             nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+        } else if (nodep->name() == "compare" || nodep->name() == "icompare") {
+            const bool ignoreCase = nodep->name()[0] == 'i';
+            methodOkArguments(nodep, 1, 1);
+            AstArg* argp = VN_CAST(nodep->pinsp(), Arg);
+            AstNode* lhs = nodep->fromp()->unlinkFrBack();
+            AstNode* rhs = argp->exprp()->unlinkFrBack();
+            AstNode* newp = new AstCompareNN(nodep->fileline(), lhs, rhs, ignoreCase);
+            nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
         } else if (nodep->name() == "atobin"
                    || nodep->name() == "atohex"
                    || nodep->name() == "atoi"
                    || nodep->name() == "atooct"
-                   || nodep->name() == "atoreal"
-                   || nodep->name() == "compare"
-                   || nodep->name() == "icompare"
-                   || nodep->name() == "getc"
+                   || nodep->name() == "atoreal") {
+            AstAtoN::FmtType fmt;
+            if (nodep->name() == "atobin")       fmt = AstAtoN::ATOBIN;
+            else if (nodep->name() == "atohex")  fmt = AstAtoN::ATOHEX;
+            else if (nodep->name() == "atoi")    fmt = AstAtoN::ATOI;
+            else if (nodep->name() == "atooct")  fmt = AstAtoN::ATOOCT;
+            else if (nodep->name() == "atoreal") fmt = AstAtoN::ATOREAL;
+            else { V3ERROR_NA; fmt = AstAtoN::ATOI; }  // dummy assignment to suppress compiler warning
+            methodOkArguments(nodep, 0, 0);
+            AstNode* newp = new AstAtoN(nodep->fileline(), nodep->fromp()->unlinkFrBack(), fmt);
+            nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+        } else if (nodep->name() == "getc"
                    || nodep->name() == "putc") {
             nodep->v3error("Unsupported: built-in string method "<<nodep->prettyNameQ());
         } else {
@@ -3326,6 +3366,7 @@ private:
             nodep->dtypeSetLogicBool();
         }
     }
+
     void visit_Os32_string(AstNodeUniop* nodep) {
         // CALLER: LenN
         // Widths: 32 bit out

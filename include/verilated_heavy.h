@@ -350,4 +350,21 @@ inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, double& rdr)
 }
 extern IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) VL_MT_SAFE;
 
+//======================================================================
+// Strings
+
+inline IData VL_CMP_NN(const std::string& lhs, const std::string& rhs, bool ignoreCase) VL_PURE {
+    // SystemVerilog Language Standard does not allow a string variable to contain '\0'.
+    // So C functions such as strcmp() can correctly compare strings.
+    int result;
+    if (ignoreCase) {
+        result = VL_STRCASECMP(lhs.c_str(), rhs.c_str());
+    } else {
+        result = std::strcmp(lhs.c_str(), rhs.c_str());
+    }
+    return result;
+}
+
+extern IData VL_ATOI_N(const std::string& str, int base) VL_PURE;
+
 #endif  // Guard

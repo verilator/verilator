@@ -25,9 +25,16 @@ module t (/*AUTOARG*/
 `ifndef VERILATOR
       s="1234"; s.putc(2, "z"); `checks(s, "12z4");
       s="1234"; `checkh(s.getc(2), "3");
+`endif
       s="b"; if (s.compare("a") <= 0) $stop;
       s="b"; if (s.compare("b") != 0) $stop;
       s="b"; if (s.compare("c") >= 0) $stop;
+      s="b"; if (s.compare("A") <= 0) $stop;
+      s="b"; if (s.compare("B") <= 0) $stop;
+      s="b"; if (s.compare("C") <= 0) $stop;
+      s="B"; if (s.compare("a") >= 0) $stop;
+      s="B"; if (s.compare("b") >= 0) $stop;
+      s="B"; if (s.compare("c") >= 0) $stop;
       s="b"; if (s.icompare("A") < 0) $stop;
       s="b"; if (s.icompare("B") != 0) $stop;
       s="b"; if (s.icompare("C") >= 0) $stop;
@@ -36,7 +43,6 @@ module t (/*AUTOARG*/
       s="101"; `checkh(s.atooct(), 'o101);
       s="101"; `checkh(s.atobin(), 'b101);
       s="1.23"; `checkg(s.atoreal(), 1.23);
-`endif
       s.itoa(123); `checks(s, "123");
       s.hextoa(123); `checks(s, "7b");
       s.octtoa(123); `checks(s, "173");
@@ -75,29 +81,26 @@ module t (/*AUTOARG*/
          s="b";
       end
       else if (cyc==5) begin
-`ifndef VERILATOR
          if (s.compare("a") <= 0) $stop;
          if (s.compare("b") != 0) $stop;
          if (s.compare("c") >= 0) $stop;
+         if (s.compare("A") <= 0) $stop;
+         if (s.compare("B") <= 0) $stop;
+         if (s.compare("C") <= 0) $stop;
          if (s.icompare("A") < 0) $stop;
          if (s.icompare("B") != 0) $stop;
          if (s.icompare("C") >= 0) $stop;
-`endif
          s="101";
       end
       else if (cyc==7) begin
-`ifndef VERILATOR
          `checkh(s.atoi(), 'd101);
          `checkh(s.atohex(), 'h101);
          `checkh(s.atooct(), 'o101);
          `checkh(s.atobin(), 'b101);
-`endif
          s="1.23";
       end
       else if (cyc==8) begin
-`ifndef VERILATOR
          `checkg(s.atoreal(), 1.23);
-`endif
       end
       else if (cyc==9) begin
          s.itoa(123);

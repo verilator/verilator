@@ -26,6 +26,7 @@
 #include "V3Ast.h"
 
 #include <algorithm>
+#include <cerrno>
 #include <cmath>
 #include <cstdarg>
 #include <iomanip>
@@ -1241,6 +1242,40 @@ V3Number& V3Number::opLogEq(const V3Number& lhs, const V3Number& rhs) {
     V3Number ifa = lhs; ifa.opLogIf(lhs, rhs);
     V3Number ifb = rhs; ifb.opLogIf(rhs, lhs);
     return opLogAnd(ifa, ifb);
+}
+
+V3Number& V3Number::opAtoN(const V3Number& lhs, int base) {
+    NUM_ASSERT_OP_ARGS1(lhs);
+    NUM_ASSERT_STRING_ARGS1(lhs);
+    UASSERT(base == AstAtoN::ATOREAL || base == 2 || base == 8 || base == 10 || base == 16,
+            "base must be one of AstAtoN::ATOREAL, 2, 8, 10, or 16.");
+
+    std::string str = lhs.toString();  // new instance to edit later
+    if (base == AstAtoN::ATOREAL) return setDouble(std::atof(str.c_str()));
+
+    // IEEE 1800-2017 6.16.9 says '_' may exist.
+    str.erase(std::remove(str.begin(), str.end(), '_'), str.end());
+
+    errno = 0;
+    long v = std::strtol(str.c_str(), NULL, base);
+    if (errno != 0) v = 0;
+    return setLongS(static_cast<vlsint32_t>(v));
+}
+
+V3Number& V3Number::opCompareNN(const V3Number& lhs, const V3Number& rhs, bool ignoreCase) {
+    NUM_ASSERT_OP_ARGS2(lhs, rhs);
+    NUM_ASSERT_STRING_ARGS2(lhs, rhs);
+    // SystemVerilog Language Standard does not allow a string variable to contain '\0'.
+    // So C functions such as strcmp() can correctly compare strings.
+    int result;
+    string lstring = lhs.toString();
+    string rstring = rhs.toString();
+    if (ignoreCase) {
+        result = VL_STRCASECMP(lstring.c_str(), rstring.c_str());
+    } else {
+        result = std::strcmp(lstring.c_str(), rstring.c_str());
+    }
+    return setLongS(result);
 }
 
 V3Number& V3Number::opEq(const V3Number& lhs, const V3Number& rhs) {

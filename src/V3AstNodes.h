@@ -4818,6 +4818,47 @@ public:
     virtual bool sizeMattersLhs() const { return false; }
 };
 
+class AstAtoN : public AstNodeUniop {
+    // string.atoi(), atobin(), atohex(), atooct(), atoireal()
+public:
+    enum FmtType {ATOI = 10, ATOHEX = 16, ATOOCT = 8, ATOBIN = 2, ATOREAL = -1};
+private:
+    FmtType m_fmt;  // Operation type
+public:
+    AstAtoN(FileLine* fl, AstNode* lhsp, FmtType fmt)
+        : AstNodeUniop(fl, lhsp)
+        , m_fmt(fmt) {
+        fmt == ATOREAL ? dtypeSetDouble() : dtypeSetSigned32();
+    }
+    ASTNODE_NODE_FUNCS(AtoN)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opAtoN(lhs, m_fmt); }
+    virtual string name() const {
+        switch (m_fmt) {
+        case ATOI: return "atoi";
+        case ATOHEX: return "atohex";
+        case ATOOCT: return "atooct";
+        case ATOBIN: return "atobin";
+        case ATOREAL: return "atoreal";
+        default: V3ERROR_NA;
+        }
+    }
+    virtual string emitVerilog() { return "%l." + name() + "()"; }
+    virtual string emitC() {
+        switch (m_fmt) {
+        case ATOI: return "VL_ATOI_N(%li, 10)";
+        case ATOHEX: return "VL_ATOI_N(%li, 16)";
+        case ATOOCT: return "VL_ATOI_N(%li, 8)";
+        case ATOBIN: return "VL_ATOI_N(%li, 2)";
+        case ATOREAL: return "std::atof(%li.c_str())";
+        default: V3ERROR_NA;
+        }
+    }
+    virtual bool cleanOut() const { return true; }
+    virtual bool cleanLhs() const { return true; }
+    virtual bool sizeMattersLhs() const { return false; }
+    FmtType format() const { return m_fmt; }
+};
+
 //======================================================================
 // Binary ops
 
@@ -5948,6 +5989,38 @@ public:
         out.setDouble(hypot(lhs.toDouble(), rhs.toDouble())); }
     virtual string emitVerilog() { return "%f$hypot(%l,%r)"; }
     virtual string emitC() { return "hypot(%li,%ri)"; }
+};
+
+class AstCompareNN : public AstNodeBiop {
+    // Verilog str.compare() and str.icompare()
+private:
+    bool m_ignoreCase;  // True for str.icompare()
+public:
+    AstCompareNN(FileLine* fl, AstNode* lhsp, AstNode* rhsp, bool ignoreCase)
+        : AstNodeBiop(fl, lhsp, rhsp)
+        , m_ignoreCase(ignoreCase) {
+        dtypeSetUInt32();
+    }
+    ASTNODE_NODE_FUNCS(CompareNN)
+    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) {
+        return new AstCompareNN(this->fileline(), lhsp, rhsp, m_ignoreCase);
+    }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
+        out.opCompareNN(lhs, rhs, m_ignoreCase);
+    }
+    virtual string name() const { return m_ignoreCase ? "icompare" : "compare"; }
+    virtual string emitVerilog() {
+        return m_ignoreCase ? "%k(%l.icompare(%r))" : "%k(%l.compare(%r))";
+    }
+    virtual string emitC() {
+        return m_ignoreCase ? "VL_CMP_NN(%li,%ri,true)" : "VL_CMP_NN(%li,%ri,false)";
+    }
+    virtual string emitSimpleOperator() { return ""; }
+    virtual bool cleanOut() const { return true; }
+    virtual bool cleanLhs() const { return true; }
+    virtual bool cleanRhs() const { return true; }
+    virtual bool sizeMattersLhs() const { return false; }
+    virtual bool sizeMattersRhs() const { return false; }
 };
 
 class AstPast : public AstNodeMath {

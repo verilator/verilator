@@ -424,5 +424,14 @@ typedef unsigned long long      vluint64_t;     ///< 64-bit unsigned type
 #endif
 
 //=========================================================================
+// String related OS-specific functions
+
+#ifdef _MSC_VER
+# define VL_STRCASECMP _stricmp
+#else
+# define VL_STRCASECMP strcasecmp
+#endif
+
+//=========================================================================
 
 #endif  // Guard
