@@ -63,9 +63,6 @@ private:
                     int arraynum, vluint32_t len);
     // helpers
     std::vector<char> m_valueStrBuffer;
-    char* word2Str(vluint32_t newval, int bits);
-    char* quad2Str(vluint64_t newval, int bits);
-    char* array2Str(const vluint32_t* newval, int bits);
 public:
     explicit VerilatedFst(void* fst=NULL);
     ~VerilatedFst() { if (m_fst == NULL) { fstWriterClose(m_fst); } }
@@ -140,7 +137,7 @@ public:
         fstWriterEmitValueChange(m_fst, m_code2symbol[code], newval ? "1" : "0");
     }
     void chgBus(vluint32_t code, const vluint32_t newval, int bits) {
-        fstWriterEmitValueChange(m_fst, m_code2symbol[code], word2Str(newval, bits));
+        fstWriterEmitValueChange32(m_fst, m_code2symbol[code], bits, newval);
     }
     void chgDouble(vluint32_t code, const double newval) {
         double val = newval;
@@ -151,10 +148,10 @@ public:
         fstWriterEmitValueChange(m_fst, m_code2symbol[code], &val);
     }
     void chgQuad(vluint32_t code, const vluint64_t newval, int bits) {
-        fstWriterEmitValueChange(m_fst, m_code2symbol[code], quad2Str(newval, bits));
+        fstWriterEmitValueChange64(m_fst, m_code2symbol[code], bits, newval);
     }
     void chgArray(vluint32_t code, const vluint32_t* newval, int bits) {
-        fstWriterEmitValueChange(m_fst, m_code2symbol[code], array2Str(newval, bits));
+        fstWriterEmitValueChangeVec32(m_fst, m_code2symbol[code], bits, newval);
     }
 
     void fullBit(vluint32_t code, const vluint32_t newval) {

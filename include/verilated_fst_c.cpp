@@ -205,52 +205,6 @@ void VerilatedFst::dump(vluint64_t timeui) {
     }
 }
 
-//=============================================================================
-// Helpers
-
-char* VerilatedFst::word2Str(vluint32_t newval, int bits) {
-    // Constructor makes sure m_valueStrBuffer.reserve() > 32+1
-    char* s = m_valueStrBuffer.data();
-    for (int i = 0; i < bits; ++i) {
-        *s++ = '0' + ((newval>>(bits-i-1))&1);
-    }
-    *s = '\0';
-    return m_valueStrBuffer.data();
-}
-
-char* VerilatedFst::quad2Str(vluint64_t newval, int bits) {
-    // Constructor makes sure m_valueStrBuffer.reserve() > 64+1
-    char* s = m_valueStrBuffer.data();
-    for (int i = 0; i < bits; ++i) {
-        *s++ = '0' + ((newval>>(bits-i-1))&1);
-    }
-    *s = '\0';
-    return m_valueStrBuffer.data();
-}
-
-char* VerilatedFst::array2Str(const vluint32_t* newval, int bits) {
-    int bq = bits / 32;
-    int br = bits & 31;
-    m_valueStrBuffer.reserve(bits+1);
-    char* s = m_valueStrBuffer.data();
-    vluint32_t v = newval[bq];
-    for (int i = 0; i < br; ++i) {
-        *s++ = '0' + ((v>>(br-i-1))&1);
-    }
-    for (int w = bq-1; w >= 0; --w) {
-        v = newval[w];
-        for (int i = (32 - 4); i >= 0; i-=4) {
-            s[0] = '0' + ((v>>(i+3))&1);
-            s[1] = '0' + ((v>>(i+2))&1);
-            s[2] = '0' + ((v>>(i+1))&1);
-            s[3] = '0' + ((v>>(i+0))&1);
-            s+=4;
-        }
-    }
-    *s = '\0';
-    return m_valueStrBuffer.data();
-}
-
 //********************************************************************
 // Local Variables:
 // End:
