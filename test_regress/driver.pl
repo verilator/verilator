@@ -2008,6 +2008,17 @@ sub files_identical {
     }
 }
 
+sub copy_if_golden {
+    my $self = (ref $_[0]? shift : $Self);
+    my $fn1 = shift;
+    my $fn2 = shift;
+    if ($ENV{HARNESS_UPDATE_GOLDEN}) {  # Update golden files with current
+        warn "%Warning: HARNESS_UPDATE_GOLDEN set: cp $fn1 $fn2\n";
+        eval "use File::Copy;";
+        File::Copy::copy($fn1, $fn2);
+    }
+}
+
 sub vcd_identical {
     my $self = (ref $_[0]? shift : $Self);
     my $fn1 = shift;
@@ -2028,11 +2039,7 @@ sub vcd_identical {
         if ($out ne '') {
             print $out;
             $self->error("VCD miscompare $fn1 $fn2\n");
-            if ($ENV{HARNESS_UPDATE_GOLDEN}) {  # Update golden files with current
-                warn "%Warning: HARNESS_UPDATE_GOLDEN set: cp $fn1 $fn2\n";
-                eval "use File::Copy;";
-                File::Copy::copy($fn1,$fn2);
-            }
+            $self->copy_if_golden($fn1, $fn2);
             return 0;
         }
     }
@@ -2047,11 +2054,7 @@ sub vcd_identical {
         if ($a ne $b) {
             print "$a\n$b\n" if $::Debug;
             $self->error("VCD hier mismatch $fn1 $fn2\n");
-            if ($ENV{HARNESS_UPDATE_GOLDEN}) {  # Update golden files with current
-                warn "%Warning: HARNESS_UPDATE_GOLDEN set: cp $fn1 $fn2\n";
-                eval "use File::Copy;";
-                File::Copy::copy($fn1,$fn2);
-            }
+            $self->copy_if_golden($fn1, $fn2);
             return 0;
         }
     }
