@@ -328,8 +328,11 @@ private:
                   <<"  pd="<<pinDim.first<<","<<pinDim.second<<endl);
             if (expDim.first == pinDim.first && expDim.second == pinDim.second+1) {
                 // Connection to array, where array dimensions match the instant dimension
+                AstRange* rangep = VN_CAST(nodep->exprp()->dtypep(), UnpackArrayDType)->rangep();
+                int arraySelNum = rangep->littleEndian()
+                    ? (rangep->elementsConst() - 1 - m_instSelNum) : m_instSelNum;
                 AstNode* exprp = nodep->exprp()->unlinkFrBack();
-                exprp = new AstArraySel(exprp->fileline(), exprp, m_instSelNum);
+                exprp = new AstArraySel(exprp->fileline(), exprp, arraySelNum);
                 nodep->exprp(exprp);
             } else if (expwidth == pinwidth) {
                 // NOP: Arrayed instants: widths match so connect to each instance

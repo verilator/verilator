@@ -10,6 +10,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Update FST trace API for better performance.
 
+****  Fix little endian cell ranges, bug1631. [Julien Margetts]
+
 
 * Verilator 4.024 2019-12-08
 
