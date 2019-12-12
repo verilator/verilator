@@ -2674,7 +2674,7 @@ The remainder of this section describe behavior with --threads 1 or
 VL_THREADED is defined when compiling a threaded Verilated module, causing
 the Verilated support classes become threadsafe.
 
-The thread used for constructing a model must the the same thread that
+The thread used for constructing a model must be the same thread that
 calls eval() into the model, this is called the "eval thread". The thread
 used to perform certain global operations such as saving and tracing must
 be done by a "main thread". In most cases the eval thread and main thread
@@ -2756,8 +2756,7 @@ The grammar of configuration commands is as follows:
 
 =item `verilator_config
 
-Take remaining text up the the next `verilog mode switch and treat it as
-Verilator configuration commands.
+Take remaining text and treat it as Verilator configuration commands.
 
 =item coverage_on  [-file "<filename>" [-lines <line> [ - <line> ]]]
 
@@ -2995,7 +2994,7 @@ may `ifdef around compiler specific constructs.
 
 =item `verilator_config
 
-Take remaining text up the the next `verilog mode switch and treat it as
+Take remaining text up to the next `verilog mode switch and treat it as
 Verilator configuration commands.
 
 =item `verilog
@@ -4852,7 +4851,7 @@ SystemC module *may* be faster.)
 
 =head1 BUGS
 
-First, check the the coding limitations section.
+First, check the coding limitations section.
 
 Next, try the --debug switch.  This will enable additional internal
 assertions, and may help identify the problem.
