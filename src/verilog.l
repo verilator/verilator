@@ -931,6 +931,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                                           FL_BRK; }  // Rest handled by preproc
   "`suppress_faults"                    { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`timescale"{ws}+[^\n\r]*             { FL_FWD; FL_BRK; }  // Verilog spec - not supported
+  "`uselib"{ws}+[^\n\r]*                { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
 
   /* See also setLanguage below */
   "`begin_keywords"[ \t]*\"1364-1995\"          { FL_FWD; yy_push_state(V95); PARSEP->pushBeginKeywords(YY_START); FL_BRK; }

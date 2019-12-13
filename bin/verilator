@@ -3316,7 +3316,7 @@ that Verilator will print a list of known scopes to help your debugging.
 
 =head2 Floating Point
 
-Floating Point (real) numbers are supported.
+Short floating point (shortreal) numbers are converted to real.
 
 =head2 Latches
 
@@ -3505,6 +3505,11 @@ expressions ("a = b++;").
 Assignment patterns with order based, default, constant integer (array) or
 member identifier (struct/union) keys are supported.  Data type keys and
 keys which are computed from a constant expression are not supported.
+
+=item `uselib
+
+Uselib, a vendor specific library specification method, is ignored along
+with anything following it until the end of that line.
 
 =item cast operator
 

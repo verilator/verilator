@@ -8,6 +8,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support string compare, icompare, ato* methods, bug1606. [Yutetsu TAKATSUKASA]
 
+****  Ignore `uselib to end-of-line, bug1634. [Frederic Antonin]
+
 ****  Update FST trace API for better performance.
 
 ****  Fix little endian cell ranges, bug1631. [Julien Margetts]
