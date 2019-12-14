@@ -737,8 +737,21 @@ extern void _VL_DEBUG_PRINT_W(int lbits, WDataInP iwp);
 //=========================================================================
 // Pli macros
 
+extern int VL_TIME_STR_CONVERT(const char* strp) VL_PURE;
+
 #ifndef VL_TIME_PRECISION
-# define VL_TIME_PRECISION (-12)  ///< Timescale units only for for VPI return - picoseconds
+# ifdef VL_TIME_PRECISION_STR
+#  define VL_TIME_PRECISION VL_TIME_STR_CONVERT(VL_STRINGIFY(VL_TIME_PRECISION_STR))
+# else
+#  define VL_TIME_PRECISION (-12)  ///< Timescale units only for for VPI return - picoseconds
+# endif
+#endif
+#ifndef VL_TIME_UNIT
+# ifdef VL_TIME_UNIT_STR
+#  define VL_TIME_UNIT VL_TIME_STR_CONVERT(VL_STRINGIFY(VL_TIME_PRECISION_STR))
+# else
+#  define VL_TIME_UNIT (-12) ///< Timescale units only for for VPI return - picoseconds
+# endif
 #endif
 #ifndef VL_TIME_MULTIPLIER
 # define VL_TIME_MULTIPLIER 1

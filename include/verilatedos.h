@@ -433,5 +433,11 @@ typedef unsigned long long      vluint64_t;     ///< 64-bit unsigned type
 #endif
 
 //=========================================================================
+// Stringify macros
+
+#define VL_STRINGIFY(x) VL_STRINGIFY2(x)
+#define VL_STRINGIFY2(x) #x
+
+//=========================================================================
 
 #endif  // Guard

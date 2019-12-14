@@ -1838,6 +1838,30 @@ IData VL_ATOI_N(const std::string& str, int base) VL_PURE {
 }
 
 //===========================================================================
+// Timescale conversion
+
+// Helper function for conversion of timescale strings
+// Converts (1|10|100)(s|ms|us|ns|ps|fs) to power of then
+int VL_TIME_STR_CONVERT(const char* strp) {
+    int scale = 0;
+    if (!strp) return 0;
+    if (*strp++ != '1') return 0;
+    while (*strp == '0') { scale++; strp++; }
+    switch (*strp++) {
+    case 's': break;
+    case 'm': scale -= 3; break;
+    case 'u': scale -= 6; break;
+    case 'n': scale -= 9; break;
+    case 'p': scale -= 12; break;
+    case 'f': scale -= 15; break;
+    default: return 0;
+    }
+    if ((scale < 0) && (*strp++ != 's')) return 0;
+    if (*strp) return 0;
+    return scale;
+}
+
+//===========================================================================
 // Verilated:: Methods
 
 Verilated::ThreadLocal::ThreadLocal()

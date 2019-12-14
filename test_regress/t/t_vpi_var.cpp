@@ -90,6 +90,7 @@ unsigned int callback_count_strs_max = 500;
 
 #define CHECK_RESULT_CSTR_STRIP(got, exp) CHECK_RESULT_CSTR(got + strspn(got, " "), exp)
 
+// We cannot replace those with VL_STRINGIFY, not available when PLI is build
 #define STRINGIFY(x) STRINGIFY2(x)
 #define STRINGIFY2(x) #x
 

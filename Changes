@@ -12,6 +12,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Update FST trace API for better performance.
 
+****  Add vpiTimeUnit and allow to specify time as string, bug1636. [Stefan Wallentowitz]
+
 ****  Fix little endian cell ranges, bug1631. [Julien Margetts]
 
 

@@ -5,9 +5,6 @@
 #include "verilated.h"
 #include "verilated_vcd_c.h"
 
-#define STRINGIFY(x) STRINGIFY2(x)
-#define STRINGIFY2(x) #x
-
 Vt_order_multidriven* vcore;
 VerilatedVcdC* vcd;
 vluint64_t vtime;
@@ -46,7 +43,7 @@ int main() {
     vcd = new VerilatedVcdC;
 
     vcore->trace(vcd, 99);
-    vcd->open(STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
+    vcd->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 
     vcore->i_clk_wr = 0;
     vcore->i_clk_rd = 0;
