@@ -3008,26 +3008,24 @@ if(FST_LIKELY((xc) && (handle <= xc->maxhandle)))
 
 void fstWriterEmitValueChange32(void *ctx, fstHandle handle,
                                 uint32_t bits, uint32_t val) {
-        char buf[33];
+        char buf[32];
         char *s = buf;
         int i;
         for (i = 0; i < bits; ++i)
         {
                 *s++ = '0' + ((val >> (bits - i - 1)) & 1);
         }
-        *s = '\0';
         fstWriterEmitValueChange(ctx, handle, buf);
 }
 void fstWriterEmitValueChange64(void *ctx, fstHandle handle,
                                 uint32_t bits, uint64_t val) {
-        char buf[65];
+        char buf[64];
         char *s = buf;
         int i;
         for (i = 0; i < bits; ++i)
         {
                 *s++ = '0' + ((val >> (bits - i - 1)) & 1);
         }
-        *s = '\0';
         fstWriterEmitValueChange(ctx, handle, buf);
 }
 void fstWriterEmitValueChangeVec32(void *ctx, fstHandle handle,
@@ -3045,7 +3043,7 @@ void fstWriterEmitValueChangeVec32(void *ctx, fstHandle handle,
                 int w;
                 uint32_t v;
                 unsigned char* s;
-                if (FST_UNLIKELY(bits + 1 > xc->outval_alloc_siz))
+                if (FST_UNLIKELY(bits > xc->outval_alloc_siz))
                 {
                         xc->outval_alloc_siz = bits*2 + 1;
                         xc->outval_mem = (unsigned char*)realloc(xc->outval_mem, xc->outval_alloc_siz);
@@ -3076,7 +3074,6 @@ void fstWriterEmitValueChangeVec32(void *ctx, fstHandle handle,
                                 s += 4;
                         }
                 }
-                *s = '\0';
                 fstWriterEmitValueChange(ctx, handle, xc->outval_mem);
         }
 }
@@ -3095,7 +3092,7 @@ void fstWriterEmitValueChangeVec64(void *ctx, fstHandle handle,
                 int w;
                 uint32_t v;
                 unsigned char* s;
-                if (FST_UNLIKELY(bits + 1 > xc->outval_alloc_siz))
+                if (FST_UNLIKELY(bits > xc->outval_alloc_siz))
                 {
                         xc->outval_alloc_siz = bits*2 + 1;
                         xc->outval_mem = (unsigned char*)realloc(xc->outval_mem, xc->outval_alloc_siz);
@@ -3126,7 +3123,6 @@ void fstWriterEmitValueChangeVec64(void *ctx, fstHandle handle,
                                 s += 4;
                         }
                 }
-                *s = '\0';
                 fstWriterEmitValueChange(ctx, handle, xc->outval_mem);
         }
 }
