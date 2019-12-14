@@ -1,0 +1,4 @@
+%Error: t/t_pp_pragma_bad.v:6: `pragma is missing a pragma_expression.
+`pragma
+^~~~~~~
+%Error: Exiting due to

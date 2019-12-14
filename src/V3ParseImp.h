@@ -142,12 +142,13 @@ public:
     int yylexThis();
     static bool optFuture(const string& flag) { return v3Global.opt.isFuture(flag); }
 
-    void ppline(const char* text);
+    void ppline(const char* textp);
+    void pragma(const char* textp);
     void linenoInc() { fileline()->linenoInc(); }
-    void verilatorCmtLint(const char* text, bool on);
+    void verilatorCmtLint(const char* textp, bool on);
     void verilatorCmtLintSave();
     void verilatorCmtLintRestore();
-    void verilatorCmtBad(const char* text);
+    void verilatorCmtBad(const char* textp);
     void errorPreprocDirective(const char* textp);
     void tag(const char* text);
     void tagNodep(AstNode* nodep) { m_tagNodep = nodep; }
