@@ -1826,8 +1826,33 @@ std::string VL_CVT_PACK_STR_NW(int lwords, WDataInP lwp) VL_MT_SAFE {
     return std::string(destout, len);
 }
 
+std::string VL_PUTC_N(const std::string& lhs, IData rhs, CData ths) VL_PURE {
+    std::string lstring = lhs;
+    const vlsint32_t rhs_s = rhs;  // To signed value
+    // 6.16.2:str.putc(i, c) does not change the value when i < 0 || i >= str.len() || c == 0
+    if (0 <= rhs_s && rhs < lhs.length() && ths != 0) lstring[rhs] = ths;
+    return lstring;
+}
+
+CData VL_GETC_N(const std::string& lhs, IData rhs) VL_PURE {
+    CData v = 0;
+    const vlsint32_t rhs_s = rhs;  // To signed value
+    // 6.16.3:str.getc(i) returns 0 if i < 0 || i >= str.len()
+    if (0 <= rhs_s && rhs < lhs.length()) v = lhs[rhs];
+    return v;
+}
+
+std::string VL_SUBSTR_N(const std::string& lhs, IData rhs, IData ths) VL_PURE {
+    const vlsint32_t rhs_s = rhs;  // To signed value
+    const vlsint32_t ths_s = ths;  // To signed value
+    // 6.16.8:str.substr(i, j) returns an empty string when i < 0 || j < i || j >= str.len()
+    if (rhs_s < 0 || ths_s < rhs_s || ths >= lhs.length()) return "";
+    // Second parameter of std::string::substr(i, n) is length, not position as in SystemVerilog
+    return lhs.substr(rhs, ths - rhs + 1);
+}
+
 IData VL_ATOI_N(const std::string& str, int base) VL_PURE {
-    std::string str_mod = str;  // create a new instance to modify later.
+    std::string str_mod = str;
     // IEEE 1800-2017 6.16.9 says '_' may exist.
     str_mod.erase(std::remove(str_mod.begin(), str_mod.end(), '_'), str_mod.end());
 

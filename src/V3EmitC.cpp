@@ -643,6 +643,10 @@ public:
             emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), NULL);
         }
     }
+    virtual void visit(AstNodeTriop* nodep) {
+        UASSERT_OBJ(!emitSimpleOk(nodep), nodep, "Triop cannot be described in a simple way");
+        emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nodep->thsp());
+    }
     virtual void visit(AstRedXor* nodep) {
         if (nodep->lhsp()->isWide()) {
             visit(VN_CAST(nodep, NodeUniop));

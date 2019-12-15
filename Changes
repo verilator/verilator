@@ -6,7 +6,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support bounded queues.
 
-***   Support string compare, icompare, ato* methods, bug1606. [Yutetsu TAKATSUKASA]
+***   Support string compare, ato*, etc methods, bug1606. [Yutetsu TAKATSUKASA]
 
 ****  Ignore `uselib to end-of-line, bug1634. [Frederic Antonin]
 

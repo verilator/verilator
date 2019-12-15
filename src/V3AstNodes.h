@@ -5995,6 +5995,78 @@ public:
     virtual string emitC() { return "hypot(%li,%ri)"; }
 };
 
+class AstPutcN : public AstNodeTriop {
+    // Verilog string.putc()
+public:
+    AstPutcN(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* ths) : AstNodeTriop(fl, lhsp, rhsp, ths) {
+        dtypeSetString();
+    }
+    ASTNODE_NODE_FUNCS(PutcN)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs,
+                               const V3Number& rhs, const V3Number& ths) {
+        out.opPutcN(lhs, rhs, ths);
+    }
+    virtual string name() const { return "putc"; }
+    virtual string emitVerilog() { return "%k(%l.putc(%r,%t))"; }
+    virtual string emitC() { return "VL_PUTC_N(%li,%ri,%ti)"; }
+    virtual string emitSimpleOperator() { return ""; }
+    virtual bool cleanOut() const { return true; }
+    virtual bool cleanLhs() const { return true; }
+    virtual bool cleanRhs() const { return true; }
+    virtual bool cleanThs() const { return true; }
+    virtual bool sizeMattersLhs() const { return false; }
+    virtual bool sizeMattersRhs() const { return false; }
+    virtual bool sizeMattersThs() const { return false; }
+};
+
+class AstGetcN : public AstNodeBiop {
+    // Verilog string.getc()
+public:
+    AstGetcN(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
+        dtypeSetBitSized(8, AstNumeric::UNSIGNED);
+    }
+    ASTNODE_NODE_FUNCS(GetcN)
+    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) {
+        return new AstGetcN(this->fileline(), lhsp, rhsp);
+    }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
+        out.opGetcN(lhs, rhs);
+    }
+    virtual string name() const { return "getc"; }
+    virtual string emitVerilog() { return "%k(%l.getc(%r))"; }
+    virtual string emitC() { return "VL_GETC_N(%li,%ri)"; }
+    virtual string emitSimpleOperator() { return ""; }
+    virtual bool cleanOut() const { return true; }
+    virtual bool cleanLhs() const { return true; }
+    virtual bool cleanRhs() const { return true; }
+    virtual bool sizeMattersLhs() const { return false; }
+    virtual bool sizeMattersRhs() const { return false; }
+};
+
+class AstSubstrN : public AstNodeTriop {
+    // Verilog string.substr()
+public:
+    AstSubstrN(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* ths) : AstNodeTriop(fl, lhsp, rhsp, ths) {
+        dtypeSetString();
+    }
+    ASTNODE_NODE_FUNCS(SubstrN)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs,
+                               const V3Number& rhs, const V3Number& ths) {
+        out.opSubstrN(lhs, rhs, ths);
+    }
+    virtual string name() const { return "substr"; }
+    virtual string emitVerilog() { return "%k(%l.substr(%r,%t))"; }
+    virtual string emitC() { return "VL_SUBSTR_N(%li,%ri,%ti)"; }
+    virtual string emitSimpleOperator() { return ""; }
+    virtual bool cleanOut() const { return true; }
+    virtual bool cleanLhs() const { return true; }
+    virtual bool cleanRhs() const { return true; }
+    virtual bool cleanThs() const { return true; }
+    virtual bool sizeMattersLhs() const { return false; }
+    virtual bool sizeMattersRhs() const { return false; }
+    virtual bool sizeMattersThs() const { return false; }
+};
+
 class AstCompareNN : public AstNodeBiop {
     // Verilog str.compare() and str.icompare()
 private:

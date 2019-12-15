@@ -333,6 +333,38 @@ private:
 
     // Output integer, input string
     virtual void visit(AstLenN* nodep) { visit_Os32_string(nodep); }
+    virtual void visit(AstPutcN* nodep) {
+        // CALLER: str.putc()
+        UASSERT_OBJ(nodep->rhsp() && nodep->thsp(), nodep, "For ternary ops only!");
+        if (m_vup && m_vup->prelim()) {
+            // See similar handling in visit_cmp_eq_gt where created
+            iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
+            iterateCheckSigned32(nodep, "RHS", nodep->rhsp(), BOTH);
+            iterateCheckSigned32(nodep, "THS", nodep->thsp(), BOTH);
+            nodep->dtypeSetString(); //AstPutcN returns the new string to be assigned by AstAssign
+        }
+    }
+    virtual void visit(AstGetcN* nodep) {
+        // CALLER: str.getc()
+        UASSERT_OBJ(nodep->rhsp(), nodep, "For binary ops only!");
+        if (m_vup && m_vup->prelim()) {
+            // See similar handling in visit_cmp_eq_gt where created
+            iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
+            iterateCheckSigned32(nodep, "RHS", nodep->rhsp(), BOTH);
+            nodep->dtypeSetBitSized(8, AstNumeric::UNSIGNED);
+        }
+    }
+    virtual void visit(AstSubstrN* nodep) {
+        // CALLER: str.substr()
+        UASSERT_OBJ(nodep->rhsp() && nodep->thsp(), nodep, "For ternary ops only!");
+        if (m_vup && m_vup->prelim()) {
+            // See similar handling in visit_cmp_eq_gt where created
+            iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
+            iterateCheckSigned32(nodep, "RHS", nodep->rhsp(), BOTH);
+            iterateCheckSigned32(nodep, "THS", nodep->thsp(), BOTH);
+            nodep->dtypeSetString();
+        }
+    }
     virtual void visit(AstCompareNN* nodep) {
         // CALLER: str.compare(), str.icompare()
         // Widths: 32 bit out
@@ -2115,6 +2147,34 @@ private:
             AstNode* rhs = argp->exprp()->unlinkFrBack();
             AstNode* newp = new AstCompareNN(nodep->fileline(), lhs, rhs, ignoreCase);
             nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+        } else if (nodep->name() == "putc" ) {
+            methodOkArguments(nodep, 2, 2);
+            AstArg* arg0p = VN_CAST(nodep->pinsp(), Arg);
+            AstArg* arg1p = VN_CAST(arg0p->nextp(), Arg);
+            AstNodeVarRef* fromp = VN_CAST(nodep->fromp()->unlinkFrBack(), VarRef);
+            AstNode* rhsp = arg0p->exprp()->unlinkFrBack();
+            AstNode* thsp = arg1p->exprp()->unlinkFrBack();
+            AstVarRef* varrefp = new AstVarRef(nodep->fileline(), fromp->varp(), false);
+            AstNode* newp = new AstAssign(nodep->fileline(), fromp,
+                                          new AstPutcN(nodep->fileline(), varrefp, rhsp, thsp));
+            fromp->lvalue(true);
+            nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+        } else if (nodep->name() == "getc") {
+            methodOkArguments(nodep, 1, 1);
+            AstArg* arg0p = VN_CAST(nodep->pinsp(), Arg);
+            AstNode* lhsp = nodep->fromp()->unlinkFrBack();
+            AstNode* rhsp = arg0p->exprp()->unlinkFrBack();
+            AstNode* newp = new AstGetcN(nodep->fileline(), lhsp, rhsp);
+            nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+        } else if (nodep->name() == "substr") {
+            methodOkArguments(nodep, 2, 2);
+            AstArg* arg0p = VN_CAST(nodep->pinsp(), Arg);
+            AstArg* arg1p = VN_CAST(arg0p->nextp(), Arg);
+            AstNode* lhsp = nodep->fromp()->unlinkFrBack();
+            AstNode* rhsp = arg0p->exprp()->unlinkFrBack();
+            AstNode* thsp = arg1p->exprp()->unlinkFrBack();
+            AstNode* newp = new AstSubstrN(nodep->fileline(), lhsp, rhsp, thsp);
+            nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
         } else if (nodep->name() == "atobin"
                    || nodep->name() == "atohex"
                    || nodep->name() == "atoi"
@@ -2130,9 +2190,6 @@ private:
             methodOkArguments(nodep, 0, 0);
             AstNode* newp = new AstAtoN(nodep->fileline(), nodep->fromp()->unlinkFrBack(), fmt);
             nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
-        } else if (nodep->name() == "getc"
-                   || nodep->name() == "putc") {
-            nodep->v3error("Unsupported: built-in string method "<<nodep->prettyNameQ());
         } else {
             nodep->v3error("Unknown built-in string method "<<nodep->prettyNameQ());
         }

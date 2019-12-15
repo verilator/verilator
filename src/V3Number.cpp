@@ -1262,6 +1262,44 @@ V3Number& V3Number::opAtoN(const V3Number& lhs, int base) {
     return setLongS(static_cast<vlsint32_t>(v));
 }
 
+V3Number& V3Number::opPutcN(const V3Number& lhs, const V3Number& rhs, const V3Number& ths) {
+    NUM_ASSERT_OP_ARGS3(lhs, rhs, ths);
+    NUM_ASSERT_STRING_ARGS1(lhs);
+    string lstring = lhs.toString();
+    const vlsint32_t i = rhs.toSInt();
+    const vlsint32_t c = ths.toSInt() & 0xFF;
+    // 6.16.2:str.putc(i, c) does not change the value when i < 0 || i >= str.len() || c == 0
+    // when evaluating the second condition, i must be positive.
+    if (0 <= i && static_cast<uint32_t>(i) < lstring.length() && c != 0) lstring[i] = c;
+    return setString(lstring);
+}
+
+V3Number& V3Number::opGetcN(const V3Number& lhs, const V3Number& rhs) {
+    NUM_ASSERT_OP_ARGS2(lhs, rhs);
+    NUM_ASSERT_STRING_ARGS1(lhs);
+    const string lstring = lhs.toString();
+    const vlsint32_t i = rhs.toSInt();
+    vlsint32_t v = 0;
+    // 6.16.3:str.getc(i) returns 0 if i < 0 || i >= str.len()
+    // when evaluating the second condition, i must be positive.
+    if (0 <= i && static_cast<uint32_t>(i) < lstring.length()) v = lstring[i];
+    return setLong(v);
+}
+
+V3Number& V3Number::opSubstrN(const V3Number& lhs, const V3Number& rhs, const V3Number& ths) {
+    NUM_ASSERT_OP_ARGS3(lhs, rhs, ths);
+    NUM_ASSERT_STRING_ARGS1(lhs);
+    const string lstring = lhs.toString();
+    const vlsint32_t i = rhs.toSInt();
+    const vlsint32_t j = ths.toSInt();
+    // 6.16.8:str.substr(i, j) returns an empty string when i < 0 || j < i || j >= str.len()
+    // when evaluating the third condition, j must be positive because 0 <= i <= j is guaranteed by
+    // the former two conditions.
+    if (i < 0 || j < i || static_cast<uint32_t>(j) >= lstring.length()) return setString("");
+    // The second parameter of std::string::substr(i, n) is length, not position as SystemVerilog.
+    return setString(lstring.substr(i, j - i + 1));
+}
+
 V3Number& V3Number::opCompareNN(const V3Number& lhs, const V3Number& rhs, bool ignoreCase) {
     NUM_ASSERT_OP_ARGS2(lhs, rhs);
     NUM_ASSERT_STRING_ARGS2(lhs, rhs);

@@ -22,10 +22,13 @@ module t (/*AUTOARG*/
       s="1234"; `checkh(s.len(),4);
       s="ab7CD"; `checks(s.toupper(), "AB7CD");
       s="ab7CD"; `checks(s.tolower(), "ab7cd");
-`ifndef VERILATOR
+      s="1234"; s.putc(-1, "z"); `checks(s, "1234");
+      s="1234"; s.putc(4, "z"); `checks(s, "1234");
+      s="1234"; s.putc(2, 0); `checks(s, "1234");
       s="1234"; s.putc(2, "z"); `checks(s, "12z4");
+      s="1234"; `checkh(s.getc(-1), 0);
+      s="1234"; `checkh(s.getc(4), 0);
       s="1234"; `checkh(s.getc(2), "3");
-`endif
       s="b"; if (s.compare("a") <= 0) $stop;
       s="b"; if (s.compare("b") != 0) $stop;
       s="b"; if (s.compare("c") >= 0) $stop;
@@ -38,6 +41,10 @@ module t (/*AUTOARG*/
       s="b"; if (s.icompare("A") < 0) $stop;
       s="b"; if (s.icompare("B") != 0) $stop;
       s="b"; if (s.icompare("C") >= 0) $stop;
+      s="abcd"; `checks(s.substr(-1,1), "");
+      s="abcd"; `checks(s.substr(1,0), "");
+      s="abcd"; `checks(s.substr(1,4), "");
+      s="abcd"; `checks(s.substr(2,3), "cd");
       s="101"; `checkh(s.atoi(), 'd101);
       s="101"; `checkh(s.atohex(), 'h101);
       s="101"; `checkh(s.atooct(), 'o101);
@@ -64,23 +71,35 @@ module t (/*AUTOARG*/
          `checkh(s.len(),4);
       end
       else if (cyc==2) begin
-`ifndef VERILATOR
-         s.putc(2, "z");
-`endif
+         s.putc(-1, "z");
       end
       else if (cyc==3) begin
-`ifndef VERILATOR
-         `checks(s, "12z4");
-         `checkh(s.getc(2), "z");
-`endif
-         s="ab3CD";
+         `checks(s, "1234");
+         s.putc(4, "z");
       end
       else if (cyc==4) begin
+         `checks(s, "1234");
+         s.putc(2, 0);
+      end
+      else if (cyc==5) begin
+         `checks(s, "1234");
+         s.putc(2, "z");
+      end
+      else if (cyc==6) begin
+         `checks(s, "12z4");
+      end
+      else if (cyc==7) begin
+         `checkh(s.getc(-1), 0);
+         `checkh(s.getc(4), 0);
+         `checkh(s.getc(2), "z");
+         s="ab3CD";
+      end
+      else if (cyc==8) begin
          `checks(s.toupper(), "AB3CD");
          `checks(s.tolower(), "ab3cd");
          s="b";
       end
-      else if (cyc==5) begin
+      else if (cyc==9) begin
          if (s.compare("a") <= 0) $stop;
          if (s.compare("b") != 0) $stop;
          if (s.compare("c") >= 0) $stop;
@@ -90,38 +109,45 @@ module t (/*AUTOARG*/
          if (s.icompare("A") < 0) $stop;
          if (s.icompare("B") != 0) $stop;
          if (s.icompare("C") >= 0) $stop;
+         s="abcd";
+      end
+      else if (cyc==10) begin
+         `checks(s.substr(-1,1), "");
+         `checks(s.substr(1,0), "");
+         `checks(s.substr(1,4), "");
+         `checks(s.substr(2,3), "cd");
          s="101";
       end
-      else if (cyc==7) begin
+      else if (cyc==11) begin
          `checkh(s.atoi(), 'd101);
          `checkh(s.atohex(), 'h101);
          `checkh(s.atooct(), 'o101);
          `checkh(s.atobin(), 'b101);
          s="1.23";
       end
-      else if (cyc==8) begin
+      else if (cyc==12) begin
          `checkg(s.atoreal(), 1.23);
       end
-      else if (cyc==9) begin
+      else if (cyc==13) begin
          s.itoa(123);
       end
-      else if (cyc==10) begin
+      else if (cyc==14) begin
          `checks(s, "123");
          s.hextoa(123);
       end
-      else if (cyc==11) begin
+      else if (cyc==15) begin
          `checks(s, "7b");
          s.octtoa(123);
       end
-      else if (cyc==12) begin
+      else if (cyc==16) begin
          `checks(s, "173");
          s.bintoa(123);
       end
-      else if (cyc==13) begin
+      else if (cyc==17) begin
          `checks(s, "1111011");
          s.realtoa(1.23);
       end
-      else if (cyc==14) begin
+      else if (cyc==18) begin
          `checks(s, "1.23");
       end
       else if (cyc==99) begin
