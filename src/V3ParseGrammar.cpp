@@ -118,14 +118,11 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep,
                     (rangep->fileline(), VFlagChildDType(), arrayp, rangep);
             } else if (VN_IS(nrangep, QueueRange)) {
                 arrayp = new AstQueueDType
-                    (nrangep->fileline(), VFlagChildDType(), arrayp);
+                    (nrangep->fileline(), VFlagChildDType(), arrayp, NULL);
             } else if (rangep && (VN_IS(rangep->leftp(), Unbounded)
                                   || VN_IS(rangep->rightp(), Unbounded))) {
-                if (!VN_IS(rangep->rightp(), Unbounded)) {
-                    rangep->v3warn(UNBOUNDED,
-                                   "Unsupported: Bounded queues. Converting to unbounded.");
-                }
-                arrayp = new AstQueueDType(nrangep->fileline(), VFlagChildDType(), arrayp);
+                arrayp = new AstQueueDType(nrangep->fileline(), VFlagChildDType(), arrayp,
+                                           rangep->rightp()->cloneTree(true));
             } else if (rangep) {
                 arrayp = new AstUnpackArrayDType
                     (rangep->fileline(), VFlagChildDType(), arrayp, rangep);

@@ -1124,6 +1124,9 @@ private:
         // Iterate into subDTypep() to resolve that type and update pointer.
         nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
         nodep->dtypep(nodep);  // The array itself, not subDtype
+        if (VN_IS(nodep->boundp(), Unbounded)) {
+            nodep->boundp()->unlinkFrBack()->deleteTree();  // NULL will represent unbounded
+        }
         UINFO(4,"dtWidthed "<<nodep<<endl);
     }
     virtual void visit(AstUnsizedArrayDType* nodep) {

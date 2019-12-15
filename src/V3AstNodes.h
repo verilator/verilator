@@ -743,8 +743,9 @@ class AstQueueDType : public AstNodeDType {
 private:
     AstNodeDType* m_refDTypep;  // Elements of this type (after widthing)
 public:
-    AstQueueDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp)
+    AstQueueDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstNode* boundp)
         : AstNodeDType(fl) {
+        setNOp2p(boundp);
         childDTypep(dtp);  // Only for parser
         refDTypep(NULL);
         dtypep(NULL);  // V3Width will resolve
@@ -770,6 +771,9 @@ public:
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
     virtual AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); }
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
+    AstNode* boundp() const { return op2p(); }  // op2 = Bound, NULL = none
+    void boundp(AstNode* nodep) { setNOp2p(nodep); }
+    int boundConst() const { AstConst* constp = VN_CAST(boundp(), Const); return (constp?constp->toSInt() : 0); }
     virtual AstNodeDType* virtRefDTypep() const { return m_refDTypep; }
     virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
     // METHODS

@@ -185,7 +185,8 @@ std::string VL_TO_STRING(const VlAssocArray<T_Key, T_Value>& obj) {
 // There are no multithreaded locks on this; the base variable must
 // be protected by other means
 //
-template <class T_Value> class VlQueue {
+// Bound here is the maximum size() allowed, e.g. 1 + SystemVerilog bound
+template <class T_Value, size_t T_MaxSize = 0> class VlQueue {
 private:
     // TYPES
     typedef std::deque<T_Value> Deque;
@@ -215,9 +216,14 @@ public:
     void erase(size_t index) { if (VL_LIKELY(index < m_deque.size())) m_deque.erase(index); }
 
     // function void q.push_front(value)
-    void push_front(const T_Value& value) { m_deque.push_front(value); }
+    void push_front(const T_Value& value) {
+        m_deque.push_front(value);
+        if (VL_UNLIKELY(T_MaxSize != 0 && m_deque.size() > T_MaxSize)) m_deque.pop_back();
+    }
     // function void q.push_back(value)
-    void push_back(const T_Value& value) { m_deque.push_back(value); }
+    void push_back(const T_Value& value) {
+        if (VL_LIKELY(T_MaxSize == 0 || m_deque.size() < T_MaxSize)) m_deque.push_back(value);
+    }
     // function value_t q.pop_front();
     T_Value pop_front() {
         if (m_deque.empty()) return m_defaultValue;

@@ -285,6 +285,8 @@ AstVar::VlArgTypeRecursed AstVar::vlArgTypeRecurse(bool forFunc, const AstNodeDT
         if (!sub.m_osuffix.empty() || !sub.m_oref.empty()) {
             out += " " + sub.m_osuffix + sub.m_oref;
         }
+        // + 1 below as VlQueue uses 0 to mean unlimited, 1 to mean size() max is 1
+        if (adtypep->boundp()) out += ", " + cvtToStr(adtypep->boundConst() + 1);
         out += "> ";
         info.m_oprefix = out;
         return info;
