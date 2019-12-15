@@ -287,6 +287,8 @@ class AstSenTree;
 %token<strp>		yaD_IGNORE	"${ignored-bbox-sys}"
 %token<strp>		yaD_DPI		"${dpi-sys}"
 
+%token<fl>		yaT_RESETALL	"`resetall"
+
 // <fl> is the fileline, abbreviated to shorten "$<fl>1" references
 %token<fl>		'!'
 %token<fl>		'#'
@@ -742,6 +744,7 @@ description:			// ==IEEE: description
        	|	bind_directive				{ if ($1) GRAMMARP->unitPackage($1->fileline())->addStmtp($1); }
 	//	unsupported	// IEEE: config_declaration
 	//			// Verilator only
+	|	yaT_RESETALL				{ }  // Else, under design, and illegal based on IEEE 22.3
 	|	vltItem					{ }
 	|	error					{ }
 	;

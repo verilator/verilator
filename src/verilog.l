@@ -927,8 +927,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`protect"                            { FL_FWD; FL_BRK; }
   "`remove_gatenames"                   { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`remove_netnames"                    { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
-  "`resetall"                           { FL_FWD; PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, true);
-                                          FL_BRK; }  // Rest handled by preproc
+  "`resetall"                           { FL; PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, true);
+                                          return yaT_RESETALL; }  // Rest handled by preproc
   "`suppress_faults"                    { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`timescale"{ws}+[^\n\r]*             { FL_FWD; FL_BRK; }  // Verilog spec - not supported
   "`uselib"{ws}+[^\n\r]*                { FL_FWD; FL_BRK; }  // Verilog-XL compatibility

@@ -14,6 +14,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Add vpiTimeUnit and allow to specify time as string, bug1636. [Stefan Wallentowitz]
 
+****  Add error when `resetall inside module (IEEE 2017-22.3).
+
 ****  Fix little endian cell ranges, bug1631. [Julien Margetts]
 
 

@@ -4,3 +4,9 @@
 // without warranty, 2019 by Wilson Snyder.
 
 `pragma
+
+`resetall  // Ok
+module t;
+`resetall  // Bad
+endmodule
+`resetall  // Ok
