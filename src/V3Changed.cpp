@@ -175,7 +175,7 @@ private:
             m_newRvEqnp = origNREp;
         }
     }
-    virtual void visit(AstNodeClassDType* nodep) {
+    virtual void visit(AstNodeUOrStructDType* nodep) {
         if (nodep->packedUnsup()) {
             newChangeDet();
         } else {

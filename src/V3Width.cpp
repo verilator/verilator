@@ -1374,7 +1374,7 @@ private:
         }
         else if (nodep->isIO() && !(VN_IS(nodep->dtypeSkipRefp(), BasicDType)
                                     || VN_IS(nodep->dtypeSkipRefp(), NodeArrayDType)
-                                    || VN_IS(nodep->dtypeSkipRefp(), NodeClassDType))) {
+                                    || VN_IS(nodep->dtypeSkipRefp(), NodeUOrStructDType))) {
             nodep->v3error("Unsupported: Inputs and outputs must be simple data types");
         }
         if (VN_IS(nodep->dtypep()->skipRefToConstp(), ConstDType)) {
@@ -1647,7 +1647,7 @@ private:
         nodep->widthForce(1, 1);  // Not really relevant
         UINFO(4,"dtWidthed "<<nodep<<endl);
     }
-    virtual void visit(AstNodeClassDType* nodep) {
+    virtual void visit(AstNodeUOrStructDType* nodep) {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         UINFO(5,"   NODECLASS "<<nodep<<endl);
         //if (debug()>=9) nodep->dumpTree("-class-in--");
@@ -1697,7 +1697,7 @@ private:
         AstNodeDType* fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
         UINFO(9,"     from dt "<<fromDtp<<endl);
         AstMemberDType* memberp = NULL;  // NULL=error below
-        if (AstNodeClassDType* adtypep = VN_CAST(fromDtp, NodeClassDType)) {
+        if (AstNodeUOrStructDType* adtypep = VN_CAST(fromDtp, NodeUOrStructDType)) {
             // No need to width-resolve the class, as it was done when we did the child
             memberp = adtypep->findMember(nodep->name());
             if (!memberp) {
@@ -2255,8 +2255,8 @@ private:
             while (const AstConstDType* vdtypep = VN_CAST(dtypep, ConstDType)) {
                 dtypep = vdtypep->subDTypep()->skipRefp();
             }
-            if (AstNodeClassDType* vdtypep = VN_CAST(dtypep, NodeClassDType)) {
-                patternClass(nodep, vdtypep, defaultp); VL_DANGLING(nodep);
+            if (AstNodeUOrStructDType* vdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
+                patternUOrStruct(nodep, vdtypep, defaultp); VL_DANGLING(nodep);
             }
             else if (AstNodeArrayDType* vdtypep = VN_CAST(dtypep, NodeArrayDType)) {
                 patternArray(nodep, vdtypep, defaultp); VL_DANGLING(nodep);
@@ -2270,7 +2270,8 @@ private:
             }
         }
     }
-    void patternClass(AstPattern* nodep, AstNodeClassDType* vdtypep, AstPatMember* defaultp) {
+    void patternUOrStruct(AstPattern* nodep, AstNodeUOrStructDType* vdtypep,
+                          AstPatMember* defaultp) {
         // Due to "default" and tagged patterns, we need to determine
         // which member each AstPatMember corresponds to before we can
         // determine the dtypep for that PatMember's value, and then
@@ -4336,7 +4337,7 @@ private:
                 declRange = adtypep->declRange();
                 if (i<dim) dtypep = adtypep->subDTypep()->skipRefp();
                 continue;
-            } else if (AstNodeClassDType* adtypep = VN_CAST(dtypep, NodeClassDType)) {
+            } else if (AstNodeUOrStructDType* adtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
                 declRange = adtypep->declRange();
                 if (adtypep) {}  // UNUSED
                 break;  // Sub elements don't look like arrays and can't iterate into
@@ -4357,7 +4358,7 @@ private:
                     bits *= adtypep->declRange().elements();
                     dtypep = adtypep->subDTypep()->skipRefp();
                     continue;
-                } else if (AstNodeClassDType* adtypep = VN_CAST(dtypep, NodeClassDType)) {
+                } else if (AstNodeUOrStructDType* adtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
                     bits *= adtypep->width();
                     break;
                 } else if (AstBasicDType* adtypep = VN_CAST(dtypep, BasicDType)) {

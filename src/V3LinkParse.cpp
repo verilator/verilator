@@ -132,7 +132,7 @@ private:
         }
         visitIterateNodeDType(nodep);
     }
-    virtual void visit(AstNodeClassDType* nodep) {
+    virtual void visit(AstNodeUOrStructDType* nodep) {
         if (nodep->name() == "") {
             nodep->name(nameFromTypedef(nodep));  // Might still remain ""
         }

@@ -542,7 +542,7 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
         iterate(nodep->subDTypep());
         iterateAndNextNull(nodep->rangep());
     }
-    virtual void visit(AstNodeClassDType* nodep) {
+    virtual void visit(AstNodeUOrStructDType* nodep) {
         puts(nodep->verilogKwd()+" ");
         if (nodep->packed()) puts("packed ");
         puts("\n");

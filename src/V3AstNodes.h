@@ -842,26 +842,26 @@ public:
     void packagep(AstPackage* nodep) { m_packagep = nodep; }
 };
 
-class AstStructDType : public AstNodeClassDType {
+class AstStructDType : public AstNodeUOrStructDType {
 public:
     AstStructDType(FileLine* fl, AstNumeric numericUnpack)
-        : AstNodeClassDType(fl, numericUnpack) {}
+        : AstNodeUOrStructDType(fl, numericUnpack) {}
     ASTNODE_NODE_FUNCS(StructDType)
     virtual string verilogKwd() const { return "struct"; }
 };
 
-class AstUnionDType : public AstNodeClassDType {
+class AstUnionDType : public AstNodeUOrStructDType {
 public:
     //UNSUP: bool isTagged;
     AstUnionDType(FileLine* fl, AstNumeric numericUnpack)
-        : AstNodeClassDType(fl, numericUnpack) {}
+        : AstNodeUOrStructDType(fl, numericUnpack) {}
     ASTNODE_NODE_FUNCS(UnionDType)
     virtual string verilogKwd() const { return "union"; }
 };
 
 class AstMemberDType : public AstNodeDType {
     // A member of a struct/union
-    // PARENT: AstNodeClassDType
+    // PARENT: AstNodeUOrStructDType
 private:
     AstNodeDType* m_refDTypep;  // Elements of this type (after widthing)
     string      m_name;         // Name of variable

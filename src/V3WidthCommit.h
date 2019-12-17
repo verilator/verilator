@@ -129,7 +129,7 @@ private:
     virtual void visit(AstNodeDType* nodep) {
         visitIterateNodeDType(nodep);
     }
-    virtual void visit(AstNodeClassDType* nodep) {
+    virtual void visit(AstNodeUOrStructDType* nodep) {
         if (nodep->user1SetOnce()) return;  // Process once
         visitIterateNodeDType(nodep);
         nodep->clearCache();

@@ -306,7 +306,7 @@ private:
             }
         }
     }
-    virtual void visit(AstNodeClassDType* nodep) {
+    virtual void visit(AstNodeUOrStructDType* nodep) {
         if (m_traVscp) {
             if (nodep->packed() && !v3Global.opt.traceStructs()) {
                 // Everything downstream is packed, so deal with as one trace unit

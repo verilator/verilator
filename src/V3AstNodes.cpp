@@ -65,7 +65,7 @@ int AstNodeSel::bitConst() const {
     return (constp ? constp->toSInt() : 0);
 }
 
-void AstNodeClassDType::repairMemberCache() {
+void AstNodeUOrStructDType::repairMemberCache() {
     clearCache();
     for (AstMemberDType* itemp = membersp(); itemp; itemp=VN_CAST(itemp->nextp(), MemberDType)) {
         if (m_members.find(itemp->name())!=m_members.end()) {
@@ -74,7 +74,7 @@ void AstNodeClassDType::repairMemberCache() {
     }
 }
 
-const char* AstNodeClassDType::broken() const {
+const char* AstNodeUOrStructDType::broken() const {
     vl_unordered_set<AstMemberDType*> exists;
     for (AstMemberDType* itemp = membersp(); itemp; itemp=VN_CAST(itemp->nextp(), MemberDType)) {
         exists.insert(itemp);
@@ -107,14 +107,14 @@ int AstBasicDType::widthTotalBytes() const {
     else return widthWords() * (VL_EDATASIZE / 8);
 }
 
-int AstNodeClassDType::widthTotalBytes() const {
+int AstNodeUOrStructDType::widthTotalBytes() const {
     if (width()<=8) return 1;
     else if (width()<=16) return 2;
     else if (isQuad()) return 8;
     else return widthWords() * (VL_EDATASIZE / 8);
 }
 
-int AstNodeClassDType::widthAlignBytes() const {
+int AstNodeUOrStructDType::widthAlignBytes() const {
     // Could do max across members but that would be slow,
     // instead intuit based on total structure size
     if (width()<=8) return 1;
@@ -580,7 +580,7 @@ AstNodeDType* AstNodeDType::dtypeDimensionp(int dimension) {
             }
             return NULL;
         }
-        else if (AstNodeClassDType* adtypep = VN_CAST(dtypep, NodeClassDType)) {
+        else if (AstNodeUOrStructDType* adtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
             if (adtypep->packed()) {
                 if ((dim++) == dimension) {
                     return adtypep;
@@ -1030,7 +1030,7 @@ void AstRefDType::dump(std::ostream& str) const {
     }
     else { str<<" -> UNLINKED"; }
 }
-void AstNodeClassDType::dump(std::ostream& str) const {
+void AstNodeUOrStructDType::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (packed()) str<<" [PACKED]";
     if (isFourstate()) str<<" [4STATE]";

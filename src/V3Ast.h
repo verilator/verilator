@@ -1949,7 +1949,8 @@ public:
     const char* charIQWN() const { return (isString() ? "N" : isWide() ? "W" : isQuad() ? "Q" : "I"); }
 };
 
-class AstNodeClassDType : public AstNodeDType {
+class AstNodeUOrStructDType : public AstNodeDType {
+    // A struct or union; common handling
 private:
     // TYPES
     typedef std::map<string,AstMemberDType*> MemberNameMap;
@@ -1959,14 +1960,14 @@ private:
     bool                m_isFourstate;
     MemberNameMap       m_members;
 public:
-    AstNodeClassDType(FileLine* fl, AstNumeric numericUnpack)
+    AstNodeUOrStructDType(FileLine* fl, AstNumeric numericUnpack)
         : AstNodeDType(fl) {
         // AstNumeric::NOSIGN overloaded to indicate not packed
         m_packed = (numericUnpack != AstNumeric::NOSIGN);
         m_isFourstate = false;  // V3Width computes
         numeric(AstNumeric::fromBool(numericUnpack.isSigned()));
     }
-    ASTNODE_BASE_FUNCS(NodeClassDType)
+    ASTNODE_BASE_FUNCS(NodeUOrStructDType)
     virtual const char* broken() const;
     virtual void dump(std::ostream& str) const;
     // For basicp() we reuse the size to indicate a "fake" basic type of same size

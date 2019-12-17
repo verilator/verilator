@@ -1521,14 +1521,14 @@ var_data_type<dtypep>:		// ==IEEE: var_data_type
 	|	yVAR implicit_typeE			{ $$ = $2; }
 	;
 
-struct_unionDecl<classp>:	// IEEE: part of data_type
+struct_unionDecl<uorstructp>:	// IEEE: part of data_type
 	//			// packedSigningE is NOP for unpacked
-		ySTRUCT        packedSigningE '{' 	{ $<classp>$ = new AstStructDType($1, $2); SYMP->pushNew($<classp>$); }
+		ySTRUCT        packedSigningE '{' 	{ $<uorstructp>$ = new AstStructDType($1, $2); SYMP->pushNew($<uorstructp>$); }
 	/*cont*/	struct_union_memberList '}'
-			{ $$=$<classp>4; $$->addMembersp($5); SYMP->popScope($$); }
-	|	yUNION taggedE packedSigningE '{' 	{ $<classp>$ = new AstUnionDType($1, $3); SYMP->pushNew($<classp>$); }
+			{ $$=$<uorstructp>4; $$->addMembersp($5); SYMP->popScope($$); }
+	|	yUNION taggedE packedSigningE '{' 	{ $<uorstructp>$ = new AstUnionDType($1, $3); SYMP->pushNew($<uorstructp>$); }
 	/*cont*/	struct_union_memberList '}'
-			{ $$=$<classp>5; $$->addMembersp($6); SYMP->popScope($$); }
+			{ $$=$<uorstructp>5; $$->addMembersp($6); SYMP->popScope($$); }
 	;
 
 struct_union_memberList<nodep>:	// IEEE: { struct_union_member }
