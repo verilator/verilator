@@ -55,8 +55,8 @@ private:
     // Below state needs to be preserved between each module call.
     AstNodeModule*      m_modp;         // Current module
     AstNodeFTask* m_ftaskp;     // Function or task we're inside
-    AstVAssert* m_assertp;      // Current assertion
-    int         m_senitemCvtNum; // Temporary signal counter
+    AstNodeCoverOrAssert* m_assertp;  // Current assertion
+    int m_senitemCvtNum;  // Temporary signal counter
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -82,7 +82,7 @@ private:
             nodep->replaceWith(nodep->bodysp()->unlinkFrBackWithNext()); VL_DANGLING(nodep);
         }
     }
-    virtual void visit(AstVAssert* nodep) {
+    virtual void visit(AstNodeCoverOrAssert* nodep) {
         if (m_assertp) nodep->v3error("Assert not allowed under another assert");
         m_assertp = nodep;
         iterateChildren(nodep);

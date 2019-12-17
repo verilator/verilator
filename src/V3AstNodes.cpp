@@ -949,6 +949,10 @@ void AstCellInline::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str<<" -> "<<origModName();
 }
+void AstNodeCoverOrAssert::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (immediate()) str<<" [IMMEDIATE]";
+}
 void AstDisplay::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     //str<<" "<<displayType().ascii();

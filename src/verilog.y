@@ -105,7 +105,7 @@ public:
 	return new AstText(fileline, newtext);
     }
     AstDisplay* createDisplayError(FileLine* fileline) {
-	AstDisplay* nodep = new AstDisplay(fileline,AstDisplayType::DT_ERROR,  "", NULL,NULL);
+	AstDisplay* nodep = new AstDisplay(fileline, AstDisplayType::DT_ERROR, "", NULL, NULL);
 	nodep->addNext(new AstStop(fileline, true));
 	return nodep;
     }
@@ -3936,7 +3936,8 @@ clocking_declaration<nodep>:		// IEEE: clocking_declaration  (INCOMPLETE)
 
 assertion_item<nodep>:		// ==IEEE: assertion_item
 		concurrent_assertion_item		{ $$ = $1; }
-	|	deferred_immediate_assertion_item	{ $$ = $1; }
+	|	deferred_immediate_assertion_item
+			{ $$ = $1 ? new AstAlways($1->fileline(), VAlwaysKwd::ALWAYS_COMB, NULL, $1) : NULL; }
 	;
 
 deferred_immediate_assertion_item<nodep>:	// ==IEEE: deferred_immediate_assertion_item
@@ -3959,16 +3960,16 @@ immediate_assertion_statement<nodep>:	// ==IEEE: immediate_assertion_statement
 	;
 
 simple_immediate_assertion_statement<nodep>:	// ==IEEE: simple_immediate_assertion_statement
-	//				// action_block expanded here, for compatibility with AstVAssert
-		yASSERT '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE	{ $$ = new AstVAssert($1,$3,$5, GRAMMARP->createDisplayError($1)); }
-	|	yASSERT '(' expr ')'           yELSE stmtBlock		{ $$ = new AstVAssert($1,$3,NULL,$6); }
-	|	yASSERT '(' expr ')' stmtBlock yELSE stmtBlock		{ $$ = new AstVAssert($1,$3,$5,$7);   }
-	//				// action_block expanded here, for compatibility with AstVAssert
-	|	yASSUME '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE	{ $$ = new AstVAssert($1,$3,$5, GRAMMARP->createDisplayError($1)); }
-	|	yASSUME '(' expr ')'           yELSE stmtBlock		{ $$ = new AstVAssert($1,$3,NULL,$6); }
-	|	yASSUME '(' expr ')' stmtBlock yELSE stmtBlock		{ $$ = new AstVAssert($1,$3,$5,$7);   }
+	//				// action_block expanded here, for compatibility with AstAssert
+		yASSERT '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE	{ $$ = new AstAssert($1, $3, $5, NULL, true); }
+	|	yASSERT '(' expr ')'           yELSE stmtBlock		{ $$ = new AstAssert($1, $3, NULL, $6, true); }
+	|	yASSERT '(' expr ')' stmtBlock yELSE stmtBlock		{ $$ = new AstAssert($1, $3, $5, $7, true); }
+	//				// action_block expanded here, for compatibility with AstAssert
+	|	yASSUME '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE	{ $$ = new AstAssert($1, $3, $5, NULL, true); }
+	|	yASSUME '(' expr ')'           yELSE stmtBlock		{ $$ = new AstAssert($1, $3, NULL, $6, true); }
+	|	yASSUME '(' expr ')' stmtBlock yELSE stmtBlock		{ $$ = new AstAssert($1, $3, $5, $7, true);   }
 	//			// IEEE: simple_immediate_cover_statement
-	|	yCOVER '(' expr ')' stmt 		{ $$ = NULL; BBUNSUP($<fl>1, "Unsupported: immediate cover"); }
+	|	yCOVER '(' expr ')' stmt 		{ $$ = new AstCover($1, $3, $5, true); }
 	;
 
 final_zero:			// IEEE: part of deferred_immediate_assertion_statement
@@ -3980,15 +3981,15 @@ final_zero:			// IEEE: part of deferred_immediate_assertion_statement
 
 deferred_immediate_assertion_statement<nodep>:	// ==IEEE: deferred_immediate_assertion_statement
 	//			// IEEE: deferred_immediate_assert_statement
-		yASSERT final_zero '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE	{ $$ = new AstVAssert($1,$4,$6, GRAMMARP->createDisplayError($1)); }
-	|	yASSERT final_zero '(' expr ')'           yELSE stmtBlock		{ $$ = new AstVAssert($1,$4,NULL,$7); }
-	|	yASSERT final_zero '(' expr ')' stmtBlock yELSE stmtBlock		{ $$ = new AstVAssert($1,$4,$6,$8);   }
+		yASSERT final_zero '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE	{ $$ = new AstAssert($1, $4, $6, NULL, true); }
+	|	yASSERT final_zero '(' expr ')'           yELSE stmtBlock		{ $$ = new AstAssert($1, $4, NULL, $7, true); }
+	|	yASSERT final_zero '(' expr ')' stmtBlock yELSE stmtBlock		{ $$ = new AstAssert($1, $4, $6, $8, true);   }
 	//			// IEEE: deferred_immediate_assume_statement
-	|	yASSUME final_zero '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE	{ $$ = new AstVAssert($1,$4,$6, GRAMMARP->createDisplayError($1)); }
-	|	yASSUME final_zero '(' expr ')'           yELSE stmtBlock		{ $$ = new AstVAssert($1,$4,NULL,$7); }
-	|	yASSUME final_zero '(' expr ')' stmtBlock yELSE stmtBlock		{ $$ = new AstVAssert($1,$4,$6,$8);   }
+	|	yASSUME final_zero '(' expr ')' stmtBlock %prec prLOWER_THAN_ELSE	{ $$ = new AstAssert($1, $4, $6, NULL, true); }
+	|	yASSUME final_zero '(' expr ')'           yELSE stmtBlock		{ $$ = new AstAssert($1, $4, NULL, $7, true); }
+	|	yASSUME final_zero '(' expr ')' stmtBlock yELSE stmtBlock		{ $$ = new AstAssert($1, $4, $6, $8, true); }
 	//			// IEEE: deferred_immediate_cover_statement
-	|	yCOVER final_zero '(' expr ')' stmt	{ $$ = NULL; BBUNSUP($<fl>1, "Unsupported: immediate cover"); }
+	|	yCOVER final_zero '(' expr ')' stmt	{ $$ = new AstCover($1, $4, $6, true); }
 	;
 
 concurrent_assertion_item<nodep>:	// IEEE: concurrent_assertion_item
@@ -4000,11 +4001,11 @@ concurrent_assertion_item<nodep>:	// IEEE: concurrent_assertion_item
 
 concurrent_assertion_statement<nodep>:	// ==IEEE: concurrent_assertion_statement
 	//			// IEEE: assert_property_statement
-		yASSERT yPROPERTY '(' property_spec ')' elseStmtBlock	{ $$ = new AstPslAssert($1,$4,$6); }
+		yASSERT yPROPERTY '(' property_spec ')' elseStmtBlock	{ $$ = new AstAssert($1, $4, NULL, $6, false); }
 	//			// IEEE: cover_property_statement
-	|	yCOVER yPROPERTY '(' property_spec ')' stmtBlock	{ $$ = new AstPslCover($1,$4,$6); }
+	|	yCOVER yPROPERTY '(' property_spec ')' stmtBlock	{ $$ = new AstCover($1, $4, $6, false); }
 	//			// IEEE: restrict_property_statement
-	|	yRESTRICT yPROPERTY '(' property_spec ')' ';'		{ $$ = new AstPslRestrict($1,$4); }
+	|	yRESTRICT yPROPERTY '(' property_spec ')' ';'		{ $$ = new AstRestrict($1, $4); }
 	;
 
 elseStmtBlock<nodep>:	// Part of concurrent_assertion_statement
@@ -4015,10 +4016,10 @@ elseStmtBlock<nodep>:	// Part of concurrent_assertion_statement
 property_spec<nodep>:			// IEEE: property_spec
 	//UNSUP: This rule has been super-specialized to what is supported now
 		'@' '(' senitemEdge ')' yDISABLE yIFF '(' expr ')' expr
-			{ $$ = new AstPslClocked($1,$3,$8,$10); }
-	|	'@' '(' senitemEdge ')' expr		{ $$ = new AstPslClocked($1,$3,NULL,$5); }
-	|	yDISABLE yIFF '(' expr ')' expr	 	{ $$ = new AstPslClocked($4->fileline(),NULL,$4,$6); }
-	|	expr	 				{ $$ = new AstPslClocked($1->fileline(),NULL,NULL,$1); }
+			{ $$ = new AstPropClocked($1, $3, $8, $10); }
+	|	'@' '(' senitemEdge ')' expr		{ $$ = new AstPropClocked($1, $3, NULL, $5); }
+	|	yDISABLE yIFF '(' expr ')' expr	 	{ $$ = new AstPropClocked($4->fileline(), NULL, $4, $6); }
+	|	expr	 				{ $$ = new AstPropClocked($1->fileline(), NULL, NULL, $1); }
 	;
 
 //************************************************

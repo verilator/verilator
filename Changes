@@ -8,6 +8,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support string compare, ato*, etc methods, bug1606. [Yutetsu TAKATSUKASA]
 
+****  Support immediate cover statements.
+
 ****  Ignore `uselib to end-of-line, bug1634. [Frederic Antonin]
 
 ****  Update FST trace API for better performance.

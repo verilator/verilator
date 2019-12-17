@@ -2518,7 +2518,7 @@ private:
         return times;
     }
 
-    virtual void visit(AstPslClocked* nodep) {
+    virtual void visit(AstPropClocked* nodep) {
         if (m_vup->prelim()) {  // First stage evaluation
             iterateCheckBool(nodep, "Property", nodep->propp(), BOTH);
             userIterateAndNext(nodep->sensesp(), NULL);
@@ -2891,16 +2891,20 @@ private:
         assertAtStatement(nodep);
         userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
     }
-    virtual void visit(AstNodePslCoverOrAssert* nodep) {
-        assertAtStatement(nodep);
-        iterateCheckBool(nodep, "Property", nodep->propp(), BOTH);  // it's like an if() condition.
-        userIterateAndNext(nodep->stmtsp(), NULL);
-    }
-    virtual void visit(AstVAssert* nodep) {
+    virtual void visit(AstAssert* nodep) {
         assertAtStatement(nodep);
         iterateCheckBool(nodep, "Property", nodep->propp(), BOTH);  // it's like an if() condition.
         userIterateAndNext(nodep->passsp(), NULL);
         userIterateAndNext(nodep->failsp(), NULL);
+    }
+    virtual void visit(AstCover* nodep) {
+        assertAtStatement(nodep);
+        iterateCheckBool(nodep, "Property", nodep->propp(), BOTH);  // it's like an if() condition.
+        userIterateAndNext(nodep->passsp(), NULL);
+    }
+    virtual void visit(AstRestrict* nodep) {
+        assertAtStatement(nodep);
+        iterateCheckBool(nodep, "Property", nodep->propp(), BOTH);  // it's like an if() condition.
     }
     virtual void visit(AstPin* nodep) {
         //if (debug()) nodep->dumpTree(cout, "-  PinPre: ");

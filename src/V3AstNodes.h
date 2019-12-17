@@ -6168,28 +6168,6 @@ public:
 };
 
 //======================================================================
-// SysVerilog assertions
-
-class AstVAssert : public AstNodeStmt {
-    // Verilog Assertion
-    // Parents:  {statement list}
-    // Children: expression, if pass statements, if fail statements
-public:
-    AstVAssert(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp)
-        : AstNodeStmt(fl) {
-        addOp1p(propp);
-        addNOp2p(passsp);
-        addNOp3p(failsp);
-    }
-    ASTNODE_NODE_FUNCS(VAssert)
-    virtual V3Hash sameHash() const { return V3Hash(); }
-    virtual bool same(const AstNode* samep) const { return true; }
-    AstNode* propp() const { return op1p(); }  // op1 = property
-    AstNode* passsp() const { return op2p(); }  // op2 = if passes
-    AstNode* failsp() const { return op3p(); }  // op3 = if fails
-};
-
-//======================================================================
 // Assertions
 
 class AstClocking : public AstNode {
@@ -6210,69 +6188,80 @@ public:
 //======================================================================
 // PSL
 
-class AstPslClocked : public AstNode {
+class AstPropClocked : public AstNode {
     // A clocked property
     // Parents:  ASSERT|COVER (property)
     // Children: SENITEM, Properties
 public:
-    AstPslClocked(FileLine* fl, AstNodeSenItem* sensesp, AstNode* disablep, AstNode* propp)
+    AstPropClocked(FileLine* fl, AstNodeSenItem* sensesp, AstNode* disablep, AstNode* propp)
         : AstNode(fl) {
         addNOp1p(sensesp);
         addNOp2p(disablep);
         addOp3p(propp);
     }
-    ASTNODE_NODE_FUNCS(PslClocked)
-    virtual bool hasDType() const { return true; }  // Used under PslCover, which expects a bool child
+    ASTNODE_NODE_FUNCS(PropClocked)
+    virtual bool hasDType() const { return true; }  // Used under Cover, which expects a bool child
     AstNodeSenItem* sensesp() const { return VN_CAST(op1p(), NodeSenItem); }  // op1 = Sensitivity list
     AstNode* disablep() const { return op2p(); }  // op2 = disable
     AstNode* propp() const { return op3p(); }  // op3 = property
 };
 
-class AstNodePslCoverOrAssert : public AstNodeStmt {
-    // Psl Cover
+class AstNodeCoverOrAssert : public AstNodeStmt {
+    // Cover or Assert
     // Parents:  {statement list}
     // Children: expression, report string
 private:
+    bool m_immediate;  // Immediate assertion/cover
     string m_name;  // Name to report
 public:
-    AstNodePslCoverOrAssert(FileLine* fl, AstNode* propp, AstNode* stmtsp, const string& name="")
+    AstNodeCoverOrAssert(FileLine* fl, AstNode* propp, AstNode* passsp,
+                         bool immediate, const string& name="")
         : AstNodeStmt(fl)
+        , m_immediate(immediate)
         , m_name(name) {
         addOp1p(propp);
-        addNOp4p(stmtsp);
+        addNOp4p(passsp);
     }
-    ASTNODE_BASE_FUNCS(NodePslCoverOrAssert)
+    ASTNODE_BASE_FUNCS(NodeCoverOrAssert)
     virtual string name() const { return m_name; }  // * = Var name
     virtual V3Hash sameHash() const { return V3Hash(name()); }
     virtual bool same(const AstNode* samep) const { return samep->name() == name(); }
     virtual void name(const string& name) { m_name = name; }
+    virtual void dump(std::ostream& str=std::cout) const;
     AstNode* propp() const { return op1p(); }  // op1 = property
     AstSenTree* sentreep() const { return VN_CAST(op2p(), SenTree); }  // op2 = clock domain
     void sentreep(AstSenTree* sentreep) { addOp2p(sentreep); }  // op2 = clock domain
-    AstNode* stmtsp() const { return op4p(); }  // op4 = statements
+    AstNode* passsp() const { return op4p(); }  // op4 = statements (assert/cover passes)
+    bool immediate() const { return m_immediate; }
 };
 
-class AstPslAssert : public AstNodePslCoverOrAssert {
+class AstAssert : public AstNodeCoverOrAssert {
 public:
-    ASTNODE_NODE_FUNCS(PslAssert)
-    AstPslAssert(FileLine* fl, AstNode* propp, AstNode* stmtsp, const string& name="")
-        : AstNodePslCoverOrAssert(fl, propp, stmtsp, name) {}
+    ASTNODE_NODE_FUNCS(Assert)
+    AstAssert(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp,
+              bool immediate, const string& name = "")
+        : AstNodeCoverOrAssert(fl, propp, passsp, immediate, name) {
+        addNOp3p(failsp);
+    }
+    AstNode* failsp() const { return op3p(); }  // op3 = if assertion fails
 };
 
-class AstPslCover : public AstNodePslCoverOrAssert {
+class AstCover : public AstNodeCoverOrAssert {
 public:
-    ASTNODE_NODE_FUNCS(PslCover)
-    AstPslCover(FileLine* fl, AstNode* propp, AstNode* stmtsp, const string& name="")
-        : AstNodePslCoverOrAssert(fl, propp, stmtsp, name) {}
+    ASTNODE_NODE_FUNCS(Cover)
+    AstCover(FileLine* fl, AstNode* propp, AstNode* stmtsp,
+             bool immediate, const string& name = "")
+        : AstNodeCoverOrAssert(fl, propp, stmtsp, immediate, name) {}
     AstNode* coverincp() const { return op3p(); }  // op3 = coverage node
     void coverincp(AstCoverInc* nodep) { addOp3p(nodep); }  // op3 = coverage node
+    virtual bool immediate() const { return false; }
 };
 
-class AstPslRestrict : public AstNodePslCoverOrAssert {
+class AstRestrict : public AstNodeCoverOrAssert {
 public:
-    ASTNODE_NODE_FUNCS(PslRestrict)
-    AstPslRestrict(FileLine* fl, AstNode* propp)
-        : AstNodePslCoverOrAssert(fl, propp, NULL, "") {}
+    ASTNODE_NODE_FUNCS(Restrict)
+    AstRestrict(FileLine* fl, AstNode* propp)
+        : AstNodeCoverOrAssert(fl, propp, NULL, false, "") {}
 };
 
 //======================================================================

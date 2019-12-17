@@ -353,8 +353,8 @@ private:
             m_checkBlock = true;  // Reset as a child may have cleared it
         }
     }
-    virtual void visit(AstPslCover* nodep) {
-        UINFO(4," PSLCOVER: "<<nodep<<endl);
+    virtual void visit(AstCover* nodep) {
+        UINFO(4," COVER: "<<nodep<<endl);
         m_checkBlock = true;  // Always do cover blocks, even if there's a $stop
         iterateChildren(nodep);
         if (!nodep->coverincp()) {

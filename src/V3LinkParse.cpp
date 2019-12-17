@@ -459,10 +459,10 @@ private:
         visitIterateNoValueMod(nodep);
         m_inAlways = false;
     }
-    virtual void visit(AstPslCover* nodep) {
+    virtual void visit(AstCover* nodep) {
         visitIterateNoValueMod(nodep);
     }
-    virtual void visit(AstPslRestrict* nodep) {
+    virtual void visit(AstRestrict* nodep) {
         visitIterateNoValueMod(nodep);
     }
 

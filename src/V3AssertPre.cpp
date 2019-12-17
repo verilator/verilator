@@ -92,12 +92,14 @@ private:
         m_seniAlwaysp = NULL;
     }
 
-    virtual void visit(AstNodePslCoverOrAssert* nodep) {
+    virtual void visit(AstNodeCoverOrAssert* nodep) {
         if (nodep->sentreep()) return;  // Already processed
         clearAssertInfo();
-        // Find PslClocking's buried under nodep->exprsp
+        // Find Clocking's buried under nodep->exprsp
         iterateChildren(nodep);
-        nodep->sentreep(newSenTree(nodep));
+        if (!nodep->immediate()) {
+            nodep->sentreep(newSenTree(nodep));
+        }
         clearAssertInfo();
     }
     virtual void visit(AstPast* nodep) {
@@ -105,7 +107,7 @@ private:
         iterateChildren(nodep);
         nodep->sentreep(newSenTree(nodep));
     }
-    virtual void visit(AstPslClocked* nodep) {
+    virtual void visit(AstPropClocked* nodep) {
         // No need to iterate the body, once replace will get iterated
         iterateAndNextNull(nodep->sensesp());
         if (m_senip) {

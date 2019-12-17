@@ -92,7 +92,12 @@ module Test2 (/*AUTOARG*/
    reg [31:0]   dly0;
    reg [31:0]   dly1;
 
+   always @(posedge clk) begin
+      dly0 <= in;
+      dly1 <= dly0;
+   end
+
    default clocking @(posedge clk); endclocking
-   assert property (@(posedge clk) dly1 == $past(in, 2));
+   assert property (@(posedge clk) $time < 40 || dly1 == $past(in, 2));
 
 endmodule
