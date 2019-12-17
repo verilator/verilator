@@ -60,7 +60,7 @@ module t (/*AUTOARG*/
          //v = q[0]; `checks(v, "ins0");
          //v = q[3]; `checks(v, "ins3");
 
-         v = q.pop_front(); `checks(v, "f2");
+         q.pop_front();
          v = q.pop_front(); `checks(v, "f1");
          v = q.pop_back(); `checks(v, "b2");
          v = q.pop_back(); `checks(v, "b1");
@@ -73,7 +73,7 @@ module t (/*AUTOARG*/
          v = q.pop_front(); `checks(v, "");  // Was empty, optional warning
          v = q.pop_back(); `checks(v, "");  // Was empty, optional warning
 
-         // COnversion of insert/delete with zero to operator
+         // Conversion of insert/delete with zero to operator
          q.push_front("front");
          q.insert(0, "newfront");
          i = q.size(); `checkh(i, 2);
