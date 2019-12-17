@@ -144,7 +144,7 @@ public:
     /// Delete any nodes with only outputs
     void deleteCutableOnlyEdges();
 
-    /// Any cutable edged become non-cutable
+    /// Any cutable edges become non-cutable
     void makeEdgesNonCutable(V3EdgeFuncP edgeFuncp);
 
     /// Remove any redundant edges, weights become MAX of any other weight
