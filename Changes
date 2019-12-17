@@ -18,6 +18,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Add error when `resetall inside module (IEEE 2017-22.3).
 
+****  Add cleaner error on version control conflicts in sources.
+
 ****  Fix little endian cell ranges, bug1631. [Julien Margetts]
 
 
