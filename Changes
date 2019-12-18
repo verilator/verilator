@@ -22,7 +22,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix little endian cell ranges, bug1631. [Julien Margetts]
 
-****  Fix queues as statements, bug1641. [Peter Monsson, Stefan Wallentowitz]
+****  Fix queue issues, bug1641, bug1643. [Peter Monsson, Stefan Wallentowitz]
 
 
 * Verilator 4.024 2019-12-08

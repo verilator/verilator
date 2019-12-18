@@ -392,17 +392,22 @@ private:
             FileLine* fl = varsp->fileline();
             AstNode* varp = new AstVar(fl, AstVarType::BLOCKTEMP,
                                        varsp->name(), nodep->findSigned32DType());
-            // These will be the left and right dimensions of the array:
+            // These will be the left and right dimensions and size of the array:
             AstNode* leftp = new AstAttrOf(fl, AstAttrType::DIM_LEFT,
                                            new AstVarRef(fl, arrayp->name(), false),
                                            new AstConst(fl, dimension));
             AstNode* rightp = new AstAttrOf(fl, AstAttrType::DIM_RIGHT,
                                             new AstVarRef(fl, arrayp->name(), false),
                                             new AstConst(fl, dimension));
+            AstNode* sizep = new AstAttrOf(fl, AstAttrType::DIM_SIZE,
+                                           new AstVarRef(fl, arrayp->name(), false),
+                                           new AstConst(fl, dimension));
             AstNode* stmtsp = varp;
             // Assign left-dimension into the loop var:
             stmtsp->addNext(new AstAssign
                             (fl, new AstVarRef(fl, varp->name(), true), leftp));
+            // This will turn into a constant bool for static arrays
+            AstNode* notemptyp = new AstGt(fl, sizep, new AstConst(fl, 0));
             // This will turn into a bool constant, indicating whether
             // we count the loop variable up or down:
             AstNode* countupp = new AstLte(fl, leftp->cloneTree(true),
@@ -414,13 +419,15 @@ private:
                            rightp->cloneTree(true)),
                 // Left decrements down to right
                 new AstGte(fl, new AstVarRef(fl, varp->name(), false), rightp));
+            // This will reduce to comparep for static arrays
+            AstNode* condp = new AstAnd(fl, notemptyp, comparep);
             AstNode* incp = new AstAssign(
                 fl, new AstVarRef(fl, varp->name(), true),
                 new AstAdd(fl, new AstVarRef(fl, varp->name(), false),
                            new AstCond(fl, countupp,
                                        new AstConst(fl, 1),
                                        new AstConst(fl, -1))));
-            stmtsp->addNext(new AstWhile(fl, comparep, newp, incp));
+            stmtsp->addNext(new AstWhile(fl, condp, newp, incp));
             newp = new AstBegin(nodep->fileline(), "", stmtsp);
             dimension--;
         }

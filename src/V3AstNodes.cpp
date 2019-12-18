@@ -622,8 +622,16 @@ std::pair<uint32_t,uint32_t> AstNodeDType::dimensions(bool includeBasic) {
             dtypep = adtypep->subDTypep();
             continue;
         }
+        else if (const AstQueueDType* qdtypep = VN_CAST(dtypep, QueueDType)) {
+            unpacked++;
+            dtypep = qdtypep->subDTypep();
+            continue;
+        }
         else if (const AstBasicDType* adtypep = VN_CAST(dtypep, BasicDType)) {
-            if (includeBasic && adtypep->isRanged()) packed++;
+            if (includeBasic && (adtypep->isRanged() || adtypep->isString())) packed++;
+        }
+        else if (const AstStructDType* sdtypep = VN_CAST(dtypep, StructDType)) {
+            packed++;
         }
         break;
     }
