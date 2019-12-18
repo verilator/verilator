@@ -52,6 +52,9 @@ VERILATOR_FLAGS += --coverage
 # Add this trace to get a backtrace in gdb
 #VERILATOR_FLAGS += --gdbbt
 
+# Input files for Verilator
+VERILATOR_INPUT = -f input.vc top.v sim_main.cpp
+
 ######################################################################
 default: run
 
@@ -61,7 +64,7 @@ run:
 
 	@echo
 	@echo "-- VERILATE ----------------"
-	$(VERILATOR) $(VERILATOR_FLAGS) -f input.vc top.v sim_main.cpp
+	$(VERILATOR) $(VERILATOR_FLAGS) $(VERILATOR_INPUT)
 
 	@echo
 	@echo "-- COMPILE -----------------"
@@ -72,11 +75,13 @@ run:
 
 	@echo
 	@echo "-- RUN ---------------------"
+	@rm -rf logs
 	@mkdir -p logs
 	obj_dir/Vtop +trace
 
 	@echo
 	@echo "-- COVERAGE ----------------"
+	@rm -rf logs/annotated
 	$(VERILATOR_COVERAGE) --annotate logs/annotated logs/coverage.dat
 
 	@echo

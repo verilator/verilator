@@ -52,6 +52,9 @@ VERILATOR_FLAGS += --coverage
 # Add this trace to get a backtrace in gdb
 #VERILATOR_FLAGS += --gdbbt
 
+# Input files for Verilator
+VERILATOR_INPUT = -f input.vc top.v sc_main.cpp
+
 # Check if SC exists via a verilator call (empty if not)
 SYSTEMC_EXISTS := $(shell $(VERILATOR) --getenv SYSTEMC_INCLUDE)
 
@@ -69,10 +72,10 @@ run:
 
 	@echo
 	@echo "-- VERILATE ----------------"
-	$(VERILATOR) $(VERILATOR_FLAGS) -f input.vc top.v sc_main.cpp
+	$(VERILATOR) $(VERILATOR_FLAGS) $(VERILATOR_INPUT)
 
 	@echo
-	@echo "-- COMPILE ----------------="
+	@echo "-- COMPILE -----------------"
 # To compile, we can either just do what Verilator asks,
 # or call a submakefile where we can override the rules ourselves
 #	$(MAKE) -j 4 -C obj_dir -f Vtop.mk
@@ -80,17 +83,20 @@ run:
 
 	@echo
 	@echo "-- RUN ---------------------"
+	@rm -rf logs
 	@mkdir -p logs
 	obj_dir/Vtop +trace
 
 	@echo
 	@echo "-- COVERAGE ----------------"
+	@rm -rf logs/annotated
 	$(VERILATOR_COVERAGE) --annotate logs/annotated logs/coverage.dat
 
 	@echo
 	@echo "-- DONE --------------------"
 	@echo "To see waveforms, open vlt_dump.vcd in a waveform viewer"
 	@echo
+
 
 ######################################################################
 # Other targets
