@@ -24,6 +24,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix queue issues, bug1641, bug1643. [Peter Monsson, Stefan Wallentowitz]
 
+****  Fix strcasecmp for windows, bug1651. [Kuba Ober]
+
 
 * Verilator 4.024 2019-12-08
 
