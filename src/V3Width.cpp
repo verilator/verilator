@@ -77,6 +77,7 @@
 #include "V3String.h"
 #include "V3Task.h"
 
+#include <algorithm>
 #include <cstdarg>
 
 // More code; this file was getting too large; see actions there
