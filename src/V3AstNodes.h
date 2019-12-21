@@ -106,7 +106,7 @@ public:
     AstConst(FileLine* fl, Signed32, int32_t num)  // Signed 32-bit integer of specified value
         : AstNodeMath(fl)
         , m_num(this, 32, num) {
-        m_num.width(32, 32);
+        m_num.width(32, true);
         dtypeSetLogicUnsized(32, m_num.widthMin(), AstNumeric::SIGNED);
     }
     class SizedEData {};  // for creator type-overload selection
