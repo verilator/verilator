@@ -52,6 +52,10 @@
 # include <sys/wait.h>
 #endif
 
+#ifdef WIN32
+# include <io.h> // open, read, write, close
+#endif
+
 // If change this code, run a test with the below size set very small
 //#define INFILTER_IPC_BUFSIZ 16
 #define INFILTER_IPC_BUFSIZ (64*1024)  // For debug, try this as a small number

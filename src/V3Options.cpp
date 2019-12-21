@@ -34,6 +34,9 @@
 #ifndef _WIN32
 # include <sys/utsname.h>
 #endif
+#ifdef _WIN32
+# include <io.h> // open, close
+#endif
 #include <cctype>
 #include <dirent.h>
 #include <fcntl.h>
