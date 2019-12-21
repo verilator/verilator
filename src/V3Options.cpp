@@ -34,6 +34,7 @@
 #ifndef _WIN32
 # include <sys/utsname.h>
 #endif
+#include <alloca.h>
 #include <cctype>
 #include <dirent.h>
 #include <fcntl.h>
@@ -1364,7 +1365,10 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     string optdir = (rel ? V3Os::filenameDir(filename) : ".");
 
     // Convert to argv style arg list and parse them
-    char* argv [args.size()+1];
+    char** argv = reinterpret_cast<char**>(alloca(sizeof(char*) * (args.size()+1)));
+    if (!argv) {
+        v3fatal("Could not allocate a temporary buffer for command line arguments: the stack is full.");
+    }
     for (unsigned i=0; i<args.size(); ++i) {
         argv[i] = const_cast<char*>(args[i].c_str());
     }

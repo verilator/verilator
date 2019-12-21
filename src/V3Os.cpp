@@ -26,6 +26,7 @@
 #include "V3String.h"
 #include "V3Os.h"
 
+#include <alloca.h>
 #include <cerrno>
 #include <climits>
 #include <cstdarg>
@@ -221,8 +222,11 @@ vluint64_t V3Os::rand64(vluint64_t* statep) {
 
 string V3Os::trueRandom(size_t size) {
     string data; data.reserve(size);
+    char *bytes = reinterpret_cast<char*>(alloca(sizeof(char) * size));
+    if (!bytes) {
+        v3fatal("Could not allocate a temporary buffer for random data: the stack is full.");
+    }
     std::ifstream is ("/dev/urandom", std::ios::in | std::ios::binary);
-    char bytes[size];
     if (!is.read(bytes, size)) {
         v3fatal("Could not open /dev/urandom, no source of randomness. Try specifing a key instead.");
         return "";
