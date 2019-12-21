@@ -727,6 +727,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             VOptionBool bflag;
             // Allow gnu -- switches
             if (sw[0]=='-' && sw[1]=='-') ++sw;
+            bool hadSwitchPart1 = true;
             if (0) {}
             // Single switches
             else if (!strcmp(sw, "-E"))                         { m_preprocOnly = true; }
@@ -799,6 +800,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-Wpedantic", flag/*ref*/))         { m_pedantic = flag; }
             else if ( onoff (sw, "-x-initial-edge", flag/*ref*/))    { m_xInitialEdge = flag; }
             else if ( onoff (sw, "-xml-only", flag/*ref*/))          { m_xmlOnly = flag; }  // Undocumented, still experimental
+            else { hadSwitchPart1 = false; }
+            if (hadSwitchPart1) {}
             // Optimization
             else if (!strncmp (sw, "-O", 2)) {
                 for (const char* cp=sw+strlen("-O"); *cp; ++cp) {
