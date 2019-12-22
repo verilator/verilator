@@ -26,6 +26,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix strcasecmp for windows, #1651. [Kuba Ober]
 
+****  Fix disable iff in assertions. Closes #1404. [Peter Monsson]
+
 
 * Verilator 4.024 2019-12-08
 

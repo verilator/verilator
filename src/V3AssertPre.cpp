@@ -116,10 +116,16 @@ private:
         // Block is the new expression to evaluate
         AstNode* blockp = nodep->propp()->unlinkFrBack();
         if (nodep->disablep()) {
-            blockp = new AstAnd(nodep->disablep()->fileline(),
-                                new AstNot(nodep->disablep()->fileline(),
-                                           nodep->disablep()->unlinkFrBack()),
-                                blockp);
+            if (VN_IS(nodep->backp(), Cover)) {
+                blockp = new AstAnd(nodep->disablep()->fileline(),
+                                    new AstNot(nodep->disablep()->fileline(),
+                                               nodep->disablep()->unlinkFrBack()),
+                                    blockp);
+            } else {
+                blockp = new AstOr(nodep->disablep()->fileline(),
+                                   nodep->disablep()->unlinkFrBack(),
+                                   blockp);
+            }
         }
         // Unlink and just keep a pointer to it, convert to sentree as needed
         m_senip = nodep->sensesp();
