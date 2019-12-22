@@ -1215,7 +1215,7 @@ class EmitCImp : EmitCStmts {
 
         //puts("__Vm_activity = true;\n");
         puts("}\n");
-        if (nodep->ifdef()!="") puts("#endif // "+nodep->ifdef()+"\n");
+        if (nodep->ifdef()!="") puts("#endif  // "+nodep->ifdef()+"\n");
     }
 
     void emitChangeDet() {
@@ -2475,7 +2475,7 @@ void EmitCImp::emitIntFuncDecls(AstNodeModule* modp) {
             puts("("+cFuncArgs(funcp)+")");
             if (funcp->slow()) puts(" VL_ATTR_COLD");
             puts(";\n");
-            if (funcp->ifdef()!="") puts("#endif // "+funcp->ifdef()+"\n");
+            if (funcp->ifdef()!="") puts("#endif  // "+funcp->ifdef()+"\n");
         }
     }
 
@@ -2756,7 +2756,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     }
 
     // finish up h-file
-    puts("#endif // guard\n");
+    puts("#endif  // guard\n");
 }
 
 //----------------------------------------------------------------------
