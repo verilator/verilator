@@ -41,7 +41,7 @@ extern std::string VL_TO_STRING(CData obj);
 extern std::string VL_TO_STRING(SData obj);
 extern std::string VL_TO_STRING(IData obj);
 extern std::string VL_TO_STRING(QData obj);
-inline std::string VL_TO_STRING(const std::string& obj) { return "\""+obj+"\""; }
+inline std::string VL_TO_STRING(const std::string& obj) { return "\"" + obj + "\""; }
 
 //===================================================================
 // Verilog array container
@@ -304,7 +304,7 @@ inline std::string VL_REPLICATEN_NNQ(int,int,int, const std::string& lhs, IData 
 }
 inline std::string VL_REPLICATEN_NNI(int obits,int lbits,int rbits,
                                      const std::string& lhs, IData rep) VL_PURE {
-    return VL_REPLICATEN_NNQ(obits,lbits,rbits,lhs,rep);
+    return VL_REPLICATEN_NNQ(obits, lbits, rbits, lhs, rep);
 }
 
 inline IData VL_LEN_IN(const std::string& ld) { return ld.length(); }
@@ -326,13 +326,13 @@ extern std::string VL_SFORMATF_NX(const char* formatp, ...) VL_MT_SAFE;
 extern IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_MT_SAFE;
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, CData& rdr) VL_MT_SAFE {
     WData rwp[2];  // WData must always be at least 2
-    IData got = VL_VALUEPLUSARGS_INW(rbits,ld,rwp);
+    IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = rwp[0];
     return got;
 }
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, SData& rdr) VL_MT_SAFE {
     WData rwp[2];  // WData must always be at least 2
-    IData got = VL_VALUEPLUSARGS_INW(rbits,ld,rwp);
+    IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = rwp[0];
     return got;
 }
@@ -350,7 +350,7 @@ inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, QData& rdr) 
 }
 inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, double& rdr) VL_MT_SAFE {
     WData rwp[2];
-    IData got = VL_VALUEPLUSARGS_INW(rbits,ld,rwp);
+    IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = VL_CVT_D_Q(VL_SET_QW(rwp));
     return got;
 }

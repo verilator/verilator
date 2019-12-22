@@ -43,7 +43,8 @@ private:
     int m_fd;  ///< File descriptor we're writing to
 public:
     // METHODS
-    VerilatedVcdFile() : m_fd(0) {}
+    VerilatedVcdFile()
+        : m_fd(0) {}
     virtual ~VerilatedVcdFile() {}
     virtual bool open(const std::string& name) VL_MT_UNSAFE;
     virtual void close() VL_MT_UNSAFE;
@@ -57,10 +58,11 @@ public:
 class VerilatedVcdSig {
 protected:
     friend class VerilatedVcd;
-    vluint32_t          m_code;         ///< VCD file code number
-    int                 m_bits;         ///< Size of value in bits
+    vluint32_t m_code;  ///< VCD file code number
+    int m_bits;  ///< Size of value in bits
     VerilatedVcdSig(vluint32_t code, int bits)
-        : m_code(code), m_bits(bits) {}
+        : m_code(code)
+        , m_bits(bits) {}
 public:
     ~VerilatedVcdSig() {}
 };

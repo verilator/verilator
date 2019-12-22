@@ -35,14 +35,14 @@ class VerilatedSerialize {
 protected:
     // MEMBERS
     // For speed, keep m_cp as the first member of this structure
-    vluint8_t*          m_cp;           ///< Current pointer into m_bufp buffer
-    vluint8_t*          m_bufp;         ///< Output buffer
-    bool                m_isOpen;       ///< True indicates open file/stream
-    std::string         m_filename;     ///< Filename, for error messages
+    vluint8_t* m_cp;  ///< Current pointer into m_bufp buffer
+    vluint8_t* m_bufp;  ///< Output buffer
+    bool m_isOpen;  ///< True indicates open file/stream
+    std::string m_filename;  ///< Filename, for error messages
     VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
 
-    inline static size_t bufferSize() { return 256*1024; }  // See below for slack calculation
-    inline static size_t bufferInsertSize() { return 16*1024; }
+    inline static size_t bufferSize() { return 256 * 1024; }  // See below for slack calculation
+    inline static size_t bufferInsertSize() { return 16 * 1024; }
 
     void header() VL_MT_UNSAFE_ONE;
     void trailer() VL_MT_UNSAFE_ONE;
@@ -94,15 +94,15 @@ class VerilatedDeserialize {
 protected:
     // MEMBERS
     // For speed, keep m_cp as the first member of this structure
-    vluint8_t*          m_cp;           ///< Current pointer into m_bufp buffer
-    vluint8_t*          m_bufp;         ///< Output buffer
-    vluint8_t*          m_endp;         ///< Last valid byte in m_bufp buffer
-    bool                m_isOpen;       ///< True indicates open file/stream
-    std::string         m_filename;     ///< Filename, for error messages
-    VerilatedAssertOneThread m_assertOne;       ///< Assert only called from single thread
+    vluint8_t* m_cp;  ///< Current pointer into m_bufp buffer
+    vluint8_t* m_bufp;  ///< Output buffer
+    vluint8_t* m_endp;  ///< Last valid byte in m_bufp buffer
+    bool m_isOpen;  ///< True indicates open file/stream
+    std::string m_filename;  ///< Filename, for error messages
+    VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
 
-    inline static size_t bufferSize() { return 256*1024; }  // See below for slack calculation
-    inline static size_t bufferInsertSize() { return 16*1024; }
+    inline static size_t bufferSize() { return 256 * 1024; }  // See below for slack calculation
+    inline static size_t bufferInsertSize() { return 16 * 1024; }
 
     virtual void fill() = 0;
     void header() VL_MT_UNSAFE_ONE;
@@ -195,56 +195,56 @@ public:
 
 //=============================================================================
 
-inline VerilatedSerialize&   operator<<(VerilatedSerialize& os,   vluint64_t& rhs) {
+inline VerilatedSerialize& operator<<(VerilatedSerialize& os, vluint64_t& rhs) {
     return os.write(&rhs, sizeof(rhs));
 }
-inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, vluint64_t& rhs){
+inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, vluint64_t& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
-inline VerilatedSerialize&   operator<<(VerilatedSerialize& os,   vluint32_t& rhs) {
+inline VerilatedSerialize& operator<<(VerilatedSerialize& os, vluint32_t& rhs) {
     return os.write(&rhs, sizeof(rhs));
 }
 inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, vluint32_t& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
-inline VerilatedSerialize&   operator<<(VerilatedSerialize& os,   vluint16_t& rhs) {
+inline VerilatedSerialize& operator<<(VerilatedSerialize& os, vluint16_t& rhs) {
     return os.write(&rhs, sizeof(rhs));
 }
 inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, vluint16_t& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
-inline VerilatedSerialize&   operator<<(VerilatedSerialize& os,   vluint8_t& rhs) {
+inline VerilatedSerialize& operator<<(VerilatedSerialize& os, vluint8_t& rhs) {
     return os.write(&rhs, sizeof(rhs));
 }
 inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, vluint8_t& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
-inline VerilatedSerialize&   operator<<(VerilatedSerialize& os,   bool& rhs) {
+inline VerilatedSerialize& operator<<(VerilatedSerialize& os, bool& rhs) {
     return os.write(&rhs, sizeof(rhs));
 }
 inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, bool& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
-inline VerilatedSerialize&   operator<<(VerilatedSerialize& os,   double& rhs) {
+inline VerilatedSerialize& operator<<(VerilatedSerialize& os, double& rhs) {
     return os.write(&rhs, sizeof(rhs));
 }
 inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, double& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
-inline VerilatedSerialize&   operator<<(VerilatedSerialize& os,   float& rhs) {
+inline VerilatedSerialize& operator<<(VerilatedSerialize& os, float& rhs) {
     return os.write(&rhs, sizeof(rhs));
 }
 inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, float& rhs) {
     return os.read(&rhs, sizeof(rhs));
 }
-inline VerilatedSerialize&   operator<<(VerilatedSerialize& os,   std::string& rhs) {
+inline VerilatedSerialize& operator<<(VerilatedSerialize& os, std::string& rhs) {
     vluint32_t len = rhs.length();
-    os<<len;
+    os << len;
     return os.write(rhs.data(), len);
 }
 inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, std::string& rhs) {
     vluint32_t len = 0;
-    os>>len;
+    os >> len;
     rhs.resize(len);
     return os.read((void*)rhs.data(), len);
 }
