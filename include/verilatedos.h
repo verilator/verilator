@@ -184,11 +184,13 @@
 #  define VL_INCLUDE_UNORDERED_MAP <unordered_map>
 #  define VL_INCLUDE_UNORDERED_SET <unordered_set>
 # endif
+# define VL_OVERRIDE override
 #else
 # define VL_EQ_DELETE
 # define vl_unique_ptr std::auto_ptr
 # define VL_INCLUDE_UNORDERED_MAP "verilated_unordered_set_map.h"
 # define VL_INCLUDE_UNORDERED_SET "verilated_unordered_set_map.h"
+# define VL_OVERRIDE
 #endif
 
 //=========================================================================
