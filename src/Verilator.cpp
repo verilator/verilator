@@ -81,6 +81,7 @@
 #include "V3Slice.h"
 #include "V3Split.h"
 #include "V3SplitAs.h"
+#include "V3SplitVar.h"
 #include "V3Stats.h"
 #include "V3String.h"
 #include "V3Subst.h"
@@ -212,6 +213,11 @@ void process() {
     // Push constants, but only true constants preserving liveness
     // so V3Undriven sees variables to be eliminated, ie "if (0 && foo) ..."
     V3Const::constifyAllLive(v3Global.rootp());
+
+    // Split variables into multiple pieces to resolve UNOPTFLAT.
+    // This should come before undrivenAll() to eliminate ALWCOMBORDER warning
+    //   which can be resolved by splitArray().
+    V3SplitVar::splitVariable(v3Global.rootp());
 
     // Signal based lint checks, no change to structures
     // Must be before first constification pass drops dead code

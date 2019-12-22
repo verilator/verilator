@@ -592,6 +592,7 @@ class AstSenTree;
 %token<fl>		yVL_PUBLIC_FLAT_RD	"/*verilator public_flat_rd*/"
 %token<fl>		yVL_PUBLIC_FLAT_RW	"/*verilator public_flat_rw*/"
 %token<fl>		yVL_PUBLIC_MODULE	"/*verilator public_module*/"
+%token<fl>		yVL_SPLIT_VAR		"/*verilator split_var*/"
 
 %token<fl>		yP_TICK		"'"
 %token<fl>		yP_TICKBRA	"'{"
@@ -1822,6 +1823,7 @@ non_port_module_item<nodep>:	// ==IEEE: non_port_module_item
 	|	yVL_INLINE_MODULE			{ $$ = new AstPragma($1,AstPragmaType::INLINE_MODULE); }
 	|	yVL_NO_INLINE_MODULE			{ $$ = new AstPragma($1,AstPragmaType::NO_INLINE_MODULE); }
 	|	yVL_PUBLIC_MODULE			{ $$ = new AstPragma($1,AstPragmaType::PUBLIC_MODULE); v3Global.dpi(true); }
+	|	yVL_SPLIT_VAR 			{ $$ = new AstPragma($1,AstPragmaType::SPLIT_VAR); }
 	;
 
 module_or_generate_item<nodep>:	// ==IEEE: module_or_generate_item

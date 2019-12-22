@@ -91,6 +91,7 @@
 #include "V3Partition.h"
 #include "V3PartitionGraph.h"
 #include "V3SenTree.h"
+#include "V3SplitVar.h"
 #include "V3Stats.h"
 
 #include "V3Order.h"
@@ -895,14 +896,21 @@ private:
         std::cerr<<V3Error::msgPrefix()
                  <<"     Widest candidate vars to split:"<<endl;
         std::stable_sort(m_unoptflatVars.begin(), m_unoptflatVars.end(), OrderVarWidthCmp());
+        int num_can_split = 0;
         int lim = m_unoptflatVars.size() < 10 ? m_unoptflatVars.size() : 10;
         for (int i = 0; i < lim; i++) {
             OrderVarStdVertex* vsvertexp = m_unoptflatVars[i];
             AstVar* varp = vsvertexp->varScp()->varp();
+            const bool can_split = V3SplitVar::canSplitVar(varp);
             std::cerr<<V3Error::msgPrefix()<<"          "
                      <<varp->fileline()<<" "<<varp->prettyName()<<std::dec
                      <<", width "<<varp->width()<<", fanout "
-                     <<vsvertexp->fanout()<<endl;
+                     <<vsvertexp->fanout();
+            if (can_split) {
+                std::cerr <<", can be splitted ";
+                ++num_can_split;
+            }
+            std::cerr << std::endl;
         }
         // Up to 10 of the most fanned out
         std::cerr<<V3Error::msgPrefix()
@@ -913,11 +921,18 @@ private:
         for (int i = 0; i < lim; i++) {
             OrderVarStdVertex* vsvertexp = m_unoptflatVars[i];
             AstVar* varp = vsvertexp->varScp()->varp();
+            const bool can_split = V3SplitVar::canSplitVar(varp);
             std::cerr<<V3Error::msgPrefix()<<"          "
                      <<varp->fileline()<<" "<<varp->prettyName()
                      <<", width "<<std::dec<<varp->width()
-                     <<", fanout "<<vsvertexp->fanout()<<endl;
+                     <<", fanout "<<vsvertexp->fanout();
+            if (can_split) {
+                std::cerr<<", can be splitted ";
+                ++num_can_split;
+            }
+            std::cerr<<endl;
         }
+        if (num_can_split) v3info("Adding /*verilator split_var*/ to variables above may resolve this warning.");
         m_unoptflatVars.clear();
     }
 

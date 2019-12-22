@@ -142,7 +142,8 @@ public:
         NO_INLINE_MODULE,
         NO_INLINE_TASK,
         PUBLIC_MODULE,
-        PUBLIC_TASK
+        PUBLIC_TASK,
+        SPLIT_VAR
     };
     enum en m_e;
     inline AstPragmaType() : m_e(ILLEGAL) {}

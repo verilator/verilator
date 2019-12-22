@@ -229,6 +229,7 @@ RAW_OBJS = \
 	V3Slice.o \
 	V3Split.o \
 	V3SplitAs.o \
+	V3SplitVar.o \
 	V3Stats.o \
 	V3StatsReport.o \
 	V3String.o \
