@@ -1,38 +1,14 @@
 ---
 name: Bug report
-about: Create a report to help us improve
+about: Something isn't working as expected, and it isn't "Unsupported." (Note our contributor agreement at https://github.com/verilator/verilator/.github/blob/master/CONTRIBUTING.adoc)
 title: ''
-labels: ''
+labels: new, bug
 assignees: ''
 
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+Thanks for taking the time to report this.
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+Can you attach an example that shows the issue?  (Must be openly licensed, ideally in test_regress format.)
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
-
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
-
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
-
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
-
-**Additional context**
-Add any other context about the problem here.
+May we assist you in trying to fix this yourself?
