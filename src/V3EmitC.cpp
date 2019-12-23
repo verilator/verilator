@@ -2468,14 +2468,15 @@ void EmitCImp::emitIntFuncDecls(AstNodeModule* modp) {
         const AstCFunc* funcp = *it;
         if (!funcp->dpiImport()) {  // DPI is prototyped in __Dpi.h
             ofp()->putsPrivate(funcp->declPrivate());
-            if (funcp->ifdef()!="") puts("#ifdef "+funcp->ifdef()+"\n");
+            if (!funcp->ifdef().empty()) puts("#ifdef " + funcp->ifdef() + "\n");
             if (funcp->isStatic().trueU()) puts("static ");
-            puts(funcp->rtnTypeVoid()); puts(" ");
+            puts(funcp->rtnTypeVoid());
+            puts(" ");
             puts(funcp->nameProtect());
-            puts("("+cFuncArgs(funcp)+")");
+            puts("(" + cFuncArgs(funcp) + ")");
             if (funcp->slow()) puts(" VL_ATTR_COLD");
             puts(";\n");
-            if (funcp->ifdef()!="") puts("#endif  // "+funcp->ifdef()+"\n");
+            if (!funcp->ifdef().empty()) puts("#endif  // " + funcp->ifdef() + "\n");
         }
     }
 
