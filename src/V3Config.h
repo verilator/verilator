@@ -26,13 +26,25 @@
 
 #include "V3Error.h"
 #include "V3FileLine.h"
+#include "V3Ast.h"
 
 //######################################################################
 
 class V3Config {
 public:
+    static void addCaseFull(const string& file, int lineno);
+    static void addCaseParallel(const string& file, int lineno);
+    static void addCoverageBlockOff(const string& file, int lineno);
+    static void addCoverageBlockOff(const string& module, const string& blockname);
     static void addIgnore(V3ErrorCode code, bool on, const string& filename, int min, int max);
+    static void addInline(FileLine* fl, const string& module, const string& ftask, bool on);
+    static void addVarAttr(FileLine* fl, const string& module, const string& ftask, const string& signal, AstAttrType type, AstSenTree* nodep);
+    static void applyCase(AstCase* nodep);
+    static void applyCoverageBlock(AstNodeModule* modulep, AstBegin* nodep);
     static void applyIgnores(FileLine* filelinep);
+    static void applyModule(AstNodeModule* nodep);
+    static void applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp);
+    static void applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar* varp);
 };
 
 #endif  // Guard

@@ -12,7 +12,7 @@ scenarios(simulator => 1);
 top_filename("t/t_cover_line.v");
 
 compile(
-    verilator_flags2 => ['--cc --coverage-line'],
+    verilator_flags2 => ['--cc --coverage-line +define+ATTRIBUTE'],
     );
 
 execute(

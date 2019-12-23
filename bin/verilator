@@ -2794,6 +2794,124 @@ and range of line numbers (or all lines if omitted).
 For tracing_off, cells below any module in the files/ranges specified will
 also not be traced.
 
+=item clock_enable -module "<modulename>" -signal "<signame>"
+
+Indicate the signal is used to gate a clock, and the user takes responsibility
+for insuring there are no races related to it.
+
+Same as /*verilator clock_enable*/, see L</"LANGUAGE EXTENSIONS"> for
+more information and an example.
+
+=item clocker -module "<modulename>" [-task "<taskname>"] -signal "<signame>"
+
+=item clocker -module "<modulename>" [-function "<funcname>"] -signal "<signame>"
+
+=item no_clocker -module "<modulename>" [-task "<taskname>"] -signal "<signame>"
+
+=item no_clocker -module "<modulename>" [-function "<funcname>"] -signal "<signame>"
+
+Indicate the signal is used as clock or not. This information is used by
+Verilator to mark the signal as clocker and propagate the clocker attribute
+automatically to derived signals. See C<--clk> for more information.
+
+Same as /*verilator clocker*/, see L</"LANGUAGE EXTENSIONS"> for more
+information.
+
+=item coverage_block_off -module "<modulename>" -block "<blockname>"
+
+=item coverage_block_off -file "<filename>" -line <lineno>
+
+Specifies the entire begin/end block should be ignored for coverage
+analysis purposes.  Can either be specified as a named block or as a
+filename and line number.
+
+Same as /*verilator coverage_block_off*/, see L</"LANGUAGE
+EXTENSIONS"> for more information.
+
+=item full_case -file "<filename>" -lines <lineno>
+
+=item parallel_case -file "<filename>" -lines <lineno>
+
+Same as "//synopsys full_case" and "//synopsys parallel_case". When
+these synthesis directives are discovered, Verilator will either
+formally prove the directive to be true, or failing that, will insert
+the appropriate code to detect failing cases at simulation runtime and
+print an "Assertion failed" error message.
+
+=item inline -module "<modulename>"
+
+Specifies the module may be inlined into any modules that use this
+module.  This is useful to speed up simulation runtime with some small
+loss of trace visibility and modularity.  Note signals under inlined
+submodules will be named I<submodule>__DOT__I<subsignal> as C++ does
+not allow "." in signal names.  When tracing such signals the tracing
+routines will replace the __DOT__ with the period.
+
+Same as /*verilator inline_module*/, see L</"LANGUAGE EXTENSIONS"> for
+more information.
+
+=item isolate_assignments -module "<modulename>" [-task "<taskname>"] -signal "<signame>"
+
+=item isolate_assignments -module "<modulename>" [-function "<funcname>"] -signal "<signame>"
+
+=item isolate_assignments -module "<modulename>" -function "<fname>"
+
+Used to indicate the assignments to this signal in any blocks should be
+isolated into new blocks.  When there is a large combinatorial block that
+is resulting in a UNOPTFLAT warning, attaching this to the signal causing
+a false loop may clear up the problem.
+
+Same as /* verilator isolate_assignments */, see L</"LANGUAGE
+EXTENSIONS"> for more information.
+
+=item no_inline -module "<modulename>"
+
+Specifies the module should not be inlined into any modules that use
+this module.  This is useful especially at the top level module to
+reduce the size of the interface class, to aid compile time at a small
+performance loss.
+
+Same as /*verilator no_inline_module*/, see L</"LANGUAGE EXTENSIONS">
+for more information.
+
+=item no_inline [-module "<modulename>"] -task "<taskname>"
+
+=item no_inline [-module "<modulename>"] -function "<funcname>"
+
+Specify the function or task should not be inlined into where it is
+used.  This may reduce the size of the final executable when a task is
+used a very large number of times.  For this flag to work, the task
+and tasks below it must be pure; they cannot reference any variables
+outside the task itself.
+
+Same as /*verilator no_inline_task*/, see L</"LANGUAGE EXTENSIONS">
+for more information.
+
+=item sc_bv -module "<modulename>" [-task "<taskname>"] -signal "<signame>"
+
+=item sc_bv -module "<modulename>" [-function "<funcname>"] -signal "<signame>"
+
+Sets the port to be of sc_bv<I<width>> type, instead of bool, vluint32_t or
+vluint64_t.  This may be useful if the port width is parameterized and
+different of such modules interface a templated module (such as a transactor)
+or for other reasons.  In general you should avoid using this attribute when
+not necessary as with increasing usage of sc_bv the performance decreases
+significantly.
+
+Same as /*verilator sc_bv*/, see L</"LANGUAGE EXTENSIONS"> for more
+information.
+
+=item sformat [-module "<modulename>"] [-task "<taskname>"] -signal "<signame>"
+
+=item sformat [-module "<modulename>"] [-function "<funcname>"] -signal "<signame>"
+
+Final input of a function or task "input string" to indicate the
+function or task should pass all remaining arguments through
+$sformatf.  This allows creation of DPI functions with $display like
+behavior.  See the test_regress/t/t_dpi_display.v file for an example.
+
+Same as /*verilator sformat*/, see L</"LANGUAGE EXTENSIONS"> for more
+information.
 
 =back
 
@@ -2929,7 +3047,8 @@ per the C standard (it's unspecified in Verilog).
 
 Specifies the entire begin/end block should be ignored for coverage
 analysis.  Must be inside a basic block, e.g. within a begin/end pair.
-Same as /* verilator coverage_block_off */.
+Same as /* verilator coverage_block_off */ and C<coverage_block_off> in
+L</"CONFIGURATION FILES">.
 
 =item `systemc_header
 
@@ -3021,6 +3140,9 @@ scheduling algorithm, sometimes required for correct clock behavior, and
 always improving performance.  It's also a good idea to enable the
 IMPERFECTSCH warning, to insure all clock enables are properly recognized.
 
+Same as C<clock_enable> in configuration files, see L</"CONFIGURATION
+FILES"> for more information.
+
 =item /*verilator clocker*/
 
 =item /*verilator no_clocker*/
@@ -3030,10 +3152,16 @@ not. This information is used by Verilator to mark the signal as clocker
 and propagate the clocker attribute automatically to derived signals. See
 C<--clk> for more information.
 
+Same as C<clocker> and C<no_clocker> in configuration files, see
+L</"CONFIGURATION FILES"> for more information.
+
 =item /*verilator coverage_block_off*/
 
 Specifies the entire begin/end block should be ignored for coverage
 analysis purposes.
+
+Same as C<coverage_block_off> in configuration files, see
+L</"CONFIGURATION FILES"> for more information.
 
 =item /*verilator coverage_off*/
 
@@ -3054,6 +3182,9 @@ small loss of trace visibility and modularity.  Note signals under inlined
 submodules will be named I<submodule>__DOT__I<subsignal> as C++ does not
 allow "." in signal names.  When tracing such signals the tracing routines
 will replace the __DOT__ with the period.
+
+Same as C<inline> in configuration files, see L</"CONFIGURATION FILES">
+for more information.
 
 =item /*verilator isolate_assignments*/
 
@@ -3091,6 +3222,9 @@ It would then internally break it into (sort of):
       end
     end
 
+Same as C<isolate_assignments> in configuration files, see
+L</"CONFIGURATION FILES"> for more information.
+
 =item /*verilator lint_off I<msg>*/
 
 Disable the specified warning message for any warnings following the comment.
@@ -3126,6 +3260,9 @@ modules that use this module.  This is useful especially at the top level
 module to reduce the size of the interface class, to aid compile time at a
 small performance loss.
 
+Same as C<no_inline> in configuration files, see L</"CONFIGURATION
+FILES"> for more information.
+
 =item /*verilator no_inline_task*/
 
 Used in a function or task variable definition section to specify the
@@ -3133,6 +3270,9 @@ function or task should not be inlined into where it is used.  This may
 reduce the size of the final executable when a task is used a very large
 number of times.  For this flag to work, the task and tasks below it must
 be pure; they cannot reference any variables outside the task itself.
+
+Same as C<no_inline> in configuration files, see L</"CONFIGURATION
+FILES"> for more information.
 
 =item /*verilator public*/ (parameter)
 
@@ -3161,6 +3301,9 @@ Instead of using public variables, consider instead making a DPI or public
 function that accesses the variable.  This is nicer as it provides an
 obvious entry point that is also compatible across simulators.
 
+Same as C<public> in configuration files, see L</"CONFIGURATION FILES">
+for more information.
+
 =item /*verilator public*/ (task/function)
 
 Used inside the declaration section of a function or task declaration to
@@ -3183,6 +3326,9 @@ the model will NOT notice changes made to variables in these functions.
 You may want to use DPI exports instead, as it's compatible with other
 simulators.
 
+Same as C<public> in configuration files, see L</"CONFIGURATION FILES">
+for more information.
+
 =item /*verilator public_flat*/ (variable)
 
 Used after an input, output, register, or wire declaration to indicate the
@@ -3191,10 +3337,16 @@ signal.  This will not declare this module public, which means the name of
 the signal or path to it may change based upon the module inlining which
 takes place.
 
+Same as C<public_flat> in configuration files, see L</"CONFIGURATION
+FILES"> for more information.
+
 =item /*verilator public_flat_rd*/ (variable)
 
 Used after an input, output, register, or wire declaration to indicate the
 signal should be declared public_flat (see above), but read-only.
+
+Same as C<public_flat_rd> in configuration files, see L</"CONFIGURATION
+FILES"> for more information.
 
 =item /*verilator public_flat_rw @(<edge_list>) */ (variable)
 
@@ -3204,6 +3356,9 @@ where writes should be considered to have the timing specified by the given
 sensitivity edge list.  Set for all variables, ports and wires using the
 --public-flat-rw switch.
 
+Same as C<public_flat_rw> in configuration files, see L</"CONFIGURATION
+FILES"> for more information.
+
 =item /*verilator public_module*/
 
 Used after a module statement to indicate the module should not be inlined
@@ -3212,9 +3367,12 @@ Verilator automatically sets this attribute when the module contains any
 public signals or `systemc_ directives.  Also set for all modules when
 using the --public switch.
 
+Same as C<public> in configuration files, see L</"CONFIGURATION FILES">
+for more information.
+
 =item /*verilator sc_clock*/
 
-Rarely needed.  Used after an input declaration to indicate the signal
+Deprecated.  Used after an input declaration to indicate the signal
 should be declared in SystemC as a sc_clock instead of a bool.  This was
 needed in SystemC 1.1 and 1.2 only; versions 2.0 and later do not require
 clock pins to be sc_clocks and this is no longer needed.
@@ -3226,7 +3384,10 @@ type, instead of bool, vluint32_t or vluint64_t.  This may be useful if
 the port width is parameterized and different of such modules interface
 a templated module (such as a transactor) or for other reasons.  In general
 you should avoid using this attribute when not necessary as with increasing
-usage of sc_bv the performance increases significantly.
+usage of sc_bv the performance decreases significantly.
+
+Same as C<sc_bv> in configuration files, see L</"CONFIGURATION FILES">
+for more information.
 
 =item /*verilator sformat*/
 
@@ -3234,6 +3395,9 @@ Attached to the final input of a function or task "input string" to
 indicate the function or task should pass all remaining arguments through
 $sformatf.  This allows creation of DPI functions with $display like
 behavior.  See the test_regress/t/t_dpi_display.v file for an example.
+
+Same as C<sformat> in configuration files, see L</"CONFIGURATION FILES">
+for more information.
 
 =item /*verilator tag <text...>*/
 

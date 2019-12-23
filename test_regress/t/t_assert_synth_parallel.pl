@@ -12,7 +12,7 @@ scenarios(simulator => 1);
 top_filename("t/t_assert_synth.v");
 
 compile(
-    v_flags2 => ['+define+FAILING_PARALLEL'],
+    v_flags2 => ['+define+FAILING_PARALLEL', '+define+ATTRIBUTES'],
     verilator_flags2 => ['--assert'],
     nc_flags2 => ['+assert'],
     );
