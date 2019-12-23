@@ -1558,7 +1558,7 @@ var_data_type<dtypep>:		// ==IEEE: var_data_type
 	|	yVAR implicit_typeE			{ $$ = $2; }
 	;
 
-//UNSUP type_reference<str>:		// ==IEEE: type_reference
+//UNSUP type_reference<dtypep>:  // ==IEEE: type_reference
 //UNSUP		yTYPE '(' exprOrDataType ')'		{ UNSUP }
 //UNSUP	;
 
@@ -1824,6 +1824,11 @@ implicit_typeE<dtypep>:		// IEEE: part of *data_type_or_implicit
 	|	signingE rangeList			{ $$ = GRAMMARP->addRange(new AstBasicDType($2->fileline(), LOGIC_IMPLICIT, $1),$2,true); }
 	|	signing					{ $$ = new AstBasicDType($<fl>1, LOGIC_IMPLICIT, $1); }
 	;
+
+//UNSUPassertion_variable_declaration:  // IEEE: assertion_variable_declaration
+//UNSUP	//			// IEEE: var_data_type expanded
+//UNSUP		var_data_type list_of_variable_decl_assignments ';'	{ }
+//UNSUP	;
 
 type_declaration<nodep>:	// ==IEEE: type_declaration
 	//			// Use idAny, as we can redeclare a typedef on an existing typedef
@@ -2201,6 +2206,11 @@ rangeList<rangep>:		// IEEE: {packed_dimension}
 		anyrange				{ $$ = $1; }
         |	rangeList anyrange			{ $$ = $1; $1->addNext($2); }
 	;
+
+//UNSUPbit_selectE<fl>:  // IEEE: constant_bit_select (IEEE included empty)
+//UNSUP		/* empty */				{ $$ = NULL; }
+//UNSUP	|	'[' constExpr ']'			{ $<fl>$=$<fl>1; $$ = "["+$2+"]"; }
+//UNSUP	;
 
 // IEEE: select
 // Merged into more general idArray
@@ -4068,13 +4078,96 @@ endLabelE<strp>:
 // Clocking
 
 clocking_declaration<nodep>:		// IEEE: clocking_declaration  (INCOMPLETE)
+	//UNSUP: vvv remove this -- vastly simplified grammar:
 		yDEFAULT yCLOCKING '@' '(' senitemEdge ')' ';' yENDCLOCKING
 			{ $$ = new AstClocking($2, $5, NULL); }
-	//UNSUP: Vastly simplified grammar
+	//UNSUP: ^^^ remove this -- vastly simplified grammar:
+	//UNSUP	clockingFront clocking_event ';'
+	//UNSUP	 clocking_itemListE yENDCLOCKING endLabelE { SYMP->popScope($$); }
 	;
+
+//UNSUPclockingFront:  // IEEE: part of class_declaration
+//UNSUP		yCLOCKING				{ PARSEP->symPushNewAnon(VAstType::CLOCKING); }
+//UNSUP	|	yCLOCKING idAny/*clocking_identifier*/	{ SYMP->pushNew($$); }
+//UNSUP	|	yDEFAULT yCLOCKING			{ PARSEP->symPushNewAnon(VAstType::CLOCKING); }
+//UNSUP	|	yDEFAULT yCLOCKING idAny/*clocking_identifier*/	{ SYMP->pushNew($$); }
+//UNSUP	|	yGLOBAL__CLOCKING yCLOCKING			{ PARSEP->symPushNewAnon(VAstType::CLOCKING); }
+//UNSUP	|	yGLOBAL__CLOCKING yCLOCKING idAny/*clocking_identifier*/	{ SYMP->pushNew($$); }
+//UNSUP	;
+
+//UNSUPclocking_event:  // ==IEEE: clocking_event
+//UNSUP		'@' id					{ }
+//UNSUP	|	'@' '(' event_expression ')'		{ }
+//UNSUP	;
+
+//UNSUPclocking_itemListE:
+//UNSUP		/* empty */				{ $$ = NULL; }
+//UNSUP	|	clocking_itemList			{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPclocking_itemList:  // IEEE: [ clocking_item ]
+//UNSUP		clocking_item				{ $$ = $1; }
+//UNSUP	|	clocking_itemList clocking_item		{ $$ = AstNode::addNextNull($1, $2); }
+//UNSUP	;
+
+//UNSUPclocking_item:  // ==IEEE: clocking_item
+//UNSUP		yDEFAULT default_skew ';'		{ }
+//UNSUP	|	clocking_direction list_of_clocking_decl_assign ';'	{ }
+//UNSUP	|	assertion_item_declaration		{ }
+//UNSUP	;
+
+//UNSUPdefault_skew:  // ==IEEE: default_skew
+//UNSUP		yINPUT clocking_skew			{ }
+//UNSUP	|	yOUTPUT clocking_skew			{ }
+//UNSUP	|	yINPUT clocking_skew yOUTPUT clocking_skew	{ }
+//UNSUP	;
+
+//UNSUPclocking_direction:  // ==IEEE: clocking_direction
+//UNSUP		yINPUT clocking_skewE			{ }
+//UNSUP	|	yOUTPUT clocking_skewE			{ }
+//UNSUP	|	yINPUT clocking_skewE yOUTPUT clocking_skewE	{ }
+//UNSUP	|	yINOUT					{ }
+//UNSUP	;
+
+//UNSUPlist_of_clocking_decl_assign:  // ==IEEE: list_of_clocking_decl_assign
+//UNSUP		clocking_decl_assign			{ $$ = $1; }
+//UNSUP	|	list_of_clocking_decl_assign ',' clocking_decl_assign	{ }
+//UNSUP	;
+
+//UNSUPclocking_decl_assign:  // ==IEEE: clocking_decl_assign
+//UNSUP		idAny/*new-signal_identifier*/		{ $$ = $1; }
+//UNSUP	|	idAny/*new-signal_identifier*/ '=' expr	{ }
+//UNSUP	;
+
+//UNSUPclocking_skewE:  // IEEE: [clocking_skew]
+//UNSUP		/* empty */				{ $$ = NULL;}
+//UNSUP	|	clocking_skew				{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPclocking_skew:  // ==IEEE: clocking_skew
+//UNSUP		yPOSEDGE				{ }
+//UNSUP	|	yPOSEDGE delay_control			{ }
+//UNSUP	|	yNEGEDGE				{ }
+//UNSUP	|	yNEGEDGE delay_control			{ }
+//UNSUP	|	yEDGE					{ NEED_S09($<fl>1,"edge"); }
+//UNSUP	|	yEDGE delay_control			{ NEED_S09($<fl>1,"edge"); }
+//UNSUP	|	delay_control				{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPcycle_delay:  // ==IEEE: cycle_delay
+//UNSUP		yP_POUNDPOUND yaINTNUM			{ }
+//UNSUP	|	yP_POUNDPOUND id			{ }
+//UNSUP	|	yP_POUNDPOUND '(' expr ')'		{ }
+//UNSUP	;
 
 //************************************************
 // Asserts
+
+//UNSUPassertion_item_declaration:  // ==IEEE: assertion_item_declaration
+//UNSUP		property_declaration			{ $$ = $1; }
+//UNSUP	|	sequence_declaration			{ $$ = $1; }
+//UNSUP	|	let_declaration				{ $$ = $1; }
+//UNSUP	;
 
 assertion_item<nodep>:		// ==IEEE: assertion_item
 		concurrent_assertion_item		{ $$ = $1; }
@@ -4134,6 +4227,10 @@ deferred_immediate_assertion_statement<nodep>:	// ==IEEE: deferred_immediate_ass
 	|	yCOVER final_zero '(' expr ')' stmt	{ $$ = new AstCover($1, $4, $6, true); }
 	;
 
+//UNSUPexpect_property_statement<nodep>:  // ==IEEE: expect_property_statement
+//UNSUP		yEXPECT '(' property_spec ')' action_block	{ }
+//UNSUP	;
+
 concurrent_assertion_item<nodep>:	// IEEE: concurrent_assertion_item
 		concurrent_assertion_statement		{ $$ = $1; }
 	|	id/*block_identifier*/ ':' concurrent_assertion_statement	{ $$ = new AstBegin($<fl>1, *$1, $3); }
@@ -4170,11 +4267,410 @@ property_spec<nodep>:			// IEEE: property_spec
 //************************************************
 // Covergroup
 
+//UNSUPcovergroup_declaration<nodep>:  // ==IEEE: covergroup_declaration
+//UNSUP		covergroup_declarationFront coverage_eventE ';' coverage_spec_or_optionListE
+//UNSUP			yENDGROUP endLabelE
+//UNSUP			{ PARSEP->endgroupCb($<fl>5,$5);
+//UNSUP			  SYMP->popScope($$); }
+//UNSUP	|	covergroup_declarationFront '(' tf_port_listE ')' coverage_eventE ';' coverage_spec_or_optionListE
+//UNSUP			yENDGROUP endLabelE
+//UNSUP			{ PARSEP->endgroupCb($<fl>8,$8);
+//UNSUP			  SYMP->popScope($$); }
+//UNSUP	;
+
+//UNSUPcovergroup_declarationFront:  // IEEE: part of covergroup_declaration
+//UNSUP		yCOVERGROUP idAny
+//UNSUP 			{ SYMP->pushNew($$);
+//UNSUP			  PARSEP->covergroupCb($<fl>1,$1,$2); }
+//UNSUP	;
+
+//UNSUPcgexpr<nodep>:  // IEEE-2012: covergroup_expression, before that just expression
+//UNSUP		expr					{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPcoverage_spec_or_optionListE<nodep>:  // IEEE: [{coverage_spec_or_option}]
+//UNSUP		/* empty */				{ $$ = NULL; }
+//UNSUP	|	coverage_spec_or_optionList		{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPcoverage_spec_or_optionList<nodep>:  // IEEE: {coverage_spec_or_option}
+//UNSUP		coverage_spec_or_option			{ $$ = $1; }
+//UNSUP	|	coverage_spec_or_optionList coverage_spec_or_option	{ $$ = AstNode::addNextNull($1, $2); }
+//UNSUP	;
+
+//UNSUPcoverage_spec_or_option<nodep>:  // ==IEEE: coverage_spec_or_option
+//UNSUP	//			// IEEE: coverage_spec
+//UNSUP		cover_point				{ $$ = $1; }
+//UNSUP	|	cover_cross				{ $$ = $1; }
+//UNSUP	|	coverage_option ';'			{ $$ = $1; }
+//UNSUP	|	error					{ $$ = NULL; }
+//UNSUP	;
+
+//UNSUPcoverage_option:  // ==IEEE: coverage_option
+//UNSUP	//			// option/type_option aren't really keywords
+//UNSUP		id/*yOPTION | yTYPE_OPTION*/ '.' idAny/*member_identifier*/ '=' expr	{ }
+//UNSUP	;
+
+//UNSUPcover_point:  // ==IEEE: cover_point
+//UNSUP		/**/               yCOVERPOINT expr iffE bins_or_empty	{ }
+//UNSUP	//			// IEEE-2012: class_scope before an ID
+//UNSUP	|	/**/           /**/ /**/    id ':' yCOVERPOINT expr iffE bins_or_empty	{ }
+//UNSUP	|	class_scope_id ':' yCOVERPOINT expr iffE bins_or_empty	{ }
+//UNSUP	|	class_scope_id id data_type id ':' yCOVERPOINT expr iffE bins_or_empty	{ }
+//UNSUP	|	class_scope_id id /**/      id ':' yCOVERPOINT expr iffE bins_or_empty	{ }
+//UNSUP	|	/**/           id /**/      id ':' yCOVERPOINT expr iffE bins_or_empty	{ }
+//UNSUP	//			// IEEE-2012:
+//UNSUP	|	bins_or_empty				{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPiffE<nodep>:  // IEEE: part of cover_point, others
+//UNSUP		/* empty */				{ $$ = NULL; }
+//UNSUP	|	yIFF '(' expr ')'			{ }
+//UNSUP	;
+
+//UNSUPbins_or_empty<nodep>:  // ==IEEE: bins_or_empty
+//UNSUP		'{' bins_or_optionsList '}'		{ $$ = $2; }
+//UNSUP	|	'{' '}'					{ $$ = NULL; }
+//UNSUP	|	';'					{ $$ = NULL; }
+//UNSUP	;
+
+//UNSUPbins_or_optionsList<nodep>:  // IEEE: { bins_or_options ';' }
+//UNSUP		bins_or_options ';'			{ $$ = $1; }
+//UNSUP	|	bins_or_optionsList bins_or_options ';'	{ $$ = AstNode::addNextNull($1, $2); }
+//UNSUP	;
+
+//UNSUPbins_or_options<nodep>:  // ==IEEE: bins_or_options
+//UNSUP	//			// Superset of IEEE - we allow []'s in more places
+//UNSUP		coverage_option				{ $$ = $1; }
+//UNSUP	//			// Can't use wildcardE as results in conflicts
+//UNSUP	|	/**/      bins_keyword id/*bin_identifier*/ bins_orBraE '=' '{' open_range_list '}' iffE	{ }
+//UNSUP	|	yWILDCARD bins_keyword id/*bin_identifier*/ bins_orBraE '=' '{' open_range_list '}' iffE	{ }
+//UNSUP	|	/**/      bins_keyword id/*bin_identifier*/ bins_orBraE '=' '{' open_range_list '}' yWITH__CUR '{' cgexpr ')' iffE	{ }
+//UNSUP	|	yWILDCARD bins_keyword id/*bin_identifier*/ bins_orBraE '=' '{' open_range_list '}' yWITH__CUR '{' cgexpr ')' iffE	{ }
+//UNSUP	//
+//UNSUP	//			// cgexpr part of trans_list
+//UNSUP	//
+//UNSUP	|	/**/      bins_keyword id/*bin_identifier*/ bins_orBraE '=' trans_list iffE	{ }
+//UNSUP	|	yWILDCARD bins_keyword id/*bin_identifier*/ bins_orBraE '=' trans_list iffE	{ }
+//UNSUP	//
+//UNSUP	|	bins_keyword id/*bin_identifier*/ bins_orBraE '=' yDEFAULT iffE	{ }
+//UNSUP	//
+//UNSUP	|	bins_keyword id/*bin_identifier*/ bins_orBraE '=' yDEFAULT ySEQUENCE iffE { }
+//UNSUP	;
+
+//UNSUPbins_orBraE<nodep>:  // IEEE: part of bins_or_options:
+//UNSUP		/* empty */				{ $$ = NULL; }
+//UNSUP	|	'[' ']'					{ }
+//UNSUP	|	'[' cgexpr ']'				{ }
+//UNSUP	;
+
+//UNSUPbins_keyword:  // ==IEEE: bins_keyword
+//UNSUP		yBINS					{ }
+//UNSUP	|	yILLEGAL_BINS				{ }
+//UNSUP	|	yIGNORE_BINS				{ }
+//UNSUP	;
+
+//UNSUPcovergroup_range_list:  // ==IEEE: covergroup_range_list
+//UNSUP	 	covergroup_value_range			{ $$ = $1; }
+//UNSUP	|	covergroup_range_list ',' covergroup_value_range	{ $$ = AstNode::addNextNull($1, $3); }
+//UNSUP	;
+
+//UNSUPtrans_list:  // ==IEEE: trans_list
+//UNSUP		'(' trans_set ')'			{ $$ = $2; }
+//UNSUP	|	trans_list ',' '(' trans_set ')'	{ }
+//UNSUP	;
+
+//UNSUPtrans_set:  // ==IEEE: trans_set
+//UNSUP		trans_range_list			{ $$ = $1; }
+//UNSUP	//			// Note the { => } in the grammer, this is really a list
+//UNSUP	|	trans_set yP_EQGT trans_range_list	{ }
+//UNSUP	;
+
+//UNSUPtrans_range_list:  // ==IEEE: trans_range_list
+//UNSUP		trans_item				{ $$ = $1; }
+//UNSUP	|	trans_item yP_BRASTAR repeat_range ']'	{ }
+//UNSUP	|	trans_item yP_BRAMINUSGT repeat_range ']' { }
+//UNSUP	|	trans_item yP_BRAEQ repeat_range ']'	{ }
+//UNSUP	;
+
+//UNSUPtrans_item:  // ==IEEE: range_list
+//UNSUP		covergroup_range_list			{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPrepeat_range:  // ==IEEE: repeat_range
+//UNSUP		cgexpr					{ $$ = $1; }
+//UNSUP	|	cgexpr ':' cgexpr			{ $$ = AstNode::addNextNull($1, $3); }
+//UNSUP	;
+
+//UNSUPcover_cross:  // ==IEEE: cover_cross
+//UNSUP	 	id/*cover_point_identifier*/ ':' yCROSS list_of_cross_items iffE cross_body	{ }
+//UNSUP	|	/**/				 yCROSS list_of_cross_items iffE cross_body	{ }
+//UNSUP	;
+
+//UNSUPlist_of_cross_items<nodep>:  // ==IEEE: list_of_cross_items
+//UNSUP		cross_item ',' cross_item		{ $$ = AstNode::addNextNull($1, $3); }
+//UNSUP	|	cross_item ',' cross_item ',' cross_itemList	{ }
+//UNSUP	;
+
+//UNSUPcross_itemList<nodep>:  // IEEE: part of list_of_cross_items
+//UNSUP		cross_item				{ $$ = NULL; }
+//UNSUP	|	cross_itemList ',' cross_item		{ $$ = AstNode::addNextNull($1, $3); }
+//UNSUP	;
+
+//UNSUPcross_item<nodep>:  // ==IEEE: cross_item
+//UNSUP		idAny/*cover_point_identifier or variable_identifier*/		{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPcross_body:  // ==IEEE: cross_body
+//UNSUP		'{' '}'					{ $$ = NULL; }
+//UNSUP	//			// IEEE-2012: No semicolon here, mistake in spec
+//UNSUP	|	'{' cross_body_itemSemiList '}'		{ $$ = $1; }
+//UNSUP	|	';'					{ $$ = NULL; }
+//UNSUP	;
+
+//UNSUPcross_body_itemSemiList:  // IEEE: part of cross_body
+//UNSUP		cross_body_item ';'			{ $$ = $1; }
+//UNSUP	|	cross_body_itemSemiList cross_body_item ';' { $$ = AstNode::addNextNull($1, $2); }
+//UNSUP	;
+
+//UNSUPcross_body_item<nodep>:  // ==IEEE: cross_body_item
+//UNSUP	//			// IEEE: our semicolon is in the list
+//UNSUP		bins_selection_or_option		{ $$ = $1; }
+//UNSUP	|	function_declaration			{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPbins_selection_or_option<nodep>:  // ==IEEE: bins_selection_or_option
+//UNSUP		coverage_option				{ $$ = $1; }
+//UNSUP	|	bins_selection				{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPbins_selection:  // ==IEEE: bins_selection
+//UNSUP		bins_keyword idAny/*new-bin_identifier*/ '=' select_expression iffE	{ }
+//UNSUP	;
+
+//UNSUPselect_expression:  // ==IEEE: select_expression
+//UNSUP	//			// IEEE: select_condition expanded here
+//UNSUP		yBINSOF '(' bins_expression ')'		{ }
+//UNSUP	|	yBINSOF '(' bins_expression ')' yINTERSECT '{' covergroup_range_list '}'	{ }
+//UNSUP	|	yWITH__PAREN '(' cgexpr ')'		{ }
+//UNSUP	//			// IEEE-2012: Need clarification as to precedence
+//UNSUP	//UNSUP	yWITH__PAREN '(' cgexpr ')' yMATCHES cgexpr	{ }
+//UNSUP	|	'!' yBINSOF '(' bins_expression ')'		{ }
+//UNSUP	|	'!' yBINSOF '(' bins_expression ')' yINTERSECT '{' covergroup_range_list '}'	{ }
+//UNSUP	|	'!' yWITH__PAREN '(' cgexpr ')'		{ }
+//UNSUP	//			// IEEE-2012: Need clarification as to precedence
+//UNSUP	//UNSUP	'!' yWITH__PAREN '(' cgexpr ')' yMATCHES cgexpr	{ }
+//UNSUP	|	select_expression yP_ANDAND select_expression	{ }
+//UNSUP	|	select_expression yP_OROR   select_expression	{ }
+//UNSUP	|	'(' select_expression ')'			{ $$ = $2; }
+//UNSUP	//			// IEEE-2012: cross_identifier
+//UNSUP	//			// Part of covergroup_expression - generic identifier
+//UNSUP	//			// IEEE-2012: Need clarification as to precedence
+//UNSUP	//UNSUP	covergroup_expression [ yMATCHES covergroup_expression ]
+//UNSUP	;
+
+//UNSUPbins_expression:  // ==IEEE: bins_expression
+//UNSUP	//			// "cover_point_identifier" and "variable_identifier" look identical
+//UNSUP		id/*variable_identifier or cover_point_identifier*/	{ $$ = $1; }
+//UNSUP	|	id/*cover_point_identifier*/ '.' idAny/*bins_identifier*/	{ }
+//UNSUP	;
+
+//UNSUPcoverage_eventE:  // IEEE: [ coverage_event ]
+//UNSUP		/* empty */				{ $$ = NULL; }
+//UNSUP	|	clocking_event				{ $$ = $1; }
+//UNSUP	|	yWITH__ETC function idAny/*"sample"*/ '(' tf_port_listE ')'	{ }
+//UNSUP	|	yP_ATAT '(' block_event_expression ')'	{ }
+//UNSUP	;
+
+//UNSUPblock_event_expression:  // ==IEEE: block_event_expression
+//UNSUP		block_event_expressionTerm		{ $$ = $1; }
+//UNSUP	|	block_event_expression yOR block_event_expressionTerm	{ }
+//UNSUP	;
+
+//UNSUPblock_event_expressionTerm:  // IEEE: part of block_event_expression
+//UNSUP		yBEGIN hierarchical_btf_identifier	{ }
+//UNSUP	|	yEND   hierarchical_btf_identifier	{ }
+//UNSUP	;
+
+//UNSUPhierarchical_btf_identifier:  // ==IEEE: hierarchical_btf_identifier
+//UNSUP	//			// hierarchical_tf_identifier + hierarchical_block_identifier
+//UNSUP		hierarchical_identifier/*tf_or_block*/	{ $$ = $1; }
+//UNSUP	//			// method_identifier
+//UNSUP	|	hierarchical_identifier class_scope_id	{ }
+//UNSUP	|	hierarchical_identifier id		{ }
+//UNSUP	;
+
 //**********************************************************************
 // Randsequence
 
+//UNSUPrandsequence_statement<nodep>:  // ==IEEE: randsequence_statement
+//UNSUP		yRANDSEQUENCE '('    ')' productionList yENDSEQUENCE	{ }
+//UNSUP	|	yRANDSEQUENCE '(' id/*production_identifier*/ ')' productionList yENDSEQUENCE	{ }
+//UNSUP	;
+
+//UNSUPproductionList<nodep>:  // IEEE: production+
+//UNSUP		production				{ $$ = $1; }
+//UNSUP	|	productionList production		{ $$ = AstNode::addNextNull($1, $2); }
+//UNSUP	;
+
+//UNSUPproduction<nodep>:  // ==IEEE: production
+//UNSUP		productionFront ':' rs_ruleList ';'	{ }
+//UNSUP	;
+
+//UNSUPproductionFront<nodep>:  // IEEE: part of production
+//UNSUP		function_data_type id/*production_identifier*/	{ }
+//UNSUP	|	/**/		   id/*production_identifier*/	{ $$ = $1; }
+//UNSUP	|	function_data_type id/*production_identifier*/ '(' tf_port_listE ')'	{ }
+//UNSUP	|	/**/		   id/*production_identifier*/ '(' tf_port_listE ')'	{ }
+//UNSUP	;
+
+//UNSUPrs_ruleList<nodep>:  // IEEE: rs_rule+ part of production
+//UNSUP		rs_rule					{ $$ = $1; }
+//UNSUP	|	rs_ruleList '|' rs_rule			{ $$ = AstNode::addNextNull($1, $3); }
+//UNSUP	;
+
+//UNSUPrs_rule<nodep>:  // ==IEEE: rs_rule
+//UNSUP		rs_production_list			{ $$ = $1; }
+//UNSUP	|	rs_production_list yP_COLONEQ weight_specification	{ }
+//UNSUP	|	rs_production_list yP_COLONEQ weight_specification rs_code_block	{ }
+//UNSUP	;
+
+//UNSUPrs_production_list<nodep>:  // ==IEEE: rs_production_list
+//UNSUP		rs_prodList				{ $$ = $1; }
+//UNSUP	|	yRAND yJOIN /**/         production_item production_itemList	{ }
+//UNSUP	|	yRAND yJOIN '(' expr ')' production_item production_itemList	{ }
+//UNSUP	;
+
+//UNSUPweight_specification<nodep>:  // ==IEEE: weight_specification
+//UNSUP		yaINTNUM				{ $$ = $1; }
+//UNSUP	|	idClassSel/*ps_identifier*/		{ $$ = $1; }
+//UNSUP	|	'(' expr ')'				{ $$ = $2; }
+//UNSUP	;
+
+//UNSUPrs_code_block<nodep>:  // ==IEEE: rs_code_block
+//UNSUP		'{' '}'					{ $$ = NULL; }
+//UNSUP	|	'{' rs_code_blockItemList '}'		{ $$ = $2; }
+//UNSUP	;
+
+//UNSUPrs_code_blockItemList<nodep>:  // IEEE: part of rs_code_block
+//UNSUP		rs_code_blockItem			{ $$ = $1; }
+//UNSUP	|	rs_code_blockItemList rs_code_blockItem		{ $$ = AstNode::addNextNull($1, $2); }
+//UNSUP	;
+
+//UNSUPrs_code_blockItem<nodep>:  // IEEE: part of rs_code_block
+//UNSUP		data_declaration			{ $$ = $1; }
+//UNSUP	|	stmt					{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPrs_prodList<nodep>:  // IEEE: rs_prod+
+//UNSUP		rs_prod					{ $$ = $1; }
+//UNSUP	|	rs_prodList rs_prod			{ $$ = AstNode::addNextNull($1, $2); }
+//UNSUP	;
+
+//UNSUPrs_prod<nodep>:  // ==IEEE: rs_prod
+//UNSUP		production_item				{ $$ = $1; }
+//UNSUP	|	rs_code_block				{ $$ = $1; }
+//UNSUP	//			// IEEE: rs_if_else
+//UNSUP	|	yIF '(' expr ')' production_item %prec prLOWER_THAN_ELSE	{ }
+//UNSUP	|	yIF '(' expr ')' production_item yELSE production_item		{ }
+//UNSUP	//			// IEEE: rs_repeat
+//UNSUP	|	yREPEAT '(' expr ')' production_item	{ }
+//UNSUP	//			// IEEE: rs_case
+//UNSUP	|	yCASE '(' expr ')' rs_case_itemList yENDCASE	{ }
+//UNSUP	;
+
+//UNSUPproduction_itemList<nodep>:  // IEEE: production_item+
+//UNSUP		production_item				{ $$ = $1; }
+//UNSUP	|	production_itemList production_item	{ $$ = AstNode::addNextNull($1, $2); }
+//UNSUP	;
+
+//UNSUPproduction_item<nodep>:  // ==IEEE: production_item
+//UNSUP		id/*production_identifier*/ 		{ $$ = $1; }
+//UNSUP	|	id/*production_identifier*/ '(' list_of_argumentsE ')'	{ }
+//UNSUP	;
+
+//UNSUPrs_case_itemList<nodep>:  // IEEE: rs_case_item+
+//UNSUP		rs_case_item				{ $$ = $1; }
+//UNSUP	|	rs_case_itemList rs_case_item		{ $$ = AstNode::addNextNull($1, $2); }
+//UNSUP	;
+
+//UNSUPrs_case_item<nodep>:  // ==IEEE: rs_case_item
+//UNSUP		caseCondList ':' production_item ';'	{ }
+//UNSUP	|	yDEFAULT production_item ';'		{ }
+//UNSUP	|	yDEFAULT ':' production_item ';'	{ }
+//UNSUP	;
+
 //**********************************************************************
 // Checker
+
+//UNSUPchecker_declaration<nodep>:  // ==IEEE: part of checker_declaration
+//UNSUP		checkerFront checker_port_listE ';'
+//UNSUP			checker_or_generate_itemListE yENDCHECKER endLabelE
+//UNSUP			{ SYMP->popScope($$); }
+//UNSUP	;
+
+//UNSUPcheckerFront<nodep>:  // IEEE: part of checker_declaration
+//UNSUP		yCHECKER idAny/*checker_identifier*/
+//UNSUP			{ SYMP->pushNew($$); }
+//UNSUP	;
+
+//UNSUPchecker_port_listE<nodep>:  // IEEE: [ ( [ checker_port_list ] ) ]
+//UNSUP	//			// checker_port_item is basically the same as property_port_item, minus yLOCAL::
+//UNSUP	//			// Want to bet 1800-2012 adds local to checkers?
+//UNSUP		property_port_listE			{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPchecker_or_generate_itemListE<nodep>:  // IEEE: [{ checker_or_generate_itemList }]
+//UNSUP		/* empty */				{ $$ = NULL; }
+//UNSUP	|	checker_or_generate_itemList		{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPchecker_or_generate_itemList<nodep>:  // IEEE: { checker_or_generate_itemList }
+//UNSUP		checker_or_generate_item		{ $$ = $1; }
+//UNSUP	|	checker_or_generate_itemList checker_or_generate_item	{ $$ = AstNode::addNextNull($1, $2); }
+//UNSUP	;
+
+//UNSUPchecker_or_generate_item<nodep>:  // ==IEEE: checker_or_generate_item
+//UNSUP		checker_or_generate_item_declaration	{ $$ = $1; }
+//UNSUP	|	initial_construct			{ $$ = $1; }
+//UNSUP	//			// IEEE: checker_construct
+//UNSUP	|	yALWAYS stmtBlock			{ }
+//UNSUP	|	final_construct				{ $$ = $1; }
+//UNSUP	|	assertion_item				{ $$ = $1; }
+//UNSUP	|	continuous_assign			{ $$ = $1; }
+//UNSUP	|	checker_generate_item			{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPchecker_or_generate_item_declaration<nodep>:  // ==IEEE: checker_or_generate_item_declaration
+//UNSUP		data_declaration			{ $$ = $1; }
+//UNSUP	|	yRAND data_declaration			{ }
+//UNSUP	|	function_declaration			{ $$ = $1; }
+//UNSUP	|	checker_declaration			{ $$ = $1; }
+//UNSUP	|	assertion_item_declaration		{ $$ = $1; }
+//UNSUP	|	covergroup_declaration			{ $$ = $1; }
+//UNSUP	//	// IEEE deprecated: overload_declaration
+//UNSUP	|	genvar_declaration			{ $$ = $1; }
+//UNSUP	|	clocking_declaration			{ $$ = $1; }
+//UNSUP	|	yDEFAULT yCLOCKING id/*clocking_identifier*/ ';'	{ }
+//UNSUP	|	yDEFAULT yDISABLE yIFF expr/*expression_or_dist*/ ';'	{ }
+//UNSUP	|	';'					{ $$ = NULL; }
+//UNSUP	;
+
+//UNSUPchecker_generate_item<nodep>:  // ==IEEE: checker_generate_item
+//UNSUP	//			// Specialized for checker so need "c_" prefixes here
+//UNSUP		c_loop_generate_construct		{ $$ = $1; }
+//UNSUP	|	c_conditional_generate_construct	{ $$ = $1; }
+//UNSUP	|	c_generate_region			{ $$ = $1; }
+//UNSUP	//
+//UNSUP	|	elaboration_system_task			{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPchecker_instantiation<nodep>:
+//UNSUP	//			// Only used for procedural_assertion_item's
+//UNSUP	//			// Version in concurrent_assertion_item looks like etcInst
+//UNSUP	//			// Thus instead of *_checker_port_connection we can use etcInst's cellpinList
+//UNSUP		id/*checker_identifier*/ id '(' cellpinList ')' ';'	{ }
+//UNSUP	;
 
 //**********************************************************************
 // Class
@@ -4387,6 +4883,87 @@ memberQualOne<nodep>:			// IEEE: property_qualifier + method_qualifier
 
 //**********************************************************************
 // Constraints
+
+//UNSUPclass_constraint<nodep>:  // ==IEEE: class_constraint
+//UNSUP	//			// IEEE: constraint_declaration
+//UNSUP		constraintStaticE yCONSTRAINT idAny constraint_block	{ }
+//UNSUP	//			// IEEE: constraint_prototype + constraint_prototype_qualifier
+//UNSUP	|	constraintStaticE yCONSTRAINT idAny ';'		{ }
+//UNSUP	|	yEXTERN constraintStaticE yCONSTRAINT idAny ';'	{ }
+//UNSUP	|	yPURE constraintStaticE yCONSTRAINT idAny ';'	{ }
+//UNSUP	;
+
+//UNSUPconstraint_block<nodep>:  // ==IEEE: constraint_block
+//UNSUP		'{' constraint_block_itemList '}'	{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPconstraint_block_itemList<nodep>:  // IEEE: { constraint_block_item }
+//UNSUP		constraint_block_item			{ $$ = $1; }
+//UNSUP	|	constraint_block_itemList constraint_block_item	{ $$ = AstNode::addNextNull($1, $2); }
+//UNSUP	;
+
+//UNSUPconstraint_block_item:  // ==IEEE: constraint_block_item
+//UNSUP		ySOLVE solve_before_list yBEFORE solve_before_list ';'	{ }
+//UNSUP	|	constraint_expression			{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPsolve_before_list:  // ==IEEE: solve_before_list
+//UNSUP		constraint_primary			{ $$ = $1; }
+//UNSUP	|	solve_before_list ',' constraint_primary	{ }
+//UNSUP	;
+
+//UNSUPconstraint_primary:  // ==IEEE: constraint_primary
+//UNSUP	//			// exprScope more general than: [ implicit_class_handle '.' | class_scope ] hierarchical_identifier select
+//UNSUP		exprScope				{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPconstraint_expressionList<nodep>:  // ==IEEE: { constraint_expression }
+//UNSUP		constraint_expression				{ $$ = $1; }
+//UNSUP	|	constraint_expressionList constraint_expression	{ $$ = AstNode::addNextNull($1, $2); }
+//UNSUP	;
+
+//UNSUPconstraint_expression<nodep>:  // ==IEEE: constraint_expression
+//UNSUP		expr/*expression_or_dist*/ ';'		{ $$ = $1; }
+//UNSUP	//			// 1800-2012:
+//UNSUP	|	ySOFT expr/*expression_or_dist*/ ';'	{ }
+//UNSUP	//			// 1800-2012:
+//UNSUP	//			// IEEE: uniqueness_constraint ';'
+//UNSUP	|	yUNIQUE '{' open_range_list '}'		{ }
+//UNSUP	//			// IEEE: expr yP_MINUSGT constraint_set
+//UNSUP	//			// Conflicts with expr:"expr yP_MINUSGT expr"; rule moved there
+//UNSUP	//
+//UNSUP	|	yIF '(' expr ')' constraint_set	%prec prLOWER_THAN_ELSE	{ }
+//UNSUP	|	yIF '(' expr ')' constraint_set	yELSE constraint_set	{ }
+//UNSUP	//			// IEEE says array_identifier here, but dotted accepted in VMM + 1800-2009
+//UNSUP	|	yFOREACH '(' idClassForeach/*array_id[loop_variables]*/ ')' constraint_set	{ }
+//UNSUP	//			// soft is 1800-2012
+//UNSUP	|	yDISABLE ySOFT expr/*constraint_primary*/ ';'	{ }
+//UNSUP	;
+
+//UNSUPconstraint_set<nodep>:  // ==IEEE: constraint_set
+//UNSUP		constraint_expression			{ $$ = $1; }
+//UNSUP	|	'{' constraint_expressionList '}'	{ $$ = $2; }
+//UNSUP	;
+
+//UNSUPdist_list<nodep>:  // ==IEEE: dist_list
+//UNSUP		dist_item				{ $$ = $1; }
+//UNSUP	|	dist_list ',' dist_item			{ $$ = AstNode::addNextNull($1, $3); }
+//UNSUP	;
+
+//UNSUPdist_item:  // ==IEEE: dist_item + dist_weight
+//UNSUP		value_range				{ $$ = $1; }
+//UNSUP	|	value_range yP_COLONEQ  expr		{ }
+//UNSUP	|	value_range yP_COLONDIV expr		{ }
+//UNSUP	;
+
+//UNSUPextern_constraint_declaration:  // ==IEEE: extern_constraint_declaration
+//UNSUP		constraintStaticE yCONSTRAINT class_scope_id constraint_block	{ }
+//UNSUP	;
+
+//UNSUPconstraintStaticE<bool>:  // IEEE: part of extern_constraint_declaration
+//UNSUP		/* empty */				{ $$ = false; }
+//UNSUP	|	ySTATIC__CONSTRAINT			{ $$ = true; }
+//UNSUP	;
 
 //**********************************************************************
 // VLT Files
