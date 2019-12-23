@@ -28,6 +28,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix disable iff in assertions. Closes #1404. [Peter Monsson]
 
+****  Fix huge case statement performance. Closes #1644. [Julien Margetts]
+
 
 * Verilator 4.024 2019-12-08
 
