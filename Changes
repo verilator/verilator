@@ -6,6 +6,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support bounded queues.
 
+***   Support implication operator "|->" in assertions, #2069. [Peter Monsson]
+
 ***   Support string compare, ato*, etc methods, #1606. [Yutetsu TAKATSUKASA]
 
 ****  Support immediate cover statements.
