@@ -406,6 +406,8 @@ class AstSenTree;
 %token<fl>		yINTEGER	"integer"
 %token<fl>		yINTERFACE	"interface"
 %token<fl>		yJOIN		"join"
+%token<fl>		yJOIN_ANY	"join_any"
+%token<fl>		yJOIN_NONE	"join_none"
 %token<fl>		yLOCALPARAM	"localparam"
 %token<fl>		yLOCAL__COLONCOLON "local-then-::"
 %token<fl>		yLOCAL__ETC	"local"
@@ -2464,8 +2466,24 @@ seq_block<nodep>:		// ==IEEE: seq_block
 	;
 
 par_block<nodep>:		// ==IEEE: par_block
-		par_blockFront blockDeclStmtList yJOIN endLabelE { $$=$1; $1->addStmtsp($2); SYMP->popScope($1); GRAMMARP->endLabel($<fl>4,$1,$4); }
-	|	par_blockFront /**/		 yJOIN endLabelE { $$=$1; SYMP->popScope($1); GRAMMARP->endLabel($<fl>3,$1,$3); }
+		par_blockFront blockDeclStmtList yJOIN endLabelE
+			{ $$ = $1; $1->addStmtsp($2);
+			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
+	|	par_blockFront /**/		 yJOIN endLabelE
+			{ $$ = $1;
+			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>3, $1, $3); }
+	|	par_blockFront blockDeclStmtList yJOIN_ANY endLabelE
+			{ $$ = $1; $1->addStmtsp($2);
+			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
+	|	par_blockFront /**/		 yJOIN_ANY endLabelE
+			{ $$ = $1;
+			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>3, $1, $3); }
+	|	par_blockFront blockDeclStmtList yJOIN_NONE endLabelE
+			{ $$ = $1; $1->addStmtsp($2);
+			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
+	|	par_blockFront /**/		 yJOIN_NONE endLabelE
+			{ $$ = $1;
+			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>3, $1, $3); }
 	;
 
 seq_blockFront<beginp>:		// IEEE: part of seq_block
@@ -2475,7 +2493,9 @@ seq_blockFront<beginp>:		// IEEE: part of seq_block
 
 par_blockFront<beginp>:		// IEEE: part of par_block
 		yFORK					{ $$ = new AstBegin($1, "", NULL);  SYMP->pushNew($$);
-							  BBUNSUP($1, "Unsupported: fork statements"); }
+							  BBUNSUP($1, "Unsupported: fork statements");
+							  // When support, record or BBUNSUP yJOIN_ANY/yJOIN_NONE
+							  }
 	|	yFORK ':' idAny/*new-block_identifier*/	{ $$ = new AstBegin($<fl>3, *$3, NULL); SYMP->pushNew($$);
 							  BBUNSUP($1, "Unsupported: fork statements"); }
 	;

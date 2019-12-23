@@ -442,6 +442,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "inside"              { FL; return yINSIDE; }
   "int"                 { FL; return yINT; }
   "interface"           { FL; return yINTERFACE; }
+  "join_any"            { FL; return yJOIN_ANY; }
+  "join_none"           { FL; return yJOIN_NONE; }
   "local"               { FL; return yLOCAL__LEX; }
   "logic"               { FL; return yLOGIC; }
   "longint"             { FL; return yLONGINT; }
@@ -495,8 +497,6 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "ignore_bins"         { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "illegal_bins"        { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "intersect"           { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "join_any"            { ERROR_RSVD_WORD("SystemVerilog 2005"); }
-  "join_none"           { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "matches"             { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "randomize"           { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "randsequence"        { ERROR_RSVD_WORD("SystemVerilog 2005"); }
