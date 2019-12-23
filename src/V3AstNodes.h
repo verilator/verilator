@@ -245,6 +245,22 @@ public:
     AstRange* rangep() const { return VN_CAST(op2p(), Range); }  // op2 = Range of pin
 };
 
+class AstClass : public AstNode {
+    // MEMBERS
+    string m_name;  // Name
+public:
+    AstClass(FileLine* fl, const string& name)
+        : AstNode(fl)
+        , m_name(name) {}
+    ASTNODE_NODE_FUNCS(Class)
+    virtual string name() const { return m_name; }  // * = Var name
+    virtual void name(const string& name) { m_name = name; }
+    virtual string verilogKwd() const { return "class"; }
+    virtual bool maybePointedTo() const { return true; }
+    AstNode* membersp() const { return op1p(); }  // op1 = List of statements
+    void addMembersp(AstNode* nodep) { addNOp1p(nodep); }
+};
+
 //######################################################################
 //==== Data Types
 
@@ -685,6 +701,45 @@ public:
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
 };
 
+class AstClassRefDType : public AstNodeDType {
+    // Reference to a class
+private:
+    AstClass* m_classp;  // data type pointed to, BELOW the AstTypedef
+    AstPackage* m_packagep;  // Package hierarchy
+public:
+    AstClassRefDType(FileLine* fl, AstClass* classp)
+        : AstNodeDType(fl), m_classp(classp), m_packagep(NULL) {
+        dtypep(this);
+    }
+    ASTNODE_NODE_FUNCS(ClassRefDType)
+    // METHODS
+    virtual const char* broken() const {
+        BROKEN_RTN(m_classp && !m_classp->brokeExists()); return NULL; }
+    virtual void cloneRelink() {
+        if (m_classp && m_classp->clonep()) m_classp = m_classp->clonep();
+    }
+    virtual bool same(const AstNode* samep) const {
+        const AstClassRefDType* asamep = static_cast<const AstClassRefDType*>(samep);
+        return (m_classp == asamep->m_classp
+                && m_packagep == asamep->m_packagep); }
+    virtual bool similarDType(AstNodeDType* samep) const { return this == samep; }
+    virtual V3Hash sameHash() const { return V3Hash(V3Hash(m_classp), V3Hash(m_packagep)); }
+    virtual string name() const { return classp() ? classp()->name() : "<unlinked>"; }
+    virtual AstBasicDType* basicp() const { return NULL; }
+    virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
+    virtual int widthAlignBytes() const { return 0; }
+    virtual int widthTotalBytes() const { return 0; }
+    virtual AstNodeDType* virtRefDTypep() const { return NULL; }
+    virtual void virtRefDTypep(AstNodeDType* nodep) {}
+    virtual AstNodeDType* subDTypep() const { return NULL; }
+    AstPackage* packagep() const { return m_packagep; }
+    void packagep(AstPackage* nodep) { m_packagep = nodep; }
+    AstClass* classp() const { return m_classp; }
+    void classp(AstClass* nodep) { m_classp = nodep; }
+};
+
 class AstIfaceRefDType : public AstNodeDType {
     // Reference to an interface, either for a port, or inside parent cell
 private:
@@ -844,6 +899,7 @@ public:
 
 class AstStructDType : public AstNodeUOrStructDType {
 public:
+    // AstNumeric below is mispurposed to indicate if packed or not
     AstStructDType(FileLine* fl, AstNumeric numericUnpack)
         : AstNodeUOrStructDType(fl, numericUnpack) {}
     ASTNODE_NODE_FUNCS(StructDType)
@@ -853,6 +909,7 @@ public:
 class AstUnionDType : public AstNodeUOrStructDType {
 public:
     //UNSUP: bool isTagged;
+    // AstNumeric below is mispurposed to indicate if packed or not
     AstUnionDType(FileLine* fl, AstNumeric numericUnpack)
         : AstNodeUOrStructDType(fl, numericUnpack) {}
     ASTNODE_NODE_FUNCS(UnionDType)
@@ -1280,37 +1337,6 @@ public:
     VNumRange& declRange() { return m_declRange; }
     const VNumRange& declRange() const { return m_declRange; }
     void declRange(const VNumRange& flag) { m_declRange = flag; }
-};
-
-class AstMemberSel : public AstNodeMath {
-    // Parents: math|stmt
-    // Children: varref|arraysel, math
-private:
-    // Don't need the class we are extracting from, as the "fromp()"'s datatype can get us to it
-    string m_name;
-public:
-    AstMemberSel(FileLine* fl, AstNode* fromp, VFlagChildDType, const string& name)
-        : AstNodeMath(fl), m_name(name) {
-        setOp1p(fromp);
-        dtypep(NULL);  // V3Width will resolve
-    }
-    AstMemberSel(FileLine* fl, AstNode* fromp, AstMemberDType* dtp)
-        : AstNodeMath(fl) {
-        setOp1p(fromp);
-        dtypep(dtp);
-        m_name = dtp->name();
-    }
-    ASTNODE_NODE_FUNCS(MemberSel)
-    virtual string name() const { return m_name; }
-    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
-        V3ERROR_NA; /* How can from be a const? */ }
-    virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
-    virtual string emitC() { V3ERROR_NA; return ""; }
-    virtual bool cleanOut() const { return false; }
-    virtual bool same(const AstNode* samep) const { return true; }  // dtype comparison does it all for us
-    virtual int instrCount() const { return widthInstrs(); }
-    AstNode* fromp() const { return op1p(); }  // op1 = Extracting what (NULL=TBD during parsing)
-    void fromp(AstNode* nodep) { setOp1p(nodep); }
 };
 
 class AstMethodCall : public AstNode {
@@ -2010,6 +2036,47 @@ public:
     AstIface(FileLine* fl, const string& name)
         : AstNodeModule(fl, name) { }
     ASTNODE_NODE_FUNCS(Iface)
+};
+
+class AstMemberSel : public AstNodeMath {
+    // Parents: math|stmt
+    // Children: varref|arraysel, math
+private:
+    // Don't need the class we are extracting from, as the "fromp()"'s datatype can get us to it
+    string m_name;
+    AstVar* m_varp;  // Post link, variable within class that is target of selection
+public:
+    AstMemberSel(FileLine* fl, AstNode* fromp, VFlagChildDType, const string& name)
+        : AstNodeMath(fl)
+        , m_name(name)
+        , m_varp(NULL) {
+        setOp1p(fromp);
+        dtypep(NULL);  // V3Width will resolve
+    }
+    AstMemberSel(FileLine* fl, AstNode* fromp, AstNodeDType* dtp)
+        : AstNodeMath(fl)
+        , m_name(dtp->name())
+        , m_varp(NULL) {
+        setOp1p(fromp);
+        dtypep(dtp);
+    }
+    ASTNODE_NODE_FUNCS(MemberSel)
+    virtual void cloneRelink() { if (m_varp && m_varp->clonep()) { m_varp = m_varp->clonep(); } }
+    virtual const char* broken() const {
+        BROKEN_RTN(m_varp && !m_varp->brokeExists()); return NULL; }
+    virtual string name() const { return m_name; }
+    virtual V3Hash sameHash() const { return V3Hash(m_name); }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
+        V3ERROR_NA; /* How can from be a const? */ }
+    virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual bool cleanOut() const { return false; }
+    virtual bool same(const AstNode* samep) const { return true; }  // dtype comparison does it
+    virtual int instrCount() const { return widthInstrs(); }
+    AstNode* fromp() const { return op1p(); }  // op1 = Extracting what (NULL=TBD during parsing)
+    void fromp(AstNode* nodep) { setOp1p(nodep); }
+    AstVar* varp() const { return m_varp; }
+    void varp(AstVar* nodep) { m_varp = nodep; }
 };
 
 class AstModportFTaskRef : public AstNode {
@@ -3824,6 +3891,25 @@ public:
         if (!valuep) valuep = defaultp();
         return valuep;
     }
+};
+
+class AstNew : public AstNodeMath {
+    // Parents: math|stmt
+    // Children: varref|arraysel, math
+public:
+    AstNew(FileLine* fl)
+        : AstNodeMath(fl) {
+        dtypep(NULL);  // V3Width will resolve
+    }
+    ASTNODE_NODE_FUNCS(New)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
+        V3ERROR_NA; /* How can from be a const? */ }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual string emitVerilog() { return "new"; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual bool cleanOut() const { return true; }
+    virtual bool same(const AstNode* samep) const { return true; }
+    virtual int instrCount() const { return widthInstrs(); }
 };
 
 class AstPragma : public AstNode {

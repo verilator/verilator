@@ -345,6 +345,7 @@ class AstSenTree;
 %token<fl>		yCASEX		"casex"
 %token<fl>		yCASEZ		"casez"
 %token<fl>		yCHANDLE	"chandle"
+%token<fl>		yCLASS		"class"
 %token<fl>		yCLOCKING	"clocking"
 %token<fl>		yCMOS		"cmos"
 %token<fl>		yCONST__ETC	"const"
@@ -362,6 +363,7 @@ class AstSenTree;
 %token<fl>		yELSE		"else"
 %token<fl>		yEND		"end"
 %token<fl>		yENDCASE	"endcase"
+%token<fl>		yENDCLASS	"endclass"
 %token<fl>		yENDCLOCKING	"endclocking"
 %token<fl>		yENDFUNCTION	"endfunction"
 %token<fl>		yENDGENERATE	"endgenerate"
@@ -377,6 +379,7 @@ class AstSenTree;
 %token<fl>		yENUM		"enum"
 %token<fl>		yEVENT		"event"
 %token<fl>		yEXPORT		"export"
+%token<fl>		yEXTENDS	"extends"
 %token<fl>		yEXTERN		"extern"
 %token<fl>		yFINAL		"final"
 %token<fl>		yFOR		"for"
@@ -393,6 +396,7 @@ class AstSenTree;
 %token<fl>		yGLOBAL__LEX	"global-in-lex"
 %token<fl>		yIF		"if"
 %token<fl>		yIFF		"iff"
+%token<fl>		yIMPLEMENTS	"implements"
 %token<fl>		yIMPORT		"import"
 %token<fl>		yINITIAL	"initial"
 %token<fl>		yINOUT		"inout"
@@ -403,12 +407,18 @@ class AstSenTree;
 %token<fl>		yINTERFACE	"interface"
 %token<fl>		yJOIN		"join"
 %token<fl>		yLOCALPARAM	"localparam"
+%token<fl>		yLOCAL__COLONCOLON "local-then-::"
+%token<fl>		yLOCAL__ETC	"local"
+%token<fl>		yLOCAL__LEX	"local-in-lex"
 %token<fl>		yLOGIC		"logic"
 %token<fl>		yLONGINT	"longint"
 %token<fl>		yMODPORT	"modport"
 %token<fl>		yMODULE		"module"
 %token<fl>		yNAND		"nand"
 %token<fl>		yNEGEDGE	"negedge"
+%token<fl>		yNEW__ETC	"new"
+%token<fl>		yNEW__LEX	"new-in-lex"
+%token<fl>		yNEW__PAREN	"new-then-paren"
 %token<fl>		yNMOS		"nmos"
 %token<fl>		yNOR		"nor"
 %token<fl>		yNOT		"not"
@@ -426,6 +436,7 @@ class AstSenTree;
 %token<fl>		yPRIORITY	"priority"
 %token<fl>		yPROGRAM	"program"
 %token<fl>		yPROPERTY	"property"
+%token<fl>		yPROTECTED	"protected"
 %token<fl>		yPULLDOWN	"pulldown"
 %token<fl>		yPULLUP		"pullup"
 %token<fl>		yPURE		"pure"
@@ -455,10 +466,12 @@ class AstSenTree;
 %token<fl>		ySTATIC__ETC	"static"
 %token<fl>		ySTRING		"string"
 %token<fl>		ySTRUCT		"struct"
+%token<fl>		ySUPER		"super"
 %token<fl>		ySUPPLY0	"supply0"
 %token<fl>		ySUPPLY1	"supply1"
 %token<fl>		yTABLE		"table"
 %token<fl>		yTASK		"task"
+%token<fl>		yTHIS		"this"
 %token<fl>		yTIME		"time"
 %token<fl>		yTIMEPRECISION	"timeprecision"
 %token<fl>		yTIMEUNIT	"timeunit"
@@ -480,6 +493,11 @@ class AstSenTree;
 %token<fl>		yUNSIGNED	"unsigned"
 %token<fl>		yVAR		"var"
 %token<fl>		yVECTORED	"vectored"
+%token<fl>		yVIRTUAL__CLASS	"virtual-then-class"
+%token<fl>		yVIRTUAL__ETC	"virtual"
+%token<fl>		yVIRTUAL__INTERFACE	"virtual-then-interface"
+%token<fl>		yVIRTUAL__LEX	"virtual-in-lex"
+%token<fl>		yVIRTUAL__anyID	"virtual-then-identifier"
 %token<fl>		yVOID		"void"
 %token<fl>		yWAIT		"wait"
 %token<fl>		yWAND 		"wand"
@@ -800,7 +818,7 @@ package_or_generate_item_declaration<nodep>:	// ==IEEE: package_or_generate_item
 	//UNSUP	checker_declaration			{ $$ = $1; }
 	|	dpi_import_export			{ $$ = $1; }
 	//UNSUP	extern_constraint_declaration		{ $$ = $1; }
-	//UNSUP	class_declaration			{ $$ = $1; }
+	|	class_declaration			{ $$ = $1; }
 	//			// class_constructor_declaration is part of function_declaration
 	|	local_parameter_declaration ';'		{ $$ = $1; }
 	|	parameter_declaration ';'		{ $$ = $1; }
@@ -915,6 +933,11 @@ parameter_value_assignmentE<pinp>:	// IEEE: [ parameter_value_assignment ]
 	//			// Not needed in Verilator:
 	//			// Side effect of combining *_instantiations
 	//			// '#' delay_value	{ UNSUP }
+	;
+
+parameter_value_assignmentClass<pinp>:	// IEEE: [ parameter_value_assignment ] (for classes)
+	//			// Like parameter_value_assignment, but for classes only, which always have #()
+		'#' '(' cellparamList ')'		{ $$ = $3; }
 	;
 
 parameter_port_listE<nodep>:	// IEEE: parameter_port_list + empty == parameter_value_assignment
@@ -1133,7 +1156,7 @@ anonymous_program_itemList<nodep>:	// IEEE: { anonymous_program_item }
 anonymous_program_item<nodep>:	// ==IEEE: anonymous_program_item
 		task_declaration			{ $$ = $1; }
 	|	function_declaration			{ $$ = $1; }
-	//UNSUP	class_declaration			{ $$ = $1; }
+	|	class_declaration			{ $$ = $1; }
 	//UNSUP	covergroup_declaration			{ $$ = $1; }
 	//			// class_constructor_declaration is part of function_declaration
 	|	';'					{ $$ = NULL; }
@@ -1478,13 +1501,20 @@ simple_type<dtypep>:		// ==IEEE: simple_type
 data_type<dtypep>:		// ==IEEE: data_type
 	//			// This expansion also replicated elsewhere, IE data_type__AndID
 		data_typeNoRef				{ $$ = $1; }
+	//
+	//			// REFERENCES
+	//
 	//			// IEEE: [ class_scope | package_scope ] type_identifier { packed_dimension }
-	|	ps_type  packed_dimensionListE		{ $$ = GRAMMARP->createArray($1,$2,true); }
-	//UNSUP	class_scope_type packed_dimensionListE	{ UNSUP }
 	//			// IEEE: class_type
-	//UNSUP	class_typeWithoutId			{ $$ = $1; }
 	//			// IEEE: ps_covergroup_identifier
-	//			// we put covergroups under ps_type, so can ignore this
+	//			// Don't distinguish between types and classes so all these combined
+	|	package_scopeIdFollowsE idRefDType packed_dimensionListE
+			{ $2->packagep($1);
+			  $$ = GRAMMARP->createArray($2, $3, true); }
+	|	package_scopeIdFollowsE idRefDType parameter_value_assignmentClass packed_dimensionListE
+			{ $2->packagep($1);
+			  BBUNSUP($3->fileline(), "Unsupported: Parameter classes");
+			  $$ = GRAMMARP->createArray($2, $4, true); }
 	;
 
 data_typeBasic<dtypep>:		// IEEE: part of data_type
@@ -1502,8 +1532,13 @@ data_typeNoRef<dtypep>:		// ==IEEE: data_type, excluding class_type etc referenc
 	|	ySTRING					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::STRING); }
 	|	yCHANDLE				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::CHANDLE); }
 	|	yEVENT					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::BIT); BBUNSUP($1, "Unsupported: event data types"); }
-	//UNSUP	yVIRTUAL__INTERFACE yINTERFACE id/*interface*/	{ UNSUP }
-	//UNSUP	yVIRTUAL__anyID                id/*interface*/	{ UNSUP }
+	//			// Rules overlap virtual_interface_declaration
+	//			// Parameters here are SV2009
+	//			// IEEE has ['.' modport] but that will conflict with port
+	//			// declarations which decode '.' modport themselves, so
+	//			// instead see data_typeVar
+	|	yVIRTUAL__INTERFACE yINTERFACE id/*interface*/	{ $$ = NULL; BBUNSUP($1, "Unsupported: virtual interface"); }
+	|	yVIRTUAL__anyID                id/*interface*/	{ $$ = NULL; BBUNSUP($1, "Unsupported: virtual data type"); }
 	//UNSUP	type_reference				{ UNSUP }
 	//			// IEEE: class_scope: see data_type above
 	//			// IEEE: class_type: see data_type above
@@ -1520,6 +1555,10 @@ var_data_type<dtypep>:		// ==IEEE: var_data_type
 	|	yVAR data_type				{ $$ = $2; }
 	|	yVAR implicit_typeE			{ $$ = $2; }
 	;
+
+//UNSUP type_reference<str>:		// ==IEEE: type_reference
+//UNSUP		yTYPE '(' exprOrDataType ')'		{ UNSUP }
+//UNSUP	;
 
 struct_unionDecl<uorstructp>:	// IEEE: part of data_type
 	//			// packedSigningE is NOP for unpacked
@@ -1568,7 +1607,7 @@ member_decl_assignment<memberp>:	// Derived from IEEE: variable_decl_assignment
 	//
 	//			// IEEE: "[ covergroup_variable_identifier ] '=' class_new
 	//			// Pushed into variable_declExpr:class_new
-	//UNSUP	'=' class_new				{ UNSUP }
+	|	'=' class_new				{ NULL; BBUNSUP($1, "Unsupported: member declaration assignment with new()"); }
 	;
 
 list_of_variable_decl_assignments<nodep>:	// ==IEEE: list_of_variable_decl_assignments
@@ -1591,7 +1630,7 @@ variable_decl_assignment<varp>:	// ==IEEE: variable_decl_assignment
 	//
 	//			// IEEE: "[ covergroup_variable_identifier ] '=' class_new
 	//			// Pushed into variable_declExpr:class_new
-	//UNSUP	'=' class_new				{ UNSUP }
+	|	'=' class_new				{ NULL; BBUNSUP($1, "Unsupported: declaration assignment with new()"); }
 	;
 
 list_of_tf_variable_identifiers<nodep>: // ==IEEE: list_of_tf_variable_identifiers
@@ -1609,8 +1648,8 @@ tf_variable_identifier<varp>:		// IEEE: part of list_of_tf_variable_identifiers
 
 variable_declExpr<nodep>:		// IEEE: part of variable_decl_assignment - rhs of expr
 		expr					{ $$ = $1; }
-	//UNSUP	dynamic_array_new			{ $$ = $1; }
-	//UNSUP	class_new				{ $$ = $1; }
+	|	dynamic_array_new			{ $$ = $1; }
+	|	class_new				{ $$ = $1; }
 	;
 
 variable_dimensionListE<rangep>:	// IEEE: variable_dimension + empty
@@ -1721,9 +1760,23 @@ data_declaration<nodep>:	// ==IEEE: data_declaration
 	//			// Therefore the virtual_interface_declaration term isn't used
 	;
 
+class_property<nodep>:		// ==IEEE: class_property, which is {property_qualifier} data_declaration
+		memberQualResetListE data_declarationVarClass		{ $$ = $2; }
+	|	memberQualResetListE type_declaration			{ $$ = $2; }
+	|	memberQualResetListE package_import_declaration		{ $$ = $2; }
+	//			// IEEE: virtual_interface_declaration
+	//			// "yVIRTUAL yID yID" looks just like a data_declaration
+	//			// Therefore the virtual_interface_declaration term isn't used
+	;
+
 data_declarationVar<nodep>:	// IEEE: part of data_declaration
 	//			// The first declaration has complications between assuming what's the type vs ID declaring
 		data_declarationVarFront list_of_variable_decl_assignments ';'	{ $$ = $2; }
+	;
+
+data_declarationVarClass<nodep>: // IEEE: part of data_declaration (for class_property)
+	//			// The first declaration has complications between assuming what's the type vs ID declaring
+		data_declarationVarFrontClass list_of_variable_decl_assignments ';'	{ $$ = $2; }
 	;
 
 data_declarationVarFront:	// IEEE: part of data_declaration
@@ -1748,6 +1801,21 @@ data_declarationVarFront:	// IEEE: part of data_declaration
 	//			// = class_new is in variable_decl_assignment
 	;
 
+data_declarationVarFrontClass:	// IEEE: part of data_declaration (for class_property)
+	//			// VARRESET called before this rule
+	//			// yCONST is removed, added to memberQual rules
+	//			// implicit_type expanded into /*empty*/ or "signingE rangeList"
+		yVAR lifetimeE data_type	{ VARRESET_NONLIST(VAR); VARDTYPE($3); }
+	|	yVAR lifetimeE			{ VARRESET_NONLIST(VAR); }
+	|	yVAR lifetimeE signingE rangeList { /*VARRESET-in-ddVar*/ VARDTYPE(GRAMMARP->addRange(new AstBasicDType($<fl>1, LOGIC_IMPLICIT, $3), $4,true)); }
+	//
+	//			// Expanded: "constE lifetimeE data_type"
+	|	data_type			{ VARRESET_NONLIST(VAR); VARDTYPE($1); }
+	//			// lifetime is removed, added to memberQual rules to avoid conflict
+	//			// yCONST is removed, added to memberQual rules to avoid conflict
+	//			// = class_new is in variable_decl_assignment
+	;
+
 implicit_typeE<dtypep>:		// IEEE: part of *data_type_or_implicit
 	//			// Also expanded in data_declaration
 		/* empty */				{ $$ = NULL; }
@@ -1767,8 +1835,8 @@ type_declaration<nodep>:	// ==IEEE: type_declaration
 	|	yTYPEDEF yENUM idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>3, *$3); SYMP->reinsert($$); PARSEP->tagNodep($$); }
 	|	yTYPEDEF ySTRUCT idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>3, *$3); SYMP->reinsert($$); PARSEP->tagNodep($$); }
 	|	yTYPEDEF yUNION idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>3, *$3); SYMP->reinsert($$); PARSEP->tagNodep($$); }
-	//UNSUP	yTYPEDEF yCLASS idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>3, *$3); SYMP->reinsert($$); PARSEP->tagNodep($$); }
-	//UNSUP	yTYPEDEF yINTERFACE yCLASS idAny ';'	{ ... }
+	|	yTYPEDEF yCLASS idAny ';'		{ $$ = NULL; $$ = new AstTypedefFwd($<fl>3, *$3); SYMP->reinsert($$); PARSEP->tagNodep($$); }
+	|	yTYPEDEF yINTERFACE yCLASS idAny ';'	{ $$ = NULL; $$ = new AstTypedefFwd($<fl>4, *$4); SYMP->reinsert($$); PARSEP->tagNodep($$); }
 	;
 
 dtypeAttrListE<nodep>:
@@ -1891,8 +1959,8 @@ bind_directive<nodep>:		// ==IEEE: bind_directive + bind_target_scope
 	//			// ';' - Note IEEE grammar is wrong, includes extra ';' - it's already in module_instantiation
 	//			// We merged the rules - id may be a bind_target_instance or module_identifier or interface_identifier
 		yBIND bind_target_instance bind_instantiation	{ $$ = new AstBind($<fl>2, *$2, $3); }
-	|	yBIND bind_target_instance ':' bind_target_instance_list bind_instantiation	{
-	    		$$=NULL; BBUNSUP($1, "Unsupported: Bind with instance list"); }
+	|	yBIND bind_target_instance ':' bind_target_instance_list bind_instantiation
+			{ $$ = NULL; BBUNSUP($1, "Unsupported: Bind with instance list"); }
 	;
 
 bind_target_instance_list:	// ==IEEE: bind_target_instance_list
@@ -2451,8 +2519,8 @@ statement_item<nodep>:		// IEEE: statement_item
 	//		 	// IEEE: blocking_assignment
 	//			// 1800-2009 restricts LHS of assignment to new to not have a range
 	//			// This is ignored to avoid conflicts
-	//UNSUP	fexprLvalue '=' class_new ';'		{ UNSUP }
-	//UNSUP	fexprLvalue '=' dynamic_array_new ';'	{ UNSUP }
+	|	fexprLvalue '=' class_new ';'		{ $$ = new AstAssign($2, $1, $3); }
+	|	fexprLvalue '=' dynamic_array_new ';'	{ $$ = new AstAssign($2, $1, $3); }
 	//
 	//			// IEEE: nonblocking_assignment
 	|	fexprLvalue yP_LTE delayE expr ';'	{ $$ = new AstAssignDly($2,$1,$4); }
@@ -2522,9 +2590,9 @@ statement_item<nodep>:		// IEEE: statement_item
 	//			// Because we've joined class_constructor_declaration into generic functions
 	//			// Way over-permissive;
 	//			// IEEE: [ ySUPER '.' yNEW [ '(' list_of_arguments ')' ] ';' ]
-	//UNSUP	fexpr '.' class_new ';'		{ }
+	|	fexpr '.' class_new ';'			{ $$ = NULL; BBUNSUP($1, "Unsupported: dotted new"); }
 	//
-	|	statementVerilatorPragmas			{ $$ = $1; }
+	|	statementVerilatorPragmas		{ $$ = $1; }
 	//
 	//			// IEEE: disable_statement
 	|	yDISABLE idAny/*hierarchical_identifier-task_or_block*/ ';'	{ $$ = new AstDisable($1,*$2); }
@@ -2624,6 +2692,19 @@ finc_or_dec_expression<nodep>:	// ==IEEE: inc_or_dec_expression
 	|	fexprLvalue yP_MINUSMINUS		{ $$ = new AstAssign($2,$1,new AstSub    ($2,$1->cloneTree(true),new AstConst($2, AstConst::StringToParse(), "'b1"))); }
 	|	yP_PLUSPLUS   fexprLvalue		{ $$ = new AstAssign($1,$2,new AstAdd    ($1,$2->cloneTree(true),new AstConst($1, AstConst::StringToParse(), "'b1"))); }
 	|	yP_MINUSMINUS fexprLvalue		{ $$ = new AstAssign($1,$2,new AstSub    ($1,$2->cloneTree(true),new AstConst($1, AstConst::StringToParse(), "'b1"))); }
+	;
+
+class_new<nodep>:		// ==IEEE: class_new
+	//			// Special precence so (...) doesn't match expr
+		yNEW__ETC				{ $$ = new AstNew($1); }
+	|	yNEW__ETC expr				{ $$ = new AstNew($1); BBUNSUP($1, "Unsupported: new with expression"); }
+	//			// Grammer abiguity; we assume "new (x)" the () are a argument, not expr
+	|	yNEW__PAREN '(' list_of_argumentsE ')'	{ $$ = new AstNew($1); BBUNSUP($1, "Unsupported: new with arguments"); }
+	;
+
+dynamic_array_new<nodep>:	// ==IEEE: dynamic_array_new
+		yNEW__ETC '[' expr ']'			{ $$ = new AstNew($1); BBUNSUP($1, "Unsupported: Dynamic array new"); }
+	|	yNEW__ETC '[' expr ']' '(' expr ')'	{ $$ = new AstNew($1); BBUNSUP($1, "Unsupported: Dynamic array new"); }
 	;
 
 //************************************************
@@ -2831,17 +2912,27 @@ funcRef<nodep>:			// IEEE: part of tf_call
 task_subroutine_callNoMethod<nodep>:	// function_subroutine_callNoMethod (as task)
 	//			// IEEE: tf_call
 		taskRef					{ $$ = $1; }
+	//UNSUP	funcRef yWITH__PAREN '(' expr ')'	{ /*UNSUP*/ }
 	|	system_t_call				{ $$ = $1; }
 	//			// IEEE: method_call requires a "." so is in expr
-	//UNSUP	randomize_call 				{ $$ = $1; }
+	//			// IEEE: ['std::'] not needed, as normal std package resolution will find it
+	//			// IEEE: randomize_call
+	//			// We implement randomize as a normal funcRef, since randomize isn't a keyword
+	//			// Note yNULL is already part of expressions, so they come for free
+	//UNSUP	funcRef yWITH__CUR constraint_block	{ }
 	;
 
 function_subroutine_callNoMethod<nodep>:	// IEEE: function_subroutine_call (as function)
 	//			// IEEE: tf_call
 		funcRef					{ $$ = $1; }
+	//UNSUP	funcRef yWITH__PAREN '(' expr ')'	{ /*UNSUP*/ }
 	|	system_f_call				{ $$ = $1; }
 	//			// IEEE: method_call requires a "." so is in expr
-	//UNSUP	randomize_call 				{ $$ = $1; }
+	//			// IEEE: ['std::'] not needed, as normal std package resolution will find it
+	//			// IEEE: randomize_call
+	//			// We implement randomize as a normal funcRef, since randomize isn't a keyword
+	//			// Note yNULL is already part of expressions, so they come for free
+	//UNSUP	funcRef yWITH__CUR constraint_block	{ }
 	;
 
 system_t_call<nodep>:		// IEEE: system_tf_call (as task)
@@ -3039,11 +3130,20 @@ function_declaration<ftaskp>:	// IEEE: function_declaration + function_body_decl
 			{ $$ = $3; $3->attrIsolateAssign($4); $$->addStmtsp($5);
 			  SYMP->popScope($$);
 			  GRAMMARP->endLabel($<fl>7,$$,$7); }
+	| 	yFUNCTION lifetimeE funcIdNew funcIsolateE tfGuts yENDFUNCTION endLabelE
+			{ $$ = $3; $3->attrIsolateAssign($4); $$->addStmtsp($5);
+			  SYMP->popScope($$);
+			  GRAMMARP->endLabel($<fl>7,$$,$7); }
 	;
 
 function_prototype<ftaskp>:	// IEEE: function_prototype
 		yFUNCTION funcId '(' tf_port_listE ')'	{ $$=$2; $$->addStmtsp($4); $$->prototype(true); SYMP->popScope($$); }
 	|	yFUNCTION funcId			{ $$=$2; $$->prototype(true); SYMP->popScope($$); }
+	;
+
+class_constructor_prototype<ftaskp>:	// ==IEEE: class_constructor_prototype
+		yFUNCTION funcIdNew '(' tf_port_listE ')' ';'	{ $$ = $2; $$->addStmtsp($4); $$->prototype(true); SYMP->popScope($$); }
+	|	yFUNCTION funcIdNew ';'				{ $$ = $2; $$->prototype(true); SYMP->popScope($$); }
 	;
 
 funcIsolateE<cint>:
@@ -3097,11 +3197,27 @@ funcId<ftaskp>:			// IEEE: function_data_type_or_implicit + part of function_bod
 			  SYMP->pushNewUnder($$, NULL); }
 	;
 
+funcIdNew<ftaskp>:		// IEEE: from class_constructor_declaration
+		yNEW__ETC
+			{ $$ = new AstFunc($<fl>1, "new", NULL, NULL);
+			  BBUNSUP($<fl>1, "Unsupported: new constructor");
+			  SYMP->pushNewUnder($$, NULL); }
+	| 	yNEW__PAREN
+			{ $$ = new AstFunc($<fl>1, "new", NULL, NULL);
+			  BBUNSUP($<fl>1, "Unsupported: new constructor");
+			  SYMP->pushNewUnder($$, NULL); }
+	|	class_scopeWithoutId yNEW__PAREN
+			{ $$ = new AstFunc($<fl>2, "new", NULL, NULL);
+			  BBUNSUP($<fl>2, "Unsupported: scoped new constructor");
+			  SYMP->pushNewUnder($$, NULL); }
+	;
+
 tfIdScoped<strp>:		// IEEE: part of function_body_declaration/task_body_declaration
  	//			// IEEE: [ interface_identifier '.' | class_scope ] function_identifier
 		id					{ $<fl>$=$<fl>1; $<strp>$ = $1; }
-	//UNSUP	id/*interface_identifier*/ '.' id	{ UNSUP }
-	//UNSUP	class_scope_id				{ UNSUP }
+	|	id/*interface_identifier*/ '.' id	{ $<fl>$=$<fl>3; $<strp>$ = $3; BBUNSUP($2, "Unsupported: Out of block function declaration"); }
+	|	class_scopeIdFollows id			{ $<fl>$=$<fl>2; $<scp>$=$<scp>1; $<strp>$=$<strp>2;
+							  BBUNSUP($<fl>1, "Unsupported: Out of class block function declaration"); }
 	;
 
 tfGuts<nodep>:
@@ -3368,8 +3484,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// Indistinguishable from function_subroutine_call:method_call
 	//
 	|	'$'					{ $$ = new AstUnbounded($<fl>1); }
-	|	yNULL					{ $$ = new AstConst($1, AstConst::LogicFalse());
-							  BBUNSUP($<fl>1, "Unsupported: null expression"); }
+	|	yNULL					{ $$ = new AstConst($1, AstConst::LogicFalse()); }
 	//			// IEEE: yTHIS
 	//			// See exprScope
 	//
@@ -3442,15 +3557,17 @@ exprScope<nodep>:		// scope and variable for use to inside an expression
 	//			// IEEE: [ implicit_class_handle . | class_scope | package_scope ] hierarchical_identifier select
 	//			// Or method_call_body without parenthesis
 	//			// See also varRefClassBit, which is the non-expr version of most of this
-	//UNSUP	yTHIS					{ UNSUP }
-		idArrayed				{ $$ = $1; }
+		yTHIS					{ $$ = new AstConst($1, AstConst::LogicFalse());
+							  BBUNSUP($1, "Unsupported: this"); }
+	|	idArrayed				{ $$ = $1; }
 	|	package_scopeIdFollows idArrayed	{ $$ = AstDot::newIfPkg($2->fileline(), $1, $2); }
-	//UNSUP	class_scopeIdFollows idArrayed		{ UNSUP }
+	|	class_scopeIdFollows idArrayed		{ $$ = $2; BBUNSUP($<fl>1, "Unsupported: scoped class reference"); }
 	|	~l~expr '.' idArrayed			{ $$ = new AstDot($<fl>2,$1,$3); }
 	//			// expr below must be a "yTHIS"
-	//UNSUP	~l~expr '.' ySUPER			{ UNSUP }
+	|	~l~expr '.' ySUPER			{ $$ = $1; BBUNSUP($3, "Unsupported: super"); }
 	//			// Part of implicit_class_handle
-	//UNSUP	ySUPER					{ UNSUP }
+	|	ySUPER					{ $$ = new AstConst($1, AstConst::LogicFalse());
+							  BBUNSUP($1, "Unsupported: super"); }
 	;
 
 fexprScope<nodep>:		// exprScope, For use as first part of statement (disambiguates <=)
@@ -3823,6 +3940,11 @@ idAny<strp>:			// Any kind of identifier
 	|	yaID__ETC				{ $$ = $1; $<fl>$=$<fl>1; }
 	;
 
+idRefDType<refdtypep>:		// IEEE: class_identifier or other type identifier
+				// Used where reference is needed
+		yaID__aTYPE				{ $$ = new AstRefDType($<fl>1, *$1); }
+	;
+
 idSVKwd<strp>:			// Warn about non-forward compatible Verilog 2001 code
 	//			// yBIT, yBYTE won't work here as causes conflicts
 		yDO					{ static string s = "do"   ; $$ = &s; ERRSVKWD($1,*$$); $<fl>$=$<fl>1; }
@@ -3850,12 +3972,12 @@ variable_lvalueConcList<nodep>:	// IEEE: part of variable_lvalue: '{' variable_l
 idClassSel<nodep>:			// Misc Ref to dotted, and/or arrayed, and/or bit-ranged variable
 		idDotted				{ $$ = $1; }
 	//			// IEEE: [ implicit_class_handle . | package_scope ] hierarchical_variable_identifier select
-	//UNSUP	yTHIS '.' idDotted			{ UNSUP }
-	//UNSUP	ySUPER '.' idDotted			{ UNSUP }
-	//UNSUP	yTHIS '.' ySUPER '.' idDotted		{ UNSUP }
+	|	yTHIS '.' idDotted			{ $$ = $3; BBUNSUP($1, "Unsupported: this"); }
+	|	ySUPER '.' idDotted			{ $$ = $3; BBUNSUP($1, "Unsupported: super"); }
+	|	yTHIS '.' ySUPER '.' idDotted		{ $$ = $5; BBUNSUP($1, "Unsupported: this.super"); }
 	//			// Expanded: package_scope idDotted
-	//UNSUP	class_scopeIdFollows idDotted		{ UNSUP }
-	//UNSUP	package_scopeIdFollows idDotted		{ UNSUP }
+	|	class_scopeIdFollows idDotted		{ $$ = $2; BBUNSUP($2, "Unsupported: package scoped id"); }
+	|	package_scopeIdFollows idDotted		{ $$ = $2; BBUNSUP($2, "Unsupported: class scoped id"); }
 	;
 
 idDotted<nodep>:
@@ -3919,7 +4041,7 @@ strAsText<nodep>:
 endLabelE<strp>:
 		/* empty */				{ $$ = NULL; $<fl>$=NULL; }
 	|	':' idAny				{ $$ = $2; $<fl>$=$<fl>2; }
-	//UNSUP	':' yNEW__ETC				{ $$ = $2; $<fl>$=$<fl>2; }
+	|	':' yNEW__ETC				{ static string n = "new"; $$ = &n; $<fl>$=$<fl>2; }
 	;
 
 //************************************************
@@ -4037,6 +4159,65 @@ property_spec<nodep>:			// IEEE: property_spec
 //**********************************************************************
 // Class
 
+class_declaration<nodep>:	// ==IEEE: part of class_declaration
+	//			// IEEE-2012: using this also for interface_class_declaration
+	//			// The classExtendsE rule relys on classFront having the
+	//			// new class scope correct via classFront
+		classFront parameter_port_listE classExtendsE classImplementsE ';'
+			class_itemListE yENDCLASS endLabelE
+			{ $$ = $1; $1->addMembersp($2);
+			  $1->addMembersp($4); $1->addMembersp($6);
+			  SYMP->popScope($$);
+			  GRAMMARP->endLabel($<fl>7, $1, $8); }
+	;
+
+classFront<classp>:		// IEEE: part of class_declaration
+		classVirtualE yCLASS lifetimeE idAny/*class_identifier*/
+			{ $$ = new AstClass($2, *$4);
+			  SYMP->pushNew($<classp>$);
+			  BBUNSUP($2, "Unsupported: classes");  }
+	//			// IEEE: part of interface_class_declaration
+	|	yINTERFACE yCLASS lifetimeE idAny/*class_identifier*/
+			{ $$ = new AstClass($2, *$4);
+			  SYMP->pushNew($<classp>$);
+			  BBUNSUP($2, "Unsupported: interface classes");  }
+	;
+
+classVirtualE:
+		/* empty */				{ }
+	|	yVIRTUAL__CLASS				{ BBUNSUP($1, "Unsupported: virtual classes"); }
+	;
+
+classExtendsE<nodep>:		// IEEE: part of class_declaration
+	//			// The classExtendsE rule relys on classFront having the
+	//			// new class scope correct via classFront
+		/* empty */				{ $$ = NULL; }
+	|	yEXTENDS classExtendsList		{ $$ = $2; }
+	;
+
+classExtendsList<nodep>:	// IEEE: part of class_declaration
+		classExtendsOne				{ $$ = $1; }
+	|	classExtendsList ',' classExtendsOne	{ $$ = AstNode::addNextNull($1, $3); }
+	;
+
+classExtendsOne<nodep>:		// IEEE: part of class_declaration
+		class_typeWithoutId			{ $$ = NULL; BBUNSUP($1, "Unsupported: extends"); }
+	//			// IEEE: Might not be legal to have more than one set of parameters in an extends
+	|	class_typeWithoutId '(' list_of_argumentsE ')'	{ $$ = NULL; BBUNSUP($1, "Unsupported: extends"); }
+	;
+
+classImplementsE<nodep>:	// IEEE: part of class_declaration
+	//			// All 1800-2012
+		/* empty */				{ $$ = NULL; }
+	|	yIMPLEMENTS classImplementsList		{ $$ = $2; }
+	;
+
+classImplementsList<nodep>:	// IEEE: part of class_declaration
+	//			// All 1800-2012
+		class_typeWithoutId				{ $$ = NULL; BBUNSUP($1, "Unsupported: implements class"); }
+	|	classImplementsList ',' class_typeWithoutId	{ $$ = AstNode::addNextNull($1, $3); }
+	;
+
 //=========
 // Package scoping - to traverse the symbol table properly, the final identifer
 // must be included in the rules below.
@@ -4049,12 +4230,47 @@ ps_id_etc:		// package_scope + general id
 ps_type<dtypep>:		// IEEE: ps_parameter_identifier | ps_type_identifier
 				// Even though we looked up the type and have a AstNode* to it,
 				// we can't fully resolve it because it may have been just a forward definition.
-		package_scopeIdFollowsE yaID__aTYPE	{ $$ = new AstRefDType($<fl>2, *$2); VN_CAST($$, RefDType)->packagep($1); }
+		package_scopeIdFollowsE idRefDType	{ $$ = $2; $2->packagep($1); }
 	//			// Simplify typing - from ps_covergroup_identifier
-	//UNSUP	package_scopeIdFollowsE yaID__aCOVERGROUP	{ $<fl>$=$<fl>1; $$=$1+$2; }
 	;
 
 //=== Below rules assume special scoping per above
+
+class_typeWithoutId<nodep>:	// as with class_typeWithoutId but allow yaID__aTYPE
+	//			// and we thus don't need to resolve it in specified package
+		package_scopeIdFollowsE class_typeOneList	{ $$ = $2; $2->packagep($1); }
+	;
+
+class_scopeWithoutId<nodep>:	// class_type standalone without following id
+	//			// and we thus don't need to resolve it in specified package
+		class_scopeIdFollows			{ $$ = $1; }
+	;
+
+class_scopeIdFollows<nodep>:	// IEEE: class_scope + type
+	//			// IEEE: "class_type yP_COLONCOLON"
+	//			// IMPORTANT: The lexer will parse the following ID to be in the found package
+	//			// But class_type:'::' conflicts with class_scope:'::' so expand here
+		package_scopeIdFollowsE class_typeOneListColonIdFollows
+			{ $$ = NULL; BBUNSUP(CRELINE(), "Unsupported: scoped class reference"); }
+	;
+
+class_typeOneListColonIdFollows: // IEEE: class_type :: but allow yaID__aTYPE
+		class_typeOneList yP_COLONCOLON 	{ BBUNSUP($2, "Unsupported: Hierarchical class references"); }
+	;
+
+class_typeOneList<refdtypep>:	// IEEE: class_type: "id [ parameter_value_assignment ]" but allow yaID__aTYPE
+	//			// If you follow the rules down, class_type is really a list via ps_class_identifier
+	//			// Must propagate scp up for next id
+		class_typeOne					{ $$ = $1; }
+	|	class_typeOneListColonIdFollows class_typeOne	{ $$ = $2; /*UNSUP*/ }
+	;
+
+class_typeOne<refdtypep>:	// IEEE: class_type: "id [ parameter_value_assignment ]" but allow yaID__aTYPE
+	//			// If you follow the rules down, class_type is really a list via ps_class_identifier
+	//			// Not listed in IEEE, but see bug627 any parameter type maybe a class
+		idRefDType parameter_value_assignmentE
+			{ $$ = $1; if ($2) BBUNSUP($2->fileline(), "Unsupported: Parameterized classes"); }
+	;
 
 package_scopeIdFollowsE<packagep>:	// IEEE: [package_scope]
 	//			// IMPORTANT: The lexer will parse the following ID to be in the found package
@@ -4072,6 +4288,81 @@ package_scopeIdFollows<packagep>:	// IEEE: package_scope
 	/*cont*/	yP_COLONCOLON	{ $$ = VN_CAST($<scp>1, Package); }
 	//UNSUP	yLOCAL__COLONCOLON { PARSEP->symTableNextId($<scp>1); }
 	//UNSUP	/*cont*/	yP_COLONCOLON	{ UNSUP }
+	;
+
+//^^^=========
+
+class_itemListE<nodep>:
+		/* empty */				{ $$ = NULL; }
+	|	class_itemList				{ $$ = $1; }
+	;
+
+class_itemList<nodep>:
+		class_item				{ $$ = $1; }
+	|	class_itemList class_item  		{ $$ = AstNode::addNextNull($1, $2); }
+	;
+
+class_item<nodep>:			// ==IEEE: class_item
+		class_property				{ $$ = $1; }
+	|	class_method				{ $$ = $1; }
+	//UNSUP	class_constraint			{ $$ = $1; }
+	//
+	|	class_declaration			{ $$ = NULL; BBUNSUP($1, "Unsupported: class within class"); }
+	|	timeunits_declaration			{ $$ = $1; }
+	//UNSUP	covergroup_declaration			{ $$ = $1; }
+	|	local_parameter_declaration ';'		{ $$ = $1; BBUNSUP($2, "Unsupported: class parameters"); }  // 1800-2009
+	|	parameter_declaration ';'		{ $$ = $1; BBUNSUP($2, "Unsupported: class parameters"); }  // 1800-2009
+	|	';'					{ $$ = NULL; }
+	//
+	|	error ';'				{ $$ = NULL; }
+	;
+
+class_method<nodep>:		// ==IEEE: class_method
+		memberQualResetListE task_declaration		{ $$ = $2; }
+	|	memberQualResetListE function_declaration	{ $$ = $2; }
+	|	yPURE yVIRTUAL__ETC memberQualResetListE method_prototype ';'
+			{ $$ = NULL; BBUNSUP($1, "Unsupported: pure virtual class method"); }
+	|	yEXTERN memberQualResetListE method_prototype ';'
+			{ $$ = NULL; BBUNSUP($1, "Unsupported: extern class method prototype"); }
+	//			// IEEE: "method_qualifierE class_constructor_declaration"
+	//			// part of function_declaration
+	|	yEXTERN memberQualResetListE class_constructor_prototype
+			{ $$ = NULL; BBUNSUP($1, "Unsupported: extern class"); }
+	;
+
+// IEEE: class_constructor_prototype
+// See function_declaration
+
+class_item_qualifier<nodep>:	// IEEE: class_item_qualifier minus ySTATIC
+	//			// IMPORTANT: yPROTECTED | yLOCAL is in a lex rule
+		yPROTECTED				{ $$ = NULL; }  // Ignoring protected until implemented
+	|	yLOCAL__ETC				{ $$ = NULL; BBUNSUP($1, "Unsupported: 'local' class item"); }
+	|	ySTATIC__ETC				{ $$ = NULL; BBUNSUP($1, "Unsupported: 'static' class item"); }
+	;
+
+memberQualResetListE<nodep>:	// Called from class_property for all qualifiers before yVAR
+	//			// Also before method declarations, to prevent grammar conflict
+	//			// Thus both types of qualifiers (method/property) are here
+		/*empty*/				{ $$ = NULL; }
+	|	memberQualList				{ $$ = $1; }
+	;
+
+memberQualList<nodep>:
+		memberQualOne				{ $$ = $1; }
+	|	memberQualList memberQualOne		{ $$ = AstNode::addNextNull($1, $2); }
+	;
+
+memberQualOne<nodep>:			// IEEE: property_qualifier + method_qualifier
+	//			// Part of method_qualifier and property_qualifier
+		class_item_qualifier			{ $$ = $1; }
+	//			// Part of method_qualifier only
+	|	yVIRTUAL__ETC				{ $$ = NULL; BBUNSUP($1, "Unsupported: virtual class member qualifier"); }
+	//			// Part of property_qualifier only
+	|	random_qualifier			{ $$ = NULL; }
+	//			// Part of lifetime, but here as ySTATIC can be in different positions
+	|	yAUTOMATIC		 		{ $$ = NULL; BBUNSUP($1, "Unsupported: automatic class member qualifier"); }
+	//			// Part of data_declaration, but not in data_declarationVarFrontClass
+	|	yCONST__ETC				{ $$ = NULL; BBUNSUP($1, "Unsupported: const class member qualifier"); }
 	;
 
 //**********************************************************************
