@@ -2,7 +2,7 @@
 name: Bug report
 about: Something isn't working as expected, and it isn't "Unsupported." (Note our contributor agreement at https://github.com/verilator/verilator/.github/blob/master/CONTRIBUTING.adoc)
 title: ''
-labels: 'new', 'type: bug'
+labels: new
 assignees: ''
 
 ---
