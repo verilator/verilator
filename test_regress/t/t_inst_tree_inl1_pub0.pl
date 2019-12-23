@@ -10,10 +10,17 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 top_filename("t/t_inst_tree.v");
+my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
 
 compile(
-    v_flags2 => ['+define+USE_INLINE', '+define+NOUSE_PUBLIC'],
+    v_flags2 => ["$Self->{t_dir}/t_inst_tree_inl1_pub0.vlt"],
     );
+
+if ($Self->{vlt_all}) {
+    file_grep("$out_filename", qr/\<var fl="e69" name="t.u.u0.u0.z1" dtype_id="3" vartype="logic" origName="z1"\/\>/i);
+    file_grep("$out_filename", qr/\<var fl="e69" name="t.u.u0.u1.z1" dtype_id="3" vartype="logic" origName="z1"\/\>/i);
+    file_grep("$out_filename", qr/\<var fl="e69" name="t.u.u1.u0.z0" dtype_id="3" vartype="logic" origName="z0"\/\>/i);
+}
 
 execute(
     check_finished => 1,

@@ -9,8 +9,17 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
+my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
+
 compile(
+    verilator_flags2 => ["+define+ATTRIBUTES"],
     );
+
+if ($Self->{vlt_all}) {
+    file_grep("$out_filename", qr/\<var fl="d74" name="clk0" dtype_id="1" dir="input" vartype="logic" origName="clk0" clocker="true" public="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var fl="d75" name="clk1" dtype_id="1" dir="input" vartype="logic" origName="clk1" clocker="true" public="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var fl="d76" name="clk2" dtype_id="1" dir="input" vartype="logic" origName="clk2" clocker="true" public="true"\/\>/i);
+}
 
 execute(
     check_finished => 1,
