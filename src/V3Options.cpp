@@ -44,6 +44,10 @@
 
 #include "config_rev.h"
 
+#if defined(_WIN32) || defined(__MINGW32__)
+# include <io.h>  // open, close
+#endif
+
 //######################################################################
 // V3 Internal state
 
@@ -1364,11 +1368,12 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     string optdir = (rel ? V3Os::filenameDir(filename) : ".");
 
     // Convert to argv style arg list and parse them
-    char* argv [args.size()+1];
-    for (unsigned i=0; i<args.size(); ++i) {
-        argv[i] = const_cast<char*>(args[i].c_str());
+    std::vector<char*> argv; argv.reserve(args.size()+1);
+    for (const string &arg : args) {
+        argv.push_back(const_cast<char*>(arg.c_str()));
     }
-    parseOptsList(fl, optdir, args.size(), argv);
+    argv.push_back(nullptr); // argv is NULL-terminated
+    parseOptsList(fl, optdir, static_cast<int>(argv.size()-1), argv.data());
 }
 
 //======================================================================

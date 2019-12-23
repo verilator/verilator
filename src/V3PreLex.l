@@ -27,6 +27,9 @@
 
 #include "V3PreProc.h"
 #include "V3PreLex.h"
+#ifdef _WIN32
+# include <io.h> // for isatty
+#endif
 
 V3PreLex* V3PreLex::s_currentLexp = NULL;       // Current lexing point
 
