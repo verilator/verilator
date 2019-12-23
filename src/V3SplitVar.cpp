@@ -89,7 +89,7 @@ class SplitVarVisitor : public AstNVisitor {
     virtual void visit(AstArraySel* nodep) VL_OVERRIDE;
 
 public:
-    SplitVarVisitor(AstNodeModule* modp);
+    explicit SplitVarVisitor(AstNodeModule* modp);
     explicit SplitVarVisitor(AstNode* nodep);
     ~SplitVarVisitor();
     void split();  // must call before dtor
@@ -175,7 +175,7 @@ void SplitVarVisitor::visit(AstArraySel* nodep) {
         nodep->bitp()->v3warn(SPLITVAR,
                               "Variable \"" << vrefp->name() << "\" will not be splitted "
                               "because index cannot be determined statically.");
-        if (m_refs.find(varp) != m_refs.end()) m_refs.erase(varp);
+        m_refs.erase(varp);
     }
 }
 
