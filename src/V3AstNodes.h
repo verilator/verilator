@@ -6707,10 +6707,11 @@ public:
 class AstCMath : public AstNodeMath {
 private:
     bool m_cleanOut;
+    bool m_pure;  // Pure optimizable
 public:
     // Emit C textual math function (like AstUCFunc)
     AstCMath(FileLine* fl, AstNode* exprsp)
-        : AstNodeMath(fl), m_cleanOut(true) {
+        : AstNodeMath(fl), m_cleanOut(true), m_pure(false) {
         addOp1p(exprsp);
         dtypeFrom(exprsp);
     }
@@ -6720,8 +6721,8 @@ public:
         if (setwidth) { dtypeSetLogicSized(setwidth, AstNumeric::UNSIGNED); }
     }
     ASTNODE_NODE_FUNCS(CMath)
-    virtual bool isGateOptimizable() const { return false; }
-    virtual bool isPredictOptimizable() const { return false; }
+    virtual bool isGateOptimizable() const { return m_pure; }
+    virtual bool isPredictOptimizable() const { return m_pure; }
     virtual bool cleanOut() const { return m_cleanOut; }
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
     virtual string emitC() { V3ERROR_NA; return ""; }
@@ -6729,8 +6730,9 @@ public:
     virtual bool same(const AstNode* samep) const { return true; }
     void addBodysp(AstNode* nodep) { addNOp1p(nodep); }
     AstNode* bodysp() const { return op1p(); }  // op1 = expressions to print
+    bool pure() const { return m_pure; }
+    void pure(bool flag) { m_pure = flag; }
 };
-
 
 class AstCReset : public AstNodeStmt {
     // Reset variable at startup

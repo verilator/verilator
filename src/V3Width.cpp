@@ -2239,6 +2239,18 @@ private:
         }
     }
 
+    virtual void visit(AstNew* nodep) {
+        if (nodep->didWidthAndSet()) return;
+        userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
+        AstClassRefDType* refp = VN_CAST(m_vup->dtypeNullp(), ClassRefDType);
+        if (!refp) {  // e.g. int a = new;
+            if (refp) UINFO(1, "Got refp "<<refp<<endl);
+            nodep->v3error("new() not expected in this context");
+            return;
+        }
+        nodep->dtypep(refp);
+    }
+
     virtual void visit(AstPattern* nodep) {
         if (nodep->didWidthAndSet()) return;
         UINFO(9,"PATTERN "<<nodep<<endl);

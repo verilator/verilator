@@ -714,6 +714,11 @@ public:
             iterateAndNextNull(nodep->expr2p()); puts(")");
         }
     }
+    virtual void visit(AstNew* nodep) {
+        puts("std::make_shared<" + nodep->dtypep()->nameProtect() + ">(");
+        iterateChildren(nodep);
+        puts(")");
+    }
     virtual void visit(AstSel* nodep) {
         // Note ASSIGN checks for this on a LHS
         emitOpName(nodep, nodep->emitC(), nodep->fromp(), nodep->lsbp(), nodep->thsp());
@@ -2736,21 +2741,19 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
         ofp()->putsPrivate(false);  // public:
         puts("void "+protect("__Vserialize")+"(VerilatedSerialize& os);\n");
         puts("void "+protect("__Vdeserialize")+"(VerilatedDeserialize& os);\n");
-        puts("\n");
     }
 
     puts("} VL_ATTR_ALIGNED(128);\n");
-    puts("\n");
 
     // Save/restore
     if (v3Global.opt.savable() && modp->isTop()) {
-        puts("inline VerilatedSerialize&   operator<<(VerilatedSerialize& os,   "
+        puts("\n");
+        puts("inline VerilatedSerialize& operator<<(VerilatedSerialize& os, "
              +modClassName(modp)+"& rhs) {\n"
              "Verilated::quiesce(); rhs."+protect("__Vserialize")+"(os); return os; }\n");
         puts("inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, "
              +modClassName(modp)+"& rhs) {\n"
              "Verilated::quiesce(); rhs."+protect("__Vdeserialize")+"(os); return os; }\n");
-        puts("\n");
     }
 
     // finish up h-file
