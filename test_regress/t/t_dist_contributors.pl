@@ -71,7 +71,7 @@ sub read_user {
 
 sub read_authors {
     # Check recent commits in case did commit
-    my $git_auths = `git log '--pretty=format:%aN <%aE>' | head -20`;
+    my $git_auths = `git log '--pretty=format:%aN <%aE>' | head -5`;
     foreach my $line (split /\n/, $git_auths) {
         $line =~ s/ *<[^>]*>//;
         $Authors{$line} = 1;
