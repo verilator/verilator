@@ -4254,20 +4254,19 @@ elseStmtBlock<nodep>:	// Part of concurrent_assertion_statement
 
 property_spec<nodep>:			// IEEE: property_spec
 	//UNSUP: This rule has been super-specialized to what is supported now
-		'@' '(' senitemEdge ')' yDISABLE yIFF '(' expr ')' property_expr
+		'@' '(' senitemEdge ')' yDISABLE yIFF '(' expr ')' pexpr
 			{ $$ = new AstPropClocked($1, $3, $8, $10); }
-	|	'@' '(' senitemEdge ')' property_expr	 	{ $$ = new AstPropClocked($1, $3, NULL, $5); }
-	|	yDISABLE yIFF '(' expr ')' property_expr 	{ $$ = new AstPropClocked($4->fileline(), NULL, $4, $6); }
-	|	property_expr	 				{ $$ = new AstPropClocked($1->fileline(), NULL, NULL, $1); }
+	|	'@' '(' senitemEdge ')' pexpr	 	{ $$ = new AstPropClocked($1, $3, NULL, $5); }
+	|	yDISABLE yIFF '(' expr ')' pexpr 	{ $$ = new AstPropClocked($4->fileline(), NULL, $4, $6); }
+	|	pexpr	 				{ $$ = new AstPropClocked($1->fileline(), NULL, NULL, $1); }
 	;
 
-property_expr<nodep>:			// IEEE: property_expr
+pexpr<nodep>:  // IEEE: property_expr  (The name pexpr is important as regexps just add an "p" to expr.)
 	//UNSUP: This rule has been super-specialized to what is supported now
-		expr yP_ORMINUSGT property_expr			{ $$ = new AstLogOr($2,new AstLogNot($2,$1),$3); }
-	//UNSUP	expr yP_OREQGT property_expr			{ $$ = new AstLogOr($2,new AstLogNot($2,new AstPast($2,$1, NULL)),$3); } // This handles disable iff in the past time step incorrectly
-	|	expr						{ $$ = $1; }
+		expr yP_ORMINUSGT pexpr			{ $$ = new AstLogOr($2, new AstLogNot($2, $1), $3); }
+	//UNSUP	expr yP_OREQGT pexpr			{ $$ = new AstLogOr($2, new AstLogNot($2, new AstPast($2, $1, NULL)), $3); } // This handles disable iff in the past time step incorrectly
+	|	expr					{ $$ = $1; }
 	;
-
 
 //************************************************
 // Let
