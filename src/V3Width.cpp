@@ -1740,55 +1740,52 @@ private:
         if (!nodep->fromp()->dtypep()) nodep->fromp()->v3fatalSrc("Unlinked data type");
         AstNodeDType* fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
         UINFO(9,"     from dt "<<fromDtp<<endl);
-        AstMemberDType* memberp = NULL;  // NULL=error below
         if (AstNodeUOrStructDType* adtypep = VN_CAST(fromDtp, NodeUOrStructDType)) {
             // No need to width-resolve the class, as it was done when we did the child
-            memberp = adtypep->findMember(nodep->name());
+            AstMemberDType* memberp = adtypep->findMember(nodep->name());
             if (!memberp) {
-                nodep->v3error("Member "<<nodep->prettyNameQ()<<" not found in structure");
+                nodep->v3error("Member " << nodep->prettyNameQ() << " not found in structure");
+            } else {
+                if (m_attrp) {  // Looking for the base of the attribute
+                    nodep->dtypep(memberp);
+                    UINFO(9, "   MEMBERSEL(attr) -> " << nodep << endl);
+                    UINFO(9, "           dt-> " << nodep->dtypep() << endl);
+                } else {
+                    AstSel* newp = new AstSel(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                              memberp->lsb(), memberp->width());
+                    // Must skip over the member to find the union; as the member may disappear
+                    // later
+                    newp->dtypep(memberp->subDTypep()->skipRefToEnump());
+                    newp->didWidth(true);  // Don't replace dtype with basic type
+                    UINFO(9, "   MEMBERSEL -> " << newp << endl);
+                    UINFO(9, "           dt-> " << newp->dtypep() << endl);
+                    nodep->replaceWith(newp);
+                    pushDeletep(nodep); VL_DANGLING(nodep);
+                    // Should be able to treat it as a normal-ish nodesel - maybe.
+                    // The lhsp() will be strange until this stage; create the number here?
+                }
+                return;
             }
-        }
-        else if (VN_IS(fromDtp, EnumDType)
-                 || VN_IS(fromDtp, AssocArrayDType)
-                 || VN_IS(fromDtp, QueueDType)
-                 || VN_IS(fromDtp, BasicDType)) {
+        } else if (VN_IS(fromDtp, EnumDType)
+                   || VN_IS(fromDtp, AssocArrayDType)
+                   || VN_IS(fromDtp, QueueDType)
+                   || VN_IS(fromDtp, BasicDType)) {
             // Method call on enum without following parenthesis, e.g. "ENUM.next"
             // Convert this into a method call, and let that visitor figure out what to do next
-            AstNode* newp = new AstMethodCall(nodep->fileline(),
-                                              nodep->fromp()->unlinkFrBack(), nodep->name(), NULL);
+            AstNode* newp = new AstMethodCall(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                              nodep->name(), NULL);
             nodep->replaceWith(newp);
             pushDeletep(nodep); VL_DANGLING(nodep);
             userIterate(newp, m_vup);
             return;
-        }
-        else {
+        } else {
             nodep->v3error("Member selection of non-struct/union object '"
-                           <<nodep->fromp()->prettyTypeName()
-                           <<"' which is a '"<<nodep->fromp()->dtypep()->prettyTypeName()<<"'");
+                           << nodep->fromp()->prettyTypeName() << "' which is a '"
+                           << nodep->fromp()->dtypep()->prettyTypeName() << "'");
         }
-        if (memberp) {
-            if (m_attrp) {  // Looking for the base of the attribute
-                nodep->dtypep(memberp);
-                UINFO(9,"   MEMBERSEL(attr) -> "<<nodep<<endl);
-                UINFO(9,"           dt-> "<<nodep->dtypep()<<endl);
-            } else {
-                AstSel* newp = new AstSel(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                          memberp->lsb(), memberp->width());
-                // Must skip over the member to find the union; as the member may disappear later
-                newp->dtypep(memberp->subDTypep()->skipRefToEnump());
-                newp->didWidth(true);  // Don't replace dtype with basic type
-                UINFO(9,"   MEMBERSEL -> "<<newp<<endl);
-                UINFO(9,"           dt-> "<<newp->dtypep()<<endl);
-                nodep->replaceWith(newp);
-                pushDeletep(nodep); VL_DANGLING(nodep);
-                // Should be able to treat it as a normal-ish nodesel - maybe.
-                // The lhsp() will be strange until this stage; create the number here?
-            }
-        }
-        if (!memberp) {  // Very bogus, but avoids core dump
-            nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::LogicFalse()));
-            pushDeletep(nodep); VL_DANGLING(nodep);
-        }
+        // Error handling
+        nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::LogicFalse()));
+        pushDeletep(nodep); VL_DANGLING(nodep);
     }
 
     virtual void visit(AstCMethodCall* nodep) {
@@ -2713,7 +2710,7 @@ private:
                     if (argp) argp = argp->nextp();
                     break;
                 }
-                case 'p': {  // Packed
+                case 'p': {  // Pattern
                     AstNodeDType* dtypep = argp ? argp->dtypep()->skipRefp() : NULL;
                     AstBasicDType* basicp = dtypep ? dtypep->basicp() : NULL;
                     if (basicp && basicp->isString()) {
