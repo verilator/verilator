@@ -931,6 +931,7 @@ parameter_value_assignmentE<pinp>:	// IEEE: [ parameter_value_assignment ]
 	|	'#' yaFLOATNUM				{ $$ = new AstPin($<fl>2, 1, "",
 									  new AstConst($<fl>2, AstConst::Unsized32(),
 										       (int)(($2<0)?($2-0.5):($2+0.5)))); }
+	//UNSUP	'#' yaTIMENUM				{ UNSUP }
 	|	'#' idClassSel				{ $$ = new AstPin($<fl>2, 1, "", $2); }
 	//			// Not needed in Verilator:
 	//			// Side effect of combining *_instantiations
@@ -1760,6 +1761,8 @@ data_declaration<nodep>:	// ==IEEE: data_declaration
 	//			// IEEE: virtual_interface_declaration
 	//			// "yVIRTUAL yID yID" looks just like a data_declaration
 	//			// Therefore the virtual_interface_declaration term isn't used
+	//			// 1800-2009:
+	//UNSUP	net_type_declaration			{ $$ = $1; }
 	;
 
 class_property<nodep>:		// ==IEEE: class_property, which is {property_qualifier} data_declaration
@@ -1817,6 +1820,13 @@ data_declarationVarFrontClass:	// IEEE: part of data_declaration (for class_prop
 	//			// yCONST is removed, added to memberQual rules to avoid conflict
 	//			// = class_new is in variable_decl_assignment
 	;
+
+//UNSUPnet_type_declaration:		// IEEE: net_type_declaration
+//UNSUP		yNETTYPE data_type idAny/*net_type_identifier*/ ';' { }
+//UNSUP	//			// package_scope part of data_type
+//UNSUP	|	yNETTYPE data_type idAny yWITH__ETC package_scopeIdFollows id/*tf_identifier*/ ';' { }
+//UNSUP	|	yNETTYPE package_scopeIdFollows id/*net_type_identifier*/ idAny/*net_type_identifier*/ ';' { }
+//UNSUP	;
 
 implicit_typeE<dtypep>:		// IEEE: part of *data_type_or_implicit
 	//			// Also expanded in data_declaration
@@ -1997,9 +2007,13 @@ bind_instantiation<nodep>:	// ==IEEE: bind_instantiation
 // different, so we copy all rules for checkers.
 
 generate_region<nodep>:		// ==IEEE: generate_region
-		yGENERATE genItemList yENDGENERATE	{ $$ = new AstGenerate($1, $2); }
+		yGENERATE ~c~genItemList yENDGENERATE	{ $$ = new AstGenerate($1, $2); }
 	|	yGENERATE yENDGENERATE			{ $$ = NULL; }
 	;
+
+//UNSUPc_generate_region<nodep>:  // IEEE: generate_region (for checkers)
+//UNSUP		BISONPRE_COPY(generate_region,{s/~c~/c_/g})	// {copied}
+//UNSUP	;
 
 generate_block_or_null<nodep>:	// IEEE: generate_block_or_null
 	//	';'		// is included in
@@ -2010,23 +2024,35 @@ generate_block_or_null<nodep>:	// IEEE: generate_block_or_null
 	;
 
 genItemBegin<nodep>:		// IEEE: part of generate_block
-		yBEGIN genItemList yEND			{ $$ = new AstBegin($1,"genblk",$2,true); }
+		yBEGIN ~c~genItemList yEND		{ $$ = new AstBegin($1,"genblk",$2,true); }
 	|	yBEGIN yEND				{ $$ = NULL; }
-	|	id ':' yBEGIN genItemList yEND endLabelE	{ $$ = new AstBegin($<fl>1,*$1,$4,true); GRAMMARP->endLabel($<fl>6,*$1,$6); }
-	|	id ':' yBEGIN             yEND endLabelE	{ $$ = NULL; GRAMMARP->endLabel($<fl>5,*$1,$5); }
-	|	yBEGIN ':' idAny genItemList yEND endLabelE	{ $$ = new AstBegin($<fl>3,*$3,$4,true); GRAMMARP->endLabel($<fl>6,*$3,$6); }
-	|	yBEGIN ':' idAny 	  yEND endLabelE	{ $$ = NULL; GRAMMARP->endLabel($<fl>5,*$3,$5); }
+	|	id ':' yBEGIN ~c~genItemList yEND endLabelE	{ $$ = new AstBegin($<fl>1,*$1,$4,true); GRAMMARP->endLabel($<fl>6,*$1,$6); }
+	|	id ':' yBEGIN yEND endLabelE		{ $$ = NULL; GRAMMARP->endLabel($<fl>5,*$1,$5); }
+	|	yBEGIN ':' idAny ~c~ genItemList yEND endLabelE	{ $$ = new AstBegin($<fl>3,*$3,$4,true); GRAMMARP->endLabel($<fl>6,*$3,$6); }
+	|	yBEGIN ':' idAny yEND endLabelE		{ $$ = NULL; GRAMMARP->endLabel($<fl>5,*$3,$5); }
 	;
+
+//UNSUPc_genItemBegin<nodep>:  // IEEE: part of generate_block (for checkers)
+//UNSUP		BISONPRE_COPY(genItemBegin,{s/~c~/c_/g})		// {copied}
+//UNSUP	;
 
 genItemOrBegin<nodep>:		// Not in IEEE, but our begin isn't under generate_item
 		~c~generate_item			{ $$ = $1; }
 	|	~c~genItemBegin				{ $$ = $1; }
 	;
 
+//UNSUPc_genItemOrBegin<nodep>:  // (for checkers)
+//UNSUP		BISONPRE_COPY(genItemOrBegin,{s/~c~/c_/g})	// {copied}
+//UNSUP	;
+
 genItemList<nodep>:
 		~c~genItemOrBegin			{ $$ = $1; }
 	|	~c~genItemList ~c~genItemOrBegin	{ $$ = $1->addNextNull($2); }
 	;
+
+//UNSUPc_genItemList<nodep>:  // (for checkers)
+//UNSUP		BISONPRE_COPY(genItemList,{s/~c~/c_/g})		// {copied}
+//UNSUP	;
 
 generate_item<nodep>:		// IEEE: module_or_interface_or_generate_item
 	//			// Only legal when in a generate under a module (or interface under a module)
@@ -2038,11 +2064,22 @@ generate_item<nodep>:		// IEEE: module_or_interface_or_generate_item
 	//			// so below in c_generate_item
 	;
 
+//UNSUPc_generate_item<nodep>:  // IEEE: generate_item (for checkers)
+//UNSUP		checker_or_generate_item		{ $$ = $1; }
+//UNSUP	;
+
 conditional_generate_construct<nodep>:	// ==IEEE: conditional_generate_construct
-		yCASE  '(' expr ')' ~c~case_generate_itemListE yENDCASE	{ $$ = new AstGenCase($1,$3,$5); }
-	|	yIF '(' expr ')' generate_block_or_null	%prec prLOWER_THAN_ELSE	{ $$ = new AstGenIf($1,$3,$5,NULL); }
-	|	yIF '(' expr ')' generate_block_or_null yELSE generate_block_or_null	{ $$ = new AstGenIf($1,$3,$5,$7); }
+		yCASE  '(' expr ')' ~c~case_generate_itemListE yENDCASE
+			{ $$ = new AstGenCase($1, $3, $5); }
+	|	yIF '(' expr ')' ~c~generate_block_or_null	%prec prLOWER_THAN_ELSE
+			{ $$ = new AstGenIf($1, $3, $5, NULL); }
+	|	yIF '(' expr ')' ~c~generate_block_or_null yELSE ~c~generate_block_or_null
+			{ $$ = new AstGenIf($1, $3, $5, $7); }
 	;
+
+//UNSUPc_conditional_generate_construct<nodep>:  // IEEE: conditional_generate_construct (for checkers)
+//UNSUP		BISONPRE_COPY(conditional_generate_construct,{s/~c~/c_/g})	// {copied}
+//UNSUP	;
 
 loop_generate_construct<nodep>:	// ==IEEE: loop_generate_construct
 		yFOR '(' genvar_initialization ';' expr ';' genvar_iteration ')' ~c~generate_block_or_null
@@ -2068,6 +2105,10 @@ loop_generate_construct<nodep>:	// ==IEEE: loop_generate_construct
 			  lowerBegp->deleteTree(); VL_DANGLING(lowerBegp);
 			}
 	;
+
+//UNSUPc_loop_generate_construct<nodep>:  // IEEE: loop_generate_construct (for checkers)
+//UNSUP		BISONPRE_COPY(loop_generate_construct,{s/~c~/c_/g})	// {copied}
+//UNSUP	;
 
 genvar_initialization<nodep>:	// ==IEEE: genvar_initialization
 		varRefBase '=' expr			{ $$ = new AstAssign($2,$1,$3); }
@@ -2105,11 +2146,19 @@ case_generate_itemList<nodep>:	// IEEE: { case_generate_itemList }
 	|	~c~case_generate_itemList ~c~case_generate_item	{ $$=$1; $1->addNext($2); }
 	;
 
+//UNSUPc_case_generate_itemList<nodep>:  // IEEE: { case_generate_item } (for checkers)
+//UNSUP		BISONPRE_COPY(case_generate_itemList,{s/~c~/c_/g})	// {copied}
+//UNSUP	;
+
 case_generate_item<nodep>:	// ==IEEE: case_generate_item
 		caseCondList ':' generate_block_or_null		{ $$ = new AstCaseItem($2,$1,$3); }
 	|	yDEFAULT ':' generate_block_or_null		{ $$ = new AstCaseItem($1,NULL,$3); }
 	|	yDEFAULT generate_block_or_null			{ $$ = new AstCaseItem($1,NULL,$2); }
 	;
+
+//UNSUPc_case_generate_item<nodep>:  // IEEE: case_generate_item (for checkers)
+//UNSUP		BISONPRE_COPY(case_generate_item,{s/~c~/c_/g})	// {copied}
+//UNSUP	;
 
 //************************************************
 // Assignments and register declarations
@@ -2122,6 +2171,13 @@ assignList<nodep>:
 assignOne<nodep>:
 		variable_lvalue '=' expr		{ $$ = new AstAssignW($2,$1,$3); }
 	;
+
+//UNSUPdelay_or_event_controlE<nodep>:  // IEEE: delay_or_event_control plus empty
+//UNSUP		/* empty */				{ $$ = NULL; }
+//UNSUP	|	delay_control				{ $$ = $1; }
+//UNSUP	|	event_control				{ $$ = $1; }
+//UNSUP	|	yREPEAT '(' expr ')' event_control	{ }
+//UNSUP	;
 
 delayE:
 		/* empty */				{ }
@@ -2146,6 +2202,7 @@ delay_value:			// ==IEEE:delay_value
 delayExpr:
 		expr					{ DEL($1); }
 	//			// Verilator doesn't support yaTIMENUM, so not in expr
+	//UNSUP below doesn't belong here:
 	|	yaTIMENUM 				{ }
 	;
 
@@ -2389,9 +2446,10 @@ cellpinItemE<pinp>:		// IEEE: named_port_connection + empty
 	|	'.' idAny				{ $$ = new AstPin($<fl>2,PINNUMINC(),*$2,new AstParseRef($<fl>2,VParseRefExp::PX_TEXT,*$2,NULL,NULL)); $$->svImplicit(true);}
 	|	'.' idAny '(' ')'			{ $$ = new AstPin($<fl>2,PINNUMINC(),*$2,NULL); }
 	//			// mintypmax is expanded here, as it might be a UDP or gate primitive
+	//UNSUP               pev_expr below
 	|	'.' idAny '(' expr ')'			{ $$ = new AstPin($<fl>2,PINNUMINC(),*$2,$4); }
-	//UNSUP	'.' idAny '(' expr ':' expr ')'		{ }
-	//UNSUP	'.' idAny '(' expr ':' expr ':' expr ')' { }
+	//UNSUP	'.' idAny '(' pev_expr ':' expr ')'	{ }
+	//UNSUP	'.' idAny '(' pev_expr ':' expr ':' expr ')' { }
 	//
 	|	expr					{ $$ = new AstPin(FILELINE_OR_CRE($1),PINNUMINC(),"",$1); }
 	//UNSUP	expr ':' expr				{ }
@@ -2417,6 +2475,7 @@ event_control<sentreep>:	// ==IEEE: event_control
 	|	'@' '(' '*' ')'				{ $$ = NULL; }
 	|	'@' '*'					{ $$ = NULL; }
 	//			// IEEE: hierarchical_event_identifier
+	//			// UNSUP below should be idClassSel
 	|	'@' senitemVar				{ $$ = new AstSenTree($1,$2); }	/* For events only */
 	//			// IEEE: sequence_instance
 	//			// sequence_instance without parens matches idClassSel above.
@@ -2429,9 +2488,13 @@ event_control<sentreep>:	// ==IEEE: event_control
 	;
 
 event_expression<senitemp>:	// IEEE: event_expression - split over several
+	//UNSUP			// Below are all removed
 		senitem					{ $$ = $1; }
 	|	event_expression yOR senitem		{ $$ = VN_CAST($1->addNextNull($3), NodeSenItem); }
 	|	event_expression ',' senitem		{ $$ = VN_CAST($1->addNextNull($3), NodeSenItem); }	/* Verilog 2001 */
+	//UNSUP			// Above are all removed, replace with:
+	//UNSUP	ev_expr					{ $$ = $1; }
+	//UNSUP	event_expression ',' ev_expr %prec yOR	{ $$ = VN_CAST($1->addNextNull($3), NodeSenItem); }
 	;
 
 senitem<senitemp>:		// IEEE: part of event_expression, non-'OR' ',' terms
@@ -2452,13 +2515,20 @@ senitemVar<senitemp>:
 	;
 
 senitemEdge<senitemp>:		// IEEE: part of event_expression
+	//UNSUP			// Below are all removed
 		yPOSEDGE idClassSel			{ $$ = new AstSenItem($1, VEdgeType::ET_POSEDGE, $2); }
 	|	yNEGEDGE idClassSel			{ $$ = new AstSenItem($1, VEdgeType::ET_NEGEDGE, $2); }
 	|	yEDGE idClassSel			{ $$ = new AstSenItem($1, VEdgeType::ET_BOTHEDGE, $2); }
 	|	yPOSEDGE '(' idClassSel ')'		{ $$ = new AstSenItem($1, VEdgeType::ET_POSEDGE, $3); }
 	|	yNEGEDGE '(' idClassSel ')'		{ $$ = new AstSenItem($1, VEdgeType::ET_NEGEDGE, $3); }
 	|	yEDGE '(' idClassSel ')'		{ $$ = new AstSenItem($1, VEdgeType::ET_BOTHEDGE, $3); }
-	//UNSUP	yIFF...
+	//UNSUP			// Above are all removed, replace with:
+	//UNSUP	yPOSEDGE expr				{ UNSUP }
+	//UNSUP	yPOSEDGE expr yIFF expr			{ UNSUP }
+	//UNSUP	yNEGEDGE expr				{ UNSUP }
+	//UNSUP	yNEGEDGE expr yIFF expr			{ UNSUP }
+	//UNSUP	yEDGE expr				{ UNSUP }
+	//UNSUP	yEDGE expr yIFF expr			{ UNSUP }
 	;
 
 //************************************************
@@ -2696,6 +2766,21 @@ statementVerilatorPragmas<nodep>:
 		yVL_COVERAGE_BLOCK_OFF			{ $$ = new AstPragma($1,AstPragmaType::COVERAGE_BLOCK_OFF); }
 	;
 
+//UNSUPoperator_assignment<nodep>:  // IEEE: operator_assignment
+//UNSUP		~f~exprLvalue '=' delay_or_event_controlE expr { }
+//UNSUP	|	~f~exprLvalue yP_PLUSEQ    expr		{ }
+//UNSUP	|	~f~exprLvalue yP_MINUSEQ   expr		{ }
+//UNSUP	|	~f~exprLvalue yP_TIMESEQ   expr		{ }
+//UNSUP	|	~f~exprLvalue yP_DIVEQ     expr		{ }
+//UNSUP	|	~f~exprLvalue yP_MODEQ     expr		{ }
+//UNSUP	|	~f~exprLvalue yP_ANDEQ     expr		{ }
+//UNSUP	|	~f~exprLvalue yP_OREQ      expr		{ }
+//UNSUP	|	~f~exprLvalue yP_XOREQ     expr		{ }
+//UNSUP	|	~f~exprLvalue yP_SLEFTEQ   expr		{ }
+//UNSUP	|	~f~exprLvalue yP_SRIGHTEQ  expr		{ }
+//UNSUP	|	~f~exprLvalue yP_SSRIGHTEQ expr		{ }
+//UNSUP	;
+
 foperator_assignment<nodep>:	// IEEE: operator_assignment (for first part of expression)
 		fexprLvalue '=' delayE expr	{ $$ = new AstAssign($2,$1,$4); }
 	|	fexprLvalue '=' yD_FOPEN '(' expr ')'		{ $$ = NULL; BBUNSUP($3, "Unsupported: $fopen with multichannel descriptor.  Add ,\"w\" as second argument to open a file descriptor."); }
@@ -2714,15 +2799,44 @@ foperator_assignment<nodep>:	// IEEE: operator_assignment (for first part of exp
 	|	fexprLvalue yP_SLEFTEQ   expr		{ $$ = new AstAssign($2,$1,new AstShiftL ($2,$1->cloneTree(true),$3)); }
 	|	fexprLvalue yP_SRIGHTEQ  expr		{ $$ = new AstAssign($2,$1,new AstShiftR ($2,$1->cloneTree(true),$3)); }
 	|	fexprLvalue yP_SSRIGHTEQ expr		{ $$ = new AstAssign($2,$1,new AstShiftRS($2,$1->cloneTree(true),$3)); }
+	//UNSUP replace above with:
+	//UNSUP	BISONPRE_COPY(operator_assignment,{s/~f~/f/g})	// {copied}
 	;
 
+//UNSUPinc_or_dec_expression<nodep>:  // ==IEEE: inc_or_dec_expression
+//UNSUP	//			// Need fexprScope instead of variable_lvalue to prevent conflict
+//UNSUP		~l~exprScope yP_PLUSPLUS		{ $<fl>$=$<fl>1; $$ = $1+$2; }
+//UNSUP	|	~l~exprScope yP_MINUSMINUS		{ $<fl>$=$<fl>1; $$ = $1+$2; }
+//UNSUP	//			// Need expr instead of variable_lvalue to prevent conflict
+//UNSUP	|	yP_PLUSPLUS	expr			{ $<fl>$=$<fl>1; $$ = $1+$2; }
+//UNSUP	|	yP_MINUSMINUS	expr			{ $<fl>$=$<fl>1; $$ = $1+$2; }
+//UNSUP	;
+
 finc_or_dec_expression<nodep>:	// ==IEEE: inc_or_dec_expression
-	//UNSUP: Generic scopes in incrementes
+	//UNSUP: Generic scopes in incrementes, remove below
 		fexprLvalue yP_PLUSPLUS			{ $$ = new AstAssign($2,$1,new AstAdd    ($2,$1->cloneTree(true),new AstConst($2, AstConst::StringToParse(), "'b1"))); }
 	|	fexprLvalue yP_MINUSMINUS		{ $$ = new AstAssign($2,$1,new AstSub    ($2,$1->cloneTree(true),new AstConst($2, AstConst::StringToParse(), "'b1"))); }
 	|	yP_PLUSPLUS   fexprLvalue		{ $$ = new AstAssign($1,$2,new AstAdd    ($1,$2->cloneTree(true),new AstConst($1, AstConst::StringToParse(), "'b1"))); }
 	|	yP_MINUSMINUS fexprLvalue		{ $$ = new AstAssign($1,$2,new AstSub    ($1,$2->cloneTree(true),new AstConst($1, AstConst::StringToParse(), "'b1"))); }
+	//UNSUP: Generic scopes in incrementes, remove above
+	//UNSUP	BISONPRE_COPY(inc_or_dec_expression,{s/~l~/f/g})	// {copied}
 	;
+
+//UNSUPsinc_or_dec_expression<nodep>:  // IEEE: inc_or_dec_expression (for sequence_expression)
+//UNSUP		BISONPRE_COPY(inc_or_dec_expression,{s/~l~/s/g})	// {copied}
+//UNSUP	;
+
+//UNSUPpinc_or_dec_expression<nodep>:  // IEEE: inc_or_dec_expression (for property_expression)
+//UNSUP		BISONPRE_COPY(inc_or_dec_expression,{s/~l~/p/g})	// {copied}
+//UNSUP	;
+
+//UNSUPev_inc_or_dec_expression<nodep>:  // IEEE: inc_or_dec_expression (for ev_expr)
+//UNSUP		BISONPRE_COPY(inc_or_dec_expression,{s/~l~/ev_/g})	// {copied}
+//UNSUP	;
+
+//UNSUPpev_inc_or_dec_expression<nodep>:  // IEEE: inc_or_dec_expression (for pev_expr)
+//UNSUP		BISONPRE_COPY(inc_or_dec_expression,{s/~l~/pev_/g})	// {copied}
+//UNSUP	;
 
 class_new<nodep>:		// ==IEEE: class_new
 	//			// Special precence so (...) doesn't match expr
@@ -2758,6 +2872,11 @@ caseAttrE:
 	|	caseAttrE yVL_FULL_CASE			{ GRAMMARP->m_caseAttrp->fullPragma(true); }
 	|	caseAttrE yVL_PARALLEL_CASE		{ GRAMMARP->m_caseAttrp->parallelPragma(true); }
 	;
+
+//UNSUPcase_patternListE<nodep>:  // IEEE: case_pattern_item
+//UNSUP	//	&&& is part of expr so aliases to case_itemList
+//UNSUP		case_itemListE				{ $$ = $1; }
+//UNSUP	;
 
 case_itemListE<caseitemp>:	// IEEE: [ { case_item } ]
 		/* empty */				{ $$ = NULL; }
@@ -2800,6 +2919,11 @@ value_range<nodep>:		// ==IEEE: value_range
 		expr					{ $$ = $1; }
 	|	'[' expr ':' expr ']'			{ $$ = new AstInsideRange($1, $2, $4); }
 	;
+
+//UNSUPcovergroup_value_range<nodep>:  // ==IEEE-2012: covergroup_value_range
+//UNSUP		cgexpr					{ $$ = $1; }
+//UNSUP	|	'[' cgexpr ':' cgexpr ']'		{ }
+//UNSUP	;
 
 caseCondList<nodep>:		// IEEE: part of case_item
 		expr 					{ $$ = $1; }
@@ -2897,6 +3021,7 @@ for_initializationItem<nodep>:		// IEEE: variable_assignment + for_variable_decl
 			  $$ = VARDONEA($<fl>3,*$3,NULL,NULL);
 			  $$->addNext(new AstAssign($4, new AstVarRef($<fl>3, *$3, true), $5));}
 	//			// IEEE: variable_assignment
+	//			// UNSUP variable_lvalue below
 	|	varRefBase '=' expr			{ $$ = new AstAssign($2, $1, $3); }
 	;
 
@@ -2906,8 +3031,22 @@ for_stepE<nodep>:		// IEEE: for_step + empty
 	;
 
 for_step<nodep>:		// IEEE: for_step
+		for_step_assignment			{ $$ = $1; }
+	|	for_step ',' for_step_assignment	{ $$ = $1; $<fl>1->v3error("Unsupported: for loop step after the first comma"); }
+	;
+
+for_step_assignment<nodep>:  // ==IEEE: for_step_assignment
+	//UNSUP	operator_assignment			{ $$ = $1; }
+	//
+	//UNSUP	inc_or_dec_expression			{ $$ = $1; }
+	//			// IEEE: subroutine_call
+	//UNSUP	function_subroutine_callNoMethod	{ $$ = $1; }
+	//			// method_call:array_method requires a '.'
+	//UNSUP	expr '.' array_methodNoRoot		{ }
+	//UNSUP	exprScope				{ $$ = $1; }
+	//UNSUP remove below
 		genvar_iteration			{ $$ = $1; }
-	|	for_step ',' genvar_iteration		{ $$ = $1; $<fl>1->v3error("Unsupported: for loop step after the first comma"); }
+	//UNSUP remove above
 	;
 
 loop_variables<nodep>:		// IEEE: loop_variables
@@ -2936,6 +3075,7 @@ funcRef<nodep>:			// IEEE: part of tf_call
 	//
 		id '(' list_of_argumentsE ')'		{ $$ = new AstFuncRef($<fl>1, *$1, $3); }
 	|	package_scopeIdFollows id '(' list_of_argumentsE ')'	{ $$ = AstDot::newIfPkg($<fl>2, $1, new AstFuncRef($<fl>2,*$2,$4)); }
+	//UNSUP list_of_argumentE should be pev_list_of_argumentE
 	//UNSUP: idDotted is really just id to allow dotted method calls
 	;
 
@@ -3129,6 +3269,14 @@ elaboration_system_task_guts<nodep>:	// IEEE: part of elaboration_system_task (1
 	|	yD_FATAL   '(' expr ',' exprListE ')'	{ $$ = new AstElabDisplay($1, AstDisplayType::DT_FATAL, $5); DEL($3); }
 	;
 
+//UNSUPproperty_actual_arg<nodep>:  // ==IEEE: property_actual_arg
+//UNSUP	//			// IEEE: property_expr
+//UNSUP	//			// IEEE: sequence_actual_arg
+//UNSUP		pev_expr				{ $$ = $1; }
+//UNSUP	//			// IEEE: sequence_expr
+//UNSUP	//			// property_expr already includes sequence_expr
+//UNSUP	;
+
 exprOrDataType<nodep>:		// expr | data_type: combined to prevent conflicts
 		expr					{ $$ = $1; }
 	//			// data_type includes id that overlaps expr, so special flavor
@@ -3136,6 +3284,20 @@ exprOrDataType<nodep>:		// expr | data_type: combined to prevent conflicts
 	//			// not in spec, but needed for $past(sig,1,,@(posedge clk))
 	//UNSUP	event_control				{ }
 	;
+
+//UNSUPexprOrDataTypeOrMinTypMax<nodep>:  // exprOrDataType or mintypmax_expression
+//UNSUP		expr					{ $$ = $1; }
+//UNSUP	|	expr ':' expr ':' expr			{ $$ = $3; }
+//UNSUP	//			// data_type includes id that overlaps expr, so special flavor
+//UNSUP	|	data_type				{ $$ = $1; }
+//UNSUP	//			// not in spec, but needed for $past(sig,1,,@(posedge clk))
+//UNSUP	|	event_control				{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPexprOrDataTypeList<nodep>:
+//UNSUP		exprOrDataType				{ $$ = $1; }
+//UNSUP	|	exprOrDataTypeList ',' exprOrDataType	{ $$ = AstNode::addNextNull($1, $3); }
+//UNSUP	;
 
 list_of_argumentsE<nodep>:	// IEEE: [list_of_arguments]
 		argsDottedList				{ $$ = $1; }
@@ -3338,6 +3500,7 @@ array_methodNoRoot<nodep>:
 		yOR					{ $$ = new AstFuncRef($1, "or", NULL); }
 	|	yAND					{ $$ = new AstFuncRef($1, "and", NULL); }
 	|	yXOR					{ $$ = new AstFuncRef($1, "xor", NULL); }
+	//UNSUP	yUNIQUE					{ $$ = new AstFuncRef($1, "unique", NULL); }
 	;
 
 dpi_import_export<nodep>:	// ==IEEE: dpi_import_export
@@ -3444,9 +3607,18 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	|	~l~expr yP_SRIGHT ~r~expr		{ $$ = new AstShiftR	($2,$1,$3); }
 	|	~l~expr yP_SSRIGHT ~r~expr		{ $$ = new AstShiftRS	($2,$1,$3); }
 	|	~l~expr yP_LTMINUSGT ~r~expr		{ $$ = new AstLogEq     ($2,$1,$3); }
+	//
+	//			// IEEE: expr yP_MINUSGT expr  (1800-2009)
+	//			// Conflicts with constraint_expression:"expr yP_MINUSGT constraint_set"
+	//			// To duplicating expr for constraints, just allow the more general form
+	//			// Later Ast processing must ignore constraint terms where inappropriate
+	//UNSUP	~l~expr yP_MINUSGT constraint_set		{ $<fl>$=$<fl>1; $$ = $1+$2+$3; }
+	//UNSUP remove line below
+	|	~l~expr yP_MINUSGT ~r~expr		{ $$ = new AstLogIf($2, $1, $3); }
+	//
 	//			// <= is special, as we need to disambiguate it with <= assignment
 	//			// We copy all of expr to fexpr and rename this token to a fake one.
-	|	~l~expr yP_LTE~f__IGNORE~ ~r~expr	{ $$ = new AstLte	($2,$1,$3); }
+	|	~l~expr yP_LTE~f__IGNORE~ ~r~expr	{ $$ = new AstLte($2, $1, $3); }
 	//
 	//			// IEEE: conditional_expression
 	|	~l~expr '?' ~r~expr ':' ~r~expr		{ $$ = new AstCond($2,$1,$3,$5); }
@@ -3457,10 +3629,6 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// IEEE: tagged_union_expression
 	//UNSUP	yTAGGED id/*member*/ %prec prTAGGED		{ UNSUP }
 	//UNSUP	yTAGGED id/*member*/ %prec prTAGGED expr	{ UNSUP }
-	//
-	//======================// PSL expressions
-	//
-	|	~l~expr yP_MINUSGT ~r~expr		{ $$ = new AstLogIf	($2,$1,$3); }
 	//
 	//======================// IEEE: primary/constant_primary
 	//
@@ -3481,6 +3649,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//
 	//			// IEEE: multiple_concatenation/constant_multiple_concatenation
 	|	'{' constExpr '{' cateList '}' '}'	{ $$ = new AstReplicate($3, $4, $2); }
+	//			// UNSUP some other rules above
 	//
 	|	function_subroutine_callNoMethod	{ $$ = $1; }
 	//			// method_call
@@ -3545,6 +3714,35 @@ fexpr<nodep>:			// For use as first part of statement (disambiguates <=)
 		BISONPRE_COPY(expr,{s/~l~/f/g; s/~r~/f/g; s/~f__IGNORE~/__IGNORE/g;})	// {copied}
 	;
 
+//UNSUPev_expr<nodep>:  // IEEE: event_expression
+//UNSUP	//			// for yOR/, see event_expression
+//UNSUP	//
+//UNSUP	//			// IEEE: [ edge_identifier ] expression [ yIFF expression ]
+//UNSUP	//			// expr alone see below
+//UNSUP		senitemEdge				{ $$ = $1; }
+//UNSUP	|	ev_expr yIFF expr			{ }
+//UNSUP	//
+//UNSUP	//			// IEEE: sequence_instance [ yIFF expression ]
+//UNSUP	//			// seq_inst is in expr, so matches senitem rule above
+//UNSUP	//
+//UNSUP	//			// IEEE: event_expression yOR event_expression
+//UNSUP	|	ev_expr yOR ev_expr			{ }
+//UNSUP	//			// IEEE: event_expression ',' event_expression
+//UNSUP	//			// See real event_expression rule
+//UNSUP	//
+//UNSUP	//---------------------
+//UNSUP	//			// IEEE: expr
+//UNSUP	|	BISONPRE_COPY(expr,{s/~l~/ev_/g; s/~r~/ev_/g; s/~p~/ev_/g; s/~noPar__IGNORE~/yP_PAR__IGNORE /g;})	// {copied}
+//UNSUP	//
+//UNSUP	//			// IEEE: '(' event_expression ')'
+//UNSUP	//			// expr:'(' x ')' conflicts with event_expression:'(' event_expression ')'
+//UNSUP	//			// so we use a special expression class
+//UNSUP	|	'(' event_expression ')'		{ $<fl>$=$<fl>1; $$ = "(...)"; }
+//UNSUP	//			// IEEE: From normal expr: '(' expr ':' expr ':' expr ')'
+//UNSUP	//			// But must avoid conflict
+//UNSUP	|	'(' event_expression ':' expr ':' expr ')'	{ $<fl>$=$<fl>1; $$ = "(...)"; }
+//UNSUP	;
+
 exprNoStr<nodep>:		// expression with string removed
 		BISONPRE_COPY(expr,{s/~noStr__IGNORE~/Ignore/g;})	// {copied}
 	;
@@ -3575,6 +3773,22 @@ fexprOkLvalue<nodep>:		// exprOkLValue, For use as first part of statement (disa
 		BISONPRE_COPY(exprOkLvalue,{s/~l~/f/g})	// {copied}
 	;
 
+//UNSUPsexprOkLvalue<nodep>:  // exprOkLValue, For use by sequence_expr
+//UNSUP		BISONPRE_COPY(exprOkLvalue,{s/~l~/s/g})	// {copied}
+//UNSUP	;
+
+//UNSUPpexprOkLvalue<nodep>:  // exprOkLValue, For use by property_expr
+//UNSUP		BISONPRE_COPY(exprOkLvalue,{s/~l~/p/g})	// {copied}
+//UNSUP	;
+
+//UNSUPev_exprOkLvalue<nodep>:  // exprOkLValue, For use by ev_expr
+//UNSUP		BISONPRE_COPY(exprOkLvalue,{s/~l~/ev_/g})	// {copied}
+//UNSUP	;
+
+//UNSUPpev_exprOkLvalue<nodep>:  // exprOkLValue, For use by ev_expr
+//UNSUP		BISONPRE_COPY(exprOkLvalue,{s/~l~/pev_/g})	// {copied}
+//UNSUP	;
+
 fexprLvalue<nodep>:		// For use as first part of statement (disambiguates <=)
 		fexprOkLvalue				{ $<fl>$=$<fl>1; $$ = $1; }
 	;
@@ -3603,6 +3817,22 @@ exprScope<nodep>:		// scope and variable for use to inside an expression
 fexprScope<nodep>:		// exprScope, For use as first part of statement (disambiguates <=)
 		BISONPRE_COPY(exprScope,{s/~l~/f/g})	// {copied}
 	;
+
+//UNSUPsexprScope<nodep>:  // exprScope, For use by sequence_expr
+//UNSUP		BISONPRE_COPY(exprScope,{s/~l~/s/g})	// {copied}
+//UNSUP	;
+
+//UNSUPpexprScope<nodep>:  // exprScope, For use by property_expr
+//UNSUP		BISONPRE_COPY(exprScope,{s/~l~/p/g})	// {copied}
+//UNSUP	;
+
+//UNSUPev_exprScope<nodep>:  // exprScope, For use by ev_expr
+//UNSUP		BISONPRE_COPY(exprScope,{s/~l~/ev_/g})	// {copied}
+//UNSUP	;
+
+//UNSUPpev_exprScope<nodep>:  // exprScope, For use by ev_expr
+//UNSUP		BISONPRE_COPY(exprScope,{s/~l~/pev_/g})	// {copied}
+//UNSUP	;
 
 // PLI calls exclude "" as integers, they're strings
 // For $c("foo","bar") we want "bar" as a string, not a Verilog integer.
@@ -3657,20 +3887,40 @@ argsExprListE<nodep>:		// IEEE: part of list_of_arguments
 	|	argsExprListE ',' argsExprOneE		{ $$ = $1->addNext($3); }
 	;
 
+//UNSUPpev_argsExprListE<nodep>:  // IEEE: part of list_of_arguments - pev_expr at bottom
+//UNSUP		pev_argsExprOneE			{ $$ = $1; }
+//UNSUP	|	pev_argsExprListE ',' pev_argsExprOneE	{ $$ = AstNode::addNextNull($1, $3); }
+//UNSUP	;
+
 argsExprOneE<nodep>:		// IEEE: part of list_of_arguments
 		/*empty*/				{ $$ = new AstArg(CRELINE(), "", NULL); }
 	|	expr					{ $$ = new AstArg($1->fileline(), "", $1); }
 	;
+
+//UNSUPpev_argsExprOneE<nodep>:  // IEEE: part of list_of_arguments - pev_expr at bottom
+//UNSUP		/*empty*/				{ $$ = NULL; }	// ,, is legal in list_of_arguments
+//UNSUP	|	pev_expr				{ $$ = $1; }
+//UNSUP	;
 
 argsDottedList<nodep>:		// IEEE: part of list_of_arguments
 		argsDotted				{ $$ = $1; }
 	|	argsDottedList ',' argsDotted		{ $$ = $1->addNextNull($3); }
 	;
 
+//UNSUPpev_argsDottedList<nodep>:  // IEEE: part of list_of_arguments - pev_expr at bottom
+//UNSUP		pev_argsDotted				{ $$ = $1; }
+//UNSUP	|	pev_argsDottedList ',' pev_argsDotted	{ $$ = AstNode::addNextNull($1, $3); }
+//UNSUP	;
+
 argsDotted<nodep>:		// IEEE: part of list_of_arguments
 		'.' idAny '(' ')'			{ $$ = new AstArg($<fl>2, *$2, NULL); }
 	|	'.' idAny '(' expr ')'			{ $$ = new AstArg($<fl>2, *$2, $4); }
 	;
+
+//UNSUPpev_argsDotted<nodep>:  // IEEE: part of list_of_arguments - pev_expr at bottom
+//UNSUP		'.' idAny '(' ')'			{ $$ = new AstArg($<fl>2, *$2, NULL); }
+//UNSUP	|	'.' idAny '(' pev_expr ')'		{ $$ = new AstArg($<fl>2, *$2, $4); }
+//UNSUP	;
 
 streaming_concatenation<nodep>:	// ==IEEE: streaming_concatenation
 	//	 		// Need to disambiguate {<< expr-{ ... expr-} stream_concat }
@@ -3998,6 +4248,11 @@ variable_lvalueConcList<nodep>:	// IEEE: part of variable_lvalue: '{' variable_l
 	|	variable_lvalueConcList ',' variable_lvalue	{ $$ = new AstConcat($2,$1,$3); }
 	;
 
+//UNSUPvariable_lvalueList<nodep>:  // IEEE: part of variable_lvalue: variable_lvalue { ',' variable_lvalue }
+//UNSUP		variable_lvalue				{ $$ = $1; }
+//UNSUP	|	variable_lvalueList ',' variable_lvalue	{ $$ = AstNode::addNextNull($1, $3); }
+//UNSUP	;
+
 // VarRef to dotted, and/or arrayed, and/or bit-ranged variable
 idClassSel<nodep>:			// Misc Ref to dotted, and/or arrayed, and/or bit-ranged variable
 		idDotted				{ $$ = $1; }
@@ -4240,9 +4495,19 @@ concurrent_assertion_item<nodep>:	// IEEE: concurrent_assertion_item
 
 concurrent_assertion_statement<nodep>:	// ==IEEE: concurrent_assertion_statement
 	//			// IEEE: assert_property_statement
+	//UNSUP remove below:
 		yASSERT yPROPERTY '(' property_spec ')' elseStmtBlock	{ $$ = new AstAssert($1, $4, NULL, $6, false); }
+	//UNSUP	yASSERT yPROPERTY '(' property_spec ')' action_block	{ }
+	//			// IEEE: assume_property_statement
+	//UNSUP	yASSUME yPROPERTY '(' property_spec ')' action_block	{ }
 	//			// IEEE: cover_property_statement
 	|	yCOVER yPROPERTY '(' property_spec ')' stmtBlock	{ $$ = new AstCover($1, $4, $6, false); }
+	//			// IEEE: cover_sequence_statement
+	//UNSUP	yCOVER ySEQUENCE '(' sexpr ')' stmt			{ }
+	//			// IEEE: yCOVER ySEQUENCE '(' clocking_event sexpr ')' stmt
+	//			// sexpr already includes "clocking_event sexpr"
+	//UNSUP	yCOVER ySEQUENCE '(' clocking_event yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' sexpr ')' stmt	{ }
+	//UNSUP	yCOVER ySEQUENCE '(' yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' sexpr ')' stmt	{ }
 	//			// IEEE: restrict_property_statement
 	|	yRESTRICT yPROPERTY '(' property_spec ')' ';'		{ $$ = new AstRestrict($1, $4); }
 	;
@@ -4252,21 +4517,361 @@ elseStmtBlock<nodep>:	// Part of concurrent_assertion_statement
 	|	yELSE stmtBlock				{ $$ = $2; }
 	;
 
+//UNSUPproperty_declaration<nodep>:  // ==IEEE: property_declaration
+//UNSUP		property_declarationFront property_port_listE ';' property_declarationBody
+//UNSUP			yENDPROPERTY endLabelE
+//UNSUP			{ SYMP->popScope($$); }
+//UNSUP	;
+
+//UNSUPproperty_declarationFront<nodep>:  // IEEE: part of property_declaration
+//UNSUP		yPROPERTY idAny/*property_identifier*/
+//UNSUP			{ SYMP->pushNew($$); }
+//UNSUP	;
+
+//UNSUPproperty_port_listE<nodep>:  // IEEE: [ ( [ property_port_list ] ) ]
+//UNSUP		/* empty */				{ $$ = NULL; }
+//UNSUP	|	'(' {VARRESET_LIST(""); VARIO("input"); } property_port_list ')'
+//UNSUP			{ VARRESET_NONLIST(""); }
+//UNSUP	;
+
+//UNSUPproperty_port_list<nodep>:  // ==IEEE: property_port_list
+//UNSUP		property_port_item			{ $$ = $1; }
+//UNSUP	|	property_port_list ',' property_port_item	{ }
+//UNSUP	;
+
+//UNSUPproperty_port_item<nodep>:  // IEEE: property_port_item/sequence_port_item
+//UNSUP	//			// Merged in sequence_port_item
+//UNSUP	//			// IEEE: property_lvar_port_direction ::= yINPUT
+//UNSUP	//			// prop IEEE: [ yLOCAL [ yINPUT ] ] property_formal_type
+//UNSUP	//			//	     id {variable_dimension} [ '=' property_actual_arg ]
+//UNSUP	//			// seq IEEE: [ yLOCAL [ sequence_lvar_port_direction ] ] sequence_formal_type
+//UNSUP	//			//           id {variable_dimension} [ '=' sequence_actual_arg ]
+//UNSUP		property_port_itemFront property_port_itemAssignment { }
+//UNSUP	;
+
+//UNSUPproperty_port_itemFront:	// IEEE: part of property_port_item/sequence_port_item
+//UNSUP		property_port_itemDirE property_formal_typeNoDt		{ VARDTYPE($2); }
+//UNSUP	//			// data_type_or_implicit
+//UNSUP	|	property_port_itemDirE data_type           	{ VARDTYPE($2); }
+//UNSUP	|	property_port_itemDirE yVAR data_type      	{ VARDTYPE($3); }
+//UNSUP	|	property_port_itemDirE yVAR implicit_typeE 	{ VARDTYPE($3); }
+//UNSUP	|	property_port_itemDirE signingE rangeList  	{ VARDTYPE(SPACED($2,$3)); }
+//UNSUP	|	property_port_itemDirE /*implicit*/        	{ /*VARDTYPE-same*/ }
+//UNSUP	;
+
+//UNSUPproperty_port_itemAssignment<nodep>:  // IEEE: part of property_port_item/sequence_port_item/checker_port_direction
+//UNSUP		portSig variable_dimensionListE		{ VARDONE($<fl>1, $1, $2, ""); PINNUMINC(); }
+//UNSUP	|	portSig variable_dimensionListE '=' property_actual_arg
+//UNSUP			{ VARDONE($<fl>1, $1, $2, $4); PINNUMINC(); }
+//UNSUP	;
+
+//UNSUPproperty_port_itemDirE:
+//UNSUP		/* empty */				{ $$ = NULL; }
+//UNSUP	|	yLOCAL__ETC				{ }
+//UNSUP	|	yLOCAL__ETC port_direction		{ }
+//UNSUP	;
+
+//UNSUPproperty_declarationBody<nodep>:  // IEEE: part of property_declaration
+//UNSUP		assertion_variable_declarationList property_statement_spec	{ }
+//UNSUP	//			// IEEE-2012: Incorectly hasyCOVER ySEQUENCE then property_spec here.
+//UNSUP	//			// Fixed in IEEE 1800-2017
+//UNSUP	|	property_statement_spec			{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPassertion_variable_declarationList: // IEEE: part of assertion_variable_declaration
+//UNSUP		assertion_variable_declaration		{ $$ = $1; }
+//UNSUP	|	assertion_variable_declarationList assertion_variable_declaration	{ }
+//UNSUP	;
+
+//UNSUPsequence_declaration<nodep>:  // ==IEEE: sequence_declaration
+//UNSUP		sequence_declarationFront sequence_port_listE ';' sequence_declarationBody
+//UNSUP			yENDSEQUENCE endLabelE
+//UNSUP			{ SYMP->popScope($$); }
+//UNSUP	;
+
+//UNSUPsequence_declarationFront<nodep>:  // IEEE: part of sequence_declaration
+//UNSUP		ySEQUENCE idAny/*new_sequence*/
+//UNSUP			{ SYMP->pushNew($$); }
+//UNSUP	;
+
+//UNSUPsequence_port_listE<nodep>:  // IEEE: [ ( [ sequence_port_list ] ) ]
+//UNSUP	//			// IEEE: sequence_lvar_port_direction ::= yINPUT | yINOUT | yOUTPUT
+//UNSUP	//			// IEEE: [ yLOCAL [ sequence_lvar_port_direction ] ] sequence_formal_type
+//UNSUP	//			//           id {variable_dimension} [ '=' sequence_actual_arg ]
+//UNSUP	//			// All this is almost identically the same as a property.
+//UNSUP	//			// Difference is only yINOUT/yOUTPUT (which might be added to 1800-2012)
+//UNSUP	//			// and yPROPERTY.  So save some work.
+//UNSUP		property_port_listE			{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPproperty_formal_typeNoDt<nodep>:  // IEEE: property_formal_type (w/o implicit)
+//UNSUP		sequence_formal_typeNoDt		{ $$ = $1; }
+//UNSUP	|	yPROPERTY				{ }
+//UNSUP	;
+
+//UNSUPsequence_formal_typeNoDt<nodep>:  // ==IEEE: sequence_formal_type (w/o data_type_or_implicit)
+//UNSUP	//			// IEEE: data_type_or_implicit
+//UNSUP	//			// implicit expanded where used
+//UNSUP		ySEQUENCE				{ }
+//UNSUP	//			// IEEE-2009: yEVENT
+//UNSUP	//			// already part of data_type.  Removed in 1800-2012.
+//UNSUP	|	yUNTYPED				{ }
+//UNSUP	;
+
+//UNSUPsequence_declarationBody<nodep>:  // IEEE: part of sequence_declaration
+//UNSUP	//			// 1800-2012 makes ';' optional
+//UNSUP		assertion_variable_declarationList sexpr	{ }
+//UNSUP	|	assertion_variable_declarationList sexpr ';'	{ }
+//UNSUP	|	sexpr					{ $$ = $1; }
+//UNSUP	|	sexpr ';'				{ $$ = $1; }
+//UNSUP	;
+
 property_spec<nodep>:			// IEEE: property_spec
 	//UNSUP: This rule has been super-specialized to what is supported now
+	//UNSUP remove below
 		'@' '(' senitemEdge ')' yDISABLE yIFF '(' expr ')' pexpr
 			{ $$ = new AstPropClocked($1, $3, $8, $10); }
 	|	'@' '(' senitemEdge ')' pexpr	 	{ $$ = new AstPropClocked($1, $3, NULL, $5); }
+	//UNSUP remove above
 	|	yDISABLE yIFF '(' expr ')' pexpr 	{ $$ = new AstPropClocked($4->fileline(), NULL, $4, $6); }
 	|	pexpr	 				{ $$ = new AstPropClocked($1->fileline(), NULL, NULL, $1); }
 	;
 
+//UNSUPproperty_statement_spec<nodep>:  // ==IEEE: property_statement_spec
+//UNSUP	//			// IEEE: [ clocking_event ] [ yDISABLE yIFF '(' expression_or_dist ')' ] property_statement
+//UNSUP		property_statement			{ $$ = $1; }
+//UNSUP	|	yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' property_statement	{ }
+//UNSUP	//			// IEEE: clocking_event property_statement
+//UNSUP	//			// IEEE: clocking_event yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' property_statement
+//UNSUP	//			// Both overlap pexpr:"clocking_event pexpr"  the difference is
+//UNSUP	//			// property_statement:property_statementCaseIf so replicate it
+//UNSUP	|	clocking_event property_statementCaseIf	{ }
+//UNSUP	|	clocking_event yDISABLE yIFF '(' expr/*expression_or_dist*/ ')' property_statementCaseIf	{ }
+//UNSUP	;
+
+//UNSUPproperty_statement<nodep>:  // ==IEEE: property_statement
+//UNSUP	//			// Doesn't make sense to have "pexpr ;" in pexpr rule itself, so we split out case/if
+//UNSUP		pexpr ';'				{ $$ = $1; }
+//UNSUP	//			// Note this term replicated in property_statement_spec
+//UNSUP	//			// If committee adds terms, they may need to be there too.
+//UNSUP	|	property_statementCaseIf		{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPproperty_statementCaseIf<nodep>:  // IEEE: property_statement - minus pexpr
+//UNSUP		yCASE '(' expr/*expression_or_dist*/ ')' property_case_itemList yENDCASE	{ }
+//UNSUP	|	yCASE '(' expr/*expression_or_dist*/ ')' yENDCASE		{ }
+//UNSUP	|	yIF '(' expr/*expression_or_dist*/ ')' pexpr  %prec prLOWER_THAN_ELSE	{ }
+//UNSUP	|	yIF '(' expr/*expression_or_dist*/ ')' pexpr yELSE pexpr	{ }
+//UNSUP	;
+
+//UNSUPproperty_case_itemList<nodep>:  // IEEE: {property_case_item}
+//UNSUP		property_case_item			{ $$ = $1; }
+//UNSUP	|	property_case_itemList ',' property_case_item	{ $$ = AstNode::addNextNull($1, $3); }
+//UNSUP	;
+
+//UNSUPproperty_case_item<nodep>:  // ==IEEE: property_case_item
+//UNSUP	//			// IEEE: expression_or_dist { ',' expression_or_dist } ':' property_statement
+//UNSUP	//			// IEEE 1800-2012 changed from property_statement to property_expr
+//UNSUP	//			// IEEE 1800-2017 changed to require the semicolon
+//UNSUP		caseCondList ':' pexpr			{ }
+//UNSUP	|	caseCondList ':' pexpr ';'		{ }
+//UNSUP	|	yDEFAULT pexpr				{ }
+//UNSUP	|	yDEFAULT ':' pexpr ';'			{ }
+//UNSUP	;
+
+//UNSUPpev_expr<nodep>:  // IEEE: property_actual_arg | expr
+//UNSUP	//			//       which expands to pexpr | event_expression
+//UNSUP	//			// Used in port and function calls, when we can't know yet if something
+//UNSUP	//			// is a function/sequence/property or instance/checker pin.
+//UNSUP	//
+//UNSUP	//			// '(' pev_expr ')'
+//UNSUP	//			// Already in pexpr
+//UNSUP	//			// IEEE: event_expression ',' event_expression
+//UNSUP	//			// ','s are legal in event_expressions, but parens required to avoid conflict with port-sep-,
+//UNSUP	//			// IEEE: event_expression yOR event_expression
+//UNSUP	//			// Already in pexpr - needs removal there
+//UNSUP	//			// IEEE: event_expression yIFF expr
+//UNSUP	//			// Already in pexpr - needs removal there
+//UNSUP	//
+//UNSUP		senitemEdge				{ $$ = $1; }
+//UNSUP	//
+//UNSUP	//============= pexpr rules copied for pev_expr
+//UNSUP	|	BISONPRE_COPY_ONCE(pexpr,{s/~o~p/pev_/g; })	// {copied}
+//UNSUP	//
+//UNSUP	//============= sexpr rules copied for pev_expr
+//UNSUP	|	BISONPRE_COPY_ONCE(sexpr,{s/~p~s/pev_/g; })	// {copied}
+//UNSUP	//
+//UNSUP	//============= expr rules copied for pev_expr
+//UNSUP	|	BISONPRE_COPY_ONCE(expr,{s/~l~/pev_/g; s/~p~/pev_/g; s/~noPar__IGNORE~/yP_PAR__IGNORE /g; })	// {copied}
+//UNSUP	;
+
 pexpr<nodep>:  // IEEE: property_expr  (The name pexpr is important as regexps just add an "p" to expr.)
 	//UNSUP: This rule has been super-specialized to what is supported now
+	//UNSUP remove below
 		expr yP_ORMINUSGT pexpr			{ $$ = new AstLogOr($2, new AstLogNot($2, $1), $3); }
 	//UNSUP	expr yP_OREQGT pexpr			{ $$ = new AstLogOr($2, new AstLogNot($2, new AstPast($2, $1, NULL)), $3); } // This handles disable iff in the past time step incorrectly
 	|	expr					{ $$ = $1; }
+	//UNSUP remove above, use below:
+	//
+	//			// IEEE: sequence_expr
+	//			// Expanded below
+	//
+	//			// IEEE: '(' pexpr ')'
+	//			// Expanded below
+	//
+	//UNSUP	yNOT pexpr %prec prNEGATION		{ }
+	//UNSUP	ySTRONG '(' sexpr ')'			{ }
+	//UNSUP	yWEAK '(' sexpr ')'			{ }
+	//			// IEEE: pexpr yOR pexpr
+	//			// IEEE: pexpr yAND pexpr
+	//			// Under ~p~sexpr and/or ~p~sexpr
+	//
+	//			// IEEE: "sequence_expr yP_ORMINUSGT pexpr"
+	//			// Instead we use pexpr to prevent conflicts
+	//UNSUP	~o~pexpr yP_ORMINUSGT pexpr		{ }
+	//UNSUP	~o~pexpr yP_OREQGT pexpr		{ }
+	//
+	//			// IEEE-2009: property_statement
+	//			// IEEE-2012: yIF and yCASE
+	//UNSUP	property_statementCaseIf		{ }
+	//
+	//UNSUP	~o~pexpr/*sexpr*/ yP_POUNDMINUSPD pexpr	{ }
+	//UNSUP	~o~pexpr/*sexpr*/ yP_POUNDEQPD pexpr	{ }
+	//UNSUP	yNEXTTIME pexpr				{ }
+	//UNSUP	yS_NEXTTIME pexpr			{ }
+	//UNSUP	yNEXTTIME '[' expr/*const*/ ']' pexpr %prec yNEXTTIME		{ }
+	//UNSUP	yS_NEXTTIME '[' expr/*const*/ ']' pexpr	%prec yS_NEXTTIME	{ }
+	//UNSUP	yALWAYS pexpr				{ }
+	//UNSUP	yALWAYS '[' cycle_delay_const_range_expression ']' pexpr  %prec yALWAYS	{ }
+	//UNSUP	yS_ALWAYS '[' constant_range ']' pexpr  %prec yS_ALWAYS		{ }
+	//UNSUP	yS_EVENTUALLY pexpr			{ }
+	//UNSUP	yEVENTUALLY '[' constant_range ']' pexpr  %prec yEVENTUALLY	{ }
+	//UNSUP	yS_EVENTUALLY '[' cycle_delay_const_range_expression ']' pexpr  %prec yS_EVENTUALLY	{ }
+	//UNSUP	~o~pexpr yUNTIL pexpr			{ }
+	//UNSUP	~o~pexpr yS_UNTIL pexpr			{ }
+	//UNSUP	~o~pexpr yUNTIL_WITH pexpr		{ }
+	//UNSUP	~o~pexpr yS_UNTIL_WITH pexpr		{ }
+	//UNSUP	~o~pexpr yIMPLIES pexpr			{ }
+	//			// yIFF also used by event_expression
+	//UNSUP	~o~pexpr yIFF ~o~pexpr			{ }
+	//UNSUP	yACCEPT_ON '(' expr/*expression_or_dist*/ ')' pexpr  %prec yACCEPT_ON	{ }
+	//UNSUP	yREJECT_ON '(' expr/*expression_or_dist*/ ')' pexpr  %prec yREJECT_ON	{ }
+	//UNSUP	ySYNC_ACCEPT_ON '(' expr/*expression_or_dist*/ ')' pexpr %prec ySYNC_ACCEPT_ON	{ }
+	//UNSUP	ySYNC_REJECT_ON '(' expr/*expression_or_dist*/ ')' pexpr %prec ySYNC_REJECT_ON	{ }
+	//
+	//			// IEEE: "property_instance"
+	//			// Looks just like a function/method call
+	//
+	//			// Note "clocking_event pexpr" overlaps property_statement_spec: clocking_event property_statement
+	//
+	//			// Include property_specDisable to match property_spec rule
+	//UNSUP	clocking_event yDISABLE yIFF '(' expr ')' pexpr	%prec prSEQ_CLOCKING	{ }
+	//
+	//============= sexpr rules copied for property_expr
+	//UNSUP	BISONPRE_COPY_ONCE(sexpr,{s/~p~s/p/g; })	// {copied}
+	//
+	//============= expr rules copied for property_expr
+	//UNSUP	BISONPRE_COPY_ONCE(expr,{s/~l~/p/g; s/~p~/p/g; s/~noPar__IGNORE~/yP_PAR__IGNORE /g; })	// {copied}
 	;
+
+//UNSUPsexpr<nodep>:  // ==IEEE: sequence_expr  (The name sexpr is important as regexps just add an "s" to expr.)
+//UNSUP	//			// ********* RULES COPIED IN sequence_exprProp
+//UNSUP	//			// For precedence, see IEEE 17.7.1
+//UNSUP	//
+//UNSUP	// 			// IEEE: "cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }"
+//UNSUP	//			// IEEE: "sequence_expr cycle_delay_range sequence_expr { cycle_delay_range sequence_expr }"
+//UNSUP	//			// Both rules basically mean we can repeat sequences, so make it simpler:
+//UNSUP		cycle_delay_range sexpr	 %prec yP_POUNDPOUND	{ }
+//UNSUP	|	~p~sexpr cycle_delay_range sexpr %prec prPOUNDPOUND_MULTI	{ }
+//UNSUP	//
+//UNSUP	//			// IEEE: expression_or_dist [ boolean_abbrev ]
+//UNSUP	//			// Note expression_or_dist includes "expr"!
+//UNSUP	//			// sexpr/*sexpression_or_dist*/	 --- Hardcoded below
+//UNSUP	|	~p~sexpr/*sexpression_or_dist*/ boolean_abbrev	{ }
+//UNSUP	//
+//UNSUP	//			// IEEE: "sequence_instance [ sequence_abbrev ]"
+//UNSUP	//			// version without sequence_abbrev looks just like normal function call
+//UNSUP	//			// version w/sequence_abbrev matches above; expression_or_dist:expr:func boolean_abbrev:sequence_abbrev
+//UNSUP	//
+//UNSUP	//			// IEEE: '(' expression_or_dist {',' sequence_match_item } ')' [ boolean_abbrev ]
+//UNSUP	//			// IEEE: '(' sexpr {',' sequence_match_item } ')' [ sequence_abbrev ]
+//UNSUP	//			// As sequence_expr includes expression_or_dist, and boolean_abbrev includes sequence_abbrev:
+//UNSUP	//			// '(' sequence_expr {',' sequence_match_item } ')' [ boolean_abbrev ]
+//UNSUP	//			// "'(' sexpr ')' boolean_abbrev" matches "[sexpr:'(' expr ')'] boolean_abbrev" so we can simply drop it
+//UNSUP	|	'(' ~p~sexpr ')'			{ $<fl>$=$<fl>1; $$=$1+$2+$3; }
+//UNSUP	|	'(' ~p~sexpr ',' sequence_match_itemList ')'	{ }
+//UNSUP	//
+//UNSUP	//			// AND/OR are between pexprs OR sexprs
+//UNSUP	|	~p~sexpr yAND ~p~sexpr			{ $<fl>$=$<fl>1; $$=$1+$2+$3; }
+//UNSUP	|	~p~sexpr yOR ~p~sexpr			{ $<fl>$=$<fl>1; $$=$1+$2+$3; }
+//UNSUP	//			// Intersect always has an sexpr rhs
+//UNSUP	|	~p~sexpr yINTERSECT sexpr		{ $<fl>$=$<fl>1; $$=$1+$2+$3; }
+//UNSUP	//
+//UNSUP	|	yFIRST_MATCH '(' sexpr ')'		{ }
+//UNSUP	|	yFIRST_MATCH '(' sexpr ',' sequence_match_itemList ')'	{ }
+//UNSUP	|	~p~sexpr/*sexpression_or_dist*/ yTHROUGHOUT sexpr		{ }
+//UNSUP	//			// Below pexpr's are really sequence_expr, but avoid conflict
+//UNSUP	//			// IEEE: sexpr yWITHIN sexpr
+//UNSUP	|	~p~sexpr yWITHIN sexpr			{ $<fl>$=$<fl>1; $$=$1+$2+$3; }
+//UNSUP	//			// Note concurrent_assertion had duplicate rule for below
+//UNSUP	|	clocking_event ~p~sexpr %prec prSEQ_CLOCKING	{ }
+//UNSUP	//
+//UNSUP	//============= expr rules copied for sequence_expr
+//UNSUP	|	BISONPRE_COPY_ONCE(expr,{s/~l~/s/g; s/~p~/s/g; s/~noPar__IGNORE~/yP_PAR__IGNORE /g; })	// {copied}
+//UNSUP	;
+
+//UNSUPcycle_delay_range<nodep>:  // IEEE: ==cycle_delay_range
+//UNSUP	//			// These three terms in 1800-2005 ONLY
+//UNSUP		yP_POUNDPOUND yaINTNUM			{ }
+//UNSUP	|	yP_POUNDPOUND id			{ }
+//UNSUP	|	yP_POUNDPOUND '(' constExpr ')'		{ }
+//UNSUP	//			// In 1800-2009 ONLY:
+//UNSUP	//			// IEEE: yP_POUNDPOUND constant_primary
+//UNSUP	//			// UNSUP: This causes a big grammer ambiguity
+//UNSUP	//			// as ()'s mismatch between primary and the following statement
+//UNSUP	//			// the sv-ac committee has been asked to clarify  (Mantis 1901)
+//UNSUP	|	yP_POUNDPOUND '[' cycle_delay_const_range_expression ']'	{ }
+//UNSUP	|	yP_POUNDPOUND yP_BRASTAR ']'		{ }
+//UNSUP	|	yP_POUNDPOUND yP_BRAPLUSKET		{ }
+//UNSUP	;
+
+//UNSUPsequence_match_itemList<nodep>:  // IEEE: [sequence_match_item] part of sequence_expr
+//UNSUP		sequence_match_item			{ $$ = $1; }
+//UNSUP	|	sequence_match_itemList ',' sequence_match_item	{ }
+//UNSUP	;
+
+//UNSUPsequence_match_item<nodep>:  // ==IEEE: sequence_match_item
+//UNSUP	//			// IEEE says: operator_assignment
+//UNSUP	//			// IEEE says: inc_or_dec_expression
+//UNSUP	//			// IEEE says: subroutine_call
+//UNSUP	//			// This is the same list as...
+//UNSUP		for_step_assignment			{ $$ = $1; }
+//UNSUP	;
+
+//UNSUPboolean_abbrev<nodep>:  // ==IEEE: boolean_abbrev
+//UNSUP	//			// IEEE: consecutive_repetition
+//UNSUP		yP_BRASTAR const_or_range_expression ']'	{ }
+//UNSUP	|	yP_BRASTAR ']'				{ }
+//UNSUP	|	yP_BRAPLUSKET				{ $$ = $1; }
+//UNSUP	//			// IEEE: non_consecutive_repetition
+//UNSUP	|	yP_BRAEQ const_or_range_expression ']'		{ }
+//UNSUP	//			// IEEE: goto_repetition
+//UNSUP	|	yP_BRAMINUSGT const_or_range_expression ']'	{ }
+//UNSUP	;
+
+//UNSUPconst_or_range_expression<nodep>:  // ==IEEE: const_or_range_expression
+//UNSUP		constExpr				{ $$ = $1; }
+//UNSUP	|	cycle_delay_const_range_expression	{ }
+//UNSUP	;
+
+//UNSUPconstant_range<nodep>:  // ==IEEE: constant_range
+//UNSUP		constExpr ':' constExpr			{ }
+//UNSUP	;
+
+//UNSUPcycle_delay_const_range_expression<nodep>:  // ==IEEE: cycle_delay_const_range_expression
+//UNSUP	//				// Note '$' is part of constExpr
+//UNSUP		constExpr ':' constExpr			{ }
+//UNSUP	;
 
 //************************************************
 // Let
