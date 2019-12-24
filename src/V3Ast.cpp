@@ -146,6 +146,9 @@ string AstNode::encodeNumber(vlsint64_t num) {
 string AstNode::nameProtect() const {
     return VIdProtect::protectIf(name(), protect());
 }
+string AstNode::origNameProtect() const {
+    return VIdProtect::protectIf(origName(), protect());
+}
 
 string AstNode::shortName() const {
     string pretty = name();

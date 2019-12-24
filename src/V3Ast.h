@@ -1278,11 +1278,13 @@ public:
 
     // ACCESSORS
     virtual string name() const { return ""; }
+    virtual string origName() const { return ""; }
     virtual void name(const string& name) { this->v3fatalSrc("name() called on object without name() method"); }
     virtual void tag(const string& text) {}
     virtual string tag() const { return ""; }
     virtual string verilogKwd() const { return ""; }
     string nameProtect() const;  // Name with --protect-id applied
+    string origNameProtect() const;  // origName with --protect-id applied
     string shortName() const;  // Name with __PVT__ removed for concatenating scopes
     static string dedotName(const string& namein);  // Name with dots removed
     static string prettyName(const string& namein);  // Name for printing out to the user
@@ -2240,7 +2242,7 @@ public:
     void addActivep(AstNode* nodep) { addOp3p(nodep); }
     // ACCESSORS
     virtual void name(const string& name) { m_name = name; }
-    string origName() const { return m_origName; }
+    virtual string origName() const { return m_origName; }
     string hierName() const    { return m_hierName; }
     void hierName(const string& hierName) { m_hierName = hierName; }
     bool inLibrary() const { return m_inLibrary; }

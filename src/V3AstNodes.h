@@ -1517,7 +1517,7 @@ public:
     virtual string name() const { return m_name; }  // * = Var name
     virtual bool hasDType() const { return true; }
     virtual bool maybePointedTo() const { return true; }
-    string origName() const { return m_origName; }  // * = Original name
+    virtual string origName() const { return m_origName; }  // * = Original name
     void origName(const string& name) { m_origName = name; }
     AstVarType varType() const { return m_varType; }  // * = Type of variable
     void direction(const VDirection& flag) {
@@ -2177,7 +2177,7 @@ public:
     // ACCESSORS
     virtual string name() const { return m_name; }  // * = Cell name
     virtual void name(const string& name) { m_name = name; }
-    string origName() const { return m_origName; }  // * = Original name
+    virtual string origName() const { return m_origName; }  // * = Original name
     void origName(const string& name) { m_origName = name; }
     string modName() const { return m_modName; }  // * = Instance name
     void modName(const string& name) { m_modName = name; }
