@@ -1741,31 +1741,7 @@ private:
         AstNodeDType* fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
         UINFO(9,"     from dt "<<fromDtp<<endl);
         if (AstNodeUOrStructDType* adtypep = VN_CAST(fromDtp, NodeUOrStructDType)) {
-            // No need to width-resolve the class, as it was done when we did the child
-            AstMemberDType* memberp = adtypep->findMember(nodep->name());
-            if (!memberp) {
-                nodep->v3error("Member " << nodep->prettyNameQ() << " not found in structure");
-            } else {
-                if (m_attrp) {  // Looking for the base of the attribute
-                    nodep->dtypep(memberp);
-                    UINFO(9, "   MEMBERSEL(attr) -> " << nodep << endl);
-                    UINFO(9, "           dt-> " << nodep->dtypep() << endl);
-                } else {
-                    AstSel* newp = new AstSel(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                              memberp->lsb(), memberp->width());
-                    // Must skip over the member to find the union; as the member may disappear
-                    // later
-                    newp->dtypep(memberp->subDTypep()->skipRefToEnump());
-                    newp->didWidth(true);  // Don't replace dtype with basic type
-                    UINFO(9, "   MEMBERSEL -> " << newp << endl);
-                    UINFO(9, "           dt-> " << newp->dtypep() << endl);
-                    nodep->replaceWith(newp);
-                    pushDeletep(nodep); VL_DANGLING(nodep);
-                    // Should be able to treat it as a normal-ish nodesel - maybe.
-                    // The lhsp() will be strange until this stage; create the number here?
-                }
-                return;
-            }
+            if (memberSelStruct(nodep, adtypep)) return;
         } else if (VN_IS(fromDtp, EnumDType)
                    || VN_IS(fromDtp, AssocArrayDType)
                    || VN_IS(fromDtp, QueueDType)
@@ -1786,6 +1762,30 @@ private:
         // Error handling
         nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::LogicFalse()));
         pushDeletep(nodep); VL_DANGLING(nodep);
+    }
+    bool memberSelStruct(AstMemberSel* nodep, AstNodeUOrStructDType* adtypep) {
+        // Returns true if ok
+        if (AstMemberDType* memberp = adtypep->findMember(nodep->name())) {
+            if (m_attrp) {  // Looking for the base of the attribute
+                nodep->dtypep(memberp);
+                UINFO(9, "   MEMBERSEL(attr) -> " << nodep << endl);
+                UINFO(9, "           dt-> " << nodep->dtypep() << endl);
+            } else {
+                AstSel* newp = new AstSel(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                          memberp->lsb(), memberp->width());
+                // Must skip over the member to find the union; as the member may disappear later
+                newp->dtypep(memberp->subDTypep()->skipRefToEnump());
+                newp->didWidth(true);  // Don't replace dtype with basic type
+                UINFO(9, "   MEMBERSEL -> " << newp << endl);
+                UINFO(9, "           dt-> " << newp->dtypep() << endl);
+                nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+                // Should be able to treat it as a normal-ish nodesel - maybe.
+                // The lhsp() will be strange until this stage; create the number here?
+            }
+            return true;
+        }
+        nodep->v3error("Member " << nodep->prettyNameQ() << " not found in structure");
+        return false;
     }
 
     virtual void visit(AstCMethodCall* nodep) {
