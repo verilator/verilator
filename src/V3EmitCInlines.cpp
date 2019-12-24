@@ -101,8 +101,7 @@ void EmitCInlines::emitInt() {
     m_ofp = &hf;
 
     ofp()->putsHeader();
-    puts("#ifndef _"+topClassName()+"__Inlines_H_\n");
-    puts("#define _"+topClassName()+"__Inlines_H_\n");
+    ofp()->putsGuard();
     puts("\n");
 
     puts("#include \"verilated.h\"\n");
@@ -112,7 +111,7 @@ void EmitCInlines::emitInt() {
     // Placeholder - v3Global.needHInlines(true) currently not used
 
     puts("//======================\n\n");
-    puts("#endif  // guard\n");
+    ofp()->putsEndGuard();
 }
 
 //######################################################################

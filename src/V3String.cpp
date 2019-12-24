@@ -88,6 +88,14 @@ string VString::downcase(const string& str) {
     return out;
 }
 
+string VString::upcase(const string& str) {
+    string out = str;
+    for (string::iterator pos = out.begin(); pos != out.end(); ++pos) {
+        *pos = toupper(*pos);
+    }
+    return out;
+}
+
 string VString::quotePercent(const string& str) {
     string out;
     for (string::const_iterator pos = str.begin(); pos != str.end(); ++pos) {

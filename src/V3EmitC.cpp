@@ -1073,8 +1073,6 @@ class EmitCImp : EmitCStmts {
             }
             ofp->puts("// See "+v3Global.opt.prefix()+".h for the primary calling header\n");
         }
-        ofp->puts("\n");
-
         return ofp;
     }
 
@@ -2536,8 +2534,7 @@ void EmitCImp::emitMTaskState() {
 
 void EmitCImp::emitInt(AstNodeModule* modp) {
     // Always have this first; gcc has short circuiting if #ifdef is first in a file
-    puts("#ifndef _"+modClassName(modp)+"_H_\n");
-    puts("#define _"+modClassName(modp)+"_H_\n");
+    ofp()->putsGuard();
     puts("\n");
 
     ofp()->putsIntTopInclude();
@@ -2757,12 +2754,13 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     }
 
     // finish up h-file
-    puts("#endif  // guard\n");
+    ofp()->putsEndGuard();
 }
 
 //----------------------------------------------------------------------
 
 void EmitCImp::emitImp(AstNodeModule* modp) {
+    puts("\n");
     puts("#include \""+modClassName(modp)+".h\"\n");
     puts("#include \""+symClassName()+".h\"\n");
 
@@ -2770,8 +2768,8 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
         puts("\n");
         puts("#include \"verilated_dpi.h\"\n");
     }
-    puts("\n");
 
+    puts("\n");
     emitTextSection(AstType::atScImpHdr);
 
     if (m_slow && splitFilenum()==0) {

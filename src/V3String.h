@@ -65,8 +65,10 @@ public:
     static bool wildmatch(const char* s, const char* p);
     // Return {a}{dot}{b}, omitting dot if a or b are empty
     static string dot(const string& a, const string& dot, const string& b);
-    // Convert string to lowercase
+    // Convert string to lowercase (tolower)
     static string downcase(const string& str);
+    // Convert string to upper case (toupper)
+    static string upcase(const string& str);
     // Replace any %'s with %%
     static string quotePercent(const string& str);
     // Replace any unprintable with space

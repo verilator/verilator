@@ -25,6 +25,7 @@
 #include "V3File.h"
 #include "V3Os.h"
 #include "V3PreShell.h"
+#include "V3String.h"
 #include "V3Ast.h"
 
 #include <cerrno>
@@ -940,6 +941,17 @@ void V3OutFile::putsForceIncs() {
     for (V3StringList::const_iterator it = forceIncs.begin(); it != forceIncs.end(); ++it) {
         puts("#include \""+*it+"\"\n");
     }
+}
+
+void V3OutCFile::putsGuard() {
+    UASSERT(!m_guard, "Already called putsGuard in emit file");
+    m_guard = true;
+    string var = VString::upcase(string("_") + V3Os::filenameNonDir(filename()) + "_");
+    for (string::iterator pos = var.begin(); pos != var.end(); ++pos) {
+        if (!isalnum(*pos)) *pos = '_';
+    }
+    puts("\n#ifndef " + var + "\n");
+    puts("#define " + var + "  // guard\n");
 }
 
 //######################################################################
