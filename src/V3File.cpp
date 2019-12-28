@@ -53,6 +53,10 @@
 # include <sys/wait.h>
 #endif
 
+#if defined(_WIN32) || defined(__MINGW32__)
+# include <io.h>  // open, read, write, close
+#endif
+
 // If change this code, run a test with the below size set very small
 //#define INFILTER_IPC_BUFSIZ 16
 #define INFILTER_IPC_BUFSIZ (64*1024)  // For debug, try this as a small number
@@ -409,8 +413,7 @@ private:
                      || errno == EWOULDBLOCK
 #endif
                 ) {
-                // cppcheck-suppress obsoleteFunctionsusleep
-                checkFilter(false); usleep(1000); continue;
+                checkFilter(false); V3Os::u_sleep(1000); continue;
             } else { m_readEof = true; break; }
         }
         return out;
@@ -448,8 +451,7 @@ private:
                      || errno == EWOULDBLOCK
 #endif
                 ) {
-                // cppcheck-suppress obsoleteFunctionsusleep
-                checkFilter(false); usleep(1000); continue;
+                checkFilter(false); V3Os::u_sleep(1000); continue;
             }
             else break;
         }
