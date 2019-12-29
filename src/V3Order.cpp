@@ -896,19 +896,19 @@ private:
         std::cerr<<V3Error::msgPrefix()
                  <<"     Widest candidate vars to split:"<<endl;
         std::stable_sort(m_unoptflatVars.begin(), m_unoptflatVars.end(), OrderVarWidthCmp());
-        int num_can_split = 0;
+        vl_unordered_set<const AstVar*> canSplitList;
         int lim = m_unoptflatVars.size() < 10 ? m_unoptflatVars.size() : 10;
         for (int i = 0; i < lim; i++) {
             OrderVarStdVertex* vsvertexp = m_unoptflatVars[i];
             AstVar* varp = vsvertexp->varScp()->varp();
-            const bool can_split = V3SplitVar::canSplitVar(varp);
+            const bool canSplit = V3SplitVar::canSplitVar(varp);
             std::cerr<<V3Error::msgPrefix()<<"          "
                      <<varp->fileline()<<" "<<varp->prettyName()<<std::dec
                      <<", width "<<varp->width()<<", fanout "
                      <<vsvertexp->fanout();
-            if (can_split) {
-                std::cerr <<", can be splitted ";
-                ++num_can_split;
+            if (canSplit) {
+                std::cerr <<", can be split";
+                canSplitList.insert(varp);
             }
             std::cerr << std::endl;
         }
@@ -921,18 +921,19 @@ private:
         for (int i = 0; i < lim; i++) {
             OrderVarStdVertex* vsvertexp = m_unoptflatVars[i];
             AstVar* varp = vsvertexp->varScp()->varp();
-            const bool can_split = V3SplitVar::canSplitVar(varp);
+            const bool canSplit = V3SplitVar::canSplitVar(varp);
             std::cerr<<V3Error::msgPrefix()<<"          "
                      <<varp->fileline()<<" "<<varp->prettyName()
                      <<", width "<<std::dec<<varp->width()
                      <<", fanout "<<vsvertexp->fanout();
-            if (can_split) {
-                std::cerr<<", can be splitted ";
-                ++num_can_split;
+            if (canSplit) {
+                std::cerr<<", can be split";
+                canSplitList.insert(varp);
             }
             std::cerr<<endl;
         }
-        if (num_can_split) v3info("Adding /*verilator split_var*/ to variables above may resolve this warning.");
+        if (!canSplitList.empty()) v3info("Adding /*verilator split_var*/ to variables above may resolve this warning.");
+        V3Stats::addStat("Order, SplitVar, candidates", canSplitList.size());
         m_unoptflatVars.clear();
     }
 

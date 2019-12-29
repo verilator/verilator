@@ -19,7 +19,7 @@
 //*************************************************************************
 // V3SplitVar divides a variable into multiple variables to avoid UNOPTFLAT warning
 // and get better perfomance.
-// Variables to be splitted must be marked by /*verilator split_var*/ pragma.
+// Variables to be split must be marked by /*verilator split_var*/ pragma.
 // There are sveral kinds of data types that may cause the warning.
 // 1) Unpacked arrays
 // 2) Packed arrays
@@ -55,7 +55,7 @@
 //
 //
 // Limitations: (planned to be resolved)
-// - Only 1D unpacked array can be splitted
+// - Only 1D unpacked array can be split
 // - Splitting 2) - 5) will be supported later
 //
 //*************************************************************************
@@ -73,178 +73,155 @@
 #include VL_INCLUDE_UNORDERED_MAP
 #include VL_INCLUDE_UNORDERED_SET
 
-namespace {
 //######################################################################
 //
 
-class SplitVarVisitor : public AstNVisitor {
+class SplitUnpackedVarVisitor : public AstNVisitor {
     AstNodeModule* m_modp;  // current module
-    AstVar* m_lastVar;      // the most recently declared variable
-    // key:variable to be splitted. value:location where the variable is referenced.
+    AstVar* m_lastVarp;     // the most recently declared variable
+    int m_numSplit;         // total number of split variable
+    // key:variable to be split. value:location where the variable is referenced.
     vl_unordered_map<AstVar*, std::vector<AstArraySel*> > m_refs;
-    virtual void visit(AstNode* nodep) VL_OVERRIDE;
-    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE;
-    virtual void visit(AstVar* nodep) VL_OVERRIDE;
-    virtual void visit(AstPragma* pragmap) VL_OVERRIDE;
-    virtual void visit(AstArraySel* nodep) VL_OVERRIDE;
+
+    static AstConst* constifyIfNot(AstNode* nodep) {
+        AstConst* constp = VN_CAST(nodep, Const);
+        if (!constp) {
+            UINFO(4, nodep << " is expected to be constant, but not\n");
+            AstNode* const constified = V3Const::constifyEdit(nodep);
+            UINFO(4, "After constified:" << constified << '\n');
+            constp = VN_CAST(constified, Const);
+        }
+        return constp;
+    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+        UASSERT_OBJ(m_modp == NULL, m_modp, "Nested module declration");
+        m_modp = nodep;
+        m_lastVarp = NULL;
+        iterateChildren(nodep);
+        split();
+        m_modp = NULL;
+    }
+    virtual void visit(AstVar* nodep) VL_OVERRIDE { m_lastVarp = nodep; }
+    virtual void visit(AstPragma* pragmap) VL_OVERRIDE {
+        if (pragmap->pragType() != AstPragmaType::SPLIT_VAR) return;  // nothing to do
+        if (!m_lastVarp) {
+            pragmap->v3warn(SPLITVAR, "Stray pragma of split_var is detected.");
+        } else if (!canSplit(m_lastVarp)) {
+            pragmap->v3warn(SPLITVAR,
+                            "Pragma split_var is specified on "
+                                << m_lastVarp->prettyNameQ()
+                                << " which type is not supported yet. "
+                                   "Only unpacked 1D array is supported by this version.");
+        } else {  // finally find a good candidate
+            UINFO(4, m_lastVarp->name() << " is added to candidate list.\n");
+            m_refs.insert(std::make_pair(m_lastVarp, std::vector<AstArraySel*>()));
+        }
+        m_lastVarp = NULL;
+        pragmap->unlinkFrBack()->deleteTree(); VL_DANGLING(pragmap); // consume the pragma here anyway.
+    }
+    virtual void visit(AstArraySel* nodep) VL_OVERRIDE {
+        AstVarRef* const vrefp = VN_CAST(nodep->fromp(), VarRef);
+        if (!vrefp) return;
+
+        AstVar* const varp = vrefp->varp();
+        if (m_refs.find(varp) == m_refs.end()) return;  // variable without split_var pragma
+
+        AstConst* const indexp = constifyIfNot(nodep->bitp());
+
+        if (indexp) {  // OK
+            m_refs[varp].push_back(nodep);
+        } else {
+            nodep->bitp()->v3warn(SPLITVAR,
+                                  "Variable " << vrefp->prettyNameQ()
+                                              << " will not be split because index cannot be determined statically.");
+            m_refs.erase(varp);
+        }
+    }
+    // The actual splitting operation is done in this function, so don't forget to call this function.
+    // The reason not doing things in dtor is to avoid throwing an exception in dtor.
+    void split() {
+        for (vl_unordered_map<AstVar*, std::vector<AstArraySel*> >::iterator it = m_refs.begin(),
+                                                                             it_end = m_refs.end();
+             it != it_end; ++it) {
+            UINFO(3, "In module " << m_modp->name() << " var " << it->first->prettyNameQ()
+                                  << " which has "
+                                  << it->second.size() << " refs"
+                                  << " will be split.\n");
+            AstVar* varp = it->first;
+            AstUnpackArrayDType* const dtypep = VN_CAST(varp->subDTypep(), UnpackArrayDType);
+            std::vector<AstVar*> vars;
+            // Add the split variables
+            AstConst* const lsbp = constifyIfNot(dtypep->rangep()->lsbp());
+            AstConst* const msbp = constifyIfNot(dtypep->rangep()->msbp());
+            UASSERT_OBJ(lsbp, dtypep->rangep()->lsbp(), "must be constant");
+            UASSERT_OBJ(msbp, dtypep->rangep()->msbp(), "must be constant");
+            const vlsint32_t lsb = lsbp->toSInt(), msb = msbp->toSInt();
+            UASSERT_OBJ(lsb <= msb, dtypep->rangep(), "lsb must not greater than msb");
+            for (vlsint32_t i = 0; i <= msb - lsb; ++i) {
+                const std::string name = varp->name() + "__BRA__" + cvtToStr(i) + "__KET__";
+                AstVar* const newp = new AstVar(varp->fileline(), varp->varType(), name, dtypep->subDTypep());
+                m_modp->addStmtp(newp);
+                vars.push_back(newp);
+            }
+
+            // refer the split variable
+            for (size_t i = 0; i < it->second.size(); ++i) {
+                AstArraySel* selp = it->second[i];
+                AstVarRef* const vrefp = VN_CAST(selp->fromp(), VarRef);
+                AstConst* const indexp = VN_CAST(selp->bitp(), Const);
+                UASSERT_OBJ(vrefp && indexp, selp, "already checked");
+                const uint32_t idx = indexp->toUInt();
+                // V3Width:width() removes VAR_BASE attribute and make index 0-origin.
+                AstVarRef* const new_vref = new AstVarRef(selp->fileline(), vars.at(idx), vrefp->lvalue());
+                selp->replaceWith(new_vref); selp->deleteTree(); VL_DANGLING(selp);
+            }
+            varp->unlinkFrBack()->deleteTree(); VL_DANGLING(varp);
+            ++m_numSplit;
+        }
+        m_refs.clear();  // done
+    }
 
 public:
-    explicit SplitVarVisitor(AstNodeModule* modp);
-    explicit SplitVarVisitor(AstNode* nodep);
-    ~SplitVarVisitor();
-    void split();  // must call before dtor
-    static bool canSplit(const AstVar* nodep);
-    static int debug(bool reset = false);
+    explicit SplitUnpackedVarVisitor(AstNetlist* nodep)
+        : m_modp(NULL)
+        , m_lastVarp(NULL)
+        , m_numSplit(0) {
+        iterate(nodep);
+    }
+    ~SplitUnpackedVarVisitor() {
+        UASSERT(m_refs.empty(), "Don't forget to call split()");
+        V3Stats::addStat("SplitVar, Split Unpacked Array", m_numSplit);
+    }
+    VL_DEBUG_FUNC;  // Declare debug()
+
+    // Check if the passed variable can be split.
+    // Even if this function returns true, the variable may not be split
+    // because the access to the variable cannot be determined statically.
+    static bool canSplit(const AstVar* nodep) {
+        if (AstNodeDType* dtypep = nodep->subDTypep()) {
+            const std::pair<uint32_t, uint32_t> dim = dtypep->dimensions(false);
+            UINFO(5, "Unpacked Dim of " << nodep->prettyNameQ() << ":" << dim.second << '\n');
+            // Support just 1D in unpacked side.
+            // Traced or public variable cannot be split.
+            return dim.second == 1 && !nodep->isSigPublic() && !nodep->isTrace();
+        }
+        return false;
+    }
 };
 
-// Check if the passed variable can be splitted.
-// Even if this function returns true, the variable may not be splitted
-// because the access to the variable cannot be determined statically.
-bool SplitVarVisitor::canSplit(const AstVar* nodep) {
-    if (AstNodeDType* dtypep = nodep->subDTypep()) {
-        const std::pair<uint32_t, uint32_t> dim = dtypep->dimensions(false);
-        UINFO(5, "Unpacked Dim of \"" << nodep->name() << "\":" << dim.second << '\n');
-        // Support just 1D in unpacked side.
-        // Traced or public variable cannot be splitted.
-        return dim.second == 1 && !nodep->isSigPublic() && !nodep->isTrace();
-    }
-    return false;
-}
 
-int SplitVarVisitor::debug(bool reset) {
-    static int level = -1;
-    if (VL_UNLIKELY(level < 0) || reset) {
-        level = v3Global.opt.debugSrcLevel(__FILE__);
-    }
-    return level;
-}
-
-void SplitVarVisitor::visit(AstNode* nodep) {
-    iterateChildren(nodep);
-}
-
-void SplitVarVisitor::visit(AstNodeModule* nodep) {
-    if (m_modp) {
-        SplitVarVisitor visitor(nodep);
-        visitor.split();
-    } else {
-        m_modp = nodep;
-        iterateChildren(nodep);
-    }
-}
-
-void SplitVarVisitor::visit(AstVar* nodep) {
-    m_lastVar = nodep;
-}
-
-void SplitVarVisitor::visit(AstPragma* pragmap) {
-    if (pragmap->pragType() != AstPragmaType::SPLIT_VAR) return;  // nothing to do
-    if (!m_lastVar) {
-        pragmap->v3warn(SPLITVAR, "Stray pragma of split_var is detected.");
-    } else if (!canSplit(m_lastVar)) {
-        pragmap->v3warn(SPLITVAR,
-                        "Pragma split_var is specified on a variable whose type is not supported yet. "
-                        "Only unpacked 1D array is supported by this version.");
-    } else {  // finally find a good candidate
-        UINFO(4, m_lastVar->name() << " is added to candidate list.\n");
-        m_refs.insert(std::make_pair(m_lastVar, std::vector<AstArraySel*>()));
-    }
-    m_lastVar = NULL;
-    pragmap->unlinkFrBack()->deleteTree();  // consume the pragma here anyway.
-}
-
-void SplitVarVisitor::visit(AstArraySel* nodep) {
-    AstVarRef* const vrefp = VN_CAST(nodep->fromp(), VarRef);
-    if (!vrefp) return;
-
-    AstVar* const varp = vrefp->varp();
-    if (m_refs.find(varp) == m_refs.end()) return;  // variable without split_var pragma
-
-    AstConst* indexp = VN_CAST(nodep->bitp(), Const);
-    if (!indexp) {  // index is not constant yet.
-        UINFO(4, "Index of " << vrefp->name() << " is " << nodep->bitp()
-                             << " which is not constant.\n");
-        AstNode* const constified = V3Const::constifyEdit(nodep->bitp());
-        UINFO(4, "After constified:" << constified << '\n');
-        indexp = VN_CAST(constified, Const);
-    }
-
-    if (indexp) {  // OK
-        m_refs[varp].push_back(nodep);
-    } else {
-        nodep->bitp()->v3warn(SPLITVAR,
-                              "Variable \"" << vrefp->name() << "\" will not be splitted "
-                              "because index cannot be determined statically.");
-        m_refs.erase(varp);
-    }
-}
-
-// The actual splitting operation is done in this function, so don't forget to call this function.
-// The reason not doing things in dtor is to avoid throwing an exception in dtor.
-void SplitVarVisitor::split() {
-    for (vl_unordered_map<AstVar*, std::vector<AstArraySel*> >::iterator it = m_refs.begin(),
-                                                                         it_end = m_refs.end();
-        it != it_end; ++it) {
-        UINFO(3, "In module " << m_modp->name() << " var " << it->first->name() << " which has "
-                              << it->second.size() << " refs"
-                              << " will be splitted.\n");
-        AstVar* const varp = it->first;
-        AstUnpackArrayDType* const dtypep = VN_CAST(varp->subDTypep(), UnpackArrayDType);
-        std::vector<AstVar*> vars;
-        // Add the splitted variables
-        for (uint32_t i = 0; i < dtypep->arrayUnpackedElements(); ++i) {
-            std::stringstream name;
-            name << varp->name() << std::dec << i;
-            AstVar* const newp = new AstVar(varp->fileline(), varp->varType(), name.str(), dtypep->subDTypep());
-            m_modp->addStmtp(newp);
-            vars.push_back(newp);
-        }
-
-        // refer the splitted variable
-        for (size_t i = 0; i < it->second.size(); ++i) {
-            AstArraySel* selp = it->second[i];
-            AstVarRef* const vrefp = VN_CAST(selp->fromp(), VarRef);
-            AstConst* const indexp = VN_CAST(selp->bitp(), Const);
-            UASSERT_OBJ(vrefp && indexp, selp, "already checked");
-            const uint32_t idx = indexp->toUInt();
-            std::cout << "Access idx:" << idx << std::endl;
-            AstVarRef* const new_vref = new AstVarRef(selp->fileline(), vars.at(idx), vrefp->lvalue());
-            selp->replaceWith(new_vref); selp->deleteTree(); VL_DANGLING(selp);
-        }
-        varp->unlinkFrBack()->deleteTree();
-    }
-    m_refs.clear();  // done
-}
-
-
-SplitVarVisitor::SplitVarVisitor(AstNodeModule* modp)
-    : m_modp(modp)
-    , m_lastVar(NULL) {
-    iterateChildren(modp);
-}
-
-SplitVarVisitor::SplitVarVisitor(AstNode* nodep)
-    : m_modp(NULL)
-    , m_lastVar(NULL) {
-    iterate(nodep);
-}
-
-SplitVarVisitor::~SplitVarVisitor() {
-    UASSERT(m_refs.empty(), "Don't forget to call split()");
-}
-}  // unnamed namespace
 
 //######################################################################
 // Split class functions
-void V3SplitVar::splitVariable(AstNode* nodep) {
+void V3SplitVar::splitUnpackedVariable(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     {
-        SplitVarVisitor visitor(nodep);
-        visitor.split();
+        SplitUnpackedVarVisitor visitor(nodep);
     }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("split_array", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    V3Global::dumpCheckGlobalTree("split_var", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }
 
 bool V3SplitVar::canSplitVar(const AstVar* varp) {
-    return SplitVarVisitor::canSplit(varp);
+    return SplitUnpackedVarVisitor::canSplit(varp);
 }

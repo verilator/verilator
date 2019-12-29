@@ -3237,9 +3237,22 @@ behavior.  See the test_regress/t/t_dpi_display.v file for an example.
 =item /*verilator split_var*/
 
 Attached to a variable or a net declaration. It breaks the variable into
-multiple pieces. Only 1D unpacked array can be splitted at this moment.
-Splitting variables may resolve UNOPTFLAT warning and increase
-the simulation speed.
+multiple pieces. Only 1D unpacked array can be split at this moment.
+
+Verilator will internally convert a variable with the metacomment such as:
+
+  logic [7:0] x [0:1];  /*verilator split_var*/
+
+to scalar variables below.
+
+  logic [7:0] x__BRA__0__KET__;
+  logic [7:0] x__BRA__1__KET__;
+
+This operation helps optimization step to identify the dependencies
+among variables and may resolve resolve UNOPTFLAT warning.
+If the warning is resolved, simulation speed gets improved.
+Please also see the explanation of UNOPTFLAT below.
+
 Splitting large array may slow donw the Verilating speed.
 
 =item /*verilator tag <text...>*/
@@ -4207,11 +4220,11 @@ calls.
 
 =item SPLITVAR
 
-Warns that a variable with split_var metacomment was not splitted.
+Warns that a variable with split_var metacomment was not split.
 Possible reasons are
 
   The datatype is not supported for splitting yet.
-  The access pattern of the variable can not be determined statically.
+  The access pattern of the variable can not be determined statically. (e.g. memory)
 
 =item STMTDLY
 
@@ -4340,7 +4353,8 @@ sort of changes may also speed up your traditional event driven simulator,
 as it will result in fewer events per cycle.
 
 Another way to resolve this warning is to add split_var meta comment
-explained above.
+explained above. The variable will be split internnaly so that Verilator
+can optimize well.
 
 The most complicated UNOPTFLAT path we've seen was due to low bits of a bus
 being generated from an always statement that consumed high bits of the

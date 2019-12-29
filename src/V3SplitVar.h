@@ -23,15 +23,15 @@
 
 //============================================================================
 
-class AstNode;
+class AstNetlist;
 class AstVar;
 
 class V3SplitVar {
 public:
     // split variables marked with split_var pragma.
-    static void splitVariable(AstNode* nodep);
+    static void splitUnpackedVariable(AstNetlist* nodep);
 
-    // returns true if the variable can be splitted.
+    // returns true if the variable can be split.
     // This check is not perfect.
     static bool canSplitVar(const AstVar* varp);
 };
