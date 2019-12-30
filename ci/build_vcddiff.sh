@@ -14,5 +14,13 @@ TMP_DIR=$(mktemp -d)
 git -C ${TMP_DIR} clone https://github.com/veripool/vcddiff
 VCDDIFF_DIR=${TMP_DIR}/vcddiff
 git -C ${VCDDIFF_DIR} checkout 5112f88b7ba8818dce9dfb72619e64a1fc19542c
-make -C ${VCDDIFF_DIR}
-sudo cp ${VCDDIFF_DIR}/vcddiff /usr/local/bin
+
+case $TRAVIS_OS_NAME in
+    linux | osx)
+        make -C ${VCDDIFF_DIR}
+        sudo cp ${VCDDIFF_DIR}/vcddiff /usr/local/bin
+        ;;
+
+    windows)
+        ;;
+esac

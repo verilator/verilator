@@ -131,6 +131,8 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	README.adoc \
 	verilator-config.cmake.in \
 	verilator-config-version.cmake.in \
+	CMakeLists.txt \
+	src/CMakeLists.txt \
 	bin/verilator \
 	bin/verilator_coverage \
 	bin/verilator_difftree \
@@ -153,6 +155,8 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	include/.*ignore \
 	include/gtkwave/*.[chv]* \
 	include/vltstd/*.[chv]* \
+	platform/win32/dirent.h \
+	platform/win32/LICENSE.dirent.txt \
 	.*attributes */.*attributes  */*/.*attributes \
 	src/.*ignore src/*.in src/*.cpp src/*.[chly] \
 	src/astgen src/bisonpre src/*fix src/cppcheck_filtered \

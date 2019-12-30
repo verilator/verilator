@@ -3,3 +3,4 @@ exclude_paths:
   - '.github/**'
   - 'ci/build_verilator.sh'
   - 'include/vltstd/**'
+  - 'platform/win32/dirent.h'
