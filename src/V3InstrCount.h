@@ -19,6 +19,9 @@
 //
 //*************************************************************************
 
+#ifndef _V3INSTRCOUNT_H_
+#define _V3INSTRCOUNT_H_ 1
+
 #include "config_build.h"
 #include "verilatedos.h"
 
@@ -41,3 +44,5 @@ public:
     // Optional osp is stream to dump critical path to.
     static uint32_t count(AstNode* nodep, bool assertNoDups, std::ostream* osp = NULL);
 };
+
+#endif  // guard
