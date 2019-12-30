@@ -283,6 +283,7 @@ class AstSenTree;
 %token<fl>		yVLT_D_FILE	"--file"
 %token<fl>		yVLT_D_LINES	"--lines"
 %token<fl>		yVLT_D_MSG	"--msg"
+%token<fl>		yVLT_D_RULE	"--rule"
 
 %token<strp>		yaD_IGNORE	"${ignored-bbox-sys}"
 %token<strp>		yaD_DPI		"${dpi-sys}"
@@ -5597,6 +5598,10 @@ vltOffFront<errcodeen>:
 	|	yVLT_LINT_OFF				{ $$ = V3ErrorCode::I_LINT; }
 	|	yVLT_LINT_OFF yVLT_D_MSG yaID__ETC
 			{ $$ = V3ErrorCode((*$3).c_str());
+			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl); }
+			  $1->v3info("Deprecated -msg in configuration files, use -rule instead."<<endl); }
+	|	yVLT_LINT_OFF yVLT_D_RULE yaID__ETC
+			{ $$ = V3ErrorCode((*$3).c_str());
 			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl);  } }
 	;
 
@@ -5605,6 +5610,10 @@ vltOnFront<errcodeen>:
 	|	yVLT_TRACING_ON				{ $$ = V3ErrorCode::I_TRACING; }
 	|	yVLT_LINT_ON				{ $$ = V3ErrorCode::I_LINT; }
 	|	yVLT_LINT_ON yVLT_D_MSG yaID__ETC
+			{ $$ = V3ErrorCode((*$3).c_str());
+			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl);  }
+			  $1->v3info("Deprecated -msg in configuration files, use -rule instead."<<endl); }
+	|	yVLT_LINT_ON yVLT_D_RULE yaID__ETC
 			{ $$ = V3ErrorCode((*$3).c_str());
 			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl);  } }
 	;

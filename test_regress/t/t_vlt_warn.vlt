@@ -5,12 +5,12 @@
 
 `verilator_config
 
-lint_off -msg CASEINCOMPLETE -file "t/t_vlt_warn.v"
-lint_off -msg WIDTH          -file "t/t_vlt_warn.v" -lines 18
+lint_off -msg  CASEINCOMPLETE -file "t/t_vlt_warn.v" // Deprecation info about msg
+lint_off -rule WIDTH          -file "t/t_vlt_warn.v" -lines 18
 // Test wildcard filenames
-lint_off -msg WIDTH          -file "*/t_vlt_warn.v" -lines 19-19
+lint_off -rule WIDTH          -file "*/t_vlt_warn.v" -lines 19-19
 // Test global disables
-lint_off                     -file "*/t_vlt_warn.v" -lines 20-20
+lint_off                      -file "*/t_vlt_warn.v" -lines 20-20
 
 coverage_off -file "t/t_vlt_warn.v"
 // Test --flag is also accepted

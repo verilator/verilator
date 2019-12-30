@@ -2737,8 +2737,8 @@ controlled by configuration files, typically named with the .vlt
 extension. An example:
 
   `verilator_config
-  lint_off -msg WIDTH
-  lint_off -msg CASEX  -file "silly_vendor_code.v"
+  lint_off -rule WIDTH
+  lint_off -rule CASEX  -file "silly_vendor_code.v"
 
 This disables WIDTH warnings globally, and CASEX for a specific file.
 
@@ -2767,9 +2767,9 @@ Enable/disable coverage for the specified filename (or wildcard with '*' or
 omitted).  Often used to ignore an entire module for coverage analysis
 purposes.
 
-=item lint_on  [-msg <message>] [-file "<filename>" [-lines <line> [ - <line>]]]
+=item lint_on  [-rule <message>] [-file "<filename>" [-lines <line> [ - <line>]]]
 
-=item lint_off [-msg <message>] [-file "<filename>" [-lines <line> [ - <line>]]]
+=item lint_off [-rule <message>] [-file "<filename>" [-lines <line> [ - <line>]]]
 
 Enable/disables the specified lint warning, in the specified filename (or
 wildcard with '*' or '?', or all files if omitted) and range of line
@@ -2778,9 +2778,12 @@ numbers (or all lines if omitted).
 With lint_off using '*' will override any lint_on directives in the source,
 i.e. the warning will still not be printed.
 
-If the -msg is omitted, all lint warnings (see list in -Wno-lint) are
+If the -rule is omitted, all lint warnings (see list in -Wno-lint) are
 enabled/disabled.  This will override all later lint warning enables for
 the specified region.
+
+In previous versions -rule was named -msg. The latter is deprecated, but
+still works with a deprecation info, it may be removed in future versions.
 
 =item tracing_on  [-file "<filename>" [-lines <line> [ - <line> ]]]
 
