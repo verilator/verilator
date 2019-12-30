@@ -1,5 +1,5 @@
 #!/bin/bash
-# DESCRIPTION: Verilator: Travis CI build script
+# DESCRIPTION: Verilator: Travis CI autotools build script
 #
 # Copyright 2019 by Todd Strader. This program is free software; you can
 # redistribute it and/or modify it under the terms of either the GNU
@@ -15,6 +15,11 @@
 # process or add Verilator as a Git submodule.  Verilator tarballs can
 # not be used as the script relies on Git revisions for caching.
 set -e
+
+if [ "$TRAVIS_OS_NAME" = "windows" ]; then
+    # This script is currently only used on unices
+    exit 0
+fi
 
 if [ -z "${VERILATOR_NUM_JOBS}" ]; then
     VERILATOR_NUM_JOBS=$(nproc)

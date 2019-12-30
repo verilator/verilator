@@ -971,6 +971,18 @@ function in `src/verilator.cpp`.
 To get your pass to build you'll need to add its binary filename to the
 list in `src/Makefile_obj.in` and reconfigure.
 
+== IDE-based Development
+
+Any IDE supporting autoconf or cmake projects can be used for development.
+It's worth noting that https://www.qt.io/development-tools[Qt Creator] has
+excellent cmake support and can be used to directly open the root directory
+`CMakeLists.txt` for development and debugging. It also provides clang-format
+support for the `.clang-format` bundled with verilator's source code.
+
+Qt Creator will pick up clang-format from an installed LLVM package on all
+platforms it supports. E.g. on Windows, `choco install llvm` is all it takes to
+get clang-format.
+
 == Distribution
 
 Copyright 2008-2019 by Wilson Snyder.  Verilator is free software; you can

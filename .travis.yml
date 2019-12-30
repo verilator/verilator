@@ -23,14 +23,20 @@ cache:
     - $VERILATOR_CACHE
 
 before_install:
+# Chocolatey packages needed for building
+  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then  choco install activeperl ninja winflexbison3  ; fi
+
 # Perl modules needed for testing
-  - yes yes | sudo cpan -fi Unix::Processors Parallel::Forker Bit::Vector
-  - sudo apt-get install gdb gtkwave
+  - if [ "$TRAVIS_OS_NAME" != "windows" ]; then  yes yes | sudo cpan -fi Unix::Processors Parallel::Forker Bit::Vector  ; fi
+  - if [ "$TRAVIS_OS_NAME" != "windows" ]; then  sudo apt-get install gdb gtkwave                                       ; fi
+
 before_script:
   - bash -x ci/build_vcddiff.sh
   - bash -x ci/build_verilator.sh
+  - bash -x ci/build_cmake.sh
+
 after_script:
-  - ccache -s
+  - if [ "$TRAVIS_OS_NAME" != "windows" ]; then  ccache -s  ; fi
 
 stages:
   - "Build Verilator"
@@ -41,22 +47,31 @@ jobs:
     - if: type != cron
       stage: "Build Verilator"
       name: Build Verilator
+      os: linux
       compiler: gcc
       script: echo "Done building Verilator"
-# Non-cron build will just run on whatever linux flavor we get
+    - if: type != cron
+      stage: "Build Verilator"
+      name: Build Verilator
+      os: windows
+      script: echo "Done building Verilator"
+# Non-cron build will just run on whatever linux flavor we get, and on windows
     - if: type != cron
       stage: test
       name: Dist test
+      os: linux
       compiler: gcc
       script: ci/test.sh dist
     - if: type != cron
       stage: test
       name: Vlt test
+      os: linux
       compiler: gcc
       script: ci/test.sh vlt
     - if: type != cron
       stage: test
       name: Vltmt test
+      os: linux
       compiler: gcc
       script: ci/test.sh vltmt
 # Cron builds try different OS/compiler combinations

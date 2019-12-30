@@ -14,6 +14,7 @@
 *.tex
 *.pdf
 /Makefile
+CMakeLists.txt.user
 README
 TAGS
 autom4te.cache

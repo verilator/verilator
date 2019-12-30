@@ -24,8 +24,11 @@ If this works, skip down to <<Running Verilator>>.
 === Git
 
 Alternatively, installing Verilator with Git provides the most flexibility.
-For additional options and details see the additional sections below.  In
-brief:
+For additional options and details see the additional sections below.
+
+==== Unix Quick-start
+
+In brief:
 
 // Also update README
 ....
@@ -56,6 +59,30 @@ sudo make install
 
 If this works, skip down to <<Running Verilator>>.
 
+==== Windows Quick-start
+
+Cygwin builds should work similar to Unix builds. Cmake-based building is
+the long-term goal, and while the `verilator` binary can be currently built,
+the **cmake-based Windows builds are experimental and currently exempt
+from test suite coverage**. Cmake-based installation hasn't been implemented
+yet and has to be done manually.  Assuming you have the
+https://chocolatey.org[Chocolatey] package manager installed, as well as a
+build environment (MinGW or MSVS):
+
+....
+:: Prerequisites
+choco install activeperl ninja winflexbison3 git
+
+:: Build
+git clone https://git.veripool.org/git/verilator verilator
+cmake -G Ninja -S verilator -B verilator-build
+cmake --build verilator-build --config Release
+....
+
+Verilator is built, statically linked, under `./verilator-build/bin`. The
+binary itself has no other runtime dependencies, but it's expected to be
+invoked via the `bin/verilator` Perl wrapper.
+
 == Detailed Build Instructions
 
 This section describes details of the build process, and assumes you are
@@ -65,13 +92,15 @@ Linux distribution, see instead <<Install From a Package Manager>>.
 === OS Requirements
 
 Verilator is developed and has primary testing on Ubuntu.  Versions have
-also built on Redhat Linux, Apple OS-X, HPUX and Solaris.  It should run
+also built on Redhat Linux, Apple macOS, HPUX and Solaris.  It should run
 with minor porting on any GNU/Linux-ish platform.  Verilator also works on
-Windows under Cygwin, and Windows under MinGW (gcc -mno-cygwin).  Verilated
-output (not Verilator itself) compiles under all the options above, plus
-MSVC++.
+Windows - natively using either MinGW (`gcc -mno-cygwin`) or MS Visual
+C++ as the compiler, and under Cygwin. Verilated output also compiles under
+all the options above.
 
 === Install Prerequisites
+
+==== Linux
 
 To build Verilator you will need to install some standard packages:
 
@@ -92,6 +121,29 @@ Those developing Verilator may also want these (see internals.adoc):
    sudo apt-get install gdb asciidoctor graphviz
    cpan install Pod::Perldoc
    cpan install Unix::Processors
+
+==== Windows
+
+It's most convenient to install all the prerequisites using the
+https://chocolatey.org[Chocolatey] package manager.  You can install it
+from an administrative powershell window as follows:
+
+   Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+
+Verilator can be built natively, i.e. without using Cygwin nor MSYS,
+using either MS Visual Studio 2017 or later, or MinGW 7.3 or later.  Those
+are easily installed using Chocolatey:
+
+....
+:: Only one needed
+choco install visualstudio2019buildtools
+:: or
+choco install mingw
+....
+
+Other prerequisites are Git, Perl, CMake, and Ninja:
+
+   choco install activeperl git cmake ninja
 
 ==== Install SystemC
 
@@ -128,6 +180,21 @@ Enter the checkout and determine what version/branch to use:
    #git checkout master      # Use development branch (e.g. recent bug fix)
    #git checkout stable      # Use most recent release
    #git checkout v{version}  # Switch to specified release version
+
+=== Build Introduction
+
+There are currently two ways to build Verilator:
+
+. The autoconf-based build is the primary supported build.
+
+. The CMake-based build is available on Windows. Neither installation
+nor tests are implemented in the cmake files yet, thus manual installation
+and testing is necessary if desired.
++
+The cmake build is currently only tested on Windows, and is fairly simple once
+the prerequisites are in place. See <<Windows Quick-start>> for details.
+
+The remaining build steps below apply to the autoconf-based build.
 
 === Auto Configure
 
@@ -280,6 +347,7 @@ Some relevant files and directories in this package are as follows:
    include/verilated*.cpp      => Global routines to link into your simulator
    include/verilated*.h        => Global headers
    include/verilated.mk        => Common Makefile
+   platform/win32              => Windows-specific implementations of missing Posix functionality
    src/                        => Translator source code
    test_regress                => Internal tests
 

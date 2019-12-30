@@ -21,6 +21,7 @@ if (!-r "$root/.git") {
     my $files = `cd $root && git ls-files --exclude-standard`;
     print "ST $files\n" if $Debug;
     $files =~ s/\s+/ /g;
+    $files =~ s-platform/win32/dirent.h--;
     my $cmd = "cd $root && fgrep -n include $files | sort";
     my $grep = `$cmd`;
     foreach my $line (split /\n/, $grep) {
