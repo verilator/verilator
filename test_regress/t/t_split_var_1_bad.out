@@ -15,7 +15,7 @@ logic [1:0][7:0]should_show_warning1;      /*verilator split_var*/
                                           : ... In instance t
 wire  [7:0]should_show_warning2[0:1][0:3]; /*verilator split_var*/ 
                                            ^~~~~~~~~~~~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:30: Variable "cannot_split" will not be split because index cannot be determined statically.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:30: Variable 'cannot_split' will not be split because index cannot be determined statically.
                                            : ... In instance t.i_sub0
     rd_data = cannot_split[addr];
                            ^~~~
