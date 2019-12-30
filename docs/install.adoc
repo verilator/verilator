@@ -75,13 +75,24 @@ choco install activeperl ninja winflexbison3 git
 
 :: Build
 git clone https://git.veripool.org/git/verilator verilator
+
 cmake -G Ninja -S verilator -B verilator-build
+:: creates a ninja build script in the build directory
+
 cmake --build verilator-build --config Release
+:: runs ninja in the build directory; ninja could also be
+:: ran directly
 ....
 
 Verilator is built, statically linked, under `./verilator-build/bin`. The
 binary itself has no other runtime dependencies, but it's expected to be
 invoked via the `bin/verilator` Perl wrapper.
+
+Unity builds are supported with cmake 3.16 or newer. A unity build concatenates
+groups of multiple source files prior to compilation. This can speed up compilation
+on some platforms.
+
+   cmake -G Ninja -S verilator -B verilator-build -DCMAKE_UNITY_BUILD=TRUE
 
 == Detailed Build Instructions
 
@@ -126,7 +137,12 @@ Those developing Verilator may also want these (see internals.adoc):
 
 It's most convenient to install all the prerequisites using the
 https://chocolatey.org[Chocolatey] package manager.  You can install it
-from an administrative powershell window as follows:
+from an administrative `cmd.exe` shell window as follows:
+
+
+   @"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -InputFormat None -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))" && SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
+
+Or, from an administrative `PowerShell.exe` window:
 
    Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
 
