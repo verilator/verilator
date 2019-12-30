@@ -145,6 +145,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   -?"-file"             { FL; return yVLT_D_FILE; }
   -?"-lines"            { FL; return yVLT_D_LINES; }
   -?"-msg"              { FL; return yVLT_D_MSG; }
+  -?"-rule"             { FL; return yVLT_D_RULE; }
 }
 
   /************************************************************************/
