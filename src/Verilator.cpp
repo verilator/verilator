@@ -239,6 +239,10 @@ void process() {
     // Propagate constants into expressions
     V3Const::constifyAllLint(v3Global.rootp());
 
+    // Split packed variables into multiple pieces to resolve UNOPTFLAT.
+    // should be after constifyAllLint() which flattens to 1D bit vector
+    V3SplitVar::splitPackedVariable(v3Global.rootp());
+
     if (!v3Global.opt.xmlOnly()) {
         // Remove cell arrays (must be between V3Width and scoping)
         V3Inst::dearrayAll(v3Global.rootp());

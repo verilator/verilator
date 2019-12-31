@@ -3237,19 +3237,34 @@ behavior.  See the test_regress/t/t_dpi_display.v file for an example.
 =item /*verilator split_var*/
 
 Attached to a variable or a net declaration. It breaks the variable into
-multiple pieces. Only 1D unpacked array can be split at this moment.
+multiple pieces. The following data types are supported.
+
+  Packed array and packed struct consist of Integer types (reg, logic, bit, byte, int...)
+  1D unpacked array of data type above
 
 Verilator will internally convert a variable with the metacomment such as:
 
-  logic [7:0] x [0:1];  /*verilator split_var*/
+    logic [7:0] x [0:1];  /*verilator split_var*/
 
-to scalar variables below.
+to packed variables below.
 
-  logic [7:0] x__BRA__0__KET__;
-  logic [7:0] x__BRA__1__KET__;
+    logic [7:0] x__BRA__0__KET__; /*verilator split_var*/
+    logic [7:0] x__BRA__1__KET__; /*verilator split_var*/
+
+Note that the generated packed variables still have split_var metacomment because
+they will be split into further smaller pieces accorting to each access pattern.
+
+Packed variable will be split as the following example.
+
+    logic [7:0] y;        /*verilator split_var*/
+
+to:
+
+    logic [1:0] y__BRA__7_6__KET__;
+    logic [5:0] y__BRA__5_0__KET__;
 
 This operation helps optimization step to identify the dependencies
-among variables and may resolve resolve UNOPTFLAT warning.
+among variables and may resolve UNOPTFLAT warning.
 If the warning is resolved, simulation speed gets improved.
 Please also see the explanation of UNOPTFLAT below.
 
