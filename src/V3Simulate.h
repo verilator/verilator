@@ -539,6 +539,18 @@ private:
                                  fetchConst(nodep->thsp())->num());
         }
     }
+    virtual void visit(AstNodeQuadop* nodep) VL_OVERRIDE {
+        if (!optimizable()) return;  // Accelerate
+        checkNodeInfo(nodep);
+        iterateChildren(nodep);
+        if (!m_checkOnly && optimizable()) {
+            nodep->numberOperate(newConst(nodep)->num(),
+                                 fetchConst(nodep->lhsp())->num(),
+                                 fetchConst(nodep->rhsp())->num(),
+                                 fetchConst(nodep->thsp())->num(),
+                                 fetchConst(nodep->fhsp())->num());
+        }
+    }
     virtual void visit(AstLogAnd* nodep) VL_OVERRIDE {
         // Need to short circuit
         if (!optimizable()) return;  // Accelerate

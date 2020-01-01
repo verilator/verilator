@@ -435,6 +435,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   /*     System Tasks */
   "$bits"               { FL; return yD_BITS; }
   "$countones"          { FL; return yD_COUNTONES; }
+  "$countbits"          { FL; return yD_COUNTBITS; }
   "$dimensions"         { FL; return yD_DIMENSIONS; }
   "$error"              { FL; return yD_ERROR; }
   "$fatal"              { FL; return yD_FATAL; }

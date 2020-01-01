@@ -1128,6 +1128,14 @@ private:
                                       VSigning::UNSIGNED);  // Spec doesn't indicate if an integer
         }
     }
+    virtual void visit(AstCountBits* nodep) VL_OVERRIDE {
+        if (m_vup->prelim()) {
+            iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
+            // If it's a 32 bit number, we need a 6 bit number as we need to return '32'.
+            int selwidth = V3Number::log2b(nodep->lhsp()->width())+1;
+            nodep->dtypeSetLogicSized(selwidth, VSigning::UNSIGNED);  // Spec doesn't indicate if an integer
+        }
+    }
     virtual void visit(AstCvtPackString* nodep) VL_OVERRIDE {
         // Opaque returns, so arbitrary
         userIterateAndNext(nodep->lhsp(), WidthVP(SELF, BOTH).p());

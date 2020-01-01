@@ -86,7 +86,6 @@ public:
         }
     }
 
-private:
     char bitIs(int bit) const {
         if (bit >= m_width || bit < 0) {
             // We never sign extend
@@ -95,6 +94,7 @@ private:
         return ("01zx"[(((m_value[bit / 32] & (1UL << (bit & 31))) ? 1 : 0)
                         | ((m_valueX[bit / 32] & (1UL << (bit & 31))) ? 2 : 0))]);
     }
+private:
     char bitIsExtend(int bit, int lbits) const {
         // lbits usually = width, but for C optimizations width=32_bits, lbits = 32_or_less
         if (bit < 0) return '0';
@@ -283,6 +283,8 @@ public:
     uint32_t edataWord(int eword) const;
     uint8_t dataByte(int byte) const;
     uint32_t countOnes() const;
+        uint32_t countBits(const V3Number& ctrl) const;
+    uint32_t countBits(const V3Number& ctrl1, const V3Number& ctrl2, const V3Number& ctrl3) const;
     uint32_t
     mostSetBitP1() const;  // Highest bit set plus one, IE for 16 return 5, for 0 return 0.
 
@@ -313,6 +315,7 @@ public:
     V3Number& opRedXor(const V3Number& lhs);
     V3Number& opRedXnor(const V3Number& lhs);
     V3Number& opCountOnes(const V3Number& lhs);
+    V3Number& opCountBits(const V3Number& expr, const V3Number& ctrl1, const V3Number& ctrl2, const V3Number& ctrl3);
     V3Number& opIsUnknown(const V3Number& lhs);
     V3Number& opOneHot(const V3Number& lhs);
     V3Number& opOneHot0(const V3Number& lhs);

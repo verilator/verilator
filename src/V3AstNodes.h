@@ -5410,6 +5410,31 @@ public:
     virtual bool sizeMattersLhs() const { return false; }
     virtual int instrCount() const { return widthInstrs() * 16; }
 };
+class AstCountBits : public AstNodeQuadop {
+    // Number of bits set in vector
+public:
+    AstCountBits(FileLine* fl, AstNode* exprp, AstNode* ctrl1p)
+        : ASTGEN_SUPER(fl, exprp, ctrl1p, ctrl1p->cloneTree(false), ctrl1p->cloneTree(false)) {}
+    AstCountBits(FileLine* fl, AstNode* exprp, AstNode* ctrl1p, AstNode* ctrl2p)
+        : ASTGEN_SUPER(fl, exprp, ctrl1p, ctrl2p, ctrl2p->cloneTree(false)) {}
+    AstCountBits(FileLine* fl, AstNode* exprp, AstNode* ctrl1p, AstNode* ctrl2p, AstNode* ctrl3p)
+        : ASTGEN_SUPER(fl, exprp, ctrl1p, ctrl2p, ctrl3p) {}
+    ASTNODE_NODE_FUNCS(CountBits)
+    virtual void numberOperate(V3Number& out, const V3Number& expr, const V3Number& ctrl1, const V3Number& ctrl2, const V3Number& ctrl3)
+        { out.opCountBits(expr, ctrl1, ctrl2, ctrl3); }
+    virtual string emitVerilog() { return "%f$countbits(%l, %r, %f, %o)"; }
+    virtual string emitC() { return ""; }
+    virtual bool cleanOut() const { return false; }
+    virtual bool cleanLhs() const { return true; }
+    virtual bool cleanRhs() const { return true; }
+    virtual bool cleanThs() const { return true; }
+    virtual bool cleanFhs() const { return true; }
+    virtual bool sizeMattersLhs() const { return false; }
+    virtual bool sizeMattersRhs() const { return false; }
+    virtual bool sizeMattersThs() const { return false; }
+    virtual bool sizeMattersFhs() const { return false; }
+    virtual int instrCount() const { return widthInstrs()*16; }
+};
 class AstIsUnknown : public AstNodeUniop {
     // True if any unknown bits
 public:

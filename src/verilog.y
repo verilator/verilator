@@ -553,6 +553,7 @@ class AstSenTree;
 %token<fl>		yD_COS		"$cos"
 %token<fl>		yD_COSH		"$cosh"
 %token<fl>		yD_COUNTONES	"$countones"
+%token<fl>		yD_COUNTBITS	"$countbits"
 %token<fl>		yD_DIMENSIONS	"$dimensions"
 %token<fl>		yD_DISPLAY	"$display"
 %token<fl>		yD_DISPLAYB	"$displayb"
@@ -3388,6 +3389,10 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_COS '(' expr ')'			{ $$ = new AstCosD($1,$3); }
 	|	yD_COSH '(' expr ')'			{ $$ = new AstCoshD($1,$3); }
 	|	yD_COUNTONES '(' expr ')'		{ $$ = new AstCountOnes($1,$3); }
+	|	yD_COUNTBITS '(' expr ',' expr ')'		{ $$ = new AstCountBits($1,$3,$5); }
+	|	yD_COUNTBITS '(' expr ',' expr ',' expr ')'		{ $$ = new AstCountBits($1,$3,$5,$7); }
+	|	yD_COUNTBITS '(' expr ',' expr ',' expr ',' expr ')'	{ $$ = new AstCountBits($1,$3,$5,$7,$9); }
+	|	yD_COUNTBITS '(' expr ',' expr ',' expr ',' expr ',' exprList ')'	{ $$ = NULL; $1->v3error("Unsupported: $countbits with more than 3 control fields"); }
 	|	yD_DIMENSIONS '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_DIMENSIONS,$3); }
 	|	yD_EXP '(' expr ')'			{ $$ = new AstExpD($1,$3); }
 	|	yD_FEOF '(' expr ')'			{ $$ = new AstFEof($1,$3); }

@@ -1217,6 +1217,29 @@ static inline IData VL_COUNTONES_W(int words, WDataInP lwp) VL_MT_SAFE {
     return r;
 }
 
+// EMIT_RULE: VL_COUNTBITS_II:  oclean = false; lhs clean
+static inline IData VL_COUNTBITS_I(IData lhs, IData ctrl0, IData ctrl1, IData ctrl2, int msb) VL_PURE {
+    int ctrlSum = (ctrl0 & 0x1) + (ctrl1 & 0x1) + (ctrl2 & 0x1);
+    if (ctrlSum == 3) {
+        return VL_COUNTONES_I(lhs);
+    } else if (ctrlSum == 1) {
+        IData mask = (1 << msb) - 1;
+        return VL_COUNTONES_I(~lhs & mask);
+    } else {
+        return (msb <= 32) ? msb : 32;
+    }
+}
+static inline IData VL_COUNTBITS_Q(QData lhs, IData ctrl0, IData ctrl1, IData ctrl2, int msb) VL_PURE {
+    return VL_COUNTBITS_I(static_cast<IData>(lhs), ctrl0, ctrl1, ctrl2, 32) +
+           VL_COUNTBITS_I(static_cast<IData>(lhs>>32), ctrl0, ctrl1, ctrl2, msb-32);
+}
+#define VL_COUNTBITS_E VL_COUNTBITS_I
+static inline IData VL_COUNTBITS_W(int words, WDataInP lwp, IData ctrl0, IData ctrl1, IData ctrl2, int msb) VL_MT_SAFE {
+    EData r = 0;
+    for (int i = 0; i < words; ++i) r += VL_COUNTBITS_E(lwp[i], ctrl0, ctrl1, ctrl2, msb-(i*32));
+    return r;
+}
+
 static inline IData VL_ONEHOT_I(IData lhs) VL_PURE {
     return (((lhs & (lhs - 1)) == 0) & (lhs != 0));
 }
