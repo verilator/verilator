@@ -5599,7 +5599,7 @@ vltOffFront<errcodeen>:
 	|	yVLT_LINT_OFF yVLT_D_MSG yaID__ETC
 			{ $$ = V3ErrorCode((*$3).c_str());
 			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl); }
-			  $1->v3info("Deprecated -msg in configuration files, use -rule instead."<<endl); }
+			  $2->v3warn(DEPRECATED, "Deprecated -msg in configuration files, use -rule instead."<<endl); }
 	|	yVLT_LINT_OFF yVLT_D_RULE yaID__ETC
 			{ $$ = V3ErrorCode((*$3).c_str());
 			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl);  } }
@@ -5612,7 +5612,7 @@ vltOnFront<errcodeen>:
 	|	yVLT_LINT_ON yVLT_D_MSG yaID__ETC
 			{ $$ = V3ErrorCode((*$3).c_str());
 			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl);  }
-			  $1->v3info("Deprecated -msg in configuration files, use -rule instead."<<endl); }
+			  $2->v3warn(DEPRECATED, "Deprecated -msg in configuration files, use -rule instead."<<endl); }
 	|	yVLT_LINT_ON yVLT_D_RULE yaID__ETC
 			{ $$ = V3ErrorCode((*$3).c_str());
 			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl);  } }
