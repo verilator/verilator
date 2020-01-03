@@ -77,6 +77,7 @@ public:
         CONTASSREG,     // Continuous assignment on reg
         DEFPARAM,       // Style: Defparam
         DECLFILENAME,   // Declaration doesn't match filename
+        DEPRECATED,     // Feature will be deprecated
         ENDLABEL,       // End lable name mismatch
         GENCLK,         // Generated Clock
         IFDEPTH,        // If statements too deep
@@ -143,7 +144,7 @@ public:
             "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ", "BSSPACE",
             "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CDCRSTLOGIC", "CLKDATA",
             "CMPCONST", "COLONPLUS", "COMBDLY", "CONTASSREG",
-            "DEFPARAM", "DECLFILENAME",
+            "DEFPARAM", "DECLFILENAME", "DEPRECATED",
             "ENDLABEL", "GENCLK",
             "IFDEPTH", "IGNOREDRETURN",
             "IMPERFECTSCH", "IMPLICIT", "IMPORTSTAR", "IMPURE",
