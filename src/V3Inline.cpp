@@ -322,6 +322,15 @@ private:
                     new AstAssignW(nodep->fileline(),
                                    new AstVarRef(nodep->fileline(), exprvarrefp->varp(), true),
                                    new AstVarRef(nodep->fileline(), nodep, false)));
+            } else if (nodep->isSigPublic() && VN_IS(nodep->dtypep(), UnpackArrayDType)) {
+                // Public variable at this end and it is an unpacked array. We need to assign
+                // instead of aliased, because otherwise it will pass V3Slice and invalid
+                // code will be emitted.
+                UINFO(9,"assign to public and unpacked: "<<nodep<<endl);
+                m_modp->addStmtp(
+                    new AstAssignW(nodep->fileline(),
+                                   new AstVarRef(nodep->fileline(), exprvarrefp->varp(), true),
+                                   new AstVarRef(nodep->fileline(), nodep, false)));
             } else if (nodep->isIfaceRef()) {
                 m_modp->addStmtp(
                     new AstAssignVarScope(nodep->fileline(),
