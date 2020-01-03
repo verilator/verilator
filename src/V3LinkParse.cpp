@@ -260,6 +260,7 @@ private:
         }
         else if (nodep->attrType() == AstAttrType::VAR_CLOCK) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
+            nodep->v3warn(DEPRECATED, "sc_clock is deprecated and will be removed");
             m_varp->attrScClocked(true);
             nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
         }
