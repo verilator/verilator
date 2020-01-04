@@ -350,6 +350,7 @@ class SplitPackedVarVisitor : public AstNVisitor {
     AstNetlist* m_netp;
     AstNodeModule* m_modp;  // current module (just for log)
     AstVar* m_lastVarp;     // the most recently declared variable
+    int m_numSplit;         // total number of split variable
     bool m_isLhs;           // true when traversing LHS of assignment
     // key:variable to be split. value:location where the variable is referenced.
     vl_unordered_map<AstVar*, PackedVarRef> m_refs;
@@ -490,6 +491,7 @@ class SplitPackedVarVisitor : public AstNVisitor {
                     UASSERT_OBJ(varit->msb() >= refit->msb(), varit->varp(), "Out of range");
                 }
             }
+            ++m_numSplit;
         }
         m_refs.clear();  // done
     }
@@ -499,10 +501,14 @@ public:
         : m_netp(nodep)
         , m_modp(NULL)
         , m_lastVarp(NULL)
+        , m_numSplit(0)
         , m_isLhs(false) {
         iterate(nodep);
     }
-    ~SplitPackedVarVisitor() { UASSERT(m_refs.empty(), "Don't forget to call split()"); }
+    ~SplitPackedVarVisitor() {
+        UASSERT(m_refs.empty(), "Don't forget to call split()");
+        V3Stats::addStat("SplitVar, Split Packed variables", m_numSplit);
+    }
 
     // Check if the passed variable can be split.
     // Even if this function returns true, the variable may not be split
