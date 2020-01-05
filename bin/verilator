@@ -3240,7 +3240,7 @@ Attached to a variable or a net declaration. It breaks the variable into
 multiple pieces. The following data types are supported.
 
   Packed array and packed struct consist of Integer types (reg, logic, bit, byte, int...)
-  1D unpacked array of data type above
+  unpacked array of data type above
 
 Verilator will internally convert a variable with the metacomment such as:
 
@@ -4238,8 +4238,10 @@ calls.
 Warns that a variable with split_var metacomment was not split.
 Possible reasons are
 
-  The datatype is not supported for splitting yet.
+  The datatype is not supported for splitting. (e.g. real)
   The access pattern of the variable can not be determined statically. (e.g. memory)
+  The unpacked array is accessed other than subscript.
+     slicing (unpacked_array[lsb:msb]) and accessing without subscript are not supported yet.
 
 =item STMTDLY
 

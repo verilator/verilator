@@ -74,7 +74,11 @@
 //
 //
 // Limitations: (planned to be resolved)
-// - Dimension of an unpacked array must be 1 or 0.
+// - Unpacked array must be accessed via AstArraySel.
+//      e.g. unpacked_array[3]   : supported
+//           unpacked_array[0:1] : not supported because AstSliceSel is used
+//           unpacked_array      : not supported
+//   to allow such access, concatenate op node to build unpacked array is necessary on AST.
 //
 //*************************************************************************
 
@@ -110,6 +114,7 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
     AstNodeModule* m_modp;  // current module
     AstVar* m_lastVarp;     // the most recently declared variable
     int m_numSplit;         // total number of split variable
+    bool m_firstRun;        // true for the first pass
     // key:variable to be split. value:location where the variable is referenced.
     vl_unordered_map<AstVar*, std::vector<AstArraySel*> > m_refs;
 
@@ -144,15 +149,19 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
         AstVar* const varp = nodep->varp();
         if (m_refs.find(varp) == m_refs.end()) return;  // variable without split_var pragma
 
-        nodep->v3warn(SPLITVAR,
-                      "Variable " << varp->prettyNameQ()
-                                  << " will not be split because the entire unpacked array is referred."
-                                     " Such access is not supported yet.\n");
+        if (m_firstRun)
+            nodep->v3warn(SPLITVAR,
+                          "Variable " << varp->prettyNameQ()
+                                      << " will not be split because the entire unpacked array is referred."
+                                         " Such access is not supported yet.\n");
         m_refs.erase(varp);
     }
     virtual void visit(AstArraySel* nodep) VL_OVERRIDE {
         AstVarRef* const vrefp = VN_CAST(nodep->fromp(), VarRef);
-        if (!vrefp) return;
+        if (!vrefp) {
+            iterateChildren(nodep);
+            return;
+        }
 
         AstVar* const varp = vrefp->varp();
         if (m_refs.find(varp) == m_refs.end()) return;  // variable without split_var pragma
@@ -162,11 +171,24 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
         if (indexp) {  // OK
             m_refs[varp].push_back(nodep);
         } else {
-            nodep->bitp()->v3warn(SPLITVAR,
-                                  "Variable " << vrefp->prettyNameQ()
-                                              << " will not be split because index cannot be determined statically.");
+            if (m_firstRun)
+                nodep->bitp()->v3warn(SPLITVAR,
+                                      "Variable " << vrefp->prettyNameQ()
+                                                  << " will not be split because index cannot be determined statically.");
             m_refs.erase(varp);
         }
+    }
+    virtual void visit(AstSliceSel* nodep) VL_OVERRIDE {
+        AstVarRef* const vrefp = VN_CAST(nodep->fromp(), VarRef);
+        if (!vrefp) return;
+
+        AstVar* const varp = vrefp->varp();
+        if (m_refs.find(varp) == m_refs.end()) return;  // variable without split_var pragma
+        if (m_firstRun)
+            nodep->v3warn(SPLITVAR,
+                          "Variable " << vrefp->prettyNameQ()
+                                      << " will not be split because slicing an unpacked array is not supported yet.");
+        m_refs.erase(varp);
     }
     // The actual splitting operation is done in this function.
     void split() {
@@ -191,7 +213,11 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
                 const std::string name = varp->name() + "__BRA__" + cvtToStr(i) + "__KET__";
                 AstVar* const newp = new AstVar(varp->fileline(), varp->varType(), name, dtypep->subDTypep());
                 insertp->addNextHere(newp);
-                newp->addNextHere(insertp = new AstPragma(varp->fileline(), AstPragmaType::SPLIT_VAR));
+                if (newp->width() == 1) {  // no need to try splitting
+                    insertp = newp;
+                } else {
+                    newp->addNextHere(insertp = new AstPragma(varp->fileline(), AstPragmaType::SPLIT_VAR));
+                }
                 vars.push_back(newp);
             }
 
@@ -213,16 +239,19 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
     }
 
 public:
-    explicit SplitUnpackedVarVisitor(AstNetlist* nodep)
+    SplitUnpackedVarVisitor(AstNetlist* nodep, bool firstRun)
         : m_modp(NULL)
         , m_lastVarp(NULL)
-        , m_numSplit(0) {
+        , m_numSplit(0)
+        , m_firstRun(firstRun) {
         iterate(nodep);
     }
     ~SplitUnpackedVarVisitor() {
         UASSERT(m_refs.empty(), "Don't forget to call split()");
-        V3Stats::addStat("SplitVar, Split Unpacked Array", m_numSplit);
+        if (m_firstRun)
+            V3Stats::addStat("SplitVar, Split Unpacked Array", m_numSplit);
     }
+    int numSplit() const { return m_numSplit; }
     VL_DEBUG_FUNC;  // Declare debug()
 
     // Check if the passed variable can be split.
@@ -230,11 +259,10 @@ public:
     // because the access to the variable cannot be determined statically.
     static bool canSplit(const AstVar* nodep) {
         if (AstNodeDType* dtypep = nodep->subDTypep()) {
-            const std::pair<uint32_t, uint32_t> dim = dtypep->dimensions(false);
-            UINFO(5, "Unpacked Dim of " << nodep->prettyNameQ() << ":" << dim.second << '\n');
-            // Support just 1D in unpacked side.
+            const std::pair<uint32_t, uint32_t> dim = nodep->dtypep()->dimensions(false);
             // Traced or public variable cannot be split.
-            return dim.second == 1 && !nodep->isSigPublic() && !nodep->isTrace();
+            // at least one unpacked dimension must exist
+            return dim.second >= 1 && !nodep->isSigPublic() && !nodep->isTrace();
         }
         return false;
     }
@@ -383,11 +411,10 @@ class SplitPackedVarVisitor : public AstNVisitor {
         if (pragmap->pragType() != AstPragmaType::SPLIT_VAR) return;  // nothing to do
         UASSERT_OBJ(m_lastVarp, pragmap,
                     "Stray pragma must have been consumed in SplitUnpackedVarVisitor");
-        if (!canSplit(m_lastVarp)) {
+        if (!canSplit(m_lastVarp, true)) {
             pragmap->v3warn(SPLITVAR,
                             "Pragma split_var is specified on a variable whose type is not supported. "
-                            "Unpacked dimension must be 1D or none "
-                            "and packed portion must be an aggregate type of bit or logic.");
+                            "Packed portion must be an aggregate type of bit or logic.");
         } else {  // finally find a good candidate
             UINFO(3, m_lastVarp->prettyNameQ() << " is added to candidate list.\n");
             m_refs.insert(std::make_pair(m_lastVarp, PackedVarRef()));
@@ -449,6 +476,8 @@ class SplitPackedVarVisitor : public AstNVisitor {
                                   << it->second.rhs().size() << " rhs refs will be split.\n");
             typedef std::vector<SplitNewVar> NewVars;  // sorted by its lsb
             NewVars vars = it->second.splitPlan();
+            if (vars.empty())
+                continue;
             // Add the split variables
             for (size_t i = 0; i < vars.size(); ++i) {
                 const int lsb = vars[i].lsb();
@@ -513,12 +542,13 @@ public:
     // Check if the passed variable can be split.
     // Even if this function returns true, the variable may not be split
     // when the access to the variable cannot be determined statically.
-    static bool canSplit(const AstVar* nodep) {
+    static bool canSplit(const AstVar* nodep, bool checkUnpacked) {
         if (AstBasicDType* const basicp = nodep->dtypep()->basicp()) {
             // floating point, string are not supported
             const std::pair<uint32_t, uint32_t> dim = nodep->dtypep()->dimensions(false);
-            // 1D unpacked array will be split in  SplitUnpackedVarVisitor() beforehand.
-            return dim.second <= 1 && basicp->isBitLogic() && !nodep->isSigPublic() && !nodep->isTrace();
+            // unpacked array will be split in  SplitUnpackedVarVisitor() beforehand.
+            return (!checkUnpacked || dim.second == 0) && nodep->dtypep()->widthMin() > 1 &&
+                basicp->isBitLogic() && !nodep->isSigPublic() && !nodep->isTrace();
         }
         return false;
     }
@@ -529,10 +559,15 @@ public:
 // Split class functions
 void V3SplitVar::splitUnpackedVariable(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    {
-        SplitUnpackedVarVisitor visitor(nodep);
-    }  // Destruct before checking
-    V3Global::dumpCheckGlobalTree("split_var", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    // SplitUnpackedVarVisitor collapses one-dimension per one scan. so repeat until nothing to do.
+    for (int trial = 0, done = 0; done == 0 ; ++trial) {
+        {
+            SplitUnpackedVarVisitor visitor(nodep, trial == 0);
+            UINFO(3, visitor.numSplit() << " variables are split in trial " << trial << '\n');
+            if (visitor.numSplit() == 0) done = 1;  // nothing to do anymore
+        }  // Destruct before checking
+        V3Global::dumpCheckGlobalTree("split_var", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+    }
 }
 
 void V3SplitVar::splitPackedVariable(AstNetlist* nodep) {
@@ -544,5 +579,5 @@ void V3SplitVar::splitPackedVariable(AstNetlist* nodep) {
 }
 
 bool V3SplitVar::canSplitVar(const AstVar* varp) {
-    return SplitUnpackedVarVisitor::canSplit(varp) || SplitPackedVarVisitor::canSplit(varp);
+    return SplitUnpackedVarVisitor::canSplit(varp) || SplitPackedVarVisitor::canSplit(varp, false);
 }
