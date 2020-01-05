@@ -3,31 +3,39 @@
       /*verilator split_var*/ 
       ^~~~~~~~~~~~~~~~~~~~~~~
                    ... Use "/* verilator lint_off SPLITVAR */" and lint_on around source to disable this message.
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:30: Variable 'cannot_split' will not be split because index cannot be determined statically.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:31: Variable 'cannot_split' will not be split because index cannot be determined statically.
                                            : ... In instance t.i_sub0
         rd_data = cannot_split[addr];
                                ^~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:39: Variable 'cannot_split0' will not be split because the entire unpacked array is referred. Such access is not supported yet.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:41: Variable 'cannot_split0' will not be split because the entire unpacked array is referred. Such access is not supported yet.
                                            : ... In instance t.i_sub1
         cannot_split1 = cannot_split0;
                         ^~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:39: Variable 'cannot_split1' will not be split because the entire unpacked array is referred. Such access is not supported yet.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:41: Variable 'cannot_split1' will not be split because the entire unpacked array is referred. Such access is not supported yet.
                                            : ... In instance t.i_sub1
         cannot_split1 = cannot_split0;
         ^~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:5: Pragma split_var is specified on a variable whose type is not supported. Unpacked dimension must be 1D or none and packed portion must be an aggregate type of bit or logic.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:63: Variable 'cannot_split1' will not be split because slicing an unpacked array is not supported yet.
+                                           : ... In instance t.i_sub3
+        cannot_split1[0:1] = cannot_split1[2:3];
+                                          ^
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:64: Variable 'cannot_split0' will not be split because the entire unpacked array is referred. Such access is not supported yet.
+                                           : ... In instance t.i_sub3
+        cannot_split1 = cannot_split0;
+                        ^~~~~~~~~~~~~
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:5: Pragma split_var is specified on a variable whose type is not supported. Packed portion must be an aggregate type of bit or logic.
                                           : ... In instance t
     real should_show_warning0;                 /*verilator split_var*/ 
                                                ^~~~~~~~~~~~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:6: Pragma split_var is specified on a variable whose type is not supported. Unpacked dimension must be 1D or none and packed portion must be an aggregate type of bit or logic.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:6: Pragma split_var is specified on a variable whose type is not supported. Packed portion must be an aggregate type of bit or logic.
                                           : ... In instance t
     string should_show_warning1[0:2];          /*verilator split_var*/ 
            ^~~~~~~~~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:7: Pragma split_var is specified on a variable whose type is not supported. Unpacked dimension must be 1D or none and packed portion must be an aggregate type of bit or logic.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:7: Pragma split_var is specified on a variable whose type is not supported. Packed portion must be an aggregate type of bit or logic.
                                           : ... In instance t
-    wire  [7:0]should_show_warning2[0:1][0:3]; /*verilator split_var*/ 
+    wire   should_show_warning2;               /*verilator split_var*/ 
                                                ^~~~~~~~~~~~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:50: Variable 'cannot_split' will not be split because bit range cannot be determined statically.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:52: Variable 'cannot_split' will not be split because bit range cannot be determined statically.
                                            : ... In instance t.i_sub2
         rd_data = cannot_split[addr];
                               ^
