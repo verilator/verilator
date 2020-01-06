@@ -289,6 +289,6 @@ or https://verilator.org/verilator_doc.pdf[Verilator manual (PDF)].
 
 == License
 
-Copyright 2008-2019 by Wilson Snyder.  Verilator is free software; you can
+Copyright 2008-2020 by Wilson Snyder.  Verilator is free software; you can
 redistribute it and/or modify it under the terms of either the GNU Lesser
 General Public License Version 3 or the Perl Artistic License Version 2.0.

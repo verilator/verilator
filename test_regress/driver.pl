@@ -2651,7 +2651,7 @@ Command to use to invoke XSim xvlog
 
 The latest version is available from L<https://verilator.org>.
 
-Copyright 2003-2019 by Wilson Snyder.  Verilator is free software; you can
+Copyright 2003-2020 by Wilson Snyder.  Verilator is free software; you can
 redistribute it and/or modify it under the terms of either the GNU Lesser
 General Public License Version 3 or the Perl Artistic License Version 2.0.
 
