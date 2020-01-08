@@ -308,13 +308,10 @@ public:
     // Even if this function returns true, the variable may not be split
     // because the access to the variable cannot be determined statically.
     static bool canSplit(const AstVar* nodep) {
-        if (AstNodeDType* dtypep = nodep->subDTypep()) {
-            const std::pair<uint32_t, uint32_t> dim = nodep->dtypep()->dimensions(false);
-            // Traced or public variable cannot be split.
-            // at least one unpacked dimension must exist
-            return dim.second >= 1 && !nodep->isSigPublic();
-        }
-        return false;
+        const std::pair<uint32_t, uint32_t> dim = nodep->dtypep()->dimensions(false);
+        // Public variable cannot be split.
+        // at least one unpacked dimension must exist
+        return dim.second >= 1 && !nodep->isSigPublic();
     }
 };
 
