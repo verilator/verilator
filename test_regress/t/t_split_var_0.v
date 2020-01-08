@@ -182,6 +182,26 @@ module barshift_bitslice #(parameter depth = 2, localparam width = 2**depth) (
 endmodule
 
 
+module var_decl_with_init();
+
+    /*verilator lint_off LITENDIAN*/
+logic [-1:30] var0 = {4'd0, 4'd1, 4'd2, 4'd3, 4'd4, 4'd5, 4'd6, 4'd7}; /* verilator split_var */
+logic [-1:30] var2; /* verilator split_var */
+    /*verilator lint_on LITENDIAN*/
+logic [30:-1] var1 = {4'd0, 4'd1, 4'd2, 4'd3, 4'd4, 4'd5, 4'd6, 4'd7}; /* verilator split_var */
+logic [30:-1] var3; /* verilator split_var */
+
+initial begin
+    var2[-1:2] = 4'd2;
+    var3[2:-1] = 4'd3;
+    $display("%x %x", var0, var1);
+    $display("%x %x", var2, var3);
+    var0[-1:5] = 7'd0;
+    var1[10:3] = 8'd2;
+end
+
+endmodule
+
 module t(/*AUTOARG*/ clk);
     input clk;
     localparam depth = 3;
@@ -200,6 +220,7 @@ module t(/*AUTOARG*/ clk);
     barshift_2d_packed_array_le  #(.depth(depth)) shifter5(.in(in), .out(out[5]), .shift(shift));
     barshift_1d_packed_struct                     shifter6(.in(in), .out(out[6]), .shift(shift));
     barshift_bitslice            #(.depth(depth)) shifter7(.in(in), .out(out[7]), .shift(shift));
+    var_decl_with_init i_var_decl_with_init();
 
     assign in = 8'b10001110;
     /*verilator lint_off LITENDIAN*/
@@ -207,7 +228,7 @@ module t(/*AUTOARG*/ clk);
         8'b10001110, 8'b01000111, 8'b10100011, 8'b11010001,
         8'b11101000, 8'b01110100, 8'b00111010, 8'b00011101};
     /*verilator lint_on LITENDIAN*/
-    always @(posedge clk) begin
+    always @(posedge clk) begin : always_block
         automatic bit failed = 0;
         $display("in:%b shift:%d exp:%b", in, shift, exp[7-shift]);
         for (int i = 0; i < numsub; ++i) begin

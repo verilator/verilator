@@ -23,15 +23,15 @@
                                            : ... In instance t.i_sub3
         cannot_split1 = cannot_split0;
                         ^~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:5: Pragma split_var is specified on a variable whose type is not supported. Packed portion must be an aggregate type of bit or logic.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:5: Pragma split_var is specified on a variable whose type is unsupported or public. Packed portion must be an aggregate type of bit or logic.
                                           : ... In instance t
     real should_show_warning0;                 /*verilator split_var*/ 
                                                ^~~~~~~~~~~~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:6: Pragma split_var is specified on a variable whose type is not supported. Packed portion must be an aggregate type of bit or logic.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:6: Pragma split_var is specified on a variable whose type is unsupported or public. Packed portion must be an aggregate type of bit or logic.
                                           : ... In instance t
     string should_show_warning1[0:2];          /*verilator split_var*/ 
            ^~~~~~~~~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:7: Pragma split_var is specified on a variable whose type is not supported. Packed portion must be an aggregate type of bit or logic.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:7: Pragma split_var is specified on a variable whose type is unsupported or public. Packed portion must be an aggregate type of bit or logic.
                                           : ... In instance t
     wire   should_show_warning2;               /*verilator split_var*/ 
                                                ^~~~~~~~~~~~~~~~~~~~~~~
