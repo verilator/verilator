@@ -118,7 +118,7 @@ void VerilatedFst::declDTypeEnum(int dtypenum, const char* name, vluint32_t elem
 
 void VerilatedFst::declSymbol(vluint32_t code, const char* name,
                               int dtypenum, fstVarDir vardir, fstVarType vartype,
-                              int arraynum, vluint32_t len) {
+                              bool array, int arraynum, vluint32_t len) {
     std::pair<Code2SymbolType::iterator, bool> p
         = m_code2symbol.insert(std::make_pair(code, static_cast<fstHandle>(NULL)));
     std::istringstream nameiss(name);
@@ -153,8 +153,7 @@ void VerilatedFst::declSymbol(vluint32_t code, const char* name,
 
     std::stringstream name_ss;
     name_ss << symbol_name;
-    if (arraynum >= 0)
-        name_ss << "(" << arraynum << ")";
+    if (array) name_ss << "(" << arraynum << ")";
     std::string name_str = name_ss.str();
 
     if (dtypenum > 0) {

@@ -525,7 +525,7 @@ void VerilatedVcd::module(const std::string& name) {
 }
 
 void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep,
-                           int arraynum, bool tri, bool bussed, int msb, int lsb) {
+                           bool array, int arraynum, bool tri, bool bussed, int msb, int lsb) {
     if (!code) { VL_FATAL_MT(__FILE__, __LINE__, "",
                              "Internal: internal trace problem, code 0 is illegal"); }
 
@@ -584,7 +584,7 @@ void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep,
     }
     decl += " ";
     decl += basename;
-    if (arraynum>=0) {
+    if (array) {
         sprintf(buf, "(%d)", arraynum);
         decl += buf;
         hiername += buf;
@@ -597,26 +597,42 @@ void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep,
     m_namemapp->insert(std::make_pair(hiername,decl));
 }
 
-void VerilatedVcd::declBit      (vluint32_t code, const char* name, int arraynum)
-{  declare(code, name, "wire", arraynum, false, false, 0, 0); }
-void VerilatedVcd::declBus      (vluint32_t code, const char* name, int arraynum, int msb, int lsb)
-{  declare(code, name, "wire", arraynum, false, true, msb, lsb); }
-void VerilatedVcd::declQuad     (vluint32_t code, const char* name, int arraynum, int msb, int lsb)
-{  declare(code, name, "wire", arraynum, false, true, msb, lsb); }
-void VerilatedVcd::declArray    (vluint32_t code, const char* name, int arraynum, int msb, int lsb)
-{  declare(code, name, "wire", arraynum, false, true, msb, lsb); }
-void VerilatedVcd::declTriBit   (vluint32_t code, const char* name, int arraynum)
-{  declare(code, name, "wire", arraynum, true, false, 0, 0); }
-void VerilatedVcd::declTriBus   (vluint32_t code, const char* name, int arraynum, int msb, int lsb)
-{  declare(code, name, "wire", arraynum, true, true, msb, lsb); }
-void VerilatedVcd::declTriQuad  (vluint32_t code, const char* name, int arraynum, int msb, int lsb)
-{  declare(code, name, "wire", arraynum, true, true, msb, lsb); }
-void VerilatedVcd::declTriArray (vluint32_t code, const char* name, int arraynum, int msb, int lsb)
-{  declare(code, name, "wire", arraynum, true, true, msb, lsb); }
-void VerilatedVcd::declFloat    (vluint32_t code, const char* name, int arraynum)
-{  declare(code, name, "real", arraynum, false, false, 31, 0); }
-void VerilatedVcd::declDouble   (vluint32_t code, const char* name, int arraynum)
-{  declare(code, name, "real", arraynum, false, false, 63, 0); }
+void VerilatedVcd::declBit(vluint32_t code, const char* name, bool array, int arraynum) {
+    declare(code, name, "wire", array, arraynum, false, false, 0, 0);
+}
+void VerilatedVcd::declBus(vluint32_t code, const char* name, bool array, int arraynum, int msb,
+                           int lsb) {
+    declare(code, name, "wire", array, arraynum, false, true, msb, lsb);
+}
+void VerilatedVcd::declQuad(vluint32_t code, const char* name, bool array, int arraynum, int msb,
+                            int lsb) {
+    declare(code, name, "wire", array, arraynum, false, true, msb, lsb);
+}
+void VerilatedVcd::declArray(vluint32_t code, const char* name, bool array, int arraynum, int msb,
+                             int lsb) {
+    declare(code, name, "wire", array, arraynum, false, true, msb, lsb);
+}
+void VerilatedVcd::declTriBit(vluint32_t code, const char* name, bool array, int arraynum) {
+    declare(code, name, "wire", array, arraynum, true, false, 0, 0);
+}
+void VerilatedVcd::declTriBus(vluint32_t code, const char* name, bool array, int arraynum, int msb,
+                              int lsb) {
+    declare(code, name, "wire", array, arraynum, true, true, msb, lsb);
+}
+void VerilatedVcd::declTriQuad(vluint32_t code, const char* name, bool array, int arraynum,
+                               int msb, int lsb) {
+    declare(code, name, "wire", array, arraynum, true, true, msb, lsb);
+}
+void VerilatedVcd::declTriArray(vluint32_t code, const char* name, bool array, int arraynum,
+                                int msb, int lsb) {
+    declare(code, name, "wire", array, arraynum, true, true, msb, lsb);
+}
+void VerilatedVcd::declFloat(vluint32_t code, const char* name, bool array, int arraynum) {
+    declare(code, name, "real", array, arraynum, false, false, 31, 0);
+}
+void VerilatedVcd::declDouble(vluint32_t code, const char* name, bool array, int arraynum) {
+    declare(code, name, "real", array, arraynum, false, false, 63, 0);
+}
 
 //=============================================================================
 

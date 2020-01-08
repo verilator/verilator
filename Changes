@@ -32,6 +32,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix huge case statement performance. Closes #1644. [Julien Margetts]
 
+****  Fix tracing -1 index arrays. Closes #2090. [Yutetsu Takatsukasa]
+
 
 * Verilator 4.024 2019-12-08
 

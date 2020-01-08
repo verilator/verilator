@@ -3062,13 +3062,13 @@ class EmitCTrace : EmitCStmts {
         }
         // Range
         if (nodep->arrayRange().ranged()) {
-            puts(",(i+"+cvtToStr(nodep->arrayRange().lo())+")");
+            puts(", true,(i+" + cvtToStr(nodep->arrayRange().lo()) + ")");
         } else {
-            puts(",-1");
+            puts(", false,-1");
         }
-        if (!nodep->dtypep()->basicp()->isDouble()  // When float/double no longer have widths this can go
-            && nodep->bitRange().ranged()) {
-            puts(","+cvtToStr(nodep->bitRange().left())+","+cvtToStr(nodep->bitRange().right()));
+        if (!nodep->dtypep()->basicp()->isDouble() && nodep->bitRange().ranged()) {
+            puts(", " + cvtToStr(nodep->bitRange().left()) + ","
+                 + cvtToStr(nodep->bitRange().right()));
         }
         puts(");");
     }
