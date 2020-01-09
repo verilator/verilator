@@ -34,6 +34,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix tracing -1 index arrays. Closes #2090. [Yutetsu Takatsukasa]
 
+****  Fix expand optimization slowing --lint-only. Closes #2091. [Thomas Watts]
+
 
 * Verilator 4.024 2019-12-08
 

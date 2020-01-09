@@ -470,7 +470,8 @@ void process() {
     }
 
     // Expand macros and wide operators into C++ primitives
-    if (!v3Global.opt.xmlOnly()
+    if (!v3Global.opt.lintOnly()
+        && !v3Global.opt.xmlOnly()
         && v3Global.opt.oExpand()) {
         V3Expand::expandAll(v3Global.rootp());
     }
