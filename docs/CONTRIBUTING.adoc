@@ -24,8 +24,8 @@ contributions flow more efficiently.
 
 * Please https://verilator.org/issues/new[Open a new issue].
 
-* You may attach a patch to the issue, or (preferred) may point to a GitHub
-  repository branch within your GitHub account.
+* You may attach a patch to the issue, or (preferred) may request a GitHub
+  pull request.
 
 ** Verilator uses Travis CI to provide continuous integration. You may
    want to setup Travis CI on your GitHub branch to ensure your changes
