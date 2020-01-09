@@ -162,6 +162,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   -?"-file"             { FL; return yVLT_D_FILE; }
   -?"-function"         { FL; return yVLT_D_FUNCTION; }
   -?"-lines"            { FL; return yVLT_D_LINES; }
+  -?"-match"            { FL; return yVLT_D_MATCH; }
   -?"-module"           { FL; return yVLT_D_MODULE; }
   -?"-msg"              { FL; return yVLT_D_MSG; }
   -?"-rule"             { FL; return yVLT_D_RULE; }

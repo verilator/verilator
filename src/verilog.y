@@ -301,6 +301,7 @@ class AstSenTree;
 %token<fl>		yVLT_D_FUNCTION "--function"
 %token<fl>		yVLT_D_LINES    "--lines"
 %token<fl>		yVLT_D_MODULE   "--module"
+%token<fl>		yVLT_D_MATCH    "--match"
 %token<fl>		yVLT_D_MSG      "--msg"
 %token<fl>		yVLT_D_RULE     "--rule"
 %token<fl>		yVLT_D_TASK     "--task"
@@ -5617,6 +5618,12 @@ vltItem:
 			{ V3Config::addIgnore($1, false, *$3, $5->toUInt(), $5->toUInt()+1); }
 	|	vltOffFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM '-' yaINTNUM
 			{ V3Config::addIgnore($1, false, *$3, $5->toUInt(), $7->toUInt()+1); }
+	|	vltOffFront yVLT_D_FILE yaSTRING yVLT_D_MATCH yaSTRING
+			{	if (($1==V3ErrorCode::I_COVERAGE) || ($1==V3ErrorCode::I_TRACING)) {
+					$<fl>1->v3error("Argument -match only supported for lint_off"<<endl);
+				} else {
+					V3Config::addWaiver($1,*$3,*$5);
+				}}
 	|	vltOnFront			{ V3Config::addIgnore($1, true, "*", 0, 0); }
 	|	vltOnFront yVLT_D_FILE yaSTRING
 			{ V3Config::addIgnore($1, true, *$3, 0, 0); }

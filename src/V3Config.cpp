@@ -270,9 +270,12 @@ typedef std::bitset<AstPragmaType::ENUM_SIZE> V3ConfigLineAttribute;
 class V3ConfigFile {
     typedef std::map<int, V3ConfigLineAttribute> LineAttrMap;  // Map line->bitset of attributes
     typedef std::multiset<V3ConfigIgnoresLine> IgnLines;  // list of {line,code,on}
+    typedef std::pair<V3ErrorCode, string> WaiverSetting;  // Waive code if string matches
+    typedef std::vector<WaiverSetting> Waivers;  // List of {code,wildcard string}
 
     LineAttrMap m_lineAttrs;  // Atributes to line mapping
     IgnLines m_ignLines;  // Ignore line settings
+    Waivers m_waivers; // Waive messages
 
     struct {
         int lineno;  // Last line number
@@ -302,11 +305,16 @@ public:
         }
         // Update the iterator after the list has changed
         m_lastIgnore.it = m_ignLines.begin();
+        m_waivers.reserve(m_waivers.size() + file.m_waivers.size());
+        m_waivers.insert(m_waivers.end(), file.m_waivers.begin(), file.m_waivers.end());
     }
     void addLineAttribute(int lineno, AstPragmaType attr) { m_lineAttrs[lineno].set(attr); }
     void addIgnore(V3ErrorCode code, int lineno, bool on) {
         m_ignLines.insert(V3ConfigIgnoresLine(code, lineno, on));
         m_lastIgnore.it = m_ignLines.begin();
+    }
+    void addWaiver(V3ErrorCode code, const string& match) {
+        m_waivers.push_back(make_pair(code, match));
     }
 
     void applyBlock(AstBegin* nodep) {
@@ -340,6 +348,13 @@ public:
             }
             m_lastIgnore.lineno = filelinep->lastLineno();
         }
+    }
+    bool waive(V3ErrorCode code, const string& match) {
+        for (Waivers::const_iterator it = m_waivers.begin(); it != m_waivers.end(); ++it) {
+            if (((it->first == code) || (it->first == V3ErrorCode::I_LINT))
+                && VString::wildmatch(match, it->second)) return true;
+        }
+        return false;
     }
 };
 
@@ -445,6 +460,10 @@ void V3Config::addVarAttr(FileLine* fl, const string& module, const string& ftas
     }
 }
 
+void V3Config::addWaiver(V3ErrorCode code, const string& filename, const string& match) {
+    V3ConfigResolver::s().files().at(filename).addWaiver(code, match);
+}
+
 void V3Config::applyCase(AstCase* nodep) {
     const string& filename = nodep->fileline()->filename();
     V3ConfigFile* filep = V3ConfigResolver::s().files().resolve(filename);
@@ -492,4 +511,10 @@ void V3Config::applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar
         vp = modp->vars().resolve(varp->name());
     }
     if (vp) vp->apply(varp);
+}
+
+bool V3Config::waive(FileLine* filelinep, V3ErrorCode code, const string& message) {
+    V3ConfigFile* filep = V3ConfigResolver::s().files().resolve(filelinep->filename());
+    if (!filep) return false;
+    return filep->waive(code, message);
 }

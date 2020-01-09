@@ -37,6 +37,7 @@ public:
     static void addCoverageBlockOff(const string& file, int lineno);
     static void addCoverageBlockOff(const string& module, const string& blockname);
     static void addIgnore(V3ErrorCode code, bool on, const string& filename, int min, int max);
+    static void addWaiver(V3ErrorCode code, const string& filename, const string& msg);
     static void addInline(FileLine* fl, const string& module, const string& ftask, bool on);
     static void addVarAttr(FileLine* fl, const string& module, const string& ftask, const string& signal, AstAttrType type, AstSenTree* nodep);
     static void applyCase(AstCase* nodep);
@@ -45,6 +46,7 @@ public:
     static void applyModule(AstNodeModule* nodep);
     static void applyFTask(AstNodeModule* modulep, AstNodeFTask* ftaskp);
     static void applyVarAttr(AstNodeModule* modulep, AstNodeFTask* ftaskp, AstVar* varp);
+    static bool waive(FileLine* filelinep, V3ErrorCode code, const string& match);
 };
 
 #endif  // Guard
