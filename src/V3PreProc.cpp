@@ -358,7 +358,7 @@ void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
 }
 
 string V3PreProcImp::removeDefines(const string& text) {
-    string val = "0_never_match";
+    string val;
     string rtnsym = text;
     for (int loopprevent=0; loopprevent<100; loopprevent++) {
         string xsym = rtnsym;

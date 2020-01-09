@@ -252,6 +252,7 @@ public:
         m_callGraph.dumpDotFilePrefixed("task_call");
     }
     virtual ~TaskStateVisitor() {}
+    VL_UNCOPYABLE(TaskStateVisitor);
 };
 
 //######################################################################

@@ -459,6 +459,7 @@ public:
     virtual ~LifeVisitor() {
         if (m_lifep) { delete m_lifep; m_lifep = NULL; }
     }
+    VL_UNCOPYABLE(LifeVisitor);
 };
 
 //######################################################################
