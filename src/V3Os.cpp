@@ -161,7 +161,7 @@ string V3Os::filenameSubstitute(const string& filename) {
             }
             string envvar = filename.substr(pos+1, endpos-pos);
             string envvalue;
-            if (!envvar.empty()) envvalue = getenvStr(envvar, {});
+            if (!envvar.empty()) envvalue = getenvStr(envvar, "");
             if (!envvalue.empty()) {
                 out += envvalue;
                 if (brackets==NONE) pos = endpos;

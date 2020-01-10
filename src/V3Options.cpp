@@ -1369,10 +1369,10 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
 
     // Convert to argv style arg list and parse them
     std::vector<char*> argv; argv.reserve(args.size()+1);
-    for (const string &arg : args) {
-        argv.push_back(const_cast<char*>(arg.c_str()));
+    for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it) {
+        argv.push_back(const_cast<char*>(it->c_str()));
     }
-    argv.push_back(nullptr); // argv is NULL-terminated
+    argv.push_back(NULL); // argv is NULL-terminated
     parseOptsList(fl, optdir, static_cast<int>(argv.size()-1), argv.data());
 }
 
