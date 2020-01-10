@@ -4,6 +4,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.025 devel
 
+**    Docker images are now available for Verilator releases.
+
 ***   Support bounded queues.
 
 ***   Support implication operator "|->" in assertions, #2069. [Peter Monsson]
