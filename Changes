@@ -36,6 +36,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix expand optimization slowing --lint-only. Closes #2091. [Thomas Watts]
 
+****  Fix %{number}s with strings. #2093. [agrobman]
+
 
 * Verilator 4.024 2019-12-08
 

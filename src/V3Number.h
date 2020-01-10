@@ -175,6 +175,7 @@ private:
         for (int i=0; i<words(); i++) m_value[i] = m_valueX[i] = 0;
     }
     void setNames(AstNode* nodep);
+    static string displayPad(size_t fmtsize, char pad, const string& in);
     string displayed(FileLine* fl, const string& vformat) const;
     string displayed(const string& vformat) const {
         return displayed(m_fileline, vformat);

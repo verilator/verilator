@@ -662,6 +662,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
             case '@': {  // Verilog/C++ string
                 va_arg(ap, int);  // # bits is ignored
                 const std::string* cstrp = va_arg(ap, const std::string*);
+                if (width > cstrp->size()) output += std::string(width - cstrp->size(), ' ');
                 output += *cstrp;
                 break;
             }
@@ -713,13 +714,17 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                     output += charval;
                     break;
                 }
-                case 's':
+                case 's': {
+                    std::string field;
                     for (; lsb>=0; --lsb) {
                         lsb = (lsb / 8) * 8;  // Next digit
                         IData charval = VL_BITRSHIFT_W(lwp, lsb) & 0xff;
-                        output += (charval==0)?' ':charval;
+                        field += (charval==0)?' ':charval;
                     }
+                    if (width > field.size()) output += std::string(width - field.size(), ' ');
+                    output += field;
                     break;
+                }
                 case 'd': {  // Signed decimal
                     int digits;
                     std::string append;
