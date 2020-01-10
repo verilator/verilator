@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 ######################################################################
 #
 # Copyright 2007-2020 by Wilson Snyder.  This package is free software; you
@@ -15,6 +15,7 @@
 
 # DESCRIPTION: Diff bison files
 
+use warnings;
 use Getopt::Long;
 use IO::File;
 use strict;

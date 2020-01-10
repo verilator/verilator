@@ -38,6 +38,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix %{number}s with strings. #2093. [agrobman]
 
+****  Fix shebang breaking some shells. Closes #2067. [zdave]
+
 
 * Verilator 4.024 2019-12-08
 

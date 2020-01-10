@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # DESCRIPTION: Verilator: Verilog Test driver bootstrapper
 #
 # Copyright 2008 by Wilson Snyder. This program is free software; you can

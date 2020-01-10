@@ -1,8 +1,8 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 # See copyright, etc in below POD section.
 ######################################################################
 
-require 5.006_001;
+use warnings;
 use strict;
 
 #======================================================================

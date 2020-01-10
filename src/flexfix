@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 ######################################################################
 #
 # Copyright 2002-2020 by Wilson Snyder.  Verilator is free software; you
@@ -12,8 +12,9 @@
 # GNU General Public License for more details.
 #
 ######################################################################
-
 # DESCRIPTION: Edits flex output to get around various broken flex issues.
+
+use warnings;
 
 my $Opt_Prefix = $ARGV[0] or die "%Error: No prefix specified,";
 

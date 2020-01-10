@@ -1,7 +1,8 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 # See copyright, etc in below POD section.
 ######################################################################
 
+use warnings;
 use Getopt::Long;
 use Cwd;
 use IO::File;
