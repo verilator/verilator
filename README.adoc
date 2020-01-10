@@ -136,5 +136,5 @@ https://verilator.org/issues[Verilator Issues].)
 
 Verilator is free software; you can redistribute it and/or modify it under
 the terms of either the GNU Lesser General Public License Version 3 or the
-Perl Artistic License Version 2.0.  (See the documentation for more
-details.)
+Perl Artistic License Version 2.0.  See the documentation for more
+details.
