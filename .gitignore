@@ -29,6 +29,7 @@ internals.txt
 verilator.txt
 verilator_bin*
 verilator_coverage_bin*
+verilator_replay_bin*
 verilator.pc
 verilator-config.cmake
 verilator-config-version.cmake

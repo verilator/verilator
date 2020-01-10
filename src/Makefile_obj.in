@@ -256,14 +256,28 @@ NC_OBJS += \
 VLCOV_OBJS = \
 	VlcMain.o \
 
+# verilator_replay
+VLREPLAY_OBJS = \
+	V3Error.o \
+	VlrOptions.o \
+	VlrGenerator.o \
+	VlrMain.o \
+
 #### Linking
 
-ifeq ($(VL_VLCOV),)
-PREDEP_H = V3Ast__gen_classes.h
-OBJS += $(RAW_OBJS) $(NC_OBJS)
-else
+ifneq ($(VL_VLCOV),)
 PREDEP_H =
 OBJS += $(VLCOV_OBJS)
+else ifneq ($(VL_VLREPLAY),)
+PREDEP_H =
+OBJS += $(VLREPLAY_OBJS)
+# TODO -- do we already search for this in configure?
+LIBS += -lz
+# TODO -- do this for verilator_coverage as well
+CXXFLAGS += -D_V3ERROR_NO_GLOBAL_=1
+else
+PREDEP_H = V3Ast__gen_classes.h
+OBJS += $(RAW_OBJS) $(NC_OBJS)
 endif
 
 V3__CONCAT.cpp: $(addsuffix .cpp, $(basename $(RAW_OBJS)))

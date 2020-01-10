@@ -3,6 +3,9 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2012 by Wilson Snyder.
 
+// TODO -- don't hijack this test
+`ifndef REPLAY_HACK
+
 module t (/*AUTOARG*/
    // Inputs
    clk
@@ -63,6 +66,8 @@ module t (/*AUTOARG*/
    end
 
 endmodule
+
+`endif
 
 module Test
   (

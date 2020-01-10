@@ -64,7 +64,7 @@ else
 	$(MAKE) -C obj_opt       TGT=../$@ -f ../Makefile_obj
 endif
 
-dbg: ../bin/verilator_bin_dbg ../bin/verilator_coverage_bin_dbg
+dbg: ../bin/verilator_bin_dbg ../bin/verilator_coverage_bin_dbg ../bin/verilator_replay_bin_dbg
 ../bin/verilator_bin_dbg: obj_dbg ../bin prefiles
 	$(MAKE) -C obj_dbg -j 1  TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj serial
 	$(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 -f ../Makefile_obj
@@ -72,6 +72,9 @@ dbg: ../bin/verilator_bin_dbg ../bin/verilator_coverage_bin_dbg
 ../bin/verilator_coverage_bin_dbg: obj_dbg ../bin prefiles
 	$(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 VL_VLCOV=1 -f ../Makefile_obj serial_vlcov
 	$(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 VL_VLCOV=1 -f ../Makefile_obj
+
+../bin/verilator_replay_bin_dbg: obj_dbg ../bin prefiles
+	$(MAKE) -C obj_dbg       TGT=../$@ VL_DEBUG=1 VL_VLREPLAY=1 -f ../Makefile_obj
 
 prefiles::
 prefiles:: config_rev.h
