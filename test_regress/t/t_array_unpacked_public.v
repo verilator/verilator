@@ -17,5 +17,4 @@ endmodule
 module array_test(
     input din [0:15]
 );
-
 endmodule
