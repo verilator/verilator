@@ -1568,7 +1568,7 @@ private:
             AstConst* constp = VN_CAST(itemp->valuep(), Const);
             if (constp->num().isFourState() && nodep->dtypep()->basicp()
                 && !nodep->dtypep()->basicp()->isFourstate())
-                itemp->v3error("Enum value with X/Zs cannot be assigned to non-fourstate type (IEEE 2019 6.19)");
+                itemp->v3error("Enum value with X/Zs cannot be assigned to non-fourstate type (IEEE 2017 6.19)");
             num.opAssign(constp->num());
             // Look for duplicates
             if (inits.find(num) != inits.end()) {  // IEEE says illegal
@@ -1825,7 +1825,7 @@ private:
             methodCallString(nodep, basicp);
         }
         else {
-            nodep->v3error("Unsupported: Member call on non-enum object '"
+            nodep->v3error("Unsupported: Member call on object '"
                            <<nodep->fromp()->prettyTypeName()
                            <<"' which is a '"<<nodep->fromp()->dtypep()->prettyTypeName()<<"'");
         }
