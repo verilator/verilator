@@ -2112,16 +2112,16 @@ specified, it will come from a default optionally specified at configure
 time (before Verilator was compiled), or computed from
 SYSTEMC/lib-SYSTEMC_ARCH.
 
-=item VCS_HOME
-
-If set, specifies the directory containing the Synopsys VCS distribution.
-When set, a 'make test' in the Verilator distribution will also run VCS
-baseline regression tests.
-
 =item VERILATOR_BIN
 
-If set, specifies an alternative name of the Verilator binary.  May be used
-for debugging and selecting between multiple operating system builds.
+If set, specifies an alternative name of the C<verilator> binary.  May be
+used for debugging and selecting between multiple operating system builds.
+
+=item VERILATOR_COVERAGE_BIN
+
+If set, specifies an alternative name of the C<verilator_coverage binary>.
+May be used for debugging and selecting between multiple operating system
+builds.
 
 =item VERILATOR_GDB
 

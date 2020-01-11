@@ -21,9 +21,14 @@ Git, below, maybe a better alternative.) To install as a package:
 
 If this works, skip down to <<Running Verilator>>.
 
+=== Docker
+
+Verilator is available in pre-built Docker containers. See
+https://github.com/verilator/verilator/blob/master/ci/docker/run/README.adoc
+
 === Git
 
-Alternatively, installing Verilator with Git provides the most flexibility.
+Installing Verilator with Git provides the most flexibility.
 For additional options and details see the additional sections below.  In
 brief:
 
