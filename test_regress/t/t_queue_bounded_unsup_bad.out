@@ -1,4 +1,0 @@
-%Error: t/t_queue_bounded_unsup_bad.v:7: Unsupported: Bounded queues. Suggest use unbounded.
-   int q[$ : 3];
-        ^
-%Error: Exiting due to

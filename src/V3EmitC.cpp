@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -643,6 +643,10 @@ public:
             emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), NULL);
         }
     }
+    virtual void visit(AstNodeTriop* nodep) {
+        UASSERT_OBJ(!emitSimpleOk(nodep), nodep, "Triop cannot be described in a simple way");
+        emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nodep->thsp());
+    }
     virtual void visit(AstRedXor* nodep) {
         if (nodep->lhsp()->isWide()) {
             visit(VN_CAST(nodep, NodeUniop));
@@ -691,10 +695,10 @@ public:
     }
     virtual void visit(AstCCast* nodep) {
         // Extending a value of the same word width is just a NOP.
-        if (nodep->size()>VL_WORDSIZE) {
-            puts("(QData)(");
-        } else {
+        if (nodep->size() <= VL_IDATASIZE) {
             puts("(IData)(");
+        } else {
+            puts("(QData)(");
         }
         iterateAndNextNull(nodep->lhsp());
         puts(")");
@@ -709,6 +713,11 @@ public:
             iterateAndNextNull(nodep->expr1p()); putbs(" : ");
             iterateAndNextNull(nodep->expr2p()); puts(")");
         }
+    }
+    virtual void visit(AstNew* nodep) {
+        puts("std::make_shared<" + nodep->dtypep()->nameProtect() + ">(");
+        iterateChildren(nodep);
+        puts(")");
     }
     virtual void visit(AstSel* nodep) {
         // Note ASSIGN checks for this on a LHS
@@ -788,11 +797,11 @@ public:
         } else if (nodep->isWide()) {
             int upWidth = nodep->num().widthMin();
             int chunks = 0;
-            if (upWidth > EMITC_NUM_CONSTW*VL_WORDSIZE) {
+            if (upWidth > EMITC_NUM_CONSTW * VL_EDATASIZE) {
                 // Output e.g. 8 words in groups of e.g. 8
-                chunks = (upWidth-1) / (EMITC_NUM_CONSTW*VL_WORDSIZE);
-                upWidth %= (EMITC_NUM_CONSTW*VL_WORDSIZE);
-                if (upWidth == 0) upWidth = (EMITC_NUM_CONSTW*VL_WORDSIZE);
+                chunks = (upWidth-1) / (EMITC_NUM_CONSTW * VL_EDATASIZE);
+                upWidth %= (EMITC_NUM_CONSTW * VL_EDATASIZE);
+                if (upWidth == 0) upWidth = (EMITC_NUM_CONSTW * VL_EDATASIZE);
             }
             {   // Upper e.g. 8 words
                 if (chunks) {
@@ -801,7 +810,7 @@ public:
                     puts("X(");
                     puts(cvtToStr(nodep->widthMin()));
                     puts(",");
-                    puts(cvtToStr(chunks*EMITC_NUM_CONSTW*VL_WORDSIZE));
+                    puts(cvtToStr(chunks * EMITC_NUM_CONSTW * VL_EDATASIZE));
                 } else {
                     putbs("VL_CONST_W_");
                     puts(cvtToStr(VL_WORDS_I(upWidth)));
@@ -820,8 +829,8 @@ public:
                 for (int word=VL_WORDS_I(upWidth)-1; word>=0; word--) {
                     // Only 32 bits - llx + long long here just to appease CPP format warning
                     ofp()->printf(",0x%08" VL_PRI64 "x",
-                                  static_cast<vluint64_t>(nodep->num().dataWord
-                                                          (word+chunks*EMITC_NUM_CONSTW)));
+                                  static_cast<vluint64_t>(nodep->num().edataWord
+                                                          (word+chunks * EMITC_NUM_CONSTW)));
                 }
                 puts(")");
             }
@@ -830,7 +839,7 @@ public:
                 putbs("VL_CONSTLO_W_");
                 puts(cvtToStr(EMITC_NUM_CONSTW));
                 puts("X(");
-                puts(cvtToStr(chunks*EMITC_NUM_CONSTW*VL_WORDSIZE));
+                puts(cvtToStr(chunks * EMITC_NUM_CONSTW * VL_EDATASIZE));
                 puts(",");
                 if (!assigntop) {
                     puts(assignString);
@@ -843,8 +852,8 @@ public:
                 for (int word=EMITC_NUM_CONSTW-1; word>=0; word--) {
                     // Only 32 bits - llx + long long here just to appease CPP format warning
                     ofp()->printf(",0x%08" VL_PRI64 "x",
-                                  static_cast<vluint64_t>(nodep->num().dataWord
-                                                          (word+chunks*EMITC_NUM_CONSTW)));
+                                  static_cast<vluint64_t>(nodep->num().edataWord
+                                                          (word+chunks * EMITC_NUM_CONSTW)));
                 }
                 puts(")");
             }
@@ -1069,8 +1078,6 @@ class EmitCImp : EmitCStmts {
             }
             ofp->puts("// See "+v3Global.opt.prefix()+".h for the primary calling header\n");
         }
-        ofp->puts("\n");
-
         return ofp;
     }
 
@@ -1211,7 +1218,7 @@ class EmitCImp : EmitCStmts {
 
         //puts("__Vm_activity = true;\n");
         puts("}\n");
-        if (nodep->ifdef()!="") puts("#endif // "+nodep->ifdef()+"\n");
+        if (nodep->ifdef()!="") puts("#endif  // "+nodep->ifdef()+"\n");
     }
 
     void emitChangeDet() {
@@ -2464,14 +2471,15 @@ void EmitCImp::emitIntFuncDecls(AstNodeModule* modp) {
         const AstCFunc* funcp = *it;
         if (!funcp->dpiImport()) {  // DPI is prototyped in __Dpi.h
             ofp()->putsPrivate(funcp->declPrivate());
-            if (funcp->ifdef()!="") puts("#ifdef "+funcp->ifdef()+"\n");
+            if (!funcp->ifdef().empty()) puts("#ifdef " + funcp->ifdef() + "\n");
             if (funcp->isStatic().trueU()) puts("static ");
-            puts(funcp->rtnTypeVoid()); puts(" ");
+            puts(funcp->rtnTypeVoid());
+            puts(" ");
             puts(funcp->nameProtect());
-            puts("("+cFuncArgs(funcp)+")");
+            puts("(" + cFuncArgs(funcp) + ")");
             if (funcp->slow()) puts(" VL_ATTR_COLD");
             puts(";\n");
-            if (funcp->ifdef()!="") puts("#endif // "+funcp->ifdef()+"\n");
+            if (!funcp->ifdef().empty()) puts("#endif  // " + funcp->ifdef() + "\n");
         }
     }
 
@@ -2531,8 +2539,7 @@ void EmitCImp::emitMTaskState() {
 
 void EmitCImp::emitInt(AstNodeModule* modp) {
     // Always have this first; gcc has short circuiting if #ifdef is first in a file
-    puts("#ifndef _"+modClassName(modp)+"_H_\n");
-    puts("#define _"+modClassName(modp)+"_H_\n");
+    ofp()->putsGuard();
     puts("\n");
 
     ofp()->putsIntTopInclude();
@@ -2734,30 +2741,29 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
         ofp()->putsPrivate(false);  // public:
         puts("void "+protect("__Vserialize")+"(VerilatedSerialize& os);\n");
         puts("void "+protect("__Vdeserialize")+"(VerilatedDeserialize& os);\n");
-        puts("\n");
     }
 
     puts("} VL_ATTR_ALIGNED(128);\n");
-    puts("\n");
 
     // Save/restore
     if (v3Global.opt.savable() && modp->isTop()) {
-        puts("inline VerilatedSerialize&   operator<<(VerilatedSerialize& os,   "
+        puts("\n");
+        puts("inline VerilatedSerialize& operator<<(VerilatedSerialize& os, "
              +modClassName(modp)+"& rhs) {\n"
              "Verilated::quiesce(); rhs."+protect("__Vserialize")+"(os); return os; }\n");
         puts("inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, "
              +modClassName(modp)+"& rhs) {\n"
              "Verilated::quiesce(); rhs."+protect("__Vdeserialize")+"(os); return os; }\n");
-        puts("\n");
     }
 
     // finish up h-file
-    puts("#endif // guard\n");
+    ofp()->putsEndGuard();
 }
 
 //----------------------------------------------------------------------
 
 void EmitCImp::emitImp(AstNodeModule* modp) {
+    puts("\n");
     puts("#include \""+modClassName(modp)+".h\"\n");
     puts("#include \""+symClassName()+".h\"\n");
 
@@ -2765,8 +2771,8 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
         puts("\n");
         puts("#include \"verilated_dpi.h\"\n");
     }
-    puts("\n");
 
+    puts("\n");
     emitTextSection(AstType::atScImpHdr);
 
     if (m_slow && splitFilenum()==0) {
@@ -3056,13 +3062,13 @@ class EmitCTrace : EmitCStmts {
         }
         // Range
         if (nodep->arrayRange().ranged()) {
-            puts(",(i+"+cvtToStr(nodep->arrayRange().lo())+")");
+            puts(", true,(i+" + cvtToStr(nodep->arrayRange().lo()) + ")");
         } else {
-            puts(",-1");
+            puts(", false,-1");
         }
-        if (!nodep->dtypep()->basicp()->isDouble()  // When float/double no longer have widths this can go
-            && nodep->bitRange().ranged()) {
-            puts(","+cvtToStr(nodep->bitRange().left())+","+cvtToStr(nodep->bitRange().right()));
+        if (!nodep->dtypep()->basicp()->isDouble() && nodep->bitRange().ranged()) {
+            puts(", " + cvtToStr(nodep->bitRange().left()) + ","
+                 + cvtToStr(nodep->bitRange().right()));
         }
         puts(");");
     }

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1278,11 +1278,13 @@ public:
 
     // ACCESSORS
     virtual string name() const { return ""; }
+    virtual string origName() const { return ""; }
     virtual void name(const string& name) { this->v3fatalSrc("name() called on object without name() method"); }
     virtual void tag(const string& text) {}
     virtual string tag() const { return ""; }
     virtual string verilogKwd() const { return ""; }
     string nameProtect() const;  // Name with --protect-id applied
+    string origNameProtect() const;  // origName with --protect-id applied
     string shortName() const;  // Name with __PVT__ removed for concatenating scopes
     static string dedotName(const string& namein);  // Name with dots removed
     static string prettyName(const string& namein);  // Name for printing out to the user
@@ -1312,8 +1314,8 @@ public:
     int widthMin() const;
     int widthMinV() const { return v3Global.widthMinUsage()==VWidthMinUsage::VERILOG_WIDTH ? widthMin() : width(); }
     int widthWords() const { return VL_WORDS_I(width()); }
-    bool isQuad() const { return (width()>VL_WORDSIZE && width()<=VL_QUADSIZE); }
-    bool isWide() const { return (width()>VL_QUADSIZE); }
+    bool isQuad() const { return (width() > VL_IDATASIZE && width() <= VL_QUADSIZE); }
+    bool isWide() const { return (width() > VL_QUADSIZE); }
     bool isDouble() const;
     bool isSigned() const;
     bool isString() const;
@@ -1949,7 +1951,8 @@ public:
     const char* charIQWN() const { return (isString() ? "N" : isWide() ? "W" : isQuad() ? "Q" : "I"); }
 };
 
-class AstNodeClassDType : public AstNodeDType {
+class AstNodeUOrStructDType : public AstNodeDType {
+    // A struct or union; common handling
 private:
     // TYPES
     typedef std::map<string,AstMemberDType*> MemberNameMap;
@@ -1959,14 +1962,14 @@ private:
     bool                m_isFourstate;
     MemberNameMap       m_members;
 public:
-    AstNodeClassDType(FileLine* fl, AstNumeric numericUnpack)
+    AstNodeUOrStructDType(FileLine* fl, AstNumeric numericUnpack)
         : AstNodeDType(fl) {
         // AstNumeric::NOSIGN overloaded to indicate not packed
         m_packed = (numericUnpack != AstNumeric::NOSIGN);
         m_isFourstate = false;  // V3Width computes
         numeric(AstNumeric::fromBool(numericUnpack.isSigned()));
     }
-    ASTNODE_BASE_FUNCS(NodeClassDType)
+    ASTNODE_BASE_FUNCS(NodeUOrStructDType)
     virtual const char* broken() const;
     virtual void dump(std::ostream& str) const;
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
@@ -2239,7 +2242,7 @@ public:
     void addActivep(AstNode* nodep) { addOp3p(nodep); }
     // ACCESSORS
     virtual void name(const string& name) { m_name = name; }
-    string origName() const { return m_origName; }
+    virtual string origName() const { return m_origName; }
     string hierName() const    { return m_hierName; }
     void hierName(const string& hierName) { m_hierName = hierName; }
     bool inLibrary() const { return m_inLibrary; }

@@ -3,7 +3,7 @@
 //
 // THIS MODULE IS PUBLICLY LICENSED
 //
-// Copyright 2001-2019 by Wilson Snyder.  This program is free software;
+// Copyright 2001-2020 by Wilson Snyder.  This program is free software;
 // you can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License Version 2.0.
 //
@@ -118,7 +118,7 @@ void VerilatedFst::declDTypeEnum(int dtypenum, const char* name, vluint32_t elem
 
 void VerilatedFst::declSymbol(vluint32_t code, const char* name,
                               int dtypenum, fstVarDir vardir, fstVarType vartype,
-                              int arraynum, vluint32_t len) {
+                              bool array, int arraynum, vluint32_t len) {
     std::pair<Code2SymbolType::iterator, bool> p
         = m_code2symbol.insert(std::make_pair(code, static_cast<fstHandle>(NULL)));
     std::istringstream nameiss(name);
@@ -153,8 +153,7 @@ void VerilatedFst::declSymbol(vluint32_t code, const char* name,
 
     std::stringstream name_ss;
     name_ss << symbol_name;
-    if (arraynum >= 0)
-        name_ss << "(" << arraynum << ")";
+    if (array) name_ss << "(" << arraynum << ")";
     std::string name_str = name_ss.str();
 
     if (dtypenum > 0) {
@@ -203,51 +202,6 @@ void VerilatedFst::dump(vluint64_t timeui) {
         VerilatedFstCallInfo* cip = m_callbacks[ent];
         (cip->m_changecb)(this, cip->m_userthis, cip->m_code);
     }
-}
-
-//=============================================================================
-// Helpers
-
-char* VerilatedFst::word2Str(vluint32_t newval, int bits) {
-    // Constructor makes sure m_valueStrBuffer.reserve() > 32+1
-    char* s = m_valueStrBuffer.data();
-    for (int i = 0; i < bits; ++i) {
-        *s++ = '0' + ((newval>>(bits-i-1))&1);
-    }
-    *s = '\0';
-    return m_valueStrBuffer.data();
-}
-
-char* VerilatedFst::quad2Str(vluint64_t newval, int bits) {
-    // Constructor makes sure m_valueStrBuffer.reserve() > 64+1
-    char* s = m_valueStrBuffer.data();
-    for (int i = 0; i < bits; ++i) {
-        *s++ = '0' + ((newval>>(bits-i-1))&1);
-    }
-    *s = '\0';
-    return m_valueStrBuffer.data();
-}
-
-char* VerilatedFst::array2Str(const vluint32_t* newval, int bits) {
-    int bq = VL_BITWORD_I(bits), br = VL_BITBIT_I(bits);
-    m_valueStrBuffer.reserve(bits+1);
-    char* s = m_valueStrBuffer.data();
-    vluint32_t v = newval[bq];
-    for (int i = 0; i < br; ++i) {
-        *s++ = '0' + ((v>>(br-i-1))&1);
-    }
-    for (int w = bq-1; w >= 0; --w) {
-        v = newval[w];
-        for (int i = 28; i >= 0; i-=4) {
-            s[0] = '0' + ((v>>(i+3))&1);
-            s[1] = '0' + ((v>>(i+2))&1);
-            s[2] = '0' + ((v>>(i+1))&1);
-            s[3] = '0' + ((v>>(i+0))&1);
-            s+=4;
-        }
-    }
-    *s = '\0';
-    return m_valueStrBuffer.data();
 }
 
 //********************************************************************

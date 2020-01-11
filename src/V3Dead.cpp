@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -373,11 +373,11 @@ private:
         }
         for (std::vector<AstNode*>::iterator it = m_dtypesp.begin(); it != m_dtypesp.end();++it) {
             if ((*it)->user1() == 0) {
-                AstNodeClassDType *classp;
+                AstNodeUOrStructDType *classp;
                 // It's possible that there if a reference to each individual member, but
                 // not to the dtype itself.  Check and don't remove the parent dtype if
                 // members are still alive.
-                if ((classp = VN_CAST((*it), NodeClassDType))) {
+                if ((classp = VN_CAST((*it), NodeUOrStructDType))) {
                     bool cont = true;
                     for (AstMemberDType *memberp = classp->membersp();
                          memberp; memberp = VN_CAST(memberp->nextp(), MemberDType)) {

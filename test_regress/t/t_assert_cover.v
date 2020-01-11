@@ -64,7 +64,15 @@ module Test
    cover property (@(posedge clk) disable iff (!toggle) cyc==8)
      $stop;
 
-   // Innediate assert
+   always_ff @ (posedge clk) begin
+      labeled_icov: cover (cyc==3 || cyc==4);
+   end
+
+   // Immediate cover
+   labeled_imm0: cover #0 (cyc == 0);
+   labeled_immf: cover final (cyc == 0);
+
+   // Immediate assert
    labeled_imas: assert #0 (1);
    assert final (1);
 

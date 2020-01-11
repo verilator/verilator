@@ -1,9 +1,7 @@
-: # -*-Mode: perl;-*- use perl, wherever it is
-eval 'exec perl -wS $0 ${1+"$@"}'
-  if 0;
+#!/usr/bin/env perl
 ######################################################################
 #
-# Copyright 2003-2019 by Wilson Snyder. This program is free software; you
+# Copyright 2003-2020 by Wilson Snyder. This program is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -1078,7 +1076,7 @@ and the remaining files can be compiled on parallel machines.  Using
 design --output-split 20000 resulted in splitting into approximately
 one-minute-compile chunks.
 
-Typically when using this, make with VM_PARALLEL_BUILD=1, and use
+Typically when using this, make with VM_PARALLEL_BUILDS=1, and use
 I<ccache>.
 
 =item --output-split-cfuncs I<statements>
@@ -2114,16 +2112,16 @@ specified, it will come from a default optionally specified at configure
 time (before Verilator was compiled), or computed from
 SYSTEMC/lib-SYSTEMC_ARCH.
 
-=item VCS_HOME
-
-If set, specifies the directory containing the Synopsys VCS distribution.
-When set, a 'make test' in the Verilator distribution will also run VCS
-baseline regression tests.
-
 =item VERILATOR_BIN
 
-If set, specifies an alternative name of the Verilator binary.  May be used
-for debugging and selecting between multiple operating system builds.
+If set, specifies an alternative name of the C<verilator> binary.  May be
+used for debugging and selecting between multiple operating system builds.
+
+=item VERILATOR_COVERAGE_BIN
+
+If set, specifies an alternative name of the C<verilator_coverage binary>.
+May be used for debugging and selecting between multiple operating system
+builds.
 
 =item VERILATOR_GDB
 
@@ -2674,7 +2672,7 @@ The remainder of this section describe behavior with --threads 1 or
 VL_THREADED is defined when compiling a threaded Verilated module, causing
 the Verilated support classes become threadsafe.
 
-The thread used for constructing a model must the the same thread that
+The thread used for constructing a model must be the same thread that
 calls eval() into the model, this is called the "eval thread". The thread
 used to perform certain global operations such as saving and tracing must
 be done by a "main thread". In most cases the eval thread and main thread
@@ -2737,8 +2735,8 @@ controlled by configuration files, typically named with the .vlt
 extension. An example:
 
   `verilator_config
-  lint_off -msg WIDTH
-  lint_off -msg CASEX  -file "silly_vendor_code.v"
+  lint_off -rule WIDTH
+  lint_off -rule CASEX  -file "silly_vendor_code.v"
 
 This disables WIDTH warnings globally, and CASEX for a specific file.
 
@@ -2756,8 +2754,7 @@ The grammar of configuration commands is as follows:
 
 =item `verilator_config
 
-Take remaining text up the the next `verilog mode switch and treat it as
-Verilator configuration commands.
+Take remaining text and treat it as Verilator configuration commands.
 
 =item coverage_on  [-file "<filename>" [-lines <line> [ - <line> ]]]
 
@@ -2768,9 +2765,9 @@ Enable/disable coverage for the specified filename (or wildcard with '*' or
 omitted).  Often used to ignore an entire module for coverage analysis
 purposes.
 
-=item lint_on  [-msg <message>] [-file "<filename>" [-lines <line> [ - <line>]]]
+=item lint_on  [-rule <message>] [-file "<filename>" [-lines <line> [ - <line>]]]
 
-=item lint_off [-msg <message>] [-file "<filename>" [-lines <line> [ - <line>]]]
+=item lint_off [-rule <message>] [-file "<filename>" [-lines <line> [ - <line>]]]
 
 Enable/disables the specified lint warning, in the specified filename (or
 wildcard with '*' or '?', or all files if omitted) and range of line
@@ -2779,9 +2776,12 @@ numbers (or all lines if omitted).
 With lint_off using '*' will override any lint_on directives in the source,
 i.e. the warning will still not be printed.
 
-If the -msg is omitted, all lint warnings (see list in -Wno-lint) are
+If the -rule is omitted, all lint warnings (see list in -Wno-lint) are
 enabled/disabled.  This will override all later lint warning enables for
 the specified region.
+
+In previous versions -rule was named -msg. The latter is deprecated, but
+still works with a deprecation info, it may be removed in future versions.
 
 =item tracing_on  [-file "<filename>" [-lines <line> [ - <line> ]]]
 
@@ -2995,7 +2995,7 @@ may `ifdef around compiler specific constructs.
 
 =item `verilator_config
 
-Take remaining text up the the next `verilog mode switch and treat it as
+Take remaining text up to the next `verilog mode switch and treat it as
 Verilator configuration commands.
 
 =item `verilog
@@ -3317,7 +3317,7 @@ that Verilator will print a list of known scopes to help your debugging.
 
 =head2 Floating Point
 
-Floating Point (real) numbers are supported.
+Short floating point (shortreal) numbers are converted to real.
 
 =head2 Latches
 
@@ -3506,6 +3506,11 @@ expressions ("a = b++;").
 Assignment patterns with order based, default, constant integer (array) or
 member identifier (struct/union) keys are supported.  Data type keys and
 keys which are computed from a constant expression are not supported.
+
+=item `uselib
+
+Uselib, a vendor specific library specification method, is ignored along
+with anything following it until the end of that line.
 
 =item cast operator
 
@@ -3742,6 +3747,14 @@ This message is only seen on large or complicated loops because Verilator
 generally unrolls small loops.  You may want to try increasing
 --unroll-count (and occasionally --unroll-stmts) which will raise the small
 loop bar to avoid this error.
+
+=item BOUNDED
+
+This indicates that bounded queues (e.g. "var name[$ : 3]") are
+unsupported.
+
+Ignoring this warning may make Verilator simulations differ from other
+simulators.
 
 =item BSSPACE
 
@@ -4844,7 +4857,7 @@ SystemC module *may* be faster.)
 
 =head1 BUGS
 
-First, check the the coding limitations section.
+First, check the coding limitations section.
 
 Next, try the --debug switch.  This will enable additional internal
 assertions, and may help identify the problem.
@@ -5016,7 +5029,7 @@ remain anonymous.
 
 The latest version is available from L<https://verilator.org>.
 
-Copyright 2003-2019 by Wilson Snyder.  Verilator is free software; you can
+Copyright 2003-2020 by Wilson Snyder.  Verilator is free software; you can
 redistribute it and/or modify the Verilator internals under the terms of
 either the GNU Lesser General Public License Version 3 or the Perl Artistic
 License Version 2.0.

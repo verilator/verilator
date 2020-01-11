@@ -7,11 +7,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
-scenarios(linter => 1);
+scenarios(vlt => 1);
 
 lint(
-    fails => 1,
-    expect_filename => $Self->{golden_filename},
+    verilator_flags2 => ["--lint-only", "-Wno-DEPRECATED"],
     );
 
 ok(1);

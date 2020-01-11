@@ -1,8 +1,8 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 # See copyright, etc in below POD section.
 ######################################################################
 
-require 5.006_001;
+use warnings;
 use Getopt::Long;
 use IO::File;
 use Pod::Usage;
@@ -191,7 +191,7 @@ sub clean_output {
         }
         my @out;
         foreach my $line (@lines) {
-            if ($line =~ /BISONPRE_TOKEN_NAMES/) {
+            if (_enaline($line) && $line =~ /BISONPRE_TOKEN_NAMES/) {
                 push @out, $line;
                 foreach my $tv (sort keys %token_values) {
                     push @out, sprintf("\tcase %d: return \"%s\";\n",
@@ -303,7 +303,7 @@ sub clean_input {
         my @linesin = @lines;  @lines=();  my $l=0;
         foreach my $line (@linesin) {
             $l++;
-            if ($line =~ /BISONPRE_VERSION/) {
+            if (_enaline($line) && $line =~ /BISONPRE_VERSION/) {
                 #                            1         3             4
                 ($line =~ /BISONPRE_VERSION\((\S+)\s*,\s*((\S+)\s*,)?\s*([^\),]+)\)\s*$/)
                     or die "%Error: $filename:$l: Bad form of BISONPRE_VERSION: $line\n";
@@ -324,7 +324,7 @@ sub clean_input {
         my @linesin = @lines;  @lines=();  my $l=0;
         foreach my $line (@linesin) {
             $l++;
-            if ($line =~ /BISONPRE_NOT/) {
+            if (_enaline($line) && $line =~ /BISONPRE_NOT/) {
                 ($line =~ s/BISONPRE_NOT\((\S+)\)\s*(\{[^}]+})\s*$//)
                     or die "%Error: $filename:$l: Bad form of BISONPRE_NOT: $line\n";
                 my $endtok = $1;  my $action = $2;
@@ -354,7 +354,7 @@ sub clean_input {
         my @linesin = @lines;  @lines=();  my $l=0;
         foreach my $line (@linesin) {
             $l++;
-            if ($line =~ /BISONPRE_COPY/) {
+            if (_enaline($line) && $line =~ /BISONPRE_COPY/) {
                 $line = _bisonpre_copy($line,$l,0);
             }
             push @lines, $line;
@@ -377,7 +377,7 @@ sub clean_input {
         my $needmore = 0;
         foreach my $line (@linesin) {
             $l++;
-            if ($line =~ m!//BISONPRE_TYPES!) {
+            if (_enaline($line) && $line =~ m!//BISONPRE_TYPES!) {
                 push @lines, $line;
                 foreach my $type (sort keys %types) {
                     next if !$type;
@@ -436,6 +436,12 @@ sub _bisonpre_copy {
         $depth++;
     }
     return $text;
+}
+
+sub _enaline {
+    my $line = shift;
+    return 0 if $line =~ m!//UN!;
+    return 1;
 }
 
 #######################################################################
@@ -572,7 +578,7 @@ This is part of the L<https://www.veripool.org/> free Verilog EDA software
 tool suite.  The latest version is available from CPAN and from
 L<https://www.veripool.org/>.
 
-Copyright 2008-2019 by Wilson Snyder.  This package is free software; you
+Copyright 2008-2020 by Wilson Snyder.  This package is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License Version 2.0.
 

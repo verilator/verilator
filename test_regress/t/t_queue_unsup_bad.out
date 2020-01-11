@@ -6,10 +6,6 @@
                                 : ... In instance t
       q.delete(1);
         ^~~~~~
-%Error: t/t_queue_unsup_bad.v:26: Unsupported: Queue .insert method, as is O(n) complexity and slow.
-                                : ... In instance t
-      q.insert(0, "ins0");
-        ^~~~~~
 %Error: t/t_queue_unsup_bad.v:27: Unsupported: Queue .insert method, as is O(n) complexity and slow.
                                 : ... In instance t
       q.insert(2, "ins2");

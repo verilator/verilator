@@ -3,7 +3,7 @@
 //
 // THIS MODULE IS PUBLICLY LICENSED
 //
-// Copyright 2012-2019 by Wilson Snyder.  This program is free software;
+// Copyright 2012-2020 by Wilson Snyder.  This program is free software;
 // you can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License Version 2.0.
 //
@@ -153,7 +153,7 @@ public:
 #elif defined(__APPLE__)
         vluint32_t info[4];
         __cpuid_count(1, 0, info[0], info[1], info[2], info[3]);
-        /* info[1] is EBX, bits 24-31 are APIC ID */
+        // info[1] is EBX, bits 24-31 are APIC ID
         if ((info[3] & (1 << 9)) == 0) {
             return -1;  // no APIC on chip
         } else {

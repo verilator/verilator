@@ -61,6 +61,10 @@ if (!-r "$root/.git") {
             }
             elsif ($line =~ m!^\+(.*)!) {
                 ++$lineno;
+                if ($line =~ /\r/) {
+                    $summary = "File modification adds carriage return (remove them):" if !$summary;
+                    $warns{$file} = "File modification adds carriage return (remove them): $file:$lineno";
+                }
                 my $len = length($1);
                 if ($len >= 100
                     && $file !~ /\.out$/) {

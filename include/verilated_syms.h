@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License.
 // Version 2.0.
@@ -42,9 +42,7 @@
 
 /// Class to sort maps keyed by const char*'s
 struct VerilatedCStrCmp {
-    bool operator() (const char* a, const char* b) const {
-        return std::strcmp(a, b) < 0;
-    }
+    bool operator()(const char* a, const char* b) const { return std::strcmp(a, b) < 0; }
 };
 
 /// Map of sorted scope names to find associated scope class
@@ -56,8 +54,7 @@ public:
 };
 
 /// Map of sorted variable names to find associated variable class
-class VerilatedVarNameMap
-    : public std::map<const char*, VerilatedVar, VerilatedCStrCmp> {
+class VerilatedVarNameMap : public std::map<const char*, VerilatedVar, VerilatedCStrCmp> {
 public:
     VerilatedVarNameMap() {}
     ~VerilatedVarNameMap() {}
@@ -65,8 +62,7 @@ public:
 
 typedef std::vector<const VerilatedScope*> VerilatedScopeVector;
 
-class VerilatedHierarchyMap
-    : public std::map<const VerilatedScope*, VerilatedScopeVector> {
+class VerilatedHierarchyMap : public std::map<const VerilatedScope*, VerilatedScopeVector> {
 public:
     VerilatedHierarchyMap() {}
     ~VerilatedHierarchyMap() {}

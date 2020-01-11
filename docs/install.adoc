@@ -21,9 +21,14 @@ Git, below, maybe a better alternative.) To install as a package:
 
 If this works, skip down to <<Running Verilator>>.
 
+=== Docker
+
+Verilator is available in pre-built Docker containers. See
+https://github.com/verilator/verilator/blob/master/ci/docker/run/README.adoc
+
 === Git
 
-Alternatively, installing Verilator with Git provides the most flexibility.
+Installing Verilator with Git provides the most flexibility.
 For additional options and details see the additional sections below.  In
 brief:
 
@@ -96,11 +101,11 @@ Those developing Verilator may also want these (see internals.adoc):
 ==== Install SystemC
 
 If you will be using SystemC (vs straight C++ output), download
-http://www.systemc.org[SystemC].  Follow their installation instructions.
-You will need to set `SYSTEMC_INCLUDE` to point to the include directory
-with systemc.h in it, and `SYSTEMC_LIBDIR` to points to the directory with
-libsystemc.a in it.  (Older installations may set `SYSTEMC` and
-`SYSTEMC_ARCH` instead.)
+https://www.accellera.org/downloads/standards/systemc[SystemC].
+Follow their installation instructions.  You will need to set `SYSTEMC_INCLUDE`
+to point to the include directory with `systemc.h` in it, and `SYSTEMC_LIBDIR`
+to points to the directory with `libsystemc.a` in it.  (Older installations
+may set `SYSTEMC` and `SYSTEMC_ARCH` instead.)
 
 ==== Install GTKWave
 
@@ -289,6 +294,6 @@ or https://verilator.org/verilator_doc.pdf[Verilator manual (PDF)].
 
 == License
 
-Copyright 2008-2019 by Wilson Snyder.  Verilator is free software; you can
+Copyright 2008-2020 by Wilson Snyder.  Verilator is free software; you can
 redistribute it and/or modify it under the terms of either the GNU Lesser
 General Public License Version 3 or the Perl Artistic License Version 2.0.

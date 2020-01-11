@@ -1,0 +1,199 @@
+["area: assertions"]
+color = "ffffe8"
+name = "area: assertions"
+description = "Issue involves assertions"
+
+["area: configure/compiling"]
+color = "ffffe8"
+name = "area: configure/compiling"
+description = "Issue involves configuring or compilating Verilator itself"
+
+["area: coverage"]
+color = "ffffe8"
+name = "area: coverage"
+description = "Issue involves coverage generation"
+
+["area: data-types"]
+color = "ffffe8"
+name = "area: data-types"
+description = "Issue involves data-types"
+
+["area: documentation"]
+color = "ffffe8"
+name = "area: documentation"
+description = "Issue involves documentation"
+
+["area: elaboration"]
+color = "ffffe8"
+name = "area: elaboration"
+description = "Issue involves elaboration phase"
+
+["area: invoking/options"]
+color = "ffffe8"
+name = "area: invoking/options"
+description = "Issue involves options passed to Verilator"
+
+["area: lint"]
+color = "ffffe8"
+name = "area: lint"
+description = "Issue involves SystemVerilog lint checking"
+
+["area: parser"]
+color = "ffffe8"
+name = "area: parser"
+description = "Issue involves SystemVerilog parsing"
+
+["area: performance"]
+color = "ffffe8"
+name = "area: performance"
+description = "Issue involves performance issues"
+
+["area: portability"]
+color = "ffffe8"
+name = "area: portability"
+description = "Issue involves operating system/compiler portability"
+
+["area: runtime result"]
+color = "ffffe8"
+name = "area: runtime result"
+description = "Issue involves an incorrect runtine result from Verilated model"
+
+["area: scheduling"]
+color = "ffffe8"
+name = "area: scheduling"
+description = "Issue involves scheduling/ordering of events"
+
+["area: tests"]
+color = "ffffe8"
+name = "area: tests"
+description = "Issue involves the testing system"
+
+["area: usability"]
+color = "ffffe8"
+name = "area: usability"
+description = "Issue involves general usability"
+
+["effort: days"]
+color = "d0c0b0"
+name = "effort: days"
+description = "Expect this issue to require roughly days of invested effort to resolve"
+
+["effort: hours"]
+color = "f5e6d6"
+name = "effort: hours"
+description = "Expect this issue to require roughly hours of invested effort to resolve"
+
+["effort: minutes"]
+color = "f5e6d6"
+name = "effort: minutes"
+description = "Expect this issue to require less than an hour of invested effort to resolve"
+
+["effort: weeks"]
+color = "d0c0b0"
+name = "effort: weeks"
+description = "Expect this issue to require weeks or more of invested effort to resolve"
+
+["good first issue"]
+color = "7057ff"
+name = "good first issue"
+description = "Good for newcomers"
+
+["help wanted"]
+color = "008672"
+name = "help wanted"
+description = "Extra attention is needed"
+
+["new"]
+color = "ff4400"
+name = "new"
+description = "New issue, not yet seen by maintainers"
+
+["resolution: abandoned"]
+color = "cfd3d7"
+name = "resolution: abandoned"
+description = "Closed; not enough information or otherwise never finished"
+
+["resolution: answered"]
+color = "cfd3d7"
+name = "resolution: answered"
+description = "Closed; only applies to questions which were answered"
+
+["resolution: duplicate"]
+color = "cfd3d7"
+name = "resolution: duplicate"
+description = "Closed; issue or pull request already exists"
+
+["resolution: external"]
+color = "cfd3d7"
+name = "resolution: external"
+description = "Closed; passed to another tool's bug tracker"
+
+["resolution: fixed"]
+color = "cfd3d7"
+name = "resolution: fixed"
+description = "Closed; fixed"
+
+["resolution: invalid"]
+color = "cfd3d7"
+name = "resolution: invalid"
+description = "Closed; issue or pull request is no longer relevant"
+
+["resolution: no fix needed"]
+color = "cfd3d7"
+name = "resolution: no fix needed"
+description = "Closed; no fix required (not a bug)"
+
+["resolution: wontfix"]
+color = "cfd3d7"
+name = "resolution: wontfix"
+description = "Closed; work won't continue on an issue or pull request"
+
+["status: asked reporter"]
+color = "ffffff"
+name = "status: asked reporter"
+description = "Bug is waiting for reporter to answer a question"
+
+["status: assigned"]
+color = "a0f0ff"
+name = "status: assigned"
+description = "Issue is assigned to someone to work on"
+
+["status: blocked"]
+color = "00007f"
+name = "status: blocked"
+description = "Issue is waiting for another bug, when other bug is fixed, then goes to 'status: assigned'"
+
+["status: discussion"]
+color = "d876e3"
+name = "status: discussion"
+description = "Issue is waiting for discussions to resolve"
+
+["status: ready"]
+color = "b6c92a"
+name = "status: ready"
+description = "Issue is ready for someone to fix; then goes to 'status: assigned'"
+
+["type: bug"]
+color = "d73a4a"
+name = "type: bug"
+description = "Defect"
+
+["type: feature-IEEE"]
+color = "cfccff"
+name = "type: feature-IEEE"
+description = "Request to add new feature, described in IEEE 1800"
+
+["type: feature-non-IEEE"]
+color = "cfccff"
+name = "type: feature-non-IEEE"
+description = "Request to add new feature, outside IEEE 1800"
+
+["type: maintenance"]
+color = "cfccff"
+name = "type: maintenance"
+description = "Internal maintenance task"
+
+["type: q and a"]
+color = "84ba34"
+name = "type: q and a"
+description = "Question and answer about some feature or user question"

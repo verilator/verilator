@@ -1,4 +1,5 @@
 ---
 exclude_paths:
+  - '.github/**'
   - 'ci/build_verilator.sh'
   - 'include/vltstd/**'

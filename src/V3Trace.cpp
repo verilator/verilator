@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -341,8 +341,8 @@ private:
                                  AstVarType::MODULETEMP,
                                   "__Vm_traceActivity", newArrDtp);
         } else {
-            // For tighter code; round to next 32 bit point.
-            int activityBits = VL_WORDS_I(m_activityNumber)*VL_WORDSIZE;
+            // For tighter code; round to next word point.
+            int activityBits = VL_WORDS_I(m_activityNumber) * VL_EDATASIZE;
             newvarp = new AstVar(m_chgFuncp->fileline(), AstVarType::MODULETEMP,
                                  "__Vm_traceActivity", VFlagBitPacked(), activityBits);
         }

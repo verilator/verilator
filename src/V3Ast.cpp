@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -145,6 +145,9 @@ string AstNode::encodeNumber(vlsint64_t num) {
 
 string AstNode::nameProtect() const {
     return VIdProtect::protectIf(name(), protect());
+}
+string AstNode::origNameProtect() const {
+    return VIdProtect::protectIf(origName(), protect());
 }
 
 string AstNode::shortName() const {
@@ -1107,7 +1110,13 @@ void AstNode::v3errorEndFatal(std::ostringstream& str) const {
 string AstNode::locationStr() const {
     string str = "... In instance ";
     const AstNode* backp = this;
+    int itmax = 10000;  // Max iterations before giving up on location search
     while (backp) {
+        if (--itmax < 0) {
+            // Likely some circular back link, and V3Ast is trying to report a low-level error
+            UINFO(1, "Ran out of iterations finding locationStr on " << backp << endl);
+            return "";
+        }
         const AstScope* scopep;
         if ((scopep = VN_CAST_CONST(backp, Scope))) {
             // The design is flattened and there are no useful scopes

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -210,7 +210,12 @@ private:
                 return false;
             }
         }
-        if (m_caseItems <= 3) return false;  // Not worth simplifying
+        if (m_caseItems <= 3
+            // Avoid e.g. priority expanders from going crazy in expansion
+            || (m_caseWidth >= 8 && (m_caseItems <= (m_caseWidth + 1)))) {
+            return false;  // Not worth simplifying
+        }
+
         // Convert valueItem from AstCaseItem* to the expression
         // Not done earlier, as we may now have a NULL because it's just a ";" NOP branch
         for (uint32_t i=0; i<(1UL<<m_caseWidth); ++i) {

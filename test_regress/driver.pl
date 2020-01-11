@@ -1,10 +1,9 @@
-: # -*-Mode: perl;-*- use perl, wherever it is
-eval 'exec perl -wS $0 ${1+"$@"}'
-  if 0;
+#!/usr/bin/env perl
 # See copyright, etc in below POD section.
 ######################################################################
 
 require 5.006_001;
+use warnings;
 use Cwd;
 BEGIN {
     if (!$ENV{VERILATOR_ROOT} && -x "../bin/verilator") {
@@ -2008,6 +2007,17 @@ sub files_identical {
     }
 }
 
+sub copy_if_golden {
+    my $self = (ref $_[0]? shift : $Self);
+    my $fn1 = shift;
+    my $fn2 = shift;
+    if ($ENV{HARNESS_UPDATE_GOLDEN}) {  # Update golden files with current
+        warn "%Warning: HARNESS_UPDATE_GOLDEN set: cp $fn1 $fn2\n";
+        eval "use File::Copy;";
+        File::Copy::copy($fn1, $fn2);
+    }
+}
+
 sub vcd_identical {
     my $self = (ref $_[0]? shift : $Self);
     my $fn1 = shift;
@@ -2028,11 +2038,7 @@ sub vcd_identical {
         if ($out ne '') {
             print $out;
             $self->error("VCD miscompare $fn1 $fn2\n");
-            if ($ENV{HARNESS_UPDATE_GOLDEN}) {  # Update golden files with current
-                warn "%Warning: HARNESS_UPDATE_GOLDEN set: cp $fn1 $fn2\n";
-                eval "use File::Copy;";
-                File::Copy::copy($fn1,$fn2);
-            }
+            $self->copy_if_golden($fn1, $fn2);
             return 0;
         }
     }
@@ -2047,11 +2053,7 @@ sub vcd_identical {
         if ($a ne $b) {
             print "$a\n$b\n" if $::Debug;
             $self->error("VCD hier mismatch $fn1 $fn2\n");
-            if ($ENV{HARNESS_UPDATE_GOLDEN}) {  # Update golden files with current
-                warn "%Warning: HARNESS_UPDATE_GOLDEN set: cp $fn1 $fn2\n";
-                eval "use File::Copy;";
-                File::Copy::copy($fn1,$fn2);
-            }
+            $self->copy_if_golden($fn1, $fn2);
             return 0;
         }
     }
@@ -2648,7 +2650,7 @@ Command to use to invoke XSim xvlog
 
 The latest version is available from L<https://verilator.org>.
 
-Copyright 2003-2019 by Wilson Snyder.  Verilator is free software; you can
+Copyright 2003-2020 by Wilson Snyder.  Verilator is free software; you can
 redistribute it and/or modify it under the terms of either the GNU Lesser
 General Public License Version 3 or the Perl Artistic License Version 2.0.
 

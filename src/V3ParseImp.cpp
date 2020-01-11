@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -72,6 +72,15 @@ V3ParseImp::~V3ParseImp() {
 
 //######################################################################
 // Parser utility methods
+
+void V3ParseImp::pragma(const char* textp) {
+    // Handle `pragma directive
+    if (0 == strncmp(textp, "`pragma", strlen("`pragma"))) textp += strlen("`pragma");
+    while (isspace(*textp)) ++textp;
+    if (!*textp) {
+        if (v3Global.opt.pedantic()) yyerrorf("`pragma is missing a pragma_expression.");
+    }
+}
 
 void V3ParseImp::ppline(const char* textp) {
     // Handle `line directive

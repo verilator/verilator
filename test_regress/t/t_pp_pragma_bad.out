@@ -1,0 +1,7 @@
+%Error: t/t_pp_pragma_bad.v:6: `pragma is missing a pragma_expression.
+`pragma
+^~~~~~~
+%Error: t/t_pp_pragma_bad.v:10: syntax error, unexpected `resetall
+`resetall   
+^~~~~~~~~
+%Error: Cannot continue

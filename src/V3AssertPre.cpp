@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2005-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -92,12 +92,14 @@ private:
         m_seniAlwaysp = NULL;
     }
 
-    virtual void visit(AstNodePslCoverOrAssert* nodep) {
+    virtual void visit(AstNodeCoverOrAssert* nodep) {
         if (nodep->sentreep()) return;  // Already processed
         clearAssertInfo();
-        // Find PslClocking's buried under nodep->exprsp
+        // Find Clocking's buried under nodep->exprsp
         iterateChildren(nodep);
-        nodep->sentreep(newSenTree(nodep));
+        if (!nodep->immediate()) {
+            nodep->sentreep(newSenTree(nodep));
+        }
         clearAssertInfo();
     }
     virtual void visit(AstPast* nodep) {
@@ -105,7 +107,7 @@ private:
         iterateChildren(nodep);
         nodep->sentreep(newSenTree(nodep));
     }
-    virtual void visit(AstPslClocked* nodep) {
+    virtual void visit(AstPropClocked* nodep) {
         // No need to iterate the body, once replace will get iterated
         iterateAndNextNull(nodep->sensesp());
         if (m_senip) {
@@ -114,10 +116,16 @@ private:
         // Block is the new expression to evaluate
         AstNode* blockp = nodep->propp()->unlinkFrBack();
         if (nodep->disablep()) {
-            blockp = new AstAnd(nodep->disablep()->fileline(),
-                                new AstNot(nodep->disablep()->fileline(),
-                                           nodep->disablep()->unlinkFrBack()),
-                                blockp);
+            if (VN_IS(nodep->backp(), Cover)) {
+                blockp = new AstAnd(nodep->disablep()->fileline(),
+                                    new AstNot(nodep->disablep()->fileline(),
+                                               nodep->disablep()->unlinkFrBack()),
+                                    blockp);
+            } else {
+                blockp = new AstOr(nodep->disablep()->fileline(),
+                                   nodep->disablep()->unlinkFrBack(),
+                                   blockp);
+            }
         }
         // Unlink and just keep a pointer to it, convert to sentree as needed
         m_senip = nodep->sensesp();

@@ -1,4 +1,4 @@
-%Error: t/t_fuzz_genintf_bad.v:23: Unsupported: Member call on non-enum object 'VARREF 'j'' which is a 'BASICDTYPE 'integer''
+%Error: t/t_fuzz_genintf_bad.v:23: Unsupported: Member call on object 'VARREF 'j'' which is a 'BASICDTYPE 'integer''
                                  : ... In instance t
          j.e(0),
            ^

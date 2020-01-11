@@ -133,9 +133,9 @@ void **JenkinsIns(void *base_i, const unsigned char *mem, uint32_t length, uint3
 #endif
 
 #ifdef __GNUC__
-// Boolean expression more often true than false
+/* Boolean expression more often true than false */
 #define FST_LIKELY(x) __builtin_expect(!!(x), 1)
-// Boolean expression more often false than true
+/* Boolean expression more often false than true */
 #define FST_UNLIKELY(x) __builtin_expect(!!(x), 0)
 #else
 #define FST_LIKELY(x) (!!(x))
@@ -736,6 +736,9 @@ off_t hier_file_len;
 
 uint32_t *valpos_mem;
 unsigned char *curval_mem;
+
+unsigned char *outval_mem; /* for two-state / Verilator-style value changes */
+uint32_t outval_alloc_siz;
 
 char *filename;
 
@@ -1944,6 +1947,11 @@ if(xc && !xc->already_in_close && !xc->already_in_flush)
                         }
                 }
         fstDestroyMmaps(xc, 1);
+	if(xc->outval_mem)
+		{
+		free(xc->outval_mem); xc->outval_mem = NULL;
+		xc->outval_alloc_siz = 0;
+		}
 
         /* write out geom section */
         fflush(xc->geom_handle);
@@ -2913,7 +2921,7 @@ if(FST_LIKELY((xc) && (handle <= xc->maxhandle)))
                                 {
                                 xc->vchg_alloc_siz += (xc->fst_break_add_size + len); /* +len added in the case of extremely long vectors and small break add sizes */
                                 xc->vchg_mem = (unsigned char *)realloc(xc->vchg_mem, xc->vchg_alloc_siz);
-                                if(VL_UNLIKELY(!xc->vchg_mem))
+                                if(FST_UNLIKELY(!xc->vchg_mem))
                                         {
                                         fprintf(stderr, FST_APIMESS "Could not realloc() in fstWriterEmitValueChange, exiting.\n");
                                         exit(255);
@@ -2995,6 +3003,127 @@ if(FST_LIKELY((xc) && (handle <= xc->maxhandle)))
                         memcpy(xc->curval_mem + offs, buf, len);
                         }
                 }
+        }
+}
+
+void fstWriterEmitValueChange32(void *ctx, fstHandle handle,
+                                uint32_t bits, uint32_t val) {
+        char buf[32];
+        char *s = buf;
+        uint32_t i;
+        for (i = 0; i < bits; ++i)
+        {
+                *s++ = '0' + ((val >> (bits - i - 1)) & 1);
+        }
+        fstWriterEmitValueChange(ctx, handle, buf);
+}
+void fstWriterEmitValueChange64(void *ctx, fstHandle handle,
+                                uint32_t bits, uint64_t val) {
+        char buf[64];
+        char *s = buf;
+        uint32_t i;
+        for (i = 0; i < bits; ++i)
+        {
+                *s++ = '0' + ((val >> (bits - i - 1)) & 1);
+        }
+        fstWriterEmitValueChange(ctx, handle, buf);
+}
+void fstWriterEmitValueChangeVec32(void *ctx, fstHandle handle,
+                                   uint32_t bits, const uint32_t *val) {
+        struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
+        if (FST_UNLIKELY(bits <= 32))
+        {
+                fstWriterEmitValueChange32(ctx, handle, bits, val[0]);
+        }
+        else if(FST_LIKELY(xc))
+        {
+                int bq = bits / 32;
+                int br = bits & 31;
+                int i;
+                int w;
+                uint32_t v;
+                unsigned char* s;
+                if (FST_UNLIKELY(bits > xc->outval_alloc_siz))
+                {
+                        xc->outval_alloc_siz = bits*2 + 1;
+                        xc->outval_mem = (unsigned char*)realloc(xc->outval_mem, xc->outval_alloc_siz);
+                        if (FST_UNLIKELY(!xc->outval_mem))
+                        {
+                                fprintf(stderr,
+                                        FST_APIMESS "Could not realloc() in fstWriterEmitValueChangeVec32, exiting.\n");
+                                exit(255);
+                        }
+                }
+                s = xc->outval_mem;
+                {
+                        w = bq;
+                        v = val[w];
+                        for (i = 0; i < br; ++i)
+                        {
+                                *s++ = '0' + ((v >> (br - i - 1)) & 1);
+                        }
+                }
+                for (w = bq - 1; w >= 0; --w)
+                {
+                        v = val[w];
+                        for (i = (32 - 4); i >= 0; i -= 4) {
+                                s[0] = '0' + ((v >> (i + 3)) & 1);
+                                s[1] = '0' + ((v >> (i + 2)) & 1);
+                                s[2] = '0' + ((v >> (i + 1)) & 1);
+                                s[3] = '0' + ((v >> (i + 0)) & 1);
+                                s += 4;
+                        }
+                }
+                fstWriterEmitValueChange(ctx, handle, xc->outval_mem);
+        }
+}
+void fstWriterEmitValueChangeVec64(void *ctx, fstHandle handle,
+                                   uint32_t bits, const uint64_t *val) {
+        struct fstWriterContext *xc = (struct fstWriterContext *)ctx;
+        if (FST_UNLIKELY(bits <= 64))
+        {
+                fstWriterEmitValueChange64(ctx, handle, bits, val[0]);
+        }
+        else if(FST_LIKELY(xc))
+        {
+                int bq = bits / 64;
+                int br = bits & 63;
+                int i;
+                int w;
+                uint32_t v;
+                unsigned char* s;
+                if (FST_UNLIKELY(bits > xc->outval_alloc_siz))
+                {
+                        xc->outval_alloc_siz = bits*2 + 1;
+                        xc->outval_mem = (unsigned char*)realloc(xc->outval_mem, xc->outval_alloc_siz);
+                        if (FST_UNLIKELY(!xc->outval_mem))
+                        {
+                                fprintf(stderr,
+                                        FST_APIMESS "Could not realloc() in fstWriterEmitValueChangeVec64, exiting.\n");
+                                exit(255);
+                        }
+                }
+                s = xc->outval_mem;
+                {
+                        w = bq;
+                        v = val[w];
+                        for (i = 0; i < br; ++i)
+                        {
+                                *s++ = '0' + ((v >> (br - i - 1)) & 1);
+                        }
+                }
+                for (w = bq - 1; w >= 0; --w) {
+                        v = val[w];
+                        for (i = (64 - 4); i >= 0; i -= 4)
+                        {
+                                s[0] = '0' + ((v >> (i + 3)) & 1);
+                                s[1] = '0' + ((v >> (i + 2)) & 1);
+                                s[2] = '0' + ((v >> (i + 1)) & 1);
+                                s[3] = '0' + ((v >> (i + 0)) & 1);
+                                s += 4;
+                        }
+                }
+                fstWriterEmitValueChange(ctx, handle, xc->outval_mem);
         }
 }
 

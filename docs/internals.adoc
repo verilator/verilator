@@ -382,6 +382,13 @@ changed; if clear, checking those signals for changes may be skipped.
 
 == Coding Conventions
 
+=== Compiler Version and C++11
+
+Verilator supports GCC 4.4.7 and newer.  GCC 4.4.7 does not support C++11,
+therefore C++11 is generally not required.  Exceptions may be made to
+require C++11 for features that are only practical with C++11,
+e.g. threads.
+
 === Indentation and Naming Style
 
 We will work with contributors to fix up indentation style issues, but it
@@ -973,6 +980,6 @@ list in `src/Makefile_obj.in` and reconfigure.
 
 == Distribution
 
-Copyright 2008-2019 by Wilson Snyder.  Verilator is free software; you can
+Copyright 2008-2020 by Wilson Snyder.  Verilator is free software; you can
 redistribute it and/or modify it under the terms of either the GNU Lesser
 General Public License Version 3 or the Perl Artistic License Version 2.0.

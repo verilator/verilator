@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
-// Copyright 2009-2019 by Wilson Snyder. This program is free software; you can
+// Copyright 2009-2020 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License.
 // Version 2.0.
@@ -1224,6 +1224,9 @@ PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
     case vpiTimePrecision: {
         return VL_TIME_PRECISION;
     }
+    case vpiTimeUnit: {
+        return VL_TIME_UNIT;
+    }
     case vpiType: {
         VerilatedVpio* vop = VerilatedVpio::castp(object);
         if (VL_UNLIKELY(!vop)) return 0;
@@ -1333,7 +1336,7 @@ void vpi_get_value(vpiHandle object, p_vpi_value value_p) {
                     VL_FATAL_MT(__FILE__, __LINE__, "",
                                 "vpi_get_value with more than VL_MULS_MAX_WORDS; increase and recompile");
                 }
-                WDataInP datap = (reinterpret_cast<IData*>(vop->varDatap()));
+                WDataInP datap = (reinterpret_cast<EData*>(vop->varDatap()));
                 for (int i=0; i<words; ++i) {
                     out[i].aval = datap[i];
                     out[i].bval = 0;
@@ -1617,7 +1620,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value value_p,
                 return object;
             case VLVT_WDATA: {
                 int words = VL_WORDS_I(vop->varp()->packed().elements());
-                WDataOutP datap = (reinterpret_cast<IData*>(vop->varDatap()));
+                WDataOutP datap = (reinterpret_cast<EData*>(vop->varDatap()));
                 for (int i=0; i<words; ++i) {
                     datap[i] = value_p->value.vector[i].aval;
                     if (i==(words-1)) {

@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2004-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -80,9 +80,9 @@ private:
     }
     int castSize(AstNode* nodep) {
         if (nodep->isQuad()) return VL_QUADSIZE;
-        else if (nodep->width()<=8) return 8;
-        else if (nodep->width()<=16) return 16;
-        else return VL_WORDSIZE;
+        else if (nodep->width() <= 8) return 8;
+        else if (nodep->width() <= 16) return 16;
+        else return VL_IDATASIZE;
     }
     void insureCast(AstNode* nodep) {
         if (castSize(nodep->backp()) != castSize(nodep)
@@ -97,7 +97,7 @@ private:
         // less than has nondeterministic signedness.
         if (nodep->isQuad() && !nodep->lhsp()->isQuad()
             && !VN_IS(nodep->lhsp(), CCast)) {
-            insertCast(nodep->lhsp(), VL_WORDSIZE);
+            insertCast(nodep->lhsp(), VL_IDATASIZE);
         }
     }
 

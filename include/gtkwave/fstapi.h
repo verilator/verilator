@@ -355,6 +355,14 @@ fstHandle       fstWriterCreateVar2(void *ctx, enum fstVarType vt, enum fstVarDi
 void            fstWriterEmitDumpActive(void *ctx, int enable);
 void 		fstWriterEmitEnumTableRef(void *ctx, fstEnumHandle handle);
 void            fstWriterEmitValueChange(void *ctx, fstHandle handle, const void *val);
+void            fstWriterEmitValueChange32(void *ctx, fstHandle handle,
+                        uint32_t bits, uint32_t val);
+void            fstWriterEmitValueChange64(void *ctx, fstHandle handle,
+                        uint32_t bits, uint64_t val);
+void            fstWriterEmitValueChangeVec32(void *ctx, fstHandle handle,
+                        uint32_t bits, const uint32_t *val);
+void            fstWriterEmitValueChangeVec64(void *ctx, fstHandle handle,
+                        uint32_t bits, const uint64_t *val);
 void            fstWriterEmitVariableLengthValueChange(void *ctx, fstHandle handle, const void *val, uint32_t len);
 void            fstWriterEmitTimeChange(void *ctx, uint64_t tim);
 void            fstWriterFlushContext(void *ctx);

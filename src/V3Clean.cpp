@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -62,9 +62,9 @@ private:
 
     // Width resetting
     int  cppWidth(AstNode* nodep) {
-        if (nodep->width()<=VL_WORDSIZE) return VL_WORDSIZE;
-        else if (nodep->width()<=VL_QUADSIZE) return VL_QUADSIZE;
-        else return nodep->widthWords()*VL_WORDSIZE;
+        if (nodep->width() <= VL_IDATASIZE) return VL_IDATASIZE;
+        else if (nodep->width() <= VL_QUADSIZE) return VL_QUADSIZE;
+        else return nodep->widthWords() * VL_EDATASIZE;
     }
     void setCppWidth(AstNode* nodep) {
         nodep->user2(true);  // Don't resize it again
@@ -88,6 +88,7 @@ private:
         if (!nodep->user2() && nodep->hasDType()) {
             if (VN_IS(nodep, Var) || VN_IS(nodep, NodeDType)  // Don't want to change variable widths!
                 || VN_IS(nodep->dtypep()->skipRefp(), AssocArrayDType)  // Or arrays
+                || VN_IS(nodep->dtypep()->skipRefp(), ClassRefDType)
                 || VN_IS(nodep->dtypep()->skipRefp(), QueueDType)
                 || VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType)
                 || VN_IS(nodep->dtypep()->skipRefp(), VoidDType)) {
@@ -113,8 +114,10 @@ private:
     }
     void setClean(AstNode* nodep, bool isClean) {
         computeCppWidth(nodep);  // Just to be sure it's in widthMin
-        bool wholeUint = ((nodep->widthMin() % VL_WORDSIZE) == 0);  // 32,64,...
-        setCleanState(nodep, ((isClean||wholeUint) ? CS_CLEAN:CS_DIRTY));
+        bool wholeUint = (nodep->widthMin() == VL_IDATASIZE
+                          || nodep->widthMin() == VL_QUADSIZE
+                          || (nodep->widthMin() % VL_EDATASIZE) == 0);
+        setCleanState(nodep, ((isClean || wholeUint) ? CS_CLEAN : CS_DIRTY));
     }
 
     // Operate on nodes

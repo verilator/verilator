@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -318,6 +318,15 @@ private:
                 // remove the change detection on the output variable.
                 UINFO(9,"public pin assign: "<<exprvarrefp<<endl);
                 UASSERT_OBJ(!nodep->isNonOutput(), nodep, "Outputs only - inputs use AssignAlias");
+                m_modp->addStmtp(
+                    new AstAssignW(nodep->fileline(),
+                                   new AstVarRef(nodep->fileline(), exprvarrefp->varp(), true),
+                                   new AstVarRef(nodep->fileline(), nodep, false)));
+            } else if (nodep->isSigPublic() && VN_IS(nodep->dtypep(), UnpackArrayDType)) {
+                // Public variable at this end and it is an unpacked array. We need to assign
+                // instead of aliased, because otherwise it will pass V3Slice and invalid
+                // code will be emitted.
+                UINFO(9,"assign to public and unpacked: "<<nodep<<endl);
                 m_modp->addStmtp(
                     new AstAssignW(nodep->fileline(),
                                    new AstVarRef(nodep->fileline(), exprvarrefp->varp(), true),

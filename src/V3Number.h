@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -175,6 +175,7 @@ private:
         for (int i=0; i<words(); i++) m_value[i] = m_valueX[i] = 0;
     }
     void setNames(AstNode* nodep);
+    static string displayPad(size_t fmtsize, char pad, const string& in);
     string displayed(FileLine* fl, const string& vformat) const;
     string displayed(const string& vformat) const {
         return displayed(m_fileline, vformat);
@@ -243,8 +244,8 @@ public:
     string toDecimalU() const;  // return ASCII unsigned decimal number
     double toDouble() const;
     uint32_t toHash() const;
-    uint32_t dataWord(int word) const;
-    uint8_t dataByte(int byte) const { return (dataWord(byte/4) >> (8*(byte&3))) & 0xff; }
+    uint32_t edataWord(int eword) const;
+    uint8_t dataByte(int byte) const;
     uint32_t countOnes() const;
     uint32_t mostSetBitP1() const;  // Highest bit set plus one, IE for 16 return 5, for 0 return 0.
 
@@ -360,6 +361,11 @@ public:
     V3Number& opLteD    (const V3Number& lhs, const V3Number& rhs);
 
     // "N" - string operations
+    V3Number& opAtoN    (const V3Number& lhs, int base);
+    V3Number& opPutcN   (const V3Number& lhs, const V3Number& rhs, const V3Number& ths);
+    V3Number& opGetcN   (const V3Number& lhs, const V3Number& rhs);
+    V3Number& opSubstrN (const V3Number& lhs, const V3Number& rhs, const V3Number& ths);
+    V3Number& opCompareNN(const V3Number& lhs,const V3Number& rhs, bool ignoreCase);
     V3Number& opConcatN (const V3Number& lhs, const V3Number& rhs);
     V3Number& opReplN   (const V3Number& lhs, const V3Number& rhs);
     V3Number& opReplN   (const V3Number& lhs, uint32_t rhsval);

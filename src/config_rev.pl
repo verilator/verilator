@@ -1,7 +1,7 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 ######################################################################
 #
-# Copyright 2005-2019 by Wilson Snyder.  Verilator is free software; you
+# Copyright 2005-2020 by Wilson Snyder.  Verilator is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -12,8 +12,9 @@
 # GNU General Public License for more details.
 #
 ######################################################################
-
 # DESCRIPTION: Query's subversion to get version number
+
+use warnings;
 
 my $dir = $ARGV[0]; defined $dir or die "%Error: No directory argument,";
 chdir $dir;

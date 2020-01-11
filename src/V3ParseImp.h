@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2009-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2009-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -70,10 +70,11 @@ struct V3ParseBisonYYSType {
         AstCase*        casep;
         AstCaseItem*    caseitemp;
         AstCell*        cellp;
+        AstClass*       classp;
         AstConst*       constp;
         AstMemberDType* memberp;
         AstNodeModule*  modulep;
-        AstNodeClassDType* classp;
+        AstNodeUOrStructDType* uorstructp;
         AstNodeDType*   dtypep;
         AstNodeFTask*   ftaskp;
         AstNodeFTaskRef* ftaskrefp;
@@ -86,6 +87,7 @@ struct V3ParseBisonYYSType {
         AstPatMember*   patmemberp;
         AstPattern*     patternp;
         AstPin*         pinp;
+        AstRefDType*    refdtypep;
         AstSenTree*     sentreep;
         AstVar*         varp;
         AstVarRef*      varrefp;
@@ -142,12 +144,13 @@ public:
     int yylexThis();
     static bool optFuture(const string& flag) { return v3Global.opt.isFuture(flag); }
 
-    void ppline(const char* text);
+    void ppline(const char* textp);
+    void pragma(const char* textp);
     void linenoInc() { fileline()->linenoInc(); }
-    void verilatorCmtLint(const char* text, bool on);
+    void verilatorCmtLint(const char* textp, bool on);
     void verilatorCmtLintSave();
     void verilatorCmtLintRestore();
-    void verilatorCmtBad(const char* text);
+    void verilatorCmtBad(const char* textp);
     void errorPreprocDirective(const char* textp);
     void tag(const char* text);
     void tagNodep(AstNode* nodep) { m_tagNodep = nodep; }

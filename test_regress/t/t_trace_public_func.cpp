@@ -12,9 +12,6 @@
 #include "Vt_trace_public_func_t.h"
 #include "Vt_trace_public_func_glbl.h"
 
-#define STRINGIFY(x) STRINGIFY2(x)
-#define STRINGIFY2(x) #x
-
 unsigned long long main_time = 0;
 double sc_time_stamp() { return (double)main_time; }
 
@@ -28,7 +25,7 @@ int main(int argc, char** argv, char** env) {
 
     VerilatedVcdC* tfp = new VerilatedVcdC;
     top->trace(tfp, 99);
-    tfp->open(STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
+    tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 
     while (main_time <= 20) {
         top->CLK = (main_time / dt_2) % 2;

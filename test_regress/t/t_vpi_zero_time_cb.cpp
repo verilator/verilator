@@ -85,9 +85,6 @@ unsigned int callback_count_start_of_sim = 0;
 
 #define CHECK_RESULT_CSTR_STRIP(got, exp) CHECK_RESULT_CSTR(got + strspn(got, " "), exp)
 
-#define STRINGIFY(x) STRINGIFY2(x)
-#define STRINGIFY2(x) #x
-
 //======================================================================
 
 #ifdef IS_VPI
@@ -166,12 +163,12 @@ int main(int argc, char** argv, char** env) {
     VL_PRINTF("Enabling waves...\n");
     VerilatedVcdC* tfp = new VerilatedVcdC;
     topp->trace(tfp, 99);
-    tfp->open(STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
+    tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 #endif
 
     // Load and initialize the PLI application
     {
-        const char* filenamep = STRINGIFY(TEST_OBJ_DIR) "/libvpi.so";
+        const char* filenamep = VL_STRINGIFY(TEST_OBJ_DIR) "/libvpi.so";
         void* lib = dlopen(filenamep, RTLD_LAZY);
         void* bootstrap = dlsym(lib, "vpi_compat_bootstrap");
         if (!bootstrap) {

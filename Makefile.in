@@ -7,7 +7,7 @@
 #
 #*****************************************************************************
 #
-# Copyright 2003-2019 by Wilson Snyder. This program is free software; you can
+# Copyright 2003-2020 by Wilson Snyder. This program is free software; you can
 # redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -103,7 +103,7 @@ PACKAGE_VERSION = @PACKAGE_VERSION@
 
 SHELL = /bin/sh
 
-SUBDIRS = src test_regress \
+SUBDIRS = docs src test_regress \
 	examples/cmake_hello_c \
 	examples/cmake_hello_sc \
 	examples/cmake_tracing_c \
@@ -114,6 +114,7 @@ SUBDIRS = src test_regress \
 	examples/make_tracing_c \
 	examples/make_tracing_sc \
 	examples/make_protect_lib \
+	examples/xml_py \
 
 INFOS = verilator.txt verilator.html verilator.pdf
 
@@ -513,6 +514,7 @@ clean mostlyclean distclean maintainer-clean::
 	rm -f *.tex
 	rm -rf examples/*/obj_dir* examples/*/logs
 	rm -rf test_*/obj_dir
+	rm -rf nodist/fuzzer/dictionary
 	rm -rf nodist/obj_dir
 
 distclean maintainer-clean::

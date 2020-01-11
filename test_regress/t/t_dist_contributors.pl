@@ -46,7 +46,7 @@ sub read_contributors {
     # Assumes git .mailmap format
     while (my $line = ($fh && $fh->getline)) {
         while ($line =~ /(.*)/g) {
-            $line =~ s/ *<[^>]+>//;
+            $line =~ s/ *<[^>]*>//;
             $Contributors{$1} = 1;
         }
     }
@@ -71,9 +71,9 @@ sub read_user {
 
 sub read_authors {
     # Check recent commits in case did commit
-    my $git_auths = `git log '--pretty=format:%aN <%aE>' | head -20`;
+    my $git_auths = `git log '--pretty=format:%aN <%aE>' | head -5`;
     foreach my $line (split /\n/, $git_auths) {
-        $line =~ s/ *<[^>]+>//;
+        $line =~ s/ *<[^>]*>//;
         $Authors{$line} = 1;
     }
 }

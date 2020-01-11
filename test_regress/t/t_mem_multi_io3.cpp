@@ -20,12 +20,6 @@ int main()
     tb = new VM_PREFIX("tb");
 
     // Just a constructor test
-    bool pass = true;
-
-    if (pass) {
-        VL_PRINTF("*-* All Finished *-*\n");
-    } else {
-        vl_fatal(__FILE__, __LINE__, "top", "Unexpected results from test\n");
-    }
+    VL_PRINTF("*-* All Finished *-*\n");
     return 0;
 }

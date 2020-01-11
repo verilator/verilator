@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -116,11 +116,14 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep,
             if (rangep && isPacked) {
                 arrayp = new AstPackArrayDType
                     (rangep->fileline(), VFlagChildDType(), arrayp, rangep);
+            } else if (VN_IS(nrangep, QueueRange)) {
+                arrayp = new AstQueueDType
+                    (nrangep->fileline(), VFlagChildDType(), arrayp, NULL);
+            } else if (rangep && (VN_IS(rangep->leftp(), Unbounded)
+                                  || VN_IS(rangep->rightp(), Unbounded))) {
+                arrayp = new AstQueueDType(nrangep->fileline(), VFlagChildDType(), arrayp,
+                                           rangep->rightp()->cloneTree(true));
             } else if (rangep) {
-                if (VN_IS(rangep->leftp(), Unbounded)
-                    || VN_IS(rangep->rightp(), Unbounded)) {
-                    rangep->v3error("Unsupported: Bounded queues. Suggest use unbounded.");
-                }
                 arrayp = new AstUnpackArrayDType
                     (rangep->fileline(), VFlagChildDType(), arrayp, rangep);
             } else if (VN_IS(nrangep, UnsizedRange)) {
@@ -131,9 +134,6 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep,
                 AstNodeDType* keyp = arangep->keyDTypep(); keyp->unlinkFrBack();
                 arrayp = new AstAssocArrayDType
                     (nrangep->fileline(), VFlagChildDType(), arrayp, keyp);
-            } else if (VN_IS(nrangep, QueueRange)) {
-                arrayp = new AstQueueDType
-                    (nrangep->fileline(), VFlagChildDType(), arrayp);
             } else {
                 UASSERT_OBJ(0, nrangep, "Expected range or unsized range");
             }

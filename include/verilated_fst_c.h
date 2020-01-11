@@ -3,7 +3,7 @@
 //
 // THIS MODULE IS PUBLICLY LICENSED
 //
-// Copyright 2001-2019 by Wilson Snyder.  This program is free software;
+// Copyright 2001-2020 by Wilson Snyder.  This program is free software;
 // you can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License Version 2.0.
 //
@@ -60,12 +60,9 @@ private:
     VL_UNCOPYABLE(VerilatedFst);
     void declSymbol(vluint32_t code, const char* name,
                     int dtypenum, fstVarDir vardir, fstVarType vartype,
-                    int arraynum, vluint32_t len);
+                    bool array, int arraynum, vluint32_t len);
     // helpers
     std::vector<char> m_valueStrBuffer;
-    char* word2Str(vluint32_t newval, int bits);
-    char* quad2Str(vluint64_t newval, int bits);
-    char* array2Str(const vluint32_t *newval, int bits);
 public:
     explicit VerilatedFst(void* fst=NULL);
     ~VerilatedFst() { if (m_fst == NULL) { fstWriterClose(m_fst); } }
@@ -106,33 +103,33 @@ public:
     /// Inside dumping routines, declare a signal
     void declBit(vluint32_t code, const char* name,
                  int dtypenum, fstVarDir vardir, fstVarType vartype,
-                 int arraynum) {
-        declSymbol(code, name, dtypenum, vardir, vartype, arraynum, 1);
+                 bool array, int arraynum) {
+        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 1);
     }
     void declBus(vluint32_t code, const char* name,
                  int dtypenum, fstVarDir vardir, fstVarType vartype,
-                 int arraynum, int msb, int lsb) {
-        declSymbol(code, name, dtypenum, vardir, vartype, arraynum, msb - lsb + 1);
+                 bool array, int arraynum, int msb, int lsb) {
+        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1);
     }
     void declDouble(vluint32_t code, const char* name,
                     int dtypenum, fstVarDir vardir, fstVarType vartype,
-                    int arraynum) {
-        declSymbol(code, name, dtypenum, vardir, vartype, arraynum, 2);
+                    bool array, int arraynum) {
+        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 2);
     }
     void declFloat(vluint32_t code, const char* name,
                    int dtypenum, fstVarDir vardir, fstVarType vartype,
-                   int arraynum) {
-        declSymbol(code, name, dtypenum, vardir, vartype, arraynum, 1);
+                   bool array, int arraynum) {
+        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 1);
     }
     void declQuad(vluint32_t code, const char* name,
                   int dtypenum, fstVarDir vardir, fstVarType vartype,
-                  int arraynum, int msb, int lsb) {
-        declSymbol(code, name, dtypenum, vardir, vartype, arraynum, msb - lsb + 1);
+                  bool array, int arraynum, int msb, int lsb) {
+        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1);
     }
     void declArray(vluint32_t code, const char* name,
                    int dtypenum, fstVarDir vardir, fstVarType vartype,
-                   int arraynum, int msb, int lsb) {
-        declSymbol(code, name, dtypenum, vardir, vartype, arraynum, msb - lsb + 1);
+                   bool array, int arraynum, int msb, int lsb) {
+        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1);
     }
 
     /// Inside dumping routines, dump one signal if it has changed
@@ -140,7 +137,7 @@ public:
         fstWriterEmitValueChange(m_fst, m_code2symbol[code], newval ? "1" : "0");
     }
     void chgBus(vluint32_t code, const vluint32_t newval, int bits) {
-        fstWriterEmitValueChange(m_fst, m_code2symbol[code], word2Str(newval, bits));
+        fstWriterEmitValueChange32(m_fst, m_code2symbol[code], bits, newval);
     }
     void chgDouble(vluint32_t code, const double newval) {
         double val = newval;
@@ -151,10 +148,10 @@ public:
         fstWriterEmitValueChange(m_fst, m_code2symbol[code], &val);
     }
     void chgQuad(vluint32_t code, const vluint64_t newval, int bits) {
-        fstWriterEmitValueChange(m_fst, m_code2symbol[code], quad2Str(newval, bits));
+        fstWriterEmitValueChange64(m_fst, m_code2symbol[code], bits, newval);
     }
     void chgArray(vluint32_t code, const vluint32_t* newval, int bits) {
-        fstWriterEmitValueChange(m_fst, m_code2symbol[code], array2Str(newval, bits));
+        fstWriterEmitValueChangeVec32(m_fst, m_code2symbol[code], bits, newval);
     }
 
     void fullBit(vluint32_t code, const vluint32_t newval) {

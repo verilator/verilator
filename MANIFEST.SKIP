@@ -2,6 +2,7 @@
 \.clang-tidy
 \.git/
 \.git$
+\.github/
 \.svn/
 \.(bak|old)/
 \.(bak|old)$

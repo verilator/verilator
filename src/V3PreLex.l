@@ -10,7 +10,7 @@
  *
  **************************************************************************
  *
- * Copyright 2003-2019 by Wilson Snyder.  This program is free software;
+ * Copyright 2003-2020 by Wilson Snyder.  This program is free software;
  * you can redistribute it and/or modify it under the terms of either the
  * GNU Lesser General Public License Version 3 or the Perl Artistic License
  * Version 2.0.
@@ -27,6 +27,9 @@
 
 #include "V3PreProc.h"
 #include "V3PreLex.h"
+#ifdef _WIN32
+# include <io.h> // for isatty
+#endif
 
 V3PreLex* V3PreLex::s_currentLexp = NULL;       // Current lexing point
 

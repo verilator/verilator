@@ -6,7 +6,7 @@
 // Try inline config
 `ifdef verilator
   `verilator_config
-    lint_off -msg CASEX -file "t/t_vlt_warn.v"
+    lint_off -rule CASEX -file "t/t_vlt_warn.v"
   `verilog
 `endif
 

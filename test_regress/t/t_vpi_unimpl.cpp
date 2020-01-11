@@ -35,9 +35,6 @@
 unsigned int main_time = false;
 unsigned int callback_count = false;
 
-#define STRINGIFY(x) STRINGIFY2(x)
-#define STRINGIFY2(x) #x
-
 //======================================================================
 
 #define CHECK_RESULT_VH(got, exp) \
@@ -163,7 +160,7 @@ int main(int argc, char** argv, char** env) {
     VL_PRINTF("Enabling waves...\n");
     VerilatedVcdC* tfp = new VerilatedVcdC;
     topp->trace(tfp, 99);
-    tfp->open(STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
+    tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 #endif
 
     topp->eval();

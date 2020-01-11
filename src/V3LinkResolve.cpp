@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -55,8 +55,8 @@ private:
     // Below state needs to be preserved between each module call.
     AstNodeModule*      m_modp;         // Current module
     AstNodeFTask* m_ftaskp;     // Function or task we're inside
-    AstVAssert* m_assertp;      // Current assertion
-    int         m_senitemCvtNum; // Temporary signal counter
+    AstNodeCoverOrAssert* m_assertp;  // Current assertion
+    int m_senitemCvtNum;  // Temporary signal counter
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -82,7 +82,7 @@ private:
             nodep->replaceWith(nodep->bodysp()->unlinkFrBackWithNext()); VL_DANGLING(nodep);
         }
     }
-    virtual void visit(AstVAssert* nodep) {
+    virtual void visit(AstNodeCoverOrAssert* nodep) {
         if (m_assertp) nodep->v3error("Assert not allowed under another assert");
         m_assertp = nodep;
         iterateChildren(nodep);

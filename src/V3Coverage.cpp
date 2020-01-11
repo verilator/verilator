@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -353,8 +353,8 @@ private:
             m_checkBlock = true;  // Reset as a child may have cleared it
         }
     }
-    virtual void visit(AstPslCover* nodep) {
-        UINFO(4," PSLCOVER: "<<nodep<<endl);
+    virtual void visit(AstCover* nodep) {
+        UINFO(4," COVER: "<<nodep<<endl);
         m_checkBlock = true;  // Always do cover blocks, even if there's a $stop
         iterateChildren(nodep);
         if (!nodep->coverincp()) {

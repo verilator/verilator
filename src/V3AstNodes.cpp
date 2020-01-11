@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -65,7 +65,7 @@ int AstNodeSel::bitConst() const {
     return (constp ? constp->toSInt() : 0);
 }
 
-void AstNodeClassDType::repairMemberCache() {
+void AstNodeUOrStructDType::repairMemberCache() {
     clearCache();
     for (AstMemberDType* itemp = membersp(); itemp; itemp=VN_CAST(itemp->nextp(), MemberDType)) {
         if (m_members.find(itemp->name())!=m_members.end()) {
@@ -74,7 +74,7 @@ void AstNodeClassDType::repairMemberCache() {
     }
 }
 
-const char* AstNodeClassDType::broken() const {
+const char* AstNodeUOrStructDType::broken() const {
     vl_unordered_set<AstMemberDType*> exists;
     for (AstMemberDType* itemp = membersp(); itemp; itemp=VN_CAST(itemp->nextp(), MemberDType)) {
         exists.insert(itemp);
@@ -104,17 +104,17 @@ int AstBasicDType::widthTotalBytes() const {
     if (width()<=8) return 1;
     else if (width()<=16) return 2;
     else if (isQuad()) return 8;
-    else return widthWords()*(VL_WORDSIZE/8);
+    else return widthWords() * (VL_EDATASIZE / 8);
 }
 
-int AstNodeClassDType::widthTotalBytes() const {
+int AstNodeUOrStructDType::widthTotalBytes() const {
     if (width()<=8) return 1;
     else if (width()<=16) return 2;
     else if (isQuad()) return 8;
-    else return widthWords()*(VL_WORDSIZE/8);
+    else return widthWords() * (VL_EDATASIZE / 8);
 }
 
-int AstNodeClassDType::widthAlignBytes() const {
+int AstNodeUOrStructDType::widthAlignBytes() const {
     // Could do max across members but that would be slow,
     // instead intuit based on total structure size
     if (width()<=8) return 1;
@@ -285,6 +285,8 @@ AstVar::VlArgTypeRecursed AstVar::vlArgTypeRecurse(bool forFunc, const AstNodeDT
         if (!sub.m_osuffix.empty() || !sub.m_oref.empty()) {
             out += " " + sub.m_osuffix + sub.m_oref;
         }
+        // + 1 below as VlQueue uses 0 to mean unlimited, 1 to mean size() max is 1
+        if (adtypep->boundp()) out += ", " + cvtToStr(adtypep->boundConst() + 1);
         out += "> ";
         info.m_oprefix = out;
         return info;
@@ -319,7 +321,7 @@ AstVar::VlArgTypeRecursed AstVar::vlArgTypeRecurse(bool forFunc, const AstNodeDT
             otype += "CData"+bitvec;
         } else if (dtypep->widthMin() <= 16) {
             otype += "SData"+bitvec;
-        } else if (dtypep->widthMin() <= VL_WORDSIZE) {
+        } else if (dtypep->widthMin() <= VL_IDATASIZE) {
             otype += "IData"+bitvec;
         } else if (dtypep->isQuad()) {
             otype += "QData"+bitvec;
@@ -367,7 +369,7 @@ string AstVar::vlEnumType() const {
         arg += "VLVT_UINT8";
     } else if (widthMin() <= 16) {
         arg += "VLVT_UINT16";
-    } else if (widthMin() <= VL_WORDSIZE) {
+    } else if (widthMin() <= VL_IDATASIZE) {
         arg += "VLVT_UINT32";
     } else if (isQuad()) {
         arg += "VLVT_UINT64";
@@ -429,12 +431,12 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
     if (isWide() && isReadOnly()) arg += "const ";
     if (widthMin() == 1) {
         arg += "bool";
-    } else if (widthMin() <= VL_WORDSIZE) {
+    } else if (widthMin() <= VL_IDATASIZE) {
         arg += "uint32_t";
-    } else if (isWide()) {
-        arg += "uint32_t";  // []'s added later
-    } else {
+    } else if (widthMin() <= VL_QUADSIZE) {
         arg += "vluint64_t";
+    } else {
+        arg += "uint32_t";  // []'s added later
     }
     if (isWide()) {
         if (forReturn) v3error("Unsupported: Public functions with >64 bit outputs; make an output of a public task instead");
@@ -501,7 +503,7 @@ string AstVar::scType() const {
         return (string("sc_bv<")+cvtToStr(widthMin())+"> ");  // Keep the space so don't get >>
     } else if (widthMin() == 1) {
         return "bool";
-    } else if (widthMin() <= VL_WORDSIZE) {
+    } else if (widthMin() <= VL_IDATASIZE) {
         if (widthMin() <= 8 && v3Global.opt.pinsUint8()) {
             return "uint8_t";
         } else if (widthMin() <= 16 && v3Global.opt.pinsUint8()) {
@@ -578,7 +580,7 @@ AstNodeDType* AstNodeDType::dtypeDimensionp(int dimension) {
             }
             return NULL;
         }
-        else if (AstNodeClassDType* adtypep = VN_CAST(dtypep, NodeClassDType)) {
+        else if (AstNodeUOrStructDType* adtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
             if (adtypep->packed()) {
                 if ((dim++) == dimension) {
                     return adtypep;
@@ -620,8 +622,16 @@ std::pair<uint32_t,uint32_t> AstNodeDType::dimensions(bool includeBasic) {
             dtypep = adtypep->subDTypep();
             continue;
         }
+        else if (const AstQueueDType* qdtypep = VN_CAST(dtypep, QueueDType)) {
+            unpacked++;
+            dtypep = qdtypep->subDTypep();
+            continue;
+        }
         else if (const AstBasicDType* adtypep = VN_CAST(dtypep, BasicDType)) {
-            if (includeBasic && adtypep->isRanged()) packed++;
+            if (includeBasic && (adtypep->isRanged() || adtypep->isString())) packed++;
+        }
+        else if (const AstStructDType* sdtypep = VN_CAST(dtypep, StructDType)) {
+            packed++;
         }
         break;
     }
@@ -947,6 +957,10 @@ void AstCellInline::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str<<" -> "<<origModName();
 }
+void AstNodeCoverOrAssert::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (immediate()) str<<" [IMMEDIATE]";
+}
 void AstDisplay::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     //str<<" "<<displayType().ascii();
@@ -1024,7 +1038,7 @@ void AstRefDType::dump(std::ostream& str) const {
     }
     else { str<<" -> UNLINKED"; }
 }
-void AstNodeClassDType::dump(std::ostream& str) const {
+void AstNodeUOrStructDType::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (packed()) str<<" [PACKED]";
     if (isFourstate()) str<<" [4STATE]";

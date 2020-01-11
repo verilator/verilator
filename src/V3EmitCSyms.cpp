@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -372,12 +372,10 @@ void EmitCSyms::emitSymHdr() {
     puts("//\n");
     puts("// Internal details; most calling programs do not need this header,\n");
     puts("// unless using verilator public meta comments.\n");
-    puts("\n");
 
-    puts("#ifndef _"+symClassName()+"_H_\n");
-    puts("#define _"+symClassName()+"_H_\n");
-    puts("\n");
+    ofp()->putsGuard();
 
+    puts("\n");
     ofp()->putsIntTopInclude();
     if (v3Global.needHeavy()) {
         puts("#include \"verilated_heavy.h\"\n");
@@ -474,8 +472,8 @@ void EmitCSyms::emitSymHdr() {
     }
     puts("\n");
     puts("} VL_ATTR_ALIGNED(64);\n");
-    puts("\n");
-    puts("#endif  // guard\n");
+
+    ofp()->putsEndGuard();
 }
 
 void EmitCSyms::closeSplit() {

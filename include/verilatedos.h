@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder. This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License.
 // Version 2.0.
@@ -317,16 +317,20 @@ typedef unsigned long long      vluint64_t;     ///< 64-bit unsigned type
 //=========================================================================
 // Integer size macros
 
-#define VL_BYTESIZE 8                   ///< Bits in a byte
-#define VL_SHORTSIZE 16                 ///< Bits in a short
-#define VL_WORDSIZE 32                  ///< Bits in a word
-#define VL_QUADSIZE 64                  ///< Bits in a quadword
-#define VL_WORDSIZE_LOG2 5              ///< log2(VL_WORDSIZE)
+#define VL_BYTESIZE 8                   ///< Bits in a CData / byte
+#define VL_SHORTSIZE 16                 ///< Bits in a SData / short
+#define VL_IDATASIZE 32                 ///< Bits in a IData / word
+#define VL_WORDSIZE IDATASIZE           ///< Legacy define
+#define VL_QUADSIZE 64                  ///< Bits in a QData / quadword
+#define VL_EDATASIZE 32                 ///< Bits in a EData (WData entry)
+#define VL_EDATASIZE_LOG2 5             ///< log2(VL_EDATASIZE)
 
 /// Bytes this number of bits needs (1 bit=1 byte)
 #define VL_BYTES_I(nbits) (((nbits) + (VL_BYTESIZE - 1)) / VL_BYTESIZE)
-/// Words this number of bits needs (1 bit=1 word)
-#define VL_WORDS_I(nbits) (((nbits) + (VL_WORDSIZE - 1)) / VL_WORDSIZE)
+/// Words/EDatas this number of bits needs (1 bit=1 word)
+#define VL_WORDS_I(nbits) (((nbits) + (VL_EDATASIZE - 1)) / VL_EDATASIZE)
+/// Words/EDatas a quad requires
+#define VL_WQ_WORDS_E VL_WORDS_I(VL_QUADSIZE)
 
 //=========================================================================
 // Class definition helpers
@@ -345,8 +349,9 @@ typedef unsigned long long      vluint64_t;     ///< 64-bit unsigned type
 //=========================================================================
 // Base macros
 
-#define VL_SIZEBITS_I (VL_WORDSIZE - 1)  ///< Bit mask for bits in a word
+#define VL_SIZEBITS_I (VL_IDATASIZE - 1)  ///< Bit mask for bits in a word
 #define VL_SIZEBITS_Q (VL_QUADSIZE - 1)  ///< Bit mask for bits in a quad
+#define VL_SIZEBITS_E (VL_EDATASIZE - 1)  ///< Bit mask for bits in a quad
 
 /// Mask for words with 1's where relevant bits are (0=all bits)
 #define VL_MASK_I(nbits)  (((nbits) & VL_SIZEBITS_I) \
@@ -354,9 +359,15 @@ typedef unsigned long long      vluint64_t;     ///< 64-bit unsigned type
 /// Mask for quads with 1's where relevant bits are (0=all bits)
 #define VL_MASK_Q(nbits)  (((nbits) & VL_SIZEBITS_Q) \
                          ? ((VL_ULL(1) << ((nbits) & VL_SIZEBITS_Q) )-VL_ULL(1)) : VL_ULL(~0))
-#define VL_BITWORD_I(bit) ((bit)/VL_WORDSIZE)  ///< Word number for a wide quantity
-#define VL_BITBIT_I(bit) ((bit)&VL_SIZEBITS_I)  ///< Bit number for a bit in a long
-#define VL_BITBIT_Q(bit) ((bit)&VL_SIZEBITS_Q)  ///< Bit number for a bit in a quad
+/// Mask for EData with 1's where relevant bits are (0=all bits)
+#define VL_MASK_E(nbits) VL_MASK_I(nbits)
+#define VL_EUL(n) VL_UL(n)  ///< Make constant number EData sized
+
+#define VL_BITWORD_I(bit) ((bit) / VL_IDATASIZE)  ///< Word number for sv DPI vectors
+#define VL_BITWORD_E(bit) ((bit) >> VL_EDATASIZE_LOG2)  ///< Word number for a wide quantity
+#define VL_BITBIT_I(bit) ((bit) & VL_SIZEBITS_I)  ///< Bit number for a bit in a long
+#define VL_BITBIT_Q(bit) ((bit) & VL_SIZEBITS_Q)  ///< Bit number for a bit in a quad
+#define VL_BITBIT_E(bit) ((bit) & VL_SIZEBITS_E)  ///< Bit number for a bit in a EData
 
 //=========================================================================
 // Floating point
@@ -411,6 +422,21 @@ typedef unsigned long long      vluint64_t;     ///< 64-bit unsigned type
 #  error "Missing VL_CPU_RELAX() definition. Or, don't use VL_THREADED"
 # endif
 #endif
+
+//=========================================================================
+// String related OS-specific functions
+
+#ifdef _MSC_VER
+# define VL_STRCASECMP _stricmp
+#else
+# define VL_STRCASECMP strcasecmp
+#endif
+
+//=========================================================================
+// Stringify macros
+
+#define VL_STRINGIFY(x) VL_STRINGIFY2(x)
+#define VL_STRINGIFY2(x) #x
 
 //=========================================================================
 

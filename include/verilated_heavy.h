@@ -1,7 +1,7 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 //
-// Copyright 2010-2019 by Wilson Snyder. This program is free software; you can
+// Copyright 2010-2020 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License.
 // Version 2.0.
@@ -41,7 +41,7 @@ extern std::string VL_TO_STRING(CData obj);
 extern std::string VL_TO_STRING(SData obj);
 extern std::string VL_TO_STRING(IData obj);
 extern std::string VL_TO_STRING(QData obj);
-inline std::string VL_TO_STRING(const std::string& obj) { return "\""+obj+"\""; }
+inline std::string VL_TO_STRING(const std::string& obj) { return "\"" + obj + "\""; }
 
 //===================================================================
 // Verilog array container
@@ -185,7 +185,8 @@ std::string VL_TO_STRING(const VlAssocArray<T_Key, T_Value>& obj) {
 // There are no multithreaded locks on this; the base variable must
 // be protected by other means
 //
-template <class T_Value> class VlQueue {
+// Bound here is the maximum size() allowed, e.g. 1 + SystemVerilog bound
+template <class T_Value, size_t T_MaxSize = 0> class VlQueue {
 private:
     // TYPES
     typedef std::deque<T_Value> Deque;
@@ -215,9 +216,14 @@ public:
     void erase(size_t index) { if (VL_LIKELY(index < m_deque.size())) m_deque.erase(index); }
 
     // function void q.push_front(value)
-    void push_front(const T_Value& value) { m_deque.push_front(value); }
+    void push_front(const T_Value& value) {
+        m_deque.push_front(value);
+        if (VL_UNLIKELY(T_MaxSize != 0 && m_deque.size() > T_MaxSize)) m_deque.pop_back();
+    }
     // function void q.push_back(value)
-    void push_back(const T_Value& value) { m_deque.push_back(value); }
+    void push_back(const T_Value& value) {
+        if (VL_LIKELY(T_MaxSize == 0 || m_deque.size() < T_MaxSize)) m_deque.push_back(value);
+    }
     // function value_t q.pop_front();
     T_Value pop_front() {
         if (m_deque.empty()) return m_defaultValue;
@@ -278,14 +284,14 @@ std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
 
 extern std::string VL_CVT_PACK_STR_NW(int lwords, WDataInP lwp) VL_MT_SAFE;
 inline std::string VL_CVT_PACK_STR_NQ(QData lhs) VL_PURE {
-    WData lw[2];  VL_SET_WQ(lw, lhs);
-    return VL_CVT_PACK_STR_NW(2, lw);
+    WData lw[VL_WQ_WORDS_E]; VL_SET_WQ(lw, lhs);
+    return VL_CVT_PACK_STR_NW(VL_WQ_WORDS_E, lw);
 }
 inline std::string VL_CVT_PACK_STR_NN(const std::string& lhs) VL_PURE {
     return lhs;
 }
 inline std::string VL_CVT_PACK_STR_NI(IData lhs) VL_PURE {
-    WData lw[1];  lw[0] = lhs;
+    WData lw[VL_WQ_WORDS_E];  VL_SET_WI(lw, lhs);
     return VL_CVT_PACK_STR_NW(1, lw);
 }
 inline std::string VL_CONCATN_NNN(const std::string& lhs, const std::string& rhs) VL_PURE {
@@ -298,7 +304,7 @@ inline std::string VL_REPLICATEN_NNQ(int,int,int, const std::string& lhs, IData 
 }
 inline std::string VL_REPLICATEN_NNI(int obits,int lbits,int rbits,
                                      const std::string& lhs, IData rep) VL_PURE {
-    return VL_REPLICATEN_NNQ(obits,lbits,rbits,lhs,rep);
+    return VL_REPLICATEN_NNQ(obits, lbits, rbits, lhs, rep);
 }
 
 inline IData VL_LEN_IN(const std::string& ld) { return ld.length(); }
@@ -320,18 +326,18 @@ extern std::string VL_SFORMATF_NX(const char* formatp, ...) VL_MT_SAFE;
 extern IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_MT_SAFE;
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, CData& rdr) VL_MT_SAFE {
     WData rwp[2];  // WData must always be at least 2
-    IData got = VL_VALUEPLUSARGS_INW(rbits,ld,rwp);
+    IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = rwp[0];
     return got;
 }
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, SData& rdr) VL_MT_SAFE {
     WData rwp[2];  // WData must always be at least 2
-    IData got = VL_VALUEPLUSARGS_INW(rbits,ld,rwp);
+    IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = rwp[0];
     return got;
 }
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, IData& rdr) VL_MT_SAFE {
-    WData rwp[2];  // WData must always be at least 2
+    WData rwp[2];
     IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = rwp[0];
     return got;
@@ -344,10 +350,31 @@ inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, QData& rdr) 
 }
 inline IData VL_VALUEPLUSARGS_INQ(int rbits, const std::string& ld, double& rdr) VL_MT_SAFE {
     WData rwp[2];
-    IData got = VL_VALUEPLUSARGS_INW(rbits,ld,rwp);
+    IData got = VL_VALUEPLUSARGS_INW(rbits, ld, rwp);
     if (got) rdr = VL_CVT_D_Q(VL_SET_QW(rwp));
     return got;
 }
 extern IData VL_VALUEPLUSARGS_INN(int, const std::string& ld, std::string& rdr) VL_MT_SAFE;
+
+//======================================================================
+// Strings
+
+extern std::string VL_PUTC_N(const std::string& lhs, IData rhs, CData ths) VL_PURE;
+extern CData VL_GETC_N(const std::string& lhs, IData rhs) VL_PURE;
+extern std::string VL_SUBSTR_N(const std::string& lhs, IData rhs, IData ths) VL_PURE;
+
+inline IData VL_CMP_NN(const std::string& lhs, const std::string& rhs, bool ignoreCase) VL_PURE {
+    // SystemVerilog does not allow a string variable to contain '\0'.
+    // So C functions such as strcmp() can correctly compare strings.
+    int result;
+    if (ignoreCase) {
+        result = VL_STRCASECMP(lhs.c_str(), rhs.c_str());
+    } else {
+        result = std::strcmp(lhs.c_str(), rhs.c_str());
+    }
+    return result;
+}
+
+extern IData VL_ATOI_N(const std::string& str, int base) VL_PURE;
 
 #endif  // Guard

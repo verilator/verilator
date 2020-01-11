@@ -80,4 +80,4 @@ module Test (/*AUTOARG*/
       out <= in inside {5'b1_1?1?};
    end
 
-endmodule // t
+endmodule

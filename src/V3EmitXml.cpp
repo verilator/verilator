@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2004-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -114,6 +114,7 @@ class EmitXmlFileVisitor : public AstNVisitor {
         puts(" origName="); putsQuoted(nodep->origName());
         if (nodep->level()==1 || nodep->level()==2)  // ==2 because we don't add wrapper when in XML mode
             puts(" topModule=\"1\"");  // IEEE vpiTopModule
+        if (nodep->modPublic()) puts(" public=\"true\"");
         outputChildrenEnd(nodep, "");
     }
     virtual void visit(AstVar* nodep) {
@@ -129,6 +130,16 @@ class EmitXmlFileVisitor : public AstNVisitor {
             puts(" vartype="); putsQuoted(!vt.empty() ? vt : kw);
         }
         puts(" origName="); putsQuoted(nodep->origName());
+        // Attributes
+        if (nodep->attrClocker()) puts(" clocker=\"true\"");
+        if (nodep->attrClockEn()) puts(" clock_enable=\"true\"");
+        if (nodep->attrIsolateAssign()) puts(" isolate_assignments=\"true\"");
+        if (nodep->isSigPublic()) puts(" public=\"true\"");
+        if (nodep->isSigUserRdPublic()) puts(" public_flat_rd=\"true\"");
+        if (nodep->isSigUserRWPublic()) puts(" public_flat_rw=\"true\"");
+        if (nodep->attrScBv()) puts(" sc_bv=\"true\"");
+        if (nodep->attrScClocked()) puts(" sc_clock=\"true\"");
+        if (nodep->attrSFormat()) puts(" sformat=\"true\"");
         outputChildrenEnd(nodep, "");
     }
     virtual void visit(AstPin* nodep) {

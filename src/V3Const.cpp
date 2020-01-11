@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -965,15 +965,15 @@ private:
             V3Number ones (nodep, nodep->width());
             ones.setMask(nodep->width());
             if (shift1<0) {
-                mask1.opShiftR(ones, V3Number(nodep, VL_WORDSIZE, -shift1));
+                mask1.opShiftR(ones, V3Number(nodep, VL_IDATASIZE, -shift1));
             } else {
-                mask1.opShiftL(ones, V3Number(nodep, VL_WORDSIZE, shift1));
+                mask1.opShiftL(ones, V3Number(nodep, VL_IDATASIZE, shift1));
             }
             V3Number mask (nodep, nodep->width());
             if (shift2<0) {
-                mask.opShiftR(mask1, V3Number(nodep, VL_WORDSIZE, -shift2));
+                mask.opShiftR(mask1, V3Number(nodep, VL_IDATASIZE, -shift2));
             } else {
-                mask.opShiftL(mask1, V3Number(nodep, VL_WORDSIZE, shift2));
+                mask.opShiftL(mask1, V3Number(nodep, VL_IDATASIZE, shift2));
             }
             if (newshift<0) {
                 newp = new AstShiftR(nodep->fileline(), ap,
@@ -1016,8 +1016,6 @@ private:
         if ((  con1p->toSInt() != con2p->toSInt() + sel2p->width())
             &&(con2p->toSInt() != con1p->toSInt() + sel1p->width())) return false;
         bool lsbFirstAssign = (con1p->toUInt() < con2p->toUInt());
-        // If the user already has nice 32-bit divisions, keep them to aid later subdivision
-        //if (VL_BITBIT_I(con1p->toUInt()) == 0) return false;
         UINFO(4,"replaceAssignMultiSel "<<nodep<<endl);
         UINFO(4,"                   && "<<nextp<<endl);
         //nodep->dumpTree(cout, "comb1: ");
@@ -2528,6 +2526,8 @@ private:
     TREEOPV("AstLogIf{$lhsp, $rhsp}",  "AstLogOr{AstLogNot{$lhsp},$rhsp}");
     TREEOPV("AstLogEq{$lhsp, $rhsp}",  "replaceLogEq(nodep)");
     // Strings
+    TREEOPC("AstPutcN{$lhsp.castConst, $rhsp.castConst, $thsp.castConst}",  "replaceConst(nodep)");
+    TREEOPC("AstSubstrN{$lhsp.castConst, $rhsp.castConst, $thsp.castConst}",  "replaceConst(nodep)");
     TREEOPC("AstCvtPackString{$lhsp.castConst}", "replaceConstString(nodep, VN_CAST(nodep->lhsp(), Const)->num().toString())");
 
 

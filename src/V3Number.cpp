@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -26,6 +26,7 @@
 #include "V3Ast.h"
 
 #include <algorithm>
+#include <cerrno>
 #include <cmath>
 #include <cstdarg>
 #include <iomanip>
@@ -495,11 +496,18 @@ bool V3Number::displayedFmtLegal(char format) {
     default: return false;
     }
 }
+
+string V3Number::displayPad(size_t fmtsize, char pad, const string& in) {
+    string prefix;
+    if (in.length() < fmtsize) prefix = string(fmtsize - in.length(), pad);
+    return prefix + in;
+}
+
 string V3Number::displayed(AstNode* nodep, const string& vformat) const {
     return displayed(nodep->fileline(), vformat);
 }
 
-string V3Number::displayed(FileLine*fl, const string& vformat) const {
+string V3Number::displayed(FileLine* fl, const string& vformat) const {
     string::const_iterator pos = vformat.begin();
     UASSERT(pos != vformat.end() && pos[0]=='%',
             "$display-like function with non format argument "<<*this);
@@ -565,6 +573,8 @@ string V3Number::displayed(FileLine*fl, const string& vformat) const {
                 if (fmtsize != "0") str += ' ';
             }
         }
+        size_t fmtsizen = static_cast<size_t>(atoi(fmtsize.c_str()));
+        str = displayPad(fmtsizen, ' ', str);
         return str;
     }
     case '~':  // Signed decimal
@@ -591,12 +601,10 @@ string V3Number::displayed(FileLine*fl, const string& vformat) const {
                 str = cvtToStr(toUQuad());
             }
         }
-        int intfmtsize = atoi(fmtsize.c_str());
         bool zeropad = fmtsize.length()>0 && fmtsize[0]=='0';
-        while (static_cast<int>(str.length()) < intfmtsize) {
-            if (zeropad) str.insert(0, "0");
-            else str.insert(0, " ");
-        }
+        // fmtsize might have changed since we parsed the %fmtsize
+        size_t fmtsizen = static_cast<size_t>(atoi(fmtsize.c_str()));
+        str = displayPad(fmtsizen, (zeropad ? '0' : ' '), str);
         return str;
     }
     case 'e':
@@ -642,7 +650,9 @@ string V3Number::displayed(FileLine*fl, const string& vformat) const {
         return str;
     }
     case '@': {  // Packed string
-        return toString();
+        size_t fmtsizen = static_cast<size_t>(atoi(fmtsize.c_str()));
+        str = displayPad(fmtsizen, ' ', toString());
+        return str;
     }
     default:
         fl->v3fatalSrc("Unknown $display-like format code for number: %"<<pos[0]);
@@ -741,6 +751,7 @@ vlsint32_t V3Number::toSInt() const {
 vluint64_t V3Number::toUQuad() const {
     UASSERT(!isFourState(), "toUQuad with 4-state "<<*this);
     // We allow wide numbers that represent values <= 64 bits
+    if (isDouble()) return static_cast<vluint64_t>(toDouble());
     for (int i=2; i<words(); ++i) {
         if (m_value[i]) {
             v3error("Value too wide for 64-bits expected in this context "<<*this);
@@ -753,6 +764,7 @@ vluint64_t V3Number::toUQuad() const {
 }
 
 vlsint64_t V3Number::toSQuad() const {
+    if (isDouble()) return static_cast<vlsint64_t>(toDouble());
     vluint64_t v = toUQuad();
     vluint64_t signExtend = (-(v & (VL_ULL(1)<<(width()-1))));
     vluint64_t extended = v | signExtend;
@@ -781,9 +793,13 @@ uint32_t V3Number::toHash() const {
     return m_value[0];
 }
 
-uint32_t V3Number::dataWord(int word) const {
-    UASSERT(!isFourState(), "dataWord with 4-state "<<*this);
-    return m_value[word];
+uint32_t V3Number::edataWord(int eword) const {
+    UASSERT(!isFourState(), "edataWord with 4-state "<<*this);
+    return m_value[eword];
+}
+
+uint8_t V3Number::dataByte(int byte) const {
+    return (edataWord(byte / (VL_EDATASIZE / 8)) >> ((byte * 8) % VL_EDATASIZE)) & 0xff;
 }
 
 bool V3Number::isEqZero() const {
@@ -1237,6 +1253,78 @@ V3Number& V3Number::opLogEq(const V3Number& lhs, const V3Number& rhs) {
     return opLogAnd(ifa, ifb);
 }
 
+V3Number& V3Number::opAtoN(const V3Number& lhs, int base) {
+    NUM_ASSERT_OP_ARGS1(lhs);
+    NUM_ASSERT_STRING_ARGS1(lhs);
+    UASSERT(base == AstAtoN::ATOREAL || base == 2 || base == 8 || base == 10 || base == 16,
+            "base must be one of AstAtoN::ATOREAL, 2, 8, 10, or 16.");
+
+    std::string str = lhs.toString();  // new instance to edit later
+    if (base == AstAtoN::ATOREAL) return setDouble(std::atof(str.c_str()));
+
+    // IEEE 1800-2017 6.16.9 says '_' may exist.
+    str.erase(std::remove(str.begin(), str.end(), '_'), str.end());
+
+    errno = 0;
+    long v = std::strtol(str.c_str(), NULL, base);
+    if (errno != 0) v = 0;
+    return setLongS(static_cast<vlsint32_t>(v));
+}
+
+V3Number& V3Number::opPutcN(const V3Number& lhs, const V3Number& rhs, const V3Number& ths) {
+    NUM_ASSERT_OP_ARGS3(lhs, rhs, ths);
+    NUM_ASSERT_STRING_ARGS1(lhs);
+    string lstring = lhs.toString();
+    const vlsint32_t i = rhs.toSInt();
+    const vlsint32_t c = ths.toSInt() & 0xFF;
+    // 6.16.2:str.putc(i, c) does not change the value when i < 0 || i >= str.len() || c == 0
+    // when evaluating the second condition, i must be positive.
+    if (0 <= i && static_cast<uint32_t>(i) < lstring.length() && c != 0) lstring[i] = c;
+    return setString(lstring);
+}
+
+V3Number& V3Number::opGetcN(const V3Number& lhs, const V3Number& rhs) {
+    NUM_ASSERT_OP_ARGS2(lhs, rhs);
+    NUM_ASSERT_STRING_ARGS1(lhs);
+    const string lstring = lhs.toString();
+    const vlsint32_t i = rhs.toSInt();
+    vlsint32_t v = 0;
+    // 6.16.3:str.getc(i) returns 0 if i < 0 || i >= str.len()
+    // when evaluating the second condition, i must be positive.
+    if (0 <= i && static_cast<uint32_t>(i) < lstring.length()) v = lstring[i];
+    return setLong(v);
+}
+
+V3Number& V3Number::opSubstrN(const V3Number& lhs, const V3Number& rhs, const V3Number& ths) {
+    NUM_ASSERT_OP_ARGS3(lhs, rhs, ths);
+    NUM_ASSERT_STRING_ARGS1(lhs);
+    const string lstring = lhs.toString();
+    const vlsint32_t i = rhs.toSInt();
+    const vlsint32_t j = ths.toSInt();
+    // 6.16.8:str.substr(i, j) returns an empty string when i < 0 || j < i || j >= str.len()
+    // when evaluating the third condition, j must be positive because 0 <= i <= j is guaranteed by
+    // the former two conditions.
+    if (i < 0 || j < i || static_cast<uint32_t>(j) >= lstring.length()) return setString("");
+    // The second parameter of std::string::substr(i, n) is length, not position as SystemVerilog.
+    return setString(lstring.substr(i, j - i + 1));
+}
+
+V3Number& V3Number::opCompareNN(const V3Number& lhs, const V3Number& rhs, bool ignoreCase) {
+    NUM_ASSERT_OP_ARGS2(lhs, rhs);
+    NUM_ASSERT_STRING_ARGS2(lhs, rhs);
+    // SystemVerilog Language Standard does not allow a string variable to contain '\0'.
+    // So C functions such as strcmp() can correctly compare strings.
+    int result;
+    string lstring = lhs.toString();
+    string rstring = rhs.toString();
+    if (ignoreCase) {
+        result = VL_STRCASECMP(lstring.c_str(), rstring.c_str());
+    } else {
+        result = std::strcmp(lstring.c_str(), rstring.c_str());
+    }
+    return setLongS(result);
+}
+
 V3Number& V3Number::opEq(const V3Number& lhs, const V3Number& rhs) {
     // i op j, 1 bit return, max(L(lhs),L(rhs)) calculation, careful need to X/Z extend.
     NUM_ASSERT_OP_ARGS2(lhs, rhs);
@@ -1656,8 +1744,8 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
         return *this;
     }
 
-    int uw = VL_WORDS_I(umsbp1);  // aka "m" in the algorithm
-    int vw = VL_WORDS_I(vmsbp1);  // aka "n" in the algorithm
+    int uw = (umsbp1 + 31) / 32;  // aka "m" in the algorithm
+    int vw = (vmsbp1 + 31) / 32;  // aka "n" in the algorithm
 
     if (vw == 1) {  // Single divisor word breaks rest of algorithm
         vluint64_t k = 0;
@@ -1684,7 +1772,7 @@ V3Number& V3Number::opModDivGuts(const V3Number& lhs, const V3Number& rhs, bool 
 
     // Algorithm requires divisor MSB to be set
     // Copy and shift to normalize divisor so MSB of vn[vw-1] is set
-    int s = 31-VL_BITBIT_I(vmsbp1-1);  // shift amount (0...31)
+    int s = 31 - ((vmsbp1-1) & 31);  // shift amount (0...31)
     uint32_t shift_mask = s ? 0xffffffff : 0;  // otherwise >> 32 won't mask the value
     for (int i = vw-1; i>0; i--) {
         vn[i] = (rhs.m_value[i] << s) | (shift_mask & (rhs.m_value[i-1] >> (32-s)));

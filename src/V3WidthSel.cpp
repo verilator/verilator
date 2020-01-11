@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -95,7 +95,7 @@ private:
         }
         else if (const AstQueueDType* adtypep = VN_CAST(ddtypep, QueueDType)) {
         }
-        else if (const AstNodeClassDType* adtypep = VN_CAST(ddtypep, NodeClassDType)) {
+        else if (const AstNodeUOrStructDType* adtypep = VN_CAST(ddtypep, NodeUOrStructDType)) {
             fromRange = adtypep->declRange();
         }
         else if (AstBasicDType* adtypep = VN_CAST(ddtypep, BasicDType)) {
@@ -280,7 +280,7 @@ private:
             if (debug()>=9) newp->dumpTree(cout, "--SELBTn: ");
             nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
         }
-        else if (VN_IS(ddtypep, NodeClassDType)) {  // It's packed, so a bit from the packed struct
+        else if (VN_IS(ddtypep, NodeUOrStructDType)) {  // A bit from the packed struct
             // SELBIT(range, index) -> SEL(array, index, 1)
             AstSel* newp = new AstSel(nodep->fileline(),
                                       fromp,
@@ -389,7 +389,7 @@ private:
             //if (debug()>=9) newp->dumpTree(cout, "--SELEXnew: ");
             nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
         }
-        else if (VN_IS(ddtypep, NodeClassDType)) {
+        else if (VN_IS(ddtypep, NodeUOrStructDType)) {
             // Classes aren't little endian
             if (lsb > msb) {
                 nodep->v3error("["<<msb<<":"<<lsb<<"] Range extract has backward bit ordering, perhaps you wanted ["
@@ -443,8 +443,8 @@ private:
         VNumRange fromRange = fromdata.m_fromRange;
         if (VN_IS(ddtypep, BasicDType)
             || VN_IS(ddtypep, PackArrayDType)
-            || (VN_IS(ddtypep, NodeClassDType)
-                && VN_CAST(ddtypep, NodeClassDType)->packedUnsup())) {
+            || (VN_IS(ddtypep, NodeUOrStructDType)
+                && VN_CAST(ddtypep, NodeUOrStructDType)->packedUnsup())) {
             int elwidth = 1;
             AstNode* newwidthp = widthp;
             if (const AstPackArrayDType* adtypep = VN_CAST(ddtypep, PackArrayDType)) {
