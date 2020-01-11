@@ -74,6 +74,8 @@ public:
     // Replace any unprintable with space
     // This includes removing tabs, so column tracking is correct
     static string spaceUnprintable(const string& str);
+    // Return true if only whitespace or ""
+    static bool isWhitespace(const string& str);
 };
 
 //######################################################################

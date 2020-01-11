@@ -244,6 +244,11 @@ bom             [\357\273\277]
                           // Note paren level 0 means before "(" of starting args
                           // Level 1 means "," between arguments
                           // Level 2+ means one inside the () of an argument
+                          if (LEXP->m_parenLevel == 1) {  // Starting (
+                              if (!VString::isWhitespace(LEXP->m_defValue)) {
+                                  yyerrorf("Illegal text before '(' that starts define arguments");
+                              }
+                          }
                           if (LEXP->m_parenLevel>1) {
                               appendDefValue(yytext, yyleng); FL_BRK;
                           } else {

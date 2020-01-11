@@ -114,6 +114,13 @@ string VString::spaceUnprintable(const string& str) {
     return out;
 }
 
+bool VString::isWhitespace(const string& str) {
+    for (string::const_iterator pos = str.begin(); pos != str.end(); ++pos) {
+        if (!isspace(*pos)) return false;
+    }
+    return true;
+}
+
 //######################################################################
 // VHashSha256
 

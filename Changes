@@ -5,6 +5,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.027 devel
 
+****  Add error on misused define. [Topa Tota]
+
 
 * Verilator 4.026 2020-01-11
 
