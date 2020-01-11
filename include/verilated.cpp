@@ -1354,17 +1354,16 @@ const char* memhFormat(int nBits) {
     return buf;
 }
 
-void VL_WRITEMEM_N(
-    bool hex,  // Hex format, else binary
-    int width,  // Width of each array row
-    int depth,  // Number of rows
-    int array_lsb,  // Index of first row. Valid row addresses
-    //              //  range from array_lsb up to (array_lsb + depth - 1)
-    const std::string& filename,  // Output file name
-    const void* memp,  // Array state
-    IData start,  // First array row address to write
-    IData end  // Last address to write, or ~0 when not specified
-    ) VL_MT_SAFE {
+void VL_WRITEMEM_N(bool hex,  // Hex format, else binary
+                   int width,  // Width of each array row
+                   int depth,  // Number of rows
+                   int array_lsb,  // Index of first row. Valid row addresses
+                   //              //  range from array_lsb up to (array_lsb + depth - 1)
+                   const std::string& filename,  // Output file name
+                   const void* memp,  // Array state
+                   IData start,  // First array row address to write
+                   IData end  // Last address to write, or ~0 when not specified
+                   ) VL_MT_SAFE {
     if (VL_UNLIKELY(!hex)) {
         VL_FATAL_MT(filename.c_str(), 0, "",
                     "VL_WRITEMEM_N only supports hex format for now, sorry!");
@@ -1380,21 +1379,19 @@ void VL_WRITEMEM_N(
 
     // Bounds check the write address range
     if (VL_UNLIKELY((start < row_min) || (start > row_max)
-                    || (nend < row_min) ||  (nend > row_max))) {
-        VL_FATAL_MT(filename.c_str(), 0, "",
-                    "$writemem specified address out-of-bounds");
+                    || (nend < row_min) || (nend > row_max))) {
+        VL_FATAL_MT(filename.c_str(), 0, "", "$writemem specified address out-of-bounds");
         return;
     }
 
     if (VL_UNLIKELY(start > nend)) {
-        VL_FATAL_MT(filename.c_str(), 0, "",
-                    "$writemem invalid address range");
+        VL_FATAL_MT(filename.c_str(), 0, "", "$writemem invalid address range");
         return;
     }
 
     // Calculate row offset range
     size_t row_start = start - row_min;
-    size_t row_end   = nend  - row_min;
+    size_t row_end = nend - row_min;
 
     // Bail out on possible 32-bit size_t overflow
     if (VL_UNLIKELY(row_end + 1 == 0)) {
@@ -1411,23 +1408,19 @@ void VL_WRITEMEM_N(
 
     for (size_t row_offset = row_start; row_offset <= row_end; ++row_offset) {
         if (width <= 8) {
-            const CData* datap
-                = &(reinterpret_cast<const CData*>(memp))[row_offset];
+            const CData* datap = &(reinterpret_cast<const CData*>(memp))[row_offset];
             fprintf(fp, memhFormat(width), VL_MASK_I(width) & *datap);
             fprintf(fp, "\n");
         } else if (width <= 16) {
-            const SData* datap
-                = &(reinterpret_cast<const SData*>(memp))[row_offset];
+            const SData* datap = &(reinterpret_cast<const SData*>(memp))[row_offset];
             fprintf(fp, memhFormat(width), VL_MASK_I(width) & *datap);
             fprintf(fp, "\n");
         } else if (width <= 32) {
-            const IData* datap
-                = &(reinterpret_cast<const IData*>(memp))[row_offset];
+            const IData* datap = &(reinterpret_cast<const IData*>(memp))[row_offset];
             fprintf(fp, memhFormat(width), VL_MASK_I(width) & *datap);
             fprintf(fp, "\n");
         } else if (width <= 64) {
-            const QData* datap
-                = &(reinterpret_cast<const QData*>(memp))[row_offset];
+            const QData* datap = &(reinterpret_cast<const QData*>(memp))[row_offset];
             vluint64_t value = VL_MASK_Q(width) & *datap;
             vluint32_t lo = value & 0xffffffff;
             vluint32_t hi = value >> 32;
@@ -1469,14 +1462,14 @@ IData VL_FREAD_I(int width, int array_lsb, int array_size,
     // Prep for reading
     IData read_count = 0;
     IData read_elements = 0;
-    int start_shift = (width-1) & ~7;  // bit+7:bit gets first character
+    int start_shift = (width - 1) & ~7;  // bit+7:bit gets first character
     int shift = start_shift;
     // Read the data
     // We process a character at a time, as then we don't need to deal
     // with changing buffer sizes dynamically, etc.
     while (1) {
         int c = fgetc(fp);
-        if (VL_UNLIKELY(c==EOF)) break;
+        if (VL_UNLIKELY(c == EOF)) break;
         // Shift value in
         IData entry = read_elements + start - array_lsb;
         if (width <= 8) {
@@ -1527,17 +1520,16 @@ void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
     return VL_READMEM_N(hex, width, depth, array_lsb, filenames, memp, start, end);
 }
 
-void VL_READMEM_N(
-    bool hex,  // Hex format, else binary
-    int width,  // Width of each array row
-    int depth,  // Number of rows
-    int array_lsb,  // Index of first row. Valid row addresses
-    //              //  range from array_lsb up to (array_lsb + depth - 1)
-    const std::string& filename,  // Input file name
-    void* memp,  // Array state
-    IData start,  // First array row address to read
-    IData end  // Last row address to read
-    ) VL_MT_SAFE {
+void VL_READMEM_N(bool hex,  // Hex format, else binary
+                  int width,  // Width of each array row
+                  int depth,  // Number of rows
+                  int array_lsb,  // Index of first row. Valid row addresses
+                  //              //  range from array_lsb up to (array_lsb + depth - 1)
+                  const std::string& filename,  // Input file name
+                  void* memp,  // Array state
+                  IData start,  // First array row address to read
+                  IData end  // Last row address to read
+                  ) VL_MT_SAFE {
     FILE* fp = fopen(filename.c_str(), "r");
     if (VL_UNLIKELY(!fp)) {
         // We don't report the Verilog source filename as it slow to have to pass it down
@@ -1559,30 +1551,31 @@ void VL_READMEM_N(
     // with changing buffer sizes dynamically, etc.
     while (1) {
         int c = fgetc(fp);
-        if (VL_UNLIKELY(c==EOF)) break;
-        //printf("%d: Got '%c' Addr%x IN%d IgE%d IgC%d ninc%d\n",
+        if (VL_UNLIKELY(c == EOF)) break;
+        // printf("%d: Got '%c' Addr%x IN%d IgE%d IgC%d ninc%d\n",
         //       linenum, c, addr, innum, ignore_to_eol, ignore_to_cmt, needinc);
         if (c=='\n') {
             linenum++; ignore_to_eol = false;
             if (innum) reading_addr = false;
             innum = false;
-        }
-        else if (c=='\t' || c==' ' || c=='\r' || c=='\f') {
+        } else if (c == '\t' || c == ' ' || c == '\r' || c == '\f') {
             if (innum) reading_addr = false;
             innum = false;
         }
         // Skip // comments and detect /* comments
-        else if (ignore_to_cmt && lastc=='*' && c=='/') {
-            ignore_to_cmt = false; if (innum) reading_addr=false; innum=false;
+        else if (ignore_to_cmt && lastc == '*' && c == '/') {
+            ignore_to_cmt = false;
+            if (innum) reading_addr = false;
+            innum = false;
         } else if (!ignore_to_eol && !ignore_to_cmt) {
             if (lastc=='/' && c=='*') { ignore_to_cmt = true; }
             else if (lastc=='/' && c=='/') { ignore_to_eol = true; }
             else if (c=='/') {}  // Part of /* or //
             else if (c=='#') { ignore_to_eol = true; }
             else if (c=='_') {}
-            else if (c=='@') { reading_addr = true; innum=false; needinc=false; }
+            else if (c=='@') { reading_addr = true; innum = false; needinc = false; }
             // Check for hex or binary digits as file format requests
-            else if (isxdigit(c) || (!reading_addr && (c=='x' || c=='X'))) {
+            else if (isxdigit(c) || (!reading_addr && (c == 'x' || c == 'X'))) {
                 c = tolower(c);
                 int value = (c >= 'a' ? (c=='x' ? VL_RAND_RESET_I(4) : (c-'a'+10)) : (c-'0'));
                 if (!innum) {  // Prep for next number
@@ -1590,12 +1583,12 @@ void VL_READMEM_N(
                 }
                 if (reading_addr) {
                     // Decode @ addresses
-                    if (!innum) addr=0;
-                    addr = (addr<<4) + value;
+                    if (!innum) addr = 0;
+                    addr = (addr << 4) + value;
                 } else {
                     needinc = true;
-                    //printf(" Value width=%d  @%x = %c\n", width, addr, c);
-                    if (VL_UNLIKELY(addr >= static_cast<IData>(depth+array_lsb)
+                    // printf(" Value width=%d  @%x = %c\n", width, addr, c);
+                    if (VL_UNLIKELY(addr >= static_cast<IData>(depth + array_lsb)
                                     || addr < static_cast<IData>(array_lsb))) {
                         VL_FATAL_MT(filename.c_str(), linenum, "",
                                     "$readmem file address beyond bounds of array");
@@ -1603,11 +1596,11 @@ void VL_READMEM_N(
                         int entry = addr - array_lsb;
                         QData shift = hex ? VL_ULL(4) : VL_ULL(1);
                         // Shift value in
-                        if (width<=8) {
+                        if (width <= 8) {
                             CData* datap = &(reinterpret_cast<CData*>(memp))[entry];
                             if (!innum) { *datap = 0; }
                             *datap = ((*datap << shift) + value) & VL_MASK_I(width);
-                        } else if (width<=16) {
+                        } else if (width <= 16) {
                             SData* datap = &(reinterpret_cast<SData*>(memp))[entry];
                             if (!innum) { *datap = 0; }
                             *datap = ((*datap << shift) + value) & VL_MASK_I(width);
@@ -1615,7 +1608,7 @@ void VL_READMEM_N(
                             IData* datap = &(reinterpret_cast<IData*>(memp))[entry];
                             if (!innum) { *datap = 0; }
                             *datap = ((*datap << shift) + value) & VL_MASK_I(width);
-                        } else if (width<=VL_QUADSIZE) {
+                        } else if (width <= VL_QUADSIZE) {
                             QData* datap = &(reinterpret_cast<QData*>(memp))[entry];
                             if (!innum) { *datap = 0; }
                             *datap = ((*datap << static_cast<QData>(shift))
@@ -1627,15 +1620,14 @@ void VL_READMEM_N(
                             _VL_SHIFTL_INPLACE_W(width, datap, static_cast<IData>(shift));
                             datap[0] |= value;
                         }
-                        if (VL_UNLIKELY(value>=(1<<shift))) {
+                        if (VL_UNLIKELY(value >= (1 << shift))) {
                             VL_FATAL_MT(filename.c_str(), linenum, "",
                                         "$readmemb (binary) file contains hex characters");
                         }
                     }
                 }
                 innum = true;
-            }
-            else {
+            } else {
                 VL_FATAL_MT(filename.c_str(), linenum, "", "$readmem file syntax error");
             }
         }
@@ -1645,7 +1637,7 @@ void VL_READMEM_N(
 
     // Final checks
     fclose(fp);
-    if (VL_UNLIKELY(end != VL_UL(0xffffffff) && addr != (end+1))) {
+    if (VL_UNLIKELY(end != VL_UL(0xffffffff) && addr != (end + 1))) {
         VL_FATAL_MT(filename.c_str(), linenum, "",
                     "$readmem file ended before specified ending-address");
     }
