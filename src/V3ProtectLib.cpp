@@ -92,7 +92,7 @@ class ProtectVisitor : public AstNVisitor {
 
         V3Hash hash = V3Hashed::uncachedHash(m_cfilep);
         m_hashValuep->addText(fl, cvtToStr(hash.fullValue())+";\n");
-        m_cHashValuep->addText(fl, cvtToStr(hash.fullValue())+";\n");
+        m_cHashValuep->addText(fl, cvtToStr(hash.fullValue())+"U;\n");
         m_foundTop = true;
     }
 
