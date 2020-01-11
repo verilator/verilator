@@ -428,9 +428,11 @@ public:
         iterateAndNextNull(nodep->filenamep());
         putbs(", ");
         iterateAndNextNull(nodep->memp());
-        putbs(","); if (nodep->lsbp()) { iterateAndNextNull(nodep->lsbp()); }
+        putbs(",");
+        if (nodep->lsbp()) { iterateAndNextNull(nodep->lsbp()); }
         else puts(cvtToStr(array_lsb));
-        putbs(","); if (nodep->msbp()) { iterateAndNextNull(nodep->msbp()); } else puts("~0");
+        putbs(",");
+        if (nodep->msbp()) { iterateAndNextNull(nodep->msbp()); } else puts("~VL_ULL(0)");
         puts(");\n");
     }
     virtual void visit(AstFClose* nodep) {
@@ -438,7 +440,7 @@ public:
         iterateAndNextNull(nodep->filep());
         puts("); ");
         iterateAndNextNull(nodep->filep());  // For safety, so user doesn't later WRITE with it.
-        puts("=0;\n");
+        puts(" = 0;\n");
     }
     virtual void visit(AstFFlush* nodep) {
         if (!nodep->filep()) {

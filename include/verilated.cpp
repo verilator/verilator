@@ -1320,16 +1320,16 @@ IData VL_SSCANF_INX(int, const std::string& ld, const char* formatp, ...) VL_MT_
     return got;
 }
 
-void VL_WRITEMEM_Q(bool hex, int width, int depth, int array_lsb, int,
-                   QData filename, const void* memp, IData start,
-                   IData end) VL_MT_SAFE {
+void VL_WRITEMEM_Q(bool hex, int width, QData depth, int array_lsb, int,
+                   QData filename, const void* memp, QData start,
+                   QData end) VL_MT_SAFE {
     WData fnw[VL_WQ_WORDS_E]; VL_SET_WQ(fnw, filename);
     return VL_WRITEMEM_W(hex, width, depth, array_lsb, VL_WQ_WORDS_E, fnw, memp, start, end);
 }
 
-void VL_WRITEMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
-                   WDataInP filenamep, const void* memp, IData start,
-                   IData end) VL_MT_SAFE {
+void VL_WRITEMEM_W(bool hex, int width, QData depth, int array_lsb, int fnwords,
+                   WDataInP filenamep, const void* memp, QData start,
+                   QData end) VL_MT_SAFE {
     char filenamez[VL_TO_STRING_MAX_WORDS * VL_EDATASIZE + 1];
     _VL_VINT_TO_STRING(fnwords * VL_EDATASIZE, filenamez, filenamep);
     std::string filenames(filenamez);
@@ -1356,13 +1356,13 @@ const char* memhFormat(int nBits) {
 
 void VL_WRITEMEM_N(bool hex,  // Hex format, else binary
                    int width,  // Width of each array row
-                   int depth,  // Number of rows
+                   QData depth,  // Number of rows
                    int array_lsb,  // Index of first row. Valid row addresses
                    //              //  range from array_lsb up to (array_lsb + depth - 1)
                    const std::string& filename,  // Output file name
                    const void* memp,  // Array state
-                   IData start,  // First array row address to write
-                   IData end  // Last address to write, or ~0 when not specified
+                   QData start,  // First array row address to write
+                   QData end  // Last address to write, or ~0 when not specified
                    ) VL_MT_SAFE {
     if (VL_UNLIKELY(!hex)) {
         VL_FATAL_MT(filename.c_str(), 0, "",
@@ -1371,11 +1371,11 @@ void VL_WRITEMEM_N(bool hex,  // Hex format, else binary
     }
 
     // Calculate row address limits
-    size_t row_min = array_lsb;
-    size_t row_max = row_min + depth - 1;
+    QData row_min = array_lsb;
+    QData row_max = row_min + depth - 1;
 
     // Normalize the last address argument: ~0 => row_max
-    size_t nend = (end == ~0u) ? row_max : end;
+    QData nend = (end == ~VL_ULL(0)) ? row_max : end;
 
     // Bounds check the write address range
     if (VL_UNLIKELY((start < row_min) || (start > row_max)
@@ -1390,8 +1390,8 @@ void VL_WRITEMEM_N(bool hex,  // Hex format, else binary
     }
 
     // Calculate row offset range
-    size_t row_start = start - row_min;
-    size_t row_end = nend - row_min;
+    QData row_start = start - row_min;
+    QData row_end = nend - row_min;
 
     // Bail out on possible 32-bit size_t overflow
     if (VL_UNLIKELY(row_end + 1 == 0)) {
@@ -1406,7 +1406,7 @@ void VL_WRITEMEM_N(bool hex,  // Hex format, else binary
         return;
     }
 
-    for (size_t row_offset = row_start; row_offset <= row_end; ++row_offset) {
+    for (QData row_offset = row_start; row_offset <= row_end; ++row_offset) {
         if (width <= 8) {
             const CData* datap = &(reinterpret_cast<const CData*>(memp))[row_offset];
             fprintf(fp, memhFormat(width), VL_MASK_I(width) & *datap);
@@ -1506,14 +1506,14 @@ IData VL_FREAD_I(int width, int array_lsb, int array_size,
     return read_count;
 }
 
-void VL_READMEM_Q(bool hex, int width, int depth, int array_lsb, int,
-                  QData filename, void* memp, IData start, IData end) VL_MT_SAFE {
+void VL_READMEM_Q(bool hex, int width, QData depth, int array_lsb, int,
+                  QData filename, void* memp, QData start, QData end) VL_MT_SAFE {
     WData fnw[VL_WQ_WORDS_E]; VL_SET_WQ(fnw, filename);
     return VL_READMEM_W(hex, width, depth, array_lsb, VL_WQ_WORDS_E, fnw, memp, start, end);
 }
 
-void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
-                  WDataInP filenamep, void* memp, IData start, IData end) VL_MT_SAFE {
+void VL_READMEM_W(bool hex, int width, QData depth, int array_lsb, int fnwords,
+                  WDataInP filenamep, void* memp, QData start, QData end) VL_MT_SAFE {
     char filenamez[VL_TO_STRING_MAX_WORDS * VL_EDATASIZE + 1];
     _VL_VINT_TO_STRING(fnwords * VL_EDATASIZE, filenamez, filenamep);
     std::string filenames(filenamez);
@@ -1522,13 +1522,13 @@ void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
 
 void VL_READMEM_N(bool hex,  // Hex format, else binary
                   int width,  // Width of each array row
-                  int depth,  // Number of rows
+                  QData depth,  // Number of rows
                   int array_lsb,  // Index of first row. Valid row addresses
                   //              //  range from array_lsb up to (array_lsb + depth - 1)
                   const std::string& filename,  // Input file name
                   void* memp,  // Array state
-                  IData start,  // First array row address to read
-                  IData end  // Last row address to read
+                  QData start,  // First array row address to read
+                  QData end  // Last row address to read
                   ) VL_MT_SAFE {
     FILE* fp = fopen(filename.c_str(), "r");
     if (VL_UNLIKELY(!fp)) {
@@ -1538,7 +1538,7 @@ void VL_READMEM_N(bool hex,  // Hex format, else binary
         return;
     }
     // Prep for reading
-    IData addr = start;
+    QData addr = start;
     int linenum = 1;
     bool innum = false;
     bool ignore_to_eol = false;
@@ -1588,12 +1588,12 @@ void VL_READMEM_N(bool hex,  // Hex format, else binary
                 } else {
                     needinc = true;
                     // printf(" Value width=%d  @%x = %c\n", width, addr, c);
-                    if (VL_UNLIKELY(addr >= static_cast<IData>(depth + array_lsb)
-                                    || addr < static_cast<IData>(array_lsb))) {
+                    if (VL_UNLIKELY(addr >= static_cast<QData>(depth + array_lsb)
+                                    || addr < static_cast<QData>(array_lsb))) {
                         VL_FATAL_MT(filename.c_str(), linenum, "",
                                     "$readmem file address beyond bounds of array");
                     } else {
-                        int entry = addr - array_lsb;
+                        QData entry = addr - array_lsb;
                         QData shift = hex ? VL_ULL(4) : VL_ULL(1);
                         // Shift value in
                         if (width <= 8) {
@@ -1637,7 +1637,7 @@ void VL_READMEM_N(bool hex,  // Hex format, else binary
 
     // Final checks
     fclose(fp);
-    if (VL_UNLIKELY(end != VL_UL(0xffffffff) && addr != (end + 1))) {
+    if (VL_UNLIKELY(end != ~VL_ULL(0) && addr != (end + 1))) {
         VL_FATAL_MT(filename.c_str(), linenum, "",
                     "$readmem file ended before specified ending-address");
     }
