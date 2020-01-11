@@ -144,10 +144,10 @@ class ProtectVisitor : public AstNVisitor {
         // DPI declarations
         hashComment(txtp, fl);
         txtp->addText(fl, "import \"DPI-C\" function void "+
-                      m_libName+"_protectlib_check_hash (int protectlib_hash__V);\n\n");
+                      m_libName+"_protectlib_check_hash(int protectlib_hash__V);\n\n");
         initialComment(txtp, fl);
         txtp->addText(fl, "import \"DPI-C\" function chandle "+
-                      m_libName+"_protectlib_create (string scope__V);\n\n");
+                      m_libName+"_protectlib_create(string scope__V);\n\n");
         comboComment(txtp, fl);
         m_comboPortsp = new AstTextBlock(fl, "import \"DPI-C\" function longint "+
                                          m_libName+"_protectlib_combo_update "
@@ -157,21 +157,21 @@ class ProtectVisitor : public AstNVisitor {
         txtp->addText(fl, ");\n\n");
         seqComment(txtp, fl);
         m_seqPortsp = new AstTextBlock(fl, "import \"DPI-C\" function longint "+
-                                       m_libName+"_protectlib_seq_update "
+                                       m_libName+"_protectlib_seq_update"
                                        "(\n", false, true);
         m_seqPortsp->addText(fl, "chandle handle__V\n");
         txtp->addNodep(m_seqPortsp);
         txtp->addText(fl, ");\n\n");
         comboIgnoreComment(txtp, fl);
         m_comboIgnorePortsp = new AstTextBlock(fl, "import \"DPI-C\" function void "+
-                                               m_libName+"_protectlib_combo_ignore "
+                                               m_libName+"_protectlib_combo_ignore"
                                                "(\n", false, true);
         m_comboIgnorePortsp->addText(fl, "chandle handle__V\n");
         txtp->addNodep(m_comboIgnorePortsp);
         txtp->addText(fl, ");\n\n");
         finalComment(txtp, fl);
         txtp->addText(fl, "import \"DPI-C\" function void "+
-                      m_libName+"_protectlib_final (chandle handle__V);\n\n");
+                      m_libName+"_protectlib_final(chandle handle__V);\n\n");
 
         // Local variables
         txtp->addText(fl, "chandle handle__V;\n\n");
@@ -187,7 +187,7 @@ class ProtectVisitor : public AstNVisitor {
         // CPP hash value
         addComment(txtp, fl, "Hash value to make sure this file and the corresponding");
         addComment(txtp, fl, "library agree");
-        m_hashValuep = new AstTextBlock(fl, "localparam int protectlib_hash__V =\n");
+        m_hashValuep = new AstTextBlock(fl, "localparam int protectlib_hash__V = ");
         txtp->addNodep(m_hashValuep);
         txtp->addText(fl, "\n");
 
@@ -278,8 +278,8 @@ class ProtectVisitor : public AstNVisitor {
         // Hash check
         hashComment(txtp, fl);
         txtp->addText(fl, "void "+m_libName+"_protectlib_check_hash"
-                      " (int protectlib_hash__V) {\n");
-        m_cHashValuep = new AstTextBlock(fl, "int expected_hash__V =\n");
+                      "(int protectlib_hash__V) {\n");
+        m_cHashValuep = new AstTextBlock(fl, "int expected_hash__V = ");
         txtp->addNodep(m_cHashValuep);
         txtp->addText(fl, "if (protectlib_hash__V != expected_hash__V) {\n");
         txtp->addText(fl, "fprintf(stderr, \"%%Error: cannot use "+m_libName+" library, "
@@ -300,7 +300,7 @@ class ProtectVisitor : public AstNVisitor {
 
         // Updates
         comboComment(txtp, fl);
-        m_cComboParamsp = new AstTextBlock(fl, "long long "+m_libName+"_protectlib_combo_update (\n",
+        m_cComboParamsp = new AstTextBlock(fl, "long long "+m_libName+"_protectlib_combo_update(\n",
                                            false, true);
         m_cComboParamsp->addText(fl, "void* vhandlep__V\n");
         txtp->addNodep(m_cComboParamsp);
@@ -314,7 +314,7 @@ class ProtectVisitor : public AstNVisitor {
         txtp->addText(fl, "}\n\n");
 
         seqComment(txtp, fl);
-        m_cSeqParamsp = new AstTextBlock(fl, "long long "+m_libName+"_protectlib_seq_update (\n",
+        m_cSeqParamsp = new AstTextBlock(fl, "long long "+m_libName+"_protectlib_seq_update(\n",
                                          false, true);
         m_cSeqParamsp->addText(fl, "void* vhandlep__V\n");
         txtp->addNodep(m_cSeqParamsp);
@@ -328,7 +328,7 @@ class ProtectVisitor : public AstNVisitor {
         txtp->addText(fl, "}\n\n");
 
         comboIgnoreComment(txtp, fl);
-        m_cIgnoreParamsp = new AstTextBlock(fl, "void "+m_libName+"_protectlib_combo_ignore (\n",
+        m_cIgnoreParamsp = new AstTextBlock(fl, "void "+m_libName+"_protectlib_combo_ignore(\n",
                                             false, true);
         m_cIgnoreParamsp->addText(fl, "void* vhandlep__V\n");
         txtp->addNodep(m_cIgnoreParamsp);
@@ -337,7 +337,7 @@ class ProtectVisitor : public AstNVisitor {
 
         // Final
         finalComment(txtp, fl);
-        txtp->addText(fl, "void "+m_libName+"_protectlib_final (void* vhandlep__V) {\n");
+        txtp->addText(fl, "void "+m_libName+"_protectlib_final(void* vhandlep__V) {\n");
         castPtr(fl, txtp);
         txtp->addText(fl, "handlep__V->final();\n");
         txtp->addText(fl, "delete handlep__V;\n");
