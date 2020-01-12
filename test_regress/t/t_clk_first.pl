@@ -9,7 +9,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
+my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
+
 compile(
+    verilator_flags2 => ["+define+ATTRIBUTES=1"],
     );
 
 execute(

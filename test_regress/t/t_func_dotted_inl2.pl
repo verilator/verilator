@@ -10,10 +10,16 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 top_filename("t/t_func_dotted.v");
+my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
 
 compile(
-    v_flags2 => ['+define+USE_INLINE_MID',],
+    v_flags2 => ['+define+ATTRIBUTES', '+define+USE_INLINE_MID',],
     );
+
+if ($Self->{vlt_all}) {
+    file_grep("$out_filename", qr/\<instance fl="d86" name="t.ma0.mb0" defName="mb" origName="mb0"\/\>/i);
+    file_grep("$out_filename", qr/\<module fl="d98" name="mb" origName="mb"\>/i);
+}
 
 execute(
     check_finished => 1,

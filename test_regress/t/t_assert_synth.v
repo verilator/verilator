@@ -26,7 +26,11 @@ module t (/*AUTOARG*/
 
    always @* begin
       // Note not all tools support directives on casez's
+`ifdef ATTRIBUTES
       case ({a,b_fc}) // synopsys full_case
+`else
+      case ({a,b_fc})
+`endif
 	2'b0_0: ;
 	2'b0_1: ;
 	2'b1_0: ;
@@ -41,7 +45,15 @@ module t (/*AUTOARG*/
    end
 
    always @* begin
+`ifdef ATTRIBUTES
       case (1'b1) // synopsys full_case parallel_case
+`else
+ `ifdef FAILING_FULL
+      case (1'b1) // synopsys parallel_case
+ `else
+      case (1'b1) // synopsys parallel_full
+ `endif
+`endif
 	a: ;
 	b_pc: ;
       endcase

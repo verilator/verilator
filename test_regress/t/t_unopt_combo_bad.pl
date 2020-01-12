@@ -12,6 +12,7 @@ scenarios(simulator => 1);
 top_filename("t/t_unopt_combo.v");
 
 compile(
+    v_flags2 => ['+define+ATTRIBUTES'],
     fails => $Self->{vlt_all},
     expect_filename => $Self->{golden_filename},
     );

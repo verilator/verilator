@@ -14,7 +14,7 @@ top_filename("t/t_trace_public.v");
 compile(
     make_top_shell => 0,
     make_main => 0,
-    v_flags2 => ["-DPUB_FUNC --trace --exe $Self->{t_dir}/$Self->{name}.cpp"],
+    v_flags2 => ["-DATTRIBUTES -DPUB_FUNC --trace --exe $Self->{t_dir}/$Self->{name}.cpp"],
     );
 
 execute(

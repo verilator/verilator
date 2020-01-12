@@ -341,7 +341,10 @@ void FileLine::v3errorEnd(std::ostringstream& str, const string& locationStr) {
     if (!locationStr.empty()) {
         lstr<<std::setw(ascii().length())<<" "<<": "<<locationStr;
     }
-    if (warnIsOff(V3Error::errorCode())) V3Error::suppressThisWarning();
+    if (warnIsOff(V3Error::errorCode())
+        || V3Config::waive(this, V3Error::errorCode(), str.str())) {
+        V3Error::suppressThisWarning();
+    }
     else if (!V3Error::errorContexted()) nsstr<<warnContextPrimary();
     V3Error::v3errorEnd(nsstr, lstr.str());
 }

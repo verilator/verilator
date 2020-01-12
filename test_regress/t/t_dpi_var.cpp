@@ -13,7 +13,7 @@
 //
 //*************************************************************************
 
-#include "Vt_dpi_var.h"
+#include VM_PREFIX_INCLUDE
 #include "verilated.h"
 #include "svdpi.h"
 

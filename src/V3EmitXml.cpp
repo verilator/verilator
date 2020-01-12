@@ -131,7 +131,10 @@ class EmitXmlFileVisitor : public AstNVisitor {
         }
         puts(" origName="); putsQuoted(nodep->origName());
         // Attributes
-        if (nodep->attrClocker()) puts(" clocker=\"true\"");
+        if (nodep->attrClocker() == VVarAttrClocker::CLOCKER_YES)
+            puts(" clocker=\"true\"");
+        else if (nodep->attrClocker() == VVarAttrClocker::CLOCKER_NO)
+            puts(" clocker=\"false\"");
         if (nodep->attrClockEn()) puts(" clock_enable=\"true\"");
         if (nodep->attrIsolateAssign()) puts(" isolate_assignments=\"true\"");
         if (nodep->isSigPublic()) puts(" public=\"true\"");

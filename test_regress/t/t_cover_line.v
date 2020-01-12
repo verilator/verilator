@@ -82,7 +82,9 @@ module alpha (/*AUTOARG*/
       if (toggle) begin
 	 // CHECK_COVER_MISSING(-1)
 	 // This doesn't even get added
+`ifdef ATTRIBUTE
 	 // verilator coverage_block_off
+`endif
 	 $write("");
       end
    end
@@ -106,10 +108,12 @@ module beta (/*AUTOARG*/
 	 // CHECK_COVER(-1,"top.t.b*",2)
 	 // t.b1 and t.b2 collapse to a count of 2
       end
-      if (toggle) begin
+      if (toggle) begin : block
 	 // CHECK_COVER_MISSING(-1)
 	 // This doesn't
+`ifdef ATTRIBUTE
 	 // verilator coverage_block_off
+`endif
 	 $write("");
       end
    end

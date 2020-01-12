@@ -9,13 +9,17 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
+my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
+
 compile(
-    verilator_flags2 => ["--stats"],
+    verilator_flags2 => ["--stats $Self->{t_dir}/t_dedupe_clk_gate.vlt"],
     );
 
 if ($Self->{vlt_all}) {
+    file_grep("$out_filename", qr/\<var fl="e43" name="t.f0.clock_gate.clken_latched" dtype_id="1" vartype="logic" origName="clken_latched" clock_enable="true"\/\>/i);
     file_grep($Self->{stats}, qr/Optimizations, Gate sigs deduped\s+(\d+)/i, 4);
 }
+
 
 ok(1);
 1;
