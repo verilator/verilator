@@ -268,7 +268,7 @@ string V3Os::trueRandom(size_t size) {
     // This read uses the size of the buffer.
     // Flawfinder: ignore
     if (!is.read(data, size)) {
-        v3fatal("Could not open /dev/urandom, no source of randomness. Try specifing a key instead.");
+        v3fatal("Could not open /dev/urandom, no source of randomness. Try specifying a key instead.");
     }
 #endif
     return result;
