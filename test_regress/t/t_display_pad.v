@@ -7,6 +7,8 @@ module t;
 integer n; initial n = 23;
     initial begin
         $write("%0d %2d %8d\n", 23, 23, 23);
+        $write("%-0d %-2d %-8d\n", 23, 23, 23);
+        $write("%0d %2d %8d\n", n, n, n);
         $write("%-0d %-2d %-8d\n", n, n, n);
         $write("*-* All Finished *-*\n");
         $finish;
