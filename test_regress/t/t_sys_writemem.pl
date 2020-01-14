@@ -31,12 +31,7 @@ execute(
 for (my $i = 1; $i <= 5; $i++) {
     my $gold = "$Self->{t_dir}/t_sys_writemem.gold${i}.mem";
     my $out = "$Self->{obj_dir}/tmp${i}.mem";
-    print "> diff $gold $out\n";
-    my @diffs = `diff $gold $out`;
-    if (0 < scalar @diffs) {
-        print @diffs;
-        error("Got unexpected diffs against gold.");
-    }
+    files_identical($out, $gold);
 }
 
 ok(1);

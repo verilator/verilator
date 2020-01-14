@@ -2929,9 +2929,27 @@ private:
         assertAtStatement(nodep);
         userIterateAndNext(nodep->filenamep(), WidthVP(SELF, BOTH).p());
         userIterateAndNext(nodep->memp(), WidthVP(SELF, BOTH).p());
-        if (!VN_IS(nodep->memp()->dtypep()->skipRefp(), UnpackArrayDType)) {
+        AstNodeDType* subp = NULL;
+        if (AstAssocArrayDType* adtypep
+            = VN_CAST(nodep->memp()->dtypep()->skipRefp(), AssocArrayDType)) {
+            subp = adtypep->subDTypep();
+            if (!adtypep->keyDTypep()->skipRefp()->basicp()
+                || !adtypep->keyDTypep()->skipRefp()->basicp()->keyword().isIntNumeric()) {
+                nodep->memp()->v3error(nodep->verilogKwd()
+                                       << " address/key must be integral (IEEE 21.4.1)");
+            }
+        } else if (AstUnpackArrayDType* adtypep
+                   = VN_CAST(nodep->memp()->dtypep()->skipRefp(), UnpackArrayDType)) {
+            subp = adtypep->subDTypep();
+        } else {
+            nodep->memp()->v3error("Unsupported: "
+                                   << nodep->verilogKwd()
+                                   << " into other than unpacked or associative array");
+        }
+        if (subp && (!subp->skipRefp()->basicp()
+                     || !subp->skipRefp()->basicp()->keyword().isIntNumeric())) {
             nodep->memp()->v3error("Unsupported: " << nodep->verilogKwd()
-                                   << " into other than unpacked array");
+                                   << " array values must be integral");
         }
         userIterateAndNext(nodep->lsbp(), WidthVP(SELF, BOTH).p());
         userIterateAndNext(nodep->msbp(), WidthVP(SELF, BOTH).p());

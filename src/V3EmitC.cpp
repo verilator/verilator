@@ -397,41 +397,40 @@ public:
     }
     virtual void visit(AstNodeReadWriteMem* nodep) {
         puts(nodep->cFuncPrefixp());
-        emitIQW(nodep->filenamep());
-        puts("(");  // We take a void* rather than emitIQW(nodep->memp());
-        puts(nodep->isHex()?"true":"false");
-        putbs(",");
-        puts(cvtToStr(nodep->memp()->widthMin()));  // Need real storage width
-        putbs(",");
+        puts("N(");
+        puts(nodep->isHex() ? "true" : "false");
+        putbs(", ");
+        // Need real storage width
+        puts(cvtToStr(nodep->memp()->dtypep()->subDTypep()->widthMin()));
         uint32_t array_lsb = 0;
         {
             const AstVarRef* varrefp = VN_CAST(nodep->memp(), VarRef);
             if (!varrefp) { nodep->v3error(nodep->verilogKwd() << " loading non-variable"); }
+            else if (const AstAssocArrayDType* adtypep
+                     = VN_CAST(varrefp->varp()->dtypeSkipRefp(), AssocArrayDType)) {
+                // nodep->memp() below will when verilated code is compiled create a C++ template
+            }
             else if (const AstUnpackArrayDType* adtypep
                      = VN_CAST(varrefp->varp()->dtypeSkipRefp(), UnpackArrayDType)) {
+                putbs(", ");
                 puts(cvtToStr(varrefp->varp()->dtypep()->arrayUnpackedElements()));
                 array_lsb = adtypep->lsb();
+                putbs(", ");
+                puts(cvtToStr(array_lsb));
             }
             else {
                 nodep->v3error(nodep->verilogKwd()
-                               << " loading other than unpacked-array variable");
+                               << " loading other than unpacked/associative-array variable");
             }
         }
         putbs(", ");
-        puts(cvtToStr(array_lsb));
-        putbs(",");
-        if (!nodep->filenamep()->dtypep()->isString()) {
-            puts(cvtToStr(nodep->filenamep()->widthWords()));
-            checkMaxWords(nodep->filenamep());
-            putbs(", ");
-        }
-        iterateAndNextNull(nodep->filenamep());
+        emitCvtPackStr(nodep->filenamep());
         putbs(", ");
         iterateAndNextNull(nodep->memp());
-        putbs(",");
+        putbs(", ");
         if (nodep->lsbp()) { iterateAndNextNull(nodep->lsbp()); }
         else puts(cvtToStr(array_lsb));
-        putbs(",");
+        putbs(", ");
         if (nodep->msbp()) { iterateAndNextNull(nodep->msbp()); } else puts("~VL_ULL(0)");
         puts(");\n");
     }
@@ -782,7 +781,7 @@ public:
             puts("(");
             if (nodep->isWide()) {
                 puts(cvtToStr(nodep->widthWords()));  // Note argument width, not node width (which is always 32)
-                puts(",");
+                puts(", ");
             }
             iterateAndNextNull(nodep);
             puts(")");

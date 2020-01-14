@@ -42,6 +42,40 @@ extern std::string VL_TO_STRING(SData obj);
 extern std::string VL_TO_STRING(IData obj);
 extern std::string VL_TO_STRING(QData obj);
 inline std::string VL_TO_STRING(const std::string& obj) { return "\"" + obj + "\""; }
+extern std::string VL_TO_STRING_W(int words, WDataInP obj);
+
+//===================================================================
+// Readmem/Writemem operation classes
+
+class VlReadMem {
+    bool m_hex;  // Hex format
+    int m_bits;  // Bit width of values
+    const std::string& m_filename;  // Filename
+    QData m_end;  // End address (as specified by user)
+    FILE* m_fp;  // File handle for filename
+    QData m_addr;  // Next address to read
+    int m_linenum;  // Line number last read from file
+public:
+    VlReadMem(bool hex, int bits, const std::string& filename, QData start, QData end);
+    ~VlReadMem();
+    bool isOpen() const { return m_fp != NULL; }
+    int linenum() const { return m_linenum; }
+    bool get(QData& addrr, std::string& valuer);
+    void setData(void* valuep, const std::string& rhs);
+};
+
+class VlWriteMem {
+    bool m_hex;  // Hex format
+    int m_bits;  // Bit width of values
+    const std::string& m_filename;  // Filename
+    FILE* m_fp;  // File handle for filename
+    QData m_addr;  // Next address to write
+public:
+    VlWriteMem(bool hex, int bits, const std::string& filename, QData start, QData end);
+    ~VlWriteMem();
+    bool isOpen() const { return m_fp != NULL; }
+    void print(QData addr, bool addrstamp, const void* valuep);
+};
 
 //===================================================================
 // Verilog array container
@@ -72,6 +106,10 @@ VlWide<T_Words>& VL_CVT_W_A(WDataInP inp, const VlWide<T_Words>&) {
     return *((VlWide<T_Words>*)inp);
 }
 
+template <std::size_t T_Words>
+std::string VL_TO_STRING(const VlWide<T_Words>& obj) {
+    return VL_TO_STRING_W(T_Words, obj.data());
+}
 
 //===================================================================
 // Verilog associative array container
@@ -178,6 +216,34 @@ public:
 template <class T_Key, class T_Value>
 std::string VL_TO_STRING(const VlAssocArray<T_Key, T_Value>& obj) {
     return obj.to_string();
+}
+
+template <class T_Key, class T_Value>
+void VL_READMEM_N(bool hex, int bits, const std::string& filename,
+                  VlAssocArray<T_Key, T_Value>& obj, QData start, QData end) VL_MT_SAFE {
+    VlReadMem rmem(hex, bits, filename, start, end);
+    if (VL_UNLIKELY(!rmem.isOpen())) return;
+    while (1) {
+        QData addr;
+        std::string data;
+        if (rmem.get(addr /*ref*/, data /*ref*/)) {
+            rmem.setData(&(obj.at(addr)), data);
+        } else {
+            break;
+        }
+    }
+}
+
+template <class T_Key, class T_Value>
+void VL_WRITEMEM_N(bool hex, int bits, const std::string& filename,
+                   const VlAssocArray<T_Key, T_Value>& obj, QData start, QData end) VL_MT_SAFE {
+    VlWriteMem wmem(hex, bits, filename, start, end);
+    if (VL_UNLIKELY(!wmem.isOpen())) return;
+    for (typename VlAssocArray<T_Key, T_Value>::const_iterator it = obj.begin(); it != obj.end();
+         ++it) {
+        QData addr = it->first;
+        if (addr >= start && addr <= end) wmem.print(addr, true, &(it->second));
+    }
 }
 
 //===================================================================
@@ -312,12 +378,12 @@ extern std::string VL_TOLOWER_NN(const std::string& ld);
 extern std::string VL_TOUPPER_NN(const std::string& ld);
 
 extern IData VL_FOPEN_NI(const std::string& filename, IData mode) VL_MT_SAFE;
-extern void VL_READMEM_N(bool hex, int width, QData depth, int array_lsb,
-                         const std::string& filename,
-                         void* memp, QData start, QData end) VL_MT_SAFE;
-extern void VL_WRITEMEM_N(bool hex, int width, QData depth, int array_lsb,
-                          const std::string& filename,
-                          const void* memp, QData start, QData end) VL_MT_SAFE;
+extern void VL_READMEM_N(bool hex, int bits, QData depth, int array_lsb,
+                         const std::string& filename, void* memp, QData start,
+                         QData end) VL_MT_SAFE;
+extern void VL_WRITEMEM_N(bool hex, int bits, QData depth, int array_lsb,
+                          const std::string& filename, const void* memp, QData start,
+                          QData end) VL_MT_SAFE;
 extern IData VL_SSCANF_INX(int lbits, const std::string& ld,
                            const char* formatp, ...) VL_MT_SAFE;
 extern void VL_SFORMAT_X(int obits_ignored, std::string& output,

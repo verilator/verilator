@@ -13,10 +13,11 @@ compile(
     );
 
 execute(
-    fails => $Self->{vlt_all},
-    expect =>
-'%Error: t/t_sys_readmem_bad_end.mem:\d+: \$readmem file ended before specified final address',
+    check_finished => 1,
     );
+
+files_identical("$Self->{obj_dir}/t_sys_writemem_c_b.mem", "t/t_sys_readmem_assoc_c_b.out");
+files_identical("$Self->{obj_dir}/t_sys_writemem_w_h.mem", "t/t_sys_readmem_assoc_w_h.out");
 
 ok(1);
 1;

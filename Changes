@@ -9,6 +9,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ** Add -match to lint_off to waive warnings. [Philipp Wagner]
 
+*** Support $readmem/$writemem with assoc arrarys. Closes #2100. [agrobman]
+
 ****  Add error on misused define. [Topa Tota]
 
 
