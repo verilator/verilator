@@ -374,7 +374,12 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
 
 void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
     static bool shown_notfound_msg = false;
-    if (!shown_notfound_msg) {
+    if (modname.find("__Vhsh") != string::npos) {
+        std::cerr << V3Error::warnMore() << "... Unsupported: Name is longer than 127 characters;"
+                  << " automatic file lookup not supported.\n";
+        std::cerr << V3Error::warnMore() << "... Suggest putting filename with this module/package"
+                  << " onto command line instead.\n";
+    } else if (!shown_notfound_msg) {
         shown_notfound_msg = true;
         if (m_impp->m_incDirUsers.empty()) {
             fl->v3error("This may be because there's no search path specified with -I<dir>."<<endl);
