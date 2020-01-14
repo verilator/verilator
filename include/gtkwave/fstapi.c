@@ -3010,7 +3010,7 @@ void fstWriterEmitValueChange32(void *ctx, fstHandle handle,
                                 uint32_t bits, uint32_t val) {
         char buf[32];
         char *s = buf;
-        int i;
+        uint32_t i;
         for (i = 0; i < bits; ++i)
         {
                 *s++ = '0' + ((val >> (bits - i - 1)) & 1);
@@ -3021,7 +3021,7 @@ void fstWriterEmitValueChange64(void *ctx, fstHandle handle,
                                 uint32_t bits, uint64_t val) {
         char buf[64];
         char *s = buf;
-        int i;
+        uint32_t i;
         for (i = 0; i < bits; ++i)
         {
                 *s++ = '0' + ((val >> (bits - i - 1)) & 1);

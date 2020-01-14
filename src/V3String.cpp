@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -74,6 +74,14 @@ bool VString::wildmatch(const char* s, const char* p) {
     return (*s == '\0');
 }
 
+bool VString::wildmatch(const string& s, const string& p) {
+    return wildmatch(s.c_str(), p.c_str());
+}
+
+bool VString::isWildcard(const string &p) {
+    return ((p.find("*") != string::npos) || (p.find("?") != string::npos));
+}
+
 string VString::dot(const string& a, const string& dot, const string& b) {
     if (b=="") return a;
     if (a=="") return b;
@@ -84,6 +92,14 @@ string VString::downcase(const string& str) {
     string out = str;
     for (string::iterator pos = out.begin(); pos != out.end(); ++pos) {
         *pos = tolower(*pos);
+    }
+    return out;
+}
+
+string VString::upcase(const string& str) {
+    string out = str;
+    for (string::iterator pos = out.begin(); pos != out.end(); ++pos) {
+        *pos = toupper(*pos);
     }
     return out;
 }
@@ -104,6 +120,13 @@ string VString::spaceUnprintable(const string& str) {
         else out += ' ';
     }
     return out;
+}
+
+bool VString::isWhitespace(const string& str) {
+    for (string::const_iterator pos = str.begin(); pos != str.end(); ++pos) {
+        if (!isspace(*pos)) return false;
+    }
+    return true;
 }
 
 //######################################################################

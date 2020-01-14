@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2000-2019 by Wilson Snyder.  This program is free software;
+// Copyright 2000-2020 by Wilson Snyder.  This program is free software;
 // you can redistribute it and/or modify it under the terms of either the
 // GNU Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -358,7 +358,7 @@ void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
 }
 
 string V3PreProcImp::removeDefines(const string& text) {
-    string val = "0_never_match";
+    string val;
     string rtnsym = text;
     for (int loopprevent=0; loopprevent<100; loopprevent++) {
         string xsym = rtnsym;

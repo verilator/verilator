@@ -3,7 +3,7 @@
 //
 // THIS MODULE IS PUBLICLY LICENSED
 //
-// Copyright 2001-2019 by Wilson Snyder.  This program is free software;
+// Copyright 2001-2020 by Wilson Snyder.  This program is free software;
 // you can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License Version 2.0.
 //
@@ -125,8 +125,8 @@ private:
     void printStr(const char* str);
     void printQuad(vluint64_t n);
     void printTime(vluint64_t timeui);
-    void declare(vluint32_t code, const char* name, const char* wirep,
-                 int arraynum, bool tri, bool bussed, int msb, int lsb);
+    void declare(vluint32_t code, const char* name, const char* wirep, bool array, int arraynum,
+                 bool tri, bool bussed, int msb, int lsb);
 
     void dumpHeader();
     void dumpPrep(vluint64_t timeui);
@@ -201,16 +201,16 @@ public:
     /// Inside dumping routines, declare a module
     void module(const std::string& name);
     /// Inside dumping routines, declare a signal
-    void declBit      (vluint32_t code, const char* name, int arraynum);
-    void declBus      (vluint32_t code, const char* name, int arraynum, int msb, int lsb);
-    void declQuad     (vluint32_t code, const char* name, int arraynum, int msb, int lsb);
-    void declArray    (vluint32_t code, const char* name, int arraynum, int msb, int lsb);
-    void declTriBit   (vluint32_t code, const char* name, int arraynum);
-    void declTriBus   (vluint32_t code, const char* name, int arraynum, int msb, int lsb);
-    void declTriQuad  (vluint32_t code, const char* name, int arraynum, int msb, int lsb);
-    void declTriArray (vluint32_t code, const char* name, int arraynum, int msb, int lsb);
-    void declDouble   (vluint32_t code, const char* name, int arraynum);
-    void declFloat    (vluint32_t code, const char* name, int arraynum);
+    void declBit(     vluint32_t code, const char* name, bool array, int arraynum);
+    void declBus(     vluint32_t code, const char* name, bool array, int arraynum, int msb, int lsb);
+    void declQuad(    vluint32_t code, const char* name, bool array, int arraynum, int msb, int lsb);
+    void declArray(   vluint32_t code, const char* name, bool array, int arraynum, int msb, int lsb);
+    void declTriBit(  vluint32_t code, const char* name, bool array, int arraynum);
+    void declTriBus(  vluint32_t code, const char* name, bool array, int arraynum, int msb, int lsb);
+    void declTriQuad( vluint32_t code, const char* name, bool array, int arraynum, int msb, int lsb);
+    void declTriArray(vluint32_t code, const char* name, bool array, int arraynum, int msb, int lsb);
+    void declDouble(  vluint32_t code, const char* name, bool array, int arraynum);
+    void declFloat(   vluint32_t code, const char* name, bool array, int arraynum);
     //  ... other module_start for submodules (based on cell name)
 
     /// Inside dumping routines, dump one signal

@@ -20,10 +20,16 @@ foreach my $file (sort keys %files) {
     my $contents = file_contents($filename);
     if ($file =~ /\.out$/) {
         # Ignore golden files
+        next;
     } elsif ($contents =~ /[\001\002\003\004\005\006]/) {
-        # Ignore binrary files
-    } elsif ($contents =~ /[ \t]\n/
-             || $contents =~ m/\n\n+$/) {  # Regexp repeated below
+        # Ignore binary files
+        next;
+    }
+    if ($contents !~ /\n$/s && $contents ne "") {
+        $warns{$file} = "Missing trailing newline in $file";
+    }
+    if ($contents =~ /[ \t]\n/
+        || $contents =~ m/\n\n+$/) {  # Regexp repeated below
         my $eol_ws_exempt = ($file =~ /(\.txt|\.html)$/
                              || $file =~ m!^README$!
                              || $file =~ m!/gtkwave/!);

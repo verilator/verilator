@@ -1,0 +1,8 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed into the Public Domain, for any use,
+// without warranty, 2019 by Stefan Wallentowitz.
+
+`verilator_config
+
+public -module "glbl" -var "GSR"

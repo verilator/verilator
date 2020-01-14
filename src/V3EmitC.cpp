@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -397,40 +397,40 @@ public:
     }
     virtual void visit(AstNodeReadWriteMem* nodep) {
         puts(nodep->cFuncPrefixp());
-        emitIQW(nodep->filenamep());
-        puts("(");  // We take a void* rather than emitIQW(nodep->memp());
-        puts(nodep->isHex()?"true":"false");
-        putbs(",");
-        puts(cvtToStr(nodep->memp()->widthMin()));  // Need real storage width
-        putbs(",");
+        puts("N(");
+        puts(nodep->isHex() ? "true" : "false");
+        putbs(", ");
+        // Need real storage width
+        puts(cvtToStr(nodep->memp()->dtypep()->subDTypep()->widthMin()));
         uint32_t array_lsb = 0;
         {
             const AstVarRef* varrefp = VN_CAST(nodep->memp(), VarRef);
             if (!varrefp) { nodep->v3error(nodep->verilogKwd() << " loading non-variable"); }
+            else if (VN_IS(varrefp->varp()->dtypeSkipRefp(), AssocArrayDType)) {
+                // nodep->memp() below will when verilated code is compiled create a C++ template
+            }
             else if (const AstUnpackArrayDType* adtypep
                      = VN_CAST(varrefp->varp()->dtypeSkipRefp(), UnpackArrayDType)) {
+                putbs(", ");
                 puts(cvtToStr(varrefp->varp()->dtypep()->arrayUnpackedElements()));
                 array_lsb = adtypep->lsb();
+                putbs(", ");
+                puts(cvtToStr(array_lsb));
             }
             else {
                 nodep->v3error(nodep->verilogKwd()
-                               << " loading other than unpacked-array variable");
+                               << " loading other than unpacked/associative-array variable");
             }
         }
         putbs(", ");
-        puts(cvtToStr(array_lsb));
-        putbs(",");
-        if (!nodep->filenamep()->dtypep()->isString()) {
-            puts(cvtToStr(nodep->filenamep()->widthWords()));
-            checkMaxWords(nodep->filenamep());
-            putbs(", ");
-        }
-        iterateAndNextNull(nodep->filenamep());
+        emitCvtPackStr(nodep->filenamep());
         putbs(", ");
         iterateAndNextNull(nodep->memp());
-        putbs(","); if (nodep->lsbp()) { iterateAndNextNull(nodep->lsbp()); }
+        putbs(", ");
+        if (nodep->lsbp()) { iterateAndNextNull(nodep->lsbp()); }
         else puts(cvtToStr(array_lsb));
-        putbs(","); if (nodep->msbp()) { iterateAndNextNull(nodep->msbp()); } else puts("~0");
+        putbs(", ");
+        if (nodep->msbp()) { iterateAndNextNull(nodep->msbp()); } else puts("~VL_ULL(0)");
         puts(");\n");
     }
     virtual void visit(AstFClose* nodep) {
@@ -438,7 +438,7 @@ public:
         iterateAndNextNull(nodep->filep());
         puts("); ");
         iterateAndNextNull(nodep->filep());  // For safety, so user doesn't later WRITE with it.
-        puts("=0;\n");
+        puts(" = 0;\n");
     }
     virtual void visit(AstFFlush* nodep) {
         if (!nodep->filep()) {
@@ -714,6 +714,11 @@ public:
             iterateAndNextNull(nodep->expr2p()); puts(")");
         }
     }
+    virtual void visit(AstNew* nodep) {
+        puts("std::make_shared<" + nodep->dtypep()->nameProtect() + ">(");
+        iterateChildren(nodep);
+        puts(")");
+    }
     virtual void visit(AstSel* nodep) {
         // Note ASSIGN checks for this on a LHS
         emitOpName(nodep, nodep->emitC(), nodep->fromp(), nodep->lsbp(), nodep->thsp());
@@ -775,7 +780,7 @@ public:
             puts("(");
             if (nodep->isWide()) {
                 puts(cvtToStr(nodep->widthWords()));  // Note argument width, not node width (which is always 32)
-                puts(",");
+                puts(", ");
             }
             iterateAndNextNull(nodep);
             puts(")");
@@ -1073,8 +1078,6 @@ class EmitCImp : EmitCStmts {
             }
             ofp->puts("// See "+v3Global.opt.prefix()+".h for the primary calling header\n");
         }
-        ofp->puts("\n");
-
         return ofp;
     }
 
@@ -2536,8 +2539,7 @@ void EmitCImp::emitMTaskState() {
 
 void EmitCImp::emitInt(AstNodeModule* modp) {
     // Always have this first; gcc has short circuiting if #ifdef is first in a file
-    puts("#ifndef _"+modClassName(modp)+"_H_\n");
-    puts("#define _"+modClassName(modp)+"_H_\n");
+    ofp()->putsGuard();
     puts("\n");
 
     ofp()->putsIntTopInclude();
@@ -2739,30 +2741,29 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
         ofp()->putsPrivate(false);  // public:
         puts("void "+protect("__Vserialize")+"(VerilatedSerialize& os);\n");
         puts("void "+protect("__Vdeserialize")+"(VerilatedDeserialize& os);\n");
-        puts("\n");
     }
 
     puts("} VL_ATTR_ALIGNED(128);\n");
-    puts("\n");
 
     // Save/restore
     if (v3Global.opt.savable() && modp->isTop()) {
-        puts("inline VerilatedSerialize&   operator<<(VerilatedSerialize& os,   "
+        puts("\n");
+        puts("inline VerilatedSerialize& operator<<(VerilatedSerialize& os, "
              +modClassName(modp)+"& rhs) {\n"
              "Verilated::quiesce(); rhs."+protect("__Vserialize")+"(os); return os; }\n");
         puts("inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, "
              +modClassName(modp)+"& rhs) {\n"
              "Verilated::quiesce(); rhs."+protect("__Vdeserialize")+"(os); return os; }\n");
-        puts("\n");
     }
 
     // finish up h-file
-    puts("#endif  // guard\n");
+    ofp()->putsEndGuard();
 }
 
 //----------------------------------------------------------------------
 
 void EmitCImp::emitImp(AstNodeModule* modp) {
+    puts("\n");
     puts("#include \""+modClassName(modp)+".h\"\n");
     puts("#include \""+symClassName()+".h\"\n");
 
@@ -2770,8 +2771,8 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
         puts("\n");
         puts("#include \"verilated_dpi.h\"\n");
     }
-    puts("\n");
 
+    puts("\n");
     emitTextSection(AstType::atScImpHdr);
 
     if (m_slow && splitFilenum()==0) {
@@ -3061,13 +3062,13 @@ class EmitCTrace : EmitCStmts {
         }
         // Range
         if (nodep->arrayRange().ranged()) {
-            puts(",(i+"+cvtToStr(nodep->arrayRange().lo())+")");
+            puts(", true,(i+" + cvtToStr(nodep->arrayRange().lo()) + ")");
         } else {
-            puts(",-1");
+            puts(", false,-1");
         }
-        if (!nodep->dtypep()->basicp()->isDouble()  // When float/double no longer have widths this can go
-            && nodep->bitRange().ranged()) {
-            puts(","+cvtToStr(nodep->bitRange().left())+","+cvtToStr(nodep->bitRange().right()));
+        if (!nodep->dtypep()->basicp()->isDouble() && nodep->bitRange().ranged()) {
+            puts(", " + cvtToStr(nodep->bitRange().left()) + ","
+                 + cvtToStr(nodep->bitRange().right()));
         }
         puts(");");
     }

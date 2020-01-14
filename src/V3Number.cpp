@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -496,11 +496,18 @@ bool V3Number::displayedFmtLegal(char format) {
     default: return false;
     }
 }
+
+string V3Number::displayPad(size_t fmtsize, char pad, const string& in) {
+    string prefix;
+    if (in.length() < fmtsize) prefix = string(fmtsize - in.length(), pad);
+    return prefix + in;
+}
+
 string V3Number::displayed(AstNode* nodep, const string& vformat) const {
     return displayed(nodep->fileline(), vformat);
 }
 
-string V3Number::displayed(FileLine*fl, const string& vformat) const {
+string V3Number::displayed(FileLine* fl, const string& vformat) const {
     string::const_iterator pos = vformat.begin();
     UASSERT(pos != vformat.end() && pos[0]=='%',
             "$display-like function with non format argument "<<*this);
@@ -566,6 +573,8 @@ string V3Number::displayed(FileLine*fl, const string& vformat) const {
                 if (fmtsize != "0") str += ' ';
             }
         }
+        size_t fmtsizen = static_cast<size_t>(atoi(fmtsize.c_str()));
+        str = displayPad(fmtsizen, ' ', str);
         return str;
     }
     case '~':  // Signed decimal
@@ -592,12 +601,10 @@ string V3Number::displayed(FileLine*fl, const string& vformat) const {
                 str = cvtToStr(toUQuad());
             }
         }
-        int intfmtsize = atoi(fmtsize.c_str());
         bool zeropad = fmtsize.length()>0 && fmtsize[0]=='0';
-        while (static_cast<int>(str.length()) < intfmtsize) {
-            if (zeropad) str.insert(0, "0");
-            else str.insert(0, " ");
-        }
+        // fmtsize might have changed since we parsed the %fmtsize
+        size_t fmtsizen = static_cast<size_t>(atoi(fmtsize.c_str()));
+        str = displayPad(fmtsizen, (zeropad ? '0' : ' '), str);
         return str;
     }
     case 'e':
@@ -643,7 +650,9 @@ string V3Number::displayed(FileLine*fl, const string& vformat) const {
         return str;
     }
     case '@': {  // Packed string
-        return toString();
+        size_t fmtsizen = static_cast<size_t>(atoi(fmtsize.c_str()));
+        str = displayPad(fmtsizen, ' ', toString());
+        return str;
     }
     default:
         fl->v3fatalSrc("Unknown $display-like format code for number: %"<<pos[0]);

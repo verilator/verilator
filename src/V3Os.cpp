@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -17,6 +17,15 @@
 // GNU General Public License for more details.
 //
 //*************************************************************************
+
+#if defined(_WIN32) || defined(__MINGW32__)
+# ifndef PSAPI_VERSION
+#  define PSAPI_VERSION 1  // Needed for compatibility with Windows 7
+# endif
+#endif
+#if defined(__MINGW32__)
+# define MINGW_HAS_SECURE_API 1  // Needed to expose a "secure" POSIX-like API
+#endif
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -35,11 +44,18 @@
 #include <iomanip>
 #include <memory>
 #include <sys/stat.h>
-#include <sys/time.h>
 #include <sys/types.h>
 
 #if defined(_WIN32) || defined(__MINGW32__)
+# include <winnt.h>   // LONG for bcrypt.h on MINGW
+# include <bcrypt.h>  // BCryptGenRandom
+# include <chrono>
 # include <direct.h>  // mkdir
+# include <psapi.h>   // GetProcessMemoryInfo
+# include <thread>
+#else
+# include <sys/time.h>
+# include <unistd.h>  // usleep
 #endif
 
 
@@ -47,11 +63,23 @@
 // Environment
 
 string V3Os::getenvStr(const string& envvar, const string& defaultValue) {
+#if defined(_MSC_VER)
+    // Note: MinGW does not offer _dupenv_s
+    char* envvalue;
+    if (_dupenv_s(&envvalue, nullptr, envvar.c_str()) == 0) {
+        const std::string result{envvalue};
+        free(envvalue);
+        return result;
+    } else {
+        return defaultValue;
+    }
+#else
     if (const char* envvalue = getenv(envvar.c_str())) {
         return envvalue;
     } else {
         return defaultValue;
     }
+#endif
 }
 
 void V3Os::setenvStr(const string& envvar, const string& value, const string& why) {
@@ -60,10 +88,12 @@ void V3Os::setenvStr(const string& envvar, const string& value, const string& wh
     } else {
         UINFO(1,"export "<<envvar<<"="<<value<<endl);
     }
-#if !defined(__MINGW32__) && (defined(_BSD_SOURCE) || (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L))
+#if defined(_WIN32) || defined(__MINGW32__)
+    _putenv_s(envvar.c_str(), value.c_str());
+#elif defined(_BSD_SOURCE) || (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L)
     setenv(envvar.c_str(), value.c_str(), true);
 #else
-    //setenv() replaced by putenv() in MinGW/Solaris environment. Prototype is different
+    //setenv() replaced by putenv() in Solaris environment. Prototype is different
     //putenv() requires NAME=VALUE format
     string vareq = envvar + "=" + value;
     putenv(const_cast<char*>(vareq.c_str()));
@@ -130,9 +160,9 @@ string V3Os::filenameSubstitute(const string& filename) {
               v3fatal("Unmatched brackets in variable substitution in file: "+filename);
             }
             string envvar = filename.substr(pos+1, endpos-pos);
-            const char* envvalue = NULL;
-            if (envvar != "") envvalue = getenv(envvar.c_str());
-            if (envvalue) {
+            string envvalue;
+            if (!envvar.empty()) envvalue = getenvStr(envvar, "");
+            if (!envvalue.empty()) {
                 out += envvalue;
                 if (brackets==NONE) pos = endpos;
                 else pos = endpos+1;
@@ -152,8 +182,8 @@ string V3Os::filenameRealPath(const string& filename) {
     // If there is a ../ that goes down from the 'root' of this path it is preserved.
     char retpath[PATH_MAX];
     if (
-#if defined( _MSC_VER ) || defined( __MINGW32__ )
-        ::_fullpath(retpath, filename.c_str(), PATH_MAX)
+#if defined(_WIN32) || defined(__MINGW32__)
+        _fullpath(retpath, filename.c_str(), PATH_MAX)
 #else
         realpath(filename.c_str(), retpath)
 #endif
@@ -188,7 +218,7 @@ string V3Os::getline(std::istream& is, char delim) {
 
 void V3Os::createDir(const string& dirname) {
 #if defined(_WIN32) || defined(__MINGW32__)
-    mkdir(dirname.c_str());
+    _mkdir(dirname.c_str());
 #else
     mkdir(dirname.c_str(), 0777);
 #endif
@@ -199,7 +229,11 @@ void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
         while (struct dirent* direntp = readdir(dirp)) {
             if (VString::wildmatch(direntp->d_name, regexp.c_str())) {
                 string fullname = dir + "/" + string(direntp->d_name);
+#if defined(_WIN32) || defined(__MINGW32__)
+                _unlink(fullname.c_str());
+#else
                 unlink(fullname.c_str());
+#endif
             }
         }
         closedir(dirp);
@@ -220,15 +254,24 @@ vluint64_t V3Os::rand64(vluint64_t* statep) {
 }
 
 string V3Os::trueRandom(size_t size) {
-    string data; data.reserve(size);
-    std::ifstream is ("/dev/urandom", std::ios::in | std::ios::binary);
-    char bytes[size];
-    if (!is.read(bytes, size)) {
-        v3fatal("Could not open /dev/urandom, no source of randomness. Try specifing a key instead.");
-        return "";
+    string result(size, '\xFF');
+    char *const data = const_cast<char*>(result.data());
+    // Note: std::string.data() returns a non-const Char* from C++17 onwards.
+    // For pre-C++17, this cast is OK in practice, even though it's UB.
+#if defined(_WIN32) || defined(__MINGW32__)
+    NTSTATUS hr = BCryptGenRandom(NULL, reinterpret_cast<BYTE*>(data), size, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+    if (!BCRYPT_SUCCESS(hr)) {
+        v3fatal("Could not acquire random data.");
     }
-    data.append(bytes, size);
-    return data;
+#else
+    std::ifstream is ("/dev/urandom", std::ios::in | std::ios::binary);
+    // This read uses the size of the buffer.
+    // Flawfinder: ignore
+    if (!is.read(data, size)) {
+        v3fatal("Could not open /dev/urandom, no source of randomness. Try specifying a key instead.");
+    }
+#endif
+    return result;
 }
 
 //######################################################################
@@ -236,7 +279,13 @@ string V3Os::trueRandom(size_t size) {
 
 uint64_t V3Os::timeUsecs() {
 #if defined(_WIN32) || defined(__MINGW32__)
-    return 0;
+    // Microseconds between 1601-01-01 00:00:00 UTC and 1970-01-01 00:00:00 UTC
+    static const uint64_t EPOCH_DIFFERENCE_USECS = 11644473600000000ull;
+
+    FILETIME ft; // contains number of 0.1us intervals since the beginning of 1601 UTC.
+    GetSystemTimeAsFileTime(&ft);
+    uint64_t us = ((static_cast<uint64_t>(ft.dwHighDateTime) << 32) + ft.dwLowDateTime + 5ull) / 10ull;
+    return us - EPOCH_DIFFERENCE_USECS;
 #else
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     timeval tv;
@@ -247,6 +296,12 @@ uint64_t V3Os::timeUsecs() {
 
 uint64_t V3Os::memUsageBytes() {
 #if defined(_WIN32) || defined(__MINGW32__)
+    HANDLE process = GetCurrentProcess();
+    PROCESS_MEMORY_COUNTERS pmc;
+    if (GetProcessMemoryInfo(process, &pmc, sizeof(pmc))) {
+        // The best we can do using simple Windows APIs is to get the size of the working set.
+        return pmc.WorkingSetSize;
+    }
     return 0;
 #else
     // Highly unportable. Sorry
@@ -264,5 +319,15 @@ uint64_t V3Os::memUsageBytes() {
     }
     fclose(fp);
     return (text + data) * getpagesize();
+#endif
+}
+
+void V3Os::u_sleep(int64_t usec) {
+#if defined(_WIN32) || defined(__MINGW32__)
+    std::this_thread::sleep_for(std::chrono::microseconds(usec));
+#else
+    // cppcheck-suppress obsoleteFunctionsusleep
+    // Flawfinder: ignore
+    ::usleep(usec);
 #endif
 }

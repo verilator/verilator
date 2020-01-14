@@ -12,7 +12,8 @@ scenarios(simulator => 1);
 top_filename("t/t_inst_tree.v");
 
 compile(
-    verilator_flags2 => ['+define+NOUSE_INLINE', '+define+USE_PUBLIC', '--stats', '--norelative-cfuncs',
+    verilator_flags2 => ['--stats', '--norelative-cfuncs',
+                         "$Self->{t_dir}/t_inst_tree_inl0_pub1.vlt",
                          $Self->wno_unopthreads_for_few_cores()]
     );
 

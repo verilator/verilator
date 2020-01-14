@@ -1,0 +1,11 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed into the Public Domain, for any use,
+// without warranty, 2019 by Stefan Wallentowitz.
+
+`verilator_config
+
+isolate_assignments -module "file" -var "b"
+isolate_assignments -module "file" -task "set_b_d" -var "t_c*"
+isolate_assignments -module "file" -function "get_31_16" -var "t_crc"
+isolate_assignments -module "file" -function "get_31_16"

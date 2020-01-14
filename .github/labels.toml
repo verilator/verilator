@@ -103,6 +103,11 @@ color = "008672"
 name = "help wanted"
 description = "Extra attention is needed"
 
+["new"]
+color = "ff4400"
+name = "new"
+description = "New issue, not yet seen by maintainers"
+
 ["resolution: abandoned"]
 color = "cfd3d7"
 name = "resolution: abandoned"

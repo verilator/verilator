@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -25,6 +25,7 @@
 #include "V3File.h"
 #include "V3Os.h"
 #include "V3PreShell.h"
+#include "V3String.h"
 #include "V3Ast.h"
 
 #include <cerrno>
@@ -50,6 +51,10 @@
 
 #ifdef INFILTER_PIPE
 # include <sys/wait.h>
+#endif
+
+#if defined(_WIN32) || defined(__MINGW32__)
+# include <io.h>  // open, read, write, close
 #endif
 
 // If change this code, run a test with the below size set very small
@@ -408,8 +413,7 @@ private:
                      || errno == EWOULDBLOCK
 #endif
                 ) {
-                // cppcheck-suppress obsoleteFunctionsusleep
-                checkFilter(false); usleep(1000); continue;
+                checkFilter(false); V3Os::u_sleep(1000); continue;
             } else { m_readEof = true; break; }
         }
         return out;
@@ -447,8 +451,7 @@ private:
                      || errno == EWOULDBLOCK
 #endif
                 ) {
-                // cppcheck-suppress obsoleteFunctionsusleep
-                checkFilter(false); usleep(1000); continue;
+                checkFilter(false); V3Os::u_sleep(1000); continue;
             }
             else break;
         }
@@ -940,6 +943,17 @@ void V3OutFile::putsForceIncs() {
     for (V3StringList::const_iterator it = forceIncs.begin(); it != forceIncs.end(); ++it) {
         puts("#include \""+*it+"\"\n");
     }
+}
+
+void V3OutCFile::putsGuard() {
+    UASSERT(!m_guard, "Already called putsGuard in emit file");
+    m_guard = true;
+    string var = VString::upcase(string("_") + V3Os::filenameNonDir(filename()) + "_");
+    for (string::iterator pos = var.begin(); pos != var.end(); ++pos) {
+        if (!isalnum(*pos)) *pos = '_';
+    }
+    puts("\n#ifndef " + var + "\n");
+    puts("#define " + var + "  // guard\n");
 }
 
 //######################################################################

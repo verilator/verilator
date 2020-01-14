@@ -1,7 +1,8 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 # See copyright, etc in below POD section.
 ######################################################################
 
+use warnings;
 use Getopt::Long;
 #use Data::Dumper; $Data::Dumper::Indent=1; $Data::Dumper::Sortkeys=1; #Debug
 use IO::File;
@@ -235,7 +236,7 @@ Displays program version and exits.
 
 =head1 DISTRIBUTION
 
-Copyright 2005-2019 by Wilson Snyder.  Verilator is free software; you can
+Copyright 2005-2020 by Wilson Snyder.  Verilator is free software; you can
 redistribute it and/or modify it under the terms of either the GNU Lesser
 General Public License Version 3 or the Perl Artistic License Version 2.0.
 

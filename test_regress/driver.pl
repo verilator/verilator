@@ -1,10 +1,9 @@
-: # -*-Mode: perl;-*- use perl, wherever it is
-eval 'exec perl -wS $0 ${1+"$@"}'
-  if 0;
+#!/usr/bin/env perl
 # See copyright, etc in below POD section.
 ######################################################################
 
 require 5.006_001;
+use warnings;
 use Cwd;
 BEGIN {
     if (!$ENV{VERILATOR_ROOT} && -x "../bin/verilator") {
@@ -2651,7 +2650,7 @@ Command to use to invoke XSim xvlog
 
 The latest version is available from L<https://verilator.org>.
 
-Copyright 2003-2019 by Wilson Snyder.  Verilator is free software; you can
+Copyright 2003-2020 by Wilson Snyder.  Verilator is free software; you can
 redistribute it and/or modify it under the terms of either the GNU Lesser
 General Public License Version 3 or the Perl Artistic License Version 2.0.
 

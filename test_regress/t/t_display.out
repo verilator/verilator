@@ -41,6 +41,8 @@
 [0] %t=                   0 %03t=  0 %0t=0
 
 [0] %s=! %s= what! %s= hmmm!1234
+[0] %6s=:     !: %6s=: what!: %6s=: hmmm!1234:
+[0] %8s=:  sv-str:
 [0] hello, from a very long string. Percent %s are literally substituted in.
 hello, from a concatenated string.
 hello, from a concatenated format string [0].

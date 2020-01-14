@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -28,6 +28,7 @@
 #include "V3Global.h"
 #include "V3LinkParse.h"
 #include "V3Ast.h"
+#include "V3Config.h"
 
 #include <algorithm>
 #include <cstdarg>
@@ -106,6 +107,8 @@ private:
 
     // VISITs
     virtual void visit(AstNodeFTask* nodep) {
+        V3Config::applyFTask(m_modp, nodep);
+
         if (!nodep->user1SetOnce()) {  // Process only once.
             cleanFileline(nodep);
             m_ftaskp = nodep;
@@ -189,6 +192,9 @@ private:
             return;
         }
 
+        // Maybe this variable has a signal attribute
+        V3Config::applyVarAttr(m_modp, m_ftaskp, nodep);
+
         if (v3Global.opt.publicFlatRW()) {
             switch (nodep->varType()) {
             case AstVarType::VAR:
@@ -260,6 +266,7 @@ private:
         }
         else if (nodep->attrType() == AstAttrType::VAR_CLOCK) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
+            nodep->v3warn(DEPRECATED, "sc_clock is deprecated and will be removed");
             m_varp->attrScClocked(true);
             nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
         }
@@ -437,6 +444,8 @@ private:
     }
 
     virtual void visit(AstNodeModule* nodep) {
+        V3Config::applyModule(nodep);
+
         // Module: Create sim table for entire module and iterate
         cleanFileline(nodep);
         //
@@ -471,6 +480,17 @@ private:
     }
     virtual void visit(AstRestrict* nodep) {
         visitIterateNoValueMod(nodep);
+    }
+
+    virtual void visit(AstBegin* nodep) {
+        V3Config::applyCoverageBlock(m_modp, nodep);
+        cleanFileline(nodep);
+        iterateChildren(nodep);
+    }
+    virtual void visit(AstCase* nodep) {
+        V3Config::applyCase(nodep);
+        cleanFileline(nodep);
+        iterateChildren(nodep);
     }
 
     virtual void visit(AstNode* nodep) {

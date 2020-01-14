@@ -124,6 +124,10 @@ module t;
       // Not testing %0s, it does different things in different simulators
       $display("[%0t] %%s=%s %%s=%s %%s=%s", $time,
                str2[7:0], str2, str3);
+      $display("[%0t] %%6s=:%6s: %%6s=:%6s: %%6s=:%6s:", $time,
+               str2[7:0], str2, str3);
+      $display("[%0t] %%8s=:%8s:", $time,
+               svs);
 
       $display("[%0t] %s%s%s", $time,
                "hel", "lo, fr", "om a very long string. Percent %s are literally substituted in.");

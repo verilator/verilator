@@ -1,7 +1,7 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 ######################################################################
 #
-# Copyright 2002-2019 by Wilson Snyder.  Verilator is free software; you
+# Copyright 2002-2020 by Wilson Snyder.  Verilator is free software; you
 # can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
@@ -12,8 +12,9 @@
 # GNU General Public License for more details.
 #
 ######################################################################
-
 # DESCRIPTION: Edits pod2latex output
+
+use warnings;
 
 my $Opt_DistTitle = $ARGV[0] or die "%Error: No disttitle specified,";
 my $Opt_DistDate = $ARGV[1] or die "%Error: No distdate specified,";

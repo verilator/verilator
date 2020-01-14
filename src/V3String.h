@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -63,15 +63,23 @@ public:
     // METHODS (generic string utilities)
     // Return true if p with ? or *'s matches s
     static bool wildmatch(const char* s, const char* p);
+    // Return true if p with ? or *'s matches s
+    static bool wildmatch(const string& s, const string& p);
+    // Return true if this is a wildcard string (contains * or ?)
+    static bool isWildcard(const string &p);
     // Return {a}{dot}{b}, omitting dot if a or b are empty
     static string dot(const string& a, const string& dot, const string& b);
-    // Convert string to lowercase
+    // Convert string to lowercase (tolower)
     static string downcase(const string& str);
+    // Convert string to upper case (toupper)
+    static string upcase(const string& str);
     // Replace any %'s with %%
     static string quotePercent(const string& str);
     // Replace any unprintable with space
     // This includes removing tabs, so column tracking is correct
     static string spaceUnprintable(const string& str);
+    // Return true if only whitespace or ""
+    static bool isWhitespace(const string& str);
 };
 
 //######################################################################

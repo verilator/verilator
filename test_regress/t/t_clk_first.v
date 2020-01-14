@@ -8,8 +8,8 @@ module t (/*AUTOARG*/
    clk, fastclk
    );
 
-   input clk /*verilator sc_clock*/;
-   input fastclk /*verilator sc_clock*/;
+   input clk;
+   input fastclk;
    reg 	 reset_l;
 
    int cyc;
@@ -32,8 +32,8 @@ module t_clk (/*AUTOARG*/
    clk, fastclk, reset_l
    );
 
-   input clk /*verilator sc_clock*/;
-   input fastclk /*verilator sc_clock*/;
+   input clk;
+   input fastclk;
    input reset_l;
 
    // surefire lint_off STMINI

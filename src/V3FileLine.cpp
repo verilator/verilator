@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -341,7 +341,10 @@ void FileLine::v3errorEnd(std::ostringstream& str, const string& locationStr) {
     if (!locationStr.empty()) {
         lstr<<std::setw(ascii().length())<<" "<<": "<<locationStr;
     }
-    if (warnIsOff(V3Error::errorCode())) V3Error::suppressThisWarning();
+    if (warnIsOff(V3Error::errorCode())
+        || V3Config::waive(this, V3Error::errorCode(), str.str())) {
+        V3Error::suppressThisWarning();
+    }
     else if (!V3Error::errorContexted()) nsstr<<warnContextPrimary();
     V3Error::v3errorEnd(nsstr, lstr.str());
 }

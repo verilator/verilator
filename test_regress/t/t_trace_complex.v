@@ -65,6 +65,8 @@ module t (clk);
    typedef enum logic [2:0] { BZERO=0, BONE, BTWO, BTHREE } enumb_t;
    enumb_t v_enumb;
 
+   logic [7:0] unpacked_array[-2:0];
+
    p #(.PARAM(2)) p2 ();
    p #(.PARAM(3)) p3 ();
 

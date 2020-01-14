@@ -1,7 +1,8 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 # See copyright, etc in below POD section.
 ######################################################################
 
+use warnings;
 use Cwd;
 use File::Copy qw(cp);
 use File::Path qw(mkpath);
@@ -242,7 +243,7 @@ Runs a specific stage (see the script).
 
 =head1 DISTRIBUTION
 
-Copyright 2019-2019 by Wilson Snyder.  This package is free software; you
+Copyright 2019-2020 by Wilson Snyder.  This package is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

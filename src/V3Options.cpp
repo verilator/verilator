@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -43,6 +43,10 @@
 #include <set>
 
 #include "config_rev.h"
+
+#if defined(_WIN32) || defined(__MINGW32__)
+# include <io.h>  // open, close
+#endif
 
 //######################################################################
 // V3 Internal state
@@ -370,7 +374,12 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
 
 void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
     static bool shown_notfound_msg = false;
-    if (!shown_notfound_msg) {
+    if (modname.find("__Vhsh") != string::npos) {
+        std::cerr << V3Error::warnMore() << "... Unsupported: Name is longer than 127 characters;"
+                  << " automatic file lookup not supported.\n";
+        std::cerr << V3Error::warnMore() << "... Suggest putting filename with this module/package"
+                  << " onto command line instead.\n";
+    } else if (!shown_notfound_msg) {
         shown_notfound_msg = true;
         if (m_impp->m_incDirUsers.empty()) {
             fl->v3error("This may be because there's no search path specified with -I<dir>."<<endl);
@@ -1364,11 +1373,12 @@ void V3Options::parseOptsFile(FileLine* fl, const string& filename, bool rel) {
     string optdir = (rel ? V3Os::filenameDir(filename) : ".");
 
     // Convert to argv style arg list and parse them
-    char* argv [args.size()+1];
-    for (unsigned i=0; i<args.size(); ++i) {
-        argv[i] = const_cast<char*>(args[i].c_str());
+    std::vector<char*> argv; argv.reserve(args.size()+1);
+    for (std::vector<std::string>::const_iterator it = args.begin(); it != args.end(); ++it) {
+        argv.push_back(const_cast<char*>(it->c_str()));
     }
-    parseOptsList(fl, optdir, args.size(), argv);
+    argv.push_back(NULL); // argv is NULL-terminated
+    parseOptsList(fl, optdir, static_cast<int>(argv.size()-1), argv.data());
 }
 
 //======================================================================
@@ -1404,7 +1414,7 @@ void V3Options::showVersion(bool verbose) {
     if (!verbose) return;
 
     cout <<endl;
-    cout << "Copyright 2003-2019 by Wilson Snyder.  Verilator is free software; you can\n";
+    cout << "Copyright 2003-2020 by Wilson Snyder.  Verilator is free software; you can\n";
     cout << "redistribute it and/or modify the Verilator internals under the terms of\n";
     cout << "either the GNU Lesser General Public License Version 3 or the Perl Artistic\n";
     cout << "License Version 2.0.\n";

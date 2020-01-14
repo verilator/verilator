@@ -5,6 +5,6 @@
                     t/t_unopt_combo.v:23:      Example path: t.c
                     t/t_unopt_combo.v:80:      Example path: ALWAYS
                     t/t_unopt_combo.v:22:      Example path: t.b
-                    t/t_unopt_combo.v:116:      Example path: ALWAYS
+                    t/t_unopt_combo.v:123:      Example path: ALWAYS
                     t/t_unopt_combo.v:23:      Example path: t.c
 %Error: Exiting due to

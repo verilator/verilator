@@ -1,0 +1,5 @@
+%Warning-DEPRECATED: t/t_clk_first_deprecated.v:11: sc_clock is deprecated and will be removed
+   input clk /*verilator sc_clock*/ ;
+             ^~~~~~~~~~~~~~~~~~~~~~
+                     ... Use "/* verilator lint_off DEPRECATED */" and lint_on around source to disable this message.
+%Error: Exiting due to

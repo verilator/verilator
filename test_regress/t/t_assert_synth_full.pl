@@ -12,7 +12,7 @@ scenarios(simulator => 1);
 top_filename("t/t_assert_synth.v");
 
 compile(
-    v_flags2 => ['+define+FAILING_FULL'],
+    v_flags2 => ['+define+FAILING_FULL +define+ATTRIBUTES'],
     verilator_flags2 => ['--assert'],
     nc_flags2 => ['+assert'],
     );
@@ -21,7 +21,7 @@ execute(
     check_finished => 0,
     fails => $Self->{vlt_all},
     expect =>
-'%Error: t_assert_synth.v:\d+: Assertion failed in top.t: synthesis full_case'
+'%Error: t_assert_synth.v:30: Assertion failed in top.t: synthesis full_case'
     );
 
 ok(1);

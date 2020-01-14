@@ -70,9 +70,15 @@ module t2(
 endmodule
 
 module t(
+`ifdef ATTRIBUTES
 	 input clk0 /*verilator clocker*/,
 	 input clk1 /*verilator clocker*/,
 	 input clk2 /*verilator clocker*/,
+`else
+	 input clk0,
+	 input clk1,
+	 input clk2,
+`endif
 	 input data_in
 	 );
 

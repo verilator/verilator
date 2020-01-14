@@ -6,7 +6,7 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2019 by Wilson Snyder.  This program is free software; you can
+// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
@@ -1568,7 +1568,7 @@ private:
             AstConst* constp = VN_CAST(itemp->valuep(), Const);
             if (constp->num().isFourState() && nodep->dtypep()->basicp()
                 && !nodep->dtypep()->basicp()->isFourstate())
-                itemp->v3error("Enum value with X/Zs cannot be assigned to non-fourstate type (IEEE 2019 6.19)");
+                itemp->v3error("Enum value with X/Zs cannot be assigned to non-fourstate type (IEEE 2017 6.19)");
             num.opAssign(constp->num());
             // Look for duplicates
             if (inits.find(num) != inits.end()) {  // IEEE says illegal
@@ -1740,55 +1740,52 @@ private:
         if (!nodep->fromp()->dtypep()) nodep->fromp()->v3fatalSrc("Unlinked data type");
         AstNodeDType* fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
         UINFO(9,"     from dt "<<fromDtp<<endl);
-        AstMemberDType* memberp = NULL;  // NULL=error below
         if (AstNodeUOrStructDType* adtypep = VN_CAST(fromDtp, NodeUOrStructDType)) {
-            // No need to width-resolve the class, as it was done when we did the child
-            memberp = adtypep->findMember(nodep->name());
-            if (!memberp) {
-                nodep->v3error("Member "<<nodep->prettyNameQ()<<" not found in structure");
-            }
-        }
-        else if (VN_IS(fromDtp, EnumDType)
-                 || VN_IS(fromDtp, AssocArrayDType)
-                 || VN_IS(fromDtp, QueueDType)
-                 || VN_IS(fromDtp, BasicDType)) {
+            if (memberSelStruct(nodep, adtypep)) return;
+        } else if (VN_IS(fromDtp, EnumDType)
+                   || VN_IS(fromDtp, AssocArrayDType)
+                   || VN_IS(fromDtp, QueueDType)
+                   || VN_IS(fromDtp, BasicDType)) {
             // Method call on enum without following parenthesis, e.g. "ENUM.next"
             // Convert this into a method call, and let that visitor figure out what to do next
-            AstNode* newp = new AstMethodCall(nodep->fileline(),
-                                              nodep->fromp()->unlinkFrBack(), nodep->name(), NULL);
+            AstNode* newp = new AstMethodCall(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
+                                              nodep->name(), NULL);
             nodep->replaceWith(newp);
             pushDeletep(nodep); VL_DANGLING(nodep);
             userIterate(newp, m_vup);
             return;
-        }
-        else {
+        } else {
             nodep->v3error("Member selection of non-struct/union object '"
-                           <<nodep->fromp()->prettyTypeName()
-                           <<"' which is a '"<<nodep->fromp()->dtypep()->prettyTypeName()<<"'");
+                           << nodep->fromp()->prettyTypeName() << "' which is a '"
+                           << nodep->fromp()->dtypep()->prettyTypeName() << "'");
         }
-        if (memberp) {
+        // Error handling
+        nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::LogicFalse()));
+        pushDeletep(nodep); VL_DANGLING(nodep);
+    }
+    bool memberSelStruct(AstMemberSel* nodep, AstNodeUOrStructDType* adtypep) {
+        // Returns true if ok
+        if (AstMemberDType* memberp = adtypep->findMember(nodep->name())) {
             if (m_attrp) {  // Looking for the base of the attribute
                 nodep->dtypep(memberp);
-                UINFO(9,"   MEMBERSEL(attr) -> "<<nodep<<endl);
-                UINFO(9,"           dt-> "<<nodep->dtypep()<<endl);
+                UINFO(9, "   MEMBERSEL(attr) -> " << nodep << endl);
+                UINFO(9, "           dt-> " << nodep->dtypep() << endl);
             } else {
                 AstSel* newp = new AstSel(nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                           memberp->lsb(), memberp->width());
                 // Must skip over the member to find the union; as the member may disappear later
                 newp->dtypep(memberp->subDTypep()->skipRefToEnump());
                 newp->didWidth(true);  // Don't replace dtype with basic type
-                UINFO(9,"   MEMBERSEL -> "<<newp<<endl);
-                UINFO(9,"           dt-> "<<newp->dtypep()<<endl);
-                nodep->replaceWith(newp);
-                pushDeletep(nodep); VL_DANGLING(nodep);
+                UINFO(9, "   MEMBERSEL -> " << newp << endl);
+                UINFO(9, "           dt-> " << newp->dtypep() << endl);
+                nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
                 // Should be able to treat it as a normal-ish nodesel - maybe.
                 // The lhsp() will be strange until this stage; create the number here?
             }
+            return true;
         }
-        if (!memberp) {  // Very bogus, but avoids core dump
-            nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::LogicFalse()));
-            pushDeletep(nodep); VL_DANGLING(nodep);
-        }
+        nodep->v3error("Member " << nodep->prettyNameQ() << " not found in structure");
+        return false;
     }
 
     virtual void visit(AstCMethodCall* nodep) {
@@ -1828,7 +1825,7 @@ private:
             methodCallString(nodep, basicp);
         }
         else {
-            nodep->v3error("Unsupported: Member call on non-enum object '"
+            nodep->v3error("Unsupported: Member call on object '"
                            <<nodep->fromp()->prettyTypeName()
                            <<"' which is a '"<<nodep->fromp()->dtypep()->prettyTypeName()<<"'");
         }
@@ -2240,6 +2237,18 @@ private:
         } else {
             nodep->v3error("Unknown built-in string method "<<nodep->prettyNameQ());
         }
+    }
+
+    virtual void visit(AstNew* nodep) {
+        if (nodep->didWidthAndSet()) return;
+        userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
+        AstClassRefDType* refp = VN_CAST(m_vup->dtypeNullp(), ClassRefDType);
+        if (!refp) {  // e.g. int a = new;
+            if (refp) UINFO(1, "Got refp "<<refp<<endl);
+            nodep->v3error("new() not expected in this context");
+            return;
+        }
+        nodep->dtypep(refp);
     }
 
     virtual void visit(AstPattern* nodep) {
@@ -2713,7 +2722,7 @@ private:
                     if (argp) argp = argp->nextp();
                     break;
                 }
-                case 'p': {  // Packed
+                case 'p': {  // Pattern
                     AstNodeDType* dtypep = argp ? argp->dtypep()->skipRefp() : NULL;
                     AstBasicDType* basicp = dtypep ? dtypep->basicp() : NULL;
                     if (basicp && basicp->isString()) {
@@ -2920,9 +2929,27 @@ private:
         assertAtStatement(nodep);
         userIterateAndNext(nodep->filenamep(), WidthVP(SELF, BOTH).p());
         userIterateAndNext(nodep->memp(), WidthVP(SELF, BOTH).p());
-        if (!VN_IS(nodep->memp()->dtypep()->skipRefp(), UnpackArrayDType)) {
+        AstNodeDType* subp = NULL;
+        if (AstAssocArrayDType* adtypep
+            = VN_CAST(nodep->memp()->dtypep()->skipRefp(), AssocArrayDType)) {
+            subp = adtypep->subDTypep();
+            if (!adtypep->keyDTypep()->skipRefp()->basicp()
+                || !adtypep->keyDTypep()->skipRefp()->basicp()->keyword().isIntNumeric()) {
+                nodep->memp()->v3error(nodep->verilogKwd()
+                                       << " address/key must be integral (IEEE 21.4.1)");
+            }
+        } else if (AstUnpackArrayDType* adtypep
+                   = VN_CAST(nodep->memp()->dtypep()->skipRefp(), UnpackArrayDType)) {
+            subp = adtypep->subDTypep();
+        } else {
+            nodep->memp()->v3error("Unsupported: "
+                                   << nodep->verilogKwd()
+                                   << " into other than unpacked or associative array");
+        }
+        if (subp && (!subp->skipRefp()->basicp()
+                     || !subp->skipRefp()->basicp()->keyword().isIntNumeric())) {
             nodep->memp()->v3error("Unsupported: " << nodep->verilogKwd()
-                                   << " into other than unpacked array");
+                                   << " array values must be integral");
         }
         userIterateAndNext(nodep->lsbp(), WidthVP(SELF, BOTH).p());
         userIterateAndNext(nodep->msbp(), WidthVP(SELF, BOTH).p());

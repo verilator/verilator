@@ -2,9 +2,25 @@ Revision history for Verilator
 
 The contributors that suggested a given feature are shown in []. Thanks!
 
-* Verilator 4.025 devel
+
+* Verilator 4.027 devel
+
+** Support attributes (public, isolate_assignments, etc.) in configuration files.
+
+** Add -match to lint_off to waive warnings. [Philipp Wagner]
+
+*** Support $readmem/$writemem with assoc arrarys. Closes #2100. [agrobman]
+
+****  Add error on misused define. [Topa Tota]
+
+
+* Verilator 4.026 2020-01-11
+
+**    Docker images are now available for Verilator releases.
 
 ***   Support bounded queues.
+
+***   Support implication operator "|->" in assertions, #2069. [Peter Monsson]
 
 ***   Support string compare, ato*, etc methods, #1606. [Yutetsu TAKATSUKASA]
 
@@ -29,6 +45,14 @@ The contributors that suggested a given feature are shown in []. Thanks!
 ****  Fix disable iff in assertions. Closes #1404. [Peter Monsson]
 
 ****  Fix huge case statement performance. Closes #1644. [Julien Margetts]
+
+****  Fix tracing -1 index arrays. Closes #2090. [Yutetsu Takatsukasa]
+
+****  Fix expand optimization slowing --lint-only. Closes #2091. [Thomas Watts]
+
+****  Fix %{number}s with strings. #2093. [agrobman]
+
+****  Fix shebang breaking some shells. Closes #2067. [zdave]
 
 
 * Verilator 4.024 2019-12-08
@@ -3455,7 +3479,7 @@ of input ports exists for tracing.
 
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
-Copyright 2001-2019 by Wilson Snyder.  This program is free software; you
+Copyright 2001-2020 by Wilson Snyder.  This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.

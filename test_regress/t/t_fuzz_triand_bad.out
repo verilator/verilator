@@ -1,4 +1,4 @@
-%Error: t/t_fuzz_triand_bad.v:7: Unsupported: Member call on non-enum object 'VARREF 'g'' which is a 'BASICDTYPE 'logic''
+%Error: t/t_fuzz_triand_bad.v:7: Unsupported: Member call on object 'VARREF 'g'' which is a 'BASICDTYPE 'logic''
                                : ... In instance t
    tri g=g.and.g;
            ^~~
