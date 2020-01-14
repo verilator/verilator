@@ -406,8 +406,7 @@ public:
         {
             const AstVarRef* varrefp = VN_CAST(nodep->memp(), VarRef);
             if (!varrefp) { nodep->v3error(nodep->verilogKwd() << " loading non-variable"); }
-            else if (const AstAssocArrayDType* adtypep
-                     = VN_CAST(varrefp->varp()->dtypeSkipRefp(), AssocArrayDType)) {
+            else if (VN_IS(varrefp->varp()->dtypeSkipRefp(), AssocArrayDType)) {
                 // nodep->memp() below will when verilated code is compiled create a C++ template
             }
             else if (const AstUnpackArrayDType* adtypep
