@@ -643,7 +643,8 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                 widthSet = true;
                 width = width*10 + (fmt - '0');
                 break;
-            case '.': case '-':
+            case '.':  // FALLTHRU
+            case '-':
                 inPct = true;  // Get more digits
                 break;
             case '%':
