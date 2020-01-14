@@ -618,7 +618,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
     const char* pctp = NULL;  // Most recent %##.##g format
     bool inPct = false;
     bool widthSet = false;
-    int width = 0;
+    size_t width = 0;
     for (const char* pos = formatp; *pos; ++pos) {
         if (!inPct && pos[0]=='%') {
             pctp = pos;
