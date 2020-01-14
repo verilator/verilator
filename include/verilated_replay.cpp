@@ -23,30 +23,24 @@
 //=========================================================================
 
 #include "verilated_replay.h"
-
-// TODO -- can we not do this?
-// Include the GTKWave implementation directly
-#define FST_CONFIG_INCLUDE "fst_config.h"
-#include "gtkwave/fastlz.c"
-#include "gtkwave/fstapi.c"
-// TODO -- use the system's LZ4 library, not this copy
-#include "gtkwave/lz4.c"
+#define QUOTE(x) #x
+#define MAKE_HEADER(x) QUOTE(x.h)
+#include MAKE_HEADER(VM_PREFIX)
 
 // TODO -- collapse into constructor?
-int VerilatedReplay::init() {
-    m_fstp = fstReaderOpen(m_fstName.c_str());
-    if (!m_fstp) {
-        // TODO -- Verilator runtime way of tossing a fatal error?, see elsewhere
-        VL_PRINTF("Could not open FST: %s\n", m_fstName.c_str());
-        exit(-1);
-    }
-
+int VerilatedReplay::init(std::string scope) {
+    openFst(m_fstName);
+    search(scope);
     m_time = fstReaderGetStartTime(m_fstp);
     // TODO -- use FST timescale
     m_simTime = m_time;
 
-    // TODO -- this is not right, just testing
-    fstReaderSetFacProcessMaskAll(m_fstp);
+    for (VarList::iterator it = m_inputs.begin(); it != m_inputs.end();
+         ++it) {
+        VL_PRINTF("%s = %d\n", it->fullName.c_str(),
+                  it->hier.u.var.handle);
+        fstReaderSetFacProcessMask(m_fstp, it->hier.u.var.handle);
+    }
 
     createMod();
 
@@ -160,10 +154,29 @@ void VerilatedReplay::fstCallback(void* userDatap, uint64_t time, fstHandle faci
     uint32_t len;
 
     if(valuep) {
-	len = strlen((const char *)valuep);
+        len = strlen((const char *)valuep);
     } else {
-	len = 0;
+        len = 0;
     }
 
     fstCallbackVarlen(userDatap, time, facidx, valuep, len);
+}
+
+void VerilatedReplay::createMod() {
+    m_modp = new VM_PREFIX;
+    // TODO -- make VerilatedModule destructor virtual so we can delete from the base class?
+}
+
+void VerilatedReplay::eval() {
+    // TODO -- make eval, trace and final virtual methods of VerilatedModule?
+    reinterpret_cast<VM_PREFIX*>(m_modp)->eval();
+}
+
+void VerilatedReplay::trace() {
+    // TODO -- need VerilatedFstC, etc.
+    //reinterpret_cast<VM_PREFIX*>(m_modp)->trace();
+}
+
+void VerilatedReplay::final() {
+    reinterpret_cast<VM_PREFIX*>(m_modp)->final();
 }

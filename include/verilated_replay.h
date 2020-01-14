@@ -27,10 +27,11 @@
 #define _VERILATED_REPLAY_H_ 1  ///< Header Guard
 
 #include "verilated.h"
+#include "verilated_replay_common.h"
 #include "gtkwave/fstapi.h"
 #include <string>
 
-class VerilatedReplay {
+class VerilatedReplay: private VerilatedReplayCommon {
 private:
     void createMod();
     void eval();
@@ -46,14 +47,13 @@ private:
     std::string m_fstName;
     double& m_simTime;
     VerilatedModule* m_modp;
-    void* m_fstp;
     uint64_t m_time;
 public:
     VerilatedReplay(const std::string& fstName, double& simTime):
         m_fstName(fstName), m_simTime(simTime)
     {}
     ~VerilatedReplay();
-    int init();
+    int init(std::string scope);
     int replay();
 };
 

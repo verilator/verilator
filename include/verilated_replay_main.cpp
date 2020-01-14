@@ -53,10 +53,12 @@ double sc_time_stamp() {
 int main(int argc, char** argv) {
     // TODO -- actual arg parsing
     std::string fstFilename(argv[1]);
+    std::string scope(argv[2]);
     VL_PRINTF("FST = %s\n", fstFilename.c_str());
+    VL_PRINTF("Scope = %s\n", scope.c_str());
 
     VerilatedReplay replay(fstFilename, simTime);
-    if (replay.init()) exit(-1);
+    if (replay.init(scope)) exit(-1);
 
 //#if VM_TRACE
 //    Verilated::traceEverOn(true);

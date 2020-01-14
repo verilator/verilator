@@ -10,6 +10,7 @@
 // TODO -- use the system's LZ4 library, not this copy
 #include "gtkwave/lz4.c"
 
+// TODO -- use verilator_replay_common.h instead
 void VlrGenerator::getFstIO() {
     void* fst = fstReaderOpen(opts().fst());
     const char* scope = "";
