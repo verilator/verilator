@@ -299,7 +299,7 @@ private:
         return (!nodep->isSigPublic()  // Can't elim publics!
                 && !nodep->isIO()
                 && ((nodep->isTemp() && !nodep->isTrace())
-                    || (nodep->isParam() && !nodep->isTrace())
+                    || (nodep->isParam() && !nodep->isTrace() && !v3Global.opt.xmlOnly())
                     || m_elimUserVars));  // Post-Trace can kill most anything
     }
 

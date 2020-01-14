@@ -11,6 +11,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 *** Support $readmem/$writemem with assoc arrarys. Closes #2100. [agrobman]
 
+****  Add parameter values in XML. #2110. [Pieter Kapsenberg]
+
 ****  Add error on misused define. [Topa Tota]
 
 
