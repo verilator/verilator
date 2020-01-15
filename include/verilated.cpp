@@ -618,6 +618,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
     const char* pctp = NULL;  // Most recent %##.##g format
     bool inPct = false;
     bool widthSet = false;
+    bool left = false;
     int width = 0;
     for (const char* pos = formatp; *pos; ++pos) {
         if (!inPct && pos[0]=='%') {
@@ -643,6 +644,10 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                 widthSet = true;
                 width = width*10 + (fmt - '0');
                 break;
+            case '-':
+                left = true;
+                inPct = true;  // Get more digits
+                break;
             case '.':
                 inPct = true;  // Get more digits
                 break;
@@ -662,8 +667,9 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
             case '@': {  // Verilog/C++ string
                 va_arg(ap, int);  // # bits is ignored
                 const std::string* cstrp = va_arg(ap, const std::string*);
-                if (width > cstrp->size()) output += std::string(width - cstrp->size(), ' ');
-                output += *cstrp;
+                std::string padding;
+                if (width > cstrp->size()) padding.append(width - cstrp->size(), ' ');
+                output += left ? (*cstrp + padding) : (padding + *cstrp);
                 break;
             }
             case 'e':
@@ -721,8 +727,9 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                         IData charval = VL_BITRSHIFT_W(lwp, lsb) & 0xff;
                         field += (charval==0)?' ':charval;
                     }
-                    if (width > field.size()) output += std::string(width - field.size(), ' ');
-                    output += field;
+                    std::string padding;
+                    if (width > field.size()) padding.append(width - field.size(), ' ');
+                    output += left ? (field + padding) : (padding + field);
                     break;
                 }
                 case 'd': {  // Signed decimal
@@ -743,14 +750,15 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                         digits = append.length();
                     }
                     int needmore = width-digits;
+                    std::string padding;
                     if (needmore>0) {
                         if (pctp && pctp[0] && pctp[1]=='0') {  // %0
-                            output.append(needmore, '0');  // Pre-pad zero
+                            padding.append(needmore, '0');  // Pre-pad zero
                         } else {
-                            output.append(needmore, ' ');  // Pre-pad spaces
+                            padding.append(needmore, ' ');  // Pre-pad spaces
                         }
                     }
-                    output += append;
+                    output += left ? (append + padding) : (padding + append);
                     break;
                 }
                 case '#': {  // Unsigned decimal
@@ -764,14 +772,15 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                         digits = append.length();
                     }
                     int needmore = width-digits;
+                    std::string padding;
                     if (needmore>0) {
                         if (pctp && pctp[0] && pctp[1]=='0') {  // %0
-                            output.append(needmore, '0');  // Pre-pad zero
+                            padding.append(needmore, '0');  // Pre-pad zero
                         } else {
-                            output.append(needmore, ' ');  // Pre-pad spaces
+                            padding.append(needmore, ' ');  // Pre-pad spaces
                         }
                     }
-                    output += append;
+                    output += left ? (append + padding) : (padding + append);
                     break;
                 }
                 case 't': {  // Time
@@ -786,8 +795,9 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                         VL_FATAL_MT(__FILE__, __LINE__, "", "Unsupported VL_TIME_MULTIPLIER");
                     }
                     int needmore = width-digits;
-                    if (needmore>0) output.append(needmore, ' ');  // Pre-pad spaces
-                    output += tmp;
+                    std::string padding;
+                    if (needmore>0) padding.append(needmore, ' ');  // Pad with spaces
+                    output += left ? (tmp + padding) : (padding + tmp);
                     break;
                 }
                 case 'b':

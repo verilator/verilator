@@ -2706,7 +2706,7 @@ private:
             if (!inPct && ch=='%') {
                 inPct = true;
                 fmt = ch;
-            } else if (inPct && (isdigit(ch) || ch=='.')) {
+            } else if (inPct && (isdigit(ch) || ch=='.' || ch=='-')) {
                 fmt += ch;
             } else if (tolower(inPct)) {
                 inPct = false;

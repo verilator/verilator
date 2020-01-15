@@ -1797,7 +1797,8 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep,
             switch (tolower(pos[0])) {
             case '0': case '1': case '2': case '3': case '4':
             case '5': case '6': case '7': case '8': case '9':
-            case '.':
+            case '.':  // FALLTHRU
+            case '-':
                 // Digits, like %5d, etc.
                 vfmt += pos[0];
                 inPct = true;  // Get more digits
