@@ -29,11 +29,12 @@ using namespace std;
 
 // TODO -- can we not do this?
 // Include the GTKWave implementation directly
-#define FST_CONFIG_INCLUDE "fst_config.h"
-#include "gtkwave/fastlz.c"
-#include "gtkwave/fstapi.c"
-// TODO -- use the system's LZ4 library, not this copy
-#include "gtkwave/lz4.c"
+// Ugh, building with verilated_fst_c.cpp, brings this in, let's really not do this
+//#define FST_CONFIG_INCLUDE "fst_config.h"
+//#include "gtkwave/fastlz.c"
+//#include "gtkwave/fstapi.c"
+//// TODO -- use the system's LZ4 library, not this copy
+//#include "gtkwave/lz4.c"
 
 void VerilatedReplayCommon::openFst(const string& fstName) {
     m_fstp = fstReaderOpen(fstName.c_str());
@@ -58,10 +59,12 @@ void VerilatedReplayCommon::search(string targetScope) {
                 string varName = string(scope) + "." + string(hierp->u.var.name);
                 switch (hierp->u.var.direction) {
                     case FST_VD_INPUT:
-                        m_inputs.push_back(fstVar(hierp, varName));
+                        m_inputs[hierp->u.var.handle] =
+                            fstVar(hierp, varName);
                         break;
                     case FST_VD_OUTPUT:
-                        m_outputs.push_back(fstVar(hierp, varName));
+                        m_outputs[hierp->u.var.handle] =
+                            fstVar(hierp, varName);
                         break;
                     default: break;
                 }

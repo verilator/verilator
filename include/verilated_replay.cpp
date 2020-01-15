@@ -35,11 +35,10 @@ int VerilatedReplay::init(std::string scope) {
     // TODO -- use FST timescale
     m_simTime = m_time;
 
-    for (VarList::iterator it = m_inputs.begin(); it != m_inputs.end();
+    for (VarMap::iterator it = m_inputs.begin(); it != m_inputs.end();
          ++it) {
-        VL_PRINTF("%s = %d\n", it->fullName.c_str(),
-                  it->hier.u.var.handle);
-        fstReaderSetFacProcessMask(m_fstp, it->hier.u.var.handle);
+        VL_PRINTF("%s = %d\n", it->second.fullName.c_str(), it->first);
+        fstReaderSetFacProcessMask(m_fstp, it->first);
     }
 
     createMod();
@@ -49,6 +48,9 @@ int VerilatedReplay::init(std::string scope) {
 
 VerilatedReplay::~VerilatedReplay() {
     fstReaderClose(m_fstp);
+#if VM_TRACE
+    if (m_tfp) m_tfp->close();
+#endif
     delete(m_modp);
 }
 
@@ -165,6 +167,13 @@ void VerilatedReplay::fstCallback(void* userDatap, uint64_t time, fstHandle faci
 void VerilatedReplay::createMod() {
     m_modp = new VM_PREFIX;
     // TODO -- make VerilatedModule destructor virtual so we can delete from the base class?
+#if VM_TRACE
+    Verilated::traceEverOn(true);
+    m_tfp = new VerilatedFstC;
+    reinterpret_cast<VM_PREFIX*>(m_modp)->trace(m_tfp, 99);
+    // TODO -- command line parameter
+    m_tfp->open("replay.fst");
+#endif  // VM_TRACE
 }
 
 void VerilatedReplay::eval() {
@@ -173,8 +182,9 @@ void VerilatedReplay::eval() {
 }
 
 void VerilatedReplay::trace() {
-    // TODO -- need VerilatedFstC, etc.
-    //reinterpret_cast<VM_PREFIX*>(m_modp)->trace();
+#if VM_TRACE
+    if (m_tfp) m_tfp->dump(m_simTime);
+#endif  // VM_TRACE
 }
 
 void VerilatedReplay::final() {

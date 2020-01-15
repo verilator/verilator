@@ -29,28 +29,29 @@
 #include "verilated.h"
 #include "gtkwave/fstapi.h"
 #include <string>
-#include <list>
+#include <map>
 
 class VerilatedReplayCommon {
 public:
     struct fstVar {
+        // Can't just save the struct fstHier* that fstReadIterateHier()
+        // gives us because it recycles that pointer
         struct fstHier hier;
         std::string fullName;
         fstVar(struct fstHier* _hierp, std::string _fullName):
             hier(*_hierp), fullName(_fullName) {}
+        fstVar() {}
     };
-    typedef std::list<const fstVar> VarList;
+    typedef std::map<fstHandle, fstVar> VarMap;
 protected:
     void* m_fstp;
-    VarList m_inputs;
-    VarList m_outputs;
+    VarMap m_inputs;
+    VarMap m_outputs;
 public:
     VerilatedReplayCommon() {}
     ~VerilatedReplayCommon() {}
     void openFst(const std::string& fstName);
     void search(std::string targetScope);
-    VarList& inputs() { return m_inputs; }
-    VarList& outputs() { return m_outputs; }
 };
 
 #endif  // Guard

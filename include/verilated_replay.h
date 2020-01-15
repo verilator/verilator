@@ -27,6 +27,7 @@
 #define _VERILATED_REPLAY_H_ 1  ///< Header Guard
 
 #include "verilated.h"
+#include "verilated_fst_c.h"
 #include "verilated_replay_common.h"
 #include "gtkwave/fstapi.h"
 #include <string>
@@ -47,6 +48,7 @@ private:
     std::string m_fstName;
     double& m_simTime;
     VerilatedModule* m_modp;
+    VerilatedFstC* m_tfp;
     uint64_t m_time;
 public:
     VerilatedReplay(const std::string& fstName, double& simTime):
