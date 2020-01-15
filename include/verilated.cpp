@@ -1740,9 +1740,7 @@ void VlReadMem::setData(void* valuep, const std::string& rhs) {
 }
 
 VlWriteMem::VlWriteMem(bool hex, int bits, const std::string& filename, QData start, QData end)
-    : m_hex(hex)
-    , m_bits(bits)
-    , m_filename(filename)
+    : m_bits(bits)
     , m_addr(0) {
     if (VL_UNLIKELY(!hex)) {
         VL_FATAL_MT(filename.c_str(), 0, "",
