@@ -47,23 +47,46 @@ module barshift_2d_unpacked #(parameter depth = 2, localparam width = 2**depth) 
 
     localparam offset = 1;
     localparam n = 3;
-    reg [width-1:0]tmp[depth+offset:offset][offset:offset+n-1]; /*verilator split_var*/
+    reg [width-1:0]tmp0[depth+offset:offset][offset:offset+n-1]; /*verilator split_var*/
+    reg [width-1:0]tmp1[depth+offset:offset][offset:offset+n-1]; /*verilator split_var*/
+    reg [width-1:0]tmp2[depth+offset:offset][offset:offset+n-1];
+    reg [width-1:0]tmp3[depth+offset:offset][offset:offset+n-1]; /*verilator split_var*/
+    reg [width-1:0]tmp4[depth+offset:offset][offset:offset+n-1]; /*verilator split_var*/
+    reg [width-1:0]tmp5[depth+offset:offset][offset:offset+n-1];
+    reg [width-1:0]tmp6[depth+offset:offset][offset:offset+n-1]; /*verilator split_var*/
+
+    reg [width-1:0]tmp7[depth+offset+1:offset+1][offset:offset+n-1]; /*verilator split_var*/
+    reg [width-1:0]tmp8[depth+offset+3:offset-1][offset:offset+n-1]; /*verilator split_var*/
+    reg [width-1:0]tmp9[depth+offset+3:offset+3][offset:offset+n-1]; /*verilator split_var*/
+    reg [width-1:0]tmp10[depth+offset:offset][offset:offset+n-1]; /*verilator split_var*/
+
     generate
         for(genvar i = 0; i < depth; ++i) begin
             for(genvar j = offset; j < n + offset; ++j) begin
                 always_comb
                     if (shift[i]) begin
-                        tmp[i+1+offset][j] = {tmp[i+offset][j][(1 << i)-1:0], tmp[i+offset][j][width-1:(2**i)]};
+                        tmp0[i+1+offset][j] = {tmp0[i+offset][j][(1 << i)-1:0], tmp0[i+offset][j][width-1:(2**i)]};
                     end else begin
-                        tmp[i+1+offset][j] = tmp[i+offset][j];
+                        tmp0[i+1+offset][j] = tmp0[i+offset][j];
                     end
             end
         end
         for(genvar j = offset; j < n + offset; ++j) begin
-            assign tmp[0 + offset][j] = in;
+            assign tmp0[0 + offset][j] = in;
         end
     endgenerate
-    assign out = tmp[depth+offset][offset];
+    assign tmp1 = tmp0;  // split both side
+    assign tmp2 = tmp1;  // split only rhs
+    assign tmp3 = tmp2;  // split only lhs
+    always_comb tmp4 = tmp3; // split both side
+    always_comb tmp5 = tmp4; // split only rhs
+    always_comb tmp6 = tmp5; // split only lhs
+
+    assign tmp7 = tmp6;
+    assign tmp8[depth+offset+1:offset+1] = tmp7;
+    assign tmp9 = tmp8[depth+offset+1:offset+1];
+    assign tmp10[depth+offset:offset] = tmp9[depth+offset+3:offset+3];
+    assign out = tmp10[depth+offset][offset];
 endmodule
 
 

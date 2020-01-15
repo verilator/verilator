@@ -73,13 +73,6 @@
 // </pre>
 //
 //
-// Limitations: (planned to be resolved)
-// - Unpacked array must be accessed via AstArraySel.
-//      e.g. unpacked_array[3]   : supported
-//           unpacked_array[0:1] : not supported because AstSliceSel is used
-//           unpacked_array      : not supported
-//   to allow such access, concatenate op node to build unpacked array is necessary on AST.
-//
 //*************************************************************************
 
 #include "config_build.h"
@@ -105,6 +98,18 @@ static AstConst* constifyIfNot(AstNode* nodep) {
         constp = VN_CAST(constified, Const);
     }
     return constp;
+}
+
+// returns <msb,lsb> of outer most dimension of an unpacked array
+static std::pair<int, int> outerMostSizeOfUnpackedArray(AstVar* nodep) {
+    AstUnpackArrayDType* const dtypep = VN_CAST(nodep->dtypep(), UnpackArrayDType);
+    AstConst* const lsbp = constifyIfNot(dtypep->rangep()->lsbp());
+    AstConst* const msbp = constifyIfNot(dtypep->rangep()->msbp());
+    UASSERT_OBJ(lsbp, dtypep->rangep()->lsbp(), "must be constant");
+    UASSERT_OBJ(msbp, dtypep->rangep()->msbp(), "must be constant");
+    const vlsint32_t lsb = lsbp->toSInt(), msb = msbp->toSInt();
+    UASSERT_OBJ(lsb <= msb, dtypep->rangep(), "lsb must not greater than msb");
+    return std::make_pair(msb, lsb);
 }
 
 //######################################################################
@@ -200,6 +205,57 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
                                " Such access is not supported yet.\n");
         m_refs.erase(varp);
     }
+
+    static void splitSimpleAssign(AstNodeAssign* asnp, AstVarRef* lhsp, AstVarRef *rhsp, int lstart, int rstart, int num) {
+        for (int i = 0; i < num; ++i) {
+            AstVarRef* const lrefp = new AstVarRef(lhsp->fileline(), lhsp->varp(), true);
+            AstVarRef* const rrefp = new AstVarRef(rhsp->fileline(), rhsp->varp(), false);
+            AstArraySel* const lselp = new AstArraySel(lhsp->fileline(), lrefp, lstart + i);
+            AstArraySel* const rselp = new AstArraySel(rhsp->fileline(), rrefp, rstart + i);
+            // the added new assignment statement will be visited later.
+            asnp->addNext(asnp->cloneType(lselp, rselp));
+        }
+    }
+
+    // Unroll assignments of SliceSel or entire unpacked array to multiple assignment
+    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
+        AstSliceSel* lsel = VN_CAST(nodep->lhsp(), SliceSel);
+        AstSliceSel* rsel = VN_CAST(nodep->rhsp(), SliceSel);
+        AstVarRef* const lhsp = VN_CAST(lsel ? lsel->fromp() : nodep->lhsp(), VarRef);
+        AstVarRef* const rhsp = VN_CAST(rsel ? rsel->fromp() : nodep->rhsp(), VarRef);
+        // unless simple assignment, nothing to do in this function
+        if (!lhsp || !rhsp) {
+            iterateChildren(nodep);
+            return;
+        }
+
+        // if nodep is a simple assignment of variables without split_var pragma, quick exit
+        if (m_refs.find(lhsp->varp()) == m_refs.end() &&
+            m_refs.find(rhsp->varp()) == m_refs.end()) return;
+
+        int lstart, lnum, rstart, rnum;
+        if (lsel) {
+            lstart = lsel->declRange().lo();
+            lnum = lsel->declRange().elements();
+        } else {  // LHS is entire array
+            const std::pair<int, int> lrange = outerMostSizeOfUnpackedArray(lhsp->varp());
+            lstart = 0;
+            lnum = lrange.first - lrange.second + 1;
+        }
+        if (rsel) {
+            rstart = rsel->declRange().lo();
+            rnum = rsel->declRange().elements();
+        } else {  // RHS is entire array
+            const std::pair<int, int> rrange = outerMostSizeOfUnpackedArray(rhsp->varp());
+            rstart = 0;
+            rnum = rrange.first - rrange.second + 1;
+        }
+        if (lnum != rnum) return;  // strange. V3Slice will show proper diagnosis
+        splitSimpleAssign(nodep, lhsp, rhsp, lstart, rstart, lnum);
+        nodep->unlinkFrBack()->deleteTree();
+        VL_DANGLING(nodep);
+    }
+
     virtual void visit(AstArraySel* nodep) VL_OVERRIDE {
         AstVarRef* const vrefp = VN_CAST(nodep->fromp(), VarRef);
         if (!vrefp) {
@@ -224,18 +280,6 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
             m_refs.erase(varp);
         }
     }
-    virtual void visit(AstSliceSel* nodep) VL_OVERRIDE {
-        AstVarRef* const vrefp = VN_CAST(nodep->fromp(), VarRef);
-        if (!vrefp) return;
-
-        AstVar* const varp = vrefp->varp();
-        if (m_refs.find(varp) == m_refs.end()) return;  // variable without split_var pragma
-        if (m_firstRun)
-            nodep->v3warn(SPLITVAR, "Variable " << vrefp->prettyNameQ()
-                                                << " will not be split because slicing an "
-                                                   "unpacked array is not supported yet.");
-        m_refs.erase(varp);
-    }
     // The actual splitting operation is done in this function.
     void split() {
         for (vl_unordered_map<AstVar*, std::vector<AstArraySel*> >::iterator it = m_refs.begin(),
@@ -249,12 +293,8 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
             AstUnpackArrayDType* const dtypep = VN_CAST(varp->dtypep(), UnpackArrayDType);
             std::vector<AstVar*> vars;
             // Add the split variables
-            AstConst* const lsbp = constifyIfNot(dtypep->rangep()->lsbp());
-            AstConst* const msbp = constifyIfNot(dtypep->rangep()->msbp());
-            UASSERT_OBJ(lsbp, dtypep->rangep()->lsbp(), "must be constant");
-            UASSERT_OBJ(msbp, dtypep->rangep()->msbp(), "must be constant");
-            const vlsint32_t lsb = lsbp->toSInt(), msb = msbp->toSInt();
-            UASSERT_OBJ(lsb <= msb, dtypep->rangep(), "lsb must not greater than msb");
+            const std::pair<int, int> arraySize = outerMostSizeOfUnpackedArray(varp);
+            const int msb = arraySize.first, lsb = arraySize.second;
             for (vlsint32_t i = 0; i <= msb - lsb; ++i) {
                 // const std::string name = varp->name() + "__BRA__" + AstNode::encodeNumber(i + lsb) + "__KET__";
                 // unpacked array is traced as var(idx).

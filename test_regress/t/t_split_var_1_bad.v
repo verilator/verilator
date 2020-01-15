@@ -10,10 +10,7 @@ module t();
     logic [7:0] rd_data0, rd_data1, rd_data2;
 
     sub0 i_sub0(.addr(addr), .rd_data(rd_data0));
-    sub1 i_sub1(             .rd_data(rd_data1));
     sub2 i_sub2(.addr(addr), .rd_data(rd_data2));
-    sub3 i_sub3();
-
 
     initial begin
         addr = 0;
@@ -33,18 +30,6 @@ module sub0(input [3:0]addr, output logic [7:0] rd_data);
 endmodule
 
 
-module sub1(output logic [7:0] rd_data);
-
-    logic [7:0] cannot_split0[0:15];  /*verilator split_var*/
-    logic [7:0] cannot_split1[0:15];  /*verilator split_var*/
-    always_comb begin
-        cannot_split1 = cannot_split0;
-        rd_data = cannot_split1[0];
-    end
-
-endmodule
-
-
 module sub2(input [3:0]addr, output logic [7:0] rd_data);
 
     logic [15:0] [7:0] cannot_split;  /*verilator split_var*/
@@ -53,16 +38,3 @@ module sub2(input [3:0]addr, output logic [7:0] rd_data);
 
 endmodule
 
-
-module sub3();
-
-    logic cannot_split0 [15:0] [7:0] ;  /*verilator split_var*/
-    logic cannot_split1 [0:15] [7:0] ;  /*verilator split_var*/
-    /* verilator lint_off ALWCOMBORDER */
-    always_comb begin
-        cannot_split1[0:1] = cannot_split1[2:3];
-        cannot_split1 = cannot_split0;
-    end
-    /* verilator lint_on ALWCOMBORDER */
-
-endmodule

@@ -4411,8 +4411,6 @@ Possible reasons are
 
   The datatype is not supported for splitting. (e.g. real)
   The access pattern of the variable can not be determined statically. (e.g. memory)
-  The unpacked array is accessed other than subscript.
-     slicing (unpacked_array[lsb:msb]) and accessing without subscript are not supported yet.
 
 =item STMTDLY
 
