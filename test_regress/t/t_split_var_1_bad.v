@@ -37,4 +37,3 @@ module sub2(input [3:0]addr, output logic [7:0] rd_data);
         rd_data = cannot_split[addr];
 
 endmodule
-
