@@ -619,7 +619,7 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
     bool inPct = false;
     bool widthSet = false;
     bool left = false;
-    int width = 0;
+    size_t width = 0;
     for (const char* pos = formatp; *pos; ++pos) {
         if (!inPct && pos[0]=='%') {
             pctp = pos;
