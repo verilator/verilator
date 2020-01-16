@@ -932,7 +932,11 @@ private:
             }
             std::cerr<<endl;
         }
-        if (!canSplitList.empty()) v3info("Adding /*verilator split_var*/ to variables above may resolve this warning.");
+        if (!canSplitList.empty()) {
+            std::cerr << V3Error::msgPrefix()
+                      << "Adding /*verilator split_var*/ to variables above may resolve this warning."
+                      << std::endl;
+        }
         V3Stats::addStat("Order, SplitVar, candidates", canSplitList.size());
         m_unoptflatVars.clear();
     }

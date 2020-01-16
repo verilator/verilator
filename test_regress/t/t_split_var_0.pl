@@ -10,11 +10,14 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 compile(
+    verilator_flags2 => ['--stats '],
     );
 
 execute(
     check_finished => 1,
     );
 
+file_grep($Self->{stats}, qr/SplitVar,\s+Split packed variables\s+(\d+)/i, 80);
+file_grep($Self->{stats}, qr/SplitVar,\s+Split unpacked arrays\s+(\d+)/i, 12);
 ok(1);
 1;

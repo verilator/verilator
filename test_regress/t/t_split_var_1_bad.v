@@ -1,3 +1,8 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed into the Public Domain, for any use,
+// without warranty, 2020 by Yutetsu TAKATSUKASA.
+
 module t();
     /*stray pragma */ /*verilator split_var*/
 
@@ -10,7 +15,7 @@ module t();
     logic [7:0] rd_data0, rd_data1, rd_data2;
 
     sub0 i_sub0(.addr(addr), .rd_data(rd_data0));
-    sub2 i_sub2(.addr(addr), .rd_data(rd_data2));
+    sub1 i_sub1(.addr(addr), .rd_data(rd_data2));
 
     initial begin
         addr = 0;
@@ -30,7 +35,7 @@ module sub0(input [3:0]addr, output logic [7:0] rd_data);
 endmodule
 
 
-module sub2(input [3:0]addr, output logic [7:0] rd_data);
+module sub1(input [3:0]addr, output logic [7:0] rd_data);
 
     logic [15:0] [7:0] cannot_split;  /*verilator split_var*/
     always_comb

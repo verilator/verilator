@@ -11,8 +11,11 @@ scenarios(simulator => 1);
 
 compile(
     fails => 1,
+    verilator_flags2 => ['--stats '],
     expect_filename => $Self->{golden_filename},
 );
 
+file_grep($Self->{stats}, qr/SplitVar,\s+Split packed variables\s+(\d+)/i, 0);
+file_grep($Self->{stats}, qr/SplitVar,\s+Split unpacked arrays\s+(\d+)/i, 0);
 ok(1);
 1;

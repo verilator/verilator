@@ -9,5 +9,5 @@
 %Warning-UNOPTFLAT:           t/t_unoptflat_simple_2.v:14:  t.x, width 3, fanout 12, can be split
 %Warning-UNOPTFLAT:      Most fanned out candidate vars to split:
 %Warning-UNOPTFLAT:           t/t_unoptflat_simple_2.v:14:  t.x, width 3, fanout 12, can be split
--Info: Adding /*verilator split_var*/ to variables above may resolve this warning.
+%Warning-UNOPTFLAT: Adding /*verilator split_var*/ to variables above may resolve this warning.
 %Error: Exiting due to

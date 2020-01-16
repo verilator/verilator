@@ -14,7 +14,7 @@ top_filename("t/t_split_var_0.v");
 # %Warning-UNOPTTHREADS: Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.
 # So use 4 threads here though it's not optimal in performace wise, but ok.
 compile(
-    verilator_flags2 => [$Self->{vltmt} ? '--cc --trace --threads 4' : '--cc --trace ' ],
+    verilator_flags2 => ['--cc --trace --stats ' . ($Self->{vltmt} ? '--threads 4' : '')],
     );
 
 execute(
@@ -22,6 +22,8 @@ execute(
     );
 
 vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
+file_grep($Self->{stats}, qr/SplitVar,\s+Split packed variables\s+(\d+)/i, 92);
+file_grep($Self->{stats}, qr/SplitVar,\s+Split unpacked arrays\s+(\d+)/i, 12);
 
 ok(1);
 1;
