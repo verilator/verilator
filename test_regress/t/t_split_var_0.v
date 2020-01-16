@@ -25,6 +25,28 @@ module barshift_1d_unpacked #(parameter depth = 2, localparam width = 2**depth) 
 endmodule
 
 
+module barshift_1d_unpacked_le #(parameter depth = 2, localparam width = 2**depth) (
+    input [width-1:0] in, input [depth-1:0] shift, output [width-1:0]out);
+
+    localparam offset = -3;
+    // almost same as above module, but tmp[smaller:bigger] here.
+    logic [width-1:0] tmp[offset:depth+offset]; /*verilator split_var*/
+    generate
+        for(genvar i = 0; i < depth; ++i) begin
+            always_comb
+            if (shift[i]) begin
+                tmp[i+1+offset] = {tmp[i+offset][(1 << i)-1:0], tmp[i+offset][width-1:(2**i)]};
+            end else begin
+                tmp[i+1+offset] = tmp[i+offset];
+            end
+        end
+    endgenerate
+    assign tmp[0+offset] = in;
+    assign out = tmp[depth+offset];
+endmodule
+
+
+
 module barshift_1d_unpacked_struct0 #(parameter depth = 2, localparam width = 2**depth) (
     input [width-1:0] in, input [depth-1:0] shift, output [width-1:0]out);
 
@@ -229,24 +251,26 @@ end
 
 endmodule
 
+
 module t(/*AUTOARG*/ clk);
     input clk;
     localparam depth = 3;
     localparam width = 2**depth;
-    localparam numsub = 8;
+    localparam numsub = 9;
     logic [width-1:0] in;
     logic [width-1:0] out[0:numsub-1];
     logic [depth-1:0] shift = 0;
 
     // barrel shifter
     barshift_1d_unpacked         #(.depth(depth)) shifter0(.in(in), .out(out[0]), .shift(shift));
-    barshift_1d_unpacked_struct0 #(.depth(depth)) shifter1(.in(in), .out(out[1]), .shift(shift));
-    barshift_2d_unpacked         #(.depth(depth)) shifter2(.in(in), .out(out[2]), .shift(shift));
-    barshift_1d_unpacked_struct1 #(.depth(depth)) shifter3(.in(in), .out(out[3]), .shift(shift));
-    barshift_2d_packed_array     #(.depth(depth)) shifter4(.in(in), .out(out[4]), .shift(shift));
-    barshift_2d_packed_array_le  #(.depth(depth)) shifter5(.in(in), .out(out[5]), .shift(shift));
-    barshift_1d_packed_struct                     shifter6(.in(in), .out(out[6]), .shift(shift));
-    barshift_bitslice            #(.depth(depth)) shifter7(.in(in), .out(out[7]), .shift(shift));
+    barshift_1d_unpacked_le      #(.depth(depth)) shifter1(.in(in), .out(out[1]), .shift(shift));
+    barshift_1d_unpacked_struct0 #(.depth(depth)) shifter2(.in(in), .out(out[2]), .shift(shift));
+    barshift_2d_unpacked         #(.depth(depth)) shifter3(.in(in), .out(out[3]), .shift(shift));
+    barshift_1d_unpacked_struct1 #(.depth(depth)) shifter4(.in(in), .out(out[4]), .shift(shift));
+    barshift_2d_packed_array     #(.depth(depth)) shifter5(.in(in), .out(out[5]), .shift(shift));
+    barshift_2d_packed_array_le  #(.depth(depth)) shifter6(.in(in), .out(out[6]), .shift(shift));
+    barshift_1d_packed_struct                     shifter7(.in(in), .out(out[7]), .shift(shift));
+    barshift_bitslice            #(.depth(depth)) shifter8(.in(in), .out(out[8]), .shift(shift));
     var_decl_with_init i_var_decl_with_init();
 
     assign in = 8'b10001110;
