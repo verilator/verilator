@@ -5354,13 +5354,17 @@ classExtendsE<nodep>:		// IEEE: part of class_declaration
 
 classExtendsList<nodep>:	// IEEE: part of class_declaration
 		classExtendsOne				{ $$ = $1; }
-	|	classExtendsList ',' classExtendsOne	{ $$ = AstNode::addNextNull($1, $3); }
+	|	classExtendsList ',' classExtendsOne
+			{ $$ = $3; BBUNSUP($3, "Multiple inheritance illegal on non-interface classes (IEEE 8.13)"
+					       ", and unsupported for interface classes."); }
 	;
 
 classExtendsOne<nodep>:		// IEEE: part of class_declaration
-		class_typeWithoutId			{ $$ = NULL; BBUNSUP($1, "Unsupported: extends"); }
+		class_typeWithoutId
+			{ $$ = NULL; BBUNSUP($1, "Unsupported: extends"); }
 	//			// IEEE: Might not be legal to have more than one set of parameters in an extends
-	|	class_typeWithoutId '(' list_of_argumentsE ')'	{ $$ = NULL; BBUNSUP($1, "Unsupported: extends"); }
+	|	class_typeWithoutId '(' list_of_argumentsE ')'
+			{ $$ = NULL; BBUNSUP($1, "Unsupported: extends"); }
 	;
 
 classImplementsE<nodep>:	// IEEE: part of class_declaration

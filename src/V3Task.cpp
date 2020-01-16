@@ -129,15 +129,14 @@ public:
         return iter->second;
     }
     bool ftaskNoInline(AstNodeFTask* nodep) {
-        return (getFTaskVertex(nodep)->noInline());
+        return getFTaskVertex(nodep)->noInline();
     }
     AstCFunc* ftaskCFuncp(AstNodeFTask* nodep) {
-        return (getFTaskVertex(nodep)->cFuncp());
+        return getFTaskVertex(nodep)->cFuncp();
     }
     void ftaskCFuncp(AstNodeFTask* nodep, AstCFunc* cfuncp) {
         getFTaskVertex(nodep)->cFuncp(cfuncp);
     }
-
     void checkPurity(AstNodeFTask* nodep) {
         checkPurity(nodep, getFTaskVertex(nodep));
     }

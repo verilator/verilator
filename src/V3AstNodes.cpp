@@ -999,6 +999,12 @@ void AstJumpGo::dump(std::ostream& str) const {
     if (labelp()) { labelp()->dump(str); }
     else { str<<"%Error:UNLINKED"; }
 }
+void AstMemberSel::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " -> ";
+    if (varp()) { varp()->dump(str); }
+    else { str << "%Error:UNLINKED"; }
+}
 void AstModportFTaskRef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isExport()) str<<" EXPORT";

@@ -49,12 +49,12 @@ private:
     // NODE STATE
     //  Entire netlist:
     //   AstCaseItem::user2()   // bool           Moved default caseitems
-    AstUser2InUse       m_inuser2;
+    AstUser2InUse m_inuser2;
 
     // STATE
     // Below state needs to be preserved between each module call.
-    AstNodeModule*      m_modp;         // Current module
-    AstNodeFTask* m_ftaskp;     // Function or task we're inside
+    AstNodeModule* m_modp;  // Current module
+    AstNodeFTask* m_ftaskp;  // Function or task we're inside
     AstNodeCoverOrAssert* m_assertp;  // Current assertion
     int m_senitemCvtNum;  // Temporary signal counter
 

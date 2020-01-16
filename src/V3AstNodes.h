@@ -2064,6 +2064,7 @@ public:
     virtual void cloneRelink() { if (m_varp && m_varp->clonep()) { m_varp = m_varp->clonep(); } }
     virtual const char* broken() const {
         BROKEN_RTN(m_varp && !m_varp->brokeExists()); return NULL; }
+    virtual void dump(std::ostream& str) const;
     virtual string name() const { return m_name; }
     virtual V3Hash sameHash() const { return V3Hash(m_name); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
