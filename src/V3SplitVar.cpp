@@ -174,8 +174,10 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
                 pragmap->unlinkFrBack()->deleteTree(); VL_DANGLING(vars[i].first);
             }
         }
-        iterateChildren(nodep);
-        split();
+        if (!vars.empty()) {  // need to check this module only when split_var pragma exists in this module.
+            iterateChildren(nodep);
+            split();
+        }
         m_modp = NULL;
     }
     virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
@@ -494,8 +496,10 @@ class SplitPackedVarVisitor : public AstNVisitor {
             // consume the pragma here anyway.
             pragmap->unlinkFrBack()->deleteTree(); VL_DANGLING(vars[i].first);
         }
-        iterateChildren(nodep);
-        split();
+        if (!vars.empty()) {  // need to check this module only when split_var pragma exists in this module.
+            iterateChildren(nodep);
+            split();
+        }
         m_modp = NULL;
     }
     virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
