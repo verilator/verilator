@@ -865,10 +865,10 @@ AstNode* AstNode::iterateSubtreeReturnEdits(AstNVisitor& v) {
         // track, then delete it on completion
         AstBegin* tempp = new AstBegin(nodep->fileline(), "[EditWrapper]", nodep);
         {
-            tempp->stmtsp()->accept(v); VL_DANGLING(nodep);  // nodep to null as may be replaced
+            VL_DO_DANGLING(tempp->stmtsp()->accept(v), nodep);  // nodep to null as may be replaced
         }
         nodep = tempp->stmtsp()->unlinkFrBackWithNext();
-        tempp->deleteTree(); VL_DANGLING(tempp);
+        VL_DO_DANGLING(tempp->deleteTree(), tempp);
     } else {
         // Use back to determine who's pointing at us (IE assume new node
         // grafts into same place as old one)
@@ -880,7 +880,7 @@ AstNode* AstNode::iterateSubtreeReturnEdits(AstNVisitor& v) {
         else if (this->m_backp->m_nextp == this) nextnodepp = &(this->m_backp->m_nextp);
         UASSERT_OBJ(nextnodepp, this, "Node's back doesn't point to forward to node itself");
         {
-            nodep->accept(v); VL_DANGLING(nodep);  // nodep to null as may be replaced
+            VL_DO_DANGLING(nodep->accept(v), nodep);  // nodep to null as may be replaced
         }
         nodep = *nextnodepp;  // Grab new node from point where old was connected
     }

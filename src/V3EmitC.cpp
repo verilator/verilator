@@ -2388,7 +2388,7 @@ void EmitCStmts::emitVarSort(const VarSortMap& vmap, VarVec* sortedp) {
                 sortedp->push_back(*kt);
             }
         }
-        delete statep; VL_DANGLING(statep);
+        VL_DO_DANGLING(delete statep, statep);
     }
 }
 

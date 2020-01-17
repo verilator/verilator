@@ -91,7 +91,7 @@ AstRange* V3ParseGrammar::scrubRange(AstNodeRange* nrangep) {
         nextp = VN_CAST(nodep->nextp(), NodeRange);
         if (!VN_IS(nodep, Range)) {
             nodep->v3error("Unsupported or syntax error: Unsized range in cell or other declaration");
-            nodep->unlinkFrBack(); nodep->deleteTree(); VL_DANGLING(nodep);
+            nodep->unlinkFrBack(); VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
     if (nrangep && nrangep->nextp()) {

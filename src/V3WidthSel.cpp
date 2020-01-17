@@ -60,7 +60,7 @@ private:
         if (!VN_IS(nodep, Const)) {
             nodep->v3error(message);
             nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::Unsized32(), 1));
-            pushDeletep(nodep); VL_DANGLING(nodep);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
 
@@ -219,7 +219,7 @@ private:
                                                 fromp, subp);
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
             if (debug()>=9) newp->dumpTree(cout, "--SELBTn: ");
-            nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+            nodep->replaceWith(newp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         else if (AstPackArrayDType* adtypep = VN_CAST(ddtypep, PackArrayDType)) {
             // SELBIT(array, index) -> SEL(array, index*width-of-subindex, width-of-subindex)
@@ -248,7 +248,7 @@ private:
             newp->declElWidth(elwidth);
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
             if (debug()>=9) newp->dumpTree(cout, "--SELBTn: ");
-            nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+            nodep->replaceWith(newp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         else if (AstAssocArrayDType* adtypep = VN_CAST(ddtypep, AssocArrayDType)) {
             // SELBIT(array, index) -> ASSOCSEL(array, index)
@@ -257,7 +257,7 @@ private:
                                                 fromp, subp);
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
             if (debug()>=9) newp->dumpTree(cout, "--SELBTn: ");
-            nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+            nodep->replaceWith(newp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         else if (AstQueueDType* adtypep = VN_CAST(ddtypep, QueueDType)) {
             // SELBIT(array, index) -> CMETHODCALL(queue, "at", index)
@@ -266,7 +266,7 @@ private:
                                                       fromp, "at", subp);
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off queue reference
             if (debug()>=9) newp->dumpTree(cout, "--SELBTq: ");
-            nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+            nodep->replaceWith(newp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         else if (VN_IS(ddtypep, BasicDType)) {
             // SELBIT(range, index) -> SEL(array, index, 1)
@@ -278,7 +278,7 @@ private:
             newp->declRange(fromRange);
             UINFO(6,"   new "<<newp<<endl);
             if (debug()>=9) newp->dumpTree(cout, "--SELBTn: ");
-            nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+            nodep->replaceWith(newp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         else if (VN_IS(ddtypep, NodeUOrStructDType)) {  // A bit from the packed struct
             // SELBIT(range, index) -> SEL(array, index, 1)
@@ -290,15 +290,15 @@ private:
             newp->declRange(fromRange);
             UINFO(6,"   new "<<newp<<endl);
             if (debug()>=9) newp->dumpTree(cout, "--SELBTn: ");
-            nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+            nodep->replaceWith(newp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         else {  // NULL=bad extract, or unknown node type
             nodep->v3error("Illegal bit or array select; type already selected, or bad dimension: type is"
                            <<fromdata.m_errp->prettyName());
             // How to recover?  We'll strip a dimension.
-            nodep->replaceWith(fromp); pushDeletep(nodep); VL_DANGLING(nodep);
+            nodep->replaceWith(fromp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
-        if (!rhsp->backp()) { pushDeletep(rhsp); VL_DANGLING(rhsp); }
+        if (!rhsp->backp()) { VL_DO_DANGLING(pushDeletep(rhsp), rhsp); }
     }
     virtual void visit(AstSelExtract* nodep) {
         // Select of a range specified part of an array, i.e. "array[2:3]"
@@ -325,15 +325,15 @@ private:
             // Slice extraction
             if (fromRange.elements() == elem
                 && fromRange.lo() == lsb) {  // Extracting whole of original array
-                nodep->replaceWith(fromp); pushDeletep(nodep); VL_DANGLING(nodep);
+                nodep->replaceWith(fromp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else if (fromRange.elements() == 1) {  // Extracting single element
                 AstArraySel* newp = new AstArraySel(nodep->fileline(), fromp, lsbp);
-                nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+                nodep->replaceWith(newp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else {  // Slice
                 AstSliceSel* newp = new AstSliceSel(nodep->fileline(), fromp,
                                                     VNumRange(VNumRange::LeftRight(),
                                                               msb, lsb));
-                nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+                nodep->replaceWith(newp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
         }
         else if (AstPackArrayDType* adtypep = VN_CAST(ddtypep, PackArrayDType)) {
@@ -365,7 +365,7 @@ private:
             newp->dtypeFrom(sliceDType(adtypep, msb, lsb));
             //if (debug()>=9) newp->dumpTree(cout, "--EXTBTn: ");
             UASSERT_OBJ(newp->widthMin() == newp->widthConst(), nodep, "Width mismatch");
-            nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+            nodep->replaceWith(newp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         else if (VN_IS(ddtypep, BasicDType)) {
             if (fromRange.littleEndian()) {
@@ -387,7 +387,7 @@ private:
             newp->declRange(fromRange);
             UINFO(6,"   new "<<newp<<endl);
             //if (debug()>=9) newp->dumpTree(cout, "--SELEXnew: ");
-            nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+            nodep->replaceWith(newp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         else if (VN_IS(ddtypep, NodeUOrStructDType)) {
             // Classes aren't little endian
@@ -406,19 +406,19 @@ private:
             newp->declRange(fromRange);
             UINFO(6,"   new "<<newp<<endl);
             //if (debug()>=9) newp->dumpTree(cout, "--SELEXnew: ");
-            nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+            nodep->replaceWith(newp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         else {  // NULL=bad extract, or unknown node type
             nodep->v3error("Illegal range select; type already selected, or bad dimension: type is "
                            <<fromdata.m_errp->prettyName());
             UINFO(1,"    Related ddtype: "<<ddtypep<<endl);
             // How to recover?  We'll strip a dimension.
-            nodep->replaceWith(fromp); pushDeletep(nodep); VL_DANGLING(nodep);
+            nodep->replaceWith(fromp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         // delete whatever we didn't use in reconstruction
-        if (!fromp->backp()) { pushDeletep(fromp); VL_DANGLING(fromp); }
-        if (!msbp->backp()) { pushDeletep(msbp); VL_DANGLING(msbp); }
-        if (!lsbp->backp()) { pushDeletep(lsbp); VL_DANGLING(lsbp); }
+        if (!fromp->backp()) { VL_DO_DANGLING(pushDeletep(fromp), fromp); }
+        if (!msbp->backp()) { VL_DO_DANGLING(pushDeletep(msbp), msbp); }
+        if (!lsbp->backp()) { VL_DO_DANGLING(pushDeletep(lsbp), lsbp); }
     }
 
     void replaceSelPlusMinus(AstNodePreSel* nodep) {
@@ -479,18 +479,18 @@ private:
             newp->declElWidth(elwidth);
             UINFO(6,"   new "<<newp<<endl);
             if (debug()>=9) newp->dumpTree(cout, "--SELNEW: ");
-            nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+            nodep->replaceWith(newp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         else {  // NULL=bad extract, or unknown node type
             nodep->v3error("Illegal +: or -: select; type already selected, or bad dimension: type is "
                            <<fromdata.m_errp->prettyTypeName());
             // How to recover?  We'll strip a dimension.
-            nodep->replaceWith(fromp); pushDeletep(nodep); VL_DANGLING(nodep);
+            nodep->replaceWith(fromp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         // delete whatever we didn't use in reconstruction
-        if (!fromp->backp()) { pushDeletep(fromp); VL_DANGLING(fromp); }
-        if (!rhsp->backp()) { pushDeletep(rhsp); VL_DANGLING(rhsp); }
-        if (!widthp->backp()) { pushDeletep(widthp); VL_DANGLING(widthp); }
+        if (!fromp->backp()) { VL_DO_DANGLING(pushDeletep(fromp), fromp); }
+        if (!rhsp->backp()) { VL_DO_DANGLING(pushDeletep(rhsp), rhsp); }
+        if (!widthp->backp()) { VL_DO_DANGLING(pushDeletep(widthp), widthp); }
     }
     virtual void visit(AstSelPlus* nodep) {
         replaceSelPlusMinus(nodep);

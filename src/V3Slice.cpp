@@ -146,7 +146,7 @@ class SliceVisitor : public AstNVisitor {
                     newlistp = AstNode::addNextNull(newlistp, newp);
                 }
                 if (debug()>=9) { cout<<endl; nodep->dumpTree(cout, " Deslice-Dn: "); }
-                nodep->replaceWith(newlistp); nodep->deleteTree(); VL_DANGLING(nodep);
+                nodep->replaceWith(newlistp); VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 // Normal edit iterator will now iterate on all of the expansion assignments
                 // This will potentially call this function again to resolve next level of slicing
                 return;
@@ -209,7 +209,7 @@ class SliceVisitor : public AstNVisitor {
                     }
                     UASSERT_OBJ(logp, nodep, "Unpacked array with empty indices range");
                     nodep->replaceWith(logp);
-                    pushDeletep(nodep); VL_DANGLING(nodep);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     nodep = logp;
                 }
             }

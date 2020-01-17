@@ -384,9 +384,9 @@ private:
             if (newlhsp) {
                 nodep->lhsp(newlhsp);
             } else {
-                nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             }
-            lhsp->deleteTree(); VL_DANGLING(lhsp);
+            VL_DO_DANGLING(lhsp->deleteTree(), lhsp);
         }
         else {
             iterateChildren(nodep);
@@ -432,7 +432,7 @@ private:
                 }
                 AstVarRef* newrefp = new AstVarRef(nodep->fileline(), dlyvscp, true);
                 newrefp->user2(true);  // No reason to do it again
-                nodep->replaceWith(newrefp); nodep->deleteTree(); VL_DANGLING(nodep);
+                nodep->replaceWith(newrefp); VL_DO_DANGLING(nodep->deleteTree(), nodep);
             }
             else if (!m_inDly && nodep->lvalue()) {
                 //UINFO(9,"NBA "<<nodep<<endl);

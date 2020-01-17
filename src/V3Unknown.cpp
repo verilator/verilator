@@ -152,12 +152,12 @@ private:
     }
     virtual void visit(AstAssignDly* nodep) {
         m_assigndlyp = nodep;
-        iterateChildren(nodep); VL_DANGLING(nodep);  // May delete nodep.
+        VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
         m_assigndlyp = NULL;
     }
     virtual void visit(AstAssignW* nodep) {
         m_assignwp = nodep;
-        iterateChildren(nodep); VL_DANGLING(nodep);  // May delete nodep.
+        VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
         m_assignwp = NULL;
     }
     virtual void visit(AstCaseItem* nodep) {
@@ -177,7 +177,7 @@ private:
         V3Const::constifyEdit(nodep->rhsp());  // rhsp may change
         if (VN_IS(nodep->lhsp(), Const) && VN_IS(nodep->rhsp(), Const)) {
             // Both sides are constant, node can be constant
-            V3Const::constifyEdit(nodep); VL_DANGLING(nodep);
+            VL_DO_DANGLING(V3Const::constifyEdit(nodep), nodep);
             return;
         } else {
             AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
@@ -188,15 +188,15 @@ private:
                  || (VN_IS(rhsp, Const) && VN_CAST(rhsp, Const)->num().isFourState()))) {
                 newp = new AstConst(nodep->fileline(), AstConst::WidthedValue(),
                                     1, (VN_IS(nodep, EqCase) ? 0 : 1));
-                lhsp->deleteTree(); VL_DANGLING(lhsp);
-                rhsp->deleteTree(); VL_DANGLING(rhsp);
+                VL_DO_DANGLING(lhsp->deleteTree(), lhsp);
+                VL_DO_DANGLING(rhsp->deleteTree(), rhsp);
             } else {
                 if (VN_IS(nodep, EqCase)) {
                     newp = new AstEq(nodep->fileline(), lhsp, rhsp);
                 } else { newp = new AstNeq(nodep->fileline(), lhsp, rhsp); }
             }
             nodep->replaceWith(newp);
-            nodep->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
             // Iterate tree now that we may have gotten rid of Xs
             iterateChildren(newp);
         }
@@ -207,7 +207,7 @@ private:
         V3Const::constifyEdit(nodep->rhsp());  // rhsp may change
         if (VN_IS(nodep->lhsp(), Const) && VN_IS(nodep->rhsp(), Const)) {
             // Both sides are constant, node can be constant
-            V3Const::constifyEdit(nodep); VL_DANGLING(nodep);
+            VL_DO_DANGLING(V3Const::constifyEdit(nodep), nodep);
             return;
         } else {
             AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
@@ -229,10 +229,10 @@ private:
                 if (VN_IS(nodep, EqWild)) {
                     newp  = new AstEq(nodep->fileline(), and1p, and2p);
                 } else { newp = new AstNeq(nodep->fileline(), and1p, and2p); }
-                rhsp->deleteTree(); VL_DANGLING(rhsp);
+                VL_DO_DANGLING(rhsp->deleteTree(), rhsp);
             }
             nodep->replaceWith(newp);
-            nodep->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
             // Iterate tree now that we may have gotten rid of the compare
             iterateChildren(newp);
         }
@@ -256,7 +256,7 @@ private:
         UINFO(4," ISUNKNOWN->0 "<<nodep<<endl);
         AstConst* newp = new AstConst(nodep->fileline(), AstConst::LogicFalse());
         nodep->replaceWith(newp);
-        nodep->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     virtual void visit(AstConst* nodep) {
         if (m_constXCvt
@@ -280,7 +280,7 @@ private:
                 }
                 AstConst* newp = new AstConst(nodep->fileline(), numnew);
                 nodep->replaceWith(newp);
-                nodep->deleteTree(); VL_DANGLING(nodep);
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 UINFO(4,"   -> "<<newp<<endl);
             } else {
                 // Make a Vxrand variable
@@ -317,7 +317,7 @@ private:
                 if (debug()>=9) newref1p->dumpTree(cout, "     _new: ");
                 if (debug()>=9) newvarp->dumpTree(cout, "     _new: ");
                 if (debug()>=9) newinitp->dumpTree(cout, "     _new: ");
-                nodep->deleteTree(); VL_DANGLING(nodep);
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
             }
         }
     }
@@ -347,7 +347,7 @@ private:
             condp = V3Const::constifyEdit(condp);
             if (condp->isOne()) {
                 // We don't need to add a conditional; we know the existing expression is ok
-                condp->deleteTree();
+                VL_DO_DANGLING(condp->deleteTree(), condp);
             }
             else if (!lvalue) {
                 // SEL(...) -> COND(LTE(bit<=maxmsb), ARRAYSEL(...), {width{1'bx}})
@@ -408,7 +408,7 @@ private:
             condp = V3Const::constifyEdit(condp);
             if (condp->isOne()) {
                 // We don't need to add a conditional; we know the existing expression is ok
-                condp->deleteTree();
+                VL_DO_DANGLING(condp->deleteTree(), condp);
             }
             else if (!lvalue
                      // Making a scalar would break if we're making an array

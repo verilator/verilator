@@ -161,7 +161,7 @@ public:
                         // It's no longer implicit but a wire logic type
                         AstBasicDType* newp = new AstBasicDType(dtypep->fileline(), AstBasicDTypeKwd::LOGIC,
                                                                 dtypep->numeric(), dtypep->width(), dtypep->widthMin());
-                        dtypep->deleteTree(); VL_DANGLING(dtypep);
+                        VL_DO_DANGLING(dtypep->deleteTree(), dtypep);
                         dtypep = newp;
                     }
                     dtypep->rangep(finalRangep);
@@ -2126,7 +2126,7 @@ loop_generate_construct<nodep>:	// ==IEEE: loop_generate_construct
 			  // for loop won't get an extra layer of hierarchy tacked on
 			  blkp->addGenforp(new AstGenFor($1,initp,$5,$7,lowerNoBegp));
 			  $$ = blkp;
-			  lowerBegp->deleteTree(); VL_DANGLING(lowerBegp);
+			  VL_DO_DANGLING(lowerBegp->deleteTree(), lowerBegp);
 			}
 	;
 

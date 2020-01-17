@@ -212,7 +212,7 @@ public:
         }
     }
     ~vl_unordered_set() {
-        delete [] m_bucketsp; VL_DANGLING(m_bucketsp);
+        VL_DO_DANGLING(delete [] m_bucketsp, m_bucketsp);
     }
 
     vl_unordered_set& operator=(const vl_unordered_set& other) {

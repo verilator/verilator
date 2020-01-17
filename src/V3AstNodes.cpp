@@ -172,7 +172,7 @@ AstExecGraph::AstExecGraph(FileLine* fileline)
     m_depGraphp = new V3Graph;
 }
 AstExecGraph::~AstExecGraph() {
-    delete m_depGraphp; VL_DANGLING(m_depGraphp);
+    VL_DO_DANGLING(delete m_depGraphp, m_depGraphp);
 }
 
 bool AstVar::isSigPublic() const {
@@ -798,7 +798,7 @@ AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd) 
     // check the detailed map for this same node
     // Also adds this new node to the detailed map
     AstBasicDType* newp = findInsertSameDType(new1p);
-    if (newp != new1p) new1p->deleteTree();
+    if (newp != new1p) VL_DO_DANGLING(new1p->deleteTree(), new1p);
     else addTypesp(newp);
     //
     m_basicps[kwd] = newp;
@@ -809,7 +809,7 @@ AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kw
                                                int width, int widthMin, AstNumeric numeric) {
     AstBasicDType* new1p = new AstBasicDType(fl, kwd, numeric, width, widthMin);
     AstBasicDType* newp = findInsertSameDType(new1p);
-    if (newp != new1p) new1p->deleteTree();
+    if (newp != new1p) VL_DO_DANGLING(new1p->deleteTree(), new1p);
     else addTypesp(newp);
     return newp;
 }
@@ -818,7 +818,7 @@ AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kw
                                                VNumRange range, int widthMin, AstNumeric numeric) {
     AstBasicDType* new1p = new AstBasicDType(fl, kwd, numeric, range, widthMin);
     AstBasicDType* newp = findInsertSameDType(new1p);
-    if (newp != new1p) new1p->deleteTree();
+    if (newp != new1p) VL_DO_DANGLING(new1p->deleteTree(), new1p);
     else addTypesp(newp);
     return newp;
 }

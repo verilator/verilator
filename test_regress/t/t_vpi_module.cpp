@@ -178,7 +178,7 @@ int main(int argc, char** argv, char** env) {
     if (tfp) tfp->close();
 #endif
 
-    delete topp; VL_DANGLING(topp);
+    VL_DO_DANGLING(delete topp, topp);
     exit(0L);
 }
 

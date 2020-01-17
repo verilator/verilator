@@ -1041,7 +1041,7 @@ static void partCheckCriticalPaths(V3Graph* mtasksp) {
 // Advance to nextp(way) and delete edge
 static V3GraphEdge* partBlastEdgep(GraphWay way, V3GraphEdge* edgep) {
     V3GraphEdge* nextp = edgep->nextp(way);
-    edgep->unlinkDelete(); VL_DANGLING(edgep);
+    VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
     return nextp;
 }
 
@@ -1965,7 +1965,7 @@ private:
                 // Move edges from donorp to recipientp
                 partMergeEdgesFrom(m_mtasksp, mergedp, donorp, NULL);
                 // Remove donorp from the graph
-                donorp->unlinkDelete(m_mtasksp); VL_DANGLING(donorp);
+                VL_DO_DANGLING(donorp->unlinkDelete(m_mtasksp), donorp);
                 m_mergesDone++;
             }
 
@@ -2697,10 +2697,10 @@ void V3Partition::finalizeCosts(V3Graph* execMTaskGraphp) {
                                     outp->top(), 1);
                 }
             }
-            mtp->unlinkDelete(execMTaskGraphp); VL_DANGLING(mtp);
+            VL_DO_DANGLING(mtp->unlinkDelete(execMTaskGraphp), mtp);
             // Also remove and delete the AstMTaskBody, otherwise it would
             // keep a dangling pointer to the ExecMTask.
-            bodyp->unlinkFrBack()->deleteTree(); VL_DANGLING(bodyp);
+            VL_DO_DANGLING(bodyp->unlinkFrBack()->deleteTree(), bodyp);
         }
     }
 

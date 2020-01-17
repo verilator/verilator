@@ -1175,7 +1175,7 @@ int V3PreProcImp::getStateToken() {
                     out = defineSubst(refp);
                     //NOP: out = m_preprocp->defSubstitute(out);
                 }
-                m_defRefs.pop(); VL_DANGLING(refp);
+                VL_DO_DANGLING(m_defRefs.pop(), refp);
                 if (m_defRefs.empty()) {
                     statePop();
                     if (state() == ps_JOIN) {  // Handle {left}```FOO(ARG) where `FOO(ARG) might be empty

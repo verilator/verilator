@@ -371,7 +371,7 @@ private:
                 const AstNode* init2p = VN_CAST(var2p->valuep(), InitArray);
                 if (init1p->sameGateTree(init2p)) {
                     UINFO(8,"   Duplicate table var "<<vsc2p<<" == "<<vsc1p<<endl);
-                    vsc1p->unlinkFrBack()->deleteTree();
+                    VL_DO_DANGLING(vsc1p->unlinkFrBack()->deleteTree(), vsc1p);
                     return vsc2p;
                 }
             }
@@ -443,7 +443,7 @@ private:
         UINFO(4,"  ALWAYS  "<<nodep<<endl);
         if (treeTest(nodep)) {
             // Well, then, I'll be a memory hog.
-            createTable(nodep); VL_DANGLING(nodep);
+            VL_DO_DANGLING(createTable(nodep), nodep);
         }
     }
     virtual void visit(AstAssignAlias* nodep) {}

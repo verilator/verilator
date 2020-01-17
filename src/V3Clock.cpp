@@ -278,7 +278,7 @@ private:
             stmtsp->unlinkFrBackWithNext();
             cmtp->addNextHere(stmtsp);
         }
-        nodep->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     virtual void visit(AstAlwaysPost* nodep) {
         AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName(), true);
@@ -287,7 +287,7 @@ private:
             stmtsp->unlinkFrBackWithNext();
             cmtp->addNextHere(stmtsp);
         }
-        nodep->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     virtual void visit(AstCoverToggle* nodep) {
         //nodep->dumpTree(cout, "ct:");
@@ -307,7 +307,7 @@ private:
         newp->addIfsp(new AstAssign(nodep->fileline(),
                                     changep->cloneTree(false),
                                     origp->cloneTree(false)));
-        nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+        nodep->replaceWith(newp); VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     virtual void visit(AstInitial* nodep) {
         AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName(), true);
@@ -316,7 +316,7 @@ private:
             stmtsp->unlinkFrBackWithNext();
             cmtp->addNextHere(stmtsp);
         }
-        nodep->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     virtual void visit(AstCFunc* nodep) {
         iterateChildren(nodep);
@@ -349,7 +349,7 @@ private:
             // Not at the top or empty block...
             // Only empty blocks should be leftover on the non-top.  Killem.
             UASSERT_OBJ(!nodep->stmtsp(), nodep, "Non-empty lower active");
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (m_mtaskBodyp) {
             UINFO(4,"  TR ACTIVE  "<<nodep<<endl);
             AstNode* stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
@@ -374,7 +374,7 @@ private:
                 clearLastSen();
                 m_mtaskBodyp->addStmtsp(stmtsp);
             }
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else {
             UINFO(4,"  ACTIVE  "<<nodep<<endl);
             AstNode* stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
@@ -407,7 +407,7 @@ private:
                 // Move statements to function
                 addToEvalLoop(stmtsp);
             }
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
     }
     virtual void visit(AstExecGraph* nodep) {

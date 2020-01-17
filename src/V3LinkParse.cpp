@@ -169,7 +169,7 @@ private:
                 else addp = newp;
             }
             nodep->replaceWith(addp);
-            nodep->deleteTree();
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
 
@@ -187,7 +187,7 @@ private:
                 AstNode* newp = new AstParamTypeDType(nodep->fileline(),
                                                       nodep->varType(), nodep->name(),
                                                       VFlagChildDType(), dtypep);
-                nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+                nodep->replaceWith(newp); VL_DO_DANGLING(nodep->deleteTree(), nodep);
             }
             return;
         }
@@ -262,63 +262,63 @@ private:
             AstTypedef* typep = VN_CAST(nodep->backp(), Typedef);
             UASSERT_OBJ(typep, nodep, "Attribute not attached to typedef");
             typep->attrPublic(true);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_CLOCK) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             nodep->v3warn(DEPRECATED, "sc_clock is deprecated and will be removed");
             m_varp->attrScClocked(true);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_CLOCK_ENABLE) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrClockEn(true);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_PUBLIC) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRWPublic(true); m_varp->sigModPublic(true);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_PUBLIC_FLAT) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRWPublic(true);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_PUBLIC_FLAT_RD) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRdPublic(true);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_PUBLIC_FLAT_RW) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRWPublic(true);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_ISOLATE_ASSIGNMENTS) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrIsolateAssign(true);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_SFORMAT) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrSFormat(true);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_SC_BV) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrScBv(true);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_CLOCKER) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrClocker(VVarAttrClocker::CLOCKER_YES);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_NO_CLOCKER) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrClocker(VVarAttrClocker::CLOCKER_NO);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
     }
 
@@ -363,7 +363,7 @@ private:
             if (VN_IS(backp, Typedef)) {  // A typedef doesn't need us to make yet another level of typedefing
                 // For typedefs just remove the AstRefDType level of abstraction
                 nodep->replaceWith(dtypep);
-                nodep->deleteTree(); VL_DANGLING(nodep);
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 return;
             } else {
                 defp = new AstTypedef(nodep->fileline(), nodep->name(), NULL,
@@ -373,14 +373,14 @@ private:
             }
         }
         nodep->replaceWith(new AstRefDType(nodep->fileline(), defp->name()));
-        nodep->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
     virtual void visit(AstTypedefFwd* nodep) {
         // We only needed the forward declaration in order to parse correctly.
         // We won't even check it was ever really defined, as it might have been in a header
         // file referring to a module we never needed
-        nodep->unlinkFrBack()->deleteTree();
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
 
     virtual void visit(AstForeach* nodep) {
@@ -439,8 +439,8 @@ private:
             dimension--;
         }
         //newp->dumpTree(cout, "-foreach-new:");
-        firstVarsp->deleteTree(); VL_DANGLING(firstVarsp);
-        nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(firstVarsp->deleteTree(), firstVarsp);
+        nodep->replaceWith(newp); VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
     virtual void visit(AstNodeModule* nodep) {

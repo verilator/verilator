@@ -79,7 +79,7 @@ private:
         // Initial assignments under function/tasks can just be simple
         // assignments without the initial
         if (m_ftaskp) {
-            nodep->replaceWith(nodep->bodysp()->unlinkFrBackWithNext()); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->replaceWith(nodep->bodysp()->unlinkFrBackWithNext()), nodep);
         }
     }
     virtual void visit(AstNodeCoverOrAssert* nodep) {
@@ -167,18 +167,18 @@ private:
                 did = 0;
                 if (AstNodeSel* selp = VN_CAST(nodep->sensp(), NodeSel)) {
                     AstNode* fromp = selp->fromp()->unlinkFrBack();
-                    selp->replaceWith(fromp); selp->deleteTree(); VL_DANGLING(selp);
+                    selp->replaceWith(fromp); VL_DO_DANGLING(selp->deleteTree(), selp);
                     did = 1;
                 }
                 // NodeSel doesn't include AstSel....
                 if (AstSel* selp = VN_CAST(nodep->sensp(), Sel)) {
                     AstNode* fromp = selp->fromp()->unlinkFrBack();
-                    selp->replaceWith(fromp); selp->deleteTree(); VL_DANGLING(selp);
+                    selp->replaceWith(fromp); VL_DO_DANGLING(selp->deleteTree(), selp);
                     did = 1;
                 }
                 if (AstNodePreSel* selp = VN_CAST(nodep->sensp(), NodePreSel)) {
                     AstNode* fromp = selp->lhsp()->unlinkFrBack();
-                    selp->replaceWith(fromp); selp->deleteTree(); VL_DANGLING(selp);
+                    selp->replaceWith(fromp); VL_DO_DANGLING(selp->deleteTree(), selp);
                     did = 1;
                 }
             }
@@ -242,17 +242,17 @@ private:
         if (nodep->pragType() == AstPragmaType::PUBLIC_MODULE) {
             UASSERT_OBJ(m_modp, nodep, "PUBLIC_MODULE not under a module");
             m_modp->modPublic(true);
-            nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
+            nodep->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         else if (nodep->pragType() == AstPragmaType::PUBLIC_TASK) {
             UASSERT_OBJ(m_ftaskp, nodep, "PUBLIC_TASK not under a task");
             m_ftaskp->taskPublic(true);
             m_modp->modPublic(true);  // Need to get to the task...
-            nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
+            nodep->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         else if (nodep->pragType() == AstPragmaType::COVERAGE_BLOCK_OFF) {
             if (!v3Global.opt.coverageLine()) {  // No need for block statements; may optimize better without
-                nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
+                nodep->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
         }
         else {
@@ -343,7 +343,7 @@ private:
                     }
                     newFormat.append(str);
                     AstNode *nextp = argp->nextp();
-                    argp->unlinkFrBack(); pushDeletep(argp); VL_DANGLING(argp);
+                    argp->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(argp), argp);
                     argp = nextp;
                 } else {
                     newFormat.append("%?");  // V3Width to figure it out
@@ -392,7 +392,7 @@ private:
                 && VN_CAST(nodep->exprsp(), Const)->num().isFromString()) {
                 AstConst* fmtp = VN_CAST(nodep->exprsp()->unlinkFrBack(), Const);
                 nodep->text(fmtp->num().toString());
-                pushDeletep(fmtp); VL_DANGLING(fmtp);
+                VL_DO_DANGLING(pushDeletep(fmtp), fmtp);
             }
             nodep->hasFormat(true);
         }
@@ -432,7 +432,7 @@ private:
                     }
                 }
             }
-            nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
+            nodep->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
 

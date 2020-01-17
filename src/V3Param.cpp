@@ -256,7 +256,7 @@ private:
                     AstCell* cellp = *it;
                     if (string* genHierNamep = (string *) cellp->user5p()) {
                         cellp->user5p(NULL);
-                        delete genHierNamep; VL_DANGLING(genHierNamep);
+                        VL_DO_DANGLING(delete genHierNamep, genHierNamep);
                     }
                 }
                 m_cellps.clear();
@@ -335,7 +335,7 @@ private:
                 } else if (AstPin* pinp = VN_CAST(candp, Pin)) {
                     UINFO(9,"Found interface parameter: "<<pinp<<endl);
                     UASSERT_OBJ(pinp->exprp(), pinp, "Interface parameter pin missing expression");
-                    nodep->replaceWith(pinp->exprp()->cloneTree(false)); VL_DANGLING(nodep);
+                    VL_DO_DANGLING(nodep->replaceWith(pinp->exprp()->cloneTree(false)), nodep);
                     return true;
                 }
             }
@@ -401,7 +401,7 @@ private:
             taskrefp->dotted(m_unlinkedTxt);
         }
         nodep->replaceWith(nodep->op1p()->unlinkFrBack());
-        pushDeletep(nodep); VL_DANGLING(nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     virtual void visit(AstCellArrayRef* nodep) {
         V3Const::constifyParamsEdit(nodep->selp());
@@ -436,7 +436,7 @@ private:
         } else {
             nodep->unlinkFrBack();
         }
-        nodep->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     virtual void visit(AstGenIf* nodep) {
         UINFO(9,"  GENIF "<<nodep<<endl);
@@ -457,7 +457,7 @@ private:
             } else {
                 nodep->unlinkFrBack();
             }
-            nodep->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
             // Normal edit rules will now recurse the replacement
         } else {
             nodep->condp()->v3error("Generate If condition must evaluate to constant");
@@ -486,7 +486,7 @@ private:
             // Note V3Unroll will replace some AstVarRef's to the loop variable with constants
             // Don't remove any deleted nodes in m_unroller until whole process finishes,
             // (are held in m_unroller), as some AstXRefs may still point to old nodes.
-            m_unroller.unrollGen(forp, beginName); VL_DANGLING(forp);
+            VL_DO_DANGLING(m_unroller.unrollGen(forp, beginName), forp);
             // Blocks were constructed under the special begin, move them up
             // Note forp is null, so grab statements again
             if (AstNode* stmtsp = nodep->genforp()) {
@@ -519,7 +519,7 @@ private:
             for (AstNode* ep = itemp->condsp(); ep; ) {
                 AstNode* nextp = ep->nextp();  // May edit list
                 iterateAndNextNull(ep);
-                V3Const::constifyParamsEdit(ep); VL_DANGLING(ep);  // ep may change
+                VL_DO_DANGLING(V3Const::constifyParamsEdit(ep), ep);  // ep may change
                 ep = nextp;
             }
         }
@@ -553,7 +553,7 @@ private:
             nodep->replaceWith(keepp);
         }
         else nodep->unlinkFrBack();
-        nodep->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
     // Default: Just iterate

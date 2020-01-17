@@ -159,7 +159,7 @@ public:
     }
     void deleteAssign(AstNodeAssign* nodep) {
         UINFO(5, "Delete "<<nodep<<endl);
-        nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     void deleteUnusedAssign() {
         // If there are unused assignments in this var, kill them
@@ -308,7 +308,7 @@ private:
         }
         if (debug()>5)  newp->dumpTree(cout, "       w_new: ");
         nodep->replaceWith(newp);
-        pushDeletep(nodep); VL_DANGLING(nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
         ++m_statSubsts;
     }
     virtual void visit(AstWordSel* nodep) {
@@ -327,7 +327,7 @@ private:
                 // Check that the RHS hasn't changed value since we recorded it.
                 SubstUseVisitor visitor (substp, entryp->getWordStep(word));
                 if (visitor.ok()) {
-                    replaceSubstEtc(nodep, substp); VL_DANGLING(nodep);
+                    VL_DO_DANGLING(replaceSubstEtc(nodep, substp), nodep);
                 } else {
                     entryp->consumeWord(word);
                 }
@@ -355,7 +355,7 @@ private:
                 SubstUseVisitor visitor (substp, entryp->getWholeStep());
                 if (visitor.ok()) {
                     UINFO(8," USEwhole "<<nodep<<endl);
-                    replaceSubstEtc(nodep, substp); VL_DANGLING(nodep);
+                    VL_DO_DANGLING(replaceSubstEtc(nodep, substp), nodep);
                 } else {
                     UINFO(8," USEwholeButChg "<<nodep<<endl);
                     entryp->consumeWhole();
