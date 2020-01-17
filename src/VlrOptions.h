@@ -27,7 +27,7 @@ class VlrOptions {
 public:
     // CONSTRUCTORS
     VlrOptions():
-        m_fst(NULL), m_scope(NULL), m_vlt(false)
+        m_fst(NULL), m_replayTop(NULL), m_scope(NULL), m_vlt(false)
     {}
     ~VlrOptions() {}
 
@@ -35,6 +35,7 @@ public:
     void parseOptsList(int argc, char** argv);
 
     const char* fst() { return m_fst; }
+    const char* replayTop() { return m_replayTop; }
     const char* scope() { return m_scope; }
     bool vlt() { return m_vlt; }
 private:
@@ -42,8 +43,9 @@ private:
     std::string version();
     bool onoff(const char* sw, const char* arg, bool& flag);
 
-    const char* m_fst;
-    const char* m_scope;
+    char* m_fst;
+    char* m_replayTop;
+    char* m_scope;
     bool m_vlt;
 };
 

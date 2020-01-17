@@ -39,6 +39,8 @@ int VerilatedReplay::init(std::string scope) {
          ++it) {
         VL_PRINTF("%s = %d\n", it->second.fullName.c_str(), it->first);
         fstReaderSetFacProcessMask(m_fstp, it->first);
+        m_signals[it->first] = FstSignal(it->second.hier.u.var.length,
+                        reinterpret_cast<VM_PREFIX*>(m_modp)->??);
     }
 
     createMod();
@@ -142,6 +144,7 @@ void VerilatedReplay::fstCb(uint64_t time, fstHandle facidx,
         m_simTime = m_time;
     }
 
+    // TODO -- remove
     VL_PRINTF("%lu %u %s\n", time, facidx, valuep);
 }
 
@@ -165,6 +168,7 @@ void VerilatedReplay::fstCallback(void* userDatap, uint64_t time, fstHandle faci
 }
 
 void VerilatedReplay::createMod() {
+    // TODO -- maybe get rid of the need for VM_PREFIX by generating these things
     m_modp = new VM_PREFIX;
     // TODO -- make VerilatedModule destructor virtual so we can delete from the base class?
 #if VM_TRACE

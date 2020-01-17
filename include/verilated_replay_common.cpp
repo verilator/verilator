@@ -24,6 +24,7 @@
 
 
 #include "verilated_replay_common.h"
+#include <iostream>
 
 using namespace std;
 
@@ -39,23 +40,24 @@ using namespace std;
 void VerilatedReplayCommon::openFst(const string& fstName) {
     m_fstp = fstReaderOpen(fstName.c_str());
     if (!m_fstp) {
-        // TODO -- Verilator runtime way of tossing a fatal error?, see elsewhere
-        VL_PRINTF("Could not open FST: %s\n", fstName.c_str());
+        // TODO -- a better way to fatal in either Verilator or in the runtime?
+        cout<<"Could not open FST: "<<fstName<<endl;
         exit(-1);
     }
 }
 
-void VerilatedReplayCommon::search(string targetScope) {
+void VerilatedReplayCommon::searchFst(const string& targetScope) {
     const char* scope = "";
+    string searchScope(targetScope);
 
     while (fstHier* hierp = fstReaderIterateHier(m_fstp)) {
         if (hierp->htyp == FST_HT_SCOPE) {
             scope = fstReaderPushScope(m_fstp, hierp->u.scope.name, NULL);
-            if (targetScope.empty()) targetScope = string(scope);
+            if (searchScope.empty()) searchScope = string(scope);
         } else if (hierp->htyp == FST_HT_UPSCOPE) {
             scope = fstReaderPopScope(m_fstp);
         } else if (hierp->htyp == FST_HT_VAR) {
-            if (string(scope) == targetScope) {
+            if (string(scope) == searchScope) {
                 string varName = string(scope) + "." + string(hierp->u.var.name);
                 switch (hierp->u.var.direction) {
                     case FST_VD_INPUT:

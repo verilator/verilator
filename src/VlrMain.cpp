@@ -21,6 +21,14 @@
 #include "VlrGenerator.h"
 #include "V3Error.h"
 
+// TODO -- can we not do this?
+// Include the GTKWave implementation directly
+#define FST_CONFIG_INCLUDE "fst_config.h"
+#include "gtkwave/fastlz.c"
+#include "gtkwave/fstapi.c"
+// TODO -- use the system's LZ4 library, not this copy
+#include "gtkwave/lz4.c"
+
 int main(int argc, char** argv) {
     VlrGenerator gen;
 
@@ -29,7 +37,7 @@ int main(int argc, char** argv) {
 
     // Read signals from FST or signals file
     if (gen.opts().fst()) {
-        gen.getFstIO();
+        gen.searchFst();
     }
     // TODO -- manually specified lists
     // TODO -- check for none of the above

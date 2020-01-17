@@ -48,6 +48,10 @@ void VlrOptions::parseOptsList(int argc, char** argv) {
                 ++i;
                 m_fst = argv[i];
             }
+            else if (!strcmp(sw, "-replay-top") && (i+1)<argc ) {
+                ++i;
+                m_replayTop= argv[i];
+            }
             else if (!strcmp(sw, "-scope") && (i+1)<argc ) {
                 ++i;
                 m_scope = argv[i];

@@ -31,9 +31,16 @@
 #include "verilated_replay_common.h"
 #include "gtkwave/fstapi.h"
 #include <string>
+#include <map>
 
 class VerilatedReplay: private VerilatedReplayCommon {
 private:
+    struct FstSignal {
+        size_t bits;
+        vluint8_t* signal;
+    };
+    typedef std::map<fstHandle, FstSignal> SignalMap;
+
     void createMod();
     void eval();
     void trace();
@@ -50,6 +57,7 @@ private:
     VerilatedModule* m_modp;
     VerilatedFstC* m_tfp;
     uint64_t m_time;
+    SignalMap m_signals;
 public:
     VerilatedReplay(const std::string& fstName, double& simTime):
         m_fstName(fstName), m_simTime(simTime)

@@ -22,9 +22,10 @@
 #define _VLRGENERATOR_H_ 1
 
 #include "VlrOptions.h"
+#include "verilated_replay_common.h"
 #include <list>
 
-class VlrGenerator {
+class VlrGenerator: public VerilatedReplayCommon {
 public:
     // CONSTRUCTORS
     VlrGenerator() {}
@@ -32,14 +33,12 @@ public:
 
     // METHODS
     VlrOptions& opts() { return m_opts; }
-    void getFstIO();
+    void searchFst();
     void emitVltCode();
 private:
     typedef std::list<std::string> StrList;
 
     VlrOptions m_opts;
-    StrList m_inputs;
-    StrList m_outputs;
 };
 
 #endif  // guard

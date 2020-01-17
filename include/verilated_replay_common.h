@@ -26,7 +26,6 @@
 #ifndef _VERILATED_REPLAY_COMMON_H_
 #define _VERILATED_REPLAY_COMMON_H_ 1  ///< Header Guard
 
-#include "verilated.h"
 #include "gtkwave/fstapi.h"
 #include <string>
 #include <map>
@@ -51,7 +50,7 @@ public:
     VerilatedReplayCommon() {}
     ~VerilatedReplayCommon() {}
     void openFst(const std::string& fstName);
-    void search(std::string targetScope);
+    void searchFst(const std::string& targetScope);
 };
 
 #endif  // Guard

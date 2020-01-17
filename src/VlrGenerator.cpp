@@ -2,47 +2,36 @@
 #include "V3Error.h"
 #include "gtkwave/fstapi.h"
 
-// TODO -- can we not do this?
-// Include the GTKWave implementation directly
-#define FST_CONFIG_INCLUDE "fst_config.h"
-#include "gtkwave/fastlz.c"
-#include "gtkwave/fstapi.c"
-// TODO -- use the system's LZ4 library, not this copy
-#include "gtkwave/lz4.c"
-
-// TODO -- use verilator_replay_common.h instead
-void VlrGenerator::getFstIO() {
-    void* fst = fstReaderOpen(opts().fst());
-    const char* scope = "";
-    string targetScope;
-    if (m_opts.scope()) targetScope = string(m_opts.scope());
-
-    while (struct fstHier* hier = fstReaderIterateHier(fst)) {
-        if (hier->htyp == FST_HT_SCOPE) {
-            scope = fstReaderPushScope(fst, hier->u.scope.name, NULL);
-            if (targetScope.empty()) targetScope = string(scope);
-            UINFO(3, "SCOPE "<<scope<<endl);
-        } else if (hier->htyp == FST_HT_UPSCOPE) {
-            scope = fstReaderPopScope(fst);
-            UINFO(3, "UPSCOPE "<<scope<<endl);
-        } else if (hier->htyp == FST_HT_VAR) {
-            if (string(scope) == targetScope) {
-                string varName = string(scope) + "." + string(hier->u.var.name);
-                switch (hier->u.var.direction) {
-                    case FST_VD_INPUT:
-                        UINFO(3, "VAR input "<<hier->u.var.name<<endl);
-                        m_inputs.push_back(varName);
-                        break;
-                    case FST_VD_OUTPUT:
-                        UINFO(3, "VAR output "<<hier->u.var.name<<endl);
-                        m_outputs.push_back(varName);
-                        break;
-                    default: break;
-                }
-            }
-        }
-    }
+void VlrGenerator::searchFst() {
+    openFst(string(m_opts.fst()));
+    VerilatedReplayCommon::searchFst(string(m_opts.scope()));
 }
 
 void VlrGenerator::emitVltCode() {
+    // TODO -- use V3OutCFile
+    cout << "#include \"verilated_replay.h\"" << endl;
+    cout << endl;
+    cout << "void VerilatedReplay() {" << endl;
+
+    for (VarMap::iterator it = m_inputs.begin(); it != m_inputs.end(); ++it) {
+        string sigName(it->second.fullName);
+
+        // TODO -- add a trailing dot for the user if they don't
+        if (m_opts.replayTop()) {
+            string replayTop(m_opts.replayTop());
+            size_t pos = sigName.find(replayTop);
+            if (pos != 0) {
+                cout << sigName << " did not start with " << replayTop << endl;
+                exit(-1);
+            }
+
+            sigName = sigName.substr(replayTop.length());
+        }
+
+        // TODO -- need to be able to specify a new top level
+        cout << "    addInput(\"" << it->second.fullName <<
+             "\", reinterpret_cast<VM_PREFIX*>(m_modp)->" << sigName <<
+             ", " << it->second.hier.u.var.length << ");" << endl;
+    }
+    cout << "}" << endl;
 }

@@ -260,6 +260,7 @@ VLCOV_OBJS = \
 VLREPLAY_OBJS = \
 	V3Error.o \
 	VlrOptions.o \
+	verilated_replay_common.o \
 	VlrGenerator.o \
 	VlrMain.o \
 
@@ -300,6 +301,9 @@ V3Number_test: V3Number_test.o
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} -c $<
 %.o:	%.c
 	$(OBJCACHE) ${CC}  ${CFLAGS} ${CPPFLAGSWALL} -c $<
+# TODO -- this seems terrible
+verilated_replay_common.o:	../include/verilated_replay_common.cpp
+	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSWALL} -c $<
 
 V3ParseLex.o:	V3ParseLex.cpp V3Lexer.yy.cpp V3ParseBison.c
 	$(OBJCACHE) ${CXX} ${CXXFLAGS} ${CPPFLAGSPARSER} -c $<
