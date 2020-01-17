@@ -158,7 +158,7 @@ public:
                 // above our current iteration point.
                 if (debug()>4) oldassp->dumpTree(cout, "       REMOVE/SAMEBLK ");
                 entp->complexAssign();
-                m_statep->pushUnlinkDeletep(oldassp); VL_DANGLING(oldassp);
+                VL_DO_DANGLING(m_statep->pushUnlinkDeletep(oldassp), oldassp);
                 ++m_statep->m_statAssnDel;
             }
         }
@@ -195,7 +195,7 @@ public:
                     // We'll later constant propagate
                     UINFO(4,"     replaceconst: "<<varrefp<<endl);
                     varrefp->replaceWith(constp->cloneTree(false));
-                    varrefp->deleteTree(); VL_DANGLING(varrefp);
+                    VL_DO_DANGLING(varrefp->deleteTree(), varrefp);
                     ++m_statep->m_statAssnCon;
                     return;  // **DONE, no longer a var reference**
                 }
@@ -307,7 +307,7 @@ private:
             m_sideEffect = true;  // $sscanf etc may have RHS vars that are lvalues
             m_lifep->complexAssign(vscp);
         } else {
-            m_lifep->varUsageReplace(vscp, nodep); VL_DANGLING(nodep);
+            VL_DO_DANGLING(m_lifep->varUsageReplace(vscp, nodep), nodep);
         }
     }
     virtual void visit(AstNodeAssign* nodep) {
@@ -358,8 +358,8 @@ private:
         // For the next assignments, clear any variables that were read or written in the block
         ifLifep->lifeToAbove();
         elseLifep->lifeToAbove();
-        delete ifLifep;
-        delete elseLifep;
+        VL_DO_DANGLING(delete ifLifep, ifLifep);
+        VL_DO_DANGLING(delete elseLifep, elseLifep);
     }
 
     virtual void visit(AstWhile* nodep) {
@@ -388,8 +388,8 @@ private:
         // For the next assignments, clear any variables that were read or written in the block
         condLifep->lifeToAbove();
         bodyLifep->lifeToAbove();
-        delete condLifep;
-        delete bodyLifep;
+        VL_DO_DANGLING(delete condLifep, condLifep);
+        VL_DO_DANGLING(delete bodyLifep, bodyLifep);
     }
     virtual void visit(AstJumpLabel* nodep) {
         // As with While's we can't predict if a JumpGo will kill us or not
@@ -408,7 +408,7 @@ private:
         UINFO(4,"   joinjump"<<endl);
         // For the next assignments, clear any variables that were read or written in the block
         bodyLifep->lifeToAbove();
-        delete bodyLifep;
+        VL_DO_DANGLING(delete bodyLifep, bodyLifep);
     }
     virtual void visit(AstCCall* nodep) {
         //UINFO(4,"  CCALL "<<nodep<<endl);

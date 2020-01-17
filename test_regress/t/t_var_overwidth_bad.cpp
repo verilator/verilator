@@ -37,6 +37,6 @@ int main(int argc, char** argv, char** env) {
     topp->eval();
     topp->final();
 
-    delete topp; VL_DANGLING(topp);
+    VL_DO_DANGLING(delete topp, topp);
     exit(0L);
 }

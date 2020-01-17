@@ -107,7 +107,7 @@ public:
                     callp->unlinkFrBack();
                 }
                 callp->user3(true);  // Dead now
-                pushDeletep(callp); VL_DANGLING(callp);
+                VL_DO_DANGLING(pushDeletep(callp), callp);
                 m_callMmap.erase(eqit);  // Fix the table
             }
         }
@@ -228,7 +228,7 @@ private:
                 CombMarkVisitor visitor(oldfuncp);
                 m_call.replaceFunc(oldfuncp, NULL);
                 oldfuncp->unlinkFrBack();
-                pushDeletep(oldfuncp); VL_DANGLING(oldfuncp);
+                VL_DO_DANGLING(pushDeletep(oldfuncp), oldfuncp);
             }
         }
     }
@@ -260,7 +260,7 @@ private:
         CombMarkVisitor visitor(oldfuncp);
         m_call.replaceFunc(oldfuncp, newfuncp);
         oldfuncp->unlinkFrBack();
-        pushDeletep(oldfuncp); VL_DANGLING(oldfuncp);
+        VL_DO_DANGLING(pushDeletep(oldfuncp), oldfuncp);
     }
     void replaceOnlyCallFunc(AstCCall* nodep) {
         if (AstCFunc* oldfuncp = VN_CAST(nodep->backp(), CFunc)) {
@@ -272,7 +272,7 @@ private:
                 UINFO(9,"     Function only has call "<<oldfuncp<<endl);
                 m_call.deleteCall(nodep);
                 CombMarkVisitor visitor(oldfuncp);
-                replaceFuncWFunc(oldfuncp, nodep->funcp()); VL_DANGLING(nodep);
+                VL_DO_DANGLING(replaceFuncWFunc(oldfuncp, nodep->funcp()), nodep);
             }
         }
     }
@@ -384,8 +384,8 @@ private:
         m_call.addCall(call2p);
         // If either new statement makes a func with only a single call, replace
         // the above callers to call it directly
-        replaceOnlyCallFunc(call1p); VL_DANGLING(call1p);
-        replaceOnlyCallFunc(call2p); VL_DANGLING(call2p);
+        VL_DO_DANGLING(replaceOnlyCallFunc(call1p), call1p);
+        VL_DO_DANGLING(replaceOnlyCallFunc(call2p), call2p);
     }
 
     // VISITORS

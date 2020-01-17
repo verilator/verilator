@@ -164,13 +164,13 @@ private:
         if (selfDestruct) {
             // Delete it after making the tree.  This way we can tell the user
             // if it wasn't constructed nicely or has other errors without needing --coverage.
-            newp->deleteTree();
+            VL_DO_DANGLING(newp->deleteTree(), newp);
             nodep->unlinkFrBack();
         } else {
             nodep->replaceWith(newp);
         }
         // Bye
-        pushDeletep(nodep); VL_DANGLING(nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
     // VISITORS
@@ -352,7 +352,7 @@ private:
     virtual void visit(AstRestrict* nodep) {
         iterateChildren(nodep);
         // IEEE says simulator ignores these
-        pushDeletep(nodep->unlinkFrBack()); VL_DANGLING(nodep);
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
 
     virtual void visit(AstNodeModule* nodep) {

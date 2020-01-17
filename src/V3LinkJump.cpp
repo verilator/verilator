@@ -156,7 +156,7 @@ private:
         initsp = initsp->addNext(newp);
         newp = initsp;
         nodep->replaceWith(newp);
-        nodep->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     virtual void visit(AstWhile* nodep) {
         // Don't need to track AstRepeat/AstFor as they have already been converted
@@ -193,7 +193,7 @@ private:
             AstJumpLabel* labelp = findAddLabel(m_ftaskp, false);
             nodep->addPrev(new AstJumpGo(nodep->fileline(), labelp));
         }
-        nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
+        nodep->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     virtual void visit(AstBreak* nodep) {
         iterateChildren(nodep);
@@ -203,7 +203,7 @@ private:
             AstJumpLabel* labelp = findAddLabel(m_loopp, false);
             nodep->addNextHere(new AstJumpGo(nodep->fileline(), labelp));
         }
-        nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
+        nodep->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     virtual void visit(AstContinue* nodep) {
         iterateChildren(nodep);
@@ -214,7 +214,7 @@ private:
             AstJumpLabel* labelp = findAddLabel(m_loopp, true);
             nodep->addNextHere(new AstJumpGo(nodep->fileline(), labelp));
         }
-        nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
+        nodep->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     virtual void visit(AstDisable* nodep) {
         UINFO(8,"   DISABLE "<<nodep<<endl);
@@ -236,7 +236,7 @@ private:
             AstJumpLabel* labelp = findAddLabel(beginp, false);
             nodep->addNextHere(new AstJumpGo(nodep->fileline(), labelp));
         }
-        nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
+        nodep->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         //if (debug()>=9) { UINFO(0,"\n"); beginp->dumpTree(cout, "  labelo: "); }
     }
     virtual void visit(AstVarRef* nodep) {

@@ -79,7 +79,7 @@ private:
             // Never executing.  Kill it.
             UASSERT_OBJ(!sensesp->sensesp()->nextp(), nodep,
                         "Never senitem should be alone, else the never should be eliminated.");
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
         // Copy combo tree to settlement tree with duplicated statements

@@ -373,7 +373,7 @@ private:
             // Skip all NEXT nodes under this block, and skip this if/case branch
             UINFO(4,"  OFF: "<<nodep<<endl);
             m_checkBlock = false;
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else {
             if (m_checkBlock) iterateChildren(nodep);
         }

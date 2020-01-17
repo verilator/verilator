@@ -825,7 +825,7 @@ public:
              it != m_removeSet.end(); ++it) {
             AstNode* np = *it;
             np->unlinkFrBack();  // Without next
-            np->deleteTree(); VL_DANGLING(np);
+            VL_DO_DANGLING(np->deleteTree(), np);
         }
     }
     virtual ~RemovePlaceholdersVisitor() {}
@@ -868,7 +868,7 @@ public:
                 RemovePlaceholdersVisitor removePlaceholders(*addme);
             }
             origp->unlinkFrBack();  // Without next
-            origp->deleteTree(); VL_DANGLING(origp);
+            VL_DO_DANGLING(origp->deleteTree(), origp);
         }
     }
 

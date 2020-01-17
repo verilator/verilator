@@ -157,7 +157,7 @@ private:
         } else {
             nodep->unlinkFrBack();
         }
-        pushDeletep(nodep); VL_DANGLING(nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     virtual void visit(AstVar* nodep) {
         if (m_unnamedScope != "") {

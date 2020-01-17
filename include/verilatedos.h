@@ -154,10 +154,14 @@
 #define VL_UL(c) (static_cast<IData>(c##UL))  ///< Add appropriate suffix to 32-bit constant
 
 #if defined(VL_CPPCHECK) || defined(__clang_analyzer__)
-# define VL_DANGLING(v)
+# define VL_DANGLING(var)
 #else
-# define VL_DANGLING(v) do { (v) = NULL; } while(0)  ///< After e.g. delete, set variable to NULL to indicate must not use later
+///< After e.g. delete, set variable to NULL to indicate must not use later
+# define VL_DANGLING(var) do { (var) = NULL; } while(0)
 #endif
+
+///< Perform an e.g. delete, then set variable to NULL to indicate must not use later
+#define VL_DO_DANGLING(stmt, var) do { do { stmt; } while(0); VL_DANGLING(var); } while(0)
 
 //=========================================================================
 // C++-2011

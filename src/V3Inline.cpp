@@ -129,14 +129,16 @@ private:
                        || m_modp->user2() == CIL_NOTSOFT) {
                 m_modp->user2(CIL_USER);
             }
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);  // Remove so don't propagate to upper cell...
+            // Remove so don't propagate to upper cell...
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->pragType() == AstPragmaType::NO_INLINE_MODULE) {
             if (!m_modp) {
                 nodep->v3error("Inline pragma not under a module");  // LCOV_EXCL_LINE
             } else {
                 cantInline("Pragma NO_INLINE_MODULE", false);
             }
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);  // Remove so don't propagate to upper cell...
+            // Remove so don't propagate to upper cell...
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else {
             iterateChildren(nodep);
         }
@@ -401,7 +403,7 @@ private:
             AstVarRef* exprvarrefp = VN_CAST(nodep->varp()->user2p(), VarRef);
             if (exprconstp) {
                 nodep->replaceWith(exprconstp->cloneTree(true));
-                nodep->deleteTree(); VL_DANGLING(nodep);
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 return;
             }
             else if (exprvarrefp) {
@@ -597,9 +599,9 @@ private:
             if (stmtsp) stmtsp->unlinkFrBackWithNext();
             if (stmtsp) m_modp->addStmtp(stmtsp);
             // Remove the cell
-            newmodp->deleteTree(); VL_DANGLING(newmodp);  // Clear any leftover ports, etc
+            VL_DO_DANGLING(newmodp->deleteTree(), newmodp);  // Clear any leftover ports, etc
             nodep->unlinkFrBack();
-            pushDeletep(nodep); VL_DANGLING(nodep);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
             if (debug()>=9) { m_modp->dumpTree(cout, "donemod:"); }
         }
     }
@@ -746,7 +748,7 @@ void V3Inline::inlineAll(AstNetlist* nodep) {
     for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp; modp=nextmodp) {
         nextmodp = VN_CAST(modp->nextp(), NodeModule);
         if (modp->user1()) {  // Was inlined
-            modp->unlinkFrBack()->deleteTree(); VL_DANGLING(modp);
+            VL_DO_DANGLING(modp->unlinkFrBack()->deleteTree(), modp);
         }
     }
     {

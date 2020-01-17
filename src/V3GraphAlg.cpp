@@ -110,10 +110,10 @@ private:
                     }
                     if (saveOld) {
                         if (m_sumWeights) prevEdgep->weight(prevEdgep->weight() + edgep->weight());
-                        edgep->unlinkDelete(); VL_DANGLING(edgep);
+                        VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
                     } else {
                         if (m_sumWeights) edgep->weight(prevEdgep->weight() + edgep->weight());
-                        prevEdgep->unlinkDelete(); VL_DANGLING(prevEdgep);
+                        VL_DO_DANGLING(prevEdgep->unlinkDelete(), prevEdgep);
                         outVertexp->userp(edgep);
                     }
                 }
@@ -162,7 +162,7 @@ public:
                 }
             }
             if (deletep) {
-                deletep->unlinkDelete(); VL_DANGLING(deletep);
+                VL_DO_DANGLING(deletep->unlinkDelete(), deletep);
             }
         }
     }

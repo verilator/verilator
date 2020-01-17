@@ -113,7 +113,7 @@ private:
         }
 
         // We're done with the pin
-        nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
 
     virtual void visit(AstUdpTable* nodep) {
@@ -303,9 +303,10 @@ private:
             // Done.  Delete original
             m_cellRangep = NULL;
             if (isIface) {
-                ifaceVarp->unlinkFrBack(); pushDeletep(ifaceVarp); VL_DANGLING(ifaceVarp);
+                ifaceVarp->unlinkFrBack();
+                VL_DO_DANGLING(pushDeletep(ifaceVarp), ifaceVarp);
             }
-            nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
+            nodep->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else {
             m_cellRangep = NULL;
             iterateChildren(nodep);
@@ -379,7 +380,7 @@ private:
                 newp->dtypep(nodep->modVarp()->dtypep());
                 newp->packagep(varrefp->packagep());
                 arrselp->addNextHere(newp);
-                arrselp->unlinkFrBack()->deleteTree();
+                VL_DO_DANGLING(arrselp->unlinkFrBack()->deleteTree(), arrselp);
             }
         } else {
             AstVar* pinVarp = nodep->modVarp();

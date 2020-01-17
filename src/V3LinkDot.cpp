@@ -985,7 +985,7 @@ class LinkDotFindVisitor : public AstNVisitor {
         iterateChildren(nodep);
         if (m_ftaskp && nodep->isParam()) {
             nodep->v3error("Unsupported: Parameters in functions.");  // Big3 unsupported too
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
         if (!m_statep->forScopeCreation()) {
@@ -1038,12 +1038,12 @@ class LinkDotFindVisitor : public AstNVisitor {
                             AstNodeDType* newdtypep = nodep->subDTypep();
                             UASSERT_OBJ(newdtypep && nodep->childDTypep(), findvarp,
                                         "No child type?");
-                            bdtypep->unlinkFrBack()->deleteTree();
+                            VL_DO_DANGLING(bdtypep->unlinkFrBack()->deleteTree(), bdtypep);
                             newdtypep->unlinkFrBack();
                             findvarp->childDTypep(newdtypep);
                         }
                     }
-                    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+                    VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
                 } else {
                     // User can disable the message at either point
                     if (!(m_ftaskp && m_ftaskp->dpiImport())
@@ -1075,7 +1075,7 @@ class LinkDotFindVisitor : public AstNVisitor {
                             newp->valuep(valuep);
                             UINFO(9,"       replace parameter "<<nodep<<endl);
                             UINFO(9,"       with "<<newp<<endl);
-                            nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+                            nodep->replaceWith(newp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
                             nodep = newp;
                         }
                     }
@@ -1299,7 +1299,7 @@ private:
                                       nodep->name(),
                                       exprp);
             cellp->addParamsp(pinp);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
     }
     virtual void visit(AstPort* nodep) {
@@ -1327,7 +1327,7 @@ private:
             symp->exported(false);
         }
         // Ports not needed any more
-        nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     virtual void visit(AstAssignW* nodep) {
         // Deal with implicit definitions
@@ -1352,7 +1352,7 @@ private:
         // Unsupported gates need implicit creation
         pinImplicitExprRecurse(nodep);
         // We're done with implicit gates
-        nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     virtual void visit(AstNode* nodep) {
         // Default: Just iterate
@@ -1497,7 +1497,7 @@ class LinkDotScopeVisitor : public AstNVisitor {
         // or maybe an alias of an alias
         m_statep->insertScopeAlias(LinkDotState::SAMN_IFTOP, lhsSymp, rhsSymp);
         // We have stored the link, we don't need these any more
-        nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     // For speed, don't recurse things that can't have scope
     // Note we allow AstNodeStmt's as generates may be under them
@@ -1565,7 +1565,7 @@ class LinkDotIfaceVisitor : public AstNVisitor {
         if (m_statep->forScopeCreation()) {
             // Done with AstModportFTaskRef.
             // Delete to prevent problems if we dead-delete pointed to ftask
-            nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
+            nodep->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
     virtual void visit(AstModportVarRef* nodep) {
@@ -1589,7 +1589,7 @@ class LinkDotIfaceVisitor : public AstNVisitor {
         if (m_statep->forScopeCreation()) {
             // Done with AstModportVarRef.
             // Delete to prevent problems if we dead-delete pointed to variable
-            nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
+            nodep->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
     virtual void visit(AstNode* nodep) {
@@ -1801,7 +1801,7 @@ private:
     virtual void visit(AstCellInline* nodep) {
         checkNoDot(nodep);
         if (m_statep->forScopeCreation() && !v3Global.opt.vpi()) {
-            nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
+            nodep->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
     virtual void visit(AstCell* nodep) {
@@ -1844,7 +1844,7 @@ private:
             if (!foundp) {
                 if (nodep->name() == "__paramNumber1" && VN_IS(m_cellp->modp(), Primitive)) {
                     // Primitive parameter is really a delay we can just ignore
-                    nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+                    VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
                     return;
                 }
                 string suggest
@@ -1923,7 +1923,7 @@ private:
                 }
                 if (debug()>=9) newp->dumpTree("-dot-out: ");
                 nodep->replaceWith(newp);
-                pushDeletep(nodep); VL_DANGLING(nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else {  // Dot midpoint
                 AstNode* newp = nodep->rhsp()->unlinkFrBack();
                 if (m_ds.m_unresolved) {
@@ -1932,7 +1932,7 @@ private:
                     newp = crp;
                 }
                 nodep->replaceWith(newp);
-                pushDeletep(nodep); VL_DANGLING(nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
         }
         if (start) {
@@ -1963,7 +1963,7 @@ private:
                                              VFlagChildDType(), nodep->name());
             if (m_ds.m_dotErr) nodep->unlinkFrBack();  // Avoid circular node loop on errors
             else nodep->replaceWith(newp);
-            pushDeletep(nodep); VL_DANGLING(nodep);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         else {
             //
@@ -2042,7 +2042,7 @@ private:
                         UINFO(9," cell -> iface varref "<<foundp->nodep()<<endl);
                         AstNode* newp = new AstVarRef(ifaceRefVarp->fileline(),
                                                       ifaceRefVarp, false);
-                        nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+                        nodep->replaceWith(newp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     } else if (VN_IS(cellp->modp(), NotFoundModule)) {
                         cellp->modNameFileline()->v3error("Cannot find file containing interface: "
                                                           <<cellp->modp()->prettyNameQ());
@@ -2060,7 +2060,7 @@ private:
                     m_ds.m_dotPos = DP_SCOPE;
                     ok = true;
                     AstNode* newp = new AstVarRef(nodep->fileline(), varp, false);
-                    nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+                    nodep->replaceWith(newp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 }
                 else if (allowVar) {
                     AstNode* newp;
@@ -2084,7 +2084,7 @@ private:
                         newp = refp;
                     }
                     UINFO(9,"    new "<<newp<<endl);
-                    nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+                    nodep->replaceWith(newp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     m_ds.m_dotPos = DP_MEMBER;
                     ok = true;
                 }
@@ -2117,14 +2117,14 @@ private:
                     AstVar* varp = makeIfaceModportVar(nodep->fileline(),
                                                        cellp, ifacep, modportp);
                     AstVarRef* refp = new AstVarRef(varp->fileline(), varp, false);
-                    nodep->replaceWith(refp); pushDeletep(nodep); VL_DANGLING(nodep);
+                    nodep->replaceWith(refp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 }
             }
             else if (AstEnumItem* valuep = VN_CAST(foundp->nodep(), EnumItem)) {
                 if (allowVar) {
                     AstNode* newp = new AstEnumItemRef(nodep->fileline(),
                                                        valuep, foundp->packagep());
-                    nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+                    nodep->replaceWith(newp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     ok = true;
                     m_ds.m_dotText = "";
                 }
@@ -2166,7 +2166,7 @@ private:
                     // Create if implicit, and also if error (so only complain once)
                     AstVarRef* newp = new AstVarRef(nodep->fileline(), nodep->name(), false);
                     nodep->replaceWith(newp);
-                    pushDeletep(nodep); VL_DANGLING(nodep);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     createImplicitVar(m_curSymp, newp, m_modp, m_modSymp, err);
                 }
             }
@@ -2237,7 +2237,7 @@ private:
                         AstVarRef* newrefp = new AstVarRef(nodep->fileline(),
                                                            nodep->varp(), nodep->lvalue());
                         nodep->replaceWith(newrefp);
-                        nodep->deleteTree(); VL_DANGLING(nodep);
+                        VL_DO_DANGLING(nodep->deleteTree(), nodep);
                     }
                 }
             } else {
@@ -2262,7 +2262,7 @@ private:
                     UINFO(7,"         Resolved "<<nodep<<endl);  // Also prints taskp
                     AstVarRef* newvscp = new AstVarRef(nodep->fileline(), vscp, nodep->lvalue());
                     nodep->replaceWith(newvscp);
-                    nodep->deleteTree(); VL_DANGLING(nodep);
+                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
                     UINFO(9,"         new "<<newvscp<<endl);  // Also prints taskp
                 }
             }
@@ -2323,7 +2323,7 @@ private:
             AstNode* newp = new AstMethodCall(nodep->fileline(), varEtcp,
                                               VFlagChildDType(), nodep->name(), argsp);
             nodep->replaceWith(newp);
-            pushDeletep(nodep); VL_DANGLING(nodep);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         } else {
             checkNoDot(nodep);
@@ -2425,7 +2425,7 @@ private:
             AstNode* exprp = nodep->bitp()->unlinkFrBack();
             AstCellArrayRef* newp
                 = new AstCellArrayRef(nodep->fileline(), nodep->fromp()->name(), exprp);
-            nodep->replaceWith(newp); pushDeletep(nodep); VL_DANGLING(nodep);
+            nodep->replaceWith(newp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
     virtual void visit(AstNodePreSel* nodep) {
@@ -2525,22 +2525,22 @@ private:
             taskp->dpiExport(true);
             if (nodep->cname()!="") taskp->cname(nodep->cname());
         }
-        nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     virtual void visit(AstPackageImport* nodep) {
         // No longer needed
         checkNoDot(nodep);
-        nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     virtual void visit(AstPackageExport* nodep) {
         // No longer needed
         checkNoDot(nodep);
-        nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     virtual void visit(AstPackageExportStarStar* nodep) {
         // No longer needed
         checkNoDot(nodep);
-        nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     virtual void visit(AstCellRef* nodep) {
         UINFO(5,"  AstCellRef: "<<nodep<<" "<<m_ds.ascii()<<endl);

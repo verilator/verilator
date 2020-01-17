@@ -97,7 +97,7 @@ public:
                                                new AstLogOr(m_scopetopp->fileline(), callp,
                                                             returnp->lhsp()->unlinkFrBack()));
                 returnp->replaceWith(newp);
-                returnp->deleteTree(); VL_DANGLING(returnp);
+                VL_DO_DANGLING(returnp->deleteTree(), returnp);
             }
             m_numStmts = 0;
         }

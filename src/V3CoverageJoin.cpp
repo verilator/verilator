@@ -92,7 +92,7 @@ private:
                     UINFO(8,"   new "<<removep->incp()->declp()<<endl);
                     // Mark the found node as a duplicate of the first node
                     // (Not vice-versa as we have the iterator for the found node)
-                    removep->unlinkFrBack();  pushDeletep(removep); VL_DANGLING(removep);
+                    removep->unlinkFrBack();  VL_DO_DANGLING(pushDeletep(removep), removep);
                     // Remove node from comparison so don't hit it again
                     hashed.erase(dupit);
                     ++m_statToggleJoins;

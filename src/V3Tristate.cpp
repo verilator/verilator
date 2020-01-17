@@ -429,9 +429,9 @@ class TristateVisitor : public TristateBaseVisitor {
         VarMap::iterator it = m_lhsmap.find(key);
         UINFO(9,"    mapInsertLhsVarRef "<<nodep<<endl);
         if (it == m_lhsmap.end()) {  // Not found
-            RefVec* refs = new RefVec();
-            refs->push_back(nodep);
-            m_lhsmap.insert(make_pair(key, refs));
+            RefVec* refsp = new RefVec();
+            refsp->push_back(nodep);
+            m_lhsmap.insert(make_pair(key, refsp));
         } else {
             it->second->push_back(nodep);
         }
@@ -512,14 +512,14 @@ class TristateVisitor : public TristateBaseVisitor {
         for (VarMap::iterator nextit, it = m_lhsmap.begin(); it != m_lhsmap.end(); it = nextit) {
             nextit = it; ++nextit;
             AstVar* invarp = it->first;
-            RefVec* refs = it->second;
+            RefVec* refsp = it->second;
 
             // Figure out if this var needs tristate expanded.
             if (!m_tgraph.isTristate(invarp)) {
                 // This var has no tristate logic, so we leave it alone.
                 UINFO(8, "  NO TRISTATE ON:" << invarp << endl);
                 m_lhsmap.erase(invarp);
-                delete refs;
+                VL_DO_DANGLING(delete refsp, refsp);
                 continue;
             }
 
@@ -559,7 +559,7 @@ class TristateVisitor : public TristateBaseVisitor {
             AstNode* undrivenp = NULL;
 
             // loop through the lhs drivers to build the driver resolution logic
-            for (RefVec::iterator ii=refs->begin(); ii != refs->end(); ++ii) {
+            for (RefVec::iterator ii = refsp->begin(); ii != refsp->end(); ++ii) {
                 AstVarRef* refp = (*ii);
                 int w = lhsp->width();
 
@@ -623,7 +623,7 @@ class TristateVisitor : public TristateBaseVisitor {
                                        new AstConst(invarp->fileline(), pull));
                 orp = new AstOr(invarp->fileline(), orp, undrivenp);
             } else {
-                undrivenp->deleteTree(); VL_DANGLING(undrivenp);
+                VL_DO_DANGLING(undrivenp->deleteTree(), undrivenp);
             }
             if (envarp) {
                 nodep->addStmtp(new AstAssignW(enp->fileline(),
@@ -641,7 +641,7 @@ class TristateVisitor : public TristateBaseVisitor {
             nodep->addStmtp(assp);
             // Delete the map and vector list now that we have expanded it.
             m_lhsmap.erase(invarp);
-            delete refs;
+            VL_DO_DANGLING(delete refsp, refsp);
         }
     }
 
@@ -662,7 +662,7 @@ class TristateVisitor : public TristateBaseVisitor {
                 AstNode* newp = new AstVarRef(nodep->fileline(), varp, true);
                 UINFO(9," const->"<<newp<<endl);
                 nodep->replaceWith(newp);
-                pushDeletep(nodep); VL_DANGLING(nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
             else if (m_tgraph.isTristate(nodep)) {
                 m_tgraph.didProcess(nodep);
@@ -676,7 +676,7 @@ class TristateVisitor : public TristateBaseVisitor {
                 AstConst* newconstp = new AstConst(fl, num1);
                 AstConst* enp       = new AstConst(fl, numz0);
                 nodep->replaceWith(newconstp);
-                pushDeletep(nodep); VL_DANGLING(nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 newconstp->user1p(enp);  // Propagate up constant with non-Z bits as 1
             }
         }
@@ -841,7 +841,7 @@ class TristateVisitor : public TristateBaseVisitor {
             nodep->replaceWith(expr2p);
             UINFO(9,"   bufif  datap="<<expr2p<<endl);
             UINFO(9,"   bufif  enp="<<enp<<endl);
-            pushDeletep(nodep); VL_DANGLING(nodep);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
 
@@ -976,7 +976,7 @@ class TristateVisitor : public TristateBaseVisitor {
                 if (debug()>=9) nodep->dumpTree(cout, "-caseeq-old: ");
                 if (debug()>=9) newp->dumpTree(cout, "-caseeq-new: ");
                 nodep->replaceWith(newp);
-                pushDeletep(nodep); VL_DANGLING(nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else {
                 checkUnhandled(nodep);
             }
@@ -1040,7 +1040,7 @@ class TristateVisitor : public TristateBaseVisitor {
         }
         if (!m_graphing) {
             nodep->unlinkFrBack();
-            pushDeletep(nodep); VL_DANGLING(nodep);  // Node must persist as user3p points to it
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Node must persist as user3p points to it
         }
     }
 

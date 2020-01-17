@@ -57,7 +57,7 @@ void make_and_destroy() {
         topp->eval();
     }
 
-    delete topp; VL_DANGLING(topp);
+    VL_DO_DANGLING(delete topp, topp);
 }
 
 int main(int argc, char* argv[]) {

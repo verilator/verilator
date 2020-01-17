@@ -2008,7 +2008,7 @@ PLI_INT32 vpi_release_handle(vpiHandle object) {
     _VL_VPI_ERROR_RESET();
     if (VL_UNLIKELY(!vop)) return 0;
     vpi_remove_cb(object);  // May not be a callback, but that's ok
-    delete vop;
+    VL_DO_DANGLING(delete vop, vop);
     return 1;
 }
 

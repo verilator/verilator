@@ -354,7 +354,7 @@ private:
                 if (pinStar) pinp->v3error("Duplicate .* in a cell");
                 pinStar = true;
                 // Done with this fake pin
-                pinp->unlinkFrBack()->deleteTree(); VL_DANGLING(pinp);
+                VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
             }
         }
         // Convert unnamed pins to pin number based assignments
@@ -470,7 +470,7 @@ private:
                                   <<foundp->warnContextSecondary());
                 }
                 nodep->unlinkFrBack();
-                pushDeletep(nodep); VL_DANGLING(nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             } else if (!foundp) {
                 m_mods.rootp()->insert(nodep->name(), new VSymEnt(&m_mods, nodep));
             }

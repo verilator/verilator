@@ -181,7 +181,7 @@ double V3ParseImp::parseDouble(const char* textp, size_t length, bool* successp)
         if (successp) *successp = false;
         else yyerrorf("Syntax error parsing real: %s", strgp);
     }
-    delete[] strgp;
+    VL_DO_DANGLING(delete[] strgp, strgp);
     return d;
 }
 
@@ -265,7 +265,7 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
             preprocDumps(*osp);
             if (ofp) {
                 ofp->close();
-                delete ofp; VL_DANGLING(ofp);
+                VL_DO_DANGLING(delete ofp, ofp);
             }
         }
     }

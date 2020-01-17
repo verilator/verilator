@@ -46,7 +46,7 @@ void oneTest(int seed) {
     }
 
     topp->final();
-    delete topp; VL_DANGLING(topp);
+    VL_DO_DANGLING(delete topp, topp);
 }
 
 int main(int argc, char** argv, char** env) {

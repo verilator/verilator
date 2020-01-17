@@ -666,7 +666,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
                                     varvertexp->propagateAttrClocksFrom(vvertexp);
                                 }
                                 // Remove the edge
-                                edgep->unlinkDelete(); VL_DANGLING(edgep);
+                                VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
                                 ++m_statRefs;
                                 edgep = vvertexp->outBeginp();
                             }
@@ -674,7 +674,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
                         if (removedAllUsages) {
                             // Remove input links
                             while (V3GraphEdge* edgep = vvertexp->inBeginp()) {
-                                edgep->unlinkDelete(); VL_DANGLING(edgep);
+                                VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
                             }
                             // Clone tree so we remember it for tracing, and keep the pointer
                             // to the "ALWAYS" part of the tree as part of this statement
@@ -731,25 +731,25 @@ void GateVisitor::replaceAssigns() {
             if (vscp->valuep() && !VN_IS(vscp->valuep(), NodeMath)) {
                 //if (debug()>9) vscp->dumpTree(cout, "-vscPre:  ");
                 while (AstNode* delp = VN_CAST(vscp->valuep(), Comment)) {
-                    delp->unlinkFrBack()->deleteTree(); VL_DANGLING(delp);
+                    VL_DO_DANGLING(delp->unlinkFrBack()->deleteTree(), delp);
                 }
                 if (AstInitial* delp = VN_CAST(vscp->valuep(), Initial)) {
                     AstNode* bodyp = delp->bodysp();
                     bodyp->unlinkFrBackWithNext();
                     delp->replaceWith(bodyp);
-                    delp->deleteTree(); VL_DANGLING(delp);
+                    VL_DO_DANGLING(delp->deleteTree(), delp);
                 }
                 if (AstAlways* delp = VN_CAST(vscp->valuep(), Always)) {
                     AstNode* bodyp = delp->bodysp();
                     bodyp->unlinkFrBackWithNext();
                     delp->replaceWith(bodyp);
-                    delp->deleteTree(); VL_DANGLING(delp);
+                    VL_DO_DANGLING(delp->deleteTree(), delp);
                 }
                 if (AstNodeAssign* delp = VN_CAST(vscp->valuep(), NodeAssign)) {
                     AstNode* rhsp = delp->rhsp();
                     rhsp->unlinkFrBack();
                     delp->replaceWith(rhsp);
-                    delp->deleteTree(); VL_DANGLING(delp);
+                    VL_DO_DANGLING(delp->deleteTree(), delp);
                 }
                 //if (debug()>9) {vscp->dumpTree(cout, "-vscDone: "); cout<<endl;}
                 if (!VN_IS(vscp->valuep(), NodeMath)
@@ -805,7 +805,7 @@ void GateVisitor::consumedMove() {
                 // with "tracing-on" sensitivity
                 UINFO(8,"    Remove unconsumed "<<nodep<<endl);
                 nodep->unlinkFrBack();
-                pushDeletep(nodep); VL_DANGLING(nodep);
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
         }
     }
@@ -884,7 +884,7 @@ private:
             if (AstNodeVarRef* varrefp = VN_CAST(substp, NodeVarRef)) varrefp->lvalue(false);
             hashReplace(nodep, substp);
             nodep->replaceWith(substp);
-            nodep->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
     virtual void visit(AstNode* nodep) {
@@ -1207,7 +1207,7 @@ private:
                     dupVvertexp->propagateAttrClocksFrom(vvertexp);
                     // Remove inputs links
                     while (V3GraphEdge* inedgep = vvertexp->inBeginp()) {
-                        inedgep->unlinkDelete(); VL_DANGLING(inedgep);
+                        VL_DO_DANGLING(inedgep->unlinkDelete(), inedgep);
                     }
                     // replaceAssigns() does the deleteTree on lvertexNodep in a later step
                     AstNode* lvertexNodep = lvertexp->nodep();
@@ -1338,19 +1338,19 @@ private:
                             UINFO(5, "assemble to new sel: "<<newselp<<endl);
                             // replace preSel with newSel
                             preselp->replaceWith(newselp);
-                            preselp->deleteTree(); VL_DANGLING(preselp);
+                            VL_DO_DANGLING(preselp->deleteTree(), preselp);
                             // create new rhs for pre assignment
                             AstNode* newrhsp = new AstConcat(
                                 m_assignp->rhsp()->fileline(), m_assignp->rhsp()->cloneTree(false),
                                 assignp->rhsp()->cloneTree(false));
                             AstNode* oldrhsp = m_assignp->rhsp();
                             oldrhsp->replaceWith(newrhsp);
-                            oldrhsp->deleteTree(); VL_DANGLING(oldrhsp);
+                            VL_DO_DANGLING(oldrhsp->deleteTree(), oldrhsp);
                             m_assignp->dtypeChgWidthSigned(m_assignp->width()+assignp->width(),
                                                            m_assignp->width()+assignp->width(),
                                                            AstNumeric::SIGNED);
                             // don't need to delete, will be handled
-                            //assignp->unlinkFrBack(); assignp->deleteTree(); VL_DANGLING(assignp);
+                            //assignp->unlinkFrBack(); VL_DO_DANGLING(assignp->deleteTree(), assignp);
 
                             // update the graph
                             {
@@ -1362,11 +1362,11 @@ private:
                                         GateEitherVertex* fromvp
                                             = dynamic_cast<GateEitherVertex*>(oedgep->fromp());
                                         new V3GraphEdge(m_graphp, fromvp, m_logicvp, 1);
-                                        oedgep->unlinkDelete(); VL_DANGLING(oedgep);
+                                        VL_DO_DANGLING(oedgep->unlinkDelete(), oedgep);
                                     }
                                 }
                                 // delete all outedges to lvertexp, only one
-                                oldedgep->unlinkDelete(); VL_DANGLING(oldedgep);
+                                VL_DO_DANGLING(oldedgep->unlinkDelete(), oldedgep);
                             }
                             ++m_numMergedAssigns;
                         } else {
@@ -1556,7 +1556,7 @@ private:
                     AstNode* rhsp = assignp->rhsp();
                     rhsp->replaceWith(new AstVarRef(rhsp->fileline(), m_clk_vsp, false));
                     for (V3GraphEdge* edgep = lvertexp->inBeginp(); edgep; ) {
-                        edgep->unlinkDelete(); VL_DANGLING(edgep);
+                        VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
                     }
                     new V3GraphEdge(m_graphp, m_clk_vvertexp, lvertexp, 1);
                     m_total_decomposed_clk_vectors++;
@@ -1623,7 +1623,7 @@ private:
             AstNode* valuep = assp->rhsp();
             valuep->unlinkFrBack();
             assp->replaceWith(valuep);
-            assp->deleteTree(); VL_DANGLING(assp);
+            VL_DO_DANGLING(assp->deleteTree(), assp);
         }
     }
     // Speedups

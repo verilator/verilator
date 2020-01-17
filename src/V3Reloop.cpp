@@ -120,11 +120,11 @@ private:
                 // Replace constant index with new loop index
                 AstNode* lbitp = m_mgSelLp->bitp();
                 lbitp->replaceWith(new AstVarRef(fl, itp, false));
-                lbitp->deleteTree(); VL_DANGLING(lbitp);
+                VL_DO_DANGLING(lbitp->deleteTree(), lbitp);
                 if (m_mgSelRp) {  // else constant and no replace
                     AstNode* rbitp = m_mgSelRp->bitp();
                     rbitp->replaceWith(new AstVarRef(fl, itp, false));
-                    rbitp->deleteTree(); VL_DANGLING(lbitp);
+                    VL_DO_DANGLING(rbitp->deleteTree(), lbitp);
                 }
                 if (debug()>=9) initp->dumpTree(cout, "-new: ");
                 if (debug()>=9) whilep->dumpTree(cout, "-new: ");
@@ -133,7 +133,7 @@ private:
                 for (AssVec::iterator it=m_mgAssignps.begin(); it!=m_mgAssignps.end(); ++it) {
                     AstNodeAssign* assp = *it;
                     if (assp != bodyp) {
-                        assp->unlinkFrBack()->deleteTree(); VL_DANGLING(assp);
+                        VL_DO_DANGLING(assp->unlinkFrBack()->deleteTree(), assp);
                     }
                 }
             }

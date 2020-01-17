@@ -73,7 +73,7 @@ GraphPathChecker::~GraphPathChecker() {
     for (V3GraphVertex* vxp = m_graphp->verticesBeginp();
          vxp; vxp = vxp->verticesNextp()) {
         GraphPCNode* nodep = static_cast<GraphPCNode*>(vxp->userp());
-        delete nodep; VL_DANGLING(nodep);
+        VL_DO_DANGLING(delete nodep, nodep);
         vxp->userp(NULL);
     }
 }

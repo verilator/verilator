@@ -81,7 +81,7 @@ private:
         } else {
             nodep->unlinkFrBack();
         }
-        pushDeletep(nodep); VL_DANGLING(nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     virtual void visit(AstAlways* nodep) {
         iterateAndNextNull(nodep->sensesp());
@@ -130,7 +130,7 @@ private:
         // Unlink and just keep a pointer to it, convert to sentree as needed
         m_senip = nodep->sensesp();
         nodep->replaceWith(blockp);
-        pushDeletep(nodep); VL_DANGLING(nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     virtual void visit(AstNodeModule* nodep) {
         iterateChildren(nodep);
