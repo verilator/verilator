@@ -157,12 +157,11 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
         m_modp = nodep;
         std::vector<std::pair<AstPragma*, AstVar*> > vars = ScanPragmaVisitor::scan(nodep);
         for (size_t i = 0; i < vars.size(); ++i) {
-            AstPragma* pragmap = vars[i].first;
             AstVar* varp = vars[i].second;
-            if (pragmap->pragType() != AstPragmaType::SPLIT_VAR) continue;  // nothing to do
+            if (vars[i].first->pragType() != AstPragmaType::SPLIT_VAR) continue;  // nothing to do
             bool keepPragma = false;
             if (!varp) {
-                pragmap->v3warn(SPLITVAR, "Unexpected location for split_var pragma.");
+                vars[i].first->v3warn(SPLITVAR, "Unexpected location for split_var pragma.");
             } else if (!canSplit(varp)) {
                 // maybe packed variable which will be split later.
                 keepPragma = true;  // SplitPackedVarVisitor will read this pragma again later.
@@ -171,7 +170,7 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
                 m_refs.insert(std::make_pair(varp, std::vector<AstArraySel*>()));
             }
             if (!keepPragma) {
-                pragmap->unlinkFrBack()->deleteTree(); VL_DANGLING(vars[i].first);
+                VL_DO_DANGLING(vars[i].first->unlinkFrBack()->deleteTree(), vars[i].first);
             }
         }
         if (!vars.empty()) {  // need to check this module only when split_var pragma exists in this module.
@@ -238,7 +237,7 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
         }
         if (lnum != rnum) return;  // strange. V3Slice will show proper diagnosis
         splitSimpleAssign(nodep, lhsp, rhsp, lstart, rstart, lnum);
-        nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
 
     virtual void visit(AstArraySel* nodep) VL_OVERRIDE {
@@ -303,9 +302,9 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
                 // V3Width:width() removes VAR_BASE attribute and make index 0-origin.
                 AstVarRef* new_vref = new AstVarRef(selp->fileline(), vars.at(idx), vrefp->lvalue());
                 selp->replaceWith(new_vref);
-                selp->deleteTree(); VL_DANGLING(selp);
+                VL_DO_DANGLING(selp->deleteTree(), selp);
             }
-            varp->unlinkFrBack()->deleteTree(); VL_DANGLING(varp);
+            VL_DO_DANGLING(varp->unlinkFrBack()->deleteTree(), varp);
             ++m_numSplit;
         }
         m_refs.clear();  // done
@@ -386,7 +385,7 @@ public:
     int bitwidth() const { return m_bitwidth; }
     void replaceNodeWith(AstNode* nodep) {
         m_nodep->replaceWith(nodep);
-        m_nodep->deleteTree(); VL_DANGLING(m_nodep);
+        VL_DO_DANGLING(m_nodep->deleteTree(), m_nodep);
     }
 };
 
@@ -486,15 +485,15 @@ class SplitPackedVarVisitor : public AstNVisitor {
                         "Unexpected pragma must have been consumed in SplitUnpackedVarVisitor");
             if (!canSplit(varp, true)) {
                 varp->v3warn(SPLITVAR,
-                                "Pragma split_var is specified on a variable whose type is "
-                                "unsupported or public. "
-                                "Packed portion must be an aggregate type of bit or logic.");
+                             "Pragma split_var is specified on a variable whose type is "
+                             "unsupported or public. "
+                             "Packed portion must be an aggregate type of bit or logic.");
             } else {  // finally find a good candidate
                 UINFO(3, varp->prettyNameQ() << " is added to candidate list.\n");
                 m_refs.insert(std::make_pair(varp, PackedVarRef(varp)));
             }
             // consume the pragma here anyway.
-            pragmap->unlinkFrBack()->deleteTree(); VL_DANGLING(vars[i].first);
+            VL_DO_DANGLING(pragmap->unlinkFrBack()->deleteTree(), vars[i].first);
         }
         if (!vars.empty()) {  // need to check this module only when split_var pragma exists in this module.
             iterateChildren(nodep);
@@ -633,7 +632,7 @@ class SplitPackedVarVisitor : public AstNVisitor {
                 AstAssignW* assignp = new AstAssignW(varp->fileline(), new AstVarRef(varp->fileline(), traceVar, true), rhs);
                 traceVar->addNextHere(assignp);
             }
-            varp->unlinkFrBack()->deleteTree(); VL_DANGLING(varp);
+            VL_DO_DANGLING(varp->unlinkFrBack()->deleteTree(), varp);
             ++m_numSplit;
         }
         m_refs.clear();  // done
