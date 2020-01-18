@@ -17,6 +17,7 @@
 README
 TAGS
 autom4te.cache
+compile_commands.json
 config.cache
 config.status
 configure
