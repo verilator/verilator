@@ -53,12 +53,15 @@ void VerilatedReplayCommon::searchFst(const string& targetScope) {
     while (fstHier* hierp = fstReaderIterateHier(m_fstp)) {
         if (hierp->htyp == FST_HT_SCOPE) {
             scope = fstReaderPushScope(m_fstp, hierp->u.scope.name, NULL);
-            if (searchScope.empty()) searchScope = string(scope);
+
+            // Just take the top scope if nothing else has been specified
+            if (searchScope.empty() && m_inputNames.empty() && m_outputNames.empty())
+                searchScope = string(scope);
         } else if (hierp->htyp == FST_HT_UPSCOPE) {
             scope = fstReaderPopScope(m_fstp);
         } else if (hierp->htyp == FST_HT_VAR) {
+            string varName = string(scope) + "." + string(hierp->u.var.name);
             if (string(scope) == searchScope) {
-                string varName = string(scope) + "." + string(hierp->u.var.name);
                 switch (hierp->u.var.direction) {
                     case FST_VD_INPUT:
                         m_inputs[hierp->u.var.handle] =
@@ -70,6 +73,10 @@ void VerilatedReplayCommon::searchFst(const string& targetScope) {
                         break;
                     default: break;
                 }
+            } else if (m_inputNames.find(varName) != m_inputNames.end()) {
+                m_inputs[hierp->u.var.handle] = fstVar(hierp, varName);
+            } else if (m_outputNames.find(varName) != m_outputNames.end()) {
+                m_outputs[hierp->u.var.handle] = fstVar(hierp, varName);
             }
         }
     }

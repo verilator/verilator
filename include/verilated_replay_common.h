@@ -29,6 +29,7 @@
 #include "gtkwave/fstapi.h"
 #include <string>
 #include <map>
+#include <unordered_set>
 
 class VerilatedReplayCommon {
 public:
@@ -46,11 +47,15 @@ protected:
     void* m_fstp;
     VarMap m_inputs;
     VarMap m_outputs;
+    std::unordered_set<std::string> m_inputNames;
+    std::unordered_set<std::string> m_outputNames;
 public:
     VerilatedReplayCommon() {}
     ~VerilatedReplayCommon() {}
     void openFst(const std::string& fstName);
     void searchFst(const std::string& targetScope);
+    void addInputName(const std::string& name) { m_inputNames.insert(name); }
+    void addOutputName(const std::string& name) { m_outputNames.insert(name); }
 };
 
 #endif  // Guard

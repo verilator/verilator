@@ -33,15 +33,26 @@
 #include <string>
 #include <map>
 
+#define QUOTE(x) #x
+#define MAKE_HEADER(x) QUOTE(x.h)
+#include MAKE_HEADER(VM_PREFIX)
+
 class VerilatedReplay: private VerilatedReplayCommon {
 private:
     struct FstSignal {
         size_t bits;
         vluint8_t* signal;
+        FstSignal()  {}
+        FstSignal(size_t _bits, vluint8_t* _signal):
+            bits(_bits), signal(_signal) { }
     };
-    typedef std::map<fstHandle, FstSignal> SignalMap;
+    typedef std::map<fstHandle, FstSignal> SignalHandleMap;
+    typedef std::map<std::string, FstSignal> SignalNameMap;
 
     void createMod();
+    void addSignals();
+    void addInput(const std::string& fullName, vluint8_t* signal, size_t size);
+    void addOutput(const std::string& fullName, vluint8_t* signal, size_t size);
     void eval();
     void trace();
     void final();
@@ -54,16 +65,19 @@ private:
 
     std::string m_fstName;
     double& m_simTime;
-    VerilatedModule* m_modp;
+    VM_PREFIX* m_modp;
     VerilatedFstC* m_tfp;
     uint64_t m_time;
-    SignalMap m_signals;
+    SignalHandleMap m_inputHandles;
+    SignalHandleMap m_outputHandles;
+    SignalNameMap m_inputNames;
+    SignalNameMap m_outputNames;
 public:
     VerilatedReplay(const std::string& fstName, double& simTime):
         m_fstName(fstName), m_simTime(simTime)
     {}
     ~VerilatedReplay();
-    int init(std::string scope);
+    int init();
     int replay();
 };
 

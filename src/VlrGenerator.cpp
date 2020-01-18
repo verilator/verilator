@@ -11,7 +11,7 @@ void VlrGenerator::emitVltCode() {
     // TODO -- use V3OutCFile
     cout << "#include \"verilated_replay.h\"" << endl;
     cout << endl;
-    cout << "void VerilatedReplay() {" << endl;
+    cout << "void VerilatedReplay::addSignals() {" << endl;
 
     for (VarMap::iterator it = m_inputs.begin(); it != m_inputs.end(); ++it) {
         string sigName(it->second.fullName);
@@ -30,8 +30,9 @@ void VlrGenerator::emitVltCode() {
 
         // TODO -- need to be able to specify a new top level
         cout << "    addInput(\"" << it->second.fullName <<
-             "\", reinterpret_cast<VM_PREFIX*>(m_modp)->" << sigName <<
-             ", " << it->second.hier.u.var.length << ");" << endl;
+             "\", &(m_modp->" << sigName <<
+             "), " << it->second.hier.u.var.length << ");" << endl;
+        // TODO -- sizof check (FST vs VLT)
     }
     cout << "}" << endl;
 }

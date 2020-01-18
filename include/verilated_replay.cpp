@@ -23,14 +23,18 @@
 //=========================================================================
 
 #include "verilated_replay.h"
-#define QUOTE(x) #x
-#define MAKE_HEADER(x) QUOTE(x.h)
-#include MAKE_HEADER(VM_PREFIX)
 
 // TODO -- collapse into constructor?
-int VerilatedReplay::init(std::string scope) {
+int VerilatedReplay::init() {
+    addSignals();
+    for (SignalNameMap::iterator it = m_inputNames.begin(); it != m_inputNames.end(); ++it) {
+        addInputName(it->first);
+    }
+    for (SignalNameMap::iterator it = m_outputNames.begin(); it != m_outputNames.end(); ++it) {
+        addOutputName(it->first);
+    }
     openFst(m_fstName);
-    search(scope);
+    searchFst("");
     m_time = fstReaderGetStartTime(m_fstp);
     // TODO -- use FST timescale
     m_simTime = m_time;
@@ -39,8 +43,9 @@ int VerilatedReplay::init(std::string scope) {
          ++it) {
         VL_PRINTF("%s = %d\n", it->second.fullName.c_str(), it->first);
         fstReaderSetFacProcessMask(m_fstp, it->first);
-        m_signals[it->first] = FstSignal(it->second.hier.u.var.length,
-                        reinterpret_cast<VM_PREFIX*>(m_modp)->??);
+        // TODO -- double check the size hasn't changed
+        m_inputHandles[it->first] = FstSignal(it->second.hier.u.var.length,
+                m_inputNames[it->second.fullName].signal);
     }
 
     createMod();
@@ -54,6 +59,14 @@ VerilatedReplay::~VerilatedReplay() {
     if (m_tfp) m_tfp->close();
 #endif
     delete(m_modp);
+}
+
+void VerilatedReplay::addInput(const std::string& fullName, vluint8_t* signal, size_t size) {
+    m_inputNames[fullName] = FstSignal(size, signal);
+}
+
+void VerilatedReplay::addOutput(const std::string& fullName, vluint8_t* signal, size_t size) {
+    m_outputNames[fullName] = FstSignal(size, signal);
 }
 
 //int VerilatedReplay::addInput(const std::string& signalName, void* dutSignal, unsigned bits) {
@@ -174,7 +187,7 @@ void VerilatedReplay::createMod() {
 #if VM_TRACE
     Verilated::traceEverOn(true);
     m_tfp = new VerilatedFstC;
-    reinterpret_cast<VM_PREFIX*>(m_modp)->trace(m_tfp, 99);
+    m_modp->trace(m_tfp, 99);
     // TODO -- command line parameter
     m_tfp->open("replay.fst");
 #endif  // VM_TRACE
@@ -182,15 +195,16 @@ void VerilatedReplay::createMod() {
 
 void VerilatedReplay::eval() {
     // TODO -- make eval, trace and final virtual methods of VerilatedModule?
-    reinterpret_cast<VM_PREFIX*>(m_modp)->eval();
+    m_modp->eval();
 }
 
 void VerilatedReplay::trace() {
 #if VM_TRACE
+    // TODO -- make this optional
     if (m_tfp) m_tfp->dump(m_simTime);
 #endif  // VM_TRACE
 }
 
 void VerilatedReplay::final() {
-    reinterpret_cast<VM_PREFIX*>(m_modp)->final();
+    m_modp->final();
 }
