@@ -453,11 +453,11 @@ public:
         {
             m_lifep = new LifeBlock(NULL, m_statep);
             iterate(nodep);
-            if (m_lifep) { delete m_lifep; m_lifep = NULL; }
+            if (m_lifep) VL_DO_CLEAR(delete m_lifep, m_lifep = NULL);
         }
     }
     virtual ~LifeVisitor() {
-        if (m_lifep) { delete m_lifep; m_lifep = NULL; }
+        if (m_lifep) VL_DO_CLEAR(delete m_lifep, m_lifep = NULL);
     }
     VL_UNCOPYABLE(LifeVisitor);
 };

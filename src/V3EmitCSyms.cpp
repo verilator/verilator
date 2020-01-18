@@ -480,8 +480,7 @@ void EmitCSyms::closeSplit() {
     if (!m_ofp || m_ofp == m_ofpBase) return;
 
     puts("}\n");
-    delete m_ofp;
-    m_ofp = NULL;
+    VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
 }
 
 void EmitCSyms::checkSplit(bool usesVfinal) {

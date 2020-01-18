@@ -86,7 +86,8 @@ private:
             // Wire assigns must become always statements to deal with insertion
             // of multiple statements.  Perhaps someday make all wassigns into always's?
             UINFO(5,"     IM_WireRep  "<<m_assignwp<<endl);
-            m_assignwp->convertToAlways(); pushDeletep(m_assignwp); m_assignwp = NULL;
+            m_assignwp->convertToAlways();
+            VL_DO_CLEAR(pushDeletep(m_assignwp), m_assignwp = NULL);
         }
         bool needDly = (m_assigndlyp != NULL);
         if (m_assigndlyp) {
@@ -95,7 +96,8 @@ private:
             AstNode* newp = new AstAssign(m_assigndlyp->fileline(),
                                           m_assigndlyp->lhsp()->unlinkFrBackWithNext(),
                                           m_assigndlyp->rhsp()->unlinkFrBackWithNext());
-            m_assigndlyp->replaceWith(newp); pushDeletep(m_assigndlyp); m_assigndlyp = NULL;
+            m_assigndlyp->replaceWith(newp);
+            VL_DO_CLEAR(pushDeletep(m_assigndlyp), m_assigndlyp = NULL);
         }
         AstNode* prep = nodep;
 

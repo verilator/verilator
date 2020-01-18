@@ -595,7 +595,7 @@ public:
         add_complement_edges();
         if (debug()>=6) m_graphp->dumpDotFilePrefixed("comp_preswap");
 
-        m_tempNewerReject->unlinkDelete(graphp()); m_tempNewerReject = NULL;
+        VL_DO_CLEAR(m_tempNewerReject->unlinkDelete(graphp()), m_tempNewerReject = NULL);
         if (debug()>=6) m_graphp->dumpDotFilePrefixed("comp_out");
     }
     ~DfaGraphComplement() {}

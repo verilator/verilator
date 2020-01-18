@@ -123,7 +123,7 @@ public:
     }
     void setVarDecl(AstVarType type) { m_varDecl = type; }
     void setDType(AstNodeDType* dtypep) {
-	if (m_varDTypep) { m_varDTypep->deleteTree(); m_varDTypep=NULL; } // It was cloned, so this is safe.
+	if (m_varDTypep) VL_DO_CLEAR(m_varDTypep->deleteTree(), m_varDTypep=NULL);  // It was cloned, so this is safe.
 	m_varDTypep = dtypep;
     }
     AstPackage* unitPackage(FileLine* fl) {
@@ -2362,7 +2362,10 @@ etcInst<nodep>:			// IEEE: module_instantiation + gate_instantiation + udp_insta
 instDecl<nodep>:
 		id parameter_value_assignmentE {INSTPREP($<fl>1,*$1,$2);} instnameList ';'
 			{ $$ = $4; GRAMMARP->m_impliedDecl=false;
-			  if (GRAMMARP->m_instParamp) { GRAMMARP->m_instParamp->deleteTree(); GRAMMARP->m_instParamp = NULL; } }
+			  if (GRAMMARP->m_instParamp) {
+			      VL_DO_CLEAR(GRAMMARP->m_instParamp->deleteTree(),
+					  GRAMMARP->m_instParamp = NULL);
+			  } }
 	//			// IEEE: interface_identifier' .' modport_identifier list_of_interface_identifiers
 	|	id/*interface*/ '.' id/*modport*/
 			{ VARRESET_NONLIST(AstVarType::IFACEREF);

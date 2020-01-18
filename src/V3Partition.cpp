@@ -1411,7 +1411,7 @@ private:
             // Remove and free the connecting edge. Must do this before
             // propagating CP's below.
             m_sb.removeElem(mergeCanp);
-            mergeEdgep->unlinkDelete(); mergeEdgep=NULL;
+            VL_DO_CLEAR(mergeEdgep->unlinkDelete(), mergeEdgep=NULL);
         }
 
         // This also updates cost and stepCost on recipientp
@@ -1467,7 +1467,7 @@ private:
         partMergeEdgesFrom(m_mtasksp, recipientp, donorp, &m_sb);
 
         // Delete the donorp mtask from the graph
-        donorp->unlinkDelete(m_mtasksp); donorp = NULL;
+        VL_DO_CLEAR(donorp->unlinkDelete(m_mtasksp), donorp = NULL);
 
         m_mergesSinceRescore++;
 

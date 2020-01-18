@@ -160,8 +160,12 @@
 # define VL_DANGLING(var) do { (var) = NULL; } while(0)
 #endif
 
-///< Perform an e.g. delete, then set variable to NULL to indicate must not use later
+///< Perform an e.g. delete, then set variable to NULL to indicate must not use later.
+///< Unlike VL_DO_CLEAR the setting of the variable is only for debug reasons.
 #define VL_DO_DANGLING(stmt, var) do { do { stmt; } while(0); VL_DANGLING(var); } while(0)
+
+///< Perform an e.g. delete, then set variable to NULL as a requirement
+#define VL_DO_CLEAR(stmt, stmt2) do { do { stmt; } while(0); do { stmt2; } while(0); } while(0)
 
 //=========================================================================
 // C++-2011

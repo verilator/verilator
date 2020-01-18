@@ -285,7 +285,7 @@ public:
         m_lexp->debug(debug()>=5 ? debug() : 0);  // See also V3PreProc::debug() method
     }
     ~V3PreProcImp() {
-        if (m_lexp) { delete m_lexp; m_lexp = NULL; }
+        if (m_lexp) VL_DO_CLEAR(delete m_lexp, m_lexp = NULL);
     }
 };
 

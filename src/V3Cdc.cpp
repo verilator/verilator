@@ -761,7 +761,7 @@ public:
         }
     }
     virtual ~CdcVisitor() {
-        if (m_ofp) { delete m_ofp; m_ofp = NULL; }
+        if (m_ofp) VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
     }
 };
 

@@ -2813,7 +2813,7 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
 void EmitCImp::maybeSplit(AstNodeModule* modp) {
     if (splitNeeded()) {
         // Close old file
-        delete m_ofp; m_ofp = NULL;
+        VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
         // Open a new file
         m_ofp = newOutCFile(modp, !m_fast, true/*source*/, splitFilenumInc());
         emitImp(modp);
@@ -2834,7 +2834,7 @@ void EmitCImp::main(AstNodeModule* modp, bool slow, bool fast) {
     if (m_fast) {
         m_ofp = newOutCFile(modp, !m_fast, false/*source*/);
         emitInt(modp);
-        delete m_ofp; m_ofp = NULL;
+        VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
     }
 
     m_ofp = newOutCFile(modp, !m_fast, true/*source*/);
@@ -2865,7 +2865,7 @@ void EmitCImp::main(AstNodeModule* modp, bool slow, bool fast) {
             }
         }
     }
-    delete m_ofp; m_ofp = NULL;
+    VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
 }
 
 //######################################################################
@@ -3192,7 +3192,7 @@ class EmitCTrace : EmitCStmts {
 
             if (splitNeeded()) {
                 // Close old file
-                delete m_ofp; m_ofp = NULL;
+                VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
                 // Open a new file
                 newOutCFile(splitFilenumInc());
             }
@@ -3273,7 +3273,7 @@ public:
 
         iterate(v3Global.rootp());
 
-        delete m_ofp; m_ofp = NULL;
+        VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
     }
 };
 

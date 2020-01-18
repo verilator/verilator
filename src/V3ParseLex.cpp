@@ -82,5 +82,5 @@ void V3ParseImp::lexNew() {
 }
 
 void V3ParseImp::lexDestroy() {
-    if (m_lexerp) { delete m_lexerp; m_lexerp = NULL; }
+    if (m_lexerp) VL_DO_CLEAR(delete m_lexerp, m_lexerp = NULL);
 }

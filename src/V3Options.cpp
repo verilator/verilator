@@ -1553,7 +1553,7 @@ V3Options::V3Options() {
 }
 
 V3Options::~V3Options() {
-    delete m_impp; m_impp = NULL;
+    VL_DO_CLEAR(delete m_impp, m_impp = NULL);
 }
 
 void V3Options::setDebugMode(int level) {

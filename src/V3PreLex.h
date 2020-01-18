@@ -189,7 +189,7 @@ class V3PreLex {
     }
     ~V3PreLex() {
         while (!m_streampStack.empty()) { delete m_streampStack.top(); m_streampStack.pop(); }
-        yy_delete_buffer(m_bufferState); m_bufferState = NULL;
+        VL_DO_CLEAR(yy_delete_buffer(m_bufferState), m_bufferState = NULL);
     }
 
     // Called by V3PreLex.l from lexer

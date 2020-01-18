@@ -150,9 +150,7 @@ public:
             V3GraphEdge* deletep = NULL;
             for (V3GraphEdge* edgep = vxp->outBeginp();
                  edgep; edgep = edgep->outNextp()) {
-                if (deletep) {
-                    deletep->unlinkDelete(); deletep = NULL;
-                }
+                if (deletep) VL_DO_CLEAR(deletep->unlinkDelete(), deletep = NULL);
                 // It should be safe to modify the graph, despite using
                 // the GraphPathChecker, as none of the modifications will
                 // change what can be reached from what, nor should they
