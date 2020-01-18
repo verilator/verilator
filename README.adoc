@@ -16,6 +16,7 @@ ifndef::env-github[]
 :link_verilator_contributing: https://github.com/verilator/verilator/blob/master/docs/CONTRIBUTING.adoc
 :link_verilator_install: https://verilator.org/install
 endif::[]
+:link_verilator_commercial_support: https://verilator.org/verilator_commercial_support
 
 == Welcome to Verilator
 
@@ -38,12 +39,18 @@ endif::[]
 +++ <br/> +++ &bullet; Out-of-the-box support from Arm, and RISC-V vendor IP
 <.^|image:https://www.veripool.org/img/verilator_usage_400x200-min.png[,400,200]
 
->.^|image:https://www.veripool.org/img/chips_alliance_logo_225x75-min.png[CHIPS Alliance,link=https://chipsalliance.org]
-image:https://www.veripool.org/img/osi_logo_125x125-min.png[,125,125]
+>.^|image:https://www.veripool.org/img/verilator_community_400x125-min.png[,400,125]
 ^.^| *Community Driven & Openly Licensed*
 +++ <br/> +++ &bullet; Guided by the https://chipsalliance.org/[CHIPS Alliance] and https://www.linuxfoundation.org/[Linux Foundation]
 +++ <br/> +++ &bullet; Open, and free as in both speech and beer
 +++ <br/> +++ &bullet; More simulation for your verification budget
+
+^.^| *Commercial Support Available*
++++ <br/> +++ &bullet; Commercial support contracts
++++ <br/> +++ &bullet; Design support contracts
++++ <br/> +++ &bullet; Enhancement contracts
+<.^|image:https://www.veripool.org/img/verilator_support_400x125-min.png[,400,125]
+
 |===
 
 == What Verilator Does
@@ -109,7 +116,7 @@ or https://verilator.org/verilator_doc.pdf[Verilator manual (PDF)]
 
 * https://verilator.org/issues[Verilator Issues]
 
-== Community Supported
+== Support
 
 Verilator is a community project, guided by the
 https://chipsalliance.org/[CHIPS Alliance] under the
@@ -119,6 +126,10 @@ We appreciate and welcome your contributions in whatever form; please see
 {link_verilator_contributing}[Contributing to Verilator].  Thanks to our
 https://verilator.org/verilator_doc.html#CONTRIBUTORS[Contributors and
 Sponsors].
+
+Verilator also supports and encourages commercial support models and
+organizations; please see {link_verilator_commercial_support}[Verilator
+Commercial Support].
 
 == Related Projects
 
