@@ -183,6 +183,7 @@ public:
     const string filebasenameNoExt() const;
     const string profileFuncname() const;
     const string xml() const { return "fl=\""+filenameLetters()+cvtToStr(lastLineno())+"\""; }
+    const string xmlDetailedLocation() const;
     string lineDirectiveStrg(int enterExit) const;
 
     // Turn on/off warning messages on this line.

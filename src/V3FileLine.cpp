@@ -158,6 +158,14 @@ FileLine::FileLine(FileLine::EmptySecret) {
     }
 }
 
+const string FileLine::xmlDetailedLocation() const {
+    return "loc=\"" + 
+      cvtToStr(firstLineno()) + "," +
+      cvtToStr(firstColumn()) + "," +
+      cvtToStr(lastLineno()) + "," +
+      cvtToStr(lastColumn()) + "\"";
+}
+
 string FileLine::lineDirectiveStrg(int enterExit) const {
     char numbuf[20]; sprintf(numbuf, "%d", lastLineno());
     char levelbuf[20]; sprintf(levelbuf, "%d", enterExit);
