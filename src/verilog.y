@@ -123,7 +123,7 @@ public:
     }
     void setVarDecl(AstVarType type) { m_varDecl = type; }
     void setDType(AstNodeDType* dtypep) {
-	if (m_varDTypep) { m_varDTypep->deleteTree(); m_varDTypep=NULL; } // It was cloned, so this is safe.
+	if (m_varDTypep) VL_DO_CLEAR(m_varDTypep->deleteTree(), m_varDTypep=NULL);  // It was cloned, so this is safe.
 	m_varDTypep = dtypep;
     }
     AstPackage* unitPackage(FileLine* fl) {
@@ -2364,7 +2364,10 @@ etcInst<nodep>:			// IEEE: module_instantiation + gate_instantiation + udp_insta
 instDecl<nodep>:
 		id parameter_value_assignmentE {INSTPREP($<fl>1,*$1,$2);} instnameList ';'
 			{ $$ = $4; GRAMMARP->m_impliedDecl=false;
-			  if (GRAMMARP->m_instParamp) { GRAMMARP->m_instParamp->deleteTree(); GRAMMARP->m_instParamp = NULL; } }
+			  if (GRAMMARP->m_instParamp) {
+			      VL_DO_CLEAR(GRAMMARP->m_instParamp->deleteTree(),
+					  GRAMMARP->m_instParamp = NULL);
+			  } }
 	//			// IEEE: interface_identifier' .' modport_identifier list_of_interface_identifiers
 	|	id/*interface*/ '.' id/*modport*/
 			{ VARRESET_NONLIST(AstVarType::IFACEREF);
@@ -5356,13 +5359,17 @@ classExtendsE<nodep>:		// IEEE: part of class_declaration
 
 classExtendsList<nodep>:	// IEEE: part of class_declaration
 		classExtendsOne				{ $$ = $1; }
-	|	classExtendsList ',' classExtendsOne	{ $$ = AstNode::addNextNull($1, $3); }
+	|	classExtendsList ',' classExtendsOne
+			{ $$ = $3; BBUNSUP($3, "Multiple inheritance illegal on non-interface classes (IEEE 8.13)"
+					       ", and unsupported for interface classes."); }
 	;
 
 classExtendsOne<nodep>:		// IEEE: part of class_declaration
-		class_typeWithoutId			{ $$ = NULL; BBUNSUP($1, "Unsupported: extends"); }
+		class_typeWithoutId
+			{ $$ = NULL; BBUNSUP($1, "Unsupported: extends"); }
 	//			// IEEE: Might not be legal to have more than one set of parameters in an extends
-	|	class_typeWithoutId '(' list_of_argumentsE ')'	{ $$ = NULL; BBUNSUP($1, "Unsupported: extends"); }
+	|	class_typeWithoutId '(' list_of_argumentsE ')'
+			{ $$ = NULL; BBUNSUP($1, "Unsupported: extends"); }
 	;
 
 classImplementsE<nodep>:	// IEEE: part of class_declaration

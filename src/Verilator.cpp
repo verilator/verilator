@@ -113,7 +113,7 @@ AstNetlist* V3Global::makeNetlist() {
 void V3Global::checkTree() { rootp()->checkTree(); }
 
 void V3Global::clear() {
-    if (m_rootp) { m_rootp->deleteTree(); m_rootp = NULL; }
+    if (m_rootp) VL_DO_CLEAR(m_rootp->deleteTree(), m_rootp = NULL);
 }
 
 void V3Global::readFiles() {

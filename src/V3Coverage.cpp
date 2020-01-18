@@ -54,8 +54,8 @@ private:
             : m_comment(comment), m_varRefp(vp), m_chgRefp(cp) {}
         ~ToggleEnt() {}
         void cleanup() {
-            m_varRefp->deleteTree(); m_varRefp = NULL;
-            m_chgRefp->deleteTree(); m_chgRefp = NULL;
+            VL_DO_CLEAR(m_varRefp->deleteTree(), m_varRefp = NULL);
+            VL_DO_CLEAR(m_chgRefp->deleteTree(), m_chgRefp = NULL);
         }
     };
 

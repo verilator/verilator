@@ -184,7 +184,7 @@ private:
         SimulateVisitor simvis;
         AstNode* clonep = nodep->cloneTree(true);
         simvis.mainCheckTree(clonep);
-        pushDeletep(clonep); clonep = NULL;
+        VL_DO_CLEAR(pushDeletep(clonep), clonep = NULL);
         return simvis.optimizable();
     }
 
@@ -202,7 +202,7 @@ private:
             clonep = tempp->stmtsp()->unlinkFrBackWithNext();
             tempp->deleteTree();
             tempp = NULL;
-            pushDeletep(m_varValuep); m_varValuep = NULL;
+            VL_DO_CLEAR(pushDeletep(m_varValuep), m_varValuep = NULL);
         }
         SimulateVisitor simvis;
         simvis.mainParamEmulate(clonep);
@@ -329,7 +329,7 @@ private:
                         string nname = m_beginName + "__BRA__" + index + "__KET__";
                         oneloopp = new AstBegin(oneloopp->fileline(), nname, oneloopp, true);
                     }
-                    pushDeletep(m_varValuep); m_varValuep = NULL;
+                    VL_DO_CLEAR(pushDeletep(m_varValuep), m_varValuep = NULL);
                     if (newbodysp) newbodysp->addNext(oneloopp);
                     else newbodysp = oneloopp;
 

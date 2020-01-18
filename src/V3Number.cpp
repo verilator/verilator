@@ -497,10 +497,10 @@ bool V3Number::displayedFmtLegal(char format) {
     }
 }
 
-string V3Number::displayPad(size_t fmtsize, char pad, const string& in) {
-    string prefix;
-    if (in.length() < fmtsize) prefix = string(fmtsize - in.length(), pad);
-    return prefix + in;
+string V3Number::displayPad(size_t fmtsize, char pad, bool left, const string& in) {
+    string padding;
+    if (in.length() < fmtsize) padding = string(fmtsize - in.length(), pad);
+    return left ? (in + padding) : (padding + in);
 }
 
 string V3Number::displayed(AstNode* nodep, const string& vformat) const {
@@ -512,6 +512,11 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
     UASSERT(pos != vformat.end() && pos[0]=='%',
             "$display-like function with non format argument "<<*this);
     ++pos;
+    bool left = false;
+    if (pos[0] == '-') {
+        left = true;
+        ++pos;
+    }
     string fmtsize;
     for (; pos != vformat.end() && (isdigit(pos[0]) || pos[0]=='.'); ++pos) {
         fmtsize += pos[0];
@@ -574,7 +579,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
             }
         }
         size_t fmtsizen = static_cast<size_t>(atoi(fmtsize.c_str()));
-        str = displayPad(fmtsizen, ' ', str);
+        str = displayPad(fmtsizen, ' ', left, str);
         return str;
     }
     case '~':  // Signed decimal
@@ -604,7 +609,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
         bool zeropad = fmtsize.length()>0 && fmtsize[0]=='0';
         // fmtsize might have changed since we parsed the %fmtsize
         size_t fmtsizen = static_cast<size_t>(atoi(fmtsize.c_str()));
-        str = displayPad(fmtsizen, (zeropad ? '0' : ' '), str);
+        str = displayPad(fmtsizen, (zeropad ? '0' : ' '), left, str);
         return str;
     }
     case 'e':
@@ -651,7 +656,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
     }
     case '@': {  // Packed string
         size_t fmtsizen = static_cast<size_t>(atoi(fmtsize.c_str()));
-        str = displayPad(fmtsizen, ' ', toString());
+        str = displayPad(fmtsizen, ' ', left, toString());
         return str;
     }
     default:

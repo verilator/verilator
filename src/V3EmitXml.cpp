@@ -140,6 +140,8 @@ class EmitXmlFileVisitor : public AstNVisitor {
         if (nodep->isSigPublic()) puts(" public=\"true\"");
         if (nodep->isSigUserRdPublic()) puts(" public_flat_rd=\"true\"");
         if (nodep->isSigUserRWPublic()) puts(" public_flat_rw=\"true\"");
+        if (nodep->isGParam()) puts(" param=\"true\"");
+        else if (nodep->isParam()) puts(" localparam=\"true\"");
         if (nodep->attrScBv()) puts(" sc_bv=\"true\"");
         if (nodep->attrScClocked()) puts(" sc_clock=\"true\"");
         if (nodep->attrSFormat()) puts(" sformat=\"true\"");

@@ -1155,7 +1155,9 @@ class TristateVisitor : public TristateBaseVisitor {
             AstVar* outModVarp = static_cast<AstVar*>(nodep->modVarp()->user4p());
             if (!outModVarp) {
                 // At top, no need for __out as might be input only. Otherwise resolvable.
-                UASSERT_OBJ(m_modp->isTop(), nodep, "Unlinked");
+                if (!m_modp->isTop()) {
+                    nodep->v3error("Unsupported: tristate in top-level IO: " << nodep->prettyNameQ());
+                }
             } else {
                 AstNode* outexprp = nodep->exprp()->cloneTree(false);  // Note has lvalue() set
                 outpinp = new AstPin(nodep->fileline(),

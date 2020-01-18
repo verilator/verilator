@@ -13,7 +13,10 @@ module t;
    reg [31:0] str; initial str = "\000\277\021\n";
    reg [47:0] str2; initial str2 = "\000what!";
    reg [79:0] str3; initial str3 = "\000hmmm!1234";
+   int        n; initial n = 23;
+   reg [7:0]  m; initial m = 24;
    string     svs = "sv-str";
+   reg [31:0] regstr = "meep";
 
    sub sub ();
    sub2 sub2 ();
@@ -143,6 +146,22 @@ multiline", $time);
 `ifndef NC      // NC-Verilog 5.3 chokes on this test
       if (str !== 32'h00_bf_11_0a) $stop;
 `endif
+
+      // Padding
+      $write("'%0d %2d %8d'\n", 23, 23, 23);
+      $write("'%-0d %-2d %-8d'\n", 23, 23, 23);
+      $write("'%0d %2d %8d'\n", n, n, n);
+      $write("'%-0d %-2d %-8d'\n", n, n, n);
+      $write("'%8d'\n", m);
+      $write("'%-8d'\n", m);
+      $write("'%8t'\n", $time);
+      $write("'%-8t'\n", $time);
+      $write("'%8s'\n", svs);
+      $write("'%-8s'\n", svs);
+      $write("'%8s'\n", regstr);
+      $write("'%-8s'\n", regstr);
+      $write("'%8s'\n", "beep");
+      $write("'%-8s'\n", "beep");
 
       // $itord conversion bug, note a %d instead of proper float
       $display("log10(2) = %d", $log10(100));

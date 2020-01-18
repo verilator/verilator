@@ -164,12 +164,12 @@ public:
     void deleteUnusedAssign() {
         // If there are unused assignments in this var, kill them
         if (!m_whole.m_use && !m_wordUse && m_whole.m_assignp) {
-            deleteAssign(m_whole.m_assignp); m_whole.m_assignp = NULL;
+            VL_DO_CLEAR(deleteAssign(m_whole.m_assignp), m_whole.m_assignp = NULL);
         }
         for (unsigned i=0; i<m_words.size(); i++) {
             if (!m_whole.m_use && !m_words[i].m_use
                 && m_words[i].m_assignp && !m_words[i].m_complex) {
-                deleteAssign(m_words[i].m_assignp); m_words[i].m_assignp = NULL;
+                VL_DO_CLEAR(deleteAssign(m_words[i].m_assignp), m_words[i].m_assignp = NULL);
             }
         }
     }

@@ -11,7 +11,7 @@ contributions flow more efficiently.
   https://verilator.org/issues[Verilator Issues].
 
 * If you're unable to find an open issue addressing the problem,
-  https://verilator.org/issues/new[open a new issue].
+  https://verilator.org/issues/new[open a new Verilator issue].
 
 ** Be sure to include a **code sample** or an **executable test case**
    demonstrating the bug and expected behavior that is not occurring.

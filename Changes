@@ -5,11 +5,15 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.027 devel
 
-** Support attributes (public, isolate_assignments, etc.) in configuration files.
+**    Support attributes (public, isolate_assignments, etc.) in configuration files.
 
-** Add -match to lint_off to waive warnings. [Philipp Wagner]
+**    Add -match to lint_off to waive warnings. [Philipp Wagner]
 
-*** Support $readmem/$writemem with assoc arrarys. Closes #2100. [agrobman]
+***   Support $readmem/$writemem with assoc arrarys. Closes #2100. [agrobman]
+
+****  Support left justified $display. Closes #2101. [Pieter Kapsenberg]
+
+****  Add parameter values in XML. #2110. [Pieter Kapsenberg]
 
 ****  Add error on misused define. [Topa Tota]
 

@@ -129,15 +129,14 @@ public:
         return iter->second;
     }
     bool ftaskNoInline(AstNodeFTask* nodep) {
-        return (getFTaskVertex(nodep)->noInline());
+        return getFTaskVertex(nodep)->noInline();
     }
     AstCFunc* ftaskCFuncp(AstNodeFTask* nodep) {
-        return (getFTaskVertex(nodep)->cFuncp());
+        return getFTaskVertex(nodep)->cFuncp();
     }
     void ftaskCFuncp(AstNodeFTask* nodep, AstCFunc* cfuncp) {
         getFTaskVertex(nodep)->cFuncp(cfuncp);
     }
-
     void checkPurity(AstNodeFTask* nodep) {
         checkPurity(nodep, getFTaskVertex(nodep));
     }
@@ -196,7 +195,7 @@ private:
             // of multiple statements.  Perhaps someday make all wassigns into always's?
             UINFO(5,"     IM_WireRep  "<<m_assignwp<<endl);
             m_assignwp->convertToAlways();
-            pushDeletep(m_assignwp); m_assignwp = NULL;
+            VL_DO_CLEAR(pushDeletep(m_assignwp), m_assignwp = NULL);
         }
         // We make multiple edges if a task is called multiple times from another task.
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked task");
@@ -471,7 +470,8 @@ private:
         {
             AstBegin* tempp = new AstBegin(beginp->fileline(), "[EditWrapper]", beginp);
             TaskRelinkVisitor visit (tempp);
-            tempp->stmtsp()->unlinkFrBackWithNext(); VL_DO_DANGLING(tempp->deleteTree(), tempp);
+            tempp->stmtsp()->unlinkFrBackWithNext();
+            VL_DO_DANGLING(tempp->deleteTree(), tempp);
         }
         //
         if (debug()>=9) { beginp->dumpTreeAndNext(cout, "-iotask: "); }
@@ -489,8 +489,8 @@ private:
                                          string("Function: ")+refp->name(), true);
         AstCCall* ccallp = new AstCCall(refp->fileline(), cfuncp, NULL);
         beginp->addNext(ccallp);
-        // Convert complicated outputs to temp signals
 
+        // Convert complicated outputs to temp signals
         V3TaskConnects tconnects = V3Task::taskConnects(refp, refp->taskp()->stmtsp());
         for (V3TaskConnects::iterator it=tconnects.begin(); it!=tconnects.end(); ++it) {
             AstVar* portp = it->first;
@@ -521,7 +521,7 @@ private:
                     // Correct lvalue; we didn't know when we linked
                     // This is slightly scary; are we sure no decisions were made
                     // before here based on this not being a lvalue?
-                    // Doesn't seem so; V3Unknown uses it earlier, but works ok.
+                    // Seems correct assumption; V3Unknown uses it earlier, but works ok.
                     V3LinkLValue::linkLValueSet(pinp);
 
                     // Even if it's referencing a varref, we still make a temporary
@@ -1074,7 +1074,8 @@ private:
         {
             AstBegin* tempp = new AstBegin(cfuncp->fileline(), "[EditWrapper]", cfuncp);
             TaskRelinkVisitor visit (tempp);
-            tempp->stmtsp()->unlinkFrBackWithNext(); VL_DO_DANGLING(tempp->deleteTree(), tempp);
+            tempp->stmtsp()->unlinkFrBackWithNext();
+            VL_DO_DANGLING(tempp->deleteTree(), tempp);
         }
         // Delete rest of cloned task and return new func
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -1411,7 +1412,8 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
             UINFO(9,"Default pin for "<<portp<<endl);
             AstArg* newp = new AstArg(nodep->fileline(), portp->name(), newvaluep);
             if (tconnects[i].second) {  // Have a "NULL" pin already defined for it
-                tconnects[i].second->unlinkFrBack()->deleteTree(); tconnects[i].second = NULL;
+                VL_DO_CLEAR(tconnects[i].second->unlinkFrBack()->deleteTree(),
+                            tconnects[i].second = NULL);
             }
             tconnects[i].second = newp;
             reorganize = true;

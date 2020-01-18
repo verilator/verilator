@@ -51,5 +51,19 @@ extra argument: 0000000000000000
 [0] Embedded <#013> return
 [0] Embedded
 multiline
+'23 23       23'
+'23 23 23      '
+'23 23       23'
+'23 23 23      '
+'      24'
+'24      '
+'       0'
+'0       '
+'  sv-str'
+'sv-str  '
+'    meep'
+'meep    '
+'    beep'
+'beep    '
 log10(2) =                    2
 *-* All Finished *-*
