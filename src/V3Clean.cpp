@@ -282,7 +282,7 @@ private:
         insureCleanAndNext(nodep->argsp());
         setClean(nodep, true);
     }
-    virtual void visit(AstCMethodCall* nodep) {
+    virtual void visit(AstCMethodHard* nodep) {
         iterateChildren(nodep);
         insureCleanAndNext(nodep->pinsp());
         setClean(nodep, true);

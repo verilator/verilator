@@ -262,7 +262,7 @@ private:
         else if (AstQueueDType* adtypep = VN_CAST(ddtypep, QueueDType)) {
             // SELBIT(array, index) -> CMETHODCALL(queue, "at", index)
             AstNode* subp = rhsp;
-            AstCMethodCall* newp = new AstCMethodCall(nodep->fileline(),
+            AstCMethodHard* newp = new AstCMethodHard(nodep->fileline(),
                                                       fromp, "at", subp);
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off queue reference
             if (debug()>=9) newp->dumpTree(cout, "--SELBTq: ");

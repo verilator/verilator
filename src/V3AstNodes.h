@@ -1366,7 +1366,7 @@ public:
     void addPinsp(AstNode* nodep) { addOp2p(nodep); }
 };
 
-class AstCMethodCall : public AstNodeStmt {
+class AstCMethodHard : public AstNodeStmt {
     // A reference to a "C" hardocded member task (or function)
     // PARENTS: stmt/math
     // Not all calls are statments vs math.  AstNodeStmt needs isStatement() to deal.
@@ -1374,7 +1374,7 @@ private:
     string m_name;  // Name of method
     bool m_pure;  // Pure optimizable
 public:
-    AstCMethodCall(FileLine* fl, AstNode* fromp, VFlagChildDType, const string& name,
+    AstCMethodHard(FileLine* fl, AstNode* fromp, VFlagChildDType, const string& name,
                    AstNode* pinsp)
         : AstNodeStmt(fl, false)
         , m_name(name)
@@ -1383,19 +1383,19 @@ public:
         dtypep(NULL);  // V3Width will resolve
         addNOp2p(pinsp);
     }
-    AstCMethodCall(FileLine* fl, AstNode* fromp, const string& name, AstNode* pinsp)
+    AstCMethodHard(FileLine* fl, AstNode* fromp, const string& name, AstNode* pinsp)
         : AstNodeStmt(fl, false)
         , m_name(name) {
         setOp1p(fromp);
         addNOp2p(pinsp);
     }
-    ASTNODE_NODE_FUNCS(CMethodCall)
+    ASTNODE_NODE_FUNCS(CMethodHard)
     virtual string name() const { return m_name; }  // * = Var name
     virtual bool hasDType() const { return true; }
     virtual void name(const string& name) { m_name = name; }
     virtual V3Hash sameHash() const { return V3Hash(m_name); }
     virtual bool same(const AstNode* samep) const {
-        const AstCMethodCall* asamep = static_cast<const AstCMethodCall*>(samep);
+        const AstCMethodHard* asamep = static_cast<const AstCMethodHard*>(samep);
         return (m_name == asamep->m_name); }
     virtual bool isPure() const { return m_pure; }
     void pure(bool flag) { m_pure = flag; }

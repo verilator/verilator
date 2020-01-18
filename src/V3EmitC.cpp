@@ -192,7 +192,7 @@ public:
         } else if (nodep->isWide()
                    && VN_IS(nodep->lhsp(), VarRef)
                    && !VN_IS(nodep->rhsp(), CMath)
-                   && !VN_IS(nodep->rhsp(), CMethodCall)
+                   && !VN_IS(nodep->rhsp(), CMethodHard)
                    && !VN_IS(nodep->rhsp(), VarRef)
                    && !VN_IS(nodep->rhsp(), AssocSel)
                    && !VN_IS(nodep->rhsp(), ArraySel)) {
@@ -257,7 +257,7 @@ public:
             puts(");\n");
         }
     }
-    virtual void visit(AstCMethodCall* nodep) {
+    virtual void visit(AstCMethodHard* nodep) {
         iterate(nodep->fromp());
         puts(".");
         puts(nodep->nameProtect());
