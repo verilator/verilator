@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Emit Verilog from tree
+// DESCRIPTION: Verilator: Common implemenetations
 //
 // Code available from: https://verilator.org
 //
