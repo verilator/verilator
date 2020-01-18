@@ -22,8 +22,8 @@ execute(
     );
 
 vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
-file_grep($Self->{stats}, qr/SplitVar,\s+Split packed variables\s+(\d+)/i, 96);
-file_grep($Self->{stats}, qr/SplitVar,\s+Split unpacked arrays\s+(\d+)/i, 13);
+file_grep($Self->{stats}, qr/SplitVar,\s+Split packed variables\s+(\d+)/i, 180);
+file_grep($Self->{stats}, qr/SplitVar,\s+Split unpacked arrays\s+(\d+)/i, 15);
 
 ok(1);
 1;

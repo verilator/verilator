@@ -85,6 +85,13 @@ module barshift_2d_unpacked #(parameter depth = 2, localparam width = 2**depth) 
     reg [width-1:0]tmp8[depth+offset+3:offset-1][offset:offset+n-1]; /*verilator split_var*/
     reg [width-1:0]tmp9[depth+offset+3:offset+3][offset:offset+n-1]; /*verilator split_var*/
     reg [width-1:0]tmp10[depth+offset:offset][offset:offset+n-1]; /*verilator split_var*/
+    // because tmp11 is not split for testing mixture usage of split_var and no-spliv_ar,
+    // UNOPTFLAT appears, but it's fine.
+    /*verilator lint_off UNOPTFLAT*/
+    reg [width-1:0]tmp11[-1:1][depth+offset:offset][offset:offset+n-1];
+    /*verilator lint_on UNOPTFLAT*/
+    reg [width-1:0]tmp12[-1:0][depth+offset:offset][offset:offset+n-1]; /*verilator split_var*/
+    reg [width-1:0]tmp13[depth+offset:offset][offset:offset+n-1]; /*verilator split_var*/
 
     generate
         for(genvar i = 0; i < depth; ++i) begin
@@ -112,7 +119,11 @@ module barshift_2d_unpacked #(parameter depth = 2, localparam width = 2**depth) 
     assign tmp8[depth+offset+1:offset+1] = tmp7;
     assign tmp9 = tmp8[depth+offset+1:offset+1];
     assign tmp10[depth+offset:offset] = tmp9[depth+offset+3:offset+3];
-    assign out = tmp10[depth+offset][offset];
+    assign tmp11[1] = tmp10;
+    assign tmp11[-1] = tmp11[1];
+    assign tmp11[0] = tmp11[-1];
+    assign tmp12 = tmp11[0:1];
+    assign out = tmp12[1][depth+offset][offset];
 endmodule
 
 

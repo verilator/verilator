@@ -20,7 +20,7 @@ execute(
     check_finished => 1,
     );
 
-file_grep($Self->{stats}, qr/SplitVar,\s+Split packed variables\s+(\d+)/i, 84);
-file_grep($Self->{stats}, qr/SplitVar,\s+Split unpacked arrays\s+(\d+)/i, 13);
+file_grep($Self->{stats}, qr/SplitVar,\s+Split packed variables\s+(\d+)/i, 156);
+file_grep($Self->{stats}, qr/SplitVar,\s+Split unpacked arrays\s+(\d+)/i, 15);
 ok(1);
 1;

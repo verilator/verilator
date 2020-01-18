@@ -128,10 +128,17 @@ public:
 
 class SplitUnpackedVarVisitor : public AstNVisitor {
     AstNodeModule* m_modp;  // current module
-    int m_numSplit;   // total number of split variable
-    bool m_firstRun;  // true for the first pass
+    int m_numSplit;         // total number of split variable
     // key:variable to be split. value:location where the variable is referenced.
     vl_unordered_map<AstVar*, std::vector<AstArraySel*> > m_refs;
+    typedef vl_unordered_set<AstNodeAssign*> AssignSet;
+    AssignSet m_assigns;  // at least LHS or RHS will be split
+
+    // used when traversing LHS and RHS of assignment. true if func/task is included
+    bool m_taskFuncFound;
+    // used when traversing LHS and RHS of assignment. added to this set.
+    typedef vl_unordered_set<AstVar*> TargetVarSet;
+    TargetVarSet m_foundTargetVar;
 
     // This visitor is used before V3Const::constifyAllLint(),
     // some parameters need to be resolved here, but don't abuse this function.
@@ -152,8 +159,15 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
     }
 
     virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
+    virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
+        m_taskFuncFound = true;
+        iterateChildren(nodep);
+    }
+
     virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         UASSERT_OBJ(m_modp == NULL, m_modp, "Nested module declration");
+        UASSERT_OBJ(m_refs.empty(), nodep, "The last module didn't finish split()");
         m_modp = nodep;
         std::vector<std::pair<AstPragma*, AstVar*> > vars = ScanPragmaVisitor::scan(nodep);
         for (size_t i = 0; i < vars.size(); ++i) {
@@ -173,35 +187,17 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
                 VL_DO_DANGLING(vars[i].first->unlinkFrBack()->deleteTree(), vars[i].first);
             }
         }
-        if (!vars.empty()) {  // need to check this module only when split_var pragma exists in this module.
+        if (!m_refs.empty()) {  // need to check this module only when split_var pragma exists in this module.
             iterateChildren(nodep);
             split();
         }
         m_modp = NULL;
     }
+
     virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         AstVar* varp = nodep->varp();
         if (m_refs.find(varp) == m_refs.end()) return;  // variable without split_var pragma
-
-        if (m_firstRun)
-            nodep->v3warn(
-                SPLITVAR,
-                "Variable " << varp->prettyNameQ()
-                            << " will not be split because the entire unpacked array is referred."
-                               " Such access is not supported yet.\n");
-        m_refs.erase(varp);
-    }
-
-    static void splitSimpleAssign(AstNodeAssign* asnp, AstVarRef* lhsp, AstVarRef* rhsp,
-                                  int lstart, int rstart, int num) {
-        for (int i = 0; i < num; ++i) {
-            AstVarRef* lrefp = new AstVarRef(lhsp->fileline(), lhsp->varp(), true);
-            AstVarRef* rrefp = new AstVarRef(rhsp->fileline(), rhsp->varp(), false);
-            AstArraySel* lselp = new AstArraySel(lhsp->fileline(), lrefp, lstart + i);
-            AstArraySel* rselp = new AstArraySel(rhsp->fileline(), rrefp, rstart + i);
-            // the added new assignment statement will be visited later.
-            asnp->addNext(asnp->cloneType(lselp, rselp));
-        }
+        m_foundTargetVar.insert(varp);
     }
 
     // Unroll assignments of SliceSel or entire unpacked array to multiple assignment
@@ -210,34 +206,34 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
         AstSliceSel* rsel = VN_CAST(nodep->rhsp(), SliceSel);
         AstVarRef* lhsp = VN_CAST(lsel ? lsel->fromp() : nodep->lhsp(), VarRef);
         AstVarRef* rhsp = VN_CAST(rsel ? rsel->fromp() : nodep->rhsp(), VarRef);
-        // unless simple assignment, nothing to do in this function
-        if (!lhsp || !rhsp) {
+        // at least either LHS or RHS must be VarRef or SliceSel to unroll this assignment
+        if (!lhsp && !rhsp) {
             iterateChildren(nodep);
             return;
         }
+        m_taskFuncFound = false;
+        m_foundTargetVar.clear();
+        iterateChildren(nodep);
 
-        // if nodep is a simple assignment of variables without split_var pragma, quick exit
-        if (m_refs.find(lhsp->varp()) == m_refs.end() && m_refs.find(rhsp->varp()) == m_refs.end())
+        // If LHS or RHS includes function, this assign statement can not be split/unrolled
+        // because the function may have side effect.
+        // e.g. unpacked_array[some_func()] = rhs; or unpacked_array = some_func();
+        if (m_taskFuncFound) {
+            for (TargetVarSet::iterator it = m_foundTargetVar.begin(),
+                                        it_end = m_foundTargetVar.end();
+                 it != it_end; ++it) {
+                (*it)->v3warn(
+                    SPLITVAR,
+                    "Variable " << (*it)->prettyNameQ()
+                                << " will not be split because it is used with function or task.");
+                m_refs.erase(*it);
+            }
+            m_foundTargetVar.clear();
             return;
+        }
 
-        int lstart, lnum, rstart, rnum;
-        if (lsel) {
-            lstart = lsel->declRange().lo();
-            lnum = lsel->declRange().elements();
-        } else {  // LHS is entire array
-            lstart = 0;
-            lnum = outerMostSizeOfUnpackedArray(lhsp->varp());
-        }
-        if (rsel) {
-            rstart = rsel->declRange().lo();
-            rnum = rsel->declRange().elements();
-        } else {  // RHS is entire array
-            rstart = 0;
-            rnum = outerMostSizeOfUnpackedArray(rhsp->varp());
-        }
-        if (lnum != rnum) return;  // strange. V3Slice will show proper diagnosis
-        splitSimpleAssign(nodep, lhsp, rhsp, lstart, rstart, lnum);
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        // If an unpacked array with split_var pragma is found, this assignment needs to be split.
+        if (!m_foundTargetVar.empty()) m_assigns.insert(nodep);
     }
 
     virtual void visit(AstArraySel* nodep) VL_OVERRIDE {
@@ -250,24 +246,87 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
         AstVar* varp = vrefp->varp();
         if (m_refs.find(varp) == m_refs.end()) return;  // variable without split_var pragma
 
+        // nodep->bitp() is sometimes AstSel consists of AstAdd/Sub and parameters.
+        // constify can solve it.
         AstConst* indexp = constifyIfNot(nodep->bitp());
 
         if (indexp) {  // OK
             m_refs[varp].push_back(nodep);
         } else {
-            if (m_firstRun)
-                nodep->bitp()->v3warn(
-                    SPLITVAR,
-                    "Variable "
-                        << vrefp->prettyNameQ()
-                        << " will not be split because index cannot be determined statically.");
+            nodep->bitp()->v3warn(
+                SPLITVAR,
+                "Variable "
+                    << vrefp->prettyNameQ()
+                    << " will not be split because index cannot be determined statically.");
             m_refs.erase(varp);
         }
     }
-    // The actual splitting operation is done in this function.
-    void split() {
-        for (vl_unordered_map<AstVar*, std::vector<AstArraySel*> >::iterator it = m_refs.begin(),
-                                                                             it_end = m_refs.end();
+
+    static AstArraySel* createArraySel(AstNode* fromp, int idx) {
+        if (AstSliceSel* selp = VN_CAST(fromp, SliceSel)) {  // fuse
+            // if fromp is AstSliceSel, fuse ArraySel and AstSliceSel.
+            return new AstArraySel(selp->fileline(), selp->fromp()->cloneTree(false),
+                                   idx + selp->declRange().lo());
+        }
+        return new AstArraySel(fromp->fileline(), fromp->cloneTree(false), idx);
+    }
+
+    void splitSimpleAssign(AstNodeAssign* asnp, int lstart, int rstart, int num) {
+        AstNode* lhsp = asnp->lhsp();
+        AstNode* rhsp = asnp->rhsp();
+        for (int i = 0; i < num; ++i) {
+            AstArraySel* lselp = createArraySel(lhsp, lstart + i);
+            AstArraySel* rselp = createArraySel(rhsp, rstart + i);
+            AstNodeAssign* newAssignp = VN_CAST(asnp->cloneType(lselp, rselp), NodeAssign);
+            asnp->addNext(newAssignp);
+            // Add new ArraySels which may be made inside cloneTree()
+            iterateChildren(newAssignp);
+        }
+    }
+
+    void splitAssign(const AssignSet& assigns) {
+        for (AssignSet::const_iterator it = assigns.begin(), it_end = assigns.end(); it != it_end;
+             ++it) {
+            AstNodeAssign* nodep = *it;
+            AstSliceSel* lsel = VN_CAST(nodep->lhsp(), SliceSel);
+            AstSliceSel* rsel = VN_CAST(nodep->rhsp(), SliceSel);
+            AstVarRef* lhsp = VN_CAST(lsel ? lsel->fromp() : nodep->lhsp(), VarRef);
+            AstVarRef* rhsp = VN_CAST(rsel ? rsel->fromp() : nodep->rhsp(), VarRef);
+
+            int lstart = 0, lnum = -1, rstart = 0, rnum = -1;
+            if (lsel) {
+                lstart = lsel->declRange().lo();
+                lnum = lsel->declRange().elements();
+            } else if (lhsp) {  // LHS is entire array
+                lstart = 0;
+                lnum = outerMostSizeOfUnpackedArray(lhsp->varp());
+            }
+            if (rsel) {
+                rstart = rsel->declRange().lo();
+                rnum = rsel->declRange().elements();
+            } else if (rhsp) {  // RHS is entire array
+                rstart = 0;
+                rnum = outerMostSizeOfUnpackedArray(rhsp->varp());
+            }
+            UASSERT_OBJ(lnum >= 0 || rnum >= 0, nodep,
+                        "At least either side must be VarRef or SliceSel");
+            splitSimpleAssign(nodep, lstart, rstart, std::max(lnum, rnum));
+            // don't delete here because ArraySel linked form nodep may be in m_refs
+            // delete everything after replacement has done
+            nodep->unlinkFrBack();
+        }
+    }
+
+    int collapseUnpackedArray() {
+        AssignSet toBeDeleted;
+        m_assigns.swap(toBeDeleted);  // now m_assigns is empty
+        splitAssign(toBeDeleted);
+        vl_unordered_map<AstVar*, std::vector<AstArraySel*> > curRefs;
+        m_refs.swap(curRefs);
+        // now m_refs is empty. split var will be added to m_refs for the next iteration.
+        int numSplit = 0;
+        for (vl_unordered_map<AstVar*, std::vector<AstArraySel*> >::iterator it = curRefs.begin(),
+                                                                             it_end = curRefs.end();
              it != it_end; ++it) {
             UINFO(3, "In module " << m_modp->name() << " var " << it->first->prettyNameQ()
                                   << " which has " << it->second.size()
@@ -275,19 +334,26 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
             AstVar* varp = it->first;
             AstNode* insertp = varp;
             AstUnpackArrayDType* dtypep = VN_CAST(varp->dtypep(), UnpackArrayDType);
+            AstNodeDType* subTypep = dtypep->subDTypep();
+            const bool needNext = VN_IS(subTypep, UnpackArrayDType);  // still unpacked array.
             std::vector<AstVar*> vars;
+            std::vector<AstArraySel*> newSels;
             // Add the split variables
             for (vlsint32_t i = 0; i <= dtypep->msb() - dtypep->lsb(); ++i) {
                 // const std::string name = varp->name() + "__BRA__" + AstNode::encodeNumber(i + dtypep->lsb()) + "__KET__";
                 // unpacked array is traced as var(idx).
                 const std::string name = varp->name() + AstNode::encodeName('(' + cvtToStr(i + dtypep->lsb()) + ')');
-                AstVar* newp = new AstVar(varp->fileline(), varp->varType(), name, dtypep->subDTypep());
+                AstVar* newp = new AstVar(varp->fileline(), varp->varType(), name, subTypep);
                 newp->trace(varp->isTrace());
                 insertp->addNextHere(newp);
                 if (newp->width() == 1) {  // no need to try splitting
                     insertp = newp;
-                } else {
+                } else if (!needNext) {
                     newp->addNextHere(insertp = new AstPragma(varp->fileline(), AstPragmaType::SPLIT_VAR));
+                }
+                if (needNext) {
+                    m_refs.insert(std::make_pair(newp, std::vector<AstArraySel*>()));  // split in the next round
+                    UINFO(5, "In module " << m_modp->name() << " var " << newp->prettyNameQ() << " is added\n");
                 }
                 vars.push_back(newp);
             }
@@ -303,25 +369,49 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
                 AstVarRef* new_vref = new AstVarRef(selp->fileline(), vars.at(idx), vrefp->lvalue());
                 selp->replaceWith(new_vref);
                 VL_DO_DANGLING(selp->deleteTree(), selp);
+                // it's safe to visit again because m_refs and m_assigns are already cleared.
+                if (needNext) {
+                    UINFO(5, "In module " << m_modp->name() << " var " << new_vref->backp() << " is tracing\n");
+                    iterate(new_vref->backp());
+                }
             }
             VL_DO_DANGLING(varp->unlinkFrBack()->deleteTree(), varp);
-            ++m_numSplit;
+            ++numSplit;
         }
-        m_refs.clear();  // done
+        // it's time to delete all assigns
+        for (AssignSet::iterator it = toBeDeleted.begin(), it_end = toBeDeleted.end();
+             it != it_end; ++it) {
+            (*it)->deleteTree();
+        }
+        toBeDeleted.clear();  // instead of VL_DANGLING
+        return numSplit;
+    }
+
+    // The actual splitting operation is done in this function.
+    void split() {
+        int numSplit = -1;
+        do {
+            const int n = collapseUnpackedArray();
+            if (numSplit < 0)  // update m_numSplit in the first iteration of this module
+                m_numSplit += n;
+            numSplit = n;
+        } while (numSplit > 0);
     }
 
 public:
-    SplitUnpackedVarVisitor(AstNetlist* nodep, bool firstRun)
+    explicit SplitUnpackedVarVisitor(AstNetlist* nodep)
         : m_modp(NULL)
         , m_numSplit(0)
-        , m_firstRun(firstRun) {
+        , m_refs()
+        , m_assigns()
+        , m_taskFuncFound(false)
+        , m_foundTargetVar() {
         iterate(nodep);
     }
     ~SplitUnpackedVarVisitor() {
         UASSERT(m_refs.empty(), "Don't forget to call split()");
-        if (m_firstRun) V3Stats::addStat("SplitVar, Split unpacked arrays", m_numSplit);
+        V3Stats::addStat("SplitVar, Split unpacked arrays", m_numSplit);
     }
-    int numSplit() const { return m_numSplit; }
     VL_DEBUG_FUNC;  // Declare debug()
 
     // Check if the passed variable can be split.
@@ -474,6 +564,7 @@ class SplitPackedVarVisitor : public AstNVisitor {
     }
     virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         UASSERT_OBJ(m_modp == NULL, m_modp, "Nested module declration");
+        UASSERT_OBJ(m_refs.empty(), nodep, "The last module didn't finish split()");
         m_modp = nodep;
         UINFO(3, "Start analyzing module " << nodep->prettyName() << '\n');
         std::vector<std::pair<AstPragma*, AstVar*> > vars = ScanPragmaVisitor::scan(nodep);
@@ -495,7 +586,7 @@ class SplitPackedVarVisitor : public AstNVisitor {
             // consume the pragma here anyway.
             VL_DO_DANGLING(pragmap->unlinkFrBack()->deleteTree(), vars[i].first);
         }
-        if (!vars.empty()) {  // need to check this module only when split_var pragma exists in this module.
+        if (!m_refs.empty()) {  // need to check this module only when split_var pragma exists in this module.
             iterateChildren(nodep);
             split();
         }
@@ -529,8 +620,10 @@ class SplitPackedVarVisitor : public AstNVisitor {
                                         << vrefp->prettyNameQ()
                                         << " will not be split"
                                            " because bit range cannot be determined statically.");
-            if(!consts[0]) UINFO(4, "LSB " << nodep->lsbp() << " is expected to be constant, but not\n");
-            if(!consts[1]) UINFO(4, "WIDTH " << nodep->widthp() << " is expected to be constant, but not\n");
+            if (!consts[0])
+                UINFO(4, "LSB " << nodep->lsbp() << " is expected to be constant, but not\n");
+            if (!consts[1])
+                UINFO(4, "WIDTH " << nodep->widthp() << " is expected to be constant, but not\n");
             m_refs.erase(varp);
         }
     }
@@ -671,15 +764,10 @@ public:
 // Split class functions
 void V3SplitVar::splitUnpackedVariable(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    // SplitUnpackedVarVisitor collapses one-dimension per one scan. so repeat until nothing to do.
-    for (int trial = 0, done = 0; done == 0; ++trial) {
-        {
-            SplitUnpackedVarVisitor visitor(nodep, trial == 0);
-            UINFO(3, visitor.numSplit() << " variables are split in trial " << trial << '\n');
-            if (visitor.numSplit() == 0) done = 1;  // nothing to do anymore
-        }  // Destruct before checking
-        V3Global::dumpCheckGlobalTree("split_var", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 9);
+    {
+        SplitUnpackedVarVisitor visitor(nodep);
     }
+    V3Global::dumpCheckGlobalTree("split_var", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 9);
 }
 
 void V3SplitVar::splitPackedVariable(AstNetlist* nodep) {
