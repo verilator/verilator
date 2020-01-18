@@ -1723,12 +1723,15 @@ public:
 
 class AstNodeStmt : public AstNode {
     // Statement -- anything that's directly under a function
+    bool m_statement;  // Really a statement (e.g. not a function with return)
 public:
-    explicit AstNodeStmt(FileLine* fl)
-        : AstNode(fl) {}
+    explicit AstNodeStmt(FileLine* fl, bool statement = true)
+        : AstNode(fl)
+        , m_statement(statement) {}
     ASTNODE_BASE_FUNCS(NodeStmt)
     // METHODS
-    virtual bool isStatement() const { return true; }  // Really a statement
+    bool isStatement() const { return m_statement; }  // Really a statement
+    void statement(bool flag) { m_statement = flag; }
     virtual void addNextStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here
     virtual void addBeforeStmt(AstNode* newp, AstNode* belowp);  // Stop statement searchback here
 };
@@ -2170,13 +2173,13 @@ private:
     string              m_inlinedDots;  // Dotted hierarchy flattened out
     AstPackage*         m_packagep;     // Package hierarchy
 public:
-    AstNodeFTaskRef(FileLine* fl, AstNode* namep, AstNode* pinsp)
-        : AstNodeStmt(fl)
+    AstNodeFTaskRef(FileLine* fl, bool statement, AstNode* namep, AstNode* pinsp)
+        : AstNodeStmt(fl, statement)
         , m_taskp(NULL), m_packagep(NULL) {
         setOp1p(namep); addNOp2p(pinsp);
     }
-    AstNodeFTaskRef(FileLine* fl, const string& name, AstNode* pinsp)
-        : AstNodeStmt(fl)
+    AstNodeFTaskRef(FileLine* fl, bool statement, const string& name, AstNode* pinsp)
+        : AstNodeStmt(fl, statement)
         , m_taskp(NULL), m_name(name), m_packagep(NULL) {
         addNOp2p(pinsp);
     }

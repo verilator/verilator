@@ -1373,17 +1373,19 @@ class AstCMethodCall : public AstNodeStmt {
 private:
     string m_name;  // Name of method
     bool m_pure;  // Pure optimizable
-    bool m_statement;  // Is a statement (AstNodeMath-like) versus AstNodeStmt-like
 public:
     AstCMethodCall(FileLine* fl, AstNode* fromp, VFlagChildDType, const string& name,
                    AstNode* pinsp)
-        : AstNodeStmt(fl), m_name(name), m_pure(false), m_statement(false) {
+        : AstNodeStmt(fl, false)
+        , m_name(name)
+        , m_pure(false) {
         setOp1p(fromp);
         dtypep(NULL);  // V3Width will resolve
         addNOp2p(pinsp);
     }
     AstCMethodCall(FileLine* fl, AstNode* fromp, const string& name, AstNode* pinsp)
-        : AstNodeStmt(fl), m_name(name), m_statement(false) {
+        : AstNodeStmt(fl, false)
+        , m_name(name) {
         setOp1p(fromp);
         addNOp2p(pinsp);
     }
@@ -1395,10 +1397,9 @@ public:
     virtual bool same(const AstNode* samep) const {
         const AstCMethodCall* asamep = static_cast<const AstCMethodCall*>(samep);
         return (m_name == asamep->m_name); }
-    virtual bool isStatement() const { return m_statement; }
     virtual bool isPure() const { return m_pure; }
     void pure(bool flag) { m_pure = flag; }
-    void makeStatement() { m_statement = true; dtypeSetVoid(); }
+    void makeStatement() { statement(true); dtypeSetVoid(); }
     AstNode* fromp() const { return op1p(); }  // op1 = Extracting what (NULL=TBD during parsing)
     void fromp(AstNode* nodep) { setOp1p(nodep); }
     AstNode* pinsp() const { return op2p(); }  // op2 = Pin interconnection list
@@ -2431,22 +2432,22 @@ class AstTaskRef : public AstNodeFTaskRef {
     // A reference to a task
 public:
     AstTaskRef(FileLine* fl, AstParseRef* namep, AstNode* pinsp)
-        : AstNodeFTaskRef(fl, namep, pinsp) {}
+        : AstNodeFTaskRef(fl, true, namep, pinsp) {
+        statement(true);
+    }
     AstTaskRef(FileLine* fl, const string& name, AstNode* pinsp)
-        : AstNodeFTaskRef(fl, name, pinsp) {}
+        : AstNodeFTaskRef(fl, true, name, pinsp) {}
     ASTNODE_NODE_FUNCS(TaskRef)
-    virtual bool isStatement() const { return true; }  // A statement, unlike FuncRef
 };
 
 class AstFuncRef : public AstNodeFTaskRef {
     // A reference to a function
 public:
     AstFuncRef(FileLine* fl, AstParseRef* namep, AstNode* pinsp)
-        : AstNodeFTaskRef(fl, namep, pinsp) {}
+        : AstNodeFTaskRef(fl, false, namep, pinsp) {}
     AstFuncRef(FileLine* fl, const string& name, AstNode* pinsp)
-        : AstNodeFTaskRef(fl, name, pinsp) {}
+        : AstNodeFTaskRef(fl, false, name, pinsp) {}
     ASTNODE_NODE_FUNCS(FuncRef)
-    virtual bool isStatement() const { return false; }  // Not a statement, unlike TaskRef
     virtual bool hasDType() const { return true; }
 };
 
