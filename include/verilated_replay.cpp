@@ -26,6 +26,7 @@
 
 // TODO -- collapse into constructor?
 int VerilatedReplay::init() {
+    createMod();
     addSignals();
     for (SignalNameMap::iterator it = m_inputNames.begin(); it != m_inputNames.end(); ++it) {
         addInputName(it->first);
@@ -47,8 +48,6 @@ int VerilatedReplay::init() {
         m_inputHandles[it->first] = FstSignal(it->second.hier.u.var.length,
                 m_inputNames[it->second.fullName].signal);
     }
-
-    createMod();
 
     return 0;
 }
@@ -159,6 +158,20 @@ void VerilatedReplay::fstCb(uint64_t time, fstHandle facidx,
 
     // TODO -- remove
     VL_PRINTF("%lu %u %s\n", time, facidx, valuep);
+
+    // TODO -- is len always right, or should we use strlen() or something?
+    // TODO -- handle values other than 0/1, what can show up here?
+    vluint8_t* signal = m_inputHandles[facidx].signal;
+    vluint8_t byte = 0;
+    for (size_t bit = 0; bit < len; ++bit) {
+        char value = valuep[len - 1 - bit];
+        if (value == '1') byte |= 1 << (bit % 8);
+        if ((bit + 1) % 8 == 0 || bit == len - 1) {
+            *signal = byte;
+            ++signal;
+            byte = 0;
+        }
+    }
 }
 
 void VerilatedReplay::fstCallbackVarlen(void* userDatap, uint64_t time, fstHandle facidx,
