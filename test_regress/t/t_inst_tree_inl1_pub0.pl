@@ -17,9 +17,9 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<var fl="e69" loc="(\d+,){3}\d+" name="t.u.u0.u0.z1" dtype_id="3" vartype="logic" origName="z1"\/\>/i);
-    file_grep("$out_filename", qr/\<var fl="e69" loc="(\d+,){3}\d+" name="t.u.u0.u1.z1" dtype_id="3" vartype="logic" origName="z1"\/\>/i);
-    file_grep("$out_filename", qr/\<var fl="e69" loc="(\d+,){3}\d+" name="t.u.u1.u0.z0" dtype_id="3" vartype="logic" origName="z0"\/\>/i);
+    file_grep("$out_filename", qr/\<var fl="e69" loc="\d+,\d+,\d+,\d+" name="t.u.u0.u0.z1" dtype_id="3" vartype="logic" origName="z1"\/\>/i);
+    file_grep("$out_filename", qr/\<var fl="e69" loc="\d+,\d+,\d+,\d+" name="t.u.u0.u1.z1" dtype_id="3" vartype="logic" origName="z1"\/\>/i);
+    file_grep("$out_filename", qr/\<var fl="e69" loc="\d+,\d+,\d+,\d+" name="t.u.u1.u0.z0" dtype_id="3" vartype="logic" origName="z0"\/\>/i);
 }
 
 execute(

@@ -17,10 +17,10 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<module fl="e83" loc="(\d+,){3}\d+" name="ma" origName="ma" public="true"\>/i);
-    file_grep("$out_filename", qr/\<module fl="e98" loc="(\d+,){3}\d+" name="mb" origName="mb" public="true"\>/i);
-    file_grep("$out_filename", qr/\<module fl="e126" loc="(\d+,){3}\d+" name="mc" origName="mc" public="true"\>/i);
-    file_grep("$out_filename", qr/\<module fl="e126" loc="(\d+,){3}\d+" name="mc__PB1" origName="mc" public="true"\>/i);
+    file_grep("$out_filename", qr/\<module fl="e83" loc="\d+,\d+,\d+,\d+" name="ma" origName="ma" public="true"\>/i);
+    file_grep("$out_filename", qr/\<module fl="e98" loc="\d+,\d+,\d+,\d+" name="mb" origName="mb" public="true"\>/i);
+    file_grep("$out_filename", qr/\<module fl="e126" loc="\d+,\d+,\d+,\d+" name="mc" origName="mc" public="true"\>/i);
+    file_grep("$out_filename", qr/\<module fl="e126" loc="\d+,\d+,\d+,\d+" name="mc__PB1" origName="mc" public="true"\>/i);
 }
 
 execute(
