@@ -160,6 +160,7 @@ FileLine::FileLine(FileLine::EmptySecret) {
 
 const string FileLine::xmlDetailedLocation() const {
     return "loc=\"" +
+      cvtToStr(filenameLetters()) + "," +
       cvtToStr(firstLineno()) + "," +
       cvtToStr(firstColumn()) + "," +
       cvtToStr(lastLineno()) + "," +
