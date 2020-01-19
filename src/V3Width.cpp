@@ -1900,7 +1900,19 @@ private:
                        && !(VN_IS(VN_CAST(nodep->pinsp(), Arg)->exprp(), Const)
                             && VN_CAST(VN_CAST(nodep->pinsp(), Arg)->exprp(), Const)->toUInt() == 1
                             && !nodep->pinsp()->nextp())) {
-                nodep->v3error("Unsupported: Arguments passed to enum.next method");
+                // Unroll of enumVar.next(k) to enumVar.next(1).next(k - 1)
+                AstMethodCall* clonep = nodep->cloneTree(false);
+                VN_CAST(VN_CAST(clonep->pinsp(), Arg)->exprp(), Const)->num().setLong(1);
+
+                uint32_t stepWidth = VN_CAST(VN_CAST(nodep->pinsp(), Arg)->exprp(), Const)->toUInt();
+                AstConst* constp = new AstConst(nodep->fileline(), stepWidth - 1);
+                AstArg* argp = new AstArg(nodep->fileline(), "", constp);
+                AstMethodCall* newp = new AstMethodCall(
+                        nodep->fileline(), clonep,
+                        nodep->name(), argp);
+
+                nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+                return;
             }
             // Need a runtime lookup table.  Yuk.
             // Most enums unless overridden are 32 bits, so we size array

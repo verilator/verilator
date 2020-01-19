@@ -34,10 +34,15 @@ module t (/*AUTOARG*/
       `checkh(e.next, E04);
       `checkh(e.next(), E04);
       `checkh(e.next(1), E04);
-      //Unsup: `checkh(e.next(2), E01);
+      `checkh(e.next(1).next(1), E01);
+      `checkh(e.next(2), E01);
+      `checkh(e.next(1).next(1).next(1), E03);
+      `checkh(e.next(1).next(2), E03);
+      `checkh(e.next(3), E03);
       `checkh(e.prev, E01);
       `checkh(e.prev(1), E01);
-      //Unsup: `checkh(e.prev(2), E04);
+      `checkh(e.prev(1).prev(1), E04);
+      `checkh(e.prev(2), E04);
       `checkh(e.num, 3);
       `checks(e.name, "E03");
       //
@@ -61,30 +66,30 @@ module t (/*AUTOARG*/
 	 `checks(e.name, "E01");
 	 `checkh(e.next, E03);
 	 `checkh(e.next(1), E03);
-	 //Unsup: `checkh(e.next(2), E04);
+	 `checkh(e.next(2), E04);
 	 `checkh(e.prev, E04);
 	 `checkh(e.prev(1), E04);
-	 //Unsup: `checkh(e.prev(2), E03);
+	 `checkh(e.prev(2), E03);
 	 e <= E03;
       end
       else if (cyc==2) begin
 	 `checks(e.name, "E03");
 	 `checkh(e.next, E04);
 	 `checkh(e.next(1), E04);
-	 //Unsup: `checkh(e.next(2), E01);
+	 `checkh(e.next(2), E01);
 	 `checkh(e.prev, E01);
 	 `checkh(e.prev(1), E01);
-	 //Unsup: `checkh(e.prev(2), E04);
+	 `checkh(e.prev(2), E04);
 	 e <= E04;
       end
       else if (cyc==3) begin
 	 `checks(e.name, "E04");
 	 `checkh(e.next, E01);
 	 `checkh(e.next(1), E01);
-	 //Unsup: `checkh(e.next(2), E03);
+	 `checkh(e.next(2), E03);
 	 `checkh(e.prev, E03);
 	 `checkh(e.prev(1), E03);
-	 //Unsup: `checkh(e.prev(2), E01);
+	 `checkh(e.prev(2), E01);
 	 e <= E01;
       end
       else if (cyc==99) begin
