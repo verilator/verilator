@@ -57,6 +57,7 @@ public:
         }
     }
     static FILE* new_fopen_w(const string& filename) {
+        if (filename == "stdout") return stdout;
         createMakeDirFor(filename);
         addTgtDepend(filename);
         return fopen(filename.c_str(), "w");
