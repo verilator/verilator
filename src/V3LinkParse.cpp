@@ -446,14 +446,17 @@ private:
     virtual void visit(AstNodeModule* nodep) {
         V3Config::applyModule(nodep);
 
-        // Module: Create sim table for entire module and iterate
-        cleanFileline(nodep);
-        //
-        m_modp = nodep;
+        AstNodeModule* origModp = m_modp;
+        {
+            // Module: Create sim table for entire module and iterate
+            cleanFileline(nodep);
+            //
+            m_modp = nodep;
+            m_valueModp = nodep;
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
         m_valueModp = nodep;
-        iterateChildren(nodep);
-        m_modp = NULL;
-        m_valueModp = NULL;
     }
     void visitIterateNoValueMod(AstNode* nodep) {
         // Iterate a node which shouldn't have any local variables moved to an Initial

@@ -228,12 +228,15 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) {
-        m_modp = nodep;
-        m_modFuncs.clear();
-        m_modSingleton = modIsSingleton(m_modp);
-        iterateChildren(nodep);
-        makePublicFuncWrappers();
-        m_modp = NULL;
+        AstNodeModule* origModp = m_modp;
+        {
+            m_modp = nodep;
+            m_modFuncs.clear();
+            m_modSingleton = modIsSingleton(m_modp);
+            iterateChildren(nodep);
+            makePublicFuncWrappers();
+        }
+        m_modp = origModp;
     }
     virtual void visit(AstScope* nodep) {
         m_scopep = nodep;

@@ -147,10 +147,13 @@ private:
     // VISITORS
     virtual void visit(AstNodeModule* nodep) {
         UINFO(4," MOD   "<<nodep<<endl);
-        m_modp = nodep;
-        m_constXCvt = true;
-        iterateChildren(nodep);
-        m_modp = NULL;
+        AstNodeModule* origModp = m_modp;
+        {
+            m_modp = nodep;
+            m_constXCvt = true;
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
     }
     virtual void visit(AstAssignDly* nodep) {
         m_assigndlyp = nodep;

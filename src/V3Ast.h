@@ -2244,7 +2244,7 @@ public:
     AstActive* activesp() const { return VN_CAST(op3p(), Active); }  // op3 = List of i/sblocks
     // METHODS
     void addInlinesp(AstNode* nodep) { addOp1p(nodep); }
-    void addStmtp(AstNode* nodep) { addOp2p(nodep); }
+    void addStmtp(AstNode* nodep) { addNOp2p(nodep); }
     void addActivep(AstNode* nodep) { addOp3p(nodep); }
     // ACCESSORS
     virtual void name(const string& name) { m_name = name; }

@@ -101,6 +101,7 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) {
+        UASSERT_OBJ(!m_modp, nodep, "Unsupported: Recursive modules");
         m_modp = nodep;
         m_allMods.push_back(nodep);
         m_modp->user2(CIL_MAYBE);
@@ -525,8 +526,12 @@ private:
         }
     }
     virtual void visit(AstNodeModule* nodep) {
-        m_modp = nodep;
-        iterateChildren(nodep);
+        AstNodeModule* origModp = m_modp;
+        {
+            m_modp = nodep;
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
     }
     virtual void visit(AstCell* nodep) {
         if (nodep->modp()->user1()) {  // Marked with inline request

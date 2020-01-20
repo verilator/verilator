@@ -80,7 +80,8 @@ private:
     //  State cleared on each module
     AstNodeModule*      m_modp;         // Current MODULE
     int                 m_modTables;    // Number of tables created in this module
-    std::deque<AstVarScope*> m_modTableVscs;  // All tables created
+    typedef std::deque<AstVarScope*> ModTableVector;
+    ModTableVector m_modTableVscs;  // All tables created
 
     //  State cleared on each scope
     AstScope*   m_scopep;               // Current SCOPE
@@ -427,11 +428,18 @@ private:
         iterateChildren(nodep);
     }
     virtual void visit(AstNodeModule* nodep) {
-        m_modTables = 0;
-        m_modTableVscs.clear();
-        m_modp = nodep;
-        iterateChildren(nodep);
-        m_modp = NULL;
+        AstNodeModule* origModp = m_modp;
+        int origModTables = m_modTables;
+        ModTableVector origModTableVscs = m_modTableVscs;
+        {
+            m_modp = nodep;
+            m_modTables = 0;
+            m_modTableVscs.clear();
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
+        m_modTables = origModTables;
+        m_modTableVscs = origModTableVscs;
     }
     virtual void visit(AstScope* nodep) {
         UINFO(4," SCOPE "<<nodep<<endl);

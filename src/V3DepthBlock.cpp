@@ -73,10 +73,13 @@ private:
     // VISITORS
     virtual void visit(AstNodeModule* nodep) {
         UINFO(4," MOD   "<<nodep<<endl);
-        m_modp = nodep;
-        m_deepNum = 0;
-        iterateChildren(nodep);
-        m_modp = NULL;
+        AstNodeModule* origModp = m_modp;
+        {
+            m_modp = nodep;
+            m_deepNum = 0;
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
     }
     virtual void visit(AstCFunc* nodep) {
         // We recurse into this.

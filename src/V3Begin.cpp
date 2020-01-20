@@ -72,7 +72,6 @@ private:
     AstNodeFTask*       m_ftaskp;       // Current function/task
     string              m_namedScope;   // Name of begin blocks above us
     string              m_unnamedScope; // Name of begin blocks, including unnamed blocks
-    int                 m_repeatNum;    // Repeat counter
     int                 m_ifDepth;      // Current if depth
 
     // METHODS
@@ -80,10 +79,12 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) {
-        m_modp = nodep;
-        m_repeatNum = 0;
-        iterateChildren(nodep);
-        m_modp = NULL;
+        AstNodeModule* origModp = m_modp;
+        {
+            m_modp = nodep;
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
     }
     virtual void visit(AstNodeFTask* nodep) {
         UINFO(8,"  "<<nodep<<endl);
@@ -232,7 +233,6 @@ public:
         m_statep = statep;
         m_modp = NULL;
         m_ftaskp = NULL;
-        m_repeatNum = 0;
         m_ifDepth = 0;
         iterate(nodep);
     }

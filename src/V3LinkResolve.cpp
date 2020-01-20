@@ -69,10 +69,15 @@ private:
         // Module: Create sim table for entire module and iterate
         UINFO(8,"MODULE "<<nodep<<endl);
         if (nodep->dead()) return;
-        m_modp = nodep;
-        m_senitemCvtNum = 0;
-        iterateChildren(nodep);
-        m_modp = NULL;
+        AstNodeModule* origModp = m_modp;
+        int origSenitemCvtNum = m_senitemCvtNum;
+        {
+            m_modp = nodep;
+            m_senitemCvtNum = 0;
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
+        m_senitemCvtNum = origSenitemCvtNum;
     }
     virtual void visit(AstInitial* nodep) {
         iterateChildren(nodep);
@@ -489,9 +494,12 @@ private:
         iterateChildrenBackwards(nodep);
     }
     virtual void visit(AstNodeModule* nodep) {
-        m_modp = nodep;
-        iterateChildren(nodep);
-        m_modp = NULL;
+        AstNodeModule* origModp = m_modp;
+        {
+            m_modp = nodep;
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
     }
     virtual void visit(AstCell* nodep) {
         // Parent module inherits child's publicity

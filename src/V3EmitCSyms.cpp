@@ -270,9 +270,12 @@ class EmitCSyms : EmitCBaseVisitor {
     }
     virtual void visit(AstNodeModule* nodep) {
         nameCheck(nodep);
-        m_modp = nodep;
-        iterateChildren(nodep);
-        m_modp = NULL;
+        AstNodeModule* origModp = m_modp;
+        {
+            m_modp = nodep;
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
     }
     virtual void visit(AstCellInline* nodep) {
         if (v3Global.opt.vpi()) {

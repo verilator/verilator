@@ -49,7 +49,7 @@ private:
     AstNodeFTask*       m_ftaskp;       // Current function/task
     AstWhile*           m_loopp;        // Current loop
     bool                m_loopInc;      // In loop increment
-    int                 m_repeatNum;    // Repeat counter
+    int                 m_modRepeatNum;  // Repeat counter
     BeginStack          m_beginStack;   // All begin blocks above current node
 
     // METHODS
@@ -109,10 +109,15 @@ private:
     // VISITORS
     virtual void visit(AstNodeModule* nodep) {
         if (nodep->dead()) return;
-        m_modp = nodep;
-        m_repeatNum = 0;
-        iterateChildren(nodep);
-        m_modp = NULL;
+        AstNodeModule* origModp = m_modp;
+        int origRepeatNum = m_modRepeatNum;
+        {
+            m_modp = nodep;
+            m_modRepeatNum = 0;
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
+        m_modRepeatNum = origRepeatNum;
     }
     virtual void visit(AstNodeFTask* nodep) {
         m_ftaskp = nodep;
@@ -130,7 +135,7 @@ private:
         //    REPEAT(count,body) -> loop=count,WHILE(loop>0) { body, loop-- }
         // Note var can be signed or unsigned based on original number.
         AstNode* countp = nodep->countp()->unlinkFrBackWithNext();
-        string name = string("__Vrepeat")+cvtToStr(m_repeatNum++);
+        string name = string("__Vrepeat")+cvtToStr(m_modRepeatNum++);
         // Spec says value is integral, if negative is ignored
         AstVar* varp = new AstVar(nodep->fileline(), AstVarType::BLOCKTEMP, name,
                                   nodep->findSigned32DType());
@@ -254,7 +259,7 @@ public:
         m_ftaskp = NULL;
         m_loopp = NULL;
         m_loopInc = false;
-        m_repeatNum = 0;
+        m_modRepeatNum = 0;
         iterate(nodep);
     }
     virtual ~LinkJumpVisitor() {}

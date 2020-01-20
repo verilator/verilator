@@ -420,10 +420,13 @@ private:
         replaceAssigns();
     }
     virtual void visit(AstNodeModule* nodep) {
-        m_modp = nodep;
-        m_activeReducible = true;
-        iterateChildren(nodep);
-        m_modp = NULL;
+        AstNodeModule* origModp = m_modp;
+        {
+            m_modp = nodep;
+            m_activeReducible = true;
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
     }
     virtual void visit(AstScope* nodep) {
         UINFO(4," SCOPE "<<nodep<<endl);

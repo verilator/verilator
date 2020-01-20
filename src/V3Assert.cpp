@@ -356,12 +356,15 @@ private:
     }
 
     virtual void visit(AstNodeModule* nodep) {
-        m_modp = nodep;
-        m_modPastNum = 0;
-        //
-        iterateChildren(nodep);
-        // Reset defaults
-        m_modp = NULL;
+        AstNodeModule* origModp = m_modp;
+        unsigned origPastNum = m_modPastNum;
+        {
+            m_modp = nodep;
+            m_modPastNum = 0;
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
+        m_modPastNum = origPastNum;
     }
     virtual void visit(AstBegin* nodep) {
         // This code is needed rather than a visitor in V3Begin,

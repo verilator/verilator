@@ -1306,28 +1306,38 @@ class TristateVisitor : public TristateBaseVisitor {
     }
 
     virtual void visit(AstNodeModule* nodep) {
-        UINFO(8, nodep<<endl);
-        UASSERT_OBJ(!m_graphing, nodep,
-                    "Modules under modules not supported");  // Lots of per-module state breaks
-        // Clear state
-        m_tgraph.clear();
-        m_unique = 0;
-        m_logicp = NULL;
-        m_lhsmap.clear();
-        m_modp = nodep;
-        // Walk the graph, finding all variables and tristate constructs
+        UINFO(8, nodep << endl);
+        AstNodeModule* origModp = m_modp;
+        bool origGraphing = m_graphing;
+        int origUnique = m_unique;
+        VarMap origLhsmap = m_lhsmap;
+        TristateGraph origTgraph = m_tgraph;
         {
-            m_graphing = true;
-            iterateChildren(nodep);
+            // Clear state
             m_graphing = false;
+            m_tgraph.clear();
+            m_unique = 0;
+            m_logicp = NULL;
+            m_lhsmap.clear();
+            m_modp = nodep;
+            // Walk the graph, finding all variables and tristate constructs
+            {
+                m_graphing = true;
+                iterateChildren(nodep);
+                m_graphing = false;
+            }
+            // Use graph to find tristate signals
+            m_tgraph.graphWalk(nodep);
+            // Build the LHS drivers map for this module
+            iterateChildren(nodep);
+            // Insert new logic for all tristates
+            insertTristates(nodep);
         }
-        // Use graph to find tristate signals
-        m_tgraph.graphWalk(nodep);
-        // Build the LHS drivers map for this module
-        iterateChildren(nodep);
-        // Insert new logic for all tristates
-        insertTristates(nodep);
-        m_modp = NULL;
+        m_modp = origModp;
+        m_graphing = origGraphing;
+        m_unique = origUnique;
+        m_lhsmap = origLhsmap;
+        m_tgraph = origTgraph;
     }
 
     virtual void visit(AstNodeFTask* nodep) {

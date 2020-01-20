@@ -150,12 +150,16 @@ private:
     }
     // VISITORS - BOTH
     virtual void visit(AstNodeModule* nodep) {
-        m_modp = nodep;
-        m_inModOff = nodep->isTop();  // Ignore coverage on top module; it's a shell we created
-        m_fileps.clear();
-        iterateChildren(nodep);
-        m_modp = NULL;
-        m_inModOff = true;
+        AstNodeModule* origModp = m_modp;
+        bool origInModOff = m_inModOff;
+        {
+            m_modp = nodep;
+            m_inModOff = nodep->isTop();  // Ignore coverage on top module; it's a shell we created
+            m_fileps.clear();
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
+        m_inModOff = origInModOff;
     }
 
     // VISITORS - TOGGLE COVERAGE

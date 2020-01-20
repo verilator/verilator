@@ -1128,11 +1128,16 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) {
-        m_modp = nodep;
-        m_insStmtp = NULL;
-        m_modNCalls = 0;
-        iterateChildren(nodep);
-        m_modp = NULL;
+        AstNodeModule* origModp = m_modp;
+        int origNCalls = m_modNCalls;
+        {
+            m_modp = nodep;
+            m_insStmtp = NULL;
+            m_modNCalls = 0;
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
+        m_modNCalls = origNCalls;
     }
     virtual void visit(AstTopScope* nodep) {
         m_topScopep = nodep;

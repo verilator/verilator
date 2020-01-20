@@ -134,12 +134,15 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) {
-        m_modp = nodep;
-        if (!nodep->dead()) {
-            iterateChildren(nodep);
-            checkAll(nodep);
+        AstNodeModule* origModp = m_modp;
+        {
+            m_modp = nodep;
+            if (!nodep->dead()) {
+                iterateChildren(nodep);
+                checkAll(nodep);
+            }
         }
-        m_modp = NULL;
+        m_modp = origModp;
     }
     virtual void visit(AstCFunc* nodep) {
         iterateChildren(nodep);
