@@ -4646,6 +4646,32 @@ that is not yet supported in Verilator.  See the Limitations chapter.
 =back
 
 
+=head1 DEPRECATIONS
+
+The following deprecated items are scheduled for future removal:
+
+=over 4
+
+=item Pre-C++11 compiler support
+
+Verilator supports pre-C++11 compilers for non-threaded models when
+configured with --enable-prec11.  This flag will be removed and C++11
+compilers will be required for both compiling Verilator and compiling
+Verilated models no sooner than September 2020.
+
+=item SystemC 2.1 and earlier support
+
+Support for SystemC versions 2.1 and earlier and the related sc_clock
+variable attribute will be removed no sooner than July 2020.
+
+=item Configuration File -msg
+
+The -msg argument to lint_off has been replaced with -rule.  -msg is
+planned for removal no sooner than January 2021.
+
+=back
+
+
 =head1 FAQ/FREQUENTLY ASKED QUESTIONS
 
 =over 4
