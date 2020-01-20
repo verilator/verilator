@@ -14,11 +14,11 @@
     <cell fl="d6" name="m" submodname="m" hier="m"/>
   </cells>
   <netlist>
-    <module fl="d6" name="m" origName="m">
-      <var fl="d7" name="clk" tag="foo_op" dtype_id="1" dir="input" vartype="logic" origName="clk"/>
+    <module fl="d6" loc="d,6,8,6,9" name="m" origName="m">
+      <var fl="d7" loc="d,7,10,7,13" name="clk" tag="foo_op" dtype_id="1" dir="input" vartype="logic" origName="clk"/>
     </module>
-    <typetable fl="a0">
-      <basicdtype fl="d7" id="1" name="logic"/>
+    <typetable fl="a0" loc="a,0,0,0,0">
+      <basicdtype fl="d7" loc="d,7,10,7,13" id="1" name="logic"/>
     </typetable>
   </netlist>
 </verilator_xml>

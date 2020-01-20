@@ -4669,6 +4669,11 @@ variable attribute will be removed no sooner than July 2020.
 The -msg argument to lint_off has been replaced with -rule.  -msg is
 planned for removal no sooner than January 2021.
 
+=item XML locations
+
+The XML C<fl> attribute has been replaced with C<loc>.  C<fl> is planned
+for removal no sooner than January 2021.
+
 =back
 
 

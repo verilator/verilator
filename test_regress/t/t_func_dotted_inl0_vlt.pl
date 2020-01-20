@@ -17,10 +17,10 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<module fl="e83" name="ma" origName="ma" public="true"\>/i);
-    file_grep("$out_filename", qr/\<module fl="e98" name="mb" origName="mb" public="true"\>/i);
-    file_grep("$out_filename", qr/\<module fl="e126" name="mc" origName="mc" public="true"\>/i);
-    file_grep("$out_filename", qr/\<module fl="e126" name="mc__PB1" origName="mc" public="true"\>/i);
+    file_grep("$out_filename", qr/\<module fl="e83" loc=".*?" name="ma" origName="ma" public="true"\>/i);
+    file_grep("$out_filename", qr/\<module fl="e98" loc=".*?" name="mb" origName="mb" public="true"\>/i);
+    file_grep("$out_filename", qr/\<module fl="e126" loc=".*?" name="mc" origName="mc" public="true"\>/i);
+    file_grep("$out_filename", qr/\<module fl="e126" loc=".*?" name="mc__PB1" origName="mc" public="true"\>/i);
 }
 
 execute(

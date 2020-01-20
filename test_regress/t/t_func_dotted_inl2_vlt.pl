@@ -17,8 +17,8 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<instance fl="e86" name="t.ma0.mb0" defName="mb" origName="mb0"\/\>/i);
-    file_grep("$out_filename", qr/\<module fl="e98" name="mb" origName="mb"\>/i);
+    file_grep("$out_filename", qr/\<instance fl="e86" loc=".*?" name="t.ma0.mb0" defName="mb" origName="mb0"\/\>/i);
+    file_grep("$out_filename", qr/\<module fl="e98" loc=".*?" name="mb" origName="mb"\>/i);
 }
 
 execute(
