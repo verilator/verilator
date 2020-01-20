@@ -150,6 +150,60 @@ public:
         }
     }
 
+    struct CmpName {
+        inline bool operator()(const AstNode* lhsp, const AstNode* rhsp) const {
+            return lhsp->name() < rhsp->name();
+        }
+    };
+    void emitIntFuncDecls(AstNodeModule* modp) {
+        typedef std::vector<const AstCFunc*> FuncVec;
+        FuncVec funcsp;
+
+        for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            if (const AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
+                if (!funcp->skipDecl()) { funcsp.push_back(funcp); }
+            }
+        }
+
+        stable_sort(funcsp.begin(), funcsp.end(), CmpName());
+
+        for (FuncVec::iterator it = funcsp.begin(); it != funcsp.end(); ++it) {
+            const AstCFunc* funcp = *it;
+            if (!funcp->dpiImport()) {  // DPI is prototyped in __Dpi.h
+                ofp()->putsPrivate(funcp->declPrivate());
+                if (!funcp->ifdef().empty()) puts("#ifdef " + funcp->ifdef() + "\n");
+                if (funcp->isStatic().trueU()) puts("static ");
+                puts(funcp->rtnTypeVoid());
+                puts(" ");
+                puts(funcp->nameProtect());
+                puts("(" + cFuncArgs(funcp) + ")");
+                if (funcp->slow()) puts(" VL_ATTR_COLD");
+                puts(";\n");
+                if (!funcp->ifdef().empty()) puts("#endif  // " + funcp->ifdef() + "\n");
+            }
+        }
+
+        if (modp->isTop() && v3Global.opt.mtasks()) {
+            // Emit the mtask func prototypes.
+            AstExecGraph* execGraphp = v3Global.rootp()->execGraphp();
+            UASSERT_OBJ(execGraphp, v3Global.rootp(), "Root should have an execGraphp");
+            const V3Graph* depGraphp = execGraphp->depGraphp();
+            for (const V3GraphVertex* vxp = depGraphp->verticesBeginp(); vxp;
+                 vxp = vxp->verticesNextp()) {
+                const ExecMTask* mtp = dynamic_cast<const ExecMTask*>(vxp);
+                if (mtp->threadRoot()) {
+                    // Emit function declaration for this mtask
+                    ofp()->putsPrivate(true);
+                    puts("static void ");
+                    puts(protect(mtp->cFuncName()));
+                    puts("(bool even_cycle, void* symtab);\n");
+                }
+            }
+            // No AstCFunc for this one, as it's synthetic. Just write it:
+            puts("static void __Vmtask__final(bool even_cycle, void* symtab);\n");
+        }
+    }
+
     // VISITORS
     virtual void visit(AstNodeAssign* nodep) {
         bool paren = true;  bool decind = false;
@@ -1429,7 +1483,6 @@ class EmitCImp : EmitCStmts {
     void emitDestructorImp(AstNodeModule* modp);
     void emitSavableImp(AstNodeModule* modp);
     void emitTextSection(AstType type);
-    void emitIntFuncDecls(AstNodeModule* modp);
     // High level
     void emitImp(AstNodeModule* modp);
     void emitSettleLoop(const std::string& eval_call, bool initial);
@@ -2445,62 +2498,6 @@ void EmitCStmts::emitSortedVarList(const VarVec& anons,
         const AstVar* varp = *it;
         emitVarCmtChg(varp, &curVarCmt);
         emitVarDecl(varp, prefixIfImp);
-    }
-}
-
-struct CmpName {
-    inline bool operator() (const AstNode* lhsp, const AstNode* rhsp) const {
-        return lhsp->name() < rhsp->name();
-    }
-};
-
-void EmitCImp::emitIntFuncDecls(AstNodeModule* modp) {
-    typedef std::vector<const AstCFunc*> FuncVec;
-    FuncVec funcsp;
-
-    for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-        if (const AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
-            if (!funcp->skipDecl()) {
-                funcsp.push_back(funcp);
-            }
-        }
-    }
-
-    stable_sort(funcsp.begin(), funcsp.end(), CmpName());
-
-    for (FuncVec::iterator it = funcsp.begin(); it != funcsp.end(); ++it) {
-        const AstCFunc* funcp = *it;
-        if (!funcp->dpiImport()) {  // DPI is prototyped in __Dpi.h
-            ofp()->putsPrivate(funcp->declPrivate());
-            if (!funcp->ifdef().empty()) puts("#ifdef " + funcp->ifdef() + "\n");
-            if (funcp->isStatic().trueU()) puts("static ");
-            puts(funcp->rtnTypeVoid());
-            puts(" ");
-            puts(funcp->nameProtect());
-            puts("(" + cFuncArgs(funcp) + ")");
-            if (funcp->slow()) puts(" VL_ATTR_COLD");
-            puts(";\n");
-            if (!funcp->ifdef().empty()) puts("#endif  // " + funcp->ifdef() + "\n");
-        }
-    }
-
-    if (modp->isTop() && v3Global.opt.mtasks()) {
-        // Emit the mtask func prototypes.
-        AstExecGraph* execGraphp = v3Global.rootp()->execGraphp();
-        UASSERT_OBJ(execGraphp, v3Global.rootp(), "Root should have an execGraphp");
-        const V3Graph* depGraphp = execGraphp->depGraphp();
-        for (const V3GraphVertex* vxp = depGraphp->verticesBeginp();
-             vxp; vxp = vxp->verticesNextp()) {
-            const ExecMTask* mtp = dynamic_cast<const ExecMTask*>(vxp);
-            if (mtp->threadRoot()) {
-                // Emit function declaration for this mtask
-                ofp()->putsPrivate(true);
-                puts("static void "); puts(protect(mtp->cFuncName()));
-                puts("(bool even_cycle, void* symtab);\n");
-            }
-        }
-        // No AstCFunc for this one, as it's synthetic. Just write it:
-        puts("static void __Vmtask__final(bool even_cycle, void* symtab);\n");
     }
 }
 
