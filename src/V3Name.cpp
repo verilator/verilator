@@ -59,6 +59,7 @@ private:
             if (addPvt) {
                 string newname = string("__PVT__")+nodep->name();
                 nodep->name(newname);
+                nodep->editCountInc();
             } else {
                 string rsvd = m_words.isKeyword(nodep->name());
                 if (rsvd != "") {
@@ -66,6 +67,7 @@ private:
                                   +": "<<nodep->prettyNameQ());
                     string newname = string("__SYM__")+nodep->name();
                     nodep->name(newname);
+                    nodep->editCountInc();
                 }
             }
             nodep->user1(1);

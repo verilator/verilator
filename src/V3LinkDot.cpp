@@ -1098,13 +1098,12 @@ class LinkDotFindVisitor : public AstNVisitor {
         }
     }
     virtual void visit(AstTypedef* nodep) {
-        // Remember its name for later resolution
-        UASSERT_OBJ(m_curSymp, nodep, "Typedef not under module?");
+        UASSERT_OBJ(m_curSymp, nodep, "Typedef not under module/package/$unit");
         iterateChildren(nodep);
         m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_packagep);
     }
     virtual void visit(AstParamTypeDType* nodep) {
-        UASSERT_OBJ(m_curSymp, nodep, "Parameter type not under module?");
+        UASSERT_OBJ(m_curSymp, nodep, "Parameter type not under module/package/$unit");
         iterateChildren(nodep);
         m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_packagep);
     }

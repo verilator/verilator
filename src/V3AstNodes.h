@@ -1367,7 +1367,7 @@ public:
 };
 
 class AstCMethodHard : public AstNodeStmt {
-    // A reference to a "C" hardocded member task (or function)
+    // A reference to a "C" hardcoded member task (or function)
     // PARENTS: stmt/math
     // Not all calls are statments vs math.  AstNodeStmt needs isStatement() to deal.
 private:
