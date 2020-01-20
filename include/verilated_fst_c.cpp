@@ -19,6 +19,10 @@
 ///
 //=============================================================================
 // SPDIFF_OFF
+//
+// The inttypes supplied with some GCC versions requires STDC_FORMAT_MACROS
+// to be declared in order to get the PRIxx macros used by fstapi.c
+#define __STDC_FORMAT_MACROS
 
 #include "verilatedos.h"
 #include "verilated.h"
