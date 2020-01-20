@@ -201,6 +201,7 @@ class V3Options {
     int         m_ifDepth;      // main switch: --if-depth
     int         m_inlineMult;   // main switch: --inline-mult
     VOptionBool m_makeDepend;  // main switch: -MMD
+    int         m_maxNumWidth;  // main switch: --max-num-width
     int         m_moduleRecursion;// main switch: --module-recursion-depth
     int         m_outputSplit;  // main switch: --output-split
     int         m_outputSplitCFuncs;// main switch: --output-split-cfuncs
@@ -376,6 +377,7 @@ class V3Options {
     int ifDepth() const { return m_ifDepth; }
     int inlineMult() const { return m_inlineMult; }
     VOptionBool makeDepend() const { return m_makeDepend; }
+    int maxNumWidth() const { return m_maxNumWidth; }
     int moduleRecursionDepth() const { return m_moduleRecursion; }
     int outputSplit() const { return m_outputSplit; }
     int outputSplitCFuncs() const { return m_outputSplitCFuncs; }

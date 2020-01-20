@@ -17,6 +17,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Add error on misused define. [Topa Tota]
 
+****  Add parameter to set maximum signal width. #2082. [Øyvind Harboe]
+
 
 * Verilator 4.026 2020-01-11
 

@@ -948,6 +948,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                     fl->v3fatal("Unknown --make system specified: '"<<argv[i]<<"'");
                 }
             }
+            else if (!strcmp(sw, "-max-num-width")) {
+                shift;
+                m_maxNumWidth = atoi(argv[i]);
+            }
             else if (!strcmp(sw, "-no-l2name")) {  // Historical and undocumented
                 m_l2Name = "";
             }
@@ -1518,6 +1522,7 @@ V3Options::V3Options() {
     m_gateStmts = 100;
     m_ifDepth = 0;
     m_inlineMult = 2000;
+    m_maxNumWidth = 65536;
     m_moduleRecursion = 100;
     m_outputSplit = 0;
     m_outputSplitCFuncs = 0;
