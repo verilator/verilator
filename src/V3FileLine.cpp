@@ -160,11 +160,11 @@ FileLine::FileLine(FileLine::EmptySecret) {
 
 const string FileLine::xmlDetailedLocation() const {
     return "loc=\"" +
-      cvtToStr(filenameLetters()) + "," +
-      cvtToStr(firstLineno()) + "," +
-      cvtToStr(firstColumn()) + "," +
-      cvtToStr(lastLineno()) + "," +
-      cvtToStr(lastColumn()) + "\"";
+        cvtToStr(filenameLetters()) + "," +
+        cvtToStr(firstLineno()) + "," +
+        cvtToStr(firstColumn()) + "," +
+        cvtToStr(lastLineno()) + "," +
+        cvtToStr(lastColumn()) + "\"";
 }
 
 string FileLine::lineDirectiveStrg(int enterExit) const {
