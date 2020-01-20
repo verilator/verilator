@@ -21,6 +21,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Add parameter to set maximum signal width. #2082. [Øyvind Harboe]
 
+****  Fix VPI scope naming for public modules. [Nandu Raj]
+
 
 * Verilator 4.026 2020-01-11
 
