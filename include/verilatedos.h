@@ -269,6 +269,10 @@ typedef signed   __int32        ssize_t;        ///< signed size_t; returned fro
 
 #else  // Linux or compliant Unix flavors, -m64
 
+// The inttypes supplied with some GCC versions requires STDC_FORMAT_MACROS
+// to be declared in order to get the PRIxx macros used by fstapi.c
+#define __STDC_FORMAT_MACROS
+
 # include <inttypes.h>  // Solaris
 # include <stdint.h>  // Linux and most flavors
 # include <sys/types.h>  // __WORDSIZE
