@@ -44,7 +44,7 @@ int VerilatedReplay::init() {
          ++it) {
         VL_PRINTF("%s = %d\n", it->second.fullName.c_str(), it->first);
         fstReaderSetFacProcessMask(m_fstp, it->first);
-        // TODO -- double check the size hasn't changed
+        // TODO -- double check the size hasn't changed or just defer looking at size until here
         m_inputHandles[it->first] = FstSignal(it->second.hier.u.var.length,
                 m_inputNames[it->second.fullName].signal);
     }
