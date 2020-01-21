@@ -293,9 +293,10 @@ class EmitCSyms : EmitCBaseVisitor {
         m_scopes.push_back(make_pair(nodep, m_modp));
 
         if (v3Global.opt.vpi() && !nodep->isTop()) {
+            string name_dedot = AstNode::dedotName(nodep->shortName());
             m_vpiScopeCandidates.insert(make_pair(nodep->name(),
                                                   ScopeData(scopeSymString(nodep->name()),
-                                                            nodep->name(), "SCOPE_MODULE")));
+                                                            name_dedot, "SCOPE_MODULE")));
         }
     }
     virtual void visit(AstScopeName* nodep) {
