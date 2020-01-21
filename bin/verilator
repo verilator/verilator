@@ -323,6 +323,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --language <lang>           Default language standard to parse
      +libext+<ext>+[ext]...     Extensions for finding modules
     --lint-only                 Lint, but do not make output
+    --max-num-width <value>     Maximum number width (default: 64K)
     --MMD                       Create .d dependency files
     --MP                        Create phony dependency targets
     --Mdir <directory>          Name of output object directory
@@ -967,6 +968,11 @@ stylistic and not enabled by default.
 
 If the design is not to be completely Verilated see also the --bbox-sys and
 --bbox-unsup options.
+
+=item --max-num-width I<value>
+
+Set the maximum number literal width (e.g. in 1024'd22 this it the 1024).
+Defaults to 64K.
 
 =item --MMD
 =item --no-MMD

@@ -32,7 +32,6 @@
 #include <iomanip>
 
 #define MAX_SPRINTF_DOUBLE_SIZE 100  // Maximum characters with a sprintf %e/%f/%g (probably < 30)
-#define MAX_WIDTH 5*1024  // Maximum width before error
 
 // Number operations build output in-place so can't call e.g. foo.opX(foo)
 #define NUM_ASSERT_OP_ARGS1(arg1)  \
@@ -125,10 +124,11 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
         value_startp = cp;
 
         if (atoi(widthn.c_str())) {
-            if (atoi(widthn.c_str()) < 0 || atoi(widthn.c_str()) > MAX_WIDTH) {
+            if (atoi(widthn.c_str()) < 0 || atoi(widthn.c_str()) > v3Global.opt.maxNumWidth()) {
                 // atoi might convert large number to negative, so can't tell which
-                v3error("Unsupported: Width of number exceeds implementation limit: "<<sourcep);
-                width(MAX_WIDTH, true);
+                v3error("Unsupported: Width of number exceeds implementation limit: "
+                        << sourcep << "  (IEEE 2017 6.9.1)");
+                width(v3Global.opt.maxNumWidth(), true);
             } else {
                 width(atoi(widthn.c_str()), true);
             }
