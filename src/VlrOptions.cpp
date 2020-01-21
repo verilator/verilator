@@ -22,6 +22,9 @@
 #include "config_build.h"
 #include "config_rev.h"
 #include "V3Error.h"
+#include "V3File.h"
+#include "V3Os.h"
+#include <memory>
 
 void VlrOptions::parseOptsList(int argc, char** argv) {
     // Parse parameters
@@ -55,6 +58,10 @@ void VlrOptions::parseOptsList(int argc, char** argv) {
             else if (!strcmp(sw, "-scope") && (i+1)<argc ) {
                 ++i;
                 m_scope = argv[i];
+            }
+            else if (!strcmp(sw, "-signal-list") && (i+1)<argc ) {
+                ++i;
+                readSignalList(argv[i]);
             }
             else if (!strcmp(sw, "-V") ) {
                 showVersion(true);
@@ -112,4 +119,35 @@ bool VlrOptions::onoff(const char* sw, const char* arg, bool& flag) {
     else if (0==strncmp(sw, "-no", 3) && (0==strcmp(sw+3, arg+1))) { flag = false; return true; }
     else if (0==strncmp(sw, "-no-", 4) && (0==strcmp(sw+4, arg+1))) { flag = false; return true; }
     return false;
+}
+
+void VlrOptions::readSignalList(const char* filename) {
+    const vl_unique_ptr<std::ifstream> ifp (V3File::new_ifstream(string(filename)));
+    if (ifp->fail()) {
+        v3fatal("Cannot open -f command file: "+string(filename));
+        return;
+    }
+
+    while (!ifp->eof()) {
+        string line = V3Os::getline(*ifp);
+
+        // Remove comments
+        size_t cmt = line.find("#");
+        if (cmt == 0) {
+            continue;
+        } else if (cmt != string::npos) {
+            line = line.substr(0, cmt);
+        }
+
+        // Parse signals
+        string signalName = line.substr(2);
+
+        if (line[0] == 'I' && line[1] == ' ') {
+            m_replayp->addInputName(signalName);
+        } else if (line[0] == 'O' && line[1] == ' ') {
+            m_replayp->addOutputName(signalName);
+        } else {
+            v3fatal("Invalid signal line: "+line);
+        }
+    }
 }

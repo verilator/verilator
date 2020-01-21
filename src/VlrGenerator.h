@@ -28,7 +28,11 @@
 class VlrGenerator: public VerilatedReplayCommon {
 public:
     // CONSTRUCTORS
-    VlrGenerator() {}
+    // TODO -- passing this in the constructor is wonky, but we'd need VlrOptions to
+    // inherit from VerilatedReplayCommon (or something) to avoid this, but that
+    // would break the foo.opt.bar() convention in Verilator if VlrGenerator
+    // further inherited from VlrOptions
+    VlrGenerator(): m_opts(this) {}
     ~VlrGenerator() {}
 
     // METHODS

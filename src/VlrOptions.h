@@ -21,13 +21,15 @@
 #ifndef _VLROPTIONS_H_
 #define _VLROPTIONS_H_ 1
 
+#include "verilated_replay_common.h"
 #include <string>
 
 class VlrOptions {
 public:
     // CONSTRUCTORS
-    VlrOptions():
-        m_fst(NULL), m_replayTop(NULL), m_scope(NULL), m_vlt(false)
+    VlrOptions(VerilatedReplayCommon* replayp):
+        m_fst(NULL), m_replayTop(NULL), m_scope(NULL), m_vlt(false),
+        m_replayp(replayp)
     {}
     ~VlrOptions() {}
 
@@ -42,11 +44,13 @@ private:
     void showVersion(bool version);
     std::string version();
     bool onoff(const char* sw, const char* arg, bool& flag);
+    void readSignalList(const char* filename);
 
     char* m_fst;
     char* m_replayTop;
     char* m_scope;
     bool m_vlt;
+    VerilatedReplayCommon* m_replayp;
 };
 
 #endif  // guard
