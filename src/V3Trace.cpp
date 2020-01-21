@@ -613,7 +613,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) {
+    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
         m_code = 1;  // Multiple TopScopes will require fixing how code#s
         // are assigned as duplicate varscopes must result in the same tracing code#.
 
@@ -641,17 +641,17 @@ private:
         assignActivity();
         putTracesIntoTree();
     }
-    virtual void visit(AstNodeModule* nodep) {
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         if (nodep->isTop()) m_topModp = nodep;
         iterateChildren(nodep);
     }
-    virtual void visit(AstTopScope* nodep) {
+    virtual void visit(AstTopScope* nodep) VL_OVERRIDE {
         AstScope* scopep = nodep->scopep();
         UASSERT_OBJ(scopep, nodep, "No scope found on top level");
         m_highScopep = scopep;
         iterateChildren(nodep);
     }
-    virtual void visit(AstCCall* nodep) {
+    virtual void visit(AstCCall* nodep) VL_OVERRIDE {
         UINFO(8,"   CCALL "<<nodep<<endl);
         if (!m_finding && !nodep->user2()) {
             // See if there are other calls in same statement list;
@@ -669,7 +669,7 @@ private:
         }
         iterateChildren(nodep);
     }
-    virtual void visit(AstCFunc* nodep) {
+    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         UINFO(8,"   CFUNC "<<nodep<<endl);
         if (nodep->funcType() == AstCFuncType::TRACE_INIT) {
             m_initFuncp = nodep;
@@ -693,7 +693,7 @@ private:
         iterateChildren(nodep);
         m_funcp = NULL;
     }
-    virtual void visit(AstTraceInc* nodep) {
+    virtual void visit(AstTraceInc* nodep) VL_OVERRIDE {
         UINFO(8,"   TRACE "<<nodep<<endl);
         UASSERT_OBJ(!m_finding, nodep, "Traces should have been removed in prev step.");
         nodep->unlinkFrBack();
@@ -706,7 +706,7 @@ private:
         iterateChildren(nodep);
         m_tracep = NULL;
     }
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         if (m_tracep) {
             UASSERT_OBJ(nodep->varScopep(), nodep, "No var scope?");
             UASSERT_OBJ(!nodep->lvalue(), nodep, "Lvalue in trace?  Should be const.");
@@ -732,7 +732,7 @@ private:
         }
     }
     //--------------------
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 

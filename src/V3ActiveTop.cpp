@@ -56,19 +56,19 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
-    virtual void visit(AstTopScope* nodep) {
+    virtual void visit(AstTopScope* nodep) VL_OVERRIDE {
         m_topscopep = nodep;
         m_finder.main(m_topscopep);
         iterateChildren(nodep);
         m_topscopep = NULL;
     }
-    virtual void visit(AstNodeModule* nodep) {
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         // Create required actives and add to module
         // We can start ordering at a module, or a scope
         UINFO(4," MOD   "<<nodep<<endl);
         iterateChildren(nodep);
     }
-    virtual void visit(AstActive* nodep) {
+    virtual void visit(AstActive* nodep) VL_OVERRIDE {
         UINFO(4,"   ACTIVE "<<nodep<<endl);
         V3Const::constifyExpensiveEdit(nodep);  // Remove duplicate clocks and such; sensesp() may change!
         AstSenTree* sensesp = nodep->sensesp();
@@ -113,29 +113,29 @@ private:
         // No need to do statements under it, they're already moved.
         //iterateChildren(nodep);
     }
-    virtual void visit(AstInitial* nodep) {  // LCOV_EXCL_LINE
+    virtual void visit(AstInitial* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstAssignAlias* nodep) {  // LCOV_EXCL_LINE
+    virtual void visit(AstAssignAlias* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstAssignW* nodep) {  // LCOV_EXCL_LINE
+    virtual void visit(AstAssignW* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstAlways* nodep) {  // LCOV_EXCL_LINE
+    virtual void visit(AstAlways* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstAlwaysPublic* nodep) {  // LCOV_EXCL_LINE
+    virtual void visit(AstAlwaysPublic* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been under ACTIVE");
     }
-    virtual void visit(AstFinal* nodep) {  // LCOV_EXCL_LINE
+    virtual void visit(AstFinal* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been deleted");
     }
     // Empty visitors, speed things up
-    virtual void visit(AstNodeMath* nodep) {}
-    virtual void visit(AstVarScope* nodep) {}
+    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}
+    virtual void visit(AstVarScope* nodep) VL_OVERRIDE {}
     //--------------------
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 public:

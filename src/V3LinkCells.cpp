@@ -158,7 +158,7 @@ private:
     }
 
     // VISITs
-    virtual void visit(AstNetlist* nodep) {
+    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
         AstNode::user1ClearTree();
         readModNames();
         iterateChildren(nodep);
@@ -190,7 +190,7 @@ private:
             v3error("Specified --top-module '"<<v3Global.opt.topModule()<<"' was not found in design.");
         }
     }
-    virtual void visit(AstNodeModule* nodep) {
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         // Module: Pick up modnames, so we can resolve cells later
         m_modp = nodep;
         UINFO(2,"Link Module: "<<nodep<<endl);
@@ -228,7 +228,7 @@ private:
         m_modp = NULL;
     }
 
-    virtual void visit(AstIfaceRefDType* nodep) {
+    virtual void visit(AstIfaceRefDType* nodep) VL_OVERRIDE {
         // Cell: Resolve its filename.  If necessary, parse it.
         UINFO(4,"Link IfaceRef: "<<nodep<<endl);
         // Use findIdUpward instead of findIdFlat; it doesn't matter for now
@@ -247,14 +247,14 @@ private:
         // Note cannot do modport resolution here; modports are allowed underneath generates
     }
 
-    virtual void visit(AstPackageImport* nodep) {
+    virtual void visit(AstPackageImport* nodep) VL_OVERRIDE {
         // Package Import: We need to do the package before the use of a package
         iterateChildren(nodep);
         UASSERT_OBJ(nodep->packagep(), nodep, "Unlinked package");  // Parser should set packagep
         new V3GraphEdge(&m_graph, vertex(m_modp), vertex(nodep->packagep()), 1, false);
     }
 
-    virtual void visit(AstBind* nodep) {
+    virtual void visit(AstBind* nodep) VL_OVERRIDE {
         // Bind: Has cells underneath that need to be put into the new
         // module, and cells which need resolution
         // TODO this doesn't allow bind to dotted hier names, that would require
@@ -276,7 +276,7 @@ private:
         pushDeletep(nodep->unlinkFrBack());
     }
 
-    virtual void visit(AstCell* nodep) {
+    virtual void visit(AstCell* nodep) VL_OVERRIDE {
         // Cell: Resolve its filename.  If necessary, parse it.
         // Execute only once.  Complication is that cloning may result in
         // user1 being set (for pre-clone) so check if user1() matches the
@@ -448,8 +448,8 @@ private:
 
     // Accelerate the recursion
     // Must do statements to support Generates, math though...
-    virtual void visit(AstNodeMath* nodep) {}
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         // Default: Just iterate
         iterateChildren(nodep);
     }

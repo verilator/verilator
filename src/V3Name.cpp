@@ -75,7 +75,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) {
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         AstNodeModule* origModp = m_modp;
         {
             m_modp = nodep;
@@ -84,44 +84,44 @@ private:
         m_modp = origModp;
     }
     // Add __PVT__ to names of local signals
-    virtual void visit(AstVar* nodep) {
+    virtual void visit(AstVar* nodep) VL_OVERRIDE {
         // Don't iterate... Don't need temps for RANGES under the Var.
         rename(nodep, (!m_modp->isTop()
                        && !nodep->isSigPublic()
                        && !nodep->isFuncLocal()  // Isn't exposed, and would mess up dpi import wrappers
                        && !nodep->isTemp()));  // Don't bother to rename internal signals
     }
-    virtual void visit(AstCFunc* nodep) {
+    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         if (!nodep->user1()) {
             iterateChildren(nodep);
             rename(nodep, false);
         }
     }
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         if (nodep->varp()) {
             iterate(nodep->varp());
             nodep->name(nodep->varp()->name());
         }
     }
-    virtual void visit(AstCell* nodep) {
+    virtual void visit(AstCell* nodep) VL_OVERRIDE {
         if (!nodep->user1()) {
             rename(nodep, !nodep->modp()->modPublic());
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstMemberDType* nodep) {
+    virtual void visit(AstMemberDType* nodep) VL_OVERRIDE {
         if (!nodep->user1()) {
             rename(nodep, false);
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstMemberSel* nodep) {
+    virtual void visit(AstMemberSel* nodep) VL_OVERRIDE {
         if (!nodep->user1()) {
             rename(nodep, false);
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstScope* nodep) {
+    virtual void visit(AstScope* nodep) VL_OVERRIDE {
         if (!nodep->user1SetOnce()) {
             if (nodep->aboveScopep()) iterate(nodep->aboveScopep());
             if (nodep->aboveCellp()) iterate(nodep->aboveCellp());
@@ -134,7 +134,7 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 public:

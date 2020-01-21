@@ -296,7 +296,7 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         // Consumption/generation of a variable,
         // it's used so can't elim assignment before this use.
         UASSERT_OBJ(nodep->varScopep(), nodep, "NULL");
@@ -310,7 +310,7 @@ private:
             VL_DO_DANGLING(m_lifep->varUsageReplace(vscp, nodep), nodep);
         }
     }
-    virtual void visit(AstNodeAssign* nodep) {
+    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
         // Collect any used variables first, as lhs may also be on rhs
         // Similar code in V3Dead
         vluint64_t lastEdit = AstNode::editCountGbl();  // When it was last edited
@@ -330,13 +330,13 @@ private:
             iterateAndNextNull(nodep->lhsp());
         }
     }
-    virtual void visit(AstAssignDly* nodep) {
+    virtual void visit(AstAssignDly* nodep) VL_OVERRIDE {
         // Don't treat as normal assign; V3Life doesn't understand time sense
         iterateChildren(nodep);
     }
 
     //---- Track control flow changes
-    virtual void visit(AstNodeIf* nodep) {
+    virtual void visit(AstNodeIf* nodep) VL_OVERRIDE {
         UINFO(4,"   IF "<<nodep<<endl);
         // Condition is part of PREVIOUS block
         iterateAndNextNull(nodep->condp());
@@ -362,7 +362,7 @@ private:
         VL_DO_DANGLING(delete elseLifep, elseLifep);
     }
 
-    virtual void visit(AstWhile* nodep) {
+    virtual void visit(AstWhile* nodep) VL_OVERRIDE {
         // While's are a problem, as we don't allow loops in the graph.  We
         // may go around the cond/body multiple times.  Thus a
         // lifelication just in the body is ok, but we can't delete an
@@ -391,7 +391,7 @@ private:
         VL_DO_DANGLING(delete condLifep, condLifep);
         VL_DO_DANGLING(delete bodyLifep, bodyLifep);
     }
-    virtual void visit(AstJumpLabel* nodep) {
+    virtual void visit(AstJumpLabel* nodep) VL_OVERRIDE {
         // As with While's we can't predict if a JumpGo will kill us or not
         // It's worse though as an IF(..., JUMPGO) may change the control flow.
         // Just don't optimize blocks with labels; they're rare - so far.
@@ -410,7 +410,7 @@ private:
         bodyLifep->lifeToAbove();
         VL_DO_DANGLING(delete bodyLifep, bodyLifep);
     }
-    virtual void visit(AstCCall* nodep) {
+    virtual void visit(AstCCall* nodep) VL_OVERRIDE {
         //UINFO(4,"  CCALL "<<nodep<<endl);
         iterateChildren(nodep);
         // Enter the function and trace it
@@ -419,7 +419,7 @@ private:
             iterate(nodep->funcp());
         }
     }
-    virtual void visit(AstCFunc* nodep) {
+    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         //UINFO(4,"  CCALL "<<nodep<<endl);
         if (!m_tracingCall && !nodep->entryPoint()) return;
         m_tracingCall = false;
@@ -428,17 +428,17 @@ private:
         }
         iterateChildren(nodep);
     }
-    virtual void visit(AstUCFunc* nodep) {
+    virtual void visit(AstUCFunc* nodep) VL_OVERRIDE {
         m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
         iterateChildren(nodep);
     }
-    virtual void visit(AstCMath* nodep) {
+    virtual void visit(AstCMath* nodep) VL_OVERRIDE {
         m_sideEffect = true;  // If appears on assign RHS, don't ever delete the assignment
         iterateChildren(nodep);
     }
 
-    virtual void visit(AstVar*) {}  // Don't want varrefs under it
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstVar*) VL_OVERRIDE {}  // Don't want varrefs under it
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 
@@ -472,28 +472,28 @@ private:
     LifeState* m_statep;        // Current state
 
     // VISITORS
-    virtual void visit(AstCFunc* nodep) {
+    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         if (nodep->entryPoint()) {
             // Usage model 1: Simulate all C code, doing lifetime analysis
             LifeVisitor visitor (nodep, m_statep);
         }
     }
-    virtual void visit(AstAlways* nodep) {
+    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
         // Usage model 2: Cleanup basic blocks
         LifeVisitor visitor (nodep, m_statep);
     }
-    virtual void visit(AstInitial* nodep) {
+    virtual void visit(AstInitial* nodep) VL_OVERRIDE {
         // Usage model 2: Cleanup basic blocks
         LifeVisitor visitor (nodep, m_statep);
     }
-    virtual void visit(AstFinal* nodep) {
+    virtual void visit(AstFinal* nodep) VL_OVERRIDE {
         // Usage model 2: Cleanup basic blocks
         LifeVisitor visitor (nodep, m_statep);
     }
-    virtual void visit(AstVar*) {}  // Accelerate
-    virtual void visit(AstNodeStmt*) {}  // Accelerate
-    virtual void visit(AstNodeMath*) {}  // Accelerate
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstVar*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNodeStmt*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 public:

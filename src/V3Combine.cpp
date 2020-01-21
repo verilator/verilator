@@ -131,13 +131,13 @@ public:
     }
 private:
     // VISITORS
-    virtual void visit(AstCCall* nodep) {
+    virtual void visit(AstCCall* nodep) VL_OVERRIDE {
         addCall(nodep);
     }
     // Speed things up
-    virtual void visit(AstNodeAssign* nodep) {}
-    virtual void visit(AstNodeMath* nodep) {}
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {}
+    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 public:
@@ -160,7 +160,7 @@ private:
     // OUTPUT:
     //  AstNode::user3()        -> bool. True to indicate duplicated
     // VISITORS
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         nodep->user3(true);
         iterateChildren(nodep);
     }
@@ -389,7 +389,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) {
+    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
         // Track all callers of each function
         m_call.main(nodep);
         //
@@ -398,7 +398,7 @@ private:
         // Required so that a module instantiating another can benefit from collapsing.
         iterateChildrenBackwards(nodep);
     }
-    virtual void visit(AstNodeModule* nodep) {
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         UINFO(4," MOD   "<<nodep<<endl);
         m_modp = nodep;
         m_modNFuncs = 0;
@@ -427,7 +427,7 @@ private:
         }
         m_modp = NULL;
     }
-    virtual void visit(AstCFunc* nodep) {
+    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         m_funcp = nodep;
         if (!nodep->dontCombine()) {
             if (m_state == STATE_HASH) {
@@ -438,7 +438,7 @@ private:
         }
         m_funcp = NULL;
     }
-    virtual void visit(AstNodeStmt* nodep) {
+    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE {
         if (!nodep->isStatement()) {
             iterateChildren(nodep);
             return;
@@ -453,10 +453,10 @@ private:
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstVar*) {}
-    virtual void visit(AstTraceDecl*) {}
-    virtual void visit(AstTraceInc*) {}
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstVar*) VL_OVERRIDE {}
+    virtual void visit(AstTraceDecl*) VL_OVERRIDE {}
+    virtual void visit(AstTraceInc*) VL_OVERRIDE {}
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 

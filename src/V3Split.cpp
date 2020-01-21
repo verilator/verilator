@@ -346,19 +346,19 @@ protected:
     virtual void makeRvalueEdges(SplitVarStdVertex* vstdp) = 0;
 
     // VISITORS
-    virtual void visit(AstAlways* nodep) = 0;
-    virtual void visit(AstNodeIf* nodep) = 0;
+    virtual void visit(AstAlways* nodep) VL_OVERRIDE = 0;
+    virtual void visit(AstNodeIf* nodep) VL_OVERRIDE = 0;
 
     // We don't do AstNodeFor/AstWhile loops, due to the standard question
     // of what is before vs. after
 
-    virtual void visit(AstAssignDly* nodep) {
+    virtual void visit(AstAssignDly* nodep) VL_OVERRIDE {
         m_inDly = true;
         UINFO(4,"    ASSIGNDLY "<<nodep<<endl);
         iterateChildren(nodep);
         m_inDly = false;
     }
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         if (!m_stmtStackps.empty()) {
             AstVarScope* vscp = nodep->varScopep();
             UASSERT_OBJ(vscp, nodep, "Not linked");
@@ -422,7 +422,7 @@ protected:
         }
     }
 
-    virtual void visit(AstJumpGo* nodep) {
+    virtual void visit(AstJumpGo* nodep) VL_OVERRIDE {
         // Jumps will disable reordering at all levels
         // This is overly pessimistic; we could treat jumps as barriers, and
         // reorder everything between jumps/labels, however jumps are rare
@@ -434,7 +434,7 @@ protected:
 
     //--------------------
     // Default
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         // **** SPECIAL default type that sets PLI_ORDERING
         if (!m_stmtStackps.empty() && !nodep->isPure()) {
             UINFO(9,"         NotSplittable "<<nodep<<endl);
@@ -606,7 +606,7 @@ protected:
         firstp->user3p(oldBlockUser3);
     }
 
-    virtual void visit(AstAlways* nodep) {
+    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
         UINFO(4,"   ALW   "<<nodep<<endl);
         if (debug()>=9) nodep->dumpTree(cout, "   alwIn:: ");
         scoreboardClear();
@@ -614,7 +614,7 @@ protected:
         if (debug()>=9) nodep->dumpTree(cout, "   alwOut: ");
     }
 
-    virtual void visit(AstNodeIf* nodep) {
+    virtual void visit(AstNodeIf* nodep) VL_OVERRIDE {
         UINFO(4,"     IF "<<nodep<<endl);
         iterateAndNextNull(nodep->condp());
         processBlock(nodep->ifsp());
@@ -672,13 +672,13 @@ private:
     }
 
 protected:
-    virtual void visit(AstNodeIf* nodep) {
+    virtual void visit(AstNodeIf* nodep) VL_OVERRIDE {
         m_ifStack.push_back(nodep);
         trackNode(nodep);
         iterateChildren(nodep);
         m_ifStack.pop_back();
     }
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         trackNode(nodep);
         iterateChildren(nodep);
     }
@@ -746,7 +746,7 @@ protected:
         return new AstSplitPlaceholder(m_origAlwaysp->fileline());
     }
 
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         // Anything that's not an if/else we assume is a leaf
         // (that is, something we won't split.) Don't visit further
         // into the leaf.
@@ -768,7 +768,7 @@ protected:
         m_addAfter[color] = clonedp;
     }
 
-    virtual void visit(AstNodeIf* nodep) {
+    virtual void visit(AstNodeIf* nodep) VL_OVERRIDE {
         const ColorSet& colors = m_ifColorp->colors(nodep);
         typedef vl_unordered_map<uint32_t, AstNodeIf*> CloneMap;
         CloneMap clones;
@@ -829,10 +829,10 @@ public:
         }
     }
     virtual ~RemovePlaceholdersVisitor() {}
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
-    virtual void visit(AstSplitPlaceholder* nodep) {
+    virtual void visit(AstSplitPlaceholder* nodep) VL_OVERRIDE {
         m_removeSet.insert(nodep);
     }
 private:
@@ -955,7 +955,7 @@ protected:
         if (debug()>=9) m_graph.dumpDotFilePrefixed("splitg_colored", false);
     }
 
-    virtual void visit(AstAlways* nodep) {
+    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
         // build the scoreboard
         scoreboardClear();
         scanBlock(nodep->bodysp());
@@ -988,7 +988,7 @@ protected:
             emitSplit.go();
         }
     }
-    virtual void visit(AstNodeIf* nodep) {
+    virtual void visit(AstNodeIf* nodep) VL_OVERRIDE {
         UINFO(4,"     IF "<<nodep<<endl);
         m_curIfConditional = nodep;
         iterateAndNextNull(nodep->condp());

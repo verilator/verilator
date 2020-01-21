@@ -70,7 +70,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeIf* nodep) {
+    virtual void visit(AstNodeIf* nodep) VL_OVERRIDE {
         UINFO(4," IF: "<<nodep<<endl);
         int lastLikely = m_likely;
         int lastUnlikely = m_unlikely;
@@ -96,17 +96,17 @@ private:
         m_likely = lastLikely;
         m_unlikely = lastUnlikely;
     }
-    virtual void visit(AstCCall* nodep) {
+    virtual void visit(AstCCall* nodep) VL_OVERRIDE {
         checkUnlikely(nodep);
         nodep->funcp()->user1Inc();
         iterateChildren(nodep);
     }
-    virtual void visit(AstCFunc* nodep) {
+    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         checkUnlikely(nodep);
         m_cfuncsp.push_back(nodep);
         iterateChildren(nodep);
     }
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         checkUnlikely(nodep);
         iterateChildren(nodep);
     }

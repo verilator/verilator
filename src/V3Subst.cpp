@@ -193,7 +193,7 @@ private:
         return reinterpret_cast<SubstVarEntry*>(nodep->varp()->user1p());  // Might be NULL
     }
     // VISITORS
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         SubstVarEntry* entryp = findEntryp(nodep);
         if (entryp) {
             // Don't sweat it.  We assign a new temp variable for every new assignment,
@@ -206,8 +206,8 @@ private:
             }
         }
     }
-    virtual void visit(AstConst* nodep) {}  // Accelerate
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstConst* nodep) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 public:
@@ -261,7 +261,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeAssign* nodep) {
+    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
         m_ops = 0;
         m_assignStep++;
         iterateAndNextNull(nodep->rhsp());
@@ -311,7 +311,7 @@ private:
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         ++m_statSubsts;
     }
-    virtual void visit(AstWordSel* nodep) {
+    virtual void visit(AstWordSel* nodep) VL_OVERRIDE {
         iterate(nodep->rhsp());
         AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef);
         AstConst* constp = VN_CAST(nodep->rhsp(), Const);
@@ -338,7 +338,7 @@ private:
             iterate(nodep->lhsp());
         }
     }
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         // Any variable
         if (nodep->lvalue()) {
             m_assignStep++;
@@ -366,9 +366,9 @@ private:
             }
         }
     }
-    virtual void visit(AstVar* nodep) {}
-    virtual void visit(AstConst* nodep) {}
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstVar* nodep) VL_OVERRIDE {}
+    virtual void visit(AstConst* nodep) VL_OVERRIDE {}
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         m_ops++;
         if (!nodep->isSubstOptimizable()) {
             m_ops = SUBST_MAX_OPS_NA;

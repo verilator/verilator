@@ -102,19 +102,19 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeUniop* nodep) {
+    virtual void visit(AstNodeUniop* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         nodep->user1(nodep->lhsp()->user1());
         if (nodep->sizeMattersLhs()) insureCast(nodep->lhsp());
     }
-    virtual void visit(AstNodeBiop* nodep) {
+    virtual void visit(AstNodeBiop* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         nodep->user1(nodep->lhsp()->user1()
                     | nodep->rhsp()->user1());
         if (nodep->sizeMattersLhs()) insureCast(nodep->lhsp());
         if (nodep->sizeMattersRhs()) insureCast(nodep->rhsp());
     }
-    virtual void visit(AstNodeTriop* nodep) {
+    virtual void visit(AstNodeTriop* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         nodep->user1(nodep->lhsp()->user1()
                     | nodep->rhsp()->user1()
@@ -123,12 +123,12 @@ private:
         if (nodep->sizeMattersRhs()) insureCast(nodep->rhsp());
         if (nodep->sizeMattersThs()) insureCast(nodep->thsp());
     }
-    virtual void visit(AstCCast* nodep) {
+    virtual void visit(AstCCast* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         insureLower32Cast(nodep);
         nodep->user1(1);
     }
-    virtual void visit(AstNegate* nodep) {
+    virtual void visit(AstNegate* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         nodep->user1(nodep->lhsp()->user1());
         if (nodep->lhsp()->widthMin()==1) {
@@ -140,7 +140,7 @@ private:
             insureCast(nodep->lhsp());
         }
     }
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         if (!nodep->lvalue()
             && !VN_IS(nodep->backp(), CCast)
             && VN_IS(nodep->backp(), NodeMath)
@@ -153,7 +153,7 @@ private:
         }
         nodep->user1(1);
     }
-    virtual void visit(AstConst* nodep) {
+    virtual void visit(AstConst* nodep) VL_OVERRIDE {
         // Constants are of unknown size if smaller than 33 bits, because
         // we're too lazy to wrap every constant in the universe in
         // ((IData)#).
@@ -161,11 +161,11 @@ private:
     }
 
     // NOPs
-    virtual void visit(AstVar* nodep) {}
+    virtual void visit(AstVar* nodep) VL_OVERRIDE {}
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 

@@ -148,12 +148,12 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstCFunc* nodep) {
+    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         m_cfuncp = nodep;
         iterateChildren(nodep);
         m_cfuncp = NULL;
     }
-    virtual void visit(AstNodeAssign* nodep) {
+    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
         if (!m_cfuncp) return;
 
         // Left select WordSel or ArraySel
@@ -227,9 +227,9 @@ private:
     }
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstVar* nodep) {}  // Speedup
-    virtual void visit(AstNodeMath* nodep) {}  // Speedup
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstVar* nodep) VL_OVERRIDE {}  // Speedup
+    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}  // Speedup
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 

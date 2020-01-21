@@ -71,7 +71,7 @@ private:
 
     // VISITORS
     //========== Statements
-    virtual void visit(AstClocking* nodep) {
+    virtual void visit(AstClocking* nodep) VL_OVERRIDE {
         UINFO(8,"   CLOCKING"<<nodep<<endl);
         // Store the new default clock, reset on new module
         m_seniDefaultp = nodep->sensesp();
@@ -83,7 +83,7 @@ private:
         }
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    virtual void visit(AstAlways* nodep) {
+    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
         iterateAndNextNull(nodep->sensesp());
         if (nodep->sensesp()) {
             m_seniAlwaysp = nodep->sensesp()->sensesp();
@@ -92,7 +92,7 @@ private:
         m_seniAlwaysp = NULL;
     }
 
-    virtual void visit(AstNodeCoverOrAssert* nodep) {
+    virtual void visit(AstNodeCoverOrAssert* nodep) VL_OVERRIDE {
         if (nodep->sentreep()) return;  // Already processed
         clearAssertInfo();
         // Find Clocking's buried under nodep->exprsp
@@ -102,12 +102,12 @@ private:
         }
         clearAssertInfo();
     }
-    virtual void visit(AstPast* nodep) {
+    virtual void visit(AstPast* nodep) VL_OVERRIDE {
         if (nodep->sentreep()) return;  // Already processed
         iterateChildren(nodep);
         nodep->sentreep(newSenTree(nodep));
     }
-    virtual void visit(AstPropClocked* nodep) {
+    virtual void visit(AstPropClocked* nodep) VL_OVERRIDE {
         // No need to iterate the body, once replace will get iterated
         iterateAndNextNull(nodep->sensesp());
         if (m_senip) {
@@ -132,12 +132,12 @@ private:
         nodep->replaceWith(blockp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    virtual void visit(AstNodeModule* nodep) {
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         // Reset defaults
         m_seniDefaultp = NULL;
     }
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 

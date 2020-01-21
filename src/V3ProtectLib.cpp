@@ -68,7 +68,7 @@ class ProtectVisitor : public AstNVisitor {
     bool m_foundTop;                    // Have seen the top module
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) {
+    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
         m_vfilep = new AstVFile(nodep->fileline(),
                                 v3Global.opt.makeDir()+"/"+m_libName+".sv");
         nodep->addFilesp(m_vfilep);
@@ -78,7 +78,7 @@ class ProtectVisitor : public AstNVisitor {
         iterateChildren(nodep);
     }
 
-    virtual void visit(AstNodeModule* nodep) {
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         if (!nodep->isTop()) {
             return;
         } else {
@@ -347,7 +347,7 @@ class ProtectVisitor : public AstNVisitor {
         m_cfilep->tblockp(txtp);
     }
 
-    virtual void visit(AstVar* nodep) {
+    virtual void visit(AstVar* nodep) VL_OVERRIDE {
         if (!nodep->isIO()) return;
         if (VN_IS(nodep->dtypep(), UnpackArrayDType)) {
             nodep->v3error("Unsupported: unpacked arrays with protect-lib on "<<nodep->prettyNameQ());
@@ -366,7 +366,7 @@ class ProtectVisitor : public AstNVisitor {
         }
     }
 
-    virtual void visit(AstNode* nodep) { }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { }
 
     string cInputConnection(AstVar* varp) {
         string frstmt;
