@@ -176,7 +176,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) {
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         AstNodeModule* origModp = m_modp;
         {
             m_modp = nodep;
@@ -184,7 +184,7 @@ private:
         }
         m_modp = origModp;
     }
-    virtual void visit(AstNodeUniop* nodep) {
+    virtual void visit(AstNodeUniop* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         computeCppWidth(nodep);
         if (nodep->cleanLhs()) {
@@ -192,45 +192,45 @@ private:
         }
         setClean(nodep, nodep->cleanOut());
     }
-    virtual void visit(AstNodeBiop* nodep) {
+    virtual void visit(AstNodeBiop* nodep) VL_OVERRIDE {
         operandBiop(nodep);
         setClean(nodep, nodep->cleanOut());
     }
-    virtual void visit(AstAnd* nodep) {
+    virtual void visit(AstAnd* nodep) VL_OVERRIDE {
         operandBiop(nodep);
         setClean(nodep, isClean(nodep->lhsp()) || isClean(nodep->rhsp()));
     }
-    virtual void visit(AstXor* nodep) {
+    virtual void visit(AstXor* nodep) VL_OVERRIDE {
         operandBiop(nodep);
         setClean(nodep, isClean(nodep->lhsp()) && isClean(nodep->rhsp()));
     }
-    virtual void visit(AstOr* nodep) {
+    virtual void visit(AstOr* nodep) VL_OVERRIDE {
         operandBiop(nodep);
         setClean(nodep, isClean(nodep->lhsp()) && isClean(nodep->rhsp()));
     }
-    virtual void visit(AstNodeMath* nodep) {
+    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         computeCppWidth(nodep);
         setClean(nodep, nodep->cleanOut());
     }
-    virtual void visit(AstNodeAssign* nodep) {
+    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         computeCppWidth(nodep);
         if (nodep->cleanRhs()) {
             insureClean(nodep->rhsp());
         }
     }
-    virtual void visit(AstText* nodep) {
+    virtual void visit(AstText* nodep) VL_OVERRIDE {
         setClean(nodep, true);
     }
-    virtual void visit(AstScopeName* nodep) {
+    virtual void visit(AstScopeName* nodep) VL_OVERRIDE {
         setClean(nodep, true);
     }
-    virtual void visit(AstSel* nodep) {
+    virtual void visit(AstSel* nodep) VL_OVERRIDE {
         operandTriop(nodep);
         setClean(nodep, nodep->cleanOut());
     }
-    virtual void visit(AstUCFunc* nodep) {
+    virtual void visit(AstUCFunc* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         computeCppWidth(nodep);
         setClean(nodep, false);
@@ -240,64 +240,64 @@ private:
         }
         insureCleanAndNext(nodep->bodysp());
     }
-    virtual void visit(AstTraceDecl* nodep) {
+    virtual void visit(AstTraceDecl* nodep) VL_OVERRIDE {
         // No cleaning, or would loose pointer to enum
         iterateChildren(nodep);
     }
-    virtual void visit(AstTraceInc* nodep) {
+    virtual void visit(AstTraceInc* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         insureCleanAndNext(nodep->valuep());
     }
-    virtual void visit(AstTypedef* nodep) {
+    virtual void visit(AstTypedef* nodep) VL_OVERRIDE {
         // No cleaning, or would loose pointer to enum
         iterateChildren(nodep);
     }
-    virtual void visit(AstParamTypeDType* nodep) {
+    virtual void visit(AstParamTypeDType* nodep) VL_OVERRIDE {
         // No cleaning, or would loose pointer to enum
         iterateChildren(nodep);
     }
 
     // Control flow operators
-    virtual void visit(AstNodeCond* nodep) {
+    virtual void visit(AstNodeCond* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         insureClean(nodep->condp());
         setClean(nodep, isClean(nodep->expr1p()) && isClean(nodep->expr2p()));
     }
-    virtual void visit(AstWhile* nodep) {
+    virtual void visit(AstWhile* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         insureClean(nodep->condp());
     }
-    virtual void visit(AstNodeIf* nodep) {
+    virtual void visit(AstNodeIf* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         insureClean(nodep->condp());
     }
-    virtual void visit(AstSFormatF* nodep) {
+    virtual void visit(AstSFormatF* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         insureCleanAndNext(nodep->exprsp());
         setClean(nodep, true);  // generates a string, so not relevant
     }
-    virtual void visit(AstUCStmt* nodep) {
+    virtual void visit(AstUCStmt* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         insureCleanAndNext(nodep->bodysp());
     }
-    virtual void visit(AstCCall* nodep) {
+    virtual void visit(AstCCall* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         insureCleanAndNext(nodep->argsp());
         setClean(nodep, true);
     }
-    virtual void visit(AstCMethodHard* nodep) {
+    virtual void visit(AstCMethodHard* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         insureCleanAndNext(nodep->pinsp());
         setClean(nodep, true);
     }
-    virtual void visit(AstIntfRef* nodep) {
+    virtual void visit(AstIntfRef* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         setClean(nodep, true);  // generates a string, so not relevant
     }
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         computeCppWidth(nodep);
     }

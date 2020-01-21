@@ -348,22 +348,22 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) {
+    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
         //VV*****  We reset all userp() on the netlist
         m_modVarMap.clear();
         iterateChildren(nodep);
     }
-    virtual void visit(AstScope* nodep) {
+    virtual void visit(AstScope* nodep) VL_OVERRIDE {
         UINFO(4," MOD   "<<nodep<<endl);
         AstNode::user3ClearTree();
         iterateChildren(nodep);
     }
-    virtual void visit(AstCFunc* nodep) {
+    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         m_cfuncp = nodep;
         iterateChildren(nodep);
         m_cfuncp = NULL;
     }
-    virtual void visit(AstActive* nodep) {
+    virtual void visit(AstActive* nodep) VL_OVERRIDE {
         m_activep = nodep;
         bool oldinit = m_inInitial;
         m_inInitial = nodep->hasInitial();
@@ -371,7 +371,7 @@ private:
         iterateChildren(nodep);
         m_inInitial = oldinit;
     }
-    virtual void visit(AstAssignDly* nodep) {
+    virtual void visit(AstAssignDly* nodep) VL_OVERRIDE {
         m_inDly = true;
         m_nextDlyp = VN_CAST(nodep->nextp(), AssignDly);  // Next assignment in same block, maybe NULL.
         if (m_cfuncp) nodep->v3error("Unsupported: Delayed assignment inside public function/task");
@@ -395,7 +395,7 @@ private:
         m_nextDlyp = NULL;
     }
 
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         if (!nodep->user2Inc()) {  // Not done yet
             if (m_inDly && nodep->lvalue()) {
                 UINFO(4,"AssignDlyVar: "<<nodep<<endl);
@@ -444,10 +444,10 @@ private:
         }
     }
 
-    virtual void visit(AstNodeFor* nodep) {
+    virtual void visit(AstNodeFor* nodep) VL_OVERRIDE {
         nodep->v3fatalSrc("For statements should have been converted to while statements in V3Begin");
     }
-    virtual void visit(AstWhile* nodep) {
+    virtual void visit(AstWhile* nodep) VL_OVERRIDE {
         bool oldloop = m_inLoop;
         m_inLoop = true;
         iterateChildren(nodep);
@@ -456,7 +456,7 @@ private:
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 

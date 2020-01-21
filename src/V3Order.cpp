@@ -274,7 +274,7 @@ private:
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
-    virtual void visit(AstNodeAssign* nodep) {
+    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
         m_hasClk = false;
         if (AstVarRef* varrefp = VN_CAST(nodep->rhsp(), VarRef)) {
             this->visit(varrefp);
@@ -315,7 +315,7 @@ private:
         }
     }
 
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         if (m_inAss && nodep->varp()->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
             if (m_inClocked) {
                 nodep->v3warn(CLKDATA,
@@ -328,7 +328,7 @@ private:
             }
         }
     }
-    virtual void visit(AstConcat* nodep) {
+    virtual void visit(AstConcat* nodep) VL_OVERRIDE {
         if (m_inAss) {
             iterateAndNextNull(nodep->lhsp());
             int lw = m_childClkWidth;
@@ -337,20 +337,20 @@ private:
             m_childClkWidth = lw + rw;  // Pass up
         }
     }
-    virtual void visit(AstNodeSel* nodep) {
+    virtual void visit(AstNodeSel* nodep) VL_OVERRIDE {
         if (m_inAss) {
             iterateChildren(nodep);
             // Pass up result width
             if (m_childClkWidth > nodep->width()) m_childClkWidth = nodep->width();
         }
     }
-    virtual void visit(AstSel* nodep) {
+    virtual void visit(AstSel* nodep) VL_OVERRIDE {
         if (m_inAss) {
             iterateChildren(nodep);
             if (m_childClkWidth > nodep->width()) m_childClkWidth = nodep->width();
         }
     }
-    virtual void visit(AstReplicate* nodep) {
+    virtual void visit(AstReplicate* nodep) VL_OVERRIDE {
         if (m_inAss) {
             iterateChildren(nodep);
             if (VN_IS(nodep->rhsp(), Const)) {
@@ -360,12 +360,12 @@ private:
             }
         }
     }
-    virtual void visit(AstActive* nodep) {
+    virtual void visit(AstActive* nodep) VL_OVERRIDE {
         m_inClocked = nodep->hasClocked();
         iterateChildren(nodep);
         m_inClocked = false;
     }
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 
@@ -393,7 +393,7 @@ private:
     bool m_clkAss;  // There is signals marked as clocker in the assignment
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
-    virtual void visit(AstNodeAssign* nodep) {
+    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
         if (const AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef)) {
             if (varrefp->varp()->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
                 m_clkAss = true;
@@ -402,13 +402,13 @@ private:
         }
         iterateChildren(nodep->rhsp());
     }
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         // Previous versions checked attrClocker() here, but this breaks
         // the updated t_clocker VCD test.
         // If reenable this visitor note AstNodeMath short circuit below
     }
-    virtual void visit(AstNodeMath* nodep) {}  // Accelerate
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 public:
@@ -953,7 +953,7 @@ private:
         }
     }
     // VISITORS
-    virtual void visit(AstNetlist* nodep) {
+    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
         {
             AstUser4InUse       m_inuser4;      // Used only when building tree, so below
             iterateChildren(nodep);
@@ -961,7 +961,7 @@ private:
         // We're finished, complete the topscopes
         if (m_topScopep) { process(); m_topScopep=NULL; }
     }
-    virtual void visit(AstTopScope* nodep) {
+    virtual void visit(AstTopScope* nodep) VL_OVERRIDE {
         // Process the last thing we're finishing
         UASSERT_OBJ(!m_topScopep, nodep, "Only one topscope should ever be created");
         UINFO(2,"  Loading tree...\n");
@@ -1000,7 +1000,7 @@ private:
         AstNode::user3ClearTree();
         AstNode::user4ClearTree();
     }
-    virtual void visit(AstNodeModule* nodep) {
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         AstNodeModule* origModp = m_modp;
         {
             m_modp = nodep;
@@ -1008,7 +1008,7 @@ private:
         }
         m_modp = origModp;
     }
-    virtual void visit(AstScope* nodep) {
+    virtual void visit(AstScope* nodep) VL_OVERRIDE {
         UINFO(4," SCOPE "<<nodep<<endl);
         m_scopep = nodep;
         m_logicVxp = NULL;
@@ -1018,7 +1018,7 @@ private:
         iterateChildren(nodep);
         m_scopep = NULL;
     }
-    virtual void visit(AstActive* nodep) {
+    virtual void visit(AstActive* nodep) VL_OVERRIDE {
         // Create required activation blocks and add to module
         UINFO(4,"  ACTIVE  "<<nodep<<endl);
         m_activep = nodep;
@@ -1034,14 +1034,14 @@ private:
         m_activeSenVxp = NULL;
         m_inClocked = false;
     }
-    virtual void visit(AstVarScope* nodep) {
+    virtual void visit(AstVarScope* nodep) VL_OVERRIDE {
         // Create links to all input signals
         if (m_modp->isTop() && nodep->varp()->isNonOutput()) {
             OrderVarVertex* varVxp = newVarUserVertex(nodep, WV_STD);
             new OrderEdge(&m_graph, m_inputsVxp, varVxp, WEIGHT_INPUT);
         }
     }
-    virtual void visit(AstNodeVarRef* nodep) {
+    virtual void visit(AstNodeVarRef* nodep) VL_OVERRIDE {
         if (m_scopep) {
             AstVarScope* varscp = nodep->varScopep();
             UASSERT_OBJ(varscp, nodep, "Var didn't get varscoped in V3Scope.cpp");
@@ -1170,7 +1170,7 @@ private:
             }
         }
     }
-    virtual void visit(AstSenTree* nodep) {
+    virtual void visit(AstSenTree* nodep) VL_OVERRIDE {
         // Having a node derived from the sentree isn't required for
         // correctness, it merely makes the graph better connected
         // and improves graph algorithmic performance
@@ -1185,27 +1185,27 @@ private:
             m_inSenTree = false;
         }
     }
-    virtual void visit(AstAlways* nodep) {
+    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
         iterateNewStmt(nodep);
     }
-    virtual void visit(AstAlwaysPost* nodep) {
+    virtual void visit(AstAlwaysPost* nodep) VL_OVERRIDE {
         m_inPost = true;
         iterateNewStmt(nodep);
         m_inPost = false;
     }
-    virtual void visit(AstAlwaysPublic* nodep) {
+    virtual void visit(AstAlwaysPublic* nodep) VL_OVERRIDE {
         iterateNewStmt(nodep);
     }
-    virtual void visit(AstAssignAlias* nodep) {
+    virtual void visit(AstAssignAlias* nodep) VL_OVERRIDE {
         iterateNewStmt(nodep);
     }
-    virtual void visit(AstAssignW* nodep) {
+    virtual void visit(AstAssignW* nodep) VL_OVERRIDE {
         OrderClkAssVisitor visitor(nodep);
         m_inClkAss = visitor.isClkAss();
         iterateNewStmt(nodep);
         m_inClkAss = false;
     }
-    virtual void visit(AstAssignPre* nodep) {
+    virtual void visit(AstAssignPre* nodep) VL_OVERRIDE {
         OrderClkAssVisitor visitor(nodep);
         m_inClkAss = visitor.isClkAss();
         m_inPre = true;
@@ -1213,7 +1213,7 @@ private:
         m_inPre = false;
         m_inClkAss = false;
     }
-    virtual void visit(AstAssignPost* nodep) {
+    virtual void visit(AstAssignPost* nodep) VL_OVERRIDE {
         OrderClkAssVisitor visitor(nodep);
         m_inClkAss = visitor.isClkAss();
         m_inPost = true;
@@ -1221,15 +1221,15 @@ private:
         m_inPost = false;
         m_inClkAss = false;
     }
-    virtual void visit(AstCoverToggle* nodep) {
+    virtual void visit(AstCoverToggle* nodep) VL_OVERRIDE {
         iterateNewStmt(nodep);
     }
-    virtual void visit(AstInitial* nodep) {
+    virtual void visit(AstInitial* nodep) VL_OVERRIDE {
         // We use initials to setup parameters and static consts's which may be referenced
         // in user initial blocks.  So use ordering to sort them all out.
         iterateNewStmt(nodep);
     }
-    virtual void visit(AstCFunc*) {
+    virtual void visit(AstCFunc*) VL_OVERRIDE {
         // Ignore for now
         // We should detect what variables are set in the function, and make
         // settlement code for them, then set a global flag, so we call "settle"
@@ -1237,7 +1237,7 @@ private:
     }
     //--------------------
     // Default
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 public:

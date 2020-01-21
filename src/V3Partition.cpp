@@ -1766,7 +1766,7 @@ private:
     // METHODS
     VL_DEBUG_FUNC;
 
-    virtual void visit(AstCFunc* nodep) {
+    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         if (!m_tracingCall) return;
         m_tracingCall = false;
         if (nodep->dpiImportWrapper()) {
@@ -1777,13 +1777,13 @@ private:
         }
         iterateChildren(nodep);
     }
-    virtual void visit(AstCCall* nodep) {
+    virtual void visit(AstCCall* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         // Enter the function and trace it
         m_tracingCall = true;
         iterate(nodep->funcp());
     }
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 

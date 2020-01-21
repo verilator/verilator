@@ -244,7 +244,7 @@ class EmitCSyms : EmitCBaseVisitor {
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) {
+    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
         // Collect list of scopes
         iterateChildren(nodep);
         varsExpand();
@@ -268,7 +268,7 @@ class EmitCSyms : EmitCBaseVisitor {
             if (!m_dpiHdrOnly) emitDpiImp();
         }
     }
-    virtual void visit(AstNodeModule* nodep) {
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         nameCheck(nodep);
         AstNodeModule* origModp = m_modp;
         {
@@ -277,7 +277,7 @@ class EmitCSyms : EmitCBaseVisitor {
         }
         m_modp = origModp;
     }
-    virtual void visit(AstCellInline* nodep) {
+    virtual void visit(AstCellInline* nodep) VL_OVERRIDE {
         if (v3Global.opt.vpi()) {
             string type = (nodep->origModName() == "__BEGIN__") ? "SCOPE_OTHER"
                                                                 : "SCOPE_MODULE";
@@ -287,7 +287,7 @@ class EmitCSyms : EmitCBaseVisitor {
                                                                   name_dedot, type)));
         }
     }
-    virtual void visit(AstScope* nodep) {
+    virtual void visit(AstScope* nodep) VL_OVERRIDE {
         nameCheck(nodep);
 
         m_scopes.push_back(make_pair(nodep, m_modp));
@@ -299,7 +299,7 @@ class EmitCSyms : EmitCBaseVisitor {
                                                             name_dedot, "SCOPE_MODULE")));
         }
     }
-    virtual void visit(AstScopeName* nodep) {
+    virtual void visit(AstScopeName* nodep) VL_OVERRIDE {
         string name = nodep->scopeSymName();
         //UINFO(9,"scnameins sp "<<nodep->name()<<" sp "<<nodep->scopePrettySymName()<<" ss "<<name<<endl);
         if (m_scopeNames.find(name) == m_scopeNames.end()) {
@@ -319,7 +319,7 @@ class EmitCSyms : EmitCBaseVisitor {
             }
         }
     }
-    virtual void visit(AstVar* nodep) {
+    virtual void visit(AstVar* nodep) VL_OVERRIDE {
         nameCheck(nodep);
         iterateChildren(nodep);
         if (nodep->isSigUserRdPublic()
@@ -327,13 +327,13 @@ class EmitCSyms : EmitCBaseVisitor {
             m_modVars.push_back(make_pair(m_modp, nodep));
         }
     }
-    virtual void visit(AstCoverDecl* nodep) {
+    virtual void visit(AstCoverDecl* nodep) VL_OVERRIDE {
         // Assign numbers to all bins, so we know how big of an array to use
         if (!nodep->dataDeclNullp()) {  // else duplicate we don't need code for
             nodep->binNum(m_coverBins++);
         }
     }
-    virtual void visit(AstCFunc* nodep) {
+    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         nameCheck(nodep);
         if (nodep->dpiImport() || nodep->dpiExportWrapper()) {
             m_dpis.push_back(nodep);
@@ -343,9 +343,9 @@ class EmitCSyms : EmitCBaseVisitor {
         m_funcp = NULL;
     }
     // NOPs
-    virtual void visit(AstConst*) {}
+    virtual void visit(AstConst*) VL_OVERRIDE {}
     // Default
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
     //---------------------------------------

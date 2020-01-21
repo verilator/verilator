@@ -39,13 +39,13 @@
 class WidthRemoveVisitor : public AstNVisitor {
 private:
     // VISITORS
-    virtual void visit(AstSigned* nodep) {
+    virtual void visit(AstSigned* nodep) VL_OVERRIDE {
         VL_DO_DANGLING(replaceWithSignedVersion(nodep, nodep->lhsp()->unlinkFrBack()), nodep);
     }
-    virtual void visit(AstUnsigned* nodep) {
+    virtual void visit(AstUnsigned* nodep) VL_OVERRIDE {
         VL_DO_DANGLING(replaceWithSignedVersion(nodep, nodep->lhsp()->unlinkFrBack()), nodep);
     }
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
     void replaceWithSignedVersion(AstNode* nodep, AstNode* newp) {
@@ -114,7 +114,7 @@ private:
         return nodep;
     }
     // VISITORS
-    virtual void visit(AstConst* nodep) {
+    virtual void visit(AstConst* nodep) VL_OVERRIDE {
         UASSERT_OBJ(nodep->dtypep(), nodep, "No dtype");
         iterate(nodep->dtypep());  // Do datatype first
         if (AstConst* newp = newIfConstCommitSize(nodep)) {
@@ -126,15 +126,15 @@ private:
         }
         editDType(nodep);
     }
-    virtual void visit(AstNodeDType* nodep) {
+    virtual void visit(AstNodeDType* nodep) VL_OVERRIDE {
         visitIterateNodeDType(nodep);
     }
-    virtual void visit(AstNodeUOrStructDType* nodep) {
+    virtual void visit(AstNodeUOrStructDType* nodep) VL_OVERRIDE {
         if (nodep->user1SetOnce()) return;  // Process once
         visitIterateNodeDType(nodep);
         nodep->clearCache();
     }
-    virtual void visit(AstParamTypeDType* nodep) {
+    virtual void visit(AstParamTypeDType* nodep) VL_OVERRIDE {
         if (nodep->user1SetOnce()) return;  // Process once
         visitIterateNodeDType(nodep);
         // Move to type table as all dtype pointers must resolve there
@@ -153,11 +153,11 @@ private:
         nodep->virtRefDTypep(editOneDType(nodep->virtRefDTypep()));
         nodep->virtRefDType2p(editOneDType(nodep->virtRefDType2p()));
     }
-    virtual void visit(AstNodePreSel* nodep) {  // LCOV_EXCL_LINE
+    virtual void visit(AstNodePreSel* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         // This check could go anywhere after V3Param
         nodep->v3fatalSrc("Presels should have been removed before this point");
     }
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         editDType(nodep);
     }

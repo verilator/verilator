@@ -378,15 +378,15 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstAlways* nodep) {
+    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
         if (jumpingOver(nodep)) return;
         checkNodeInfo(nodep);
         iterateChildren(nodep);
     }
-    virtual void visit(AstSenTree* nodep) {
+    virtual void visit(AstSenTree* nodep) VL_OVERRIDE {
         // Sensitivities aren't inputs per se; we'll keep our tree under the same sens.
     }
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         if (jumpingOver(nodep)) return;
         if (!optimizable()) return;  // Accelerate
         UASSERT_OBJ(nodep->varp(), nodep, "Unlinked");
@@ -451,12 +451,12 @@ private:
             }
         }
     }
-    virtual void visit(AstVarXRef* nodep) {
+    virtual void visit(AstVarXRef* nodep) VL_OVERRIDE {
         if (jumpingOver(nodep)) return;
         if (m_scoped) { badNodeType(nodep); return; }
         else { clearOptimizable(nodep, "Language violation: Dotted hierarchical references not allowed in constant functions"); }
     }
-    virtual void visit(AstNodeFTask* nodep) {
+    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
         if (jumpingOver(nodep)) return;
         if (!m_params) { badNodeType(nodep); return; }
         if (nodep->dpiImport()) {
@@ -465,7 +465,7 @@ private:
         checkNodeInfo(nodep);
         iterateChildren(nodep);
     }
-    virtual void visit(AstNodeIf* nodep) {
+    virtual void visit(AstNodeIf* nodep) VL_OVERRIDE {
         if (jumpingOver(nodep)) return;
         UINFO(5, "   IF "<<nodep<<endl);
         checkNodeInfo(nodep);
@@ -482,19 +482,19 @@ private:
             }
         }
     }
-    virtual void visit(AstConst* nodep) {
+    virtual void visit(AstConst* nodep) VL_OVERRIDE {
         checkNodeInfo(nodep);
         if (!m_checkOnly && optimizable()) {
             newValue(nodep, nodep);
         }
     }
-    virtual void visit(AstInitArray* nodep) {
+    virtual void visit(AstInitArray* nodep) VL_OVERRIDE {
         checkNodeInfo(nodep);
         if (!m_checkOnly && optimizable()) {
             newValue(nodep, nodep);
         }
     }
-    virtual void visit(AstEnumItemRef* nodep) {
+    virtual void visit(AstEnumItemRef* nodep) VL_OVERRIDE {
         checkNodeInfo(nodep);
         UASSERT_OBJ(nodep->itemp(), nodep, "Not linked");
         if (!m_checkOnly && optimizable()) {
@@ -509,7 +509,7 @@ private:
             }
         }
     }
-    virtual void visit(AstNodeUniop* nodep) {
+    virtual void visit(AstNodeUniop* nodep) VL_OVERRIDE {
         if (!optimizable()) return;  // Accelerate
         checkNodeInfo(nodep);
         iterateChildren(nodep);
@@ -518,7 +518,7 @@ private:
                                  fetchConst(nodep->lhsp())->num());
         }
     }
-    virtual void visit(AstNodeBiop* nodep) {
+    virtual void visit(AstNodeBiop* nodep) VL_OVERRIDE {
         if (!optimizable()) return;  // Accelerate
         checkNodeInfo(nodep);
         iterateChildren(nodep);
@@ -528,7 +528,7 @@ private:
                                  fetchConst(nodep->rhsp())->num());
         }
     }
-    virtual void visit(AstNodeTriop* nodep) {
+    virtual void visit(AstNodeTriop* nodep) VL_OVERRIDE {
         if (!optimizable()) return;  // Accelerate
         checkNodeInfo(nodep);
         iterateChildren(nodep);
@@ -539,7 +539,7 @@ private:
                                  fetchConst(nodep->thsp())->num());
         }
     }
-    virtual void visit(AstLogAnd* nodep) {
+    virtual void visit(AstLogAnd* nodep) VL_OVERRIDE {
         // Need to short circuit
         if (!optimizable()) return;  // Accelerate
         checkNodeInfo(nodep);
@@ -557,7 +557,7 @@ private:
             }
         }
     }
-    virtual void visit(AstLogOr* nodep) {
+    virtual void visit(AstLogOr* nodep) VL_OVERRIDE {
         // Need to short circuit
         if (!optimizable()) return;  // Accelerate
         checkNodeInfo(nodep);
@@ -575,7 +575,7 @@ private:
             }
         }
     }
-    virtual void visit(AstLogIf* nodep) {
+    virtual void visit(AstLogIf* nodep) VL_OVERRIDE {
         // Need to short circuit, same as (!A || B)
         if (!optimizable()) return;  // Accelerate
         checkNodeInfo(nodep);
@@ -594,7 +594,7 @@ private:
             }
         }
     }
-    virtual void visit(AstNodeCond* nodep) {
+    virtual void visit(AstNodeCond* nodep) VL_OVERRIDE {
         // We could use above visit(AstNodeTriop), but need to do short circuiting.
         // It's also slower even O(n^2) to evaluate both sides when we
         // really only need to evaluate one side.
@@ -716,7 +716,7 @@ private:
         }
     }
 
-    virtual void visit(AstNodeAssign* nodep) {
+    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
         if (jumpingOver(nodep)) return;
         if (!optimizable()) return;  // Accelerate
         if (VN_IS(nodep, AssignDly)) {
@@ -751,7 +751,7 @@ private:
         }
         m_inDlyAssign = false;
     }
-    virtual void visit(AstArraySel* nodep) {
+    virtual void visit(AstArraySel* nodep) VL_OVERRIDE {
         checkNodeInfo(nodep);
         iterateChildren(nodep);
         if (AstInitArray* initp = VN_CAST(fetchValueNull(nodep->fromp()), InitArray)) {
@@ -768,11 +768,11 @@ private:
             clearOptimizable(nodep, "Array select of non-array");
         }
     }
-    virtual void visit(AstBegin* nodep) {
+    virtual void visit(AstBegin* nodep) VL_OVERRIDE {
         checkNodeInfo(nodep);
         iterateChildren(nodep);
     }
-    virtual void visit(AstNodeCase* nodep) {
+    virtual void visit(AstNodeCase* nodep) VL_OVERRIDE {
         if (jumpingOver(nodep)) return;
         UINFO(5, "   CASE "<<nodep<<endl);
         checkNodeInfo(nodep);
@@ -810,16 +810,16 @@ private:
         }
     }
 
-    virtual void visit(AstCaseItem* nodep) {
+    virtual void visit(AstCaseItem* nodep) VL_OVERRIDE {
         // Real handling is in AstNodeCase
         if (jumpingOver(nodep)) return;
         checkNodeInfo(nodep);
         iterateChildren(nodep);
     }
 
-    virtual void visit(AstComment*) {}
+    virtual void visit(AstComment*) VL_OVERRIDE {}
 
-    virtual void visit(AstJumpGo* nodep) {
+    virtual void visit(AstJumpGo* nodep) VL_OVERRIDE {
         if (jumpingOver(nodep)) return;
         checkNodeInfo(nodep);
         if (!m_checkOnly) {
@@ -827,7 +827,7 @@ private:
             m_jumpp = nodep;
         }
     }
-    virtual void visit(AstJumpLabel* nodep) {
+    virtual void visit(AstJumpLabel* nodep) VL_OVERRIDE {
         if (jumpingOver(nodep)) return;
         checkNodeInfo(nodep);
         iterateChildren(nodep);
@@ -836,7 +836,7 @@ private:
             m_jumpp = NULL;
         }
     }
-    virtual void visit(AstStop* nodep) {
+    virtual void visit(AstStop* nodep) VL_OVERRIDE {
         if (jumpingOver(nodep)) return;
         if (m_params) {  // This message seems better than an obscure $stop
             // The spec says $stop is just ignored, it seems evil to ignore assertions
@@ -845,7 +845,7 @@ private:
         checkNodeInfo(nodep);
     }
 
-    virtual void visit(AstNodeFor* nodep) {
+    virtual void visit(AstNodeFor* nodep) VL_OVERRIDE {
         // Doing lots of Whiles is slow, so only for parameters
         UINFO(5, "   FOR "<<nodep<<endl);
         if (!m_params) { badNodeType(nodep); return; }
@@ -874,7 +874,7 @@ private:
         }
     }
 
-    virtual void visit(AstWhile* nodep) {
+    virtual void visit(AstWhile* nodep) VL_OVERRIDE {
         // Doing lots of Whiles is slow, so only for parameters
         if (jumpingOver(nodep)) return;
         UINFO(5, "   WHILE "<<nodep<<endl);
@@ -909,7 +909,7 @@ private:
         }
     }
 
-    virtual void visit(AstFuncRef* nodep) {
+    virtual void visit(AstFuncRef* nodep) VL_OVERRIDE {
         if (jumpingOver(nodep)) return;
         if (!optimizable()) return;  // Accelerate
         UINFO(5, "   FUNCREF "<<nodep<<endl);
@@ -956,17 +956,17 @@ private:
         }
     }
 
-    virtual void visit(AstVar* nodep) {
+    virtual void visit(AstVar* nodep) VL_OVERRIDE {
         if (jumpingOver(nodep)) return;
         if (!m_params) { badNodeType(nodep); return; }
     }
 
-    virtual void visit(AstScopeName* nodep) {
+    virtual void visit(AstScopeName* nodep) VL_OVERRIDE {
         if (jumpingOver(nodep)) return;
         // Ignore
     }
 
-    virtual void visit(AstSFormatF* nodep) {
+    virtual void visit(AstSFormatF* nodep) VL_OVERRIDE {
         if (jumpingOver(nodep)) return;
         if (!optimizable()) return;  // Accelerate
         iterateChildren(nodep);
@@ -1017,7 +1017,7 @@ private:
         }
     }
 
-    virtual void visit(AstDisplay* nodep) {
+    virtual void visit(AstDisplay* nodep) VL_OVERRIDE {
         if (jumpingOver(nodep)) return;
         if (!optimizable()) return;  // Accelerate
         iterateChildren(nodep);
@@ -1039,7 +1039,7 @@ private:
     // These types are definitely not reducible
     //   AstCoverInc, AstFinish,
     //   AstRand, AstTime, AstUCFunc, AstCCall, AstCStmt, AstUCStmt
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         if (jumpingOver(nodep)) return;
         badNodeType(nodep);
     }

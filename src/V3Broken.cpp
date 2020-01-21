@@ -209,7 +209,7 @@ private:
         iterateChildrenConst(nodep);
     }
     // VISITORS
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         processAndIterate(nodep);
     }
 public:
@@ -257,7 +257,7 @@ private:
         iterateChildrenConst(nodep);
         BrokenTable::setUnder(nodep, false);
     }
-    virtual void visit(AstNodeAssign* nodep) {
+    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
         processAndIterate(nodep);
         UASSERT_OBJ(!(v3Global.assertDTypesResolved()
                       && nodep->brokeLhsMustBeLvalue()
@@ -265,7 +265,7 @@ private:
                       && !VN_CAST(nodep->lhsp(), NodeVarRef)->lvalue()),
                     nodep, "Assignment LHS is not an lvalue");
     }
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         processAndIterate(nodep);
     }
 public:

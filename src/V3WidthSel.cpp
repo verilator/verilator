@@ -196,7 +196,7 @@ private:
     // VISITORS
     // If adding new visitors, insure V3Width's visit(TYPE) calls into here
 
-    virtual void visit(AstSelBit* nodep) {
+    virtual void visit(AstSelBit* nodep) VL_OVERRIDE {
         // Select of a non-width specified part of an array, i.e. "array[2]"
         // This select style has a lsb and msb (no user specified width)
         UINFO(6,"SELBIT "<<nodep<<endl);
@@ -300,7 +300,7 @@ private:
         }
         if (!rhsp->backp()) { VL_DO_DANGLING(pushDeletep(rhsp), rhsp); }
     }
-    virtual void visit(AstSelExtract* nodep) {
+    virtual void visit(AstSelExtract* nodep) VL_OVERRIDE {
         // Select of a range specified part of an array, i.e. "array[2:3]"
         // SELEXTRACT(from,msb,lsb) -> SEL(from, lsb, 1+msb-lsb)
         // This select style has a (msb or lsb) and width
@@ -492,17 +492,17 @@ private:
         if (!rhsp->backp()) { VL_DO_DANGLING(pushDeletep(rhsp), rhsp); }
         if (!widthp->backp()) { VL_DO_DANGLING(pushDeletep(widthp), widthp); }
     }
-    virtual void visit(AstSelPlus* nodep) {
+    virtual void visit(AstSelPlus* nodep) VL_OVERRIDE {
         replaceSelPlusMinus(nodep);
     }
-    virtual void visit(AstSelMinus* nodep) {
+    virtual void visit(AstSelMinus* nodep) VL_OVERRIDE {
         replaceSelPlusMinus(nodep);
     }
     // If adding new visitors, insure V3Width's visit(TYPE) calls into here
 
     //--------------------
     // Default
-    virtual void visit(AstNode* nodep) {  // LCOV_EXCL_LINE
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         // See notes above; we never iterate
         nodep->v3fatalSrc("Shouldn't iterate in V3WidthSel");
     }

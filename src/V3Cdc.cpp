@@ -136,7 +136,7 @@ private:
     std::ofstream* m_ofp;  // Output file
     string              m_prefix;
 
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         *m_ofp<<m_prefix;
         if (nodep->user3()) *m_ofp<<" %%";
         else *m_ofp<<"  ";
@@ -170,7 +170,7 @@ private:
     int         m_maxLineno;
     size_t      m_maxFilenameLen;
 
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         // Keeping line+filename lengths separate is much faster than calling ascii().length()
         if (nodep->fileline()->lineno() >= m_maxLineno) {
@@ -608,7 +608,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) {
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         AstNodeModule* origModp = m_modp;
         {
             m_modp = nodep;
@@ -616,14 +616,14 @@ private:
         }
         m_modp = origModp;
     }
-    virtual void visit(AstScope* nodep) {
+    virtual void visit(AstScope* nodep) VL_OVERRIDE {
         UINFO(4," SCOPE "<<nodep<<endl);
         m_scopep = nodep;
         m_logicVertexp = NULL;
         iterateChildren(nodep);
         m_scopep = NULL;
     }
-    virtual void visit(AstActive* nodep) {
+    virtual void visit(AstActive* nodep) VL_OVERRIDE {
         // Create required blocks and add to module
         UINFO(4,"  BLOCK  "<<nodep<<endl);
         AstNode::user2ClearTree();
@@ -634,7 +634,7 @@ private:
         m_domainp = NULL;
         AstNode::user2ClearTree();
     }
-    virtual void visit(AstNodeVarRef* nodep) {
+    virtual void visit(AstNodeVarRef* nodep) VL_OVERRIDE {
         if (m_scopep) {
             UASSERT_OBJ(m_logicVertexp, nodep, "Var ref not under a logic block");
             AstVarScope* varscp = nodep->varScopep();
@@ -662,72 +662,72 @@ private:
             }
         }
     }
-    virtual void visit(AstAssignDly* nodep) {
+    virtual void visit(AstAssignDly* nodep) VL_OVERRIDE {
         m_inDly = true;
         iterateChildren(nodep);
         m_inDly = false;
     }
-    virtual void visit(AstSenItem* nodep) {
+    virtual void visit(AstSenItem* nodep) VL_OVERRIDE {
         // Note we look at only AstSenItems, not AstSenGate's
         // The gating term of a AstSenGate is normal logic
         m_inSenItem = true;
         iterateChildren(nodep);
         m_inSenItem = false;
     }
-    virtual void visit(AstAlways* nodep) {
+    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
         iterateNewStmt(nodep);
     }
-    virtual void visit(AstAlwaysPublic* nodep) {
+    virtual void visit(AstAlwaysPublic* nodep) VL_OVERRIDE {
         // CDC doesn't care about public variables
     }
-    virtual void visit(AstCFunc* nodep) {
+    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         iterateNewStmt(nodep);
     }
-    virtual void visit(AstSenGate* nodep) {
+    virtual void visit(AstSenGate* nodep) VL_OVERRIDE {
         // First handle the clock part will be handled in a minute by visit AstSenItem
         // The logic gating term is dealt with as logic
         iterateNewStmt(nodep);
     }
-    virtual void visit(AstAssignAlias* nodep) {
+    virtual void visit(AstAssignAlias* nodep) VL_OVERRIDE {
         iterateNewStmt(nodep);
     }
-    virtual void visit(AstAssignW* nodep) {
+    virtual void visit(AstAssignW* nodep) VL_OVERRIDE {
         iterateNewStmt(nodep);
     }
 
     // Math that shouldn't cause us to clear hazard
-    virtual void visit(AstConst* nodep) { }
-    virtual void visit(AstReplicate* nodep) {
+    virtual void visit(AstConst* nodep) VL_OVERRIDE { }
+    virtual void visit(AstReplicate* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
-    virtual void visit(AstConcat* nodep) {
+    virtual void visit(AstConcat* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
-    virtual void visit(AstNot* nodep) {
+    virtual void visit(AstNot* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
-    virtual void visit(AstSel* nodep) {
+    virtual void visit(AstSel* nodep) VL_OVERRIDE {
         if (!VN_IS(nodep->lsbp(), Const)) setNodeHazard(nodep);
         iterateChildren(nodep);
     }
-    virtual void visit(AstNodeSel* nodep) {
+    virtual void visit(AstNodeSel* nodep) VL_OVERRIDE {
         if (!VN_IS(nodep->bitp(), Const)) setNodeHazard(nodep);
         iterateChildren(nodep);
     }
 
     // Ignores
-    virtual void visit(AstInitial* nodep) { }
-    virtual void visit(AstTraceInc* nodep) { }
-    virtual void visit(AstCoverToggle* nodep) { }
-    virtual void visit(AstNodeDType* nodep) { }
+    virtual void visit(AstInitial* nodep) VL_OVERRIDE { }
+    virtual void visit(AstTraceInc* nodep) VL_OVERRIDE { }
+    virtual void visit(AstCoverToggle* nodep) VL_OVERRIDE { }
+    virtual void visit(AstNodeDType* nodep) VL_OVERRIDE { }
 
     //--------------------
     // Default
-    virtual void visit(AstNodeMath* nodep) {
+    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {
         setNodeHazard(nodep);
         iterateChildren(nodep);
     }
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 
