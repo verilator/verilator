@@ -31,25 +31,6 @@ double sc_time_stamp() {
     return simTime;
 }
 
-// TODO -- should we make eval, final and trace(?) part of VerilatedModule?
-// TODO -- generate this part
-//#include "Vt_case_reducer.h"
-//Vt_case_reducer* dutp = NULL;
-//VerilatedVcdC* tfp = NULL;
-//void VerilatedReplay::eval() {
-//    dutp->eval();
-//}
-//
-//void VerilatedReplay::trace() {
-//#if VM_TRACE
-//    if (tfp) tfp->dump(simTime);
-//#endif  // VM_TRACE
-//}
-//
-//void VerilatedReplay::final() {
-//    dutp->final();
-//}
-
 int main(int argc, char** argv) {
     // TODO -- actual arg parsing
     std::string fstFilename(argv[1]);
@@ -58,19 +39,7 @@ int main(int argc, char** argv) {
     VerilatedReplay replay(fstFilename, simTime);
     if (replay.init()) exit(-1);
 
-//#if VM_TRACE
-//    Verilated::traceEverOn(true);
-//    tfp = new VerilatedFstC;
-//    dutp->trace(tfp, 99);
-//    tfp->open("replay.fst");
-//    if (tfp) tfp->dump(simTime);
-//#endif  // VM_TRACE
-
     if (replay.replay()) exit(-1);
-
-//#if VM_TRACE
-//    if (tfp) tfp->close();
-//#endif  // VM_TRACE
 
     return 0;
 }

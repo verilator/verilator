@@ -68,65 +68,6 @@ void VerilatedReplay::addOutput(const std::string& fullName, vluint8_t* signal, 
     m_outputNames[fullName] = FstSignal(size, signal);
 }
 
-//int VerilatedReplay::addInput(const std::string& signalName, void* dutSignal, unsigned bits) {
-//    for (std::vector<VCDSignal*>::iterator it = m_scopep->signals.begin();
-//         it != m_scopep->signals.end(); ++it) {
-//        if (signalName == (*it)->reference) {
-//            VerilatedReplaySignal* signalp = new VerilatedReplaySignal;
-//            signalp->dutSignal = dutSignal;
-//            signalp->bits = bits;
-//            signalp->hash = (*it)->hash;
-//
-//            if ((*it)->size != bits) {
-//                VL_PRINTF("Error size mismatch on %s: trace=%d design=%d\n",
-//                          signalName.c_str(), (*it)->size, bits);
-//                return -1;
-//            }
-//
-//            if ((*it)->type != VCD_VAR_REG && (*it)->type != VCD_VAR_WIRE) {
-//                VL_PRINTF("Error unsupported signal type on %s\n", signalName.c_str());
-//                return -1;
-//            }
-//
-//            m_inputs.push_back(signalp);
-//            return 0;
-//        }
-//    }
-//    VL_PRINTF("Error finding signal (%s)\n", signalName.c_str());
-//    return -1;
-//}
-//
-//void VerilatedReplay::copySignal(uint8_t* signal, VCDValue* valuep) {
-//    VCDValueType type = valuep->get_type();
-//    switch(type) {
-//        case VCD_SCALAR: {
-//            copySignalBit(signal, 0, valuep->get_value_bit());
-//            break;
-//        }
-//        case VCD_VECTOR: {
-//            VCDBitVector* bitVector = valuep->get_value_vector();
-//            unsigned length = bitVector->size();
-//            for (int i = 0; i < length; ++i) {
-//                copySignalBit(signal, i, bitVector->at(length - i - 1));
-//            }
-//            break;
-//        }
-//        default: {
-//            VL_PRINTF("Error unsupported VCD value type");
-//            exit(-1);
-//        }
-//    }
-//}
-//
-//void VerilatedReplay::copySignalBit(uint8_t* signal, unsigned offset, VCDBit bit) {
-//    unsigned byte = offset / 8;
-//    unsigned byteOffset = offset % 8;
-//    // TODO - more efficient byte copying
-//    signal[byte] &= ~(0x1 << byteOffset);
-//    // TODO - x's and z's?
-//    signal[byte] |= (bit == VCD_1 ? 0x1 : 0x0) << byteOffset;
-//}
-
 int VerilatedReplay::replay() {
     // TODO -- lockless ring buffer for separate reader/replay threads
     // TODO -- should I be using fstReaderIterBlocks instead? (only one CB)
