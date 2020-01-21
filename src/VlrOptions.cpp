@@ -25,6 +25,7 @@
 #include "V3File.h"
 #include "V3Os.h"
 #include <memory>
+#include <fstream>
 
 void VlrOptions::parseOptsList(int argc, char** argv) {
     // Parse parameters
@@ -122,14 +123,14 @@ bool VlrOptions::onoff(const char* sw, const char* arg, bool& flag) {
 }
 
 void VlrOptions::readSignalList(const char* filename) {
-    const vl_unique_ptr<std::ifstream> ifp (V3File::new_ifstream(string(filename)));
-    if (ifp->fail()) {
+    std::ifstream ifs(filename);
+    if (ifs.fail()) {
         v3fatal("Cannot open -f command file: "+string(filename));
         return;
     }
 
-    while (!ifp->eof()) {
-        string line = V3Os::getline(*ifp);
+    while (!ifs.eof()) {
+        string line = V3Os::getline(ifs);
 
         // Remove comments
         size_t cmt = line.find("#");
@@ -140,11 +141,13 @@ void VlrOptions::readSignalList(const char* filename) {
         }
 
         // Parse signals
+        if (line.length() <= 2) continue;
+
         string signalName = line.substr(2);
 
-        if (line[0] == 'I' && line[1] == ' ') {
+        if (line.substr(0, 2) == "I ") {
             m_replayp->addInputName(signalName);
-        } else if (line[0] == 'O' && line[1] == ' ') {
+        } else if (line.substr(0, 2) == "O ") {
             m_replayp->addOutputName(signalName);
         } else {
             v3fatal("Invalid signal line: "+line);

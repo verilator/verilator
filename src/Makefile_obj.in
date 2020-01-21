@@ -259,8 +259,8 @@ VLCOV_OBJS = \
 # verilator_replay
 VLREPLAY_OBJS = \
 	V3Error.o \
-	V3File.o \
 	V3Os.o \
+	V3String.o \
 	VlrOptions.o \
 	verilated_replay_common.o \
 	VlrGenerator.o \

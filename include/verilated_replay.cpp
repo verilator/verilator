@@ -35,7 +35,7 @@ int VerilatedReplay::init() {
         addOutputName(it->first);
     }
     openFst(m_fstName);
-    searchFst("");
+    searchFst(NULL);
     m_time = fstReaderGetStartTime(m_fstp);
     // TODO -- use FST timescale
     m_simTime = m_time;

@@ -53,7 +53,7 @@ public:
     VerilatedReplayCommon() {}
     ~VerilatedReplayCommon() {}
     void openFst(const std::string& fstName);
-    void searchFst(const std::string& targetScope);
+    void searchFst(const char* targetScope);
     void addInputName(const std::string& name) { m_inputNames.insert(name); }
     void addOutputName(const std::string& name) { m_outputNames.insert(name); }
 };

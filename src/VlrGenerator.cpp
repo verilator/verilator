@@ -4,7 +4,7 @@
 
 void VlrGenerator::searchFst() {
     openFst(string(m_opts.fst()));
-    VerilatedReplayCommon::searchFst(string(m_opts.scope()));
+    VerilatedReplayCommon::searchFst(m_opts.scope());
 }
 
 void VlrGenerator::emitVltCode() {

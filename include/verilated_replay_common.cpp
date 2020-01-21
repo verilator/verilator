@@ -46,9 +46,9 @@ void VerilatedReplayCommon::openFst(const string& fstName) {
     }
 }
 
-void VerilatedReplayCommon::searchFst(const string& targetScope) {
+void VerilatedReplayCommon::searchFst(const char* targetScope) {
     const char* scope = "";
-    string searchScope(targetScope);
+    string searchScope(string(targetScope ? targetScope : ""));
 
     while (fstHier* hierp = fstReaderIterateHier(m_fstp)) {
         if (hierp->htyp == FST_HT_SCOPE) {
