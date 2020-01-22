@@ -7,14 +7,8 @@ void VlrGenerator::searchFst() {
     VerilatedReplayCommon::searchFst(m_opts.scope());
 }
 
-void VlrGenerator::emitVltCode() {
-    // TODO -- use V3OutCFile
-    cout << "#include \"verilated_replay.h\"" << endl;
-    cout << endl;
-    cout << "void VerilatedReplay::addSignals() {" << endl;
-
-    for (VarMap::iterator it = m_inputs.begin(); it != m_inputs.end(); ++it) {
-        string sigName(it->second.fullName);
+string VlrGenerator::replayName(const string& fullName) {
+        string sigName(fullName);
 
         // TODO -- add a trailing dot for the user if they don't
         if (m_opts.replayTop()) {
@@ -28,11 +22,34 @@ void VlrGenerator::emitVltCode() {
             sigName = sigName.substr(replayTop.length());
         }
 
-        // TODO -- need to be able to specify a new top level
+        return sigName;
+}
+
+void VlrGenerator::emitVltCode() {
+    // TODO -- use V3OutCFile
+    cout << "#include \"verilated_replay.h\"" << endl;
+    cout << endl;
+    cout << "void VerilatedReplay::addSignals() {" << endl;
+
+    for (VarMap::iterator it = m_inputs.begin(); it != m_inputs.end(); ++it) {
+        string sigName = replayName(it->second.fullName);
+
         cout << "    addInput(\"" << it->second.fullName <<
              "\", &(m_modp->" << sigName <<
              "), " << it->second.hier.u.var.length << ");" << endl;
         // TODO -- sizof check (FST vs VLT)
     }
+
+    if (m_opts.checkOutputs()) {
+        for (VarMap::iterator it = m_outputs.begin(); it != m_outputs.end(); ++it) {
+            string sigName = replayName(it->second.fullName);
+
+            cout << "    addOutput(\"" << it->second.fullName <<
+                 "\", &(m_modp->" << sigName <<
+                 "), " << it->second.hier.u.var.length << ");" << endl;
+            // TODO -- sizof check (FST vs VLT)
+        }
+    }
+
     cout << "}" << endl;
 }

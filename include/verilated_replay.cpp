@@ -23,6 +23,7 @@
 //=========================================================================
 
 #include "verilated_replay.h"
+#include <cstring>
 
 // TODO -- collapse into constructor?
 int VerilatedReplay::init() {
@@ -42,11 +43,23 @@ int VerilatedReplay::init() {
 
     for (VarMap::iterator it = m_inputs.begin(); it != m_inputs.end();
          ++it) {
-        VL_PRINTF("%s = %d\n", it->second.fullName.c_str(), it->first);
+        VL_PRINTF("input %s = %d\n", it->second.fullName.c_str(), it->first);
         fstReaderSetFacProcessMask(m_fstp, it->first);
         // TODO -- double check the size hasn't changed or just defer looking at size until here
         m_inputHandles[it->first] = FstSignal(it->second.hier.u.var.length,
                 m_inputNames[it->second.fullName].signal);
+    }
+
+    for (VarMap::iterator it = m_outputs.begin(); it != m_outputs.end();
+         ++it) {
+        VL_PRINTF("output %s = %d\n", it->second.fullName.c_str(), it->first);
+        fstReaderSetFacProcessMask(m_fstp, it->first);
+        size_t bits = it->second.hier.u.var.length;
+        size_t bytes = (bits + 7) / 8;
+        vluint8_t* buffer = new vluint8_t [bytes];
+        // TODO -- double check the size hasn't changed or just defer looking at size until here
+        m_outputHandles[it->first] = FstSignal(bits, m_outputNames[it->second.fullName].signal,
+                                               buffer);
     }
 
     return 0;
@@ -54,6 +67,11 @@ int VerilatedReplay::init() {
 
 VerilatedReplay::~VerilatedReplay() {
     fstReaderClose(m_fstp);
+
+    for (SignalHandleMap::iterator it = m_outputHandles.begin(); it != m_outputHandles.end(); ++it) {
+        delete [] it->second.expected;
+    }
+
 #if VM_TRACE
     if (m_tfp) m_tfp->close();
 #endif
@@ -100,19 +118,37 @@ void VerilatedReplay::fstCb(uint64_t time, fstHandle facidx,
     // TODO -- remove
     VL_PRINTF("%lu %u %s\n", time, facidx, valuep);
 
-    // TODO -- is len always right, or should we use strlen() or something?
-    // TODO -- handle values other than 0/1, what can show up here?
-    vluint8_t* signal = m_inputHandles[facidx].signal;
+    if (m_outputHandles.empty() || m_inputHandles.find(facidx) != m_inputHandles.end()) {
+        handleInput(facidx, valuep, len);
+    } else {
+        handleOutput(facidx, valuep, len);
+    }
+}
+
+void VerilatedReplay::copyValue(unsigned char* to, const unsigned char* valuep, uint32_t len) {
     vluint8_t byte = 0;
     for (size_t bit = 0; bit < len; ++bit) {
         char value = valuep[len - 1 - bit];
         if (value == '1') byte |= 1 << (bit % 8);
         if ((bit + 1) % 8 == 0 || bit == len - 1) {
-            *signal = byte;
-            ++signal;
+            *to = byte;
+            ++to;
             byte = 0;
         }
     }
+}
+
+void VerilatedReplay::handleInput(fstHandle facidx, const unsigned char* valuep, uint32_t len) {
+    // TODO -- is len always right, or should we use strlen() or something?
+    // TODO -- handle values other than 0/1, what can show up here?
+    vluint8_t* signal = m_inputHandles[facidx].signal;
+    copyValue(signal, valuep, len);
+}
+
+void VerilatedReplay::handleOutput(fstHandle facidx, const unsigned char* valuep, uint32_t len) {
+    FstSignal& fstSignal = m_outputHandles[facidx];
+    size_t bytes = (len + 7) / 8;
+    copyValue(fstSignal.expected, valuep, len);
 }
 
 void VerilatedReplay::fstCallbackVarlen(void* userDatap, uint64_t time, fstHandle facidx,
@@ -134,6 +170,18 @@ void VerilatedReplay::fstCallback(void* userDatap, uint64_t time, fstHandle faci
     fstCallbackVarlen(userDatap, time, facidx, valuep, len);
 }
 
+void VerilatedReplay::outputCheck() {
+    for (SignalHandleMap::iterator it = m_outputHandles.begin(); it != m_outputHandles.end(); ++it) {
+        size_t bytes = (it->second.bits + 7) / 8;
+        if (std::memcmp(it->second.expected, it->second.signal, bytes)) {
+            fstHandle facidx = it->first;
+            // TODO -- timescale, actually print out values with Verilator runtime, etc.
+            VL_PRINTF("Miscompare: %s @ %ld\n", m_outputs[facidx].fullName.c_str(),
+                      m_time);
+        }
+    }
+}
+
 void VerilatedReplay::createMod() {
     // TODO -- maybe get rid of the need for VM_PREFIX by generating these things
     m_modp = new VM_PREFIX;
@@ -150,6 +198,7 @@ void VerilatedReplay::createMod() {
 void VerilatedReplay::eval() {
     // TODO -- make eval, trace and final virtual methods of VerilatedModule?
     m_modp->eval();
+    outputCheck();
 }
 
 void VerilatedReplay::trace() {

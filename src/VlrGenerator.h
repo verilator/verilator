@@ -38,6 +38,7 @@ public:
     // METHODS
     VlrOptions& opts() { return m_opts; }
     void searchFst();
+    std::string replayName(const std::string& fullName);
     void emitVltCode();
 private:
     typedef std::list<std::string> StrList;

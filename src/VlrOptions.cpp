@@ -39,7 +39,8 @@ void VlrOptions::parseOptsList(int argc, char** argv) {
             if (sw[0]=='-' && sw[1]=='-') ++sw;
             if (0) {} // TODO -- just to avoid the asymetry of one "if"?
             // Single switches
-            else if (onoff (sw, "-vlt", flag/*ref*/) )      { m_vlt = flag; }
+            else if (onoff (sw, "-check-outputs", flag/*ref*/) ) { m_checkOutputs = flag; }
+            else if (onoff (sw, "-vlt", flag/*ref*/) )           { m_vlt = flag; }
             //// Parameterized switches
             else if (!strcmp(sw, "-debug") ) {
                 V3Error::debugDefault(3);

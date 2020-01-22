@@ -42,9 +42,12 @@ private:
     struct FstSignal {
         size_t bits;
         vluint8_t* signal;
+        vluint8_t* expected;
         FstSignal()  {}
         FstSignal(size_t _bits, vluint8_t* _signal):
-            bits(_bits), signal(_signal) { }
+            bits(_bits), signal(_signal), expected(NULL) { }
+        FstSignal(size_t _bits, vluint8_t* _signal, vluint8_t* _expected):
+            bits(_bits), signal(_signal), expected(_expected) { }
     };
     typedef std::map<fstHandle, FstSignal> SignalHandleMap;
     typedef std::map<std::string, FstSignal> SignalNameMap;
@@ -53,15 +56,20 @@ private:
     void addSignals();
     void addInput(const std::string& fullName, vluint8_t* signal, size_t size);
     void addOutput(const std::string& fullName, vluint8_t* signal, size_t size);
+    void outputCheck();
     void eval();
     void trace();
     void final();
     void fstCb(uint64_t time, fstHandle facidx, const unsigned char* value,
                uint32_t len);
+    void handleInput(fstHandle facidx, const unsigned char* valuep, uint32_t len);
+    void handleOutput(fstHandle facidx, const unsigned char* valuep, uint32_t len);
     static void fstCallback(void* userData, uint64_t time, fstHandle facidx,
                             const unsigned char* value);
     static void fstCallbackVarlen(void* userData, uint64_t time, fstHandle facidx,
                                   const unsigned char* value, uint32_t len);
+
+    static void copyValue(unsigned char* to, const unsigned char* valuep, uint32_t len);
 
     std::string m_fstName;
     double& m_simTime;

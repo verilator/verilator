@@ -37,6 +37,7 @@ int main(int argc, char** argv) {
     VL_PRINTF("FST = %s\n", fstFilename.c_str());
 
     VerilatedReplay replay(fstFilename, simTime);
+
     if (replay.init()) exit(-1);
 
     if (replay.replay()) exit(-1);

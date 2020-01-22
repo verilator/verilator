@@ -28,14 +28,15 @@ class VlrOptions {
 public:
     // CONSTRUCTORS
     VlrOptions(VerilatedReplayCommon* replayp):
-        m_fst(NULL), m_replayTop(NULL), m_scope(NULL), m_vlt(false),
-        m_replayp(replayp)
+        m_checkOutputs(false), m_fst(NULL), m_replayTop(NULL), m_scope(NULL),
+        m_vlt(false), m_replayp(replayp)
     {}
     ~VlrOptions() {}
 
     // METHODS
     void parseOptsList(int argc, char** argv);
 
+    bool checkOutputs() { return m_checkOutputs; }
     const char* fst() { return m_fst; }
     const char* replayTop() { return m_replayTop; }
     const char* scope() { return m_scope; }
@@ -45,7 +46,9 @@ private:
     std::string version();
     bool onoff(const char* sw, const char* arg, bool& flag);
     void readSignalList(const char* filename);
+    void outputCheck();
 
+    bool m_checkOutputs;
     char* m_fst;
     char* m_replayTop;
     char* m_scope;
