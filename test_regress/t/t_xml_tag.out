@@ -11,8 +11,8 @@
     <file id="d" filename="t/t_xml_tag.v" language="1800-2017"/>
   </module_files>
   <cells>
-    <cell fl="d11" name="m" submodname="m" hier="m">
-      <cell fl="d28" name="itop" submodname="ifc" hier="m.itop"/>
+    <cell fl="d11" loc="d,11,8,11,9" name="m" submodname="m" hier="m">
+      <cell fl="d28" loc="d,28,8,28,12" name="itop" submodname="ifc" hier="m.itop"/>
     </cell>
   </cells>
   <netlist>

@@ -299,6 +299,7 @@ private:
             && nodep->level() <=2 ) {  // ==2 because we don't add wrapper when in XML mode
             m_os<<"<cells>\n";
             m_os<<"<cell "<<nodep->fileline()->xml()
+                <<" "<<nodep->fileline()->xmlDetailedLocation()
                 <<" name=\""<<nodep->name()<<"\""
                 <<" submodname=\""<<nodep->name()<<"\""
                 <<" hier=\""<<nodep->name()<<"\"";
@@ -319,6 +320,7 @@ private:
         }
         if (!m_hasChildren) m_os<<">\n";
         m_os<<"<cell "<<nodep->fileline()->xml()
+            <<" "<<nodep->fileline()->xmlDetailedLocation()
             <<" name=\""<<nodep->name()<<"\""
             <<" submodname=\""<<nodep->modName()<<"\""
             <<" hier=\""<<m_hier+nodep->name()<<"\"";

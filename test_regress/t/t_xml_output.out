@@ -11,7 +11,7 @@
     <file id="d" filename="t/t_xml_output.v" language="1800-2017"/>
   </module_files>
   <cells>
-    <cell fl="d6" name="m" submodname="m" hier="m"/>
+    <cell fl="d6" loc="d,6,8,6,9" name="m" submodname="m" hier="m"/>
   </cells>
   <netlist>
     <module fl="d6" loc="d,6,8,6,9" name="m" origName="m">
