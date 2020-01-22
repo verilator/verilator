@@ -115,9 +115,6 @@ void VerilatedReplay::fstCb(uint64_t time, fstHandle facidx,
         m_simTime = m_time;
     }
 
-    // TODO -- remove
-    VL_PRINTF("%lu %u %s\n", time, facidx, valuep);
-
     if (m_outputHandles.empty() || m_inputHandles.find(facidx) != m_inputHandles.end()) {
         handleInput(facidx, valuep, len);
     } else {

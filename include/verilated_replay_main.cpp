@@ -25,6 +25,12 @@
 
 
 #include "verilated_replay.h"
+// TODO -- I know this is C++11 . . . figure this out
+#include <chrono>
+#include <ctime>
+#include <ratio>
+
+using namespace std::chrono;
 
 double simTime = 0;
 double sc_time_stamp() {
@@ -40,7 +46,11 @@ int main(int argc, char** argv) {
 
     if (replay.init()) exit(-1);
 
+    high_resolution_clock::time_point start = high_resolution_clock::now();
     if (replay.replay()) exit(-1);
+    high_resolution_clock::time_point end = high_resolution_clock::now();
+    VL_PRINTF("Replay took %ld ns\n",
+              std::chrono::duration_cast<std::chrono::nanoseconds>(end-start).count());
 
     return 0;
 }
