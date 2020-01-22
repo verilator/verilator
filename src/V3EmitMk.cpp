@@ -101,8 +101,8 @@ public:
                 else if (support==2 && slow) {
                 }
                 else {
-                    for (AstFile* nodep = v3Global.rootp()->filesp();
-                         nodep; nodep = VN_CAST(nodep->nextp(), File)) {
+                    for (AstNodeFile* nodep = v3Global.rootp()->filesp();
+                         nodep; nodep = VN_CAST(nodep->nextp(), NodeFile)) {
                         AstCFile* cfilep = VN_CAST(nodep, CFile);
                         if (cfilep && cfilep->source()
                             && cfilep->slow()==(slow!=0)

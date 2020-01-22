@@ -642,7 +642,7 @@ public:
         puts(cvtToStr(nodep->fileline()->lineno()));
         puts(", \"\");\n");
     }
-    virtual void visit(AstText* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeSimpleText* nodep) VL_OVERRIDE {
         if (nodep->tracking() || m_trackText) {
             puts(nodep->text());
         } else {
@@ -650,7 +650,7 @@ public:
         }
     }
     virtual void visit(AstTextBlock* nodep) VL_OVERRIDE {
-        visit(VN_CAST(nodep, Text));
+        visit(VN_CAST(nodep, NodeSimpleText));
         for (AstNode* childp = nodep->nodesp(); childp; childp = childp->nextp()) {
             iterate(childp);
             if (nodep->commas() && childp->nextp()) puts(", ");
@@ -3301,8 +3301,8 @@ void V3EmitC::emitcTrace() {
 
 void V3EmitC::emitcFiles() {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    for (AstFile* filep = v3Global.rootp()->filesp(); filep;
-         filep = VN_CAST(filep->nextp(), File)) {
+    for (AstNodeFile* filep = v3Global.rootp()->filesp(); filep;
+         filep = VN_CAST(filep->nextp(), NodeFile)) {
         AstCFile* cfilep = VN_CAST(filep, CFile);
         if (cfilep && cfilep->tblockp()) {
             V3OutCFile of(cfilep->name());

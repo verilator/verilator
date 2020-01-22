@@ -30,6 +30,15 @@ if (! GetOptions(
 
 read_types("$Opt_I[0]/V3Ast.h");
 read_types("$Opt_I[0]/V3AstNodes.h");
+foreach my $type (sort (keys %Classes)) {
+    # Chekc all leafs are not AstNode* and non-leave are AstNode*
+    my @children = children_of($type);
+    if ($type =~ /^Node/) {
+        @children  || die "Error: Final AstNode subclasses must not be named AstNode*: Ast$type"
+    } else {
+        !@children || die "Error: Non-final AstNode subclasses must be named AstNode*: Ast$type"
+    }
+}
 read_stages("$Opt_I[0]/Verilator.cpp");
 read_refs(glob("$Opt_I[0]/*.y"), glob("$Opt_I[0]/*.h"), glob("$Opt_I[0]/*.cpp"));
 if ($opt_report) {

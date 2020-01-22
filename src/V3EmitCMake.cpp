@@ -125,8 +125,8 @@ class CMakeEmitter {
 
         *of << "\n### Sources...\n";
         std::vector<string> classes_fast, classes_slow, support_fast, support_slow, global;
-        for (AstFile* nodep = v3Global.rootp()->filesp(); nodep;
-             nodep = VN_CAST(nodep->nextp(), File)) {
+        for (AstNodeFile* nodep = v3Global.rootp()->filesp(); nodep;
+             nodep = VN_CAST(nodep->nextp(), NodeFile)) {
             AstCFile* cfilep = VN_CAST(nodep, CFile);
             if (cfilep && cfilep->source()) {
                 if (cfilep->support()) {
