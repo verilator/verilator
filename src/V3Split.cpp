@@ -457,7 +457,7 @@ public:
 
     // METHODS
 protected:
-    void makeRvalueEdges(SplitVarStdVertex* vstdp) {
+    virtual void makeRvalueEdges(SplitVarStdVertex* vstdp) VL_OVERRIDE {
         for (VStack::iterator it = m_stmtStackps.begin(); it != m_stmtStackps.end(); ++it) {
             new SplitRVEdge(&m_graph, *it, vstdp);
         }
@@ -876,7 +876,7 @@ public:
 
     // METHODS
 protected:
-    void makeRvalueEdges(SplitVarStdVertex* vstdp) {
+    virtual void makeRvalueEdges(SplitVarStdVertex* vstdp) VL_OVERRIDE {
         // Each 'if' depends on rvalues in its own conditional ONLY,
         // not rvalues in the if/else bodies.
         for (VStack::const_iterator it = m_stmtStackps.begin(); it != m_stmtStackps.end(); ++it) {
