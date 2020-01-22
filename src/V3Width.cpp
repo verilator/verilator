@@ -1897,6 +1897,9 @@ private:
             if (nodep->name() == "name") {
                 methodOkArguments(nodep, 0, 0);
             } else if (nodep->pinsp()
+                       && !(VN_IS(VN_CAST(nodep->pinsp(), Arg)->exprp(), Const))) {
+                nodep->v3fatalSrc("Unsupported: enum next/prev with non-const argument");
+            } else if (nodep->pinsp()
                        && !(VN_IS(VN_CAST(nodep->pinsp(), Arg)->exprp(), Const)
                             && VN_CAST(VN_CAST(nodep->pinsp(), Arg)->exprp(), Const)->toUInt() == 1
                             && !nodep->pinsp()->nextp())) {
@@ -1910,7 +1913,6 @@ private:
                 AstMethodCall* newp = new AstMethodCall(
                         nodep->fileline(), clonep,
                         nodep->name(), argp);
-
                 nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
                 return;
             }
@@ -1929,7 +1931,7 @@ private:
                     if (vconstp->toUQuad() >= msbdim) msbdim = vconstp->toUQuad();
                 }
                 if (adtypep->itemsp()->width() > 64 || msbdim >= (1 << 16)) {
-                    nodep->v3error("Unsupported; enum next/prev method on enum with > 10 bits");
+                    nodep->v3error("Unsupported: enum next/prev method on enum with > 10 bits");
                     return;
                 }
             }
