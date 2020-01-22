@@ -11,9 +11,9 @@
     <file id="d" filename="t/t_xml_first.v" language="1800-2017"/>
   </module_files>
   <cells>
-    <cell fl="d6" name="t" submodname="t" hier="t">
-      <cell fl="d19" name="cell1" submodname="mod1__W4" hier="t.cell1"/>
-      <cell fl="d24" name="cell2" submodname="mod2" hier="t.cell2"/>
+    <cell fl="d6" loc="d,6,8,6,9" name="t" submodname="t" hier="t">
+      <cell fl="d19" loc="d,19,4,19,9" name="cell1" submodname="mod1__W4" hier="t.cell1"/>
+      <cell fl="d24" loc="d,24,6,24,11" name="cell2" submodname="mod2" hier="t.cell2"/>
     </cell>
   </cells>
   <netlist>
