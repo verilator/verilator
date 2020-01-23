@@ -57,12 +57,12 @@ typedef std::set<int> MTaskIdSet;  // Set of mtaskIds for Var sorting
     } while (0)
 
 // (V)erilator (N)ode is: True if AstNode is of a a given AstType
-#define VN_IS(nodep,nodetypename) (AstNode::privateIs ## nodetypename(nodep))
+#define VN_IS(nodep,nodetypename) (AstNode::privateIs<Ast ## nodetypename>(nodep))
 
 // (V)erilator (N)ode cast: Cast to given type if can; effectively
 // dynamic_cast<nodetypename>(nodep)
-#define VN_CAST(nodep,nodetypename) (AstNode::privateCast ## nodetypename(nodep))
-#define VN_CAST_CONST(nodep,nodetypename) (AstNode::privateConstCast ## nodetypename(nodep) )
+#define VN_CAST(nodep,nodetypename) (AstNode::privateCast<Ast ## nodetypename>(nodep))
+#define VN_CAST_CONST(nodep,nodetypename) (AstNode::privateConstCast<Ast ## nodetypename>(nodep))
 
 // (V)erilator (N)ode deleted: Reference to deleted child (for assertions only)
 #define VN_DELETED(nodep) VL_UNLIKELY((vluint64_t)(nodep) == 0x1)
@@ -1535,10 +1535,21 @@ private:
 
     // CONVERSION
 public:
-#include "V3Ast__gen_interface.h"  // From ./astgen
-    // Things like:
-    //  AstAlways*      castAlways();
+    // These for use by VN_IS macro only
+    template<class T>
+    static bool privateIs(const AstNode* nodep);
+
+    // These for use by VN_CAST macro only
+    template<class T>
+    static T* privateCast(AstNode* nodep);
+
+    // These for use by VN_CAST_CONST macro only
+    template<class T>
+    static const T* privateConstCast(const AstNode* nodep);
 };
+
+// Specialisations of privateIs/privateCast
+#include "V3Ast__gen_impl.h"  // From ./astgen
 
 inline std::ostream& operator<<(std::ostream& os, const AstNode* rhs) {
     if (!rhs) os<<"NULL"; else rhs->dump(os); return os;
@@ -2285,11 +2296,6 @@ public:
 //######################################################################
 
 #include "V3AstNodes.h"
-
-#include "V3Ast__gen_impl.h"  // From ./astgen
-// Things like:
-//  inline AstAlways* AstNode::castAlways() { return dynamic_cast<AstAlways*>(this); }
-//  inline bool AstNode::privateIsaAlways(const AstNode* nodep) { return nodep && nodep->type() == AstType::atAlways; }
 
 //######################################################################
 // Inline AstNVisitor METHODS
