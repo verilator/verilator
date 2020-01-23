@@ -25,6 +25,18 @@ AC_ARG_ENABLE([maintainer-mode],
 AC_ARG_ENABLE([silent-rules],
               [AS_HELP_STRING([--disable-silent-rules], [ignored])])
 
+# Flag to enable linking Verilator with tcmalloc if available
+AC_ARG_ENABLE([tcmalloc],
+              [AS_HELP_STRING([--enable-tcmalloc],
+                              [Use libtcmalloc for faster dynamic memory
+                               management @<:@default=check@:>@])],
+              [case "${enableval}" in
+                yes) CFG_WITH_TCMALLOC=yes ;;
+                no)  CFG_WITH_TCMALLOC=no ;;
+                *)   AC_MSG_ERROR([bad value '${enableval}' for --enable-tcmalloc]) ;;
+               esac],
+              [CFG_WITH_TCMALLOC=check;])
+
 # Special Substitutions - CFG_WITH_DEFENV
 AC_MSG_CHECKING(whether to use hardcoded paths)
 AC_ARG_ENABLE([defenv],
@@ -209,13 +221,24 @@ AC_DEFUN([_MY_LDLIBS_CHECK_FLAG],
     LIBS="$ACO_SAVE_LIBS"
    ])
 
-AC_DEFUN([_MY_LDLIBS_CHECK_OPT],
-   [# _MY_LDLIBS_CHECK_OPT(flag) -- Check if linker supports specific options
-    # If it does, append flag to variable
-    _MY_LDLIBS_CHECK_FLAG($2)
+AC_DEFUN([_MY_LDLIBS_CHECK_IFELSE],
+   [# _MY_LDLIBS_CHECK_IFELSE(flag,action-if-supported,action-if-not-supported)
+    # Check if linker supports specific flag, if it does do action-if-supported
+    # otherwise do action-if-not-supported
+    _MY_LDLIBS_CHECK_FLAG($1)
     if test "$_my_result" = "yes" ; then
-       $1="$$1 $2"
+      true
+      $2
+    else
+      true
+      $3
     fi
+   ])
+
+AC_DEFUN([_MY_LDLIBS_CHECK_OPT],
+   [# _MY_LDLIBS_CHECK_OPT(variable, flag) -- Check if linker supports specific
+    # options. If it does, append flag to variable.
+    _MY_LDLIBS_CHECK_IFELSE($2, $1="$$1 $2")
    ])
 
 # Flag to select newest language standard supported
@@ -258,7 +281,6 @@ _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-faligned-new)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-unused-parameter)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-undefined-bool-conversion)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-shadow)
-AC_SUBST(CFG_CXXFLAGS_SRC)
 
 # Flags for compiling Verilator parser always (in addition to above CFG_CXXFLAGS_SRC)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PARSER,-Wno-char-subscripts)
@@ -309,6 +331,24 @@ m4_foreach([ldflag], [
     ])
 AC_SUBST(CFG_LDLIBS_THREADS)
 AC_SUBST(CFG_LDFLAGS_THREADS_CMAKE)
+
+# Check if tcmalloc is available based on --enable-tcmalloc
+_MY_LDLIBS_CHECK_IFELSE(
+  -ltcmalloc,
+  [if test "$CFG_WITH_TCMALLOC" != "no"; then
+    CFG_LIBS="$CFG_LIBS -ltcmalloc";
+    # If using tcmalloc, add some extra options to make the compiler not assume
+    # it is using it's own versions of the standard library functions
+    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-malloc)
+    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-calloc)
+    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-realloc)
+    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-free)
+    AC_SUBST(CFG_CXXFLAGS_SRC)
+   fi],
+  [if test "$CFG_WITH_TCMALLOC" = "yes"; then
+    AC_MSG_ERROR([--enable-tcmalloc was given but test for -ltcmalloc failed])
+   fi])
+AC_SUBST(CFG_LIBS)
 
 # Set CFG_WITH_THREADED if can support threading
 AC_MSG_CHECKING(whether $CXX supports Verilated threads)
