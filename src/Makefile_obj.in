@@ -68,6 +68,7 @@ CFG_CXXFLAGS_SRC = @CFG_CXXFLAGS_SRC@
 CFG_CXXFLAGS_PARSER = @CFG_CXXFLAGS_PARSER@
 # Compiler flags that turn on extra warnings
 CFG_CXXFLAGS_WEXTRA = @CFG_CXXFLAGS_WEXTRA@
+CFG_LIBS = @CFG_LIBS@
 
 #### End of system configuration section. ####
 
@@ -92,7 +93,7 @@ endif
 
 # -lfl not needed as Flex invoked with %nowrap option
 # -lstdc++ needed for clang, believed harmless with gcc
-LIBS = -lm -lstdc++
+LIBS = $(CFG_LIBS) -lm -lstdc++
 
 CPPFLAGS += -MMD
 CPPFLAGS += -I. -I$(bldsrc) -I$(srcdir) -I$(incdir) -I../../include
