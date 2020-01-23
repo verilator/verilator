@@ -27,6 +27,7 @@ before_install:
 # Perl modules needed for testing
   - yes yes | sudo cpan -fi Unix::Processors Parallel::Forker Bit::Vector
   - sudo apt-get install gdb gtkwave
+  - sudo apt-get install libgoogle-perftools-dev
 before_script:
   - bash -x ci/build_vcddiff.sh
   - bash -x ci/build_verilator.sh
