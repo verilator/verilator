@@ -32,6 +32,7 @@
 #include "gtkwave/fstapi.h"
 #include <string>
 #include <map>
+#include <vector>
 
 #define QUOTE(x) #x
 #define MAKE_HEADER(x) QUOTE(x.h)
@@ -52,6 +53,18 @@ private:
     typedef std::map<fstHandle, FstSignal> SignalHandleMap;
     typedef std::map<std::string, FstSignal> SignalNameMap;
 
+    struct ReplayData {
+        enum ReplayType {Input, Output, Time};
+        size_t size;
+        ReplayType type;
+        union {
+            uint64_t time;
+            vluint8_t* target;
+        } u;
+        vluint8_t* data;
+    };
+    typedef std::vector<ReplayData> ReplayVector;
+
     void createMod();
     void addSignals();
     void addInput(const std::string& fullName, vluint8_t* signal, size_t size);
@@ -60,6 +73,14 @@ private:
     void eval();
     void trace();
     void final();
+    void addPreloadTime();
+    void loadData(ReplayData::ReplayType type, fstHandle facidx,
+                  const unsigned char* valuep, uint32_t len);
+    void loadInput(fstHandle facidx, const unsigned char* valuep, uint32_t len);
+    void loadOutput(fstHandle facidx, const unsigned char* valuep, uint32_t len);
+    void replayPreloadedData();
+    void loadData(uint64_t time, fstHandle facidx, const unsigned char* value,
+                  uint32_t len);
     void fstCb(uint64_t time, fstHandle facidx, const unsigned char* value,
                uint32_t len);
     void handleInput(fstHandle facidx, const unsigned char* valuep, uint32_t len);
@@ -76,17 +97,24 @@ private:
     VM_PREFIX* m_modp;
     VerilatedFstC* m_tfp;
     uint64_t m_time;
+    uint64_t m_preloadTime;
+    bool m_preloadData;
+    bool m_doTrace;
     SignalHandleMap m_inputHandles;
     SignalHandleMap m_outputHandles;
     SignalNameMap m_inputNames;
     SignalNameMap m_outputNames;
+    ReplayVector m_replayData;
 public:
     VerilatedReplay(const std::string& fstName, double& simTime):
-        m_fstName(fstName), m_simTime(simTime)
+        m_fstName(fstName), m_simTime(simTime), m_tfp(NULL),
+        m_preloadData(false), m_doTrace(false)
     {}
     ~VerilatedReplay();
     int init();
     int replay();
+    void preloadData(bool value) { m_preloadData = value; }
+    void doTrace(bool value) { m_doTrace = value; }
 };
 
 #endif  // Guard

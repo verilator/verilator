@@ -38,6 +38,7 @@ int VerilatedReplay::init() {
     openFst(m_fstName);
     searchFst(NULL);
     m_time = fstReaderGetStartTime(m_fstp);
+    m_preloadTime = m_time;
     // TODO -- use FST timescale
     m_simTime = m_time;
 
@@ -62,6 +63,19 @@ int VerilatedReplay::init() {
                                                buffer);
     }
 
+    if (m_preloadData) {
+        // TODO -- should I be using fstReaderIterBlocks instead? (only one CB)
+        // It appears that 0 is the error return code
+        if (fstReaderIterBlocks2(m_fstp, &VerilatedReplay::fstCallback,
+                                 &VerilatedReplay::fstCallbackVarlen, this, NULL) == 0) {
+            VL_PRINTF("Error iterating FST\n");
+            exit(-1);
+        }
+
+        // Add final time
+        addPreloadTime();
+    }
+
     return 0;
 }
 
@@ -72,10 +86,14 @@ VerilatedReplay::~VerilatedReplay() {
         delete [] it->second.expected;
     }
 
+    for (ReplayVector::iterator it = m_replayData.begin(); it != m_replayData.end(); ++it) {
+        if (it->type != ReplayData::ReplayType::Time) delete [] it->data;
+    }
+
 #if VM_TRACE
     if (m_tfp) m_tfp->close();
 #endif
-    delete(m_modp);
+    delete m_modp;
 }
 
 void VerilatedReplay::addInput(const std::string& fullName, vluint8_t* signal, size_t size) {
@@ -86,14 +104,36 @@ void VerilatedReplay::addOutput(const std::string& fullName, vluint8_t* signal, 
     m_outputNames[fullName] = FstSignal(size, signal);
 }
 
+void VerilatedReplay::replayPreloadedData() {
+    for (ReplayVector::iterator it = m_replayData.begin(); it != m_replayData.end(); ++it) {
+        switch (it->type) {
+            case ReplayData::ReplayType::Input:
+            case ReplayData::ReplayType::Output:
+                memcpy(it->u.target, it->data, it->size);
+                break;
+            case ReplayData::ReplayType::Time:
+                m_time = it->u.time;
+                // TODO -- use FST timescale
+                m_simTime = m_time;
+                eval();
+                break;
+        }
+    }
+}
+
 int VerilatedReplay::replay() {
-    // TODO -- lockless ring buffer for separate reader/replay threads
-    // TODO -- should I be using fstReaderIterBlocks instead? (only one CB)
-    // It appears that 0 is the error return code
-    if (fstReaderIterBlocks2(m_fstp, &VerilatedReplay::fstCallback,
-                             &VerilatedReplay::fstCallbackVarlen, this, NULL) == 0) {
-        VL_PRINTF("Error iterating FST\n");
-        exit(-1);
+    // TODO -- lockless ring buffer for separate reader/replay threads if
+    // dumb preloading is insufficient
+    if (m_preloadData) {
+        replayPreloadedData();
+    } else {
+        // TODO -- should I be using fstReaderIterBlocks instead? (only one CB)
+        // It appears that 0 is the error return code
+        if (fstReaderIterBlocks2(m_fstp, &VerilatedReplay::fstCallback,
+                                 &VerilatedReplay::fstCallbackVarlen, this, NULL) == 0) {
+            VL_PRINTF("Error iterating FST\n");
+            exit(-1);
+        }
     }
 
     // One final eval + trace since we only eval on time changes
@@ -104,8 +144,60 @@ int VerilatedReplay::replay() {
     return 0;
 }
 
+void VerilatedReplay::addPreloadTime() {
+    ReplayData data;
+    data.type = ReplayData::ReplayType::Time;
+    data.u.time = m_preloadTime;
+    m_replayData.push_back(data);
+}
+
+void VerilatedReplay::loadData(ReplayData::ReplayType type, fstHandle facidx,
+                               const unsigned char* valuep, uint32_t len) {
+    ReplayData data;
+    data.type = type;
+    if (type == ReplayData::ReplayType::Input) {
+        data.u.target = m_inputHandles[facidx].signal;
+    } else {
+        data.u.target = m_outputHandles[facidx].expected;
+    }
+    size_t bytes = (len + 7) / 8;
+    data.size = bytes;
+    // TODO -- would pre-allocating space be better?  possibly hugepages if available
+    data.data = new vluint8_t [bytes];
+    copyValue(data.data, valuep, len);
+    m_replayData.push_back(data);
+}
+
+void VerilatedReplay::loadInput(fstHandle facidx, const unsigned char* valuep, uint32_t len) {
+    loadData(ReplayData::ReplayType::Input, facidx, valuep, len);
+}
+
+void VerilatedReplay::loadOutput(fstHandle facidx, const unsigned char* valuep, uint32_t len) {
+    loadData(ReplayData::ReplayType::Output, facidx, valuep, len);
+}
+
+void VerilatedReplay::loadData(uint64_t time, fstHandle facidx,
+                               const unsigned char* valuep, uint32_t len) {
+    // TODO -- move to method and call at the very end too
+    if (m_preloadTime != time) {
+        addPreloadTime();
+        m_preloadTime = time;
+    }
+
+    if (m_outputHandles.empty() || m_inputHandles.find(facidx) != m_inputHandles.end()) {
+        loadInput(facidx, valuep, len);
+    } else {
+        loadOutput(facidx, valuep, len);
+    }
+}
+
 void VerilatedReplay::fstCb(uint64_t time, fstHandle facidx,
                             const unsigned char* valuep, uint32_t len) {
+    if (m_preloadData) {
+        loadData(time, facidx, valuep, len);
+        return;
+    }
+
     // Watch for new time steps and eval before we start working on the new time
     if (m_time != time) {
         eval();
@@ -123,6 +215,8 @@ void VerilatedReplay::fstCb(uint64_t time, fstHandle facidx,
 }
 
 void VerilatedReplay::copyValue(unsigned char* to, const unsigned char* valuep, uint32_t len) {
+    // TODO -- is len always right, or should we use strlen() or something?
+    // TODO -- handle values other than 0/1, what can show up here?
     vluint8_t byte = 0;
     for (size_t bit = 0; bit < len; ++bit) {
         char value = valuep[len - 1 - bit];
@@ -136,8 +230,6 @@ void VerilatedReplay::copyValue(unsigned char* to, const unsigned char* valuep, 
 }
 
 void VerilatedReplay::handleInput(fstHandle facidx, const unsigned char* valuep, uint32_t len) {
-    // TODO -- is len always right, or should we use strlen() or something?
-    // TODO -- handle values other than 0/1, what can show up here?
     vluint8_t* signal = m_inputHandles[facidx].signal;
     copyValue(signal, valuep, len);
 }
@@ -184,11 +276,13 @@ void VerilatedReplay::createMod() {
     m_modp = new VM_PREFIX;
     // TODO -- make VerilatedModule destructor virtual so we can delete from the base class?
 #if VM_TRACE
-    Verilated::traceEverOn(true);
-    m_tfp = new VerilatedFstC;
-    m_modp->trace(m_tfp, 99);
-    // TODO -- command line parameter
-    m_tfp->open("replay.fst");
+    if (m_doTrace) {
+        Verilated::traceEverOn(true);
+        m_tfp = new VerilatedFstC;
+        m_modp->trace(m_tfp, 99);
+        // TODO -- command line parameter
+        m_tfp->open("replay.fst");
+    }
 #endif  // VM_TRACE
 }
 

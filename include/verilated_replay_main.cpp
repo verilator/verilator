@@ -43,6 +43,9 @@ int main(int argc, char** argv) {
     VL_PRINTF("FST = %s\n", fstFilename.c_str());
 
     VerilatedReplay replay(fstFilename, simTime);
+    // TODO -- again, arg parsing
+    replay.preloadData(true);
+    replay.doTrace(false);
 
     if (replay.init()) exit(-1);
 
