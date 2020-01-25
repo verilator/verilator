@@ -25,6 +25,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix VPI scope naming for public modules. [Nandu Raj]
 
+****  Fix FST tracing of enums inside structs. [fsiegle]
+
 
 * Verilator 4.026 2020-01-11
 

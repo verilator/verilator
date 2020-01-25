@@ -224,7 +224,7 @@ private:
                 else m_traValuep = new AstVarRef(nodep->fileline(), nodep, false);
                 {
                     // Recurse into data type of the signal; the visitors will call addTraceDecl()
-                    iterate(varp->dtypeSkipRefp());
+                    iterate(varp->dtypep()->skipRefToEnump());
                 }
                 // Cleanup
                 if (m_traValuep) VL_DO_CLEAR(m_traValuep->deleteTree(), m_traValuep = NULL);
@@ -237,12 +237,12 @@ private:
     // VISITORS - Data types when tracing
     virtual void visit(AstConstDType* nodep) VL_OVERRIDE {
         if (m_traVscp) {
-            iterate(nodep->subDTypep()->skipRefp());
+            iterate(nodep->subDTypep()->skipRefToEnump());
         }
     }
     virtual void visit(AstRefDType* nodep) VL_OVERRIDE {
         if (m_traVscp) {
-            iterate(nodep->subDTypep()->skipRefp());
+            iterate(nodep->subDTypep()->skipRefToEnump());
         }
     }
     virtual void visit(AstUnpackArrayDType* nodep) VL_OVERRIDE {
@@ -250,18 +250,18 @@ private:
         if (m_traVscp) {
             if (static_cast<int>(nodep->arrayUnpackedElements()) > v3Global.opt.traceMaxArray()) {
                 addIgnore("Wide memory > --trace-max-array ents");
-            } else if (VN_IS(nodep->subDTypep()->skipRefp(), BasicDType)  // Nothing lower than this array
-                       && m_traVscp->dtypep()->skipRefp() == nodep) {  // Nothing above this array
+            } else if (VN_IS(nodep->subDTypep()->skipRefToEnump(), BasicDType)  // Nothing lower than this array
+                       && m_traVscp->dtypep()->skipRefToEnump() == nodep) {  // Nothing above this array
                 // Simple 1-D array, use existing V3EmitC runtime loop rather than unrolling
                 // This will put "(index)" at end of signal name for us
-                if (m_traVscp->dtypep()->skipRefp()->isString()) {
+                if (m_traVscp->dtypep()->skipRefToEnump()->isString()) {
                     addIgnore("Unsupported: strings");
                 } else {
                     addTraceDecl(nodep->declRange(), 0);
                 }
             } else {
                 // Unroll now, as have no other method to get right signal names
-                AstNodeDType* subtypep = nodep->subDTypep()->skipRefp();
+                AstNodeDType* subtypep = nodep->subDTypep()->skipRefToEnump();
                 for (int i=nodep->lsb(); i<=nodep->msb(); ++i) {
                     string oldShowname = m_traShowname;
                     AstNode* oldValuep = m_traValuep;
@@ -271,6 +271,7 @@ private:
                                                       m_traValuep->cloneTree(true),
                                                       i - nodep->lsb());
 
+                        m_traValuep->dtypep(subtypep);
                         iterate(subtypep);
                         VL_DO_CLEAR(m_traValuep->deleteTree(), m_traValuep = NULL);
                     }
@@ -288,7 +289,7 @@ private:
                 // a much faster way to trace
                 addTraceDecl(VNumRange(), nodep->width());
             } else {
-                AstNodeDType* subtypep = nodep->subDTypep()->skipRefp();
+                AstNodeDType* subtypep = nodep->subDTypep()->skipRefToEnump();
                 for (int i=nodep->lsb(); i<=nodep->msb(); ++i) {
                     string oldShowname = m_traShowname;
                     AstNode* oldValuep = m_traValuep;
@@ -297,6 +298,7 @@ private:
                         m_traValuep = new AstSel(nodep->fileline(), m_traValuep->cloneTree(true),
                                                  (i - nodep->lsb())*subtypep->width(),
                                                  subtypep->width());
+                        m_traValuep->dtypep(subtypep);
                         iterate(subtypep);
                         VL_DO_CLEAR(m_traValuep->deleteTree(), m_traValuep = NULL);
                     }
@@ -319,7 +321,7 @@ private:
                 } else {
                     for (AstMemberDType* itemp = nodep->membersp();
                          itemp; itemp=VN_CAST(itemp->nextp(), MemberDType)) {
-                        AstNodeDType* subtypep = itemp->subDTypep()->skipRefp();
+                        AstNodeDType* subtypep = itemp->subDTypep()->skipRefToEnump();
                         string oldShowname = m_traShowname;
                         AstNode* oldValuep = m_traValuep;
                         {
@@ -328,6 +330,7 @@ private:
                                 m_traValuep = new AstSel(nodep->fileline(),
                                                          m_traValuep->cloneTree(true),
                                                          itemp->lsb(), subtypep->width());
+                                m_traValuep->dtypep(subtypep);
                                 iterate(subtypep);
                                 VL_DO_CLEAR(m_traValuep->deleteTree(), m_traValuep = NULL);
                             } else {  // Else union, replicate fields
@@ -349,6 +352,9 @@ private:
                 addTraceDecl(VNumRange(), 0);
             }
         }
+    }
+    virtual void visit(AstEnumDType* nodep) VL_OVERRIDE {
+        iterate(nodep->skipRefp());
     }
     virtual void visit(AstNodeDType* nodep) VL_OVERRIDE {
         // Note more specific dtypes above
