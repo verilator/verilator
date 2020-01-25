@@ -1483,6 +1483,7 @@ class EmitCImp : EmitCStmts {
     void emitSavableImp(AstNodeModule* modp);
     void emitTextSection(AstType type);
     // High level
+    void emitImpTop(AstNodeModule* modp);
     void emitImp(AstNodeModule* modp);
     void emitSettleLoop(const std::string& eval_call, bool initial);
     void emitWrapEval(AstNodeModule* modp);
@@ -2560,12 +2561,12 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
         if (v3Global.opt.savable()) v3error("--coverage and --savable not supported together");
     }
     if (v3Global.needHInlines()) {  // Set by V3EmitCInlines; should have been called before us
-        puts("#include \""+topClassName()+"__Inlines.h\"\n");
+        puts("#include \"" + topClassName() + "__Inlines.h\"\n");
     }
     if (v3Global.dpi()) {
         // do this before including our main .h file so that any references to
         // types defined in svdpi.h are available
-        puts("#include \""+ topClassName() +"__Dpi.h\"\n");
+        puts("#include \"" + topClassName() + "__Dpi.h\"\n");
     }
     puts("\n");
 
@@ -2768,9 +2769,9 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
 //----------------------------------------------------------------------
 
-void EmitCImp::emitImp(AstNodeModule* modp) {
+void EmitCImp::emitImpTop(AstNodeModule* fileModp) {
     puts("\n");
-    puts("#include \"" + prefixNameProtect(modp) + ".h\"\n");
+    puts("#include \"" + prefixNameProtect(fileModp) + ".h\"\n");
     puts("#include \"" + symClassName() + ".h\"\n");
 
     if (v3Global.dpi()) {
@@ -2780,18 +2781,14 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
 
     puts("\n");
     emitTextSection(AstType::atScImpHdr);
+}
 
-    if (m_slow && splitFilenum()==0) {
+void EmitCImp::emitImp(AstNodeModule* modp) {
+    if (m_slow) {
         puts("\n//--------------------\n");
         puts("// STATIC VARIABLES\n\n");
         emitVarList(modp->stmtsp(), EVL_CLASS_ALL, prefixNameProtect(modp));
-    }
 
-    if (m_fast && splitFilenum()==0) {
-        emitTextSection(AstType::atScImp);
-    }
-
-    if (m_slow && splitFilenum()==0) {
         puts("\n//--------------------\n");
         emitCtorImp(modp);
         emitConfigureImp(modp);
@@ -2800,7 +2797,9 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
         emitCoverageImp(modp);
     }
 
-    if (m_fast && splitFilenum()==0) {
+    if (m_fast) {
+        emitTextSection(AstType::atScImp);
+
         if (modp->isTop()) {
             puts("\n//--------------------\n");
             puts("\n");
@@ -2811,23 +2810,30 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
     // Blocks
     puts("\n//--------------------\n");
     puts("// Internal Methods\n");
+    for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        if (AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
+            maybeSplit(modp);
+            mainDoFunc(funcp);
+        }
+    }
 }
 
 //######################################################################
 
-void EmitCImp::maybeSplit(AstNodeModule* modp) {
+void EmitCImp::maybeSplit(AstNodeModule* fileModp) {
     if (splitNeeded()) {
         // Close old file
         VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
         // Open a new file
-        m_ofp = newOutCFile(modp, !m_fast, true/*source*/, splitFilenumInc());
-        emitImp(modp);
+        m_ofp = newOutCFile(fileModp, !m_fast, true/*source*/, splitFilenumInc());
+        emitImpTop(fileModp);
     }
     splitSizeInc(10);  // Even blank functions get a file with a low csplit
 }
 
 void EmitCImp::main(AstNodeModule* modp, bool slow, bool fast) {
     // Output a module
+    AstNodeModule* fileModp = modp;  // Filename constructed using this module
     m_modp = modp;
     m_slow = slow;
     m_fast = fast;
@@ -2835,20 +2841,14 @@ void EmitCImp::main(AstNodeModule* modp, bool slow, bool fast) {
     UINFO(5, "  Emitting " << prefixNameProtect(modp) << endl);
 
     if (m_fast) {
-        m_ofp = newOutCFile(modp, !m_fast, false/*source*/);
+        m_ofp = newOutCFile(fileModp, !m_fast, false/*source*/);
         emitInt(modp);
         VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
     }
 
-    m_ofp = newOutCFile(modp, !m_fast, true/*source*/);
+    m_ofp = newOutCFile(fileModp, !m_fast, true/*source*/);
+    emitImpTop(fileModp);
     emitImp(modp);
-
-    for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-        if (AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
-            maybeSplit(modp);
-            mainDoFunc(funcp);
-        }
-    }
 
     if (fast && modp->isTop() && v3Global.opt.mtasks()) {
         // Make a final pass and emit function definitions for the mtasks
