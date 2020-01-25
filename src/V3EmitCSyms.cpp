@@ -422,7 +422,8 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n// SUBCELL STATE\n");
     for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
-        AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
+        AstScope* scopep = it->first;
+        AstNodeModule* modp = it->second;
         if (modp->isTop()) {
             ofp()->printf("%-30s ", (modClassName(modp)+"*").c_str());
             puts(protectIf(scopep->nameDotless()+"p", scopep->protect())+";\n");
@@ -525,9 +526,9 @@ void EmitCSyms::emitSymImpPreamble() {
 
     // Includes
     puts("#include \""+symClassName()+".h\"\n");
-    for (AstNodeModule* nodep = v3Global.rootp()->modulesp();
-         nodep; nodep=VN_CAST(nodep->nextp(), NodeModule)) {
-        puts("#include \""+modClassName(nodep)+".h\"\n");
+    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
+         nodep = VN_CAST(nodep->nextp(), NodeModule)) {
+        puts("#include \"" + modClassName(nodep) + ".h\"\n");
     }
 }
 
@@ -583,13 +584,14 @@ void EmitCSyms::emitSymImp() {
     }
     puts("    , __Vm_didInit(false)\n");
     puts("    // Setup submodule names\n");
-    char comma=',';
+    char comma = ',';
     for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
-        AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
+        AstScope* scopep = it->first;
+        AstNodeModule* modp = it->second;
         if (modp->isTop()) {
         } else {
-            puts(string("    ")+comma+" "+protect(scopep->nameDotless()));
-            puts("(Verilated::catName(topp->name(),");
+            puts(string("    ") + comma + " " + protect(scopep->nameDotless()));
+            puts("(Verilated::catName(topp->name(), ");
             // The "." is added by catName
             putsQuoted(protectWordsIf(scopep->prettyName(), scopep->protect()));
             puts("))\n");
@@ -603,7 +605,8 @@ void EmitCSyms::emitSymImp() {
     puts("TOPp = topp;\n");
     puts("// Setup each module's pointers to their submodules\n");
     for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
-        AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
+        AstScope* scopep = it->first;
+        AstNodeModule* modp = it->second;
         if (!modp->isTop()) {
             checkSplit(false);
             string arrow = scopep->name();
@@ -612,10 +615,9 @@ void EmitCSyms::emitSymImp() {
                 arrow.replace(pos, 1, "->");
             }
             if (arrow.substr(0, 5) == "TOP->") arrow.replace(0, 5, "TOPp->");
-            string arrowProt = protectWordsIf(arrow, scopep->protect());
-            ofp()->printf("%-30s ", arrowProt.c_str());
+            ofp()->puts(protectWordsIf(arrow, scopep->protect()));
             puts(" = &");
-            puts(protectIf(scopep->nameDotless(), scopep->protect())+";\n");
+            puts(protectIf(scopep->nameDotless(), scopep->protect()) + ";\n");
             ++m_numStmts;
         }
     }
@@ -623,7 +625,8 @@ void EmitCSyms::emitSymImp() {
     puts("// Setup each module's pointer back to symbol table (for public functions)\n");
     puts("TOPp->"+protect("__Vconfigure")+"(this, true);\n");
     for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
-        AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
+        AstScope* scopep = it->first;
+        AstNodeModule* modp = it->second;
         if (!modp->isTop()) {
             checkSplit(false);
             // first is used by AstCoverDecl's call to __vlCoverInsert
