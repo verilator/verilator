@@ -362,8 +362,11 @@ sub write_header {
     my $type = "None";
     my $base = "None";
 
-    my $ifile = "$Opt_I[0]/V3AstNodes.h";
+    my $in_filename = "V3AstNodes.h";
+    my $ifile = "$Opt_I[0]/$in_filename";
     my $ifh = IO::File->new($ifile) or die "%Error: $! $ifile,";
+
+    $fh->print("#line 1 \"../$in_filename\"\n");
 
     while (defined (my $line = $ifh->getline())) {
         # Drop expanded macro definitions - but keep empty line so compiler
