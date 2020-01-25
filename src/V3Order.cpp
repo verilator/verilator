@@ -1036,6 +1036,7 @@ private:
     }
     virtual void visit(AstVarScope* nodep) VL_OVERRIDE {
         // Create links to all input signals
+        UASSERT_OBJ(m_modp, nodep, "Scope not under module");
         if (m_modp->isTop() && nodep->varp()->isNonOutput()) {
             OrderVarVertex* varVxp = newVarUserVertex(nodep, WV_STD);
             new OrderEdge(&m_graph, m_inputsVxp, varVxp, WEIGHT_INPUT);

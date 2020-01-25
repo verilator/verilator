@@ -420,7 +420,7 @@ private:
         }
     }
     virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
-        //UINFO(4,"  CCALL "<<nodep<<endl);
+        //UINFO(4,"  CFUNC "<<nodep<<endl);
         if (!m_tracingCall && !nodep->entryPoint()) return;
         m_tracingCall = false;
         if (nodep->dpiImport() && !nodep->pure()) {

@@ -136,6 +136,7 @@ public:
     // CONSTRUCTORS
     TristateGraph() { clear(); }
     virtual ~TristateGraph() { clear(); }
+    VL_UNCOPYABLE(TristateGraph);
 
 private:
     // METHODS
@@ -212,6 +213,7 @@ private:
 
 public:
     // METHODS
+    bool empty() const { return m_graph.empty(); }
     void clear() {
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
             TristateVertex* vvertexp = static_cast<TristateVertex*>(itp);
@@ -1311,7 +1313,8 @@ class TristateVisitor : public TristateBaseVisitor {
         bool origGraphing = m_graphing;
         int origUnique = m_unique;
         VarMap origLhsmap = m_lhsmap;
-        TristateGraph origTgraph = m_tgraph;
+        // Not preserved, needs pointer instead: TristateGraph origTgraph = m_tgraph;
+        UASSERT_OBJ(m_tgraph.empty(), nodep, "Unsupported: NodeModule under NodeModule");
         {
             // Clear state
             m_graphing = false;
@@ -1337,7 +1340,7 @@ class TristateVisitor : public TristateBaseVisitor {
         m_graphing = origGraphing;
         m_unique = origUnique;
         m_lhsmap = origLhsmap;
-        m_tgraph = origTgraph;
+        m_tgraph.clear();  // Recursion not supported
     }
 
     virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {

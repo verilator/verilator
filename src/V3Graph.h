@@ -104,6 +104,7 @@ public:
     // METHODS
     void clear();  // Empty it of all vertices/edges, as if making a new object
     void clearColors();
+    bool empty() const { return m_vertices.empty(); }
 
     V3GraphVertex* verticesBeginp() const { return m_vertices.begin(); }
 

@@ -400,7 +400,7 @@ public:
     VSymEnt* getScopeSym(AstScope* nodep) {
         NameScopeSymMap::iterator it = m_nameScopeSymMap.find(nodep->name());
         UASSERT_OBJ(it != m_nameScopeSymMap.end(), nodep,
-                    "Scope never assigned a symbol entry?");
+                    "Scope never assigned a symbol entry '" << nodep->name() << "'");
         return it->second;
     }
     void implicitOkAdd(AstNodeModule* nodep, const string& varname) {
