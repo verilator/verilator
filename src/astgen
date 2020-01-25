@@ -31,7 +31,7 @@ if (! GetOptions(
 read_types("$Opt_I[0]/V3Ast.h");
 read_types("$Opt_I[0]/V3AstNodes.h");
 foreach my $type (sort (keys %Classes)) {
-    # Chekc all leafs are not AstNode* and non-leave are AstNode*
+    # Check all leaves are not AstNode* and non-leaves are AstNode*
     my @children = children_of($type);
     if ($type =~ /^Node/) {
         @children  || die "Error: Final AstNode subclasses must not be named AstNode*: Ast$type"
@@ -50,6 +50,7 @@ if ($opt_classes) {
     write_visitor("V3Ast__gen_visitor.h");
     write_impl("V3Ast__gen_impl.h");
     write_types("V3Ast__gen_types.h");
+    write_header("V3AstNodes__gen.h");
 }
 foreach my $cpt (@Opt_Cpt) {
     Cpt::process(in_filename=>"$Opt_I[0]/${cpt}.cpp", out_filename=>"${cpt}__gen.cpp");
@@ -346,12 +347,43 @@ sub write_types {
     printf $fh "    };\n";
 
     printf $fh "    const char* ascii() const {\n";
-    printf $fh "        const char* const names[_ENUM_END + 1] = {\n";
+    printf $fh "        static const char* const names[_ENUM_END + 1] = {\n";
     write_type_enum($fh, "Node", 0, {}, "concrete-ascii", 3);
     printf $fh "            \"_ENUM_END\"\n";
     printf $fh "        };\n";
     printf $fh "        return names[m_e];\n";
     printf $fh "    };\n";
+    $fh->close();
+}
+
+sub write_header {
+    my $fh = open_file(@_);
+
+    my $type = "None";
+    my $base = "None";
+
+    my $ifile = "$Opt_I[0]/V3AstNodes.h";
+    my $ifh = IO::File->new($ifile) or die "%Error: $! $ifile,";
+
+    while (defined (my $line = $ifh->getline())) {
+        # Drop expanded macro definitions - but keep empty line so compiler
+        # message locations are accurate
+        $line =~ s/^\s*#(define|undef)\s+ASTGEN_.*$//;
+
+        # Track current node type and base class
+        if ($line =~ /^\s*class\s*Ast(\S+)\s*:\s*(public)?\s*(AstNode\S*)/) {
+          $type = $1;
+          $base = $3;
+        }
+
+        # Substitute macros
+        $line =~ s/\bASTGEN_SUPER\s*\(/$base(AstType::at$type, /;
+
+        # Emit the line
+        print $fh $line;
+    }
+
+    $ifh->close();
     $fh->close();
 }
 

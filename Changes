@@ -9,6 +9,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    Add -match to lint_off to waive warnings. [Philipp Wagner]
 
+***   Verilation speed improvements, #2133, #2138. [Geza Lore]
+
 ***   Support libgoogle-perftools-dev's libtcmalloc if available. #2137. [Geza Lore]
 
 ***   Support $readmem/$writemem with assoc arrarys. Closes #2100. [agrobman]

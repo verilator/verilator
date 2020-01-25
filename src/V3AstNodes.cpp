@@ -168,7 +168,7 @@ AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
 }
 
 AstExecGraph::AstExecGraph(FileLine* fileline)
-    : AstNode(fileline) {
+    : AstNode(AstType::atExecGraph, fileline) {
     m_depGraphp = new V3Graph;
 }
 AstExecGraph::~AstExecGraph() {
