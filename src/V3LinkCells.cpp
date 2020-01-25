@@ -192,40 +192,44 @@ private:
     }
     virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         // Module: Pick up modnames, so we can resolve cells later
-        m_modp = nodep;
-        UINFO(2,"Link Module: "<<nodep<<endl);
-        if (nodep->fileline()->filebasenameNoExt() != nodep->prettyName()
-            && !v3Global.opt.isLibraryFile(nodep->fileline()->filename())
-            && !nodep->recursiveClone()
-            && !nodep->internal()) {
-            // We only complain once per file, otherwise library-like files
-            // have a huge mess of warnings
-            if (m_declfnWarned.find(nodep->fileline()->filename()) == m_declfnWarned.end()) {
-                m_declfnWarned.insert(nodep->fileline()->filename());
-                nodep->v3warn(DECLFILENAME, "Filename '"<<nodep->fileline()->filebasenameNoExt()
-                              <<"' does not match "<<nodep->typeName()
-                              <<" name: "<<nodep->prettyNameQ());
+        AstNodeModule* oldModp = m_modp;
+        {
+            m_modp = nodep;
+            UINFO(2, "Link Module: " << nodep << endl);
+            if (nodep->fileline()->filebasenameNoExt() != nodep->prettyName()
+                && !v3Global.opt.isLibraryFile(nodep->fileline()->filename())
+                && !nodep->recursiveClone() && !nodep->internal()) {
+                // We only complain once per file, otherwise library-like files
+                // have a huge mess of warnings
+                if (m_declfnWarned.find(nodep->fileline()->filename()) == m_declfnWarned.end()) {
+                    m_declfnWarned.insert(nodep->fileline()->filename());
+                    nodep->v3warn(DECLFILENAME, "Filename '"
+                                  << nodep->fileline()->filebasenameNoExt()
+                                  << "' does not match " << nodep->typeName()
+                                  << " name: " << nodep->prettyNameQ());
+                }
             }
+            if (VN_IS(nodep, Iface) || VN_IS(nodep, Package)) {
+                nodep->inLibrary(true);  // Interfaces can't be at top, unless asked
+            }
+            bool topMatch = (v3Global.opt.topModule() == nodep->prettyName());
+            if (topMatch) {
+                m_topVertexp = vertex(nodep);
+                UINFO(2, "Link --top-module: " << nodep << endl);
+                nodep->inLibrary(false);  // Safer to make sure it doesn't disappear
+            }
+            if (v3Global.opt.topModule() == "" ? nodep->inLibrary()  // Library cells are lower
+                : !topMatch) {  // Any non-specified module is lower
+                // Put under a fake vertex so that the graph ranking won't indicate
+                // this is a top level module
+                if (!m_libVertexp) m_libVertexp = new LibraryVertex(&m_graph);
+                new V3GraphEdge(&m_graph, m_libVertexp, vertex(nodep), 1, false);
+            }
+            // Note AstBind also has iteration on cells
+            iterateChildren(nodep);
+            nodep->checkTree();
         }
-        if (VN_IS(nodep, Iface) || VN_IS(nodep, Package)) nodep->inLibrary(true);  // Interfaces can't be at top, unless asked
-        bool topMatch = (v3Global.opt.topModule()==nodep->prettyName());
-        if (topMatch) {
-            m_topVertexp = vertex(nodep);
-            UINFO(2,"Link --top-module: "<<nodep<<endl);
-            nodep->inLibrary(false);  // Safer to make sure it doesn't disappear
-        }
-        if (v3Global.opt.topModule()==""
-            ? nodep->inLibrary()  // Library cells are lower
-            : !topMatch) {  // Any non-specified module is lower
-            // Put under a fake vertex so that the graph ranking won't indicate
-            // this is a top level module
-            if (!m_libVertexp) m_libVertexp = new LibraryVertex(&m_graph);
-            new V3GraphEdge(&m_graph, m_libVertexp, vertex(nodep), 1, false);
-        }
-        // Note AstBind also has iteration on cells
-        iterateChildren(nodep);
-        nodep->checkTree();
-        m_modp = NULL;
+        m_modp = oldModp;
     }
 
     virtual void visit(AstIfaceRefDType* nodep) VL_OVERRIDE {
