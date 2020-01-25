@@ -79,8 +79,10 @@ public:
     // cppcheck-suppress uninitVar  // responsibility of each subclass
     inline AstType() {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstType(en _e) : m_e(_e) {}
-    explicit inline AstType(int _e) : m_e(static_cast<en>(_e)) {}
+    inline AstType(en _e)
+        : m_e(_e) {}
+    explicit inline AstType(int _e)
+        : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
   };
   inline bool operator==(AstType lhs, AstType rhs) { return (lhs.m_e == rhs.m_e); }
@@ -112,9 +114,11 @@ public:
         };
         return names[m_e];
     };
-    inline AstNumeric() : m_e(UNSIGNED) {}
+    inline AstNumeric()
+        : m_e(UNSIGNED) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstNumeric(en _e) : m_e(_e) {}
+    inline AstNumeric(en _e)
+        : m_e(_e) {}
     // cppcheck-suppress noExplicitConstructor
     inline AstNumeric(VSignedState signst) {
         if (signst==signedst_UNSIGNED) m_e = UNSIGNED;
@@ -123,7 +127,8 @@ public:
     }
     static inline AstNumeric fromBool(bool isSigned) {  // Factory method
         return isSigned ? AstNumeric(SIGNED) : AstNumeric(UNSIGNED); }
-    explicit inline AstNumeric(int _e) : m_e(static_cast<en>(_e)) {}
+    explicit inline AstNumeric(int _e)
+        : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     inline bool isSigned() const { return m_e==SIGNED; }
     inline bool isNosign() const { return m_e==NOSIGN; }
@@ -151,10 +156,13 @@ public:
         ENUM_SIZE
     };
     enum en m_e;
-    inline AstPragmaType() : m_e(ILLEGAL) {}
+    inline AstPragmaType()
+        : m_e(ILLEGAL) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstPragmaType(en _e) : m_e(_e) {}
-    explicit inline AstPragmaType(int _e) : m_e(static_cast<en>(_e)) {}
+    inline AstPragmaType(en _e)
+        : m_e(_e) {}
+    explicit inline AstPragmaType(int _e)
+        : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
   };
   inline bool operator==(AstPragmaType lhs, AstPragmaType rhs) { return (lhs.m_e == rhs.m_e); }
@@ -175,10 +183,13 @@ public:
         TRACE_CHANGE_SUB
     };
     enum en m_e;
-    inline AstCFuncType() : m_e(FT_NORMAL) {}
+    inline AstCFuncType()
+        : m_e(FT_NORMAL) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstCFuncType(en _e) : m_e(_e) {}
-    explicit inline AstCFuncType(int _e) : m_e(static_cast<en>(_e)) {}
+    inline AstCFuncType(en _e)
+        : m_e(_e) {}
+    explicit inline AstCFuncType(int _e)
+        : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     // METHODS
     bool isTrace() const { return (m_e==TRACE_INIT || m_e==TRACE_INIT_SUB
@@ -268,10 +279,13 @@ public:
         }
         return false;
     }
-    inline VEdgeType() : m_e(ET_ILLEGAL) {}
+    inline VEdgeType()
+        : m_e(ET_ILLEGAL) {}
     // cppcheck-suppress noExplicitConstructor
-    inline VEdgeType(en _e) : m_e(_e) {}
-    explicit inline VEdgeType(int _e) : m_e(static_cast<en>(_e)) {}
+    inline VEdgeType(en _e)
+        : m_e(_e) {}
+    explicit inline VEdgeType(int _e)
+        : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
   };
   inline bool operator==(VEdgeType lhs, VEdgeType rhs) { return (lhs.m_e == rhs.m_e); }
@@ -337,10 +351,13 @@ public:
         };
         return names[m_e];
     };
-    inline AstAttrType() : m_e(ILLEGAL) {}
+    inline AstAttrType()
+        : m_e(ILLEGAL) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstAttrType(en _e) : m_e(_e) {}
-    explicit inline AstAttrType(int _e) : m_e(static_cast<en>(_e)) {}
+    inline AstAttrType(en _e)
+        : m_e(_e) {}
+    explicit inline AstAttrType(int _e)
+        : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
   };
   inline bool operator==(AstAttrType lhs, AstAttrType rhs) { return (lhs.m_e == rhs.m_e); }
@@ -397,10 +414,13 @@ public:
         UASSERT(0==strcmp(AstBasicDTypeKwd(_ENUM_MAX).ascii(), " MAX"), "SelfTest: Enum mismatch");
         UASSERT(0==strcmp(AstBasicDTypeKwd(_ENUM_MAX).dpiType(), " MAX"), "SelfTest: Enum mismatch");
     }
-    inline AstBasicDTypeKwd() : m_e(UNKNOWN) {}
+    inline AstBasicDTypeKwd()
+        : m_e(UNKNOWN) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstBasicDTypeKwd(en _e) : m_e(_e) {}
-    explicit inline AstBasicDTypeKwd(int _e) : m_e(static_cast<en>(_e)) {}
+    inline AstBasicDTypeKwd(en _e)
+        : m_e(_e) {}
+    explicit inline AstBasicDTypeKwd(int _e)
+        : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     int width() const {
         switch (m_e) {
@@ -487,10 +507,13 @@ public:
         CONSTREF
     };
     enum en m_e;
-    inline VDirection() : m_e(NONE) {}
+    inline VDirection()
+        : m_e(NONE) {}
     // cppcheck-suppress noExplicitConstructor
-    inline VDirection(en _e) : m_e(_e) {}
-    explicit inline VDirection(int _e) : m_e(static_cast<en>(_e)) {}
+    inline VDirection(en _e)
+        : m_e(_e) {}
+    explicit inline VDirection(int _e)
+        : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[] = {
@@ -533,10 +556,13 @@ public:
     };
     enum en m_e;
     // CONSTRUCTOR - note defaults to *UNKNOWN*
-    inline VBoolOrUnknown() : m_e(BU_UNKNOWN) {}
+    inline VBoolOrUnknown()
+        : m_e(BU_UNKNOWN) {}
     // cppcheck-suppress noExplicitConstructor
-    inline VBoolOrUnknown(en _e) : m_e(_e) {}
-    explicit inline VBoolOrUnknown(int _e) : m_e(static_cast<en>(_e)) {}
+    inline VBoolOrUnknown(en _e)
+        : m_e(_e) {}
+    explicit inline VBoolOrUnknown(int _e)
+        : m_e(static_cast<en>(_e)) {}
     const char* ascii() const {
         static const char* const names[] = {
             "FALSE", "TRUE", "UNK"};
@@ -576,10 +602,13 @@ public:
         IFACEREF        // Used to link Interfaces between modules
     };
     enum en m_e;
-    inline AstVarType() : m_e(UNKNOWN) {}
+    inline AstVarType()
+        : m_e(UNKNOWN) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstVarType(en _e) : m_e(_e) {}
-    explicit inline AstVarType(int _e) : m_e(static_cast<en>(_e)) {}
+    inline AstVarType(en _e)
+        : m_e(_e) {}
+    explicit inline AstVarType(int _e)
+        : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[] = {
@@ -631,10 +660,13 @@ public:
     };
     enum en m_e;
     // CONSTRUCTOR - note defaults to *UNKNOWN*
-    inline VBranchPred() : m_e(BP_UNKNOWN) {}
+    inline VBranchPred()
+        : m_e(BP_UNKNOWN) {}
     // cppcheck-suppress noExplicitConstructor
-    inline VBranchPred(en _e) : m_e(_e) {}
-    explicit inline VBranchPred(int _e) : m_e(static_cast<en>(_e)) {}
+    inline VBranchPred(en _e)
+        : m_e(_e) {}
+    explicit inline VBranchPred(int _e)
+        : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     bool unknown() const { return m_e == BP_UNKNOWN; }
     bool likely() const { return m_e == BP_LIKELY; }
@@ -666,10 +698,13 @@ public:
     };
     enum en m_e;
     // CONSTRUCTOR - note defaults to *UNKNOWN*
-    inline VVarAttrClocker() : m_e(CLOCKER_UNKNOWN) {}
+    inline VVarAttrClocker()
+        : m_e(CLOCKER_UNKNOWN) {}
     // cppcheck-suppress noExplicitConstructor
-    inline VVarAttrClocker(en _e) : m_e(_e) {}
-    explicit inline VVarAttrClocker(int _e) : m_e(static_cast<en>(_e)) {}
+    inline VVarAttrClocker(en _e)
+        : m_e(_e) {}
+    explicit inline VVarAttrClocker(int _e)
+        : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     bool unknown() const { return m_e==CLOCKER_UNKNOWN; }
     VVarAttrClocker invert() const {
@@ -698,10 +733,13 @@ public:
         ALWAYS_COMB
     };
     enum en m_e;
-    inline VAlwaysKwd() : m_e(ALWAYS) {}
+    inline VAlwaysKwd()
+        : m_e(ALWAYS) {}
     // cppcheck-suppress noExplicitConstructor
-    inline VAlwaysKwd(en _e) : m_e(_e) {}
-    explicit inline VAlwaysKwd(int _e) : m_e(static_cast<en>(_e)) {}
+    inline VAlwaysKwd(en _e)
+        : m_e(_e) {}
+    explicit inline VAlwaysKwd(int _e)
+        : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[] = {
@@ -723,10 +761,13 @@ public:
         CT_CASEINSIDE
     };
     enum en m_e;
-    inline VCaseType() : m_e(CT_CASE) {}
+    inline VCaseType()
+        : m_e(CT_CASE) {}
     // cppcheck-suppress noExplicitConstructor
-    inline VCaseType(en _e) : m_e(_e) {}
-    explicit inline VCaseType(int _e) : m_e(static_cast<en>(_e)) {}
+    inline VCaseType(en _e)
+        : m_e(_e) {}
+    explicit inline VCaseType(int _e)
+        : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
   };
   inline bool operator==(VCaseType lhs, VCaseType rhs) { return (lhs.m_e == rhs.m_e); }
@@ -746,10 +787,13 @@ public:
         DT_FATAL
     };
     enum en m_e;
-    inline AstDisplayType() : m_e(DT_DISPLAY) {}
+    inline AstDisplayType()
+        : m_e(DT_DISPLAY) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstDisplayType(en _e) : m_e(_e) {}
-    explicit inline AstDisplayType(int _e) : m_e(static_cast<en>(_e)) {}
+    inline AstDisplayType(en _e)
+        : m_e(_e) {}
+    explicit inline AstDisplayType(int _e)
+        : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     bool addNewline() const { return m_e!=DT_WRITE; }
     bool needScopeTracking() const { return m_e!=DT_DISPLAY && m_e!=DT_WRITE; }
@@ -771,10 +815,13 @@ public:
         PX_TEXT         // Unknown ID component
     };
     enum en m_e;
-    inline VParseRefExp() : m_e(PX_NONE) {}
+    inline VParseRefExp()
+        : m_e(PX_NONE) {}
     // cppcheck-suppress noExplicitConstructor
-    inline VParseRefExp(en _e) : m_e(_e) {}
-    explicit inline VParseRefExp(int _e) : m_e(static_cast<en>(_e)) {}
+    inline VParseRefExp(en _e)
+        : m_e(_e) {}
+    explicit inline VParseRefExp(int _e)
+        : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     const char* ascii() const {
         static const char* const names[] = {
@@ -816,7 +863,8 @@ public:
     }
     //
     class LeftRight {};
-    VNumRange() : m_hi(0), m_lo(0), mu_flags(0) {}
+    VNumRange()
+        : m_hi(0), m_lo(0), mu_flags(0) {}
     VNumRange(int hi, int lo, bool littleEndian)
         : m_hi(0), m_lo(0), mu_flags(0)
         { init(hi, lo, littleEndian); }
@@ -1215,9 +1263,10 @@ public:
 
 protected:
     // CONSTRUCTORS
-    AstNode(AstType t) : m_type(t) { init(); }
-    explicit AstNode(AstType t, FileLine* fileline)
-        : m_type(t) {init(); m_fileline = fileline; }
+    AstNode(AstType t)
+        : m_type(t) { init(); }
+    AstNode(AstType t, FileLine* fl)
+        : m_type(t) { init(); m_fileline = fl; }
     virtual AstNode* clone() = 0;  // Generally, cloneTree is what you want instead
     virtual void cloneRelink() {}
     void cloneRelinkTree();
@@ -1573,7 +1622,7 @@ inline void AstNRelinker::relink(AstNode* newp) { newp->AstNode::relink(this); }
 class AstNodeMath : public AstNode {
     // Math -- anything that's part of an expression tree
 public:
-    explicit AstNodeMath(AstType t, FileLine* fl)
+    AstNodeMath(AstType t, FileLine* fl)
         : AstNode(t, fl) {}
     ASTNODE_BASE_FUNCS(NodeMath)
     // METHODS
@@ -1590,7 +1639,7 @@ public:
 class AstNodeTermop : public AstNodeMath {
     // Terminal operator -- a operator with no "inputs"
 public:
-    explicit AstNodeTermop(AstType t, FileLine* fl)
+    AstNodeTermop(AstType t, FileLine* fl)
         : AstNodeMath(t, fl) {}
     ASTNODE_BASE_FUNCS(NodeTermop)
     // Know no children, and hot function, so skip iterator for speed
@@ -1742,7 +1791,7 @@ class AstNodeStmt : public AstNode {
     // Statement -- anything that's directly under a function
     bool m_statement;  // Really a statement (e.g. not a function with return)
 public:
-    explicit AstNodeStmt(AstType t, FileLine* fl, bool statement = true)
+    AstNodeStmt(AstType t, FileLine* fl, bool statement = true)
         : AstNode(t, fl)
         , m_statement(statement) {}
     ASTNODE_BASE_FUNCS(NodeStmt)
@@ -1836,7 +1885,8 @@ public:
 class AstNodeSenItem : public AstNode {
     // An AstSenItem or AstSenGate
 public:
-    explicit AstNodeSenItem(AstType t, FileLine* fl) : AstNode(t, fl) {}
+    AstNodeSenItem(AstType t, FileLine* fl)
+        : AstNode(t, fl) {}
     ASTNODE_BASE_FUNCS(NodeSenItem)
     virtual bool isClocked() const = 0;
     virtual bool isCombo() const = 0;
@@ -1925,7 +1975,8 @@ private:
     static int  s_uniqueNum;    // Unique number assigned to each dtype during creation for IEEE matching
 public:
     // CONSTRUCTORS
-    explicit AstNodeDType(AstType t, FileLine* fl) : AstNode(t, fl) {
+    AstNodeDType(AstType t, FileLine* fl)
+        : AstNode(t, fl) {
         m_width = 0; m_widthMin = 0; m_generic = false;
     }
     ASTNODE_BASE_FUNCS(NodeDType)
@@ -2036,7 +2087,8 @@ private:
     AstNodeDType* m_refDTypep;  // Elements of this type (after widthing)
     AstNode* rangenp() const { return op2p(); }  // op2 = Array(s) of variable
 public:
-    explicit AstNodeArrayDType(AstType t, FileLine* fl) : AstNodeDType(t, fl) {
+    AstNodeArrayDType(AstType t, FileLine* fl)
+        : AstNodeDType(t, fl) {
         m_refDTypep = NULL;
     }
     ASTNODE_BASE_FUNCS(NodeArrayDType)
@@ -2101,7 +2153,8 @@ public:
 class AstNodeStream : public AstNodeBiop {
     // Verilog {rhs{lhs}} - Note rhsp() is the slice size, not the lhsp()
 public:
-    AstNodeStream(AstType t, FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(t, fl, lhsp, rhsp) {
+    AstNodeStream(AstType t, FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : AstNodeBiop(t, fl, lhsp, rhsp) {
         if (lhsp->dtypep()) {
             dtypeSetLogicSized(lhsp->dtypep()->width(), AstNumeric::UNSIGNED);
         }
@@ -2292,7 +2345,8 @@ public:
 class AstNodeRange : public AstNode {
     // A range, sized or unsized
 public:
-    explicit AstNodeRange(AstType t, FileLine* fl) : AstNode(t, fl) { }
+    AstNodeRange(AstType t, FileLine* fl)
+        : AstNode(t, fl) { }
     ASTNODE_BASE_FUNCS(NodeRange)
 };
 

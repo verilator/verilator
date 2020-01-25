@@ -199,7 +199,7 @@ class AstAssocRange : public AstNodeRange {
     // Associative array range specification
     // Only for early parsing - becomes AstAssocDType
 public:
-    explicit AstAssocRange(FileLine* fl, AstNodeDType* dtp)
+    AstAssocRange(FileLine* fl, AstNodeDType* dtp)
         : ASTGEN_SUPER(fl) {
         setOp1p(dtp);
     }
@@ -227,7 +227,8 @@ public:
 class AstUnsizedRange : public AstNodeRange {
     // Unsized range specification, for open arrays
 public:
-    explicit AstUnsizedRange(FileLine* fl) : ASTGEN_SUPER(fl) { }
+    explicit AstUnsizedRange(FileLine* fl)
+        : ASTGEN_SUPER(fl) {}
     ASTNODE_NODE_FUNCS(UnsizedRange)
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual string emitVerilog() { return "[]"; }
@@ -238,7 +239,8 @@ public:
 class AstGatePin : public AstNodeMath {
     // Possibly expand a gate primitive input pin value to match the range of the gate primitive
 public:
-    AstGatePin(FileLine* fl, AstNode* lhsp, AstRange* rangep) : ASTGEN_SUPER(fl) {
+    AstGatePin(FileLine* fl, AstNode* lhsp, AstRange* rangep)
+        : ASTGEN_SUPER(fl) {
         setOp1p(lhsp); setOp2p(rangep);
     }
     ASTNODE_NODE_FUNCS(GatePin)
@@ -2321,8 +2323,8 @@ class AstGenerate : public AstNode {
     // Parents: MODULE
     // Children: modItems
 public:
-    AstGenerate(FileLine* fileline, AstNode* stmtsp)
-        : ASTGEN_SUPER(fileline) {
+    AstGenerate(FileLine* fl, AstNode* stmtsp)
+        : ASTGEN_SUPER(fl) {
         addNOp1p(stmtsp);
     }
     ASTNODE_NODE_FUNCS(Generate)
@@ -2534,7 +2536,8 @@ class AstSenGate : public AstNodeSenItem {
     // AND as applied to a sensitivity list and a gating expression
     // Performing this gating is optional; it may be removed by later optimizations
 public:
-    AstSenGate(FileLine* fl, AstSenItem* sensesp, AstNode* rhsp) : ASTGEN_SUPER(fl) {
+    AstSenGate(FileLine* fl, AstSenItem* sensesp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl) {
         dtypeSetLogicBool(); addOp1p(sensesp); setOp2p(rhsp);
     }
     ASTNODE_NODE_FUNCS(SenGate)
@@ -2629,8 +2632,8 @@ public:
 
 class AstAssign : public AstNodeAssign {
 public:
-    AstAssign(FileLine* fileline, AstNode* lhsp, AstNode* rhsp)
-        : ASTGEN_SUPER(fileline, lhsp, rhsp) {
+    AstAssign(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) {
         dtypeFrom(lhsp);
     }
     ASTNODE_NODE_FUNCS(Assign)
@@ -2642,8 +2645,8 @@ class AstAssignAlias : public AstNodeAssign {
     // Like AstAssignW, but a true bidirect interconnection alias
     // If both sides are wires, there's no LHS vs RHS,
 public:
-    AstAssignAlias(FileLine* fileline, AstVarRef* lhsp, AstVarRef* rhsp)
-        : ASTGEN_SUPER(fileline, lhsp, rhsp) {}
+    AstAssignAlias(FileLine* fl, AstVarRef* lhsp, AstVarRef* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(AssignAlias)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { V3ERROR_NA; return NULL; }
     virtual bool brokeLhsMustBeLvalue() const { return false; }
@@ -2651,8 +2654,8 @@ public:
 
 class AstAssignDly : public AstNodeAssign {
 public:
-    AstAssignDly(FileLine* fileline, AstNode* lhsp, AstNode* rhsp)
-        : ASTGEN_SUPER(fileline, lhsp, rhsp) {}
+    AstAssignDly(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(AssignDly)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssignDly(this->fileline(), lhsp, rhsp); }
     virtual bool isGateOptimizable() const { return false; }
@@ -2663,8 +2666,8 @@ public:
 class AstAssignW : public AstNodeAssign {
     // Like assign, but wire/assign's in verilog, the only setting of the specified variable
 public:
-    AstAssignW(FileLine* fileline, AstNode* lhsp, AstNode* rhsp)
-        : ASTGEN_SUPER(fileline, lhsp, rhsp) { }
+    AstAssignW(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { }
     ASTNODE_NODE_FUNCS(AssignW)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssignW(this->fileline(), lhsp, rhsp); }
     virtual bool brokeLhsMustBeLvalue() const { return true; }
@@ -2681,8 +2684,8 @@ public:
 class AstAssignVarScope : public AstNodeAssign {
     // Assign two VarScopes to each other
 public:
-    AstAssignVarScope(FileLine* fileline, AstNode* lhsp, AstNode* rhsp)
-        : ASTGEN_SUPER(fileline, lhsp, rhsp) {
+    AstAssignVarScope(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) {
         dtypeFrom(rhsp);
     }
     ASTNODE_NODE_FUNCS(AssignVarScope)
@@ -2694,8 +2697,8 @@ class AstPull : public AstNode {
 private:
     bool m_direction;
 public:
-    AstPull(FileLine* fileline, AstNode* lhsp, bool direction)
-        : ASTGEN_SUPER(fileline) {
+    AstPull(FileLine* fl, AstNode* lhsp, bool direction)
+        : ASTGEN_SUPER(fl) {
         setOp1p(lhsp);
         m_direction = direction;
     }
@@ -2710,8 +2713,8 @@ public:
 class AstAssignPre : public AstNodeAssign {
     // Like Assign, but predelayed assignment requiring special order handling
 public:
-    AstAssignPre(FileLine* fileline, AstNode* lhsp, AstNode* rhsp)
-        : ASTGEN_SUPER(fileline, lhsp, rhsp) {}
+    AstAssignPre(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(AssignPre)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssignPre(this->fileline(), lhsp, rhsp); }
     virtual bool brokeLhsMustBeLvalue() const { return true; }
@@ -2720,8 +2723,8 @@ public:
 class AstAssignPost : public AstNodeAssign {
     // Like Assign, but predelayed assignment requiring special order handling
 public:
-    AstAssignPost(FileLine* fileline, AstNode* lhsp, AstNode* rhsp)
-        : ASTGEN_SUPER(fileline, lhsp, rhsp) {}
+    AstAssignPost(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(AssignPost)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAssignPost(this->fileline(), lhsp, rhsp); }
     virtual bool brokeLhsMustBeLvalue() const { return true; }
@@ -2878,8 +2881,8 @@ class AstGenCase : public AstNodeCase {
     // exprp Children:  MATHs
     // casesp Children: CASEITEMs
 public:
-    AstGenCase(FileLine* fileline, AstNode* exprp, AstNode* casesp)
-        : ASTGEN_SUPER(fileline, exprp, casesp) {
+    AstGenCase(FileLine* fl, AstNode* exprp, AstNode* casesp)
+        : ASTGEN_SUPER(fl, exprp, casesp) {
     }
     ASTNODE_NODE_FUNCS(GenCase)
 };
@@ -2897,8 +2900,8 @@ private:
     bool        m_unique0Pragma;        // unique0 case
     bool        m_priorityPragma;       // priority case
 public:
-    AstCase(FileLine* fileline, VCaseType casex, AstNode* exprp, AstNode* casesp)
-        : ASTGEN_SUPER(fileline, exprp, casesp) {
+    AstCase(FileLine* fl, VCaseType casex, AstNode* exprp, AstNode* casesp)
+        : ASTGEN_SUPER(fl, exprp, casesp) {
         m_casex = casex;
         m_fullPragma = false; m_parallelPragma = false;
         m_uniquePragma = false; m_unique0Pragma = false; m_priorityPragma = false;
@@ -2932,8 +2935,8 @@ class AstCaseItem : public AstNode {
 private:
     bool m_ignoreOverlap;  // Default created by assertions; ignore overlaps
 public:
-    AstCaseItem(FileLine* fileline, AstNode* condsp, AstNode* bodysp)
-        : ASTGEN_SUPER(fileline) {
+    AstCaseItem(FileLine* fl, AstNode* condsp, AstNode* bodysp)
+        : ASTGEN_SUPER(fl) {
         addNOp1p(condsp); addNOp2p(bodysp);
         m_ignoreOverlap = false;
     }
@@ -2992,15 +2995,15 @@ class AstDisplay : public AstNodeStmt {
 private:
     AstDisplayType      m_displayType;
 public:
-    AstDisplay(FileLine* fileline, AstDisplayType dispType, const string& text, AstNode* filep, AstNode* exprsp)
-        : ASTGEN_SUPER(fileline) {
-        setOp1p(new AstSFormatF(fileline, text, true, exprsp));
+    AstDisplay(FileLine* fl, AstDisplayType dispType, const string& text, AstNode* filep, AstNode* exprsp)
+        : ASTGEN_SUPER(fl) {
+        setOp1p(new AstSFormatF(fl, text, true, exprsp));
         setNOp3p(filep);
         m_displayType = dispType;
     }
-    AstDisplay(FileLine* fileline, AstDisplayType dispType, AstNode* filep, AstNode* exprsp)
-        : ASTGEN_SUPER(fileline) {
-        setOp1p(new AstSFormatF(fileline, AstSFormatF::NoFormat(), exprsp));
+    AstDisplay(FileLine* fl, AstDisplayType dispType, AstNode* filep, AstNode* exprsp)
+        : ASTGEN_SUPER(fl) {
+        setOp1p(new AstSFormatF(fl, AstSFormatF::NoFormat(), exprsp));
         setNOp3p(filep);
         m_displayType = dispType;
     }
@@ -3033,9 +3036,9 @@ class AstElabDisplay : public AstNode {
 private:
     AstDisplayType m_displayType;
 public:
-    AstElabDisplay(FileLine* fileline, AstDisplayType dispType, AstNode* exprsp)
-        : ASTGEN_SUPER(fileline) {
-        setOp1p(new AstSFormatF(fileline, AstSFormatF::NoFormat(), exprsp));
+    AstElabDisplay(FileLine* fl, AstDisplayType dispType, AstNode* exprsp)
+        : ASTGEN_SUPER(fl) {
+        setOp1p(new AstSFormatF(fl, AstSFormatF::NoFormat(), exprsp));
         m_displayType = dispType;
     }
     ASTNODE_NODE_FUNCS(ElabDisplay)
@@ -3061,9 +3064,9 @@ class AstSFormat : public AstNodeStmt {
     // Children: string to load
     // Children: SFORMATF to generate print string
 public:
-    AstSFormat(FileLine* fileline, AstNode* lhsp, const string& text, AstNode* exprsp)
-        : ASTGEN_SUPER(fileline) {
-        setOp1p(new AstSFormatF(fileline, text, true, exprsp));
+    AstSFormat(FileLine* fl, AstNode* lhsp, const string& text, AstNode* exprsp)
+        : ASTGEN_SUPER(fl) {
+        setOp1p(new AstSFormatF(fl, text, true, exprsp));
         setOp3p(lhsp);
     }
     ASTNODE_NODE_FUNCS(SFormat)
@@ -3090,8 +3093,8 @@ class AstSysFuncAsTask : public AstNodeStmt {
     // Parents: stmtlist
     // Children: a system function
 public:
-    AstSysFuncAsTask(FileLine* fileline, AstNode* exprsp)
-        : ASTGEN_SUPER(fileline) { addNOp1p(exprsp); }
+    AstSysFuncAsTask(FileLine* fl, AstNode* exprsp)
+        : ASTGEN_SUPER(fl) { addNOp1p(exprsp); }
     ASTNODE_NODE_FUNCS(SysFuncAsTask)
     virtual string verilogKwd() const { return ""; }
     virtual bool isGateOptimizable() const { return true; }
@@ -3109,8 +3112,8 @@ class AstSysIgnore : public AstNodeStmt {
     // Parents: stmtlist
     // Children: varrefs or exprs
 public:
-    AstSysIgnore(FileLine* fileline, AstNode* exprsp)
-        : ASTGEN_SUPER(fileline) { addNOp1p(exprsp); }
+    AstSysIgnore(FileLine* fl, AstNode* exprsp)
+        : ASTGEN_SUPER(fl) { addNOp1p(exprsp); }
     ASTNODE_NODE_FUNCS(SysIgnore)
     virtual string verilogKwd() const { return "$ignored"; }
     virtual bool isGateOptimizable() const { return false; }  // Though deleted before opt
@@ -3126,8 +3129,8 @@ class AstFClose : public AstNodeStmt {
     // Parents: stmtlist
     // Children: file which must be a varref
 public:
-    AstFClose(FileLine* fileline, AstNode* filep)
-        : ASTGEN_SUPER(fileline) {
+    AstFClose(FileLine* fl, AstNode* filep)
+        : ASTGEN_SUPER(fl) {
         setNOp2p(filep);
     }
     ASTNODE_NODE_FUNCS(FClose)
@@ -3146,8 +3149,8 @@ public:
 class AstFOpen : public AstNodeStmt {
     // Although a system function in IEEE, here a statement which sets the file pointer (MCD)
 public:
-    AstFOpen(FileLine* fileline, AstNode* filep, AstNode* filenamep, AstNode* modep)
-        : ASTGEN_SUPER(fileline) {
+    AstFOpen(FileLine* fl, AstNode* filep, AstNode* filenamep, AstNode* modep)
+        : ASTGEN_SUPER(fl) {
         setOp1p(filep);
         setOp2p(filenamep);
         setOp3p(modep);
@@ -3170,8 +3173,8 @@ class AstFFlush : public AstNodeStmt {
     // Parents: stmtlist
     // Children: file which must be a varref
 public:
-    AstFFlush(FileLine* fileline, AstNode* filep)
-        : ASTGEN_SUPER(fileline) {
+    AstFFlush(FileLine* fl, AstNode* filep)
+        : ASTGEN_SUPER(fl) {
         setNOp2p(filep);
     }
     ASTNODE_NODE_FUNCS(FFlush)
@@ -3194,9 +3197,9 @@ class AstFRead : public AstNodeMath {
     // Children: low index
     // Children: count
 public:
-    AstFRead(FileLine* fileline, AstNode* memp, AstNode* filep,
+    AstFRead(FileLine* fl, AstNode* memp, AstNode* filep,
              AstNode* startp, AstNode* countp)
-        : ASTGEN_SUPER(fileline) {
+        : ASTGEN_SUPER(fl) {
         setOp1p(memp);
         setOp2p(filep);
         setNOp3p(startp);
@@ -3227,8 +3230,8 @@ class AstFRewind : public AstNodeMath {
     // Parents: stmtlist
     // Children: file which must be a varref
 public:
-    AstFRewind(FileLine* fileline, AstNode* filep)
-        : ASTGEN_SUPER(fileline) {
+    AstFRewind(FileLine* fl, AstNode* filep)
+        : ASTGEN_SUPER(fl) {
         setNOp2p(filep);
     }
     ASTNODE_NODE_FUNCS(FRewind)
@@ -3251,8 +3254,8 @@ class AstFTell : public AstNodeMath {
     // Parents: stmtlist
     // Children: file which must be a varref
 public:
-    AstFTell(FileLine* fileline, AstNode* filep)
-        : ASTGEN_SUPER(fileline) {
+    AstFTell(FileLine* fl, AstNode* filep)
+        : ASTGEN_SUPER(fl) {
         setNOp2p(filep);
     }
     ASTNODE_NODE_FUNCS(FTell)
@@ -3277,9 +3280,9 @@ class AstFSeek : public AstNodeMath {
     // Children: offset
     // Children: operation
 public:
-    AstFSeek(FileLine* fileline, AstNode* filep,
+    AstFSeek(FileLine* fl, AstNode* filep,
              AstNode* offset, AstNode* operation)
-        : ASTGEN_SUPER(fileline) {
+        : ASTGEN_SUPER(fl) {
         setOp2p(filep);
         setNOp3p(offset);
         setNOp4p(operation);
@@ -3310,8 +3313,8 @@ class AstFScanF : public AstNodeMath {
 private:
     string      m_text;
 public:
-    AstFScanF(FileLine* fileline, const string& text, AstNode* filep, AstNode* exprsp)
-        : ASTGEN_SUPER(fileline), m_text(text) {
+    AstFScanF(FileLine* fl, const string& text, AstNode* filep, AstNode* exprsp)
+        : ASTGEN_SUPER(fl), m_text(text) {
         addNOp1p(exprsp);
         setNOp2p(filep);
     }
@@ -3343,8 +3346,8 @@ class AstSScanF : public AstNodeMath {
 private:
     string      m_text;
 public:
-    AstSScanF(FileLine* fileline, const string& text, AstNode* fromp, AstNode* exprsp)
-        : ASTGEN_SUPER(fileline), m_text(text) {
+    AstSScanF(FileLine* fl, const string& text, AstNode* fromp, AstNode* exprsp)
+        : ASTGEN_SUPER(fl), m_text(text) {
         addNOp1p(exprsp);
         setOp2p(fromp);
     }
@@ -3373,10 +3376,10 @@ class AstNodeReadWriteMem : public AstNodeStmt {
 private:
     bool m_isHex;  // readmemh, not readmemb
 public:
-    AstNodeReadWriteMem(AstType t, FileLine* fileline, bool hex,
+    AstNodeReadWriteMem(AstType t, FileLine* fl, bool hex,
                         AstNode* filenamep, AstNode* memp,
                         AstNode* lsbp, AstNode* msbp)
-        : AstNodeStmt(t, fileline), m_isHex(hex) {
+        : AstNodeStmt(t, fl), m_isHex(hex) {
         setOp1p(filenamep); setOp2p(memp); setNOp3p(lsbp); setNOp4p(msbp);
     }
     virtual bool isGateOptimizable() const { return false; }
@@ -3398,9 +3401,9 @@ public:
 
 class AstReadMem : public AstNodeReadWriteMem {
 public:
-    AstReadMem(FileLine* fileline, bool hex,
+    AstReadMem(FileLine* fl, bool hex,
                AstNode* filenamep, AstNode* memp, AstNode* lsbp, AstNode* msbp)
-        : ASTGEN_SUPER(fileline, hex, filenamep, memp, lsbp, msbp)
+        : ASTGEN_SUPER(fl, hex, filenamep, memp, lsbp, msbp)
         { }
     ASTNODE_NODE_FUNCS(ReadMem);
     virtual string verilogKwd() const { return (isHex()?"$readmemh":"$readmemb"); }
@@ -3409,9 +3412,9 @@ public:
 
 class AstWriteMem : public AstNodeReadWriteMem {
 public:
-    AstWriteMem(FileLine* fileline,
+    AstWriteMem(FileLine* fl,
                 AstNode* filenamep, AstNode* memp, AstNode* lsbp, AstNode* msbp)
-        : ASTGEN_SUPER(fileline, true, filenamep, memp, lsbp, msbp) { }
+        : ASTGEN_SUPER(fl, true, filenamep, memp, lsbp, msbp) { }
     ASTNODE_NODE_FUNCS(WriteMem)
     virtual string verilogKwd() const { return (isHex()?"$writememh":"$writememb"); }
     virtual const char* cFuncPrefixp() const { return "VL_WRITEMEM_"; }
@@ -3420,8 +3423,8 @@ public:
 class AstSystemT : public AstNodeStmt {
     // $system used as task
 public:
-    AstSystemT(FileLine* fileline, AstNode* lhsp)
-        : ASTGEN_SUPER(fileline) {
+    AstSystemT(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl) {
         setOp1p(lhsp);
     }
     ASTNODE_NODE_FUNCS(SystemT)
@@ -3439,8 +3442,8 @@ public:
 class AstSystemF : public AstNodeMath {
     // $system used as function
 public:
-    AstSystemF(FileLine* fileline, AstNode* lhsp)
-        : ASTGEN_SUPER(fileline) {
+    AstSystemF(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl) {
         setOp1p(lhsp);
     }
     ASTNODE_NODE_FUNCS(SystemF)
@@ -3462,8 +3465,8 @@ class AstValuePlusArgs : public AstNodeMath {
     // Parents: expr
     // Child: variable to set.  If NULL then this is a $test$plusargs instead of $value$plusargs
 public:
-    AstValuePlusArgs(FileLine* fileline, AstNode* searchp, AstNode* outp)
-        : ASTGEN_SUPER(fileline) {
+    AstValuePlusArgs(FileLine* fl, AstNode* searchp, AstNode* outp)
+        : ASTGEN_SUPER(fl) {
         setOp1p(searchp); setOp2p(outp);
     }
     ASTNODE_NODE_FUNCS(ValuePlusArgs)
@@ -3487,8 +3490,8 @@ class AstTestPlusArgs : public AstNodeMath {
 private:
     string      m_text;
 public:
-    AstTestPlusArgs(FileLine* fileline, const string& text)
-        : ASTGEN_SUPER(fileline), m_text(text) { }
+    AstTestPlusArgs(FileLine* fl, const string& text)
+        : ASTGEN_SUPER(fl), m_text(text) { }
     ASTNODE_NODE_FUNCS(TestPlusArgs)
     virtual string name() const { return m_text; }
     virtual string verilogKwd() const { return "$test$plusargs"; }
@@ -3506,18 +3509,18 @@ public:
 
 class AstGenFor : public AstNodeFor {
 public:
-    AstGenFor(FileLine* fileline, AstNode* initsp, AstNode* condp,
+    AstGenFor(FileLine* fl, AstNode* initsp, AstNode* condp,
            AstNode* incsp, AstNode* bodysp)
-        : ASTGEN_SUPER(fileline, initsp, condp, incsp, bodysp) {
+        : ASTGEN_SUPER(fl, initsp, condp, incsp, bodysp) {
     }
     ASTNODE_NODE_FUNCS(GenFor)
 };
 
 class AstForeach : public AstNodeStmt {
 public:
-    AstForeach(FileLine* fileline, AstNode* arrayp, AstNode* varsp,
+    AstForeach(FileLine* fl, AstNode* arrayp, AstNode* varsp,
                AstNode* bodysp)
-        : ASTGEN_SUPER(fileline) {
+        : ASTGEN_SUPER(fl) {
         setOp1p(arrayp); addNOp2p(varsp); addNOp4p(bodysp);
     }
     ASTNODE_NODE_FUNCS(Foreach)
@@ -3532,8 +3535,8 @@ public:
 
 class AstRepeat : public AstNodeStmt {
 public:
-    AstRepeat(FileLine* fileline, AstNode* countp, AstNode* bodysp)
-        : ASTGEN_SUPER(fileline) {
+    AstRepeat(FileLine* fl, AstNode* countp, AstNode* bodysp)
+        : ASTGEN_SUPER(fl) {
         setOp2p(countp); addNOp3p(bodysp);
     }
     ASTNODE_NODE_FUNCS(Repeat)
@@ -3547,8 +3550,8 @@ public:
 
 class AstWhile : public AstNodeStmt {
 public:
-    AstWhile(FileLine* fileline, AstNode* condp, AstNode* bodysp, AstNode* incsp=NULL)
-        : ASTGEN_SUPER(fileline) {
+    AstWhile(FileLine* fl, AstNode* condp, AstNode* bodysp, AstNode* incsp=NULL)
+        : ASTGEN_SUPER(fl) {
         setOp2p(condp); addNOp3p(bodysp); addNOp4p(incsp);
     }
     ASTNODE_NODE_FUNCS(While)
@@ -3569,8 +3572,8 @@ public:
 
 class AstBreak : public AstNodeStmt {
 public:
-    explicit AstBreak(FileLine* fileline)
-        : ASTGEN_SUPER(fileline) {}
+    explicit AstBreak(FileLine* fl)
+        : ASTGEN_SUPER(fl) {}
     ASTNODE_NODE_FUNCS(Break)
     virtual string verilogKwd() const { return "break"; }
     virtual V3Hash sameHash() const { return V3Hash(); }
@@ -3579,8 +3582,8 @@ public:
 
 class AstContinue : public AstNodeStmt {
 public:
-    explicit AstContinue(FileLine* fileline)
-        : ASTGEN_SUPER(fileline) {}
+    explicit AstContinue(FileLine* fl)
+        : ASTGEN_SUPER(fl) {}
     ASTNODE_NODE_FUNCS(Continue)
     virtual string verilogKwd() const { return "continue"; }
     virtual V3Hash sameHash() const { return V3Hash(); }
@@ -3591,8 +3594,8 @@ class AstDisable : public AstNodeStmt {
 private:
     string m_name;  // Name of block
 public:
-    AstDisable(FileLine* fileline, const string& name)
-        : ASTGEN_SUPER(fileline), m_name(name) {}
+    AstDisable(FileLine* fl, const string& name)
+        : ASTGEN_SUPER(fl), m_name(name) {}
     ASTNODE_NODE_FUNCS(Disable)
     virtual string name() const { return m_name; }  // * = Block name
     void name(const string& flag) { m_name = flag; }
@@ -3601,8 +3604,8 @@ public:
 
 class AstReturn : public AstNodeStmt {
 public:
-    AstReturn(FileLine* fileline, AstNode* lhsp=NULL)
-        : ASTGEN_SUPER(fileline) {
+    AstReturn(FileLine* fl, AstNode* lhsp=NULL)
+        : ASTGEN_SUPER(fl) {
         setNOp1p(lhsp);
     }
     ASTNODE_NODE_FUNCS(Return)
@@ -3614,8 +3617,8 @@ public:
 
 class AstGenIf : public AstNodeIf {
 public:
-    AstGenIf(FileLine* fileline, AstNode* condp, AstNode* ifsp, AstNode* elsesp)
-        : ASTGEN_SUPER(fileline, condp, ifsp, elsesp) {
+    AstGenIf(FileLine* fl, AstNode* condp, AstNode* ifsp, AstNode* elsesp)
+        : ASTGEN_SUPER(fl, condp, ifsp, elsesp) {
     }
     ASTNODE_NODE_FUNCS(GenIf)
 };
@@ -3626,8 +3629,8 @@ private:
     bool        m_unique0Pragma;        // unique0 case
     bool        m_priorityPragma;       // priority case
 public:
-    AstIf(FileLine* fileline, AstNode* condp, AstNode* ifsp, AstNode* elsesp=NULL)
-        : ASTGEN_SUPER(fileline, condp, ifsp, elsesp) {
+    AstIf(FileLine* fl, AstNode* condp, AstNode* ifsp, AstNode* elsesp=NULL)
+        : ASTGEN_SUPER(fl, condp, ifsp, elsesp) {
         m_uniquePragma = false; m_unique0Pragma = false; m_priorityPragma = false;
     }
     ASTNODE_NODE_FUNCS(If)
@@ -3741,8 +3744,8 @@ private:
     bool        m_generate;     // Underneath a generate
 public:
     // Node that simply puts name into the output stream
-    AstBegin(FileLine* fileline, const string& name, AstNode* stmtsp, bool generate=false)
-        : ASTGEN_SUPER(fileline)
+    AstBegin(FileLine* fl, const string& name, AstNode* stmtsp, bool generate=false)
+        : ASTGEN_SUPER(fl)
         , m_name(name) {
         addNOp1p(stmtsp);
         m_unnamed = (name=="");
@@ -3938,7 +3941,7 @@ public:
 
 class AstStop : public AstNodeStmt {
 public:
-    explicit AstStop(FileLine* fl, bool maybe)
+    AstStop(FileLine* fl, bool maybe)
         : ASTGEN_SUPER(fl) {}
     ASTNODE_NODE_FUNCS(Stop)
     virtual bool isGateOptimizable() const { return false; }
@@ -4062,8 +4065,8 @@ private:
     string      m_name;
     AstSenTree* m_sensesp;
 public:
-    AstActive(FileLine* fileline, const string& name, AstSenTree* sensesp)
-        : ASTGEN_SUPER(fileline) {
+    AstActive(FileLine* fl, const string& name, AstSenTree* sensesp)
+        : ASTGEN_SUPER(fl) {
         m_name = name;  // Copy it
         UASSERT(sensesp, "Sensesp required arg");
         m_sensesp = sensesp;
@@ -4120,8 +4123,8 @@ private:
     string scopeNameFormatter(AstText* scopeTextp) const;
     string scopePrettyNameFormatter(AstText* scopeTextp) const;
 public:
-    explicit AstScopeName(FileLine* fl) : ASTGEN_SUPER(fl), m_dpiExport(false) {
-        dtypeSetUInt64(); }
+    explicit AstScopeName(FileLine* fl)
+        : ASTGEN_SUPER(fl), m_dpiExport(false) { dtypeSetUInt64(); }
     ASTNODE_NODE_FUNCS(ScopeName)
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode* samep) const {
@@ -4173,9 +4176,10 @@ class AstRand : public AstNodeTermop {
 private:
     bool m_reset;  // Random reset, versus always random
 public:
-    AstRand(FileLine* fl, AstNodeDType* dtp, bool reset) : ASTGEN_SUPER(fl) {
-        dtypep(dtp); m_reset = reset; }
-    explicit AstRand(FileLine* fl) : ASTGEN_SUPER(fl), m_reset(false) { }
+    AstRand(FileLine* fl, AstNodeDType* dtp, bool reset)
+        : ASTGEN_SUPER(fl) { dtypep(dtp); m_reset = reset; }
+    explicit AstRand(FileLine* fl)
+        : ASTGEN_SUPER(fl), m_reset(false) {}
     ASTNODE_NODE_FUNCS(Rand)
     virtual string emitVerilog() { return "%f$random"; }
     virtual string emitC() {
@@ -4192,8 +4196,8 @@ public:
 
 class AstTime : public AstNodeTermop {
 public:
-    explicit AstTime(FileLine* fl) : ASTGEN_SUPER(fl) {
-        dtypeSetUInt64(); }
+    explicit AstTime(FileLine* fl)
+        : ASTGEN_SUPER(fl) { dtypeSetUInt64(); }
     ASTNODE_NODE_FUNCS(Time)
     virtual string emitVerilog() { return "%f$time"; }
     virtual string emitC() { return "VL_TIME_%nq()"; }
@@ -4207,8 +4211,8 @@ public:
 
 class AstTimeD : public AstNodeTermop {
 public:
-    explicit AstTimeD(FileLine* fl) : ASTGEN_SUPER(fl) {
-        dtypeSetDouble(); }
+    explicit AstTimeD(FileLine* fl)
+        : ASTGEN_SUPER(fl) { dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(TimeD)
     virtual string emitVerilog() { return "%f$realtime"; }
     virtual string emitC() { return "VL_TIME_D()"; }
@@ -4248,8 +4252,8 @@ public:
 
 class AstNegate : public AstNodeUniop {
 public:
-    AstNegate(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {
-        dtypeFrom(lhsp); }
+    AstNegate(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) { dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Negate)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opNegate(lhs); }
     virtual string emitVerilog() { return "%f(- %l)"; }
@@ -4260,8 +4264,8 @@ public:
 };
 class AstNegateD : public AstNodeUniop {
 public:
-    AstNegateD(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetDouble(); }
+    AstNegateD(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) { dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(NegateD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opNegateD(lhs); }
     virtual string emitVerilog() { return "%f(- %l)"; }
@@ -4275,8 +4279,8 @@ public:
 };
 class AstRedAnd : public AstNodeUniop {
 public:
-    AstRedAnd(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetLogicBool(); }
+    AstRedAnd(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(RedAnd)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRedAnd(lhs); }
     virtual string emitVerilog() { return "%f(& %l)"; }
@@ -4287,8 +4291,8 @@ public:
 };
 class AstRedOr : public AstNodeUniop {
 public:
-    AstRedOr(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetLogicBool(); }
+    AstRedOr(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(RedOr)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRedOr(lhs); }
     virtual string emitVerilog() { return "%f(| %l)"; }
@@ -4299,8 +4303,8 @@ public:
 };
 class AstRedXor : public AstNodeUniop {
 public:
-    AstRedXor(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetLogicBool(); }
+    AstRedXor(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(RedXor)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRedXor(lhs); }
     virtual string emitVerilog() { return "%f(^ %l)"; }
@@ -4314,8 +4318,8 @@ public:
 class AstRedXnor : public AstNodeUniop {
     // AstRedXnors are replaced with AstRedXors in V3Const.
 public:
-    AstRedXnor(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetLogicBool(); }
+    AstRedXnor(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(RedXnor)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRedXnor(lhs); }
     virtual string emitVerilog() { return "%f(~^ %l)"; }
@@ -4329,8 +4333,8 @@ public:
 class AstLenN : public AstNodeUniop {
     // Length of a string
 public:
-    AstLenN(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetSigned32(); }
+    AstLenN(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) { dtypeSetSigned32(); }
     ASTNODE_NODE_FUNCS(LenN)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opLenN(lhs); }
     virtual string emitVerilog() { return "%f(%l)"; }
@@ -4341,8 +4345,8 @@ public:
 };
 class AstLogNot : public AstNodeUniop {
 public:
-    AstLogNot(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetLogicBool(); }
+    AstLogNot(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(LogNot)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opLogNot(lhs); }
     virtual string emitVerilog() { return "%f(! %l)"; }
@@ -4354,8 +4358,8 @@ public:
 };
 class AstNot : public AstNodeUniop {
 public:
-    AstNot(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {
-        dtypeFrom(lhsp); }
+    AstNot(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) { dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Not)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opNot(lhs); }
     virtual string emitVerilog() { return "%f(~ %l)"; }
@@ -4368,9 +4372,10 @@ public:
 class AstExtend : public AstNodeUniop {
     // Expand a value into a wider entity by 0 extension.  Width is implied from nodep->width()
 public:
-    AstExtend(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
-    AstExtend(FileLine* fl, AstNode* lhsp, int width) : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetLogicSized(width, AstNumeric::UNSIGNED); }
+    AstExtend(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
+    AstExtend(FileLine* fl, AstNode* lhsp, int width)
+        : ASTGEN_SUPER(fl, lhsp) { dtypeSetLogicSized(width, AstNumeric::UNSIGNED); }
     ASTNODE_NODE_FUNCS(Extend)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opAssign(lhs); }
     virtual string emitVerilog() { return "%l"; }
@@ -4383,10 +4388,11 @@ public:
 class AstExtendS : public AstNodeUniop {
     // Expand a value into a wider entity by sign extension.  Width is implied from nodep->width()
 public:
-    AstExtendS(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
-    AstExtendS(FileLine* fl, AstNode* lhsp, int width) : ASTGEN_SUPER(fl, lhsp) {
+    AstExtendS(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
+    AstExtendS(FileLine* fl, AstNode* lhsp, int width)
         // Important that widthMin be correct, as opExtend requires it after V3Expand
-        dtypeSetLogicSized(width, AstNumeric::UNSIGNED); }
+        : ASTGEN_SUPER(fl, lhsp) { dtypeSetLogicSized(width, AstNumeric::UNSIGNED); }
     ASTNODE_NODE_FUNCS(ExtendS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) {
         out.opExtendS(lhs, lhsp()->widthMinV());
@@ -4402,7 +4408,8 @@ public:
 class AstSigned : public AstNodeUniop {
     // $signed(lhs)
 public:
-    AstSigned(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {
+    AstSigned(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {
         UASSERT_OBJ(!v3Global.assertDTypesResolved(), this,
                     "not coded to create after dtypes resolved"); }
     ASTNODE_NODE_FUNCS(Signed)
@@ -4417,7 +4424,8 @@ public:
 class AstUnsigned : public AstNodeUniop {
     // $unsigned(lhs)
 public:
-    AstUnsigned(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {
+    AstUnsigned(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {
         UASSERT_OBJ(!v3Global.assertDTypesResolved(), this,
                     "not coded to create after dtypes resolved"); }
     ASTNODE_NODE_FUNCS(Unsigned)
@@ -4432,8 +4440,8 @@ public:
 class AstRToIS : public AstNodeUniop {
     // $rtoi(lhs)
 public:
-    AstRToIS(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetSigned32(); }
+    AstRToIS(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) { dtypeSetSigned32(); }
     ASTNODE_NODE_FUNCS(RToIS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRToIS(lhs); }
     virtual string emitVerilog() { return "%f$rtoi(%l)"; }
@@ -4445,8 +4453,8 @@ public:
 };
 class AstRToIRoundS : public AstNodeUniop {
 public:
-    AstRToIRoundS(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetSigned32(); }
+    AstRToIRoundS(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) { dtypeSetSigned32(); }
     ASTNODE_NODE_FUNCS(RToIRoundS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRToIRoundS(lhs); }
     virtual string emitVerilog() { return "%f$rtoi_rounded(%l)"; }
@@ -4458,8 +4466,8 @@ public:
 };
 class AstIToRD : public AstNodeUniop {
 public:
-    AstIToRD(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetDouble(); }
+    AstIToRD(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) { dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(IToRD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opIToRD(lhs); }
     virtual string emitVerilog() { return "%f$itor(%l)"; }
@@ -4471,8 +4479,8 @@ public:
 };
 class AstRealToBits : public AstNodeUniop {
 public:
-    AstRealToBits(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetUInt64(); }
+    AstRealToBits(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) { dtypeSetUInt64(); }
     ASTNODE_NODE_FUNCS(RealToBits)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRealToBits(lhs); }
     virtual string emitVerilog() { return "%f$realtobits(%l)"; }
@@ -4484,8 +4492,8 @@ public:
 };
 class AstBitsToRealD : public AstNodeUniop {
 public:
-    AstBitsToRealD(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetDouble(); }
+    AstBitsToRealD(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) { dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(BitsToRealD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opBitsToRealD(lhs); }
     virtual string emitVerilog() { return "%f$bitstoreal(%l)"; }
@@ -4498,7 +4506,8 @@ public:
 
 class AstCLog2 : public AstNodeUniop {
 public:
-    AstCLog2(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
+    AstCLog2(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(CLog2)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opCLog2(lhs); }
     virtual string emitVerilog() { return "%f$clog2(%l)"; }
@@ -4511,7 +4520,8 @@ public:
 class AstCountOnes : public AstNodeUniop {
     // Number of bits set in vector
 public:
-    AstCountOnes(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
+    AstCountOnes(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(CountOnes)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opCountOnes(lhs); }
     virtual string emitVerilog() { return "%f$countones(%l)"; }
@@ -4524,8 +4534,8 @@ public:
 class AstIsUnknown : public AstNodeUniop {
     // True if any unknown bits
 public:
-    AstIsUnknown(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetLogicBool(); }
+    AstIsUnknown(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(IsUnknown)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opIsUnknown(lhs); }
     virtual string emitVerilog() { return "%f$isunknown(%l)"; }
@@ -4537,8 +4547,8 @@ public:
 class AstOneHot : public AstNodeUniop {
     // True if only single bit set in vector
 public:
-    AstOneHot(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetLogicBool(); }
+    AstOneHot(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(OneHot)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opOneHot(lhs); }
     virtual string emitVerilog() { return "%f$onehot(%l)"; }
@@ -4551,8 +4561,8 @@ public:
 class AstOneHot0 : public AstNodeUniop {
     // True if only single bit, or no bits set in vector
 public:
-    AstOneHot0(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetLogicBool(); }
+    AstOneHot0(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(OneHot0)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opOneHot0(lhs); }
     virtual string emitVerilog() { return "%f$onehot0(%l)"; }
@@ -4566,7 +4576,8 @@ public:
 class AstCast : public AstNode {
     // Cast to appropriate data type - note lhsp is value, to match AstTypedef, AstCCast, etc
 public:
-    AstCast(FileLine* fl, AstNode* lhsp, AstNodeDType* dtp) : ASTGEN_SUPER(fl) {
+    AstCast(FileLine* fl, AstNode* lhsp, AstNodeDType* dtp)
+        : ASTGEN_SUPER(fl) {
         setOp1p(lhsp); setOp2p(dtp);
         dtypeFrom(dtp);
     }
@@ -4585,7 +4596,8 @@ public:
 class AstCastParse : public AstNode {
     // Cast to appropriate type, where we haven't determined yet what the data type is
 public:
-    AstCastParse(FileLine* fl, AstNode* lhsp, AstNode* dtp) : ASTGEN_SUPER(fl) {
+    AstCastParse(FileLine* fl, AstNode* lhsp, AstNode* dtp)
+        : ASTGEN_SUPER(fl) {
         setOp1p(lhsp); setOp2p(dtp);
     }
     ASTNODE_NODE_FUNCS(CastParse)
@@ -4601,7 +4613,8 @@ public:
 class AstCastSize : public AstNode {
     // Cast to specific size; signed/twostate inherited from lower element per IEEE
 public:
-    AstCastSize(FileLine* fl, AstNode* lhsp, AstConst* rhsp) : ASTGEN_SUPER(fl) {
+    AstCastSize(FileLine* fl, AstNode* lhsp, AstConst* rhsp)
+        : ASTGEN_SUPER(fl) {
         setOp1p(lhsp); setOp2p(rhsp);
     }
     ASTNODE_NODE_FUNCS(CastSize)
@@ -4620,14 +4633,16 @@ class AstCCast : public AstNodeUniop {
 private:
     int         m_size;
 public:
-    AstCCast(FileLine* fl, AstNode* lhsp, int setwidth, int minwidth=-1) : ASTGEN_SUPER(fl, lhsp) {
+    AstCCast(FileLine* fl, AstNode* lhsp, int setwidth, int minwidth=-1)
+        : ASTGEN_SUPER(fl, lhsp) {
         m_size = setwidth;
         if (setwidth) {
             if (minwidth==-1) minwidth = setwidth;
             dtypeSetLogicUnsized(setwidth, minwidth, AstNumeric::UNSIGNED);
         }
     }
-    AstCCast(FileLine* fl, AstNode* lhsp, AstNode* typeFromp) : ASTGEN_SUPER(fl, lhsp) {
+    AstCCast(FileLine* fl, AstNode* lhsp, AstNode* typeFromp)
+        : ASTGEN_SUPER(fl, lhsp) {
         dtypeFrom(typeFromp);
         m_size = width();
     }
@@ -4649,8 +4664,8 @@ public:
 class AstCvtPackString : public AstNodeUniop {
     // Convert to Verilator Packed String (aka verilog "string")
 public:
-    AstCvtPackString(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetString(); }  // Really, width should be dtypep -> STRING
+    AstCvtPackString(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) { dtypeSetString(); }  // Really, width should be dtypep -> STRING
     ASTNODE_NODE_FUNCS(CvtPackString)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%f$_CAST(%l)"; }
@@ -4664,7 +4679,8 @@ public:
 
 class AstFEof : public AstNodeUniop {
 public:
-    AstFEof(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
+    AstFEof(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(FEof)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%f$feof(%l)"; }
@@ -4679,7 +4695,8 @@ public:
 
 class AstFGetC : public AstNodeUniop {
 public:
-    AstFGetC(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
+    AstFGetC(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(FGetC)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return "%f$fgetc(%l)"; }
@@ -4729,7 +4746,8 @@ public:
 
 class AstLogD : public AstNodeSystemUniop {
 public:
-    AstLogD(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
+    AstLogD(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(LogD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(log(lhs.toDouble())); }
     virtual string emitVerilog() { return "%f$ln(%l)"; }
@@ -4737,7 +4755,8 @@ public:
 };
 class AstLog10D : public AstNodeSystemUniop {
 public:
-    AstLog10D(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
+    AstLog10D(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(Log10D)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(log10(lhs.toDouble())); }
     virtual string emitVerilog() { return "%f$log10(%l)"; }
@@ -4746,7 +4765,8 @@ public:
 
 class AstExpD : public AstNodeSystemUniop {
 public:
-    AstExpD(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
+    AstExpD(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(ExpD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(exp(lhs.toDouble())); }
     virtual string emitVerilog() { return "%f$exp(%l)"; }
@@ -4755,7 +4775,8 @@ public:
 
 class AstSqrtD : public AstNodeSystemUniop {
 public:
-    AstSqrtD(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
+    AstSqrtD(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(SqrtD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(sqrt(lhs.toDouble())); }
     virtual string emitVerilog() { return "%f$sqrt(%l)"; }
@@ -4764,7 +4785,8 @@ public:
 
 class AstFloorD : public AstNodeSystemUniop {
 public:
-    AstFloorD(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
+    AstFloorD(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(FloorD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(floor(lhs.toDouble())); }
     virtual string emitVerilog() { return "%f$floor(%l)"; }
@@ -4773,7 +4795,8 @@ public:
 
 class AstCeilD : public AstNodeSystemUniop {
 public:
-    AstCeilD(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
+    AstCeilD(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(CeilD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(ceil(lhs.toDouble())); }
     virtual string emitVerilog() { return "%f$ceil(%l)"; }
@@ -4782,7 +4805,8 @@ public:
 
 class AstSinD : public AstNodeSystemUniop {
 public:
-    AstSinD(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
+    AstSinD(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(SinD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(sin(lhs.toDouble())); }
     virtual string emitVerilog() { return "%f$sin(%l)"; }
@@ -4791,7 +4815,8 @@ public:
 
 class AstCosD : public AstNodeSystemUniop {
 public:
-    AstCosD(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
+    AstCosD(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(CosD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(cos(lhs.toDouble())); }
     virtual string emitVerilog() { return "%f$cos(%l)"; }
@@ -4800,7 +4825,8 @@ public:
 
 class AstTanD : public AstNodeSystemUniop {
 public:
-    AstTanD(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
+    AstTanD(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(TanD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(tan(lhs.toDouble())); }
     virtual string emitVerilog() { return "%f$tan(%l)"; }
@@ -4809,7 +4835,8 @@ public:
 
 class AstAsinD : public AstNodeSystemUniop {
 public:
-    AstAsinD(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
+    AstAsinD(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(AsinD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(asin(lhs.toDouble())); }
     virtual string emitVerilog() { return "%f$asin(%l)"; }
@@ -4818,7 +4845,8 @@ public:
 
 class AstAcosD : public AstNodeSystemUniop {
 public:
-    AstAcosD(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
+    AstAcosD(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(AcosD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(acos(lhs.toDouble())); }
     virtual string emitVerilog() { return "%f$acos(%l)"; }
@@ -4827,7 +4855,8 @@ public:
 
 class AstAtanD : public AstNodeSystemUniop {
 public:
-    AstAtanD(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
+    AstAtanD(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(AtanD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(atan(lhs.toDouble())); }
     virtual string emitVerilog() { return "%f$atan(%l)"; }
@@ -4836,7 +4865,8 @@ public:
 
 class AstSinhD : public AstNodeSystemUniop {
 public:
-    AstSinhD(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
+    AstSinhD(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(SinhD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(sinh(lhs.toDouble())); }
     virtual string emitVerilog() { return "%f$sinh(%l)"; }
@@ -4845,7 +4875,8 @@ public:
 
 class AstCoshD : public AstNodeSystemUniop {
 public:
-    AstCoshD(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
+    AstCoshD(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(CoshD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(cosh(lhs.toDouble())); }
     virtual string emitVerilog() { return "%f$cosh(%l)"; }
@@ -4854,7 +4885,8 @@ public:
 
 class AstTanhD : public AstNodeSystemUniop {
 public:
-    AstTanhD(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
+    AstTanhD(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(TanhD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(tanh(lhs.toDouble())); }
     virtual string emitVerilog() { return "%f$tanh(%l)"; }
@@ -4863,7 +4895,8 @@ public:
 
 class AstAsinhD : public AstNodeSystemUniop {
 public:
-    AstAsinhD(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
+    AstAsinhD(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(AsinhD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(asinh(lhs.toDouble())); }
     virtual string emitVerilog() { return "%f$asinh(%l)"; }
@@ -4872,7 +4905,8 @@ public:
 
 class AstAcoshD : public AstNodeSystemUniop {
 public:
-    AstAcoshD(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
+    AstAcoshD(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(AcoshD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(acosh(lhs.toDouble())); }
     virtual string emitVerilog() { return "%f$acosh(%l)"; }
@@ -4881,7 +4915,8 @@ public:
 
 class AstAtanhD : public AstNodeSystemUniop {
 public:
-    AstAtanhD(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {}
+    AstAtanhD(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
     ASTNODE_NODE_FUNCS(AtanhD)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.setDouble(atanh(lhs.toDouble())); }
     virtual string emitVerilog() { return "%f$atanh(%l)"; }
@@ -4890,8 +4925,8 @@ public:
 class AstToLowerN : public AstNodeUniop {
     // string.tolower()
 public:
-    AstToLowerN(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetString(); }
+    AstToLowerN(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) { dtypeSetString(); }
     ASTNODE_NODE_FUNCS(ToLowerN)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opToLowerN(lhs); }
     virtual string emitVerilog() { return "%l.tolower()"; }
@@ -4903,8 +4938,8 @@ public:
 class AstToUpperN : public AstNodeUniop {
     // string.toupper()
 public:
-    AstToUpperN(FileLine* fl, AstNode* lhsp) : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetString(); }
+    AstToUpperN(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) { dtypeSetString(); }
     ASTNODE_NODE_FUNCS(ToUpperN)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opToUpperN(lhs); }
     virtual string emitVerilog() { return "%l.toupper()"; }
@@ -4960,8 +4995,8 @@ public:
 
 class AstLogOr : public AstNodeBiop {
 public:
-    AstLogOr(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstLogOr(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(LogOr)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstLogOr(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLogOr(lhs, rhs); }
@@ -4977,8 +5012,8 @@ public:
 };
 class AstLogAnd : public AstNodeBiop {
 public:
-    AstLogAnd(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstLogAnd(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(LogAnd)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstLogAnd(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLogAnd(lhs, rhs); }
@@ -4994,8 +5029,8 @@ public:
 };
 class AstLogEq : public AstNodeBiCom {
 public:
-    AstLogEq(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstLogEq(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(LogEq)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) {
         return new AstLogEq(this->fileline(), lhsp, rhsp); }
@@ -5013,8 +5048,8 @@ public:
 };
 class AstLogIf : public AstNodeBiop {
 public:
-    AstLogIf(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstLogIf(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(LogIf)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) {
         return new AstLogIf(this->fileline(), lhsp, rhsp); }
@@ -5032,8 +5067,8 @@ public:
 };
 class AstOr : public AstNodeBiComAsv {
 public:
-    AstOr(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp); }
+    AstOr(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Or)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstOr(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opOr(lhs, rhs); }
@@ -5048,8 +5083,8 @@ public:
 };
 class AstAnd : public AstNodeBiComAsv {
 public:
-    AstAnd(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp); }
+    AstAnd(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(And)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAnd(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opAnd(lhs, rhs); }
@@ -5064,8 +5099,8 @@ public:
 };
 class AstXor : public AstNodeBiComAsv {
 public:
-    AstXor(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp); }
+    AstXor(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Xor)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstXor(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opXor(lhs, rhs); }
@@ -5080,8 +5115,8 @@ public:
 };
 class AstXnor : public AstNodeBiComAsv {
 public:
-    AstXnor(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp); }
+    AstXnor(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Xnor)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstXnor(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opXnor(lhs, rhs); }
@@ -5096,8 +5131,8 @@ public:
 };
 class AstEq : public AstNodeBiCom {
 public:
-    AstEq(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstEq(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(Eq)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstEq(this->fileline(), lhsp, rhsp); }
     static AstNodeBiop* newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp);  // Return AstEq/AstEqD
@@ -5113,8 +5148,8 @@ public:
 };
 class AstEqD : public AstNodeBiCom {
 public:
-    AstEqD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstEqD(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(EqD)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstEqD(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opEqD(lhs, rhs); }
@@ -5131,8 +5166,8 @@ public:
 };
 class AstEqN : public AstNodeBiCom {
 public:
-    AstEqN(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstEqN(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(EqN)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstEqN(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opEqN(lhs, rhs); }
@@ -5149,8 +5184,8 @@ public:
 };
 class AstNeq : public AstNodeBiCom {
 public:
-    AstNeq(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstNeq(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(Neq)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstNeq(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opNeq(lhs, rhs); }
@@ -5165,8 +5200,8 @@ public:
 };
 class AstNeqD : public AstNodeBiCom {
 public:
-    AstNeqD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstNeqD(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(NeqD)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstNeqD(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opNeqD(lhs, rhs); }
@@ -5183,8 +5218,8 @@ public:
 };
 class AstNeqN : public AstNodeBiCom {
 public:
-    AstNeqN(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstNeqN(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(NeqN)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstNeqN(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opNeqN(lhs, rhs); }
@@ -5201,8 +5236,8 @@ public:
 };
 class AstLt : public AstNodeBiop {
 public:
-    AstLt(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstLt(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(Lt)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstLt(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLt(lhs, rhs); }
@@ -5217,8 +5252,8 @@ public:
 };
 class AstLtD : public AstNodeBiop {
 public:
-    AstLtD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstLtD(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(LtD)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstLtD(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLtD(lhs, rhs); }
@@ -5235,8 +5270,8 @@ public:
 };
 class AstLtS : public AstNodeBiop {
 public:
-    AstLtS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstLtS(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(LtS)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstLtS(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLtS(lhs, rhs); }
@@ -5252,8 +5287,8 @@ public:
 };
 class AstLtN : public AstNodeBiop {
 public:
-    AstLtN(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstLtN(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(LtN)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstLtN(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLtN(lhs, rhs); }
@@ -5270,8 +5305,8 @@ public:
 };
 class AstGt : public AstNodeBiop {
 public:
-    AstGt(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstGt(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(Gt)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstGt(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGt(lhs, rhs); }
@@ -5286,8 +5321,8 @@ public:
 };
 class AstGtD : public AstNodeBiop {
 public:
-    AstGtD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstGtD(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(GtD)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstGtD(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGtD(lhs, rhs); }
@@ -5304,8 +5339,8 @@ public:
 };
 class AstGtS : public AstNodeBiop {
 public:
-    AstGtS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstGtS(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(GtS)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstGtS(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGtS(lhs, rhs); }
@@ -5321,8 +5356,8 @@ public:
 };
 class AstGtN : public AstNodeBiop {
 public:
-    AstGtN(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstGtN(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(GtN)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstGtN(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGtN(lhs, rhs); }
@@ -5339,8 +5374,8 @@ public:
 };
 class AstGte : public AstNodeBiop {
 public:
-    AstGte(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstGte(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(Gte)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstGte(this->fileline(), lhsp, rhsp); }
     static AstNodeBiop* newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp);  // Return AstGte/AstGteS/AstGteD
@@ -5356,8 +5391,8 @@ public:
 };
 class AstGteD : public AstNodeBiop {
 public:
-    AstGteD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstGteD(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(GteD)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstGteD(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGteD(lhs, rhs); }
@@ -5374,8 +5409,8 @@ public:
 };
 class AstGteS : public AstNodeBiop {
 public:
-    AstGteS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstGteS(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(GteS)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstGteS(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGteS(lhs, rhs); }
@@ -5391,8 +5426,8 @@ public:
 };
 class AstGteN : public AstNodeBiop {
 public:
-    AstGteN(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstGteN(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(GteN)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstGteN(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opGteN(lhs, rhs); }
@@ -5409,8 +5444,8 @@ public:
 };
 class AstLte : public AstNodeBiop {
 public:
-    AstLte(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstLte(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(Lte)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstLte(this->fileline(), lhsp, rhsp); }
     static AstNodeBiop* newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp);  // Return AstLte/AstLteS/AstLteD
@@ -5426,8 +5461,8 @@ public:
 };
 class AstLteD : public AstNodeBiop {
 public:
-    AstLteD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstLteD(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(LteD)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstLteD(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLteD(lhs, rhs); }
@@ -5444,8 +5479,8 @@ public:
 };
 class AstLteS : public AstNodeBiop {
 public:
-    AstLteS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstLteS(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(LteS)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstLteS(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLteS(lhs, rhs); }
@@ -5461,8 +5496,8 @@ public:
 };
 class AstLteN : public AstNodeBiop {
 public:
-    AstLteN(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstLteN(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(LteN)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstLteN(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opLteN(lhs, rhs); }
@@ -5539,8 +5574,8 @@ public:
 };
 class AstAdd : public AstNodeBiComAsv {
 public:
-    AstAdd(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp); }
+    AstAdd(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Add)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAdd(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opAdd(lhs, rhs); }
@@ -5555,8 +5590,8 @@ public:
 };
 class AstAddD : public AstNodeBiComAsv {
 public:
-    AstAddD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetDouble(); }
+    AstAddD(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(AddD)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAddD(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opAddD(lhs, rhs); }
@@ -5573,8 +5608,8 @@ public:
 };
 class AstSub : public AstNodeBiop {
 public:
-    AstSub(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp); }
+    AstSub(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Sub)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstSub(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opSub(lhs, rhs); }
@@ -5589,8 +5624,8 @@ public:
 };
 class AstSubD : public AstNodeBiop {
 public:
-    AstSubD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetDouble(); }
+    AstSubD(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(SubD)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstSubD(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opSubD(lhs, rhs); }
@@ -5607,8 +5642,8 @@ public:
 };
 class AstMul : public AstNodeBiComAsv {
 public:
-    AstMul(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp); }
+    AstMul(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Mul)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstMul(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opMul(lhs, rhs); }
@@ -5624,8 +5659,8 @@ public:
 };
 class AstMulD : public AstNodeBiComAsv {
 public:
-    AstMulD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetDouble(); }
+    AstMulD(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(MulD)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstMulD(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opMulD(lhs, rhs); }
@@ -5642,8 +5677,8 @@ public:
 };
 class AstMulS : public AstNodeBiComAsv {
 public:
-    AstMulS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp); }
+    AstMulS(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(MulS)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstMulS(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opMulS(lhs, rhs); }
@@ -5660,8 +5695,8 @@ public:
 };
 class AstDiv : public AstNodeBiop {
 public:
-    AstDiv(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp); }
+    AstDiv(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Div)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstDiv(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opDiv(lhs, rhs); }
@@ -5676,8 +5711,8 @@ public:
 };
 class AstDivD : public AstNodeBiop {
 public:
-    AstDivD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetDouble(); }
+    AstDivD(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(DivD)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstDivD(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opDivD(lhs, rhs); }
@@ -5694,8 +5729,8 @@ public:
 };
 class AstDivS : public AstNodeBiop {
 public:
-    AstDivS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp); }
+    AstDivS(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(DivS)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstDivS(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opDivS(lhs, rhs); }
@@ -5711,8 +5746,8 @@ public:
 };
 class AstModDiv : public AstNodeBiop {
 public:
-    AstModDiv(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp); }
+    AstModDiv(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(ModDiv)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstModDiv(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opModDiv(lhs, rhs); }
@@ -5727,8 +5762,8 @@ public:
 };
 class AstModDivS : public AstNodeBiop {
 public:
-    AstModDivS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp); }
+    AstModDivS(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(ModDivS)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstModDivS(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opModDivS(lhs, rhs); }
@@ -5744,8 +5779,8 @@ public:
 };
 class AstPow : public AstNodeBiop {
 public:
-    AstPow(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp); }
+    AstPow(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(Pow)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstPow(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPow(lhs, rhs); }
@@ -5760,8 +5795,8 @@ public:
 };
 class AstPowD : public AstNodeBiop {
 public:
-    AstPowD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetDouble(); }
+    AstPowD(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetDouble(); }
     ASTNODE_NODE_FUNCS(PowD)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstPowD(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPowD(lhs, rhs); }
@@ -5777,8 +5812,8 @@ public:
 };
 class AstPowSU : public AstNodeBiop {
 public:
-    AstPowSU(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp); }
+    AstPowSU(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(PowSU)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstPowSU(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPowSU(lhs, rhs); }
@@ -5794,8 +5829,8 @@ public:
 };
 class AstPowSS : public AstNodeBiop {
 public:
-    AstPowSS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp); }
+    AstPowSS(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(PowSS)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstPowSS(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPowSS(lhs, rhs); }
@@ -5811,8 +5846,8 @@ public:
 };
 class AstPowUS : public AstNodeBiop {
 public:
-    AstPowUS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp); }
+    AstPowUS(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(PowUS)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstPowUS(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opPowUS(lhs, rhs); }
@@ -5828,8 +5863,8 @@ public:
 };
 class AstEqCase : public AstNodeBiCom {
 public:
-    AstEqCase(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstEqCase(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(EqCase)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstEqCase(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opCaseEq(lhs, rhs); }
@@ -5844,8 +5879,8 @@ public:
 };
 class AstNeqCase : public AstNodeBiCom {
 public:
-    AstNeqCase(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstNeqCase(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(NeqCase)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstNeqCase(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opCaseNeq(lhs, rhs); }
@@ -5861,8 +5896,8 @@ public:
 class AstEqWild : public AstNodeBiop {
     // Note wildcard operator rhs differs from lhs
 public:
-    AstEqWild(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstEqWild(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(EqWild)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstEqWild(this->fileline(), lhsp, rhsp); }
     static AstNodeBiop* newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp);  // Return AstEqWild/AstEqD
@@ -5878,8 +5913,8 @@ public:
 };
 class AstNeqWild : public AstNodeBiop {
 public:
-    AstNeqWild(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetLogicBool(); }
+    AstNeqWild(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
     ASTNODE_NODE_FUNCS(NeqWild)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstNeqWild(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opWildNeq(lhs, rhs); }
@@ -5895,7 +5930,8 @@ public:
 class AstConcat : public AstNodeBiop {
     // If you're looking for {#{}}, see AstReplicate
 public:
-    AstConcat(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
+    AstConcat(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) {
         if (lhsp->dtypep() && rhsp->dtypep()) {
             dtypeSetLogicSized(lhsp->dtypep()->width()+rhsp->dtypep()->width(),
                                AstNumeric::UNSIGNED);
@@ -5916,9 +5952,8 @@ public:
 class AstConcatN : public AstNodeBiop {
     // String concatenate
 public:
-    AstConcatN(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetString();
-    }
+    AstConcatN(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetString(); }
     ASTNODE_NODE_FUNCS(ConcatN)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstConcatN(this->fileline(), lhsp, rhsp); }
     virtual string emitVerilog() { return "%f{%l, %k%r}"; }
@@ -5986,7 +6021,8 @@ public:
 class AstStreamL : public AstNodeStream {
     // Verilog {rhs{lhs}} - Note rhsp() is the slice size, not the lhsp()
 public:
-    AstStreamL(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {}
+    AstStreamL(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(StreamL)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstStreamL(this->fileline(), lhsp, rhsp); }
     virtual string emitVerilog() { return "%f{ << %r %k{%l} }"; }
@@ -6002,7 +6038,8 @@ public:
 class AstStreamR : public AstNodeStream {
     // Verilog {rhs{lhs}} - Note rhsp() is the slice size, not the lhsp()
 public:
-    AstStreamR(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {}
+    AstStreamR(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(StreamR)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstStreamR(this->fileline(), lhsp, rhsp); }
     virtual string emitVerilog() { return "%f{ >> %r %k{%l} }"; }
@@ -6020,8 +6057,8 @@ class AstBufIf1 : public AstNodeBiop {
     // Note unlike the Verilog bufif1() UDP, this allows any width; each lhsp
     // bit enables respective rhsp bit
 public:
-    AstBufIf1(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeFrom(lhsp); }
+    AstBufIf1(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeFrom(lhsp); }
     ASTNODE_NODE_FUNCS(BufIf1)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstBufIf1(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opBufIf1(lhs, rhs); }
@@ -6036,7 +6073,8 @@ public:
 };
 class AstFGetS : public AstNodeBiop {
 public:
-    AstFGetS(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {}
+    AstFGetS(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(FGetS)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstFGetS(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { V3ERROR_NA; }
@@ -6067,7 +6105,8 @@ public:
 
 class AstAtan2D : public AstNodeSystemBiop {
 public:
-    AstAtan2D(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {}
+    AstAtan2D(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(Atan2D)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstAtan2D(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
@@ -6078,7 +6117,8 @@ public:
 
 class AstHypotD : public AstNodeSystemBiop {
 public:
-    AstHypotD(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {}
+    AstHypotD(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) {}
     ASTNODE_NODE_FUNCS(HypotD)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstHypotD(this->fileline(), lhsp, rhsp); }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
@@ -6090,9 +6130,8 @@ public:
 class AstPutcN : public AstNodeTriop {
     // Verilog string.putc()
 public:
-    AstPutcN(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* ths) : ASTGEN_SUPER(fl, lhsp, rhsp, ths) {
-        dtypeSetString();
-    }
+    AstPutcN(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* ths)
+        : ASTGEN_SUPER(fl, lhsp, rhsp, ths) { dtypeSetString(); }
     ASTNODE_NODE_FUNCS(PutcN)
     virtual void numberOperate(V3Number& out, const V3Number& lhs,
                                const V3Number& rhs, const V3Number& ths) {
@@ -6114,9 +6153,8 @@ public:
 class AstGetcN : public AstNodeBiop {
     // Verilog string.getc()
 public:
-    AstGetcN(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetBitSized(8, AstNumeric::UNSIGNED);
-    }
+    AstGetcN(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetBitSized(8, AstNumeric::UNSIGNED); }
     ASTNODE_NODE_FUNCS(GetcN)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) {
         return new AstGetcN(this->fileline(), lhsp, rhsp);
@@ -6138,9 +6176,8 @@ public:
 class AstSubstrN : public AstNodeTriop {
     // Verilog string.substr()
 public:
-    AstSubstrN(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* ths) : ASTGEN_SUPER(fl, lhsp, rhsp, ths) {
-        dtypeSetString();
-    }
+    AstSubstrN(FileLine* fl, AstNode* lhsp, AstNode* rhsp, AstNode* ths)
+        : ASTGEN_SUPER(fl, lhsp, rhsp, ths) { dtypeSetString(); }
     ASTNODE_NODE_FUNCS(SubstrN)
     virtual void numberOperate(V3Number& out, const V3Number& lhs,
                                const V3Number& rhs, const V3Number& ths) {
@@ -6196,10 +6233,8 @@ class AstPast : public AstNodeMath {
     // Parents: math
     // Children: expression
 public:
-    AstPast(FileLine* fl, AstNode* exprp, AstNode* ticksp) : ASTGEN_SUPER(fl) {
-        addOp1p(exprp);
-        addNOp2p(ticksp);
-    }
+    AstPast(FileLine* fl, AstNode* exprp, AstNode* ticksp)
+        : ASTGEN_SUPER(fl) { addOp1p(exprp); addNOp2p(ticksp); }
     ASTNODE_NODE_FUNCS(Past)
     virtual string emitVerilog() { V3ERROR_NA; return ""; }
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { V3ERROR_NA; }
@@ -6220,9 +6255,8 @@ class AstPattern : public AstNodeMath {
     // Parents: AstNodeAssign, AstPattern, ...
     // Children: expression, AstPattern, AstPatReplicate
 public:
-    AstPattern(FileLine* fl, AstNode* itemsp) : ASTGEN_SUPER(fl) {
-        addNOp2p(itemsp);
-    }
+    AstPattern(FileLine* fl, AstNode* itemsp)
+        : ASTGEN_SUPER(fl) { addNOp2p(itemsp); }
     ASTNODE_NODE_FUNCS(Pattern)
     virtual string emitVerilog() { V3ERROR_NA; return ""; }  // Implemented specially
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { V3ERROR_NA; }
@@ -6243,8 +6277,8 @@ class AstPatMember : public AstNodeMath {
 private:
     bool        m_default;
 public:
-    AstPatMember(FileLine* fl, AstNode* lhsp, AstNode* keyp, AstNode* repp) : ASTGEN_SUPER(fl) {
-        addOp1p(lhsp), setNOp2p(keyp), setNOp3p(repp); m_default = false; }
+    AstPatMember(FileLine* fl, AstNode* lhsp, AstNode* keyp, AstNode* repp)
+        : ASTGEN_SUPER(fl) { addOp1p(lhsp), setNOp2p(keyp), setNOp3p(repp); m_default = false; }
     ASTNODE_NODE_FUNCS(PatMember)
     virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { V3ERROR_NA; }
     virtual string emitVerilog() { return lhssp()?"%f{%r{%k%l}}":"%l"; }
@@ -6787,8 +6821,8 @@ class AstMTaskBody : public AstNode {
 private:
     ExecMTask* m_execMTaskp;
 public:
-    explicit AstMTaskBody(FileLine* flp)
-        : ASTGEN_SUPER(flp)
+    explicit AstMTaskBody(FileLine* fl)
+        : ASTGEN_SUPER(fl)
         , m_execMTaskp(NULL) {}
     ASTNODE_NODE_FUNCS(MTaskBody);
     virtual const char* broken() const { BROKEN_RTN(!m_execMTaskp); return NULL; }
@@ -6811,7 +6845,7 @@ class AstExecGraph : public AstNode {
 private:
     V3Graph *m_depGraphp;  // contains ExecMTask's
 public:
-    explicit AstExecGraph(FileLine* fileline);
+    explicit AstExecGraph(FileLine* fl);
     ASTNODE_NODE_FUNCS_NO_DTOR(ExecGraph)
     virtual ~AstExecGraph();
     virtual const char* broken() const { BROKEN_RTN(!m_depGraphp); return NULL; }
@@ -6823,8 +6857,8 @@ public:
 class AstSplitPlaceholder : public AstNode {
 public:
     // Dummy node used within V3Split; never exists outside of V3Split.
-    explicit AstSplitPlaceholder(FileLine* filelinep)
-        : ASTGEN_SUPER(filelinep) {}
+    explicit AstSplitPlaceholder(FileLine* fl)
+        : ASTGEN_SUPER(fl) {}
     ASTNODE_NODE_FUNCS(SplitPlaceholder)
 };
 
@@ -6840,7 +6874,8 @@ class AstTypeTable : public AstNode {
     typedef std::map<VBasicTypeKey,AstBasicDType*> DetailedMap;
     DetailedMap m_detailedMap;
 public:
-    explicit AstTypeTable(FileLine* fl) : ASTGEN_SUPER(fl), m_voidp(NULL) {
+    explicit AstTypeTable(FileLine* fl)
+        : ASTGEN_SUPER(fl), m_voidp(NULL) {
         for (int i=0; i<AstBasicDTypeKwd::_ENUM_MAX; ++i) m_basicps[i] = NULL;
     }
     ASTNODE_NODE_FUNCS(TypeTable)
