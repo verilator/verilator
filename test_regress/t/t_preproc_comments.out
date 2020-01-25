@@ -652,7 +652,7 @@ hello4hello4hello4hello4
      
 Line_Preproc_Check 401
 //====================================================================== 
-// Quoted multiline - track line numbers, and insure \\n gets propagated 
+// Quoted multiline - track line numbers, and ensure \\n gets propagated 
  
 
  

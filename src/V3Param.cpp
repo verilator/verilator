@@ -477,7 +477,7 @@ private:
             UINFO(9,"  BEGIN "<<nodep<<endl);
             UINFO(9,"  GENFOR "<<forp<<endl);
             V3Width::widthParamsEdit(forp);  // Param typed widthing will NOT recurse the body
-            // Outer wrapper around generate used to hold genvar, and to insure genvar
+            // Outer wrapper around generate used to hold genvar, and to ensure genvar
             // doesn't conflict in V3LinkDot resolution with other genvars
             // Now though we need to change BEGIN("zzz", GENFOR(...)) to
             // a BEGIN("zzz__BRA__{loop#}__KET__")

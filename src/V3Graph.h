@@ -270,7 +270,7 @@ class V3GraphEdge {
     // Wires/variables aren't edges.  Edges have only a single to/from vertex
 public:
     // ENUMS
-    enum Cuttable { NOT_CUTABLE = false, CUTABLE = true };  // For passing to V3GraphEdge
+    enum Cutable { NOT_CUTABLE = false, CUTABLE = true };  // For passing to V3GraphEdge
 protected:
     friend class V3Graph;       friend class V3GraphVertex;
     friend class GraphAcyc;     friend class GraphAcycEdge;

@@ -2064,7 +2064,7 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
             string op = de ? ">>" : "<<";
             // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
             puts("void "+modClassName(modp)+"::"+protect(funcname)+"("+classname+"& os) {\n");
-            // Place a computed checksum to insure proper structure save/restore formatting
+            // Place a computed checksum to ensure proper structure save/restore formatting
             // OK if this hash includes some things we won't dump, since
             // just looking for loading the wrong model
             VHashSha256 hash;

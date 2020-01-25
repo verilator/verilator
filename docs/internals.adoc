@@ -397,7 +397,7 @@ e.g. threads.
 We will work with contributors to fix up indentation style issues, but it
 is appreciated if you could match our style:
 
-* All files should contain the magic header to insure standard indentation:
+* All files should contain the magic header to ensure standard indentation:
 +
    // -*- mode: C++; c-file-style: "cc-mode" -*-
 +

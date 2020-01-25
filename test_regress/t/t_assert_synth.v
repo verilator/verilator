@@ -18,7 +18,7 @@ module t (/*AUTOARG*/
    wire  a_l = ~a;
    wire  b_oc_l = ~b_oc;
 
-   // Note we must insure that full, parallel, etc, only fire during
+   // Note we must ensure that full, parallel, etc, only fire during
    // edges (not mid-cycle), and must provide a way to turn them off.
    // SystemVerilog provides:  $asserton and $assertoff.
 

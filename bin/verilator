@@ -3150,7 +3150,7 @@ analysis.) For example:
 The clock_enable attribute will cause the clock gate to be ignored in the
 scheduling algorithm, sometimes required for correct clock behavior, and
 always improving performance.  It's also a good idea to enable the
-IMPERFECTSCH warning, to insure all clock enables are properly recognized.
+IMPERFECTSCH warning, to ensure all clock enables are properly recognized.
 
 Same as C<clock_enable> in configuration files, see L</"CONFIGURATION
 FILES"> for more information.
@@ -4914,7 +4914,7 @@ Most synthesis tools similarly define SYNTHESIS for you.
 =item Why do I get "unexpected `do'" or "unexpected `bit'" errors?
 
 Do, bit, ref, return, and other words are now SystemVerilog keywords.  You
-should change your code to not use them to insure it works with newer
+should change your code to not use them to ensure it works with newer
 tools.  Alternatively, surround them by the Verilog 2005/SystemVerilog
 begin_keywords pragma to indicate Verilog 2001 code.
 

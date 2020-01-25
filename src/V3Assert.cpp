@@ -115,9 +115,9 @@ private:
         if (failsp) failsp->unlinkFrBackWithNext();
 
         if (nodep->immediate()) {
-            UASSERT_OBJ(!sentreep, nodep, "Immediate assertions don't have sensivity");
+            UASSERT_OBJ(!sentreep, nodep, "Immediate assertions don't have sensitivity");
         } else {
-            UASSERT_OBJ(sentreep, nodep, "Concurrent assertions must have sensivity");
+            UASSERT_OBJ(sentreep, nodep, "Concurrent assertions must have sensitivity");
             sentreep->unlinkFrBack();
         }
         //

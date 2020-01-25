@@ -194,7 +194,7 @@ private:
     }
 
     // VISITORS
-    // If adding new visitors, insure V3Width's visit(TYPE) calls into here
+    // If adding new visitors, ensure V3Width's visit(TYPE) calls into here
 
     virtual void visit(AstSelBit* nodep) VL_OVERRIDE {
         // Select of a non-width specified part of an array, i.e. "array[2]"
@@ -498,7 +498,7 @@ private:
     virtual void visit(AstSelMinus* nodep) VL_OVERRIDE {
         replaceSelPlusMinus(nodep);
     }
-    // If adding new visitors, insure V3Width's visit(TYPE) calls into here
+    // If adding new visitors, ensure V3Width's visit(TYPE) calls into here
 
     //--------------------
     // Default

@@ -66,7 +66,7 @@ protected:
     static bool emptyFunctionDeletion() { return true; }
     static bool duplicateFunctionCombine() { return true; }
     // Note this is disabled, it still needed work
-    // Also repair it for DPI functions; when make __common need to insure proper
+    // Also repair it for DPI functions; when make __common need to ensure proper
     // flags get inherited from the old to new AstCFunc, and that AstText doesn't
     // get split between functions causing the text to have a dangling reference.
     bool statementCombine() { return false; }  // duplicateFunctionCombine();

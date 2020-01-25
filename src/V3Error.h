@@ -291,8 +291,8 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
 
 // Theses allow errors using << operators: v3error("foo"<<"bar");
 // Careful, you can't put () around msg, as you would in most macro definitions
-// Note the commas are the comma operator, not separating arguments. These are needed to insure
-// evaluation order as otherwise we couldn't insure v3errorPrep is called first.
+// Note the commas are the comma operator, not separating arguments. These are needed to ensure
+// evaluation order as otherwise we couldn't ensure v3errorPrep is called first.
 #define v3warnCode(code,msg) \
     v3errorEnd((V3Error::v3errorPrep(code), (V3Error::v3errorStr()<<msg), V3Error::v3errorStr()));
 #define v3warnCodeFatal(code,msg) \

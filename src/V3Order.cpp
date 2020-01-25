@@ -1462,7 +1462,7 @@ void OrderVisitor::processCircular() {
             for (V3GraphEdge* edgep = vvertexp->outBeginp(); edgep; edgep=edgep->outNextp()) {
                 if (edgep->weight()==0) {  // was cut
                     OrderEdge* oedgep = dynamic_cast<OrderEdge*>(edgep);
-                    UASSERT_OBJ(oedgep, vvertexp->varScp(), "Cuttable edge not of proper type");
+                    UASSERT_OBJ(oedgep, vvertexp->varScp(), "Cutable edge not of proper type");
                     UINFO(6,"      CutCircularO: "<<vvertexp->name()<<endl);
                     nodeMarkCircular(vvertexp, oedgep);
                 }
@@ -1470,7 +1470,7 @@ void OrderVisitor::processCircular() {
             for (V3GraphEdge* edgep = vvertexp->inBeginp(); edgep; edgep = edgep->inNextp()) {
                 if (edgep->weight()==0) {  // was cut
                     OrderEdge* oedgep = dynamic_cast<OrderEdge*>(edgep);
-                    UASSERT_OBJ(oedgep, vvertexp->varScp(), "Cuttable edge not of proper type");
+                    UASSERT_OBJ(oedgep, vvertexp->varScp(), "Cutable edge not of proper type");
                     UINFO(6,"      CutCircularI: "<<vvertexp->name()<<endl);
                     nodeMarkCircular(vvertexp, oedgep);
                 }

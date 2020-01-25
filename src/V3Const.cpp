@@ -1791,7 +1791,7 @@ private:
 
             //   SENTREE(... SENITEM(x),   SENGATE(SENITEM(x),*) ...)  => SENITEM(x)
             // Do we need the SENITEM's to be identical?  No because we're
-            // ORing between them; we just need to insure that the result is at
+            // ORing between them; we just need to ensure that the result is at
             // least as frequently activating.  So we simply
             // SENGATE(SENITEM(x)) -> SENITEM(x), then let it collapse with the
             // other SENITEM(x).

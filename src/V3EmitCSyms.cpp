@@ -778,7 +778,7 @@ void EmitCSyms::emitDpiHdr() {
     puts("// DESCR" "IPTION: Verilator output: Prototypes for DPI import and export functions.\n");
     puts("//\n");
     puts("// Verilator includes this file in all generated .cpp files that use DPI functions.\n");
-    puts("// Manually include this file where DPI .c import functions are declared to insure\n");
+    puts("// Manually include this file where DPI .c import functions are declared to ensure\n");
     puts("// the C functions match the expectations of the DPI imports.\n");
     puts("\n");
     puts("#include \"svdpi.h\"\n");

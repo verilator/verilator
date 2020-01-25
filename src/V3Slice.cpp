@@ -171,11 +171,11 @@ class SliceVisitor : public AstNVisitor {
             if (AstUnpackArrayDType* adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
                 AstNodeBiop* logp = NULL;
                 if (!VN_IS(nodep->lhsp()->dtypep()->skipRefp(), NodeArrayDType)) {
-                    nodep->lhsp()->v3error("Slice operatator "<<nodep->lhsp()->prettyTypeName()
+                    nodep->lhsp()->v3error("Slice operator "<<nodep->lhsp()->prettyTypeName()
                                            <<" on non-slicable (e.g. non-vector) left-hand-side operand");
                 }
                 else if (!VN_IS(nodep->rhsp()->dtypep()->skipRefp(), NodeArrayDType)) {
-                    nodep->rhsp()->v3error("Slice operatator "<<nodep->rhsp()->prettyTypeName()
+                    nodep->rhsp()->v3error("Slice operator "<<nodep->rhsp()->prettyTypeName()
                                            <<" on non-slicable (e.g. non-vector) right-hand-side operand");
                 }
                 else {
