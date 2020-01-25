@@ -61,9 +61,9 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
         iterateChildren(nodep);
     }
     virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
-        putfs(nodep, nodep->verilogKwd()+" "+modClassName(nodep)+";\n");
+        putfs(nodep, nodep->verilogKwd() + " " + prefixNameProtect(nodep) + ";\n");
         iterateChildren(nodep);
-        putqs(nodep, "end"+nodep->verilogKwd()+"\n");
+        putqs(nodep, "end" + nodep->verilogKwd() + "\n");
     }
     virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
         putfs(nodep, nodep->isFunction() ? "function":"task");
@@ -757,12 +757,12 @@ void V3EmitV::emitv() {
         EmitVFileVisitor visitor (v3Global.rootp(), &of);
     } else {
         // Process each module in turn
-        for (AstNodeModule* modp = v3Global.rootp()->modulesp();
-             modp; modp=VN_CAST(modp->nextp(), NodeModule)) {
-            V3OutVFile of (v3Global.opt.makeDir()
-                           +"/"+EmitCBaseVisitor::modClassName(modp)+"__Vout.v");
+        for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
+             modp = VN_CAST(modp->nextp(), NodeModule)) {
+            V3OutVFile of(v3Global.opt.makeDir() + "/" + EmitCBaseVisitor::prefixNameProtect(modp)
+                          + "__Vout.v");
             of.putsHeader();
-            EmitVFileVisitor visitor (modp, &of);
+            EmitVFileVisitor visitor(modp, &of);
         }
     }
 }

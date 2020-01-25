@@ -391,7 +391,7 @@ void EmitCSyms::emitSymHdr() {
     puts("\n// INCLUDE MODULE CLASSES\n");
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp();
          nodep; nodep=VN_CAST(nodep->nextp(), NodeModule)) {
-        puts("#include \""+modClassName(nodep)+".h\"\n");
+        puts("#include \"" + prefixNameProtect(nodep) + ".h\"\n");
     }
 
     if (v3Global.dpi()) {
@@ -425,12 +425,11 @@ void EmitCSyms::emitSymHdr() {
         AstScope* scopep = it->first;
         AstNodeModule* modp = it->second;
         if (modp->isTop()) {
-            ofp()->printf("%-30s ", (modClassName(modp)+"*").c_str());
-            puts(protectIf(scopep->nameDotless()+"p", scopep->protect())+";\n");
-        }
-        else {
-            ofp()->printf("%-30s ", (modClassName(modp)+"").c_str());
-            puts(protectIf(scopep->nameDotless(), scopep->protect())+";\n");
+            ofp()->printf("%-30s ", (prefixNameProtect(modp) + "*").c_str());
+            puts(protectIf(scopep->nameDotless() + "p", scopep->protect()) + ";\n");
+        } else {
+            ofp()->printf("%-30s ", (prefixNameProtect(modp) + "").c_str());
+            puts(protectIf(scopep->nameDotless(), scopep->protect()) + ";\n");
         }
     }
 
@@ -528,7 +527,7 @@ void EmitCSyms::emitSymImpPreamble() {
     puts("#include \""+symClassName()+".h\"\n");
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
          nodep = VN_CAST(nodep->nextp(), NodeModule)) {
-        puts("#include \"" + modClassName(nodep) + ".h\"\n");
+        puts("#include \"" + prefixNameProtect(nodep) + ".h\"\n");
     }
 }
 
@@ -699,7 +698,7 @@ void EmitCSyms::emitSymImp() {
                 puts(protect("__Vscope_"+scopep->scopeSymName())+".exportInsert(__Vfinal, ");
                 putsQuoted(funcp->cname());  // Not protected - user asked for import/export
                 puts(", (void*)(&");
-                puts(modClassName(modp));
+                puts(prefixNameProtect(modp));
                 puts("::");
                 puts(funcp->nameProtect());
                 puts("));\n");

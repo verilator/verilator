@@ -1095,9 +1095,9 @@ class EmitCImp : EmitCStmts {
     }
 
     V3OutCFile* newOutCFile(AstNodeModule* modp, bool slow, bool source, int filenum=0) {
-        string filenameNoExt = v3Global.opt.makeDir()+"/"+ modClassName(modp);
-        if (filenum) filenameNoExt += "__"+cvtToStr(filenum);
-        filenameNoExt += (slow ? "__Slow":"");
+        string filenameNoExt = v3Global.opt.makeDir() + "/" + prefixNameProtect(modp);
+        if (filenum) filenameNoExt += "__" + cvtToStr(filenum);
+        filenameNoExt += (slow ? "__Slow" : "");
         V3OutCFile* ofp = NULL;
         if (v3Global.opt.lintOnly()) {
             // Unfortunately we have some lint checks here, so we can't just skip processing.
@@ -1208,7 +1208,7 @@ class EmitCImp : EmitCStmts {
         ExecMTask* mtp = nodep->execMTaskp();
         puts("\n");
         puts("void ");
-        puts(modClassName(m_modp)+"::"+protect(mtp->cFuncName()));
+        puts(prefixNameProtect(m_modp) + "::" + protect(mtp->cFuncName()));
         puts("(bool even_cycle, void* symtab) {\n");
 
         // Declare and set vlSymsp
@@ -1237,14 +1237,13 @@ class EmitCImp : EmitCStmts {
         if (nodep->ifdef()!="") puts("#ifdef "+nodep->ifdef()+"\n");
         if (nodep->isInline()) puts("VL_INLINE_OPT ");
         puts(nodep->rtnTypeVoid()); puts(" ");
-        puts(modClassName(m_modp)+"::"+nodep->nameProtect()
-             +"("+cFuncArgs(nodep)+") {\n");
+        puts(prefixNameProtect(m_modp) + "::" + nodep->nameProtect() + "(" + cFuncArgs(nodep)
+             + ") {\n");
 
         // "+" in the debug indicates a print from the model
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+  ");
         for (int i=0; i<m_modp->level(); ++i) { puts("  "); }
-        puts(modClassName(m_modp)+"::"+nodep->nameProtect()
-             +"\\n\"); );\n");
+        puts(prefixNameProtect(m_modp) + "::" + nodep->nameProtect() + "\\n\"); );\n");
 
         // Declare and set vlTOPp
         if (nodep->symProlog()) puts(EmitCBaseVisitor::symTopAssign()+"\n");
@@ -1949,9 +1948,9 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     puts("\n");
     bool first = true;
     if (optSystemC() && modp->isTop()) {
-        puts("VL_SC_CTOR_IMP("+modClassName(modp)+")");
+        puts("VL_SC_CTOR_IMP(" + prefixNameProtect(modp) + ")");
     } else {
-        puts("VL_CTOR_IMP("+modClassName(modp)+")");
+        puts("VL_CTOR_IMP(" + prefixNameProtect(modp) + ")");
         first = false;  // VL_CTOR_IMP includes the first ':'
     }
     emitVarCtors(&first);
@@ -2007,8 +2006,8 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
 }
 
 void EmitCImp::emitConfigureImp(AstNodeModule* modp) {
-    puts("\nvoid "+modClassName(modp)+"::"+protect("__Vconfigure")
-         +"("+symClassName()+"* vlSymsp, bool first) {\n");
+    puts("\nvoid " + prefixNameProtect(modp) + "::" + protect("__Vconfigure") + "("
+         + symClassName() + "* vlSymsp, bool first) {\n");
     puts(   "if (0 && first) {}  // Prevent unused\n");
     puts(   "this->__VlSymsp = vlSymsp;\n");  // First, as later stuff needs it.
     if (v3Global.opt.coverage() ) {
@@ -2023,8 +2022,9 @@ void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
         puts("\n// Coverage\n");
         // Rather than putting out VL_COVER_INSERT calls directly, we do it via this function
         // This gets around gcc slowness constructing all of the template arguments.
-        puts("void "+modClassName(m_modp)+"::__vlCoverInsert(uint32_t* countp, bool enable,"
-             " const char* filenamep, int lineno, int column,\n");
+        puts("void " + prefixNameProtect(m_modp)
+             + "::__vlCoverInsert(uint32_t* countp, bool enable,"
+             + " const char* filenamep, int lineno, int column,\n");
         puts(   "const char* hierp, const char* pagep, const char* commentp) {\n");
         puts(   "static uint32_t fake_zero_count = 0;\n");  // static doesn't need save-restore as constant
         puts(   "if (!enable) countp = &fake_zero_count;\n");  // Used for second++ instantiation of identical bin
@@ -2045,7 +2045,7 @@ void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
 
 void EmitCImp::emitDestructorImp(AstNodeModule* modp) {
     puts("\n");
-    puts(modClassName(modp)+"::~"+modClassName(modp)+"() {\n");
+    puts(prefixNameProtect(modp) + "::~" + prefixNameProtect(modp) + "() {\n");
     if (modp->isTop() && v3Global.opt.mtasks()) {
         puts("delete __Vm_threadPoolp; __Vm_threadPoolp = NULL;\n");
     }
@@ -2063,7 +2063,8 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
             string funcname = de ? "__Vdeserialize" : "__Vserialize";
             string op = de ? ">>" : "<<";
             // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
-            puts("void "+modClassName(modp)+"::"+protect(funcname)+"("+classname+"& os) {\n");
+            puts("void " + prefixNameProtect(modp) + "::" + protect(funcname) + "(" + classname
+                 + "& os) {\n");
             // Place a computed checksum to ensure proper structure save/restore formatting
             // OK if this hash includes some things we won't dump, since
             // just looking for loading the wrong model
@@ -2167,7 +2168,8 @@ void EmitCImp::emitCellCtors(AstNodeModule* modp) {
     }
     for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
         if (AstCell* cellp = VN_CAST(nodep, Cell)) {
-            puts("VL_CELL("+cellp->nameProtect()+", "+modClassName(cellp->modp())+");\n");
+            puts("VL_CELL(" + cellp->nameProtect() + ", " + prefixNameProtect(cellp->modp())
+                 + ");\n");
         }
     }
 }
@@ -2238,8 +2240,9 @@ void EmitCImp::emitSettleLoop(const std::string& eval_call, bool initial) {
 }
 
 void EmitCImp::emitWrapEval(AstNodeModule* modp) {
-    puts("\nvoid "+modClassName(modp)+"::eval() {\n");
-    puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+++++TOP Evaluate "+modClassName(modp)+"::eval\\n\"); );\n");
+    puts("\nvoid " + prefixNameProtect(modp) + "::eval() {\n");
+    puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+++++TOP Evaluate " + prefixNameProtect(modp)
+         + "::eval\\n\"); );\n");
     puts(EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp;  // Setup global symbol table\n");
     puts(EmitCBaseVisitor::symTopAssign()+"\n");
     puts("#ifdef VL_DEBUG\n");
@@ -2311,8 +2314,8 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     splitSizeInc(10);
 
     //
-    puts("\nvoid "+modClassName(modp)+"::"+protect("_eval_initial_loop")
-         +"("+EmitCBaseVisitor::symClassVar()+") {\n");
+    puts("\nvoid " + prefixNameProtect(modp) + "::" + protect("_eval_initial_loop") + "("
+         + EmitCBaseVisitor::symClassVar() + ") {\n");
     puts("vlSymsp->__Vm_didInit = true;\n");
     puts(protect("_eval_initial")+"(vlSymsp);\n");
     if (v3Global.opt.trace()) {
@@ -2571,9 +2574,9 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     vl_unordered_set<string> didClassName;
     for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
         if (AstCell* cellp = VN_CAST(nodep, Cell)) {
-            string className = modClassName(cellp->modp());
-            if (didClassName.find(className)==didClassName.end()) {
-                puts("class "+className+";\n");
+            string className = prefixNameProtect(cellp->modp());
+            if (didClassName.find(className) == didClassName.end()) {
+                puts("class " + className + ";\n");
                 didClassName.insert(className);
             }
         }
@@ -2586,9 +2589,9 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     emitTextSection(AstType::atScHdr);
 
     if (optSystemC() && modp->isTop()) {
-        puts("SC_MODULE("+modClassName(modp)+") {\n");
+        puts("SC_MODULE(" + prefixNameProtect(modp) + ") {\n");
     } else {
-        puts("VL_MODULE("+modClassName(modp)+") {\n");
+        puts("VL_MODULE(" + prefixNameProtect(modp) + ") {\n");
     }
     ofp()->resetPrivate();
     ofp()->putsPrivate(false);  // public:
@@ -2603,7 +2606,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
                     if (modp->isTop()) puts("// Public to allow access to /*verilator_public*/ items;\n");
                     if (modp->isTop()) puts("// otherwise the application code can consider these internals.\n");
                 }
-                puts(modClassName(cellp->modp())+"* "+cellp->nameProtect()+";\n");
+                puts(prefixNameProtect(cellp->modp()) + "* " + cellp->nameProtect() + ";\n");
             }
         }
     }
@@ -2671,24 +2674,26 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     ofp()->resetPrivate();
     // We don't need a private copy constructor, as VerilatedModule has one for us.
     ofp()->putsPrivate(true);
-    puts("VL_UNCOPYABLE("+modClassName(modp)+");  ///< Copying not allowed\n");
+    puts("VL_UNCOPYABLE(" + prefixNameProtect(modp) + ");  ///< Copying not allowed\n");
 
     ofp()->putsPrivate(false);  // public:
     if (optSystemC() && modp->isTop()) {
-        puts("SC_CTOR("+modClassName(modp)+");\n");
-        puts("virtual ~"+modClassName(modp)+"();\n");
+        puts("SC_CTOR(" + prefixNameProtect(modp) + ");\n");
+        puts("virtual ~" + prefixNameProtect(modp) + "();\n");
     } else if (optSystemC()) {
-        puts("VL_CTOR("+modClassName(modp)+");\n");
-        puts("~"+modClassName(modp)+"();\n");
+        puts("VL_CTOR(" + prefixNameProtect(modp) + ");\n");
+        puts("~" + prefixNameProtect(modp) + "();\n");
     } else {
         if (modp->isTop()) {
             puts("/// Construct the model; called by application code\n");
             puts("/// The special name "" may be used to make a wrapper with a\n");
             puts("/// single model invisible with respect to DPI scope names.\n");
         }
-        puts(modClassName(modp)+"(const char* name = \"TOP\");\n");
-        if (modp->isTop()) puts("/// Destroy the model; called (often implicitly) by application code\n");
-        puts("~"+modClassName(modp)+"();\n");
+        puts(prefixNameProtect(modp) + "(const char* name = \"TOP\");\n");
+        if (modp->isTop()) {
+            puts("/// Destroy the model; called (often implicitly) by application code\n");
+        }
+        puts("~" + prefixNameProtect(modp) + "();\n");
     }
     if (v3Global.opt.trace() && modp->isTop()) {
         puts("/// Trace signals in the model; called by application code\n");
@@ -2747,11 +2752,14 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     if (v3Global.opt.savable() && modp->isTop()) {
         puts("\n");
         puts("inline VerilatedSerialize& operator<<(VerilatedSerialize& os, "
-             +modClassName(modp)+"& rhs) {\n"
-             "Verilated::quiesce(); rhs."+protect("__Vserialize")+"(os); return os; }\n");
+             + prefixNameProtect(modp) + "& rhs) {\n"
+             + "Verilated::quiesce(); rhs."
+             + protect("__Vserialize") + "(os); return os; }\n");
         puts("inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, "
-             +modClassName(modp)+"& rhs) {\n"
-             "Verilated::quiesce(); rhs."+protect("__Vdeserialize")+"(os); return os; }\n");
+             + prefixNameProtect(modp)
+             + "& rhs) {\n"
+             + "Verilated::quiesce(); rhs."
+             + protect("__Vdeserialize") + "(os); return os; }\n");
     }
 
     // finish up h-file
@@ -2762,8 +2770,8 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
 void EmitCImp::emitImp(AstNodeModule* modp) {
     puts("\n");
-    puts("#include \""+modClassName(modp)+".h\"\n");
-    puts("#include \""+symClassName()+".h\"\n");
+    puts("#include \"" + prefixNameProtect(modp) + ".h\"\n");
+    puts("#include \"" + symClassName() + ".h\"\n");
 
     if (v3Global.dpi()) {
         puts("\n");
@@ -2776,7 +2784,7 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
     if (m_slow && splitFilenum()==0) {
         puts("\n//--------------------\n");
         puts("// STATIC VARIABLES\n\n");
-        emitVarList(modp->stmtsp(), EVL_CLASS_ALL, modClassName(modp));
+        emitVarList(modp->stmtsp(), EVL_CLASS_ALL, prefixNameProtect(modp));
     }
 
     if (m_fast && splitFilenum()==0) {
@@ -2824,9 +2832,7 @@ void EmitCImp::main(AstNodeModule* modp, bool slow, bool fast) {
     m_slow = slow;
     m_fast = fast;
 
-    if (debug()>=5) {
-        UINFO(0,"  Emitting "<<modClassName(modp)<<endl);
-    }
+    UINFO(5, "  Emitting " << prefixNameProtect(modp) << endl);
 
     if (m_fast) {
         m_ofp = newOutCFile(modp, !m_fast, false/*source*/);
