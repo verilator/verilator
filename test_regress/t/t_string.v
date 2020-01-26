@@ -20,6 +20,8 @@ module t (/*AUTOARG*/
    string 	s3;
    reg		eq;
 
+   byte		unpack1[0:4];
+
    // Operators == != < <= > >=  {a,b}  {a{b}}  a[b]
    // a.len, a.putc, a.getc, a.toupper, a.tolower, a.compare, a.icompare, a.substr
    // a.atoi, a.atohex, a.atooct, a.atobin, a.atoreal,
@@ -44,6 +46,20 @@ module t (/*AUTOARG*/
       `checkh(s <  "b", 1'b1);
       `checkh(s <= " ", 1'b0);
       `checkh(s <= "a", 1'b1);
+
+`ifndef VCS
+`ifndef VERILATOR
+`ifndef NC
+      // IEEE 1800-2017 5.9 assignment to byte array
+      unpack1 = "five";
+      `checkh(unpack1[0], "f");
+      `checkh(unpack1[1], "i");
+      `checkh(unpack1[2], "v");
+      `checkh(unpack1[3], "e");
+      `checkh(unpack1[4], 8'h0);
+`endif
+`endif
+`endif
    end
 
    // Test loop
