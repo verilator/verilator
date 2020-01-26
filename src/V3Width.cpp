@@ -2300,9 +2300,10 @@ private:
                     patp->unlinkFrBack(&relinkHandle);
                     while (AstNode* movep = patp->lhssp()->nextp()) {
                         movep->unlinkFrBack();  // Not unlinkFrBackWithNext, just one
+                        AstNode* newkeyp = NULL;
+                        if (patp->keyp()) newkeyp = patp->keyp()->cloneTree(true);
                         AstPatMember* newp
-                            = new AstPatMember(patp->fileline(), movep,
-                                               patp->keyp()->cloneTree(true), NULL);
+                            = new AstPatMember(patp->fileline(), movep, newkeyp, NULL);
                         patp->addNext(newp);
                     }
                     relinkHandle.relink(patp);
