@@ -1566,7 +1566,7 @@ data_typeNoRef<dtypep>:		// ==IEEE: data_type, excluding class_type etc referenc
 	//			// instead see data_typeVar
 	|	yVIRTUAL__INTERFACE yINTERFACE id/*interface*/	{ $$ = NULL; BBUNSUP($1, "Unsupported: virtual interface"); }
 	|	yVIRTUAL__anyID                id/*interface*/	{ $$ = NULL; BBUNSUP($1, "Unsupported: virtual data type"); }
-	//UNSUP	type_reference				{ UNSUP }
+	|	type_reference				{ $$ = $1; }
 	//			// IEEE: class_scope: see data_type above
 	//			// IEEE: class_type: see data_type above
 	//			// IEEE: ps_covergroup: see data_type above
@@ -1583,9 +1583,9 @@ var_data_type<dtypep>:		// ==IEEE: var_data_type
 	|	yVAR implicit_typeE			{ $$ = $2; }
 	;
 
-//UNSUP type_reference<dtypep>:  // ==IEEE: type_reference
-//UNSUP		yTYPE '(' exprOrDataType ')'		{ UNSUP }
-//UNSUP	;
+type_reference<dtypep>:  	// ==IEEE: type_reference
+		yTYPE '(' exprOrDataType ')'		{ $$ = new AstRefDType($1, AstRefDType::FlagTypeOfExpr(), $3); }
+	;
 
 struct_unionDecl<uorstructp>:	// IEEE: part of data_type
 	//			// packedSigningE is NOP for unpacked

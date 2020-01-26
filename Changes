@@ -11,19 +11,21 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Verilation speed improvements, #2133, #2138. [Geza Lore]
 
-***   Support libgoogle-perftools-dev's libtcmalloc if available. #2137. [Geza Lore]
+***   Support libgoogle-perftools-dev's libtcmalloc if available, #2137. [Geza Lore]
 
-***   Support $readmem/$writemem with assoc arrarys. Closes #2100. [agrobman]
+***   Support $readmem/$writemem with assoc arrarys, #2100. [agrobman]
 
-****  Support left justified $display. Closes #2101. [Pieter Kapsenberg]
+****  Support type(expression) operator, #1650.
+
+****  Support left justified $display, #2101. [Pieter Kapsenberg]
 
 ****  Add parameter values in XML. #2110. [Pieter Kapsenberg]
 
-****  Add loc column location in XML (replaces fl). #2122. [Pieter Kapsenberg]
+****  Add loc column location in XML (replaces fl), #2122. [Pieter Kapsenberg]
 
 ****  Add error on misused define. [Topa Tota]
 
-****  Add parameter to set maximum signal width. #2082. [Øyvind Harboe]
+****  Add parameter to set maximum signal width, #2082. [Øyvind Harboe]
 
 ****  Fix VPI scope naming for public modules. [Nandu Raj]
 

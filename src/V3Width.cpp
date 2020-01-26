@@ -1261,6 +1261,15 @@ private:
         }
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         nodep->doingWidth(true);
+        if (nodep->typeofp()) {  // type(typeofp_expression)
+            // Type comes from expression's type
+            userIterateAndNext(nodep->typeofp(), WidthVP(SELF, BOTH).p());
+            AstNode* typeofp = nodep->typeofp();
+            nodep->refDTypep(typeofp->dtypep());
+            VL_DO_DANGLING(typeofp->unlinkFrBack()->deleteTree(), typeofp);
+            // We had to use AstRefDType for this construct as pointers to this type
+            // in type table are still correct (which they wouldn't be if we replaced the node)
+        }
         userIterateChildren(nodep, NULL);
         if (nodep->subDTypep()) nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
         // Effectively nodep->dtypeFrom(nodep->dtypeSkipRefp());
@@ -4175,7 +4184,7 @@ private:
     AstNode* spliceCvtD(AstNode* nodep) {
         // For integer used in REAL context, convert to real
         // We don't warn here, "2.0 * 2" is common and reasonable
-        if (nodep && !nodep->isDouble()) {
+        if (nodep && !nodep->dtypep()->skipRefp()->isDouble()) {
             UINFO(6,"   spliceCvtD: "<<nodep<<endl);
             AstNRelinker linker;
             nodep->unlinkFrBack(&linker);
@@ -4189,7 +4198,7 @@ private:
     AstNode* spliceCvtS(AstNode* nodep, bool warnOn) {
         // IEEE-2012 11.8.1: Signed: Type coercion creates signed
         // 11.8.2: Argument to convert is self-determined
-        if (nodep && nodep->isDouble()) {
+        if (nodep && nodep->dtypep()->skipRefp()->isDouble()) {
             UINFO(6,"   spliceCvtS: "<<nodep<<endl);
             AstNRelinker linker;
             nodep->unlinkFrBack(&linker);

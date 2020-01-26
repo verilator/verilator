@@ -859,6 +859,11 @@ public:
         dtypeFrom(defp->dtypep());
         widthFromSub(subDTypep());
     }
+    class FlagTypeOfExpr {};  // type(expr) for parser only
+    AstRefDType(FileLine* fl, FlagTypeOfExpr, AstNode* typeofp)
+        : ASTGEN_SUPER(fl), m_refDTypep(NULL), m_packagep(NULL) {
+        setOp2p(typeofp);
+    }
     ASTNODE_NODE_FUNCS(RefDType)
     // METHODS
     virtual const char* broken() const { BROKEN_RTN(m_refDTypep && !m_refDTypep->brokeExists()); return NULL; }
@@ -901,6 +906,7 @@ public:
     virtual AstNodeDType* subDTypep() const { return m_refDTypep; }
     AstPackage* packagep() const { return m_packagep; }
     void packagep(AstPackage* nodep) { m_packagep = nodep; }
+    AstNode* typeofp() const { return op2p(); }
 };
 
 class AstStructDType : public AstNodeUOrStructDType {
