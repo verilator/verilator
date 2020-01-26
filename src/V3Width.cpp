@@ -947,6 +947,12 @@ private:
             }
         }
     }
+    virtual void visit(AstSampled* nodep) VL_OVERRIDE {
+        if (m_vup->prelim()) {
+            iterateCheckSizedSelf(nodep, "LHS", nodep->exprp(), SELF, BOTH);
+            nodep->dtypeFrom(nodep->exprp());
+        }
+    }
     virtual void visit(AstRand* nodep) VL_OVERRIDE {
         if (m_vup->prelim()) {
             nodep->dtypeSetSigned32();  // Says the spec

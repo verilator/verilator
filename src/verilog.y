@@ -591,6 +591,7 @@ class AstSenTree;
 %token<fl>		yD_REWIND	"$rewind"
 %token<fl>		yD_RIGHT	"$right"
 %token<fl>		yD_RTOI		"$rtoi"
+%token<fl>		yD_SAMPLED	"$sampled"
 %token<fl>		yD_SFORMAT	"$sformat"
 %token<fl>		yD_SFORMATF	"$sformatf"
 %token<fl>		yD_SHORTREALTOBITS "$shortrealtobits"
@@ -3264,6 +3265,7 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_RIGHT '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,NULL); }
 	|	yD_RIGHT '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,$5); }
 	|	yD_RTOI '(' expr ')'			{ $$ = new AstRToIS($1,$3); }
+	|	yD_SAMPLED '(' expr ')'			{ $$ = new AstSampled($1, $3); }
 	|	yD_SFORMATF '(' str commaEListE ')'	{ $$ = new AstSFormatF($1,*$3,false,$4); }
 	|	yD_SHORTREALTOBITS '(' expr ')'		{ $$ = new AstRealToBits($1,$3); UNSUPREAL($1); }
 	|	yD_SIGNED '(' expr ')'			{ $$ = new AstSigned($1,$3); }

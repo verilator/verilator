@@ -6265,6 +6265,24 @@ public:
     virtual bool same(const AstNode* samep) const { return true; }
 };
 
+class AstSampled : public AstNodeMath {
+    // Verilog $sampled
+    // Parents: math
+    // Children: expression
+public:
+    AstSampled(FileLine* fl, AstNode* exprp)
+        : ASTGEN_SUPER(fl) { addOp1p(exprp); }
+    ASTNODE_NODE_FUNCS(Sampled)
+    virtual string emitVerilog() { return "$sampled(%l)"; }
+    virtual string emitC() { V3ERROR_NA; return "";}
+    virtual string emitSimpleOperator() { V3ERROR_NA; return ""; }
+    virtual bool cleanOut() const { V3ERROR_NA; return ""; }
+    virtual int instrCount() const { return 0; }
+    AstNode* exprp() const { return op1p(); }  // op1 = expression
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const { return true; }
+};
+
 class AstPattern : public AstNodeMath {
     // Verilog '{a,b,c,d...}
     // Parents: AstNodeAssign, AstPattern, ...
