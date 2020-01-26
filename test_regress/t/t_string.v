@@ -4,7 +4,7 @@
 // without warranty, 2014 by Wilson Snyder.
 
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
-`define checks(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=\"%s\" exp=\"%s\"\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
+`define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=\"%s\" exp=\"%s\"\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
 
 module t (/*AUTOARG*/
    // Inputs
@@ -98,6 +98,19 @@ module t (/*AUTOARG*/
 	 `checkh(s <= " ", 1'b0);
 	 `checkh(s <= "a", 1'b1);
       end
+      // String character references
+      else if (cyc==10) begin
+	 s2 = "astring";
+      end
+      else if (cyc==11) begin
+	 `checks(s2, "astring");
+	 `checkh(s2.len(), 7);
+	 `checkh(s2[1], "s");
+	 s2[0] = "0";
+	 s2[3] = "3";
+	 `checks(s2, "0st3ing");
+      end
+      //
       else if (cyc==99) begin
 	 $write("*-* All Finished *-*\n");
 	 $finish;

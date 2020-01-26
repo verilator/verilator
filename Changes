@@ -19,6 +19,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support left justified $display, #2101. [Pieter Kapsenberg]
 
+****  Support string character access via indexing.
+
 ****  Add parameter values in XML. #2110. [Pieter Kapsenberg]
 
 ****  Add loc column location in XML (replaces fl), #2122. [Pieter Kapsenberg]

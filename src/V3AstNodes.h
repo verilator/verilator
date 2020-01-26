@@ -6188,6 +6188,29 @@ public:
     virtual bool sizeMattersRhs() const { return false; }
 };
 
+class AstGetcRefN : public AstNodeBiop {
+    // Verilog string[#] on the left-hand-side of assignment
+    // Spec says is of type byte (not string of single character)
+public:
+    AstGetcRefN(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetBitSized(8, AstNumeric::UNSIGNED); }
+    ASTNODE_NODE_FUNCS(GetcRefN)
+    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) {
+        return new AstGetcRefN(this->fileline(), lhsp, rhsp);
+    }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
+        V3ERROR_NA;
+    }
+    virtual string emitVerilog() { return "%k%l[%r]"; }
+    virtual string emitC() { V3ERROR_NA; }
+    virtual string emitSimpleOperator() { return ""; }
+    virtual bool cleanOut() const { return true; }
+    virtual bool cleanLhs() const { return true; }
+    virtual bool cleanRhs() const { return true; }
+    virtual bool sizeMattersLhs() const { return false; }
+    virtual bool sizeMattersRhs() const { return false; }
+};
+
 class AstSubstrN : public AstNodeTriop {
     // Verilog string.substr()
 public:

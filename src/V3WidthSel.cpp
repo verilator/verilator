@@ -99,7 +99,8 @@ private:
             fromRange = adtypep->declRange();
         }
         else if (AstBasicDType* adtypep = VN_CAST(ddtypep, BasicDType)) {
-            if (adtypep->isRanged()) {
+            if (adtypep->isString() && VN_IS(nodep, SelBit)) {
+            } else if (adtypep->isRanged()) {
                 UASSERT_OBJ(!(adtypep->rangep()
                               && (!VN_IS(adtypep->rangep()->msbp(), Const)
                                   || !VN_IS(adtypep->rangep()->lsbp(), Const))),
@@ -268,7 +269,20 @@ private:
             if (debug()>=9) newp->dumpTree(cout, "--SELBTq: ");
             nodep->replaceWith(newp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
-        else if (VN_IS(ddtypep, BasicDType)) {
+        else if (VN_IS(ddtypep, BasicDType) && ddtypep->isString()) {
+            // SELBIT(string, index) -> GETC(string, index)
+            AstNodeVarRef* varrefp = VN_CAST(fromp, NodeVarRef);
+            if (!varrefp) nodep->v3error("Unsupported: String array operation on non-variable");
+            AstNode* newp;
+            if (varrefp && varrefp->lvalue()) {
+                newp = new AstGetcRefN(nodep->fileline(), fromp, rhsp);
+            } else {
+                newp = new AstGetcN(nodep->fileline(), fromp, rhsp);
+            }
+            UINFO(6, "   new " << newp << endl);
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        } else if (VN_IS(ddtypep, BasicDType)) {
             // SELBIT(range, index) -> SEL(array, index, 1)
             AstSel* newp = new AstSel(nodep->fileline(),
                                       fromp,

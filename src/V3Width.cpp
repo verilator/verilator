@@ -355,6 +355,16 @@ private:
             nodep->dtypeSetBitSized(8, AstNumeric::UNSIGNED);
         }
     }
+    virtual void visit(AstGetcRefN* nodep) VL_OVERRIDE {
+        // CALLER: str.getc()
+        UASSERT_OBJ(nodep->rhsp(), nodep, "For binary ops only!");
+        if (m_vup && m_vup->prelim()) {
+            // See similar handling in visit_cmp_eq_gt where created
+            iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
+            iterateCheckSigned32(nodep, "RHS", nodep->rhsp(), BOTH);
+            nodep->dtypeSetBitSized(8, AstNumeric::UNSIGNED);
+        }
+    }
     virtual void visit(AstSubstrN* nodep) VL_OVERRIDE {
         // CALLER: str.substr()
         UASSERT_OBJ(nodep->rhsp() && nodep->thsp(), nodep, "For ternary ops only!");

@@ -229,6 +229,14 @@ public:
                 iterateAndNextNull(selp->lsbp()); puts(", ");
                 iterateAndNextNull(selp->fromp()); puts(", ");
             }
+        } else if (AstGetcRefN* selp = VN_CAST(nodep->lhsp(), GetcRefN)) {
+            iterateAndNextNull(selp->lhsp());
+            puts(" = ");
+            putbs("VL_PUTC_N(");
+            iterateAndNextNull(selp->lhsp());
+            puts(", ");
+            iterateAndNextNull(selp->rhsp());
+            puts(", ");
         } else if (AstVar* varp = AstVar::scVarRecurse(nodep->lhsp())) {
             putbs("VL_ASSIGN_");  // Set a systemC variable
             emitScIQW(varp);

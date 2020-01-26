@@ -74,6 +74,10 @@ class EmitCInlines : EmitCBaseVisitor {
         v3Global.needHeavy(true);
         iterateChildren(nodep);
     }
+    virtual void visit(AstGetcRefN* nodep) VL_OVERRIDE {
+        v3Global.needHeavy(true);
+        iterateChildren(nodep);
+    }
     virtual void visit(AstSubstrN* nodep) VL_OVERRIDE {
         v3Global.needHeavy(true);
         iterateChildren(nodep);
