@@ -425,6 +425,7 @@ public:
         const AstAssocArrayDType* asamep = static_cast<const AstAssocArrayDType*>(samep);
         return (subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
     }
+    virtual string prettyDTypeName() const;
     virtual void dumpSmall(std::ostream& str) const;
     virtual V3Hash sameHash() const { return V3Hash(m_refDTypep); }
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
@@ -473,6 +474,7 @@ public:
         widthForce(width, width);
     }
     ASTNODE_NODE_FUNCS(PackArrayDType)
+    virtual string prettyDTypeName() const;
 };
 
 class AstUnpackArrayDType : public AstNodeArrayDType {
@@ -500,6 +502,7 @@ public:
         widthFromSub(subDTypep());
     }
     ASTNODE_NODE_FUNCS(UnpackArrayDType)
+    virtual string prettyDTypeName() const;
 };
 
 class AstUnsizedArrayDType : public AstNodeDType {
@@ -623,6 +626,7 @@ public:
     virtual bool similarDType(AstNodeDType* samep) const {
         return type()==samep->type() && same(samep); }
     virtual string name() const { return m.m_keyword.ascii(); }
+    virtual string prettyDTypeName() const;
     virtual const char* broken() const { BROKEN_RTN(dtypep()!=this); return NULL; }
     AstRange* rangep() const { return VN_CAST(op1p(), Range); }  // op1 = Range of variable
     void rangep(AstRange* nodep) { setNOp1p(nodep); }
@@ -827,6 +831,7 @@ public:
     }
     virtual void dumpSmall(std::ostream& str) const;
     virtual V3Hash sameHash() const { return V3Hash(m_refDTypep); }
+    virtual string prettyDTypeName() const;
     AstNodeDType* getChildDTypep() const { return childDTypep(); }
     AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }  // op1 = Range of variable
     void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
@@ -880,6 +885,8 @@ public:
     virtual V3Hash sameHash() const { return V3Hash(V3Hash(m_refDTypep), V3Hash(m_packagep)); }
     virtual void dump(std::ostream& str=std::cout) const;
     virtual string name() const { return m_name; }
+    virtual string prettyDTypeName() const {
+        return subDTypep() ? subDTypep()->name() : prettyName(); }
     virtual AstBasicDType* basicp() const { return subDTypep() ? subDTypep()->basicp() : NULL; }
     virtual AstNodeDType* skipRefp() const {
         // Skip past both the Ref and the Typedef

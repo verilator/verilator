@@ -608,6 +608,7 @@ class AstSenTree;
 %token<fl>		yD_TANH		"$tanh"
 %token<fl>		yD_TESTPLUSARGS	"$test$plusargs"
 %token<fl>		yD_TIME		"$time"
+%token<fl>		yD_TYPENAME	"$typename"
 %token<fl>		yD_UNGETC	"$ungetc"
 %token<fl>		yD_UNIT		"$unit"
 %token<fl>		yD_UNPACKED_DIMENSIONS "$unpacked_dimensions"
@@ -3277,6 +3278,7 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_TANH '(' expr ')'			{ $$ = new AstTanhD($1,$3); }
 	|	yD_TESTPLUSARGS '(' str ')'		{ $$ = new AstTestPlusArgs($1,*$3); }
 	|	yD_TIME	parenE				{ $$ = new AstTime($1); }
+	|	yD_TYPENAME '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1, AstAttrType::TYPENAME, $3); }
 	|	yD_UNGETC '(' expr ',' expr ')'		{ $$ = new AstFUngetC($1, $5, $3); }  // Arg swap to file first
 	|	yD_UNPACKED_DIMENSIONS '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_UNPK_DIMENSIONS,$3); }
 	|	yD_UNSIGNED '(' expr ')'		{ $$ = new AstUnsigned($1,$3); }

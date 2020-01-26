@@ -15,7 +15,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Support $readmem/$writemem with assoc arrarys, #2100. [agrobman]
 
-****  Support type(expression) operator, #1650.
+****  Support type(expression) operator and $typename, #1650.
 
 ****  Support left justified $display, #2101. [Pieter Kapsenberg]
 

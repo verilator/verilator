@@ -307,6 +307,8 @@ public:
         //
         MEMBER_BASE,                    // V3LinkResolve creates for AstPreSel, V3LinkParam removes
         //
+        TYPENAME,                       // V3Width processes
+        //
         VAR_BASE,                       // V3LinkResolve creates for AstPreSel, V3LinkParam removes
         VAR_CLOCK,                      // V3LinkParse moves to AstVar::attrScClocked
         VAR_CLOCK_ENABLE,               // V3LinkParse moves to AstVar::attrClockEn
@@ -330,6 +332,7 @@ public:
             "ENUM_BASE", "ENUM_FIRST", "ENUM_LAST", "ENUM_NUM",
             "ENUM_NEXT", "ENUM_PREV", "ENUM_NAME",
             "MEMBER_BASE",
+            "TYPENAME",
             "VAR_BASE", "VAR_CLOCK", "VAR_CLOCK_ENABLE", "VAR_PUBLIC",
             "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW",
             "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BV", "VAR_SFORMAT", "VAR_CLOCKER",
@@ -1305,7 +1308,7 @@ public:
     static string vcdName(const string& namein);  // Name for printing out to vcd files
     string prettyName() const { return prettyName(name()); }
     string prettyNameQ() const { return prettyNameQ(name()); }
-    string prettyTypeName() const;  // "VARREF" for error messages
+    string prettyTypeName() const;  // "VARREF" for error messages (NOT dtype's pretty name)
     virtual string prettyOperatorName() const { return "operator "+prettyTypeName(); }
     FileLine* fileline() const { return m_fileline; }
     void fileline(FileLine* fl) { m_fileline = fl; }
@@ -1950,6 +1953,8 @@ public:
     virtual bool similarDType(AstNodeDType* samep) const = 0;  // Assignable equivalence.  Call skipRefp() on this and samep before calling
     virtual AstNodeDType* subDTypep() const { return NULL; }  // Iff has a non-null subDTypep(), as generic node function
     virtual bool isFourstate() const;
+    virtual string prettyDTypeName() const { return prettyTypeName(); }  // Ideally an IEEE $typename
+    string prettyDTypeNameQ() const { return "'" + prettyDTypeName() + "'"; }
     //
     // Changing the width may confuse the data type resolution, so must clear
     // TypeTable cache after use.

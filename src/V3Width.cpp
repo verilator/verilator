@@ -449,7 +449,8 @@ private:
             if (vdtypep && (VN_IS(vdtypep, AssocArrayDType)
                             || VN_IS(vdtypep, AssocArrayDType)
                             || VN_IS(vdtypep, QueueDType))) {
-                nodep->v3error("Unsupported: Concatenation to form "<<vdtypep->prettyTypeName());
+                nodep->v3error("Unsupported: Concatenation to form "
+                               << vdtypep->prettyDTypeNameQ() << "data type");
             }
 
             iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
@@ -524,10 +525,11 @@ private:
         //   width: value(LHS) * width(RHS)
         if (m_vup->prelim()) {
             AstNodeDType* vdtypep = m_vup->dtypeNullp();
-            if (vdtypep && (VN_IS(vdtypep, AssocArrayDType)
-                            || VN_IS(vdtypep, QueueDType)
-                            || VN_IS(vdtypep, UnpackArrayDType))) {
-                nodep->v3error("Unsupported: Replication to form "<<vdtypep->prettyTypeName());
+            if (vdtypep
+                && (VN_IS(vdtypep, AssocArrayDType) || VN_IS(vdtypep, QueueDType)
+                    || VN_IS(vdtypep, UnpackArrayDType))) {
+                nodep->v3error("Unsupported: Replication to form " << vdtypep->prettyDTypeNameQ()
+                               << " data type");
             }
             iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
             iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
@@ -1146,6 +1148,13 @@ private:
                     nodep->replaceWith(newp); VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 }
             }
+            break;
+        }
+        case AstAttrType::TYPENAME: {
+            UASSERT_OBJ(nodep->fromp(), nodep, "Unprovided expression");
+            string result = nodep->fromp()->dtypep()->prettyDTypeName();
+            AstNode* newp = new AstConst(nodep->fileline(), AstConst::String(), result);
+            nodep->replaceWith(newp); VL_DO_DANGLING(nodep->deleteTree(), nodep);
             break;
         }
         default: {
@@ -2331,8 +2340,8 @@ private:
                      && VN_CAST(dtypep, BasicDType)->isRanged()) {
                 VL_DO_DANGLING(patternBasic(nodep, dtypep, defaultp), nodep);
             } else {
-                nodep->v3error("Unsupported: Assignment pattern applies against non struct/union: "
-                               <<dtypep->prettyTypeName());
+                nodep->v3error("Unsupported: Assignment pattern applies against non struct/union data type: "
+                               << dtypep->prettyDTypeNameQ());
             }
         }
     }
@@ -3041,9 +3050,9 @@ private:
                 if (nodep->modVarp()->direction() == VDirection::REF) {
                     nodep->v3error("Ref connection "<<nodep->modVarp()->prettyNameQ()
                                    <<" requires matching types;"
-                                   <<" ref requires "<<pinDTypep->prettyTypeName()
-                                   <<" but connection is "
-                                   <<conDTypep->prettyTypeName()<<"."<<endl);
+                                   <<" ref requires "<<pinDTypep->prettyDTypeNameQ()
+                                   <<" data type but connection is "
+                                   <<conDTypep->prettyDTypeNameQ()<<" data type."<<endl);
                 } else if (nodep->modVarp()->isTristate()) {
                     if (pinwidth != conwidth) {
                         nodep->v3error("Unsupported: "<<ucfirst(nodep->prettyOperatorName())
