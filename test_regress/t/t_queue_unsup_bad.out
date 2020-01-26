@@ -42,7 +42,7 @@
                                 : ... In instance t
       q = {q[0], q[2:$]};   
                      ^
-%Error: t/t_queue_unsup_bad.v:37: Illegal range select; type already selected, or bad dimension: type is 
+%Error: t/t_queue_unsup_bad.v:37: Illegal range select; type already selected, or bad dimension: data type is 'string[$]'
                                 : ... In instance t
       q = {q[0], q[2:$]};   
                   ^
