@@ -1931,10 +1931,23 @@ private:
             if (nodep->name() == "name") {
                 methodOkArguments(nodep, 0, 0);
             } else if (nodep->pinsp()
+                       && !(VN_IS(VN_CAST(nodep->pinsp(), Arg)->exprp(), Const))) {
+                nodep->pinsp()->v3fatalSrc("Unsupported: enum next/prev with non-const argument");
+            } else if (nodep->pinsp()
                        && !(VN_IS(VN_CAST(nodep->pinsp(), Arg)->exprp(), Const)
                             && VN_CAST(VN_CAST(nodep->pinsp(), Arg)->exprp(), Const)->toUInt() == 1
                             && !nodep->pinsp()->nextp())) {
-                nodep->v3error("Unsupported: Arguments passed to enum.next method");
+                // Unroll of enumVar.next(k) to enumVar.next(1).next(k - 1)
+                AstMethodCall* clonep = nodep->cloneTree(false);
+                VN_CAST(VN_CAST(clonep->pinsp(), Arg)->exprp(), Const)->num().setLong(1);
+                uint32_t stepWidth = VN_CAST(VN_CAST(nodep->pinsp(), Arg)->exprp(), Const)->toUInt();
+                AstConst* constp = new AstConst(nodep->fileline(), stepWidth - 1);
+                AstArg* argp = new AstArg(nodep->fileline(), "", constp);
+                AstMethodCall* newp = new AstMethodCall(nodep->fileline(), clonep,
+                                                        nodep->name(), argp);
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                return;
             }
             // Need a runtime lookup table.  Yuk.
             // Most enums unless overridden are 32 bits, so we size array
@@ -1951,7 +1964,7 @@ private:
                     if (vconstp->toUQuad() >= msbdim) msbdim = vconstp->toUQuad();
                 }
                 if (adtypep->itemsp()->width() > 64 || msbdim >= (1 << 16)) {
-                    nodep->v3error("Unsupported; enum next/prev method on enum with > 10 bits");
+                    nodep->v3error("Unsupported: enum next/prev method on enum with > 10 bits");
                     return;
                 }
             }

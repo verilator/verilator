@@ -21,6 +21,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support string character access via indexing.
 
+****  Support enum.next(k) with constant k > 1, #2125. [Tobias Rosenkranz]
+
 ****  Add parameter values in XML. #2110. [Pieter Kapsenberg]
 
 ****  Add loc column location in XML (replaces fl), #2122. [Pieter Kapsenberg]
