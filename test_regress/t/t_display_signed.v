@@ -4,14 +4,21 @@
 // without warranty, 2003 by Wilson Snyder.
 
 module t;
-   reg signed [20:0] longp; initial longp = 21'shbbccc;
-   reg signed [20:0] longn; initial longn = 21'shbbccc; initial longn[20]=1'b1;
-   reg signed [40:0] quadp; initial quadp = 41'sh1_bbbb_cccc;
-   reg signed [40:0] quadn; initial quadn = 41'sh1_bbbb_cccc; initial quadn[40]=1'b1;
-   reg signed [80:0] widep; initial widep = 81'shbc_1234_5678_1234_5678;
-   reg signed [80:0] widen; initial widen = 81'shbc_1234_5678_1234_5678; initial widen[40]=1'b1;
+   reg signed [20:0] longp;
+   reg signed [20:0] longn;
+   reg signed [40:0] quadp;
+   reg signed [40:0] quadn;
+   reg signed [80:0] widep;
+   reg signed [80:0] widen;
 
    initial begin
+      longp = 21'shbbccc;
+      longn = 21'shbbccc; longn[20] = 1'b1;
+      quadp = 41'sh1_bbbb_cccc;
+      quadn = 41'sh1_bbbb_cccc; quadn[40] = 1'b1;
+      widep = 81'shbc_1234_5678_1234_5678;
+      widen = 81'shbc_1234_5678_1234_5678; widen[40] = 1'b1;
+
       // Display formatting
       $display("[%0t] lp %%x=%x %%x=%x %%o=%o %%b=%b %%0d=%0d %%d=%d %%p=%p %%0p=%0p",
                $time, longp, longp, longp, longp, longp, longp, longp, longp);
