@@ -3517,10 +3517,23 @@ private:
                 int ewidth = std::max(nodep->lhsp()->widthMin(), nodep->rhsp()->widthMin());
                 AstNodeDType* subDTypep = nodep->findLogicDType(width, ewidth,
                                                                 AstNumeric::fromBool(signedFl));
+                bool warnOn = true;
+                if (!signedFl && width == 32) {
+                    // Waive on unsigned < or <= if RHS is narrower, since can't give wrong answer
+                    if ((VN_IS(nodep, Lt) || VN_IS(nodep, Lte))
+                        && (nodep->lhsp()->width() >= nodep->rhsp()->widthMin())) {
+                        warnOn = false;
+                    }
+                    // Waive on unsigned > or >= if RHS is wider, since can't give wrong answer
+                    if ((VN_IS(nodep, Gt) || VN_IS(nodep, Gte))
+                        && (nodep->lhsp()->widthMin() >= nodep->rhsp()->width())) {
+                        warnOn = false;
+                    }
+                }
                 iterateCheck(nodep, "LHS", nodep->lhsp(), CONTEXT, FINAL, subDTypep,
-                             signedFl ? EXTEND_LHS:EXTEND_ZERO);
+                             (signedFl ? EXTEND_LHS : EXTEND_ZERO), warnOn);
                 iterateCheck(nodep, "RHS", nodep->rhsp(), CONTEXT, FINAL, subDTypep,
-                             signedFl ? EXTEND_LHS:EXTEND_ZERO);
+                             (signedFl ? EXTEND_LHS : EXTEND_ZERO), warnOn);
             }
             nodep->dtypeSetLogicBool();
         }
