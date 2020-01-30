@@ -25,10 +25,27 @@ AC_ARG_ENABLE([maintainer-mode],
 AC_ARG_ENABLE([silent-rules],
               [AS_HELP_STRING([--disable-silent-rules], [ignored])])
 
+# Flag to enable linking specific libraries statically
+AC_MSG_CHECKING(whether to perform partial static linking of Verilator binary)
+AC_ARG_ENABLE([partial-static],
+              [AS_HELP_STRING([--disable-partial-static],
+                              [By default, for Verilation peformance, Verilator
+                               is linked against some of its dependencies
+                               statically. Use this to link the Verilator binary
+                               fully dynamically.])],
+              [case "${enableval}" in
+                yes) CFG_ENABLE_PARTIAL_STATIC=yes ;;
+                no)  CFG_ENABLE_PARTIAL_STATIC=no ;;
+                *)   AC_MSG_ERROR([bad value '${enableval}' for --disable-partial-static]) ;;
+               esac],
+               CFG_ENABLE_PARTIAL_STATIC=yes)
+AC_MSG_RESULT($CFG_ENABLE_PARTIAL_STATIC)
+
 # Flag to enable linking Verilator with tcmalloc if available
+AC_MSG_CHECKING(whether to use tcmalloc)
 AC_ARG_ENABLE([tcmalloc],
               [AS_HELP_STRING([--enable-tcmalloc],
-                              [Use libtcmalloc for faster dynamic memory
+                              [Use libtcmalloc_minimal for faster dynamic memory
                                management in Verilator binary@<:@default=check@:>@])],
               [case "${enableval}" in
                 yes) CFG_WITH_TCMALLOC=yes ;;
@@ -36,6 +53,7 @@ AC_ARG_ENABLE([tcmalloc],
                 *)   AC_MSG_ERROR([bad value '${enableval}' for --enable-tcmalloc]) ;;
                esac],
               [CFG_WITH_TCMALLOC=check;])
+AC_MSG_RESULT($CFG_WITH_TCMALLOC)
 
 # Special Substitutions - CFG_WITH_DEFENV
 AC_MSG_CHECKING(whether to use hardcoded paths)
@@ -285,6 +303,7 @@ _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-faligned-new)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-unused-parameter)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-undefined-bool-conversion)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-shadow)
+AC_SUBST(CFG_CXXFLAGS_SRC)
 
 # Flags for compiling Verilator parser always (in addition to above CFG_CXXFLAGS_SRC)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_PARSER,-Wno-char-subscripts)
@@ -336,21 +355,36 @@ m4_foreach([ldflag], [
 AC_SUBST(CFG_LDLIBS_THREADS)
 AC_SUBST(CFG_LDFLAGS_THREADS_CMAKE)
 
+# When linking partially statically
+if test "$CFG_ENABLE_PARTIAL_STATIC" = "yes"; then
+  _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_SRC, -static-libgcc)
+  _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_SRC, -static-libstdc++)
+  _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_SRC, -Xlinker -gc-sections)
+  LTCMALLOC=-l:libtcmalloc_minimal.a
+else
+  LTCMALLOC=-ltcmalloc_minimal
+fi
+AC_SUBST(CFG_LDFLAGS_SRC)
+
+# The pthread library is required by tcmalloc, so add it if it exists. If it
+# does not, the tcmalloc check below will fail anyway, and linking against
+# pthreads is harmless otherwise.
+_MY_LDLIBS_CHECK_OPT(CFG_LIBS, -lpthread)
+
 # Check if tcmalloc is available based on --enable-tcmalloc
 _MY_LDLIBS_CHECK_IFELSE(
-  -ltcmalloc,
+  $LTCMALLOC,
   [if test "$CFG_WITH_TCMALLOC" != "no"; then
-    CFG_LIBS="$CFG_LIBS -ltcmalloc";
+    CFG_LIBS="$LTCMALLOC $CFG_LIBS";
     # If using tcmalloc, add some extra options to make the compiler not assume
     # it is using it's own versions of the standard library functions
     _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-malloc)
     _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-calloc)
     _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-realloc)
     _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-free)
-    AC_SUBST(CFG_CXXFLAGS_SRC)
    fi],
   [if test "$CFG_WITH_TCMALLOC" = "yes"; then
-    AC_MSG_ERROR([--enable-tcmalloc was given but test for -ltcmalloc failed])
+    AC_MSG_ERROR([--enable-tcmalloc was given but test for ${LTCMALLOC} failed])
    fi])
 AC_SUBST(CFG_LIBS)
 
