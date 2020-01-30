@@ -51,15 +51,18 @@ typedef std::set<int> MTaskIdSet;  // Set of mtaskIds for Var sorting
 //######################################################################
 
 // For broken() function, return error string if have a match
-#define BROKEN_RTN(test) do { if (VL_UNCOVERABLE(test)) return # test; } while(0)
+#define BROKEN_RTN(test) \
+    do { \
+        if (VL_UNCOVERABLE(test)) return #test; \
+    } while (0)
 
 // (V)erilator (N)ode is: True if AstNode is of a a given AstType
-#define VN_IS(nodep,nodetypename) (AstNode::privateIs ## nodetypename(nodep))
+#define VN_IS(nodep,nodetypename) (AstNode::privateIs<Ast ## nodetypename>(nodep))
 
 // (V)erilator (N)ode cast: Cast to given type if can; effectively
 // dynamic_cast<nodetypename>(nodep)
-#define VN_CAST(nodep,nodetypename) (AstNode::privateCast ## nodetypename(nodep))
-#define VN_CAST_CONST(nodep,nodetypename) (AstNode::privateConstCast ## nodetypename(nodep) )
+#define VN_CAST(nodep,nodetypename) (AstNode::privateCast<Ast ## nodetypename>(nodep))
+#define VN_CAST_CONST(nodep,nodetypename) (AstNode::privateConstCast<Ast ## nodetypename>(nodep))
 
 // (V)erilator (N)ode deleted: Reference to deleted child (for assertions only)
 #define VN_DELETED(nodep) VL_UNLIKELY((vluint64_t)(nodep) == 0x1)
@@ -305,6 +308,8 @@ public:
         //
         MEMBER_BASE,                    // V3LinkResolve creates for AstPreSel, V3LinkParam removes
         //
+        TYPENAME,                       // V3Width processes
+        //
         VAR_BASE,                       // V3LinkResolve creates for AstPreSel, V3LinkParam removes
         VAR_CLOCK,                      // V3LinkParse moves to AstVar::attrScClocked
         VAR_CLOCK_ENABLE,               // V3LinkParse moves to AstVar::attrClockEn
@@ -328,6 +333,7 @@ public:
             "ENUM_BASE", "ENUM_FIRST", "ENUM_LAST", "ENUM_NUM",
             "ENUM_NEXT", "ENUM_PREV", "ENUM_NAME",
             "MEMBER_BASE",
+            "TYPENAME",
             "VAR_BASE", "VAR_CLOCK", "VAR_CLOCK_ENABLE", "VAR_PUBLIC",
             "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW",
             "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BV", "VAR_SFORMAT", "VAR_CLOCKER",
@@ -1157,6 +1163,8 @@ class AstNode {
 
     AstNode*    m_headtailp;    // When at begin/end of list, the opposite end of the list
 
+    const AstType m_type;       // Node sub-type identifier
+
     FileLine*   m_fileline;     // Where it was declared
     vluint64_t  m_editCount;    // When it was last edited
     static vluint64_t s_editCntGbl;  // Global edit counter
@@ -1211,8 +1219,10 @@ public:
 
 protected:
     // CONSTRUCTORS
-    AstNode() { init(); }
-    explicit AstNode(FileLine* fileline) {init(); m_fileline = fileline; }
+    AstNode(AstType t)
+        : m_type(t) { init(); }
+    AstNode(AstType t, FileLine* fl)
+        : m_type(t) { init(); m_fileline = fl; }
     virtual AstNode* clone() = 0;  // Generally, cloneTree is what you want instead
     virtual void cloneRelink() {}
     void cloneRelinkTree();
@@ -1243,7 +1253,7 @@ protected:
 
 public:
     // ACCESSORS
-    virtual AstType type() const = 0;
+    inline AstType type() const { return m_type; }
     const char* typeName() const { return type().ascii(); }  // See also prettyTypeName
     AstNode* nextp() const { return m_nextp; }
     AstNode* backp() const { return m_backp; }
@@ -1299,7 +1309,7 @@ public:
     static string vcdName(const string& namein);  // Name for printing out to vcd files
     string prettyName() const { return prettyName(name()); }
     string prettyNameQ() const { return prettyNameQ(name()); }
-    string prettyTypeName() const;  // "VARREF" for error messages
+    string prettyTypeName() const;  // "VARREF" for error messages (NOT dtype's pretty name)
     virtual string prettyOperatorName() const { return "operator "+prettyTypeName(); }
     FileLine* fileline() const { return m_fileline; }
     void fileline(FileLine* fl) { m_fileline = fl; }
@@ -1533,10 +1543,21 @@ private:
 
     // CONVERSION
 public:
-#include "V3Ast__gen_interface.h"  // From ./astgen
-    // Things like:
-    //  AstAlways*      castAlways();
+    // These for use by VN_IS macro only
+    template<class T>
+    static bool privateIs(const AstNode* nodep);
+
+    // These for use by VN_CAST macro only
+    template<class T>
+    static T* privateCast(AstNode* nodep);
+
+    // These for use by VN_CAST_CONST macro only
+    template<class T>
+    static const T* privateConstCast(const AstNode* nodep);
 };
+
+// Specialisations of privateIs/privateCast
+#include "V3Ast__gen_impl.h"  // From ./astgen
 
 inline std::ostream& operator<<(std::ostream& os, const AstNode* rhs) {
     if (!rhs) os<<"NULL"; else rhs->dump(os); return os;
@@ -1557,8 +1578,8 @@ inline void AstNRelinker::relink(AstNode* newp) { newp->AstNode::relink(this); }
 class AstNodeMath : public AstNode {
     // Math -- anything that's part of an expression tree
 public:
-    explicit AstNodeMath(FileLine* fl)
-        : AstNode(fl) {}
+    AstNodeMath(AstType t, FileLine* fl)
+        : AstNode(t, fl) {}
     ASTNODE_BASE_FUNCS(NodeMath)
     // METHODS
     virtual bool hasDType() const { return true; }
@@ -1574,8 +1595,8 @@ public:
 class AstNodeTermop : public AstNodeMath {
     // Terminal operator -- a operator with no "inputs"
 public:
-    explicit AstNodeTermop(FileLine* fl)
-        : AstNodeMath(fl) {}
+    AstNodeTermop(AstType t, FileLine* fl)
+        : AstNodeMath(t, fl) {}
     ASTNODE_BASE_FUNCS(NodeTermop)
     // Know no children, and hot function, so skip iterator for speed
     // See checkTreeIter also that asserts no children
@@ -1586,8 +1607,8 @@ public:
 class AstNodeUniop : public AstNodeMath {
     // Unary math
 public:
-    AstNodeUniop(FileLine* fl, AstNode* lhsp)
-        : AstNodeMath(fl) {
+    AstNodeUniop(AstType t, FileLine* fl, AstNode* lhsp)
+        : AstNodeMath(t, fl) {
         dtypeFrom(lhsp);
         setOp1p(lhsp); }
     ASTNODE_BASE_FUNCS(NodeUniop)
@@ -1608,8 +1629,8 @@ public:
 class AstNodeBiop : public AstNodeMath {
     // Binary math
 public:
-    AstNodeBiop(FileLine* fl, AstNode* lhs, AstNode* rhs)
-        : AstNodeMath(fl) {
+    AstNodeBiop(AstType t, FileLine* fl, AstNode* lhs, AstNode* rhs)
+        : AstNodeMath(t, fl) {
         setOp1p(lhs); setOp2p(rhs); }
     ASTNODE_BASE_FUNCS(NodeBiop)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) = 0;  // Clone single node, just get same type back.
@@ -1635,8 +1656,8 @@ public:
 class AstNodeTriop : public AstNodeMath {
     // Trinary math
 public:
-    AstNodeTriop(FileLine* fl, AstNode* lhs, AstNode* rhs, AstNode* ths)
-        : AstNodeMath(fl) {
+    AstNodeTriop(AstType t, FileLine* fl, AstNode* lhs, AstNode* rhs, AstNode* ths)
+        : AstNodeMath(t, fl) {
         setOp1p(lhs); setOp2p(rhs); setOp3p(ths); }
     ASTNODE_BASE_FUNCS(NodeTriop)
     AstNode* lhsp() const { return op1p(); }
@@ -1663,22 +1684,22 @@ public:
 class AstNodeBiCom : public AstNodeBiop {
     // Binary math with commutative properties
 public:
-    AstNodeBiCom(FileLine* fl, AstNode* lhs, AstNode* rhs)
-        : AstNodeBiop(fl, lhs, rhs) {}
+    AstNodeBiCom(AstType t, FileLine* fl, AstNode* lhs, AstNode* rhs)
+        : AstNodeBiop(t, fl, lhs, rhs) {}
     ASTNODE_BASE_FUNCS(NodeBiCom)
 };
 
 class AstNodeBiComAsv : public AstNodeBiCom {
     // Binary math with commutative & associative properties
 public:
-    AstNodeBiComAsv(FileLine* fl, AstNode* lhs, AstNode* rhs)
-        : AstNodeBiCom(fl, lhs, rhs) {}
+    AstNodeBiComAsv(AstType t, FileLine* fl, AstNode* lhs, AstNode* rhs)
+        : AstNodeBiCom(t, fl, lhs, rhs) {}
     ASTNODE_BASE_FUNCS(NodeBiComAsv)
 };
 class AstNodeCond : public AstNodeTriop {
 public:
-    AstNodeCond(FileLine* fl, AstNode* condp, AstNode* expr1p, AstNode* expr2p)
-        : AstNodeTriop(fl, condp, expr1p, expr2p) {
+    AstNodeCond(AstType t, FileLine* fl, AstNode* condp, AstNode* expr1p, AstNode* expr2p)
+        : AstNodeTriop(t, fl, condp, expr1p, expr2p) {
         if (expr1p) dtypeFrom(expr1p);
         else if (expr2p) dtypeFrom(expr2p);
     }
@@ -1704,8 +1725,8 @@ public:
 class AstNodePreSel : public AstNode {
     // Something that becomes an AstSel
 public:
-    AstNodePreSel(FileLine* fl, AstNode* lhs, AstNode* rhs, AstNode* ths)
-        : AstNode(fl) {
+    AstNodePreSel(AstType t, FileLine* fl, AstNode* lhs, AstNode* rhs, AstNode* ths)
+        : AstNode(t, fl) {
         setOp1p(lhs); setOp2p(rhs); setNOp3p(ths); }
     ASTNODE_BASE_FUNCS(NodePreSel)
     AstNode* lhsp() const { return op1p(); }
@@ -1726,8 +1747,8 @@ class AstNodeStmt : public AstNode {
     // Statement -- anything that's directly under a function
     bool m_statement;  // Really a statement (e.g. not a function with return)
 public:
-    explicit AstNodeStmt(FileLine* fl, bool statement = true)
-        : AstNode(fl)
+    AstNodeStmt(AstType t, FileLine* fl, bool statement = true)
+        : AstNode(t, fl)
         , m_statement(statement) {}
     ASTNODE_BASE_FUNCS(NodeStmt)
     // METHODS
@@ -1739,8 +1760,8 @@ public:
 
 class AstNodeAssign : public AstNodeStmt {
 public:
-    AstNodeAssign(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
-        : AstNodeStmt(fl) {
+    AstNodeAssign(AstType t, FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : AstNodeStmt(t, fl) {
         setOp1p(rhsp); setOp2p(lhsp);
         dtypeFrom(lhsp);
     }
@@ -1762,9 +1783,9 @@ public:
 
 class AstNodeFor : public AstNodeStmt {
 public:
-    AstNodeFor(FileLine* fileline, AstNode* initsp, AstNode* condp,
+    AstNodeFor(AstType t, FileLine* fl, AstNode* initsp, AstNode* condp,
                AstNode* incsp, AstNode* bodysp)
-        : AstNodeStmt(fileline) {
+        : AstNodeStmt(t, fl) {
         addNOp1p(initsp); setOp2p(condp); addNOp3p(incsp); addNOp4p(bodysp);
     }
     ASTNODE_BASE_FUNCS(NodeFor)
@@ -1782,8 +1803,8 @@ class AstNodeIf : public AstNodeStmt {
 private:
     VBranchPred m_branchPred;  // Branch prediction as taken/untaken?
 public:
-    AstNodeIf(FileLine* fl, AstNode* condp, AstNode* ifsp, AstNode* elsesp)
-        : AstNodeStmt(fl) {
+    AstNodeIf(AstType t, FileLine* fl, AstNode* condp, AstNode* ifsp, AstNode* elsesp)
+        : AstNodeStmt(t, fl) {
         setOp1p(condp); addNOp2p(ifsp); addNOp3p(elsesp);
     }
     ASTNODE_BASE_FUNCS(NodeIf)
@@ -1804,8 +1825,8 @@ public:
 
 class AstNodeCase : public AstNodeStmt {
 public:
-    AstNodeCase(FileLine* fl, AstNode* exprp, AstNode* casesp)
-        : AstNodeStmt(fl) {
+    AstNodeCase(AstType t, FileLine* fl, AstNode* exprp, AstNode* casesp)
+        : AstNodeStmt(t, fl) {
         setOp1p(exprp); addNOp2p(casesp);
     }
     ASTNODE_BASE_FUNCS(NodeCase)
@@ -1820,7 +1841,8 @@ public:
 class AstNodeSenItem : public AstNode {
     // An AstSenItem or AstSenGate
 public:
-    explicit AstNodeSenItem(FileLine* fl) : AstNode(fl) {}
+    AstNodeSenItem(AstType t, FileLine* fl)
+        : AstNode(t, fl) {}
     ASTNODE_BASE_FUNCS(NodeSenItem)
     virtual bool isClocked() const = 0;
     virtual bool isCombo() const = 0;
@@ -1841,14 +1863,14 @@ private:
     bool        m_hierThis;     // Hiername points to "this" function
     void init();
 public:
-    AstNodeVarRef(FileLine* fl, const string& name, bool lvalue)
-        : AstNodeMath(fl), m_lvalue(lvalue), m_varp(NULL), m_varScopep(NULL),
-          m_packagep(NULL), m_name(name), m_hierThis(false) {
+    AstNodeVarRef(AstType t, FileLine* fl, const string& name, bool lvalue)
+        : AstNodeMath(t, fl), m_lvalue(lvalue), m_varp(NULL), m_varScopep(NULL)
+        , m_packagep(NULL), m_name(name), m_hierThis(false) {
         init();
     }
-    AstNodeVarRef(FileLine* fl, const string& name, AstVar* varp, bool lvalue)
-        : AstNodeMath(fl), m_lvalue(lvalue), m_varp(varp), m_varScopep(NULL),
-          m_packagep(NULL), m_name(name), m_hierThis(false) {
+    AstNodeVarRef(AstType t, FileLine* fl, const string& name, AstVar* varp, bool lvalue)
+        : AstNodeMath(t, fl), m_lvalue(lvalue), m_varp(varp), m_varScopep(NULL)
+        , m_packagep(NULL), m_name(name), m_hierThis(false) {
         // May have varp==NULL
         init();
     }
@@ -1883,8 +1905,8 @@ private:
     string      m_text;
 public:
     // Node that simply puts text into the output stream
-    AstNodeText(FileLine* fileline, const string& textp)
-        : AstNode(fileline) {
+    AstNodeText(AstType t, FileLine* fl, const string& textp)
+        : AstNode(t, fl) {
         m_text = textp;  // Copy it
     }
     ASTNODE_BASE_FUNCS(NodeText)
@@ -1909,7 +1931,8 @@ private:
     static int  s_uniqueNum;    // Unique number assigned to each dtype during creation for IEEE matching
 public:
     // CONSTRUCTORS
-    explicit AstNodeDType(FileLine* fl) : AstNode(fl) {
+    AstNodeDType(AstType t, FileLine* fl)
+        : AstNode(t, fl) {
         m_width = 0; m_widthMin = 0; m_generic = false;
     }
     ASTNODE_BASE_FUNCS(NodeDType)
@@ -1931,6 +1954,8 @@ public:
     virtual bool similarDType(AstNodeDType* samep) const = 0;  // Assignable equivalence.  Call skipRefp() on this and samep before calling
     virtual AstNodeDType* subDTypep() const { return NULL; }  // Iff has a non-null subDTypep(), as generic node function
     virtual bool isFourstate() const;
+    virtual string prettyDTypeName() const { return prettyTypeName(); }  // Ideally an IEEE $typename
+    string prettyDTypeNameQ() const { return "'" + prettyDTypeName() + "'"; }
     //
     // Changing the width may confuse the data type resolution, so must clear
     // TypeTable cache after use.
@@ -1969,8 +1994,8 @@ private:
     bool                m_isFourstate;
     MemberNameMap       m_members;
 public:
-    AstNodeUOrStructDType(FileLine* fl, AstNumeric numericUnpack)
-        : AstNodeDType(fl) {
+    AstNodeUOrStructDType(AstType t, FileLine* fl, AstNumeric numericUnpack)
+        : AstNodeDType(t, fl) {
         // AstNumeric::NOSIGN overloaded to indicate not packed
         m_packed = (numericUnpack != AstNumeric::NOSIGN);
         m_isFourstate = false;  // V3Width computes
@@ -2020,7 +2045,8 @@ private:
     AstNodeDType* m_refDTypep;  // Elements of this type (after widthing)
     AstNode* rangenp() const { return op2p(); }  // op2 = Array(s) of variable
 public:
-    explicit AstNodeArrayDType(FileLine* fl) : AstNodeDType(fl) {
+    AstNodeArrayDType(AstType t, FileLine* fl)
+        : AstNodeDType(t, fl) {
         m_refDTypep = NULL;
     }
     ASTNODE_BASE_FUNCS(NodeArrayDType)
@@ -2071,8 +2097,8 @@ public:
 class AstNodeSel : public AstNodeBiop {
     // Single bit range extraction, perhaps with non-constant selection or array selection
 public:
-    AstNodeSel(FileLine* fl, AstNode* fromp, AstNode* bitp)
-        : AstNodeBiop(fl, fromp, bitp) {}
+    AstNodeSel(AstType t, FileLine* fl, AstNode* fromp, AstNode* bitp)
+        : AstNodeBiop(t, fl, fromp, bitp) {}
     ASTNODE_BASE_FUNCS(NodeSel)
     AstNode* fromp() const { return op1p(); }  // op1 = Extracting what (NULL=TBD during parsing)
     void fromp(AstNode* nodep) { setOp1p(nodep); }
@@ -2085,7 +2111,8 @@ public:
 class AstNodeStream : public AstNodeBiop {
     // Verilog {rhs{lhs}} - Note rhsp() is the slice size, not the lhsp()
 public:
-    AstNodeStream(FileLine* fl, AstNode* lhsp, AstNode* rhsp) : AstNodeBiop(fl, lhsp, rhsp) {
+    AstNodeStream(AstType t, FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : AstNodeBiop(t, fl, lhsp, rhsp) {
         if (lhsp->dtypep()) {
             dtypeSetLogicSized(lhsp->dtypep()->width(), AstNumeric::UNSIGNED);
         }
@@ -2111,8 +2138,8 @@ private:
     bool        m_dpiTask:1;    // DPI import task (vs. void function)
     bool        m_pure:1;       // DPI import pure
 public:
-    AstNodeFTask(FileLine* fileline, const string& name, AstNode* stmtsp)
-        : AstNode(fileline)
+    AstNodeFTask(AstType t, FileLine* fl, const string& name, AstNode* stmtsp)
+        : AstNode(t, fl)
         , m_name(name)
         , m_dpiOpenParent(0), m_taskPublic(false)
         , m_attrIsolateAssign(false), m_prototype(false)
@@ -2174,13 +2201,13 @@ private:
     string              m_inlinedDots;  // Dotted hierarchy flattened out
     AstPackage*         m_packagep;     // Package hierarchy
 public:
-    AstNodeFTaskRef(FileLine* fl, bool statement, AstNode* namep, AstNode* pinsp)
-        : AstNodeStmt(fl, statement)
+    AstNodeFTaskRef(AstType t, FileLine* fl, bool statement, AstNode* namep, AstNode* pinsp)
+        : AstNodeStmt(t, fl, statement)
         , m_taskp(NULL), m_packagep(NULL) {
         setOp1p(namep); addNOp2p(pinsp);
     }
-    AstNodeFTaskRef(FileLine* fl, bool statement, const string& name, AstNode* pinsp)
-        : AstNodeStmt(fl, statement)
+    AstNodeFTaskRef(AstType t, FileLine* fl, bool statement, const string& name, AstNode* pinsp)
+        : AstNodeStmt(t, fl, statement)
         , m_taskp(NULL), m_name(name), m_packagep(NULL) {
         addNOp2p(pinsp);
     }
@@ -2231,8 +2258,8 @@ private:
     int         m_varNum;       // Incrementing variable number
     int         m_typeNum;      // Incrementing implicit type number
 public:
-    AstNodeModule(FileLine* fl, const string& name)
-        : AstNode(fl)
+    AstNodeModule(AstType t, FileLine* fl, const string& name)
+        : AstNode(t, fl)
         , m_name(name), m_origName(name)
         , m_modPublic(false), m_modTrace(false), m_inLibrary(false), m_dead(false)
         , m_internal(false), m_recursive(false), m_recursiveClone(false)
@@ -2245,7 +2272,7 @@ public:
     AstActive* activesp() const { return VN_CAST(op3p(), Active); }  // op3 = List of i/sblocks
     // METHODS
     void addInlinesp(AstNode* nodep) { addOp1p(nodep); }
-    void addStmtp(AstNode* nodep) { addOp2p(nodep); }
+    void addStmtp(AstNode* nodep) { addNOp2p(nodep); }
     void addActivep(AstNode* nodep) { addOp3p(nodep); }
     // ACCESSORS
     virtual void name(const string& name) { m_name = name; }
@@ -2276,18 +2303,14 @@ public:
 class AstNodeRange : public AstNode {
     // A range, sized or unsized
 public:
-    explicit AstNodeRange(FileLine* fl) : AstNode(fl) { }
+    AstNodeRange(AstType t, FileLine* fl)
+        : AstNode(t, fl) {}
     ASTNODE_BASE_FUNCS(NodeRange)
 };
 
 //######################################################################
 
-#include "V3AstNodes.h"
-
-#include "V3Ast__gen_impl.h"  // From ./astgen
-// Things like:
-//  inline AstAlways* AstNode::castAlways() { return dynamic_cast<AstAlways*>(this); }
-//  inline bool AstNode::privateIsaAlways(const AstNode* nodep) { return nodep && nodep->type() == AstType::atAlways; }
+#include "V3AstNodes__gen.h"
 
 //######################################################################
 // Inline AstNVisitor METHODS

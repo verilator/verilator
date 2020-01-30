@@ -591,6 +591,7 @@ class AstSenTree;
 %token<fl>		yD_REWIND	"$rewind"
 %token<fl>		yD_RIGHT	"$right"
 %token<fl>		yD_RTOI		"$rtoi"
+%token<fl>		yD_SAMPLED	"$sampled"
 %token<fl>		yD_SFORMAT	"$sformat"
 %token<fl>		yD_SFORMATF	"$sformatf"
 %token<fl>		yD_SHORTREALTOBITS "$shortrealtobits"
@@ -608,6 +609,7 @@ class AstSenTree;
 %token<fl>		yD_TANH		"$tanh"
 %token<fl>		yD_TESTPLUSARGS	"$test$plusargs"
 %token<fl>		yD_TIME		"$time"
+%token<fl>		yD_TYPENAME	"$typename"
 %token<fl>		yD_UNGETC	"$ungetc"
 %token<fl>		yD_UNIT		"$unit"
 %token<fl>		yD_UNPACKED_DIMENSIONS "$unpacked_dimensions"
@@ -1567,7 +1569,7 @@ data_typeNoRef<dtypep>:		// ==IEEE: data_type, excluding class_type etc referenc
 	//			// instead see data_typeVar
 	|	yVIRTUAL__INTERFACE yINTERFACE id/*interface*/	{ $$ = NULL; BBUNSUP($1, "Unsupported: virtual interface"); }
 	|	yVIRTUAL__anyID                id/*interface*/	{ $$ = NULL; BBUNSUP($1, "Unsupported: virtual data type"); }
-	//UNSUP	type_reference				{ UNSUP }
+	|	type_reference				{ $$ = $1; }
 	//			// IEEE: class_scope: see data_type above
 	//			// IEEE: class_type: see data_type above
 	//			// IEEE: ps_covergroup: see data_type above
@@ -1584,9 +1586,9 @@ var_data_type<dtypep>:		// ==IEEE: var_data_type
 	|	yVAR implicit_typeE			{ $$ = $2; }
 	;
 
-//UNSUP type_reference<dtypep>:  // ==IEEE: type_reference
-//UNSUP		yTYPE '(' exprOrDataType ')'		{ UNSUP }
-//UNSUP	;
+type_reference<dtypep>:  	// ==IEEE: type_reference
+		yTYPE '(' exprOrDataType ')'		{ $$ = new AstRefDType($1, AstRefDType::FlagTypeOfExpr(), $3); }
+	;
 
 struct_unionDecl<uorstructp>:	// IEEE: part of data_type
 	//			// packedSigningE is NOP for unpacked
@@ -3265,6 +3267,7 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_RIGHT '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,NULL); }
 	|	yD_RIGHT '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,$5); }
 	|	yD_RTOI '(' expr ')'			{ $$ = new AstRToIS($1,$3); }
+	|	yD_SAMPLED '(' expr ')'			{ $$ = new AstSampled($1, $3); }
 	|	yD_SFORMATF '(' str commaEListE ')'	{ $$ = new AstSFormatF($1,*$3,false,$4); }
 	|	yD_SHORTREALTOBITS '(' expr ')'		{ $$ = new AstRealToBits($1,$3); UNSUPREAL($1); }
 	|	yD_SIGNED '(' expr ')'			{ $$ = new AstSigned($1,$3); }
@@ -3279,6 +3282,7 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_TANH '(' expr ')'			{ $$ = new AstTanhD($1,$3); }
 	|	yD_TESTPLUSARGS '(' str ')'		{ $$ = new AstTestPlusArgs($1,*$3); }
 	|	yD_TIME	parenE				{ $$ = new AstTime($1); }
+	|	yD_TYPENAME '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1, AstAttrType::TYPENAME, $3); }
 	|	yD_UNGETC '(' expr ',' expr ')'		{ $$ = new AstFUngetC($1, $5, $3); }  // Arg swap to file first
 	|	yD_UNPACKED_DIMENSIONS '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_UNPK_DIMENSIONS,$3); }
 	|	yD_UNSIGNED '(' expr ')'		{ $$ = new AstUnsigned($1,$3); }

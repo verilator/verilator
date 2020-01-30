@@ -105,29 +105,29 @@ private:
     // VISITORS
     VL_DEBUG_FUNC;  // Declare debug()
 
-    virtual void visit(AstNodeModule* nodep) {
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         // Only do the top
         if (nodep->isTop()) {
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstTopScope* nodep) {
+    virtual void visit(AstTopScope* nodep) VL_OVERRIDE {
         m_topscopep = nodep;
         iterateChildren(nodep);
         // Don't clear topscopep, the namer persists beyond this visit
     }
-    virtual void visit(AstScope* nodep) {
+    virtual void visit(AstScope* nodep) VL_OVERRIDE {
         // But no SenTrees under TopScope's scope
     }
     // Memorize existing block names
-    virtual void visit(AstActive* nodep) {
+    virtual void visit(AstActive* nodep) VL_OVERRIDE {
         // Don't grab SenTrees under Actives, only those that are global (under Scope directly)
         iterateChildren(nodep);
     }
-    virtual void visit(AstSenTree* nodep) { m_trees.add(nodep); }
+    virtual void visit(AstSenTree* nodep) VL_OVERRIDE { m_trees.add(nodep); }
     // Empty visitors, speed things up
-    virtual void visit(AstNodeStmt* nodep) { }
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE { }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
     // METHODS

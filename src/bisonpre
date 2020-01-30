@@ -392,7 +392,8 @@ sub clean_input {
             } elsif ($needmore) {
                 # Bison doesn't have a #line directive, so we need somewhere to insert into
                 $line =~ s!^\s*//.*$!!;
-                ($line =~ m/^\s*$/) or die "%Error: $filename:$l: Need $needmore more blank lines to insure line numbers are constant\n";
+                ($line =~ m/^\s*$/)
+                    or die "%Error: $filename:$l: Need $needmore more blank lines to keep line numbers are constant\n";
                 $needmore--;
             } else {
                 push @lines, $line;

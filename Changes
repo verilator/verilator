@@ -9,13 +9,35 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    Add -match to lint_off to waive warnings. [Philipp Wagner]
 
-***   Support $readmem/$writemem with assoc arrarys. Closes #2100. [agrobman]
+***   Verilation speed improvements, #2133, #2138. [Geza Lore]
 
-****  Support left justified $display. Closes #2101. [Pieter Kapsenberg]
+***   Support libgoogle-perftools-dev's libtcmalloc if available, #2137. [Geza Lore]
+
+***   Support $readmem/$writemem with assoc arrarys, #2100. [agrobman]
+
+****  Support type(expression) operator and $typename, #1650.
+
+****  Support left justified $display, #2101. [Pieter Kapsenberg]
+
+****  Support string character access via indexing.
+
+****  Support enum.next(k) with constant k > 1, #2125. [Tobias Rosenkranz]
 
 ****  Add parameter values in XML. #2110. [Pieter Kapsenberg]
 
+****  Add loc column location in XML (replaces fl), #2122. [Pieter Kapsenberg]
+
 ****  Add error on misused define. [Topa Tota]
+
+****  Add parameter to set maximum signal width, #2082. [Øyvind Harboe]
+
+****  Add warning on genvar in normal for loop, #2143. [yurivict]
+
+****  Fix VPI scope naming for public modules. [Nandu Raj]
+
+****  Fix FST tracing of enums inside structs. [fsiegle]
+
+****  Fix WIDTH warning on </<= of narrower value, #2141. [agrobman]
 
 
 * Verilator 4.026 2020-01-11

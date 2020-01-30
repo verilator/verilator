@@ -165,7 +165,7 @@ typedef V3ConfigWildcardResolver<V3ConfigFTask> V3ConfigFTaskResolver;
 // Modules have tasks, variables, named blocks and properties
 
 class V3ConfigModule {
-    typedef std::unordered_set<string> StringSet;
+    typedef vl_unordered_set<string> StringSet;
 
     V3ConfigFTaskResolver m_tasks;  // Functions/tasks in module
     V3ConfigVarResolver m_vars;  // Variables in module
@@ -290,8 +290,10 @@ class V3ConfigFile {
     }
 
 public:
-    V3ConfigFile() { m_lastIgnore = {-1, m_ignLines.begin()}; }
-
+    V3ConfigFile() {
+        m_lastIgnore.lineno = -1;
+        m_lastIgnore.it = m_ignLines.begin();
+    }
     void update(const V3ConfigFile& file) {
         // Copy in all Attributes
         for (LineAttrMap::const_iterator it = file.m_lineAttrs.begin();
@@ -455,7 +457,7 @@ void V3Config::addVarAttr(FileLine* fl, const string& module, const string& ftas
         if (ftask.empty()) {
             mod.vars().at(var).push_back(V3ConfigVarAttr(attr, sensep));
         } else {
-            mod.ftasks().at(ftask).vars().at(var).push_back({attr, sensep});
+            mod.ftasks().at(ftask).vars().at(var).push_back(V3ConfigVarAttr(attr, sensep));
         }
     }
 }

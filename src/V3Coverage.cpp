@@ -149,17 +149,21 @@ private:
             +"_"+type;
     }
     // VISITORS - BOTH
-    virtual void visit(AstNodeModule* nodep) {
-        m_modp = nodep;
-        m_inModOff = nodep->isTop();  // Ignore coverage on top module; it's a shell we created
-        m_fileps.clear();
-        iterateChildren(nodep);
-        m_modp = NULL;
-        m_inModOff = true;
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+        AstNodeModule* origModp = m_modp;
+        bool origInModOff = m_inModOff;
+        {
+            m_modp = nodep;
+            m_inModOff = nodep->isTop();  // Ignore coverage on top module; it's a shell we created
+            m_fileps.clear();
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
+        m_inModOff = origInModOff;
     }
 
     // VISITORS - TOGGLE COVERAGE
-    virtual void visit(AstNodeFTask* nodep) {
+    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
         bool oldtog = m_inToggleOff;
         {
             m_inToggleOff = true;
@@ -167,7 +171,7 @@ private:
         }
         m_inToggleOff = oldtog;
     }
-    virtual void visit(AstVar* nodep) {
+    virtual void visit(AstVar* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         if (m_modp && !m_inModOff && !m_inToggleOff
             && nodep->fileline()->coverageOn() && v3Global.opt.coverageToggle()) {
@@ -303,7 +307,7 @@ private:
     }
 
     // VISITORS - LINE COVERAGE
-    virtual void visit(AstIf* nodep) {  // Note not AstNodeIf; other types don't get covered
+    virtual void visit(AstIf* nodep) VL_OVERRIDE {  // Note not AstNodeIf; other types don't get covered
         UINFO(4," IF: "<<nodep<<endl);
         if (m_checkBlock) {
             // An else-if.  When we iterate the if, use "elsif" marking
@@ -340,7 +344,7 @@ private:
             m_checkBlock = true;  // Reset as a child may have cleared it
         }
     }
-    virtual void visit(AstCaseItem* nodep) {
+    virtual void visit(AstCaseItem* nodep) VL_OVERRIDE {
         UINFO(4," CASEI: "<<nodep<<endl);
         if (m_checkBlock && !m_inModOff
             && nodep->fileline()->coverageOn() && v3Global.opt.coverageLine()) {
@@ -353,7 +357,7 @@ private:
             m_checkBlock = true;  // Reset as a child may have cleared it
         }
     }
-    virtual void visit(AstCover* nodep) {
+    virtual void visit(AstCover* nodep) VL_OVERRIDE {
         UINFO(4," COVER: "<<nodep<<endl);
         m_checkBlock = true;  // Always do cover blocks, even if there's a $stop
         iterateChildren(nodep);
@@ -364,11 +368,11 @@ private:
         }
         m_checkBlock = true;  // Reset as a child may have cleared it
     }
-    virtual void visit(AstStop* nodep) {
+    virtual void visit(AstStop* nodep) VL_OVERRIDE {
         UINFO(4,"  STOP: "<<nodep<<endl);
         m_checkBlock = false;
     }
-    virtual void visit(AstPragma* nodep) {
+    virtual void visit(AstPragma* nodep) VL_OVERRIDE {
         if (nodep->pragType() == AstPragmaType::COVERAGE_BLOCK_OFF) {
             // Skip all NEXT nodes under this block, and skip this if/case branch
             UINFO(4,"  OFF: "<<nodep<<endl);
@@ -378,7 +382,7 @@ private:
             if (m_checkBlock) iterateChildren(nodep);
         }
     }
-    virtual void visit(AstBegin* nodep) {
+    virtual void visit(AstBegin* nodep) VL_OVERRIDE {
         // Record the hierarchy of any named begins, so we can apply to user
         // coverage points.  This is because there may be cov points inside
         // generate blocks; each point should get separate consideration.
@@ -398,7 +402,7 @@ private:
     }
 
     // VISITORS - BOTH
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         // Default: Just iterate
         if (m_checkBlock) {
             iterateChildren(nodep);

@@ -124,7 +124,7 @@ class SliceVisitor : public AstNVisitor {
         return newp;
     }
 
-    virtual void visit(AstNodeAssign* nodep) {
+    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
         // Called recursively on newly created assignments
         if (!nodep->user1()
             && !VN_IS(nodep, AssignAlias)) {
@@ -157,7 +157,7 @@ class SliceVisitor : public AstNVisitor {
         }
     }
 
-    virtual void visit(AstInitArray* nodep) {
+    virtual void visit(AstInitArray* nodep) VL_OVERRIDE {
         UASSERT_OBJ(!m_assignp, nodep,
                     "Array initialization should have been removed earlier");
     }
@@ -171,11 +171,11 @@ class SliceVisitor : public AstNVisitor {
             if (AstUnpackArrayDType* adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
                 AstNodeBiop* logp = NULL;
                 if (!VN_IS(nodep->lhsp()->dtypep()->skipRefp(), NodeArrayDType)) {
-                    nodep->lhsp()->v3error("Slice operatator "<<nodep->lhsp()->prettyTypeName()
+                    nodep->lhsp()->v3error("Slice operator "<<nodep->lhsp()->prettyTypeName()
                                            <<" on non-slicable (e.g. non-vector) left-hand-side operand");
                 }
                 else if (!VN_IS(nodep->rhsp()->dtypep()->skipRefp(), NodeArrayDType)) {
-                    nodep->rhsp()->v3error("Slice operatator "<<nodep->rhsp()->prettyTypeName()
+                    nodep->rhsp()->v3error("Slice operator "<<nodep->rhsp()->prettyTypeName()
                                            <<" on non-slicable (e.g. non-vector) right-hand-side operand");
                 }
                 else {
@@ -216,20 +216,20 @@ class SliceVisitor : public AstNVisitor {
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstEq* nodep) {
+    virtual void visit(AstEq* nodep) VL_OVERRIDE {
         expandBiOp(nodep);
     }
-    virtual void visit(AstNeq* nodep) {
+    virtual void visit(AstNeq* nodep) VL_OVERRIDE {
         expandBiOp(nodep);
     }
-    virtual void visit(AstEqCase* nodep) {
+    virtual void visit(AstEqCase* nodep) VL_OVERRIDE {
         expandBiOp(nodep);
     }
-    virtual void visit(AstNeqCase* nodep) {
+    virtual void visit(AstNeqCase* nodep) VL_OVERRIDE {
         expandBiOp(nodep);
     }
 
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         // Default: Just iterate
         iterateChildren(nodep);
     }

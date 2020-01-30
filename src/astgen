@@ -30,6 +30,15 @@ if (! GetOptions(
 
 read_types("$Opt_I[0]/V3Ast.h");
 read_types("$Opt_I[0]/V3AstNodes.h");
+foreach my $type (sort (keys %Classes)) {
+    # Check all leaves are not AstNode* and non-leaves are AstNode*
+    my @children = children_of($type);
+    if ($type =~ /^Node/) {
+        @children  || die "Error: Final AstNode subclasses must not be named AstNode*: Ast$type"
+    } else {
+        !@children || die "Error: Non-final AstNode subclasses must be named AstNode*: Ast$type"
+    }
+}
 read_stages("$Opt_I[0]/Verilator.cpp");
 read_refs(glob("$Opt_I[0]/*.y"), glob("$Opt_I[0]/*.h"), glob("$Opt_I[0]/*.cpp"));
 if ($opt_report) {
@@ -39,9 +48,9 @@ if ($opt_classes) {
     write_report("V3Ast__gen_report.txt");
     write_classes("V3Ast__gen_classes.h");
     write_visitor("V3Ast__gen_visitor.h");
-    write_intf("V3Ast__gen_interface.h");
     write_impl("V3Ast__gen_impl.h");
     write_types("V3Ast__gen_types.h");
+    write_header("V3AstNodes__gen.h");
 }
 foreach my $cpt (@Opt_Cpt) {
     Cpt::process(in_filename=>"$Opt_I[0]/${cpt}.cpp", out_filename=>"${cpt}__gen.cpp");
@@ -235,71 +244,149 @@ sub write_visitor {
     $fh->close();
 }
 
-sub write_intf {
+sub write_impl {
     my $fh = open_file(@_);
 
     print $fh "\n";
-    print $fh "    // These for use by VN_IS macro only\n";
+
+    print $fh "    // These for use by VN_IS only\n";
     foreach my $type (sort (keys %Classes)) {
-        print $fh "    static bool privateIs",$type,"(const AstNode* nodep);\n";
+        print $fh "template<> inline bool AstNode::privateIs<Ast",$type,">(const AstNode* nodep) { ";
+        if ($type eq "Node") {
+            print $fh "return nodep != NULL; ";
+        } else {
+            print $fh "return nodep && ";
+            if ($type =~ /^Node/) {
+                print $fh "(static_cast<int>(nodep->type()) >= static_cast<int>(AstType::first",$type,")) && ";
+                print $fh "(static_cast<int>(nodep->type()) <= static_cast<int>(AstType::last",$type,")); ";
+            } else {
+                print $fh "(static_cast<int>(nodep->type()) == static_cast<int>(AstType::at",$type,")); ";
+            }
+        }
+        print $fh "}\n"
     }
 
-    print $fh "\n";
     print $fh "    // These for use by VN_CAST macro only\n";
     foreach my $type (sort (keys %Classes)) {
-        print $fh "    static Ast",$type,"* privateCast",$type,"(AstNode* nodep);\n";
+        print $fh "template<> inline Ast",$type,"* AstNode::privateCast<Ast",$type,">(AstNode* nodep) { ";
+        if ($type eq "Node") {
+            print $fh "return nodep; ";
+        } else {
+            print $fh "return AstNode::privateIs<Ast",$type,">(nodep) ? ";
+            print $fh "reinterpret_cast<Ast",$type,"*>(nodep) : NULL; ";
+        }
+        print $fh "}\n";
     }
+
+    print $fh "    // These for use by VN_CAST_CONST macro only\n";
     foreach my $type (sort (keys %Classes)) {
-        print $fh "    static const Ast",$type,"* privateConstCast",$type,"(const AstNode* nodep);\n";
+        print $fh "template<> inline const Ast",$type,"* AstNode::privateConstCast<Ast",$type,">(const AstNode* nodep) { ";
+        if ($type eq "Node") {
+            print $fh "return nodep; ";
+        } else {
+            print $fh "return AstNode::privateIs<Ast",$type,">(nodep) ? ";
+            print $fh "reinterpret_cast<const Ast",$type,"*>(nodep) : NULL; ";
+        }
+        print $fh "}\n";
     }
 
     $fh->close();
 }
 
-sub write_impl {
-    my $fh = open_file(@_);
+sub write_type_enum {
+    my $fh = shift;
+    my $type = shift;
+    my $idx = shift;
+    my $processed = shift;
+    my $kind = shift;
+    my $indent = shift;
 
-    print $fh "\n";
-    print $fh "    // These for use by VN_IS macro only\n";
-    foreach my $type (sort (keys %Classes)) {
-        if (children_of($type)) {
-            print $fh "inline bool AstNode::privateIs",$type,"(const AstNode* nodep) { return (bool)(dynamic_cast<const Ast",$type,"*>(nodep)); }\n";
-        } else {
-            print $fh "inline bool AstNode::privateIs",$type,"(const AstNode* nodep) { return nodep && nodep->type() == AstType::at",$type,"; }\n";
+    # Skip this if it has already been processed
+    return $idx if (exists $processed->{$type});
+
+    # Mark processed
+    $processed->{$type} = 1;
+
+    # The last used index
+    my $last;
+
+    if ($type !~ /^Node/) {
+        $last = $idx;
+        if ($kind eq "concrete-enum") {
+            print $fh " "x($indent*4), "at",$type," = ",$idx,",\n";
+        } elsif ($kind eq "concrete-ascii") {
+            print $fh " "x($indent*4), "\"", uc $type, "\",\n";
         }
+        $idx += 1;
+    } elsif ($kind eq "abstract-enum") {
+        print $fh " "x($indent*4), "first",$type," = ",$idx,",\n";
     }
 
-    foreach my $type (sort (keys %Classes)) {
-        print $fh "inline Ast",$type,"* AstNode::privateCast",$type,"(AstNode* nodep) { return dynamic_cast<Ast",$type,"*>(nodep); }\n";
-    }
-    foreach my $type (sort (keys %Classes)) {
-        print $fh "inline const Ast",$type,"* AstNode::privateConstCast",$type,"(const AstNode* nodep) { return dynamic_cast<const Ast",$type,"*>(nodep); }\n";
+    foreach my $child (sort keys %{$::Children{$type}}) {
+        ($idx, $last) = write_type_enum($fh, $child, $idx, $processed, $kind, $indent);
     }
 
-    $fh->close();
+    if ($type =~ /^Node/ && ($kind eq "abstract-enum")) {
+        print $fh " "x($indent*4), "last",$type," = ",$last,",\n";
+    }
+
+    return $idx, $last;
 }
 
 sub write_types {
     my $fh = open_file(@_);
 
     printf $fh "    enum en {\n";
-    # Add "at" prefix to avoid conflicting with FOPEN and other macros in include files
-    foreach my $type (sort (keys %Classes)) {
-        next if $type =~ /^Node/;
-        print $fh "\tat",$type,",\n";
-    }
-    printf $fh "\t_ENUM_END\n";
+    (my $final, undef) = write_type_enum($fh, "Node", 0, {}, "concrete-enum", 2);
+    printf $fh "        _ENUM_END = $final\n";
     printf $fh "    };\n";
+
+    printf $fh "    enum bounds {\n";
+    write_type_enum($fh, "Node", 0, {}, "abstract-enum", 2);
+    printf $fh "        _BOUNDS_END\n";
+    printf $fh "    };\n";
+
     printf $fh "    const char* ascii() const {\n";
-    printf $fh "        const char* const names[] = {\n";
-    foreach my $type (sort (keys %Classes)) {
-        next if $type =~ /^Node/;
-        print $fh "\t\"", uc $type, "\",\n";
-    }
-    printf $fh "\t\"_ENUM_END\"\n";
+    printf $fh "        static const char* const names[_ENUM_END + 1] = {\n";
+    write_type_enum($fh, "Node", 0, {}, "concrete-ascii", 3);
+    printf $fh "            \"_ENUM_END\"\n";
     printf $fh "        };\n";
     printf $fh "        return names[m_e];\n";
     printf $fh "    };\n";
+    $fh->close();
+}
+
+sub write_header {
+    my $fh = open_file(@_);
+
+    my $type = "None";
+    my $base = "None";
+
+    my $in_filename = "V3AstNodes.h";
+    my $ifile = "$Opt_I[0]/$in_filename";
+    my $ifh = IO::File->new($ifile) or die "%Error: $! $ifile,";
+
+    $fh->print("#line 1 \"../$in_filename\"\n");
+
+    while (defined (my $line = $ifh->getline())) {
+        # Drop expanded macro definitions - but keep empty line so compiler
+        # message locations are accurate
+        $line =~ s/^\s*#(define|undef)\s+ASTGEN_.*$//;
+
+        # Track current node type and base class
+        if ($line =~ /^\s*class\s*Ast(\S+)\s*:\s*(public)?\s*(AstNode\S*)/) {
+          $type = $1;
+          $base = $3;
+        }
+
+        # Substitute macros
+        $line =~ s/\bASTGEN_SUPER\s*\(/$base(AstType::at$type, /;
+
+        # Emit the line
+        print $fh $line;
+    }
+
+    $ifh->close();
     $fh->close();
 }
 
@@ -618,7 +705,7 @@ sub tree_base {
         # saves one comparison.
         if ($out_for_type_sc[0]) {      # Short-circuited types
             $self->print("    // Generated by astgen with short-circuiting\n",
-                         "    virtual void visit(Ast${type}* nodep) {\n",
+                         "    virtual void visit(Ast${type}* nodep) VL_OVERRIDE {\n",
                          "      iterateAndNextNull(nodep->lhsp());\n",
                          @out_for_type_sc);
             $self->print("      iterateAndNextNull(nodep->rhsp());\n",
@@ -629,8 +716,9 @@ sub tree_base {
         } elsif ($out_for_type[0]) {    # Other types with something to print
             my $skip = $self->{tree_skip_visit}{$type};
             my $gen = $skip ? "Gen" : "";
+            my $override = $skip ? "" : " VL_OVERRIDE";
             $self->print("    // Generated by astgen\n",
-                         "    virtual void visit$gen(Ast${type}* nodep) {\n",
+                         "    virtual void visit$gen(Ast${type}* nodep)${override} {\n",
                          ($skip?"":
                           "        iterateChildren(nodep);\n"),
                          @out_for_type,

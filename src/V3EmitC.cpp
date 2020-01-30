@@ -150,8 +150,62 @@ public:
         }
     }
 
+    struct CmpName {
+        inline bool operator()(const AstNode* lhsp, const AstNode* rhsp) const {
+            return lhsp->name() < rhsp->name();
+        }
+    };
+    void emitIntFuncDecls(AstNodeModule* modp) {
+        typedef std::vector<const AstCFunc*> FuncVec;
+        FuncVec funcsp;
+
+        for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            if (const AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
+                if (!funcp->skipDecl()) { funcsp.push_back(funcp); }
+            }
+        }
+
+        stable_sort(funcsp.begin(), funcsp.end(), CmpName());
+
+        for (FuncVec::iterator it = funcsp.begin(); it != funcsp.end(); ++it) {
+            const AstCFunc* funcp = *it;
+            if (!funcp->dpiImport()) {  // DPI is prototyped in __Dpi.h
+                ofp()->putsPrivate(funcp->declPrivate());
+                if (!funcp->ifdef().empty()) puts("#ifdef " + funcp->ifdef() + "\n");
+                if (funcp->isStatic().trueU()) puts("static ");
+                puts(funcp->rtnTypeVoid());
+                puts(" ");
+                puts(funcp->nameProtect());
+                puts("(" + cFuncArgs(funcp) + ")");
+                if (funcp->slow()) puts(" VL_ATTR_COLD");
+                puts(";\n");
+                if (!funcp->ifdef().empty()) puts("#endif  // " + funcp->ifdef() + "\n");
+            }
+        }
+
+        if (modp->isTop() && v3Global.opt.mtasks()) {
+            // Emit the mtask func prototypes.
+            AstExecGraph* execGraphp = v3Global.rootp()->execGraphp();
+            UASSERT_OBJ(execGraphp, v3Global.rootp(), "Root should have an execGraphp");
+            const V3Graph* depGraphp = execGraphp->depGraphp();
+            for (const V3GraphVertex* vxp = depGraphp->verticesBeginp(); vxp;
+                 vxp = vxp->verticesNextp()) {
+                const ExecMTask* mtp = dynamic_cast<const ExecMTask*>(vxp);
+                if (mtp->threadRoot()) {
+                    // Emit function declaration for this mtask
+                    ofp()->putsPrivate(true);
+                    puts("static void ");
+                    puts(protect(mtp->cFuncName()));
+                    puts("(bool even_cycle, void* symtab);\n");
+                }
+            }
+            // No AstCFunc for this one, as it's synthetic. Just write it:
+            puts("static void __Vmtask__final(bool even_cycle, void* symtab);\n");
+        }
+    }
+
     // VISITORS
-    virtual void visit(AstNodeAssign* nodep) {
+    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
         bool paren = true;  bool decind = false;
         if (AstSel* selp = VN_CAST(nodep->lhsp(), Sel)) {
             if (selp->widthMin()==1) {
@@ -175,6 +229,14 @@ public:
                 iterateAndNextNull(selp->lsbp()); puts(", ");
                 iterateAndNextNull(selp->fromp()); puts(", ");
             }
+        } else if (AstGetcRefN* selp = VN_CAST(nodep->lhsp(), GetcRefN)) {
+            iterateAndNextNull(selp->lhsp());
+            puts(" = ");
+            putbs("VL_PUTC_N(");
+            iterateAndNextNull(selp->lhsp());
+            puts(", ");
+            iterateAndNextNull(selp->rhsp());
+            puts(", ");
         } else if (AstVar* varp = AstVar::scVarRecurse(nodep->lhsp())) {
             putbs("VL_ASSIGN_");  // Set a systemC variable
             emitScIQW(varp);
@@ -216,9 +278,9 @@ public:
         if (decind) ofp()->blockDec();
         if (!m_suppressSemi) puts(";\n");
     }
-    virtual void visit(AstAlwaysPublic*) {
+    virtual void visit(AstAlwaysPublic*) VL_OVERRIDE {
     }
-    virtual void visit(AstAssocSel* nodep) {
+    virtual void visit(AstAssocSel* nodep) VL_OVERRIDE {
         iterateAndNextNull(nodep->fromp());
         putbs(".at(");
         AstAssocArrayDType* adtypep = VN_CAST(nodep->fromp()->dtypep(), AssocArrayDType);
@@ -239,7 +301,7 @@ public:
             puts(".data()");  // Access returned std::array as C array
         }
     }
-    virtual void visit(AstCCall* nodep) {
+    virtual void visit(AstCCall* nodep) VL_OVERRIDE {
         puts(nodep->hiernameProtect());
         puts(nodep->funcp()->nameProtect());
         puts("(");
@@ -257,7 +319,7 @@ public:
             puts(");\n");
         }
     }
-    virtual void visit(AstCMethodHard* nodep) {
+    virtual void visit(AstCMethodHard* nodep) VL_OVERRIDE {
         iterate(nodep->fromp());
         puts(".");
         puts(nodep->nameProtect());
@@ -274,15 +336,15 @@ public:
         UASSERT_OBJ(!nodep->isStatement() || VN_IS(nodep->dtypep(), VoidDType),
                     nodep, "Statement of non-void data type");
     }
-    virtual void visit(AstIntfRef* nodep) {
+    virtual void visit(AstIntfRef* nodep) VL_OVERRIDE {
         putsQuoted(VIdProtect::protectWordsIf(AstNode::vcdName(nodep->name()),
                                               nodep->protect()));
     }
-    virtual void visit(AstNodeCase* nodep) {
+    virtual void visit(AstNodeCase* nodep) VL_OVERRIDE {
         // In V3Case...
         nodep->v3fatalSrc("Case statements should have been reduced out");
     }
-    virtual void visit(AstComment* nodep) {
+    virtual void visit(AstComment* nodep) VL_OVERRIDE {
         string at;
         if (nodep->showAt()) {
             at = " at "+nodep->fileline()->ascii();
@@ -294,7 +356,7 @@ public:
         }
         iterateChildren(nodep);
     }
-    virtual void visit(AstCoverDecl* nodep) {
+    virtual void visit(AstCoverDecl* nodep) VL_OVERRIDE {
         puts("__vlCoverInsert(");  // As Declared in emitCoverageDecl
         puts("&(vlSymsp->__Vcoverage[");
         puts(cvtToStr(nodep->dataDeclThisp()->binNum())); puts("])");
@@ -313,22 +375,22 @@ public:
         puts(", ");     putsQuoted(protectWordsIf(nodep->comment(), nodep->protect()));
         puts(");\n");
     }
-    virtual void visit(AstCoverInc* nodep) {
+    virtual void visit(AstCoverInc* nodep) VL_OVERRIDE {
         puts("++(vlSymsp->__Vcoverage[");
         puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
         puts("]);\n");
     }
-    virtual void visit(AstCReturn* nodep) {
+    virtual void visit(AstCReturn* nodep) VL_OVERRIDE {
         puts("return (");
         iterateAndNextNull(nodep->lhsp());
         puts(");\n");
     }
-    virtual void visit(AstDisplay* nodep) {
+    virtual void visit(AstDisplay* nodep) VL_OVERRIDE {
         string text = nodep->fmtp()->text();
         if (nodep->addNewline()) text += "\n";
         displayNode(nodep, nodep->fmtp()->scopeNamep(), text, nodep->fmtp()->exprsp(), false);
     }
-    virtual void visit(AstScopeName* nodep) {
+    virtual void visit(AstScopeName* nodep) VL_OVERRIDE {
         // For use under AstCCalls for dpiImports.  ScopeNames under
         // displays are handled in AstDisplay
         if (!nodep->dpiExport()) {
@@ -337,20 +399,20 @@ public:
             putbs("(&(vlSymsp->"+protect("__Vscope_"+scope)+"))");
         }
     }
-    virtual void visit(AstSFormat* nodep) {
+    virtual void visit(AstSFormat* nodep) VL_OVERRIDE {
         displayNode(nodep, nodep->fmtp()->scopeNamep(), nodep->fmtp()->text(),
                     nodep->fmtp()->exprsp(), false);
     }
-    virtual void visit(AstSFormatF* nodep) {
+    virtual void visit(AstSFormatF* nodep) VL_OVERRIDE {
         displayNode(nodep, nodep->scopeNamep(), nodep->text(), nodep->exprsp(), false);
     }
-    virtual void visit(AstFScanF* nodep) {
+    virtual void visit(AstFScanF* nodep) VL_OVERRIDE {
         displayNode(nodep, NULL, nodep->text(), nodep->exprsp(), true);
     }
-    virtual void visit(AstSScanF* nodep) {
+    virtual void visit(AstSScanF* nodep) VL_OVERRIDE {
         displayNode(nodep, NULL, nodep->text(), nodep->exprsp(), true);
     }
-    virtual void visit(AstValuePlusArgs* nodep) {
+    virtual void visit(AstValuePlusArgs* nodep) VL_OVERRIDE {
         puts("VL_VALUEPLUSARGS_IN");
         emitIQW(nodep->outp());
         puts("(");
@@ -362,12 +424,12 @@ public:
         iterateAndNextNull(nodep->outp());
         puts(")");
     }
-    virtual void visit(AstTestPlusArgs* nodep) {
+    virtual void visit(AstTestPlusArgs* nodep) VL_OVERRIDE {
         puts("VL_TESTPLUSARGS_I(");
         putsQuoted(nodep->text());
         puts(")");
     }
-    virtual void visit(AstFGetS* nodep) {
+    virtual void visit(AstFGetS* nodep) VL_OVERRIDE {
         checkMaxWords(nodep);
         emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), NULL);
     }
@@ -378,7 +440,7 @@ public:
                            <<" bits exceeds hardcoded limit VL_TO_STRING_MAX_WORDS in verilatedos.h");
         }
     }
-    virtual void visit(AstFOpen* nodep) {
+    virtual void visit(AstFOpen* nodep) VL_OVERRIDE {
         iterateAndNextNull(nodep->filep());
         puts(" = VL_FOPEN_");
         emitIQW(nodep->filenamep());
@@ -395,7 +457,7 @@ public:
         iterateAndNextNull(nodep->modep());
         puts(");\n");
     }
-    virtual void visit(AstNodeReadWriteMem* nodep) {
+    virtual void visit(AstNodeReadWriteMem* nodep) VL_OVERRIDE {
         puts(nodep->cFuncPrefixp());
         puts("N(");
         puts(nodep->isHex() ? "true" : "false");
@@ -433,14 +495,14 @@ public:
         if (nodep->msbp()) { iterateAndNextNull(nodep->msbp()); } else puts("~VL_ULL(0)");
         puts(");\n");
     }
-    virtual void visit(AstFClose* nodep) {
+    virtual void visit(AstFClose* nodep) VL_OVERRIDE {
         puts("VL_FCLOSE_I(");
         iterateAndNextNull(nodep->filep());
         puts("); ");
         iterateAndNextNull(nodep->filep());  // For safety, so user doesn't later WRITE with it.
         puts(" = 0;\n");
     }
-    virtual void visit(AstFFlush* nodep) {
+    virtual void visit(AstFFlush* nodep) VL_OVERRIDE {
         if (!nodep->filep()) {
             puts("fflush(stdout);\n");
         } else {
@@ -451,7 +513,7 @@ public:
             puts(")); }\n");
         }
     }
-    virtual void visit(AstFSeek* nodep) {
+    virtual void visit(AstFSeek* nodep) VL_OVERRIDE {
         puts("(fseek(VL_CVT_I_FP(");
         iterateAndNextNull(nodep->filep());
         puts("),");
@@ -460,17 +522,17 @@ public:
         iterateAndNextNull(nodep->operation());
         puts(")==-1?-1:0)");
     }
-    virtual void visit(AstFTell* nodep) {
+    virtual void visit(AstFTell* nodep) VL_OVERRIDE {
         puts("ftell(VL_CVT_I_FP(");
         iterateAndNextNull(nodep->filep());
         puts("))");
     }
-    virtual void visit(AstFRewind* nodep) {
+    virtual void visit(AstFRewind* nodep) VL_OVERRIDE {
         puts("(fseek(VL_CVT_I_FP(");
         iterateAndNextNull(nodep->filep());
         puts("), 0, 0)==-1?-1:0)");
     }
-    virtual void visit(AstFRead* nodep) {
+    virtual void visit(AstFRead* nodep) VL_OVERRIDE {
         puts("VL_FREAD_I(");
         puts(cvtToStr(nodep->memp()->widthMin()));  // Need real storage width
         putbs(",");
@@ -509,12 +571,12 @@ public:
         else puts(cvtToStr(array_size));
         puts(");\n");
     }
-    virtual void visit(AstSysFuncAsTask* nodep) {
+    virtual void visit(AstSysFuncAsTask* nodep) VL_OVERRIDE {
         if (!nodep->lhsp()->isWide()) puts("(void)");
         iterateAndNextNull(nodep->lhsp());
         if (!nodep->lhsp()->isWide()) puts(";");
     }
-    virtual void visit(AstSystemT* nodep) {
+    virtual void visit(AstSystemT* nodep) VL_OVERRIDE {
         puts("(void)VL_SYSTEM_I");
         emitIQW(nodep->lhsp());
         puts("(");
@@ -526,7 +588,7 @@ public:
         iterateAndNextNull(nodep->lhsp());
         puts(");\n");
     }
-    virtual void visit(AstSystemF* nodep) {
+    virtual void visit(AstSystemF* nodep) VL_OVERRIDE {
         puts("VL_SYSTEM_I");
         emitIQW(nodep->lhsp());
         puts("(");
@@ -538,17 +600,17 @@ public:
         iterateAndNextNull(nodep->lhsp());
         puts(")");
     }
-    virtual void visit(AstJumpGo* nodep) {
+    virtual void visit(AstJumpGo* nodep) VL_OVERRIDE {
         puts("goto __Vlabel"+cvtToStr(nodep->labelp()->labelNum())+";\n");
     }
-    virtual void visit(AstJumpLabel* nodep) {
+    virtual void visit(AstJumpLabel* nodep) VL_OVERRIDE {
         nodep->labelNum(++m_labelNum);
         puts("{\n");  // Make it visually obvious label jumps outside these
         iterateAndNextNull(nodep->stmtsp());
         puts("}\n");
         puts("__Vlabel"+cvtToStr(nodep->labelNum())+": ;\n");
     }
-    virtual void visit(AstWhile* nodep) {
+    virtual void visit(AstWhile* nodep) VL_OVERRIDE {
         iterateAndNextNull(nodep->precondsp());
         puts("while (");
         iterateAndNextNull(nodep->condp());
@@ -558,7 +620,7 @@ public:
         iterateAndNextNull(nodep->precondsp());  // Need to recompute before next loop
         puts("}\n");
     }
-    virtual void visit(AstNodeIf* nodep) {
+    virtual void visit(AstNodeIf* nodep) VL_OVERRIDE {
         puts("if (");
         if (!nodep->branchPred().unknown()) {
             puts(nodep->branchPred().ascii()); puts("(");
@@ -573,7 +635,7 @@ public:
         }
         puts("}\n");
     }
-    virtual void visit(AstStop* nodep) {
+    virtual void visit(AstStop* nodep) VL_OVERRIDE {
         puts("VL_STOP_MT(");
         putsQuoted(protect(nodep->fileline()->filename()));
         puts(", ");
@@ -581,41 +643,41 @@ public:
         puts(", \"\"");
         puts(");\n");
     }
-    virtual void visit(AstFinish* nodep) {
+    virtual void visit(AstFinish* nodep) VL_OVERRIDE {
         puts("VL_FINISH_MT(");
         putsQuoted(protect(nodep->fileline()->filename()));
         puts(", ");
         puts(cvtToStr(nodep->fileline()->lineno()));
         puts(", \"\");\n");
     }
-    virtual void visit(AstText* nodep) {
+    virtual void visit(AstNodeSimpleText* nodep) VL_OVERRIDE {
         if (nodep->tracking() || m_trackText) {
             puts(nodep->text());
         } else {
             ofp()->putsNoTracking(nodep->text());
         }
     }
-    virtual void visit(AstTextBlock* nodep) {
-        visit(VN_CAST(nodep, Text));
+    virtual void visit(AstTextBlock* nodep) VL_OVERRIDE {
+        visit(VN_CAST(nodep, NodeSimpleText));
         for (AstNode* childp = nodep->nodesp(); childp; childp = childp->nextp()) {
             iterate(childp);
             if (nodep->commas() && childp->nextp()) puts(", ");
         }
     }
-    virtual void visit(AstCStmt* nodep) {
+    virtual void visit(AstCStmt* nodep) VL_OVERRIDE {
         putbs("");
         iterateAndNextNull(nodep->bodysp());
     }
-    virtual void visit(AstCMath* nodep) {
+    virtual void visit(AstCMath* nodep) VL_OVERRIDE {
         putbs("");
         iterateAndNextNull(nodep->bodysp());
     }
-    virtual void visit(AstUCStmt* nodep) {
+    virtual void visit(AstUCStmt* nodep) VL_OVERRIDE {
         putsDecoration(ifNoProtect("// $c statement at "+nodep->fileline()->ascii()+"\n"));
         iterateAndNextNull(nodep->bodysp());
         puts("\n");
     }
-    virtual void visit(AstUCFunc* nodep) {
+    virtual void visit(AstUCFunc* nodep) VL_OVERRIDE {
         puts("\n");
         putsDecoration(ifNoProtect("// $c function at "+nodep->fileline()->ascii()+"\n"));
         iterateAndNextNull(nodep->bodysp());
@@ -623,10 +685,10 @@ public:
     }
 
     // Operators
-    virtual void visit(AstNodeTermop* nodep) {
+    virtual void visit(AstNodeTermop* nodep) VL_OVERRIDE {
         emitOpName(nodep, nodep->emitC(), NULL, NULL, NULL);
     }
-    virtual void visit(AstNodeUniop* nodep) {
+    virtual void visit(AstNodeUniop* nodep) VL_OVERRIDE {
         if (emitSimpleOk(nodep)) {
             putbs("("); puts(nodep->emitSimpleOperator()); puts(" ");
             iterateAndNextNull(nodep->lhsp()); puts(")");
@@ -634,7 +696,7 @@ public:
             emitOpName(nodep, nodep->emitC(), nodep->lhsp(), NULL, NULL);
         }
     }
-    virtual void visit(AstNodeBiop* nodep) {
+    virtual void visit(AstNodeBiop* nodep) VL_OVERRIDE {
         if (emitSimpleOk(nodep)) {
             putbs("("); iterateAndNextNull(nodep->lhsp());
             puts(" "); putbs(nodep->emitSimpleOperator()); puts(" ");
@@ -643,11 +705,11 @@ public:
             emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), NULL);
         }
     }
-    virtual void visit(AstNodeTriop* nodep) {
+    virtual void visit(AstNodeTriop* nodep) VL_OVERRIDE {
         UASSERT_OBJ(!emitSimpleOk(nodep), nodep, "Triop cannot be described in a simple way");
         emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nodep->thsp());
     }
-    virtual void visit(AstRedXor* nodep) {
+    virtual void visit(AstRedXor* nodep) VL_OVERRIDE {
         if (nodep->lhsp()->isWide()) {
             visit(VN_CAST(nodep, NodeUniop));
         } else {
@@ -658,42 +720,42 @@ public:
             puts(")");
         }
     }
-    virtual void visit(AstMulS* nodep) {
+    virtual void visit(AstMulS* nodep) VL_OVERRIDE {
         if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
             nodep->v3error("Unsupported: Signed multiply of "<<nodep->width()
                            <<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
         }
         visit(VN_CAST(nodep, NodeBiop));
     }
-    virtual void visit(AstPow* nodep) {
+    virtual void visit(AstPow* nodep) VL_OVERRIDE {
         if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
             nodep->v3error("Unsupported: Power of "<<nodep->width()
                            <<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
         }
         visit(VN_CAST(nodep, NodeBiop));
     }
-    virtual void visit(AstPowSS* nodep) {
+    virtual void visit(AstPowSS* nodep) VL_OVERRIDE {
         if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
             nodep->v3error("Unsupported: Power of "<<nodep->width()
                            <<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
         }
         visit(VN_CAST(nodep, NodeBiop));
     }
-    virtual void visit(AstPowSU* nodep) {
+    virtual void visit(AstPowSU* nodep) VL_OVERRIDE {
         if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
             nodep->v3error("Unsupported: Power of "<<nodep->width()
                            <<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
         }
         visit(VN_CAST(nodep, NodeBiop));
     }
-    virtual void visit(AstPowUS* nodep) {
+    virtual void visit(AstPowUS* nodep) VL_OVERRIDE {
         if (nodep->widthWords() > VL_MULS_MAX_WORDS) {
             nodep->v3error("Unsupported: Power of "<<nodep->width()
                            <<" bits exceeds hardcoded limit VL_MULS_MAX_WORDS in verilatedos.h");
         }
         visit(VN_CAST(nodep, NodeBiop));
     }
-    virtual void visit(AstCCast* nodep) {
+    virtual void visit(AstCCast* nodep) VL_OVERRIDE {
         // Extending a value of the same word width is just a NOP.
         if (nodep->size() <= VL_IDATASIZE) {
             puts("(IData)(");
@@ -703,7 +765,7 @@ public:
         iterateAndNextNull(nodep->lhsp());
         puts(")");
     }
-    virtual void visit(AstNodeCond* nodep) {
+    virtual void visit(AstNodeCond* nodep) VL_OVERRIDE {
         // Widths match up already, so we'll just use C++'s operator w/o any temps.
         if (nodep->expr1p()->isWide()) {
             emitOpName(nodep, nodep->emitC(), nodep->condp(), nodep->expr1p(), nodep->expr2p());
@@ -714,16 +776,16 @@ public:
             iterateAndNextNull(nodep->expr2p()); puts(")");
         }
     }
-    virtual void visit(AstNew* nodep) {
+    virtual void visit(AstNew* nodep) VL_OVERRIDE {
         puts("std::make_shared<" + nodep->dtypep()->nameProtect() + ">(");
         iterateChildren(nodep);
         puts(")");
     }
-    virtual void visit(AstSel* nodep) {
+    virtual void visit(AstSel* nodep) VL_OVERRIDE {
         // Note ASSIGN checks for this on a LHS
         emitOpName(nodep, nodep->emitC(), nodep->fromp(), nodep->lsbp(), nodep->thsp());
     }
-    virtual void visit(AstReplicate* nodep) {
+    virtual void visit(AstReplicate* nodep) VL_OVERRIDE {
         if (nodep->lhsp()->widthMin() == 1 && !nodep->isWide()) {
             UASSERT_OBJ((static_cast<int>(VN_CAST(nodep->rhsp(), Const)->toUInt())
                          * nodep->lhsp()->widthMin()) == nodep->widthMin(),
@@ -741,7 +803,7 @@ public:
             emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), NULL);
         }
     }
-    virtual void visit(AstStreamL* nodep) {
+    virtual void visit(AstStreamL* nodep) VL_OVERRIDE {
         // Attempt to use a "fast" stream function for slice size = power of 2
         if (!nodep->isWide()) {
             uint32_t isPow2 = VN_CAST(nodep->rhsp(), Const)->num().countOnes() == 1;
@@ -765,7 +827,7 @@ public:
                    nodep->lhsp(), nodep->rhsp(), NULL);
     }
     // Terminals
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         puts(nodep->hiernameProtect());
         puts(nodep->varp()->nameProtect());
     }
@@ -889,7 +951,7 @@ public:
         emitConstant(constp, NULL, assignString);
         puts(";\n");
     }
-    virtual void visit(AstConst* nodep) {
+    virtual void visit(AstConst* nodep) VL_OVERRIDE {
         if (nodep->isWide()) {
             UASSERT_OBJ(m_wideTempRefp, nodep, "Wide Constant w/ no temp");
             emitConstant(nodep, m_wideTempRefp, "");
@@ -900,27 +962,27 @@ public:
     }
 
     // Just iterate
-    virtual void visit(AstNetlist* nodep) {
+    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
-    virtual void visit(AstTopScope* nodep) {
+    virtual void visit(AstTopScope* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
-    virtual void visit(AstScope* nodep) {
+    virtual void visit(AstScope* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
     // NOPs
-    virtual void visit(AstTypedef*) {}
-    virtual void visit(AstPragma*) {}
-    virtual void visit(AstCell*) {}  // Handled outside the Visit class
-    virtual void visit(AstVar*) {}  // Handled outside the Visit class
-    virtual void visit(AstNodeText*) {}  // Handled outside the Visit class
-    virtual void visit(AstTraceDecl*) {}  // Handled outside the Visit class
-    virtual void visit(AstTraceInc*) {}  // Handled outside the Visit class
-    virtual void visit(AstCFile*) {}  // Handled outside the Visit class
-    virtual void visit(AstCellInline*) {}  // Handled outside the Visit class (EmitCSyms)
+    virtual void visit(AstTypedef*) VL_OVERRIDE {}
+    virtual void visit(AstPragma*) VL_OVERRIDE {}
+    virtual void visit(AstCell*) VL_OVERRIDE {}  // Handled outside the Visit class
+    virtual void visit(AstVar*) VL_OVERRIDE {}  // Handled outside the Visit class
+    virtual void visit(AstNodeText*) VL_OVERRIDE {}  // Handled outside the Visit class
+    virtual void visit(AstTraceDecl*) VL_OVERRIDE {}  // Handled outside the Visit class
+    virtual void visit(AstTraceInc*) VL_OVERRIDE {}  // Handled outside the Visit class
+    virtual void visit(AstCFile*) VL_OVERRIDE {}  // Handled outside the Visit class
+    virtual void visit(AstCellInline*) VL_OVERRIDE {}  // Handled outside the Visit class (EmitCSyms)
     // Default
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         puts(string("\n???? // ")+nodep->prettyTypeName()+"\n");
         iterateChildren(nodep);
         nodep->v3fatalSrc("Unknown node type reached emitter: "<<nodep->prettyTypeName());
@@ -1041,9 +1103,9 @@ class EmitCImp : EmitCStmts {
     }
 
     V3OutCFile* newOutCFile(AstNodeModule* modp, bool slow, bool source, int filenum=0) {
-        string filenameNoExt = v3Global.opt.makeDir()+"/"+ modClassName(modp);
-        if (filenum) filenameNoExt += "__"+cvtToStr(filenum);
-        filenameNoExt += (slow ? "__Slow":"");
+        string filenameNoExt = v3Global.opt.makeDir() + "/" + prefixNameProtect(modp);
+        if (filenum) filenameNoExt += "__" + cvtToStr(filenum);
+        filenameNoExt += (slow ? "__Slow" : "");
         V3OutCFile* ofp = NULL;
         if (v3Global.opt.lintOnly()) {
             // Unfortunately we have some lint checks here, so we can't just skip processing.
@@ -1150,11 +1212,11 @@ class EmitCImp : EmitCStmts {
         }
     }
 
-    virtual void visit(AstMTaskBody* nodep) {
+    virtual void visit(AstMTaskBody* nodep) VL_OVERRIDE {
         ExecMTask* mtp = nodep->execMTaskp();
         puts("\n");
         puts("void ");
-        puts(modClassName(m_modp)+"::"+protect(mtp->cFuncName()));
+        puts(prefixNameProtect(m_modp) + "::" + protect(mtp->cFuncName()));
         puts("(bool even_cycle, void* symtab) {\n");
 
         // Declare and set vlSymsp
@@ -1169,7 +1231,7 @@ class EmitCImp : EmitCStmts {
     //---------------------------------------
     // VISITORS
     using EmitCStmts::visit;  // Suppress hidden overloaded virtual function warning
-    virtual void visit(AstCFunc* nodep) {
+    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         // TRACE_* and DPI handled elsewhere
         if (nodep->funcType().isTrace()) return;
         if (nodep->dpiImport()) return;
@@ -1183,14 +1245,13 @@ class EmitCImp : EmitCStmts {
         if (nodep->ifdef()!="") puts("#ifdef "+nodep->ifdef()+"\n");
         if (nodep->isInline()) puts("VL_INLINE_OPT ");
         puts(nodep->rtnTypeVoid()); puts(" ");
-        puts(modClassName(m_modp)+"::"+nodep->nameProtect()
-             +"("+cFuncArgs(nodep)+") {\n");
+        puts(prefixNameProtect(m_modp) + "::" + nodep->nameProtect() + "(" + cFuncArgs(nodep)
+             + ") {\n");
 
         // "+" in the debug indicates a print from the model
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+  ");
         for (int i=0; i<m_modp->level(); ++i) { puts("  "); }
-        puts(modClassName(m_modp)+"::"+nodep->nameProtect()
-             +"\\n\"); );\n");
+        puts(prefixNameProtect(m_modp) + "::" + nodep->nameProtect() + "\\n\"); );\n");
 
         // Declare and set vlTOPp
         if (nodep->symProlog()) puts(EmitCBaseVisitor::symTopAssign()+"\n");
@@ -1259,16 +1320,16 @@ class EmitCImp : EmitCStmts {
         }
     }
 
-    virtual void visit(AstChangeDet* nodep) {
+    virtual void visit(AstChangeDet* nodep) VL_OVERRIDE {
         m_blkChangeDetVec.push_back(nodep);
     }
 
-    virtual void visit(AstCReset* nodep) {
+    virtual void visit(AstCReset* nodep) VL_OVERRIDE {
         AstVar* varp = nodep->varrefp()->varp();
         emitVarReset(varp);
     }
 
-    virtual void visit(AstExecGraph* nodep) {
+    virtual void visit(AstExecGraph* nodep) VL_OVERRIDE {
         UASSERT_OBJ(nodep == v3Global.rootp()->execGraphp(), nodep,
                     "ExecGraph should be a singleton!");
         // The location of the AstExecGraph within the containing _eval()
@@ -1429,8 +1490,8 @@ class EmitCImp : EmitCStmts {
     void emitDestructorImp(AstNodeModule* modp);
     void emitSavableImp(AstNodeModule* modp);
     void emitTextSection(AstType type);
-    void emitIntFuncDecls(AstNodeModule* modp);
     // High level
+    void emitImpTop(AstNodeModule* modp);
     void emitImp(AstNodeModule* modp);
     void emitSettleLoop(const std::string& eval_call, bool initial);
     void emitWrapEval(AstNodeModule* modp);
@@ -1896,9 +1957,9 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     puts("\n");
     bool first = true;
     if (optSystemC() && modp->isTop()) {
-        puts("VL_SC_CTOR_IMP("+modClassName(modp)+")");
+        puts("VL_SC_CTOR_IMP(" + prefixNameProtect(modp) + ")");
     } else {
-        puts("VL_CTOR_IMP("+modClassName(modp)+")");
+        puts("VL_CTOR_IMP(" + prefixNameProtect(modp) + ")");
         first = false;  // VL_CTOR_IMP includes the first ':'
     }
     emitVarCtors(&first);
@@ -1954,8 +2015,8 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
 }
 
 void EmitCImp::emitConfigureImp(AstNodeModule* modp) {
-    puts("\nvoid "+modClassName(modp)+"::"+protect("__Vconfigure")
-         +"("+symClassName()+"* vlSymsp, bool first) {\n");
+    puts("\nvoid " + prefixNameProtect(modp) + "::" + protect("__Vconfigure") + "("
+         + symClassName() + "* vlSymsp, bool first) {\n");
     puts(   "if (0 && first) {}  // Prevent unused\n");
     puts(   "this->__VlSymsp = vlSymsp;\n");  // First, as later stuff needs it.
     if (v3Global.opt.coverage() ) {
@@ -1970,8 +2031,9 @@ void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
         puts("\n// Coverage\n");
         // Rather than putting out VL_COVER_INSERT calls directly, we do it via this function
         // This gets around gcc slowness constructing all of the template arguments.
-        puts("void "+modClassName(m_modp)+"::__vlCoverInsert(uint32_t* countp, bool enable,"
-             " const char* filenamep, int lineno, int column,\n");
+        puts("void " + prefixNameProtect(m_modp)
+             + "::__vlCoverInsert(uint32_t* countp, bool enable,"
+             + " const char* filenamep, int lineno, int column,\n");
         puts(   "const char* hierp, const char* pagep, const char* commentp) {\n");
         puts(   "static uint32_t fake_zero_count = 0;\n");  // static doesn't need save-restore as constant
         puts(   "if (!enable) countp = &fake_zero_count;\n");  // Used for second++ instantiation of identical bin
@@ -1992,7 +2054,7 @@ void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
 
 void EmitCImp::emitDestructorImp(AstNodeModule* modp) {
     puts("\n");
-    puts(modClassName(modp)+"::~"+modClassName(modp)+"() {\n");
+    puts(prefixNameProtect(modp) + "::~" + prefixNameProtect(modp) + "() {\n");
     if (modp->isTop() && v3Global.opt.mtasks()) {
         puts("delete __Vm_threadPoolp; __Vm_threadPoolp = NULL;\n");
     }
@@ -2010,8 +2072,9 @@ void EmitCImp::emitSavableImp(AstNodeModule* modp) {
             string funcname = de ? "__Vdeserialize" : "__Vserialize";
             string op = de ? ">>" : "<<";
             // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
-            puts("void "+modClassName(modp)+"::"+protect(funcname)+"("+classname+"& os) {\n");
-            // Place a computed checksum to insure proper structure save/restore formatting
+            puts("void " + prefixNameProtect(modp) + "::" + protect(funcname) + "(" + classname
+                 + "& os) {\n");
+            // Place a computed checksum to ensure proper structure save/restore formatting
             // OK if this hash includes some things we won't dump, since
             // just looking for loading the wrong model
             VHashSha256 hash;
@@ -2114,7 +2177,8 @@ void EmitCImp::emitCellCtors(AstNodeModule* modp) {
     }
     for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
         if (AstCell* cellp = VN_CAST(nodep, Cell)) {
-            puts("VL_CELL("+cellp->nameProtect()+", "+modClassName(cellp->modp())+");\n");
+            puts("VL_CELL(" + cellp->nameProtect() + ", " + prefixNameProtect(cellp->modp())
+                 + ");\n");
         }
     }
 }
@@ -2185,8 +2249,9 @@ void EmitCImp::emitSettleLoop(const std::string& eval_call, bool initial) {
 }
 
 void EmitCImp::emitWrapEval(AstNodeModule* modp) {
-    puts("\nvoid "+modClassName(modp)+"::eval() {\n");
-    puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+++++TOP Evaluate "+modClassName(modp)+"::eval\\n\"); );\n");
+    puts("\nvoid " + prefixNameProtect(modp) + "::eval() {\n");
+    puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+++++TOP Evaluate " + prefixNameProtect(modp)
+         + "::eval\\n\"); );\n");
     puts(EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp;  // Setup global symbol table\n");
     puts(EmitCBaseVisitor::symTopAssign()+"\n");
     puts("#ifdef VL_DEBUG\n");
@@ -2258,8 +2323,8 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     splitSizeInc(10);
 
     //
-    puts("\nvoid "+modClassName(modp)+"::"+protect("_eval_initial_loop")
-         +"("+EmitCBaseVisitor::symClassVar()+") {\n");
+    puts("\nvoid " + prefixNameProtect(modp) + "::" + protect("_eval_initial_loop") + "("
+         + EmitCBaseVisitor::symClassVar() + ") {\n");
     puts("vlSymsp->__Vm_didInit = true;\n");
     puts(protect("_eval_initial")+"(vlSymsp);\n");
     if (v3Global.opt.trace()) {
@@ -2448,62 +2513,6 @@ void EmitCStmts::emitSortedVarList(const VarVec& anons,
     }
 }
 
-struct CmpName {
-    inline bool operator() (const AstNode* lhsp, const AstNode* rhsp) const {
-        return lhsp->name() < rhsp->name();
-    }
-};
-
-void EmitCImp::emitIntFuncDecls(AstNodeModule* modp) {
-    typedef std::vector<const AstCFunc*> FuncVec;
-    FuncVec funcsp;
-
-    for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-        if (const AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
-            if (!funcp->skipDecl()) {
-                funcsp.push_back(funcp);
-            }
-        }
-    }
-
-    stable_sort(funcsp.begin(), funcsp.end(), CmpName());
-
-    for (FuncVec::iterator it = funcsp.begin(); it != funcsp.end(); ++it) {
-        const AstCFunc* funcp = *it;
-        if (!funcp->dpiImport()) {  // DPI is prototyped in __Dpi.h
-            ofp()->putsPrivate(funcp->declPrivate());
-            if (!funcp->ifdef().empty()) puts("#ifdef " + funcp->ifdef() + "\n");
-            if (funcp->isStatic().trueU()) puts("static ");
-            puts(funcp->rtnTypeVoid());
-            puts(" ");
-            puts(funcp->nameProtect());
-            puts("(" + cFuncArgs(funcp) + ")");
-            if (funcp->slow()) puts(" VL_ATTR_COLD");
-            puts(";\n");
-            if (!funcp->ifdef().empty()) puts("#endif  // " + funcp->ifdef() + "\n");
-        }
-    }
-
-    if (modp->isTop() && v3Global.opt.mtasks()) {
-        // Emit the mtask func prototypes.
-        AstExecGraph* execGraphp = v3Global.rootp()->execGraphp();
-        UASSERT_OBJ(execGraphp, v3Global.rootp(), "Root should have an execGraphp");
-        const V3Graph* depGraphp = execGraphp->depGraphp();
-        for (const V3GraphVertex* vxp = depGraphp->verticesBeginp();
-             vxp; vxp = vxp->verticesNextp()) {
-            const ExecMTask* mtp = dynamic_cast<const ExecMTask*>(vxp);
-            if (mtp->threadRoot()) {
-                // Emit function declaration for this mtask
-                ofp()->putsPrivate(true);
-                puts("static void "); puts(protect(mtp->cFuncName()));
-                puts("(bool even_cycle, void* symtab);\n");
-            }
-        }
-        // No AstCFunc for this one, as it's synthetic. Just write it:
-        puts("static void __Vmtask__final(bool even_cycle, void* symtab);\n");
-    }
-}
-
 void EmitCImp::emitMTaskState() {
     ofp()->putsPrivate(true);
     AstExecGraph* execGraphp = v3Global.rootp()->execGraphp();
@@ -2560,12 +2569,12 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
         if (v3Global.opt.savable()) v3error("--coverage and --savable not supported together");
     }
     if (v3Global.needHInlines()) {  // Set by V3EmitCInlines; should have been called before us
-        puts("#include \""+topClassName()+"__Inlines.h\"\n");
+        puts("#include \"" + topClassName() + "__Inlines.h\"\n");
     }
     if (v3Global.dpi()) {
         // do this before including our main .h file so that any references to
         // types defined in svdpi.h are available
-        puts("#include \""+ topClassName() +"__Dpi.h\"\n");
+        puts("#include \"" + topClassName() + "__Dpi.h\"\n");
     }
     puts("\n");
 
@@ -2574,9 +2583,9 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     vl_unordered_set<string> didClassName;
     for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
         if (AstCell* cellp = VN_CAST(nodep, Cell)) {
-            string className = modClassName(cellp->modp());
-            if (didClassName.find(className)==didClassName.end()) {
-                puts("class "+className+";\n");
+            string className = prefixNameProtect(cellp->modp());
+            if (didClassName.find(className) == didClassName.end()) {
+                puts("class " + className + ";\n");
                 didClassName.insert(className);
             }
         }
@@ -2589,9 +2598,9 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     emitTextSection(AstType::atScHdr);
 
     if (optSystemC() && modp->isTop()) {
-        puts("SC_MODULE("+modClassName(modp)+") {\n");
+        puts("SC_MODULE(" + prefixNameProtect(modp) + ") {\n");
     } else {
-        puts("VL_MODULE("+modClassName(modp)+") {\n");
+        puts("VL_MODULE(" + prefixNameProtect(modp) + ") {\n");
     }
     ofp()->resetPrivate();
     ofp()->putsPrivate(false);  // public:
@@ -2606,7 +2615,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
                     if (modp->isTop()) puts("// Public to allow access to /*verilator_public*/ items;\n");
                     if (modp->isTop()) puts("// otherwise the application code can consider these internals.\n");
                 }
-                puts(modClassName(cellp->modp())+"* "+cellp->nameProtect()+";\n");
+                puts(prefixNameProtect(cellp->modp()) + "* " + cellp->nameProtect() + ";\n");
             }
         }
     }
@@ -2674,24 +2683,26 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     ofp()->resetPrivate();
     // We don't need a private copy constructor, as VerilatedModule has one for us.
     ofp()->putsPrivate(true);
-    puts("VL_UNCOPYABLE("+modClassName(modp)+");  ///< Copying not allowed\n");
+    puts("VL_UNCOPYABLE(" + prefixNameProtect(modp) + ");  ///< Copying not allowed\n");
 
     ofp()->putsPrivate(false);  // public:
     if (optSystemC() && modp->isTop()) {
-        puts("SC_CTOR("+modClassName(modp)+");\n");
-        puts("virtual ~"+modClassName(modp)+"();\n");
+        puts("SC_CTOR(" + prefixNameProtect(modp) + ");\n");
+        puts("virtual ~" + prefixNameProtect(modp) + "();\n");
     } else if (optSystemC()) {
-        puts("VL_CTOR("+modClassName(modp)+");\n");
-        puts("~"+modClassName(modp)+"();\n");
+        puts("VL_CTOR(" + prefixNameProtect(modp) + ");\n");
+        puts("~" + prefixNameProtect(modp) + "();\n");
     } else {
         if (modp->isTop()) {
             puts("/// Construct the model; called by application code\n");
             puts("/// The special name "" may be used to make a wrapper with a\n");
             puts("/// single model invisible with respect to DPI scope names.\n");
         }
-        puts(modClassName(modp)+"(const char* name = \"TOP\");\n");
-        if (modp->isTop()) puts("/// Destroy the model; called (often implicitly) by application code\n");
-        puts("~"+modClassName(modp)+"();\n");
+        puts(prefixNameProtect(modp) + "(const char* name = \"TOP\");\n");
+        if (modp->isTop()) {
+            puts("/// Destroy the model; called (often implicitly) by application code\n");
+        }
+        puts("~" + prefixNameProtect(modp) + "();\n");
     }
     if (v3Global.opt.trace() && modp->isTop()) {
         puts("/// Trace signals in the model; called by application code\n");
@@ -2750,11 +2761,14 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     if (v3Global.opt.savable() && modp->isTop()) {
         puts("\n");
         puts("inline VerilatedSerialize& operator<<(VerilatedSerialize& os, "
-             +modClassName(modp)+"& rhs) {\n"
-             "Verilated::quiesce(); rhs."+protect("__Vserialize")+"(os); return os; }\n");
+             + prefixNameProtect(modp) + "& rhs) {\n"
+             + "Verilated::quiesce(); rhs."
+             + protect("__Vserialize") + "(os); return os; }\n");
         puts("inline VerilatedDeserialize& operator>>(VerilatedDeserialize& os, "
-             +modClassName(modp)+"& rhs) {\n"
-             "Verilated::quiesce(); rhs."+protect("__Vdeserialize")+"(os); return os; }\n");
+             + prefixNameProtect(modp)
+             + "& rhs) {\n"
+             + "Verilated::quiesce(); rhs."
+             + protect("__Vdeserialize") + "(os); return os; }\n");
     }
 
     // finish up h-file
@@ -2763,10 +2777,10 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
 //----------------------------------------------------------------------
 
-void EmitCImp::emitImp(AstNodeModule* modp) {
+void EmitCImp::emitImpTop(AstNodeModule* fileModp) {
     puts("\n");
-    puts("#include \""+modClassName(modp)+".h\"\n");
-    puts("#include \""+symClassName()+".h\"\n");
+    puts("#include \"" + prefixNameProtect(fileModp) + ".h\"\n");
+    puts("#include \"" + symClassName() + ".h\"\n");
 
     if (v3Global.dpi()) {
         puts("\n");
@@ -2775,18 +2789,14 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
 
     puts("\n");
     emitTextSection(AstType::atScImpHdr);
+}
 
-    if (m_slow && splitFilenum()==0) {
+void EmitCImp::emitImp(AstNodeModule* modp) {
+    if (m_slow) {
         puts("\n//--------------------\n");
         puts("// STATIC VARIABLES\n\n");
-        emitVarList(modp->stmtsp(), EVL_CLASS_ALL, modClassName(modp));
-    }
+        emitVarList(modp->stmtsp(), EVL_CLASS_ALL, prefixNameProtect(modp));
 
-    if (m_fast && splitFilenum()==0) {
-        emitTextSection(AstType::atScImp);
-    }
-
-    if (m_slow && splitFilenum()==0) {
         puts("\n//--------------------\n");
         emitCtorImp(modp);
         emitConfigureImp(modp);
@@ -2795,7 +2805,9 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
         emitCoverageImp(modp);
     }
 
-    if (m_fast && splitFilenum()==0) {
+    if (m_fast) {
+        emitTextSection(AstType::atScImp);
+
         if (modp->isTop()) {
             puts("\n//--------------------\n");
             puts("\n");
@@ -2806,46 +2818,45 @@ void EmitCImp::emitImp(AstNodeModule* modp) {
     // Blocks
     puts("\n//--------------------\n");
     puts("// Internal Methods\n");
-}
-
-//######################################################################
-
-void EmitCImp::maybeSplit(AstNodeModule* modp) {
-    if (splitNeeded()) {
-        // Close old file
-        VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
-        // Open a new file
-        m_ofp = newOutCFile(modp, !m_fast, true/*source*/, splitFilenumInc());
-        emitImp(modp);
-    }
-    splitSizeInc(10);  // Even blank functions get a file with a low csplit
-}
-
-void EmitCImp::main(AstNodeModule* modp, bool slow, bool fast) {
-    // Output a module
-    m_modp = modp;
-    m_slow = slow;
-    m_fast = fast;
-
-    if (debug()>=5) {
-        UINFO(0,"  Emitting "<<modClassName(modp)<<endl);
-    }
-
-    if (m_fast) {
-        m_ofp = newOutCFile(modp, !m_fast, false/*source*/);
-        emitInt(modp);
-        VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
-    }
-
-    m_ofp = newOutCFile(modp, !m_fast, true/*source*/);
-    emitImp(modp);
-
     for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
         if (AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
             maybeSplit(modp);
             mainDoFunc(funcp);
         }
     }
+}
+
+//######################################################################
+
+void EmitCImp::maybeSplit(AstNodeModule* fileModp) {
+    if (splitNeeded()) {
+        // Close old file
+        VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
+        // Open a new file
+        m_ofp = newOutCFile(fileModp, !m_fast, true/*source*/, splitFilenumInc());
+        emitImpTop(fileModp);
+    }
+    splitSizeInc(10);  // Even blank functions get a file with a low csplit
+}
+
+void EmitCImp::main(AstNodeModule* modp, bool slow, bool fast) {
+    // Output a module
+    AstNodeModule* fileModp = modp;  // Filename constructed using this module
+    m_modp = modp;
+    m_slow = slow;
+    m_fast = fast;
+
+    UINFO(5, "  Emitting " << prefixNameProtect(modp) << endl);
+
+    if (m_fast) {
+        m_ofp = newOutCFile(fileModp, !m_fast, false/*source*/);
+        emitInt(modp);
+        VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
+    }
+
+    m_ofp = newOutCFile(fileModp, !m_fast, true/*source*/);
+    emitImpTop(fileModp);
+    emitImp(modp);
 
     if (fast && modp->isTop() && v3Global.opt.mtasks()) {
         // Make a final pass and emit function definitions for the mtasks
@@ -3178,14 +3189,14 @@ class EmitCTrace : EmitCStmts {
 
     // VISITORS
     using EmitCStmts::visit;  // Suppress hidden overloaded virtual function warning
-    virtual void visit(AstNetlist* nodep) {
+    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
         // Top module only
         iterate(nodep->topModulep());
     }
-    virtual void visit(AstNodeModule* nodep) {
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
-    virtual void visit(AstCFunc* nodep) {
+    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         if (nodep->slow() != m_slow) return;
         if (nodep->funcType().isTrace()) {  // TRACE_*
             m_funcp = nodep;
@@ -3231,7 +3242,7 @@ class EmitCTrace : EmitCStmts {
         }
         m_funcp = NULL;
     }
-    virtual void visit(AstTraceDecl* nodep) {
+    virtual void visit(AstTraceDecl* nodep) VL_OVERRIDE {
         int enumNum = emitTraceDeclDType(nodep->dtypep());
         if (nodep->arrayRange().ranged()) {
             puts("{int i; for (i=0; i<"+cvtToStr(nodep->arrayRange().elements())+"; i++) {\n");
@@ -3242,7 +3253,7 @@ class EmitCTrace : EmitCStmts {
             puts("\n");
         }
     }
-    virtual void visit(AstTraceInc* nodep) {
+    virtual void visit(AstTraceInc* nodep) VL_OVERRIDE {
         if (nodep->declp()->arrayRange().ranged()) {
             // It traces faster if we unroll the loop
             for (int i=0; i<nodep->declp()->arrayRange().elements(); i++) {
@@ -3252,9 +3263,9 @@ class EmitCTrace : EmitCStmts {
             emitTraceChangeOne(nodep, -1);
         }
     }
-    virtual void visit(AstCoverDecl* nodep) {
+    virtual void visit(AstCoverDecl* nodep) VL_OVERRIDE {
     }
-    virtual void visit(AstCoverInc* nodep) {
+    virtual void visit(AstCoverInc* nodep) VL_OVERRIDE {
     }
 
 public:
@@ -3304,8 +3315,8 @@ void V3EmitC::emitcTrace() {
 
 void V3EmitC::emitcFiles() {
     UINFO(2,__FUNCTION__<<": "<<endl);
-    for (AstFile* filep = v3Global.rootp()->filesp(); filep;
-         filep = VN_CAST(filep->nextp(), File)) {
+    for (AstNodeFile* filep = v3Global.rootp()->filesp(); filep;
+         filep = VN_CAST(filep->nextp(), NodeFile)) {
         AstCFile* cfilep = VN_CAST(filep, CFile);
         if (cfilep && cfilep->tblockp()) {
             V3OutCFile of(cfilep->name());

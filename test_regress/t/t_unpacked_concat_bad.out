@@ -1,4 +1,4 @@
-%Error: t/t_unpacked_concat_bad.v:16: Unsupported: Replication to form UNPACKARRAYDTYPE
+%Error: t/t_unpacked_concat_bad.v:16: Unsupported: Replication to form 'bit[31:0]$[1:0]' data type
                                     : ... In instance t
    localparam bit_int_t count_bits [1:0] = {2{$bits(count_t)}};
                                              ^
@@ -7,7 +7,7 @@
    localparam bit_int_t count_bits [1:0] = {2{$bits(count_t)}};
                                               ^~~~~
                       ... Use "/* verilator lint_off WIDTHCONCAT */" and lint_on around source to disable this message.
-%Error: t/t_unpacked_concat_bad.v:17: Unsupported: Replication to form UNPACKARRAYDTYPE
+%Error: t/t_unpacked_concat_bad.v:17: Unsupported: Replication to form 'bit[31:0]$[1:0]' data type
                                     : ... In instance t
    localparam bit_int_t count_bitsc [1:0] = {$bits(count_t), $bits(count_t)};
                                             ^

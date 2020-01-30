@@ -77,14 +77,14 @@ private:
     // See above
 
     // METHODS
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         VarFlags flags (nodep->varp());
         if (flags.m_done) {
             nodep->hiername("");  // Remove this->
             nodep->hierThis(true);
         }
     }
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 public:
@@ -151,11 +151,11 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) {
+    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         moveVars();
     }
-    virtual void visit(AstCFunc* nodep) {
+    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         UINFO(4,"  CFUNC "<<nodep<<endl);
         m_cfuncp = nodep;
         searchFuncStmts(nodep->argsp());
@@ -186,7 +186,7 @@ private:
         }
     }
 
-    virtual void visit(AstVar* nodep) {
+    virtual void visit(AstVar* nodep) VL_OVERRIDE {
         if (!nodep->isSigPublic()
             && !nodep->isPrimaryIO()
             && !m_cfuncp) {  // Not already inside a function
@@ -195,7 +195,7 @@ private:
         }
         // No iterate; Don't want varrefs under it
     }
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         if (!VarFlags(nodep->varp()).m_notOpt) {
             if (!m_cfuncp) {  // Not in function, can't optimize
                 clearOptimizable(nodep->varp(), "BVnofunc");
@@ -224,7 +224,7 @@ private:
         }
         // No iterate; Don't want varrefs under it
     }
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 public:

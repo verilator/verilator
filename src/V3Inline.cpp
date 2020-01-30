@@ -100,7 +100,8 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) {
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+        UASSERT_OBJ(!m_modp, nodep, "Unsupported: Recursive modules");
         m_modp = nodep;
         m_allMods.push_back(nodep);
         m_modp->user2(CIL_MAYBE);
@@ -115,12 +116,12 @@ private:
         iterateChildren(nodep);
         m_modp = NULL;
     }
-    virtual void visit(AstCell* nodep) {
+    virtual void visit(AstCell* nodep) VL_OVERRIDE {
         nodep->modp()->user3Inc();  // Inc refs
         m_instances[m_modp][nodep->modp()]++;
         iterateChildren(nodep);
     }
-    virtual void visit(AstPragma* nodep) {
+    virtual void visit(AstPragma* nodep) VL_OVERRIDE {
         if (nodep->pragType() == AstPragmaType::INLINE_MODULE) {
             //UINFO(0,"PRAG MARK "<<m_modp<<endl);
             if (!m_modp) {
@@ -143,27 +144,27 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstVarXRef* nodep) {
+    virtual void visit(AstVarXRef* nodep) VL_OVERRIDE {
         // Cleanup link until V3LinkDot can correct it
         nodep->varp(NULL);
     }
-    virtual void visit(AstNodeFTaskRef* nodep) {
+    virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
         // Cleanup link until V3LinkDot can correct it
         if (!nodep->packagep()) nodep->taskp(NULL);
         iterateChildren(nodep);
     }
-    virtual void visit(AstAlways* nodep) {
+    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         m_modp->user4Inc();  // statement count
     }
-    virtual void visit(AstNodeAssign* nodep) {
+    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
         // Don't count assignments, as they'll likely flatten out
         // Still need to iterate though to nullify VarXRefs
         int oldcnt = m_modp->user4();
         iterateChildren(nodep);
         m_modp->user4(oldcnt);
     }
-    virtual void visit(AstNetlist* nodep) {
+    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
         // Build user2, user3, and user4 for all modules.
         // Also build m_allMods and m_instances.
         iterateChildren(nodep);
@@ -206,7 +207,7 @@ private:
     }
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         if (m_modp) {
             m_modp->user4Inc();  // Inc statement count
@@ -242,13 +243,13 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
-    virtual void visit(AstCell* nodep) {
+    virtual void visit(AstCell* nodep) VL_OVERRIDE {
         nodep->user4p(nodep->clonep());
     }
     // Accelerate
-    virtual void visit(AstNodeStmt* nodep) {}
-    virtual void visit(AstNodeMath* nodep) {}
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE {}
+    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 
@@ -280,7 +281,7 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
-    virtual void visit(AstCellInline* nodep) {
+    virtual void visit(AstCellInline* nodep) VL_OVERRIDE {
         // Inlined cell under the inline cell, need to move to avoid conflicts
         nodep->unlinkFrBack();
         m_modp->addInlinesp(nodep);
@@ -291,17 +292,17 @@ private:
         // Do CellInlines under this, but don't move them
         iterateChildren(nodep);
     }
-    virtual void visit(AstCell* nodep) {
+    virtual void visit(AstCell* nodep) VL_OVERRIDE {
         // Cell under the inline cell, need to rename to avoid conflicts
         string name = m_cellp->name() + "__DOT__" + nodep->name();
         nodep->name(name);
         iterateChildren(nodep);
     }
-    virtual void visit(AstModule* nodep) {
+    virtual void visit(AstModule* nodep) VL_OVERRIDE {
         m_renamedInterfaces.clear();
         iterateChildren(nodep);
     }
-    virtual void visit(AstVar* nodep) {
+    virtual void visit(AstVar* nodep) VL_OVERRIDE {
         if (nodep->user2p()) {
             // Make an assignment, so we'll trace it properly
             // user2p is either a const or a var.
@@ -385,17 +386,17 @@ private:
         if (debug()>=9 && nodep->valuep()) { nodep->valuep()->dumpTree(cout, "varchangei:"); }
         iterateChildren(nodep);
     }
-    virtual void visit(AstNodeFTask* nodep) {
+    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
         // Function under the inline cell, need to rename to avoid conflicts
         nodep->name(m_cellp->name() + "__DOT__" + nodep->name());
         iterateChildren(nodep);
     }
-    virtual void visit(AstTypedef* nodep) {
+    virtual void visit(AstTypedef* nodep) VL_OVERRIDE {
         // Typedef under the inline cell, need to rename to avoid conflicts
         nodep->name(m_cellp->name() + "__DOT__" + nodep->name());
         iterateChildren(nodep);
     }
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         if (nodep->varp()->user2p()  // It's being converted to an alias.
             && !nodep->varp()->user3()
             && !VN_IS(nodep->backp(), AssignAlias)) {  // Don't constant propagate aliases (we just made)
@@ -416,7 +417,7 @@ private:
         nodep->name(nodep->varp()->name());
         iterateChildren(nodep);
     }
-    virtual void visit(AstVarXRef* nodep) {
+    virtual void visit(AstVarXRef* nodep) VL_OVERRIDE {
         // Track what scope it was originally under so V3LinkDot can resolve it
         string newdots = VString::dot(m_cellp->name(), ".", nodep->inlinedDots());
         nodep->inlinedDots(newdots);
@@ -435,7 +436,7 @@ private:
         }
         iterateChildren(nodep);
     }
-    virtual void visit(AstNodeFTaskRef* nodep) {
+    virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
         // Track what scope it was originally under so V3LinkDot can resolve it
         string newdots = VString::dot(m_cellp->name(), ".", nodep->inlinedDots());
         nodep->inlinedDots(newdots);
@@ -447,9 +448,9 @@ private:
     }
 
     // Not needed, as V3LinkDot doesn't care about typedefs
-    //virtual void visit(AstRefDType* nodep) {}
+    //virtual void visit(AstRefDType* nodep) VL_OVERRIDE {}
 
-    virtual void visit(AstScopeName* nodep) {
+    virtual void visit(AstScopeName* nodep) VL_OVERRIDE {
         // If there's a %m in the display text, we add a special node that will contain the name()
         // Similar code in V3Begin
         // To keep correct visual order, must add before other Text's
@@ -463,12 +464,12 @@ private:
         if (afterp) nodep->scopeEntrp(afterp);
         iterateChildren(nodep);
     }
-    virtual void visit(AstCoverDecl* nodep) {
+    virtual void visit(AstCoverDecl* nodep) VL_OVERRIDE {
         // Fix path in coverage statements
         nodep->hier(VString::dot(m_cellp->prettyName(), ".", nodep->hier()));
         iterateChildren(nodep);
     }
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 
@@ -512,11 +513,11 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) {
+    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
         // Iterate modules backwards, in bottom-up order.  Required!
         iterateChildrenBackwards(nodep);
     }
-    virtual void visit(AstIfaceRefDType* nodep) {
+    virtual void visit(AstIfaceRefDType* nodep) VL_OVERRIDE {
         if (nodep->user5()) {
             // The cell has been removed so let's make sure we don't leave a reference to it
             // This dtype may still be in use by the AstAssignVarScope created earlier
@@ -524,11 +525,15 @@ private:
             nodep->cellp(NULL);
         }
     }
-    virtual void visit(AstNodeModule* nodep) {
-        m_modp = nodep;
-        iterateChildren(nodep);
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+        AstNodeModule* origModp = m_modp;
+        {
+            m_modp = nodep;
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
     }
-    virtual void visit(AstCell* nodep) {
+    virtual void visit(AstCell* nodep) VL_OVERRIDE {
         if (nodep->modp()->user1()) {  // Marked with inline request
             UINFO(5," Inline CELL   "<<nodep<<endl);
             UINFO(5,"   To MOD      "<<m_modp<<endl);
@@ -607,9 +612,9 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstNodeMath* nodep) {}  // Accelerate
-    virtual void visit(AstNodeStmt* nodep) {}  // Accelerate
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 
@@ -640,17 +645,17 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) {
+    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 
-    virtual void visit(AstModule* nodep) {
+    virtual void visit(AstModule* nodep) VL_OVERRIDE {
         if (nodep->isTop()) {
             iterateChildren(nodep);
         }
     }
 
-    virtual void visit(AstCell* nodep) {
+    virtual void visit(AstCell* nodep) VL_OVERRIDE {
         string oldScope = m_scope;
         if (m_scope.empty()) {
             m_scope = nodep->name();
@@ -686,7 +691,7 @@ private:
         m_scope = oldScope;
     }
 
-    virtual void visit(AstAssignVarScope* nodep) {
+    virtual void visit(AstAssignVarScope* nodep) VL_OVERRIDE {
         // Reference
         AstVarRef* reflp = VN_CAST(nodep->lhsp(), VarRef);
         // What the reference refers to
@@ -712,9 +717,9 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstNodeMath*) {}  // Accelerate
-    virtual void visit(AstNodeStmt*) {}  // Accelerate
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNodeStmt*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 

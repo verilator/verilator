@@ -148,6 +148,7 @@ DISTFILES_INC = $(INFOS) .gitignore \
 	docs/install.adoc \
 	docs/internals.adoc \
 	docs/verilator_logo.png \
+	docs/xml.adoc \
 	install-sh configure *.pod \
 	include/*.[chv]* \
 	include/*.in \

@@ -323,6 +323,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --language <lang>           Default language standard to parse
      +libext+<ext>+[ext]...     Extensions for finding modules
     --lint-only                 Lint, but do not make output
+    --max-num-width <value>     Maximum number width (default: 64K)
     --MMD                       Create .d dependency files
     --MP                        Create phony dependency targets
     --Mdir <directory>          Name of output object directory
@@ -967,6 +968,11 @@ stylistic and not enabled by default.
 
 If the design is not to be completely Verilated see also the --bbox-sys and
 --bbox-unsup options.
+
+=item --max-num-width I<value>
+
+Set the maximum number literal width (e.g. in 1024'd22 this it the 1024).
+Defaults to 64K.
 
 =item --MMD
 =item --no-MMD
@@ -3144,7 +3150,7 @@ analysis.) For example:
 The clock_enable attribute will cause the clock gate to be ignored in the
 scheduling algorithm, sometimes required for correct clock behavior, and
 always improving performance.  It's also a good idea to enable the
-IMPERFECTSCH warning, to insure all clock enables are properly recognized.
+IMPERFECTSCH warning, to ensure all clock enables are properly recognized.
 
 Same as C<clock_enable> in configuration files, see L</"CONFIGURATION
 FILES"> for more information.
@@ -4694,6 +4700,37 @@ that is not yet supported in Verilator.  See the Limitations chapter.
 =back
 
 
+=head1 DEPRECATIONS
+
+The following deprecated items are scheduled for future removal:
+
+=over 4
+
+=item Pre-C++11 compiler support
+
+Verilator supports pre-C++11 compilers for non-threaded models when
+configured with --enable-prec11.  This flag will be removed and C++11
+compilers will be required for both compiling Verilator and compiling
+Verilated models no sooner than September 2020.
+
+=item SystemC 2.1 and earlier support
+
+Support for SystemC versions 2.1 and earlier and the related sc_clock
+variable attribute will be removed no sooner than July 2020.
+
+=item Configuration File -msg
+
+The -msg argument to lint_off has been replaced with -rule.  -msg is
+planned for removal no sooner than January 2021.
+
+=item XML locations
+
+The XML C<fl> attribute has been replaced with C<loc>.  C<fl> is planned
+for removal no sooner than January 2021.
+
+=back
+
+
 =head1 FAQ/FREQUENTLY ASKED QUESTIONS
 
 =over 4
@@ -4925,7 +4962,7 @@ Most synthesis tools similarly define SYNTHESIS for you.
 =item Why do I get "unexpected `do'" or "unexpected `bit'" errors?
 
 Do, bit, ref, return, and other words are now SystemVerilog keywords.  You
-should change your code to not use them to insure it works with newer
+should change your code to not use them to ensure it works with newer
 tools.  Alternatively, surround them by the Verilog 2005/SystemVerilog
 begin_keywords pragma to indicate Verilog 2001 code.
 

@@ -184,12 +184,14 @@
 #  define VL_INCLUDE_UNORDERED_MAP <unordered_map>
 #  define VL_INCLUDE_UNORDERED_SET <unordered_set>
 # endif
+# define VL_FINAL final
 # define VL_OVERRIDE override
 #else
 # define VL_EQ_DELETE
 # define vl_unique_ptr std::auto_ptr
 # define VL_INCLUDE_UNORDERED_MAP "verilated_unordered_set_map.h"
 # define VL_INCLUDE_UNORDERED_SET "verilated_unordered_set_map.h"
+# define VL_FINAL
 # define VL_OVERRIDE
 #endif
 
@@ -270,6 +272,10 @@ typedef signed   __int32        ssize_t;        ///< signed size_t; returned fro
 # endif
 
 #else  // Linux or compliant Unix flavors, -m64
+
+// The inttypes supplied with some GCC versions requires STDC_FORMAT_MACROS
+// to be declared in order to get the PRIxx macros used by fstapi.c
+#define __STDC_FORMAT_MACROS
 
 # include <inttypes.h>  // Solaris
 # include <stdint.h>  // Linux and most flavors

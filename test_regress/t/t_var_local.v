@@ -43,7 +43,7 @@ module t;
 	 end
       end
       tsk;
-      tsk; // Second time to insure we reinit the initial value
+      tsk; // Second time to ensure we reinit the initial value
       $write("*-* All Finished *-*\n");
       $finish;
    end

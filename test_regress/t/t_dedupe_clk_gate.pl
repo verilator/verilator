@@ -16,7 +16,7 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<var fl="e43" name="t.f0.clock_gate.clken_latched" dtype_id="1" vartype="logic" origName="clken_latched" clock_enable="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var fl="e43" loc=".*?" name="t.f0.clock_gate.clken_latched" dtype_id="1" vartype="logic" origName="clken_latched" clock_enable="true"\/\>/i);
     file_grep($Self->{stats}, qr/Optimizations, Gate sigs deduped\s+(\d+)/i, 4);
 }
 

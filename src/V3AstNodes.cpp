@@ -168,7 +168,7 @@ AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
 }
 
 AstExecGraph::AstExecGraph(FileLine* fileline)
-    : AstNode(fileline) {
+    : AstNode(AstType::atExecGraph, fileline) {
     m_depGraphp = new V3Graph;
 }
 AstExecGraph::~AstExecGraph() {
@@ -943,6 +943,14 @@ void AstBasicDType::dump(std::ostream& str) const {
     str<<" kwd="<<keyword().ascii();
     if (isRanged() && !rangep()) str<<" range=["<<left()<<":"<<right()<<"]";
 }
+string AstBasicDType::prettyDTypeName() const {
+    std::ostringstream os;
+    os << keyword().ascii();
+    if (isRanged() && !rangep() && keyword().width() <= 1) {
+        os << "[" << left() << ":" << right() << "]";
+    }
+    return os.str();
+}
 void AstCCast::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str<<" sz"<<size();
@@ -1079,6 +1087,24 @@ void AstNodeArrayDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);
     str<<" "<<declRange();
 }
+string AstPackArrayDType::prettyDTypeName() const {
+    std::ostringstream os;
+    os << subDTypep()->prettyDTypeName() << declRange();
+    return os.str();
+}
+string AstUnpackArrayDType::prettyDTypeName() const {
+    std::ostringstream os;
+    string ranges = cvtToStr(declRange());
+    // Unfortunately we need a single $ for the first unpacked, and all
+    // dimensions shown in "reverse" order
+    AstNodeDType* subp = subDTypep()->skipRefp();
+    while (AstUnpackArrayDType* adtypep = VN_CAST(subp, UnpackArrayDType)) {
+        ranges += cvtToStr(adtypep->declRange());
+        subp = adtypep->subDTypep()->skipRefp();
+    }
+    os << subp->prettyDTypeName() << "$" << ranges;
+    return os.str();
+}
 void AstNodeModule::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str<<"  L"<<level();
@@ -1139,9 +1165,17 @@ void AstAssocArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str<<"[assoc-"<<(void*)keyDTypep()<<"]";
 }
+string AstAssocArrayDType::prettyDTypeName() const {
+    return subDTypep()->prettyDTypeName() + "[" + keyDTypep()->prettyDTypeName() + "]";
+}
 void AstQueueDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str<<"[queue]";
+}
+string AstQueueDType::prettyDTypeName() const {
+    string str = subDTypep()->prettyDTypeName() + "[$";
+    if (boundConst()) str += ":" + cvtToStr(boundConst());
+    return str + "]";
 }
 void AstUnsizedArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);

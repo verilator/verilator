@@ -124,6 +124,12 @@ private:
         if (VN_IS(nodep, GenFor) && !m_forVarp->isGenVar()) {
             nodep->v3error("Non-genvar used in generate for: "<<m_forVarp->prettyNameQ()<<endl);
         }
+        else if (!VN_IS(nodep, GenFor) && m_forVarp->isGenVar()) {
+            nodep->v3error("Genvar not legal in non-generate for (IEEE 2017 27.4): "
+                           << m_forVarp->prettyNameQ() << endl
+                           << nodep->warnMore()
+                           << "... Suggest move for loop upwards to generate-level scope.");
+        }
         if (m_generate) V3Const::constifyParamsEdit(initAssp->rhsp());  // rhsp may change
 
         // This check shouldn't be needed when using V3Simulate
@@ -367,7 +373,7 @@ private:
         return true;
     }
 
-    virtual void visit(AstWhile* nodep) {
+    virtual void visit(AstWhile* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         if (m_varModeCheck || m_varModeReplace) {
         } else {
@@ -396,7 +402,7 @@ private:
             }
         }
     }
-    virtual void visit(AstGenFor* nodep) {
+    virtual void visit(AstGenFor* nodep) VL_OVERRIDE {
         if (!m_generate || m_varModeReplace) {
             iterateChildren(nodep);
         }  // else V3Param will recursively call each for loop to be unrolled for us
@@ -424,7 +430,7 @@ private:
             }
         }
     }
-    virtual void visit(AstNodeFor* nodep) {
+    virtual void visit(AstNodeFor* nodep) VL_OVERRIDE {
         if (m_generate) {  // Ignore for's when expanding genfor's
             iterateChildren(nodep);
         } else {
@@ -432,7 +438,7 @@ private:
         }
     }
 
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         if (m_varModeCheck
             && nodep->varp() == m_forVarp
             && nodep->varScopep() == m_forVscp
@@ -453,7 +459,7 @@ private:
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         if (m_varModeCheck && nodep == m_ignoreIncp) {
             // Ignore subtree that is the increment
         } else {

@@ -1,0 +1,12 @@
+#!/bin/bash
+# DESCRIPTION: Docker hub hook to tag the latest release (stable)
+#
+# Copyright 2020 by Stefan Wallentowitz. This program is free
+# software; you can redistribute it and/or modify it under the terms
+# of either the GNU Lesser General Public License Version 3 or the
+# Perl Artistic License Version 2.0.FROM ubuntu:18.04
+
+if [ "$SOURCE_BRANCH"="stable" ]; then
+    docker tag $IMAGE_NAME $DOCKER_REPO:latest
+    docker push $DOCKER_REPO:latest
+fi

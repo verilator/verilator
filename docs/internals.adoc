@@ -70,7 +70,10 @@ The AST is represented at the top level by the class `AstNode`. This
 abstract class has derived classes for the individual components
 (e.g. `AstGenerate` for a generate block) or groups of components
 (e.g. `AstNodeFTask` for functions and tasks, which in turn has `AstFunc`
-and `AstTask` as derived classes).
+and `AstTask` as derived classes). An important property of the `AstNode`
+type hierarchy is that all non-final subclasses of `AstNode` (i.e.: those
+which themselves have subclasses) must be abstract as well, and be named
+with the prefix `AstNode*`. The `astgen` (see below) script relies on this.
 
 Each `AstNode` has pointers to up to four children, accessed by the `op1p`
 through `op4p` methods.  These methods are then abstracted in a specific
@@ -394,7 +397,7 @@ e.g. threads.
 We will work with contributors to fix up indentation style issues, but it
 is appreciated if you could match our style:
 
-* All files should contain the magic header to insure standard indentation:
+* All files should contain the magic header to ensure standard indentation:
 +
    // -*- mode: C++; c-file-style: "cc-mode" -*-
 +
@@ -959,7 +962,8 @@ src/VParseGrammar.y, as this grammar supports the full SystemVerilog
 language and has a lot of back-and-forth with Verilator's grammar.  Copy
 the appropriate rules to src/verilog.y and modify the productions.
 
-. If a new Ast type is needed, add it to V3AstNodes.h.
+. If a new Ast type is needed, add it to V3AstNodes.h. Follow the convention
+described above about the AstNode type hierarchy.
 
 . Now you can run "test_regress/t/t_{new testcase}.pl --debug" and it'll
 probably fail but you'll see a test_regress/obj_dir/t_{newtestcase}/*.tree
