@@ -29,7 +29,7 @@ AC_ARG_ENABLE([silent-rules],
 AC_ARG_ENABLE([tcmalloc],
               [AS_HELP_STRING([--enable-tcmalloc],
                               [Use libtcmalloc for faster dynamic memory
-                               management @<:@default=check@:>@])],
+                               management in Verilator binary@<:@default=check@:>@])],
               [case "${enableval}" in
                 yes) CFG_WITH_TCMALLOC=yes ;;
                 no)  CFG_WITH_TCMALLOC=no ;;
@@ -41,7 +41,9 @@ AC_ARG_ENABLE([tcmalloc],
 AC_MSG_CHECKING(whether to use hardcoded paths)
 AC_ARG_ENABLE([defenv],
               [AS_HELP_STRING([--disable-defenv],
-                              [disable using some hardcoded data paths extracted from some default environment variables (the default is to use hardcoded paths)])],
+                              [disable using some hardcoded data paths extracted
+                              from some default environment variables (the default
+                              is to use hardcoded paths) in Verilator binary])],
               [case "${enableval}" in
                 yes) CFG_WITH_DEFENV=yes ;;
                 no)  CFG_WITH_DEFENV=no ;;
@@ -55,7 +57,8 @@ AC_MSG_RESULT($CFG_WITH_DEFENV)
 AC_MSG_CHECKING(whether to show and stop on compilation warnings)
 AC_ARG_ENABLE([ccwarn],
               [AS_HELP_STRING([--enable-ccwarn],
-                              [enable showing and stopping on compilation warnings])],
+                              [enable showing and stopping on compilation warnings
+                               in Verilator binrary and Verilated makefiles])],
               [case "${enableval}" in
                 yes) CFG_WITH_CCWARN=yes ;;
                 no)  CFG_WITH_CCWARN=no ;;
@@ -91,7 +94,8 @@ AC_MSG_RESULT($CFG_WITH_LONGTESTS)
 AC_MSG_CHECKING(whether allow pre-C++11)
 AC_ARG_ENABLE([prec11],
               [AS_HELP_STRING([--enable-prec11],
-                              [enable pre-C++11 compilers])],
+                              [enable pre-C++11 compilers for Verilator binary
+                               and Verilated makefiles])],
               [case "${enableval}" in
                 yes) CFG_WITH_PREC11=yes ;;
                 no)  CFG_WITH_PREC11=no ;;
