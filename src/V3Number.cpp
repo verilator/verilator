@@ -127,7 +127,7 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
             if (atoi(widthn.c_str()) < 0 || atoi(widthn.c_str()) > v3Global.opt.maxNumWidth()) {
                 // atoi might convert large number to negative, so can't tell which
                 v3error("Unsupported: Width of number exceeds implementation limit: "
-                        << sourcep << "  (IEEE 2017 6.9.1)");
+                        << sourcep << "  (IEEE 1800-2017 6.9.1)");
                 width(v3Global.opt.maxNumWidth(), true);
             } else {
                 width(atoi(widthn.c_str()), true);
@@ -198,7 +198,7 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
                                 <<std::endl
                                 <<((!m_sized && !warned++)
                                    ? (V3Error::warnMore()+"... As that number was unsized"
-                                      +" ('d...) it is limited to 32 bits (IEEE 2017 5.7.1)\n"
+                                      +" ('d...) it is limited to 32 bits (IEEE 1800-2017 5.7.1)\n"
                                       + V3Error::warnMore()+"... Suggest adding a size to it.")
                                    : ""));
                         while (*(cp+1)) cp++;  // Skip ahead so don't get multiple warnings

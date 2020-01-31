@@ -339,7 +339,8 @@ void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
                           const string& params, bool cmdline) {
     UINFO(4,"DEFINE '"<<name<<"' as '"<<value<<"' params '"<<params<<"'"<<endl);
     if (!V3LanguageWords::isKeyword(string("`") + name).empty()) {
-        fl->v3error("Attempting to define built-in directive: '`"<<name<<"' (IEEE 2017 22.5.1)");
+        fl->v3error("Attempting to define built-in directive: '`"
+                    << name << "' (IEEE 1800-2017 22.5.1)");
     } else {
         if (defExists(name)) {
             if (!(defValue(name) == value

@@ -338,14 +338,13 @@ private:
                 && !nodep->varp()->isDeclTyped()
                 && !nodep->varp()->isFuncLocal()) {
                 nodep->v3warn(PROCASSWIRE, "Procedural assignment to wire, perhaps intended var"
-                              " (IEEE 2017 6.5): "
-                              +nodep->prettyNameQ());
+                              << " (IEEE 1800-2017 6.5): " << nodep->prettyNameQ());
             }
             if (m_inContAssign && !nodep->varp()->varType().isContAssignable()
                 && !nodep->fileline()->language().systemVerilog()) {
                 nodep->v3warn(CONTASSREG, "Continuous assignment to reg, perhaps intended wire"
-                              " (IEEE 2005 6.1; Verilog only, legal in SV): "
-                              +nodep->prettyNameQ());
+                              << " (IEEE 1364-2005 6.1; Verilog only, legal in SV): "
+                              << nodep->prettyNameQ());
             }
         }
         for (int usr=1; usr<(m_alwaysCombp?3:2); ++usr) {

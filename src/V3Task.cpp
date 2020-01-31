@@ -933,7 +933,7 @@ private:
                 && portp->dtypep()->basicp()->keyword().isDpiUnreturnable()) {
                 portp->v3error("DPI function may not return type "
                                <<portp->basicp()->prettyTypeName()
-                               <<" (IEEE 2017 35.5.5)");
+                               <<" (IEEE 1800-2017 35.5.5)");
             }
             portp->unlinkFrBack();
             rtnvarp = portp;
@@ -1183,7 +1183,7 @@ private:
         } else {
             if (nodep->taskp()->isFunction()) {
                 nodep->v3warn(IGNOREDRETURN,
-                              "Ignoring return value of non-void function (IEEE 2017 13.4.1)");
+                              "Ignoring return value of non-void function (IEEE 1800-2017 13.4.1)");
             }
             // outvscp maybe non-NULL if calling a function in a taskref,
             // but if so we want to simply ignore the function result

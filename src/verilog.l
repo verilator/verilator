@@ -72,10 +72,10 @@ void yyerror(const char* errmsg) {
         && PARSEP->curBisonVal().token == yP_COLONCOLON) {
         static int warned = false;
         if (!warned++) {
-            std::cerr<<PARSEP->fileline()->warnMore()
-                     <<("... Perhaps '"+*PARSEP->prevBisonVal().strp
-                        +"' is a package which needs to be predeclared? (IEEE 2017 26.3)")
-                     <<std::endl;
+            std::cerr << PARSEP->fileline()->warnMore()
+                      << ("... Perhaps '" + *PARSEP->prevBisonVal().strp
+                          + "' is a package which needs to be predeclared? (IEEE 1800-2017 26.3)")
+                      << std::endl;
         }
     }
 }
