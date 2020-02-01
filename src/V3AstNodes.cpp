@@ -1336,7 +1336,7 @@ void AstCFunc::dump(std::ostream& str) const {
     if (slow()) str<<" [SLOW]";
     if (pure()) str<<" [PURE]";
     if (isStatic().unknown()) str<<" [STATICU]";
-    else if (isStatic().trueU()) str<<" [STATIC]";
+    else if (isStatic().trueUnknown()) str<<" [STATIC]";
     if (dpiImport()) str<<" [DPII]";
     if (dpiExport()) str<<" [DPIX]";
     if (dpiExportWrapper()) str<<" [DPIXWR]";

@@ -6629,6 +6629,7 @@ private:
     string      m_rtnType;              // void, bool, or other return type
     string      m_argTypes;
     string      m_ifdef;                // #ifdef symbol around this function
+    VBoolOrUnknown m_isConst;           // Function is declared const (*this not changed)
     VBoolOrUnknown m_isStatic;          // Function is declared static (no this)
     bool        m_dontCombine:1;        // V3Combine shouldn't compare this func tree, it's special
     bool        m_skipDecl:1;           // Don't declare it
@@ -6636,6 +6637,7 @@ private:
     bool        m_formCallTree:1;       // Make a global function to call entire tree of functions
     bool        m_slow:1;               // Slow routine, called once or just at init time
     bool        m_funcPublic:1;         // From user public task/function
+    bool        m_isMethod:1;           // Is inside a class definition
     bool        m_isInline:1;           // Inline function
     bool        m_symProlog:1;          // Setup symbol table for later instructions
     bool        m_entryPoint:1;         // User may call into this top level function
@@ -6648,6 +6650,7 @@ public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType="")
         : ASTGEN_SUPER(fl) {
         m_funcType = AstCFuncType::FT_NORMAL;
+        m_isConst = VBoolOrUnknown::BU_UNKNOWN;  // Unknown until analyzed
         m_isStatic = VBoolOrUnknown::BU_UNKNOWN;  // Unknown until see where thisp needed
         m_scopep = scopep;
         m_name = name;
@@ -6658,6 +6661,7 @@ public:
         m_formCallTree = false;
         m_slow = false;
         m_funcPublic = false;
+        m_isMethod = true;
         m_isInline = false;
         m_symProlog = false;
         m_entryPoint = false;
@@ -6683,8 +6687,11 @@ public:
     //
     virtual void name(const string& name) { m_name = name; }
     virtual int instrCount() const { return dpiImport() ? instrCountDpi() : 0; }
+    VBoolOrUnknown isConst() const { return m_isConst; }
+    void isConst(bool flag) { m_isConst.setTrueOrFalse(flag); }
+    void isConst(VBoolOrUnknown flag) { m_isConst = flag; }
     VBoolOrUnknown isStatic() const { return m_isStatic; }
-    void isStatic(bool flag) { m_isStatic = flag ? VBoolOrUnknown::BU_TRUE : VBoolOrUnknown::BU_FALSE; }
+    void isStatic(bool flag) { m_isStatic.setTrueOrFalse(flag); }
     void isStatic(VBoolOrUnknown flag) { m_isStatic = flag; }
     void cname(const string& name) { m_cname = name; }
     string cname() const { return m_cname; }
@@ -6710,6 +6717,8 @@ public:
     string ifdef() const { return m_ifdef; }
     void funcType(AstCFuncType flag) { m_funcType = flag; }
     AstCFuncType funcType() const { return m_funcType; }
+    bool isMethod() const { return m_isMethod; }
+    void isMethod(bool flag) { m_isMethod = flag; }
     bool isInline() const { return m_isInline; }
     void isInline(bool flag) { m_isInline = flag; }
     bool symProlog() const { return m_symProlog; }

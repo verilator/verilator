@@ -155,13 +155,17 @@ public:
             return lhsp->name() < rhsp->name();
         }
     };
-    void emitIntFuncDecls(AstNodeModule* modp) {
+    void emitIntFuncDecls(AstNodeModule* modp, bool methodFuncs) {
         typedef std::vector<const AstCFunc*> FuncVec;
         FuncVec funcsp;
 
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
-                if (!funcp->skipDecl()) { funcsp.push_back(funcp); }
+                if (!funcp->skipDecl()
+                    && funcp->isMethod() == methodFuncs
+                    && !funcp->dpiImport()) {  // DPI is prototyped in __Dpi.h
+                    funcsp.push_back(funcp);
+                }
             }
         }
 
@@ -169,21 +173,20 @@ public:
 
         for (FuncVec::iterator it = funcsp.begin(); it != funcsp.end(); ++it) {
             const AstCFunc* funcp = *it;
-            if (!funcp->dpiImport()) {  // DPI is prototyped in __Dpi.h
-                ofp()->putsPrivate(funcp->declPrivate());
-                if (!funcp->ifdef().empty()) puts("#ifdef " + funcp->ifdef() + "\n");
-                if (funcp->isStatic().trueU()) puts("static ");
-                puts(funcp->rtnTypeVoid());
-                puts(" ");
-                puts(funcp->nameProtect());
-                puts("(" + cFuncArgs(funcp) + ")");
-                if (funcp->slow()) puts(" VL_ATTR_COLD");
-                puts(";\n");
-                if (!funcp->ifdef().empty()) puts("#endif  // " + funcp->ifdef() + "\n");
-            }
+            ofp()->putsPrivate(funcp->declPrivate());
+            if (!funcp->ifdef().empty()) puts("#ifdef " + funcp->ifdef() + "\n");
+            if (funcp->isStatic().trueUnknown()) puts("static ");
+            puts(funcp->rtnTypeVoid());
+            puts(" ");
+            puts(funcp->nameProtect());
+            puts("(" + cFuncArgs(funcp) + ")");
+            if (funcp->isConst().trueKnown()) puts(" const");
+            if (funcp->slow()) puts(" VL_ATTR_COLD");
+            puts(";\n");
+            if (!funcp->ifdef().empty()) puts("#endif  // " + funcp->ifdef() + "\n");
         }
 
-        if (modp->isTop() && v3Global.opt.mtasks()) {
+        if (methodFuncs && modp->isTop() && v3Global.opt.mtasks()) {
             // Emit the mtask func prototypes.
             AstExecGraph* execGraphp = v3Global.rootp()->execGraphp();
             UASSERT_OBJ(execGraphp, v3Global.rootp(), "Root should have an execGraphp");
@@ -1245,8 +1248,10 @@ class EmitCImp : EmitCStmts {
         if (nodep->ifdef()!="") puts("#ifdef "+nodep->ifdef()+"\n");
         if (nodep->isInline()) puts("VL_INLINE_OPT ");
         puts(nodep->rtnTypeVoid()); puts(" ");
-        puts(prefixNameProtect(m_modp) + "::" + nodep->nameProtect() + "(" + cFuncArgs(nodep)
-             + ") {\n");
+        if (nodep->isMethod()) puts(prefixNameProtect(m_modp) + "::");
+        puts(nodep->nameProtect() + "(" + cFuncArgs(nodep) + ")");
+        if (nodep->isConst().trueKnown()) puts(" const");
+        puts(" {\n");
 
         // "+" in the debug indicates a print from the model
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+  ");
@@ -2738,7 +2743,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     ofp()->putsPrivate(false);  // public:
     puts("void "+protect("__Vconfigure")+"("+symClassName()+"* symsp, bool first);\n");
 
-    emitIntFuncDecls(modp);
+    emitIntFuncDecls(modp, true);
 
     if (v3Global.opt.trace()) {
         ofp()->putsPrivate(false);  // public:
@@ -2756,6 +2761,8 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     }
 
     puts("} VL_ATTR_ALIGNED(128);\n");
+
+    emitIntFuncDecls(modp, false);
 
     // Save/restore
     if (v3Global.opt.savable() && modp->isTop()) {

@@ -544,9 +544,12 @@ public:
         static const char* const names[] = {
             "FALSE", "TRUE", "UNK"};
         return names[m_e]; }
-    bool trueU() const { return m_e == BU_TRUE || m_e == BU_UNKNOWN; }
-    bool falseU() const { return m_e == BU_FALSE || m_e == BU_UNKNOWN; }
+    bool trueKnown() const { return m_e == BU_TRUE; }
+    bool trueUnknown() const { return m_e == BU_TRUE || m_e == BU_UNKNOWN; }
+    bool falseKnown() const { return m_e == BU_FALSE; }
+    bool falseUnknown() const { return m_e == BU_FALSE || m_e == BU_UNKNOWN; }
     bool unknown() const { return m_e == BU_UNKNOWN; }
+    void setTrueOrFalse(bool flag) { m_e = flag ? BU_TRUE : BU_FALSE; }
   };
   inline bool operator==(VBoolOrUnknown lhs, VBoolOrUnknown rhs) { return (lhs.m_e == rhs.m_e); }
   inline bool operator==(VBoolOrUnknown lhs, VBoolOrUnknown::en rhs) { return (lhs.m_e == rhs); }
