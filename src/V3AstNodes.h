@@ -6881,6 +6881,24 @@ public:
     AstNode* bodysp() const { return op1p(); }  // op1 = expressions to print
 };
 
+class AstCUse : public AstNode {
+    // C++ use of a class or #include; indicates need of forward declaration
+    // Parents:  NODEMODULE
+private:
+    VUseType m_useType;  // What sort of use this is
+    string m_name;
+public:
+    AstCUse(FileLine* fl, VUseType useType, const string& name)
+        : ASTGEN_SUPER(fl)
+        , m_useType(useType)
+        , m_name(name) {}
+    ASTNODE_NODE_FUNCS(CUse)
+    virtual string name() const { return m_name; }
+    virtual void dump(std::ostream& str = std::cout) const;
+    VUseType useType() const { return m_useType; }
+    void useType(VUseType useType) { m_useType = useType; }
+};
+
 class AstMTaskBody : public AstNode {
     // Hold statements for each MTask
 private:

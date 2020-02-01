@@ -166,6 +166,7 @@ RAW_OBJS = \
 	V3Branch.o \
 	V3Broken.o \
 	V3CCtors.o \
+	V3CUse.o \
 	V3Case.o \
 	V3Cast.o \
 	V3Cdc.o \

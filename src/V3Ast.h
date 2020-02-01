@@ -852,6 +852,36 @@ inline std::ostream& operator<<(std::ostream& os, const VNumRange& rhs) { rhs.du
 
 //######################################################################
 
+class VUseType {
+public:
+    enum en {
+        IMP_INCLUDE,  // Implementation (.cpp) needs an include
+        INT_INCLUDE,  // Interface (.h) needs an include
+        IMP_FWD_CLASS,  // Implementation (.cpp) needs a forward class declaration
+        INT_FWD_CLASS,  // Interface (.h) needs a forward class declaration
+    };
+    enum en m_e;
+    inline VUseType() : m_e(IMP_FWD_CLASS) {}
+    // cppcheck-suppress noExplicitConstructor
+    inline VUseType(en _e) : m_e(_e) {}
+    explicit inline VUseType(int _e) : m_e(static_cast<en>(_e)) {}
+    bool isInclude() const { return m_e == IMP_INCLUDE || m_e == INT_INCLUDE; }
+    bool isFwdClass() const { return m_e == IMP_FWD_CLASS || m_e == INT_FWD_CLASS; }
+    operator en() const { return m_e; }
+    const char* ascii() const {
+        static const char* const names[] = {"IMP_INC", "INT_INC", "IMP_FWD", "INT_FWD"};
+        return names[m_e];
+    }
+};
+inline bool operator==(VUseType lhs, VUseType rhs) { return (lhs.m_e == rhs.m_e); }
+inline bool operator==(VUseType lhs, VUseType::en rhs) { return (lhs.m_e == rhs); }
+inline bool operator==(VUseType::en lhs, VUseType rhs) { return (lhs == rhs.m_e); }
+inline std::ostream& operator<<(std::ostream& os, const VUseType& rhs) {
+    return os << rhs.ascii();
+}
+
+//######################################################################
+
 class VBasicTypeKey {
 public:
     int         m_width;        // From AstNodeDType: Bit width of operation

@@ -1341,3 +1341,7 @@ void AstCFunc::dump(std::ostream& str) const {
     if (dpiExport()) str<<" [DPIX]";
     if (dpiExportWrapper()) str<<" [DPIXWR]";
 }
+void AstCUse::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " [" << useType() << "]";
+}
