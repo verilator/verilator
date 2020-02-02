@@ -1521,6 +1521,7 @@ class EmitCImp : EmitCStmts {
     void emitWrapEval(AstNodeModule* modp);
     void emitMTaskState();
     void emitMTaskVertexCtors(bool* firstp);
+    void emitIntTop(AstNodeModule* modp);
     void emitInt(AstNodeModule* modp);
     void maybeSplit(AstNodeModule* modp);
 
@@ -1531,7 +1532,8 @@ public:
         m_fast = false;
     }
     virtual ~EmitCImp() {}
-    void main(AstNodeModule* modp, bool slow, bool fast);
+    void mainImp(AstNodeModule* modp, bool slow, bool fast);
+    void mainInt(AstNodeModule* modp);
     void mainDoFunc(AstCFunc* nodep) {
         iterate(nodep);
     }
@@ -2571,7 +2573,7 @@ void EmitCImp::emitMTaskState() {
     puts("bool __Vm_even_cycle;\n");
 }
 
-void EmitCImp::emitInt(AstNodeModule* modp) {
+void EmitCImp::emitIntTop(AstNodeModule* modp) {
     // Always have this first; gcc has short circuiting if #ifdef is first in a file
     ofp()->putsGuard();
     puts("\n");
@@ -2582,12 +2584,8 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     } else {
         puts("#include \"verilated.h\"\n");
     }
-    if (v3Global.opt.mtasks()) {
-        puts("#include \"verilated_threads.h\"\n");
-    }
-    if (v3Global.opt.savable()) {
-        puts("#include \"verilated_save.h\"\n");
-    }
+    if (v3Global.opt.mtasks()) puts("#include \"verilated_threads.h\"\n");
+    if (v3Global.opt.savable()) puts("#include \"verilated_save.h\"\n");
     if (v3Global.opt.coverage()) {
         puts("#include \"verilated_cov.h\"\n");
         if (v3Global.opt.savable()) v3error("--coverage and --savable not supported together");
@@ -2601,7 +2599,9 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
         puts("#include \"" + topClassName() + "__Dpi.h\"\n");
     }
     puts("\n");
+}
 
+void EmitCImp::emitInt(AstNodeModule* modp) {
     emitModCUse(modp, VUseType::INT_INCLUDE);
 
     // Declare foreign instances up front to make C++ happy
@@ -2654,10 +2654,8 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     ofp()->putsPrivate(!modp->isTop());  // private: unless top
     puts(symClassName()+"* __VlSymsp;  // Symbol table\n");
     ofp()->putsPrivate(false);  // public:
-    if (modp->isTop()) {
-        if (v3Global.opt.inhibitSim()) {
-            puts("bool __Vm_inhibitSim;  ///< Set true to disable evaluation of module\n");
-        }
+    if (modp->isTop() && v3Global.opt.inhibitSim()) {
+        puts("bool __Vm_inhibitSim;  ///< Set true to disable evaluation of module\n");
     }
     if (modp->isTop() && v3Global.opt.mtasks()) {
         emitMTaskState();
@@ -2729,8 +2727,8 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
     emitTextSection(AstType::atScInt);
 
-    puts("\n// API METHODS\n");
     if (modp->isTop()) {
+        puts("\n// API METHODS\n");
         if (optSystemC()) ofp()->putsPrivate(true);  ///< eval() is invoked by our sensitive() calls.
         else puts("/// Evaluate the model.  Application must call when inputs change.\n");
         puts("void eval();\n");
@@ -2786,9 +2784,6 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
              + "Verilated::quiesce(); rhs."
              + protect("__Vdeserialize") + "(os); return os; }\n");
     }
-
-    // finish up h-file
-    ofp()->putsEndGuard();
 }
 
 //----------------------------------------------------------------------
@@ -2858,7 +2853,22 @@ void EmitCImp::maybeSplit(AstNodeModule* fileModp) {
     splitSizeInc(10);  // Even blank functions get a file with a low csplit
 }
 
-void EmitCImp::main(AstNodeModule* modp, bool slow, bool fast) {
+void EmitCImp::mainInt(AstNodeModule* modp) {
+    AstNodeModule* fileModp = modp;  // Filename constructed using this module
+    m_modp = modp;
+    m_slow = true;
+    m_fast = true;
+
+    UINFO(5, "  Emitting " << prefixNameProtect(modp) << endl);
+
+    m_ofp = newOutCFile(fileModp, false/*slow*/, false/*source*/);
+    emitIntTop(modp);
+    emitInt(modp);
+    ofp()->putsEndGuard();
+    VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
+}
+
+void EmitCImp::mainImp(AstNodeModule* modp, bool slow, bool fast) {
     // Output a module
     AstNodeModule* fileModp = modp;  // Filename constructed using this module
     m_modp = modp;
@@ -2866,12 +2876,6 @@ void EmitCImp::main(AstNodeModule* modp, bool slow, bool fast) {
     m_fast = fast;
 
     UINFO(5, "  Emitting " << prefixNameProtect(modp) << endl);
-
-    if (m_fast) {
-        m_ofp = newOutCFile(fileModp, !m_fast, false/*source*/);
-        emitInt(modp);
-        VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
-    }
 
     m_ofp = newOutCFile(fileModp, !m_fast, true/*source*/);
     emitImpTop(fileModp);
@@ -3315,11 +3319,12 @@ void V3EmitC::emitc() {
     // Process each module in turn
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp();
          nodep; nodep = VN_CAST(nodep->nextp(), NodeModule)) {
+        { EmitCImp cint; cint.mainInt(nodep); }
         if (v3Global.opt.outputSplit()) {
-            { EmitCImp fast; fast.main(nodep, false, true); }
-            { EmitCImp slow; slow.main(nodep, true, false); }
+            { EmitCImp fast; fast.mainImp(nodep, false, true); }
+            { EmitCImp slow; slow.mainImp(nodep, true, false); }
         } else {
-            { EmitCImp both; both.main(nodep, true, true); }
+            { EmitCImp both; both.mainImp(nodep, true, true); }
         }
     }
 }
