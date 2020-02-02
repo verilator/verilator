@@ -78,7 +78,7 @@ public:
     void emitVarDecl(const AstVar* nodep, const string& prefixIfImp);
     typedef enum {EVL_CLASS_IO, EVL_CLASS_SIG, EVL_CLASS_TEMP, EVL_CLASS_PAR, EVL_CLASS_ALL,
                   EVL_FUNC_ALL} EisWhich;
-    void emitVarList(AstNode* firstp, EisWhich which, const string& prefixIfImp);
+    void emitVarList(AstNode* firstp, EisWhich which, const string& prefixIfImp, string& sectionr);
     static void emitVarSort(const VarSortMap& vmap, VarVec* sortedp);
     void emitSortedVarList(const VarVec& anons,
                            const VarVec& nonanons, const string& prefixIfImp);
@@ -1268,8 +1268,9 @@ class EmitCImp : EmitCStmts {
                 if (varp->isFuncReturn()) emitVarDecl(varp, "");
             }
         }
-        emitVarList(nodep->initsp(), EVL_FUNC_ALL, "");
-        emitVarList(nodep->stmtsp(), EVL_FUNC_ALL, "");
+        string section;
+        emitVarList(nodep->initsp(), EVL_FUNC_ALL, "", section/*ref*/);
+        emitVarList(nodep->stmtsp(), EVL_FUNC_ALL, "", section/*ref*/);
 
         iterateAndNextNull(nodep->initsp());
 
@@ -2365,7 +2366,8 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
 //----------------------------------------------------------------------
 // Top interface/ implementation
 
-void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& prefixIfImp) {
+void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& prefixIfImp,
+                             string& sectionr) {
     // Put out a list of signal declarations
     // in order of 0:clocks, 1:vluint8, 2:vluint16, 4:vluint32, 5:vluint64, 6:wide, 7:arrays
     // This aids cache packing and locality
@@ -2422,11 +2424,17 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
         }
     }
 
-    VarVec anons;
-    VarVec nonanons;
-    emitVarSort(varAnonMap, &anons);
-    emitVarSort(varNonanonMap, &nonanons);
-    emitSortedVarList(anons, nonanons, prefixIfImp);
+    if (!varAnonMap.empty() || !varNonanonMap.empty()) {
+        if (!sectionr.empty()) {
+            puts(sectionr);
+            sectionr = "";
+        }
+        VarVec anons;
+        VarVec nonanons;
+        emitVarSort(varAnonMap, &anons);
+        emitVarSort(varNonanonMap, &nonanons);
+        emitSortedVarList(anons, nonanons, prefixIfImp);
+    }
 }
 
 void EmitCStmts::emitVarSort(const VarSortMap& vmap, VarVec* sortedp) {
@@ -2636,18 +2644,19 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
     emitTypedefs(modp->stmtsp());
 
-    puts("\n// PORTS\n");
-    if (modp->isTop()) puts("// The application code writes and reads these signals to\n");
-    if (modp->isTop()) puts("// propagate new values into/out from the Verilated model.\n");
-    emitVarList(modp->stmtsp(), EVL_CLASS_IO, "");
+    string section;
+    section = "\n// PORTS\n";
+    if (modp->isTop()) section += ("// The application code writes and reads these signals to\n"
+                                   "// propagate new values into/out from the Verilated model.\n");
+    emitVarList(modp->stmtsp(), EVL_CLASS_IO, "", section/*ref*/);
 
-    puts("\n// LOCAL SIGNALS\n");
-    if (modp->isTop()) puts("// Internals; generally not touched by application code\n");
-    emitVarList(modp->stmtsp(), EVL_CLASS_SIG, "");
+    section = "\n// LOCAL SIGNALS\n";
+    if (modp->isTop()) section += "// Internals; generally not touched by application code\n";
+    emitVarList(modp->stmtsp(), EVL_CLASS_SIG, "", section/*ref*/);
 
-    puts("\n// LOCAL VARIABLES\n");
-    if (modp->isTop()) puts("// Internals; generally not touched by application code\n");
-    emitVarList(modp->stmtsp(), EVL_CLASS_TEMP, "");
+    section = "\n// LOCAL VARIABLES\n";
+    if (modp->isTop()) section += "// Internals; generally not touched by application code\n";
+    emitVarList(modp->stmtsp(), EVL_CLASS_TEMP, "", section/*ref*/);
 
     puts("\n// INTERNAL VARIABLES\n");
     if (modp->isTop()) puts("// Internals; generally not touched by application code\n");
@@ -2662,13 +2671,14 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     }
     emitCoverageDecl(modp);  // may flip public/private
 
-    puts("\n// PARAMETERS\n");
-    if (modp->isTop()) puts("// Parameters marked /*verilator public*/ for use by application code\n");
+    section = "\n// PARAMETERS\n";
+    if (modp->isTop()) section += "// Parameters marked /*verilator public*/ for use by application code\n";
     ofp()->putsPrivate(false);  // public:
-    emitVarList(modp->stmtsp(), EVL_CLASS_PAR, "");  // Only those that are non-CONST
+    emitVarList(modp->stmtsp(), EVL_CLASS_PAR, "", section/*ref*/);  // Only those that are non-CONST
     for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
         if (const AstVar* varp = VN_CAST(nodep, Var)) {
             if (varp->isParam() && (varp->isUsedParam() || varp->isSigPublic())) {
+                if (section != "") { puts(section); section = ""; }
                 UASSERT_OBJ(varp->valuep(), nodep, "No init for a param?");
                 // These should be static const values, however microsloth VC++ doesn't
                 // support them.  They also cause problems with GDB under GCC2.95.
@@ -2767,7 +2777,9 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
         puts("void "+protect("__Vdeserialize")+"(VerilatedDeserialize& os);\n");
     }
 
-    puts("} VL_ATTR_ALIGNED(128);\n");
+    puts("}");
+    if (!VN_IS(modp, Class)) puts(" VL_ATTR_ALIGNED(128)");
+    puts(";\n");
 
     emitIntFuncDecls(modp, false);
 
@@ -2808,10 +2820,8 @@ void EmitCImp::emitImpTop(AstNodeModule* fileModp) {
 void EmitCImp::emitImp(AstNodeModule* modp) {
     if (m_slow) {
         puts("\n//--------------------\n");
-        puts("// STATIC VARIABLES\n\n");
-        emitVarList(modp->stmtsp(), EVL_CLASS_ALL, prefixNameProtect(modp));
-
-        puts("\n//--------------------\n");
+        string section;
+        emitVarList(modp->stmtsp(), EVL_CLASS_ALL, prefixNameProtect(modp), section/*ref*/);
         emitCtorImp(modp);
         emitConfigureImp(modp);
         emitDestructorImp(modp);
@@ -3251,16 +3261,23 @@ class EmitCTrace : EmitCStmts {
             } else if (nodep->funcType() == AstCFuncType::TRACE_CHANGE_SUB) {
             } else nodep->v3fatalSrc("Bad Case");
 
-            if (nodep->initsp()) putsDecoration("// Variables\n");
-            emitVarList(nodep->initsp(), EVL_FUNC_ALL, "");
-            iterateAndNextNull(nodep->initsp());
+            if (nodep->initsp()) {
+                string section;
+                putsDecoration("// Variables\n");
+                emitVarList(nodep->initsp(), EVL_FUNC_ALL, "", section /*ref*/);
+                iterateAndNextNull(nodep->initsp());
+            }
 
-            putsDecoration("// Body\n");
-            puts("{\n");
-            iterateAndNextNull(nodep->stmtsp());
-            puts("}\n");
-            if (nodep->finalsp()) putsDecoration("// Final\n");
-            iterateAndNextNull(nodep->finalsp());
+            if (nodep->stmtsp()) {
+                putsDecoration("// Body\n");
+                puts("{\n");
+                iterateAndNextNull(nodep->stmtsp());
+                puts("}\n");
+            }
+            if (nodep->finalsp()) {
+                putsDecoration("// Final\n");
+                iterateAndNextNull(nodep->finalsp());
+            }
             puts("}\n");
         }
         m_funcp = NULL;
