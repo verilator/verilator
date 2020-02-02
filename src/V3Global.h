@@ -55,10 +55,16 @@ public:
     inline VWidthMinUsage(en _e) : m_e(_e) {}
     explicit inline VWidthMinUsage(int _e) : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
-  };
-  inline bool operator==(VWidthMinUsage lhs, VWidthMinUsage rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(VWidthMinUsage lhs, VWidthMinUsage::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(VWidthMinUsage::en lhs, VWidthMinUsage rhs) { return (lhs == rhs.m_e); }
+};
+inline bool operator==(const VWidthMinUsage& lhs, const VWidthMinUsage& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+inline bool operator==(const VWidthMinUsage& lhs, VWidthMinUsage::en rhs) {
+    return lhs.m_e == rhs;
+}
+inline bool operator==(VWidthMinUsage::en lhs, const VWidthMinUsage& rhs) {
+    return lhs == rhs.m_e;
+}
 
 //######################################################################
 // V3Global - The top level class for the entire program

@@ -103,10 +103,16 @@ struct OrderVEdgeType {
     inline OrderVEdgeType(en _e) : m_e(_e) {}
     explicit inline OrderVEdgeType(int _e) : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
-  };
-  inline bool operator==(OrderVEdgeType lhs, OrderVEdgeType rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(OrderVEdgeType lhs, OrderVEdgeType::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(OrderVEdgeType::en lhs, OrderVEdgeType rhs) { return (lhs == rhs.m_e); }
+};
+inline bool operator==(const OrderVEdgeType& lhs, const OrderVEdgeType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+inline bool operator==(const OrderVEdgeType& lhs, OrderVEdgeType::en rhs) {
+    return lhs.m_e == rhs;
+}
+inline bool operator==(OrderVEdgeType::en lhs, const OrderVEdgeType& rhs) {
+    return lhs == rhs.m_e;
+}
 
 //######################################################################
 // Graph types

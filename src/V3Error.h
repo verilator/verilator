@@ -205,11 +205,15 @@ public:
                                        || m_e==UNDRIVEN
                                        || m_e==UNUSED
                                        || m_e==VARHIDDEN ); }
-  };
-  inline bool operator==(V3ErrorCode lhs, V3ErrorCode rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(V3ErrorCode lhs, V3ErrorCode::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(V3ErrorCode::en lhs, V3ErrorCode rhs) { return (lhs == rhs.m_e); }
-  inline std::ostream& operator<<(std::ostream& os, V3ErrorCode rhs) { return os<<rhs.ascii(); }
+};
+inline bool operator==(const V3ErrorCode& lhs, const V3ErrorCode& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+inline bool operator==(const V3ErrorCode& lhs, V3ErrorCode::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(V3ErrorCode::en lhs, const V3ErrorCode& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const V3ErrorCode& rhs) {
+    return os << rhs.ascii();
+}
 
 //######################################################################
 
