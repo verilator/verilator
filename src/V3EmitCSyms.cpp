@@ -475,7 +475,7 @@ void EmitCSyms::emitSymHdr() {
         puts("void "+protect("__Vdeserialize")+"(VerilatedDeserialize& os);\n");
     }
     puts("\n");
-    puts("} VL_ATTR_ALIGNED(64);\n");
+    puts("} VL_ATTR_ALIGNED(VL_CACHE_LINE_BYTES);\n");
 
     ofp()->putsEndGuard();
 }

@@ -2778,7 +2778,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     }
 
     puts("}");
-    if (!VN_IS(modp, Class)) puts(" VL_ATTR_ALIGNED(128)");
+    if (!VN_IS(modp, Class)) puts(" VL_ATTR_ALIGNED(VL_CACHE_LINE_BYTES)");
     puts(";\n");
 
     emitIntFuncDecls(modp, false);
