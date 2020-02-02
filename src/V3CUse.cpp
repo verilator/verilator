@@ -83,8 +83,7 @@ class CUseVisitor : public AstNVisitor {
         for (AstNode* itemp = nodep->stmtsp(); itemp; itemp = itemp->nextp()) {
             if (AstCell* cellp = VN_CAST(itemp, Cell)) {
                 // Currently no include because we include __Syms which has them all
-                AstCUse* usep
-                    = m_state.newUse(nodep, VUseType::INT_FWD_CLASS, cellp->modp()->name());
+                m_state.newUse(nodep, VUseType::INT_FWD_CLASS, cellp->modp()->name());
             }
         }
     }
