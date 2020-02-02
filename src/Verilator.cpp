@@ -374,9 +374,6 @@ static void process() {
     //--MODULE OPTIMIZATIONS--------------
 
     if (!v3Global.opt.xmlOnly()) {
-        // Create AstCUse to determine what class forward declarations/#includes needed in C
-        V3CUse::cUseAll(v3Global.rootp());
-
         // Split deep blocks to appease MSVC++.  Must be before Localize.
         if (!v3Global.opt.lintOnly() && v3Global.opt.compLimitBlocks()) {
             V3DepthBlock::depthBlockAll(v3Global.rootp());
@@ -468,6 +465,9 @@ static void process() {
     if (!v3Global.opt.lintOnly()
         && !v3Global.opt.xmlOnly()
         && !v3Global.opt.dpiHdrOnly()) {
+        // Create AstCUse to determine what class forward declarations/#includes needed in C
+        V3CUse::cUseAll(v3Global.rootp());
+
         // emitcInlines is first, as it may set needHInlines which other emitters read
         V3EmitC::emitcInlines();
         V3EmitC::emitcSyms();
