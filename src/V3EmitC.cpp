@@ -176,9 +176,12 @@ public:
             ofp()->putsPrivate(funcp->declPrivate());
             if (!funcp->ifdef().empty()) puts("#ifdef " + funcp->ifdef() + "\n");
             if (funcp->isStatic().trueUnknown()) puts("static ");
-            puts(funcp->rtnTypeVoid());
-            puts(" ");
-            puts(funcp->nameProtect());
+            if (funcp->isVirtual()) puts("virtual ");
+            if (!funcp->isConstructor() && !funcp->isDestructor()) {
+                puts(funcp->rtnTypeVoid());
+                puts(" ");
+            }
+            puts(funcNameProtect(funcp, modp));
             puts("(" + cFuncArgs(funcp) + ")");
             if (funcp->isConst().trueKnown()) puts(" const");
             if (funcp->slow()) puts(" VL_ATTR_COLD");
@@ -1248,9 +1251,14 @@ class EmitCImp : EmitCStmts {
         puts("\n");
         if (nodep->ifdef()!="") puts("#ifdef "+nodep->ifdef()+"\n");
         if (nodep->isInline()) puts("VL_INLINE_OPT ");
-        puts(nodep->rtnTypeVoid()); puts(" ");
+        if (!nodep->isConstructor() && !nodep->isDestructor()) {
+            puts(nodep->rtnTypeVoid());
+            puts(" ");
+        }
+
         if (nodep->isMethod()) puts(prefixNameProtect(m_modp) + "::");
-        puts(nodep->nameProtect() + "(" + cFuncArgs(nodep) + ")");
+        puts(funcNameProtect(nodep, m_modp));
+        puts("(" + cFuncArgs(nodep) + ")");
         if (nodep->isConst().trueKnown()) puts(" const");
         puts(" {\n");
 
@@ -1983,7 +1991,9 @@ void EmitCImp::emitMTaskVertexCtors(bool* firstp) {
 void EmitCImp::emitCtorImp(AstNodeModule* modp) {
     puts("\n");
     bool first = true;
-    if (optSystemC() && modp->isTop()) {
+    if (VN_IS(modp, Class)) {
+        modp->v3fatalSrc("constructors should be AstCFuncs instead");
+    } else if (optSystemC() && modp->isTop()) {
         puts("VL_SC_CTOR_IMP(" + prefixNameProtect(modp) + ")");
     } else {
         puts("VL_CTOR_IMP(" + prefixNameProtect(modp) + ")");
@@ -2606,10 +2616,10 @@ void EmitCImp::emitIntTop(AstNodeModule* modp) {
         // types defined in svdpi.h are available
         puts("#include \"" + topClassName() + "__Dpi.h\"\n");
     }
-    puts("\n");
 }
 
 void EmitCImp::emitInt(AstNodeModule* modp) {
+    puts("\n//==========\n\n");
     emitModCUse(modp, VUseType::INT_INCLUDE);
 
     // Declare foreign instances up front to make C++ happy
@@ -2701,20 +2711,26 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
         }
     }
 
-    puts("\n// CONSTRUCTORS\n");
-    ofp()->resetPrivate();
-    // We don't need a private copy constructor, as VerilatedModule has one for us.
-    ofp()->putsPrivate(true);
-    puts("VL_UNCOPYABLE(" + prefixNameProtect(modp) + ");  ///< Copying not allowed\n");
+    if (!VN_IS(modp, Class)) {
+        puts("\n// CONSTRUCTORS\n");
+        ofp()->resetPrivate();
+        // We don't need a private copy constructor, as VerilatedModule has one for us.
+        ofp()->putsPrivate(true);
+        puts("VL_UNCOPYABLE(" + prefixNameProtect(modp) + ");  ///< Copying not allowed\n");
+    }
 
-    ofp()->putsPrivate(false);  // public:
-    if (optSystemC() && modp->isTop()) {
+    if (VN_IS(modp, Class)) {
+        // CFuncs with isConstructor/isDestructor used instead
+    } else if (optSystemC() && modp->isTop()) {
+        ofp()->putsPrivate(false);  // public:
         puts("SC_CTOR(" + prefixNameProtect(modp) + ");\n");
         puts("virtual ~" + prefixNameProtect(modp) + "();\n");
     } else if (optSystemC()) {
+        ofp()->putsPrivate(false);  // public:
         puts("VL_CTOR(" + prefixNameProtect(modp) + ");\n");
         puts("~" + prefixNameProtect(modp) + "();\n");
     } else {
+        ofp()->putsPrivate(false);  // public:
         if (modp->isTop()) {
             puts("/// Construct the model; called by application code\n");
             puts("/// The special name "" may be used to make a wrapper with a\n");
@@ -2757,12 +2773,14 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
              +"("+EmitCBaseVisitor::symClassVar()+");\n");
     }
 
-    ofp()->putsPrivate(false);  // public:
-    puts("void "+protect("__Vconfigure")+"("+symClassName()+"* symsp, bool first);\n");
+    if (!VN_IS(modp, Class)) {
+        ofp()->putsPrivate(false);  // public:
+        puts("void " + protect("__Vconfigure") + "(" + symClassName() + "* symsp, bool first);\n");
+    }
 
     emitIntFuncDecls(modp, true);
 
-    if (v3Global.opt.trace()) {
+    if (v3Global.opt.trace() && !VN_IS(modp, Class)) {
         ofp()->putsPrivate(false);  // public:
         puts("static void "+protect("traceInit")+"("+v3Global.opt.traceClassBase()
              +"* vcdp, void* userthis, uint32_t code);\n");
@@ -2781,6 +2799,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     if (!VN_IS(modp, Class)) puts(" VL_ATTR_ALIGNED(VL_CACHE_LINE_BYTES)");
     puts(";\n");
 
+    puts("\n//----------\n\n");
     emitIntFuncDecls(modp, false);
 
     // Save/restore
@@ -2813,35 +2832,27 @@ void EmitCImp::emitImpTop(AstNodeModule* fileModp) {
     emitModCUse(fileModp, VUseType::IMP_INCLUDE);
     emitModCUse(fileModp, VUseType::IMP_FWD_CLASS);
 
-    puts("\n");
     emitTextSection(AstType::atScImpHdr);
 }
 
 void EmitCImp::emitImp(AstNodeModule* modp) {
+    puts("\n//==========\n");
     if (m_slow) {
-        puts("\n//--------------------\n");
         string section;
         emitVarList(modp->stmtsp(), EVL_CLASS_ALL, prefixNameProtect(modp), section/*ref*/);
-        emitCtorImp(modp);
-        emitConfigureImp(modp);
-        emitDestructorImp(modp);
+        if (!VN_IS(modp, Class)) emitCtorImp(modp);
+        if (!VN_IS(modp, Class)) emitConfigureImp(modp);
+        if (!VN_IS(modp, Class)) emitDestructorImp(modp);
         emitSavableImp(modp);
         emitCoverageImp(modp);
     }
 
     if (m_fast) {
         emitTextSection(AstType::atScImp);
-
-        if (modp->isTop()) {
-            puts("\n//--------------------\n");
-            puts("\n");
-            emitWrapEval(modp);
-        }
+        if (modp->isTop()) emitWrapEval(modp);
     }
 
     // Blocks
-    puts("\n//--------------------\n");
-    puts("// Internal Methods\n");
     for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
         if (AstCFunc* funcp = VN_CAST(nodep, CFunc)) {
             maybeSplit(modp);

@@ -6637,8 +6637,11 @@ private:
     bool        m_formCallTree:1;       // Make a global function to call entire tree of functions
     bool        m_slow:1;               // Slow routine, called once or just at init time
     bool        m_funcPublic:1;         // From user public task/function
+    bool        m_isConstructor:1;      // Is C class constructor
+    bool        m_isDestructor:1;       // Is C class destructor
     bool        m_isMethod:1;           // Is inside a class definition
     bool        m_isInline:1;           // Inline function
+    bool        m_isVirtual:1;          // Virtual function
     bool        m_symProlog:1;          // Setup symbol table for later instructions
     bool        m_entryPoint:1;         // User may call into this top level function
     bool        m_pure:1;               // Pure function
@@ -6661,8 +6664,11 @@ public:
         m_formCallTree = false;
         m_slow = false;
         m_funcPublic = false;
+        m_isConstructor = false;
+        m_isDestructor = false;
         m_isMethod = true;
         m_isInline = false;
+        m_isVirtual = false;
         m_symProlog = false;
         m_entryPoint = false;
         m_pure = false;
@@ -6717,10 +6723,16 @@ public:
     string ifdef() const { return m_ifdef; }
     void funcType(AstCFuncType flag) { m_funcType = flag; }
     AstCFuncType funcType() const { return m_funcType; }
+    bool isConstructor() const { return m_isConstructor; }
+    void isConstructor(bool flag) { m_isConstructor = flag; }
+    bool isDestructor() const { return m_isDestructor; }
+    void isDestructor(bool flag) { m_isDestructor = flag; }
     bool isMethod() const { return m_isMethod; }
     void isMethod(bool flag) { m_isMethod = flag; }
     bool isInline() const { return m_isInline; }
     void isInline(bool flag) { m_isInline = flag; }
+    bool isVirtual() const { return m_isVirtual; }
+    void isVirtual(bool flag) { m_isVirtual = flag; }
     bool symProlog() const { return m_symProlog; }
     void symProlog(bool flag) { m_symProlog = flag; }
     bool entryPoint() const { return m_entryPoint; }
