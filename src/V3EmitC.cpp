@@ -382,9 +382,15 @@ public:
         puts(");\n");
     }
     virtual void visit(AstCoverInc* nodep) VL_OVERRIDE {
-        puts("++(vlSymsp->__Vcoverage[");
-        puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
-        puts("]);\n");
+        if (v3Global.opt.threads()) {
+            puts("vlSymsp->__Vcoverage[");
+            puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
+            puts("].fetch_add(1, std::memory_order_relaxed);\n");
+        } else {
+            puts("++(vlSymsp->__Vcoverage[");
+            puts(cvtToStr(nodep->declp()->dataDeclThisp()->binNum()));
+            puts("]);\n");
+        }
     }
     virtual void visit(AstCReturn* nodep) VL_OVERRIDE {
         puts("return (");
@@ -1953,7 +1959,9 @@ void EmitCImp::emitCoverageDecl(AstNodeModule* modp) {
     if (v3Global.opt.coverage()) {
         ofp()->putsPrivate(true);
         putsDecoration("// Coverage\n");
-        puts("void __vlCoverInsert(uint32_t* countp, bool enable, const char* filenamep, int lineno, int column,\n");
+        puts("void __vlCoverInsert(");
+        puts(v3Global.opt.threads() ? "std::atomic<uint32_t>" : "uint32_t");
+        puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
         puts(   "const char* hierp, const char* pagep, const char* commentp);\n");
     }
 }
@@ -2068,14 +2076,22 @@ void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
         puts("\n// Coverage\n");
         // Rather than putting out VL_COVER_INSERT calls directly, we do it via this function
         // This gets around gcc slowness constructing all of the template arguments.
-        puts("void " + prefixNameProtect(m_modp)
-             + "::__vlCoverInsert(uint32_t* countp, bool enable,"
-             + " const char* filenamep, int lineno, int column,\n");
+        puts("void " + prefixNameProtect(m_modp) + "::__vlCoverInsert(");
+        puts(v3Global.opt.threads() ? "std::atomic<uint32_t>" : "uint32_t");
+        puts("* countp, bool enable, const char* filenamep, int lineno, int column,\n");
         puts(   "const char* hierp, const char* pagep, const char* commentp) {\n");
-        puts(   "static uint32_t fake_zero_count = 0;\n");  // static doesn't need save-restore as constant
-        puts(   "if (!enable) countp = &fake_zero_count;\n");  // Used for second++ instantiation of identical bin
-        puts(   "*countp = 0;\n");
-        puts(   "VL_COVER_INSERT(countp,");
+        if (v3Global.opt.threads()) {
+            puts(   "assert(sizeof(uint32_t) == sizeof(std::atomic<uint32_t>));\n");
+            puts(   "uint32_t* count32p = reinterpret_cast<uint32_t*>(countp);\n");
+        } else {
+            puts(   "uint32_t* count32p = countp;\n");
+        }
+        // static doesn't need save-restore as is constant
+        puts(   "static uint32_t fake_zero_count = 0;\n");
+        // Used for second++ instantiation of identical bin
+        puts(   "if (!enable) count32p = &fake_zero_count;\n");
+        puts(   "*count32p = 0;\n");
+        puts("VL_COVER_INSERT(count32p,");
         puts(   "  \"filename\",filenamep,");
         puts(   "  \"lineno\",lineno,");
         puts(   "  \"column\",column,\n");

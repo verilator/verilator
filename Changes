@@ -168,9 +168,9 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.020 2019-10-06
 
-***   Support $fseek, $ftell, $frewind, #1496. [Howard Su]
-
 ***   Add --public-flat-rw, #1511. [Stefan Wallentowitz]
+
+***   Support $fseek, $ftell, $frewind, #1496. [Howard Su]
 
 ***   Support vpiModule, #1469. [Stefan Wallentowitz]
 
@@ -191,6 +191,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 ****  Fix misc bad-syntax crashes, #1529, #1530, #1531, #1532, #1533. [Eric Rippey]
 
 ****  Fix case statements with strings, #1536. [Philipp Wagner]
+
+****  Fix some coverage lost when multithreaded, #2151.
 
 
 * Verilator 4.018 2019-08-29
