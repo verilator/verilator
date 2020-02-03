@@ -1498,10 +1498,9 @@ sub _run {
 
     # Read the log file a couple of times to allow for NFS delays
     if ($param{check_finished} || $param{expect}) {
-        my $tries = $self->tries;
-        for (my $try=$tries-1; $try>=0; $try--) {
-            sleep 1 if ($try!=$tries-1);
-            my $moretry = $try!=0;
+        for (my $try = $self->tries - 1; $try >= 0; $try--) {
+            sleep 1 if ($try != $self->tries - 1);
+            my $moretry = $try != 0;
 
             my $fh = IO::File->new("<$param{logfile}");
             next if !$fh && $moretry;
@@ -1949,11 +1948,10 @@ sub files_identical {
     my $fn1_is_logfile = shift;
     return 1 if $self->errors || $self->skips || $self->unsupporteds;
 
-    my $tries = $self->tries;
   try:
-    for (my $try=$tries-1; $try>=0; $try--) {
-        sleep 1 if ($try!=$tries-1);
-        my $moretry = $try!=0;
+    for (my $try = $self->tries - 1; $try >= 0; $try--) {
+        sleep 1 if ($try != $self->tries - 1);
+        my $moretry = $try != 0;
 
         my $f1 = IO::File->new("<$fn1");
         my $f2 = IO::File->new("<$fn2");
