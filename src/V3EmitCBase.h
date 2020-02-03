@@ -56,6 +56,11 @@ public:
     static string symClassVar()  { return symClassName()+"* __restrict vlSymsp"; }
     static string symTopAssign() {
         return v3Global.opt.prefix()+"* __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;"; }
+    static string funcNameProtect(const AstCFunc* nodep, const AstNodeModule* modp) {
+        if (nodep->isConstructor()) return prefixNameProtect(modp);
+        else if (nodep->isDestructor()) return string("~") + prefixNameProtect(modp);
+        else return nodep->nameProtect();
+    }
     static string prefixNameProtect(const AstNode* nodep) {  // C++ name with prefix
         const AstNodeModule* modp = VN_CAST_CONST(nodep, NodeModule);
         if (modp && modp->isTop()) {

@@ -9,6 +9,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    Add -match to lint_off to waive warnings. [Philipp Wagner]
 
+***   Link Verilator binary partially statically, #2146. [Geza Lore]
+
 ***   Verilation speed improvements, #2133, #2138. [Geza Lore]
 
 ***   Support libgoogle-perftools-dev's libtcmalloc if available, #2137. [Geza Lore]

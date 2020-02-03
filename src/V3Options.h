@@ -62,11 +62,15 @@ public:
         static const char* const names[] = {
             "DEFAULT_FALSE", "DEFAULT_TRUE", "TRUE", "FALSE"};
         return names[m_e]; }
-  };
-  inline bool operator==(VOptionBool lhs, VOptionBool rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(VOptionBool lhs, VOptionBool::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(VOptionBool::en lhs, VOptionBool rhs) { return (lhs == rhs.m_e); }
-  inline std::ostream& operator<<(std::ostream& os, const VOptionBool& rhs) { return os<<rhs.ascii(); }
+};
+inline bool operator==(const VOptionBool& lhs, const VOptionBool& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+inline bool operator==(const VOptionBool& lhs, VOptionBool::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(VOptionBool::en lhs, const VOptionBool& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VOptionBool& rhs) {
+    return os << rhs.ascii();
+}
 
 //######################################################################
 
@@ -99,9 +103,11 @@ public:
         return names[m_e];
     }
 };
-inline bool operator==(TraceFormat lhs, TraceFormat rhs) { return (lhs.m_e == rhs.m_e); }
-inline bool operator==(TraceFormat lhs, TraceFormat::en rhs) { return (lhs.m_e == rhs); }
-inline bool operator==(TraceFormat::en lhs, TraceFormat rhs) { return (lhs == rhs.m_e); }
+inline bool operator==(const TraceFormat& lhs, const TraceFormat& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+inline bool operator==(const TraceFormat& lhs, TraceFormat::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(TraceFormat::en lhs, const TraceFormat& rhs) { return lhs == rhs.m_e; }
 
 typedef std::vector<string> V3StringList;
 typedef std::set<string> V3StringSet;

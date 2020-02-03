@@ -1,7 +1,15 @@
 %Error: t/t_pp_pragma_bad.v:6: `pragma is missing a pragma_expression.
 `pragma
 ^~~~~~~
-%Error: t/t_pp_pragma_bad.v:10: syntax error, unexpected `resetall
-`resetall   
-^~~~~~~~~
-%Error: Cannot continue
+`line 1 "t/t_pp_pragma_bad.v" 1
+ 
+
+`line 3 "t/t_pp_pragma_bad.v" 0
+ 
+ 
+
+`line 6 "t/t_pp_pragma_bad.v" 0
+`pragma
+
+`line 8 "t/t_pp_pragma_bad.v" 2
+%Error: Exiting due to

@@ -110,7 +110,10 @@ class EmitCSyms : EmitCBaseVisitor {
 
     void nameCheck(AstNode* nodep) {
         // Prevent GCC compile time error; name check all things that reach C++ code
-        if (nodep->name() != "") {
+        if (nodep->name() != ""
+            && !(VN_IS(nodep, CFunc)
+                 && (VN_CAST(nodep, CFunc)->isConstructor()
+                     || VN_CAST(nodep, CFunc)->isDestructor()))) {
             string rsvd = m_words.isKeyword(nodep->name());
             if (rsvd != "") {
                 // Generally V3Name should find all of these and throw SYMRSVDWORD.
@@ -387,10 +390,9 @@ void EmitCSyms::emitSymHdr() {
         puts("#include \"verilated.h\"\n");
     }
 
-    // for
     puts("\n// INCLUDE MODULE CLASSES\n");
-    for (AstNodeModule* nodep = v3Global.rootp()->modulesp();
-         nodep; nodep=VN_CAST(nodep->nextp(), NodeModule)) {
+    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
+         nodep = VN_CAST(nodep->nextp(), NodeModule)) {
         puts("#include \"" + prefixNameProtect(nodep) + ".h\"\n");
     }
 
@@ -475,7 +477,7 @@ void EmitCSyms::emitSymHdr() {
         puts("void "+protect("__Vdeserialize")+"(VerilatedDeserialize& os);\n");
     }
     puts("\n");
-    puts("} VL_ATTR_ALIGNED(64);\n");
+    puts("} VL_ATTR_ALIGNED(VL_CACHE_LINE_BYTES);\n");
 
     ofp()->putsEndGuard();
 }

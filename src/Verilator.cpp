@@ -37,6 +37,7 @@
 #include "V3Coverage.h"
 #include "V3CoverageJoin.h"
 #include "V3CCtors.h"
+#include "V3CUse.h"
 #include "V3Dead.h"
 #include "V3Delayed.h"
 #include "V3Depth.h"
@@ -474,6 +475,10 @@ static void process() {
     if (!v3Global.opt.lintOnly()
         && !v3Global.opt.xmlOnly()
         && !v3Global.opt.dpiHdrOnly()) {
+        // Create AstCUse to determine what class forward declarations/#includes needed in C
+        // Must be before V3EmitC
+        V3CUse::cUseAll(v3Global.rootp());
+
         // emitcInlines is first, as it may set needHInlines which other emitters read
         V3EmitC::emitcInlines();
         V3EmitC::emitcSyms();

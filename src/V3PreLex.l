@@ -106,6 +106,13 @@ bom             [\357\273\277]
 <INITIAL>"`undef"       { FL_FWDC; return VP_UNDEF; }
 <INITIAL>"`undefineall" { FL_FWDC; return VP_UNDEFINEALL; }
 <INITIAL>"`error"       { FL_FWDC; if (!pedantic()) return VP_ERROR; else return VP_DEFREF; }
+<INITIAL>"`pragma"{wsn}*[^\n\r]*  { FL_FWDC;
+                          const char* pointp = yytext + strlen("`pragma");
+                          while (isspace(*pointp)) ++pointp;
+                          if (!*pointp && v3Global.opt.pedantic()) {
+                              yyerrorf("`pragma is missing a pragma_expression.");
+                          }
+                          return VP_TEXT; }
 <INITIAL,STRIFY>"`__FILE__"     { FL_FWDC;
                           static string rtnfile;
                           rtnfile = '"'; rtnfile += LEXP->curFilelinep()->filename();

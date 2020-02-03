@@ -72,10 +72,10 @@ void yyerror(const char* errmsg) {
         && PARSEP->curBisonVal().token == yP_COLONCOLON) {
         static int warned = false;
         if (!warned++) {
-            std::cerr<<PARSEP->fileline()->warnMore()
-                     <<("... Perhaps '"+*PARSEP->prevBisonVal().strp
-                        +"' is a package which needs to be predeclared? (IEEE 2017 26.3)")
-                     <<std::endl;
+            std::cerr << PARSEP->fileline()->warnMore()
+                      << ("... Perhaps '" + *PARSEP->prevBisonVal().strp
+                          + "' is a package which needs to be predeclared? (IEEE 1800-2017 26.3)")
+                      << std::endl;
         }
     }
 }
@@ -955,7 +955,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`nosuppress_faults"                  { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`nounconnected_drive"                { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`portcoerce"                         { FL_FWD; FL_BRK; }
-  "`pragma"{ws}*[^\n\r]*                { FL_FWD; PARSEP->pragma(yytext); FL_BRK; }  // Verilog 2005
+  "`pragma"{ws}*[^\n\r]*                { FL_FWD; FL_BRK; }  // Verilog 2005
   "`protect"                            { FL_FWD; FL_BRK; }
   "`remove_gatenames"                   { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`remove_netnames"                    { FL_FWD; FL_BRK; }  // Verilog-XL compatibility

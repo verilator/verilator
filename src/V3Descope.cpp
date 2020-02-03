@@ -273,7 +273,7 @@ private:
     virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         if (!nodep->user1()) {
             m_needThis = false;
-            m_allowThis = nodep->isStatic().falseU();  // Non-static or unknown if static
+            m_allowThis = nodep->isStatic().falseUnknown();  // Non-static or unknown if static
             iterateChildren(nodep);
             nodep->user1(true);
             if (m_needThis) nodep->isStatic(false);

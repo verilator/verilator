@@ -240,7 +240,7 @@ public:
     /// When building an error, additional location for additional references
     /// Simplified information vs warnContextPrimary() to make dump clearer
     string warnContextSecondary() const { return warnContext(true); }
-    bool operator==(FileLine rhs) const {
+    bool operator==(const FileLine& rhs) const {
         return (m_firstLineno == rhs.m_firstLineno
                 && m_firstColumn == rhs.m_firstColumn
                 && m_lastLineno == rhs.m_lastLineno

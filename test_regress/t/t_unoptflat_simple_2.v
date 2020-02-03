@@ -14,7 +14,7 @@ module t (/*AUTOARG*/
    wire [2:0] x;
 
    assign x[1:0] = { x[0], clk };
-   assign x[2:1] = { clk, x[1] };
+   assign x[2:1] = x[1:0];
 
    always @(posedge clk or negedge clk) begin
 
@@ -22,7 +22,7 @@ module t (/*AUTOARG*/
       $write("x = %x\n", x);
 `endif
 
-      if (x[1] != 0) begin
+      if (x[2] != 0) begin
          $write("*-* All Finished *-*\n");
          $finish;
       end

@@ -73,15 +73,6 @@ V3ParseImp::~V3ParseImp() {
 //######################################################################
 // Parser utility methods
 
-void V3ParseImp::pragma(const char* textp) {
-    // Handle `pragma directive
-    if (0 == strncmp(textp, "`pragma", strlen("`pragma"))) textp += strlen("`pragma");
-    while (isspace(*textp)) ++textp;
-    if (!*textp) {
-        if (v3Global.opt.pedantic()) yyerrorf("`pragma is missing a pragma_expression.");
-    }
-}
-
 void V3ParseImp::ppline(const char* textp) {
     // Handle `line directive
     FileLine* prevFl = copyOrSameFileLine();

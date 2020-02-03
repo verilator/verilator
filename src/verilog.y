@@ -4502,7 +4502,7 @@ simple_immediate_assertion_statement<nodep>:	// ==IEEE: simple_immediate_asserti
 
 final_zero:			// IEEE: part of deferred_immediate_assertion_statement
 		'#' yaINTNUM
-			{ if ($2->isNeqZero()) { $<fl>2->v3error("Deferred assertions must use '#0' (IEEE 2017 16.4)"); } }
+			{ if ($2->isNeqZero()) { $<fl>2->v3error("Deferred assertions must use '#0' (IEEE 1800-2017 16.4)"); } }
 	//			// 1800-2012:
 	|	yFINAL							{ }
 	;
@@ -5364,7 +5364,7 @@ classExtendsE<nodep>:		// IEEE: part of class_declaration
 classExtendsList<nodep>:	// IEEE: part of class_declaration
 		classExtendsOne				{ $$ = $1; }
 	|	classExtendsList ',' classExtendsOne
-			{ $$ = $3; BBUNSUP($3, "Multiple inheritance illegal on non-interface classes (IEEE 8.13)"
+			{ $$ = $3; BBUNSUP($3, "Multiple inheritance illegal on non-interface classes (IEEE 1800-2017 8.13)"
 					       ", and unsupported for interface classes."); }
 	;
 

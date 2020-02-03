@@ -82,11 +82,11 @@ public:
     inline AstType(en _e) : m_e(_e) {}
     explicit inline AstType(int _e) : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
-  };
-  inline bool operator==(AstType lhs, AstType rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(AstType lhs, AstType::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(AstType::en lhs, AstType rhs) { return (lhs == rhs.m_e); }
-  inline std::ostream& operator<<(std::ostream& os, const AstType& rhs) { return os<<rhs.ascii(); }
+};
+inline bool operator==(const AstType& lhs, const AstType& rhs) { return lhs.m_e == rhs.m_e; }
+inline bool operator==(const AstType& lhs, AstType::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(AstType::en lhs, const AstType& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const AstType& rhs) { return os << rhs.ascii(); }
 
 //######################################################################
 
@@ -128,11 +128,13 @@ public:
     inline bool isSigned() const { return m_e==SIGNED; }
     inline bool isNosign() const { return m_e==NOSIGN; }
     // No isUnsigned() as it's ambiguous if NOSIGN should be included or not.
-  };
-  inline bool operator==(AstNumeric lhs, AstNumeric rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(AstNumeric lhs, AstNumeric::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(AstNumeric::en lhs, AstNumeric rhs) { return (lhs == rhs.m_e); }
-  inline std::ostream& operator<<(std::ostream& os, const AstNumeric& rhs) { return os<<rhs.ascii(); }
+};
+inline bool operator==(const AstNumeric& lhs, const AstNumeric& rhs) { return lhs.m_e == rhs.m_e; }
+inline bool operator==(const AstNumeric& lhs, AstNumeric::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(AstNumeric::en lhs, const AstNumeric& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const AstNumeric& rhs) {
+    return os << rhs.ascii();
+}
 
 //######################################################################
 
@@ -157,10 +159,12 @@ public:
     inline AstPragmaType(en _e) : m_e(_e) {}
     explicit inline AstPragmaType(int _e) : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
-  };
-  inline bool operator==(AstPragmaType lhs, AstPragmaType rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(AstPragmaType lhs, AstPragmaType::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(AstPragmaType::en lhs, AstPragmaType rhs) { return (lhs == rhs.m_e); }
+};
+inline bool operator==(const AstPragmaType& lhs, const AstPragmaType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+inline bool operator==(const AstPragmaType& lhs, AstPragmaType::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(AstPragmaType::en lhs, const AstPragmaType& rhs) { return lhs == rhs.m_e; }
 
 //######################################################################
 
@@ -185,10 +189,12 @@ public:
     bool isTrace() const { return (m_e==TRACE_INIT || m_e==TRACE_INIT_SUB
                                    || m_e==TRACE_FULL || m_e==TRACE_FULL_SUB
                                    || m_e==TRACE_CHANGE || m_e==TRACE_CHANGE_SUB); }
-  };
-  inline bool operator==(AstCFuncType lhs, AstCFuncType rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(AstCFuncType lhs, AstCFuncType::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(AstCFuncType::en lhs, AstCFuncType rhs) { return (lhs == rhs.m_e); }
+};
+inline bool operator==(const AstCFuncType& lhs, const AstCFuncType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+inline bool operator==(const AstCFuncType& lhs, AstCFuncType::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(AstCFuncType::en lhs, const AstCFuncType& rhs) { return lhs == rhs.m_e; }
 
 //######################################################################
 
@@ -274,10 +280,10 @@ public:
     inline VEdgeType(en _e) : m_e(_e) {}
     explicit inline VEdgeType(int _e) : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
-  };
-  inline bool operator==(VEdgeType lhs, VEdgeType rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(VEdgeType lhs, VEdgeType::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(VEdgeType::en lhs, VEdgeType rhs) { return (lhs == rhs.m_e); }
+};
+inline bool operator==(const VEdgeType& lhs, const VEdgeType& rhs) { return lhs.m_e == rhs.m_e; }
+inline bool operator==(const VEdgeType& lhs, VEdgeType::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(VEdgeType::en lhs, const VEdgeType& rhs) { return lhs == rhs.m_e; }
 
 //######################################################################
 
@@ -346,10 +352,12 @@ public:
     inline AstAttrType(en _e) : m_e(_e) {}
     explicit inline AstAttrType(int _e) : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
-  };
-  inline bool operator==(AstAttrType lhs, AstAttrType rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(AstAttrType lhs, AstAttrType::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(AstAttrType::en lhs, AstAttrType rhs) { return (lhs == rhs.m_e); }
+};
+inline bool operator==(const AstAttrType& lhs, const AstAttrType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+inline bool operator==(const AstAttrType& lhs, AstAttrType::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(AstAttrType::en lhs, const AstAttrType& rhs) { return lhs == rhs.m_e; }
 
 //######################################################################
 
@@ -473,10 +481,16 @@ public:
     }
     bool isDouble() const { return m_e==DOUBLE; }
     bool isString() const { return m_e==STRING; }
-  };
-  inline bool operator==(AstBasicDTypeKwd lhs, AstBasicDTypeKwd rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(AstBasicDTypeKwd lhs, AstBasicDTypeKwd::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(AstBasicDTypeKwd::en lhs, AstBasicDTypeKwd rhs) { return (lhs == rhs.m_e); }
+};
+inline bool operator==(const AstBasicDTypeKwd& lhs, const AstBasicDTypeKwd& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+inline bool operator==(const AstBasicDTypeKwd& lhs, AstBasicDTypeKwd::en rhs) {
+    return lhs.m_e == rhs;
+}
+inline bool operator==(AstBasicDTypeKwd::en lhs, const AstBasicDTypeKwd& rhs) {
+    return lhs == rhs.m_e;
+}
 
 //######################################################################
 
@@ -518,11 +532,13 @@ public:
     bool isWritable() const { return m_e == OUTPUT || m_e == INOUT
             || m_e == REF; }
     bool isRefOrConstRef() const { return m_e == REF || m_e == CONSTREF; }
-  };
-  inline bool operator==(VDirection lhs, VDirection rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(VDirection lhs, VDirection::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(VDirection::en lhs, VDirection rhs) { return (lhs == rhs.m_e); }
-  inline std::ostream& operator<<(std::ostream& os, const VDirection& rhs) { return os<<rhs.ascii(); }
+};
+inline bool operator==(const VDirection& lhs, const VDirection& rhs) { return lhs.m_e == rhs.m_e; }
+inline bool operator==(const VDirection& lhs, VDirection::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(VDirection::en lhs, const VDirection& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VDirection& rhs) {
+    return os << rhs.ascii();
+}
 
 //######################################################################
 
@@ -545,14 +561,25 @@ public:
         static const char* const names[] = {
             "FALSE", "TRUE", "UNK"};
         return names[m_e]; }
-    bool trueU() const { return m_e == BU_TRUE || m_e == BU_UNKNOWN; }
-    bool falseU() const { return m_e == BU_FALSE || m_e == BU_UNKNOWN; }
+    bool trueKnown() const { return m_e == BU_TRUE; }
+    bool trueUnknown() const { return m_e == BU_TRUE || m_e == BU_UNKNOWN; }
+    bool falseKnown() const { return m_e == BU_FALSE; }
+    bool falseUnknown() const { return m_e == BU_FALSE || m_e == BU_UNKNOWN; }
     bool unknown() const { return m_e == BU_UNKNOWN; }
-  };
-  inline bool operator==(VBoolOrUnknown lhs, VBoolOrUnknown rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(VBoolOrUnknown lhs, VBoolOrUnknown::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(VBoolOrUnknown::en lhs, VBoolOrUnknown rhs) { return (lhs == rhs.m_e); }
-  inline std::ostream& operator<<(std::ostream& os, const VBoolOrUnknown& rhs) { return os<<rhs.ascii(); }
+    void setTrueOrFalse(bool flag) { m_e = flag ? BU_TRUE : BU_FALSE; }
+};
+inline bool operator==(const VBoolOrUnknown& lhs, const VBoolOrUnknown& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+inline bool operator==(const VBoolOrUnknown& lhs, VBoolOrUnknown::en rhs) {
+    return lhs.m_e == rhs;
+}
+inline bool operator==(VBoolOrUnknown::en lhs, const VBoolOrUnknown& rhs) {
+    return lhs == rhs.m_e;
+}
+inline std::ostream& operator<<(std::ostream& os, const VBoolOrUnknown& rhs) {
+    return os << rhs.ascii();
+}
 
 //######################################################################
 
@@ -617,11 +644,13 @@ public:
     bool isTemp() const {
         return (m_e==BLOCKTEMP || m_e==MODULETEMP || m_e==STMTTEMP || m_e==XTEMP);
     }
-  };
-  inline bool operator==(AstVarType lhs, AstVarType rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(AstVarType lhs, AstVarType::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(AstVarType::en lhs, AstVarType rhs) { return (lhs == rhs.m_e); }
-  inline std::ostream& operator<<(std::ostream& os, const AstVarType& rhs) { return os<<rhs.ascii(); }
+};
+inline bool operator==(const AstVarType& lhs, const AstVarType& rhs) { return lhs.m_e == rhs.m_e; }
+inline bool operator==(const AstVarType& lhs, AstVarType::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(AstVarType::en lhs, const AstVarType& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const AstVarType& rhs) {
+    return os << rhs.ascii();
+}
 
 //######################################################################
 
@@ -652,11 +681,15 @@ public:
         static const char* const names[] = {
             "", "VL_LIKELY", "VL_UNLIKELY"};
         return names[m_e]; }
-  };
-  inline bool operator==(VBranchPred lhs, VBranchPred rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(VBranchPred lhs, VBranchPred::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(VBranchPred::en lhs, VBranchPred rhs) { return (lhs == rhs.m_e); }
-  inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) { return os<<rhs.ascii(); }
+};
+inline bool operator==(const VBranchPred& lhs, const VBranchPred& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+inline bool operator==(const VBranchPred& lhs, VBranchPred::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(VBranchPred::en lhs, const VBranchPred& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
+    return os << rhs.ascii();
+}
 
 //######################################################################
 
@@ -685,11 +718,19 @@ public:
         static const char* const names[] = {
             "", "clker", "non_clker"};
         return names[m_e]; }
-  };
-  inline bool operator==(VVarAttrClocker lhs, VVarAttrClocker rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(VVarAttrClocker lhs, VVarAttrClocker::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(VVarAttrClocker::en lhs, VVarAttrClocker rhs) { return (lhs == rhs.m_e); }
-  inline std::ostream& operator<<(std::ostream& os, const VVarAttrClocker& rhs) { return os<<rhs.ascii(); }
+};
+inline bool operator==(const VVarAttrClocker& lhs, const VVarAttrClocker& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+inline bool operator==(const VVarAttrClocker& lhs, VVarAttrClocker::en rhs) {
+    return lhs.m_e == rhs;
+}
+inline bool operator==(VVarAttrClocker::en lhs, const VVarAttrClocker& rhs) {
+    return lhs == rhs.m_e;
+}
+inline std::ostream& operator<<(std::ostream& os, const VVarAttrClocker& rhs) {
+    return os << rhs.ascii();
+}
 
 //######################################################################
 
@@ -711,10 +752,10 @@ public:
         static const char* const names[] = {
             "always", "always_ff", "always_latch", "always_comb"};
         return names[m_e]; }
-  };
-  inline bool operator==(VAlwaysKwd lhs, VAlwaysKwd rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(VAlwaysKwd lhs, VAlwaysKwd::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(VAlwaysKwd::en lhs, VAlwaysKwd rhs) { return (lhs == rhs.m_e); }
+};
+inline bool operator==(const VAlwaysKwd& lhs, const VAlwaysKwd& rhs) { return lhs.m_e == rhs.m_e; }
+inline bool operator==(const VAlwaysKwd& lhs, VAlwaysKwd::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(VAlwaysKwd::en lhs, const VAlwaysKwd& rhs) { return lhs == rhs.m_e; }
 
 //######################################################################
 
@@ -732,10 +773,10 @@ public:
     inline VCaseType(en _e) : m_e(_e) {}
     explicit inline VCaseType(int _e) : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
-  };
-  inline bool operator==(VCaseType lhs, VCaseType rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(VCaseType lhs, VCaseType::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(VCaseType::en lhs, VCaseType rhs) { return (lhs == rhs.m_e); }
+};
+inline bool operator==(const VCaseType& lhs, const VCaseType& rhs) { return lhs.m_e == rhs.m_e; }
+inline bool operator==(const VCaseType& lhs, VCaseType::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(VCaseType::en lhs, const VCaseType& rhs) { return lhs == rhs.m_e; }
 
 //######################################################################
 
@@ -761,10 +802,16 @@ public:
         static const char* const names[] = {
             "display", "write", "info", "error", "warning", "fatal"};
         return names[m_e]; }
-  };
-  inline bool operator==(AstDisplayType lhs, AstDisplayType rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(AstDisplayType lhs, AstDisplayType::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(AstDisplayType::en lhs, AstDisplayType rhs) { return (lhs == rhs.m_e); }
+};
+inline bool operator==(const AstDisplayType& lhs, const AstDisplayType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+inline bool operator==(const AstDisplayType& lhs, AstDisplayType::en rhs) {
+    return lhs.m_e == rhs;
+}
+inline bool operator==(AstDisplayType::en lhs, const AstDisplayType& rhs) {
+    return lhs == rhs.m_e;
+}
 
 //######################################################################
 
@@ -784,11 +831,15 @@ public:
         static const char* const names[] = {
             "", "TEXT", "PREDOT"};
         return names[m_e]; }
-  };
-  inline bool operator==(VParseRefExp lhs, VParseRefExp rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(VParseRefExp lhs, VParseRefExp::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(VParseRefExp::en lhs, VParseRefExp rhs) { return (lhs == rhs.m_e); }
-  inline std::ostream& operator<<(std::ostream& os, const VParseRefExp& rhs) { return os<<rhs.ascii(); }
+};
+inline bool operator==(const VParseRefExp& lhs, const VParseRefExp& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+inline bool operator==(const VParseRefExp& lhs, VParseRefExp::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(VParseRefExp::en lhs, const VParseRefExp& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VParseRefExp& rhs) {
+    return os << rhs.ascii();
+}
 
 //######################################################################
 // VNumRange - Structure containing numeric range information
@@ -847,6 +898,36 @@ public:
         if (ranged()) str<<"["<<left()<<":"<<right()<<"]"; else str<<"[norg]"; }
 };
 inline std::ostream& operator<<(std::ostream& os, const VNumRange& rhs) { rhs.dump(os); return os; }
+
+//######################################################################
+
+class VUseType {
+public:
+    enum en {
+        IMP_INCLUDE,  // Implementation (.cpp) needs an include
+        INT_INCLUDE,  // Interface (.h) needs an include
+        IMP_FWD_CLASS,  // Implementation (.cpp) needs a forward class declaration
+        INT_FWD_CLASS,  // Interface (.h) needs a forward class declaration
+    };
+    enum en m_e;
+    inline VUseType() : m_e(IMP_FWD_CLASS) {}
+    // cppcheck-suppress noExplicitConstructor
+    inline VUseType(en _e) : m_e(_e) {}
+    explicit inline VUseType(int _e) : m_e(static_cast<en>(_e)) {}
+    bool isInclude() const { return m_e == IMP_INCLUDE || m_e == INT_INCLUDE; }
+    bool isFwdClass() const { return m_e == IMP_FWD_CLASS || m_e == INT_FWD_CLASS; }
+    operator en() const { return m_e; }
+    const char* ascii() const {
+        static const char* const names[] = {"IMP_INC", "INT_INC", "IMP_FWD", "INT_FWD"};
+        return names[m_e];
+    }
+};
+inline bool operator==(const VUseType& lhs, const VUseType& rhs) { return lhs.m_e == rhs.m_e; }
+inline bool operator==(const VUseType& lhs, VUseType::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(VUseType::en lhs, const VUseType& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VUseType& rhs) {
+    return os << rhs.ascii();
+}
 
 //######################################################################
 
