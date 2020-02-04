@@ -126,7 +126,7 @@ void OrderGraph::loopsVertexCb(V3GraphVertex* vertexp) {
                  <<"     Example path: "
                  <<vvertexp->varScp()->prettyName()<<endl;
     }
-};
+}
 
 //######################################################################
 

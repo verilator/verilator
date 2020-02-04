@@ -135,7 +135,7 @@ public:
                "ps_DEFFORM", "ps_DEFVALUE", "ps_DEFPAREN", "ps_DEFARG",
                "ps_INCNAME", "ps_ERRORNAME", "ps_JOIN", "ps_STRIFY"};
         return states[s];
-    };
+    }
 
     std::stack<ProcState> m_states;  ///< Current state of parser
     int         m_off;          ///< If non-zero, ifdef level is turned off, don't dump text

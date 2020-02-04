@@ -1584,7 +1584,7 @@ private:
             }
             UASSERT_OBJ(found, ap, "Sibling not found");
         }
-    };
+    }
 
     static const GraphWay* s_shortestWaywardCpInclusiveWay;
     static int shortestWaywardCpInclusive(const void* vap, const void* vbp) {

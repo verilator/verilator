@@ -102,8 +102,8 @@ public:
 protected:
     // CONSTRUCTORS
     V3PreProc() {
-        m_debug=0;
-    };
+        m_debug = 0;
+    }
     void configure(FileLine* fl);
 public:
     static V3PreProc* createPreProc(FileLine* fl);

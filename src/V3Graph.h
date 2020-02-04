@@ -65,7 +65,7 @@ public:
     const char* ascii() const {
         static const char* const names[] = { "FORWARD", "REVERSE" };
         return names[m_e];
-    };
+    }
     // METHODS unique to this class
     GraphWay invert() const { return m_e == FORWARD ? REVERSE : FORWARD; }
     bool forward() const { return m_e == FORWARD; }

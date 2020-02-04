@@ -1404,7 +1404,8 @@ public:
     }
     AstCMethodHard(FileLine* fl, AstNode* fromp, const string& name, AstNode* pinsp)
         : ASTGEN_SUPER(fl, false)
-        , m_name(name) {
+        , m_name(name)
+        , m_pure(false) {
         setOp1p(fromp);
         addNOp2p(pinsp);
     }
@@ -6840,7 +6841,7 @@ public:
         dtypeFrom(exprsp);
     }
     AstCMath(FileLine* fl, const string& textStmt, int setwidth, bool cleanOut=true)
-        : ASTGEN_SUPER(fl), m_cleanOut(cleanOut) {
+        : ASTGEN_SUPER(fl), m_cleanOut(cleanOut), m_pure(true) {
         addNOp1p(new AstText(fl, textStmt, true));
         if (setwidth) { dtypeSetLogicSized(setwidth, AstNumeric::UNSIGNED); }
     }

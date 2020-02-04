@@ -111,7 +111,7 @@ public:
             "UNSIGNED", "SIGNED", "NOSIGN"
         };
         return names[m_e];
-    };
+    }
     inline AstNumeric() : m_e(UNSIGNED) {}
     // cppcheck-suppress noExplicitConstructor
     inline AstNumeric(en _e) : m_e(_e) {}
@@ -345,7 +345,7 @@ public:
             "VAR_NO_CLOCKER"
         };
         return names[m_e];
-    };
+    }
     inline AstAttrType() : m_e(ILLEGAL) {}
     // cppcheck-suppress noExplicitConstructor
     inline AstAttrType(en _e) : m_e(_e) {}
@@ -390,7 +390,7 @@ public:
             " MAX"
         };
         return names[m_e];
-    };
+    }
     const char* dpiType() const {
         static const char* const names[] = {
             "%E-unk",
@@ -403,7 +403,7 @@ public:
             " MAX"
         };
         return names[m_e];
-    };
+    }
     static void selfTest() {
         UASSERT(0==strcmp(AstBasicDTypeKwd(_ENUM_MAX).ascii(), " MAX"), "SelfTest: Enum mismatch");
         UASSERT(0==strcmp(AstBasicDTypeKwd(_ENUM_MAX).dpiType(), " MAX"), "SelfTest: Enum mismatch");
@@ -1196,7 +1196,7 @@ public:
     explicit V3Hash(VNUser u) { m_both = u.toInt(); }
     V3Hash operator+= (const V3Hash& rh) {
         setBoth(depth()+rh.depth(), (hshval()*31+rh.hshval()));
-        return *this; };
+        return *this; }
     // Creating from raw data (sameHash functions)
     V3Hash() { setBoth(1, 0); }
     // cppcheck-suppress noExplicitConstructor
