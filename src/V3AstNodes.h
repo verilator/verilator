@@ -996,7 +996,7 @@ public:
 class AstVoidDType : public AstNodeDType {
     // For e.g. a function returning void
 public:
-    AstVoidDType(FileLine* fl)
+    explicit AstVoidDType(FileLine* fl)
         : ASTGEN_SUPER(fl) { dtypep(this); }
     ASTNODE_NODE_FUNCS(VoidDType)
     virtual void dumpSmall(std::ostream& str) const;
@@ -2420,7 +2420,7 @@ public:
 class AstUnbounded : public AstNode {
     // A $ in the parser, used for unbounded and queues
 public:
-    AstUnbounded(FileLine* fl)
+    explicit AstUnbounded(FileLine* fl)
         : ASTGEN_SUPER(fl) {}
     ASTNODE_NODE_FUNCS(Unbounded)
     virtual string emitVerilog() { return "$"; }
@@ -3616,7 +3616,7 @@ public:
 
 class AstReturn : public AstNodeStmt {
 public:
-    AstReturn(FileLine* fl, AstNode* lhsp = NULL)
+    explicit AstReturn(FileLine* fl, AstNode* lhsp = NULL)
         : ASTGEN_SUPER(fl) {
         setNOp1p(lhsp);
     }
@@ -3917,7 +3917,7 @@ class AstNew : public AstNodeMath {
     // Parents: math|stmt
     // Children: varref|arraysel, math
 public:
-    AstNew(FileLine* fl)
+    explicit AstNew(FileLine* fl)
         : ASTGEN_SUPER(fl) {
         dtypep(NULL);  // V3Width will resolve
     }
@@ -6472,9 +6472,10 @@ class AstTextBlock : public AstNodeSimpleText {
 private:
     bool m_commas;  // Comma separate emitted children
 public:
-    AstTextBlock(FileLine* fl, const string& textp="", bool tracking=false,
-                 bool commas=false)
-        : ASTGEN_SUPER(fl, textp, tracking), m_commas(commas) {}
+    explicit AstTextBlock(FileLine* fl, const string& textp = "", bool tracking = false,
+                          bool commas = false)
+        : ASTGEN_SUPER(fl, textp, tracking)
+        , m_commas(commas) {}
     ASTNODE_NODE_FUNCS(TextBlock)
     void commas(bool flag) { m_commas = flag; }
     bool commas() const { return m_commas; }

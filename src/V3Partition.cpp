@@ -573,7 +573,7 @@ public:
         edges.erase(relativep);
     }
     bool hasRelative(GraphWay way, LogicMTask* relativep) {
-        EdgeSet& edges = m_edges[way];
+        const EdgeSet& edges = m_edges[way];
         return edges.has(relativep);
     }
     void checkRelativesCp(GraphWay way) const {

@@ -91,9 +91,9 @@ private:
         if (const AstNodeArrayDType* adtypep = VN_CAST(ddtypep, NodeArrayDType)) {
             fromRange = adtypep->declRange();
         }
-        else if (const AstAssocArrayDType* adtypep = VN_CAST(ddtypep, AssocArrayDType)) {
+        else if (VN_IS(ddtypep, AssocArrayDType)) {
         }
-        else if (const AstQueueDType* adtypep = VN_CAST(ddtypep, QueueDType)) {
+        else if (VN_IS(ddtypep, QueueDType)) {
         }
         else if (const AstNodeUOrStructDType* adtypep = VN_CAST(ddtypep, NodeUOrStructDType)) {
             fromRange = adtypep->declRange();

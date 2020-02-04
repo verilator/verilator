@@ -151,7 +151,7 @@ public:
     V3Number(VerilogStringLiteral, AstNode* nodep, const string& str);
     class String {};
     V3Number(String, AstNode* nodep, const string& value) { init(nodep, 0); setString(value); }
-    V3Number(const V3Number* nump, int width = 1) {
+    explicit V3Number(const V3Number* nump, int width = 1) {
         init(NULL, width);
         m_fileline = nump->fileline();
     }

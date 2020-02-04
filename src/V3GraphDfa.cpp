@@ -599,6 +599,7 @@ public:
         if (debug()>=6) m_graphp->dumpDotFilePrefixed("comp_out");
     }
     ~DfaGraphComplement() {}
+    VL_UNCOPYABLE(DfaGraphComplement);
 };
 
 void DfaGraph::dfaComplement() {

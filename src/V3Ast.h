@@ -1024,14 +1024,14 @@ protected:
         clearcnt(id, cntGblRef, userBusyRef);  // Includes a checkUse for us
         userBusyRef = false;
     }
-    static void clearcnt(int id, uint32_t& cntGblRef, bool& userBusyRef) {
+    static void clearcnt(int id, uint32_t& cntGblRef, const bool& userBusyRef) {
         UASSERT_STATIC(userBusyRef, "Clear of User"+cvtToStr(id)+"() not under AstUserInUse");
         // If this really fires and is real (after 2^32 edits???)
         // we could just walk the tree and clear manually
         ++cntGblRef;
         UASSERT_STATIC(cntGblRef, "User*() overflowed!");
     }
-    static void checkcnt(int id, uint32_t&, bool& userBusyRef) {
+    static void checkcnt(int id, uint32_t&, const bool& userBusyRef) {
         UASSERT_STATIC(userBusyRef, "Check of User"+cvtToStr(id)+"() failed, not under AstUserInUse");
     }
 };

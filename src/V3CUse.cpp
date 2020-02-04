@@ -115,11 +115,11 @@ public:
 void V3CUse::cUseAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     // Call visitor separately for each module, so visitor state is cleared
-    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
-         nodep = VN_CAST(nodep->nextp(), NodeModule)) {
+    for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
+         modp = VN_CAST(modp->nextp(), NodeModule)) {
         // Insert under this module; someday we should e.g. make Ast
         // for each output file and put under that
-        CUseVisitor visitor(nodep);
+        CUseVisitor visitor(modp);
     }
     V3Global::dumpCheckGlobalTree("cuse", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

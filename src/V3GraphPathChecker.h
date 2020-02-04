@@ -42,8 +42,8 @@ class GraphPathChecker : GraphAlg<const V3Graph> {
 
  public:
     // CONSTRUCTORS
-    GraphPathChecker(const V3Graph* graphp,
-                     V3EdgeFuncP edgeFuncp = V3GraphEdge::followAlwaysTrue);
+    explicit GraphPathChecker(const V3Graph* graphp,
+                              V3EdgeFuncP edgeFuncp = V3GraphEdge::followAlwaysTrue);
     ~GraphPathChecker();
 
     // METHODS

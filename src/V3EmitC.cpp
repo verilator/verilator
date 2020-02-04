@@ -1080,6 +1080,7 @@ class EmitCImp : EmitCStmts {
     // METHODS
 
     void doubleOrDetect(AstChangeDet* changep, bool& gotOne) {
+        // cppcheck-suppress variableScope
         static int s_addDoubleOr = 10;  // Determined experimentally as best
         if (!changep->rhsp()) {
             if (!gotOne) gotOne = true;
@@ -1453,7 +1454,8 @@ class EmitCImp : EmitCStmts {
             puts(emitVarResetRecurse(varp, dtypep, 0, ""));
         }
     }
-    string emitVarResetRecurse(AstVar* varp, AstNodeDType* dtypep, int depth, string suffix) {
+    string emitVarResetRecurse(AstVar* varp, AstNodeDType* dtypep, int depth,
+                               const string& suffix) {
         dtypep = dtypep->skipRefp();
         AstBasicDType* basicp = dtypep->basicp();
         // Returns string to do resetting, empty to do nothing (which caller should handle)
@@ -2660,8 +2662,10 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
                 if (!did) {
                     did = true;
                     putsDecoration("// CELLS\n");
-                    if (modp->isTop()) puts("// Public to allow access to /*verilator_public*/ items;\n");
-                    if (modp->isTop()) puts("// otherwise the application code can consider these internals.\n");
+                    if (modp->isTop()) {
+                        puts("// Public to allow access to /*verilator_public*/ items;\n");
+                        puts("// otherwise the application code can consider these internals.\n");
+                    }
                 }
                 puts(prefixNameProtect(cellp->modp()) + "* " + cellp->nameProtect() + ";\n");
             }

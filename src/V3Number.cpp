@@ -1540,8 +1540,8 @@ V3Number& V3Number::opShiftRS(const V3Number& lhs, const V3Number& rhs, uint32_t
     if (rhs.isFourState()) return setAllBitsX();
     setZero();
     for (int bit=32; bit<rhs.width(); bit++) {
-        for (int bit=0; bit<this->width(); bit++) {
-            setBit(bit, lhs.bitIs(lbits-1));  // 0/1/X/Z
+        for (int sbit = 0; sbit < this->width(); sbit++) {
+            setBit(sbit, lhs.bitIs(lbits - 1));  // 0/1/X/Z
         }
         if (rhs.bitIs1(lbits-1)) setAllBits1();  // -1 else 0
         return *this;  // shift of over 2^32 must be -1/0

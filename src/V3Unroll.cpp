@@ -388,6 +388,7 @@ private:
             // Grab assignment
             AstNode* incp = NULL;  // Should be last statement
             if (nodep->incsp()) V3Const::constifyEdit(nodep->incsp());
+            // cppcheck-suppress duplicateCondition
             if (nodep->incsp()) incp = nodep->incsp();
             else {
                 for (incp = nodep->bodysp(); incp && incp->nextp(); incp = incp->nextp()) {}

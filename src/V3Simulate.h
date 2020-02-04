@@ -993,8 +993,8 @@ private:
                             clearOptimizable(nodep, "Argument for $display like statement is not constant");
                             break;
                         }
-                        string format = string("%") + pos[0];
-                        result += constp->num().displayed(nodep, format);
+                        string pformat = string("%") + pos[0];
+                        result += constp->num().displayed(nodep, pformat);
                     } else {
                         switch (tolower(pos[0])) {
                         case '%': result += "%"; break;

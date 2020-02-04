@@ -120,6 +120,7 @@ void VFileContent::pushText(const string& text) {
 
 string VFileContent::getLine(int lineno) const {
     // Return error text rather than asserting so the user isn't left without a message
+    // cppcheck-suppress negativeContainerIndex
     if (VL_UNCOVERABLE(lineno < 0 || lineno >= (int)m_lines.size())) {
         if (debug() || v3Global.opt.debugCheck()) {
             return ("%Error-internal-contents-bad-ct"+cvtToStr(m_id)

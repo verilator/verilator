@@ -189,7 +189,7 @@ public:
             string cppfile = *it;
             of.puts("\t"+V3Os::filenameNonExt(cppfile)+" \\\n");
             string dir = V3Os::filenameDir(cppfile);
-            if (dirs.find(dir) == dirs.end()) dirs.insert(dir);
+            dirs.insert(dir);
         }
         of.puts("\n");
 

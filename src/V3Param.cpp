@@ -228,9 +228,9 @@ private:
         // Hitting a cell adds to the appropriate level of this level-sorted list,
         // so since cells originally exist top->bottom we process in top->bottom order too.
         while (!m_todoModps.empty()) {
-            LevelModMap::iterator it = m_todoModps.begin();
-            AstNodeModule* nodep = it->second;
-            m_todoModps.erase(it);
+            LevelModMap::iterator itm = m_todoModps.begin();
+            AstNodeModule* nodep = itm->second;
+            m_todoModps.erase(itm);
             if (!nodep->user5SetOnce()) {  // Process once; note clone() must clear so we do it again
                 m_modp = nodep;
                 UINFO(4," MOD   "<<nodep<<endl);
