@@ -6,10 +6,10 @@
 // If split_var pragma is removed, UNOPTFLAT appears.
 
 module barshift_1d_unpacked #(parameter DEPTH = 2, localparam WIDTH = 2**DEPTH)
-   (input [WIDTH-1:0] in, input [DEPTH-1:0] shift, output [WIDTH-1:0] out);
+   (input [WIDTH-1:0] in, input [DEPTH-1:0] shift, output [WIDTH-1:0] out /*verilator split_var*/);
 
    localparam OFFSET = -3;
-   logic [WIDTH-1:0] tmp[DEPTH+OFFSET:OFFSET]; /*verilator split_var*/
+   logic [WIDTH-1:0] tmp[DEPTH+OFFSET:OFFSET] /*verilator split_var*/;
    generate
       for(genvar i = 0; i < DEPTH; ++i) begin
          always_comb
@@ -22,7 +22,8 @@ module barshift_1d_unpacked #(parameter DEPTH = 2, localparam WIDTH = 2**DEPTH)
       end
    endgenerate
    assign tmp[0+OFFSET] = in;
-   assign out = tmp[DEPTH+OFFSET];
+   assign out[WIDTH-1-:WIDTH-1] = tmp[DEPTH+OFFSET][WIDTH-1:1];
+   assign out[0] = tmp[DEPTH+OFFSET][0+:1];
 endmodule
 
 
@@ -31,7 +32,7 @@ module barshift_1d_unpacked_le #(parameter DEPTH = 2, localparam WIDTH = 2**DEPT
 
    localparam OFFSET = -3;
    // almost same as above module, but tmp[smaller:bigger] here.
-   logic [WIDTH-1:0] tmp[OFFSET:DEPTH+OFFSET]; /*verilator split_var*/
+   logic [WIDTH-1:0] tmp[OFFSET:DEPTH+OFFSET] /*verilator split_var*/;
    generate
       for(genvar i = 0; i < DEPTH; ++i) begin
          always_comb
@@ -53,7 +54,7 @@ module barshift_1d_unpacked_struct0 #(parameter DEPTH = 2, localparam WIDTH = 2*
 
    localparam OFFSET = 1;
    typedef struct packed { logic [WIDTH-1:0] data; } data_type;
-   data_type tmp[DEPTH+OFFSET:OFFSET]; /*verilator split_var*/
+   data_type tmp[DEPTH+OFFSET:OFFSET] /*verilator split_var*/;
    generate
       for(genvar i = 0; i < DEPTH; ++i) begin
          always_comb
@@ -75,25 +76,25 @@ module barshift_2d_unpacked #(parameter DEPTH = 2, localparam WIDTH = 2**DEPTH)
 
    localparam OFFSET = 1;
    localparam N = 3;
-   reg [WIDTH-1:0] tmp0[DEPTH+OFFSET:OFFSET][OFFSET:OFFSET+N-1]; /*verilator split_var*/
-   reg [WIDTH-1:0] tmp1[DEPTH+OFFSET:OFFSET][OFFSET:OFFSET+N-1]; /*verilator split_var*/
+   reg [WIDTH-1:0] tmp0[DEPTH+OFFSET:OFFSET][OFFSET:OFFSET+N-1] /*verilator split_var*/;
+   reg [WIDTH-1:0] tmp1[DEPTH+OFFSET:OFFSET][OFFSET:OFFSET+N-1] /*verilator split_var*/;
    reg [WIDTH-1:0] tmp2[DEPTH+OFFSET:OFFSET][OFFSET:OFFSET+N-1];
-   reg [WIDTH-1:0] tmp3[DEPTH+OFFSET:OFFSET][OFFSET:OFFSET+N-1]; /*verilator split_var*/
-   reg [WIDTH-1:0] tmp4[DEPTH+OFFSET:OFFSET][OFFSET:OFFSET+N-1]; /*verilator split_var*/
+   reg [WIDTH-1:0] tmp3[DEPTH+OFFSET:OFFSET][OFFSET:OFFSET+N-1] /*verilator split_var*/;
+   reg [WIDTH-1:0] tmp4[DEPTH+OFFSET:OFFSET][OFFSET:OFFSET+N-1] /*verilator split_var*/;
    reg [WIDTH-1:0] tmp5[DEPTH+OFFSET:OFFSET][OFFSET:OFFSET+N-1];
-   reg [WIDTH-1:0] tmp6[DEPTH+OFFSET:OFFSET][OFFSET:OFFSET+N-1]; /*verilator split_var*/
+   reg [WIDTH-1:0] tmp6[DEPTH+OFFSET:OFFSET][OFFSET:OFFSET+N-1] /*verilator split_var*/;
 
-   reg [WIDTH-1:0] tmp7[DEPTH+OFFSET+1:OFFSET+1][OFFSET:OFFSET+N-1]; /*verilator split_var*/
-   reg [WIDTH-1:0] tmp8[DEPTH+OFFSET+3:OFFSET-1][OFFSET:OFFSET+N-1]; /*verilator split_var*/
-   reg [WIDTH-1:0] tmp9[DEPTH+OFFSET+3:OFFSET+3][OFFSET:OFFSET+N-1]; /*verilator split_var*/
-   reg [WIDTH-1:0] tmp10[DEPTH+OFFSET:OFFSET][OFFSET:OFFSET+N-1]; /*verilator split_var*/
+   reg [WIDTH-1:0] tmp7[DEPTH+OFFSET+1:OFFSET+1][OFFSET:OFFSET+N-1] /*verilator split_var*/;
+   reg [WIDTH-1:0] tmp8[DEPTH+OFFSET+3:OFFSET-1][OFFSET:OFFSET+N-1] /*verilator split_var*/;
+   reg [WIDTH-1:0] tmp9[DEPTH+OFFSET+3:OFFSET+3][OFFSET:OFFSET+N-1] /*verilator split_var*/;
+   reg [WIDTH-1:0] tmp10[DEPTH+OFFSET:OFFSET][OFFSET:OFFSET+N-1] /*verilator split_var*/;
    // because tmp11 is not split for testing mixture usage of split_var and no-spliv_ar,
    // UNOPTFLAT appears, but it's fine.
    /*verilator lint_off UNOPTFLAT*/
    reg [WIDTH-1:0] tmp11[-1:1][DEPTH+OFFSET:OFFSET][OFFSET:OFFSET+N-1];
    /*verilator lint_on UNOPTFLAT*/
-   reg [WIDTH-1:0] tmp12[-1:0][DEPTH+OFFSET:OFFSET][OFFSET:OFFSET+N-1]; /*verilator split_var*/
-   reg [WIDTH-1:0] tmp13[DEPTH+OFFSET:OFFSET][OFFSET:OFFSET+N-1]; /*verilator split_var*/
+   reg [WIDTH-1:0] tmp12[-1:0][DEPTH+OFFSET:OFFSET][OFFSET:OFFSET+N-1] /*verilator split_var*/;
+   reg [WIDTH-1:0] tmp13[DEPTH+OFFSET:OFFSET][OFFSET:OFFSET+N-1] /*verilator split_var*/;
 
    generate
       for(genvar i = 0; i < DEPTH; ++i) begin
@@ -135,7 +136,7 @@ module barshift_1d_unpacked_struct1 #(parameter DEPTH = 2, localparam WIDTH = 2*
 
    localparam OFFSET = 2;
    typedef struct packed { int data; } data_type;
-   data_type tmp[DEPTH+OFFSET:OFFSET]; /*verilator split_var*/
+   data_type tmp[DEPTH+OFFSET:OFFSET] /*verilator split_var*/;
 
    localparam [32-WIDTH-1:0] pad = 0;
    generate
@@ -159,7 +160,7 @@ module barshift_2d_packed_array #(parameter DEPTH = 2, localparam WIDTH = 2**DEP
 
    localparam OFFSET = -2;
    /*verilator lint_off LITENDIAN*/
-   reg [OFFSET:DEPTH+OFFSET][WIDTH-1:0] tmp; /*verilator split_var*/
+   reg [OFFSET:DEPTH+OFFSET][WIDTH-1:0] tmp /*verilator split_var*/;
    /*verilator lint_on LITENDIAN*/
 
    generate
@@ -180,13 +181,12 @@ module barshift_2d_packed_array #(parameter DEPTH = 2, localparam WIDTH = 2**DEP
    assign out = tmp[DEPTH+OFFSET];
 endmodule
 
-
 module barshift_2d_packed_array_le #(parameter DEPTH = 2, localparam WIDTH = 2**DEPTH)
    (input [WIDTH-1:0] in, input [DEPTH-1:0] shift, output [WIDTH-1:0] out);
 
    localparam OFFSET = -2;
    /*verilator lint_off LITENDIAN*/
-   reg [OFFSET:DEPTH+OFFSET][OFFSET:WIDTH-1+OFFSET] tmp; /*verilator split_var*/
+   reg [OFFSET:DEPTH+OFFSET][OFFSET:WIDTH-1+OFFSET] tmp /*verilator split_var*/;
    /*verilator lint_on LITENDIAN*/
 
    generate
@@ -216,7 +216,7 @@ module barshift_1d_packed_struct #(localparam DEPTH = 3, localparam WIDTH = 2**D
    typedef struct packed {
       logic [WIDTH-1:0] v0, v1, v2, v3;
    } data_type;
-   wire data_type tmp; /*verilator split_var*/
+   wire data_type tmp /*verilator split_var*/;
 
    assign tmp.v0 = in;
    assign tmp.v1 = shift[0] == 1'b1 ? {tmp.v0[(1 << 0)-1:0], tmp.v0[WIDTH-1:2**0]} : tmp.v0;
@@ -230,7 +230,7 @@ module barshift_bitslice #(parameter DEPTH = 2, localparam WIDTH = 2**DEPTH)
    (input [WIDTH-1:0] in, input [DEPTH-1:0] shift, output [WIDTH-1:0] out);
 
    /*verilator lint_off LITENDIAN*/
-   wire [0:WIDTH*(DEPTH+1) - 1] tmp; /*verilator split_var*/
+   wire [0:WIDTH*(DEPTH+1) - 1] tmp /*verilator split_var*/;
    /*verilator lint_on LITENDIAN*/
 
    generate
@@ -252,11 +252,11 @@ endmodule
 module var_decl_with_init();
 
    /*verilator lint_off LITENDIAN*/
-   logic [-1:30] var0 = {4'd0, 4'd1, 4'd2, 4'd3, 4'd4, 4'd5, 4'd6, 4'd7}; /* verilator split_var */
-   logic [-1:30] var2; /* verilator split_var */
+   logic [-1:30] var0 /* verilator split_var */ = {4'd0, 4'd1, 4'd2, 4'd3, 4'd4, 4'd5, 4'd6, 4'd7};
+   logic [-1:30] var2 /* verilator split_var */;
    /*verilator lint_on LITENDIAN*/
-   logic [30:-1] var1 = {4'd0, 4'd1, 4'd2, 4'd3, 4'd4, 4'd5, 4'd6, 4'd7}; /* verilator split_var */
-   logic [30:-1] var3; /* verilator split_var */
+   logic [30:-1] var1 /* verilator split_var */ = {4'd0, 4'd1, 4'd2, 4'd3, 4'd4, 4'd5, 4'd6, 4'd7};
+   logic [30:-1] var3 /* verilator split_var */;
 
    initial begin
       var2[-1:2] = 4'd2;
@@ -269,14 +269,109 @@ module var_decl_with_init();
 
 endmodule
 
+module t_array_rev(clk);  // from t_array_rev.v
+
+   input clk;
+
+   integer 	cyc=0;
+   // verilator lint_off LITENDIAN
+   logic arrd [0:1] /*verilator split_var*/ = '{ 1'b1, 1'b0 };
+   // verilator lint_on LITENDIAN
+   logic y0, y1;
+   logic localbkw [1:0]/*verilator split_var*/ ;
+
+   arr_rev arr_rev_u (
+     .arrbkw	(arrd),
+     .y0(y0),
+     .y1(y1)
+   );
+
+   always @ (posedge clk) begin
+      if (arrd[0] != 1'b1) $stop;
+      if (arrd[1] != 1'b0) $stop;
+
+      localbkw = arrd;
+      if (localbkw[0] != 1'b0) $stop;
+      if (localbkw[1] != 1'b1) $stop;
+
+      if (y0 != 1'b0) $stop;
+      if (y1 != 1'b1) $stop;
+   end
+
+endmodule
+
+module arr_rev (
+   input  var logic arrbkw [1:0]/*verilator split_var*/ ,
+   output var logic y0,
+   output var logic y1
+   );
+
+   always_comb y0 = arrbkw[0];
+   always_comb y1 = arrbkw[1];
+
+endmodule
+
+
+module pack2unpack #(parameter WIDTH = 8)
+   (input wire [WIDTH-1:0] in/*verilator split_var*/, output wire out [WIDTH-1:0] /*verilator split_var*/);
+
+   generate
+      for (genvar i = 0; i < WIDTH; ++i) begin
+         assign out[i] = in[i];
+      end
+   endgenerate
+endmodule
+
+module unpack2pack #(parameter WIDTH = 8)
+   (input wire in [WIDTH-1:0] /*verilator split_var*/, output wire [WIDTH-1:0] out/*verilator split_var*/);
+
+   function automatic [1:0] to_packed0(input logic in[1:0] /*verilator split_var*/);
+       logic [1:0] tmp /*verilator split_var*/;
+       tmp[1] = in[1];
+       tmp[0] = in[0];
+       return tmp;
+   endfunction
+
+   /* verilator lint_off UNOPTFLAT*/
+   task automatic to_packed1(input logic in[1:0] /*verilator split_var*/, output logic [1:0] out /*verilator split_var*/);
+       out[1] = in[1];
+       out[0] = in[0];
+   endtask
+   /* verilator lint_on UNOPTFLAT*/
+
+
+   generate
+      for (genvar i = 4; i < WIDTH; i += 4) begin
+          always @(*) begin
+             out[i+1:i] = to_packed0(in[i+1:i]);
+             out[i+3:i+2] = to_packed0(in[i+3:i+2]);
+          end
+      end
+      always_comb
+         to_packed1(.in(in[1:0]), .out(out[1:0]));
+      always_comb
+         to_packed1(.in(in[3:2]), .out(out[3:2]));
+   endgenerate
+endmodule
+
+module through #(parameter WIDTH = 8)
+    (input wire [WIDTH-1:0] in, output wire [WIDTH-1:0] out);
+
+   logic unpack_tmp [0:WIDTH-1] /*verilator split_var*/;
+   pack2unpack i_pack2unpack(.in(in), .out(unpack_tmp));
+   unpack2pack i_unpack2pack(.in(unpack_tmp), .out(out));
+
+endmodule
 
 module t(/*AUTOARG*/ clk);
    input clk;
    localparam DEPTH = 3;
    localparam WIDTH = 2**DEPTH;
    localparam NUMSUB = 9;
+
    logic [WIDTH-1:0] in;
    logic [WIDTH-1:0] out[0:NUMSUB-1];
+   logic [WIDTH-1:0] through_tmp;
    logic [DEPTH-1:0] shift = 0;
 
    // barrel shifter
@@ -289,7 +384,9 @@ module t(/*AUTOARG*/ clk);
    barshift_2d_packed_array_le  #(.DEPTH(DEPTH)) shifter6(.in(in), .out(out[6]), .shift(shift));
    barshift_1d_packed_struct                     shifter7(.in(in), .out(out[7]), .shift(shift));
    barshift_bitslice            #(.DEPTH(DEPTH)) shifter8(.in(in), .out(out[8]), .shift(shift));
+   through                      #(.WIDTH(WIDTH)) though0 (.in(out[8]), .out(through_tmp));
    var_decl_with_init i_var_decl_with_init();
+    t_array_rev i_t_array_rev(clk);
 
    assign in = 8'b10001110;
    /*verilator lint_off LITENDIAN*/
@@ -305,6 +402,10 @@ module t(/*AUTOARG*/ clk);
             $display("Missmatch out[%d]:%b", i, out[i]);
             failed = 1;
          end
+      end
+      if (through_tmp != expc[7-shift]) begin
+         $display("Missmatch through_tmp:%b", through_tmp);
+         failed = 1;
       end
       if (failed) $stop;
       if (shift == 7) begin

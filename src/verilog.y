@@ -1936,7 +1936,6 @@ non_port_module_item<nodep>:	// ==IEEE: non_port_module_item
 	|	yVL_INLINE_MODULE			{ $$ = new AstPragma($1,AstPragmaType::INLINE_MODULE); }
 	|	yVL_NO_INLINE_MODULE			{ $$ = new AstPragma($1,AstPragmaType::NO_INLINE_MODULE); }
 	|	yVL_PUBLIC_MODULE			{ $$ = new AstPragma($1,AstPragmaType::PUBLIC_MODULE); v3Global.dpi(true); }
-	|	yVL_SPLIT_VAR 			        { $$ = new AstPragma($1,AstPragmaType::SPLIT_VAR); }
 	;
 
 module_or_generate_item<nodep>:	// ==IEEE: module_or_generate_item
@@ -2282,6 +2281,7 @@ sigAttr<nodep>:
 	|	yVL_ISOLATE_ASSIGNMENTS			{ $$ = new AstAttrOf($1,AstAttrType::VAR_ISOLATE_ASSIGNMENTS); }
 	|	yVL_SC_BV				{ $$ = new AstAttrOf($1,AstAttrType::VAR_SC_BV); }
 	|	yVL_SFORMAT				{ $$ = new AstAttrOf($1,AstAttrType::VAR_SFORMAT); }
+	|	yVL_SPLIT_VAR				{ $$ = new AstAttrOf($1,AstAttrType::VAR_SPLIT_VAR); }
 	;
 
 rangeListE<rangep>:		// IEEE: [{packed_dimension}]

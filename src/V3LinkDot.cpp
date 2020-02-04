@@ -2068,6 +2068,14 @@ private:
                         AstVarXRef* refp = new AstVarXRef(nodep->fileline(), nodep->name(),
                                                           m_ds.m_dotText, false);  // lvalue'ness computed later
                         refp->varp(varp);
+                        if (varp->attrSplitVar()) {
+#ifndef SPLIT_VAR_DEBUG_SPLIT_ALL
+                            refp->v3warn(SPLITVAR, varp->prettyNameQ()
+                                         << " has split_var metacomment but will not be split because "
+                                         "it is accessed from other module via dot.\n");
+#endif
+                            varp->attrSplitVar(false);
+                        }
                         m_ds.m_dotText = "";
                         if (m_ds.m_unresolved && m_ds.m_unlinkedScope) {
                             string dotted = refp->dotted();

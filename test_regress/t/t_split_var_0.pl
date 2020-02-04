@@ -11,16 +11,16 @@ scenarios(simulator => 1);
 
 # Travis environment offers 2 VCPUs, 2 thread setting causes the following warning.
 # %Warning-UNOPTTHREADS: Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.
-# So use 3 threads here though it's not optimal in performace wise, but ok.
+# So use 6 threads here though it's not optimal in performace wise, but ok.
 compile(
-    verilator_flags2 => ['--stats ' . ($Self->{vltmt} ? '--threads 3' : '')],
+    verilator_flags2 => ['--stats' . ($Self->{vltmt} ? ' --threads 6' : '')],
     );
 
 execute(
     check_finished => 1,
     );
 
-file_grep($Self->{stats}, qr/SplitVar,\s+Split packed variables\s+(\d+)/i, 156);
-file_grep($Self->{stats}, qr/SplitVar,\s+Split unpacked arrays\s+(\d+)/i, 15);
+file_grep($Self->{stats}, qr/SplitVar,\s+Split packed variables\s+(\d+)/i, 13);
+file_grep($Self->{stats}, qr/SplitVar,\s+Split unpacked arrays\s+(\d+)/i, 23);
 ok(1);
 1;

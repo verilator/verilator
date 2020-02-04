@@ -3421,12 +3421,12 @@ itself, see UNOPTFLAT below.
 For example, Verilator will internally convert a variable with the
 metacomment such as:
 
-    logic [7:0] x [0:1];  /*verilator split_var*/
+    logic [7:0] x [0:1]  /*verilator split_var*/;
 
 To:
 
-    logic [7:0] x__BRA__0__KET__; /*verilator split_var*/
-    logic [7:0] x__BRA__1__KET__; /*verilator split_var*/
+    logic [7:0] x__BRA__0__KET__ /*verilator split_var*/;
+    logic [7:0] x__BRA__1__KET__ /*verilator split_var*/;
 
 Note that the generated packed variables retain the split_var metacomment
 because they may be split into further smaller pieces accorting to the
@@ -4404,9 +4404,24 @@ calls.
 =item SPLITVAR
 
 Warns that a variable with a C<split_var> metacomment was not split.
-Typical reasons are the datatype is not supported for splitting
-(e.g. real), or the access pattern of the variable can not be determined
-statically.
+Typical reasons are
+
+    The datatype of the variable is not supported for splitting. (e.g. is a
+    real).
+
+    The access pattern of the variable can not be determined
+    statically. (e.g. is accessed as a memory).
+
+    The index of the array exceeds the array size.
+
+    The variable is accessed from outside using dotted reference.
+    (e.g. top.instance0.variable0 = 1).
+
+    The variable is not declared in a module, but in a package or an interface.
+
+    The variable is one of parameter, localparam, genvar, or queue.
+
+    The variable is tirstate or bidirectional. (e.g. inout or ref).
 
 =item STMTDLY
 
