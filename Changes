@@ -41,6 +41,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix WIDTH warning on </<= of narrower value, #2141. [agrobman]
 
+****  Support parameter access from arrays of interfaces, #2155. [Todd Strader]
+
 
 * Verilator 4.026 2020-01-11
 
