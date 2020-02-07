@@ -25,6 +25,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support enum.next(k) with constant k > 1, #2125. [Tobias Rosenkranz]
 
+****  Support parameter access from arrays of interfaces, #2155. [Todd Strader]
+
 ****  Add parameter values in XML. #2110. [Pieter Kapsenberg]
 
 ****  Add loc column location in XML (replaces fl), #2122. [Pieter Kapsenberg]
@@ -41,7 +43,7 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix WIDTH warning on </<= of narrower value, #2141. [agrobman]
 
-****  Support parameter access from arrays of interfaces, #2155. [Todd Strader]
+****  Fix OpenSolaris issues, #2154. [brancoliticus]
 
 
 * Verilator 4.026 2020-01-11
