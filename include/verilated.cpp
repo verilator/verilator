@@ -2396,9 +2396,9 @@ VerilatedVar* VerilatedScope::varFind(const char* namep) const VL_MT_SAFE_POSTIN
 
 void* VerilatedScope::exportFindNullError(int funcnum) VL_MT_SAFE {
     // Slowpath - Called only when find has failed
-    std::string msg = (std::string("Testbench C called '")
-                       +VerilatedImp::exportName(funcnum)
-                       +"' but scope wasn't set, perhaps due to dpi import call without 'context'");
+    std::string msg = (std::string("Testbench C called '") + VerilatedImp::exportName(funcnum)
+                       + "' but scope wasn't set, perhaps due to dpi import call without "
+                       + "'context', or missing svSetScope. See IEEE 1800-2017 35.5.3.");
     VL_FATAL_MT("unknown", 0, "", msg.c_str());
     return NULL;
 }
