@@ -20,6 +20,7 @@
 //=============================================================================
 // SPDIFF_OFF
 
+#define __STDC_LIMIT_MACROS  // UINT64_MAX
 #include "verilatedos.h"
 #include "verilated.h"
 #include "verilated_fst_c.h"
@@ -47,6 +48,7 @@
 #if defined(_WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__)
 # include <io.h>
 #else
+# include <stdint.h>
 # include <unistd.h>
 #endif
 
