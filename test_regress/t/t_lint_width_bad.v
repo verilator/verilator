@@ -30,6 +30,12 @@ module t ();
    wire                 one = 1;
    wire [2:0]           cnt  = (one + one + one + one);
 
+   // Not harmless > or >= compared with something wider (as different results if "a" wider)
+   localparam [40:0] THREE = 3;
+   int        a;
+   initial for (a = 0; a > THREE; ++a) $display(a);
+   initial for (a = 0; a >= THREE; ++a) $display(a);
+
 endmodule
 
 module p

@@ -12,7 +12,7 @@ scenarios(vlt_all => 1);
 top_filename("t/t_var_pinsizes.v");
 
 compile(
-    verilator_flags2 => ["-sc -pins-bv 2 --trace --exe $Self->{t_dir}/t_var_pinsizes.cpp"],
+    verilator_flags2 => ["-sc -pins-bv 2 --trace --exe $Self->{t_dir}/t_var_pinsizes.cpp $Self->{t_dir}/t_var_pinsizes.vlt"],
     make_main => 0,
     );
 
@@ -25,6 +25,8 @@ compile(
     file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}.h", qr/sc_in<sc_bv<65>\s> \s+ i65;/x);
     file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}.h", qr/sc_in<sc_bv<1>\s> \s+ ibv1;/x);
     file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}.h", qr/sc_in<sc_bv<16>\s> \s+ ibv16;/x);
+    file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}.h", qr/sc_in<sc_bv<1>\s> \s+ ibv1_vlt;/x);
+    file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}.h", qr/sc_in<sc_bv<16>\s> \s+ ibv16_vlt;/x);
 
     file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}.h", qr/sc_out<bool> \s+ o1;/x);
     file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}.h", qr/sc_out<sc_bv<8>\s> \s+ o8;/x);
@@ -34,6 +36,8 @@ compile(
     file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}.h", qr/sc_out<sc_bv<65>\s> \s+ o65;/x);
     file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}.h", qr/sc_out<sc_bv<1>\s> \s+ obv1;/x);
     file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}.h", qr/sc_out<sc_bv<16>\s> \s+ obv16;/x);
+    file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}.h", qr/sc_out<sc_bv<1>\s> \s+ obv1_vlt;/x);
+    file_grep("$Self->{obj_dir}/$Self->{VM_PREFIX}.h", qr/sc_out<sc_bv<16>\s> \s+ obv16_vlt;/x);
 }
 
 execute();

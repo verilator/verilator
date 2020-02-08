@@ -189,7 +189,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstTopScope* nodep) {
+    virtual void visit(AstTopScope* nodep) VL_OVERRIDE {
         UINFO(4," TOPSCOPE   "<<nodep<<endl);
         m_topScopep = nodep;
         m_scopep = nodep->scopep();
@@ -254,13 +254,16 @@ private:
         m_topScopep = NULL;
         m_scopep = NULL;
     }
-    virtual void visit(AstNodeModule* nodep) {
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         //UINFO(4," MOD   "<<nodep<<endl);
-        m_modp = nodep;
-        iterateChildren(nodep);
-        m_modp= NULL;
+        AstNodeModule* origModp = m_modp;
+        {
+            m_modp = nodep;
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
     }
-    virtual void visit(AstScope* nodep) {
+    virtual void visit(AstScope* nodep) VL_OVERRIDE {
         //UINFO(4," SCOPE   "<<nodep<<endl);
         m_scopep = nodep;
         iterateChildren(nodep);
@@ -271,25 +274,25 @@ private:
         }
         m_scopep = NULL;
     }
-    virtual void visit(AstAlways* nodep) {
+    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
         AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName(), true);
         nodep->replaceWith(cmtp);
         if (AstNode* stmtsp = nodep->bodysp()) {
             stmtsp->unlinkFrBackWithNext();
             cmtp->addNextHere(stmtsp);
         }
-        nodep->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstAlwaysPost* nodep) {
+    virtual void visit(AstAlwaysPost* nodep) VL_OVERRIDE {
         AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName(), true);
         nodep->replaceWith(cmtp);
         if (AstNode* stmtsp = nodep->bodysp()) {
             stmtsp->unlinkFrBackWithNext();
             cmtp->addNextHere(stmtsp);
         }
-        nodep->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstCoverToggle* nodep) {
+    virtual void visit(AstCoverToggle* nodep) VL_OVERRIDE {
         //nodep->dumpTree(cout, "ct:");
         //COVERTOGGLE(INC, ORIG, CHANGE) ->
         //   IF(ORIG ^ CHANGE) { INC; CHANGE = ORIG; }
@@ -307,18 +310,18 @@ private:
         newp->addIfsp(new AstAssign(nodep->fileline(),
                                     changep->cloneTree(false),
                                     origp->cloneTree(false)));
-        nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+        nodep->replaceWith(newp); VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstInitial* nodep) {
+    virtual void visit(AstInitial* nodep) VL_OVERRIDE {
         AstNode* cmtp = new AstComment(nodep->fileline(), nodep->typeName(), true);
         nodep->replaceWith(cmtp);
         if (AstNode* stmtsp = nodep->bodysp()) {
             stmtsp->unlinkFrBackWithNext();
             cmtp->addNextHere(stmtsp);
         }
-        nodep->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstCFunc* nodep) {
+    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         // Link to global function
         if (nodep->formCallTree()) {
@@ -328,7 +331,7 @@ private:
             m_finalFuncp->addStmtsp(callp);
         }
     }
-    virtual void visit(AstSenTree* nodep) {
+    virtual void visit(AstSenTree* nodep) VL_OVERRIDE {
         // Delete it later; Actives still pointing to it
         nodep->unlinkFrBack();
         pushDeletep(nodep);
@@ -342,14 +345,14 @@ private:
     void addToInitial(AstNode* stmtsp) {
        m_initFuncp->addStmtsp(stmtsp);  // add to top level function
     }
-    virtual void visit(AstActive* nodep) {
+    virtual void visit(AstActive* nodep) VL_OVERRIDE {
         // Careful if adding variables here, ACTIVES can be under other ACTIVES
         // Need to save and restore any member state in AstUntilStable block
         if (!m_topScopep || !nodep->stmtsp()) {
             // Not at the top or empty block...
             // Only empty blocks should be leftover on the non-top.  Killem.
             UASSERT_OBJ(!nodep->stmtsp(), nodep, "Non-empty lower active");
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (m_mtaskBodyp) {
             UINFO(4,"  TR ACTIVE  "<<nodep<<endl);
             AstNode* stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
@@ -374,7 +377,7 @@ private:
                 clearLastSen();
                 m_mtaskBodyp->addStmtsp(stmtsp);
             }
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else {
             UINFO(4,"  ACTIVE  "<<nodep<<endl);
             AstNode* stmtsp = nodep->stmtsp()->unlinkFrBackWithNext();
@@ -407,10 +410,10 @@ private:
                 // Move statements to function
                 addToEvalLoop(stmtsp);
             }
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
     }
-    virtual void visit(AstExecGraph* nodep) {
+    virtual void visit(AstExecGraph* nodep) VL_OVERRIDE {
         for (m_mtaskBodyp = VN_CAST(nodep->op1p(), MTaskBody);
              m_mtaskBodyp;
              m_mtaskBodyp = VN_CAST(m_mtaskBodyp->nextp(), MTaskBody)) {
@@ -427,7 +430,7 @@ private:
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 

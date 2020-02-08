@@ -228,9 +228,9 @@ private:
         // Hitting a cell adds to the appropriate level of this level-sorted list,
         // so since cells originally exist top->bottom we process in top->bottom order too.
         while (!m_todoModps.empty()) {
-            LevelModMap::iterator it = m_todoModps.begin();
-            AstNodeModule* nodep = it->second;
-            m_todoModps.erase(it);
+            LevelModMap::iterator itm = m_todoModps.begin();
+            AstNodeModule* nodep = itm->second;
+            m_todoModps.erase(itm);
             if (!nodep->user5SetOnce()) {  // Process once; note clone() must clear so we do it again
                 m_modp = nodep;
                 UINFO(4," MOD   "<<nodep<<endl);
@@ -256,7 +256,7 @@ private:
                     AstCell* cellp = *it;
                     if (string* genHierNamep = (string *) cellp->user5p()) {
                         cellp->user5p(NULL);
-                        delete genHierNamep; VL_DANGLING(genHierNamep);
+                        VL_DO_DANGLING(delete genHierNamep, genHierNamep);
                     }
                 }
                 m_cellps.clear();
@@ -266,11 +266,11 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) {
+    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
         // Modules must be done in top-down-order
         iterateChildren(nodep);
     }
-    virtual void visit(AstNodeModule* nodep) {
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         if (nodep->dead()) {
             UINFO(4," MOD-dead.  "<<nodep<<endl);  // Marked by LinkDot
         } else if (nodep->recursiveClone()) {
@@ -288,7 +288,7 @@ private:
             UINFO(4," MOD-dead?  "<<nodep<<endl);  // Should have been done by now, if not dead
         }
     }
-    virtual void visit(AstCell* nodep) {
+    virtual void visit(AstCell* nodep) VL_OVERRIDE {
         // Must do ifaces first, so push to list and do in proper order
         string* genHierNamep = new string(m_generateHierName);
         nodep->user5p(genHierNamep);
@@ -296,7 +296,7 @@ private:
     }
 
     // Make sure all parameters are constantified
-    virtual void visit(AstVar* nodep) {
+    virtual void visit(AstVar* nodep) VL_OVERRIDE {
         if (!nodep->user5SetOnce()) {  // Process once
             iterateChildren(nodep);
             if (nodep->isParam()) {
@@ -322,7 +322,7 @@ private:
         }
     }
     // Make sure varrefs cause vars to constify before things above
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         if (nodep->varp()) iterate(nodep->varp());
     }
     bool ifaceParamReplace(AstVarXRef* nodep, AstNode* candp) {
@@ -335,14 +335,14 @@ private:
                 } else if (AstPin* pinp = VN_CAST(candp, Pin)) {
                     UINFO(9,"Found interface parameter: "<<pinp<<endl);
                     UASSERT_OBJ(pinp->exprp(), pinp, "Interface parameter pin missing expression");
-                    nodep->replaceWith(pinp->exprp()->cloneTree(false)); VL_DANGLING(nodep);
+                    VL_DO_DANGLING(nodep->replaceWith(pinp->exprp()->cloneTree(false)), nodep);
                     return true;
                 }
             }
         }
         return false;
     }
-    virtual void visit(AstVarXRef* nodep) {
+    virtual void visit(AstVarXRef* nodep) VL_OVERRIDE {
         // Check to see if the scope is just an interface because interfaces are special
         string dotted = nodep->dotted();
         if (!dotted.empty() && nodep->varp() && nodep->varp()->isParam()) {
@@ -355,9 +355,16 @@ private:
                 if (VN_IS(backp, Var)
                     && VN_CAST(backp, Var)->isIfaceRef()
                     && VN_CAST(backp, Var)->childDTypep()
-                    && VN_CAST(VN_CAST(backp, Var)->childDTypep(), IfaceRefDType)) {
+                    && (VN_CAST(VN_CAST(backp, Var)->childDTypep(), IfaceRefDType)
+                        || (VN_CAST(VN_CAST(backp, Var)->childDTypep(), UnpackArrayDType)
+                            && VN_CAST(VN_CAST(backp, Var)->childDTypep()->getChildDTypep(),
+                                       IfaceRefDType)))) {
                     AstIfaceRefDType* ifacerefp
                         = VN_CAST(VN_CAST(backp, Var)->childDTypep(), IfaceRefDType);
+                    if (!ifacerefp) {
+                        ifacerefp = VN_CAST(VN_CAST(backp, Var)->childDTypep()->getChildDTypep(),
+                                            IfaceRefDType);
+                    }
                     // Interfaces passed in on the port map have ifaces
                     if (AstIface* ifacep = ifacerefp->ifacep()) {
                         if (dotted == backp->name()) {
@@ -382,7 +389,7 @@ private:
         nodep->varp(NULL);  // Needs relink, as may remove pointed-to var
     }
 
-    virtual void visit(AstUnlinkedRef* nodep) {
+    virtual void visit(AstUnlinkedRef* nodep) VL_OVERRIDE {
         AstVarXRef* varxrefp = VN_CAST(nodep->op1p(), VarXRef);
         AstNodeFTaskRef* taskrefp = VN_CAST(nodep->op1p(), NodeFTaskRef);
         if (varxrefp) {
@@ -401,9 +408,9 @@ private:
             taskrefp->dotted(m_unlinkedTxt);
         }
         nodep->replaceWith(nodep->op1p()->unlinkFrBack());
-        pushDeletep(nodep); VL_DANGLING(nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    virtual void visit(AstCellArrayRef* nodep) {
+    virtual void visit(AstCellArrayRef* nodep) VL_OVERRIDE {
         V3Const::constifyParamsEdit(nodep->selp());
         if (const AstConst* constp = VN_CAST(nodep->selp(), Const)) {
             string index = AstNode::encodeNumber(constp->toSInt());
@@ -424,7 +431,7 @@ private:
     }
 
     // Generate Statements
-    virtual void visit(AstGenerate* nodep) {
+    virtual void visit(AstGenerate* nodep) VL_OVERRIDE {
         if (debug()>=9) nodep->dumpTree(cout, "-genin: ");
         iterateChildren(nodep);
         // After expanding the generate, all statements under it can be moved
@@ -436,9 +443,9 @@ private:
         } else {
             nodep->unlinkFrBack();
         }
-        nodep->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstGenIf* nodep) {
+    virtual void visit(AstGenIf* nodep) VL_OVERRIDE {
         UINFO(9,"  GENIF "<<nodep<<endl);
         iterateAndNextNull(nodep->condp());
         // We suppress errors when widthing params since short-circuiting in
@@ -457,7 +464,7 @@ private:
             } else {
                 nodep->unlinkFrBack();
             }
-            nodep->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
             // Normal edit rules will now recurse the replacement
         } else {
             nodep->condp()->v3error("Generate If condition must evaluate to constant");
@@ -468,7 +475,7 @@ private:
     //! @todo Unlike generated IF, we don't have to worry about short-circuiting the conditional
     //!       expression, since this is currently restricted to simple comparisons. If we ever do
     //!       move to more generic constant expressions, such code will be needed here.
-    virtual void visit(AstBegin* nodep) {
+    virtual void visit(AstBegin* nodep) VL_OVERRIDE {
         if (nodep->genforp()) {
             AstGenFor* forp = VN_CAST(nodep->genforp(), GenFor);
             UASSERT_OBJ(forp, nodep, "Non-GENFOR under generate-for BEGIN");
@@ -477,7 +484,7 @@ private:
             UINFO(9,"  BEGIN "<<nodep<<endl);
             UINFO(9,"  GENFOR "<<forp<<endl);
             V3Width::widthParamsEdit(forp);  // Param typed widthing will NOT recurse the body
-            // Outer wrapper around generate used to hold genvar, and to insure genvar
+            // Outer wrapper around generate used to hold genvar, and to ensure genvar
             // doesn't conflict in V3LinkDot resolution with other genvars
             // Now though we need to change BEGIN("zzz", GENFOR(...)) to
             // a BEGIN("zzz__BRA__{loop#}__KET__")
@@ -486,7 +493,7 @@ private:
             // Note V3Unroll will replace some AstVarRef's to the loop variable with constants
             // Don't remove any deleted nodes in m_unroller until whole process finishes,
             // (are held in m_unroller), as some AstXRefs may still point to old nodes.
-            m_unroller.unrollGen(forp, beginName); VL_DANGLING(forp);
+            VL_DO_DANGLING(m_unroller.unrollGen(forp, beginName), forp);
             // Blocks were constructed under the special begin, move them up
             // Note forp is null, so grab statements again
             if (AstNode* stmtsp = nodep->genforp()) {
@@ -501,10 +508,10 @@ private:
             m_generateHierName = rootHierName;
         }
     }
-    virtual void visit(AstGenFor* nodep) {
+    virtual void visit(AstGenFor* nodep) VL_OVERRIDE {
         nodep->v3fatalSrc("GENFOR should have been wrapped in BEGIN");
     }
-    virtual void visit(AstGenCase* nodep) {
+    virtual void visit(AstGenCase* nodep) VL_OVERRIDE {
         UINFO(9,"  GENCASE "<<nodep<<endl);
         AstNode* keepp = NULL;
         iterateAndNextNull(nodep->exprp());
@@ -519,7 +526,7 @@ private:
             for (AstNode* ep = itemp->condsp(); ep; ) {
                 AstNode* nextp = ep->nextp();  // May edit list
                 iterateAndNextNull(ep);
-                V3Const::constifyParamsEdit(ep); VL_DANGLING(ep);  // ep may change
+                VL_DO_DANGLING(V3Const::constifyParamsEdit(ep), ep);  // ep may change
                 ep = nextp;
             }
         }
@@ -553,11 +560,11 @@ private:
             nodep->replaceWith(keepp);
         }
         else nodep->unlinkFrBack();
-        nodep->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
     // Default: Just iterate
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 

@@ -52,17 +52,22 @@ module t (/*AUTOARG*/
 
 endmodule
 
-`ifdef USE_INLINE_MID
- `define INLINE_MODULE /*verilator inline_module*/
- `define INLINE_MID_MODULE /*verilator no_inline_module*/
-`else
- `ifdef USE_INLINE
+`ifdef ATTRIBUTES
+ `ifdef USE_INLINE_MID
   `define INLINE_MODULE /*verilator inline_module*/
-  `define INLINE_MID_MODULE /*verilator inline_module*/
+  `define INLINE_MID_MODULE /*verilator no_inline_module*/
  `else
-  `define INLINE_MODULE /*verilator public_module*/
-  `define INLINE_MID_MODULE /*verilator public_module*/
+  `ifdef USE_INLINE
+   `define INLINE_MODULE /*verilator inline_module*/
+   `define INLINE_MID_MODULE /*verilator inline_module*/
+  `else
+   `define INLINE_MODULE /*verilator public_module*/
+   `define INLINE_MID_MODULE /*verilator public_module*/
+  `endif
  `endif
+`else
+ `define INLINE_MODULE
+ `define INLINE_MID_MODULE
 `endif
 
 module global_mod;

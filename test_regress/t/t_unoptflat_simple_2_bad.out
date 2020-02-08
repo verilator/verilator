@@ -6,7 +6,7 @@
                     t/t_unoptflat_simple_2.v:16:      Example path: ASSIGNW
                     t/t_unoptflat_simple_2.v:14:      Example path: t.x
 %Warning-UNOPTFLAT:      Widest candidate vars to split:
-%Warning-UNOPTFLAT:           t/t_unoptflat_simple_2.v:14:  t.x, width 3, fanout 12
+%Warning-UNOPTFLAT:           t/t_unoptflat_simple_2.v:14:  t.x, width 3, fanout 10
 %Warning-UNOPTFLAT:      Most fanned out candidate vars to split:
-%Warning-UNOPTFLAT:           t/t_unoptflat_simple_2.v:14:  t.x, width 3, fanout 12
+%Warning-UNOPTFLAT:           t/t_unoptflat_simple_2.v:14:  t.x, width 3, fanout 10
 %Error: Exiting due to

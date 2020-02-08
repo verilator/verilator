@@ -73,12 +73,12 @@ private:
 public:
     // METHODS
     // cppcheck-suppress truncLongCastReturn
-    virtual vluint64_t count() const { return *m_countp; }
-    virtual void zero() const { *m_countp = 0; }
+    virtual vluint64_t count() const VL_OVERRIDE { return *m_countp; }
+    virtual void zero() const VL_OVERRIDE { *m_countp = 0; }
     // CONSTRUCTORS
     // cppcheck-suppress noExplicitConstructor
     VerilatedCoverItemSpec(T* countp) : m_countp(countp) { *m_countp = 0; }
-    virtual ~VerilatedCoverItemSpec() {}
+    virtual ~VerilatedCoverItemSpec() VL_OVERRIDE {}
 };
 
 //=============================================================================
@@ -222,7 +222,7 @@ private:
     void clearGuts() VL_REQUIRES(m_mutex) {
         for (ItemList::const_iterator it=m_items.begin(); it!=m_items.end(); ++it) {
             VerilatedCovImpItem* itemp = *(it);
-            delete itemp;
+            VL_DO_DANGLING(delete itemp, itemp);
         }
         m_items.clear();
         m_indexValues.clear();
@@ -244,7 +244,7 @@ public:
             for (ItemList::iterator it=m_items.begin(); it!=m_items.end(); ++it) {
                 VerilatedCovImpItem* itemp = *(it);
                 if (!itemMatchesString(itemp, matchp)) {
-                    delete itemp;
+                    VL_DO_DANGLING(delete itemp, itemp);
                 } else {
                     newlist.push_back(itemp);
                 }

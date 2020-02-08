@@ -275,7 +275,7 @@ void GraphAcyc::deleteMarked() {
         nextp = vertexp->verticesNextp();
         GraphAcycVertex* avertexp = static_cast<GraphAcycVertex*>(vertexp);
         if (avertexp->isDelete()) {
-            avertexp->unlinkDelete(&m_breakGraph); VL_DANGLING(avertexp);
+            VL_DO_DANGLING(avertexp->unlinkDelete(&m_breakGraph), avertexp);
         }
     }
 }
@@ -291,13 +291,13 @@ void GraphAcyc::simplifyNone(GraphAcycVertex* avertexp) {
         while (V3GraphEdge* edgep = avertexp->outBeginp()) {
             V3GraphVertex* otherVertexp = edgep->top();
             //UINFO(9,"  out "<<otherVertexp<<endl);
-            edgep->unlinkDelete(); VL_DANGLING(edgep);
+            VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
             workPush(otherVertexp);
         }
         while (V3GraphEdge* edgep = avertexp->inBeginp()) {
             V3GraphVertex* otherVertexp = edgep->fromp();
             //UINFO(9,"  in  "<<otherVertexp<<endl);
-            edgep->unlinkDelete(); VL_DANGLING(edgep);
+            VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
             workPush(otherVertexp);
         }
     }
@@ -328,8 +328,8 @@ void GraphAcyc::simplifyOne(GraphAcycVertex* avertexp) {
             // cppcheck-suppress leakReturnValNotUsed
             edgeFromEdge(templateEdgep, inVertexp, outVertexp);
             // Remove old edge
-            inEdgep->unlinkDelete(); VL_DANGLING(inEdgep);
-            outEdgep->unlinkDelete(); VL_DANGLING(outEdgep); VL_DANGLING(templateEdgep);
+            VL_DO_DANGLING(inEdgep->unlinkDelete(), inEdgep);
+            VL_DO_DANGLING(outEdgep->unlinkDelete(), outEdgep); VL_DANGLING(templateEdgep);
             workPush(inVertexp);
             workPush(outVertexp);
         }
@@ -363,10 +363,10 @@ void GraphAcyc::simplifyOut(GraphAcycVertex* avertexp) {
                 // cppcheck-suppress leakReturnValNotUsed
                 edgeFromEdge(inEdgep, inVertexp, outVertexp);
                 // Remove old edge
-                inEdgep->unlinkDelete(); VL_DANGLING(inEdgep);
+                VL_DO_DANGLING(inEdgep->unlinkDelete(), inEdgep);
                 workPush(inVertexp);
             }
-            outEdgep->unlinkDelete(); VL_DANGLING(outEdgep);
+            VL_DO_DANGLING(outEdgep->unlinkDelete(), outEdgep);
             workPush(outVertexp);
         }
     }
@@ -389,18 +389,18 @@ void GraphAcyc::simplifyDup(GraphAcycVertex* avertexp) {
                 // !cutable duplicates prev !cutable: we can ignore it, redundant
                 //  cutable duplicates prev !cutable: know it's not a relevant loop, ignore it
                 UINFO(8,"    DelDupEdge "<<avertexp<<" -> "<<edgep->top()<<endl);
-                edgep->unlinkDelete(); VL_DANGLING(edgep);
+                VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
             } else if (!edgep->cutable()) {
                 // !cutable duplicates prev  cutable: delete the earlier cutable
                 UINFO(8,"    DelDupPrev "<<avertexp<<" -> "<<prevEdgep->top()<<endl);
-                prevEdgep->unlinkDelete(); VL_DANGLING(prevEdgep);
+                VL_DO_DANGLING(prevEdgep->unlinkDelete(), prevEdgep);
                 outVertexp->userp(edgep);
             } else {
                 //  cutable duplicates prev  cutable: combine weights
                 UINFO(8,"    DelDupComb "<<avertexp<<" -> "<<edgep->top()<<endl);
                 prevEdgep->weight(prevEdgep->weight() + edgep->weight());
                 addOrigEdgep(prevEdgep, edgep);
-                edgep->unlinkDelete(); VL_DANGLING(edgep);
+                VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
             }
             workPush(outVertexp);
             workPush(avertexp);
@@ -418,7 +418,7 @@ void GraphAcyc::cutBasic(GraphAcycVertex* avertexp) {
         nextp = edgep->outNextp();
         if (edgep->cutable() && edgep->top()==avertexp) {
             cutOrigEdge(edgep, "  Cut Basic");
-            edgep->unlinkDelete(); VL_DANGLING(edgep);
+            VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
             workPush(avertexp);
         }
     }
@@ -439,7 +439,7 @@ void GraphAcyc::cutBackward(GraphAcycVertex* avertexp) {
         nextp = edgep->outNextp();
         if (edgep->cutable() && edgep->top()->user()) {
             cutOrigEdge(edgep, "  Cut A->B->A");
-            edgep->unlinkDelete(); VL_DANGLING(edgep);
+            VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
             workPush(avertexp);
         }
     }
@@ -506,7 +506,7 @@ void GraphAcyc::placeTryEdge(V3GraphEdge* edgep) {
         // Adding this edge would cause a loop, kill it
         edgep->cutable(true);  // So graph still looks pretty
         cutOrigEdge(edgep, "  Cut loop");
-        edgep->unlinkDelete(); VL_DANGLING(edgep);
+        VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
         // Back out the ranks we calculated
         while (GraphAcycVertex* vertexp = workBeginp()) {
             workPop();

@@ -151,7 +151,7 @@ public:
     V3Number(VerilogStringLiteral, AstNode* nodep, const string& str);
     class String {};
     V3Number(String, AstNode* nodep, const string& value) { init(nodep, 0); setString(value); }
-    V3Number(const V3Number* nump, int width = 1) {
+    explicit V3Number(const V3Number* nump, int width = 1) {
         init(NULL, width);
         m_fileline = nump->fileline();
     }
@@ -175,7 +175,7 @@ private:
         for (int i=0; i<words(); i++) m_value[i] = m_valueX[i] = 0;
     }
     void setNames(AstNode* nodep);
-    static string displayPad(size_t fmtsize, char pad, const string& in);
+    static string displayPad(size_t fmtsize, char pad, bool left, const string& in);
     string displayed(FileLine* fl, const string& vformat) const;
     string displayed(const string& vformat) const {
         return displayed(m_fileline, vformat);

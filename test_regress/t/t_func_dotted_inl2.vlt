@@ -1,0 +1,11 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed into the Public Domain, for any use,
+// without warranty, 2019 by Stefan Wallentowitz.
+
+`verilator_config
+
+inline -module "global_mod"
+inline -module "ma"
+no_inline -module "mb"
+inline -module "mc"

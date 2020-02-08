@@ -164,12 +164,12 @@ private:
 public:
     // CONSTRUCTORS
     VerilatedSave() { m_fd = -1; }
-    virtual ~VerilatedSave() { close(); }
+    virtual ~VerilatedSave() VL_OVERRIDE { close(); }
     // METHODS
     void open(const char* filenamep) VL_MT_UNSAFE_ONE;  ///< Open the file; call isOpen() to see if errors
     void open(const std::string& filename) VL_MT_UNSAFE_ONE { open(filename.c_str()); }
-    virtual void close() VL_MT_UNSAFE_ONE;
-    virtual void flush() VL_MT_UNSAFE_ONE;
+    virtual void close() VL_OVERRIDE VL_MT_UNSAFE_ONE;
+    virtual void flush() VL_OVERRIDE VL_MT_UNSAFE_ONE;
 };
 
 //=============================================================================
@@ -183,14 +183,14 @@ private:
 public:
     // CONSTRUCTORS
     VerilatedRestore() { m_fd = -1; }
-    virtual ~VerilatedRestore() { close(); }
+    virtual ~VerilatedRestore() VL_OVERRIDE { close(); }
 
     // METHODS
     void open(const char* filenamep) VL_MT_UNSAFE_ONE;  ///< Open the file; call isOpen() to see if errors
     void open(const std::string& filename) VL_MT_UNSAFE_ONE { open(filename.c_str()); }
-    virtual void close() VL_MT_UNSAFE_ONE;
-    virtual void flush() VL_MT_UNSAFE_ONE {}
-    virtual void fill() VL_MT_UNSAFE_ONE;
+    virtual void close() VL_OVERRIDE VL_MT_UNSAFE_ONE;
+    virtual void flush() VL_OVERRIDE VL_MT_UNSAFE_ONE {}
+    virtual void fill() VL_OVERRIDE VL_MT_UNSAFE_ONE;
 };
 
 //=============================================================================

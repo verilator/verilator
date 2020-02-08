@@ -274,7 +274,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstVar* nodep) {
+    virtual void visit(AstVar* nodep) VL_OVERRIDE {
         for (int usr=1; usr<(m_alwaysCombp?3:2); ++usr) {
             // For assigns and non-combo always, do just usr==1, to look
             // for module-wide undriven etc.
@@ -299,15 +299,15 @@ private:
         // Discover variables used in bit definitions, etc
         iterateChildren(nodep);
     }
-    virtual void visit(AstArraySel* nodep) {
+    virtual void visit(AstArraySel* nodep) VL_OVERRIDE {
         // Arrays are rarely constant assigned, so for now we punt and do all entries
         iterateChildren(nodep);
     }
-    virtual void visit(AstSliceSel* nodep) {
+    virtual void visit(AstSliceSel* nodep) VL_OVERRIDE {
         // Arrays are rarely constant assigned, so for now we punt and do all entries
         iterateChildren(nodep);
     }
-    virtual void visit(AstSel* nodep) {
+    virtual void visit(AstSel* nodep) VL_OVERRIDE {
         AstNodeVarRef* varrefp = VN_CAST(nodep->fromp(), NodeVarRef);
         AstConst* constp = VN_CAST(nodep->lsbp(), Const);
         if (varrefp && constp && !constp->num().isFourState()) {
@@ -330,7 +330,7 @@ private:
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstNodeVarRef* nodep) {
+    virtual void visit(AstNodeVarRef* nodep) VL_OVERRIDE {
         // Any variable
         if (nodep->lvalue()
             && !VN_IS(nodep, VarXRef)) {  // Ignore interface variables and similar ugly items
@@ -338,14 +338,13 @@ private:
                 && !nodep->varp()->isDeclTyped()
                 && !nodep->varp()->isFuncLocal()) {
                 nodep->v3warn(PROCASSWIRE, "Procedural assignment to wire, perhaps intended var"
-                              " (IEEE 2017 6.5): "
-                              +nodep->prettyNameQ());
+                              << " (IEEE 1800-2017 6.5): " << nodep->prettyNameQ());
             }
             if (m_inContAssign && !nodep->varp()->varType().isContAssignable()
                 && !nodep->fileline()->language().systemVerilog()) {
                 nodep->v3warn(CONTASSREG, "Continuous assignment to reg, perhaps intended wire"
-                              " (IEEE 2005 6.1; Verilog only, legal in SV): "
-                              +nodep->prettyNameQ());
+                              << " (IEEE 1364-2005 6.1; Verilog only, legal in SV): "
+                              << nodep->prettyNameQ());
             }
         }
         for (int usr=1; usr<(m_alwaysCombp?3:2); ++usr) {
@@ -363,14 +362,14 @@ private:
     }
 
     // Don't know what black boxed calls do, assume in+out
-    virtual void visit(AstSysIgnore* nodep) {
+    virtual void visit(AstSysIgnore* nodep) VL_OVERRIDE {
         bool prevMark = m_inBBox;
         m_inBBox = true;
         iterateChildren(nodep);
         m_inBBox = prevMark;
     }
 
-    virtual void visit(AstAssign* nodep) {
+    virtual void visit(AstAssign* nodep) VL_OVERRIDE {
         bool prevProc = m_inProcAssign;
         {
             m_inProcAssign = true;
@@ -378,7 +377,7 @@ private:
         }
         m_inProcAssign = prevProc;
     }
-    virtual void visit(AstAssignDly* nodep) {
+    virtual void visit(AstAssignDly* nodep) VL_OVERRIDE {
         bool prevProc = m_inProcAssign;
         {
             m_inProcAssign = true;
@@ -386,7 +385,7 @@ private:
         }
         m_inProcAssign = prevProc;
     }
-    virtual void visit(AstAssignW* nodep) {
+    virtual void visit(AstAssignW* nodep) VL_OVERRIDE {
         bool prevCont = m_inContAssign;
         {
             m_inContAssign = true;
@@ -394,7 +393,7 @@ private:
         }
         m_inContAssign = prevCont;
     }
-    virtual void visit(AstAlways* nodep) {
+    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
         AstAlways* prevAlwp = m_alwaysCombp;
         {
             AstNode::user2ClearTree();
@@ -407,7 +406,7 @@ private:
         m_alwaysCombp = prevAlwp;
     }
 
-    virtual void visit(AstNodeFTask* nodep) {
+    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
         AstNodeFTask* prevTaskp = m_taskp;
         m_taskp = nodep;
         iterateChildren(nodep);
@@ -415,18 +414,18 @@ private:
     }
 
     // Until we support tables, primitives will have undriven and unused I/Os
-    virtual void visit(AstPrimitive* nodep) {}
+    virtual void visit(AstPrimitive* nodep) VL_OVERRIDE {}
 
     // Coverage artifacts etc shouldn't count as a sink
-    virtual void visit(AstCoverDecl* nodep) {}
-    virtual void visit(AstCoverInc* nodep) {}
-    virtual void visit(AstCoverToggle* nodep) {}
-    virtual void visit(AstTraceDecl* nodep) {}
-    virtual void visit(AstTraceInc* nodep) {}
+    virtual void visit(AstCoverDecl* nodep) VL_OVERRIDE {}
+    virtual void visit(AstCoverInc* nodep) VL_OVERRIDE {}
+    virtual void visit(AstCoverToggle* nodep) VL_OVERRIDE {}
+    virtual void visit(AstTraceDecl* nodep) VL_OVERRIDE {}
+    virtual void visit(AstTraceInc* nodep) VL_OVERRIDE {}
 
     // iterate
-    virtual void visit(AstConst* nodep) {}
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstConst* nodep) VL_OVERRIDE {}
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 public:

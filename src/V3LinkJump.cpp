@@ -49,7 +49,7 @@ private:
     AstNodeFTask*       m_ftaskp;       // Current function/task
     AstWhile*           m_loopp;        // Current loop
     bool                m_loopInc;      // In loop increment
-    int                 m_repeatNum;    // Repeat counter
+    int                 m_modRepeatNum;  // Repeat counter
     BeginStack          m_beginStack;   // All begin blocks above current node
 
     // METHODS
@@ -107,30 +107,35 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) {
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         if (nodep->dead()) return;
-        m_modp = nodep;
-        m_repeatNum = 0;
-        iterateChildren(nodep);
-        m_modp = NULL;
+        AstNodeModule* origModp = m_modp;
+        int origRepeatNum = m_modRepeatNum;
+        {
+            m_modp = nodep;
+            m_modRepeatNum = 0;
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
+        m_modRepeatNum = origRepeatNum;
     }
-    virtual void visit(AstNodeFTask* nodep) {
+    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
         m_ftaskp = nodep;
         iterateChildren(nodep);
         m_ftaskp = NULL;
     }
-    virtual void visit(AstBegin* nodep) {
+    virtual void visit(AstBegin* nodep) VL_OVERRIDE {
         UINFO(8,"  "<<nodep<<endl);
         m_beginStack.push_back(nodep);
         iterateChildren(nodep);
         m_beginStack.pop_back();
     }
-    virtual void visit(AstRepeat* nodep) {
+    virtual void visit(AstRepeat* nodep) VL_OVERRIDE {
         // So later optimizations don't need to deal with them,
         //    REPEAT(count,body) -> loop=count,WHILE(loop>0) { body, loop-- }
         // Note var can be signed or unsigned based on original number.
         AstNode* countp = nodep->countp()->unlinkFrBackWithNext();
-        string name = string("__Vrepeat")+cvtToStr(m_repeatNum++);
+        string name = string("__Vrepeat")+cvtToStr(m_modRepeatNum++);
         // Spec says value is integral, if negative is ignored
         AstVar* varp = new AstVar(nodep->fileline(), AstVarType::BLOCKTEMP, name,
                                   nodep->findSigned32DType());
@@ -156,9 +161,9 @@ private:
         initsp = initsp->addNext(newp);
         newp = initsp;
         nodep->replaceWith(newp);
-        nodep->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    virtual void visit(AstWhile* nodep) {
+    virtual void visit(AstWhile* nodep) VL_OVERRIDE {
         // Don't need to track AstRepeat/AstFor as they have already been converted
         AstWhile* lastLoopp = m_loopp;
         bool lastInc = m_loopInc;
@@ -172,7 +177,7 @@ private:
         m_loopInc = lastInc;
         m_loopp = lastLoopp;
     }
-    virtual void visit(AstReturn* nodep) {
+    virtual void visit(AstReturn* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         AstFunc* funcp = VN_CAST(m_ftaskp, Func);
         if (!m_ftaskp) {
@@ -193,9 +198,9 @@ private:
             AstJumpLabel* labelp = findAddLabel(m_ftaskp, false);
             nodep->addPrev(new AstJumpGo(nodep->fileline(), labelp));
         }
-        nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
+        nodep->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    virtual void visit(AstBreak* nodep) {
+    virtual void visit(AstBreak* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         if (!m_loopp) { nodep->v3error("break isn't underneath a loop"); }
         else {
@@ -203,9 +208,9 @@ private:
             AstJumpLabel* labelp = findAddLabel(m_loopp, false);
             nodep->addNextHere(new AstJumpGo(nodep->fileline(), labelp));
         }
-        nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
+        nodep->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    virtual void visit(AstContinue* nodep) {
+    virtual void visit(AstContinue* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         if (!m_loopp) { nodep->v3error("continue isn't underneath a loop"); }
         else {
@@ -214,9 +219,9 @@ private:
             AstJumpLabel* labelp = findAddLabel(m_loopp, true);
             nodep->addNextHere(new AstJumpGo(nodep->fileline(), labelp));
         }
-        nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
+        nodep->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    virtual void visit(AstDisable* nodep) {
+    virtual void visit(AstDisable* nodep) VL_OVERRIDE {
         UINFO(8,"   DISABLE "<<nodep<<endl);
         iterateChildren(nodep);
         AstBegin* beginp = NULL;
@@ -236,15 +241,15 @@ private:
             AstJumpLabel* labelp = findAddLabel(beginp, false);
             nodep->addNextHere(new AstJumpGo(nodep->fileline(), labelp));
         }
-        nodep->unlinkFrBack(); pushDeletep(nodep); VL_DANGLING(nodep);
+        nodep->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         //if (debug()>=9) { UINFO(0,"\n"); beginp->dumpTree(cout, "  labelo: "); }
     }
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         if (m_loopInc && nodep->varp()) nodep->varp()->usedLoopIdx(true);
     }
 
-    virtual void visit(AstConst* nodep) {}
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstConst* nodep) VL_OVERRIDE {}
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 public:
@@ -254,7 +259,7 @@ public:
         m_ftaskp = NULL;
         m_loopp = NULL;
         m_loopInc = false;
-        m_repeatNum = 0;
+        m_modRepeatNum = 0;
         iterate(nodep);
     }
     virtual ~LinkJumpVisitor() {}

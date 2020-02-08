@@ -32,7 +32,6 @@
 #include <iomanip>
 
 #define MAX_SPRINTF_DOUBLE_SIZE 100  // Maximum characters with a sprintf %e/%f/%g (probably < 30)
-#define MAX_WIDTH 5*1024  // Maximum width before error
 
 // Number operations build output in-place so can't call e.g. foo.opX(foo)
 #define NUM_ASSERT_OP_ARGS1(arg1)  \
@@ -125,10 +124,11 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
         value_startp = cp;
 
         if (atoi(widthn.c_str())) {
-            if (atoi(widthn.c_str()) < 0 || atoi(widthn.c_str()) > MAX_WIDTH) {
+            if (atoi(widthn.c_str()) < 0 || atoi(widthn.c_str()) > v3Global.opt.maxNumWidth()) {
                 // atoi might convert large number to negative, so can't tell which
-                v3error("Unsupported: Width of number exceeds implementation limit: "<<sourcep);
-                width(MAX_WIDTH, true);
+                v3error("Unsupported: Width of number exceeds implementation limit: "
+                        << sourcep << "  (IEEE 1800-2017 6.9.1)");
+                width(v3Global.opt.maxNumWidth(), true);
             } else {
                 width(atoi(widthn.c_str()), true);
             }
@@ -198,7 +198,7 @@ void V3Number::V3NumberCreate(AstNode* nodep, const char* sourcep, FileLine* fl)
                                 <<std::endl
                                 <<((!m_sized && !warned++)
                                    ? (V3Error::warnMore()+"... As that number was unsized"
-                                      +" ('d...) it is limited to 32 bits (IEEE 2017 5.7.1)\n"
+                                      +" ('d...) it is limited to 32 bits (IEEE 1800-2017 5.7.1)\n"
                                       + V3Error::warnMore()+"... Suggest adding a size to it.")
                                    : ""));
                         while (*(cp+1)) cp++;  // Skip ahead so don't get multiple warnings
@@ -497,10 +497,10 @@ bool V3Number::displayedFmtLegal(char format) {
     }
 }
 
-string V3Number::displayPad(size_t fmtsize, char pad, const string& in) {
-    string prefix;
-    if (in.length() < fmtsize) prefix = string(fmtsize - in.length(), pad);
-    return prefix + in;
+string V3Number::displayPad(size_t fmtsize, char pad, bool left, const string& in) {
+    string padding;
+    if (in.length() < fmtsize) padding = string(fmtsize - in.length(), pad);
+    return left ? (in + padding) : (padding + in);
 }
 
 string V3Number::displayed(AstNode* nodep, const string& vformat) const {
@@ -512,6 +512,11 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
     UASSERT(pos != vformat.end() && pos[0]=='%',
             "$display-like function with non format argument "<<*this);
     ++pos;
+    bool left = false;
+    if (pos[0] == '-') {
+        left = true;
+        ++pos;
+    }
     string fmtsize;
     for (; pos != vformat.end() && (isdigit(pos[0]) || pos[0]=='.'); ++pos) {
         fmtsize += pos[0];
@@ -574,7 +579,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
             }
         }
         size_t fmtsizen = static_cast<size_t>(atoi(fmtsize.c_str()));
-        str = displayPad(fmtsizen, ' ', str);
+        str = displayPad(fmtsizen, ' ', left, str);
         return str;
     }
     case '~':  // Signed decimal
@@ -604,7 +609,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
         bool zeropad = fmtsize.length()>0 && fmtsize[0]=='0';
         // fmtsize might have changed since we parsed the %fmtsize
         size_t fmtsizen = static_cast<size_t>(atoi(fmtsize.c_str()));
-        str = displayPad(fmtsizen, (zeropad ? '0' : ' '), str);
+        str = displayPad(fmtsizen, (zeropad ? '0' : ' '), left, str);
         return str;
     }
     case 'e':
@@ -651,7 +656,7 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
     }
     case '@': {  // Packed string
         size_t fmtsizen = static_cast<size_t>(atoi(fmtsize.c_str()));
-        str = displayPad(fmtsizen, ' ', toString());
+        str = displayPad(fmtsizen, ' ', left, toString());
         return str;
     }
     default:
@@ -1535,8 +1540,8 @@ V3Number& V3Number::opShiftRS(const V3Number& lhs, const V3Number& rhs, uint32_t
     if (rhs.isFourState()) return setAllBitsX();
     setZero();
     for (int bit=32; bit<rhs.width(); bit++) {
-        for (int bit=0; bit<this->width(); bit++) {
-            setBit(bit, lhs.bitIs(lbits-1));  // 0/1/X/Z
+        for (int sbit = 0; sbit < this->width(); sbit++) {
+            setBit(sbit, lhs.bitIs(lbits - 1));  // 0/1/X/Z
         }
         if (rhs.bitIs1(lbits-1)) setAllBits1();  // -1 else 0
         return *this;  // shift of over 2^32 must be -1/0

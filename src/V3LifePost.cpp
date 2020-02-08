@@ -58,21 +58,21 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         AstVarScope* vscp = nodep->varScopep();
         UASSERT_OBJ(vscp, nodep, "Scope not assigned");
         if (AstVarScope* newvscp = reinterpret_cast<AstVarScope*>(vscp->user4p())) {
             UINFO(9, "  Replace "<<nodep<<" to "<<newvscp<<endl);
             AstVarRef* newrefp = new AstVarRef(nodep->fileline(), newvscp, nodep->lvalue());
             nodep->replaceWith(newrefp);
-            nodep->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
-    virtual void visit(AstNodeModule* nodep) {
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         // Only track the top scopes, not lower level functions
         if (nodep->isTop()) iterateChildren(nodep);
     }
-    virtual void visit(AstCCall* nodep) {
+    virtual void visit(AstCCall* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         if (!nodep->funcp()->entryPoint()) {
             // Enter the function and trace it
@@ -80,18 +80,18 @@ private:
             iterate(nodep->funcp());
         }
     }
-    virtual void visit(AstExecGraph* nodep) {
+    virtual void visit(AstExecGraph* nodep) VL_OVERRIDE {
         // Can just iterate across the MTask bodies in any order.  Order
         // isn't important for LifePostElimVisitor's simple substitution.
         iterateChildren(nodep);
     }
-    virtual void visit(AstCFunc* nodep) {
+    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         if (!m_tracingCall && !nodep->entryPoint()) return;
         m_tracingCall = false;
         iterateChildren(nodep);
     }
-    virtual void visit(AstVar*) {}  // Don't want varrefs under it
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstVar*) VL_OVERRIDE {}  // Don't want varrefs under it
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 public:
@@ -253,13 +253,13 @@ private:
             // Delete and mark so LifePostElimVisitor will get it
             UINFO(4,"    DELETE "<<app->nodep<<endl);
             dlyVarp->user4p(origVarp);
-            app->nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(app->nodep);
+            VL_DO_DANGLING(app->nodep->unlinkFrBack()->deleteTree(), app->nodep);
             ++m_statAssnDel;
         }
     }
 
     // VISITORS
-    virtual void visit(AstTopScope* nodep) {
+    virtual void visit(AstTopScope* nodep) VL_OVERRIDE {
         AstNode::user4ClearTree();  // user4p() used on entire tree
 
         // First, build maps of every location (mtask and sequence
@@ -284,7 +284,7 @@ private:
         // Replace any node4p varscopes with the new scope
         LifePostElimVisitor visitor (nodep);
     }
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         // Consumption/generation of a variable,
         AstVarScope* vscp = nodep->varScopep();
         UASSERT_OBJ(vscp, nodep, "Scope not assigned");
@@ -296,14 +296,14 @@ private:
             m_reads[vscp].insert(loc);
         }
     }
-    virtual void visit(AstAssignPre* nodep) {
+    virtual void visit(AstAssignPre* nodep) VL_OVERRIDE {
         // Do not record varrefs within assign pre.
         //
         // The pre-assignment into the dly var should not count as its
         // first write; we only want to consider reads and writes that
         // would still happen if the dly var were eliminated.
     }
-    virtual void visit(AstAssignPost* nodep) {
+    virtual void visit(AstAssignPost* nodep) VL_OVERRIDE {
         // Don't record ASSIGNPOST in the read/write maps, record them in a
         // separate map
         if (AstVarRef* rhsp = VN_CAST(nodep->rhsp(), VarRef)) {
@@ -315,11 +315,11 @@ private:
             m_assignposts[dlyVarp] = LifePostLocation(loc, nodep);
         }
     }
-    virtual void visit(AstNodeModule* nodep) {
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         // Only track the top scopes, not lower level functions
         if (nodep->isTop()) iterateChildren(nodep);
     }
-    virtual void visit(AstCCall* nodep) {
+    virtual void visit(AstCCall* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         if (!nodep->funcp()->entryPoint()) {
             // Enter the function and trace it
@@ -327,7 +327,7 @@ private:
             iterate(nodep->funcp());
         }
     }
-    virtual void visit(AstExecGraph* nodep) {
+    virtual void visit(AstExecGraph* nodep) VL_OVERRIDE {
         // Treat the ExecGraph like a call to each mtask body
         m_mtasksGraphp = nodep->depGraphp();
         for (V3GraphVertex* mtaskVxp = m_mtasksGraphp->verticesBeginp();
@@ -339,14 +339,14 @@ private:
         }
         m_execMTaskp = NULL;
     }
-    virtual void visit(AstCFunc* nodep) {
+    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         if (!m_tracingCall && !nodep->entryPoint()) return;
         m_tracingCall = false;
         iterateChildren(nodep);
     }
     //-----
-    virtual void visit(AstVar*) {}  // Don't want varrefs under it
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstVar*) VL_OVERRIDE {}  // Don't want varrefs under it
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 public:

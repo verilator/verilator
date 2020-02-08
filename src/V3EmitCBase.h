@@ -56,11 +56,17 @@ public:
     static string symClassVar()  { return symClassName()+"* __restrict vlSymsp"; }
     static string symTopAssign() {
         return v3Global.opt.prefix()+"* __restrict vlTOPp VL_ATTR_UNUSED = vlSymsp->TOPp;"; }
-    static string modClassName(AstNodeModule* modp) {  // Return name of current module being processed
-        if (modp->isTop()) {
+    static string funcNameProtect(const AstCFunc* nodep, const AstNodeModule* modp) {
+        if (nodep->isConstructor()) return prefixNameProtect(modp);
+        else if (nodep->isDestructor()) return string("~") + prefixNameProtect(modp);
+        else return nodep->nameProtect();
+    }
+    static string prefixNameProtect(const AstNode* nodep) {  // C++ name with prefix
+        const AstNodeModule* modp = VN_CAST_CONST(nodep, NodeModule);
+        if (modp && modp->isTop()) {
             return v3Global.opt.prefix();
         } else {
-            return v3Global.opt.modPrefix()+"_"+protect(modp->name());
+            return v3Global.opt.modPrefix() + "_" + protect(nodep->name());
         }
     }
     static string topClassName() {  // Return name of top wrapper module
@@ -108,7 +114,7 @@ private:
     // MEMBERS
     int m_count;  // Number of statements
     // VISITORS
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         m_count++;
         iterateChildren(nodep);
     }

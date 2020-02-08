@@ -137,6 +137,9 @@ sub _suppress {
 
     return undef if $filename eq "*";
 
+    # Cleanup for e.g. ../V3AstNodes.h
+    $filename = "src/$1" if $filename =~ m!^\.\./(.*)!;
+
     # Specific suppressions
     return 1 if $id eq "missingInclude" && $filename =~ m!systemc.h!;
     return 1 if $id eq "missingInclude" && $filename =~ m!svdpi.h!;

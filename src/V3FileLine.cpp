@@ -120,6 +120,7 @@ void VFileContent::pushText(const string& text) {
 
 string VFileContent::getLine(int lineno) const {
     // Return error text rather than asserting so the user isn't left without a message
+    // cppcheck-suppress negativeContainerIndex
     if (VL_UNCOVERABLE(lineno < 0 || lineno >= (int)m_lines.size())) {
         if (debug() || v3Global.opt.debugCheck()) {
             return ("%Error-internal-contents-bad-ct"+cvtToStr(m_id)
@@ -156,6 +157,15 @@ FileLine::FileLine(FileLine::EmptySecret) {
         V3ErrorCode code = V3ErrorCode(codei);
         warnOff(code, code.defaultsOff());
     }
+}
+
+const string FileLine::xmlDetailedLocation() const {
+    return "loc=\"" +
+        cvtToStr(filenameLetters()) + "," +
+        cvtToStr(firstLineno()) + "," +
+        cvtToStr(firstColumn()) + "," +
+        cvtToStr(lastLineno()) + "," +
+        cvtToStr(lastColumn()) + "\"";
 }
 
 string FileLine::lineDirectiveStrg(int enterExit) const {
@@ -341,7 +351,10 @@ void FileLine::v3errorEnd(std::ostringstream& str, const string& locationStr) {
     if (!locationStr.empty()) {
         lstr<<std::setw(ascii().length())<<" "<<": "<<locationStr;
     }
-    if (warnIsOff(V3Error::errorCode())) V3Error::suppressThisWarning();
+    if (warnIsOff(V3Error::errorCode())
+        || V3Config::waive(this, V3Error::errorCode(), str.str())) {
+        V3Error::suppressThisWarning();
+    }
     else if (!V3Error::errorContexted()) nsstr<<warnContextPrimary();
     V3Error::v3errorEnd(nsstr, lstr.str());
 }

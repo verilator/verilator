@@ -224,7 +224,7 @@ void V3Graph::clear() {
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; vertexp=vertexp->verticesNextp()) {
         for (V3GraphEdge* edgep = vertexp->outBeginp(); edgep; /*BELOW*/) {
             V3GraphEdge* nextp = edgep->outNextp();
-            delete edgep;
+            VL_DO_DANGLING(delete edgep, edgep);
             edgep = nextp;
         }
         vertexp->outUnlink();
@@ -232,7 +232,7 @@ void V3Graph::clear() {
     // Delete the old vertices
     for (V3GraphVertex* vertexp = verticesBeginp(); vertexp; /*BELOW*/) {
         V3GraphVertex* nextp = vertexp->verticesNextp();
-        delete vertexp;
+        VL_DO_DANGLING(delete vertexp, vertexp);
         vertexp = nextp;
     }
     verticesUnlink();

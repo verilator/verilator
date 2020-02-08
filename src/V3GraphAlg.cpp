@@ -110,10 +110,10 @@ private:
                     }
                     if (saveOld) {
                         if (m_sumWeights) prevEdgep->weight(prevEdgep->weight() + edgep->weight());
-                        edgep->unlinkDelete(); VL_DANGLING(edgep);
+                        VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
                     } else {
                         if (m_sumWeights) edgep->weight(prevEdgep->weight() + edgep->weight());
-                        prevEdgep->unlinkDelete(); VL_DANGLING(prevEdgep);
+                        VL_DO_DANGLING(prevEdgep->unlinkDelete(), prevEdgep);
                         outVertexp->userp(edgep);
                     }
                 }
@@ -150,9 +150,7 @@ public:
             V3GraphEdge* deletep = NULL;
             for (V3GraphEdge* edgep = vxp->outBeginp();
                  edgep; edgep = edgep->outNextp()) {
-                if (deletep) {
-                    deletep->unlinkDelete(); deletep = NULL;
-                }
+                if (deletep) VL_DO_CLEAR(deletep->unlinkDelete(), deletep = NULL);
                 // It should be safe to modify the graph, despite using
                 // the GraphPathChecker, as none of the modifications will
                 // change what can be reached from what, nor should they
@@ -162,7 +160,7 @@ public:
                 }
             }
             if (deletep) {
-                deletep->unlinkDelete(); VL_DANGLING(deletep);
+                VL_DO_DANGLING(deletep->unlinkDelete(), deletep);
             }
         }
     }

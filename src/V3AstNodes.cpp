@@ -168,11 +168,11 @@ AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNode* lhsp, AstNode* rhsp) {
 }
 
 AstExecGraph::AstExecGraph(FileLine* fileline)
-    : AstNode(fileline) {
+    : AstNode(AstType::atExecGraph, fileline) {
     m_depGraphp = new V3Graph;
 }
 AstExecGraph::~AstExecGraph() {
-    delete m_depGraphp; VL_DANGLING(m_depGraphp);
+    VL_DO_DANGLING(delete m_depGraphp, m_depGraphp);
 }
 
 bool AstVar::isSigPublic() const {
@@ -630,7 +630,7 @@ std::pair<uint32_t,uint32_t> AstNodeDType::dimensions(bool includeBasic) {
         else if (const AstBasicDType* adtypep = VN_CAST(dtypep, BasicDType)) {
             if (includeBasic && (adtypep->isRanged() || adtypep->isString())) packed++;
         }
-        else if (const AstStructDType* sdtypep = VN_CAST(dtypep, StructDType)) {
+        else if (VN_IS(dtypep, StructDType)) {
             packed++;
         }
         break;
@@ -798,7 +798,7 @@ AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd) 
     // check the detailed map for this same node
     // Also adds this new node to the detailed map
     AstBasicDType* newp = findInsertSameDType(new1p);
-    if (newp != new1p) new1p->deleteTree();
+    if (newp != new1p) VL_DO_DANGLING(new1p->deleteTree(), new1p);
     else addTypesp(newp);
     //
     m_basicps[kwd] = newp;
@@ -809,7 +809,7 @@ AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kw
                                                int width, int widthMin, AstNumeric numeric) {
     AstBasicDType* new1p = new AstBasicDType(fl, kwd, numeric, width, widthMin);
     AstBasicDType* newp = findInsertSameDType(new1p);
-    if (newp != new1p) new1p->deleteTree();
+    if (newp != new1p) VL_DO_DANGLING(new1p->deleteTree(), new1p);
     else addTypesp(newp);
     return newp;
 }
@@ -818,7 +818,7 @@ AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kw
                                                VNumRange range, int widthMin, AstNumeric numeric) {
     AstBasicDType* new1p = new AstBasicDType(fl, kwd, numeric, range, widthMin);
     AstBasicDType* newp = findInsertSameDType(new1p);
-    if (newp != new1p) new1p->deleteTree();
+    if (newp != new1p) VL_DO_DANGLING(new1p->deleteTree(), new1p);
     else addTypesp(newp);
     return newp;
 }
@@ -943,6 +943,14 @@ void AstBasicDType::dump(std::ostream& str) const {
     str<<" kwd="<<keyword().ascii();
     if (isRanged() && !rangep()) str<<" range=["<<left()<<":"<<right()<<"]";
 }
+string AstBasicDType::prettyDTypeName() const {
+    std::ostringstream os;
+    os << keyword().ascii();
+    if (isRanged() && !rangep() && keyword().width() <= 1) {
+        os << "[" << left() << ":" << right() << "]";
+    }
+    return os.str();
+}
 void AstCCast::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str<<" sz"<<size();
@@ -998,6 +1006,12 @@ void AstJumpGo::dump(std::ostream& str) const {
     str<<" -> ";
     if (labelp()) { labelp()->dump(str); }
     else { str<<"%Error:UNLINKED"; }
+}
+void AstMemberSel::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " -> ";
+    if (varp()) { varp()->dump(str); }
+    else { str << "%Error:UNLINKED"; }
 }
 void AstModportFTaskRef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
@@ -1073,6 +1087,24 @@ void AstNodeArrayDType::dump(std::ostream& str) const {
     this->AstNodeDType::dump(str);
     str<<" "<<declRange();
 }
+string AstPackArrayDType::prettyDTypeName() const {
+    std::ostringstream os;
+    os << subDTypep()->prettyDTypeName() << declRange();
+    return os.str();
+}
+string AstUnpackArrayDType::prettyDTypeName() const {
+    std::ostringstream os;
+    string ranges = cvtToStr(declRange());
+    // Unfortunately we need a single $ for the first unpacked, and all
+    // dimensions shown in "reverse" order
+    AstNodeDType* subp = subDTypep()->skipRefp();
+    while (AstUnpackArrayDType* adtypep = VN_CAST(subp, UnpackArrayDType)) {
+        ranges += cvtToStr(adtypep->declRange());
+        subp = adtypep->subDTypep()->skipRefp();
+    }
+    os << subp->prettyDTypeName() << "$" << ranges;
+    return os.str();
+}
 void AstNodeModule::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str<<"  L"<<level();
@@ -1133,9 +1165,17 @@ void AstAssocArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str<<"[assoc-"<<(void*)keyDTypep()<<"]";
 }
+string AstAssocArrayDType::prettyDTypeName() const {
+    return subDTypep()->prettyDTypeName() + "[" + keyDTypep()->prettyDTypeName() + "]";
+}
 void AstQueueDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str<<"[queue]";
+}
+string AstQueueDType::prettyDTypeName() const {
+    string str = subDTypep()->prettyDTypeName() + "[$";
+    if (boundConst()) str += ":" + cvtToStr(boundConst());
+    return str + "]";
 }
 void AstUnsizedArrayDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
@@ -1296,8 +1336,15 @@ void AstCFunc::dump(std::ostream& str) const {
     if (slow()) str<<" [SLOW]";
     if (pure()) str<<" [PURE]";
     if (isStatic().unknown()) str<<" [STATICU]";
-    else if (isStatic().trueU()) str<<" [STATIC]";
+    else if (isStatic().trueUnknown()) str<<" [STATIC]";
     if (dpiImport()) str<<" [DPII]";
     if (dpiExport()) str<<" [DPIX]";
     if (dpiExportWrapper()) str<<" [DPIXWR]";
+    if (isConstructor()) str<<" [CTOR]";
+    if (isDestructor()) str<<" [DTOR]";
+    if (isVirtual()) str<<" [VIRT]";
+}
+void AstCUse::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " [" << useType() << "]";
 }

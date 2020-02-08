@@ -630,22 +630,6 @@ extern void VL_FCLOSE_I(IData fdi);
 extern IData VL_FREAD_I(int width, int array_lsb, int array_size,
                         void* memp, IData fpi, IData start, IData count);
 
-extern void VL_READMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
-                         WDataInP filenamep, void* memp, IData start, IData end);
-extern void VL_READMEM_Q(bool hex, int width, int depth, int array_lsb, int fnwords,
-                         QData filename,     void* memp, IData start, IData end);
-inline void VL_READMEM_I(bool hex, int width, int depth, int array_lsb, int fnwords,
-                         IData filename,     void* memp, IData start, IData end) VL_MT_SAFE {
-    VL_READMEM_Q(hex, width, depth, array_lsb, fnwords, filename, memp, start, end); }
-
-extern void VL_WRITEMEM_W(bool hex, int width, int depth, int array_lsb, int fnwords,
-                          WDataInP filenamep, const void* memp, IData start, IData end);
-extern void VL_WRITEMEM_Q(bool hex, int width, int depth, int array_lsb, int fnwords,
-                          QData filename,     const void* memp, IData start, IData end);
-inline void VL_WRITEMEM_I(bool hex, int width, int depth, int array_lsb, int fnwords,
-                          IData filename,     const void* memp, IData start, IData end) VL_MT_SAFE {
-    VL_WRITEMEM_Q(hex, width, depth, array_lsb, fnwords, filename, memp, start, end); }
-
 extern void VL_WRITEF(const char* formatp, ...);
 extern void VL_FWRITEF(IData fpi, const char* formatp, ...);
 

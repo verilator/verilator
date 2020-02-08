@@ -15,7 +15,7 @@ compile(
 execute(
     fails => $Self->{vlt_all},
     expect =>
-'%Error: t/t_sys_readmem_bad_end.mem:\d+: \$readmem file ended before specified ending-address',
+'%Error: t/t_sys_readmem_bad_end.mem:\d+: \$readmem file ended before specified final address',
     );
 
 ok(1);

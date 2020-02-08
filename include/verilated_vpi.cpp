@@ -1993,7 +1993,7 @@ PLI_INT32 vpi_chk_error(p_vpi_error_info error_info_p) {
     }
     if (!_error_info_p) return 0;  // no error occured
     return _error_info_p->level;  // return error severity level
-};
+}
 
 PLI_INT32 vpi_free_object(vpiHandle object) {
     VerilatedVpiImp::assertOneCheck();
@@ -2008,7 +2008,7 @@ PLI_INT32 vpi_release_handle(vpiHandle object) {
     _VL_VPI_ERROR_RESET();
     if (VL_UNLIKELY(!vop)) return 0;
     vpi_remove_cb(object);  // May not be a callback, but that's ok
-    delete vop;
+    VL_DO_DANGLING(delete vop, vop);
     return 1;
 }
 

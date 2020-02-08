@@ -62,6 +62,7 @@ struct V3ParseBisonYYSType {
         VSignedState    signstate;
         V3ImportProperty iprop;
         V3ErrorCode::en errcodeen;
+        AstAttrType::en attrtypeen;
 
         AstNode*        nodep;
 
@@ -145,7 +146,6 @@ public:
     static bool optFuture(const string& flag) { return v3Global.opt.isFuture(flag); }
 
     void ppline(const char* textp);
-    void pragma(const char* textp);
     void linenoInc() { fileline()->linenoInc(); }
     void verilatorCmtLint(const char* textp, bool on);
     void verilatorCmtLintSave();

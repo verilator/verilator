@@ -75,6 +75,8 @@ module Test (/*AUTOARG*/
       if (dly0 != $past(in)) $stop;
       if (dly0 != $past(in,1)) $stop;
       if (dly1 != $past(in,2)) $stop;
+      // $sampled(expression) -> expression
+      if (in != $sampled(in)) $stop;
    end
 
    assert property (@(posedge clk) dly0 == $past(in));

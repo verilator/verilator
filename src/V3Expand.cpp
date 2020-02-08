@@ -80,7 +80,7 @@ private:
     void replaceWithDelete(AstNode* nodep, AstNode* newp) {
         newp->user1(1);  // Already processed, don't need to re-iterate
         nodep->replaceWith(newp);
-        nodep->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     AstNode* newWordAssign(AstNodeAssign* placep, int word, AstNode* lhsp, AstNode* rhsp) {
         AstAssign* newp = new AstAssign(placep->fileline(),
@@ -306,7 +306,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstExtend* nodep) {
+    virtual void visit(AstExtend* nodep) VL_OVERRIDE {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->isWide()) {
@@ -328,7 +328,7 @@ private:
                             "extending larger thing into smaller?");
                 lhsp->dtypeFrom(nodep);  // Just mark it, else nop
             }
-            replaceWithDelete(nodep, newp); VL_DANGLING(nodep);
+            VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
     }
     bool expandWide(AstNodeAssign* nodep, AstExtend* rhsp) {
@@ -343,7 +343,7 @@ private:
         return true;
     }
 
-    virtual void visit(AstSel* nodep) {
+    virtual void visit(AstSel* nodep) VL_OVERRIDE {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         // Remember, Sel's may have non-integer rhs, so need to optimize for that!
@@ -443,7 +443,7 @@ private:
             if (midp) newp = new AstOr(nodep->fileline(), midp, newp);
             if (hip) newp = new AstOr(nodep->fileline(), hip, newp);
             newp->dtypeFrom(nodep);
-            replaceWithDelete(nodep, newp); VL_DANGLING(nodep);
+            VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
         else {  // Long/Quad from Long/Quad
             UINFO(8,"    SEL->SHIFT "<<nodep<<endl);
@@ -461,7 +461,7 @@ private:
                 newp = new AstCCast(newp->fileline(), newp, nodep);
             }
             newp->dtypeFrom(nodep);
-            replaceWithDelete(nodep, newp); VL_DANGLING(nodep);
+            VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
     }
 
@@ -553,8 +553,8 @@ private:
                                                                  rhsp, lsb)));
                     }
                 }
-                rhsp->deleteTree(); VL_DANGLING(rhsp);
-                destp->deleteTree(); VL_DANGLING(destp);
+                VL_DO_DANGLING(rhsp->deleteTree(), rhsp);
+                VL_DO_DANGLING(destp->deleteTree(), destp);
             } else {
                 UINFO(8,"    ASSIGNSEL(const,narrow) "<<nodep<<endl);
                 if (destp->isQuad() && !rhsp->isQuad()) {
@@ -670,7 +670,7 @@ private:
         }
     }
 
-    virtual void visit(AstConcat* nodep) {
+    virtual void visit(AstConcat* nodep) VL_OVERRIDE {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->isWide()) {
@@ -693,7 +693,7 @@ private:
                                                     nodep->width()),
                                        rhsp);
             newp->dtypeFrom(nodep);  // Unsigned
-            replaceWithDelete(nodep, newp); VL_DANGLING(nodep);
+            VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
     }
     bool expandWide(AstNodeAssign* nodep, AstConcat* rhsp) {
@@ -714,7 +714,7 @@ private:
         return true;
     }
 
-    virtual void visit(AstReplicate* nodep) {
+    virtual void visit(AstReplicate* nodep) VL_OVERRIDE {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->isWide()) {
@@ -746,10 +746,10 @@ private:
                                       newp);
                     newp->dtypeFrom(nodep);  // Unsigned
                 }
-                lhsp->deleteTree();  // Never used
+                VL_DO_DANGLING(lhsp->deleteTree(), lhsp);  // Never used
             }
             newp->dtypeFrom(nodep);  // Unsigned
-            replaceWithDelete(nodep, newp); VL_DANGLING(nodep);
+            VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
     }
     bool expandWide(AstNodeAssign* nodep, AstReplicate* rhsp) {
@@ -779,7 +779,7 @@ private:
         return true;
     }
 
-    virtual void visit(AstChangeXor* nodep) {
+    virtual void visit(AstChangeXor* nodep) VL_OVERRIDE {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         UINFO(8,"    Wordize ChangeXor "<<nodep<<endl);
@@ -791,7 +791,7 @@ private:
                                       newAstWordSelClone(nodep->rhsp(), w));
             newp = (newp==NULL) ? eqp : (new AstOr(nodep->fileline(), newp, eqp));
         }
-        replaceWithDelete(nodep, newp); VL_DANGLING(nodep);
+        VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
     }
 
     void visitEqNeq(AstNodeBiop* nodep) {
@@ -816,13 +816,13 @@ private:
                                  new AstConst(nodep->fileline(), AstConst::SizedEData(), 0),
                                  newp);
             }
-            replaceWithDelete(nodep, newp); VL_DANGLING(nodep);
+            VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
     }
-    virtual void visit(AstEq* nodep) { visitEqNeq(nodep); }
-    virtual void visit(AstNeq* nodep) { visitEqNeq(nodep); }
+    virtual void visit(AstEq* nodep) VL_OVERRIDE { visitEqNeq(nodep); }
+    virtual void visit(AstNeq* nodep) VL_OVERRIDE { visitEqNeq(nodep); }
 
-    virtual void visit(AstRedOr* nodep) {
+    virtual void visit(AstRedOr* nodep) VL_OVERRIDE {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->lhsp()->isWide()) {
@@ -836,7 +836,7 @@ private:
             newp = new AstNeq(nodep->fileline(),
                               new AstConst(nodep->fileline(), AstConst::SizedEData(), 0),
                               newp);
-            replaceWithDelete(nodep, newp); VL_DANGLING(nodep);
+            VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         } else {
             UINFO(8,"    REDOR->EQ "<<nodep<<endl);
             AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
@@ -844,10 +844,10 @@ private:
                                        new AstConst(nodep->fileline(), AstConst::WidthedValue(),
                                                     longOrQuadWidth(nodep), 0),
                                        lhsp);
-            replaceWithDelete(nodep, newp); VL_DANGLING(nodep);
+            VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
     }
-    virtual void visit(AstRedAnd* nodep) {
+    virtual void visit(AstRedAnd* nodep) VL_OVERRIDE {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->lhsp()->isWide()) {
@@ -870,17 +870,17 @@ private:
             newp = new AstEq(nodep->fileline(),
                              new AstConst(nodep->fileline(), AstConst::SizedEData(),
                                           ~VL_MASK_E(0)), newp);
-            replaceWithDelete(nodep, newp); VL_DANGLING(nodep);
+            VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         } else {
             UINFO(8,"    REDAND->EQ "<<nodep<<endl);
             AstNode* lhsp = nodep->lhsp()->unlinkFrBack();
             AstNode* newp = new AstEq(nodep->fileline(),
                                       new AstConst(nodep->fileline(), wordMask(lhsp)),
                                       lhsp);
-            replaceWithDelete(nodep, newp); VL_DANGLING(nodep);
+            VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
     }
-    virtual void visit(AstRedXor* nodep) {
+    virtual void visit(AstRedXor* nodep) VL_OVERRIDE {
         if (nodep->user1SetOnce()) return;  // Process once
         iterateChildren(nodep);
         if (nodep->lhsp()->isWide()) {
@@ -893,13 +893,13 @@ private:
             }
             newp = new AstRedXor(nodep->fileline(), newp);
             UINFO(8,"    Wordize REDXORnew "<<newp<<endl);
-            replaceWithDelete(nodep, newp); VL_DANGLING(nodep);
+            VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
         // We don't reduce non-wide XORs, as its more efficient to use a temp register,
         // which the inlined function does nicely.
     }
 
-    virtual void visit(AstNodeStmt* nodep) {
+    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE {
         if (nodep->user1SetOnce()) return;  // Process once
         if (!nodep->isStatement()) {
             iterateChildren(nodep);
@@ -909,7 +909,7 @@ private:
         iterateChildren(nodep);
         m_stmtp = NULL;
     }
-    virtual void visit(AstNodeAssign* nodep) {
+    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
         if (nodep->user1SetOnce()) return;  // Process once
         m_stmtp = nodep;
         iterateChildren(nodep);
@@ -948,15 +948,15 @@ private:
         }
         // Cleanup common code
         if (did) {
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         m_stmtp = NULL;
     }
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstVar*) {}  // Don't hit varrefs under vars
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstVar*) VL_OVERRIDE {}  // Don't hit varrefs under vars
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 

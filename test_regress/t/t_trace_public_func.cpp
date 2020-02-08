@@ -8,9 +8,14 @@
 #include <verilated.h>
 #include <verilated_vcd_c.h>
 
-#include "Vt_trace_public_func.h"
-#include "Vt_trace_public_func_t.h"
-#include "Vt_trace_public_func_glbl.h"
+#include VM_PREFIX_INCLUDE
+#ifdef T_TRACE_PUBLIC_FUNC_VLT
+# include "Vt_trace_public_func_vlt_t.h"
+# include "Vt_trace_public_func_vlt_glbl.h"
+#else
+# include "Vt_trace_public_func_t.h"
+# include "Vt_trace_public_func_glbl.h"
+#endif
 
 unsigned long long main_time = 0;
 double sc_time_stamp() { return (double)main_time; }
@@ -18,7 +23,7 @@ double sc_time_stamp() { return (double)main_time; }
 const unsigned long long dt_2 = 3;
 
 int main(int argc, char** argv, char** env) {
-    Vt_trace_public_func* top = new Vt_trace_public_func("top");
+    VM_PREFIX* top = new VM_PREFIX("top");
 
     Verilated::debug(0);
     Verilated::traceEverOn(true);

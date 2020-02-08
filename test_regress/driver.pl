@@ -1057,6 +1057,7 @@ sub compile {
         if (!$param{fails} && $param{verilator_make_gmake}) {
             $self->oprint("Running make (gmake)\n") if $self->{verbose};
             $self->_run(logfile => "$self->{obj_dir}/vlt_gcc.log",
+                        entering => "$self->{obj_dir}",
                         cmd => ["make",
                                 "-C ".$self->{obj_dir},
                                 "-f ".$::RealBin."/Makefile_obj",
@@ -1416,7 +1417,8 @@ sub run {
 }
 sub _run {
     my $self = (ref $_[0]? shift : $Self);
-    my %param = (tee=>1,
+    my %param = (tee => 1,
+                 #entering =>  # Print entering directory information
                  @_);
     my $command = join(' ',@{$param{cmd}});
     $command = "time $command" if $opt_benchmark && $command !~ /^cd /;
@@ -1438,6 +1440,8 @@ sub _run {
         my $pid=fork();
         if ($pid) {  # Parent
             close CHILDWR;
+            print "driver: Entering directory '",
+                File::Spec->rel2abs($param{entering}), "'\n" if $param{entering};
             while (1) {
                 my $buf = '';
                 my $got = sysread PARENTRD,$buf,10000;
@@ -1447,6 +1451,8 @@ sub _run {
             }
             close PARENTRD;
             close $logfh if $logfh;
+            print "driver: Leaving directory '",
+                File::Spec->rel2abs($param{entering}), "'\n" if $param{entering};
         }
         else {  # Child
             close PARENTRD;
@@ -1492,10 +1498,9 @@ sub _run {
 
     # Read the log file a couple of times to allow for NFS delays
     if ($param{check_finished} || $param{expect}) {
-        my $tries = $self->tries;
-        for (my $try=$tries-1; $try>=0; $try--) {
-            sleep 1 if ($try!=$tries-1);
-            my $moretry = $try!=0;
+        for (my $try = $self->tries - 1; $try >= 0; $try--) {
+            sleep 1 if ($try != $self->tries - 1);
+            my $moretry = $try != 0;
 
             my $fh = IO::File->new("<$param{logfile}");
             next if !$fh && $moretry;
@@ -1943,11 +1948,10 @@ sub files_identical {
     my $fn1_is_logfile = shift;
     return 1 if $self->errors || $self->skips || $self->unsupporteds;
 
-    my $tries = $self->tries;
   try:
-    for (my $try=$tries-1; $try>=0; $try--) {
-        sleep 1 if ($try!=$tries-1);
-        my $moretry = $try!=0;
+    for (my $try = $self->tries - 1; $try >= 0; $try--) {
+        sleep 1 if ($try != $self->tries - 1);
+        my $moretry = $try != 0;
 
         my $f1 = IO::File->new("<$fn1");
         my $f2 = IO::File->new("<$fn2");

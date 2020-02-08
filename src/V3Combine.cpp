@@ -66,7 +66,7 @@ protected:
     static bool emptyFunctionDeletion() { return true; }
     static bool duplicateFunctionCombine() { return true; }
     // Note this is disabled, it still needed work
-    // Also repair it for DPI functions; when make __common need to insure proper
+    // Also repair it for DPI functions; when make __common need to ensure proper
     // flags get inherited from the old to new AstCFunc, and that AstText doesn't
     // get split between functions causing the text to have a dangling reference.
     bool statementCombine() { return false; }  // duplicateFunctionCombine();
@@ -107,7 +107,7 @@ public:
                     callp->unlinkFrBack();
                 }
                 callp->user3(true);  // Dead now
-                pushDeletep(callp); VL_DANGLING(callp);
+                VL_DO_DANGLING(pushDeletep(callp), callp);
                 m_callMmap.erase(eqit);  // Fix the table
             }
         }
@@ -131,13 +131,13 @@ public:
     }
 private:
     // VISITORS
-    virtual void visit(AstCCall* nodep) {
+    virtual void visit(AstCCall* nodep) VL_OVERRIDE {
         addCall(nodep);
     }
     // Speed things up
-    virtual void visit(AstNodeAssign* nodep) {}
-    virtual void visit(AstNodeMath* nodep) {}
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {}
+    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 public:
@@ -160,7 +160,7 @@ private:
     // OUTPUT:
     //  AstNode::user3()        -> bool. True to indicate duplicated
     // VISITORS
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         nodep->user3(true);
         iterateChildren(nodep);
     }
@@ -228,7 +228,7 @@ private:
                 CombMarkVisitor visitor(oldfuncp);
                 m_call.replaceFunc(oldfuncp, NULL);
                 oldfuncp->unlinkFrBack();
-                pushDeletep(oldfuncp); VL_DANGLING(oldfuncp);
+                VL_DO_DANGLING(pushDeletep(oldfuncp), oldfuncp);
             }
         }
     }
@@ -260,7 +260,7 @@ private:
         CombMarkVisitor visitor(oldfuncp);
         m_call.replaceFunc(oldfuncp, newfuncp);
         oldfuncp->unlinkFrBack();
-        pushDeletep(oldfuncp); VL_DANGLING(oldfuncp);
+        VL_DO_DANGLING(pushDeletep(oldfuncp), oldfuncp);
     }
     void replaceOnlyCallFunc(AstCCall* nodep) {
         if (AstCFunc* oldfuncp = VN_CAST(nodep->backp(), CFunc)) {
@@ -272,7 +272,7 @@ private:
                 UINFO(9,"     Function only has call "<<oldfuncp<<endl);
                 m_call.deleteCall(nodep);
                 CombMarkVisitor visitor(oldfuncp);
-                replaceFuncWFunc(oldfuncp, nodep->funcp()); VL_DANGLING(nodep);
+                VL_DO_DANGLING(replaceFuncWFunc(oldfuncp, nodep->funcp()), nodep);
             }
         }
     }
@@ -384,12 +384,12 @@ private:
         m_call.addCall(call2p);
         // If either new statement makes a func with only a single call, replace
         // the above callers to call it directly
-        replaceOnlyCallFunc(call1p); VL_DANGLING(call1p);
-        replaceOnlyCallFunc(call2p); VL_DANGLING(call2p);
+        VL_DO_DANGLING(replaceOnlyCallFunc(call1p), call1p);
+        VL_DO_DANGLING(replaceOnlyCallFunc(call2p), call2p);
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) {
+    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
         // Track all callers of each function
         m_call.main(nodep);
         //
@@ -398,7 +398,7 @@ private:
         // Required so that a module instantiating another can benefit from collapsing.
         iterateChildrenBackwards(nodep);
     }
-    virtual void visit(AstNodeModule* nodep) {
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         UINFO(4," MOD   "<<nodep<<endl);
         m_modp = nodep;
         m_modNFuncs = 0;
@@ -427,7 +427,7 @@ private:
         }
         m_modp = NULL;
     }
-    virtual void visit(AstCFunc* nodep) {
+    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         m_funcp = nodep;
         if (!nodep->dontCombine()) {
             if (m_state == STATE_HASH) {
@@ -438,7 +438,7 @@ private:
         }
         m_funcp = NULL;
     }
-    virtual void visit(AstNodeStmt* nodep) {
+    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE {
         if (!nodep->isStatement()) {
             iterateChildren(nodep);
             return;
@@ -453,10 +453,10 @@ private:
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstVar*) {}
-    virtual void visit(AstTraceDecl*) {}
-    virtual void visit(AstTraceInc*) {}
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstVar*) VL_OVERRIDE {}
+    virtual void visit(AstTraceDecl*) VL_OVERRIDE {}
+    virtual void visit(AstTraceInc*) VL_OVERRIDE {}
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 

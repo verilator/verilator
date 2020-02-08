@@ -42,9 +42,7 @@
 // VlcOptions
 
 void VlcOptions::addReadFile(const string& filename) {
-    if (m_readFiles.find(filename) == m_readFiles.end()) {
-        m_readFiles.insert(filename);
-    }
+    m_readFiles.insert(filename);
 }
 
 string VlcOptions::version() {

@@ -13,7 +13,7 @@
 //
 //*************************************************************************
 
-#include "Vt_dpi_var.h"
+#include VM_PREFIX_INCLUDE
 #include "verilated.h"
 #include "svdpi.h"
 
@@ -145,6 +145,6 @@ int main(int argc, char** argv, char** env) {
     }
     topp->final();
 
-    delete topp; VL_DANGLING(topp);
+    VL_DO_DANGLING(delete topp, topp);
     exit(0L);
 }

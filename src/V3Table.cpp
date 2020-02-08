@@ -80,7 +80,8 @@ private:
     //  State cleared on each module
     AstNodeModule*      m_modp;         // Current MODULE
     int                 m_modTables;    // Number of tables created in this module
-    std::deque<AstVarScope*> m_modTableVscs;  // All tables created
+    typedef std::deque<AstVarScope*> ModTableVector;
+    ModTableVector m_modTableVscs;  // All tables created
 
     //  State cleared on each scope
     AstScope*   m_scopep;               // Current SCOPE
@@ -371,7 +372,7 @@ private:
                 const AstNode* init2p = VN_CAST(var2p->valuep(), InitArray);
                 if (init1p->sameGateTree(init2p)) {
                     UINFO(8,"   Duplicate table var "<<vsc2p<<" == "<<vsc1p<<endl);
-                    vsc1p->unlinkFrBack()->deleteTree();
+                    VL_DO_DANGLING(vsc1p->unlinkFrBack()->deleteTree(), vsc1p);
                     return vsc2p;
                 }
             }
@@ -423,37 +424,44 @@ private:
 
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) {
+    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
-    virtual void visit(AstNodeModule* nodep) {
-        m_modTables = 0;
-        m_modTableVscs.clear();
-        m_modp = nodep;
-        iterateChildren(nodep);
-        m_modp = NULL;
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+        AstNodeModule* origModp = m_modp;
+        int origModTables = m_modTables;
+        ModTableVector origModTableVscs = m_modTableVscs;
+        {
+            m_modp = nodep;
+            m_modTables = 0;
+            m_modTableVscs.clear();
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
+        m_modTables = origModTables;
+        m_modTableVscs = origModTableVscs;
     }
-    virtual void visit(AstScope* nodep) {
+    virtual void visit(AstScope* nodep) VL_OVERRIDE {
         UINFO(4," SCOPE "<<nodep<<endl);
         m_scopep = nodep;
         iterateChildren(nodep);
         m_scopep = NULL;
     }
-    virtual void visit(AstAlways* nodep) {
+    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
         UINFO(4,"  ALWAYS  "<<nodep<<endl);
         if (treeTest(nodep)) {
             // Well, then, I'll be a memory hog.
-            createTable(nodep); VL_DANGLING(nodep);
+            VL_DO_DANGLING(createTable(nodep), nodep);
         }
     }
-    virtual void visit(AstAssignAlias* nodep) {}
-    virtual void visit(AstAssignW* nodep) {
+    virtual void visit(AstAssignAlias* nodep) VL_OVERRIDE {}
+    virtual void visit(AstAssignW* nodep) VL_OVERRIDE {
         // It's nearly impossible to have a large enough assign to make this worthwhile
         // For now we won't bother.
         // Accelerated: no iterate
     }
     // default
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 public:

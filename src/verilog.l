@@ -72,10 +72,10 @@ void yyerror(const char* errmsg) {
         && PARSEP->curBisonVal().token == yP_COLONCOLON) {
         static int warned = false;
         if (!warned++) {
-            std::cerr<<PARSEP->fileline()->warnMore()
-                     <<("... Perhaps '"+*PARSEP->prevBisonVal().strp
-                        +"' is a package which needs to be predeclared? (IEEE 2017 26.3)")
-                     <<std::endl;
+            std::cerr << PARSEP->fileline()->warnMore()
+                      << ("... Perhaps '" + *PARSEP->prevBisonVal().strp
+                          + "' is a package which needs to be predeclared? (IEEE 1800-2017 26.3)")
+                      << std::endl;
         }
     }
 }
@@ -135,17 +135,45 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   {ws}                  { FL_FWD; FL_BRK; }  /* otherwise ignore white-space */
   {crnl}                { FL_FWD; FL_BRK; }  /* Count line numbers */
 
+  "clock_enable"        { FL; return yVLT_CLOCK_ENABLE; }
+  "clocker"             { FL; return yVLT_CLOCKER; }
+  "coverage_block_off"  { FL; return yVLT_COVERAGE_BLOCK_OFF; }
   "coverage_off"        { FL; return yVLT_COVERAGE_OFF; }
   "coverage_on"         { FL; return yVLT_COVERAGE_ON; }
+  "full_case"           { FL; return yVLT_FULL_CASE; }
+  "inline"              { FL; return yVLT_INLINE; }
+  "isolate_assignments" { FL; return yVLT_ISOLATE_ASSIGNMENTS; }
   "lint_off"            { FL; return yVLT_LINT_OFF; }
   "lint_on"             { FL; return yVLT_LINT_ON; }
+  "no_clocker"          { FL; return yVLT_NO_CLOCKER; }
+  "no_inline"           { FL; return yVLT_NO_INLINE; }
+  "parallel_case"       { FL; return yVLT_PARALLEL_CASE; }
+  "public"              { FL; return yVLT_PUBLIC; }
+  "public_flat"         { FL; return yVLT_PUBLIC_FLAT; }
+  "public_flat_rd"      { FL; return yVLT_PUBLIC_FLAT_RD; }
+  "public_flat_rw"      { FL; return yVLT_PUBLIC_FLAT_RW; }
+  "public_module"       { FL; return yVLT_PUBLIC_MODULE; }
+  "sc_bv"               { FL; return yVLT_SC_BV; }
+  "sformat"             { FL; return yVLT_SFORMAT; }
   "tracing_off"         { FL; return yVLT_TRACING_OFF; }
   "tracing_on"          { FL; return yVLT_TRACING_ON; }
 
+  -?"-block"            { FL; return yVLT_D_BLOCK; }
   -?"-file"             { FL; return yVLT_D_FILE; }
+  -?"-function"         { FL; return yVLT_D_FUNCTION; }
   -?"-lines"            { FL; return yVLT_D_LINES; }
+  -?"-match"            { FL; return yVLT_D_MATCH; }
+  -?"-module"           { FL; return yVLT_D_MODULE; }
   -?"-msg"              { FL; return yVLT_D_MSG; }
   -?"-rule"             { FL; return yVLT_D_RULE; }
+  -?"-task"             { FL; return yVLT_D_TASK; }
+  -?"-var"              { FL; return yVLT_D_VAR; }
+
+  /* Reachable by attr_event_control */
+  "edge"                { FL; return yEDGE; }
+  "negedge"             { FL; return yNEGEDGE; }
+  "or"                  { FL; return yOR; }
+  "posedge"             { FL; return yPOSEDGE; }
 }
 
   /************************************************************************/
@@ -206,6 +234,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$rtoi"               { FL; return yD_RTOI; }
   "$setup"              { FL; return yaTIMINGSPEC; }
   "$setuphold"          { FL; return yaTIMINGSPEC; }
+  "$sampled"            { FL; return yD_SAMPLED; }
   "$sformat"            { FL; return yD_SFORMAT; }
   "$sformatf"           { FL; return yD_SFORMATF; }
   "$shortrealtobits"    { FL; return yD_SHORTREALTOBITS; }
@@ -223,6 +252,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$test$plusargs"      { FL; return yD_TESTPLUSARGS; }
   "$time"               { FL; return yD_TIME; }
   "$timeskew"           { FL; return yaTIMINGSPEC; }
+  "$typename"           { FL; return yD_TYPENAME; }
   "$ungetc"             { FL; return yD_UNGETC; }
   "$value$plusargs"     { FL; return yD_VALUEPLUSARGS; }
   "$width"              { FL; return yaTIMINGSPEC; }
@@ -924,7 +954,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`nosuppress_faults"                  { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`nounconnected_drive"                { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`portcoerce"                         { FL_FWD; FL_BRK; }
-  "`pragma"{ws}*[^\n\r]*                { FL_FWD; PARSEP->pragma(yytext); FL_BRK; }  // Verilog 2005
+  "`pragma"{ws}*[^\n\r]*                { FL_FWD; FL_BRK; }  // Verilog 2005
   "`protect"                            { FL_FWD; FL_BRK; }
   "`remove_gatenames"                   { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
   "`remove_netnames"                    { FL_FWD; FL_BRK; }  // Verilog-XL compatibility

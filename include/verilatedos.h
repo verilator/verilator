@@ -154,10 +154,18 @@
 #define VL_UL(c) (static_cast<IData>(c##UL))  ///< Add appropriate suffix to 32-bit constant
 
 #if defined(VL_CPPCHECK) || defined(__clang_analyzer__)
-# define VL_DANGLING(v)
+# define VL_DANGLING(var)
 #else
-# define VL_DANGLING(v) do { (v) = NULL; } while(0)  ///< After e.g. delete, set variable to NULL to indicate must not use later
+///< After e.g. delete, set variable to NULL to indicate must not use later
+# define VL_DANGLING(var) do { (var) = NULL; } while(0)
 #endif
+
+///< Perform an e.g. delete, then set variable to NULL to indicate must not use later.
+///< Unlike VL_DO_CLEAR the setting of the variable is only for debug reasons.
+#define VL_DO_DANGLING(stmt, var) do { do { stmt; } while(0); VL_DANGLING(var); } while(0)
+
+///< Perform an e.g. delete, then set variable to NULL as a requirement
+#define VL_DO_CLEAR(stmt, stmt2) do { do { stmt; } while(0); do { stmt2; } while(0); } while(0)
 
 //=========================================================================
 // C++-2011
@@ -176,11 +184,15 @@
 #  define VL_INCLUDE_UNORDERED_MAP <unordered_map>
 #  define VL_INCLUDE_UNORDERED_SET <unordered_set>
 # endif
+# define VL_FINAL final
+# define VL_OVERRIDE override
 #else
 # define VL_EQ_DELETE
 # define vl_unique_ptr std::auto_ptr
 # define VL_INCLUDE_UNORDERED_MAP "verilated_unordered_set_map.h"
 # define VL_INCLUDE_UNORDERED_SET "verilated_unordered_set_map.h"
+# define VL_FINAL
+# define VL_OVERRIDE
 #endif
 
 //=========================================================================
@@ -261,6 +273,10 @@ typedef signed   __int32        ssize_t;        ///< signed size_t; returned fro
 
 #else  // Linux or compliant Unix flavors, -m64
 
+// The inttypes supplied with some GCC versions requires STDC_FORMAT_MACROS
+// to be declared in order to get the PRIxx macros used by fstapi.c
+#define __STDC_FORMAT_MACROS
+
 # include <inttypes.h>  // Solaris
 # include <stdint.h>  // Linux and most flavors
 # include <sys/types.h>  // __WORDSIZE
@@ -324,6 +340,7 @@ typedef unsigned long long      vluint64_t;     ///< 64-bit unsigned type
 #define VL_QUADSIZE 64                  ///< Bits in a QData / quadword
 #define VL_EDATASIZE 32                 ///< Bits in a EData (WData entry)
 #define VL_EDATASIZE_LOG2 5             ///< log2(VL_EDATASIZE)
+#define VL_CACHE_LINE_BYTES 64          ///< Bytes in a cache line (for alignment)
 
 /// Bytes this number of bits needs (1 bit=1 byte)
 #define VL_BYTES_I(nbits) (((nbits) + (VL_BYTESIZE - 1)) / VL_BYTESIZE)

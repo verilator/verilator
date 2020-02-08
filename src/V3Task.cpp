@@ -129,15 +129,14 @@ public:
         return iter->second;
     }
     bool ftaskNoInline(AstNodeFTask* nodep) {
-        return (getFTaskVertex(nodep)->noInline());
+        return getFTaskVertex(nodep)->noInline();
     }
     AstCFunc* ftaskCFuncp(AstNodeFTask* nodep) {
-        return (getFTaskVertex(nodep)->cFuncp());
+        return getFTaskVertex(nodep)->cFuncp();
     }
     void ftaskCFuncp(AstNodeFTask* nodep, AstCFunc* cfuncp) {
         getFTaskVertex(nodep)->cFuncp(cfuncp);
     }
-
     void checkPurity(AstNodeFTask* nodep) {
         checkPurity(nodep, getFTaskVertex(nodep));
     }
@@ -164,7 +163,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstScope* nodep) {
+    virtual void visit(AstScope* nodep) VL_OVERRIDE {
         // Each FTask is unique per-scope, so AstNodeFTaskRefs do not need
         // pointers to what scope the FTask is to be invoked under.
         // However, to create variables, we need to track the scopes involved.
@@ -185,24 +184,24 @@ private:
         }
         iterateChildren(nodep);
     }
-    virtual void visit(AstAssignW* nodep) {
+    virtual void visit(AstAssignW* nodep) VL_OVERRIDE {
         m_assignwp = nodep;
-        iterateChildren(nodep); VL_DANGLING(nodep);  // May delete nodep.
+        VL_DO_DANGLING(iterateChildren(nodep), nodep);  // May delete nodep.
         m_assignwp = NULL;
     }
-    virtual void visit(AstNodeFTaskRef* nodep) {
+    virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
         if (m_assignwp) {
             // Wire assigns must become always statements to deal with insertion
             // of multiple statements.  Perhaps someday make all wassigns into always's?
             UINFO(5,"     IM_WireRep  "<<m_assignwp<<endl);
             m_assignwp->convertToAlways();
-            pushDeletep(m_assignwp); m_assignwp = NULL;
+            VL_DO_CLEAR(pushDeletep(m_assignwp), m_assignwp = NULL);
         }
         // We make multiple edges if a task is called multiple times from another task.
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked task");
         new TaskEdge(&m_callGraph, m_curVxp, getFTaskVertex(nodep->taskp()));
     }
-    virtual void visit(AstNodeFTask* nodep) {
+    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
         UINFO(9,"  TASK "<<nodep<<endl);
         TaskBaseVertex* lastVxp = m_curVxp;
         m_curVxp = getFTaskVertex(nodep);
@@ -210,21 +209,21 @@ private:
         iterateChildren(nodep);
         m_curVxp = lastVxp;
     }
-    virtual void visit(AstPragma* nodep) {
+    virtual void visit(AstPragma* nodep) VL_OVERRIDE {
         if (nodep->pragType() == AstPragmaType::NO_INLINE_TASK) {
             // Just mark for the next steps, and we're done with it.
             m_curVxp->noInline(true);
-            nodep->unlinkFrBack()->deleteTree();
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else {
             iterateChildren(nodep);
         }
     }
-    virtual void visit(AstVar* nodep) {
+    virtual void visit(AstVar* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         nodep->user4p(m_curVxp);  // Remember what task it's under
     }
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         if (nodep->varp()->user4u().toGraphVertex() != m_curVxp) {
             if (m_curVxp->pure()
@@ -235,7 +234,7 @@ private:
     }
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 public:
@@ -265,7 +264,7 @@ private:
     //   AstVar::user2p         // AstVarScope* to replace varref with
 
     // VISITORS
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         // Similar code in V3Inline
         if (nodep->varp()->user2p()) {  // It's being converted to an alias.
             UINFO(9, "    relinkVar "<<cvtToHex(nodep->varp()->user2p())<<" "<<nodep<<endl);
@@ -279,7 +278,7 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 public:
@@ -384,7 +383,7 @@ private:
                 UINFO(9, "     Port "<<portp<<endl);
                 UINFO(9, "      pin "<<pinp<<endl);
                 pinp->unlinkFrBack();  // Relinked to assignment below
-                argp->unlinkFrBack()->deleteTree();  // Args no longer needed
+                VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);  // Args no longer needed
                 //
                 if (portp->isWritable() && VN_IS(pinp, Const)) {
                     pinp->v3error("Function/task "
@@ -416,12 +415,12 @@ private:
 
                     // Even if it's referencing a varref, we still make a temporary
                     // Else task(x,x,x) might produce incorrect results
-                    AstVarScope* outvscp
+                    AstVarScope* tempvscp
                         = createVarScope(portp, namePrefix+"__"+portp->shortName());
-                    portp->user2p(outvscp);
-                    AstAssign* assp = new AstAssign(pinp->fileline(),
-                                                    pinp,
-                                                    new AstVarRef(outvscp->fileline(), outvscp, false));
+                    portp->user2p(tempvscp);
+                    AstAssign* assp
+                        = new AstAssign(pinp->fileline(), pinp,
+                                        new AstVarRef(tempvscp->fileline(), tempvscp, false));
                     assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);  // Ok if in <= block
                     // Put assignment BEHIND of all other statements
                     beginp->addNext(assp);
@@ -470,8 +469,9 @@ private:
         // Iteration requires a back, so put under temporary node
         {
             AstBegin* tempp = new AstBegin(beginp->fileline(), "[EditWrapper]", beginp);
-            TaskRelinkVisitor visit (tempp);
-            tempp->stmtsp()->unlinkFrBackWithNext(); tempp->deleteTree(); VL_DANGLING(tempp);
+            TaskRelinkVisitor visitor(tempp);
+            tempp->stmtsp()->unlinkFrBackWithNext();
+            VL_DO_DANGLING(tempp->deleteTree(), tempp);
         }
         //
         if (debug()>=9) { beginp->dumpTreeAndNext(cout, "-iotask: "); }
@@ -489,8 +489,8 @@ private:
                                          string("Function: ")+refp->name(), true);
         AstCCall* ccallp = new AstCCall(refp->fileline(), cfuncp, NULL);
         beginp->addNext(ccallp);
-        // Convert complicated outputs to temp signals
 
+        // Convert complicated outputs to temp signals
         V3TaskConnects tconnects = V3Task::taskConnects(refp, refp->taskp()->stmtsp());
         for (V3TaskConnects::iterator it=tconnects.begin(); it!=tconnects.end(); ++it) {
             AstVar* portp = it->first;
@@ -521,7 +521,7 @@ private:
                     // Correct lvalue; we didn't know when we linked
                     // This is slightly scary; are we sure no decisions were made
                     // before here based on this not being a lvalue?
-                    // Doesn't seem so; V3Unknown uses it earlier, but works ok.
+                    // Seems correct assumption; V3Unknown uses it earlier, but works ok.
                     V3LinkLValue::linkLValueSet(pinp);
 
                     // Even if it's referencing a varref, we still make a temporary
@@ -933,7 +933,7 @@ private:
                 && portp->dtypep()->basicp()->keyword().isDpiUnreturnable()) {
                 portp->v3error("DPI function may not return type "
                                <<portp->basicp()->prettyTypeName()
-                               <<" (IEEE 2017 35.5.5)");
+                               <<" (IEEE 1800-2017 35.5.5)");
             }
             portp->unlinkFrBack();
             rtnvarp = portp;
@@ -954,7 +954,7 @@ private:
                 }
                 if (nodep->dpiOpenParent()) {
                     // No need to make more than just the c prototype, children will
-                    pushDeletep(nodep); VL_DANGLING(nodep);
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return NULL;
                 }
             }
@@ -1073,11 +1073,12 @@ private:
         // Iteration requires a back, so put under temporary node
         {
             AstBegin* tempp = new AstBegin(cfuncp->fileline(), "[EditWrapper]", cfuncp);
-            TaskRelinkVisitor visit (tempp);
-            tempp->stmtsp()->unlinkFrBackWithNext(); tempp->deleteTree(); VL_DANGLING(tempp);
+            TaskRelinkVisitor visitor(tempp);
+            tempp->stmtsp()->unlinkFrBackWithNext();
+            VL_DO_DANGLING(tempp->deleteTree(), tempp);
         }
         // Delete rest of cloned task and return new func
-        pushDeletep(nodep); VL_DANGLING(nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
         if (debug()>=9) { cfuncp->dumpTree(cout, "-userFunc: "); }
         return cfuncp;
     }
@@ -1126,24 +1127,29 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) {
-        m_modp = nodep;
-        m_insStmtp = NULL;
-        m_modNCalls = 0;
-        iterateChildren(nodep);
-        m_modp = NULL;
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+        AstNodeModule* origModp = m_modp;
+        int origNCalls = m_modNCalls;
+        {
+            m_modp = nodep;
+            m_insStmtp = NULL;
+            m_modNCalls = 0;
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
+        m_modNCalls = origNCalls;
     }
-    virtual void visit(AstTopScope* nodep) {
+    virtual void visit(AstTopScope* nodep) VL_OVERRIDE {
         m_topScopep = nodep;
         iterateChildren(nodep);
     }
-    virtual void visit(AstScope* nodep) {
+    virtual void visit(AstScope* nodep) VL_OVERRIDE {
         m_scopep = nodep;
         m_insStmtp = NULL;
         iterateChildren(nodep);
         m_scopep = NULL;
     }
-    virtual void visit(AstNodeFTaskRef* nodep) {
+    virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked?");
         iterateIntoFTask(nodep->taskp());  // First, do hierarchical funcs
         UINFO(4," FTask REF   "<<nodep<<endl);
@@ -1177,19 +1183,19 @@ private:
         } else {
             if (nodep->taskp()->isFunction()) {
                 nodep->v3warn(IGNOREDRETURN,
-                              "Ignoring return value of non-void function (IEEE 2017 13.4.1)");
+                              "Ignoring return value of non-void function (IEEE 1800-2017 13.4.1)");
             }
             // outvscp maybe non-NULL if calling a function in a taskref,
             // but if so we want to simply ignore the function result
             nodep->replaceWith(beginp);
         }
         // Cleanup
-        nodep->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
         UINFO(4,"  FTask REF Done.\n");
         // Visit nodes that normal iteration won't find
         if (visitp) iterateAndNextNull(visitp);
     }
-    virtual void visit(AstNodeFTask* nodep) {
+    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
         UINFO(4," Inline   "<<nodep<<endl);
         InsertMode prevInsMode = m_insMode;
         AstNode* prevInsStmtp = m_insStmtp;
@@ -1231,7 +1237,7 @@ private:
                 if (AstVar* portp = VN_CAST(nodep->fvarp(), Var)) {
                     AstVarScope* vscp = m_statep->findVarScope(m_scopep, portp);
                     UINFO(9,"   funcremovevsc "<<vscp<<endl);
-                    pushDeletep(vscp->unlinkFrBack()); VL_DANGLING(vscp);
+                    VL_DO_DANGLING(pushDeletep(vscp->unlinkFrBack()), vscp);
                 }
             }
             for (AstNode* nextp, *stmtp = nodep->stmtsp(); stmtp; stmtp = nextp) {
@@ -1239,18 +1245,18 @@ private:
                 if (AstVar* portp = VN_CAST(stmtp, Var)) {
                     AstVarScope* vscp = m_statep->findVarScope(m_scopep, portp);
                     UINFO(9,"   funcremovevsc "<<vscp<<endl);
-                    pushDeletep(vscp->unlinkFrBack()); VL_DANGLING(vscp);
+                    VL_DO_DANGLING(pushDeletep(vscp->unlinkFrBack()), vscp);
                 }
             }
             // Just push for deletion, as other references to func may
             // remain until visitor exits
             nodep->unlinkFrBack();
-            pushDeletep(nodep); VL_DANGLING(nodep);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         m_insMode = prevInsMode;
         m_insStmtp = prevInsStmtp;
     }
-    virtual void visit(AstWhile* nodep) {
+    virtual void visit(AstWhile* nodep) VL_OVERRIDE {
         // Special, as statements need to be put in different places
         // Preconditions insert first just before themselves (the normal
         // rule for other statement types)
@@ -1267,10 +1273,10 @@ private:
         // Done the loop
         m_insStmtp = NULL;  // Next thing should be new statement
     }
-    virtual void visit(AstNodeFor* nodep) {
+    virtual void visit(AstNodeFor* nodep) VL_OVERRIDE {
         nodep->v3fatalSrc("For statements should have been converted to while statements in V3Begin.cpp");
     }
-    virtual void visit(AstNodeStmt* nodep) {
+    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE {
         if (!nodep->isStatement()) {
             iterateChildren(nodep);
             return;
@@ -1282,7 +1288,7 @@ private:
     }
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 
@@ -1348,7 +1354,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
                 pinp->v3error("No such argument "<<argp->prettyNameQ()
                               <<" in function call to "<<nodep->taskp()->prettyTypeName());
                 // We'll just delete it; seems less error prone than making a false argument
-                pinp->unlinkFrBack()->deleteTree(); VL_DANGLING(pinp);
+                VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
             } else {
                 if (tconnects[it->second].second) {
                     pinp->v3error("Duplicate argument "<<argp->prettyNameQ()
@@ -1368,7 +1374,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
                     pinp->v3error("Too many arguments in function call to "
                                   <<nodep->taskp()->prettyTypeName());
                     // We'll just delete it; seems less error prone than making a false argument
-                    pinp->unlinkFrBack()->deleteTree(); VL_DANGLING(pinp);
+                    VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
                 }
             } else {
                 tconnects[ppinnum].second = argp;
@@ -1411,7 +1417,8 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
             UINFO(9,"Default pin for "<<portp<<endl);
             AstArg* newp = new AstArg(nodep->fileline(), portp->name(), newvaluep);
             if (tconnects[i].second) {  // Have a "NULL" pin already defined for it
-                tconnects[i].second->unlinkFrBack()->deleteTree(); tconnects[i].second = NULL;
+                VL_DO_CLEAR(tconnects[i].second->unlinkFrBack()->deleteTree(),
+                            tconnects[i].second = NULL);
             }
             tconnects[i].second = newp;
             reorganize = true;

@@ -114,16 +114,18 @@ public:
 	if (!rangep) return exprp;
 	else return new AstGatePin(rangep->fileline(), exprp, rangep->cloneTree(true));
     }
-    void endLabel(FileLine* fl, AstNode* nodep, string* endnamep) { endLabel(fl, nodep->prettyName(), endnamep); }
-    void endLabel(FileLine* fl, string name, string* endnamep) {
-	if (fl && endnamep && *endnamep != "" && name != *endnamep
-	    && name != AstNode::prettyName(*endnamep)) {
-	    fl->v3warn(ENDLABEL,"End label '"<<*endnamep<<"' does not match begin label '"<<name<<"'");
-	}
+    void endLabel(FileLine* fl, AstNode* nodep, string* endnamep) {
+        endLabel(fl, nodep->prettyName(), endnamep);
+    }
+    void endLabel(FileLine* fl, const string& name, string* endnamep) {
+        if (fl && endnamep && *endnamep != "" && name != *endnamep
+            && name != AstNode::prettyName(*endnamep)) {
+            fl->v3warn(ENDLABEL,"End label '"<<*endnamep<<"' does not match begin label '"<<name<<"'");
+        }
     }
     void setVarDecl(AstVarType type) { m_varDecl = type; }
     void setDType(AstNodeDType* dtypep) {
-	if (m_varDTypep) { m_varDTypep->deleteTree(); m_varDTypep=NULL; } // It was cloned, so this is safe.
+	if (m_varDTypep) VL_DO_CLEAR(m_varDTypep->deleteTree(), m_varDTypep=NULL);  // It was cloned, so this is safe.
 	m_varDTypep = dtypep;
     }
     AstPackage* unitPackage(FileLine* fl) {
@@ -161,7 +163,7 @@ public:
                         // It's no longer implicit but a wire logic type
                         AstBasicDType* newp = new AstBasicDType(dtypep->fileline(), AstBasicDTypeKwd::LOGIC,
                                                                 dtypep->numeric(), dtypep->width(), dtypep->widthMin());
-                        dtypep->deleteTree(); VL_DANGLING(dtypep);
+                        VL_DO_DANGLING(dtypep->deleteTree(), dtypep);
                         dtypep = newp;
                     }
                     dtypep->rangep(finalRangep);
@@ -273,17 +275,39 @@ class AstSenTree;
 %token<strp>		yaSCCTOR	"`systemc_implementation BLOCK"
 %token<strp>		yaSCDTOR	"`systemc_imp_header BLOCK"
 
-%token<fl>		yVLT_COVERAGE_OFF "coverage_off"
-%token<fl>		yVLT_COVERAGE_ON  "coverage_on"
-%token<fl>		yVLT_LINT_OFF	  "lint_off"
-%token<fl>		yVLT_LINT_ON	  "lint_on"
-%token<fl>		yVLT_TRACING_OFF  "tracing_off"
-%token<fl>		yVLT_TRACING_ON   "tracing_on"
+%token<fl>		yVLT_CLOCKER                "clocker"
+%token<fl>		yVLT_CLOCK_ENABLE           "clock_enable"
+%token<fl>		yVLT_COVERAGE_BLOCK_OFF     "coverage_block_off"
+%token<fl>		yVLT_COVERAGE_OFF           "coverage_off"
+%token<fl>		yVLT_COVERAGE_ON            "coverage_on"
+%token<fl>		yVLT_FULL_CASE              "full_case"
+%token<fl>		yVLT_INLINE                 "inline"
+%token<fl>		yVLT_ISOLATE_ASSIGNMENTS    "isolate_assignments"
+%token<fl>		yVLT_LINT_OFF               "lint_off"
+%token<fl>		yVLT_LINT_ON                "lint_on"
+%token<fl>		yVLT_NO_CLOCKER             "no_clocker"
+%token<fl>		yVLT_NO_INLINE              "no_inline"
+%token<fl>		yVLT_PARALLEL_CASE          "parallel_case"
+%token<fl>		yVLT_PUBLIC                 "public"
+%token<fl>		yVLT_PUBLIC_FLAT            "public_flat"
+%token<fl>		yVLT_PUBLIC_FLAT_RD         "public_flat_rd"
+%token<fl>		yVLT_PUBLIC_FLAT_RW         "public_flat_rw"
+%token<fl>		yVLT_PUBLIC_MODULE          "public_module"
+%token<fl>		yVLT_SC_BV                  "sc_bv"
+%token<fl>		yVLT_SFORMAT                "sformat"
+%token<fl>		yVLT_TRACING_OFF            "tracing_off"
+%token<fl>		yVLT_TRACING_ON             "tracing_on"
 
-%token<fl>		yVLT_D_FILE	"--file"
-%token<fl>		yVLT_D_LINES	"--lines"
-%token<fl>		yVLT_D_MSG	"--msg"
-%token<fl>		yVLT_D_RULE	"--rule"
+%token<fl>		yVLT_D_BLOCK    "--block"
+%token<fl>		yVLT_D_FILE     "--file"
+%token<fl>		yVLT_D_FUNCTION "--function"
+%token<fl>		yVLT_D_LINES    "--lines"
+%token<fl>		yVLT_D_MODULE   "--module"
+%token<fl>		yVLT_D_MATCH    "--match"
+%token<fl>		yVLT_D_MSG      "--msg"
+%token<fl>		yVLT_D_RULE     "--rule"
+%token<fl>		yVLT_D_TASK     "--task"
+%token<fl>		yVLT_D_VAR      "--var"
 
 %token<strp>		yaD_IGNORE	"${ignored-bbox-sys}"
 %token<strp>		yaD_DPI		"${dpi-sys}"
@@ -569,6 +593,7 @@ class AstSenTree;
 %token<fl>		yD_REWIND	"$rewind"
 %token<fl>		yD_RIGHT	"$right"
 %token<fl>		yD_RTOI		"$rtoi"
+%token<fl>		yD_SAMPLED	"$sampled"
 %token<fl>		yD_SFORMAT	"$sformat"
 %token<fl>		yD_SFORMATF	"$sformatf"
 %token<fl>		yD_SHORTREALTOBITS "$shortrealtobits"
@@ -586,6 +611,7 @@ class AstSenTree;
 %token<fl>		yD_TANH		"$tanh"
 %token<fl>		yD_TESTPLUSARGS	"$test$plusargs"
 %token<fl>		yD_TIME		"$time"
+%token<fl>		yD_TYPENAME	"$typename"
 %token<fl>		yD_UNGETC	"$ungetc"
 %token<fl>		yD_UNIT		"$unit"
 %token<fl>		yD_UNPACKED_DIMENSIONS "$unpacked_dimensions"
@@ -707,6 +733,7 @@ class AstSenTree;
 %nonassoc yELSE
 
 //BISONPRE_TYPES
+//  Blank lines for type insertion
 //  Blank lines for type insertion
 //  Blank lines for type insertion
 //  Blank lines for type insertion
@@ -1543,7 +1570,7 @@ data_typeNoRef<dtypep>:		// ==IEEE: data_type, excluding class_type etc referenc
 	//			// instead see data_typeVar
 	|	yVIRTUAL__INTERFACE yINTERFACE id/*interface*/	{ $$ = NULL; BBUNSUP($1, "Unsupported: virtual interface"); }
 	|	yVIRTUAL__anyID                id/*interface*/	{ $$ = NULL; BBUNSUP($1, "Unsupported: virtual data type"); }
-	//UNSUP	type_reference				{ UNSUP }
+	|	type_reference				{ $$ = $1; }
 	//			// IEEE: class_scope: see data_type above
 	//			// IEEE: class_type: see data_type above
 	//			// IEEE: ps_covergroup: see data_type above
@@ -1560,9 +1587,9 @@ var_data_type<dtypep>:		// ==IEEE: var_data_type
 	|	yVAR implicit_typeE			{ $$ = $2; }
 	;
 
-//UNSUP type_reference<dtypep>:  // ==IEEE: type_reference
-//UNSUP		yTYPE '(' exprOrDataType ')'		{ UNSUP }
-//UNSUP	;
+type_reference<dtypep>:  	// ==IEEE: type_reference
+		yTYPE '(' exprOrDataType ')'		{ $$ = new AstRefDType($1, AstRefDType::FlagTypeOfExpr(), $3); }
+	;
 
 struct_unionDecl<uorstructp>:	// IEEE: part of data_type
 	//			// packedSigningE is NOP for unpacked
@@ -2103,7 +2130,7 @@ loop_generate_construct<nodep>:	// ==IEEE: loop_generate_construct
 			  // for loop won't get an extra layer of hierarchy tacked on
 			  blkp->addGenforp(new AstGenFor($1,initp,$5,$7,lowerNoBegp));
 			  $$ = blkp;
-			  lowerBegp->deleteTree(); VL_DANGLING(lowerBegp);
+			  VL_DO_DANGLING(lowerBegp->deleteTree(), lowerBegp);
 			}
 	;
 
@@ -2339,7 +2366,10 @@ etcInst<nodep>:			// IEEE: module_instantiation + gate_instantiation + udp_insta
 instDecl<nodep>:
 		id parameter_value_assignmentE {INSTPREP($<fl>1,*$1,$2);} instnameList ';'
 			{ $$ = $4; GRAMMARP->m_impliedDecl=false;
-			  if (GRAMMARP->m_instParamp) { GRAMMARP->m_instParamp->deleteTree(); GRAMMARP->m_instParamp = NULL; } }
+			  if (GRAMMARP->m_instParamp) {
+			      VL_DO_CLEAR(GRAMMARP->m_instParamp->deleteTree(),
+					  GRAMMARP->m_instParamp = NULL);
+			  } }
 	//			// IEEE: interface_identifier' .' modport_identifier list_of_interface_identifiers
 	|	id/*interface*/ '.' id/*modport*/
 			{ VARRESET_NONLIST(AstVarType::IFACEREF);
@@ -2459,6 +2489,11 @@ cellpinItemE<pinp>:		// IEEE: named_port_connection + empty
 
 //************************************************
 // EventControl lists
+
+attr_event_controlE<sentreep>:
+		/* empty */					{ $$ = NULL; }
+	|	attr_event_control			{ $$ = $1; }
+	;
 
 attr_event_control<sentreep>:	// ==IEEE: event_control
 		'@' '(' event_expression ')'		{ $$ = new AstSenTree($1,$3); }
@@ -3232,6 +3267,7 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_RIGHT '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,NULL); }
 	|	yD_RIGHT '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,$5); }
 	|	yD_RTOI '(' expr ')'			{ $$ = new AstRToIS($1,$3); }
+	|	yD_SAMPLED '(' expr ')'			{ $$ = new AstSampled($1, $3); }
 	|	yD_SFORMATF '(' str commaEListE ')'	{ $$ = new AstSFormatF($1,*$3,false,$4); }
 	|	yD_SHORTREALTOBITS '(' expr ')'		{ $$ = new AstRealToBits($1,$3); UNSUPREAL($1); }
 	|	yD_SIGNED '(' expr ')'			{ $$ = new AstSigned($1,$3); }
@@ -3246,6 +3282,7 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_TANH '(' expr ')'			{ $$ = new AstTanhD($1,$3); }
 	|	yD_TESTPLUSARGS '(' str ')'		{ $$ = new AstTestPlusArgs($1,*$3); }
 	|	yD_TIME	parenE				{ $$ = new AstTime($1); }
+	|	yD_TYPENAME '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1, AstAttrType::TYPENAME, $3); }
 	|	yD_UNGETC '(' expr ',' expr ')'		{ $$ = new AstFUngetC($1, $5, $3); }  // Arg swap to file first
 	|	yD_UNPACKED_DIMENSIONS '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_UNPK_DIMENSIONS,$3); }
 	|	yD_UNSIGNED '(' expr ')'		{ $$ = new AstUnsigned($1,$3); }
@@ -4465,7 +4502,7 @@ simple_immediate_assertion_statement<nodep>:	// ==IEEE: simple_immediate_asserti
 
 final_zero:			// IEEE: part of deferred_immediate_assertion_statement
 		'#' yaINTNUM
-			{ if ($2->isNeqZero()) { $<fl>2->v3error("Deferred assertions must use '#0' (IEEE 2017 16.4)"); } }
+			{ if ($2->isNeqZero()) { $<fl>2->v3error("Deferred assertions must use '#0' (IEEE 1800-2017 16.4)"); } }
 	//			// 1800-2012:
 	|	yFINAL							{ }
 	;
@@ -5326,13 +5363,17 @@ classExtendsE<nodep>:		// IEEE: part of class_declaration
 
 classExtendsList<nodep>:	// IEEE: part of class_declaration
 		classExtendsOne				{ $$ = $1; }
-	|	classExtendsList ',' classExtendsOne	{ $$ = AstNode::addNextNull($1, $3); }
+	|	classExtendsList ',' classExtendsOne
+			{ $$ = $3; BBUNSUP($3, "Multiple inheritance illegal on non-interface classes (IEEE 1800-2017 8.13)"
+					       ", and unsupported for interface classes."); }
 	;
 
 classExtendsOne<nodep>:		// IEEE: part of class_declaration
-		class_typeWithoutId			{ $$ = NULL; BBUNSUP($1, "Unsupported: extends"); }
+		class_typeWithoutId
+			{ $$ = NULL; BBUNSUP($1, "Unsupported: extends"); }
 	//			// IEEE: Might not be legal to have more than one set of parameters in an extends
-	|	class_typeWithoutId '(' list_of_argumentsE ')'	{ $$ = NULL; BBUNSUP($1, "Unsupported: extends"); }
+	|	class_typeWithoutId '(' list_of_argumentsE ')'
+			{ $$ = NULL; BBUNSUP($1, "Unsupported: extends"); }
 	;
 
 classImplementsE<nodep>:	// IEEE: part of class_declaration
@@ -5582,14 +5623,45 @@ memberQualOne<nodep>:			// IEEE: property_qualifier + method_qualifier
 // VLT Files
 
 vltItem:
-		vltOffFront				{ V3Config::addIgnore($1,false,"*",0,0); }
-	|	vltOffFront yVLT_D_FILE yaSTRING	{ V3Config::addIgnore($1,false,*$3,0,0); }
-	|	vltOffFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM			{ V3Config::addIgnore($1,false,*$3,$5->toUInt(),$5->toUInt()+1); }
-	|	vltOffFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM '-' yaINTNUM	{ V3Config::addIgnore($1,false,*$3,$5->toUInt(),$7->toUInt()+1); }
-	|	vltOnFront				{ V3Config::addIgnore($1,true,"*",0,0); }
-	|	vltOnFront yVLT_D_FILE yaSTRING		{ V3Config::addIgnore($1,true,*$3,0,0); }
-	|	vltOnFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM			{ V3Config::addIgnore($1,true,*$3,$5->toUInt(),$5->toUInt()+1); }
-	|	vltOnFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM '-' yaINTNUM	{ V3Config::addIgnore($1,true,*$3,$5->toUInt(),$7->toUInt()+1); }
+
+		vltOffFront			{ V3Config::addIgnore($1, false, "*", 0, 0); }
+	|	vltOffFront yVLT_D_FILE yaSTRING
+			{ V3Config::addIgnore($1, false, *$3, 0, 0); }
+	|	vltOffFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM
+			{ V3Config::addIgnore($1, false, *$3, $5->toUInt(), $5->toUInt()+1); }
+	|	vltOffFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM '-' yaINTNUM
+			{ V3Config::addIgnore($1, false, *$3, $5->toUInt(), $7->toUInt()+1); }
+	|	vltOffFront yVLT_D_FILE yaSTRING yVLT_D_MATCH yaSTRING
+			{	if (($1==V3ErrorCode::I_COVERAGE) || ($1==V3ErrorCode::I_TRACING)) {
+					$<fl>1->v3error("Argument -match only supported for lint_off"<<endl);
+				} else {
+					V3Config::addWaiver($1,*$3,*$5);
+				}}
+	|	vltOnFront			{ V3Config::addIgnore($1, true, "*", 0, 0); }
+	|	vltOnFront yVLT_D_FILE yaSTRING
+			{ V3Config::addIgnore($1, true, *$3, 0, 0); }
+	|	vltOnFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM
+			{ V3Config::addIgnore($1, true, *$3, $5->toUInt(), $5->toUInt()+1); }
+	|	vltOnFront yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM '-' yaINTNUM
+			{ V3Config::addIgnore($1, true, *$3, $5->toUInt(), $7->toUInt()+1); }
+	|	vltVarAttrFront vltDModuleE vltDFTaskE vltVarAttrVarE attr_event_controlE
+			{ V3Config::addVarAttr($<fl>1, *$2, *$3, *$4, $1, $5); }
+	|	vltInlineFront vltDModuleE vltDFTaskE
+			{ V3Config::addInline($<fl>1, *$2, *$3, $1); }
+	|	yVLT_COVERAGE_BLOCK_OFF yVLT_D_FILE yaSTRING
+			{ V3Config::addCoverageBlockOff(*$3, 0); }
+	|	yVLT_COVERAGE_BLOCK_OFF yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM
+			{ V3Config::addCoverageBlockOff(*$3, $5->toUInt()); }
+	|	yVLT_COVERAGE_BLOCK_OFF yVLT_D_MODULE yaSTRING yVLT_D_BLOCK yaSTRING
+			{ V3Config::addCoverageBlockOff(*$3, *$5); }
+	|	yVLT_FULL_CASE yVLT_D_FILE yaSTRING
+			{ V3Config::addCaseFull(*$3, 0); }
+	|	yVLT_FULL_CASE yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM
+			{ V3Config::addCaseFull(*$3, $5->toUInt()); }
+	|	yVLT_PARALLEL_CASE yVLT_D_FILE yaSTRING
+			{ V3Config::addCaseParallel(*$3, 0); }
+	|	yVLT_PARALLEL_CASE yVLT_D_FILE yaSTRING yVLT_D_LINES yaINTNUM
+			{ V3Config::addCaseParallel(*$3, $5->toUInt()); }
 	;
 
 vltOffFront<errcodeen>:
@@ -5616,6 +5688,40 @@ vltOnFront<errcodeen>:
 	|	yVLT_LINT_ON yVLT_D_RULE yaID__ETC
 			{ $$ = V3ErrorCode((*$3).c_str());
 			  if ($$ == V3ErrorCode::EC_ERROR) { $1->v3error("Unknown Error Code: "<<*$3<<endl);  } }
+	;
+
+vltDModuleE<strp>:
+		/* empty */					{ static string unit = "__024unit"; $$ = &unit; }
+	|	yVLT_D_MODULE str			{ $$ = $2; }
+	;
+
+vltDFTaskE<strp>:
+		/* empty */					{ static string empty = ""; $$ = &empty; }
+	|	yVLT_D_FUNCTION str			{ $$ = $2; }
+	|	yVLT_D_TASK str				{ $$ = $2; }
+	;
+
+vltInlineFront<cbool>:
+		yVLT_INLINE					{ $$ = true; }
+	|	yVLT_NO_INLINE				{ $$ = false; }
+	;
+
+vltVarAttrVarE<strp>:
+		/* empty */					{ static string empty = ""; $$ = &empty; }
+	|	yVLT_D_VAR str				{ $$ = $2; }
+	;
+
+vltVarAttrFront<attrtypeen>:
+		yVLT_CLOCK_ENABLE           { $$ = AstAttrType::VAR_CLOCK_ENABLE; }
+	|	yVLT_CLOCKER                { $$ = AstAttrType::VAR_CLOCKER; }
+	|	yVLT_ISOLATE_ASSIGNMENTS    { $$ = AstAttrType::VAR_ISOLATE_ASSIGNMENTS; }
+	|	yVLT_NO_CLOCKER             { $$ = AstAttrType::VAR_NO_CLOCKER; }
+	|	yVLT_PUBLIC                 { $$ = AstAttrType::VAR_PUBLIC; v3Global.dpi(true); }
+	|	yVLT_PUBLIC_FLAT            { $$ = AstAttrType::VAR_PUBLIC_FLAT; v3Global.dpi(true); }
+	|	yVLT_PUBLIC_FLAT_RD         { $$ = AstAttrType::VAR_PUBLIC_FLAT_RD; v3Global.dpi(true); }
+	|	yVLT_PUBLIC_FLAT_RW         { $$ = AstAttrType::VAR_PUBLIC_FLAT_RW; v3Global.dpi(true); }
+	|	yVLT_SC_BV                  { $$ = AstAttrType::VAR_SC_BV; }
+	|	yVLT_SFORMAT                { $$ = AstAttrType::VAR_SFORMAT; }
 	;
 
 //**********************************************************************

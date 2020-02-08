@@ -573,7 +573,7 @@ public:
         edges.erase(relativep);
     }
     bool hasRelative(GraphWay way, LogicMTask* relativep) {
-        EdgeSet& edges = m_edges[way];
+        const EdgeSet& edges = m_edges[way];
         return edges.has(relativep);
     }
     void checkRelativesCp(GraphWay way) const {
@@ -1041,7 +1041,7 @@ static void partCheckCriticalPaths(V3Graph* mtasksp) {
 // Advance to nextp(way) and delete edge
 static V3GraphEdge* partBlastEdgep(GraphWay way, V3GraphEdge* edgep) {
     V3GraphEdge* nextp = edgep->nextp(way);
-    edgep->unlinkDelete(); VL_DANGLING(edgep);
+    VL_DO_DANGLING(edgep->unlinkDelete(), edgep);
     return nextp;
 }
 
@@ -1411,7 +1411,7 @@ private:
             // Remove and free the connecting edge. Must do this before
             // propagating CP's below.
             m_sb.removeElem(mergeCanp);
-            mergeEdgep->unlinkDelete(); mergeEdgep=NULL;
+            VL_DO_CLEAR(mergeEdgep->unlinkDelete(), mergeEdgep=NULL);
         }
 
         // This also updates cost and stepCost on recipientp
@@ -1467,7 +1467,7 @@ private:
         partMergeEdgesFrom(m_mtasksp, recipientp, donorp, &m_sb);
 
         // Delete the donorp mtask from the graph
-        donorp->unlinkDelete(m_mtasksp); donorp = NULL;
+        VL_DO_CLEAR(donorp->unlinkDelete(m_mtasksp), donorp = NULL);
 
         m_mergesSinceRescore++;
 
@@ -1584,7 +1584,7 @@ private:
             }
             UASSERT_OBJ(found, ap, "Sibling not found");
         }
-    };
+    }
 
     static const GraphWay* s_shortestWaywardCpInclusiveWay;
     static int shortestWaywardCpInclusive(const void* vap, const void* vbp) {
@@ -1766,7 +1766,7 @@ private:
     // METHODS
     VL_DEBUG_FUNC;
 
-    virtual void visit(AstCFunc* nodep) {
+    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         if (!m_tracingCall) return;
         m_tracingCall = false;
         if (nodep->dpiImportWrapper()) {
@@ -1777,13 +1777,13 @@ private:
         }
         iterateChildren(nodep);
     }
-    virtual void visit(AstCCall* nodep) {
+    virtual void visit(AstCCall* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         // Enter the function and trace it
         m_tracingCall = true;
         iterate(nodep->funcp());
     }
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 
@@ -1965,7 +1965,7 @@ private:
                 // Move edges from donorp to recipientp
                 partMergeEdgesFrom(m_mtasksp, mergedp, donorp, NULL);
                 // Remove donorp from the graph
-                donorp->unlinkDelete(m_mtasksp); VL_DANGLING(donorp);
+                VL_DO_DANGLING(donorp->unlinkDelete(m_mtasksp), donorp);
                 m_mergesDone++;
             }
 
@@ -2697,10 +2697,10 @@ void V3Partition::finalizeCosts(V3Graph* execMTaskGraphp) {
                                     outp->top(), 1);
                 }
             }
-            mtp->unlinkDelete(execMTaskGraphp); VL_DANGLING(mtp);
+            VL_DO_DANGLING(mtp->unlinkDelete(execMTaskGraphp), mtp);
             // Also remove and delete the AstMTaskBody, otherwise it would
             // keep a dangling pointer to the ExecMTask.
-            bodyp->unlinkFrBack()->deleteTree(); VL_DANGLING(bodyp);
+            VL_DO_DANGLING(bodyp->unlinkFrBack()->deleteTree(), bodyp);
         }
     }
 

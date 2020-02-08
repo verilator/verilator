@@ -115,9 +115,9 @@ private:
         if (failsp) failsp->unlinkFrBackWithNext();
 
         if (nodep->immediate()) {
-            UASSERT_OBJ(!sentreep, nodep, "Immediate assertions don't have sensivity");
+            UASSERT_OBJ(!sentreep, nodep, "Immediate assertions don't have sensitivity");
         } else {
-            UASSERT_OBJ(sentreep, nodep, "Concurrent assertions must have sensivity");
+            UASSERT_OBJ(sentreep, nodep, "Concurrent assertions must have sensitivity");
             sentreep->unlinkFrBack();
         }
         //
@@ -164,17 +164,17 @@ private:
         if (selfDestruct) {
             // Delete it after making the tree.  This way we can tell the user
             // if it wasn't constructed nicely or has other errors without needing --coverage.
-            newp->deleteTree();
+            VL_DO_DANGLING(newp->deleteTree(), newp);
             nodep->unlinkFrBack();
         } else {
             nodep->replaceWith(newp);
         }
         // Bye
-        pushDeletep(nodep); VL_DANGLING(nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
 
     // VISITORS
-    virtual void visit(AstIf* nodep) {
+    virtual void visit(AstIf* nodep) VL_OVERRIDE {
         if (nodep->user1SetOnce()) return;
         if (nodep->uniquePragma() || nodep->unique0Pragma()) {
             AstNodeIf* ifp = nodep;
@@ -234,7 +234,7 @@ private:
     }
 
     //========== Case assertions
-    virtual void visit(AstCase* nodep) {
+    virtual void visit(AstCase* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             bool has_default = false;
@@ -296,7 +296,7 @@ private:
     }
 
     //========== Past
-    virtual void visit(AstPast* nodep) {
+    virtual void visit(AstPast* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         uint32_t ticks = 1;
         if (nodep->ticksp()) {
@@ -326,9 +326,13 @@ private:
         }
         nodep->replaceWith(inp);
     }
+    virtual void visit(AstSampled* nodep) VL_OVERRIDE {
+        nodep->replaceWith(nodep->exprp()->unlinkFrBack());
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
 
     //========== Statements
-    virtual void visit(AstDisplay* nodep) {
+    virtual void visit(AstDisplay* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         // Replace the special types with standard text
         if (nodep->displayType()==AstDisplayType::DT_INFO) {
@@ -341,29 +345,32 @@ private:
         }
     }
 
-    virtual void visit(AstAssert* nodep) {
+    virtual void visit(AstAssert* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         newPslAssertion(nodep, nodep->failsp());
     }
-    virtual void visit(AstCover* nodep) {
+    virtual void visit(AstCover* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         newPslAssertion(nodep, NULL);
     }
-    virtual void visit(AstRestrict* nodep) {
+    virtual void visit(AstRestrict* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         // IEEE says simulator ignores these
-        pushDeletep(nodep->unlinkFrBack()); VL_DANGLING(nodep);
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
 
-    virtual void visit(AstNodeModule* nodep) {
-        m_modp = nodep;
-        m_modPastNum = 0;
-        //
-        iterateChildren(nodep);
-        // Reset defaults
-        m_modp = NULL;
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+        AstNodeModule* origModp = m_modp;
+        unsigned origPastNum = m_modPastNum;
+        {
+            m_modp = nodep;
+            m_modPastNum = 0;
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
+        m_modPastNum = origPastNum;
     }
-    virtual void visit(AstBegin* nodep) {
+    virtual void visit(AstBegin* nodep) VL_OVERRIDE {
         // This code is needed rather than a visitor in V3Begin,
         // because V3Assert is called before V3Begin
         AstBegin* lastp = m_beginp;
@@ -374,7 +381,7 @@ private:
         m_beginp = lastp;
     }
 
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 public:

@@ -57,11 +57,11 @@ extern void yyerrorf(const char* format, ...);
 
 V3ParseImp::~V3ParseImp() {
     for (std::deque<string*>::iterator it = m_stringps.begin(); it != m_stringps.end(); ++it) {
-        delete (*it);
+        VL_DO_DANGLING(delete *it, *it);
     }
     m_stringps.clear();
     for (std::deque<V3Number*>::iterator it = m_numberps.begin(); it != m_numberps.end(); ++it) {
-        delete (*it);
+        VL_DO_DANGLING(delete *it, *it);
     }
     m_numberps.clear();
     lexDestroy();
@@ -72,15 +72,6 @@ V3ParseImp::~V3ParseImp() {
 
 //######################################################################
 // Parser utility methods
-
-void V3ParseImp::pragma(const char* textp) {
-    // Handle `pragma directive
-    if (0 == strncmp(textp, "`pragma", strlen("`pragma"))) textp += strlen("`pragma");
-    while (isspace(*textp)) ++textp;
-    if (!*textp) {
-        if (v3Global.opt.pedantic()) yyerrorf("`pragma is missing a pragma_expression.");
-    }
-}
 
 void V3ParseImp::ppline(const char* textp) {
     // Handle `line directive
@@ -181,7 +172,7 @@ double V3ParseImp::parseDouble(const char* textp, size_t length, bool* successp)
         if (successp) *successp = false;
         else yyerrorf("Syntax error parsing real: %s", strgp);
     }
-    delete[] strgp;
+    VL_DO_DANGLING(delete[] strgp, strgp);
     return d;
 }
 
@@ -265,7 +256,7 @@ void V3ParseImp::parseFile(FileLine* fileline, const string& modfilename, bool i
             preprocDumps(*osp);
             if (ofp) {
                 ofp->close();
-                delete ofp; VL_DANGLING(ofp);
+                VL_DO_DANGLING(delete ofp, ofp);
             }
         }
     }
@@ -297,7 +288,7 @@ V3Parse::V3Parse(AstNetlist* rootp, VInFilter* filterp, V3ParseSym* symp) {
     m_impp = new V3ParseImp(rootp, filterp, symp);
 }
 V3Parse::~V3Parse() {
-    delete m_impp; m_impp = NULL;
+    VL_DO_CLEAR(delete m_impp, m_impp = NULL);
 }
 void V3Parse::parseFile(FileLine* fileline, const string& modname, bool inLibrary,
                         const string& errmsg) {

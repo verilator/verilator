@@ -159,17 +159,17 @@ public:
     }
     void deleteAssign(AstNodeAssign* nodep) {
         UINFO(5, "Delete "<<nodep<<endl);
-        nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     void deleteUnusedAssign() {
         // If there are unused assignments in this var, kill them
         if (!m_whole.m_use && !m_wordUse && m_whole.m_assignp) {
-            deleteAssign(m_whole.m_assignp); m_whole.m_assignp = NULL;
+            VL_DO_CLEAR(deleteAssign(m_whole.m_assignp), m_whole.m_assignp = NULL);
         }
         for (unsigned i=0; i<m_words.size(); i++) {
             if (!m_whole.m_use && !m_words[i].m_use
                 && m_words[i].m_assignp && !m_words[i].m_complex) {
-                deleteAssign(m_words[i].m_assignp); m_words[i].m_assignp = NULL;
+                VL_DO_CLEAR(deleteAssign(m_words[i].m_assignp), m_words[i].m_assignp = NULL);
             }
         }
     }
@@ -193,7 +193,7 @@ private:
         return reinterpret_cast<SubstVarEntry*>(nodep->varp()->user1p());  // Might be NULL
     }
     // VISITORS
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         SubstVarEntry* entryp = findEntryp(nodep);
         if (entryp) {
             // Don't sweat it.  We assign a new temp variable for every new assignment,
@@ -206,8 +206,8 @@ private:
             }
         }
     }
-    virtual void visit(AstConst* nodep) {}  // Accelerate
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstConst* nodep) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 public:
@@ -261,7 +261,7 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeAssign* nodep) {
+    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
         m_ops = 0;
         m_assignStep++;
         iterateAndNextNull(nodep->rhsp());
@@ -308,10 +308,10 @@ private:
         }
         if (debug()>5)  newp->dumpTree(cout, "       w_new: ");
         nodep->replaceWith(newp);
-        pushDeletep(nodep); VL_DANGLING(nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
         ++m_statSubsts;
     }
-    virtual void visit(AstWordSel* nodep) {
+    virtual void visit(AstWordSel* nodep) VL_OVERRIDE {
         iterate(nodep->rhsp());
         AstVarRef* varrefp = VN_CAST(nodep->lhsp(), VarRef);
         AstConst* constp = VN_CAST(nodep->rhsp(), Const);
@@ -327,7 +327,7 @@ private:
                 // Check that the RHS hasn't changed value since we recorded it.
                 SubstUseVisitor visitor (substp, entryp->getWordStep(word));
                 if (visitor.ok()) {
-                    replaceSubstEtc(nodep, substp); VL_DANGLING(nodep);
+                    VL_DO_DANGLING(replaceSubstEtc(nodep, substp), nodep);
                 } else {
                     entryp->consumeWord(word);
                 }
@@ -338,7 +338,7 @@ private:
             iterate(nodep->lhsp());
         }
     }
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         // Any variable
         if (nodep->lvalue()) {
             m_assignStep++;
@@ -355,7 +355,7 @@ private:
                 SubstUseVisitor visitor (substp, entryp->getWholeStep());
                 if (visitor.ok()) {
                     UINFO(8," USEwhole "<<nodep<<endl);
-                    replaceSubstEtc(nodep, substp); VL_DANGLING(nodep);
+                    VL_DO_DANGLING(replaceSubstEtc(nodep, substp), nodep);
                 } else {
                     UINFO(8," USEwholeButChg "<<nodep<<endl);
                     entryp->consumeWhole();
@@ -366,9 +366,9 @@ private:
             }
         }
     }
-    virtual void visit(AstVar* nodep) {}
-    virtual void visit(AstConst* nodep) {}
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstVar* nodep) VL_OVERRIDE {}
+    virtual void visit(AstConst* nodep) VL_OVERRIDE {}
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         m_ops++;
         if (!nodep->isSubstOptimizable()) {
             m_ops = SUBST_MAX_OPS_NA;

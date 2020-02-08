@@ -205,11 +205,15 @@ public:
                                        || m_e==UNDRIVEN
                                        || m_e==UNUSED
                                        || m_e==VARHIDDEN ); }
-  };
-  inline bool operator==(V3ErrorCode lhs, V3ErrorCode rhs) { return (lhs.m_e == rhs.m_e); }
-  inline bool operator==(V3ErrorCode lhs, V3ErrorCode::en rhs) { return (lhs.m_e == rhs); }
-  inline bool operator==(V3ErrorCode::en lhs, V3ErrorCode rhs) { return (lhs == rhs.m_e); }
-  inline std::ostream& operator<<(std::ostream& os, V3ErrorCode rhs) { return os<<rhs.ascii(); }
+};
+inline bool operator==(const V3ErrorCode& lhs, const V3ErrorCode& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+inline bool operator==(const V3ErrorCode& lhs, V3ErrorCode::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(V3ErrorCode::en lhs, const V3ErrorCode& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const V3ErrorCode& rhs) {
+    return os << rhs.ascii();
+}
 
 //######################################################################
 
@@ -291,8 +295,8 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
 
 // Theses allow errors using << operators: v3error("foo"<<"bar");
 // Careful, you can't put () around msg, as you would in most macro definitions
-// Note the commas are the comma operator, not separating arguments. These are needed to insure
-// evaluation order as otherwise we couldn't insure v3errorPrep is called first.
+// Note the commas are the comma operator, not separating arguments. These are needed to ensure
+// evaluation order as otherwise we couldn't ensure v3errorPrep is called first.
 #define v3warnCode(code,msg) \
     v3errorEnd((V3Error::v3errorPrep(code), (V3Error::v3errorStr()<<msg), V3Error::v3errorStr()));
 #define v3warnCodeFatal(code,msg) \

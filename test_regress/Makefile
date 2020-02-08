@@ -24,12 +24,12 @@ include $(VERILATOR_ROOT)/include/verilated.mk
 ######################################################################
 
 ifneq ($(VCS_HOME),)
-#Default to off, even with vcs; not all tests are insured to be working
+#Default to off, even with vcs; not all tests are ensured to be working
 #PRODUCTS += --vcs
 endif
 
 ifneq ($(NC_ROOT),)
-#Default to off, even with vcs; not all tests are insured to be working
+#Default to off, even with vcs; not all tests are ensured to be working
 #PRODUCTS += --nc
 endif
 

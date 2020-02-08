@@ -182,9 +182,7 @@ void V3Options::checkParameters() {
 }
 
 void V3Options::addCppFile(const string& filename) {
-    if (m_cppFiles.find(filename) == m_cppFiles.end()) {
-        m_cppFiles.insert(filename);
-    }
+    m_cppFiles.insert(filename);
 }
 void V3Options::addCFlags(const string& filename) {
     m_cFlags.push_back(filename);
@@ -193,9 +191,7 @@ void V3Options::addLdLibs(const string& filename) {
     m_ldLibs.push_back(filename);
 }
 void V3Options::addFuture(const string& flag) {
-    if (m_futures.find(flag) == m_futures.end()) {
-        m_futures.insert(flag);
-    }
+    m_futures.insert(flag);
 }
 bool V3Options::isFuture(const string& flag) const {
     return m_futures.find(flag) != m_futures.end();
@@ -204,25 +200,19 @@ bool V3Options::isLibraryFile(const string& filename) const {
     return m_libraryFiles.find(filename) != m_libraryFiles.end();
 }
 void V3Options::addLibraryFile(const string& filename) {
-    if (m_libraryFiles.find(filename) == m_libraryFiles.end()) {
-        m_libraryFiles.insert(filename);
-    }
+    m_libraryFiles.insert(filename);
 }
 bool V3Options::isClocker(const string& signame) const {
     return m_clockers.find(signame) != m_clockers.end();
 }
 void V3Options::addClocker(const string& signame) {
-    if (m_clockers.find(signame) == m_clockers.end()) {
-        m_clockers.insert(signame);
-    }
+    m_clockers.insert(signame);
 }
 bool V3Options::isNoClocker(const string& signame) const {
     return m_noClockers.find(signame) != m_noClockers.end();
 }
 void V3Options::addNoClocker(const string& signame) {
-    if (m_noClockers.find(signame) == m_noClockers.end()) {
-        m_noClockers.insert(signame);
-    }
+    m_noClockers.insert(signame);
 }
 void V3Options::addVFile(const string& filename) {
     // We use a list for v files, because it's legal to have includes
@@ -374,7 +364,12 @@ string V3Options::filePath(FileLine* fl, const string& modname, const string& la
 
 void V3Options::filePathLookedMsg(FileLine* fl, const string& modname) {
     static bool shown_notfound_msg = false;
-    if (!shown_notfound_msg) {
+    if (modname.find("__Vhsh") != string::npos) {
+        std::cerr << V3Error::warnMore() << "... Unsupported: Name is longer than 127 characters;"
+                  << " automatic file lookup not supported.\n";
+        std::cerr << V3Error::warnMore() << "... Suggest putting filename with this module/package"
+                  << " onto command line instead.\n";
+    } else if (!shown_notfound_msg) {
         shown_notfound_msg = true;
         if (m_impp->m_incDirUsers.empty()) {
             fl->v3error("This may be because there's no search path specified with -I<dir>."<<endl);
@@ -942,6 +937,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 } else {
                     fl->v3fatal("Unknown --make system specified: '"<<argv[i]<<"'");
                 }
+            }
+            else if (!strcmp(sw, "-max-num-width")) {
+                shift;
+                m_maxNumWidth = atoi(argv[i]);
             }
             else if (!strcmp(sw, "-no-l2name")) {  // Historical and undocumented
                 m_l2Name = "";
@@ -1513,6 +1512,7 @@ V3Options::V3Options() {
     m_gateStmts = 100;
     m_ifDepth = 0;
     m_inlineMult = 2000;
+    m_maxNumWidth = 65536;
     m_moduleRecursion = 100;
     m_outputSplit = 0;
     m_outputSplitCFuncs = 0;
@@ -1548,7 +1548,7 @@ V3Options::V3Options() {
 }
 
 V3Options::~V3Options() {
-    delete m_impp; m_impp = NULL;
+    VL_DO_CLEAR(delete m_impp, m_impp = NULL);
 }
 
 void V3Options::setDebugMode(int level) {

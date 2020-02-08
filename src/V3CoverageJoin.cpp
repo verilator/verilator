@@ -92,7 +92,7 @@ private:
                     UINFO(8,"   new "<<removep->incp()->declp()<<endl);
                     // Mark the found node as a duplicate of the first node
                     // (Not vice-versa as we have the iterator for the found node)
-                    removep->unlinkFrBack();  pushDeletep(removep); VL_DANGLING(removep);
+                    removep->unlinkFrBack();  VL_DO_DANGLING(pushDeletep(removep), removep);
                     // Remove node from comparison so don't hit it again
                     hashed.erase(dupit);
                     ++m_statToggleJoins;
@@ -102,19 +102,19 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) {
+    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
         // Find all Coverage's
         iterateChildren(nodep);
         // Simplify
         detectDuplicates();
     }
-    virtual void visit(AstCoverToggle* nodep) {
+    virtual void visit(AstCoverToggle* nodep) VL_OVERRIDE {
         m_toggleps.push_back(nodep);
         iterateChildren(nodep);
     }
     //--------------------
-    virtual void visit(AstNodeMath* nodep) {}  // Accelerate
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 

@@ -13,7 +13,7 @@ top_filename("t/t_inst_tree.v");
 
 my $default_vltmt_threads = $Self->get_default_vltmt_threads();
 compile(
-    verilator_flags2 => ['+define+NOUSE_INLINE', '+define+USE_PUBLIC', '--stats',
+    verilator_flags2 => ['--stats', "$Self->{t_dir}/$Self->{name}.vlt",
                          # Force 3 threads even if we have fewer cores
                          $Self->{vltmt} ? "--threads $default_vltmt_threads" : ""]
     );

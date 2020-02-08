@@ -6,7 +6,7 @@
 
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[4.026 2020-01-11],
+AC_INIT([Verilator],[4.028 2020-02-06],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 # When releasing, also update header of Changes file
@@ -25,11 +25,43 @@ AC_ARG_ENABLE([maintainer-mode],
 AC_ARG_ENABLE([silent-rules],
               [AS_HELP_STRING([--disable-silent-rules], [ignored])])
 
+# Flag to enable linking specific libraries statically
+AC_MSG_CHECKING(whether to perform partial static linking of Verilator binary)
+AC_ARG_ENABLE([partial-static],
+              [AS_HELP_STRING([--disable-partial-static],
+                              [By default, for Verilation peformance, Verilator
+                               is linked against some of its dependencies
+                               statically. Use this to link the Verilator binary
+                               fully dynamically.])],
+              [case "${enableval}" in
+                yes) CFG_ENABLE_PARTIAL_STATIC=yes ;;
+                no)  CFG_ENABLE_PARTIAL_STATIC=no ;;
+                *)   AC_MSG_ERROR([bad value '${enableval}' for --disable-partial-static]) ;;
+               esac],
+               CFG_ENABLE_PARTIAL_STATIC=yes)
+AC_MSG_RESULT($CFG_ENABLE_PARTIAL_STATIC)
+
+# Flag to enable linking Verilator with tcmalloc if available
+AC_MSG_CHECKING(whether to use tcmalloc)
+AC_ARG_ENABLE([tcmalloc],
+              [AS_HELP_STRING([--enable-tcmalloc],
+                              [Use libtcmalloc_minimal for faster dynamic memory
+                               management in Verilator binary@<:@default=check@:>@])],
+              [case "${enableval}" in
+                yes) CFG_WITH_TCMALLOC=yes ;;
+                no)  CFG_WITH_TCMALLOC=no ;;
+                *)   AC_MSG_ERROR([bad value '${enableval}' for --enable-tcmalloc]) ;;
+               esac],
+              [CFG_WITH_TCMALLOC=check;])
+AC_MSG_RESULT($CFG_WITH_TCMALLOC)
+
 # Special Substitutions - CFG_WITH_DEFENV
 AC_MSG_CHECKING(whether to use hardcoded paths)
 AC_ARG_ENABLE([defenv],
               [AS_HELP_STRING([--disable-defenv],
-                              [disable using some hardcoded data paths extracted from some default environment variables (the default is to use hardcoded paths)])],
+                              [disable using some hardcoded data paths extracted
+                              from some default environment variables (the default
+                              is to use hardcoded paths) in Verilator binary])],
               [case "${enableval}" in
                 yes) CFG_WITH_DEFENV=yes ;;
                 no)  CFG_WITH_DEFENV=no ;;
@@ -43,7 +75,8 @@ AC_MSG_RESULT($CFG_WITH_DEFENV)
 AC_MSG_CHECKING(whether to show and stop on compilation warnings)
 AC_ARG_ENABLE([ccwarn],
               [AS_HELP_STRING([--enable-ccwarn],
-                              [enable showing and stopping on compilation warnings])],
+                              [enable showing and stopping on compilation warnings
+                               in Verilator binrary and Verilated makefiles])],
               [case "${enableval}" in
                 yes) CFG_WITH_CCWARN=yes ;;
                 no)  CFG_WITH_CCWARN=no ;;
@@ -79,7 +112,8 @@ AC_MSG_RESULT($CFG_WITH_LONGTESTS)
 AC_MSG_CHECKING(whether allow pre-C++11)
 AC_ARG_ENABLE([prec11],
               [AS_HELP_STRING([--enable-prec11],
-                              [enable pre-C++11 compilers])],
+                              [enable pre-C++11 compilers for Verilator binary
+                               and Verilated makefiles])],
               [case "${enableval}" in
                 yes) CFG_WITH_PREC11=yes ;;
                 no)  CFG_WITH_PREC11=no ;;
@@ -209,13 +243,24 @@ AC_DEFUN([_MY_LDLIBS_CHECK_FLAG],
     LIBS="$ACO_SAVE_LIBS"
    ])
 
-AC_DEFUN([_MY_LDLIBS_CHECK_OPT],
-   [# _MY_LDLIBS_CHECK_OPT(flag) -- Check if linker supports specific options
-    # If it does, append flag to variable
-    _MY_LDLIBS_CHECK_FLAG($2)
+AC_DEFUN([_MY_LDLIBS_CHECK_IFELSE],
+   [# _MY_LDLIBS_CHECK_IFELSE(flag,action-if-supported,action-if-not-supported)
+    # Check if linker supports specific flag, if it does do action-if-supported
+    # otherwise do action-if-not-supported
+    _MY_LDLIBS_CHECK_FLAG($1)
     if test "$_my_result" = "yes" ; then
-       $1="$$1 $2"
+      true
+      $2
+    else
+      true
+      $3
     fi
+   ])
+
+AC_DEFUN([_MY_LDLIBS_CHECK_OPT],
+   [# _MY_LDLIBS_CHECK_OPT(variable, flag) -- Check if linker supports specific
+    # options. If it does, append flag to variable.
+    _MY_LDLIBS_CHECK_IFELSE($2, $1="$$1 $2")
    ])
 
 # Flag to select newest language standard supported
@@ -309,6 +354,39 @@ m4_foreach([ldflag], [
     ])
 AC_SUBST(CFG_LDLIBS_THREADS)
 AC_SUBST(CFG_LDFLAGS_THREADS_CMAKE)
+
+# When linking partially statically
+if test "$CFG_ENABLE_PARTIAL_STATIC" = "yes"; then
+  _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_SRC, -static-libgcc)
+  _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_SRC, -static-libstdc++)
+  _MY_LDLIBS_CHECK_OPT(CFG_LDFLAGS_SRC, -Xlinker -gc-sections)
+  LTCMALLOC=-l:libtcmalloc_minimal.a
+else
+  LTCMALLOC=-ltcmalloc_minimal
+fi
+AC_SUBST(CFG_LDFLAGS_SRC)
+
+# The pthread library is required by tcmalloc, so add it if it exists. If it
+# does not, the tcmalloc check below will fail anyway, and linking against
+# pthreads is harmless otherwise.
+_MY_LDLIBS_CHECK_OPT(CFG_LIBS, -lpthread)
+
+# Check if tcmalloc is available based on --enable-tcmalloc
+_MY_LDLIBS_CHECK_IFELSE(
+  $LTCMALLOC,
+  [if test "$CFG_WITH_TCMALLOC" != "no"; then
+    CFG_LIBS="$LTCMALLOC $CFG_LIBS";
+    # If using tcmalloc, add some extra options to make the compiler not assume
+    # it is using it's own versions of the standard library functions
+    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-malloc)
+    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-calloc)
+    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-realloc)
+    _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-fno-builtin-free)
+   fi],
+  [if test "$CFG_WITH_TCMALLOC" = "yes"; then
+    AC_MSG_ERROR([--enable-tcmalloc was given but test for ${LTCMALLOC} failed])
+   fi])
+AC_SUBST(CFG_LIBS)
 
 # Set CFG_WITH_THREADED if can support threading
 AC_MSG_CHECKING(whether $CXX supports Verilated threads)

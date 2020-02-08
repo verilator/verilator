@@ -505,6 +505,6 @@ private:
 
 namespace V3ScoreboardBase {
     void selfTest();
-};
+}
 
 #endif  // Guard

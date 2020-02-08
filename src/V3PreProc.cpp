@@ -135,7 +135,7 @@ public:
                "ps_DEFFORM", "ps_DEFVALUE", "ps_DEFPAREN", "ps_DEFARG",
                "ps_INCNAME", "ps_ERRORNAME", "ps_JOIN", "ps_STRIFY"};
         return states[s];
-    };
+    }
 
     std::stack<ProcState> m_states;  ///< Current state of parser
     int         m_off;          ///< If non-zero, ifdef level is turned off, don't dump text
@@ -285,7 +285,7 @@ public:
         m_lexp->debug(debug()>=5 ? debug() : 0);  // See also V3PreProc::debug() method
     }
     ~V3PreProcImp() {
-        if (m_lexp) { delete m_lexp; m_lexp = NULL; }
+        if (m_lexp) VL_DO_CLEAR(delete m_lexp, m_lexp = NULL);
     }
 };
 
@@ -339,7 +339,8 @@ void V3PreProcImp::define(FileLine* fl, const string& name, const string& value,
                           const string& params, bool cmdline) {
     UINFO(4,"DEFINE '"<<name<<"' as '"<<value<<"' params '"<<params<<"'"<<endl);
     if (!V3LanguageWords::isKeyword(string("`") + name).empty()) {
-        fl->v3error("Attempting to define built-in directive: '`"<<name<<"' (IEEE 2017 22.5.1)");
+        fl->v3error("Attempting to define built-in directive: '`"
+                    << name << "' (IEEE 1800-2017 22.5.1)");
     } else {
         if (defExists(name)) {
             if (!(defValue(name) == value
@@ -1175,7 +1176,7 @@ int V3PreProcImp::getStateToken() {
                     out = defineSubst(refp);
                     //NOP: out = m_preprocp->defSubstitute(out);
                 }
-                m_defRefs.pop(); VL_DANGLING(refp);
+                VL_DO_DANGLING(m_defRefs.pop(), refp);
                 if (m_defRefs.empty()) {
                     statePop();
                     if (state() == ps_JOIN) {  // Handle {left}```FOO(ARG) where `FOO(ARG) might be empty

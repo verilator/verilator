@@ -57,13 +57,13 @@ private:
     // NODE STATE
     // ** Shared with DeadVisitor **
     // VISITORS
-    virtual void visit(AstCell* nodep) {
+    virtual void visit(AstCell* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         nodep->modp()->user1Inc(-1);
     }
     //-----
-    virtual void visit(AstNodeMath* nodep) {}  // Accelerate
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
 public:
@@ -133,20 +133,23 @@ private:
     }
 
     // VISITORS
-    virtual void visit(AstNodeModule* nodep) {
-        m_modp = nodep;
-        if (!nodep->dead()) {
-            iterateChildren(nodep);
-            checkAll(nodep);
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+        AstNodeModule* origModp = m_modp;
+        {
+            m_modp = nodep;
+            if (!nodep->dead()) {
+                iterateChildren(nodep);
+                checkAll(nodep);
+            }
         }
-        m_modp = NULL;
+        m_modp = origModp;
     }
-    virtual void visit(AstCFunc* nodep) {
+    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         checkAll(nodep);
         if (nodep->scopep()) nodep->scopep()->user1Inc();
     }
-    virtual void visit(AstScope* nodep) {
+    virtual void visit(AstScope* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         checkAll(nodep);
         if (nodep->aboveScopep()) nodep->aboveScopep()->user1Inc();
@@ -155,14 +158,14 @@ private:
             m_scopesp.push_back(nodep);
         }
     }
-    virtual void visit(AstCell* nodep) {
+    virtual void visit(AstCell* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         checkAll(nodep);
         m_cellsp.push_back(nodep);
         nodep->modp()->user1Inc();
     }
 
-    virtual void visit(AstNodeVarRef* nodep) {
+    virtual void visit(AstNodeVarRef* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         checkAll(nodep);
         if (nodep->varScopep()) {
@@ -177,7 +180,7 @@ private:
             else nodep->packagep()->user1Inc();
         }
     }
-    virtual void visit(AstNodeFTaskRef* nodep) {
+    virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         checkAll(nodep);
         if (nodep->packagep()) {
@@ -185,7 +188,7 @@ private:
             else nodep->packagep()->user1Inc();
         }
     }
-    virtual void visit(AstRefDType* nodep) {
+    virtual void visit(AstRefDType* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         checkDType(nodep);
         checkAll(nodep);
@@ -194,12 +197,12 @@ private:
             else nodep->packagep()->user1Inc();
         }
     }
-    virtual void visit(AstNodeDType* nodep) {
+    virtual void visit(AstNodeDType* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         checkDType(nodep);
         checkAll(nodep);
     }
-    virtual void visit(AstEnumItemRef* nodep) {
+    virtual void visit(AstEnumItemRef* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         checkAll(nodep);
         if (nodep->packagep()) {
@@ -208,20 +211,20 @@ private:
         }
         checkAll(nodep);
     }
-    virtual void visit(AstModport* nodep) {
+    virtual void visit(AstModport* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         if (m_elimCells) {
             if (!nodep->varsp()) {
-                pushDeletep(nodep->unlinkFrBack()); VL_DANGLING(nodep);
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return;
             }
         }
         checkAll(nodep);
     }
-    virtual void visit(AstTypedef* nodep) {
+    virtual void visit(AstTypedef* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         if (m_elimCells && !nodep->attrPublic()) {
-            pushDeletep(nodep->unlinkFrBack()); VL_DANGLING(nodep);
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
         checkAll(nodep);
@@ -229,7 +232,7 @@ private:
         // Normal modules may disappear, e.g. if they are parameterized then removed
         if (nodep->attrPublic() && m_modp && VN_IS(m_modp, Package)) m_modp->user1Inc();
     }
-    virtual void visit(AstVarScope* nodep) {
+    virtual void visit(AstVarScope* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         checkAll(nodep);
         if (nodep->scopep()) nodep->scopep()->user1Inc();
@@ -237,7 +240,7 @@ private:
             m_vscsp.push_back(nodep);
         }
     }
-    virtual void visit(AstVar* nodep) {
+    virtual void visit(AstVar* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         checkAll(nodep);
         if (nodep->isSigPublic() && m_modp && VN_IS(m_modp, Package)) m_modp->user1Inc();
@@ -245,7 +248,7 @@ private:
             m_varsp.push_back(nodep);
         }
     }
-    virtual void visit(AstNodeAssign* nodep) {
+    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {
         // See if simple assignments to variables may be eliminated because
         // that variable is never used.
         // Similar code in V3Life
@@ -265,7 +268,7 @@ private:
     }
 
     //-----
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         if (nodep->isOutputter()) m_sideEffect = true;
         iterateChildren(nodep);
         checkAll(nodep);
@@ -289,7 +292,7 @@ private:
                     if (!modp->dead()) {  // If was dead didn't increment user1's
                         DeadModVisitor visitor(modp);
                     }
-                    modp->unlinkFrBack()->deleteTree(); VL_DANGLING(modp);
+                    VL_DO_DANGLING(modp->unlinkFrBack()->deleteTree(), modp);
                     retry = true;
                 }
             }
@@ -299,7 +302,7 @@ private:
         return (!nodep->isSigPublic()  // Can't elim publics!
                 && !nodep->isIO()
                 && ((nodep->isTemp() && !nodep->isTrace())
-                    || (nodep->isParam() && !nodep->isTrace())
+                    || (nodep->isParam() && !nodep->isTrace() && !v3Global.opt.xmlOnly())
                     || m_elimUserVars));  // Post-Trace can kill most anything
     }
 
@@ -317,7 +320,7 @@ private:
                     if (scp->dtypep()) {
                         scp->dtypep()->user1Inc(-1);
                     }
-                    scp->unlinkFrBack()->deleteTree(); VL_DANGLING(scp);
+                    VL_DO_DANGLING(scp->unlinkFrBack()->deleteTree(), scp);
                     *it = NULL;
                     retry = true;
                 }
@@ -330,7 +333,7 @@ private:
             AstCell* cellp = *it;
             if (cellp->user1() == 0 && !cellp->modp()->stmtsp()) {
                 cellp->modp()->user1Inc(-1);
-                cellp->unlinkFrBack()->deleteTree(); VL_DANGLING(cellp);
+                VL_DO_DANGLING(cellp->unlinkFrBack()->deleteTree(), cellp);
             }
         }
     }
@@ -347,11 +350,11 @@ private:
                     AstNodeAssign* assp = itr->second;
                     UINFO(4,"    Dead assign "<<assp<<endl);
                     assp->dtypep()->user1Inc(-1);
-                    assp->unlinkFrBack()->deleteTree(); VL_DANGLING(assp);
+                    VL_DO_DANGLING(assp->unlinkFrBack()->deleteTree(), assp);
                 }
                 if (vscp->scopep()) vscp->scopep()->user1Inc(-1);
                 vscp->dtypep()->user1Inc(-1);
-                vscp->unlinkFrBack()->deleteTree(); VL_DANGLING(vscp);
+                VL_DO_DANGLING(vscp->unlinkFrBack()->deleteTree(), vscp);
             }
         }
         for (bool retry=true; retry; ) {
@@ -365,7 +368,7 @@ private:
                     if (varp->dtypep()) {
                         varp->dtypep()->user1Inc(-1);
                     }
-                    varp->unlinkFrBack()->deleteTree(); VL_DANGLING(varp);
+                    VL_DO_DANGLING(varp->unlinkFrBack()->deleteTree(), varp);
                     *it = NULL;
                     retry = true;
                 }
@@ -389,7 +392,7 @@ private:
                     if (!cont)
                         continue;
                 }
-                (*it)->unlinkFrBack()->deleteTree(); VL_DANGLING(*it);
+                VL_DO_DANGLING((*it)->unlinkFrBack()->deleteTree(), *it);
             }
         }
     }

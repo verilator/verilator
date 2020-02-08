@@ -33,12 +33,18 @@ module glbl();
 `ifdef PUB_FUNC
    reg GSR;
    task setGSR;
+`ifdef ATTRIBUTES
       /* verilator public */
+`endif
       input value;
       GSR = value;
    endtask
 `else
+ `ifdef ATTRIBUTES
    reg GSR /*verilator public*/;
+ `else
+   reg GSR;
+ `endif
 `endif
 endmodule
 

@@ -110,7 +110,10 @@ class EmitCSyms : EmitCBaseVisitor {
 
     void nameCheck(AstNode* nodep) {
         // Prevent GCC compile time error; name check all things that reach C++ code
-        if (nodep->name() != "") {
+        if (nodep->name() != ""
+            && !(VN_IS(nodep, CFunc)
+                 && (VN_CAST(nodep, CFunc)->isConstructor()
+                     || VN_CAST(nodep, CFunc)->isDestructor()))) {
             string rsvd = m_words.isKeyword(nodep->name());
             if (rsvd != "") {
                 // Generally V3Name should find all of these and throw SYMRSVDWORD.
@@ -244,7 +247,7 @@ class EmitCSyms : EmitCBaseVisitor {
     }
 
     // VISITORS
-    virtual void visit(AstNetlist* nodep) {
+    virtual void visit(AstNetlist* nodep) VL_OVERRIDE {
         // Collect list of scopes
         iterateChildren(nodep);
         varsExpand();
@@ -268,13 +271,16 @@ class EmitCSyms : EmitCBaseVisitor {
             if (!m_dpiHdrOnly) emitDpiImp();
         }
     }
-    virtual void visit(AstNodeModule* nodep) {
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         nameCheck(nodep);
-        m_modp = nodep;
-        iterateChildren(nodep);
-        m_modp = NULL;
+        AstNodeModule* origModp = m_modp;
+        {
+            m_modp = nodep;
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
     }
-    virtual void visit(AstCellInline* nodep) {
+    virtual void visit(AstCellInline* nodep) VL_OVERRIDE {
         if (v3Global.opt.vpi()) {
             string type = (nodep->origModName() == "__BEGIN__") ? "SCOPE_OTHER"
                                                                 : "SCOPE_MODULE";
@@ -284,18 +290,19 @@ class EmitCSyms : EmitCBaseVisitor {
                                                                   name_dedot, type)));
         }
     }
-    virtual void visit(AstScope* nodep) {
+    virtual void visit(AstScope* nodep) VL_OVERRIDE {
         nameCheck(nodep);
 
         m_scopes.push_back(make_pair(nodep, m_modp));
 
         if (v3Global.opt.vpi() && !nodep->isTop()) {
+            string name_dedot = AstNode::dedotName(nodep->shortName());
             m_vpiScopeCandidates.insert(make_pair(nodep->name(),
                                                   ScopeData(scopeSymString(nodep->name()),
-                                                            nodep->name(), "SCOPE_MODULE")));
+                                                            name_dedot, "SCOPE_MODULE")));
         }
     }
-    virtual void visit(AstScopeName* nodep) {
+    virtual void visit(AstScopeName* nodep) VL_OVERRIDE {
         string name = nodep->scopeSymName();
         //UINFO(9,"scnameins sp "<<nodep->name()<<" sp "<<nodep->scopePrettySymName()<<" ss "<<name<<endl);
         if (m_scopeNames.find(name) == m_scopeNames.end()) {
@@ -315,7 +322,7 @@ class EmitCSyms : EmitCBaseVisitor {
             }
         }
     }
-    virtual void visit(AstVar* nodep) {
+    virtual void visit(AstVar* nodep) VL_OVERRIDE {
         nameCheck(nodep);
         iterateChildren(nodep);
         if (nodep->isSigUserRdPublic()
@@ -323,13 +330,13 @@ class EmitCSyms : EmitCBaseVisitor {
             m_modVars.push_back(make_pair(m_modp, nodep));
         }
     }
-    virtual void visit(AstCoverDecl* nodep) {
+    virtual void visit(AstCoverDecl* nodep) VL_OVERRIDE {
         // Assign numbers to all bins, so we know how big of an array to use
         if (!nodep->dataDeclNullp()) {  // else duplicate we don't need code for
             nodep->binNum(m_coverBins++);
         }
     }
-    virtual void visit(AstCFunc* nodep) {
+    virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         nameCheck(nodep);
         if (nodep->dpiImport() || nodep->dpiExportWrapper()) {
             m_dpis.push_back(nodep);
@@ -339,9 +346,9 @@ class EmitCSyms : EmitCBaseVisitor {
         m_funcp = NULL;
     }
     // NOPs
-    virtual void visit(AstConst*) {}
+    virtual void visit(AstConst*) VL_OVERRIDE {}
     // Default
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
     //---------------------------------------
@@ -383,11 +390,10 @@ void EmitCSyms::emitSymHdr() {
         puts("#include \"verilated.h\"\n");
     }
 
-    // for
     puts("\n// INCLUDE MODULE CLASSES\n");
-    for (AstNodeModule* nodep = v3Global.rootp()->modulesp();
-         nodep; nodep=VN_CAST(nodep->nextp(), NodeModule)) {
-        puts("#include \""+modClassName(nodep)+".h\"\n");
+    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
+         nodep = VN_CAST(nodep->nextp(), NodeModule)) {
+        puts("#include \"" + prefixNameProtect(nodep) + ".h\"\n");
     }
 
     if (v3Global.dpi()) {
@@ -418,20 +424,23 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n// SUBCELL STATE\n");
     for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
-        AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
+        AstScope* scopep = it->first;
+        AstNodeModule* modp = it->second;
         if (modp->isTop()) {
-            ofp()->printf("%-30s ", (modClassName(modp)+"*").c_str());
-            puts(protectIf(scopep->nameDotless()+"p", scopep->protect())+";\n");
-        }
-        else {
-            ofp()->printf("%-30s ", (modClassName(modp)+"").c_str());
-            puts(protectIf(scopep->nameDotless(), scopep->protect())+";\n");
+            ofp()->printf("%-30s ", (prefixNameProtect(modp) + "*").c_str());
+            puts(protectIf(scopep->nameDotless() + "p", scopep->protect()) + ";\n");
+        } else {
+            ofp()->printf("%-30s ", (prefixNameProtect(modp) + "").c_str());
+            puts(protectIf(scopep->nameDotless(), scopep->protect()) + ";\n");
         }
     }
 
     if (m_coverBins) {
         puts("\n// COVERAGE\n");
-        puts("uint32_t __Vcoverage["); puts(cvtToStr(m_coverBins)); puts("];\n");
+        puts(v3Global.opt.threads() ? "std::atomic<uint32_t>" : "uint32_t");
+        puts(" __Vcoverage[");
+        puts(cvtToStr(m_coverBins));
+        puts("];\n");
     }
 
     if (!m_scopeNames.empty()) {  // Scope names
@@ -471,7 +480,7 @@ void EmitCSyms::emitSymHdr() {
         puts("void "+protect("__Vdeserialize")+"(VerilatedDeserialize& os);\n");
     }
     puts("\n");
-    puts("} VL_ATTR_ALIGNED(64);\n");
+    puts("} VL_ATTR_ALIGNED(VL_CACHE_LINE_BYTES);\n");
 
     ofp()->putsEndGuard();
 }
@@ -480,8 +489,7 @@ void EmitCSyms::closeSplit() {
     if (!m_ofp || m_ofp == m_ofpBase) return;
 
     puts("}\n");
-    delete m_ofp;
-    m_ofp = NULL;
+    VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
 }
 
 void EmitCSyms::checkSplit(bool usesVfinal) {
@@ -522,9 +530,9 @@ void EmitCSyms::emitSymImpPreamble() {
 
     // Includes
     puts("#include \""+symClassName()+".h\"\n");
-    for (AstNodeModule* nodep = v3Global.rootp()->modulesp();
-         nodep; nodep=VN_CAST(nodep->nextp(), NodeModule)) {
-        puts("#include \""+modClassName(nodep)+".h\"\n");
+    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
+         nodep = VN_CAST(nodep->nextp(), NodeModule)) {
+        puts("#include \"" + prefixNameProtect(nodep) + ".h\"\n");
     }
 }
 
@@ -580,13 +588,14 @@ void EmitCSyms::emitSymImp() {
     }
     puts("    , __Vm_didInit(false)\n");
     puts("    // Setup submodule names\n");
-    char comma=',';
+    char comma = ',';
     for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
-        AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
+        AstScope* scopep = it->first;
+        AstNodeModule* modp = it->second;
         if (modp->isTop()) {
         } else {
-            puts(string("    ")+comma+" "+protect(scopep->nameDotless()));
-            puts("(Verilated::catName(topp->name(),");
+            puts(string("    ") + comma + " " + protect(scopep->nameDotless()));
+            puts("(Verilated::catName(topp->name(), ");
             // The "." is added by catName
             putsQuoted(protectWordsIf(scopep->prettyName(), scopep->protect()));
             puts("))\n");
@@ -600,7 +609,8 @@ void EmitCSyms::emitSymImp() {
     puts("TOPp = topp;\n");
     puts("// Setup each module's pointers to their submodules\n");
     for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
-        AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
+        AstScope* scopep = it->first;
+        AstNodeModule* modp = it->second;
         if (!modp->isTop()) {
             checkSplit(false);
             string arrow = scopep->name();
@@ -609,10 +619,9 @@ void EmitCSyms::emitSymImp() {
                 arrow.replace(pos, 1, "->");
             }
             if (arrow.substr(0, 5) == "TOP->") arrow.replace(0, 5, "TOPp->");
-            string arrowProt = protectWordsIf(arrow, scopep->protect());
-            ofp()->printf("%-30s ", arrowProt.c_str());
+            ofp()->puts(protectWordsIf(arrow, scopep->protect()));
             puts(" = &");
-            puts(protectIf(scopep->nameDotless(), scopep->protect())+";\n");
+            puts(protectIf(scopep->nameDotless(), scopep->protect()) + ";\n");
             ++m_numStmts;
         }
     }
@@ -620,7 +629,8 @@ void EmitCSyms::emitSymImp() {
     puts("// Setup each module's pointer back to symbol table (for public functions)\n");
     puts("TOPp->"+protect("__Vconfigure")+"(this, true);\n");
     for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
-        AstScope* scopep = it->first;  AstNodeModule* modp = it->second;
+        AstScope* scopep = it->first;
+        AstNodeModule* modp = it->second;
         if (!modp->isTop()) {
             checkSplit(false);
             // first is used by AstCoverDecl's call to __vlCoverInsert
@@ -693,7 +703,7 @@ void EmitCSyms::emitSymImp() {
                 puts(protect("__Vscope_"+scopep->scopeSymName())+".exportInsert(__Vfinal, ");
                 putsQuoted(funcp->cname());  // Not protected - user asked for import/export
                 puts(", (void*)(&");
-                puts(modClassName(modp));
+                puts(prefixNameProtect(modp));
                 puts("::");
                 puts(funcp->nameProtect());
                 puts("));\n");
@@ -775,7 +785,7 @@ void EmitCSyms::emitDpiHdr() {
     puts("// DESCR" "IPTION: Verilator output: Prototypes for DPI import and export functions.\n");
     puts("//\n");
     puts("// Verilator includes this file in all generated .cpp files that use DPI functions.\n");
-    puts("// Manually include this file where DPI .c import functions are declared to insure\n");
+    puts("// Manually include this file where DPI .c import functions are declared to ensure\n");
     puts("// the C functions match the expectations of the DPI imports.\n");
     puts("\n");
     puts("#include \"svdpi.h\"\n");

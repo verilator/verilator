@@ -400,7 +400,7 @@ EXP: This is fooed_2
 `ifdef TEMP  `error "bad0" `endif
 Line_Preproc_Check `__LINE__
 //======================================================================
-// Quoted multiline - track line numbers, and insure \\n gets propagated
+// Quoted multiline - track line numbers, and ensure \\n gets propagated
 `define MULQUOTE "FOO \
   BAR "
 `define MULQUOTE2(mq) `MULQUOTE mq `MULQUOTE

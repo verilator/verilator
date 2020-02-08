@@ -28,6 +28,7 @@
 #include "V3Global.h"
 #include "V3LinkParse.h"
 #include "V3Ast.h"
+#include "V3Config.h"
 
 #include <algorithm>
 #include <cstdarg>
@@ -105,7 +106,9 @@ private:
     }
 
     // VISITs
-    virtual void visit(AstNodeFTask* nodep) {
+    virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
+        V3Config::applyFTask(m_modp, nodep);
+
         if (!nodep->user1SetOnce()) {  // Process only once.
             cleanFileline(nodep);
             m_ftaskp = nodep;
@@ -113,7 +116,7 @@ private:
             m_ftaskp = NULL;
         }
     }
-    virtual void visit(AstNodeFTaskRef* nodep) {
+    virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
         if (!nodep->user1SetOnce()) {  // Process only once.
             cleanFileline(nodep);
             UINFO(5,"   "<<nodep<<endl);
@@ -123,22 +126,22 @@ private:
             m_valueModp = upperValueModp;
         }
     }
-    virtual void visit(AstNodeDType* nodep) {
+    virtual void visit(AstNodeDType* nodep) VL_OVERRIDE {
         visitIterateNodeDType(nodep);
     }
-    virtual void visit(AstEnumDType* nodep) {
+    virtual void visit(AstEnumDType* nodep) VL_OVERRIDE {
         if (nodep->name() == "") {
             nodep->name(nameFromTypedef(nodep));  // Might still remain ""
         }
         visitIterateNodeDType(nodep);
     }
-    virtual void visit(AstNodeUOrStructDType* nodep) {
+    virtual void visit(AstNodeUOrStructDType* nodep) VL_OVERRIDE {
         if (nodep->name() == "") {
             nodep->name(nameFromTypedef(nodep));  // Might still remain ""
         }
         visitIterateNodeDType(nodep);
     }
-    virtual void visit(AstEnumItem* nodep) {
+    virtual void visit(AstEnumItem* nodep) VL_OVERRIDE {
         // Expand ranges
         cleanFileline(nodep);
         iterateChildren(nodep);
@@ -166,11 +169,11 @@ private:
                 else addp = newp;
             }
             nodep->replaceWith(addp);
-            nodep->deleteTree();
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
 
-    virtual void visit(AstVar* nodep) {
+    virtual void visit(AstVar* nodep) VL_OVERRIDE {
         cleanFileline(nodep);
         if (VN_IS(nodep->subDTypep(), ParseTypeDType)) {
             // It's a parameter type. Use a different node type for this.
@@ -184,10 +187,13 @@ private:
                 AstNode* newp = new AstParamTypeDType(nodep->fileline(),
                                                       nodep->varType(), nodep->name(),
                                                       VFlagChildDType(), dtypep);
-                nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+                nodep->replaceWith(newp); VL_DO_DANGLING(nodep->deleteTree(), nodep);
             }
             return;
         }
+
+        // Maybe this variable has a signal attribute
+        V3Config::applyVarAttr(m_modp, m_ftaskp, nodep);
 
         if (v3Global.opt.publicFlatRW()) {
             switch (nodep->varType()) {
@@ -249,74 +255,74 @@ private:
         }
     }
 
-    virtual void visit(AstAttrOf* nodep) {
+    virtual void visit(AstAttrOf* nodep) VL_OVERRIDE {
         cleanFileline(nodep);
         iterateChildren(nodep);
         if (nodep->attrType() == AstAttrType::DT_PUBLIC) {
             AstTypedef* typep = VN_CAST(nodep->backp(), Typedef);
             UASSERT_OBJ(typep, nodep, "Attribute not attached to typedef");
             typep->attrPublic(true);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_CLOCK) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             nodep->v3warn(DEPRECATED, "sc_clock is deprecated and will be removed");
             m_varp->attrScClocked(true);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_CLOCK_ENABLE) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrClockEn(true);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_PUBLIC) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRWPublic(true); m_varp->sigModPublic(true);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_PUBLIC_FLAT) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRWPublic(true);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_PUBLIC_FLAT_RD) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRdPublic(true);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_PUBLIC_FLAT_RW) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->sigUserRWPublic(true);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_ISOLATE_ASSIGNMENTS) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrIsolateAssign(true);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_SFORMAT) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrSFormat(true);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_SC_BV) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrScBv(true);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_CLOCKER) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrClocker(VVarAttrClocker::CLOCKER_YES);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
         else if (nodep->attrType() == AstAttrType::VAR_NO_CLOCKER) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrClocker(VVarAttrClocker::CLOCKER_NO);
-            nodep->unlinkFrBack()->deleteTree(); VL_DANGLING(nodep);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
     }
 
-    virtual void visit(AstAlwaysPublic* nodep) {
+    virtual void visit(AstAlwaysPublic* nodep) VL_OVERRIDE {
         // AlwaysPublic was attached under a var, but it's a statement that should be
         // at the same level as the var
         cleanFileline(nodep);
@@ -331,7 +337,7 @@ private:
         }
     }
 
-    virtual void visit(AstDefImplicitDType* nodep) {
+    virtual void visit(AstDefImplicitDType* nodep) VL_OVERRIDE {
         cleanFileline(nodep);
         UINFO(8,"   DEFIMPLICIT "<<nodep<<endl);
         // Must remember what names we've already created, and combine duplicates
@@ -357,7 +363,7 @@ private:
             if (VN_IS(backp, Typedef)) {  // A typedef doesn't need us to make yet another level of typedefing
                 // For typedefs just remove the AstRefDType level of abstraction
                 nodep->replaceWith(dtypep);
-                nodep->deleteTree(); VL_DANGLING(nodep);
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
                 return;
             } else {
                 defp = new AstTypedef(nodep->fileline(), nodep->name(), NULL,
@@ -367,17 +373,17 @@ private:
             }
         }
         nodep->replaceWith(new AstRefDType(nodep->fileline(), defp->name()));
-        nodep->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
-    virtual void visit(AstTypedefFwd* nodep) {
+    virtual void visit(AstTypedefFwd* nodep) VL_OVERRIDE {
         // We only needed the forward declaration in order to parse correctly.
         // We won't even check it was ever really defined, as it might have been in a header
         // file referring to a module we never needed
-        nodep->unlinkFrBack()->deleteTree();
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
 
-    virtual void visit(AstForeach* nodep) {
+    virtual void visit(AstForeach* nodep) VL_OVERRIDE {
         // FOREACH(array,loopvars,body)
         // -> BEGIN(declare vars, loopa=lowest; WHILE(loopa<=highest, ... body))
         //nodep->dumpTree(cout, "-foreach-old:");
@@ -433,19 +439,24 @@ private:
             dimension--;
         }
         //newp->dumpTree(cout, "-foreach-new:");
-        firstVarsp->deleteTree(); VL_DANGLING(firstVarsp);
-        nodep->replaceWith(newp); nodep->deleteTree(); VL_DANGLING(nodep);
+        VL_DO_DANGLING(firstVarsp->deleteTree(), firstVarsp);
+        nodep->replaceWith(newp); VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
-    virtual void visit(AstNodeModule* nodep) {
-        // Module: Create sim table for entire module and iterate
-        cleanFileline(nodep);
-        //
-        m_modp = nodep;
+    virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
+        V3Config::applyModule(nodep);
+
+        AstNodeModule* origModp = m_modp;
+        {
+            // Module: Create sim table for entire module and iterate
+            cleanFileline(nodep);
+            //
+            m_modp = nodep;
+            m_valueModp = nodep;
+            iterateChildren(nodep);
+        }
+        m_modp = origModp;
         m_valueModp = nodep;
-        iterateChildren(nodep);
-        m_modp = NULL;
-        m_valueModp = NULL;
     }
     void visitIterateNoValueMod(AstNode* nodep) {
         // Iterate a node which shouldn't have any local variables moved to an Initial
@@ -456,25 +467,36 @@ private:
         iterateChildren(nodep);
         m_valueModp = upperValueModp;
     }
-    virtual void visit(AstInitial* nodep) {
+    virtual void visit(AstInitial* nodep) VL_OVERRIDE {
         visitIterateNoValueMod(nodep);
     }
-    virtual void visit(AstFinal* nodep) {
+    virtual void visit(AstFinal* nodep) VL_OVERRIDE {
         visitIterateNoValueMod(nodep);
     }
-    virtual void visit(AstAlways* nodep) {
+    virtual void visit(AstAlways* nodep) VL_OVERRIDE {
         m_inAlways = true;
         visitIterateNoValueMod(nodep);
         m_inAlways = false;
     }
-    virtual void visit(AstCover* nodep) {
+    virtual void visit(AstCover* nodep) VL_OVERRIDE {
         visitIterateNoValueMod(nodep);
     }
-    virtual void visit(AstRestrict* nodep) {
+    virtual void visit(AstRestrict* nodep) VL_OVERRIDE {
         visitIterateNoValueMod(nodep);
     }
 
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstBegin* nodep) VL_OVERRIDE {
+        V3Config::applyCoverageBlock(m_modp, nodep);
+        cleanFileline(nodep);
+        iterateChildren(nodep);
+    }
+    virtual void visit(AstCase* nodep) VL_OVERRIDE {
+        V3Config::applyCase(nodep);
+        cleanFileline(nodep);
+        iterateChildren(nodep);
+    }
+
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         // Default: Just iterate
         cleanFileline(nodep);
         iterateChildren(nodep);

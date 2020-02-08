@@ -594,7 +594,7 @@ protected:
 // Just dispatch to the implementation
 
 VInFilter::VInFilter(const string& command) { m_impp = new VInFilterImp(command); }
-VInFilter::~VInFilter() { if (m_impp) delete m_impp; m_impp = NULL; }
+VInFilter::~VInFilter() { if (m_impp) VL_DO_CLEAR(delete m_impp, m_impp = NULL); }
 
 bool VInFilter::readWholefile(const string& filename, VInFilter::StrList& outl) {
     if (!m_impp) v3fatalSrc("readWholefile on invalid filter");

@@ -68,6 +68,8 @@ CFG_CXXFLAGS_SRC = @CFG_CXXFLAGS_SRC@
 CFG_CXXFLAGS_PARSER = @CFG_CXXFLAGS_PARSER@
 # Compiler flags that turn on extra warnings
 CFG_CXXFLAGS_WEXTRA = @CFG_CXXFLAGS_WEXTRA@
+CFG_LDFLAGS_SRC = @CFG_LDFLAGS_SRC@
+CFG_LIBS = @CFG_LIBS@
 
 #### End of system configuration section. ####
 
@@ -91,8 +93,7 @@ endif
 #CCMALLOC = /usr/local/lib/ccmalloc-gcc.o -lccmalloc -ldl
 
 # -lfl not needed as Flex invoked with %nowrap option
-# -lstdc++ needed for clang, believed harmless with gcc
-LIBS = -lm -lstdc++
+LIBS = $(CFG_LIBS) -lm
 
 CPPFLAGS += -MMD
 CPPFLAGS += -I. -I$(bldsrc) -I$(srcdir) -I$(incdir) -I../../include
@@ -106,6 +107,7 @@ CPPFLAGS += -W -Wall $(CFG_CXXFLAGS_WEXTRA) $(CFG_CXXFLAGS_SRC) -Werror
 else
 CPPFLAGS += $(CFG_CXXFLAGS_SRC)
 endif
+LDFLAGS += $(CFG_LDFLAGS_SRC)
 
 CPPFLAGSWALL   = $(CPPFLAGS)
 CPPFLAGSPARSER = $(CPPFLAGS) $(CFG_CXXFLAGS_PARSER)
@@ -164,6 +166,7 @@ RAW_OBJS = \
 	V3Branch.o \
 	V3Broken.o \
 	V3CCtors.o \
+	V3CUse.o \
 	V3Case.o \
 	V3Cast.o \
 	V3Cdc.o \
@@ -193,6 +196,7 @@ RAW_OBJS = \
 	V3FileLine.o \
 	V3Gate.o \
 	V3GenClk.o \
+	V3Global.o \
 	V3Graph.o \
 	V3GraphAlg.o \
 	V3GraphAcyc.o \

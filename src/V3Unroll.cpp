@@ -124,6 +124,12 @@ private:
         if (VN_IS(nodep, GenFor) && !m_forVarp->isGenVar()) {
             nodep->v3error("Non-genvar used in generate for: "<<m_forVarp->prettyNameQ()<<endl);
         }
+        else if (!VN_IS(nodep, GenFor) && m_forVarp->isGenVar()) {
+            nodep->v3error("Genvar not legal in non-generate for (IEEE 1800-2017 27.4): "
+                           << m_forVarp->prettyNameQ() << endl
+                           << nodep->warnMore()
+                           << "... Suggest move for loop upwards to generate-level scope.");
+        }
         if (m_generate) V3Const::constifyParamsEdit(initAssp->rhsp());  // rhsp may change
 
         // This check shouldn't be needed when using V3Simulate
@@ -184,7 +190,7 @@ private:
         SimulateVisitor simvis;
         AstNode* clonep = nodep->cloneTree(true);
         simvis.mainCheckTree(clonep);
-        pushDeletep(clonep); clonep = NULL;
+        VL_DO_CLEAR(pushDeletep(clonep), clonep = NULL);
         return simvis.optimizable();
     }
 
@@ -202,21 +208,21 @@ private:
             clonep = tempp->stmtsp()->unlinkFrBackWithNext();
             tempp->deleteTree();
             tempp = NULL;
-            pushDeletep(m_varValuep); m_varValuep = NULL;
+            VL_DO_CLEAR(pushDeletep(m_varValuep), m_varValuep = NULL);
         }
         SimulateVisitor simvis;
         simvis.mainParamEmulate(clonep);
         if (!simvis.optimizable()) {
             UINFO(3, "Unable to simulate" << endl);
             if (debug()>=9) nodep->dumpTree(cout, "- _simtree: ");
-            clonep->deleteTree(); VL_DANGLING(clonep);
+            VL_DO_DANGLING(clonep->deleteTree(), clonep);
             return false;
         }
         // Fetch the result
         V3Number* res = simvis.fetchNumberNull(clonep);
         if (!res) {
             UINFO(3, "No number returned from simulation" << endl);
-            clonep->deleteTree(); VL_DANGLING(clonep);
+            VL_DO_DANGLING(clonep->deleteTree(), clonep);
             return false;
         }
         // Patch up datatype
@@ -224,11 +230,11 @@ private:
             AstConst new_con (clonep->fileline(), *res);
             new_con.dtypeFrom(dtypep);
             outNum = new_con.num();
-            clonep->deleteTree(); VL_DANGLING(clonep);
+            VL_DO_DANGLING(clonep->deleteTree(), clonep);
             return true;
         }
         outNum = *res;
-        clonep->deleteTree(); VL_DANGLING(clonep);
+        VL_DO_DANGLING(clonep->deleteTree(), clonep);
         return true;
     }
 
@@ -322,14 +328,14 @@ private:
                         iterateAndNextNull(tempp->stmtsp());
                         m_varModeReplace = false;
                         oneloopp = tempp->stmtsp()->unlinkFrBackWithNext();
-                        tempp->deleteTree(); VL_DANGLING(tempp);
+                        VL_DO_DANGLING(tempp->deleteTree(), tempp);
                     }
                     if (m_generate) {
                         string index = AstNode::encodeNumber(m_varValuep->toSInt());
                         string nname = m_beginName + "__BRA__" + index + "__KET__";
                         oneloopp = new AstBegin(oneloopp->fileline(), nname, oneloopp, true);
                     }
-                    pushDeletep(m_varValuep); m_varValuep = NULL;
+                    VL_DO_CLEAR(pushDeletep(m_varValuep), m_varValuep = NULL);
                     if (newbodysp) newbodysp->addNext(oneloopp);
                     else newbodysp = oneloopp;
 
@@ -359,15 +365,15 @@ private:
         // Replace the FOR()
         if (newbodysp) nodep->replaceWith(newbodysp);
         else nodep->unlinkFrBack();
-        if (bodysp) { pushDeletep(bodysp); VL_DANGLING(bodysp); }
-        if (precondsp) { pushDeletep(precondsp); VL_DANGLING(precondsp); }
-        if (initp) { pushDeletep(initp); VL_DANGLING(initp); }
-        if (incp && !incp->backp()) { pushDeletep(incp); VL_DANGLING(incp); }
+        if (bodysp) { VL_DO_DANGLING(pushDeletep(bodysp), bodysp); }
+        if (precondsp) { VL_DO_DANGLING(pushDeletep(precondsp), precondsp); }
+        if (initp) { VL_DO_DANGLING(pushDeletep(initp), initp); }
+        if (incp && !incp->backp()) { VL_DO_DANGLING(pushDeletep(incp), incp); }
         if (debug()>=9 && newbodysp) newbodysp->dumpTree(cout, "-  _new: ");
         return true;
     }
 
-    virtual void visit(AstWhile* nodep) {
+    virtual void visit(AstWhile* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         if (m_varModeCheck || m_varModeReplace) {
         } else {
@@ -377,26 +383,27 @@ private:
             // Grab initial value
             AstNode* initp = NULL;  // Should be statement before the while.
             if (nodep->backp()->nextp() == nodep) initp = nodep->backp();
-            if (initp) { V3Const::constifyEdit(initp); VL_DANGLING(initp); }
+            if (initp) { VL_DO_DANGLING(V3Const::constifyEdit(initp), initp); }
             if (nodep->backp()->nextp() == nodep) initp = nodep->backp();
             // Grab assignment
             AstNode* incp = NULL;  // Should be last statement
             if (nodep->incsp()) V3Const::constifyEdit(nodep->incsp());
+            // cppcheck-suppress duplicateCondition
             if (nodep->incsp()) incp = nodep->incsp();
             else {
                 for (incp = nodep->bodysp(); incp && incp->nextp(); incp = incp->nextp()) {}
-                if (incp) { V3Const::constifyEdit(incp); VL_DANGLING(incp); }
+                if (incp) { VL_DO_DANGLING(V3Const::constifyEdit(incp), incp); }
                 for (incp = nodep->bodysp(); incp && incp->nextp(); incp = incp->nextp()) {}  // Again, as may have changed
             }
             // And check it
             if (forUnrollCheck(nodep, initp,
                                nodep->precondsp(), nodep->condp(),
                                incp, nodep->bodysp())) {
-                pushDeletep(nodep); VL_DANGLING(nodep);  // Did replacement
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Did replacement
             }
         }
     }
-    virtual void visit(AstGenFor* nodep) {
+    virtual void visit(AstGenFor* nodep) VL_OVERRIDE {
         if (!m_generate || m_varModeReplace) {
             iterateChildren(nodep);
         }  // else V3Param will recursively call each for loop to be unrolled for us
@@ -414,17 +421,17 @@ private:
                 // we'd need to initialize the variable to the initial
                 // condition, but they'll become while's which can be
                 // deleted by V3Const.
-                pushDeletep(nodep->unlinkFrBack()); VL_DANGLING(nodep);
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             } else if (forUnrollCheck(nodep, nodep->initsp(),
                                       NULL, nodep->condp(),
                                       nodep->incsp(), nodep->bodysp())) {
-                pushDeletep(nodep); VL_DANGLING(nodep);  // Did replacement
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Did replacement
             } else {
                 nodep->v3error("For loop doesn't have genvar index, or is malformed");
             }
         }
     }
-    virtual void visit(AstNodeFor* nodep) {
+    virtual void visit(AstNodeFor* nodep) VL_OVERRIDE {
         if (m_generate) {  // Ignore for's when expanding genfor's
             iterateChildren(nodep);
         } else {
@@ -432,7 +439,7 @@ private:
         }
     }
 
-    virtual void visit(AstVarRef* nodep) {
+    virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         if (m_varModeCheck
             && nodep->varp() == m_forVarp
             && nodep->varScopep() == m_forVscp
@@ -453,7 +460,7 @@ private:
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstNode* nodep) {
+    virtual void visit(AstNode* nodep) VL_OVERRIDE {
         if (m_varModeCheck && nodep == m_ignoreIncp) {
             // Ignore subtree that is the increment
         } else {

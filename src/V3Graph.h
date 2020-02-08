@@ -65,15 +65,15 @@ public:
     const char* ascii() const {
         static const char* const names[] = { "FORWARD", "REVERSE" };
         return names[m_e];
-    };
+    }
     // METHODS unique to this class
     GraphWay invert() const { return m_e == FORWARD ? REVERSE : FORWARD; }
     bool forward() const { return m_e == FORWARD; }
     bool reverse() const { return m_e != FORWARD; }
 };
-inline bool operator==(GraphWay lhs, GraphWay rhs) { return (lhs.m_e == rhs.m_e); }
-inline bool operator==(GraphWay lhs, GraphWay::en rhs) { return (lhs.m_e == rhs); }
-inline bool operator==(GraphWay::en lhs, GraphWay rhs) { return (lhs == rhs.m_e); }
+inline bool operator==(const GraphWay& lhs, const GraphWay& rhs) { return lhs.m_e == rhs.m_e; }
+inline bool operator==(const GraphWay& lhs, GraphWay::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(GraphWay::en lhs, const GraphWay& rhs) { return lhs == rhs.m_e; }
 
 //============================================================================
 
@@ -104,6 +104,7 @@ public:
     // METHODS
     void clear();  // Empty it of all vertices/edges, as if making a new object
     void clearColors();
+    bool empty() const { return m_vertices.empty(); }
 
     V3GraphVertex* verticesBeginp() const { return m_vertices.begin(); }
 
@@ -270,7 +271,7 @@ class V3GraphEdge {
     // Wires/variables aren't edges.  Edges have only a single to/from vertex
 public:
     // ENUMS
-    enum Cuttable { NOT_CUTABLE = false, CUTABLE = true };  // For passing to V3GraphEdge
+    enum Cutable { NOT_CUTABLE = false, CUTABLE = true };  // For passing to V3GraphEdge
 protected:
     friend class V3Graph;       friend class V3GraphVertex;
     friend class GraphAcyc;     friend class GraphAcycEdge;

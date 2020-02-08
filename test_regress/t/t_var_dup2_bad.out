@@ -1,5 +1,5 @@
 %Error: t/t_var_dup2_bad.v:12: Duplicate declaration of signal: 'bad_o_w'
-                             : ... note: ANSI ports must have type declared with the I/O (IEEE 2017 23.2.2.2)
+                             : ... note: ANSI ports must have type declared with the I/O (IEEE 1800-2017 23.2.2.2)
    wire bad_o_w;
         ^~~~~~~
         t/t_var_dup2_bad.v:9: ... Location of original declaration
