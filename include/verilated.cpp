@@ -1832,7 +1832,7 @@ void VL_READMEM_N(bool hex,  // Hex format, else binary
                   QData end  // Last row address to read
                   ) VL_MT_SAFE {
     QData addr_max = array_lsb + depth - 1;
-    if (start < array_lsb) start = array_lsb;
+    if (start < static_cast<QData>(array_lsb)) start = array_lsb;
     QData addr_end = end;
     if (addr_end > addr_max) addr_end = addr_max;
 
@@ -1883,7 +1883,7 @@ void VL_WRITEMEM_N(bool hex,  // Hex format, else binary
                    QData end  // Last address to write, or ~0 when not specified
                    ) VL_MT_SAFE {
     QData addr_max = array_lsb + depth - 1;
-    if (start < array_lsb) start = array_lsb;
+    if (start < static_cast<QData>(array_lsb)) start = array_lsb;
     if (end > addr_max) end = addr_max;
 
     VlWriteMem wmem(hex, bits, filename, start, end);
