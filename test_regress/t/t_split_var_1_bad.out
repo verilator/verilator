@@ -19,7 +19,7 @@
                                            : ... In instance t
    wire   should_show_warning2;               /*verilator split_var*/ 
           ^~~~~~~~~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:42: Variable 'cannot_split' will not be split because bit range cannot be determined statically.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:42: Variable 'cannot_split' will not be split because its bit range cannot be determined statically.
                                            : ... In instance t.i_sub1
      rd_data = cannot_split[addr];
                            ^

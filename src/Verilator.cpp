@@ -157,7 +157,7 @@ static void process() {
 
     // Split variables into multiple pieces to resolve UNOPTFLAT.
     // This should come before undrivenAll() to eliminate ALWCOMBORDER warning
-    //   which can be resolved by splitUnpackedVariable().
+    // which can be resolved by splitUnpackedVariable().
     V3SplitVar::splitUnpackedVariable(v3Global.rootp());
 
     // Signal based lint checks, no change to structures
