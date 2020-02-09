@@ -89,7 +89,7 @@ class DfaVertex : public V3GraphVertex {
     bool m_accepting;  // Accepting state?
 public:
     // CONSTRUCTORS
-    DfaVertex(DfaGraph* graphp, bool start=false, bool accepting=false)
+    explicit DfaVertex(DfaGraph* graphp, bool start=false, bool accepting=false)
         : V3GraphVertex(graphp)
         , m_start(start), m_accepting(accepting) {}
     using V3GraphVertex::clone;  // We are overriding, not overloading clone(V3Graph*)

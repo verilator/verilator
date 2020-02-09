@@ -1138,9 +1138,9 @@ private:
                 default: nodep->v3error("Unhandled attribute type");
                 }
             } else {
-                std::pair<uint32_t, uint32_t> dim
+                std::pair<uint32_t, uint32_t> dimp
                     = nodep->fromp()->dtypep()->skipRefp()->dimensions(true);
-                uint32_t msbdim = dim.first + dim.second;
+                uint32_t msbdim = dimp.first + dimp.second;
                 if (!nodep->dimp() || msbdim < 1) {
                     int dim = 1;
                     AstConst* newp = dimensionValue(nodep->fileline(), nodep->fromp()->dtypep(),
@@ -2291,7 +2291,6 @@ private:
         userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
         AstClassRefDType* refp = VN_CAST(m_vup->dtypeNullp(), ClassRefDType);
         if (!refp) {  // e.g. int a = new;
-            if (refp) UINFO(1, "Got refp "<<refp<<endl);
             nodep->v3error("new() not expected in this context");
             return;
         }
@@ -2454,9 +2453,9 @@ private:
                 if (VN_IS(valuep, Const)) {
                     // Forming a AstConcat will cause problems with
                     // unsized (uncommitted sized) constants
-                    if (AstNode* newp = WidthCommitVisitor::newIfConstCommitSize(VN_CAST(valuep, Const))) {
+                    if (AstNode* newccp = WidthCommitVisitor::newIfConstCommitSize(VN_CAST(valuep, Const))) {
                         VL_DO_DANGLING(pushDeletep(valuep), valuep);
-                        valuep = newp;
+                        valuep = newccp;
                     }
                 }
                 if (!newp) newp = valuep;
@@ -2574,9 +2573,10 @@ private:
                 if (VN_IS(valuep, Const)) {
                     // Forming a AstConcat will cause problems with
                     // unsized (uncommitted sized) constants
-                    if (AstNode* newp = WidthCommitVisitor::newIfConstCommitSize(VN_CAST(valuep, Const))) {
+                    if (AstNode* newccp
+                        = WidthCommitVisitor::newIfConstCommitSize(VN_CAST(valuep, Const))) {
                         VL_DO_DANGLING(pushDeletep(valuep), valuep);
-                        valuep = newp;
+                        valuep = newccp;
                     }
                 }
                 {  // Packed. Convert to concat for now.
@@ -3675,9 +3675,9 @@ private:
                 if (shiftp && shiftp->num().mostSetBitP1() <= 32) {
                     // If (number)<<96'h1, then make it into (number)<<32'h1
                     V3Number num (shiftp, 32, 0); num.opAssign(shiftp->num());
-                    AstNode* shiftp = nodep->rhsp();
-                    nodep->rhsp()->replaceWith(new AstConst(shiftp->fileline(), num));
-                    VL_DO_DANGLING(shiftp->deleteTree(), shiftp);
+                    AstNode* shiftrhsp = nodep->rhsp();
+                    nodep->rhsp()->replaceWith(new AstConst(shiftrhsp->fileline(), num));
+                    VL_DO_DANGLING(shiftrhsp->deleteTree(), shiftrhsp);
                 }
             }
         }

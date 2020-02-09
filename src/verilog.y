@@ -114,12 +114,14 @@ public:
 	if (!rangep) return exprp;
 	else return new AstGatePin(rangep->fileline(), exprp, rangep->cloneTree(true));
     }
-    void endLabel(FileLine* fl, AstNode* nodep, string* endnamep) { endLabel(fl, nodep->prettyName(), endnamep); }
-    void endLabel(FileLine* fl, string name, string* endnamep) {
-	if (fl && endnamep && *endnamep != "" && name != *endnamep
-	    && name != AstNode::prettyName(*endnamep)) {
-	    fl->v3warn(ENDLABEL,"End label '"<<*endnamep<<"' does not match begin label '"<<name<<"'");
-	}
+    void endLabel(FileLine* fl, AstNode* nodep, string* endnamep) {
+        endLabel(fl, nodep->prettyName(), endnamep);
+    }
+    void endLabel(FileLine* fl, const string& name, string* endnamep) {
+        if (fl && endnamep && *endnamep != "" && name != *endnamep
+            && name != AstNode::prettyName(*endnamep)) {
+            fl->v3warn(ENDLABEL,"End label '"<<*endnamep<<"' does not match begin label '"<<name<<"'");
+        }
     }
     void setVarDecl(AstVarType type) { m_varDecl = type; }
     void setDType(AstNodeDType* dtypep) {

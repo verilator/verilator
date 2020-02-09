@@ -437,7 +437,10 @@ void EmitCSyms::emitSymHdr() {
 
     if (m_coverBins) {
         puts("\n// COVERAGE\n");
-        puts("uint32_t __Vcoverage["); puts(cvtToStr(m_coverBins)); puts("];\n");
+        puts(v3Global.opt.threads() ? "std::atomic<uint32_t>" : "uint32_t");
+        puts(" __Vcoverage[");
+        puts(cvtToStr(m_coverBins));
+        puts("];\n");
     }
 
     if (!m_scopeNames.empty()) {  // Scope names

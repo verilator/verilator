@@ -453,9 +453,11 @@ private:
             UASSERT_OBJ(varscp, nodep, "Var didn't get varscoped in V3Scope.cpp");
             GateVarVertex* vvertexp = makeVarVertex(varscp);
             UINFO(5," VARREF to "<<varscp<<endl);
-            if (m_inSenItem) vvertexp->setIsClock();
-            // For SYNCASYNCNET
-            if (m_inSenItem) varscp->user2(true);
+            if (m_inSenItem) {
+                vvertexp->setIsClock();
+                // For SYNCASYNCNET
+                varscp->user2(true);
+            }
             else if (m_activep && m_activep->hasClocked() && !nodep->lvalue()) {
                 if (varscp->user2()) {
                     if (!vvertexp->rstAsyncNodep()) vvertexp->rstAsyncNodep(nodep);
@@ -712,7 +714,7 @@ bool GateVisitor::elimLogicOkOutputs(GateLogicVertex* consumeVertexp,
     for (GateVarRefList::const_iterator it = rhsVarRefs.begin();
          it != rhsVarRefs.end(); ++it) {
         AstVarScope* vscp = (*it)->varScopep();
-        if (varscopes.find(vscp) == varscopes.end()) varscopes.insert(vscp);
+        varscopes.insert(vscp);
     }
     for (V3GraphEdge* edgep = consumeVertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
         GateVarVertex* consVVertexp = dynamic_cast<GateVarVertex*>(edgep->top());

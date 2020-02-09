@@ -111,7 +111,7 @@ public:
             "UNSIGNED", "SIGNED", "NOSIGN"
         };
         return names[m_e];
-    };
+    }
     inline AstNumeric() : m_e(UNSIGNED) {}
     // cppcheck-suppress noExplicitConstructor
     inline AstNumeric(en _e) : m_e(_e) {}
@@ -346,7 +346,7 @@ public:
             "VAR_NO_CLOCKER"
         };
         return names[m_e];
-    };
+    }
     inline AstAttrType() : m_e(ILLEGAL) {}
     // cppcheck-suppress noExplicitConstructor
     inline AstAttrType(en _e) : m_e(_e) {}
@@ -391,7 +391,7 @@ public:
             " MAX"
         };
         return names[m_e];
-    };
+    }
     const char* dpiType() const {
         static const char* const names[] = {
             "%E-unk",
@@ -404,7 +404,7 @@ public:
             " MAX"
         };
         return names[m_e];
-    };
+    }
     static void selfTest() {
         UASSERT(0==strcmp(AstBasicDTypeKwd(_ENUM_MAX).ascii(), " MAX"), "SelfTest: Enum mismatch");
         UASSERT(0==strcmp(AstBasicDTypeKwd(_ENUM_MAX).dpiType(), " MAX"), "SelfTest: Enum mismatch");
@@ -1025,14 +1025,14 @@ protected:
         clearcnt(id, cntGblRef, userBusyRef);  // Includes a checkUse for us
         userBusyRef = false;
     }
-    static void clearcnt(int id, uint32_t& cntGblRef, bool& userBusyRef) {
+    static void clearcnt(int id, uint32_t& cntGblRef, const bool& userBusyRef) {
         UASSERT_STATIC(userBusyRef, "Clear of User"+cvtToStr(id)+"() not under AstUserInUse");
         // If this really fires and is real (after 2^32 edits???)
         // we could just walk the tree and clear manually
         ++cntGblRef;
         UASSERT_STATIC(cntGblRef, "User*() overflowed!");
     }
-    static void checkcnt(int id, uint32_t&, bool& userBusyRef) {
+    static void checkcnt(int id, uint32_t&, const bool& userBusyRef) {
         UASSERT_STATIC(userBusyRef, "Check of User"+cvtToStr(id)+"() failed, not under AstUserInUse");
     }
 };
@@ -1197,7 +1197,7 @@ public:
     explicit V3Hash(VNUser u) { m_both = u.toInt(); }
     V3Hash operator+= (const V3Hash& rh) {
         setBoth(depth()+rh.depth(), (hshval()*31+rh.hshval()));
-        return *this; };
+        return *this; }
     // Creating from raw data (sameHash functions)
     V3Hash() { setBoth(1, 0); }
     // cppcheck-suppress noExplicitConstructor

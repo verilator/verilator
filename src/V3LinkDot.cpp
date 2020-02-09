@@ -2070,11 +2070,21 @@ private:
                         refp->varp(varp);
                         m_ds.m_dotText = "";
                         if (m_ds.m_unresolved && m_ds.m_unlinkedScope) {
-                            newp = new AstUnlinkedRef(nodep->fileline(), VN_CAST(refp, VarXRef),
-                                                      refp->name(),
-                                                      m_ds.m_unlinkedScope->unlinkFrBack());
-                            m_ds.m_unlinkedScope = NULL;
-                            m_ds.m_unresolved = false;
+                            string dotted = refp->dotted();
+                            size_t pos = dotted.find("__BRA__??__KET__");
+                            // Arrays of interfaces all have the same parameters
+                            if (pos != string::npos && varp->isParam()
+                                && VN_IS(m_ds.m_unlinkedScope, CellArrayRef)) {
+                                refp->dotted(dotted.substr(0, pos));
+                                newp = refp;
+                            } else {
+                                newp = new AstUnlinkedRef(nodep->fileline(),
+                                                          VN_CAST(refp, VarXRef),
+                                                          refp->name(),
+                                                          m_ds.m_unlinkedScope->unlinkFrBack());
+                                m_ds.m_unlinkedScope = NULL;
+                                m_ds.m_unresolved = false;
+                           }
                         } else {
                             newp = refp;
                         }
@@ -2241,7 +2251,6 @@ private:
                     }
                 }
             } else {
-                string baddot;
                 VSymEnt* foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot);
                 AstVarScope* vscp = foundp ? VN_CAST(foundp->nodep(), VarScope) : NULL;
                 if (!vscp) {

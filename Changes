@@ -3,7 +3,10 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in []. Thanks!
 
 
-* Verilator 4.027 devel
+* Verilator 4.029 devel
+
+
+* Verilator 4.028 2020-02-08
 
 **    Support attributes (public, isolate_assignments, etc.) in configuration files.
 
@@ -25,6 +28,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support enum.next(k) with constant k > 1, #2125. [Tobias Rosenkranz]
 
+****  Support parameter access from arrays of interfaces, #2155. [Todd Strader]
+
 ****  Add parameter values in XML. #2110. [Pieter Kapsenberg]
 
 ****  Add loc column location in XML (replaces fl), #2122. [Pieter Kapsenberg]
@@ -40,6 +45,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 ****  Fix FST tracing of enums inside structs. [fsiegle]
 
 ****  Fix WIDTH warning on </<= of narrower value, #2141. [agrobman]
+
+****  Fix OpenSolaris issues, #2154. [brancoliticus]
 
 
 * Verilator 4.026 2020-01-11
@@ -168,9 +175,9 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.020 2019-10-06
 
-***   Support $fseek, $ftell, $frewind, #1496. [Howard Su]
-
 ***   Add --public-flat-rw, #1511. [Stefan Wallentowitz]
+
+***   Support $fseek, $ftell, $frewind, #1496. [Howard Su]
 
 ***   Support vpiModule, #1469. [Stefan Wallentowitz]
 
@@ -191,6 +198,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 ****  Fix misc bad-syntax crashes, #1529, #1530, #1531, #1532, #1533. [Eric Rippey]
 
 ****  Fix case statements with strings, #1536. [Philipp Wagner]
+
+****  Fix some coverage lost when multithreaded, #2151.
 
 
 * Verilator 4.018 2019-08-29

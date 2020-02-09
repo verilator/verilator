@@ -163,9 +163,9 @@ public:
         // Suggest alternative symbol candidates without looking upward through symbol hierarchy
         for (IdNameMap::const_iterator it = m_idNameMap.begin();
              it != m_idNameMap.end(); ++it) {
-            const AstNode* nodep = it->second->nodep();
-            if (nodep && (!matcherp || matcherp->nodeMatch(nodep))) {
-                spellerp->pushCandidate(nodep->prettyName());
+            const AstNode* itemp = it->second->nodep();
+            if (itemp && (!matcherp || matcherp->nodeMatch(itemp))) {
+                spellerp->pushCandidate(itemp->prettyName());
             }
         }
     }
@@ -249,9 +249,9 @@ public:
         if (prettyName=="") prettyName = lookp->prettyName();
         string scopes;
         for (IdNameMap::iterator it = m_idNameMap.begin(); it!=m_idNameMap.end(); ++it) {
-            AstNode* nodep = it->second->nodep();
-            if (VN_IS(nodep, Cell)
-                || (VN_IS(nodep, Module) && VN_CAST(nodep, Module)->isTop())) {
+            AstNode* itemp = it->second->nodep();
+            if (VN_IS(itemp, Cell)
+                || (VN_IS(itemp, Module) && VN_CAST(itemp, Module)->isTop())) {
                 if (scopes != "") scopes += ", ";
                 scopes += AstNode::prettyName(it->first);
             }

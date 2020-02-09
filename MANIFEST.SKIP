@@ -19,14 +19,15 @@
 \.codacy\.yml
 \.travis\.yml
 /build/
-/obj_dir/
 /obj_dbg/
+/obj_dir/
+/obj_dist/
+/obj_iv/
 /obj_nc/
 /obj_opt/
 /obj_vcs/
 /obj_vlt/
 /obj_vltmt/
-/obj_dist/
 /INCA_libs/
 /cov_work/
 /logs/

@@ -95,9 +95,9 @@ private:
 
 public:
     // CONSTRUCTORS
-    GraphStream(const V3Graph* graphp,
-                GraphWay way = GraphWay::FORWARD,
-                const T_Compare& lessThan = T_Compare())
+    explicit GraphStream(const V3Graph* graphp,
+                         GraphWay way = GraphWay::FORWARD,
+                         const T_Compare& lessThan = T_Compare())
         // NOTE: Perhaps REVERSE way should also reverse the sense of the
         // lessThan function? For now the only usage of REVERSE is not
         // sensitive to its lessThan at all, so it doesn't matter.

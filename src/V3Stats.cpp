@@ -204,7 +204,7 @@ private:
         if (m_fast && nodep->evalp()) {
             m_instrs = 0;
             m_counting = true;
-            if (nodep->evalp()) iterateChildrenConst(nodep->evalp());
+            iterateChildrenConst(nodep->evalp());
             m_counting = false;
         }
         allNodes(nodep);

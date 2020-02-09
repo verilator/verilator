@@ -385,9 +385,7 @@ private:
                                      <<pinp->prettyNameQ());
                     }
                 }
-                if (ports.find(pinp->name()) == ports.end()) {
-                    ports.insert(pinp->name());
-                }
+                ports.insert(pinp->name());
             }
             // We search ports, rather than in/out declarations as they aren't resolved yet,
             // and it's easier to do it now than in V3LinkDot when we'd need to repeat steps.

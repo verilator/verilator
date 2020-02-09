@@ -449,9 +449,7 @@ private:
                         break;
                     } else {
                         uint32_t acode = cfvertexp->activityCode();
-                        if (actset.find(acode) == actset.end()) {
-                            actset.insert(acode);
-                        }
+                        actset.insert(acode);
                     }
                 }
                 // If a trace doesn't have activity, it's constant, and we

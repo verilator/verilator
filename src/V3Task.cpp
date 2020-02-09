@@ -415,12 +415,12 @@ private:
 
                     // Even if it's referencing a varref, we still make a temporary
                     // Else task(x,x,x) might produce incorrect results
-                    AstVarScope* outvscp
+                    AstVarScope* tempvscp
                         = createVarScope(portp, namePrefix+"__"+portp->shortName());
-                    portp->user2p(outvscp);
-                    AstAssign* assp = new AstAssign(pinp->fileline(),
-                                                    pinp,
-                                                    new AstVarRef(outvscp->fileline(), outvscp, false));
+                    portp->user2p(tempvscp);
+                    AstAssign* assp
+                        = new AstAssign(pinp->fileline(), pinp,
+                                        new AstVarRef(tempvscp->fileline(), tempvscp, false));
                     assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);  // Ok if in <= block
                     // Put assignment BEHIND of all other statements
                     beginp->addNext(assp);
@@ -469,7 +469,7 @@ private:
         // Iteration requires a back, so put under temporary node
         {
             AstBegin* tempp = new AstBegin(beginp->fileline(), "[EditWrapper]", beginp);
-            TaskRelinkVisitor visit (tempp);
+            TaskRelinkVisitor visitor(tempp);
             tempp->stmtsp()->unlinkFrBackWithNext();
             VL_DO_DANGLING(tempp->deleteTree(), tempp);
         }
@@ -1073,7 +1073,7 @@ private:
         // Iteration requires a back, so put under temporary node
         {
             AstBegin* tempp = new AstBegin(cfuncp->fileline(), "[EditWrapper]", cfuncp);
-            TaskRelinkVisitor visit (tempp);
+            TaskRelinkVisitor visitor(tempp);
             tempp->stmtsp()->unlinkFrBackWithNext();
             VL_DO_DANGLING(tempp->deleteTree(), tempp);
         }

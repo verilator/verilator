@@ -178,10 +178,10 @@ private:
             // update user4 (statement count) to reflect that:
             int statements = modp->user4();
             LocalInstanceMap& localsr = m_instances[modp];
-            for (LocalInstanceMap::iterator it = localsr.begin(); it != localsr.end(); ++it) {
-                AstNodeModule* childp = it->first;
+            for (LocalInstanceMap::iterator iti = localsr.begin(); iti != localsr.end(); ++iti) {
+                AstNodeModule* childp = iti->first;
                 if (childp->user1()) {  // inlining child
-                    statements += (childp->user4() * it->second);
+                    statements += (childp->user4() * iti->second);
                 }
             }
             modp->user4(statements);

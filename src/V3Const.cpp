@@ -2087,7 +2087,7 @@ private:
                     default:  // Most operators, just move to next argument
                         if (argp) {
                             AstNode* nextp = argp->nextp();
-                            if (argp && VN_IS(argp, Const)) {  // Convert it
+                            if (VN_IS(argp, Const)) {  // Convert it
                                 string out = VN_CAST(argp, Const)->num().displayed(nodep, fmt);
                                 UINFO(9,"     DispConst: "<<fmt<<" -> "<<out
                                       <<"  for "<<argp<<endl);

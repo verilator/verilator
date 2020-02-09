@@ -41,9 +41,9 @@ template <typename T> class V3ConfigWildcardResolver {
 
     Map m_mapWildcard;  // Wildcard strings to entities
     Map m_mapResolved;  // Resolved strings to converged entities
-    typename Map::iterator m_last;  // Last access, will probably hit again
 public:
-    V3ConfigWildcardResolver() { m_last = m_mapResolved.end(); }
+    V3ConfigWildcardResolver() {}
+    ~V3ConfigWildcardResolver() {}
 
     /// Update into maps from other
     void update(const V3ConfigWildcardResolver& other) {
@@ -63,10 +63,6 @@ public:
     }
     // Access an entity and resolve wildcards that match it
     T* resolve(const string& name) {
-        // Lookup if recently accessed matches
-        if (VL_LIKELY(m_last != m_mapResolved.end()) && VL_LIKELY(m_last->first == name)) {
-            return &m_last->second;
-        }
         // Lookup if it was resolved before, typically not
         typename Map::iterator it = m_mapResolved.find(name);
         if (VL_UNLIKELY(it != m_mapResolved.end())) { return &it->second; }

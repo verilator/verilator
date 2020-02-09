@@ -352,7 +352,7 @@ sub write_types {
     printf $fh "            \"_ENUM_END\"\n";
     printf $fh "        };\n";
     printf $fh "        return names[m_e];\n";
-    printf $fh "    };\n";
+    printf $fh "    }\n";
     $fh->close();
 }
 

@@ -119,7 +119,7 @@ private:
         return *defFilelinep;
     }
 public:
-    FileLine(const string& filename) {
+    explicit FileLine(const string& filename) {
         m_lastLineno = m_firstLineno = 0;
         m_lastColumn = m_firstColumn = 0;
         m_filenameno = singleton().nameToNumber(filename);
