@@ -11,7 +11,7 @@ scenarios(simulator => 1);
 
 compile(
     fails => 1,
-    verilator_flags2 => ['--stats '],
+    verilator_flags2 => ['--stats'],
     expect_filename => $Self->{golden_filename},
 );
 
