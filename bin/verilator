@@ -3413,39 +3413,30 @@ for more information.
 
 =item /*verilator split_var*/
 
-Attached to a variable or a net declaration. It breaks the variable into
-multiple pieces. The following data types are supported.
+Attached to a variable or a net declaration to break the variable into
+multiple pieces typically to resolve UNOPTFLAT performance issues.
+Typically the variables to attach this to are recommeded by Verilator
+itself, see UNOPTFLAT below.
 
-  Packed array and packed struct consist of Integer types (reg, logic, bit, byte, int...)
-  unpacked array of data type above
-
-Verilator will internally convert a variable with the metacomment such as:
+For example, Verilator will internally convert a variable with the
+metacomment such as:
 
     logic [7:0] x [0:1];  /*verilator split_var*/
 
-to packed variables below.
+To:
 
     logic [7:0] x__BRA__0__KET__; /*verilator split_var*/
     logic [7:0] x__BRA__1__KET__; /*verilator split_var*/
 
-Note that the generated packed variables still have split_var metacomment because
-they will be split into further smaller pieces accorting to each access pattern.
+Note that the generated packed variables retain the split_var metacomment
+because they may be split into further smaller pieces accorting to the
+access patterns.
 
-Packed variable will be split as the following example.
-
-    logic [7:0] y;        /*verilator split_var*/
-
-to:
-
-    logic [1:0] y__BRA__7_6__KET__;
-    logic [5:0] y__BRA__5_0__KET__;
-
-This operation helps optimization step to identify the dependencies
-among variables and may resolve UNOPTFLAT warning.
-If the warning is resolved, simulation speed gets improved.
-Please also see the explanation of UNOPTFLAT below.
-
-Splitting large array may slow donw the Verilating speed.
+This only supports unpacked arrays, packed arrays, and packed structs of
+integer types (reg, logic, bit, byte, int...); otherwise if a split was
+requested but cannot occur a SPLITVAR warning is issued.  Splitting large
+arrays may slow donw the Verilation speed, so use this only on variables
+that require it.
 
 =item /*verilator tag <text...>*/
 
@@ -4412,11 +4403,10 @@ calls.
 
 =item SPLITVAR
 
-Warns that a variable with split_var metacomment was not split.
-Possible reasons are
-
-  The datatype is not supported for splitting. (e.g. real)
-  The access pattern of the variable can not be determined statically. (e.g. memory)
+Warns that a variable with a C<split_var> metacomment was not split.
+Typical reasons are the datatype is not supported for splitting
+(e.g. real), or the access pattern of the variable can not be determined
+statically.
 
 =item STMTDLY
 
@@ -4544,14 +4534,15 @@ With this change this assignment needs to be evaluated only once.  These
 sort of changes may also speed up your traditional event driven simulator,
 as it will result in fewer events per cycle.
 
-Another way to resolve this warning is to add split_var meta comment
-explained above. The variable will be split internnaly so that Verilator
-can optimize well.
-
 The most complicated UNOPTFLAT path we've seen was due to low bits of a bus
 being generated from an always statement that consumed high bits of the
 same bus processed by another series of always blocks.  The fix is the
 same; split it into two separate signals generated from each block.
+
+Another way to resolve this warning is to add a C<split_var> metacomment
+described above. This will cause the variable to be split internally,
+potentially resolving the conflict. If you run with --report-unoptflat
+Verilator will suggest possible candidates for C<split_var>.
 
 The UNOPTFLAT warning may also be due to clock enables, identified from the
 reported path going through a clock gating cell.  To fix these, use the
