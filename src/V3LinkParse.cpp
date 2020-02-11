@@ -175,9 +175,6 @@ private:
 
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
         cleanFileline(nodep);
-#ifdef SPLIT_VAR_DEBUG_SPLIT_ALL
-        nodep->attrSplitVar(VN_IS(m_modp, Module));  // only variables in a module.
-#endif
         if (VN_IS(nodep->subDTypep(), ParseTypeDType)) {
             // It's a parameter type. Use a different node type for this.
             AstNodeDType* dtypep = VN_CAST(nodep->valuep(), NodeDType);
@@ -311,10 +308,8 @@ private:
         else if (nodep->attrType() == AstAttrType::VAR_SPLIT_VAR) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             if (!VN_IS(m_modp, Module)) {
-#if defined(VL_DEBUG) || !defined(SPLIT_VAR_DEBUG_SPLIT_ALL)
                 m_varp->v3warn(SPLITVAR, m_varp->prettyNameQ() << " has split_var metacomment, "
                                "but will not be split because it is not declared in a module.\n");
-#endif
             } else {
                 m_varp->attrSplitVar(true);
             }

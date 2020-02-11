@@ -30,8 +30,6 @@
 #ifndef _VERILATEDOS_H_
 #define _VERILATEDOS_H_ 1  ///< Header Guard
 
-// #define SPLIT_VAR_DEBUG_SPLIT_ALL
-
 //=========================================================================
 // Compiler pragma abstraction
 

@@ -400,9 +400,7 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
                 for (vl_unordered_set<AstVar*>::iterator it = m_foundTargetVar.begin(),
                                                          it_end = m_foundTargetVar.end();
                      it != it_end; ++it) {
-#if defined(VL_DEBUG) || !defined(SPLIT_VAR_DEBUG_SPLIT_ALL)
                     arg->v3warn(SPLITVAR, (*it)->prettyNameQ() << notSplitMsg << reason << ".\n");
-#endif
                     m_refs.remove(*it);
                 }
                 m_foundTargetVar.clear();
@@ -419,9 +417,7 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
             for (vl_unordered_set<AstVar*>::iterator it = m_foundTargetVar.begin(),
                                                      it_end = m_foundTargetVar.end();
                  it != it_end; ++it) {
-#if defined(VL_DEBUG) || !defined(SPLIT_VAR_DEBUG_SPLIT_ALL)
                 nodep->v3warn(SPLITVAR, (*it)->prettyNameQ() << notSplitMsg << reason << ".\n");
-#endif
                 m_refs.remove(*it);
             }
             m_foundTargetVar.clear();
@@ -456,19 +452,15 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
                 if (indexp->toUInt() < outerMostSizeOfUnpackedArray(refp->varp())) {
                     m_refs.tryAdd(m_context, refp, nodep, indexp->toSInt(), m_inFTask);
                 } else {
-#if defined(VL_DEBUG) || !defined(SPLIT_VAR_DEBUG_SPLIT_ALL)
                     nodep->bitp()->v3warn(SPLITVAR, refp->prettyNameQ()
                                                         << notSplitMsg
                                                         << "index is out of range.\n");
-#endif
                     m_refs.remove(refp->varp());
                 }
             } else {
-#if defined(VL_DEBUG) || !defined(SPLIT_VAR_DEBUG_SPLIT_ALL)
                 nodep->bitp()->v3warn(SPLITVAR, refp->prettyNameQ()
                                                     << notSplitMsg
                                                     << "index cannot be determined statically.\n");
-#endif
                 m_refs.remove(refp->varp());
                 iterate(nodep->bitp());
             }
@@ -486,10 +478,8 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
                 m_refs.tryAdd(m_context, refp, nodep, nodep->declRange().hi(),
                               nodep->declRange().lo(), m_inFTask);
             } else {
-#if defined(VL_DEBUG) || !defined(SPLIT_VAR_DEBUG_SPLIT_ALL)
                 nodep->v3warn(SPLITVAR, refp->prettyNameQ()
                                             << notSplitMsg << "index if out of range.\n");
-#endif
                 m_refs.remove(refp->varp());
             }
         } else {
@@ -832,9 +822,7 @@ class SplitPackedVarVisitor : public AstNVisitor {
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
         if (!nodep->attrSplitVar()) return;  // nothing to do
         if (const char* reason = cannotSplitReason(nodep, true)) {
-#if defined(VL_DEBUG) || !defined(SPLIT_VAR_DEBUG_SPLIT_ALL)
             nodep->v3warn(SPLITVAR, nodep->prettyNameQ() << notSplitMsg << reason << ".\n");
-#endif
             nodep->attrSplitVar(false);
         } else {  // finally find a good candidate
             const bool inserted = m_refs.insert(std::make_pair(nodep, PackedVarRef(nodep))).second;
@@ -879,10 +867,8 @@ class SplitPackedVarVisitor : public AstNVisitor {
             UINFO(5, varp->prettyName() << " [" << consts[0]->toSInt() << ":+"
                   << consts[1]->toSInt() << "] lsb:" << refit->second.basicp()->lsb() << "\n");
         } else {
-#if defined(VL_DEBUG) || !defined(SPLIT_VAR_DEBUG_SPLIT_ALL)
             nodep->v3warn(SPLITVAR, vrefp->prettyNameQ() << notSplitMsg
                           << "its bit range cannot be determined statically.");
-#endif
             if (!consts[0]) {
                 UINFO(4, "LSB " << nodep->lsbp() << " is expected to be constant, but not\n");
             }
