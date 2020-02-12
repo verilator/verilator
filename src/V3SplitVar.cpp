@@ -374,13 +374,13 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
         if (nodep->sensesp()) {  // When visiting sensitivity list, always is the context
             setContextAndIterate(nodep, nodep->sensesp());
         }
-        iterate(nodep->bodysp());
+        if (AstNode* bodysp = nodep->bodysp()) iterate(bodysp);
     };
     virtual void visit(AstAlwaysPublic* nodep) VL_OVERRIDE {
         if (nodep->sensesp()) {  // When visiting sensitivity list, always is the context
             setContextAndIterate(nodep, nodep->sensesp());
         }
-        iterate(nodep->bodysp());
+        if (AstNode* bodysp = nodep->bodysp()) iterate(bodysp);
     }
     virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
         const ContextKeeper keeper(&m_context, nodep);
@@ -638,6 +638,7 @@ public:
     explicit SplitUnpackedVarVisitor(AstNetlist* nodep)
         : m_refs()
         , m_modp(NULL)
+        , m_context(NULL)
         , m_inFTask(false)
         , m_numSplit(0) {
         iterate(nodep);
