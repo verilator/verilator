@@ -716,6 +716,13 @@ respectively 16,384 and 4,096. The method of doing this is system
 dependent, but on Fedora Linux it would require editing the
 `/etc/security/limits.conf` file as root.
 
+=== Manual Test Execution
+
+A specific regression test can be executed manually. To start the "EXAMPLE"
+test, run the following command.
+
+   test_regress/t/t_EXAMPLE.pl
+
 === Continuous Integration
 
 Verilator has a https://travis-ci.com/verilator/verilator[Travis CI environment]
