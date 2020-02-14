@@ -631,7 +631,7 @@ Test drivers are written in PERL. All invoke the main test driver script,
 which can provide detailed help on all the features available when writing
 a test driver.
 
-   test_regress/t/driver.pl --help
+   test_regress/driver.pl --help
 
 For convenience, a summary of the most commonly used features is provided
 here. All drivers require a call to `compile` subroutine to compile the
