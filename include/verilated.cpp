@@ -2199,6 +2199,9 @@ void VerilatedImp::commandArgVl(const std::string& arg) {
         else if (commandArgVlValue(arg, "+verilator+seed+", value/*ref*/)) {
             Verilated::randSeed(atoi(value.c_str()));
         }
+        else if (arg == "+verilator+noassert") {
+            Verilated::assertOn(false);
+        }
         else if (arg == "+verilator+V") {
             versionDump();  // Someday more info too
             VL_FATAL_MT("COMMAND_LINE", 0, "",
