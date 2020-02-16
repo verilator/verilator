@@ -1098,15 +1098,11 @@ static const char* cannotSplitPackedVarReason(const AstVar* varp) {
 //######################################################################
 // Split class functions
 
-void V3SplitVar::splitUnpackedVariable(AstNetlist* nodep) {
+void V3SplitVar::splitVariable(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
     { SplitUnpackedVarVisitor visitor(nodep); }
     V3Global::dumpCheckGlobalTree("split_var", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 9);
-}
-
-void V3SplitVar::splitPackedVariable(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ": " << endl);
-    { SplitPackedVarVisitor visitor(nodep); }  // Destruct before checking
+    { SplitPackedVarVisitor visitor(nodep); }
     V3Global::dumpCheckGlobalTree("split_var", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 9);
 }
 

@@ -14,7 +14,9 @@ module barshift_1d_unpacked #(parameter DEPTH = 2, localparam WIDTH = 2**DEPTH)
       for(genvar i = 0; i < DEPTH; ++i) begin
          always_comb
            if (shift[i]) begin
+              /*verilator lint_off ALWCOMBORDER*/
               tmp[i+1+OFFSET] = {tmp[i+OFFSET][(1 << i)-1:0], tmp[i+OFFSET][WIDTH-1:(2**i)]};
+              /*verilator lint_on ALWCOMBORDER*/
            end
            else begin
               tmp[i+1+OFFSET] = tmp[i+OFFSET];
@@ -37,7 +39,9 @@ module barshift_1d_unpacked_le #(parameter DEPTH = 2, localparam WIDTH = 2**DEPT
       for(genvar i = 0; i < DEPTH; ++i) begin
          always_comb
            if (shift[i]) begin
+              /*verilator lint_off ALWCOMBORDER*/
               tmp[i+1+OFFSET] = {tmp[i+OFFSET][(1 << i)-1:0], tmp[i+OFFSET][WIDTH-1:(2**i)]};
+              /*verilator lint_on ALWCOMBORDER*/
            end
            else begin
               tmp[i+1+OFFSET] = tmp[i+OFFSET];
@@ -59,7 +63,9 @@ module barshift_1d_unpacked_struct0 #(parameter DEPTH = 2, localparam WIDTH = 2*
       for(genvar i = 0; i < DEPTH; ++i) begin
          always_comb
            if (shift[i]) begin
+              /*verilator lint_off ALWCOMBORDER*/
               tmp[i+1+OFFSET] = {tmp[i+OFFSET][(1 << i)-1:0], tmp[i+OFFSET][WIDTH-1:(2**i)]};
+              /*verilator lint_on ALWCOMBORDER*/
            end
            else begin
               tmp[i+1+OFFSET] = tmp[i+OFFSET];
@@ -101,7 +107,9 @@ module barshift_2d_unpacked #(parameter DEPTH = 2, localparam WIDTH = 2**DEPTH)
          for(genvar j = OFFSET; j < N + OFFSET; ++j) begin
             always_comb
               if (shift[i]) begin
+                 /*verilator lint_off ALWCOMBORDER*/
                  tmp0[i+1+OFFSET][j] = {tmp0[i+OFFSET][j][(1 << i)-1:0], tmp0[i+OFFSET][j][WIDTH-1:(2**i)]};
+                 /*verilator lint_on ALWCOMBORDER*/
               end
               else begin
                  tmp0[i+1+OFFSET][j] = tmp0[i+OFFSET][j];
@@ -143,7 +151,9 @@ module barshift_1d_unpacked_struct1 #(parameter DEPTH = 2, localparam WIDTH = 2*
       for(genvar i = 0; i < DEPTH; ++i) begin
          always_comb
            if (shift[i]) begin
+              /*verilator lint_off ALWCOMBORDER*/
               tmp[i+1+OFFSET] = {pad, tmp[i+OFFSET][(1 << i)-1:0], tmp[i+OFFSET][WIDTH-1:(2**i)]};
+              /*verilator lint_on ALWCOMBORDER*/
            end
            else begin
               tmp[i+1+OFFSET] = tmp[i+OFFSET];

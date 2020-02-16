@@ -22,6 +22,10 @@ logic [7:0] should_show_warning_global1 [1:0] /*verilator split_var*/ ;
                                         : ... In instance t
       i_sub0.cannot_split1[1] = bad_func(addr, rd_data0);
                               ^
+%Error: t/t_split_var_1_bad.v:71: Illegal assignment of constant to unpacked array
+                                : ... In instance t.i_sub2
+   assign b = a[0];   
+               ^
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:50: 'cannot_split0' has split_var metacomment but will not be split because index cannot be determined statically.
                                            : ... In instance t.i_sub0
       rd_data = cannot_split0[addr];
@@ -58,7 +62,4 @@ logic [7:0] should_show_warning_global1 [1:0] /*verilator split_var*/ ;
                                            : ... In instance t.i_sub1
       rd_data = cannot_split[addr];
                             ^
-%Error: t/t_split_var_1_bad.v:70: Illegal assignment of constant to unpacked array
-   assign a = 1'b0;   
-          ^
 %Error: Exiting due to

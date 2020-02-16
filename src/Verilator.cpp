@@ -155,11 +155,6 @@ static void process() {
     // so V3Undriven sees variables to be eliminated, ie "if (0 && foo) ..."
     V3Const::constifyAllLive(v3Global.rootp());
 
-    // Split variables into multiple pieces to resolve UNOPTFLAT.
-    // This should come before undrivenAll() to eliminate ALWCOMBORDER warning
-    // which can be resolved by splitUnpackedVariable().
-    V3SplitVar::splitUnpackedVariable(v3Global.rootp());
-
     // Signal based lint checks, no change to structures
     // Must be before first constification pass drops dead code
     V3Undriven::undrivenAll(v3Global.rootp());
@@ -182,7 +177,7 @@ static void process() {
 
     // Split packed variables into multiple pieces to resolve UNOPTFLAT.
     // should be after constifyAllLint() which flattens to 1D bit vector
-    V3SplitVar::splitPackedVariable(v3Global.rootp());
+    V3SplitVar::splitVariable(v3Global.rootp());
 
     if (!v3Global.opt.xmlOnly()) {
         // Remove cell arrays (must be between V3Width and scoping)
