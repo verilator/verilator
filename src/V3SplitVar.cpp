@@ -323,6 +323,8 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
     AstNode* m_context;
     bool m_inFTask;
     size_t m_numSplit;
+    // List for SplitPackedVarVisitor
+    vl_unordered_set<AstNodeModule*> m_modulesForPackedSplit;
 
     static AstVarRef* isTargetVref(AstNode* nodep) {
         if (AstVarRef* refp = VN_CAST(nodep, VarRef)) {
@@ -439,6 +441,8 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
         if (!cannotSplitReason(nodep)) {
             m_refs.registerVar(nodep);
             UINFO(4, nodep->name() << " is added to candidate list.\n");
+        } else {  // For SplitPackedVarVisitor
+            m_modulesForPackedSplit.insert(m_modp);
         }
     }
     virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
@@ -627,6 +631,8 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
                 if (!(varp->isFuncLocal() || varp->isFuncReturn()))  // AssignW will be created, so just once
                     connectPort(varp, vars, NULL);
                 varp->attrSplitVar(!cannotSplitPackedVarReason(varp));
+                if (varp->attrSplitVar())
+                    m_modulesForPackedSplit.insert(m_modp);
             } else {
                 pushDeletep(varp->unlinkFrBack());
             }
@@ -659,6 +665,7 @@ public:
         UASSERT(m_refs.empty(), "Don't forget to call split()");
         V3Stats::addStat("SplitVar, Split unpacked arrays", m_numSplit);
     }
+    const vl_unordered_set<AstNodeModule*>& getModulesWithPackedVar() const { return m_modulesForPackedSplit; }
     VL_DEBUG_FUNC;  // Declare debug()
 
     // Check if the passed variable can be split.
@@ -1057,11 +1064,16 @@ class SplitPackedVarVisitor : public AstNVisitor {
     }
 
 public:
-    explicit SplitPackedVarVisitor(AstNetlist* nodep)
+    SplitPackedVarVisitor(AstNetlist* nodep, const vl_unordered_set<AstNodeModule*>& modules)
         : m_netp(nodep)
         , m_modp(NULL)
         , m_numSplit(0) {
-        iterate(nodep);
+            for (vl_unordered_set<AstNodeModule*>::const_iterator it = modules.begin(),
+                 it_end = modules.end();
+                 it != it_end;
+                 ++it) {
+                iterate(*it);
+            }
     }
     ~SplitPackedVarVisitor() {
         UASSERT(m_refs.empty(), "Don't forget to call split()");
@@ -1100,9 +1112,13 @@ static const char* cannotSplitPackedVarReason(const AstVar* varp) {
 
 void V3SplitVar::splitVariable(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    { SplitUnpackedVarVisitor visitor(nodep); }
+    vl_unordered_set<AstNodeModule*> modules;
+    {
+        SplitUnpackedVarVisitor visitor(nodep);
+        modules = visitor.getModulesWithPackedVar();
+    }
     V3Global::dumpCheckGlobalTree("split_var", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 9);
-    { SplitPackedVarVisitor visitor(nodep); }
+    { SplitPackedVarVisitor visitor(nodep, modules); }
     V3Global::dumpCheckGlobalTree("split_var", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 9);
 }
 
