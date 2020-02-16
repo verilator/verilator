@@ -76,6 +76,7 @@
 #include "V3Stats.h"
 
 #include <algorithm>  // sort
+#include <set>
 #include <vector>
 #include VL_INCLUDE_UNORDERED_MAP
 #include VL_INCLUDE_UNORDERED_SET
@@ -315,8 +316,28 @@ public:
     }
 };
 
+// Compare AstVar* to get deterministic ordering when showing messages.
+struct VarComparetor {
+    bool operator ()(const AstVar* a, const AstVar* b) const {
+        const FileLine* afp = a->fileline();
+        const FileLine* bfp = b->fileline();
+        if (afp->firstLineno() != bfp->firstLineno())
+            return afp->firstLineno() < bfp->firstLineno();
+        if (afp->firstColumn() != bfp->firstColumn())
+            return afp->firstColumn() < bfp->firstColumn();
+        // Don't comapre its filename because it is expensive.
+        // Line number and column is practically enough.
+        // The comparison of raw pointer here is just in case.
+        // The comparison of this pointer may differ on different run,
+        // but this is just warning message order. (mostly for CI)
+        // Verilated result is same anyway.
+        return a < b;
+    }
+};
+
 class SplitUnpackedVarVisitor : public AstNVisitor {
-    vl_unordered_set<AstVar*> m_foundTargetVar;
+    typedef std::set<AstVar*, VarComparetor> VarSet;
+    VarSet m_foundTargetVar;
     UnpackRefMap m_refs;
     AstNodeModule* m_modp;
     // AstNodeStmt, AstCell, AstNodeFTaskRef, or AstAlways(Public) for sensitivity
@@ -390,8 +411,8 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
             if (reason) {
                 m_foundTargetVar.clear();
                 iterate(arg);
-                for (vl_unordered_set<AstVar*>::iterator it = m_foundTargetVar.begin(),
-                                                         it_end = m_foundTargetVar.end();
+                for (VarSet::iterator it = m_foundTargetVar.begin(),
+                                      it_end = m_foundTargetVar.end();
                      it != it_end; ++it) {
                     arg->v3warn(SPLITVAR, (*it)->prettyNameQ() << notSplitMsg << reason << ".\n");
                     m_refs.remove(*it);
@@ -407,8 +428,8 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
         m_foundTargetVar.clear();
         iterate(exprp);
         if (const char* reason = cannotSplitConnectedPortReason(nodep)) {
-            for (vl_unordered_set<AstVar*>::iterator it = m_foundTargetVar.begin(),
-                                                     it_end = m_foundTargetVar.end();
+            for (VarSet::iterator it = m_foundTargetVar.begin(),
+                                  it_end = m_foundTargetVar.end();
                  it != it_end; ++it) {
                 nodep->v3warn(SPLITVAR, (*it)->prettyNameQ() << notSplitMsg << reason << ".\n");
                 m_refs.remove(*it);
