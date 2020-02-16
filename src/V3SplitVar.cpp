@@ -332,18 +332,6 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
         }
         return NULL;
     }
-    // This visitor is used before V3Const::constifyAllLint(),
-    // some parameters need to be resolved here, but don't abuse this function.
-    static AstConst* constifyIfNot(AstNode* nodep) {
-        AstConst* constp = VN_CAST(nodep, Const);
-        if (!constp) {
-            UINFO(6, nodep << " is expected to be constant, but not\n");
-            AstNode* constified = V3Const::constifyEdit(nodep);
-            UINFO(6, "After constified:" << constified << '\n');
-            constp = VN_CAST(constified, Const);
-        }
-        return constp;
-    }
     static int outerMostSizeOfUnpackedArray(AstVar* nodep) {
         AstUnpackArrayDType* dtypep = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType);
         UASSERT_OBJ(dtypep, nodep, "Must be unapcked array");
@@ -451,9 +439,7 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
     }
     virtual void visit(AstArraySel* nodep) VL_OVERRIDE {
         if (AstVarRef* refp = isTargetVref(nodep->fromp())) {
-            // nodep->bitp() is sometimes AstSel which consists of AstAdd/Sub and parameters.
-            // constify can solve it.
-            AstConst* indexp = constifyIfNot(nodep->bitp());
+            AstConst* indexp = VN_CAST(nodep->bitp(), Const);
             if (indexp) {  // OK
                 UINFO(4, "add " << nodep << " for " << refp->varp()->prettyName() << "\n");
                 if (indexp->toUInt() < outerMostSizeOfUnpackedArray(refp->varp())) {
