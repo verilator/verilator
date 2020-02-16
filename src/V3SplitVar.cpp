@@ -317,8 +317,8 @@ public:
 };
 
 // Compare AstVar* to get deterministic ordering when showing messages.
-struct VarComparetor {
-    bool operator ()(const AstVar* a, const AstVar* b) const {
+struct AstNodeComparetor {
+    bool operator ()(const AstNode* a, const AstNode* b) const {
         const FileLine* afp = a->fileline();
         const FileLine* bfp = b->fileline();
         if (afp->firstLineno() != bfp->firstLineno())
@@ -335,8 +335,10 @@ struct VarComparetor {
     }
 };
 
+typedef std::set<AstVar*, AstNodeComparetor> VarSet;
+typedef std::set<AstNodeModule*, AstNodeComparetor> ModuleSet;
+
 class SplitUnpackedVarVisitor : public AstNVisitor {
-    typedef std::set<AstVar*, VarComparetor> VarSet;
     VarSet m_foundTargetVar;
     UnpackRefMap m_refs;
     AstNodeModule* m_modp;
@@ -345,7 +347,7 @@ class SplitUnpackedVarVisitor : public AstNVisitor {
     bool m_inFTask;
     size_t m_numSplit;
     // List for SplitPackedVarVisitor
-    vl_unordered_set<AstNodeModule*> m_modulesForPackedSplit;
+    ModuleSet m_modulesForPackedSplit;
 
     static AstVarRef* isTargetVref(AstNode* nodep) {
         if (AstVarRef* refp = VN_CAST(nodep, VarRef)) {
@@ -672,7 +674,7 @@ public:
         UASSERT(m_refs.empty(), "Don't forget to call split()");
         V3Stats::addStat("SplitVar, Split unpacked arrays", m_numSplit);
     }
-    const vl_unordered_set<AstNodeModule*>& getModulesWithPackedVar() const { return m_modulesForPackedSplit; }
+    const ModuleSet& getModulesWithPackedVar() const { return m_modulesForPackedSplit; }
     VL_DEBUG_FUNC;  // Declare debug()
 
     // Check if the passed variable can be split.
@@ -1071,14 +1073,13 @@ class SplitPackedVarVisitor : public AstNVisitor {
     }
 
 public:
-    SplitPackedVarVisitor(AstNetlist* nodep, const vl_unordered_set<AstNodeModule*>& modules)
+    SplitPackedVarVisitor(AstNetlist* nodep, const ModuleSet& modules)
         : m_netp(nodep)
         , m_modp(NULL)
         , m_numSplit(0) {
-            for (vl_unordered_set<AstNodeModule*>::const_iterator it = modules.begin(),
-                 it_end = modules.end();
-                 it != it_end;
-                 ++it) {
+            for (ModuleSet::const_iterator it = modules.begin(),
+                                           it_end = modules.end();
+                 it != it_end; ++it) {
                 iterate(*it);
             }
     }
@@ -1119,7 +1120,7 @@ static const char* cannotSplitPackedVarReason(const AstVar* varp) {
 
 void V3SplitVar::splitVariable(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ": " << endl);
-    vl_unordered_set<AstNodeModule*> modules;
+    ModuleSet modules;
     {
         SplitUnpackedVarVisitor visitor(nodep);
         modules = visitor.getModulesWithPackedVar();
