@@ -55,6 +55,8 @@ module t (/*AUTOARG*/
          logic [3:0] [31:0] s4x32_in;
          logic [3:0] [31:0] s4x32_out;
 
+         wire clk_en = crc[0];
+
          secret
            secret (
                    .accum_in,
@@ -77,6 +79,7 @@ module t (/*AUTOARG*/
                    .s129_out,
                    .s4x32_in,
                    .s4x32_out,
+                   .clk_en,
                    .clk);
 
          always @(posedge clk) begin
