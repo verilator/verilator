@@ -2,7 +2,8 @@
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2019 by Todd Strader.
 
-module secret (
+module secret #(parameter GATED_CLK = 0)
+              (
                input [31:0] 		 accum_in,
                output wire [31:0] 	 accum_out,
                input 			 accum_bypass,
@@ -23,6 +24,7 @@ module secret (
                output logic [128:0] 	 s129_out,
                input [3:0] [31:0] 	 s4x32_in,
                output logic [3:0] [31:0] s4x32_out,
+               input                     clk_en,
                input 			 clk);
 
    logic [31:0] 			 secret_accum_q = 0;
@@ -30,7 +32,8 @@ module secret (
 
    initial $display("created %m");
 
-   always @(posedge clk) begin
+   wire the_clk = GATED_CLK != 0 ? clk & clk_en : clk;
+   always @(posedge the_clk) begin
       secret_accum_q <= secret_accum_q + accum_in + secret_value;
    end
 
