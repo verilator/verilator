@@ -15,16 +15,16 @@ if (cyc > 0 && sig``_in != sig``_out) begin \
        end
 
 module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
-          // Inputs
-          clk
-          );
+				     // Inputs
+				     clk
+				     );
    input clk;
 
    localparam last_cyc =
 `ifdef TEST_BENCHMARK
-        `TEST_BENCHMARK;
+			`TEST_BENCHMARK;
 `else
-        10;
+   10;
 `endif
 
    genvar x;
@@ -55,7 +55,7 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
          logic [3:0] [31:0] s4x32_in;
          logic [3:0] [31:0] s4x32_out;
 
-         wire clk_en = crc[0];
+         wire 		    clk_en = crc[0];
 
          secret
            secret (
@@ -125,13 +125,13 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
 
          logic possibly_gated_clk;
          if (GATED_CLK != 0) begin: yes_gated_clock
-             logic clk_en_latch /*verilator clock_enable*/;
-             /* verilator lint_off COMBDLY */
-             always_comb if (clk == '0) clk_en_latch <= clk_en;
-             /* verilator lint_on COMBDLY */
-             assign possibly_gated_clk = clk & clk_en_latch;
+            logic clk_en_latch /*verilator clock_enable*/;
+            /* verilator lint_off COMBDLY */
+            always_comb if (clk == '0) clk_en_latch <= clk_en;
+            /* verilator lint_on COMBDLY */
+            assign possibly_gated_clk = clk & clk_en_latch;
          end else begin: no_gated_clock
-             assign possibly_gated_clk = clk;
+            assign possibly_gated_clk = clk;
          end
 
          always @(posedge possibly_gated_clk) begin
