@@ -32,7 +32,19 @@ module secret #(parameter GATED_CLK = 0)
 
    initial $display("created %m");
 
-   wire the_clk = GATED_CLK != 0 ? clk & clk_en : clk;
+   logic the_clk;
+   generate
+      if (GATED_CLK != 0) begin: yes_gated_clock
+          logic clk_en_latch /*verilator clock_enable*/;
+          /* verilator lint_off COMBDLY */
+          always_comb if (clk == '0) clk_en_latch <= clk_en;
+          /* verilator lint_on COMBDLY */
+          assign the_clk = clk & clk_en_latch;
+      end else begin: no_gated_clock
+          assign the_clk = clk;
+      end
+   endgenerate
+
    always @(posedge the_clk) begin
       secret_accum_q <= secret_accum_q + accum_in + secret_value;
    end
