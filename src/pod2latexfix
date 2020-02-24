@@ -20,7 +20,7 @@ my $Opt_DistTitle = $ARGV[0] or die "%Error: No disttitle specified,";
 my $Opt_DistDate = $ARGV[1] or die "%Error: No distdate specified,";
 
 my $header =
-    ("\\usepackage[left=1.7in,right=1.7in,top=1.3in,bottom=1.3in]{geometry}\n"
+    ("\\usepackage[left=1.0in,right=1.0in,top=1.0in,bottom=1.0in]{geometry}\n"
      ."\\usepackage[pdftex,bookmarks=true,bookmarksnumbered=true,hypertexnames=false,breaklinks=true,colorlinks=true,linkcolor=blue]{hyperref}\n"
      ."\\usepackage{fancyhdr} \\pagestyle{fancy}\n"
      ."\\usepackage{graphicx}\n"
