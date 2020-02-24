@@ -335,8 +335,9 @@ endmodule
 module unpack2pack #(parameter WIDTH = 8)
    (input wire in [WIDTH-1:0] /*verilator split_var*/, output wire [WIDTH-1:0] out/*verilator split_var*/);
 
-   function automatic [1:0] to_packed0(input logic in[1:0] /*verilator split_var*/);
+   function automatic [1:0] to_packed0;
        logic [1:0] tmp /*verilator split_var*/;
+       input logic in[1:0] /*verilator split_var*/;
        tmp[1] = in[1];
        tmp[0] = in[0];
        return tmp;
