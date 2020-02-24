@@ -11,7 +11,7 @@ logic [7:0] should_show_warning_global1 [1:0] /*verilator split_var*/ ;
 %Warning-SPLITVAR: t/t_split_var_1_bad.v:11: 'should_show_warning_ifs1' has split_var metacomment, but will not be split because it is not declared in a module.
    logic [7:0] should_show_warning_ifs1 [1:0] /*verilator split_var*/ ;
                ^~~~~~~~~~~~~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:37: 'cannot_split1' has split_var metacomment but will not be split because it is accessed from other module via dot.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:37: 'cannot_split1' has split_var metacomment but will not be split because it is accessed from another module via a dot.
       i_sub0.cannot_split1[0] = 0;
              ^~~~~~~~~~~~~
 %Warning-SELRANGE: t/t_split_var_1_bad.v:82: Selection index out of range: 13 outside 12:10

@@ -4410,24 +4410,25 @@ calls.
 =item SPLITVAR
 
 Warns that a variable with a C<split_var> metacomment was not split.
-Typical reasons are
+Some possible reasons for this are:
 
-    The datatype of the variable is not supported for splitting. (e.g. is a
-    real).
+* The datatype of the variable is not supported for splitting. (e.g. is a
+real).
 
-    The access pattern of the variable can not be determined
-    statically. (e.g. is accessed as a memory).
+* The access pattern of the variable can not be determined
+statically. (e.g. is accessed as a memory).
 
-    The index of the array exceeds the array size.
+* The index of the array exceeds the array size.
 
-    The variable is accessed from outside using dotted reference.
-    (e.g. top.instance0.variable0 = 1).
+* The variable is accessed from outside using dotted reference.
+(e.g. top.instance0.variable0 = 1).
 
-    The variable is not declared in a module, but in a package or an interface.
+* The variable is not declared in a module, but in a package or an
+interface.
 
-    The variable is one of parameter, localparam, genvar, or queue.
+* The variable is a parameter, localparam, genvar, or queue.
 
-    The variable is tirstate or bidirectional. (e.g. inout or ref).
+* The variable is tirstate or bidirectional. (e.g. inout or ref).
 
 =item STMTDLY
 

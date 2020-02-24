@@ -309,7 +309,7 @@ private:
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             if (!VN_IS(m_modp, Module)) {
                 m_varp->v3warn(SPLITVAR, m_varp->prettyNameQ() << " has split_var metacomment, "
-                               "but will not be split because it is not declared in a module.\n");
+                               "but will not be split because it is not declared in a module.");
             } else {
                 m_varp->attrSplitVar(true);
             }
