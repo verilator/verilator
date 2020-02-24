@@ -421,6 +421,7 @@ more information.
      +verilator+prof+threads+window+I<value>   Set profile duration
      +verilator+rand+reset+I<value>    Set random reset technique
      +verilator+seed+I<value>          Set random seed
+     +verilator+noassert               Disable assert checking
      +verilator+V                      Verbose version and config
      +verilator+version                Show version and exit
 
@@ -1772,6 +1773,11 @@ all-ones.  2 = Randomize.  See L</"Unknown states">.
 For $random and "-x-initial unique", set the simulation runtime random seed
 value.  If zero or not specified picks a value from the system random
 number generator.
+
+=item +verilator+noassert
+
+Disable assert checking per runtime argument. This is the same as calling
+"Verilated::assertOn(false)" in the model.
 
 =item +verilator+V
 
@@ -5295,6 +5301,10 @@ redistribute it and/or modify the Verilator internals under the terms of
 either the GNU Lesser General Public License Version 3 or the Perl Artistic
 License Version 2.0.
 
+All Verilog and C++/SystemC code quoted within this documentation file are
+released into the Public Domain.  Many example files and test files are
+likewise released into the Public Domain as described in the files
+themselves.
 
 =head1 SEE ALSO
 
