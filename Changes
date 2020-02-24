@@ -5,8 +5,12 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.029 devel
 
-***   Add assertOn check for assert. [Tobias Wölfel]
-***   Add +verilator+noassert flag to disable assert checking. [Tobias Wölfel]
+***   Add +verilator+noassert flag to disable assertion checking. [Tobias Wölfel]
+
+***   Add check for assertOn for asserts, #2162. [Tobias Wölfel]
+
+****  Fix undeclared VL_SHIFTR_WWQ, #2114. [Alex Solomatnikov]
+
 
 * Verilator 4.028 2020-02-08
 
