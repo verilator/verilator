@@ -54,6 +54,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix OpenSolaris issues, #2154. [brancoliticus]
 
+****  Fix gated clocks under --protect-lib, #2169. [Todd Strader]
+
 
 * Verilator 4.026 2020-01-11
 
