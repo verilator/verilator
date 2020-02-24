@@ -223,8 +223,11 @@
 
 #ifdef __MINGW32__
 # define __USE_MINGW_ANSI_STDIO 1  // Force old MinGW (GCC 5 and older) to use C99 formats
-# define __STDC_FORMAT_MACROS   1  // Otherwise MinGW doesn't get PRId64 for fstapi.c
 #endif
+
+// The inttypes supplied with some GCC & MINGW32 versions requires STDC_FORMAT_MACROS
+// to be declared in order to get the PRIxx macros used by fstapi.c
+#define __STDC_FORMAT_MACROS
 
 #if defined(__CYGWIN__)
 
@@ -272,10 +275,6 @@ typedef signed   __int32        ssize_t;        ///< signed size_t; returned fro
 # endif
 
 #else  // Linux or compliant Unix flavors, -m64
-
-// The inttypes supplied with some GCC versions requires STDC_FORMAT_MACROS
-// to be declared in order to get the PRIxx macros used by fstapi.c
-#define __STDC_FORMAT_MACROS
 
 # include <inttypes.h>  // Solaris
 # include <stdint.h>  // Linux and most flavors
