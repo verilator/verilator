@@ -302,17 +302,17 @@ public:
 };
 
 class ContextKeeper {
-    AstNode* m_origContext;
-    AstNode** m_contextp;
+    AstNode* m_origContextp;
+    AstNode** m_contextpp;
 
 public:
-    ContextKeeper(AstNode** contextp, AstNode* curContext)
-        : m_origContext(*contextp)
-        , m_contextp(contextp) {
-        *contextp = curContext;
+    ContextKeeper(AstNode** contextpp, AstNode* curContext)
+        : m_origContextp(*contextpp)
+        , m_contextpp(contextpp) {
+        *contextpp = curContext;
     }
     ~ContextKeeper() {  // Restore the original value.
-        *m_contextp = m_origContext;
+        *m_contextpp = m_origContextp;
     }
 };
 
@@ -845,14 +845,16 @@ class PackedVarRef {
     bool m_dedupDone;
     static void dedupRefs(std::vector<PackedVarRefEntry>& refs) {
         vl_unordered_map<AstNode*, size_t> nodes;
-        for (size_t i = 0; i < refs.size(); ++i)
+        for (size_t i = 0; i < refs.size(); ++i) {
             nodes.insert(std::make_pair(refs[i].nodep(), i));
+        }
         std::vector<PackedVarRefEntry> vect;
         vect.reserve(nodes.size());
         for (vl_unordered_map<AstNode*, size_t>::const_iterator it = nodes.begin(),
-                                                                it_end = nodes.end();
-             it != it_end; ++it)
+                 it_end = nodes.end();
+             it != it_end; ++it) {
             vect.push_back(refs[it->second]);
+        }
         refs.swap(vect);
     }
 
@@ -915,10 +917,11 @@ public:
         int refcount = 0;
         for (size_t i = 0; i + 1 < points.size(); ++i) {
             const int bitwidth = points[i + 1].first - points[i].first;
-            if (points[i].second)
+            if (points[i].second) {
                 --refcount;  // End of a region
-            else
+            } else {
                 ++refcount;  // Start of a region
+            }
             UASSERT(refcount >= 0, "refcounut must not be negative");
             if (bitwidth == 0 || refcount == 0) continue;  // Vacant region
             plan.push_back(SplitNewVar(points[i].first, bitwidth));
@@ -952,11 +955,11 @@ class SplitPackedVarVisitor : public AstNVisitor {
         if (!cannotSplitTaskReason(nodep)) iterateChildren(nodep);
     }
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
-        if (!nodep->attrSplitVar()) return;  // nothing to do
+        if (!nodep->attrSplitVar()) return;  // Nothing to do
         if (const char* reason = cannotSplitReason(nodep, true)) {
-            nodep->v3warn(SPLITVAR, nodep->prettyNameQ() << notSplitMsg << reason << ".\n");
+            nodep->v3warn(SPLITVAR, nodep->prettyNameQ() << notSplitMsg << reason);
             nodep->attrSplitVar(false);
-        } else {  // finally find a good candidate
+        } else {  // Finally find a good candidate
             const bool inserted = m_refs.insert(std::make_pair(nodep, PackedVarRef(nodep))).second;
             if (inserted) { UINFO(3, nodep->prettyNameQ() << " is added to candidate list.\n"); }
         }
@@ -1082,8 +1085,8 @@ class SplitPackedVarVisitor : public AstNVisitor {
             newvarp->varp(new AstVar(varp->fileline(), AstVarType::VAR, name, dtypep));
             newvarp->varp()->propagateAttrFrom(varp);
             newvarp->varp()->funcLocal(varp->isFuncLocal() || varp->isFuncReturn());
-            // newvarp->varp()->trace(varp->isTrace());  // Enable this line to trace split
-            // variable directly
+            // Enable this line to trace split variable directly:
+            // newvarp->varp()->trace(varp->isTrace());
             m_netp->typeTablep()->addTypesp(dtypep);
             varp->addNextHere(newvarp->varp());
             UINFO(4, newvarp->varp()->prettyNameQ()
@@ -1135,7 +1138,7 @@ class SplitPackedVarVisitor : public AstNVisitor {
             }
         }
     }
-    // The actual splitting operation is done in this function.
+    // Do the actual splitting operation
     void split() {
         for (vl_unordered_map<AstVar*, PackedVarRef>::iterator it = m_refs.begin(),
                                                                it_end = m_refs.end();
@@ -1156,7 +1159,7 @@ class SplitPackedVarVisitor : public AstNVisitor {
             updateReferences(varp, it->second, vars);
 
             if (varp->isIO()) {  // port cannot be deleted
-                // If varp is a port of a module, single AssignW is sufficient.
+                // If varp is a port of a module, single AssignW is sufficient
                 if (!(varp->isFuncLocal() || varp->isFuncReturn()))
                     connectPortAndVar(vars, varp, NULL);
             } else if (varp->isTrace()) {
@@ -1203,7 +1206,7 @@ public:
         }
     }
     ~SplitPackedVarVisitor() {
-        UASSERT(m_refs.empty(), "Don't forget to call split()");
+        UASSERT(m_refs.empty(), "Forgot to call split()");
         V3Stats::addStat("SplitVar, Split packed variables", m_numSplit);
     }
 
@@ -1214,7 +1217,7 @@ public:
         const char* reason = NULL;
         if (AstBasicDType* const basicp = nodep->dtypep()->basicp()) {
             const std::pair<uint32_t, uint32_t> dim = nodep->dtypep()->dimensions(false);
-            // Unpacked array will be split in  SplitUnpackedVarVisitor() beforehand
+            // Unpacked array will be split in SplitUnpackedVarVisitor() beforehand
             if (!((!checkUnpacked || dim.second == 0) && nodep->dtypep()->widthMin() > 1))
                 reason = "its bitwidth is 1";
             if (!reason && !basicp->isBitLogic())  // Floating point and string are not supported
@@ -1224,7 +1227,7 @@ public:
             reason = "its type is unknown";
         }
         if (reason) UINFO(5, "Check " << nodep->prettyNameQ()
-                                      << " cannot split because" << reason << ".\n");
+                          << " cannot split because" << reason << endl);
         return reason;
     }
     VL_DEBUG_FUNC;  // Declare debug()

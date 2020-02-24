@@ -34,27 +34,27 @@ logic [7:0] should_show_warning_global1 [1:0] /*verilator split_var*/ ;
                                            : ... In instance t.i_sub3
    assign outwires[12] = inwires[13];   
                                  ^~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:16: 'should_show_warning0' has split_var metacomment but will not be split because it is not an aggregate type of bit nor logic.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:16: 'should_show_warning0' has split_var metacomment but will not be split because it is not an aggregate type of bit nor logic
                                            : ... In instance t
    real should_show_warning0                  /*verilator split_var*/ ;
         ^~~~~~~~~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:17: 'should_show_warning1' has split_var metacomment but will not be split because it is not an aggregate type of bit nor logic.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:17: 'should_show_warning1' has split_var metacomment but will not be split because it is not an aggregate type of bit nor logic
                                            : ... In instance t
    string should_show_warning1                /*verilator split_var*/ ;
           ^~~~~~~~~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:18: 'should_show_warning2' has split_var metacomment but will not be split because its bitwidth is 1.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:18: 'should_show_warning2' has split_var metacomment but will not be split because its bitwidth is 1
                                            : ... In instance t
    wire   should_show_warning2                /*verilator split_var*/ ;
           ^~~~~~~~~~~~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:29: 'inout_port' has split_var metacomment but will not be split because it is an inout port.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:29: 'inout_port' has split_var metacomment but will not be split because it is an inout port
                                            : ... In instance t
    function int bad_func(inout logic [3:0] inout_port /*verilator split_var*/ ,
                                            ^~~~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:30: 'ref_port' has split_var metacomment but will not be split because it is a ref argument.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:30: 'ref_port' has split_var metacomment but will not be split because it is a ref argument
                                            : ... In instance t
                          ref logic [7:0] ref_port /*verilator split_var*/ );
                                          ^~~~~~~~
-%Warning-SPLITVAR: t/t_split_var_1_bad.v:56: 'cannot_split_genvar' has split_var metacomment but will not be split because it is not an aggregate type of bit nor logic.
+%Warning-SPLITVAR: t/t_split_var_1_bad.v:56: 'cannot_split_genvar' has split_var metacomment but will not be split because it is not an aggregate type of bit nor logic
                                            : ... In instance t.i_sub1
    genvar cannot_split_genvar /*verilator split_var*/ ;
           ^~~~~~~~~~~~~~~~~~~
