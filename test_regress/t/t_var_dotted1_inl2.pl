@@ -9,10 +9,10 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-top_filename("t/t_var_dotted.v");
+top_filename("t/t_var_dotted1.v");
 
 compile(
-    v_flags2 => ['+define+USE_INLINE',],
+    v_flags2 => ['+define+USE_INLINE_MID',],
     );
 
 execute(
