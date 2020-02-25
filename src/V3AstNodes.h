@@ -2332,21 +2332,6 @@ public:
 
 //######################################################################
 
-class AstGenerate : public AstNode {
-    // A Generate/end block
-    // Parents: MODULE
-    // Children: modItems
-public:
-    AstGenerate(FileLine* fl, AstNode* stmtsp)
-        : ASTGEN_SUPER(fl) {
-        addNOp1p(stmtsp);
-    }
-    ASTNODE_NODE_FUNCS(Generate)
-    // op1 = Statements
-    AstNode* stmtsp() const { return op1p(); }  // op1 = List of statements
-    void addStmtp(AstNode* nodep) { addOp1p(nodep); }
-};
-
 class AstParseRef : public AstNode {
     // A reference to a variable, function or task
     // We don't know which at parse time due to bison constraints
