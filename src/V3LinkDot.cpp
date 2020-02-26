@@ -914,20 +914,24 @@ class LinkDotFindVisitor : public AstNVisitor {
                 }
             }
         }
-        int oldNum = m_beginNum;
-        AstBegin* oldbegin = m_beginp;
-        VSymEnt* oldCurSymp = m_curSymp;
-        {
-            m_beginNum = 0;
-            m_beginp = nodep;
-            m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_packagep);
-            m_curSymp->fallbackp(oldCurSymp);
-            // Iterate
+        if (nodep->name() == "") {
             iterateChildren(nodep);
+        } else {
+            int oldNum = m_beginNum;
+            AstBegin* oldbegin = m_beginp;
+            VSymEnt* oldCurSymp = m_curSymp;
+            {
+                m_beginNum = 0;
+                m_beginp = nodep;
+                m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_packagep);
+                m_curSymp->fallbackp(oldCurSymp);
+                // Iterate
+                iterateChildren(nodep);
+            }
+            m_curSymp = oldCurSymp;
+            m_beginp = oldbegin;
+            m_beginNum = oldNum;
         }
-        m_curSymp = oldCurSymp;
-        m_beginp = oldbegin;
-        m_beginNum = oldNum;
     }
     virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
         // NodeTask: Remember its name for later resolution
@@ -2449,8 +2453,10 @@ private:
         checkNoDot(nodep);
         VSymEnt* oldCurSymp = m_curSymp;
         {
-            m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
-            UINFO(5,"   cur=se"<<cvtToHex(m_curSymp)<<endl);
+            if (nodep->name() != "") {
+                m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
+                UINFO(5,"   cur=se"<<cvtToHex(m_curSymp)<<endl);
+            }
             iterateChildren(nodep);
         }
         m_ds.m_dotSymp = m_curSymp = oldCurSymp;

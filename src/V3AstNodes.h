@@ -3736,16 +3736,19 @@ class AstBegin : public AstNode {
     // Children: statements
 private:
     string      m_name;         // Name of block
-    bool        m_unnamed;      // Originally unnamed
+    bool        m_unnamed;      // Originally unnamed (name change does not affect this)
     bool        m_generate;     // Underneath a generate
+    bool        m_implied;      // Not inserted by user
 public:
     // Node that simply puts name into the output stream
-    AstBegin(FileLine* fl, const string& name, AstNode* stmtsp, bool generate=false)
+    AstBegin(FileLine* fl, const string& name, AstNode* stmtsp, bool generate = false,
+             bool implied = false)
         : ASTGEN_SUPER(fl)
         , m_name(name) {
         addNOp1p(stmtsp);
-        m_unnamed = (name=="");
+        m_unnamed = (name == "");
         m_generate = generate;
+        m_implied = implied;
     }
     ASTNODE_NODE_FUNCS(Begin)
     virtual void dump(std::ostream& str) const;
@@ -3760,6 +3763,7 @@ public:
     bool unnamed() const { return m_unnamed; }
     void generate(bool flag) { m_generate = flag; }
     bool generate() const { return m_generate; }
+    bool implied() const { return m_implied; }
 };
 
 class AstInitial : public AstNode {

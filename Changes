@@ -9,6 +9,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Add check for assertOn for asserts, #2162. [Tobias Wölfel]
 
+***   Fix genblk naming with directly nested generate blocks, #2176. [Alexander Grobman]
+
 ****  Fix undeclared VL_SHIFTR_WWQ, #2114. [Alex Solomatnikov]
 
 

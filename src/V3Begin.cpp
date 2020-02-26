@@ -125,7 +125,7 @@ private:
                 while ((pos=dottedname.find("__DOT__")) != string::npos) {
                     string ident = dottedname.substr(0, pos);
                     dottedname = dottedname.substr(pos+strlen("__DOT__"));
-                    if (!nodep->unnamed()) {
+                    if (nodep->name() != "") {
                         if (m_namedScope=="") m_namedScope = ident;
                         else m_namedScope = m_namedScope + "__DOT__"+ident;
                     }
