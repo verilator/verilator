@@ -1906,13 +1906,13 @@ Now we run Verilator on our little example.
 
 We then can compile it
 
-    cd obj_dir
-    make -j -f Vour.mk Vour__ALL.a
-    make -j -f Vour.mk ../sc_main.o verilated.o
+    make -j -C obj_dir -f Vour.mk Vour__ALL.a
+    make -j -C obj_dir -f Vour.mk ../sc_main.o verilated.o
 
 And link with SystemC.  Note your path to the libraries may vary,
 depending on the operating system.
 
+    cd obj_dir
     export SYSTEMC_LIBDIR=/path/to/where/libsystemc.a/exists
     export LD_LIBRARY_PATH=$SYSTEMC_LIBDIR:$LD_LIBRARY_PATH
     # Might be needed if SystemC 2.3.0
