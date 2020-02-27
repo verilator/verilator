@@ -123,13 +123,13 @@ sub report {
     }
 
     my $nthreads = scalar keys %Threads;
-    $Global{cpus}{cpu_time} = {};
+    $Global{cpus} = {};
     foreach my $thread (keys %Threads) {
         # Make potentially multiple characters per column
         foreach my $start (keys %{$Threads{$thread}}) {
             my $cpu = $Threads{$thread}{$start}{cpu};
             my $elapsed = $Threads{$thread}{$start}{end} - $start;
-            $Global{cpus}{cpu_time}{$cpu} += $elapsed;
+            $Global{cpus}{$cpu}{cpu_time} += $elapsed;
         }
     }
 
