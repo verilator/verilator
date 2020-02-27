@@ -86,7 +86,7 @@ LDLIBS   += $(VM_USER_LDLIBS)
 # SystemC takes minutes to optimize, thus it is off by default.
 #OPT_SLOW =
 # Fast path optimizations.  Most time is spent in these classes.
-#OPT_FAST = -O2 -fstrict-aliasing
+#OPT_FAST = -Os -fstrict-aliasing
 #OPT_FAST = -O
 #OPT_FAST =
 

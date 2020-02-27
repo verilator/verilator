@@ -34,7 +34,7 @@ VERILATOR_FLAGS =
 # Generate C++
 VERILATOR_FLAGS += -cc
 # Optimize
-VERILATOR_FLAGS += -O2 -x-assign 0
+VERILATOR_FLAGS += -Os -x-assign 0
 # Warn abount lint issues; may not want this on less solid designs
 VERILATOR_FLAGS += -Wall
 # Make waveforms

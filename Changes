@@ -11,6 +11,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Fix genblk naming with directly nested generate blocks, #2176. [Alexander Grobman]
 
+****  Use gcc -Os in examples instead of -O2 for better average performance.
+
 ****  Fix undeclared VL_SHIFTR_WWQ, #2114. [Alex Solomatnikov]
 
 
