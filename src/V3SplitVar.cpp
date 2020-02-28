@@ -327,7 +327,7 @@ public:
     // Remove a variable from the list to split
     void remove(AstVar* varp) {
         UASSERT_OBJ(varp->attrSplitVar(), varp, " no split_var metacomment");
-        const bool deleted = m_map.erase(varp) > 0;
+        m_map.erase(varp);
         varp->attrSplitVar(!SplitVarImpl::cannotSplitPackedVarReason(varp));
     }
     bool empty() const { return m_map.empty(); }
@@ -580,7 +580,7 @@ class SplitUnpackedVarVisitor : public AstNVisitor, public SplitVarImpl {
             AstConst* indexp = VN_CAST(nodep->bitp(), Const);
             if (indexp) {  // OK
                 UINFO(4, "add " << nodep << " for " << refp->varp()->prettyName() << "\n");
-                if (indexp->toUInt() < outerMostSizeOfUnpackedArray(refp->varp())) {
+                if (indexp->toSInt() < outerMostSizeOfUnpackedArray(refp->varp())) {
                     m_refs.tryAdd(m_contextp, refp, nodep, indexp->toSInt(), m_inFTask);
                 } else {
                     nodep->bitp()->v3warn(SPLITVAR, refp->prettyNameQ()
