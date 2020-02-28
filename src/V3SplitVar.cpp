@@ -290,7 +290,7 @@ public:
             return a.nodep() == b.nodep();
         }
     };
-    typedef vl_unordered_map<AstVar*, vl_unordered_set<UnpackRef, Hash, Compare> > MapType;
+    typedef std::map<AstVar*, vl_unordered_set<UnpackRef, Hash, Compare> > MapType;
     typedef MapType::iterator MapIt;
     typedef MapType::value_type::second_type::iterator SetIt;
 
