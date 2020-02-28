@@ -1906,13 +1906,13 @@ Now we run Verilator on our little example.
 
 We then can compile it
 
-    cd obj_dir
-    make -j -f Vour.mk Vour__ALL.a
-    make -j -f Vour.mk ../sc_main.o verilated.o
+    make -j -C obj_dir -f Vour.mk Vour__ALL.a
+    make -j -C obj_dir -f Vour.mk ../sc_main.o verilated.o
 
 And link with SystemC.  Note your path to the libraries may vary,
 depending on the operating system.
 
+    cd obj_dir
     export SYSTEMC_LIBDIR=/path/to/where/libsystemc.a/exists
     export LD_LIBRARY_PATH=$SYSTEMC_LIBDIR:$LD_LIBRARY_PATH
     # Might be needed if SystemC 2.3.0
@@ -1964,27 +1964,27 @@ OPT, OPT_FAST, or OPT_SLOW lib/verilated.mk.  Or, use the -CFLAGS and/or
 the compiler or linker.  Or, just for one run, pass them on the command
 line to make:
 
-    make OPT_FAST="-O2 -fno-stack-protector" -f Vour.mk Vour__ALL.a
+    make OPT_FAST="-Os -fno-stack-protector" -f Vour.mk Vour__ALL.a
 
 OPT_FAST specifies optimizations for those programs that are part of the
 fast path, mostly code that is executed every cycle.  OPT_SLOW specifies
 optimizations for slow-path files (plus tracing), which execute only
 rarely, yet take a long time to compile with optimization on.  OPT
 specifies overall optimization and affects all compiles, including those
-OPT_FAST and OPT_SLOW control.  For best results, use OPT="-O2", and link
+OPT_FAST and OPT_SLOW control.  For best results, use OPT="-Os", and link
 with "-static".  Nearly the same results can be had with much better
 compile times with OPT_FAST="-O1 -fstrict-aliasing".  Higher optimization
-such as "-O3" may help, but gcc compile times may be excessive under O3 on
-even medium sized designs.  Alternatively, some larger designs report
-better performance using "-Os".
+such as "-O2" or "-O3" may help, but gcc compile times may be excessive
+under O3 on even medium sized designs.
 
 Unfortunately, using the optimizer with SystemC files can result in
 compiles taking several minutes.  (The SystemC libraries have many little
 inlined functions that drive the compiler nuts.)
 
-For best results, use GCC 3.3 or newer.  GCC 3.2 and earlier have
-optimization bugs around pointer aliasing detection, which can result in 2x
-performance losses.
+For best results, use the latest clang compiler (about 10% faster than
+GCC).  Note the now fairly old GCC 3.2 and earlier have optimization bugs
+around pointer aliasing detection, which can result in 2x performance
+losses.
 
 If you will be running many simulations on a single compile, investigate
 feedback driven compilation.  With GCC, using -fprofile-arcs, then
@@ -1994,6 +1994,9 @@ Modern compilers also support link-time optimization (LTO), which can help
 especially if you link in DPI code.  To enable LTO on GCC, pass "-flto" in
 both compilation and link.  Note LTO may cause excessive compile times on
 large designs.
+
+Using profile driven compiler optimization, with feedback from a real
+design, can yield up to30% improvements.
 
 If you are using your own makefiles, you may want to compile the Verilated
 code with -DVL_INLINE_OPT=inline. This will inline functions, however this
@@ -2005,7 +2008,7 @@ either oprofile or gprof to see where in the C++ code the time is spent.
 Run the gprof output through verilator_profcfunc and it will tell you what
 Verilog line numbers on which most of the time is being spent.
 
-When done, please let the author know the results.  I like to keep tabs on
+When done, please let the author know the results.  We like to keep tabs on
 how Verilator compares, and may be able to suggest additional improvements.
 
 
@@ -2080,7 +2083,7 @@ After running Make, the C++ compiler may produce the following:
 
 A generic Linux/OS variable specifying what directories have shared object
 (.so) files.  This path should include SystemC and any other shared objects
-needed at simultion runtime.
+needed at simulation runtime.
 
 =item OBJCACHE
 

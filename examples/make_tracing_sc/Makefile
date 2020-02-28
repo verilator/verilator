@@ -38,7 +38,7 @@ VERILATOR_FLAGS += -sc --exe
 # Generate makefile dependencies (not shown as complicates the Makefile)
 #VERILATOR_FLAGS += -MMD
 # Optimize
-VERILATOR_FLAGS += -O2 -x-assign 0
+VERILATOR_FLAGS += -Os -x-assign 0
 # Warn abount lint issues; may not want this on less solid designs
 VERILATOR_FLAGS += -Wall
 # Make waveforms

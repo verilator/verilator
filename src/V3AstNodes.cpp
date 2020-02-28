@@ -1282,6 +1282,7 @@ void AstBegin::dump(std::ostream& str) const {
     if (unnamed()) str<<" [UNNAMED]";
     if (generate()) str<<" [GEN]";
     if (genforp()) str<<" [GENFOR]";
+    if (implied()) str<<" [IMPLIED]";
 }
 void AstCoverDecl::dump(std::ostream& str) const {
     this->AstNode::dump(str);

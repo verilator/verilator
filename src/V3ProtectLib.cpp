@@ -353,7 +353,8 @@ class ProtectVisitor : public AstNVisitor {
             nodep->v3error("Unsupported: unpacked arrays with protect-lib on "<<nodep->prettyNameQ());
         }
         if (nodep->direction() == VDirection::INPUT) {
-            if (nodep->isUsedClock()) {
+            if (nodep->isUsedClock()
+                || nodep->attrClocker() == VVarAttrClocker::CLOCKER_YES) {
                 handleClock(nodep);
             } else {
                 handleDataInput(nodep);

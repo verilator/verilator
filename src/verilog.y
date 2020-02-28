@@ -1156,7 +1156,7 @@ interface_item<nodep>:		// IEEE: interface_item + non_port_interface_item
 	;
 
 interface_generate_region<nodep>:		// ==IEEE: generate_region
-		yGENERATE interface_itemList yENDGENERATE	{ $$ = new AstGenerate($1, $2); }
+		yGENERATE interface_itemList yENDGENERATE	{ $$ = $2; }
 	|	yGENERATE yENDGENERATE			{ $$ = NULL; }
 	;
 
@@ -2036,7 +2036,7 @@ bind_instantiation<nodep>:	// ==IEEE: bind_instantiation
 // different, so we copy all rules for checkers.
 
 generate_region<nodep>:		// ==IEEE: generate_region
-		yGENERATE ~c~genItemList yENDGENERATE	{ $$ = new AstGenerate($1, $2); }
+		yGENERATE ~c~genItemList yENDGENERATE	{ $$ = $2; }
 	|	yGENERATE yENDGENERATE			{ $$ = NULL; }
 	;
 
@@ -2044,20 +2044,22 @@ generate_region<nodep>:		// ==IEEE: generate_region
 //UNSUP		BISONPRE_COPY(generate_region,{s/~c~/c_/g})	// {copied}
 //UNSUP	;
 
-generate_block_or_null<nodep>:	// IEEE: generate_block_or_null
+generate_block_or_null<nodep>:	// IEEE: generate_block_or_null (called from gencase/genif/genfor)
 	//	';'		// is included in
 	//			// IEEE: generate_block
 	//			// Must always return a BEGIN node, or NULL - see GenFor construction
-		generate_item				{ $$ = $1 ? (new AstBegin($1->fileline(),"genblk",$1,true)) : NULL; }
+		generate_item				{ $$ = $1 ? (new AstBegin($1->fileline(),"",$1,true,true)) : NULL; }
 	|	genItemBegin				{ $$ = $1; }
 	;
 
 genItemBegin<nodep>:		// IEEE: part of generate_block
-		yBEGIN ~c~genItemList yEND		{ $$ = new AstBegin($1,"genblk",$2,true); }
+		yBEGIN ~c~genItemList yEND		{ $$ = new AstBegin($1,"",$2,true,false); }
 	|	yBEGIN yEND				{ $$ = NULL; }
-	|	id ':' yBEGIN ~c~genItemList yEND endLabelE	{ $$ = new AstBegin($<fl>1,*$1,$4,true); GRAMMARP->endLabel($<fl>6,*$1,$6); }
+	|	id ':' yBEGIN ~c~genItemList yEND endLabelE
+			{ $$ = new AstBegin($<fl>1,*$1,$4,true,false); GRAMMARP->endLabel($<fl>6,*$1,$6); }
 	|	id ':' yBEGIN yEND endLabelE		{ $$ = NULL; GRAMMARP->endLabel($<fl>5,*$1,$5); }
-	|	yBEGIN ':' idAny ~c~ genItemList yEND endLabelE	{ $$ = new AstBegin($<fl>3,*$3,$4,true); GRAMMARP->endLabel($<fl>6,*$3,$6); }
+	|	yBEGIN ':' idAny ~c~genItemList yEND endLabelE
+			{ $$ = new AstBegin($<fl>3,*$3,$4,true,false); GRAMMARP->endLabel($<fl>6,*$3,$6); }
 	|	yBEGIN ':' idAny yEND endLabelE		{ $$ = NULL; GRAMMARP->endLabel($<fl>5,*$3,$5); }
 	;
 
@@ -2115,11 +2117,11 @@ loop_generate_construct<nodep>:	// ==IEEE: loop_generate_construct
 			{ // Convert BEGIN(...) to BEGIN(GENFOR(...)), as we need the BEGIN to hide the local genvar
 			  AstBegin* lowerBegp = VN_CAST($9, Begin);
 			  UASSERT_OBJ(!($9 && !lowerBegp), $9, "Child of GENFOR should have been begin");
-			  if (!lowerBegp) lowerBegp = new AstBegin($1,"genblk",NULL,true);  // Empty body
+			  if (!lowerBegp) lowerBegp = new AstBegin($1, "genblk", NULL, true, true);  // Empty body
 			  AstNode* lowerNoBegp = lowerBegp->stmtsp();
 			  if (lowerNoBegp) lowerNoBegp->unlinkFrBackWithNext();
 			  //
-			  AstBegin* blkp = new AstBegin($1,lowerBegp->name(),NULL,true);
+			  AstBegin* blkp = new AstBegin($1, lowerBegp->name(), NULL, true, true);
 			  // V3LinkDot detects BEGIN(GENFOR(...)) as a special case
 			  AstNode* initp = $3;  AstNode* varp = $3;
 			  if (VN_IS(varp, Var)) {  // Genvar
@@ -2793,10 +2795,10 @@ statement_item<nodep>:		// IEEE: statement_item
 
 statementFor<beginp>:		// IEEE: part of statement
 		yFOR '(' for_initialization expr ';' for_stepE ')' stmtBlock
-							{ $$ = new AstBegin($1,"",$3);
+							{ $$ = new AstBegin($1, "", $3, false, true);
 							  $$->addStmtsp(new AstWhile($1, $4,$8,$6)); }
 	|	yFOR '(' for_initialization ';' for_stepE ')' stmtBlock
-							{ $$ = new AstBegin($1,"",$3);
+							{ $$ = new AstBegin($1, "", $3, false, true);
 							  $$->addStmtsp(new AstWhile($1, new AstConst($1,AstConst::LogicTrue()),$7,$5)); }
 	;
 
@@ -4473,7 +4475,7 @@ assertion_item<nodep>:		// ==IEEE: assertion_item
 deferred_immediate_assertion_item<nodep>:	// ==IEEE: deferred_immediate_assertion_item
 		deferred_immediate_assertion_statement	{ $$ = $1; }
 	|	id/*block_identifier*/ ':' deferred_immediate_assertion_statement
-			{ $$ = new AstBegin($<fl>1, *$1, $3); }
+			{ $$ = new AstBegin($<fl>1, *$1, $3, false, true); }
 	;
 
 procedural_assertion_statement<nodep>:	// ==IEEE: procedural_assertion_statement
@@ -4528,7 +4530,8 @@ deferred_immediate_assertion_statement<nodep>:	// ==IEEE: deferred_immediate_ass
 
 concurrent_assertion_item<nodep>:	// IEEE: concurrent_assertion_item
 		concurrent_assertion_statement		{ $$ = $1; }
-	|	id/*block_identifier*/ ':' concurrent_assertion_statement	{ $$ = new AstBegin($<fl>1, *$1, $3); }
+	|	id/*block_identifier*/ ':' concurrent_assertion_statement
+			{ $$ = new AstBegin($<fl>1, *$1, $3, false, true); }
 	//			// IEEE: checker_instantiation
 	//			// identical to module_instantiation; see etcInst
 	;

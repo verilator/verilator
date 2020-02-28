@@ -13,7 +13,7 @@
                                  : ... Suggested alternative: 'notfuncs'
       i = sub.nofuncs();   
               ^~~~~~~
-        ... Known scopes under 'nofuncs': <no cells found>
+        ... Known scopes under 'nofuncs': sub
 %Error: t/t_var_notfound_bad.v:21: Can't find definition of task/function: 'notask'
                                  : ... Suggested alternative: 'nottask'
       notask();   

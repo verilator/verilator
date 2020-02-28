@@ -9,6 +9,10 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Add check for assertOn for asserts, #2162. [Tobias Wölfel]
 
+***   Fix genblk naming with directly nested generate blocks, #2176. [Alexander Grobman]
+
+****  Use gcc -Os in examples instead of -O2 for better average performance.
+
 ****  Fix undeclared VL_SHIFTR_WWQ, #2114. [Alex Solomatnikov]
 
 
@@ -53,6 +57,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 ****  Fix WIDTH warning on </<= of narrower value, #2141. [agrobman]
 
 ****  Fix OpenSolaris issues, #2154. [brancoliticus]
+
+****  Fix gated clocks under --protect-lib, #2169. [Todd Strader]
 
 
 * Verilator 4.026 2020-01-11

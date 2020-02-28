@@ -445,7 +445,7 @@ private:
                                        new AstConst(fl, 1),
                                        new AstConst(fl, -1))));
             stmtsp->addNext(new AstWhile(fl, condp, newp, incp));
-            newp = new AstBegin(nodep->fileline(), "", stmtsp);
+            newp = new AstBegin(nodep->fileline(), "", stmtsp, false, true);
             dimension--;
         }
         //newp->dumpTree(cout, "-foreach-new:");
@@ -498,6 +498,21 @@ private:
     virtual void visit(AstBegin* nodep) VL_OVERRIDE {
         V3Config::applyCoverageBlock(m_modp, nodep);
         cleanFileline(nodep);
+        AstNode* backp = nodep->backp();
+        // IEEE says directly nested item is not a new block
+        bool nestedIf = (nodep->implied()  // User didn't provide begin/end
+                         && (VN_IS(nodep->stmtsp(), GenIf)
+                             || VN_IS(nodep->stmtsp(), GenCase))  // Has an if/case
+                         && !nodep->stmtsp()->nextp());  // Has only one item
+        // It's not FOR(BEGIN(...)) but we earlier changed it to BEGIN(FOR(...))
+        if (nodep->genforp() && nodep->name() == "") {
+            nodep->name("genblk");
+        }
+        else if (nodep->generate() && nodep->name() == ""
+            && (VN_IS(backp, CaseItem) || VN_IS(backp, GenIf))
+            && !nestedIf) {
+            nodep->name("genblk");
+        }
         iterateChildren(nodep);
     }
     virtual void visit(AstCase* nodep) VL_OVERRIDE {
