@@ -122,6 +122,7 @@
 #include "V3Stats.h"
 
 #include <algorithm>  // sort
+#include <map>
 #include <set>
 #include <vector>
 #include VL_INCLUDE_UNORDERED_MAP
