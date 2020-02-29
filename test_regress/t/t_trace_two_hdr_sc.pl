@@ -27,7 +27,7 @@ else {
         make_main => 0,
         top_filename => 't_trace_two_a.v',
         verilator_flags2 => ['-sc', '-exe', '-trace',
-                             "$Self->{t_dir}/t_trace_two_sc.cpp"],
+                             "$Self->{t_dir}/t_trace_two_hdr_sc.cpp"],
         );
 
     execute(
@@ -35,7 +35,7 @@ else {
         );
 
     if ($Self->{vlt_all}) {
-        file_grep     ("$Self->{obj_dir}/simx.vcd", qr/\$enddefinitions/x);
+        file_grep("$Self->{obj_dir}/simx.vcd", qr/\$enddefinitions/x);
         vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
     }
 }
