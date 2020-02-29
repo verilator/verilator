@@ -283,7 +283,7 @@ module t_array_rev(clk);  // from t_array_rev.v
 
    input clk;
 
-   integer 	cyc=0;
+   integer      cyc=0;
    // verilator lint_off LITENDIAN
    logic arrd [0:1] /*verilator split_var*/ = '{ 1'b1, 1'b0 };
    // verilator lint_on LITENDIAN
@@ -291,7 +291,7 @@ module t_array_rev(clk);  // from t_array_rev.v
    logic localbkw [1:0]/*verilator split_var*/ ;
 
    arr_rev arr_rev_u (
-     .arrbkw	(arrd),
+     .arrbkw    (arrd),
      .y0(y0),
      .y1(y1)
    );

@@ -101,8 +101,10 @@
 //     - AstSel
 //   They are stored in a RefsInModule instance and will be used in SplitPackedVarVisitor.
 //
-// - SplitPackedVarVisitor class splits packed variables ( 2), 3), 4), and 5) in the explanation above.)
-//   "unpacked_array0", "unpacked_array_var1", and "packed_var" in "Intermediate" are split by the class.
+// - SplitPackedVarVisitor class splits packed variables ( 2), 3), 4), and 5) in the explanation
+//   above.)
+//   "unpacked_array0", "unpacked_array_var1", and "packed_var" in "Intermediate" are split by the
+//   class.
 //   Packed variables here include the result of SplitUnpackedVarVisitor.
 //   The result of this class looks like "Final" above.
 //   The class visits just necessary AstNode based on RefsInModule collected in the preceding
@@ -221,7 +223,8 @@ struct SplitVarImpl {
 
 };  // SplitVarImpl
 
-const char* const SplitVarImpl::notSplitMsg = " has split_var metacomment but will not be split because ";
+const char* const SplitVarImpl::notSplitMsg
+    = " has split_var metacomment but will not be split because ";
 
 //######################################################################
 // Split Unpacked Variables
@@ -525,7 +528,8 @@ class SplitUnpackedVarVisitor : public AstNVisitor, public SplitVarImpl {
                     for (VarSet::iterator it = m_foundTargetVar.begin(),
                              it_end = m_foundTargetVar.end();
                          it != it_end; ++it) {
-                        argp->v3warn(SPLITVAR, (*it)->prettyNameQ() << notSplitMsg << reason << ".\n");
+                        argp->v3warn(SPLITVAR, (*it)->prettyNameQ()
+                                     << notSplitMsg << reason << ".\n");
                         m_refs.remove(*it);
                     }
                 }
@@ -631,7 +635,8 @@ class SplitUnpackedVarVisitor : public AstNVisitor, public SplitVarImpl {
             = "__VsplitVar" + cvtToStr(m_modp->varNumGetInc()) + "__" + name_prefix;
         AstNodeAssign* assignp = VN_CAST(context, NodeAssign);
         if (assignp) {
-            // "always_comb a = b;" to "always_comb begin a = b; end" so that local variable can be added.
+            // "always_comb a = b;" to "always_comb begin a = b; end" so that local
+            // variable can be added.
             insertBeginIfNecessary(assignp, m_modp);
         }
         AstVar* varp = newVar(nodep->fileline(), AstVarType::VAR, name, dtypep);
@@ -654,7 +659,8 @@ class SplitUnpackedVarVisitor : public AstNVisitor, public SplitVarImpl {
                 AstNode* insertp = toInsertPoint(context);
                 newassignp = new AstAssign(nodep->fileline(), lhsp, rhsp);
                 if (lvalue) {
-                    // If varp is LHS, this assignment must appear after the original assignment(context).
+                    // If varp is LHS, this assignment must appear after the original
+                    // assignment(context).
                     insertp->addNextHere(newassignp);
                 } else {
                     // If varp is RHS, this assignment comes just before the original assignment
@@ -757,8 +763,10 @@ class SplitUnpackedVarVisitor : public AstNVisitor, public SplitVarImpl {
                     connectPort(varp, vars, sit->context());
             }
             if (varp->isIO()) {
-                if (!varp->isFuncLocal() && !varp->isFuncReturn())  // AssignW will be created, so just once
+                // AssignW will be created, so just once
+                if (!varp->isFuncLocal() && !varp->isFuncReturn()) {
                     connectPort(varp, vars, NULL);
+                }
                 varp->attrSplitVar(!cannotSplitPackedVarReason(varp));
                 m_refsForPackedSplit[m_modp].add(varp);
             } else {
@@ -868,7 +876,8 @@ public:
         m_nodep->replaceWith(nodep);
         VL_DO_DANGLING(m_nodep->deleteTree(), m_nodep);
     }
-    // If this is AstVarRef and referred in the sensitivity list of always@, return the sensitivity item
+    // If this is AstVarRef and referred in the sensitivity list of always@,
+    // return the sensitivity item
     AstSenItem* backSenItemp() const {
         if (AstVarRef* refp = VN_CAST(m_nodep, VarRef)) { return VN_CAST(refp->backp(), SenItem); }
         return NULL;
@@ -1154,7 +1163,8 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
                 bool inSentitivityList = false;
                 if (AstSenItem* senitemp = refit->backSenItemp()) {
                     AstNode* oldsenrefp = senitemp->sensp();
-                    oldsenrefp->replaceWith(new AstVarRef(senitemp->fileline(), varit->varp(), false));
+                    oldsenrefp->replaceWith(
+                        new AstVarRef(senitemp->fileline(), varit->varp(), false));
                     VL_DO_DANGLING(oldsenrefp->deleteTree(), oldsenrefp);
                     prevp = senitemp;
                     inSentitivityList = true;
@@ -1166,8 +1176,9 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
                     ++varit;
                     UASSERT_OBJ(varit != vars.end(), refit->nodep(), "not enough split variables");
                     if (AstSenItem* senitemp = VN_CAST(prevp, SenItem)) {
-                        prevp = new AstSenItem(senitemp->fileline(), senitemp->edgeType(),
-                                              new AstVarRef(senitemp->fileline(), varit->varp(), false));
+                        prevp = new AstSenItem(
+                            senitemp->fileline(), senitemp->edgeType(),
+                            new AstVarRef(senitemp->fileline(), varit->varp(), false));
                         senitemp->addNextHere(prevp);
                     } else {
                         AstNode* bitsp = extractBits(*refit, *varit, lvalue);
@@ -1175,7 +1186,8 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
                     }
                 }
                 // If varp is an argument of task/func, need to update temporary var
-                // everytime the var is updated. See also another call of connectPortAndVar() in split().
+                // everytime the var is updated. See also another call of connectPortAndVar() in
+                // split()
                 if (varp->isIO() && (varp->isFuncLocal() || varp->isFuncReturn()))
                     connectPortAndVar(vars, varp, refit->nodep());
                 if (!inSentitivityList) refit->replaceNodeWith(prevp);
@@ -1235,7 +1247,8 @@ public:
         , m_numSplit(0) {
         // If you want ignore refs and walk the tne entire AST,
         // just call iterate(nodep) and disable the following for-loop.
-        for (SplitVarRefsMap::iterator it = refs.begin(), it_end = refs.end(); it != it_end; ++it) {
+        for (SplitVarRefsMap::iterator it = refs.begin(), it_end = refs.end(); it != it_end;
+             ++it) {
             m_modp = it->first;
             it->second.visit(this);
             split();
