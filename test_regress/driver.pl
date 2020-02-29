@@ -1724,7 +1724,7 @@ sub _make_main {
     }
     $fh->print("\n");
 
-    print $fh "    delete topp; topp=NULL;\n";
+    print $fh "    VL_DO_DANGLING(delete topp, topp);\n";
     print $fh "    exit(0L);\n";
     print $fh "}\n";
     $fh->close();

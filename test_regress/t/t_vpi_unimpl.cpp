@@ -32,8 +32,8 @@
 #define DEBUG \
     if (0) printf
 
-unsigned int main_time = false;
-unsigned int callback_count = false;
+unsigned int main_time = 0;
+unsigned int callback_count = 0;
 
 //======================================================================
 

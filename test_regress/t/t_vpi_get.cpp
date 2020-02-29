@@ -45,7 +45,7 @@ using namespace std;
 #define TEST_MSG \
     if (0) printf
 
-unsigned int main_time = false;
+unsigned int main_time = 0;
 
 //======================================================================
 

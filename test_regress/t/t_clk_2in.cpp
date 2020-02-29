@@ -8,7 +8,7 @@
 #include <verilated.h>
 #include VM_PREFIX_INCLUDE
 
-unsigned int main_time = false;
+unsigned int main_time = 0;
 
 double sc_time_stamp() { return main_time; }
 

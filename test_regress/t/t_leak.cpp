@@ -12,7 +12,7 @@
 #include <verilated.h>
 #include "Vt_leak.h"
 
-unsigned int main_time = false;
+unsigned int main_time = 0;
 double sc_time_stamp() { return main_time; }
 
 long long get_memory_usage() {
