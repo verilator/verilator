@@ -98,9 +98,11 @@ Additionally, to build or run Verilator you need these standard packages:
 
 Those developing Verilator may also want these (see internals.adoc):
 
-   sudo apt-get install gdb asciidoctor graphviz
+   sudo apt-get install gdb asciidoctor graphviz cmake
    cpan install Pod::Perldoc
    cpan install Unix::Processors
+   cpan install Parallel::Forker
+   cpan install Bit::Vector
 
 ==== Install SystemC
 
