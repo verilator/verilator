@@ -226,7 +226,7 @@ module barshift_1d_packed_struct #(localparam DEPTH = 3, localparam WIDTH = 2**D
    typedef struct packed {
       logic [WIDTH-1:0] v0, v1, v2, v3;
    } data_type;
-   wire data_type tmp /*verilator split_var*/;
+   wire                 data_type tmp /*verilator split_var*/;
 
    assign tmp.v0 = in;
    assign tmp.v1 = shift[0] == 1'b1 ? {tmp.v0[(1 << 0)-1:0], tmp.v0[WIDTH-1:2**0]} : tmp.v0;
@@ -283,18 +283,19 @@ module t_array_rev(clk);  // from t_array_rev.v
 
    input clk;
 
-   integer      cyc=0;
+   integer cyc=0;
    // verilator lint_off LITENDIAN
-   logic arrd [0:1] /*verilator split_var*/ = '{ 1'b1, 1'b0 };
+   logic   arrd [0:1] /*verilator split_var*/ = '{ 1'b1, 1'b0 };
    // verilator lint_on LITENDIAN
-   logic y0, y1;
-   logic localbkw [1:0]/*verilator split_var*/ ;
+   logic   y0, y1;
+   logic   localbkw [1:0]/*verilator split_var*/ ;
 
-   arr_rev arr_rev_u (
-     .arrbkw    (arrd),
-     .y0(y0),
-     .y1(y1)
-   );
+   arr_rev arr_rev_u
+     (
+      .arrbkw    (arrd),
+      .y0(y0),
+      .y1(y1)
+      );
 
    always @ (posedge clk) begin
       if (arrd[0] != 1'b1) $stop;
@@ -310,7 +311,8 @@ module t_array_rev(clk);  // from t_array_rev.v
 
 endmodule
 
-module arr_rev (
+module arr_rev
+  (
    input  var logic arrbkw [1:0]/*verilator split_var*/ ,
    output var logic y0,
    output var logic y1
@@ -336,37 +338,37 @@ module unpack2pack #(parameter WIDTH = 8)
    (input wire in [WIDTH-1:0] /*verilator split_var*/, output wire [WIDTH-1:0] out/*verilator split_var*/);
 
    function automatic [1:0] to_packed0;
-       logic [1:0] tmp /*verilator split_var*/;
-       input logic in[1:0] /*verilator split_var*/;
-       tmp[1] = in[1];
-       tmp[0] = in[0];
-       return tmp;
+      logic [1:0] tmp /*verilator split_var*/;
+      input logic in[1:0] /*verilator split_var*/;
+      tmp[1] = in[1];
+      tmp[0] = in[0];
+      return tmp;
    endfunction
 
    /* verilator lint_off UNOPTFLAT*/
    task automatic to_packed1(input logic in[1:0] /*verilator split_var*/, output logic [1:0] out /*verilator split_var*/);
-       out[1] = in[1];
-       out[0] = in[0];
+      out[1] = in[1];
+      out[0] = in[0];
    endtask
    /* verilator lint_on UNOPTFLAT*/
 
 
    generate
       for (genvar i = 4; i < WIDTH; i += 4) begin
-          always @(*) begin
-             out[i+1:i] = to_packed0(in[i+1:i]);
-             out[i+3:i+2] = to_packed0(in[i+3:i+2]);
-          end
+         always @(*) begin
+            out[i+1:i] = to_packed0(in[i+1:i]);
+            out[i+3:i+2] = to_packed0(in[i+3:i+2]);
+         end
       end
       always_comb
-         to_packed1(.in(in[1:0]), .out(out[1:0]));
+        to_packed1(.in(in[1:0]), .out(out[1:0]));
       always_comb
-         to_packed1(.in(in[3:2]), .out(out[3:2]));
+        to_packed1(.in(in[3:2]), .out(out[3:2]));
    endgenerate
 endmodule
 
 module through #(parameter WIDTH = 8)
-    (input wire [WIDTH-1:0] in, output wire [WIDTH-1:0] out);
+   (input wire [WIDTH-1:0] in, output wire [WIDTH-1:0] out);
 
    logic unpack_tmp [0:WIDTH-1] /*verilator split_var*/;
    pack2unpack i_pack2unpack(.in(in), .out(unpack_tmp));
@@ -397,7 +399,7 @@ module t(/*AUTOARG*/ clk);
    barshift_bitslice            #(.DEPTH(DEPTH)) shifter8(.in(in), .out(out[8]), .shift(shift));
    through                      #(.WIDTH(WIDTH)) though0 (.in(out[8]), .out(through_tmp));
    var_decl_with_init i_var_decl_with_init();
-    t_array_rev i_t_array_rev(clk);
+   t_array_rev i_t_array_rev(clk);
 
    assign in = 8'b10001110;
    /*verilator lint_off LITENDIAN*/
