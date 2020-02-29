@@ -1742,7 +1742,7 @@ sub _print_advance_time {
 
     if ($self->sc) {
         print $fh "#if (SYSTEMC_VERSION>=20070314)\n";
-        print $fh "        sc_start(${time},SC_NS);\n";
+        print $fh "        sc_start(${time}, SC_NS);\n";
         print $fh "#else\n";
         print $fh "        sc_start(${time});\n";
         print $fh "#endif\n";

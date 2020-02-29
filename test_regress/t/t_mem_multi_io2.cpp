@@ -48,7 +48,7 @@ int main()
 
     // loop through every possibility and check the result
 #ifdef SYSTEMC_VERSION
-    sc_start(1,SC_NS);
+    sc_start(1, SC_NS);
 #  define ASSIGN(s,v) s.write(v)
 #  define READ(s) s.read()
 #else
