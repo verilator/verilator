@@ -639,6 +639,7 @@ class AstSenTree;
 %token<fl>		yVL_PUBLIC_FLAT_RD	"/*verilator public_flat_rd*/"
 %token<fl>		yVL_PUBLIC_FLAT_RW	"/*verilator public_flat_rw*/"
 %token<fl>		yVL_PUBLIC_MODULE	"/*verilator public_module*/"
+%token<fl>		yVL_SPLIT_VAR		"/*verilator split_var*/"
 
 %token<fl>		yP_TICK		"'"
 %token<fl>		yP_TICKBRA	"'{"
@@ -2282,6 +2283,7 @@ sigAttr<nodep>:
 	|	yVL_ISOLATE_ASSIGNMENTS			{ $$ = new AstAttrOf($1,AstAttrType::VAR_ISOLATE_ASSIGNMENTS); }
 	|	yVL_SC_BV				{ $$ = new AstAttrOf($1,AstAttrType::VAR_SC_BV); }
 	|	yVL_SFORMAT				{ $$ = new AstAttrOf($1,AstAttrType::VAR_SFORMAT); }
+	|	yVL_SPLIT_VAR				{ $$ = new AstAttrOf($1,AstAttrType::VAR_SPLIT_VAR); }
 	;
 
 rangeListE<rangep>:		// IEEE: [{packed_dimension}]

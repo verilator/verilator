@@ -326,7 +326,8 @@ public:
         VAR_SC_BV,                      // V3LinkParse moves to AstVar::attrScBv
         VAR_SFORMAT,                    // V3LinkParse moves to AstVar::attrSFormat
         VAR_CLOCKER,                    // V3LinkParse moves to AstVar::attrClocker
-        VAR_NO_CLOCKER                  // V3LinkParse moves to AstVar::attrClocker
+        VAR_NO_CLOCKER,                 // V3LinkParse moves to AstVar::attrClocker
+        VAR_SPLIT_VAR                   // V3LinkParse moves to AstVar::attrSplitVar
     };
     enum en m_e;
     const char* ascii() const {
@@ -342,7 +343,7 @@ public:
             "VAR_BASE", "VAR_CLOCK", "VAR_CLOCK_ENABLE", "VAR_PUBLIC",
             "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW",
             "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BV", "VAR_SFORMAT", "VAR_CLOCKER",
-            "VAR_NO_CLOCKER"
+            "VAR_NO_CLOCKER", "VAR_SPLIT_VAR"
         };
         return names[m_e];
     }

@@ -3420,6 +3420,33 @@ behavior.  See the test_regress/t/t_dpi_display.v file for an example.
 Same as C<sformat> in configuration files, see L</"CONFIGURATION FILES">
 for more information.
 
+=item /*verilator split_var*/
+
+Attached to a variable or a net declaration to break the variable into
+multiple pieces typically to resolve UNOPTFLAT performance issues.
+Typically the variables to attach this to are recommeded by Verilator
+itself, see UNOPTFLAT below.
+
+For example, Verilator will internally convert a variable with the
+metacomment such as:
+
+    logic [7:0] x [0:1]  /*verilator split_var*/;
+
+To:
+
+    logic [7:0] x__BRA__0__KET__ /*verilator split_var*/;
+    logic [7:0] x__BRA__1__KET__ /*verilator split_var*/;
+
+Note that the generated packed variables retain the split_var metacomment
+because they may be split into further smaller pieces accorting to the
+access patterns.
+
+This only supports unpacked arrays, packed arrays, and packed structs of
+integer types (reg, logic, bit, byte, int...); otherwise if a split was
+requested but cannot occur a SPLITVAR warning is issued.  Splitting large
+arrays may slow donw the Verilation speed, so use this only on variables
+that require it.
+
 =item /*verilator tag <text...>*/
 
 Attached after a variable or structure member to indicate opaque (to
@@ -4383,6 +4410,29 @@ Ignoring this warning may make Verilator simulations differ from other
 simulators, if the increased precision of real affects your model or DPI
 calls.
 
+=item SPLITVAR
+
+Warns that a variable with a C<split_var> metacomment was not split.
+Some possible reasons for this are:
+
+* The datatype of the variable is not supported for splitting. (e.g. is a
+real).
+
+* The access pattern of the variable can not be determined
+statically. (e.g. is accessed as a memory).
+
+* The index of the array exceeds the array size.
+
+* The variable is accessed from outside using dotted reference.
+(e.g. top.instance0.variable0 = 1).
+
+* The variable is not declared in a module, but in a package or an
+interface.
+
+* The variable is a parameter, localparam, genvar, or queue.
+
+* The variable is tirstate or bidirectional. (e.g. inout or ref).
+
 =item STMTDLY
 
 Warns that you have a statement with a delayed time in front of it, for
@@ -4513,6 +4563,11 @@ The most complicated UNOPTFLAT path we've seen was due to low bits of a bus
 being generated from an always statement that consumed high bits of the
 same bus processed by another series of always blocks.  The fix is the
 same; split it into two separate signals generated from each block.
+
+Another way to resolve this warning is to add a C<split_var> metacomment
+described above. This will cause the variable to be split internally,
+potentially resolving the conflict. If you run with --report-unoptflat
+Verilator will suggest possible candidates for C<split_var>.
 
 The UNOPTFLAT warning may also be due to clock enables, identified from the
 reported path going through a clock gating cell.  To fix these, use the

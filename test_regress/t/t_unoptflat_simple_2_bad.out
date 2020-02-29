@@ -5,8 +5,9 @@
                     t/t_unoptflat_simple_2.v:14:      Example path: t.x
                     t/t_unoptflat_simple_2.v:16:      Example path: ASSIGNW
                     t/t_unoptflat_simple_2.v:14:      Example path: t.x
-%Warning-UNOPTFLAT:      Widest candidate vars to split:
-%Warning-UNOPTFLAT:           t/t_unoptflat_simple_2.v:14:  t.x, width 3, fanout 10
-%Warning-UNOPTFLAT:      Most fanned out candidate vars to split:
-%Warning-UNOPTFLAT:           t/t_unoptflat_simple_2.v:14:  t.x, width 3, fanout 10
+                    ... Widest candidate vars to split:
+                        t/t_unoptflat_simple_2.v:14:  t.x, width 3, fanout 10, can split_var
+                    ... Most fanned out candidate vars to split:
+                        t/t_unoptflat_simple_2.v:14:  t.x, width 3, fanout 10, can split_var
+                    ... Suggest add /*verilator split_var*/ to appropriate variables above.
 %Error: Exiting due to

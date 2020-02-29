@@ -305,6 +305,16 @@ private:
             m_varp->attrSFormat(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
+        else if (nodep->attrType() == AstAttrType::VAR_SPLIT_VAR) {
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
+            if (!VN_IS(m_modp, Module)) {
+                m_varp->v3warn(SPLITVAR, m_varp->prettyNameQ() << " has split_var metacomment, "
+                               "but will not be split because it is not declared in a module.");
+            } else {
+                m_varp->attrSplitVar(true);
+            }
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        }
         else if (nodep->attrType() == AstAttrType::VAR_SC_BV) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrScBv(true);

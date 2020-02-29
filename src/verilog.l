@@ -704,6 +704,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator public_flat_rd*/"        { FL; return yVL_PUBLIC_FLAT_RD; }
   "/*verilator public_flat_rw*/"        { FL; return yVL_PUBLIC_FLAT_RW; }  // The @(edge) is converted by the preproc
   "/*verilator public_module*/"         { FL; return yVL_PUBLIC_MODULE; }
+  "/*verilator split_var*/"             { FL; return yVL_SPLIT_VAR; }
   "/*verilator sc_clock*/"              { FL; return yVL_CLOCK; }
   "/*verilator clocker*/"               { FL; return yVL_CLOCKER; }
   "/*verilator no_clocker*/"            { FL; return yVL_NO_CLOCKER; }

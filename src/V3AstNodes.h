@@ -1456,6 +1456,7 @@ private:
     bool        m_attrScBv:1;  // User force bit vector attribute
     bool        m_attrIsolateAssign:1;// User isolate_assignments attribute
     bool        m_attrSFormat:1;// User sformat attribute
+    bool        m_attrSplitVar:1;  // declared with split_var metacomment
     bool        m_fileDescr:1;  // File descriptor
     bool        m_isConst:1;    // Table contains constant data
     bool        m_isStatic:1;   // Static variable
@@ -1478,7 +1479,7 @@ private:
         m_sigUserRdPublic = false; m_sigUserRWPublic = false;
         m_funcLocal = false; m_funcReturn = false;
         m_attrClockEn = false; m_attrScBv = false;
-        m_attrIsolateAssign = false; m_attrSFormat = false;
+        m_attrIsolateAssign = false; m_attrSFormat = false; m_attrSplitVar = false;
         m_fileDescr = false; m_isConst = false;
         m_isStatic = false; m_isPulldown = false; m_isPullup = false;
         m_isIfaceParent = false; m_isDpiOpenArray = false;
@@ -1582,6 +1583,7 @@ public:
     void attrScBv(bool flag) { m_attrScBv = flag; }
     void attrIsolateAssign(bool flag) { m_attrIsolateAssign = flag; }
     void attrSFormat(bool flag) { m_attrSFormat = flag; }
+    void attrSplitVar(bool flag) { m_attrSplitVar = flag; }
     void usedClock(bool flag) { m_usedClock = flag; }
     void usedParam(bool flag) { m_usedParam = flag; }
     void usedLoopIdx(bool flag) { m_usedLoopIdx = flag; }
@@ -1658,6 +1660,7 @@ public:
     bool attrFileDescr() const { return m_fileDescr; }
     bool attrScClocked() const { return m_scClocked; }
     bool attrSFormat() const { return m_attrSFormat; }
+    bool attrSplitVar() const { return m_attrSplitVar; }
     bool attrIsolateAssign() const { return m_attrIsolateAssign; }
     VVarAttrClocker attrClocker() const { return m_attrClocker; }
     virtual string verilogKwd() const;
