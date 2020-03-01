@@ -57,8 +57,8 @@ class VerilatedVcdSingleton {
 private:
     typedef std::vector<VerilatedVcd*> VcdVec;
     struct Singleton {
-        VerilatedMutex  s_vcdMutex;  ///< Protect the singleton
-        VcdVec          s_vcdVecp VL_GUARDED_BY(s_vcdMutex);  ///< List of all created traces
+        VerilatedMutex s_vcdMutex;  ///< Protect the singleton
+        VcdVec s_vcdVecp VL_GUARDED_BY(s_vcdMutex);  ///< List of all created traces
     };
     static Singleton& singleton() { static Singleton s; return s; }
 public:
@@ -96,16 +96,19 @@ public:
 class VerilatedVcdCallInfo {
 protected:
     friend class VerilatedVcd;
-    VerilatedVcdCallback_t      m_initcb;       ///< Initialization Callback function
-    VerilatedVcdCallback_t      m_fullcb;       ///< Full Dumping Callback function
-    VerilatedVcdCallback_t      m_changecb;     ///< Incremental Dumping Callback function
-    void*               m_userthis;     ///< Fake "this" for caller
-    vluint32_t          m_code;         ///< Starting code number
+    VerilatedVcdCallback_t m_initcb;  ///< Initialization Callback function
+    VerilatedVcdCallback_t m_fullcb;  ///< Full Dumping Callback function
+    VerilatedVcdCallback_t m_changecb;  ///< Incremental Dumping Callback function
+    void* m_userthis;  ///< Fake "this" for caller
+    vluint32_t m_code;  ///< Starting code number (set later by traceInit)
     // CONSTRUCTORS
     VerilatedVcdCallInfo(VerilatedVcdCallback_t icb, VerilatedVcdCallback_t fcb,
-                         VerilatedVcdCallback_t changecb,
-                         void* ut, vluint32_t code)
-        : m_initcb(icb), m_fullcb(fcb), m_changecb(changecb), m_userthis(ut), m_code(code) {}
+                         VerilatedVcdCallback_t changecb, void* ut)
+        : m_initcb(icb)
+        , m_fullcb(fcb)
+        , m_changecb(changecb)
+        , m_userthis(ut)
+        , m_code(1) {}
     ~VerilatedVcdCallInfo() {}
 };
 
@@ -230,7 +233,7 @@ void VerilatedVcd::makeNameMap() {
     deleteNameMap();
     m_nextCode = 1;
     m_namemapp = new NameMap;
-    for (vluint32_t ent = 0; ent< m_callbacks.size(); ent++) {
+    for (vluint32_t ent = 0; ent < m_callbacks.size(); ent++) {
         VerilatedVcdCallInfo* cip = m_callbacks[ent];
         cip->m_code = m_nextCode;
         (cip->m_initcb)(this, cip->m_userthis, cip->m_code);
@@ -513,7 +516,7 @@ void VerilatedVcd::dumpHeader() {
 
     printIndent(-1);
     printStr("$enddefinitions $end\n\n\n");
-    assert(m_modDepth==0);
+    assert(m_modDepth == 0);
 
     // Reclaim storage
     deleteNameMap();
@@ -658,19 +661,16 @@ void VerilatedVcd::fullFloat(vluint32_t code, const float newval) {
 //=============================================================================
 // Callbacks
 
-void VerilatedVcd::addCallback(
-    VerilatedVcdCallback_t initcb, VerilatedVcdCallback_t fullcb, VerilatedVcdCallback_t changecb,
-    void* userthis) VL_MT_UNSAFE_ONE
-{
+void VerilatedVcd::addCallback(VerilatedVcdCallback_t initcb, VerilatedVcdCallback_t fullcb,
+                               VerilatedVcdCallback_t changecb, void* userthis) VL_MT_UNSAFE_ONE {
     m_assertOne.check();
     if (VL_UNLIKELY(isOpen())) {
-        std::string msg = std::string("Internal: ")+__FILE__+"::"+__FUNCTION__
-            +" called with already open file";
+        std::string msg = std::string("Internal: ") + __FILE__ + "::" + __FUNCTION__
+                          + " called with already open file";
         VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
     }
-    VerilatedVcdCallInfo* vci
-        = new VerilatedVcdCallInfo(initcb, fullcb, changecb, userthis, m_nextCode);
-    m_callbacks.push_back(vci);
+    VerilatedVcdCallInfo* cip = new VerilatedVcdCallInfo(initcb, fullcb, changecb, userthis);
+    m_callbacks.push_back(cip);
 }
 
 //=============================================================================
@@ -680,7 +680,7 @@ void VerilatedVcd::dumpFull(vluint64_t timeui) {
     m_assertOne.check();
     dumpPrep(timeui);
     Verilated::quiesce();
-    for (vluint32_t ent = 0; ent< m_callbacks.size(); ent++) {
+    for (vluint32_t ent = 0; ent < m_callbacks.size(); ent++) {
         VerilatedVcdCallInfo* cip = m_callbacks[ent];
         (cip->m_fullcb)(this, cip->m_userthis, cip->m_code);
     }
@@ -700,7 +700,7 @@ void VerilatedVcd::dump(vluint64_t timeui) {
     }
     dumpPrep(timeui);
     Verilated::quiesce();
-    for (vluint32_t ent = 0; ent< m_callbacks.size(); ++ent) {
+    for (vluint32_t ent = 0; ent < m_callbacks.size(); ++ent) {
         VerilatedVcdCallInfo* cip = m_callbacks[ent];
         (cip->m_changecb)(this, cip->m_userthis, cip->m_code);
     }
@@ -829,6 +829,7 @@ main() {
 #endif
 
 //********************************************************************
+// ;compile-command: "mkdir -p ../test_dir && cd ../test_dir && c++ -DVERILATED_VCD_TEST ../include/verilated_vcd_c.cpp -o verilated_vcd_c && ./verilated_vcd_c && cat test.vcd"
+//
 // Local Variables:
-// compile-command: "mkdir -p ../test_dir && cd ../test_dir && c++ -DVERILATED_VCD_TEST ../include/verilated_vcd_c.cpp -o verilated_vcd_c && ./verilated_vcd_c && cat test.vcd"
 // End:

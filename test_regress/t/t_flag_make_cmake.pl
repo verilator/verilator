@@ -21,12 +21,12 @@ if ($? != 0) {
 } else {
     my $cmakecache = $Self->{obj_dir}."/CMakeCache.txt";
     if (! -e $cmakecache) {
-	error("$cmakecache does not exist.")
+        error("$cmakecache does not exist.")
     }
 
     execute(
-	check_finished => 1,
-	);
+        check_finished => 1,
+        );
 }
 ok(1);
 1;
