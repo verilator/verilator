@@ -402,6 +402,44 @@ public:
         if (nodep->addNewline()) text += "\n";
         displayNode(nodep, nodep->fmtp()->scopeNamep(), text, nodep->fmtp()->exprsp(), false);
     }
+    virtual void visit(AstDumpCtl* nodep) VL_OVERRIDE {
+        switch (nodep->ctlType()) {
+        case VDumpCtlType::FILE:
+            puts("vl_dumpctl_filenamep(true, ");
+            emitCvtPackStr(nodep->exprp());
+            puts(");\n");
+            break;
+        case VDumpCtlType::VARS:
+            // We ignore number of levels to dump in exprp()
+            if (v3Global.opt.trace()) {
+                puts("vlSymsp->TOPp->_traceDumpOpen();\n");
+            } else {
+                puts("VL_PRINTF_MT(\"-Info: ");
+                puts(protect(nodep->fileline()->filename()));
+                puts(":");
+                puts(cvtToStr(nodep->fileline()->lineno()));
+                puts(": $dumpvar ignored, as Verilated without --trace");
+                puts("\\n\");\n");
+            }
+            break;
+        case VDumpCtlType::ALL:
+            // $dumpall currently ignored
+            break;
+        case VDumpCtlType::FLUSH:
+            puts("Verilated::flushCall();\n");  // Also flush stdio, as need lock
+            break;
+        case VDumpCtlType::LIMIT:
+            // $dumplimit currently ignored
+            break;
+        case VDumpCtlType::OFF:
+            // Currently ignored as both Vcd and Fst do not support them, as would need "X" dump
+            break;
+        case VDumpCtlType::ON:
+            // Currently ignored as $dumpoff is also ignored
+            break;
+        default: nodep->v3fatalSrc("Bad case, unexpected " << nodep->ctlType().ascii());
+        }
+    }
     virtual void visit(AstScopeName* nodep) VL_OVERRIDE {
         // For use under AstCCalls for dpiImports.  ScopeNames under
         // displays are handled in AstDisplay
@@ -2110,8 +2148,16 @@ void EmitCImp::emitCoverageImp(AstNodeModule* modp) {
 void EmitCImp::emitDestructorImp(AstNodeModule* modp) {
     puts("\n");
     puts(prefixNameProtect(modp) + "::~" + prefixNameProtect(modp) + "() {\n");
-    if (modp->isTop() && v3Global.opt.mtasks()) {
-        puts("delete __Vm_threadPoolp; __Vm_threadPoolp = NULL;\n");
+    if (modp->isTop()) {
+        if (v3Global.opt.mtasks()) {
+            puts("delete __Vm_threadPoolp; __Vm_threadPoolp = NULL;\n");
+        }
+        // Call via function in __Trace.cpp as this .cpp file does not have trace header
+        if (v3Global.needTraceDumper()) {
+            puts("#ifdef VM_TRACE\n");
+            puts("if (VL_UNLIKELY(__VlSymsp->__Vm_dumperp)) _traceDumpClose();\n");
+            puts("#endif  // VM_TRACE\n");
+        }
     }
     emitTextSection(AstType::atScDtor);
     if (modp->isTop()) puts("delete __VlSymsp; __VlSymsp=NULL;\n");
@@ -2304,7 +2350,7 @@ void EmitCImp::emitSettleLoop(const std::string& eval_call, bool initial) {
 }
 
 void EmitCImp::emitWrapEval(AstNodeModule* modp) {
-    puts("\nvoid " + prefixNameProtect(modp) + "::eval() {\n");
+    puts("\nvoid " + prefixNameProtect(modp) + "::eval_step() {\n");
     puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+++++TOP Evaluate " + prefixNameProtect(modp)
          + "::eval\\n\"); );\n");
     puts(EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp;  // Setup global symbol table\n");
@@ -2316,6 +2362,15 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     putsDecoration("// Initialize\n");
     puts("if (VL_UNLIKELY(!vlSymsp->__Vm_didInit)) "
          +protect("_eval_initial_loop")+"(vlSymsp);\n");
+    if (v3Global.opt.trace()) {
+        puts("#ifdef VM_TRACE\n");
+        putsDecoration("// Tracing\n");
+        // SystemC's eval loop deals with calling trace, not us
+        if (v3Global.needTraceDumper() && !optSystemC()) {
+            puts("if (VL_UNLIKELY(vlSymsp->__Vm_dumperp)) _traceDump();\n");
+        }
+        puts("#endif  // VM_TRACE\n");
+    }
     if (v3Global.opt.inhibitSim()) {
         puts("if (VL_UNLIKELY(__Vm_inhibitSim)) return;\n");
     }
@@ -2376,6 +2431,21 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     }
     puts("}\n");
     splitSizeInc(10);
+
+    //
+    if (v3Global.needTraceDumper() && !optSystemC()) {
+        puts("\nvoid " + prefixNameProtect(modp) + "::eval_end_step() {\n");
+        puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+eval_end_step " + prefixNameProtect(modp)
+             + "::eval_end_step\\n\"); );\n");
+        puts("#ifdef VM_TRACE\n");
+        puts(EmitCBaseVisitor::symClassVar()+" = this->__VlSymsp;  // Setup global symbol table\n");
+        puts(EmitCBaseVisitor::symTopAssign()+"\n");
+        putsDecoration("// Tracing\n");
+        // SystemC's eval loop deals with calling trace, not us
+        puts("if (VL_UNLIKELY(vlSymsp->__Vm_dumperp)) _traceDump();\n");
+        puts("#endif  // VM_TRACE\n");
+        puts("}\n");
+    }
 
     //
     puts("\nvoid " + prefixNameProtect(modp) + "::" + protect("_eval_initial_loop") + "("
@@ -2693,11 +2763,11 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     ofp()->putsPrivate(!modp->isTop());  // private: unless top
     puts(symClassName()+"* __VlSymsp;  // Symbol table\n");
     ofp()->putsPrivate(false);  // public:
-    if (modp->isTop() && v3Global.opt.inhibitSim()) {
-        puts("bool __Vm_inhibitSim;  ///< Set true to disable evaluation of module\n");
-    }
-    if (modp->isTop() && v3Global.opt.mtasks()) {
-        emitMTaskState();
+    if (modp->isTop()) {
+        if (v3Global.opt.inhibitSim()) {
+            puts("bool __Vm_inhibitSim;  ///< Set true to disable evaluation of module\n");
+        }
+        if (v3Global.opt.mtasks()) emitMTaskState();
     }
     emitCoverageDecl(modp);  // may flip public/private
 
@@ -2775,14 +2845,26 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
     if (modp->isTop()) {
         puts("\n// API METHODS\n");
+        string callEvalEndStep
+            = (v3Global.needTraceDumper() && !optSystemC()) ? "eval_end_step(); " : "";
         if (optSystemC()) ofp()->putsPrivate(true);  ///< eval() is invoked by our sensitive() calls.
-        else puts("/// Evaluate the model.  Application must call when inputs change.\n");
-        puts("void eval();\n");
+        if (!optSystemC()) puts("/// Evaluate the model.  Application must call when inputs change.\n");
+        puts("void eval() { eval_step(); " + callEvalEndStep + "}\n");
+        if (!optSystemC()) puts("/// Evaluate when calling multiple units/models per time step.\n");
+        puts("void eval_step();\n");
+        if (!optSystemC()) {
+            puts("/// Evaluate at end of a timestep for tracing, when using eval_step().\n");
+            puts("/// Application must call after all eval() and before time changes.\n");
+            puts("void eval_end_step()");
+            if (callEvalEndStep == "") puts(" {}\n");
+            else puts(";\n");
+        }
         ofp()->putsPrivate(false);  // public:
         if (!optSystemC()) puts("/// Simulation complete, run final blocks.  Application must call on completion.\n");
         puts("void final();\n");
         if (v3Global.opt.inhibitSim()) {
-            puts("void inhibitSim(bool flag) { __Vm_inhibitSim=flag; }  ///< Set true to disable evaluation of module\n");
+            puts("/// Disable evaluation of module (e.g. turn off)\n");
+            puts("void inhibitSim(bool flag) { __Vm_inhibitSim = flag; }\n");
         }
     }
 
@@ -2791,6 +2873,9 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
         ofp()->putsPrivate(true);  // private:
         puts("static void "+protect("_eval_initial_loop")
              +"("+EmitCBaseVisitor::symClassVar()+");\n");
+        if (v3Global.needTraceDumper() && !optSystemC()) puts("void _traceDump();");
+        if (v3Global.needTraceDumper()) puts("void _traceDumpOpen();");
+        if (v3Global.needTraceDumper()) puts("void _traceDumpClose();");
     }
 
     if (!VN_IS(modp, Class)) {
@@ -2978,13 +3063,42 @@ class EmitCTrace : EmitCStmts {
 
     void emitTraceHeader() {
         // Includes
-        puts("#include \""+v3Global.opt.traceSourceName()+"_c.h\"\n");
-        puts("#include \""+ symClassName() +".h\"\n");
+        puts("#include \"" + v3Global.opt.traceSourceLang() + ".h\"\n");
+        puts("#include \"" + symClassName() + ".h\"\n");
         puts("\n");
     }
 
     void emitTraceSlow() {
         puts("\n//======================\n\n");
+
+        if (v3Global.needTraceDumper() && !optSystemC()) {
+            puts("void " + topClassName() + "::_traceDump() {\n");
+            // Caller checked for __Vm_dumperp non-NULL
+            puts(  "VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
+            puts(  "__VlSymsp->__Vm_dumperp->dump(VL_TIME_Q());\n");
+            puts("}\n");
+            splitSizeInc(10);
+        }
+
+        if (v3Global.needTraceDumper()) {
+            puts("void " + topClassName() + "::_traceDumpOpen() {\n");
+            puts(  "if (VL_UNLIKELY(!__VlSymsp->__Vm_dumperp)) {\n");
+            puts(    "VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
+            puts(    "__VlSymsp->__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
+            puts(    "const char* cp = vl_dumpctl_filenamep();\n");
+            puts(    "trace(__VlSymsp->__Vm_dumperp, 0, 0);\n");
+            puts(    "__VlSymsp->__Vm_dumperp->open(vl_dumpctl_filenamep());\n");
+            puts(  "}\n");
+            puts("}\n");
+            splitSizeInc(10);
+
+            puts("void " + topClassName() + "::_traceDumpClose() {\n");
+            // Caller checked for __Vm_dumperp non-NULL
+            puts(  "VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
+            puts(  "delete __VlSymsp->__Vm_dumperp; __VlSymsp->__Vm_dumperp = NULL;\n");
+            puts("}\n");
+            splitSizeInc(10);
+        }
 
         puts("void "+topClassName()+"::trace(");
         puts(v3Global.opt.traceClassBase()+"C* tfp, int, int) {\n");

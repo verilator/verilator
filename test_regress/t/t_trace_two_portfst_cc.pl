@@ -17,14 +17,16 @@ compile(
     verilator_make_gmake => 0,
     top_filename => 't_trace_two_b.v',
     VM_PREFIX => 'Vt_trace_two_b',
-    verilator_flags2 => ['-trace'],
+    verilator_flags2 => ['--trace-fst-thread'],
     );
 
 compile(
     make_main => 0,
     top_filename => 't_trace_two_a.v',
-    make_flags => 'CPPFLAGS_ADD=-DTEST_HDR_TRACE=1',
-    verilator_flags2 => ['-exe', '-trace', "$Self->{t_dir}/t_trace_two_cc.cpp"],
+    verilator_flags2 => ['-exe', '--trace-fst-thread',
+                         '-DTEST_FST',
+                         "$Self->{t_dir}/t_trace_two_cc.cpp"],
+    v_flags2 => ['+define+TEST_DUMPPORTS'],
     );
 
 execute(
@@ -32,8 +34,8 @@ execute(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$Self->{obj_dir}/simx.vcd", qr/\$enddefinitions/x);
-    vcd_identical("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
+    fst2vcd($Self->trace_filename, "$Self->{obj_dir}/simx-fst2vcd.vcd");
+    vcd_identical("$Self->{obj_dir}/simx-fst2vcd.vcd", $Self->{golden_filename});
 }
 
 ok(1);

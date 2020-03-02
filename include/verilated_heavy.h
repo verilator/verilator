@@ -441,4 +441,10 @@ inline IData VL_CMP_NN(const std::string& lhs, const std::string& rhs, bool igno
 
 extern IData VL_ATOI_N(const std::string& str, int base) VL_PURE;
 
+//======================================================================
+// Dumping
+
+extern const char* vl_dumpctl_filenamep(bool setit = false,
+                                        const std::string& filename = "") VL_MT_SAFE;
+
 #endif  // Guard

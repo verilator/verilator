@@ -3033,6 +3033,31 @@ public:
     void filep(AstNodeVarRef* nodep) { setNOp3p(nodep); }
 };
 
+class AstDumpCtl : public AstNodeStmt {
+    // $dumpon etc
+    // Parents: expr
+    // Child: expr based on type of control statement
+    VDumpCtlType m_ctlType;  // Type of operation
+public:
+    AstDumpCtl(FileLine* fl, VDumpCtlType ctlType, AstNode* exprp = NULL)
+        : ASTGEN_SUPER(fl), m_ctlType(ctlType) {
+        setNOp1p(exprp);
+    }
+    ASTNODE_NODE_FUNCS(DumpCtl)
+    virtual string verilogKwd() const { return ctlType().ascii(); }
+    virtual string emitVerilog() { return "%f" + verilogKwd() + "(%l)"; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual bool isGateOptimizable() const { return false; }
+    virtual bool isPredictOptimizable() const { return false; }
+    virtual bool isOutputter() const { return true; }
+    virtual bool cleanOut() const { return true; }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const { return true; }
+    VDumpCtlType ctlType() const { return m_ctlType; }
+    AstNode* exprp() const { return op1p(); }  // op2 = Expressions to output
+    void exprp(AstNode* nodep) { setOp1p(nodep); }
+};
+
 class AstElabDisplay : public AstNode {
     // Parents: stmtlist
     // Children: SFORMATF to generate print string

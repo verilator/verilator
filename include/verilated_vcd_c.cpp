@@ -119,7 +119,7 @@ protected:
 
 bool VerilatedVcdFile::open(const std::string& name) VL_MT_UNSAFE {
     m_fd = ::open(name.c_str(), O_CREAT|O_WRONLY|O_TRUNC|O_LARGEFILE|O_NONBLOCK|O_CLOEXEC, 0666);
-    return (m_fd>=0);
+    return m_fd >= 0;
 }
 
 void VerilatedVcdFile::close() VL_MT_UNSAFE {
@@ -136,7 +136,10 @@ ssize_t VerilatedVcdFile::write(const char* bufp, ssize_t len) VL_MT_UNSAFE {
 // Opening/Closing
 
 VerilatedVcd::VerilatedVcd(VerilatedVcdFile* filep)
-    : m_isOpen(false), m_rolloverMB(0), m_modDepth(0), m_nextCode(1) {
+    : m_isOpen(false)
+    , m_rolloverMB(0)
+    , m_modDepth(0)
+    , m_nextCode(1) {
     // Not in header to avoid link issue if header is included without this .cpp file
     m_fileNewed = (filep == NULL);
     m_filep = m_fileNewed ? new VerilatedVcdFile : filep;
@@ -156,7 +159,7 @@ VerilatedVcd::VerilatedVcd(VerilatedVcdFile* filep)
 
 void VerilatedVcd::open(const char* filename) {
     m_assertOne.check();
-    if (isOpen()) return;
+    if (isOpen() || !filename || !*filename) return;
 
     // Set member variables
     m_filename = filename;
@@ -690,7 +693,7 @@ void VerilatedVcd::dump(vluint64_t timeui) {
     m_assertOne.check();
     if (!isOpen()) return;
     if (VL_UNLIKELY(m_fullDump)) {
-        m_fullDump = false;  // No need for more full dumps
+        m_fullDump = false;  // No more need for next dump to be full
         dumpFull(timeui);
         return;
     }

@@ -23,8 +23,8 @@ compile(
 compile(
     make_main => 0,
     top_filename => 't_trace_two_a.v',
-    make_flags => 'CPPFLAGS_ADD=-DTEST_HDR_TRACE=1',
     verilator_flags2 => ['-exe', '-trace', "$Self->{t_dir}/t_trace_two_cc.cpp"],
+    v_flags2 => ['+define+TEST_DUMPPORTS'],
     );
 
 execute(

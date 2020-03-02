@@ -83,6 +83,7 @@ class VerilatedVar;
 class VerilatedVarNameMap;
 class VerilatedVcd;
 class VerilatedVcdC;
+class VerilatedVcdSc;
 class VerilatedFst;
 class VerilatedFstC;
 

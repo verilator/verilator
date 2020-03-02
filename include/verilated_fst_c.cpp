@@ -64,9 +64,12 @@ protected:
     vluint32_t m_code;  ///< Starting code number
     // CONSTRUCTORS
     VerilatedFstCallInfo(VerilatedFstCallback_t icb, VerilatedFstCallback_t fcb,
-                         VerilatedFstCallback_t changecb,
-                         void* ut, vluint32_t code)
-        : m_initcb(icb), m_fullcb(fcb), m_changecb(changecb), m_userthis(ut), m_code(code) {}
+                         VerilatedFstCallback_t changecb, void* ut)
+        : m_initcb(icb)
+        , m_fullcb(fcb)
+        , m_changecb(changecb)
+        , m_userthis(ut)
+        , m_code(1) {}
     ~VerilatedFstCallInfo() {}
 };
 
@@ -173,17 +176,16 @@ void VerilatedFst::declSymbol(vluint32_t code, const char* name,
 //=============================================================================
 // Callbacks
 
-void VerilatedFst::addCallback(
-    VerilatedFstCallback_t initcb, VerilatedFstCallback_t fullcb,
-    VerilatedFstCallback_t changecb, void* userthis) VL_MT_UNSAFE_ONE {
+void VerilatedFst::addCallback(VerilatedFstCallback_t initcb, VerilatedFstCallback_t fullcb,
+                               VerilatedFstCallback_t changecb, void* userthis) VL_MT_UNSAFE_ONE {
     m_assertOne.check();
     if (VL_UNLIKELY(isOpen())) {
-        std::string msg = (std::string("Internal: ")+__FILE__+"::"+__FUNCTION__
-                           +" called with already open file");
+        std::string msg = (std::string("Internal: ") + __FILE__ + "::" + __FUNCTION__
+                           + " called with already open file");
         VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
     }
-    VerilatedFstCallInfo* vci = new VerilatedFstCallInfo(initcb, fullcb, changecb, userthis, 1);
-    m_callbacks.push_back(vci);
+    VerilatedFstCallInfo* cip = new VerilatedFstCallInfo(initcb, fullcb, changecb, userthis);
+    m_callbacks.push_back(cip);
 }
 
 //=============================================================================
@@ -192,7 +194,7 @@ void VerilatedFst::addCallback(
 void VerilatedFst::dump(vluint64_t timeui) {
     if (!isOpen()) return;
     if (VL_UNLIKELY(m_fullDump)) {
-        m_fullDump = false;  // No need for more full dumps
+        m_fullDump = false;  // No more need for next dump to be full
         for (vluint32_t ent = 0; ent< m_callbacks.size(); ++ent) {
             VerilatedFstCallInfo* cip = m_callbacks[ent];
             (cip->m_fullcb)(this, cip->m_userthis, cip->m_code);

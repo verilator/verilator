@@ -1603,6 +1603,25 @@ IData VL_ATOI_N(const std::string& str, int base) VL_PURE {
 }
 
 //===========================================================================
+// Dumping
+
+const char* vl_dumpctl_filenamep(bool setit, const std::string& filename) VL_MT_SAFE {
+    // This function performs both accessing and setting so it's easy to make an in-function static
+    static VL_THREAD_LOCAL std::string t_filename;
+    if (setit) {
+        t_filename = filename;
+    } else {
+        static VL_THREAD_LOCAL bool t_warned = false;
+        if (VL_UNLIKELY(t_filename.empty() && !t_warned)) {
+            t_warned = true;
+            VL_PRINTF_MT("%%Warning: $dumpvar ignored as not proceeded by $dumpfile\n");
+            return "";
+        }
+    }
+    return t_filename.c_str();
+}
+
+//===========================================================================
 // Readmem/writemem
 
 static const char* memhFormat(int nBits) {

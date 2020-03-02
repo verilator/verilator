@@ -198,7 +198,7 @@ class VerilatedFstC {
     VL_UNCOPYABLE(VerilatedFstC);
 public:
     explicit VerilatedFstC(void* filep=NULL) : m_sptrace(filep) {}
-    ~VerilatedFstC() {}
+    ~VerilatedFstC() { close(); }
 public:
     // ACCESSORS
     /// Is file open?

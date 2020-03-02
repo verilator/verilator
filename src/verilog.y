@@ -553,6 +553,14 @@ class AstSenTree;
 %token<fl>		yD_COUNTONES	"$countones"
 %token<fl>		yD_DIMENSIONS	"$dimensions"
 %token<fl>		yD_DISPLAY	"$display"
+%token<fl>		yD_DUMPALL	"$dumpall"
+%token<fl>		yD_DUMPFILE	"$dumpfile"
+%token<fl>		yD_DUMPFLUSH	"$dumpflush"
+%token<fl>		yD_DUMPLIMIT	"$dumplimit"
+%token<fl>		yD_DUMPOFF	"$dumpoff"
+%token<fl>		yD_DUMPON	"$dumpon"
+%token<fl>		yD_DUMPPORTS	"$dumpports"
+%token<fl>		yD_DUMPVARS	"$dumpvars"
 %token<fl>		yD_ERROR	"$error"
 %token<fl>		yD_EXP		"$exp"
 %token<fl>		yD_FATAL	"$fatal"
@@ -3154,8 +3162,30 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yaD_DPI '(' exprList ')'		{ $$ = new AstTaskRef($<fl>1, *$1, $3);
 							  GRAMMARP->argWrapList(VN_CAST($$, TaskRef)); }
 	//
+	|	yD_DUMPPORTS '(' idDotted ',' expr ')'	{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::FILE, $5); DEL($3);
+    							  $$->addNext(new AstDumpCtl($<fl>1, VDumpCtlType::VARS,
+										     new AstConst($<fl>1, 1))); }
+	|	yD_DUMPPORTS '(' ',' expr ')'		{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::FILE, $4);
+    							  $$->addNext(new AstDumpCtl($<fl>1, VDumpCtlType::VARS,
+										     new AstConst($<fl>1, 1))); }
+	|	yD_DUMPFILE '(' expr ')'		{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::FILE, $3); }
+	|	yD_DUMPVARS parenE			{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::VARS,
+									      new AstConst($<fl>1, 0)); }
+	|	yD_DUMPVARS '(' expr ')'		{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::VARS, $3); }
+	|	yD_DUMPVARS '(' expr ',' idDotted ')'	{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::VARS, $3); DEL($5); }
+	|	yD_DUMPALL parenE			{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::ALL); }
+	|	yD_DUMPALL '(' expr ')'			{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::ALL); DEL($3); }
+	|	yD_DUMPFLUSH parenE			{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::FLUSH); }
+	|	yD_DUMPFLUSH '(' expr ')'		{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::FLUSH); DEL($3); }
+	|	yD_DUMPLIMIT '(' expr ')'		{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::LIMIT, $3); }
+	|	yD_DUMPLIMIT '(' expr ',' expr ')'	{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::LIMIT, $3); DEL($5); }
+	|	yD_DUMPOFF parenE			{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::OFF); }
+	|	yD_DUMPOFF '(' expr ')'			{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::OFF); DEL($3); }
+	|	yD_DUMPON parenE			{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::ON); }
+	|	yD_DUMPON '(' expr ')'			{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::ON); DEL($3); }
+	//
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCStmt($1,$3)); }
-	|	yD_SYSTEM  '(' expr ')'			{ $$ = new AstSystemT($1, $3); }
+	|	yD_SYSTEM '(' expr ')'			{ $$ = new AstSystemT($1, $3); }
 	//
 	|	yD_FCLOSE '(' idClassSel ')'		{ $$ = new AstFClose($1, $3); }
 	|	yD_FFLUSH parenE			{ $$ = NULL; BBUNSUP($1, "Unsupported: $fflush of all handles does not map to C++."); }

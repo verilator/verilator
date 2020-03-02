@@ -7,6 +7,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    Add split_var metacomment to assist UNOPTFLAT fixes, #2066. [Yutetsu TAKATSUKASA]
 
+**    Add support for $dumpfile and $dumpvars, #2126. [Alexander Grobman]
+
 ***   Add +verilator+noassert flag to disable assertion checking. [Tobias Wölfel]
 
 ***   Add check for assertOn for asserts, #2162. [Tobias Wölfel]

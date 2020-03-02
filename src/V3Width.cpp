@@ -2872,6 +2872,11 @@ private:
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         }
     }
+    virtual void visit(AstDumpCtl* nodep) VL_OVERRIDE {
+        assertAtStatement(nodep);
+        // Just let all arguments seek their natural sizes
+        userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
+    }
     virtual void visit(AstFOpen* nodep) VL_OVERRIDE {
         // Although a system function in IEEE, here a statement which sets the file pointer (MCD)
         assertAtStatement(nodep);

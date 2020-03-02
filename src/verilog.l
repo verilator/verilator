@@ -197,6 +197,19 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$cos"                { FL; return yD_COS; }
   "$cosh"               { FL; return yD_COSH; }
   "$display"            { FL; return yD_DISPLAY; }
+  "$dumpall"            { FL; return yD_DUMPALL; }
+  "$dumpfile"           { FL; return yD_DUMPFILE; }
+  "$dumpflush"          { FL; return yD_DUMPFLUSH; }
+  "$dumplimit"          { FL; return yD_DUMPLIMIT; }
+  "$dumpoff"            { FL; return yD_DUMPOFF; }
+  "$dumpon"             { FL; return yD_DUMPON; }
+  "$dumpports"          { FL; return yD_DUMPPORTS; }
+  "$dumpportsall"       { FL; return yD_DUMPALL; }
+  "$dumpportsflush"     { FL; return yD_DUMPFLUSH; }
+  "$dumpportslimit"     { FL; return yD_DUMPLIMIT; }
+  "$dumpportsoff"       { FL; return yD_DUMPOFF; }
+  "$dumpportson"        { FL; return yD_DUMPON; }
+  "$dumpvars"           { FL; return yD_DUMPVARS; }
   "$exp"                { FL; return yD_EXP; }
   "$fclose"             { FL; return yD_FCLOSE; }
   "$fdisplay"           { FL; return yD_FDISPLAY; }
@@ -208,10 +221,10 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$floor"              { FL; return yD_FLOOR; }
   "$fopen"              { FL; return yD_FOPEN; }
   "$fread"              { FL; return yD_FREAD; }
+  "$frewind"            { FL; return yD_FREWIND; }
   "$fscanf"             { FL; return yD_FSCANF; }
   "$fseek"              { FL; return yD_FSEEK; }
   "$ftell"              { FL; return yD_FTELL; }
-  "$frewind"            { FL; return yD_FREWIND; }
   "$fullskew"           { FL; return yaTIMINGSPEC; }
   "$fwrite"             { FL; return yD_FWRITE; }
   "$hold"               { FL; return yaTIMINGSPEC; }

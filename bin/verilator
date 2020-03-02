@@ -3782,16 +3782,28 @@ $unsigned, $warning.
 
 Generally supported.
 
-=item $display, $write, $fdisplay, $fwrite, $swrite
-
-$display and friends must have a constant format string as the first
-argument (as with C's printf).  The rare usage which lists variables
-standalone without a format is not supported.
-
 =item $displayb, $displayh, $displayo, $writeb, $writeh, $writeo, etc
 
 The sized display functions are rarely used and so not supported.  Replace
 them with a $write with the appropriate format specifier.
+
+=item $dump/$dumpports and related
+
+$dumpfile or $dumpports will create a VCD or FST file (which is based on
+the --trace argument given when the model was Verilated). This will take
+effect starting at the next eval() call.  If you have multiple Verilated
+designs under the same C model, then this will dump signals only from the
+design containing the $dumpvar.
+
+$dumpvars and $dumpports module identifier is ignored; the traced instances
+will always start at the top of the design. The levels argument is also
+ignored, use tracing_on/tracing_off pragmas instead.
+
+$dumpportson/$dumpportsoff/$dumpportsall/$dumpportslimit filename argument
+is ignored, only a single trace file may be active at once.
+
+$dumpall/$dumpportsall, $dumpon/$dumpportson, $dumpoff/$dumpportsoff, and
+$dumplimit/$dumpportlimit are currently ignored.
 
 =item $finish, $stop
 
@@ -4835,19 +4847,20 @@ designs have topped 16GB.
 
 See the next question for tracing in SystemC mode.
 
-Add the --trace switch to Verilator, and in your top level C code, call
-Verilated::traceEverOn(true).  Then create a VerilatedVcdC object, and
-in your main loop call "trace_object->dump(time)" every time step, and
-finally call "trace_object->close()".  For an example, see below and the
-examples/make_tracing_c/sim_main.cpp file of the distribution.
+A. Add the --trace switch to Verilator, and in your top level C code, call
+Verilated::traceEverOn(true).  Then you may use $dumpfile and $dumpvars to
+enable traces, same as with any Verilog simulator. See
+C<examples/make_tracing_c>.
 
-You also need to compile verilated_vcd_c.cpp and add it to your link,
-preferably by adding the dependencies in $(VK_GLOBAL_OBJS) to your
-Makefile's link rule.  This is done for you if using the Verilator --exe
-flag.
-
-Note you can also call ->trace on multiple Verilated objects with the same
-trace file if you want all data to land in the same output file.
+B. Or, for finer-grained control, or C++ files with multiple Verilated
+modules you may also create the trace purely from C++.  Create a
+VerilatedVcdC object, and in your main loop call "trace_object->dump(time)"
+every time step, and finally call "trace_object->close()".  You also need
+to compile verilated_vcd_c.cpp and add it to your link, preferably by
+adding the dependencies in $(VK_GLOBAL_OBJS) to your Makefile's link rule.
+This is done for you if using the Verilator --exe flag.  Note you can also
+call ->trace on multiple Verilated objects with the same trace file if you
+want all data to land in the same output file.
 
     #include "verilated_vcd_c.h"
     ...
@@ -4867,11 +4880,17 @@ trace file if you want all data to land in the same output file.
 
 =item How do I generate waveforms (traces) in SystemC?
 
-Add the --trace switch to Verilator, and in your top level C sc_main code,
-include verilated_vcd_sc.h.  Then call Verilated::traceEverOn(true).  Then
-create a VerilatedVcdSc object as you would create a normal SystemC trace
-file.  For an example, see the call to VerilatedVcdSc in the
-examples/make_tracing_sc/sc_main.cpp file of the distribution, and below.
+A. Add the --trace switch to Verilator, and in your top level sc_main, call
+Verilated::traceEverOn(true).  Then you may use $dumpfile and $dumpvars to
+enable traces, same as with any Verilog simulator, see the non-SystemC
+example in C<examples/make_tracing_c>. This will trace only the module
+containing the $dumpvar.
+
+B. Or, you may create a trace purely from SystemC, which may trace all
+Verilated designs in the SystemC model. Create a VerilatedVcdSc object as
+you would create a normal SystemC trace file.  For an example, see the call
+to VerilatedVcdSc in the examples/make_tracing_sc/sc_main.cpp file of the
+distribution, and below.
 
 Alternatively you may use the C++ trace mechanism described in the previous
 question, however the timescale and timeprecision will not inherited from
@@ -4901,23 +4920,23 @@ trace file if you want all data to land in the same output file.
 
 =item How do I generate FST waveforms (traces) in C++?
 
-FST a format by GTKWave.
-This version provides a basic FST support.
-To dump FST format, add the --trace-fst switch to Verilator and change the include
-path in the testbench to:
+FST a format by GTKWave.  This version provides a basic FST support.  To
+dump FST format, add the --trace-fst switch to Verilator and either A. use
+$dumpfile/$dumpvars in Verilog as described in the VCD example above, or
+B. in C++ change the include described in the VCD example above:
 
     #include "verilated_fst_c.h"
     VerilatedFstC* tfp = new VerilatedFstC;
 
-Note that currently supporting both FST and VCD in a single simulation is impossible,
-but such requirement could be rare.
+Note that currently supporting both FST and VCD in a single simulation is
+impossible, but such requirement should be rare.
 
-=item How do I generate FST waveforms (traces) in SystemC?
+=item How do I generate FST waveforms (aka dumps or traces) in SystemC?
 
 The FST library from GTKWave does not currently support SystemC; use VCD
 format instead.
 
-=item How do I view waveforms (traces)?
+=item How do I view waveforms (aka dumps or traces)?
 
 Verilator makes standard VCD (Value Change Dump) and FST files.  VCD files are viewable
 with the public domain GTKWave (recommended) or Dinotrace (legacy)

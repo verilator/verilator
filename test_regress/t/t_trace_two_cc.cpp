@@ -9,7 +9,13 @@
 #include VM_PREFIX_INCLUDE
 #include "Vt_trace_two_b.h"
 #include "verilated.h"
-#include "verilated_vcd_c.h"
+#ifdef TEST_HDR_TRACE
+# ifdef TEST_FST
+#  include "verilated_fst_c.h"
+# else
+#  include "verilated_vcd_c.h"
+# endif
+#endif
 
 // Compile in place
 #include "Vt_trace_two_b.cpp"
@@ -26,18 +32,28 @@ int main(int argc, char** argv, char** env) {
     double sim_time = 1100;
     Verilated::commandArgs(argc, argv);
     Verilated::debug(0);
+    Verilated::traceEverOn(true);
     srand48(5);
     ap = new VM_PREFIX("topa");
     bp = new Vt_trace_two_b("topb");
-    ap->eval();
-    bp->eval();
+    ap->eval_step();
+    bp->eval_step();
+    ap->eval_end_step();
+    bp->eval_end_step();
 
-#if VM_TRACE
+#ifdef TEST_HDR_TRACE
     Verilated::traceEverOn(true);
+# ifdef TEST_FST
+    VerilatedFstC* tfp = new VerilatedFstC;
+    ap->trace(tfp, 99);
+    bp->trace(tfp, 99);
+    tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.fst");
+# else
     VerilatedVcdC* tfp = new VerilatedVcdC;
     ap->trace(tfp, 99);
     bp->trace(tfp, 99);
     tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
+# endif
     if (tfp) tfp->dump(main_time);
 #endif
     {
@@ -48,11 +64,13 @@ int main(int argc, char** argv, char** env) {
     while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {
         ap->clk = !ap->clk;
         bp->clk = ap->clk;
-        ap->eval();
-        bp->eval();
-#if VM_TRACE
+        ap->eval_step();
+        bp->eval_step();
+        ap->eval_end_step();
+        bp->eval_end_step();
+#ifdef TEST_HDR_TRACE
         if (tfp) tfp->dump(main_time);
-#endif  // VM_TRACE
+#endif
         main_time += 5;
     }
     if (!Verilated::gotFinish()) {
@@ -60,9 +78,9 @@ int main(int argc, char** argv, char** env) {
     }
     ap->final();
     bp->final();
-#if VM_TRACE
+#ifdef TEST_HDR_TRACE
     if (tfp) tfp->close();
-#endif  // VM_TRACE
+#endif
 
     VL_DO_DANGLING(delete ap, ap);
     VL_DO_DANGLING(delete bp, bp);

@@ -467,7 +467,11 @@ class V3Options {
     bool oTable() const { return m_oTable; }
 
     string traceClassBase() const { return m_traceFormat.classBase(); }
-    string traceSourceName() const { return m_traceFormat.sourceName(); }
+    string traceClassLang() const { return m_traceFormat.classBase() + (systemC() ? "Sc" : "C"); }
+    string traceSourceBase() const { return m_traceFormat.sourceName(); }
+    string traceSourceLang() const {
+        return m_traceFormat.sourceName() + (systemC() ? "_sc" : "_c");
+    }
 
     // METHODS (from main)
     static string version();

@@ -9,7 +9,9 @@
 #include VM_PREFIX_INCLUDE
 #include "Vt_trace_two_b.h"
 #include "verilated.h"
-#include "verilated_vcd_c.h"
+#ifdef TEST_HDR_TRACE
+# include "verilated_vcd_sc.h"
+#endif
 
 // Compile in place
 #include "Vt_trace_two_b.cpp"
@@ -20,7 +22,6 @@
 // General headers
 #include "verilated.h"
 #include "systemc.h"
-#include "verilated_vcd_sc.h"
 
 VM_PREFIX* ap;
 Vt_trace_two_b* bp;
@@ -29,6 +30,7 @@ int sc_main(int argc, char** argv) {
     sc_signal<bool> clk;
     sc_time sim_time(1100, SC_NS);
     Verilated::commandArgs(argc, argv);
+    Verilated::traceEverOn(true);
     Verilated::debug(0);
     srand48(5);
     ap = new VM_PREFIX("topa");
@@ -36,8 +38,7 @@ int sc_main(int argc, char** argv) {
     ap->clk(clk);
     bp->clk(clk);
 
-#if VM_TRACE
-    Verilated::traceEverOn(true);
+#ifdef TEST_HDR_TRACE
     VerilatedVcdSc* tfp = new VerilatedVcdSc;
     ap->trace(tfp, 99);
     bp->trace(tfp, 99);
@@ -64,9 +65,9 @@ int sc_main(int argc, char** argv) {
     }
     ap->final();
     bp->final();
-#if VM_TRACE
+#ifdef TEST_HDR_TRACE
     if (tfp) tfp->close();
-#endif  // VM_TRACE
+#endif
 
     VL_DO_DANGLING(delete ap, ap);
     VL_DO_DANGLING(delete bp, bp);

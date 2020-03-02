@@ -10,11 +10,6 @@
 // Include model header, generated from Verilating "top.v"
 #include "Vtop.h"
 
-// If "verilator --trace" is used, include the tracing class
-#if VM_TRACE
-# include <verilated_vcd_c.h>
-#endif
-
 // Current simulation time (64-bit unsigned)
 vluint64_t main_time = 0;
 // Called by $time in Verilog
@@ -36,27 +31,18 @@ int main(int argc, char** argv, char** env) {
     // May be overridden by commandArgs
     Verilated::randReset(2);
 
+    // Verilator must compute traced signals
+    Verilated::traceEverOn(true);
+
     // Pass arguments so Verilated code can see them, e.g. $value$plusargs
     // This needs to be called before you create any model
     Verilated::commandArgs(argc, argv);
 
+    // Create logs/ directory in case we have traces to put under it
+    Verilated::mkdir("logs");
+
     // Construct the Verilated model, from Vtop.h generated from Verilating "top.v"
     Vtop* top = new Vtop;  // Or use a const unique_ptr, or the VL_UNIQUE_PTR wrapper
-
-#if VM_TRACE
-    // If verilator was invoked with --trace argument,
-    // and if at run time passed the +trace argument, turn on tracing
-    VerilatedVcdC* tfp = NULL;
-    const char* flag = Verilated::commandArgsPlusMatch("trace");
-    if (flag && 0==strcmp(flag, "+trace")) {
-        Verilated::traceEverOn(true);  // Verilator must compute traced signals
-        VL_PRINTF("Enabling waves into logs/vlt_dump.vcd...\n");
-        tfp = new VerilatedVcdC;
-        top->trace(tfp, 99);  // Trace 99 levels of hierarchy
-        Verilated::mkdir("logs");
-        tfp->open("logs/vlt_dump.vcd");  // Open the dump file
-    }
-#endif
 
     // Set some inputs
     top->reset_l = !0;
@@ -90,12 +76,10 @@ int main(int argc, char** argv, char** env) {
         top->in_quad += 0x12;
 
         // Evaluate model
+        // (If you have multiple models being simulated in the same
+        // timestep then instead of eval(), call eval_step() on each, then
+        // eval_end_step() on each.)
         top->eval();
-
-#if VM_TRACE
-        // Dump trace data for this cycle
-        if (tfp) tfp->dump(main_time);
-#endif
 
         // Read outputs
         VL_PRINTF("[%" VL_PRI64 "d] clk=%x rstl=%x iquad=%" VL_PRI64 "x"
@@ -106,11 +90,6 @@ int main(int argc, char** argv, char** env) {
 
     // Final model cleanup
     top->final();
-
-    // Close trace if opened
-#if VM_TRACE
-    if (tfp) { tfp->close(); tfp = NULL; }
-#endif
 
     //  Coverage analysis (since test passed)
 #if VM_COVERAGE

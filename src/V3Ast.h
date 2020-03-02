@@ -815,6 +815,32 @@ inline bool operator==(AstDisplayType::en lhs, const AstDisplayType& rhs) {
 
 //######################################################################
 
+class VDumpCtlType {
+public:
+    enum en { FILE, VARS, ALL, FLUSH, LIMIT, OFF, ON };
+    enum en m_e;
+    inline VDumpCtlType()
+        : m_e(ON) {}
+    // cppcheck-suppress noExplicitConstructor
+    inline VDumpCtlType(en _e)
+        : m_e(_e) {}
+    explicit inline VDumpCtlType(int _e)
+        : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
+    const char* ascii() const {
+        static const char* const names[] = {"$dumpfile", "$dumpvars", "$dumpall", "$dumpflush",
+                                            "$dumplimit", "$dumpoff", "$dumpon"};
+        return names[m_e];
+    }
+};
+inline bool operator==(const VDumpCtlType& lhs, const VDumpCtlType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+inline bool operator==(const VDumpCtlType& lhs, VDumpCtlType::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(VDumpCtlType::en lhs, const VDumpCtlType& rhs) { return lhs == rhs.m_e; }
+
+//######################################################################
+
 class VParseRefExp {
 public:
     enum en {
