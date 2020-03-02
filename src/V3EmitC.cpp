@@ -426,7 +426,8 @@ public:
             // $dumpall currently ignored
             break;
         case VDumpCtlType::FLUSH:
-            puts("Verilated::flushCall();\n");  // Also flush stdio, as need lock
+            // $dumpall currently ignored; would need rework of VCD single thread,
+            // or flag we pass-through to next eval() iteration
             break;
         case VDumpCtlType::LIMIT:
             // $dumplimit currently ignored
