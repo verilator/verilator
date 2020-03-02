@@ -159,6 +159,8 @@ private:
 public:
     explicit VerilatedVcd(VerilatedVcdFile* filep = NULL);
     ~VerilatedVcd();
+    /// Routines can only be called from one thread; allow next call from different thread
+    void changeThread() { m_assertOne.changeThread(); }
 
     // ACCESSORS
     /// Set size in megabytes after which new file should be created
@@ -446,6 +448,8 @@ public:
     explicit VerilatedVcdC(VerilatedVcdFile* filep = NULL)
         : m_sptrace(filep) {}
     ~VerilatedVcdC() { close(); }
+    /// Routines can only be called from one thread; allow next call from different thread
+    void changeThread() { spTrace()->changeThread(); }
 public:
     // ACCESSORS
     /// Is file open?

@@ -66,6 +66,7 @@ private:
 public:
     explicit VerilatedFst(void* fst=NULL);
     ~VerilatedFst() { if (m_fst == NULL) { fstWriterClose(m_fst); } }
+    void changeThread() { m_assertOne.changeThread(); }
     bool isOpen() const { return m_fst != NULL; }
     void open(const char* filename) VL_MT_UNSAFE;
     void flush() VL_MT_UNSAFE { fstWriterFlushContext(m_fst); }
@@ -199,6 +200,8 @@ class VerilatedFstC {
 public:
     explicit VerilatedFstC(void* filep=NULL) : m_sptrace(filep) {}
     ~VerilatedFstC() { close(); }
+    /// Routines can only be called from one thread; allow next call from different thread
+    void changeThread() { spTrace()->changeThread(); }
 public:
     // ACCESSORS
     /// Is file open?

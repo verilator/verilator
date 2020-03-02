@@ -201,13 +201,19 @@ public:
     /// Check that the current thread ID is the same as the construction thread ID
     void check() VL_MT_UNSAFE_ONE {
         if (VL_UNCOVERABLE(m_threadid != VL_THREAD_ID())) {
-            fatal_different();  // LCOV_EXCL_LINE
+            if (m_threadid == 0) {
+                m_threadid = VL_THREAD_ID();
+            } else {
+                fatal_different();  // LCOV_EXCL_LINE
+            }
         }
     }
+    void changeThread() { m_threadid = 0; }  // Allow intentional change-of-thread
     static void fatal_different() VL_MT_SAFE;
 #else  // !VL_THREADED || !VL_DEBUG
 public:
     void check() {}
+    void changeThread() {}
 #endif
 };
 

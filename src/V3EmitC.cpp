@@ -3088,6 +3088,7 @@ class EmitCTrace : EmitCStmts {
             puts(    "const char* cp = vl_dumpctl_filenamep();\n");
             puts(    "trace(__VlSymsp->__Vm_dumperp, 0, 0);\n");
             puts(    "__VlSymsp->__Vm_dumperp->open(vl_dumpctl_filenamep());\n");
+            puts(    "__VlSymsp->__Vm_dumperp->changeThread();\n");
             puts(  "}\n");
             puts("}\n");
             splitSizeInc(10);
