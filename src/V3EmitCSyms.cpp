@@ -420,6 +420,7 @@ void EmitCSyms::emitSymHdr() {
     if (v3Global.needTraceDumper()) {
         // __Vm_dumperp is local, otherwise we wouldn't know what design's eval()
         // should call a global dumpperp
+        puts("bool __Vm_dumping;  // Dumping is active\n");
         puts("VerilatedMutex __Vm_dumperMutex;  // Protect __Vm_dumperp\n");
         puts(v3Global.opt.traceClassLang()
              + "* __Vm_dumperp VL_GUARDED_BY(__Vm_dumperMutex);  /// Trace class for $dump*\n");
@@ -590,7 +591,10 @@ void EmitCSyms::emitSymImp() {
     puts(symClassName()+"::"+symClassName()+"("+topClassName()+"* topp, const char* namep)\n");
     puts("    // Setup locals\n");
     puts("    : __Vm_namep(namep)\n");  // No leak, as gets destroyed when the top is destroyed
-    if (v3Global.needTraceDumper()) puts("    , __Vm_dumperp(NULL)\n");
+    if (v3Global.needTraceDumper()) {
+        puts("    , __Vm_dumping(false)\n");
+        puts("    , __Vm_dumperp(NULL)\n");
+    }
     if (v3Global.opt.trace()) puts("    , __Vm_activity(false)\n");
     puts("    , __Vm_didInit(false)\n");
     puts("    // Setup submodule names\n");

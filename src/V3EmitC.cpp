@@ -2156,7 +2156,7 @@ void EmitCImp::emitDestructorImp(AstNodeModule* modp) {
         // Call via function in __Trace.cpp as this .cpp file does not have trace header
         if (v3Global.needTraceDumper()) {
             puts("#ifdef VM_TRACE\n");
-            puts("if (VL_UNLIKELY(__VlSymsp->__Vm_dumperp)) _traceDumpClose();\n");
+            puts("if (VL_UNLIKELY(__VlSymsp->__Vm_dumping)) _traceDumpClose();\n");
             puts("#endif  // VM_TRACE\n");
         }
     }
@@ -2368,7 +2368,7 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
         putsDecoration("// Tracing\n");
         // SystemC's eval loop deals with calling trace, not us
         if (v3Global.needTraceDumper() && !optSystemC()) {
-            puts("if (VL_UNLIKELY(vlSymsp->__Vm_dumperp)) _traceDump();\n");
+            puts("if (VL_UNLIKELY(vlSymsp->__Vm_dumping)) _traceDump();\n");
         }
         puts("#endif  // VM_TRACE\n");
     }
@@ -2443,7 +2443,7 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
         puts(EmitCBaseVisitor::symTopAssign()+"\n");
         putsDecoration("// Tracing\n");
         // SystemC's eval loop deals with calling trace, not us
-        puts("if (VL_UNLIKELY(vlSymsp->__Vm_dumperp)) _traceDump();\n");
+        puts("if (VL_UNLIKELY(vlSymsp->__Vm_dumping)) _traceDump();\n");
         puts("#endif  // VM_TRACE\n");
         puts("}\n");
     }
@@ -3083,20 +3083,21 @@ class EmitCTrace : EmitCStmts {
 
         if (v3Global.needTraceDumper()) {
             puts("void " + topClassName() + "::_traceDumpOpen() {\n");
+            puts(  "VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
             puts(  "if (VL_UNLIKELY(!__VlSymsp->__Vm_dumperp)) {\n");
-            puts(    "VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
             puts(    "__VlSymsp->__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
             puts(    "const char* cp = vl_dumpctl_filenamep();\n");
             puts(    "trace(__VlSymsp->__Vm_dumperp, 0, 0);\n");
             puts(    "__VlSymsp->__Vm_dumperp->open(vl_dumpctl_filenamep());\n");
             puts(    "__VlSymsp->__Vm_dumperp->changeThread();\n");
+            puts(    "__VlSymsp->__Vm_dumping = true;\n");
             puts(  "}\n");
             puts("}\n");
             splitSizeInc(10);
 
             puts("void " + topClassName() + "::_traceDumpClose() {\n");
-            // Caller checked for __Vm_dumperp non-NULL
             puts(  "VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
+            puts(  "__VlSymsp->__Vm_dumping = false;\n");
             puts(  "delete __VlSymsp->__Vm_dumperp; __VlSymsp->__Vm_dumperp = NULL;\n");
             puts("}\n");
             splitSizeInc(10);
