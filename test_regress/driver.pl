@@ -565,7 +565,7 @@ sub new {
         ghdl_run_flags => [],
         # IV
         iv => 0,
-        iv_flags => [split(/\s+/,"+define+iverilog -o $self->{obj_dir}/simiv")],
+        iv_flags => [split(/\s+/,"+define+iverilog -g2012 -o $self->{obj_dir}/simiv")],
         iv_flags2 => [],  # Overridden in some sim files
         iv_pli => 0,  # need to use pli
         iv_run_flags => [],
