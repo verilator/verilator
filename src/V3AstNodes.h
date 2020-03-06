@@ -3996,7 +3996,7 @@ public:
     virtual bool cleanOut() const { return true; }
     virtual bool same(const AstNode* samep) const { return true; }
     virtual int instrCount() const { return widthInstrs(); }
-    AstNode* sizep() const { return sizep(); }
+    AstNode* sizep() const { return op1p(); }
     AstNode* rhsp() const { return op2p(); }
 };
 
