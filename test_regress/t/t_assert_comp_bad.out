@@ -7,7 +7,7 @@
       $warning("User compile-time warning");
       ^~~~~~~~
                    ... Use "/* verilator lint_off USERWARN */" and lint_on around source to disable this message.
-%Warning-USERWARN: t/t_assert_comp_bad.v:11: 00000001
+%Warning-USERWARN: t/t_assert_comp_bad.v:11:           1
                                            : ... In instance t
       $warning(1);   
       ^~~~~~~~

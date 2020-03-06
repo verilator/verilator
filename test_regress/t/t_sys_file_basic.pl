@@ -21,10 +21,7 @@ execute(
     check_finished => 1,
     );
 
-file_grep("$Self->{obj_dir}/t_sys_file_basic_test.log",
-qr/\[0\] hello v=12345667
-\[0\] Hello2
-/);
+files_identical("$Self->{obj_dir}/t_sys_file_basic_test.log", $Self->{golden_filename});
 
 ok(1);
 1;

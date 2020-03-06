@@ -553,6 +553,9 @@ class AstSenTree;
 %token<fl>		yD_COUNTONES	"$countones"
 %token<fl>		yD_DIMENSIONS	"$dimensions"
 %token<fl>		yD_DISPLAY	"$display"
+%token<fl>		yD_DISPLAYB	"$displayb"
+%token<fl>		yD_DISPLAYH	"$displayh"
+%token<fl>		yD_DISPLAYO	"$displayo"
 %token<fl>		yD_DUMPALL	"$dumpall"
 %token<fl>		yD_DUMPFILE	"$dumpfile"
 %token<fl>		yD_DUMPFLUSH	"$dumpflush"
@@ -566,6 +569,9 @@ class AstSenTree;
 %token<fl>		yD_FATAL	"$fatal"
 %token<fl>		yD_FCLOSE	"$fclose"
 %token<fl>		yD_FDISPLAY	"$fdisplay"
+%token<fl>		yD_FDISPLAYB	"$fdisplayb"
+%token<fl>		yD_FDISPLAYH	"$fdisplayh"
+%token<fl>		yD_FDISPLAYO	"$fdisplayo"
 %token<fl>		yD_FEOF		"$feof"
 %token<fl>		yD_FFLUSH	"$fflush"
 %token<fl>		yD_FGETC	"$fgetc"
@@ -579,6 +585,9 @@ class AstSenTree;
 %token<fl>		yD_FSEEK	"$fseek"
 %token<fl>		yD_FTELL	"$ftell"
 %token<fl>		yD_FWRITE	"$fwrite"
+%token<fl>		yD_FWRITEB	"$fwriteb"
+%token<fl>		yD_FWRITEH	"$fwriteh"
+%token<fl>		yD_FWRITEO	"$fwriteo"
 %token<fl>		yD_HIGH		"$high"
 %token<fl>		yD_HYPOT	"$hypot"
 %token<fl>		yD_INCREMENT	"$increment"
@@ -614,6 +623,9 @@ class AstSenTree;
 %token<fl>		yD_STIME	"$stime"
 %token<fl>		yD_STOP		"$stop"
 %token<fl>		yD_SWRITE	"$swrite"
+%token<fl>		yD_SWRITEB	"$swriteb"
+%token<fl>		yD_SWRITEH	"$swriteh"
+%token<fl>		yD_SWRITEO	"$swriteo"
 %token<fl>		yD_SYSTEM	"$system"
 %token<fl>		yD_TAN		"$tan"
 %token<fl>		yD_TANH		"$tanh"
@@ -627,7 +639,10 @@ class AstSenTree;
 %token<fl>		yD_VALUEPLUSARGS "$value$plusargs"
 %token<fl>		yD_WARNING	"$warning"
 %token<fl>		yD_WRITE	"$write"
+%token<fl>		yD_WRITEB	"$writeb"
+%token<fl>		yD_WRITEH	"$writeh"
 %token<fl>		yD_WRITEMEMH	"$writememh"
+%token<fl>		yD_WRITEO	"$writeo"
 
 %token<fl>		yVL_CLOCK		"/*verilator sc_clock*/"
 %token<fl>		yVL_CLOCKER		"/*verilator clocker*/"
@@ -3195,16 +3210,40 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_STOP parenE				{ $$ = new AstStop($1, false); }
 	|	yD_STOP '(' expr ')'			{ $$ = new AstStop($1, false); DEL($3); }
 	//
-	|	yD_SFORMAT '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
-	|	yD_SWRITE  '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
+	|	yD_SFORMAT '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1, $3, *$5, $6); }
+	|	yD_SWRITE  '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1, $3, *$5, $6); }
+	|	yD_SWRITEB '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1, $3, *$5, $6, 'b'); }
+	|	yD_SWRITEH '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1, $3, *$5, $6, 'h'); }
+	|	yD_SWRITEO '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1, $3, *$5, $6, 'o'); }
 	//
 	|	yD_DISPLAY  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, NULL, NULL); }
 	|	yD_DISPLAY  '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, NULL, $3); }
+	|	yD_DISPLAYB  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, NULL, NULL, 'b'); }
+	|	yD_DISPLAYB  '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, NULL, $3, 'b'); }
+	|	yD_DISPLAYH  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, NULL, NULL, 'h'); }
+	|	yD_DISPLAYH  '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, NULL, $3, 'h'); }
+	|	yD_DISPLAYO  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, NULL, NULL, 'o'); }
+	|	yD_DISPLAYO  '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, NULL, $3, 'o'); }
 	|	yD_WRITE    parenE			{ $$ = NULL; }  // NOP
 	|	yD_WRITE    '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   NULL, $3); }
+	|	yD_WRITEB   parenE			{ $$ = NULL; }  // NOP
+	|	yD_WRITEB   '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   NULL, $3, 'b'); }
+	|	yD_WRITEH   parenE			{ $$ = NULL; }  // NOP
+	|	yD_WRITEH   '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   NULL, $3, 'h'); }
+	|	yD_WRITEO   parenE			{ $$ = NULL; }  // NOP
+	|	yD_WRITEO   '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   NULL, $3, 'o'); }
 	|	yD_FDISPLAY '(' expr ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, NULL); }
 	|	yD_FDISPLAY '(' expr ',' exprListE ')' 	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, $5); }
+	|	yD_FDISPLAYB '(' expr ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, NULL, 'b'); }
+	|	yD_FDISPLAYB '(' expr ',' exprListE ')' { $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, $5, 'b'); }
+	|	yD_FDISPLAYH '(' expr ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, NULL, 'h'); }
+	|	yD_FDISPLAYH '(' expr ',' exprListE ')' { $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, $5, 'h'); }
+	|	yD_FDISPLAYO '(' expr ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, NULL, 'o'); }
+	|	yD_FDISPLAYO '(' expr ',' exprListE ')' { $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, $5, 'o'); }
 	|	yD_FWRITE   '(' expr ',' exprListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   $3, $5); }
+	|	yD_FWRITEB  '(' expr ',' exprListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   $3, $5, 'b'); }
+	|	yD_FWRITEO  '(' expr ',' exprListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   $3, $5, 'h'); }
+	|	yD_FWRITEH  '(' expr ',' exprListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   $3, $5, 'o'); }
 	|	yD_INFO	    parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,    NULL, NULL); }
 	|	yD_INFO	    '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,    NULL, $3); }
 	|	yD_WARNING  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING, NULL, NULL); }

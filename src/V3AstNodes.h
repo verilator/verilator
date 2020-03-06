@@ -2956,17 +2956,21 @@ public:
 class AstSFormatF : public AstNode {
     // Convert format to string, generally under an AstDisplay or AstSFormat
     // Also used as "real" function for /*verilator sformat*/ functions
-    string      m_text;
-    bool        m_hidden;       // Under display, etc
-    bool        m_hasFormat;    // Has format code
+    string m_text;
+    bool m_hidden;  // Under display, etc
+    bool m_hasFormat;  // Has format code
+    char m_missingArgChar;  // Format code when argument without format, 'h'/'o'/'b'
 public:
     class NoFormat {};
-    AstSFormatF(FileLine* fl, const string& text, bool hidden, AstNode* exprsp)
-        : ASTGEN_SUPER(fl), m_text(text), m_hidden(hidden), m_hasFormat(true) {
+    AstSFormatF(FileLine* fl, const string& text, bool hidden, AstNode* exprsp,
+                char missingArgChar = 'd')
+        : ASTGEN_SUPER(fl)
+        , m_text(text), m_hidden(hidden), m_hasFormat(true), m_missingArgChar(missingArgChar) {
         dtypeSetString();
         addNOp1p(exprsp); addNOp2p(NULL); }
-    AstSFormatF(FileLine* fl, NoFormat, AstNode* exprsp)
-        : ASTGEN_SUPER(fl), m_text(""), m_hidden(true), m_hasFormat(false) {
+    AstSFormatF(FileLine* fl, NoFormat, AstNode* exprsp, char missingArgChar = 'd')
+        : ASTGEN_SUPER(fl)
+        , m_text(""), m_hidden(true), m_hasFormat(false), m_missingArgChar(missingArgChar) {
         dtypeSetString();
         addNOp1p(exprsp); addNOp2p(NULL); }
     ASTNODE_NODE_FUNCS(SFormatF)
@@ -2988,6 +2992,7 @@ public:
     bool hidden() const { return m_hidden; }
     void hasFormat(bool flag) { m_hasFormat = flag; }
     bool hasFormat() const { return m_hasFormat; }
+    char missingArgChar() const { return m_missingArgChar; }
 };
 
 class AstDisplay : public AstNodeStmt {
@@ -2995,18 +3000,19 @@ class AstDisplay : public AstNodeStmt {
     // Children: file which must be a varref
     // Children: SFORMATF to generate print string
 private:
-    AstDisplayType      m_displayType;
+    AstDisplayType m_displayType;
 public:
     AstDisplay(FileLine* fl, AstDisplayType dispType, const string& text, AstNode* filep,
-               AstNode* exprsp)
+               AstNode* exprsp, char missingArgChar = 'd')
         : ASTGEN_SUPER(fl) {
-        setOp1p(new AstSFormatF(fl, text, true, exprsp));
+        setOp1p(new AstSFormatF(fl, text, true, exprsp, missingArgChar));
         setNOp3p(filep);
         m_displayType = dispType;
     }
-    AstDisplay(FileLine* fl, AstDisplayType dispType, AstNode* filep, AstNode* exprsp)
+    AstDisplay(FileLine* fl, AstDisplayType dispType, AstNode* filep, AstNode* exprsp,
+               char missingArgChar = 'd')
         : ASTGEN_SUPER(fl) {
-        setOp1p(new AstSFormatF(fl, AstSFormatF::NoFormat(), exprsp));
+        setOp1p(new AstSFormatF(fl, AstSFormatF::NoFormat(), exprsp, missingArgChar));
         setNOp3p(filep);
         m_displayType = dispType;
     }
@@ -3092,9 +3098,10 @@ class AstSFormat : public AstNodeStmt {
     // Children: string to load
     // Children: SFORMATF to generate print string
 public:
-    AstSFormat(FileLine* fl, AstNode* lhsp, const string& text, AstNode* exprsp)
+    AstSFormat(FileLine* fl, AstNode* lhsp, const string& text, AstNode* exprsp,
+               char missingArgChar = 'd')
         : ASTGEN_SUPER(fl) {
-        setOp1p(new AstSFormatF(fl, text, true, exprsp));
+        setOp1p(new AstSFormatF(fl, text, true, exprsp, missingArgChar));
         setOp3p(lhsp);
     }
     ASTNODE_NODE_FUNCS(SFormat)

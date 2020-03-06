@@ -2819,7 +2819,7 @@ private:
                     } else if (argp && argp->isString()) {
                         ch = '@';
                     } else {
-                        ch = 'h';
+                        ch = nodep->missingArgChar();
                     }
                     if (argp) argp = argp->nextp();
                     break;

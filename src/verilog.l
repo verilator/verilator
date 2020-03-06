@@ -197,6 +197,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$cos"                { FL; return yD_COS; }
   "$cosh"               { FL; return yD_COSH; }
   "$display"            { FL; return yD_DISPLAY; }
+  "$displayb"           { FL; return yD_DISPLAYB; }
+  "$displayh"           { FL; return yD_DISPLAYH; }
+  "$displayo"           { FL; return yD_DISPLAYO; }
   "$dumpall"            { FL; return yD_DUMPALL; }
   "$dumpfile"           { FL; return yD_DUMPFILE; }
   "$dumpflush"          { FL; return yD_DUMPFLUSH; }
@@ -213,6 +216,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$exp"                { FL; return yD_EXP; }
   "$fclose"             { FL; return yD_FCLOSE; }
   "$fdisplay"           { FL; return yD_FDISPLAY; }
+  "$fdisplayb"          { FL; return yD_FDISPLAYB; }
+  "$fdisplayh"          { FL; return yD_FDISPLAYH; }
+  "$fdisplayo"          { FL; return yD_FDISPLAYO; }
   "$feof"               { FL; return yD_FEOF; }
   "$fflush"             { FL; return yD_FFLUSH; }
   "$fgetc"              { FL; return yD_FGETC; }
@@ -227,6 +233,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$ftell"              { FL; return yD_FTELL; }
   "$fullskew"           { FL; return yaTIMINGSPEC; }
   "$fwrite"             { FL; return yD_FWRITE; }
+  "$fwriteb"            { FL; return yD_FWRITEB; }
+  "$fwriteh"            { FL; return yD_FWRITEH; }
+  "$fwriteo"            { FL; return yD_FWRITEO; }
   "$hold"               { FL; return yaTIMINGSPEC; }
   "$hypot"              { FL; return yD_HYPOT; }
   "$itor"               { FL; return yD_ITOR; }
@@ -245,9 +254,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$removal"            { FL; return yaTIMINGSPEC; }
   "$rewind"             { FL; return yD_REWIND; }
   "$rtoi"               { FL; return yD_RTOI; }
+  "$sampled"            { FL; return yD_SAMPLED; }
   "$setup"              { FL; return yaTIMINGSPEC; }
   "$setuphold"          { FL; return yaTIMINGSPEC; }
-  "$sampled"            { FL; return yD_SAMPLED; }
   "$sformat"            { FL; return yD_SFORMAT; }
   "$sformatf"           { FL; return yD_SFORMATF; }
   "$shortrealtobits"    { FL; return yD_SHORTREALTOBITS; }
@@ -259,6 +268,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$stime"              { FL; return yD_STIME; }
   "$stop"               { FL; return yD_STOP; }
   "$swrite"             { FL; return yD_SWRITE; }
+  "$swriteb"            { FL; return yD_SWRITEB; }
+  "$swriteh"            { FL; return yD_SWRITEH; }
+  "$swriteo"            { FL; return yD_SWRITEO; }
   "$system"             { FL; return yD_SYSTEM; }
   "$tan"                { FL; return yD_TAN; }
   "$tanh"               { FL; return yD_TANH; }
@@ -270,6 +282,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$value$plusargs"     { FL; return yD_VALUEPLUSARGS; }
   "$width"              { FL; return yaTIMINGSPEC; }
   "$write"              { FL; return yD_WRITE; }
+  "$writeb"             { FL; return yD_WRITEB; }
+  "$writeh"             { FL; return yD_WRITEH; }
+  "$writeo"             { FL; return yD_WRITEO; }
   "$writememh"          { FL; return yD_WRITEMEMH; }
   /*     Keywords */
   "always"              { FL; return yALWAYS; }
@@ -374,19 +389,6 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "wor"                 { FL; return yWOR; }
   "xnor"                { FL; return yXNOR; }
   "xor"                 { FL; return yXOR; }
-  /*     Special errors */
-  "$displayb"           { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $display with %%b format instead: %s", yytext); }
-  "$displayh"           { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $display with %%x format instead: %s", yytext); }
-  "$displayo"           { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $display with %%o format instead: %s", yytext); }
-  "$fdisplayb"          { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fdisplay with %%b format instead: %s", yytext); }
-  "$fdisplayh"          { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fdisplay with %%x format instead: %s", yytext); }
-  "$fdisplayo"          { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fdisplay with %%o format instead: %s", yytext); }
-  "$fwriteb"            { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fwrite with %%b format instead: %s", yytext); }
-  "$fwriteh"            { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fwrite with %%x format instead: %s", yytext); }
-  "$fwriteo"            { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $fwrite with %%o format instead: %s", yytext); }
-  "$writeb"             { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%b format instead: %s", yytext); }
-  "$writeh"             { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%x format instead: %s", yytext); }
-  "$writeo"             { FL; RETURN_BBOX_SYS_OR_MSG("Unsupported: Use $write with %%o format instead: %s", yytext); }
 }
 
   /* Verilog 2001 */
