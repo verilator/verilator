@@ -46,7 +46,6 @@ int main(int argc, char** argv, char** env) {
 
     // Set some inputs
     top->reset_l = !0;
-    top->fastclk = 0;
     top->clk = 0;
     top->in_small = 1;
     top->in_quad = 0x1234;
@@ -58,22 +57,22 @@ int main(int argc, char** argv, char** env) {
     while (!Verilated::gotFinish()) {
         main_time++;  // Time passes...
 
-        // Toggle clocks and such
-        top->fastclk = !top->fastclk;
-        if ((main_time % 10) == 3) {
-            top->clk = 1;
-        }
-        if ((main_time % 10) == 8) {
-            top->clk = 0;
-        }
-        if (main_time > 1 && main_time < 10) {
-            top->reset_l = !1;  // Assert reset
-        } else {
-            top->reset_l = !0;  // Deassert reset
-        }
+        // Toggle a fast (time/2 period) clock
+        top->clk = !top->clk;
 
-        // Assign some other inputs
-        top->in_quad += 0x12;
+        // Toggle control signals on an edge that doesn't correspond
+        // to where the controls are sampled; in this example we do
+        // this only on a negedge of clk, because we know
+        // reset is not sampled there.
+        if (!top->clk) {
+            if (main_time > 1 && main_time < 10) {
+                top->reset_l = !1;  // Assert reset
+            } else {
+                top->reset_l = !0;  // Deassert reset
+            }
+            // Assign some other inputs
+            top->in_quad += 0x12;
+        }
 
         // Evaluate model
         // (If you have multiple models being simulated in the same

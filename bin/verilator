@@ -1936,6 +1936,39 @@ when your source changes it will automatically run all of these steps.  See
 the examples directory in the distribution.
 
 
+=head1 EVALUATION LOOP
+
+When using SystemC, when Verilator is evaluated is managed by the SystemC
+kernel, and for the most part can be ignored.  When using C++, the user
+must call eval(), or eval_step() and eval_end_step().
+
+1. When there is a single design instantiated at the C++ level that need to
+evaluate, just call designp->eval().
+
+2. When there are multiple designs instantiated each at the C++ level that
+need to evaluate, call first_designp->eval_step() then ->eval_step() on all
+other designs.  Then call ->eval_end_step() on the first design then all
+other designs.  If there is only a single design, you would call
+eval_step() then eval_end_step(); in fact eval() described above is just a
+wrapper which calls these two functions.
+
+When eval() is called Verilator looks for changes in clock signals and
+evaluates related sequential always blocks, such as computing always_ff @
+(posedge...) outputs.  Then Verilator evaluates combinatorial logic.
+
+Note combinatorial logic is not computed before sequential always blocks
+are computed (for speed reasons). Therefore it is best to set any non-clock
+inputs up with a separate eval() call before changing clocks().
+
+Alternatively, if all always_ff statements use only the posedge of clocks,
+or all inputs go directly to always_ff statements, as is typical, then you
+can change non-clock inputs on the negative edge of the input clock, which
+will be faster as there will be fewer eval() calls.
+
+For more information on evaluation, see docs/internals.adoc in the
+distribution.
+
+
 =head1 BENCHMARKING & OPTIMIZATION
 
 For best performance, run Verilator with the "-O3 --x-assign fast
@@ -2212,7 +2245,7 @@ example:
 Note signals are read and written as member variables of the lower module.
 You call the eval() method to evaluate the model.  When the simulation is
 complete call the final() method to wrap up any SystemVerilog final blocks,
-and complete any assertions.
+and complete any assertions. See L</"EVALUATION LOOP">.
 
 
 =head1 CONNECTING TO SYSTEMC
@@ -5335,7 +5368,7 @@ L<verilator_coverage>, L<verilator_gantt>, L<verilator_profcfunc>, L<make>,
 
 L<verilator --help> which is the source for this document,
 
-and internals.txt in the distribution.
+and docs/internals.adoc in the distribution.
 
 =cut
 
