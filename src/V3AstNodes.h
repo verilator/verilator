@@ -3938,22 +3938,66 @@ public:
 };
 
 class AstNew : public AstNodeMath {
+    // New as constructor
+    // Don't need the class we are extracting from, as the "fromp()"'s datatype can get us to it
     // Parents: math|stmt
     // Children: varref|arraysel, math
 public:
-    explicit AstNew(FileLine* fl)
+    AstNew(FileLine* fl, AstNode* argsp)
         : ASTGEN_SUPER(fl) {
         dtypep(NULL);  // V3Width will resolve
+        addNOp2p(argsp);
     }
     ASTNODE_NODE_FUNCS(New)
-    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) {
-        V3ERROR_NA; /* How can from be a const? */ }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual string emitVerilog() { return "new"; }
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool cleanOut() const { return true; }
     virtual bool same(const AstNode* samep) const { return true; }
     virtual int instrCount() const { return widthInstrs(); }
+    AstNode* argsp() const { return op2p(); }
+};
+
+class AstNewCopy : public AstNodeMath {
+    // New as shallow copy
+    // Parents: math|stmt
+    // Children: varref|arraysel, math
+public:
+    AstNewCopy(FileLine* fl, AstNode* rhsp)
+        : ASTGEN_SUPER(fl) {
+        dtypeFrom(rhsp);  // otherwise V3Width will resolve
+        setNOp1p(rhsp);
+    }
+    ASTNODE_NODE_FUNCS(NewCopy)
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual string emitVerilog() { return "new"; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual bool cleanOut() const { return true; }
+    virtual bool same(const AstNode* samep) const { return true; }
+    virtual int instrCount() const { return widthInstrs(); }
+    AstNode* rhsp() const { return op1p(); }
+};
+
+class AstNewDynamic : public AstNodeMath {
+    // New for dynamic array
+    // Parents: math|stmt
+    // Children: varref|arraysel, math
+public:
+    AstNewDynamic(FileLine* fl, AstNode* sizep, AstNode* rhsp)
+        : ASTGEN_SUPER(fl) {
+        dtypeFrom(rhsp);  // otherwise V3Width will resolve
+        setNOp1p(sizep);
+        setNOp2p(rhsp);
+    }
+    ASTNODE_NODE_FUNCS(NewDynamic)
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual string emitVerilog() { return "new"; }
+    virtual string emitC() { V3ERROR_NA; return ""; }
+    virtual bool cleanOut() const { return true; }
+    virtual bool same(const AstNode* samep) const { return true; }
+    virtual int instrCount() const { return widthInstrs(); }
+    AstNode* sizep() const { return sizep(); }
+    AstNode* rhsp() const { return op2p(); }
 };
 
 class AstPragma : public AstNode {

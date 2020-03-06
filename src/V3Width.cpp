@@ -2288,13 +2288,24 @@ private:
 
     virtual void visit(AstNew* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;
-        userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
         AstClassRefDType* refp = VN_CAST(m_vup->dtypeNullp(), ClassRefDType);
         if (!refp) {  // e.g. int a = new;
             nodep->v3error("new() not expected in this context");
             return;
         }
         nodep->dtypep(refp);
+        if (nodep->argsp()) {
+            nodep->v3error("Unsupported: new with arguments");
+            userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
+        }
+    }
+    virtual void visit(AstNewCopy* nodep) VL_OVERRIDE {
+        if (nodep->didWidthAndSet()) return;
+        nodep->v3error("Unsupported: new-as-copy");
+    }
+    virtual void visit(AstNewDynamic* nodep) VL_OVERRIDE {
+        if (nodep->didWidthAndSet()) return;
+        nodep->v3error("Unsupported: Dynamic array new");
     }
 
     virtual void visit(AstPattern* nodep) VL_OVERRIDE {
