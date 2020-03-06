@@ -2796,8 +2796,10 @@ private:
                         newFormat += "%@";
                         AstNRelinker handle;
                         argp->unlinkFrBack(&handle);
-                        AstCMethodHard* newp = new AstCMethodHard(
-                            nodep->fileline(), argp, "to_string", NULL);
+                        AstCMath* newp = new AstCMath(
+                            nodep->fileline(), "VL_TO_STRING(", 0, true);
+                        newp->addBodysp(argp);
+                        newp->addBodysp(new AstText(nodep->fileline(), ")"));
                         newp->dtypeSetString();
                         newp->pure(true);
                         newp->protect(false);
