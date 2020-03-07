@@ -2075,9 +2075,18 @@ sub fst2vcd {
     if (!$out || $out !~ /Usage:/) { $self->skip("No fst2vcd installed\n"); return 1; }
 
     $cmd = qq{fst2vcd -e "$fn1" -o "$fn2"};
-    print "\t$cmd\n" if $::Debug;
+    print "\t$cmd\n";  # Always print to help debug race cases
     $out = `$cmd`;
     return 1;
+}
+
+sub fst_identical {
+    my $self = (ref $_[0]? shift : $Self);
+    my $fn1 = shift;
+    my $fn2 = shift;
+    my $tmp = $fn1.".vcd";
+    fst2vcd($fn1, $tmp);
+    return vcd_identical($tmp, $fn2);
 }
 
 sub _vcd_read {
