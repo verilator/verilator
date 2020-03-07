@@ -1344,6 +1344,13 @@ Creates more detailed statistics, including a list of all the variables by
 size (plain --stats just gives a count).  See --stats, which is implied by
 this.
 
+=item --structs-packed
+
+Converts all unpacked structures to packed structures and issues a UNPACKED
+warning.  Currently this is the default and --no-structs-packed will not
+work.  Specifying this option allows for forward compatibility when a
+future version of Verilator no longer always packs unpacked structures.
+
 =item -sv
 
 Specifies SystemVerilog language features should be enabled; equivalent to

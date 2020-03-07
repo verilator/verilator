@@ -1745,6 +1745,9 @@ private:
         //if (debug()>=9) nodep->dumpTree("-class-in--");
         if (!nodep->packed()) {
             nodep->v3warn(UNPACKED, "Unsupported: Unpacked struct/union");
+            if (!v3Global.opt.structsPacked()) {
+                nodep->v3warn(UNPACKED, "Unsupported: --no-structs-packed");
+            }
         }
         userIterateChildren(nodep, NULL);  // First size all members
         nodep->repairMemberCache();

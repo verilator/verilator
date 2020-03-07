@@ -15,6 +15,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Add check for assertOn for asserts, #2162. [Tobias Wölfel]
 
+***   Add --structs-packed for forward compatibility.
+
 ***   Fix genblk naming with directly nested generate blocks, #2176. [Alexander Grobman]
 
 ****  Implement $displayb/o/h, $writeb/o/h, etc, #1637.
