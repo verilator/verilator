@@ -5470,7 +5470,7 @@ ps_id_etc:		// package_scope + general id
 		package_scopeIdFollowsE id		{ }
 	;
 
-ps_type<dtypep>:		// IEEE: ps_parameter_identifier | ps_type_identifier
+ps_type<refdtypep>:		// IEEE: ps_parameter_identifier | ps_type_identifier
 				// Even though we looked up the type and have a AstNode* to it,
 				// we can't fully resolve it because it may have been just a forward definition.
 		package_scopeIdFollowsE idRefDType	{ $$ = $2; $2->packagep($1); }
@@ -5479,7 +5479,7 @@ ps_type<dtypep>:		// IEEE: ps_parameter_identifier | ps_type_identifier
 
 //=== Below rules assume special scoping per above
 
-class_typeWithoutId<nodep>:	// as with class_typeWithoutId but allow yaID__aTYPE
+class_typeWithoutId<refdtypep>:	// as with class_typeWithoutId but allow yaID__aTYPE
 	//			// and we thus don't need to resolve it in specified package
 		package_scopeIdFollowsE class_typeOneList	{ $$ = $2; $2->packagep($1); }
 	;
