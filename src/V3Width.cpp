@@ -2457,18 +2457,7 @@ private:
             if (patp) {
                 // Determine initial values
                 patp->dtypep(memp);
-                userIterate(patp, WidthVP(memp, BOTH).p());  // See visit(AstPatMember*
-
-                // Convert to concat for now
-                AstNode* valuep = patp->lhssp()->unlinkFrBack();
-                if (VN_IS(valuep, Const)) {
-                    // Forming a AstConcat will cause problems with
-                    // unsized (uncommitted sized) constants
-                    if (AstNode* newccp = WidthCommitVisitor::newIfConstCommitSize(VN_CAST(valuep, Const))) {
-                        VL_DO_DANGLING(pushDeletep(valuep), valuep);
-                        valuep = newccp;
-                    }
-                }
+                AstNode* valuep = patternMemberValueIterate(patp);
                 if (!newp) newp = valuep;
                 else {
                     AstConcat* concatp = new AstConcat(patp->fileline(), newp, valuep);
@@ -2511,18 +2500,7 @@ private:
             if (patp) {
                 // Don't want the RHS an array
                 patp->dtypep(arrayp->subDTypep());
-                // Determine values - might be another InitArray
-                userIterate(patp, WidthVP(patp->dtypep(), BOTH).p());  // See visit(AstPatMember*
-                // Convert to InitArray or constify immediately
-                AstNode* valuep = patp->lhssp()->unlinkFrBack();
-                if (VN_IS(valuep, Const)) {
-                    // Forming a AstConcat will cause problems with
-                    // unsized (uncommitted sized) constants
-                    if (AstNode* newp = WidthCommitVisitor::newIfConstCommitSize(VN_CAST(valuep, Const))) {
-                        VL_DO_DANGLING(pushDeletep(valuep), valuep);
-                        valuep = newp;
-                    }
-                }
+                AstNode* valuep = patternMemberValueIterate(patp);
                 if (VN_IS(arrayp, UnpackArrayDType)) {
                     if (!newp) {
                         AstInitArray* newap
@@ -2575,21 +2553,8 @@ private:
             if (patp) {
                 // Determine initial values
                 vdtypep = nodep->findLogicBoolDType();
-                // Don't want the RHS an array
                 patp->dtypep(vdtypep);
-                // Determine values - might be another InitArray
-                userIterate(patp, WidthVP(patp->dtypep(), BOTH).p());
-                // Convert to InitArray or constify immediately
-                AstNode* valuep = patp->lhssp()->unlinkFrBack();
-                if (VN_IS(valuep, Const)) {
-                    // Forming a AstConcat will cause problems with
-                    // unsized (uncommitted sized) constants
-                    if (AstNode* newccp
-                        = WidthCommitVisitor::newIfConstCommitSize(VN_CAST(valuep, Const))) {
-                        VL_DO_DANGLING(pushDeletep(valuep), valuep);
-                        valuep = newccp;
-                    }
-                }
+                AstNode* valuep = patternMemberValueIterate(patp);
                 {  // Packed. Convert to concat for now.
                     if (!newp) newp = valuep;
                     else {
@@ -2609,6 +2574,22 @@ private:
         //if (debug()>=9) newp->dumpTree("-apat-out: ");
         VL_DO_DANGLING(pushDeletep(nodep), nodep);  // Deletes defaultp also, if present
     }
+    AstNode* patternMemberValueIterate(AstPatMember* patp) {
+        // Determine values - might be another InitArray
+        userIterate(patp, WidthVP(patp->dtypep(), BOTH).p());
+        // Convert to InitArray or constify immediately
+        AstNode* valuep = patp->lhssp()->unlinkFrBack();
+        if (VN_IS(valuep, Const)) {
+            // Forming a AstConcat will cause problems with
+            // unsized (uncommitted sized) constants
+            if (AstNode* newp = WidthCommitVisitor::newIfConstCommitSize(VN_CAST(valuep, Const))) {
+                VL_DO_DANGLING(pushDeletep(valuep), valuep);
+                valuep = newp;
+            }
+        }
+        return valuep;
+    }
+
     virtual void visit(AstPatMember* nodep) VL_OVERRIDE {
         AstNodeDType* vdtypep = m_vup->dtypeNullp();
         UASSERT_OBJ(vdtypep, nodep, "Pattern member type not assigned by AstPattern visitor");
