@@ -50,6 +50,10 @@ class EmitCInlines : EmitCBaseVisitor {
         v3Global.needHeavy(true);
         iterateChildren(nodep);
     }
+    virtual void visit(AstDynArrayDType* nodep) VL_OVERRIDE {
+        v3Global.needHeavy(true);
+        iterateChildren(nodep);
+    }
     virtual void visit(AstQueueDType* nodep) VL_OVERRIDE {
         v3Global.needHeavy(true);
         iterateChildren(nodep);

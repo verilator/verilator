@@ -1503,6 +1503,9 @@ class EmitCImp : EmitCStmts {
             return emitVarResetRecurse(varp, adtypep->subDTypep(), depth+1,
                                        ".atDefault()" + cvtarray);
         }
+        else if (AstDynArrayDType* adtypep = VN_CAST(dtypep, DynArrayDType)) {
+            return emitVarResetRecurse(varp, adtypep->subDTypep(), depth+1, ".atDefault()");
+        }
         else if (AstQueueDType* adtypep = VN_CAST(dtypep, QueueDType)) {
             return emitVarResetRecurse(varp, adtypep->subDTypep(), depth+1, ".atDefault()");
         }

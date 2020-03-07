@@ -451,6 +451,56 @@ public:
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
 };
 
+class AstDynArrayDType : public AstNodeDType {
+    // Dynamic array data type, ie "[]"
+    // Children: DTYPE (moved to refDTypep() in V3Width)
+private:
+    AstNodeDType* m_refDTypep;  // Elements of this type (after widthing)
+public:
+    AstDynArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp)
+        : ASTGEN_SUPER(fl) {
+        childDTypep(dtp);  // Only for parser
+        refDTypep(NULL);
+        dtypep(NULL);  // V3Width will resolve
+    }
+    AstDynArrayDType(FileLine* fl, AstNodeDType* dtp)
+        : ASTGEN_SUPER(fl) {
+        refDTypep(dtp);
+        dtypep(NULL);  // V3Width will resolve
+    }
+    ASTNODE_NODE_FUNCS(DynArrayDType)
+    virtual const char* broken() const {
+        BROKEN_RTN(!((m_refDTypep && !childDTypep() && m_refDTypep->brokeExists())
+                     || (!m_refDTypep && childDTypep())));
+        return NULL; }
+    virtual void cloneRelink() {
+        if (m_refDTypep && m_refDTypep->clonep()) { m_refDTypep = m_refDTypep->clonep(); } }
+    virtual bool same(const AstNode* samep) const {
+        const AstAssocArrayDType* asamep = static_cast<const AstAssocArrayDType*>(samep);
+        return subDTypep() == asamep->subDTypep(); }
+    virtual bool similarDType(AstNodeDType* samep) const {
+        const AstAssocArrayDType* asamep = static_cast<const AstAssocArrayDType*>(samep);
+        return (subDTypep()->skipRefp()->similarDType(asamep->subDTypep()->skipRefp()));
+    }
+    virtual string prettyDTypeName() const;
+    virtual void dumpSmall(std::ostream& str) const;
+    virtual V3Hash sameHash() const { return V3Hash(m_refDTypep); }
+    AstNodeDType* getChildDTypep() const { return childDTypep(); }
+    AstNodeDType* childDTypep() const { return VN_CAST(op1p(), NodeDType); }  // op1 = Range of variable
+    void childDTypep(AstNodeDType* nodep) { setOp1p(nodep); }
+    virtual AstNodeDType* subDTypep() const { return m_refDTypep ? m_refDTypep : childDTypep(); }
+    void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
+    virtual AstNodeDType* virtRefDTypep() const { return m_refDTypep; }
+    virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
+    // METHODS
+    virtual AstBasicDType* basicp() const { return NULL; }  // (Slow) recurse down to find basic data type
+    virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
+    virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
+    virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
+    virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
+};
+
 class AstPackArrayDType : public AstNodeArrayDType {
     // Packed array data type, ie "some_dtype [2:0] var_name"
     // Children: DTYPE (moved to refDTypep() in V3Width)

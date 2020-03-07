@@ -9,6 +9,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    Add support for $dumpfile and $dumpvars, #2126. [Alexander Grobman]
 
+**    Add support for dynamic arrays, #379.
+
 ***   Add +verilator+noassert flag to disable assertion checking. [Tobias Wölfel]
 
 ***   Add check for assertOn for asserts, #2162. [Tobias Wölfel]

@@ -457,7 +457,7 @@ private:
         if (m_vup->prelim()) {
             AstNodeDType* vdtypep = m_vup->dtypeNullp();
             if (vdtypep && (VN_IS(vdtypep, AssocArrayDType)
-                            || VN_IS(vdtypep, AssocArrayDType)
+                            || VN_IS(vdtypep, DynArrayDType)
                             || VN_IS(vdtypep, QueueDType))) {
                 nodep->v3error("Unsupported: Concatenation to form "
                                << vdtypep->prettyDTypeNameQ() << "data type");
@@ -536,7 +536,9 @@ private:
         if (m_vup->prelim()) {
             AstNodeDType* vdtypep = m_vup->dtypeNullp();
             if (vdtypep
-                && (VN_IS(vdtypep, AssocArrayDType) || VN_IS(vdtypep, QueueDType)
+                && (VN_IS(vdtypep, AssocArrayDType)
+                    || VN_IS(vdtypep, DynArrayDType)
+                    || VN_IS(vdtypep, QueueDType)
                     || VN_IS(vdtypep, UnpackArrayDType))) {
                 nodep->v3error("Unsupported: Replication to form " << vdtypep->prettyDTypeNameQ()
                                << " data type");
@@ -1219,6 +1221,14 @@ private:
         nodep->dtypep(nodep);  // The array itself, not subDtype
         UINFO(4,"dtWidthed "<<nodep<<endl);
     }
+    virtual void visit(AstDynArrayDType* nodep) VL_OVERRIDE {
+        if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
+        if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
+        // Iterate into subDTypep() to resolve that type and update pointer.
+        nodep->refDTypep(iterateEditDTypep(nodep, nodep->subDTypep()));
+        nodep->dtypep(nodep);  // The array itself, not subDtype
+        UINFO(4,"dtWidthed "<<nodep<<endl);
+    }
     virtual void visit(AstQueueDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
@@ -1445,9 +1455,13 @@ private:
         if (nodep->childDTypep()) nodep->dtypep(moveChildDTypeEdit(nodep));
         nodep->dtypep(iterateEditDTypep(nodep, nodep->dtypep()));
         UASSERT_OBJ(nodep->dtypep(), nodep, "No dtype determined for var");
-        if (VN_IS(nodep->dtypeSkipRefp(), UnsizedArrayDType)) {
+        if (AstUnsizedArrayDType* unsizedp = VN_CAST(nodep->dtypeSkipRefp(), UnsizedArrayDType)) {
             if (!(m_ftaskp && m_ftaskp->dpiImport())) {
-                nodep->v3error("Unsized/open arrays ('[]') are only supported in DPI imports");
+                UINFO(9, "Unsized becomes dynamic array " << nodep << endl);
+                AstDynArrayDType* newp
+                    = new AstDynArrayDType(unsizedp->fileline(), unsizedp->subDTypep());
+                nodep->dtypep(newp);
+                v3Global.rootp()->typeTablep()->addTypesp(newp);
             }
         }
         else if (nodep->isIO() && !(VN_IS(nodep->dtypeSkipRefp(), BasicDType)
@@ -1778,6 +1792,7 @@ private:
             if (memberSelStruct(nodep, adtypep)) return;
         } else if (VN_IS(fromDtp, EnumDType)
                    || VN_IS(fromDtp, AssocArrayDType)
+                   || VN_IS(fromDtp, DynArrayDType)
                    || VN_IS(fromDtp, QueueDType)
                    || VN_IS(fromDtp, BasicDType)) {
             // Method call on enum without following parenthesis, e.g. "ENUM.next"
@@ -1848,6 +1863,9 @@ private:
         }
         else if (AstAssocArrayDType* adtypep = VN_CAST(fromDtp, AssocArrayDType)) {
             methodCallAssoc(nodep, adtypep);
+        }
+        else if (AstDynArrayDType* adtypep = VN_CAST(fromDtp, DynArrayDType)) {
+            methodCallDyn(nodep, adtypep);
         }
         else if (AstQueueDType* adtypep = VN_CAST(fromDtp, QueueDType)) {
             methodCallQueue(nodep, adtypep);
@@ -2057,6 +2075,41 @@ private:
                            <<nodep->prettyName()<<"'");
         } else {
             if (lvalue) varrefp->lvalue(true);
+        }
+    }
+    void methodCallDyn(AstMethodCall* nodep, AstDynArrayDType* adtypep) {
+        AstCMethodHard* newp = NULL;
+        if (nodep->name() == "at") {  // Created internally for []
+            methodOkArguments(nodep, 1, 1);
+            methodCallLValue(nodep, nodep->fromp(), true);
+            newp = new AstCMethodHard(nodep->fileline(),
+                                      nodep->fromp()->unlinkFrBack(),
+                                      "at", NULL);
+            newp->dtypeFrom(adtypep->subDTypep());
+            newp->protect(false);
+            newp->didWidth(true);
+        } else if (nodep->name() == "size") {
+            methodOkArguments(nodep, 0, 0);
+            newp = new AstCMethodHard(nodep->fileline(),
+                                      nodep->fromp()->unlinkFrBack(),
+                                      "size", NULL);
+            newp->dtypeSetSigned32();
+            newp->didWidth(true);
+            newp->protect(false);
+        } else if (nodep->name() == "delete") {  // function void delete()
+            methodOkArguments(nodep, 0, 0);
+            methodCallLValue(nodep, nodep->fromp(), true);
+            newp = new AstCMethodHard(nodep->fileline(),
+                                      nodep->fromp()->unlinkFrBack(),
+                                      "clear", NULL);
+            newp->makeStatement();
+        } else {
+            nodep->v3error("Unsupported/unknown built-in dynamic array method "
+                           << nodep->prettyNameQ());
+        }
+        if (newp) {
+            newp->didWidth(true);
+            nodep->replaceWith(newp); VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
     void methodCallQueue(AstMethodCall* nodep, AstQueueDType* adtypep) {
@@ -2305,7 +2358,26 @@ private:
     }
     virtual void visit(AstNewDynamic* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;
-        nodep->v3error("Unsupported: Dynamic array new");
+        AstDynArrayDType* adtypep = VN_CAST(m_vup->dtypeNullp(), DynArrayDType);
+        if (!adtypep) {  // e.g. int a = new;
+            if (adtypep) UINFO(1, "Got adtypep " << adtypep << endl);
+            nodep->v3error("dynamic new() not expected in this context (data type must be dynamic array)");
+            return;
+        }
+        // The AstNodeAssign visitor will be soon be replacing this node, make sure it gets it
+        if (!VN_IS(nodep->backp(), NodeAssign)) {
+            if (adtypep) UINFO(1, "Got backp " << nodep->backp() << endl);
+            nodep->v3error("dynamic new() not expected in this context (expected under an assign)");
+            return;
+        }
+        nodep->dtypep(adtypep);
+        if (m_vup && m_vup->prelim()) {
+            iterateCheckSigned32(nodep, "new() size", nodep->sizep(), BOTH);
+        }
+        if (nodep->rhsp()) {
+            iterateCheckTyped(nodep, "Dynamic array new RHS", nodep->rhsp(), adtypep->subDTypep(),
+                              BOTH);
+        }
     }
 
     virtual void visit(AstPattern* nodep) VL_OVERRIDE {
@@ -2727,6 +2799,23 @@ private:
             iterateCheckAssign(nodep, "Assign RHS", nodep->rhsp(), FINAL, lhsDTypep);
             //if (debug()) nodep->dumpTree(cout, "  AssignOut: ");
         }
+        if (AstNewDynamic* dynp = VN_CAST(nodep->rhsp(), NewDynamic)) {
+            UINFO(9, "= new[] -> .resize(): " << nodep);
+            AstCMethodHard* newp;
+            if (!dynp->rhsp()) {
+                newp = new AstCMethodHard(nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
+                                          "renew", dynp->sizep()->unlinkFrBack());
+            } else {
+                newp = new AstCMethodHard(nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
+                                          "renew_copy", dynp->sizep()->unlinkFrBack());
+                newp->addPinsp(dynp->rhsp()->unlinkFrBack());
+            }
+            newp->didWidth(true);
+            newp->protect(false);
+            newp->makeStatement();
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        }
     }
 
     virtual void visit(AstSFormatF* nodep) VL_OVERRIDE {
@@ -2772,6 +2861,7 @@ private:
                         added = true;
                         newFormat += "%g";
                     } else if (VN_IS(dtypep, AssocArrayDType)
+                               || VN_IS(dtypep, DynArrayDType)
                                || VN_IS(dtypep, QueueDType)) {
                         added = true;
                         newFormat += "%@";
@@ -4225,8 +4315,8 @@ private:
 
     AstNode* checkCvtUS(AstNode* nodep) {
         if (nodep && nodep->isDouble()) {
-            nodep->v3error("Expected integral (non-real) input to "
-                           <<nodep->backp()->prettyTypeName());
+            nodep->v3error("Expected integral (non-" << nodep->dtypep()->prettyDTypeName()
+                           << ") input to " << nodep->backp()->prettyTypeName());
             nodep = spliceCvtS(nodep, true);
         }
         return nodep;

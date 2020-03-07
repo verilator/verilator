@@ -278,6 +278,17 @@ AstVar::VlArgTypeRecursed AstVar::vlArgTypeRecurse(bool forFunc, const AstNodeDT
         VlArgTypeRecursed info;
         info.m_oprefix = out;
         return info;
+    } else if (const AstDynArrayDType* adtypep = VN_CAST_CONST(dtypep, DynArrayDType)) {
+        VlArgTypeRecursed sub = vlArgTypeRecurse(forFunc, adtypep->subDTypep(), true);
+        string out = "VlQueue<";
+        out += sub.m_oprefix;
+        if (!sub.m_osuffix.empty() || !sub.m_oref.empty()) {
+            out += " " + sub.m_osuffix + sub.m_oref;
+        }
+        out += "> ";
+        VlArgTypeRecursed info;
+        info.m_oprefix = out;
+        return info;
     } else if (const AstQueueDType* adtypep = VN_CAST_CONST(dtypep, QueueDType)) {
         VlArgTypeRecursed sub = vlArgTypeRecurse(forFunc, adtypep->subDTypep(), true);
         VlArgTypeRecursed info;
@@ -1167,6 +1178,13 @@ void AstAssocArrayDType::dumpSmall(std::ostream& str) const {
 }
 string AstAssocArrayDType::prettyDTypeName() const {
     return subDTypep()->prettyDTypeName() + "[" + keyDTypep()->prettyDTypeName() + "]";
+}
+void AstDynArrayDType::dumpSmall(std::ostream& str) const {
+    this->AstNodeDType::dumpSmall(str);
+    str<<"[]";
+}
+string AstDynArrayDType::prettyDTypeName() const {
+    return subDTypep()->prettyDTypeName() + "[]";
 }
 void AstQueueDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
