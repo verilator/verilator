@@ -307,8 +307,14 @@ public:
             puts(".data()");  // Access returned std::array as C array
         }
     }
-    virtual void visit(AstCCall* nodep) VL_OVERRIDE {
-        puts(nodep->hiernameProtect());
+    virtual void visit(AstNodeCCall* nodep) VL_OVERRIDE {
+        if (AstCMethodCall* ccallp = VN_CAST(nodep, CMethodCall)) {
+            // make this a Ast type for future opt
+            iterate(ccallp->fromp());
+            putbs("->");
+        } else {
+            puts(nodep->hiernameProtect());
+        }
         puts(nodep->funcp()->nameProtect());
         puts("(");
         puts(nodep->argTypes());

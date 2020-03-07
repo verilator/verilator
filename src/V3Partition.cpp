@@ -1777,7 +1777,7 @@ private:
         }
         iterateChildren(nodep);
     }
-    virtual void visit(AstCCall* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeCCall* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         // Enter the function and trace it
         m_tracingCall = true;

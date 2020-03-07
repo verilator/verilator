@@ -1408,31 +1408,33 @@ public:
     void declRange(const VNumRange& flag) { m_declRange = flag; }
 };
 
-class AstMethodCall : public AstNode {
+class AstMethodCall : public AstNodeFTaskRef {
     // A reference to a member task (or function)
-    // We do not support generic member calls yet, so this is only enough to
-    // make built-in methods work
-private:
-    string m_name;  // Name of method
+    // PARENTS: stmt/math
+    // Not all calls are statments vs math.  AstNodeStmt needs isStatement() to deal.
+    // Don't need the class we are extracting from, as the "fromp()"'s datatype can get us to it
 public:
-    AstMethodCall(FileLine* fl, AstNode* fromp, VFlagChildDType, const string& name, AstNode* pinsp)
-        : ASTGEN_SUPER(fl), m_name(name) {
-        setOp1p(fromp);
+    AstMethodCall(FileLine* fl, AstNode* fromp, VFlagChildDType, const string& name,
+                  AstNode* pinsp)
+        : ASTGEN_SUPER(fl, false, name, pinsp) {
+        setOp2p(fromp);
         dtypep(NULL);  // V3Width will resolve
-        addNOp2p(pinsp);
     }
     AstMethodCall(FileLine* fl, AstNode* fromp, const string& name, AstNode* pinsp)
-        : ASTGEN_SUPER(fl), m_name(name) {
-        setOp1p(fromp);
-        addNOp2p(pinsp);
+        : ASTGEN_SUPER(fl, false, name, pinsp) {
+        setOp2p(fromp);
     }
     ASTNODE_NODE_FUNCS(MethodCall)
-    virtual string name() const { return m_name; }  // * = Var name
-    virtual void name(const string& name) { m_name = name; }
-    AstNode* fromp() const { return op1p(); }  // op1 = Extracting what (NULL=TBD during parsing)
-    void fromp(AstNode* nodep) { setOp1p(nodep); }
-    AstNode* pinsp() const { return op2p(); }  // op2 = Pin interconnection list
-    void addPinsp(AstNode* nodep) { addOp2p(nodep); }
+    virtual const char* broken() const {
+        BROKEN_BASE_RTN(AstNodeFTaskRef::broken());
+        BROKEN_RTN(!fromp());
+        return NULL;
+    }
+    virtual void dump(std::ostream& str) const;
+    virtual bool hasDType() const { return true; }
+    void makeStatement() { statement(true); dtypeSetVoid(); }
+    AstNode* fromp() const { return op2p(); }  // op2 = Extracting what (NULL=TBD during parsing)
+    void fromp(AstNode* nodep) { setOp2p(nodep); }
 };
 
 class AstCMethodHard : public AstNodeStmt {
@@ -3995,7 +3997,6 @@ class AstNew : public AstNodeMath {
 public:
     AstNew(FileLine* fl, AstNode* argsp)
         : ASTGEN_SUPER(fl) {
-        dtypep(NULL);  // V3Width will resolve
         addNOp2p(argsp);
     }
     ASTNODE_NODE_FUNCS(New)
@@ -6881,54 +6882,37 @@ public:
     bool emptyBody() const { return argsp()==NULL && initsp()==NULL && stmtsp()==NULL && finalsp()==NULL; }
 };
 
-class AstCCall : public AstNodeStmt {
+class AstCCall : public AstNodeCCall {
     // C++ function call
     // Parents:  Anything above a statement
     // Children: Args to the function
-private:
-    AstCFunc*   m_funcp;
-    string      m_hiername;
-    string      m_argTypes;
 public:
-    AstCCall(FileLine* fl, AstCFunc* funcp, AstNode* argsp=NULL)
-        : ASTGEN_SUPER(fl) {
-        m_funcp = funcp;
-        addNOp1p(argsp);
-    }
-    AstCCall(AstCCall* oldp, AstCFunc* funcp)  // Replacement form for V3Combine
-        // Note this removes old attachments from the oldp
-        : ASTGEN_SUPER(oldp->fileline()) {
-        m_funcp = funcp;
-        m_hiername = oldp->hiername();
-        m_argTypes = oldp->argTypes();
-        if (oldp->argsp()) addNOp1p(oldp->argsp()->unlinkFrBackWithNext());
-    }
+    AstCCall(FileLine* fl, AstCFunc* funcp, AstNode* argsp = NULL)
+        : ASTGEN_SUPER(fl, funcp, argsp) {}
+    // Replacement form for V3Combine
+    // Note this removes old attachments from the oldp
+    AstCCall(AstCCall* oldp, AstCFunc* funcp)
+        : ASTGEN_SUPER(oldp, funcp) {}
     ASTNODE_NODE_FUNCS(CCall)
-    virtual void dump(std::ostream& str=std::cout) const;
-    virtual void cloneRelink() { if (m_funcp && m_funcp->clonep()) {
-        m_funcp = m_funcp->clonep();
-    }}
-    virtual const char* broken() const { BROKEN_RTN(m_funcp && !m_funcp->brokeExists()); return NULL; }
-    virtual int instrCount() const { return instrCountCall(); }
-    virtual V3Hash sameHash() const { return V3Hash(funcp()); }
-    virtual bool same(const AstNode* samep) const {
-        const AstCCall* asamep = static_cast<const AstCCall*>(samep);
-        return (funcp() == asamep->funcp()
-                && argTypes() == asamep->argTypes()); }
-    AstNode* exprsp() const { return op1p(); }  // op1 = expressions to print
-    virtual bool isGateOptimizable() const { return false; }
-    virtual bool isPredictOptimizable() const { return false; }
-    virtual bool isPure() const { return funcp()->pure(); }
-    virtual bool isOutputter() const { return !(funcp()->pure()); }
-    AstCFunc* funcp() const { return m_funcp; }
-    string hiername() const { return m_hiername; }
-    void hiername(const string& hn) { m_hiername = hn; }
-    string hiernameProtect() const;
-    void argTypes(const string& str) { m_argTypes = str; }
-    string argTypes() const { return m_argTypes; }
-    //
-    AstNode* argsp() const { return op1p(); }
-    void addArgsp(AstNode* nodep) { addOp1p(nodep); }
+};
+
+class AstCMethodCall : public AstNodeCCall {
+    // C++ method call
+    // Parents:  Anything above a statement
+    // Children: Args to the function
+public:
+    AstCMethodCall(FileLine* fl, AstNode* fromp, AstCFunc* funcp, AstNode* argsp = NULL)
+        : ASTGEN_SUPER(fl, funcp, argsp) {
+        setOp1p(fromp);
+    }
+    ASTNODE_NODE_FUNCS(CMethodCall)
+    virtual const char* broken() const {
+        BROKEN_BASE_RTN(AstNodeCCall::broken());
+        BROKEN_RTN(!fromp());
+        return NULL;
+    }
+    AstNode* fromp() const { return op1p(); }  // op1 = Extracting what (NULL=TBD during parsing)
+    void fromp(AstNode* nodep) { setOp1p(nodep); }
 };
 
 class AstCReturn : public AstNodeStmt {

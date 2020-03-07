@@ -281,7 +281,7 @@ private:
         iterateChildren(nodep);
         ensureCleanAndNext(nodep->bodysp());
     }
-    virtual void visit(AstCCall* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeCCall* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         ensureCleanAndNext(nodep->argsp());
         setClean(nodep, true);

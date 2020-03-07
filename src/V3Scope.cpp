@@ -386,7 +386,7 @@ private:
             UASSERT_OBJ(newp, nodep, "No clone for package function");
             nodep->taskp(newp);
             UINFO(9,"   New pkg-taskref "<<nodep<<endl);
-        } else {
+        } else if (!VN_IS(nodep, MethodCall)) {
             nodep->taskp(NULL);
             UINFO(9,"   New pkg-taskref "<<nodep<<endl);
         }

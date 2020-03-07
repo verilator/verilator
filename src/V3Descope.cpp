@@ -259,7 +259,7 @@ private:
         nodep->hierThis(hierThis);
         nodep->varScopep(NULL);
     }
-    virtual void visit(AstCCall* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeCCall* nodep) VL_OVERRIDE {
         // UINFO(9,"       "<<nodep<<endl);
         iterateChildren(nodep);
         // Convert the hierch name

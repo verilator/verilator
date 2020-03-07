@@ -96,7 +96,7 @@ private:
         m_likely = lastLikely;
         m_unlikely = lastUnlikely;
     }
-    virtual void visit(AstCCall* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeCCall* nodep) VL_OVERRIDE {
         checkUnlikely(nodep);
         nodep->funcp()->user1Inc();
         iterateChildren(nodep);
