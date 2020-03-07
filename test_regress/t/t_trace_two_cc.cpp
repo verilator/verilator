@@ -36,10 +36,6 @@ int main(int argc, char** argv, char** env) {
     srand48(5);
     ap = new VM_PREFIX("topa");
     bp = new Vt_trace_two_b("topb");
-    ap->eval_step();
-    bp->eval_step();
-    ap->eval_end_step();
-    bp->eval_end_step();
 
 #ifdef TEST_HDR_TRACE
     Verilated::traceEverOn(true);
@@ -54,8 +50,16 @@ int main(int argc, char** argv, char** env) {
     bp->trace(tfp, 99);
     tfp->open(VL_STRINGIFY(TEST_OBJ_DIR) "/simx.vcd");
 # endif
+#endif
+
+#ifdef TEST_HDR_TRACE
+    ap->eval_step();
+    bp->eval_step();
+    ap->eval_end_step();
+    bp->eval_end_step();
     if (tfp) tfp->dump(main_time);
 #endif
+
     {
         ap->clk = false;
         ap->clk = false;
@@ -78,6 +82,7 @@ int main(int argc, char** argv, char** env) {
     }
     ap->final();
     bp->final();
+
 #ifdef TEST_HDR_TRACE
     if (tfp) tfp->close();
 #endif

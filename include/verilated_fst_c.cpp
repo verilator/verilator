@@ -77,10 +77,11 @@ protected:
 // VerilatedFst
 
 VerilatedFst::VerilatedFst(void* fst)
-    : m_fst(fst),
-      m_fullDump(true),
-      m_scopeEscape('.') {
-    m_valueStrBuffer.reserve(64+1);  // Need enough room for quad
+    : m_fst(fst)
+    , m_fullDump(true)
+    , m_nextCode(1)
+    , m_scopeEscape('.') {
+    m_valueStrBuffer.reserve(64 + 1);  // Need enough room for quad
 }
 
 void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
@@ -91,10 +92,12 @@ void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
     fstWriterSetParallelMode(m_fst, 1);
 #endif
     m_curScope.clear();
+    m_nextCode = 1;
 
     for (vluint32_t ent = 0; ent< m_callbacks.size(); ++ent) {
         VerilatedFstCallInfo* cip = m_callbacks[ent];
-        cip->m_code = 1;
+        cip->m_code = m_nextCode;
+        // Initialize; callbacks will call decl* which update m_nextCode
         (cip->m_initcb)(this, cip->m_userthis, cip->m_code);
     }
 
@@ -121,9 +124,15 @@ void VerilatedFst::declDTypeEnum(int dtypenum, const char* name, vluint32_t elem
     m_local2fstdtype[dtypenum] = enumNum;
 }
 
-void VerilatedFst::declSymbol(vluint32_t code, const char* name,
-                              int dtypenum, fstVarDir vardir, fstVarType vartype,
-                              bool array, int arraynum, vluint32_t len) {
+void VerilatedFst::declSymbol(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+                              fstVarType vartype, bool array, int arraynum, vluint32_t len,
+                              vluint32_t bits) {
+
+    // Make sure deduplicate tracking increments for future declarations
+    int codesNeeded = 1 + int(bits / 32);
+    //Not supported: if (tri) codesNeeded *= 2;  // Space in change array for __en signals
+    m_nextCode = std::max(m_nextCode, code + codesNeeded);
+
     std::pair<Code2SymbolType::iterator, bool> p
         = m_code2symbol.insert(std::make_pair(code, static_cast<fstHandle>(NULL)));
     std::istringstream nameiss(name);

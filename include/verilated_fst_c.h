@@ -50,6 +50,7 @@ private:
     void* m_fst;
     VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
     bool m_fullDump;
+    vluint32_t m_nextCode;  ///< Next code number to assign
     char m_scopeEscape;
     std::string m_module;
     CallbackVec m_callbacks;  ///< Routines to perform dumping
@@ -60,7 +61,7 @@ private:
     VL_UNCOPYABLE(VerilatedFst);
     void declSymbol(vluint32_t code, const char* name,
                     int dtypenum, fstVarDir vardir, fstVarType vartype,
-                    bool array, int arraynum, vluint32_t len);
+                    bool array, int arraynum, vluint32_t len, vluint32_t bits);
     // helpers
     std::vector<char> m_valueStrBuffer;
 public:
@@ -105,32 +106,35 @@ public:
     void declBit(vluint32_t code, const char* name,
                  int dtypenum, fstVarDir vardir, fstVarType vartype,
                  bool array, int arraynum) {
-        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 1);
+        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 1, 1);
     }
     void declBus(vluint32_t code, const char* name,
                  int dtypenum, fstVarDir vardir, fstVarType vartype,
                  bool array, int arraynum, int msb, int lsb) {
-        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1);
+        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1,
+                   msb - lsb + 1);
     }
     void declDouble(vluint32_t code, const char* name,
                     int dtypenum, fstVarDir vardir, fstVarType vartype,
                     bool array, int arraynum) {
-        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 2);
+        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 2, 64);
     }
     void declFloat(vluint32_t code, const char* name,
                    int dtypenum, fstVarDir vardir, fstVarType vartype,
                    bool array, int arraynum) {
-        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 1);
+        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 1, 32);
     }
     void declQuad(vluint32_t code, const char* name,
                   int dtypenum, fstVarDir vardir, fstVarType vartype,
                   bool array, int arraynum, int msb, int lsb) {
-        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1);
+        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1,
+                   msb - lsb + 1);
     }
     void declArray(vluint32_t code, const char* name,
                    int dtypenum, fstVarDir vardir, fstVarType vartype,
                    bool array, int arraynum, int msb, int lsb) {
-        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1);
+        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1,
+                   msb - lsb + 1);
     }
 
     /// Inside dumping routines, dump one signal if it has changed

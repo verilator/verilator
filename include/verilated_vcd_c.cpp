@@ -239,6 +239,7 @@ void VerilatedVcd::makeNameMap() {
     for (vluint32_t ent = 0; ent < m_callbacks.size(); ent++) {
         VerilatedVcdCallInfo* cip = m_callbacks[ent];
         cip->m_code = m_nextCode;
+        // Initialize; callbacks will call decl* which update m_nextCode
         (cip->m_initcb)(this, cip->m_userthis, cip->m_code);
     }
 
@@ -535,12 +536,12 @@ void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep,
     if (!code) { VL_FATAL_MT(__FILE__, __LINE__, "",
                              "Internal: internal trace problem, code 0 is illegal"); }
 
-    int bits = ((msb>lsb)?(msb-lsb):(lsb-msb))+1;
-    int codesNeeded = 1+int(bits/32);
+    int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
+    int codesNeeded = 1 + int(bits / 32);
     if (tri) codesNeeded *= 2;  // Space in change array for __en signals
 
     // Make sure array is large enough
-    m_nextCode = std::max(m_nextCode, code+codesNeeded);
+    m_nextCode = std::max(m_nextCode, code + codesNeeded);
     if (m_sigs.capacity() <= m_nextCode) {
         m_sigs.reserve(m_nextCode*2);  // Power-of-2 allocation speeds things up
     }
