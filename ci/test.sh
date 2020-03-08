@@ -6,7 +6,6 @@
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 set -e
-date
 
 export DRIVER_FLAGS='-j 0 --quiet --rerun'
 
@@ -25,5 +24,3 @@ case $1 in
     exit -1
     ;;
 esac
-
-date

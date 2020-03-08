@@ -6,7 +6,6 @@
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 set -e
-date
 
 # NB: it would be better to add this via a PPA
 
@@ -17,5 +16,3 @@ VCDDIFF_DIR=${TMP_DIR}/vcddiff
 git -C "${VCDDIFF_DIR}" checkout 5112f88b7ba8818dce9dfb72619e64a1fc19542c
 make -C "${VCDDIFF_DIR}"
 sudo cp "${VCDDIFF_DIR}/vcddiff" /usr/local/bin
-
-date

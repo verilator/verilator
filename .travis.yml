@@ -24,14 +24,11 @@ cache:
     - $VERILATOR_CACHE
 
 before_install:
-  - date
 # Perl modules needed for testing
 # Not listing Bit::Vector as slow to install, and only skips one test
   - yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
-  - date
   - sudo apt-get install gdb gtkwave
   - sudo apt-get install libgoogle-perftools-dev
-  - date
 before_script:
   - bash -x ci/build_vcddiff.sh
   - bash -x ci/build_verilator.sh
