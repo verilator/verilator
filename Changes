@@ -3,6 +3,9 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in []. Thanks!
 
 
+* Verilator 4.031 devel
+
+
 * Verilator 4.030 2020-03-08
 
 **    Add split_var metacomment to assist UNOPTFLAT fixes, #2066. [Yutetsu TAKATSUKASA]
