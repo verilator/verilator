@@ -1083,8 +1083,8 @@ and the remaining files can be compiled on parallel machines.  Using
 design --output-split 20000 resulted in splitting into approximately
 one-minute-compile chunks.
 
-Typically when using this, make with VM_PARALLEL_BUILDS=1, and use
-I<ccache>.
+Typically when using this, make with VM_PARALLEL_BUILDS=1 (set for you if
+using the default makefiles), and use I<ccache>.
 
 =item --output-split-cfuncs I<statements>
 

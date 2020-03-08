@@ -31,7 +31,7 @@ while (1) {
               "-C ".$Self->{obj_dir},
               "-f $Self->{VM_PREFIX}.mk",
               "-j 4",
-              "VM_PARALLEL_BUILDS=1",  # Important to this test
+              #"VM_PARALLEL_BUILDS=1",  # Check is set by makefile
               "VM_PREFIX=$Self->{VM_PREFIX}",
               "TEST_OBJ_DIR=$Self->{obj_dir}",
               "CPPFLAGS_DRIVER=-D".uc($Self->{name}),

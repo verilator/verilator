@@ -51,6 +51,9 @@ public:
         of.puts("\n### Switches...\n");
         of.puts("# Coverage output mode?  0/1 (from --coverage)\n");
         of.puts("VM_COVERAGE = "); of.puts(v3Global.opt.coverage()?"1":"0"); of.puts("\n");
+        of.puts("# Parallel builds?  0/1 (from --output-split)\n");
+        of.puts("VM_PARALLEL_BUILDS = ");
+        of.puts(v3Global.opt.outputSplit() ? "1" : "0"); of.puts("\n");
         of.puts("# Threaded output mode?  0/1/N threads (from --threads)\n");
         of.puts("VM_THREADS = "); of.puts(cvtToStr(v3Global.opt.threads())); of.puts("\n");
         of.puts("# Tracing output mode?  0/1 (from --trace)\n");
