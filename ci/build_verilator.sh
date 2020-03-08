@@ -15,6 +15,7 @@
 # process or add Verilator as a Git submodule.  Verilator tarballs can
 # not be used as the script relies on Git revisions for caching.
 set -e
+date
 
 if [ -z "${VERILATOR_NUM_JOBS}" ]; then
     VERILATOR_NUM_JOBS=$(nproc)
@@ -62,3 +63,5 @@ else
     autoconf && ./configure ${VERILATOR_CONFIG_FLAGS}
     cp ${VERILATOR_CACHE}/* bin
 fi
+
+date
