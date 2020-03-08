@@ -114,7 +114,7 @@ void mon_eval() {
 
 //======================================================================
 
-unsigned int main_time = false;
+unsigned int main_time = 0;
 
 double sc_time_stamp() { return main_time; }
 int main(int argc, char** argv, char** env) {

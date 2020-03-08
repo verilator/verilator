@@ -43,10 +43,11 @@ endif
 ######################################################################
 
 SCENARIOS ?= --vlt --vltmt --dist
+DRIVER_HASHSET ?=
 
 .PHONY: test
 test:
-	$(PERL) driver.pl $(DRIVER_FLAGS) $(SCENARIOS)
+	$(PERL) driver.pl $(DRIVER_FLAGS) $(SCENARIOS) $(DRIVER_HASHSET)
 
 ######################################################################
 

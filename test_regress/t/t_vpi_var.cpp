@@ -45,11 +45,11 @@ using namespace std;
 #define TEST_MSG \
     if (0) printf
 
-unsigned int main_time = false;
-unsigned int callback_count = false;
-unsigned int callback_count_half = false;
-unsigned int callback_count_quad = false;
-unsigned int callback_count_strs = false;
+unsigned int main_time = 0;
+unsigned int callback_count = 0;
+unsigned int callback_count_half = 0;
+unsigned int callback_count_quad = 0;
+unsigned int callback_count_strs = 0;
 unsigned int callback_count_strs_max = 500;
 
 //======================================================================

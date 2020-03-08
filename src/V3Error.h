@@ -102,6 +102,7 @@ public:
         REDEFMACRO,     // Redefining existing define macro
         SELRANGE,       // Selection index out of range
         SHORTREAL,      // Shortreal not supported
+        SPLITVAR,       // Cannot split the variable
         STMTDLY,        // Delayed statement
         SYMRSVDWORD,    // Symbol is Reserved Word
         SYNCASYNCNET,   // Mixed sync + async reset
@@ -153,7 +154,7 @@ public:
             "MULTIDRIVEN", "MULTITOP",
             "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY", "PROCASSWIRE",
             "REALCVT", "REDEFMACRO",
-            "SELRANGE", "SHORTREAL", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
+            "SELRANGE", "SHORTREAL", "SPLITVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
             "TICKCOUNT",
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
             "UNPACKED", "UNSIGNED", "UNUSED",

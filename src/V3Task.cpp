@@ -190,6 +190,7 @@ private:
         m_assignwp = NULL;
     }
     virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
+        // Includes handling AstMethodCall
         if (m_assignwp) {
             // Wire assigns must become always statements to deal with insertion
             // of multiple statements.  Perhaps someday make all wassigns into always's?
@@ -487,7 +488,12 @@ private:
         //
         AstNode* beginp = new AstComment(refp->fileline(),
                                          string("Function: ")+refp->name(), true);
-        AstCCall* ccallp = new AstCCall(refp->fileline(), cfuncp, NULL);
+        AstNodeCCall* ccallp;
+        if (AstMethodCall* mrefp = VN_CAST(refp, MethodCall)) {
+            ccallp = new AstCMethodCall(refp->fileline(), mrefp->fromp()->unlinkFrBack(), cfuncp);
+        } else {
+            ccallp = new AstCCall(refp->fileline(), cfuncp);
+        }
         beginp->addNext(ccallp);
 
         // Convert complicated outputs to temp signals
@@ -1174,7 +1180,7 @@ private:
         }
         // Replace the ref
         AstNode* visitp = NULL;
-        if (VN_IS(nodep, FuncRef)) {
+        if (!nodep->isStatement()) {
             UASSERT_OBJ(nodep->taskp()->isFunction(), nodep, "func reference to non-function");
             AstVarRef* outrefp = new AstVarRef(nodep->fileline(), outvscp, false);
             nodep->replaceWith(outrefp);

@@ -25,7 +25,7 @@ endif::[]
 ^.^| *Welcome to Verilator, the fastest free Verilog HDL simulator.*
 +++ <br/> +++ &bullet; Accepts synthesizable Verilog or SystemVerilog
 +++ <br/> +++ &bullet; Performs lint code-quality checks
-+++ <br/> +++ &bullet; Compiles into multithreaded {cpp}, SystemC, or (soon) {cpp}-under-Python
++++ <br/> +++ &bullet; Compiles into multithreaded {cpp}, or SystemC
 +++ <br/> +++ &bullet; Creates XML to front-end your own tools
 <.^|image:https://www.veripool.org/img/verilator_256_200_min.png[Logo,256,200]
 
@@ -81,7 +81,7 @@ touch of {cpp} code, Verilator is the tool for you.
 Verilator does not simply convert Verilog HDL to {cpp} or SystemC.  Rather
 than only translate, Verilator compiles your code into a much faster
 optimized and optionally thread-partitioned model, which is in turn wrapped
-inside a {cpp}/SystemC/Python module.  The results are a compiled Verilog
+inside a {cpp}/SystemC/{cpp}-under-Python module.  The results are a compiled Verilog
 model that executes even on a single-thread over 10x faster than standalone
 SystemC, and on a single thread is about 100 times faster than interpreted
 Verilog simulators such as http://iverilog.icarus.com[Icarus

@@ -184,6 +184,7 @@ class V3Options {
     bool        m_relativeIncludes; // main switch: --relative-includes
     bool        m_reportUnoptflat; // main switch: --report-unoptflat
     bool        m_savable;      // main switch: --savable
+    bool        m_structsPacked;  // main switch: --structs-packed
     bool        m_systemC;      // main switch: --sc: System C instead of simple C++
     bool        m_stats;        // main switch: --stats
     bool        m_statsVars;    // main switch: --stats-vars
@@ -322,6 +323,7 @@ class V3Options {
     bool savable() const { return m_savable; }
     bool stats() const { return m_stats; }
     bool statsVars() const { return m_statsVars; }
+    bool structsPacked() const { return m_structsPacked; }
     bool assertOn() const { return m_assert; }  // assertOn as __FILE__ may be defined
     bool autoflush() const { return m_autoflush; }
     bool bboxSys() const { return m_bboxSys; }
@@ -467,7 +469,11 @@ class V3Options {
     bool oTable() const { return m_oTable; }
 
     string traceClassBase() const { return m_traceFormat.classBase(); }
-    string traceSourceName() const { return m_traceFormat.sourceName(); }
+    string traceClassLang() const { return m_traceFormat.classBase() + (systemC() ? "Sc" : "C"); }
+    string traceSourceBase() const { return m_traceFormat.sourceName(); }
+    string traceSourceLang() const {
+        return m_traceFormat.sourceName() + (systemC() ? "_sc" : "_c");
+    }
 
     // METHODS (from main)
     static string version();

@@ -19,6 +19,12 @@ case $1 in
     vltmt)
         make -C test_regress SCENARIOS=--vltmt
         ;;
+    vltmt0)
+        make -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=0/2
+        ;;
+    vltmt1)
+        make -C test_regress SCENARIOS=--vltmt DRIVER_HASHSET=--hashset=1/2
+        ;;
     *)
     echo "Usage: test.sh (dist|vlt|vltmt)"
     exit -1

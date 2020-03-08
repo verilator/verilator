@@ -9,21 +9,23 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(simulator => 1);
 
-if (eval "use Bit::Vector; return 2;" != 2) { error("Please install Bit::Vector"); }
+if (eval "use Bit::Vector; return 2;" != 2) {
+    skip("Vgen test requires Bit::Vector");
+} else {
 
-top_filename("$Self->{obj_dir}/vgen.v");
+    top_filename("$Self->{obj_dir}/vgen.v");
 
-run(cmd => ["./vgen.pl",
-            "-o $Self->{top_filename}",
-            #"--seed 0",
-           ]);
+    run(cmd => ["./vgen.pl",
+        "-o $Self->{top_filename}",
+        #"--seed 0",
+    ]);
 
-compile(
+    compile(
     );
 
-execute(
+    execute(
     check_finished => 1,
     );
-
+}
 ok(1);
 1;

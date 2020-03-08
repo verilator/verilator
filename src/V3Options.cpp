@@ -786,6 +786,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoffb(sw, "-skip-identical", bflag/*ref*/))   { m_skipIdentical = bflag; }
             else if ( onoff (sw, "-stats", flag/*ref*/))             { m_stats = flag; }
             else if ( onoff (sw, "-stats-vars", flag/*ref*/))        { m_statsVars = flag; m_stats |= flag; }
+            else if ( onoff (sw, "-structs-unpacked", flag/*ref*/))  { m_structsPacked = flag; }
             else if (!strcmp(sw, "-sv"))                             { m_defaultLanguage = V3LangCode::L1800_2005; }
             else if ( onoff (sw, "-threads-coarsen", flag/*ref*/))   { m_threadsCoarsen = flag; }  // Undocumented, debug
             else if ( onoff (sw, "-trace", flag/*ref*/))             { m_trace = flag; }
@@ -1489,6 +1490,7 @@ V3Options::V3Options() {
     m_savable = false;
     m_stats = false;
     m_statsVars = false;
+    m_structsPacked = true;
     m_systemC = false;
     m_threads = 0;
     m_threadsDpiPure = true;

@@ -683,7 +683,6 @@ class LinkDotFindVisitor : public AstNVisitor {
     string              m_scope;        // Scope text
     AstBegin*           m_beginp;       // Current Begin/end block
     AstNodeFTask*       m_ftaskp;       // Current function/task
-    bool                m_inGenerate;   // Inside a generate
     bool                m_inRecursion;  // Inside a recursive module
     int                 m_paramNum;     // Parameter number, for position based connection
     int                 m_beginNum;     // Begin block number, 0=none seen
@@ -891,16 +890,6 @@ class LinkDotFindVisitor : public AstNVisitor {
         nodep->user1p(m_curSymp);
         iterateChildren(nodep);
     }
-    virtual void visit(AstGenerate* nodep) VL_OVERRIDE {
-        // Begin: ... blocks often replicate under genif/genfor, so simply
-        // suppress duplicate checks.  See t_gen_forif.v for an example.
-        bool lastInGen = m_inGenerate;
-        {
-            m_inGenerate = true;
-            iterateChildren(nodep);
-        }
-        m_inGenerate = lastInGen;
-    }
     virtual void visit(AstBegin* nodep) VL_OVERRIDE {
         UINFO(5,"   "<<nodep<<endl);
         // Rename "genblk"s to include a number
@@ -909,9 +898,6 @@ class LinkDotFindVisitor : public AstNVisitor {
                 ++m_beginNum;
                 nodep->name(nodep->name()+cvtToStr(m_beginNum));
             }
-            // Just for loop index, make special name.  The [00] is so it will "dearray" to same
-            // name as after we expand the GENFOR
-            if (nodep->genforp()) nodep->name(nodep->name());
         }
         // All blocks are numbered in the standard, IE we start with "genblk1" even if only one.
         if (nodep->name()=="" && nodep->unnamed()) {
@@ -928,20 +914,24 @@ class LinkDotFindVisitor : public AstNVisitor {
                 }
             }
         }
-        int oldNum = m_beginNum;
-        AstBegin* oldbegin = m_beginp;
-        VSymEnt* oldCurSymp = m_curSymp;
-        {
-            m_beginNum = 0;
-            m_beginp = nodep;
-            m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_packagep);
-            m_curSymp->fallbackp(oldCurSymp);
-            // Iterate
+        if (nodep->name() == "") {
             iterateChildren(nodep);
+        } else {
+            int oldNum = m_beginNum;
+            AstBegin* oldbegin = m_beginp;
+            VSymEnt* oldCurSymp = m_curSymp;
+            {
+                m_beginNum = 0;
+                m_beginp = nodep;
+                m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_packagep);
+                m_curSymp->fallbackp(oldCurSymp);
+                // Iterate
+                iterateChildren(nodep);
+            }
+            m_curSymp = oldCurSymp;
+            m_beginp = oldbegin;
+            m_beginNum = oldNum;
         }
-        m_curSymp = oldCurSymp;
-        m_beginp = oldbegin;
-        m_beginNum = oldNum;
     }
     virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
         // NodeTask: Remember its name for later resolution
@@ -1202,7 +1192,6 @@ public:
         m_statep = statep;
         m_beginp = NULL;
         m_ftaskp = NULL;
-        m_inGenerate = false;
         m_inRecursion = false;
         m_paramNum = 0;
         m_beginNum = 0;
@@ -2068,6 +2057,12 @@ private:
                         AstVarXRef* refp = new AstVarXRef(nodep->fileline(), nodep->name(),
                                                           m_ds.m_dotText, false);  // lvalue'ness computed later
                         refp->varp(varp);
+                        if (varp->attrSplitVar()) {
+                            refp->v3warn(SPLITVAR, varp->prettyNameQ()
+                                         << " has split_var metacomment but will not be split because"
+                                         << " it is accessed from another module via a dot.");
+                            varp->attrSplitVar(false);
+                        }
                         m_ds.m_dotText = "";
                         if (m_ds.m_unresolved && m_ds.m_unlinkedScope) {
                             string dotted = refp->dotted();
@@ -2464,8 +2459,10 @@ private:
         checkNoDot(nodep);
         VSymEnt* oldCurSymp = m_curSymp;
         {
-            m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
-            UINFO(5,"   cur=se"<<cvtToHex(m_curSymp)<<endl);
+            if (nodep->name() != "") {
+                m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
+                UINFO(5,"   cur=se"<<cvtToHex(m_curSymp)<<endl);
+            }
             iterateChildren(nodep);
         }
         m_ds.m_dotSymp = m_curSymp = oldCurSymp;

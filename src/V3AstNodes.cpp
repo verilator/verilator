@@ -26,6 +26,7 @@
 #include "V3Global.h"
 #include "V3Graph.h"
 #include "V3PartitionGraph.h"  // Just for mtask dumping
+#include "V3EmitCBase.h"
 
 #include <cstdarg>
 #include <iomanip>
@@ -86,6 +87,27 @@ const char* AstNodeUOrStructDType::broken() const {
         }
     }
     return NULL;
+}
+
+void AstNodeCCall::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (funcp()) {
+        str << " " << funcp()->name() << " => ";
+        funcp()->dump(str);
+    } else {
+        str << " " << name();
+    }
+}
+void AstNodeCCall::cloneRelink() {
+    if (m_funcp && m_funcp->clonep()) { m_funcp = m_funcp->clonep(); }
+}
+const char* AstNodeCCall::broken() const {
+    BROKEN_RTN(m_funcp && !m_funcp->brokeExists());
+    return NULL;
+}
+bool AstNodeCCall::isPure() const { return funcp()->pure(); }
+string AstNodeCCall::hiernameProtect() const {
+    return VIdProtect::protectWordsIf(hiername(), protect());
 }
 
 void AstNodeCond::numberOperate(V3Number& out, const V3Number& lhs,
@@ -270,6 +292,17 @@ AstVar::VlArgTypeRecursed AstVar::vlArgTypeRecurse(bool forFunc, const AstNodeDT
             out += " " + key.m_osuffix + key.m_oref;
         }
         out += ", ";
+        out += sub.m_oprefix;
+        if (!sub.m_osuffix.empty() || !sub.m_oref.empty()) {
+            out += " " + sub.m_osuffix + sub.m_oref;
+        }
+        out += "> ";
+        VlArgTypeRecursed info;
+        info.m_oprefix = out;
+        return info;
+    } else if (const AstDynArrayDType* adtypep = VN_CAST_CONST(dtypep, DynArrayDType)) {
+        VlArgTypeRecursed sub = vlArgTypeRecurse(forFunc, adtypep->subDTypep(), true);
+        string out = "VlQueue<";
         out += sub.m_oprefix;
         if (!sub.m_osuffix.empty() || !sub.m_oref.empty()) {
             out += " " + sub.m_osuffix + sub.m_oref;
@@ -668,10 +701,6 @@ AstNode* AstArraySel::baseFromp(AstNode* nodep) {  ///< What is the base variabl
     return nodep;
 }
 
-string AstCCall::hiernameProtect() const {
-    return VIdProtect::protectWordsIf(hiername(), protect());
-}
-
 const char* AstScope::broken() const {
     BROKEN_RTN(m_aboveScopep && !m_aboveScopep->brokeExists());
     BROKEN_RTN(m_aboveCellp && !m_aboveCellp->brokeExists());
@@ -1013,6 +1042,16 @@ void AstMemberSel::dump(std::ostream& str) const {
     if (varp()) { varp()->dump(str); }
     else { str << "%Error:UNLINKED"; }
 }
+void AstMethodCall::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (isStatement()) str << " [STMT]";
+    str << " -> ";
+    if (taskp()) {
+        taskp()->dump(str);
+    } else {
+        str << " -> UNLINKED";
+    }
+}
 void AstModportFTaskRef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (isExport()) str<<" EXPORT";
@@ -1168,6 +1207,13 @@ void AstAssocArrayDType::dumpSmall(std::ostream& str) const {
 string AstAssocArrayDType::prettyDTypeName() const {
     return subDTypep()->prettyDTypeName() + "[" + keyDTypep()->prettyDTypeName() + "]";
 }
+void AstDynArrayDType::dumpSmall(std::ostream& str) const {
+    this->AstNodeDType::dumpSmall(str);
+    str<<"[]";
+}
+string AstDynArrayDType::prettyDTypeName() const {
+    return subDTypep()->prettyDTypeName() + "[]";
+}
 void AstQueueDType::dumpSmall(std::ostream& str) const {
     this->AstNodeDType::dumpSmall(str);
     str<<"[queue]";
@@ -1282,6 +1328,7 @@ void AstBegin::dump(std::ostream& str) const {
     if (unnamed()) str<<" [UNNAMED]";
     if (generate()) str<<" [GEN]";
     if (genforp()) str<<" [GENFOR]";
+    if (implied()) str<<" [IMPLIED]";
 }
 void AstCoverDecl::dump(std::ostream& str) const {
     this->AstNode::dump(str);
@@ -1323,13 +1370,6 @@ void AstCFile::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (source()) str<<" [SRC]";
     if (slow()) str<<" [SLOW]";
-}
-void AstCCall::dump(std::ostream& str) const {
-    this->AstNode::dump(str);
-    if (funcp()) {
-        str<<" "<<funcp()->name()<<" => ";
-        funcp()->dump(str);
-    }
 }
 void AstCFunc::dump(std::ostream& str) const {
     this->AstNode::dump(str);

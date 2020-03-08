@@ -132,6 +132,12 @@ module t;
       $display("[%0t] %%8s=:%8s:", $time,
                svs);
 
+      // Displays without format, must use default
+      $write("d: "); $write(nine); $write(" "); $display(nine);
+      $writeh("h: "); $writeh(nine); $writeh(" "); $displayh(nine);
+      $writeo("o: "); $writeo(nine); $writeo(" "); $displayo(nine);
+      $writeb("b: "); $writeb(nine); $writeb(" "); $displayb(nine);
+
       $display("[%0t] %s%s%s", $time,
                "hel", "lo, fr", "om a very long string. Percent %s are literally substituted in.");
       $display("hel", "lo, fr", "om a concatenated string.");

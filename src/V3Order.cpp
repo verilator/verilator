@@ -91,6 +91,7 @@
 #include "V3Partition.h"
 #include "V3PartitionGraph.h"
 #include "V3SenTree.h"
+#include "V3SplitVar.h"
 #include "V3Stats.h"
 
 #include "V3Order.h"
@@ -892,32 +893,48 @@ private:
         m_graph.userClearVertices();
         // May be very large vector, so only report the "most important"
         // elements. Up to 10 of the widest
-        std::cerr<<V3Error::msgPrefix()
-                 <<"     Widest candidate vars to split:"<<endl;
+        std::cerr << V3Error::warnMore() << "... Widest candidate vars to split:" << endl;
         std::stable_sort(m_unoptflatVars.begin(), m_unoptflatVars.end(), OrderVarWidthCmp());
+        vl_unordered_set<const AstVar*> canSplitList;
         int lim = m_unoptflatVars.size() < 10 ? m_unoptflatVars.size() : 10;
         for (int i = 0; i < lim; i++) {
             OrderVarStdVertex* vsvertexp = m_unoptflatVars[i];
             AstVar* varp = vsvertexp->varScp()->varp();
-            std::cerr<<V3Error::msgPrefix()<<"          "
-                     <<varp->fileline()<<" "<<varp->prettyName()<<std::dec
-                     <<", width "<<varp->width()<<", fanout "
-                     <<vsvertexp->fanout()<<endl;
+            const bool canSplit = V3SplitVar::canSplitVar(varp);
+            std::cerr << V3Error::warnMore() << "    " << varp->fileline() << " "
+                      << varp->prettyName() << std::dec << ", width " << varp->width()
+                      << ", fanout " << vsvertexp->fanout();
+            if (canSplit) {
+                std::cerr <<", can split_var";
+                canSplitList.insert(varp);
+            }
+            std::cerr << std::endl;
         }
         // Up to 10 of the most fanned out
-        std::cerr<<V3Error::msgPrefix()
-                 <<"     Most fanned out candidate vars to split:"<<endl;
+        std::cerr << V3Error::warnMore()
+                  << "... Most fanned out candidate vars to split:" << endl;
         std::stable_sort(m_unoptflatVars.begin(), m_unoptflatVars.end(),
                          OrderVarFanoutCmp());
         lim = m_unoptflatVars.size() < 10 ? m_unoptflatVars.size() : 10;
         for (int i = 0; i < lim; i++) {
             OrderVarStdVertex* vsvertexp = m_unoptflatVars[i];
             AstVar* varp = vsvertexp->varScp()->varp();
-            std::cerr<<V3Error::msgPrefix()<<"          "
-                     <<varp->fileline()<<" "<<varp->prettyName()
-                     <<", width "<<std::dec<<varp->width()
-                     <<", fanout "<<vsvertexp->fanout()<<endl;
+            const bool canSplit = V3SplitVar::canSplitVar(varp);
+            std::cerr << V3Error::warnMore() << "    " << varp->fileline() << " "
+                      << varp->prettyName() << ", width " << std::dec << varp->width()
+                      << ", fanout " << vsvertexp->fanout();
+            if (canSplit) {
+                std::cerr << ", can split_var";
+                canSplitList.insert(varp);
+            }
+            std::cerr<<endl;
         }
+        if (!canSplitList.empty()) {
+            std::cerr << V3Error::warnMore()
+                      << "... Suggest add /*verilator split_var*/ to appropriate variables above."
+                      << std::endl;
+        }
+        V3Stats::addStat("Order, SplitVar, candidates", canSplitList.size());
         m_unoptflatVars.clear();
     }
 

@@ -553,11 +553,25 @@ class AstSenTree;
 %token<fl>		yD_COUNTONES	"$countones"
 %token<fl>		yD_DIMENSIONS	"$dimensions"
 %token<fl>		yD_DISPLAY	"$display"
+%token<fl>		yD_DISPLAYB	"$displayb"
+%token<fl>		yD_DISPLAYH	"$displayh"
+%token<fl>		yD_DISPLAYO	"$displayo"
+%token<fl>		yD_DUMPALL	"$dumpall"
+%token<fl>		yD_DUMPFILE	"$dumpfile"
+%token<fl>		yD_DUMPFLUSH	"$dumpflush"
+%token<fl>		yD_DUMPLIMIT	"$dumplimit"
+%token<fl>		yD_DUMPOFF	"$dumpoff"
+%token<fl>		yD_DUMPON	"$dumpon"
+%token<fl>		yD_DUMPPORTS	"$dumpports"
+%token<fl>		yD_DUMPVARS	"$dumpvars"
 %token<fl>		yD_ERROR	"$error"
 %token<fl>		yD_EXP		"$exp"
 %token<fl>		yD_FATAL	"$fatal"
 %token<fl>		yD_FCLOSE	"$fclose"
 %token<fl>		yD_FDISPLAY	"$fdisplay"
+%token<fl>		yD_FDISPLAYB	"$fdisplayb"
+%token<fl>		yD_FDISPLAYH	"$fdisplayh"
+%token<fl>		yD_FDISPLAYO	"$fdisplayo"
 %token<fl>		yD_FEOF		"$feof"
 %token<fl>		yD_FFLUSH	"$fflush"
 %token<fl>		yD_FGETC	"$fgetc"
@@ -571,6 +585,9 @@ class AstSenTree;
 %token<fl>		yD_FSEEK	"$fseek"
 %token<fl>		yD_FTELL	"$ftell"
 %token<fl>		yD_FWRITE	"$fwrite"
+%token<fl>		yD_FWRITEB	"$fwriteb"
+%token<fl>		yD_FWRITEH	"$fwriteh"
+%token<fl>		yD_FWRITEO	"$fwriteo"
 %token<fl>		yD_HIGH		"$high"
 %token<fl>		yD_HYPOT	"$hypot"
 %token<fl>		yD_INCREMENT	"$increment"
@@ -606,6 +623,9 @@ class AstSenTree;
 %token<fl>		yD_STIME	"$stime"
 %token<fl>		yD_STOP		"$stop"
 %token<fl>		yD_SWRITE	"$swrite"
+%token<fl>		yD_SWRITEB	"$swriteb"
+%token<fl>		yD_SWRITEH	"$swriteh"
+%token<fl>		yD_SWRITEO	"$swriteo"
 %token<fl>		yD_SYSTEM	"$system"
 %token<fl>		yD_TAN		"$tan"
 %token<fl>		yD_TANH		"$tanh"
@@ -619,7 +639,10 @@ class AstSenTree;
 %token<fl>		yD_VALUEPLUSARGS "$value$plusargs"
 %token<fl>		yD_WARNING	"$warning"
 %token<fl>		yD_WRITE	"$write"
+%token<fl>		yD_WRITEB	"$writeb"
+%token<fl>		yD_WRITEH	"$writeh"
 %token<fl>		yD_WRITEMEMH	"$writememh"
+%token<fl>		yD_WRITEO	"$writeo"
 
 %token<fl>		yVL_CLOCK		"/*verilator sc_clock*/"
 %token<fl>		yVL_CLOCKER		"/*verilator clocker*/"
@@ -639,6 +662,7 @@ class AstSenTree;
 %token<fl>		yVL_PUBLIC_FLAT_RD	"/*verilator public_flat_rd*/"
 %token<fl>		yVL_PUBLIC_FLAT_RW	"/*verilator public_flat_rw*/"
 %token<fl>		yVL_PUBLIC_MODULE	"/*verilator public_module*/"
+%token<fl>		yVL_SPLIT_VAR		"/*verilator split_var*/"
 
 %token<fl>		yP_TICK		"'"
 %token<fl>		yP_TICKBRA	"'{"
@@ -1155,7 +1179,7 @@ interface_item<nodep>:		// IEEE: interface_item + non_port_interface_item
 	;
 
 interface_generate_region<nodep>:		// ==IEEE: generate_region
-		yGENERATE interface_itemList yENDGENERATE	{ $$ = new AstGenerate($1, $2); }
+		yGENERATE interface_itemList yENDGENERATE	{ $$ = $2; }
 	|	yGENERATE yENDGENERATE			{ $$ = NULL; }
 	;
 
@@ -2035,7 +2059,7 @@ bind_instantiation<nodep>:	// ==IEEE: bind_instantiation
 // different, so we copy all rules for checkers.
 
 generate_region<nodep>:		// ==IEEE: generate_region
-		yGENERATE ~c~genItemList yENDGENERATE	{ $$ = new AstGenerate($1, $2); }
+		yGENERATE ~c~genItemList yENDGENERATE	{ $$ = $2; }
 	|	yGENERATE yENDGENERATE			{ $$ = NULL; }
 	;
 
@@ -2043,20 +2067,22 @@ generate_region<nodep>:		// ==IEEE: generate_region
 //UNSUP		BISONPRE_COPY(generate_region,{s/~c~/c_/g})	// {copied}
 //UNSUP	;
 
-generate_block_or_null<nodep>:	// IEEE: generate_block_or_null
+generate_block_or_null<nodep>:	// IEEE: generate_block_or_null (called from gencase/genif/genfor)
 	//	';'		// is included in
 	//			// IEEE: generate_block
 	//			// Must always return a BEGIN node, or NULL - see GenFor construction
-		generate_item				{ $$ = $1 ? (new AstBegin($1->fileline(),"genblk",$1,true)) : NULL; }
+		generate_item				{ $$ = $1 ? (new AstBegin($1->fileline(),"",$1,true,true)) : NULL; }
 	|	genItemBegin				{ $$ = $1; }
 	;
 
 genItemBegin<nodep>:		// IEEE: part of generate_block
-		yBEGIN ~c~genItemList yEND		{ $$ = new AstBegin($1,"genblk",$2,true); }
+		yBEGIN ~c~genItemList yEND		{ $$ = new AstBegin($1,"",$2,true,false); }
 	|	yBEGIN yEND				{ $$ = NULL; }
-	|	id ':' yBEGIN ~c~genItemList yEND endLabelE	{ $$ = new AstBegin($<fl>1,*$1,$4,true); GRAMMARP->endLabel($<fl>6,*$1,$6); }
+	|	id ':' yBEGIN ~c~genItemList yEND endLabelE
+			{ $$ = new AstBegin($<fl>1,*$1,$4,true,false); GRAMMARP->endLabel($<fl>6,*$1,$6); }
 	|	id ':' yBEGIN yEND endLabelE		{ $$ = NULL; GRAMMARP->endLabel($<fl>5,*$1,$5); }
-	|	yBEGIN ':' idAny ~c~ genItemList yEND endLabelE	{ $$ = new AstBegin($<fl>3,*$3,$4,true); GRAMMARP->endLabel($<fl>6,*$3,$6); }
+	|	yBEGIN ':' idAny ~c~genItemList yEND endLabelE
+			{ $$ = new AstBegin($<fl>3,*$3,$4,true,false); GRAMMARP->endLabel($<fl>6,*$3,$6); }
 	|	yBEGIN ':' idAny yEND endLabelE		{ $$ = NULL; GRAMMARP->endLabel($<fl>5,*$3,$5); }
 	;
 
@@ -2114,11 +2140,11 @@ loop_generate_construct<nodep>:	// ==IEEE: loop_generate_construct
 			{ // Convert BEGIN(...) to BEGIN(GENFOR(...)), as we need the BEGIN to hide the local genvar
 			  AstBegin* lowerBegp = VN_CAST($9, Begin);
 			  UASSERT_OBJ(!($9 && !lowerBegp), $9, "Child of GENFOR should have been begin");
-			  if (!lowerBegp) lowerBegp = new AstBegin($1,"genblk",NULL,true);  // Empty body
+			  if (!lowerBegp) lowerBegp = new AstBegin($1, "genblk", NULL, true, true);  // Empty body
 			  AstNode* lowerNoBegp = lowerBegp->stmtsp();
 			  if (lowerNoBegp) lowerNoBegp->unlinkFrBackWithNext();
 			  //
-			  AstBegin* blkp = new AstBegin($1,lowerBegp->name(),NULL,true);
+			  AstBegin* blkp = new AstBegin($1, lowerBegp->name(), NULL, true, true);
 			  // V3LinkDot detects BEGIN(GENFOR(...)) as a special case
 			  AstNode* initp = $3;  AstNode* varp = $3;
 			  if (VN_IS(varp, Var)) {  // Genvar
@@ -2280,6 +2306,7 @@ sigAttr<nodep>:
 	|	yVL_ISOLATE_ASSIGNMENTS			{ $$ = new AstAttrOf($1,AstAttrType::VAR_ISOLATE_ASSIGNMENTS); }
 	|	yVL_SC_BV				{ $$ = new AstAttrOf($1,AstAttrType::VAR_SC_BV); }
 	|	yVL_SFORMAT				{ $$ = new AstAttrOf($1,AstAttrType::VAR_SFORMAT); }
+	|	yVL_SPLIT_VAR				{ $$ = new AstAttrOf($1,AstAttrType::VAR_SPLIT_VAR); }
 	;
 
 rangeListE<rangep>:		// IEEE: [{packed_dimension}]
@@ -2791,10 +2818,10 @@ statement_item<nodep>:		// IEEE: statement_item
 
 statementFor<beginp>:		// IEEE: part of statement
 		yFOR '(' for_initialization expr ';' for_stepE ')' stmtBlock
-							{ $$ = new AstBegin($1,"",$3);
+							{ $$ = new AstBegin($1, "", $3, false, true);
 							  $$->addStmtsp(new AstWhile($1, $4,$8,$6)); }
 	|	yFOR '(' for_initialization ';' for_stepE ')' stmtBlock
-							{ $$ = new AstBegin($1,"",$3);
+							{ $$ = new AstBegin($1, "", $3, false, true);
 							  $$->addStmtsp(new AstWhile($1, new AstConst($1,AstConst::LogicTrue()),$7,$5)); }
 	;
 
@@ -2876,15 +2903,14 @@ finc_or_dec_expression<nodep>:	// ==IEEE: inc_or_dec_expression
 
 class_new<nodep>:		// ==IEEE: class_new
 	//			// Special precence so (...) doesn't match expr
-		yNEW__ETC				{ $$ = new AstNew($1); }
-	|	yNEW__ETC expr				{ $$ = new AstNew($1); BBUNSUP($1, "Unsupported: new with expression"); }
-	//			// Grammer abiguity; we assume "new (x)" the () are a argument, not expr
-	|	yNEW__PAREN '(' list_of_argumentsE ')'	{ $$ = new AstNew($1); BBUNSUP($1, "Unsupported: new with arguments"); }
+		yNEW__ETC				{ $$ = new AstNew($1,  NULL); }
+	|	yNEW__ETC expr				{ $$ = new AstNewCopy($1, $2); }
+	|	yNEW__PAREN '(' list_of_argumentsE ')'	{ $$ = new AstNew($1, $3); }
 	;
 
 dynamic_array_new<nodep>:	// ==IEEE: dynamic_array_new
-		yNEW__ETC '[' expr ']'			{ $$ = new AstNew($1); BBUNSUP($1, "Unsupported: Dynamic array new"); }
-	|	yNEW__ETC '[' expr ']' '(' expr ')'	{ $$ = new AstNew($1); BBUNSUP($1, "Unsupported: Dynamic array new"); }
+		yNEW__ETC '[' expr ']'			{ $$ = new AstNewDynamic($1, $3, NULL); }
+	|	yNEW__ETC '[' expr ']' '(' expr ')'	{ $$ = new AstNewDynamic($1, $3, $6); }
 	;
 
 //************************************************
@@ -3150,8 +3176,30 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yaD_DPI '(' exprList ')'		{ $$ = new AstTaskRef($<fl>1, *$1, $3);
 							  GRAMMARP->argWrapList(VN_CAST($$, TaskRef)); }
 	//
+	|	yD_DUMPPORTS '(' idDotted ',' expr ')'	{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::FILE, $5); DEL($3);
+    							  $$->addNext(new AstDumpCtl($<fl>1, VDumpCtlType::VARS,
+										     new AstConst($<fl>1, 1))); }
+	|	yD_DUMPPORTS '(' ',' expr ')'		{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::FILE, $4);
+    							  $$->addNext(new AstDumpCtl($<fl>1, VDumpCtlType::VARS,
+										     new AstConst($<fl>1, 1))); }
+	|	yD_DUMPFILE '(' expr ')'		{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::FILE, $3); }
+	|	yD_DUMPVARS parenE			{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::VARS,
+									      new AstConst($<fl>1, 0)); }
+	|	yD_DUMPVARS '(' expr ')'		{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::VARS, $3); }
+	|	yD_DUMPVARS '(' expr ',' idDotted ')'	{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::VARS, $3); DEL($5); }
+	|	yD_DUMPALL parenE			{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::ALL); }
+	|	yD_DUMPALL '(' expr ')'			{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::ALL); DEL($3); }
+	|	yD_DUMPFLUSH parenE			{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::FLUSH); }
+	|	yD_DUMPFLUSH '(' expr ')'		{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::FLUSH); DEL($3); }
+	|	yD_DUMPLIMIT '(' expr ')'		{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::LIMIT, $3); }
+	|	yD_DUMPLIMIT '(' expr ',' expr ')'	{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::LIMIT, $3); DEL($5); }
+	|	yD_DUMPOFF parenE			{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::OFF); }
+	|	yD_DUMPOFF '(' expr ')'			{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::OFF); DEL($3); }
+	|	yD_DUMPON parenE			{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::ON); }
+	|	yD_DUMPON '(' expr ')'			{ $$ = new AstDumpCtl($<fl>1, VDumpCtlType::ON); DEL($3); }
+	//
 	|	yD_C '(' cStrList ')'			{ $$ = (v3Global.opt.ignc() ? NULL : new AstUCStmt($1,$3)); }
-	|	yD_SYSTEM  '(' expr ')'			{ $$ = new AstSystemT($1, $3); }
+	|	yD_SYSTEM '(' expr ')'			{ $$ = new AstSystemT($1, $3); }
 	//
 	|	yD_FCLOSE '(' idClassSel ')'		{ $$ = new AstFClose($1, $3); }
 	|	yD_FFLUSH parenE			{ $$ = NULL; BBUNSUP($1, "Unsupported: $fflush of all handles does not map to C++."); }
@@ -3161,16 +3209,40 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_STOP parenE				{ $$ = new AstStop($1, false); }
 	|	yD_STOP '(' expr ')'			{ $$ = new AstStop($1, false); DEL($3); }
 	//
-	|	yD_SFORMAT '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
-	|	yD_SWRITE  '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1,$3,*$5,$6); }
+	|	yD_SFORMAT '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1, $3, *$5, $6); }
+	|	yD_SWRITE  '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1, $3, *$5, $6); }
+	|	yD_SWRITEB '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1, $3, *$5, $6, 'b'); }
+	|	yD_SWRITEH '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1, $3, *$5, $6, 'h'); }
+	|	yD_SWRITEO '(' expr ',' str commaEListE ')'	{ $$ = new AstSFormat($1, $3, *$5, $6, 'o'); }
 	//
 	|	yD_DISPLAY  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, NULL, NULL); }
 	|	yD_DISPLAY  '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, NULL, $3); }
+	|	yD_DISPLAYB  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, NULL, NULL, 'b'); }
+	|	yD_DISPLAYB  '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, NULL, $3, 'b'); }
+	|	yD_DISPLAYH  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, NULL, NULL, 'h'); }
+	|	yD_DISPLAYH  '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, NULL, $3, 'h'); }
+	|	yD_DISPLAYO  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, NULL, NULL, 'o'); }
+	|	yD_DISPLAYO  '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, NULL, $3, 'o'); }
 	|	yD_WRITE    parenE			{ $$ = NULL; }  // NOP
 	|	yD_WRITE    '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   NULL, $3); }
+	|	yD_WRITEB   parenE			{ $$ = NULL; }  // NOP
+	|	yD_WRITEB   '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   NULL, $3, 'b'); }
+	|	yD_WRITEH   parenE			{ $$ = NULL; }  // NOP
+	|	yD_WRITEH   '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   NULL, $3, 'h'); }
+	|	yD_WRITEO   parenE			{ $$ = NULL; }  // NOP
+	|	yD_WRITEO   '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   NULL, $3, 'o'); }
 	|	yD_FDISPLAY '(' expr ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, NULL); }
 	|	yD_FDISPLAY '(' expr ',' exprListE ')' 	{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, $5); }
+	|	yD_FDISPLAYB '(' expr ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, NULL, 'b'); }
+	|	yD_FDISPLAYB '(' expr ',' exprListE ')' { $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, $5, 'b'); }
+	|	yD_FDISPLAYH '(' expr ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, NULL, 'h'); }
+	|	yD_FDISPLAYH '(' expr ',' exprListE ')' { $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, $5, 'h'); }
+	|	yD_FDISPLAYO '(' expr ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, NULL, 'o'); }
+	|	yD_FDISPLAYO '(' expr ',' exprListE ')' { $$ = new AstDisplay($1,AstDisplayType::DT_DISPLAY, $3, $5, 'o'); }
 	|	yD_FWRITE   '(' expr ',' exprListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   $3, $5); }
+	|	yD_FWRITEB  '(' expr ',' exprListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   $3, $5, 'b'); }
+	|	yD_FWRITEO  '(' expr ',' exprListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   $3, $5, 'h'); }
+	|	yD_FWRITEH  '(' expr ',' exprListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_WRITE,   $3, $5, 'o'); }
 	|	yD_INFO	    parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,    NULL, NULL); }
 	|	yD_INFO	    '(' exprList ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_INFO,    NULL, $3); }
 	|	yD_WARNING  parenE			{ $$ = new AstDisplay($1,AstDisplayType::DT_WARNING, NULL, NULL); }
@@ -4471,7 +4543,7 @@ assertion_item<nodep>:		// ==IEEE: assertion_item
 deferred_immediate_assertion_item<nodep>:	// ==IEEE: deferred_immediate_assertion_item
 		deferred_immediate_assertion_statement	{ $$ = $1; }
 	|	id/*block_identifier*/ ':' deferred_immediate_assertion_statement
-			{ $$ = new AstBegin($<fl>1, *$1, $3); }
+			{ $$ = new AstBegin($<fl>1, *$1, $3, false, true); }
 	;
 
 procedural_assertion_statement<nodep>:	// ==IEEE: procedural_assertion_statement
@@ -4526,7 +4598,8 @@ deferred_immediate_assertion_statement<nodep>:	// ==IEEE: deferred_immediate_ass
 
 concurrent_assertion_item<nodep>:	// IEEE: concurrent_assertion_item
 		concurrent_assertion_statement		{ $$ = $1; }
-	|	id/*block_identifier*/ ':' concurrent_assertion_statement	{ $$ = new AstBegin($<fl>1, *$1, $3); }
+	|	id/*block_identifier*/ ':' concurrent_assertion_statement
+			{ $$ = new AstBegin($<fl>1, *$1, $3, false, true); }
 	//			// IEEE: checker_instantiation
 	//			// identical to module_instantiation; see etcInst
 	;
@@ -5397,7 +5470,7 @@ ps_id_etc:		// package_scope + general id
 		package_scopeIdFollowsE id		{ }
 	;
 
-ps_type<dtypep>:		// IEEE: ps_parameter_identifier | ps_type_identifier
+ps_type<refdtypep>:		// IEEE: ps_parameter_identifier | ps_type_identifier
 				// Even though we looked up the type and have a AstNode* to it,
 				// we can't fully resolve it because it may have been just a forward definition.
 		package_scopeIdFollowsE idRefDType	{ $$ = $2; $2->packagep($1); }
@@ -5406,7 +5479,7 @@ ps_type<dtypep>:		// IEEE: ps_parameter_identifier | ps_type_identifier
 
 //=== Below rules assume special scoping per above
 
-class_typeWithoutId<nodep>:	// as with class_typeWithoutId but allow yaID__aTYPE
+class_typeWithoutId<refdtypep>:	// as with class_typeWithoutId but allow yaID__aTYPE
 	//			// and we thus don't need to resolve it in specified package
 		package_scopeIdFollowsE class_typeOneList	{ $$ = $2; $2->packagep($1); }
 	;
@@ -5505,8 +5578,8 @@ class_method<nodep>:		// ==IEEE: class_method
 
 class_item_qualifier<nodep>:	// IEEE: class_item_qualifier minus ySTATIC
 	//			// IMPORTANT: yPROTECTED | yLOCAL is in a lex rule
-		yPROTECTED				{ $$ = NULL; }  // Ignoring protected until implemented
-	|	yLOCAL__ETC				{ $$ = NULL; BBUNSUP($1, "Unsupported: 'local' class item"); }
+		yPROTECTED				{ $$ = NULL; }  // Ignoring protected until warning implemented
+	|	yLOCAL__ETC				{ $$ = NULL; }  // Ignoring local until warning implemented
 	|	ySTATIC__ETC				{ $$ = NULL; BBUNSUP($1, "Unsupported: 'static' class item"); }
 	;
 

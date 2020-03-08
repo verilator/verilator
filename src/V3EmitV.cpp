@@ -76,18 +76,13 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
     }
 
     virtual void visit(AstBegin* nodep) VL_OVERRIDE {
-        if (nodep->unnamed()) {
+        if (nodep->name() == "") {
             putbs("begin\n");
         } else {
             putbs("begin : "+nodep->name()+"\n");
         }
         iterateChildren(nodep);
         puts("end\n");
-    }
-    virtual void visit(AstGenerate* nodep) VL_OVERRIDE {
-        putfs(nodep, "generate\n");
-        iterateChildren(nodep);
-        putqs(nodep, "end\n");
     }
     virtual void visit(AstFinal* nodep) VL_OVERRIDE {
         putfs(nodep, "final begin\n");

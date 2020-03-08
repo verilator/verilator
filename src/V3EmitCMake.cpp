@@ -160,13 +160,13 @@ class CMakeEmitter {
         }
         if (v3Global.opt.trace()) {
             global.push_back("${VERILATOR_ROOT}/include/"
-                             + v3Global.opt.traceSourceName()+"_c.cpp");
+                             + v3Global.opt.traceSourceBase() + "_c.cpp");
             if (v3Global.opt.systemC()) {
                 if (v3Global.opt.traceFormat() != TraceFormat::VCD) {
                     v3error("Unsupported: This trace format is not supported in SystemC, use VCD format.");
                 }
                 global.push_back("${VERILATOR_ROOT}/include/"
-                                    + v3Global.opt.traceSourceName()+"_sc.cpp");
+                                    + v3Global.opt.traceSourceLang() + ".cpp");
             }
         }
         if (v3Global.opt.mtasks()) {

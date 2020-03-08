@@ -96,7 +96,7 @@ private:
     void visitStmt(AstNodeStmt* nodep) {
         m_depth++;
         if (m_depth > v3Global.opt.compLimitBlocks()
-            && !VN_IS(nodep, CCall)) {  // Already done
+            && !VN_IS(nodep, NodeCCall)) {  // Already done
             UINFO(4, "DeepBlocks "<<m_depth<<" "<<nodep<<endl);
             AstNode* backp = nodep->backp();  // Only for debug
             if (debug()>=9) backp->dumpTree(cout, "-   pre : ");

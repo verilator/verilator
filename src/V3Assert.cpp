@@ -150,7 +150,7 @@ private:
             // It's more LIKELY that we'll take the NULL if clause
             // than the sim-killing else clause:
             ifp->branchPred(VBranchPred::BP_LIKELY);
-            bodysp = ifp;
+            bodysp = newIfAssertOn(ifp);
         } else {
             nodep->v3fatalSrc("Unknown node type");
         }

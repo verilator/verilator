@@ -245,11 +245,12 @@ void VL_WRITEMEM_N(bool hex, int bits, const std::string& filename,
 }
 
 //===================================================================
-// Verilog queue container
+// Verilog queue and dynamic array container
 // There are no multithreaded locks on this; the base variable must
 // be protected by other means
 //
 // Bound here is the maximum size() allowed, e.g. 1 + SystemVerilog bound
+// For dynamic arrays it is always zero
 template <class T_Value, size_t T_MaxSize = 0> class VlQueue {
 private:
     // TYPES
@@ -279,6 +280,21 @@ public:
     void clear() { m_deque.clear(); }
     void erase(size_t index) { if (VL_LIKELY(index < m_deque.size())) m_deque.erase(index); }
 
+    // Dynamic array new[] becomes a renew()
+    void renew(size_t size) {
+        clear();
+        m_deque.resize(size, atDefault());
+    }
+    // Dynamic array new[]() becomes a renew_copy()
+    void renew_copy(size_t size, const VlQueue<T_Value,T_MaxSize>& rhs) {
+        if (size == 0) {
+            clear();
+        } else {
+            *this = rhs;
+            m_deque.resize(size, atDefault());
+        }
+    }
+
     // function void q.push_front(value)
     void push_front(const T_Value& value) {
         m_deque.push_front(value);
@@ -304,6 +320,7 @@ public:
     // because we need to be able to insert only when the value is set
     T_Value& at(size_t index) {
         static T_Value s_throwAway;
+        // Needs to work for dynamic arrays, so does not use T_MaxSize
         if (VL_UNLIKELY(index >= m_deque.size())) {
             s_throwAway = atDefault();
             return s_throwAway;
@@ -313,6 +330,7 @@ public:
     // Accessing. Verilog: v = assoc[index]
     const T_Value& at(size_t index) const {
         static T_Value s_throwAway;
+        // Needs to work for dynamic arrays, so does not use T_MaxSize
         if (VL_UNLIKELY(index >= m_deque.size())) return atDefault();
         else return m_deque[index];
     }
@@ -440,5 +458,11 @@ inline IData VL_CMP_NN(const std::string& lhs, const std::string& rhs, bool igno
 }
 
 extern IData VL_ATOI_N(const std::string& str, int base) VL_PURE;
+
+//======================================================================
+// Dumping
+
+extern const char* vl_dumpctl_filenamep(bool setit = false,
+                                        const std::string& filename = "") VL_MT_SAFE;
 
 #endif  // Guard

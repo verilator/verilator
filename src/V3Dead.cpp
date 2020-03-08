@@ -188,6 +188,10 @@ private:
             else nodep->packagep()->user1Inc();
         }
     }
+    virtual void visit(AstMethodCall* nodep) VL_OVERRIDE {
+        iterateChildren(nodep);
+        checkAll(nodep);
+    }
     virtual void visit(AstRefDType* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         checkDType(nodep);
@@ -209,6 +213,12 @@ private:
             if (m_elimCells) nodep->packagep(NULL);
             else nodep->packagep()->user1Inc();
         }
+        checkAll(nodep);
+    }
+    virtual void visit(AstMemberSel* nodep) VL_OVERRIDE {
+        iterateChildren(nodep);
+        if (nodep->varp()) nodep->varp()->user1Inc();
+        if (nodep->fromp()->dtypep()) nodep->fromp()->dtypep()->user1Inc();  // classref
         checkAll(nodep);
     }
     virtual void visit(AstModport* nodep) VL_OVERRIDE {

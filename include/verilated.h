@@ -83,6 +83,7 @@ class VerilatedVar;
 class VerilatedVarNameMap;
 class VerilatedVcd;
 class VerilatedVcdC;
+class VerilatedVcdSc;
 class VerilatedFst;
 class VerilatedFstC;
 
@@ -200,13 +201,19 @@ public:
     /// Check that the current thread ID is the same as the construction thread ID
     void check() VL_MT_UNSAFE_ONE {
         if (VL_UNCOVERABLE(m_threadid != VL_THREAD_ID())) {
-            fatal_different();  // LCOV_EXCL_LINE
+            if (m_threadid == 0) {
+                m_threadid = VL_THREAD_ID();
+            } else {
+                fatal_different();  // LCOV_EXCL_LINE
+            }
         }
     }
+    void changeThread() { m_threadid = 0; }  // Allow intentional change-of-thread
     static void fatal_different() VL_MT_SAFE;
 #else  // !VL_THREADED || !VL_DEBUG
 public:
     void check() {}
+    void changeThread() {}
 #endif
 };
 
@@ -2013,6 +2020,12 @@ static inline WDataOutP VL_SHIFTR_WWW(int obits, int lbits, int rbits,
     }
     return VL_SHIFTR_WWI(obits, lbits, 32, owp, lwp, rwp[0]);
 }
+static inline WDataOutP VL_SHIFTR_WWQ(int obits, int lbits, int rbits,
+                                      WDataOutP owp, WDataInP lwp, QData rd) VL_MT_SAFE {
+    WData rwp[VL_WQ_WORDS_E]; VL_SET_WQ(rwp, rd);
+    return VL_SHIFTR_WWW(obits, lbits, rbits, owp, lwp, rwp);
+}
+
 static inline IData VL_SHIFTR_IIW(int obits, int, int rbits, IData lhs, WDataInP rwp) VL_MT_SAFE {
     for (int i = 1; i < VL_WORDS_I(rbits); ++i) {
         if (VL_UNLIKELY(rwp[i])) {  // Huge shift 1>>32 or more
@@ -2097,6 +2110,11 @@ static inline WDataOutP VL_SHIFTRS_WWW(int obits, int lbits, int rbits,
         return owp;
     }
     return VL_SHIFTRS_WWI(obits, lbits, 32, owp, lwp, rwp[0]);
+}
+static inline WDataOutP VL_SHIFTRS_WWQ(int obits, int lbits, int rbits,
+                                       WDataOutP owp, WDataInP lwp, QData rd) VL_MT_SAFE {
+    WData rwp[VL_WQ_WORDS_E]; VL_SET_WQ(rwp, rd);
+    return VL_SHIFTRS_WWW(obits, lbits, rbits, owp, lwp, rwp);
 }
 static inline IData VL_SHIFTRS_IIW(int obits, int lbits, int rbits,
                                    IData lhs, WDataInP rwp) VL_MT_SAFE {

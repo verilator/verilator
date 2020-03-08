@@ -3,6 +3,29 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in []. Thanks!
 
 
+* Verilator 4.030 2020-03-08
+
+**    Add split_var metacomment to assist UNOPTFLAT fixes, #2066. [Yutetsu TAKATSUKASA]
+
+**    Add support for $dumpfile and $dumpvars, #2126. [Alexander Grobman]
+
+**    Add support for dynamic arrays, #379.
+
+***   Add +verilator+noassert flag to disable assertion checking. [Tobias Wölfel]
+
+***   Add check for assertOn for asserts, #2162. [Tobias Wölfel]
+
+***   Add --structs-packed for forward compatibility.
+
+***   Fix genblk naming with directly nested generate blocks, #2176. [Alexander Grobman]
+
+****  Implement $displayb/o/h, $writeb/o/h, etc, #1637.
+
+****  Use gcc -Os in examples instead of -O2 for better average performance.
+
+****  Fix undeclared VL_SHIFTR_WWQ, #2114. [Alex Solomatnikov]
+
+
 * Verilator 4.028 2020-02-08
 
 **    Support attributes (public, isolate_assignments, etc.) in configuration files.
@@ -44,6 +67,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 ****  Fix WIDTH warning on </<= of narrower value, #2141. [agrobman]
 
 ****  Fix OpenSolaris issues, #2154. [brancoliticus]
+
+****  Fix gated clocks under --protect-lib, #2169. [Todd Strader]
 
 
 * Verilator 4.026 2020-01-11

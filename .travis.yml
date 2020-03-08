@@ -25,7 +25,8 @@ cache:
 
 before_install:
 # Perl modules needed for testing
-  - yes yes | sudo cpan -fi Unix::Processors Parallel::Forker Bit::Vector
+# Not listing Bit::Vector as slow to install, and only skips one test
+  - yes yes | sudo cpan -fi Unix::Processors Parallel::Forker
   - sudo apt-get install gdb gtkwave
   - sudo apt-get install libgoogle-perftools-dev
 before_script:
@@ -58,9 +59,14 @@ jobs:
       script: ci/test.sh vlt
     - if: type != cron
       stage: test
-      name: Vltmt test
+      name: Vltmt set 0 test
       compiler: gcc
-      script: ci/test.sh vltmt
+      script: ci/test.sh vltmt0
+    - if: type != cron
+      stage: test
+      name: Vltmt set 1 test
+      compiler: gcc
+      script: ci/test.sh vltmt1
 # Cron builds try different OS/compiler combinations
     - if: type = cron
       stage: "Build Verilator"

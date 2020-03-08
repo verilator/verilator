@@ -421,6 +421,7 @@ more information.
      +verilator+prof+threads+window+I<value>   Set profile duration
      +verilator+rand+reset+I<value>    Set random reset technique
      +verilator+seed+I<value>          Set random seed
+     +verilator+noassert               Disable assert checking
      +verilator+V                      Verbose version and config
      +verilator+version                Show version and exit
 
@@ -1343,6 +1344,13 @@ Creates more detailed statistics, including a list of all the variables by
 size (plain --stats just gives a count).  See --stats, which is implied by
 this.
 
+=item --structs-packed
+
+Converts all unpacked structures to packed structures and issues a UNPACKED
+warning.  Currently this is the default and --no-structs-packed will not
+work.  Specifying this option allows for forward compatibility when a
+future version of Verilator no longer always packs unpacked structures.
+
 =item -sv
 
 Specifies SystemVerilog language features should be enabled; equivalent to
@@ -1773,6 +1781,11 @@ For $random and "-x-initial unique", set the simulation runtime random seed
 value.  If zero or not specified picks a value from the system random
 number generator.
 
+=item +verilator+noassert
+
+Disable assert checking per runtime argument. This is the same as calling
+"Verilated::assertOn(false)" in the model.
+
 =item +verilator+V
 
 Shows the verbose version, including configuration information.
@@ -1900,13 +1913,13 @@ Now we run Verilator on our little example.
 
 We then can compile it
 
-    cd obj_dir
-    make -j -f Vour.mk Vour__ALL.a
-    make -j -f Vour.mk ../sc_main.o verilated.o
+    make -j -C obj_dir -f Vour.mk Vour__ALL.a
+    make -j -C obj_dir -f Vour.mk ../sc_main.o verilated.o
 
 And link with SystemC.  Note your path to the libraries may vary,
 depending on the operating system.
 
+    cd obj_dir
     export SYSTEMC_LIBDIR=/path/to/where/libsystemc.a/exists
     export LD_LIBRARY_PATH=$SYSTEMC_LIBDIR:$LD_LIBRARY_PATH
     # Might be needed if SystemC 2.3.0
@@ -1928,6 +1941,39 @@ And we get the same output as the C++ example:
 Really, you're better off using a Makefile to do all this for you.  Then,
 when your source changes it will automatically run all of these steps.  See
 the examples directory in the distribution.
+
+
+=head1 EVALUATION LOOP
+
+When using SystemC, when Verilator is evaluated is managed by the SystemC
+kernel, and for the most part can be ignored.  When using C++, the user
+must call eval(), or eval_step() and eval_end_step().
+
+1. When there is a single design instantiated at the C++ level that need to
+evaluate, just call designp->eval().
+
+2. When there are multiple designs instantiated each at the C++ level that
+need to evaluate, call first_designp->eval_step() then ->eval_step() on all
+other designs.  Then call ->eval_end_step() on the first design then all
+other designs.  If there is only a single design, you would call
+eval_step() then eval_end_step(); in fact eval() described above is just a
+wrapper which calls these two functions.
+
+When eval() is called Verilator looks for changes in clock signals and
+evaluates related sequential always blocks, such as computing always_ff @
+(posedge...) outputs.  Then Verilator evaluates combinatorial logic.
+
+Note combinatorial logic is not computed before sequential always blocks
+are computed (for speed reasons). Therefore it is best to set any non-clock
+inputs up with a separate eval() call before changing clocks().
+
+Alternatively, if all always_ff statements use only the posedge of clocks,
+or all inputs go directly to always_ff statements, as is typical, then you
+can change non-clock inputs on the negative edge of the input clock, which
+will be faster as there will be fewer eval() calls.
+
+For more information on evaluation, see docs/internals.adoc in the
+distribution.
 
 
 =head1 BENCHMARKING & OPTIMIZATION
@@ -1958,27 +2004,27 @@ OPT, OPT_FAST, or OPT_SLOW lib/verilated.mk.  Or, use the -CFLAGS and/or
 the compiler or linker.  Or, just for one run, pass them on the command
 line to make:
 
-    make OPT_FAST="-O2 -fno-stack-protector" -f Vour.mk Vour__ALL.a
+    make OPT_FAST="-Os -fno-stack-protector" -f Vour.mk Vour__ALL.a
 
 OPT_FAST specifies optimizations for those programs that are part of the
 fast path, mostly code that is executed every cycle.  OPT_SLOW specifies
 optimizations for slow-path files (plus tracing), which execute only
 rarely, yet take a long time to compile with optimization on.  OPT
 specifies overall optimization and affects all compiles, including those
-OPT_FAST and OPT_SLOW control.  For best results, use OPT="-O2", and link
+OPT_FAST and OPT_SLOW control.  For best results, use OPT="-Os", and link
 with "-static".  Nearly the same results can be had with much better
 compile times with OPT_FAST="-O1 -fstrict-aliasing".  Higher optimization
-such as "-O3" may help, but gcc compile times may be excessive under O3 on
-even medium sized designs.  Alternatively, some larger designs report
-better performance using "-Os".
+such as "-O2" or "-O3" may help, but gcc compile times may be excessive
+under O3 on even medium sized designs.
 
 Unfortunately, using the optimizer with SystemC files can result in
 compiles taking several minutes.  (The SystemC libraries have many little
 inlined functions that drive the compiler nuts.)
 
-For best results, use GCC 3.3 or newer.  GCC 3.2 and earlier have
-optimization bugs around pointer aliasing detection, which can result in 2x
-performance losses.
+For best results, use the latest clang compiler (about 10% faster than
+GCC).  Note the now fairly old GCC 3.2 and earlier have optimization bugs
+around pointer aliasing detection, which can result in 2x performance
+losses.
 
 If you will be running many simulations on a single compile, investigate
 feedback driven compilation.  With GCC, using -fprofile-arcs, then
@@ -1988,6 +2034,9 @@ Modern compilers also support link-time optimization (LTO), which can help
 especially if you link in DPI code.  To enable LTO on GCC, pass "-flto" in
 both compilation and link.  Note LTO may cause excessive compile times on
 large designs.
+
+Using profile driven compiler optimization, with feedback from a real
+design, can yield up to30% improvements.
 
 If you are using your own makefiles, you may want to compile the Verilated
 code with -DVL_INLINE_OPT=inline. This will inline functions, however this
@@ -1999,7 +2048,7 @@ either oprofile or gprof to see where in the C++ code the time is spent.
 Run the gprof output through verilator_profcfunc and it will tell you what
 Verilog line numbers on which most of the time is being spent.
 
-When done, please let the author know the results.  I like to keep tabs on
+When done, please let the author know the results.  We like to keep tabs on
 how Verilator compares, and may be able to suggest additional improvements.
 
 
@@ -2074,7 +2123,7 @@ After running Make, the C++ compiler may produce the following:
 
 A generic Linux/OS variable specifying what directories have shared object
 (.so) files.  This path should include SystemC and any other shared objects
-needed at simultion runtime.
+needed at simulation runtime.
 
 =item OBJCACHE
 
@@ -2203,7 +2252,7 @@ example:
 Note signals are read and written as member variables of the lower module.
 You call the eval() method to evaluate the model.  When the simulation is
 complete call the final() method to wrap up any SystemVerilog final blocks,
-and complete any assertions.
+and complete any assertions. See L</"EVALUATION LOOP">.
 
 
 =head1 CONNECTING TO SYSTEMC
@@ -3411,6 +3460,33 @@ behavior.  See the test_regress/t/t_dpi_display.v file for an example.
 Same as C<sformat> in configuration files, see L</"CONFIGURATION FILES">
 for more information.
 
+=item /*verilator split_var*/
+
+Attached to a variable or a net declaration to break the variable into
+multiple pieces typically to resolve UNOPTFLAT performance issues.
+Typically the variables to attach this to are recommeded by Verilator
+itself, see UNOPTFLAT below.
+
+For example, Verilator will internally convert a variable with the
+metacomment such as:
+
+    logic [7:0] x [0:1]  /*verilator split_var*/;
+
+To:
+
+    logic [7:0] x__BRA__0__KET__ /*verilator split_var*/;
+    logic [7:0] x__BRA__1__KET__ /*verilator split_var*/;
+
+Note that the generated packed variables retain the split_var metacomment
+because they may be split into further smaller pieces accorting to the
+access patterns.
+
+This only supports unpacked arrays, packed arrays, and packed structs of
+integer types (reg, logic, bit, byte, int...); otherwise if a split was
+requested but cannot occur a SPLITVAR warning is issued.  Splitting large
+arrays may slow donw the Verilation speed, so use this only on variables
+that require it.
+
 =item /*verilator tag <text...>*/
 
 Attached after a variable or structure member to indicate opaque (to
@@ -3746,16 +3822,28 @@ $unsigned, $warning.
 
 Generally supported.
 
-=item $display, $write, $fdisplay, $fwrite, $swrite
-
-$display and friends must have a constant format string as the first
-argument (as with C's printf).  The rare usage which lists variables
-standalone without a format is not supported.
-
 =item $displayb, $displayh, $displayo, $writeb, $writeh, $writeo, etc
 
 The sized display functions are rarely used and so not supported.  Replace
 them with a $write with the appropriate format specifier.
+
+=item $dump/$dumpports and related
+
+$dumpfile or $dumpports will create a VCD or FST file (which is based on
+the --trace argument given when the model was Verilated). This will take
+effect starting at the next eval() call.  If you have multiple Verilated
+designs under the same C model, then this will dump signals only from the
+design containing the $dumpvar.
+
+$dumpvars and $dumpports module identifier is ignored; the traced instances
+will always start at the top of the design. The levels argument is also
+ignored, use tracing_on/tracing_off pragmas instead.
+
+$dumpportson/$dumpportsoff/$dumpportsall/$dumpportslimit filename argument
+is ignored, only a single trace file may be active at once.
+
+$dumpall/$dumpportsall, $dumpon/$dumpportson, $dumpoff/$dumpportsoff, and
+$dumplimit/$dumpportlimit are currently ignored.
 
 =item $finish, $stop
 
@@ -4374,6 +4462,29 @@ Ignoring this warning may make Verilator simulations differ from other
 simulators, if the increased precision of real affects your model or DPI
 calls.
 
+=item SPLITVAR
+
+Warns that a variable with a C<split_var> metacomment was not split.
+Some possible reasons for this are:
+
+* The datatype of the variable is not supported for splitting. (e.g. is a
+real).
+
+* The access pattern of the variable can not be determined
+statically. (e.g. is accessed as a memory).
+
+* The index of the array exceeds the array size.
+
+* The variable is accessed from outside using dotted reference.
+(e.g. top.instance0.variable0 = 1).
+
+* The variable is not declared in a module, but in a package or an
+interface.
+
+* The variable is a parameter, localparam, genvar, or queue.
+
+* The variable is tirstate or bidirectional. (e.g. inout or ref).
+
 =item STMTDLY
 
 Warns that you have a statement with a delayed time in front of it, for
@@ -4504,6 +4615,11 @@ The most complicated UNOPTFLAT path we've seen was due to low bits of a bus
 being generated from an always statement that consumed high bits of the
 same bus processed by another series of always blocks.  The fix is the
 same; split it into two separate signals generated from each block.
+
+Another way to resolve this warning is to add a C<split_var> metacomment
+described above. This will cause the variable to be split internally,
+potentially resolving the conflict. If you run with --report-unoptflat
+Verilator will suggest possible candidates for C<split_var>.
 
 The UNOPTFLAT warning may also be due to clock enables, identified from the
 reported path going through a clock gating cell.  To fix these, use the
@@ -4771,19 +4887,20 @@ designs have topped 16GB.
 
 See the next question for tracing in SystemC mode.
 
-Add the --trace switch to Verilator, and in your top level C code, call
-Verilated::traceEverOn(true).  Then create a VerilatedVcdC object, and
-in your main loop call "trace_object->dump(time)" every time step, and
-finally call "trace_object->close()".  For an example, see below and the
-examples/make_tracing_c/sim_main.cpp file of the distribution.
+A. Add the --trace switch to Verilator, and in your top level C code, call
+Verilated::traceEverOn(true).  Then you may use $dumpfile and $dumpvars to
+enable traces, same as with any Verilog simulator. See
+C<examples/make_tracing_c>.
 
-You also need to compile verilated_vcd_c.cpp and add it to your link,
-preferably by adding the dependencies in $(VK_GLOBAL_OBJS) to your
-Makefile's link rule.  This is done for you if using the Verilator --exe
-flag.
-
-Note you can also call ->trace on multiple Verilated objects with the same
-trace file if you want all data to land in the same output file.
+B. Or, for finer-grained control, or C++ files with multiple Verilated
+modules you may also create the trace purely from C++.  Create a
+VerilatedVcdC object, and in your main loop call "trace_object->dump(time)"
+every time step, and finally call "trace_object->close()".  You also need
+to compile verilated_vcd_c.cpp and add it to your link, preferably by
+adding the dependencies in $(VK_GLOBAL_OBJS) to your Makefile's link rule.
+This is done for you if using the Verilator --exe flag.  Note you can also
+call ->trace on multiple Verilated objects with the same trace file if you
+want all data to land in the same output file.
 
     #include "verilated_vcd_c.h"
     ...
@@ -4803,11 +4920,17 @@ trace file if you want all data to land in the same output file.
 
 =item How do I generate waveforms (traces) in SystemC?
 
-Add the --trace switch to Verilator, and in your top level C sc_main code,
-include verilated_vcd_sc.h.  Then call Verilated::traceEverOn(true).  Then
-create a VerilatedVcdSc object as you would create a normal SystemC trace
-file.  For an example, see the call to VerilatedVcdSc in the
-examples/make_tracing_sc/sc_main.cpp file of the distribution, and below.
+A. Add the --trace switch to Verilator, and in your top level sc_main, call
+Verilated::traceEverOn(true).  Then you may use $dumpfile and $dumpvars to
+enable traces, same as with any Verilog simulator, see the non-SystemC
+example in C<examples/make_tracing_c>. This will trace only the module
+containing the $dumpvar.
+
+B. Or, you may create a trace purely from SystemC, which may trace all
+Verilated designs in the SystemC model. Create a VerilatedVcdSc object as
+you would create a normal SystemC trace file.  For an example, see the call
+to VerilatedVcdSc in the examples/make_tracing_sc/sc_main.cpp file of the
+distribution, and below.
 
 Alternatively you may use the C++ trace mechanism described in the previous
 question, however the timescale and timeprecision will not inherited from
@@ -4837,23 +4960,23 @@ trace file if you want all data to land in the same output file.
 
 =item How do I generate FST waveforms (traces) in C++?
 
-FST a format by GTKWave.
-This version provides a basic FST support.
-To dump FST format, add the --trace-fst switch to Verilator and change the include
-path in the testbench to:
+FST a format by GTKWave.  This version provides a basic FST support.  To
+dump FST format, add the --trace-fst switch to Verilator and either A. use
+$dumpfile/$dumpvars in Verilog as described in the VCD example above, or
+B. in C++ change the include described in the VCD example above:
 
     #include "verilated_fst_c.h"
     VerilatedFstC* tfp = new VerilatedFstC;
 
-Note that currently supporting both FST and VCD in a single simulation is impossible,
-but such requirement could be rare.
+Note that currently supporting both FST and VCD in a single simulation is
+impossible, but such requirement should be rare.
 
-=item How do I generate FST waveforms (traces) in SystemC?
+=item How do I generate FST waveforms (aka dumps or traces) in SystemC?
 
 The FST library from GTKWave does not currently support SystemC; use VCD
 format instead.
 
-=item How do I view waveforms (traces)?
+=item How do I view waveforms (aka dumps or traces)?
 
 Verilator makes standard VCD (Value Change Dump) and FST files.  VCD files are viewable
 with the public domain GTKWave (recommended) or Dinotrace (legacy)
@@ -5241,6 +5364,10 @@ redistribute it and/or modify the Verilator internals under the terms of
 either the GNU Lesser General Public License Version 3 or the Perl Artistic
 License Version 2.0.
 
+All Verilog and C++/SystemC code quoted within this documentation file are
+released into the Public Domain.  Many example files and test files are
+likewise released into the Public Domain as described in the files
+themselves.
 
 =head1 SEE ALSO
 
@@ -5248,7 +5375,7 @@ L<verilator_coverage>, L<verilator_gantt>, L<verilator_profcfunc>, L<make>,
 
 L<verilator --help> which is the source for this document,
 
-and internals.txt in the distribution.
+and docs/internals.adoc in the distribution.
 
 =cut
 

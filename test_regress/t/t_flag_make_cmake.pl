@@ -7,6 +7,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
 
+
 scenarios(simulator => 1);
 
 compile(
@@ -14,15 +15,18 @@ compile(
     verilator_make_cmake => 1,
     );
 
+system("cmake --version");
+if ($? != 0) {
+    skip("cmake is not installed");
+} else {
+    my $cmakecache = $Self->{obj_dir}."/CMakeCache.txt";
+    if (! -e $cmakecache) {
+        error("$cmakecache does not exist.")
+    }
 
-my $cmakecache = $Self->{obj_dir}."/CMakeCache.txt";
-if (! -e $cmakecache) {
-    error("$cmakecache does not exist")
+    execute(
+        check_finished => 1,
+        );
 }
-
-execute(
-    check_finished => 1,
-    );
-
 ok(1);
 1;

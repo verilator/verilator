@@ -103,9 +103,9 @@ private:
     typedef std::vector<VerilatedVcdSig>  SigVec;
     SigVec              m_sigs;         ///< Pointer to signal information
     typedef std::vector<VerilatedVcdCallInfo*>  CallbackVec;
-    CallbackVec         m_callbacks;    ///< Routines to perform dumping
+    CallbackVec m_callbacks;  ///< Routines to perform dumping
     typedef std::map<std::string,std::string>  NameMap;
-    NameMap*            m_namemapp;     ///< List of names for the header
+    NameMap* m_namemapp;  ///< List of names for the header
 
     VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
 
@@ -159,6 +159,8 @@ private:
 public:
     explicit VerilatedVcd(VerilatedVcdFile* filep = NULL);
     ~VerilatedVcd();
+    /// Routines can only be called from one thread; allow next call from different thread
+    void changeThread() { m_assertOne.changeThread(); }
 
     // ACCESSORS
     /// Set size in megabytes after which new file should be created
@@ -445,7 +447,9 @@ class VerilatedVcdC {
 public:
     explicit VerilatedVcdC(VerilatedVcdFile* filep = NULL)
         : m_sptrace(filep) {}
-    ~VerilatedVcdC() {}
+    ~VerilatedVcdC() { close(); }
+    /// Routines can only be called from one thread; allow next call from different thread
+    void changeThread() { spTrace()->changeThread(); }
 public:
     // ACCESSORS
     /// Is file open?

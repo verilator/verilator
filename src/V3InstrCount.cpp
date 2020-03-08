@@ -236,7 +236,7 @@ private:
         markCost(nodep);
         UASSERT_OBJ(nodep == m_startNodep, nodep, "Multiple actives, or not start node");
     }
-    virtual void visit(AstCCall* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeCCall* nodep) VL_OVERRIDE {
         VisitBase vb(this, nodep);
         iterateChildren(nodep);
         m_tracingCall = true;

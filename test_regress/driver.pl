@@ -66,6 +66,7 @@ my $opt_gdb;
 my $opt_rr;
 my $opt_gdbbt;
 my $opt_gdbsim;
+my $opt_hashset;
 my $opt_jobs = 1;
 my $opt_optimize;
 my $opt_quiet;
@@ -90,6 +91,7 @@ if (! GetOptions(
           "gdbbt!"      => \$opt_gdbbt,
           "gdbsim!"     => \$opt_gdbsim,
           "golden!"     => sub { $ENV{HARNESS_UPDATE_GOLDEN} = 1; },
+          "hashset=s"   => \$opt_hashset,
           "help"        => \&usage,
           "j=i"         => \$opt_jobs,
           "optimize:s"  => \$opt_optimize,
@@ -141,6 +143,8 @@ if ($#opt_tests<0) {  # Run everything
         push @opt_tests, sort(glob("${dir}/t_*.pl"));
     }
 }
+@opt_tests = _calc_hashset(@opt_tests) if $opt_hashset;
+
 if ($#opt_tests>=2 && $opt_jobs>=2) {
     # Without this tests such as t_debug_sigsegv_bt_bad.pl will occasionally
     # block on input and cause a SIGSTOP, then a "fg" was needed to resume testing.
@@ -259,6 +263,25 @@ sub calc_jobs {
     $ok && !$@ or die "%Error: Can't use -j: $@\n";
     print "driver.pl: Found $ok cores, using -j ",$ok+1,"\n";
     return $ok + 1;
+}
+
+sub _calc_hashset {
+    my @in = @_;
+    return @in if !$opt_hashset;
+    $opt_hashset =~ m!^(\d+)/(\d+)$!
+        or die "%Error: Need number/number format for --hashset: $opt_hashset\n";
+    my ($set, $nsets) = ($1, $2);
+    my @new;
+    foreach my $t (@opt_tests) {
+        my $checksum = do {
+            local $/;
+            unpack("%32W*", $t);
+        };
+        if ($set == ($checksum % $nsets)) {
+            push @new, $t;
+        }
+    }
+    return @new;
 }
 
 #######################################################################
@@ -565,7 +588,7 @@ sub new {
         ghdl_run_flags => [],
         # IV
         iv => 0,
-        iv_flags => [split(/\s+/,"+define+iverilog -o $self->{obj_dir}/simiv")],
+        iv_flags => [split(/\s+/,"+define+iverilog -g2012 -o $self->{obj_dir}/simiv")],
         iv_flags2 => [],  # Overridden in some sim files
         iv_pli => 0,  # need to use pli
         iv_run_flags => [],
@@ -1048,7 +1071,7 @@ sub compile {
                                 "-DTEST_VERBOSE=\"".($self->{verbose} ? 1 : 0)."\"",
                                 "-DTEST_SYSTEMC=\"" .($self->sc ? 1 : 0). "\"",
                                 "-DCMAKE_PREFIX_PATH=\"".(($ENV{SYSTEMC_INCLUDE}||$ENV{SYSTEMC}||'')."/..\""),
-                                "-DTEST_OPT_FAST=\"" . ($param{benchmark}?"-O2":"") . "\"",
+                                "-DTEST_OPT_FAST=\"" . ($param{benchmark} ? "-Os" : "") . "\"",
                                 "-DTEST_VERILATION=\"" . $::Opt_Verilation . "\"",
                         ]);
             return 1 if $self->errors || $self->skips || $self->unsupporteds;
@@ -1066,7 +1089,7 @@ sub compile {
                                 "TEST_OBJ_DIR=$self->{obj_dir}",
                                 "CPPFLAGS_DRIVER=-D".uc($self->{name}),
                                 ($self->{verbose} ? "CPPFLAGS_DRIVER2=-DTEST_VERBOSE=1":""),
-                                ($param{benchmark}?"OPT_FAST=-O2":""),
+                                ($param{benchmark} ? "OPT_FAST=-Os" : ""),
                                 "$self->{VM_PREFIX}",  # bypass default rule, as we don't need archive
                                 ($param{make_flags}||""),
                         ]);
@@ -1724,7 +1747,7 @@ sub _make_main {
     }
     $fh->print("\n");
 
-    print $fh "    delete topp; topp=NULL;\n";
+    print $fh "    VL_DO_DANGLING(delete topp, topp);\n";
     print $fh "    exit(0L);\n";
     print $fh "}\n";
     $fh->close();
@@ -1742,7 +1765,7 @@ sub _print_advance_time {
 
     if ($self->sc) {
         print $fh "#if (SYSTEMC_VERSION>=20070314)\n";
-        print $fh "        sc_start(${time},SC_NS);\n";
+        print $fh "        sc_start(${time}, SC_NS);\n";
         print $fh "#else\n";
         print $fh "        sc_start(${time});\n";
         print $fh "#endif\n";
@@ -2075,9 +2098,18 @@ sub fst2vcd {
     if (!$out || $out !~ /Usage:/) { $self->skip("No fst2vcd installed\n"); return 1; }
 
     $cmd = qq{fst2vcd -e "$fn1" -o "$fn2"};
-    print "\t$cmd\n" if $::Debug;
+    print "\t$cmd\n";  # Always print to help debug race cases
     $out = `$cmd`;
     return 1;
+}
+
+sub fst_identical {
+    my $self = (ref $_[0]? shift : $Self);
+    my $fn1 = shift;
+    my $fn2 = shift;
+    my $tmp = $fn1.".vcd";
+    fst2vcd($fn1, $tmp);
+    return vcd_identical($tmp, $fn2);
 }
 
 sub _vcd_read {
@@ -2493,6 +2525,11 @@ Run Verilator generated executable under the debugger.
 =item --golden
 
 Update golden files, equivalent to setting HARNESS_UPDATE_GOLDEN=1.
+
+=item --hashset I<set>/I<numsets>
+
+Split tests based on a hash of the test names into I<numsets> and run only
+tests in set number I<set> (0..I<numsets>-1).
 
 =item --help
 

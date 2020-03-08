@@ -82,6 +82,7 @@
 #include "V3Slice.h"
 #include "V3Split.h"
 #include "V3SplitAs.h"
+#include "V3SplitVar.h"
 #include "V3Stats.h"
 #include "V3String.h"
 #include "V3Subst.h"
@@ -175,12 +176,14 @@ static void process() {
     V3Const::constifyAllLint(v3Global.rootp());
 
     if (!v3Global.opt.xmlOnly()) {
+        // Split packed variables into multiple pieces to resolve UNOPTFLAT.
+        // should be after constifyAllLint() which flattens to 1D bit vector
+        V3SplitVar::splitVariable(v3Global.rootp());
+
         // Remove cell arrays (must be between V3Width and scoping)
         V3Inst::dearrayAll(v3Global.rootp());
         V3LinkDot::linkDotArrayed(v3Global.rootp());
-    }
 
-    if (!v3Global.opt.xmlOnly()) {
         // Task inlining & pushing BEGINs names to variables/cells
         // Begin processing must be after Param, before module inlining
         V3Begin::debeginAll(v3Global.rootp());  // Flatten cell names, before inliner

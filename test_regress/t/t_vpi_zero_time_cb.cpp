@@ -43,7 +43,7 @@ using namespace std;
 #define TEST_MSG \
     if (0) printf
 
-unsigned int main_time = false;
+unsigned int main_time = 0;
 unsigned int callback_count_zero_time = 0;
 unsigned int callback_count_start_of_sim = 0;
 

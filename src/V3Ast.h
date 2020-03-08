@@ -55,6 +55,12 @@ typedef std::set<int> MTaskIdSet;  // Set of mtaskIds for Var sorting
     do { \
         if (VL_UNCOVERABLE(test)) return #test; \
     } while (0)
+// For broken() function, return error string if a base of this class has a match
+#define BROKEN_BASE_RTN(test) \
+    do { \
+        const char* reasonp = (test); \
+        if (VL_UNCOVERABLE(reasonp)) return reasonp; \
+    } while (0)
 
 // (V)erilator (N)ode is: True if AstNode is of a a given AstType
 #define VN_IS(nodep,nodetypename) (AstNode::privateIs<Ast ## nodetypename>(nodep))
@@ -326,7 +332,8 @@ public:
         VAR_SC_BV,                      // V3LinkParse moves to AstVar::attrScBv
         VAR_SFORMAT,                    // V3LinkParse moves to AstVar::attrSFormat
         VAR_CLOCKER,                    // V3LinkParse moves to AstVar::attrClocker
-        VAR_NO_CLOCKER                  // V3LinkParse moves to AstVar::attrClocker
+        VAR_NO_CLOCKER,                 // V3LinkParse moves to AstVar::attrClocker
+        VAR_SPLIT_VAR                   // V3LinkParse moves to AstVar::attrSplitVar
     };
     enum en m_e;
     const char* ascii() const {
@@ -342,7 +349,7 @@ public:
             "VAR_BASE", "VAR_CLOCK", "VAR_CLOCK_ENABLE", "VAR_PUBLIC",
             "VAR_PUBLIC_FLAT", "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW",
             "VAR_ISOLATE_ASSIGNMENTS", "VAR_SC_BV", "VAR_SFORMAT", "VAR_CLOCKER",
-            "VAR_NO_CLOCKER"
+            "VAR_NO_CLOCKER", "VAR_SPLIT_VAR"
         };
         return names[m_e];
     }
@@ -811,6 +818,32 @@ inline bool operator==(const AstDisplayType& lhs, AstDisplayType::en rhs) {
 inline bool operator==(AstDisplayType::en lhs, const AstDisplayType& rhs) {
     return lhs == rhs.m_e;
 }
+
+//######################################################################
+
+class VDumpCtlType {
+public:
+    enum en { FILE, VARS, ALL, FLUSH, LIMIT, OFF, ON };
+    enum en m_e;
+    inline VDumpCtlType()
+        : m_e(ON) {}
+    // cppcheck-suppress noExplicitConstructor
+    inline VDumpCtlType(en _e)
+        : m_e(_e) {}
+    explicit inline VDumpCtlType(int _e)
+        : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
+    const char* ascii() const {
+        static const char* const names[] = {"$dumpfile", "$dumpvars", "$dumpall", "$dumpflush",
+                                            "$dumplimit", "$dumpoff", "$dumpon"};
+        return names[m_e];
+    }
+};
+inline bool operator==(const VDumpCtlType& lhs, const VDumpCtlType& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+inline bool operator==(const VDumpCtlType& lhs, VDumpCtlType::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(VDumpCtlType::en lhs, const VDumpCtlType& rhs) { return lhs == rhs.m_e; }
 
 //######################################################################
 
@@ -2203,6 +2236,54 @@ public:
 //######################################################################
 // Tasks/functions common handling
 
+class AstNodeCCall : public AstNodeStmt {
+    // A call of a C++ function, perhaps a AstCFunc or perhaps globally named
+    // Functions are not statements, while tasks are. AstNodeStmt needs isStatement() to deal.
+    AstCFunc* m_funcp;
+    string m_hiername;
+    string m_argTypes;
+public:
+    AstNodeCCall(AstType t, FileLine* fl, AstCFunc* funcp, AstNode* argsp = NULL)
+        : AstNodeStmt(t, fl, true)
+        , m_funcp(funcp) {
+        addNOp2p(argsp);
+    }
+    // Replacement form for V3Combine
+    // Note this removes old attachments from the oldp
+    AstNodeCCall(AstType t, AstNodeCCall* oldp, AstCFunc* funcp)
+        : AstNodeStmt(t, oldp->fileline(), true)
+        , m_funcp(funcp) {
+        m_funcp = funcp;
+        m_hiername = oldp->hiername();
+        m_argTypes = oldp->argTypes();
+        if (oldp->argsp()) addNOp2p(oldp->argsp()->unlinkFrBackWithNext());
+    }
+    ASTNODE_BASE_FUNCS(NodeCCall)
+    virtual void dump(std::ostream& str=std::cout) const;
+    virtual void cloneRelink();
+    virtual const char* broken() const;
+    virtual int instrCount() const { return instrCountCall(); }
+    virtual V3Hash sameHash() const { return V3Hash(funcp()); }
+    virtual bool same(const AstNode* samep) const {
+        const AstNodeCCall* asamep = static_cast<const AstNodeCCall*>(samep);
+        return (funcp() == asamep->funcp() && argTypes() == asamep->argTypes());
+    }
+    AstNode* exprsp() const { return op2p(); }  // op2 = expressions to print
+    virtual bool isGateOptimizable() const { return false; }
+    virtual bool isPredictOptimizable() const { return false; }
+    virtual bool isPure() const;
+    virtual bool isOutputter() const { return !isPure(); }
+    AstCFunc* funcp() const { return m_funcp; }
+    string hiername() const { return m_hiername; }
+    void hiername(const string& hn) { m_hiername = hn; }
+    string hiernameProtect() const;
+    void argTypes(const string& str) { m_argTypes = str; }
+    string argTypes() const { return m_argTypes; }
+    // op1p reserved for AstCMethodCall
+    AstNode* argsp() const { return op2p(); }
+    void addArgsp(AstNode* nodep) { addOp2p(nodep); }
+};
+
 class AstNodeFTask : public AstNode {
 private:
     string      m_name;         // Name of task
@@ -2284,12 +2365,12 @@ public:
     AstNodeFTaskRef(AstType t, FileLine* fl, bool statement, AstNode* namep, AstNode* pinsp)
         : AstNodeStmt(t, fl, statement)
         , m_taskp(NULL), m_packagep(NULL) {
-        setOp1p(namep); addNOp2p(pinsp);
+        setOp1p(namep); addNOp3p(pinsp);
     }
     AstNodeFTaskRef(AstType t, FileLine* fl, bool statement, const string& name, AstNode* pinsp)
         : AstNodeStmt(t, fl, statement)
         , m_taskp(NULL), m_name(name), m_packagep(NULL) {
-        addNOp2p(pinsp);
+        addNOp3p(pinsp);
     }
     ASTNODE_BASE_FUNCS(NodeFTaskRef)
     virtual const char* broken() const { BROKEN_RTN(m_taskp && !m_taskp->brokeExists()); return NULL; }
@@ -2311,12 +2392,13 @@ public:
     void packagep(AstPackage* nodep) { m_packagep = nodep; }
     // op1 = namep
     AstNode* namep() const { return op1p(); }
-    // op2 = Pin interconnection list
-    AstNode* pinsp() const { return op2p(); }
-    void addPinsp(AstNode* nodep) { addOp2p(nodep); }
-    // op3 = scope tracking
-    AstScopeName* scopeNamep() const { return VN_CAST(op3p(), ScopeName); }
-    void scopeNamep(AstNode* nodep) { setNOp3p(nodep); }
+    // op2 = reserved for AstMethodCall
+    // op3 = Pin interconnection list
+    AstNode* pinsp() const { return op3p(); }
+    void addPinsp(AstNode* nodep) { addOp3p(nodep); }
+    // op4 = scope tracking
+    AstScopeName* scopeNamep() const { return VN_CAST(op4p(), ScopeName); }
+    void scopeNamep(AstNode* nodep) { setNOp4p(nodep); }
 };
 
 class AstNodeModule : public AstNode {

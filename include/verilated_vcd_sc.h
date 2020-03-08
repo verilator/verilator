@@ -62,7 +62,7 @@ public:
         spTrace()->set_time_resolution(sc_get_time_resolution().to_string());
 # endif
     }
-    virtual ~VerilatedVcdSc() {}
+    virtual ~VerilatedVcdSc() { close(); }
 
     // METHODS
     /// Called by SystemC simulate()

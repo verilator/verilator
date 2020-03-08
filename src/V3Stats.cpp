@@ -177,7 +177,7 @@ private:
     // While's we assume evaluate once.
     //virtual void visit(AstWhile* nodep) VL_OVERRIDE {
 
-    virtual void visit(AstCCall* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeCCall* nodep) VL_OVERRIDE {
         allNodes(nodep);
         iterateChildrenConst(nodep);
         if (m_fast && !nodep->funcp()->entryPoint()) {

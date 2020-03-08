@@ -41,7 +41,7 @@ add_executable(example ../make_tracing_sc/sc_main.cpp)
 # Add the Verilated circuit to the target
 verilate(example SYSTEMC COVERAGE TRACE
   INCLUDE_DIRS "../make_tracing_sc"
-  VERILATOR_ARGS -f ../make_tracing_sc/input.vc -O2 -x-assign 0
+  VERILATOR_ARGS -f ../make_tracing_sc/input.vc -Os -x-assign 0
   SOURCES ../make_tracing_sc/top.v)
 
 verilator_link_systemc(example)

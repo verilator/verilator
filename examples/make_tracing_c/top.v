@@ -11,7 +11,6 @@ module top
   (
    // Declare some signals so we can see how I/O works
    input         clk,
-   input         fastclk,
    input         reset_l,
 
    output wire [1:0]  out_small,
@@ -31,11 +30,15 @@ module top
    sub sub (/*AUTOINST*/
             // Inputs
             .clk                        (clk),
-            .fastclk                    (fastclk),
             .reset_l                    (reset_l));
 
    // Print some stuff as an example
    initial begin
+      if ($test$plusargs("trace") != 0) begin
+         $display("[%0t] Tracing to logs/vlt_dump.vcd...\n", $time);
+         $dumpfile("logs/vlt_dump.vcd");
+         $dumpvars();
+      end
       $display("[%0t] Model running...\n", $time);
    end
 

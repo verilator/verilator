@@ -625,13 +625,17 @@ with e.g. "sudo cpan install Parallel::Forker".
 * vcddiff to find differences in VCD outputs. See the readme at
 https://github.com/veripool/vcddiff
 
+* Cmake for build paths that use it.
+
+* Bit::Vector to test vgen.pl
+
 === Controlling the Test Driver
 
 Test drivers are written in PERL. All invoke the main test driver script,
 which can provide detailed help on all the features available when writing
 a test driver.
 
-   test_regress/t/driver.pl --help
+   test_regress/driver.pl --help
 
 For convenience, a summary of the most commonly used features is provided
 here. All drivers require a call to `compile` subroutine to compile the
@@ -715,6 +719,13 @@ particularly file handles and user processes. Increase these to
 respectively 16,384 and 4,096. The method of doing this is system
 dependent, but on Fedora Linux it would require editing the
 `/etc/security/limits.conf` file as root.
+
+=== Manual Test Execution
+
+A specific regression test can be executed manually. To start the "EXAMPLE"
+test, run the following command.
+
+   test_regress/t/t_EXAMPLE.pl
 
 === Continuous Integration
 

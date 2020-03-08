@@ -431,20 +431,6 @@ private:
     }
 
     // Generate Statements
-    virtual void visit(AstGenerate* nodep) VL_OVERRIDE {
-        if (debug()>=9) nodep->dumpTree(cout, "-genin: ");
-        iterateChildren(nodep);
-        // After expanding the generate, all statements under it can be moved
-        // up, and the generate block deleted as it's not relevant
-        if (AstNode* stmtsp = nodep->stmtsp()) {
-            stmtsp->unlinkFrBackWithNext();
-            nodep->replaceWith(stmtsp);
-            if (debug()>=9) stmtsp->dumpTree(cout, "-genout: ");
-        } else {
-            nodep->unlinkFrBack();
-        }
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
-    }
     virtual void visit(AstGenIf* nodep) VL_OVERRIDE {
         UINFO(9,"  GENIF "<<nodep<<endl);
         iterateAndNextNull(nodep->condp());

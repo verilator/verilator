@@ -50,6 +50,7 @@ private:
     void* m_fst;
     VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
     bool m_fullDump;
+    vluint32_t m_nextCode;  ///< Next code number to assign
     char m_scopeEscape;
     std::string m_module;
     CallbackVec m_callbacks;  ///< Routines to perform dumping
@@ -60,12 +61,13 @@ private:
     VL_UNCOPYABLE(VerilatedFst);
     void declSymbol(vluint32_t code, const char* name,
                     int dtypenum, fstVarDir vardir, fstVarType vartype,
-                    bool array, int arraynum, vluint32_t len);
+                    bool array, int arraynum, vluint32_t len, vluint32_t bits);
     // helpers
     std::vector<char> m_valueStrBuffer;
 public:
     explicit VerilatedFst(void* fst=NULL);
     ~VerilatedFst() { if (m_fst == NULL) { fstWriterClose(m_fst); } }
+    void changeThread() { m_assertOne.changeThread(); }
     bool isOpen() const { return m_fst != NULL; }
     void open(const char* filename) VL_MT_UNSAFE;
     void flush() VL_MT_UNSAFE { fstWriterFlushContext(m_fst); }
@@ -104,32 +106,35 @@ public:
     void declBit(vluint32_t code, const char* name,
                  int dtypenum, fstVarDir vardir, fstVarType vartype,
                  bool array, int arraynum) {
-        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 1);
+        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 1, 1);
     }
     void declBus(vluint32_t code, const char* name,
                  int dtypenum, fstVarDir vardir, fstVarType vartype,
                  bool array, int arraynum, int msb, int lsb) {
-        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1);
+        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1,
+                   msb - lsb + 1);
     }
     void declDouble(vluint32_t code, const char* name,
                     int dtypenum, fstVarDir vardir, fstVarType vartype,
                     bool array, int arraynum) {
-        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 2);
+        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 2, 64);
     }
     void declFloat(vluint32_t code, const char* name,
                    int dtypenum, fstVarDir vardir, fstVarType vartype,
                    bool array, int arraynum) {
-        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 1);
+        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 1, 32);
     }
     void declQuad(vluint32_t code, const char* name,
                   int dtypenum, fstVarDir vardir, fstVarType vartype,
                   bool array, int arraynum, int msb, int lsb) {
-        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1);
+        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1,
+                   msb - lsb + 1);
     }
     void declArray(vluint32_t code, const char* name,
                    int dtypenum, fstVarDir vardir, fstVarType vartype,
                    bool array, int arraynum, int msb, int lsb) {
-        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1);
+        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1,
+                   msb - lsb + 1);
     }
 
     /// Inside dumping routines, dump one signal if it has changed
@@ -167,10 +172,10 @@ public:
     void fullArray(vluint32_t code, const vluint32_t* newval, int bits) {
         chgArray(code, newval, bits); }
 
-    void declTriBit   (vluint32_t code, const char* name, int arraynum);
-    void declTriBus   (vluint32_t code, const char* name, int arraynum, int msb, int lsb);
-    void declTriQuad  (vluint32_t code, const char* name, int arraynum, int msb, int lsb);
-    void declTriArray (vluint32_t code, const char* name, int arraynum, int msb, int lsb);
+    void declTriBit(vluint32_t code, const char* name, int arraynum);
+    void declTriBus(vluint32_t code, const char* name, int arraynum, int msb, int lsb);
+    void declTriQuad(vluint32_t code, const char* name, int arraynum, int msb, int lsb);
+    void declTriArray(vluint32_t code, const char* name, int arraynum, int msb, int lsb);
     void fullTriBit(vluint32_t code, const vluint32_t newval, const vluint32_t newtri);
     void fullTriBus(vluint32_t code, const vluint32_t newval, const vluint32_t newtri, int bits);
     void fullTriQuad(vluint32_t code, const vluint64_t newval, const vluint32_t newtri, int bits);
@@ -198,7 +203,9 @@ class VerilatedFstC {
     VL_UNCOPYABLE(VerilatedFstC);
 public:
     explicit VerilatedFstC(void* filep=NULL) : m_sptrace(filep) {}
-    ~VerilatedFstC() {}
+    ~VerilatedFstC() { close(); }
+    /// Routines can only be called from one thread; allow next call from different thread
+    void changeThread() { spTrace()->changeThread(); }
 public:
     // ACCESSORS
     /// Is file open?

@@ -93,6 +93,8 @@ private:
         }
         else if (VN_IS(ddtypep, AssocArrayDType)) {
         }
+        else if (VN_IS(ddtypep, DynArrayDType)) {
+        }
         else if (VN_IS(ddtypep, QueueDType)) {
         }
         else if (const AstNodeUOrStructDType* adtypep = VN_CAST(ddtypep, NodeUOrStructDType)) {
@@ -258,6 +260,15 @@ private:
                                                 fromp, subp);
             newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off array reference
             if (debug()>=9) newp->dumpTree(cout, "--SELBTn: ");
+            nodep->replaceWith(newp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        }
+        else if (AstDynArrayDType* adtypep = VN_CAST(ddtypep, DynArrayDType)) {
+            // SELBIT(array, index) -> CMETHODCALL(queue, "at", index)
+            AstNode* subp = rhsp;
+            AstCMethodHard* newp = new AstCMethodHard(nodep->fileline(),
+                                                      fromp, "at", subp);
+            newp->dtypeFrom(adtypep->subDTypep());  // Need to strip off queue reference
+            if (debug()>=9) newp->dumpTree(cout, "--SELBTq: ");
             nodep->replaceWith(newp); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
         else if (AstQueueDType* adtypep = VN_CAST(ddtypep, QueueDType)) {
