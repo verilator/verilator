@@ -66,6 +66,7 @@ my $opt_gdb;
 my $opt_rr;
 my $opt_gdbbt;
 my $opt_gdbsim;
+my $opt_hashset;
 my $opt_jobs = 1;
 my $opt_optimize;
 my $opt_quiet;
@@ -90,6 +91,7 @@ if (! GetOptions(
           "gdbbt!"      => \$opt_gdbbt,
           "gdbsim!"     => \$opt_gdbsim,
           "golden!"     => sub { $ENV{HARNESS_UPDATE_GOLDEN} = 1; },
+          "hashset=s"   => \$opt_hashset,
           "help"        => \&usage,
           "j=i"         => \$opt_jobs,
           "optimize:s"  => \$opt_optimize,
@@ -141,6 +143,8 @@ if ($#opt_tests<0) {  # Run everything
         push @opt_tests, sort(glob("${dir}/t_*.pl"));
     }
 }
+@opt_tests = _calc_hashset(@opt_tests) if $opt_hashset;
+
 if ($#opt_tests>=2 && $opt_jobs>=2) {
     # Without this tests such as t_debug_sigsegv_bt_bad.pl will occasionally
     # block on input and cause a SIGSTOP, then a "fg" was needed to resume testing.
@@ -259,6 +263,25 @@ sub calc_jobs {
     $ok && !$@ or die "%Error: Can't use -j: $@\n";
     print "driver.pl: Found $ok cores, using -j ",$ok+1,"\n";
     return $ok + 1;
+}
+
+sub _calc_hashset {
+    my @in = @_;
+    return @in if !$opt_hashset;
+    $opt_hashset =~ m!^(\d+)/(\d+)$!
+        or die "%Error: Need number/number format for --hashset: $opt_hashset\n";
+    my ($set, $nsets) = ($1, $2);
+    my @new;
+    foreach my $t (@opt_tests) {
+        my $checksum = do {
+            local $/;
+            unpack("%32W*", $t);
+        };
+        if ($set == ($checksum % $nsets)) {
+            push @new, $t;
+        }
+    }
+    return @new;
 }
 
 #######################################################################
@@ -2502,6 +2525,11 @@ Run Verilator generated executable under the debugger.
 =item --golden
 
 Update golden files, equivalent to setting HARNESS_UPDATE_GOLDEN=1.
+
+=item --hashset I<set>/I<numsets>
+
+Split tests based on a hash of the test names into I<numsets> and run only
+tests in set number I<set> (0..I<numsets>-1).
 
 =item --help
 
