@@ -277,7 +277,7 @@ sub _calc_hashset {
             local $/;
             unpack("%32W*", $t);
         };
-        if ($set == ($checksum % $nsets)) {
+        if (($set % $nsets) == ($checksum % $nsets)) {
             push @new, $t;
         }
     }
