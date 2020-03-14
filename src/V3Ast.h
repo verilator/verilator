@@ -162,6 +162,7 @@ public:
     enum en {
         ILLEGAL,
         COVERAGE_BLOCK_OFF,
+        HIER_BLOCK,
         INLINE_MODULE,
         NO_INLINE_MODULE,
         NO_INLINE_TASK,
