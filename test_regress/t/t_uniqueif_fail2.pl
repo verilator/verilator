@@ -20,10 +20,7 @@ compile(
 
 execute(
     fails => $Self->{vlt_all},
-    expect =>
-'.*%Error: t_uniqueif.v:\d+: Assertion failed in top.t: \'unique if\' statement violated
-%Error: t/t_uniqueif.v:\d+: Verilog \$stop
-.*',
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

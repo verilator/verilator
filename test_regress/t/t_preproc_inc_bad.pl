@@ -12,8 +12,7 @@ scenarios(vlt => 1);
 lint(
     fails => 1,
     # The .vh file has the error, not the .v file
-    expect =>
-'%Error: t/t_preproc_inc_inc_bad.vh:10: syntax error, unexpected endmodule, expecting IDENTIFIER'
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

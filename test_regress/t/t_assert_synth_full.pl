@@ -20,8 +20,7 @@ compile(
 execute(
     check_finished => 0,
     fails => $Self->{vlt_all},
-    expect =>
-'%Error: t_assert_synth.v:30: Assertion failed in top.t: synthesis full_case'
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);

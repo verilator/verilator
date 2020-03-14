@@ -16,9 +16,7 @@ compile(
 
 execute(
     fails => 1,
-    expect =>
-qr{%Error: unknown:0: Testbench C set input 'clk' to value that overflows what the signal's width can fit
-Aborting....*}
+    expect_filename => $Self->{golden_filename},
     );
 
 ok(1);
