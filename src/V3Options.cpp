@@ -100,6 +100,24 @@ public:
     ~V3OptionsImp() {}
 };
 
+//######################################################################
+// V3LangCode class functions
+
+V3LangCode::V3LangCode(const char* textp) {
+    // Return code for given string, or ERROR, which is a bad code
+    for (int codei = V3LangCode::L_ERROR; codei < V3LangCode::_ENUM_END; ++codei) {
+        V3LangCode code = V3LangCode(codei);
+        if (0 == VL_STRCASECMP(textp, code.ascii())) {
+            m_e = code;
+            return;
+        }
+    }
+    m_e = V3LangCode::L_ERROR;
+}
+
+//######################################################################
+// V3Options class functions
+
 void V3Options::addIncDirUser(const string& incdir) {
     m_impp->addIncDirUser(incdir);
 }
@@ -235,20 +253,6 @@ string V3Options::allArgsString() {
         out += *it;
     }
     return out;
-}
-
-//######################################################################
-// V3LangCode class functions
-
-V3LangCode::V3LangCode(const char* textp) {
-    // Return code for given string, or ERROR, which is a bad code
-    for (int codei=V3LangCode::L_ERROR; codei<V3LangCode::_ENUM_END; ++codei) {
-        V3LangCode code = V3LangCode(codei);
-        if (0 == VL_STRCASECMP(textp, code.ascii())) {
-            m_e = code; return;
-        }
-    }
-    m_e = V3LangCode::L_ERROR;
 }
 
 //######################################################################
