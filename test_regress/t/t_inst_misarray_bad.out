@@ -1,5 +1,5 @@
-%Error: t/t_inst_misarray_bad.v:16: VARREF 't.foo' is not an unpacked array, but is in an unpacked array context
-                                  : ... In instance t.foo
+%Error: t/t_inst_misarray_bad.v:16:27: VARREF 't.foo' is not an unpacked array, but is in an unpacked array context
+                                     : ... In instance t.foo
                      .foo(foo));   
                           ^~~
 %Error: Exiting due to

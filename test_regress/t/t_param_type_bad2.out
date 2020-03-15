@@ -1,9 +1,9 @@
-%Error: t/t_param_type_bad2.v:7: Operator VAR 't' expected non-datatype Initial value but 'logic' is a datatype.
-                               : ... In instance t
+%Error: t/t_param_type_bad2.v:7:19: Operator VAR 't' expected non-datatype Initial value but 'logic' is a datatype.
+                                  : ... In instance t
    localparam t = logic;   
                   ^~~~~
-%Error: t/t_param_type_bad2.v:8: Operator VAR 't2' expected non-datatype Initial value but 'real' is a datatype.
-                               : ... In instance t
+%Error: t/t_param_type_bad2.v:8:20: Operator VAR 't2' expected non-datatype Initial value but 'real' is a datatype.
+                                  : ... In instance t
    localparam t2 = realtime;   
                    ^~~~~~~~
 %Error: Exiting due to

@@ -1,4 +1,4 @@
-%Error: obj_vlt/t_inst_long_bad/t_inst_long.v:4: Cannot find file containing module: 'long_long_long_long_long_long_lo__Vhsh1JZCXQVBM1QiASYlLmgTuAXYyUr7VAbJYwVHfiAD'
+%Error: obj_vlt/t_inst_long_bad/t_inst_long.v:4:3: Cannot find file containing module: 'long_long_long_long_long_long_lo__Vhsh1JZCXQVBM1QiASYlLmgTuAXYyUr7VAbJYwVHfiAD'
   long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_long_ inst ();
   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ... Unsupported: Name is longer than 127 characters; automatic file lookup not supported.

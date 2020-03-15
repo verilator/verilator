@@ -1,9 +1,9 @@
-%Error: t/t_var_suggest_bad.v:12: Can't find definition of variable: 'foobat'
-                                : ... Suggested alternative: 'foobar'
+%Error: t/t_var_suggest_bad.v:12:11: Can't find definition of variable: 'foobat'
+                                   : ... Suggested alternative: 'foobar'
       if (foobat) $stop;
           ^~~~~~
-%Error: t/t_var_suggest_bad.v:13: Can't find definition of task/function: 'boobat'
-                                : ... Suggested alternative: 'boobar'
+%Error: t/t_var_suggest_bad.v:13:7: Can't find definition of task/function: 'boobat'
+                                  : ... Suggested alternative: 'boobar'
       boobat;
       ^~~~~~
 %Error: Exiting due to

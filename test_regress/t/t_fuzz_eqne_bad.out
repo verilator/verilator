@@ -1,5 +1,5 @@
-%Error: t/t_fuzz_eqne_bad.v:11: Slice operator VARREF 't.b' on non-slicable (e.g. non-vector) right-hand-side operand
-                              : ... In instance t.b
+%Error: t/t_fuzz_eqne_bad.v:11:23: Slice operator VARREF 't.b' on non-slicable (e.g. non-vector) right-hand-side operand
+                                 : ... In instance t.b
    initial c = (a != &b);
                       ^
 %Error: Exiting due to

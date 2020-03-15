@@ -1,15 +1,15 @@
-%Error: t/t_tri_pullvec_bad.v:10: Unsupported: Conflicting pull directions.
-                                : ... In instance t
+%Error: t/t_tri_pullvec_bad.v:10:13: Unsupported: Conflicting pull directions.
+                                   : ... In instance t
    pulldown p1 (w[1]);
             ^~
-        t/t_tri_pullvec_bad.v:9: ... Location of conflicting pull.
+        t/t_tri_pullvec_bad.v:9:11: ... Location of conflicting pull.
    pullup p0 (w[0]);
           ^~
-%Error: t/t_tri_pullvec_bad.v:11: Unsupported: Conflicting pull directions.
-                                : ... In instance t
+%Error: t/t_tri_pullvec_bad.v:11:13: Unsupported: Conflicting pull directions.
+                                   : ... In instance t
    pulldown p2 (w[2]);
             ^~
-        t/t_tri_pullvec_bad.v:9: ... Location of conflicting pull.
+        t/t_tri_pullvec_bad.v:9:11: ... Location of conflicting pull.
    pullup p0 (w[0]);
           ^~
 %Error: Exiting due to

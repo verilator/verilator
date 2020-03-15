@@ -1,5 +1,5 @@
-%Error: t/t_interface_modport_bad.v:22: Modport not found under interface 'ifc': 'oop_modport'
-                                      : ... Suggested alternative: 'out_modport'
+%Error: t/t_interface_modport_bad.v:22:8: Modport not found under interface 'ifc': 'oop_modport'
+                                        : ... Suggested alternative: 'out_modport'
    ifc.oop_modport isub,   
        ^~~~~~~~~~~
 %Error: Exiting due to

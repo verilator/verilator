@@ -1,5 +1,5 @@
-%Error: t/t_array_pattern_bad.v:23: Assignment pattern key 'valids' not found as member
-                                  : ... In instance t
+%Error: t/t_array_pattern_bad.v:23:18: Assignment pattern key 'valids' not found as member
+                                     : ... In instance t
                  valids: '1};
                  ^~~~~~
 %Error: Exiting due to

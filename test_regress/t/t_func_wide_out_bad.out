@@ -1,5 +1,5 @@
-%Error: t/t_func_wide_out_bad.v:16: Unsupported: Function output argument 'data' requires 4352 bits, but connection's VARREF 'msg' generates 4350 bits.
-                                  : ... In instance t
+%Error: t/t_func_wide_out_bad.v:16:12: Unsupported: Function output argument 'data' requires 4352 bits, but connection's VARREF 'msg' generates 4350 bits.
+                                     : ... In instance t
       func(msg);
            ^~~
 %Error: Exiting due to

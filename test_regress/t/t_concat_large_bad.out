@@ -1,5 +1,5 @@
-%Warning-WIDTHCONCAT: t/t_concat_large_bad.v:8: More than a 8k bit replication is probably wrong: 32768
-                                              : ... In instance t
+%Warning-WIDTHCONCAT: t/t_concat_large_bad.v:8:29: More than a 8k bit replication is probably wrong: 32768
+                                                 : ... In instance t
    wire [32767:0] a = {32768{1'b1}};
                             ^
                       ... Use "/* verilator lint_off WIDTHCONCAT */" and lint_on around source to disable this message.

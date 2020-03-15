@@ -1,4 +1,4 @@
-%Error: t/t_param_type_bad.v:8: Parameter type's initial value isn't a type: 'bad2'
+%Error: t/t_param_type_bad.v:8:20: Parameter type's initial value isn't a type: 'bad2'
    localparam type bad2 = 2;   
                    ^~~~
 %Error: Exiting due to

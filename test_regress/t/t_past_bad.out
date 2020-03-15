@@ -1,9 +1,9 @@
-%Error: t/t_past_bad.v:11: $past tick value must be constant (IEEE 1800-2017 16.9.3)
-                         : ... In instance t
+%Error: t/t_past_bad.v:11:11: $past tick value must be constant (IEEE 1800-2017 16.9.3)
+                            : ... In instance t
       if ($past(d, 0)) $stop;   
           ^~~~~
-%Warning-TICKCOUNT: t/t_past_bad.v:12: $past tick value of 10000 may have a large performance cost
-                                     : ... In instance t
+%Warning-TICKCOUNT: t/t_past_bad.v:12:20: $past tick value of 10000 may have a large performance cost
+                                        : ... In instance t
       if ($past(d, 10000)) $stop;   
                    ^~~~~
                     ... Use "/* verilator lint_off TICKCOUNT */" and lint_on around source to disable this message.

@@ -1,4 +1,4 @@
-%Error: t/t_pp_pragma_bad.v:6: `pragma is missing a pragma_expression.
+%Error: t/t_pp_pragma_bad.v:6:1: `pragma is missing a pragma_expression.
 `pragma
 ^~~~~~~
 `line 1 "t/t_pp_pragma_bad.v" 1

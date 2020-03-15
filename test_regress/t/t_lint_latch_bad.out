@@ -1,5 +1,5 @@
-%Warning-COMBDLY: t/t_lint_latch_bad.v:24: Delayed assignments (<=) in non-clocked (non flop or latch) block
-                                         : ... Suggest blocking assignments (=)
+%Warning-COMBDLY: t/t_lint_latch_bad.v:24:10: Delayed assignments (<=) in non-clocked (non flop or latch) block
+                                            : ... Suggest blocking assignments (=)
       bc <= a;   
          ^~
                   ... Use "/* verilator lint_off COMBDLY */" and lint_on around source to disable this message.

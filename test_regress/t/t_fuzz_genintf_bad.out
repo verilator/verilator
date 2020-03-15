@@ -1,9 +1,9 @@
-%Error: t/t_fuzz_genintf_bad.v:23: Unsupported: Member call on object 'VARREF 'j'' which is a 'BASICDTYPE 'integer''
-                                 : ... In instance t
+%Error: t/t_fuzz_genintf_bad.v:23:12: Unsupported: Member call on object 'VARREF 'j'' which is a 'BASICDTYPE 'integer''
+                                    : ... In instance t
          j.e(0),
            ^
-%Error: Internal Error: t/t_fuzz_genintf_bad.v:23: ../V3Width.cpp:#: Unlinked pin data type
-                                                 : ... In instance t
+%Error: Internal Error: t/t_fuzz_genintf_bad.v:23:11: ../V3Width.cpp:#: Unlinked pin data type
+                                                    : ... In instance t
          j.e(0),
           ^
                         ... See the manual and https://verilator.org for more assistance.

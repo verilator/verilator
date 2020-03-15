@@ -1,9 +1,9 @@
-%Error: t/t_fuzz_triand_bad.v:7: Unsupported: Member call on object 'VARREF 'g'' which is a 'BASICDTYPE 'logic''
-                               : ... In instance t
+%Error: t/t_fuzz_triand_bad.v:7:12: Unsupported: Member call on object 'VARREF 'g'' which is a 'BASICDTYPE 'logic''
+                                  : ... In instance t
    tri g=g.and.g;
            ^~~
-%Error: Internal Error: t/t_fuzz_triand_bad.v:7: ../V3Width.cpp:#: Unlinked data type
-                                               : ... In instance t
+%Error: Internal Error: t/t_fuzz_triand_bad.v:7:12: ../V3Width.cpp:#: Unlinked data type
+                                                  : ... In instance t
    tri g=g.and.g;
            ^~~
                         ... See the manual and https://verilator.org for more assistance.

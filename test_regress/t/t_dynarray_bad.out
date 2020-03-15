@@ -1,5 +1,5 @@
-%Warning-WIDTH: t/t_dynarray_bad.v:14: Operator NEWDYNAMIC expects 32 bits on the new() size, but new() size's VARREF 's' generates 64 bits.
-                                     : ... In instance t
+%Warning-WIDTH: t/t_dynarray_bad.v:14:11: Operator NEWDYNAMIC expects 32 bits on the new() size, but new() size's VARREF 's' generates 64 bits.
+                                        : ... In instance t
       a = new [s];   
           ^~~
                 ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.

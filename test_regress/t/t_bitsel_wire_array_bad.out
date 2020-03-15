@@ -1,5 +1,5 @@
-%Error: t/t_bitsel_wire_array_bad.v:20: Illegal assignment of constant to unpacked array
-                                      : ... In instance t
+%Error: t/t_bitsel_wire_array_bad.v:20:16: Illegal assignment of constant to unpacked array
+                                         : ... In instance t
    assign b = a[0];   
                ^
 %Error: Exiting due to

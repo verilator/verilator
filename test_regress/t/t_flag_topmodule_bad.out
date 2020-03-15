@@ -1,13 +1,13 @@
-%Warning-MULTITOP: t/t_flag_topmodule.v:14: Multiple top level modules
-                                          : ... Suggest see manual; fix the duplicates, or use --top-module to select top.
+%Warning-MULTITOP: t/t_flag_topmodule.v:14:8: Multiple top level modules
+                                            : ... Suggest see manual; fix the duplicates, or use --top-module to select top.
                    ... Use "/* verilator lint_off MULTITOP */" and lint_on around source to disable this message.
-                                          : ... Top module 'a'
+                                            : ... Top module 'a'
 module a;
        ^
-                                          : ... Top module 'a2'
+                                            : ... Top module 'a2'
 module a2;
        ^~
-                                          : ... Top module 'b'
+                                            : ... Top module 'b'
 module b;
        ^
 %Error: Exiting due to

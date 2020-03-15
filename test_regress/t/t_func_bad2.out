@@ -1,5 +1,5 @@
-%Error: t/t_func_bad2.v:7: Unsupported: Recursive function or task call
-                         : ... In instance t
+%Error: t/t_func_bad2.v:7:13: Unsupported: Recursive function or task call
+                            : ... In instance t
    function recurse;
             ^~~~~~~
 %Error: Exiting due to

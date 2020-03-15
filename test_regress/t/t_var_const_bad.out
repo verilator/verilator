@@ -1,5 +1,5 @@
-%Error: t/t_var_const_bad.v:16: Assigning to const variable: 'five'
-                              : ... In instance t
+%Error: t/t_var_const_bad.v:16:7: Assigning to const variable: 'five'
+                                : ... In instance t
       five = 3'd4;
       ^~~~
 %Error: Exiting due to

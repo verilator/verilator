@@ -1,5 +1,5 @@
-%Error: t/t_struct_notfound_bad.v:12: Member 'nfmember' not found in structure
-                                    : ... In instance t
+%Error: t/t_struct_notfound_bad.v:12:9: Member 'nfmember' not found in structure
+                                      : ... In instance t
       s.nfmember = 0;  
         ^~~~~~~~
 %Error: Exiting due to

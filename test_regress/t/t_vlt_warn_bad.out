@@ -1,4 +1,4 @@
-%Warning-DEPRECATED: t/t_vlt_warn_bad.vlt:11: Deprecated -msg in configuration files, use -rule instead.
+%Warning-DEPRECATED: t/t_vlt_warn_bad.vlt:11:10: Deprecated -msg in configuration files, use -rule instead.
 lint_off -msg WIDTH          -file "*/t_vlt_warn.v" -lines 19-19
          ^~~~
                      ... Use "/* verilator lint_off DEPRECATED */" and lint_on around source to disable this message.

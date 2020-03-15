@@ -288,7 +288,7 @@ string FileLine::asciiLineCol() const {
 }
 string FileLine::ascii() const {
     // For most errors especially in the parser the lastLineno is more accurate than firstLineno
-    return filename()+":"+cvtToStr(lastLineno());
+    return filename() + ":" + cvtToStr(lastLineno()) + ":" + cvtToStr(firstColumn());
 }
 std::ostream& operator<<(std::ostream& os, FileLine* fileline) {
     os <<fileline->ascii()<<": "<<std::hex;

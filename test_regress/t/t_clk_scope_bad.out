@@ -1,5 +1,5 @@
-%Warning-CLKDATA: t/t_clk_scope_bad.v:35: Clock used as data (on rhs of assignment) in sequential block 'clk'
-                                        : ... In instance t.p2
+%Warning-CLKDATA: t/t_clk_scope_bad.v:35:12: Clock used as data (on rhs of assignment) in sequential block 'clk'
+                                           : ... In instance t.p2
       q <= d;
            ^
                   ... Use "/* verilator lint_off CLKDATA */" and lint_on around source to disable this message.

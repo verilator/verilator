@@ -14,9 +14,9 @@ lint(
     # Can't use expect_filename here as unstable output
     expect =>
 '%Error: Circular logic when ordering code .*
- *t/t_order_loop_bad.v:\d+: + Example path: ALWAYS
- *t/t_order_loop_bad.v:\d+: + Example path: t.ready
- *t/t_order_loop_bad.v:\d+: + Example path: ACTIVE
+ *t/t_order_loop_bad.v:\d+:\d+: + Example path: ALWAYS
+ *t/t_order_loop_bad.v:\d+:\d+: + Example path: t.ready
+ *t/t_order_loop_bad.v:\d+:\d+: + Example path: ACTIVE
 .*',
     );
 
