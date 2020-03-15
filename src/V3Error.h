@@ -43,6 +43,7 @@ public:
         //
         EC_INFO,        // General information out
         EC_FATAL,       // Kill the program
+        EC_FATALEXIT,   // Kill the program, suppress with --quiet-exit
         EC_FATALSRC,    // Kill the program, for internal source errors
         EC_ERROR,       // General error out, can't suppress
         // Boolean information we track per-line, but aren't errors
@@ -134,7 +135,7 @@ public:
     const char* ascii() const {
         const char* names[] = {
             // Leading spaces indicate it can't be disabled.
-            " MIN", " INFO", " FATAL", " FATALSRC", " ERROR",
+            " MIN", " INFO", " FATAL", " FATALEXIT", " FATALSRC", " ERROR",
             // Boolean
             " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE",
             // Errors
@@ -307,6 +308,8 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
 #define v3info(msg)  v3warnCode(V3ErrorCode::EC_INFO, msg)
 #define v3error(msg) v3warnCode(V3ErrorCode::EC_ERROR, msg)
 #define v3fatal(msg) v3warnCodeFatal(V3ErrorCode::EC_FATAL, msg)
+// Use this instead of fatal() if message gets suppressed with --quiet-exit
+#define v3fatalExit(msg) v3warnCodeFatal(V3ErrorCode::EC_FATALEXIT, msg)
 // Use this instead of fatal() to mention the source code line.
 #define v3fatalSrc(msg) v3warnCodeFatal(V3ErrorCode::EC_FATALSRC, __FILE__<<":"<<std::dec<<__LINE__<<": "<<msg)
 // Use this when normal v3fatal is called in static method that overrides fileline.

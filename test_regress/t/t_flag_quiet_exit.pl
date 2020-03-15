@@ -16,10 +16,10 @@ top_filename("t/t_file_does_not_exist.v");
 compile(
     v_flags2 => ["--quiet-exit"],
     fails => 1,
-    expect =>
-'%Error: Exiting due to \d+ error\(s\)
-((?!Command Failed).)*$',
     );
+
+file_grep_not("$Self->{obj_dir}/vlt_compile.log", qr/Exiting due to/);
+file_grep_not("$Self->{obj_dir}/vlt_compile.log", qr/Command Failed/);
 
 ok(1);
 1;

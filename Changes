@@ -5,9 +5,11 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.031 devel
 
-**    Add column numbers to errors and warnings.
+***   Add column numbers to errors and warnings.
 
 ***   Add setting VM_PARALLEL_BUILDS=1 when using --output-split, #2185.
+
+***   Change --quiet-exit to also suppress 'Exiting due to N errors'.
 
 
 * Verilator 4.030 2020-03-08

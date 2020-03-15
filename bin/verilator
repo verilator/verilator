@@ -1273,7 +1273,8 @@ detailed description.
 
 =item --quiet-exit
 
-When exiting due to an error, do not display the "Command Failed" message.
+When exiting due to an error, do not display the "Exiting due to Errors"
+nor "Command Failed" messages.
 
 =item --relative-includes
 

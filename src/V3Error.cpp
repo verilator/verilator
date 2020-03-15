@@ -92,30 +92,32 @@ string V3Error::lineStr(const char* filename, int lineno) {
 void V3Error::incErrors() {
     s_errCount++;
     if (errorCount() == errorLimit()) {  // Not >= as would otherwise recurse
-        v3fatal("Exiting due to too many errors encountered; --error-limit="<<errorCount()<<endl);
+        v3fatalExit("Exiting due to too many errors encountered; --error-limit="
+                    << errorCount() << endl);
     }
 }
 
 void V3Error::abortIfWarnings() {
     bool exwarn = warnFatal() && warnCount();
     if (errorCount() && exwarn) {
-        v3fatal("Exiting due to "<<std::dec<<errorCount()<<" error(s), "
-                <<warnCount()<<" warning(s)\n");
+        v3fatalExit("Exiting due to " << std::dec << errorCount() << " error(s), "
+                    << warnCount() << " warning(s)\n");
     } else if (errorCount()) {
-        v3fatal("Exiting due to "<<std::dec<<errorCount()<<" error(s)\n");
+        v3fatalExit("Exiting due to " << std::dec << errorCount() << " error(s)\n");
     } else if (exwarn) {
-        v3fatal("Exiting due to "<<std::dec<<warnCount()<<" warning(s)\n");
+        v3fatalExit("Exiting due to " << std::dec << warnCount() << " warning(s)\n");
     }
 }
 
 bool V3Error::isError(V3ErrorCode code, bool supp) {
     if (supp) return false;
-    else if (code==V3ErrorCode::USERINFO) return false;
-    else if (code==V3ErrorCode::EC_INFO) return false;
-    else if (code==V3ErrorCode::EC_FATAL) return true;
-    else if (code==V3ErrorCode::EC_FATALSRC) return true;
-    else if (code==V3ErrorCode::EC_ERROR) return true;
-    else if (code<V3ErrorCode::EC_FIRST_WARN
+    else if (code == V3ErrorCode::USERINFO) return false;
+    else if (code == V3ErrorCode::EC_INFO) return false;
+    else if (code == V3ErrorCode::EC_FATAL) return true;
+    else if (code == V3ErrorCode::EC_FATALEXIT) return true;
+    else if (code == V3ErrorCode::EC_FATALSRC) return true;
+    else if (code == V3ErrorCode::EC_ERROR) return true;
+    else if (code < V3ErrorCode::EC_FIRST_WARN
              || s_pretendError[code]) return true;
     else return false;
 }
@@ -124,11 +126,12 @@ string V3Error::msgPrefix() {
     V3ErrorCode code = s_errorCode;
     bool supp = s_errorSuppressed;
     if (supp) return "-arning-suppressed: ";
-    else if (code==V3ErrorCode::USERINFO) return "-Info: ";
-    else if (code==V3ErrorCode::EC_INFO) return "-Info: ";
-    else if (code==V3ErrorCode::EC_FATAL) return "%Error: ";
-    else if (code==V3ErrorCode::EC_FATALSRC) return "%Error: Internal Error: ";
-    else if (code==V3ErrorCode::EC_ERROR) return "%Error: ";
+    else if (code == V3ErrorCode::USERINFO) return "-Info: ";
+    else if (code == V3ErrorCode::EC_INFO) return "-Info: ";
+    else if (code == V3ErrorCode::EC_FATAL) return "%Error: ";
+    else if (code == V3ErrorCode::EC_FATALEXIT) return "%Error: ";
+    else if (code == V3ErrorCode::EC_FATALSRC) return "%Error: Internal Error: ";
+    else if (code == V3ErrorCode::EC_ERROR) return "%Error: ";
     else if (isError(code, supp)) return "%Error-"+string(code.ascii())+": ";
     else return "%Warning-"+string(code.ascii())+": ";
 }
@@ -194,7 +197,15 @@ void V3Error::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
         msg.insert(pos + 1, locationMsg);
     }
     // Output
-    std::cerr<<msg;
+    if (
+#ifndef _V3ERROR_NO_GLOBAL_
+        !(v3Global.opt.quietExit() && s_errorCode == V3ErrorCode::EC_FATALEXIT)
+#else
+        true
+#endif
+        ) {
+        std::cerr << msg;
+    }
     if (!s_errorSuppressed && !(s_errorCode==V3ErrorCode::EC_INFO
                                 || s_errorCode==V3ErrorCode::USERINFO)) {
         if (!s_describedEachWarn[s_errorCode]
@@ -222,8 +233,9 @@ void V3Error::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
         }
         if (isError(s_errorCode, s_errorSuppressed)) incErrors();
         else incWarnings();
-        if (s_errorCode==V3ErrorCode::EC_FATAL
-            || s_errorCode==V3ErrorCode::EC_FATALSRC) {
+        if (s_errorCode == V3ErrorCode::EC_FATAL
+            || s_errorCode == V3ErrorCode::EC_FATALEXIT
+            || s_errorCode == V3ErrorCode::EC_FATALSRC) {
             static bool inFatal = false;
             if (!inFatal) {
                 inFatal = true;
