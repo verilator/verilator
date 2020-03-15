@@ -247,7 +247,7 @@ void V3Options::addArg(const string& arg) {
 
 string V3Options::allArgsString() {
     string out;
-    for (std::list<string>::iterator it=m_impp->m_allArgs.begin();
+    for (std::list<string>::const_iterator it = m_impp->m_allArgs.begin();
          it != m_impp->m_allArgs.end(); ++it) {
         if (out != "") out += " ";
         out += *it;

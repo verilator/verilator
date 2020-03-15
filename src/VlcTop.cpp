@@ -75,7 +75,7 @@ void VlcTop::writeCoverage(const string& filename) {
     }
 
     os << "# SystemC::Coverage-3" << endl;
-    for (VlcPoints::ByName::iterator it=m_points.begin(); it!=m_points.end(); ++it) {
+    for (VlcPoints::ByName::const_iterator it = m_points.begin(); it != m_points.end(); ++it) {
         const VlcPoint& point = m_points.pointNumber(it->second);
         os <<"C '"<<point.name()<<"' " << point.count()<<endl;
     }
@@ -98,7 +98,7 @@ void VlcTop::rank() {
 
     // Sort by computrons, so fast tests get selected first
     std::vector<VlcTest*> bytime;
-    for (VlcTests::ByName::iterator it=m_tests.begin(); it!=m_tests.end(); ++it) {
+    for (VlcTests::ByName::const_iterator it = m_tests.begin(); it != m_tests.end(); ++it) {
         VlcTest* testp = *it;
         if (testp->bucketsCovered()) {  // else no points, so can't help us
             bytime.push_back(*it);
@@ -107,7 +107,7 @@ void VlcTop::rank() {
     sort(bytime.begin(), bytime.end(), CmpComputrons());  // Sort the vector
 
     VlcBuckets remaining;
-    for (VlcPoints::ByName::iterator it=m_points.begin(); it!=m_points.end(); ++it) {
+    for (VlcPoints::ByName::const_iterator it = m_points.begin(); it != m_points.end(); ++it) {
         VlcPoint* pointp = &points().pointNumber(it->second);
         // If any tests hit this point, then we'll need to cover it.
         if (pointp->testsCovering()) { remaining.addData(pointp->pointNum(), 1); }
@@ -145,7 +145,7 @@ void VlcTop::rank() {
 
 void VlcTop::annotateCalc() {
     // Calculate per-line information into filedata structure
-    for (VlcPoints::ByName::iterator it=m_points.begin(); it!=m_points.end(); ++it) {
+    for (VlcPoints::ByName::const_iterator it = m_points.begin(); it != m_points.end(); ++it) {
         const VlcPoint& point = m_points.pointNumber(it->second);
         string filename = point.filename();
         int lineno = point.lineno();
@@ -171,9 +171,10 @@ void VlcTop::annotateCalcNeeded() {
         //UINFO(1,"Source "<<source.name()<<endl);
         if (opt.annotateAll()) source.needed(true);
         VlcSource::LinenoMap& lines = source.lines();
-        for (VlcSource::LinenoMap::iterator lit=lines.begin(); lit!=lines.end(); ++lit) {
+        for (VlcSource::LinenoMap::iterator lit = lines.begin(); lit != lines.end(); ++lit) {
             VlcSource::ColumnMap& cmap = lit->second;
-            for (VlcSource::ColumnMap::iterator cit=cmap.begin(); cit!=cmap.end(); ++cit) {
+            for (VlcSource::ColumnMap::iterator cit = cmap.begin(); cit != cmap.end();
+                 ++cit) {
                 VlcSourceCount& col = cit->second;
                 //UINFO(0,"Source "<<source.name()<<":"<<col.lineno()<<":"<<col.column()<<endl);
                 ++totCases;
@@ -227,7 +228,8 @@ void VlcTop::annotateOutputFiles(const string& dirname) {
             VlcSource::LinenoMap::iterator lit=lines.find(lineno);
             if (lit != lines.end()) {
                 VlcSource::ColumnMap& cmap = lit->second;
-                for (VlcSource::ColumnMap::iterator cit=cmap.begin(); cit!=cmap.end(); ++cit) {
+                for (VlcSource::ColumnMap::iterator cit = cmap.begin(); cit != cmap.end();
+                     ++cit) {
                     VlcSourceCount& col = cit->second;
                     //UINFO(0,"Source "<<source.name()<<":"<<col.lineno()<<":"<<col.column()<<endl);
                     os<<(col.ok()?" ":"%")

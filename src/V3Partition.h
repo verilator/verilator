@@ -88,10 +88,8 @@ public:
     PartPtrIdMap() : m_nextId(0) {}
     // METHODS
     vluint64_t findId(const void* ptrp) const {
-        PtrMap::iterator it = m_id.find(ptrp);
-        if (it != m_id.end()) {
-            return it->second;
-        }
+        PtrMap::const_iterator it = m_id.find(ptrp);
+        if (it != m_id.end()) return it->second;
         m_id[ptrp] = m_nextId;
         return m_nextId++;
     }

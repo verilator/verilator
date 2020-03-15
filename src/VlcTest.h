@@ -118,7 +118,7 @@ public:
     void dump(bool bucketsToo) {
         UINFO(2,"dumpTests...\n");
         VlcTest::dumpHeader();
-        for (VlcTests::ByName::iterator it=begin(); it!=end(); ++it) {
+        for (VlcTests::ByName::const_iterator it = begin(); it != end(); ++it) {
             (*it)->dump(bucketsToo);
         }
     }

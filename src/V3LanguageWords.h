@@ -46,7 +46,7 @@ class V3LanguageWords {
     static const_iterator begin() { return s().s_kwdMap.begin(); }
     static const_iterator end() { return s().s_kwdMap.end(); }
     static string isKeyword(const string& kwd) {
-        KeywordMap::iterator it = s().s_kwdMap.find(kwd);
+        KeywordMap::const_iterator it = s().s_kwdMap.find(kwd);
         if (it == s().s_kwdMap.end()) return "";
         return it->second;
     }

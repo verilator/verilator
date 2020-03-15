@@ -350,7 +350,7 @@ void V3Graph::dumpDotFile(const string& filename, bool colorAsSubgraph) const {
     // Print vertices
     int n = 0;
     string subgr;
-    for (SubgraphMmap::iterator it = subgraphs.begin(); it!=subgraphs.end(); ++it) {
+    for (SubgraphMmap::const_iterator it = subgraphs.begin(); it != subgraphs.end(); ++it) {
         string vertexSubgraph = it->first;
         V3GraphVertex* vertexp = it->second;
         numMap[vertexp] = n;

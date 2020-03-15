@@ -157,7 +157,7 @@ int main(int argc, char** argv, char** env) {
 
     {
         const VlStringSet& readFiles = top.opt.readFiles();
-        for (VlStringSet::iterator it = readFiles.begin(); it != readFiles.end(); ++it) {
+        for (VlStringSet::const_iterator it = readFiles.begin(); it != readFiles.end(); ++it) {
             string filename = *it;
             top.readCoverage(filename);
         }
@@ -183,7 +183,7 @@ int main(int argc, char** argv, char** env) {
         V3Error::abortIfWarnings();
         if (top.opt.unlink()) {
             const VlStringSet& readFiles = top.opt.readFiles();
-            for (VlStringSet::iterator it = readFiles.begin(); it != readFiles.end(); ++it) {
+            for (VlStringSet::const_iterator it = readFiles.begin(); it != readFiles.end(); ++it) {
                 string filename = *it;
                 unlink(filename.c_str());
             }

@@ -173,12 +173,12 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed) {
             VlMTaskVertex::yields());
 
     vluint32_t thread_id = 0;
-    for (ProfileSet::iterator pit = m_allProfiles.begin();
+    for (ProfileSet::const_iterator pit = m_allProfiles.begin();
          pit != m_allProfiles.end(); ++pit) {
         ++thread_id;
 
         bool printing = false;  // False while in warmup phase
-        for (ProfileTrace::iterator eit = (*pit)->begin();
+        for (ProfileTrace::const_iterator eit = (*pit)->begin();
              eit != (*pit)->end(); ++eit) {
             switch (eit->m_type) {
             case VlProfileRec::TYPE_BARRIER:

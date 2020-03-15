@@ -689,7 +689,7 @@ void V3TSP::selfTestString() {
     expect.push_back("3");
 
     if (VL_UNCOVERABLE(expect != result)) {
-        for (std::vector<string>::iterator it = result.begin(); it != result.end(); ++it) {
+        for (std::vector<string>::const_iterator it = result.begin(); it != result.end(); ++it) {
             cout<<*it<<" ";
         }
         cout<<endl;

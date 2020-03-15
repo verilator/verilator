@@ -140,12 +140,12 @@ class StatsReport {
 
         // Header
         os<<"  Stat     "<<std::left<<std::setw(maxWidth-5-2)<<"";
-        for (Stages::iterator it = stages.begin(); it!=stages.end(); ++it) {
+        for (Stages::const_iterator it = stages.begin(); it != stages.end(); ++it) {
             os<<"  "<<std::left<<std::setw(9)<<*it;
         }
         os<<endl;
         os<<"  -------- "<<std::left<<std::setw(maxWidth-5-2)<<"";
-        for (Stages::iterator it = stages.begin(); it!=stages.end(); ++it) {
+        for (Stages::const_iterator it = stages.begin(); it != stages.end(); ++it) {
             os<<"  "<<std::left<<std::setw(9)<<"-------";
         }
         //os<<endl;
@@ -154,7 +154,7 @@ class StatsReport {
         string lastName = "__NONE__";
         string lastCommaName = "__NONE__";
         unsigned col = 0;
-        for (ByName::iterator it = byName.begin(); it!=byName.end(); ++it) {
+        for (ByName::const_iterator it = byName.begin(); it != byName.end(); ++it) {
             const V3Statistic* repp = it->second;
             if (lastName != repp->name()) {
                 lastName = repp->name();
