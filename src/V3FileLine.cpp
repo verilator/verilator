@@ -376,8 +376,11 @@ string FileLine::warnOther() const {
 
 string FileLine::source() const {
     if (VL_UNCOVERABLE(!m_contentp)) {
-        if (debug() || v3Global.opt.debugCheck()) return "%Error-internal-no-contents";
-        else return "";
+        if (debug() || v3Global.opt.debugCheck()) {
+            return "%Error: internal tracking of file contents failed";
+        } else {
+            return "";
+        }
     }
     return m_contentp->getLine(m_contentLineno);
 }

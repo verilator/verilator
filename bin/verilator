@@ -3914,7 +3914,19 @@ checking across the designs, and prevents other users from compiling your
 code without knowing the magic set of disables needed to successfully
 compile your design.
 
-List of all warnings:
+=head2 Error and Warning Format
+
+Warnings and errors printed by Verilator always match this regular
+expression:
+
+        %(Error|Warning)(-[A-Z0-9_]+)?: ((\S+):(\d+):((\d+):)?)? .*
+
+Errors and warning start with a percent sign (historical heritage from
+Digital Equipment Corporation).  Some errors or warning have a code
+attached, with meanings described below.  Some errors also have a filename,
+line number and optional column number (starting at column 1 to match GCC).
+
+=head2 List of all warnings
 
 =over 4
 

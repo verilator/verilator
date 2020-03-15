@@ -5,7 +5,7 @@
 `line 100
 ^
 %Error: somefile:100: `line was not properly formed with '`line number "filename" level'
-%Error-internal-no-contents
+%Error: internal tracking of file contents failed
 ^
 %Error: t/t_pp_line_bad.v:6: Define or directive not defined: '`line'
 `line
