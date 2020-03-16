@@ -40,6 +40,7 @@ private:
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(V3Parse);
+
 public:
     // We must allow reading multiple files into one parser
     V3Parse(AstNetlist* rootp, VInFilter* filterp, V3ParseSym* symp);

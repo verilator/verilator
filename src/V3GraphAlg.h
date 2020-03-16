@@ -38,7 +38,8 @@ protected:
     V3EdgeFuncP m_edgeFuncp;  // Function that says we follow this edge
     // CONSTRUCTORS
     GraphAlg(T_Graph* graphp, V3EdgeFuncP edgeFuncp)
-        : m_graphp(graphp), m_edgeFuncp(edgeFuncp) {}
+        : m_graphp(graphp)
+        , m_edgeFuncp(edgeFuncp) {}
     ~GraphAlg() {}
     // METHODS
     inline bool followEdge(V3GraphEdge* edgep) {

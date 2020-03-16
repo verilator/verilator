@@ -40,7 +40,7 @@ class GraphPathChecker : GraphAlg<const V3Graph> {
     // through the same node twice while searching for a path.
     vluint64_t m_generation;
 
- public:
+public:
     // CONSTRUCTORS
     explicit GraphPathChecker(const V3Graph* graphp,
                               V3EdgeFuncP edgeFuncp = V3GraphEdge::followAlwaysTrue);
@@ -54,9 +54,8 @@ class GraphPathChecker : GraphAlg<const V3Graph> {
     // removed. Detect such an edge.
     bool isTransitiveEdge(const V3GraphEdge* edgep);
 
- private:
-    bool pathExistsInternal(const V3GraphVertex* ap,
-                            const V3GraphVertex* bp,
+private:
+    bool pathExistsInternal(const V3GraphVertex* ap, const V3GraphVertex* bp,
                             unsigned* costp = NULL);
     void initHalfCriticalPaths(GraphWay way, bool checkOnly);
     void incGeneration() { ++m_generation; }

@@ -71,26 +71,26 @@ public:
         const string namestr = name();
         for (const char* cp = namestr.c_str(); *cp; ++cp) {
             if (*cp == '\001') {
-                if (0==strncmp(cp+1, shortKey, shortLen)
-                    && cp[shortLen+1] == '\002') {
-                    cp += shortLen+2;  // Skip \001+short+\002
+                if (0 == strncmp(cp + 1, shortKey, shortLen)
+                    && cp[shortLen + 1] == '\002') {
+                    cp += shortLen + 2;  // Skip \001+short+\002
                     const char* ep = cp;
                     while (*ep && *ep != '\001') ++ep;
-                    return string(cp, ep-cp);
+                    return string(cp, ep - cp);
                 }
             }
         }
         return "";
     }
     static void dumpHeader() {
-        cout<<"Points:\n";
-        cout<<"  Num,    TestsCover,    Count,  Name"<<endl;
+        cout << "Points:\n";
+        cout << "  Num,    TestsCover,    Count,  Name" << endl;
     }
     void dump() const {
-        cout<<"  "<<std::setw(8)<<std::setfill('0')<<pointNum()
-            <<",  "<<std::setw(7)<<std::setfill(' ')<<testsCovering()
-            <<",  "<<std::setw(7)<<std::setfill(' ')<<count()
-            <<",  \""<<name()<<"\""<<endl;
+        cout << "  " << std::setw(8) << std::setfill('0') << pointNum();
+        cout << ",  " << std::setw(7) << std::setfill(' ') << testsCovering();
+        cout << ",  " << std::setw(7) << std::setfill(' ') << count();
+        cout << ",  \"" << name() << "\"" << endl;
     }
 };
 
@@ -100,7 +100,7 @@ public:
 class VlcPoints {
 private:
     // MEMBERS
-    typedef std::map<string,vluint64_t> NameMap;  // Sorted by name (ordered)
+    typedef std::map<string, vluint64_t> NameMap;  // Sorted by name (ordered)
     NameMap m_nameMap;  //< Name to point-number
     std::vector<VlcPoint> m_points;  //< List of all points
     vluint64_t m_numPoints;  //< Total unique points
@@ -114,33 +114,28 @@ public:
 
 public:
     // CONSTRUCTORS
-    VlcPoints() {
-        m_numPoints = 0;
-    }
+    VlcPoints() : m_numPoints(0) {}
     ~VlcPoints() {}
 
     // METHODS
     void dump() {
-        UINFO(2,"dumpPoints...\n");
+        UINFO(2, "dumpPoints...\n");
         VlcPoint::dumpHeader();
         for (VlcPoints::ByName::const_iterator it = begin(); it != end(); ++it) {
             const VlcPoint& point = pointNumber(it->second);
             point.dump();
         }
     }
-    VlcPoint& pointNumber(vluint64_t num) {
-        return m_points[num];
-    }
+    VlcPoint& pointNumber(vluint64_t num) { return m_points[num]; }
     vluint64_t findAddPoint(const string& name, vluint64_t count) {
         vluint64_t pointnum;
         NameMap::const_iterator iter = m_nameMap.find(name);
         if (iter != m_nameMap.end()) {
             pointnum = iter->second;
             m_points[pointnum].countInc(count);
-        }
-        else {
+        } else {
             pointnum = m_numPoints++;
-            VlcPoint point (name, pointnum);
+            VlcPoint point(name, pointnum);
             point.countInc(count);
             m_points.push_back(point);
             m_nameMap.insert(make_pair(point.name(), point.pointNum()));

@@ -71,19 +71,20 @@ public:
 
     // METHODS
     static void dumpHeader() {
-        cout<<"Tests:\n";
-        //cout<<"  Testrun, Computrons,";  // Currently not loaded
-        cout<<"  Covered,     Rank,  RankPts,  Filename"<<endl;
+        cout << "Tests:\n";
+        // cout<<"  Testrun, Computrons,";  // Currently not loaded
+        cout << "  Covered,     Rank,  RankPts,  Filename" << endl;
     }
     void dump(bool bucketsToo) {
-        if (testrun() || computrons()!=0.0) {  // currently unused // LCOV_EXCL_LINE
-            cout<<"  "<<std::setw(8)<<std::setfill('0')<<testrun()  // LCOV_EXCL_LINE
-                <<",  "<<std::setw(7)<<std::setfill(' ')<<computrons()<<",";  // LCOV_EXCL_LINE
+        if (testrun() || computrons() != 0.0) {  // currently unused // LCOV_EXCL_LINE
+            cout << "  " << std::setw(8) << std::setfill('0') << testrun()  // LCOV_EXCL_LINE
+                 << ",  " << std::setw(7) << std::setfill(' ') << computrons()
+                 << ",";  // LCOV_EXCL_LINE
         }
-        cout<<"  "<<std::setw(7)<<std::setfill(' ')<<bucketsCovered()
-            <<",  "<<std::setw(7)<<std::setfill(' ')<<rank()
-            <<",  "<<std::setw(7)<<std::setfill(' ')<<rankPoints()
-            <<",  \""<<name()<<"\""<<endl;
+        cout << "  " << std::setw(7) << std::setfill(' ') << bucketsCovered();
+        cout << ",  " << std::setw(7) << std::setfill(' ') << rank();
+        cout << ",  " << std::setw(7) << std::setfill(' ') << rankPoints();
+        cout << ",  \"" << name() << "\"" << endl;
         if (bucketsToo) m_buckets.dump();
     }
 };
@@ -95,6 +96,7 @@ class VlcTests {
 public:
     // TYPES
     typedef std::vector<VlcTest*> ByName;
+
 private:
     // MEMBERS
     ByName m_tests;  //< List of all tests
@@ -109,14 +111,14 @@ public:
     // CONSTRUCTORS
     VlcTests() {}
     ~VlcTests() {
-        for (VlcTests::ByName::iterator it=begin(); it!=end(); ++it) {
-            VL_DO_CLEAR(delete *it, *it=NULL);
+        for (VlcTests::ByName::iterator it = begin(); it != end(); ++it) {
+            VL_DO_CLEAR(delete *it, *it = NULL);
         }
     }
 
     // METHODS
     void dump(bool bucketsToo) {
-        UINFO(2,"dumpTests...\n");
+        UINFO(2, "dumpTests...\n");
         VlcTest::dumpHeader();
         for (VlcTests::ByName::const_iterator it = begin(); it != end(); ++it) {
             (*it)->dump(bucketsToo);

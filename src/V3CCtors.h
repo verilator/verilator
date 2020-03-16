@@ -32,9 +32,9 @@
 class V3CCtors {
 public:
     static void cctorsAll();
+
 private:
     static void evalAsserts();
 };
-
 
 #endif  // Guard

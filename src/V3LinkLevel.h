@@ -33,6 +33,7 @@ class V3LinkLevel {
 private:
     static void wrapTopCell(AstNetlist* rootp);
     static void wrapTopPackages(AstNetlist* rootp);
+
 public:
     static void modSortByLevel();
     static void wrapTop(AstNetlist* rootp);

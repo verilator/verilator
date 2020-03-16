@@ -39,7 +39,8 @@ public:
     static void addIgnore(V3ErrorCode code, bool on, const string& filename, int min, int max);
     static void addWaiver(V3ErrorCode code, const string& filename, const string& msg);
     static void addInline(FileLine* fl, const string& module, const string& ftask, bool on);
-    static void addVarAttr(FileLine* fl, const string& module, const string& ftask, const string& signal, AstAttrType type, AstSenTree* nodep);
+    static void addVarAttr(FileLine* fl, const string& module, const string& ftask,
+                           const string& signal, AstAttrType type, AstSenTree* nodep);
     static void applyCase(AstCase* nodep);
     static void applyCoverageBlock(AstNodeModule* modulep, AstBegin* nodep);
     static void applyIgnores(FileLine* filelinep);
