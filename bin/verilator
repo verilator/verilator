@@ -3920,7 +3920,7 @@ compile your design.
 Warnings and errors printed by Verilator always match this regular
 expression:
 
-        %(Error|Warning)(-[A-Z0-9_]+)?: ((\S+):(\d+):((\d+):)?)? .*
+        %(Error|Warning)(-[A-Z0-9_]+)?: ((\S+):(\d+):((\d+):)? )?.*
 
 Errors and warning start with a percent sign (historical heritage from
 Digital Equipment Corporation).  Some errors or warning have a code
