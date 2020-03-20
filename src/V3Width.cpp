@@ -254,6 +254,9 @@ private:
     // ...    These comparisons don't allow reals
     virtual void visit(AstEqWild* nodep) VL_OVERRIDE {      visit_cmp_eq_gt(nodep, false); }
     virtual void visit(AstNeqWild* nodep) VL_OVERRIDE {     visit_cmp_eq_gt(nodep, false); }
+    // ...    Type compares
+    virtual void visit(AstEqT* nodep) VL_OVERRIDE {         visit_cmp_eq_type(nodep); }
+    virtual void visit(AstNeqT* nodep) VL_OVERRIDE {        visit_cmp_eq_type(nodep); }
     // ...    Real compares
     virtual void visit(AstEqD* nodep) VL_OVERRIDE {         visit_cmp_real(nodep); }
     virtual void visit(AstNeqD* nodep) VL_OVERRIDE {        visit_cmp_real(nodep); }
@@ -3568,6 +3571,16 @@ private:
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->lhsp(), WidthVP(SELF, BOTH).p());
             nodep->dtypeSetLogicBool();
+        }
+    }
+
+    void visit_cmp_eq_type(AstNodeBiop* nodep) {
+        if (m_vup->prelim()) {
+            userIterateAndNext(nodep->lhsp(), WidthVP(CONTEXT, PRELIM).p());
+            userIterateAndNext(nodep->rhsp(), WidthVP(CONTEXT, PRELIM).p());
+            // TODO -- remove
+            UINFO(1,"Type comparision LHS : "<<nodep->lhsp()<<endl);
+            UINFO(1,"Type comparision RHS : "<<nodep->rhsp()<<endl);
         }
     }
 

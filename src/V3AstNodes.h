@@ -5281,6 +5281,23 @@ public:
     virtual bool sizeMattersLhs() const { return false; }
     virtual bool sizeMattersRhs() const { return false; }
 };
+class AstEqT : public AstNodeBiCom {
+public:
+    AstEqT(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
+    ASTNODE_NODE_FUNCS(EqT)
+    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstEqT(this->fileline(), lhsp, rhsp); }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opEq(lhs, rhs); }
+    virtual string emitVerilog() { return "%k(%l %f== %r)"; }
+    // TOOD -- if we can't even emit C, should this be a child of AstNodeMath?
+    virtual string emitC() { return ""; }
+    virtual string emitSimpleOperator() { return "=="; }
+    virtual bool cleanOut() const { return false; }
+    virtual bool cleanLhs() const { return false; }
+    virtual bool cleanRhs() const { return false; }
+    virtual bool sizeMattersLhs() const { return false; }
+    virtual bool sizeMattersRhs() const { return false; }
+};
 class AstEqD : public AstNodeBiCom {
 public:
     AstEqD(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
@@ -5330,6 +5347,22 @@ public:
     virtual bool cleanOut() const { return true; }
     virtual bool cleanLhs() const { return true; }
     virtual bool cleanRhs() const { return true; }
+    virtual bool sizeMattersLhs() const { return false; }
+    virtual bool sizeMattersRhs() const { return false; }
+};
+class AstNeqT : public AstNodeBiCom {
+public:
+    AstNeqT(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
+        : ASTGEN_SUPER(fl, lhsp, rhsp) { dtypeSetLogicBool(); }
+    ASTNODE_NODE_FUNCS(NeqT)
+    virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) { return new AstNeqT(this->fileline(), lhsp, rhsp); }
+    virtual void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) { out.opNeq(lhs, rhs); }
+    virtual string emitVerilog() { return "%k(%l %f!= %r)"; }
+    virtual string emitC() { return ""; }
+    virtual string emitSimpleOperator() { return "!="; }
+    virtual bool cleanOut() const { return false; }
+    virtual bool cleanLhs() const { return false; }
+    virtual bool cleanRhs() const { return false; }
     virtual bool sizeMattersLhs() const { return false; }
     virtual bool sizeMattersRhs() const { return false; }
 };
