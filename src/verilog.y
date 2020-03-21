@@ -1010,6 +1010,7 @@ paramPortDeclOrArgList<nodep>:	// IEEE: list_of_param_assignments + { parameter_
 paramPortDeclOrArg<nodep>:	// IEEE: param_assignment + parameter_port_declaration
 	//			// We combine the two as we can't tell which follows a comma
 		parameter_port_declarationFrontE param_assignment	{ $$ = $2; }
+	|	parameter_port_declarationTypeFrontE type_assignment	{ $$ = $2; }
 	;
 
 portsStarE<nodep>:		// IEEE: .* + list_of_ports + list_of_port_declarations + empty
@@ -1342,6 +1343,7 @@ local_parameter_declaration<nodep>:	// IEEE: local_parameter_declaration
 	//			// See notes in parameter_declaration
 	//			// Front must execute first so VARDTYPE is ready before list of vars
 		local_parameter_declarationFront list_of_param_assignments	{ $$ = $2; }
+	|	local_parameter_declarationTypeFront list_of_type_assignments	{ $$ = $2; }
 	;
 
 parameter_declaration<nodep>:	// IEEE: parameter_declaration
@@ -1350,21 +1352,30 @@ parameter_declaration<nodep>:	// IEEE: parameter_declaration
 	//			// we use list_of_param_assignments because for port handling
 	//			// it already must accept types, so simpler to have code only one place
 	//			// Front must execute first so VARDTYPE is ready before list of vars
-		parameter_declarationFront list_of_param_assignments	{ $$ = $2; }
+		parameter_declarationFront list_of_param_assignments		{ $$ = $2; }
+	|	parameter_declarationTypeFront list_of_type_assignments		{ $$ = $2; }
 	;
 
 local_parameter_declarationFront: // IEEE: local_parameter_declaration w/o assignment
 	//			// Front must execute first so VARDTYPE is ready before list of vars
 		varLParamReset implicit_typeE 		{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
 	|	varLParamReset data_type		{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
-	|	varLParamReset yTYPE			{ /*VARRESET-in-varLParam*/ VARDTYPE(new AstParseTypeDType($2)); }
+	;
+
+local_parameter_declarationTypeFront: // IEEE: local_parameter_declaration w/o assignment
+	//			// Front must execute first so VARDTYPE is ready before list of vars
+		varLParamReset yTYPE			{ /*VARRESET-in-varLParam*/ VARDTYPE(new AstParseTypeDType($2)); }
 	;
 
 parameter_declarationFront:	// IEEE: parameter_declaration w/o assignment
 	//			// Front must execute first so VARDTYPE is ready before list of vars
 		varGParamReset implicit_typeE 		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
 	|	varGParamReset data_type		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
-	|	varGParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($2)); }
+	;
+
+parameter_declarationTypeFront:	// IEEE: parameter_declaration w/o assignment
+	//			// Front must execute first so VARDTYPE is ready before list of vars
+		varGParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($2)); }
 	;
 
 parameter_port_declarationFrontE: // IEEE: parameter_port_declaration w/o assignment
@@ -1373,12 +1384,18 @@ parameter_port_declarationFrontE: // IEEE: parameter_port_declaration w/o assign
 	//			// Front must execute first so VARDTYPE is ready before list of vars
 		varGParamReset implicit_typeE 		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
 	|	varGParamReset data_type		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
-	|	varGParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($2)); }
 	|	varLParamReset implicit_typeE 		{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
 	|	varLParamReset data_type		{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
-	|	varLParamReset yTYPE			{ /*VARRESET-in-varLParam*/ VARDTYPE(new AstParseTypeDType($2)); }
 	|	implicit_typeE 				{ /*VARRESET-in-varGParam*/ VARDTYPE($1); }
 	|	data_type				{ /*VARRESET-in-varGParam*/ VARDTYPE($1); }
+	;
+
+parameter_port_declarationTypeFrontE: // IEEE: parameter_port_declaration w/o assignment
+	//			// IEEE: parameter_declaration (minus assignment)
+	//			// IEEE: local_parameter_declaration (minus assignment)
+	//			// Front must execute first so VARDTYPE is ready before list of vars
+		varGParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($2)); }
+	|	varLParamReset yTYPE			{ /*VARRESET-in-varLParam*/ VARDTYPE(new AstParseTypeDType($2)); }
 	|	yTYPE					{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($1)); }
 	;
 
@@ -2348,8 +2365,7 @@ packed_dimension<rangep>:	// ==IEEE: packed_dimension
 param_assignment<varp>:		// ==IEEE: param_assignment
 	//			// IEEE: constant_param_expression
 	//			// constant_param_expression: '$' is in expr
-	//			// note exptOrDataType being a data_type is only for yPARAMETER yTYPE
-		id/*new-parameter*/ variable_dimensionListE sigAttrListE '=' exprOrDataType
+		id/*new-parameter*/ variable_dimensionListE sigAttrListE '=' expr
 	/**/		{ $$ = VARDONEA($<fl>1,*$1, $2, $3); $$->valuep($5); }
 	|	id/*new-parameter*/ variable_dimensionListE sigAttrListE
 	/**/		{ $$ = VARDONEA($<fl>1,*$1, $2, $3);
@@ -2360,6 +2376,17 @@ param_assignment<varp>:		// ==IEEE: param_assignment
 list_of_param_assignments<varp>:	// ==IEEE: list_of_param_assignments
 		param_assignment			{ $$ = $1; }
 	|	list_of_param_assignments ',' param_assignment	{ $$ = $1; $1->addNext($3); }
+	;
+
+type_assignment<varp>:		// ==IEEE: type_assignment
+	//			// note exptOrDataType being a data_type is only for yPARAMETER yTYPE
+		idAny/*new-parameter*/ sigAttrListE '=' data_type
+	/**/		{ $$ = VARDONEA($<fl>1,*$1, NULL, $2); $$->valuep($4); }
+	;
+
+list_of_type_assignments<varp>:		// ==IEEE: list_of_type_assignments
+		type_assignment				{ $$ = $1; }
+	|	list_of_type_assignments ',' type_assignment	{ $$ = $1; $1->addNext($3); }
 	;
 
 list_of_defparam_assignments<nodep>:	//== IEEE: list_of_defparam_assignments

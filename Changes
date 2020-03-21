@@ -11,6 +11,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Change --quiet-exit to also suppress 'Exiting due to N errors'.
 
+****  Fix parameter type redeclaring a type, #2195. [hdzhangdoc]
+
 
 * Verilator 4.030 2020-03-08
 
