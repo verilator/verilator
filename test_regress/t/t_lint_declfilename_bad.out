@@ -1,4 +1,4 @@
-%Warning-DECLFILENAME: t/t_lint_declfilename.v:6:8: Filename 't_lint_declfilename' does not match MODULE name: 't'
+%Warning-DECLFILENAME: t/t_lint_declfilename.v:7:8: Filename 't_lint_declfilename' does not match MODULE name: 't'
 module t;
        ^
                        ... Use "/* verilator lint_off DECLFILENAME */" and lint_on around source to disable this message.

@@ -1,7 +1,7 @@
-%Error: t/t_var_port2_bad.v:6:11: Input/output/inout declaration not found for port: 'portwithoin'
+%Error: t/t_var_port2_bad.v:7:11: Input/output/inout declaration not found for port: 'portwithoin'
 module t (portwithoin);
           ^~~~~~~~~~~
-%Error: t/t_var_port2_bad.v:7:10: Input/output/inout does not appear in port list: 'portwithin'
+%Error: t/t_var_port2_bad.v:8:10: Input/output/inout does not appear in port list: 'portwithin'
    input portwithin;
          ^~~~~~~~~~
 %Error: Exiting due to

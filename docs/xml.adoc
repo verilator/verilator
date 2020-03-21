@@ -63,3 +63,10 @@ each describing the contents of that module, and a single `<typetable>`...
 `</typetable>` element which lists all used types used within the
 modules. Each type has a numeric `id` attribute that is referred to by
 elements in the `<module>` elements using the `dtype_id` attribute.
+
+== Distribution
+
+Copyright 2020-2020 by Wilson Snyder.  Verilator is free software; you can
+redistribute it and/or modify it under the terms of either the GNU Lesser
+General Public License Version 3 or the Perl Artistic License Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0

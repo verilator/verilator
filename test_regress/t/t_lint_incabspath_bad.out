@@ -1,4 +1,4 @@
-%Warning-INCABSPATH: t/t_lint_incabspath.v:6:10: Suggest `include with absolute path be made relative, and use +include: /dev/null
+%Warning-INCABSPATH: t/t_lint_incabspath.v:7:10: Suggest `include with absolute path be made relative, and use +include: /dev/null
 `include "/dev/null"
          ^~~~~~~~~~~
                      ... Use "/* verilator lint_off INCABSPATH */" and lint_on around source to disable this message.

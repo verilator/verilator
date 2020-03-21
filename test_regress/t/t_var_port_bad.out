@@ -1,4 +1,4 @@
-%Error: t/t_var_port_bad.v:15:13: Input/output/inout does not appear in port list: 'b'
+%Error: t/t_var_port_bad.v:16:13: Input/output/inout does not appear in port list: 'b'
    input a, b;
             ^
 %Error: Exiting due to

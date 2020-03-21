@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2018 by Julien Margetts.
+// SPDX-License-Identifier: CC0-1.0
 
 module t #(parameter sz = 4096)
    (

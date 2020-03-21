@@ -1,9 +1,9 @@
-%Warning-UNUSED: t/t_lint_once_bad.v:18:14: Signal is not driven, nor used: 'unus1'
+%Warning-UNUSED: t/t_lint_once_bad.v:19:14: Signal is not driven, nor used: 'unus1'
                                           : ... In instance t.sub3
    reg [A:0] unus1;    reg [A:0] unus2;
              ^~~~~
                  ... Use "/* verilator lint_off UNUSED */" and lint_on around source to disable this message.
-%Warning-UNUSED: t/t_lint_once_bad.v:18:34: Signal is not driven, nor used: 'unus2'
+%Warning-UNUSED: t/t_lint_once_bad.v:19:34: Signal is not driven, nor used: 'unus2'
                                           : ... In instance t.sub3
    reg [A:0] unus1;    reg [A:0] unus2;
                                  ^~~~~

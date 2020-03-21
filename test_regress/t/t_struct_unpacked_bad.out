@@ -1,4 +1,4 @@
-%Warning-UNPACKED: t/t_struct_unpacked_bad.v:8:12: Unsupported: Unpacked struct/union
+%Warning-UNPACKED: t/t_struct_unpacked_bad.v:9:12: Unsupported: Unpacked struct/union
    typedef struct {
            ^~~~~~
                    ... Use "/* verilator lint_off UNPACKED */" and lint_on around source to disable this message.

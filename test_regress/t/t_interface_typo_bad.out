@@ -1,10 +1,10 @@
-%Error: t/t_interface_typo_bad.v:13:4: Parent cell's interface is not found: 'foo_intf'
+%Error: t/t_interface_typo_bad.v:14:4: Parent cell's interface is not found: 'foo_intf'
    foo_intf foo
    ^~~~~~~~
-%Error: t/t_interface_typo_bad.v:21:4: Cannot find file containing interface: 'fo_intf'
+%Error: t/t_interface_typo_bad.v:22:4: Cannot find file containing interface: 'fo_intf'
    fo_intf the_foo;
    ^~~~~~~
-%Error: t/t_interface_typo_bad.v:26:15: Found definition of 'the_foo' as a CELL but expected a variable
+%Error: t/t_interface_typo_bad.v:27:15: Found definition of 'the_foo' as a CELL but expected a variable
         .foo (the_foo)
               ^~~~~~~
 %Error: Exiting due to

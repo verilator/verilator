@@ -1,37 +1,37 @@
-%Error: t/t_mem_multi_ref_bad.v:14:11: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'logic'
+%Error: t/t_mem_multi_ref_bad.v:15:11: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'logic'
                                      : ... In instance t
       dimn[1:0] = 0;             
           ^
-%Error: t/t_mem_multi_ref_bad.v:14:11: Extracting 2 bits from only 1 bit number
+%Error: t/t_mem_multi_ref_bad.v:15:11: Extracting 2 bits from only 1 bit number
                                      : ... In instance t
       dimn[1:0] = 0;             
           ^
-%Error: t/t_mem_multi_ref_bad.v:15:14: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'logic'
+%Error: t/t_mem_multi_ref_bad.v:16:14: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'logic'
                                      : ... In instance t
       dim0[1][1] = 0;            
              ^
-%Warning-SELRANGE: t/t_mem_multi_ref_bad.v:15:14: Selection index out of range: 1:1 outside 0:0
+%Warning-SELRANGE: t/t_mem_multi_ref_bad.v:16:14: Selection index out of range: 1:1 outside 0:0
                                                 : ... In instance t
       dim0[1][1] = 0;            
              ^
                    ... Use "/* verilator lint_off SELRANGE */" and lint_on around source to disable this message.
-%Error: t/t_mem_multi_ref_bad.v:16:17: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'logic'
+%Error: t/t_mem_multi_ref_bad.v:17:17: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'logic'
                                      : ... In instance t
       dim1[1][1][1] = 0;         
                 ^
-%Warning-SELRANGE: t/t_mem_multi_ref_bad.v:16:17: Selection index out of range: 1:1 outside 0:0
+%Warning-SELRANGE: t/t_mem_multi_ref_bad.v:17:17: Selection index out of range: 1:1 outside 0:0
                                                 : ... In instance t
       dim1[1][1][1] = 0;         
                 ^
-%Error: t/t_mem_multi_ref_bad.v:18:11: Illegal +: or -: select; type already selected, or bad dimension: data type is 'logic[1:0]$[1:0][1:0]'
+%Error: t/t_mem_multi_ref_bad.v:19:11: Illegal +: or -: select; type already selected, or bad dimension: data type is 'logic[1:0]$[1:0][1:0]'
                                      : ... In instance t
       dim2[0 +: 1][1] = 0;       
           ^
-%Error: t/t_mem_multi_ref_bad.v:22:16: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'logic'
+%Error: t/t_mem_multi_ref_bad.v:23:16: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'logic'
                                      : ... In instance t
       dim0nv[1][1] = 0;          
                ^
-%Warning-SELRANGE: t/t_mem_multi_ref_bad.v:22:16: Selection index out of range: 1:1 outside 0:0
+%Warning-SELRANGE: t/t_mem_multi_ref_bad.v:23:16: Selection index out of range: 1:1 outside 0:0
                                                 : ... In instance t
       dim0nv[1][1] = 0;          
                ^

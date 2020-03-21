@@ -1,4 +1,4 @@
-%Error: t/t_gen_missing.v:42:20: Cannot find file containing module: 'foo_not_needed'
+%Error: t/t_gen_missing.v:43:20: Cannot find file containing module: 'foo_not_needed'
                    foo_not_needed i_foo(.x(foo[j]), .y(bar[j]));
                    ^~~~~~~~~~~~~~
         ... Looked in:

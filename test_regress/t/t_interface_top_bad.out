@@ -1,7 +1,7 @@
-%Error: t/t_interface_top_bad.v:16:19: Unsupported: Interfaced port on top level module
+%Error: t/t_interface_top_bad.v:17:19: Unsupported: Interfaced port on top level module
    ifc.counter_mp c_data
                   ^~~~~~
-%Error: t/t_interface_top_bad.v:16:4: Parent cell's interface is not found: 'ifc'
+%Error: t/t_interface_top_bad.v:17:4: Parent cell's interface is not found: 'ifc'
    ifc.counter_mp c_data
    ^~~
 %Error: Exiting due to

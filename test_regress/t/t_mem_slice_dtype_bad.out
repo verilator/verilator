@@ -1,4 +1,4 @@
-%Error: t/t_mem_slice_dtype_bad.v:22:45: ADD unexpected in assignment to unpacked array
+%Error: t/t_mem_slice_dtype_bad.v:23:45: ADD unexpected in assignment to unpacked array
       completed_cnt[id] <= completed_cnt_dp + 1;
                                             ^
 %Error: Exiting due to

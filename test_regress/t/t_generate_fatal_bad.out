@@ -1,86 +1,86 @@
 %Warning-USERFATAL: "boom"
                     ... Use "/* verilator lint_off USERFATAL */" and lint_on around source to disable this message.
-%Error: t/t_generate_fatal_bad.v:12:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
+%Error: t/t_generate_fatal_bad.v:13:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
                                       : ... In instance t.genloop[0].foo_inst
-        t/t_generate_fatal_bad.v:8:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
-        t/t_generate_fatal_bad.v:12:29: ... Called from get_baz() with parameters:
+        t/t_generate_fatal_bad.v:9:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
+        t/t_generate_fatal_bad.v:13:29: ... Called from get_baz() with parameters:
            bar = ?32?h0
    localparam integer BAZ = get_baz(BAR);
                             ^~~~~~~
-%Error: t/t_generate_fatal_bad.v:12:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
+%Error: t/t_generate_fatal_bad.v:13:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
                                       : ... In instance t.genloop[1].foo_inst
-        t/t_generate_fatal_bad.v:8:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
-        t/t_generate_fatal_bad.v:12:29: ... Called from get_baz() with parameters:
+        t/t_generate_fatal_bad.v:9:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
+        t/t_generate_fatal_bad.v:13:29: ... Called from get_baz() with parameters:
            bar = ?32?h1
    localparam integer BAZ = get_baz(BAR);
                             ^~~~~~~
-%Error: t/t_generate_fatal_bad.v:12:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
+%Error: t/t_generate_fatal_bad.v:13:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
                                       : ... In instance t.gen_l1[2].gen_l2[0].foo_inst2
-        t/t_generate_fatal_bad.v:8:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
-        t/t_generate_fatal_bad.v:12:29: ... Called from get_baz() with parameters:
+        t/t_generate_fatal_bad.v:9:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
+        t/t_generate_fatal_bad.v:13:29: ... Called from get_baz() with parameters:
            bar = 32'h2
    localparam integer BAZ = get_baz(BAR);
                             ^~~~~~~
-%Error: t/t_generate_fatal_bad.v:12:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
+%Error: t/t_generate_fatal_bad.v:13:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
                                       : ... In instance t.gen_l1[2].gen_l2[1].foo_inst2
-        t/t_generate_fatal_bad.v:8:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
-        t/t_generate_fatal_bad.v:12:29: ... Called from get_baz() with parameters:
+        t/t_generate_fatal_bad.v:9:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
+        t/t_generate_fatal_bad.v:13:29: ... Called from get_baz() with parameters:
            bar = 32'h4
    localparam integer BAZ = get_baz(BAR);
                             ^~~~~~~
-%Error: t/t_generate_fatal_bad.v:12:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
+%Error: t/t_generate_fatal_bad.v:13:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
                                       : ... In instance t.gen_l1[3].gen_l2[0].foo_inst2
-        t/t_generate_fatal_bad.v:8:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
-        t/t_generate_fatal_bad.v:12:29: ... Called from get_baz() with parameters:
+        t/t_generate_fatal_bad.v:9:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
+        t/t_generate_fatal_bad.v:13:29: ... Called from get_baz() with parameters:
            bar = 32'h3
    localparam integer BAZ = get_baz(BAR);
                             ^~~~~~~
-%Error: t/t_generate_fatal_bad.v:12:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
+%Error: t/t_generate_fatal_bad.v:13:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
                                       : ... In instance t.gen_l1[3].gen_l2[1].foo_inst2
-        t/t_generate_fatal_bad.v:8:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
-        t/t_generate_fatal_bad.v:12:29: ... Called from get_baz() with parameters:
+        t/t_generate_fatal_bad.v:9:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
+        t/t_generate_fatal_bad.v:13:29: ... Called from get_baz() with parameters:
            bar = 32'h5
    localparam integer BAZ = get_baz(BAR);
                             ^~~~~~~
-%Error: t/t_generate_fatal_bad.v:12:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
+%Error: t/t_generate_fatal_bad.v:13:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
                                       : ... In instance t.cond_true.foo_inst3
-        t/t_generate_fatal_bad.v:8:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
-        t/t_generate_fatal_bad.v:12:29: ... Called from get_baz() with parameters:
+        t/t_generate_fatal_bad.v:9:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
+        t/t_generate_fatal_bad.v:13:29: ... Called from get_baz() with parameters:
            bar = ?32?h6
    localparam integer BAZ = get_baz(BAR);
                             ^~~~~~~
-%Error: t/t_generate_fatal_bad.v:12:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
+%Error: t/t_generate_fatal_bad.v:13:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
                                       : ... In instance t.genblk1.foo_inst4
-        t/t_generate_fatal_bad.v:8:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
-        t/t_generate_fatal_bad.v:12:29: ... Called from get_baz() with parameters:
+        t/t_generate_fatal_bad.v:9:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
+        t/t_generate_fatal_bad.v:13:29: ... Called from get_baz() with parameters:
            bar = ?32?h7
    localparam integer BAZ = get_baz(BAR);
                             ^~~~~~~
-%Error: t/t_generate_fatal_bad.v:12:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
+%Error: t/t_generate_fatal_bad.v:13:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
                                       : ... In instance t.nested_loop[8].foo2_inst.foo2_loop[0].foo_in_foo2_inst
-        t/t_generate_fatal_bad.v:8:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
-        t/t_generate_fatal_bad.v:12:29: ... Called from get_baz() with parameters:
+        t/t_generate_fatal_bad.v:9:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
+        t/t_generate_fatal_bad.v:13:29: ... Called from get_baz() with parameters:
            bar = 32'h8
    localparam integer BAZ = get_baz(BAR);
                             ^~~~~~~
-%Error: t/t_generate_fatal_bad.v:12:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
+%Error: t/t_generate_fatal_bad.v:13:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
                                       : ... In instance t.nested_loop[8].foo2_inst.foo2_loop[1].foo_in_foo2_inst
-        t/t_generate_fatal_bad.v:8:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
-        t/t_generate_fatal_bad.v:12:29: ... Called from get_baz() with parameters:
+        t/t_generate_fatal_bad.v:9:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
+        t/t_generate_fatal_bad.v:13:29: ... Called from get_baz() with parameters:
            bar = 32'h9
    localparam integer BAZ = get_baz(BAR);
                             ^~~~~~~
-%Error: t/t_generate_fatal_bad.v:12:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
+%Error: t/t_generate_fatal_bad.v:13:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
                                       : ... In instance t.nested_loop[10].foo2_inst.foo2_loop[0].foo_in_foo2_inst
-        t/t_generate_fatal_bad.v:8:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
-        t/t_generate_fatal_bad.v:12:29: ... Called from get_baz() with parameters:
+        t/t_generate_fatal_bad.v:9:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
+        t/t_generate_fatal_bad.v:13:29: ... Called from get_baz() with parameters:
            bar = 32'ha
    localparam integer BAZ = get_baz(BAR);
                             ^~~~~~~
-%Error: t/t_generate_fatal_bad.v:12:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
+%Error: t/t_generate_fatal_bad.v:13:29: Expecting expression to be constant, but can't determine constant for FUNCREF 'get_baz'
                                       : ... In instance t.nested_loop[10].foo2_inst.foo2_loop[1].foo_in_foo2_inst
-        t/t_generate_fatal_bad.v:8:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
-        t/t_generate_fatal_bad.v:12:29: ... Called from get_baz() with parameters:
+        t/t_generate_fatal_bad.v:9:4: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
+        t/t_generate_fatal_bad.v:13:29: ... Called from get_baz() with parameters:
            bar = 32'hb
    localparam integer BAZ = get_baz(BAR);
                             ^~~~~~~

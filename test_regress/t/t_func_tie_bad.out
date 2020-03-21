@@ -1,4 +1,4 @@
-%Error: t/t_func_tie_bad.v:10:15: Function/task output connected to constant instead of variable: 'b'
+%Error: t/t_func_tie_bad.v:11:15: Function/task output connected to constant instead of variable: 'b'
       func(0, 1'b1);
               ^~~~
 %Error: Exiting due to

@@ -1,4 +1,4 @@
-%Error: t/t_genvar_for_bad.v:22:10: Genvar not legal in non-generate for (IEEE 1800-2017 27.4): 't.i'
+%Error: t/t_genvar_for_bad.v:23:10: Genvar not legal in non-generate for (IEEE 1800-2017 27.4): 't.i'
                                   : ... Suggest move for loop upwards to generate-level scope.
          for (i=0; i<N; i=i+1) begin
          ^~~

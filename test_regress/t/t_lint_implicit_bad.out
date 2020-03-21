@@ -1,15 +1,15 @@
-%Warning-IMPLICIT: t/t_lint_implicit.v:10:11: Signal definition not found, creating implicitly: 'b'
+%Warning-IMPLICIT: t/t_lint_implicit.v:11:11: Signal definition not found, creating implicitly: 'b'
    assign b = 1'b1;
           ^
                    ... Use "/* verilator lint_off IMPLICIT */" and lint_on around source to disable this message.
-%Warning-IMPLICIT: t/t_lint_implicit.v:12:14: Signal definition not found, creating implicitly: 'nt0'
+%Warning-IMPLICIT: t/t_lint_implicit.v:13:14: Signal definition not found, creating implicitly: 'nt0'
    or   OR0 (nt0, a, b);
              ^~~
-%Warning-IMPLICIT: t/t_lint_implicit.v:15:12: Signal definition not found, creating implicitly: 'dummy1'
+%Warning-IMPLICIT: t/t_lint_implicit.v:16:12: Signal definition not found, creating implicitly: 'dummy1'
                                             : ... Suggested alternative: 'dummy_ip'
    assign {dummy1, dummy2} = dummy_ip;
            ^~~~~~
-%Warning-IMPLICIT: t/t_lint_implicit.v:15:20: Signal definition not found, creating implicitly: 'dummy2'
+%Warning-IMPLICIT: t/t_lint_implicit.v:16:20: Signal definition not found, creating implicitly: 'dummy2'
                                             : ... Suggested alternative: 'dummy1'
    assign {dummy1, dummy2} = dummy_ip;
                    ^~~~~~

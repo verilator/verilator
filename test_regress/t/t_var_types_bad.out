@@ -1,36 +1,36 @@
-%Error: t/t_var_types_bad.v:38:13: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'bit'
+%Error: t/t_var_types_bad.v:39:13: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'bit'
                                  : ... In instance t
       d_bitz[0] = 1'b1;          
             ^
-%Error: t/t_var_types_bad.v:39:15: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'logic'
+%Error: t/t_var_types_bad.v:40:15: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'logic'
                                  : ... In instance t
       d_logicz[0] = 1'b1;        
               ^
-%Error: t/t_var_types_bad.v:40:13: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'logic'
+%Error: t/t_var_types_bad.v:41:13: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'logic'
                                  : ... In instance t
       d_regz[0] = 1'b1;          
             ^
-%Error: t/t_var_types_bad.v:45:13: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'real'
+%Error: t/t_var_types_bad.v:46:13: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'real'
                                  : ... In instance t
       d_real[0] = 1'b1;          
             ^
-%Error: t/t_var_types_bad.v:45:7: Expected integral (non-real) input to SEL
+%Error: t/t_var_types_bad.v:46:7: Expected integral (non-real) input to SEL
                                 : ... In instance t
       d_real[0] = 1'b1;          
       ^~~~~~
-%Warning-REALCVT: t/t_var_types_bad.v:45:7: Implicit conversion of real to integer
+%Warning-REALCVT: t/t_var_types_bad.v:46:7: Implicit conversion of real to integer
       d_real[0] = 1'b1;          
       ^~~~~~
                   ... Use "/* verilator lint_off REALCVT */" and lint_on around source to disable this message.
-%Error: t/t_var_types_bad.v:46:17: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'real'
+%Error: t/t_var_types_bad.v:47:17: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'real'
                                  : ... In instance t
       d_realtime[0] = 1'b1;      
                 ^
-%Error: t/t_var_types_bad.v:46:7: Expected integral (non-real) input to SEL
+%Error: t/t_var_types_bad.v:47:7: Expected integral (non-real) input to SEL
                                 : ... In instance t
       d_realtime[0] = 1'b1;      
       ^~~~~~~~~~
-%Warning-REALCVT: t/t_var_types_bad.v:46:7: Implicit conversion of real to integer
+%Warning-REALCVT: t/t_var_types_bad.v:47:7: Implicit conversion of real to integer
       d_realtime[0] = 1'b1;      
       ^~~~~~~~~~
 %Error: Exiting due to

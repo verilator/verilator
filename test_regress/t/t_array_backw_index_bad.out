@@ -1,20 +1,20 @@
-%Error: t/t_array_backw_index_bad.v:13:19: Slice selection '[1:3]' has backward indexing versus data type's '[3:0]'
+%Error: t/t_array_backw_index_bad.v:14:19: Slice selection '[1:3]' has backward indexing versus data type's '[3:0]'
                                          : ... In instance t
       array_assign[1:3] = '{32'd4, 32'd3, 32'd2};
                   ^
-%Error: t/t_array_backw_index_bad.v:14:20: Slice selection '[3:1]' has backward indexing versus data type's '[0:3]'
+%Error: t/t_array_backw_index_bad.v:15:20: Slice selection '[3:1]' has backward indexing versus data type's '[0:3]'
                                          : ... In instance t
       larray_assign[3:1] = '{32'd4, 32'd3, 32'd2};
                    ^
-%Error: t/t_array_backw_index_bad.v:16:19: Slice selection index '[4:3]' outside data type's '[3:0]'
+%Error: t/t_array_backw_index_bad.v:17:19: Slice selection index '[4:3]' outside data type's '[3:0]'
                                          : ... In instance t
       array_assign[4:3] = '{32'd4, 32'd3};
                   ^
-%Error: t/t_array_backw_index_bad.v:17:19: Slice selection index '[1:-1]' outside data type's '[3:0]'
+%Error: t/t_array_backw_index_bad.v:18:19: Slice selection index '[1:-1]' outside data type's '[3:0]'
                                          : ... In instance t
       array_assign[1:-1] = '{32'd4, 32'd3};
                   ^
-%Error: t/t_array_backw_index_bad.v:17:28: Assignment pattern missed initializing elements: -1
+%Error: t/t_array_backw_index_bad.v:18:28: Assignment pattern missed initializing elements: -1
                                          : ... In instance t
       array_assign[1:-1] = '{32'd4, 32'd3};
                            ^~

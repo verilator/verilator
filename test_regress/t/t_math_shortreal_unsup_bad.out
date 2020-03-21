@@ -1,4 +1,4 @@
-%Warning-SHORTREAL: t/t_math_shortreal_unsup_bad.v:8:4: Unsupported: shortreal being promoted to real (suggest use real instead)
+%Warning-SHORTREAL: t/t_math_shortreal_unsup_bad.v:9:4: Unsupported: shortreal being promoted to real (suggest use real instead)
    shortreal s;
    ^~~~~~~~~
                     ... Use "/* verilator lint_off SHORTREAL */" and lint_on around source to disable this message.

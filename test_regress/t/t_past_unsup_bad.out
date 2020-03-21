@@ -1,4 +1,4 @@
-%Error: t/t_past_unsup_bad.v:12:11: Unsupported: $past expr2 and clock arguments
+%Error: t/t_past_unsup_bad.v:13:11: Unsupported: $past expr2 and clock arguments
       if ($past(d, 0, 0, 0)) $stop;
           ^~~~~
 %Error: Exiting due to

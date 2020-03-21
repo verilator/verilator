@@ -1,4 +1,4 @@
-%Error: t/t_dpi_exp_bad.v:11:24: DPI functions cannot return > 32 bits or four-state; use a two-state type or task instead: 'dpix_f_bit48__Vfuncrtn'
+%Error: t/t_dpi_exp_bad.v:12:24: DPI functions cannot return > 32 bits or four-state; use a two-state type or task instead: 'dpix_f_bit48__Vfuncrtn'
    function bit [47:0] dpix_f_bit48(bit [47:0] i); dpix_f_bit48 = ~i; endfunction
                        ^~~~~~~~~~~~
 %Error: Exiting due to

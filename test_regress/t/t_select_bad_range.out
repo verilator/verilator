@@ -1,9 +1,9 @@
-%Warning-SELRANGE: t/t_select_bad_range.v:15:15: Selection index out of range: 44:44 outside 43:0
+%Warning-SELRANGE: t/t_select_bad_range.v:16:15: Selection index out of range: 44:44 outside 43:0
                                                : ... In instance t
       sel = mi[44];
               ^
                    ... Use "/* verilator lint_off SELRANGE */" and lint_on around source to disable this message.
-%Warning-SELRANGE: t/t_select_bad_range.v:16:16: Selection index out of range: 44:41 outside 43:0
+%Warning-SELRANGE: t/t_select_bad_range.v:17:16: Selection index out of range: 44:41 outside 43:0
                                                : ... In instance t
       sel2 = mi[44:41];
                ^

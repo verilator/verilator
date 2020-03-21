@@ -1,4 +1,4 @@
-%Warning-COLONPLUS: t/t_lint_colonplus_bad.v:12:25: Perhaps instead of ':+' the intent was '+:'?
+%Warning-COLONPLUS: t/t_lint_colonplus_bad.v:13:25: Perhaps instead of ':+' the intent was '+:'?
    output [2:1] z = r[2 :+ 1];
                         ^~
                     ... Use "/* verilator lint_off COLONPLUS */" and lint_on around source to disable this message.

@@ -1,14 +1,14 @@
-%Warning-VARHIDDEN: t/t_var_bad_hide.v:15:14: Declaration of signal hides declaration in upper scope: 'top'
+%Warning-VARHIDDEN: t/t_var_bad_hide.v:16:14: Declaration of signal hides declaration in upper scope: 'top'
       output top;
              ^~~
-                    t/t_var_bad_hide.v:12:12: ... Location of original declaration
+                    t/t_var_bad_hide.v:13:12: ... Location of original declaration
    integer top;
            ^~~
                     ... Use "/* verilator lint_off VARHIDDEN */" and lint_on around source to disable this message.
-%Warning-VARHIDDEN: t/t_var_bad_hide.v:21:18: Declaration of signal hides declaration in upper scope: 'top'
+%Warning-VARHIDDEN: t/t_var_bad_hide.v:22:18: Declaration of signal hides declaration in upper scope: 'top'
          integer top;
                  ^~~
-                    t/t_var_bad_hide.v:12:12: ... Location of original declaration
+                    t/t_var_bad_hide.v:13:12: ... Location of original declaration
    integer top;
            ^~~
 %Error: Exiting due to

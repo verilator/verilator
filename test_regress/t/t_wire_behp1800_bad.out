@@ -1,12 +1,12 @@
-%Error-PROCASSWIRE: t/t_wire_behp1800_bad.v:22:7: Procedural assignment to wire, perhaps intended var (IEEE 1800-2017 6.5): 'w'
+%Error-PROCASSWIRE: t/t_wire_behp1800_bad.v:23:7: Procedural assignment to wire, perhaps intended var (IEEE 1800-2017 6.5): 'w'
                                                 : ... In instance t
       w = '0;   
       ^
-%Error-PROCASSWIRE: t/t_wire_behp1800_bad.v:23:7: Procedural assignment to wire, perhaps intended var (IEEE 1800-2017 6.5): 'o'
+%Error-PROCASSWIRE: t/t_wire_behp1800_bad.v:24:7: Procedural assignment to wire, perhaps intended var (IEEE 1800-2017 6.5): 'o'
                                                 : ... In instance t
       o = '0;   
       ^
-%Error-PROCASSWIRE: t/t_wire_behp1800_bad.v:24:7: Procedural assignment to wire, perhaps intended var (IEEE 1800-2017 6.5): 'oa'
+%Error-PROCASSWIRE: t/t_wire_behp1800_bad.v:25:7: Procedural assignment to wire, perhaps intended var (IEEE 1800-2017 6.5): 'oa'
                                                 : ... In instance t
       oa = '0;   
       ^~

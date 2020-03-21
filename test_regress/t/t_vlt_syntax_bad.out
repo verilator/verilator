@@ -1,7 +1,7 @@
-%Error: t/t_vlt_syntax_bad.vlt:8:20: sensitivity not expected for attribute
+%Error: t/t_vlt_syntax_bad.vlt:9:20: sensitivity not expected for attribute
 public -module "t" @(posedge clk)
                    ^
-%Error: t/t_vlt_syntax_bad.vlt:9:1: isolate_assignments only applies to signals or functions/tasks
+%Error: t/t_vlt_syntax_bad.vlt:10:1: isolate_assignments only applies to signals or functions/tasks
 isolate_assignments -module "t"
 ^~~~~~~~~~~~~~~~~~~
 %Error: Exiting due to

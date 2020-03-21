@@ -1,7 +1,7 @@
-%Warning-VARHIDDEN: t/t_enum_bad_hide.v:10:19: Declaration of enum value hides declaration in upper scope: HIDE_VALUE
+%Warning-VARHIDDEN: t/t_enum_bad_hide.v:11:19: Declaration of enum value hides declaration in upper scope: HIDE_VALUE
    typedef enum { HIDE_VALUE = 0 } hide_enum_t;
                   ^~~~~~~~~~
-                    t/t_enum_bad_hide.v:6:16: ... Location of original declaration
+                    t/t_enum_bad_hide.v:7:16: ... Location of original declaration
    typedef enum { HIDE_VALUE = 0 } hide_enum_t;
                   ^~~~~~~~~~
                     ... Use "/* verilator lint_off VARHIDDEN */" and lint_on around source to disable this message.

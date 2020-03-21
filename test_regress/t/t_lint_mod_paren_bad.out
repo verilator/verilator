@@ -1,4 +1,4 @@
-%Error: t/t_lint_mod_paren_bad.v:13:7: syntax error, unexpected '(', expecting ';'
+%Error: t/t_lint_mod_paren_bad.v:14:7: syntax error, unexpected '(', expecting ';'
       output bar
       ^~~~~~
 %Error: Exiting due to

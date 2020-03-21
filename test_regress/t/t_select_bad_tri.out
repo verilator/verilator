@@ -1,4 +1,4 @@
-%Error: t/t_select_bad_tri.v:10:13: Selection index is constantly unknown or tristated: lsb=7'bxxxxxxx width=32'sh47
+%Error: t/t_select_bad_tri.v:11:13: Selection index is constantly unknown or tristated: lsb=7'bxxxxxxx width=32'sh47
                                   : ... In instance t
       if (in[(   (1'h0 / 1'b0)   )+:71] != 71'h0) $stop;
             ^

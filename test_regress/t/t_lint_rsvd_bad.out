@@ -1,10 +1,10 @@
-%Error: t/t_lint_rsvd_bad.v:6:1: Unsupported: Verilog 2001-config reserved word not implemented: 'config'
+%Error: t/t_lint_rsvd_bad.v:7:1: Unsupported: Verilog 2001-config reserved word not implemented: 'config'
 config cfgBad;
 ^~~~~~
-%Error: t/t_lint_rsvd_bad.v:6:8: syntax error, unexpected IDENTIFIER
+%Error: t/t_lint_rsvd_bad.v:7:8: syntax error, unexpected IDENTIFIER
 config cfgBad;
        ^~~~~~
-%Error: t/t_lint_rsvd_bad.v:7:1: Unsupported: Verilog 2001-config reserved word not implemented: 'endconfig'
+%Error: t/t_lint_rsvd_bad.v:8:1: Unsupported: Verilog 2001-config reserved word not implemented: 'endconfig'
 endconfig
 ^~~~~~~~~
 %Error: Exiting due to

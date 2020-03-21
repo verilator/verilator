@@ -1,17 +1,17 @@
-%Warning-LITENDIAN: t/t_interface_array_nocolon_bad.v:25:26: Little endian cell range connecting to vector: MSB < LSB of cell range: 0:2
+%Warning-LITENDIAN: t/t_interface_array_nocolon_bad.v:26:26: Little endian cell range connecting to vector: MSB < LSB of cell range: 0:2
                                                            : ... In instance t
    foo_intf foos [N] (.x(X));  
                          ^
                     ... Use "/* verilator lint_off LITENDIAN */" and lint_on around source to disable this message.
-%Warning-LITENDIAN: t/t_interface_array_nocolon_bad.v:26:28: Little endian cell range connecting to vector: MSB < LSB of cell range: 1:3
+%Warning-LITENDIAN: t/t_interface_array_nocolon_bad.v:27:28: Little endian cell range connecting to vector: MSB < LSB of cell range: 1:3
                                                            : ... In instance t
    foo_intf fool [1:3] (.x(X));  
                            ^
-%Warning-LITENDIAN: t/t_interface_array_nocolon_bad.v:29:26: Little endian cell range connecting to vector: MSB < LSB of cell range: 0:2
+%Warning-LITENDIAN: t/t_interface_array_nocolon_bad.v:30:26: Little endian cell range connecting to vector: MSB < LSB of cell range: 0:2
                                                            : ... In instance t
    foo_subm subs [N] (.x(X));  
                          ^
-%Warning-LITENDIAN: t/t_interface_array_nocolon_bad.v:30:28: Little endian cell range connecting to vector: MSB < LSB of cell range: 1:3
+%Warning-LITENDIAN: t/t_interface_array_nocolon_bad.v:31:28: Little endian cell range connecting to vector: MSB < LSB of cell range: 1:3
                                                            : ... In instance t
    foo_subm subl [1:3] (.x(X));  
                            ^

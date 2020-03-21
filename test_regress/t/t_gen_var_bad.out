@@ -1,5 +1,5 @@
-%Error: t/t_gen_var_bad.v:9:7: Non-genvar used in generate for: 'i'
-                             : ... In instance t
+%Error: t/t_gen_var_bad.v:10:7: Non-genvar used in generate for: 'i'
+                              : ... In instance t
       for (i=0; i<3; i=i+1) begin   
       ^~~
 %Error: Exiting due to

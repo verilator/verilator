@@ -1,4 +1,4 @@
-%Error: t/t_tri_compass_bad.v:15:12: Unsupported: tristate in top-level IO: '__pinNumber1'
+%Error: t/t_tri_compass_bad.v:16:12: Unsupported: tristate in top-level IO: '__pinNumber1'
                                    : ... In instance t
    sub sub(i, o);
            ^

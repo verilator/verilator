@@ -1,4 +1,4 @@
-%Error: t/t_var_ref_bad3.v:9:18: Unsupported: ref/const ref as primary input/output: 'bad_primary_ref'
+%Error: t/t_var_ref_bad3.v:10:18: Unsupported: ref/const ref as primary input/output: 'bad_primary_ref'
 module t(ref int bad_primary_ref
                  ^~~~~~~~~~~~~~~
 %Error: Exiting due to

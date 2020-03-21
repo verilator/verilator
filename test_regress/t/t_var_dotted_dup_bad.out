@@ -1,7 +1,7 @@
-%Error: t/t_var_dotted_dup_bad.v:13:18: Duplicate declaration of cell: 'dccm_bank'
+%Error: t/t_var_dotted_dup_bad.v:14:18: Duplicate declaration of cell: 'dccm_bank'
          eh2_ram dccm_bank (.*);   
                  ^~~~~~~~~
-        t/t_var_dotted_dup_bad.v:10:18: ... Location of original declaration
+        t/t_var_dotted_dup_bad.v:11:18: ... Location of original declaration
          eh2_ram dccm_bank (.*);
                  ^~~~~~~~~
 %Error: Exiting due to

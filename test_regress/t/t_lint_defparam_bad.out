@@ -1,4 +1,4 @@
-%Warning-DEFPARAM: t/t_lint_defparam.v:9:19: Suggest replace defparam assignment with Verilog 2001 #(.P(...etc...))
+%Warning-DEFPARAM: t/t_lint_defparam.v:10:19: Suggest replace defparam assignment with Verilog 2001 #(.P(...etc...))
    defparam sub.P = 2;
                   ^
                    ... Use "/* verilator lint_off DEFPARAM */" and lint_on around source to disable this message.

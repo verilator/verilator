@@ -1,8 +1,8 @@
-%Error: t/t_interface_array_bad.v:22:16: Expecting expression to be constant, but variable isn't const: 'bar'
+%Error: t/t_interface_array_bad.v:23:16: Expecting expression to be constant, but variable isn't const: 'bar'
                                        : ... In instance t
    assign foos[bar].a = 1'b1;
                ^~~
-%Error: t/t_interface_array_bad.v:22:15: Could not expand constant selection inside dotted reference: 'bar'
+%Error: t/t_interface_array_bad.v:23:15: Could not expand constant selection inside dotted reference: 'bar'
                                        : ... In instance t
    assign foos[bar].a = 1'b1;
               ^

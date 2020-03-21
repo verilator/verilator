@@ -1,8 +1,8 @@
-%Warning-CASEX: t/t_case_x_bad.v:13:7: Suggest casez (with ?'s) in place of casex (with X's)
+%Warning-CASEX: t/t_case_x_bad.v:14:7: Suggest casez (with ?'s) in place of casex (with X's)
       casex (value)
       ^~~~~
                 ... Use "/* verilator lint_off CASEX */" and lint_on around source to disable this message.
-%Warning-CASEWITHX: t/t_case_x_bad.v:18:9: Use of x/? constant in case statement, (perhaps intended casex/casez)
+%Warning-CASEWITHX: t/t_case_x_bad.v:19:9: Use of x/? constant in case statement, (perhaps intended casex/casez)
         4'b1xxx: $stop;
         ^~~~~~~
 %Error: Exiting due to

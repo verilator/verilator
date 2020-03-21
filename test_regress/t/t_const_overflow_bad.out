@@ -1,16 +1,16 @@
-%Error: t/t_const_overflow_bad.v:8:34: Too many digits for 94 bit number: 94'd123456789012345678901234567890
+%Error: t/t_const_overflow_bad.v:9:34: Too many digits for 94 bit number: 94'd123456789012345678901234567890
    parameter [200:0] TOO_SMALL = 94'd123456789012345678901234567890;   
                                  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-%Error: t/t_const_overflow_bad.v:10:31: Too many digits for 8 bit number: 8'habc
+%Error: t/t_const_overflow_bad.v:11:31: Too many digits for 8 bit number: 8'habc
    parameter [200:0] SMALLH = 8'habc;   
                               ^~~~~~
-%Error: t/t_const_overflow_bad.v:11:31: Too many digits for 6 bit number: 6'o1234
+%Error: t/t_const_overflow_bad.v:12:31: Too many digits for 6 bit number: 6'o1234
    parameter [200:0] SMALLO = 6'o1234;   
                               ^~~~~~~
-%Error: t/t_const_overflow_bad.v:12:31: Too many digits for 3 bit number: 3'b1111
+%Error: t/t_const_overflow_bad.v:13:31: Too many digits for 3 bit number: 3'b1111
    parameter [200:0] SMALLB = 3'b1111;   
                               ^~~~~~~
-%Error: t/t_const_overflow_bad.v:18:35: Too many digits for 129 bit number: 129'hdeadbeefc001f00ddeadbeefc001f00ddeadbeefc001f00ddeadbeefc001f00d
+%Error: t/t_const_overflow_bad.v:19:35: Too many digits for 129 bit number: 129'hdeadbeefc001f00ddeadbeefc001f00ddeadbeefc001f00ddeadbeefc001f00d
    parameter [128:0] ALSO_SMALL = 129'hdeadbeefc001f00ddeadbeefc001f00ddeadbeefc001f00ddeadbeefc001f00d;
                                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 %Error: Exiting due to

@@ -1,4 +1,4 @@
-%Error: t/t_var_ref_bad1.v:13:8: Ref connection 'bad_sub_ref' requires matching types; ref requires 'real' data type but connection is 'bit' data type.
+%Error: t/t_var_ref_bad1.v:14:8: Ref connection 'bad_sub_ref' requires matching types; ref requires 'real' data type but connection is 'bit' data type.
                                : ... In instance t
      (.bad_sub_ref(bad_parent));   
        ^~~~~~~~~~~

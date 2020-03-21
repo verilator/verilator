@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2012 by Iztok Jeras.
+// SPDX-License-Identifier: CC0-1.0
 
 package tt_pkg;
    typedef enum logic [1:0] {L0, L1, L2, L3} test_t;

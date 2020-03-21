@@ -1,4 +1,4 @@
-%Error: t/t_preproc_inc_notfound_bad.v:6:10: Cannot find include file: this_file_is_not_found.vh
+%Error: t/t_preproc_inc_notfound_bad.v:7:10: Cannot find include file: this_file_is_not_found.vh
 `include "this_file_is_not_found.vh"
          ^~~~~~~~~~~~~~~~~~~~~~~~~~~
         ... Looked in:

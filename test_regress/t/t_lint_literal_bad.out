@@ -1,4 +1,4 @@
-%Warning-WIDTH: t/t_lint_literal_bad.v:9:33: Value too large for 8 bit number: 256
+%Warning-WIDTH: t/t_lint_literal_bad.v:10:33: Value too large for 8 bit number: 256
     localparam the_localparam = 8'd256;
                                 ^~~~~~
                 ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.

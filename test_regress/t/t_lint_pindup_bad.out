@@ -1,31 +1,31 @@
-%Warning-PINMISSING: t/t_lint_pindup_bad.v:18:4: Cell has missing pin: 'exists'
+%Warning-PINMISSING: t/t_lint_pindup_bad.v:19:4: Cell has missing pin: 'exists'
    sub (.o(o),
    ^~~
                      ... Use "/* verilator lint_off PINMISSING */" and lint_on around source to disable this message.
-%Error: t/t_lint_pindup_bad.v:20:10: Duplicate pin connection: 'i'
+%Error: t/t_lint_pindup_bad.v:21:10: Duplicate pin connection: 'i'
         .i(i2),   
          ^
-        t/t_lint_pindup_bad.v:19:10: ... Location of original pin connection
+        t/t_lint_pindup_bad.v:20:10: ... Location of original pin connection
         .i(i),
          ^
-%Error: t/t_lint_pindup_bad.v:21:10: Pin not found: 'nexist'
+%Error: t/t_lint_pindup_bad.v:22:10: Pin not found: 'nexist'
                                    : ... Suggested alternative: 'exists'
         .nexist(i2)   
          ^~~~~~
-%Error: t/t_lint_pindup_bad.v:15:9: Parameter pin not found: 'NEXIST'
+%Error: t/t_lint_pindup_bad.v:16:9: Parameter pin not found: 'NEXIST'
                                   : ... Suggested alternative: 'EXIST'
        .NEXIST(1),   
         ^~~~~~
-%Error: t/t_lint_pindup_bad.v:16:9: Duplicate parameter pin connection: 'P'
+%Error: t/t_lint_pindup_bad.v:17:9: Duplicate parameter pin connection: 'P'
        .P(2),
         ^
-        t/t_lint_pindup_bad.v:14:8: ... Location of original parameter pin connection
+        t/t_lint_pindup_bad.v:15:8: ... Location of original parameter pin connection
      #(,   
        ^
-%Error: t/t_lint_pindup_bad.v:17:9: Duplicate parameter pin connection: 'P'
+%Error: t/t_lint_pindup_bad.v:18:9: Duplicate parameter pin connection: 'P'
        .P(3))   
         ^
-        t/t_lint_pindup_bad.v:14:8: ... Location of original parameter pin connection
+        t/t_lint_pindup_bad.v:15:8: ... Location of original parameter pin connection
      #(,   
        ^
 %Error: Exiting due to

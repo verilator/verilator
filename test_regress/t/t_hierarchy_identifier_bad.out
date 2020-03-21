@@ -1,17 +1,17 @@
-%Warning-ENDLABEL: t/t_hierarchy_identifier_bad.v:33:10: End label 'if_cnt_finish_bad' does not match begin label 'if_cnt_finish'
+%Warning-ENDLABEL: t/t_hierarchy_identifier_bad.v:34:10: End label 'if_cnt_finish_bad' does not match begin label 'if_cnt_finish'
    end : if_cnt_finish_bad
          ^~~~~~~~~~~~~~~~~
                    ... Use "/* verilator lint_off ENDLABEL */" and lint_on around source to disable this message.
-%Warning-ENDLABEL: t/t_hierarchy_identifier_bad.v:39:10: End label 'generate_for_bad' does not match begin label 'generate_for'
+%Warning-ENDLABEL: t/t_hierarchy_identifier_bad.v:40:10: End label 'generate_for_bad' does not match begin label 'generate_for'
    end : generate_for_bad
          ^~~~~~~~~~~~~~~~
-%Warning-ENDLABEL: t/t_hierarchy_identifier_bad.v:46:10: End label 'generate_if_if_bad' does not match begin label 'generate_if_if'
+%Warning-ENDLABEL: t/t_hierarchy_identifier_bad.v:47:10: End label 'generate_if_if_bad' does not match begin label 'generate_if_if'
    end : generate_if_if_bad
          ^~~~~~~~~~~~~~~~~~
-%Warning-ENDLABEL: t/t_hierarchy_identifier_bad.v:50:10: End label 'generate_if_else_bad' does not match begin label 'generate_if_else'
+%Warning-ENDLABEL: t/t_hierarchy_identifier_bad.v:51:10: End label 'generate_if_else_bad' does not match begin label 'generate_if_else'
    end : generate_if_else_bad
          ^~~~~~~~~~~~~~~~~~~~
-%Warning-ENDLABEL: t/t_hierarchy_identifier_bad.v:53:13: End label 't_bad' does not match begin label 't'
+%Warning-ENDLABEL: t/t_hierarchy_identifier_bad.v:54:13: End label 't_bad' does not match begin label 't'
 endmodule : t_bad
             ^~~~~
 %Error: Exiting due to

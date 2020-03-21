@@ -1,6 +1,6 @@
-%Warning-REDEFMACRO: t/t_pp_dupdef.v:10:20: Redefining existing define: 'DUP', with different value: barney
+%Warning-REDEFMACRO: t/t_pp_dupdef.v:11:20: Redefining existing define: 'DUP', with different value: barney
                      ... Use "/* verilator lint_off REDEFMACRO */" and lint_on around source to disable this message.
-%Warning-REDEFMACRO: t/t_pp_dupdef.v:10:20: Previous definition is here, with value: fred
-%Warning-REDEFMACRO: t/t_pp_dupdef.v:13:33: Redefining existing define: 'DUPP', with different value: paramed(x,z) (x*z)
-%Warning-REDEFMACRO: t/t_pp_dupdef.v:13:33: Previous definition is here, with value: paramed(x) (x)
+%Warning-REDEFMACRO: t/t_pp_dupdef.v:11:20: Previous definition is here, with value: fred
+%Warning-REDEFMACRO: t/t_pp_dupdef.v:14:33: Redefining existing define: 'DUPP', with different value: paramed(x,z) (x*z)
+%Warning-REDEFMACRO: t/t_pp_dupdef.v:14:33: Previous definition is here, with value: paramed(x) (x)
 %Error: Exiting due to

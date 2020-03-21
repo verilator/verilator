@@ -1,11 +1,11 @@
-%Warning-MODDUP: t/t_mod_dup_bad.v:13:8: Duplicate declaration of module: 'a'
+%Warning-MODDUP: t/t_mod_dup_bad.v:14:8: Duplicate declaration of module: 'a'
 module a();
        ^
-                 t/t_mod_dup_bad.v:6:8: ... Location of original declaration
+                 t/t_mod_dup_bad.v:7:8: ... Location of original declaration
 module a();
        ^
                  ... Use "/* verilator lint_off MODDUP */" and lint_on around source to disable this message.
-%Warning-MULTITOP: t/t_mod_dup_bad.v:16:8: Multiple top level modules
+%Warning-MULTITOP: t/t_mod_dup_bad.v:17:8: Multiple top level modules
                                          : ... Suggest see manual; fix the duplicates, or use --top-module to select top.
                                          : ... Top module 'test'
 module test();

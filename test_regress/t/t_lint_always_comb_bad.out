@@ -1,17 +1,17 @@
-%Error-PROCASSWIRE: t/t_lint_always_comb_bad.v:28:9: Procedural assignment to wire, perhaps intended var (IEEE 1800-2017 6.5): 'temp1'
+%Error-PROCASSWIRE: t/t_lint_always_comb_bad.v:29:9: Procedural assignment to wire, perhaps intended var (IEEE 1800-2017 6.5): 'temp1'
                                                    : ... In instance t
         temp1 = 'h0;
         ^~~~~
-%Error-PROCASSWIRE: t/t_lint_always_comb_bad.v:30:9: Procedural assignment to wire, perhaps intended var (IEEE 1800-2017 6.5): 'temp1'
+%Error-PROCASSWIRE: t/t_lint_always_comb_bad.v:31:9: Procedural assignment to wire, perhaps intended var (IEEE 1800-2017 6.5): 'temp1'
                                                    : ... In instance t
         temp1 = (temp1_d1r - 'h1);
         ^~~~~
-%Warning-ALWCOMBORDER: t/t_lint_always_comb_bad.v:31:7: Always_comb variable driven after use: 'mid'
+%Warning-ALWCOMBORDER: t/t_lint_always_comb_bad.v:32:7: Always_comb variable driven after use: 'mid'
                                                       : ... In instance t
       mid = (temp1_d1r == 'h0);   
       ^~~
                        ... Use "/* verilator lint_off ALWCOMBORDER */" and lint_on around source to disable this message.
-%Error-PROCASSWIRE: t/t_lint_always_comb_bad.v:45:7: Procedural assignment to wire, perhaps intended var (IEEE 1800-2017 6.5): 'temp1_d1r'
+%Error-PROCASSWIRE: t/t_lint_always_comb_bad.v:46:7: Procedural assignment to wire, perhaps intended var (IEEE 1800-2017 6.5): 'temp1_d1r'
                                                    : ... In instance t
       temp1_d1r <= temp1;
       ^~~~~~~~~

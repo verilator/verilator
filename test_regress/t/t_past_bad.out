@@ -1,8 +1,8 @@
-%Error: t/t_past_bad.v:11:11: $past tick value must be constant (IEEE 1800-2017 16.9.3)
+%Error: t/t_past_bad.v:12:11: $past tick value must be constant (IEEE 1800-2017 16.9.3)
                             : ... In instance t
       if ($past(d, 0)) $stop;   
           ^~~~~
-%Warning-TICKCOUNT: t/t_past_bad.v:12:20: $past tick value of 10000 may have a large performance cost
+%Warning-TICKCOUNT: t/t_past_bad.v:13:20: $past tick value of 10000 may have a large performance cost
                                         : ... In instance t
       if ($past(d, 10000)) $stop;   
                    ^~~~~

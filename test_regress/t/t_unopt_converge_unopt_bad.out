@@ -1,8 +1,8 @@
-%Warning-UNOPT: t/t_unopt_converge.v:18:11: Signal unoptimizable: Feedback to public clock or circular logic: 'x'
+%Warning-UNOPT: t/t_unopt_converge.v:19:11: Signal unoptimizable: Feedback to public clock or circular logic: 'x'
    output x;    
           ^
                 ... Use "/* verilator lint_off UNOPT */" and lint_on around source to disable this message.
-                t/t_unopt_converge.v:18:11:      Example path: x
-                t/t_unopt_converge.v:21:4:      Example path: ALWAYS
-                t/t_unopt_converge.v:18:11:      Example path: x
+                t/t_unopt_converge.v:19:11:      Example path: x
+                t/t_unopt_converge.v:22:4:      Example path: ALWAYS
+                t/t_unopt_converge.v:19:11:      Example path: x
 %Error: Exiting due to

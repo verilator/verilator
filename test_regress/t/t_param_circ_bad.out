@@ -1,4 +1,4 @@
-%Error: t/t_param_circ_bad.v:10:43: Variable's initial value is circular: 'X'
+%Error: t/t_param_circ_bad.v:11:43: Variable's initial value is circular: 'X'
                                   : ... In instance t.sub
 module sub #(parameter WIDTH=X, parameter X=WIDTH)
                                           ^

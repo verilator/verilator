@@ -1,5 +1,8 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
 // This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2008 by Lane Brooks
+// without warranty, 2008 by Lane Brooks.
+// SPDX-License-Identifier: CC0-1.0
 
 module top (input A, input B, input SEL, output Y1, output Y2, output Z);
    io   io1(.A(A), .OE( SEL), .Z(Z), .Y(Y1));

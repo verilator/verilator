@@ -12,8 +12,9 @@
 // **If you do not wish for your code to be released to the public
 // please note it here, otherwise:**
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2019 by ____YOUR_NAME_HERE____.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2020 ____YOUR_NAME_HERE____.
+// SPDX-License-Identifier: CC0-1.0
 
 module t(/*AUTOARG*/
    // Inputs

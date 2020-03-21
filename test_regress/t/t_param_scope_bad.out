@@ -1,4 +1,4 @@
-%Warning-CASEOVERLAP: t/t_param_scope_bad.v:27:9: Case values overlap (example pattern 0x2)
+%Warning-CASEOVERLAP: t/t_param_scope_bad.v:28:9: Case values overlap (example pattern 0x2)
         2'h2: $stop;
         ^~~~
                       ... Use "/* verilator lint_off CASEOVERLAP */" and lint_on around source to disable this message.

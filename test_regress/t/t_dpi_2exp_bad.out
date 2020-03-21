@@ -1,4 +1,4 @@
-%Error: t/t_dpi_2exp_bad.v:11:45: Function was already DPI Exported, duplicate not allowed: 'dpix_twice'
+%Error: t/t_dpi_2exp_bad.v:12:45: Function was already DPI Exported, duplicate not allowed: 'dpix_twice'
    export "DPI-C" dpix_t_int_renamed = task dpix_twice;
                                             ^~~~~~~~~~
 %Error: Exiting due to

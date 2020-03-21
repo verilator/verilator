@@ -1,3 +1,3 @@
-[40] %Error: t_assert_synth.v:49: Assertion failed in top.t: synthesis parallel_case, but multiple matches found
-%Error: t/t_assert_synth.v:49: Verilog $stop
+[40] %Error: t_assert_synth.v:50: Assertion failed in top.t: synthesis parallel_case, but multiple matches found
+%Error: t/t_assert_synth.v:50: Verilog $stop
 Aborting...

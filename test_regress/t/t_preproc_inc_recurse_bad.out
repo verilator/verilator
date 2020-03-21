@@ -1,4 +1,4 @@
-%Error: t/t_preproc_inc_recurse_bad.v:6:10: Recursive inclusion of file: t/t_preproc_inc_recurse_bad.v
+%Error: t/t_preproc_inc_recurse_bad.v:7:10: Recursive inclusion of file: t/t_preproc_inc_recurse_bad.v
 `include "t_preproc_inc_recurse_bad.v"
          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 %Error: Exiting due to

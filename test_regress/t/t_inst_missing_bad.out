@@ -1,11 +1,11 @@
-%Warning-PINNOCONNECT: t/t_inst_missing_bad.v:8:22: Cell pin is not connected: '__pinNumber2'
+%Warning-PINNOCONNECT: t/t_inst_missing_bad.v:9:22: Cell pin is not connected: '__pinNumber2'
    sub sub (.ok(ok), , .nc());
                      ^
                        ... Use "/* verilator lint_off PINNOCONNECT */" and lint_on around source to disable this message.
-%Warning-PINCONNECTEMPTY: t/t_inst_missing_bad.v:8:25: Cell pin connected by name with empty reference: 'nc'
+%Warning-PINCONNECTEMPTY: t/t_inst_missing_bad.v:9:25: Cell pin connected by name with empty reference: 'nc'
    sub sub (.ok(ok), , .nc());
                         ^~
-%Warning-PINMISSING: t/t_inst_missing_bad.v:8:8: Cell has missing pin: 'missing'
+%Warning-PINMISSING: t/t_inst_missing_bad.v:9:8: Cell has missing pin: 'missing'
    sub sub (.ok(ok), , .nc());
        ^~~
 %Error: Exiting due to

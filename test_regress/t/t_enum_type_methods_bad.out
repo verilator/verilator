@@ -1,4 +1,4 @@
-%Error: Internal Error: t/t_enum_type_methods_bad.v:23:14: ../V3Width.cpp:#: Unsupported: enum next/prev with non-const argument
+%Error: Internal Error: t/t_enum_type_methods_bad.v:24:14: ../V3Width.cpp:#: Unsupported: enum next/prev with non-const argument
                                                          : ... In instance t
       e.next(increment);
              ^~~~~~~~~

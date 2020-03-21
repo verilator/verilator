@@ -1,8 +1,8 @@
-%Error: t/t_var_ref_bad2.v:12:7: Assigning to const ref variable: 'bad_const_set'
+%Error: t/t_var_ref_bad2.v:13:7: Assigning to const ref variable: 'bad_const_set'
                                : ... In instance t
       bad_const_set = 32'h4567;   
       ^~~~~~~~~~~~~
-%Error: t/t_var_ref_bad2.v:22:17: Ref argument requires matching types; port 'int_ref' requires VAR 'int_ref' but connection is VARREF 'bad_non_int'.
+%Error: t/t_var_ref_bad2.v:23:17: Ref argument requires matching types; port 'int_ref' requires VAR 'int_ref' but connection is VARREF 'bad_non_int'.
                                 : ... In instance t
       checkset2(bad_non_int);   
                 ^~~~~~~~~~~

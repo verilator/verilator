@@ -1,4 +1,4 @@
-%Error: t/t_interface_wrong_bad.v:31:8: Port 'foo_port' expects 'foo_intf' interface but pin connects 'bar_intf' interface
+%Error: t/t_interface_wrong_bad.v:32:8: Port 'foo_port' expects 'foo_intf' interface but pin connects 'bar_intf' interface
                                       : ... In instance t
       .foo_port (bar)
        ^~~~~~~~

@@ -1,4 +1,4 @@
-%Error: t/t_math_shift_over_bad.v:18:20: Value too wide for 32-bits expected in this context 64'h123456789abcdef
+%Error: t/t_math_shift_over_bad.v:19:20: Value too wide for 32-bits expected in this context 64'h123456789abcdef
                                        : ... In instance t
    assign o = i << 64'h01234567_89abcdef;
                    ^~~~~~~~~~~~~~~~~~~~~

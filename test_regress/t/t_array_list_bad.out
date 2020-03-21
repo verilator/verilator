@@ -1,8 +1,8 @@
-%Error: t/t_array_list_bad.v:37:25: Assignment pattern missed initializing elements: MEMBERDTYPE 't3'
+%Error: t/t_array_list_bad.v:38:25: Assignment pattern missed initializing elements: MEMBERDTYPE 't3'
                                   : ... In instance t
             test_out <= '{'0, '0};  
                         ^~
-%Warning-WIDTH: t/t_array_list_bad.v:37:22: Operator ASSIGNDLY expects 3 bits on the Assign RHS, but Assign RHS's CONCAT generates 2 bits.
+%Warning-WIDTH: t/t_array_list_bad.v:38:22: Operator ASSIGNDLY expects 3 bits on the Assign RHS, but Assign RHS's CONCAT generates 2 bits.
                                           : ... In instance t
             test_out <= '{'0, '0};  
                      ^~

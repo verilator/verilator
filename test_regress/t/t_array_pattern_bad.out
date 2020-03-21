@@ -1,4 +1,4 @@
-%Error: t/t_array_pattern_bad.v:23:18: Assignment pattern key 'valids' not found as member
+%Error: t/t_array_pattern_bad.v:24:18: Assignment pattern key 'valids' not found as member
                                      : ... In instance t
                  valids: '1};
                  ^~~~~~

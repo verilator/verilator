@@ -1,28 +1,28 @@
-%Error: t/t_for_comma_bad.v:13:16: Unsupported: for loop step after the first comma
+%Error: t/t_for_comma_bad.v:14:16: Unsupported: for loop step after the first comma
       for (; ; a=a+1, b=b+1) ;
                ^
-%Error: t/t_for_comma_bad.v:16:19: Unsupported: for loop step after the first comma
+%Error: t/t_for_comma_bad.v:17:19: Unsupported: for loop step after the first comma
       for (; a<1; a=a+1, b=b+1) ;
                   ^
-%Error: t/t_for_comma_bad.v:19:22: Unsupported: for loop step after the first comma
+%Error: t/t_for_comma_bad.v:20:22: Unsupported: for loop step after the first comma
       for (a=0; a<1; a=a+1, b=b+1) ;
                      ^
-%Error: t/t_for_comma_bad.v:22:30: Unsupported: for loop step after the first comma
+%Error: t/t_for_comma_bad.v:23:30: Unsupported: for loop step after the first comma
       for (integer a=0; a<1; a=a+1, b=b+1) ;
                              ^
-%Error: t/t_for_comma_bad.v:25:34: Unsupported: for loop step after the first comma
+%Error: t/t_for_comma_bad.v:26:34: Unsupported: for loop step after the first comma
       for (var integer a=0; a<1; a=a+1, b=b+1) ;
                                  ^
-%Error: t/t_for_comma_bad.v:26:23: Unsupported: for loop initialization after the first comma
+%Error: t/t_for_comma_bad.v:27:23: Unsupported: for loop initialization after the first comma
       for (integer a=0, integer b=0; a<1; ) ;
                       ^
-%Error: t/t_for_comma_bad.v:27:23: Unsupported: for loop initialization after the first comma
+%Error: t/t_for_comma_bad.v:28:23: Unsupported: for loop initialization after the first comma
       for (integer a=0, integer b=0; a<1; a=a+1) ;
                       ^
-%Error: t/t_for_comma_bad.v:28:23: Unsupported: for loop initialization after the first comma
+%Error: t/t_for_comma_bad.v:29:23: Unsupported: for loop initialization after the first comma
       for (integer a=0, integer b=0; a<1; a=a+1, b=b+1) ;
                       ^
-%Error: t/t_for_comma_bad.v:28:43: Unsupported: for loop step after the first comma
+%Error: t/t_for_comma_bad.v:29:43: Unsupported: for loop step after the first comma
       for (integer a=0, integer b=0; a<1; a=a+1, b=b+1) ;
                                           ^
 %Error: Exiting due to

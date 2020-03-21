@@ -1,4 +1,4 @@
-%Warning-CASEWITHX: t/t_case_zx_bad.v:15:9: Use of x constant in casez statement, (perhaps intended ?/z in constant)
+%Warning-CASEWITHX: t/t_case_zx_bad.v:16:9: Use of x constant in casez statement, (perhaps intended ?/z in constant)
         4'b1xxx: $stop;
         ^~~~~~~
                     ... Use "/* verilator lint_off CASEWITHX */" and lint_on around source to disable this message.

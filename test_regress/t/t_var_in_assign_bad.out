@@ -1,7 +1,7 @@
-%Error-ASSIGNIN: t/t_var_in_assign_bad.v:11:16: Assigning to input/const variable: 'value'
+%Error-ASSIGNIN: t/t_var_in_assign_bad.v:12:16: Assigning to input/const variable: 'value'
    assign      value = 4'h0;
                ^~~~~
-%Error-ASSIGNIN: t/t_var_in_assign_bad.v:20:16: Assigning to input/const variable: 'valueSub'
+%Error-ASSIGNIN: t/t_var_in_assign_bad.v:21:16: Assigning to input/const variable: 'valueSub'
    assign      valueSub = 4'h0;
                ^~~~~~~~
 %Error: Exiting due to

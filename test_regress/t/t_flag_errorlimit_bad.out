@@ -1,13 +1,13 @@
-%Error: t/t_flag_errorlimit_bad.v:9:8: Duplicate declaration of signal: 'u1'
-   int u1;
-       ^~
-        t/t_flag_errorlimit_bad.v:8:8: ... Location of original declaration
-   int u1;
-       ^~
 %Error: t/t_flag_errorlimit_bad.v:10:8: Duplicate declaration of signal: 'u1'
    int u1;
        ^~
-        t/t_flag_errorlimit_bad.v:8:8: ... Location of original declaration
+        t/t_flag_errorlimit_bad.v:9:8: ... Location of original declaration
+   int u1;
+       ^~
+%Error: t/t_flag_errorlimit_bad.v:11:8: Duplicate declaration of signal: 'u1'
+   int u1;
+       ^~
+        t/t_flag_errorlimit_bad.v:9:8: ... Location of original declaration
    int u1;
        ^~
 %Error: Exiting due to

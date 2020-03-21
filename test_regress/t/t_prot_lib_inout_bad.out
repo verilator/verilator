@@ -1,4 +1,4 @@
-%Error: t/t_prot_lib_inout_bad.v:8:28: Unsupported: protect-lib port direction: INOUT
+%Error: t/t_prot_lib_inout_bad.v:9:28: Unsupported: protect-lib port direction: INOUT
                     inout  z,
                            ^
 %Error: Exiting due to

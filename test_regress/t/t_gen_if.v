@@ -4,6 +4,8 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty.
+// SPDX-License-Identifier: CC0-1.0
+
 `timescale 1ns / 1ps
 
 module t(data_i, data_o, single);

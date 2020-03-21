@@ -1,8 +1,8 @@
-%Warning-LITENDIAN: t/t_select_bad_msb.v:11:8: Little bit endian vector: MSB < LSB of bit range: 0:22
+%Warning-LITENDIAN: t/t_select_bad_msb.v:12:8: Little bit endian vector: MSB < LSB of bit range: 0:22
    reg [0:22] backwd;
        ^
                     ... Use "/* verilator lint_off LITENDIAN */" and lint_on around source to disable this message.
-%Error: t/t_select_bad_msb.v:15:16: [1:4] Range extract has backward bit ordering, perhaps you wanted [4:1]
+%Error: t/t_select_bad_msb.v:16:16: [1:4] Range extract has backward bit ordering, perhaps you wanted [4:1]
                                   : ... In instance t
       sel2 = mi[1:4];
                ^

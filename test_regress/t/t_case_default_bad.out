@@ -1,4 +1,4 @@
-%Error: t/t_case_default_bad.v:15:9: Multiple default statements in case statement.
+%Error: t/t_case_default_bad.v:16:9: Multiple default statements in case statement.
         default: $stop;
         ^~~~~~~
 %Error: Exiting due to

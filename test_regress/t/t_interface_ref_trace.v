@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2019 by Todd Strader.
+// SPDX-License-Identifier: CC0-1.0
 
 // Test for trace file interface aliasing
 

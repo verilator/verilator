@@ -1,60 +1,60 @@
-%Error: t/t_queue_unsup_bad.v:20:11: Unsupported: Replication to form 'string[$]' data type
+%Error: t/t_queue_unsup_bad.v:21:11: Unsupported: Replication to form 'string[$]' data type
                                    : ... In instance t
       q = {"q", "b", "c", "d", "e", "f"};
           ^
-%Error: t/t_queue_unsup_bad.v:23:9: Unsupported: Queue .delete(index) method, as is O(n) complexity and slow.
+%Error: t/t_queue_unsup_bad.v:24:9: Unsupported: Queue .delete(index) method, as is O(n) complexity and slow.
                                   : ... In instance t
       q.delete(1);
         ^~~~~~
-%Error: t/t_queue_unsup_bad.v:27:9: Unsupported: Queue .insert method, as is O(n) complexity and slow.
+%Error: t/t_queue_unsup_bad.v:28:9: Unsupported: Queue .insert method, as is O(n) complexity and slow.
                                   : ... In instance t
       q.insert(2, "ins2");
         ^~~~~~
-%Error: t/t_queue_unsup_bad.v:33:11: Unsupported: Replication to form 'string[$]' data type
+%Error: t/t_queue_unsup_bad.v:34:11: Unsupported: Replication to form 'string[$]' data type
                                    : ... In instance t
       q = {q, "f1"};   
           ^
-%Error: t/t_queue_unsup_bad.v:34:11: Unsupported: Replication to form 'string[$]' data type
+%Error: t/t_queue_unsup_bad.v:35:11: Unsupported: Replication to form 'string[$]' data type
                                    : ... In instance t
       q = {q, "f2"};   
           ^
-%Error: t/t_queue_unsup_bad.v:35:11: Unsupported: Replication to form 'string[$]' data type
+%Error: t/t_queue_unsup_bad.v:36:11: Unsupported: Replication to form 'string[$]' data type
                                    : ... In instance t
       q = {"b1", q};   
           ^
-%Error: t/t_queue_unsup_bad.v:36:11: Unsupported: Replication to form 'string[$]' data type
+%Error: t/t_queue_unsup_bad.v:37:11: Unsupported: Replication to form 'string[$]' data type
                                    : ... In instance t
       q = {"b2", q};   
           ^
-%Error: t/t_queue_unsup_bad.v:37:11: Unsupported: Replication to form 'string[$]' data type
+%Error: t/t_queue_unsup_bad.v:38:11: Unsupported: Replication to form 'string[$]' data type
                                    : ... In instance t
       q = {q[0], q[2:$]};   
           ^
-%Error: t/t_queue_unsup_bad.v:37:22: Unsupported/illegal unbounded ('$') in this context.
+%Error: t/t_queue_unsup_bad.v:38:22: Unsupported/illegal unbounded ('$') in this context.
                                    : ... In instance t
       q = {q[0], q[2:$]};   
                      ^
-%Error: t/t_queue_unsup_bad.v:37:22: Expecting expression to be constant, but can't convert a UNBOUNDED to constant.
+%Error: t/t_queue_unsup_bad.v:38:22: Expecting expression to be constant, but can't convert a UNBOUNDED to constant.
                                    : ... In instance t
       q = {q[0], q[2:$]};   
                      ^
-%Error: t/t_queue_unsup_bad.v:37:22: First value of [a:b] isn't a constant, maybe you want +: or -:
+%Error: t/t_queue_unsup_bad.v:38:22: First value of [a:b] isn't a constant, maybe you want +: or -:
                                    : ... In instance t
       q = {q[0], q[2:$]};   
                      ^
-%Error: t/t_queue_unsup_bad.v:37:19: Illegal range select; type already selected, or bad dimension: data type is 'string[$]'
+%Error: t/t_queue_unsup_bad.v:38:19: Illegal range select; type already selected, or bad dimension: data type is 'string[$]'
                                    : ... In instance t
       q = {q[0], q[2:$]};   
                   ^
-%Error: t/t_queue_unsup_bad.v:41:25: Unsupported: Replication to form 'string[$]' data type
+%Error: t/t_queue_unsup_bad.v:42:25: Unsupported: Replication to form 'string[$]' data type
                                    : ... In instance t
          string ai[$] = { "Foo", "Bar" };
                         ^
-%Error: t/t_queue_unsup_bad.v:46:14: Unsupported: Assignment pattern applies against non struct/union data type: 'string[$]'
+%Error: t/t_queue_unsup_bad.v:47:14: Unsupported: Assignment pattern applies against non struct/union data type: 'string[$]'
                                    : ... In instance t
          q = '{ "BB", "CC" };   
              ^~
-%Error: t/t_queue_unsup_bad.v:49:14: Unsupported: Replication to form 'string[$]' data type
+%Error: t/t_queue_unsup_bad.v:50:14: Unsupported: Replication to form 'string[$]' data type
                                    : ... In instance t
          q = { "BB", "CC" };   
              ^

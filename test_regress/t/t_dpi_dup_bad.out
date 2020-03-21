@@ -1,8 +1,8 @@
-%Error: t/t_dpi_dup_bad.v:12:51: Duplicate declaration of DPI function with different formal arguments: 't.oth_f_int2'
+%Error: t/t_dpi_dup_bad.v:13:51: Duplicate declaration of DPI function with different formal arguments: 't.oth_f_int2'
    import "DPI-C" pure dpii_fa_bit = function int oth_f_int2(input int i, input int bad);
                                                   ^~~~~~~~~~
                                : ... New prototype:      pure int dpii_fa_bit (int, int)
-        t/t_dpi_dup_bad.v:11:47: ... Original prototype: int dpii_fa_bit (int)
+        t/t_dpi_dup_bad.v:12:47: ... Original prototype: int dpii_fa_bit (int)
    import "DPI-C" dpii_fa_bit =  function int oth_f_int1(input int i);
                                               ^~~~~~~~~~
 %Error: Exiting due to

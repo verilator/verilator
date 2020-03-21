@@ -1,11 +1,11 @@
-%Error: t/t_var_bad_sv.v:7:8: Unexpected 'do': 'do' is a SystemVerilog keyword misused as an identifier.
+%Error: t/t_var_bad_sv.v:8:8: Unexpected 'do': 'do' is a SystemVerilog keyword misused as an identifier.
         ... Suggest modify the Verilog-2001 code to avoid SV keywords, or use `begin_keywords or --language.
    reg do;
        ^~
-%Error: t/t_var_bad_sv.v:8:14: Unexpected 'do': 'do' is a SystemVerilog keyword misused as an identifier.
+%Error: t/t_var_bad_sv.v:9:14: Unexpected 'do': 'do' is a SystemVerilog keyword misused as an identifier.
    mod mod (.do(bar));
              ^~
-%Error: t/t_var_bad_sv.v:8:17: syntax error, unexpected '(', expecting ')'
+%Error: t/t_var_bad_sv.v:9:17: syntax error, unexpected '(', expecting ')'
    mod mod (.do(bar));
                 ^~~
 %Error: Exiting due to

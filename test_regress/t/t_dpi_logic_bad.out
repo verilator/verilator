@@ -1,4 +1,4 @@
-%Error: t/t_dpi_logic_bad.v:11:54: DPI function may not return type BASICDTYPE 'logic' (IEEE 1800-2017 35.5.5)
+%Error: t/t_dpi_logic_bad.v:12:54: DPI function may not return type BASICDTYPE 'logic' (IEEE 1800-2017 35.5.5)
    import "DPI-C" dpii_fa_bit = function logic [2:0] oth_f_int1(input time i);
                                                      ^~~~~~~~~~
 %Error: Exiting due to

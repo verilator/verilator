@@ -1,4 +1,4 @@
-%Error: t/t_param_default_bad.v:6:26: Parameter without initial value is never given value (IEEE 1800-2017 6.20.1): 'Foo'
+%Error: t/t_param_default_bad.v:7:26: Parameter without initial value is never given value (IEEE 1800-2017 6.20.1): 'Foo'
                                     : ... In instance t.foo
 module m #(parameter int Foo);
                          ^~~

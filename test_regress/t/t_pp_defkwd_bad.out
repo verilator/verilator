@@ -1,2 +1,2 @@
-%Error: t/t_pp_defkwd_bad.v:7:18: Attempting to define built-in directive: '`define' (IEEE 1800-2017 22.5.1)
+%Error: t/t_pp_defkwd_bad.v:8:18: Attempting to define built-in directive: '`define' (IEEE 1800-2017 22.5.1)
 %Error: Exiting due to

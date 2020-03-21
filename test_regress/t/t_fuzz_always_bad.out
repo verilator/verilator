@@ -1,10 +1,10 @@
-%Error: t/t_fuzz_always_bad.v:9:15: Can't find definition of 'a' in dotted variable: 'c.a'
+%Error: t/t_fuzz_always_bad.v:10:15: Can't find definition of 'a' in dotted variable: 'c.a'
    always @ c.a c:h;
               ^
-%Error: t/t_fuzz_always_bad.v:9:19: Can't find definition of task/function: 'h'
+%Error: t/t_fuzz_always_bad.v:10:19: Can't find definition of task/function: 'h'
    always @ c.a c:h;
                   ^
-%Error: t/t_fuzz_always_bad.v:9:14: Unsupported: Complex statement in sensitivity list
+%Error: t/t_fuzz_always_bad.v:10:14: Unsupported: Complex statement in sensitivity list
    always @ c.a c:h;
              ^
 %Error: Exiting due to

@@ -1,28 +1,28 @@
-%Error: t/t_func_bad.v:8:11: Missing argument on non-defaulted argument 'from2' in function call to FUNC 'add'
+%Error: t/t_func_bad.v:9:11: Missing argument on non-defaulted argument 'from2' in function call to FUNC 'add'
                            : ... In instance t
       if (add(3'd1) != 0) $stop;   
           ^~~
-%Error: t/t_func_bad.v:9:27: Too many arguments in function call to FUNC 'add'
-                           : ... In instance t
+%Error: t/t_func_bad.v:10:27: Too many arguments in function call to FUNC 'add'
+                            : ... In instance t
       if (add(3'd1, 3'd2, 3'd3) != 0) $stop;     
                           ^~~~
-%Error: t/t_func_bad.v:10:7: Missing argument on non-defaulted argument 'y' in function call to TASK 'x'
+%Error: t/t_func_bad.v:11:7: Missing argument on non-defaulted argument 'y' in function call to TASK 'x'
                            : ... In instance t
       x;  
       ^
-%Error: t/t_func_bad.v:10:7: Unsupported: Function output argument 'y' requires 1 bits, but connection's CONST '?32?h0' generates 32 bits.
+%Error: t/t_func_bad.v:11:7: Unsupported: Function output argument 'y' requires 1 bits, but connection's CONST '?32?h0' generates 32 bits.
                            : ... In instance t
       x;  
       ^
-%Error: t/t_func_bad.v:13:17: No such argument 'no_such' in function call to FUNC 'f'
+%Error: t/t_func_bad.v:14:17: No such argument 'no_such' in function call to FUNC 'f'
                             : ... In instance t
       f(.j(1), .no_such(2));  
                 ^~~~~~~
-%Error: t/t_func_bad.v:14:19: Duplicate argument 'dup' in function call to FUNC 'f'
+%Error: t/t_func_bad.v:15:19: Duplicate argument 'dup' in function call to FUNC 'f'
                             : ... In instance t
       f(.dup(1), .dup(3));  
                   ^~~
-%Error: t/t_func_bad.v:15:13: Too many arguments in function call to FUNC 'f'
+%Error: t/t_func_bad.v:16:13: Too many arguments in function call to FUNC 'f'
                             : ... In instance t
       f(1,2,3);  
             ^

@@ -1,4 +1,4 @@
-%Error: t/t_flag_wpedantic_bad.v:7:14: syntax error, unexpected global, expecting IDENTIFIER or '=' or do or final
+%Error: t/t_flag_wpedantic_bad.v:8:14: syntax error, unexpected global, expecting IDENTIFIER or '=' or do or final
    reg global;
              ^
 %Error: Exiting due to

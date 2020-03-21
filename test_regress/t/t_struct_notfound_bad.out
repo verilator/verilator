@@ -1,4 +1,4 @@
-%Error: t/t_struct_notfound_bad.v:12:9: Member 'nfmember' not found in structure
+%Error: t/t_struct_notfound_bad.v:13:9: Member 'nfmember' not found in structure
                                       : ... In instance t
       s.nfmember = 0;  
         ^~~~~~~~

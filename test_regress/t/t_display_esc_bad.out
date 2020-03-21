@@ -1,4 +1,4 @@
-%Error: t/t_display_esc_bad.v:8:16: Unknown escape sequence: \x
+%Error: t/t_display_esc_bad.v:9:16: Unknown escape sequence: \x
       $display("\x\y\z");   
                ^~~~~~~~
 %Error: Exiting due to

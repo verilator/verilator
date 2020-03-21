@@ -1,4 +1,4 @@
-%Error: t/t_interface_mismodport_bad.v:35:12: Can't find definition of 'bad' in dotted signal: 'isub.bad'
+%Error: t/t_interface_mismodport_bad.v:36:12: Can't find definition of 'bad' in dotted signal: 'isub.bad'
       isub.bad = i_value;   
            ^~~
         ... Known scopes under 'bad': <no cells found>

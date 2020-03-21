@@ -1,4 +1,4 @@
-%Error: t/t_var_const_bad.v:16:7: Assigning to const variable: 'five'
+%Error: t/t_var_const_bad.v:17:7: Assigning to const variable: 'five'
                                 : ... In instance t
       five = 3'd4;
       ^~~~

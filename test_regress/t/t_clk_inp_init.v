@@ -5,7 +5,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2018 by Rupert Swarbrick (Argon Design).
-
+// SPDX-License-Identifier: CC0-1.0
 
 // bug1327
 // This models some device under test with an asynchronous reset pin

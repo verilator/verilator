@@ -1,10 +1,10 @@
-%Error: t/t_number_bad.v:8:29: Number is missing value digits: 32'd
+%Error: t/t_number_bad.v:9:29: Number is missing value digits: 32'd
    parameter integer FOO2 = 32'd-6;   
                             ^~~~
-%Error: t/t_number_bad.v:9:29: Number is missing value digits: 32'd
+%Error: t/t_number_bad.v:10:29: Number is missing value digits: 32'd
    parameter integer FOO3 = 32'd;
                             ^~~~
-%Error: t/t_number_bad.v:10:29: Number is missing value digits: 32'h
+%Error: t/t_number_bad.v:11:29: Number is missing value digits: 32'h
    parameter integer FOO4 = 32'h;
                             ^~~~
 %Error: Exiting due to

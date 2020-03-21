@@ -1,41 +1,41 @@
-%Warning-WIDTH: t/t_lint_width_bad.v:16:25: Operator VAR 'XS' expects 4 bits on the Initial value, but Initial value's CONST '?32?bxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' generates 32 bits.
+%Warning-WIDTH: t/t_lint_width_bad.v:17:25: Operator VAR 'XS' expects 4 bits on the Initial value, but Initial value's CONST '?32?bxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' generates 32 bits.
                                           : ... In instance t
    localparam [3:0]     XS = 'hx;   
                         ^~
                 ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
-%Warning-WIDTH: t/t_lint_width_bad.v:44:19: Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's VARREF 'in' generates 4 bits.
+%Warning-WIDTH: t/t_lint_width_bad.v:45:19: Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's VARREF 'in' generates 4 bits.
                                           : ... In instance t.p4
    wire [4:0] out = in;
                   ^
-%Warning-WIDTH: t/t_lint_width_bad.v:20:25: Operator SHIFTL expects 5 bits on the LHS, but LHS's CONST '1'h1' generates 1 bits.
+%Warning-WIDTH: t/t_lint_width_bad.v:21:25: Operator SHIFTL expects 5 bits on the LHS, but LHS's CONST '1'h1' generates 1 bits.
                                           : ... In instance t
    wire [4:0] d = (1'b1 << 2) + 5'b1;   
                         ^~
-%Warning-WIDTH: t/t_lint_width_bad.v:26:32: Operator ASSIGNW expects 6 bits on the Assign RHS, but Assign RHS's SHIFTL generates 7 bits.
+%Warning-WIDTH: t/t_lint_width_bad.v:27:32: Operator ASSIGNW expects 6 bits on the Assign RHS, but Assign RHS's SHIFTL generates 7 bits.
                                           : ... In instance t
    wire [WIDTH-1:0]     masked = (({{(WIDTH){1'b0}}, one_bit}) << shifter);
                                ^
-%Warning-WIDTH: t/t_lint_width_bad.v:31:37: Operator ADD expects 3 bits on the LHS, but LHS's VARREF 'one' generates 1 bits.
+%Warning-WIDTH: t/t_lint_width_bad.v:32:37: Operator ADD expects 3 bits on the LHS, but LHS's VARREF 'one' generates 1 bits.
                                           : ... In instance t
    wire [2:0]           cnt  = (one + one + one + one);
                                     ^
-%Warning-WIDTH: t/t_lint_width_bad.v:31:37: Operator ADD expects 3 bits on the RHS, but RHS's VARREF 'one' generates 1 bits.
+%Warning-WIDTH: t/t_lint_width_bad.v:32:37: Operator ADD expects 3 bits on the RHS, but RHS's VARREF 'one' generates 1 bits.
                                           : ... In instance t
    wire [2:0]           cnt  = (one + one + one + one);
                                     ^
-%Warning-WIDTH: t/t_lint_width_bad.v:31:43: Operator ADD expects 3 bits on the RHS, but RHS's VARREF 'one' generates 1 bits.
+%Warning-WIDTH: t/t_lint_width_bad.v:32:43: Operator ADD expects 3 bits on the RHS, but RHS's VARREF 'one' generates 1 bits.
                                           : ... In instance t
    wire [2:0]           cnt  = (one + one + one + one);
                                           ^
-%Warning-WIDTH: t/t_lint_width_bad.v:31:49: Operator ADD expects 3 bits on the RHS, but RHS's VARREF 'one' generates 1 bits.
+%Warning-WIDTH: t/t_lint_width_bad.v:32:49: Operator ADD expects 3 bits on the RHS, but RHS's VARREF 'one' generates 1 bits.
                                           : ... In instance t
    wire [2:0]           cnt  = (one + one + one + one);
                                                 ^
-%Warning-WIDTH: t/t_lint_width_bad.v:36:26: Operator GT expects 41 bits on the LHS, but LHS's VARREF 'a' generates 32 bits.
+%Warning-WIDTH: t/t_lint_width_bad.v:37:26: Operator GT expects 41 bits on the LHS, but LHS's VARREF 'a' generates 32 bits.
                                           : ... In instance t
    initial for (a = 0; a > THREE; ++a) $display(a);
                          ^
-%Warning-WIDTH: t/t_lint_width_bad.v:37:26: Operator GTE expects 41 bits on the LHS, but LHS's VARREF 'a' generates 32 bits.
+%Warning-WIDTH: t/t_lint_width_bad.v:38:26: Operator GTE expects 41 bits on the LHS, but LHS's VARREF 'a' generates 32 bits.
                                           : ... In instance t
    initial for (a = 0; a >= THREE; ++a) $display(a);
                          ^~

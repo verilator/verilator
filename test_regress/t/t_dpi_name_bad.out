@@ -1,4 +1,4 @@
-%Error: t/t_dpi_name_bad.v:11:32: DPI function has illegal characters in C identifier name: 'badly.named'
+%Error: t/t_dpi_name_bad.v:12:32: DPI function has illegal characters in C identifier name: 'badly.named'
    import "DPI-C" function int \badly.named (int i);
                                ^~~~~~~~~~~~
 %Error: Exiting due to

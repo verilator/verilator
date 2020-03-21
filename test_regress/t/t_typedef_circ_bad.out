@@ -1,4 +1,4 @@
-%Error: t/t_typedef_circ_bad.v:5:9: Typedef's type is circular: a_t
+%Error: t/t_typedef_circ_bad.v:8:9: Typedef's type is circular: a_t
 typedef a_t b_t;
         ^~~
 %Error: Exiting due to

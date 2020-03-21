@@ -1,23 +1,23 @@
-%Warning-IMPERFECTSCH: t/t_order_clkinst.v:17:16: Imperfect scheduling of variable: 't.c1_start'
+%Warning-IMPERFECTSCH: t/t_order_clkinst.v:18:16: Imperfect scheduling of variable: 't.c1_start'
    reg         c1_start; initial c1_start = 0;
                ^~~~~~~~
                        ... Use "/* verilator lint_off IMPERFECTSCH */" and lint_on around source to disable this message.
-%Warning-IMPERFECTSCH: t/t_order_clkinst.v:18:16: Imperfect scheduling of variable: 't.c1_count'
+%Warning-IMPERFECTSCH: t/t_order_clkinst.v:19:16: Imperfect scheduling of variable: 't.c1_count'
    wire [31:0] c1_count;
                ^~~~~~~~
-%Warning-IMPERFECTSCH: t/t_order_clkinst.v:22:16: Imperfect scheduling of variable: 't.s2_count'
+%Warning-IMPERFECTSCH: t/t_order_clkinst.v:23:16: Imperfect scheduling of variable: 't.s2_count'
    wire [31:0] s2_count;
                ^~~~~~~~
-%Warning-IMPERFECTSCH: t/t_order_clkinst.v:26:16: Imperfect scheduling of variable: 't.c3_count'
+%Warning-IMPERFECTSCH: t/t_order_clkinst.v:27:16: Imperfect scheduling of variable: 't.c3_count'
    wire [31:0] c3_count;
                ^~~~~~~~
-%Warning-IMPERFECTSCH: t/t_order_clkinst.v:70:28: Imperfect scheduling of variable: 't.c1.runner'
+%Warning-IMPERFECTSCH: t/t_order_clkinst.v:71:28: Imperfect scheduling of variable: 't.c1.runner'
    reg [31:0]    runnerm1, runner; initial runner = 0;
                            ^~~~~~
-%Warning-IMPERFECTSCH: t/t_order_clkinst.v:99:28: Imperfect scheduling of variable: 't.s2.runner'
+%Warning-IMPERFECTSCH: t/t_order_clkinst.v:100:28: Imperfect scheduling of variable: 't.s2.runner'
    reg [31:0]    runnerm1, runner; initial runner = 0;
                            ^~~~~~
-%Warning-IMPERFECTSCH: t/t_order_clkinst.v:70:28: Imperfect scheduling of variable: 't.c3.runner'
+%Warning-IMPERFECTSCH: t/t_order_clkinst.v:71:28: Imperfect scheduling of variable: 't.c3.runner'
    reg [31:0]    runnerm1, runner; initial runner = 0;
                            ^~~~~~
 %Error: Exiting due to

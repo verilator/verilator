@@ -1,8 +1,8 @@
-%Warning-SYNCASYNCNET: t/t_lint_syncasyncnet_bad.v:15:25: Signal flopped as both synchronous and async: 'rst_both_l'
-                       t/t_lint_syncasyncnet_bad.v:90:15: ... Location of async usage
+%Warning-SYNCASYNCNET: t/t_lint_syncasyncnet_bad.v:16:25: Signal flopped as both synchronous and async: 'rst_both_l'
+                       t/t_lint_syncasyncnet_bad.v:91:15: ... Location of async usage
       q2 <= (~rst_both_l) ? 1'b0 : d;
               ^~~~~~~~~~
-                       t/t_lint_syncasyncnet_bad.v:58:14: ... Location of sync usage
+                       t/t_lint_syncasyncnet_bad.v:59:14: ... Location of sync usage
       q2 <= (rst_both_l) ? d : 1'b0;
              ^~~~~~~~~~
                        ... Use "/* verilator lint_off SYNCASYNCNET */" and lint_on around source to disable this message.

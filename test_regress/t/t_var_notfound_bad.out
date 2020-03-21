@@ -1,24 +1,24 @@
-%Error: t/t_var_notfound_bad.v:17:7: Can't find definition of variable: 'nf'
+%Error: t/t_var_notfound_bad.v:18:7: Can't find definition of variable: 'nf'
       nf = 0;   
       ^~
-%Error: t/t_var_notfound_bad.v:18:11: Can't find definition of 'subsubz' in dotted scope/variable: 'sub.subsubz'
+%Error: t/t_var_notfound_bad.v:19:11: Can't find definition of 'subsubz' in dotted scope/variable: 'sub.subsubz'
       sub.subsubz.inss = 0;   
           ^~~~~~~
         ... Known scopes under 'sub': subsub
-%Error: t/t_var_notfound_bad.v:19:11: Can't find definition of task/function: 'nofunc'
+%Error: t/t_var_notfound_bad.v:20:11: Can't find definition of task/function: 'nofunc'
                                     : ... Suggested alternative: 'notfunc'
       i = nofunc();   
           ^~~~~~
-%Error: t/t_var_notfound_bad.v:20:15: Can't find definition of 'nofuncs' in dotted task/function: 'sub.nofuncs'
+%Error: t/t_var_notfound_bad.v:21:15: Can't find definition of 'nofuncs' in dotted task/function: 'sub.nofuncs'
                                     : ... Suggested alternative: 'notfuncs'
       i = sub.nofuncs();   
               ^~~~~~~
         ... Known scopes under 'nofuncs': sub
-%Error: t/t_var_notfound_bad.v:21:7: Can't find definition of task/function: 'notask'
+%Error: t/t_var_notfound_bad.v:22:7: Can't find definition of task/function: 'notask'
                                    : ... Suggested alternative: 'nottask'
       notask();   
       ^~~~~~
-%Error: t/t_var_notfound_bad.v:22:7: Found definition of 'a_var' as a VAR but expected a task/function
+%Error: t/t_var_notfound_bad.v:23:7: Found definition of 'a_var' as a VAR but expected a task/function
       a_var();   
       ^~~~~
 %Error: Exiting due to

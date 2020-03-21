@@ -1,10 +1,10 @@
-%Error: t/t_enum_recurse_bad.v:6:9: Recursive enum value: 'u'
+%Error: t/t_enum_recurse_bad.v:7:9: Recursive enum value: 'u'
 enum {u=u} e_t;
         ^
-%Error: t/t_enum_recurse_bad.v:6:9: Expecting expression to be constant, but variable isn't const: 'u'
+%Error: t/t_enum_recurse_bad.v:7:9: Expecting expression to be constant, but variable isn't const: 'u'
 enum {u=u} e_t;
         ^
-%Error: t/t_enum_recurse_bad.v:6:9: Enum value isn't a constant
+%Error: t/t_enum_recurse_bad.v:7:9: Enum value isn't a constant
 enum {u=u} e_t;
         ^
 %Error: Exiting due to

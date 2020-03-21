@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2004 by Jie Xu.
+// SPDX-License-Identifier: CC0-1.0
 //
 // The test was added together with the concat optimization.
 

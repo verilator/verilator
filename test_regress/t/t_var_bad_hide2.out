@@ -1,7 +1,7 @@
-%Warning-VARHIDDEN: t/t_var_bad_hide2.v:13:12: Declaration of signal hides declaration in upper scope: 't'
+%Warning-VARHIDDEN: t/t_var_bad_hide2.v:14:12: Declaration of signal hides declaration in upper scope: 't'
    integer t;
            ^
-                    t/t_var_bad_hide2.v:6:8: ... Location of original declaration
+                    t/t_var_bad_hide2.v:7:8: ... Location of original declaration
 module t;
        ^
                     ... Use "/* verilator lint_off VARHIDDEN */" and lint_on around source to disable this message.

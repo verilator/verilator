@@ -1,4 +1,4 @@
-%Warning-COMBDLY: t/t_lint_latch_bad.v:24:10: Delayed assignments (<=) in non-clocked (non flop or latch) block
+%Warning-COMBDLY: t/t_lint_latch_bad.v:25:10: Delayed assignments (<=) in non-clocked (non flop or latch) block
                                             : ... Suggest blocking assignments (=)
       bc <= a;   
          ^~

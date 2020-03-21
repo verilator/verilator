@@ -1,4 +1,4 @@
-%Error: t/t_const_dec_mixed_bad.v:8:30: Mixing X/Z/? with digits not legal in decimal constant: x_1
+%Error: t/t_const_dec_mixed_bad.v:9:30: Mixing X/Z/? with digits not legal in decimal constant: x_1
    parameter [200:0] MIXED = 32'dx_1;
                              ^~~~~~~
 %Error: Exiting due to

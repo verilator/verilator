@@ -1,4 +1,4 @@
-%Warning-SELRANGE: t/t_select_bad_range2.v:50:21: Selection index out of range: 3:2 outside 1:0
+%Warning-SELRANGE: t/t_select_bad_range2.v:51:21: Selection index out of range: 3:2 outside 1:0
                                                 : ... In instance t.test
    assign out32 = in[3:2];
                     ^

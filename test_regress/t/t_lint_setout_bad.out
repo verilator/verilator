@@ -1,4 +1,4 @@
-%Error-PORTSHORT: t/t_lint_setout_bad.v:16:8: Output port is connected to a constant pin, electrical short
+%Error-PORTSHORT: t/t_lint_setout_bad.v:17:8: Output port is connected to a constant pin, electrical short
                                             : ... In instance t
       .cpu_if_timeout(1'b0)
        ^~~~~~~~~~~~~~

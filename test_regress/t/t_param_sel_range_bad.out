@@ -1,4 +1,4 @@
-%Warning-SELRANGE: t/t_param_sel_range.v:40:35: Selection index out of range: 7:7 outside 4:0
+%Warning-SELRANGE: t/t_param_sel_range.v:43:35: Selection index out of range: 7:7 outside 4:0
                                               : ... In instance t.u2
                  r_rst[i] <= r_rst[i-1];   
                                   ^

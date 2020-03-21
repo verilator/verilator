@@ -1,2 +1,2 @@
-%Error: t/t_sys_readmem_bad_digit.mem:7: $readmemb (binary) file contains hex characters
+%Error: t/t_sys_readmem_bad_digit.mem:8: $readmemb (binary) file contains hex characters
 Aborting...

@@ -1,4 +1,4 @@
-%Warning-WIDTHCONCAT: t/t_func_const3_bad.v:11:28: More than a 8k bit replication is probably wrong: 9000
+%Warning-WIDTHCONCAT: t/t_func_const3_bad.v:12:28: More than a 8k bit replication is probably wrong: 9000
                                                  : ... In instance t.b9k.c9
    localparam SOMEP = {BITS{1'b0}};
                            ^

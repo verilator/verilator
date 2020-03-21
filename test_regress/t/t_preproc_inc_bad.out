@@ -1,5 +1,5 @@
-%Error: t/t_preproc_inc_inc_bad.vh:10:1: syntax error, unexpected endmodule, expecting IDENTIFIER
+%Error: t/t_preproc_inc_inc_bad.vh:11:1: syntax error, unexpected endmodule, expecting IDENTIFIER
 endmodule
 ^~~~~~~~~
-        t/t_preproc_inc_bad.v:9:1: ... note: In file included from t_preproc_inc_bad.v
+        t/t_preproc_inc_bad.v:10:1: ... note: In file included from t_preproc_inc_bad.v
 %Error: Exiting due to

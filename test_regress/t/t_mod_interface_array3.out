@@ -1,7 +1,7 @@
-%Error: t/t_mod_interface_array3.v:24:20: Unsupported: Multidimensional cells/interfaces.
+%Error: t/t_mod_interface_array3.v:25:20: Unsupported: Multidimensional cells/interfaces.
    a_if iface [2:0][1:0];
                    ^
-%Error: t/t_mod_interface_array3.v:26:18: Unsupported: Multidimensional cells/interfaces.
+%Error: t/t_mod_interface_array3.v:27:18: Unsupported: Multidimensional cells/interfaces.
    sub i_sub[2:0][1:0] (.s(str));
                  ^
 %Error: Exiting due to

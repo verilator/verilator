@@ -1,4 +1,4 @@
-%Error: t/t_lint_import_name_bad.v:10:12: Import object not found: 'defs::sigs'
+%Error: t/t_lint_import_name_bad.v:11:12: Import object not found: 'defs::sigs'
 import defs::sigs;
            ^~
 %Error: Exiting due to

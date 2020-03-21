@@ -1,8 +1,8 @@
-%Error: t/t_fuzz_genintf_bad.v:23:12: Unsupported: Member call on object 'VARREF 'j'' which is a 'BASICDTYPE 'integer''
+%Error: t/t_fuzz_genintf_bad.v:24:12: Unsupported: Member call on object 'VARREF 'j'' which is a 'BASICDTYPE 'integer''
                                     : ... In instance t
          j.e(0),
            ^
-%Error: Internal Error: t/t_fuzz_genintf_bad.v:23:11: ../V3Width.cpp:#: Unlinked pin data type
+%Error: Internal Error: t/t_fuzz_genintf_bad.v:24:11: ../V3Width.cpp:#: Unlinked pin data type
                                                     : ... In instance t
          j.e(0),
           ^

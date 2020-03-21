@@ -1,4 +1,4 @@
-%Warning-SELRANGE: t/t_select_bad_range3.v:18:33: Selection index out of range: 13 outside 12:10
+%Warning-SELRANGE: t/t_select_bad_range3.v:19:33: Selection index out of range: 13 outside 12:10
                                                 : ... In instance t
    assign outwires[12] = inwires[13];   
                                 ^

@@ -1,12 +1,12 @@
-%Warning-CDCRSTLOGIC: t/t_cdc_async_bad.v:27:21: Logic in path that feeds async reset, via signal: 't.rst2_bad_n'
+%Warning-CDCRSTLOGIC: t/t_cdc_async_bad.v:28:21: Logic in path that feeds async reset, via signal: 't.rst2_bad_n'
    wire  rst2_bad_n = rst0_n | rst1_n;
                     ^
                       ... Use "/* verilator lint_off CDCRSTLOGIC */" and lint_on around source to disable this message.
 %Warning-CDCRSTLOGIC:      See details in obj_vlt/t_cdc_async_bad/Vt_cdc_async_bad__cdc.txt
-%Warning-CDCRSTLOGIC: t/t_cdc_async_bad.v:52:21: Logic in path that feeds async reset, via signal: 't.rst6a_bad_n'
+%Warning-CDCRSTLOGIC: t/t_cdc_async_bad.v:53:21: Logic in path that feeds async reset, via signal: 't.rst6a_bad_n'
    wire rst6a_bad_n = rst6_bad_n ^ $c1("0");   
                     ^
-%Warning-CDCRSTLOGIC: t/t_cdc_async_bad.v:53:21: Logic in path that feeds async reset, via signal: 't.rst6b_bad_n'
+%Warning-CDCRSTLOGIC: t/t_cdc_async_bad.v:54:21: Logic in path that feeds async reset, via signal: 't.rst6b_bad_n'
    wire rst6b_bad_n = rst6_bad_n ^ $c1("1");
                     ^
 %Error: Exiting due to

@@ -1,6 +1,6 @@
-%Error: t/t_lint_in_inc_bad_2.vh:8:7: syntax error, unexpected if, expecting '('
+%Error: t/t_lint_in_inc_bad_2.vh:9:7: syntax error, unexpected if, expecting '('
    if if if;
       ^~
-        t/t_lint_in_inc_bad_1.vh:7:1: ... note: In file included from t_lint_in_inc_bad_1.vh
-        t/t_lint_in_inc_bad.v:7:1: ... note: In file included from t_lint_in_inc_bad.v
+        t/t_lint_in_inc_bad_1.vh:8:1: ... note: In file included from t_lint_in_inc_bad_1.vh
+        t/t_lint_in_inc_bad.v:8:1: ... note: In file included from t_lint_in_inc_bad.v
 %Error: Exiting due to

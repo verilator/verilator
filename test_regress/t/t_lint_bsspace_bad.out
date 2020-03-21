@@ -1,8 +1,8 @@
-%Warning-BSSPACE: t/t_lint_bsspace_bad.v:9:21: Backslash followed by whitespace, perhaps the whitespace is accidental?
+%Warning-BSSPACE: t/t_lint_bsspace_bad.v:10:21: Backslash followed by whitespace, perhaps the whitespace is accidental?
 `define FOO   blak \ 
                     ^
                   ... Use "/* verilator lint_off BSSPACE */" and lint_on around source to disable this message.
-%Error: t/t_lint_bsspace_bad.v:10:4: syntax error, unexpected IDENTIFIER
+%Error: t/t_lint_bsspace_bad.v:11:4: syntax error, unexpected IDENTIFIER
    blak
    ^~~~
 %Error: Exiting due to

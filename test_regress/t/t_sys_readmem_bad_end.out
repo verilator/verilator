@@ -1,2 +1,2 @@
-%Error: t/t_sys_readmem_bad_end.mem:11: $readmem file ended before specified final address (IEEE 2017 21.4)
+%Error: t/t_sys_readmem_bad_end.mem:12: $readmem file ended before specified final address (IEEE 2017 21.4)
 Aborting...

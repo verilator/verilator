@@ -1,4 +1,4 @@
-%Error: t/t_struct_init.v:53:40: Assignment pattern contains duplicate entry: b1
+%Error: t/t_struct_init.v:54:40: Assignment pattern contains duplicate entry: b1
                                : ... In instance t
    const b4_t b4_const_c = '{b1: 1'b1, b1: 1'b0, b0:1'b0, b2: 1'b1, b3: 1'b1};
                                        ^~

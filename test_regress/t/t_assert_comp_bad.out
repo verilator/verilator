@@ -1,17 +1,17 @@
--Info: t/t_assert_comp_bad.v:9:7: User compile-time info
-                                : ... In instance t
+-Info: t/t_assert_comp_bad.v:10:7: User compile-time info
+                                 : ... In instance t
       $info("User compile-time info");
       ^~~~~
-%Warning-USERWARN: t/t_assert_comp_bad.v:10:7: User compile-time warning
+%Warning-USERWARN: t/t_assert_comp_bad.v:11:7: User compile-time warning
                                              : ... In instance t
       $warning("User compile-time warning");
       ^~~~~~~~
                    ... Use "/* verilator lint_off USERWARN */" and lint_on around source to disable this message.
-%Warning-USERWARN: t/t_assert_comp_bad.v:11:7:           1
+%Warning-USERWARN: t/t_assert_comp_bad.v:12:7:           1
                                              : ... In instance t
       $warning(1);   
       ^~~~~~~~
-%Warning-USERERROR: t/t_assert_comp_bad.v:12:7: User compile-time error
+%Warning-USERERROR: t/t_assert_comp_bad.v:13:7: User compile-time error
                                               : ... In instance t
       $error("User compile-time error");
       ^~~~~~

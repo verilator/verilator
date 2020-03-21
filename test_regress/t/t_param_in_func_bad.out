@@ -1,7 +1,7 @@
-%Error: t/t_param_in_func_bad.v:23:26: Unsupported: Parameters in functions.
+%Error: t/t_param_in_func_bad.v:24:26: Unsupported: Parameters in functions.
    localparam logic[7:0] digits[10]
                          ^~~~~~
-%Error: t/t_param_in_func_bad.v:27:11: Can't find definition of variable: 'digits'
+%Error: t/t_param_in_func_bad.v:28:11: Can't find definition of variable: 'digits'
    return digits[d];
           ^~~~~~
 %Error: Exiting due to

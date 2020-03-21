@@ -1,4 +1,4 @@
-%Error: t/t_inst_recurse2_bad.v:17:8: Unsupported: Identically recursive module (module instantiates itself, without changing parameters): 'looped'
+%Error: t/t_inst_recurse2_bad.v:18:8: Unsupported: Identically recursive module (module instantiates itself, without changing parameters): 'looped'
                                     : ... In instance t.looped.looped
 module looped ( );
        ^~~~~~

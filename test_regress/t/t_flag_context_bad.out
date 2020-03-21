@@ -1,6 +1,6 @@
-%Warning-WIDTH: t/t_flag_context_bad.v:8:19: Operator ASSIGNW expects 3 bits on the Assign RHS, but Assign RHS's CONST '5'h1f' generates 5 bits.
+%Warning-WIDTH: t/t_flag_context_bad.v:9:19: Operator ASSIGNW expects 3 bits on the Assign RHS, but Assign RHS's CONST '5'h1f' generates 5 bits.
                                            : ... In instance t
                 ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
-%Warning-UNUSED: t/t_flag_context_bad.v:8:15: Signal is not used: 'foo'
+%Warning-UNUSED: t/t_flag_context_bad.v:9:15: Signal is not used: 'foo'
                                             : ... In instance t
 %Error: Exiting due to

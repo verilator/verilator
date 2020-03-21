@@ -1,13 +1,13 @@
-%Warning-WIDTHCONCAT: t/t_param_concat.v:18:15: Unsized numbers/parameters not allowed in concatenations.
+%Warning-WIDTHCONCAT: t/t_param_concat.v:19:15: Unsized numbers/parameters not allowed in concatenations.
                                               : ... In instance t
          if ({UNSIZED,UNSIZED+1} != {32'd10, 32'd11}) $stop;
               ^~~~~~~
                       ... Use "/* verilator lint_off WIDTHCONCAT */" and lint_on around source to disable this message.
-%Warning-WIDTHCONCAT: t/t_param_concat.v:18:22: Unsized numbers/parameters not allowed in replications.
+%Warning-WIDTHCONCAT: t/t_param_concat.v:19:22: Unsized numbers/parameters not allowed in replications.
                                               : ... In instance t
          if ({UNSIZED,UNSIZED+1} != {32'd10, 32'd11}) $stop;
                      ^
-%Warning-WIDTHCONCAT: t/t_param_concat.v:19:17: Unsized numbers/parameters not allowed in replications.
+%Warning-WIDTHCONCAT: t/t_param_concat.v:20:17: Unsized numbers/parameters not allowed in replications.
                                               : ... In instance t
          if ({2{UNSIZED}} != {32'd10, 32'd10}) $stop;
                 ^~~~~~~

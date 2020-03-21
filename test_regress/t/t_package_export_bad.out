@@ -1,24 +1,24 @@
-%Error: t/t_package_export.v:56:16: Can't find definition of scope/variable: 'PARAM2'
+%Error: t/t_package_export.v:57:16: Can't find definition of scope/variable: 'PARAM2'
                                   : ... Suggested alternative: 'PARAM1'
    reg [pkg11::PARAM2 : 0] bus12;
                ^~~~~~
-%Error: t/t_package_export.v:57:16: Can't find definition of scope/variable: 'PARAM3'
+%Error: t/t_package_export.v:58:16: Can't find definition of scope/variable: 'PARAM3'
                                   : ... Suggested alternative: 'PARAM1'
    reg [pkg11::PARAM3 : 0] bus13;
                ^~~~~~
-%Error: t/t_package_export.v:60:16: Can't find definition of scope/variable: 'PARAM2'
+%Error: t/t_package_export.v:61:16: Can't find definition of scope/variable: 'PARAM2'
                                   : ... Suggested alternative: 'PARAM1'
    reg [pkg21::PARAM2 : 0] bus22;
                ^~~~~~
-%Error: t/t_package_export.v:61:16: Can't find definition of scope/variable: 'PARAM3'
+%Error: t/t_package_export.v:62:16: Can't find definition of scope/variable: 'PARAM3'
                                   : ... Suggested alternative: 'PARAM1'
    reg [pkg21::PARAM3 : 0] bus23;
                ^~~~~~
-%Error: t/t_package_export.v:64:16: Can't find definition of scope/variable: 'PARAM2'
+%Error: t/t_package_export.v:65:16: Can't find definition of scope/variable: 'PARAM2'
                                   : ... Suggested alternative: 'PARAM1'
    reg [pkg31::PARAM2 : 0] bus32;
                ^~~~~~
-%Error: t/t_package_export.v:65:16: Can't find definition of scope/variable: 'PARAM3'
+%Error: t/t_package_export.v:66:16: Can't find definition of scope/variable: 'PARAM3'
                                   : ... Suggested alternative: 'PARAM1'
    reg [pkg31::PARAM3 : 0] bus33;
                ^~~~~~

@@ -1,4 +1,4 @@
-%Error: t/t_pp_resetall_bad.v:8:1: syntax error, unexpected `resetall
+%Error: t/t_pp_resetall_bad.v:9:1: syntax error, unexpected `resetall
 `resetall   
 ^~~~~~~~~
 %Error: Cannot continue

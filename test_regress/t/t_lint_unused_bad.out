@@ -1,25 +1,25 @@
-%Warning-UNUSED: t/t_lint_unused_bad.v:16:15: Bits of signal are not used: 'assunu1'[5:1]
+%Warning-UNUSED: t/t_lint_unused_bad.v:17:15: Bits of signal are not used: 'assunu1'[5:1]
                                             : ... In instance t.sub
    wire [5:0] assunu1 = 0;   
               ^~~~~~~
                  ... Use "/* verilator lint_off UNUSED */" and lint_on around source to disable this message.
-%Warning-UNDRIVEN: t/t_lint_unused_bad.v:20:17: Bits of signal are not driven: 'udrb2'[14:13,11]
+%Warning-UNDRIVEN: t/t_lint_unused_bad.v:21:17: Bits of signal are not driven: 'udrb2'[14:13,11]
                                               : ... In instance t.sub
    wire [15:10] udrb2;   
                 ^~~~~
-%Warning-UNUSED: t/t_lint_unused_bad.v:25:15: Signal is not driven, nor used: 'unu3'
+%Warning-UNUSED: t/t_lint_unused_bad.v:26:15: Signal is not driven, nor used: 'unu3'
                                             : ... In instance t.sub
    wire       unu3;   
               ^~~~
-%Warning-UNUSED: t/t_lint_unused_bad.v:27:15: Bits of signal are not driven, nor used: 'mixed'[3]
+%Warning-UNUSED: t/t_lint_unused_bad.v:28:15: Bits of signal are not driven, nor used: 'mixed'[3]
                                             : ... In instance t.sub
    wire [3:0] mixed;   
               ^~~~~
-%Warning-UNUSED: t/t_lint_unused_bad.v:27:15: Bits of signal are not used: 'mixed'[2]
+%Warning-UNUSED: t/t_lint_unused_bad.v:28:15: Bits of signal are not used: 'mixed'[2]
                                             : ... In instance t.sub
    wire [3:0] mixed;   
               ^~~~~
-%Warning-UNDRIVEN: t/t_lint_unused_bad.v:27:15: Bits of signal are not driven: 'mixed'[1]
+%Warning-UNDRIVEN: t/t_lint_unused_bad.v:28:15: Bits of signal are not driven: 'mixed'[1]
                                               : ... In instance t.sub
    wire [3:0] mixed;   
               ^~~~~

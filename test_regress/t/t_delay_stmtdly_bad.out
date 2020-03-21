@@ -1,14 +1,14 @@
-%Warning-ASSIGNDLY: t/t_delay.v:19:11: Unsupported: Ignoring delay on this assignment/primitive.
+%Warning-ASSIGNDLY: t/t_delay.v:20:11: Unsupported: Ignoring delay on this assignment/primitive.
    assign #(1.2000000000000000) dly1 = dly0 + 32'h1;
           ^
                     ... Use "/* verilator lint_off ASSIGNDLY */" and lint_on around source to disable this message.
-%Warning-ASSIGNDLY: t/t_delay.v:24:18: Unsupported: Ignoring delay on this assignment/primitive.
+%Warning-ASSIGNDLY: t/t_delay.v:25:18: Unsupported: Ignoring delay on this assignment/primitive.
          dly0 <= #0 32'h11;
                  ^
-%Warning-ASSIGNDLY: t/t_delay.v:27:18: Unsupported: Ignoring delay on this assignment/primitive.
+%Warning-ASSIGNDLY: t/t_delay.v:28:18: Unsupported: Ignoring delay on this assignment/primitive.
          dly0 <= #0.12 dly0 + 32'h12;
                  ^
-%Warning-STMTDLY: t/t_delay.v:33:10: Unsupported: Ignoring delay on this delayed statement.
+%Warning-STMTDLY: t/t_delay.v:34:10: Unsupported: Ignoring delay on this delayed statement.
          #100 $finish;
          ^
 %Error: Exiting due to

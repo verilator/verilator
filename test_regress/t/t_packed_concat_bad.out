@@ -1,13 +1,13 @@
-%Warning-WIDTHCONCAT: t/t_packed_concat_bad.v:16:47: Unsized numbers/parameters not allowed in replications.
+%Warning-WIDTHCONCAT: t/t_packed_concat_bad.v:17:47: Unsized numbers/parameters not allowed in replications.
                                                    : ... In instance t
    localparam bit_int_t [1:0] count_bits = {2{$bits(count_t)}};
                                               ^~~~~
                       ... Use "/* verilator lint_off WIDTHCONCAT */" and lint_on around source to disable this message.
-%Warning-WIDTHCONCAT: t/t_packed_concat_bad.v:17:46: Unsized numbers/parameters not allowed in concatenations.
+%Warning-WIDTHCONCAT: t/t_packed_concat_bad.v:18:46: Unsized numbers/parameters not allowed in concatenations.
                                                    : ... In instance t
    localparam bit_int_t [1:0] count_bitsc = {$bits(count_t), $bits(count_t)};
                                              ^~~~~
-%Warning-WIDTHCONCAT: t/t_packed_concat_bad.v:17:60: Unsized numbers/parameters not allowed in replications.
+%Warning-WIDTHCONCAT: t/t_packed_concat_bad.v:18:60: Unsized numbers/parameters not allowed in replications.
                                                    : ... In instance t
    localparam bit_int_t [1:0] count_bitsc = {$bits(count_t), $bits(count_t)};
                                                            ^

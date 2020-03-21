@@ -1,7 +1,7 @@
-%Error: t/t_display_bad.v:10:7: Missing arguments for $display-like format
+%Error: t/t_display_bad.v:11:7: Missing arguments for $display-like format
       $display("%x");   
       ^~~~~~~~
-%Error: t/t_display_bad.v:12:7: Unknown $display-like format code: '%q'
+%Error: t/t_display_bad.v:13:7: Unknown $display-like format code: '%q'
       $display("%q");   
       ^~~~~~~~
 %Error: Exiting due to

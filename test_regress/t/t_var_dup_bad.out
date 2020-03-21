@@ -1,109 +1,109 @@
-%Error: t/t_var_dup_bad.v:16:11: Duplicate declaration of signal: 'a'
+%Error: t/t_var_dup_bad.v:17:11: Duplicate declaration of signal: 'a'
    reg    a;
           ^
-        t/t_var_dup_bad.v:15:11: ... Location of original declaration
+        t/t_var_dup_bad.v:16:11: ... Location of original declaration
    reg    a;
           ^
-%Error: t/t_var_dup_bad.v:19:12: Duplicate declaration of signal: 'l'
+%Error: t/t_var_dup_bad.v:20:12: Duplicate declaration of signal: 'l'
    integer l;
            ^
-        t/t_var_dup_bad.v:18:12: ... Location of original declaration
+        t/t_var_dup_bad.v:19:12: ... Location of original declaration
    integer l;
            ^
-%Error: t/t_var_dup_bad.v:22:12: Duplicate declaration of signal: 'b'
+%Error: t/t_var_dup_bad.v:23:12: Duplicate declaration of signal: 'b'
    bit     b;
            ^
-        t/t_var_dup_bad.v:21:12: ... Location of original declaration
+        t/t_var_dup_bad.v:22:12: ... Location of original declaration
    bit     b;
            ^
-%Error: t/t_var_dup_bad.v:25:11: Duplicate declaration of signal: 'o'
+%Error: t/t_var_dup_bad.v:26:11: Duplicate declaration of signal: 'o'
    output o;
           ^
-        t/t_var_dup_bad.v:24:11: ... Location of original declaration
+        t/t_var_dup_bad.v:25:11: ... Location of original declaration
    output o;
           ^
-%Error: t/t_var_dup_bad.v:28:11: Duplicate declaration of signal: 'i'
+%Error: t/t_var_dup_bad.v:29:11: Duplicate declaration of signal: 'i'
    input  i;
           ^
-        t/t_var_dup_bad.v:27:11: ... Location of original declaration
+        t/t_var_dup_bad.v:28:11: ... Location of original declaration
    input  i;
           ^
-%Error: t/t_var_dup_bad.v:31:11: Duplicate declaration of signal: 'oi'
+%Error: t/t_var_dup_bad.v:32:11: Duplicate declaration of signal: 'oi'
    input  oi;
           ^~
-        t/t_var_dup_bad.v:30:11: ... Location of original declaration
+        t/t_var_dup_bad.v:31:11: ... Location of original declaration
    output oi;
           ^~
-%Error: t/t_var_dup_bad.v:38:15: Duplicate declaration of signal: 'org'
+%Error: t/t_var_dup_bad.v:39:15: Duplicate declaration of signal: 'org'
    output reg org;
               ^~~
-        t/t_var_dup_bad.v:37:15: ... Location of original declaration
+        t/t_var_dup_bad.v:38:15: ... Location of original declaration
    output reg org;
               ^~~
-%Error: t/t_var_dup_bad.v:65:11: Duplicate declaration of signal: 'bad_reout_port'
+%Error: t/t_var_dup_bad.v:66:11: Duplicate declaration of signal: 'bad_reout_port'
    output bad_reout_port;
           ^~~~~~~~~~~~~~
-        t/t_var_dup_bad.v:63:11: ... Location of original declaration
+        t/t_var_dup_bad.v:64:11: ... Location of original declaration
    output bad_reout_port
           ^~~~~~~~~~~~~~
-%Error: t/t_var_dup_bad.v:72:9: Duplicate declaration of signal: 'bad_rewire'
+%Error: t/t_var_dup_bad.v:73:9: Duplicate declaration of signal: 'bad_rewire'
                               : ... note: ANSI ports must have type declared with the I/O (IEEE 1800-2017 23.2.2.2)
    wire bad_rewire;
         ^~~~~~~~~~
-        t/t_var_dup_bad.v:69:16: ... Location of original declaration
+        t/t_var_dup_bad.v:70:16: ... Location of original declaration
   (output wire bad_rewire,
                ^~~~~~~~~~
-%Error: t/t_var_dup_bad.v:73:9: Duplicate declaration of signal: 'bad_rereg'
+%Error: t/t_var_dup_bad.v:74:9: Duplicate declaration of signal: 'bad_rereg'
    reg  bad_rereg;
         ^~~~~~~~~
-        t/t_var_dup_bad.v:70:15: ... Location of original declaration
+        t/t_var_dup_bad.v:71:15: ... Location of original declaration
    output reg bad_rereg
               ^~~~~~~~~
-%Error: t/t_var_dup_bad.v:12:7: Duplicate declaration of port: 'oi'
+%Error: t/t_var_dup_bad.v:13:7: Duplicate declaration of port: 'oi'
    i, oi
       ^~
-        t/t_var_dup_bad.v:30:11: ... Location of original declaration
+        t/t_var_dup_bad.v:31:11: ... Location of original declaration
    output oi;
           ^~
-%Error: t/t_var_dup_bad.v:49:4: Duplicate declaration of port: 'bad_duport'
+%Error: t/t_var_dup_bad.v:50:4: Duplicate declaration of port: 'bad_duport'
    bad_duport
    ^~~~~~~~~~
-        t/t_var_dup_bad.v:51:11: ... Location of original declaration
+        t/t_var_dup_bad.v:52:11: ... Location of original declaration
    output bad_duport;
           ^~~~~~~~~~
-%Error: t/t_var_dup_bad.v:57:11: Duplicate declaration of port: 'bad_mixport'
+%Error: t/t_var_dup_bad.v:58:11: Duplicate declaration of port: 'bad_mixport'
    output bad_mixport
           ^~~~~~~~~~~
-        t/t_var_dup_bad.v:57:11: ... Location of original declaration
+        t/t_var_dup_bad.v:58:11: ... Location of original declaration
    output bad_mixport
           ^~~~~~~~~~~
-%Error: t/t_var_dup_bad.v:40:9: Can't find definition of variable: 'bad_duport'
+%Error: t/t_var_dup_bad.v:41:9: Can't find definition of variable: 'bad_duport'
    sub0 sub0(.*);
         ^~~~
-%Error: t/t_var_dup_bad.v:40:9: Duplicate pin connection: 'bad_duport'
+%Error: t/t_var_dup_bad.v:41:9: Duplicate pin connection: 'bad_duport'
    sub0 sub0(.*);
         ^~~~
-        t/t_var_dup_bad.v:40:9: ... Location of original pin connection
+        t/t_var_dup_bad.v:41:9: ... Location of original pin connection
    sub0 sub0(.*);
         ^~~~
-%Error: t/t_var_dup_bad.v:41:9: Can't find definition of variable: 'bad_mixport'
+%Error: t/t_var_dup_bad.v:42:9: Can't find definition of variable: 'bad_mixport'
                               : ... Suggested alternative: 'bad_duport'
    sub1 sub1(.*);
         ^~~~
-%Error: t/t_var_dup_bad.v:41:9: Duplicate pin connection: 'bad_mixport'
+%Error: t/t_var_dup_bad.v:42:9: Duplicate pin connection: 'bad_mixport'
    sub1 sub1(.*);
         ^~~~
-        t/t_var_dup_bad.v:41:9: ... Location of original pin connection
+        t/t_var_dup_bad.v:42:9: ... Location of original pin connection
    sub1 sub1(.*);
         ^~~~
-%Error: t/t_var_dup_bad.v:42:9: Can't find definition of variable: 'bad_reout_port'
+%Error: t/t_var_dup_bad.v:43:9: Can't find definition of variable: 'bad_reout_port'
                               : ... Suggested alternative: 'bad_duport'
    sub2 sub2(.*);
         ^~~~
-%Error: t/t_var_dup_bad.v:43:9: Can't find definition of variable: 'bad_rewire'
+%Error: t/t_var_dup_bad.v:44:9: Can't find definition of variable: 'bad_rewire'
    sub3 sub3(.*);
         ^~~~
-%Error: t/t_var_dup_bad.v:43:9: Can't find definition of variable: 'bad_rereg'
+%Error: t/t_var_dup_bad.v:44:9: Can't find definition of variable: 'bad_rereg'
                               : ... Suggested alternative: 'bad_rewire'
    sub3 sub3(.*);
         ^~~~

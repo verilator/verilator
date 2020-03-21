@@ -1,10 +1,11 @@
 #!/bin/bash -e
 # DESCRIPTION: Build SystemC in Ubuntu 18.04 with  different g++/gcc
 #
-# Copyright 2020 by Stefan Wallentowitz. This program is free
-# software; you can redistribute it and/or modify it under the terms
-# of either the GNU Lesser General Public License Version 3 or the
-# Perl Artistic License Version 2.0.
+# Copyright 2020 by Stefan Wallentowitz. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
+# Lesser General Public License Version 3 or the Perl Artistic License
+# Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 build_variant () {
     version=$($1 --version | grep gcc | awk '{print $4}')

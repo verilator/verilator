@@ -1,7 +1,7 @@
-%Error: t/t_pp_underline_bad.v:7:4: Extra underscore in meta-comment; use /*verilator {...}*/ not /*verilator_{...}*/
+%Error: t/t_pp_underline_bad.v:8:4: Extra underscore in meta-comment; use /*verilator {...}*/ not /*verilator_{...}*/
    // verilator_no_inline_module
    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-%Error: t/t_pp_underline_bad.v:7:4: Unknown verilator comment: /*verilator _no_inline_module*/
+%Error: t/t_pp_underline_bad.v:8:4: Unknown verilator comment: /*verilator _no_inline_module*/
    /*verilator _no_inline_module*/ 
    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 %Error: Exiting due to

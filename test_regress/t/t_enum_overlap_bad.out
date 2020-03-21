@@ -1,8 +1,8 @@
-%Error: t/t_enum_overlap_bad.v:11:11: Overlapping enumeration value: 'e1b'
+%Error: t/t_enum_overlap_bad.v:12:11: Overlapping enumeration value: 'e1b'
                                     : ... In instance t
           e1b=1
           ^~~
-        t/t_enum_overlap_bad.v:9:11: ... Location of original declaration
+        t/t_enum_overlap_bad.v:10:11: ... Location of original declaration
           e1,
           ^~
 %Error: Exiting due to

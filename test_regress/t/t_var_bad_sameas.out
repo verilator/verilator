@@ -1,31 +1,31 @@
-%Error: t/t_var_bad_sameas.v:9:8: Unsupported in C: Cell has the same name as variable: 'varfirst'
+%Error: t/t_var_bad_sameas.v:10:8: Unsupported in C: Cell has the same name as variable: 'varfirst'
    sub varfirst ();   
        ^~~~~~~~
-        t/t_var_bad_sameas.v:8:12: ... Location of original declaration
+        t/t_var_bad_sameas.v:9:12: ... Location of original declaration
    integer varfirst;
            ^~~~~~~~
-%Error: t/t_var_bad_sameas.v:10:9: Unsupported in C: Task has the same name as cell: 'varfirst'
+%Error: t/t_var_bad_sameas.v:11:9: Unsupported in C: Task has the same name as cell: 'varfirst'
    task varfirst; begin end endtask   
         ^~~~~~~~
-        t/t_var_bad_sameas.v:9:8: ... Location of original declaration
+        t/t_var_bad_sameas.v:10:8: ... Location of original declaration
    sub varfirst ();   
        ^~~~~~~~
-%Error: t/t_var_bad_sameas.v:13:12: Unsupported in C: Variable has same name as cell: 'cellfirst'
+%Error: t/t_var_bad_sameas.v:14:12: Unsupported in C: Variable has same name as cell: 'cellfirst'
    integer cellfirst;   
            ^~~~~~~~~
-%Error: t/t_var_bad_sameas.v:14:9: Unsupported in C: Task has the same name as cell: 'cellfirst'
+%Error: t/t_var_bad_sameas.v:15:9: Unsupported in C: Task has the same name as cell: 'cellfirst'
    task cellfirst; begin end endtask   
         ^~~~~~~~~
-        t/t_var_bad_sameas.v:12:8: ... Location of original declaration
+        t/t_var_bad_sameas.v:13:8: ... Location of original declaration
    sub cellfirst ();
        ^~~~~~~~~
-%Error: t/t_var_bad_sameas.v:17:12: Unsupported in C: Variable has same name as task: 'taskfirst'
+%Error: t/t_var_bad_sameas.v:18:12: Unsupported in C: Variable has same name as task: 'taskfirst'
    integer taskfirst;   
            ^~~~~~~~~
-%Error: t/t_var_bad_sameas.v:18:8: Unsupported in C: Cell has the same name as task: 'taskfirst'
+%Error: t/t_var_bad_sameas.v:19:8: Unsupported in C: Cell has the same name as task: 'taskfirst'
    sub taskfirst ();   
        ^~~~~~~~~
-        t/t_var_bad_sameas.v:16:9: ... Location of original declaration
+        t/t_var_bad_sameas.v:17:9: ... Location of original declaration
    task taskfirst; begin end endtask
         ^~~~~~~~~
 %Error: Exiting due to

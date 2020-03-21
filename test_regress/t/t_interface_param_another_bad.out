@@ -1,4 +1,4 @@
-%Error: t/t_interface_param_another_bad.v:8:42: Parameter-resolved constants must not use dotted references: 'dummy'
+%Error: t/t_interface_param_another_bad.v:9:42: Parameter-resolved constants must not use dotted references: 'dummy'
                                               : ... In instance t
    simple_bus #(.PARAMETER($bits(sb_intf.dummy))) simple();
                                          ^~~~~

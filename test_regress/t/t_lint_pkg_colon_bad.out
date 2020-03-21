@@ -1,8 +1,8 @@
-%Error: t/t_lint_pkg_colon_bad.v:6:23: syntax error, unexpected ::, expecting ')' or ','
+%Error: t/t_lint_pkg_colon_bad.v:7:23: syntax error, unexpected ::, expecting ')' or ','
 module t (input mispkg::foo_t a);
                       ^~
                                      : ... Perhaps 'mispkg' is a package which needs to be predeclared? (IEEE 1800-2017 26.3)
-%Error: t/t_lint_pkg_colon_bad.v:7:15: syntax error, unexpected ::, expecting ',' or ';'
+%Error: t/t_lint_pkg_colon_bad.v:8:15: syntax error, unexpected ::, expecting ',' or ';'
    reg mispkgb::bar_t b;
               ^~
 %Error: Exiting due to

@@ -1,4 +1,4 @@
-%Error: t/t_lint_comb_bad.v:13:16: syntax error, unexpected '@'
+%Error: t/t_lint_comb_bad.v:14:16: syntax error, unexpected '@'
    always_comb @(*) begin
                ^
 %Error: Cannot continue

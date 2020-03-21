@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2014 by Alex Solomatnikov.
+// SPDX-License-Identifier: CC0-1.0
 
 typedef logic [$clog2(26+1)-1:0] way_cnt_t;
 

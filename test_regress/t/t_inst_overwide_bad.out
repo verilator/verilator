@@ -1,17 +1,17 @@
-%Warning-WIDTH: t/t_inst_overwide.v:22:14: Output port connection 'outy_w92' expects 92 bits on the pin connection, but pin connection's VARREF 'outc_w30' generates 30 bits.
+%Warning-WIDTH: t/t_inst_overwide.v:23:14: Output port connection 'outy_w92' expects 92 bits on the pin connection, but pin connection's VARREF 'outc_w30' generates 30 bits.
                                          : ... In instance t
             .outy_w92   (outc_w30),      
              ^~~~~~~~
                 ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
-%Warning-WIDTH: t/t_inst_overwide.v:23:14: Output port connection 'outz_w22' expects 22 bits on the pin connection, but pin connection's VARREF 'outd_w73' generates 73 bits.
+%Warning-WIDTH: t/t_inst_overwide.v:24:14: Output port connection 'outz_w22' expects 22 bits on the pin connection, but pin connection's VARREF 'outd_w73' generates 73 bits.
                                          : ... In instance t
             .outz_w22   (outd_w73),      
              ^~~~~~~~
-%Warning-WIDTH: t/t_inst_overwide.v:26:14: Input port connection 'inw_w31' expects 31 bits on the pin connection, but pin connection's VARREF 'ina_w1' generates 1 bits.
+%Warning-WIDTH: t/t_inst_overwide.v:27:14: Input port connection 'inw_w31' expects 31 bits on the pin connection, but pin connection's VARREF 'ina_w1' generates 1 bits.
                                          : ... In instance t
             .inw_w31    (ina_w1),        
              ^~~~~~~
-%Warning-WIDTH: t/t_inst_overwide.v:27:14: Input port connection 'inx_w11' expects 11 bits on the pin connection, but pin connection's VARREF 'inb_w61' generates 61 bits.
+%Warning-WIDTH: t/t_inst_overwide.v:28:14: Input port connection 'inx_w11' expects 11 bits on the pin connection, but pin connection's VARREF 'inb_w61' generates 61 bits.
                                          : ... In instance t
             .inx_w11    (inb_w61)        
              ^~~~~~~

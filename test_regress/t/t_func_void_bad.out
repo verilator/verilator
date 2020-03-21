@@ -1,4 +1,4 @@
-%Warning-IGNOREDRETURN: t/t_func_void_bad.v:25:7: Ignoring return value of non-void function (IEEE 1800-2017 13.4.1)
+%Warning-IGNOREDRETURN: t/t_func_void_bad.v:26:7: Ignoring return value of non-void function (IEEE 1800-2017 13.4.1)
       f1(20);
       ^~
                         ... Use "/* verilator lint_off IGNOREDRETURN */" and lint_on around source to disable this message.

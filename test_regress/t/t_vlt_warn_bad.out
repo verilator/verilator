@@ -1,5 +1,9 @@
-%Warning-DEPRECATED: t/t_vlt_warn_bad.vlt:11:10: Deprecated -msg in configuration files, use -rule instead.
+%Warning-DEPRECATED: t/t_vlt_warn_bad.vlt:12:10: Deprecated -msg in configuration files, use -rule instead.
 lint_off -msg WIDTH          -file "*/t_vlt_warn.v" -lines 19-19
          ^~~~
                      ... Use "/* verilator lint_off DEPRECATED */" and lint_on around source to disable this message.
+%Warning-WIDTH: t/t_vlt_warn.v:21:33: Operator ASSIGN expects 1 bits on the Assign RHS, but Assign RHS's CONST '2'h3' generates 2 bits.
+                                    : ... In instance t
+   reg width_warn3_var_line20 = 2'b11;   
+                                ^~~~~
 %Error: Exiting due to

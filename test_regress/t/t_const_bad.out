@@ -1,13 +1,13 @@
-%Warning-WIDTH: t/t_const_bad.v:12:39: Unsized constant being X/Z extended to 68 bits: ?32?bxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+%Warning-WIDTH: t/t_const_bad.v:13:39: Unsized constant being X/Z extended to 68 bits: ?32?bxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
                                      : ... In instance t
       if (68'hx_xxxxxxxx_xxxxxxxx !== 'dX) $stop;
                                       ^~~
                 ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
-%Warning-WIDTH: t/t_const_bad.v:13:39: Unsized constant being X/Z extended to 68 bits: ?32?bzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+%Warning-WIDTH: t/t_const_bad.v:14:39: Unsized constant being X/Z extended to 68 bits: ?32?bzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
                                      : ... In instance t
       if (68'hz_zzzzzzzz_zzzzzzzz !== 'dZ) $stop;
                                       ^~~
-%Warning-WIDTH: t/t_const_bad.v:14:39: Unsized constant being X/Z extended to 68 bits: ?32?bzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+%Warning-WIDTH: t/t_const_bad.v:15:39: Unsized constant being X/Z extended to 68 bits: ?32?bzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
                                      : ... In instance t
       if (68'h?_????????_???????? !== 'd?) $stop;
                                       ^~~

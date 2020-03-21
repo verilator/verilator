@@ -1,8 +1,8 @@
-%Warning-LITENDIAN: t/t_metacmt_onoff.v:5:8: Little bit endian vector: MSB < LSB of bit range: 0:1
+%Warning-LITENDIAN: t/t_metacmt_onoff.v:8:8: Little bit endian vector: MSB < LSB of bit range: 0:1
    reg [0:1] show1; /*verilator lint_off LITENDIAN*/  reg [0:2] ign2; /*verilator lint_on LITENDIAN*/   reg [0:3] show3;
        ^
                     ... Use "/* verilator lint_off LITENDIAN */" and lint_on around source to disable this message.
-%Warning-LITENDIAN: t/t_metacmt_onoff.v:5:109: Little bit endian vector: MSB < LSB of bit range: 0:3
+%Warning-LITENDIAN: t/t_metacmt_onoff.v:8:109: Little bit endian vector: MSB < LSB of bit range: 0:3
    reg [0:1] show1; /*verilator lint_off LITENDIAN*/  reg [0:2] ign2; /*verilator lint_on LITENDIAN*/   reg [0:3] show3;
                                                                                                             ^
 %Error: Exiting due to

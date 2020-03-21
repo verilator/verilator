@@ -1,4 +1,4 @@
-%Error: t/t_bitsel_const_bad.v:20:16: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'logic'
+%Error: t/t_bitsel_const_bad.v:21:16: Illegal bit or array select; type does not have a bit range, or bad dimension: data type is 'logic'
                                     : ... In instance t
    assign a = b[0];   
                ^

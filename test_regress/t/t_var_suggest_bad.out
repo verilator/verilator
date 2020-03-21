@@ -1,8 +1,8 @@
-%Error: t/t_var_suggest_bad.v:12:11: Can't find definition of variable: 'foobat'
+%Error: t/t_var_suggest_bad.v:13:11: Can't find definition of variable: 'foobat'
                                    : ... Suggested alternative: 'foobar'
       if (foobat) $stop;
           ^~~~~~
-%Error: t/t_var_suggest_bad.v:13:7: Can't find definition of task/function: 'boobat'
+%Error: t/t_var_suggest_bad.v:14:7: Can't find definition of task/function: 'boobat'
                                   : ... Suggested alternative: 'boobar'
       boobat;
       ^~~~~~

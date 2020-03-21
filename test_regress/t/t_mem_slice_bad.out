@@ -1,24 +1,24 @@
-%Error: t/t_mem_slice_bad.v:38:31: Slice selection index '[2:0]' outside data type's '[1:0]'
+%Error: t/t_mem_slice_bad.v:39:31: Slice selection index '[2:0]' outside data type's '[1:0]'
                                  : ... In instance t
    assign active_command3[1:0][2:0][3:0] = (use_AnB) ?  command_A3[1:0][2:0][3:0] : command_B3[1:0][1:0][3:0];
                               ^
-%Error: t/t_mem_slice_bad.v:38:36: Slice selection index '[3:0]' outside data type's '[2:0]'
+%Error: t/t_mem_slice_bad.v:39:36: Slice selection index '[3:0]' outside data type's '[2:0]'
                                  : ... In instance t
    assign active_command3[1:0][2:0][3:0] = (use_AnB) ?  command_A3[1:0][2:0][3:0] : command_B3[1:0][1:0][3:0];
                                    ^
-%Error: t/t_mem_slice_bad.v:38:72: Slice selection index '[2:0]' outside data type's '[1:0]'
+%Error: t/t_mem_slice_bad.v:39:72: Slice selection index '[2:0]' outside data type's '[1:0]'
                                  : ... In instance t
    assign active_command3[1:0][2:0][3:0] = (use_AnB) ?  command_A3[1:0][2:0][3:0] : command_B3[1:0][1:0][3:0];
                                                                        ^
-%Error: t/t_mem_slice_bad.v:38:77: Slice selection index '[3:0]' outside data type's '[2:0]'
+%Error: t/t_mem_slice_bad.v:39:77: Slice selection index '[3:0]' outside data type's '[2:0]'
                                  : ... In instance t
    assign active_command3[1:0][2:0][3:0] = (use_AnB) ?  command_A3[1:0][2:0][3:0] : command_B3[1:0][1:0][3:0];
                                                                             ^
-%Error: t/t_mem_slice_bad.v:38:105: Slice selection index '[3:0]' outside data type's '[1:0]'
+%Error: t/t_mem_slice_bad.v:39:105: Slice selection index '[3:0]' outside data type's '[1:0]'
                                   : ... In instance t
    assign active_command3[1:0][2:0][3:0] = (use_AnB) ?  command_A3[1:0][2:0][3:0] : command_B3[1:0][1:0][3:0];
                                                                                                         ^
-%Error: t/t_mem_slice_bad.v:50:41: Slice selection index '[8:0]' outside data type's '[7:0]'
+%Error: t/t_mem_slice_bad.v:51:41: Slice selection index '[8:0]' outside data type's '[7:0]'
                                  : ... In instance t
       active_command4[7:0] <= command_A4[8:0];
                                         ^

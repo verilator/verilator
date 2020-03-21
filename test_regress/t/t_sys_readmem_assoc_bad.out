@@ -1,8 +1,8 @@
-%Error: t/t_sys_readmem_assoc_bad.v:12:24: $readmemb address/key must be integral (IEEE 1800-2017 21.4.1)
+%Error: t/t_sys_readmem_assoc_bad.v:13:24: $readmemb address/key must be integral (IEEE 1800-2017 21.4.1)
                                          : ... In instance t
       $readmemb("not", assoc_bad_key);
                        ^~~~~~~~~~~~~
-%Error: t/t_sys_readmem_assoc_bad.v:13:24: Unsupported: $readmemb array values must be integral
+%Error: t/t_sys_readmem_assoc_bad.v:14:24: Unsupported: $readmemb array values must be integral
                                          : ... In instance t
       $readmemb("not", assoc_bad_value);
                        ^~~~~~~~~~~~~~~

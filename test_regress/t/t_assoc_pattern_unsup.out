@@ -1,4 +1,4 @@
-%Error: t/t_assoc_pattern_unsup.v:18:11: Unsupported: Assignment pattern applies against non struct/union data type: 'string[string]'
+%Error: t/t_assoc_pattern_unsup.v:19:11: Unsupported: Assignment pattern applies against non struct/union data type: 'string[string]'
                                        : ... In instance t
       a = '{ "f": "fooed", "b": "bared", default: "defaulted" };
           ^~

@@ -1,4 +1,4 @@
-%Error: t/t_inst_array_bad.v:18:28: Input port connection 'onebit' as part of a module instance array requires 1 or 8 bits, but connection's VARREF 'onebitbad' generates 9 bits.
+%Error: t/t_inst_array_bad.v:19:28: Input port connection 'onebit' as part of a module instance array requires 1 or 8 bits, but connection's VARREF 'onebitbad' generates 9 bits.
                                   : ... In instance t
    sub sub [7:0] (allbits, onebitbad, bitout);
                            ^~~~~~~~~

@@ -1,4 +1,4 @@
-%Warning-WIDTH: t/t_lint_repeat_bad.v:17:17: Operator ASSIGNW expects 1 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 2 bits.
+%Warning-WIDTH: t/t_lint_repeat_bad.v:18:17: Operator ASSIGNW expects 1 bits on the Assign RHS, but Assign RHS's VARREF 'a' generates 2 bits.
                                            : ... In instance t.sub2
    wire [0:0] b = a;
                 ^

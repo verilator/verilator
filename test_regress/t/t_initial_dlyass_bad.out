@@ -1,9 +1,9 @@
-%Warning-INITIALDLY: t/t_initial_dlyass.v:17:9: Delayed assignments (<=) in initial or final block
+%Warning-INITIALDLY: t/t_initial_dlyass.v:18:9: Delayed assignments (<=) in initial or final block
                                               : ... Suggest blocking assignments (=)
       a <= 22;
         ^~
                      ... Use "/* verilator lint_off INITIALDLY */" and lint_on around source to disable this message.
-%Warning-INITIALDLY: t/t_initial_dlyass.v:18:9: Delayed assignments (<=) in initial or final block
+%Warning-INITIALDLY: t/t_initial_dlyass.v:19:9: Delayed assignments (<=) in initial or final block
                                               : ... Suggest blocking assignments (=)
       b <= 33;
         ^~

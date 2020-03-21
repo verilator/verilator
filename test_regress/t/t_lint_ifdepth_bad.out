@@ -1,4 +1,4 @@
-%Warning-IFDEPTH: t/t_lint_ifdepth_bad.v:21:12: Deep 'if' statement; suggest unique/priority to avoid slow logic
+%Warning-IFDEPTH: t/t_lint_ifdepth_bad.v:22:12: Deep 'if' statement; suggest unique/priority to avoid slow logic
                                               : ... In instance t
       else if (value==11) begin end   
            ^~

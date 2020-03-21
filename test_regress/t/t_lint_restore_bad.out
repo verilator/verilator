@@ -1,4 +1,4 @@
-%Warning-WIDTH: t/t_lint_restore_bad.v:18:17: Operator ASSIGN expects 5 bits on the Assign RHS, but Assign RHS's CONST '64'h1' generates 64 bits.
+%Warning-WIDTH: t/t_lint_restore_bad.v:19:17: Operator ASSIGN expects 5 bits on the Assign RHS, but Assign RHS's CONST '64'h1' generates 64 bits.
                                             : ... In instance t
    initial five = 64'h1;
                 ^

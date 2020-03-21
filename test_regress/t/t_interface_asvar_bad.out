@@ -1,8 +1,8 @@
-%Error: t/t_interface_asvar_bad.v:28:16: Operator ASSIGN expected non-interface on Assign RHS but 'itf' is an interface.
+%Error: t/t_interface_asvar_bad.v:29:16: Operator ASSIGN expected non-interface on Assign RHS but 'itf' is an interface.
                                        : ... In instance t.source
       getter = itf;   
                ^~~
-%Error: t/t_interface_asvar_bad.v:29:23: Operator ADD expected non-interface on RHS but 'itf' is an interface.
+%Error: t/t_interface_asvar_bad.v:30:23: Operator ADD expected non-interface on RHS but 'itf' is an interface.
                                        : ... In instance t.source
       getter = 4'd3 + itf;   
                       ^~~

@@ -1,4 +1,4 @@
-%Error: t/t_func_task_bad.v:9:11: Illegal call of a task as a function: 'task_as_func'
+%Error: t/t_func_task_bad.v:10:11: Illegal call of a task as a function: 'task_as_func'
       if (task_as_func(1'b0)) $stop;
           ^~~~~~~~~~~~
 %Error: Exiting due to

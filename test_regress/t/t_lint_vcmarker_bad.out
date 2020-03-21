@@ -1,10 +1,10 @@
-%Error: t/t_lint_vcmarker_bad.v:8:1: version control conflict marker in file
+%Error: t/t_lint_vcmarker_bad.v:9:1: version control conflict marker in file
 <<<<<<< HEAD   
 ^~~~~~~~~~~~~~~
-%Error: t/t_lint_vcmarker_bad.v:10:1: version control conflict marker in file
+%Error: t/t_lint_vcmarker_bad.v:11:1: version control conflict marker in file
 =======    
 ^~~~~~~~~~~
-%Error: t/t_lint_vcmarker_bad.v:12:1: version control conflict marker in file
+%Error: t/t_lint_vcmarker_bad.v:13:1: version control conflict marker in file
 >>>>>>> MERGE   
 ^~~~~~~~~~~~~~~~
 %Error: Exiting due to

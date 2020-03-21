@@ -1,4 +1,4 @@
-%Warning-WIDTH: t/t_dynarray_bad.v:14:11: Operator NEWDYNAMIC expects 32 bits on the new() size, but new() size's VARREF 's' generates 64 bits.
+%Warning-WIDTH: t/t_dynarray_bad.v:15:11: Operator NEWDYNAMIC expects 32 bits on the new() size, but new() size's VARREF 's' generates 64 bits.
                                         : ... In instance t
       a = new [s];   
           ^~~

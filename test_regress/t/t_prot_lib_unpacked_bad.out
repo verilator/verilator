@@ -1,7 +1,7 @@
-%Error: t/t_prot_lib_unpacked_bad.v:6:28: Unsupported: unpacked arrays with protect-lib on 'unpacked_in'
+%Error: t/t_prot_lib_unpacked_bad.v:7:28: Unsupported: unpacked arrays with protect-lib on 'unpacked_in'
                     input  unpacked_in [7:0],
                            ^~~~~~~~~~~
-%Error: t/t_prot_lib_unpacked_bad.v:7:28: Unsupported: unpacked arrays with protect-lib on 'unpacked_out'
+%Error: t/t_prot_lib_unpacked_bad.v:8:28: Unsupported: unpacked arrays with protect-lib on 'unpacked_out'
                     output unpacked_out [7:0]);
                            ^~~~~~~~~~~~
 %Error: Exiting due to

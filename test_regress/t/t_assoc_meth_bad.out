@@ -1,36 +1,36 @@
-%Error: t/t_assoc_meth_bad.v:13:13: The 1 arguments passed to .num method does not match its requiring 0 arguments
+%Error: t/t_assoc_meth_bad.v:14:13: The 1 arguments passed to .num method does not match its requiring 0 arguments
                                   : ... In instance t
       v = a.num("badarg");
             ^~~
-%Error: t/t_assoc_meth_bad.v:14:13: The 1 arguments passed to .size method does not match its requiring 0 arguments
+%Error: t/t_assoc_meth_bad.v:15:13: The 1 arguments passed to .size method does not match its requiring 0 arguments
                                   : ... In instance t
       v = a.size("badarg");
             ^~~~
-%Error: t/t_assoc_meth_bad.v:15:13: The 0 arguments passed to .exists method does not match its requiring 1 arguments
+%Error: t/t_assoc_meth_bad.v:16:13: The 0 arguments passed to .exists method does not match its requiring 1 arguments
                                   : ... In instance t
       v = a.exists();   
             ^~~~~~
-%Error: t/t_assoc_meth_bad.v:16:13: The 2 arguments passed to .exists method does not match its requiring 1 arguments
+%Error: t/t_assoc_meth_bad.v:17:13: The 2 arguments passed to .exists method does not match its requiring 1 arguments
                                   : ... In instance t
       v = a.exists(k, "bad2");
             ^~~~~~
-%Error: t/t_assoc_meth_bad.v:17:13: The 0 arguments passed to .first method does not match its requiring 1 arguments
+%Error: t/t_assoc_meth_bad.v:18:13: The 0 arguments passed to .first method does not match its requiring 1 arguments
                                   : ... In instance t
       v = a.first();   
             ^~~~~
-%Error: t/t_assoc_meth_bad.v:18:13: The 2 arguments passed to .next method does not match its requiring 1 arguments
+%Error: t/t_assoc_meth_bad.v:19:13: The 2 arguments passed to .next method does not match its requiring 1 arguments
                                   : ... In instance t
       v = a.next(k, "bad2");   
             ^~~~
-%Error: t/t_assoc_meth_bad.v:19:13: The 0 arguments passed to .last method does not match its requiring 1 arguments
+%Error: t/t_assoc_meth_bad.v:20:13: The 0 arguments passed to .last method does not match its requiring 1 arguments
                                   : ... In instance t
       v = a.last();   
             ^~~~
-%Error: t/t_assoc_meth_bad.v:20:13: The 2 arguments passed to .prev method does not match its requiring 1 arguments
+%Error: t/t_assoc_meth_bad.v:21:13: The 2 arguments passed to .prev method does not match its requiring 1 arguments
                                   : ... In instance t
       v = a.prev(k, "bad2");   
             ^~~~
-%Error: t/t_assoc_meth_bad.v:21:9: The 2 arguments passed to .delete method does not match its requiring 0 to 1 arguments
+%Error: t/t_assoc_meth_bad.v:22:9: The 2 arguments passed to .delete method does not match its requiring 0 to 1 arguments
                                  : ... In instance t
       a.delete(k, "bad2");
         ^~~~~~

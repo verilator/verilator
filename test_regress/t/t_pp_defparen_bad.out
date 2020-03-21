@@ -1,7 +1,7 @@
-%Error: t/t_pp_defparen_bad.v:9:2: Illegal text before '(' that starts define arguments
+%Error: t/t_pp_defparen_bad.v:10:2: Illegal text before '(' that starts define arguments
  ( 1,2)
  ^
-%Error: t/t_pp_defparen_bad.v:9:2: syntax error, unexpected '('
+%Error: t/t_pp_defparen_bad.v:10:2: syntax error, unexpected '('
 ((val  1) + (2))
  ^
 %Error: Exiting due to

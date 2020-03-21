@@ -1,4 +1,4 @@
-%Error: t/t_fuzz_negwidth_bad.v:8:9: Unsupported: Width of number exceeds implementation limit: 1231232312312312'd1  (IEEE 1800-2017 6.9.1)
+%Error: t/t_fuzz_negwidth_bad.v:9:9: Unsupported: Width of number exceeds implementation limit: 1231232312312312'd1  (IEEE 1800-2017 6.9.1)
 int c = 1231232312312312'd1;
         ^~~~~~~~~~~~~~~~~~~
 %Error: Exiting due to

@@ -1,4 +1,4 @@
-%Error: t/t_mem_packed_bad.v:26:32: CONST '28'h0' unexpected in assignment to unpacked array
+%Error: t/t_mem_packed_bad.v:27:32: CONST '28'h0' unexpected in assignment to unpacked array
       ch04                  <= 56'd0;
                                ^~~~~
 %Error: Exiting due to

@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2013 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2013 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 // This test demonstrates how not only parameters but the type of a parent
 // interface could propagate down to child modules, changing their data type

@@ -1,9 +1,9 @@
-%Warning-WIDTH: t/t_func_bad_width.v:12:13: Operator FUNCREF 'MUX' expects 40 bits on the Function Argument, but Function Argument's VARREF 'in' generates 39 bits.
+%Warning-WIDTH: t/t_func_bad_width.v:13:13: Operator FUNCREF 'MUX' expects 40 bits on the Function Argument, but Function Argument's VARREF 'in' generates 39 bits.
                                           : ... In instance t
       out = MUX (in);
             ^~~
                 ... Use "/* verilator lint_off WIDTH */" and lint_on around source to disable this message.
-%Warning-WIDTH: t/t_func_bad_width.v:12:11: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS's FUNCREF 'MUX' generates 32 bits.
+%Warning-WIDTH: t/t_func_bad_width.v:13:11: Operator ASSIGN expects 4 bits on the Assign RHS, but Assign RHS's FUNCREF 'MUX' generates 32 bits.
                                           : ... In instance t
       out = MUX (in);
           ^

@@ -1,12 +1,12 @@
-%Error: t/t_string_type_methods_bad.v:14:13: The 1 arguments passed to .len method does not match its requiring 0 arguments
+%Error: t/t_string_type_methods_bad.v:15:13: The 1 arguments passed to .len method does not match its requiring 0 arguments
                                            : ... In instance t
       i = s.len(0);  
             ^~~
-%Error: t/t_string_type_methods_bad.v:15:9: The 0 arguments passed to .itoa method does not match its requiring 1 arguments
+%Error: t/t_string_type_methods_bad.v:16:9: The 0 arguments passed to .itoa method does not match its requiring 1 arguments
                                           : ... In instance t
       s.itoa;   
         ^~~~
-%Error: t/t_string_type_methods_bad.v:16:9: The 3 arguments passed to .itoa method does not match its requiring 1 arguments
+%Error: t/t_string_type_methods_bad.v:17:9: The 3 arguments passed to .itoa method does not match its requiring 1 arguments
                                           : ... In instance t
       s.itoa(1,2,3);   
         ^~~~

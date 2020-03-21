@@ -1,13 +1,13 @@
-%Error: t/t_concat_link_bad.v:24:20: Syntax Error: Not expecting REPLICATE under a DOT in dotted expression
+%Error: t/t_concat_link_bad.v:13:20: Syntax Error: Not expecting REPLICATE under a DOT in dotted expression
     assign bar_s = {foo_s, foo_s}.f1;
                    ^
-%Error: t/t_concat_link_bad.v:24:26: Syntax Error: Not expecting CONCAT under a REPLICATE in dotted expression
+%Error: t/t_concat_link_bad.v:13:26: Syntax Error: Not expecting CONCAT under a REPLICATE in dotted expression
     assign bar_s = {foo_s, foo_s}.f1;
                          ^
-%Error: t/t_concat_link_bad.v:24:20: Syntax Error: Not expecting CONST under a REPLICATE in dotted expression
+%Error: t/t_concat_link_bad.v:13:20: Syntax Error: Not expecting CONST under a REPLICATE in dotted expression
     assign bar_s = {foo_s, foo_s}.f1;
                    ^
-%Warning-IMPLICIT: t/t_concat_link_bad.v:24:12: Signal definition not found, creating implicitly: 'bar_s'
+%Warning-IMPLICIT: t/t_concat_link_bad.v:13:12: Signal definition not found, creating implicitly: 'bar_s'
     assign bar_s = {foo_s, foo_s}.f1;
            ^~~~~
                    ... Use "/* verilator lint_off IMPLICIT */" and lint_on around source to disable this message.

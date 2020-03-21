@@ -1,4 +1,4 @@
-%Error: t/t_inst_misarray_bad.v:16:27: VARREF 't.foo' is not an unpacked array, but is in an unpacked array context
+%Error: t/t_inst_misarray_bad.v:17:27: VARREF 't.foo' is not an unpacked array, but is in an unpacked array context
                                      : ... In instance t.foo
                      .foo(foo));   
                           ^~~

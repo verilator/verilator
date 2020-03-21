@@ -1,4 +1,4 @@
-%Error: t/t_param_default_bad.v:6:26: Parameter requires default value, or use IEEE 1800-2009 or later.
+%Error: t/t_param_default_bad.v:7:26: Parameter requires default value, or use IEEE 1800-2009 or later.
 module m #(parameter int Foo);
                          ^~~
 %Error: Exiting due to
