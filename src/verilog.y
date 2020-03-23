@@ -3696,6 +3696,8 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//
 	//			// IEEE: inc_or_dec_expression
 	//UNSUP	~l~inc_or_dec_expression		{ UNSUP }
+	|	yP_MINUSMINUS ~r~expr			{ $$ = new AstSub($1, $2, new AstConst($1, 1)); }
+	|	yP_PLUSPLUS ~r~expr			{ $$ = new AstAdd($1, $2, new AstConst($1, 1)); }
 	//
 	//			// IEEE: '(' operator_assignment ')'
 	//			// Need exprScope of variable_lvalue to prevent conflict
