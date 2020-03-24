@@ -156,10 +156,10 @@ VerilatedVcd::VerilatedVcd(VerilatedVcdFile* filep)
 
 void VerilatedVcd::open(const char* filename) {
     m_assertOne.check();
-    if (isOpen() || !filename || !*filename) return;
+    if (isOpen()) return;
 
     // Set member variables
-    m_filename = filename;
+    m_filename = filename;  // "" is ok, as someone may overload open
     VerilatedVcdSingleton::pushVcd(this);
 
     // SPDIFF_OFF
