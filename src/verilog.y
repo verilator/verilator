@@ -1788,7 +1788,12 @@ enum_base_typeE<dtypep>:	// IEEE: enum_base_type
 	|	integer_vector_type signingE rangeListE	{ $1->setSignedState($2); $$ = GRAMMARP->addRange($1,$3,true); }
 	//			// below can be idAny or yaID__aTYPE
 	//			// IEEE requires a type, though no shift conflict if idAny
-	|	idAny rangeListE			{ $$ = GRAMMARP->createArray(new AstRefDType($<fl>1, *$1), $2, true); }
+	//			// IEEE: type_identifier [ packed_dimension ]
+	//			// however other simulators allow [ class_scope | package_scope ] type_identifier
+	|	idAny rangeListE
+			{ $$ = GRAMMARP->createArray(new AstRefDType($<fl>1, *$1), $2, true); }
+	|	package_scopeIdFollows idRefDType rangeListE
+			{ $2->packagep($1); $$ = GRAMMARP->createArray($2, $3, true); }
 	;
 
 enum_nameList<nodep>:
