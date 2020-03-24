@@ -1,0 +1,6 @@
+%Warning-HIERBLOCK: t/t_hier_block_bad1.v:8:8: Top module is marked hierachy block. Ignore the setting.
+                                             : ... In instance t
+    8 | module t ( 
+      |        ^
+                    ... Use "/* verilator lint_off HIERBLOCK */" and lint_on around source to disable this message.
+%Error: Exiting due to
