@@ -197,6 +197,7 @@ private:
     bool        m_doGenerate;   // Do errors later inside generate statement
     int         m_dtTables;     // Number of created data type tables
     TableMap    m_tableMap;     // Created tables so can remove duplicates
+    bool        m_leaveTypeof;  // Don't clean up type-of children
 
     // ENUMS
     enum ExtendRule {
@@ -1304,7 +1305,8 @@ private:
             userIterateAndNext(nodep->typeofp(), WidthVP(SELF, BOTH).p());
             AstNode* typeofp = nodep->typeofp();
             nodep->refDTypep(typeofp->dtypep());
-            VL_DO_DANGLING(typeofp->unlinkFrBack()->deleteTree(), typeofp);
+            if (!m_leaveTypeof)
+                VL_DO_DANGLING(typeofp->unlinkFrBack()->deleteTree(), typeofp);
             // We had to use AstRefDType for this construct as pointers to this type
             // in type table are still correct (which they wouldn't be if we replaced the node)
         }
@@ -3576,11 +3578,33 @@ private:
 
     void visit_cmp_eq_type(AstNodeBiop* nodep) {
         if (m_vup->prelim()) {
+            // don't clean up types which may not be in the type table
+            // we're going to remove this whole sub-tree anyway
+            m_leaveTypeof = true;
             userIterateAndNext(nodep->lhsp(), WidthVP(CONTEXT, PRELIM).p());
             userIterateAndNext(nodep->rhsp(), WidthVP(CONTEXT, PRELIM).p());
-            // TODO -- remove
-            UINFO(1,"Type comparision LHS : "<<nodep->lhsp()<<endl);
-            UINFO(1,"Type comparision RHS : "<<nodep->rhsp()<<endl);
+            m_leaveTypeof = false;
+            bool equal = false;
+            AstRefDType* refLhsp = VN_CAST(nodep->lhsp(), RefDType);
+            AstRefDType* refRhsp = VN_CAST(nodep->rhsp(), RefDType);
+            if (refLhsp && refRhsp) {
+                AstNodeDType* typeLhsp = refLhsp->refDTypep();
+                AstNodeDType* typeRhsp = refRhsp->refDTypep();
+                if (AstBasicDType* basicLhsp = VN_CAST(typeLhsp, BasicDType)) {
+                    if (VN_IS(typeRhsp, BasicDType) && basicLhsp->same(typeRhsp)) {
+                        equal = true;
+                    }
+                } else {
+                    nodep->v3fatalSrc("TODO -- handle this");
+                }
+            } else {
+                nodep->v3fatalSrc("TODO -- also handle this");
+            }
+            bool isNot = VN_IS(nodep, NeqT);
+            uint32_t value = equal ^ isNot ? 1 : 0;
+            nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::WidthedValue(),
+                                            1, value));
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
 
@@ -4914,6 +4938,7 @@ public:
         m_doGenerate = doGenerate;
         m_dtTables = 0;
         m_vup = NULL;
+        m_leaveTypeof = false;
     }
     AstNode* mainAcceptEdit(AstNode* nodep) {
         return userIterateSubtreeReturnEdits(nodep, WidthVP(SELF, BOTH).p());
