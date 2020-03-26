@@ -17,6 +17,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix packages as enum base types, #2202. [Driss Hafdi]
 
+****  Fix duplicate typedefs in generate for, #2205. [hdzhangdoc]
+
 
 * Verilator 4.030 2020-03-08
 
