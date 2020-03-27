@@ -3585,6 +3585,8 @@ private:
             userIterateAndNext(nodep->rhsp(), WidthVP(CONTEXT, PRELIM).p());
             m_leaveTypeof = false;
             bool equal = false;
+            // TODO -- remove
+            nodep->dumpTree(cout, "typeCompare: ");
             AstRefDType* refLhsp = VN_CAST(nodep->lhsp(), RefDType);
             AstRefDType* refRhsp = VN_CAST(nodep->rhsp(), RefDType);
             if (refLhsp && refRhsp) {
@@ -3592,9 +3594,16 @@ private:
                 AstNodeDType* typeRhsp = refRhsp->refDTypep();
                 if (AstBasicDType* basicLhsp = VN_CAST(typeLhsp, BasicDType)) {
                     AstBasicDType* basicRhsp = VN_CAST(typeRhsp, BasicDType);
-                    if (basicRhsp && basicLhsp->same(typeRhsp)
-                        && basicLhsp->isSigned() == basicRhsp->isSigned()) {
-                        equal = true;
+                    // QUESTION -- AstBasicDType::same() doesn't check signedness . . . should it?
+                    if (basicRhsp && basicLhsp->isSigned() == basicRhsp->isSigned()) {
+                        AstBasicDTypeKwd kwdLhs = basicLhsp->keyword();
+                        AstBasicDTypeKwd kwdRhs = basicRhsp->keyword();
+                        if (basicLhsp->same(typeRhsp) ||
+                            (kwdLhs.isIntNumeric() && kwdRhs.isIntNumeric()
+                             && kwdLhs.isFourstate() == kwdRhs.isFourstate()
+                             && basicLhsp->nrange() == basicRhsp->nrange())) {
+                            equal = true;
+                        }
                     }
                 } else if (refLhsp->dtypep() == refRhsp->dtypep()) {
                     equal = true;
