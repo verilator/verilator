@@ -3592,19 +3592,10 @@ private:
             if (refLhsp && refRhsp) {
                 AstNodeDType* typeLhsp = refLhsp->refDTypep();
                 AstNodeDType* typeRhsp = refRhsp->refDTypep();
-                if (AstBasicDType* basicLhsp = VN_CAST(typeLhsp, BasicDType)) {
-                    AstBasicDType* basicRhsp = VN_CAST(typeRhsp, BasicDType);
-                    // QUESTION -- AstBasicDType::same() doesn't check signedness . . . should it?
-                    if (basicRhsp && basicLhsp->isSigned() == basicRhsp->isSigned()) {
-                        AstBasicDTypeKwd kwdLhs = basicLhsp->keyword();
-                        AstBasicDTypeKwd kwdRhs = basicRhsp->keyword();
-                        if (basicLhsp->same(typeRhsp) ||
-                            (kwdLhs.isIntNumeric() && kwdRhs.isIntNumeric()
-                             && kwdLhs.isFourstate() == kwdRhs.isFourstate()
-                             && basicLhsp->nrange() == basicRhsp->nrange())) {
-                            equal = true;
-                        }
-                    }
+                AstBasicDType* basicLhsp = VN_CAST(typeLhsp, BasicDType);
+                AstBasicDType* basicRhsp = VN_CAST(typeRhsp, BasicDType);
+                if (basicLhsp && basicRhsp && basicLhsp->matching(basicRhsp)) {
+                    equal = true;
                 } else if (refLhsp->dtypep() == refRhsp->dtypep()) {
                     equal = true;
                 }

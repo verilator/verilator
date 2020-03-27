@@ -673,6 +673,16 @@ public:
     virtual bool same(const AstNode* samep) const {  // width/widthMin/numeric compared elsewhere
         const AstBasicDType* sp = static_cast<const AstBasicDType*>(samep);
         return m == sp->m; }
+    bool matching(const AstBasicDType* matchp) {
+        if (isSigned() == matchp->isSigned()
+            && (same(matchp) ||
+                (isIntNumeric() && matchp->isIntNumeric()
+                 && isFourstate() == matchp->isFourstate()
+                 && nrange() == matchp->nrange()))) {
+            return true;
+        }
+        return false;
+    }
     virtual bool similarDType(AstNodeDType* samep) const {
         return type()==samep->type() && same(samep); }
     virtual string name() const { return m.m_keyword.ascii(); }
@@ -700,6 +710,7 @@ public:
     bool isString() const { return keyword().isString(); }
     bool isSloppy() const { return keyword().isSloppy(); }
     bool isZeroInit() const { return keyword().isZeroInit(); }
+    bool isIntNumeric() const { return keyword().isIntNumeric(); }
     bool isRanged() const { return rangep() || m.m_nrange.ranged(); }
     const VNumRange& nrange() const { return m.m_nrange; }  // Generally the msb/lsb/etc funcs should be used instead
     int msb() const { return (rangep() ? rangep()->msbConst() : m.m_nrange.hi()); }
