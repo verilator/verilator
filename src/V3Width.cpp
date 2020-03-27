@@ -3594,8 +3594,8 @@ private:
                     if (VN_IS(typeRhsp, BasicDType) && basicLhsp->same(typeRhsp)) {
                         equal = true;
                     }
-                } else {
-                    nodep->v3fatalSrc("TODO -- handle this");
+                } else if (refLhsp->dtypep() == refRhsp->dtypep()) {
+                    equal = true;
                 }
             } else {
                 nodep->v3fatalSrc("TODO -- also handle this");
