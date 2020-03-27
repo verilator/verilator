@@ -79,6 +79,8 @@ module t();
    typedef byte MEM_BYTES [256];
    typedef bit signed [7:0] MY_MEM_BYTES [256];     // MY_MEM_BYTES matches
                                                     // MEM_BYTES
+   typedef byte [255:0] MEM_BYTES_PACKED;
+   typedef bit signed [7:0] [255:0] MY_MEM_BYTES_PACKED;
    typedef logic [1:0] [3:0] NIBBLES;
    typedef logic [7:0] MY_BYTE; // MY_BYTE and NIBBLES are not matching types
    typedef logic MD_ARY [][2:0];
@@ -109,6 +111,11 @@ module t();
       if (type(BYTE) != type(byte)) $stop();
       if (type(ETYB) == type(byte)) $stop();
       if (type(BYTE) == type(UNSIGNED_BYTE)) $stop();
+      if (type(MEM_BYTES) != type(MY_MEM_BYTES)) $stop();
+//      if (type(MEM_BYTES_PACKED) != type(MY_MEM_BYTES_PACKED)) $stop();
+//      if (type(NIBBLES) == type(MY_BYTE)) $stop();
+//      if (type(MD_ARY) == type(MD_ARY_TOO)) $stop();
+//      if (type(MY_CHAR) != type(byte)) $stop();
       // TODO -- the rest
       // TODO -- case equal/not equal, ===, !===
    end
