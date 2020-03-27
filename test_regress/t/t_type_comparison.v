@@ -83,6 +83,10 @@ module t();
       if (type(type1) != type(type2)) $stop();
       if (type(AB1) != type(AB2)) $stop();
       if (type(AB3) == type(AB1)) $stop();
+      if (type(AB4) != type(AB5)) $stop();
+      if (type(AB6) == type(AB4)) $stop();
+      if (type(AB6) == type(AB5)) $stop();
+      if (type(BYTE) != type(byte)) $stop();
       // TODO -- the rest
       // TODO -- case equal/not equal, ===, !===
    end
