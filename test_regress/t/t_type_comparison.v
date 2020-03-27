@@ -47,6 +47,16 @@ module t();
       .b_type (real)) the_foo ();
 
    // From 6.22.1 (mostly)
+   shortint shortint_v;
+   int int_v;
+   longint longint_v;
+   byte byte_v;
+   bit bit_v;
+   logic logic_v;
+   reg reg_v;
+   integer integer_v;
+   time time_v;
+
    typedef bit node;        // 'bit' and 'node' are matching types
    typedef node type1;
    typedef type1 type2;     // 'type1' and 'type2' are matching types
@@ -64,6 +74,7 @@ module t();
    /* verilator lint_off LITENDIAN */
    typedef bit signed [0:7] ETYB;   // does not match the byte type
    /* verilator lint_on LITENDIAN */
+   typedef bit [7:0] UNSIGNED_BYTE;   // also does not match the byte type
 
    typedef byte MEM_BYTES [256];
    typedef bit signed [7:0] MY_MEM_BYTES [256];     // MY_MEM_BYTES matches
@@ -79,6 +90,15 @@ module t();
    //import the_pkg::*;
 
    initial begin
+      if (type(shortint) != type(shortint_v)) $stop();
+      if (type(int) != type(int_v)) $stop();
+      if (type(longint) != type(longint_v)) $stop();
+      if (type(byte) != type(byte_v)) $stop();
+      if (type(bit) != type(bit_v)) $stop();
+      if (type(logic) != type(logic_v)) $stop();
+      if (type(reg) != type(reg_v)) $stop();
+      if (type(integer) != type(integer_v)) $stop();
+      if (type(time) != type(time_v)) $stop();
       if (type(bit) != type(node)) $stop();
       if (type(type1) != type(type2)) $stop();
       if (type(AB1) != type(AB2)) $stop();
@@ -87,6 +107,8 @@ module t();
       if (type(AB6) == type(AB4)) $stop();
       if (type(AB6) == type(AB5)) $stop();
       if (type(BYTE) != type(byte)) $stop();
+      if (type(ETYB) == type(byte)) $stop();
+      if (type(BYTE) == type(UNSIGNED_BYTE)) $stop();
       // TODO -- the rest
       // TODO -- case equal/not equal, ===, !===
    end
