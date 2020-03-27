@@ -3591,7 +3591,9 @@ private:
                 AstNodeDType* typeLhsp = refLhsp->refDTypep();
                 AstNodeDType* typeRhsp = refRhsp->refDTypep();
                 if (AstBasicDType* basicLhsp = VN_CAST(typeLhsp, BasicDType)) {
-                    if (VN_IS(typeRhsp, BasicDType) && basicLhsp->same(typeRhsp)) {
+                    AstBasicDType* basicRhsp = VN_CAST(typeRhsp, BasicDType);
+                    if (basicRhsp && basicLhsp->same(typeRhsp)
+                        && basicLhsp->isSigned() == basicRhsp->isSigned()) {
                         equal = true;
                     }
                 } else if (refLhsp->dtypep() == refRhsp->dtypep()) {
