@@ -566,6 +566,10 @@ bool VerilatedVpi::callCbs(vluint32_t reason) VL_MT_UNSAFE_ONE {
     return VerilatedVpiImp::callCbs(reason);
 }
 
+QData VerilatedVpi::cbNextDeadline() VL_MT_UNSAFE_ONE {
+    return VerilatedVpiImp::cbNextDeadline();
+}
+
 //======================================================================
 // VerilatedVpiImp implementation
 
