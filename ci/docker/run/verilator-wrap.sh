@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 # DESCRIPTION: Wrap a Verilator call and copy vlt includes
 #              (inside docker container)
 #
