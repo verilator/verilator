@@ -1,7 +1,7 @@
-= Verilator Build Environment
+= Verilator Docker Build Environment
 
-This container is set up to compile and test a Verilator build based
-on the following parameters:
+This Verilator Build container is set up to compile and test a Verilator
+build. It uses the following parameters:
 
 * Source repository (default: https://github.com/verilator/verilator)
 * Source revision (default: master)
@@ -10,7 +10,7 @@ on the following parameters:
 The container is published as `verilator/verilator-buildenv` on
 https://hub.docker.com/repository/docker/verilator/verilator-buildenv[docker hub].
 
-To run the basic build of current master:
+To run the basic build using the current Verilator master:
 
     docker run -ti verilator/verilator-buildenv
 
@@ -18,7 +18,7 @@ To also run tests:
 
     docker run -ti verilator/verilator-buildenv test
 
-Change the compiler:
+To change the compiler:
 
     docker run -ti -e CC=gcc-4.8 -e CXX=g++-4.8 verilator/verilator-buildenv test
 
@@ -29,22 +29,21 @@ To run those too:
 docker run -ti -v ${PWD}:/tmp/repo -e REPO=/tmp/repo -e REV=`git rev-parse --short HEAD` -e CC=gcc-4.8 -e CXX=g++-4.8 --cap-add=SYS_PTRACE --security-opt seccomp=unconfined verilator/verilator-buildenv test
 ....
 
-You may want to avoid pushing your changes to a remote repository and
-instead use a local working copy. You can mount the local working copy
-path as a volume and use this as repo. Be careful, that it can only
-use committed changes, so you may want to use a work-in-progress
-commit or so. To build the current HEAD from top of a repository:
+Rather then building using a remote git repository you may prefer to use a
+working copy on the local filesystem. Mount the local working copy path as
+a volume and use that in place of git. When doing this be careful to have
+all changes committed to the local git area. To build the current HEAD from
+top of a repository:
 
 ....
 docker run -ti -v ${PWD}:/tmp/repo -e REPO=/tmp/repo -e REV=`git rev-parse --short HEAD` --cap-add=SYS_PTRACE --security-opt seccomp=unconfined verilator/verilator-buildenv test
 ....
 
-== Under the Hood
+== Rebuilding
 
-To rebuild the image, simply run:
+To rebuild the Verilator-buildenv docker image, run:
 
     docker build .
 
-It will build SystemC in all supported compiler variants to reduce the
-impact on testing cycles. A build script will be the entrypoint to the
-container that will perform a standard build and test procedure.
+This will also build SystemC under all supported compiler variants to
+reduce the SystemC testing time.
