@@ -9,6 +9,10 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 perl /usr/local/bin/verilator "$@"
+status=$?
+if [ $status -ne 0 ]; then
+    exit $status
+fi
 
 # Check if user set an obj_dir
 obj_dir=$(echo " $@" | grep -oP '\s--Mdir\s*\K\S+')
