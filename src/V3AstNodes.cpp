@@ -499,31 +499,21 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
         arg = "const svOpenArrayHandle";
     } else if (!basicp()) {
         arg = "UNKNOWN";
-    } else if (basicp()->keyword().isDpiBitVal()) {
-        if (widthMin() == 1) {
-            arg = "unsigned char";
-            if (!forReturn && isWritable()) arg += "*";
+    } else if (basicp()->isDpiBitVec()) {
+        if (forReturn) {
+            arg = "svBitVecVal";
+        } else if (isReadOnly()) {
+            arg = "const svBitVecVal*";
         } else {
-            if (forReturn) {
-                arg = "svBitVecVal";
-            } else if (isReadOnly()) {
-                arg = "const svBitVecVal*";
-            } else {
-                arg = "svBitVecVal*";
-            }
+            arg = "svBitVecVal*";
         }
-    } else if (basicp()->keyword().isDpiLogicVal()) {
-        if (widthMin() == 1) {
-            arg = "unsigned char";
-            if (!forReturn && isWritable()) arg += "*";
+    } else if (basicp()->isDpiLogicVec()) {
+        if (forReturn) {
+            arg = "svLogicVecVal";
+        } else if (isReadOnly()) {
+            arg = "const svLogicVecVal*";
         } else {
-            if (forReturn) {
-                arg = "svLogicVecVal";
-            } else if (isReadOnly()) {
-                arg = "const svLogicVecVal*";
-            } else {
-                arg = "svLogicVecVal*";
-            }
+            arg = "svLogicVecVal*";
         }
     } else {
         arg = basicp()->keyword().dpiType();

@@ -246,7 +246,7 @@ int main() {
     for (int i = 0; !Verilated::gotFinish() && (i < 4); i++) {
         dut->clk = 1 - dut->clk;
         a = 1 - (int)a_read();
-        a_write(a);
+        a_write((const svBitVecVal*)&a);
         logReg(dut->clk, "write a", a, " (before clk)");
         a = a_read();
         logReg(dut->clk, "read  a", a, " (before clk)");
