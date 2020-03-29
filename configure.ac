@@ -370,7 +370,12 @@ AC_SUBST(CFG_LDFLAGS_SRC)
 # The pthread library is required by tcmalloc, so add it if it exists. If it
 # does not, the tcmalloc check below will fail anyway, and linking against
 # pthreads is harmless otherwise.
+CFG_LIBS="$LIBS $CFG_LIBS"
 _MY_LDLIBS_CHECK_OPT(CFG_LIBS, -lpthread)
+
+# Check libraries for MingW
+_MY_LDLIBS_CHECK_OPT(CFG_LIBS, -lbcrypt)
+_MY_LDLIBS_CHECK_OPT(CFG_LIBS, -lpsapi)
 
 # Check if tcmalloc is available based on --enable-tcmalloc
 _MY_LDLIBS_CHECK_IFELSE(

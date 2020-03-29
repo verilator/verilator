@@ -43,7 +43,7 @@
 #include <sys/types.h>
 
 #if defined(_WIN32) || defined(__MINGW32__)
-# include <winnt.h>   // LONG for bcrypt.h on MINGW
+# include <windows.h>   // LONG for bcrypt.h on MINGW
 # include <bcrypt.h>  // BCryptGenRandom
 # include <chrono>
 # include <direct.h>  // mkdir
