@@ -34,6 +34,7 @@
 #include VL_INCLUDE_UNORDERED_MAP
 
 class AstNetlist;
+class V3HierBlockPlan;
 
 //======================================================================
 // Statics
@@ -69,6 +70,7 @@ inline bool operator==(VWidthMinUsage::en lhs, const VWidthMinUsage& rhs) {
 class V3Global {
     // Globals
     AstNetlist* m_rootp;  // Root of entire netlist
+    V3HierBlockPlan* m_hierPlanp;  // Hierarchical verilation plan
     VWidthMinUsage m_widthMinUsage;  // What AstNode::widthMin() is used for
 
     int m_debugFileNumber;  // Number to append to debug files created
@@ -91,6 +93,8 @@ public:
     // CONSTRUCTORS
     V3Global()
         : m_rootp(NULL)  // created by makeInitNetlist() so static constructors run first
+        , m_hierPlanp(NULL)  // Set via hierPlanp(V3HierBlockPlan*). Stay NULL unless hier_block
+                             // pragma appears
         , m_widthMinUsage(VWidthMinUsage::LINT_WIDTH)
         , m_debugFileNumber(0)
         , m_assertDTypesResolved(false)
@@ -134,6 +138,11 @@ public:
     void needTraceDumper(bool flag) { m_needTraceDumper = flag; }
     bool dpi() const { return m_dpi; }
     void dpi(bool flag) { m_dpi = flag; }
+    V3HierBlockPlan* hierPlanp() const { return m_hierPlanp; }
+    void hierPlanp(V3HierBlockPlan* plan) {
+        UASSERT(!m_hierPlanp, "call once");
+        m_hierPlanp = plan;
+    }
     void useParallelBuild(bool flag) { m_useParallelBuild = flag; }
     bool useParallelBuild() const { return m_useParallelBuild; }
     const std::string& ptrToId(const void* p);

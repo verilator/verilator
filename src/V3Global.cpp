@@ -20,6 +20,7 @@
 #include "V3Global.h"
 #include "V3Ast.h"
 #include "V3File.h"
+#include "V3HierBlock.h"
 #include "V3LinkCells.h"
 #include "V3Parse.h"
 #include "V3ParseSym.h"
