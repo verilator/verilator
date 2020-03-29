@@ -52,6 +52,7 @@
 #include "V3Gate.h"
 #include "V3GenClk.h"
 #include "V3Graph.h"
+#include "V3HierBlock.h"
 #include "V3Inline.h"
 #include "V3Inst.h"
 #include "V3Life.h"
@@ -138,6 +139,14 @@ static void process() {
     // Remove any modules that were parameterized and are no longer referenced.
     V3Dead::deadifyModules(v3Global.rootp());
     v3Global.checkTree();
+
+    // Create a hierarchical verilation plan
+    if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly()) {
+        V3HierBlockPlan::createPlan(v3Global.rootp());
+        // If a plan is created, further analysis is not necessary.
+        // The actual verilation will be done based on this plan.
+        if (v3Global.hierPlanp()) return;
+    }
 
     // Calculate and check widths, edit tree to TRUNC/EXTRACT any width mismatches
     V3Width::width(v3Global.rootp());
@@ -563,14 +572,24 @@ static void verilate(const string& argString) {
 
     V3Error::abortIfWarnings();
 
-    if (v3Global.opt.makeDepend().isTrue()) {
-        V3File::writeDepend(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__ver.d");
+    if (v3Global.hierPlanp()) {  // This run is for just write a makefile
+        UASSERT(!v3Global.opt.hierMode(), "this is child run");
+        UASSERT(v3Global.opt.hierBlocks().empty(), "Must not set");
+        if (v3Global.opt.gmake()) { V3EmitMk::emitHierVerilation(v3Global.hierPlanp()); }
+        if (v3Global.opt.cmake()) { V3EmitCMake::emit(); }
+    } else {
+        if (v3Global.opt.makeDepend().isTrue()) {
+            V3File::writeDepend(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__ver.d");
+        }
+        if (v3Global.opt.protectIds()) {
+            VIdProtect::writeMapFile(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix()
+                                     + "__idmap.xml");
+        }
     }
-    if (v3Global.opt.protectIds()) {
-        VIdProtect::writeMapFile(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix()
-                                 + "__idmap.xml");
-    }
-    if (v3Global.opt.skipIdentical().isTrue() || v3Global.opt.makeDepend().isTrue()) {
+    // Verilation for the top module (when hierMode() == false && hierBlocks is not empty) must
+    // not save the dependency file to avoid overwriting the files generated in the initial run.
+    if ((v3Global.opt.skipIdentical().isTrue() || v3Global.opt.makeDepend().isTrue())
+        && !(!v3Global.opt.hierMode() && !v3Global.opt.hierBlocks().empty())) {
         V3File::writeTimes(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__verFiles.dat",
                            argString);
     }
@@ -620,6 +639,18 @@ static void execBuildJob() {
     }
 }
 
+static void execHierVerilation() {
+    UASSERT(v3Global.hierPlanp(), "must be called only when plan exists");
+    const string makefile = v3Global.opt.prefix() + "_hier.mk ";
+    const string target = v3Global.opt.build() ? " hier_build" : " hier_verilation";
+    const string cmdStr = buildMakeCmd(makefile, target);
+    const int exit_code = V3Os::system(cmdStr);
+    if (exit_code != 0) {
+        v3error(cmdStr << " exitted with " << exit_code << std::endl);
+        exit(exit_code);
+    }
+}
+
 //######################################################################
 
 int main(int argc, char** argv, char** env) {
@@ -654,7 +685,11 @@ int main(int argc, char** argv, char** env) {
         UINFO(1, "Option --no-verilate: Skip Verilation\n");
     }
 
-    if (v3Global.opt.build()) execBuildJob();
+    if (v3Global.hierPlanp() && v3Global.opt.gmake()) {
+        execHierVerilation();  // execHierVerilation() takes care of --build too
+    } else if (v3Global.opt.build()) {
+        execBuildJob();
+    }
 
     UINFO(1, "Done, Exiting...\n");
 }
