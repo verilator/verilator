@@ -254,12 +254,15 @@ private:
                     // Not parallel, but harmlessly so.
                 } else {
                     AstNode* propp = NULL;
-                    for (AstCaseItem* itemp = nodep->itemsp();
-                         itemp; itemp=VN_CAST(itemp->nextp(), CaseItem)) {
-                        for (AstNode* icondp = itemp->condsp();
-                             icondp!=NULL; icondp=icondp->nextp()) {
+                    for (AstCaseItem* itemp = nodep->itemsp(); itemp;
+                         itemp = VN_CAST(itemp->nextp(), CaseItem)) {
+                        for (AstNode* icondp = itemp->condsp(); icondp; icondp = icondp->nextp()) {
                             AstNode* onep;
-                            if (nodep->casex() || nodep->casez() || nodep->caseInside()) {
+                            if (AstInsideRange* rcondp = VN_CAST(icondp, InsideRange)) {
+                                onep = rcondp->newAndFromInside(nodep->exprp(),
+                                                                rcondp->lhsp()->cloneTree(true),
+                                                                rcondp->rhsp()->cloneTree(true));
+                            } else if (nodep->casex() || nodep->casez() || nodep->caseInside()) {
                                 onep = AstEqWild::newTyped(itemp->fileline(),
                                                            nodep->exprp()->cloneTree(false),
                                                            icondp->cloneTree(false));
