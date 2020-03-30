@@ -196,6 +196,32 @@ typedef std::vector<string> V3StringList;
 typedef std::set<string> V3StringSet;
 
 //######################################################################
+
+// Information given by --hierarchy-block option
+class V3HierarchyBlockOption {
+public:
+    // key:parameter name, value:value (as string)
+    typedef std::map<string, string> ParamStrMap;
+
+private:
+    // module name
+    string m_origName;
+    // module name after uniquified
+    // same as m_origName for non-parameterized module
+    string m_mangledName;
+    // overriding parameter values specified by -G option
+    ParamStrMap m_parameters;
+
+public:
+    explicit V3HierarchyBlockOption(const string& optstring);
+    const string& origName() const { return m_origName; }
+    const string& mangledName() const { return m_mangledName; }
+    const ParamStrMap params() const { return m_parameters; }
+};
+
+typedef std::map<string, V3HierarchyBlockOption> V3HierBlockOptSet;
+
+//######################################################################
 // V3Options - Command line options
 
 class V3Options {
@@ -221,6 +247,7 @@ private:
     DebugSrcMap m_debugSrcs;    // argument: --debugi-<srcfile>=<level>
     DebugSrcMap m_dumpTrees;    // argument: --dump-treei-<srcfile>=<level>
     std::map<string,string> m_parameters;  // Parameters
+    std::map<string, V3HierarchyBlockOption> m_hierBlocks;  // main switch: --hierarchy-block
 
     bool        m_preprocOnly;  // main switch: -E
     bool        m_makePhony;    // main switch: -MP
@@ -295,6 +322,7 @@ private:
     int         m_dumpTree;     // main switch: --dump-tree
     bool        m_dumpTreeAddrids;// main switch: --dump-tree-addrids
     int         m_gateStmts;    // main switch: --gate-stmts
+    bool        m_hierMode;     // main switch: --hierarchical-mode
     int         m_ifDepth;      // main switch: --if-depth
     int         m_inlineMult;   // main switch: --inline-mult
     VOptionBool m_makeDepend;  // main switch: -MMD
@@ -595,10 +623,16 @@ public:
         return m_traceFormat.sourceName() + (systemC() ? "_sc" : "_c");
     }
 
+    bool hierMode() const { return m_hierMode; }
+    const V3HierBlockOptSet& hierBlocks() const { return m_hierBlocks; }
+
     // METHODS (from main)
     static string version();
     static string argString(int argc, char** argv);  ///< Return list of arguments as simple string
-    string allArgsString();  ///< Return all passed arguments as simple string
+    string allArgsString() const;  ///< Return all passed arguments as simple string
+    // Return options for child hierarchy blocks when forTop==false, otherwise returns args for the
+    // top module.
+    string allArgsStringForHierBlock(bool forTop) const;
     void bin(const string& flag) { m_bin = flag; }
     void parseOpts(FileLine* fl, int argc, char** argv);
     void parseOptsList(FileLine* fl, const string& optdir, int argc, char** argv);
