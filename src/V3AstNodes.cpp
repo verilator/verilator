@@ -193,6 +193,15 @@ AstExecGraph::~AstExecGraph() {
     VL_DO_DANGLING(delete m_depGraphp, m_depGraphp);
 }
 
+AstNode* AstInsideRange::newAndFromInside(AstNode* exprp, AstNode* lhsp, AstNode* rhsp) {
+    AstNode* ap = new AstGte(fileline(), exprp->cloneTree(true), lhsp);
+    AstNode* bp = new AstLte(fileline(), exprp->cloneTree(true), rhsp);
+    ap->fileline()->modifyWarnOff(V3ErrorCode::UNSIGNED, true);
+    bp->fileline()->modifyWarnOff(V3ErrorCode::CMPCONST, true);
+    AstNode* newp = new AstAnd(fileline(), ap, bp);
+    return newp;
+}
+
 bool AstVar::isSigPublic() const {
     return (m_sigPublic || (v3Global.opt.allPublic() && !isTemp() && !isGenVar()));
 }

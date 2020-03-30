@@ -333,15 +333,8 @@ private:
                         condp = new AstConst(itemp->fileline(), AstConst::LogicFalse());
                     } else if (AstInsideRange* irangep = VN_CAST(icondp, InsideRange)) {
                         // Similar logic in V3Width::visit(AstInside)
-                        AstNode* ap = AstGte::newTyped(itemp->fileline(),
-                                                       cexprp->cloneTree(false),
-                                                       irangep->lhsp()->unlinkFrBack());
-                        AstNode* bp = AstLte::newTyped(itemp->fileline(),
-                                                       cexprp->cloneTree(false),
-                                                       irangep->rhsp()->unlinkFrBack());
-                        ap->fileline()->modifyWarnOff(V3ErrorCode::UNSIGNED, true);
-                        bp->fileline()->modifyWarnOff(V3ErrorCode::CMPCONST, true);
-                        condp = new AstAnd(itemp->fileline(), ap, bp);
+                        condp = irangep->newAndFromInside(cexprp, irangep->lhsp()->unlinkFrBack(),
+                                                          irangep->rhsp()->unlinkFrBack());
                     } else if (iconstp && iconstp->num().isFourState()
                                && (nodep->casex() || nodep->casez() || nodep->caseInside())) {
                         V3Number nummask (itemp, iconstp->width());

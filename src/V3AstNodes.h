@@ -3898,6 +3898,8 @@ public:
     virtual string emitVerilog() { return "[%l:%r]"; }
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool cleanOut() const { return false; }  // NA
+    // Create AstAnd(AstGte(...), AstLte(...))
+    AstNode* newAndFromInside(AstNode* exprp, AstNode* lhsp, AstNode* rhsp);
 };
 
 class AstInitItem : public AstNode {
