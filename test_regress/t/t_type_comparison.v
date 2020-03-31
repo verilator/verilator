@@ -93,6 +93,8 @@ module t();
 
    initial begin
       if (type(shortint) != type(shortint_v)) $stop();
+      if (type(shortint) !== type(shortint_v)) $stop();
+      if (type(int) === type(shortint_v)) $stop();
       if (type(int) != type(int_v)) $stop();
       if (type(longint) != type(longint_v)) $stop();
       if (type(byte) != type(byte_v)) $stop();
