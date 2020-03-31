@@ -453,6 +453,7 @@ public:
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
     virtual bool matching(const AstNodeDType* typep) const {
         const AstAssocArrayDType* arrayp = VN_CAST_CONST(typep, AssocArrayDType);
+        if (!arrayp) return typep->matching(this);
         return arrayp && subDTypep()->matching(arrayp->subDTypep())
                && keyDTypep()->matching(arrayp->keyDTypep());
     }
@@ -508,6 +509,7 @@ public:
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
     virtual bool matching(const AstNodeDType* typep) const {
         const AstDynArrayDType* arrayp = VN_CAST_CONST(typep, DynArrayDType);
+        if (!arrayp) return typep->matching(this);
         return arrayp && subDTypep()->matching(arrayp->subDTypep());
     }
 };
@@ -615,6 +617,7 @@ public:
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
     virtual bool matching(const AstNodeDType* typep) const {
         const AstUnsizedArrayDType* arrayp = VN_CAST_CONST(typep, UnsizedArrayDType);
+        if (!arrayp) return typep->matching(this);
         return arrayp && subDTypep()->matching(arrayp->subDTypep());
     }
 };
@@ -696,16 +699,12 @@ public:
         return m == sp->m; }
     virtual bool matching(const AstNodeDType* typep) const {
         const AstBasicDType* matchp = VN_CAST_CONST(typep, BasicDType);
-        if (!matchp) {
-            return typep->matching(this);
-        } else if (isSigned() == matchp->isSigned()
-                   && (same(matchp) ||
-                       (isIntNumeric() && matchp->isIntNumeric()
-                        && isFourstate() == matchp->isFourstate()
-                        && nrange() == matchp->nrange()))) {
-            return true;
-        }
-        return false;
+        if (!matchp) return typep->matching(this);
+        return isSigned() == matchp->isSigned()
+               && (same(matchp) ||
+                   (isIntNumeric() && matchp->isIntNumeric()
+                    && isFourstate() == matchp->isFourstate()
+                    && nrange() == matchp->nrange()));
     }
     virtual bool similarDType(AstNodeDType* samep) const {
         return type()==samep->type() && same(samep); }
@@ -940,6 +939,7 @@ public:
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
     virtual bool matching(const AstNodeDType* typep) const {
         const AstQueueDType* queuep = VN_CAST_CONST(typep, QueueDType);
+        if (!queuep) return typep->matching(this);
         return queuep && subDTypep()->matching(typep);
     }
 };

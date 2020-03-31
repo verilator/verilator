@@ -2210,6 +2210,7 @@ public:
     virtual bool matchingArrayType(const AstNodeArrayDType* matchp) const = 0;
     virtual bool matching(const AstNodeDType* typep) const {
         const AstNodeArrayDType* arrayp = VN_CAST_CONST(typep, NodeArrayDType);
+        if (!arrayp) return typep->matching(this);
         return arrayp && matchingArrayType(arrayp) && declRange() == arrayp->declRange()
                && subDTypep()->matching(arrayp->subDTypep());
     }
