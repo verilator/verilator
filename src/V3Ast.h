@@ -2094,7 +2094,15 @@ public:
     uint32_t arrayUnpackedElements();  // 1, or total multiplication of all dimensions
     static int uniqueNumInc() { return ++s_uniqueNum; }
     const char* charIQWN() const { return (isString() ? "N" : isWide() ? "W" : isQuad() ? "Q" : "I"); }
-    virtual bool matching(const AstNodeDType* typep) const = 0;
+    bool matching(const AstNodeDType* typep) const {
+        if (VN_IS(typep, RefDType)) {
+            // Follow RefDTypes
+            return typep->match(this);
+        } else {
+            return match(typep);
+        }
+    }
+    virtual bool match(const AstNodeDType* typep) const = 0;
 };
 
 class AstNodeUOrStructDType : public AstNodeDType {
@@ -2149,7 +2157,7 @@ public:
     int lsb() const { return 0; }
     int msb() const { return dtypep()->width()-1; }  // Packed classes look like arrays
     VNumRange declRange() const { return VNumRange(msb(), lsb(), false); }
-    virtual bool matching(const AstNodeDType* typep) const { return typep == this; }
+    virtual bool match(const AstNodeDType* typep) const { return typep == this; }
 };
 
 class AstNodeArrayDType : public AstNodeDType {
@@ -2208,7 +2216,7 @@ public:
     int elementsConst() const;
     VNumRange declRange() const;
     virtual bool matchingArrayType(const AstNodeArrayDType* matchp) const = 0;
-    virtual bool matching(const AstNodeDType* typep) const {
+    virtual bool match(const AstNodeDType* typep) const {
         const AstNodeArrayDType* arrayp = VN_CAST_CONST(typep, NodeArrayDType);
         if (!arrayp) return typep->matching(this);
         return arrayp && matchingArrayType(arrayp) && declRange() == arrayp->declRange()
