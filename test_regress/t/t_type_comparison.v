@@ -112,10 +112,10 @@ module t();
       if (type(ETYB) == type(byte)) $stop();
       if (type(BYTE) == type(UNSIGNED_BYTE)) $stop();
       if (type(MEM_BYTES) != type(MY_MEM_BYTES)) $stop();
-//      if (type(MEM_BYTES_PACKED) != type(MY_MEM_BYTES_PACKED)) $stop();
-//      if (type(NIBBLES) == type(MY_BYTE)) $stop();
-//      if (type(MD_ARY) == type(MD_ARY_TOO)) $stop();
-//      if (type(MY_CHAR) != type(byte)) $stop();
+      if (type(MEM_BYTES_PACKED) != type(MY_MEM_BYTES_PACKED)) $stop();
+      if (type(NIBBLES) == type(MY_BYTE)) $stop();
+      if (type(MD_ARY) == type(MD_ARY_TOO)) $stop();
+      if (type(MY_CHAR) != type(byte)) $stop();
       // TODO -- the rest
       // TODO -- case equal/not equal, ===, !===
       // TODO -- test associative arrays
