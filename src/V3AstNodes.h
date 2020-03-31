@@ -305,6 +305,7 @@ public:
     AstVarType varType() const { return m_varType; }  // * = Type of variable
     bool isParam() const { return true; }
     bool isGParam() const { return (varType()==AstVarType::GPARAM); }
+    virtual bool matching(const AstNodeDType* typep) const { return childDTypep()->matching(typep); }
 };
 
 class AstTypedef : public AstNode {
@@ -389,6 +390,7 @@ public:
     virtual int widthTotalBytes() const { return dtypep()->widthTotalBytes(); }
     virtual string name() const { return m_name; }
     void name(const string& flag) { m_name = flag; }
+    virtual bool matching(const AstNodeDType* typep) const { return typep == this; }
 };
 
 class AstAssocArrayDType : public AstNodeDType {
@@ -449,6 +451,11 @@ public:
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
+    virtual bool matching(const AstNodeDType* typep) const {
+        const AstAssocArrayDType* arrayp = VN_CAST_CONST(typep, AssocArrayDType);
+        return arrayp && subDTypep()->matching(arrayp->subDTypep())
+               && keyDTypep()->matching(arrayp->keyDTypep());
+    }
 };
 
 class AstDynArrayDType : public AstNodeDType {
@@ -499,6 +506,10 @@ public:
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
+    virtual bool matching(const AstNodeDType* typep) const {
+        const AstDynArrayDType* arrayp = VN_CAST_CONST(typep, DynArrayDType);
+        return arrayp && subDTypep()->matching(arrayp->subDTypep());
+    }
 };
 
 class AstPackArrayDType : public AstNodeArrayDType {
@@ -525,6 +536,9 @@ public:
     }
     ASTNODE_NODE_FUNCS(PackArrayDType)
     virtual string prettyDTypeName() const;
+    virtual bool matchingArrayType(const AstNodeArrayDType* matchp) const {
+        return VN_IS(matchp, PackArrayDType);
+    }
 };
 
 class AstUnpackArrayDType : public AstNodeArrayDType {
@@ -553,6 +567,9 @@ public:
     }
     ASTNODE_NODE_FUNCS(UnpackArrayDType)
     virtual string prettyDTypeName() const;
+    virtual bool matchingArrayType(const AstNodeArrayDType* matchp) const {
+        return VN_IS(matchp, UnpackArrayDType);
+    }
 };
 
 class AstUnsizedArrayDType : public AstNodeDType {
@@ -596,6 +613,10 @@ public:
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
+    virtual bool matching(const AstNodeDType* typep) const {
+        const AstUnsizedArrayDType* arrayp = VN_CAST_CONST(typep, UnsizedArrayDType);
+        return arrayp && subDTypep()->matching(arrayp->subDTypep());
+    }
 };
 
 class AstBasicDType : public AstNodeDType {
@@ -673,12 +694,15 @@ public:
     virtual bool same(const AstNode* samep) const {  // width/widthMin/numeric compared elsewhere
         const AstBasicDType* sp = static_cast<const AstBasicDType*>(samep);
         return m == sp->m; }
-    bool matching(const AstBasicDType* matchp) {
-        if (isSigned() == matchp->isSigned()
-            && (same(matchp) ||
-                (isIntNumeric() && matchp->isIntNumeric()
-                 && isFourstate() == matchp->isFourstate()
-                 && nrange() == matchp->nrange()))) {
+    virtual bool matching(const AstNodeDType* typep) const {
+        const AstBasicDType* matchp = VN_CAST_CONST(typep, BasicDType);
+        if (!matchp) {
+            return typep->matching(this);
+        } else if (isSigned() == matchp->isSigned()
+                   && (same(matchp) ||
+                       (isIntNumeric() && matchp->isIntNumeric()
+                        && isFourstate() == matchp->isFourstate()
+                        && nrange() == matchp->nrange()))) {
             return true;
         }
         return false;
@@ -770,6 +794,7 @@ public:
     virtual AstNodeDType* skipRefToEnump() const { return subDTypep()->skipRefToEnump(); }
     virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
+    virtual bool matching(const AstNodeDType* typep) const { return subDTypep()->matching(typep); }
 };
 
 class AstClassRefDType : public AstNodeDType {
@@ -809,6 +834,7 @@ public:
     void packagep(AstPackage* nodep) { m_packagep = nodep; }
     AstClass* classp() const { return m_classp; }
     void classp(AstClass* nodep) { m_classp = nodep; }
+    virtual bool matching(const AstNodeDType* typep) const { return typep == this; }
 };
 
 class AstIfaceRefDType : public AstNodeDType {
@@ -861,6 +887,8 @@ public:
     AstModport* modportp() const { return m_modportp; }
     void modportp(AstModport* modportp) { m_modportp = modportp; }
     bool isModport() { return !m_modportName.empty(); }
+    // Cannot take type() of interface
+    virtual bool matching(const AstNodeDType* typep) const { return false; }
 };
 
 class AstQueueDType : public AstNodeDType {
@@ -910,6 +938,10 @@ public:
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
+    virtual bool matching(const AstNodeDType* typep) const {
+        const AstQueueDType* queuep = VN_CAST_CONST(typep, QueueDType);
+        return queuep && subDTypep()->matching(typep);
+    }
 };
 
 class AstRefDType : public AstNodeDType {
@@ -975,6 +1007,7 @@ public:
     AstPackage* packagep() const { return m_packagep; }
     void packagep(AstPackage* nodep) { m_packagep = nodep; }
     AstNode* typeofp() const { return op2p(); }
+    virtual bool matching(const AstNodeDType* typep) const { return refDTypep()->matching(typep); }
 };
 
 class AstStructDType : public AstNodeUOrStructDType {
@@ -1052,6 +1085,7 @@ public:
     virtual string tag() const { return m_tag; }
     int lsb() const { return m_lsb; }
     void lsb(int lsb) { m_lsb = lsb; }
+    virtual bool matching(const AstNodeDType* typep) const { return subDTypep()->matching(typep); }
 };
 
 class AstVoidDType : public AstNodeDType {
@@ -1074,6 +1108,7 @@ public:
     virtual int widthAlignBytes() const { return 1; }
     virtual int widthTotalBytes() const { return 1; }
     virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool matching(const AstNodeDType* typep) const { return false; }
 };
 
 class AstEnumItem : public AstNode {
@@ -1167,6 +1202,7 @@ public:
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
+    virtual bool matching(const AstNodeDType* typep) const { return typep == this; }
 };
 
 class AstParseTypeDType : public AstNodeDType {
@@ -1186,6 +1222,7 @@ public:
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const { return 0; }
     virtual int widthTotalBytes() const { return 0; }
+    virtual bool matching(const AstNodeDType* typep) const { return false; }
 };
 
 //######################################################################

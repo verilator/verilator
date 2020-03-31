@@ -3590,17 +3590,13 @@ private:
             AstRefDType* refLhsp = VN_CAST(nodep->lhsp(), RefDType);
             AstRefDType* refRhsp = VN_CAST(nodep->rhsp(), RefDType);
             if (refLhsp && refRhsp) {
-                AstNodeDType* typeLhsp = refLhsp->refDTypep();
-                AstNodeDType* typeRhsp = refRhsp->refDTypep();
-                AstBasicDType* basicLhsp = VN_CAST(typeLhsp, BasicDType);
-                AstBasicDType* basicRhsp = VN_CAST(typeRhsp, BasicDType);
-                if (basicLhsp && basicRhsp && basicLhsp->matching(basicRhsp)) {
-                    equal = true;
-                } else if (refLhsp->dtypep() == refRhsp->dtypep()) {
+                if (refLhsp->matching(refRhsp)
+                    // TODO -- is this even necessary in the end?
+                    || refLhsp->dtypep() == refRhsp->dtypep()) {
                     equal = true;
                 }
             } else {
-                nodep->v3fatalSrc("TODO -- also handle this");
+                nodep->v3fatalSrc("Expected two types for type comparison");
             }
             bool isNot = VN_IS(nodep, NeqT);
             uint32_t value = equal ^ isNot ? 1 : 0;
