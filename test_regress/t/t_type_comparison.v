@@ -118,6 +118,13 @@ module t();
 //      if (type(MY_CHAR) != type(byte)) $stop();
       // TODO -- the rest
       // TODO -- case equal/not equal, ===, !===
+      // TODO -- test associative arrays
+      // TODO -- test dynamic arrays
+      // TODO -- test unsized arrays
+      // TODO -- test const vars (both LHS and RHS) against const and non-const
+      // TODO -- test queues
+      // TODO -- test structs, enums and unions
+      // TODO -- test struct member vs type
    end
 
 
