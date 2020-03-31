@@ -7,6 +7,8 @@
 program t;
    parameter SIZE = 5;
 
+   typedef vec_t;  // Forward
+
    typedef reg [SIZE-1:0] vec_t ;
    vec_t a; initial a =0;
 

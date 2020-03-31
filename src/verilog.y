@@ -1664,6 +1664,7 @@ member_decl_assignment<memberp>:	// Derived from IEEE: variable_decl_assignment
                           }
 	|	id variable_dimensionListE '=' variable_declExpr
 			{ $4->v3error("Unsupported: Initial values in struct/union members.");
+			  // But still need error if packed according to IEEE 7.2.2
 			  $$ = NULL; }
 	|	idSVKwd					{ $$ = NULL; }
 	//
