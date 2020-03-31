@@ -3695,9 +3695,11 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	|	~l~expr '*' ~r~expr			{ $$ = new AstMul	($2,$1,$3); }
 	|	~l~expr '/' ~r~expr			{ $$ = new AstDiv	($2,$1,$3); }
 	|	~l~expr '%' ~r~expr			{ $$ = new AstModDiv	($2,$1,$3); }
-	|	type_reference yP_EQUAL type_reference	{ $$ = new AstEqT	($2,$1,$3); }
+	|	type_reference yP_EQUAL type_reference        { $$ = new AstEqT	        ($2,$1,$3); }
+	|	type_reference yP_NOTEQUAL type_reference     { $$ = new AstNeqT	($2,$1,$3); }
+	|	type_reference yP_CASEEQUAL type_reference    { $$ = new AstEqT	        ($2,$1,$3); }
+	|	type_reference yP_CASENOTEQUAL type_reference { $$ = new AstNeqT	($2,$1,$3); }
 	|	~l~expr yP_EQUAL ~r~expr		{ $$ = new AstEq	($2,$1,$3); }
-	|	type_reference yP_NOTEQUAL type_reference { $$ = new AstNeqT	($2,$1,$3); }
 	|	~l~expr yP_NOTEQUAL ~r~expr		{ $$ = new AstNeq	($2,$1,$3); }
 	|	~l~expr yP_CASEEQUAL ~r~expr		{ $$ = new AstEqCase	($2,$1,$3); }
 	|	~l~expr yP_CASENOTEQUAL ~r~expr		{ $$ = new AstNeqCase	($2,$1,$3); }
