@@ -40,13 +40,21 @@ module foo
 
 endmodule
 
+package pkg;
+   typedef struct packed {logic foo;} struct_t;
+   typedef enum {A_VAL, B_VAL, C_VAL} enum_t;
+   typedef union packed {
+      logic [7:0] foo;
+      logic [3:0] bar;
+   } union_t;
+endpackage
+
 module t();
 
    foo #(
       .a_type (logic[7:0]),
       .b_type (real)) the_foo ();
 
-   // From 6.22.1 (mostly)
    shortint shortint_v;
    int int_v;
    longint longint_v;
@@ -59,6 +67,7 @@ module t();
 
    const int int_c;
 
+   // From 6.22.1 (mostly)
    typedef bit node;        // 'bit' and 'node' are matching types
    typedef node type1;
    typedef type1 type2;     // 'type1' and 'type2' are matching types
@@ -90,8 +99,11 @@ module t();
 
    typedef byte signed MY_CHAR; // MY_CHAR matches the byte type
 
-   // TODO -- this (6.22.1 h)
-   //import the_pkg::*;
+   // 6.22.1 h
+   import pkg::*;
+   struct_t struct_v;
+   enum_t enum_v;
+   union_t union_v;
 
    bit should_be_true;
 
@@ -120,16 +132,20 @@ module t();
       if (type(NIBBLES) == type(MY_BYTE)) $stop();
       if (type(MD_ARY) == type(MD_ARY_TOO)) $stop();
       if (type(MY_CHAR) != type(byte)) $stop();
+      if (type(struct_v) != type(struct_t)) $stop();
+      if (type(struct_v) != type(pkg::struct_t)) $stop();
+      if (type(struct_t) != type(pkg::struct_t)) $stop();
+      if (type(struct_v.foo) != type(logic)) $stop();
+      if (type(logic) != type(struct_v.foo)) $stop();
+      if (type(enum_v) != type(enum_t)) $stop();
+      if (type(union_v) != type(union_t)) $stop();
       // TODO -- the rest
       // TODO -- case statement
       // TODO -- generate case
       // TODO -- test associative arrays
       // TODO -- test dynamic arrays
       // TODO -- test unsized arrays
-      // TODO -- test const vars (both LHS and RHS) against const and non-const
       // TODO -- test queues
-      // TODO -- test structs, enums and unions
-      // TODO -- test struct member vs type
 
       if (type(shortint) !== type(shortint_v)) $stop();
       if (type(int) === type(shortint_v)) $stop();
