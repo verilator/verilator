@@ -57,6 +57,8 @@ module t();
    integer integer_v;
    time time_v;
 
+   const int int_c;
+
    typedef bit node;        // 'bit' and 'node' are matching types
    typedef node type1;
    typedef type1 type2;     // 'type1' and 'type2' are matching types
@@ -119,7 +121,7 @@ module t();
       if (type(MD_ARY) == type(MD_ARY_TOO)) $stop();
       if (type(MY_CHAR) != type(byte)) $stop();
       // TODO -- the rest
-      // TODO -- case equal/not equal, ===, !===
+      // TODO -- case statement
       // TODO -- generate case
       // TODO -- test associative arrays
       // TODO -- test dynamic arrays
@@ -132,14 +134,17 @@ module t();
       if (type(shortint) !== type(shortint_v)) $stop();
       if (type(int) === type(shortint_v)) $stop();
 
-      should_be_true = '0;
-      case (type(shortint_v))
-         type(shortint): should_be_true = '1;
-         type(int): $stop();
-         default: $stop();
-      endcase
+      if (type(int_c) != type(int_v)) $stop();
+      if (type(int_v) != type(int_c)) $stop();
 
-      if (!should_be_true) $stop();
+      should_be_true = '0;
+//      case (type(shortint_v))
+//         type(shortint): should_be_true = '1;
+//         type(int): $stop();
+//         default: $stop();
+//      endcase
+//
+//      if (!should_be_true) $stop();
    end
 
 
