@@ -232,7 +232,9 @@
 # include <unistd.h>  // ssize_t
 typedef unsigned char           uint8_t;        ///< 8-bit unsigned type (backward compatibility)
 typedef unsigned short int      uint16_t;       ///< 16-bit unsigned type (backward compatibility)
+typedef char                    vlsint8_t;      ///< 8-bit signed type
 typedef unsigned char           vluint8_t;      ///< 8-bit unsigned type
+typedef short int               vlsint16_t;     ///< 16-bit signed type
 typedef unsigned short int      vluint16_t;     ///< 16-bit unsigned type
 # if defined(__uint32_t_defined) || defined(___int32_t_defined)  // Newer Cygwin uint32_t in stdint.h as an unsigned int
 typedef int32_t                 vlsint32_t;     ///< 32-bit signed type
@@ -255,7 +257,9 @@ typedef unsigned long long      vluint64_t;     ///< 64-bit unsigned type
 typedef unsigned __int8         uint8_t;        ///< 8-bit unsigned type (backward compatibility)
 typedef unsigned __int16        uint16_t;       ///< 16-bit unsigned type (backward compatibility)
 typedef unsigned __int32        uint32_t;       ///< 32-bit unsigned type (backward compatibility)
+typedef signed   __int8         vlsint8_t;      ///< 8-bit signed type
 typedef unsigned __int8         vluint8_t;      ///< 8-bit unsigned type
+typedef signed   __int16        vlsint16_t;     ///< 16-bit signed type
 typedef unsigned __int16        vluint16_t;     ///< 16-bit unsigned type
 typedef signed   __int32        vlsint32_t;     ///< 32-bit signed type
 typedef unsigned __int32        vluint32_t;     ///< 32-bit unsigned type
@@ -276,10 +280,12 @@ typedef signed   __int32        ssize_t;        ///< signed size_t; returned fro
 # include <stdint.h>  // Linux and most flavors
 # include <sys/types.h>  // __WORDSIZE
 # include <unistd.h>  // ssize_t
-typedef uint8_t                 vluint8_t;      ///< 32-bit unsigned type
-typedef uint16_t                vluint16_t;     ///< 32-bit unsigned type
+typedef char                    vlsint8_t;      ///< 8-bit signed type
+typedef uint8_t                 vluint8_t;      ///< 8-bit unsigned type
+typedef short                   vlsint16_t;     ///< 16-bit signed type
+typedef uint16_t                vluint16_t;     ///< 16-bit unsigned type
 typedef int                     vlsint32_t;     ///< 32-bit signed type
-typedef uint32_t                vluint32_t;     ///< 32-bit signed type
+typedef uint32_t                vluint32_t;     ///< 32-bit unsigned type
 # if defined(__WORDSIZE) && (__WORDSIZE == 64)
 typedef long                    vlsint64_t;     ///< 64-bit signed type
 typedef unsigned long           vluint64_t;     ///< 64-bit unsigned type
