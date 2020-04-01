@@ -322,11 +322,17 @@ private:
     virtual void visit(AstIToRD* nodep) VL_OVERRIDE {       visit_Or_Ls32(nodep); }
 
     // Widths: Output integer signed, input real
-    virtual void visit(AstRToIS* nodep) VL_OVERRIDE {       visit_Os32_Lr(nodep); }
-    virtual void visit(AstRToIRoundS* nodep) VL_OVERRIDE {  visit_Os32_Lr(nodep); }
+    virtual void visit(AstRToIS* nodep) VL_OVERRIDE { visit_Os32_Lr(nodep); }
+    virtual void visit(AstRToIRoundS* nodep) VL_OVERRIDE {
+        // Only created here, size comes from upper expression
+        if (m_vup->prelim()) {  // First stage evaluation
+            iterateCheckReal(nodep, "LHS", nodep->lhsp(), BOTH);
+        }
+        if (!nodep->dtypep()->widthSized()) nodep->v3fatalSrc("RToIRoundS should be presized");
+    }
 
     // Widths: Output integer unsigned, input real
-    virtual void visit(AstRealToBits* nodep) VL_OVERRIDE {  visit_Ou64_Lr(nodep); }
+    virtual void visit(AstRealToBits* nodep) VL_OVERRIDE { visit_Ou64_Lr(nodep); }
 
     // Output integer, input string
     virtual void visit(AstLenN* nodep) VL_OVERRIDE { visit_Os32_string(nodep); }
@@ -4180,7 +4186,7 @@ private:
             underp = spliceCvtD(underp);
             underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
         } else if (!expDTypep->isDouble() && underp->isDouble()) {
-            underp = spliceCvtS(underp, true);  // Round RHS
+            underp = spliceCvtS(underp, true, expDTypep->width());  // Round RHS
             underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
         } else if (expDTypep->isString() && !underp->dtypep()->isString()) {
             underp = spliceCvtString(underp);
@@ -4309,7 +4315,7 @@ private:
         if (nodep && nodep->isDouble()) {
             nodep->v3error("Expected integral (non-" << nodep->dtypep()->prettyDTypeName()
                            << ") input to " << nodep->backp()->prettyTypeName());
-            nodep = spliceCvtS(nodep, true);
+            nodep = spliceCvtS(nodep, true, 32);
         }
         return nodep;
     }
@@ -4328,7 +4334,7 @@ private:
             return nodep;
         }
     }
-    AstNode* spliceCvtS(AstNode* nodep, bool warnOn) {
+    AstNode* spliceCvtS(AstNode* nodep, bool warnOn, int width) {
         // IEEE-2012 11.8.1: Signed: Type coercion creates signed
         // 11.8.2: Argument to convert is self-determined
         if (nodep && nodep->dtypep()->skipRefp()->isDouble()) {
@@ -4338,6 +4344,7 @@ private:
             if (warnOn) nodep->v3warn(REALCVT, "Implicit conversion of real to integer");
             AstNode* newp = new AstRToIRoundS(nodep->fileline(), nodep);
             linker.relink(newp);
+            newp->dtypeSetBitSized(width, AstNumeric::SIGNED);
             return newp;
         } else {
             return nodep;

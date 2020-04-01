@@ -4585,16 +4585,19 @@ public:
     virtual int instrCount() const { return instrCountDouble(); }
 };
 class AstRToIRoundS : public AstNodeUniop {
+    // Convert real to integer, with arbitrary sized output (not just "integer" format)
 public:
     AstRToIRoundS(FileLine* fl, AstNode* lhsp)
-        : ASTGEN_SUPER(fl, lhsp) { dtypeSetSigned32(); }
+        : ASTGEN_SUPER(fl, lhsp) {
+        dtypeSetSigned32();
+    }
     ASTNODE_NODE_FUNCS(RToIRoundS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRToIRoundS(lhs); }
     virtual string emitVerilog() { return "%f$rtoi_rounded(%l)"; }
-    virtual string emitC() { return "VL_RTOIROUND_I_D(%li)"; }
+    virtual string emitC() { return "VL_RTOIROUND_%nq_D(%nw, %P, %li)"; }
     virtual bool cleanOut() const { return false; }
-    virtual bool cleanLhs() const { return false; }  // Eliminated before matters
-    virtual bool sizeMattersLhs() const { return false; }  // Eliminated before matters
+    virtual bool cleanLhs() const { return false; }
+    virtual bool sizeMattersLhs() const { return false; }
     virtual int instrCount() const { return instrCountDouble(); }
 };
 class AstIToRD : public AstNodeUniop {

@@ -2055,8 +2055,28 @@ V3Number& V3Number::opRToIRoundS(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_DOUBLE_ARGS1(lhs);
     double v = VL_ROUND(lhs.toDouble());
-    vlsint32_t i = static_cast<vlsint32_t>(v);  // C converts from double to vlsint32
-    return setLongS(i);
+    setZero();
+    union { double d; vluint64_t q; } u;
+    u.d = v; if (u.d) {}
+
+    int exp = static_cast<int>((u.q >> VL_ULL(52)) & VL_MASK_Q(11)) - 1023;
+    int lsb = exp - 52;
+    vluint64_t mantissa = (u.q & VL_MASK_Q(52)) | (VL_ULL(1) << 52);
+    if (v != 0) {
+        // IEEE format: [63]=sign [62:52]=exp+1023 [51:0]=mantissa
+        // This does not need to support subnormals as they are sub-integral
+        for (int bit = 0; bit <= 52; ++bit) {
+            if (mantissa & (VL_ULL(1) << bit)) {
+                int outbit = bit + lsb;
+                if (outbit >= 0) setBit(outbit, 1);
+            }
+        }
+        if (v < 0) {
+            V3Number noSign = *this;
+            opNegate(noSign);
+        }
+    }
+    return *this;
 }
 V3Number& V3Number::opRealToBits(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);

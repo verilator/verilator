@@ -695,13 +695,12 @@ static inline QData  VL_CVT_Q_D(double lhs) VL_PURE {
     union { double d; QData q; } u; u.d=lhs; return u.q; }
 /// Return double from QData (numeric)
 static inline double VL_ITOR_D_I(IData lhs) VL_PURE {
-    return static_cast<double>(static_cast<vlsint32_t>(lhs)); }
+    return static_cast<double>(static_cast<vlsint32_t>(lhs));
+}
 /// Return QData from double (numeric)
-static inline IData  VL_RTOI_I_D(double lhs) VL_PURE {
-    return static_cast<vlsint32_t>(VL_TRUNC(lhs)); }
-/// Return QData from double (numeric)
-static inline IData  VL_RTOIROUND_I_D(double lhs) VL_PURE {
-    return static_cast<vlsint32_t>(VL_ROUND(lhs)); }
+static inline IData VL_RTOI_I_D(double lhs) VL_PURE {
+    return static_cast<vlsint32_t>(VL_TRUNC(lhs));
+}
 
 // Sign extend such that if MSB set, we get ffff_ffff, else 0s
 // (Requires clean input)
@@ -1319,6 +1318,14 @@ static inline WDataOutP VL_NEGATE_W(int words, WDataOutP owp, WDataInP lwp) VL_M
         carry = (owp[i] < ~lwp[i]);
     }
     return owp;
+}
+static void VL_NEGATE_INPLACE_W(int words, WDataOutP owp_lwp) VL_MT_SAFE {
+    EData carry = 1;
+    for (int i = 0; i < words; ++i) {
+        EData word = ~owp_lwp[i] + carry;
+        carry = (word < ~owp_lwp[i]);
+        owp_lwp[i] = word;
+    }
 }
 
 // EMIT_RULE: VL_MUL:    oclean=dirty; lclean==clean; rclean==clean;
@@ -2233,6 +2240,50 @@ static inline WDataOutP VL_SEL_WWII(int obits, int lbits, int, int,
         }
         for (int i=words; i<VL_WORDS_I(obits); ++i) owp[i]=0;
     }
+    return owp;
+}
+
+//======================================================================
+// Math needing insert/select
+
+/// Return QData from double (numeric)
+// EMIT_RULE: VL_RTOIROUND_Q_D:  oclean=dirty; lclean==clean/real
+static inline QData VL_RTOIROUND_Q_D(int bits, double lhs) VL_PURE {
+    // IEEE format: [63]=sign [62:52]=exp+1023 [51:0]=mantissa
+    // This does not need to support subnormals as they are sub-integral
+    lhs = VL_ROUND(lhs);
+    if (!lhs) return 0;
+    QData q = VL_CVT_Q_D(lhs);
+    int lsb = static_cast<int>((q >> VL_ULL(52)) & VL_MASK_Q(11)) - 1023 - 52;
+    vluint64_t mantissa = (q & VL_MASK_Q(52)) | (VL_ULL(1) << 52);
+    vluint64_t out = 0;
+    if (lsb < 0) {
+        out = mantissa >> -lsb;
+    } else if (lsb < 64) {
+        out = mantissa << lsb;
+    }
+    if (lhs < 0) out = -out;
+    return out;
+}
+static inline IData VL_RTOIROUND_I_D(int bits, double lhs) VL_PURE {
+    return static_cast<IData>(VL_RTOIROUND_Q_D(bits, lhs));
+}
+static inline WDataOutP VL_RTOIROUND_W_D(int obits, WDataOutP owp, double lhs) VL_PURE {
+    // IEEE format: [63]=sign [62:52]=exp+1023 [51:0]=mantissa
+    // This does not need to support subnormals as they are sub-integral
+    lhs = VL_ROUND(lhs);
+    VL_ZERO_W(obits, owp);
+    if (!lhs) return owp;
+    QData q = VL_CVT_Q_D(lhs);
+    int lsb = static_cast<int>((q >> VL_ULL(52)) & VL_MASK_Q(11)) - 1023 - 52;
+    vluint64_t mantissa = (q & VL_MASK_Q(52)) | (VL_ULL(1) << 52);
+    if (lsb < 0) {
+        VL_SET_WQ(owp, mantissa >> -lsb);
+    } else if (lsb < obits) {
+        int lsbword = VL_BITWORD_I(lsb);
+        _VL_INSERT_WQ(obits, owp, mantissa, lsb + 52, lsb);
+    }
+    if (lhs < 0) VL_NEGATE_INPLACE_W(VL_WORDS_I(obits), owp);
     return owp;
 }
 

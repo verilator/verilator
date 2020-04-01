@@ -23,6 +23,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix assertions with unique case inside, #2199. [hdzhangdoc]
 
+****  Fix implicit conversion of floats to wide integers.
+
 
 * Verilator 4.030 2020-03-08
 

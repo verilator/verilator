@@ -1693,6 +1693,7 @@ public:
     // METHODS
     virtual bool hasDType() const { return true; }
     virtual string emitVerilog() = 0;  /// Format string for verilog writing; see V3EmitV
+    // For documentation on emitC format see EmitCStmts::emitOpName
     virtual string emitC() = 0;
     virtual string emitSimpleOperator() { return ""; }
     virtual bool cleanOut() const = 0;  // True if output has extra upper bits zero
