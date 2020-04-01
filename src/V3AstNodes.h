@@ -935,7 +935,7 @@ public:
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
     virtual bool match(const AstNodeDType* typep) const {
         const AstQueueDType* queuep = VN_CAST_CONST(typep, QueueDType);
-        return queuep && subDTypep()->matching(typep);
+        return queuep && subDTypep()->matching(queuep->subDTypep());
     }
 };
 
