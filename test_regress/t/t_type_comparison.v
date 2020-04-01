@@ -91,10 +91,10 @@ module t();
    // TODO -- this (6.22.1 h)
    //import the_pkg::*;
 
+   bit should_be_true;
+
    initial begin
       if (type(shortint) != type(shortint_v)) $stop();
-      if (type(shortint) !== type(shortint_v)) $stop();
-      if (type(int) === type(shortint_v)) $stop();
       if (type(int) != type(int_v)) $stop();
       if (type(longint) != type(longint_v)) $stop();
       if (type(byte) != type(byte_v)) $stop();
@@ -120,6 +120,7 @@ module t();
       if (type(MY_CHAR) != type(byte)) $stop();
       // TODO -- the rest
       // TODO -- case equal/not equal, ===, !===
+      // TODO -- generate case
       // TODO -- test associative arrays
       // TODO -- test dynamic arrays
       // TODO -- test unsized arrays
@@ -127,6 +128,18 @@ module t();
       // TODO -- test queues
       // TODO -- test structs, enums and unions
       // TODO -- test struct member vs type
+
+      if (type(shortint) !== type(shortint_v)) $stop();
+      if (type(int) === type(shortint_v)) $stop();
+
+      should_be_true = '0;
+      case (type(shortint_v))
+         type(shortint): should_be_true = '1;
+         type(int): $stop();
+         default: $stop();
+      endcase
+
+      if (!should_be_true) $stop();
    end
 
 
