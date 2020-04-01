@@ -2057,7 +2057,7 @@ V3Number& V3Number::opRToIRoundS(const V3Number& lhs) {
     double v = VL_ROUND(lhs.toDouble());
     setZero();
     union { double d; vluint64_t q; } u;
-    u.d = v; if (u.d) {}
+    u.d = v; if (u.d == 0.0) {}
 
     int exp = static_cast<int>((u.q >> VL_ULL(52)) & VL_MASK_Q(11)) - 1023;
     int lsb = exp - 52;
