@@ -67,6 +67,20 @@ module t();
 
    const int int_c;
 
+   integer string_to_integer_1[string];
+   integer string_to_integer_2[string];
+   integer int_to_integer[int];
+
+   int dyn_1 [];
+   int dyn_2 [];
+   real dyn_3 [];
+   int dyn_4 [] [];
+   int dyn_5 [] [];
+
+   int queue_1 [$];
+   int queue_2 [$];
+   real queue_3 [$];
+
    // From 6.22.1 (mostly)
    typedef bit node;        // 'bit' and 'node' are matching types
    typedef node type1;
@@ -108,6 +122,12 @@ module t();
    bit should_be_true;
 
    initial begin
+      // size of non-fixed-length arrays does not matter for type matching
+      string_to_integer_2["foo"] = 5;
+      dyn_1 = new[100];
+      dyn_2[3] = 7;
+      queue_1.push_front(8);
+
       if (type(shortint) != type(shortint_v)) $stop();
       if (type(int) != type(int_v)) $stop();
       if (type(longint) != type(longint_v)) $stop();
@@ -117,6 +137,14 @@ module t();
       if (type(reg) != type(reg_v)) $stop();
       if (type(integer) != type(integer_v)) $stop();
       if (type(time) != type(time_v)) $stop();
+      if (type(string_to_integer_1) != type(string_to_integer_2)) $stop();
+      if (type(string_to_integer_1) == type(int_to_integer)) $stop();
+      if (type(dyn_1) != type(dyn_2)) $stop();
+      if (type(dyn_1) == type(dyn_3)) $stop();
+      if (type(dyn_1) == type(dyn_4)) $stop();
+      if (type(dyn_4) != type(dyn_5)) $stop();
+      if (type(queue_1) != type(queue_2)) $stop();
+      if (type(queue_1) == type(queue_3)) $stop();
       if (type(bit) != type(node)) $stop();
       if (type(type1) != type(type2)) $stop();
       if (type(AB1) != type(AB2)) $stop();
@@ -142,10 +170,6 @@ module t();
       // TODO -- the rest
       // TODO -- case statement
       // TODO -- generate case
-      // TODO -- test associative arrays
-      // TODO -- test dynamic arrays
-      // TODO -- test unsized arrays
-      // TODO -- test queues
 
       if (type(shortint) !== type(shortint_v)) $stop();
       if (type(int) === type(shortint_v)) $stop();
