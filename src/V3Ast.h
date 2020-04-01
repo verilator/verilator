@@ -2095,8 +2095,8 @@ public:
     static int uniqueNumInc() { return ++s_uniqueNum; }
     const char* charIQWN() const { return (isString() ? "N" : isWide() ? "W" : isQuad() ? "Q" : "I"); }
     bool matching(const AstNodeDType* typep) const {
-        if (VN_IS(typep, RefDType)) {
-            // Follow RefDTypes
+        if (VN_IS(typep, RefDType) || VN_IS(typep, ConstDType)) {
+            // Unwrap type wrappers
             return typep->match(this);
         } else {
             return match(typep);
