@@ -22,7 +22,16 @@
 
 #include "V3Error.h"
 
+#include <cmath>
+#include <limits>
 #include <vector>
+
+//============================================================================
+
+// Return if two numbers within Epsilon of each other
+inline bool v3EpsilonEqual(double a, double b) {
+    return fabs(a - b) <= (std::numeric_limits<double>::epsilon() * std::max(1.0, std::max(a, b)));
+}
 
 //============================================================================
 

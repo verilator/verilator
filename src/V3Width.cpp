@@ -4342,9 +4342,12 @@ private:
             AstNRelinker linker;
             nodep->unlinkFrBack(&linker);
             if (AstConst* constp = VN_CAST(nodep, Const)) {
-                // Ignore obvious conversions of whole real numbers, e.g. 1.0 -> 1
+                // We convert to/from vlsint32 rather than use floor() as want to make sure is
+                // representable in integer's number of bits
                 if (constp->isDouble()
-                    && constp->num().toDouble() == floor(constp->num().toDouble())) {
+                    && v3EpsilonEqual(constp->num().toDouble(),
+                                      static_cast<double>(
+                                          static_cast<vlsint32_t>(constp->num().toDouble())))) {
                     warnOn = false;
                 }
             }
