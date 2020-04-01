@@ -3581,8 +3581,7 @@ private:
             // don't clean up types which may not be in the type table
             // we're going to remove this whole sub-tree anyway
             m_leaveTypeof = true;
-            userIterateAndNext(nodep->lhsp(), WidthVP(CONTEXT, PRELIM).p());
-            userIterateAndNext(nodep->rhsp(), WidthVP(CONTEXT, PRELIM).p());
+            userIterateChildren(nodep, WidthVP(CONTEXT, PRELIM).p());
             m_leaveTypeof = false;
             bool equal = false;
             // TODO -- remove
