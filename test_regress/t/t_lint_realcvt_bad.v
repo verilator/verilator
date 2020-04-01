@@ -8,5 +8,6 @@ module sub;
    integer i;
    initial begin
       i = 23.2;
+      i = 23.0; // No warning - often happens with units of time
    end
 endmodule

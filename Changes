@@ -11,6 +11,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Change --quiet-exit to also suppress 'Exiting due to N errors'.
 
+****  Suppress REALCVT for whole real numbers.
+
 ****  Fix parameter type redeclaring a type, #2195. [hdzhangdoc]
 
 ****  Fix VCD open with empty filename, #2198. [Julius Baxter]

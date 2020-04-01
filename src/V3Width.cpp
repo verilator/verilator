@@ -4338,9 +4338,16 @@ private:
         // IEEE-2012 11.8.1: Signed: Type coercion creates signed
         // 11.8.2: Argument to convert is self-determined
         if (nodep && nodep->dtypep()->skipRefp()->isDouble()) {
-            UINFO(6,"   spliceCvtS: "<<nodep<<endl);
+            UINFO(6, "   spliceCvtS: " << nodep << endl);
             AstNRelinker linker;
             nodep->unlinkFrBack(&linker);
+            if (AstConst* constp = VN_CAST(nodep, Const)) {
+                // Ignore obvious conversions of whole real numbers, e.g. 1.0 -> 1
+                if (constp->isDouble()
+                    && constp->num().toDouble() == floor(constp->num().toDouble())) {
+                    warnOn = false;
+                }
+            }
             if (warnOn) nodep->v3warn(REALCVT, "Implicit conversion of real to integer");
             AstNode* newp = new AstRToIRoundS(nodep->fileline(), nodep);
             linker.relink(newp);
