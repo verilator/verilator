@@ -382,13 +382,6 @@ private:
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
-    virtual void visit(AstTypedefFwd* nodep) VL_OVERRIDE {
-        // We only needed the forward declaration in order to parse correctly.
-        // We won't even check it was ever really defined, as it might have been in a header
-        // file referring to a module we never needed
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-    }
-
     virtual void visit(AstForeach* nodep) VL_OVERRIDE {
         // FOREACH(array,loopvars,body)
         // -> BEGIN(declare vars, loopa=lowest; WHILE(loopa<=highest, ... body))

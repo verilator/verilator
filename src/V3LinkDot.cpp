@@ -1089,6 +1089,12 @@ class LinkDotFindVisitor : public AstNVisitor {
         iterateChildren(nodep);
         m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_packagep);
     }
+    virtual void visit(AstTypedefFwd* nodep) VL_OVERRIDE {
+        UASSERT_OBJ(m_curSymp, nodep, "Typedef not under module/package/$unit");
+        iterateChildren(nodep);
+        // No need to insert, only the real typedef matters, but need to track for errors
+        nodep->user1p(m_curSymp);
+    }
     virtual void visit(AstParamTypeDType* nodep) VL_OVERRIDE {
         UASSERT_OBJ(m_curSymp, nodep, "Parameter type not under module/package/$unit");
         iterateChildren(nodep);
@@ -1337,6 +1343,19 @@ private:
         // Unsupported gates need implicit creation
         pinImplicitExprRecurse(nodep);
         // We're done with implicit gates
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+    }
+    virtual void visit(AstTypedefFwd* nodep) VL_OVERRIDE {
+        VSymEnt* foundp = m_statep->getNodeSym(nodep)->findIdFallback(nodep->name());
+        if (!foundp && v3Global.opt.pedantic()) {
+            // We only check it was ever really defined in pedantic mode, as it
+            // might have been in a header file referring to a module we never
+            // needed so there are false positives
+            nodep->v3error(
+                "Forward typedef unused or does not resolve to a data type (IEEE 1800-2017 6.18): "
+                << nodep->prettyNameQ());
+        }
+        // We only needed the forward declaration in order to parse correctly.
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
     virtual void visit(AstNode* nodep) VL_OVERRIDE {
