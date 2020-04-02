@@ -32,6 +32,7 @@ class UnrollStateful {
     // MEMBERS
     UnrollVisitor* m_unrollerp;
     VL_UNCOPYABLE(UnrollStateful);
+
 public:
     // CONSTRUCTORS
     UnrollStateful();

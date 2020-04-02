@@ -37,13 +37,11 @@
 //######################################################################
 // VlcOptions
 
-void VlcOptions::addReadFile(const string& filename) {
-    m_readFiles.insert(filename);
-}
+void VlcOptions::addReadFile(const string& filename) { m_readFiles.insert(filename); }
 
 string VlcOptions::version() {
     string ver = DTVERSION;
-    ver += " rev "+cvtToStr(DTVERSION_rev);
+    ver += " rev " + cvtToStr(DTVERSION_rev);
     return ver;
 }
 
@@ -52,10 +50,17 @@ bool VlcOptions::onoff(const char* sw, const char* arg, bool& flag) {
     // if sw=="-no-arg", then return true (found it), and flag=false
     // if sw=="-noarg", then return true (found it), and flag=false
     // else return false
-    if (arg[0]!='-') v3fatalSrc("OnOff switches must have leading dash.");
-    if (0==strcmp(sw, arg)) { flag = true; return true; }
-    else if (0==strncmp(sw, "-no", 3) && (0==strcmp(sw+3, arg+1))) { flag = false; return true; }
-    else if (0==strncmp(sw, "-no-", 4) && (0==strcmp(sw+4, arg+1))) { flag = false; return true; }
+    if (arg[0] != '-') v3fatalSrc("OnOff switches must have leading dash.");
+    if (0 == strcmp(sw, arg)) {
+        flag = true;
+        return true;
+    } else if (0 == strncmp(sw, "-no", 3) && (0 == strcmp(sw + 3, arg + 1))) {
+        flag = false;
+        return true;
+    } else if (0 == strncmp(sw, "-no-", 4) && (0 == strcmp(sw + 4, arg + 1))) {
+        flag = false;
+        return true;
+    }
     return false;
 }
 
@@ -64,57 +69,52 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
     // Note argc and argv DO NOT INCLUDE the filename in [0]!!!
     // May be called recursively when there are -f files.
 #define shift { ++i; }
-    for (int i=0; i<argc; )  {
-        UINFO(9, " Option: "<<argv[i]<<endl);
-        if (argv[i][0]=='-') {
+    for (int i = 0; i < argc;) {
+        UINFO(9, " Option: " << argv[i] << endl);
+        if (argv[i][0] == '-') {
             const char* sw = argv[i];
             bool flag = true;
             // Allow gnu -- switches
-            if (sw[0]=='-' && sw[1]=='-') ++sw;
-            if (0) {}
+            if (sw[0] == '-' && sw[1] == '-') ++sw;
             // Single switches
-            else if (onoff  (sw, "-annotate-all", flag/*ref*/) ) { m_annotateAll = flag; }
-            else if (onoff  (sw, "-rank", flag/*ref*/) ) { m_rank = flag; }
-            else if (onoff  (sw, "-unlink", flag/*ref*/) )    { m_unlink = flag; }
+            else if (onoff(sw, "-annotate-all", flag /*ref*/)) {
+                m_annotateAll = flag;
+            } else if (onoff(sw, "-rank", flag /*ref*/)) {
+                m_rank = flag;
+            } else if (onoff(sw, "-unlink", flag /*ref*/)) {
+                m_unlink = flag;
+            }
             // Parameterized switches
-            else if (!strcmp(sw, "-annotate-min") && (i+1)<argc ) {
+            else if (!strcmp(sw, "-annotate-min") && (i + 1) < argc) {
                 shift;
                 m_annotateMin = atoi(argv[i]);
-            }
-            else if (!strcmp(sw, "-annotate") && (i+1)<argc ) {
+            } else if (!strcmp(sw, "-annotate") && (i + 1) < argc) {
                 shift;
                 m_annotateOut = argv[i];
-            }
-            else if (!strcmp(sw, "-debug") ) {
+            } else if (!strcmp(sw, "-debug")) {
                 V3Error::debugDefault(3);
-            }
-            else if (!strcmp(sw, "-debugi") && (i+1)<argc ) {
+            } else if (!strcmp(sw, "-debugi") && (i + 1) < argc) {
                 shift;
                 V3Error::debugDefault(atoi(argv[i]));
-            }
-            else if (!strcmp(sw, "-V") ) {
+            } else if (!strcmp(sw, "-V")) {
                 showVersion(true);
                 exit(0);
-            }
-            else if (!strcmp(sw, "-version") ) {
+            } else if (!strcmp(sw, "-version")) {
                 showVersion(false);
                 exit(0);
-            }
-            else if (!strcmp(sw, "-write") && (i+1)<argc ) {
+            } else if (!strcmp(sw, "-write") && (i + 1) < argc) {
                 shift;
                 m_writeFile = argv[i];
-            }
-            else {
-                v3fatal("Invalid option: "<<argv[i]);
+            } else {
+                v3fatal("Invalid option: " << argv[i]);
             }
             shift;
         }  // - options
         else if (1) {
             addReadFile(argv[i]);
             shift;
-        }
-        else {
-            v3fatal("Invalid argument: "<<argv[i]);
+        } else {
+            v3fatal("Invalid argument: " << argv[i]);
             shift;
         }
     }
@@ -122,17 +122,17 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
 }
 
 void VlcOptions::showVersion(bool verbose) {
-    cout <<version();
-    cout <<endl;
+    cout << version();
+    cout << endl;
     if (!verbose) return;
 
-    cout <<endl;
+    cout << endl;
     cout << "Copyright 2003-2020 by Wilson Snyder.  Verilator is free software; you can\n";
     cout << "redistribute it and/or modify the Verilator internals under the terms of\n";
     cout << "either the GNU Lesser General Public License Version 3 or the Perl Artistic\n";
     cout << "License Version 2.0.\n";
 
-    cout <<endl;
+    cout << endl;
     cout << "See https://verilator.org for documentation\n";
 }
 
@@ -145,11 +145,9 @@ int main(int argc, char** argv, char** env) {
     VlcTop top;
 
     // Command option parsing
-    top.opt.parseOptsList(argc-1, argv+1);
+    top.opt.parseOptsList(argc - 1, argv + 1);
 
-    if (top.opt.readFiles().empty()) {
-        top.opt.addReadFile("vlt_coverage.dat");
-    }
+    if (top.opt.readFiles().empty()) top.opt.addReadFile("vlt_coverage.dat");
 
     {
         const VlStringSet& readFiles = top.opt.readFiles();
@@ -165,9 +163,7 @@ int main(int argc, char** argv, char** env) {
     }
 
     V3Error::abortIfWarnings();
-    if (!top.opt.annotateOut().empty()) {
-        top.annotate(top.opt.annotateOut());
-    }
+    if (!top.opt.annotateOut().empty()) top.annotate(top.opt.annotateOut());
 
     if (top.opt.rank()) {
         top.rank();
@@ -189,7 +185,7 @@ int main(int argc, char** argv, char** env) {
     // Final writing shouldn't throw warnings, but...
     V3Error::abortIfWarnings();
 
-    UINFO(1,"Done, Exiting...\n");
+    UINFO(1, "Done, Exiting...\n");
 }
 
 // Local Variables:
