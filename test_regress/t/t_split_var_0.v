@@ -10,7 +10,11 @@ module barshift_1d_unpacked #(parameter DEPTH = 2, localparam WIDTH = 2**DEPTH)
    (input [WIDTH-1:0] in, input [DEPTH-1:0] shift, output [WIDTH-1:0] out /*verilator split_var*/);
 
    localparam OFFSET = -3;
+`ifdef ATTRIBUTES
    logic [WIDTH-1:0] tmp[DEPTH+OFFSET:OFFSET] /*verilator split_var*/;
+`else
+   logic [WIDTH-1:0] tmp[DEPTH+OFFSET:OFFSET];
+`endif
    generate
       for(genvar i = 0; i < DEPTH; ++i) begin
          always_comb
