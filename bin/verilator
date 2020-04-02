@@ -2852,7 +2852,7 @@ and range of line numbers (or all lines if omitted).
 For tracing_off, cells below any module in the files/ranges specified will
 also not be traced.
 
-=item clock_enable -module "<modulename>" -signal "<signame>"
+=item clock_enable -module "<modulename>" -var "<signame>"
 
 Indicate the signal is used to gate a clock, and the user takes responsibility
 for insuring there are no races related to it.
@@ -2860,13 +2860,13 @@ for insuring there are no races related to it.
 Same as /*verilator clock_enable*/, see L</"LANGUAGE EXTENSIONS"> for
 more information and an example.
 
-=item clocker -module "<modulename>" [-task "<taskname>"] -signal "<signame>"
+=item clocker -module "<modulename>" [-task "<taskname>"] -var "<signame>"
 
-=item clocker -module "<modulename>" [-function "<funcname>"] -signal "<signame>"
+=item clocker -module "<modulename>" [-function "<funcname>"] -var "<signame>"
 
-=item no_clocker -module "<modulename>" [-task "<taskname>"] -signal "<signame>"
+=item no_clocker -module "<modulename>" [-task "<taskname>"] -var "<signame>"
 
-=item no_clocker -module "<modulename>" [-function "<funcname>"] -signal "<signame>"
+=item no_clocker -module "<modulename>" [-function "<funcname>"] -var "<signame>"
 
 Indicate the signal is used as clock or not. This information is used by
 Verilator to mark the signal as clocker and propagate the clocker attribute
@@ -2908,9 +2908,9 @@ routines will replace the __DOT__ with the period.
 Same as /*verilator inline_module*/, see L</"LANGUAGE EXTENSIONS"> for
 more information.
 
-=item isolate_assignments -module "<modulename>" [-task "<taskname>"] -signal "<signame>"
+=item isolate_assignments -module "<modulename>" [-task "<taskname>"] -var "<signame>"
 
-=item isolate_assignments -module "<modulename>" [-function "<funcname>"] -signal "<signame>"
+=item isolate_assignments -module "<modulename>" [-function "<funcname>"] -var "<signame>"
 
 =item isolate_assignments -module "<modulename>" -function "<fname>"
 
@@ -2945,9 +2945,9 @@ outside the task itself.
 Same as /*verilator no_inline_task*/, see L</"LANGUAGE EXTENSIONS">
 for more information.
 
-=item sc_bv -module "<modulename>" [-task "<taskname>"] -signal "<signame>"
+=item sc_bv -module "<modulename>" [-task "<taskname>"] -var "<signame>"
 
-=item sc_bv -module "<modulename>" [-function "<funcname>"] -signal "<signame>"
+=item sc_bv -module "<modulename>" [-function "<funcname>"] -var "<signame>"
 
 Sets the port to be of sc_bv<I<width>> type, instead of bool, vluint32_t or
 vluint64_t.  This may be useful if the port width is parameterized and
@@ -2959,9 +2959,9 @@ significantly.
 Same as /*verilator sc_bv*/, see L</"LANGUAGE EXTENSIONS"> for more
 information.
 
-=item sformat [-module "<modulename>"] [-task "<taskname>"] -signal "<signame>"
+=item sformat [-module "<modulename>"] [-task "<taskname>"] -var "<signame>"
 
-=item sformat [-module "<modulename>"] [-function "<funcname>"] -signal "<signame>"
+=item sformat [-module "<modulename>"] [-function "<funcname>"] -var "<signame>"
 
 Final input of a function or task "input string" to indicate the
 function or task should pass all remaining arguments through
