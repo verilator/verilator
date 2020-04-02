@@ -236,6 +236,10 @@ void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
     }
 }
 
+std::string V3Os::getcwd() {
+    return filenameRealPath(".");
+}
+
 //######################################################################
 // METHODS (random)
 
@@ -326,4 +330,14 @@ void V3Os::u_sleep(int64_t usec) {
     // Flawfinder: ignore
     ::usleep(usec);
 #endif
+}
+
+//######################################################################
+// METHODS (sub command)
+
+int V3Os::system(const string& command) {
+    UINFO(1, "Running system: " << command << endl);
+    const int ret = ::system(command.c_str());
+    UINFO(1, "Command status " << ret <<endl);
+    return ret;
 }

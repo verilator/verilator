@@ -49,6 +49,7 @@ public:
     // METHODS (directory utilities)
     static void createDir(const string& dirname);
     static void unlinkRegexp(const string& dir, const string& regexp);
+    static std::string getcwd();  // Return the current working directory
 
     // METHODS (random)
     static vluint64_t rand64(vluint64_t* statep);
@@ -58,6 +59,9 @@ public:
     static void u_sleep(int64_t usec);  ///< Sleep for a given number of microseconds.
     static uint64_t timeUsecs();  ///< Return wall time since epoch in microseconds, or 0 if not implemented
     static uint64_t memUsageBytes();  ///< Return memory usage in bytes, or 0 if not implemented
+
+    // METHODS (sub command)
+    static int system(const string& command);  ///< Run system command
 };
 
 #endif  // Guard
