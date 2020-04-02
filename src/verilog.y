@@ -291,6 +291,7 @@ class AstSenTree;
 %token<fl>		yVLT_PUBLIC_MODULE          "public_module"
 %token<fl>		yVLT_SC_BV                  "sc_bv"
 %token<fl>		yVLT_SFORMAT                "sformat"
+%token<fl>		yVLT_SPLIT_VAR              "split_var"
 %token<fl>		yVLT_TRACING_OFF            "tracing_off"
 %token<fl>		yVLT_TRACING_ON             "tracing_on"
 
@@ -5824,6 +5825,7 @@ vltVarAttrFront<attrtypeen>:
 	|	yVLT_PUBLIC_FLAT_RW         { $$ = AstAttrType::VAR_PUBLIC_FLAT_RW; v3Global.dpi(true); }
 	|	yVLT_SC_BV                  { $$ = AstAttrType::VAR_SC_BV; }
 	|	yVLT_SFORMAT                { $$ = AstAttrType::VAR_SFORMAT; }
+	|	yVLT_SPLIT_VAR              { $$ = AstAttrType::VAR_SPLIT_VAR; }
 	;
 
 //**********************************************************************
