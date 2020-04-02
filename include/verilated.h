@@ -2252,7 +2252,7 @@ static inline QData VL_RTOIROUND_Q_D(int bits, double lhs) VL_PURE {
     // IEEE format: [63]=sign [62:52]=exp+1023 [51:0]=mantissa
     // This does not need to support subnormals as they are sub-integral
     lhs = VL_ROUND(lhs);
-    if (!lhs) return 0;
+    if (lhs == 0.0) return 0;
     QData q = VL_CVT_Q_D(lhs);
     int lsb = static_cast<int>((q >> VL_ULL(52)) & VL_MASK_Q(11)) - 1023 - 52;
     vluint64_t mantissa = (q & VL_MASK_Q(52)) | (VL_ULL(1) << 52);
@@ -2273,7 +2273,7 @@ static inline WDataOutP VL_RTOIROUND_W_D(int obits, WDataOutP owp, double lhs) V
     // This does not need to support subnormals as they are sub-integral
     lhs = VL_ROUND(lhs);
     VL_ZERO_W(obits, owp);
-    if (!lhs) return owp;
+    if (lhs == 0.0) return owp;
     QData q = VL_CVT_Q_D(lhs);
     int lsb = static_cast<int>((q >> VL_ULL(52)) & VL_MASK_Q(11)) - 1023 - 52;
     vluint64_t mantissa = (q & VL_MASK_Q(52)) | (VL_ULL(1) << 52);

@@ -68,7 +68,8 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
     // Parse parameters
     // Note argc and argv DO NOT INCLUDE the filename in [0]!!!
     // May be called recursively when there are -f files.
-#define shift { ++i; }
+#define shift \
+    { ++i; }
     for (int i = 0; i < argc;) {
         UINFO(9, " Option: " << argv[i] << endl);
         if (argv[i][0] == '-') {
@@ -77,7 +78,7 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
             // Allow gnu -- switches
             if (sw[0] == '-' && sw[1] == '-') ++sw;
             // Single switches
-            else if (onoff(sw, "-annotate-all", flag /*ref*/)) {
+            if (onoff(sw, "-annotate-all", flag /*ref*/)) {
                 m_annotateAll = flag;
             } else if (onoff(sw, "-rank", flag /*ref*/)) {
                 m_rank = flag;
