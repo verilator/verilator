@@ -171,7 +171,9 @@ multiline", $time);
       $write("'%-8s'\n", "beep");
 
       // $itord conversion bug, note a %d instead of proper float
+      // verilator lint_off REALCVT
       $display("log10(2) = %d", $log10(100));
+      // verilator lint_on REALCVT
 
       $write("*-* All Finished *-*\n");
       $finish;

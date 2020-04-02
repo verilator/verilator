@@ -2843,10 +2843,17 @@ private:
                 case 'm': break;  // %m - auto insert "name"
                 case 'l': break;  // %m - auto insert "library"
                 case 'd': {  // Convert decimal to either 'd' or '#'
-                    if (argp && argp->isSigned()) {  // Convert it
-                        ch = '~';
+                    if (argp) {
+                        AstNode* nextp = argp->nextp();
+                        if (argp->isDouble()) {
+                            spliceCvtS(argp, true, 64);
+                            ch = '~';
+                        }
+                        else if (argp->isSigned()) {  // Convert it
+                            ch = '~';
+                        }
+                        argp = nextp;
                     }
-                    if (argp) argp = argp->nextp();
                     break;
                 }
                 case 'p': {  // Pattern
@@ -2893,6 +2900,17 @@ private:
                         ch = '^';
                     }
                     if (argp) argp = argp->nextp();
+                    break;
+                }
+                case 'f':  // FALLTHRU
+                case 'g': {
+                    if (argp) {
+                        AstNode* nextp = argp->nextp();
+                        if (!argp->isDouble()) {
+                            iterateCheckReal(nodep, "Display argument", argp, BOTH);
+                        }
+                        argp = nextp;
+                    }
                     break;
                 }
                 case '?': {  // Unspecified by user, guess
