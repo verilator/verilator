@@ -151,6 +151,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "public_module"       { FL; return yVLT_PUBLIC_MODULE; }
   "sc_bv"               { FL; return yVLT_SC_BV; }
   "sformat"             { FL; return yVLT_SFORMAT; }
+  "split_var"           { FL; return yVLT_SPLIT_VAR; }
   "tracing_off"         { FL; return yVLT_TRACING_OFF; }
   "tracing_on"          { FL; return yVLT_TRACING_ON; }
 

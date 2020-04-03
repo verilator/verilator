@@ -2971,6 +2971,17 @@ behavior.  See the test_regress/t/t_dpi_display.v file for an example.
 Same as /*verilator sformat*/, see L</"LANGUAGE EXTENSIONS"> for more
 information.
 
+=item split_var [-module "<modulename>"] [-task "<taskname>"] -var "<varname>"
+
+=item split_var [-module "<modulename>"] [-function "<funcname>"] -var "<varname>"
+
+Break the variable into multiple pieces typically to resolve UNOPTFLAT
+performance issues. Typically the variables to attach this to are
+recommeded by Verilator itself, see UNOPTFLAT.
+
+Same as /*verilator split_var*/, see L</"LANGUAGE EXTENSIONS"> for more
+information.
+
 =back
 
 
@@ -3483,6 +3494,9 @@ integer types (reg, logic, bit, byte, int...); otherwise if a split was
 requested but cannot occur a SPLITVAR warning is issued.  Splitting large
 arrays may slow donw the Verilation speed, so use this only on variables
 that require it.
+
+Same as C<split_var> in configuration files, see L</"CONFIGURATION FILES">
+for more information.
 
 =item /*verilator tag <text...>*/
 

@@ -1,0 +1,9 @@
+// DESCRIPTION: Verilator: Verilog Test module
+//
+// This file ONLY is placed into the Public Domain, for any use,
+// without warranty, 2020 by Marco Widmer.
+// SPDX-License-Identifier: CC0-1.0
+
+`verilator_config
+
+split_var -module "barshift_1d_unpacked" -var "tmp"
