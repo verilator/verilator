@@ -15,7 +15,7 @@ top_filename("t/t_split_var_0.v");
 # %Warning-UNOPTTHREADS: Thread scheduler is unable to provide requested parallelism; consider asking for fewer threads.
 # So use 6 threads here though it's not optimal in performace wise, but ok.
 compile(
-    verilator_flags2 => ['--cc --trace --stats' . ($Self->{vltmt} ? ' --threads 6' : '') . ' +define+ATTRIBUTES'],
+    verilator_flags2 => ['--cc --trace --stats' . ($Self->{vltmt} ? ' --threads 6' : ''), '+define+TEST_ATTRIBUTES'],
     );
 
 execute(
