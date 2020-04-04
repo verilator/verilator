@@ -3,6 +3,9 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in []. Thanks!
 
 
+* Verilator 4.033 devel
+
+
 * Verilator 4.032 2020-04-04
 
 ***   Add column numbers to errors and warnings.
