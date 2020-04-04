@@ -265,17 +265,17 @@ void VerilatedVcd::makeNameMap() {
 }
 
 void VerilatedVcd::deleteNameMap() {
-    if (m_namemapp) { delete m_namemapp; m_namemapp=NULL; }
+    if (m_namemapp) VL_DO_CLEAR(delete m_namemapp, m_namemapp = NULL);
 }
 
 VerilatedVcd::~VerilatedVcd() {
     close();
-    if (m_wrBufp) { delete[] m_wrBufp; m_wrBufp=NULL; }
-    if (m_sigs_oldvalp) { delete[] m_sigs_oldvalp; m_sigs_oldvalp=NULL; }
+    if (m_wrBufp) VL_DO_CLEAR(delete[] m_wrBufp, m_wrBufp = NULL);
+    if (m_sigs_oldvalp) VL_DO_CLEAR(delete[] m_sigs_oldvalp, m_sigs_oldvalp = NULL);
     deleteNameMap();
-    if (m_filep && m_fileNewed) { delete m_filep; m_filep = NULL; }
-    for (CallbackVec::const_iterator it=m_callbacks.begin(); it!=m_callbacks.end(); ++it) {
-        delete (*it);
+    if (m_filep && m_fileNewed) VL_DO_CLEAR(delete m_filep, m_filep = NULL);
+    for (CallbackVec::const_iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it) {
+        delete *it;
     }
     m_callbacks.clear();
     VerilatedVcdSingleton::removeVcd(this);
@@ -347,12 +347,12 @@ void VerilatedVcd::bufferResize(vluint64_t minsize) {
     // writing when we are 3/4 full (with thus 2*minsize remaining free)
     if (VL_UNLIKELY(minsize > m_wrChunkSize)) {
         char* oldbufp = m_wrBufp;
-        m_wrChunkSize = minsize*2;
-        m_wrBufp = new char [m_wrChunkSize * 8];
+        m_wrChunkSize = minsize * 2;
+        m_wrBufp = new char[m_wrChunkSize * 8];
         memcpy(m_wrBufp, oldbufp, m_writep - oldbufp);
         m_writep = m_wrBufp + (m_writep - oldbufp);
         m_wrFlushp = m_wrBufp + m_wrChunkSize * 6;
-        delete [] oldbufp; oldbufp=NULL;
+        VL_DO_CLEAR(delete[] oldbufp, oldbufp = NULL);
     }
 }
 

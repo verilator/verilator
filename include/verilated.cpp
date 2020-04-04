@@ -245,7 +245,8 @@ Verilated::NonSerialized::NonSerialized() {
 }
 Verilated::NonSerialized::~NonSerialized() {
     if (s_profThreadsFilenamep) {
-        free(const_cast<char*>(s_profThreadsFilenamep)); s_profThreadsFilenamep=NULL;
+        VL_DO_CLEAR(free(const_cast<char*>(s_profThreadsFilenamep)),
+                    s_profThreadsFilenamep = NULL);
     }
 }
 
@@ -2265,7 +2266,7 @@ VerilatedModule::VerilatedModule(const char* namep)
 VerilatedModule::~VerilatedModule() {
     // Memory cleanup - not called during normal operation
     // NOLINTNEXTLINE(google-readability-casting)
-    if (m_namep) { free((void*)(m_namep)); m_namep=NULL; }
+    if (m_namep) VL_DO_CLEAR(free((void*)(m_namep)), m_namep = NULL);
 }
 
 //======================================================================
@@ -2322,9 +2323,9 @@ VerilatedScope::VerilatedScope() {
 VerilatedScope::~VerilatedScope() {
     // Memory cleanup - not called during normal operation
     VerilatedImp::scopeErase(this);
-    if (m_namep) { delete [] m_namep; m_namep = NULL; }
-    if (m_callbacksp) { delete [] m_callbacksp; m_callbacksp = NULL; }
-    if (m_varsp) { delete m_varsp; m_varsp = NULL; }
+    if (m_namep) VL_DO_CLEAR(delete [] m_namep, m_namep = NULL);
+    if (m_callbacksp) VL_DO_CLEAR(delete [] m_callbacksp, m_callbacksp = NULL);
+    if (m_varsp) VL_DO_CLEAR(delete m_varsp, m_varsp = NULL);
     m_funcnumMax = 0;  // Force callback table to empty
 }
 

@@ -61,7 +61,7 @@ public:
     }
     ~VlcBuckets() {
         m_dataSize = 0;
-        free(m_datap); m_datap = NULL;
+        VL_DO_CLEAR(free(m_datap), m_datap = NULL);
     }
 
     // ACCESSORS

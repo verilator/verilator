@@ -54,7 +54,7 @@ public:
     }
     virtual ~VerilatedSerialize() {
         close();
-        if (m_bufp) { delete m_bufp; m_bufp=NULL; }
+        if (m_bufp) VL_DO_CLEAR(delete m_bufp, m_bufp = NULL);
     }
     // METHODS
     bool isOpen() const { return m_isOpen; }
@@ -107,6 +107,7 @@ protected:
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedDeserialize);
+
 public:
     VerilatedDeserialize() {
         m_isOpen = false;
@@ -116,7 +117,7 @@ public:
     }
     virtual ~VerilatedDeserialize() {
         close();
-        if (m_bufp) { delete m_bufp; m_bufp=NULL; }
+        if (m_bufp) VL_DO_CLEAR(delete m_bufp, m_bufp = NULL);
     }
     // METHODS
     bool isOpen() const { return m_isOpen; }
@@ -160,10 +161,12 @@ private:
 
 public:
     // CONSTRUCTORS
-    VerilatedSave() { m_fd = -1; }
+    VerilatedSave()
+        : m_fd(-1) {}
     virtual ~VerilatedSave() VL_OVERRIDE { close(); }
     // METHODS
-    void open(const char* filenamep) VL_MT_UNSAFE_ONE;  ///< Open the file; call isOpen() to see if errors
+    /// Open the file; call isOpen() to see if errors
+    void open(const char* filenamep) VL_MT_UNSAFE_ONE;
     void open(const std::string& filename) VL_MT_UNSAFE_ONE { open(filename.c_str()); }
     virtual void close() VL_OVERRIDE VL_MT_UNSAFE_ONE;
     virtual void flush() VL_OVERRIDE VL_MT_UNSAFE_ONE;
@@ -179,7 +182,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    VerilatedRestore() { m_fd = -1; }
+    VerilatedRestore()
+        : m_fd(-1) {}
     virtual ~VerilatedRestore() VL_OVERRIDE { close(); }
 
     // METHODS

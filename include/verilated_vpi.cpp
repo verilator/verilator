@@ -204,7 +204,7 @@ public:
         m_varDatap = varp->datap();
     }
     virtual ~VerilatedVpioVar() {
-        if (m_prevDatap) { delete [] m_prevDatap; m_prevDatap = NULL; }
+        if (m_prevDatap) VL_DO_CLEAR(delete[] m_prevDatap, m_prevDatap = NULL);
     }
     static inline VerilatedVpioVar* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioVar*>(reinterpret_cast<VerilatedVpio*>(h));
