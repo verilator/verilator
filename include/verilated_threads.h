@@ -284,6 +284,7 @@ public:
     // this once to setup profiling state:
     void setupProfilingClientThread();
     void tearDownProfilingClientThread();
+
 private:
     VL_UNCOPYABLE(VlThreadPool);
 };

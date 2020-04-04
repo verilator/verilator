@@ -10,22 +10,14 @@ be made to a file.  The following files are not yet clang-format clean:
 
 clang-format -i include/verilated.h
 clang-format -i include/verilated_dpi.h
-clang-format -i include/verilated_fst_c.h
 clang-format -i include/verilated_heavy.h
 clang-format -i include/verilated_imp.h
-clang-format -i include/verilated_save.h
-clang-format -i include/verilated_sym_props.h
 clang-format -i include/verilated_unordered_set_map.h
-clang-format -i include/verilated_vcd_c.h
 clang-format -i include/verilatedos.h
 
 clang-format -i include/verilated.cpp
 clang-format -i include/verilated_cov.cpp
 clang-format -i include/verilated_dpi.cpp
-clang-format -i include/verilated_fst_c.cpp
-clang-format -i include/verilated_save.cpp
-clang-format -i include/verilated_threads.cpp
-clang-format -i include/verilated_vcd_c.cpp
 clang-format -i include/verilated_vpi.cpp
 
 clang-format -i src/V3Ast.h

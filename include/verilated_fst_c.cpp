@@ -91,7 +91,7 @@ void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
     m_curScope.clear();
     m_nextCode = 1;
 
-    for (vluint32_t ent = 0; ent< m_callbacks.size(); ++ent) {
+    for (vluint32_t ent = 0; ent < m_callbacks.size(); ++ent) {
         VerilatedFstCallInfo* cip = m_callbacks[ent];
         cip->m_code = m_nextCode;
         // Initialize; callbacks will call decl* which update m_nextCode
@@ -106,18 +106,16 @@ void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
     }
 }
 
-void VerilatedFst::module(const std::string& name) {
-    m_module = name;
-}
+void VerilatedFst::module(const std::string& name) { m_module = name; }
 
 //=============================================================================
 // Decl
 
 void VerilatedFst::declDTypeEnum(int dtypenum, const char* name, vluint32_t elements,
-                                 unsigned int minValbits,
-                                 const char** itemNamesp, const char** itemValuesp) {
-    fstEnumHandle enumNum = fstWriterCreateEnumTable(m_fst, name, elements,
-                                                     minValbits, itemNamesp, itemValuesp);
+                                 unsigned int minValbits, const char** itemNamesp,
+                                 const char** itemValuesp) {
+    fstEnumHandle enumNum
+        = fstWriterCreateEnumTable(m_fst, name, elements, minValbits, itemNamesp, itemValuesp);
     m_local2fstdtype[dtypenum] = enumNum;
 }
 
@@ -127,7 +125,7 @@ void VerilatedFst::declSymbol(vluint32_t code, const char* name, int dtypenum, f
 
     // Make sure deduplicate tracking increments for future declarations
     int codesNeeded = 1 + int(bits / 32);
-    //Not supported: if (tri) codesNeeded *= 2;  // Space in change array for __en signals
+    // Not supported: if (tri) codesNeeded *= 2;  // Space in change array for __en signals
     m_nextCode = std::max(m_nextCode, code + codesNeeded);
 
     std::pair<Code2SymbolType::iterator, bool> p
@@ -143,8 +141,7 @@ void VerilatedFst::declSymbol(vluint32_t code, const char* name, int dtypenum, f
     std::list<std::string>::iterator cur_it = m_curScope.begin();
     std::list<std::string>::iterator new_it = tokens.begin();
     while (cur_it != m_curScope.end() && new_it != tokens.end()) {
-        if (*cur_it != *new_it)
-            break;
+        if (*cur_it != *new_it) break;
         ++cur_it;
         ++new_it;
     }
@@ -201,14 +198,14 @@ void VerilatedFst::dump(vluint64_t timeui) {
     if (!isOpen()) return;
     if (VL_UNLIKELY(m_fullDump)) {
         m_fullDump = false;  // No more need for next dump to be full
-        for (vluint32_t ent = 0; ent< m_callbacks.size(); ++ent) {
+        for (vluint32_t ent = 0; ent < m_callbacks.size(); ++ent) {
             VerilatedFstCallInfo* cip = m_callbacks[ent];
             (cip->m_fullcb)(this, cip->m_userthis, cip->m_code);
         }
         return;
     }
     fstWriterEmitTimeChange(m_fst, timeui);
-    for (vluint32_t ent = 0; ent< m_callbacks.size(); ++ent) {
+    for (vluint32_t ent = 0; ent < m_callbacks.size(); ++ent) {
         VerilatedFstCallInfo* cip = m_callbacks[ent];
         (cip->m_changecb)(this, cip->m_userthis, cip->m_code);
     }

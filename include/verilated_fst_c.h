@@ -43,6 +43,7 @@ class VerilatedFst {
     typedef std::map<vluint32_t, fstHandle> Code2SymbolType;
     typedef std::map<int, fstEnumHandle> Local2FstDtype;
     typedef std::vector<VerilatedFstCallInfo*> CallbackVec;
+
 private:
     void* m_fst;
     VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
@@ -61,9 +62,12 @@ private:
                     bool array, int arraynum, vluint32_t len, vluint32_t bits);
     // helpers
     std::vector<char> m_valueStrBuffer;
+
 public:
-    explicit VerilatedFst(void* fst=NULL);
-    ~VerilatedFst() { if (m_fst == NULL) { fstWriterClose(m_fst); } }
+    explicit VerilatedFst(void* fst = NULL);
+    ~VerilatedFst() {
+        if (m_fst == NULL) { fstWriterClose(m_fst); }
+    }
     void changeThread() { m_assertOne.changeThread(); }
     bool isOpen() const { return m_fst != NULL; }
     void open(const char* filename) VL_MT_UNSAFE;
@@ -76,7 +80,7 @@ public:
     void set_time_unit(const char* unitp) { fstWriterSetTimescaleFromString(m_fst, unitp); }
     void set_time_unit(const std::string& unit) { set_time_unit(unit.c_str()); }
 
-    void set_time_resolution(const char* unitp) { if (unitp) {} }
+    void set_time_resolution(const char*) {}
     void set_time_resolution(const std::string& unit) { set_time_resolution(unit.c_str()); }
 
     // double timescaleToDouble(const char* unitp);
@@ -156,18 +160,18 @@ public:
         fstWriterEmitValueChangeVec32(m_fst, m_code2symbol[code], bits, newval);
     }
 
-    void fullBit(vluint32_t code, const vluint32_t newval) {
-        chgBit(code, newval); }
+    void fullBit(vluint32_t code, const vluint32_t newval) { chgBit(code, newval); }
     void fullBus(vluint32_t code, const vluint32_t newval, int bits) {
-        chgBus(code, newval, bits); }
-    void fullDouble(vluint32_t code, const double newval) {
-        chgDouble(code, newval); }
-    void fullFloat(vluint32_t code, const float newval) {
-        chgFloat(code, newval); }
+        chgBus(code, newval, bits);
+    }
+    void fullDouble(vluint32_t code, const double newval) { chgDouble(code, newval); }
+    void fullFloat(vluint32_t code, const float newval) { chgFloat(code, newval); }
     void fullQuad(vluint32_t code, const vluint64_t newval, int bits) {
-        chgQuad(code, newval, bits); }
+        chgQuad(code, newval, bits);
+    }
     void fullArray(vluint32_t code, const vluint32_t* newval, int bits) {
-        chgArray(code, newval, bits); }
+        chgArray(code, newval, bits);
+    }
 
     void declTriBit(vluint32_t code, const char* name, int arraynum);
     void declTriBus(vluint32_t code, const char* name, int arraynum, int msb, int lsb);
@@ -198,12 +202,14 @@ class VerilatedFstC {
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFstC);
+
 public:
-    explicit VerilatedFstC(void* filep=NULL) : m_sptrace(filep) {}
+    explicit VerilatedFstC(void* filep = NULL)
+        : m_sptrace(filep) {}
     ~VerilatedFstC() { close(); }
     /// Routines can only be called from one thread; allow next call from different thread
     void changeThread() { spTrace()->changeThread(); }
-public:
+
     // ACCESSORS
     /// Is file open?
     bool isOpen() const { return m_sptrace.isOpen(); }
