@@ -985,7 +985,6 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
     int m_numSplit;  // Total number of split variables
     // key:variable to be split. value:location where the variable is referenced.
     vl_unordered_map<AstVar*, PackedVarRef> m_refs;
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
     virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         UASSERT_OBJ(m_modp == NULL, m_modp, "Nested module declration");
         if (!VN_IS(nodep, Module)) {
@@ -1063,6 +1062,8 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
             iterateChildren(nodep);
         }
     }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
     // Extract necessary bit range from a newly created variable to meet ref
     static AstNode* extractBits(const PackedVarRefEntry& ref, const SplitNewVar& var,
                                 bool lvalue) {

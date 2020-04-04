@@ -83,23 +83,23 @@ private:
     }
 
     //--------------------
-    // Default: Just iterate
     virtual void visit(AstVar*) VL_OVERRIDE {}
     virtual void visit(AstTypedef*) VL_OVERRIDE {}
     virtual void visit(AstParamTypeDType*) VL_OVERRIDE {}
     virtual void visit(AstNode* nodep) VL_OVERRIDE {
+        // Hash not just iterate
         nodeHashIterate(nodep);
     }
 
 public:
     // CONSTRUCTORS
-    explicit HashedVisitor(AstNode* nodep) {
-        m_cacheInUser4 = true;
+    explicit HashedVisitor(AstNode* nodep)
+        : m_cacheInUser4(true) {
         nodeHashIterate(nodep);
-        //UINFO(9,"  stmthash "<<hex<<V3Hashed::nodeHash(nodep)<<"  "<<nodep<<endl);
+        // UINFO(9,"  stmthash "<<hex<<V3Hashed::nodeHash(nodep)<<"  "<<nodep<<endl);
     }
-    explicit HashedVisitor(const AstNode* nodep) {
-        m_cacheInUser4 = false;
+    explicit HashedVisitor(const AstNode* nodep)
+        : m_cacheInUser4(false) {
         nodeHashIterate(const_cast<AstNode*>(nodep));
     }
     V3Hash finalHash() const { return m_lowerHash; }

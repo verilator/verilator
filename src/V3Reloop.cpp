@@ -222,12 +222,9 @@ private:
         UINFO(9, "Start merge i="<<index<<" "<<nodep<<endl);
     }
     //--------------------
-    // Default: Just iterate
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {}  // Speedup
-    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}  // Speedup
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstVar*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

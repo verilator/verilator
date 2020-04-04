@@ -131,20 +131,16 @@ private:
         addCall(nodep);
     }
     // Speed things up
-    virtual void visit(AstNodeAssign* nodep) VL_OVERRIDE {}
-    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNodeAssign*) VL_OVERRIDE {}
+    virtual void visit(AstNodeMath*) VL_OVERRIDE {}
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
-    CombCallVisitor() {
-        m_find = false;
-    }
+    CombCallVisitor()
+        : m_find(false) {}
     virtual ~CombCallVisitor() {}
-    void main(AstNetlist* nodep) {
-        iterate(nodep);
-    }
+    void main(AstNetlist* nodep) { iterate(nodep); }
 };
 
 //######################################################################
@@ -452,9 +448,7 @@ private:
     virtual void visit(AstVar*) VL_OVERRIDE {}
     virtual void visit(AstTraceDecl*) VL_OVERRIDE {}
     virtual void visit(AstTraceInc*) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

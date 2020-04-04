@@ -69,9 +69,7 @@ private:
             }
         }
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -359,7 +357,8 @@ private:
         checkNode(nodep);
     }
     virtual void visit(AstConst* nodep) VL_OVERRIDE {
-        iterateChildren(nodep); checkNode(nodep);
+        iterateChildren(nodep);
+        checkNode(nodep);
     }
     virtual void visit(AstNodeCond* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
@@ -407,10 +406,8 @@ private:
 
     //--------------------
     // Default: Just iterate
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {}  // Don't hit varrefs under vars
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstVar*) VL_OVERRIDE {}  // Don't hit varrefs under vars
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

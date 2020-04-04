@@ -253,7 +253,7 @@ private:
         }
     }
     //-----
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
+    virtual void visit(AstNode*) VL_OVERRIDE {
         // All modules are present at root so no need to iterate on children
     }
 
@@ -333,9 +333,7 @@ private:
         m_hasChildren = true;
     }
     //-----
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

@@ -337,18 +337,14 @@ class EmitCSyms : EmitCBaseVisitor {
         iterateChildren(nodep);
         m_funcp = NULL;
     }
-    // NOPs
-    virtual void visit(AstConst*) VL_OVERRIDE {}
-    // Default
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+
     //---------------------------------------
-    // ACCESSORS
+    virtual void visit(AstConst*) VL_OVERRIDE {}
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
-    explicit EmitCSyms(AstNetlist* nodep, bool dpiHdrOnly):
-        m_dpiHdrOnly(dpiHdrOnly)
-    {
+    explicit EmitCSyms(AstNetlist* nodep, bool dpiHdrOnly)
+        : m_dpiHdrOnly(dpiHdrOnly) {
         m_funcp = NULL;
         m_modp = NULL;
         m_coverBins = 0;

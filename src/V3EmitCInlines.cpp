@@ -96,12 +96,9 @@ class EmitCInlines : EmitCBaseVisitor {
         iterateChildren(nodep);
     }
 
-    // Default
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
     //---------------------------------------
-    // ACCESSORS
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     explicit EmitCInlines(AstNetlist* nodep) {
         iterate(nodep);

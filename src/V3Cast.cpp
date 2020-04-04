@@ -157,13 +157,10 @@ private:
     }
 
     // NOPs
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {}
+    virtual void visit(AstVar*) VL_OVERRIDE {}
 
     //--------------------
-    // Default: Just iterate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

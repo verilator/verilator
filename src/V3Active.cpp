@@ -79,16 +79,12 @@ private:
         // Simplify sensitivity list
         VL_DO_DANGLING(V3Const::constifyExpensiveEdit(nodep), nodep);
     }
-    // Empty visitors, speed things up
-    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE { }
     //--------------------
-    // Default
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        // Default: Just iterate
-        iterateChildren(nodep);
-    }
-    // METHODS
+    virtual void visit(AstNodeStmt*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
+    // METHODS
     AstScope* scopep() { return m_scopep; }
     AstActive* getCActive(FileLine* fl) {
         if (!m_cActivep) {
@@ -206,9 +202,8 @@ private:
         }
     }
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     ActiveDlyVisitor(AstNode* nodep, CheckType check) {
@@ -411,10 +406,9 @@ private:
         }
     }
 
-    // Empty visitors, speed things up
-    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}
-    virtual void visit(AstVarScope* nodep) VL_OVERRIDE {}
     //--------------------
+    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstVarScope*) VL_OVERRIDE {}  // Accelerate
     virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:

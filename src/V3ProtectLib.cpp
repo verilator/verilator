@@ -363,7 +363,7 @@ class ProtectVisitor : public AstNVisitor {
         }
     }
 
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { }
+    virtual void visit(AstNode*) VL_OVERRIDE {}
 
     string cInputConnection(AstVar* varp) {
         string frstmt;

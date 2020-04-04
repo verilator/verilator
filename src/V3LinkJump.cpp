@@ -243,11 +243,9 @@ private:
     virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         if (m_loopInc && nodep->varp()) nodep->varp()->usedLoopIdx(true);
     }
+    virtual void visit(AstConst*) VL_OVERRIDE {}
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
-    virtual void visit(AstConst* nodep) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
 public:
     // CONSTRUCTORS
     explicit LinkJumpVisitor(AstNetlist* nodep) {

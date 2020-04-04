@@ -121,11 +121,10 @@ private:
         iterateChildren(nodep);
     }
     virtual void visit(AstSenTree* nodep) VL_OVERRIDE { m_trees.add(nodep); }
-    // Empty visitors, speed things up
-    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE { }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+
+    virtual void visit(AstNodeStmt*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
     // METHODS
 public:
     void clear() {

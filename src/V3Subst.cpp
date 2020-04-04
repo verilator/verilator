@@ -202,10 +202,9 @@ private:
             }
         }
     }
-    virtual void visit(AstConst* nodep) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstConst*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     SubstUseVisitor(AstNode* nodep, int origStep) {
@@ -362,8 +361,8 @@ private:
             }
         }
     }
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {}
-    virtual void visit(AstConst* nodep) VL_OVERRIDE {}
+    virtual void visit(AstVar*) VL_OVERRIDE {}
+    virtual void visit(AstConst*) VL_OVERRIDE {}
     virtual void visit(AstNode* nodep) VL_OVERRIDE {
         m_ops++;
         if (!nodep->isSubstOptimizable()) {

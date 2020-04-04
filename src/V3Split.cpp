@@ -825,12 +825,11 @@ public:
         }
     }
     virtual ~RemovePlaceholdersVisitor() {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
     virtual void visit(AstSplitPlaceholder* nodep) VL_OVERRIDE {
         m_removeSet.insert(nodep);
     }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 private:
     VL_UNCOPYABLE(RemovePlaceholdersVisitor);
 };

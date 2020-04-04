@@ -225,10 +225,7 @@ class SliceVisitor : public AstNVisitor {
         expandBiOp(nodep);
     }
 
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        // Default: Just iterate
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

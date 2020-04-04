@@ -45,9 +45,8 @@ private:
     virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         if (nodep->varp()) nodep->varp()->user4(1);
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     explicit ConstVarMarkVisitor(AstNode* nodep) {
@@ -67,9 +66,8 @@ private:
     virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         if (nodep->varp() && nodep->varp()->user4()) m_found = true;
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     explicit ConstVarFindVisitor(AstNode* nodep) {
@@ -1367,7 +1365,7 @@ private:
     }
 
     // Special cases
-    virtual void visit(AstConst* nodep) VL_OVERRIDE {}  // Already constant
+    virtual void visit(AstConst*) VL_OVERRIDE {}  // Already constant
 
     virtual void visit(AstCell* nodep) VL_OVERRIDE {
         if (m_params) {
@@ -2155,7 +2153,7 @@ private:
     // These are converted by V3Param.  Don't constify as we don't want the
     // from() VARREF to disappear, if any.
     // If output of a presel didn't get consted, chances are V3Param didn't visit properly
-    virtual void visit(AstNodePreSel* nodep) VL_OVERRIDE {}
+    virtual void visit(AstNodePreSel*) VL_OVERRIDE {}
 
     // Ignored, can eliminate early
     virtual void visit(AstSysIgnore* nodep) VL_OVERRIDE {

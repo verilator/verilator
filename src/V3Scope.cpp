@@ -289,10 +289,8 @@ private:
         // Want to ignore blocks under it, so just do nothing
     }
     //--------------------
-    // Default
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     explicit ScopeVisitor(AstNetlist* nodep) {
@@ -395,10 +393,8 @@ private:
     }
 
     //--------------------
-    // Default
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     explicit ScopeCleanupVisitor(AstNetlist* nodep) {

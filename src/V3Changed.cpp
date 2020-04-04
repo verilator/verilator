@@ -283,14 +283,9 @@ private:
             }
         }
     }
-    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {
-        // Short-circuit
-    }
     //--------------------
-    // Default: Just iterate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

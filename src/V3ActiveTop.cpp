@@ -127,10 +127,9 @@ private:
     virtual void visit(AstFinal* nodep) VL_OVERRIDE {  // LCOV_EXCL_LINE
         nodep->v3fatalSrc("Node should have been deleted");
     }
-    // Empty visitors, speed things up
-    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}
-    virtual void visit(AstVarScope* nodep) VL_OVERRIDE {}
     //--------------------
+    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstVarScope*) VL_OVERRIDE {}  // Accelerate
     virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:

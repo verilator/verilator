@@ -249,7 +249,6 @@ private:
         }
     }
     //--------------------
-    // Default
     virtual void visit(AstNode* nodep) VL_OVERRIDE {
         // *** Special iterator
         if (!m_isSimple) return;  // Fastpath
@@ -264,6 +263,7 @@ private:
         }
         else iterateChildren(nodep);
     }
+
 public:
     // CONSTRUCTORS
     GateOkVisitor(AstNode* nodep, bool buffersOnly, bool dedupe) {
@@ -523,7 +523,6 @@ private:
     }
 
     //--------------------
-    // Default
     virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         if (nodep->isOutputter() && m_logicVertexp) m_logicVertexp->setConsumed("outputter");
@@ -884,9 +883,8 @@ private:
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     virtual ~GateElimVisitor() {}
@@ -1440,10 +1438,8 @@ private:
         iterate(nodep->lhsp());
     }
     //--------------------
-    // Default
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     GateConcatVisitor() {
@@ -1624,11 +1620,9 @@ private:
         }
     }
     // Speedups
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {}
-    virtual void visit(AstActive* nodep) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstVar*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstActive*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

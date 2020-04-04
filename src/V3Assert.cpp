@@ -380,9 +380,8 @@ private:
         m_beginp = lastp;
     }
 
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     explicit AssertVisitor(AstNetlist* nodep) {

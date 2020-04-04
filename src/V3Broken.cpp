@@ -206,8 +206,10 @@ private:
     }
     // VISITORS
     virtual void visit(AstNode* nodep) VL_OVERRIDE {
+        // Process not just iterate
         processAndIterate(nodep);
     }
+
 public:
     // CONSTRUCTORS
     explicit BrokenMarkVisitor(AstNetlist* nodep) {
@@ -262,6 +264,7 @@ private:
                     nodep, "Assignment LHS is not an lvalue");
     }
     virtual void visit(AstNode* nodep) VL_OVERRIDE {
+        // Process not just iterate
         processAndIterate(nodep);
     }
 public:

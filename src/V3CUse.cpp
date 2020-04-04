@@ -93,7 +93,7 @@ class CUseVisitor : public AstNVisitor {
         }
         makeUseCells(nodep);
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {}  // All in AstNodeModule
+    virtual void visit(AstNode*) VL_OVERRIDE {}  // All in AstNodeModule
 
 public:
     // CONSTRUCTORS

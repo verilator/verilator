@@ -414,20 +414,19 @@ private:
     }
 
     // Until we support tables, primitives will have undriven and unused I/Os
-    virtual void visit(AstPrimitive* nodep) VL_OVERRIDE {}
+    virtual void visit(AstPrimitive*) VL_OVERRIDE {}
 
     // Coverage artifacts etc shouldn't count as a sink
-    virtual void visit(AstCoverDecl* nodep) VL_OVERRIDE {}
-    virtual void visit(AstCoverInc* nodep) VL_OVERRIDE {}
-    virtual void visit(AstCoverToggle* nodep) VL_OVERRIDE {}
-    virtual void visit(AstTraceDecl* nodep) VL_OVERRIDE {}
-    virtual void visit(AstTraceInc* nodep) VL_OVERRIDE {}
+    virtual void visit(AstCoverDecl*) VL_OVERRIDE {}
+    virtual void visit(AstCoverInc*) VL_OVERRIDE {}
+    virtual void visit(AstCoverToggle*) VL_OVERRIDE {}
+    virtual void visit(AstTraceDecl*) VL_OVERRIDE {}
+    virtual void visit(AstTraceInc*) VL_OVERRIDE {}
 
     // iterate
     virtual void visit(AstConst* nodep) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     explicit UndrivenVisitor(AstNetlist* nodep) {

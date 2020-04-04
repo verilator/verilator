@@ -434,9 +434,7 @@ private:
     }
 
     virtual void visit(AstVar*) VL_OVERRIDE {}  // Don't want varrefs under it
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -489,9 +487,8 @@ private:
     virtual void visit(AstVar*) VL_OVERRIDE {}  // Accelerate
     virtual void visit(AstNodeStmt*) VL_OVERRIDE {}  // Accelerate
     virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     LifeTopVisitor(AstNetlist* nodep, LifeState* statep) {

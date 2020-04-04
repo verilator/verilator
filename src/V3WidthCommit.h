@@ -34,6 +34,14 @@
 
 class WidthRemoveVisitor : public AstNVisitor {
 private:
+    // METHODS
+    void replaceWithSignedVersion(AstNode* nodep, AstNode* newp) {
+        UINFO(6, " Replace " << nodep << " w/ " << newp << endl);
+        nodep->replaceWith(newp);
+        newp->dtypeFrom(nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+
     // VISITORS
     virtual void visit(AstSigned* nodep) VL_OVERRIDE {
         VL_DO_DANGLING(replaceWithSignedVersion(nodep, nodep->lhsp()->unlinkFrBack()), nodep);
@@ -41,15 +49,8 @@ private:
     virtual void visit(AstUnsigned* nodep) VL_OVERRIDE {
         VL_DO_DANGLING(replaceWithSignedVersion(nodep, nodep->lhsp()->unlinkFrBack()), nodep);
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
-    void replaceWithSignedVersion(AstNode* nodep, AstNode* newp) {
-        UINFO(6," Replace "<<nodep<<" w/ "<<newp<<endl);
-        nodep->replaceWith(newp);
-        newp->dtypeFrom(nodep);
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     WidthRemoveVisitor() {}

@@ -205,7 +205,6 @@ private:
         }
     }
     //--------------------
-    // Default: Just iterate
     virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         if (m_modp) {
@@ -245,9 +244,9 @@ private:
     virtual void visit(AstCell* nodep) VL_OVERRIDE {
         nodep->user4p(nodep->clonep());
     }
-    // Accelerate
-    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE {}
-    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}
+    //--------------------
+    virtual void visit(AstNodeStmt*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
     virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
@@ -605,8 +604,8 @@ private:
     }
 
     //--------------------
-    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNodeStmt*) VL_OVERRIDE {}  // Accelerate
     virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:

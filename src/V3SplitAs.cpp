@@ -57,9 +57,8 @@ private:
             m_splitVscp = nodep->varScopep();
         }
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     explicit SplitAsFindVisitor(AstAlways* nodep) {
@@ -117,9 +116,8 @@ private:
         m_keepStmt = oldKeep || m_keepStmt;
         UINFO(9,"     upKeep="<<m_keepStmt<<" STMT "<<nodep<<endl);
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     SplitAsCleanVisitor(AstAlways* nodep, AstVarScope* vscp, bool modeMatch) {
@@ -190,11 +188,8 @@ private:
     }
 
     // Speedup; no always under math
-    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}
-
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNodeMath*) VL_OVERRIDE {}
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

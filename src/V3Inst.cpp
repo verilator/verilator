@@ -125,10 +125,8 @@ private:
     virtual void visit(AstAlways*) VL_OVERRIDE {}
 
     //--------------------
-    // Default: Just iterate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     explicit InstVisitor(AstNetlist* nodep) {
@@ -158,12 +156,9 @@ private:
         }
         iterateChildren(nodep);
     }
-    // Save some time
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}
-    // Default: Just iterate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // METHODS
     void insert(AstVar* nodep) {
@@ -442,13 +437,10 @@ private:
         }
     }
 
-    // Save some time
-    virtual void visit(AstNodeMath*) VL_OVERRIDE {}
     //--------------------
-    // Default: Just iterate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     explicit InstDeVisitor(AstNetlist* nodep) {

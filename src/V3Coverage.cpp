@@ -399,7 +399,6 @@ private:
 
     // VISITORS - BOTH
     virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        // Default: Just iterate
         if (m_checkBlock) {
             iterateChildren(nodep);
             m_checkBlock = true;  // Reset as a child may have cleared it

@@ -450,16 +450,14 @@ private:
             VL_DO_DANGLING(createTable(nodep), nodep);
         }
     }
-    virtual void visit(AstAssignAlias* nodep) VL_OVERRIDE {}
+    virtual void visit(AstAssignAlias*) VL_OVERRIDE {}
     virtual void visit(AstAssignW* nodep) VL_OVERRIDE {
         // It's nearly impossible to have a large enough assign to make this worthwhile
         // For now we won't bother.
         // Accelerated: no iterate
     }
-    // default
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     explicit TableVisitor(AstNetlist* nodep) {

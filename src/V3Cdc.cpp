@@ -692,7 +692,7 @@ private:
     }
 
     // Math that shouldn't cause us to clear hazard
-    virtual void visit(AstConst* nodep) VL_OVERRIDE { }
+    virtual void visit(AstConst*) VL_OVERRIDE {}
     virtual void visit(AstReplicate* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
@@ -712,10 +712,10 @@ private:
     }
 
     // Ignores
-    virtual void visit(AstInitial* nodep) VL_OVERRIDE { }
-    virtual void visit(AstTraceInc* nodep) VL_OVERRIDE { }
-    virtual void visit(AstCoverToggle* nodep) VL_OVERRIDE { }
-    virtual void visit(AstNodeDType* nodep) VL_OVERRIDE { }
+    virtual void visit(AstInitial*) VL_OVERRIDE {}
+    virtual void visit(AstTraceInc*) VL_OVERRIDE {}
+    virtual void visit(AstCoverToggle*) VL_OVERRIDE {}
+    virtual void visit(AstNodeDType*) VL_OVERRIDE {}
 
     //--------------------
     // Default
@@ -723,9 +723,7 @@ private:
         setNodeHazard(nodep);
         iterateChildren(nodep);
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

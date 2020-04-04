@@ -753,7 +753,7 @@ class LinkDotFindVisitor : public AstNVisitor {
             m_curSymp = m_modSymp = NULL;
         }
     }
-    virtual void visit(AstTypeTable* nodep) VL_OVERRIDE {}
+    virtual void visit(AstTypeTable*) VL_OVERRIDE {}
     virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         // Called on top module from Netlist, other modules from the cell creating them,
         // and packages
@@ -1180,10 +1180,7 @@ class LinkDotFindVisitor : public AstNVisitor {
         // No longer needed, but can't delete until any multi-instantiated modules are expanded
     }
 
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        // Default: Just iterate
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -1244,7 +1241,7 @@ private:
     }
 
     // VISITs
-    virtual void visit(AstTypeTable* nodep) VL_OVERRIDE {}
+    virtual void visit(AstTypeTable*) VL_OVERRIDE {}
     virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         UINFO(5,"   "<<nodep<<endl);
         if (nodep->dead() || !nodep->user4()) {
@@ -1358,10 +1355,8 @@ private:
         // We only needed the forward declaration in order to parse correctly.
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        // Default: Just iterate
-        iterateChildren(nodep);
-    }
+
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -1508,10 +1503,7 @@ class LinkDotScopeVisitor : public AstNVisitor {
     virtual void visit(AstCell*) VL_OVERRIDE {}
     virtual void visit(AstVar*) VL_OVERRIDE {}
     virtual void visit(AstNodeMath*) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        // Default: Just iterate
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -1596,10 +1588,7 @@ class LinkDotIfaceVisitor : public AstNVisitor {
             nodep->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        // Default: Just iterate
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -1777,7 +1766,7 @@ private:
         // Recurse..., backward as must do packages before using packages
         iterateChildrenBackwards(nodep);
     }
-    virtual void visit(AstTypeTable* nodep) VL_OVERRIDE {}
+    virtual void visit(AstTypeTable*) VL_OVERRIDE {}
     virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         if (nodep->dead()) return;
         checkNoDot(nodep);
@@ -2578,10 +2567,10 @@ private:
     }
 
     virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        // Default: Just iterate
         checkNoDot(nodep);
         iterateChildren(nodep);
     }
+
 public:
     // CONSTRUCTORS
     LinkDotResolveVisitor(AstNetlist* rootp, LinkDotState* statep) {
