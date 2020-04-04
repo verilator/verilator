@@ -1,6 +1,6 @@
 %Warning-UNOPTFLAT: t/t_unopt_combo.v:24:25: Signal unoptimizable: Feedback to clock or circular logic: 't.c'
-   wire [31:0]          c;                       
-                        ^
+   24 |    wire [31:0]          c;                       
+      |                         ^
                     ... Use "/* verilator lint_off UNOPTFLAT */" and lint_on around source to disable this message.
                     t/t_unopt_combo.v:24:25:      Example path: t.c
                     t/t_unopt_combo.v:81:4:      Example path: ALWAYS

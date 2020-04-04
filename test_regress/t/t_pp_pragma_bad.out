@@ -1,6 +1,6 @@
 %Error: t/t_pp_pragma_bad.v:7:1: `pragma is missing a pragma_expression.
-`pragma
-^~~~~~~
+    7 | `pragma
+      | ^~~~~~~
 `line 1 "t/t_pp_pragma_bad.v" 1
  
 

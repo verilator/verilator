@@ -373,7 +373,8 @@ string FileLine::warnOther() const {
 string FileLine::source() const {
     if (VL_UNCOVERABLE(!m_contentp)) {
         if (debug() || v3Global.opt.debugCheck()) {
-            return "%Error: internal tracking of file contents failed";
+            // The newline here is to work around the " <line#> | "
+            return "\n%Error: internal tracking of file contents failed";
         } else {
             return "";
         }
@@ -393,18 +394,21 @@ string FileLine::warnContext(bool secondary) const {
     V3Error::errorContexted(true);
     if (!v3Global.opt.context()) return "";
     string out = "";
-    if (firstLineno()==lastLineno() && firstColumn()) {
+    if (firstLineno() == lastLineno() && firstColumn()) {
         string sourceLine = prettySource();
         // Don't show super-long lines as can fill screen and unlikely to help user
-        if (!sourceLine.empty()
-            && sourceLine.length() < SHOW_SOURCE_MAX_LENGTH
-            && sourceLine.length() >= (size_t)(lastColumn()-1)) {
-            out += sourceLine+"\n";
-            out += string((firstColumn()-1), ' ')+'^';
+        if (!sourceLine.empty() && sourceLine.length() < SHOW_SOURCE_MAX_LENGTH
+            && sourceLine.length() >= static_cast<size_t>(lastColumn() - 1)) {
+            string linestr = cvtToStr(firstLineno());
+            while (linestr.size() < 5)
+                linestr = ' ' + linestr;
+            out += linestr + " | " + sourceLine + "\n";
+            out += std::string(linestr.size(), ' ') + " | ";
+            out += string((firstColumn() - 1), ' ') + '^';
             // Can't use UASSERT_OBJ used in warnings already inside the error end handler
             if (lastColumn() > firstColumn()) {
                 // Note lastColumn() can be <= firstColumn() in some weird preproc expansions
-                out += string((lastColumn()-firstColumn()-1), '~');
+                out += string((lastColumn() - firstColumn() - 1), '~');
             }
             out += "\n";
         }
@@ -412,8 +416,8 @@ string FileLine::warnContext(bool secondary) const {
     if (!secondary) {  // Avoid printing long paths on informational part of error
         for (FileLine* parentFl = parent(); parentFl; parentFl = parentFl->parent()) {
             if (parentFl->filenameIsGlobal()) break;
-            out += parentFl->warnOther()+"... note: In file included from "
-                +parentFl->filebasename()+"\n";
+            out += parentFl->warnOther() + "... note: In file included from "
+                   + parentFl->filebasename() + "\n";
         }
     }
     return out;

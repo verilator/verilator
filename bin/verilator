@@ -3937,6 +3937,11 @@ Digital Equipment Corporation).  Some errors or warning have a code
 attached, with meanings described below.  Some errors also have a filename,
 line number and optional column number (starting at column 1 to match GCC).
 
+Following an the error message, Verilator will typically show the user's
+source code corresponding to the error, prefixed by the line number and a "
+| ".  Following this is typically an arrow and ~ pointing at the error on
+the source line directly above.
+
 =head2 List of all warnings
 
 =over 4

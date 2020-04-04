@@ -10,6 +10,6 @@
            a = ?32?h7
            b = ?32?h8
            c = ?32?h9
-   localparam SOMEP = f_add2(A, B, 9);
-                      ^~~~~~
+   22 |    localparam SOMEP = f_add2(A, B, 9);
+      |                       ^~~~~~
 %Error: Exiting due to

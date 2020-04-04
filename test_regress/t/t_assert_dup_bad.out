@@ -1,7 +1,7 @@
 %Error: t/t_assert_dup_bad.v:17:4: Duplicate declaration of block: 'covlabel'
-   covlabel:   
-   ^~~~~~~~
+   17 |    covlabel:   
+      |    ^~~~~~~~
         t/t_assert_dup_bad.v:15:4: ... Location of original declaration
-   covlabel:
-   ^~~~~~~~
+   15 |    covlabel:
+      |    ^~~~~~~~
 %Error: Exiting due to

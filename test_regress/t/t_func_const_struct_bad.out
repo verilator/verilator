@@ -9,6 +9,6 @@
            a = ?32?h7
            b = ?32?h8
            c = ?32?h9
-   localparam P24 = f_add2(7, 8, 9);
-                    ^~~~~~
+   17 |    localparam P24 = f_add2(7, 8, 9);
+      |                     ^~~~~~
 %Error: Exiting due to

@@ -7,6 +7,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Add column numbers to errors and warnings.
 
+***   Add GCC10-style line number prefix when showing source text for errors.
+
 ***   Add setting VM_PARALLEL_BUILDS=1 when using --output-split, #2185.
 
 ***   Change --quiet-exit to also suppress 'Exiting due to N errors'.

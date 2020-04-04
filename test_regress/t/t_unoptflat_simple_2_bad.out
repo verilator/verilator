@@ -1,6 +1,6 @@
 %Warning-UNOPTFLAT: t/t_unoptflat_simple_2.v:15:15: Signal unoptimizable: Feedback to clock or circular logic: 't.x'
-   wire [2:0] x;
-              ^
+   15 |    wire [2:0] x;
+      |               ^
                     ... Use "/* verilator lint_off UNOPTFLAT */" and lint_on around source to disable this message.
                     t/t_unoptflat_simple_2.v:15:15:      Example path: t.x
                     t/t_unoptflat_simple_2.v:17:18:      Example path: ASSIGNW
