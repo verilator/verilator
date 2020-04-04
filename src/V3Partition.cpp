@@ -726,7 +726,7 @@ public:
                  lit != mtaskp->vertexListp()->end(); ++lit) {
                 const OrderLogicVertex* logicp = (*lit)->logicp();
                 if (!logicp) continue;
-                if (0) {
+                if (false) {
                     // Show nodes only
                     *osp<<"> "; logicp->nodep()->dumpTree(*osp);
                 } else {
@@ -1191,7 +1191,7 @@ public:
 
         doRescore();  // Set initial scores in scoreboard
 
-        while (1) {
+        while (true) {
             // This is the best edge to merge, with the lowest
             // score (shortest local critical path)
             MergeCandidate* mergeCanp = const_cast<MergeCandidate*>(m_sb.bestp());

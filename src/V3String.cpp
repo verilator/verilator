@@ -75,7 +75,7 @@ bool VString::wildmatch(const string& s, const string& p) {
 }
 
 bool VString::isWildcard(const string &p) {
-    return ((p.find("*") != string::npos) || (p.find("?") != string::npos));
+    return ((p.find('*') != string::npos) || (p.find('?') != string::npos));
 }
 
 string VString::dot(const string& a, const string& dot, const string& b) {
@@ -144,8 +144,8 @@ static inline uint32_t shaRotr32(uint32_t lhs, uint32_t rhs) {
     return lhs >> rhs | lhs << (32 - rhs);
 }
 
-static inline void sha256Block(uint32_t* h, uint32_t* chunk) VL_ATTR_ALWINLINE;
-static inline void sha256Block(uint32_t* h, uint32_t* chunk) {
+static inline void sha256Block(uint32_t* h, const uint32_t* chunk) VL_ATTR_ALWINLINE;
+static inline void sha256Block(uint32_t* h, const uint32_t* chunk) {
     uint32_t ah[8];
     const uint32_t* p = chunk;
 
@@ -416,7 +416,7 @@ VSpellCheck::EditDistance VSpellCheck::cutoffDistance(size_t goal_len, size_t ca
     size_t max_length = std::max(goal_len, candidate_len);
     size_t min_length = std::min(goal_len, candidate_len);
     if (max_length <= 1) return 0;
-    if (max_length - min_length <= 1) return std::max(max_length / 3, (size_t)1);
+    if (max_length - min_length <= 1) return std::max(max_length / 3, static_cast<size_t>(1));
     return (max_length + 2) / 3;
 }
 

@@ -194,8 +194,13 @@ class V3PreLex {
     void curFilelinep(FileLine* fl) { curStreamp()->m_curFilelinep = fl; }
     void appendDefValue(const char* textp, size_t len) { m_defValue.append(textp, len); }
     void lineDirective(const char* textp);
-    void linenoInc() { if (curStreamp()->m_ignNewlines) curStreamp()->m_ignNewlines--;
-        else curFilelinep()->linenoInc(); }
+    void linenoInc() {
+        if (curStreamp()->m_ignNewlines) {
+            curStreamp()->m_ignNewlines--;
+        } else {
+            curFilelinep()->linenoInc();
+        }
+    }
     void warnBackslashSpace();
     // Called by V3PreProc.cpp to inform lexer
     void pushStateDefArg(int level);

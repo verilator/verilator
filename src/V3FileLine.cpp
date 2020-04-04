@@ -99,8 +99,8 @@ void VFileContent::pushText(const string& text) {
 
     // Insert line-by-line
     string::size_type line_start = 0;
-    while (1) {
-        string::size_type line_end = leftover.find("\n", line_start);
+    while (true) {
+        string::size_type line_end = leftover.find('\n', line_start);
         if (line_end != string::npos) {
             string oneline (leftover, line_start, line_end-line_start+1);
             m_lines.push_back(oneline);  // Keeps newline
@@ -338,17 +338,17 @@ void FileLine::modifyStateInherit(const FileLine* fromp) {
     }
 }
 
-void FileLine::v3errorEnd(std::ostringstream& str, const string& locationStr) {
+void FileLine::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
     std::ostringstream nsstr;
     if (lastLineno()) nsstr<<this;
-    nsstr<<str.str();
-    nsstr<<endl;
+    nsstr << sstr.str();
+    nsstr << endl;
     std::ostringstream lstr;
     if (!locationStr.empty()) {
         lstr<<std::setw(ascii().length())<<" "<<": "<<locationStr;
     }
     if (warnIsOff(V3Error::errorCode())
-        || V3Config::waive(this, V3Error::errorCode(), str.str())) {
+        || V3Config::waive(this, V3Error::errorCode(), sstr.str())) {
         V3Error::suppressThisWarning();
     }
     else if (!V3Error::errorContexted()) nsstr<<warnContextPrimary();
@@ -393,7 +393,7 @@ string FileLine::prettySource() const {
 string FileLine::warnContext(bool secondary) const {
     V3Error::errorContexted(true);
     if (!v3Global.opt.context()) return "";
-    string out = "";
+    string out;
     if (firstLineno() == lastLineno() && firstColumn()) {
         string sourceLine = prettySource();
         // Don't show super-long lines as can fill screen and unlikely to help user
@@ -451,7 +451,7 @@ void FileLine::deleteAllRemaining() {
     // FileLines are allocated, but never nicely freed, as it's much faster
     // that way.  Unfortunately this makes our leak checking a big mess, so
     // only when leak checking we'll track them all and cleanup.
-    while (1) {
+    while (true) {
         FileLineCheckSet::iterator it = fileLineLeakChecks.begin();
         if (it==fileLineLeakChecks.end()) break;
         delete *it;

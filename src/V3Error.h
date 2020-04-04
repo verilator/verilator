@@ -320,31 +320,36 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
     { if (VL_UNCOVERABLE(debug() >= (level))) { cout << stmsg; } }
 
 #ifdef VL_DEBUG
-# define UDEBUGONLY(stmts) {stmts}
+# define UDEBUGONLY(stmts) \
+    { stmts }
 #else
-# define UDEBUGONLY(stmts) {if (0) {stmts}}
+# define UDEBUGONLY(stmts) \
+    { if (false) { stmts } }
 #endif
 
 // Assertion without object, generally UOBJASSERT preferred
 #define UASSERT(condition,stmsg) \
-    do { if (VL_UNCOVERABLE(!(condition))) { v3fatalSrc(stmsg); }} while(0)
+    do { if (VL_UNCOVERABLE(!(condition))) { v3fatalSrc(stmsg); }} while (false)
 // Assertion with object
 #define UASSERT_OBJ(condition,obj,stmsg) \
-    do { if (VL_UNCOVERABLE(!(condition))) { (obj)->v3fatalSrc(stmsg); }} while(0)
+    do { if (VL_UNCOVERABLE(!(condition))) { (obj)->v3fatalSrc(stmsg); }} while (false)
 // For use in V3Ast static functions only
 #define UASSERT_STATIC(condition,stmsg) \
     do { if (VL_UNCOVERABLE(!(condition))) { \
             std::cerr<<"Internal Error: "<<__FILE__<<":"<<std::dec<<__LINE__ \
-                     <<":"<<(stmsg)<<std::endl; abort(); } } while(0)
+                     <<":"<<(stmsg)<<std::endl; abort(); } } while (false)
 // Check self test values for expected value.  Safe from side-effects.
 // Type argument can be removed when go to C++11 (use auto).
 #define UASSERT_SELFTEST(Type,got,exp) \
     do { Type g = (got); Type e = (exp); \
          UASSERT(g==e, "Self-test failed '" #got "==" #exp "'"" got=" \
-                 <<g<<" expected="<<e); } while(0)
+                 <<g<<" expected="<<e); } while(false)
 
 #define V3ERROR_NA \
-    do { v3error("Internal: Unexpected Call"); v3fatalSrc("Unexpected Call"); } while(0)
+    do { \
+        v3error("Internal: Unexpected Call"); \
+        v3fatalSrc("Unexpected Call"); \
+    } while (false)
 
 /// Declare a convenience debug() routine that may be added to any class in
 /// Verilator so that --debugi-<srcfile> will work to control UINFOs in

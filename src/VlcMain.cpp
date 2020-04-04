@@ -111,11 +111,8 @@ void VlcOptions::parseOptsList(int argc, char** argv) {
             }
             shift;
         }  // - options
-        else if (1) {
+        else {
             addReadFile(argv[i]);
-            shift;
-        } else {
-            v3fatal("Invalid argument: " << argv[i]);
             shift;
         }
     }
@@ -139,7 +136,7 @@ void VlcOptions::showVersion(bool verbose) {
 
 //######################################################################
 
-int main(int argc, char** argv, char** env) {
+int main(int argc, char** argv, char** /*env*/) {
     // General initialization
     std::ios::sync_with_stdio();
 

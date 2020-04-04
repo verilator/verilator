@@ -147,7 +147,7 @@ public:
             return (!this->operator==(other));
         }
         void advanceUntilValid() {
-            while (1) {
+            while (true) {
                 if (m_bit != m_setp->m_bucketsp[m_bucketIdx].end()) {
                     // Valid iterator in this bucket; we're done.
                     return;

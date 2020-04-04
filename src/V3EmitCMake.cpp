@@ -70,12 +70,11 @@ class CMakeEmitter {
         cmake_set_raw(of, name, raw_value, cache_type, docstring);
     }
 
-    //Swap all backslashes for forward slashes, because of Windows
+    // Swap all backslashes for forward slashes, because of Windows
     static string deslash(const string& s) {
         std::string res = s;
         for (string::iterator it = res.begin(); it != res.end(); ++it) {
-            if (*it == '\\')
-                *it = '/';
+            if (*it == '\\') *it = '/';
         }
         return res;
     }

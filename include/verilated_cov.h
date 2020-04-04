@@ -29,9 +29,15 @@
 /// Conditionally compile coverage code
 
 #ifdef VM_COVERAGE
-# define VL_IF_COVER(stmts) do { stmts ; } while(0)
+# define VL_IF_COVER(stmts) \
+    do { \
+        stmts; \
+    } while (false)
 #else
-# define VL_IF_COVER(stmts) do { if(0) { stmts ; } } while(0)
+# define VL_IF_COVER(stmts) \
+    do { \
+        if (false) { stmts; } \
+    } while (false)
 #endif
 
 //=============================================================================

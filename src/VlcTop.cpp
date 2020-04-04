@@ -113,7 +113,7 @@ void VlcTop::rank() {
     // O(n^2) Ouch.  Probably the thing to do is randomize the order of data
     // then hierarchically solve a small subset of tests, and take resulting
     // solution and move up to larger subset of tests.  (Aka quick sort.)
-    while (1) {
+    while (true) {
         if (debug()) { UINFO(9, "Left on iter" << nextrank << ": "); remaining.dump(); }
         VlcTest* bestTestp = NULL;
         vluint64_t bestRemain = 0;

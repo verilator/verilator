@@ -851,7 +851,7 @@ private:
         } else if (optimizable()) {
             int loops = 0;
             iterateAndNextNull(nodep->initsp());
-            while (1) {
+            while (true) {
                 UINFO(5, "    FOR-ITER "<<nodep<<endl);
                 iterateAndNextNull(nodep->condp());
                 if (!optimizable()) break;
@@ -880,7 +880,7 @@ private:
             iterateChildren(nodep);
         } else if (optimizable()) {
             int loops = 0;
-            while (1) {
+            while (true) {
                 UINFO(5, "    WHILE-ITER "<<nodep<<endl);
                 iterateAndNextNull(nodep->precondsp());
                 if (jumpingOver(nodep)) break;

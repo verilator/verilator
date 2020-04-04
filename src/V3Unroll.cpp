@@ -240,7 +240,7 @@ private:
         if (!simulateTree(initp->rhsp(), NULL, initp, loopValue)) {
             return false;
         }
-        while (1) {
+        while (true) {
             V3Number res = V3Number(initp);
             if (!simulateTree(condp, &loopValue, NULL, res)) {
                 return false;
@@ -300,7 +300,7 @@ private:
         ++m_statLoops;
         if (stmtsp) {
             int times = 0;
-            while (1) {
+            while (true) {
                 UINFO(8,"      Looping "<<loopValue<<endl);
                 V3Number res = V3Number(nodep);
                 if (!simulateTree(condp, &loopValue, NULL, res)) {

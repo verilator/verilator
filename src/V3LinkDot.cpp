@@ -501,7 +501,7 @@ public:
                  it!=m_scopeAliasMap[samn].end(); ++it) {
                 VSymEnt* lhsp = it->first;
                 VSymEnt* srcp = lhsp;
-                while (1) {  // Follow chain of aliases up to highest level non-alias
+                while (true) {  // Follow chain of aliases up to highest level non-alias
                     ScopeAliasMap::iterator it2 = m_scopeAliasMap[samn].find(srcp);
                     if (it2 != m_scopeAliasMap[samn].end()) { srcp = it2->second; continue; }
                     else break;

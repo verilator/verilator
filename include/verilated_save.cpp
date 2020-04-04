@@ -184,7 +184,7 @@ void VerilatedSave::flush() VL_MT_UNSAFE_ONE {
     m_assertOne.check();
     if (VL_UNLIKELY(!isOpen())) return;
     vluint8_t* wp = m_bufp;
-    while (1) {
+    while (true) {
         ssize_t remaining = (m_cp - wp);
         if (remaining==0) break;
         errno = 0;
@@ -213,7 +213,7 @@ void VerilatedRestore::fill() VL_MT_UNSAFE_ONE {
     m_endp = m_bufp + (m_endp - m_cp);
     m_cp = m_bufp;  // Reset buffer
     // Read into buffer starting at m_endp
-    while (1) {
+    while (true) {
         ssize_t remaining = (m_bufp+bufferSize() - m_endp);
         if (remaining==0) break;
         errno = 0;

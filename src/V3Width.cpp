@@ -2498,7 +2498,7 @@ private:
                                           << VN_CAST(patp->keyp(), Text)->text());
                         }
                     }
-                } while(0);
+                } while (false);
                 // Next
                 if (memp) memp = VN_CAST(memp->nextp(), MemberDType);
                 if (patp) patp = VN_CAST(patp->nextp(), PatMember);
@@ -3392,7 +3392,7 @@ private:
                 // AstPattern requires assignments to pass datatype on PRELIM
                 VL_DO_DANGLING(userIterate(pinp, WidthVP(portp->dtypep(), PRELIM).p()), pinp);
             }
-        } while (0);
+        } while (false);
         // Stage 2
         {
             V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());

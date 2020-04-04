@@ -415,15 +415,14 @@ private:
     virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}
     virtual void visit(AstVarScope* nodep) VL_OVERRIDE {}
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
-    explicit ActiveVisitor(AstNetlist* nodep) {
-        m_scopeFinalp = NULL;
-        m_itemCombo = false;
-        m_itemSequent = false;
+    explicit ActiveVisitor(AstNetlist* nodep)
+        : m_scopeFinalp(NULL)
+        , m_itemCombo(false)
+        , m_itemSequent(false) {
         iterate(nodep);
     }
     virtual ~ActiveVisitor() {}

@@ -74,7 +74,7 @@ public:
     virtual void zero() const VL_OVERRIDE { *m_countp = 0; }
     // CONSTRUCTORS
     // cppcheck-suppress noExplicitConstructor
-    VerilatedCoverItemSpec(T* countp) : m_countp(countp) { *m_countp = 0; }
+    explicit VerilatedCoverItemSpec(T* countp) : m_countp(countp) { *m_countp = 0; }
     virtual ~VerilatedCoverItemSpec() VL_OVERRIDE {}
 };
 

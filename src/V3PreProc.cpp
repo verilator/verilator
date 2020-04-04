@@ -861,7 +861,7 @@ void V3PreProcImp::candidateDefines(VSpellCheck* spellerp) {
 
 int V3PreProcImp::getRawToken() {
     // Get a token from the file, whatever it may be.
-    while (1) {
+    while (true) {
       next_tok:
         if (m_lineAdd) {
             m_lineAdd--;
@@ -942,7 +942,7 @@ void V3PreProcImp::debugToken(int tok, const char* cmtp) {
 
 int V3PreProcImp::getStateToken() {
     // Return the next state-determined token
-    while (1) {
+    while (true) {
       next_tok:
         if (isEof()) return VP_EOF;
         int tok = getRawToken();

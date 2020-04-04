@@ -1204,7 +1204,7 @@ AstNodeDType* AstNode::findLogicDType(int width, int widthMin, AstNumeric numeri
     return v3Global.rootp()->typeTablep()
         ->findLogicBitDType(fileline(), AstBasicDTypeKwd::LOGIC, width, widthMin, numeric);
 }
-AstNodeDType* AstNode::findLogicRangeDType(VNumRange range, int widthMin,
+AstNodeDType* AstNode::findLogicRangeDType(const VNumRange& range, int widthMin,
                                            AstNumeric numeric) const {
     return v3Global.rootp()->typeTablep()
         ->findLogicBitDType(fileline(), AstBasicDTypeKwd::LOGIC, range, widthMin, numeric);

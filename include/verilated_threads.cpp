@@ -36,7 +36,8 @@ VlMTaskVertex::VlMTaskVertex(vluint32_t upstreamDepCount)
 // VlWorkerThread
 
 VlWorkerThread::VlWorkerThread(VlThreadPool* poolp, bool profiling)
-    : m_ready_size(0)
+    : m_waiting(false)
+    , m_ready_size(0)
     , m_poolp(poolp)
     , m_profiling(profiling)
     , m_exiting(false)
@@ -58,7 +59,7 @@ void VlWorkerThread::workerLoop() {
     ExecRec work;
     work.m_fnp = NULL;
 
-    while (1) {
+    while (true) {
         if (VL_LIKELY(!work.m_fnp)) {
             dequeWork(&work);
         }

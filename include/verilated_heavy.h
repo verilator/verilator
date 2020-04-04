@@ -33,10 +33,10 @@
 //===================================================================
 // String formatters (required by below containers)
 
-extern std::string VL_TO_STRING(CData obj);
-extern std::string VL_TO_STRING(SData obj);
-extern std::string VL_TO_STRING(IData obj);
-extern std::string VL_TO_STRING(QData obj);
+extern std::string VL_TO_STRING(CData lhs);
+extern std::string VL_TO_STRING(SData lhs);
+extern std::string VL_TO_STRING(IData lhs);
+extern std::string VL_TO_STRING(QData lhs);
 inline std::string VL_TO_STRING(const std::string& obj) { return "\"" + obj + "\""; }
 extern std::string VL_TO_STRING_W(int words, WDataInP obj);
 
@@ -158,7 +158,7 @@ public:
     int next(T_Key& indexr) const {
         typename Map::const_iterator it = m_map.find(indexr);
         if (VL_UNLIKELY(it == m_map.end())) return 0;
-        it++;
+        ++it;
         if (VL_UNLIKELY(it == m_map.end())) return 0;
         indexr = it->first;
         return 1;
@@ -217,7 +217,7 @@ void VL_READMEM_N(bool hex, int bits, const std::string& filename,
                   VlAssocArray<T_Key, T_Value>& obj, QData start, QData end) VL_MT_SAFE {
     VlReadMem rmem(hex, bits, filename, start, end);
     if (VL_UNLIKELY(!rmem.isOpen())) return;
-    while (1) {
+    while (true) {
         QData addr;
         std::string data;
         if (rmem.get(addr /*ref*/, data /*ref*/)) {

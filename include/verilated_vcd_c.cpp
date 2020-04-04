@@ -364,7 +364,7 @@ void VerilatedVcd::bufferFlush() VL_MT_UNSAFE_ONE {
     m_assertOne.check();
     if (VL_UNLIKELY(!isOpen())) return;
     char* wp = m_wrBufp;
-    while (1) {
+    while (true) {
         ssize_t remaining = (m_writep - wp);
         if (remaining==0) break;
         errno = 0;

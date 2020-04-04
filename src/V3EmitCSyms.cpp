@@ -141,7 +141,7 @@ class EmitCSyms : EmitCBaseVisitor {
     string scopeDecodeIdentifier(const string& scpname) {
         string out = scpname;
         // Remove hierarchy
-        string::size_type  pos = out.rfind(".");
+        string::size_type pos = out.rfind('.');
         if (pos != std::string::npos) out.erase(0, pos + 1);
         // Decode all escaped characters
         while ((pos = out.find("__0")) != string::npos) {
@@ -163,10 +163,8 @@ class EmitCSyms : EmitCBaseVisitor {
             }
             string::size_type pos = scp.rfind("__DOT__");
             if (pos == string::npos) {
-                pos = scp.rfind(".");
-                if (pos == string::npos) {
-                    break;
-                }
+                pos = scp.rfind('.');
+                if (pos == string::npos) break;
             }
             scp.resize(pos);
         }
@@ -228,10 +226,8 @@ class EmitCSyms : EmitCBaseVisitor {
 
             string above = name;
             while (!above.empty()) {
-                string::size_type pos = above.rfind(".");
-                if (pos == string::npos) {
-                    break;
-                }
+                string::size_type pos = above.rfind('.');
+                if (pos == string::npos) break;
                 above.resize(pos);
                 if (m_vpiScopeHierarchy.find(above) != m_vpiScopeHierarchy.end()) {
                     m_vpiScopeHierarchy[above].push_back(name);
@@ -671,8 +667,8 @@ void EmitCSyms::emitSymImp() {
             string name = it->second.m_prettyName;
             if (it->first == "TOP") continue;
             name = name.replace(0, 4, "");  // Remove the "TOP."
-            if ((name.find(".") == string::npos) && (it->second.m_type == "SCOPE_MODULE")) {
-                puts("__Vhier.add(0, &"+protect("__Vscope_"+it->second.m_symName)+");\n");
+            if ((name.find('.') == string::npos) && (it->second.m_type == "SCOPE_MODULE")) {
+                puts("__Vhier.add(0, &" + protect("__Vscope_" + it->second.m_symName) + ");\n");
             }
         }
 

@@ -68,7 +68,7 @@ private:
                 // Want to choose a base node, and keep finding duplicates that are identical.
                 // This prevents making chains where a->b, then c->d, then b->c, as we'll
                 // find a->b, a->c, a->d directly.
-                while (1) {
+                while (true) {
                     V3Hashed::iterator dupit = hashed.findDuplicate(nodep->origp());
                     if (dupit == hashed.end()) break;
                     //

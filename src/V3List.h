@@ -68,8 +68,8 @@ public:
     ~V3ListEnt() {
 #ifdef VL_DEBUG
         // Load bogus pointers so we can catch deletion bugs
-        m_nextp = (T)1;
-        m_prevp = (T)1;
+        m_nextp = reinterpret_cast<T>(1);
+        m_prevp = reinterpret_cast<T>(1);
 #endif
     }
     T nextp() const { return m_nextp; }

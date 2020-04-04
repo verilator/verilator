@@ -50,13 +50,13 @@ typedef std::set<int> MTaskIdSet;  // Set of mtaskIds for Var sorting
 #define BROKEN_RTN(test) \
     do { \
         if (VL_UNCOVERABLE(test)) return #test; \
-    } while (0)
+    } while (false)
 // For broken() function, return error string if a base of this class has a match
 #define BROKEN_BASE_RTN(test) \
     do { \
         const char* reasonp = (test); \
         if (VL_UNCOVERABLE(reasonp)) return reasonp; \
-    } while (0)
+    } while (false)
 
 // (V)erilator (N)ode is: True if AstNode is of a a given AstType
 #define VN_IS(nodep,nodetypename) (AstNode::privateIs<Ast ## nodetypename>(nodep))
@@ -1559,7 +1559,8 @@ public:
     AstNodeDType* findVoidDType() const;
     AstNodeDType* findBitDType(int width, int widthMin, AstNumeric numeric) const;
     AstNodeDType* findLogicDType(int width, int widthMin, AstNumeric numeric) const;
-    AstNodeDType* findLogicRangeDType(VNumRange range, int widthMin, AstNumeric numeric) const;
+    AstNodeDType* findLogicRangeDType(const VNumRange& range, int widthMin,
+                                      AstNumeric numeric) const;
     AstNodeDType* findBasicDType(AstBasicDTypeKwd kwd) const;
     AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 

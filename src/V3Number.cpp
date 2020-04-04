@@ -1638,7 +1638,7 @@ V3Number& V3Number::opMul(const V3Number& lhs, const V3Number& rhs) {
                 vluint64_t mul = static_cast<vluint64_t>(lhs.m_value[lword])
                     * static_cast<vluint64_t>(rhs.m_value[rword]);
                 for (int qword=lword+rword; qword<this->words(); qword++) {
-                    mul += (vluint64_t)(m_value[qword]);
+                    mul += static_cast<vluint64_t>(m_value[qword]);
                     m_value[qword] = (mul & VL_ULL(0xffffffff));
                     mul = (mul >> VL_ULL(32)) & VL_ULL(0xffffffff);
                 }

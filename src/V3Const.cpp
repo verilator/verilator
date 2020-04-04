@@ -592,15 +592,12 @@ private:
         bool rad = ifMergeAdjacent(lp->rhsp(), rp->rhsp());
         if (lad && rad) return true;
         // {a[] & b[]&c[], a[] & b[]&c[]}
-        else if (lad && concatMergeable(lp->rhsp(), rp->rhsp())) return true;
+        if (lad && concatMergeable(lp->rhsp(), rp->rhsp())) return true;
         // {a[]&b[] & c[], a[]&b[] & c[]}
-        else if (rad && concatMergeable(lp->lhsp(), rp->lhsp())) return true;
-        else {
-            // {(a[]&b[])&(c[]&d[]), (a[]&b[])&(c[]&d[])}
-            if (concatMergeable(lp->lhsp(), rp->lhsp())
-                && concatMergeable(lp->rhsp(), rp->rhsp()))
-                return true;
-        }
+        if (rad && concatMergeable(lp->lhsp(), rp->lhsp())) return true;
+        // {(a[]&b[])&(c[]&d[]), (a[]&b[])&(c[]&d[])}
+        if (concatMergeable(lp->lhsp(), rp->lhsp())
+            && concatMergeable(lp->rhsp(), rp->rhsp())) return true;
         return false;
     }
 

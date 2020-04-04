@@ -215,17 +215,13 @@ private:
             if (m_lhsVarRef) clearSimple(">1 lhs varRefs");
             m_lhsVarRef = nodep;
         } else {
-            if (m_rhsVarRefs.size()>1) {
+            if (m_rhsVarRefs.size() > 1) {
                 AstNodeVarRef* lastRefp = m_rhsVarRefs.back();
-                if (0) {  // Disable the multiple-input optimization
-                    clearSimple(">1 rhs varRefs");
-                } else {
-                    if (m_buffersOnly) clearSimple(">1 rhs varRefs");
-                    if (!nodep->varScopep()->varp()->gateMultiInputOptimizable()
-                        // We didn't check multiInput on the first varref, so check it here
-                        || !lastRefp->varScopep()->varp()->gateMultiInputOptimizable()) {
-                        clearSimple("!gateMultiInputOptimizable");
-                    }
+                if (m_buffersOnly) clearSimple(">1 rhs varRefs");
+                if (!nodep->varScopep()->varp()->gateMultiInputOptimizable()
+                    // We didn't check multiInput on the first varref, so check it here
+                    || !lastRefp->varScopep()->varp()->gateMultiInputOptimizable()) {
+                    clearSimple("!gateMultiInputOptimizable");
                 }
             }
             m_rhsVarRefs.push_back(nodep);
@@ -565,7 +561,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
                     && !vvertexp->varScp()->varp()->valuep()
                     && !vvertexp->varScp()->varp()->isSigPublic()) {
                     UINFO(4, "No drivers "<<vvertexp->varScp()<<endl);
-                    if (0) {
+                    if (false) {
                         // If we warned here after constant propagation, what the user considered
                         // reasonable logic may have disappeared.  Issuing a warning would
                         // thus be confusing.  V3Undriven now handles this.

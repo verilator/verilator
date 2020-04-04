@@ -77,6 +77,7 @@ public:
         FST,
         FST_THREAD
     } m_e;
+    // cppcheck-suppress noExplicitConstructor
     inline TraceFormat(en _e = VCD) : m_e(_e) {}
     explicit inline TraceFormat(int _e) : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
@@ -280,7 +281,7 @@ class V3Options {
     void showVersion(bool verbose);
     void coverage(bool flag) { m_coverageLine = m_coverageToggle = m_coverageUser = flag; }
     bool onoff(const char* sw, const char* arg, bool& flag);
-    bool onoffb(const char* sw, const char* arg, VOptionBool& flag);
+    bool onoffb(const char* sw, const char* arg, VOptionBool& flagr);
     bool suffixed(const string& sw, const char* arg);
     string parseFileArg(const string& optdir, const string& relfilename);
     bool parseLangExt(const char* swp, const char* langswp, const V3LangCode& lc);

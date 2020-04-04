@@ -48,7 +48,6 @@ namespace V3TSP {
     void tspSort(const StateVec& states, StateVec* resultp);
 
     void selfTest();
-}
-
+}  // namespace V3TSP
 
 #endif  // Guard

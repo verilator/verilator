@@ -502,7 +502,7 @@ private:
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
             if (CdcVarVertex* vvertexp = dynamic_cast<CdcVarVertex*>(itp)) {
                 AstVar* varp = vvertexp->varScp()->varp();
-                if (1) {  // varp->isPrimaryIO()
+                {
                     string what = "wire";
                     if (varp->isPrimaryIO()) what = varp->direction().prettyName();
 
@@ -752,11 +752,11 @@ public:
 
         iterate(nodep);
         analyze();
-        if (debug()>=1) edgeReport();  // Not useful to users at the moment
-        if (0) {
-            *m_ofp<<"\nDBG-test-dumper\n";
+        if (debug() >= 1) edgeReport();  // Not useful to users at the moment
+        if (false) {
+            *m_ofp << "\nDBG-test-dumper\n";
             V3EmitV::verilogPrefixedTree(nodep, *m_ofp, "DBG ", 40, NULL, true);
-            *m_ofp<<endl;
+            *m_ofp << endl;
         }
     }
     virtual ~CdcVisitor() {

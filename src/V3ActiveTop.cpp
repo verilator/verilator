@@ -131,13 +131,12 @@ private:
     virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}
     virtual void visit(AstVarScope* nodep) VL_OVERRIDE {}
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
-    explicit ActiveTopVisitor(AstNetlist* nodep) {
-        m_topscopep = NULL;
+    explicit ActiveTopVisitor(AstNetlist* nodep)
+        : m_topscopep(NULL) {
         iterate(nodep);
     }
     virtual ~ActiveTopVisitor() {}

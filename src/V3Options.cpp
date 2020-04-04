@@ -656,10 +656,10 @@ bool V3Options::onoff(const char* sw, const char* arg, bool& flag) {
     else if (0==strncmp(sw, "-no-", 4) && (0==strcmp(sw+4, arg+1))) { flag = false; return true; }
     return false;
 }
-bool V3Options::onoffb(const char* sw, const char* arg, VOptionBool& bflag) {
+bool V3Options::onoffb(const char* sw, const char* arg, VOptionBool& flagr) {
     bool flag;
-    if (onoff(sw, arg, flag/*ref*/)) {
-        bflag.setTrueOrFalse(flag);
+    if (onoff(sw, arg, flag /*ref*/)) {
+        flagr.setTrueOrFalse(flag);
         return true;
     } else {
         return false;
@@ -727,9 +727,8 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             // Allow gnu -- switches
             if (sw[0]=='-' && sw[1]=='-') ++sw;
             bool hadSwitchPart1 = true;
-            if (0) {}
             // Single switches
-            else if (!strcmp(sw, "-E"))                         { m_preprocOnly = true; }
+            if (!strcmp(sw, "-E"))                              { m_preprocOnly = true; }
             else if ( onoffb(sw, "-MMD", bflag/*ref*/))         { m_makeDepend = bflag; }
             else if ( onoff (sw, "-MP", flag/*ref*/))           { m_makePhony = flag; }
             else if (!strcmp(sw, "-P"))                         { m_preprocNoLine = true; }

@@ -316,7 +316,7 @@ private:
 public:  // But internals only - called from VerilatedModule's
     VerilatedScope();
     ~VerilatedScope();
-    void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffix,
+    void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
                    const char* identifier, const Type type) VL_MT_UNSAFE;
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
     void varInsert(int finalize, const char* namep, void* datap,
@@ -1653,18 +1653,22 @@ static inline void _VL_INSERT_WW(int, WDataOutP owp, WDataInP lwp, int hbit, int
                 int oword = lword+i;
                 EData d = lwp[i] << loffset;
                 EData od = (owp[oword] & ~linsmask) | (d & linsmask);
-                if (oword == hword)
+                if (oword == hword) {
                     owp[oword] = (owp[oword] & ~hinsmask) | (od & hinsmask);
-                else owp[oword] = od;
+                } else {
+                    owp[oword] = od;
+                }
             }
             {   // Upper word
                 int oword = lword+i+1;
                 if (oword <= hword) {
                     EData d = lwp[i] >> nbitsonright;
                     EData od = (d & ~linsmask) | (owp[oword] & linsmask);
-                    if (oword == hword)
+                    if (oword == hword) {
                         owp[oword] = (owp[oword] & ~hinsmask) | (od & hinsmask);
-                    else owp[oword] = od;
+                    } else {
+                        owp[oword] = od;
+                    }
                 }
             }
         }
@@ -2280,7 +2284,6 @@ static inline WDataOutP VL_RTOIROUND_W_D(int obits, WDataOutP owp, double lhs) V
     if (lsb < 0) {
         VL_SET_WQ(owp, mantissa >> -lsb);
     } else if (lsb < obits) {
-        int lsbword = VL_BITWORD_I(lsb);
         _VL_INSERT_WQ(obits, owp, mantissa, lsb + 52, lsb);
     }
     if (lhs < 0) VL_NEGATE_INPLACE_W(VL_WORDS_I(obits), owp);

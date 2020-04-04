@@ -884,7 +884,7 @@ static inline int  _vl_vsss_peek(FILE* fp, int& floc, WDataInP fromp,
 }
 static inline void _vl_vsss_skipspace(FILE* fp, int& floc,
                                       WDataInP fromp, const std::string& fstr) VL_MT_SAFE {
-    while (1) {
+    while (true) {
         int c = _vl_vsss_peek(fp, floc, fromp, fstr);
         if (c==EOF || !isspace(c)) return;
         _vl_vsss_advance(fp, floc);
@@ -894,7 +894,7 @@ static inline void _vl_vsss_read(FILE* fp, int& floc, WDataInP fromp, const std:
                                  char* tmpp, const char* acceptp) VL_MT_SAFE {
     // Read into tmp, consisting of characters from acceptp list
     char* cp = tmpp;
-    while (1) {
+    while (true) {
         int c = _vl_vsss_peek(fp, floc, fromp, fstr);
         if (c==EOF || isspace(c)) break;
         if (acceptp  // String - allow anything
@@ -1340,7 +1340,7 @@ IData VL_FREAD_I(int width, int array_lsb, int array_size,
     // Read the data
     // We process a character at a time, as then we don't need to deal
     // with changing buffer sizes dynamically, etc.
-    while (1) {
+    while (true) {
         int c = fgetc(fp);
         if (VL_UNLIKELY(c == EOF)) break;
         // Shift value in
@@ -1668,7 +1668,7 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
     // Read the data
     // We process a character at a time, as then we don't need to deal
     // with changing buffer sizes dynamically, etc.
-    while (1) {
+    while (true) {
         int c = fgetc(m_fp);
         if (VL_UNLIKELY(c == EOF)) break;
         // printf("%d: Got '%c' Addr%lx IN%d IgE%d IgC%d\n",
@@ -1853,7 +1853,7 @@ void VL_READMEM_N(bool hex,  // Hex format, else binary
 
     VlReadMem rmem(hex, bits, filename, start, end);
     if (VL_UNLIKELY(!rmem.isOpen())) return;
-    while (1) {
+    while (true) {
         QData addr;
         std::string value;
         if (rmem.get(addr /*ref*/, value/*ref*/)) {
@@ -2183,9 +2183,7 @@ void VerilatedImp::commandArgsAddGuts(int argc, const char** argv) VL_REQUIRES(s
 void VerilatedImp::commandArgVl(const std::string& arg) {
     if (0 == strncmp(arg.c_str(), "+verilator+", strlen("+verilator+"))) {
         std::string value;
-        if (0) {
-        }
-        else if (arg == "+verilator+debug") {
+        if (arg == "+verilator+debug") {
             Verilated::debug(4);
         }
         else if (commandArgVlValue(arg, "+verilator+debugi+", value/*ref*/)) {

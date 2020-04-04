@@ -1024,10 +1024,10 @@ public:
         string out;
         string::size_type start = 0;
         // space, ., ->
-        while (1) {
+        while (true) {
             // When C++11, use find_if and lambda
             string::size_type pos = string::npos;
-            string separator = "";
+            string separator;
             trySep(old, start, " ", pos/*ref*/, separator/*ref*/);
             trySep(old, start, ".", pos/*ref*/, separator/*ref*/);
             trySep(old, start, "->", pos/*ref*/, separator/*ref*/);
