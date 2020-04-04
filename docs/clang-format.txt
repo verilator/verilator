@@ -10,7 +10,6 @@ be made to a file.  The following files are not yet clang-format clean:
 
 clang-format -i include/verilated.h
 clang-format -i include/verilated_dpi.h
-clang-format -i include/verilated_heavy.h
 clang-format -i include/verilated_imp.h
 clang-format -i include/verilated_unordered_set_map.h
 clang-format -i include/verilatedos.h

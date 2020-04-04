@@ -22,7 +22,6 @@
 ///
 //*************************************************************************
 
-
 #ifndef _VERILATEDOS_H_
 #define _VERILATEDOS_H_ 1  ///< Header Guard
 
@@ -378,8 +377,8 @@ typedef unsigned long long      vluint64_t;     ///< 64-bit unsigned type
 //=========================================================================
 // Verilated function size macros
 
-#define VL_MULS_MAX_WORDS 16            ///< Max size in words of MULS operation
-#define VL_TO_STRING_MAX_WORDS 64       ///< Max size in words of String conversion operation
+#define VL_MULS_MAX_WORDS 16  ///< Max size in words of MULS operation
+#define VL_TO_STRING_MAX_WORDS 64  ///< Max size in words of String conversion operation
 
 //=========================================================================
 // Base macros
