@@ -1,7 +1,8 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
-// This file ONLY is placed into the Public Domain, for any use,
-// without warranty, 2006 by Wilson Snyder.
+// This file ONLY is placed under the Creative Commons Public Domain, for
+// any use, without warranty, 2006 by Wilson Snyder.
+// SPDX-License-Identifier: CC0-1.0
 
 // Check that we report warnings only once on parameterized modules
 // Also check that we don't suppress warnings on the same line

@@ -28,7 +28,7 @@
 /obj_vcs/
 /obj_vlt/
 /obj_vltmt/
-/INCA_libs/
+INCA_libs/
 /cov_work/
 /logs/
 ^Makefile$
@@ -37,6 +37,7 @@ bin/verilator_bin.*
 bin/verilator_coverage_bin.*
 docs/.*\.html$
 docs/Makefile$
+docs/clang-format.txt$
 docs/doxygen-doc/.*
 examples/xml_py/copied/
 examples/xml_py/graph.*

@@ -3,13 +3,9 @@
 //
 // Copyright 2009-2020 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License.
+// Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //=========================================================================
 ///
@@ -48,6 +44,9 @@ public:
     /// Call callbacks of arbitrary types
     /// Users can call this from their application code
     static bool callCbs(vluint32_t reason) VL_MT_UNSAFE_ONE;
+    /// Returns time of the next registered VPI callback, or
+    /// ~(0) if none are registered
+    static QData cbNextDeadline() VL_MT_UNSAFE_ONE;
     /// Self test, for internal use only
     static void selfTest() VL_MT_UNSAFE_ONE;
 };

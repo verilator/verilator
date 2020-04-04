@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2005-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -258,12 +254,15 @@ private:
                     // Not parallel, but harmlessly so.
                 } else {
                     AstNode* propp = NULL;
-                    for (AstCaseItem* itemp = nodep->itemsp();
-                         itemp; itemp=VN_CAST(itemp->nextp(), CaseItem)) {
-                        for (AstNode* icondp = itemp->condsp();
-                             icondp!=NULL; icondp=icondp->nextp()) {
+                    for (AstCaseItem* itemp = nodep->itemsp(); itemp;
+                         itemp = VN_CAST(itemp->nextp(), CaseItem)) {
+                        for (AstNode* icondp = itemp->condsp(); icondp; icondp = icondp->nextp()) {
                             AstNode* onep;
-                            if (nodep->casex() || nodep->casez() || nodep->caseInside()) {
+                            if (AstInsideRange* rcondp = VN_CAST(icondp, InsideRange)) {
+                                onep = rcondp->newAndFromInside(nodep->exprp(),
+                                                                rcondp->lhsp()->cloneTree(true),
+                                                                rcondp->rhsp()->cloneTree(true));
+                            } else if (nodep->casex() || nodep->casez() || nodep->caseInside()) {
                                 onep = AstEqWild::newTyped(itemp->fileline(),
                                                            nodep->exprp()->cloneTree(false),
                                                            icondp->cloneTree(false));
@@ -381,9 +380,8 @@ private:
         m_beginp = lastp;
     }
 
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     explicit AssertVisitor(AstNetlist* nodep) {

@@ -3,13 +3,9 @@
 //
 // Copyright 2009-2020 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License.
+// Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //=========================================================================
 ///
@@ -46,8 +42,8 @@
     VL_FATAL_MT(__FILE__, __LINE__, "", \
                 (std::string("%%Error: Unsupported DPI function: ")+VL_FUNC).c_str())
 
-#define _VL_SVDPI_WARN(message...) \
-    VL_PRINTF_MT(message)
+#define _VL_SVDPI_WARN(...) \
+    VL_PRINTF_MT(__VA_ARGS__)
 
 // Function requires a "context" in the import declaration
 #define _VL_SVDPI_CONTEXT_WARN() \

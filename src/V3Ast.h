@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -54,13 +50,13 @@ typedef std::set<int> MTaskIdSet;  // Set of mtaskIds for Var sorting
 #define BROKEN_RTN(test) \
     do { \
         if (VL_UNCOVERABLE(test)) return #test; \
-    } while (0)
+    } while (false)
 // For broken() function, return error string if a base of this class has a match
 #define BROKEN_BASE_RTN(test) \
     do { \
         const char* reasonp = (test); \
         if (VL_UNCOVERABLE(reasonp)) return reasonp; \
-    } while (0)
+    } while (false)
 
 // (V)erilator (N)ode is: True if AstNode is of a a given AstType
 #define VN_IS(nodep,nodetypename) (AstNode::privateIs<Ast ## nodetypename>(nodep))
@@ -1563,7 +1559,8 @@ public:
     AstNodeDType* findVoidDType() const;
     AstNodeDType* findBitDType(int width, int widthMin, AstNumeric numeric) const;
     AstNodeDType* findLogicDType(int width, int widthMin, AstNumeric numeric) const;
-    AstNodeDType* findLogicRangeDType(VNumRange range, int widthMin, AstNumeric numeric) const;
+    AstNodeDType* findLogicRangeDType(const VNumRange& range, int widthMin,
+                                      AstNumeric numeric) const;
     AstNodeDType* findBasicDType(AstBasicDTypeKwd kwd) const;
     AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
@@ -1697,6 +1694,7 @@ public:
     // METHODS
     virtual bool hasDType() const { return true; }
     virtual string emitVerilog() = 0;  /// Format string for verilog writing; see V3EmitV
+    // For documentation on emitC format see EmitCStmts::emitOpName
     virtual string emitC() = 0;
     virtual string emitSimpleOperator() { return ""; }
     virtual bool cleanOut() const = 0;  // True if output has extra upper bits zero

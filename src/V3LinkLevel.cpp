@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 // LINKTOP TRANSFORMATIONS:
@@ -55,11 +51,9 @@ void V3LinkLevel::modSortByLevel() {
 
     ModVec mods;  // Modules
     ModVec tops;  // Top level modules
-    for (AstNodeModule* nodep = v3Global.rootp()->modulesp();
-         nodep; nodep=VN_CAST(nodep->nextp(), NodeModule)) {
-        if (nodep->level()<=2) {
-            tops.push_back(nodep);
-        }
+    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
+         nodep = VN_CAST(nodep->nextp(), NodeModule)) {
+        if (nodep->level() <= 2) tops.push_back(nodep);
         mods.push_back(nodep);
     }
     if (tops.size() >= 2) {
@@ -69,7 +63,7 @@ void V3LinkLevel::modSortByLevel() {
                          <<secp->warnMore()
                          <<"... Suggest see manual; fix the duplicates, or use --top-module to select top."
                          <<V3Error::warnContextNone());
-            for (ModVec::iterator it = tops.begin(); it != tops.end(); ++it) {
+            for (ModVec::const_iterator it = tops.begin(); it != tops.end(); ++it) {
                 AstNode* alsop = *it;
                 std::cout<<secp->warnMore()<<"... Top module "<<alsop->prettyNameQ()<<endl
                          <<alsop->warnContextSecondary();

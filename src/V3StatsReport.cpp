@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2005-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -140,12 +136,12 @@ class StatsReport {
 
         // Header
         os<<"  Stat     "<<std::left<<std::setw(maxWidth-5-2)<<"";
-        for (Stages::iterator it = stages.begin(); it!=stages.end(); ++it) {
+        for (Stages::const_iterator it = stages.begin(); it != stages.end(); ++it) {
             os<<"  "<<std::left<<std::setw(9)<<*it;
         }
         os<<endl;
         os<<"  -------- "<<std::left<<std::setw(maxWidth-5-2)<<"";
-        for (Stages::iterator it = stages.begin(); it!=stages.end(); ++it) {
+        for (Stages::const_iterator it = stages.begin(); it != stages.end(); ++it) {
             os<<"  "<<std::left<<std::setw(9)<<"-------";
         }
         //os<<endl;
@@ -154,7 +150,7 @@ class StatsReport {
         string lastName = "__NONE__";
         string lastCommaName = "__NONE__";
         unsigned col = 0;
-        for (ByName::iterator it = byName.begin(); it!=byName.end(); ++it) {
+        for (ByName::const_iterator it = byName.begin(); it != byName.end(); ++it) {
             const V3Statistic* repp = it->second;
             if (lastName != repp->name()) {
                 lastName = repp->name();

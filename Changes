@@ -3,6 +3,35 @@ Revision history for Verilator
 The contributors that suggested a given feature are shown in []. Thanks!
 
 
+* Verilator 4.032 2020-04-04
+
+***   Add column numbers to errors and warnings.
+
+***   Add GCC 9-style line number prefix when showing source text for errors.
+
+***   Add setting VM_PARALLEL_BUILDS=1 when using --output-split, #2185.
+
+***   Change --quiet-exit to also suppress 'Exiting due to N errors'.
+
+****  Suppress REALCVT for whole real numbers.
+
+****  Support split_var in vlt files, #2219. [Marco Widmer]
+
+****  Fix parameter type redeclaring a type, #2195. [hdzhangdoc]
+
+****  Fix VCD open with empty filename, #2198. [Julius Baxter]
+
+****  Fix packages as enum base types, #2202. [Driss Hafdi]
+
+****  Fix duplicate typedefs in generate for, #2205. [hdzhangdoc]
+
+****  Fix MinW portability, #2114. [Sean Cross]
+
+****  Fix assertions with unique case inside, #2199. [hdzhangdoc]
+
+****  Fix implicit conversion of floats to wide integers.
+
+
 * Verilator 4.030 2020-03-08
 
 **    Add split_var metacomment to assist UNOPTFLAT fixes, #2066. [Yutetsu TAKATSUKASA]
@@ -3538,10 +3567,11 @@ of input ports exists for tracing.
 
 This uses outline mode in Emacs.  See C-h m [M-x describe-mode].
 
-Copyright 2001-2020 by Wilson Snyder.  This program is free software; you
+Copyright 2001-2020 by Wilson Snyder. This program is free software; you
 can redistribute it and/or modify it under the terms of either the GNU
 Lesser General Public License Version 3 or the Perl Artistic License
 Version 2.0.
+SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 Local variables:
 mode: outline

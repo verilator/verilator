@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2005-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2005-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -46,7 +42,7 @@ class V3LanguageWords {
     static const_iterator begin() { return s().s_kwdMap.begin(); }
     static const_iterator end() { return s().s_kwdMap.end(); }
     static string isKeyword(const string& kwd) {
-        KeywordMap::iterator it = s().s_kwdMap.find(kwd);
+        KeywordMap::const_iterator it = s().s_kwdMap.find(kwd);
         if (it == s().s_kwdMap.end()) return "";
         return it->second;
     }

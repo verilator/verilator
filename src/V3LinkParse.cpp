@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 // LinkParse TRANSFORMATIONS:
@@ -384,13 +380,6 @@ private:
         }
         nodep->replaceWith(new AstRefDType(nodep->fileline(), defp->name()));
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
-    }
-
-    virtual void visit(AstTypedefFwd* nodep) VL_OVERRIDE {
-        // We only needed the forward declaration in order to parse correctly.
-        // We won't even check it was ever really defined, as it might have been in a header
-        // file referring to a module we never needed
-        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
 
     virtual void visit(AstForeach* nodep) VL_OVERRIDE {

@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2004-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2004-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 // V3Expand's Transformations:
@@ -954,11 +950,8 @@ private:
     }
 
     //--------------------
-    // Default: Just iterate
     virtual void visit(AstVar*) VL_OVERRIDE {}  // Don't hit varrefs under vars
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

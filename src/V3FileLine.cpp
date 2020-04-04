@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -103,8 +99,8 @@ void VFileContent::pushText(const string& text) {
 
     // Insert line-by-line
     string::size_type line_start = 0;
-    while (1) {
-        string::size_type line_end = leftover.find("\n", line_start);
+    while (true) {
+        string::size_type line_end = leftover.find('\n', line_start);
         if (line_end != string::npos) {
             string oneline (leftover, line_start, line_end-line_start+1);
             m_lines.push_back(oneline);  // Keeps newline
@@ -288,7 +284,7 @@ string FileLine::asciiLineCol() const {
 }
 string FileLine::ascii() const {
     // For most errors especially in the parser the lastLineno is more accurate than firstLineno
-    return filename()+":"+cvtToStr(lastLineno());
+    return filename() + ":" + cvtToStr(lastLineno()) + ":" + cvtToStr(firstColumn());
 }
 std::ostream& operator<<(std::ostream& os, FileLine* fileline) {
     os <<fileline->ascii()<<": "<<std::hex;
@@ -342,17 +338,17 @@ void FileLine::modifyStateInherit(const FileLine* fromp) {
     }
 }
 
-void FileLine::v3errorEnd(std::ostringstream& str, const string& locationStr) {
+void FileLine::v3errorEnd(std::ostringstream& sstr, const string& locationStr) {
     std::ostringstream nsstr;
     if (lastLineno()) nsstr<<this;
-    nsstr<<str.str();
-    nsstr<<endl;
+    nsstr << sstr.str();
+    nsstr << endl;
     std::ostringstream lstr;
     if (!locationStr.empty()) {
         lstr<<std::setw(ascii().length())<<" "<<": "<<locationStr;
     }
     if (warnIsOff(V3Error::errorCode())
-        || V3Config::waive(this, V3Error::errorCode(), str.str())) {
+        || V3Config::waive(this, V3Error::errorCode(), sstr.str())) {
         V3Error::suppressThisWarning();
     }
     else if (!V3Error::errorContexted()) nsstr<<warnContextPrimary();
@@ -376,8 +372,12 @@ string FileLine::warnOther() const {
 
 string FileLine::source() const {
     if (VL_UNCOVERABLE(!m_contentp)) {
-        if (debug() || v3Global.opt.debugCheck()) return "%Error-internal-no-contents";
-        else return "";
+        if (debug() || v3Global.opt.debugCheck()) {
+            // The newline here is to work around the " <line#> | "
+            return "\n%Error: internal tracking of file contents failed";
+        } else {
+            return "";
+        }
     }
     return m_contentp->getLine(m_contentLineno);
 }
@@ -393,19 +393,22 @@ string FileLine::prettySource() const {
 string FileLine::warnContext(bool secondary) const {
     V3Error::errorContexted(true);
     if (!v3Global.opt.context()) return "";
-    string out = "";
-    if (firstLineno()==lastLineno() && firstColumn()) {
+    string out;
+    if (firstLineno() == lastLineno() && firstColumn()) {
         string sourceLine = prettySource();
         // Don't show super-long lines as can fill screen and unlikely to help user
-        if (!sourceLine.empty()
-            && sourceLine.length() < SHOW_SOURCE_MAX_LENGTH
-            && sourceLine.length() >= (size_t)(lastColumn()-1)) {
-            out += sourceLine+"\n";
-            out += string((firstColumn()-1), ' ')+'^';
+        if (!sourceLine.empty() && sourceLine.length() < SHOW_SOURCE_MAX_LENGTH
+            && sourceLine.length() >= static_cast<size_t>(lastColumn() - 1)) {
+            string linestr = cvtToStr(firstLineno());
+            while (linestr.size() < 5)
+                linestr = ' ' + linestr;
+            out += linestr + " | " + sourceLine + "\n";
+            out += std::string(linestr.size(), ' ') + " | ";
+            out += string((firstColumn() - 1), ' ') + '^';
             // Can't use UASSERT_OBJ used in warnings already inside the error end handler
             if (lastColumn() > firstColumn()) {
                 // Note lastColumn() can be <= firstColumn() in some weird preproc expansions
-                out += string((lastColumn()-firstColumn()-1), '~');
+                out += string((lastColumn() - firstColumn() - 1), '~');
             }
             out += "\n";
         }
@@ -413,8 +416,8 @@ string FileLine::warnContext(bool secondary) const {
     if (!secondary) {  // Avoid printing long paths on informational part of error
         for (FileLine* parentFl = parent(); parentFl; parentFl = parentFl->parent()) {
             if (parentFl->filenameIsGlobal()) break;
-            out += parentFl->warnOther()+"... note: In file included from "
-                +parentFl->filebasename()+"\n";
+            out += parentFl->warnOther() + "... note: In file included from "
+                   + parentFl->filebasename() + "\n";
         }
     }
     return out;
@@ -448,7 +451,7 @@ void FileLine::deleteAllRemaining() {
     // FileLines are allocated, but never nicely freed, as it's much faster
     // that way.  Unfortunately this makes our leak checking a big mess, so
     // only when leak checking we'll track them all and cleanup.
-    while (1) {
+    while (true) {
         FileLineCheckSet::iterator it = fileLineLeakChecks.begin();
         if (it==fileLineLeakChecks.end()) break;
         delete *it;

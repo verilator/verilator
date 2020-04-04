@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -1028,10 +1024,10 @@ public:
         string out;
         string::size_type start = 0;
         // space, ., ->
-        while (1) {
+        while (true) {
             // When C++11, use find_if and lambda
             string::size_type pos = string::npos;
-            string separator = "";
+            string separator;
             trySep(old, start, " ", pos/*ref*/, separator/*ref*/);
             trySep(old, start, ".", pos/*ref*/, separator/*ref*/);
             trySep(old, start, "->", pos/*ref*/, separator/*ref*/);

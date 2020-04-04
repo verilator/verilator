@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 // V3Active's Transformations:
@@ -83,16 +79,12 @@ private:
         // Simplify sensitivity list
         VL_DO_DANGLING(V3Const::constifyExpensiveEdit(nodep), nodep);
     }
-    // Empty visitors, speed things up
-    virtual void visit(AstNodeStmt* nodep) VL_OVERRIDE { }
     //--------------------
-    // Default
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        // Default: Just iterate
-        iterateChildren(nodep);
-    }
-    // METHODS
+    virtual void visit(AstNodeStmt*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
+    // METHODS
     AstScope* scopep() { return m_scopep; }
     AstActive* getCActive(FileLine* fl) {
         if (!m_cActivep) {
@@ -210,9 +202,8 @@ private:
         }
     }
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     ActiveDlyVisitor(AstNode* nodep, CheckType check) {
@@ -415,19 +406,17 @@ private:
         }
     }
 
-    // Empty visitors, speed things up
-    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}
-    virtual void visit(AstVarScope* nodep) VL_OVERRIDE {}
     //--------------------
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstVarScope*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
-    explicit ActiveVisitor(AstNetlist* nodep) {
-        m_scopeFinalp = NULL;
-        m_itemCombo = false;
-        m_itemSequent = false;
+    explicit ActiveVisitor(AstNetlist* nodep)
+        : m_scopeFinalp(NULL)
+        , m_itemCombo(false)
+        , m_itemSequent(false) {
         iterate(nodep);
     }
     virtual ~ActiveVisitor() {}

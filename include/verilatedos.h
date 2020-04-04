@@ -3,13 +3,9 @@
 //
 // Copyright 2003-2020 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License.
+// Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 ///
@@ -157,15 +153,32 @@
 # define VL_DANGLING(var)
 #else
 ///< After e.g. delete, set variable to NULL to indicate must not use later
-# define VL_DANGLING(var) do { (var) = NULL; } while(0)
+# define VL_DANGLING(var) \
+    do { \
+        (var) = NULL; \
+    } while (false)
 #endif
 
 ///< Perform an e.g. delete, then set variable to NULL to indicate must not use later.
 ///< Unlike VL_DO_CLEAR the setting of the variable is only for debug reasons.
-#define VL_DO_DANGLING(stmt, var) do { do { stmt; } while(0); VL_DANGLING(var); } while(0)
+#define VL_DO_DANGLING(stmt, var) \
+    do { \
+        do { \
+            stmt; \
+        } while (false); \
+        VL_DANGLING(var); \
+    } while (false)
 
 ///< Perform an e.g. delete, then set variable to NULL as a requirement
-#define VL_DO_CLEAR(stmt, stmt2) do { do { stmt; } while(0); do { stmt2; } while(0); } while(0)
+#define VL_DO_CLEAR(stmt, stmt2) \
+    do { \
+        do { \
+            stmt; \
+        } while (false); \
+        do { \
+            stmt2; \
+        } while (false); \
+    } while (false)
 
 //=========================================================================
 // C++-2011
@@ -236,7 +249,9 @@
 # include <unistd.h>  // ssize_t
 typedef unsigned char           uint8_t;        ///< 8-bit unsigned type (backward compatibility)
 typedef unsigned short int      uint16_t;       ///< 16-bit unsigned type (backward compatibility)
+typedef char                    vlsint8_t;      ///< 8-bit signed type
 typedef unsigned char           vluint8_t;      ///< 8-bit unsigned type
+typedef short int               vlsint16_t;     ///< 16-bit signed type
 typedef unsigned short int      vluint16_t;     ///< 16-bit unsigned type
 # if defined(__uint32_t_defined) || defined(___int32_t_defined)  // Newer Cygwin uint32_t in stdint.h as an unsigned int
 typedef int32_t                 vlsint32_t;     ///< 32-bit signed type
@@ -259,7 +274,9 @@ typedef unsigned long long      vluint64_t;     ///< 64-bit unsigned type
 typedef unsigned __int8         uint8_t;        ///< 8-bit unsigned type (backward compatibility)
 typedef unsigned __int16        uint16_t;       ///< 16-bit unsigned type (backward compatibility)
 typedef unsigned __int32        uint32_t;       ///< 32-bit unsigned type (backward compatibility)
+typedef signed   __int8         vlsint8_t;      ///< 8-bit signed type
 typedef unsigned __int8         vluint8_t;      ///< 8-bit unsigned type
+typedef signed   __int16        vlsint16_t;     ///< 16-bit signed type
 typedef unsigned __int16        vluint16_t;     ///< 16-bit unsigned type
 typedef signed   __int32        vlsint32_t;     ///< 32-bit signed type
 typedef unsigned __int32        vluint32_t;     ///< 32-bit unsigned type
@@ -280,10 +297,12 @@ typedef signed   __int32        ssize_t;        ///< signed size_t; returned fro
 # include <stdint.h>  // Linux and most flavors
 # include <sys/types.h>  // __WORDSIZE
 # include <unistd.h>  // ssize_t
-typedef uint8_t                 vluint8_t;      ///< 32-bit unsigned type
-typedef uint16_t                vluint16_t;     ///< 32-bit unsigned type
+typedef char                    vlsint8_t;      ///< 8-bit signed type
+typedef uint8_t                 vluint8_t;      ///< 8-bit unsigned type
+typedef short                   vlsint16_t;     ///< 16-bit signed type
+typedef uint16_t                vluint16_t;     ///< 16-bit unsigned type
 typedef int                     vlsint32_t;     ///< 32-bit signed type
-typedef uint32_t                vluint32_t;     ///< 32-bit signed type
+typedef uint32_t                vluint32_t;     ///< 32-bit unsigned type
 # if defined(__WORDSIZE) && (__WORDSIZE == 64)
 typedef long                    vlsint64_t;     ///< 64-bit signed type
 typedef unsigned long           vluint64_t;     ///< 64-bit unsigned type

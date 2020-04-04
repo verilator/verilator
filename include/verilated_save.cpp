@@ -3,14 +3,11 @@
 //
 // THIS MODULE IS PUBLICLY LICENSED
 //
-// Copyright 2001-2020 by Wilson Snyder.  This program is free software;
-// you can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License Version 2.0.
-//
-// This is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-// for more details.
+// Copyright 2001-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
+// Lesser General Public License Version 3 or the Perl Artistic License
+// Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //=============================================================================
 ///
@@ -187,7 +184,7 @@ void VerilatedSave::flush() VL_MT_UNSAFE_ONE {
     m_assertOne.check();
     if (VL_UNLIKELY(!isOpen())) return;
     vluint8_t* wp = m_bufp;
-    while (1) {
+    while (true) {
         ssize_t remaining = (m_cp - wp);
         if (remaining==0) break;
         errno = 0;
@@ -216,7 +213,7 @@ void VerilatedRestore::fill() VL_MT_UNSAFE_ONE {
     m_endp = m_bufp + (m_endp - m_cp);
     m_cp = m_bufp;  // Reset buffer
     // Read into buffer starting at m_endp
-    while (1) {
+    while (true) {
         ssize_t remaining = (m_bufp+bufferSize() - m_endp);
         if (remaining==0) break;
         errno = 0;

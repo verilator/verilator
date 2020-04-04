@@ -3,14 +3,11 @@
 //
 // THIS MODULE IS PUBLICLY LICENSED
 //
-// Copyright 2001-2020 by Wilson Snyder.  This program is free software;
-// you can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License Version 2.0.
-//
-// This is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-// for more details.
+// Copyright 2001-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
+// Lesser General Public License Version 3 or the Perl Artistic License
+// Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //=============================================================================
 ///
@@ -32,9 +29,15 @@
 /// Conditionally compile coverage code
 
 #ifdef VM_COVERAGE
-# define VL_IF_COVER(stmts) do { stmts ; } while(0)
+# define VL_IF_COVER(stmts) \
+    do { \
+        stmts; \
+    } while (false)
 #else
-# define VL_IF_COVER(stmts) do { if(0) { stmts ; } } while(0)
+# define VL_IF_COVER(stmts) \
+    do { \
+        if (false) { stmts; } \
+    } while (false)
 #endif
 
 //=============================================================================
@@ -65,10 +68,10 @@
 ///             VL_COVER_INSERT(&m_cases[i], "comment", "Coverage Case", "i", cvtToNumStr(i));
 ///     }
 
-#define VL_COVER_INSERT(countp,args...) \
+#define VL_COVER_INSERT(countp,...) \
     VL_IF_COVER(VerilatedCov::_inserti(countp); \
                 VerilatedCov::_insertf(__FILE__, __LINE__); \
-                VerilatedCov::_insertp("hier", name(), args))
+                VerilatedCov::_insertp("hier", name(), __VA_ARGS__))
 
 //=============================================================================
 /// Convert VL_COVER_INSERT value arguments to strings

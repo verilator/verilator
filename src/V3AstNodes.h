@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -3902,6 +3898,8 @@ public:
     virtual string emitVerilog() { return "[%l:%r]"; }
     virtual string emitC() { V3ERROR_NA; return ""; }
     virtual bool cleanOut() const { return false; }  // NA
+    // Create AstAnd(AstGte(...), AstLte(...))
+    AstNode* newAndFromInside(AstNode* exprp, AstNode* lhsp, AstNode* rhsp);
 };
 
 class AstInitItem : public AstNode {
@@ -4587,16 +4585,19 @@ public:
     virtual int instrCount() const { return instrCountDouble(); }
 };
 class AstRToIRoundS : public AstNodeUniop {
+    // Convert real to integer, with arbitrary sized output (not just "integer" format)
 public:
     AstRToIRoundS(FileLine* fl, AstNode* lhsp)
-        : ASTGEN_SUPER(fl, lhsp) { dtypeSetSigned32(); }
+        : ASTGEN_SUPER(fl, lhsp) {
+        dtypeSetSigned32();
+    }
     ASTNODE_NODE_FUNCS(RToIRoundS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opRToIRoundS(lhs); }
     virtual string emitVerilog() { return "%f$rtoi_rounded(%l)"; }
-    virtual string emitC() { return "VL_RTOIROUND_I_D(%li)"; }
+    virtual string emitC() { return "VL_RTOIROUND_%nq_D(%nw, %P, %li)"; }
     virtual bool cleanOut() const { return false; }
-    virtual bool cleanLhs() const { return false; }  // Eliminated before matters
-    virtual bool sizeMattersLhs() const { return false; }  // Eliminated before matters
+    virtual bool cleanLhs() const { return false; }
+    virtual bool sizeMattersLhs() const { return false; }
     virtual int instrCount() const { return instrCountDouble(); }
 };
 class AstIToRD : public AstNodeUniop {

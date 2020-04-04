@@ -3,13 +3,9 @@
 //
 // Copyright 2003-2020 by Wilson Snyder. This program is free software; you can
 // redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License.
+// Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 ///
@@ -320,7 +316,7 @@ private:
 public:  // But internals only - called from VerilatedModule's
     VerilatedScope();
     ~VerilatedScope();
-    void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffix,
+    void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
                    const char* identifier, const Type type) VL_MT_UNSAFE;
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
     void varInsert(int finalize, const char* namep, void* datap,
@@ -699,13 +695,12 @@ static inline QData  VL_CVT_Q_D(double lhs) VL_PURE {
     union { double d; QData q; } u; u.d=lhs; return u.q; }
 /// Return double from QData (numeric)
 static inline double VL_ITOR_D_I(IData lhs) VL_PURE {
-    return static_cast<double>(static_cast<vlsint32_t>(lhs)); }
+    return static_cast<double>(static_cast<vlsint32_t>(lhs));
+}
 /// Return QData from double (numeric)
-static inline IData  VL_RTOI_I_D(double lhs) VL_PURE {
-    return static_cast<vlsint32_t>(VL_TRUNC(lhs)); }
-/// Return QData from double (numeric)
-static inline IData  VL_RTOIROUND_I_D(double lhs) VL_PURE {
-    return static_cast<vlsint32_t>(VL_ROUND(lhs)); }
+static inline IData VL_RTOI_I_D(double lhs) VL_PURE {
+    return static_cast<vlsint32_t>(VL_TRUNC(lhs));
+}
 
 // Sign extend such that if MSB set, we get ffff_ffff, else 0s
 // (Requires clean input)
@@ -1324,6 +1319,14 @@ static inline WDataOutP VL_NEGATE_W(int words, WDataOutP owp, WDataInP lwp) VL_M
     }
     return owp;
 }
+static void VL_NEGATE_INPLACE_W(int words, WDataOutP owp_lwp) VL_MT_SAFE {
+    EData carry = 1;
+    for (int i = 0; i < words; ++i) {
+        EData word = ~owp_lwp[i] + carry;
+        carry = (word < ~owp_lwp[i]);
+        owp_lwp[i] = word;
+    }
+}
 
 // EMIT_RULE: VL_MUL:    oclean=dirty; lclean==clean; rclean==clean;
 // EMIT_RULE: VL_DIV:    oclean=dirty; lclean==clean; rclean==clean;
@@ -1650,18 +1653,22 @@ static inline void _VL_INSERT_WW(int, WDataOutP owp, WDataInP lwp, int hbit, int
                 int oword = lword+i;
                 EData d = lwp[i] << loffset;
                 EData od = (owp[oword] & ~linsmask) | (d & linsmask);
-                if (oword == hword)
+                if (oword == hword) {
                     owp[oword] = (owp[oword] & ~hinsmask) | (od & hinsmask);
-                else owp[oword] = od;
+                } else {
+                    owp[oword] = od;
+                }
             }
             {   // Upper word
                 int oword = lword+i+1;
                 if (oword <= hword) {
                     EData d = lwp[i] >> nbitsonright;
                     EData od = (d & ~linsmask) | (owp[oword] & linsmask);
-                    if (oword == hword)
+                    if (oword == hword) {
                         owp[oword] = (owp[oword] & ~hinsmask) | (od & hinsmask);
-                    else owp[oword] = od;
+                    } else {
+                        owp[oword] = od;
+                    }
                 }
             }
         }
@@ -2237,6 +2244,49 @@ static inline WDataOutP VL_SEL_WWII(int obits, int lbits, int, int,
         }
         for (int i=words; i<VL_WORDS_I(obits); ++i) owp[i]=0;
     }
+    return owp;
+}
+
+//======================================================================
+// Math needing insert/select
+
+/// Return QData from double (numeric)
+// EMIT_RULE: VL_RTOIROUND_Q_D:  oclean=dirty; lclean==clean/real
+static inline QData VL_RTOIROUND_Q_D(int bits, double lhs) VL_PURE {
+    // IEEE format: [63]=sign [62:52]=exp+1023 [51:0]=mantissa
+    // This does not need to support subnormals as they are sub-integral
+    lhs = VL_ROUND(lhs);
+    if (lhs == 0.0) return 0;
+    QData q = VL_CVT_Q_D(lhs);
+    int lsb = static_cast<int>((q >> VL_ULL(52)) & VL_MASK_Q(11)) - 1023 - 52;
+    vluint64_t mantissa = (q & VL_MASK_Q(52)) | (VL_ULL(1) << 52);
+    vluint64_t out = 0;
+    if (lsb < 0) {
+        out = mantissa >> -lsb;
+    } else if (lsb < 64) {
+        out = mantissa << lsb;
+    }
+    if (lhs < 0) out = -out;
+    return out;
+}
+static inline IData VL_RTOIROUND_I_D(int bits, double lhs) VL_PURE {
+    return static_cast<IData>(VL_RTOIROUND_Q_D(bits, lhs));
+}
+static inline WDataOutP VL_RTOIROUND_W_D(int obits, WDataOutP owp, double lhs) VL_PURE {
+    // IEEE format: [63]=sign [62:52]=exp+1023 [51:0]=mantissa
+    // This does not need to support subnormals as they are sub-integral
+    lhs = VL_ROUND(lhs);
+    VL_ZERO_W(obits, owp);
+    if (lhs == 0.0) return owp;
+    QData q = VL_CVT_Q_D(lhs);
+    int lsb = static_cast<int>((q >> VL_ULL(52)) & VL_MASK_Q(11)) - 1023 - 52;
+    vluint64_t mantissa = (q & VL_MASK_Q(52)) | (VL_ULL(1) << 52);
+    if (lsb < 0) {
+        VL_SET_WQ(owp, mantissa >> -lsb);
+    } else if (lsb < obits) {
+        _VL_INSERT_WQ(obits, owp, mantissa, lsb + 52, lsb);
+    }
+    if (lhs < 0) VL_NEGATE_INPLACE_W(VL_WORDS_I(obits), owp);
     return owp;
 }
 

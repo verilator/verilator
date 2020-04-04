@@ -2,10 +2,11 @@
 if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); die; }
 # DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
-# Copyright 2003 by Wilson Snyder. This program is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU
+# Copyright 2003 by Wilson Snyder. This program is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU
 # Lesser General Public License Version 3 or the Perl Artistic License
 # Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 scenarios(simulator => 1);
 
@@ -19,10 +20,10 @@ compile(
     );
 
 if ($Self->{vlt_all}) {
-    file_grep("$out_filename", qr/\<var fl="e57" loc=".*?" name="formatted" dtype_id="4" dir="input" vartype="string" origName="formatted" sformat="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var fl="e80" loc=".*?" name="t.sub.in" dtype_id="3" vartype="int" origName="in" public="true" public_flat_rd="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var fl="e81" loc=".*?" name="t.sub.fr_a" dtype_id="3" vartype="int" origName="fr_a" public="true" public_flat_rd="true" public_flat_rw="true"\/\>/i);
-    file_grep("$out_filename", qr/\<var fl="e82" loc=".*?" name="t.sub.fr_b" dtype_id="3" vartype="int" origName="fr_b" public="true" public_flat_rd="true" public_flat_rw="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var fl="e58" loc=".*?" name="formatted" dtype_id="4" dir="input" vartype="string" origName="formatted" sformat="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var fl="e81" loc=".*?" name="t.sub.in" dtype_id="3" vartype="int" origName="in" public="true" public_flat_rd="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var fl="e82" loc=".*?" name="t.sub.fr_a" dtype_id="3" vartype="int" origName="fr_a" public="true" public_flat_rd="true" public_flat_rw="true"\/\>/i);
+    file_grep("$out_filename", qr/\<var fl="e83" loc=".*?" name="t.sub.fr_b" dtype_id="3" vartype="int" origName="fr_b" public="true" public_flat_rd="true" public_flat_rw="true"\/\>/i);
 }
 
 execute(

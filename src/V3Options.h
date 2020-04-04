@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -81,6 +77,7 @@ public:
         FST,
         FST_THREAD
     } m_e;
+    // cppcheck-suppress noExplicitConstructor
     inline TraceFormat(en _e = VCD) : m_e(_e) {}
     explicit inline TraceFormat(int _e) : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
@@ -180,6 +177,7 @@ class V3Options {
     bool        m_protectIds;   // main switch: --protect-ids
     bool        m_public;       // main switch: --public
     bool        m_publicFlatRW;  // main switch: --public-flat-rw
+    bool        m_quietExit;  // main switch: --quiet-exit
     bool        m_relativeCFuncs; // main switch: --relative-cfuncs
     bool        m_relativeIncludes; // main switch: --relative-includes
     bool        m_reportUnoptflat; // main switch: --report-unoptflat
@@ -283,7 +281,7 @@ class V3Options {
     void showVersion(bool verbose);
     void coverage(bool flag) { m_coverageLine = m_coverageToggle = m_coverageUser = flag; }
     bool onoff(const char* sw, const char* arg, bool& flag);
-    bool onoffb(const char* sw, const char* arg, VOptionBool& flag);
+    bool onoffb(const char* sw, const char* arg, VOptionBool& flagr);
     bool suffixed(const string& sw, const char* arg);
     string parseFileArg(const string& optdir, const string& relfilename);
     bool parseLangExt(const char* swp, const char* langswp, const V3LangCode& lc);
@@ -373,6 +371,7 @@ class V3Options {
     bool lintOnly() const { return m_lintOnly; }
     bool ignc() const { return m_ignc; }
     bool inhibitSim() const { return m_inhibitSim; }
+    bool quietExit() const { return m_quietExit; }
     bool relativeCFuncs() const { return m_relativeCFuncs; }
     bool reportUnoptflat() const { return m_reportUnoptflat; }
     bool vpi() const { return m_vpi; }

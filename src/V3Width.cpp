@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 // V3Width's Transformations:
@@ -326,11 +322,17 @@ private:
     virtual void visit(AstIToRD* nodep) VL_OVERRIDE {       visit_Or_Ls32(nodep); }
 
     // Widths: Output integer signed, input real
-    virtual void visit(AstRToIS* nodep) VL_OVERRIDE {       visit_Os32_Lr(nodep); }
-    virtual void visit(AstRToIRoundS* nodep) VL_OVERRIDE {  visit_Os32_Lr(nodep); }
+    virtual void visit(AstRToIS* nodep) VL_OVERRIDE { visit_Os32_Lr(nodep); }
+    virtual void visit(AstRToIRoundS* nodep) VL_OVERRIDE {
+        // Only created here, size comes from upper expression
+        if (m_vup->prelim()) {  // First stage evaluation
+            iterateCheckReal(nodep, "LHS", nodep->lhsp(), BOTH);
+        }
+        if (!nodep->dtypep()->widthSized()) nodep->v3fatalSrc("RToIRoundS should be presized");
+    }
 
     // Widths: Output integer unsigned, input real
-    virtual void visit(AstRealToBits* nodep) VL_OVERRIDE {  visit_Ou64_Lr(nodep); }
+    virtual void visit(AstRealToBits* nodep) VL_OVERRIDE { visit_Ou64_Lr(nodep); }
 
     // Output integer, input string
     virtual void visit(AstLenN* nodep) VL_OVERRIDE { visit_Os32_string(nodep); }
@@ -1703,15 +1705,8 @@ private:
             AstNode* inewp;
             if (AstInsideRange* irangep = VN_CAST(itemp, InsideRange)) {
                 // Similar logic in V3Case
-                AstNode* ap = new AstGte(itemp->fileline(),
-                                         nodep->exprp()->cloneTree(true),
-                                         irangep->lhsp()->unlinkFrBack());
-                AstNode* bp = new AstLte(itemp->fileline(),
-                                         nodep->exprp()->cloneTree(true),
-                                         irangep->rhsp()->unlinkFrBack());
-                ap->fileline()->modifyWarnOff(V3ErrorCode::UNSIGNED, true);
-                bp->fileline()->modifyWarnOff(V3ErrorCode::CMPCONST, true);
-                inewp = new AstAnd(itemp->fileline(), ap, bp);
+                inewp = irangep->newAndFromInside(nodep->exprp(), irangep->lhsp()->unlinkFrBack(),
+                                                  irangep->rhsp()->unlinkFrBack());
             } else {
                 inewp = new AstEqWild(itemp->fileline(),
                                       nodep->exprp()->cloneTree(true),
@@ -2503,7 +2498,7 @@ private:
                                           << VN_CAST(patp->keyp(), Text)->text());
                         }
                     }
-                } while(0);
+                } while (false);
                 // Next
                 if (memp) memp = VN_CAST(memp->nextp(), MemberDType);
                 if (patp) patp = VN_CAST(patp->nextp(), PatMember);
@@ -2848,10 +2843,17 @@ private:
                 case 'm': break;  // %m - auto insert "name"
                 case 'l': break;  // %m - auto insert "library"
                 case 'd': {  // Convert decimal to either 'd' or '#'
-                    if (argp && argp->isSigned()) {  // Convert it
-                        ch = '~';
+                    if (argp) {
+                        AstNode* nextp = argp->nextp();
+                        if (argp->isDouble()) {
+                            spliceCvtS(argp, true, 64);
+                            ch = '~';
+                        }
+                        else if (argp->isSigned()) {  // Convert it
+                            ch = '~';
+                        }
+                        argp = nextp;
                     }
-                    if (argp) argp = argp->nextp();
                     break;
                 }
                 case 'p': {  // Pattern
@@ -2898,6 +2900,17 @@ private:
                         ch = '^';
                     }
                     if (argp) argp = argp->nextp();
+                    break;
+                }
+                case 'f':  // FALLTHRU
+                case 'g': {
+                    if (argp) {
+                        AstNode* nextp = argp->nextp();
+                        if (!argp->isDouble()) {
+                            iterateCheckReal(nodep, "Display argument", argp, BOTH);
+                        }
+                        argp = nextp;
+                    }
                     break;
                 }
                 case '?': {  // Unspecified by user, guess
@@ -3379,7 +3392,7 @@ private:
                 // AstPattern requires assignments to pass datatype on PRELIM
                 VL_DO_DANGLING(userIterate(pinp, WidthVP(portp->dtypep(), PRELIM).p()), pinp);
             }
-        } while (0);
+        } while (false);
         // Stage 2
         {
             V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
@@ -4191,7 +4204,7 @@ private:
             underp = spliceCvtD(underp);
             underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
         } else if (!expDTypep->isDouble() && underp->isDouble()) {
-            underp = spliceCvtS(underp, true);  // Round RHS
+            underp = spliceCvtS(underp, true, expDTypep->width());  // Round RHS
             underp = userIterateSubtreeReturnEdits(underp, WidthVP(SELF, FINAL).p());
         } else if (expDTypep->isString() && !underp->dtypep()->isString()) {
             underp = spliceCvtString(underp);
@@ -4320,7 +4333,7 @@ private:
         if (nodep && nodep->isDouble()) {
             nodep->v3error("Expected integral (non-" << nodep->dtypep()->prettyDTypeName()
                            << ") input to " << nodep->backp()->prettyTypeName());
-            nodep = spliceCvtS(nodep, true);
+            nodep = spliceCvtS(nodep, true, 32);
         }
         return nodep;
     }
@@ -4339,16 +4352,27 @@ private:
             return nodep;
         }
     }
-    AstNode* spliceCvtS(AstNode* nodep, bool warnOn) {
+    AstNode* spliceCvtS(AstNode* nodep, bool warnOn, int width) {
         // IEEE-2012 11.8.1: Signed: Type coercion creates signed
         // 11.8.2: Argument to convert is self-determined
         if (nodep && nodep->dtypep()->skipRefp()->isDouble()) {
-            UINFO(6,"   spliceCvtS: "<<nodep<<endl);
+            UINFO(6, "   spliceCvtS: " << nodep << endl);
             AstNRelinker linker;
             nodep->unlinkFrBack(&linker);
+            if (AstConst* constp = VN_CAST(nodep, Const)) {
+                // We convert to/from vlsint32 rather than use floor() as want to make sure is
+                // representable in integer's number of bits
+                if (constp->isDouble()
+                    && v3EpsilonEqual(constp->num().toDouble(),
+                                      static_cast<double>(
+                                          static_cast<vlsint32_t>(constp->num().toDouble())))) {
+                    warnOn = false;
+                }
+            }
             if (warnOn) nodep->v3warn(REALCVT, "Implicit conversion of real to integer");
             AstNode* newp = new AstRToIRoundS(nodep->fileline(), nodep);
             linker.relink(newp);
+            newp->dtypeSetBitSized(width, AstNumeric::SIGNED);
             return newp;
         } else {
             return nodep;

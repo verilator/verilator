@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2020 by Yutetsu TAKATSUKASA.
+// SPDX-License-Identifier: CC0-1.0
 
 logic [7:0] should_show_warning_global0 /* verilator split_var */;
 logic [7:0] should_show_warning_global1 [1:0] /* verilator split_var */;

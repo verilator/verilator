@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 // CONST TRANSFORMATIONS:
@@ -49,9 +45,8 @@ private:
     virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         if (nodep->varp()) nodep->varp()->user4(1);
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     explicit ConstVarMarkVisitor(AstNode* nodep) {
@@ -71,9 +66,8 @@ private:
     virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         if (nodep->varp() && nodep->varp()->user4()) m_found = true;
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     explicit ConstVarFindVisitor(AstNode* nodep) {
@@ -596,15 +590,12 @@ private:
         bool rad = ifMergeAdjacent(lp->rhsp(), rp->rhsp());
         if (lad && rad) return true;
         // {a[] & b[]&c[], a[] & b[]&c[]}
-        else if (lad && concatMergeable(lp->rhsp(), rp->rhsp())) return true;
+        if (lad && concatMergeable(lp->rhsp(), rp->rhsp())) return true;
         // {a[]&b[] & c[], a[]&b[] & c[]}
-        else if (rad && concatMergeable(lp->lhsp(), rp->lhsp())) return true;
-        else {
-            // {(a[]&b[])&(c[]&d[]), (a[]&b[])&(c[]&d[])}
-            if (concatMergeable(lp->lhsp(), rp->lhsp())
-                && concatMergeable(lp->rhsp(), rp->rhsp()))
-                return true;
-        }
+        if (rad && concatMergeable(lp->lhsp(), rp->lhsp())) return true;
+        // {(a[]&b[])&(c[]&d[]), (a[]&b[])&(c[]&d[])}
+        if (concatMergeable(lp->lhsp(), rp->lhsp())
+            && concatMergeable(lp->rhsp(), rp->rhsp())) return true;
         return false;
     }
 
@@ -1374,7 +1365,7 @@ private:
     }
 
     // Special cases
-    virtual void visit(AstConst* nodep) VL_OVERRIDE {}  // Already constant
+    virtual void visit(AstConst*) VL_OVERRIDE {}  // Already constant
 
     virtual void visit(AstCell* nodep) VL_OVERRIDE {
         if (m_params) {
@@ -2162,7 +2153,7 @@ private:
     // These are converted by V3Param.  Don't constify as we don't want the
     // from() VARREF to disappear, if any.
     // If output of a presel didn't get consted, chances are V3Param didn't visit properly
-    virtual void visit(AstNodePreSel* nodep) VL_OVERRIDE {}
+    virtual void visit(AstNodePreSel*) VL_OVERRIDE {}
 
     // Ignored, can eliminate early
     virtual void visit(AstSysIgnore* nodep) VL_OVERRIDE {

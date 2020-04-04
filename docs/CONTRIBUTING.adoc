@@ -50,13 +50,13 @@ contributions flow more efficiently.
    link:CONTRIBUTORS[docs/CONTRIBUTORS] and you are agreeing all future
    contributions are also certified.
 
-** We occasionally accept contributions where people do not want their
-   name published. Please email us; you must still certify your
-   contribution using email.
+** We occasionally accept contributions where people do not want their name
+   published. Please email us; you must still privately certify your
+   contribution.
 
-* Your test contributions are generally considered released into the public
-  domain, unless you request otherwise or put a GNU/Artistic license on
-  your test file.
+* Your test contributions are generally considered released into the
+  Creative Commons Public Domain (CC0), unless you request otherwise or put
+  a GNU/Artistic license on your file.
 
 * Most important is we get your patch. If you'd like to clean up
   indentation and related issues ahead of our feedback, that is

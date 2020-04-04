@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 // V3SplitVar divides a variable into multiple variables to avoid UNOPTFLAT warning
@@ -989,7 +985,6 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
     int m_numSplit;  // Total number of split variables
     // key:variable to be split. value:location where the variable is referenced.
     vl_unordered_map<AstVar*, PackedVarRef> m_refs;
-    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
     virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         UASSERT_OBJ(m_modp == NULL, m_modp, "Nested module declration");
         if (!VN_IS(nodep, Module)) {
@@ -1067,6 +1062,8 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
             iterateChildren(nodep);
         }
     }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
     // Extract necessary bit range from a newly created variable to meet ref
     static AstNode* extractBits(const PackedVarRefEntry& ref, const SplitNewVar& var,
                                 bool lvalue) {

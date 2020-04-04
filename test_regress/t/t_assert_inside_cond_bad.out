@@ -1,0 +1,3 @@
+[10] %Error: t_assert_inside_cond.v:39: Assertion failed in top.t: synthesis parallel_case, but multiple matches found
+%Error: t/t_assert_inside_cond.v:39: Verilog $stop
+Aborting...

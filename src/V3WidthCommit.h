@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -38,6 +34,14 @@
 
 class WidthRemoveVisitor : public AstNVisitor {
 private:
+    // METHODS
+    void replaceWithSignedVersion(AstNode* nodep, AstNode* newp) {
+        UINFO(6, " Replace " << nodep << " w/ " << newp << endl);
+        nodep->replaceWith(newp);
+        newp->dtypeFrom(nodep);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+
     // VISITORS
     virtual void visit(AstSigned* nodep) VL_OVERRIDE {
         VL_DO_DANGLING(replaceWithSignedVersion(nodep, nodep->lhsp()->unlinkFrBack()), nodep);
@@ -45,15 +49,8 @@ private:
     virtual void visit(AstUnsigned* nodep) VL_OVERRIDE {
         VL_DO_DANGLING(replaceWithSignedVersion(nodep, nodep->lhsp()->unlinkFrBack()), nodep);
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
-    void replaceWithSignedVersion(AstNode* nodep, AstNode* newp) {
-        UINFO(6," Replace "<<nodep<<" w/ "<<newp<<endl);
-        nodep->replaceWith(newp);
-        newp->dtypeFrom(nodep);
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     WidthRemoveVisitor() {}

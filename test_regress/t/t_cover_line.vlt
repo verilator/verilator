@@ -2,8 +2,9 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2019 by Stefan Wallentowitz.
+// SPDX-License-Identifier: CC0-1.0
 
 `verilator_config
 
-coverage_block_off -file "t/t_cover_line.v" -lines 82
+coverage_block_off -file "t/t_cover_line.v" -lines 83
 coverage_block_off -module "beta" -block "block"

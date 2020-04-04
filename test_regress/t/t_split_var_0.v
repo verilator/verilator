@@ -2,6 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2020 by Yutetsu TAKATSUKASA.
+// SPDX-License-Identifier: CC0-1.0
 
 // If split_var pragma is removed, UNOPTFLAT appears.
 
@@ -9,7 +10,11 @@ module barshift_1d_unpacked #(parameter DEPTH = 2, localparam WIDTH = 2**DEPTH)
    (input [WIDTH-1:0] in, input [DEPTH-1:0] shift, output [WIDTH-1:0] out /*verilator split_var*/);
 
    localparam OFFSET = -3;
+`ifdef TEST_ATTRIBUTES
    logic [WIDTH-1:0] tmp[DEPTH+OFFSET:OFFSET] /*verilator split_var*/;
+`else
+   logic [WIDTH-1:0] tmp[DEPTH+OFFSET:OFFSET];
+`endif
    generate
       for(genvar i = 0; i < DEPTH; ++i) begin
          always_comb

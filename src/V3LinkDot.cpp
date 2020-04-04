@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 // LinkDot TRANSFORMATIONS:
@@ -505,7 +501,7 @@ public:
                  it!=m_scopeAliasMap[samn].end(); ++it) {
                 VSymEnt* lhsp = it->first;
                 VSymEnt* srcp = lhsp;
-                while (1) {  // Follow chain of aliases up to highest level non-alias
+                while (true) {  // Follow chain of aliases up to highest level non-alias
                     ScopeAliasMap::iterator it2 = m_scopeAliasMap[samn].find(srcp);
                     if (it2 != m_scopeAliasMap[samn].end()) { srcp = it2->second; continue; }
                     else break;
@@ -757,7 +753,7 @@ class LinkDotFindVisitor : public AstNVisitor {
             m_curSymp = m_modSymp = NULL;
         }
     }
-    virtual void visit(AstTypeTable* nodep) VL_OVERRIDE {}
+    virtual void visit(AstTypeTable*) VL_OVERRIDE {}
     virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         // Called on top module from Netlist, other modules from the cell creating them,
         // and packages
@@ -1093,6 +1089,12 @@ class LinkDotFindVisitor : public AstNVisitor {
         iterateChildren(nodep);
         m_statep->insertSym(m_curSymp, nodep->name(), nodep, m_packagep);
     }
+    virtual void visit(AstTypedefFwd* nodep) VL_OVERRIDE {
+        UASSERT_OBJ(m_curSymp, nodep, "Typedef not under module/package/$unit");
+        iterateChildren(nodep);
+        // No need to insert, only the real typedef matters, but need to track for errors
+        nodep->user1p(m_curSymp);
+    }
     virtual void visit(AstParamTypeDType* nodep) VL_OVERRIDE {
         UASSERT_OBJ(m_curSymp, nodep, "Parameter type not under module/package/$unit");
         iterateChildren(nodep);
@@ -1178,10 +1180,7 @@ class LinkDotFindVisitor : public AstNVisitor {
         // No longer needed, but can't delete until any multi-instantiated modules are expanded
     }
 
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        // Default: Just iterate
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -1242,7 +1241,7 @@ private:
     }
 
     // VISITs
-    virtual void visit(AstTypeTable* nodep) VL_OVERRIDE {}
+    virtual void visit(AstTypeTable*) VL_OVERRIDE {}
     virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         UINFO(5,"   "<<nodep<<endl);
         if (nodep->dead() || !nodep->user4()) {
@@ -1343,10 +1342,21 @@ private:
         // We're done with implicit gates
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        // Default: Just iterate
-        iterateChildren(nodep);
+    virtual void visit(AstTypedefFwd* nodep) VL_OVERRIDE {
+        VSymEnt* foundp = m_statep->getNodeSym(nodep)->findIdFallback(nodep->name());
+        if (!foundp && v3Global.opt.pedantic()) {
+            // We only check it was ever really defined in pedantic mode, as it
+            // might have been in a header file referring to a module we never
+            // needed so there are false positives
+            nodep->v3error(
+                "Forward typedef unused or does not resolve to a data type (IEEE 1800-2017 6.18): "
+                << nodep->prettyNameQ());
+        }
+        // We only needed the forward declaration in order to parse correctly.
+        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
+
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -1493,10 +1503,7 @@ class LinkDotScopeVisitor : public AstNVisitor {
     virtual void visit(AstCell*) VL_OVERRIDE {}
     virtual void visit(AstVar*) VL_OVERRIDE {}
     virtual void visit(AstNodeMath*) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        // Default: Just iterate
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -1581,10 +1588,7 @@ class LinkDotIfaceVisitor : public AstNVisitor {
             nodep->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        // Default: Just iterate
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -1762,7 +1766,7 @@ private:
         // Recurse..., backward as must do packages before using packages
         iterateChildrenBackwards(nodep);
     }
-    virtual void visit(AstTypeTable* nodep) VL_OVERRIDE {}
+    virtual void visit(AstTypeTable*) VL_OVERRIDE {}
     virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         if (nodep->dead()) return;
         checkNoDot(nodep);
@@ -2563,10 +2567,10 @@ private:
     }
 
     virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        // Default: Just iterate
         checkNoDot(nodep);
         iterateChildren(nodep);
     }
+
 public:
     // CONSTRUCTORS
     LinkDotResolveVisitor(AstNetlist* rootp, LinkDotState* statep) {

@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -145,7 +141,7 @@ class EmitCSyms : EmitCBaseVisitor {
     string scopeDecodeIdentifier(const string& scpname) {
         string out = scpname;
         // Remove hierarchy
-        string::size_type  pos = out.rfind(".");
+        string::size_type pos = out.rfind('.');
         if (pos != std::string::npos) out.erase(0, pos + 1);
         // Decode all escaped characters
         while ((pos = out.find("__0")) != string::npos) {
@@ -167,10 +163,8 @@ class EmitCSyms : EmitCBaseVisitor {
             }
             string::size_type pos = scp.rfind("__DOT__");
             if (pos == string::npos) {
-                pos = scp.rfind(".");
-                if (pos == string::npos) {
-                    break;
-                }
+                pos = scp.rfind('.');
+                if (pos == string::npos) break;
             }
             scp.resize(pos);
         }
@@ -232,10 +226,8 @@ class EmitCSyms : EmitCBaseVisitor {
 
             string above = name;
             while (!above.empty()) {
-                string::size_type pos = above.rfind(".");
-                if (pos == string::npos) {
-                    break;
-                }
+                string::size_type pos = above.rfind('.');
+                if (pos == string::npos) break;
                 above.resize(pos);
                 if (m_vpiScopeHierarchy.find(above) != m_vpiScopeHierarchy.end()) {
                     m_vpiScopeHierarchy[above].push_back(name);
@@ -345,18 +337,14 @@ class EmitCSyms : EmitCBaseVisitor {
         iterateChildren(nodep);
         m_funcp = NULL;
     }
-    // NOPs
-    virtual void visit(AstConst*) VL_OVERRIDE {}
-    // Default
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+
     //---------------------------------------
-    // ACCESSORS
+    virtual void visit(AstConst*) VL_OVERRIDE {}
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
-    explicit EmitCSyms(AstNetlist* nodep, bool dpiHdrOnly):
-        m_dpiHdrOnly(dpiHdrOnly)
-    {
+    explicit EmitCSyms(AstNetlist* nodep, bool dpiHdrOnly)
+        : m_dpiHdrOnly(dpiHdrOnly) {
         m_funcp = NULL;
         m_modp = NULL;
         m_coverBins = 0;
@@ -675,8 +663,8 @@ void EmitCSyms::emitSymImp() {
             string name = it->second.m_prettyName;
             if (it->first == "TOP") continue;
             name = name.replace(0, 4, "");  // Remove the "TOP."
-            if ((name.find(".") == string::npos) && (it->second.m_type == "SCOPE_MODULE")) {
-                puts("__Vhier.add(0, &"+protect("__Vscope_"+it->second.m_symName)+");\n");
+            if ((name.find('.') == string::npos) && (it->second.m_type == "SCOPE_MODULE")) {
+                puts("__Vhier.add(0, &" + protect("__Vscope_" + it->second.m_symName) + ");\n");
             }
         }
 

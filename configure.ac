@@ -1,12 +1,13 @@
 # DESCRIPTION: Process this file with autoconf to produce a configure script.
 #
-# Copyright 2003-2020 by Wilson Snyder. Verilator is free software; you can
-# redistribute it and/or modify it under the terms of either the GNU Lesser
+# Copyright 2003-2020 by Wilson Snyder. Verilator is free software; you
+# can redistribute it and/or modify it under the terms of either the GNU Lesser
 # General Public License Version 3 or the Perl Artistic License Version 2.0.
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[4.030 2020-03-08],
+AC_INIT([Verilator],[4.032 2020-04-04],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 # When releasing, also update header of Changes file
@@ -301,7 +302,6 @@ AC_SUBST(CFG_CXXFLAGS_WEXTRA)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Qunused-arguments)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-faligned-new)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-unused-parameter)
-_MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-undefined-bool-conversion)
 _MY_CXX_CHECK_OPT(CFG_CXXFLAGS_SRC,-Wno-shadow)
 AC_SUBST(CFG_CXXFLAGS_SRC)
 
@@ -369,7 +369,12 @@ AC_SUBST(CFG_LDFLAGS_SRC)
 # The pthread library is required by tcmalloc, so add it if it exists. If it
 # does not, the tcmalloc check below will fail anyway, and linking against
 # pthreads is harmless otherwise.
+CFG_LIBS="$LIBS $CFG_LIBS"
 _MY_LDLIBS_CHECK_OPT(CFG_LIBS, -lpthread)
+
+# Check libraries for MingW
+_MY_LDLIBS_CHECK_OPT(CFG_LIBS, -lbcrypt)
+_MY_LDLIBS_CHECK_OPT(CFG_LIBS, -lpsapi)
 
 # Check if tcmalloc is available based on --enable-tcmalloc
 _MY_LDLIBS_CHECK_IFELSE(

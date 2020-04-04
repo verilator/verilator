@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 // V3SplitAs's Transformations:
@@ -61,9 +57,8 @@ private:
             m_splitVscp = nodep->varScopep();
         }
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     explicit SplitAsFindVisitor(AstAlways* nodep) {
@@ -121,9 +116,8 @@ private:
         m_keepStmt = oldKeep || m_keepStmt;
         UINFO(9,"     upKeep="<<m_keepStmt<<" STMT "<<nodep<<endl);
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     SplitAsCleanVisitor(AstAlways* nodep, AstVarScope* vscp, bool modeMatch) {
@@ -194,11 +188,8 @@ private:
     }
 
     // Speedup; no always under math
-    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}
-
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNodeMath*) VL_OVERRIDE {}
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

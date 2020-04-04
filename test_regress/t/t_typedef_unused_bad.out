@@ -1,0 +1,4 @@
+%Error: t/t_typedef_unused_bad.v:9:9: Forward typedef unused or does not resolve to a data type (IEEE 1800-2017 6.18): 'fwd_undecl_t'
+    9 | typedef fwd_undecl_t;
+      |         ^~~~~~~~~~~~
+%Error: Exiting due to

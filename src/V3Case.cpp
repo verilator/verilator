@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 // V3Case's Transformations:
@@ -106,9 +102,8 @@ private:
             }
         }
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     explicit CaseLintVisitor(AstNodeCase* nodep) {
@@ -337,15 +332,8 @@ private:
                         condp = new AstConst(itemp->fileline(), AstConst::LogicFalse());
                     } else if (AstInsideRange* irangep = VN_CAST(icondp, InsideRange)) {
                         // Similar logic in V3Width::visit(AstInside)
-                        AstNode* ap = AstGte::newTyped(itemp->fileline(),
-                                                       cexprp->cloneTree(false),
-                                                       irangep->lhsp()->unlinkFrBack());
-                        AstNode* bp = AstLte::newTyped(itemp->fileline(),
-                                                       cexprp->cloneTree(false),
-                                                       irangep->rhsp()->unlinkFrBack());
-                        ap->fileline()->modifyWarnOff(V3ErrorCode::UNSIGNED, true);
-                        bp->fileline()->modifyWarnOff(V3ErrorCode::CMPCONST, true);
-                        condp = new AstAnd(itemp->fileline(), ap, bp);
+                        condp = irangep->newAndFromInside(cexprp, irangep->lhsp()->unlinkFrBack(),
+                                                          irangep->rhsp()->unlinkFrBack());
                     } else if (iconstp && iconstp->num().isFourState()
                                && (nodep->casex() || nodep->casez() || nodep->caseInside())) {
                         V3Number nummask (itemp, iconstp->width());
@@ -475,10 +463,7 @@ private:
         }
     }
     //--------------------
-    // Default: Just iterate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

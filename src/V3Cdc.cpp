@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 // V3Cdc's Transformations:
@@ -506,7 +502,7 @@ private:
         for (V3GraphVertex* itp = m_graph.verticesBeginp(); itp; itp=itp->verticesNextp()) {
             if (CdcVarVertex* vvertexp = dynamic_cast<CdcVarVertex*>(itp)) {
                 AstVar* varp = vvertexp->varScp()->varp();
-                if (1) {  // varp->isPrimaryIO()
+                {
                     string what = "wire";
                     if (varp->isPrimaryIO()) what = varp->direction().prettyName();
 
@@ -696,7 +692,7 @@ private:
     }
 
     // Math that shouldn't cause us to clear hazard
-    virtual void visit(AstConst* nodep) VL_OVERRIDE { }
+    virtual void visit(AstConst*) VL_OVERRIDE {}
     virtual void visit(AstReplicate* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
     }
@@ -716,10 +712,10 @@ private:
     }
 
     // Ignores
-    virtual void visit(AstInitial* nodep) VL_OVERRIDE { }
-    virtual void visit(AstTraceInc* nodep) VL_OVERRIDE { }
-    virtual void visit(AstCoverToggle* nodep) VL_OVERRIDE { }
-    virtual void visit(AstNodeDType* nodep) VL_OVERRIDE { }
+    virtual void visit(AstInitial*) VL_OVERRIDE {}
+    virtual void visit(AstTraceInc*) VL_OVERRIDE {}
+    virtual void visit(AstCoverToggle*) VL_OVERRIDE {}
+    virtual void visit(AstNodeDType*) VL_OVERRIDE {}
 
     //--------------------
     // Default
@@ -727,9 +723,7 @@ private:
         setNodeHazard(nodep);
         iterateChildren(nodep);
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
@@ -756,11 +750,11 @@ public:
 
         iterate(nodep);
         analyze();
-        if (debug()>=1) edgeReport();  // Not useful to users at the moment
-        if (0) {
-            *m_ofp<<"\nDBG-test-dumper\n";
+        if (debug() >= 1) edgeReport();  // Not useful to users at the moment
+        if (false) {
+            *m_ofp << "\nDBG-test-dumper\n";
             V3EmitV::verilogPrefixedTree(nodep, *m_ofp, "DBG ", 40, NULL, true);
-            *m_ofp<<endl;
+            *m_ofp << endl;
         }
     }
     virtual ~CdcVisitor() {

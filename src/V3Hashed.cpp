@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 // V3Hashed's Transformations:
@@ -87,23 +83,23 @@ private:
     }
 
     //--------------------
-    // Default: Just iterate
     virtual void visit(AstVar*) VL_OVERRIDE {}
     virtual void visit(AstTypedef*) VL_OVERRIDE {}
     virtual void visit(AstParamTypeDType*) VL_OVERRIDE {}
     virtual void visit(AstNode* nodep) VL_OVERRIDE {
+        // Hash not just iterate
         nodeHashIterate(nodep);
     }
 
 public:
     // CONSTRUCTORS
-    explicit HashedVisitor(AstNode* nodep) {
-        m_cacheInUser4 = true;
+    explicit HashedVisitor(AstNode* nodep)
+        : m_cacheInUser4(true) {
         nodeHashIterate(nodep);
-        //UINFO(9,"  stmthash "<<hex<<V3Hashed::nodeHash(nodep)<<"  "<<nodep<<endl);
+        // UINFO(9,"  stmthash "<<hex<<V3Hashed::nodeHash(nodep)<<"  "<<nodep<<endl);
     }
-    explicit HashedVisitor(const AstNode* nodep) {
-        m_cacheInUser4 = false;
+    explicit HashedVisitor(const AstNode* nodep)
+        : m_cacheInUser4(false) {
         nodeHashIterate(const_cast<AstNode*>(nodep));
     }
     V3Hash finalHash() const { return m_lowerHash; }

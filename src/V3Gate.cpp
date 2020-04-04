@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 // V3Gate's Transformations:
@@ -219,17 +215,13 @@ private:
             if (m_lhsVarRef) clearSimple(">1 lhs varRefs");
             m_lhsVarRef = nodep;
         } else {
-            if (m_rhsVarRefs.size()>1) {
+            if (m_rhsVarRefs.size() > 1) {
                 AstNodeVarRef* lastRefp = m_rhsVarRefs.back();
-                if (0) {  // Disable the multiple-input optimization
-                    clearSimple(">1 rhs varRefs");
-                } else {
-                    if (m_buffersOnly) clearSimple(">1 rhs varRefs");
-                    if (!nodep->varScopep()->varp()->gateMultiInputOptimizable()
-                        // We didn't check multiInput on the first varref, so check it here
-                        || !lastRefp->varScopep()->varp()->gateMultiInputOptimizable()) {
-                        clearSimple("!gateMultiInputOptimizable");
-                    }
+                if (m_buffersOnly) clearSimple(">1 rhs varRefs");
+                if (!nodep->varScopep()->varp()->gateMultiInputOptimizable()
+                    // We didn't check multiInput on the first varref, so check it here
+                    || !lastRefp->varScopep()->varp()->gateMultiInputOptimizable()) {
+                    clearSimple("!gateMultiInputOptimizable");
                 }
             }
             m_rhsVarRefs.push_back(nodep);
@@ -257,7 +249,6 @@ private:
         }
     }
     //--------------------
-    // Default
     virtual void visit(AstNode* nodep) VL_OVERRIDE {
         // *** Special iterator
         if (!m_isSimple) return;  // Fastpath
@@ -272,6 +263,7 @@ private:
         }
         else iterateChildren(nodep);
     }
+
 public:
     // CONSTRUCTORS
     GateOkVisitor(AstNode* nodep, bool buffersOnly, bool dedupe) {
@@ -531,7 +523,6 @@ private:
     }
 
     //--------------------
-    // Default
     virtual void visit(AstNode* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         if (nodep->isOutputter() && m_logicVertexp) m_logicVertexp->setConsumed("outputter");
@@ -569,7 +560,7 @@ void GateVisitor::optimizeSignals(bool allowMultiIn) {
                     && !vvertexp->varScp()->varp()->valuep()
                     && !vvertexp->varScp()->varp()->isSigPublic()) {
                     UINFO(4, "No drivers "<<vvertexp->varScp()<<endl);
-                    if (0) {
+                    if (false) {
                         // If we warned here after constant propagation, what the user considered
                         // reasonable logic may have disappeared.  Issuing a warning would
                         // thus be confusing.  V3Undriven now handles this.
@@ -892,9 +883,8 @@ private:
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     virtual ~GateElimVisitor() {}
@@ -1448,10 +1438,8 @@ private:
         iterate(nodep->lhsp());
     }
     //--------------------
-    // Default
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
+
 public:
     // CONSTRUCTORS
     GateConcatVisitor() {
@@ -1632,11 +1620,9 @@ private:
         }
     }
     // Speedups
-    virtual void visit(AstVar* nodep) VL_OVERRIDE {}
-    virtual void visit(AstActive* nodep) VL_OVERRIDE {}
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstVar*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstActive*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

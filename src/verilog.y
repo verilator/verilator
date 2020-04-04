@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 // Original code here by Paul Wasson and Duane Galbi
@@ -295,6 +291,7 @@ class AstSenTree;
 %token<fl>		yVLT_PUBLIC_MODULE          "public_module"
 %token<fl>		yVLT_SC_BV                  "sc_bv"
 %token<fl>		yVLT_SFORMAT                "sformat"
+%token<fl>		yVLT_SPLIT_VAR              "split_var"
 %token<fl>		yVLT_TRACING_OFF            "tracing_off"
 %token<fl>		yVLT_TRACING_ON             "tracing_on"
 
@@ -1014,6 +1011,7 @@ paramPortDeclOrArgList<nodep>:	// IEEE: list_of_param_assignments + { parameter_
 paramPortDeclOrArg<nodep>:	// IEEE: param_assignment + parameter_port_declaration
 	//			// We combine the two as we can't tell which follows a comma
 		parameter_port_declarationFrontE param_assignment	{ $$ = $2; }
+	|	parameter_port_declarationTypeFrontE type_assignment	{ $$ = $2; }
 	;
 
 portsStarE<nodep>:		// IEEE: .* + list_of_ports + list_of_port_declarations + empty
@@ -1346,6 +1344,7 @@ local_parameter_declaration<nodep>:	// IEEE: local_parameter_declaration
 	//			// See notes in parameter_declaration
 	//			// Front must execute first so VARDTYPE is ready before list of vars
 		local_parameter_declarationFront list_of_param_assignments	{ $$ = $2; }
+	|	local_parameter_declarationTypeFront list_of_type_assignments	{ $$ = $2; }
 	;
 
 parameter_declaration<nodep>:	// IEEE: parameter_declaration
@@ -1354,21 +1353,30 @@ parameter_declaration<nodep>:	// IEEE: parameter_declaration
 	//			// we use list_of_param_assignments because for port handling
 	//			// it already must accept types, so simpler to have code only one place
 	//			// Front must execute first so VARDTYPE is ready before list of vars
-		parameter_declarationFront list_of_param_assignments	{ $$ = $2; }
+		parameter_declarationFront list_of_param_assignments		{ $$ = $2; }
+	|	parameter_declarationTypeFront list_of_type_assignments		{ $$ = $2; }
 	;
 
 local_parameter_declarationFront: // IEEE: local_parameter_declaration w/o assignment
 	//			// Front must execute first so VARDTYPE is ready before list of vars
 		varLParamReset implicit_typeE 		{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
 	|	varLParamReset data_type		{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
-	|	varLParamReset yTYPE			{ /*VARRESET-in-varLParam*/ VARDTYPE(new AstParseTypeDType($2)); }
+	;
+
+local_parameter_declarationTypeFront: // IEEE: local_parameter_declaration w/o assignment
+	//			// Front must execute first so VARDTYPE is ready before list of vars
+		varLParamReset yTYPE			{ /*VARRESET-in-varLParam*/ VARDTYPE(new AstParseTypeDType($2)); }
 	;
 
 parameter_declarationFront:	// IEEE: parameter_declaration w/o assignment
 	//			// Front must execute first so VARDTYPE is ready before list of vars
 		varGParamReset implicit_typeE 		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
 	|	varGParamReset data_type		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
-	|	varGParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($2)); }
+	;
+
+parameter_declarationTypeFront:	// IEEE: parameter_declaration w/o assignment
+	//			// Front must execute first so VARDTYPE is ready before list of vars
+		varGParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($2)); }
 	;
 
 parameter_port_declarationFrontE: // IEEE: parameter_port_declaration w/o assignment
@@ -1377,12 +1385,18 @@ parameter_port_declarationFrontE: // IEEE: parameter_port_declaration w/o assign
 	//			// Front must execute first so VARDTYPE is ready before list of vars
 		varGParamReset implicit_typeE 		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
 	|	varGParamReset data_type		{ /*VARRESET-in-varGParam*/ VARDTYPE($2); }
-	|	varGParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($2)); }
 	|	varLParamReset implicit_typeE 		{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
 	|	varLParamReset data_type		{ /*VARRESET-in-varLParam*/ VARDTYPE($2); }
-	|	varLParamReset yTYPE			{ /*VARRESET-in-varLParam*/ VARDTYPE(new AstParseTypeDType($2)); }
 	|	implicit_typeE 				{ /*VARRESET-in-varGParam*/ VARDTYPE($1); }
 	|	data_type				{ /*VARRESET-in-varGParam*/ VARDTYPE($1); }
+	;
+
+parameter_port_declarationTypeFrontE: // IEEE: parameter_port_declaration w/o assignment
+	//			// IEEE: parameter_declaration (minus assignment)
+	//			// IEEE: local_parameter_declaration (minus assignment)
+	//			// Front must execute first so VARDTYPE is ready before list of vars
+		varGParamReset yTYPE			{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($2)); }
+	|	varLParamReset yTYPE			{ /*VARRESET-in-varLParam*/ VARDTYPE(new AstParseTypeDType($2)); }
 	|	yTYPE					{ /*VARRESET-in-varGParam*/ VARDTYPE(new AstParseTypeDType($1)); }
 	;
 
@@ -1651,6 +1665,7 @@ member_decl_assignment<memberp>:	// Derived from IEEE: variable_decl_assignment
                           }
 	|	id variable_dimensionListE '=' variable_declExpr
 			{ $4->v3error("Unsupported: Initial values in struct/union members.");
+			  // But still need error if packed according to IEEE 7.2.2
 			  $$ = NULL; }
 	|	idSVKwd					{ $$ = NULL; }
 	//
@@ -1775,7 +1790,12 @@ enum_base_typeE<dtypep>:	// IEEE: enum_base_type
 	|	integer_vector_type signingE rangeListE	{ $1->setSignedState($2); $$ = GRAMMARP->addRange($1,$3,true); }
 	//			// below can be idAny or yaID__aTYPE
 	//			// IEEE requires a type, though no shift conflict if idAny
-	|	idAny rangeListE			{ $$ = GRAMMARP->createArray(new AstRefDType($<fl>1, *$1), $2, true); }
+	//			// IEEE: type_identifier [ packed_dimension ]
+	//			// however other simulators allow [ class_scope | package_scope ] type_identifier
+	|	idAny rangeListE
+			{ $$ = GRAMMARP->createArray(new AstRefDType($<fl>1, *$1), $2, true); }
+	|	package_scopeIdFollows idRefDType rangeListE
+			{ $2->packagep($1); $$ = GRAMMARP->createArray($2, $3, true); }
 	;
 
 enum_nameList<nodep>:
@@ -2352,8 +2372,7 @@ packed_dimension<rangep>:	// ==IEEE: packed_dimension
 param_assignment<varp>:		// ==IEEE: param_assignment
 	//			// IEEE: constant_param_expression
 	//			// constant_param_expression: '$' is in expr
-	//			// note exptOrDataType being a data_type is only for yPARAMETER yTYPE
-		id/*new-parameter*/ variable_dimensionListE sigAttrListE '=' exprOrDataType
+		id/*new-parameter*/ variable_dimensionListE sigAttrListE '=' expr
 	/**/		{ $$ = VARDONEA($<fl>1,*$1, $2, $3); $$->valuep($5); }
 	|	id/*new-parameter*/ variable_dimensionListE sigAttrListE
 	/**/		{ $$ = VARDONEA($<fl>1,*$1, $2, $3);
@@ -2364,6 +2383,17 @@ param_assignment<varp>:		// ==IEEE: param_assignment
 list_of_param_assignments<varp>:	// ==IEEE: list_of_param_assignments
 		param_assignment			{ $$ = $1; }
 	|	list_of_param_assignments ',' param_assignment	{ $$ = $1; $1->addNext($3); }
+	;
+
+type_assignment<varp>:		// ==IEEE: type_assignment
+	//			// note exptOrDataType being a data_type is only for yPARAMETER yTYPE
+		idAny/*new-parameter*/ sigAttrListE '=' data_type
+	/**/		{ $$ = VARDONEA($<fl>1,*$1, NULL, $2); $$->valuep($4); }
+	;
+
+list_of_type_assignments<varp>:		// ==IEEE: list_of_type_assignments
+		type_assignment				{ $$ = $1; }
+	|	list_of_type_assignments ',' type_assignment	{ $$ = $1; $1->addNext($3); }
 	;
 
 list_of_defparam_assignments<nodep>:	//== IEEE: list_of_defparam_assignments
@@ -5795,6 +5825,7 @@ vltVarAttrFront<attrtypeen>:
 	|	yVLT_PUBLIC_FLAT_RW         { $$ = AstAttrType::VAR_PUBLIC_FLAT_RW; v3Global.dpi(true); }
 	|	yVLT_SC_BV                  { $$ = AstAttrType::VAR_SC_BV; }
 	|	yVLT_SFORMAT                { $$ = AstAttrType::VAR_SFORMAT; }
+	|	yVLT_SPLIT_VAR              { $$ = AstAttrType::VAR_SPLIT_VAR; }
 	;
 
 //**********************************************************************

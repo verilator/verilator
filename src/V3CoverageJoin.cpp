@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 // COVERAGEJOIN TRANSFORMATIONS:
@@ -72,7 +68,7 @@ private:
                 // Want to choose a base node, and keep finding duplicates that are identical.
                 // This prevents making chains where a->b, then c->d, then b->c, as we'll
                 // find a->b, a->c, a->d directly.
-                while (1) {
+                while (true) {
                     V3Hashed::iterator dupit = hashed.findDuplicate(nodep->origp());
                     if (dupit == hashed.end()) break;
                     //
@@ -113,10 +109,8 @@ private:
         iterateChildren(nodep);
     }
     //--------------------
-    virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {}  // Accelerate
-    virtual void visit(AstNode* nodep) VL_OVERRIDE {
-        iterateChildren(nodep);
-    }
+    virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
+    virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS

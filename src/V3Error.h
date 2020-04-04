@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2003-2020 by Wilson Snyder.  This program is free software; you can
-// redistribute it and/or modify it under the terms of either the GNU
+// Copyright 2003-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
 // Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// Verilator is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -43,6 +39,7 @@ public:
         //
         EC_INFO,        // General information out
         EC_FATAL,       // Kill the program
+        EC_FATALEXIT,   // Kill the program, suppress with --quiet-exit
         EC_FATALSRC,    // Kill the program, for internal source errors
         EC_ERROR,       // General error out, can't suppress
         // Boolean information we track per-line, but aren't errors
@@ -134,7 +131,7 @@ public:
     const char* ascii() const {
         const char* names[] = {
             // Leading spaces indicate it can't be disabled.
-            " MIN", " INFO", " FATAL", " FATALSRC", " ERROR",
+            " MIN", " INFO", " FATAL", " FATALEXIT", " FATALSRC", " ERROR",
             // Boolean
             " I_COVERAGE", " I_TRACING", " I_LINT", " I_DEF_NETTYPE_WIRE",
             // Errors
@@ -307,6 +304,8 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
 #define v3info(msg)  v3warnCode(V3ErrorCode::EC_INFO, msg)
 #define v3error(msg) v3warnCode(V3ErrorCode::EC_ERROR, msg)
 #define v3fatal(msg) v3warnCodeFatal(V3ErrorCode::EC_FATAL, msg)
+// Use this instead of fatal() if message gets suppressed with --quiet-exit
+#define v3fatalExit(msg) v3warnCodeFatal(V3ErrorCode::EC_FATALEXIT, msg)
 // Use this instead of fatal() to mention the source code line.
 #define v3fatalSrc(msg) v3warnCodeFatal(V3ErrorCode::EC_FATALSRC, __FILE__<<":"<<std::dec<<__LINE__<<": "<<msg)
 // Use this when normal v3fatal is called in static method that overrides fileline.
@@ -321,31 +320,36 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
     { if (VL_UNCOVERABLE(debug() >= (level))) { cout << stmsg; } }
 
 #ifdef VL_DEBUG
-# define UDEBUGONLY(stmts) {stmts}
+# define UDEBUGONLY(stmts) \
+    { stmts }
 #else
-# define UDEBUGONLY(stmts) {if (0) {stmts}}
+# define UDEBUGONLY(stmts) \
+    { if (false) { stmts } }
 #endif
 
 // Assertion without object, generally UOBJASSERT preferred
 #define UASSERT(condition,stmsg) \
-    do { if (VL_UNCOVERABLE(!(condition))) { v3fatalSrc(stmsg); }} while(0)
+    do { if (VL_UNCOVERABLE(!(condition))) { v3fatalSrc(stmsg); }} while (false)
 // Assertion with object
 #define UASSERT_OBJ(condition,obj,stmsg) \
-    do { if (VL_UNCOVERABLE(!(condition))) { (obj)->v3fatalSrc(stmsg); }} while(0)
+    do { if (VL_UNCOVERABLE(!(condition))) { (obj)->v3fatalSrc(stmsg); }} while (false)
 // For use in V3Ast static functions only
 #define UASSERT_STATIC(condition,stmsg) \
     do { if (VL_UNCOVERABLE(!(condition))) { \
             std::cerr<<"Internal Error: "<<__FILE__<<":"<<std::dec<<__LINE__ \
-                     <<":"<<(stmsg)<<std::endl; abort(); } } while(0)
+                     <<":"<<(stmsg)<<std::endl; abort(); } } while (false)
 // Check self test values for expected value.  Safe from side-effects.
 // Type argument can be removed when go to C++11 (use auto).
 #define UASSERT_SELFTEST(Type,got,exp) \
     do { Type g = (got); Type e = (exp); \
          UASSERT(g==e, "Self-test failed '" #got "==" #exp "'"" got=" \
-                 <<g<<" expected="<<e); } while(0)
+                 <<g<<" expected="<<e); } while(false)
 
 #define V3ERROR_NA \
-    do { v3error("Internal: Unexpected Call"); v3fatalSrc("Unexpected Call"); } while(0)
+    do { \
+        v3error("Internal: Unexpected Call"); \
+        v3fatalSrc("Unexpected Call"); \
+    } while (false)
 
 /// Declare a convenience debug() routine that may be added to any class in
 /// Verilator so that --debugi-<srcfile> will work to control UINFOs in

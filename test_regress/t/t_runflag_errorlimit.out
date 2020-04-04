@@ -1,7 +1,7 @@
-[0] %Error: t_runflag_errorlimit.v:8: Assertion failed in top.t: One
--Info: t/t_runflag_errorlimit.v:8: Verilog $stop, ignored due to +verilator+error+limit
-[0] %Error: t_runflag_errorlimit.v:9: Assertion failed in top.t: Two
+[0] %Error: t_runflag_errorlimit.v:9: Assertion failed in top.t: One
 -Info: t/t_runflag_errorlimit.v:9: Verilog $stop, ignored due to +verilator+error+limit
-[0] %Error: t_runflag_errorlimit.v:10: Assertion failed in top.t: Three
-%Error: t/t_runflag_errorlimit.v:10: Verilog $stop
+[0] %Error: t_runflag_errorlimit.v:10: Assertion failed in top.t: Two
+-Info: t/t_runflag_errorlimit.v:10: Verilog $stop, ignored due to +verilator+error+limit
+[0] %Error: t_runflag_errorlimit.v:11: Assertion failed in top.t: Three
+%Error: t/t_runflag_errorlimit.v:11: Verilog $stop
 Aborting...

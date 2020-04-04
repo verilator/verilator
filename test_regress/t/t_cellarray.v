@@ -2,7 +2,7 @@
 //
 // This file ONLY is placed into the Public Domain, for any use,
 // without warranty, 2014 by Jie Xu.
-//
+// SPDX-License-Identifier: CC0-1.0
 
 // change these two parameters to see the speed differences
 `define DATA_WIDTH 8

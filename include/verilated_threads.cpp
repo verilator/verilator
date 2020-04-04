@@ -1,16 +1,11 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //=============================================================================
 //
-// THIS MODULE IS PUBLICLY LICENSED
-//
-// Copyright 2012-2020 by Wilson Snyder.  This program is free software;
-// you can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License Version 2.0.
-//
-// This is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-// for more details.
+// Copyright 2012-2020 by Wilson Snyder. This program is free software; you can
+// redistribute it and/or modify it under the terms of either the GNU
+// Lesser General Public License Version 3 or the Perl Artistic License
+// Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //=============================================================================
 ///
@@ -41,7 +36,8 @@ VlMTaskVertex::VlMTaskVertex(vluint32_t upstreamDepCount)
 // VlWorkerThread
 
 VlWorkerThread::VlWorkerThread(VlThreadPool* poolp, bool profiling)
-    : m_ready_size(0)
+    : m_waiting(false)
+    , m_ready_size(0)
     , m_poolp(poolp)
     , m_profiling(profiling)
     , m_exiting(false)
@@ -63,7 +59,7 @@ void VlWorkerThread::workerLoop() {
     ExecRec work;
     work.m_fnp = NULL;
 
-    while (1) {
+    while (true) {
         if (VL_LIKELY(!work.m_fnp)) {
             dequeWork(&work);
         }
@@ -173,12 +169,12 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed) {
             VlMTaskVertex::yields());
 
     vluint32_t thread_id = 0;
-    for (ProfileSet::iterator pit = m_allProfiles.begin();
+    for (ProfileSet::const_iterator pit = m_allProfiles.begin();
          pit != m_allProfiles.end(); ++pit) {
         ++thread_id;
 
         bool printing = false;  // False while in warmup phase
-        for (ProfileTrace::iterator eit = (*pit)->begin();
+        for (ProfileTrace::const_iterator eit = (*pit)->begin();
              eit != (*pit)->end(); ++eit) {
             switch (eit->m_type) {
             case VlProfileRec::TYPE_BARRIER:

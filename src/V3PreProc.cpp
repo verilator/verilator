@@ -6,15 +6,11 @@
 //
 //*************************************************************************
 //
-// Copyright 2000-2020 by Wilson Snyder.  This program is free software;
-// you can redistribute it and/or modify it under the terms of either the
-// GNU Lesser General Public License Version 3 or the Perl Artistic License
+// Copyright 2000-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
+// Lesser General Public License Version 3 or the Perl Artistic License
 // Version 2.0.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
 
@@ -865,7 +861,7 @@ void V3PreProcImp::candidateDefines(VSpellCheck* spellerp) {
 
 int V3PreProcImp::getRawToken() {
     // Get a token from the file, whatever it may be.
-    while (1) {
+    while (true) {
       next_tok:
         if (m_lineAdd) {
             m_lineAdd--;
@@ -946,7 +942,7 @@ void V3PreProcImp::debugToken(int tok, const char* cmtp) {
 
 int V3PreProcImp::getStateToken() {
     // Return the next state-determined token
-    while (1) {
+    while (true) {
       next_tok:
         if (isEof()) return VP_EOF;
         int tok = getRawToken();

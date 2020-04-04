@@ -3,14 +3,11 @@
 //
 // THIS MODULE IS PUBLICLY LICENSED
 //
-// Copyright 2001-2020 by Wilson Snyder.  This program is free software;
-// you can redistribute it and/or modify it under the terms of either the GNU
-// Lesser General Public License Version 3 or the Perl Artistic License Version 2.0.
-//
-// This is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-// for more details.
+// Copyright 2001-2020 by Wilson Snyder. This program is free software; you
+// can redistribute it and/or modify it under the terms of either the GNU
+// Lesser General Public License Version 3 or the Perl Artistic License
+// Version 2.0.
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //=============================================================================
 ///
@@ -159,10 +156,10 @@ VerilatedVcd::VerilatedVcd(VerilatedVcdFile* filep)
 
 void VerilatedVcd::open(const char* filename) {
     m_assertOne.check();
-    if (isOpen() || !filename || !*filename) return;
+    if (isOpen()) return;
 
     // Set member variables
-    m_filename = filename;
+    m_filename = filename;  // "" is ok, as someone may overload open
     VerilatedVcdSingleton::pushVcd(this);
 
     // SPDIFF_OFF
@@ -367,7 +364,7 @@ void VerilatedVcd::bufferFlush() VL_MT_UNSAFE_ONE {
     m_assertOne.check();
     if (VL_UNLIKELY(!isOpen())) return;
     char* wp = m_wrBufp;
-    while (1) {
+    while (true) {
         ssize_t remaining = (m_writep - wp);
         if (remaining==0) break;
         errno = 0;

@@ -2,6 +2,7 @@
 //                                                                            //
 // This file is placed into the Public Domain, for any use, without warranty. //
 // 2012 by Iztok Jeras                                                        //
+// SPDX-License-Identifier: CC0-1.0                                         //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
