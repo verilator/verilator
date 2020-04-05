@@ -351,6 +351,12 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
         v3fatalSrc("Unexpected Call"); \
     } while (false)
 
+/// Throw fatal and return a value. The return value will never really be
+/// needed, but required to avoid compiler error.
+#define V3ERROR_NA_RETURN(value) \
+    V3ERROR_NA; \
+    return value
+
 /// Declare a convenience debug() routine that may be added to any class in
 /// Verilator so that --debugi-<srcfile> will work to control UINFOs in
 /// that class:
