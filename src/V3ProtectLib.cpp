@@ -452,6 +452,6 @@ class ProtectVisitor : public AstNVisitor {
 // ProtectLib class functions
 
 void V3ProtectLib::protect() {
-    UINFO(2,__FUNCTION__<<": "<<endl);
-    ProtectVisitor visitor(v3Global.rootp());
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    ProtectVisitor(v3Global.rootp());
 }

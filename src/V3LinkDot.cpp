@@ -992,7 +992,7 @@ class LinkDotFindVisitor : public AstNVisitor {
                 UINFO(4,"DupVar: "<<nodep<<" ;; "<<foundp->nodep()<<endl);
                 UINFO(4,"    found  cur=se"<<cvtToHex(m_curSymp)
                       <<" ;; parent=se"<<cvtToHex(foundp->parentp())<<endl);
-                if (foundp && foundp->parentp() == m_curSymp  // Only when on same level
+                if (foundp->parentp() == m_curSymp  // Only when on same level
                     && !foundp->imported()) {  // and not from package
                     bool nansiBad = ((findvarp->isDeclTyped() && nodep->isDeclTyped())
                                      || (findvarp->isIO() && nodep->isIO()));  // e.g. !(output && output)

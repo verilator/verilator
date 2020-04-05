@@ -63,7 +63,6 @@ int main(int argc, char** argv, char** env) {
 
     {
         ap->clk = false;
-        ap->clk = false;
         main_time += 10;
     }
     while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {

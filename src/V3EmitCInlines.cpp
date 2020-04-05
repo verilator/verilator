@@ -132,6 +132,6 @@ void EmitCInlines::emitInt() {
 // EmitC class functions
 
 void V3EmitC::emitcInlines() {
-    UINFO(2,__FUNCTION__<<": "<<endl);
-    EmitCInlines syms (v3Global.rootp());
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    EmitCInlines(v3Global.rootp());
 }

@@ -335,9 +335,9 @@ AstVar::VlArgTypeRecursed AstVar::vlArgTypeRecurse(bool forFunc, const AstNodeDT
     } else if (const AstBasicDType* bdtypep = dtypep->basicp()) {
         string otype;
         string oarray;
-        bool strtype = bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::STRING;
+        bool strtype = bdtypep->keyword() == AstBasicDTypeKwd::STRING;
         string bitvec;
-        if (bdtypep && !bdtypep->isOpaque() && !v3Global.opt.protectIds()) {
+        if (!bdtypep->isOpaque() && !v3Global.opt.protectIds()) {
             // We don't print msb()/lsb() as multidim packed would require recursion,
             // and may confuse users as C++ data is stored always with bit 0 used
             bitvec += "/*"+cvtToStr(dtypep->width()-1)+":0*/";
@@ -345,13 +345,13 @@ AstVar::VlArgTypeRecursed AstVar::vlArgTypeRecurse(bool forFunc, const AstNodeDT
         if ((forFunc && isReadOnly())
             || bdtypep->keyword() == AstBasicDTypeKwd::CHARPTR
             || bdtypep->keyword() == AstBasicDTypeKwd::SCOPEPTR) otype += "const ";
-        if (bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::CHARPTR) {
+        if (bdtypep->keyword() == AstBasicDTypeKwd::CHARPTR) {
             otype += "char*";
-        } else if (bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::SCOPEPTR) {
+        } else if (bdtypep->keyword() == AstBasicDTypeKwd::SCOPEPTR) {
             otype += "VerilatedScope*";
-        } else if (bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::DOUBLE) {
+        } else if (bdtypep->keyword() == AstBasicDTypeKwd::DOUBLE) {
             otype += "double";
-        } else if (bdtypep && bdtypep->keyword() == AstBasicDTypeKwd::FLOAT) {
+        } else if (bdtypep->keyword() == AstBasicDTypeKwd::FLOAT) {
             otype += "float";
         } else if (strtype) {
             otype += "std::string";
