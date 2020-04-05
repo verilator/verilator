@@ -75,7 +75,6 @@ class CombCallVisitor : CombBaseVisitor {
     // Find all CCALLS of each CFUNC, so that we can later rename them
 private:
     // NODE STATE
-    bool        m_find;         // Find mode vs. delete mode
     typedef std::multimap<AstCFunc*,AstCCall*> CallMmap;
     CallMmap    m_callMmap;     // Associative array of {function}{call}
     // METHODS
@@ -137,8 +136,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    CombCallVisitor()
-        : m_find(false) {}
+    CombCallVisitor() {}
     virtual ~CombCallVisitor() {}
     void main(AstNetlist* nodep) { iterate(nodep); }
 };
