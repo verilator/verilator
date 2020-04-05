@@ -19,7 +19,6 @@ env:
     - VERILATOR_NUM_JOBS=$(echo `nproc` + 1 | bc)
     - VERILATOR_CONFIG_FLAGS="--enable-maintainer-mode --enable-longtests"
     - VERILATOR_AUTHOR_SITE=1
-    - OBJCACHE=ccache
 
 cache:
   directories:

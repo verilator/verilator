@@ -159,6 +159,12 @@ if test "x$YACC" = "x" ; then
    AC_MSG_ERROR([Cannot find "bison" in your PATH, please install it])
 fi
 
+AC_CHECK_PROG(OBJCACHE,ccache,ccache)
+if test "x$OBJCACHE" != "x" ; then
+  objcache_version=$($OBJCACHE --version | head -1)
+  AC_MSG_RESULT([objcache is $OBJCACHE --version = $objcache_version])
+fi
+
 # Checks for libraries.
 
 # Checks for typedefs, structures

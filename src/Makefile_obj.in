@@ -42,6 +42,7 @@ LEX = @LEX@
 LFLAGS = -d
 PERL = @PERL@
 YACC = @YACC@
+OBJCACHE ?= @OBJCACHE@
 
 prefix = @prefix@
 

@@ -7,6 +7,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    Add simplistic class support with many restrictions, see manual, #377.
 
+**    Configuring with ccache present now defaults to using it; see OBJCACHE.
+
 ****  Support $ferror, and $fflush without arguments, #1638.
 
 
