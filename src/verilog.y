@@ -3232,7 +3232,7 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_SYSTEM '(' expr ')'			{ $$ = new AstSystemT($1, $3); }
 	//
 	|	yD_FCLOSE '(' idClassSel ')'		{ $$ = new AstFClose($1, $3); }
-	|	yD_FFLUSH parenE			{ $$ = NULL; BBUNSUP($1, "Unsupported: $fflush of all handles does not map to C++."); }
+	|	yD_FFLUSH parenE			{ $$ = new AstFFlush($1, NULL); }
 	|	yD_FFLUSH '(' expr ')'			{ $$ = new AstFFlush($1, $3); }
 	|	yD_FINISH parenE			{ $$ = new AstFinish($1); }
 	|	yD_FINISH '(' expr ')'			{ $$ = new AstFinish($1); DEL($3); }

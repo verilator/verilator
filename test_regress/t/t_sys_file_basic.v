@@ -61,6 +61,8 @@ module t;
       $fwriteb(file, "b: "); $fwriteb(file, i); $fwriteb(file, " "); $fdisplayb(file, i);
 
       $fflush(file);
+      $fflush();
+      $fflush;
 
       $fclose(file);
 `ifdef verilator

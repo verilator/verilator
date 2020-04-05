@@ -557,7 +557,7 @@ public:
     }
     virtual void visit(AstFFlush* nodep) VL_OVERRIDE {
         if (!nodep->filep()) {
-            puts("fflush(stdout);\n");
+            puts("Verilated::flushCall();\n");
         } else {
             puts("if (");
             iterateAndNextNull(nodep->filep());

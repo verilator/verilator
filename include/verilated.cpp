@@ -1181,6 +1181,10 @@ void VL_FCLOSE_I(IData fdi) VL_MT_SAFE {
     VerilatedImp::fdDelete(fdi);
 }
 
+void VL_FFLUSH_ALL() VL_MT_SAFE {
+    fflush(stdout);
+}
+
 void VL_SFORMAT_X(int obits, CData& destr, const char* formatp, ...) VL_MT_SAFE {
     static VL_THREAD_LOCAL std::string output;  // static only for speed
     output = "";
