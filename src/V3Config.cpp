@@ -158,19 +158,19 @@ typedef V3ConfigWildcardResolver<V3ConfigFTask> V3ConfigFTaskResolver;
 
 class V3ConfigModule {
     typedef vl_unordered_set<string> StringSet;
+    typedef std::set<AstPragmaType> PragmaSet;
 
     V3ConfigFTaskResolver m_tasks;  // Functions/tasks in module
     V3ConfigVarResolver m_vars;  // Variables in module
     StringSet m_coverageOffBlocks;  // List of block names for coverage_off
+    PragmaSet m_modPragmas;  // List of Pragmas for modules
     bool m_inline;  // Whether to force the inline
     bool m_inlineValue;  // The inline value (on/off)
-    bool m_public;  // Public module
 
 public:
     V3ConfigModule()
         : m_inline(false)
-        , m_inlineValue(false)
-        , m_public(false) {}
+        , m_inlineValue(false) {}
 
     void update(const V3ConfigModule& m) {
         m_tasks.update(m.m_tasks);
@@ -183,7 +183,10 @@ public:
             m_inline = m.m_inline;
             m_inlineValue = m.m_inlineValue;
         }
-        if (!m_public) m_public = m.m_public;
+        for (PragmaSet::const_iterator it = m.m_modPragmas.begin(); it != m.m_modPragmas.end();
+             ++it) {
+            m_modPragmas.insert(*it);
+        }
     }
 
     V3ConfigFTaskResolver& ftasks() { return m_tasks; }
@@ -194,7 +197,7 @@ public:
         m_inline = true;
         m_inlineValue = set;
     }
-    void setPublic(bool set) { m_public = set; }
+    void addModulePragma(AstPragmaType pragma) { m_modPragmas.insert(pragma); }
 
     void apply(AstNodeModule* modp) {
         if (m_inline) {
@@ -203,8 +206,8 @@ public:
             AstNode* nodep = new AstPragma(modp->fileline(), type);
             modp->addStmtp(nodep);
         }
-        if (m_public) {
-            AstNode* nodep = new AstPragma(modp->fileline(), AstPragmaType::PUBLIC_MODULE);
+        for (PragmaSet::const_iterator it = m_modPragmas.begin(); it != m_modPragmas.end(); ++it) {
+            AstNode* nodep = new AstPragma(modp->fileline(), *it);
             modp->addStmtp(nodep);
         }
     }
@@ -408,6 +411,10 @@ void V3Config::addIgnore(V3ErrorCode code, bool on, const string& filename, int 
     }
 }
 
+void V3Config::addModulePragma(const string& module, AstPragmaType pragma) {
+    V3ConfigResolver::s().modules().at(module).addModulePragma(pragma);
+}
+
 void V3Config::addInline(FileLine* fl, const string& module, const string& ftask, bool on) {
     if (ftask.empty()) {
         V3ConfigResolver::s().modules().at(module).setInline(on);
@@ -439,7 +446,8 @@ void V3Config::addVarAttr(FileLine* fl, const string& module, const string& ftas
         } else if (attr == AstAttrType::VAR_PUBLIC) {
             if (ftask.empty()) {
                 // public module, this is the only exception from var here
-                V3ConfigResolver::s().modules().at(module).setPublic(true);
+                V3ConfigResolver::s().modules().at(module).addModulePragma(
+                    AstPragmaType::PUBLIC_MODULE);
             } else {
                 V3ConfigResolver::s().modules().at(module).ftasks().at(ftask).setPublic(true);
             }
