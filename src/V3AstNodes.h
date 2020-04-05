@@ -4912,6 +4912,30 @@ public:
     AstNode* filep() const { return lhsp(); }
 };
 
+class AstFError : public AstNodeMath {
+public:
+    AstFError(FileLine* fl, AstNode* filep, AstNode* strp)
+        : ASTGEN_SUPER(fl) {
+        setOp1p(filep);
+        setOp2p(strp);
+    }
+    ASTNODE_NODE_FUNCS(FError)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { V3ERROR_NA; }
+    virtual string emitVerilog() { return "%f$ferror(%l, %r)"; }
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const { return true; }
+    virtual bool cleanLhs() const { return true; }
+    virtual bool sizeMattersLhs() const { return false; }
+    virtual int instrCount() const { return widthInstrs() * 64; }
+    virtual bool isPure() const { return false; }  // SPECIAL: $display has 'visual' ordering
+    void filep(AstNode* nodep) { setOp1p(nodep); }
+    AstNode* filep() const { return op1p(); }
+    void strp(AstNode* nodep) { setOp2p(nodep); }
+    AstNode* strp() const { return op2p(); }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const { return true; }
+};
+
 class AstFGetC : public AstNodeUniop {
 public:
     AstFGetC(FileLine* fl, AstNode* lhsp)

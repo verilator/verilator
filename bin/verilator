@@ -3867,7 +3867,8 @@ $dumplimit/$dumpportlimit are currently ignored.
 
 The rarely used optional parameter to $finish and $stop is ignored.
 
-=item $fopen, $fclose, $fdisplay, $feof, $fflush, $fgetc, $fgets, $fscanf, $fwrite
+=item $fopen, $fclose, $fdisplay, $ferror, $feof, $fflush, $fgetc, $fgets,
+$fscanf, $fwrite
 
 File descriptors passed to the file PLI calls must be file descriptors, not
 MCDs, which includes the mode parameter to $fopen being mandatory.

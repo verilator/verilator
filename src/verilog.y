@@ -570,6 +570,7 @@ class AstSenTree;
 %token<fl>		yD_FDISPLAYH	"$fdisplayh"
 %token<fl>		yD_FDISPLAYO	"$fdisplayo"
 %token<fl>		yD_FEOF		"$feof"
+%token<fl>		yD_FERROR	"$ferror"
 %token<fl>		yD_FFLUSH	"$fflush"
 %token<fl>		yD_FGETC	"$fgetc"
 %token<fl>		yD_FGETS	"$fgets"
@@ -3331,6 +3332,7 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_DIMENSIONS '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_DIMENSIONS,$3); }
 	|	yD_EXP '(' expr ')'			{ $$ = new AstExpD($1,$3); }
 	|	yD_FEOF '(' expr ')'			{ $$ = new AstFEof($1,$3); }
+	|	yD_FERROR '(' idClassSel ',' idClassSel ')'	{ $$ = new AstFError($1, $3, $5); }
 	|	yD_FGETC '(' expr ')'			{ $$ = new AstFGetC($1,$3); }
 	|	yD_FGETS '(' idClassSel ',' expr ')'	{ $$ = new AstFGetS($1,$3,$5); }
 	|	yD_FREAD '(' idClassSel ',' expr ')'	{ $$ = new AstFRead($1,$3,$5,NULL,NULL); }

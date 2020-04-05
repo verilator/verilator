@@ -378,6 +378,10 @@ private:
         iterateChildren(nodep);
         expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
     }
+    virtual void visit(AstFError* nodep) VL_OVERRIDE {
+        iterateChildren(nodep);
+        expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));
+    }
     virtual void visit(AstFEof* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         expectDescriptor(nodep, VN_CAST(nodep->filep(), NodeVarRef));

@@ -217,6 +217,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$fdisplayh"          { FL; return yD_FDISPLAYH; }
   "$fdisplayo"          { FL; return yD_FDISPLAYO; }
   "$feof"               { FL; return yD_FEOF; }
+  "$ferror"             { FL; return yD_FERROR; }
   "$fflush"             { FL; return yD_FFLUSH; }
   "$fgetc"              { FL; return yD_FGETC; }
   "$fgets"              { FL; return yD_FGETS; }

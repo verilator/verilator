@@ -102,6 +102,16 @@ private:
         }
         m_setRefLvalue = last_setRefLvalue;
     }
+    virtual void visit(AstFError* nodep) VL_OVERRIDE {
+        bool last_setRefLvalue = m_setRefLvalue;
+        {
+            m_setRefLvalue = true;
+            iterateAndNextNull(nodep->filep());
+            iterateAndNextNull(nodep->strp());
+            m_setRefLvalue = false;
+        }
+        m_setRefLvalue = last_setRefLvalue;
+    }
     virtual void visit(AstFFlush* nodep) VL_OVERRIDE {
         bool last_setRefLvalue = m_setRefLvalue;
         {

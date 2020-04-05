@@ -482,6 +482,13 @@ public:
         putsQuoted(nodep->text());
         puts(")");
     }
+    virtual void visit(AstFError* nodep) VL_OVERRIDE {
+        puts("VL_FERROR_IN(");
+        iterateAndNextNull(nodep->filep());
+        putbs(", ");
+        iterateAndNextNull(nodep->strp());
+        puts(")");
+    }
     virtual void visit(AstFGetS* nodep) VL_OVERRIDE {
         checkMaxWords(nodep);
         emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), NULL);

@@ -3088,6 +3088,14 @@ private:
         assertAtStatement(nodep);
         iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
     }
+    virtual void visit(AstFError* nodep) VL_OVERRIDE {
+        if (m_vup->prelim()) {
+            iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
+            // We only support string types, not packed array
+            iterateCheckString(nodep, "$ferror string result", nodep->strp(), BOTH);
+            nodep->dtypeSetLogicUnsized(32, 1, AstNumeric::SIGNED);  // Spec says integer return
+        }
+    }
     virtual void visit(AstFEof* nodep) VL_OVERRIDE {
         if (m_vup->prelim()) {
             iterateCheckFileDesc(nodep, nodep->filep(), BOTH);

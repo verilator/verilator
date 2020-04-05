@@ -1148,6 +1148,13 @@ IData VL_FGETS_IXI(int obits, void* destp, IData fpi) VL_MT_SAFE {
     return got;
 }
 
+IData VL_FERROR_IN(IData, std::string& outputr) VL_MT_SAFE {
+    // We ignore lhs/fpi - IEEE says "most recent error" so probably good enough
+    IData ret = errno;
+    outputr = std::string(::strerror(ret));
+    return ret;
+}
+
 IData VL_FOPEN_NI(const std::string& filename, IData mode) VL_MT_SAFE {
     // While threadsafe, each thread can only access different file handles
     char modez[5];
