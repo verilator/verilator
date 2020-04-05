@@ -88,11 +88,11 @@ interpreted Verilog simulators such as http://iverilog.icarus.com[Icarus
 Verilog]. Another 2-10x speedup might be gained from multithreading
 (yielding 200-1000x total over interpreted simulators).
 
-Verilator has typically similar or better performance versus the commercial
-Verilog simulators (Carbon Design Systems Carbonator, Modelsim, Cadence
-Incisive/NC-Verilog, Synopsys VCS, VTOC, and Pragmatic CVer/CVC). But,
-Verilator is open-sourced, so you can spend on computes rather than
-licenses. Thus Verilator gives you the best cycles/dollar.
+Verilator has typically similar or better performance versus the
+closed-source Verilog simulators (Carbon Design Systems Carbonator,
+Modelsim, Cadence Incisive/NC-Verilog, Synopsys VCS, VTOC, and Pragmatic
+CVer/CVC). But, Verilator is open-sourced, so you can spend on computes
+rather than licenses. Thus Verilator gives you the best cycles/dollar.
 
 For more information on how Verilator stacks up to some of the other
 closed-sourced and open-sourced Verilog simulators, see the
