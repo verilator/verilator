@@ -1907,7 +1907,8 @@ V3Number& V3Number::opBufIf1(const V3Number& ens, const V3Number& if1s) {
     return *this;
 }
 
-V3Number& V3Number::opAssign(const V3Number& lhs) {
+V3Number& V3Number::opAssign(const V3Number& lhs) { return opAssignNonXZ(lhs, false); }
+V3Number& V3Number::opAssignNonXZ(const V3Number& lhs, bool ignoreXZ) {
     // Note may be a width change during the assign.
     // Special case: opAssign unlike other ops, allows this an assignment
     // to itself; V3Simulate does this when hits "foo=foo;"
@@ -1918,8 +1919,8 @@ V3Number& V3Number::opAssign(const V3Number& lhs) {
             m_stringVal = lhs.m_stringVal;
         } else {
             // Also handles double as is just bits
-            for (int bit=0; bit<this->width(); bit++) {
-                setBit(bit, lhs.bitIs(bit));
+            for (int bit = 0; bit < this->width(); bit++) {
+                setBit(bit, ignoreXZ ? lhs.bitIs1(bit) : lhs.bitIs(bit));
             }
         }
     }
@@ -2042,7 +2043,10 @@ V3Number& V3Number::opCond(const V3Number& lhs, const V3Number& if1s, const V3Nu
 V3Number& V3Number::opIToRD(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_LOGIC_ARGS1(lhs);
-    return setDouble(lhs.toSInt());
+    // IEEE says we ignore x/z in real conversions
+    V3Number noxz(lhs);
+    noxz.opAssignNonXZ(lhs);
+    return setDouble(noxz.toSInt());
 }
 V3Number& V3Number::opRToIS(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);

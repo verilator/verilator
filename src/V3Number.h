@@ -273,6 +273,7 @@ public:
     V3Number& opBitsNonZ(const V3Number& lhs);  // Z->0, 0/1/X->1
     //
     V3Number& opAssign  (const V3Number& lhs);
+    V3Number& opAssignNonXZ(const V3Number& lhs, bool ignoreXZ = true);
     V3Number& opExtendS (const V3Number& lhs, uint32_t lbits);  // Sign extension
     V3Number& opExtendXZ(const V3Number& lhs, uint32_t lbits);  // X/Z extension
     V3Number& opRedOr   (const V3Number& lhs);
