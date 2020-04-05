@@ -45,6 +45,8 @@ public:
         of.puts("# See "+v3Global.opt.prefix()+".mk"+" for the caller.\n");
 
         of.puts("\n### Switches...\n");
+        of.puts("# C11 constructs required?  0/1 (from --threads or use of classes)\n");
+        of.puts("VM_C11 = " + cvtToStr(v3Global.needC11() || v3Global.opt.threads()) + "\n");
         of.puts("# Coverage output mode?  0/1 (from --coverage)\n");
         of.puts("VM_COVERAGE = "); of.puts(v3Global.opt.coverage()?"1":"0"); of.puts("\n");
         of.puts("# Parallel builds?  0/1 (from --output-split)\n");

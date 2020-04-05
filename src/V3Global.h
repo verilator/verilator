@@ -73,9 +73,10 @@ class V3Global {
     int m_debugFileNumber;  // Number to append to debug files created
     bool m_assertDTypesResolved;  // Tree should have dtypep()'s
     bool m_constRemoveXs;  // Const needs to strip any Xs
-    bool m_needTraceDumper;  // Need __Vm_dumperp in symbols
+    bool m_needC11;  // Need C++11
     bool m_needHInlines;  // Need __Inlines file
     bool m_needHeavy;  // Need verilated_heavy.h include
+    bool m_needTraceDumper;  // Need __Vm_dumperp in symbols
     bool m_dpi;  // Need __Dpi include files
 
 public:
@@ -89,9 +90,10 @@ public:
         m_widthMinUsage = VWidthMinUsage::LINT_WIDTH;
         m_assertDTypesResolved = false;
         m_constRemoveXs = false;
-        m_needTraceDumper = false;
+        m_needC11 = false;
         m_needHInlines = false;
         m_needHeavy = false;
+        m_needTraceDumper = false;
         m_dpi = false;
         m_rootp = NULL;  // created by makeInitNetlist() so static constructors run first
     }
@@ -117,12 +119,14 @@ public:
         char digits[100]; sprintf(digits, "%03d", m_debugFileNumber);
         return opt.makeDir()+"/"+opt.prefix()+"_"+digits+"_"+nameComment;
     }
-    bool needTraceDumper() const { return m_needTraceDumper; }
-    void needTraceDumper(bool flag) { m_needTraceDumper = flag; }
+    bool needC11() const { return m_needC11; }
+    void needC11(bool flag) { m_needC11 = flag; }
     bool needHInlines() const { return m_needHInlines; }
     void needHInlines(bool flag) { m_needHInlines = flag; }
     bool needHeavy() const { return m_needHeavy; }
     void needHeavy(bool flag) { m_needHeavy = flag; }
+    bool needTraceDumper() const { return m_needTraceDumper; }
+    void needTraceDumper(bool flag) { m_needTraceDumper = flag; }
     bool dpi() const { return m_dpi; }
     void dpi(bool flag) { m_dpi = flag; }
 };
