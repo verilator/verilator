@@ -178,7 +178,7 @@ class CUseVisitor : public AstNVisitor {
         if (nodep->extendsp() && nodep->extendsp()->classp()->user1()) {
             string stmt = "out += \"";
             if (!comma.empty()) stmt += "\", \"+ ";
-            comma = ", ";
+            // comma = ", ";  // Nothing further so not needed
             stmt += nodep->extendsp()->dtypep()->nameProtect();
             stmt += "::to_string_middle();\n";
             nodep->user1(true);  // So what we extend dumps this

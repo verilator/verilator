@@ -108,7 +108,6 @@ private:
             m_setRefLvalue = true;
             iterateAndNextNull(nodep->filep());
             iterateAndNextNull(nodep->strp());
-            m_setRefLvalue = false;
         }
         m_setRefLvalue = last_setRefLvalue;
     }

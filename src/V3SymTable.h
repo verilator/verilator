@@ -97,10 +97,10 @@ public:
     ~VSymEnt() {
         // Change links so we coredump if used
 #ifdef VL_DEBUG
-        m_nodep = (AstNode*)1;
-        m_fallbackp = (VSymEnt*)1;
-        m_parentp = (VSymEnt*)1;
-        m_packagep = (AstPackage*)1;
+        m_nodep = reinterpret_cast<AstNode*>(1);
+        m_fallbackp = reinterpret_cast<VSymEnt*>(1);
+        m_parentp = reinterpret_cast<VSymEnt*>(1);
+        m_packagep = reinterpret_cast<AstPackage*>(1);
 #endif
     }
 #if defined(VL_DEBUG) && !defined(VL_LEAK_CHECKS)

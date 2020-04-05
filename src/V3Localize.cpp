@@ -74,6 +74,7 @@ private:
 
     // METHODS
     virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
+        // cppcheck-suppress unreadVariable  // cppcheck 1.90 bug
         VarFlags flags (nodep->varp());
         if (flags.m_done) {
             nodep->hiername("");  // Remove this->

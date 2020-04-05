@@ -1878,9 +1878,8 @@ void EmitCStmts::displayEmit(AstNode* nodep, bool isScan) {
             putbs(",");
             iterate(dispp->lhsp());
             putbs(",");
-        } else if (const AstSFormatF* dispp = VN_CAST(nodep, SFormatF)) {
+        } else if (VN_IS(nodep, SFormatF)) {
             isStmt = false;
-            if (dispp) {}
             puts("VL_SFORMATF_NX(");
         } else {
             nodep->v3fatalSrc("Unknown displayEmit node type");
@@ -2916,11 +2915,13 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     puts("\n// INTERNAL METHODS\n");
     if (modp->isTop()) {
         ofp()->putsPrivate(true);  // private:
-        puts("static void "+protect("_eval_initial_loop")
-             +"("+EmitCBaseVisitor::symClassVar()+");\n");
-        if (v3Global.needTraceDumper() && !optSystemC()) puts("void _traceDump();");
-        if (v3Global.needTraceDumper()) puts("void _traceDumpOpen();");
-        if (v3Global.needTraceDumper()) puts("void _traceDumpClose();");
+        puts("static void " + protect("_eval_initial_loop") + "(" + EmitCBaseVisitor::symClassVar()
+             + ");\n");
+        if (v3Global.needTraceDumper()) {
+            if (!optSystemC()) puts("void _traceDump();");
+            puts("void _traceDumpOpen();");
+            puts("void _traceDumpClose();");
+        }
     }
 
     if (!VN_IS(modp, Class)) {

@@ -87,6 +87,7 @@ public:
     }
     static void addInTree(AstNode* nodep, bool linkable) {
 #ifndef VL_LEAK_CHECKS
+        // cppcheck-suppress knownConditionTrueFalse
         if (!linkable) return;  // save some time, else the map will get huge!
 #endif
         NodeMap::iterator iter = s_nodes.find(nodep);

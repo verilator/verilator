@@ -85,7 +85,9 @@ template <std::size_t T_Words> class VlWide {
     WData m_storage[T_Words];
 
 public:
-    // Default constructor/destructor/copy are fine
+    // cppcheck-suppress uninitVar
+    VlWide() {}
+    ~VlWide() {}
     const WData& at(size_t index) const { return m_storage[index]; }
     WData& at(size_t index) { return m_storage[index]; }
     WData* data() { return &m_storage[0]; }

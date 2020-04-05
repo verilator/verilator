@@ -857,9 +857,12 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
     }
 }
 
-static inline bool _vl_vsss_eof(FILE* fp, int& floc) VL_MT_SAFE {
-    if (fp) return feof(fp) ? 1 : 0;  // 1:0 to prevent MSVC++ warning
-    else return (floc<0);
+static inline bool _vl_vsss_eof(FILE* fp, int floc) VL_MT_SAFE {
+    if (fp) {
+        return feof(fp) ? 1 : 0;  // 1:0 to prevent MSVC++ warning
+    } else {
+        return floc < 0;
+    }
 }
 static inline void _vl_vsss_advance(FILE* fp, int& floc) VL_MT_SAFE {
     if (fp) fgetc(fp);
@@ -1689,7 +1692,6 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
         if (c == '_') continue;  // Ignore _ e.g. inside a number
         if (indata && !isxdigit(c) && c != 'x' && c != 'X') {
             // printf("Got data @%lx = %s\n", m_addr, valuer.c_str());
-            indata = false;
             ungetc(c, m_fp);
             addrr = m_addr;
             ++m_addr;
@@ -1860,8 +1862,6 @@ void VL_READMEM_N(bool hex,  // Hex format, else binary
                   ) VL_MT_SAFE {
     QData addr_max = array_lsb + depth - 1;
     if (start < static_cast<QData>(array_lsb)) start = array_lsb;
-    QData addr_end = end;
-    if (addr_end > addr_max) addr_end = addr_max;
 
     VlReadMem rmem(hex, bits, filename, start, end);
     if (VL_UNLIKELY(!rmem.isOpen())) return;

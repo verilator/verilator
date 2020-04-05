@@ -526,14 +526,15 @@ private:
 
                     // Even if it's referencing a varref, we still make a temporary
                     // Else task(x,x,x) might produce incorrect results
-                    AstVarScope* outvscp
-                        = createVarScope(portp, namePrefix+"__"+portp->shortName());
-                    portp->user2p(outvscp);
-                    pinp->replaceWith(new AstVarRef(outvscp->fileline(), outvscp, true));
-                    AstAssign* assp = new AstAssign(pinp->fileline(),
-                                                    pinp,
-                                                    new AstVarRef(outvscp->fileline(), outvscp, false));
-                    assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);  // Ok if in <= block
+                    AstVarScope* newvscp
+                        = createVarScope(portp, namePrefix + "__" + portp->shortName());
+                    portp->user2p(newvscp);
+                    pinp->replaceWith(new AstVarRef(newvscp->fileline(), newvscp, true));
+                    AstAssign* assp
+                        = new AstAssign(pinp->fileline(), pinp,
+                                        new AstVarRef(newvscp->fileline(), newvscp, false));
+                    assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ,
+                                                    true);  // Ok if in <= block
                     // Put assignment BEHIND of all other statements
                     beginp->addNext(assp);
                 }

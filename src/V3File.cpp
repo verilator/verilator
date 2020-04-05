@@ -116,6 +116,7 @@ public:
     // ACCESSOR METHODS
     void addSrcDepend(const string& filename) {
         if (m_filenameSet.find(filename) == m_filenameSet.end()) {
+            // cppcheck-suppress stlFindInsert  // cppcheck 1.90 bug
             m_filenameSet.insert(filename);
             DependFile df (filename, false);
             df.loadStats();  // Get size now, in case changes during the run
@@ -124,6 +125,7 @@ public:
     }
     void addTgtDepend(const string& filename) {
         if (m_filenameSet.find(filename) == m_filenameSet.end()) {
+            // cppcheck-suppress stlFindInsert  // cppcheck 1.90 bug
             m_filenameSet.insert(filename);
             m_filenameList.insert(DependFile(filename, true));
         }

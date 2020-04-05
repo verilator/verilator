@@ -457,14 +457,14 @@ string V3Number::ascii(bool prefixed, bool cleanVerilog) const {
         );
     //out<<"-"<<hex<<m_value[0]<<"-";
 
+    // cppcheck-suppress konwnConditionTrueFalse
     if (binary) {
-        out<<"b";
-        out<<displayed("%0b");
-    }
-    else {
-        if (prefixed) out<<"h";
+        out << "b";
+        out << displayed("%0b");
+    } else {
+        if (prefixed) out << "h";
         // Always deal with 4 bits at once.  Note no 4-state, it's above.
-        out<<displayed("%0h");
+        out << displayed("%0h");
     }
     return out.str();
 }

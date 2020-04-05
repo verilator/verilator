@@ -732,19 +732,19 @@ class SplitUnpackedVarVisitor : public AstNVisitor, public SplitVarImpl {
                                      sit->lvalue());
                 } else {
                     AstVarRef* refp = VN_CAST(sit->nodep(), VarRef);
-                    AstUnpackArrayDType* dtypep;
+                    AstUnpackArrayDType* adtypep;
                     int lsb = 0;
                     if (refp) {
-                        dtypep = VN_CAST(refp->dtypep()->skipRefp(), UnpackArrayDType);
+                        adtypep = VN_CAST(refp->dtypep()->skipRefp(), UnpackArrayDType);
                     } else {
                         AstSliceSel* selp = VN_CAST(sit->nodep(), SliceSel);
                         UASSERT_OBJ(selp, sit->nodep(), "Unexpected op is registered");
                         refp = VN_CAST(selp->fromp(), VarRef);
                         UASSERT_OBJ(refp, selp, "Unexpected op is registered");
-                        dtypep = VN_CAST(selp->dtypep()->skipRefp(), UnpackArrayDType);
-                        lsb = dtypep->lsb();
+                        adtypep = VN_CAST(selp->dtypep()->skipRefp(), UnpackArrayDType);
+                        lsb = adtypep->lsb();
                     }
-                    AstVarRef* newrefp = createTempVar(sit->context(), refp, dtypep, varp->name(),
+                    AstVarRef* newrefp = createTempVar(sit->context(), refp, adtypep, varp->name(),
                                                        vars, lsb, refp->lvalue(), sit->ftask());
                     newp = newrefp;
                     refp->varp()->addNextHere(newrefp->varp());

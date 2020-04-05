@@ -273,11 +273,11 @@ private:
     }
 public:
     AstNode* fetchValueNull(AstNode* nodep) {
-        return (AstNode*)(nodep->user3p());
+        return nodep->user3p();
     }
 private:
     AstNode* fetchOutValueNull(AstNode* nodep) {
-        return (AstNode*)(nodep->user2p());
+        return nodep->user2p();
     }
     AstConst* fetchConstNull(AstNode* nodep) {
         return VN_CAST(fetchValueNull(nodep), Const);

@@ -930,15 +930,14 @@ const char* VerilatedVpiError::strFromVpiProp(PLI_INT32 vpiVal) VL_MT_SAFE {
 
 #define CHECK_RESULT_CSTR(got, exp) \
     if (strcmp((got), (exp))) { \
-        std::string msg = std::string("%Error: ")   \
-             + "GOT = '"+((got)?(got):"<null>")+"'"  \
-             + "  EXP = '"+((exp)?(exp):"<null>")+"'";  \
-        VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());  \
+        std::string msg \
+            = std::string("%Error: ") + "GOT = '" + got + "'" + "  EXP = '" + exp + "'"; \
+        VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str()); \
     }
 
 #define CHECK_ENUM_STR(fn, enum) \
     do { \
-        const char* strVal = VerilatedVpiError::fn(enum);       \
+        const char* strVal = VerilatedVpiError::fn(enum); \
         CHECK_RESULT_CSTR(strVal, #enum); \
     } while (0)
 

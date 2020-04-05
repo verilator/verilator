@@ -237,14 +237,14 @@ private:
                 // Process interface cells, then non-interface which may ref an interface cell
                 for (int nonIf=0; nonIf<2; ++nonIf) {
                     for (CellList::iterator it=m_cellps.begin(); it!=m_cellps.end(); ++it) {
-                        AstCell* nodep = *it;
-                        if ((nonIf==0 && VN_IS(nodep->modp(), Iface))
-                            || (nonIf==1 && !VN_IS(nodep->modp(), Iface))) {
+                        AstCell* cellp = *it;
+                        if ((nonIf==0 && VN_IS(cellp->modp(), Iface))
+                            || (nonIf==1 && !VN_IS(cellp->modp(), Iface))) {
                             string fullName (m_modp->hierName());
-                            if (string* genHierNamep = (string *) nodep->user5p()) {
+                            if (string* genHierNamep = (string *) cellp->user5p()) {
                                 fullName += *genHierNamep;
                             }
-                            visitCell(nodep, fullName);
+                            visitCell(cellp, fullName);
                         }
                     }
                 }

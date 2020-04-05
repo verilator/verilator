@@ -83,22 +83,21 @@ public:
     // Options
     V3Options opt;  // All options; let user see them directly
 
-  public:
+public:
     // CONSTRUCTORS
-    V3Global() {
-        m_debugFileNumber = 0;
-        m_widthMinUsage = VWidthMinUsage::LINT_WIDTH;
-        m_assertDTypesResolved = false;
-        m_constRemoveXs = false;
-        m_needC11 = false;
-        m_needHInlines = false;
-        m_needHeavy = false;
-        m_needTraceDumper = false;
-        m_dpi = false;
-        m_rootp = NULL;  // created by makeInitNetlist() so static constructors run first
-    }
+    V3Global()
+        : m_rootp(NULL)  // created by makeInitNetlist() so static constructors run first
+        , m_widthMinUsage(VWidthMinUsage::LINT_WIDTH)
+        , m_debugFileNumber(0)
+        , m_assertDTypesResolved(false)
+        , m_constRemoveXs(false)
+        , m_needC11(false)
+        , m_needHInlines(false)
+        , m_needHeavy(false)
+        , m_needTraceDumper(false)
+        , m_dpi(false) {}
     AstNetlist* makeNetlist();
-    void boot() { UASSERT(!m_rootp,"call once"); m_rootp = makeNetlist(); }
+    void boot() { UASSERT(!m_rootp, "call once"); m_rootp = makeNetlist(); }
     void clear();
     // ACCESSORS (general)
     AstNetlist* rootp() const { return m_rootp; }

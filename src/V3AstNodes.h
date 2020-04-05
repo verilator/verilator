@@ -255,7 +255,8 @@ class AstClassPackage : public AstNodeModule {
     AstClass* m_classp;  // Class package this is under (weak pointer, hard link is other way)
 public:
     AstClassPackage(FileLine* fl, const string& name)
-        : ASTGEN_SUPER(fl, name) {}
+        : ASTGEN_SUPER(fl, name)
+        , m_classp(NULL) {}
     ASTNODE_NODE_FUNCS(ClassPackage)
     virtual string verilogKwd() const { return "/*class*/package"; }
     virtual const char* broken() const;
@@ -948,8 +949,11 @@ public:
     virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
     // METHODS
     virtual AstBasicDType* basicp() const { return NULL; }
+    // cppcheck-suppress csyleCast
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
+    // cppcheck-suppress csyleCast
     virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
+    // cppcheck-suppress csyleCast
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
@@ -1111,8 +1115,11 @@ public:
     virtual void virtRefDTypep(AstNodeDType* nodep) { }
     virtual bool similarDType(AstNodeDType* samep) const { return this==samep; }
     virtual AstBasicDType* basicp() const { return NULL; }
+    // cppcheck-suppress csyleCast
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
+    // cppcheck-suppress csyleCast
     virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
+    // cppcheck-suppress csyleCast
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const { return 1; }
     virtual int widthTotalBytes() const { return 1; }
@@ -1207,6 +1214,7 @@ public:
     virtual AstBasicDType* basicp() const { return subDTypep()->basicp(); }  // (Slow) recurse down to find basic data type
     virtual AstNodeDType* skipRefp() const { return subDTypep()->skipRefp(); }
     virtual AstNodeDType* skipRefToConstp() const { return subDTypep()->skipRefToConstp(); }
+    // cppcheck-suppress csyleCast
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const { return subDTypep()->widthAlignBytes(); }
     virtual int widthTotalBytes() const { return subDTypep()->widthTotalBytes(); }
@@ -1225,7 +1233,9 @@ public:
     virtual bool similarDType(AstNodeDType* samep) const { return this==samep; }
     virtual AstBasicDType* basicp() const { return NULL; }
     virtual AstNodeDType* skipRefp() const { return NULL; }
+    // cppcheck-suppress csyleCast
     virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
+    // cppcheck-suppress csyleCast
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }
     virtual int widthAlignBytes() const { return 0; }
     virtual int widthTotalBytes() const { return 0; }

@@ -155,6 +155,11 @@ FileLine::FileLine(FileLine::EmptySecret) {
     }
 }
 
+void FileLine::newContent() {
+    m_contentp = new VFileContent;
+    m_contentLineno = 1;
+}
+
 const string FileLine::xmlDetailedLocation() const {
     return "loc=\"" +
         cvtToStr(filenameLetters()) + "," +

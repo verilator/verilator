@@ -1142,9 +1142,9 @@ private:
                 default: nodep->v3error("Unhandled attribute type");
                 }
             } else {
-                std::pair<uint32_t, uint32_t> dimp
+                std::pair<uint32_t, uint32_t> dimpair
                     = nodep->fromp()->dtypep()->skipRefp()->dimensions(true);
-                uint32_t msbdim = dimp.first + dimp.second;
+                uint32_t msbdim = dimpair.first + dimpair.second;
                 if (!nodep->dimp() || msbdim < 1) {
                     int dim = 1;
                     AstConst* newp = dimensionValue(nodep->fileline(), nodep->fromp()->dtypep(),
@@ -2457,7 +2457,6 @@ private:
         if (nodep->didWidthAndSet()) return;
         AstDynArrayDType* adtypep = VN_CAST(m_vup->dtypeNullp(), DynArrayDType);
         if (!adtypep) {  // e.g. int a = new;
-            if (adtypep) UINFO(1, "Got adtypep " << adtypep << endl);
             nodep->v3error("dynamic new() not expected in this context (data type must be dynamic array)");
             return;
         }
@@ -4698,11 +4697,10 @@ private:
             declRange = VNumRange();  // ranged() set false
             if (AstNodeArrayDType* adtypep = VN_CAST(dtypep, NodeArrayDType)) {
                 declRange = adtypep->declRange();
-                if (i<dim) dtypep = adtypep->subDTypep()->skipRefp();
+                if (i < dim) dtypep = adtypep->subDTypep()->skipRefp();
                 continue;
             } else if (AstNodeUOrStructDType* adtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
                 declRange = adtypep->declRange();
-                if (adtypep) {}  // UNUSED
                 break;  // Sub elements don't look like arrays and can't iterate into
             } else if (AstBasicDType* adtypep = VN_CAST(dtypep, BasicDType)) {
                 if (adtypep->isRanged()) declRange = adtypep->declRange();

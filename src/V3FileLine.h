@@ -115,26 +115,26 @@ private:
         return *defFilelinep;
     }
 public:
-    explicit FileLine(const string& filename) {
-        m_lastLineno = m_firstLineno = 0;
-        m_lastColumn = m_firstColumn = 0;
-        m_filenameno = singleton().nameToNumber(filename);
-        m_contentLineno = 0;
-        m_contentp = NULL;
-        m_parent = NULL;
-        m_warnOn = defaultFileLine().m_warnOn;
-    }
-    explicit FileLine(FileLine* fromp) {
-        m_firstLineno = fromp->m_firstLineno;
-        m_firstColumn = fromp->m_firstColumn;
-        m_lastLineno = fromp->m_lastLineno;
-        m_lastColumn = fromp->m_lastColumn;
-        m_filenameno = fromp->m_filenameno;
-        m_contentLineno = fromp->m_contentLineno;
-        m_contentp = fromp->m_contentp;
-        m_parent = fromp->m_parent;
-        m_warnOn = fromp->m_warnOn;
-    }
+    explicit FileLine(const string& filename)
+        : m_firstLineno(0)
+        , m_firstColumn(0)
+        , m_lastLineno(0)
+        , m_lastColumn(0)
+        , m_filenameno(singleton().nameToNumber(filename))
+        , m_contentLineno(0)
+        , m_contentp(NULL)
+        , m_parent(NULL)
+        , m_warnOn(defaultFileLine().m_warnOn) {}
+    explicit FileLine(FileLine* fromp)
+        : m_firstLineno(fromp->m_firstLineno)
+        , m_firstColumn(fromp->m_firstColumn)
+        , m_lastLineno(fromp->m_lastLineno)
+        , m_lastColumn(fromp->m_lastColumn)
+        , m_filenameno(fromp->m_filenameno)
+        , m_contentLineno(fromp->m_contentLineno)
+        , m_contentp(fromp->m_contentp)
+        , m_parent(fromp->m_parent)
+        , m_warnOn(fromp->m_warnOn) {}
     struct EmptySecret {};  // Constructor selection
     explicit FileLine(EmptySecret);
     FileLine* copyOrSameFileLine();
@@ -144,8 +144,8 @@ public:
     static void* operator new(size_t size);
     static void operator delete(void* obj, size_t size);
 #endif
-    void newContent() { m_contentp = new VFileContent; m_contentLineno = 1; }
     // METHODS
+    void newContent();
     void lineno(int num) { m_firstLineno = num; m_lastLineno = num;
         m_firstColumn = m_lastColumn = 1; }
     void language(V3LangCode lang) { singleton().numberToLang(m_filenameno, lang); }
