@@ -84,8 +84,9 @@ To build Verilator you will need to install some standard packages:
    sudo apt-get install autoconf
    sudo apt-get install flex bison
 
-The following are optional, but improve compilation speed:
+The following are optional, but should be installed to improve compilation speed:
 
+   sudo apt-get install ccache
    sudo apt-get install libgoogle-perftools-dev
 
 Additionally, to build or run Verilator you need these standard packages:
