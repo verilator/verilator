@@ -140,7 +140,10 @@
 #define VL_MT_UNSAFE_ONE  ///< Comment tag that function is not threadsafe when VL_THREADED, protected to make sure single-caller
 
 #ifdef _MSC_VER
-# define VL_ULL(c) (c##ui64)    ///< Add appropriate suffix to 64-bit constant
+# define VL_ULL(c) (c##ULL)     ///< Add appropriate suffix to 64-bit constant
+// Was "(c##ui64)". C++11 has standardized on ULL, and MSVC now supports this.
+// We propose to no longer require using this macro no sooner than June 2020.
+// File an issue ASAP if this breaks anything.
 #else
 # define VL_ULL(c) (c##ULL)     ///< Add appropriate suffix to 64-bit constant
 #endif
