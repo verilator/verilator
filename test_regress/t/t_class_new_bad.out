@@ -1,0 +1,13 @@
+%Error: t/t_class_new_bad.v:10:13: Unsupported: new constructor
+                                 : ... In instance t
+   10 |    function new();
+      |             ^~~
+%Error: t/t_class_new_bad.v:17:13: Unsupported: new constructor
+                                 : ... In instance t
+   17 |    function new(int i);
+      |             ^~~
+%Error: t/t_class_new_bad.v:26:12: Unsupported: new with arguments
+                                 : ... In instance t
+   26 |       c1 = new(3);   
+      |            ^~~
+%Error: Exiting due to

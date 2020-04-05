@@ -1,0 +1,7 @@
+%Error: t/t_class_local.v:12:22: Unsupported: initial value on member
+   12 |    local int m_loc = 2;
+      |                      ^
+%Error: t/t_class_local.v:13:27: Unsupported: initial value on member
+   13 |    protected int m_prot = B;
+      |                           ^
+%Error: Exiting due to

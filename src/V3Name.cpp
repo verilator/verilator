@@ -82,7 +82,7 @@ private:
     // Add __PVT__ to names of local signals
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
         // Don't iterate... Don't need temps for RANGES under the Var.
-        rename(nodep, (!m_modp->isTop()
+        rename(nodep, ((!m_modp || !m_modp->isTop())
                        && !nodep->isSigPublic()
                        && !nodep->isFuncLocal()  // Isn't exposed, and would mess up dpi import wrappers
                        && !nodep->isTemp()));  // Don't bother to rename internal signals
@@ -101,7 +101,8 @@ private:
     }
     virtual void visit(AstCell* nodep) VL_OVERRIDE {
         if (!nodep->user1()) {
-            rename(nodep, !nodep->modp()->modPublic());
+            rename(nodep, (!nodep->modp()->modPublic()
+                           && !VN_IS(nodep->modp(), ClassPackage)));
             iterateChildren(nodep);
         }
     }
@@ -121,10 +122,13 @@ private:
         if (!nodep->user1SetOnce()) {
             if (nodep->aboveScopep()) iterate(nodep->aboveScopep());
             if (nodep->aboveCellp()) iterate(nodep->aboveCellp());
-            // Always recompute name (as many level above scope may have changed)
+            // Always recompute name (as many levels above scope may have changed)
             // Same formula as V3Scope
             nodep->name(nodep->isTop() ? "TOP"
-                        : (nodep->aboveScopep()->name()+"."+nodep->aboveCellp()->name()));
+                        : VN_IS(m_modp, Class) ? ("TOP." + m_modp->name())
+                        : VN_IS(m_modp, ClassPackage) ? ("TOP." + m_modp->name())
+                        : (nodep->aboveScopep()->name() + "." + nodep->aboveCellp()->name()));
+            nodep->editCountInc();
             iterateChildren(nodep);
         }
     }

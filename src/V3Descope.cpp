@@ -109,6 +109,9 @@ private:
         // The risk that this prevents combining identical logic from differently-
         // named but identical modules seems low.
         if (m_modSingleton) relativeRefOk = false;
+        //
+        // Class methods need relative
+        if (m_modp && VN_IS(m_modp, Class)) relativeRefOk = true;
 
         if (varp && varp->isFuncLocal()) {
             hierThisr = true;

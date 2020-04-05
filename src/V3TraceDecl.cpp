@@ -195,6 +195,7 @@ private:
         // Generally this equation doesn't need updating, instead use
         // varp->isTrace() and/or vscIgnoreTrace.
         if ((!nodep->varp()->isTemp() || nodep->varp()->isTrace())
+            && !nodep->varp()->isClassMember()
             && !nodep->varp()->isFuncLocal()) {
             UINFO(5, "    vsc "<<nodep<<endl);
             AstVar* varp = nodep->varp();

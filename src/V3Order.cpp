@@ -1018,6 +1018,7 @@ private:
         }
         m_modp = origModp;
     }
+    virtual void visit(AstClass*) VL_OVERRIDE {}
     virtual void visit(AstScope* nodep) VL_OVERRIDE {
         UINFO(4," SCOPE "<<nodep<<endl);
         m_scopep = nodep;

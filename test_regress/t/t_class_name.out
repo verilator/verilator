@@ -1,0 +1,4 @@
+%Error: t/t_class_name.v:12:4: Unsupported: 'static' class item
+   12 |    static task static_name;
+      |    ^~~~~~
+%Error: Exiting due to

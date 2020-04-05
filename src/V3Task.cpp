@@ -203,6 +203,7 @@ private:
         TaskBaseVertex* lastVxp = m_curVxp;
         m_curVxp = getFTaskVertex(nodep);
         if (nodep->dpiImport()) m_curVxp->noInline(true);
+        if (nodep->classMethod()) m_curVxp->noInline(true);  // Until V3Task supports it
         iterateChildren(nodep);
         m_curVxp = lastVxp;
     }
@@ -993,7 +994,7 @@ private:
         cfuncp->funcPublic(nodep->taskPublic());
         cfuncp->dpiExport(nodep->dpiExport());
         cfuncp->dpiImportWrapper(nodep->dpiImport());
-        cfuncp->isStatic(!(nodep->dpiImport()||nodep->taskPublic()));
+        cfuncp->isStatic(!(nodep->dpiImport() || nodep->taskPublic() || nodep->classMethod()));
         cfuncp->pure(nodep->pure());
         //cfuncp->dpiImport   // Not set in the wrapper - the called function has it set
         if (cfuncp->dpiExport()) cfuncp->cname(nodep->cname());
@@ -1206,19 +1207,25 @@ private:
             if (nodep->dpiImport()) modes++;
             if (nodep->dpiExport()) modes++;
             if (nodep->taskPublic()) modes++;
+            if (nodep->classMethod()) modes++;
             if (v3Global.opt.protectIds() && nodep->taskPublic()) {
                 // We always call protect() on names, we don't check if public or not
                 // Hence any external references wouldn't be able to find the refed public object.
                 nodep->v3error("Unsupported: Using --protect-ids with public function");
             }
-            if (modes > 1) nodep->v3error("Cannot mix DPI import, DPI export and/or public on same function: "
-                                          <<nodep->prettyNameQ());
+            if (modes > 1) {
+                nodep->v3error("Cannot mix DPI import, DPI export, class methods, and/or public "
+                               "on same function: "
+                               << nodep->prettyNameQ());
+            }
 
-            if (nodep->dpiImport() || nodep->dpiExport()
-                || nodep->taskPublic() || m_statep->ftaskNoInline(nodep)) {
+            if (nodep->dpiImport() || nodep->dpiExport() || nodep->taskPublic()
+                || m_statep->ftaskNoInline(nodep)) {
                 // Clone it first, because we may have later FTaskRef's that still need
                 // the original version.
-                if (m_statep->ftaskNoInline(nodep)) m_statep->checkPurity(nodep);
+                if (m_statep->ftaskNoInline(nodep) && !nodep->classMethod()) {
+                    m_statep->checkPurity(nodep);
+                }
                 AstNodeFTask* clonedFuncp = nodep->cloneTree(false);
                 AstCFunc* cfuncp = makeUserFunc(clonedFuncp, m_statep->ftaskNoInline(nodep));
                 if (cfuncp) {

@@ -325,6 +325,10 @@ public:
         if (forScopeCreation()) m_nameScopeSymMap.insert(make_pair(scopename, symp));
         return symp;
     }
+    void insertMap(VSymEnt* symp, const string& scopename) {
+        if (forScopeCreation()) m_nameScopeSymMap.insert(make_pair(scopename, symp));
+    }
+
     VSymEnt* insertInline(VSymEnt* abovep, VSymEnt* modSymp,
                           AstCellInline* nodep, const string& basename) {
         // A fake point in the hierarchy, corresponding to an inlined module
@@ -815,6 +819,39 @@ class LinkDotFindVisitor : public AstNVisitor {
         m_modBeginNum = oldModBeginNum;
         // Prep for next
         m_packagep = NULL;
+    }
+    virtual void visit(AstClass* nodep) VL_OVERRIDE {
+        UASSERT_OBJ(m_curSymp, nodep, "Class not under module/package/$unit");
+        UINFO(8,"   "<<nodep<<endl);
+        string oldscope = m_scope;
+        VSymEnt* oldModSymp = m_modSymp;
+        VSymEnt* oldCurSymp = m_curSymp;
+        int      oldParamNum    = m_paramNum;
+        int      oldBeginNum    = m_beginNum;
+        int      oldModBeginNum = m_modBeginNum;
+        {
+            UINFO(4,"     Link Class: "<<nodep<<endl);
+            VSymEnt* upperSymp = m_curSymp;
+            m_scope = m_scope + "." + nodep->name();
+            m_curSymp = m_modSymp
+                = m_statep->insertBlock(upperSymp, nodep->name(), nodep, m_packagep);
+            m_statep->insertMap(m_curSymp, m_scope);
+            UINFO(9, "New module scope "<<m_curSymp<<endl);
+            //
+            m_paramNum = 0;
+            m_beginNum = 0;
+            m_modBeginNum = 0;
+            // m_modSymp/m_curSymp for non-packages set by AstCell above this module
+            // Iterate
+            iterateChildren(nodep);
+            nodep->user4(true);
+        }
+        m_scope = oldscope;
+        m_modSymp = oldModSymp;
+        m_curSymp = oldCurSymp;
+        m_paramNum    = oldParamNum;
+        m_beginNum    = oldBeginNum;
+        m_modBeginNum = oldModBeginNum;
     }
     virtual void visit(AstScope* nodep) VL_OVERRIDE {
         UASSERT_OBJ(m_statep->forScopeCreation(), nodep,
@@ -1400,7 +1437,7 @@ class LinkDotScopeVisitor : public AstNVisitor {
         m_scopep = NULL;
     }
     virtual void visit(AstVarScope* nodep) VL_OVERRIDE {
-        if (!nodep->varp()->isFuncLocal()) {
+        if (!nodep->varp()->isFuncLocal() && !nodep->varp()->isClassMember()) {
             VSymEnt* varSymp = m_statep->insertSym(m_modSymp, nodep->varp()->name(), nodep, NULL);
             if (nodep->varp()->isIfaceRef()
                 && nodep->varp()->isIfaceParent()) {
@@ -2484,6 +2521,44 @@ private:
         m_ds.m_dotSymp = m_curSymp = oldCurSymp;
         m_ftaskp = NULL;
     }
+    virtual void visit(AstClass* nodep) VL_OVERRIDE {
+        UINFO(5, "   " << nodep << endl);
+        checkNoDot(nodep);
+        for (AstNode* itemp = nodep->membersp(); itemp; itemp = itemp->nextp()) {
+            if (AstClassExtends* eitemp = VN_CAST(itemp, ClassExtends)) {
+                // Replace abstract reference with hard pointer
+                // Will need later resolution when deal with parameters
+                eitemp->v3error("Unsupported: class extends");
+            }
+        }
+        VSymEnt* oldCurSymp = m_curSymp;
+        VSymEnt* oldModSymp = m_modSymp;
+        {
+            m_ds.init(m_curSymp);
+            // Until overridden by a SCOPE
+            m_ds.m_dotSymp = m_curSymp = m_modSymp = m_statep->getNodeSym(nodep);
+            m_modp = nodep;
+            iterateChildren(nodep);
+        }
+        // V3Width when determines types needs to find enum values and such
+        // so add members pointing to appropriate enum values
+        {
+            nodep->repairCache();
+            for (VSymEnt::const_iterator it = m_curSymp->begin(); it != m_curSymp->end(); ++it) {
+                AstNode* itemp = it->second->nodep();
+                if (!nodep->findMember(it->first)) {
+                    if (AstEnumItem* aitemp = VN_CAST(itemp, EnumItem)) {
+                        AstEnumItemRef* newp = new AstEnumItemRef(aitemp->fileline(), aitemp,
+                                                                  it->second->packagep());
+                        UINFO(8, "Class import noderef '" << it->first << "' " << newp << endl);
+                        nodep->addMembersp(newp);
+                    }
+                }
+            }
+        }
+        m_curSymp = oldCurSymp;
+        m_modSymp = oldModSymp;
+    }
     virtual void visit(AstRefDType* nodep) VL_OVERRIDE {
         // Resolve its reference
         if (nodep->user3SetOnce()) return;
@@ -2515,8 +2590,16 @@ private:
                 nodep->refDTypep(defp);
                 nodep->packagep(foundp->packagep());
             }
+            else if (AstClass* defp = foundp ? VN_CAST(foundp->nodep(), Class) : NULL) {
+                AstClassRefDType* newp = new AstClassRefDType(nodep->fileline(), defp);
+                newp->packagep(foundp->packagep());
+                nodep->replaceWith(newp);
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                return;
+            }
             else {
-                nodep->v3error("Can't find typedef: "<<nodep->prettyNameQ());
+                if (foundp) UINFO(1, "Found sym node: " << foundp->nodep() << endl);
+                nodep->v3error("Can't find typedef: " << nodep->prettyNameQ());
             }
         }
         iterateChildren(nodep);

@@ -114,6 +114,12 @@ private:
         iterateChildren(nodep);
         m_modp = NULL;
     }
+    virtual void visit(AstClass* nodep) VL_OVERRIDE {
+        // TODO allow inlining of modules that have classes
+        // (Probably wait for new inliner scheme)
+        cantInline("class", true);
+        iterateChildren(nodep);
+    }
     virtual void visit(AstCell* nodep) VL_OVERRIDE {
         nodep->modp()->user3Inc();  // Inc refs
         m_instances[m_modp][nodep->modp()]++;
@@ -294,6 +300,11 @@ private:
         nodep->name(name);
         iterateChildren(nodep);
     }
+    virtual void visit(AstClass* nodep) VL_OVERRIDE {
+        string name = m_cellp->name() + "__DOT__" + nodep->name();
+        nodep->name(name);
+        iterateChildren(nodep);
+    }
     virtual void visit(AstModule* nodep) VL_OVERRIDE {
         m_renamedInterfaces.clear();
         iterateChildren(nodep);
@@ -376,7 +387,7 @@ private:
         // Variable under the inline cell, need to rename to avoid conflicts
         // Also clear I/O bits, as it is now local.
         string name = m_cellp->name() + "__DOT__" + nodep->name();
-        if (!nodep->isFuncLocal()) nodep->inlineAttrReset(name);
+        if (!nodep->isFuncLocal() && !nodep->isClassMember()) nodep->inlineAttrReset(name);
         if (!m_cellp->isTrace()) nodep->trace(false);
         if (debug() >= 9) { nodep->dumpTree(cout, "varchanged:"); }
         if (debug() >= 9 && nodep->valuep()) { nodep->valuep()->dumpTree(cout, "varchangei:"); }

@@ -3558,6 +3558,13 @@ ___05F (5F is the hex code of an underscore.)
 Verilator only supports "bind" to a target module name, not an instance
 path.
 
+=head2 Class
+
+Verilator class support is very limited and in active development.
+Verilator supports members, and methods. Verilator doe not support initial
+values on class members, class static members, class new methods, class
+extend, or class parameters.
+
 =head2 Dotted cross-hierarchy references
 
 Verilator supports dotted references to variables, functions and tasks in

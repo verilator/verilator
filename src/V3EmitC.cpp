@@ -829,9 +829,29 @@ public:
             iterateAndNextNull(nodep->expr2p()); puts(")");
         }
     }
+    virtual void visit(AstMemberSel* nodep) VL_OVERRIDE {
+        iterateAndNextNull(nodep->fromp());
+        putbs("->");
+        puts(nodep->varp()->nameProtect());
+    }
+    virtual void visit(AstNullCheck* nodep) VL_OVERRIDE {
+        puts("VL_NULL_CHECK(");
+        iterateAndNextNull(nodep->lhsp());
+        puts(", ");
+        putsQuoted(protect(nodep->fileline()->filename()));
+        puts(", ");
+        puts(cvtToStr(nodep->fileline()->lineno()));
+        puts(")");
+    }
     virtual void visit(AstNew* nodep) VL_OVERRIDE {
-        puts("std::make_shared<" + nodep->dtypep()->nameProtect() + ">(");
-        iterateChildren(nodep);
+        puts("std::make_shared<" + prefixNameProtect(nodep->dtypep()) + ">(");
+        iterateAndNextNull(nodep->argsp());
+        puts(")");
+    }
+    virtual void visit(AstNewCopy* nodep) VL_OVERRIDE {
+        puts("std::make_shared<" + prefixNameProtect(nodep->dtypep()) + ">(");
+        puts("*");  // i.e. make into a reference
+        iterateAndNextNull(nodep->rhsp());
         puts(")");
     }
     virtual void visit(AstSel* nodep) VL_OVERRIDE {
@@ -1504,6 +1524,9 @@ class EmitCImp : EmitCStmts {
             string cvtarray = (adtypep->subDTypep()->isWide() ? ".data()" : "");  // Access std::array as C array
             return emitVarResetRecurse(varp, adtypep->subDTypep(), depth+1,
                                        ".atDefault()" + cvtarray);
+        }
+        else if (AstClassRefDType* adtypep = VN_CAST(dtypep, ClassRefDType)) {
+            return "";  // Constructor does it
         }
         else if (AstDynArrayDType* adtypep = VN_CAST(dtypep, DynArrayDType)) {
             return emitVarResetRecurse(varp, adtypep->subDTypep(), depth+1, ".atDefault()");
@@ -2723,7 +2746,11 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
     puts("\n//----------\n\n");
     emitTextSection(AstType::atScHdr);
 
-    if (optSystemC() && modp->isTop()) {
+    if (AstClass* classp = VN_CAST(modp, Class)) {
+        puts("class " + prefixNameProtect(modp));
+        if (classp->extendsp()) puts(" : public " + classp->extendsp()->classp()->nameProtect());
+        puts(" {\n");
+    } else if (optSystemC() && modp->isTop()) {
         puts("SC_MODULE(" + prefixNameProtect(modp) + ") {\n");
     } else {
         puts("VL_MODULE(" + prefixNameProtect(modp) + ") {\n");
@@ -2832,7 +2859,12 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
             puts("/// The special name "" may be used to make a wrapper with a\n");
             puts("/// single model invisible with respect to DPI scope names.\n");
         }
-        puts(prefixNameProtect(modp) + "(const char* name = \"TOP\");\n");
+        if (VN_IS(modp, Class)) {
+            // TODO move all constructor definition to e.g. V3CUse
+            puts(prefixNameProtect(modp) + "();\n");
+        } else {
+            puts(prefixNameProtect(modp) + "(const char* name = \"TOP\");\n");
+        }
         if (modp->isTop()) {
             puts("/// Destroy the model; called (often implicitly) by application code\n");
         }
@@ -2889,6 +2921,7 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
         puts("void " + protect("__Vconfigure") + "(" + symClassName() + "* symsp, bool first);\n");
     }
 
+    ofp()->putsPrivate(false);  // public:
     emitIntFuncDecls(modp, true);
 
     if (v3Global.opt.trace() && !VN_IS(modp, Class)) {
@@ -2996,6 +3029,12 @@ void EmitCImp::mainInt(AstNodeModule* modp) {
     m_ofp = newOutCFile(fileModp, false/*slow*/, false/*source*/);
     emitIntTop(modp);
     emitInt(modp);
+    if (AstClassPackage* packagep = VN_CAST(modp, ClassPackage)) {
+        // Put the non-static class implementation in same h file for speed
+        m_modp = packagep->classp();
+        emitInt(packagep->classp());
+        m_modp = modp;
+    }
     ofp()->putsEndGuard();
     VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
 }
@@ -3012,6 +3051,15 @@ void EmitCImp::mainImp(AstNodeModule* modp, bool slow, bool fast) {
     m_ofp = newOutCFile(fileModp, !m_fast, true/*source*/);
     emitImpTop(fileModp);
     emitImp(modp);
+
+    if (AstClassPackage* packagep = VN_CAST(modp, ClassPackage)) {
+        // Put the non-static class implementation in same C++ files as
+        // often optimizations are possible when both are seen by the
+        // compiler together
+        m_modp = packagep->classp();
+        emitImp(packagep->classp());
+        m_modp = modp;
+    }
 
     if (fast && modp->isTop() && v3Global.opt.mtasks()) {
         // Make a final pass and emit function definitions for the mtasks
@@ -3489,6 +3537,7 @@ void V3EmitC::emitc() {
     // Process each module in turn
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp();
          nodep; nodep = VN_CAST(nodep->nextp(), NodeModule)) {
+        if (VN_IS(nodep, Class)) continue;  // Imped with ClassPackage
         { EmitCImp cint; cint.mainInt(nodep); }
         if (v3Global.opt.outputSplit()) {
             { EmitCImp fast; fast.mainImp(nodep, false, true); }

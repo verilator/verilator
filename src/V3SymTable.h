@@ -41,7 +41,6 @@ typedef std::set<const VSymEnt*> VSymConstMap;
 
 class VSymEnt {
     // Symbol table that can have a "superior" table for resolving upper references
-private:
     // MEMBERS
     typedef std::multimap<string,VSymEnt*> IdNameMap;
     IdNameMap   m_idNameMap;    // Hash of variables by name
@@ -62,6 +61,11 @@ private:
     static inline int debug() { return 0; }  // NOT runtime, too hot of a function
 #endif
 public:
+
+    typedef IdNameMap::const_iterator const_iterator;
+    const_iterator begin() const { return m_idNameMap.begin(); }
+    const_iterator end() const { return m_idNameMap.end(); }
+
     void dumpIterate(std::ostream& os, VSymConstMap& doneSymsr, const string& indent,
                      int numLevels, const string& searchName) const {
         os<<indent<<"+ "<<std::left<<std::setw(30)

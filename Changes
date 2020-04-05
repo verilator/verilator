@@ -5,6 +5,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 * Verilator 4.033 devel
 
+**    Add simplistic class support with many restrictions, see manual, #377.
+
 
 * Verilator 4.032 2020-04-04
 

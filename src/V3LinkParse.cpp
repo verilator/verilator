@@ -219,12 +219,18 @@ private:
         if (nodep->valuep()) {
             // A variable with an = value can be three things:
             FileLine* fl = nodep->valuep()->fileline();
-            // 1. Parameters and function inputs: It's a default to use if not overridden
             if (nodep->isParam() || (m_ftaskp && nodep->isNonOutput())) {
-            }
-            else if (!m_ftaskp && nodep->isNonOutput()) {
-                nodep->v3error("Unsupported: Default value on module input: "
-                               <<nodep->prettyNameQ());
+                // 1. Parameters and function inputs: It's a default to use if not overridden
+            } else if (VN_IS(m_modp, Class)) {
+                // We make a AstVar initial value, but then do not set it in the constructor
+                // V3Emit::emitVarRecurse only does non-value inits.
+                // Perhaps these should still become a new form of
+                // AstInitial, and we propagate the initial to the class
+                // constructor
+                nodep->valuep()->v3error("Unsupported: initial value on member");
+            } else if (!m_ftaskp && nodep->isNonOutput()) {
+                nodep->v3error(
+                    "Unsupported: Default value on module input: " << nodep->prettyNameQ());
                 nodep->valuep()->unlinkFrBack()->deleteTree();
             }  // 2. Under modules, it's an initial value to be loaded at time 0 via an AstInitial
             else if (m_valueModp) {

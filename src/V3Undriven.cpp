@@ -336,6 +336,7 @@ private:
             && !VN_IS(nodep, VarXRef)) {  // Ignore interface variables and similar ugly items
             if (m_inProcAssign && !nodep->varp()->varType().isProcAssignable()
                 && !nodep->varp()->isDeclTyped()
+                && !nodep->varp()->isClassMember()
                 && !nodep->varp()->isFuncLocal()) {
                 nodep->v3warn(PROCASSWIRE, "Procedural assignment to wire, perhaps intended var"
                               << " (IEEE 1800-2017 6.5): " << nodep->prettyNameQ());

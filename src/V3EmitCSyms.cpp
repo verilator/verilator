@@ -283,6 +283,7 @@ class EmitCSyms : EmitCBaseVisitor {
         }
     }
     virtual void visit(AstScope* nodep) VL_OVERRIDE {
+        if (VN_IS(m_modp, Class)) return;  // The ClassPackage is what is visible
         nameCheck(nodep);
 
         m_scopes.push_back(make_pair(nodep, m_modp));
@@ -381,6 +382,7 @@ void EmitCSyms::emitSymHdr() {
     puts("\n// INCLUDE MODULE CLASSES\n");
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
          nodep = VN_CAST(nodep->nextp(), NodeModule)) {
+        if (VN_IS(nodep, Class)) continue;  // Class included earlier
         puts("#include \"" + prefixNameProtect(nodep) + ".h\"\n");
     }
 
@@ -422,6 +424,7 @@ void EmitCSyms::emitSymHdr() {
     for (std::vector<ScopeModPair>::iterator it = m_scopes.begin(); it != m_scopes.end(); ++it) {
         AstScope* scopep = it->first;
         AstNodeModule* modp = it->second;
+        if (VN_IS(modp, Class)) continue;
         if (modp->isTop()) {
             ofp()->printf("%-30s ", (prefixNameProtect(modp) + "*").c_str());
             puts(protectIf(scopep->nameDotless() + "p", scopep->protect()) + ";\n");
@@ -528,6 +531,7 @@ void EmitCSyms::emitSymImpPreamble() {
     puts("#include \""+symClassName()+".h\"\n");
     for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
          nodep = VN_CAST(nodep->nextp(), NodeModule)) {
+        if (VN_IS(nodep, Class)) continue;  // Class included earlier
         puts("#include \"" + prefixNameProtect(nodep) + ".h\"\n");
     }
 }

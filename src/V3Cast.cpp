@@ -96,6 +96,15 @@ private:
             insertCast(nodep->lhsp(), VL_IDATASIZE);
         }
     }
+    void ensureNullChecked(AstNode* nodep) {
+        // TODO optimize to track null checked values and avoid where possible
+        if (!VN_IS(nodep->backp(), NullCheck)) {
+            AstNRelinker relinkHandle;
+            nodep->unlinkFrBack(&relinkHandle);
+            AstNode* newp = new AstNullCheck(nodep->fileline(), nodep);
+            relinkHandle.relink(newp);
+        }
+    }
 
     // VISITORS
     virtual void visit(AstNodeUniop* nodep) VL_OVERRIDE {
@@ -154,6 +163,20 @@ private:
         // we're too lazy to wrap every constant in the universe in
         // ((IData)#).
         nodep->user1(nodep->isQuad() || nodep->isWide());
+    }
+
+    // Null dereference protection
+    virtual void visit(AstNullCheck* nodep) VL_OVERRIDE {
+        iterateChildren(nodep);
+        nodep->user1(nodep->lhsp()->user1());
+    }
+    virtual void visit(AstCMethodCall* nodep) VL_OVERRIDE {
+        iterateChildren(nodep);
+        ensureNullChecked(nodep->fromp());
+    }
+    virtual void visit(AstMemberSel* nodep) VL_OVERRIDE {
+        iterateChildren(nodep);
+        ensureNullChecked(nodep->fromp());
     }
 
     // NOPs

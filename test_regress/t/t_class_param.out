@@ -1,0 +1,4 @@
+%Error: t/t_class_param.v:20:11: Unsupported: Parameter classes
+   20 |    Cls #(.P(4)) c4;
+      |           ^
+%Error: Exiting due to

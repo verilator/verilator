@@ -510,7 +510,8 @@ public:
                                const char* delimiter = ".");  // Returns static data
 
     // Internal: Throw signal assertion
-    static void overWidthError(const char* signame) VL_MT_SAFE;
+    static void nullPointerError(const char* filename, int linenum) VL_ATTR_NORETURN VL_MT_SAFE;
+    static void overWidthError(const char* signame) VL_ATTR_NORETURN VL_MT_SAFE;
 
     // Internal: Find scope
     static const VerilatedScope* scopeFind(const char* namep) VL_MT_SAFE;

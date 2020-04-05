@@ -1,0 +1,10 @@
+%Error: t/t_class_static_order.v:23:4: Unsupported: 'static' class item
+   23 |    static ClsZ z = new;
+      |    ^~~~~~
+%Error: t/t_class_static_order.v:34:4: Unsupported: 'static' class item
+   34 |    static ClsA a = new;
+      |    ^~~~~~
+%Error: t/t_class_static_order.v:35:4: Unsupported: 'static' class item
+   35 |    static ClsB b = new;
+      |    ^~~~~~
+%Error: Exiting due to

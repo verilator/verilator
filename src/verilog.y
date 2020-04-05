@@ -3532,15 +3532,16 @@ funcId<ftaskp>:			// IEEE: function_data_type_or_implicit + part of function_bod
 funcIdNew<ftaskp>:		// IEEE: from class_constructor_declaration
 		yNEW__ETC
 			{ $$ = new AstFunc($<fl>1, "new", NULL, NULL);
-			  BBUNSUP($<fl>1, "Unsupported: new constructor");
+			  $$->isConstructor(true);
 			  SYMP->pushNewUnder($$, NULL); }
 	| 	yNEW__PAREN
 			{ $$ = new AstFunc($<fl>1, "new", NULL, NULL);
-			  BBUNSUP($<fl>1, "Unsupported: new constructor");
+			  $$->isConstructor(true);
 			  SYMP->pushNewUnder($$, NULL); }
 	|	class_scopeWithoutId yNEW__PAREN
 			{ $$ = new AstFunc($<fl>2, "new", NULL, NULL);
 			  BBUNSUP($<fl>2, "Unsupported: scoped new constructor");
+			  $$->isConstructor(true);
 			  SYMP->pushNewUnder($$, NULL); }
 	;
 
@@ -5435,7 +5436,9 @@ class_declaration<nodep>:	// ==IEEE: part of class_declaration
 		classFront parameter_port_listE classExtendsE classImplementsE ';'
 			class_itemListE yENDCLASS endLabelE
 			{ $$ = $1; $1->addMembersp($2);
-			  $1->addMembersp($4); $1->addMembersp($6);
+			  $1->extendsp($3);
+			  $1->addMembersp($4);
+			  $1->addMembersp($6);
 			  SYMP->popScope($$);
 			  GRAMMARP->endLabel($<fl>7, $1, $8); }
 	;
@@ -5443,8 +5446,7 @@ class_declaration<nodep>:	// ==IEEE: part of class_declaration
 classFront<classp>:		// IEEE: part of class_declaration
 		classVirtualE yCLASS lifetimeE idAny/*class_identifier*/
 			{ $$ = new AstClass($2, *$4);
-			  SYMP->pushNew($<classp>$);
-			  BBUNSUP($2, "Unsupported: classes");  }
+			  SYMP->pushNew($<classp>$); }
 	//			// IEEE: part of interface_class_declaration
 	|	yINTERFACE yCLASS lifetimeE idAny/*class_identifier*/
 			{ $$ = new AstClass($2, *$4);
@@ -5473,10 +5475,11 @@ classExtendsList<nodep>:	// IEEE: part of class_declaration
 
 classExtendsOne<nodep>:		// IEEE: part of class_declaration
 		class_typeWithoutId
-			{ $$ = NULL; BBUNSUP($1, "Unsupported: extends"); }
+			{ $$ = new AstClassExtends($1->fileline(), $1); }
 	//			// IEEE: Might not be legal to have more than one set of parameters in an extends
 	|	class_typeWithoutId '(' list_of_argumentsE ')'
-			{ $$ = NULL; BBUNSUP($1, "Unsupported: extends"); }
+			{ $$ = new AstClassExtends($1->fileline(), $1);
+			  if ($3) BBUNSUP($3, "Unsupported: extends with parameters"); }
 	;
 
 classImplementsE<nodep>:	// IEEE: part of class_declaration

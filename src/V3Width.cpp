@@ -1769,6 +1769,19 @@ private:
         nodep->widthForce(width, width);  // Signing stays as-is, as parsed from declaration
         //if (debug()>=9) nodep->dumpTree("-class-out-");
     }
+    virtual void visit(AstClass* nodep) VL_OVERRIDE {
+        if (nodep->didWidthAndSet()) return;
+        userIterateChildren(nodep, NULL);  // First size all members
+        nodep->repairCache();
+    }
+    virtual void visit(AstClassExtends* nodep) VL_OVERRIDE {
+        if (nodep->didWidthAndSet()) return;
+        if (nodep->childDTypep()) {
+            nodep->dtypep(moveChildDTypeEdit(nodep));  // data_type '{ pattern }
+        }
+        nodep->v3error("Unsupported: class extends");  // Member/meth access breaks
+        userIterateChildren(nodep, NULL);
+    }
     virtual void visit(AstMemberDType* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         if (nodep->childDTypep()) nodep->refDTypep(moveChildDTypeEdit(nodep));
@@ -1788,6 +1801,23 @@ private:
         UINFO(9,"     from dt "<<fromDtp<<endl);
         if (AstNodeUOrStructDType* adtypep = VN_CAST(fromDtp, NodeUOrStructDType)) {
             if (memberSelStruct(nodep, adtypep)) return;
+        } else if (AstClassRefDType* adtypep = VN_CAST(fromDtp, ClassRefDType)) {
+            if (AstNode* foundp = memberSelClass(nodep, adtypep)) {
+                if (AstVar* varp = VN_CAST(foundp, Var)) {
+                    nodep->dtypep(foundp->dtypep());
+                    nodep->varp(varp);
+                    return;
+                }
+                if (AstEnumItemRef* adfoundp = VN_CAST(foundp, EnumItemRef)) {
+                    nodep->replaceWith(adfoundp->cloneTree(false));
+                    return;
+                }
+                UINFO(1, "found object " << foundp << endl);
+                nodep->v3fatalSrc("MemberSel of non-variable\n"
+                                  << nodep->warnContextPrimary() << endl
+                                  << foundp->warnOther() << "... Location of found object\n"
+                                  << foundp->warnContextSecondary());
+            }
         } else if (VN_IS(fromDtp, EnumDType)
                    || VN_IS(fromDtp, AssocArrayDType)
                    || VN_IS(fromDtp, DynArrayDType)
@@ -1809,6 +1839,30 @@ private:
         // Error handling
         nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::LogicFalse()));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    AstNode* memberSelClass(AstMemberSel* nodep, AstClassRefDType* adtypep) {
+        // Returns node if ok
+        // No need to width-resolve the class, as it was done when we did the child
+        AstClass* first_classp = adtypep->classp();
+        UASSERT_OBJ(first_classp, nodep, "Unlinked");
+        for (AstClass* classp = first_classp; classp;) {
+            if (AstNode* foundp = classp->findMember(nodep->name())) return foundp;
+            classp = classp->extendsp() ? classp->extendsp()->classp() : NULL;
+        }
+        VSpellCheck speller;
+        for (AstClass* classp = first_classp; classp;) {
+            for (AstNode* itemp = classp->membersp(); itemp; itemp = itemp->nextp()) {
+                if (VN_IS(itemp, Var) || VN_IS(itemp, EnumItemRef)) {
+                    speller.pushCandidate(itemp->prettyName());
+                }
+            }
+            classp = classp->extendsp() ? classp->extendsp()->classp() : NULL;
+        }
+        string suggest = speller.bestCandidateMsg(nodep->prettyName());
+        nodep->v3error("Member "<<nodep->prettyNameQ()<<" not found in class "
+                       <<first_classp->prettyNameQ()<<"\n"
+                       <<(suggest.empty() ? "" : nodep->fileline()->warnMore()+suggest));
+        return NULL;  // Caller handles error
     }
     bool memberSelStruct(AstMemberSel* nodep, AstNodeUOrStructDType* adtypep) {
         // Returns true if ok
@@ -1867,6 +1921,9 @@ private:
         }
         else if (AstQueueDType* adtypep = VN_CAST(fromDtp, QueueDType)) {
             methodCallQueue(nodep, adtypep);
+        }
+        else if (AstClassRefDType* adtypep = VN_CAST(fromDtp, ClassRefDType)) {
+            methodCallClass(nodep, adtypep);
         }
         else if (AstUnpackArrayDType* adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
             methodCallUnpack(nodep, adtypep);
@@ -2218,6 +2275,35 @@ private:
         VL_DANGLING(index_exprp);  // May have been edited
         return VN_CAST(nodep->pinsp(), Arg)->exprp();
     }
+    void methodCallClass(AstMethodCall* nodep, AstClassRefDType* adtypep) {
+        // No need to width-resolve the class, as it was done when we did the child
+        AstClass* first_classp = adtypep->classp();
+        UASSERT_OBJ(first_classp, nodep, "Unlinked");
+        for (AstClass* classp = first_classp; classp;) {
+            if (AstNodeFTask* ftaskp = VN_CAST(classp->findMember(nodep->name()), NodeFTask)) {
+                nodep->taskp(ftaskp);
+                nodep->dtypeFrom(ftaskp);
+                if (VN_IS(ftaskp, Task)) nodep->makeStatement();
+                return;
+            }
+            classp = classp->extendsp() ? classp->extendsp()->classp() : NULL;
+        }
+        {
+            VSpellCheck speller;
+            for (AstClass* classp = first_classp; classp;) {
+                for (AstNode* itemp = classp->membersp(); itemp; itemp = itemp->nextp()) {
+                    if (VN_IS(itemp, NodeFTask)) speller.pushCandidate(itemp->prettyName());
+                }
+                classp = classp->extendsp() ? classp->extendsp()->classp() : NULL;
+            }
+            string suggest = speller.bestCandidateMsg(nodep->prettyName());
+            nodep->v3error("Class method "
+                           << nodep->prettyNameQ() << " not found in class "
+                           << first_classp->prettyNameQ() << "\n"
+                           << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
+        }
+        nodep->dtypeSetSigned32();  // Guess on error
+    }
     void methodCallUnpack(AstMethodCall* nodep, AstUnpackArrayDType* adtypep) {
         enum { UNKNOWN = 0, ARRAY_OR, ARRAY_AND, ARRAY_XOR } methodId;
 
@@ -2347,12 +2433,25 @@ private:
         nodep->dtypep(refp);
         if (nodep->argsp()) {
             nodep->v3error("Unsupported: new with arguments");
-            userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
+            pushDeletep(nodep->argsp()->unlinkFrBackWithNext());
+            //TODO code similar to AstNodeFTaskRef
+            //userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
         }
     }
     virtual void visit(AstNewCopy* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;
-        nodep->v3error("Unsupported: new-as-copy");
+        AstClassRefDType* refp = VN_CAST(m_vup->dtypeNullp(), ClassRefDType);
+        if (!refp) {  // e.g. int a = new;
+            nodep->v3error("new() not expected in this context");
+            return;
+        }
+        nodep->dtypep(refp);
+        userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
+        if (!similarDTypeRecurse(nodep->dtypep(), nodep->rhsp()->dtypep())) {
+            nodep->rhsp()->v3error("New-as-copier passed different data type '"
+                                   << nodep->dtypep()->prettyTypeName() << "' then expected '"
+                                   << nodep->rhsp()->dtypep()->prettyTypeName() << "'");
+        }
     }
     virtual void visit(AstNewDynamic* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;
@@ -2866,6 +2965,7 @@ private:
                         added = true;
                         newFormat += "%g";
                     } else if (VN_IS(dtypep, AssocArrayDType)
+                               || VN_IS(dtypep, ClassRefDType)
                                || VN_IS(dtypep, DynArrayDType)
                                || VN_IS(dtypep, QueueDType)) {
                         added = true;
@@ -3297,7 +3397,11 @@ private:
         nodep->doingWidth(true);  // Would use user1 etc, but V3Width called from too many places to spend a user
         m_ftaskp = nodep;
         userIterateChildren(nodep, NULL);
-        if (nodep->fvarp()) {
+        if (nodep->isConstructor()) {
+            // Pretend it's void so less special casing needed when look at dtypes
+            nodep->v3error("Unsupported: new constructor");
+            nodep->dtypeSetVoid();
+        } else if (nodep->fvarp()) {
             m_funcp = VN_CAST(nodep, Func);
             UASSERT_OBJ(m_funcp, nodep, "FTask with function variable, but isn't a function");
             nodep->dtypeFrom(nodep->fvarp());  // Which will get it from fvarp()->dtypep()

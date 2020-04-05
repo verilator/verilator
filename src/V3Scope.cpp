@@ -71,7 +71,8 @@ private:
              it!=m_varRefScopes.end(); ++it) {
             AstVarRef* nodep = it->first;
             AstScope* scopep = it->second;
-            if (nodep->packagep()) {
+            if (nodep->packagep()
+                && !nodep->varp()->isClassMember()) {
                 PackageScopeMap::iterator it2 = m_packageScopes.find(nodep->packagep());
                 UASSERT_OBJ(it2 != m_packageScopes.end(), nodep, "Can't locate package scope");
                 scopep = it2->second;
@@ -146,6 +147,39 @@ private:
         iterateChildren(nodep);
 
         // ***Note m_scopep is passed back to the caller of the routine (above)
+    }
+    virtual void visit(AstClass* nodep) VL_OVERRIDE {
+        // Create required blocks and add to module
+        AstScope* oldScopep = m_scopep;
+        AstCell* oldAbCellp = m_aboveCellp;
+        AstScope* oldAbScopep = m_aboveScopep;
+        {
+            m_aboveScopep = m_scopep;
+
+            string scopename;
+            if (!m_aboveScopep) {
+                scopename = "TOP";
+            } else {
+                scopename = m_aboveScopep->name() + "." + nodep->name();
+            }
+
+            UINFO(4, " CLASS AT " << scopename << "  " << nodep << endl);
+            AstNode::user1ClearTree();
+
+            AstNode* abovep = (m_aboveCellp ? static_cast<AstNode*>(m_aboveCellp)
+                                            : static_cast<AstNode*>(nodep));
+            m_scopep = new AstScope(abovep->fileline(),
+                                    m_modp, scopename, m_aboveScopep, m_aboveCellp);
+            // Create scope for the current usage of this cell
+            AstNode::user1ClearTree();
+            nodep->addMembersp(m_scopep);
+
+            iterateChildren(nodep);
+        }
+        // Done, restore vars
+        m_scopep = oldScopep;
+        m_aboveCellp = oldAbCellp;
+        m_aboveScopep = oldAbScopep;
     }
     virtual void visit(AstCellInline* nodep) VL_OVERRIDE {
         nodep->scopep(m_scopep);
@@ -230,7 +264,14 @@ private:
     virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
         // Add to list of blocks under this scope
         UINFO(4,"    FTASK "<<nodep<<endl);
-        AstNodeFTask* clonep = nodep->cloneTree(false);
+        AstNodeFTask* clonep;
+        if (nodep->classMethod()) {
+            // Only one scope will be created, so avoid pointless cloning
+            nodep->unlinkFrBack();
+            clonep = nodep;
+        } else {
+            clonep = nodep->cloneTree(false);
+        }
         nodep->user2p(clonep);
         m_scopep->addActivep(clonep);
         // We iterate under the *clone*
@@ -238,7 +279,6 @@ private:
     }
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
         // Make new scope variable
-        // This is called cross-module by AstVar, so we cannot trust any m_ variables
         if (!nodep->user1p()) {
             AstVarScope* varscp = new AstVarScope(nodep->fileline(), m_scopep, nodep);
             UINFO(6,"   New scope "<<varscp<<endl);

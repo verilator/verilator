@@ -28,6 +28,7 @@
 
 #include <deque>
 #include <map>
+#include <memory>
 #include <string>
 
 //===================================================================
@@ -368,6 +369,24 @@ public:
 
 template <class T_Value> std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
     return obj.to_string();
+}
+
+//===================================================================
+// Verilog class reference container
+// There are no multithreaded locks on this; the base variable must
+// be protected by other means
+//
+
+#if (defined(_MSC_VER) && _MSC_VER >= 1900) || (__cplusplus >= 201103L)
+# define VlClassRef std::shared_ptr
+#else
+# define VlClassRef VlClassRef__SystemVerilog_class_support_requires_a_C11_or_newer_compiler
+#endif
+
+template <class T>  // T typically of type VlClassRef<x>
+inline T VL_NULL_CHECK(T t, const char* filename, int linenum) {
+    if (VL_UNLIKELY(!t)) Verilated::nullPointerError(filename, linenum);
+    return t;
 }
 
 //======================================================================
