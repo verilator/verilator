@@ -162,10 +162,10 @@ void V3CCtors::cctorsAll() {
             }
         }
         if (v3Global.opt.coverage()) {
-            V3CCtorsVisitor configure_coverage
-                (modp, "_configure_coverage",
-                 EmitCBaseVisitor::symClassVar()+ ", bool first", "vlSymsp, first",
-                 "if (0 && vlSymsp && first) {}  // Prevent unused\n");
+            V3CCtorsVisitor configure_coverage(
+                modp, "_configure_coverage",
+                EmitCBaseVisitor::symClassVar() + ", bool first", "vlSymsp, first",
+                "if (false && vlSymsp && first) {}  // Prevent unused\n");
             for (AstNode* np = modp->stmtsp(); np; np = np->nextp()) {
                 if (AstCoverDecl* coverp = VN_CAST(np, CoverDecl)) {
                     AstNode* backp = coverp->backp();

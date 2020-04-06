@@ -2137,8 +2137,9 @@ void EmitCImp::emitCtorImp(AstNodeModule* modp) {
 void EmitCImp::emitConfigureImp(AstNodeModule* modp) {
     puts("\nvoid " + prefixNameProtect(modp) + "::" + protect("__Vconfigure") + "("
          + symClassName() + "* vlSymsp, bool first) {\n");
-    puts(   "if (0 && first) {}  // Prevent unused\n");
+    puts(   "if (false && first) {}  // Prevent unused\n");
     puts(   "this->__VlSymsp = vlSymsp;\n");  // First, as later stuff needs it.
+    puts(   "if (false && this->__VlSymsp) {}  // Prevent unused\n");
     if (v3Global.opt.coverage() ) {
         puts(protect("_configure_coverage")+"(vlSymsp, first);\n");
     }
@@ -3451,7 +3452,7 @@ class EmitCTrace : EmitCStmts {
             if (nodep->symProlog()) puts(EmitCBaseVisitor::symTopAssign()+"\n");
 
             puts("int c = code;\n");
-            puts("if (0 && vcdp && c) {}  // Prevent unused\n");
+            puts("if (false && vcdp && c) {}  // Prevent unused\n");
             if (nodep->funcType() == AstCFuncType::TRACE_INIT) {
                 puts("vcdp->module(vlSymsp->name());  // Setup signal names\n");
             } else if (nodep->funcType() == AstCFuncType::TRACE_INIT_SUB) {
