@@ -611,7 +611,6 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
     // Note also assumes variables < 64 are not wide, this assumption is
     // sometimes not true in low-level routines written here in verilated.cpp
     static VL_THREAD_LOCAL char tmp[VL_VALUE_STRING_MAX_WIDTH];
-    static VL_THREAD_LOCAL char tmpf[VL_VALUE_STRING_MAX_WIDTH];
     const char* pctp = NULL;  // Most recent %##.##g format
     bool inPct = false;
     bool widthSet = false;
@@ -685,9 +684,8 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                     break;
                 }
                 default: {
-                    strncpy(tmpf, pctp, pos-pctp+1);
-                    tmpf[pos-pctp+1] = '\0';
-                    sprintf(tmp, tmpf, d);
+                    std::string fmt(pctp, pos - pctp + 1);
+                    sprintf(tmp, fmt.c_str(), d);
                     output += tmp;
                     break;
                 }
@@ -1517,9 +1515,9 @@ const char* vl_mc_scan_plusargs(const char* prefixp) VL_MT_SAFE {
     const std::string& match = VerilatedImp::argPlusMatch(prefixp);
     static VL_THREAD_LOCAL char outstr[VL_VALUE_STRING_MAX_WIDTH];
     if (match.empty()) return NULL;
-    strncpy(outstr, match.c_str()+strlen(prefixp)+1,  // +1 to skip the "+"
+    outstr[0] = '\0';
+    strncat(outstr, match.c_str() + strlen(prefixp) + 1,  // +1 to skip the "+"
             VL_VALUE_STRING_MAX_WIDTH);
-    outstr[VL_VALUE_STRING_MAX_WIDTH-1] = '\0';
     return outstr;
 }
 
@@ -2094,8 +2092,8 @@ const char* Verilated::commandArgsPlusMatch(const char* prefixp) VL_MT_SAFE {
     const std::string& match = VerilatedImp::argPlusMatch(prefixp);
     static VL_THREAD_LOCAL char outstr[VL_VALUE_STRING_MAX_WIDTH];
     if (match.empty()) return "";
-    strncpy(outstr, match.c_str(), VL_VALUE_STRING_MAX_WIDTH);
-    outstr[VL_VALUE_STRING_MAX_WIDTH-1] = '\0';
+    outstr[0] = '\0';
+    strncat(outstr, match.c_str(), VL_VALUE_STRING_MAX_WIDTH - 1);
     return outstr;
 }
 
