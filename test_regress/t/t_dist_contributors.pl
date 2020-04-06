@@ -35,7 +35,7 @@ sub check {
     for my $author (sort keys %Authors) {
         print "Check: $author\n" if $Self->{verbose};
         if (!$Contributors{$author}) {
-            error("Certify your contribution by appending '$author' to docs/CONTRIBUTORS.\n"
+            error("Certify your contribution by sorted-inserting '$author' into docs/CONTRIBUTORS.\n"
                   ."   If '$author' is not your real name, please fix 'name=' in ~/.gitconfig\n"
                   ."   Also check your https://github.com account's Settings->Profile->Name\n"
                   ."   matches your ~/.gitconfig 'name='.\n");
