@@ -198,7 +198,7 @@ void VerilatedFst::addCallback(VerilatedFstCallback_t initcb, VerilatedFstCallba
 
 void VerilatedFst::dump(vluint64_t timeui) {
     if (!isOpen()) return;
-    assert(m_lastDumpTime < timeui);
+    assert(m_lastDumpTime < timeui || timeui == 0);
     m_lastDumpTime = timeui;
     if (VL_UNLIKELY(m_fullDump)) {
         m_fullDump = false;  // No more need for next dump to be full
