@@ -35,6 +35,7 @@
 #include "gtkwave/lz4.c"
 
 #include <algorithm>
+#include <cassert>
 #include <cerrno>
 #include <ctime>
 #include <fcntl.h>
@@ -76,6 +77,7 @@ protected:
 VerilatedFst::VerilatedFst(void* fst)
     : m_fst(fst)
     , m_fullDump(true)
+    , m_lastDumpTime(0)
     , m_nextCode(1)
     , m_scopeEscape('.') {
     m_valueStrBuffer.reserve(64 + 1);  // Need enough room for quad
@@ -196,6 +198,7 @@ void VerilatedFst::addCallback(VerilatedFstCallback_t initcb, VerilatedFstCallba
 
 void VerilatedFst::dump(vluint64_t timeui) {
     if (!isOpen()) return;
+    assert(m_lastDumpTime < timeui);
     if (VL_UNLIKELY(m_fullDump)) {
         m_fullDump = false;  // No more need for next dump to be full
         for (vluint32_t ent = 0; ent < m_callbacks.size(); ++ent) {
