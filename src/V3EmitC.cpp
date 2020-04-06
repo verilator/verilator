@@ -2397,15 +2397,6 @@ void EmitCImp::emitWrapEval(AstNodeModule* modp) {
     putsDecoration("// Initialize\n");
     puts("if (VL_UNLIKELY(!vlSymsp->__Vm_didInit)) "
          +protect("_eval_initial_loop")+"(vlSymsp);\n");
-    if (v3Global.opt.trace()) {
-        puts("#ifdef VM_TRACE\n");
-        putsDecoration("// Tracing\n");
-        // SystemC's eval loop deals with calling trace, not us
-        if (v3Global.needTraceDumper() && !optSystemC()) {
-            puts("if (VL_UNLIKELY(vlSymsp->__Vm_dumping)) _traceDump();\n");
-        }
-        puts("#endif  // VM_TRACE\n");
-    }
     if (v3Global.opt.inhibitSim()) {
         puts("if (VL_UNLIKELY(__Vm_inhibitSim)) return;\n");
     }
