@@ -8,7 +8,7 @@
 module sub
   #(parameter type TYPE_t = logic)
    (
-    input TYPE_t in,
+    input  TYPE_t in,
     output TYPE_t out
     );
 

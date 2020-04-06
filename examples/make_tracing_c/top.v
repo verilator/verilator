@@ -11,15 +11,15 @@
 module top
   (
    // Declare some signals so we can see how I/O works
-   input         clk,
-   input         reset_l,
+   input              clk,
+   input              reset_l,
 
    output wire [1:0]  out_small,
    output wire [39:0] out_quad,
    output wire [69:0] out_wide,
-   input [1:0]   in_small,
-   input [39:0]  in_quad,
-   input [69:0]  in_wide
+   input [1:0]        in_small,
+   input [39:0]       in_quad,
+   input [69:0]       in_wide
    );
 
    // Connect up the outputs, using some trivial logic

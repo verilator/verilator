@@ -7,16 +7,16 @@
 
 module top
   (
-   input         clk,
-   input         fastclk,
-   input         reset_l,
+   input              clk,
+   input              fastclk,
+   input              reset_l,
 
    output wire [1:0]  out_small,
    output wire [39:0] out_quad,
    output wire [69:0] out_wide,
-   input [1:0]   in_small,
-   input [39:0]  in_quad,
-   input [69:0]  in_wide
+   input [1:0]        in_small,
+   input [39:0]       in_quad,
+   input [69:0]       in_wide
    );
 
    sub #(.TYPE_t(logic [1:0])) sub_small
