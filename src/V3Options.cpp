@@ -207,6 +207,9 @@ void V3Options::addCFlags(const string& filename) {
 void V3Options::addLdLibs(const string& filename) {
     m_ldLibs.push_back(filename);
 }
+void V3Options::addMakeFlags(const string& filename) {
+    m_makeFlags.push_back(filename);
+}
 void V3Options::addFuture(const string& flag) {
     m_futures.insert(flag);
 }
@@ -539,8 +542,8 @@ void V3Options::notify() {
     }
 
     // Make sure at least one make system is enabled
-    if (!m_gmake && !m_cmake) {
-        m_gmake = true;
+    if (!gmake() && !cmake()) {
+        m_makeCmd = "gmake";
     }
 
     if (protectIds()) {
@@ -739,6 +742,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-autoflush", flag/*ref*/))    { m_autoflush = flag; }
             else if ( onoff (sw, "-bbox-sys", flag/*ref*/))     { m_bboxSys = flag; }
             else if ( onoff (sw, "-bbox-unsup", flag/*ref*/))   { m_bboxUnsup = flag; }
+            else if (!strcmp(sw, "-build"))                     { m_build = true; }
             else if (!strcmp(sw, "-cc"))                        { m_outFormatOk = true; m_systemC = false; }
             else if ( onoff (sw, "-cdc", flag/*ref*/))          { m_cdc = flag; }
             else if ( onoff (sw, "-coverage", flag/*ref*/))     { coverage(flag); }
@@ -766,6 +770,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-inhibit-sim", flag/*ref*/))  { m_inhibitSim = flag; }
             else if ( onoff (sw, "-lint-only", flag/*ref*/))    { m_lintOnly = flag; }
             else if (!strcmp(sw, "-no-pins64"))                 { m_pinsBv = 33; }
+            else if (!strcmp(sw, "-no-verilate"))               { m_noVerilate = true; }
             else if ( onoff (sw, "-order-clock-delay", flag/*ref*/)) { m_orderClockDly = flag; }
             else if (!strcmp(sw, "-pins64"))                    { m_pinsBv = 65; }
             else if ( onoff (sw, "-pins-sc-uint", flag/*ref*/)) { m_pinsScUint = flag; if (!m_pinsScBigUint) m_pinsBv = 65; }
@@ -921,9 +926,24 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 shift;
                 m_inlineMult = atoi(argv[i]);
             }
+            else if (!strcmp(sw, "-j")) {
+                if ((i+1) >= argc || !isdigit(argv[i+1][0])) {  // No value is given
+                    m_buildJobs = 0;  // Unlimited parallelism
+                }
+                else {
+                    shift;
+                    m_buildJobs = atoi(argv[i]);
+                    if (m_buildJobs <= 0)
+                        fl->v3error("-j accepts positive integer, but "<<argv[i]<<" is passed");
+                }
+            }
             else if (!strcmp(sw, "-LDFLAGS") && (i+1)<argc) {
                 shift;
                 addLdLibs(argv[i]);
+            }
+            else if (!strcmp(sw, "-MAKEFLAGS") && (i+1)<argc) {
+                shift;
+                addMakeFlags(argv[i]);
             }
             else if (!strcmp(sw, "-l2-name") && (i+1)<argc) {
                 shift;
@@ -937,7 +957,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 if (!strcmp(argv[i], "cmake")) {
                     m_cmake = true;
                 } else if (!strcmp(argv[i], "gmake")) {
-                    m_gmake = true;
+                    m_makeCmd = "gmake";
+                } else if (!strcmp(argv[i], "make")) {
+                    m_makeCmd = "make";
                 } else {
                     fl->v3fatal("Unknown --make system specified: '"<<argv[i]<<"'");
                 }
@@ -1449,6 +1471,7 @@ V3Options::V3Options() {
     m_autoflush = false;
     m_bboxSys = false;
     m_bboxUnsup = false;
+    m_build = false;
     m_cdc = false;
     m_cmake = false;
     m_context = true;
@@ -1470,8 +1493,8 @@ V3Options::V3Options() {
     m_ignc = false;
     m_inhibitSim = false;
     m_lintOnly = false;
-    m_gmake = false;
     m_makePhony = false;
+    m_noVerilate = false;
     m_orderClockDly = true;
     m_outFormatOk = false;
     m_pedantic = false;
@@ -1513,6 +1536,7 @@ V3Options::V3Options() {
     m_xInitialEdge = false;
     m_xmlOnly = false;
 
+    m_buildJobs = 1;
     m_convergeLimit = 100;
     m_dumpTree = 0;
     m_gateStmts = 100;

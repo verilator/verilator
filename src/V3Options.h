@@ -127,6 +127,7 @@ class V3Options {
     V3StringSet m_cppFiles;     // argument: C++ files to link against
     V3StringList m_cFlags;      // argument: user CFLAGS
     V3StringList m_ldLibs;      // argument: user LDFLAGS
+    V3StringList m_makeFlags;   // argument: user MAKEFLAGS
     V3StringSet m_futures;      // argument: -Wfuture- list
     V3StringSet m_libraryFiles; // argument: Verilog -v files
     V3StringSet m_clockers;     // argument: Verilog -clk signals
@@ -145,6 +146,7 @@ class V3Options {
     bool        m_autoflush;    // main switch: --autoflush
     bool        m_bboxSys;      // main switch: --bbox-sys
     bool        m_bboxUnsup;    // main switch: --bbox-unsup
+    bool        m_build;        // main switch: --build
     bool        m_cdc;          // main switch: --cdc
     bool        m_cmake;        // main switch: --make cmake
     bool        m_context;      // main switch: --Wcontext
@@ -166,7 +168,7 @@ class V3Options {
     bool        m_ignc;         // main switch: --ignc
     bool        m_inhibitSim;   // main switch: --inhibit-sim
     bool        m_lintOnly;     // main switch: --lint-only
-    bool        m_gmake;        // main switch: --make gmake
+    bool        m_noVerilate;   // main switch: --no-verilate
     bool        m_orderClockDly;// main switch: --order-clock-delay
     bool        m_outFormatOk;  // main switch: --cc, --sc or --sp was specified
     bool        m_pedantic;     // main switch: --Wpedantic
@@ -207,6 +209,7 @@ class V3Options {
     int         m_gateStmts;    // main switch: --gate-stmts
     int         m_ifDepth;      // main switch: --if-depth
     int         m_inlineMult;   // main switch: --inline-mult
+    int         m_buildJobs;    // main switch: -j
     VOptionBool m_makeDepend;  // main switch: -MMD
     int         m_maxNumWidth;  // main switch: --max-num-width
     int         m_moduleRecursion;// main switch: --module-recursion-depth
@@ -232,6 +235,7 @@ class V3Options {
     string      m_exeName;      // main switch: -o {name}
     string      m_flags;        // main switch: -f {name}
     string      m_l2Name;       // main switch: --l2name; "" for top-module's name
+    string      m_makeCmd;      // main switch: --make gmake/make
     string      m_makeDir;      // main switch: -Mdir
     string      m_modPrefix;    // main switch: --mod-prefix
     string      m_pipeFilter;   // main switch: --pipe-filter
@@ -304,6 +308,7 @@ class V3Options {
     void addCppFile(const string& filename);
     void addCFlags(const string& filename);
     void addLdLibs(const string& filename);
+    void addMakeFlags(const string& filename);
     void addLibraryFile(const string& filename);
     void addClocker(const string& signame);
     void addNoClocker(const string& signame);
@@ -328,6 +333,8 @@ class V3Options {
     bool autoflush() const { return m_autoflush; }
     bool bboxSys() const { return m_bboxSys; }
     bool bboxUnsup() const { return m_bboxUnsup; }
+    bool build() const { return m_build; }
+    bool noVerilate() const { return m_noVerilate; }
     bool cdc() const { return m_cdc; }
     bool cmake() const { return m_cmake; }
     bool context() const { return m_context; }
@@ -347,7 +354,7 @@ class V3Options {
     bool dpiHdrOnly() const { return m_dpiHdrOnly; }
     bool dumpDefines() const { return m_dumpDefines; }
     bool exe() const { return m_exe; }
-    bool gmake() const { return m_gmake; }
+    bool gmake() const { return !m_makeCmd.empty(); }
     bool threadsDpiPure() const { return m_threadsDpiPure; }
     bool threadsDpiUnpure() const { return m_threadsDpiUnpure; }
     bool threadsCoarsen() const { return m_threadsCoarsen; }
@@ -380,6 +387,7 @@ class V3Options {
     bool xInitialEdge() const { return m_xInitialEdge; }
     bool xmlOnly() const { return m_xmlOnly; }
 
+    int buildJobs() const { return m_buildJobs; }
     int convergeLimit() const { return m_convergeLimit; }
     int dumpTree() const { return m_dumpTree; }
     int gateStmts() const { return m_gateStmts; }
@@ -410,6 +418,7 @@ class V3Options {
     string exeName() const { return m_exeName!="" ? m_exeName : prefix(); }
     string l2Name() const { return m_l2Name; }
     string makeDir() const { return m_makeDir; }
+    string makeCmd() const { return m_makeCmd; }
     string modPrefix() const { return m_modPrefix; }
     string pipeFilter() const { return m_pipeFilter; }
     string prefix() const { return m_prefix; }
@@ -434,6 +443,7 @@ class V3Options {
     const V3StringSet& cppFiles() const { return m_cppFiles; }
     const V3StringList& cFlags() const { return m_cFlags; }
     const V3StringList& ldLibs() const { return m_ldLibs; }
+    const V3StringList& makeFlags() const { return m_makeFlags; }
     const V3StringSet& libraryFiles() const { return m_libraryFiles; }
     const V3StringList& vFiles() const { return m_vFiles; }
     const V3StringList& forceIncs() const { return m_forceIncs; }
