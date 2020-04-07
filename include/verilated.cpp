@@ -1517,7 +1517,7 @@ const char* vl_mc_scan_plusargs(const char* prefixp) VL_MT_SAFE {
     if (match.empty()) return NULL;
     outstr[0] = '\0';
     strncat(outstr, match.c_str() + strlen(prefixp) + 1,  // +1 to skip the "+"
-            VL_VALUE_STRING_MAX_WIDTH);
+            VL_VALUE_STRING_MAX_WIDTH - 1);
     return outstr;
 }
 
