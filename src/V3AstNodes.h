@@ -753,6 +753,15 @@ public:
     bool isSloppy() const { return keyword().isSloppy(); }
     bool isZeroInit() const { return keyword().isZeroInit(); }
     bool isRanged() const { return rangep() || m.m_nrange.ranged(); }
+    bool isDpiBitVec() const {  // DPI uses svBitVecVal
+        return keyword() == AstBasicDTypeKwd::BIT && isRanged();
+    }
+    bool isDpiLogicVec() const {  // DPI uses svLogicVecVal
+        return keyword().isFourstate() && !(keyword() == AstBasicDTypeKwd::LOGIC && !isRanged());
+    }
+    bool isDpiPrimitive() const {  // DPI uses a primitive type
+        return !isDpiBitVec() && !isDpiLogicVec();
+    }
     const VNumRange& nrange() const { return m.m_nrange; }  // Generally the msb/lsb/etc funcs should be used instead
     int msb() const { return (rangep() ? rangep()->msbConst() : m.m_nrange.hi()); }
     int lsb() const { return (rangep() ? rangep()->lsbConst() : m.m_nrange.lo()); }

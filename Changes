@@ -9,6 +9,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    Configuring with ccache present now defaults to using it; see OBJCACHE.
 
+**    Fix DPI import/export to be standard compliant, #2236. [Geza Lore]
+
 ****  Support $ferror, and $fflush without arguments, #1638.
 
 

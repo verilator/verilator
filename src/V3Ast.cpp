@@ -1209,6 +1209,11 @@ AstNodeDType* AstNode::findLogicRangeDType(const VNumRange& range, int widthMin,
     return v3Global.rootp()->typeTablep()
         ->findLogicBitDType(fileline(), AstBasicDTypeKwd::LOGIC, range, widthMin, numeric);
 }
+AstNodeDType* AstNode::findBitRangeDType(const VNumRange& range, int widthMin,
+                                         AstNumeric numeric) const {
+    return v3Global.rootp()->typeTablep()
+        ->findLogicBitDType(fileline(), AstBasicDTypeKwd::BIT, range, widthMin, numeric);
+}
 AstBasicDType* AstNode::findInsertSameDType(AstBasicDType* nodep) {
     return v3Global.rootp()->typeTablep()
         ->findInsertSameDType(nodep);

@@ -605,7 +605,7 @@ sub new {
         nc_run_flags => [split(/\s+/,"+licqueue -q +assert +sv -R")],
         # ModelSim
         ms => 0,
-        ms_flags => [split(/\s+/,("-sv -work $self->{obj_dir}/work"))],
+        ms_flags => [split(/\s+/, ("-sv -work $self->{obj_dir}/work +define+MS=1 -ccflags \"-DMS=1\""))],
         ms_flags2 => [],  # Overridden in some sim files
         ms_pli => 1,  # need to use pli
         ms_run_flags => [split(/\s+/,"-lib $self->{obj_dir}/work -c -do 'run -all;quit' ")],

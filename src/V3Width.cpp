@@ -1756,7 +1756,7 @@ private:
         for (itemp = nodep->membersp();
              itemp && itemp->nextp(); itemp=VN_CAST(itemp->nextp(), MemberDType)) ;
         for (AstMemberDType* backip; itemp; itemp=backip) {
-            if (nodep->isFourstate()) nodep->isFourstate(true);
+            if (itemp->isFourstate()) nodep->isFourstate(true);
             backip = VN_CAST(itemp->backp(), MemberDType);
             itemp->lsb(lsb);
             if (VN_IS(nodep, UnionDType)) {

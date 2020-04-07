@@ -397,12 +397,12 @@ public:
     const char* dpiType() const {
         static const char* const names[] = {
             "%E-unk",
-            "unsigned char", "char", "void*", "int", "int", "svLogic", "long long",
-            "double", "short int", "float", "long long",
+            "svBit", "char", "void*", "int", "%E-integer", "svLogic", "long long",
+            "double", "short", "float", "%E-time",
             "const char*",
             "dpiScope", "const char*",
             "IData", "QData",
-            "svLogic",  // Though shouldn't be needed
+            "%E-logic-implicit",
             " MAX"
         };
         return names[m_e];
@@ -446,7 +446,7 @@ public:
             || m_e==UINT32 || m_e==UINT64;
     }
     bool isFourstate() const {
-        return m_e==INTEGER || m_e==LOGIC || m_e==LOGIC_IMPLICIT;
+        return m_e == INTEGER || m_e == LOGIC || m_e == LOGIC_IMPLICIT || m_e == TIME;
     }
     bool isZeroInit() const {  // Otherwise initializes to X
         return (m_e==BIT || m_e==BYTE || m_e==CHANDLE || m_e==INT || m_e==LONGINT || m_e==SHORTINT
@@ -461,15 +461,6 @@ public:
     }
     bool isBitLogic() const {  // Bit/logic vector types; can form a packed array
         return (m_e==LOGIC || m_e==BIT);
-    }
-    bool isDpiBitVal() const {  // DPI uses svBitVecVal
-        return m_e==BIT;
-    }
-    bool isDpiLogicVal() const {  // DPI uses svLogicVecVal
-        return m_e==INTEGER || m_e==LOGIC || m_e==LOGIC_IMPLICIT || m_e==TIME;
-    }
-    bool isDpiUnreturnable() const {  // Not legal as DPI function return
-        return isDpiLogicVal();
     }
     bool isDpiUnsignable() const {  // Can add "unsigned" to DPI
         return (m_e==BYTE || m_e==SHORTINT || m_e==INT || m_e==LONGINT || m_e==INTEGER);
@@ -1561,6 +1552,8 @@ public:
     AstNodeDType* findLogicDType(int width, int widthMin, AstNumeric numeric) const;
     AstNodeDType* findLogicRangeDType(const VNumRange& range, int widthMin,
                                       AstNumeric numeric) const;
+    AstNodeDType* findBitRangeDType(const VNumRange& range, int widthMin,
+                                    AstNumeric numeric) const;
     AstNodeDType* findBasicDType(AstBasicDTypeKwd kwd) const;
     AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
@@ -2117,9 +2110,13 @@ public:
     virtual void dump(std::ostream& str) const;
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
     virtual AstBasicDType* basicp() const {
-        return (isFourstate()
-                ? VN_CAST(findLogicDType(width(), width(), numeric()), BasicDType)
-                : VN_CAST(findBitDType(width(), width(), numeric()), BasicDType)); }
+        return (isFourstate() ? VN_CAST(findLogicRangeDType(VNumRange(width() - 1, 0, false),
+                                                            width(), numeric()),
+                                        BasicDType)
+                              : VN_CAST(findBitRangeDType(VNumRange(width() - 1, 0, false),
+                                                          width(), numeric()),
+                                        BasicDType));
+    }
     virtual AstNodeDType* skipRefp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToConstp() const { return (AstNodeDType*)this; }
     virtual AstNodeDType* skipRefToEnump() const { return (AstNodeDType*)this; }

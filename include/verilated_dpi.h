@@ -32,7 +32,7 @@
 //===================================================================
 // SETTING OPERATORS
 
-/// Return WData from svBitVecVal
+/// Convert svBitVecVal to Verilator internal data
 static inline void VL_SET_W_SVBV(int obits, WDataOutP owp, const svBitVecVal* lwp) VL_MT_SAFE {
     int words = VL_WORDS_I(obits);
     for (int i = 0; i < words - 1; ++i) {
@@ -40,7 +40,14 @@ static inline void VL_SET_W_SVBV(int obits, WDataOutP owp, const svBitVecVal* lw
     }
     owp[words - 1] = lwp[words - 1] & VL_MASK_I(obits);
 }
-/// Return svBitVecVal from WData
+static inline QData VL_SET_Q_SVBV(const svBitVecVal* lwp) VL_MT_SAFE {
+    return _VL_SET_QII(lwp[1], lwp[0]);
+}
+static inline IData VL_SET_I_SVBV(const svBitVecVal* lwp) VL_MT_SAFE {
+    return lwp[0];
+}
+
+/// Convert Verilator internal data to svBitVecVal
 static inline void VL_SET_SVBV_W(int obits, svBitVecVal* owp, WDataInP lwp) VL_MT_SAFE {
     int words = VL_WORDS_I(obits);
     for (int i = 0; i < words - 1; ++i) {
@@ -48,8 +55,14 @@ static inline void VL_SET_SVBV_W(int obits, svBitVecVal* owp, WDataInP lwp) VL_M
     }
     owp[words - 1] = lwp[words - 1] & VL_MASK_I(obits);
 }
+static inline void VL_SET_SVBV_I(int, svBitVecVal* owp, IData ld) VL_MT_SAFE {
+    owp[0] = ld;
+}
+static inline void VL_SET_SVBV_Q(int, svBitVecVal* owp, QData ld) VL_MT_SAFE {
+    VL_SET_WQ(owp, ld);
+}
 
-/// Convert svLogicVecVal to/from WData
+/// Convert svLogicVecVal to Verilator internal data
 /// Note these functions ignore X/Z in svLogicVecVal
 static inline void VL_SET_W_SVLV(int obits, WDataOutP owp, const svLogicVecVal* lwp) VL_MT_SAFE {
     int words = VL_WORDS_I(obits);
@@ -64,6 +77,9 @@ static inline QData VL_SET_Q_SVLV(const svLogicVecVal* lwp) VL_MT_SAFE {
 static inline IData VL_SET_I_SVLV(const svLogicVecVal* lwp) VL_MT_SAFE {
     return lwp[0].aval;
 }
+
+/// Convert Verilator internal data to svLogicVecVal
+/// Note these functions never create X/Z in svLogicVecVal
 static inline void VL_SET_SVLV_W(int obits, svLogicVecVal* owp, WDataInP lwp) VL_MT_SAFE {
     int words = VL_WORDS_I(obits);
     for (int i = 0; i < words; ++i) {

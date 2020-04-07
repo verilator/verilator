@@ -367,7 +367,7 @@ class ProtectVisitor : public AstNVisitor {
 
     string cInputConnection(AstVar* varp) {
         string frstmt;
-        bool useSetWSvlv = V3Task::dpiToInternalFrStmt(varp, varp->name(), true, frstmt);
+        bool useSetWSvlv = V3Task::dpiToInternalFrStmt(varp, varp->name(), frstmt);
         if (useSetWSvlv) {
             return frstmt+" handlep__V->"+varp->name()+", "+varp->name()+");\n";
         }
@@ -424,11 +424,10 @@ class ProtectVisitor : public AstNVisitor {
         m_seqAssignsp->addText(fl, varp->name()+" = "+varp->name()+"_seq__V;\n");
         m_comboAssignsp->addText(fl, varp->name()+" = "+varp->name()+"_combo__V;\n");
         m_cComboParamsp->addText(fl, varp->dpiArgType(true, false)+"\n");
-        m_cComboOutsp->addText(fl, V3Task::assignInternalToDpi(varp, false, true, "", "",
-                                                               "handlep__V->"));
+        m_cComboOutsp->addText(fl,
+                               V3Task::assignInternalToDpi(varp, true, "", "", "handlep__V->"));
         m_cSeqParamsp->addText(fl, varp->dpiArgType(true, false)+"\n");
-        m_cSeqOutsp->addText(fl, V3Task::assignInternalToDpi(varp, false, true, "", "",
-                                                               "handlep__V->"));
+        m_cSeqOutsp->addText(fl, V3Task::assignInternalToDpi(varp, true, "", "", "handlep__V->"));
     }
 
   public:
