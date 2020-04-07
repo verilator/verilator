@@ -2791,8 +2791,10 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
     puts("\n// INTERNAL VARIABLES\n");
     if (modp->isTop()) puts("// Internals; generally not touched by application code\n");
-    ofp()->putsPrivate(!modp->isTop());  // private: unless top
-    puts(symClassName()+"* __VlSymsp;  // Symbol table\n");
+    if (!VN_IS(modp, Class)) {  // Avoid clang unused error (& don't want in every object)
+        ofp()->putsPrivate(!modp->isTop());  // private: unless top
+        puts(symClassName()+"* __VlSymsp;  // Symbol table\n");
+    }
     ofp()->putsPrivate(false);  // public:
     if (modp->isTop()) {
         if (v3Global.opt.inhibitSim()) {
