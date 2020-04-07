@@ -52,6 +52,11 @@
 # define WAVES 1  // Set backward compatibility flag
 #endif
 
+// Version check
+#if defined(SYSTEMC_VERSION) && (SYSTEMC_VERSION < 20111121)
+# warning "Verilator soon requires SystemC 2.3.*; see manual for deprecated other versions."
+#endif
+
 //=========================================================================
 // Basic types
 

@@ -13,6 +13,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support $ferror, and $fflush without arguments, #1638.
 
+****  Add error if use SystemC 2.2 and earlier (pre-2011) as is deprecated.
+
 
 * Verilator 4.032 2020-04-04
 
