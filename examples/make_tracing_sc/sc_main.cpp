@@ -90,7 +90,7 @@ int sc_main(int argc, char* argv[]) {
     // You must do one evaluation before enabling waves, in order to allow
     // SystemC to interconnect everything for testing.
 #if (SYSTEMC_VERSION>=20070314)
-    sc_start(1,SC_NS);
+    sc_start(1, SC_NS);
 #else
     sc_start(1);
 #endif
@@ -118,15 +118,16 @@ int sc_main(int argc, char* argv[]) {
 #endif
 
         // Apply inputs
-        if (VL_TIME_Q() > 1 && VL_TIME_Q() < 10) {
+        if (sc_time_stamp() > sc_time(1, SC_NS)
+            && sc_time_stamp() < sc_time(10, SC_NS)) {
             reset_l = !1;  // Assert reset
-        } else if (VL_TIME_Q() > 1) {
+        } else {
             reset_l = !0;  // Deassert reset
         }
 
         // Simulate 1ns
 #if (SYSTEMC_VERSION>=20070314)
-        sc_start(1,SC_NS);
+        sc_start(1, SC_NS);
 #else
         sc_start(1);
 #endif

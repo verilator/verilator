@@ -1798,7 +1798,8 @@ sub _make_top_v {
 
     $self->_read_inputs_v();
 
-    my $fh = IO::File->new(">$self->{top_shell_filename}") or die "%Error: $! $self->{top_shell_filename},";
+    my $fh = IO::File->new(">$self->{top_shell_filename}")
+        or die "%Error: $! $self->{top_shell_filename},";
     print $fh "module top;\n";
     foreach my $inp (sort (keys %{$self->{inputs}})) {
         print $fh "    reg ${inp};\n";
@@ -2007,6 +2008,7 @@ sub files_identical {
                 $l1[$l] =~ s/\r/<#013>/mig;
                 $l1[$l] =~ s/Command Failed[^\n]+/Command Failed/mig;
                 $l1[$l] =~ s/Version: Verilator[^\n]+/Version: Verilator ###/mig;
+                $l1[$l] =~ s/CPU Time: +[0-9.]+ seconds[^\n]+/CPU Time: ###/mig;
                 if ($l1[$l] =~ s/Exiting due to.*/Exiting due to/mig) {
                     splice @l1, $l+1;  # Trunc rest
                     last;
