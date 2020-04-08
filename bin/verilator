@@ -2110,9 +2110,8 @@ After running Make, the C++ compiler may produce the following:
     {mod_prefix}{misc}.o                // Intermediate objects
     {prefix}                            // Final executable (w/--exe argument)
     {prefix}__ALL.a                     // Library of all Verilated objects
-    {prefix}__ALLboth.cpp               // Include of classes for single compile
-    {prefix}__ALLcls.cpp                // Include of user classes for single compile
-    {prefix}__ALLsup.cpp                // Include of support files for single compile
+    {prefix}__ALLfast.cpp               // Include of hot code for single compile
+    {prefix}__ALLslow.cpp               // Include of slow code for single compile
     {prefix}{misc}.d                    // Intermediate dependencies
     {prefix}{misc}.o                    // Intermediate objects
 
@@ -2689,8 +2688,8 @@ underneath NC:
    cd obj_dir
    ncsc_run \
         sc_main.cpp \
-        Vour__ALLcls.cpp \
-        Vour__ALLsup.cpp \
+        Vour__ALLfast.cpp \
+        Vour__ALLslow.cpp \
         verilated.cpp
 
 For larger designs you'll want to automate this using makefiles, which pull
