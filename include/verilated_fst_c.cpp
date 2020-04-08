@@ -35,7 +35,6 @@
 #include "gtkwave/lz4.c"
 
 #include <algorithm>
-#include <cassert>
 #include <cerrno>
 #include <ctime>
 #include <fcntl.h>
