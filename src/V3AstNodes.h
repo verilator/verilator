@@ -3024,6 +3024,18 @@ public:
     void priorityPragma(bool flag) { m_priorityPragma = flag; }
 };
 
+class AstTypeCase : public AstNodeCase {
+    // Case statement for type references
+    // Parents:  {statement list}
+    // exprp Children:  MATHs
+    // casesp Children: CASEITEMs
+public:
+    AstTypeCase(FileLine* fl, AstNodeDType* typep, AstNode* casesp)
+        : ASTGEN_SUPER(fl, typep, casesp) { }
+    ASTNODE_NODE_FUNCS(TypeCase)
+    virtual string verilogKwd() const { return "case"; }
+};
+
 class AstCaseItem : public AstNode {
     // Single item of a case statement
     // Parents:  CASE
