@@ -198,8 +198,11 @@ void VerilatedFst::addCallback(VerilatedFstCallback_t initcb, VerilatedFstCallba
 
 void VerilatedFst::dump(vluint64_t timeui) {
     if (!isOpen()) return;
-    assert(m_minNextDumpTime <= timeui);
-    if (   m_minNextDumpTime >  timeui) return;
+    if (timeui < m_minNextDumpTime) {
+      VL_PRINTF_MT("%%Warning: previous dump at t=%" VL_PRI64 ", requesting t=%" VL_PRI64 "\n",
+        vlsint64_t(m_minNextDumpTime - 1), vlsint64_t(timeui));
+      return;
+    }
     m_minNextDumpTime = timeui + 1;
     if (VL_UNLIKELY(m_fullDump)) {
         m_fullDump = false;  // No more need for next dump to be full
