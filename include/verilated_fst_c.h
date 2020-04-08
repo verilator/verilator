@@ -55,6 +55,7 @@ private:
     Code2SymbolType m_code2symbol;
     Local2FstDtype m_local2fstdtype;
     std::list<std::string> m_curScope;
+    fstHandle* m_symbolp;  ///< same as m_code2symbol, but as an array
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFst);
     void declSymbol(vluint32_t code, const char* name,
@@ -65,9 +66,7 @@ private:
 
 public:
     explicit VerilatedFst(void* fst = NULL);
-    ~VerilatedFst() {
-        if (m_fst == NULL) { fstWriterClose(m_fst); }
-    }
+    ~VerilatedFst();
     void changeThread() { m_assertOne.changeThread(); }
     bool isOpen() const { return m_fst != NULL; }
     void open(const char* filename) VL_MT_UNSAFE;
@@ -140,24 +139,24 @@ public:
 
     /// Inside dumping routines, dump one signal if it has changed
     void chgBit(vluint32_t code, const vluint32_t newval) {
-        fstWriterEmitValueChange(m_fst, m_code2symbol[code], newval ? "1" : "0");
+        fstWriterEmitValueChange(m_fst, m_symbolp[code], newval ? "1" : "0");
     }
     void chgBus(vluint32_t code, const vluint32_t newval, int bits) {
-        fstWriterEmitValueChange32(m_fst, m_code2symbol[code], bits, newval);
+        fstWriterEmitValueChange32(m_fst, m_symbolp[code], bits, newval);
     }
     void chgDouble(vluint32_t code, const double newval) {
         double val = newval;
-        fstWriterEmitValueChange(m_fst, m_code2symbol[code], &val);
+        fstWriterEmitValueChange(m_fst, m_symbolp[code], &val);
     }
     void chgFloat(vluint32_t code, const float newval) {
         double val = (double)newval;
-        fstWriterEmitValueChange(m_fst, m_code2symbol[code], &val);
+        fstWriterEmitValueChange(m_fst, m_symbolp[code], &val);
     }
     void chgQuad(vluint32_t code, const vluint64_t newval, int bits) {
-        fstWriterEmitValueChange64(m_fst, m_code2symbol[code], bits, newval);
+        fstWriterEmitValueChange64(m_fst, m_symbolp[code], bits, newval);
     }
     void chgArray(vluint32_t code, const vluint32_t* newval, int bits) {
-        fstWriterEmitValueChangeVec32(m_fst, m_code2symbol[code], bits, newval);
+        fstWriterEmitValueChangeVec32(m_fst, m_symbolp[code], bits, newval);
     }
 
     void fullBit(vluint32_t code, const vluint32_t newval) { chgBit(code, newval); }

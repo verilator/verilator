@@ -77,8 +77,14 @@ VerilatedFst::VerilatedFst(void* fst)
     : m_fst(fst)
     , m_fullDump(true)
     , m_nextCode(1)
-    , m_scopeEscape('.') {
+    , m_scopeEscape('.')
+    , m_symbolp(NULL) {
     m_valueStrBuffer.reserve(64 + 1);  // Need enough room for quad
+}
+
+VerilatedFst::~VerilatedFst() {
+    if (m_fst) fstWriterClose(m_fst);
+    if (m_symbolp) VL_DO_CLEAR(delete[] m_symbolp, m_symbolp = NULL);
 }
 
 void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
@@ -104,6 +110,16 @@ void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
         fstWriterSetUpscope(m_fst);
         it = m_curScope.erase(it);
     }
+
+    // convert m_code2symbol into an array for fast lookup
+    if (!m_symbolp) {
+        m_symbolp = new fstHandle[m_nextCode + 10];
+        for (Code2SymbolType::iterator it = m_code2symbol.begin(); it != m_code2symbol.end();
+             ++it) {
+            m_symbolp[it->first] = it->second;
+        }
+    }
+    m_code2symbol.clear();
 }
 
 void VerilatedFst::module(const std::string& name) { m_module = name; }
