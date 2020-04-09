@@ -216,113 +216,17 @@ public:
     void declFloat(vluint32_t code, const char* name, bool array, int arraynum);
     //  ... other module_start for submodules (based on cell name)
 
-    /// Inside dumping routines, dump one signal
-    void fullBit(vluint32_t code, const vluint32_t newval) {
-        // Note the &1, so we don't require clean input -- makes more common no change case faster
-        m_sigs_oldvalp[code] = newval;
-        *m_writep++ = ('0' + static_cast<char>(newval & 1));
-        printCode(code);
-        *m_writep++ = '\n';
-        bufferCheck();
-    }
-    void fullBus(vluint32_t code, const vluint32_t newval, int bits) {
-        m_sigs_oldvalp[code] = newval;
-        *m_writep++ = 'b';
-        for (int bit = bits - 1; bit >= 0; --bit) {
-            *m_writep++ = ((newval & (1L << bit)) ? '1' : '0');
-        }
-        *m_writep++ = ' ';
-        printCode(code);
-        *m_writep++ = '\n';
-        bufferCheck();
-    }
-    void fullQuad(vluint32_t code, const vluint64_t newval, int bits) {
-        (*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code]))) = newval;
-        *m_writep++ = 'b';
-        for (int bit = bits - 1; bit >= 0; --bit) {
-            *m_writep++ = ((newval & (VL_ULL(1) << bit)) ? '1' : '0');
-        }
-        *m_writep++ = ' ';
-        printCode(code);
-        *m_writep++ = '\n';
-        bufferCheck();
-    }
-    void fullArray(vluint32_t code, const vluint32_t* newval, int bits) {
-        for (int word = 0; word < (((bits - 1) / 32) + 1); ++word) {
-            m_sigs_oldvalp[code + word] = newval[word];
-        }
-        *m_writep++ = 'b';
-        for (int bit = bits - 1; bit >= 0; --bit) {
-            *m_writep++ = ((newval[(bit / 32)] & (1L << (bit & 0x1f))) ? '1' : '0');
-        }
-        *m_writep++ = ' ';
-        printCode(code);
-        *m_writep++ = '\n';
-        bufferCheck();
-    }
-    void fullArray(vluint32_t code, const vluint64_t* newval, int bits) {
-        for (int word = 0; word < (((bits - 1) / 64) + 1); ++word) {
-            m_sigs_oldvalp[code + word] = newval[word];
-        }
-        *m_writep++ = 'b';
-        for (int bit = bits - 1; bit >= 0; --bit) {
-            *m_writep++ = ((newval[(bit / 64)] & (VL_ULL(1) << (bit & 0x3f))) ? '1' : '0');
-        }
-        *m_writep++ = ' ';
-        printCode(code);
-        *m_writep++ = '\n';
-        bufferCheck();
-    }
-    void fullTriBit(vluint32_t code, const vluint32_t newval, const vluint32_t newtri) {
-        m_sigs_oldvalp[code] = newval;
-        m_sigs_oldvalp[code + 1] = newtri;
-        *m_writep++ = "01zz"[m_sigs_oldvalp[code] | (m_sigs_oldvalp[code + 1] << 1)];
-        printCode(code);
-        *m_writep++ = '\n';
-        bufferCheck();
-    }
-    void fullTriBus(vluint32_t code, const vluint32_t newval, const vluint32_t newtri, int bits) {
-        m_sigs_oldvalp[code] = newval;
-        m_sigs_oldvalp[code + 1] = newtri;
-        *m_writep++ = 'b';
-        for (int bit = bits - 1; bit >= 0; --bit) {
-            *m_writep++ = "01zz"[((newval >> bit) & 1) | (((newtri >> bit) & 1) << 1)];
-        }
-        *m_writep++ = ' ';
-        printCode(code);
-        *m_writep++ = '\n';
-        bufferCheck();
-    }
-    void fullTriQuad(vluint32_t code, const vluint64_t newval, const vluint32_t newtri, int bits) {
-        (*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code]))) = newval;
-        (*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code + 1]))) = newtri;
-        *m_writep++ = 'b';
-        for (int bit = bits - 1; bit >= 0; --bit) {
-            *m_writep++ = "01zz"[((newval >> bit) & VL_ULL(1))
-                                 | (((newtri >> bit) & VL_ULL(1)) << VL_ULL(1))];
-        }
-        *m_writep++ = ' ';
-        printCode(code);
-        *m_writep++ = '\n';
-        bufferCheck();
-    }
-    void fullTriArray(vluint32_t code, const vluint32_t* newvalp, const vluint32_t* newtrip,
-                      int bits) {
-        for (int word = 0; word < (((bits - 1) / 32) + 1); ++word) {
-            m_sigs_oldvalp[code + word * 2] = newvalp[word];
-            m_sigs_oldvalp[code + word * 2 + 1] = newtrip[word];
-        }
-        *m_writep++ = 'b';
-        for (int bit = bits - 1; bit >= 0; --bit) {
-            vluint32_t valbit = (newvalp[(bit / 32)] >> (bit & 0x1f)) & 1;
-            vluint32_t tribit = (newtrip[(bit / 32)] >> (bit & 0x1f)) & 1;
-            *m_writep++ = "01zz"[valbit | (tribit << 1)];
-        }
-        *m_writep++ = ' ';
-        printCode(code);
-        *m_writep++ = '\n';
-        bufferCheck();
-    }
+    /// Inside dumping routines, dump one signal, faster when not inlined
+    /// due to code size reduction.
+    void fullBit(vluint32_t code, const vluint32_t newval);
+    void fullBus(vluint32_t code, const vluint32_t newval, int bits);
+    void fullQuad(vluint32_t code, const vluint64_t newval, int bits);
+    void fullArray(vluint32_t code, const vluint32_t* newval, int bits);
+    void fullArray(vluint32_t code, const vluint64_t* newval, int bits);
+    void fullTriBit(vluint32_t code, const vluint32_t newval, const vluint32_t newtri);
+    void fullTriBus(vluint32_t code, const vluint32_t newval, const vluint32_t newtri, int bits);
+    void fullTriQuad(vluint32_t code, const vluint64_t newval, const vluint32_t newtri, int bits);
+    void fullTriArray(vluint32_t code, const vluint32_t* newvalp, const vluint32_t* newtrip, int bits);
     void fullDouble(vluint32_t code, const double newval);
     void fullFloat(vluint32_t code, const float newval);
 
@@ -330,34 +234,17 @@ public:
     /// Presently this code doesn't change the oldval vector.
     /// Thus this is for special standalone applications that after calling
     /// fullBitX, must when then value goes non-X call fullBit.
-    inline void fullBitX(vluint32_t code) {
-        *m_writep++ = 'x';
-        printCode(code);
-        *m_writep++ = '\n';
-        bufferCheck();
-    }
-    inline void fullBusX(vluint32_t code, int bits) {
-        *m_writep++ = 'b';
-        for (int bit = bits - 1; bit >= 0; --bit) {
-            *m_writep++ = 'x';
-        }
-        *m_writep++ = ' ';
-        printCode(code);
-        *m_writep++ = '\n';
-        bufferCheck();
-    }
-    inline void fullQuadX(vluint32_t code, int bits) { fullBusX(code, bits); }
-    inline void fullArrayX(vluint32_t code, int bits) { fullBusX(code, bits); }
+    void fullBitX(vluint32_t code);
+    void fullBusX(vluint32_t code, int bits);
+    void fullQuadX(vluint32_t code, int bits);
+    void fullArrayX(vluint32_t code, int bits);
 
-    /// Inside dumping routines, dump one signal if it has changed
+    /// Inside dumping routines, dump one signal if it has changed.
+    /// We do want to inline these to avoid calls when the value did not change.
     inline void chgBit(vluint32_t code, const vluint32_t newval) {
         vluint32_t diff = m_sigs_oldvalp[code] ^ newval;
         if (VL_UNLIKELY(diff)) {
-            // Verilator 3.510 and newer provide clean input, so the below
-            // is only for back compatibility
-            if (VL_UNLIKELY(diff & 1)) {  // Change after clean?
-                fullBit(code, newval);
-            }
+            fullBit(code, newval);
         }
     }
     inline void chgBus(vluint32_t code, const vluint32_t newval, int bits) {

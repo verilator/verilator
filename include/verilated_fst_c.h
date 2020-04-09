@@ -179,7 +179,8 @@ public:
     void fullTriBit(vluint32_t code, const vluint32_t newval, const vluint32_t newtri);
     void fullTriBus(vluint32_t code, const vluint32_t newval, const vluint32_t newtri, int bits);
     void fullTriQuad(vluint32_t code, const vluint64_t newval, const vluint32_t newtri, int bits);
-    void fullTriArray(vluint32_t code, const vluint32_t* newvalp, const vluint32_t* newtrip, int bits);
+    void fullTriArray(vluint32_t code, const vluint32_t* newvalp, const vluint32_t* newtrip,
+                      int bits);
     void fullBitX(vluint32_t code);
     void fullBusX(vluint32_t code, int bits);
     void fullQuadX(vluint32_t code, int bits);
