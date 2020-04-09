@@ -48,6 +48,7 @@ private:
     void* m_fst;
     VerilatedAssertOneThread m_assertOne;  ///< Assert only called from single thread
     bool m_fullDump;
+    vluint64_t m_minNextDumpTime;
     vluint32_t m_nextCode;  ///< Next code number to assign
     char m_scopeEscape;
     std::string m_module;
