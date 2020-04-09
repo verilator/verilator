@@ -244,11 +244,7 @@ public:
     inline void chgBit(vluint32_t code, const vluint32_t newval) {
         vluint32_t diff = m_sigs_oldvalp[code] ^ newval;
         if (VL_UNLIKELY(diff)) {
-            // Verilator 3.510 and newer provide clean input, so the below
-            // is only for back compatibility
-            if (VL_UNLIKELY(diff & 1)) {  // Change after clean?
-                fullBit(code, newval);
-            }
+            fullBit(code, newval);
         }
     }
     inline void chgBus(vluint32_t code, const vluint32_t newval, int bits) {
