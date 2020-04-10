@@ -354,6 +354,7 @@ public:
         m_ofpBase = NULL;
         iterate(nodep);
     }
+    virtual ~EmitCSyms() VL_OVERRIDE { VL_DO_DANGLING(delete m_ofpBase, m_ofpBase); }
 };
 
 void EmitCSyms::emitSymHdr() {
