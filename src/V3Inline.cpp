@@ -547,7 +547,6 @@ private:
             // we'll save work, and we can't call pinReconnectSimple in
             // this loop as it clone()s itself.
             for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
-                if (!pinp->exprp()) continue;
                 V3Inst::pinReconnectSimple(pinp, nodep, false);
             }
 

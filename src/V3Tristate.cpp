@@ -1087,10 +1087,8 @@ class TristateVisitor : public TristateBaseVisitor {
             // Find child module's new variables.
             AstVar* enModVarp = static_cast<AstVar*>(nodep->modVarp()->user1p());
             if (!enModVarp) {
-                if (nodep->exprp()) {
-                    // May have an output only that later connects to a tristate, so simplify now.
-                    V3Inst::pinReconnectSimple(nodep, m_cellp, false);
-                }
+                // May have an output only that later connects to a tristate, so simplify now.
+                V3Inst::pinReconnectSimple(nodep, m_cellp, false);
                 iteratePinGuts(nodep);
                 return;  // No __en signals on this pin
             }

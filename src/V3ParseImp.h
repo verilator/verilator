@@ -109,6 +109,7 @@ class V3ParseImp {
     bool        m_inLibrary;            // Currently reading a library vs. regular file
     int         m_inBeginKwd;           // Inside a `begin_keywords
     int         m_lastVerilogState;     // Last LEX state in `begin_keywords
+    VOptionBool m_unconnectedDrive;  // Last unconnected drive
 
     int         m_prevLexToken;         // previous parsed token (for lexer)
     bool        m_ahead;                // aheadval is valid
@@ -199,6 +200,8 @@ public:
     bool inCellDefine() const { return m_inCellDefine; }
     void inCellDefine(bool flag) { m_inCellDefine = flag; }
     bool inLibrary() const { return m_inLibrary; }
+    VOptionBool unconnectedDrive() const { return m_unconnectedDrive; }
+    void unconnectedDrive(const VOptionBool flag) { m_unconnectedDrive = flag; }
 
     // Interactions with parser
     int  bisonParse();

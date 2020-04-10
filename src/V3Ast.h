@@ -2420,6 +2420,7 @@ private:
     int         m_level;        // 1=top module, 2=cell off top module, ...
     int         m_varNum;       // Incrementing variable number
     int         m_typeNum;      // Incrementing implicit type number
+    VOptionBool m_unconnectedDrive;  // State of `unconnected_drive
 public:
     AstNodeModule(AstType t, FileLine* fl, const string& name)
         : AstNode(t, fl)
@@ -2461,6 +2462,8 @@ public:
     bool recursive() const { return m_recursive; }
     void recursiveClone(bool flag) { m_recursiveClone = flag; }
     bool recursiveClone() const { return m_recursiveClone; }
+    void unconnectedDrive(const VOptionBool flag) { m_unconnectedDrive = flag; }
+    VOptionBool unconnectedDrive() const { return m_unconnectedDrive; }
 };
 
 class AstNodeRange : public AstNode {

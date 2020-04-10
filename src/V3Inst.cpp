@@ -62,13 +62,15 @@ private:
         // PIN(p,expr) -> ASSIGNW(VARXREF(p),expr)    (if sub's input)
         //            or  ASSIGNW(expr,VARXREF(p))    (if sub's output)
         UINFO(4,"   PIN  "<<nodep<<endl);
+        if (!nodep->user1()) {
+            // Simplify it
+            V3Inst::pinReconnectSimple(nodep, m_cellp, false);
+        }
         if (!nodep->exprp()) return;  // No-connect
         if (debug()>=9) nodep->dumpTree(cout, "  Pin_oldb: ");
         V3Inst::checkOutputShort(nodep);
         // Use user1p on the PIN to indicate we created an assign for this pin
         if (!nodep->user1SetOnce()) {
-            // Simplify it
-            V3Inst::pinReconnectSimple(nodep, m_cellp, false);
             // Make an ASSIGNW (expr, pin)
             AstNode* exprp = nodep->exprp()->cloneTree(false);
             UASSERT_OBJ(exprp->width() == nodep->modVarp()->width(), nodep,
@@ -481,8 +483,20 @@ public:
         // Else create a intermediate wire to perform the interconnect
         // Return the new assignment, if one was made
         // Note this module calles cloneTree() via new AstVar
-
         AstVar* pinVarp = pinp->modVarp();
+        if (!pinp->exprp()) {
+            // No-connect, perhaps promote based on `unconnected_drive,
+            // otherwise done
+            if (pinVarp->direction() == VDirection::INPUT
+                && cellp->modp()->unconnectedDrive().isSetTrue()) {
+                pinp->exprp(new AstConst(pinp->fileline(), AstConst::StringToParse(), "'1"));
+            } else if (pinVarp->direction() == VDirection::INPUT
+                       && cellp->modp()->unconnectedDrive().isSetFalse()) {
+                pinp->exprp(new AstConst(pinp->fileline(), AstConst::StringToParse(), "'0"));
+            } else {
+                return NULL;
+            }
+        }
         AstVarRef* connectRefp = VN_CAST(pinp->exprp(), VarRef);
         AstVarXRef* connectXRefp = VN_CAST(pinp->exprp(), VarXRef);
         AstBasicDType* pinBasicp = VN_CAST(pinVarp->dtypep(), BasicDType);  // Maybe NULL

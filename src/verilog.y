@@ -953,6 +953,7 @@ modFront<modulep>:
 			{ $$ = new AstModule($<fl>3,*$3);
 			  $$->inLibrary(PARSEP->inLibrary() || PARSEP->inCellDefine());
 			  $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
+			  $$->unconnectedDrive(PARSEP->unconnectedDrive());
 			  PARSEP->rootp()->addModulep($$);
 			  SYMP->pushNew($$); }
 	;
