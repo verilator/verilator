@@ -3110,7 +3110,11 @@ class EmitCTrace : EmitCStmts {
         cfilep->support(true);
 
         if (m_ofp) v3fatalSrc("Previous file not closed");
-        m_ofp = new V3OutCFile(filename);
+        if (optSystemC()) {
+            m_ofp = new V3OutScFile(filename);
+        } else {
+            m_ofp = new V3OutCFile(filename);
+        }
         m_ofp->putsHeader();
         m_ofp->puts("// DESCR" "IPTION: Verilator output: Tracing implementation internals\n");
 

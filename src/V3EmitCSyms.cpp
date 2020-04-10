@@ -360,8 +360,12 @@ void EmitCSyms::emitSymHdr() {
     UINFO(6,__FUNCTION__<<": "<<endl);
     string filename = v3Global.opt.makeDir()+"/"+symClassName()+".h";
     newCFile(filename, true/*slow*/, false/*source*/);
-    V3OutCFile hf (filename);
-    m_ofp = &hf;
+
+    if (v3Global.opt.systemC()) {
+        m_ofp = new V3OutScFile(filename);
+    } else {
+        m_ofp = new V3OutCFile(filename);
+    }
 
     ofp()->putsHeader();
     puts("// DESCR" "IPTION: Verilator output: Symbol table internal header\n");
@@ -482,6 +486,7 @@ void EmitCSyms::emitSymHdr() {
     puts("} VL_ATTR_ALIGNED(VL_CACHE_LINE_BYTES);\n");
 
     ofp()->putsEndGuard();
+    VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
 }
 
 void EmitCSyms::closeSplit() {
@@ -502,7 +507,11 @@ void EmitCSyms::checkSplit(bool usesVfinal) {
     m_usesVfinal[m_funcNum] = usesVfinal;
     closeSplit();
 
-    m_ofp = new V3OutCFile(filename);
+    if (v3Global.opt.systemC()) {
+        m_ofp = new V3OutScFile(filename);
+    } else {
+        m_ofp = new V3OutCFile(filename);
+    }
 
     m_ofpBase->puts(symClassName()+"_"+cvtToStr(m_funcNum)+"(");
     if (usesVfinal) {
@@ -541,8 +550,13 @@ void EmitCSyms::emitSymImp() {
     string filename = v3Global.opt.makeDir()+"/"+symClassName()+".cpp";
     AstCFile* cfilep = newCFile(filename, true/*slow*/, true/*source*/);
     cfilep->support(true);
-    V3OutCFile cf (filename);
-    m_ofp = &cf;
+
+    if (v3Global.opt.systemC()) {
+        m_ofp = new V3OutScFile(filename);
+    } else {
+        m_ofp = new V3OutCFile(filename);
+    }
+
     m_ofpBase = m_ofp;
     emitSymImpPreamble();
 
