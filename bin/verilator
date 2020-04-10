@@ -403,6 +403,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --x-initial-edge            Enable initial X->0 and X->1 edge triggers
     --xml-only                  Create XML parser output
     --xml-output                XML output filename
+    --xml-flat                  Flatten the netlist before outputting
      -y <dir>                   Directory to search for modules
 
 This is a short summary of the arguments to simulation runtime Verilated

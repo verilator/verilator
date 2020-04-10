@@ -802,6 +802,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-vpi", flag/*ref*/))               { m_vpi = flag; }
             else if ( onoff (sw, "-Wpedantic", flag/*ref*/))         { m_pedantic = flag; }
             else if ( onoff (sw, "-x-initial-edge", flag/*ref*/))    { m_xInitialEdge = flag; }
+            else if ( onoff (sw, "-xml-flat", flag/*ref*/))          { m_xmlOnly = flag; m_xmlFlat = flag; }  // Undocumented, still experimental
             else if ( onoff (sw, "-xml-only", flag/*ref*/))          { m_xmlOnly = flag; }  // Undocumented, still experimental
             else { hadSwitchPart1 = false; }
             if (hadSwitchPart1) {}
@@ -1512,6 +1513,7 @@ V3Options::V3Options() {
     m_vpi = false;
     m_xInitialEdge = false;
     m_xmlOnly = false;
+    m_xmlFlat = false;
 
     m_convergeLimit = 100;
     m_dumpTree = 0;
