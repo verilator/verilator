@@ -129,6 +129,7 @@ private:
             if ((nodep->isMovableToBlock()  // Blocktemp
                  || !flags.m_notStd)  // Or used only in block
                 && !flags.m_notOpt  // Optimizable
+                && !nodep->isClassMember()
                 && nodep->user1p()) {  // Single cfunc
                 // We don't need to test for tracing; it would be in the tracefunc if it was needed
                 UINFO(4,"  ModVar->BlkVar "<<nodep<<endl);

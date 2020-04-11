@@ -2513,7 +2513,8 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
                 bool doit = true;
                 switch (which) {
                 case EVL_CLASS_IO:   doit = varp->isIO(); break;
-                case EVL_CLASS_SIG:  doit = (varp->isSignal() && !varp->isIO()); break;
+                case EVL_CLASS_SIG:
+                    doit = ((varp->isSignal() || varp->isClassMember()) && !varp->isIO()); break;
                 case EVL_CLASS_TEMP: doit = (varp->isTemp() && !varp->isIO()); break;
                 case EVL_CLASS_PAR:  doit = (varp->isParam() && !VN_IS(varp->valuep(), Const)); break;
                 case EVL_CLASS_ALL:  doit = true; break;

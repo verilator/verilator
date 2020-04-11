@@ -597,7 +597,8 @@ public:
         MODULETEMP,
         STMTTEMP,
         XTEMP,
-        IFACEREF        // Used to link Interfaces between modules
+        IFACEREF,  // Used to link Interfaces between modules
+        MEMBER
     };
     enum en m_e;
     inline AstVarType() : m_e(UNKNOWN) {}
@@ -612,7 +613,7 @@ public:
             "TRIWIRE", "TRI0", "TRI1",
             "PORT",
             "BLOCKTEMP", "MODULETEMP", "STMTTEMP", "XTEMP",
-            "IFACEREF"};
+            "IFACEREF", "MEMBER"};
         return names[m_e]; }
     bool isSignal() const {
         return (m_e==WIRE || m_e==WREAL || m_e==IMPLICITWIRE
@@ -632,7 +633,7 @@ public:
         return (m_e==GPARAM || m_e==LPARAM || m_e==GENVAR
                 || m_e==VAR
                 || m_e==BLOCKTEMP || m_e==MODULETEMP || m_e==STMTTEMP
-                || m_e==XTEMP || m_e==IFACEREF);
+                || m_e==XTEMP || m_e==IFACEREF || m_e==MEMBER);
     }
     bool isTemp() const {
         return (m_e==BLOCKTEMP || m_e==MODULETEMP || m_e==STMTTEMP || m_e==XTEMP);

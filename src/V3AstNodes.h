@@ -1575,7 +1575,6 @@ private:
     bool        m_usedClock:1;  // Signal used as a clock
     bool        m_usedParam:1;  // Parameter is referenced (on link; later signals not setup)
     bool        m_usedLoopIdx:1;  // Variable subject of for unrolling
-    bool        m_classMember:1;  // Member variable for a class
     bool        m_funcLocal:1;  // Local variable for a function
     bool        m_funcReturn:1;  // Return variable for a function
     bool        m_attrClockEn:1;// User clock enable attribute
@@ -1603,7 +1602,6 @@ private:
         m_usedClock = false; m_usedParam = false; m_usedLoopIdx = false;
         m_sigPublic = false; m_sigModPublic = false;
         m_sigUserRdPublic = false; m_sigUserRWPublic = false;
-        m_classMember = false;
         m_funcLocal = false; m_funcReturn = false;
         m_attrClockEn = false; m_attrScBv = false;
         m_attrIsolateAssign = false; m_attrSFormat = false; m_attrSplitVar = false;
@@ -1724,7 +1722,6 @@ public:
     void isConst(bool flag) { m_isConst = flag; }
     void isStatic(bool flag) { m_isStatic = flag; }
     void isIfaceParent(bool flag) { m_isIfaceParent = flag; }
-    void classMember(bool flag) { m_classMember = flag; }
     void funcLocal(bool flag) { m_funcLocal = flag; }
     void funcReturn(bool flag) { m_funcReturn = flag; }
     void isDpiOpenArray(bool flag) { m_isDpiOpenArray = flag; }
@@ -1756,6 +1753,7 @@ public:
                 && (isIO() || isBitLogic())
                 // Wrapper would otherwise duplicate wrapped module's coverage
                 && !isSc() && !isPrimaryIO() && !isConst()); }
+    bool isClassMember() const { return varType() == AstVarType::MEMBER; }
     bool isStatementTemp() const { return (varType()==AstVarType::STMTTEMP); }
     bool isMovableToBlock() const { return (varType()==AstVarType::BLOCKTEMP || isFuncLocal()); }
     bool isXTemp() const { return (varType()==AstVarType::XTEMP); }
@@ -1779,7 +1777,6 @@ public:
     bool isTrace() const { return m_trace; }
     bool isConst() const { return m_isConst; }
     bool isStatic() const { return m_isStatic; }
-    bool isClassMember() const { return m_classMember; }
     bool isFuncLocal() const { return m_funcLocal; }
     bool isFuncReturn() const { return m_funcReturn; }
     bool isPullup() const { return m_isPullup; }
