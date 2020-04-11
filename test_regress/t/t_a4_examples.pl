@@ -10,6 +10,8 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 scenarios(dist => 1);
 
+$Self->{clean_command} = 'rm -rf ../examples/*/build ../examples/*/obj*';
+
 my @examples = sort(glob("../examples/*"));
 for my $example (@examples) {
     run(cmd=>["make -C $example"]);
