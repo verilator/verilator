@@ -4226,7 +4226,7 @@ public:
         m_code = 0;
         m_codeInc = ((arrayRange.ranged() ? arrayRange.elements() : 1)
                      * valuep->dtypep()->widthWords()
-                     * (VL_EDATASIZE / sizeof(uint32_t)));  // A code is always 32-bits
+                     * (VL_EDATASIZE / (8*sizeof(uint32_t))));  // A code is always 32-bits
         m_varType = varp->varType();
         m_declKwd = varp->declKwd();
         m_declDirection = varp->declDirection();
