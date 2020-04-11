@@ -1998,7 +1998,7 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep,
             case 'e': displayArg(nodep, &elistp, isScan, vfmt, 'e'); break;
             case 'f': displayArg(nodep, &elistp, isScan, vfmt, 'f'); break;
             case 'g': displayArg(nodep, &elistp, isScan, vfmt, 'g'); break;
-            case '^': displayArg(nodep,&elistp,isScan, vfmt,'^'); break;  // Realtime
+            case '^': displayArg(nodep, &elistp, isScan, vfmt, '^'); break;  // Realtime
             case 'v': displayArg(nodep, &elistp, isScan, vfmt, 'v'); break;
             case 'm': {
                 UASSERT_OBJ(scopenamep, nodep, "Display with %m but no AstScopeName");

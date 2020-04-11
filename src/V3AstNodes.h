@@ -2520,7 +2520,8 @@ public:
     AstDot(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl) { setOp1p(lhsp); setOp2p(rhsp); }
     ASTNODE_NODE_FUNCS(Dot)
-    static AstNode* newIfPkg(FileLine*fl, AstPackage* packagep, AstNode* rhsp) {  // For parser, make only if non-null package
+    // For parser, make only if non-null package
+    static AstNode* newIfPkg(FileLine* fl, AstPackage* packagep, AstNode* rhsp) {
         if (!packagep) return rhsp;
         return new AstDot(fl, new AstPackageRef(fl, packagep), rhsp);
     }
