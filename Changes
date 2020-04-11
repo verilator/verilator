@@ -15,11 +15,11 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Add error if use SystemC 2.2 and earlier (pre-2011) as is deprecated.
 
-****  Improve FST dump performance, #2244. [Geza Lore]
+****  Improve FST dump performance, #2244, #2250. [Geza Lore]
 
 ****  Fix build of fast path tracing code to use OPT_FAST, #2245. [Geza Lore]
 
-****  Improve VCD dump performance, ##2246. [Geza Lore]
+****  Improve VCD dump performance, #2246, #2250. [Geza Lore]
 
 
 * Verilator 4.032 2020-04-04
