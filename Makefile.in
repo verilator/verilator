@@ -336,6 +336,7 @@ installdata:
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/cmake_tracing_c
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/cmake_tracing_sc
 	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/cmake_protect_lib
+	$(MKINSTALLDIRS) $(DESTDIR)$(pkgdatadir)/examples/xml_py
 	cd $(srcdir) \
 	; for p in $(VL_INST_DATA_SRCDIR_FILES) ; do \
 	  $(INSTALL_DATA) $$p $(DESTDIR)$(pkgdatadir)/$$p; \
@@ -370,6 +371,7 @@ uninstall:
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/cmake_tracing_c
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/cmake_tracing_sc
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples/cmake_protect_lib
+	-rmdir $(DESTDIR)$(pkgdatadir)/examples/xml_py
 	-rmdir $(DESTDIR)$(pkgdatadir)/examples
 	-rmdir $(DESTDIR)$(pkgdatadir)/cmake
 	-rmdir $(DESTDIR)$(pkgdatadir)
