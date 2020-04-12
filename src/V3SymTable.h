@@ -47,7 +47,7 @@ class VSymEnt {
     AstNode*    m_nodep;        // Node that entry belongs to
     VSymEnt*    m_fallbackp;    // Table "above" this one in name scope, for fallback resolution
     VSymEnt*    m_parentp;      // Table that created this table, dot notation needed to resolve into it
-    AstPackage* m_packagep;     // Package node is in (for V3LinkDot, unused here)
+    AstNodeModule* m_packagep;  // Package node is in (for V3LinkDot, unused here)
     string      m_symPrefix;    // String to prefix symbols with (for V3LinkDot, unused here)
     bool        m_exported;     // Allow importing
     bool        m_imported;     // Was imported
@@ -100,7 +100,7 @@ public:
         m_nodep = reinterpret_cast<AstNode*>(1);
         m_fallbackp = reinterpret_cast<VSymEnt*>(1);
         m_parentp = reinterpret_cast<VSymEnt*>(1);
-        m_packagep = reinterpret_cast<AstPackage*>(1);
+        m_packagep = reinterpret_cast<AstNodeModule*>(1);
 #endif
     }
 #if defined(VL_DEBUG) && !defined(VL_LEAK_CHECKS)
@@ -110,8 +110,8 @@ public:
     void fallbackp(VSymEnt* entp) { m_fallbackp = entp; }
     void parentp(VSymEnt* entp) { m_parentp = entp; }
     VSymEnt* parentp() const { return m_parentp; }
-    void packagep(AstPackage* entp) { m_packagep = entp; }
-    AstPackage* packagep() const { return m_packagep; }
+    void packagep(AstNodeModule* entp) { m_packagep = entp; }
+    AstNodeModule* packagep() const { return m_packagep; }
     AstNode* nodep() const { return m_nodep; }
     string symPrefix() const { return m_symPrefix; }
     void symPrefix(const string& name) { m_symPrefix = name; }

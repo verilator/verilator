@@ -826,7 +826,7 @@ class AstClassRefDType : public AstNodeDType {
     // Reference to a class
 private:
     AstClass* m_classp;  // data type pointed to, BELOW the AstTypedef
-    AstPackage* m_packagep;  // Package hierarchy
+    AstNodeModule* m_packagep;  // Package hierarchy
 public:
     AstClassRefDType(FileLine* fl, AstClass* classp)
         : ASTGEN_SUPER(fl), m_classp(classp), m_packagep(NULL) {
@@ -858,8 +858,8 @@ public:
     virtual AstNodeDType* virtRefDTypep() const { return NULL; }
     virtual void virtRefDTypep(AstNodeDType* nodep) {}
     virtual AstNodeDType* subDTypep() const { return NULL; }
-    AstPackage* packagep() const { return m_packagep; }
-    void packagep(AstPackage* nodep) { m_packagep = nodep; }
+    AstNodeModule* packagep() const { return m_packagep; }
+    void packagep(AstNodeModule* nodep) { m_packagep = nodep; }
     AstClass* classp() const { return m_classp; }
     void classp(AstClass* nodep) { m_classp = nodep; }
 };
@@ -972,7 +972,7 @@ class AstRefDType : public AstNodeDType {
 private:
     AstNodeDType* m_refDTypep;  // data type pointed to, BELOW the AstTypedef
     string      m_name;         // Name of an AstTypedef
-    AstPackage* m_packagep;     // Package hierarchy
+    AstNodeModule* m_packagep;  // Package hierarchy
 public:
     AstRefDType(FileLine* fl, const string& name)
         : ASTGEN_SUPER(fl), m_refDTypep(NULL), m_name(name), m_packagep(NULL) {}
@@ -1028,8 +1028,8 @@ public:
     virtual AstNodeDType* virtRefDTypep() const { return refDTypep(); }
     virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
     virtual AstNodeDType* subDTypep() const { return m_refDTypep; }
-    AstPackage* packagep() const { return m_packagep; }
-    void packagep(AstPackage* nodep) { m_packagep = nodep; }
+    AstNodeModule* packagep() const { return m_packagep; }
+    void packagep(AstNodeModule* nodep) { m_packagep = nodep; }
     AstNode* typeofp() const { return op2p(); }
 };
 
@@ -1156,10 +1156,10 @@ public:
 
 class AstEnumItemRef : public AstNodeMath {
 private:
-    AstEnumItem* m_itemp;       // [AfterLink] Pointer to item
-    AstPackage* m_packagep;     // Package hierarchy
+    AstEnumItem* m_itemp;  // [AfterLink] Pointer to item
+    AstNodeModule* m_packagep;  // Package hierarchy
 public:
-    AstEnumItemRef(FileLine* fl, AstEnumItem* itemp, AstPackage* packagep)
+    AstEnumItemRef(FileLine* fl, AstEnumItem* itemp, AstNodeModule* packagep)
         : ASTGEN_SUPER(fl), m_itemp(itemp), m_packagep(packagep) {
         dtypeFrom(m_itemp);
     }
@@ -1176,8 +1176,8 @@ public:
     virtual string emitVerilog() { V3ERROR_NA_RETURN(""); }
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const { return true; }
-    AstPackage* packagep() const { return m_packagep; }
-    void packagep(AstPackage* nodep) { m_packagep = nodep; }
+    AstNodeModule* packagep() const { return m_packagep; }
+    void packagep(AstNodeModule* nodep) { m_packagep = nodep; }
 };
 
 class AstEnumDType : public AstNodeDType {

@@ -47,7 +47,7 @@ private:
     AstUser2InUse       m_inuser2;
 
     // TYPES
-    typedef vl_unordered_map<AstPackage*, AstScope*> PackageScopeMap;
+    typedef vl_unordered_map<AstNodeModule*, AstScope*> PackageScopeMap;
     // These cannot be unordered unless make a specialized hashing pair (gcc-8)
     typedef std::map<std::pair<AstVar*, AstScope*>, AstVarScope*> VarScopeMap;
     typedef std::set<std::pair<AstVarRef*, AstScope*> > VarRefScopeSet;

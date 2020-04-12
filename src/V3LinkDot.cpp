@@ -350,8 +350,8 @@ public:
         }
         return symp;
     }
-    VSymEnt* insertBlock(VSymEnt* abovep, const string& name,
-                         AstNode* nodep, AstPackage* packagep) {
+    VSymEnt* insertBlock(VSymEnt* abovep, const string& name, AstNode* nodep,
+                         AstNodeModule* packagep) {
         // A fake point in the hierarchy, corresponding to a begin or function/task block
         // After we remove begins these will go away
         // Note we fallback to the symbol table of the parent, as we want to find variables there
@@ -371,8 +371,8 @@ public:
         abovep->reinsert(name, symp);
         return symp;
     }
-    VSymEnt* insertSym(VSymEnt* abovep, const string& name,
-                       AstNode* nodep, AstPackage* packagep) {
+    VSymEnt* insertSym(VSymEnt* abovep, const string& name, AstNode* nodep,
+                       AstNodeModule* packagep) {
         UASSERT_OBJ(abovep, nodep, "Null symbol table inserting node");
         VSymEnt* symp = new VSymEnt(&m_syms, nodep);
         UINFO(9,"      INSERTsym se"<<cvtToHex(symp)<<"  name='"<<name
@@ -676,8 +676,8 @@ LinkDotState* LinkDotState::s_errorThisp = NULL;
 
 class LinkDotFindVisitor : public AstNVisitor {
     // STATE
-    LinkDotState*       m_statep;       // State to pass between visitors, including symbol table
-    AstPackage*         m_packagep;     // Current package
+    LinkDotState* m_statep;  // State to pass between visitors, including symbol table
+    AstNodeModule* m_packagep;  // Current package
     VSymEnt*            m_modSymp;      // Symbol Entry for current module
     VSymEnt*            m_curSymp;      // Symbol Entry for current table, where to lookup/insert
     string              m_scope;        // Scope text
@@ -780,9 +780,10 @@ class LinkDotFindVisitor : public AstNVisitor {
             UINFO(4,"     Link Module: "<<nodep<<endl);
             UASSERT_OBJ(!nodep->dead(), nodep, "Module in cell tree mislabeled as dead?");
             VSymEnt* upperSymp = m_curSymp ? m_curSymp : m_statep->rootEntp();
-            m_packagep = VN_CAST(nodep, Package);
+            AstPackage* pkgp = VN_CAST(nodep, Package);
+            m_packagep = pkgp;
             if (standalonePkg) {
-                if (m_packagep->isDollarUnit()) {
+                if (pkgp->isDollarUnit()) {
                     m_curSymp = m_modSymp = m_statep->dunitEntp();
                     nodep->user1p(m_curSymp);
                 } else {
@@ -2002,7 +2003,7 @@ private:
             bool allowVar = false;
             if (m_ds.m_dotPos == DP_PACKAGE) {
                 // {package}::{a}
-                AstPackage* packagep = NULL;
+                AstNodeModule* packagep = NULL;
                 expectWhat = "scope/variable";
                 allowScope = true;
                 allowVar = true;
