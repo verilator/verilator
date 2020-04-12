@@ -137,6 +137,14 @@ class ProtectVisitor : public AstNVisitor {
         txtp->addNodep(m_modPortsp);
         txtp->addText(fl, ");\n\n");
 
+        // Timescale
+        addComment(txtp, fl, "Precision of submodule"
+                   " (commented out to avoid requiring timescale on all modules)");
+        addComment(txtp, fl, string("timeunit ")
+                   + v3Global.rootp()->timeunit().ascii() + ";");
+        addComment(txtp, fl, string("timeprecision ")
+                   + v3Global.rootp()->timeprecision().ascii() + ";\n");
+
         // DPI declarations
         hashComment(txtp, fl);
         txtp->addText(fl, "import \"DPI-C\" function void "+

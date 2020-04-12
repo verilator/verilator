@@ -383,11 +383,11 @@ public:
     void dump(vluint32_t timestamp) { dump(static_cast<vluint64_t>(timestamp)); }
     void dump(int timestamp) { dump(static_cast<vluint64_t>(timestamp)); }
     /// Set time units (s/ms, defaults to ns)
-    /// See also VL_TIME_PRECISION, and VL_TIME_MULTIPLIER in verilated.h
+    /// For Verilated models, these propage from the Verilated default --timeunit
     void set_time_unit(const char* unit) { m_sptrace.set_time_unit(unit); }
     void set_time_unit(const std::string& unit) { set_time_unit(unit.c_str()); }
     /// Set time resolution (s/ms, defaults to ns)
-    /// See also VL_TIME_PRECISION, and VL_TIME_MULTIPLIER in verilated.h
+    /// For Verilated models, these propage from the Verilated default --timeunit
     void set_time_resolution(const char* unit) { m_sptrace.set_time_resolution(unit); }
     void set_time_resolution(const std::string& unit) { set_time_resolution(unit.c_str()); }
 

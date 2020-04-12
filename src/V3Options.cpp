@@ -30,6 +30,7 @@
 #ifndef _WIN32
 # include <sys/utsname.h>
 #endif
+#include <algorithm>
 #include <cctype>
 #include <dirent.h>
 #include <fcntl.h>
@@ -112,6 +113,75 @@ V3LangCode::V3LangCode(const char* textp) {
         }
     }
     m_e = V3LangCode::L_ERROR;
+}
+
+//######################################################################
+// VTimescale class functions
+
+VTimescale::VTimescale(const string& value, bool& badr)
+    : m_e(VTimescale::NONE) {
+    badr = true;
+    string spaceless = VString::removeWhitespace(value);
+    for (int i = TS_1S; i < _ENUM_END; ++i) {
+        VTimescale ts(i);
+        if (spaceless == ts.ascii()) {
+            badr = false;
+            m_e = ts.m_e;
+            break;
+        }
+    }
+}
+
+void VTimescale::parseSlashed(FileLine* fl, const char* textp, VTimescale& unitr,
+                              VTimescale& precr, bool allowEmpty) {
+    // Parse `timescale of <number><units> / <number><units>
+    unitr = VTimescale::NONE;
+    precr = VTimescale::NONE;
+
+    const char* cp = textp;
+    for (; isspace(*cp); ++cp) {}
+    const char* unitp = cp;
+    for (; *cp && *cp != '/'; ++cp) {}
+    string unitStr(unitp, cp - unitp);
+    for (; isspace(*cp); ++cp) {}
+    string precStr;
+    if (*cp == '/') {
+        ++cp;
+        for (; isspace(*cp); ++cp) {}
+        const char* precp = cp;
+        for (; *cp && *cp != '/'; ++cp) {}
+        precStr = string(precp, cp - precp);
+    }
+    for (; isspace(*cp); ++cp) {}
+    if (*cp) {
+        fl->v3error("`timescale syntax error: '" << textp << "'");
+        return;
+    }
+
+    bool unitbad;
+    VTimescale unit(unitStr, unitbad /*ref*/);
+    if (unitbad && !(unitStr.empty() && allowEmpty)) {
+        fl->v3error("`timescale timeunit syntax error: '" << unitStr << "'");
+        return;
+    }
+    unitr = unit;
+
+    if (!precStr.empty()) {
+        VTimescale prec(VTimescale::NONE);
+        bool precbad;
+        prec = VTimescale(precStr, precbad /*ref*/);
+        if (precbad) {
+            fl->v3error("`timescale timeprecision syntax error: '" << precStr << "'");
+            return;
+        }
+        if (!unit.isNone() && !prec.isNone() && unit < prec) {
+            fl->v3error("`timescale timeunit '"
+                        << unitStr << "' must be greater than or equal to timeprecision '"
+                        << precStr << "'");
+            return;
+        }
+        precr = prec;
+    }
 }
 
 //######################################################################
@@ -605,6 +675,18 @@ void V3Options::throwSigsegv() {
 #if !(defined(VL_CPPCHECK) || defined(__clang_analyzer__))
     char* zp=NULL; *zp=0;  // Intentional core dump, ignore warnings here
 #endif
+}
+
+VTimescale V3Options::timeComputePrec(const VTimescale& flag) const {
+    if (!timeOverridePrec().isNone()) return timeOverridePrec();
+    else if (flag.isNone()) return timeDefaultPrec();
+    else return flag;
+}
+
+VTimescale V3Options::timeComputeUnit(const VTimescale& flag) const {
+    if (!timeOverrideUnit().isNone()) return timeOverrideUnit();
+    else if (flag.isNone()) return timeDefaultUnit();
+    else return flag;
 }
 
 //######################################################################
@@ -1179,6 +1261,28 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 shift; m_threadsMaxMTasks = atoi(argv[i]);
                 if (m_threadsMaxMTasks < 1)
                     fl->v3fatal("--threads-max-mtasks must be >= 1: "<<argv[i]);
+            }
+            else if (!strcmp(sw, "-timescale") && (i + 1) < argc) {
+                shift;
+                VTimescale unit;
+                VTimescale prec;
+                VTimescale::parseSlashed(fl, argv[i], unit /*ref*/, prec /*ref*/);
+                if (!unit.isNone() && timeOverrideUnit().isNone()) m_timeDefaultUnit = unit;
+                if (!prec.isNone() && timeOverridePrec().isNone()) m_timeDefaultPrec = prec;
+            }
+            else if (!strcmp(sw, "-timescale-override") && (i + 1) < argc) {
+                shift;
+                VTimescale unit;
+                VTimescale prec;
+                VTimescale::parseSlashed(fl, argv[i], unit /*ref*/, prec /*ref*/, true);
+                if (!unit.isNone()) {
+                    m_timeDefaultUnit = unit;
+                    m_timeOverrideUnit = unit;
+                }
+                if (!prec.isNone()) {
+                    m_timeDefaultPrec = prec;
+                    m_timeOverridePrec = prec;
+                }
             }
             else if (!strcmp(sw, "-top-module") && (i+1)<argc) {
                 shift; m_topModule = argv[i];

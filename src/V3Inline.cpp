@@ -561,7 +561,8 @@ private:
             { InlineCollectVisitor(nodep->modp()); }  // {} to destroy visitor immediately
             // Create data for dotted variable resolution
             AstCellInline* inlinep
-                = new AstCellInline(nodep->fileline(), nodep->name(), nodep->modp()->origName());
+                = new AstCellInline(nodep->fileline(), nodep->name(), nodep->modp()->origName(),
+                                    nodep->modp()->timeunit());
             m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
             // Create assignments to the pins
             for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {

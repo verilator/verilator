@@ -9,9 +9,6 @@ module t;
 endmodule
 
 module sub ();
-   timeunit 1ns;
-   timeprecision 1ps;
-
    parameter REAL = 0.0;
 
    initial begin

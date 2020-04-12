@@ -1233,10 +1233,12 @@ PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
     _VL_VPI_ERROR_RESET();
     switch (property) {
     case vpiTimePrecision: {
-        return VL_TIME_PRECISION;
+        return Verilated::timeprecision();
     }
     case vpiTimeUnit: {
-        return VL_TIME_UNIT;
+        VerilatedVpioScope* vop = VerilatedVpioScope::castp(object);
+        if (!vop) return Verilated::timeunit();  // Null asks for global, not unlikely
+        return vop->scopep()->timeunit();
     }
     case vpiType: {
         VerilatedVpio* vop = VerilatedVpio::castp(object);
@@ -1892,7 +1894,7 @@ void vpi_put_value_array(vpiHandle /*object*/, p_vpi_arrayvalue /*arrayvalue_p*/
 
 // time processing
 
-void vpi_get_time(vpiHandle /*object*/, p_vpi_time time_p) {
+void vpi_get_time(vpiHandle object, p_vpi_time time_p) {
     VerilatedVpiImp::assertOneCheck();
     // cppcheck-suppress nullPointer
     if (VL_UNLIKELY(!time_p)) {
@@ -1906,9 +1908,17 @@ void vpi_get_time(vpiHandle /*object*/, p_vpi_time time_p) {
         time_p->low = itime[0];
         time_p->high = itime[1];
         return;
+    } else if (time_p->type == vpiScaledRealTime) {
+        double dtime = VL_TIME_D();
+        if (VerilatedVpioScope* vop = VerilatedVpioScope::castp(object)) {
+            int scalePow10 = Verilated::timeprecision() - vop->scopep()->timeunit();
+            double scale = vl_time_multiplier(scalePow10);  // e.g. 0.0001
+            dtime *= scale;
+        }
+        time_p->real = dtime;
+        return;
     }
-    _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported type (%d)",
-                  VL_FUNC, time_p->type);
+    _VL_VPI_ERROR(__FILE__, __LINE__, "%s: Unsupported type (%d)", VL_FUNC, time_p->type);
 }
 
 // I/O routines

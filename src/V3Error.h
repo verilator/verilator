@@ -104,6 +104,7 @@ public:
         SYMRSVDWORD,    // Symbol is Reserved Word
         SYNCASYNCNET,   // Mixed sync + async reset
         TICKCOUNT,      // Too large tick count
+        TIMESCALEMOD,   // Need timescale for module
         UNDRIVEN,       // No drivers
         UNOPT,          // Unoptimizable block
         UNOPTFLAT,      // Unoptimizable block after flattening
@@ -152,7 +153,7 @@ public:
             "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY", "PROCASSWIRE",
             "REALCVT", "REDEFMACRO",
             "SELRANGE", "SHORTREAL", "SPLITVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
-            "TICKCOUNT",
+            "TICKCOUNT", "TIMESCALEMOD",
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
             "UNPACKED", "UNSIGNED", "UNUSED",
             "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
@@ -162,20 +163,20 @@ public:
         return names[m_e];
     }
     // Warnings that default to off
-    bool defaultsOff() const { return ( m_e==IMPERFECTSCH || styleError()); }
+    bool defaultsOff() const { return (m_e == IMPERFECTSCH || styleError()); }
     // Warnings that warn about nasty side effects
-    bool dangerous() const { return ( m_e==COMBDLY ); }
+    bool dangerous() const { return (m_e == COMBDLY); }
     // Warnings we'll present to the user as errors
     // Later -Werror- options may make more of these.
-    bool pretendError() const { return ( m_e==ASSIGNIN || m_e==BLKANDNBLK
-                                         || m_e==BLKLOOPINIT
-                                         || m_e==CONTASSREG
-                                         || m_e==IMPURE
-                                         || m_e==PROCASSWIRE); }
+    bool pretendError() const {
+        return (m_e == ASSIGNIN || m_e == BLKANDNBLK || m_e == BLKLOOPINIT || m_e == CONTASSREG
+                || m_e == IMPURE || m_e == PROCASSWIRE
+                || m_e == TIMESCALEMOD);  // Says IEEE
+    }
     // Warnings to mention manual
-    bool mentionManual() const { return ( m_e==EC_FATALSRC || m_e==SYMRSVDWORD
-                                          || pretendError() ); }
-
+    bool mentionManual() const {
+        return (m_e == EC_FATALSRC || m_e == SYMRSVDWORD || pretendError());
+    }
     // Warnings that are lint only
     bool lintError() const { return ( m_e==ALWCOMBORDER
                                       || m_e==BSSPACE

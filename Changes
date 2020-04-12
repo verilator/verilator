@@ -7,6 +7,13 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    Add simplistic class support with many restrictions, see manual, #377.
 
+**    Support IEEE time units and time precisions, #234.
+      Includes `timescale, $printtimescale, $timeformat.
+      VL_TIME_MULTIPLIER, VL_TIME_PRECISION, VL_TIME_UNIT have been removed
+      and the time precision must now match the SystemC time precision.  To
+      get closer behavior to older versions, use e.g. --timescale-override
+      "1ps/1ps".
+
 **    Configuring with ccache present now defaults to using it; see OBJCACHE.
 
 **    Fix DPI import/export to be standard compliant, #2236. [Geza Lore]

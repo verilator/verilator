@@ -2076,6 +2076,10 @@ private:
                     case '%': break;  // %% - just output a %
                     case 'm': break;  // %m - auto insert "name"
                     case 'l': break;  // %l - auto insert "library"
+                    case 't':  // FALLTHRU
+                    case '^':  // %t/%^ - don't know $timeformat so can't constify
+                        if (argp) argp = argp->nextp();
+                        break;
                     default:  // Most operators, just move to next argument
                         if (argp) {
                             AstNode* nextp = argp->nextp();

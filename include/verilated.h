@@ -319,19 +319,21 @@ private:
     VerilatedVarNameMap* m_varsp;       ///< Variable map
     const char*         m_namep;        ///< Scope name (Slowpath)
     const char*         m_identifierp;  ///< Identifier of scope (with escapes removed)
+    vlsint8_t           m_timeunit;     ///< Timeunit in negative power-of-10
     Type                m_type;         ///< Type of the scope
 
 public:  // But internals only - called from VerilatedModule's
     VerilatedScope();
     ~VerilatedScope();
     void configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
-                   const char* identifier, const Type type) VL_MT_UNSAFE;
+                   const char* identifier, vlsint8_t timeunit, const Type type) VL_MT_UNSAFE;
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
     void varInsert(int finalize, const char* namep, void* datap,
                    VerilatedVarType vltype, int vlflags, int dims, ...) VL_MT_UNSAFE;
     // ACCESSORS
     const char* name() const { return m_namep; }
     const char* identifier() const { return m_identifierp; }
+    vlsint8_t timeunit() const { return m_timeunit; }
     inline VerilatedSyms* symsp() const { return m_symsp; }
     VerilatedVar* varFind(const char* namep) const VL_MT_SAFE_POSTINIT;
     VerilatedVarNameMap* varsp() const VL_MT_SAFE_POSTINIT { return m_varsp; }
@@ -373,6 +375,8 @@ class Verilated {
         bool            s_assertOn;             ///< Assertions are enabled
         bool            s_fatalOnVpiError;      ///< Stop on vpi error/unsupported
         // Slow path
+        unsigned s_timeunit : 4;  ///< Time unit as 0..15
+        unsigned s_timeprecision : 4;  ///< Time precision as 0..15
         int s_errorCount;  ///< Number of errors
         int s_errorLimit;  ///< Stop on error number
         int s_randReset;  ///< Random reset: 0=all 0s, 1=all 1s, 2=random
@@ -467,6 +471,13 @@ public:
     /// Enable/disable vpi fatal
     static void fatalOnVpiError(bool flag) VL_MT_SAFE;
     static bool fatalOnVpiError() VL_MT_SAFE { return s_s.s_fatalOnVpiError; }
+    /// Time handling
+    static int timeunit() VL_MT_SAFE { return - s_s.s_timeunit; }
+    static const char* timeunitString() VL_MT_SAFE;
+    static void timeunit(int value) VL_MT_SAFE;
+    static int timeprecision() VL_MT_SAFE { return - s_s.s_timeprecision; }
+    static const char* timeprecisionString() VL_MT_SAFE;
+    static void timeprecision(int value) VL_MT_SAFE;
     /// --prof-threads related settings
     static void profThreadsStart(vluint64_t flag) VL_MT_SAFE;
     static vluint64_t profThreadsStart() VL_MT_SAFE { return s_ns.s_profThreadsStart; }
@@ -536,8 +547,10 @@ public:
     static int dpiLineno() VL_MT_SAFE { return t_s.t_dpiLineno; }
     static int exportFuncNum(const char* namep) VL_MT_SAFE;
 
-    static size_t serializedSize() VL_PURE { return sizeof(s_s); }
-    static void* serializedPtr() VL_MT_UNSAFE { return &s_s; }  // Unsafe, for Serialize only
+    static size_t serialized1Size() VL_PURE { return sizeof(s_s); }
+    static void* serialized1Ptr() VL_MT_UNSAFE { return &s_s; }  // Unsafe, for Serialize only
+    static size_t serialized2Size() VL_PURE;
+    static void* serialized2Ptr() VL_MT_UNSAFE;
 #ifdef VL_THREADED
     /// Set the mtaskId, called when an mtask starts
     static void mtaskId(vluint32_t id) VL_MT_SAFE { t_s.t_mtaskId = id; }
@@ -623,6 +636,8 @@ extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp);  ///< Zero reset a
 /// Return high-precision counter for profiling, or 0x0 if not available
 inline QData VL_RDTSC_Q() { vluint64_t val; VL_RDTSC(val); return val; }
 #endif
+
+extern void VL_PRINTTIMESCALE(const char* namep, const char* timeunitp) VL_MT_SAFE;
 
 /// Math
 extern WDataOutP _vl_moddiv_w(int lbits, WDataOutP owp,
@@ -735,35 +750,52 @@ extern void _VL_DEBUG_PRINT_W(int lbits, WDataInP iwp);
 
 extern int VL_TIME_STR_CONVERT(const char* strp) VL_PURE;
 
+// These are deprecated and used only to establish the default precision/units.
+// Use Verilator timescale-override for better control.
 #ifndef VL_TIME_PRECISION
 # ifdef VL_TIME_PRECISION_STR
 #  define VL_TIME_PRECISION VL_TIME_STR_CONVERT(VL_STRINGIFY(VL_TIME_PRECISION_STR))
 # else
-#  define VL_TIME_PRECISION (-12)  ///< Timescale units only for for VPI return - picoseconds
+#  define VL_TIME_PRECISION (-12)  ///< Timescale default units if not in Verilog - picoseconds
 # endif
 #endif
 #ifndef VL_TIME_UNIT
 # ifdef VL_TIME_UNIT_STR
 #  define VL_TIME_UNIT VL_TIME_STR_CONVERT(VL_STRINGIFY(VL_TIME_PRECISION_STR))
 # else
-#  define VL_TIME_UNIT (-12) ///< Timescale units only for for VPI return - picoseconds
+#  define VL_TIME_UNIT (-12)  ///< Timescale default units if not in Verilog - picoseconds
 # endif
-#endif
-#ifndef VL_TIME_MULTIPLIER
-# define VL_TIME_MULTIPLIER 1
 #endif
 
 /// Return current simulation time
-#if defined(SYSTEMC_VERSION) && (SYSTEMC_VERSION>20011000)
-# define VL_TIME_I() (static_cast<IData>(sc_time_stamp().to_default_time_units()*VL_TIME_MULTIPLIER))
-# define VL_TIME_Q() (static_cast<QData>(sc_time_stamp().to_default_time_units()*VL_TIME_MULTIPLIER))
-# define VL_TIME_D() (static_cast<double>(sc_time_stamp().to_default_time_units()*VL_TIME_MULTIPLIER))
-#else
-# define VL_TIME_I() (static_cast<IData>(sc_time_stamp()*VL_TIME_MULTIPLIER))
-# define VL_TIME_Q() (static_cast<QData>(sc_time_stamp()*VL_TIME_MULTIPLIER))
-# define VL_TIME_D() (static_cast<double>(sc_time_stamp()*VL_TIME_MULTIPLIER))
-extern double sc_time_stamp();
+#if defined(SYSTEMC_VERSION)
+# if SYSTEMC_VERSION > 20011000
+// Already defined: extern sc_time sc_time_stamp();
+inline vluint64_t vl_time_stamp64() { return sc_time_stamp().value(); }
+# else  // Before SystemC changed to integral time representation
+// Already defined: extern double sc_time_stamp();
+inline vluint64_t vl_time_stamp64() { return static_cast<vluint64_t>(sc_time_stamp()); }
+# endif
+#else  // Non-SystemC
+# ifdef VL_TIME_STAMP64
+extern vluint64_t vl_time_stamp64();
+# else
+extern double sc_time_stamp();  // Verilator 4.032 and newer
+inline vluint64_t vl_time_stamp64() { return static_cast<vluint64_t>(sc_time_stamp()); }
+# endif
 #endif
+
+#define VL_TIME_I() (static_cast<IData>(vl_time_stamp64()))
+#define VL_TIME_Q() (static_cast<QData>(vl_time_stamp64()))
+#define VL_TIME_D() (static_cast<double>(vl_time_stamp64()))
+
+/// Time scaled from 1-per-precision into a module's time units ("Unit"-ed, not "United")
+// Optimized assuming scale is always constant.
+// Can't use multiply in Q flavor, as might lose precision
+#define VL_TIME_UNITED_Q(scale) (VL_TIME_Q() / static_cast<QData>(scale))
+#define VL_TIME_UNITED_D(scale) (VL_TIME_D() * (1.0 / (scale)))
+/// Time imported from units to time precision
+double vl_time_multiplier(int scale);
 
 /// Evaluate expression if debug enabled
 #ifdef VL_DEBUG

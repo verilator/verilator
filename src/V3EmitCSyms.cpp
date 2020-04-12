@@ -39,9 +39,10 @@ class EmitCSyms : EmitCBaseVisitor {
     AstUser1InUse       m_inuser1;
 
     // TYPES
-    struct ScopeData { string m_symName; string m_prettyName; string m_type;
-        ScopeData(const string& symName, const string& prettyName, const string& type)
-            : m_symName(symName), m_prettyName(prettyName), m_type(type) {}
+    struct ScopeData { string m_symName; string m_prettyName; int m_timeunit; string m_type;
+        ScopeData(const string& symName, const string& prettyName, int timeunit,
+                  const string& type)
+            : m_symName(symName), m_prettyName(prettyName), m_timeunit(timeunit), m_type(type) {}
     };
     struct ScopeFuncData { AstScopeName* m_scopep; AstCFunc* m_funcp; AstNodeModule* m_modp;
         ScopeFuncData(AstScopeName* scopep, AstCFunc* funcp, AstNodeModule* modp)
@@ -206,8 +207,8 @@ class EmitCSyms : EmitCBaseVisitor {
                         varHierarchyScopes(scpName);
                     }
                     if (m_scopeNames.find(scpSym) == m_scopeNames.end()) {
-                        m_scopeNames.insert(make_pair(scpSym, ScopeData(scpSym, scpPretty,
-                                                      "SCOPE_OTHER")));
+                        m_scopeNames.insert(
+                            make_pair(scpSym, ScopeData(scpSym, scpPretty, 0, "SCOPE_OTHER")));
                     }
                     m_scopeVars.insert(
                         make_pair(scpSym + " " + varp->name(),
@@ -274,12 +275,12 @@ class EmitCSyms : EmitCBaseVisitor {
     }
     virtual void visit(AstCellInline* nodep) VL_OVERRIDE {
         if (v3Global.opt.vpi()) {
-            string type = (nodep->origModName() == "__BEGIN__") ? "SCOPE_OTHER"
-                                                                : "SCOPE_MODULE";
+            string type = (nodep->origModName() == "__BEGIN__") ? "SCOPE_OTHER" : "SCOPE_MODULE";
             string name = nodep->scopep()->name() + "__DOT__" + nodep->name();
             string name_dedot = AstNode::dedotName(name);
-            m_vpiScopeCandidates.insert(make_pair(name, ScopeData(scopeSymString(name),
-                                                                  name_dedot, type)));
+            int timeunit = m_modp->timeunit().negativeInt();
+            m_vpiScopeCandidates.insert(make_pair(
+                name, ScopeData(scopeSymString(name), name_dedot, timeunit, type)));
         }
     }
     virtual void visit(AstScope* nodep) VL_OVERRIDE {
@@ -290,17 +291,19 @@ class EmitCSyms : EmitCBaseVisitor {
 
         if (v3Global.opt.vpi() && !nodep->isTop()) {
             string name_dedot = AstNode::dedotName(nodep->shortName());
-            m_vpiScopeCandidates.insert(make_pair(nodep->name(),
-                                                  ScopeData(scopeSymString(nodep->name()),
-                                                            name_dedot, "SCOPE_MODULE")));
+            int timeunit = m_modp->timeunit().negativeInt();
+            m_vpiScopeCandidates.insert(
+                make_pair(nodep->name(), ScopeData(scopeSymString(nodep->name()), name_dedot,
+                                                   timeunit, "SCOPE_MODULE")));
         }
     }
     virtual void visit(AstScopeName* nodep) VL_OVERRIDE {
         string name = nodep->scopeSymName();
         //UINFO(9,"scnameins sp "<<nodep->name()<<" sp "<<nodep->scopePrettySymName()<<" ss "<<name<<endl);
+        int timeunit = m_modp ? m_modp->timeunit().negativeInt() : 0;
         if (m_scopeNames.find(name) == m_scopeNames.end()) {
             m_scopeNames.insert(make_pair(name, ScopeData(name, nodep->scopePrettySymName(),
-                                                          "SCOPE_OTHER")));
+                                                          timeunit, "SCOPE_OTHER")));
         }
         if (nodep->dpiExport()) {
             UASSERT_OBJ(m_funcp, nodep, "ScopeName not under DPI function");
@@ -308,10 +311,10 @@ class EmitCSyms : EmitCBaseVisitor {
                                           ScopeFuncData(nodep, m_funcp, m_modp)));
         } else {
             if (m_scopeNames.find(nodep->scopeDpiName()) == m_scopeNames.end()) {
-                m_scopeNames.insert(make_pair(nodep->scopeDpiName(),
-                                              ScopeData(nodep->scopeDpiName(),
-                                                            nodep->scopePrettyDpiName(),
-                                                            "SCOPE_OTHER")));
+                m_scopeNames.insert(
+                    make_pair(nodep->scopeDpiName(),
+                              ScopeData(nodep->scopeDpiName(), nodep->scopePrettyDpiName(),
+                                        timeunit, "SCOPE_OTHER")));
             }
         }
     }
@@ -669,6 +672,8 @@ void EmitCSyms::emitSymImp() {
             putsQuoted(protectWordsIf(it->second.m_prettyName, true));
             puts(", ");
             putsQuoted(protect(scopeDecodeIdentifier(it->second.m_prettyName)));
+            puts(", ");
+            puts(cvtToStr(it->second.m_timeunit));
             puts(", VerilatedScope::"+it->second.m_type+");\n");
             ++m_numStmts;
         }

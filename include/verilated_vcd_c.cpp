@@ -141,7 +141,6 @@ VerilatedVcd::VerilatedVcd(VerilatedVcdFile* filep)
     m_fileNewed = (filep == NULL);
     m_filep = m_fileNewed ? new VerilatedVcdFile : filep;
     m_namemapp = NULL;
-    m_timeRes = m_timeUnit = 1e-9;
     m_timeLastDump = 0;
     m_sigs_oldvalp = NULL;
     m_evcd = false;
@@ -152,6 +151,9 @@ VerilatedVcd::VerilatedVcd(VerilatedVcdFile* filep)
     m_wrFlushp = m_wrBufp + m_wrChunkSize * 6;
     m_writep = m_wrBufp;
     m_wroteBytes = 0;
+    m_timeRes = m_timeUnit = 1e-9;
+    set_time_unit(Verilated::timeunitString());
+    set_time_resolution(Verilated::timeprecisionString());
 }
 
 void VerilatedVcd::open(const char* filename) {

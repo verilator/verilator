@@ -71,6 +71,8 @@ void V3LinkLevel::modSortByLevel() {
         }
     }
 
+    timescaling(mods);
+
     // Reorder the netlist's modules to have modules in level sorted order
     stable_sort(mods.begin(), mods.end(), CmpLevel());  // Sort the vector
     UINFO(9,"modSortByLevel() sorted\n");  // Comment required for gcc4.6.3 / bug666
@@ -87,6 +89,44 @@ void V3LinkLevel::modSortByLevel() {
     }
     UINFO(9,"modSortByLevel() done\n");  // Comment required for gcc4.6.3 / bug666
     V3Global::dumpCheckGlobalTree("cells", false, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
+}
+
+void V3LinkLevel::timescaling(const ModVec& mods) {
+    // Timescale determination
+    AstNodeModule* modTimedp = NULL;
+    VTimescale unit(VTimescale::NONE);
+    // Use highest level module as default unit - already sorted in proper order
+    for (ModVec::const_iterator it = mods.begin(); it != mods.end(); ++it) {
+        if (!modTimedp && !(*it)->timeunit().isNone()) {
+            modTimedp = *it;
+            unit = modTimedp->timeunit();
+            break;
+        }
+    }
+    unit = v3Global.opt.timeComputeUnit(unit);  // Apply override
+    if (unit.isNone()) unit = VTimescale(VTimescale::TS_DEFAULT);
+    v3Global.rootp()->timeunit(unit);
+
+    for (ModVec::const_iterator it = mods.begin(); it != mods.end(); ++it) {
+        AstNodeModule* nodep = *it;
+        if (nodep->timeunit().isNone()) {
+            if (modTimedp && !VN_IS(nodep, Iface)
+                && !(VN_IS(nodep, Package) && VN_CAST(nodep, Package)->isDollarUnit())) {
+                nodep->v3warn(TIMESCALEMOD,
+                              "Timescale missing on this module as other modules have "
+                              "it (IEEE 1800-2017 3.14.2.2)\n"
+                                  << modTimedp->warnOther()
+                                  << "... Location of module with timescale\n"
+                                  << modTimedp->warnContextSecondary());
+            }
+            nodep->timeunit(unit);
+        }
+    }
+
+    if (v3Global.rootp()->timeprecision().isNone()) {
+        v3Global.rootp()->timeprecisionMerge(v3Global.rootp()->fileline(),
+                                             VTimescale(VTimescale::TS_DEFAULT));
+    }
 }
 
 //######################################################################
@@ -107,6 +147,7 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
     newmodp->level(1);
     newmodp->modPublic(true);
     newmodp->protect(false);
+    newmodp->timeunit(oldmodp->timeunit());
     rootp->addModulep(newmodp);
 
     // TODO the module creation above could be done after linkcells, but

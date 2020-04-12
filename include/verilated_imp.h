@@ -165,6 +165,8 @@ public:
 
 class VerilatedImp {
     // Whole class is internal use only - Global information shared between verilated*.cpp files.
+protected:
+    friend class Verilated;
 
     // TYPES
     typedef std::vector<std::string> ArgVec;
@@ -174,7 +176,24 @@ class VerilatedImp {
     // MEMBERS
     static VerilatedImp s_s;  ///< Static Singleton; One and only static this
 
-    // Nothing here is save-restored; users expected to re-register appropriately
+    struct Serialized {  // All these members serialized/deserialized
+        int m_timeFormatUnits;  // $timeformat units
+        int m_timeFormatPrecision;  // $timeformat number of decimal places
+        int m_timeFormatWidth;  // $timeformat character width
+        enum { UNITS_NONE = 99 };  // Default based on precision
+        Serialized()
+            : m_timeFormatUnits(UNITS_NONE)
+            , m_timeFormatPrecision(0)
+            , m_timeFormatWidth(20) {}
+        ~Serialized() {}
+    } m_ser;
+
+    VerilatedMutex m_sergMutex;  ///< Protect m_ser
+    struct SerializedG {  // All these members serialized/deserialized and guarded
+        std::string m_timeFormatSuffix;  // $timeformat printf format
+    } m_serg VL_GUARDED_BY(m_sergMutex);
+
+    // Nothing below here is save-restored; users expected to re-register appropriately
 
     VerilatedMutex      m_argMutex;  ///< Protect m_argVec, m_argVecLoaded
     ArgVec              m_argVec VL_GUARDED_BY(m_argMutex);  ///< Argument list (NOT save-restored, may want different results)
@@ -385,6 +404,22 @@ public:  // But only for verilated*.cpp
     }
     // We don't free up m_exportMap until the end, because we can't be sure
     // what other models are using the assigned funcnum's.
+
+public:  // But only for verilated*.cpp
+    // METHODS - timeformat
+    static std::string timeFormatSuffix() VL_MT_SAFE;
+    static void timeFormatSuffix(const std::string& value) VL_MT_SAFE;
+    static int timeFormatUnits() VL_MT_SAFE {
+        if (s_s.m_ser.m_timeFormatUnits == Serialized::UNITS_NONE) {
+            return Verilated::timeprecision();
+        }
+        return s_s.m_ser.m_timeFormatUnits;
+    }
+    static int timeFormatPrecision() VL_MT_SAFE { return s_s.m_ser.m_timeFormatPrecision; }
+    static int timeFormatWidth() VL_MT_SAFE { return s_s.m_ser.m_timeFormatWidth; }
+    static void timeFormatUnits(int value) VL_MT_SAFE;
+    static void timeFormatPrecision(int value) VL_MT_SAFE;
+    static void timeFormatWidth(int value) VL_MT_SAFE;
 
 public:  // But only for verilated*.cpp
     // METHODS - file IO

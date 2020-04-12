@@ -710,6 +710,38 @@ public:
         puts(cvtToStr(nodep->fileline()->lineno()));
         puts(", \"\");\n");
     }
+    virtual void visit(AstPrintTimeScale* nodep) VL_OVERRIDE {
+        puts("VL_PRINTTIMESCALE(");
+        putsQuoted(protect(nodep->name()));
+        puts(", ");
+        putsQuoted(nodep->timeunit().ascii());
+        puts(");\n");
+    }
+    virtual void visit(AstTime* nodep) VL_OVERRIDE {
+        puts("VL_TIME_UNITED_Q(");
+        if (nodep->timeunit().isNone()) nodep->v3fatalSrc("$time has no units");
+        puts(cvtToStr(nodep->timeunit().multiplier()
+                      / v3Global.rootp()->timeprecision().multiplier()));
+        puts(")");
+    }
+    virtual void visit(AstTimeD* nodep) VL_OVERRIDE {
+        puts("VL_TIME_UNITED_D(");
+        if (nodep->timeunit().isNone()) nodep->v3fatalSrc("$realtime has no units");
+        puts(cvtToStr(nodep->timeunit().multiplier()
+                      / v3Global.rootp()->timeprecision().multiplier()));
+        puts(")");
+    }
+    virtual void visit(AstTimeFormat* nodep) VL_OVERRIDE {
+        puts("VL_TIMEFORMAT_IINI(");
+        iterateAndNextNull(nodep->unitsp());
+        puts(", ");
+        iterateAndNextNull(nodep->precisionp());
+        puts(", ");
+        emitCvtPackStr(nodep->suffixp());
+        puts(", ");
+        iterateAndNextNull(nodep->widthp());
+        puts(");\n");
+    }
     virtual void visit(AstNodeSimpleText* nodep) VL_OVERRIDE {
         if (nodep->tracking() || m_trackText) {
             puts(nodep->text());
@@ -1931,10 +1963,10 @@ void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan,
 
     //string pfmt = "%"+displayFormat(argp, vfmt, fmtLetter)+fmtLetter;
     string pfmt;
-    if ((fmtLetter=='#' || fmtLetter=='d' || fmtLetter=='t')
+    if ((fmtLetter == '#' || fmtLetter == 'd')
         && !isScan
         && vfmt == "") {  // Size decimal output.  Spec says leading spaces, not zeros
-        double mantissabits = argp->widthMin() - ((fmtLetter=='d')?1:0);
+        double mantissabits = argp->widthMin() - ((fmtLetter == 'd') ? 1 : 0);
         double maxval = pow(2.0, mantissabits);
         double dchars = log10(maxval)+1.0;
         if (fmtLetter=='d') dchars++;  // space for sign
@@ -2140,8 +2172,16 @@ void EmitCImp::emitConfigureImp(AstNodeModule* modp) {
     puts(   "if (false && first) {}  // Prevent unused\n");
     puts(   "this->__VlSymsp = vlSymsp;\n");  // First, as later stuff needs it.
     puts(   "if (false && this->__VlSymsp) {}  // Prevent unused\n");
-    if (v3Global.opt.coverage() ) {
-        puts(protect("_configure_coverage")+"(vlSymsp, first);\n");
+    if (v3Global.opt.coverage()) {
+        puts(protect("_configure_coverage") + "(vlSymsp, first);\n");
+    }
+    if (modp->isTop() && !v3Global.rootp()->timeunit().isNone()) {
+        puts("Verilated::timeunit(" + cvtToStr(v3Global.rootp()->timeunit().negativeInt())
+             + ");\n");
+    }
+    if (modp->isTop() && !v3Global.rootp()->timeprecision().isNone()) {
+        puts("Verilated::timeprecision("
+             + cvtToStr(v3Global.rootp()->timeprecision().negativeInt()) + ");\n");
     }
     puts("}\n");
     splitSizeInc(10);

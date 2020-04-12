@@ -83,6 +83,45 @@ void V3ParseImp::ppline(const char* textp) {
     }
 }
 
+void V3ParseImp::timescalePreproc(FileLine* fl, const char* textp) {
+    // Parse `timescale of <number><units> / <number><units>
+    VTimescale unit;
+    VTimescale prec;
+    VTimescale::parseSlashed(fl, textp, unit /*ref*/, prec /*ref*/);
+    m_timeLastUnit = v3Global.opt.timeComputeUnit(unit);
+    v3Global.rootp()->timeprecisionMerge(fileline(), prec);
+}
+void V3ParseImp::timescaleMod(FileLine* fl, AstNodeModule* modp,
+                              bool unitSet, double unitVal,
+                              bool precSet, double precVal) {
+    VTimescale unit(VTimescale::NONE);
+    if (unitSet) {
+        bool bad;
+        unit = VTimescale(unitVal, bad /*ref*/);
+        if (bad) {
+            UINFO(1, "Value = " << unitVal << endl);
+            fl->v3error("timeunit illegal value");
+        }
+    }
+    VTimescale prec(VTimescale::NONE);
+    if (precSet) {
+        bool bad;
+        prec = VTimescale(precVal, bad /*ref*/);
+        if (bad) {
+            UINFO(1, "Value = " << precVal << endl);
+            fl->v3error("timeprecision illegal value");
+        }
+    }
+    if (!unit.isNone()) {
+        if (modp) {
+            modp->timeunit(v3Global.opt.timeComputeUnit(unit));
+        } else {
+            fl->v3error("timeunit/timeprecision not under a module");
+        }
+    }
+    v3Global.rootp()->timeprecisionMerge(fileline(), prec);
+}
+
 void V3ParseImp::verilatorCmtLintSave() {
     m_lintState.push_back(*parsep()->fileline());
 }
@@ -170,6 +209,32 @@ double V3ParseImp::parseDouble(const char* textp, size_t length, bool* successp)
     }
     VL_DO_DANGLING(delete[] strgp, strgp);
     return d;
+}
+
+double V3ParseImp::parseTimenum(const char* textp) {
+    size_t length = strlen(textp);
+    char* strgp = new char[length + 1];
+    char* dp = strgp;
+    const char* sp = textp;
+    for (; isdigit(*sp) || *sp == '_' || *sp == '.'; ++sp) {
+        if (*sp != '_') *dp++ = *sp;
+    }
+    *dp++ = '\0';
+    double d = strtod(strgp, NULL);
+    string suffix(sp);
+
+    double divisor = 1;
+    if (suffix == "s") divisor = 1;
+    else if (suffix == "ms") divisor = 1e3;
+    else if (suffix == "us") divisor = 1e6;
+    else if (suffix == "ns") divisor = 1e9;
+    else if (suffix == "ps") divisor = 1e12;
+    else if (suffix == "fs") divisor = 1e15;
+    // verilog.l checks the suffix for us, so this is an assert
+    else v3fatalSrc("Unknown time suffix " << suffix);
+
+    VL_DO_DANGLING(delete[] strgp, strgp);
+    return d / divisor;
 }
 
 //######################################################################

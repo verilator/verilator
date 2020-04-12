@@ -118,6 +118,15 @@ string VString::spaceUnprintable(const string& str) {
     return out;
 }
 
+string VString::removeWhitespace(const string& str) {
+    string out;
+    out.reserve(str.size());
+    for (string::const_iterator pos = str.begin(); pos != str.end(); ++pos) {
+        if (!isspace(*pos)) out += *pos;
+    }
+    return out;
+}
+
 bool VString::isWhitespace(const string& str) {
     for (string::const_iterator pos = str.begin(); pos != str.end(); ++pos) {
         if (!isspace(*pos)) return false;

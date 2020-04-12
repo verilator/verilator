@@ -515,6 +515,28 @@ private:
         cleanFileline(nodep);
         iterateChildren(nodep);
     }
+    virtual void visit(AstPrintTimeScale* nodep) VL_OVERRIDE {
+        // Inlining may change hierarchy, so just save timescale where needed
+        iterateChildren(nodep);
+        nodep->name(m_modp->name());
+        nodep->timeunit(m_modp->timeunit());
+    }
+    virtual void visit(AstSFormatF* nodep) VL_OVERRIDE {
+        iterateChildren(nodep);
+        nodep->timeunit(m_modp->timeunit());
+    }
+    virtual void visit(AstTime* nodep) VL_OVERRIDE {
+        iterateChildren(nodep);
+        nodep->timeunit(m_modp->timeunit());
+    }
+    virtual void visit(AstTimeD* nodep) VL_OVERRIDE {
+        iterateChildren(nodep);
+        nodep->timeunit(m_modp->timeunit());
+    }
+    virtual void visit(AstTimeImport* nodep) VL_OVERRIDE {
+        iterateChildren(nodep);
+        nodep->timeunit(m_modp->timeunit());
+    }
 
     virtual void visit(AstNode* nodep) VL_OVERRIDE {
         // Default: Just iterate
