@@ -79,13 +79,15 @@ VerilatedFst::VerilatedFst(void* fst)
     , m_minNextDumpTime(0)
     , m_nextCode(1)
     , m_scopeEscape('.')
-    , m_symbolp(NULL) {
+    , m_symbolp(NULL)
+    , m_sigs_oldvalp(NULL) {
     m_valueStrBuffer.reserve(64 + 1);  // Need enough room for quad
 }
 
 VerilatedFst::~VerilatedFst() {
     if (m_fst) fstWriterClose(m_fst);
     if (m_symbolp) VL_DO_CLEAR(delete[] m_symbolp, m_symbolp = NULL);
+    if (m_sigs_oldvalp) VL_DO_CLEAR(delete[] m_sigs_oldvalp, m_sigs_oldvalp = NULL);
 }
 
 void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
@@ -121,6 +123,9 @@ void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
         }
     }
     m_code2symbol.clear();
+
+    // Allocate space now we know the number of codes
+    if (!m_sigs_oldvalp) m_sigs_oldvalp = new vluint32_t[m_nextCode + 10];
 }
 
 void VerilatedFst::module(const std::string& name) { m_module = name; }

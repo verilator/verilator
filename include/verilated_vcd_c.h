@@ -97,6 +97,9 @@ private:
     vluint64_t m_wrChunkSize;  ///< Output buffer size
     vluint64_t m_wroteBytes;  ///< Number of bytes written to this file
 
+    std::vector<char> m_suffixes;  ///< VCD line end string codes + metadata
+    char* m_suffixesp;  ///< Pointer to first element of above
+
     vluint32_t* m_sigs_oldvalp;  ///< Pointer to old signal values
     typedef std::vector<VerilatedVcdSig> SigVec;
     SigVec m_sigs;  ///< Pointer to signal information
@@ -131,26 +134,10 @@ private:
     void dumpFull(vluint64_t timeui);
     // cppcheck-suppress functionConst
     void dumpDone();
-    inline void printCode(vluint32_t code) {
-        *m_writep++ = static_cast<char>('!' + code % 94);
-        code /= 94;
-        while (code) {
-            code--;
-            *m_writep++ = static_cast<char>('!' + code % 94);
-            code /= 94;
-        }
-    }
-    static std::string stringCode(vluint32_t code) VL_PURE {
-        std::string out;
-        out += static_cast<char>('!' + code % 94);
-        code /= 94;
-        while (code) {
-            code--;
-            out += static_cast<char>('!' + code % 94);
-            code /= 94;
-        }
-        return out;
-    }
+    void printCode(vluint32_t code);
+    static std::string stringCode(vluint32_t code) VL_PURE;
+
+    void finishLine(vluint32_t* oldp, char* writep);
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedVcd);
@@ -330,6 +317,54 @@ public:
         if (VL_UNLIKELY((*(reinterpret_cast<float*>(&m_sigs_oldvalp[code]))) != newval)) {
             fullFloat(code, newval);
         }
+    }
+
+    //=========================================================================
+    // Inside dumping routines used by Verilator
+
+    vluint32_t* oldp(vluint32_t code) { return m_sigs_oldvalp + code; }
+
+    //=========================================================================
+    // Write back to previous value buffer value and emit
+
+    void fullBit(vluint32_t* oldp, vluint32_t newval);
+    template <int N> void fullBus(vluint32_t* oldp, vluint32_t newval);
+    template <int N> void fullQuad(vluint32_t* oldp, vluint64_t newval);
+    template <int N> void fullArray(vluint32_t* oldp, const vluint32_t* newval, int wholeWords);
+    void fullFloat(vluint32_t* oldp, float newval);
+    void fullDouble(vluint32_t* oldp, double newval);
+
+    //=========================================================================
+    // Check previous value and emit if changed
+
+    inline void chgBit(vluint32_t* oldp, vluint32_t newval) {
+        const vluint32_t diff = *oldp ^ newval;
+        if (VL_UNLIKELY(diff)) { fullBit(oldp, newval); }
+    }
+    template <int N> inline void chgBus(vluint32_t* oldp, vluint32_t newval) {
+        const vluint32_t diff = *oldp ^ newval;
+        if (VL_UNLIKELY(diff)) { fullBus<N>(oldp, newval); }
+    }
+    template <int N> inline void chgQuad(vluint32_t* oldp, vluint64_t newval) {
+        const vluint64_t diff = *reinterpret_cast<vluint64_t*>(oldp) ^ newval;
+        if (VL_UNLIKELY(diff)) { fullQuad<N>(oldp, newval); }
+    }
+    template <int N>
+    inline void chgArray(vluint32_t* oldp, const vluint32_t* newval, int wholeWords) {
+        for (int i = 0; i < wholeWords + (N > 0); ++i) {
+            if (VL_UNLIKELY(oldp[i] ^ newval[i])) {
+                fullArray<N>(oldp, newval, wholeWords);
+                return;
+            }
+        }
+    }
+    inline void chgFloat(vluint32_t* oldp, float newval) {
+        // cppcheck-suppress invalidPointerCast
+        if (VL_UNLIKELY(*reinterpret_cast<float*>(oldp) != newval)) { fullFloat(oldp, newval); }
+    }
+    inline void chgDouble(vluint32_t* oldp, double newval) {
+        // cppcheck-suppress invalidPointerCast
+        if (VL_UNLIKELY(*reinterpret_cast<double*>(oldp) != newval)) { fullDouble(oldp, newval); }
     }
 
 protected:

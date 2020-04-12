@@ -175,6 +175,9 @@ void VerilatedVcd::open(const char* filename) {
     // Allocate space now we know the number of codes
     if (!m_sigs_oldvalp) m_sigs_oldvalp = new vluint32_t[m_nextCode + 10];
 
+    // Get the direct access pointer to the code strings
+    m_suffixesp = &m_suffixes[0];  // Note: C++11 m_suffixes.data();
+
     if (m_rolloverMB) {
         openNext(true);
         if (!isOpen()) return;
@@ -434,6 +437,31 @@ std::string VerilatedVcd::doubleToTimescale(double value) {
 }
 
 //=============================================================================
+// VCD string code
+
+std::string VerilatedVcd::stringCode(vluint32_t code) VL_PURE {
+    std::string out;
+    out += static_cast<char>('!' + code % 94);
+    code /= 94;
+    while (code) {
+        code--;
+        out += static_cast<char>('!' + code % 94);
+        code /= 94;
+    }
+    return out;
+}
+
+inline void VerilatedVcd::printCode(vluint32_t code) {
+    *m_writep++ = static_cast<char>('!' + code % 94);
+    code /= 94;
+    while (code) {
+        code--;
+        *m_writep++ = static_cast<char>('!' + code % 94);
+        code /= 94;
+    }
+}
+
+//=============================================================================
 // Definitions
 
 void VerilatedVcd::printIndent(int level_change) {
@@ -554,6 +582,12 @@ void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep,
     if (m_sigs.capacity() <= m_nextCode) {
         m_sigs.reserve(m_nextCode * 2);  // Power-of-2 allocation speeds things up
     }
+    // We use 8 bytes per code in the suffixes array:
+    // 1 byte optional separator + ceil(log94(2**32)) is 5 bytes for code + 1 byte '\n' +
+    // 1 byte suffix size
+    if (m_suffixes.size() <= m_nextCode * 8) {
+        m_suffixes.resize(m_nextCode * 8 * 2, 0);  // Power-of-2 allocation as above
+    }
 
     // Make sure write buffer is large enough (one character per bit), plus header
     bufferResize(bits + 1024);
@@ -597,11 +631,27 @@ void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep,
     char buf[1000];
     sprintf(buf, " %2d ", bits);
     decl += buf;
+    // Note: EVCD support seems to be broken as all actual dumping functions
+    // 'full*' just emmti the VCD string code, rather than the EVCD style
+    // "<{integer}" can we remove m_evcd and related?
     if (m_evcd) {
         sprintf(buf, "<%u", code);
         decl += buf;
     } else {
-        decl += stringCode(code);
+        // Add string code to decl
+        std::string strCode = stringCode(code);
+        decl += strCode;
+        // Build suffix array entry
+        char* const entryp = &m_suffixes[code * 8];
+        const size_t length = strCode.length();
+        assert(length <= 5);  // ceil(log94(2**32)) == 5
+        // 1 bit values don't have a ' ' separator between value and string code
+        const bool isBit = bits == 1;
+        entryp[0] = ' ';  // Separator
+        std::strcpy(entryp + !isBit, strCode.c_str());  // Code (overwrite separator if isBit)
+        entryp[length + !isBit] = '\n';  // Replace '\0' with line termination '\n'
+        // Set length of suffix (used to increment write pointer)
+        entryp[7] = !isBit + length + 1;
     }
     decl += " ";
     decl += basename;
@@ -656,6 +706,7 @@ void VerilatedVcd::declDouble(vluint32_t code, const char* name, bool array, int
 }
 
 //=============================================================================
+// Trace recording routines
 
 void VerilatedVcd::fullBit(vluint32_t code, const vluint32_t newval) {
     // Note the &1, so we don't require clean input -- makes more common no change case faster
@@ -803,6 +854,266 @@ void VerilatedVcd::fullBusX(vluint32_t code, int bits) {
 }
 void VerilatedVcd::fullQuadX(vluint32_t code, int bits) { fullBusX(code, bits); }
 void VerilatedVcd::fullArrayX(vluint32_t code, int bits) { fullBusX(code, bits); }
+
+//=============================================================================
+// Pointer based variants used by Verilator
+
+// Emit suffix, write back write pointer, check buffer
+void VerilatedVcd::finishLine(vluint32_t* oldp, char* writep) {
+    const vluint32_t code = oldp - m_sigs_oldvalp;
+    char* const suffixp = m_suffixesp + code * 8;
+    // Copy the whole suffix (this avoid having hard to predict branches which
+    // helps a lot). Note suffixp could be aligned, so could load it in one go,
+    // but then we would be endiannes dependent which we don't have a way to
+    // test right now and probably would make little difference...
+    writep[0] = suffixp[0];
+    writep[1] = suffixp[1];
+    writep[2] = suffixp[2];
+    writep[3] = suffixp[3];
+    writep[4] = suffixp[4];
+    writep[5] = suffixp[5];
+    writep[6] = '\n';  // The 6th index is always '\n' if it's relevant, no need to fetch it.
+    // Now write back the write pointer incremented by the actual size of the suffix.
+    m_writep = writep + suffixp[7];
+    bufferCheck();
+}
+
+void VerilatedVcd::fullBit(vluint32_t* oldp, vluint32_t newval) {
+    *oldp = newval;
+    char* wp = m_writep;
+    *wp++ = '0' | static_cast<char>(newval);
+    finishLine(oldp, wp);
+}
+
+// We do want these functions specialized for sizes to avoid hard to predict
+// branches, but we don't want them in-lined, so we explicitly create one
+// specialization for each size used here here.
+
+// N is the number of used bits in the value
+template <int N> void VerilatedVcd::fullBus(vluint32_t* oldp, vluint32_t newval) {
+    *oldp = newval;
+    char* wp = m_writep;
+    *wp++ = 'b';
+    newval <<= 32 - N;
+    int bits = N;
+    do {
+        *wp++ = '0' | static_cast<char>(newval >> 31);
+        newval <<= 1;
+    } while (--bits);
+    finishLine(oldp, wp);
+}
+// Note: No specialization for width 1, covered by 'fullBit'
+template void VerilatedVcd::fullBus<2>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<3>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<4>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<5>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<6>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<7>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<8>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<9>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<10>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<11>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<12>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<13>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<14>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<15>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<16>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<17>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<18>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<19>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<20>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<21>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<22>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<23>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<24>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<25>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<26>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<27>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<28>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<29>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<30>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<31>(vluint32_t* oldp, vluint32_t newval);
+template void VerilatedVcd::fullBus<32>(vluint32_t* oldp, vluint32_t newval);
+
+// N is the number of used bits in the value
+template <int N> void VerilatedVcd::fullQuad(vluint32_t* oldp, vluint64_t newval) {
+    *reinterpret_cast<vluint64_t*>(oldp) = newval;
+    char* wp = m_writep;
+    *wp++ = 'b';
+    newval <<= 64 - N;
+    int bits = N;
+    do {
+        *wp++ = '0' | static_cast<char>(newval >> 63);
+        newval <<= 1;
+    } while (--bits);
+    finishLine(oldp, wp);
+}
+
+// Note: No specialization for width 1-32, covered by 'fullBit' and 'fullBus'
+template void VerilatedVcd::fullQuad<33>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<34>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<35>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<36>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<37>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<38>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<39>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<40>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<41>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<42>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<43>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<44>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<45>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<46>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<47>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<48>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<49>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<50>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<51>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<52>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<53>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<54>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<55>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<56>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<57>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<58>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<59>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<60>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<61>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<62>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<63>(vluint32_t* oldp, vluint64_t newval);
+template void VerilatedVcd::fullQuad<64>(vluint32_t* oldp, vluint64_t newval);
+
+// N is the number of bits in the partial word. Zero means all words are full.
+// Note: This template is for N > 0 only
+template <int N>
+void VerilatedVcd::fullArray(vluint32_t* oldp, const vluint32_t* newval, int wholeWords) {
+    for (int i = 0; i <= wholeWords; ++i) {
+        oldp[i] = newval[i];
+    }
+    char* wp = m_writep;
+    *wp++ = 'b';
+    // Most significant word is partial
+    vluint32_t val = newval[wholeWords] << (32 - N);
+    int bits = N;
+    do {
+        *wp++ = '0' | static_cast<char>(val >> 31);
+        val <<= 1;
+    } while (--bits);
+    // Full words. Note: this could almost be a do loop, except for some SystemC things
+    while (wholeWords > 0) {
+        vluint32_t val = newval[--wholeWords];
+        int bits = 32;
+        do {
+            *wp++ = '0' | static_cast<char>(val >> 31);
+            val <<= 1;
+        } while (--bits);
+    }
+    finishLine(oldp, wp);
+}
+
+// Variant with only full words specialized to avoid compilation errors when
+// building without optimization.
+template <>
+void VerilatedVcd::fullArray<0>(vluint32_t* oldp, const vluint32_t* newval, int wholeWords) {
+    for (int i = 0; i < wholeWords; ++i) {
+        oldp[i] = newval[i];
+    }
+    char* wp = m_writep;
+    *wp++ = 'b';
+    // Full words. Note: this could almost be a do loop, except for some SystemC things
+    while (wholeWords > 0) {
+        vluint32_t val = newval[--wholeWords];
+        int bits = 32;
+        do {
+            *wp++ = '0' | static_cast<char>(val >> 31);
+            val <<= 1;
+        } while (--bits);
+    }
+    finishLine(oldp, wp);
+}
+
+template void VerilatedVcd::fullArray<1>(vluint32_t* oldp, const vluint32_t* newval,
+                                         int wholeWords);
+template void VerilatedVcd::fullArray<2>(vluint32_t* oldp, const vluint32_t* newval,
+                                         int wholeWords);
+template void VerilatedVcd::fullArray<3>(vluint32_t* oldp, const vluint32_t* newval,
+                                         int wholeWords);
+template void VerilatedVcd::fullArray<4>(vluint32_t* oldp, const vluint32_t* newval,
+                                         int wholeWords);
+template void VerilatedVcd::fullArray<5>(vluint32_t* oldp, const vluint32_t* newval,
+                                         int wholeWords);
+template void VerilatedVcd::fullArray<6>(vluint32_t* oldp, const vluint32_t* newval,
+                                         int wholeWords);
+template void VerilatedVcd::fullArray<7>(vluint32_t* oldp, const vluint32_t* newval,
+                                         int wholeWords);
+template void VerilatedVcd::fullArray<8>(vluint32_t* oldp, const vluint32_t* newval,
+                                         int wholeWords);
+template void VerilatedVcd::fullArray<9>(vluint32_t* oldp, const vluint32_t* newval,
+                                         int wholeWords);
+template void VerilatedVcd::fullArray<10>(vluint32_t* oldp, const vluint32_t* newval,
+                                          int wholeWords);
+template void VerilatedVcd::fullArray<11>(vluint32_t* oldp, const vluint32_t* newval,
+                                          int wholeWords);
+template void VerilatedVcd::fullArray<12>(vluint32_t* oldp, const vluint32_t* newval,
+                                          int wholeWords);
+template void VerilatedVcd::fullArray<13>(vluint32_t* oldp, const vluint32_t* newval,
+                                          int wholeWords);
+template void VerilatedVcd::fullArray<14>(vluint32_t* oldp, const vluint32_t* newval,
+                                          int wholeWords);
+template void VerilatedVcd::fullArray<15>(vluint32_t* oldp, const vluint32_t* newval,
+                                          int wholeWords);
+template void VerilatedVcd::fullArray<16>(vluint32_t* oldp, const vluint32_t* newval,
+                                          int wholeWords);
+template void VerilatedVcd::fullArray<17>(vluint32_t* oldp, const vluint32_t* newval,
+                                          int wholeWords);
+template void VerilatedVcd::fullArray<18>(vluint32_t* oldp, const vluint32_t* newval,
+                                          int wholeWords);
+template void VerilatedVcd::fullArray<19>(vluint32_t* oldp, const vluint32_t* newval,
+                                          int wholeWords);
+template void VerilatedVcd::fullArray<20>(vluint32_t* oldp, const vluint32_t* newval,
+                                          int wholeWords);
+template void VerilatedVcd::fullArray<21>(vluint32_t* oldp, const vluint32_t* newval,
+                                          int wholeWords);
+template void VerilatedVcd::fullArray<22>(vluint32_t* oldp, const vluint32_t* newval,
+                                          int wholeWords);
+template void VerilatedVcd::fullArray<23>(vluint32_t* oldp, const vluint32_t* newval,
+                                          int wholeWords);
+template void VerilatedVcd::fullArray<24>(vluint32_t* oldp, const vluint32_t* newval,
+                                          int wholeWords);
+template void VerilatedVcd::fullArray<25>(vluint32_t* oldp, const vluint32_t* newval,
+                                          int wholeWords);
+template void VerilatedVcd::fullArray<26>(vluint32_t* oldp, const vluint32_t* newval,
+                                          int wholeWords);
+template void VerilatedVcd::fullArray<27>(vluint32_t* oldp, const vluint32_t* newval,
+                                          int wholeWords);
+template void VerilatedVcd::fullArray<28>(vluint32_t* oldp, const vluint32_t* newval,
+                                          int wholeWords);
+template void VerilatedVcd::fullArray<29>(vluint32_t* oldp, const vluint32_t* newval,
+                                          int wholeWords);
+template void VerilatedVcd::fullArray<30>(vluint32_t* oldp, const vluint32_t* newval,
+                                          int wholeWords);
+template void VerilatedVcd::fullArray<31>(vluint32_t* oldp, const vluint32_t* newval,
+                                          int wholeWords);
+
+void VerilatedVcd::fullFloat(vluint32_t* oldp, float newval) {
+    // cppcheck-suppress invalidPointerCast
+    *reinterpret_cast<float*>(oldp) = newval;
+    char* wp = m_writep;
+    // Buffer can't overflow before sprintf; we sized during declaration
+    sprintf(wp, "r%.16g", static_cast<double>(newval));
+    wp += strlen(wp);
+    finishLine(oldp, wp);
+}
+
+void VerilatedVcd::fullDouble(vluint32_t* oldp, double newval) {
+    // cppcheck-suppress invalidPointerCast
+    *reinterpret_cast<double*>(oldp) = newval;
+    char* wp = m_writep;
+    // Buffer can't overflow before sprintf; we sized during declaration
+    sprintf(wp, "r%.16g", newval);
+    wp += strlen(wp);
+    finishLine(oldp, wp);
+}
 
 //=============================================================================
 // Callbacks

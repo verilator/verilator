@@ -57,6 +57,7 @@ private:
     Local2FstDtype m_local2fstdtype;
     std::list<std::string> m_curScope;
     fstHandle* m_symbolp;  ///< same as m_code2symbol, but as an array
+    vluint32_t  *m_sigs_oldvalp;
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFst);
     void declSymbol(vluint32_t code, const char* name,
@@ -115,16 +116,6 @@ public:
         declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1,
                    msb - lsb + 1);
     }
-    void declDouble(vluint32_t code, const char* name,
-                    int dtypenum, fstVarDir vardir, fstVarType vartype,
-                    bool array, int arraynum) {
-        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 2, 64);
-    }
-    void declFloat(vluint32_t code, const char* name,
-                   int dtypenum, fstVarDir vardir, fstVarType vartype,
-                   bool array, int arraynum) {
-        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 1, 32);
-    }
     void declQuad(vluint32_t code, const char* name,
                   int dtypenum, fstVarDir vardir, fstVarType vartype,
                   bool array, int arraynum, int msb, int lsb) {
@@ -137,59 +128,84 @@ public:
         declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1,
                    msb - lsb + 1);
     }
-
-    /// Inside dumping routines, dump one signal if it has changed
-    void chgBit(vluint32_t code, const vluint32_t newval) {
-        fstWriterEmitValueChange(m_fst, m_symbolp[code], newval ? "1" : "0");
+    void declFloat(vluint32_t code, const char* name,
+                   int dtypenum, fstVarDir vardir, fstVarType vartype,
+                   bool array, int arraynum) {
+        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 1, 32);
     }
-    void chgBus(vluint32_t code, const vluint32_t newval, int bits) {
-        fstWriterEmitValueChange32(m_fst, m_symbolp[code], bits, newval);
-    }
-    void chgDouble(vluint32_t code, const double newval) {
-        double val = newval;
-        fstWriterEmitValueChange(m_fst, m_symbolp[code], &val);
-    }
-    void chgFloat(vluint32_t code, const float newval) {
-        double val = (double)newval;
-        fstWriterEmitValueChange(m_fst, m_symbolp[code], &val);
-    }
-    void chgQuad(vluint32_t code, const vluint64_t newval, int bits) {
-        fstWriterEmitValueChange64(m_fst, m_symbolp[code], bits, newval);
-    }
-    void chgArray(vluint32_t code, const vluint32_t* newval, int bits) {
-        fstWriterEmitValueChangeVec32(m_fst, m_symbolp[code], bits, newval);
+    void declDouble(vluint32_t code, const char* name,
+                    int dtypenum, fstVarDir vardir, fstVarType vartype,
+                    bool array, int arraynum) {
+        declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 2, 64);
     }
 
-    void fullBit(vluint32_t code, const vluint32_t newval) { chgBit(code, newval); }
-    void fullBus(vluint32_t code, const vluint32_t newval, int bits) {
-        chgBus(code, newval, bits);
+    //=========================================================================
+    // Inside dumping routines used by Verilator
+
+    vluint32_t* oldp(vluint32_t code) { return m_sigs_oldvalp + code; }
+
+    //=========================================================================
+    // Write back to previous value buffer value and emit
+
+    void fullBit(vluint32_t* oldp, vluint32_t newval) {
+        *oldp = newval;
+        fstWriterEmitValueChange(m_fst, m_symbolp[oldp - m_sigs_oldvalp], newval ? "1" : "0");
     }
-    void fullDouble(vluint32_t code, const double newval) { chgDouble(code, newval); }
-    void fullFloat(vluint32_t code, const float newval) { chgFloat(code, newval); }
-    void fullQuad(vluint32_t code, const vluint64_t newval, int bits) {
-        chgQuad(code, newval, bits);
+    template <int N> void fullBus(vluint32_t* oldp, vluint32_t newval){
+        *oldp = newval;
+        fstWriterEmitValueChange32(m_fst, m_symbolp[oldp - m_sigs_oldvalp], N, newval);
     }
-    void fullArray(vluint32_t code, const vluint32_t* newval, int bits) {
-        chgArray(code, newval, bits);
+    template <int N> void fullQuad(vluint32_t* oldp, vluint64_t newval) {
+        *reinterpret_cast<vluint64_t*>(oldp) = newval;
+        fstWriterEmitValueChange64(m_fst, m_symbolp[oldp - m_sigs_oldvalp], N, newval);
+    }
+    template <int N> void fullArray(vluint32_t* oldp, const vluint32_t* newval, int wholeWords) {
+        for (int i = 0; i < wholeWords + (N > 0); ++i) {
+            oldp[i] = newval[i];
+        }
+        fstWriterEmitValueChangeVec32(m_fst, m_symbolp[oldp - m_sigs_oldvalp], 32*wholeWords + N, newval);
+    }
+    void fullFloat(vluint32_t* oldp, float newval) {
+        *reinterpret_cast<float*>(oldp) = newval;
+        fstWriterEmitValueChange(m_fst, m_symbolp[oldp - m_sigs_oldvalp], oldp);
+    }
+    void fullDouble(vluint32_t* oldp, double newval) {
+        *reinterpret_cast<double*>(oldp) = newval;
+        fstWriterEmitValueChange(m_fst, m_symbolp[oldp - m_sigs_oldvalp], oldp);
     }
 
-    void declTriBit(vluint32_t code, const char* name, int arraynum);
-    void declTriBus(vluint32_t code, const char* name, int arraynum, int msb, int lsb);
-    void declTriQuad(vluint32_t code, const char* name, int arraynum, int msb, int lsb);
-    void declTriArray(vluint32_t code, const char* name, int arraynum, int msb, int lsb);
-    void fullTriBit(vluint32_t code, const vluint32_t newval, const vluint32_t newtri);
-    void fullTriBus(vluint32_t code, const vluint32_t newval, const vluint32_t newtri, int bits);
-    void fullTriQuad(vluint32_t code, const vluint64_t newval, const vluint32_t newtri, int bits);
-    void fullTriArray(vluint32_t code, const vluint32_t* newvalp, const vluint32_t* newtrip,
-                      int bits);
-    void fullBitX(vluint32_t code);
-    void fullBusX(vluint32_t code, int bits);
-    void fullQuadX(vluint32_t code, int bits);
-    void fullArrayX(vluint32_t code, int bits);
-    void chgTriBit(vluint32_t code, const vluint32_t newval, const vluint32_t newtri);
-    void chgTriBus(vluint32_t code, const vluint32_t newval, const vluint32_t newtri, int bits);
-    void chgTriQuad(vluint32_t code, const vluint64_t newval, const vluint32_t newtri, int bits);
-    void chgTriArray(vluint32_t code, const vluint32_t* newvalp, const vluint32_t* newtrip, int bits);
+    //=========================================================================
+    // Check previous value and emit if changed
+
+    inline void chgBit(vluint32_t* oldp, vluint32_t newval) {
+        const vluint32_t diff = *oldp ^ newval;
+        if (VL_UNLIKELY(diff)) { fullBit(oldp, newval); }
+    }
+    template <int N> inline void chgBus(vluint32_t* oldp, vluint32_t newval) {
+        const vluint32_t diff = *oldp ^ newval;
+        if (VL_UNLIKELY(diff)) { fullBus<N>(oldp, newval); }
+    }
+    template <int N> inline void chgQuad(vluint32_t* oldp, vluint64_t newval) {
+        const vluint64_t diff = *reinterpret_cast<vluint64_t*>(oldp) ^ newval;
+        if (VL_UNLIKELY(diff)) { fullQuad<N>(oldp, newval); }
+    }
+    template <int N>
+    inline void chgArray(vluint32_t* oldp, const vluint32_t* newval, int wholeWords) {
+        for (int i = 0; i < wholeWords + (N > 0); ++i) {
+            if (VL_UNLIKELY(oldp[i] ^ newval[i])) {
+                fullArray<N>(oldp, newval, wholeWords);
+                return;
+            }
+        }
+    }
+    inline void chgFloat(vluint32_t* oldp, float newval) {
+        // cppcheck-suppress invalidPointerCast
+        if (VL_UNLIKELY(*reinterpret_cast<float*>(oldp) != newval)) { fullFloat(oldp, newval); }
+    }
+    inline void chgDouble(vluint32_t* oldp, double newval) {
+        // cppcheck-suppress invalidPointerCast
+        if (VL_UNLIKELY(*reinterpret_cast<double*>(oldp) != newval)) { fullDouble(oldp, newval); }
+    }
 };
 
 //=============================================================================
