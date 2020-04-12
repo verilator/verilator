@@ -850,8 +850,10 @@ public:
         puts(cvtToStr(nodep->fileline()->lineno()));
         puts(")");
     }
-    virtual void visit(AstNew* nodep) VL_OVERRIDE {
+    virtual void visit(AstCNew* nodep) VL_OVERRIDE {
         puts("std::make_shared<" + prefixNameProtect(nodep->dtypep()) + ">(");
+        puts("vlSymsp");  // TODO make this part of argsp, and eliminate when unnecessary
+        if (nodep->argsp()) puts(", ");
         iterateAndNextNull(nodep->argsp());
         puts(")");
     }

@@ -4066,24 +4066,22 @@ public:
     }
 };
 
-class AstNew : public AstNodeMath {
+class AstNew : public AstNodeFTaskRef {
     // New as constructor
     // Don't need the class we are extracting from, as the "fromp()"'s datatype can get us to it
     // Parents: math|stmt
     // Children: varref|arraysel, math
 public:
-    AstNew(FileLine* fl, AstNode* argsp)
-        : ASTGEN_SUPER(fl) {
-        addNOp2p(argsp);
-    }
+    AstNew(FileLine* fl, AstNode* pinsp)
+        : ASTGEN_SUPER(fl, false, "new", pinsp) {}
     ASTNODE_NODE_FUNCS(New)
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual string emitVerilog() { return "new"; }
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const { return true; }
     virtual bool same(const AstNode* samep) const { return true; }
+    virtual bool hasDType() const { return true; }
     virtual int instrCount() const { return widthInstrs(); }
-    AstNode* argsp() const { return op2p(); }
 };
 
 class AstNewCopy : public AstNodeMath {
@@ -7038,6 +7036,23 @@ public:
     }
     AstNode* fromp() const { return op1p(); }  // op1 = Extracting what (NULL=TBD during parsing)
     void fromp(AstNode* nodep) { setOp1p(nodep); }
+};
+
+class AstCNew : public AstNodeCCall {
+    // C++ new() call
+    // Parents:  Anything above an expression
+    // Children: Args to the function
+public:
+    AstCNew(FileLine* fl, AstCFunc* funcp, AstNode* argsp = NULL)
+        : ASTGEN_SUPER(fl, funcp, argsp) {
+        statement(false);
+    }
+    // Replacement form for V3Combine
+    // Note this removes old attachments from the oldp
+    AstCNew(AstCCall* oldp, AstCFunc* funcp)
+        : ASTGEN_SUPER(oldp, funcp) {}
+    virtual bool hasDType() const { return true; }
+    ASTNODE_NODE_FUNCS(CNew)
 };
 
 class AstCReturn : public AstNodeStmt {

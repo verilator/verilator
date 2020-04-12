@@ -67,7 +67,7 @@ class EmitCInlines : EmitCBaseVisitor {
         v3Global.needHeavy(true);
         iterateChildren(nodep);
     }
-    virtual void visit(AstNew* nodep) VL_OVERRIDE {
+    virtual void visit(AstCNew* nodep) VL_OVERRIDE {
         if (v3Global.opt.savable()) v3error("Unsupported: --savable with dynamic new");
         iterateChildren(nodep);
     }

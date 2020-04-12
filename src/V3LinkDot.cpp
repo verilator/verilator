@@ -643,10 +643,9 @@ public:
         VSymEnt* foundp = NULL;
         while (!foundp) {
             foundp = lookupSymp->findIdFallback(prefix + dotname);  // Might be NULL
-            if (prefix == "") {
-                break;
-            }
-            prefix = removeLastInlineScope(prefix);
+            if (prefix.empty()) break;
+            string nextPrefix = removeLastInlineScope(prefix);
+            if (prefix == nextPrefix) break;
         }
         if (!foundp) baddot = dotname;
         return foundp;
@@ -686,7 +685,8 @@ class LinkDotFindVisitor : public AstNVisitor {
     bool                m_inRecursion;  // Inside a recursive module
     int                 m_paramNum;     // Parameter number, for position based connection
     int                 m_beginNum;     // Begin block number, 0=none seen
-    int                 m_modBeginNum;  // Begin block number in module, 0=none seen
+    bool m_explicitNew;  // Hit a "new" function
+    int m_modBeginNum;  // Begin block number in module, 0=none seen
 
     // METHODS
     int debug() { return LinkDotState::debug(); }
@@ -722,6 +722,13 @@ class LinkDotFindVisitor : public AstNVisitor {
             }
         }
         return NULL;
+    }
+    void makeImplicitNew(AstClass* nodep) {
+        AstFunc* newp = new AstFunc(nodep->fileline(), "new", NULL, NULL);
+        newp->isConstructor(true);
+        nodep->addMembersp(newp);
+        UINFO(8, "Made implicit new for " << nodep->name() << ": " << nodep << endl);
+        m_statep->insertBlock(m_curSymp, newp->name(), newp, m_packagep);
     }
 
     // VISITs
@@ -842,10 +849,13 @@ class LinkDotFindVisitor : public AstNVisitor {
             m_paramNum = 0;
             m_beginNum = 0;
             m_modBeginNum = 0;
+            m_explicitNew = false;
             // m_modSymp/m_curSymp for non-packages set by AstCell above this module
             // Iterate
             iterateChildren(nodep);
             nodep->user4(true);
+            // Implicit new needed?
+            if (!m_explicitNew && m_statep->forPrimary()) makeImplicitNew(nodep);
         }
         m_scope = oldscope;
         m_modSymp = oldModSymp;
@@ -971,6 +981,7 @@ class LinkDotFindVisitor : public AstNVisitor {
         // NodeTask: Remember its name for later resolution
         UINFO(5,"   "<<nodep<<endl);
         UASSERT_OBJ(m_curSymp && m_modSymp, nodep, "Function/Task not under module?");
+        if (nodep->name() == "new") m_explicitNew = true;
         // Remember the existing symbol table scope
         VSymEnt* oldCurSymp = m_curSymp;
         {
@@ -1232,6 +1243,7 @@ public:
         m_inRecursion = false;
         m_paramNum = 0;
         m_beginNum = 0;
+        m_explicitNew = false;
         m_modBeginNum = 0;
         //
         iterate(rootp);
@@ -2423,6 +2435,8 @@ private:
                                    <<nodep->prettyName()
                                    <<"'"<<" as a "<<foundp->nodep()->typeName()
                                    <<" but expected a task/function");
+                } else if (VN_IS(nodep, New) && m_statep->forPrearray()) {
+                    // Resolved in V3Width
                 } else if (nodep->dotted() == "") {
                     string suggest = m_statep->suggestSymFallback(
                         dotSymp, nodep->name(), LinkNodeMatcherFTask());

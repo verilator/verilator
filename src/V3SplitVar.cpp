@@ -501,6 +501,7 @@ class SplitUnpackedVarVisitor : public AstNVisitor, public SplitVarImpl {
         {
             m_contextp = nodep;
             AstNodeFTask* ftaskp = nodep->taskp();
+            UASSERT_OBJ(ftaskp, nodep, "Unlinked");
             // Iterate arguments of a function/task.
             for (AstNode *argp = nodep->pinsp(), *paramp = ftaskp->stmtsp(); argp;
                  argp = argp->nextp(), paramp = paramp ? paramp->nextp() : NULL) {

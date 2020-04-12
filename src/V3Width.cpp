@@ -1895,7 +1895,7 @@ private:
     }
 
     virtual void visit(AstMethodCall* nodep) VL_OVERRIDE {
-        UINFO(5,"   METHODSEL "<<nodep<<endl);
+        UINFO(5, "   METHODCALL " << nodep << endl);
         if (nodep->didWidth()) return;
         if (debug()>=9) nodep->dumpTree("-mts-in: ");
         // Should check types the method requires, but at present we don't do much
@@ -2431,12 +2431,20 @@ private:
             return;
         }
         nodep->dtypep(refp);
-        if (nodep->argsp()) {
-            nodep->v3error("Unsupported: new with arguments");
-            pushDeletep(nodep->argsp()->unlinkFrBackWithNext());
-            //TODO code similar to AstNodeFTaskRef
-            //userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
+
+        AstClass* classp = refp->classp();
+        UASSERT_OBJ(classp, nodep, "Unlinked");
+        if (AstNodeFTask* ftaskp = VN_CAST(classp->findMember("new"), Func)) {
+            nodep->taskp(ftaskp);
+            nodep->packagep(classp);
+        } else {
+            // Either made explicitly or V3LinkDot made implicitly
+            classp->v3fatalSrc("Can't find class's new");
         }
+
+        userIterate(nodep->taskp(), NULL);
+        userIterateChildren(nodep, NULL);
+        processFTaskRefArgs(nodep);
     }
     virtual void visit(AstNewCopy* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;
@@ -3406,7 +3414,6 @@ private:
         userIterateChildren(nodep, NULL);
         if (nodep->isConstructor()) {
             // Pretend it's void so less special casing needed when look at dtypes
-            nodep->v3error("Unsupported: new constructor");
             nodep->dtypeSetVoid();
         } else if (nodep->fvarp()) {
             m_funcp = VN_CAST(nodep, Func);

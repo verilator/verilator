@@ -186,7 +186,7 @@ private:
         m_assignwp = NULL;
     }
     virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
-        // Includes handling AstMethodCall
+        // Includes handling AstMethodCall, AstNew
         if (m_assignwp) {
             // Wire assigns must become always statements to deal with insertion
             // of multiple statements.  Perhaps someday make all wassigns into always's?
@@ -204,6 +204,7 @@ private:
         m_curVxp = getFTaskVertex(nodep);
         if (nodep->dpiImport()) m_curVxp->noInline(true);
         if (nodep->classMethod()) m_curVxp->noInline(true);  // Until V3Task supports it
+        if (nodep->isConstructor()) m_curVxp->noInline(true);
         iterateChildren(nodep);
         m_curVxp = lastVxp;
     }
@@ -474,7 +475,7 @@ private:
     }
 
     AstNode* createNonInlinedFTask(AstNodeFTaskRef* refp, const string& namePrefix,
-                                   AstVarScope* outvscp) {
+                                   AstVarScope* outvscp, AstCNew*& cnewpr) {
         // outvscp is the variable for functions only, if NULL, it's a task
         UASSERT_OBJ(refp->taskp(), refp, "Unlinked?");
         AstCFunc* cfuncp = m_statep->ftaskCFuncp(refp->taskp());
@@ -483,12 +484,19 @@ private:
         AstNode* beginp = new AstComment(refp->fileline(),
                                          string("Function: ")+refp->name(), true);
         AstNodeCCall* ccallp;
-        if (AstMethodCall* mrefp = VN_CAST(refp, MethodCall)) {
+        if (AstNew* mrefp = VN_CAST(refp, New)) {
+            AstCNew* cnewp = new AstCNew(refp->fileline(), cfuncp);
+            cnewp->dtypep(refp->dtypep());
+            ccallp = cnewp;
+            // Parent AstNew will replace with this CNew
+            cnewpr = cnewp;
+        } else if (AstMethodCall* mrefp = VN_CAST(refp, MethodCall)) {
             ccallp = new AstCMethodCall(refp->fileline(), mrefp->fromp()->unlinkFrBack(), cfuncp);
+            beginp->addNext(ccallp);
         } else {
             ccallp = new AstCCall(refp->fileline(), cfuncp);
+            beginp->addNext(ccallp);
         }
-        beginp->addNext(ccallp);
 
         // Convert complicated outputs to temp signals
         V3TaskConnects tconnects = V3Task::taskConnects(refp, refp->taskp()->stmtsp());
@@ -988,8 +996,10 @@ private:
         // so make it unique now.
         string suffix;  // So, make them unique
         if (!nodep->taskPublic()) suffix = "_"+m_scopep->nameDotless();
+        string name = ((nodep->name() == "new") ? "new"
+                       : prefix + nodep->name() + suffix);
         AstCFunc* cfuncp = new AstCFunc(nodep->fileline(),
-                                        prefix + nodep->name() + suffix,
+                                        name,
                                         m_scopep,
                                         ((nodep->taskPublic() && rtnvarp)
                                          ? rtnvarp->cPubArgType(true, true)
@@ -1003,6 +1013,7 @@ private:
         cfuncp->dpiImportWrapper(nodep->dpiImport());
         cfuncp->isStatic(!(nodep->dpiImport() || nodep->taskPublic() || nodep->classMethod()));
         cfuncp->pure(nodep->pure());
+        cfuncp->isConstructor(nodep->name() == "new");
         //cfuncp->dpiImport   // Not set in the wrapper - the called function has it set
         if (cfuncp->dpiExport()) cfuncp->cname(nodep->cname());
 
@@ -1017,6 +1028,10 @@ private:
             } else {
                 // Need symbol table
                 cfuncp->argTypes(EmitCBaseVisitor::symClassVar());
+                if (cfuncp->name() == "new") {
+                    cfuncp->addInitsp(
+                        new AstCStmt(nodep->fileline(), "_ctor_var_reset(vlSymsp);\n"));
+                }
             }
         }
         if (nodep->dpiContext()) {
@@ -1157,6 +1172,7 @@ private:
         m_scopep = NULL;
     }
     virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
+        // Includes handling AstMethodCall, AstNew
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked?");
         iterateIntoFTask(nodep->taskp());  // First, do hierarchical funcs
         UINFO(4," FTask REF   "<<nodep<<endl);
@@ -1173,15 +1189,21 @@ private:
         }
         // Create cloned statements
         AstNode* beginp;
+        AstCNew* cnewp = NULL;
         if (m_statep->ftaskNoInline(nodep->taskp())) {
             // This may share VarScope's with a public task, if any.  Yuk.
-            beginp = createNonInlinedFTask(nodep, namePrefix, outvscp);
+            beginp = createNonInlinedFTask(nodep, namePrefix, outvscp, cnewp /*ref*/);
         } else {
             beginp = createInlinedFTask(nodep, namePrefix, outvscp);
         }
         // Replace the ref
         AstNode* visitp = NULL;
-        if (!nodep->isStatement()) {
+        if (VN_IS(nodep, New)) {
+            UASSERT_OBJ(!nodep->isStatement(), nodep, "new is non-stmt");
+            UASSERT_OBJ(cnewp, nodep, "didn't create cnew for new");
+            nodep->replaceWith(cnewp);
+            visitp = insertBeforeStmt(nodep, beginp);
+        } else if (!nodep->isStatement()) {
             UASSERT_OBJ(nodep->taskp()->isFunction(), nodep, "func reference to non-function");
             AstVarRef* outrefp = new AstVarRef(nodep->fileline(), outvscp, false);
             nodep->replaceWith(outrefp);
