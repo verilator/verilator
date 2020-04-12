@@ -422,7 +422,8 @@ V3LangCode V3Options::fileLanguage(const string &filename) {
 // Environment
 
 string V3Options::getenvBuiltins(const string& var) {
-    if (var == "PERL") return getenvPERL();
+    if (var == "MAKE") return getenvMAKE();
+    else if (var == "PERL") return getenvPERL();
     else if (var == "SYSTEMC") return getenvSYSTEMC();
     else if (var == "SYSTEMC_ARCH") return getenvSYSTEMC_ARCH();
     else if (var == "SYSTEMC_INCLUDE") return getenvSYSTEMC_INCLUDE();
@@ -431,6 +432,10 @@ string V3Options::getenvBuiltins(const string& var) {
     else {
         return V3Os::getenvStr(var, "");
     }
+}
+
+string V3Options::getenvMAKE() {
+    return V3Os::getenvStr("MAKE", "make");
 }
 
 string V3Options::getenvPERL() {
@@ -542,8 +547,8 @@ void V3Options::notify() {
     }
 
     // Make sure at least one make system is enabled
-    if (!gmake() && !cmake()) {
-        m_makeCmd = "gmake";
+    if (!m_gmake && !m_cmake) {
+        m_gmake = true;
     }
 
     if (protectIds()) {
@@ -770,7 +775,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-inhibit-sim", flag/*ref*/))  { m_inhibitSim = flag; }
             else if ( onoff (sw, "-lint-only", flag/*ref*/))    { m_lintOnly = flag; }
             else if (!strcmp(sw, "-no-pins64"))                 { m_pinsBv = 33; }
-            else if (!strcmp(sw, "-no-verilate"))               { m_noVerilate = true; }
             else if ( onoff (sw, "-order-clock-delay", flag/*ref*/)) { m_orderClockDly = flag; }
             else if (!strcmp(sw, "-pins64"))                    { m_pinsBv = 65; }
             else if ( onoff (sw, "-pins-sc-uint", flag/*ref*/)) { m_pinsScUint = flag; if (!m_pinsScBigUint) m_pinsBv = 65; }
@@ -804,6 +808,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-trace-structs", flag/*ref*/))     { m_traceStructs = flag; }
             else if ( onoff (sw, "-trace-underscore", flag/*ref*/))  { m_traceUnderscore = flag; }
             else if ( onoff (sw, "-underline-zero", flag/*ref*/))    { m_underlineZero = flag; }  // Undocumented, old Verilator-2
+            else if ( onoff (sw, "-verilate", flag/*ref*/))          { m_verilate = flag; }
             else if ( onoff (sw, "-vpi", flag/*ref*/))               { m_vpi = flag; }
             else if ( onoff (sw, "-Wpedantic", flag/*ref*/))         { m_pedantic = flag; }
             else if ( onoff (sw, "-x-initial-edge", flag/*ref*/))    { m_xInitialEdge = flag; }
@@ -933,8 +938,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 else {
                     shift;
                     m_buildJobs = atoi(argv[i]);
-                    if (m_buildJobs <= 0)
+                    if (m_buildJobs <= 0) {
                         fl->v3error("-j accepts positive integer, but "<<argv[i]<<" is passed");
+                    }
                 }
             }
             else if (!strcmp(sw, "-LDFLAGS") && (i+1)<argc) {
@@ -957,9 +963,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 if (!strcmp(argv[i], "cmake")) {
                     m_cmake = true;
                 } else if (!strcmp(argv[i], "gmake")) {
-                    m_makeCmd = "gmake";
-                } else if (!strcmp(argv[i], "make")) {
-                    m_makeCmd = "make";
+                    m_gmake = true;
                 } else {
                     fl->v3fatal("Unknown --make system specified: '"<<argv[i]<<"'");
                 }
@@ -1453,6 +1457,7 @@ void V3Options::showVersion(bool verbose) {
 
     cout <<endl;
     cout << "Environment:\n";
+    cout << "    MAKE               = " << V3Os::getenvStr("MAKE","")<<endl;
     cout << "    PERL               = " << V3Os::getenvStr("PERL","")<<endl;
     cout << "    SYSTEMC            = " << V3Os::getenvStr("SYSTEMC","")<<endl;
     cout << "    SYSTEMC_ARCH       = " << V3Os::getenvStr("SYSTEMC_ARCH","")<<endl;
@@ -1493,8 +1498,8 @@ V3Options::V3Options() {
     m_ignc = false;
     m_inhibitSim = false;
     m_lintOnly = false;
+    m_gmake = false;
     m_makePhony = false;
-    m_noVerilate = false;
     m_orderClockDly = true;
     m_outFormatOk = false;
     m_pedantic = false;
@@ -1532,6 +1537,7 @@ V3Options::V3Options() {
     m_traceStructs = false;
     m_traceUnderscore = false;
     m_underlineZero = false;
+    m_verilate = true;
     m_vpi = false;
     m_xInitialEdge = false;
     m_xmlOnly = false;

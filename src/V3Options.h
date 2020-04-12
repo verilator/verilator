@@ -168,7 +168,7 @@ class V3Options {
     bool        m_ignc;         // main switch: --ignc
     bool        m_inhibitSim;   // main switch: --inhibit-sim
     bool        m_lintOnly;     // main switch: --lint-only
-    bool        m_noVerilate;   // main switch: --no-verilate
+    bool        m_gmake;        // main switch: --make gmake
     bool        m_orderClockDly;// main switch: --order-clock-delay
     bool        m_outFormatOk;  // main switch: --cc, --sc or --sp was specified
     bool        m_pedantic;     // main switch: --Wpedantic
@@ -200,6 +200,7 @@ class V3Options {
     bool        m_traceStructs; // main switch: --trace-structs
     bool        m_traceUnderscore;// main switch: --trace-underscore
     bool        m_underlineZero;// main switch: --underline-zero; undocumented old Verilator 2
+    bool        m_verilate;     // main swith: --verilate
     bool        m_vpi;          // main switch: --vpi
     bool        m_xInitialEdge; // main switch: --x-initial-edge
     bool        m_xmlOnly;      // main switch: --xml-netlist
@@ -235,7 +236,6 @@ class V3Options {
     string      m_exeName;      // main switch: -o {name}
     string      m_flags;        // main switch: -f {name}
     string      m_l2Name;       // main switch: --l2name; "" for top-module's name
-    string      m_makeCmd;      // main switch: --make gmake/make
     string      m_makeDir;      // main switch: -Mdir
     string      m_modPrefix;    // main switch: --mod-prefix
     string      m_pipeFilter;   // main switch: --pipe-filter
@@ -334,7 +334,6 @@ class V3Options {
     bool bboxSys() const { return m_bboxSys; }
     bool bboxUnsup() const { return m_bboxUnsup; }
     bool build() const { return m_build; }
-    bool noVerilate() const { return m_noVerilate; }
     bool cdc() const { return m_cdc; }
     bool cmake() const { return m_cmake; }
     bool context() const { return m_context; }
@@ -354,7 +353,7 @@ class V3Options {
     bool dpiHdrOnly() const { return m_dpiHdrOnly; }
     bool dumpDefines() const { return m_dumpDefines; }
     bool exe() const { return m_exe; }
-    bool gmake() const { return !m_makeCmd.empty(); }
+    bool gmake() const { return m_gmake; }
     bool threadsDpiPure() const { return m_threadsDpiPure; }
     bool threadsDpiUnpure() const { return m_threadsDpiUnpure; }
     bool threadsCoarsen() const { return m_threadsCoarsen; }
@@ -383,6 +382,7 @@ class V3Options {
     bool quietExit() const { return m_quietExit; }
     bool relativeCFuncs() const { return m_relativeCFuncs; }
     bool reportUnoptflat() const { return m_reportUnoptflat; }
+    bool verilate() const { return m_verilate; }
     bool vpi() const { return m_vpi; }
     bool xInitialEdge() const { return m_xInitialEdge; }
     bool xmlOnly() const { return m_xmlOnly; }
@@ -418,7 +418,6 @@ class V3Options {
     string exeName() const { return m_exeName!="" ? m_exeName : prefix(); }
     string l2Name() const { return m_l2Name; }
     string makeDir() const { return m_makeDir; }
-    string makeCmd() const { return m_makeCmd; }
     string modPrefix() const { return m_modPrefix; }
     string pipeFilter() const { return m_pipeFilter; }
     string prefix() const { return m_prefix; }
@@ -500,6 +499,7 @@ class V3Options {
     // see the README.  If adding new variables, also see src/Makefile_obj.in
     // Also add to V3Options::showVersion()
     static string getenvBuiltins(const string& var);
+    static string getenvMAKE();
     static string getenvPERL();
     static string getenvSYSTEMC();
     static string getenvSYSTEMC_ARCH();
