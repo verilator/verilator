@@ -4987,6 +4987,12 @@ using the Verilator --exe flag.
 Note you can also call ->trace on multiple Verilated objects with the same
 trace file if you want all data to land in the same output file.
 
+When using SystemC 2.3, the SystemC library must have been built with the
+experiemntal simulation phase callback based tracing disabled. This is
+disabled by default when building SystemC with its configure based build
+system, but when building SystemC with CMake, you must pass
+-DENABLE_PHASE_CALLBACKS_TRACING=OFF to disable this feature.
+
     #include "verilated_vcd_sc.h"
     ...
     int main(int argc, char** argv, char** env) {
