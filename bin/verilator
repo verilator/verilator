@@ -310,7 +310,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --getenv <var>              Get environment variable with defaults
     --help                      Display this help
      -I<dir>                    Directory to search for includes
-     -j <value>                 Parallelism for --build
+     -j <jobs>                  Parallelism for --build
     --gate-stmts <value>        Tune gate optimizer depth
     --if-depth <value>          Tune IFDEPTH warning
      +incdir+<dir>              Directory to search for includes
@@ -595,13 +595,9 @@ clock signals directly.  This should be transparent to the user.
 
 Generates a script for the specified make system.
 
-Supported make systems are gmake, make, and cmake. This option specifies
-which command is used to build. Both gmake and make means GNU make.
-If gmake is specified, system("gmake -f ... -C ...") is called to build.
-If make is specified, system("make -f ... -C ...") is executed instead.
-If cmake is specified, sustem("cmake --build ...") is used.
-Both cmake and gmake/make can be specified.
+Supported make systems are gmake and cmake. Both can be specified.
 If no make system is specified, gmake is assumed.
+The executable of gmake can be configured via environment variable "MAKE".
 
 See also --build.
 
@@ -2158,6 +2154,12 @@ After running Make, the C++ compiler may produce the following:
 A generic Linux/OS variable specifying what directories have shared object
 (.so) files.  This path should include SystemC and any other shared objects
 needed at simulation runtime.
+
+=item MAKE
+
+Executable of the make command used in --build option.
+Some operating systems may require "gmake" to this variable to launch GNU make.
+If this variable is not specified, "make" is used.
 
 =item OBJCACHE
 
