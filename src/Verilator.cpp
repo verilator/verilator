@@ -526,102 +526,8 @@ static void process() {
     // Note early return above when opt.cdc()
 }
 
-static void execBuildJob() {
-    if (!v3Global.opt.build()) return;
-
-    std::stringstream cmd;
-    const V3StringList& makeFlags = v3Global.opt.makeFlags();
-    const int jobs = v3Global.opt.buildJobs();
-    if (v3Global.opt.gmake()) {  // If both gmake and cmake are chosen, use gmake to build.
-        cmd <<  v3Global.opt.makeCmd();
-        cmd << " -C " << v3Global.opt.makeDir();
-        cmd << " -f " << v3Global.opt.prefix() << ".mk";
-        if (jobs == 0) {
-            cmd << " -j";
-        } else if (jobs > 1) {
-            cmd << " -j " << jobs;
-        }
-        for (V3StringList::const_iterator it = makeFlags.begin(); it != makeFlags.end(); ++it) {
-            cmd << ' ' << *it;
-        }
-    } else {
-        UASSERT(v3Global.opt.cmake(), "at least cmake or gmake must be chosen in V3Options.cpp");
-        cmd << "cd " << v3Global.opt.makeDir() << " && ";
-        cmd << "cmake";
-        for (V3StringList::const_iterator it = makeFlags.begin(); it != makeFlags.end(); ++it) {
-            cmd << ' ' << *it;
-        }
-        cmd << ' ' << V3Os::getcwd() << " && ";
-        cmd << "cmake --build . ";
-        if (jobs == 0) {
-            cmd << " -j";
-        } else if (jobs > 1) {
-            cmd << " -j " << jobs;
-        }
-    }
-    const std::string cmdStr = cmd.str();
-
-    const int ret = V3Os::system(cmdStr);
-    if (ret == -1) {
-        v3fatal("Failed to execute " << cmdStr);
-    } else {
-        UASSERT(WIFEXITED(ret), "system(" << cmdStr << ") returned unexpected value of " << ret);
-        const int exit_code = WEXITSTATUS(ret);
-        UINFO(1, cmdStr << " returned exit code of " << exit_code << std::endl);
-        if (exit_code != 0) {
-            v3error(cmdStr << " exitted with " << exit_code << std::endl);
-        }
-    }
-}
-
-//######################################################################
-
-int main(int argc, char** argv, char** env) {
-    // General initialization
-    std::ios::sync_with_stdio();
-
-    time_t randseed;
-    time(&randseed);
-    srand(static_cast<int>(randseed));
-
-    // Post-constructor initialization of netlists
-    v3Global.boot();
-
-    // Preprocessor
-    // Before command parsing so we can handle -Ds on command line.
-    V3PreShell::boot(env);
-
-    // Command option parsing
-    v3Global.opt.bin(argv[0]);
-    string argString = V3Options::argString(argc-1, argv+1);
-    v3Global.opt.parseOpts(new FileLine(FileLine::commandLineFilename()),
-                           argc-1, argv+1);
-
-    // Validate settings (aka Boost.Program_options)
-    v3Global.opt.notify();
-
-    V3Error::abortIfErrors();
-
-    // Can we skip doing everything if times are ok?
-    V3File::addSrcDepend(v3Global.opt.bin());
-    if (v3Global.opt.skipIdentical().isTrue()
-        && V3File::checkTimes(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix()
-                              + "__verFiles.dat", argString)) {
-        UINFO(1,"--skip-identical: No change to any source files, exiting\n");
-        exit(0);
-    }
-    // Undocumented debugging - cannot be a switch as then command line
-    // would mismatch forcing non-identicalness when we set it
-    if (!V3Os::getenvStr("VERILATOR_DEBUG_SKIP_IDENTICAL", "").empty()) {
-        v3fatalSrc("VERILATOR_DEBUG_SKIP_IDENTICAL w/ --skip-identical: Changes found\n");
-    }
-
-    if (v3Global.opt.noVerilate() && v3Global.opt.build()) {
-        UINFO(1,"--no-verilate: Skip Verilation and start build\n");
-        execBuildJob();
-        exit(0);
-    }
-
+static void execVerilate(const string& argString) {
+    UINFO(1, "Option --verilate: Start Verilation\n");
     //--FRONTEND------------------
 
     // Cleanup
@@ -671,6 +577,99 @@ int main(int argc, char** argv, char** env) {
     v3Global.clear();
 #endif
     FileLine::deleteAllRemaining();
+}
+
+static void execBuildJob() {
+    UASSERT(v3Global.opt.build(), "--build is not specified.");
+    UINFO(1, "Start Build\n");
+
+    std::stringstream cmd;
+    const V3StringList& makeFlags = v3Global.opt.makeFlags();
+    const int jobs = v3Global.opt.buildJobs();
+    UASSERT(jobs >= 0, "-j option parser in V3Options.cpp filters out negative value");
+    if (v3Global.opt.gmake()) {  // If both gmake and cmake are chosen, use gmake to build.
+        cmd << v3Global.opt.getenvMAKE();
+        cmd << " -C " << v3Global.opt.makeDir();
+        cmd << " -f " << v3Global.opt.prefix() << ".mk";
+        if (jobs == 0) {
+            cmd << " -j";
+        } else if (jobs > 1) {
+            cmd << " -j " << jobs;
+        }
+        for (V3StringList::const_iterator it = makeFlags.begin(); it != makeFlags.end(); ++it) {
+            cmd << ' ' << *it;
+        }
+    } else {
+        UASSERT(v3Global.opt.cmake(), "at least cmake or gmake must be chosen in V3Options.cpp");
+        cmd << "cd " << v3Global.opt.makeDir() << " && ";
+        cmd << "cmake";
+        for (V3StringList::const_iterator it = makeFlags.begin(); it != makeFlags.end(); ++it) {
+            cmd << ' ' << *it;
+        }
+        cmd << ' ' << V3Os::getcwd() << " && ";
+        cmd << "cmake --build . ";
+        if (jobs == 0) {
+            cmd << " -j";
+        } else if (jobs > 1) {
+            cmd << " -j " << jobs;
+        }
+    }
+    const std::string cmdStr = cmd.str();
+
+    const int exit_code = V3Os::system(cmdStr);
+    if (exit_code != 0) {
+        v3error(cmdStr << " exitted with " << exit_code << std::endl);
+        exit(exit_code);
+    }
+}
+
+//######################################################################
+
+int main(int argc, char** argv, char** env) {
+    // General initialization
+    std::ios::sync_with_stdio();
+
+    time_t randseed;
+    time(&randseed);
+    srand(static_cast<int>(randseed));
+
+    // Post-constructor initialization of netlists
+    v3Global.boot();
+
+    // Preprocessor
+    // Before command parsing so we can handle -Ds on command line.
+    V3PreShell::boot(env);
+
+    // Command option parsing
+    v3Global.opt.bin(argv[0]);
+    string argString = V3Options::argString(argc-1, argv+1);
+    v3Global.opt.parseOpts(new FileLine(FileLine::commandLineFilename()),
+                           argc-1, argv+1);
+
+    // Validate settings (aka Boost.Program_options)
+    v3Global.opt.notify();
+
+    V3Error::abortIfErrors();
+
+    // Can we skip doing everything if times are ok?
+    V3File::addSrcDepend(v3Global.opt.bin());
+    if (v3Global.opt.skipIdentical().isTrue()
+        && V3File::checkTimes(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix()
+                              + "__verFiles.dat", argString)) {
+        UINFO(1,"--skip-identical: No change to any source files, exiting\n");
+        exit(0);
+    }
+    // Undocumented debugging - cannot be a switch as then command line
+    // would mismatch forcing non-identicalness when we set it
+    if (!V3Os::getenvStr("VERILATOR_DEBUG_SKIP_IDENTICAL", "").empty()) {
+        v3fatalSrc("VERILATOR_DEBUG_SKIP_IDENTICAL w/ --skip-identical: Changes found\n");
+    }
+
+    if (v3Global.opt.verilate()) {
+        execVerilate(argString);
+    } else {
+        UINFO(1, "Option --no-verilate: Skip Verilation\n");
+    }
 
     if (v3Global.opt.build()) {
         execBuildJob();
