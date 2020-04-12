@@ -219,9 +219,9 @@ void VerilatedFst::addCallback(VerilatedFstCallback_t initcb, VerilatedFstCallba
 void VerilatedFst::dump(vluint64_t timeui) {
     if (!isOpen()) return;
     if (timeui < m_minNextDumpTime) {
-      VL_PRINTF_MT("%%Warning: previous dump at t=%" VL_PRI64 "u, requesting t=%" VL_PRI64 "u\n",
-        m_minNextDumpTime - 1, timeui);
-      return;
+        VL_PRINTF_MT("%%Warning: previous dump at t=%" VL_PRI64 "u, requesting t=%" VL_PRI64 "u\n",
+                     m_minNextDumpTime - 1, timeui);
+        return;
     }
     m_minNextDumpTime = timeui + 1;
     if (VL_UNLIKELY(m_fullDump)) {

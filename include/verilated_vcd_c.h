@@ -213,7 +213,8 @@ public:
     void fullTriBit(vluint32_t code, const vluint32_t newval, const vluint32_t newtri);
     void fullTriBus(vluint32_t code, const vluint32_t newval, const vluint32_t newtri, int bits);
     void fullTriQuad(vluint32_t code, const vluint64_t newval, const vluint32_t newtri, int bits);
-    void fullTriArray(vluint32_t code, const vluint32_t* newvalp, const vluint32_t* newtrip, int bits);
+    void fullTriArray(vluint32_t code, const vluint32_t* newvalp, const vluint32_t* newtrip,
+                      int bits);
     void fullDouble(vluint32_t code, const double newval);
     void fullFloat(vluint32_t code, const float newval);
 
@@ -230,9 +231,7 @@ public:
     /// We do want to inline these to avoid calls when the value did not change.
     inline void chgBit(vluint32_t code, const vluint32_t newval) {
         vluint32_t diff = m_sigs_oldvalp[code] ^ newval;
-        if (VL_UNLIKELY(diff)) {
-            fullBit(code, newval);
-        }
+        if (VL_UNLIKELY(diff)) { fullBit(code, newval); }
     }
     inline void chgBus(vluint32_t code, const vluint32_t newval, int bits) {
         vluint32_t diff = m_sigs_oldvalp[code] ^ newval;

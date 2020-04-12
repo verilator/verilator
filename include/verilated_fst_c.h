@@ -57,12 +57,11 @@ private:
     Local2FstDtype m_local2fstdtype;
     std::list<std::string> m_curScope;
     fstHandle* m_symbolp;  ///< same as m_code2symbol, but as an array
-    vluint32_t  *m_sigs_oldvalp;
+    vluint32_t* m_sigs_oldvalp;
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFst);
-    void declSymbol(vluint32_t code, const char* name,
-                    int dtypenum, fstVarDir vardir, fstVarType vartype,
-                    bool array, int arraynum, vluint32_t len, vluint32_t bits);
+    void declSymbol(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+                    fstVarType vartype, bool array, int arraynum, vluint32_t len, vluint32_t bits);
     // helpers
     std::vector<char> m_valueStrBuffer;
 
@@ -95,47 +94,39 @@ public:
     void dump(vluint64_t timeui);
     /// Inside dumping routines, declare callbacks for tracings
     void addCallback(VerilatedFstCallback_t initcb, VerilatedFstCallback_t fullcb,
-                     VerilatedFstCallback_t changecb,
-                     void* userthis) VL_MT_UNSAFE_ONE;
+                     VerilatedFstCallback_t changecb, void* userthis) VL_MT_UNSAFE_ONE;
 
     /// Inside dumping routines, declare a module
     void module(const std::string& name);
     /// Inside dumping routines, declare a data type
     void declDTypeEnum(int dtypenum, const char* name, vluint32_t elements,
-                       unsigned int minValbits,
-                       const char** itemNamesp, const char** itemValuesp);
+                       unsigned int minValbits, const char** itemNamesp, const char** itemValuesp);
     /// Inside dumping routines, declare a signal
-    void declBit(vluint32_t code, const char* name,
-                 int dtypenum, fstVarDir vardir, fstVarType vartype,
-                 bool array, int arraynum) {
+    void declBit(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+                 fstVarType vartype, bool array, int arraynum) {
         declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 1, 1);
     }
-    void declBus(vluint32_t code, const char* name,
-                 int dtypenum, fstVarDir vardir, fstVarType vartype,
-                 bool array, int arraynum, int msb, int lsb) {
+    void declBus(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+                 fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
         declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1,
                    msb - lsb + 1);
     }
-    void declQuad(vluint32_t code, const char* name,
-                  int dtypenum, fstVarDir vardir, fstVarType vartype,
-                  bool array, int arraynum, int msb, int lsb) {
+    void declQuad(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+                  fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
         declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1,
                    msb - lsb + 1);
     }
-    void declArray(vluint32_t code, const char* name,
-                   int dtypenum, fstVarDir vardir, fstVarType vartype,
-                   bool array, int arraynum, int msb, int lsb) {
+    void declArray(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+                   fstVarType vartype, bool array, int arraynum, int msb, int lsb) {
         declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, msb - lsb + 1,
                    msb - lsb + 1);
     }
-    void declFloat(vluint32_t code, const char* name,
-                   int dtypenum, fstVarDir vardir, fstVarType vartype,
-                   bool array, int arraynum) {
+    void declFloat(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+                   fstVarType vartype, bool array, int arraynum) {
         declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 1, 32);
     }
-    void declDouble(vluint32_t code, const char* name,
-                    int dtypenum, fstVarDir vardir, fstVarType vartype,
-                    bool array, int arraynum) {
+    void declDouble(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
+                    fstVarType vartype, bool array, int arraynum) {
         declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 2, 64);
     }
 
@@ -151,7 +142,7 @@ public:
         *oldp = newval;
         fstWriterEmitValueChange(m_fst, m_symbolp[oldp - m_sigs_oldvalp], newval ? "1" : "0");
     }
-    template <int N> void fullBus(vluint32_t* oldp, vluint32_t newval){
+    template <int N> void fullBus(vluint32_t* oldp, vluint32_t newval) {
         *oldp = newval;
         fstWriterEmitValueChange32(m_fst, m_symbolp[oldp - m_sigs_oldvalp], N, newval);
     }
@@ -163,7 +154,8 @@ public:
         for (int i = 0; i < wholeWords + (N > 0); ++i) {
             oldp[i] = newval[i];
         }
-        fstWriterEmitValueChangeVec32(m_fst, m_symbolp[oldp - m_sigs_oldvalp], 32*wholeWords + N, newval);
+        fstWriterEmitValueChangeVec32(m_fst, m_symbolp[oldp - m_sigs_oldvalp], 32 * wholeWords + N,
+                                      newval);
     }
     void fullFloat(vluint32_t* oldp, float newval) {
         *reinterpret_cast<float*>(oldp) = newval;

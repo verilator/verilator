@@ -57,7 +57,10 @@ private:
         VerilatedMutex s_vcdMutex;  ///< Protect the singleton
         VcdVec s_vcdVecp VL_GUARDED_BY(s_vcdMutex);  ///< List of all created traces
     };
-    static Singleton& singleton() { static Singleton s; return s; }
+    static Singleton& singleton() {
+        static Singleton s;
+        return s;
+    }
 
 public:
     static void pushVcd(VerilatedVcd* vcdp) VL_EXCLUDES(singleton().s_vcdMutex) {
@@ -194,10 +197,8 @@ void VerilatedVcd::openNext(bool incFilename) {
         std::string name = m_filename;
         size_t pos = name.rfind('.');
         if (pos > 8 && 0 == strncmp("_cat", name.c_str() + pos - 8, 4)
-            && isdigit(name.c_str()[pos - 4])
-            && isdigit(name.c_str()[pos - 3])
-            && isdigit(name.c_str()[pos - 2])
-            && isdigit(name.c_str()[pos - 1])) {
+            && isdigit(name.c_str()[pos - 4]) && isdigit(name.c_str()[pos - 3])
+            && isdigit(name.c_str()[pos - 2]) && isdigit(name.c_str()[pos - 1])) {
             // Increment code.
             if ((++(name[pos - 1])) > '9') {
                 name[pos - 1] = '0';
@@ -407,7 +408,8 @@ void VerilatedVcd::set_time_resolution(const char* unitp) {
 double VerilatedVcd::timescaleToDouble(const char* unitp) {
     char* endp;
     double value = strtod(unitp, &endp);
-    if (value == 0.0 && endp == unitp) value = 1;  // On error so we allow just "ns" to return 1e-9.
+    if (value == 0.0 && endp == unitp)
+        value = 1;  // On error so we allow just "ns" to return 1e-9.
     unitp = endp;
     for (; *unitp && isspace(*unitp); unitp++) {}
     switch (*unitp) {
@@ -424,13 +426,28 @@ double VerilatedVcd::timescaleToDouble(const char* unitp) {
 
 std::string VerilatedVcd::doubleToTimescale(double value) {
     const char* suffixp = "s";
-    if      (value>=1e0)   { suffixp="s"; value *= 1e0; }
-    else if (value>=1e-3 ) { suffixp="ms"; value *= 1e3; }
-    else if (value>=1e-6 ) { suffixp="us"; value *= 1e6; }
-    else if (value>=1e-9 ) { suffixp="ns"; value *= 1e9; }
-    else if (value>=1e-12) { suffixp="ps"; value *= 1e12; }
-    else if (value>=1e-15) { suffixp="fs"; value *= 1e15; }
-    else if (value>=1e-18) { suffixp="as"; value *= 1e18; }
+    if (value >= 1e0) {
+        suffixp = "s";
+        value *= 1e0;
+    } else if (value >= 1e-3) {
+        suffixp = "ms";
+        value *= 1e3;
+    } else if (value >= 1e-6) {
+        suffixp = "us";
+        value *= 1e6;
+    } else if (value >= 1e-9) {
+        suffixp = "ns";
+        value *= 1e9;
+    } else if (value >= 1e-12) {
+        suffixp = "ps";
+        value *= 1e12;
+    } else if (value >= 1e-15) {
+        suffixp = "fs";
+        value *= 1e15;
+    } else if (value >= 1e-18) {
+        suffixp = "as";
+        value *= 1e18;
+    }
     char valuestr[100];
     sprintf(valuestr, "%3.0f%s", value, suffixp);
     return valuestr;  // Gets converted to string, so no ref to stack
@@ -567,8 +584,8 @@ void VerilatedVcd::module(const std::string& name) {
     m_modName = name;
 }
 
-void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep,
-                           bool array, int arraynum, bool tri, bool bussed, int msb, int lsb) {
+void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep, bool array,
+                           int arraynum, bool tri, bool bussed, int msb, int lsb) {
     if (!code) {
         VL_FATAL_MT(__FILE__, __LINE__, "", "Internal: internal trace problem, code 0 is illegal");
     }
@@ -772,7 +789,8 @@ void VerilatedVcd::fullTriBit(vluint32_t code, const vluint32_t newval, const vl
     *m_writep++ = '\n';
     bufferCheck();
 }
-void VerilatedVcd::fullTriBus(vluint32_t code, const vluint32_t newval, const vluint32_t newtri, int bits) {
+void VerilatedVcd::fullTriBus(vluint32_t code, const vluint32_t newval, const vluint32_t newtri,
+                              int bits) {
     m_sigs_oldvalp[code] = newval;
     m_sigs_oldvalp[code + 1] = newtri;
     *m_writep++ = 'b';
@@ -784,21 +802,22 @@ void VerilatedVcd::fullTriBus(vluint32_t code, const vluint32_t newval, const vl
     *m_writep++ = '\n';
     bufferCheck();
 }
-void VerilatedVcd::fullTriQuad(vluint32_t code, const vluint64_t newval, const vluint32_t newtri, int bits) {
+void VerilatedVcd::fullTriQuad(vluint32_t code, const vluint64_t newval, const vluint32_t newtri,
+                               int bits) {
     (*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code]))) = newval;
     (*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code + 1]))) = newtri;
     *m_writep++ = 'b';
     for (int bit = bits - 1; bit >= 0; --bit) {
-        *m_writep++ = "01zz"[((newval >> bit) & VL_ULL(1))
-                             | (((newtri >> bit) & VL_ULL(1)) << VL_ULL(1))];
+        *m_writep++
+            = "01zz"[((newval >> bit) & VL_ULL(1)) | (((newtri >> bit) & VL_ULL(1)) << VL_ULL(1))];
     }
     *m_writep++ = ' ';
     printCode(code);
     *m_writep++ = '\n';
     bufferCheck();
 }
-void VerilatedVcd::fullTriArray(vluint32_t code, const vluint32_t* newvalp, const vluint32_t* newtrip,
-                  int bits) {
+void VerilatedVcd::fullTriArray(vluint32_t code, const vluint32_t* newvalp,
+                                const vluint32_t* newtrip, int bits) {
     for (int word = 0; word < (((bits - 1) / 32) + 1); ++word) {
         m_sigs_oldvalp[code + word * 2] = newvalp[word];
         m_sigs_oldvalp[code + word * 2 + 1] = newtrip[word];
@@ -1192,23 +1211,23 @@ double doub = 0;
 void vcdInit(VerilatedVcd* vcdp, void* userthis, vluint32_t code) {
     vcdp->scopeEscape('.');
     vcdp->module("top");
-     vcdp->declBus(0x2, "v1",-1,5,1);
-     vcdp->declBus(0x3, "v2",-1,6,0);
-     vcdp->module("top.sub1");
-      vcdp->declBit(0x4, "s1",-1);
-      vcdp->declBit(0x5, "ch",-1);
-     vcdp->module("top.sub2");
-      vcdp->declArray(0x6, "s2",-1, 40,3);
+    vcdp->declBus(0x2, "v1", -1, 5, 1);
+    vcdp->declBus(0x3, "v2", -1, 6, 0);
+    vcdp->module("top.sub1");
+    vcdp->declBit(0x4, "s1", -1);
+    vcdp->declBit(0x5, "ch", -1);
+    vcdp->module("top.sub2");
+    vcdp->declArray(0x6, "s2", -1, 40, 3);
     // Note need to add 3 for next code.
     vcdp->module("top2");
-     vcdp->declBus(0x2, "t2v1",-1,4,1);
-     vcdp->declTriBit(0x10, "io1",-1);
-     vcdp->declTriBus(0x12, "io5",-1,4,0);
-     vcdp->declTriArray(0x16, "io96",-1,95,0);
+    vcdp->declBus(0x2, "t2v1", -1, 4, 1);
+    vcdp->declTriBit(0x10, "io1", -1);
+    vcdp->declTriBus(0x12, "io5", -1, 4, 0);
+    vcdp->declTriArray(0x16, "io96", -1, 95, 0);
     // Note need to add 6 for next code.
-     vcdp->declDouble(0x1c, "doub",-1);
+    vcdp->declDouble(0x1c, "doub", -1);
     // Note need to add 2 for next code.
-     vcdp->declArray(0x1e, "q2",-1,95,0);
+    vcdp->declArray(0x1e, "q2", -1, 95, 0);
     // Note need to add 4 for next code.
 }
 
@@ -1255,29 +1274,35 @@ main() {
         // Dumping
         vcdp->dump(timestamp++);
         v1 = 0xfff;
-        tri96[2] = 4; tri96[1] = 2; tri96[0] = 1;
+        tri96[2] = 4;
+        tri96[1] = 2;
+        tri96[0] = 1;
         tri96__tri[2] = tri96__tri[1] = tri96__tri[0] = ~0;  // Still tri
-        quad96[1] = 0xffffffff; quad96[0] = 0;
+        quad96[1] = 0xffffffff;
+        quad96[0] = 0;
         doub = 1.5;
         vcdp->dump(timestamp++);
         v2 = 0x1;
         s2[1] = 2;
         tri96__tri[2] = tri96__tri[1] = tri96__tri[0] = 0;  // enable w/o data change
-        quad96[1] = 0; quad96[0] = ~0;
+        quad96[1] = 0;
+        quad96[0] = ~0;
         doub = -1.66e13;
         vcdp->dump(timestamp++);
         ch = 2;
-        tri96[2] = ~4; tri96[1] = ~2; tri96[0] = ~1;
+        tri96[2] = ~4;
+        tri96[1] = ~2;
+        tri96[0] = ~1;
         doub = -3.33e-13;
         vcdp->dump(timestamp++);
         vcdp->dump(timestamp++);
-# ifdef VERILATED_VCD_TEST_64BIT
+#ifdef VERILATED_VCD_TEST_64BIT
         vluint64_t bytesPerDump = VL_ULL(15);
         for (vluint64_t i = 0; i < ((VL_ULL(1) << 32) / bytesPerDump); i++) {
             v1 = i;
             vcdp->dump(timestamp++);
         }
-# endif
+#endif
         vcdp->close();
     }
 }
