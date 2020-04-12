@@ -1327,7 +1327,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     // Missing pin/expr?  We return (pinvar, NULL)
     // Extra   pin/expr?  We clean it up
 
-    typedef std::map<string,int> NameToIndex;
+    typedef std::map<string, int> NameToIndex;
     NameToIndex nameToIndex;
     V3TaskConnects tconnects;
     UASSERT_OBJ(nodep->taskp(), nodep, "unlinked");
@@ -1335,16 +1335,18 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     // Find ports
     int tpinnum = 0;
     AstVar* sformatp = NULL;
-    for (AstNode* stmtp = taskStmtsp; stmtp; stmtp=stmtp->nextp()) {
+    for (AstNode* stmtp = taskStmtsp; stmtp; stmtp = stmtp->nextp()) {
         if (AstVar* portp = VN_CAST(stmtp, Var)) {
             if (portp->isIO()) {
                 tconnects.push_back(make_pair(portp, static_cast<AstArg*>(NULL)));
-                nameToIndex.insert(make_pair(portp->name(), tpinnum));  // For name based connections
+                nameToIndex.insert(
+                    make_pair(portp->name(), tpinnum));  // For name based connections
                 tpinnum++;
                 if (portp->attrSFormat()) {
                     sformatp = portp;
                 } else if (sformatp) {
-                    nodep->v3error("/*verilator sformat*/ can only be applied to last argument of a function");
+                    portp->v3error("/*verilator sformat*/ can only be applied to last argument of "
+                                   "a function");
                 }
             }
         }
@@ -1353,7 +1355,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     // Find pins
     int ppinnum = 0;
     bool reorganize = false;
-    for (AstNode* nextp, *pinp = nodep->pinsp(); pinp; pinp=nextp) {
+    for (AstNode *nextp, *pinp = nodep->pinsp(); pinp; pinp = nextp) {
         nextp = pinp->nextp();
         AstArg* argp = VN_CAST(pinp, Arg);
         UASSERT_OBJ(argp, pinp, "Non-arg under ftask reference");
@@ -1361,14 +1363,15 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
             // By name
             NameToIndex::iterator it = nameToIndex.find(argp->name());
             if (it == nameToIndex.end()) {
-                pinp->v3error("No such argument "<<argp->prettyNameQ()
-                              <<" in function call to "<<nodep->taskp()->prettyTypeName());
+                pinp->v3error("No such argument " << argp->prettyNameQ() << " in function call to "
+                              << nodep->taskp()->prettyTypeName());
                 // We'll just delete it; seems less error prone than making a false argument
                 VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
             } else {
                 if (tconnects[it->second].second) {
-                    pinp->v3error("Duplicate argument "<<argp->prettyNameQ()
-                                  <<" in function call to "<<nodep->taskp()->prettyTypeName());
+                    pinp->v3error("Duplicate argument " << argp->prettyNameQ()
+                                  << " in function call to "
+                                  << nodep->taskp()->prettyTypeName());
                 }
                 argp->name("");  // Can forget name as will add back in pin order
                 tconnects[it->second].second = argp;
@@ -1382,7 +1385,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
                     tpinnum++;
                 } else {
                     pinp->v3error("Too many arguments in function call to "
-                                  <<nodep->taskp()->prettyTypeName());
+                                  << nodep->taskp()->prettyTypeName());
                     // We'll just delete it; seems less error prone than making a false argument
                     VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
                 }
@@ -1394,13 +1397,14 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     }
 
     // Connect missing ones
-    for (int i=0; i<tpinnum; ++i) {
+    for (int i = 0; i < tpinnum; ++i) {
         AstVar* portp = tconnects[i].first;
         if (!tconnects[i].second || !tconnects[i].second->exprp()) {
             AstNode* newvaluep = NULL;
             if (!portp->valuep()) {
-                nodep->v3error("Missing argument on non-defaulted argument "<<portp->prettyNameQ()
-                               <<" in function call to "<<nodep->taskp()->prettyTypeName());
+                nodep->v3error("Missing argument on non-defaulted argument "
+                               << portp->prettyNameQ() << " in function call to "
+                               << nodep->taskp()->prettyTypeName());
                 newvaluep = new AstConst(nodep->fileline(), AstConst::Unsized32(), 0);
             } else if (!VN_IS(portp->valuep(), Const)) {
                 // The default value for this port might be a constant
@@ -1412,11 +1416,10 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
                     // call, or something else that only makes sense in the
                     // domain of the function, not the callee.
                     nodep->v3error("Unsupported: Non-constant default value in missing argument "
-                                   <<portp->prettyNameQ()
-                                   <<" in function call to "<<nodep->taskp()->prettyTypeName());
+                                   << portp->prettyNameQ() << " in function call to "
+                                   << nodep->taskp()->prettyTypeName());
                     newvaluep = new AstConst(nodep->fileline(), AstConst::Unsized32(), 0);
-                }
-                else {
+                } else {
                     newvaluep = newvaluep->cloneTree(true);
                 }
             } else {
@@ -1424,7 +1427,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
             }
             // To avoid problems with callee needing to know to deleteTree
             // or not, we make this into a pin
-            UINFO(9,"Default pin for "<<portp<<endl);
+            UINFO(9, "Default pin for " << portp << endl);
             AstArg* newp = new AstArg(nodep->fileline(), portp->name(), newvaluep);
             if (tconnects[i].second) {  // Have a "NULL" pin already defined for it
                 VL_DO_CLEAR(tconnects[i].second->unlinkFrBack()->deleteTree(),
@@ -1433,25 +1436,30 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
             tconnects[i].second = newp;
             reorganize = true;
         }
-        if (tconnects[i].second) { UINFO(9,"Connect "<<portp
-                                         <<"  ->  "<<tconnects[i].second<<endl); }
-        else { UINFO(9,"Connect "<<portp<<"  ->  NONE"<<endl); }
+        if (tconnects[i].second) {
+            UINFO(9, "Connect " << portp << "  ->  " << tconnects[i].second << endl);
+        } else {
+            UINFO(9, "Connect " << portp << "  ->  NONE" << endl);
+        }
     }
 
     if (reorganize) {
         // To simplify downstream, put argument list back into pure pinnumber ordering
-        while (nodep->pinsp()) nodep->pinsp()->unlinkFrBack();  // Must unlink each pin, not all pins linked together as one list
-        for (int i=0; i<tpinnum; ++i) {
+        while (nodep->pinsp()) {
+            // Must unlink each pin, not all pins linked together as one list
+            nodep->pinsp()->unlinkFrBack();
+        }
+        for (int i = 0; i < tpinnum; ++i) {
             AstArg* argp = tconnects[i].second;
             UASSERT_OBJ(argp, nodep, "Lost argument in func conversion");
             nodep->addPinsp(argp);
         }
     }
 
-    if (debug()>=9) {
+    if (debug() >= 9) {
         nodep->dumpTree(cout, "-ftref-out: ");
-        for (int i=0; i<tpinnum; ++i) {
-            UINFO(0,"   pin "<<i<<"  conn="<<cvtToHex(tconnects[i].second)<<endl);
+        for (int i = 0; i < tpinnum; ++i) {
+            UINFO(0, "   pin " << i << "  conn=" << cvtToHex(tconnects[i].second) << endl);
         }
     }
     return tconnects;
