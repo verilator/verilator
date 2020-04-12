@@ -785,6 +785,7 @@ void EmitCSyms::emitSymImp() {
 
     m_ofpBase->puts("}\n");
     closeSplit();
+    VL_DO_CLEAR(delete m_ofp, m_ofp = NULL);
 }
 
 //######################################################################

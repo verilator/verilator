@@ -13,13 +13,16 @@ scenarios(vlt => 1);
 {
     compile();
 
+    print "NOTE: use --debugi, as --debug in driver turns off skip-identical\n";
+
     my $outfile = "$Self->{obj_dir}/V".$Self->{name}.".cpp";
     my @oldstats = stat($outfile);
     print "Old mtime=",$oldstats[9],"\n";
     $oldstats[9] or error("No output file found: $outfile\n");
 
-    sleep(1);  # Or else it might take < 1 second to compile and see no diff.
+    sleep(2);  # Or else it might take < 1 second to compile and see no diff.
 
+    $ENV{VERILATOR_DEBUG_SKIP_IDENTICAL} = 1;
     compile();
 
     my @newstats = stat($outfile);
