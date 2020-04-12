@@ -16,22 +16,27 @@ compile(  # Don't call cmake nor gmake from driver.pl
     verilator_make_cmake => 0,
     verilator_make_gmake => 0,
     verilator_flags2 => ['--exe --cc --build -j 2 --make cmake',
-        '../' . $Self->{main_filename},
-        ' -MAKEFLAGS "-DTEST_NAME=' . $Self->{name} . '"',
-        ' -MAKEFLAGS "-DTEST_CSOURCES=' . $Self->{main_filename} . '"',
-        ' -MAKEFLAGS "-DTEST_OPT_FAST=-Os"',
-        ' -MAKEFLAGS "-DTEST_VERILATOR_ROOT=' . $ENV{VERILATOR_ROOT} . '"',
-        ' -MAKEFLAGS "-DTEST_VERILATOR_ARGS=\"--prefix ' . $Self->{VM_PREFIX} . ' --cc \""',
-        ' -MAKEFLAGS "-DTEST_VERILATOR_SOURCES=./t/t_flag_make_cmake.v"',
-        ' -MAKEFLAGS "-DTEST_SYSTEMC=0"',
-        ' -MAKEFLAGS "-DTEST_VERBOSE=0"',
-        ' -MAKEFLAGS "-DTEST_VERILATION=1"'
-        ],
+                         '../' . $Self->{main_filename},
+                         ' -MAKEFLAGS "-DTEST_NAME=' . $Self->{name} . '"',
+                         ' -MAKEFLAGS "-DTEST_CSOURCES=' . $Self->{main_filename} . '"',
+                         ' -MAKEFLAGS "-DTEST_OPT_FAST=-Os"',
+                         ' -MAKEFLAGS "-DTEST_VERILATOR_ROOT=' . $ENV{VERILATOR_ROOT} . '"',
+                         ' -MAKEFLAGS "-DTEST_VERILATOR_ARGS=\"--prefix ' . $Self->{VM_PREFIX} . ' --cc \""',
+                         ' -MAKEFLAGS "-DTEST_VERILATOR_SOURCES=./t/t_flag_make_cmake.v"',
+                         ' -MAKEFLAGS "-DTEST_SYSTEMC=0"',
+                         ' -MAKEFLAGS "-DTEST_VERBOSE=0"',
+                         ' -MAKEFLAGS "-DTEST_VERILATION=1"',
+                         ' -MAKEFLAGS -DCMAKE_BUILD_TYPE=Debug',
+                         ' -MAKEFLAGS -L'],
     );
 
 execute(
     check_finished => 1,
     );
+
+# If '-MAKEFLAGS -DCMAKE_BUILD_TYPE=Debug' and '-MAKEFLAGS -L' are not properly processed,
+# the log will not contain 'CMAKE_BUILD_TYPE:STRING=Debug'.
+file_grep($Self->{obj_dir} . '/vlt_compile.log', /^CMAKE_BUILD_TYPE:STRING=(\w+)$/, 'Debug');
 
 ok(1);
 1;

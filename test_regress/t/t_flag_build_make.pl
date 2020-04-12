@@ -15,12 +15,18 @@ top_filename("t/t_flag_make_cmake.v");
 compile(  # Don't call cmake nor gmake from driver.pl
     verilator_make_cmake => 0,
     verilator_make_gmake => 0,
-    verilator_flags2 => ['--exe --cc --build -j 2 --make make  ../' . $Self->{main_filename} ],
+    verilator_flags2 => ['--exe --cc --build -j 2 --make gmake',
+                         '../' . $Self->{main_filename},
+                         '-MAKEFLAGS --trace'],
     );
 
 execute(
     check_finished => 1,
     );
+
+# If '-MAKEFLAGS --trace' is not properly processed,
+# the log will not contain 'CMAKE_BUILD_TYPE:STRING=Debug'.
+file_grep($Self->{obj_dir} . '/vlt_compile.log', /^Vt_flag_build_make.mk:\d+: update target \'(\w+)\' due to:/, 'Vt_flag_build_make');
 
 ok(1);
 1;
