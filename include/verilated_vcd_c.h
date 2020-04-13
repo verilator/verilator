@@ -192,14 +192,16 @@ public:
     void declBus(vluint32_t code, const char* name, bool array, int arraynum, int msb, int lsb);
     void declQuad(vluint32_t code, const char* name, bool array, int arraynum, int msb, int lsb);
     void declArray(vluint32_t code, const char* name, bool array, int arraynum, int msb, int lsb);
+    void declFloat(vluint32_t code, const char* name, bool array, int arraynum);
+    void declDouble(vluint32_t code, const char* name, bool array, int arraynum);
+#ifndef VL_TRACE_VCD_OLD_API
     void declTriBit(vluint32_t code, const char* name, bool array, int arraynum);
     void declTriBus(vluint32_t code, const char* name, bool array, int arraynum, int msb, int lsb);
     void declTriQuad(vluint32_t code, const char* name, bool array, int arraynum, int msb,
                      int lsb);
     void declTriArray(vluint32_t code, const char* name, bool array, int arraynum, int msb,
                       int lsb);
-    void declDouble(vluint32_t code, const char* name, bool array, int arraynum);
-    void declFloat(vluint32_t code, const char* name, bool array, int arraynum);
+#endif  // VL_TRACE_VCD_OLD_API
     //  ... other module_start for submodules (based on cell name)
 
     //=========================================================================

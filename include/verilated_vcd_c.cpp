@@ -686,6 +686,13 @@ void VerilatedVcd::declArray(vluint32_t code, const char* name, bool array, int 
                              int lsb) {
     declare(code, name, "wire", array, arraynum, false, true, msb, lsb);
 }
+void VerilatedVcd::declFloat(vluint32_t code, const char* name, bool array, int arraynum) {
+    declare(code, name, "real", array, arraynum, false, false, 31, 0);
+}
+void VerilatedVcd::declDouble(vluint32_t code, const char* name, bool array, int arraynum) {
+    declare(code, name, "real", array, arraynum, false, false, 63, 0);
+}
+#ifndef VL_TRACE_VCD_OLD_API
 void VerilatedVcd::declTriBit(vluint32_t code, const char* name, bool array, int arraynum) {
     declare(code, name, "wire", array, arraynum, true, false, 0, 0);
 }
@@ -701,12 +708,7 @@ void VerilatedVcd::declTriArray(vluint32_t code, const char* name, bool array, i
                                 int msb, int lsb) {
     declare(code, name, "wire", array, arraynum, true, true, msb, lsb);
 }
-void VerilatedVcd::declFloat(vluint32_t code, const char* name, bool array, int arraynum) {
-    declare(code, name, "real", array, arraynum, false, false, 31, 0);
-}
-void VerilatedVcd::declDouble(vluint32_t code, const char* name, bool array, int arraynum) {
-    declare(code, name, "real", array, arraynum, false, false, 63, 0);
-}
+#endif  //  VL_TRACE_VCD_OLD_API
 
 //=============================================================================
 // Trace recording routines
