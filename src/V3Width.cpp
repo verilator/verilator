@@ -193,6 +193,7 @@ private:
     bool        m_doGenerate;   // Do errors later inside generate statement
     int         m_dtTables;     // Number of created data type tables
     TableMap    m_tableMap;     // Created tables so can remove duplicates
+    bool        m_leaveTypeof;  // Don't clean up type-of children
 
     // ENUMS
     enum ExtendRule {
@@ -250,6 +251,9 @@ private:
     // ...    These comparisons don't allow reals
     virtual void visit(AstEqWild* nodep) VL_OVERRIDE {      visit_cmp_eq_gt(nodep, false); }
     virtual void visit(AstNeqWild* nodep) VL_OVERRIDE {     visit_cmp_eq_gt(nodep, false); }
+    // ...    Type compares
+    virtual void visit(AstEqT* nodep) VL_OVERRIDE {         visit_cmp_eq_type(nodep); }
+    virtual void visit(AstNeqT* nodep) VL_OVERRIDE {        visit_cmp_eq_type(nodep); }
     // ...    Real compares
     virtual void visit(AstEqD* nodep) VL_OVERRIDE {         visit_cmp_real(nodep); }
     virtual void visit(AstNeqD* nodep) VL_OVERRIDE {        visit_cmp_real(nodep); }
@@ -1303,7 +1307,8 @@ private:
             userIterateAndNext(nodep->typeofp(), WidthVP(SELF, BOTH).p());
             AstNode* typeofp = nodep->typeofp();
             nodep->refDTypep(typeofp->dtypep());
-            VL_DO_DANGLING(typeofp->unlinkFrBack()->deleteTree(), typeofp);
+            if (!m_leaveTypeof)
+                VL_DO_DANGLING(typeofp->unlinkFrBack()->deleteTree(), typeofp);
             // We had to use AstRefDType for this construct as pointers to this type
             // in type table are still correct (which they wouldn't be if we replaced the node)
         }
@@ -3713,6 +3718,35 @@ private:
         }
     }
 
+    void visit_cmp_eq_type(AstNodeBiop* nodep) {
+        if (m_vup->prelim()) {
+            // don't clean up types which may not be in the type table
+            // we're going to remove this whole sub-tree anyway
+            m_leaveTypeof = true;
+            userIterateChildren(nodep, WidthVP(CONTEXT, PRELIM).p());
+            m_leaveTypeof = false;
+            bool equal = false;
+            // TODO -- remove
+            nodep->dumpTree(cout, "typeCompare: ");
+            AstRefDType* refLhsp = VN_CAST(nodep->lhsp(), RefDType);
+            AstRefDType* refRhsp = VN_CAST(nodep->rhsp(), RefDType);
+            if (refLhsp && refRhsp) {
+                if (refLhsp->matching(refRhsp)
+                    // TODO -- is this even necessary in the end?
+                    || refLhsp->dtypep() == refRhsp->dtypep()) {
+                    equal = true;
+                }
+            } else {
+                nodep->v3fatalSrc("Expected two types for type comparison");
+            }
+            bool isNot = VN_IS(nodep, NeqT);
+            uint32_t value = equal ^ isNot ? 1 : 0;
+            nodep->replaceWith(new AstConst(nodep->fileline(), AstConst::WidthedValue(),
+                                            1, value));
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        }
+    }
+
     void visit_cmp_eq_gt(AstNodeBiop* nodep, bool realok) {
         // CALLER: AstEq, AstGt, ..., AstLtS
         // Real allowed if and only if real_lhs set
@@ -5053,6 +5087,7 @@ public:
         m_doGenerate = doGenerate;
         m_dtTables = 0;
         m_vup = NULL;
+        m_leaveTypeof = false;
     }
     AstNode* mainAcceptEdit(AstNode* nodep) {
         return userIterateSubtreeReturnEdits(nodep, WidthVP(SELF, BOTH).p());
