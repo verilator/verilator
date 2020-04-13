@@ -711,154 +711,7 @@ void VerilatedVcd::declDouble(vluint32_t code, const char* name, bool array, int
 //=============================================================================
 // Trace recording routines
 
-void VerilatedVcd::fullBit(vluint32_t code, const vluint32_t newval) {
-    // Note the &1, so we don't require clean input -- makes more common no change case faster
-    m_sigs_oldvalp[code] = newval;
-    *m_writep++ = ('0' + static_cast<char>(newval & 1));
-    m_writep = writeCode(m_writep, code);
-    *m_writep++ = '\n';
-    bufferCheck();
-}
-void VerilatedVcd::fullBus(vluint32_t code, const vluint32_t newval, int bits) {
-    m_sigs_oldvalp[code] = newval;
-    *m_writep++ = 'b';
-    for (int bit = bits - 1; bit >= 0; --bit) {
-        *m_writep++ = ((newval & (1L << bit)) ? '1' : '0');
-    }
-    *m_writep++ = ' ';
-    m_writep = writeCode(m_writep, code);
-    *m_writep++ = '\n';
-    bufferCheck();
-}
-void VerilatedVcd::fullQuad(vluint32_t code, const vluint64_t newval, int bits) {
-    (*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code]))) = newval;
-    *m_writep++ = 'b';
-    for (int bit = bits - 1; bit >= 0; --bit) {
-        *m_writep++ = ((newval & (VL_ULL(1) << bit)) ? '1' : '0');
-    }
-    *m_writep++ = ' ';
-    m_writep = writeCode(m_writep, code);
-    *m_writep++ = '\n';
-    bufferCheck();
-}
-void VerilatedVcd::fullArray(vluint32_t code, const vluint32_t* newval, int bits) {
-    for (int word = 0; word < (((bits - 1) / 32) + 1); ++word) {
-        m_sigs_oldvalp[code + word] = newval[word];
-    }
-    *m_writep++ = 'b';
-    for (int bit = bits - 1; bit >= 0; --bit) {
-        *m_writep++ = ((newval[(bit / 32)] & (1L << (bit & 0x1f))) ? '1' : '0');
-    }
-    *m_writep++ = ' ';
-    m_writep = writeCode(m_writep, code);
-    *m_writep++ = '\n';
-    bufferCheck();
-}
-void VerilatedVcd::fullArray(vluint32_t code, const vluint64_t* newval, int bits) {
-    for (int word = 0; word < (((bits - 1) / 64) + 1); ++word) {
-        m_sigs_oldvalp[code + word] = newval[word];
-    }
-    *m_writep++ = 'b';
-    for (int bit = bits - 1; bit >= 0; --bit) {
-        *m_writep++ = ((newval[(bit / 64)] & (VL_ULL(1) << (bit & 0x3f))) ? '1' : '0');
-    }
-    *m_writep++ = ' ';
-    m_writep = writeCode(m_writep, code);
-    *m_writep++ = '\n';
-    bufferCheck();
-}
-void VerilatedVcd::fullTriBit(vluint32_t code, const vluint32_t newval, const vluint32_t newtri) {
-    m_sigs_oldvalp[code] = newval;
-    m_sigs_oldvalp[code + 1] = newtri;
-    *m_writep++ = "01zz"[m_sigs_oldvalp[code] | (m_sigs_oldvalp[code + 1] << 1)];
-    m_writep = writeCode(m_writep, code);
-    *m_writep++ = '\n';
-    bufferCheck();
-}
-void VerilatedVcd::fullTriBus(vluint32_t code, const vluint32_t newval, const vluint32_t newtri,
-                              int bits) {
-    m_sigs_oldvalp[code] = newval;
-    m_sigs_oldvalp[code + 1] = newtri;
-    *m_writep++ = 'b';
-    for (int bit = bits - 1; bit >= 0; --bit) {
-        *m_writep++ = "01zz"[((newval >> bit) & 1) | (((newtri >> bit) & 1) << 1)];
-    }
-    *m_writep++ = ' ';
-    m_writep = writeCode(m_writep, code);
-    *m_writep++ = '\n';
-    bufferCheck();
-}
-void VerilatedVcd::fullTriQuad(vluint32_t code, const vluint64_t newval, const vluint32_t newtri,
-                               int bits) {
-    (*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code]))) = newval;
-    (*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code + 1]))) = newtri;
-    *m_writep++ = 'b';
-    for (int bit = bits - 1; bit >= 0; --bit) {
-        *m_writep++
-            = "01zz"[((newval >> bit) & VL_ULL(1)) | (((newtri >> bit) & VL_ULL(1)) << VL_ULL(1))];
-    }
-    *m_writep++ = ' ';
-    m_writep = writeCode(m_writep, code);
-    *m_writep++ = '\n';
-    bufferCheck();
-}
-void VerilatedVcd::fullTriArray(vluint32_t code, const vluint32_t* newvalp,
-                                const vluint32_t* newtrip, int bits) {
-    for (int word = 0; word < (((bits - 1) / 32) + 1); ++word) {
-        m_sigs_oldvalp[code + word * 2] = newvalp[word];
-        m_sigs_oldvalp[code + word * 2 + 1] = newtrip[word];
-    }
-    *m_writep++ = 'b';
-    for (int bit = bits - 1; bit >= 0; --bit) {
-        vluint32_t valbit = (newvalp[(bit / 32)] >> (bit & 0x1f)) & 1;
-        vluint32_t tribit = (newtrip[(bit / 32)] >> (bit & 0x1f)) & 1;
-        *m_writep++ = "01zz"[valbit | (tribit << 1)];
-    }
-    *m_writep++ = ' ';
-    m_writep = writeCode(m_writep, code);
-    *m_writep++ = '\n';
-    bufferCheck();
-}
-void VerilatedVcd::fullDouble(vluint32_t code, const double newval) {
-    // cppcheck-suppress invalidPointerCast
-    (*(reinterpret_cast<double*>(&m_sigs_oldvalp[code]))) = newval;
-    // Buffer can't overflow before sprintf; we sized during declaration
-    sprintf(m_writep, "r%.16g", newval);
-    m_writep += strlen(m_writep);
-    *m_writep++ = ' ';
-    m_writep = writeCode(m_writep, code);
-    *m_writep++ = '\n';
-    bufferCheck();
-}
-void VerilatedVcd::fullFloat(vluint32_t code, const float newval) {
-    // cppcheck-suppress invalidPointerCast
-    (*(reinterpret_cast<float*>(&m_sigs_oldvalp[code]))) = newval;
-    // Buffer can't overflow before sprintf; we sized during declaration
-    sprintf(m_writep, "r%.16g", static_cast<double>(newval));
-    m_writep += strlen(m_writep);
-    *m_writep++ = ' ';
-    m_writep = writeCode(m_writep, code);
-    *m_writep++ = '\n';
-    bufferCheck();
-}
-void VerilatedVcd::fullBitX(vluint32_t code) {
-    *m_writep++ = 'x';
-    m_writep = writeCode(m_writep, code);
-    *m_writep++ = '\n';
-    bufferCheck();
-}
-void VerilatedVcd::fullBusX(vluint32_t code, int bits) {
-    *m_writep++ = 'b';
-    for (int bit = bits - 1; bit >= 0; --bit) {
-        *m_writep++ = 'x';
-    }
-    *m_writep++ = ' ';
-    m_writep = writeCode(m_writep, code);
-    *m_writep++ = '\n';
-    bufferCheck();
-}
-void VerilatedVcd::fullQuadX(vluint32_t code, int bits) { fullBusX(code, bits); }
-void VerilatedVcd::fullArrayX(vluint32_t code, int bits) { fullBusX(code, bits); }
+#ifndef VL_TRACE_VCD_OLD_API
 
 //=============================================================================
 // Pointer based variants used by Verilator
@@ -1075,6 +928,159 @@ void VerilatedVcd::fullDouble(vluint32_t* oldp, double newval) {
     wp += strlen(wp);
     finishLine(oldp, wp);
 }
+
+#else  // VL_TRACE_VCD_OLD_API
+
+void VerilatedVcd::fullBit(vluint32_t code, const vluint32_t newval) {
+    // Note the &1, so we don't require clean input -- makes more common no change case faster
+    m_sigs_oldvalp[code] = newval;
+    *m_writep++ = ('0' + static_cast<char>(newval & 1));
+    m_writep = writeCode(m_writep, code);
+    *m_writep++ = '\n';
+    bufferCheck();
+}
+void VerilatedVcd::fullBus(vluint32_t code, const vluint32_t newval, int bits) {
+    m_sigs_oldvalp[code] = newval;
+    *m_writep++ = 'b';
+    for (int bit = bits - 1; bit >= 0; --bit) {
+        *m_writep++ = ((newval & (1L << bit)) ? '1' : '0');
+    }
+    *m_writep++ = ' ';
+    m_writep = writeCode(m_writep, code);
+    *m_writep++ = '\n';
+    bufferCheck();
+}
+void VerilatedVcd::fullQuad(vluint32_t code, const vluint64_t newval, int bits) {
+    (*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code]))) = newval;
+    *m_writep++ = 'b';
+    for (int bit = bits - 1; bit >= 0; --bit) {
+        *m_writep++ = ((newval & (VL_ULL(1) << bit)) ? '1' : '0');
+    }
+    *m_writep++ = ' ';
+    m_writep = writeCode(m_writep, code);
+    *m_writep++ = '\n';
+    bufferCheck();
+}
+void VerilatedVcd::fullArray(vluint32_t code, const vluint32_t* newval, int bits) {
+    for (int word = 0; word < (((bits - 1) / 32) + 1); ++word) {
+        m_sigs_oldvalp[code + word] = newval[word];
+    }
+    *m_writep++ = 'b';
+    for (int bit = bits - 1; bit >= 0; --bit) {
+        *m_writep++ = ((newval[(bit / 32)] & (1L << (bit & 0x1f))) ? '1' : '0');
+    }
+    *m_writep++ = ' ';
+    m_writep = writeCode(m_writep, code);
+    *m_writep++ = '\n';
+    bufferCheck();
+}
+void VerilatedVcd::fullArray(vluint32_t code, const vluint64_t* newval, int bits) {
+    for (int word = 0; word < (((bits - 1) / 64) + 1); ++word) {
+        m_sigs_oldvalp[code + word] = newval[word];
+    }
+    *m_writep++ = 'b';
+    for (int bit = bits - 1; bit >= 0; --bit) {
+        *m_writep++ = ((newval[(bit / 64)] & (VL_ULL(1) << (bit & 0x3f))) ? '1' : '0');
+    }
+    *m_writep++ = ' ';
+    m_writep = writeCode(m_writep, code);
+    *m_writep++ = '\n';
+    bufferCheck();
+}
+void VerilatedVcd::fullTriBit(vluint32_t code, const vluint32_t newval, const vluint32_t newtri) {
+    m_sigs_oldvalp[code] = newval;
+    m_sigs_oldvalp[code + 1] = newtri;
+    *m_writep++ = "01zz"[m_sigs_oldvalp[code] | (m_sigs_oldvalp[code + 1] << 1)];
+    m_writep = writeCode(m_writep, code);
+    *m_writep++ = '\n';
+    bufferCheck();
+}
+void VerilatedVcd::fullTriBus(vluint32_t code, const vluint32_t newval, const vluint32_t newtri,
+                              int bits) {
+    m_sigs_oldvalp[code] = newval;
+    m_sigs_oldvalp[code + 1] = newtri;
+    *m_writep++ = 'b';
+    for (int bit = bits - 1; bit >= 0; --bit) {
+        *m_writep++ = "01zz"[((newval >> bit) & 1) | (((newtri >> bit) & 1) << 1)];
+    }
+    *m_writep++ = ' ';
+    m_writep = writeCode(m_writep, code);
+    *m_writep++ = '\n';
+    bufferCheck();
+}
+void VerilatedVcd::fullTriQuad(vluint32_t code, const vluint64_t newval, const vluint32_t newtri,
+                               int bits) {
+    (*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code]))) = newval;
+    (*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code + 1]))) = newtri;
+    *m_writep++ = 'b';
+    for (int bit = bits - 1; bit >= 0; --bit) {
+        *m_writep++
+            = "01zz"[((newval >> bit) & VL_ULL(1)) | (((newtri >> bit) & VL_ULL(1)) << VL_ULL(1))];
+    }
+    *m_writep++ = ' ';
+    m_writep = writeCode(m_writep, code);
+    *m_writep++ = '\n';
+    bufferCheck();
+}
+void VerilatedVcd::fullTriArray(vluint32_t code, const vluint32_t* newvalp,
+                                const vluint32_t* newtrip, int bits) {
+    for (int word = 0; word < (((bits - 1) / 32) + 1); ++word) {
+        m_sigs_oldvalp[code + word * 2] = newvalp[word];
+        m_sigs_oldvalp[code + word * 2 + 1] = newtrip[word];
+    }
+    *m_writep++ = 'b';
+    for (int bit = bits - 1; bit >= 0; --bit) {
+        vluint32_t valbit = (newvalp[(bit / 32)] >> (bit & 0x1f)) & 1;
+        vluint32_t tribit = (newtrip[(bit / 32)] >> (bit & 0x1f)) & 1;
+        *m_writep++ = "01zz"[valbit | (tribit << 1)];
+    }
+    *m_writep++ = ' ';
+    m_writep = writeCode(m_writep, code);
+    *m_writep++ = '\n';
+    bufferCheck();
+}
+void VerilatedVcd::fullDouble(vluint32_t code, const double newval) {
+    // cppcheck-suppress invalidPointerCast
+    (*(reinterpret_cast<double*>(&m_sigs_oldvalp[code]))) = newval;
+    // Buffer can't overflow before sprintf; we sized during declaration
+    sprintf(m_writep, "r%.16g", newval);
+    m_writep += strlen(m_writep);
+    *m_writep++ = ' ';
+    m_writep = writeCode(m_writep, code);
+    *m_writep++ = '\n';
+    bufferCheck();
+}
+void VerilatedVcd::fullFloat(vluint32_t code, const float newval) {
+    // cppcheck-suppress invalidPointerCast
+    (*(reinterpret_cast<float*>(&m_sigs_oldvalp[code]))) = newval;
+    // Buffer can't overflow before sprintf; we sized during declaration
+    sprintf(m_writep, "r%.16g", static_cast<double>(newval));
+    m_writep += strlen(m_writep);
+    *m_writep++ = ' ';
+    m_writep = writeCode(m_writep, code);
+    *m_writep++ = '\n';
+    bufferCheck();
+}
+void VerilatedVcd::fullBitX(vluint32_t code) {
+    *m_writep++ = 'x';
+    m_writep = writeCode(m_writep, code);
+    *m_writep++ = '\n';
+    bufferCheck();
+}
+void VerilatedVcd::fullBusX(vluint32_t code, int bits) {
+    *m_writep++ = 'b';
+    for (int bit = bits - 1; bit >= 0; --bit) {
+        *m_writep++ = 'x';
+    }
+    *m_writep++ = ' ';
+    m_writep = writeCode(m_writep, code);
+    *m_writep++ = '\n';
+    bufferCheck();
+}
+void VerilatedVcd::fullQuadX(vluint32_t code, int bits) { fullBusX(code, bits); }
+void VerilatedVcd::fullArrayX(vluint32_t code, int bits) { fullBusX(code, bits); }
+
+#endif  // VL_TRACE_VCD_OLD_API
 
 //=============================================================================
 // Callbacks

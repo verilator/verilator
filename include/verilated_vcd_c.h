@@ -202,6 +202,92 @@ public:
     void declFloat(vluint32_t code, const char* name, bool array, int arraynum);
     //  ... other module_start for submodules (based on cell name)
 
+    //=========================================================================
+    // Inside dumping routines used by Verilator
+
+    vluint32_t* oldp(vluint32_t code) { return m_sigs_oldvalp + code; }
+
+#ifndef VL_TRACE_VCD_OLD_API
+
+    //=========================================================================
+    // Write back to previous value buffer value and emit
+
+    void fullBit(vluint32_t* oldp, vluint32_t newval);
+    template <int T_Bits> void fullBus(vluint32_t* oldp, vluint32_t newval);
+    void fullQuad(vluint32_t* oldp, vluint64_t newval, int bits);
+    void fullArray(vluint32_t* oldp, const vluint32_t* newvalp, int bits);
+    void fullFloat(vluint32_t* oldp, float newval);
+    void fullDouble(vluint32_t* oldp, double newval);
+
+    //=========================================================================
+    // Check previous value and emit if changed
+
+    inline void chgBit(vluint32_t* oldp, vluint32_t newval) {
+        const vluint32_t diff = *oldp ^ newval;
+        if (VL_UNLIKELY(diff)) fullBit(oldp, newval);
+    }
+    template <int T_Bits> inline void chgBus(vluint32_t* oldp, vluint32_t newval) {
+        const vluint32_t diff = *oldp ^ newval;
+        if (VL_UNLIKELY(diff)) fullBus<T_Bits>(oldp, newval);
+    }
+    inline void chgQuad(vluint32_t* oldp, vluint64_t newval, int bits) {
+        const vluint64_t diff = *reinterpret_cast<vluint64_t*>(oldp) ^ newval;
+        if (VL_UNLIKELY(diff)) fullQuad(oldp, newval, bits);
+    }
+    inline void chgArray(vluint32_t* oldp, const vluint32_t* newvalp, int bits) {
+        for (int i = 0; i < (bits + 31) / 32; ++i) {
+            if (VL_UNLIKELY(oldp[i] ^ newvalp[i])) {
+                fullArray(oldp, newvalp, bits);
+                return;
+            }
+        }
+    }
+    inline void chgFloat(vluint32_t* oldp, float newval) {
+        // cppcheck-suppress invalidPointerCast
+        if (VL_UNLIKELY(*reinterpret_cast<float*>(oldp) != newval)) fullFloat(oldp, newval);
+    }
+    inline void chgDouble(vluint32_t* oldp, double newval) {
+        // cppcheck-suppress invalidPointerCast
+        if (VL_UNLIKELY(*reinterpret_cast<double*>(oldp) != newval)) fullDouble(oldp, newval);
+    }
+
+#else  // VL_TRACE_VCD_OLD_API
+
+    // Note: These are only for testing for backward compatibility. Verilator
+    // should use the more efficient versions above.
+
+    //=========================================================================
+    // Write back to previous value buffer value and emit
+
+    void fullBit(vluint32_t* oldp, vluint32_t newval) { fullBit(oldp - m_sigs_oldvalp, newval); }
+    template <int T_Bits> void fullBus(vluint32_t* oldp, vluint32_t newval) {
+        fullBus(oldp - m_sigs_oldvalp, newval, T_Bits);
+    }
+    void fullQuad(vluint32_t* oldp, vluint64_t newval, int bits) {
+        fullQuad(oldp - m_sigs_oldvalp, newval, bits);
+    }
+    void fullArray(vluint32_t* oldp, const vluint32_t* newvalp, int bits) {
+        fullArray(oldp - m_sigs_oldvalp, newvalp, bits);
+    }
+    void fullFloat(vluint32_t* oldp, float newval) { fullFloat(oldp - m_sigs_oldvalp, newval); }
+    void fullDouble(vluint32_t* oldp, double newval) { fullDouble(oldp - m_sigs_oldvalp, newval); }
+
+    //=========================================================================
+    // Check previous value and emit if changed
+
+    void chgBit(vluint32_t* oldp, vluint32_t newval) { chgBit(oldp - m_sigs_oldvalp, newval); }
+    template <int T_Bits> void chgBus(vluint32_t* oldp, vluint32_t newval) {
+        chgBus(oldp - m_sigs_oldvalp, newval, T_Bits);
+    }
+    void chgQuad(vluint32_t* oldp, vluint64_t newval, int bits) {
+        chgQuad(oldp - m_sigs_oldvalp, newval, bits);
+    }
+    void chgArray(vluint32_t* oldp, const vluint32_t* newvalp, int bits) {
+        chgArray(oldp - m_sigs_oldvalp, newvalp, bits);
+    }
+    void chgFloat(vluint32_t* oldp, float newval) { chgFloat(oldp - m_sigs_oldvalp, newval); }
+    void chgDouble(vluint32_t* oldp, double newval) { chgDouble(oldp - m_sigs_oldvalp, newval); }
+
     /// Inside dumping routines, dump one signal, faster when not inlined
     /// due to code size reduction.
     void fullBit(vluint32_t code, const vluint32_t newval);
@@ -317,52 +403,7 @@ public:
         }
     }
 
-    //=========================================================================
-    // Inside dumping routines used by Verilator
-
-    vluint32_t* oldp(vluint32_t code) { return m_sigs_oldvalp + code; }
-
-    //=========================================================================
-    // Write back to previous value buffer value and emit
-
-    void fullBit(vluint32_t* oldp, vluint32_t newval);
-    template <int T_Bits> void fullBus(vluint32_t* oldp, vluint32_t newval);
-    void fullQuad(vluint32_t* oldp, vluint64_t newval, int bits);
-    void fullArray(vluint32_t* oldp, const vluint32_t* newvalp, int bits);
-    void fullFloat(vluint32_t* oldp, float newval);
-    void fullDouble(vluint32_t* oldp, double newval);
-
-    //=========================================================================
-    // Check previous value and emit if changed
-
-    inline void chgBit(vluint32_t* oldp, vluint32_t newval) {
-        const vluint32_t diff = *oldp ^ newval;
-        if (VL_UNLIKELY(diff)) fullBit(oldp, newval);
-    }
-    template <int T_Bits> inline void chgBus(vluint32_t* oldp, vluint32_t newval) {
-        const vluint32_t diff = *oldp ^ newval;
-        if (VL_UNLIKELY(diff)) fullBus<T_Bits>(oldp, newval);
-    }
-    inline void chgQuad(vluint32_t* oldp, vluint64_t newval, int bits) {
-        const vluint64_t diff = *reinterpret_cast<vluint64_t*>(oldp) ^ newval;
-        if (VL_UNLIKELY(diff)) fullQuad(oldp, newval, bits);
-    }
-    inline void chgArray(vluint32_t* oldp, const vluint32_t* newvalp, int bits) {
-        for (int i = 0; i < (bits + 31) / 32; ++i) {
-            if (VL_UNLIKELY(oldp[i] ^ newvalp[i])) {
-                fullArray(oldp, newvalp, bits);
-                return;
-            }
-        }
-    }
-    inline void chgFloat(vluint32_t* oldp, float newval) {
-        // cppcheck-suppress invalidPointerCast
-        if (VL_UNLIKELY(*reinterpret_cast<float*>(oldp) != newval)) fullFloat(oldp, newval);
-    }
-    inline void chgDouble(vluint32_t* oldp, double newval) {
-        // cppcheck-suppress invalidPointerCast
-        if (VL_UNLIKELY(*reinterpret_cast<double*>(oldp) != newval)) fullDouble(oldp, newval);
-    }
+#endif  // VL_TRACE_VCD_OLD_API
 
 protected:
     // METHODS
