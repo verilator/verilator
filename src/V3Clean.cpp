@@ -223,6 +223,10 @@ private:
     virtual void visit(AstScopeName* nodep) VL_OVERRIDE {
         setClean(nodep, true);
     }
+    virtual void visit(AstCNew* nodep) VL_OVERRIDE {
+        iterateChildren(nodep);
+        setClean(nodep, true);
+    }
     virtual void visit(AstSel* nodep) VL_OVERRIDE {
         operandTriop(nodep);
         setClean(nodep, nodep->cleanOut());

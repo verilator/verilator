@@ -3600,8 +3600,8 @@ path.
 
 Verilator class support is very limited and in active development.
 Verilator supports members, and methods. Verilator doe not support initial
-values on class members, class static members, class new methods, class
-extend, or class parameters.
+values on class members, class static members, class extend, or class
+parameters.
 
 =head2 Dotted cross-hierarchy references
 

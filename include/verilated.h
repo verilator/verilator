@@ -24,6 +24,9 @@
 #define _VERILATED_H_ 1  ///< Header Guard
 
 #include "verilatedos.h"
+#if VM_SC
+# include "verilated_sc.h"  // Get SYSTEMC_VERSION and time declarations
+#endif
 
 #include <cassert>
 #include <cmath>

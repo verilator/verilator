@@ -1307,7 +1307,6 @@ void AstVar::dump(std::ostream& str) const {
     if (attrClockEn()) str<<" [aCLKEN]";
     if (attrIsolateAssign()) str<<" [aISO]";
     if (attrFileDescr()) str<<" [aFD]";
-    if (isClassMember()) str<<" [MEMBER]";
     if (isFuncReturn()) str<<" [FUNCRTN]";
     else if (isFuncLocal()) str<<" [FUNC]";
     if (isDpiOpenArray()) str<<" [DPIOPENA]";

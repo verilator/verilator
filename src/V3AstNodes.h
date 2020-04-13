@@ -826,7 +826,7 @@ class AstClassRefDType : public AstNodeDType {
     // Reference to a class
 private:
     AstClass* m_classp;  // data type pointed to, BELOW the AstTypedef
-    AstPackage* m_packagep;  // Package hierarchy
+    AstNodeModule* m_packagep;  // Package hierarchy
 public:
     AstClassRefDType(FileLine* fl, AstClass* classp)
         : ASTGEN_SUPER(fl), m_classp(classp), m_packagep(NULL) {
@@ -858,8 +858,8 @@ public:
     virtual AstNodeDType* virtRefDTypep() const { return NULL; }
     virtual void virtRefDTypep(AstNodeDType* nodep) {}
     virtual AstNodeDType* subDTypep() const { return NULL; }
-    AstPackage* packagep() const { return m_packagep; }
-    void packagep(AstPackage* nodep) { m_packagep = nodep; }
+    AstNodeModule* packagep() const { return m_packagep; }
+    void packagep(AstNodeModule* nodep) { m_packagep = nodep; }
     AstClass* classp() const { return m_classp; }
     void classp(AstClass* nodep) { m_classp = nodep; }
 };
@@ -972,7 +972,7 @@ class AstRefDType : public AstNodeDType {
 private:
     AstNodeDType* m_refDTypep;  // data type pointed to, BELOW the AstTypedef
     string      m_name;         // Name of an AstTypedef
-    AstPackage* m_packagep;     // Package hierarchy
+    AstNodeModule* m_packagep;  // Package hierarchy
 public:
     AstRefDType(FileLine* fl, const string& name)
         : ASTGEN_SUPER(fl), m_refDTypep(NULL), m_name(name), m_packagep(NULL) {}
@@ -1028,8 +1028,8 @@ public:
     virtual AstNodeDType* virtRefDTypep() const { return refDTypep(); }
     virtual void virtRefDTypep(AstNodeDType* nodep) { refDTypep(nodep); }
     virtual AstNodeDType* subDTypep() const { return m_refDTypep; }
-    AstPackage* packagep() const { return m_packagep; }
-    void packagep(AstPackage* nodep) { m_packagep = nodep; }
+    AstNodeModule* packagep() const { return m_packagep; }
+    void packagep(AstNodeModule* nodep) { m_packagep = nodep; }
     AstNode* typeofp() const { return op2p(); }
 };
 
@@ -1156,10 +1156,10 @@ public:
 
 class AstEnumItemRef : public AstNodeMath {
 private:
-    AstEnumItem* m_itemp;       // [AfterLink] Pointer to item
-    AstPackage* m_packagep;     // Package hierarchy
+    AstEnumItem* m_itemp;  // [AfterLink] Pointer to item
+    AstNodeModule* m_packagep;  // Package hierarchy
 public:
-    AstEnumItemRef(FileLine* fl, AstEnumItem* itemp, AstPackage* packagep)
+    AstEnumItemRef(FileLine* fl, AstEnumItem* itemp, AstNodeModule* packagep)
         : ASTGEN_SUPER(fl), m_itemp(itemp), m_packagep(packagep) {
         dtypeFrom(m_itemp);
     }
@@ -1176,8 +1176,8 @@ public:
     virtual string emitVerilog() { V3ERROR_NA_RETURN(""); }
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const { return true; }
-    AstPackage* packagep() const { return m_packagep; }
-    void packagep(AstPackage* nodep) { m_packagep = nodep; }
+    AstNodeModule* packagep() const { return m_packagep; }
+    void packagep(AstNodeModule* nodep) { m_packagep = nodep; }
 };
 
 class AstEnumDType : public AstNodeDType {
@@ -1575,7 +1575,6 @@ private:
     bool        m_usedClock:1;  // Signal used as a clock
     bool        m_usedParam:1;  // Parameter is referenced (on link; later signals not setup)
     bool        m_usedLoopIdx:1;  // Variable subject of for unrolling
-    bool        m_classMember:1;  // Member variable for a class
     bool        m_funcLocal:1;  // Local variable for a function
     bool        m_funcReturn:1;  // Return variable for a function
     bool        m_attrClockEn:1;// User clock enable attribute
@@ -1603,7 +1602,6 @@ private:
         m_usedClock = false; m_usedParam = false; m_usedLoopIdx = false;
         m_sigPublic = false; m_sigModPublic = false;
         m_sigUserRdPublic = false; m_sigUserRWPublic = false;
-        m_classMember = false;
         m_funcLocal = false; m_funcReturn = false;
         m_attrClockEn = false; m_attrScBv = false;
         m_attrIsolateAssign = false; m_attrSFormat = false; m_attrSplitVar = false;
@@ -1724,7 +1722,6 @@ public:
     void isConst(bool flag) { m_isConst = flag; }
     void isStatic(bool flag) { m_isStatic = flag; }
     void isIfaceParent(bool flag) { m_isIfaceParent = flag; }
-    void classMember(bool flag) { m_classMember = flag; }
     void funcLocal(bool flag) { m_funcLocal = flag; }
     void funcReturn(bool flag) { m_funcReturn = flag; }
     void isDpiOpenArray(bool flag) { m_isDpiOpenArray = flag; }
@@ -1756,6 +1753,7 @@ public:
                 && (isIO() || isBitLogic())
                 // Wrapper would otherwise duplicate wrapped module's coverage
                 && !isSc() && !isPrimaryIO() && !isConst()); }
+    bool isClassMember() const { return varType() == AstVarType::MEMBER; }
     bool isStatementTemp() const { return (varType()==AstVarType::STMTTEMP); }
     bool isMovableToBlock() const { return (varType()==AstVarType::BLOCKTEMP || isFuncLocal()); }
     bool isXTemp() const { return (varType()==AstVarType::XTEMP); }
@@ -1779,7 +1777,6 @@ public:
     bool isTrace() const { return m_trace; }
     bool isConst() const { return m_isConst; }
     bool isStatic() const { return m_isStatic; }
-    bool isClassMember() const { return m_classMember; }
     bool isFuncLocal() const { return m_funcLocal; }
     bool isFuncReturn() const { return m_funcReturn; }
     bool isPullup() const { return m_isPullup; }
@@ -2523,7 +2520,8 @@ public:
     AstDot(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl) { setOp1p(lhsp); setOp2p(rhsp); }
     ASTNODE_NODE_FUNCS(Dot)
-    static AstNode* newIfPkg(FileLine*fl, AstPackage* packagep, AstNode* rhsp) {  // For parser, make only if non-null package
+    // For parser, make only if non-null package
+    static AstNode* newIfPkg(FileLine* fl, AstPackage* packagep, AstNode* rhsp) {
         if (!packagep) return rhsp;
         return new AstDot(fl, new AstPackageRef(fl, packagep), rhsp);
     }
@@ -4068,24 +4066,22 @@ public:
     }
 };
 
-class AstNew : public AstNodeMath {
+class AstNew : public AstNodeFTaskRef {
     // New as constructor
     // Don't need the class we are extracting from, as the "fromp()"'s datatype can get us to it
     // Parents: math|stmt
     // Children: varref|arraysel, math
 public:
-    AstNew(FileLine* fl, AstNode* argsp)
-        : ASTGEN_SUPER(fl) {
-        addNOp2p(argsp);
-    }
+    AstNew(FileLine* fl, AstNode* pinsp)
+        : ASTGEN_SUPER(fl, false, "new", pinsp) {}
     ASTNODE_NODE_FUNCS(New)
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual string emitVerilog() { return "new"; }
     virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const { return true; }
     virtual bool same(const AstNode* samep) const { return true; }
+    virtual bool hasDType() const { return true; }
     virtual int instrCount() const { return widthInstrs(); }
-    AstNode* argsp() const { return op2p(); }
 };
 
 class AstNewCopy : public AstNodeMath {
@@ -4229,7 +4225,7 @@ public:
         m_code = 0;
         m_codeInc = ((arrayRange.ranged() ? arrayRange.elements() : 1)
                      * valuep->dtypep()->widthWords()
-                     * (VL_EDATASIZE / sizeof(uint32_t)));  // A code is always 32-bits
+                     * (VL_EDATASIZE / (8*sizeof(uint32_t))));  // A code is always 32-bits
         m_varType = varp->varType();
         m_declKwd = varp->declKwd();
         m_declDirection = varp->declDirection();
@@ -7040,6 +7036,23 @@ public:
     }
     AstNode* fromp() const { return op1p(); }  // op1 = Extracting what (NULL=TBD during parsing)
     void fromp(AstNode* nodep) { setOp1p(nodep); }
+};
+
+class AstCNew : public AstNodeCCall {
+    // C++ new() call
+    // Parents:  Anything above an expression
+    // Children: Args to the function
+public:
+    AstCNew(FileLine* fl, AstCFunc* funcp, AstNode* argsp = NULL)
+        : ASTGEN_SUPER(fl, funcp, argsp) {
+        statement(false);
+    }
+    // Replacement form for V3Combine
+    // Note this removes old attachments from the oldp
+    AstCNew(AstCCall* oldp, AstCFunc* funcp)
+        : ASTGEN_SUPER(oldp, funcp) {}
+    virtual bool hasDType() const { return true; }
+    ASTNODE_NODE_FUNCS(CNew)
 };
 
 class AstCReturn : public AstNodeStmt {

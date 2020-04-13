@@ -186,7 +186,7 @@ private:
         m_assignwp = NULL;
     }
     virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
-        // Includes handling AstMethodCall
+        // Includes handling AstMethodCall, AstNew
         if (m_assignwp) {
             // Wire assigns must become always statements to deal with insertion
             // of multiple statements.  Perhaps someday make all wassigns into always's?
@@ -204,6 +204,7 @@ private:
         m_curVxp = getFTaskVertex(nodep);
         if (nodep->dpiImport()) m_curVxp->noInline(true);
         if (nodep->classMethod()) m_curVxp->noInline(true);  // Until V3Task supports it
+        if (nodep->isConstructor()) m_curVxp->noInline(true);
         iterateChildren(nodep);
         m_curVxp = lastVxp;
     }
@@ -474,7 +475,7 @@ private:
     }
 
     AstNode* createNonInlinedFTask(AstNodeFTaskRef* refp, const string& namePrefix,
-                                   AstVarScope* outvscp) {
+                                   AstVarScope* outvscp, AstCNew*& cnewpr) {
         // outvscp is the variable for functions only, if NULL, it's a task
         UASSERT_OBJ(refp->taskp(), refp, "Unlinked?");
         AstCFunc* cfuncp = m_statep->ftaskCFuncp(refp->taskp());
@@ -483,12 +484,19 @@ private:
         AstNode* beginp = new AstComment(refp->fileline(),
                                          string("Function: ")+refp->name(), true);
         AstNodeCCall* ccallp;
-        if (AstMethodCall* mrefp = VN_CAST(refp, MethodCall)) {
+        if (AstNew* mrefp = VN_CAST(refp, New)) {
+            AstCNew* cnewp = new AstCNew(refp->fileline(), cfuncp);
+            cnewp->dtypep(refp->dtypep());
+            ccallp = cnewp;
+            // Parent AstNew will replace with this CNew
+            cnewpr = cnewp;
+        } else if (AstMethodCall* mrefp = VN_CAST(refp, MethodCall)) {
             ccallp = new AstCMethodCall(refp->fileline(), mrefp->fromp()->unlinkFrBack(), cfuncp);
+            beginp->addNext(ccallp);
         } else {
             ccallp = new AstCCall(refp->fileline(), cfuncp);
+            beginp->addNext(ccallp);
         }
-        beginp->addNext(ccallp);
 
         // Convert complicated outputs to temp signals
         V3TaskConnects tconnects = V3Task::taskConnects(refp, refp->taskp()->stmtsp());
@@ -988,8 +996,10 @@ private:
         // so make it unique now.
         string suffix;  // So, make them unique
         if (!nodep->taskPublic()) suffix = "_"+m_scopep->nameDotless();
+        string name = ((nodep->name() == "new") ? "new"
+                       : prefix + nodep->name() + suffix);
         AstCFunc* cfuncp = new AstCFunc(nodep->fileline(),
-                                        prefix + nodep->name() + suffix,
+                                        name,
                                         m_scopep,
                                         ((nodep->taskPublic() && rtnvarp)
                                          ? rtnvarp->cPubArgType(true, true)
@@ -1003,6 +1013,7 @@ private:
         cfuncp->dpiImportWrapper(nodep->dpiImport());
         cfuncp->isStatic(!(nodep->dpiImport() || nodep->taskPublic() || nodep->classMethod()));
         cfuncp->pure(nodep->pure());
+        cfuncp->isConstructor(nodep->name() == "new");
         //cfuncp->dpiImport   // Not set in the wrapper - the called function has it set
         if (cfuncp->dpiExport()) cfuncp->cname(nodep->cname());
 
@@ -1017,6 +1028,10 @@ private:
             } else {
                 // Need symbol table
                 cfuncp->argTypes(EmitCBaseVisitor::symClassVar());
+                if (cfuncp->name() == "new") {
+                    cfuncp->addInitsp(
+                        new AstCStmt(nodep->fileline(), "_ctor_var_reset(vlSymsp);\n"));
+                }
             }
         }
         if (nodep->dpiContext()) {
@@ -1157,6 +1172,7 @@ private:
         m_scopep = NULL;
     }
     virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
+        // Includes handling AstMethodCall, AstNew
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked?");
         iterateIntoFTask(nodep->taskp());  // First, do hierarchical funcs
         UINFO(4," FTask REF   "<<nodep<<endl);
@@ -1173,15 +1189,21 @@ private:
         }
         // Create cloned statements
         AstNode* beginp;
+        AstCNew* cnewp = NULL;
         if (m_statep->ftaskNoInline(nodep->taskp())) {
             // This may share VarScope's with a public task, if any.  Yuk.
-            beginp = createNonInlinedFTask(nodep, namePrefix, outvscp);
+            beginp = createNonInlinedFTask(nodep, namePrefix, outvscp, cnewp /*ref*/);
         } else {
             beginp = createInlinedFTask(nodep, namePrefix, outvscp);
         }
         // Replace the ref
         AstNode* visitp = NULL;
-        if (!nodep->isStatement()) {
+        if (VN_IS(nodep, New)) {
+            UASSERT_OBJ(!nodep->isStatement(), nodep, "new is non-stmt");
+            UASSERT_OBJ(cnewp, nodep, "didn't create cnew for new");
+            nodep->replaceWith(cnewp);
+            visitp = insertBeforeStmt(nodep, beginp);
+        } else if (!nodep->isStatement()) {
             UASSERT_OBJ(nodep->taskp()->isFunction(), nodep, "func reference to non-function");
             AstVarRef* outrefp = new AstVarRef(nodep->fileline(), outvscp, false);
             nodep->replaceWith(outrefp);
@@ -1327,7 +1349,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     // Missing pin/expr?  We return (pinvar, NULL)
     // Extra   pin/expr?  We clean it up
 
-    typedef std::map<string,int> NameToIndex;
+    typedef std::map<string, int> NameToIndex;
     NameToIndex nameToIndex;
     V3TaskConnects tconnects;
     UASSERT_OBJ(nodep->taskp(), nodep, "unlinked");
@@ -1335,16 +1357,18 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     // Find ports
     int tpinnum = 0;
     AstVar* sformatp = NULL;
-    for (AstNode* stmtp = taskStmtsp; stmtp; stmtp=stmtp->nextp()) {
+    for (AstNode* stmtp = taskStmtsp; stmtp; stmtp = stmtp->nextp()) {
         if (AstVar* portp = VN_CAST(stmtp, Var)) {
             if (portp->isIO()) {
                 tconnects.push_back(make_pair(portp, static_cast<AstArg*>(NULL)));
-                nameToIndex.insert(make_pair(portp->name(), tpinnum));  // For name based connections
+                nameToIndex.insert(
+                    make_pair(portp->name(), tpinnum));  // For name based connections
                 tpinnum++;
                 if (portp->attrSFormat()) {
                     sformatp = portp;
                 } else if (sformatp) {
-                    nodep->v3error("/*verilator sformat*/ can only be applied to last argument of a function");
+                    portp->v3error("/*verilator sformat*/ can only be applied to last argument of "
+                                   "a function");
                 }
             }
         }
@@ -1353,7 +1377,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     // Find pins
     int ppinnum = 0;
     bool reorganize = false;
-    for (AstNode* nextp, *pinp = nodep->pinsp(); pinp; pinp=nextp) {
+    for (AstNode *nextp, *pinp = nodep->pinsp(); pinp; pinp = nextp) {
         nextp = pinp->nextp();
         AstArg* argp = VN_CAST(pinp, Arg);
         UASSERT_OBJ(argp, pinp, "Non-arg under ftask reference");
@@ -1361,14 +1385,15 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
             // By name
             NameToIndex::iterator it = nameToIndex.find(argp->name());
             if (it == nameToIndex.end()) {
-                pinp->v3error("No such argument "<<argp->prettyNameQ()
-                              <<" in function call to "<<nodep->taskp()->prettyTypeName());
+                pinp->v3error("No such argument " << argp->prettyNameQ() << " in function call to "
+                              << nodep->taskp()->prettyTypeName());
                 // We'll just delete it; seems less error prone than making a false argument
                 VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
             } else {
                 if (tconnects[it->second].second) {
-                    pinp->v3error("Duplicate argument "<<argp->prettyNameQ()
-                                  <<" in function call to "<<nodep->taskp()->prettyTypeName());
+                    pinp->v3error("Duplicate argument " << argp->prettyNameQ()
+                                  << " in function call to "
+                                  << nodep->taskp()->prettyTypeName());
                 }
                 argp->name("");  // Can forget name as will add back in pin order
                 tconnects[it->second].second = argp;
@@ -1382,7 +1407,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
                     tpinnum++;
                 } else {
                     pinp->v3error("Too many arguments in function call to "
-                                  <<nodep->taskp()->prettyTypeName());
+                                  << nodep->taskp()->prettyTypeName());
                     // We'll just delete it; seems less error prone than making a false argument
                     VL_DO_DANGLING(pinp->unlinkFrBack()->deleteTree(), pinp);
                 }
@@ -1394,13 +1419,14 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
     }
 
     // Connect missing ones
-    for (int i=0; i<tpinnum; ++i) {
+    for (int i = 0; i < tpinnum; ++i) {
         AstVar* portp = tconnects[i].first;
         if (!tconnects[i].second || !tconnects[i].second->exprp()) {
             AstNode* newvaluep = NULL;
             if (!portp->valuep()) {
-                nodep->v3error("Missing argument on non-defaulted argument "<<portp->prettyNameQ()
-                               <<" in function call to "<<nodep->taskp()->prettyTypeName());
+                nodep->v3error("Missing argument on non-defaulted argument "
+                               << portp->prettyNameQ() << " in function call to "
+                               << nodep->taskp()->prettyTypeName());
                 newvaluep = new AstConst(nodep->fileline(), AstConst::Unsized32(), 0);
             } else if (!VN_IS(portp->valuep(), Const)) {
                 // The default value for this port might be a constant
@@ -1412,11 +1438,10 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
                     // call, or something else that only makes sense in the
                     // domain of the function, not the callee.
                     nodep->v3error("Unsupported: Non-constant default value in missing argument "
-                                   <<portp->prettyNameQ()
-                                   <<" in function call to "<<nodep->taskp()->prettyTypeName());
+                                   << portp->prettyNameQ() << " in function call to "
+                                   << nodep->taskp()->prettyTypeName());
                     newvaluep = new AstConst(nodep->fileline(), AstConst::Unsized32(), 0);
-                }
-                else {
+                } else {
                     newvaluep = newvaluep->cloneTree(true);
                 }
             } else {
@@ -1424,7 +1449,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
             }
             // To avoid problems with callee needing to know to deleteTree
             // or not, we make this into a pin
-            UINFO(9,"Default pin for "<<portp<<endl);
+            UINFO(9, "Default pin for " << portp << endl);
             AstArg* newp = new AstArg(nodep->fileline(), portp->name(), newvaluep);
             if (tconnects[i].second) {  // Have a "NULL" pin already defined for it
                 VL_DO_CLEAR(tconnects[i].second->unlinkFrBack()->deleteTree(),
@@ -1433,25 +1458,30 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp)
             tconnects[i].second = newp;
             reorganize = true;
         }
-        if (tconnects[i].second) { UINFO(9,"Connect "<<portp
-                                         <<"  ->  "<<tconnects[i].second<<endl); }
-        else { UINFO(9,"Connect "<<portp<<"  ->  NONE"<<endl); }
+        if (tconnects[i].second) {
+            UINFO(9, "Connect " << portp << "  ->  " << tconnects[i].second << endl);
+        } else {
+            UINFO(9, "Connect " << portp << "  ->  NONE" << endl);
+        }
     }
 
     if (reorganize) {
         // To simplify downstream, put argument list back into pure pinnumber ordering
-        while (nodep->pinsp()) nodep->pinsp()->unlinkFrBack();  // Must unlink each pin, not all pins linked together as one list
-        for (int i=0; i<tpinnum; ++i) {
+        while (nodep->pinsp()) {
+            // Must unlink each pin, not all pins linked together as one list
+            nodep->pinsp()->unlinkFrBack();
+        }
+        for (int i = 0; i < tpinnum; ++i) {
             AstArg* argp = tconnects[i].second;
             UASSERT_OBJ(argp, nodep, "Lost argument in func conversion");
             nodep->addPinsp(argp);
         }
     }
 
-    if (debug()>=9) {
+    if (debug() >= 9) {
         nodep->dumpTree(cout, "-ftref-out: ");
-        for (int i=0; i<tpinnum; ++i) {
-            UINFO(0,"   pin "<<i<<"  conn="<<cvtToHex(tconnects[i].second)<<endl);
+        for (int i = 0; i < tpinnum; ++i) {
+            UINFO(0, "   pin " << i << "  conn=" << cvtToHex(tconnects[i].second) << endl);
         }
     }
     return tconnects;

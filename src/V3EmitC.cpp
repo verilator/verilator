@@ -850,8 +850,10 @@ public:
         puts(cvtToStr(nodep->fileline()->lineno()));
         puts(")");
     }
-    virtual void visit(AstNew* nodep) VL_OVERRIDE {
+    virtual void visit(AstCNew* nodep) VL_OVERRIDE {
         puts("std::make_shared<" + prefixNameProtect(nodep->dtypep()) + ">(");
+        puts("vlSymsp");  // TODO make this part of argsp, and eliminate when unnecessary
+        if (nodep->argsp()) puts(", ");
         iterateAndNextNull(nodep->argsp());
         puts(")");
     }
@@ -1998,7 +2000,7 @@ void EmitCStmts::displayNode(AstNode* nodep, AstScopeName* scopenamep,
             case 'e': displayArg(nodep, &elistp, isScan, vfmt, 'e'); break;
             case 'f': displayArg(nodep, &elistp, isScan, vfmt, 'f'); break;
             case 'g': displayArg(nodep, &elistp, isScan, vfmt, 'g'); break;
-            case '^': displayArg(nodep,&elistp,isScan, vfmt,'^'); break;  // Realtime
+            case '^': displayArg(nodep, &elistp, isScan, vfmt, '^'); break;  // Realtime
             case 'v': displayArg(nodep, &elistp, isScan, vfmt, 'v'); break;
             case 'm': {
                 UASSERT_OBJ(scopenamep, nodep, "Display with %m but no AstScopeName");
@@ -2513,7 +2515,8 @@ void EmitCStmts::emitVarList(AstNode* firstp, EisWhich which, const string& pref
                 bool doit = true;
                 switch (which) {
                 case EVL_CLASS_IO:   doit = varp->isIO(); break;
-                case EVL_CLASS_SIG:  doit = (varp->isSignal() && !varp->isIO()); break;
+                case EVL_CLASS_SIG:
+                    doit = ((varp->isSignal() || varp->isClassMember()) && !varp->isIO()); break;
                 case EVL_CLASS_TEMP: doit = (varp->isTemp() && !varp->isIO()); break;
                 case EVL_CLASS_PAR:  doit = (varp->isParam() && !VN_IS(varp->valuep(), Const)); break;
                 case EVL_CLASS_ALL:  doit = true; break;

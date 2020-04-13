@@ -56,6 +56,7 @@ private:
                 string newname = string("__PVT__")+nodep->name();
                 nodep->name(newname);
                 nodep->editCountInc();
+            } else if (VN_IS(nodep, CFunc) && VN_CAST(nodep, CFunc)->isConstructor()) {
             } else {
                 string rsvd = m_words.isKeyword(nodep->name());
                 if (rsvd != "") {

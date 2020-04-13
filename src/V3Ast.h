@@ -597,7 +597,8 @@ public:
         MODULETEMP,
         STMTTEMP,
         XTEMP,
-        IFACEREF        // Used to link Interfaces between modules
+        IFACEREF,  // Used to link Interfaces between modules
+        MEMBER
     };
     enum en m_e;
     inline AstVarType() : m_e(UNKNOWN) {}
@@ -612,7 +613,7 @@ public:
             "TRIWIRE", "TRI0", "TRI1",
             "PORT",
             "BLOCKTEMP", "MODULETEMP", "STMTTEMP", "XTEMP",
-            "IFACEREF"};
+            "IFACEREF", "MEMBER"};
         return names[m_e]; }
     bool isSignal() const {
         return (m_e==WIRE || m_e==WREAL || m_e==IMPLICITWIRE
@@ -632,7 +633,7 @@ public:
         return (m_e==GPARAM || m_e==LPARAM || m_e==GENVAR
                 || m_e==VAR
                 || m_e==BLOCKTEMP || m_e==MODULETEMP || m_e==STMTTEMP
-                || m_e==XTEMP || m_e==IFACEREF);
+                || m_e==XTEMP || m_e==IFACEREF || m_e==MEMBER);
     }
     bool isTemp() const {
         return (m_e==BLOCKTEMP || m_e==MODULETEMP || m_e==STMTTEMP || m_e==XTEMP);
@@ -1961,7 +1962,7 @@ private:
     bool        m_lvalue;       // Left hand side assignment
     AstVar*     m_varp;         // [AfterLink] Pointer to variable itself
     AstVarScope* m_varScopep;   // Varscope for hierarchy
-    AstPackage* m_packagep;     // Package hierarchy
+    AstNodeModule* m_packagep;  // Package hierarchy
     string      m_name;         // Name of variable
     string      m_hiername;     // Scope converted into name-> for emitting
     bool        m_hierThis;     // Hiername points to "this" function
@@ -1996,8 +1997,8 @@ public:
     void hiername(const string& hn) { m_hiername = hn; }
     bool hierThis() const { return m_hierThis; }
     void hierThis(bool flag) { m_hierThis = flag; }
-    AstPackage* packagep() const { return m_packagep; }
-    void packagep(AstPackage* nodep) { m_packagep = nodep; }
+    AstNodeModule* packagep() const { return m_packagep; }
+    void packagep(AstNodeModule* nodep) { m_packagep = nodep; }
     // Know no children, and hot function, so skip iterator for speed
     // See checkTreeIter also that asserts no children
     // cppcheck-suppress functionConst
@@ -2361,7 +2362,7 @@ private:
     string              m_name;         // Name of variable
     string              m_dotted;       // Dotted part of scope the name()ed task/func is under or ""
     string              m_inlinedDots;  // Dotted hierarchy flattened out
-    AstPackage*         m_packagep;     // Package hierarchy
+    AstNodeModule* m_packagep;  // Package hierarchy
 public:
     AstNodeFTaskRef(AstType t, FileLine* fl, bool statement, AstNode* namep, AstNode* pinsp)
         : AstNodeStmt(t, fl, statement)
@@ -2389,8 +2390,8 @@ public:
     void taskp(AstNodeFTask* taskp) { m_taskp = taskp; }
     virtual void name(const string& name) { m_name = name; }
     void dotted(const string& name) { m_dotted = name; }
-    AstPackage* packagep() const { return m_packagep; }
-    void packagep(AstPackage* nodep) { m_packagep = nodep; }
+    AstNodeModule* packagep() const { return m_packagep; }
+    void packagep(AstNodeModule* nodep) { m_packagep = nodep; }
     // op1 = namep
     AstNode* namep() const { return op1p(); }
     // op2 = reserved for AstMethodCall

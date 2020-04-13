@@ -192,11 +192,7 @@ if ($opt_rerun && $runner->fail_count) {
         skip_cnt => $orig_runner->{skip_cnt},
         unsup_cnt => $orig_runner->{unsup_cnt});
     foreach my $test (@{$orig_runner->{fail_tests}}) {
-        if (0) {  # TBD if this is required - rare that intermediate results are bad
-            # Remove old results to force hard rebuild
-            system("rm", "-rf", "$test->{obj_dir}__fail1");
-            system("mv", "$test->{obj_dir}", "$test->{obj_dir}__fail1");
-        }
+        $test->clean;
         # Reschedule test
         $runner->one_test(pl_filename => $test->{pl_filename},
                           $test->{scenario} => 1);
@@ -794,6 +790,20 @@ sub _read_status {
 
 #----------------------------------------------------------------------
 # Methods invoked by tests
+
+sub clean {
+    my $self = (ref $_[0] ? shift : $Self);
+    # Called on a rerun to cleanup files
+    if ($self->{clean_command}) {
+        system($self->{clean_command});
+    }
+    if (1) {
+        # Prevents false-failures when switching compilers
+        # Remove old results to force hard rebuild
+        system("rm", "-rf", "$self->{obj_dir}__fail1");
+        system("mv", "$self->{obj_dir}", "$self->{obj_dir}__fail1");
+    }
+}
 
 sub compile_vlt_cmd {
     my $self = (ref $_[0]? shift : $Self);

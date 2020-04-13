@@ -1895,7 +1895,7 @@ private:
     }
 
     virtual void visit(AstMethodCall* nodep) VL_OVERRIDE {
-        UINFO(5,"   METHODSEL "<<nodep<<endl);
+        UINFO(5, "   METHODCALL " << nodep << endl);
         if (nodep->didWidth()) return;
         if (debug()>=9) nodep->dumpTree("-mts-in: ");
         // Should check types the method requires, but at present we don't do much
@@ -2431,12 +2431,20 @@ private:
             return;
         }
         nodep->dtypep(refp);
-        if (nodep->argsp()) {
-            nodep->v3error("Unsupported: new with arguments");
-            pushDeletep(nodep->argsp()->unlinkFrBackWithNext());
-            //TODO code similar to AstNodeFTaskRef
-            //userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
+
+        AstClass* classp = refp->classp();
+        UASSERT_OBJ(classp, nodep, "Unlinked");
+        if (AstNodeFTask* ftaskp = VN_CAST(classp->findMember("new"), Func)) {
+            nodep->taskp(ftaskp);
+            nodep->packagep(classp);
+        } else {
+            // Either made explicitly or V3LinkDot made implicitly
+            classp->v3fatalSrc("Can't find class's new");
         }
+
+        userIterate(nodep->taskp(), NULL);
+        userIterateChildren(nodep, NULL);
+        processFTaskRefArgs(nodep);
     }
     virtual void visit(AstNewCopy* nodep) VL_OVERRIDE {
         if (nodep->didWidthAndSet()) return;
@@ -3406,7 +3414,6 @@ private:
         userIterateChildren(nodep, NULL);
         if (nodep->isConstructor()) {
             // Pretend it's void so less special casing needed when look at dtypes
-            nodep->v3error("Unsupported: new constructor");
             nodep->dtypeSetVoid();
         } else if (nodep->fvarp()) {
             m_funcp = VN_CAST(nodep, Func);
@@ -3446,19 +3453,19 @@ private:
         nodep->dtypeFrom(nodep->taskp());
         //if (debug()) nodep->dumpTree(cout, "  FuncOut: ");
     }
-    virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
+    void processFTaskRefArgs(AstNodeFTaskRef* nodep) {
         // For arguments, is assignment-like context; see IEEE rules in AstNodeAssign
         // Function hasn't been widthed, so make it so.
-        UINFO(5, "  FTASKREF "<<nodep<<endl);
+        UINFO(5, "  FTASKREF " << nodep << endl);
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked");
         if (nodep->didWidth()) return;
         userIterate(nodep->taskp(), NULL);
         //
         // And do the arguments to the task/function too
         do {
-          reloop:
+        reloop:
             V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
-            for (V3TaskConnects::iterator it=tconnects.begin(); it!=tconnects.end(); ++it) {
+            for (V3TaskConnects::iterator it = tconnects.begin(); it != tconnects.end(); ++it) {
                 AstVar* portp = it->first;
                 AstArg* argp = it->second;
                 AstNode* pinp = argp->exprp();
@@ -3467,18 +3474,23 @@ private:
                 // pointer, so need to iterate separately later
                 if (portp->attrSFormat()
                     && (!VN_IS(pinp, SFormatF) || pinp->nextp())) {  // Not already done
-                    UINFO(4,"   sformat via metacomment: "<<nodep<<endl);
+                    UINFO(4, "   sformat via metacomment: " << nodep << endl);
                     AstNRelinker handle;
                     argp->unlinkFrBackWithNext(&handle);  // Format + additional args, if any
                     AstNode* argsp = NULL;
                     while (AstArg* nextargp = VN_CAST(argp->nextp(), Arg)) {
                         argsp = AstNode::addNext(
-                            argsp, nextargp->exprp()->unlinkFrBackWithNext());  // Expression goes to SFormatF
+                            argsp, nextargp->exprp()
+                                       ->unlinkFrBackWithNext());  // Expression goes to SFormatF
                         nextargp->unlinkFrBack()->deleteTree();  // Remove the call's Arg wrapper
                     }
                     string format;
-                    if (VN_IS(pinp, Const)) format = VN_CAST(pinp, Const)->num().toString();
-                    else pinp->v3error("Format to $display-like function must have constant format string");
+                    if (VN_IS(pinp, Const)) {
+                        format = VN_CAST(pinp, Const)->num().toString();
+                    } else {
+                        pinp->v3error(
+                            "Format to $display-like function must have constant format string");
+                    }
                     VL_DO_DANGLING(pushDeletep(argp), argp);
                     AstSFormatF* newp = new AstSFormatF(nodep->fileline(), format, false, argsp);
                     if (!newp->scopeNamep() && newp->formatScopeTracking()) {
@@ -3487,13 +3499,15 @@ private:
                     handle.relink(new AstArg(newp->fileline(), "", newp));
                     // Connection list is now incorrect (has extra args in it).
                     goto reloop;  // so exit early; next loop will correct it
-                }
-                else if (portp->basicp() && portp->basicp()->keyword()==AstBasicDTypeKwd::STRING
+                }  //
+                else if (portp->basicp()
+                         && portp->basicp()->keyword() == AstBasicDTypeKwd::STRING
                          && !VN_IS(pinp, CvtPackString)
                          && !VN_IS(pinp, SFormatF)  // Already generates a string
                          && !(VN_IS(pinp, VarRef)
-                              && VN_CAST(pinp, VarRef)->varp()->basicp()->keyword()==AstBasicDTypeKwd::STRING)) {
-                    UINFO(4,"   Add CvtPackString: "<<pinp<<endl);
+                              && VN_CAST(pinp, VarRef)->varp()->basicp()->keyword()
+                                     == AstBasicDTypeKwd::STRING)) {
+                    UINFO(4, "   Add CvtPackString: " << pinp << endl);
                     AstNRelinker handle;
                     pinp->unlinkFrBack(&handle);  // No next, that's the next pin
                     AstNode* newp = new AstCvtPackString(pinp->fileline(), pinp);
@@ -3507,21 +3521,19 @@ private:
         // Stage 2
         {
             V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
-            for (V3TaskConnects::iterator it=tconnects.begin(); it!=tconnects.end(); ++it) {
+            for (V3TaskConnects::iterator it = tconnects.begin(); it != tconnects.end(); ++it) {
                 AstVar* portp = it->first;
                 AstArg* argp = it->second;
                 AstNode* pinp = argp->exprp();
                 if (!pinp) continue;  // Argument error we'll find later
                 // Change data types based on above accept completion
-                if (portp->isDouble()) {
-                    VL_DO_DANGLING(spliceCvtD(pinp), pinp);
-                }
+                if (portp->isDouble()) VL_DO_DANGLING(spliceCvtD(pinp), pinp);
             }
         }
         // Stage 3
         {
             V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
-            for (V3TaskConnects::iterator it=tconnects.begin(); it!=tconnects.end(); ++it) {
+            for (V3TaskConnects::iterator it = tconnects.begin(); it != tconnects.end(); ++it) {
                 AstVar* portp = it->first;
                 AstArg* argp = it->second;
                 AstNode* pinp = argp->exprp();
@@ -3532,13 +3544,11 @@ private:
             }
         }
         // Cleanup any open arrays
-        if (markHasOpenArray(nodep->taskp())) {
-            makeOpenArrayShell(nodep);
-        }
+        if (markHasOpenArray(nodep->taskp())) makeOpenArrayShell(nodep);
         // Stage 4
         {
             V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
-            for (V3TaskConnects::iterator it=tconnects.begin(); it!=tconnects.end(); ++it) {
+            for (V3TaskConnects::iterator it = tconnects.begin(); it != tconnects.end(); ++it) {
                 AstVar* portp = it->first;
                 AstArg* argp = it->second;
                 AstNode* pinp = argp->exprp();
@@ -3546,16 +3556,14 @@ private:
                 if (portp->direction() == VDirection::REF
                     && !similarDTypeRecurse(portp->dtypep(), pinp->dtypep())) {
                     pinp->v3error("Ref argument requires matching types;"
-                                  <<" port "<<portp->prettyNameQ()
-                                  <<" requires "<<portp->prettyTypeName()
-                                  <<" but connection is "<<pinp->prettyTypeName()<<".");
-                } else if (portp->isWritable()
-                           && pinp->width() != portp->width()) {
+                                  << " port " << portp->prettyNameQ() << " requires "
+                                  << portp->prettyTypeName() << " but connection is "
+                                  << pinp->prettyTypeName() << ".");
+                } else if (portp->isWritable() && pinp->width() != portp->width()) {
                     pinp->v3error("Unsupported: Function output argument "
-                                  <<portp->prettyNameQ()
-                                  <<" requires "<<portp->width()
-                                  <<" bits, but connection's "<<pinp->prettyTypeName()
-                                  <<" generates "<<pinp->width()<<" bits.");
+                                  << portp->prettyNameQ() << " requires " << portp->width()
+                                  << " bits, but connection's " << pinp->prettyTypeName()
+                                  << " generates " << pinp->width() << " bits.");
                     // otherwise would need some mess to force both sides to proper size
                     // (get an ASSIGN with EXTEND on the lhs instead of rhs)
                 }
@@ -3566,6 +3574,16 @@ private:
                 }
             }
         }
+    }
+    virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
+        // For arguments, is assignment-like context; see IEEE rules in AstNodeAssign
+        // Function hasn't been widthed, so make it so.
+        UINFO(5, "  FTASKREF " << nodep << endl);
+        UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked");
+        if (nodep->didWidth()) return;
+        userIterate(nodep->taskp(), NULL);
+        // And do the arguments to the task/function too
+        processFTaskRefArgs(nodep);
         nodep->didWidth(true);
     }
     virtual void visit(AstInitial* nodep) VL_OVERRIDE {
