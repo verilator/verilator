@@ -98,7 +98,7 @@ private:
     vluint64_t m_wroteBytes;  ///< Number of bytes written to this file
 
     std::vector<char> m_suffixes;  ///< VCD line end string codes + metadata
-    char* m_suffixesp;  ///< Pointer to first element of above
+    const char* m_suffixesp;  ///< Pointer to first element of above
 
     vluint32_t* m_sigs_oldvalp;  ///< Pointer to old signal values
     typedef std::vector<VerilatedVcdSig> SigVec;
@@ -134,8 +134,7 @@ private:
     void dumpFull(vluint64_t timeui);
     // cppcheck-suppress functionConst
     void dumpDone();
-    void printCode(vluint32_t code);
-    static std::string stringCode(vluint32_t code) VL_PURE;
+    char* writeCode(char* writep, vluint32_t code);
 
     void finishLine(vluint32_t* oldp, char* writep);
 
@@ -208,8 +207,8 @@ public:
     void fullBit(vluint32_t code, const vluint32_t newval);
     void fullBus(vluint32_t code, const vluint32_t newval, int bits);
     void fullQuad(vluint32_t code, const vluint64_t newval, int bits);
-    void fullArray(vluint32_t code, const vluint32_t* newval, int bits);
-    void fullArray(vluint32_t code, const vluint64_t* newval, int bits);
+    void fullArray(vluint32_t code, const vluint32_t* newvalp, int bits);
+    void fullArray(vluint32_t code, const vluint64_t* newvalp, int bits);
     void fullTriBit(vluint32_t code, const vluint32_t newval, const vluint32_t newtri);
     void fullTriBus(vluint32_t code, const vluint32_t newval, const vluint32_t newtri, int bits);
     void fullTriQuad(vluint32_t code, const vluint64_t newval, const vluint32_t newtri, int bits);
@@ -231,7 +230,7 @@ public:
     /// We do want to inline these to avoid calls when the value did not change.
     inline void chgBit(vluint32_t code, const vluint32_t newval) {
         vluint32_t diff = m_sigs_oldvalp[code] ^ newval;
-        if (VL_UNLIKELY(diff)) { fullBit(code, newval); }
+        if (VL_UNLIKELY(diff)) fullBit(code, newval);
     }
     inline void chgBus(vluint32_t code, const vluint32_t newval, int bits) {
         vluint32_t diff = m_sigs_oldvalp[code] ^ newval;
@@ -249,18 +248,18 @@ public:
             }
         }
     }
-    inline void chgArray(vluint32_t code, const vluint32_t* newval, int bits) {
+    inline void chgArray(vluint32_t code, const vluint32_t* newvalp, int bits) {
         for (int word = 0; word < (((bits - 1) / 32) + 1); ++word) {
-            if (VL_UNLIKELY(m_sigs_oldvalp[code + word] ^ newval[word])) {
-                fullArray(code, newval, bits);
+            if (VL_UNLIKELY(m_sigs_oldvalp[code + word] ^ newvalp[word])) {
+                fullArray(code, newvalp, bits);
                 return;
             }
         }
     }
-    inline void chgArray(vluint32_t code, const vluint64_t* newval, int bits) {
+    inline void chgArray(vluint32_t code, const vluint64_t* newvalp, int bits) {
         for (int word = 0; word < (((bits - 1) / 64) + 1); ++word) {
-            if (VL_UNLIKELY(m_sigs_oldvalp[code + word] ^ newval[word])) {
-                fullArray(code, newval, bits);
+            if (VL_UNLIKELY(m_sigs_oldvalp[code + word] ^ newvalp[word])) {
+                fullArray(code, newvalp, bits);
                 return;
             }
         }
@@ -327,9 +326,9 @@ public:
     // Write back to previous value buffer value and emit
 
     void fullBit(vluint32_t* oldp, vluint32_t newval);
-    template <int N> void fullBus(vluint32_t* oldp, vluint32_t newval);
-    template <int N> void fullQuad(vluint32_t* oldp, vluint64_t newval);
-    template <int N> void fullArray(vluint32_t* oldp, const vluint32_t* newval, int wholeWords);
+    template <int T_Bits> void fullBus(vluint32_t* oldp, vluint32_t newval);
+    void fullQuad(vluint32_t* oldp, vluint64_t newval, int bits);
+    void fullArray(vluint32_t* oldp, const vluint32_t* newvalp, int bits);
     void fullFloat(vluint32_t* oldp, float newval);
     void fullDouble(vluint32_t* oldp, double newval);
 
@@ -338,32 +337,31 @@ public:
 
     inline void chgBit(vluint32_t* oldp, vluint32_t newval) {
         const vluint32_t diff = *oldp ^ newval;
-        if (VL_UNLIKELY(diff)) { fullBit(oldp, newval); }
+        if (VL_UNLIKELY(diff)) fullBit(oldp, newval);
     }
-    template <int N> inline void chgBus(vluint32_t* oldp, vluint32_t newval) {
+    template <int T_Bits> inline void chgBus(vluint32_t* oldp, vluint32_t newval) {
         const vluint32_t diff = *oldp ^ newval;
-        if (VL_UNLIKELY(diff)) { fullBus<N>(oldp, newval); }
+        if (VL_UNLIKELY(diff)) fullBus<T_Bits>(oldp, newval);
     }
-    template <int N> inline void chgQuad(vluint32_t* oldp, vluint64_t newval) {
+    inline void chgQuad(vluint32_t* oldp, vluint64_t newval, int bits) {
         const vluint64_t diff = *reinterpret_cast<vluint64_t*>(oldp) ^ newval;
-        if (VL_UNLIKELY(diff)) { fullQuad<N>(oldp, newval); }
+        if (VL_UNLIKELY(diff)) fullQuad(oldp, newval, bits);
     }
-    template <int N>
-    inline void chgArray(vluint32_t* oldp, const vluint32_t* newval, int wholeWords) {
-        for (int i = 0; i < wholeWords + (N > 0); ++i) {
-            if (VL_UNLIKELY(oldp[i] ^ newval[i])) {
-                fullArray<N>(oldp, newval, wholeWords);
+    inline void chgArray(vluint32_t* oldp, const vluint32_t* newvalp, int bits) {
+        for (int i = 0; i < (bits + 31) / 32; ++i) {
+            if (VL_UNLIKELY(oldp[i] ^ newvalp[i])) {
+                fullArray(oldp, newvalp, bits);
                 return;
             }
         }
     }
     inline void chgFloat(vluint32_t* oldp, float newval) {
         // cppcheck-suppress invalidPointerCast
-        if (VL_UNLIKELY(*reinterpret_cast<float*>(oldp) != newval)) { fullFloat(oldp, newval); }
+        if (VL_UNLIKELY(*reinterpret_cast<float*>(oldp) != newval)) fullFloat(oldp, newval);
     }
     inline void chgDouble(vluint32_t* oldp, double newval) {
         // cppcheck-suppress invalidPointerCast
-        if (VL_UNLIKELY(*reinterpret_cast<double*>(oldp) != newval)) { fullDouble(oldp, newval); }
+        if (VL_UNLIKELY(*reinterpret_cast<double*>(oldp) != newval)) fullDouble(oldp, newval);
     }
 
 protected:

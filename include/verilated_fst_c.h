@@ -142,20 +142,19 @@ public:
         *oldp = newval;
         fstWriterEmitValueChange(m_fst, m_symbolp[oldp - m_sigs_oldvalp], newval ? "1" : "0");
     }
-    template <int N> void fullBus(vluint32_t* oldp, vluint32_t newval) {
+    template <int T_Bits> void fullBus(vluint32_t* oldp, vluint32_t newval) {
         *oldp = newval;
-        fstWriterEmitValueChange32(m_fst, m_symbolp[oldp - m_sigs_oldvalp], N, newval);
+        fstWriterEmitValueChange32(m_fst, m_symbolp[oldp - m_sigs_oldvalp], T_Bits, newval);
     }
-    template <int N> void fullQuad(vluint32_t* oldp, vluint64_t newval) {
+    void fullQuad(vluint32_t* oldp, vluint64_t newval, int bits) {
         *reinterpret_cast<vluint64_t*>(oldp) = newval;
-        fstWriterEmitValueChange64(m_fst, m_symbolp[oldp - m_sigs_oldvalp], N, newval);
+        fstWriterEmitValueChange64(m_fst, m_symbolp[oldp - m_sigs_oldvalp], bits, newval);
     }
-    template <int N> void fullArray(vluint32_t* oldp, const vluint32_t* newval, int wholeWords) {
-        for (int i = 0; i < wholeWords + (N > 0); ++i) {
-            oldp[i] = newval[i];
+    void fullArray(vluint32_t* oldp, const vluint32_t* newvalp, int bits) {
+        for (int i = 0; i < (bits + 31) / 32; ++i) {
+            oldp[i] = newvalp[i];
         }
-        fstWriterEmitValueChangeVec32(m_fst, m_symbolp[oldp - m_sigs_oldvalp], 32 * wholeWords + N,
-                                      newval);
+        fstWriterEmitValueChangeVec32(m_fst, m_symbolp[oldp - m_sigs_oldvalp], bits, newvalp);
     }
     void fullFloat(vluint32_t* oldp, float newval) {
         *reinterpret_cast<float*>(oldp) = newval;
@@ -171,32 +170,31 @@ public:
 
     inline void chgBit(vluint32_t* oldp, vluint32_t newval) {
         const vluint32_t diff = *oldp ^ newval;
-        if (VL_UNLIKELY(diff)) { fullBit(oldp, newval); }
+        if (VL_UNLIKELY(diff)) fullBit(oldp, newval);
     }
-    template <int N> inline void chgBus(vluint32_t* oldp, vluint32_t newval) {
+    template <int T_Bits> inline void chgBus(vluint32_t* oldp, vluint32_t newval) {
         const vluint32_t diff = *oldp ^ newval;
-        if (VL_UNLIKELY(diff)) { fullBus<N>(oldp, newval); }
+        if (VL_UNLIKELY(diff)) fullBus<T_Bits>(oldp, newval);
     }
-    template <int N> inline void chgQuad(vluint32_t* oldp, vluint64_t newval) {
+    inline void chgQuad(vluint32_t* oldp, vluint64_t newval, int bits) {
         const vluint64_t diff = *reinterpret_cast<vluint64_t*>(oldp) ^ newval;
-        if (VL_UNLIKELY(diff)) { fullQuad<N>(oldp, newval); }
+        if (VL_UNLIKELY(diff)) fullQuad(oldp, newval, bits);
     }
-    template <int N>
-    inline void chgArray(vluint32_t* oldp, const vluint32_t* newval, int wholeWords) {
-        for (int i = 0; i < wholeWords + (N > 0); ++i) {
-            if (VL_UNLIKELY(oldp[i] ^ newval[i])) {
-                fullArray<N>(oldp, newval, wholeWords);
+    inline void chgArray(vluint32_t* oldp, const vluint32_t* newvalp, int bits) {
+        for (int i = 0; i < (bits + 31) / 32; ++i) {
+            if (VL_UNLIKELY(oldp[i] ^ newvalp[i])) {
+                fullArray(oldp, newvalp, bits);
                 return;
             }
         }
     }
     inline void chgFloat(vluint32_t* oldp, float newval) {
         // cppcheck-suppress invalidPointerCast
-        if (VL_UNLIKELY(*reinterpret_cast<float*>(oldp) != newval)) { fullFloat(oldp, newval); }
+        if (VL_UNLIKELY(*reinterpret_cast<float*>(oldp) != newval)) fullFloat(oldp, newval);
     }
     inline void chgDouble(vluint32_t* oldp, double newval) {
         // cppcheck-suppress invalidPointerCast
-        if (VL_UNLIKELY(*reinterpret_cast<double*>(oldp) != newval)) { fullDouble(oldp, newval); }
+        if (VL_UNLIKELY(*reinterpret_cast<double*>(oldp) != newval)) fullDouble(oldp, newval);
     }
 };
 

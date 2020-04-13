@@ -3379,26 +3379,26 @@ class EmitCTrace : EmitCStmts {
         string full = ((m_funcp->funcType() == AstCFuncType::TRACE_FULL
                         || m_funcp->funcType() == AstCFuncType::TRACE_FULL_SUB)
                        ? "full":"chg");
-        bool isArray = false;
+        bool emitWidth = false;
         if (nodep->dtypep()->basicp()->isDouble()) {
-            puts("vcdp->"+full+"Double");
+            puts("vcdp->" + full + "Double");
         } else if (nodep->isWide() || emitTraceIsScBv(nodep) || emitTraceIsScBigUint(nodep)) {
-            isArray = true;
-            puts("vcdp->" + full + "Array<" + cvtToStr(nodep->declp()->widthMin() % 32) + ">");
+            puts("vcdp->" + full + "Array");
+            emitWidth = true;
         } else if (nodep->isQuad()) {
-            puts("vcdp->"+full+"Quad<"+cvtToStr(nodep->declp()->widthMin())+ ">");
+            puts("vcdp->" + full + "Quad");
+            emitWidth = true;
         } else if (nodep->declp()->widthMin() > 1) {
-            puts("vcdp->"+full+"Bus<"+cvtToStr(nodep->declp()->widthMin())+ ">");
+            puts("vcdp->" + full + "Bus<" + cvtToStr(nodep->declp()->widthMin()) + ">");
         } else {
-            puts("vcdp->"+full+"Bit");
+            puts("vcdp->" + full + "Bit");
         }
 
-        const uint32_t code = nodep->declp()->code() + ((arrayindex < 0) ? 0 : (arrayindex * nodep->declp()->widthWords()));
+        const uint32_t offset = (arrayindex < 0) ? 0 : (arrayindex * nodep->declp()->widthWords());
+        const uint32_t code = nodep->declp()->code() + offset;
         puts("(oldp+" + cvtToStr(code - m_baseCode) + ",");
         emitTraceValue(nodep, arrayindex);
-        if (isArray) {
-            puts("," + cvtToStr(nodep->declp()->widthMin() / 32)); // Number of whole words
-        }
+        if (emitWidth) puts("," + cvtToStr(nodep->declp()->widthMin()));
         puts(");\n");
     }
     void emitTraceValue(AstTraceInc* nodep, int arrayindex) {
@@ -3459,18 +3459,21 @@ class EmitCTrace : EmitCStmts {
 
             m_baseCode = -1;
 
-            if (nodep->funcType() == AstCFuncType::TRACE_FULL_SUB || nodep->funcType() == AstCFuncType::TRACE_CHANGE_SUB) {
-                const AstTraceInc *const stmtp = VN_CAST_CONST(nodep->stmtsp(), TraceInc);
-                if (!stmtp) nodep->stmtsp()->v3fatalSrc("Trace sub function should contain AstTraceInc");
+            if (nodep->funcType() == AstCFuncType::TRACE_FULL_SUB
+                || nodep->funcType() == AstCFuncType::TRACE_CHANGE_SUB) {
+                const AstTraceInc* const stmtp = VN_CAST_CONST(nodep->stmtsp(), TraceInc);
+                if (!stmtp) {
+                    nodep->stmtsp()->v3fatalSrc("Trace sub function should contain AstTraceInc");
+                }
                 m_baseCode = stmtp->declp()->code();
-                puts("vluint32_t *oldp = vcdp->oldp(code+" + cvtToStr(m_baseCode) + ");\n");
+                puts("vluint32_t* oldp = vcdp->oldp(code+" + cvtToStr(m_baseCode) + ");\n");
                 puts("if (false && vcdp && oldp) {}  // Prevent unused\n");
-            } else if (nodep->funcType() == AstCFuncType::TRACE_INIT_SUB){
+            } else if (nodep->funcType() == AstCFuncType::TRACE_INIT_SUB) {
                 puts("int c = code;\n");
                 puts("if (false && vcdp && c) {}  // Prevent unused\n");
             } else {
                 puts("if (false && vcdp) {}  // Prevent unused\n");
-            };
+            }
 
             if (nodep->funcType() == AstCFuncType::TRACE_INIT) {
                 puts("vcdp->module(vlSymsp->name());  // Setup signal names\n");
