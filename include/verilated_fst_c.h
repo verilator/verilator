@@ -151,16 +151,16 @@ public:
         fstWriterEmitValueChange64(m_fst, m_symbolp[oldp - m_sigs_oldvalp], bits, newval);
     }
     void fullArray(vluint32_t* oldp, const vluint32_t* newvalp, int bits) {
-        for (int i = 0; i < (bits + 31) / 32; ++i) {
-            oldp[i] = newvalp[i];
-        }
+        for (int i = 0; i < (bits + 31) / 32; ++i) oldp[i] = newvalp[i];
         fstWriterEmitValueChangeVec32(m_fst, m_symbolp[oldp - m_sigs_oldvalp], bits, newvalp);
     }
     void fullFloat(vluint32_t* oldp, float newval) {
+        // cppcheck-suppress invalidPointerCast
         *reinterpret_cast<float*>(oldp) = newval;
         fstWriterEmitValueChange(m_fst, m_symbolp[oldp - m_sigs_oldvalp], oldp);
     }
     void fullDouble(vluint32_t* oldp, double newval) {
+        // cppcheck-suppress invalidPointerCast
         *reinterpret_cast<double*>(oldp) = newval;
         fstWriterEmitValueChange(m_fst, m_symbolp[oldp - m_sigs_oldvalp], oldp);
     }

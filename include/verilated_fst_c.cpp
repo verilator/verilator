@@ -17,6 +17,8 @@
 //=============================================================================
 // SPDIFF_OFF
 
+// clang-format off
+
 #define __STDC_LIMIT_MACROS  // UINT64_MAX
 #include "verilatedos.h"
 #include "verilated.h"
@@ -48,6 +50,8 @@
 # include <stdint.h>
 # include <unistd.h>
 #endif
+
+// clang-format on
 
 //=============================================================================
 

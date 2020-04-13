@@ -47,6 +47,8 @@
 # define O_CLOEXEC 0
 #endif
 
+// clang-format on
+
 // This size comes form VCD allowing use of printable ASCII characters between
 // '!' and '~' inclusive, which are a total of 94 different values. Encoding a
 // 32 bit code hence needs a maximum of ceil(log94(2**32-1)) == 5 bytes.
@@ -57,8 +59,6 @@
 // meaning the array can be aligned such that entries never straddle multiple
 // cache-lines.
 #define VL_TRACE_SUFFIX_ENTRY_SIZE 8  ///< Size of a suffix entry
-
-// clang-format on
 
 //=============================================================================
 // VerilatedVcdImp
@@ -170,6 +170,7 @@ VerilatedVcd::VerilatedVcd(VerilatedVcdFile* filep)
     m_wrFlushp = m_wrBufp + m_wrChunkSize * 6;
     m_writep = m_wrBufp;
     m_wroteBytes = 0;
+    m_suffixesp = NULL;
 }
 
 void VerilatedVcd::open(const char* filename) {
@@ -475,9 +476,7 @@ char* VerilatedVcd::writeCode(char* writep, vluint32_t code) {
 void VerilatedVcd::printIndent(int level_change) {
     if (level_change < 0) m_modDepth += level_change;
     assert(m_modDepth >= 0);
-    for (int i = 0; i < m_modDepth; i++) {
-        printStr(" ");
-    }
+    for (int i = 0; i < m_modDepth; i++) printStr(" ");
     if (level_change > 0) m_modDepth += level_change;
 }
 
@@ -854,9 +853,7 @@ void VerilatedVcd::fullQuad(vluint32_t* oldp, vluint64_t newval, int bits) {
 
 void VerilatedVcd::fullArray(vluint32_t* oldp, const vluint32_t* newvalp, int bits) {
     int words = (bits + 31) / 32;
-    for (int i = 0; i < words; ++i) {
-        oldp[i] = newvalp[i];
-    }
+    for (int i = 0; i < words; ++i) oldp[i] = newvalp[i];
     char* wp = m_writep;
     *wp++ = 'b';
     // Handle the most significant word
@@ -1071,9 +1068,7 @@ void VerilatedVcd::fullBitX(vluint32_t code) {
 }
 void VerilatedVcd::fullBusX(vluint32_t code, int bits) {
     *m_writep++ = 'b';
-    for (int bit = bits - 1; bit >= 0; --bit) {
-        *m_writep++ = 'x';
-    }
+    for (int bit = bits - 1; bit >= 0; --bit) *m_writep++ = 'x';
     *m_writep++ = ' ';
     m_writep = writeCode(m_writep, code);
     *m_writep++ = '\n';
