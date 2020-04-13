@@ -239,55 +239,56 @@ public:
 //=========================================================================
 // Declare nets
 
-#ifndef VL_SIG
-# define VL_SIG8(name, msb,lsb)         CData name              ///< Declare signal, 1-8 bits
-# define VL_SIG16(name, msb,lsb)        SData name              ///< Declare signal, 9-16 bits
-# define VL_SIG64(name, msb,lsb)        QData name              ///< Declare signal, 33-64 bits
-# define VL_SIG(name, msb,lsb)          IData name              ///< Declare signal, 17-32 bits
-# define VL_SIGW(name, msb,lsb, words)  WData name[words]       ///< Declare signal, 65+ bits
-# define VL_IN8(name, msb,lsb)          CData name              ///< Declare input signal, 1-8 bits
-# define VL_IN16(name, msb,lsb)         SData name              ///< Declare input signal, 9-16 bits
-# define VL_IN64(name, msb,lsb)         QData name              ///< Declare input signal, 33-64 bits
-# define VL_IN(name, msb,lsb)           IData name              ///< Declare input signal, 17-32 bits
-# define VL_INW(name, msb,lsb, words)   WData name[words]       ///< Declare input signal, 65+ bits
-# define VL_INOUT8(name, msb,lsb)       CData name              ///< Declare bidir signal, 1-8 bits
-# define VL_INOUT16(name, msb,lsb)      SData name              ///< Declare bidir signal, 9-16 bits
-# define VL_INOUT64(name, msb,lsb)      QData name              ///< Declare bidir signal, 33-64 bits
-# define VL_INOUT(name, msb,lsb)        IData name              ///< Declare bidir signal, 17-32 bits
-# define VL_INOUTW(name, msb,lsb, words) WData name[words]      ///< Declare bidir signal, 65+ bits
-# define VL_OUT8(name, msb,lsb)         CData name              ///< Declare output signal, 1-8 bits
-# define VL_OUT16(name, msb,lsb)        SData name              ///< Declare output signal, 9-16 bits
-# define VL_OUT64(name, msb,lsb)        QData name              ///< Declare output signal, 33-64bits
-# define VL_OUT(name, msb,lsb)          IData name              ///< Declare output signal, 17-32 bits
-# define VL_OUTW(name, msb,lsb, words)  WData name[words]       ///< Declare output signal, 65+ bits
+#define VL_SIG8(name, msb, lsb) CData name  ///< Declare signal, 1-8 bits
+#define VL_SIG16(name, msb, lsb) SData name  ///< Declare signal, 9-16 bits
+#define VL_SIG64(name, msb, lsb) QData name  ///< Declare signal, 33-64 bits
+#define VL_SIG(name, msb, lsb) IData name  ///< Declare signal, 17-32 bits
+#define VL_SIGW(name, msb, lsb, words) WData name[words]  ///< Declare signal, 65+ bits
+#define VL_IN8(name, msb, lsb) CData name  ///< Declare input signal, 1-8 bits
+#define VL_IN16(name, msb, lsb) SData name  ///< Declare input signal, 9-16 bits
+#define VL_IN64(name, msb, lsb) QData name  ///< Declare input signal, 33-64 bits
+#define VL_IN(name, msb, lsb) IData name  ///< Declare input signal, 17-32 bits
+#define VL_INW(name, msb, lsb, words) WData name[words]  ///< Declare input signal, 65+ bits
+#define VL_INOUT8(name, msb, lsb) CData name  ///< Declare bidir signal, 1-8 bits
+#define VL_INOUT16(name, msb, lsb) SData name  ///< Declare bidir signal, 9-16 bits
+#define VL_INOUT64(name, msb, lsb) QData name  ///< Declare bidir signal, 33-64 bits
+#define VL_INOUT(name, msb, lsb) IData name  ///< Declare bidir signal, 17-32 bits
+#define VL_INOUTW(name, msb, lsb, words) WData name[words]  ///< Declare bidir signal, 65+ bits
+#define VL_OUT8(name, msb, lsb) CData name  ///< Declare output signal, 1-8 bits
+#define VL_OUT16(name, msb, lsb) SData name  ///< Declare output signal, 9-16 bits
+#define VL_OUT64(name, msb, lsb) QData name  ///< Declare output signal, 33-64bits
+#define VL_OUT(name, msb, lsb) IData name  ///< Declare output signal, 17-32 bits
+#define VL_OUTW(name, msb, lsb, words) WData name[words]  ///< Declare output signal, 65+ bits
 
-# define VL_PIN_NOP(instname,pin,port)  ///< Connect a pin, ala SP_PIN
-# define VL_CELL(instname,type)         ///< Declare a cell, ala SP_CELL
+#define VL_PIN_NOP(instname, pin, port)  ///< Connect a pin, ala SP_PIN
+#define VL_CELL(instname, type)  ///< Declare a cell, ala SP_CELL
 
 /// Declare a module, ala SC_MODULE
-# define VL_MODULE(modname)             class modname : public VerilatedModule
+#define VL_MODULE(modname) class modname : public VerilatedModule
 
 /// Constructor, ala SC_CTOR
-# define VL_CTOR(modname)               modname(const char* __VCname="")
+#define VL_CTOR(modname) modname(const char* __VCname = "")
 
 /// Constructor declaration for C++, ala SP_CTOR_IMPL
-# define VL_CTOR_IMP(modname)           modname::modname(const char* __VCname) : VerilatedModule(__VCname)
+#define VL_CTOR_IMP(modname) \
+    modname::modname(const char* __VCname) \
+        : VerilatedModule(__VCname)
 
 /// Constructor declaration for SystemC, ala SP_CTOR_IMPL
-# define VL_SC_CTOR_IMP(modname)        modname::modname(sc_module_name)
-
-#endif
+#define VL_SC_CTOR_IMP(modname) modname::modname(sc_module_name)
 
 //=========================================================================
 // Functions overridable by user defines
 // (Internals however must use VL_PRINTF_MT, which calls these.)
 
+// clang-format off
 #ifndef VL_PRINTF
-# define VL_PRINTF printf  ///< Print ala printf, called from main thread; may redefine if desired
+# define VL_PRINTF printf  ///< Print ala printf, called from main thread; redefine if desired
 #endif
 #ifndef VL_VPRINTF
-# define VL_VPRINTF vprintf  ///< Print ala vprintf, called from main thread; may redefine if desired
+# define VL_VPRINTF vprintf  ///< Print ala vprintf, called from main thread; redefine if desired
 #endif
+// clang-format on
 
 //===========================================================================
 /// Verilator symbol table base class
