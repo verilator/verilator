@@ -882,8 +882,10 @@ public:
         puts(cvtToStr(nodep->fileline()->lineno()));
         puts(")");
     }
-    virtual void visit(AstNew* nodep) VL_OVERRIDE {
+    virtual void visit(AstCNew* nodep) VL_OVERRIDE {
         puts("std::make_shared<" + prefixNameProtect(nodep->dtypep()) + ">(");
+        puts("vlSymsp");  // TODO make this part of argsp, and eliminate when unnecessary
+        if (nodep->argsp()) puts(", ");
         iterateAndNextNull(nodep->argsp());
         puts(")");
     }
@@ -3138,6 +3140,7 @@ class EmitCTrace : EmitCStmts {
     AstCFunc*   m_funcp;        // Function we're in now
     bool        m_slow;         // Making slow file
     int         m_enumNum;      // Enumeration number (whole netlist)
+    int         m_baseCode;     // Code of first AstTraceInc in this function
 
     // METHODS
     void newOutCFile(int filenum) {
@@ -3418,28 +3421,24 @@ class EmitCTrace : EmitCStmts {
                        ? "full":"chg");
         bool emitWidth = false;
         if (nodep->dtypep()->basicp()->isDouble()) {
-            puts("vcdp->"+full+"Double");
+            puts("vcdp->" + full + "Double");
         } else if (nodep->isWide() || emitTraceIsScBv(nodep) || emitTraceIsScBigUint(nodep)) {
-            puts("vcdp->"+full+"Array");
+            puts("vcdp->" + full + "Array");
             emitWidth = true;
         } else if (nodep->isQuad()) {
-            puts("vcdp->"+full+"Quad");
+            puts("vcdp->" + full + "Quad");
             emitWidth = true;
-        } else if (nodep->declp()->bitRange().ranged()
-                   // 1 element smaller to use Bit dump
-                   && nodep->declp()->bitRange().elements() != 1) {
-            puts("vcdp->"+full+"Bus");
-            emitWidth = true;
+        } else if (nodep->declp()->widthMin() > 1) {
+            puts("vcdp->" + full + "Bus<" + cvtToStr(nodep->declp()->widthMin()) + ">");
         } else {
-            puts("vcdp->"+full+"Bit");
+            puts("vcdp->" + full + "Bit");
         }
-        puts("(c+"+cvtToStr(nodep->declp()->code()
-                            + ((arrayindex<0) ? 0 : (arrayindex*nodep->declp()->widthWords()))));
-        puts(",");
+
+        const uint32_t offset = (arrayindex < 0) ? 0 : (arrayindex * nodep->declp()->widthWords());
+        const uint32_t code = nodep->declp()->code() + offset;
+        puts("(oldp+" + cvtToStr(code - m_baseCode) + ",");
         emitTraceValue(nodep, arrayindex);
-        if (emitWidth) {
-            puts(","+cvtToStr(nodep->declp()->widthMin()));
-        }
+        if (emitWidth) puts("," + cvtToStr(nodep->declp()->widthMin()));
         puts(");\n");
     }
     void emitTraceValue(AstTraceInc* nodep, int arrayindex) {
@@ -3498,8 +3497,24 @@ class EmitCTrace : EmitCStmts {
 
             if (nodep->symProlog()) puts(EmitCBaseVisitor::symTopAssign()+"\n");
 
-            puts("int c = code;\n");
-            puts("if (false && vcdp && c) {}  // Prevent unused\n");
+            m_baseCode = -1;
+
+            if (nodep->funcType() == AstCFuncType::TRACE_FULL_SUB
+                || nodep->funcType() == AstCFuncType::TRACE_CHANGE_SUB) {
+                const AstTraceInc* const stmtp = VN_CAST_CONST(nodep->stmtsp(), TraceInc);
+                if (!stmtp) {
+                    nodep->stmtsp()->v3fatalSrc("Trace sub function should contain AstTraceInc");
+                }
+                m_baseCode = stmtp->declp()->code();
+                puts("vluint32_t* oldp = vcdp->oldp(code+" + cvtToStr(m_baseCode) + ");\n");
+                puts("if (false && vcdp && oldp) {}  // Prevent unused\n");
+            } else if (nodep->funcType() == AstCFuncType::TRACE_INIT_SUB) {
+                puts("int c = code;\n");
+                puts("if (false && vcdp && c) {}  // Prevent unused\n");
+            } else {
+                puts("if (false && vcdp) {}  // Prevent unused\n");
+            }
+
             if (nodep->funcType() == AstCFuncType::TRACE_INIT) {
                 puts("vcdp->module(vlSymsp->name());  // Setup signal names\n");
             } else if (nodep->funcType() == AstCFuncType::TRACE_INIT_SUB) {

@@ -61,8 +61,7 @@ void VlWorkerThread::workerLoop() {
         if (VL_LIKELY(!work.m_fnp)) dequeWork(&work);
 
         // Do this here, not above, to avoid a race with the destructor.
-        if (VL_UNLIKELY(m_exiting.load(std::memory_order_acquire)))
-            break;
+        if (VL_UNLIKELY(m_exiting.load(std::memory_order_acquire))) break;
 
         if (VL_LIKELY(work.m_fnp)) {
             work.m_fnp(work.m_evenCycle, work.m_sym);
@@ -128,8 +127,7 @@ void VlThreadPool::setupProfilingClientThread() {
 
 void VlThreadPool::profileAppendAll(const VlProfileRec& rec) {
     VerilatedLockGuard lk(m_mutex);
-    for (ProfileSet::iterator it = m_allProfiles.begin();
-         it != m_allProfiles.end(); ++it) {
+    for (ProfileSet::iterator it = m_allProfiles.begin(); it != m_allProfiles.end(); ++it) {
         // Every thread's profile trace gets a copy of rec.
         (*it)->emplace_back(rec);
     }
@@ -156,14 +154,14 @@ void VlThreadPool::profileDump(const char* filenamep, vluint64_t ticksElapsed) {
     fprintf(fp, "VLPROF stat yields %" VL_PRI64 "u\n", VlMTaskVertex::yields());
 
     vluint32_t thread_id = 0;
-    for (ProfileSet::const_iterator pit = m_allProfiles.begin();
-         pit != m_allProfiles.end(); ++pit) {
+    for (ProfileSet::const_iterator pit = m_allProfiles.begin(); pit != m_allProfiles.end();
+         ++pit) {
         ++thread_id;
 
         bool printing = false;  // False while in warmup phase
         for (ProfileTrace::const_iterator eit = (*pit)->begin(); eit != (*pit)->end(); ++eit) {
             switch (eit->m_type) {
-            case VlProfileRec::TYPE_BARRIER:
+            case VlProfileRec::TYPE_BARRIER:  //
                 printing = true;
                 break;
             case VlProfileRec::TYPE_MTASK_RUN:

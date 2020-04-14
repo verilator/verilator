@@ -379,11 +379,13 @@ template <class T_Value> std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
 // be protected by other means
 //
 
+// clang-format off
 #if (defined(_MSC_VER) && _MSC_VER >= 1900) || (__cplusplus >= 201103L)
 # define VlClassRef std::shared_ptr
 #else
 # define VlClassRef VlClassRef__SystemVerilog_class_support_requires_a_C11_or_newer_compiler
 #endif
+// clang-format on
 
 template <class T>  // T typically of type VlClassRef<x>
 inline T VL_NULL_CHECK(T t, const char* filename, int linenum) {
@@ -412,9 +414,7 @@ inline std::string VL_CONCATN_NNN(const std::string& lhs, const std::string& rhs
 inline std::string VL_REPLICATEN_NNQ(int, int, int, const std::string& lhs, IData rep) VL_PURE {
     std::string out;
     out.reserve(lhs.length() * rep);
-    for (unsigned times = 0; times < rep; ++times) {
-        out += lhs;
-    }
+    for (unsigned times = 0; times < rep; ++times) out += lhs;
     return out;
 }
 inline std::string VL_REPLICATEN_NNI(int obits, int lbits, int rbits, const std::string& lhs,

@@ -41,8 +41,12 @@ class VerilatedRange {
 protected:
     friend class VerilatedVarProps;
     friend class VerilatedScope;
-    VerilatedRange() : m_left(0), m_right(0) {}
-    VerilatedRange(int left, int right) : m_left(left), m_right(right) {}
+    VerilatedRange()
+        : m_left(0)
+        , m_right(0) {}
+    VerilatedRange(int left, int right)
+        : m_left(left)
+        , m_right(right) {}
     void init(int left, int right) {
         m_left = left;
         m_right = right;
@@ -78,63 +82,89 @@ class VerilatedVarProps {
     // CONSTRUCTORS
 protected:
     friend class VerilatedScope;
-    VerilatedVarProps(VerilatedVarType vltype, VerilatedVarFlags vlflags,
-                      int pdims, int udims)
-        : m_magic(MAGIC), m_vltype(vltype), m_vlflags(vlflags), m_pdims(pdims), m_udims(udims) {}
+    VerilatedVarProps(VerilatedVarType vltype, VerilatedVarFlags vlflags, int pdims, int udims)
+        : m_magic(MAGIC)
+        , m_vltype(vltype)
+        , m_vlflags(vlflags)
+        , m_pdims(pdims)
+        , m_udims(udims) {}
 
 public:
     class Unpacked {};
     // Without packed
     VerilatedVarProps(VerilatedVarType vltype, int vlflags)
-        : m_magic(MAGIC), m_vltype(vltype),
-          m_vlflags(VerilatedVarFlags(vlflags)), m_pdims(0), m_udims(0) {}
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags,
-                      Unpacked, int u0l, int u0r)
-        : m_magic(MAGIC), m_vltype(vltype),
-          m_vlflags(VerilatedVarFlags(vlflags)), m_pdims(0), m_udims(1) {
+        : m_magic(MAGIC)
+        , m_vltype(vltype)
+        , m_vlflags(VerilatedVarFlags(vlflags))
+        , m_pdims(0)
+        , m_udims(0) {}
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int u0l, int u0r)
+        : m_magic(MAGIC)
+        , m_vltype(vltype)
+        , m_vlflags(VerilatedVarFlags(vlflags))
+        , m_pdims(0)
+        , m_udims(1) {
         m_unpacked[0].init(u0l, u0r);
     }
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags,
-                      Unpacked, int u0l, int u0r, int u1l, int u1r)
-        : m_magic(MAGIC), m_vltype(vltype),
-          m_vlflags(VerilatedVarFlags(vlflags)), m_pdims(0), m_udims(2) {
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int u0l, int u0r, int u1l,
+                      int u1r)
+        : m_magic(MAGIC)
+        , m_vltype(vltype)
+        , m_vlflags(VerilatedVarFlags(vlflags))
+        , m_pdims(0)
+        , m_udims(2) {
         m_unpacked[0].init(u0l, u0r);
         m_unpacked[1].init(u1l, u1r);
     }
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags,
-                      Unpacked, int u0l, int u0r, int u1l, int u1r, int u2l, int u2r)
-        : m_magic(MAGIC), m_vltype(vltype),
-          m_vlflags(VerilatedVarFlags(vlflags)), m_pdims(0), m_udims(3) {
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int u0l, int u0r, int u1l,
+                      int u1r, int u2l, int u2r)
+        : m_magic(MAGIC)
+        , m_vltype(vltype)
+        , m_vlflags(VerilatedVarFlags(vlflags))
+        , m_pdims(0)
+        , m_udims(3) {
         m_unpacked[0].init(u0l, u0r);
         m_unpacked[1].init(u1l, u1r);
         m_unpacked[2].init(u2l, u2r);
     }
     // With packed
     class Packed {};
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags,
-                      Packed, int pl, int pr)
-        : m_magic(MAGIC), m_vltype(vltype),
-          m_vlflags(VerilatedVarFlags(vlflags)), m_pdims(1), m_udims(0), m_packed(pl,pr) {}
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags,
-                      Packed, int pl, int pr,
-                      Unpacked, int u0l, int u0r)
-        : m_magic(MAGIC), m_vltype(vltype),
-          m_vlflags(VerilatedVarFlags(vlflags)), m_pdims(1), m_udims(1), m_packed(pl,pr) {
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pl, int pr)
+        : m_magic(MAGIC)
+        , m_vltype(vltype)
+        , m_vlflags(VerilatedVarFlags(vlflags))
+        , m_pdims(1)
+        , m_udims(0)
+        , m_packed(pl, pr) {}
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pl, int pr, Unpacked,
+                      int u0l, int u0r)
+        : m_magic(MAGIC)
+        , m_vltype(vltype)
+        , m_vlflags(VerilatedVarFlags(vlflags))
+        , m_pdims(1)
+        , m_udims(1)
+        , m_packed(pl, pr) {
         m_unpacked[0].init(u0l, u0r);
     }
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags,
-                      Packed, int pl, int pr,
-                      Unpacked, int u0l, int u0r, int u1l, int u1r)
-        : m_magic(MAGIC), m_vltype(vltype), m_vlflags(VerilatedVarFlags(vlflags)),
-          m_pdims(1), m_udims(2), m_packed(pl,pr) {
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pl, int pr, Unpacked,
+                      int u0l, int u0r, int u1l, int u1r)
+        : m_magic(MAGIC)
+        , m_vltype(vltype)
+        , m_vlflags(VerilatedVarFlags(vlflags))
+        , m_pdims(1)
+        , m_udims(2)
+        , m_packed(pl, pr) {
         m_unpacked[0].init(u0l, u0r);
         m_unpacked[1].init(u1l, u1r);
     }
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags,
-                      Packed, int pl, int pr,
-                      Unpacked, int u0l, int u0r, int u1l, int u1r, int u2l, int u2r)
-        : m_magic(MAGIC), m_vltype(vltype),
-          m_vlflags(VerilatedVarFlags(vlflags)), m_pdims(1), m_udims(3), m_packed(pl,pr) {
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pl, int pr, Unpacked,
+                      int u0l, int u0r, int u1l, int u1r, int u2l, int u2r)
+        : m_magic(MAGIC)
+        , m_vltype(vltype)
+        , m_vlflags(VerilatedVarFlags(vlflags))
+        , m_pdims(1)
+        , m_udims(3)
+        , m_packed(pl, pr) {
         m_unpacked[0].init(u0l, u0r);
         m_unpacked[1].init(u1l, u1r);
         m_unpacked[2].init(u2l, u2r);

@@ -31,31 +31,49 @@ class VDouble0 {
     double m_d;  ///< Count of occurrences/ value
 public:
     // METHODS
-    VDouble0() : m_d(0) {}
+    VDouble0()
+        : m_d(0) {}
     ~VDouble0() {}
 
     // Implicit conversion operators:
-    inline explicit VDouble0(const vluint64_t v) : m_d(v) { }
+    inline explicit VDouble0(const vluint64_t v)
+        : m_d(v) {}
     inline operator double() const { return m_d; }
 
     // Explicit operators:
-    inline VDouble0& operator++() { ++m_d; return *this; }  // prefix
-    inline VDouble0  operator++(int) { VDouble0 old=*this; m_d++; return old; }  // postfix
-    inline VDouble0& operator= (const double v) { m_d = v; return *this; }
-    inline VDouble0& operator+=(const double v) { m_d += v; return *this; }
-    inline VDouble0& operator-=(const double v) { m_d -= v; return *this; }
+    inline VDouble0& operator++() {  // prefix
+        ++m_d;
+        return *this;
+    }
+    inline VDouble0 operator++(int) {  // postfix
+        VDouble0 old = *this;
+        m_d++;
+        return old;
+    }
+    inline VDouble0& operator=(const double v) {
+        m_d = v;
+        return *this;
+    }
+    inline VDouble0& operator+=(const double v) {
+        m_d += v;
+        return *this;
+    }
+    inline VDouble0& operator-=(const double v) {
+        m_d -= v;
+        return *this;
+    }
 };
 
 //============================================================================
 
 class V3Statistic {
     // A statistical entry we want published into the database
-    string      m_name;         ///< Nameiption of this statistic
-    double      m_count;        ///< Count of occurrences/ value
-    string      m_stage;        ///< Runtime stage
-    bool        m_sumit;        ///< Do summation of similar stats
-    bool        m_perf;         ///< Performance section
-    bool        m_printit;      ///< Print the results
+    string m_name;  ///< Nameiption of this statistic
+    double m_count;  ///< Count of occurrences/ value
+    string m_stage;  ///< Runtime stage
+    bool m_sumit;  ///< Do summation of similar stats
+    bool m_perf;  ///< Performance section
+    bool m_printit;  ///< Print the results
 public:
     // METHODS
     string stage() const { return m_stage; }
@@ -70,9 +88,13 @@ public:
         otherp->m_printit = false;
     }
     // CONSTRUCTORS
-    V3Statistic(const string& stage, const string& name,
-                double count, bool sumit=false, bool perf=false)
-        : m_name(name), m_count(count), m_stage(stage), m_sumit(sumit), m_perf(perf)
+    V3Statistic(const string& stage, const string& name, double count, bool sumit = false,
+                bool perf = false)
+        : m_name(name)
+        , m_count(count)
+        , m_stage(stage)
+        , m_sumit(sumit)
+        , m_perf(perf)
         , m_printit(true) {}
     virtual ~V3Statistic() {}
 };
@@ -83,21 +105,24 @@ class V3Stats {
 public:
     static void addStat(const V3Statistic&);
     static void addStat(const string& stage, const string& name, double count) {
-        addStat(V3Statistic(stage, name, count)); }
+        addStat(V3Statistic(stage, name, count));
+    }
     static void addStat(const string& name, double count) {
-        addStat(V3Statistic("*", name, count)); }
+        addStat(V3Statistic("*", name, count));
+    }
     static void addStatSum(const string& name, double count) {
-        addStat(V3Statistic("*", name, count, true)); }
+        addStat(V3Statistic("*", name, count, true));
+    }
     static void addStatPerf(const string& name, double count) {
-        addStat(V3Statistic("*", name, count, true, true)); }
+        addStat(V3Statistic("*", name, count, true, true));
+    }
     /// Called each stage
     static void statsStage(const string& name);
     /// Called by the top level to collect statistics
-    static void statsStageAll(AstNetlist* nodep, const string& stage, bool fast=false);
+    static void statsStageAll(AstNetlist* nodep, const string& stage, bool fast = false);
     static void statsFinalAll(AstNetlist* nodep);
     /// Called by the top level to dump the statistics
     static void statsReport();
 };
-
 
 #endif  // Guard

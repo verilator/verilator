@@ -31,18 +31,14 @@ size_t VName::s_maxLength = 0;  // Disabled
 
 // Double procedures, inlined, unrolls loop much better
 inline bool VString::wildmatchi(const char* s, const char* p) {
-    for ( ; *p; s++, p++) {
-        if (*p!='*') {
-            if (((*s)!=(*p)) && *p != '?')
-                return false;
-        }
-        else {
+    for (; *p; s++, p++) {
+        if (*p != '*') {
+            if (((*s) != (*p)) && *p != '?') return false;
+        } else {
             // Trailing star matches everything.
             if (!*++p) return true;
             while (!wildmatch(s, p)) {
-                if (*++s == '\0') {
-                    return false;
-                }
+                if (*++s == '\0') return false;
             }
             return true;
         }
@@ -51,18 +47,14 @@ inline bool VString::wildmatchi(const char* s, const char* p) {
 }
 
 bool VString::wildmatch(const char* s, const char* p) {
-    for ( ; *p; s++, p++) {
-        if (*p!='*') {
-            if (((*s)!=(*p)) && *p != '?')
-                return false;
-        }
-        else {
+    for (; *p; s++, p++) {
+        if (*p != '*') {
+            if (((*s) != (*p)) && *p != '?') return false;
+        } else {
             // Trailing star matches everything.
             if (!*++p) return true;
             while (!wildmatchi(s, p)) {
-                if (*++s == '\0') {
-                    return false;
-                }
+                if (*++s == '\0') return false;
             }
             return true;
         }
@@ -74,29 +66,25 @@ bool VString::wildmatch(const string& s, const string& p) {
     return wildmatch(s.c_str(), p.c_str());
 }
 
-bool VString::isWildcard(const string &p) {
+bool VString::isWildcard(const string& p) {
     return ((p.find('*') != string::npos) || (p.find('?') != string::npos));
 }
 
 string VString::dot(const string& a, const string& dot, const string& b) {
-    if (b=="") return a;
-    if (a=="") return b;
-    return a+dot+b;
+    if (b == "") return a;
+    if (a == "") return b;
+    return a + dot + b;
 }
 
 string VString::downcase(const string& str) {
     string out = str;
-    for (string::iterator pos = out.begin(); pos != out.end(); ++pos) {
-        *pos = tolower(*pos);
-    }
+    for (string::iterator pos = out.begin(); pos != out.end(); ++pos) *pos = tolower(*pos);
     return out;
 }
 
 string VString::upcase(const string& str) {
     string out = str;
-    for (string::iterator pos = out.begin(); pos != out.end(); ++pos) {
-        *pos = toupper(*pos);
-    }
+    for (string::iterator pos = out.begin(); pos != out.end(); ++pos) *pos = toupper(*pos);
     return out;
 }
 
@@ -112,8 +100,11 @@ string VString::quotePercent(const string& str) {
 string VString::spaceUnprintable(const string& str) {
     string out;
     for (string::const_iterator pos = str.begin(); pos != str.end(); ++pos) {
-        if (isprint(*pos)) out += *pos;
-        else out += ' ';
+        if (isprint(*pos)) {
+            out += *pos;
+        } else {
+            out += ' ';
+        }
     }
     return out;
 }
@@ -137,16 +128,17 @@ bool VString::isWhitespace(const string& str) {
 //######################################################################
 // VHashSha256
 
-static const uint32_t sha256K[] = {
-    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
-    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
-    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
-    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
-    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
-    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
-    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
-    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
-};
+static const uint32_t sha256K[]
+    = {0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4,
+       0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe,
+       0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f,
+       0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
+       0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc,
+       0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b,
+       0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116,
+       0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+       0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7,
+       0xc67178f2};
 
 static inline uint32_t shaRotr32(uint32_t lhs, uint32_t rhs) VL_ATTR_ALWINLINE;
 static inline uint32_t shaRotr32(uint32_t lhs, uint32_t rhs) {
@@ -159,9 +151,7 @@ static inline void sha256Block(uint32_t* h, const uint32_t* chunk) {
     const uint32_t* p = chunk;
 
     // Initialize working variables to current hash value
-    for (unsigned i = 0; i < 8; i++) {
-        ah[i] = h[i];
-    }
+    for (unsigned i = 0; i < 8; i++) ah[i] = h[i];
     // Compression function main loop
     for (unsigned i = 0; i < 4; ++i) {
         uint32_t w[16];
@@ -173,17 +163,15 @@ static inline void sha256Block(uint32_t* h, const uint32_t* chunk) {
                 // Extend the first 16 words into the remaining
                 // 48 words w[16..63] of the message schedule array:
                 const uint32_t s0 = shaRotr32(w[(j + 1) & 0xf], 7)
-                    ^ shaRotr32(w[(j + 1) & 0xf], 18) ^ (w[(j + 1) & 0xf] >> 3);
+                                    ^ shaRotr32(w[(j + 1) & 0xf], 18) ^ (w[(j + 1) & 0xf] >> 3);
                 const uint32_t s1 = shaRotr32(w[(j + 14) & 0xf], 17)
-                    ^ shaRotr32(w[(j + 14) & 0xf], 19) ^ (w[(j + 14) & 0xf] >> 10);
+                                    ^ shaRotr32(w[(j + 14) & 0xf], 19) ^ (w[(j + 14) & 0xf] >> 10);
                 w[j] = w[j] + s0 + w[(j + 9) & 0xf] + s1;
             }
-            const uint32_t s1 = shaRotr32(ah[4], 6)
-                ^ shaRotr32(ah[4], 11) ^ shaRotr32(ah[4], 25);
+            const uint32_t s1 = shaRotr32(ah[4], 6) ^ shaRotr32(ah[4], 11) ^ shaRotr32(ah[4], 25);
             const uint32_t ch = (ah[4] & ah[5]) ^ (~ah[4] & ah[6]);
             const uint32_t temp1 = ah[7] + s1 + ch + sha256K[i << 4 | j] + w[j];
-            const uint32_t s0 = shaRotr32(ah[0], 2)
-                ^ shaRotr32(ah[0], 13) ^ shaRotr32(ah[0], 22);
+            const uint32_t s0 = shaRotr32(ah[0], 2) ^ shaRotr32(ah[0], 13) ^ shaRotr32(ah[0], 22);
             const uint32_t maj = (ah[0] & ah[1]) ^ (ah[0] & ah[2]) ^ (ah[1] & ah[2]);
             const uint32_t temp2 = s0 + maj;
 
@@ -200,7 +188,6 @@ static inline void sha256Block(uint32_t* h, const uint32_t* chunk) {
     for (unsigned i = 0; i < 8; ++i) h[i] += ah[i];
 }
 
-
 void VHashSha256::insert(const void* datap, size_t length) {
     UASSERT(!m_final, "Called VHashSha256::insert after finalized the hash value");
     m_totLength += length;
@@ -208,7 +195,7 @@ void VHashSha256::insert(const void* datap, size_t length) {
     string tempData;
     int chunkLen;
     const uint8_t* chunkp;
-    if (m_remainder=="") {
+    if (m_remainder == "") {
         chunkLen = length;
         chunkp = static_cast<const uint8_t*>(datap);
     } else {
@@ -238,7 +225,7 @@ void VHashSha256::insert(const void* datap, size_t length) {
         sha256Block(m_inthash, w);
     }
 
-    m_remainder = string(reinterpret_cast<const char*>(chunkp+posBegin), chunkLen-posEnd);
+    m_remainder = string(reinterpret_cast<const char*>(chunkp + posBegin), chunkLen - posEnd);
 }
 
 void VHashSha256::finalize() {
@@ -249,16 +236,16 @@ void VHashSha256::finalize() {
 
         // Process final possibly non-complete 64-byte block
         uint32_t w[16];  // Round buffer, [0..15] are input data
-        for (int i=0; i<16; ++i) w[i] = 0;
+        for (int i = 0; i < 16; ++i) w[i] = 0;
         size_t blockPos = 0;
         for (; blockPos < m_remainder.length(); ++blockPos) {
-            w[blockPos >> 2] |= ((static_cast<uint32_t>(m_remainder[blockPos]))
-                                 << ((3 - (blockPos & 3)) << 3));
+            w[blockPos >> 2]
+                |= ((static_cast<uint32_t>(m_remainder[blockPos])) << ((3 - (blockPos & 3)) << 3));
         }
         w[blockPos >> 2] |= 0x80 << ((3 - (blockPos & 3)) << 3);
         if (m_remainder.length() >= 56) {
             sha256Block(m_inthash, w);
-            for (int i=0; i<16; ++i) w[i] = 0;
+            for (int i = 0; i < 16; ++i) w[i] = 0;
         }
         w[15] = m_totLength << 3;
         sha256Block(m_inthash, w);
@@ -269,8 +256,9 @@ void VHashSha256::finalize() {
 
 string VHashSha256::digestBinary() {
     finalize();
-    string out; out.reserve(32);
-    for (size_t i=0; i<32; ++i) {
+    string out;
+    out.reserve(32);
+    for (size_t i = 0; i < 32; ++i) {
         out += (m_inthash[i >> 2] >> (((3 - i) & 0x3) << 3)) & 0xff;
     }
     return out;
@@ -279,20 +267,21 @@ string VHashSha256::digestBinary() {
 uint64_t VHashSha256::digestUInt64() {
     const string& binhash = digestBinary();
     uint64_t out = 0;
-    for (size_t byte=0; byte<sizeof(uint64_t); ++byte) {
+    for (size_t byte = 0; byte < sizeof(uint64_t); ++byte) {
         unsigned char c = binhash[byte];
-        out = (out<<8) | c;
+        out = (out << 8) | c;
     }
     return out;
 }
 
 string VHashSha256::digestHex() {
-    static const char digits[16+1] = "0123456789abcdef";
+    static const char digits[16 + 1] = "0123456789abcdef";
     const string& binhash = digestBinary();
-    string out; out.reserve(70);
-    for (size_t byte=0; byte<32; ++byte) {
-        out += digits[ (binhash[byte]>>4) & 0xf ];
-        out += digits[ (binhash[byte]>>0) & 0xf ];
+    string out;
+    out.reserve(70);
+    for (size_t byte = 0; byte < 32; ++byte) {
+        out += digits[(binhash[byte] >> 4) & 0xf];
+        out += digits[(binhash[byte] >> 0) & 0xf];
     }
     return out;
 }
@@ -302,12 +291,13 @@ string VHashSha256::digestSymbol() {
     // has + and / for last two digits, but need C symbol, and we also
     // avoid conflicts with use of _, so use "AB" at the end.
     // Thus this function is non-reversible.
-    static const char digits[64+1]
+    static const char digits[64 + 1]
         = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789AB";
     const string& binhash = digestBinary();
-    string out; out.reserve(28);
+    string out;
+    out.reserve(28);
     int pos = 0;
-    for (; pos < (256/8) - 2; pos += 3) {
+    for (; pos < (256 / 8) - 2; pos += 3) {
         out += digits[((binhash[pos] >> 2) & 0x3f)];
         out += digits[((binhash[pos] & 0x3) << 4)
                       | (static_cast<int>(binhash[pos + 1] & 0xf0) >> 4)];
@@ -319,28 +309,26 @@ string VHashSha256::digestSymbol() {
     return out;
 }
 
-void VHashSha256::selfTestOne(const string& data, const string& data2,
-                              const string& exp, const string& exp64) {
-    VHashSha256 digest (data);
-    if (data2!="") digest.insert(data2);
+void VHashSha256::selfTestOne(const string& data, const string& data2, const string& exp,
+                              const string& exp64) {
+    VHashSha256 digest(data);
+    if (data2 != "") digest.insert(data2);
     if (VL_UNCOVERABLE(digest.digestHex() != exp)) {
-        std::cerr << "%Error: When hashing '"<<data+data2<<"'"<<endl  // LCOV_EXCL_LINE
-                  << "        ... got="<<digest.digestHex()<<endl  // LCOV_EXCL_LINE
-                  << "        ... exp="<<exp<<endl;  // LCOV_EXCL_LINE
+        std::cerr << "%Error: When hashing '" << data + data2 << "'" << endl  // LCOV_EXCL_LINE
+                  << "        ... got=" << digest.digestHex() << endl  // LCOV_EXCL_LINE
+                  << "        ... exp=" << exp << endl;  // LCOV_EXCL_LINE
     }
     if (VL_UNCOVERABLE(digest.digestSymbol() != exp64)) {
-        std::cerr << "%Error: When hashing '"<<data+data2<<"'"<<endl  // LCOV_EXCL_LINE
-                  << "        ... got="<<digest.digestSymbol()<<endl  // LCOV_EXCL_LINE
-                  << "        ... exp="<<exp64<<endl;  // LCOV_EXCL_LINE
+        std::cerr << "%Error: When hashing '" << data + data2 << "'" << endl  // LCOV_EXCL_LINE
+                  << "        ... got=" << digest.digestSymbol() << endl  // LCOV_EXCL_LINE
+                  << "        ... exp=" << exp64 << endl;  // LCOV_EXCL_LINE
     }
 }
 
 void VHashSha256::selfTest() {
-    selfTestOne("", "",
-                "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    selfTestOne("", "", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
                 "47DEQpj8HBSaABTImWA5JCeuQeRkm5NMpJWZG3hS");
-    selfTestOne("a", "",
-                "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+    selfTestOne("a", "", "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
                 "ypeBEsobvcr6wjGzmiPcTaeG7BgUfE5yuYB3haBu");
     selfTestOne("The quick brown fox jumps over the lazy dog", "",
                 "d7a8fbb307d7809469ca9abcb0082e4f8d5651e46d3cdb762d02d0bf37c9e592",
@@ -360,14 +348,14 @@ void VHashSha256::selfTest() {
 // VName
 
 string VName::hashedName() {
-    if (m_name=="") return "";
-    if (m_hashed!="") return m_hashed;  // Memoized
-    if (s_maxLength==0 || m_name.length() < s_maxLength) {
+    if (m_name == "") return "";
+    if (m_hashed != "") return m_hashed;  // Memoized
+    if (s_maxLength == 0 || m_name.length() < s_maxLength) {
         m_hashed = m_name;
         return m_hashed;
     } else {
         VHashSha256 hash(m_name);
-        string suffix = "__Vhsh"+hash.digestSymbol();
+        string suffix = "__Vhsh" + hash.digestSymbol();
         if (s_minLength < s_maxLength) {
             m_hashed = m_name.substr(0, s_minLength) + suffix;
         } else {
@@ -398,9 +386,9 @@ VSpellCheck::EditDistance VSpellCheck::editDistance(const string& s, const strin
     for (size_t i = 0; i < tLen; i++) {
         s_v_next[0] = i + 1;
         for (size_t j = 0; j < sLen; j++) {
-            EditDistance cost =(s[j] == t[i] ? 0 : 1);
-            EditDistance deletion     = s_v_next[j] + 1;
-            EditDistance insertion    = s_v_one_ago[j + 1] + 1;
+            EditDistance cost = (s[j] == t[i] ? 0 : 1);
+            EditDistance deletion = s_v_next[j] + 1;
+            EditDistance insertion = s_v_one_ago[j + 1] + 1;
             EditDistance substitution = s_v_one_ago[j] + cost;
             EditDistance cheapest = std::min(deletion, insertion);
             cheapest = std::min(cheapest, substitution);
@@ -429,13 +417,11 @@ VSpellCheck::EditDistance VSpellCheck::cutoffDistance(size_t goal_len, size_t ca
     return (max_length + 2) / 3;
 }
 
-string VSpellCheck::bestCandidateInfo(const string& goal,
-                                      EditDistance& distancer) {
+string VSpellCheck::bestCandidateInfo(const string& goal, EditDistance& distancer) {
     string bestCandidate;
     size_t gLen = goal.length();
-    distancer = LENGTH_LIMIT*10;
-    for (Candidates::const_iterator it = m_candidates.begin();
-         it != m_candidates.end(); ++it) {
+    distancer = LENGTH_LIMIT * 10;
+    for (Candidates::const_iterator it = m_candidates.begin(); it != m_candidates.end(); ++it) {
         const string candidate = *it;
         size_t cLen = candidate.length();
 
@@ -447,8 +433,8 @@ string VSpellCheck::bestCandidateInfo(const string& goal,
         if (min_distance > cutoff) continue;  // Short-circuit if already too bad
 
         EditDistance dist = editDistance(goal, candidate);
-        UINFO(9, "EditDistance dist="<<dist<<" cutoff="<<cutoff
-              <<" goal="<<goal<<" candidate="<<candidate<<endl);
+        UINFO(9, "EditDistance dist=" << dist << " cutoff=" << cutoff << " goal=" << goal
+                                      << " candidate=" << candidate << endl);
         if (dist < distancer && dist <= cutoff) {
             distancer = dist;
             bestCandidate = candidate;
@@ -460,8 +446,7 @@ string VSpellCheck::bestCandidateInfo(const string& goal,
     return bestCandidate;
 }
 
-void VSpellCheck::selfTestDistanceOne(const string& a, const string& b,
-                                      EditDistance expected) {
+void VSpellCheck::selfTestDistanceOne(const string& a, const string& b, EditDistance expected) {
     UASSERT_SELFTEST(EditDistance, editDistance(a, b), expected);
     UASSERT_SELFTEST(EditDistance, editDistance(b, a), expected);
 }
@@ -471,7 +456,7 @@ void VSpellCheck::selfTestSuggestOne(bool matches, const string& c, const string
     EditDistance gdist;
     VSpellCheck speller;
     speller.pushCandidate(c);
-    string got = speller.bestCandidateInfo(goal, gdist/*ref*/);
+    string got = speller.bestCandidateInfo(goal, gdist /*ref*/);
     if (matches) {
         UASSERT_SELFTEST(string, got, c);
         UASSERT_SELFTEST(EditDistance, gdist, dist);

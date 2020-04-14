@@ -34,17 +34,21 @@ public:
 
     // METHODS (generic filename utilities)
     static string filenameFromDirBase(const string& dir, const string& basename);
-    static string filenameNonDir(const string& filename);  ///< Return non-directory part of filename
-    static string filenameNonExt(const string& filename);  ///< Return non-extensioned (no .) part of filename
+    /// Return non-directory part of filename
+    static string filenameNonDir(const string& filename);
+    /// Return non-extensioned (no .) part of filename
+    static string filenameNonExt(const string& filename);
     static string filenameNonDirExt(const string& filename) {  ///< Return basename of filename
-        return filenameNonExt(filenameNonDir(filename)); }
+        return filenameNonExt(filenameNonDir(filename));
+    }
     static string filenameDir(const string& filename);  ///< Return directory part of filename
-    static string filenameSubstitute(const string& filename);  ///< Return filename with env vars removed
+    /// Return filename with env vars removed
+    static string filenameSubstitute(const string& filename);
     static string filenameRealPath(const string& filename);  ///< Return realpath of filename
     static bool filenameIsRel(const string& filename);  ///< True if relative
 
     // METHODS (file utilities)
-    static string getline(std::istream& is, char delim='\n');
+    static string getline(std::istream& is, char delim = '\n');
 
     // METHODS (directory utilities)
     static void createDir(const string& dirname);
@@ -56,7 +60,8 @@ public:
 
     // METHODS (time & performance)
     static void u_sleep(int64_t usec);  ///< Sleep for a given number of microseconds.
-    static uint64_t timeUsecs();  ///< Return wall time since epoch in microseconds, or 0 if not implemented
+    /// Return wall time since epoch in microseconds, or 0 if not implemented
+    static uint64_t timeUsecs();
     static uint64_t memUsageBytes();  ///< Return memory usage in bytes, or 0 if not implemented
 };
 

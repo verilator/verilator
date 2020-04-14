@@ -26,17 +26,16 @@
 
 class V3LanguageWords {
     // List of common reserved keywords
-  private:
-    typedef std::map<string,string> KeywordMap;
+private:
+    typedef std::map<string, string> KeywordMap;
     struct Singleton {
         KeywordMap s_kwdMap;  // List of keywords, and what language applies
         Singleton() { init(); }
-        void addKwd(const string& kwd, const string& why) {
-            s_kwdMap.insert(make_pair(kwd, why));
-        }
+        void addKwd(const string& kwd, const string& why) { s_kwdMap.insert(make_pair(kwd, why)); }
         void init();
     };
-  public:
+
+public:
     typedef KeywordMap::const_iterator const_iterator;
     // METHODS
     static const_iterator begin() { return s().s_kwdMap.begin(); }
@@ -46,12 +45,17 @@ class V3LanguageWords {
         if (it == s().s_kwdMap.end()) return "";
         return it->second;
     }
+
 private:
-    static Singleton& s() { static Singleton s_s; return s_s; }
+    static Singleton& s() {
+        static Singleton s_s;
+        return s_s;
+    }
 };
 
 inline void V3LanguageWords::Singleton::init() {
     // C++ keywords
+    // clang-format off
     addKwd("NULL",                  "C++ common word");
     addKwd("abort",                 "C++ common word");
     addKwd("alignas",               "C++11 keyword");
@@ -242,6 +246,7 @@ inline void V3LanguageWords::Singleton::init() {
     addKwd("`undefineall",              "Verilog preprocessor directive");
     addKwd("`verilator_config",         "Verilator preprocessor directive");
     addKwd("`verilog",                  "Verilator preprocessor directive");
+    // clang-format on
 }
 
 #endif  // Guard

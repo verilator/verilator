@@ -58,27 +58,21 @@ private:
         packagep->classp(nodep);
         v3Global.rootp()->addModulep(packagep);
         // Add package to hierarchy
-        AstCell* cellp = new AstCell(packagep->fileline(),
-                                     packagep->fileline(),
-                                     packagep->name(),
-                                     packagep->name(),
-                                     NULL, NULL, NULL);
+        AstCell* cellp = new AstCell(packagep->fileline(), packagep->fileline(), packagep->name(),
+                                     packagep->name(), NULL, NULL, NULL);
         cellp->modp(packagep);
         v3Global.rootp()->topModulep()->addStmtp(cellp);
         // Find class's scope
         // Alternative would be to move this and related to V3Scope
         AstScope* classScopep = NULL;
         for (AstNode* itp = nodep->stmtsp(); itp; itp = itp->nextp()) {
-            if ((classScopep = VN_CAST(itp, Scope))) {
-                break;
-            }
+            if ((classScopep = VN_CAST(itp, Scope))) break;
         }
         UASSERT_OBJ(classScopep, nodep, "No scope under class");
 
         // Add scope
-        AstScope* scopep = new AstScope(nodep->fileline(),
-                                        packagep, classScopep->name(), classScopep->aboveScopep(),
-                                        classScopep->aboveCellp());
+        AstScope* scopep = new AstScope(nodep->fileline(), packagep, classScopep->name(),
+                                        classScopep->aboveScopep(), classScopep->aboveCellp());
         packagep->addStmtp(scopep);
         // Iterate
         string prevPrefix = m_prefix;
@@ -103,7 +97,7 @@ private:
         iterateChildren(nodep);
         // Don't move now, or wouldn't keep interating the class
         // TODO move class statics only
-        //if (m_classScopep) {
+        // if (m_classScopep) {
         //    m_moves.push_back(make_pair(nodep, m_classScopep));
         //}
     }
@@ -111,7 +105,7 @@ private:
         iterateChildren(nodep);
         // Don't move now, or wouldn't keep interating the class
         // TODO move function statics only
-        //if (m_classScopep) {
+        // if (m_classScopep) {
         //    m_moves.push_back(make_pair(nodep, m_classScopep));
         //}
     }

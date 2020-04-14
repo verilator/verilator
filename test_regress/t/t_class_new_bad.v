@@ -12,6 +12,10 @@ class ClsNoArg;
    endfunction
 endclass
 
+class ClsNoNew;
+   int imembera;
+endclass
+
 class ClsArg;
    int imembera;
    function new(int i);
@@ -22,9 +26,11 @@ endclass
 module t (/*AUTOARG*/);
    initial begin
       ClsNoArg c1;
-      ClsArg c2;
+      ClsNoNew c2;
+      ClsArg c3;
       c1 = new(3);  // Bad, called with arg
-      c2 = new();  // Bad, called without arg
+      c2 = new(3);  // Bad, called with arg
+      c3 = new();  // Bad, called without arg
       $stop;
    end
 endmodule

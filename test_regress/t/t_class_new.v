@@ -16,16 +16,22 @@ class ClsArg;
    function new(int i);
       imembera = i + 1;
    endfunction
+   function int geta;
+      return imembera;
+   endfunction
 endclass
 
 module t (/*AUTOARG*/);
    initial begin
       ClsNoArg c1;
       ClsArg c2;
+
       c1 = new;
       if (c1.imembera != 5) $stop;
+
       c2 = new(2);
       if (c2.imembera != 3) $stop;
+      if (c2.geta() != 3) $stop;
 
       $write("*-* All Finished *-*\n");
       $finish;

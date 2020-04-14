@@ -83,9 +83,9 @@ int main(int argc, char** argv, char** env) {
 
         // Read outputs
         VL_PRINTF("[%" VL_PRI64 "d] clk=%x rstl=%x iquad=%" VL_PRI64 "x"
-                  " -> oquad=%" VL_PRI64"x owide=%x_%08x_%08x\n",
-                  main_time, top->clk, top->reset_l, top->in_quad,
-                  top->out_quad, top->out_wide[2], top->out_wide[1], top->out_wide[0]);
+                  " -> oquad=%" VL_PRI64 "x owide=%x_%08x_%08x\n",
+                  main_time, top->clk, top->reset_l, top->in_quad, top->out_quad, top->out_wide[2],
+                  top->out_wide[1], top->out_wide[0]);
     }
 
     // Final model cleanup
@@ -98,7 +98,8 @@ int main(int argc, char** argv, char** env) {
 #endif
 
     // Destroy model
-    delete top; top = NULL;
+    delete top;
+    top = NULL;
 
     // Fin
     exit(0);

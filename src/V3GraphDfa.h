@@ -85,16 +85,18 @@ class DfaVertex : public V3GraphVertex {
     bool m_accepting;  // Accepting state?
 public:
     // CONSTRUCTORS
-    explicit DfaVertex(DfaGraph* graphp, bool start=false, bool accepting=false)
+    explicit DfaVertex(DfaGraph* graphp, bool start = false, bool accepting = false)
         : V3GraphVertex(graphp)
-        , m_start(start), m_accepting(accepting) {}
+        , m_start(start)
+        , m_accepting(accepting) {}
     using V3GraphVertex::clone;  // We are overriding, not overloading clone(V3Graph*)
     virtual DfaVertex* clone(DfaGraph* graphp) {
-        return new DfaVertex(graphp, start(), accepting()); }
+        return new DfaVertex(graphp, start(), accepting());
+    }
     virtual ~DfaVertex() {}
     // ACCESSORS
-    virtual string dotShape() const { return (accepting()?"doublecircle":""); }
-    virtual string dotColor() const { return start()?"blue":(color()?"red":"black"); }
+    virtual string dotShape() const { return (accepting() ? "doublecircle" : ""); }
+    virtual string dotColor() const { return start() ? "blue" : (color() ? "red" : "black"); }
     bool start() const { return m_start; }
     void start(bool flag) { m_start = flag; }
     bool accepting() const { return m_accepting; }
@@ -118,24 +120,24 @@ public:
     // CONSTRUCTORS
     DfaEdge(DfaGraph* graphp, DfaVertex* fromp, DfaVertex* top, const DfaInput& input)
         : V3GraphEdge(graphp, fromp, top, 1)
-        , m_input(input), m_complement(false) {}
+        , m_input(input)
+        , m_complement(false) {}
     DfaEdge(DfaGraph* graphp, DfaVertex* fromp, DfaVertex* top, const DfaEdge* copyfrom)
         : V3GraphEdge(graphp, fromp, top, copyfrom->weight())
-        , m_input(copyfrom->input()), m_complement(copyfrom->complement()) {}
+        , m_input(copyfrom->input())
+        , m_complement(copyfrom->complement()) {}
     virtual ~DfaEdge() {}
     // METHODS
-    virtual string dotColor() const {
-        return (na() ? "yellow"
-                : epsilon() ? "green"
-                : "black"); }
+    virtual string dotColor() const { return (na() ? "yellow" : epsilon() ? "green" : "black"); }
     virtual string dotLabel() const {
         return (na() ? ""
-                : epsilon() ? "e"
-                : complement() ? ("not "+cvtToStr(input().toInt()))
-                : cvtToStr(input().toInt())); }
-    virtual string dotStyle() const { return (na()||cutable())?"dashed":""; }
-    bool epsilon() const { return input().toInt()==EPSILON().toInt(); }
-    bool na() const { return input().toInt()==NA().toInt(); }
+                     : epsilon() ? "e"
+                                 : complement() ? ("not " + cvtToStr(input().toInt()))
+                                                : cvtToStr(input().toInt()));
+    }
+    virtual string dotStyle() const { return (na() || cutable()) ? "dashed" : ""; }
+    bool epsilon() const { return input().toInt() == EPSILON().toInt(); }
+    bool na() const { return input().toInt() == NA().toInt(); }
     bool complement() const { return m_complement; }
     void complement(bool value) { m_complement = value; }
     DfaInput input() const { return m_input; }
