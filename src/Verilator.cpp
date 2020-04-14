@@ -600,7 +600,7 @@ static void execBuildJob() {
             cmd << ' ' << *it;
         }
     } else {
-        UASSERT(v3Global.opt.cmake(), "at least cmake or gmake must be chosen in V3Options.cpp");
+        UASSERT(v3Global.opt.cmake(), "cmake or gmake must be chosen in V3Options.cpp");
         cmd << "cd " << v3Global.opt.makeDir() << " && ";
         cmd << "cmake";
         for (V3StringList::const_iterator it = makeFlags.begin(); it != makeFlags.end(); ++it) {
