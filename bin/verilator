@@ -542,10 +542,6 @@ output files.
 After generating the SystemC/C++ code, Verilator will use the make system
 to build a library or executable. See also C<--make> and C<--exe>.
 
-=item --no-verilate
-
-When using --build, disable generation of C++/SC code, and only run make/cmake.
-
 =item -CFLAGS I<flags>
 
 Add specified C compiler flag to the generated makefiles. For multiple
@@ -1538,6 +1534,10 @@ into Verilator.  (Similar to perl -V.)  See also --getenv.
 Read the filename as a Verilog library.  Any modules in the file may be
 used to resolve cell instantiations in the top level module, else ignored.
 Note -v is fairly standard across Verilog tools.
+
+=item --no-verilate
+
+When using --build, disable generation of C++/SC code, and only run make/cmake.
 
 =item  +verilog1995ext+I<ext>
 
