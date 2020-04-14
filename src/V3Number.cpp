@@ -583,9 +583,12 @@ string V3Number::displayed(FileLine* fl, const string& vformat) const {
     case 'd': {  // Unsigned decimal
         bool issigned = (code == '~');
         if (fmtsize == "") {
-            double mantissabits = this->width() - (issigned?1:0);
-            double maxval = pow(2.0, mantissabits);
-            double dchars = log10(maxval)+1.0;
+            const double mantissabits = this->width() - (issigned ? 1 : 0);
+            // To get the number of digits required, we want to compute
+            // log10(2**mantissabits) and round it up. To be able to handle
+            // a very wide mantissa, we use log2(2**mantissabits)/log2(10),
+            // which is simply (+1.0 is for rounding bias):
+            double dchars = mantissabits / 3.321928094887362 + 1.0;
             if (issigned) dchars++;  // space for sign
             fmtsize = cvtToStr(int(dchars));
         }
