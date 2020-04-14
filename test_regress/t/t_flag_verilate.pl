@@ -12,7 +12,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 top_filename("t/t_flag_make_cmake.v");
 
-compile(  # Don't call cmake nor gmake from driver.pl. Just build here
+compile(  # Don't call cmake nor gmake from driver.pl. Nothing should be done here.
     verilator_make_cmake => 0,
     verilator_make_gmake => 0,
     verilator_flags2 => ['--exe --cc --no-verilate',
