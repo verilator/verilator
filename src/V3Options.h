@@ -205,12 +205,12 @@ class V3Options {
     bool        m_xInitialEdge; // main switch: --x-initial-edge
     bool        m_xmlOnly;      // main switch: --xml-netlist
 
+    int         m_buildJobs;    // main switch: -j
     int         m_convergeLimit;// main switch: --converge-limit
     int         m_dumpTree;     // main switch: --dump-tree
     int         m_gateStmts;    // main switch: --gate-stmts
     int         m_ifDepth;      // main switch: --if-depth
     int         m_inlineMult;   // main switch: --inline-mult
-    int         m_buildJobs;    // main switch: -j
     VOptionBool m_makeDepend;  // main switch: -MMD
     int         m_maxNumWidth;  // main switch: --max-num-width
     int         m_moduleRecursion;// main switch: --module-recursion-depth
