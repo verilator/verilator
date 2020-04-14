@@ -1457,7 +1457,7 @@ void V3Options::showVersion(bool verbose) {
 
     cout <<endl;
     cout << "Environment:\n";
-    cout << "    MAKE               = " << V3Os::getenvStr("MAKE","")<<endl;
+    cout << "    MAKE               = " << V3Os::getenvStr("MAKE","") << endl;
     cout << "    PERL               = " << V3Os::getenvStr("PERL","")<<endl;
     cout << "    SYSTEMC            = " << V3Os::getenvStr("SYSTEMC","")<<endl;
     cout << "    SYSTEMC_ARCH       = " << V3Os::getenvStr("SYSTEMC_ARCH","")<<endl;
