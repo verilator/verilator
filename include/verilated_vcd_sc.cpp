@@ -25,21 +25,22 @@
 //======================================================================
 
 //--------------------------------------------------
-#if (SYSTEMC_VERSION>=20050714)
-    // SystemC 2.1.v1
+#if (SYSTEMC_VERSION >= 20050714)
+// SystemC 2.1.v1
 // cppcheck-suppress unusedFunction
-void VerilatedVcdSc::write_comment(const std::string &) {}
-void VerilatedVcdSc::trace(const unsigned int &, const std::string &, const char**) {}
+void VerilatedVcdSc::write_comment(const std::string&) {}
+void VerilatedVcdSc::trace(const unsigned int&, const std::string&, const char**) {}
 
+// clang-format off
 # define DECL_TRACE_METHOD_A(tp) \
-    void VerilatedVcdSc::trace( const tp& object, const std::string& name ) {}
+    void VerilatedVcdSc::trace(const tp& object, const std::string& name) {}
 # define DECL_TRACE_METHOD_B(tp) \
-    void VerilatedVcdSc::trace( const tp& object, const std::string& name, int width ) {}
+    void VerilatedVcdSc::trace(const tp& object, const std::string& name, int width) {}
 
-#if (SYSTEMC_VERSION>=20171012)
+# if (SYSTEMC_VERSION >= 20171012)
     DECL_TRACE_METHOD_A( sc_event )
     DECL_TRACE_METHOD_A( sc_time )
-#endif
+# endif
 
     DECL_TRACE_METHOD_A( bool )
     DECL_TRACE_METHOD_A( sc_dt::sc_bit )
@@ -49,9 +50,9 @@ void VerilatedVcdSc::trace(const unsigned int &, const std::string &, const char
     DECL_TRACE_METHOD_B( unsigned short )
     DECL_TRACE_METHOD_B( unsigned int )
     DECL_TRACE_METHOD_B( unsigned long )
-#ifdef SYSTEMC_64BIT_PATCHES
+# ifdef SYSTEMC_64BIT_PATCHES
     DECL_TRACE_METHOD_B( unsigned long long)
-#endif
+# endif
     DECL_TRACE_METHOD_B( char )
     DECL_TRACE_METHOD_B( short )
     DECL_TRACE_METHOD_B( int )
@@ -73,19 +74,21 @@ void VerilatedVcdSc::trace(const unsigned int &, const std::string &, const char
 
     DECL_TRACE_METHOD_A( sc_dt::sc_bv_base )
     DECL_TRACE_METHOD_A( sc_dt::sc_lv_base )
+// clang-format on
 
 //--------------------------------------------------
-#elif (SYSTEMC_VERSION>20011000)
-    // SystemC 2.0.1
+#elif (SYSTEMC_VERSION > 20011000)
+// SystemC 2.0.1
 // cppcheck-suppress unusedFunction
-void VerilatedVcdSc::write_comment(const sc_string &) {}
+void VerilatedVcdSc::write_comment(const sc_string&) {}
 void VerilatedVcdSc::trace(const unsigned int&, const sc_string&, const char**) {}
 
 #define DECL_TRACE_METHOD_A(tp) \
-    void VerilatedVcdSc::trace( const tp& object, const sc_string& name ) {}
+    void VerilatedVcdSc::trace(const tp& object, const sc_string& name) {}
 #define DECL_TRACE_METHOD_B(tp) \
-    void VerilatedVcdSc::trace( const tp& object, const sc_string& name, int width ) {}
+    void VerilatedVcdSc::trace(const tp& object, const sc_string& name, int width) {}
 
+// clang-format off
     DECL_TRACE_METHOD_A( bool )
     DECL_TRACE_METHOD_A( sc_bit )
     DECL_TRACE_METHOD_A( sc_logic )
@@ -96,7 +99,7 @@ void VerilatedVcdSc::trace(const unsigned int&, const sc_string&, const char**) 
 #ifdef SYSTEMC_64BIT_PATCHES
     DECL_TRACE_METHOD_B( unsigned long long)
 #endif
-#if (SYSTEMC_VERSION>20041000)
+#if (SYSTEMC_VERSION > 20041000)
     DECL_TRACE_METHOD_B( unsigned long long)
     DECL_TRACE_METHOD_B( long long)
 #endif
@@ -116,19 +119,21 @@ void VerilatedVcdSc::trace(const unsigned int&, const sc_string&, const char**) 
     DECL_TRACE_METHOD_A( sc_fxnum_fast )
     DECL_TRACE_METHOD_A( sc_bv_base )
     DECL_TRACE_METHOD_A( sc_lv_base )
+// clang-format on
 
 //--------------------------------------------------
 #else
-    // SystemC 1.2.1beta
+// SystemC 1.2.1beta
 // cppcheck-suppress unusedFunction
-void VerilatedVcdSc::write_comment(const sc_string &) {}
+void VerilatedVcdSc::write_comment(const sc_string&) {}
 void VerilatedVcdSc::trace(const unsigned int&, const sc_string&, const char**) {}
 
 #define DECL_TRACE_METHOD_A(tp) \
-    void VerilatedVcdSc::trace( const tp& object, const sc_string& name ) {}
+    void VerilatedVcdSc::trace(const tp& object, const sc_string& name) {}
 #define DECL_TRACE_METHOD_B(tp) \
-    void VerilatedVcdSc::trace( const tp& object, const sc_string& name, int width ) {}
+    void VerilatedVcdSc::trace(const tp& object, const sc_string& name, int width) {}
 
+// clang-format off
     DECL_TRACE_METHOD_A( bool )
     DECL_TRACE_METHOD_B( unsigned char )
     DECL_TRACE_METHOD_B( short unsigned int )
@@ -154,6 +159,7 @@ void VerilatedVcdSc::trace(const unsigned int&, const sc_string&, const char**) 
     DECL_TRACE_METHOD_A( sc_signal_resolved_vector )
     DECL_TRACE_METHOD_A( sc_bv_ns::sc_bv_base )
     DECL_TRACE_METHOD_A( sc_bv_ns::sc_lv_base )
+// clang-format on
 #endif
 
 #undef DECL_TRACE_METHOD_A

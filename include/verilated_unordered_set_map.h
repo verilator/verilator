@@ -41,13 +41,9 @@
 #include <string>
 
 // Abstract 'vl_hash' and 'vl_equal_to' templates.
-template <typename T> struct vl_hash {
-    size_t operator()(const T& k) const;
-};
+template <typename T> struct vl_hash { size_t operator()(const T& k) const; };
 
-template <typename T> struct vl_equal_to {
-    bool operator()(const T& a, const T& b) const;
-};
+template <typename T> struct vl_equal_to { bool operator()(const T& a, const T& b) const; };
 
 // Specializations of 'vl_hash' and 'vl_equal_to'.
 inline size_t vl_hash_bytes(const void* vbufp, size_t nbytes) {
@@ -59,60 +55,50 @@ inline size_t vl_hash_bytes(const void* vbufp, size_t nbytes) {
     return hash;
 }
 
-template <> inline size_t
-vl_hash<unsigned int>::operator()(const unsigned int& k) const {
+template <> inline size_t vl_hash<unsigned int>::operator()(const unsigned int& k) const {
     return k;
 }
 
-template <> inline bool
-vl_equal_to<unsigned int>::operator()(const unsigned int& a,
-                                      const unsigned int& b) const {
+template <>
+inline bool vl_equal_to<unsigned int>::operator()(const unsigned int& a,
+                                                  const unsigned int& b) const {
     return a == b;
 }
 
-template <> inline size_t
-vl_hash<std::string>::operator()(const std::string& k) const {
+template <> inline size_t vl_hash<std::string>::operator()(const std::string& k) const {
     return vl_hash_bytes(k.data(), k.size());
 }
 
-template <> inline bool
-vl_equal_to<std::string>::operator()(const std::string& a,
-                                     const std::string& b) const {
+template <>
+inline bool vl_equal_to<std::string>::operator()(const std::string& a,
+                                                 const std::string& b) const {
     // Don't scan the strings if the sizes are different.
-    if (a.size() != b.size()) {
-        return false;
-    }
+    if (a.size() != b.size()) return false;
     return (0 == a.compare(b));  // Must scan.
 }
 
 template <typename T> struct vl_hash<T*> {
     size_t operator()(T* kp) const {
-        return ((sizeof(size_t) == sizeof(kp))
-                ? reinterpret_cast<size_t>(kp)
-                : vl_hash_bytes(&kp, sizeof(kp)));
+        return ((sizeof(size_t) == sizeof(kp)) ? reinterpret_cast<size_t>(kp)
+                                               : vl_hash_bytes(&kp, sizeof(kp)));
     }
 };
 
 template <typename T> struct vl_equal_to<T*> {
-    bool operator()(T* ap, T* bp) const {
-        return ap == bp;
-    }
+    bool operator()(T* ap, T* bp) const { return ap == bp; }
 };
 
 //===================================================================
 //
 /// Functional clone of the std::unordered_set hash table.
-template <class T_Key,
-          class T_Hash = vl_hash<T_Key>,
-          class T_Equal = vl_equal_to<T_Key> >
+template <class T_Key, class T_Hash = vl_hash<T_Key>, class T_Equal = vl_equal_to<T_Key> >
 class vl_unordered_set {
 public:
     // TYPES
     typedef std::list<T_Key> Bucket;
     enum RehashType { GROW, SHRINK };
 
-    template <class KK, class VV,
-              class HH, class EQ> friend class vl_unordered_map;
+    template <class KK, class VV, class HH, class EQ> friend class vl_unordered_map;
 
     class iterator {
     protected:
@@ -123,29 +109,23 @@ public:
 
     public:
         // CONSTRUCTORS
-        iterator(size_t bucketIdx, typename Bucket::iterator bit,
-                 const vl_unordered_set* setp)
-            : m_bucketIdx(bucketIdx), m_bit(bit), m_setp(setp) {}
+        iterator(size_t bucketIdx, typename Bucket::iterator bit, const vl_unordered_set* setp)
+            : m_bucketIdx(bucketIdx)
+            , m_bit(bit)
+            , m_setp(setp) {}
 
         // METHODS
-        const T_Key& operator*() const {
-            return *m_bit;
-        }
+        const T_Key& operator*() const { return *m_bit; }
         // This should really be 'const T_Key*' type for unordered_set,
         // however this iterator is shared with unordered_map whose
         // operator-> returns a non-const ValueType*, so keep this
         // non-const to avoid having to define a whole separate iterator
         // for unordered_map.
-        T_Key* operator->() const {
-            return &(*m_bit);
-        }
+        T_Key* operator->() const { return &(*m_bit); }
         bool operator==(const iterator& other) const {
-            return ((m_bucketIdx == other.m_bucketIdx)
-                    && (m_bit == other.m_bit));
+            return ((m_bucketIdx == other.m_bucketIdx) && (m_bit == other.m_bit));
         }
-        bool operator!=(const iterator& other) const {
-            return (!this->operator==(other));
-        }
+        bool operator!=(const iterator& other) const { return (!this->operator==(other)); }
         void advanceUntilValid() {
             while (true) {
                 if (m_bit != m_setp->m_bucketsp[m_bucketIdx].end()) {
@@ -176,14 +156,14 @@ public:
 
 private:
     // MEMBERS
-    size_t m_numElements;       //  Number of entries present.
-    size_t m_log2Buckets;       //  Log-base-2 of the number of buckets.
-    mutable Bucket* m_bucketsp; //  Hash table buckets. May be NULL;
+    size_t m_numElements;  //  Number of entries present.
+    size_t m_log2Buckets;  //  Log-base-2 of the number of buckets.
+    mutable Bucket* m_bucketsp;  //  Hash table buckets. May be NULL;
     //                          //   we'll allocate it on the fly when
     //                          //   the first entries are created.
-    Bucket m_emptyBucket;       //  A fake bucket, used to construct end().
-    T_Hash m_hash;              //  Hash function provider.
-    T_Equal m_equal;            //  Equal-to function provider.
+    Bucket m_emptyBucket;  //  A fake bucket, used to construct end().
+    T_Hash m_hash;  //  Hash function provider.
+    T_Equal m_equal;  //  Equal-to function provider.
 
 public:
     // CONSTRUCTORS
@@ -202,26 +182,20 @@ public:
         , m_equal() {
         if (other.m_bucketsp) {
             m_bucketsp = new Bucket[numBuckets()];
-            for (size_t i = 0; i < numBuckets(); i++) {
-                m_bucketsp[i] = other.m_bucketsp[i];
-            }
+            for (size_t i = 0; i < numBuckets(); i++) m_bucketsp[i] = other.m_bucketsp[i];
         }
     }
-    ~vl_unordered_set() {
-        VL_DO_DANGLING(delete [] m_bucketsp, m_bucketsp);
-    }
+    ~vl_unordered_set() { VL_DO_DANGLING(delete[] m_bucketsp, m_bucketsp); }
 
     vl_unordered_set& operator=(const vl_unordered_set& other) {
         if (this != &other) {
             clear();
-            delete [] m_bucketsp;
+            delete[] m_bucketsp;
             m_numElements = other.m_numElements;
             m_log2Buckets = other.m_log2Buckets;
             if (other.m_bucketsp) {
                 m_bucketsp = new Bucket[numBuckets()];
-                for (size_t i = 0; i < numBuckets(); i++) {
-                    m_bucketsp[i] = other.m_bucketsp[i];
-                }
+                for (size_t i = 0; i < numBuckets(); i++) m_bucketsp[i] = other.m_bucketsp[i];
             } else {
                 m_bucketsp = NULL;
             }
@@ -251,24 +225,21 @@ public:
         return end();
     }
     const_iterator end() const {
-        return iterator(VL_ULL(0xFFFFFFFFFFFFFFFF),
-                        const_cast<Bucket&>(m_emptyBucket).begin(), this);
+        return iterator(VL_ULL(0xFFFFFFFFFFFFFFFF), const_cast<Bucket&>(m_emptyBucket).begin(),
+                        this);
     }
 
     bool empty() const { return m_numElements == 0; }
 
     size_t size() const { return m_numElements; }
 
-    size_t count(const T_Key& key) const {
-        return (find(key) == end()) ? 0 : 1;
-    }
+    size_t count(const T_Key& key) const { return (find(key) == end()) ? 0 : 1; }
 
-    size_t hashToBucket(size_t hashVal) const {
-        return hashToBucket(hashVal, m_log2Buckets);
-    }
+    size_t hashToBucket(size_t hashVal) const { return hashToBucket(hashVal, m_log2Buckets); }
     static size_t hashToBucket(size_t hashVal, unsigned log2Buckets) {
-        // Fibonacci hashing
-        // See https://probablydance.com/2018/06/16/fibonacci-hashing-the-optimization-that-the-world-forgot-or-a-better-alternative-to-integer-modulo/
+        // Fibonacci hashing, see
+        // https://probablydance.com/2018/06/16/fibonacci-hashing-the-optimization
+        // -that-the-world-forgot-or-a-better-alternative-to-integer-modulo/
         //
         // * The magic numbers below are UINT_MAX/phi where phi is the
         //   golden ratio number (1.618...)  for either 64- or 32-bit
@@ -278,11 +249,9 @@ public:
         //   function further. This permits the use of very fast client
         //   hash funcs (like just returning the int or pointer value as
         //   is!) and tolerates crappy client hash functions pretty well.
-        size_t mult = hashVal * ((sizeof(size_t) == 8)
-                                 ? VL_ULL(11400714819323198485)
-                                 : 2654435769lu);
-        size_t result = (mult >> (((sizeof(size_t) == 8)
-                                   ? 64 : 32) - log2Buckets));
+        size_t mult
+            = hashVal * ((sizeof(size_t) == 8) ? VL_ULL(11400714819323198485) : 2654435769lu);
+        size_t result = (mult >> (((sizeof(size_t) == 8) ? 64 : 32) - log2Buckets));
         return result;
     }
 
@@ -292,19 +261,15 @@ public:
         initBuckets();
         Bucket* bucketp = &m_bucketsp[bucketIdxOut];
 
-        for (typename Bucket::iterator it = bucketp->begin();
-             it != bucketp->end(); ++it) {
-            if (m_equal.operator()(*it, key)) {
-                return iterator(bucketIdxOut, it, this);
-            }
+        for (typename Bucket::iterator it = bucketp->begin(); it != bucketp->end(); ++it) {
+            if (m_equal.operator()(*it, key)) return iterator(bucketIdxOut, it, this);
         }
         return end();
     }
 
     const_iterator find(const T_Key& key) const {
         size_t bucketIdx;
-        return const_cast<vl_unordered_set*>(this)->find_internal(key,
-                                                                  bucketIdx);
+        return const_cast<vl_unordered_set*>(this)->find_internal(key, bucketIdx);
     }
 
     iterator find(const T_Key& key) {
@@ -358,9 +323,7 @@ public:
             // for the Scoreboard in V3Partition, which begins tracking
             // a huge number of vertices and then tracks a successively
             // smaller number over time.
-            if (needToRehash(SHRINK)) {
-                rehash(SHRINK);
-            }
+            if (needToRehash(SHRINK)) rehash(SHRINK);
             return 1;
         }
         return 0;
@@ -419,8 +382,7 @@ private:
                 size_t new_idx = hashToBucket(hash, new_log2Buckets);
                 // Avoid mallocing one list elem and freeing another;
                 // splice just moves it over.
-                new_bucketsp[new_idx].splice(new_bucketsp[new_idx].begin(),
-                                             m_bucketsp[i], bit);
+                new_bucketsp[new_idx].splice(new_bucketsp[new_idx].begin(), m_bucketsp[i], bit);
             }
         }
 
@@ -433,9 +395,7 @@ private:
 //===================================================================
 //
 /// Functional clone of the std::unordered_map hash table.
-template <class T_Key,
-          class T_Value,
-          class T_Hash = vl_hash<T_Key>,
+template <class T_Key, class T_Value, class T_Hash = vl_hash<T_Key>,
           class T_Equal = vl_equal_to<T_Key> >
 class vl_unordered_map {
 private:
@@ -445,6 +405,7 @@ private:
     class KeyHash {
     private:
         T_Hash key_hash;
+
     public:
         KeyHash() {}
         size_t operator()(const KeyValPair& kv_pair) const {
@@ -455,6 +416,7 @@ private:
     class KeyEqual {
     private:
         T_Equal key_eq;
+
     public:
         KeyEqual() {}
         bool operator()(const KeyValPair& kv_a, const KeyValPair& kv_b) const {
@@ -491,24 +453,19 @@ public:
         size_t bucketIdxOut = m_set.hashToBucket(hash);
         typename MapSet::Bucket* bucketp = m_set.getBucket(bucketIdxOut);
 
-        for (typename MapSet::Bucket::iterator it = bucketp->begin();
-             it != bucketp->end(); ++it) {
-            if (mapEq.operator()(it->first, k)) {
-                return iterator(bucketIdxOut, it, &m_set);
-            }
+        for (typename MapSet::Bucket::iterator it = bucketp->begin(); it != bucketp->end(); ++it) {
+            if (mapEq.operator()(it->first, k)) return iterator(bucketIdxOut, it, &m_set);
         }
         return end();
     }
     const_iterator find(const T_Key& k) const {
         return const_cast<vl_unordered_map*>(this)->find(k);
     }
-    std::pair<iterator, bool> insert(const KeyValPair& val) {
-        return m_set.insert(val);
-    }
+    std::pair<iterator, bool> insert(const KeyValPair& val) { return m_set.insert(val); }
     iterator erase(iterator it) { return m_set.erase(it); }
     size_t erase(const T_Key& k) {
         iterator it = find(k);
-        if (it == end()) { return 0; }
+        if (it == end()) return 0;
         m_set.erase(it);
         return 1;
     }
@@ -517,9 +474,7 @@ public:
         // std::unordered_map::operator[] relies on it too.
         KeyValPair dummy = std::make_pair(k, T_Value());
         iterator it = m_set.find(dummy);
-        if (it == m_set.end()) {
-            it = m_set.insert(dummy).first;
-        }
+        if (it == m_set.end()) it = m_set.insert(dummy).first;
         // For the 'set', it's generally not safe to modify
         // the value after deref. For the 'map' though, we know
         // it's safe to modify the value field and we can allow it:

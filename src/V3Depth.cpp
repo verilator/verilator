@@ -40,20 +40,20 @@ private:
     // NODE STATE
 
     // STATE
-    AstNodeModule*      m_modp;         // Current module
-    AstCFunc*           m_funcp;        // Current block
-    AstNode*            m_stmtp;        // Current statement
-    int                 m_depth;        // How deep in an expression
-    int                 m_maxdepth;     // Maximum depth in an expression
+    AstNodeModule* m_modp;  // Current module
+    AstCFunc* m_funcp;  // Current block
+    AstNode* m_stmtp;  // Current statement
+    int m_depth;  // How deep in an expression
+    int m_maxdepth;  // Maximum depth in an expression
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
 
     void createDeepTemp(AstNode* nodep) {
-        UINFO(6,"  Deep  "<<nodep<<endl);
-        //if (debug()>=9) nodep->dumpTree(cout, "deep:");
+        UINFO(6, "  Deep  " << nodep << endl);
+        // if (debug()>=9) nodep->dumpTree(cout, "deep:");
 
-        string newvarname = (string("__Vdeeptemp")+cvtToStr(m_modp->varNumGetInc()));
+        string newvarname = (string("__Vdeeptemp") + cvtToStr(m_modp->varNumGetInc()));
         AstVar* varp = new AstVar(nodep->fileline(), AstVarType::STMTTEMP, newvarname,
                                   // Width, not widthMin, as we may be in
                                   // middle of BITSEL expression which though
@@ -69,8 +69,7 @@ private:
         nodep->replaceWith(newp);
         // Put assignment before the referencing statement
         AstAssign* assp = new AstAssign(nodep->fileline(),
-                                        new AstVarRef(nodep->fileline(), varp, true),
-                                        nodep);
+                                        new AstVarRef(nodep->fileline(), varp, true), nodep);
         AstNRelinker linker2;
         m_stmtp->unlinkFrBack(&linker2);
         assp->addNext(m_stmtp);
@@ -79,7 +78,7 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
-        UINFO(4," MOD   "<<nodep<<endl);
+        UINFO(4, " MOD   " << nodep << endl);
         AstNodeModule* origModp = m_modp;
         {
             m_modp = nodep;
@@ -110,20 +109,18 @@ private:
         }
     }
     // Operators
-    virtual void visit(AstNodeTermop* nodep) VL_OVERRIDE {
-    }
+    virtual void visit(AstNodeTermop* nodep) VL_OVERRIDE {}
     virtual void visit(AstNodeMath* nodep) VL_OVERRIDE {
         // We have some operator defines that use 2 parens, so += 2.
         m_depth += 2;
-        if (m_depth>m_maxdepth) m_maxdepth = m_depth;
+        if (m_depth > m_maxdepth) m_maxdepth = m_depth;
         iterateChildren(nodep);
         m_depth -= 2;
 
-        if (m_stmtp
-            && (v3Global.opt.compLimitParens() >= 1)  // Else compiler doesn't need it
-            && (m_maxdepth-m_depth) > v3Global.opt.compLimitParens()
+        if (m_stmtp && (v3Global.opt.compLimitParens() >= 1)  // Else compiler doesn't need it
+            && (m_maxdepth - m_depth) > v3Global.opt.compLimitParens()
             && !VN_IS(nodep->backp(), NodeStmt)  // Not much point if we're about to use it
-            ) {
+        ) {
             m_maxdepth = m_depth;
             createDeepTemp(nodep);
         }
@@ -135,7 +132,7 @@ private:
     void needNonStaticFunc(AstNode* nodep) {
         UASSERT_OBJ(m_funcp, nodep, "Non-static accessor not under a function");
         if (m_funcp->isStatic().trueUnknown()) {
-            UINFO(5,"Mark non-public due to "<<nodep<<endl);
+            UINFO(5, "Mark non-public due to " << nodep << endl);
             m_funcp->isStatic(false);
         }
     }
@@ -171,9 +168,7 @@ public:
 // Depth class functions
 
 void V3Depth::depthAll(AstNetlist* nodep) {
-    UINFO(2,__FUNCTION__<<": "<<endl);
-    {
-        DepthVisitor visitor (nodep);
-    }  // Destruct before checking
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    { DepthVisitor visitor(nodep); }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("depth", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

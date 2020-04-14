@@ -267,7 +267,7 @@ class V3ConfigFile {
 
     LineAttrMap m_lineAttrs;  // Atributes to line mapping
     IgnLines m_ignLines;  // Ignore line settings
-    Waivers m_waivers; // Waive messages
+    Waivers m_waivers;  // Waive messages
 
     struct {
         int lineno;  // Last line number
@@ -346,7 +346,9 @@ public:
     bool waive(V3ErrorCode code, const string& match) {
         for (Waivers::const_iterator it = m_waivers.begin(); it != m_waivers.end(); ++it) {
             if (((it->first == code) || (it->first == V3ErrorCode::I_LINT))
-                && VString::wildmatch(match, it->second)) return true;
+                && VString::wildmatch(match, it->second)) {
+                return true;
+            }
         }
         return false;
     }

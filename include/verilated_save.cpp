@@ -23,6 +23,7 @@
 #include <cerrno>
 #include <fcntl.h>
 
+// clang-format off
 #if defined(_WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__)
 # include <io.h>
 #else
@@ -38,6 +39,7 @@
 #ifndef O_CLOEXEC
 # define O_CLOEXEC 0
 #endif
+// clang-format on
 
 // CONSTANTS
 static const char* const VLTSAVE_HEADER_STR
@@ -54,9 +56,7 @@ bool VerilatedDeserialize::readDiffers(const void* __restrict datap,
     bufferCheck();
     const vluint8_t* __restrict dp = static_cast<const vluint8_t* __restrict>(datap);
     vluint8_t miss = 0;
-    while (size--) {
-        miss |= (*dp++ ^ *m_cp++);
-    }
+    while (size--) miss |= (*dp++ ^ *m_cp++);
     return (miss != 0);
 }
 
@@ -232,9 +232,7 @@ void VerilatedRestore::fill() VL_MT_UNSAFE_ONE {
         } else {  // got==0, EOF
             // Fill buffer from here to end with NULLs so reader's don't
             // need to check eof each character.
-            while (m_endp < m_bufp + bufferSize()) {
-                *m_endp++ = '\0';
-            }
+            while (m_endp < m_bufp + bufferSize()) *m_endp++ = '\0';
             break;
         }
     }

@@ -38,8 +38,8 @@ private:
     // NODE STATE
 
     // STATE
-    bool        m_setRefLvalue;  // Set VarRefs to lvalues for pin assignments
-    AstNodeFTask* m_ftaskp;      // Function or task we're inside
+    bool m_setRefLvalue;  // Set VarRefs to lvalues for pin assignments
+    AstNodeFTask* m_ftaskp;  // Function or task we're inside
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -48,14 +48,11 @@ private:
     // Result handing
     virtual void visit(AstNodeVarRef* nodep) VL_OVERRIDE {
         // VarRef: LValue its reference
-        if (m_setRefLvalue) {
-            nodep->lvalue(true);
-        }
+        if (m_setRefLvalue) nodep->lvalue(true);
         if (nodep->varp()) {
-            if (nodep->lvalue() && !m_ftaskp
-                && nodep->varp()->isReadOnly()) {
-                nodep->v3warn(ASSIGNIN, "Assigning to input/const variable: "
-                              <<nodep->prettyNameQ());
+            if (nodep->lvalue() && !m_ftaskp && nodep->varp()->isReadOnly()) {
+                nodep->v3warn(ASSIGNIN,
+                              "Assigning to input/const variable: " << nodep->prettyNameQ());
             }
         }
         iterateChildren(nodep);
@@ -223,7 +220,7 @@ private:
     }
     virtual void visit(AstNodeSel* nodep) VL_OVERRIDE {
         bool last_setRefLvalue = m_setRefLvalue;
-        {   // Only set lvalues on the from
+        {  // Only set lvalues on the from
             iterateAndNextNull(nodep->lhsp());
             m_setRefLvalue = false;
             iterateAndNextNull(nodep->rhsp());
@@ -232,7 +229,7 @@ private:
     }
     virtual void visit(AstCellArrayRef* nodep) VL_OVERRIDE {
         bool last_setRefLvalue = m_setRefLvalue;
-        {   // selp is not an lvalue
+        {  // selp is not an lvalue
             m_setRefLvalue = false;
             iterateAndNextNull(nodep->selp());
         }
@@ -240,7 +237,7 @@ private:
     }
     virtual void visit(AstNodePreSel* nodep) VL_OVERRIDE {
         bool last_setRefLvalue = m_setRefLvalue;
-        {   // Only set lvalues on the from
+        {  // Only set lvalues on the from
             iterateAndNextNull(nodep->lhsp());
             m_setRefLvalue = false;
             iterateAndNextNull(nodep->rhsp());
@@ -258,7 +255,7 @@ private:
         AstNodeFTask* taskp = nodep->taskp();
         // We'll deal with mismatching pins later
         if (!taskp) return;
-        for (AstNode* stmtp = taskp->stmtsp(); stmtp && pinp; stmtp=stmtp->nextp()) {
+        for (AstNode* stmtp = taskp->stmtsp(); stmtp && pinp; stmtp = stmtp->nextp()) {
             if (const AstVar* portp = VN_CAST(stmtp, Var)) {
                 if (portp->isIO()) {
                     if (portp->isWritable()) {
@@ -291,15 +288,13 @@ public:
 // Link class functions
 
 void V3LinkLValue::linkLValue(AstNetlist* nodep) {
-    UINFO(4,__FUNCTION__<<": "<<endl);
-    {
-        LinkLValueVisitor visitor(nodep, false);
-    }  // Destruct before checking
+    UINFO(4, __FUNCTION__ << ": " << endl);
+    { LinkLValueVisitor visitor(nodep, false); }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linklvalue", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }
 void V3LinkLValue::linkLValueSet(AstNode* nodep) {
     // Called by later link functions when it is known a node needs
     // to be converted to a lvalue.
-    UINFO(9,__FUNCTION__<<": "<<endl);
+    UINFO(9, __FUNCTION__ << ": " << endl);
     LinkLValueVisitor visitor(nodep, true);
 }

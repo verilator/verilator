@@ -23,9 +23,11 @@
 #include "V3Error.h"
 #include "V3Ast.h"
 
+// clang-format off
 #ifndef _V3WIDTH_CPP_
 # error "V3WidthCommit for V3Width internal use only"
 #endif
+// clang-format on
 
 //######################################################################
 
@@ -55,9 +57,7 @@ public:
     // CONSTRUCTORS
     WidthRemoveVisitor() {}
     virtual ~WidthRemoveVisitor() {}
-    AstNode* mainAcceptEdit(AstNode* nodep) {
-        return iterateSubtreeReturnEdits(nodep);
-    }
+    AstNode* mainAcceptEdit(AstNode* nodep) { return iterateSubtreeReturnEdits(nodep); }
 };
 
 //######################################################################
@@ -67,15 +67,14 @@ public:
 class WidthCommitVisitor : public AstNVisitor {
     // NODE STATE
     // AstVar::user1p           -> bool, processed
-    AstUser1InUse       m_inuser1;
+    AstUser1InUse m_inuser1;
 
 public:
     // METHODS
     static AstConst* newIfConstCommitSize(AstConst* nodep) {
-        if (((nodep->dtypep()->width() != nodep->num().width())
-             || !nodep->num().sized())
+        if (((nodep->dtypep()->width() != nodep->num().width()) || !nodep->num().sized())
             && !nodep->num().isString()) {  // Need to force the number from unsized to sized
-            V3Number num (nodep, nodep->dtypep()->width());
+            V3Number num(nodep, nodep->dtypep()->width());
             num.opAssign(nodep->num());
             num.isSigned(nodep->isSigned());
             AstConst* newp = new AstConst(nodep->fileline(), num);
@@ -102,9 +101,12 @@ private:
         // Look for duplicate
         if (AstBasicDType* bdtypep = VN_CAST(nodep, BasicDType)) {
             AstBasicDType* newp = nodep->findInsertSameDType(bdtypep);
-            if (newp != bdtypep && debug()>=9) {
-                UINFO(9,"dtype replacement "); nodep->dumpSmall(cout);
-                cout<<"  ---->  "; newp->dumpSmall(cout); cout<<endl;
+            if (newp != bdtypep && debug() >= 9) {
+                UINFO(9, "dtype replacement ");
+                nodep->dumpSmall(cout);
+                cout << "  ---->  ";
+                newp->dumpSmall(cout);
+                cout << endl;
             }
             return newp;
         }
@@ -116,16 +118,15 @@ private:
         iterate(nodep->dtypep());  // Do datatype first
         if (AstConst* newp = newIfConstCommitSize(nodep)) {
             nodep->replaceWith(newp);
-            AstNode* oldp = nodep; nodep = newp;
-            //if (debug()>4) oldp->dumpTree(cout, "  fixConstSize_old: ");
-            //if (debug()>4) newp->dumpTree(cout, "              _new: ");
+            AstNode* oldp = nodep;
+            nodep = newp;
+            // if (debug()>4) oldp->dumpTree(cout, "  fixConstSize_old: ");
+            // if (debug()>4) newp->dumpTree(cout, "              _new: ");
             VL_DO_DANGLING(pushDeletep(oldp), oldp);
         }
         editDType(nodep);
     }
-    virtual void visit(AstNodeDType* nodep) VL_OVERRIDE {
-        visitIterateNodeDType(nodep);
-    }
+    virtual void visit(AstNodeDType* nodep) VL_OVERRIDE { visitIterateNodeDType(nodep); }
     virtual void visit(AstNodeUOrStructDType* nodep) VL_OVERRIDE {
         if (nodep->user1SetOnce()) return;  // Process once
         visitIterateNodeDType(nodep);
@@ -158,6 +159,7 @@ private:
         iterateChildren(nodep);
         editDType(nodep);
     }
+
 public:
     // CONSTRUCTORS
     explicit WidthCommitVisitor(AstNetlist* nodep) {
