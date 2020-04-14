@@ -528,6 +528,21 @@ static void process() {
 
 static void verilate(const string& argString) {
     UINFO(1, "Option --verilate: Start Verilation\n");
+
+    // Can we skip doing everything if times are ok?
+    V3File::addSrcDepend(v3Global.opt.bin());
+    if (v3Global.opt.skipIdentical().isTrue()
+        && V3File::checkTimes(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix()
+                              + "__verFiles.dat", argString)) {
+        UINFO(1,"--skip-identical: No change to any source files, exiting\n");
+        return;
+    }
+    // Undocumented debugging - cannot be a switch as then command line
+    // would mismatch forcing non-identicalness when we set it
+    if (!V3Os::getenvStr("VERILATOR_DEBUG_SKIP_IDENTICAL", "").empty()) {
+        v3fatalSrc("VERILATOR_DEBUG_SKIP_IDENTICAL w/ --skip-identical: Changes found\n");
+    }
+
     //--FRONTEND------------------
 
     // Cleanup
@@ -650,20 +665,6 @@ int main(int argc, char** argv, char** env) {
     v3Global.opt.notify();
 
     V3Error::abortIfErrors();
-
-    // Can we skip doing everything if times are ok?
-    V3File::addSrcDepend(v3Global.opt.bin());
-    if (v3Global.opt.skipIdentical().isTrue()
-        && V3File::checkTimes(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix()
-                              + "__verFiles.dat", argString)) {
-        UINFO(1,"--skip-identical: No change to any source files, exiting\n");
-        exit(0);
-    }
-    // Undocumented debugging - cannot be a switch as then command line
-    // would mismatch forcing non-identicalness when we set it
-    if (!V3Os::getenvStr("VERILATOR_DEBUG_SKIP_IDENTICAL", "").empty()) {
-        v3fatalSrc("VERILATOR_DEBUG_SKIP_IDENTICAL w/ --skip-identical: Changes found\n");
-    }
 
     if (v3Global.opt.verilate()) {
         verilate(argString);
