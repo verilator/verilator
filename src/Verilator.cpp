@@ -526,7 +526,7 @@ static void process() {
     // Note early return above when opt.cdc()
 }
 
-static void execVerilate(const string& argString) {
+static void verilate(const string& argString) {
     UINFO(1, "Option --verilate: Start Verilation\n");
     //--FRONTEND------------------
 
@@ -666,7 +666,7 @@ int main(int argc, char** argv, char** env) {
     }
 
     if (v3Global.opt.verilate()) {
-        execVerilate(argString);
+        verilate(argString);
     } else {
         UINFO(1, "Option --no-verilate: Skip Verilation\n");
     }
