@@ -671,9 +671,7 @@ int main(int argc, char** argv, char** env) {
         UINFO(1, "Option --no-verilate: Skip Verilation\n");
     }
 
-    if (v3Global.opt.build()) {
-        execBuildJob();
-    }
+    if (v3Global.opt.build()) execBuildJob();
 
     UINFO(1,"Done, Exiting...\n");
 }
