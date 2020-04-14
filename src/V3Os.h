@@ -61,7 +61,8 @@ public:
     static uint64_t memUsageBytes();  ///< Return memory usage in bytes, or 0 if not implemented
 
     // METHODS (sub command)
-    static int system(const string& command);  ///< Run system command, returns the exit code of the child process.
+    /// Run system command, returns the exit code of the child process.
+    static int system(const string& command);
 };
 
 #endif  // Guard
