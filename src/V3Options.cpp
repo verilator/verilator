@@ -413,9 +413,7 @@ string V3Options::getenvBuiltins(const string& var) {
     }
 }
 
-string V3Options::getenvMAKE() {
-    return V3Os::getenvStr("MAKE", "make");
-}
+string V3Options::getenvMAKE() { return V3Os::getenvStr("MAKE", "make"); }
 
 string V3Options::getenvPERL() {  //
     return V3Os::getenvStr("PERL", "perl");
@@ -899,14 +897,14 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 shift;
                 m_inlineMult = atoi(argv[i]);
             } else if (!strcmp(sw, "-j")) {
-                if ((i+1) >= argc || !isdigit(argv[i+1][0])) {  // No value is given
+                if ((i + 1) >= argc || !isdigit(argv[i + 1][0])) {  // No value is given
                     m_buildJobs = 0;  // Unlimited parallelism
-                }
-                else {
+                } else {
                     shift;
                     m_buildJobs = atoi(argv[i]);
                     if (m_buildJobs <= 0) {
-                        fl->v3error("-j accepts positive integer, but "<<argv[i]<<" is passed");
+                        fl->v3error("-j accepts positive integer, but " << argv[i]
+                                                                        << " is passed");
                     }
                 }
             } else if (!strcmp(sw, "-LDFLAGS") && (i + 1) < argc) {
@@ -926,7 +924,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 } else {
                     fl->v3fatal("Unknown --make system specified: '" << argv[i] << "'");
                 }
-            } else if (!strcmp(sw, "-MAKEFLAGS") && (i+1)<argc) {
+            } else if (!strcmp(sw, "-MAKEFLAGS") && (i + 1) < argc) {
                 shift;
                 addMakeFlags(argv[i]);
             } else if (!strcmp(sw, "-max-num-width")) {
@@ -1378,7 +1376,7 @@ void V3Options::showVersion(bool verbose) {
 
     cout << endl;
     cout << "Environment:\n";
-    cout << "    MAKE               = " << V3Os::getenvStr("MAKE","") << endl;
+    cout << "    MAKE               = " << V3Os::getenvStr("MAKE", "") << endl;
     cout << "    PERL               = " << V3Os::getenvStr("PERL", "") << endl;
     cout << "    SYSTEMC            = " << V3Os::getenvStr("SYSTEMC", "") << endl;
     cout << "    SYSTEMC_ARCH       = " << V3Os::getenvStr("SYSTEMC_ARCH", "") << endl;

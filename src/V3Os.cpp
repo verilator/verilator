@@ -242,9 +242,7 @@ void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
     }
 }
 
-std::string V3Os::getcwd() {
-    return filenameRealPath(".");
-}
+std::string V3Os::getcwd() { return filenameRealPath("."); }
 
 //######################################################################
 // METHODS (random)
