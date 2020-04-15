@@ -7,6 +7,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    Add simplistic class support with many restrictions, see manual, #377.
 
+**    Add --build to call make automatically, #2249. [Yutetsu TAKATSUKASA]
+
 **    Configuring with ccache present now defaults to using it; see OBJCACHE.
 
 **    Fix DPI import/export to be standard compliant, #2236. [Geza Lore]

@@ -1867,20 +1867,17 @@ compiled Verilator, you need to point to the kit:
 
 Now we run Verilator on our little example.
 
-    verilator -Wall --cc our.v --exe sim_main.cpp
+    verilator -Wall --cc our.v --exe --build sim_main.cpp
 
 We can see the source code under the "obj_dir" directory.  See the FILES
 section below for descriptions of some of the files that were created.
 
     ls -l obj_dir
 
-We then can compile it
-
-    make -j -C obj_dir -f Vour.mk Vour
-
 (Verilator included a default compile rule and link rule, since we used
---exe and passed a .cpp file on the Verilator command line.  You can also
-write your own compile rules, as we'll show in the SYSTEMC section.)
+--exe and passed a .cpp file on the Verilator command line.  Verilator also
+then used C<make> to build a final executable.  You can also write your own
+compile rules, and run make yourself as we'll show in the SYSTEMC section.)
 
 And now we run it
 

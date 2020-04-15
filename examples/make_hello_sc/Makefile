@@ -45,10 +45,8 @@ endif
 
 run:
 	@echo "-- Verilator hello-world simple example"
-	@echo "-- VERILATE ----------------"
-	$(VERILATOR) -sc --exe top.v sc_main.cpp
-	@echo "-- COMPILE -----------------"
-	$(MAKE) -j 4 -C obj_dir -f Vtop.mk
+	@echo "-- VERILATE & COMPILE ------"
+	$(VERILATOR) -sc --exe --build -j top.v sc_main.cpp
 	@echo "-- RUN ---------------------"
 	obj_dir/Vtop
 	@echo "-- DONE --------------------"
