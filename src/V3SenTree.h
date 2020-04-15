@@ -53,7 +53,7 @@ private:
     class HashSenTree {
     public:
         HashSenTree() {}
-        size_t operator() (const AstSenTree* kp) const {
+        size_t operator()(const AstSenTree* kp) const {
             return V3Hashed::uncachedHash(kp).fullValue();
         }
         // Copying required for OSX's libc++
@@ -62,7 +62,7 @@ private:
     class EqSenTree {
     public:
         EqSenTree() {}
-        bool operator() (const AstSenTree* ap, const AstSenTree* bp) const {
+        bool operator()(const AstSenTree* ap, const AstSenTree* bp) const {
             return ap->sameTree(bp);
         }
         // Copying required for OSX's libc++
@@ -81,9 +81,7 @@ public:
     AstSenTree* find(AstSenTree* likep) {
         AstSenTree* resultp = NULL;
         Set::iterator it = m_trees.find(likep);
-        if (it != m_trees.end()) {
-            resultp = *it;
-        }
+        if (it != m_trees.end()) resultp = *it;
         return resultp;
     }
     void clear() { m_trees.clear(); }
@@ -103,9 +101,7 @@ private:
 
     virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         // Only do the top
-        if (nodep->isTop()) {
-            iterateChildren(nodep);
-        }
+        if (nodep->isTop()) iterateChildren(nodep);
     }
     virtual void visit(AstTopScope* nodep) VL_OVERRIDE {
         m_topscopep = nodep;
@@ -120,8 +116,9 @@ private:
         // Don't grab SenTrees under Actives, only those that are global (under Scope directly)
         iterateChildren(nodep);
     }
-    virtual void visit(AstSenTree* nodep) VL_OVERRIDE { m_trees.add(nodep); }
-
+    virtual void visit(AstSenTree* nodep) VL_OVERRIDE {  //
+        m_trees.add(nodep);
+    }
     virtual void visit(AstNodeStmt*) VL_OVERRIDE {}  // Accelerate
     virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
@@ -139,21 +136,18 @@ public:
             UASSERT(m_topscopep, "Never called main()");
             treep = sensesp->cloneTree(false);
             m_topscopep->addStmtsp(treep);
-            UINFO(8,"    New SENTREE "<<treep<<endl);
+            UINFO(8, "    New SENTREE " << treep << endl);
             m_trees.add(treep);
             // Note blocks may have also been added above in the Active visitor
         }
         return treep;
     }
+
 public:
     // CONSTRUCTORS
-    SenTreeFinder() {
-        clear();
-    }
+    SenTreeFinder() { clear(); }
     virtual ~SenTreeFinder() {}
-    void main(AstTopScope* nodep) {
-        iterate(nodep);
-    }
+    void main(AstTopScope* nodep) { iterate(nodep); }
 };
 
 #endif  // Guard

@@ -34,6 +34,7 @@
 
 class V3ErrorCode {
 public:
+    // clang-format off
     enum en {
         EC_MIN=0,       // Keep first
         //
@@ -121,14 +122,19 @@ public:
         _ENUM_MAX
         // ***Add new elements below also***
     };
+    // clang-format on
     enum en m_e;
-    inline V3ErrorCode() : m_e(EC_MIN) {}
+    inline V3ErrorCode()
+        : m_e(EC_MIN) {}
     // cppcheck-suppress noExplicitConstructor
-    inline V3ErrorCode(en _e) : m_e(_e) {}
+    inline V3ErrorCode(en _e)
+        : m_e(_e) {}
     explicit V3ErrorCode(const char* msgp);  // Matching code or ERROR
-    explicit inline V3ErrorCode(int _e) : m_e(static_cast<en>(_e)) {}
+    explicit inline V3ErrorCode(int _e)
+        : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     const char* ascii() const {
+        // clang-format off
         const char* names[] = {
             // Leading spaces indicate it can't be disabled.
             " MIN", " INFO", " FATAL", " FATALEXIT", " FATALSRC", " ERROR",
@@ -159,50 +165,37 @@ public:
             "VARHIDDEN", "WIDTH", "WIDTHCONCAT",
             " MAX"
         };
+        // clang-format on
         return names[m_e];
     }
     // Warnings that default to off
-    bool defaultsOff() const { return ( m_e==IMPERFECTSCH || styleError()); }
+    bool defaultsOff() const { return (m_e == IMPERFECTSCH || styleError()); }
     // Warnings that warn about nasty side effects
-    bool dangerous() const { return ( m_e==COMBDLY ); }
+    bool dangerous() const { return (m_e == COMBDLY); }
     // Warnings we'll present to the user as errors
     // Later -Werror- options may make more of these.
-    bool pretendError() const { return ( m_e==ASSIGNIN || m_e==BLKANDNBLK
-                                         || m_e==BLKLOOPINIT
-                                         || m_e==CONTASSREG
-                                         || m_e==IMPURE
-                                         || m_e==PROCASSWIRE); }
+    bool pretendError() const {
+        return (m_e == ASSIGNIN || m_e == BLKANDNBLK || m_e == BLKLOOPINIT || m_e == CONTASSREG
+                || m_e == IMPURE || m_e == PROCASSWIRE);
+    }
     // Warnings to mention manual
-    bool mentionManual() const { return ( m_e==EC_FATALSRC || m_e==SYMRSVDWORD
-                                          || pretendError() ); }
-
+    bool mentionManual() const {
+        return (m_e == EC_FATALSRC || m_e == SYMRSVDWORD || pretendError());
+    }
     // Warnings that are lint only
-    bool lintError() const { return ( m_e==ALWCOMBORDER
-                                      || m_e==BSSPACE
-                                      || m_e==CASEINCOMPLETE || m_e==CASEOVERLAP
-                                      || m_e==CASEWITHX || m_e==CASEX
-                                      || m_e==CMPCONST
-                                      || m_e==COLONPLUS
-                                      || m_e==ENDLABEL
-                                      || m_e==IMPLICIT
-                                      || m_e==LITENDIAN
-                                      || m_e==PINMISSING
-                                      || m_e==REALCVT
-                                      || m_e==UNSIGNED
-                                      || m_e==WIDTH); }
+    bool lintError() const {
+        return (m_e == ALWCOMBORDER || m_e == BSSPACE || m_e == CASEINCOMPLETE
+                || m_e == CASEOVERLAP || m_e == CASEWITHX || m_e == CASEX || m_e == CMPCONST
+                || m_e == COLONPLUS || m_e == ENDLABEL || m_e == IMPLICIT || m_e == LITENDIAN
+                || m_e == PINMISSING || m_e == REALCVT || m_e == UNSIGNED || m_e == WIDTH);
+    }
     // Warnings that are style only
-    bool styleError() const { return ( m_e==ASSIGNDLY  // More than style, but for backward compatibility
-                                       || m_e==BLKSEQ
-                                       || m_e==DEFPARAM
-                                       || m_e==DECLFILENAME
-                                       || m_e==IMPORTSTAR
-                                       || m_e==INCABSPATH
-                                       || m_e==PINCONNECTEMPTY
-                                       || m_e==PINNOCONNECT
-                                       || m_e==SYNCASYNCNET
-                                       || m_e==UNDRIVEN
-                                       || m_e==UNUSED
-                                       || m_e==VARHIDDEN ); }
+    bool styleError() const {
+        return (m_e == ASSIGNDLY  // More than style, but for backward compatibility
+                || m_e == BLKSEQ || m_e == DEFPARAM || m_e == DECLFILENAME || m_e == IMPORTSTAR
+                || m_e == INCABSPATH || m_e == PINCONNECTEMPTY || m_e == PINNOCONNECT
+                || m_e == SYNCASYNCNET || m_e == UNDRIVEN || m_e == UNUSED || m_e == VARHIDDEN);
+    }
 };
 inline bool operator==(const V3ErrorCode& lhs, const V3ErrorCode& rhs) {
     return lhs.m_e == rhs.m_e;
@@ -221,28 +214,32 @@ class V3Error {
     typedef std::set<string> MessagesSet;
     typedef void (*ErrorExitCb)(void);
 
-  private:
-    static bool         s_describedWarnings;    // Told user how to disable warns
-    static bool         s_describedEachWarn[V3ErrorCode::_ENUM_MAX]; // Told user specifics about this warning
-    static bool         s_pretendError[V3ErrorCode::_ENUM_MAX]; // Pretend this warning is an error
-    static int          s_debugDefault;         // Option: --debugi Default debugging level
-    static int          s_errorLimit;           // Option: --error-limit Number of errors before exit
-    static bool         s_warnFatal;            // Option: --warnFatal Warnings are fatal
-    static int          s_errCount;             // Error count
-    static int          s_warnCount;            // Warning count
-    static int          s_tellManual;           // Tell user to see manual, 0=not yet, 1=doit, 2=disable
-    static std::ostringstream s_errorStr;       // Error string being formed
-    static V3ErrorCode  s_errorCode;            // Error string being formed will abort
-    static bool         s_errorContexted;       // Error being formed got context
-    static bool         s_errorSuppressed;      // Error being formed should be suppressed
-    static MessagesSet  s_messages;             // What errors we've outputted
-    static ErrorExitCb  s_errorExitCb;          // Callback when error occurs for dumping
+private:
+    static bool s_describedWarnings;  // Told user how to disable warns
+    static bool
+        s_describedEachWarn[V3ErrorCode::_ENUM_MAX];  // Told user specifics about this warning
+    static bool s_pretendError[V3ErrorCode::_ENUM_MAX];  // Pretend this warning is an error
+    static int s_debugDefault;  // Option: --debugi Default debugging level
+    static int s_errorLimit;  // Option: --error-limit Number of errors before exit
+    static bool s_warnFatal;  // Option: --warnFatal Warnings are fatal
+    static int s_errCount;  // Error count
+    static int s_warnCount;  // Warning count
+    static int s_tellManual;  // Tell user to see manual, 0=not yet, 1=doit, 2=disable
+    static std::ostringstream s_errorStr;  // Error string being formed
+    static V3ErrorCode s_errorCode;  // Error string being formed will abort
+    static bool s_errorContexted;  // Error being formed got context
+    static bool s_errorSuppressed;  // Error being formed should be suppressed
+    static MessagesSet s_messages;  // What errors we've outputted
+    static ErrorExitCb s_errorExitCb;  // Callback when error occurs for dumping
 
-    enum MaxErrors {    MAX_ERRORS = 50 };      // Fatal after this may errors
+    enum MaxErrors { MAX_ERRORS = 50 };  // Fatal after this may errors
 
-    V3Error() { std::cerr<<("Static class"); abort(); }
+    V3Error() {
+        std::cerr << ("Static class");
+        abort();
+    }
 
-  public:
+public:
     // CONSTRUCTORS
     // ACCESSORS
     static void debugDefault(int level) { s_debugDefault = level; }
@@ -254,14 +251,16 @@ class V3Error {
     static string msgPrefix();  // returns %Error/%Warn
     static int errorCount() { return s_errCount; }
     static int warnCount() { return s_warnCount; }
-    static int errorOrWarnCount() { return errorCount()+warnCount(); }
+    static int errorOrWarnCount() { return errorCount() + warnCount(); }
     static bool errorContexted() { return s_errorContexted; }
     static void errorContexted(bool flag) { s_errorContexted = flag; }
     // METHODS
     static void incErrors();
     static void incWarnings() { s_warnCount++; }
     static void init();
-    static void abortIfErrors() { if (errorCount()) abortIfWarnings(); }
+    static void abortIfErrors() {
+        if (errorCount()) abortIfWarnings();
+    }
     static void abortIfWarnings();
     static void suppressThisWarning();  // Suppress next %Warn if user has it off
     static void pretendError(V3ErrorCode code, bool flag) { s_pretendError[code] = flag; }
@@ -273,77 +272,109 @@ class V3Error {
     // When printing an error/warning, print prefix for multiline message
     static string warnMore();
     /// When building an error, don't show context info
-    static string warnContextNone() { V3Error::errorContexted(true); return ""; }
+    static string warnContextNone() {
+        V3Error::errorContexted(true);
+        return "";
+    }
 
     // Internals for v3error()/v3fatal() macros only
     // Error end takes the string stream to output, be careful to seek() as needed
     static void v3errorPrep(V3ErrorCode code) {
-        s_errorStr.str(""); s_errorCode = code;
-        s_errorContexted = false; s_errorSuppressed = false; }
+        s_errorStr.str("");
+        s_errorCode = code;
+        s_errorContexted = false;
+        s_errorSuppressed = false;
+    }
     static std::ostringstream& v3errorStr() { return s_errorStr; }
     static void vlAbort();
-    static void v3errorEnd(std::ostringstream& sstr, const string& locationStr = "");  // static, but often overridden in classes.
+    // static, but often overridden in classes.
+    static void v3errorEnd(std::ostringstream& sstr, const string& locationStr = "");
 };
 
 // Global versions, so that if the class doesn't define a operator, we get the functions anyways.
 inline int debug() { return V3Error::debugDefault(); }
 inline void v3errorEnd(std::ostringstream& sstr) { V3Error::v3errorEnd(sstr); }
 inline void v3errorEndFatal(std::ostringstream& sstr) {
-    V3Error::v3errorEnd(sstr); assert(0); VL_UNREACHABLE }
+    V3Error::v3errorEnd(sstr);
+    assert(0);
+    VL_UNREACHABLE
+}
 
 // Theses allow errors using << operators: v3error("foo"<<"bar");
 // Careful, you can't put () around msg, as you would in most macro definitions
 // Note the commas are the comma operator, not separating arguments. These are needed to ensure
 // evaluation order as otherwise we couldn't ensure v3errorPrep is called first.
-#define v3warnCode(code,msg) \
-    v3errorEnd((V3Error::v3errorPrep(code), (V3Error::v3errorStr()<<msg), V3Error::v3errorStr()));
-#define v3warnCodeFatal(code,msg) \
-    v3errorEndFatal((V3Error::v3errorPrep(code), (V3Error::v3errorStr()<<msg), \
-                     V3Error::v3errorStr()));
-#define v3warn(code,msg) v3warnCode(V3ErrorCode::code, msg)
-#define v3info(msg)  v3warnCode(V3ErrorCode::EC_INFO, msg)
+#define v3warnCode(code, msg) \
+    v3errorEnd( \
+        (V3Error::v3errorPrep(code), (V3Error::v3errorStr() << msg), V3Error::v3errorStr()));
+#define v3warnCodeFatal(code, msg) \
+    v3errorEndFatal( \
+        (V3Error::v3errorPrep(code), (V3Error::v3errorStr() << msg), V3Error::v3errorStr()));
+#define v3warn(code, msg) v3warnCode(V3ErrorCode::code, msg)
+#define v3info(msg) v3warnCode(V3ErrorCode::EC_INFO, msg)
 #define v3error(msg) v3warnCode(V3ErrorCode::EC_ERROR, msg)
 #define v3fatal(msg) v3warnCodeFatal(V3ErrorCode::EC_FATAL, msg)
 // Use this instead of fatal() if message gets suppressed with --quiet-exit
 #define v3fatalExit(msg) v3warnCodeFatal(V3ErrorCode::EC_FATALEXIT, msg)
 // Use this instead of fatal() to mention the source code line.
-#define v3fatalSrc(msg) v3warnCodeFatal(V3ErrorCode::EC_FATALSRC, __FILE__<<":"<<std::dec<<__LINE__<<": "<<msg)
+#define v3fatalSrc(msg) \
+    v3warnCodeFatal(V3ErrorCode::EC_FATALSRC, \
+                    __FILE__ << ":" << std::dec << __LINE__ << ": " << msg)
 // Use this when normal v3fatal is called in static method that overrides fileline.
 #define v3fatalStatic(msg) \
     ::v3errorEndFatal((V3Error::v3errorPrep(V3ErrorCode::EC_FATAL), \
-                       (V3Error::v3errorStr()<<msg), V3Error::v3errorStr()));
+                       (V3Error::v3errorStr() << msg), V3Error::v3errorStr()));
 
 #define UINFO(level, stmsg) \
-    { if (VL_UNCOVERABLE(debug() >= (level))) { \
-            cout << "- " << V3Error::lineStr(__FILE__, __LINE__) << stmsg; } }
+    { \
+        if (VL_UNCOVERABLE(debug() >= (level))) { \
+            cout << "- " << V3Error::lineStr(__FILE__, __LINE__) << stmsg; \
+        } \
+    }
 #define UINFONL(level, stmsg) \
-    { if (VL_UNCOVERABLE(debug() >= (level))) { cout << stmsg; } }
+    { \
+        if (VL_UNCOVERABLE(debug() >= (level))) { cout << stmsg; } \
+    }
 
 #ifdef VL_DEBUG
-# define UDEBUGONLY(stmts) \
+#define UDEBUGONLY(stmts) \
     { stmts }
 #else
-# define UDEBUGONLY(stmts) \
-    { if (false) { stmts } }
+#define UDEBUGONLY(stmts) \
+    { \
+        if (false) { stmts } \
+    }
 #endif
 
 // Assertion without object, generally UOBJASSERT preferred
-#define UASSERT(condition,stmsg) \
-    do { if (VL_UNCOVERABLE(!(condition))) { v3fatalSrc(stmsg); }} while (false)
+#define UASSERT(condition, stmsg) \
+    do { \
+        if (VL_UNCOVERABLE(!(condition))) { v3fatalSrc(stmsg); } \
+    } while (false)
 // Assertion with object
-#define UASSERT_OBJ(condition,obj,stmsg) \
-    do { if (VL_UNCOVERABLE(!(condition))) { (obj)->v3fatalSrc(stmsg); }} while (false)
+#define UASSERT_OBJ(condition, obj, stmsg) \
+    do { \
+        if (VL_UNCOVERABLE(!(condition))) { (obj)->v3fatalSrc(stmsg); } \
+    } while (false)
 // For use in V3Ast static functions only
-#define UASSERT_STATIC(condition,stmsg) \
-    do { if (VL_UNCOVERABLE(!(condition))) { \
-            std::cerr<<"Internal Error: "<<__FILE__<<":"<<std::dec<<__LINE__ \
-                     <<":"<<(stmsg)<<std::endl; abort(); } } while (false)
+#define UASSERT_STATIC(condition, stmsg) \
+    do { \
+        if (VL_UNCOVERABLE(!(condition))) { \
+            std::cerr << "Internal Error: " << __FILE__ << ":" << std::dec << __LINE__ << ":" \
+                      << (stmsg) << std::endl; \
+            abort(); \
+        } \
+    } while (false)
 // Check self test values for expected value.  Safe from side-effects.
 // Type argument can be removed when go to C++11 (use auto).
-#define UASSERT_SELFTEST(Type,got,exp) \
-    do { Type g = (got); Type e = (exp); \
-         UASSERT(g==e, "Self-test failed '" #got "==" #exp "'"" got=" \
-                 <<g<<" expected="<<e); } while(false)
+#define UASSERT_SELFTEST(Type, got, exp) \
+    do { \
+        Type g = (got); \
+        Type e = (exp); \
+        UASSERT(g == e, "Self-test failed '" #got "==" #exp "'" \
+                        " got=" \
+                            << g << " expected=" << e); \
+    } while (false)
 
 #define V3ERROR_NA \
     do { \
@@ -361,7 +392,7 @@ inline void v3errorEndFatal(std::ostringstream& sstr) {
 /// Verilator so that --debugi-<srcfile> will work to control UINFOs in
 /// that class:
 #define VL_DEBUG_FUNC \
-    static int debug() {       \
+    static int debug() { \
         static int level = -1; \
         if (VL_UNLIKELY(level < 0)) level = v3Global.opt.debugSrcLevel(__FILE__); \
         return level; \

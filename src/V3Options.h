@@ -37,18 +37,15 @@ class VOptionBool {
     // Class to track options that are either not specified (and default
     // true/false), versus user setting the option to true or false
 public:
-    enum en {
-        OPT_DEFAULT_FALSE = 0,
-        OPT_DEFAULT_TRUE,
-        OPT_TRUE,
-        OPT_FALSE,
-        _ENUM_END
-    };
+    enum en { OPT_DEFAULT_FALSE = 0, OPT_DEFAULT_TRUE, OPT_TRUE, OPT_FALSE, _ENUM_END };
     enum en m_e;
-    inline VOptionBool() : m_e(OPT_DEFAULT_FALSE) {}
+    inline VOptionBool()
+        : m_e(OPT_DEFAULT_FALSE) {}
     // cppcheck-suppress noExplicitConstructor
-    inline VOptionBool(en _e) : m_e(_e) {}
-    explicit inline VOptionBool(int _e) : m_e(static_cast<en>(_e)) {}
+    inline VOptionBool(en _e)
+        : m_e(_e) {}
+    explicit inline VOptionBool(int _e)
+        : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     bool isDefault() const { return m_e == OPT_DEFAULT_FALSE || m_e == OPT_DEFAULT_TRUE; }
     bool isTrue() const { return m_e == OPT_TRUE || m_e == OPT_DEFAULT_TRUE; }
@@ -57,9 +54,9 @@ public:
     bool isSetFalse() const { return m_e == OPT_FALSE; }
     void setTrueOrFalse(bool flag) { m_e = flag ? OPT_TRUE : OPT_FALSE; }
     const char* ascii() const {
-        static const char* const names[] = {
-            "DEFAULT_FALSE", "DEFAULT_TRUE", "TRUE", "FALSE"};
-        return names[m_e]; }
+        static const char* const names[] = {"DEFAULT_FALSE", "DEFAULT_TRUE", "TRUE", "FALSE"};
+        return names[m_e];
+    }
 };
 inline bool operator==(const VOptionBool& lhs, const VOptionBool& rhs) {
     return lhs.m_e == rhs.m_e;
@@ -74,31 +71,21 @@ inline std::ostream& operator<<(std::ostream& os, const VOptionBool& rhs) {
 
 class TraceFormat {
 public:
-    enum en {
-        VCD = 0,
-        FST,
-        FST_THREAD
-    } m_e;
+    enum en { VCD = 0, FST, FST_THREAD } m_e;
     // cppcheck-suppress noExplicitConstructor
-    inline TraceFormat(en _e = VCD) : m_e(_e) {}
-    explicit inline TraceFormat(int _e) : m_e(static_cast<en>(_e)) {}
+    inline TraceFormat(en _e = VCD)
+        : m_e(_e) {}
+    explicit inline TraceFormat(int _e)
+        : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     bool fstFlavor() const { return m_e == FST || m_e == FST_THREAD; }
     bool threaded() const { return m_e == FST_THREAD; }
     string classBase() const {
-        static const char* const names[] = {
-            "VerilatedVcd",
-            "VerilatedFst",
-            "VerilatedFst"
-        };
+        static const char* const names[] = {"VerilatedVcd", "VerilatedFst", "VerilatedFst"};
         return names[m_e];
     }
     string sourceName() const {
-        static const char* const names[] = {
-            "verilated_vcd",
-            "verilated_fst",
-            "verilated_fst"
-        };
+        static const char* const names[] = {"verilated_vcd", "verilated_fst", "verilated_fst"};
         return names[m_e];
     }
 };
@@ -115,15 +102,15 @@ typedef std::set<string> V3StringSet;
 // V3Options - Command line options
 
 class V3Options {
-  public:
-
-  private:
+public:
+private:
     // TYPES
-    typedef std::map<string,int> DebugSrcMap;
+    typedef std::map<string, int> DebugSrcMap;
 
     // MEMBERS (general options)
-    V3OptionsImp*       m_impp;         // Slow hidden options
+    V3OptionsImp* m_impp;  // Slow hidden options
 
+    // clang-format off
     V3StringSet m_cppFiles;     // argument: C++ files to link against
     V3StringList m_cFlags;      // argument: user CFLAGS
     V3StringList m_ldLibs;      // argument: user LDFLAGS
@@ -137,7 +124,6 @@ class V3Options {
     DebugSrcMap m_debugSrcs;    // argument: --debugi-<srcfile>=<level>
     DebugSrcMap m_dumpTrees;    // argument: --dump-treei-<srcfile>=<level>
     std::map<string,string> m_parameters;  // Parameters
-
 
     bool        m_preprocOnly;  // main switch: -E
     bool        m_makePhony;    // main switch: -MP
@@ -272,8 +258,9 @@ class V3Options {
     bool        m_oSubst;       // main switch: -Ou: substitute expression temp values
     bool        m_oSubstConst;  // main switch: -Ok: final constant substitution
     bool        m_oTable;       // main switch: -Oa: lookup table creation
+    // clang-format on
 
-  private:
+private:
     // METHODS
     void addArg(const string& arg);
     void addDefine(const string& defline, bool allowPlus);
@@ -295,12 +282,13 @@ class V3Options {
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(V3Options);
-  public:
+
+public:
     V3Options();
     ~V3Options();
     void setDebugMode(int level);
     void setDebugSrcLevel(const string& srcfile, int level);
-    int debugSrcLevel(const string& srcfile_path, int default_level=V3Error::debugDefault());
+    int debugSrcLevel(const string& srcfile_path, int default_level = V3Error::debugDefault());
     void setDumpTreeLevel(const string& srcfile, int level);
     int dumpTreeLevel(const string& srcfile_path);
 
@@ -365,7 +353,7 @@ class V3Options {
     bool traceUnderscore() const { return m_traceUnderscore; }
     bool orderClockDly() const { return m_orderClockDly; }
     bool outFormatOk() const { return m_outFormatOk; }
-    bool keepTempFiles() const { return (V3Error::debugDefault()!=0); }
+    bool keepTempFiles() const { return (V3Error::debugDefault() != 0); }
     bool pedantic() const { return m_pedantic; }
     bool pinsScUint() const { return m_pinsScUint; }
     bool pinsScBigUint() const { return m_pinsScBigUint; }
@@ -415,7 +403,7 @@ class V3Options {
     int compLimitMembers() const { return m_compLimitMembers; }
     int compLimitParens() const { return m_compLimitParens; }
 
-    string exeName() const { return m_exeName!="" ? m_exeName : prefix(); }
+    string exeName() const { return m_exeName != "" ? m_exeName : prefix(); }
     string l2Name() const { return m_l2Name; }
     string makeDir() const { return m_makeDir; }
     string modPrefix() const { return m_modPrefix; }
@@ -425,7 +413,7 @@ class V3Options {
     string protectKeyDefaulted();  // Set default key if not set by user
     string protectLib() const { return m_protectLib; }
     string protectLibName(bool shared) {
-        string libName = "lib"+protectLib();
+        string libName = "lib" + protectLib();
         if (shared) {
             libName += ".so";
         } else {
@@ -509,10 +497,10 @@ class V3Options {
 
     // METHODS (file utilities using these options)
     string fileExists(const string& filename);
-    string filePath(FileLine* fl, const string& modname,
-                    const string& lastpath, const string& errmsg);
+    string filePath(FileLine* fl, const string& modname, const string& lastpath,
+                    const string& errmsg);
     void filePathLookedMsg(FileLine* fl, const string& modname);
-    V3LangCode fileLanguage(const string &filename);
+    V3LangCode fileLanguage(const string& filename);
     static bool fileStatDir(const string& filename);
     static bool fileStatNormal(const string& filename);
     static void fileNfsFlush(const string& filename);

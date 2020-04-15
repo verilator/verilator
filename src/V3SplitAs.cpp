@@ -52,8 +52,7 @@ private:
 
     // METHODS
     virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
-        if (nodep->lvalue() && !m_splitVscp
-            && nodep->varp()->attrIsolateAssign()) {
+        if (nodep->lvalue() && !m_splitVscp && nodep->varp()->attrIsolateAssign()) {
             m_splitVscp = nodep->varScopep();
         }
     }
@@ -76,16 +75,16 @@ public:
 class SplitAsCleanVisitor : public SplitAsBaseVisitor {
 private:
     // STATE
-    AstVarScope* m_splitVscp;   // Variable we want to split
-    bool         m_modeMatch;   // Remove matching Vscp, else non-matching
-    bool         m_keepStmt;    // Current Statement must be preserved
-    bool         m_matches;     // Statement below has matching lvalue reference
+    AstVarScope* m_splitVscp;  // Variable we want to split
+    bool m_modeMatch;  // Remove matching Vscp, else non-matching
+    bool m_keepStmt;  // Current Statement must be preserved
+    bool m_matches;  // Statement below has matching lvalue reference
 
     // METHODS
     virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         if (nodep->lvalue()) {
-            if (nodep->varScopep()==m_splitVscp) {
-                UINFO(6,"       CL VAR "<<nodep<<endl);
+            if (nodep->varScopep() == m_splitVscp) {
+                UINFO(6, "       CL VAR " << nodep << endl);
                 m_matches = true;
             }
         }
@@ -95,7 +94,7 @@ private:
             iterateChildren(nodep);
             return;
         }
-        UINFO(6,"     CL STMT "<<nodep<<endl);
+        UINFO(6, "     CL STMT " << nodep << endl);
         bool oldKeep = m_keepStmt;
         {
             m_matches = false;
@@ -103,18 +102,18 @@ private:
 
             iterateChildren(nodep);
 
-            if (m_keepStmt
-                || (m_modeMatch ? m_matches : !m_matches)) {
-                UINFO(6,"     Keep   STMT "<<nodep<<endl);
+            if (m_keepStmt || (m_modeMatch ? m_matches : !m_matches)) {
+                UINFO(6, "     Keep   STMT " << nodep << endl);
                 m_keepStmt = true;
             } else {
-                UINFO(6,"     Delete STMT "<<nodep<<endl);
-                nodep->unlinkFrBack(); pushDeletep(nodep);
+                UINFO(6, "     Delete STMT " << nodep << endl);
+                nodep->unlinkFrBack();
+                pushDeletep(nodep);
             }
         }
         // If something below matches, the upper statement remains too.
         m_keepStmt = oldKeep || m_keepStmt;
-        UINFO(9,"     upKeep="<<m_keepStmt<<" STMT "<<nodep<<endl);
+        UINFO(9, "     upKeep=" << m_keepStmt << " STMT " << nodep << endl);
     }
     virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
@@ -123,7 +122,7 @@ public:
     SplitAsCleanVisitor(AstAlways* nodep, AstVarScope* vscp, bool modeMatch) {
         m_splitVscp = vscp;
         m_modeMatch = modeMatch;
-        m_keepStmt =  false;
+        m_keepStmt = false;
         m_matches = false;
         iterate(nodep);
     }
@@ -137,7 +136,7 @@ class SplitAsVisitor : public SplitAsBaseVisitor {
 private:
     // NODE STATE
     //  AstAlways::user()       -> bool.  True if already processed
-    AstUser1InUse       m_inuser1;
+    AstUser1InUse m_inuser1;
 
     // STATE
     VDouble0 m_statSplits;  // Statistic tracking
@@ -145,20 +144,20 @@ private:
 
     // METHODS
     void splitAlways(AstAlways* nodep) {
-        UINFO(3,"Split  "<<nodep<<endl);
-        UINFO(3,"   For "<<m_splitVscp<<endl);
-        if (debug()>=9) nodep->dumpTree(cout, "-in  : ");
+        UINFO(3, "Split  " << nodep << endl);
+        UINFO(3, "   For " << m_splitVscp << endl);
+        if (debug() >= 9) nodep->dumpTree(cout, "-in  : ");
         // Duplicate it and link in
         AstAlways* newp = nodep->cloneTree(false);
         newp->user1(true);  // So we don't clone it again
         nodep->addNextHere(newp);
-        {   // Delete stuff we don't want in old
-            SplitAsCleanVisitor visitor (nodep, m_splitVscp, false);
-            if (debug()>=9) nodep->dumpTree(cout, "-out0: ");
+        {  // Delete stuff we don't want in old
+            SplitAsCleanVisitor visitor(nodep, m_splitVscp, false);
+            if (debug() >= 9) nodep->dumpTree(cout, "-out0: ");
         }
-        {   // Delete stuff we don't want in new
-            SplitAsCleanVisitor visitor (newp, m_splitVscp, true);
-            if (debug()>=9) newp->dumpTree(cout, "-out1: ");
+        {  // Delete stuff we don't want in new
+            SplitAsCleanVisitor visitor(newp, m_splitVscp, true);
+            if (debug() >= 9) newp->dumpTree(cout, "-out1: ");
         }
     }
 
@@ -168,13 +167,12 @@ private:
         AstVarScope* lastSplitVscp = NULL;
         while (!nodep->user1()) {
             // Find any splittable variables
-            SplitAsFindVisitor visitor (nodep);
+            SplitAsFindVisitor visitor(nodep);
             m_splitVscp = visitor.splitVscp();
             if (m_splitVscp && m_splitVscp == lastSplitVscp) {
                 // We did this last time!  Something's stuck!
                 nodep->v3fatalSrc("Infinite loop in isolate_assignments removal for: "
-                                  <<m_splitVscp->prettyNameQ())
-                m_splitVscp = NULL;
+                                  << m_splitVscp->prettyNameQ());
             }
             lastSplitVscp = m_splitVscp;
             // Now isolate the always
@@ -207,9 +205,7 @@ public:
 // SplitAs class functions
 
 void V3SplitAs::splitAsAll(AstNetlist* nodep) {
-    UINFO(2,__FUNCTION__<<": "<<endl);
-    {
-        SplitAsVisitor visitor (nodep);
-    }  // Destruct before checking
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    { SplitAsVisitor visitor(nodep); }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("splitas", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

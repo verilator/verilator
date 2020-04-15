@@ -89,9 +89,7 @@ public:
     // METHODS
     void incCount(int lineno, int column, vluint64_t count, bool ok) {
         LinenoMap::iterator lit = m_lines.find(lineno);
-        if (lit == m_lines.end()) {
-            lit = m_lines.insert(make_pair(lineno, ColumnMap())).first;
-        }
+        if (lit == m_lines.end()) lit = m_lines.insert(make_pair(lineno, ColumnMap())).first;
         ColumnMap& cmap = lit->second;
         ColumnMap::iterator cit = cmap.find(column);
         if (cit == cmap.end()) {

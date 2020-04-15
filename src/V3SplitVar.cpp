@@ -133,7 +133,7 @@ struct SplitVarImpl {
             return new AstAssign(fileline, lhsp, rhsp);
         } else {
             return new AstAssignW(fileline, lhsp, rhsp);
-    }
+        }
     }
 
     static const char* const notSplitMsg;
@@ -523,10 +523,10 @@ class SplitUnpackedVarVisitor : public AstNVisitor, public SplitVarImpl {
                 iterate(argp);
                 if (reason) {
                     for (VarSet::iterator it = m_foundTargetVar.begin(),
-                             it_end = m_foundTargetVar.end();
+                                          it_end = m_foundTargetVar.end();
                          it != it_end; ++it) {
                         argp->v3warn(SPLITVAR, (*it)->prettyNameQ()
-                                     << notSplitMsg << reason << ".\n");
+                                                   << notSplitMsg << reason << ".\n");
                         m_refs.remove(*it);
                     }
                 }
@@ -574,7 +574,7 @@ class SplitUnpackedVarVisitor : public AstNVisitor, public SplitVarImpl {
         m_refsForPackedSplit[m_modp].add(nodep);
     }
     virtual void visit(AstSel* nodep) VL_OVERRIDE {
-        if (VN_IS(nodep->fromp(), VarRef))  m_refsForPackedSplit[m_modp].add(nodep);
+        if (VN_IS(nodep->fromp(), VarRef)) m_refsForPackedSplit[m_modp].add(nodep);
         iterateChildren(nodep);
     }
     virtual void visit(AstArraySel* nodep) VL_OVERRIDE {
@@ -815,8 +815,10 @@ public:
         if (dim.second < 1 || !VN_IS(nodep->dtypep()->skipRefp(), UnpackArrayDType))
             reason = "it is not an unpacked array";
         if (!reason) reason = cannotSplitVarCommonReason(nodep);
-        if (reason) UINFO(5, "Check " << nodep->prettyNameQ()
-                                      << " cannot split because" << reason << ".\n");
+        if (reason) {
+            UINFO(5,
+                  "Check " << nodep->prettyNameQ() << " cannot split because" << reason << ".\n");
+        }
         return reason;
     }
 };
@@ -900,7 +902,7 @@ class PackedVarRef {
         std::vector<PackedVarRefEntry> vect;
         vect.reserve(nodes.size());
         for (vl_unordered_map<AstNode*, size_t>::const_iterator it = nodes.begin(),
-                 it_end = nodes.end();
+                                                                it_end = nodes.end();
              it != it_end; ++it) {
             vect.push_back(refs[it->second]);
         }
@@ -1047,11 +1049,13 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
                 PackedVarRefEntry(nodep, consts[0]->toSInt() + refit->second.basicp()->lsb(),
                                   consts[1]->toUInt()),
                 vrefp->lvalue());
-            UINFO(5, varp->prettyName() << " [" << consts[0]->toSInt() << ":+"
-                  << consts[1]->toSInt() << "] lsb:" << refit->second.basicp()->lsb() << "\n");
+            UINFO(5, varp->prettyName()
+                         << " [" << consts[0]->toSInt() << ":+" << consts[1]->toSInt()
+                         << "] lsb:" << refit->second.basicp()->lsb() << "\n");
         } else {
-            nodep->v3warn(SPLITVAR, vrefp->prettyNameQ() << notSplitMsg
-                          << "its bit range cannot be determined statically.");
+            nodep->v3warn(SPLITVAR, vrefp->prettyNameQ()
+                                        << notSplitMsg
+                                        << "its bit range cannot be determined statically.");
             if (!consts[0]) {
                 UINFO(4, "LSB " << nodep->lsbp() << " is expected to be constant, but not\n");
             }
@@ -1076,7 +1080,7 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
             const int msb = std::min(ref.msb(), var.msb());
             const int bitwidth = msb + 1 - lsb;
             UINFO(4, var.varp()->prettyNameQ() << "[" << msb << ":" << lsb << "] used for "
-                  << ref.nodep()->prettyNameQ() << '\n');
+                                               << ref.nodep()->prettyNameQ() << '\n');
             // LSB of varp is always 0. "lsb - var.lsb()" means this. see also SplitNewVar
             AstSel* selp = new AstSel(ref.nodep()->fileline(), refp, lsb - var.lsb(), bitwidth);
             return selp;
@@ -1091,9 +1095,9 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
         }
         const bool in = portp->isReadOnly();
         for (size_t i = 0; i < vars.size(); ++i) {
-            AstNode* rhsp = new AstSel(portp->fileline(),
-                                       new AstVarRef(portp->fileline(), portp, !in),
-                                       vars[i].lsb(), vars[i].bitwidth());
+            AstNode* rhsp
+                = new AstSel(portp->fileline(), new AstVarRef(portp->fileline(), portp, !in),
+                             vars[i].lsb(), vars[i].bitwidth());
             AstNode* lhsp = new AstVarRef(portp->fileline(), vars[i].varp(), in);
             if (!in) std::swap(lhsp, rhsp);
             AstNodeAssign* assignp = newAssign(portp->fileline(), lhsp, rhsp, portp);
@@ -1117,8 +1121,7 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
                 = (left == right)
                       ? varp->name() + "__BRA__" + AstNode::encodeNumber(left) + "__KET__"
                       : varp->name() + "__BRA__" + AstNode::encodeNumber(left)
-                            + AstNode::encodeName(":") + AstNode::encodeNumber(right)
-                            + "__KET__";
+                            + AstNode::encodeName(":") + AstNode::encodeNumber(right) + "__KET__";
 
             AstBasicDType* dtypep;
             switch (basicp->keyword()) {
@@ -1226,9 +1229,8 @@ class SplitPackedVarVisitor : public AstNVisitor, public SplitVarImpl {
                                          new AstVarRef(varp->fileline(), vars[i].varp(), false),
                                          rhsp);
                 }
-                varp->addNextHere(newAssign(varp->fileline(),
-                                            new AstVarRef(varp->fileline(), varp, true),
-                                            rhsp, varp));
+                varp->addNextHere(newAssign(
+                    varp->fileline(), new AstVarRef(varp->fileline(), varp, true), rhsp, varp));
             } else {  // the original variable is not used anymore.
                 VL_DO_DANGLING(varp->unlinkFrBack()->deleteTree(), varp);
             }
@@ -1274,8 +1276,9 @@ public:
         } else {
             reason = "its type is unknown";
         }
-        if (reason) UINFO(5, "Check " << nodep->prettyNameQ()
-                          << " cannot split because" << reason << endl);
+        if (reason)
+            UINFO(5,
+                  "Check " << nodep->prettyNameQ() << " cannot split because" << reason << endl);
         return reason;
     }
     VL_DEBUG_FUNC;  // Declare debug()

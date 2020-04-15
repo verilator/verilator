@@ -41,11 +41,11 @@ private:
     //  AstCell::user1()        -> bool.  Set true if already processed
     //  AstScope::user1()       -> bool.  Set true if already processed
     //  AstVar::user1()         -> bool.  Set true if already processed
-    AstUser1InUse       m_inuser1;
+    AstUser1InUse m_inuser1;
 
     // STATE
-    AstNodeModule*      m_modp;
-    V3LanguageWords     m_words;        // Reserved word detector
+    AstNodeModule* m_modp;
+    V3LanguageWords m_words;  // Reserved word detector
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -53,16 +53,16 @@ private:
     void rename(AstNode* nodep, bool addPvt) {
         if (!nodep->user1()) {  // Not already done
             if (addPvt) {
-                string newname = string("__PVT__")+nodep->name();
+                string newname = string("__PVT__") + nodep->name();
                 nodep->name(newname);
                 nodep->editCountInc();
             } else if (VN_IS(nodep, CFunc) && VN_CAST(nodep, CFunc)->isConstructor()) {
             } else {
                 string rsvd = m_words.isKeyword(nodep->name());
                 if (rsvd != "") {
-                    nodep->v3warn(SYMRSVDWORD, "Symbol matches "+rsvd
-                                  +": "<<nodep->prettyNameQ());
-                    string newname = string("__SYM__")+nodep->name();
+                    nodep->v3warn(SYMRSVDWORD,
+                                  "Symbol matches " + rsvd + ": " << nodep->prettyNameQ());
+                    string newname = string("__SYM__") + nodep->name();
                     nodep->name(newname);
                     nodep->editCountInc();
                 }
@@ -83,10 +83,10 @@ private:
     // Add __PVT__ to names of local signals
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
         // Don't iterate... Don't need temps for RANGES under the Var.
-        rename(nodep, ((!m_modp || !m_modp->isTop())
-                       && !nodep->isSigPublic()
-                       && !nodep->isFuncLocal()  // Isn't exposed, and would mess up dpi import wrappers
-                       && !nodep->isTemp()));  // Don't bother to rename internal signals
+        rename(nodep,
+               ((!m_modp || !m_modp->isTop()) && !nodep->isSigPublic()
+                && !nodep->isFuncLocal()  // Isn't exposed, and would mess up dpi import wrappers
+                && !nodep->isTemp()));  // Don't bother to rename internal signals
     }
     virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
         if (!nodep->user1()) {
@@ -102,8 +102,7 @@ private:
     }
     virtual void visit(AstCell* nodep) VL_OVERRIDE {
         if (!nodep->user1()) {
-            rename(nodep, (!nodep->modp()->modPublic()
-                           && !VN_IS(nodep->modp(), ClassPackage)));
+            rename(nodep, (!nodep->modp()->modPublic() && !VN_IS(nodep->modp(), ClassPackage)));
             iterateChildren(nodep);
         }
     }
@@ -125,10 +124,13 @@ private:
             if (nodep->aboveCellp()) iterate(nodep->aboveCellp());
             // Always recompute name (as many levels above scope may have changed)
             // Same formula as V3Scope
-            nodep->name(nodep->isTop() ? "TOP"
-                        : VN_IS(m_modp, Class) ? ("TOP." + m_modp->name())
-                        : VN_IS(m_modp, ClassPackage) ? ("TOP." + m_modp->name())
-                        : (nodep->aboveScopep()->name() + "." + nodep->aboveCellp()->name()));
+            nodep->name(nodep->isTop()
+                            ? "TOP"
+                            : VN_IS(m_modp, Class) ? ("TOP." + m_modp->name())
+                                                   : VN_IS(m_modp, ClassPackage)
+                                                         ? ("TOP." + m_modp->name())
+                                                         : (nodep->aboveScopep()->name() + "."
+                                                            + nodep->aboveCellp()->name()));
             nodep->editCountInc();
             iterateChildren(nodep);
         }
@@ -150,9 +152,7 @@ public:
 // Name class functions
 
 void V3Name::nameAll(AstNetlist* nodep) {
-    UINFO(2,__FUNCTION__<<": "<<endl);
-    {
-        NameVisitor visitor (nodep);
-    }  // Destruct before checking
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    { NameVisitor visitor(nodep); }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("name", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

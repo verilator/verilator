@@ -17,6 +17,8 @@
 //=============================================================================
 // SPDIFF_OFF
 
+// clang-format off
+
 #define __STDC_LIMIT_MACROS  // UINT64_MAX
 #include "verilatedos.h"
 #include "verilated.h"
@@ -49,6 +51,8 @@
 # include <unistd.h>
 #endif
 
+// clang-format on
+
 //=============================================================================
 
 class VerilatedFstCallInfo {
@@ -79,13 +83,15 @@ VerilatedFst::VerilatedFst(void* fst)
     , m_minNextDumpTime(0)
     , m_nextCode(1)
     , m_scopeEscape('.')
-    , m_symbolp(NULL) {
+    , m_symbolp(NULL)
+    , m_sigs_oldvalp(NULL) {
     m_valueStrBuffer.reserve(64 + 1);  // Need enough room for quad
 }
 
 VerilatedFst::~VerilatedFst() {
     if (m_fst) fstWriterClose(m_fst);
     if (m_symbolp) VL_DO_CLEAR(delete[] m_symbolp, m_symbolp = NULL);
+    if (m_sigs_oldvalp) VL_DO_CLEAR(delete[] m_sigs_oldvalp, m_sigs_oldvalp = NULL);
 }
 
 void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
@@ -121,6 +127,9 @@ void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
         }
     }
     m_code2symbol.clear();
+
+    // Allocate space now we know the number of codes
+    if (!m_sigs_oldvalp) m_sigs_oldvalp = new vluint32_t[m_nextCode + 10];
 }
 
 void VerilatedFst::module(const std::string& name) { m_module = name; }
@@ -214,9 +223,9 @@ void VerilatedFst::addCallback(VerilatedFstCallback_t initcb, VerilatedFstCallba
 void VerilatedFst::dump(vluint64_t timeui) {
     if (!isOpen()) return;
     if (timeui < m_minNextDumpTime) {
-      VL_PRINTF_MT("%%Warning: previous dump at t=%" VL_PRI64 "u, requesting t=%" VL_PRI64 "u\n",
-        m_minNextDumpTime - 1, timeui);
-      return;
+        VL_PRINTF_MT("%%Warning: previous dump at t=%" VL_PRI64 "u, requesting t=%" VL_PRI64 "u\n",
+                     m_minNextDumpTime - 1, timeui);
+        return;
     }
     m_minNextDumpTime = timeui + 1;
     if (VL_UNLIKELY(m_fullDump)) {

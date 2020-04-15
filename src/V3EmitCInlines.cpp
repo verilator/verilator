@@ -107,16 +107,14 @@ class EmitCInlines : EmitCBaseVisitor {
 public:
     explicit EmitCInlines(AstNetlist* nodep) {
         iterate(nodep);
-        if (v3Global.needHInlines()) {
-            emitInt();
-        }
+        if (v3Global.needHInlines()) emitInt();
     }
 };
 
 void EmitCInlines::emitInt() {
-    string filename = v3Global.opt.makeDir()+"/"+topClassName()+"__Inlines.h";
-    newCFile(filename, false/*slow*/, false/*source*/);
-    V3OutCFile hf (filename);
+    string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__Inlines.h";
+    newCFile(filename, false /*slow*/, false /*source*/);
+    V3OutCFile hf(filename);
     m_ofp = &hf;
 
     ofp()->putsHeader();

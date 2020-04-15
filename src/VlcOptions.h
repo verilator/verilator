@@ -34,6 +34,7 @@ typedef std::set<string> VlStringSet;
 
 class VlcOptions {
     // MEMBERS (general options)
+    // clang-format off
     string m_annotateOut;       // main switch: --annotate I<output_directory>
     bool m_annotateAll;         // main switch: --annotate-all
     int m_annotateMin;          // main switch: --annotate-min I<count>
@@ -41,6 +42,7 @@ class VlcOptions {
     bool m_rank;                // main switch: --rank
     bool m_unlink;              // main switch: --unlink
     string m_writeFile;         // main switch: --write
+    // clang-format on
 
 private:
     // METHODS

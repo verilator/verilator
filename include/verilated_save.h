@@ -132,7 +132,7 @@ public:
             size_t blk = size;
             if (blk > bufferInsertSize()) blk = bufferInsertSize();
             const vluint8_t* __restrict maxp = dp + blk;
-            for (; dp < maxp; *dp++ = *m_cp++);
+            for (; dp < maxp; *dp++ = *m_cp++) {}
             size -= blk;
         }
         return *this;  // For function chaining
@@ -257,8 +257,8 @@ VerilatedSerialize& operator<<(VerilatedSerialize& os, VlAssocArray<T_Key, T_Val
     os << rhs.atDefault();
     vluint32_t len = rhs.size();
     os << len;
-    for (typename VlAssocArray<T_Key, T_Value>::const_iterator it = rhs.begin();
-         it != rhs.end(); ++it) {
+    for (typename VlAssocArray<T_Key, T_Value>::const_iterator it = rhs.begin(); it != rhs.end();
+         ++it) {
         T_Key index = it->first;  // Copy to get around const_iterator
         T_Value value = it->second;
         os << index << value;

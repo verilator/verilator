@@ -38,10 +38,10 @@ private:
     // NODE STATE
 
     // STATE
-    AstNodeModule*      m_modp;         // Current module
-    AstCFunc*           m_funcp;        // Current function
-    int                 m_depth;        // How deep in an expression
-    int                 m_deepNum;      // How many functions made
+    AstNodeModule* m_modp;  // Current module
+    AstCFunc* m_funcp;  // Current function
+    int m_depth;  // How deep in an expression
+    int m_deepNum;  // How many functions made
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -50,7 +50,7 @@ private:
         AstNRelinker relinkHandle;
         nodep->unlinkFrBack(&relinkHandle);
         // Create function
-        string name = m_funcp->name()+"__deep"+cvtToStr(++m_deepNum);
+        string name = m_funcp->name() + "__deep" + cvtToStr(++m_deepNum);
         AstCFunc* funcp = new AstCFunc(nodep->fileline(), name, NULL);
         funcp->argTypes(EmitCBaseVisitor::symClassVar());
         funcp->symProlog(true);
@@ -60,7 +60,7 @@ private:
         // Call it at the point where the body was removed from
         AstCCall* callp = new AstCCall(nodep->fileline(), funcp);
         callp->argTypes("vlSymsp");
-        UINFO(6,"      New "<<callp<<endl);
+        UINFO(6, "      New " << callp << endl);
         //
         relinkHandle.relink(callp);
         return funcp;
@@ -68,7 +68,7 @@ private:
 
     // VISITORS
     virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
-        UINFO(4," MOD   "<<nodep<<endl);
+        UINFO(4, " MOD   " << nodep << endl);
         AstNodeModule* origModp = m_modp;
         {
             m_modp = nodep;
@@ -93,13 +93,13 @@ private:
         m_depth++;
         if (m_depth > v3Global.opt.compLimitBlocks()
             && !VN_IS(nodep, NodeCCall)) {  // Already done
-            UINFO(4, "DeepBlocks "<<m_depth<<" "<<nodep<<endl);
+            UINFO(4, "DeepBlocks " << m_depth << " " << nodep << endl);
             AstNode* backp = nodep->backp();  // Only for debug
-            if (debug()>=9) backp->dumpTree(cout, "-   pre : ");
+            if (debug() >= 9) backp->dumpTree(cout, "-   pre : ");
             AstCFunc* funcp = createDeepFunc(nodep);
             iterate(funcp);
-            if (debug()>=9) backp->dumpTree(cout, "-   post: ");
-            if (debug()>=9) funcp->dumpTree(cout, "-   func: ");
+            if (debug() >= 9) backp->dumpTree(cout, "-   post: ");
+            if (debug() >= 9) funcp->dumpTree(cout, "-   func: ");
         } else {
             iterateChildren(nodep);
         }
@@ -135,9 +135,7 @@ public:
 // DepthBlock class functions
 
 void V3DepthBlock::depthBlockAll(AstNetlist* nodep) {
-    UINFO(2,__FUNCTION__<<": "<<endl);
-    {
-        DepthBlockVisitor visitor (nodep);
-    }  // Destruct before checking
+    UINFO(2, __FUNCTION__ << ": " << endl);
+    { DepthBlockVisitor visitor(nodep); }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("deepblock", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

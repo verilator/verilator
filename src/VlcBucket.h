@@ -47,9 +47,7 @@ private:
             v3fatal("Out of memory increasing buckets");
         }
         m_datap = newp;
-        for (vluint64_t i = oldsize; i < m_dataSize; i += 64) {
-            m_datap[i / 64] = 0;
-        }
+        for (vluint64_t i = oldsize; i < m_dataSize; i += 64) m_datap[i / 64] = 0;
     }
 
 public:
