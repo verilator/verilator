@@ -14,7 +14,6 @@
 //
 //*************************************************************************
 
-
 #include "V3Ast.h"  // This must be before V3ParseBison.cpp, as we don't want #defines to conflict
 
 //======================================================================
@@ -27,7 +26,7 @@
 
 int V3ParseImp::bisonParse() {
     // Use --debugi-bison 9 to enable this
-    if (PARSEP->debugBison()>=9) yydebug = 1;
+    if (PARSEP->debugBison() >= 9) yydebug = 1;
     return yyparse();
 }
 
@@ -36,8 +35,8 @@ const char* V3ParseImp::tokenName(int token) {
     static const char** nameTablep = NULL;
     if (!nameTablep) {
         int size;
-        for (size = 0; yytname[size]; ++size) ;
-        nameTablep = new const char* [size];
+        for (size = 0; yytname[size]; ++size) {}
+        nameTablep = new const char*[size];
         // Workaround bug in bison's which have '!' in yytname but not token values
         int iout = 0;
         for (int i = 0; yytname[i]; ++i) {
@@ -46,9 +45,11 @@ const char* V3ParseImp::tokenName(int token) {
         }
     }
     if (token >= 255) {
-        return nameTablep[token-255];
+        return nameTablep[token - 255];
     } else {
-        static char ch[2]; ch[0] = token; ch[1] = '\0';
+        static char ch[2];
+        ch[0] = token;
+        ch[1] = '\0';
         return ch;
     }
 #else
@@ -76,18 +77,20 @@ void V3ParseGrammar::argWrapList(AstNodeFTaskRef* nodep) {
 }
 
 AstNode* V3ParseGrammar::createSupplyExpr(FileLine* fileline, const string& name, int value) {
-    return new AstAssignW(fileline, new AstVarRef(fileline, name, true),
-                          new AstConst(fileline, AstConst::StringToParse(),
-                                       (value ? "'1" : "'0")));
+    return new AstAssignW(
+        fileline, new AstVarRef(fileline, name, true),
+        new AstConst(fileline, AstConst::StringToParse(), (value ? "'1" : "'0")));
 }
 
 AstRange* V3ParseGrammar::scrubRange(AstNodeRange* nrangep) {
     // Remove any UnsizedRange's from list
-    for (AstNodeRange* nodep = nrangep, *nextp; nodep; nodep = nextp) {
+    for (AstNodeRange *nodep = nrangep, *nextp; nodep; nodep = nextp) {
         nextp = VN_CAST(nodep->nextp(), NodeRange);
         if (!VN_IS(nodep, Range)) {
-            nodep->v3error("Unsupported or syntax error: Unsized range in cell or other declaration");
-            nodep->unlinkFrBack(); VL_DO_DANGLING(nodep->deleteTree(), nodep);
+            nodep->v3error(
+                "Unsupported or syntax error: Unsized range in cell or other declaration");
+            nodep->unlinkFrBack();
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
         }
     }
     if (nrangep && nrangep->nextp()) {
@@ -98,8 +101,8 @@ AstRange* V3ParseGrammar::scrubRange(AstNodeRange* nrangep) {
     return VN_CAST(nrangep, Range);
 }
 
-AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep,
-                                          AstNodeRange* nrangep, bool isPacked) {
+AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nrangep,
+                                          bool isPacked) {
     // Split RANGE0-RANGE1-RANGE2
     // into ARRAYDTYPE0(ARRAYDTYPE1(ARRAYDTYPE2(BASICTYPE3), RANGE), RANGE)
     AstNodeDType* arrayp = basep;
@@ -110,26 +113,26 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep,
             if (prevp) nrangep->unlinkFrBack();
             AstRange* rangep = VN_CAST(nrangep, Range);
             if (rangep && isPacked) {
-                arrayp = new AstPackArrayDType
-                    (rangep->fileline(), VFlagChildDType(), arrayp, rangep);
+                arrayp
+                    = new AstPackArrayDType(rangep->fileline(), VFlagChildDType(), arrayp, rangep);
             } else if (VN_IS(nrangep, QueueRange)) {
-                arrayp = new AstQueueDType
-                    (nrangep->fileline(), VFlagChildDType(), arrayp, NULL);
-            } else if (rangep && (VN_IS(rangep->leftp(), Unbounded)
-                                  || VN_IS(rangep->rightp(), Unbounded))) {
+                arrayp = new AstQueueDType(nrangep->fileline(), VFlagChildDType(), arrayp, NULL);
+            } else if (rangep
+                       && (VN_IS(rangep->leftp(), Unbounded)
+                           || VN_IS(rangep->rightp(), Unbounded))) {
                 arrayp = new AstQueueDType(nrangep->fileline(), VFlagChildDType(), arrayp,
                                            rangep->rightp()->cloneTree(true));
             } else if (rangep) {
-                arrayp = new AstUnpackArrayDType
-                    (rangep->fileline(), VFlagChildDType(), arrayp, rangep);
+                arrayp = new AstUnpackArrayDType(rangep->fileline(), VFlagChildDType(), arrayp,
+                                                 rangep);
             } else if (VN_IS(nrangep, UnsizedRange)) {
-                arrayp = new AstUnsizedArrayDType
-                    (nrangep->fileline(), VFlagChildDType(), arrayp);
+                arrayp = new AstUnsizedArrayDType(nrangep->fileline(), VFlagChildDType(), arrayp);
             } else if (VN_IS(nrangep, AssocRange)) {
                 AstAssocRange* arangep = VN_CAST(nrangep, AssocRange);
-                AstNodeDType* keyp = arangep->keyDTypep(); keyp->unlinkFrBack();
-                arrayp = new AstAssocArrayDType
-                    (nrangep->fileline(), VFlagChildDType(), arrayp, keyp);
+                AstNodeDType* keyp = arangep->keyDTypep();
+                keyp->unlinkFrBack();
+                arrayp
+                    = new AstAssocArrayDType(nrangep->fileline(), VFlagChildDType(), arrayp, keyp);
             } else {
                 UASSERT_OBJ(0, nrangep, "Expected range or unsized range");
             }
@@ -142,10 +145,9 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep,
 AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
                                        AstNodeRange* arrayp, AstNode* attrsp) {
     AstNodeDType* dtypep = GRAMMARP->m_varDTypep;
-    UINFO(5,"  creVar "<<name<<"  decl="<<GRAMMARP->m_varDecl
-          <<"  io="<<GRAMMARP->m_varIO<<"  dt="<<(dtypep?"set":"")<<endl);
-    if (GRAMMARP->m_varIO == VDirection::NONE
-        && GRAMMARP->m_varDecl == AstVarType::PORT) {
+    UINFO(5, "  creVar " << name << "  decl=" << GRAMMARP->m_varDecl << "  io="
+                         << GRAMMARP->m_varIO << "  dt=" << (dtypep ? "set" : "") << endl);
+    if (GRAMMARP->m_varIO == VDirection::NONE && GRAMMARP->m_varDecl == AstVarType::PORT) {
         // Just a port list with variable name (not v2k format); AstPort already created
         if (dtypep) fileline->v3error("Unsupported: Ranges ignored in port-lists");
         return NULL;
@@ -159,7 +161,8 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     } else {  // May make new variables with same type, so clone
         dtypep = dtypep->cloneTree(false);
     }
-    //UINFO(0,"CREVAR "<<fileline->ascii()<<" decl="<<GRAMMARP->m_varDecl.ascii()<<" io="<<GRAMMARP->m_varIO.ascii()<<endl);
+    // UINFO(0,"CREVAR "<<fileline->ascii()<<" decl="<<GRAMMARP->m_varDecl.ascii()<<"
+    // io="<<GRAMMARP->m_varIO.ascii()<<endl);
     AstVarType type = GRAMMARP->m_varDecl;
     if (type == AstVarType::UNKNOWN) {
         if (GRAMMARP->m_varIO.isAny()) {
@@ -169,7 +172,7 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
         }
     }
     if (type == AstVarType::GENVAR) {
-        if (arrayp) fileline->v3error("Genvars may not be arrayed: "<<name);
+        if (arrayp) fileline->v3error("Genvars may not be arrayed: " << name);
     }
 
     // Split RANGE0-RANGE1-RANGE2 into
@@ -202,9 +205,13 @@ AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
     // We need to autosize parameters and integers separately
     //
     // Propagate from current module tracing state
-    if (nodep->isGenVar()) nodep->trace(false);
-    else if (nodep->isParam() && !v3Global.opt.traceParams()) nodep->trace(false);
-    else nodep->trace(allTracingOn(nodep->fileline()));
+    if (nodep->isGenVar()) {
+        nodep->trace(false);
+    } else if (nodep->isParam() && !v3Global.opt.traceParams()) {
+        nodep->trace(false);
+    } else {
+        nodep->trace(allTracingOn(nodep->fileline()));
+    }
 
     // Remember the last variable created, so we can attach attributes to it in later parsing
     GRAMMARP->m_varAttrp = nodep;
@@ -222,7 +229,7 @@ string V3ParseGrammar::deQuote(FileLine* fileline, string text) {
     for (string::const_iterator cp = text.begin(); cp != text.end(); ++cp) {
         if (quoted) {
             if (isdigit(*cp)) {
-                octal_val = octal_val*8 + (*cp-'0');
+                octal_val = octal_val * 8 + (*cp - '0');
                 if (++octal_digits == 3) {
                     octal_digits = 0;
                     quoted = false;
@@ -238,29 +245,33 @@ string V3ParseGrammar::deQuote(FileLine* fileline, string text) {
                     continue;
                 }
                 quoted = false;
-                if (*cp == 'n') newtext += '\n';
-                else if (*cp == 'a') newtext += '\a';  // SystemVerilog 3.1
-                else if (*cp == 'f') newtext += '\f';  // SystemVerilog 3.1
-                else if (*cp == 'r') newtext += '\r';
-                else if (*cp == 't') newtext += '\t';
-                else if (*cp == 'v') newtext += '\v';  // SystemVerilog 3.1
-                else if (*cp == 'x' && isxdigit(cp[1]) && isxdigit(cp[2])) {  // SystemVerilog 3.1
-#define vl_decodexdigit(c) ((isdigit(c)?((c)-'0'):(tolower((c))-'a'+10)))
-                    newtext += (char)(16*vl_decodexdigit(cp[1]) + vl_decodexdigit(cp[2]));
+                if (*cp == 'n') {
+                    newtext += '\n';
+                } else if (*cp == 'a') {
+                    newtext += '\a';  // SystemVerilog 3.1
+                } else if (*cp == 'f') {
+                    newtext += '\f';  // SystemVerilog 3.1
+                } else if (*cp == 'r') {
+                    newtext += '\r';
+                } else if (*cp == 't') {
+                    newtext += '\t';
+                } else if (*cp == 'v') {
+                    newtext += '\v';  // SystemVerilog 3.1
+                } else if (*cp == 'x' && isxdigit(cp[1])
+                           && isxdigit(cp[2])) {  // SystemVerilog 3.1
+#define vl_decodexdigit(c) ((isdigit(c) ? ((c) - '0') : (tolower((c)) - 'a' + 10)))
+                    newtext += (char)(16 * vl_decodexdigit(cp[1]) + vl_decodexdigit(cp[2]));
                     cp += 2;
-                }
-                else if (isalnum(*cp)) {
-                    fileline->v3error("Unknown escape sequence: \\"<<*cp);
+                } else if (isalnum(*cp)) {
+                    fileline->v3error("Unknown escape sequence: \\" << *cp);
                     break;
-                }
-                else newtext += *cp;
+                } else
+                    newtext += *cp;
             }
-        }
-        else if (*cp == '\\') {
+        } else if (*cp == '\\') {
             quoted = true;
             octal_digits = 0;
-        }
-        else if (*cp != '"') {
+        } else if (*cp != '"') {
             newtext += *cp;
         }
     }

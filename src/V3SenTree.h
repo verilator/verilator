@@ -116,8 +116,9 @@ private:
         // Don't grab SenTrees under Actives, only those that are global (under Scope directly)
         iterateChildren(nodep);
     }
-    virtual void visit(AstSenTree* nodep) VL_OVERRIDE { m_trees.add(nodep); }
-
+    virtual void visit(AstSenTree* nodep) VL_OVERRIDE {  //
+        m_trees.add(nodep);
+    }
     virtual void visit(AstNodeStmt*) VL_OVERRIDE {}  // Accelerate
     virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 

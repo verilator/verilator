@@ -64,7 +64,7 @@ private:
     // TODO: could move to V3LinkParse to get them out of the way of elaboration
     virtual void visit(AstNodeModule* nodep) VL_OVERRIDE {
         // Module: Create sim table for entire module and iterate
-        UINFO(8,"MODULE "<<nodep<<endl);
+        UINFO(8, "MODULE " << nodep << endl);
         if (nodep->dead()) return;
         AstNodeModule* origModp = m_modp;
         int origSenitemCvtNum = m_senitemCvtNum;
@@ -110,9 +110,7 @@ private:
 
     virtual void visit(AstNodeVarRef* nodep) VL_OVERRIDE {
         // VarRef: Resolve its reference
-        if (nodep->varp()) {
-            nodep->varp()->usedParam(true);
-        }
+        if (nodep->varp()) { nodep->varp()->usedParam(true); }
         iterateChildren(nodep);
     }
 
@@ -123,9 +121,7 @@ private:
         m_ftaskp = nodep;
         iterateChildren(nodep);
         m_ftaskp = NULL;
-        if (nodep->dpiExport()) {
-            nodep->scopeNamep(new AstScopeName(nodep->fileline()));
-        }
+        if (nodep->dpiExport()) { nodep->scopeNamep(new AstScopeName(nodep->fileline())); }
     }
     virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
@@ -142,34 +138,29 @@ private:
             // This is a bit unfortunate as we haven't done width resolution
             // and any width errors will look a bit odd, but it works.
             AstNode* sensp = nodep->sensp();
-            if (sensp
-                && !VN_IS(sensp, NodeVarRef)
-                && !VN_IS(sensp, Const)) {
+            if (sensp && !VN_IS(sensp, NodeVarRef) && !VN_IS(sensp, Const)) {
                 // Make a new temp wire
-                string newvarname = "__Vsenitemexpr"+cvtToStr(++m_senitemCvtNum);
-                AstVar* newvarp = new AstVar(sensp->fileline(),
-                                             AstVarType::MODULETEMP, newvarname,
+                string newvarname = "__Vsenitemexpr" + cvtToStr(++m_senitemCvtNum);
+                AstVar* newvarp = new AstVar(sensp->fileline(), AstVarType::MODULETEMP, newvarname,
                                              VFlagLogicPacked(), 1);
                 // We can't just add under the module, because we may be
                 // inside a generate, begin, etc.
                 // We know a SenItem should be under a SenTree/Always etc,
                 // we we'll just hunt upwards
                 AstNode* addwherep = nodep;  // Add to this element's next
-                while (VN_IS(addwherep, SenItem)
-                       || VN_IS(addwherep, SenTree)) {
+                while (VN_IS(addwherep, SenItem) || VN_IS(addwherep, SenTree)) {
                     addwherep = addwherep->backp();
                 }
                 if (!VN_IS(addwherep, Always)) {  // Assertion perhaps?
-                    sensp->v3error("Unsupported: Non-single-bit pos/negedge clock statement under some complicated block");
+                    sensp->v3error("Unsupported: Non-single-bit pos/negedge clock statement under "
+                                   "some complicated block");
                     addwherep = m_modp;
                 }
                 addwherep->addNext(newvarp);
 
                 sensp->replaceWith(new AstVarRef(sensp->fileline(), newvarp, false));
-                AstAssignW* assignp = new AstAssignW
-                    (sensp->fileline(),
-                     new AstVarRef(sensp->fileline(), newvarp, true),
-                     sensp);
+                AstAssignW* assignp = new AstAssignW(
+                    sensp->fileline(), new AstVarRef(sensp->fileline(), newvarp, true), sensp);
                 addwherep->addNext(assignp);
             }
         } else {  // Old V1995 sensitivity list; we'll probably mostly ignore
@@ -178,18 +169,21 @@ private:
                 did = 0;
                 if (AstNodeSel* selp = VN_CAST(nodep->sensp(), NodeSel)) {
                     AstNode* fromp = selp->fromp()->unlinkFrBack();
-                    selp->replaceWith(fromp); VL_DO_DANGLING(selp->deleteTree(), selp);
+                    selp->replaceWith(fromp);
+                    VL_DO_DANGLING(selp->deleteTree(), selp);
                     did = 1;
                 }
                 // NodeSel doesn't include AstSel....
                 if (AstSel* selp = VN_CAST(nodep->sensp(), Sel)) {
                     AstNode* fromp = selp->fromp()->unlinkFrBack();
-                    selp->replaceWith(fromp); VL_DO_DANGLING(selp->deleteTree(), selp);
+                    selp->replaceWith(fromp);
+                    VL_DO_DANGLING(selp->deleteTree(), selp);
                     did = 1;
                 }
                 if (AstNodePreSel* selp = VN_CAST(nodep->sensp(), NodePreSel)) {
                     AstNode* fromp = selp->lhsp()->unlinkFrBack();
-                    selp->replaceWith(fromp); VL_DO_DANGLING(selp->deleteTree(), selp);
+                    selp->replaceWith(fromp);
+                    VL_DO_DANGLING(selp->deleteTree(), selp);
                     did = 1;
                 }
             }
@@ -213,10 +207,12 @@ private:
             // So we replicate it in another node
             // Note that V3Param knows not to replace AstVarRef's under AstAttrOf's
             AstNode* basefromp = AstArraySel::baseFromp(nodep);
-            if (AstNodeVarRef* varrefp = VN_CAST(basefromp, NodeVarRef)) {  // Maybe varxref - so need to clone
+            if (AstNodeVarRef* varrefp
+                = VN_CAST(basefromp, NodeVarRef)) {  // Maybe varxref - so need to clone
                 nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
                                            varrefp->cloneTree(false)));
-            } else if (AstUnlinkedRef* uvxrp = VN_CAST(basefromp, UnlinkedRef)) {  // Maybe unlinked - so need to clone
+            } else if (AstUnlinkedRef* uvxrp
+                       = VN_CAST(basefromp, UnlinkedRef)) {  // Maybe unlinked - so need to clone
                 nodep->attrp(new AstAttrOf(nodep->fileline(), AstAttrType::VAR_BASE,
                                            uvxrp->cloneTree(false)));
             } else if (AstMemberSel* fromp = VN_CAST(basefromp, MemberSel)) {
@@ -227,11 +223,11 @@ private:
                                            fromp->cloneTree(false)));
             } else if (VN_IS(basefromp, Replicate)) {
                 // From {...}[...] syntax in IEEE 2017
-                if (basefromp) { UINFO(1,"    Related node: "<<basefromp<<endl); }
+                if (basefromp) { UINFO(1, "    Related node: " << basefromp << endl); }
                 nodep->v3error("Unsupported: Select of concatenation");
                 nodep = NULL;
             } else {
-                if (basefromp) { UINFO(1,"    Related node: "<<basefromp<<endl); }
+                if (basefromp) { UINFO(1, "    Related node: " << basefromp << endl); }
                 nodep->v3fatalSrc("Illegal bit select; no signal/member being extracted from");
             }
         }
@@ -253,20 +249,21 @@ private:
         if (nodep->pragType() == AstPragmaType::PUBLIC_MODULE) {
             UASSERT_OBJ(m_modp, nodep, "PUBLIC_MODULE not under a module");
             m_modp->modPublic(true);
-            nodep->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        }
-        else if (nodep->pragType() == AstPragmaType::PUBLIC_TASK) {
+            nodep->unlinkFrBack();
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        } else if (nodep->pragType() == AstPragmaType::PUBLIC_TASK) {
             UASSERT_OBJ(m_ftaskp, nodep, "PUBLIC_TASK not under a task");
             m_ftaskp->taskPublic(true);
             m_modp->modPublic(true);  // Need to get to the task...
-            nodep->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        }
-        else if (nodep->pragType() == AstPragmaType::COVERAGE_BLOCK_OFF) {
-            if (!v3Global.opt.coverageLine()) {  // No need for block statements; may optimize better without
-                nodep->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            nodep->unlinkFrBack();
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        } else if (nodep->pragType() == AstPragmaType::COVERAGE_BLOCK_OFF) {
+            if (!v3Global.opt.coverageLine()) {  // No need for block statements; may optimize
+                                                 // better without
+                nodep->unlinkFrBack();
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
-        }
-        else {
+        } else {
             iterateChildren(nodep);
         }
     }
@@ -278,10 +275,10 @@ private:
         string fmt;
         for (string::const_iterator it = format.begin(); it != format.end(); ++it) {
             char ch = *it;
-            if (!inPct && ch=='%') {
+            if (!inPct && ch == '%') {
                 inPct = true;
                 fmt = ch;
-            } else if (inPct && (isdigit(ch) || ch=='.' || ch=='-')) {
+            } else if (inPct && (isdigit(ch) || ch == '.' || ch == '-')) {
                 fmt += ch;
             } else if (inPct) {
                 inPct = false;
@@ -290,15 +287,21 @@ private:
                 case '%':  // %% - just output a %
                     break;
                 case 'm':  // %m - auto insert "name"
-                    if (isScan) { nodep->v3error("Unsupported: %m in $fscanf"); fmt = ""; }
+                    if (isScan) {
+                        nodep->v3error("Unsupported: %m in $fscanf");
+                        fmt = "";
+                    }
                     break;
                 case 'l':  // %l - auto insert "library"
-                    if (isScan) { nodep->v3error("Unsupported: %l in $fscanf"); fmt = ""; }
+                    if (isScan) {
+                        nodep->v3error("Unsupported: %l in $fscanf");
+                        fmt = "";
+                    }
                     if (m_modp) fmt = VString::quotePercent(m_modp->prettyName());
                     break;
                 default:  // Most operators, just move to next argument
                     if (!V3Number::displayedFmtLegal(ch)) {
-                        nodep->v3error("Unknown $display-like format code: '%"<<ch<<"'");
+                        nodep->v3error("Unknown $display-like format code: '%" << ch << "'");
                     } else {
                         if (!argp) {
                             nodep->v3error("Missing arguments for $display-like format");
@@ -322,10 +325,10 @@ private:
                     skipCount--;
                     continue;
                 }
-                AstConst *constp = VN_CAST(argp, Const);
+                AstConst* constp = VN_CAST(argp, Const);
                 bool isFromString = (constp) ? constp->num().isFromString() : false;
                 if (isFromString) {
-                    int numchars = argp->dtypep()->width()/8;
+                    int numchars = argp->dtypep()->width() / 8;
                     string str(numchars, ' ');
                     // now scan for % operators
                     bool inpercent = false;
@@ -338,23 +341,18 @@ private:
                         } else if (inpercent) {
                             inpercent = 0;
                             switch (c) {
-                            case '0': case '1': case '2': case '3': case '4':
-                            case '5': case '6': case '7': case '8': case '9':
-                            case '.':
-                                inpercent = true;
-                                break;
-                            case '%':
-                                break;
+                            case '0' ... '9':
+                            case '.': inpercent = true; break;
+                            case '%': break;
                             default:
-                                if (V3Number::displayedFmtLegal(c)) {
-                                    skipCount++;
-                                }
+                                if (V3Number::displayedFmtLegal(c)) { skipCount++; }
                             }
                         }
                     }
                     newFormat.append(str);
-                    AstNode *nextp = argp->nextp();
-                    argp->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(argp), argp);
+                    AstNode* nextp = argp->nextp();
+                    argp->unlinkFrBack();
+                    VL_DO_DANGLING(pushDeletep(argp), argp);
                     argp = nextp;
                 } else {
                     newFormat.append("%?");  // V3Width to figure it out
@@ -366,7 +364,9 @@ private:
     }
 
     void expectDescriptor(AstNode* nodep, AstNodeVarRef* filep) {
-        if (!filep) nodep->v3error("Unsupported: $fopen/$fclose/$f* descriptor must be a simple variable");
+        if (!filep) {
+            nodep->v3error("Unsupported: $fopen/$fclose/$f* descriptor must be a simple variable");
+        }
         if (filep && filep->varp()) filep->varp()->attrFileDescr(true);
     }
 
@@ -402,7 +402,8 @@ private:
         iterateChildren(nodep);
         // Cleanup old-school displays without format arguments
         if (!nodep->hasFormat()) {
-            UASSERT_OBJ(nodep->text()=="", nodep, "Non-format $sformatf should have \"\" format");
+            UASSERT_OBJ(nodep->text() == "", nodep,
+                        "Non-format $sformatf should have \"\" format");
             if (VN_IS(nodep->exprsp(), Const)
                 && VN_CAST(nodep->exprsp(), Const)->num().isFromString()) {
                 AstConst* fmtp = VN_CAST(nodep->exprsp()->unlinkFrBack(), Const);
@@ -421,14 +422,14 @@ private:
     }
 
     virtual void visit(AstUdpTable* nodep) VL_OVERRIDE {
-        UINFO(5,"UDPTABLE  "<<nodep<<endl);
+        UINFO(5, "UDPTABLE  " << nodep << endl);
         if (!v3Global.opt.bboxUnsup()) {
             // We don't warn until V3Inst, so that UDPs that are in libraries and
             // never used won't result in any warnings.
         } else {
             // Massive hack, just tie off all outputs so our analysis can proceed
             AstVar* varoutp = NULL;
-            for (AstNode* stmtp = m_modp->stmtsp(); stmtp; stmtp=stmtp->nextp()) {
+            for (AstNode* stmtp = m_modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
                 if (AstVar* varp = VN_CAST(stmtp, Var)) {
                     if (varp->isReadOnly()) {
                     } else if (varp->isWritable()) {
@@ -438,16 +439,15 @@ private:
                         varoutp = varp;
                         // Tie off
                         m_modp->addStmtp(new AstAssignW(
-                                             varp->fileline(),
-                                             new AstVarRef(varp->fileline(), varp, true),
-                                             new AstConst(varp->fileline(),
-                                                          AstConst::LogicFalse())));
+                            varp->fileline(), new AstVarRef(varp->fileline(), varp, true),
+                            new AstConst(varp->fileline(), AstConst::LogicFalse())));
                     } else {
                         varp->v3error("Only inputs and outputs are allowed in udp modules");
                     }
                 }
             }
-            nodep->unlinkFrBack(); VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            nodep->unlinkFrBack();
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
 
@@ -531,7 +531,7 @@ public:
 // Link class functions
 
 void V3LinkResolve::linkResolve(AstNetlist* rootp) {
-    UINFO(4,__FUNCTION__<<": "<<endl);
+    UINFO(4, __FUNCTION__ << ": " << endl);
     {
         LinkResolveVisitor visitor(rootp);
         LinkBotupVisitor visitorb(rootp);

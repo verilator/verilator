@@ -42,14 +42,14 @@
 class BeginState {
 private:
     // NODE STATE
-    //Entire netlist:
+    // Entire netlist:
     // AstNodeFTask::user1      -> bool, 1=processed
-    AstUser1InUse       m_inuser1;
-    bool                m_anyFuncInBegin;
+    AstUser1InUse m_inuser1;
+    bool m_anyFuncInBegin;
+
 public:
-    BeginState() {
-        m_anyFuncInBegin = false;
-    }
+    BeginState()
+        : m_anyFuncInBegin(false) {}
     ~BeginState() {}
     void userMarkChanged(AstNode* nodep) {
         nodep->user1(true);
@@ -63,12 +63,12 @@ public:
 class BeginVisitor : public AstNVisitor {
 private:
     // STATE
-    BeginState*         m_statep;       // Current global state
-    AstNodeModule*      m_modp;         // Current module
-    AstNodeFTask*       m_ftaskp;       // Current function/task
-    string              m_namedScope;   // Name of begin blocks above us
-    string              m_unnamedScope; // Name of begin blocks, including unnamed blocks
-    int                 m_ifDepth;      // Current if depth
+    BeginState* m_statep;  // Current global state
+    AstNodeModule* m_modp;  // Current module
+    AstNodeFTask* m_ftaskp;  // Current function/task
+    string m_namedScope;  // Name of begin blocks above us
+    string m_unnamedScope;  // Name of begin blocks, including unnamed blocks
+    int m_ifDepth;  // Current if depth
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -83,11 +83,11 @@ private:
         m_modp = origModp;
     }
     virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
-        UINFO(8,"  "<<nodep<<endl);
+        UINFO(8, "  " << nodep << endl);
         // Rename it
         if (m_unnamedScope != "") {
-            nodep->name(m_unnamedScope+"__DOT__"+nodep->name());
-            UINFO(8,"     rename to "<<nodep->name()<<endl);
+            nodep->name(m_unnamedScope + "__DOT__" + nodep->name());
+            UINFO(8, "     rename to " << nodep->name() << endl);
             m_statep->userMarkChanged(nodep);
         }
         // BEGIN wrapping a function rename that function, but don't affect
@@ -109,28 +109,34 @@ private:
     }
     virtual void visit(AstBegin* nodep) VL_OVERRIDE {
         // Begin blocks were only useful in variable creation, change names and delete
-        UINFO(8,"  "<<nodep<<endl);
+        UINFO(8, "  " << nodep << endl);
         string oldScope = m_namedScope;
         string oldUnnamed = m_unnamedScope;
         {
-            UINFO(8,"nname "<<m_namedScope<<endl);
+            UINFO(8, "nname " << m_namedScope << endl);
             if (nodep->name() != "") {  // Else unneeded unnamed block
                 // Create data for dotted variable resolution
                 string dottedname = nodep->name() + "__DOT__";  // So always found
                 string::size_type pos;
-                while ((pos=dottedname.find("__DOT__")) != string::npos) {
+                while ((pos = dottedname.find("__DOT__")) != string::npos) {
                     string ident = dottedname.substr(0, pos);
-                    dottedname = dottedname.substr(pos+strlen("__DOT__"));
+                    dottedname = dottedname.substr(pos + strlen("__DOT__"));
                     if (nodep->name() != "") {
-                        if (m_namedScope=="") m_namedScope = ident;
-                        else m_namedScope = m_namedScope + "__DOT__"+ident;
+                        if (m_namedScope == "") {
+                            m_namedScope = ident;
+                        } else {
+                            m_namedScope = m_namedScope + "__DOT__" + ident;
+                        }
                     }
-                    if (m_unnamedScope=="") m_unnamedScope = ident;
-                    else m_unnamedScope = m_unnamedScope + "__DOT__"+ident;
+                    if (m_unnamedScope == "") {
+                        m_unnamedScope = ident;
+                    } else {
+                        m_unnamedScope = m_unnamedScope + "__DOT__" + ident;
+                    }
                     // Create CellInline for dotted var resolution
                     if (!m_ftaskp) {
-                        AstCellInline* inlinep = new AstCellInline(nodep->fileline(),
-                                                                   m_unnamedScope, "__BEGIN__");
+                        AstCellInline* inlinep
+                            = new AstCellInline(nodep->fileline(), m_unnamedScope, "__BEGIN__");
                         m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
                     }
                 }
@@ -147,7 +153,11 @@ private:
         AstNode* addsp = NULL;
         if (AstNode* stmtsp = nodep->stmtsp()) {
             stmtsp->unlinkFrBackWithNext();
-            if (addsp) { addsp = addsp->addNextNull(stmtsp); } else { addsp = stmtsp; }
+            if (addsp) {
+                addsp = addsp->addNextNull(stmtsp);
+            } else {
+                addsp = stmtsp;
+            }
         }
         if (addsp) {
             nodep->replaceWith(addsp);
@@ -159,12 +169,15 @@ private:
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
         if (m_unnamedScope != "") {
             // Rename it
-            nodep->name(m_unnamedScope+"__DOT__"+nodep->name());
+            nodep->name(m_unnamedScope + "__DOT__" + nodep->name());
             m_statep->userMarkChanged(nodep);
             // Move to module
             nodep->unlinkFrBack();
-            if (m_ftaskp) m_ftaskp->addStmtsp(nodep);  // Begins under funcs just move into the func
-            else m_modp->addStmtp(nodep);
+            if (m_ftaskp) {
+                m_ftaskp->addStmtsp(nodep);  // Begins under funcs just move into the func
+            } else {
+                m_modp->addStmtp(nodep);
+            }
         }
     }
     virtual void visit(AstTypedef* nodep) VL_OVERRIDE {
@@ -175,17 +188,20 @@ private:
             // Move to module
             nodep->unlinkFrBack();
             // Begins under funcs just move into the func
-            if (m_ftaskp) m_ftaskp->addStmtsp(nodep);
-            else m_modp->addStmtp(nodep);
+            if (m_ftaskp) {
+                m_ftaskp->addStmtsp(nodep);
+            } else {
+                m_modp->addStmtp(nodep);
+            }
         }
     }
     virtual void visit(AstCell* nodep) VL_OVERRIDE {
-        UINFO(8,"   CELL "<<nodep<<endl);
+        UINFO(8, "   CELL " << nodep << endl);
         if (m_namedScope != "") {
             m_statep->userMarkChanged(nodep);
             // Rename it
-            nodep->name(m_namedScope+"__DOT__"+nodep->name());
-            UINFO(8,"     rename to "<<nodep->name()<<endl);
+            nodep->name(m_namedScope + "__DOT__" + nodep->name());
+            UINFO(8, "     rename to " << nodep->name() << endl);
             // Move to module
             nodep->unlinkFrBack();
             m_modp->addStmtp(nodep);
@@ -193,10 +209,10 @@ private:
         iterateChildren(nodep);
     }
     virtual void visit(AstVarXRef* nodep) VL_OVERRIDE {
-        UINFO(9, "   VARXREF "<<nodep<<endl);
+        UINFO(9, "   VARXREF " << nodep << endl);
         if (m_namedScope != "" && nodep->inlinedDots() == "") {
             nodep->inlinedDots(m_namedScope);
-            UINFO(9, "    rescope to "<<nodep<<endl);
+            UINFO(9, "    rescope to " << nodep << endl);
         }
     }
     virtual void visit(AstScopeName* nodep) VL_OVERRIDE {
@@ -207,7 +223,7 @@ private:
             // To keep correct visual order, must add before other Text's
             AstNode* afterp = nodep->scopeAttrp();
             if (afterp) afterp->unlinkFrBackWithNext();
-            nodep->scopeAttrp(new AstText(nodep->fileline(), string("__DOT__")+m_namedScope));
+            nodep->scopeAttrp(new AstText(nodep->fileline(), string("__DOT__") + m_namedScope));
             if (afterp) nodep->scopeAttrp(afterp);
         }
         iterateChildren(nodep);
@@ -218,14 +234,15 @@ private:
         iterateChildren(nodep);
     }
     // VISITORS - LINT CHECK
-    virtual void visit(AstIf* nodep) VL_OVERRIDE {  // Note not AstNodeIf; other types don't get covered
+    virtual void visit(AstIf* nodep) VL_OVERRIDE {  // not AstNodeIf; other types not covered
         // Check IFDEPTH warning - could be in other transform files if desire
         int prevIfDepth = m_ifDepth;
-        if (m_ifDepth == -1 || v3Global.opt.ifDepth()<1) {  // Turned off
+        if (m_ifDepth == -1 || v3Global.opt.ifDepth() < 1) {  // Turned off
         } else if (nodep->uniquePragma() || nodep->unique0Pragma() || nodep->priorityPragma()) {
             m_ifDepth = -1;
         } else if (++m_ifDepth > v3Global.opt.ifDepth()) {
-            nodep->v3warn(IFDEPTH,"Deep 'if' statement; suggest unique/priority to avoid slow logic");
+            nodep->v3warn(IFDEPTH,
+                          "Deep 'if' statement; suggest unique/priority to avoid slow logic");
             nodep->fileline()->modifyWarnOff(V3ErrorCode::IFDEPTH, true);  // Warn only once
             m_ifDepth = -1;
         }
@@ -258,14 +275,14 @@ private:
     // VISITORS
     virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
         if (nodep->taskp()->user1()) {  // It was converted
-            UINFO(9, "    relinkFTask "<<nodep<<endl);
+            UINFO(9, "    relinkFTask " << nodep << endl);
             nodep->name(nodep->taskp()->name());
         }
         iterateChildren(nodep);
     }
     virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         if (nodep->varp()->user1()) {  // It was converted
-            UINFO(9, "    relinVarRef "<<nodep<<endl);
+            UINFO(9, "    relinVarRef " << nodep << endl);
             nodep->name(nodep->varp()->name());
         }
         iterateChildren(nodep);
@@ -273,9 +290,9 @@ private:
     virtual void visit(AstIfaceRefDType* nodep) VL_OVERRIDE {
         // May have changed cell names
         // TypeTable is always after all modules, so names are stable
-        UINFO(8,"   IFACEREFDTYPE "<<nodep<<endl);
+        UINFO(8, "   IFACEREFDTYPE " << nodep << endl);
         if (nodep->cellp()) nodep->cellName(nodep->cellp()->name());
-        UINFO(8,"       rename to "<<nodep<<endl);
+        UINFO(8, "       rename to " << nodep << endl);
         iterateChildren(nodep);
     }
     //--------------------
@@ -283,9 +300,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    BeginRelinkVisitor(AstNetlist* nodep, BeginState*) {
-        iterate(nodep);
-    }
+    BeginRelinkVisitor(AstNetlist* nodep, BeginState*) { iterate(nodep); }
     virtual ~BeginRelinkVisitor() {}
 };
 
@@ -293,13 +308,11 @@ public:
 // Task class functions
 
 void V3Begin::debeginAll(AstNetlist* nodep) {
-    UINFO(2,__FUNCTION__<<": "<<endl);
+    UINFO(2, __FUNCTION__ << ": " << endl);
     {
         BeginState state;
-        { BeginVisitor bvisitor (nodep,&state); }
-        if (state.anyFuncInBegin()) {
-            BeginRelinkVisitor brvisitor (nodep,&state);
-        }
+        { BeginVisitor bvisitor(nodep, &state); }
+        if (state.anyFuncInBegin()) { BeginRelinkVisitor brvisitor(nodep, &state); }
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("begin", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 3);
 }

@@ -40,11 +40,11 @@ public:
     static std::ifstream* new_ifstream_nodepend(const string& filename) {
         return new std::ifstream(filename.c_str());
     }
-    static std::ofstream* new_ofstream(const string& filename, bool append=false) {
+    static std::ofstream* new_ofstream(const string& filename, bool append = false) {
         addTgtDepend(filename);
         return new_ofstream_nodepend(filename, append);
     }
-    static std::ofstream* new_ofstream_nodepend(const string& filename, bool append=false) {
+    static std::ofstream* new_ofstream_nodepend(const string& filename, bool append = false) {
         createMakeDirFor(filename);
         if (append) {
             return new std::ofstream(filename.c_str(), std::ios::app);
@@ -86,6 +86,7 @@ private:
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VInFilter);
+
 public:
     explicit VInFilter(const string& command);
     ~VInFilter();
@@ -100,12 +101,9 @@ public:
 
 class V3OutFormatter {
     // TYPES
-    enum MiscConsts {
-        MAXSPACE = 80};  // After this indent, stop indenting more
+    enum MiscConsts { MAXSPACE = 80 };  // After this indent, stop indenting more
 public:
-    enum AlignClass {
-        AL_AUTO = 0,
-        AL_STATIC = 1};
+    enum AlignClass { AL_AUTO = 0, AL_STATIC = 1 };
     enum Language {
         LA_C = 0,
         LA_VERILOG = 1,
@@ -115,17 +113,17 @@ public:
 
 private:
     // MEMBERS
-    string      m_filename;
-    Language    m_lang;         // Indenting Verilog code
-    int         m_blockIndent;  // Characters per block indent
-    int         m_commaWidth;   // Width after which to break at ,'s
-    int         m_lineno;
-    int         m_column;
-    int         m_nobreak;      // Basic operator or begin paren, don't break next
-    bool        m_prependIndent;
-    int         m_indentLevel;  // Current {} indentation
+    string m_filename;
+    Language m_lang;  // Indenting Verilog code
+    int m_blockIndent;  // Characters per block indent
+    int m_commaWidth;  // Width after which to break at ,'s
+    int m_lineno;
+    int m_column;
+    int m_nobreak;  // Basic operator or begin paren, don't break next
+    bool m_prependIndent;
+    int m_indentLevel;  // Current {} indentation
     std::stack<int> m_parenVec;  // Stack of columns where last ( was
-    int         m_bracketLevel;  // Intenting = { block, indicates number of {'s seen.
+    int m_bracketLevel;  // Intenting = { block, indicates number of {'s seen.
 
     int endLevels(const char* strg);
     void putcNoTracking(char chr);
@@ -146,18 +144,26 @@ public:
     void putsQuoted(const string& strg);
     void putBreak();  // Print linebreak if line is too wide
     void putBreakExpr();  // Print linebreak in expression if line is too wide
-    void putbs(const char* strg) { putBreakExpr(); puts(strg); }
-    void putbs(const string& strg) {  putBreakExpr(); puts(strg); }
+    void putbs(const char* strg) {
+        putBreakExpr();
+        puts(strg);
+    }
+    void putbs(const string& strg) {
+        putBreakExpr();
+        puts(strg);
+    }
     bool exceededWidth() const { return m_column > m_commaWidth; }
     bool tokenStart(const char* cp, const char* cmp);
     bool tokenEnd(const char* cp);
     void indentInc() { m_indentLevel += m_blockIndent; }
     void indentDec() {
         m_indentLevel -= m_blockIndent;
-        UASSERT(m_indentLevel>=0, ": "<<m_filename<<": Underflow of indentation");
+        UASSERT(m_indentLevel >= 0, ": " << m_filename << ": Underflow of indentation");
     }
     void blockInc() { m_parenVec.push(m_indentLevel + m_blockIndent); }
-    void blockDec() { if (!m_parenVec.empty()) m_parenVec.pop(); }
+    void blockDec() {
+        if (!m_parenVec.empty()) m_parenVec.pop();
+    }
     // STATIC METHODS
     static const string indentSpaces(int num);
     // Add escaped characters to strings
@@ -172,11 +178,13 @@ public:
 
 class V3OutFile : public V3OutFormatter {
     // MEMBERS
-    FILE*       m_fp;
+    FILE* m_fp;
+
 public:
     V3OutFile(const string& filename, V3OutFormatter::Language lang);
     virtual ~V3OutFile();
     void putsForceIncs();
+
 private:
     // CALLBACKS
     virtual void putcOutput(char chr) { fputc(chr, m_fp); }
@@ -213,7 +221,8 @@ public:
 
 class V3OutScFile : public V3OutCFile {
 public:
-    explicit V3OutScFile(const string& filename) : V3OutCFile(filename) {}
+    explicit V3OutScFile(const string& filename)
+        : V3OutCFile(filename) {}
     virtual ~V3OutScFile() {}
     virtual void putsHeader() { puts("// Verilated -*- SystemC -*-\n"); }
     virtual void putsIntTopInclude() {
@@ -262,9 +271,9 @@ public:
     // METHODS
     // Rename to a new encoded string (unless earlier passthru'ed)
     static string protect(const string& old) { return protectIf(old, true); }
-    static string protectIf(const string& old, bool doIt=true);
+    static string protectIf(const string& old, bool doIt = true);
     // Rename words to a new encoded string
-    static string protectWordsIf(const string& old, bool doIt=true);
+    static string protectWordsIf(const string& old, bool doIt = true);
     // Write map of renames to output file
     static void writeMapFile(const string& filename);
 };

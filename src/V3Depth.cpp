@@ -51,7 +51,7 @@ private:
 
     void createDeepTemp(AstNode* nodep) {
         UINFO(6, "  Deep  " << nodep << endl);
-        // if (debug()>=9) nodep->dumpTree(cout, "deep:");
+        // if (debug() >= 9) nodep->dumpTree(cout, "deep:");
 
         string newvarname = (string("__Vdeeptemp") + cvtToStr(m_modp->varNumGetInc()));
         AstVar* varp = new AstVar(nodep->fileline(), AstVarType::STMTTEMP, newvarname,
