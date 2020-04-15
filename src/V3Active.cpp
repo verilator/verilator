@@ -364,7 +364,7 @@ private:
     virtual void visit(AstAlways* nodep) VL_OVERRIDE {
         // Move always to appropriate ACTIVE based on its sense list
         UINFO(4, "    ALW   " << nodep << endl);
-        // if (debug()>=9) nodep->dumpTree(cout, "  Alw: ");
+        // if (debug() >= 9) nodep->dumpTree(cout, "  Alw: ");
 
         if (!nodep->bodysp()) {
             // Empty always.  Kill it.
@@ -376,7 +376,7 @@ private:
     virtual void visit(AstAlwaysPublic* nodep) VL_OVERRIDE {
         // Move always to appropriate ACTIVE based on its sense list
         UINFO(4, "    ALWPub   " << nodep << endl);
-        // if (debug()>=9) nodep->dumpTree(cout, "  Alw: ");
+        // if (debug() >= 9) nodep->dumpTree(cout, "  Alw: ");
         visitAlways(nodep, nodep->sensesp(), VAlwaysKwd::ALWAYS);
     }
     virtual void visit(AstSenGate* nodep) VL_OVERRIDE {

@@ -327,12 +327,12 @@ public:
     inline void applyIgnores(FileLine* filelinep) {
         // HOT routine, called each parsed token line of this filename
         if (m_lastIgnore.lineno != filelinep->lineno()) {
-            // UINFO(9,"   ApplyIgnores for "<<filelinep->ascii()<<endl);
+            // UINFO(9, "   ApplyIgnores for " << filelinep->ascii() << endl);
             // Process all on/offs for lines up to and including the current line
             int curlineno = filelinep->lastLineno();
             for (; m_lastIgnore.it != m_ignLines.end(); ++m_lastIgnore.it) {
                 if (m_lastIgnore.it->m_lineno > curlineno) break;
-                // UINFO(9,"     Hit "<<*m_lastIt<<endl);
+                // UINFO(9, "     Hit " << *m_lastIt << endl);
                 filelinep->warnOn(m_lastIgnore.it->m_code, m_lastIgnore.it->m_on);
             }
             if (0 && debug() >= 9) {

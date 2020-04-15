@@ -120,13 +120,15 @@ private:
             nodep->replaceWith(newp);
             AstNode* oldp = nodep;
             nodep = newp;
-            // if (debug()>4) oldp->dumpTree(cout, "  fixConstSize_old: ");
-            // if (debug()>4) newp->dumpTree(cout, "              _new: ");
+            // if (debug() > 4) oldp->dumpTree(cout, "  fixConstSize_old: ");
+            // if (debug() > 4) newp->dumpTree(cout, "              _new: ");
             VL_DO_DANGLING(pushDeletep(oldp), oldp);
         }
         editDType(nodep);
     }
-    virtual void visit(AstNodeDType* nodep) VL_OVERRIDE { visitIterateNodeDType(nodep); }
+    virtual void visit(AstNodeDType* nodep) VL_OVERRIDE {  //
+        visitIterateNodeDType(nodep);
+    }
     virtual void visit(AstNodeUOrStructDType* nodep) VL_OVERRIDE {
         if (nodep->user1SetOnce()) return;  // Process once
         visitIterateNodeDType(nodep);

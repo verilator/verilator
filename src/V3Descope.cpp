@@ -258,7 +258,7 @@ private:
         nodep->varScopep(NULL);
     }
     virtual void visit(AstNodeCCall* nodep) VL_OVERRIDE {
-        // UINFO(9,"       "<<nodep<<endl);
+        // UINFO(9, "       " << nodep << endl);
         iterateChildren(nodep);
         // Convert the hierch name
         UASSERT_OBJ(m_scopep, nodep, "Node not under scope");

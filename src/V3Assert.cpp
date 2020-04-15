@@ -322,7 +322,7 @@ private:
             AstNode* assp = new AstAssignDly(nodep->fileline(),
                                              new AstVarRef(nodep->fileline(), outvarp, true), inp);
             alwaysp->addStmtp(assp);
-            // if (debug()>-9) assp->dumpTree(cout, "-ass: ");
+            // if (debug() >= 9) assp->dumpTree(cout, "-ass: ");
             invarp = outvarp;
             inp = new AstVarRef(nodep->fileline(), invarp, false);
         }

@@ -353,7 +353,7 @@ size_t V3PreLex::inputToLex(char* buf, size_t max_size) {
     // become a stale invalid pointer.
     //
     VPreStream* streamp = curStreamp();
-    if (debug()>=10) {
+    if (debug() >= 10) {
         cout<<"-  pp:inputToLex ITL s="<<max_size<<" bs="<<streamp->m_buffers.size()<<endl;
         dumpStack();
     }
@@ -394,7 +394,7 @@ size_t V3PreLex::inputToLex(char* buf, size_t max_size) {
             if (again) goto again;
         }
     }
-    if (debug()>=10) { cout<<"-  pp::inputToLex  got="<<got<<" '"<<string(buf, got)<<"'"<<endl; }
+    if (debug() >= 10) { cout<<"-  pp::inputToLex  got="<<got<<" '"<<string(buf, got)<<"'"<<endl; }
     return got;
 }
 

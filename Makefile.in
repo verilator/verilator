@@ -456,6 +456,12 @@ analyzer-include:
 	-rm -rf examples/*/obj*
 	scan-build $(MAKE) -k examples
 
+CLANGFORMAT = clang-format
+CLANGFORMAT_FLAGS = -i
+
+clang-format:
+	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CPPCHECK_CPP) $(CPPCHECK_H)
+
 ftp: info
 
 install-msg:

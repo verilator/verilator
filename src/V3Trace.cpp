@@ -551,7 +551,7 @@ private:
         // Assign trace code, add to tree, return node for change tree or null
         // Look for identical copies
         uint32_t codePreassigned = 0;
-        // if (debug()>=9) nodep->dumpTree(cout, "-   assnnode: ");
+        // if (debug() >= 9) nodep->dumpTree(cout, "-   assnnode: ");
         // Find non-duplicated node; note some nodep's maybe null, as they were deleted below
         TraceTraceVertex* dupvertexp = vvertexp;
         if (dupvertexp->duplicatep()) {
