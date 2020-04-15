@@ -656,15 +656,23 @@ void V3Options::throwSigsegv() {
 }
 
 VTimescale V3Options::timeComputePrec(const VTimescale& flag) const {
-    if (!timeOverridePrec().isNone()) return timeOverridePrec();
-    else if (flag.isNone()) return timeDefaultPrec();
-    else return flag;
+    if (!timeOverridePrec().isNone()) {
+        return timeOverridePrec();
+    } else if (flag.isNone()) {
+        return timeDefaultPrec();
+    } else {
+        return flag;
+    }
 }
 
 VTimescale V3Options::timeComputeUnit(const VTimescale& flag) const {
-    if (!timeOverrideUnit().isNone()) return timeOverrideUnit();
-    else if (flag.isNone()) return timeDefaultUnit();
-    else return flag;
+    if (!timeOverrideUnit().isNone()) {
+        return timeOverrideUnit();
+    } else if (flag.isNone()) {
+        return timeDefaultUnit();
+    } else {
+        return flag;
+    }
 }
 
 //######################################################################

@@ -5,10 +5,10 @@
 
 #include "Vt_timescale_parse.h"
 
-VM_PREFIX *tb = NULL;
+VM_PREFIX* tb = NULL;
 
 double sc_time_stamp() {
-    return 2*1e9;  // e.g. 2 seconds in ns units
+    return 2 * 1e9;  // e.g. 2 seconds in ns units
 }
 
 int main() {
