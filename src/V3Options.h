@@ -114,6 +114,7 @@ private:
     V3StringSet m_cppFiles;     // argument: C++ files to link against
     V3StringList m_cFlags;      // argument: user CFLAGS
     V3StringList m_ldLibs;      // argument: user LDFLAGS
+    V3StringList m_makeFlags;   // argument: user MAKEFLAGS
     V3StringSet m_futures;      // argument: -Wfuture- list
     V3StringSet m_libraryFiles; // argument: Verilog -v files
     V3StringSet m_clockers;     // argument: Verilog -clk signals
@@ -131,6 +132,7 @@ private:
     bool        m_autoflush;    // main switch: --autoflush
     bool        m_bboxSys;      // main switch: --bbox-sys
     bool        m_bboxUnsup;    // main switch: --bbox-unsup
+    bool        m_build;        // main switch: --build
     bool        m_cdc;          // main switch: --cdc
     bool        m_cmake;        // main switch: --make cmake
     bool        m_context;      // main switch: --Wcontext
@@ -184,10 +186,12 @@ private:
     bool        m_traceStructs; // main switch: --trace-structs
     bool        m_traceUnderscore;// main switch: --trace-underscore
     bool        m_underlineZero;// main switch: --underline-zero; undocumented old Verilator 2
+    bool        m_verilate;     // main swith: --verilate
     bool        m_vpi;          // main switch: --vpi
     bool        m_xInitialEdge; // main switch: --x-initial-edge
     bool        m_xmlOnly;      // main switch: --xml-netlist
 
+    int         m_buildJobs;    // main switch: -j
     int         m_convergeLimit;// main switch: --converge-limit
     int         m_dumpTree;     // main switch: --dump-tree
     int         m_gateStmts;    // main switch: --gate-stmts
@@ -292,6 +296,7 @@ public:
     void addCppFile(const string& filename);
     void addCFlags(const string& filename);
     void addLdLibs(const string& filename);
+    void addMakeFlags(const string& filename);
     void addLibraryFile(const string& filename);
     void addClocker(const string& signame);
     void addNoClocker(const string& signame);
@@ -316,6 +321,7 @@ public:
     bool autoflush() const { return m_autoflush; }
     bool bboxSys() const { return m_bboxSys; }
     bool bboxUnsup() const { return m_bboxUnsup; }
+    bool build() const { return m_build; }
     bool cdc() const { return m_cdc; }
     bool cmake() const { return m_cmake; }
     bool context() const { return m_context; }
@@ -364,10 +370,12 @@ public:
     bool quietExit() const { return m_quietExit; }
     bool relativeCFuncs() const { return m_relativeCFuncs; }
     bool reportUnoptflat() const { return m_reportUnoptflat; }
+    bool verilate() const { return m_verilate; }
     bool vpi() const { return m_vpi; }
     bool xInitialEdge() const { return m_xInitialEdge; }
     bool xmlOnly() const { return m_xmlOnly; }
 
+    int buildJobs() const { return m_buildJobs; }
     int convergeLimit() const { return m_convergeLimit; }
     int dumpTree() const { return m_dumpTree; }
     int gateStmts() const { return m_gateStmts; }
@@ -422,6 +430,7 @@ public:
     const V3StringSet& cppFiles() const { return m_cppFiles; }
     const V3StringList& cFlags() const { return m_cFlags; }
     const V3StringList& ldLibs() const { return m_ldLibs; }
+    const V3StringList& makeFlags() const { return m_makeFlags; }
     const V3StringSet& libraryFiles() const { return m_libraryFiles; }
     const V3StringList& vFiles() const { return m_vFiles; }
     const V3StringList& forceIncs() const { return m_forceIncs; }
@@ -478,6 +487,7 @@ public:
     // see the README.  If adding new variables, also see src/Makefile_obj.in
     // Also add to V3Options::showVersion()
     static string getenvBuiltins(const string& var);
+    static string getenvMAKE();
     static string getenvPERL();
     static string getenvSYSTEMC();
     static string getenvSYSTEMC_ARCH();

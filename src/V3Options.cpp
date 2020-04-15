@@ -198,6 +198,7 @@ void V3Options::checkParameters() {
 void V3Options::addCppFile(const string& filename) { m_cppFiles.insert(filename); }
 void V3Options::addCFlags(const string& filename) { m_cFlags.push_back(filename); }
 void V3Options::addLdLibs(const string& filename) { m_ldLibs.push_back(filename); }
+void V3Options::addMakeFlags(const string& filename) { m_makeFlags.push_back(filename); }
 void V3Options::addFuture(const string& flag) { m_futures.insert(flag); }
 bool V3Options::isFuture(const string& flag) const {
     return m_futures.find(flag) != m_futures.end();
@@ -393,7 +394,9 @@ V3LangCode V3Options::fileLanguage(const string& filename) {
 // Environment
 
 string V3Options::getenvBuiltins(const string& var) {
-    if (var == "PERL") {
+    if (var == "MAKE") {
+        return getenvMAKE();
+    } else if (var == "PERL") {
         return getenvPERL();
     } else if (var == "SYSTEMC") {
         return getenvSYSTEMC();
@@ -409,6 +412,8 @@ string V3Options::getenvBuiltins(const string& var) {
         return V3Os::getenvStr(var, "");
     }
 }
+
+string V3Options::getenvMAKE() { return V3Os::getenvStr("MAKE", "make"); }
 
 string V3Options::getenvPERL() {  //
     return V3Os::getenvStr("PERL", "perl");
@@ -723,6 +728,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-autoflush", flag/*ref*/))    { m_autoflush = flag; }
             else if ( onoff (sw, "-bbox-sys", flag/*ref*/))     { m_bboxSys = flag; }
             else if ( onoff (sw, "-bbox-unsup", flag/*ref*/))   { m_bboxUnsup = flag; }
+            else if (!strcmp(sw, "-build"))                     { m_build = true; }
             else if (!strcmp(sw, "-cc"))                        { m_outFormatOk = true; m_systemC = false; }
             else if ( onoff (sw, "-cdc", flag/*ref*/))          { m_cdc = flag; }
             else if ( onoff (sw, "-coverage", flag/*ref*/))     { coverage(flag); }
@@ -783,6 +789,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-trace-structs", flag/*ref*/))     { m_traceStructs = flag; }
             else if ( onoff (sw, "-trace-underscore", flag/*ref*/))  { m_traceUnderscore = flag; }
             else if ( onoff (sw, "-underline-zero", flag/*ref*/))    { m_underlineZero = flag; }  // Undocumented, old Verilator-2
+            else if ( onoff (sw, "-verilate", flag/*ref*/))          { m_verilate = flag; }
             else if ( onoff (sw, "-vpi", flag/*ref*/))               { m_vpi = flag; }
             else if ( onoff (sw, "-Wpedantic", flag/*ref*/))         { m_pedantic = flag; }
             else if ( onoff (sw, "-x-initial-edge", flag/*ref*/))    { m_xInitialEdge = flag; }
@@ -889,6 +896,17 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             } else if (!strcmp(sw, "-inline-mult") && (i + 1) < argc) {
                 shift;
                 m_inlineMult = atoi(argv[i]);
+            } else if (!strcmp(sw, "-j")) {
+                if ((i + 1) >= argc || !isdigit(argv[i + 1][0])) {  // No value is given
+                    m_buildJobs = 0;  // Unlimited parallelism
+                } else {
+                    shift;
+                    m_buildJobs = atoi(argv[i]);
+                    if (m_buildJobs <= 0) {
+                        fl->v3error("-j accepts positive integer, but " << argv[i]
+                                                                        << " is passed");
+                    }
+                }
             } else if (!strcmp(sw, "-LDFLAGS") && (i + 1) < argc) {
                 shift;
                 addLdLibs(argv[i]);
@@ -906,6 +924,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 } else {
                     fl->v3fatal("Unknown --make system specified: '" << argv[i] << "'");
                 }
+            } else if (!strcmp(sw, "-MAKEFLAGS") && (i + 1) < argc) {
+                shift;
+                addMakeFlags(argv[i]);
             } else if (!strcmp(sw, "-max-num-width")) {
                 shift;
                 m_maxNumWidth = atoi(argv[i]);
@@ -1355,6 +1376,7 @@ void V3Options::showVersion(bool verbose) {
 
     cout << endl;
     cout << "Environment:\n";
+    cout << "    MAKE               = " << V3Os::getenvStr("MAKE", "") << endl;
     cout << "    PERL               = " << V3Os::getenvStr("PERL", "") << endl;
     cout << "    SYSTEMC            = " << V3Os::getenvStr("SYSTEMC", "") << endl;
     cout << "    SYSTEMC_ARCH       = " << V3Os::getenvStr("SYSTEMC_ARCH", "") << endl;
@@ -1374,6 +1396,7 @@ V3Options::V3Options() {
     m_autoflush = false;
     m_bboxSys = false;
     m_bboxUnsup = false;
+    m_build = false;
     m_cdc = false;
     m_cmake = false;
     m_context = true;
@@ -1434,10 +1457,12 @@ V3Options::V3Options() {
     m_traceStructs = false;
     m_traceUnderscore = false;
     m_underlineZero = false;
+    m_verilate = true;
     m_vpi = false;
     m_xInitialEdge = false;
     m_xmlOnly = false;
 
+    m_buildJobs = 1;
     m_convergeLimit = 100;
     m_dumpTree = 0;
     m_gateStmts = 100;
