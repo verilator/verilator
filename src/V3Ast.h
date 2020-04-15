@@ -273,17 +273,17 @@ public:
             switch (other.m_e) {
             case VEdgeType::ET_NEGEDGE:  // FALLTHRU
             case VEdgeType::ET_LOWEDGE: return true;
-            default: {}
+            default:;
             }
             break;
         case VEdgeType::ET_NEGEDGE:
             switch (other.m_e) {
             case VEdgeType::ET_POSEDGE:  // FALLTHRU
             case VEdgeType::ET_HIGHEDGE: return true;
-            default: {}
+            default:;
             }
             break;
-        default: {}
+        default:;
         }
         return false;
     }
