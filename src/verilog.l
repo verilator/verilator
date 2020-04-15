@@ -242,6 +242,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$nochange"           { FL; return yaTIMINGSPEC; }
   "$period"             { FL; return yaTIMINGSPEC; }
   "$pow"                { FL; return yD_POW; }
+  "$printtimescale"     { FL; return yD_PRINTTIMESCALE; }
   "$random"             { FL; return yD_RANDOM; }
   "$readmemb"           { FL; return yD_READMEMB; }
   "$readmemh"           { FL; return yD_READMEMH; }
@@ -275,6 +276,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$test$plusargs"      { FL; return yD_TESTPLUSARGS; }
   "$time"               { FL; return yD_TIME; }
   "$timeskew"           { FL; return yaTIMINGSPEC; }
+  "$timeformat"         { FL; return yD_TIMEFORMAT; }
   "$typename"           { FL; return yD_TYPENAME; }
   "$ungetc"             { FL; return yD_UNGETC; }
   "$value$plusargs"     { FL; return yD_VALUEPLUSARGS; }
@@ -891,8 +893,12 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                           FL; yylval.cdouble = PARSEP->parseDouble(yytext, yyleng);
                           return yaFLOATNUM;
                         }
-  [0-9][_0-9]*(\.[_0-9]+)?(fs|ps|ns|us|ms|s|step) {
-                          FL; yylval.cdouble = 0;  /* Only for times, not used yet */
+  [0-9][_0-9]*(\.[_0-9]+)?(fs|ps|ns|us|ms|s) {
+                          FL; yylval.cdouble = PARSEP->parseTimenum(yytext);
+                          return yaTIMENUM;
+                        }
+  1step                 {
+                          FL; yylval.cdouble = 0;  // Unsupported
                           return yaTIMENUM;
                         }
 }
@@ -975,7 +981,9 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "`resetall"                           { FL; PARSEP->fileline()->warnOn(V3ErrorCode::I_DEF_NETTYPE_WIRE, true);
                                           return yaT_RESETALL; }  // Rest handled by preproc
   "`suppress_faults"                    { FL_FWD; FL_BRK; }  // Verilog-XL compatibility
-  "`timescale"{ws}+[^\n\r]*             { FL_FWD; FL_BRK; }  // Verilog spec - not supported
+  "`timescale"{ws}+[^\n\r]*             { FL_FWD; PARSEP->timescalePreproc(PARSEP->fileline(),
+                                                                           yytext + strlen("`timescale"));
+                                          FL_BRK; }
   "`unconnected_drive"{ws}+"pull0"      { FL_FWD; PARSEP->unconnectedDrive(VOptionBool::OPT_FALSE); FL_BRK; }
   "`unconnected_drive"{ws}+"pull1"      { FL_FWD; PARSEP->unconnectedDrive(VOptionBool::OPT_TRUE); FL_BRK; }
   "`unconnected_drive"                  { FL_FWD; yyerrorf("Bad `unconnected_drive syntax"); FL_BRK; }

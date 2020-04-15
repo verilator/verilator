@@ -372,6 +372,8 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --threads <threads>         Enable multithreading
     --threads-dpi <mode>        Enable multithreaded DPI
     --threads-max-mtasks <mtasks>  Tune maximum mtask partitioning
+    --timescale <timescale>     Sets default timescale
+    --timescale-override <timescale>  Overrides all timescales
     --top-module <topname>      Name of top level input module
     --trace                     Enable waveform creation
     --trace-depth <levels>      Depth of tracing
@@ -1266,6 +1268,10 @@ This allows for the secure delivery of sensitive IP without the need for
 encrypted RTL (i.e. IEEE P1735).  See examples/make_protect_lib in the
 distribution for a demonstration of how to build and use the DPI library.
 
+When using --protect-lib it is advised to also use C<--timescale-override
+/1fs> to ensure the model has a time resolution that is always compatible
+with the time precision of the upper instantiating module.
+
 =item --private
 
 Opposite of --public.  Is the default; this option exists for backwards
@@ -1423,6 +1429,24 @@ are threadsafe, but non-pure DPI imports are not.
 Rarely needed.  When using --threads, specify the number of mtasks the
 model is to be partitioned into. If unspecified, Verilator approximates a
 good value.
+
+=item --timescale I<timeunit>/I<timeprecision>
+
+Sets default timescale, timeunit and timeprecision for when `timescale does
+not occur in sources.  Default is "1ps/1ps" (to match SystemC).  This is
+overriden by C<--timescale-override>.
+
+=item --timescale-override I<timeunit>/I<timeprecision>
+
+=item --timescale-override /I<timeprecision>
+
+Overrides all `timescales in sources. The timeunit may be left empty to
+specify only to override the timeprecision, e.g. "/1fs".
+
+The time precision must be consistent with SystemC's
+sc_set_time_resolution, or the C++ code instantiating the Verilated module.
+As 1fs is the finest time precision it may be desirable to always use a
+precision of 1fs.
 
 =item --top-module I<topname>
 
@@ -1786,10 +1810,10 @@ Defaults to "profile_threads.dat".
 =item +verilator+prof+threads+start+I<value>
 
 When using --prof-threads at simulation runtime, Verilator will wait until
-$time is at this value, then start the profiling warmup, then
-capturing. Generally this should be set to some time that is well within
-the normal operation of the simulation, i.e. outside of reset. If 0, the
-dump is disabled. Defaults to 1.
+$time is at this value (expressed in units of the time precision), then
+start the profiling warmup, then capturing. Generally this should be set to
+some time that is well within the normal operation of the simulation,
+i.e. outside of reset. If 0, the dump is disabled. Defaults to 1.
 
 =item +verilator+prof+threads+window+I<value>
 
@@ -2249,7 +2273,8 @@ example:
 
         vluint64_t main_time = 0;       // Current simulation time
         // This is a 64-bit integer to reduce wrap over issues and
-        // allow modulus.  You can also use a double, if you wish.
+        // allow modulus.  This is in units of the timeprecision
+        // used in Verilog (or from --timescale-override)
 
         double sc_time_stamp () {       // Called by $time in Verilog
             return main_time;           // converts to double, to match
@@ -3788,7 +3813,7 @@ This section describes specific limitations for each language keyword.
 `begin_keywords, `begin_keywords, `define, `else, `elsif, `end_keywords,
 `endif, `error, `ifdef, `ifndef, `include, `line, `systemc_ctor,
 `systemc_dtor, `systemc_header, `systemc_imp_header,
-`systemc_implementation, `systemc_interface, `timescale, `undef, `verilog
+`systemc_implementation, `systemc_interface, `undef, `verilog
 
 Fully supported.
 
@@ -3939,13 +3964,6 @@ Supported, but the instantiating C++/SystemC testbench must call
 
 to register the command line before calling $test$plusargs or
 $value$plusargs.
-
-=item $timeformat
-
-Not supported as Verilator needs to determine all formatting at compile
-time.  Generally you can just ifdef them out for no ill effect.  Note also
-VL_TIME_MULTIPLIER can be defined at compile time to move the decimal point
-when displaying all times, model wide.
 
 =back
 
@@ -4619,6 +4637,18 @@ increases.
 Ignoring this warning will only slow simulations, it will simulate
 correctly.
 
+=item TIMESCALEMOD
+
+Error that `timescale is used in some but not all modules.
+Recommend using --timescale argument, or in front of all modules use:
+
+   `include "timescale.vh"
+
+Then in that file set the timescale.
+
+This is an error due to IEEE specifications, but it may be disabled similar
+to warnings.  Ignoring this error may result in a module having an
+unexpected timescale.
 
 =item UNDRIVEN
 
@@ -5008,8 +5038,8 @@ to VerilatedVcdSc in the examples/make_tracing_sc/sc_main.cpp file of the
 distribution, and below.
 
 Alternatively you may use the C++ trace mechanism described in the previous
-question, however the timescale and timeprecision will not inherited from
-your SystemC settings.
+question, note the timescale and timeprecision will be inherited from your
+SystemC settings.
 
 You also need to compile verilated_vcd_sc.cpp and verilated_vcd_c.cpp and
 add them to your link, preferably by adding the dependencies in

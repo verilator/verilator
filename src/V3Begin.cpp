@@ -135,8 +135,8 @@ private:
                     }
                     // Create CellInline for dotted var resolution
                     if (!m_ftaskp) {
-                        AstCellInline* inlinep
-                            = new AstCellInline(nodep->fileline(), m_unnamedScope, "__BEGIN__");
+                        AstCellInline* inlinep = new AstCellInline(
+                            nodep->fileline(), m_unnamedScope, "__BEGIN__", m_modp->timeunit());
                         m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
                     }
                 }

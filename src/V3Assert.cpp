@@ -55,7 +55,7 @@ private:
         nodep->displayType(AstDisplayType::DT_WRITE);
         nodep->fmtp()->text(assertDisplayMessage(nodep, prefix, nodep->fmtp()->text()));
         // cppcheck-suppress nullPointer
-        AstNode* timenewp = new AstTime(nodep->fileline());
+        AstNode* timenewp = new AstTime(nodep->fileline(), m_modp->timeunit());
         if (AstNode* timesp = nodep->fmtp()->exprsp()) {
             timesp->unlinkFrBackWithNext();
             timenewp->addNext(timesp);

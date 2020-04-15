@@ -113,6 +113,13 @@ public:
         m_num.width(32, true);
         dtypeSetLogicUnsized(32, m_num.widthMin(), AstNumeric::SIGNED);
     }
+    class Unsized64 {};  // for creator type-overload selection
+    AstConst(FileLine* fl, Unsized64, vluint64_t num)
+        : ASTGEN_SUPER(fl)
+        , m_num(this, 64, 0) {
+        m_num.setQuad(num);
+        dtypeSetLogicSized(64, AstNumeric::UNSIGNED);
+    }
     class SizedEData {};  // for creator type-overload selection
     AstConst(FileLine* fl, SizedEData, vluint64_t num)
         : ASTGEN_SUPER(fl)
@@ -2677,12 +2684,15 @@ private:
     string m_name;  // Cell name, possibly {a}__DOT__{b}...
     string m_origModName;  // Original name of the module, ignoring name() changes, for dot lookup
     AstScope* m_scopep;  // The scope that the cell is inlined into
+    VTimescale m_timeunit;  // Parent module time unit
 public:
-    AstCellInline(FileLine* fl, const string& name, const string& origModName)
+    AstCellInline(FileLine* fl, const string& name, const string& origModName,
+                  const VTimescale& timeunit)
         : ASTGEN_SUPER(fl)
         , m_name(name)
         , m_origModName(origModName)
-        , m_scopep(NULL) {}
+        , m_scopep(NULL)
+        , m_timeunit(timeunit) {}
     ASTNODE_NODE_FUNCS(CellInline)
     virtual void dump(std::ostream& str) const;
     virtual const char* broken() const {
@@ -2695,6 +2705,8 @@ public:
     virtual void name(const string& name) { m_name = name; }
     void scopep(AstScope* scp) { m_scopep = scp; }
     AstScope* scopep() const { return m_scopep; }
+    void timeunit(const VTimescale& flag) { m_timeunit = flag; }
+    VTimescale timeunit() const { return m_timeunit; }
 };
 
 class AstCellRef : public AstNode {
@@ -3478,6 +3490,7 @@ class AstSFormatF : public AstNode {
     bool m_hidden;  // Under display, etc
     bool m_hasFormat;  // Has format code
     char m_missingArgChar;  // Format code when argument without format, 'h'/'o'/'b'
+    VTimescale m_timeunit;  // Parent module time unit
 public:
     class NoFormat {};
     AstSFormatF(FileLine* fl, const string& text, bool hidden, AstNode* exprsp,
@@ -3523,6 +3536,8 @@ public:
     void hasFormat(bool flag) { m_hasFormat = flag; }
     bool hasFormat() const { return m_hasFormat; }
     char missingArgChar() const { return m_missingArgChar; }
+    void timeunit(const VTimescale& flag) { m_timeunit = flag; }
+    VTimescale timeunit() const { return m_timeunit; }
 };
 
 class AstDisplay : public AstNodeStmt {
@@ -4620,6 +4635,28 @@ public:
     }
 };
 
+class AstPrintTimeScale : public AstNodeStmt {
+    // Parents: stmtlist
+    string m_name;  // Parent module name
+    VTimescale m_timeunit;  // Parent module time unit
+public:
+    AstPrintTimeScale(FileLine* fl)
+        : ASTGEN_SUPER(fl) {}
+    ASTNODE_NODE_FUNCS(PrintTimeScale)
+    virtual void name(const string& name) { m_name = name; }
+    virtual string name() const { return m_name; }  // * = Var name
+    virtual void dump(std::ostream& str) const;
+    virtual string verilogKwd() const { return "$printtimescale"; }
+    virtual bool isGateOptimizable() const { return false; }
+    virtual bool isPredictOptimizable() const { return false; }
+    virtual bool isPure() const { return false; }
+    virtual bool isOutputter() const { return true; }
+    virtual int instrCount() const { return instrCountPli(); }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    void timeunit(const VTimescale& flag) { m_timeunit = flag; }
+    VTimescale timeunit() const { return m_timeunit; }
+};
+
 class AstStop : public AstNodeStmt {
 public:
     AstStop(FileLine* fl, bool maybe)
@@ -4669,6 +4706,31 @@ public:
     virtual bool sizeMattersLhs() const { return false; }
     virtual V3Hash sameHash() const { return V3Hash(fileline()->lineno()); }
     virtual bool same(const AstNode* samep) const { return fileline() == samep->fileline(); }
+};
+
+class AstTimeFormat : public AstNodeStmt {
+    // Parents: stmtlist
+public:
+    AstTimeFormat(FileLine* fl, AstNode* unitsp, AstNode* precisionp, AstNode* suffixp,
+                  AstNode* widthp)
+        : ASTGEN_SUPER(fl) {
+        setOp1p(unitsp);
+        setOp2p(precisionp);
+        setOp3p(suffixp);
+        setOp4p(widthp);
+    }
+    ASTNODE_NODE_FUNCS(TimeFormat)
+    virtual string verilogKwd() const { return "$timeformat"; }
+    virtual bool isGateOptimizable() const { return false; }
+    virtual bool isPredictOptimizable() const { return false; }
+    virtual bool isPure() const { return false; }
+    virtual bool isOutputter() const { return true; }
+    virtual int instrCount() const { return instrCountPli(); }
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    AstNode* unitsp() const { return op1p(); }
+    AstNode* precisionp() const { return op2p(); }
+    AstNode* suffixp() const { return op3p(); }
+    AstNode* widthp() const { return op4p(); }
 };
 
 class AstTraceDecl : public AstNodeStmt {
@@ -4924,37 +4986,47 @@ public:
 };
 
 class AstTime : public AstNodeTermop {
+    VTimescale m_timeunit;  // Parent module time unit
 public:
-    explicit AstTime(FileLine* fl)
-        : ASTGEN_SUPER(fl) {
+    AstTime(FileLine* fl, const VTimescale& timeunit)
+        : ASTGEN_SUPER(fl)
+        , m_timeunit(timeunit) {
         dtypeSetUInt64();
     }
     ASTNODE_NODE_FUNCS(Time)
     virtual string emitVerilog() { return "%f$time"; }
-    virtual string emitC() { return "VL_TIME_%nq()"; }
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const { return true; }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual int instrCount() const { return instrCountTime(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode* samep) const { return true; }
+    virtual void dump(std::ostream& str = std::cout) const;
+    void timeunit(const VTimescale& flag) { m_timeunit = flag; }
+    VTimescale timeunit() const { return m_timeunit; }
 };
 
 class AstTimeD : public AstNodeTermop {
+    VTimescale m_timeunit;  // Parent module time unit
 public:
-    explicit AstTimeD(FileLine* fl)
-        : ASTGEN_SUPER(fl) {
+    AstTimeD(FileLine* fl, const VTimescale& timeunit)
+        : ASTGEN_SUPER(fl)
+        , m_timeunit(timeunit) {
         dtypeSetDouble();
     }
     ASTNODE_NODE_FUNCS(TimeD)
     virtual string emitVerilog() { return "%f$realtime"; }
-    virtual string emitC() { return "VL_TIME_D()"; }
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
     virtual bool cleanOut() const { return true; }
     virtual bool isGateOptimizable() const { return false; }
     virtual bool isPredictOptimizable() const { return false; }
     virtual int instrCount() const { return instrCountTime(); }
     virtual V3Hash sameHash() const { return V3Hash(); }
     virtual bool same(const AstNode* samep) const { return true; }
+    virtual void dump(std::ostream& str = std::cout) const;
+    void timeunit(const VTimescale& flag) { m_timeunit = flag; }
+    VTimescale timeunit() const { return m_timeunit; }
 };
 
 class AstUCFunc : public AstNodeMath {
@@ -5812,6 +5884,23 @@ public:
     virtual bool cleanOut() const { return true; }
     virtual bool cleanLhs() const { return true; }
     virtual bool sizeMattersLhs() const { return false; }
+};
+class AstTimeImport : public AstNodeUniop {
+    // Take a constant that represents a time and needs conversion based on time units
+    VTimescale m_timeunit;  // Parent module time unit
+public:
+    AstTimeImport(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl, lhsp) {}
+    ASTNODE_NODE_FUNCS(TimeImport)
+    virtual void numberOperate(V3Number& out, const V3Number& lhs) { V3ERROR_NA; }
+    virtual string emitVerilog() { return "%l"; }
+    virtual string emitC() { V3ERROR_NA_RETURN(""); }
+    virtual bool cleanOut() const { return false; }
+    virtual bool cleanLhs() const { return false; }
+    virtual bool sizeMattersLhs() const { return false; }
+    virtual void dump(std::ostream& str = std::cout) const;
+    void timeunit(const VTimescale& flag) { m_timeunit = flag; }
+    VTimescale timeunit() const { return m_timeunit; }
 };
 
 class AstAtoN : public AstNodeUniop {
@@ -8272,6 +8361,8 @@ private:
     AstPackage* m_dollarUnitPkgp;  // $unit
     AstCFunc* m_evalp;  // The '_eval' function
     AstExecGraph* m_execGraphp;  // Execution MTask graph for threads>1 mode
+    VTimescale m_timeunit;  // Global time unit
+    VTimescale m_timeprecision;  // Global time precision
 public:
     AstNetlist()
         : ASTGEN_SUPER(new FileLine(FileLine::builtInFilename()))
@@ -8285,6 +8376,7 @@ public:
         BROKEN_RTN(m_evalp && !m_evalp->brokeExists());
         return NULL;
     }
+    virtual void dump(std::ostream& str) const;
     AstNodeModule* modulesp() const {  // op1 = List of modules
         return VN_CAST(op1p(), NodeModule);
     }
@@ -8317,6 +8409,14 @@ public:
     void evalp(AstCFunc* evalp) { m_evalp = evalp; }
     AstExecGraph* execGraphp() const { return m_execGraphp; }
     void execGraphp(AstExecGraph* graphp) { m_execGraphp = graphp; }
+    VTimescale timeunit() const { return m_timeunit; }
+    void timeunit(const VTimescale& value) { m_timeunit = value; }
+    VTimescale timeprecision() const { return m_timeprecision; }
+    void timeInit() {
+        m_timeunit = v3Global.opt.timeDefaultUnit();
+        m_timeprecision = v3Global.opt.timeDefaultPrec();
+    }
+    void timeprecisionMerge(FileLine*, const VTimescale& value);
 };
 
 //######################################################################

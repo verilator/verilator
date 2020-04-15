@@ -225,6 +225,16 @@ AstNode* AstInsideRange::newAndFromInside(AstNode* exprp, AstNode* lhsp, AstNode
     return newp;
 }
 
+void AstNetlist::timeprecisionMerge(FileLine*, const VTimescale& value) {
+    VTimescale prec = v3Global.opt.timeComputePrec(value);
+    if (prec.isNone() || prec == m_timeprecision) {
+    } else if (m_timeprecision.isNone()) {
+        m_timeprecision = prec;
+    } else if (prec < m_timeprecision) {
+        m_timeprecision = prec;
+    }
+}
+
 bool AstVar::isSigPublic() const {
     return (m_sigPublic || (v3Global.opt.allPublic() && !isTemp() && !isGenVar()));
 }
@@ -1181,6 +1191,22 @@ void AstPin::dump(std::ostream& str) const {
     }
     if (svImplicit()) str << " [.SV]";
 }
+void AstPrintTimeScale::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " " << timeunit();
+}
+void AstTime::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " " << timeunit();
+}
+void AstTimeD::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " " << timeunit();
+}
+void AstTimeImport::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " " << timeunit();
+}
 void AstTypedef::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (attrPublic()) str << " [PUBLIC]";
@@ -1254,6 +1280,10 @@ string AstUnpackArrayDType::prettyDTypeName() const {
     os << subp->prettyDTypeName() << "$" << ranges;
     return os.str();
 }
+void AstNetlist::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    str << " [" << timeunit() << "/" << timeprecision() << "]";
+}
 void AstNodeModule::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     str << "  L" << level();
@@ -1265,6 +1295,7 @@ void AstNodeModule::dump(std::ostream& str) const {
     } else if (recursive()) {
         str << " [RECURSIVE]";
     }
+    str << " [" << timeunit() << "]";
 }
 void AstPackageExport::dump(std::ostream& str) const {
     this->AstNode::dump(str);

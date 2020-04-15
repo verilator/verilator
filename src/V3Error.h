@@ -105,6 +105,7 @@ public:
         SYMRSVDWORD,    // Symbol is Reserved Word
         SYNCASYNCNET,   // Mixed sync + async reset
         TICKCOUNT,      // Too large tick count
+        TIMESCALEMOD,   // Need timescale for module
         UNDRIVEN,       // No drivers
         UNOPT,          // Unoptimizable block
         UNOPTFLAT,      // Unoptimizable block after flattening
@@ -158,7 +159,7 @@ public:
             "PINMISSING", "PINNOCONNECT", "PINCONNECTEMPTY", "PROCASSWIRE",
             "REALCVT", "REDEFMACRO",
             "SELRANGE", "SHORTREAL", "SPLITVAR", "STMTDLY", "SYMRSVDWORD", "SYNCASYNCNET",
-            "TICKCOUNT",
+            "TICKCOUNT", "TIMESCALEMOD",
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS",
             "UNPACKED", "UNSIGNED", "UNUSED",
             "USERERROR", "USERFATAL", "USERINFO", "USERWARN",
@@ -176,7 +177,8 @@ public:
     // Later -Werror- options may make more of these.
     bool pretendError() const {
         return (m_e == ASSIGNIN || m_e == BLKANDNBLK || m_e == BLKLOOPINIT || m_e == CONTASSREG
-                || m_e == IMPURE || m_e == PROCASSWIRE);
+                || m_e == IMPURE || m_e == PROCASSWIRE  //
+                || m_e == TIMESCALEMOD);  // Says IEEE
     }
     // Warnings to mention manual
     bool mentionManual() const {

@@ -86,6 +86,8 @@ VerilatedFst::VerilatedFst(void* fst)
     , m_symbolp(NULL)
     , m_sigs_oldvalp(NULL) {
     m_valueStrBuffer.reserve(64 + 1);  // Need enough room for quad
+    set_time_unit(Verilated::timeunitString());
+    set_time_resolution(Verilated::timeprecisionString());
 }
 
 VerilatedFst::~VerilatedFst() {

@@ -124,6 +124,8 @@ class V3ParseImp {
 
     string m_tag;  // Contents (if any) of current verilator tag
     AstNode* m_tagNodep;  // Points to the node to set to m_tag or NULL to not set.
+    VTimescale m_timeLastUnit;  // Last `timescale's unit
+
 public:
     // Note these are an exception to using the filename as the debug type
     static int debugBison() {
@@ -152,7 +154,12 @@ public:
     void tag(const char* text);
     void tagNodep(AstNode* nodep) { m_tagNodep = nodep; }
     AstNode* tagNodep() const { return m_tagNodep; }
+    void timescalePreproc(FileLine* fl, const char* textp);
+    void timescaleMod(FileLine* fl, AstNodeModule* modp, bool unitSet, double unitVal,
+                      bool precSet, double precVal);
+    VTimescale timeLastUnit() const { return m_timeLastUnit; }
 
+    static double parseTimenum(const char* text);
     static double parseDouble(const char* text, size_t length, bool* successp = NULL);
     void pushBeginKeywords(int state) {
         m_inBeginKwd++;
@@ -246,6 +253,7 @@ public:
         m_prevBisonVal.token = 0;
         // m_aheadVal not used as m_ahead = false, and not all compilers support initing it
         m_tagNodep = NULL;
+        m_timeLastUnit = v3Global.opt.timeDefaultUnit();
     }
     ~V3ParseImp();
     void parserClear();

@@ -69,6 +69,85 @@ inline std::ostream& operator<<(std::ostream& os, const VOptionBool& rhs) {
 
 //######################################################################
 
+class VTimescale {
+public:
+    enum en {
+        TS_1S = 0,
+        // clang-format off
+        TS_100MS = 1, TS_10MS = 2, TS_1MS = 3,
+        TS_100US = 4, TS_10US = 5, TS_1US = 6,
+        TS_100NS = 7, TS_10NS = 8, TS_1NS = 9,
+        TS_100PS = 10, TS_10PS = 11, TS_1PS = 12,
+        TS_100FS = 13, TS_10FS = 14, TS_1FS = 15,
+        // clang-format on
+        NONE = 16,
+        _ENUM_END
+    };
+    enum { TS_DEFAULT = TS_1PS };
+    enum en m_e;
+    // CONSTRUCTOR
+    inline VTimescale()
+        : m_e(NONE) {}
+    // cppcheck-suppress noExplicitConstructor
+    inline VTimescale(en _e)
+        : m_e(_e) {}
+    explicit inline VTimescale(int _e)
+        : m_e(static_cast<en>(_e)) {}
+    int negativeInt() { return -static_cast<int>(m_e); }
+    // Construct from string
+    VTimescale(const string& value, bool& badr);
+    VTimescale(double value, bool& badr) {
+        badr = false;
+        // clang-format off
+        if (value == 1e0) m_e = TS_1S;
+        else if (value == 1e-1) m_e = TS_100MS;
+        else if (value == 1e-2) m_e = TS_10MS;
+        else if (value == 1e-3) m_e = TS_1MS;
+        else if (value == 1e-4) m_e = TS_100US;
+        else if (value == 1e-5) m_e = TS_10US;
+        else if (value == 1e-6) m_e = TS_1US;
+        else if (value == 1e-7) m_e = TS_100NS;
+        else if (value == 1e-8) m_e = TS_10NS;
+        else if (value == 1e-9) m_e = TS_1NS;
+        else if (value == 1e-10) m_e = TS_100PS;
+        else if (value == 1e-11) m_e = TS_10PS;
+        else if (value == 1e-12) m_e = TS_1PS;
+        else if (value == 1e-13) m_e = TS_100FS;
+        else if (value == 1e-14) m_e = TS_10FS;
+        else if (value == 1e-15) m_e = TS_1FS;
+        // clang-format on
+        else {
+            m_e = NONE;
+            badr = true;
+        }
+    }
+    bool isNone() const { return m_e == NONE; }
+    // Parse a "unit/precision" string into two VTimescales, with error checking
+    static void parseSlashed(FileLine* fl, const char* textp, VTimescale& unitr, VTimescale& precr,
+                             bool allowEmpty = false);
+    const char* ascii() const {
+        static const char* const names[]
+            = {"1s",  "100ms", "10ms", "1ms", "100us", "10us", "1us", "100ns", "10ns",
+               "1ns", "100ps", "10ps", "1ps", "100fs", "10fs", "1fs", "NONE"};
+        return names[m_e];
+    }
+    double multiplier() const {
+        static double values[] = {1,    1e-1,  1e-2,  1e-3,  1e-4,  1e-5,  1e-6,  1e-7, 1e-8,
+                                  1e-9, 1e-10, 1e-11, 1e-12, 1e-13, 1e-14, 1e-15, 0};
+        return values[m_e];
+    }
+};
+inline bool operator==(const VTimescale& lhs, const VTimescale& rhs) { return lhs.m_e == rhs.m_e; }
+inline bool operator==(const VTimescale& lhs, VTimescale::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(VTimescale::en lhs, const VTimescale& rhs) { return lhs == rhs.m_e; }
+// Comparisons are based on time, not enum values, so seconds > milliseconds
+inline bool operator<(const VTimescale& lhs, const VTimescale& rhs) { return lhs.m_e > rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VTimescale& rhs) {
+    return os << rhs.ascii();
+}
+
+//######################################################################
+
 class TraceFormat {
 public:
     enum en { VCD = 0, FST, FST_THREAD } m_e;
@@ -207,6 +286,10 @@ private:
     VOptionBool m_skipIdentical;  // main switch: --skip-identical
     int         m_threads;      // main switch: --threads (0 == --no-threads)
     int         m_threadsMaxMTasks;  // main switch: --threads-max-mtasks
+    VTimescale  m_timeDefaultPrec;  // main switch: --timescale
+    VTimescale  m_timeDefaultUnit;  // main switch: --timescale
+    VTimescale  m_timeOverridePrec;  // main switch: --timescale-override
+    VTimescale  m_timeOverrideUnit;  // main switch: --timescale-override
     int         m_traceDepth;   // main switch: --trace-depth
     TraceFormat m_traceFormat;  // main switch: --trace or --trace-fst
     int         m_traceMaxArray;// main switch: --trace-max-array
@@ -392,6 +475,12 @@ public:
     int threads() const { return m_threads; }
     int threadsMaxMTasks() const { return m_threadsMaxMTasks; }
     bool mtasks() const { return (m_threads > 1); }
+    VTimescale timeDefaultPrec() const { return m_timeDefaultPrec; }
+    VTimescale timeDefaultUnit() const { return m_timeDefaultUnit; }
+    VTimescale timeOverridePrec() const { return m_timeOverridePrec; }
+    VTimescale timeOverrideUnit() const { return m_timeOverrideUnit; }
+    VTimescale timeComputePrec(const VTimescale& flag) const;
+    VTimescale timeComputeUnit(const VTimescale& flag) const;
     int traceDepth() const { return m_traceDepth; }
     TraceFormat traceFormat() const { return m_traceFormat; }
     int traceMaxArray() const { return m_traceMaxArray; }

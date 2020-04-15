@@ -630,6 +630,7 @@ int main(int argc, char** argv, char** env) {
 
     // Validate settings (aka Boost.Program_options)
     v3Global.opt.notify();
+    v3Global.rootp()->timeInit();
 
     V3Error::abortIfErrors();
 

@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cerrno>
+#include <tgmath.h>
 #include <sys/stat.h>  // mkdir
 
 // clang-format off
@@ -101,8 +102,12 @@ void vl_stop(const char* filename, int linenum, const char* hier) VL_MT_UNSAFE {
 void vl_fatal(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_UNSAFE {
     if (0 && hier) {}
     Verilated::gotFinish(true);
-    VL_PRINTF(  // Not VL_PRINTF_MT, already on main thread
-        "%%Error: %s:%d: %s\n", filename, linenum, msg);
+    if (filename && filename[0]) {
+        // Not VL_PRINTF_MT, already on main thread
+        VL_PRINTF("%%Error: %s:%d: %s\n", filename, linenum, msg);
+    } else {
+        VL_PRINTF("%%Error: %s\n", msg);
+    }
     Verilated::flushCall();
 
     VL_PRINTF("Aborting...\n");  // Not VL_PRINTF_MT, already on main thread
@@ -238,6 +243,8 @@ Verilated::Serialized::Serialized() {
     s_errorLimit = 1;
     s_randReset = 0;
     s_randSeed = 0;
+    s_timeunit = -VL_TIME_UNIT;  // Initial value until overriden by _Vconfigure
+    s_timeprecision = -VL_TIME_PRECISION;  // Initial value until overriden by _Vconfigure
 }
 
 Verilated::NonSerialized::NonSerialized() {
@@ -251,6 +258,9 @@ Verilated::NonSerialized::~NonSerialized() {
                     s_profThreadsFilenamep = NULL);
     }
 }
+
+size_t Verilated::serialized2Size() VL_PURE { return sizeof(VerilatedImp::m_ser); }
+void* Verilated::serialized2Ptr() VL_MT_UNSAFE { return &VerilatedImp::s_s.m_ser; }
 
 //===========================================================================
 // Random -- Mostly called at init time, so not inline.
@@ -608,6 +618,31 @@ std::string VL_DECIMAL_NW(int width, WDataInP lwp) VL_MT_SAFE {
     return output;
 }
 
+std::string _vl_vsformat_time(char* tmp, double ld, bool left, size_t width) {
+    // Double may lose precision, but sc_time_stamp has similar limit
+    std::string suffix = VerilatedImp::timeFormatSuffix();
+    int userUnits = VerilatedImp::timeFormatUnits();  // 0..-15
+    int fracDigits = VerilatedImp::timeFormatPrecision();  // 0..N
+    int prec = Verilated::timeprecision();  // 0..-15
+    int shift = prec - userUnits + fracDigits;  // 0..-15
+    double shiftd = vl_time_multiplier(shift);
+    double scaled = ld * shiftd;
+    QData fracDiv = static_cast<QData>(vl_time_multiplier(fracDigits));
+    QData whole = static_cast<QData>(scaled) / fracDiv;
+    QData fraction = static_cast<QData>(scaled) % fracDiv;
+    int digits;
+    if (!fracDigits) {
+        digits = sprintf(tmp, "%" VL_PRI64 "u%s", whole, suffix.c_str());
+    } else {
+        digits = sprintf(tmp, "%" VL_PRI64 "u.%0*" VL_PRI64 "u%s", whole, fracDigits, fraction,
+                         suffix.c_str());
+    }
+    int needmore = width - digits;
+    std::string padding;
+    if (needmore > 0) padding.append(needmore, ' ');  // Pad with spaces
+    return left ? (tmp + padding) : (padding + tmp);
+}
+
 // Do a va_arg returning a quad, assuming input argument is anything less than wide
 #define _VL_VA_ARG_Q(ap, bits) (((bits) <= VL_IDATASIZE) ? va_arg(ap, IData) : va_arg(ap, QData))
 
@@ -688,10 +723,8 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                 if (lbits) {}  // UNUSED - always 64
                 switch (fmt) {
                 case '^': {  // Realtime
-                    int digits = sprintf(tmp, "%g", d / VL_TIME_MULTIPLIER);
-                    int needmore = width - digits;
-                    if (needmore > 0) output.append(needmore, ' ');  // Pre-pad spaces
-                    output += tmp;
+                    if (!widthSet) width = VerilatedImp::timeFormatWidth();
+                    output += _vl_vsformat_time(tmp, d, left, width);
                     break;
                 }
                 default: {
@@ -792,20 +825,8 @@ void _vl_vsformat(std::string& output, const char* formatp, va_list ap) VL_MT_SA
                     break;
                 }
                 case 't': {  // Time
-                    int digits;
-                    if (VL_TIME_MULTIPLIER == 1) {
-                        digits = sprintf(tmp, "%" VL_PRI64 "u", ld);
-                    } else if (VL_TIME_MULTIPLIER == 1000) {
-                        digits = sprintf(tmp, "%" VL_PRI64 "u.%03" VL_PRI64 "u",
-                                         static_cast<QData>(ld / VL_TIME_MULTIPLIER),
-                                         static_cast<QData>(ld % VL_TIME_MULTIPLIER));
-                    } else {
-                        VL_FATAL_MT(__FILE__, __LINE__, "", "Unsupported VL_TIME_MULTIPLIER");
-                    }
-                    int needmore = width - digits;
-                    std::string padding;
-                    if (needmore > 0) padding.append(needmore, ' ');  // Pad with spaces
-                    output += left ? (tmp + padding) : (padding + tmp);
+                    if (!widthSet) width = VerilatedImp::timeFormatWidth();
+                    output += _vl_vsformat_time(tmp, static_cast<double>(ld), left, width);
                     break;
                 }
                 case 'b':
@@ -1984,6 +2005,69 @@ int VL_TIME_STR_CONVERT(const char* strp) {
     if (*strp) return 0;
     return scale;
 }
+static const char* vl_time_str(int scale) {
+    static const char* const names[]
+        = {"1s",   "100ms", "10ms",  "1ms",  "100us", "10us",  "1us",  "100ns",
+           "10ns", "1ns",   "100ps", "10ps", "1ps",   "100fs", "10fs", "1fs"};
+    if (scale < 0) scale = -scale;
+    if (VL_UNLIKELY(scale > 15)) scale = 0;
+    return names[scale];
+}
+double vl_time_multiplier(int scale) {
+    // Return timescale multipler -15 to +15
+    // For speed, this does not check for illegal values
+    static double pow10[] = {1.0,
+                             10.0,
+                             100.0,
+                             1000.0,
+                             10000.0,
+                             100000.0,
+                             1000000.0,
+                             10000000.0,
+                             100000000.0,
+                             1000000000.0,
+                             10000000000.0,
+                             100000000000.0,
+                             1000000000000.0,
+                             10000000000000.0,
+                             100000000000000.0,
+                             1000000000000000.0};
+    static double neg10[] = {1.0,
+                             0.1,
+                             0.01,
+                             0.001,
+                             0.0001,
+                             0.00001,
+                             0.000001,
+                             0.0000001,
+                             0.00000001,
+                             0.000000001,
+                             0.0000000001,
+                             0.00000000001,
+                             0.000000000001,
+                             0.0000000000001,
+                             0.00000000000001,
+                             0.000000000000001};
+    if (scale < 0) {
+        return neg10[-scale];
+    } else {
+        return pow10[scale];
+    }
+}
+const char* Verilated::timeunitString() VL_MT_SAFE { return vl_time_str(timeunit()); }
+const char* Verilated::timeprecisionString() VL_MT_SAFE { return vl_time_str(timeprecision()); }
+
+void VL_PRINTTIMESCALE(const char* namep, const char* timeunitp) VL_MT_SAFE {
+    VL_PRINTF_MT("Time scale of %s is %s / %s\n", namep, timeunitp,
+                 Verilated::timeprecisionString());
+}
+void VL_TIMEFORMAT_IINI(int units, int precision, const std::string& suffix,
+                        int width) VL_MT_SAFE {
+    VerilatedImp::timeFormatUnits(units);
+    VerilatedImp::timeFormatPrecision(precision);
+    VerilatedImp::timeFormatSuffix(suffix);
+    VerilatedImp::timeFormatWidth(width);
+}
 
 //===========================================================================
 // Verilated:: Methods
@@ -2050,6 +2134,43 @@ void Verilated::assertOn(bool flag) VL_MT_SAFE {
 void Verilated::fatalOnVpiError(bool flag) VL_MT_SAFE {
     VerilatedLockGuard lock(m_mutex);
     s_s.s_fatalOnVpiError = flag;
+}
+void Verilated::timeunit(int value) VL_MT_SAFE {
+    if (value < 0) value = -value;  // Stored as 0..15
+    VerilatedLockGuard lock(m_mutex);
+    s_s.s_timeunit = value;
+}
+void Verilated::timeprecision(int value) VL_MT_SAFE {
+    if (value < 0) value = -value;  // Stored as 0..15
+    VerilatedLockGuard lock(m_mutex);
+    s_s.s_timeprecision = value;
+#ifdef SYSTEMC_VERSION
+    sc_time sc_res = sc_get_time_resolution();
+    int sc_prec = 99;
+    if (sc_res == sc_time(1, SC_SEC)) {
+        sc_prec = 0;
+    } else if (sc_res == sc_time(1, SC_MS)) {
+        sc_prec = 3;
+    } else if (sc_res == sc_time(1, SC_US)) {
+        sc_prec = 6;
+    } else if (sc_res == sc_time(1, SC_NS)) {
+        sc_prec = 9;
+    } else if (sc_res == sc_time(1, SC_PS)) {
+        sc_prec = 12;
+    } else if (sc_res == sc_time(1, SC_FS)) {
+        sc_prec = 15;
+    }
+    if (value != sc_prec) {
+        std::ostringstream msg;
+        msg << "SystemC's sc_set_time_resolution is 10^-" << sc_prec
+            << ", which does not match Verilog timeprecision 10^-" << value
+            << ". Suggest use 'sc_set_time_resolution(" << vl_time_str(value)
+            << ")', or Verilator '--timescale-override " << vl_time_str(sc_prec) << "/"
+            << vl_time_str(sc_prec) << "'";
+        std::string msgs = msg.str();
+        VL_FATAL_MT("", 0, "", msgs.c_str());
+    }
+#endif
 }
 void Verilated::profThreadsStart(vluint64_t flag) VL_MT_SAFE {
     VerilatedLockGuard lock(m_mutex);
@@ -2179,6 +2300,20 @@ void Verilated::endOfEvalGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE {
 
 //===========================================================================
 // VerilatedImp:: Methods
+
+std::string VerilatedImp::timeFormatSuffix() VL_MT_SAFE {
+    VerilatedLockGuard lock(s_s.m_sergMutex);
+    return s_s.m_serg.m_timeFormatSuffix;
+}
+void VerilatedImp::timeFormatSuffix(const std::string& value) VL_MT_SAFE {
+    VerilatedLockGuard lock(s_s.m_sergMutex);
+    s_s.m_serg.m_timeFormatSuffix = value;
+}
+void VerilatedImp::timeFormatUnits(int value) VL_MT_SAFE { s_s.m_ser.m_timeFormatUnits = value; }
+void VerilatedImp::timeFormatPrecision(int value) VL_MT_SAFE {
+    s_s.m_ser.m_timeFormatPrecision = value;
+}
+void VerilatedImp::timeFormatWidth(int value) VL_MT_SAFE { s_s.m_ser.m_timeFormatWidth = value; }
 
 void VerilatedImp::internalsDump() VL_MT_SAFE {
     VerilatedLockGuard lock(s_s.m_argMutex);
@@ -2349,11 +2484,13 @@ VerilatedScope::~VerilatedScope() {
 }
 
 void VerilatedScope::configure(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
-                               const char* identifier, const Type type) VL_MT_UNSAFE {
+                               const char* identifier, vlsint8_t timeunit,
+                               const Type type) VL_MT_UNSAFE {
     // Slowpath - called once/scope at construction
     // We don't want the space and reference-count access overhead of strings.
     m_symsp = symsp;
     m_type = type;
+    m_timeunit = timeunit;
     char* namep = new char[strlen(prefixp) + strlen(suffixp) + 2];
     strcpy(namep, prefixp);
     if (*prefixp && *suffixp) strcat(namep, ".");

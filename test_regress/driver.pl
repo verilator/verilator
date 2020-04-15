@@ -35,16 +35,16 @@ $SIG{TERM} = sub { $Fork->kill_tree_all('TERM') if $Fork; die "Quitting...\n"; }
 
 # Map of all scenarios, with the names used to enable them
 our %All_Scenarios
-    = (dist  => [                       "dist"],
-       atsim => [          "simulator", "atsim"],
-       ghdl  => ["linter", "simulator", "ghdl"],
-       iv    => [          "simulator", "iv"],
-       ms    => ["linter", "simulator", "ms"],
-       nc    => ["linter", "simulator", "nc"],
-       vcs   => ["linter", "simulator", "vcs"],
-       xsim  => ["linter", "simulator", "xsim"],
-       vlt   => ["linter", "simulator", "vlt_all", "vlt"],
-       vltmt => [          "simulator", "vlt_all", "vltmt"],
+    = (dist  => [                                       "dist"],
+       atsim => [          "simulator", "simulator_st", "atsim"],
+       ghdl  => ["linter", "simulator", "simulator_st", "ghdl"],
+       iv    => [          "simulator", "simulator_st", "iv"],
+       ms    => ["linter", "simulator", "simulator_st", "ms"],
+       nc    => ["linter", "simulator", "simulator_st", "nc"],
+       vcs   => ["linter", "simulator", "simulator_st", "vcs"],
+       xsim  => ["linter", "simulator", "simulator_st", "xsim"],
+       vlt   => ["linter", "simulator", "simulator_st", "vlt_all", "vlt"],
+       vltmt => [          "simulator",                 "vlt_all", "vltmt"],
     );
 
 #======================================================================
@@ -546,6 +546,7 @@ sub new {
         make_top_shell => 1,    # Make a default __top.v file
         make_main => 1,         # Make __main.cpp
         make_pli => 0,          # need to compile pli
+        sc_time_resolution => "SC_PS",  # Keep - PS is SystemC default
         sim_time => 1100,
         benchmark => $opt_benchmark,
         verbose => $opt_verbose,
@@ -1613,7 +1614,7 @@ sub _make_main {
     my $fh = IO::File->new(">$filename") or die "%Error: $! $filename,";
 
     print $fh "// Test defines\n";
-    print $fh "#define VL_TIME_MULTIPLIER $self->{vl_time_multiplier}\n" if $self->{vl_time_multiplier};
+    print $fh "#define MAIN_TIME_MULTIPLIER ".($self->{main_time_multiplier} || 1)."\n";
 
     print $fh "// OS header\n";
     print $fh "#include \"verilatedos.h\"\n";
@@ -1632,8 +1633,13 @@ sub _make_main {
 
     print $fh "$VM_PREFIX* topp;\n";
     if (!$self->sc) {
-        print $fh "vluint64_t main_time = false;\n";
-        print $fh "double sc_time_stamp() { return main_time; }\n";
+        if ($self->{vl_time_stamp64}) {
+            print $fh "vluint64_t main_time = 0;\n";
+            print $fh "vluint64_t vl_time_stamp() { return main_time; }\n";
+        } else {
+            print $fh "double main_time = 0;\n";
+            print $fh "double sc_time_stamp() { return main_time; }\n";
+        }
     }
 
     if ($self->{savable}) {
@@ -1663,7 +1669,8 @@ sub _make_main {
         print $fh "int sc_main(int argc, char** argv) {\n";
         print $fh "    sc_signal<bool> fastclk;\n" if $self->{inputs}{fastclk};
         print $fh "    sc_signal<bool> clk;\n"  if $self->{inputs}{clk};
-        print $fh "    sc_time sim_time($self->{sim_time}, SC_NS);\n";
+        print $fh "    sc_set_time_resolution(1, $Self->{sc_time_resolution});\n";
+        print $fh "    sc_time sim_time($self->{sim_time}, $Self->{sc_time_resolution});\n";
     } else {
         print $fh "int main(int argc, char** argv, char** env) {\n";
         print $fh "    double sim_time = $self->{sim_time};\n";
@@ -1719,7 +1726,8 @@ sub _make_main {
     _print_advance_time($self, $fh, 10);
     print $fh "    }\n";
 
-    print $fh "    while (sc_time_stamp() < sim_time && !Verilated::gotFinish()) {\n";
+    print $fh "    while ((sc_time_stamp() < sim_time * MAIN_TIME_MULTIPLIER)\n";
+    print $fh "           && !Verilated::gotFinish()) {\n";
     for (my $i=0; $i<5; $i++) {
         my $action = 0;
         if ($self->{inputs}{fastclk}) {
@@ -1775,7 +1783,7 @@ sub _print_advance_time {
 
     if ($self->sc) {
         print $fh "#if (SYSTEMC_VERSION>=20070314)\n";
-        print $fh "        sc_start(${time}, SC_NS);\n";
+        print $fh "        sc_start(${time}, $Self->{sc_time_resolution});\n";
         print $fh "#else\n";
         print $fh "        sc_start(${time});\n";
         print $fh "#endif\n";
@@ -1788,7 +1796,7 @@ sub _print_advance_time {
                 $fh->print("#endif  // VM_TRACE\n");
             }
         }
-        print $fh "        main_time += ${time};\n";
+        print $fh "        main_time += ${time} * MAIN_TIME_MULTIPLIER;\n";
     }
 }
 

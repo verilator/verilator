@@ -1,0 +1,6 @@
+
+Warning: (W516) default time unit changed to time resolution
+In file: /svaha/sicortex/eda/systemc/systemc-2.3.3/systemc-2.3.3/src/sysc/kernel/sc_time.cpp:412
+Time scale of t is 1ms / 1ms
+[20] In top.t: Hi - expect this is 20
+*-* All Finished *-*

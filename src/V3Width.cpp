@@ -1129,6 +1129,21 @@ private:
         userIterateAndNext(nodep->lhsp(), WidthVP(SELF, BOTH).p());
         // Type set in constructor
     }
+    virtual void visit(AstTimeImport* nodep) VL_OVERRIDE {
+        // LHS is a real number in seconds
+        // Need to round to time units and precision
+        userIterateAndNext(nodep->lhsp(), WidthVP(SELF, BOTH).p());
+        AstConst* constp = VN_CAST(nodep->lhsp(), Const);
+        if (!constp || !constp->isDouble()) nodep->v3fatalSrc("Times should be doubles");
+        if (nodep->timeunit().isNone()) nodep->v3fatalSrc("$time import no units");
+        double time = constp->num().toDouble();
+        if (v3Global.rootp()->timeprecision().isNone()) nodep->v3fatalSrc("Never set precision?");
+        time /= nodep->timeunit().multiplier();
+        // IEEE claims you should round to time precision here, but no simulator seems to do this
+        AstConst* newp = new AstConst(nodep->fileline(), AstConst::RealDouble(), time);
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
     virtual void visit(AstAttrOf* nodep) VL_OVERRIDE {
         AstAttrOf* oldAttr = m_attrp;
         m_attrp = nodep;
@@ -3118,10 +3133,35 @@ private:
                     break;
                 }
                 case 't': {  // Convert decimal time to realtime
-                    if (argp && argp->isDouble()) {  // Convert it
-                        ch = '^';
+                    if (argp) {
+                        AstNode* nextp = argp->nextp();
+                        if (argp->isDouble()) ch = '^';  // Convert it
+                        if (nodep->timeunit().isNone()) {
+                            nodep->v3fatalSrc("display %t has no time units");
+                        }
+                        double scale = nodep->timeunit().multiplier()
+                                       / v3Global.rootp()->timeprecision().multiplier();
+                        if (scale != 1.0) {
+                            AstNode* newp;
+                            AstNRelinker relinkHandle;
+                            argp->unlinkFrBack(&relinkHandle);
+                            if (argp->isDouble()) {  // Convert it
+                                ch = '^';
+                                newp = new AstMulD(
+                                    argp->fileline(),
+                                    new AstConst(argp->fileline(), AstConst::RealDouble(), scale),
+                                    argp);
+                            } else {
+                                newp = new AstMul(argp->fileline(),
+                                                  new AstConst(argp->fileline(),
+                                                               AstConst::Unsized64(),
+                                                               llround(scale)),
+                                                  argp);
+                            }
+                            relinkHandle.relink(newp);
+                        }
+                        argp = nextp;
                     }
-                    if (argp) argp = argp->nextp();
                     break;
                 }
                 case 'f':  // FALLTHRU
@@ -3332,6 +3372,13 @@ private:
             userIterateAndNext(nodep->outp(), WidthVP(SELF, BOTH).p());
             nodep->dtypeChgWidthSigned(32, 1, AstNumeric::SIGNED);  // Spec says integer return
         }
+    }
+    virtual void visit(AstTimeFormat* nodep) VL_OVERRIDE {
+        assertAtStatement(nodep);
+        iterateCheckSigned32(nodep, "units", nodep->unitsp(), BOTH);
+        iterateCheckSigned32(nodep, "precision", nodep->precisionp(), BOTH);
+        iterateCheckString(nodep, "suffix", nodep->suffixp(), BOTH);
+        iterateCheckSigned32(nodep, "width", nodep->widthp(), BOTH);
     }
     virtual void visit(AstUCStmt* nodep) VL_OVERRIDE {
         // Just let all arguments seek their natural sizes

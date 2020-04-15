@@ -79,7 +79,8 @@ void VerilatedSerialize::header() VL_MT_UNSAFE_ONE {
 
     // Verilated doesn't do it itself, as if we're not using save/restore
     // it doesn't need to compile this stuff in
-    os.write(Verilated::serializedPtr(), Verilated::serializedSize());
+    os.write(Verilated::serialized1Ptr(), Verilated::serialized1Size());
+    os.write(Verilated::serialized2Ptr(), Verilated::serialized2Size());
 }
 
 void VerilatedDeserialize::header() VL_MT_UNSAFE_ONE {
@@ -91,7 +92,8 @@ void VerilatedDeserialize::header() VL_MT_UNSAFE_ONE {
         VL_FATAL_MT(fn.c_str(), 0, "", msg.c_str());
         close();
     }
-    os.read(Verilated::serializedPtr(), Verilated::serializedSize());
+    os.read(Verilated::serialized1Ptr(), Verilated::serialized1Size());
+    os.read(Verilated::serialized2Ptr(), Verilated::serialized2Size());
 }
 
 void VerilatedSerialize::trailer() VL_MT_UNSAFE_ONE {
