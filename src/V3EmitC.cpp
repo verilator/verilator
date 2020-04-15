@@ -2074,9 +2074,10 @@ void EmitCStmts::displayArg(AstNode* dispp, AstNode** elistp, bool isScan, const
     string pfmt;
     if ((fmtLetter == '#' || fmtLetter == 'd') && !isScan
         && vfmt == "") {  // Size decimal output.  Spec says leading spaces, not zeros
-        double mantissabits = argp->widthMin() - ((fmtLetter == 'd') ? 1 : 0);
-        double maxval = pow(2.0, mantissabits);
-        double dchars = log10(maxval) + 1.0;
+        const double mantissabits = argp->widthMin() - ((fmtLetter == 'd') ? 1 : 0);
+        // This is log10(2**mantissabits) as log2(2**mantissabits)/log2(10),
+        // + 1.0 rounding bias.
+        double dchars = mantissabits / 3.321928094887362 + 1.0;
         if (fmtLetter == 'd') dchars++;  // space for sign
         int nchars = int(dchars);
         pfmt = string("%") + cvtToStr(nchars) + fmtLetter;
