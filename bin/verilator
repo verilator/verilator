@@ -271,6 +271,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --bbox-sys                  Blackbox unknown $system calls
     --bbox-unsup                Blackbox unsupported language features
     --bin <filename>            Override Verilator binary
+    --build                     Call make system to build executable after Verilation
      -CFLAGS <flags>            C++ Compiler flags for makefile
     --cc                        Create C++ output
     --cdc                       Clock domain crossing analysis
@@ -309,6 +310,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --getenv <var>              Get environment variable with defaults
     --help                      Display this help
      -I<dir>                    Directory to search for includes
+     -j <jobs>                  Parallelism for --build
     --gate-stmts <value>        Tune gate optimizer depth
     --if-depth <value>          Tune IFDEPTH warning
      +incdir+<dir>              Directory to search for includes
@@ -319,6 +321,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --language <lang>           Default language standard to parse
      +libext+<ext>+[ext]...     Extensions for finding modules
     --lint-only                 Lint, but do not make output
+     -MAKEFLAGS <flags>         Options to make/cmake during --build
     --max-num-width <value>     Maximum number width (default: 64K)
     --MMD                       Create .d dependency files
     --MP                        Create phony dependency targets
@@ -334,6 +337,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
      -O<optimization-letter>    Selectable optimizations
      -o <executable>            Name of final executable
     --no-order-clock-delay      Disable ordering clock enable assignments
+    --no-verilate               Skip verilation and just compile previously verilated code.
     --output-split <statements>          Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split .cpp functions
     --output-split-ctrace <statements>   Split tracing functions
@@ -535,6 +539,11 @@ dependency (.d) file is created, this filename will become a source
 dependency, such that a change in this binary will have make rebuild the
 output files.
 
+=item --build
+
+After generating the SystemC/C++ code, Verilator will use the make system
+to build a library or executable. See also C<--make> and C<--exe>.
+
 =item -CFLAGS I<flags>
 
 Add specified C compiler flag to the generated makefiles. For multiple
@@ -586,6 +595,9 @@ Generates a script for the specified make system.
 
 Supported make systems are gmake and cmake. Both can be specified.
 If no make system is specified, gmake is assumed.
+The executable of gmake can be configured via environment variable "MAKE".
+
+See also --build.
 
 =item --compiler I<compiler-name>
 
@@ -927,6 +939,12 @@ values, or a value < 1 will inline everything, will lead to longer compile
 times, but potentially faster simulation runtimes.  This setting is ignored
 for very small modules; they will always be inlined, if allowed.
 
+=item -j <value>
+
+Specify the parallelism for make system. This option is used when --build
+options is specified. <value> must be a positive integer or can be omitted.
+Build system exploits maximum parallelism when <value> is omitted.
+
 =item -LDFLAGS I<flags>
 
 Add specified C linker flags to the generated makefiles.  For multiple
@@ -971,6 +989,13 @@ stylistic and not enabled by default.
 
 If the design is not to be completely Verilated see also the --bbox-sys and
 --bbox-unsup options.
+
+=item -MAKEFLAGS <string>
+
+When using --build, add the specified flag to the make/cmake command line.
+For multiple flags either pass them as a single argument with space separators
+quoted in the shell (e.g. C<-MAKEFLAGS "-a -b">), or use multiple -MAKEFLAGS
+arguments (e.g. C<-MAKEFLAGS -l -MAKEFLAGS -k>).
 
 =item --max-num-width I<value>
 
@@ -1534,6 +1559,10 @@ Read the filename as a Verilog library.  Any modules in the file may be
 used to resolve cell instantiations in the top level module, else ignored.
 Note -v is fairly standard across Verilog tools.
 
+=item --no-verilate
+
+When using --build, disable generation of C++/SC code, and only run make/cmake.
+
 =item  +verilog1995ext+I<ext>
 
 =item  +verilog2001ext+I<ext>
@@ -1862,20 +1891,17 @@ compiled Verilator, you need to point to the kit:
 
 Now we run Verilator on our little example.
 
-    verilator -Wall --cc our.v --exe sim_main.cpp
+    verilator -Wall --cc our.v --exe --build sim_main.cpp
 
 We can see the source code under the "obj_dir" directory.  See the FILES
 section below for descriptions of some of the files that were created.
 
     ls -l obj_dir
 
-We then can compile it
-
-    make -j -C obj_dir -f Vour.mk Vour
-
 (Verilator included a default compile rule and link rule, since we used
---exe and passed a .cpp file on the Verilator command line.  You can also
-write your own compile rules, as we'll show in the SYSTEMC section.)
+--exe and passed a .cpp file on the Verilator command line.  Verilator also
+then used C<make> to build a final executable.  You can also write your own
+compile rules, and run make yourself as we'll show in the SYSTEMC section.)
 
 And now we run it
 
@@ -2149,6 +2175,12 @@ After running Make, the C++ compiler may produce the following:
 A generic Linux/OS variable specifying what directories have shared object
 (.so) files.  This path should include SystemC and any other shared objects
 needed at simulation runtime.
+
+=item MAKE
+
+Executable of the make command used in --build option.
+Some operating systems may require "gmake" to this variable to launch GNU make.
+If this variable is not specified, "make" is used.
 
 =item OBJCACHE
 

@@ -14,6 +14,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
       get closer behavior to older versions, use e.g. --timescale-override
       "1ps/1ps".
 
+**    Add --build to call make automatically, #2249. [Yutetsu TAKATSUKASA]
+
 **    Configuring with ccache present now defaults to using it; see OBJCACHE.
 
 **    Fix DPI import/export to be standard compliant, #2236. [Geza Lore]

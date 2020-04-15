@@ -242,6 +242,8 @@ void V3Os::unlinkRegexp(const string& dir, const string& regexp) {
     }
 }
 
+std::string V3Os::getcwd() { return filenameRealPath("."); }
+
 //######################################################################
 // METHODS (random)
 
@@ -332,4 +334,22 @@ void V3Os::u_sleep(int64_t usec) {
     // Flawfinder: ignore
     ::usleep(usec);
 #endif
+}
+
+//######################################################################
+// METHODS (sub command)
+
+int V3Os::system(const string& command) {
+    UINFO(1, "Running system: " << command << endl);
+    const int ret = ::system(command.c_str());
+    if (ret == -1) {
+        v3fatal("Failed to execute command:" << command << " " << strerror(errno));
+        return -1;
+    } else {
+        UASSERT(WIFEXITED(ret), "system(" << command << ") returned unexpected value of " << ret);
+        const int exit_code = WEXITSTATUS(ret);
+        UINFO(1, command << " returned exit code of " << exit_code << std::endl);
+        UASSERT(exit_code >= 0, "exit code must not be negative");
+        return exit_code;
+    }
 }

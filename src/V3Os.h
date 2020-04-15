@@ -53,6 +53,7 @@ public:
     // METHODS (directory utilities)
     static void createDir(const string& dirname);
     static void unlinkRegexp(const string& dir, const string& regexp);
+    static std::string getcwd();  // Return the current working directory
 
     // METHODS (random)
     static vluint64_t rand64(vluint64_t* statep);
@@ -63,6 +64,10 @@ public:
     /// Return wall time since epoch in microseconds, or 0 if not implemented
     static uint64_t timeUsecs();
     static uint64_t memUsageBytes();  ///< Return memory usage in bytes, or 0 if not implemented
+
+    // METHODS (sub command)
+    /// Run system command, returns the exit code of the child process.
+    static int system(const string& command);
 };
 
 #endif  // Guard
