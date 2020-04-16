@@ -949,7 +949,8 @@ public:
             points.push_back(std::make_pair(it->msb() + 1, true));  // End of a region
         }
         if (skipUnused && !m_rhs.empty()) {  // Range to be read must be kept, so add points here
-            int lsb = m_basicp->msb() + 1, msb = m_basicp->lsb() - 1;
+            int lsb = m_basicp->msb() + 1;
+            int msb = m_basicp->lsb() - 1;
             for (size_t i = 0; i < m_rhs.size(); ++i) {
                 lsb = std::min(lsb, m_rhs[i].lsb());
                 msb = std::max(msb, m_rhs[i].msb());

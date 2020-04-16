@@ -146,7 +146,7 @@ public:
 
     void ppline(const char* textp);
     void linenoInc() { fileline()->linenoInc(); }
-    void verilatorCmtLint(const char* textp, bool on);
+    void verilatorCmtLint(const char* textp, bool warnOff);
     void verilatorCmtLintSave();
     void verilatorCmtLintRestore();
     void verilatorCmtBad(const char* textp);

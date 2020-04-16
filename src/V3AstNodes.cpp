@@ -110,10 +110,11 @@ string AstNodeCCall::hiernameProtect() const {
 
 void AstNodeCond::numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
                                 const V3Number& ths) {
-    if (lhs.isNeqZero())
+    if (lhs.isNeqZero()) {
         out.opAssign(rhs);
-    else
+    } else {
         out.opAssign(ths);
+    }
 }
 
 int AstBasicDType::widthAlignBytes() const {

@@ -46,8 +46,8 @@ class VlcOptions {
 
 private:
     // METHODS
-    void showVersion(bool verbose);
-    bool onoff(const char* sw, const char* arg, bool& flag);
+    static void showVersion(bool verbose);
+    static bool onoff(const char* sw, const char* arg, bool& flag);
 
 public:
     // CONSTRUCTORS

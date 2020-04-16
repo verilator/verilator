@@ -58,7 +58,7 @@ class GateVarVertex;
 class GateGraphBaseVisitor {
 public:
     V3Graph* m_graphp;  // Graph this class is visiting
-    GateGraphBaseVisitor(V3Graph* graphp)
+    explicit GateGraphBaseVisitor(V3Graph* graphp)
         : m_graphp(graphp) {}
     virtual ~GateGraphBaseVisitor() {}
     virtual VNUser visit(GateLogicVertex* vertexp, VNUser vu = VNUser(0)) = 0;

@@ -496,7 +496,8 @@ private:
     void startFilter(const string& command) {
         if (command == "") {}  // Prevent Unused
 #ifdef INFILTER_PIPE
-        int fd_stdin[2], fd_stdout[2];
+        int fd_stdin[2];
+        int fd_stdout[2];
         static const int P_RD = 0;
         static const int P_WR = 1;
 

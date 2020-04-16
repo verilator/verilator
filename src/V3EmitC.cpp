@@ -2924,9 +2924,10 @@ void EmitCImp::emitInt(AstNodeModule* modp) {
 
     string section;
     section = "\n// PORTS\n";
-    if (modp->isTop())
+    if (modp->isTop()) {
         section += ("// The application code writes and reads these signals to\n"
                     "// propagate new values into/out from the Verilated model.\n");
+    }
     emitVarList(modp->stmtsp(), EVL_CLASS_IO, "", section /*ref*/);
 
     section = "\n// LOCAL SIGNALS\n";
@@ -3452,24 +3453,24 @@ class EmitCTrace : EmitCStmts {
                 }
             }
             // clang-format off
-            else if (vartype == AstVarType::GPARAM)  fstvt = "FST_VT_VCD_PARAMETER";
-            else if (vartype == AstVarType::LPARAM)  fstvt = "FST_VT_VCD_PARAMETER";
-            else if (vartype == AstVarType::SUPPLY0) fstvt = "FST_VT_VCD_SUPPLY0";
-            else if (vartype == AstVarType::SUPPLY1) fstvt = "FST_VT_VCD_SUPPLY1";
-            else if (vartype == AstVarType::TRI0)    fstvt = "FST_VT_VCD_TRI0";
-            else if (vartype == AstVarType::TRI1)    fstvt = "FST_VT_VCD_TRI1";
-            else if (vartype == AstVarType::TRIWIRE) fstvt = "FST_VT_VCD_TRI";
-            else if (vartype == AstVarType::WIRE)    fstvt = "FST_VT_VCD_WIRE";
-            else if (vartype == AstVarType::PORT)    fstvt = "FST_VT_VCD_WIRE";
+            else if (vartype == AstVarType::GPARAM) {  fstvt = "FST_VT_VCD_PARAMETER"; }
+            else if (vartype == AstVarType::LPARAM) {  fstvt = "FST_VT_VCD_PARAMETER"; }
+            else if (vartype == AstVarType::SUPPLY0) { fstvt = "FST_VT_VCD_SUPPLY0"; }
+            else if (vartype == AstVarType::SUPPLY1) { fstvt = "FST_VT_VCD_SUPPLY1"; }
+            else if (vartype == AstVarType::TRI0) {    fstvt = "FST_VT_VCD_TRI0"; }
+            else if (vartype == AstVarType::TRI1) {    fstvt = "FST_VT_VCD_TRI1"; }
+            else if (vartype == AstVarType::TRIWIRE) { fstvt = "FST_VT_VCD_TRI"; }
+            else if (vartype == AstVarType::WIRE) {    fstvt = "FST_VT_VCD_WIRE"; }
+            else if (vartype == AstVarType::PORT) {    fstvt = "FST_VT_VCD_WIRE"; }
             //
-            else if (kwd == AstBasicDTypeKwd::INTEGER)  fstvt = "FST_VT_VCD_INTEGER";
-            else if (kwd == AstBasicDTypeKwd::BIT)      fstvt = "FST_VT_SV_BIT";
-            else if (kwd == AstBasicDTypeKwd::LOGIC)    fstvt = "FST_VT_SV_LOGIC";
-            else if (kwd == AstBasicDTypeKwd::INT)      fstvt = "FST_VT_SV_INT";
-            else if (kwd == AstBasicDTypeKwd::SHORTINT) fstvt = "FST_VT_SV_SHORTINT";
-            else if (kwd == AstBasicDTypeKwd::LONGINT)  fstvt = "FST_VT_SV_LONGINT";
-            else if (kwd == AstBasicDTypeKwd::BYTE)     fstvt = "FST_VT_SV_BYTE";
-            else fstvt = "FST_VT_SV_BIT";
+            else if (kwd == AstBasicDTypeKwd::INTEGER) {  fstvt = "FST_VT_VCD_INTEGER"; }
+            else if (kwd == AstBasicDTypeKwd::BIT) {      fstvt = "FST_VT_SV_BIT"; }
+            else if (kwd == AstBasicDTypeKwd::LOGIC) {    fstvt = "FST_VT_SV_LOGIC"; }
+            else if (kwd == AstBasicDTypeKwd::INT) {      fstvt = "FST_VT_SV_INT"; }
+            else if (kwd == AstBasicDTypeKwd::SHORTINT) { fstvt = "FST_VT_SV_SHORTINT"; }
+            else if (kwd == AstBasicDTypeKwd::LONGINT) {  fstvt = "FST_VT_SV_LONGINT"; }
+            else if (kwd == AstBasicDTypeKwd::BYTE) {     fstvt = "FST_VT_SV_BYTE"; }
+            else { fstvt = "FST_VT_SV_BIT"; }
             // clang-format on
             //
             // Not currently supported

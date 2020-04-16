@@ -2842,9 +2842,9 @@ private:
                 patp->dtypep(vdtypep);
                 AstNode* valuep = patternMemberValueIterate(patp);
                 {  // Packed. Convert to concat for now.
-                    if (!newp)
+                    if (!newp) {
                         newp = valuep;
-                    else {
+                    } else {
                         AstConcat* concatp = new AstConcat(patp->fileline(), newp, valuep);
                         newp = concatp;
                         newp->dtypeSetLogicSized(concatp->lhsp()->width()

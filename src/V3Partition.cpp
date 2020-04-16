@@ -2356,7 +2356,7 @@ void V3Partition::hashGraphDebug(const V3Graph* graphp, const char* debugName) {
     for (const V3GraphVertex* vxp = graphp->verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
         for (const V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
             const V3GraphVertex* top = edgep->top();
-            hash = vx2Id[top] + 31u * hash;  // The K&R hash function
+            hash = vx2Id[top] + 31U * hash;  // The K&R hash function
         }
     }
     UINFO(0, "Hash of shape (not contents) of " << debugName << " = " << cvtToStr(hash) << endl);

@@ -523,7 +523,8 @@ public:
         // For test purposes, each TspTestState is merely a point
         // on the Cartesian plane; cost is the linear distance
         // between two points.
-        unsigned xabs, yabs;
+        unsigned xabs;
+        unsigned yabs;
         xabs = diff(otherp->m_xpos, m_xpos);
         yabs = diff(otherp->m_ypos, m_ypos);
         return lround(sqrt(xabs * xabs + yabs * yabs));

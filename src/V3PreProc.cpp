@@ -1215,10 +1215,13 @@ int V3PreProcImp::getStateToken() {
                         UINFO(5, "``-end-defarg Out:" << out << endl);
                         statePop();
                     }
-                    if (!m_off) unputDefrefString(out);
+                    if (!m_off) {
+                        unputDefrefString(out);
+                    }
                     // Prevent problem when EMPTY="" in `ifdef NEVER `define `EMPTY
-                    else if (stateIsDefname())
+                    else if (stateIsDefname()) {
                         unputDefrefString("__IF_OFF_IGNORED_DEFINE");
+                    }
                     m_lexp->m_parenLevel = 0;
                 } else {  // Finished a defref inside a upper defref
                     // Can't subst now, or
@@ -1433,10 +1436,13 @@ int V3PreProcImp::getStateToken() {
                             UINFO(5, "``-end-defref Out:" << out << endl);
                             statePop();
                         }
-                        if (!m_off) unputDefrefString(out);
+                        if (!m_off) {
+                            unputDefrefString(out);
+                        }
                         // Prevent problem when EMPTY="" in `ifdef NEVER `define `EMPTY
-                        else if (stateIsDefname())
+                        else if (stateIsDefname()) {
                             unputDefrefString("__IF_OFF_IGNORED_DEFINE");
+                        }
                     } else {
                         // Inside another define.
                         // Can't subst now, or

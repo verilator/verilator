@@ -50,7 +50,7 @@ inline size_t vl_hash_bytes(const void* vbufp, size_t nbytes) {
     const vluint8_t* bufp = static_cast<const vluint8_t*>(vbufp);
     size_t hash = 0;
     for (size_t i = 0; i < nbytes; i++) {
-        hash = bufp[i] + 31u * hash;  // the K&R classic!
+        hash = bufp[i] + 31U * hash;  // the K&R classic!
     }
     return hash;
 }
