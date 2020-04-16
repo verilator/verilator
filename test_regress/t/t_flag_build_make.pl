@@ -17,7 +17,7 @@ compile(  # Don't call cmake nor gmake from driver.pl
     verilator_make_gmake => 0,
     verilator_flags2 => ['--exe --cc --build -j 2 --make gmake',
                          '../' . $Self->{main_filename},
-                         '-MAKEFLAGS --trace'],
+                         '-MAKEFLAGS -p --trace'],
     );
 
 execute(
