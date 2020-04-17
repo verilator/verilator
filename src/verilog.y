@@ -55,6 +55,7 @@ public:
     AstCase*	m_caseAttrp;	// Current case statement for attribute adding
     AstNodeDType* m_varDTypep;	// Pointer to data type for next signal declaration
     AstNodeDType* m_memDTypep;	// Pointer to data type for next member declaration
+    AstNodeModule* m_modp;      // Last module for timeunits
     bool        m_pinAnsi;      // In ANSI port list
     int		m_pinNum;	// Pin number currently parsing
     FileLine*   m_instModuleFl; // Fileline of module referenced for instantiations
@@ -73,6 +74,7 @@ public:
 	m_varDTypep = NULL;
 	m_gateRangep = NULL;
 	m_memDTypep = NULL;
+	m_modp = NULL;
 	m_pinAnsi = false;
 	m_pinNum = -1;
 	m_instModuleFl = NULL;
@@ -600,6 +602,7 @@ class AstSenTree;
 %token<fl>		yD_ONEHOT0	"$onehot0"
 %token<fl>		yD_PAST		"$past"
 %token<fl>		yD_POW		"$pow"
+%token<fl>		yD_PRINTTIMESCALE "$printtimescale"
 %token<fl>		yD_RANDOM	"$random"
 %token<fl>		yD_READMEMB	"$readmemb"
 %token<fl>		yD_READMEMH	"$readmemh"
@@ -629,6 +632,7 @@ class AstSenTree;
 %token<fl>		yD_TANH		"$tanh"
 %token<fl>		yD_TESTPLUSARGS	"$test$plusargs"
 %token<fl>		yD_TIME		"$time"
+%token<fl>		yD_TIMEFORMAT	"$timeformat"
 %token<fl>		yD_TYPENAME	"$typename"
 %token<fl>		yD_UNGETC	"$ungetc"
 %token<fl>		yD_UNIT		"$unit"
@@ -820,9 +824,12 @@ description:			// ==IEEE: description
 	;
 
 timeunits_declaration<nodep>:	// ==IEEE: timeunits_declaration
-		yTIMEUNIT       yaTIMENUM ';'		{ $$ = NULL; }
-	|	yTIMEUNIT yaTIMENUM '/' yaTIMENUM ';'	{ $$ = NULL; }
-	| 	yTIMEPRECISION  yaTIMENUM ';'		{ $$ = NULL; }
+		yTIMEUNIT yaTIMENUM ';'
+			{ PARSEP->timescaleMod($<fl>2, GRAMMARP->m_modp, true, $2, false, 0); $$ = NULL; }
+	|	yTIMEUNIT yaTIMENUM '/' yaTIMENUM ';'
+			{ PARSEP->timescaleMod($<fl>2, GRAMMARP->m_modp, true, $2, true, $4); $$ = NULL; }
+	| 	yTIMEPRECISION yaTIMENUM ';'
+			{ PARSEP->timescaleMod($<fl>2, GRAMMARP->m_modp, false, 0, true, $2); $$ = NULL; }
 	;
 
 //**********************************************************************
@@ -832,6 +839,7 @@ package_declaration:		// ==IEEE: package_declaration
 		packageFront package_itemListE yENDPACKAGE endLabelE
 			{ $1->modTrace(GRAMMARP->allTracingOn($1->fileline()));  // Stash for implicit wires, etc
 			  if ($2) $1->addStmtp($2);
+			  GRAMMARP->m_modp = NULL;
 			  SYMP->popScope($1);
 			  GRAMMARP->endLabel($<fl>4,$1,$4); }
 	;
@@ -841,8 +849,10 @@ packageFront<modulep>:
 			{ $$ = new AstPackage($<fl>3, *$3);
 			  $$->inLibrary(true);  // packages are always libraries; don't want to make them a "top"
 			  $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
+			  $$->timeunit(PARSEP->timeLastUnit());
 			  PARSEP->rootp()->addModulep($$);
-			  SYMP->pushNew($$); }
+			  SYMP->pushNew($$);
+			  GRAMMARP->m_modp = $$; }
 	;
 
 package_itemListE<nodep>:	// IEEE: [{ package_item }]
@@ -931,6 +941,7 @@ module_declaration:		// ==IEEE: module_declaration
 			{ $1->modTrace(GRAMMARP->allTracingOn($1->fileline()));  // Stash for implicit wires, etc
 			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3);
 			  if ($5) $1->addStmtp($5);
+			  GRAMMARP->m_modp = NULL;
 			  SYMP->popScope($1);
 			  GRAMMARP->endLabel($<fl>7,$1,$7); }
 	|	udpFront parameter_port_listE portsStarE ';'
@@ -939,6 +950,7 @@ module_declaration:		// ==IEEE: module_declaration
 			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3);
 			  if ($5) $1->addStmtp($5);
 			  GRAMMARP->m_tracingParse = true;
+			  GRAMMARP->m_modp = NULL;
 			  SYMP->popScope($1);
 			  GRAMMARP->endLabel($<fl>7,$1,$7); }
 	//
@@ -953,8 +965,11 @@ modFront<modulep>:
 			{ $$ = new AstModule($<fl>3,*$3);
 			  $$->inLibrary(PARSEP->inLibrary() || PARSEP->inCellDefine());
 			  $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
+			  $$->timeunit(PARSEP->timeLastUnit());
+			  $$->unconnectedDrive(PARSEP->unconnectedDrive());
 			  PARSEP->rootp()->addModulep($$);
-			  SYMP->pushNew($$); }
+			  SYMP->pushNew($$);
+			  GRAMMARP->m_modp = $$; }
 	;
 
 importsAndParametersE<nodep>:	// IEEE: common part of module_declaration, interface_declaration, program_declaration
@@ -981,7 +996,7 @@ parameter_value_assignmentE<pinp>:	// IEEE: [ parameter_value_assignment ]
 	|	'#' yaFLOATNUM				{ $$ = new AstPin($<fl>2, 1, "",
 									  new AstConst($<fl>2, AstConst::Unsized32(),
 										       (int)(($2<0)?($2-0.5):($2+0.5)))); }
-	//UNSUP	'#' yaTIMENUM				{ UNSUP }
+	|	'#' timeNumAdjusted			{ $$ = new AstPin($<fl>2, 1, "", $2); }
 	|	'#' idClassSel				{ $$ = new AstPin($<fl>2, 1, "", $2); }
 	//			// Not needed in Verilator:
 	//			// Side effect of combining *_instantiations
@@ -1223,6 +1238,7 @@ program_declaration:		// IEEE: program_declaration + program_nonansi_header + pr
 			{ $1->modTrace(GRAMMARP->allTracingOn($1->fileline()));  // Stash for implicit wires, etc
 			  if ($2) $1->addStmtp($2); if ($3) $1->addStmtp($3);
 			  if ($5) $1->addStmtp($5);
+			  GRAMMARP->m_modp = NULL;
 			  SYMP->popScope($1);
 			  GRAMMARP->endLabel($<fl>7,$1,$7); }
 	|	yEXTERN	pgmFront parameter_port_listE portsStarE ';'
@@ -1235,8 +1251,10 @@ pgmFront<modulep>:
 			{ $$ = new AstModule($<fl>3,*$3);
 			  $$->inLibrary(PARSEP->inLibrary() || PARSEP->inCellDefine());
 			  $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
+			  $$->timeunit(PARSEP->timeLastUnit());
 			  PARSEP->rootp()->addModulep($$);
-			  SYMP->pushNew($$); }
+			  SYMP->pushNew($$);
+			  GRAMMARP->m_modp = $$; }
 	;
 
 program_itemListE<nodep>:	// ==IEEE: [{ program_item }]
@@ -2271,14 +2289,11 @@ delay_value:			// ==IEEE:delay_value
 		ps_id_etc				{ }
 	|	yaINTNUM 				{ }
 	|	yaFLOATNUM 				{ }
-	|	yaTIMENUM 				{ }
+	|	timeNumAdjusted				{ DEL($1); }
 	;
 
 delayExpr:
 		expr					{ DEL($1); }
-	//			// Verilator doesn't support yaTIMENUM, so not in expr
-	//UNSUP below doesn't belong here:
-	|	yaTIMENUM 				{ }
 	;
 
 minTypMax:			// IEEE: mintypmax_expression and constant_mintypmax_expression
@@ -3284,6 +3299,11 @@ system_t_call<nodep>:		// IEEE: system_tf_call (as task)
 	|	yD_FATAL    '(' expr ')'		{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, NULL); $$->addNext(new AstStop($1, false)); DEL($3); }
 	|	yD_FATAL    '(' expr ',' exprListE ')'	{ $$ = new AstDisplay($1,AstDisplayType::DT_FATAL,   NULL, $5);   $$->addNext(new AstStop($1, false)); DEL($3); }
 	//
+	|	yD_PRINTTIMESCALE			{ $$ = new AstPrintTimeScale($1); }
+	|	yD_PRINTTIMESCALE '(' ')'		{ $$ = new AstPrintTimeScale($1); }
+	|	yD_PRINTTIMESCALE '(' idClassSel ')'	{ $$ = new AstPrintTimeScale($1); DEL($3); }
+	|	yD_TIMEFORMAT '(' expr ',' expr ',' expr ',' expr ')'	{ $$ = new AstTimeFormat($1, $3, $5, $7, $9); }
+	//
 	|	yD_READMEMB '(' expr ',' idClassSel ')'				{ $$ = new AstReadMem($1,false,$3,$5,NULL,NULL); }
 	|	yD_READMEMB '(' expr ',' idClassSel ',' expr ')'		{ $$ = new AstReadMem($1,false,$3,$5,$7,NULL); }
 	|	yD_READMEMB '(' expr ',' idClassSel ',' expr ',' expr ')'	{ $$ = new AstReadMem($1,false,$3,$5,$7,$9); }
@@ -3365,7 +3385,7 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_POW '(' expr ',' expr ')'		{ $$ = new AstPowD($1,$3,$5); }
 	|	yD_RANDOM '(' expr ')'			{ $$ = NULL; $1->v3error("Unsupported: Seeding $random doesn't map to C++, use $c(\"srand\")"); }
 	|	yD_RANDOM parenE			{ $$ = new AstRand($1); }
-	|	yD_REALTIME parenE			{ $$ = new AstTimeD($1); }
+	|	yD_REALTIME parenE			{ $$ = new AstTimeD($1, VTimescale(VTimescale::NONE)); }
 	|	yD_REALTOBITS '(' expr ')'		{ $$ = new AstRealToBits($1,$3); }
 	|	yD_REWIND '(' idClassSel ')'		{ $$ = new AstFSeek($1, $3, new AstConst($1, 0), new AstConst($1, 0)); }
 	|	yD_RIGHT '(' exprOrDataType ')'		{ $$ = new AstAttrOf($1,AstAttrType::DIM_RIGHT,$3,NULL); }
@@ -3381,11 +3401,11 @@ system_f_call_or_t<nodep>:	// IEEE: part of system_tf_call (can be task or func)
 	|	yD_SIZE '(' exprOrDataType ',' expr ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_SIZE,$3,$5); }
 	|	yD_SQRT '(' expr ')'			{ $$ = new AstSqrtD($1,$3); }
 	|	yD_SSCANF '(' expr ',' str commaVRDListE ')'	{ $$ = new AstSScanF($1,*$5,$3,$6); }
-	|	yD_STIME parenE				{ $$ = new AstSel($1,new AstTime($1),0,32); }
+	|	yD_STIME parenE				{ $$ = new AstSel($1, new AstTime($1, VTimescale(VTimescale::NONE)), 0, 32); }
 	|	yD_TAN '(' expr ')'			{ $$ = new AstTanD($1,$3); }
 	|	yD_TANH '(' expr ')'			{ $$ = new AstTanhD($1,$3); }
 	|	yD_TESTPLUSARGS '(' str ')'		{ $$ = new AstTestPlusArgs($1,*$3); }
-	|	yD_TIME	parenE				{ $$ = new AstTime($1); }
+	|	yD_TIME	parenE				{ $$ = new AstTime($1, VTimescale(VTimescale::NONE)); }
 	|	yD_TYPENAME '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1, AstAttrType::TYPENAME, $3); }
 	|	yD_UNGETC '(' expr ',' expr ')'		{ $$ = new AstFUngetC($1, $5, $3); }  // Arg swap to file first
 	|	yD_UNPACKED_DIMENSIONS '(' exprOrDataType ')'	{ $$ = new AstAttrOf($1,AstAttrType::DIM_UNPK_DIMENSIONS,$3); }
@@ -3778,7 +3798,7 @@ expr<nodep>:			// IEEE: part of expression/constant_expression/primary
 	//			// IEEE: primary_literal (minus string, which is handled specially)
 	|	yaINTNUM				{ $$ = new AstConst($<fl>1,*$1); }
 	|	yaFLOATNUM				{ $$ = new AstConst($<fl>1,AstConst::RealDouble(),$1); }
-	//UNSUP	yaTIMENUM				{ UNSUP }
+	|	timeNumAdjusted				{ $$ = $1; }
 	|	strAsInt~noStr__IGNORE~			{ $$ = $1; }
 	//
 	//			// IEEE: "... hierarchical_identifier select"  see below
@@ -5726,6 +5746,14 @@ memberQualOne<nodep>:			// IEEE: property_qualifier + method_qualifier
 //UNSUP		/* empty */				{ $$ = false; }
 //UNSUP	|	ySTATIC__CONSTRAINT			{ $$ = true; }
 //UNSUP	;
+
+//**********************************************************************
+// Constants
+
+timeNumAdjusted<nodep>:		// Time constant, adjusted to module's time units/precision
+		yaTIMENUM
+			{ $$ = new AstTimeImport($<fl>1, new AstConst($<fl>1, AstConst::RealDouble(), $1)); }
+	;
 
 //**********************************************************************
 // VLT Files

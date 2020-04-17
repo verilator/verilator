@@ -8,12 +8,25 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-scenarios(linter => 1);
+scenarios(simulator_st => 1);
 
-lint(
-    fails => $Self->{vlt_all},
+top_filename("t/t_time_vpi.v");
+
+$Self->{main_time_multiplier} = 1e-3 / 10e-9;
+
+compile(
+    v_flags2 => ['+define+time_scale_units=1ms +define+time_scale_prec=10ns',
+                 't/t_time_vpi_c.cpp'],
+    verilator_flags2 => ['--vpi --trace'],
+    );
+
+execute(
+    check_finished => 1,
     expect_filename => $Self->{golden_filename},
     );
 
+file_grep("$Self->{obj_dir}/simx.vcd", qr!timescale +10ns!);
+
 ok(1);
+
 1;

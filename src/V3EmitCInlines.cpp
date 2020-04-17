@@ -67,7 +67,7 @@ class EmitCInlines : EmitCBaseVisitor {
         v3Global.needHeavy(true);
         iterateChildren(nodep);
     }
-    virtual void visit(AstNew* nodep) VL_OVERRIDE {
+    virtual void visit(AstCNew* nodep) VL_OVERRIDE {
         if (v3Global.opt.savable()) v3error("Unsupported: --savable with dynamic new");
         iterateChildren(nodep);
     }
@@ -107,16 +107,14 @@ class EmitCInlines : EmitCBaseVisitor {
 public:
     explicit EmitCInlines(AstNetlist* nodep) {
         iterate(nodep);
-        if (v3Global.needHInlines()) {
-            emitInt();
-        }
+        if (v3Global.needHInlines()) emitInt();
     }
 };
 
 void EmitCInlines::emitInt() {
-    string filename = v3Global.opt.makeDir()+"/"+topClassName()+"__Inlines.h";
-    newCFile(filename, false/*slow*/, false/*source*/);
-    V3OutCFile hf (filename);
+    string filename = v3Global.opt.makeDir() + "/" + topClassName() + "__Inlines.h";
+    newCFile(filename, false /*slow*/, false /*source*/);
+    V3OutCFile hf(filename);
     m_ofp = &hf;
 
     ofp()->putsHeader();

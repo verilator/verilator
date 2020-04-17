@@ -271,6 +271,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --bbox-sys                  Blackbox unknown $system calls
     --bbox-unsup                Blackbox unsupported language features
     --bin <filename>            Override Verilator binary
+    --build                     Call make system to build executable after Verilation
      -CFLAGS <flags>            C++ Compiler flags for makefile
     --cc                        Create C++ output
     --cdc                       Clock domain crossing analysis
@@ -309,6 +310,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --getenv <var>              Get environment variable with defaults
     --help                      Display this help
      -I<dir>                    Directory to search for includes
+     -j <jobs>                  Parallelism for --build
     --gate-stmts <value>        Tune gate optimizer depth
     --if-depth <value>          Tune IFDEPTH warning
      +incdir+<dir>              Directory to search for includes
@@ -319,6 +321,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --language <lang>           Default language standard to parse
      +libext+<ext>+[ext]...     Extensions for finding modules
     --lint-only                 Lint, but do not make output
+     -MAKEFLAGS <flags>         Options to make/cmake during --build
     --max-num-width <value>     Maximum number width (default: 64K)
     --MMD                       Create .d dependency files
     --MP                        Create phony dependency targets
@@ -334,6 +337,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
      -O<optimization-letter>    Selectable optimizations
      -o <executable>            Name of final executable
     --no-order-clock-delay      Disable ordering clock enable assignments
+    --no-verilate               Skip verilation and just compile previously verilated code.
     --output-split <statements>          Split .cpp files into pieces
     --output-split-cfuncs <statements>   Split .cpp functions
     --output-split-ctrace <statements>   Split tracing functions
@@ -368,6 +372,8 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --threads <threads>         Enable multithreading
     --threads-dpi <mode>        Enable multithreaded DPI
     --threads-max-mtasks <mtasks>  Tune maximum mtask partitioning
+    --timescale <timescale>     Sets default timescale
+    --timescale-override <timescale>  Overrides all timescales
     --top-module <topname>      Name of top level input module
     --trace                     Enable waveform creation
     --trace-depth <levels>      Depth of tracing
@@ -516,6 +522,8 @@ unsized zero.  Arguments to such functions will be parsed, but not
 otherwise checked.  This prevents errors when linting in the presence of
 company specific PLI calls.
 
+Using this argument will likely cause incorrect simulation.
+
 =item --bbox-unsup
 
 Black box some unsupported language features, currently UDP tables, the
@@ -523,12 +531,19 @@ cmos and tran gate primitives, deassign statements, and mixed edge errors.
 This may enable linting the rest of the design even when unsupported
 constructs are present.
 
+Using this argument will likely cause incorrect simulation.
+
 =item --bin I<filename>
 
 Rarely needed.  Override the default filename for Verilator itself.  When a
 dependency (.d) file is created, this filename will become a source
 dependency, such that a change in this binary will have make rebuild the
 output files.
+
+=item --build
+
+After generating the SystemC/C++ code, Verilator will use the make system
+to build a library or executable. See also C<--make> and C<--exe>.
 
 =item -CFLAGS I<flags>
 
@@ -581,6 +596,9 @@ Generates a script for the specified make system.
 
 Supported make systems are gmake and cmake. Both can be specified.
 If no make system is specified, gmake is assumed.
+The executable of gmake can be configured via environment variable "MAKE".
+
+See also --build.
 
 =item --compiler I<compiler-name>
 
@@ -922,6 +940,12 @@ values, or a value < 1 will inline everything, will lead to longer compile
 times, but potentially faster simulation runtimes.  This setting is ignored
 for very small modules; they will always be inlined, if allowed.
 
+=item -j <value>
+
+Specify the parallelism for make system. This option is used when --build
+options is specified. <value> must be a positive integer or can be omitted.
+Build system exploits maximum parallelism when <value> is omitted.
+
 =item -LDFLAGS I<flags>
 
 Add specified C linker flags to the generated makefiles.  For multiple
@@ -966,6 +990,13 @@ stylistic and not enabled by default.
 
 If the design is not to be completely Verilated see also the --bbox-sys and
 --bbox-unsup options.
+
+=item -MAKEFLAGS <string>
+
+When using --build, add the specified flag to the make/cmake command line.
+For multiple flags either pass them as a single argument with space separators
+quoted in the shell (e.g. C<-MAKEFLAGS "-a -b">), or use multiple -MAKEFLAGS
+arguments (e.g. C<-MAKEFLAGS -l -MAKEFLAGS -k>).
 
 =item --max-num-width I<value>
 
@@ -1238,6 +1269,10 @@ This allows for the secure delivery of sensitive IP without the need for
 encrypted RTL (i.e. IEEE P1735).  See examples/make_protect_lib in the
 distribution for a demonstration of how to build and use the DPI library.
 
+When using --protect-lib it is advised to also use C<--timescale-override
+/1fs> to ensure the model has a time resolution that is always compatible
+with the time precision of the upper instantiating module.
+
 =item --private
 
 Opposite of --public.  Is the default; this option exists for backwards
@@ -1396,6 +1431,24 @@ Rarely needed.  When using --threads, specify the number of mtasks the
 model is to be partitioned into. If unspecified, Verilator approximates a
 good value.
 
+=item --timescale I<timeunit>/I<timeprecision>
+
+Sets default timescale, timeunit and timeprecision for when `timescale does
+not occur in sources.  Default is "1ps/1ps" (to match SystemC).  This is
+overriden by C<--timescale-override>.
+
+=item --timescale-override I<timeunit>/I<timeprecision>
+
+=item --timescale-override /I<timeprecision>
+
+Overrides all `timescales in sources. The timeunit may be left empty to
+specify only to override the timeprecision, e.g. "/1fs".
+
+The time precision must be consistent with SystemC's
+sc_set_time_resolution, or the C++ code instantiating the Verilated module.
+As 1fs is the finest time precision it may be desirable to always use a
+precision of 1fs.
+
 =item --top-module I<topname>
 
 When the input Verilog contains more than one top level module, specifies
@@ -1506,6 +1559,10 @@ into Verilator.  (Similar to perl -V.)  See also --getenv.
 Read the filename as a Verilog library.  Any modules in the file may be
 used to resolve cell instantiations in the top level module, else ignored.
 Note -v is fairly standard across Verilog tools.
+
+=item --no-verilate
+
+When using --build, disable generation of C++/SC code, and only run make/cmake.
 
 =item  +verilog1995ext+I<ext>
 
@@ -1754,10 +1811,10 @@ Defaults to "profile_threads.dat".
 =item +verilator+prof+threads+start+I<value>
 
 When using --prof-threads at simulation runtime, Verilator will wait until
-$time is at this value, then start the profiling warmup, then
-capturing. Generally this should be set to some time that is well within
-the normal operation of the simulation, i.e. outside of reset. If 0, the
-dump is disabled. Defaults to 1.
+$time is at this value (expressed in units of the time precision), then
+start the profiling warmup, then capturing. Generally this should be set to
+some time that is well within the normal operation of the simulation,
+i.e. outside of reset. If 0, the dump is disabled. Defaults to 1.
 
 =item +verilator+prof+threads+window+I<value>
 
@@ -1835,20 +1892,17 @@ compiled Verilator, you need to point to the kit:
 
 Now we run Verilator on our little example.
 
-    verilator -Wall --cc our.v --exe sim_main.cpp
+    verilator -Wall --cc our.v --exe --build sim_main.cpp
 
 We can see the source code under the "obj_dir" directory.  See the FILES
 section below for descriptions of some of the files that were created.
 
     ls -l obj_dir
 
-We then can compile it
-
-    make -j -C obj_dir -f Vour.mk Vour
-
 (Verilator included a default compile rule and link rule, since we used
---exe and passed a .cpp file on the Verilator command line.  You can also
-write your own compile rules, as we'll show in the SYSTEMC section.)
+--exe and passed a .cpp file on the Verilator command line.  Verilator also
+then used C<make> to build a final executable.  You can also write your own
+compile rules, and run make yourself as we'll show in the SYSTEMC section.)
 
 And now we run it
 
@@ -2107,9 +2161,8 @@ After running Make, the C++ compiler may produce the following:
     {mod_prefix}{misc}.o                // Intermediate objects
     {prefix}                            // Final executable (w/--exe argument)
     {prefix}__ALL.a                     // Library of all Verilated objects
-    {prefix}__ALLboth.cpp               // Include of classes for single compile
-    {prefix}__ALLcls.cpp                // Include of user classes for single compile
-    {prefix}__ALLsup.cpp                // Include of support files for single compile
+    {prefix}__ALLfast.cpp               // Include of hot code for single compile
+    {prefix}__ALLslow.cpp               // Include of slow code for single compile
     {prefix}{misc}.d                    // Intermediate dependencies
     {prefix}{misc}.o                    // Intermediate objects
 
@@ -2123,6 +2176,12 @@ After running Make, the C++ compiler may produce the following:
 A generic Linux/OS variable specifying what directories have shared object
 (.so) files.  This path should include SystemC and any other shared objects
 needed at simulation runtime.
+
+=item MAKE
+
+Executable of the make command used in --build option.
+Some operating systems may require "gmake" to this variable to launch GNU make.
+If this variable is not specified, "make" is used.
 
 =item OBJCACHE
 
@@ -2215,7 +2274,8 @@ example:
 
         vluint64_t main_time = 0;       // Current simulation time
         // This is a 64-bit integer to reduce wrap over issues and
-        // allow modulus.  You can also use a double, if you wish.
+        // allow modulus.  This is in units of the timeprecision
+        // used in Verilog (or from --timescale-override)
 
         double sc_time_stamp () {       // Called by $time in Verilog
             return main_time;           // converts to double, to match
@@ -2686,8 +2746,8 @@ underneath NC:
    cd obj_dir
    ncsc_run \
         sc_main.cpp \
-        Vour__ALLcls.cpp \
-        Vour__ALLsup.cpp \
+        Vour__ALLfast.cpp \
+        Vour__ALLslow.cpp \
         verilated.cpp
 
 For larger designs you'll want to automate this using makefiles, which pull
@@ -3565,8 +3625,8 @@ path.
 
 Verilator class support is very limited and in active development.
 Verilator supports members, and methods. Verilator doe not support initial
-values on class members, class static members, class new methods, class
-extend, or class parameters.
+values on class members, class static members, class extend, or class
+parameters.
 
 =head2 Dotted cross-hierarchy references
 
@@ -3754,7 +3814,7 @@ This section describes specific limitations for each language keyword.
 `begin_keywords, `begin_keywords, `define, `else, `elsif, `end_keywords,
 `endif, `error, `ifdef, `ifndef, `include, `line, `systemc_ctor,
 `systemc_dtor, `systemc_header, `systemc_imp_header,
-`systemc_implementation, `systemc_interface, `timescale, `undef, `verilog
+`systemc_implementation, `systemc_interface, `undef, `verilog
 
 Fully supported.
 
@@ -3905,13 +3965,6 @@ Supported, but the instantiating C++/SystemC testbench must call
 
 to register the command line before calling $test$plusargs or
 $value$plusargs.
-
-=item $timeformat
-
-Not supported as Verilator needs to determine all formatting at compile
-time.  Generally you can just ifdef them out for no ill effect.  Note also
-VL_TIME_MULTIPLIER can be defined at compile time to move the decimal point
-when displaying all times, model wide.
 
 =back
 
@@ -4585,6 +4638,18 @@ increases.
 Ignoring this warning will only slow simulations, it will simulate
 correctly.
 
+=item TIMESCALEMOD
+
+Error that `timescale is used in some but not all modules.
+Recommend using --timescale argument, or in front of all modules use:
+
+   `include "timescale.vh"
+
+Then in that file set the timescale.
+
+This is an error due to IEEE specifications, but it may be disabled similar
+to warnings.  Ignoring this error may result in a module having an
+unexpected timescale.
 
 =item UNDRIVEN
 
@@ -4820,10 +4885,12 @@ configured with --enable-prec11.  This flag will be removed and C++11
 compilers will be required for both compiling Verilator and compiling
 Verilated models no sooner than September 2020.
 
-=item SystemC 2.1 and earlier support
+=item SystemC 2.2 and earlier support
 
-Support for SystemC versions 2.1 and earlier and the related sc_clock
-variable attribute will be removed no sooner than July 2020.
+Support for SystemC versions 2.2 and earlier including the related sc_clock
+variable attribute will be removed no sooner than August 2020.  The
+supported versions will be SystemC 2.3.0 (SYSTEMC_VERSION 20111121) and
+later (presently 2.3.0, 2.3.1, 2.3.2, 2.3.3).
 
 =item Configuration File -msg
 
@@ -4972,8 +5039,8 @@ to VerilatedVcdSc in the examples/make_tracing_sc/sc_main.cpp file of the
 distribution, and below.
 
 Alternatively you may use the C++ trace mechanism described in the previous
-question, however the timescale and timeprecision will not inherited from
-your SystemC settings.
+question, note the timescale and timeprecision will be inherited from your
+SystemC settings.
 
 You also need to compile verilated_vcd_sc.cpp and verilated_vcd_c.cpp and
 add them to your link, preferably by adding the dependencies in
@@ -4982,6 +5049,12 @@ using the Verilator --exe flag.
 
 Note you can also call ->trace on multiple Verilated objects with the same
 trace file if you want all data to land in the same output file.
+
+When using SystemC 2.3, the SystemC library must have been built with the
+experiemntal simulation phase callback based tracing disabled. This is
+disabled by default when building SystemC with its configure based build
+system, but when building SystemC with CMake, you must pass
+-DENABLE_PHASE_CALLBACKS_TRACING=OFF to disable this feature.
 
     #include "verilated_vcd_sc.h"
     ...

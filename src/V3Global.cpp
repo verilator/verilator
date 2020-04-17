@@ -76,7 +76,7 @@ void V3Global::readFiles() {
 }
 
 void V3Global::dumpCheckGlobalTree(const string& stagename, int newNumber, bool doDump) {
-    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename(stagename + ".tree", newNumber),
-                                   false, doDump);
+    v3Global.rootp()->dumpTreeFile(v3Global.debugFilename(stagename + ".tree", newNumber), false,
+                                   doDump);
     if (v3Global.opt.stats()) V3Stats::statsStage(stagename);
 }

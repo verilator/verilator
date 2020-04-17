@@ -87,11 +87,11 @@ run:
 	@echo "-- Verilator CMake SystemC hello-world simple example"
 
 	@echo
-	@echo "-- CMake ----------------"
+	@echo "-- VERILATE ----------------"
 	mkdir -p build && cd build && cmake ..
 
 	@echo
-	@echo "-- COMPILE -----------------"
+	@echo "-- BUILD -------------------"
 	cmake --build build
 
 	@echo

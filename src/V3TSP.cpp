@@ -47,32 +47,33 @@
 // Support classes
 
 namespace V3TSP {
-    static unsigned edgeIdNext = 0;
+static unsigned edgeIdNext = 0;
 
-    static void selfTestStates();
-    static void selfTestString();
+static void selfTestStates();
+static void selfTestString();
 
-    VL_DEBUG_FUNC;  // Declare debug()
+VL_DEBUG_FUNC;  // Declare debug()
 }  // namespace V3TSP
 
 // Vertex that tracks a per-vertex key
-template <typename T_Key>
-class TspVertexTmpl : public V3GraphVertex {
+template <typename T_Key> class TspVertexTmpl : public V3GraphVertex {
 private:
     T_Key m_key;
+
 public:
     TspVertexTmpl(V3Graph* graphp, const T_Key& k)
-        : V3GraphVertex(graphp), m_key(k) {}
+        : V3GraphVertex(graphp)
+        , m_key(k) {}
     virtual ~TspVertexTmpl() {}
     const T_Key& key() const { return m_key; }
+
 private:
     VL_UNCOPYABLE(TspVertexTmpl);
 };
 
 // TspGraphTmpl represents a complete graph, templatized to work with
 // different T_Key types.
-template <typename T_Key>
-class TspGraphTmpl : public V3Graph {
+template <typename T_Key> class TspGraphTmpl : public V3Graph {
 public:
     // TYPES
     typedef TspVertexTmpl<T_Key> Vertex;
@@ -82,14 +83,15 @@ public:
     VMap m_vertices;  // T_Key to Vertex lookup map
 
     // CONSTRUCTORS
-    TspGraphTmpl() : V3Graph() {}
+    TspGraphTmpl()
+        : V3Graph() {}
     virtual ~TspGraphTmpl() {}
 
     // METHODS
-    void addVertex(const T_Key &key) {
+    void addVertex(const T_Key& key) {
         typename VMap::iterator itr = m_vertices.find(key);
         UASSERT(itr == m_vertices.end(), "Vertex already exists with same key");
-        Vertex *v = new Vertex(this, key);
+        Vertex* v = new Vertex(this, key);
         m_vertices[key] = v;
     }
 
@@ -118,9 +120,7 @@ public:
 
     std::list<Vertex*> keysToVertexList(const std::vector<T_Key>& odds) {
         std::list<Vertex*> vertices;
-        for(unsigned i = 0; i < odds.size(); ++i) {
-            vertices.push_back(findVertex(odds.at(i)));
-        }
+        for (unsigned i = 0; i < odds.size(); ++i) { vertices.push_back(findVertex(odds.at(i))); }
         return vertices;
     }
 
@@ -132,7 +132,7 @@ public:
         // CONSTRUCTORS
         EdgeCmp() {}
         // METHODS
-        bool operator() (const V3GraphEdge* ap, const V3GraphEdge* bp) {
+        bool operator()(const V3GraphEdge* ap, const V3GraphEdge* bp) {
             int aCost = ap->weight();
             int bCost = bp->weight();
             // Sort first on cost, lowest cost edges first:
@@ -141,13 +141,12 @@ public:
             // Costs are equal. Compare edgeId's which should be unique.
             return ap->user() < bp->user();
         }
+
     private:
         VL_UNCOPYABLE(EdgeCmp);
     };
 
-    static Vertex* castVertexp(V3GraphVertex* vxp) {
-        return dynamic_cast<Vertex*>(vxp);
-    }
+    static Vertex* castVertexp(V3GraphVertex* vxp) { return dynamic_cast<Vertex*>(vxp); }
 
     // From *this, populate *mstp with the minimum spanning tree.
     // *mstp must be initially empty.
@@ -164,8 +163,7 @@ public:
         PendingEdgeSet pendingEdges(cmp);
 
         vluint32_t vertCount = 0;
-        for (V3GraphVertex* vxp = verticesBeginp();
-             vxp; vxp = vxp->verticesNextp()) {
+        for (V3GraphVertex* vxp = verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             mstp->addVertex(castVertexp(vxp)->key());
             vertCount++;
         }
@@ -174,8 +172,7 @@ public:
         // all incident edges from this vertex go into a pending edge set.
         Vertex* start_vertexp = castVertexp(verticesBeginp());
         visited_set.insert(start_vertexp);
-        for (V3GraphEdge* edgep = start_vertexp->outBeginp();
-             edgep; edgep = edgep->outNextp()) {
+        for (V3GraphEdge* edgep = start_vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
             pendingEdges.insert(edgep);
         }
 
@@ -198,9 +195,8 @@ public:
             Vertex* neighborp = castVertexp(bestEdgep->top());
             if (visited_set.find(neighborp) == visited_set.end()) {
                 int bestCost = bestEdgep->weight();
-                UINFO(6, "bestCost = "<<bestCost
-                      <<"  from "<<from_vertexp->key()
-                      <<" to "<<neighborp->key()<<endl);
+                UINFO(6, "bestCost = " << bestCost << "  from " << from_vertexp->key() << " to "
+                                       << neighborp->key() << endl);
 
                 // Create the edge in our output MST graph
                 mstp->addEdge(from_vertexp->key(), neighborp->key(), bestCost);
@@ -210,13 +206,13 @@ public:
                 visited_set.insert(neighborp);
 
                 // Update the pending edges with new edges
-                for (V3GraphEdge* edgep = neighborp->outBeginp();
-                     edgep; edgep = edgep->outNextp()) {
+                for (V3GraphEdge* edgep = neighborp->outBeginp(); edgep;
+                     edgep = edgep->outNextp()) {
                     pendingEdges.insert(edgep);
                 }
             } else {
-                UINFO(6, "Discarding edge to already-visited neighbor "
-                      <<neighborp->key()<<endl);
+                UINFO(6,
+                      "Discarding edge to already-visited neighbor " << neighborp->key() << endl);
             }
         }
 
@@ -226,8 +222,7 @@ public:
 
     // Populate *outp with a minimal perfect matching of *this.
     // *outp must be initially empty.
-    void perfectMatching(const std::vector<T_Key>& oddKeys,
-                         TspGraphTmpl* outp) {
+    void perfectMatching(const std::vector<T_Key>& oddKeys, TspGraphTmpl* outp) {
         UASSERT(outp->empty(), "Output graph must start empty");
 
         std::list<Vertex*> odds = keysToVertexList(oddKeys);
@@ -261,8 +256,7 @@ public:
         PendingEdgeSet pendingEdges(cmp);
 
         for (VertexListIt it = odds.begin(); it != odds.end(); ++it) {
-            for (V3GraphEdge* edgep = (*it)->outBeginp();
-                 edgep; edgep = edgep->outNextp()) {
+            for (V3GraphEdge* edgep = (*it)->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 pendingEdges.insert(edgep);
             }
         }
@@ -270,8 +264,8 @@ public:
         // Iterate over all edges, in order from low to high cost.
         // For any edge whose ends are both odd-order vertices which
         // haven't been matched yet, match them.
-        for (typename PendingEdgeSet::iterator it = pendingEdges.begin();
-             it != pendingEdges.end(); ++it) {
+        for (typename PendingEdgeSet::iterator it = pendingEdges.begin(); it != pendingEdges.end();
+             ++it) {
             Vertex* fromp = castVertexp((*it)->fromp());
             Vertex* top = castVertexp((*it)->top());
             if ((unmatchedOdds.find(fromp) != unmatchedOdds.end())
@@ -298,49 +292,43 @@ public:
         }
     }
 
-    void findEulerTourRecurse(vl_unordered_set<unsigned>* markedEdgesp,
-                              Vertex* startp,
+    void findEulerTourRecurse(vl_unordered_set<unsigned>* markedEdgesp, Vertex* startp,
                               std::vector<T_Key>* sortedOutp) {
         Vertex* cur_vertexp = startp;
 
         // Go on a random tour. Fun!
         std::vector<Vertex*> tour;
         do {
-            UINFO(6, "Adding "<<cur_vertexp->key()<<" to tour.\n");
+            UINFO(6, "Adding " << cur_vertexp->key() << " to tour.\n");
             tour.push_back(cur_vertexp);
 
             // Look for an arbitrary edge we've not yet marked
-            for (V3GraphEdge* edgep = cur_vertexp->outBeginp();
-                 edgep; edgep = edgep->outNextp()) {
+            for (V3GraphEdge* edgep = cur_vertexp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 vluint32_t edgeId = edgep->user();
                 if (markedEdgesp->end() == markedEdgesp->find(edgeId)) {
                     // This edge is not yet marked, so follow it.
                     markedEdgesp->insert(edgeId);
                     Vertex* neighborp = castVertexp(edgep->top());
-                    UINFO(6, "following edge "<<edgeId
-                          <<" from "<<cur_vertexp->key()
-                          <<" to "<<neighborp->key()<<endl);
+                    UINFO(6, "following edge " << edgeId << " from " << cur_vertexp->key()
+                                               << " to " << neighborp->key() << endl);
                     cur_vertexp = neighborp;
                     goto found;
                 }
             }
             v3fatalSrc("No unmarked edges found in tour");
-          found:
-            ;
+        found:;
         } while (cur_vertexp != startp);
-        UINFO(6, "stopped, got back to start of tour @ "<<cur_vertexp->key()<<endl);
+        UINFO(6, "stopped, got back to start of tour @ " << cur_vertexp->key() << endl);
 
         // Look for nodes on the tour that still have
         // un-marked edges. If we find one, recurse.
-        for (typename std::vector<Vertex*>::iterator it = tour.begin();
-             it != tour.end(); ++it) {
+        for (typename std::vector<Vertex*>::iterator it = tour.begin(); it != tour.end(); ++it) {
             Vertex* vxp = *it;
             bool recursed;
             do {
                 recursed = false;
                 // Look for an arbitrary edge at vxp we've not yet marked
-                for (V3GraphEdge* edgep = vxp->outBeginp();
-                     edgep; edgep = edgep->outNextp()) {
+                for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                     vluint32_t edgeId = edgep->user();
                     if (markedEdgesp->end() == markedEdgesp->find(edgeId)) {
                         UINFO(6, "Recursing.\n");
@@ -349,38 +337,36 @@ public:
                         goto recursed;
                     }
                 }
-              recursed:
-                ;
+            recursed:;
             } while (recursed);
             sortedOutp->push_back(vxp->key());
         }
 
         UINFO(6, "Tour was: ");
-        for (typename std::vector<Vertex*>::iterator it = tour.begin();
-             it != tour.end(); ++it) {
+        for (typename std::vector<Vertex*>::iterator it = tour.begin(); it != tour.end(); ++it) {
             Vertex* vxp = *it;
-            UINFONL(6, " "<<vxp->key());
+            UINFONL(6, " " << vxp->key());
         }
         UINFONL(6, "\n");
     }
 
     void dumpGraph(std::ostream& os, const string& nameComment) const {
         // UINFO(0) as controlled by caller
-        os<<"At "<<nameComment<<", dumping graph. Keys:\n";
+        os << "At " << nameComment << ", dumping graph. Keys:\n";
         for (V3GraphVertex* vxp = verticesBeginp(); vxp; vxp = vxp->verticesNextp()) {
             Vertex* tspvp = castVertexp(vxp);
-            os<<" "<<tspvp->key()<<endl;
+            os << " " << tspvp->key() << endl;
             for (V3GraphEdge* edgep = tspvp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 Vertex* neighborp = castVertexp(edgep->top());
-                os<<"   has edge "<<edgep->user()<<" to "<<neighborp->key()<<endl;
+                os << "   has edge " << edgep->user() << " to " << neighborp->key() << endl;
             }
         }
     }
     void dumpGraphFilePrefixed(const string& nameComment) const {
         if (v3Global.opt.dumpTree()) {
-            string filename = v3Global.debugFilename(nameComment)+".txt";
+            string filename = v3Global.debugFilename(nameComment) + ".txt";
             const vl_unique_ptr<std::ofstream> logp(V3File::new_ofstream(filename));
-            if (logp->fail()) v3fatal("Can't write "<<filename);
+            if (logp->fail()) v3fatal("Can't write " << filename);
             dumpGraph(*logp, nameComment);
         }
     }
@@ -402,9 +388,7 @@ public:
             for (V3GraphEdge* edgep = vxp->outBeginp(); edgep; edgep = edgep->outNextp()) {
                 degree++;
             }
-            if (degree & 1) {
-                result.push_back(tspvp->key());
-            }
+            if (degree & 1) { result.push_back(tspvp->key()); }
         }
         return result;
     }
@@ -427,9 +411,7 @@ void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
     // Make this TSP implementation work for graphs of size 0 or 1
     // which, unfortunately, is a special case as the following
     // code assumes >= 2 nodes.
-    if (states.empty()) {
-        return;
-    }
+    if (states.empty()) { return; }
     if (states.size() == 1) {
         resultp->push_back(*(states.begin()));
         return;
@@ -470,8 +452,8 @@ void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
     // Discard duplicate nodes that the Euler tour might contain.
     {
         vl_unordered_set<const TspStateBase*> seen;
-        for (V3TSP::StateVec::iterator it = prelim_result.begin();
-             it != prelim_result.end(); ++it) {
+        for (V3TSP::StateVec::iterator it = prelim_result.begin(); it != prelim_result.end();
+             ++it) {
             const TspStateBase* elemp = *it;
             if (seen.find(elemp) == seen.end()) {
                 seen.insert(elemp);
@@ -492,7 +474,7 @@ void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
         for (unsigned i = 0; i < resultp->size(); ++i) {
             const TspStateBase* ap = (*resultp)[i];
             const TspStateBase* bp
-                = (i+1 == resultp->size()) ? (*resultp)[0] : (*resultp)[i+1];
+                = (i + 1 == resultp->size()) ? (*resultp)[0] : (*resultp)[i + 1];
             unsigned cost = ap->cost(bp);
             if (cost > max_cost) {
                 max_cost = cost;
@@ -508,12 +490,10 @@ void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
         V3TSP::StateVec new_result;
         unsigned i = max_cost_idx + 1;
         UASSERT(i < resultp->size(), "Algorithm size error");
-        while(i != max_cost_idx) {
+        while (i != max_cost_idx) {
             new_result.push_back((*resultp)[i]);
             i++;
-            if (i >= resultp->size()) {
-                i = 0;
-            }
+            if (i >= resultp->size()) { i = 0; }
         }
         new_result.push_back((*resultp)[i]);
 
@@ -527,40 +507,36 @@ void V3TSP::tspSort(const V3TSP::StateVec& states, V3TSP::StateVec* resultp) {
 
 class TspTestState : public V3TSP::TspStateBase {
 public:
-    TspTestState(unsigned xpos, unsigned ypos) :
-        m_xpos(xpos),
-        m_ypos(ypos),
-        m_serial(++m_serialNext) {}
+    TspTestState(unsigned xpos, unsigned ypos)
+        : m_xpos(xpos)
+        , m_ypos(ypos)
+        , m_serial(++m_serialNext) {}
     ~TspTestState() {}
     virtual int cost(const TspStateBase* otherp) const {
         return cost(dynamic_cast<const TspTestState*>(otherp));
     }
     static unsigned diff(unsigned a, unsigned b) {
-        if (a>b) return a-b;
-        return b-a;
+        if (a > b) return a - b;
+        return b - a;
     }
     virtual int cost(const TspTestState* otherp) const {
         // For test purposes, each TspTestState is merely a point
         // on the Cartesian plane; cost is the linear distance
         // between two points.
-        unsigned xabs, yabs;
+        unsigned xabs;
+        unsigned yabs;
         xabs = diff(otherp->m_xpos, m_xpos);
         yabs = diff(otherp->m_ypos, m_ypos);
-        return lround(sqrt(xabs*xabs + yabs*yabs));
+        return lround(sqrt(xabs * xabs + yabs * yabs));
     }
-    unsigned xpos() const {
-        return m_xpos;
-    }
-    unsigned ypos() const {
-        return m_ypos;
-    }
+    unsigned xpos() const { return m_xpos; }
+    unsigned ypos() const { return m_ypos; }
 
-    bool operator< (const TspStateBase& other) const {
-        return operator< (dynamic_cast<const TspTestState&>(other));
+    bool operator<(const TspStateBase& other) const {
+        return operator<(dynamic_cast<const TspTestState&>(other));
     }
-    bool operator< (const TspTestState& other) const {
-        return m_serial < other.m_serial;
-    }
+    bool operator<(const TspTestState& other) const { return m_serial < other.m_serial; }
+
 private:
     unsigned m_xpos;
     unsigned m_ypos;
@@ -574,11 +550,11 @@ void V3TSP::selfTestStates() {
     // Linear test -- coords all along the x-axis
     {
         V3TSP::StateVec states;
-        TspTestState s10(10,0);
-        TspTestState s60(60,0);
-        TspTestState s20(20,0);
-        TspTestState s100(100,0);
-        TspTestState s5(5,0);
+        TspTestState s10(10, 0);
+        TspTestState s60(60, 0);
+        TspTestState s20(20, 0);
+        TspTestState s100(100, 0);
+        TspTestState s5(5, 0);
         states.push_back(&s10);
         states.push_back(&s60);
         states.push_back(&s20);
@@ -595,12 +571,11 @@ void V3TSP::selfTestStates() {
         expect.push_back(&s10);
         expect.push_back(&s5);
         if (VL_UNCOVERABLE(expect != result)) {
-            for (V3TSP::StateVec::iterator it = result.begin();
-                 it != result.end(); ++it) {
+            for (V3TSP::StateVec::iterator it = result.begin(); it != result.end(); ++it) {
                 const TspTestState* statep = dynamic_cast<const TspTestState*>(*it);
-                cout<<statep->xpos()<<" ";
+                cout << statep->xpos() << " ";
             }
-            cout<<endl;
+            cout << endl;
             v3fatalSrc("TSP linear self-test fail. Result (above) did not match expectation.");
         }
     }
@@ -609,13 +584,13 @@ void V3TSP::selfTestStates() {
     // Test that tspSort() will rotate the list for minimum cost.
     {
         V3TSP::StateVec states;
-        TspTestState a(0,0);
-        TspTestState b(100,0);
-        TspTestState c(200,0);
-        TspTestState d(200,100);
-        TspTestState e(150,150);
-        TspTestState f(0,150);
-        TspTestState g(0,100);
+        TspTestState a(0, 0);
+        TspTestState b(100, 0);
+        TspTestState c(200, 0);
+        TspTestState d(200, 100);
+        TspTestState e(150, 150);
+        TspTestState f(0, 150);
+        TspTestState g(0, 100);
 
         states.push_back(&a);
         states.push_back(&b);
@@ -638,13 +613,13 @@ void V3TSP::selfTestStates() {
         expect.push_back(&e);
 
         if (VL_UNCOVERABLE(expect != result)) {
-            for (V3TSP::StateVec::iterator it = result.begin();
-                 it != result.end(); ++it) {
+            for (V3TSP::StateVec::iterator it = result.begin(); it != result.end(); ++it) {
                 const TspTestState* statep = dynamic_cast<const TspTestState*>(*it);
-                cout<<statep->xpos()<<","<<statep->ypos()<<" ";
+                cout << statep->xpos() << "," << statep->ypos() << " ";
             }
-            cout<<endl;
-            v3fatalSrc("TSP 2d cycle=false self-test fail. Result (above) did not match expectation.");
+            cout << endl;
+            v3fatalSrc(
+                "TSP 2d cycle=false self-test fail. Result (above) did not match expectation.");
         }
     }
 }
@@ -687,9 +662,9 @@ void V3TSP::selfTestString() {
 
     if (VL_UNCOVERABLE(expect != result)) {
         for (std::vector<string>::const_iterator it = result.begin(); it != result.end(); ++it) {
-            cout<<*it<<" ";
+            cout << *it << " ";
         }
-        cout<<endl;
+        cout << endl;
         v3fatalSrc("TSP string self-test fail. Result (above) did not match expectation.");
     }
 }

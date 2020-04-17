@@ -7,9 +7,28 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    Add simplistic class support with many restrictions, see manual, #377.
 
+**    Support IEEE time units and time precisions, #234.
+      Includes `timescale, $printtimescale, $timeformat.
+      VL_TIME_MULTIPLIER, VL_TIME_PRECISION, VL_TIME_UNIT have been removed
+      and the time precision must now match the SystemC time precision.  To
+      get closer behavior to older versions, use e.g. --timescale-override
+      "1ps/1ps".
+
+**    Add --build to call make automatically, #2249. [Yutetsu TAKATSUKASA]
+
 **    Configuring with ccache present now defaults to using it; see OBJCACHE.
 
+**    Fix DPI import/export to be standard compliant, #2236. [Geza Lore]
+
 ****  Support $ferror, and $fflush without arguments, #1638.
+
+****  Add error if use SystemC 2.2 and earlier (pre-2011) as is deprecated.
+
+****  Greatly improve FST dump performance, #2244, #2250, #2257. [Geza Lore]
+
+****  Fix build of fast path tracing code to use OPT_FAST, #2245. [Geza Lore]
+
+****  Improve VCD dump performance, #2246, #2250, #2257. [Geza Lore]
 
 
 * Verilator 4.032 2020-04-04

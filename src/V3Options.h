@@ -37,27 +37,26 @@ class VOptionBool {
     // Class to track options that are either not specified (and default
     // true/false), versus user setting the option to true or false
 public:
-    enum en {
-        OPT_DEFAULT_FALSE = 0,
-        OPT_DEFAULT_TRUE,
-        OPT_TRUE,
-        OPT_FALSE,
-        _ENUM_END
-    };
+    enum en { OPT_DEFAULT_FALSE = 0, OPT_DEFAULT_TRUE, OPT_TRUE, OPT_FALSE, _ENUM_END };
     enum en m_e;
-    inline VOptionBool() : m_e(OPT_DEFAULT_FALSE) {}
+    inline VOptionBool()
+        : m_e(OPT_DEFAULT_FALSE) {}
     // cppcheck-suppress noExplicitConstructor
-    inline VOptionBool(en _e) : m_e(_e) {}
-    explicit inline VOptionBool(int _e) : m_e(static_cast<en>(_e)) {}
+    inline VOptionBool(en _e)
+        : m_e(_e) {}
+    explicit inline VOptionBool(int _e)
+        : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     bool isDefault() const { return m_e == OPT_DEFAULT_FALSE || m_e == OPT_DEFAULT_TRUE; }
     bool isTrue() const { return m_e == OPT_TRUE || m_e == OPT_DEFAULT_TRUE; }
     bool isFalse() const { return m_e == OPT_FALSE || m_e == OPT_DEFAULT_FALSE; }
+    bool isSetTrue() const { return m_e == OPT_TRUE; }
+    bool isSetFalse() const { return m_e == OPT_FALSE; }
     void setTrueOrFalse(bool flag) { m_e = flag ? OPT_TRUE : OPT_FALSE; }
     const char* ascii() const {
-        static const char* const names[] = {
-            "DEFAULT_FALSE", "DEFAULT_TRUE", "TRUE", "FALSE"};
-        return names[m_e]; }
+        static const char* const names[] = {"DEFAULT_FALSE", "DEFAULT_TRUE", "TRUE", "FALSE"};
+        return names[m_e];
+    }
 };
 inline bool operator==(const VOptionBool& lhs, const VOptionBool& rhs) {
     return lhs.m_e == rhs.m_e;
@@ -70,33 +69,102 @@ inline std::ostream& operator<<(std::ostream& os, const VOptionBool& rhs) {
 
 //######################################################################
 
-class TraceFormat {
+class VTimescale {
 public:
     enum en {
-        VCD = 0,
-        FST,
-        FST_THREAD
-    } m_e;
+        TS_1S = 0,
+        // clang-format off
+        TS_100MS = 1, TS_10MS = 2, TS_1MS = 3,
+        TS_100US = 4, TS_10US = 5, TS_1US = 6,
+        TS_100NS = 7, TS_10NS = 8, TS_1NS = 9,
+        TS_100PS = 10, TS_10PS = 11, TS_1PS = 12,
+        TS_100FS = 13, TS_10FS = 14, TS_1FS = 15,
+        // clang-format on
+        NONE = 16,
+        _ENUM_END
+    };
+    enum { TS_DEFAULT = TS_1PS };
+    enum en m_e;
+    // CONSTRUCTOR
+    inline VTimescale()
+        : m_e(NONE) {}
     // cppcheck-suppress noExplicitConstructor
-    inline TraceFormat(en _e = VCD) : m_e(_e) {}
-    explicit inline TraceFormat(int _e) : m_e(static_cast<en>(_e)) {}
+    inline VTimescale(en _e)
+        : m_e(_e) {}
+    explicit inline VTimescale(int _e)
+        : m_e(static_cast<en>(_e)) {}
+    int negativeInt() { return -static_cast<int>(m_e); }
+    // Construct from string
+    VTimescale(const string& value, bool& badr);
+    VTimescale(double value, bool& badr) {
+        badr = false;
+        // clang-format off
+        if (value == 1e0) m_e = TS_1S;
+        else if (value == 1e-1) m_e = TS_100MS;
+        else if (value == 1e-2) m_e = TS_10MS;
+        else if (value == 1e-3) m_e = TS_1MS;
+        else if (value == 1e-4) m_e = TS_100US;
+        else if (value == 1e-5) m_e = TS_10US;
+        else if (value == 1e-6) m_e = TS_1US;
+        else if (value == 1e-7) m_e = TS_100NS;
+        else if (value == 1e-8) m_e = TS_10NS;
+        else if (value == 1e-9) m_e = TS_1NS;
+        else if (value == 1e-10) m_e = TS_100PS;
+        else if (value == 1e-11) m_e = TS_10PS;
+        else if (value == 1e-12) m_e = TS_1PS;
+        else if (value == 1e-13) m_e = TS_100FS;
+        else if (value == 1e-14) m_e = TS_10FS;
+        else if (value == 1e-15) m_e = TS_1FS;
+        // clang-format on
+        else {
+            m_e = NONE;
+            badr = true;
+        }
+    }
+    bool isNone() const { return m_e == NONE; }
+    // Parse a "unit/precision" string into two VTimescales, with error checking
+    static void parseSlashed(FileLine* fl, const char* textp, VTimescale& unitr, VTimescale& precr,
+                             bool allowEmpty = false);
+    const char* ascii() const {
+        static const char* const names[]
+            = {"1s",  "100ms", "10ms", "1ms", "100us", "10us", "1us", "100ns", "10ns",
+               "1ns", "100ps", "10ps", "1ps", "100fs", "10fs", "1fs", "NONE"};
+        return names[m_e];
+    }
+    double multiplier() const {
+        static double values[] = {1,    1e-1,  1e-2,  1e-3,  1e-4,  1e-5,  1e-6,  1e-7, 1e-8,
+                                  1e-9, 1e-10, 1e-11, 1e-12, 1e-13, 1e-14, 1e-15, 0};
+        return values[m_e];
+    }
+};
+inline bool operator==(const VTimescale& lhs, const VTimescale& rhs) { return lhs.m_e == rhs.m_e; }
+inline bool operator==(const VTimescale& lhs, VTimescale::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(VTimescale::en lhs, const VTimescale& rhs) { return lhs == rhs.m_e; }
+// Comparisons are based on time, not enum values, so seconds > milliseconds
+inline bool operator<(const VTimescale& lhs, const VTimescale& rhs) { return lhs.m_e > rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VTimescale& rhs) {
+    return os << rhs.ascii();
+}
+
+//######################################################################
+
+class TraceFormat {
+public:
+    enum en { VCD = 0, FST, FST_THREAD } m_e;
+    // cppcheck-suppress noExplicitConstructor
+    inline TraceFormat(en _e = VCD)
+        : m_e(_e) {}
+    explicit inline TraceFormat(int _e)
+        : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     bool fstFlavor() const { return m_e == FST || m_e == FST_THREAD; }
     bool threaded() const { return m_e == FST_THREAD; }
     string classBase() const {
-        static const char* const names[] = {
-            "VerilatedVcd",
-            "VerilatedFst",
-            "VerilatedFst"
-        };
+        static const char* const names[] = {"VerilatedVcd", "VerilatedFst", "VerilatedFst"};
         return names[m_e];
     }
     string sourceName() const {
-        static const char* const names[] = {
-            "verilated_vcd",
-            "verilated_fst",
-            "verilated_fst"
-        };
+        static const char* const names[] = {"verilated_vcd", "verilated_fst", "verilated_fst"};
         return names[m_e];
     }
 };
@@ -113,18 +181,19 @@ typedef std::set<string> V3StringSet;
 // V3Options - Command line options
 
 class V3Options {
-  public:
-
-  private:
+public:
+private:
     // TYPES
-    typedef std::map<string,int> DebugSrcMap;
+    typedef std::map<string, int> DebugSrcMap;
 
     // MEMBERS (general options)
-    V3OptionsImp*       m_impp;         // Slow hidden options
+    V3OptionsImp* m_impp;  // Slow hidden options
 
+    // clang-format off
     V3StringSet m_cppFiles;     // argument: C++ files to link against
     V3StringList m_cFlags;      // argument: user CFLAGS
     V3StringList m_ldLibs;      // argument: user LDFLAGS
+    V3StringList m_makeFlags;   // argument: user MAKEFLAGS
     V3StringSet m_futures;      // argument: -Wfuture- list
     V3StringSet m_libraryFiles; // argument: Verilog -v files
     V3StringSet m_clockers;     // argument: Verilog -clk signals
@@ -135,7 +204,6 @@ class V3Options {
     DebugSrcMap m_dumpTrees;    // argument: --dump-treei-<srcfile>=<level>
     std::map<string,string> m_parameters;  // Parameters
 
-
     bool        m_preprocOnly;  // main switch: -E
     bool        m_makePhony;    // main switch: -MP
     bool        m_preprocNoLine;// main switch: -P
@@ -143,6 +211,7 @@ class V3Options {
     bool        m_autoflush;    // main switch: --autoflush
     bool        m_bboxSys;      // main switch: --bbox-sys
     bool        m_bboxUnsup;    // main switch: --bbox-unsup
+    bool        m_build;        // main switch: --build
     bool        m_cdc;          // main switch: --cdc
     bool        m_cmake;        // main switch: --make cmake
     bool        m_context;      // main switch: --Wcontext
@@ -196,11 +265,13 @@ class V3Options {
     bool        m_traceStructs; // main switch: --trace-structs
     bool        m_traceUnderscore;// main switch: --trace-underscore
     bool        m_underlineZero;// main switch: --underline-zero; undocumented old Verilator 2
+    bool        m_verilate;     // main swith: --verilate
     bool        m_vpi;          // main switch: --vpi
     bool        m_xInitialEdge; // main switch: --x-initial-edge
     bool        m_xmlOnly;      // main switch: --only-xml
     bool        m_xmlFlat;      // main switch: --flat-xml
 
+    int         m_buildJobs;    // main switch: -j
     int         m_convergeLimit;// main switch: --converge-limit
     int         m_dumpTree;     // main switch: --dump-tree
     int         m_gateStmts;    // main switch: --gate-stmts
@@ -216,6 +287,10 @@ class V3Options {
     VOptionBool m_skipIdentical;  // main switch: --skip-identical
     int         m_threads;      // main switch: --threads (0 == --no-threads)
     int         m_threadsMaxMTasks;  // main switch: --threads-max-mtasks
+    VTimescale  m_timeDefaultPrec;  // main switch: --timescale
+    VTimescale  m_timeDefaultUnit;  // main switch: --timescale
+    VTimescale  m_timeOverridePrec;  // main switch: --timescale-override
+    VTimescale  m_timeOverrideUnit;  // main switch: --timescale-override
     int         m_traceDepth;   // main switch: --trace-depth
     TraceFormat m_traceFormat;  // main switch: --trace or --trace-fst
     int         m_traceMaxArray;// main switch: --trace-max-array
@@ -267,8 +342,9 @@ class V3Options {
     bool        m_oSubst;       // main switch: -Ou: substitute expression temp values
     bool        m_oSubstConst;  // main switch: -Ok: final constant substitution
     bool        m_oTable;       // main switch: -Oa: lookup table creation
+    // clang-format on
 
-  private:
+private:
     // METHODS
     void addArg(const string& arg);
     void addDefine(const string& defline, bool allowPlus);
@@ -290,12 +366,13 @@ class V3Options {
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(V3Options);
-  public:
+
+public:
     V3Options();
     ~V3Options();
     void setDebugMode(int level);
     void setDebugSrcLevel(const string& srcfile, int level);
-    int debugSrcLevel(const string& srcfile_path, int default_level=V3Error::debugDefault());
+    int debugSrcLevel(const string& srcfile_path, int default_level = V3Error::debugDefault());
     void setDumpTreeLevel(const string& srcfile, int level);
     int dumpTreeLevel(const string& srcfile_path);
 
@@ -303,6 +380,7 @@ class V3Options {
     void addCppFile(const string& filename);
     void addCFlags(const string& filename);
     void addLdLibs(const string& filename);
+    void addMakeFlags(const string& filename);
     void addLibraryFile(const string& filename);
     void addClocker(const string& signame);
     void addNoClocker(const string& signame);
@@ -327,6 +405,7 @@ class V3Options {
     bool autoflush() const { return m_autoflush; }
     bool bboxSys() const { return m_bboxSys; }
     bool bboxUnsup() const { return m_bboxUnsup; }
+    bool build() const { return m_build; }
     bool cdc() const { return m_cdc; }
     bool cmake() const { return m_cmake; }
     bool context() const { return m_context; }
@@ -358,7 +437,7 @@ class V3Options {
     bool traceUnderscore() const { return m_traceUnderscore; }
     bool orderClockDly() const { return m_orderClockDly; }
     bool outFormatOk() const { return m_outFormatOk; }
-    bool keepTempFiles() const { return (V3Error::debugDefault()!=0); }
+    bool keepTempFiles() const { return (V3Error::debugDefault() != 0); }
     bool pedantic() const { return m_pedantic; }
     bool pinsScUint() const { return m_pinsScUint; }
     bool pinsScBigUint() const { return m_pinsScBigUint; }
@@ -375,11 +454,13 @@ class V3Options {
     bool quietExit() const { return m_quietExit; }
     bool relativeCFuncs() const { return m_relativeCFuncs; }
     bool reportUnoptflat() const { return m_reportUnoptflat; }
+    bool verilate() const { return m_verilate; }
     bool vpi() const { return m_vpi; }
     bool xInitialEdge() const { return m_xInitialEdge; }
     bool xmlOnly() const { return m_xmlOnly; }
     bool xmlFlat() const { return m_xmlFlat; }
 
+    int buildJobs() const { return m_buildJobs; }
     int convergeLimit() const { return m_convergeLimit; }
     int dumpTree() const { return m_dumpTree; }
     int gateStmts() const { return m_gateStmts; }
@@ -396,6 +477,12 @@ class V3Options {
     int threads() const { return m_threads; }
     int threadsMaxMTasks() const { return m_threadsMaxMTasks; }
     bool mtasks() const { return (m_threads > 1); }
+    VTimescale timeDefaultPrec() const { return m_timeDefaultPrec; }
+    VTimescale timeDefaultUnit() const { return m_timeDefaultUnit; }
+    VTimescale timeOverridePrec() const { return m_timeOverridePrec; }
+    VTimescale timeOverrideUnit() const { return m_timeOverrideUnit; }
+    VTimescale timeComputePrec(const VTimescale& flag) const;
+    VTimescale timeComputeUnit(const VTimescale& flag) const;
     int traceDepth() const { return m_traceDepth; }
     TraceFormat traceFormat() const { return m_traceFormat; }
     int traceMaxArray() const { return m_traceMaxArray; }
@@ -407,7 +494,7 @@ class V3Options {
     int compLimitMembers() const { return m_compLimitMembers; }
     int compLimitParens() const { return m_compLimitParens; }
 
-    string exeName() const { return m_exeName!="" ? m_exeName : prefix(); }
+    string exeName() const { return m_exeName != "" ? m_exeName : prefix(); }
     string l2Name() const { return m_l2Name; }
     string makeDir() const { return m_makeDir; }
     string modPrefix() const { return m_modPrefix; }
@@ -417,7 +504,7 @@ class V3Options {
     string protectKeyDefaulted();  // Set default key if not set by user
     string protectLib() const { return m_protectLib; }
     string protectLibName(bool shared) {
-        string libName = "lib"+protectLib();
+        string libName = "lib" + protectLib();
         if (shared) {
             libName += ".so";
         } else {
@@ -434,6 +521,7 @@ class V3Options {
     const V3StringSet& cppFiles() const { return m_cppFiles; }
     const V3StringList& cFlags() const { return m_cFlags; }
     const V3StringList& ldLibs() const { return m_ldLibs; }
+    const V3StringList& makeFlags() const { return m_makeFlags; }
     const V3StringSet& libraryFiles() const { return m_libraryFiles; }
     const V3StringList& vFiles() const { return m_vFiles; }
     const V3StringList& forceIncs() const { return m_forceIncs; }
@@ -490,6 +578,7 @@ class V3Options {
     // see the README.  If adding new variables, also see src/Makefile_obj.in
     // Also add to V3Options::showVersion()
     static string getenvBuiltins(const string& var);
+    static string getenvMAKE();
     static string getenvPERL();
     static string getenvSYSTEMC();
     static string getenvSYSTEMC_ARCH();
@@ -499,10 +588,10 @@ class V3Options {
 
     // METHODS (file utilities using these options)
     string fileExists(const string& filename);
-    string filePath(FileLine* fl, const string& modname,
-                    const string& lastpath, const string& errmsg);
+    string filePath(FileLine* fl, const string& modname, const string& lastpath,
+                    const string& errmsg);
     void filePathLookedMsg(FileLine* fl, const string& modname);
-    V3LangCode fileLanguage(const string &filename);
+    V3LangCode fileLanguage(const string& filename);
     static bool fileStatDir(const string& filename);
     static bool fileStatNormal(const string& filename);
     static void fileNfsFlush(const string& filename);

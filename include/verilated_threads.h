@@ -25,12 +25,15 @@
 #include <condition_variable>
 #include <set>
 #include <vector>
+
+// clang-format off
 #if defined(__linux)
-#include <sched.h>  // For sched_getcpu()
+# include <sched.h>  // For sched_getcpu()
 #endif
 #if defined(__APPLE__)
 # include <cpuid.h>  // For __cpuid_count()
 #endif
+// clang-format on
 
 // VlMTaskVertex and VlThreadpool will work with multiple symbol table types.
 // Since the type is opaque to VlMTaskVertex and VlThreadPool, represent it
@@ -115,10 +118,7 @@ public:
 class VlProfileRec {
 protected:
     friend class VlThreadPool;
-    enum VlProfileE {
-        TYPE_MTASK_RUN,
-        TYPE_BARRIER
-    };
+    enum VlProfileE { TYPE_MTASK_RUN, TYPE_BARRIER };
     VlProfileE m_type;  // Record type
     vluint32_t m_mtaskId;  // Mtask we're logging
     vluint32_t m_predictTime;  // How long scheduler predicted would take
@@ -173,9 +173,14 @@ private:
         VlExecFnp m_fnp;  // Function to execute
         VlThrSymTab m_sym;  // Symbol table to execute
         bool m_evenCycle;  // Even/odd for flag alternation
-        ExecRec() : m_fnp(NULL), m_sym(NULL), m_evenCycle(false) {}
+        ExecRec()
+            : m_fnp(NULL)
+            , m_sym(NULL)
+            , m_evenCycle(false) {}
         ExecRec(VlExecFnp fnp, bool evenCycle, VlThrSymTab sym)
-            : m_fnp(fnp), m_sym(sym), m_evenCycle(evenCycle) {}
+            : m_fnp(fnp)
+            , m_sym(sym)
+            , m_evenCycle(evenCycle) {}
     };
 
     // MEMBERS
@@ -208,7 +213,7 @@ public:
     inline void dequeWork(ExecRec* workp) {
         // Spin for a while, waiting for new data
         for (int i = 0; i < VL_LOCK_SPINS; ++i) {
-            if (VL_LIKELY(m_ready_size.load(std::memory_order_relaxed))) {
+            if (VL_LIKELY(m_ready_size.load(std::memory_order_relaxed))) {  //
                 break;
             }
             VL_CPU_RELAX();

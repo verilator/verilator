@@ -1,0 +1,5 @@
+%Error-TIMESCALEMOD: t/t_timescale_lint_bad.v:7:8: Timescale missing on this module as other modules have it (IEEE 1800-2017 3.14.2.2)
+                     t/t_timescale_lint_bad.v:12:8: ... Location of module with timescale
+   12 | module t;
+      |        ^
+%Error: Exiting due to

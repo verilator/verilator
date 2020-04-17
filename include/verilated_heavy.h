@@ -379,11 +379,13 @@ template <class T_Value> std::string VL_TO_STRING(const VlQueue<T_Value>& obj) {
 // be protected by other means
 //
 
+// clang-format off
 #if (defined(_MSC_VER) && _MSC_VER >= 1900) || (__cplusplus >= 201103L)
 # define VlClassRef std::shared_ptr
 #else
 # define VlClassRef VlClassRef__SystemVerilog_class_support_requires_a_C11_or_newer_compiler
 #endif
+// clang-format on
 
 template <class T>  // T typically of type VlClassRef<x>
 inline T VL_NULL_CHECK(T t, const char* filename, int linenum) {
@@ -412,9 +414,7 @@ inline std::string VL_CONCATN_NNN(const std::string& lhs, const std::string& rhs
 inline std::string VL_REPLICATEN_NNQ(int, int, int, const std::string& lhs, IData rep) VL_PURE {
     std::string out;
     out.reserve(lhs.length() * rep);
-    for (unsigned times = 0; times < rep; ++times) {
-        out += lhs;
-    }
+    for (unsigned times = 0; times < rep; ++times) out += lhs;
     return out;
 }
 inline std::string VL_REPLICATEN_NNI(int obits, int lbits, int rbits, const std::string& lhs,
@@ -438,6 +438,8 @@ extern IData VL_SSCANF_INX(int lbits, const std::string& ld, const char* formatp
 extern void VL_SFORMAT_X(int obits_ignored, std::string& output, const char* formatp,
                          ...) VL_MT_SAFE;
 extern std::string VL_SFORMATF_NX(const char* formatp, ...) VL_MT_SAFE;
+extern void VL_TIMEFORMAT_IINI(int units, int precision, const std::string& suffix,
+                               int width) VL_MT_SAFE;
 extern IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_MT_SAFE;
 inline IData VL_VALUEPLUSARGS_INI(int rbits, const std::string& ld, CData& rdr) VL_MT_SAFE {
     WData rwp[2];  // WData must always be at least 2

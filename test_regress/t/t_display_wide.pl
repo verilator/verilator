@@ -11,7 +11,6 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 
 compile(
-    make_flags => 'CPPFLAGS_ADD=-DVL_TIME_MULTIPLIER=1000',
     );
 
 execute(

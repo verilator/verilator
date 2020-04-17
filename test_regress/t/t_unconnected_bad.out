@@ -1,0 +1,10 @@
+%Error: t/t_unconnected_bad.v:7:1: Bad `unconnected_drive syntax
+    7 | `unconnected_drive
+      | ^~~~~~~~~~~~~~~~~~
+%Error: t/t_unconnected_bad.v:9:1: Bad `unconnected_drive syntax
+    9 | `unconnected_drive pull2
+      | ^~~~~~~~~~~~~~~~~~
+%Error: t/t_unconnected_bad.v:9:20: syntax error, unexpected IDENTIFIER
+    9 | `unconnected_drive pull2
+      |                    ^~~~~
+%Error: Exiting due to

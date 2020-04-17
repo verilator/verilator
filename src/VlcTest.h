@@ -126,9 +126,7 @@ public:
         return testp;
     }
     void clearUser() {
-        for (ByName::iterator it = m_tests.begin(); it != m_tests.end(); ++it) {
-            (*it)->user(0);
-        }
+        for (ByName::iterator it = m_tests.begin(); it != m_tests.end(); ++it) (*it)->user(0);
     }
 };
 

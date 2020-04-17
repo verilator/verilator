@@ -52,10 +52,10 @@ protected:
         // Per-variable flags
         // Used in user()'s so initializes to all zeros
         struct {
-            int m_notOpt:1;     // NOT optimizable
-            int m_notStd:1;     // NOT optimizable if a non-blocktemp signal
-            int m_stdFuncAsn:1; // Found simple assignment
-            int m_done:1;       // Removed
+            int m_notOpt : 1;  // NOT optimizable
+            int m_notStd : 1;  // NOT optimizable if a non-blocktemp signal
+            int m_stdFuncAsn : 1;  // Found simple assignment
+            int m_done : 1;  // Removed
         };
         // cppcheck-suppress unusedStructMember
         uint32_t m_flags;
@@ -75,7 +75,7 @@ private:
     // METHODS
     virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         // cppcheck-suppress unreadVariable  // cppcheck 1.90 bug
-        VarFlags flags (nodep->varp());
+        VarFlags flags(nodep->varp());
         if (flags.m_done) {
             nodep->hiername("");  // Remove this->
             nodep->hierThis(true);
@@ -85,9 +85,7 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit LocalizeDehierVisitor(AstNetlist* nodep) {
-        iterate(nodep);
-    }
+    explicit LocalizeDehierVisitor(AstNetlist* nodep) { iterate(nodep); }
     virtual ~LocalizeDehierVisitor() {}
 };
 
@@ -98,9 +96,9 @@ class LocalizeVisitor : public LocalizeBaseVisitor {
 private:
     // NODE STATE/TYPES
     // See above
-    AstUser1InUse       m_inuser1;
-    AstUser2InUse       m_inuser2;
-    AstUser4InUse       m_inuser4;
+    AstUser1InUse m_inuser1;
+    AstUser2InUse m_inuser2;
+    AstUser4InUse m_inuser4;
 
     // STATE
     VDouble0 m_statLocVars;  // Statistic tracking
@@ -109,14 +107,14 @@ private:
 
     // METHODS
     void clearOptimizable(AstVar* nodep, const char* reason) {
-        UINFO(4,"       NoOpt "<<reason<<" "<<nodep<<endl);
-        VarFlags flags (nodep);
+        UINFO(4, "       NoOpt " << reason << " " << nodep << endl);
+        VarFlags flags(nodep);
         flags.m_notOpt = true;
         flags.setNodeFlags(nodep);
     }
     void clearStdOptimizable(AstVar* nodep, const char* reason) {
-        UINFO(4,"       NoStd "<<reason<<" "<<nodep<<endl);
-        VarFlags flags (nodep);
+        UINFO(4, "       NoStd " << reason << " " << nodep << endl);
+        VarFlags flags(nodep);
         flags.m_notStd = true;
         flags.setNodeFlags(nodep);
     }
@@ -125,13 +123,14 @@ private:
             AstVar* nodep = *it;
             if (nodep->valuep()) clearOptimizable(nodep, "HasInitValue");
             if (!VarFlags(nodep).m_stdFuncAsn) clearStdOptimizable(nodep, "NoStdAssign");
-            VarFlags flags (nodep);
+            VarFlags flags(nodep);
+
             if ((nodep->isMovableToBlock()  // Blocktemp
                  || !flags.m_notStd)  // Or used only in block
                 && !flags.m_notOpt  // Optimizable
-                && nodep->user1p()) {  // Single cfunc
+                && !nodep->isClassMember() && nodep->user1p()) {  // Single cfunc
                 // We don't need to test for tracing; it would be in the tracefunc if it was needed
-                UINFO(4,"  ModVar->BlkVar "<<nodep<<endl);
+                UINFO(4, "  ModVar->BlkVar " << nodep << endl);
                 ++m_statLocVars;
                 AstCFunc* newfuncp = VN_CAST(nodep->user1p(), CFunc);
                 nodep->unlinkFrBack();
@@ -152,7 +151,7 @@ private:
         moveVars();
     }
     virtual void visit(AstCFunc* nodep) VL_OVERRIDE {
-        UINFO(4,"  CFUNC "<<nodep<<endl);
+        UINFO(4, "  CFUNC " << nodep << endl);
         m_cfuncp = nodep;
         searchFuncStmts(nodep->argsp());
         searchFuncStmts(nodep->initsp());
@@ -166,14 +165,14 @@ private:
         // For now we only find simple assignments not under any other statement.
         // This could be more complicated; allow always-set under both branches of a IF.
         // If so, check for ArrayRef's and such, as they aren't acceptable.
-        for (; nodep; nodep=nodep->nextp()) {
+        for (; nodep; nodep = nodep->nextp()) {
             if (VN_IS(nodep, NodeAssign)) {
                 if (AstVarRef* varrefp = VN_CAST(VN_CAST(nodep, NodeAssign)->lhsp(), VarRef)) {
                     UASSERT_OBJ(varrefp->lvalue(), varrefp, "LHS assignment not lvalue");
                     if (!varrefp->varp()->user4p()) {
-                        UINFO(4,"      FuncAsn "<<varrefp<<endl);
+                        UINFO(4, "      FuncAsn " << varrefp << endl);
                         varrefp->varp()->user4p(varrefp);
-                        VarFlags flags (varrefp->varp());
+                        VarFlags flags(varrefp->varp());
                         flags.m_stdFuncAsn = true;
                         flags.setNodeFlags(varrefp->varp());
                     }
@@ -183,10 +182,9 @@ private:
     }
 
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
-        if (!nodep->isSigPublic()
-            && !nodep->isPrimaryIO()
+        if (!nodep->isSigPublic() && !nodep->isPrimaryIO()
             && !m_cfuncp) {  // Not already inside a function
-            UINFO(4,"    BLKVAR "<<nodep<<endl);
+            UINFO(4, "    BLKVAR " << nodep << endl);
             m_varps.push_back(nodep);
         }
         // No iterate; Don't want varrefs under it
@@ -195,14 +193,13 @@ private:
         if (!VarFlags(nodep->varp()).m_notOpt) {
             if (!m_cfuncp) {  // Not in function, can't optimize
                 clearOptimizable(nodep->varp(), "BVnofunc");
-            }
-            else {
+            } else {
                 // If we're scoping down to it, it isn't really in the same block
                 if (!nodep->hierThis()) clearOptimizable(nodep->varp(), "HierRef");
                 // Allow a variable to appear in only a single function
                 AstNode* oldfunc = nodep->varp()->user1p();
                 if (!oldfunc) {
-                    UINFO(4,"      BVnewref "<<nodep<<endl);
+                    UINFO(4, "      BVnewref " << nodep << endl);
                     nodep->varp()->user1p(m_cfuncp);  // Remember where it was used
                 } else if (m_cfuncp == oldfunc) {
                     // Same usage
@@ -212,7 +209,7 @@ private:
                 }
                 // First varref in function must be assignment found earlier
                 AstVarRef* firstasn = static_cast<AstVarRef*>(nodep->varp()->user4p());
-                if (firstasn && nodep!=firstasn) {
+                if (firstasn && nodep != firstasn) {
                     clearStdOptimizable(nodep->varp(), "notFirstAsn");
                     nodep->varp()->user4p(NULL);
                 }
@@ -237,11 +234,11 @@ public:
 // Localize class functions
 
 void V3Localize::localizeAll(AstNetlist* nodep) {
-    UINFO(2,__FUNCTION__<<": "<<endl);
+    UINFO(2, __FUNCTION__ << ": " << endl);
     {
-        LocalizeVisitor visitor (nodep);
+        LocalizeVisitor visitor(nodep);
         // Fix up hiernames
-        LocalizeDehierVisitor dvisitor (nodep);
+        LocalizeDehierVisitor dvisitor(nodep);
     }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("localize", 0, v3Global.opt.dumpTreeLevel(__FILE__) >= 6);
 }

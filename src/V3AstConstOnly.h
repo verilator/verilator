@@ -18,12 +18,12 @@
 #define _V3ASTCONSTONLY_H_ 1
 
 // Include only in visitors that do not not edit nodes, so should use constant iterators
-#define iterateAndNext   error_use_iterateAndNextConst
-#define iterateChildren  error_use_iterateChildrenConst
+#define iterateAndNext error_use_iterateAndNextConst
+#define iterateChildren error_use_iterateChildrenConst
 
-#define addNext          error_no_addNext_in_ConstOnlyVisitor
-#define replaceWith      error_no_replaceWith_in_ConstOnlyVisitor
-#define deleteTree       error_no_deleteTree_in_ConstOnlyVisitor
-#define unlinkFrBack     error_no_unlinkFrBack_in_ConstOnlyVisitor
+#define addNext error_no_addNext_in_ConstOnlyVisitor
+#define replaceWith error_no_replaceWith_in_ConstOnlyVisitor
+#define deleteTree error_no_deleteTree_in_ConstOnlyVisitor
+#define unlinkFrBack error_no_unlinkFrBack_in_ConstOnlyVisitor
 
 #endif  // Guard

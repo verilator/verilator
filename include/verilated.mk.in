@@ -163,10 +163,11 @@ LIBS   += -lm -lstdc++
 #######################################################################
 # Overall Objects Linking
 
-VK_CLASSES_H   = $(addsuffix .h, $(VM_CLASSES))
-VK_CLASSES_CPP = $(addsuffix .cpp, $(VM_CLASSES))
+VK_CLASSES_FAST_CPP = $(addsuffix .cpp, $(VM_CLASSES_FAST))
+VK_CLASSES_SLOW_CPP = $(addsuffix .cpp, $(VM_CLASSES_SLOW))
 
-VK_SUPPORT_CPP = $(addsuffix .cpp, $(VM_SUPPORT))
+VK_SUPPORT_FAST_CPP = $(addsuffix .cpp, $(VM_SUPPORT_FAST))
+VK_SUPPORT_SLOW_CPP = $(addsuffix .cpp, $(VM_SUPPORT_SLOW))
 
 VK_USER_OBJS   = $(addsuffix .o, $(VM_USER_CLASSES))
 
@@ -175,11 +176,11 @@ VK_GLOBAL_OBJS = $(addsuffix .o, $(VM_GLOBAL_FAST) $(VM_GLOBAL_SLOW))
 ifneq ($(VM_PARALLEL_BUILDS),1)
   # Fast building, all .cpp's in one fell swoop
   # This saves about 5 sec per module, but can be slower if only a little changes
-  VK_OBJS += $(VM_PREFIX)__ALLcls.o   $(VM_PREFIX)__ALLsup.o
-  all_cpp:   $(VM_PREFIX)__ALLcls.cpp $(VM_PREFIX)__ALLsup.cpp
-  $(VM_PREFIX)__ALLcls.cpp: $(VK_CLASSES_CPP)
+  VK_OBJS += $(VM_PREFIX)__ALLfast.o   $(VM_PREFIX)__ALLslow.o
+  all_cpp:   $(VM_PREFIX)__ALLfast.cpp $(VM_PREFIX)__ALLslow.cpp
+  $(VM_PREFIX)__ALLfast.cpp: $(VK_CLASSES_FAST_CPP) $(VK_SUPPORT_FAST_CPP)
 	$(VERILATOR_INCLUDER) -DVL_INCLUDE_OPT=include $^ > $@
-  $(VM_PREFIX)__ALLsup.cpp: $(VK_SUPPORT_CPP)
+  $(VM_PREFIX)__ALLslow.cpp: $(VK_CLASSES_SLOW_CPP) $(VK_SUPPORT_SLOW_CPP)
 	$(VERILATOR_INCLUDER) -DVL_INCLUDE_OPT=include $^ > $@
 else
   #Slow way of building... Each .cpp file by itself
@@ -194,10 +195,10 @@ $(VM_PREFIX)__ALL.a: $(VK_OBJS)
 ### Compile rules
 
 ifneq ($(VM_DEFAULT_RULES),0)
-$(VM_PREFIX)__ALLcls.o: $(VM_PREFIX)__ALLcls.cpp
+$(VM_PREFIX)__ALLfast.o: $(VM_PREFIX)__ALLfast.cpp
 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o $@ $<
 
-$(VM_PREFIX)__ALLsup.o: $(VM_PREFIX)__ALLsup.cpp
+$(VM_PREFIX)__ALLslow.o: $(VM_PREFIX)__ALLslow.cpp
 	$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_SLOW) -c -o $@ $<
 
 # VM_GLOBAL_FAST files including verilated.o use this rule

@@ -43,7 +43,7 @@ protected:
     //---------------------------------------
     // METHODS
 
-    static int debug(bool reset=false) {
+    static int debug(bool reset = false) {
         static int level = -1;
         if (VL_UNLIKELY(level < 0) || reset) {
             level = v3Global.opt.debugSrcLevel(__FILE__);
@@ -64,8 +64,10 @@ protected:
             s_preprocp->defineCmdLine(prefl, "VERILATOR", "1");  // LEAK_OK
             s_preprocp->defineCmdLine(prefl, "verilator", "1");  // LEAK_OK
             s_preprocp->defineCmdLine(prefl, "verilator3", "1");  // LEAK_OK
-            s_preprocp->defineCmdLine(prefl, "systemc_clock", "/*verilator systemc_clock*/");  // LEAK_OK
-            s_preprocp->defineCmdLine(prefl, "coverage_block_off", "/*verilator coverage_block_off*/");  // LEAK_OK
+            s_preprocp->defineCmdLine(prefl, "systemc_clock",
+                                      "/*verilator systemc_clock*/");  // LEAK_OK
+            s_preprocp->defineCmdLine(prefl, "coverage_block_off",
+                                      "/*verilator coverage_block_off*/");  // LEAK_OK
             if (prefl->language().systemVerilog()) {
                 // Synthesis compatibility
                 s_preprocp->defineCmdLine(prefl, "SYSTEMVERILOG", "1");  // LEAK_OK
@@ -94,7 +96,7 @@ protected:
         debug(true);  // Recheck if debug on - first check was before command line passed
 
         // Preprocess the given module, putting output in vppFilename
-        UINFONL(1,"  Preprocessing "<<modname<<endl);
+        UINFONL(1, "  Preprocessing " << modname << endl);
 
         // Preprocess
         s_filterp = filterp;
@@ -109,8 +111,8 @@ protected:
             // intervening +<lang>ext+ options since it was first encountered.
             FileLine* modfileline = new FileLine(modfilename);
             modfileline->language(v3Global.opt.fileLanguage(modfilename));
-            V3Parse::ppPushText(parsep, (string("`begin_keywords \"")
-                                         +modfileline->language().ascii()+"\"\n"));
+            V3Parse::ppPushText(
+                parsep, (string("`begin_keywords \"") + modfileline->language().ascii() + "\"\n"));
         }
 
         while (!s_preprocp->isEof()) {
@@ -121,31 +123,32 @@ protected:
     }
 
     void preprocInclude(FileLine* fl, const string& modname) {
-        if (modname[0]=='/' || modname[0]=='\\') {
-            fl->v3warn(INCABSPATH, "Suggest `include with absolute path be made relative, and use +include: "
-                       <<modname);
+        if (modname[0] == '/' || modname[0] == '\\') {
+            fl->v3warn(INCABSPATH,
+                       "Suggest `include with absolute path be made relative, and use +include: "
+                           << modname);
         }
         preprocOpen(fl, s_filterp, modname, V3Os::filenameDir(fl->filename()),
                     "Cannot find include file: ");
     }
 
 private:
-    string preprocOpen(FileLine* fl, VInFilter* filterp,
-                       const string& modname, const string& lastpath,
+    string preprocOpen(FileLine* fl, VInFilter* filterp, const string& modname,
+                       const string& lastpath,
                        const string& errmsg) {  // Error message or "" to suppress
         // Returns filename if successful
         // Try a pure name in case user has a bogus `filename they don't expect
         string filename = v3Global.opt.filePath(fl, modname, lastpath, errmsg);
-        if (filename=="") {
+        if (filename == "") {
             // Allow user to put `defined names on the command line instead of filenames,
             // then convert them properly.
             string ppmodname = s_preprocp->removeDefines(modname);
 
             filename = v3Global.opt.filePath(fl, ppmodname, lastpath, errmsg);
         }
-        if (filename=="") return "";  // Not found
+        if (filename == "") return "";  // Not found
 
-        UINFO(2,"    Reading "<<filename<<endl);
+        UINFO(2, "    Reading " << filename << endl);
         s_preprocp->openFile(fl, filterp, filename);
         return filename;
     }
@@ -163,9 +166,7 @@ VInFilter* V3PreShellImp::s_filterp = NULL;
 //######################################################################
 // Perl class functions
 
-void V3PreShell::boot(char** env) {
-    V3PreShellImp::s_preImp.boot(env);
-}
+void V3PreShell::boot(char** env) { V3PreShellImp::s_preImp.boot(env); }
 bool V3PreShell::preproc(FileLine* fl, const string& modname, VInFilter* filterp,
                          V3ParseImp* parsep, const string& errmsg) {
     return V3PreShellImp::s_preImp.preproc(fl, modname, filterp, parsep, errmsg);
@@ -177,12 +178,8 @@ void V3PreShell::defineCmdLine(const string& name, const string& value) {
     FileLine* prefl = new FileLine(FileLine::commandLineFilename());
     V3PreShellImp::s_preprocp->defineCmdLine(prefl, name, value);
 }
-void V3PreShell::undef(const string& name) {
-    V3PreShellImp::s_preprocp->undef(name);
-}
-void V3PreShell::dumpDefines(std::ostream& os) {
-    V3PreShellImp::s_preprocp->dumpDefines(os);
-}
+void V3PreShell::undef(const string& name) { V3PreShellImp::s_preprocp->undef(name); }
+void V3PreShell::dumpDefines(std::ostream& os) { V3PreShellImp::s_preprocp->dumpDefines(os); }
 void V3PreShell::candidateDefines(VSpellCheck* spellerp) {
     V3PreShellImp::s_preprocp->candidateDefines(spellerp);
 }

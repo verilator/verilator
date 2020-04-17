@@ -67,8 +67,7 @@ public:
         const string namestr = name();
         for (const char* cp = namestr.c_str(); *cp; ++cp) {
             if (*cp == '\001') {
-                if (0 == strncmp(cp + 1, shortKey, shortLen)
-                    && cp[shortLen + 1] == '\002') {
+                if (0 == strncmp(cp + 1, shortKey, shortLen) && cp[shortLen + 1] == '\002') {
                     cp += shortLen + 2;  // Skip \001+short+\002
                     const char* ep = cp;
                     while (*ep && *ep != '\001') ++ep;
@@ -110,7 +109,8 @@ public:
 
 public:
     // CONSTRUCTORS
-    VlcPoints() : m_numPoints(0) {}
+    VlcPoints()
+        : m_numPoints(0) {}
     ~VlcPoints() {}
 
     // METHODS

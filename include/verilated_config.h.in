@@ -16,9 +16,8 @@
 ///
 //*************************************************************************
 
-
 ///**** Product and Version name
 
 // Autoconf substitutes this with the strings from AC_INIT.
-#define VERILATOR_PRODUCT    "@PACKAGE_NAME@"
-#define VERILATOR_VERSION    "@PACKAGE_VERSION@"
+#define VERILATOR_PRODUCT "@PACKAGE_NAME@"
+#define VERILATOR_VERSION "@PACKAGE_VERSION@"

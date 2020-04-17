@@ -127,11 +127,10 @@ private:
     }
     virtual void visit(AstPragma* nodep) VL_OVERRIDE {
         if (nodep->pragType() == AstPragmaType::INLINE_MODULE) {
-            // UINFO(0,"PRAG MARK "<<m_modp<<endl);
+            // UINFO(0, "PRAG MARK " << m_modp << endl);
             if (!m_modp) {
                 nodep->v3error("Inline pragma not under a module");  // LCOV_EXCL_LINE
-            } else if (m_modp->user2() == CIL_MAYBE
-                       || m_modp->user2() == CIL_NOTSOFT) {
+            } else if (m_modp->user2() == CIL_MAYBE || m_modp->user2() == CIL_NOTSOFT) {
                 m_modp->user2(CIL_USER);
             }
             // Remove so don't propagate to upper cell...
@@ -199,14 +198,13 @@ private:
             // If a mod*#refs is < this # nodes, can inline it
             bool doit = ((allowed == CIL_USER)
                          || ((allowed == CIL_MAYBE)
-                             && (refs == 1
-                                 || statements < INLINE_MODS_SMALLER
+                             && (refs == 1 || statements < INLINE_MODS_SMALLER
                                  || v3Global.opt.inlineMult() < 1
                                  || refs * statements < v3Global.opt.inlineMult())));
             // Packages aren't really "under" anything so they confuse this algorithm
             if (VN_IS(modp, Package)) doit = false;
             UINFO(4, " Inline=" << doit << " Possible=" << allowed << " Refs=" << refs
-                  << " Stmts=" << statements << "  " << modp << endl);
+                                << " Stmts=" << statements << "  " << modp << endl);
             modp->user1(doit);
         }
     }
@@ -247,9 +245,7 @@ private:
     VL_DEBUG_FUNC;  // Declare debug()
 
     // VISITORS
-    virtual void visit(AstCell* nodep) VL_OVERRIDE {
-        nodep->user4p(nodep->clonep());
-    }
+    virtual void visit(AstCell* nodep) VL_OVERRIDE { nodep->user4p(nodep->clonep()); }
     //--------------------
     virtual void visit(AstNodeStmt*) VL_OVERRIDE {}  // Accelerate
     virtual void visit(AstNodeMath*) VL_OVERRIDE {}  // Accelerate
@@ -328,36 +324,30 @@ private:
                 // remove the change detection on the output variable.
                 UINFO(9, "public pin assign: " << exprvarrefp << endl);
                 UASSERT_OBJ(!nodep->isNonOutput(), nodep, "Outputs only - inputs use AssignAlias");
-                m_modp->addStmtp(
-                    new AstAssignW(nodep->fileline(),
-                                   new AstVarRef(nodep->fileline(), exprvarrefp->varp(), true),
-                                   new AstVarRef(nodep->fileline(), nodep, false)));
+                m_modp->addStmtp(new AstAssignW(
+                    nodep->fileline(), new AstVarRef(nodep->fileline(), exprvarrefp->varp(), true),
+                    new AstVarRef(nodep->fileline(), nodep, false)));
             } else if (nodep->isSigPublic() && VN_IS(nodep->dtypep(), UnpackArrayDType)) {
                 // Public variable at this end and it is an unpacked array. We need to assign
                 // instead of aliased, because otherwise it will pass V3Slice and invalid
                 // code will be emitted.
                 UINFO(9, "assign to public and unpacked: " << nodep << endl);
-                m_modp->addStmtp(
-                    new AstAssignW(nodep->fileline(),
-                                   new AstVarRef(nodep->fileline(), exprvarrefp->varp(), true),
-                                   new AstVarRef(nodep->fileline(), nodep, false)));
+                m_modp->addStmtp(new AstAssignW(
+                    nodep->fileline(), new AstVarRef(nodep->fileline(), exprvarrefp->varp(), true),
+                    new AstVarRef(nodep->fileline(), nodep, false)));
             } else if (nodep->isIfaceRef()) {
-                m_modp->addStmtp(
-                    new AstAssignVarScope(nodep->fileline(),
-                                          new AstVarRef(nodep->fileline(), nodep, true),
-                                          new AstVarRef(nodep->fileline(),
-                                                        exprvarrefp->varp(), false)));
+                m_modp->addStmtp(new AstAssignVarScope(
+                    nodep->fileline(), new AstVarRef(nodep->fileline(), nodep, true),
+                    new AstVarRef(nodep->fileline(), exprvarrefp->varp(), false)));
                 AstNode* nodebp = exprvarrefp->varp();
                 nodep->fileline()->modifyStateInherit(nodebp->fileline());
                 nodebp->fileline()->modifyStateInherit(nodep->fileline());
             } else {
                 // Do to inlining child's variable now within the same
                 // module, so a AstVarRef not AstVarXRef below
-                m_modp->addStmtp(
-                    new AstAssignAlias(nodep->fileline(),
-                                       new AstVarRef(nodep->fileline(), nodep, true),
-                                       new AstVarRef(nodep->fileline(),
-                                                     exprvarrefp->varp(), false)));
+                m_modp->addStmtp(new AstAssignAlias(
+                    nodep->fileline(), new AstVarRef(nodep->fileline(), nodep, true),
+                    new AstVarRef(nodep->fileline(), exprvarrefp->varp(), false)));
                 AstNode* nodebp = exprvarrefp->varp();
                 nodep->fileline()->modifyStateInherit(nodebp->fileline());
                 nodebp->fileline()->modifyStateInherit(nodep->fileline());
@@ -406,7 +396,8 @@ private:
     virtual void visit(AstVarRef* nodep) VL_OVERRIDE {
         if (nodep->varp()->user2p()  // It's being converted to an alias.
             && !nodep->varp()->user3()
-            && !VN_IS(nodep->backp(), AssignAlias)) {  // Don't constant propagate aliases (we just made)
+            // Don't constant propagate aliases (we just made)
+            && !VN_IS(nodep->backp(), AssignAlias)) {
             AstConst* exprconstp = VN_CAST(nodep->varp()->user2p(), Const);
             AstVarRef* exprvarrefp = VN_CAST(nodep->varp()->user2p(), VarRef);
             if (exprconstp) {
@@ -547,22 +538,22 @@ private:
             // we'll save work, and we can't call pinReconnectSimple in
             // this loop as it clone()s itself.
             for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
-                if (!pinp->exprp()) continue;
                 V3Inst::pinReconnectSimple(pinp, nodep, false);
             }
 
             // Clone original module
-            if (debug() >= 9) { nodep->dumpTree(cout, "inlcell:"); }
-            // if (debug()>=9) { nodep->modp()->dumpTree(cout,"oldmod:"); }
+            if (debug() >= 9) nodep->dumpTree(cout, "inlcell:");
+            // if (debug() >= 9) nodep->modp()->dumpTree(cout, "oldmod:");
             AstNodeModule* newmodp = nodep->modp()->cloneTree(false);
-            if (debug() >= 9) { newmodp->dumpTree(cout, "newmod:"); }
+            if (debug() >= 9) newmodp->dumpTree(cout, "newmod:");
             // Clear var markings and find cell cross references
             AstNode::user2ClearTree();
             AstNode::user4ClearTree();
             { InlineCollectVisitor(nodep->modp()); }  // {} to destroy visitor immediately
             // Create data for dotted variable resolution
             AstCellInline* inlinep
-                = new AstCellInline(nodep->fileline(), nodep->name(), nodep->modp()->origName());
+                = new AstCellInline(nodep->fileline(), nodep->name(), nodep->modp()->origName(),
+                                    nodep->modp()->timeunit());
             m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
             // Create assignments to the pins
             for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_CAST(pinp->nextp(), Pin)) {
@@ -576,8 +567,9 @@ private:
                 UASSERT_OBJ(pinNewVarp, pinOldVarp, "Cloning failed");
 
                 AstNode* connectRefp = pinp->exprp();
-                UASSERT_OBJ(VN_IS(connectRefp, Const) || VN_IS(connectRefp, VarRef), pinp,
-                            "Unknown interconnect type; pinReconnectSimple should have cleared up");
+                UASSERT_OBJ(
+                    VN_IS(connectRefp, Const) || VN_IS(connectRefp, VarRef), pinp,
+                    "Unknown interconnect type; pinReconnectSimple should have cleared up");
                 V3Inst::checkOutputShort(pinp);
 
                 // Propagate any attributes across the interconnect
@@ -625,7 +617,7 @@ public:
         m_modp = NULL;
         iterate(nodep);
     }
-    virtual ~InlineVisitor() {
+    virtual ~InlineVisitor() {  //
         V3Stats::addStat("Optimizations, Inlined cells", m_statCells);
     }
 };
@@ -669,8 +661,7 @@ private:
                 if (!irdtp) continue;
 
                 AstCell* cellp;
-                if ((cellp = VN_CAST(fromVarp->user1p(), Cell))
-                    || (cellp = irdtp->cellp())) {
+                if ((cellp = VN_CAST(fromVarp->user1p(), Cell)) || (cellp = irdtp->cellp())) {
                     varp->user1p(cellp);
                     string alias = m_scope + "__DOT__" + pinp->name();
                     cellp->addIntfRefp(new AstIntfRef(pinp->fileline(), alias));

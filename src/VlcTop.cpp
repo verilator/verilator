@@ -114,7 +114,10 @@ void VlcTop::rank() {
     // then hierarchically solve a small subset of tests, and take resulting
     // solution and move up to larger subset of tests.  (Aka quick sort.)
     while (true) {
-        if (debug()) { UINFO(9, "Left on iter" << nextrank << ": "); remaining.dump(); }
+        if (debug()) {
+            UINFO(9, "Left on iter" << nextrank << ": ");
+            remaining.dump();
+        }
         VlcTest* bestTestp = NULL;
         vluint64_t bestRemain = 0;
         for (std::vector<VlcTest*>::iterator it = bytime.begin(); it != bytime.end(); ++it) {
@@ -151,7 +154,8 @@ void VlcTop::annotateCalc() {
             string threshStr = point.thresh();
             unsigned thresh = (!threshStr.empty()) ? atoi(threshStr.c_str()) : opt.annotateMin();
             bool ok = (point.count() >= thresh);
-            UINFO(9, "AnnoCalc count " << filename << " " << lineno << " " << point.count() << endl);
+            UINFO(9,
+                  "AnnoCalc count " << filename << " " << lineno << " " << point.count() << endl);
             source.incCount(lineno, column, point.count(), ok);
         }
     }
