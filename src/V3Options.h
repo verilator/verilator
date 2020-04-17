@@ -268,8 +268,8 @@ private:
     bool        m_verilate;     // main swith: --verilate
     bool        m_vpi;          // main switch: --vpi
     bool        m_xInitialEdge; // main switch: --x-initial-edge
-    bool        m_xmlOnly;      // main switch: --only-xml
-    bool        m_xmlFlat;      // main switch: --flat-xml
+    bool        m_xmlOnly;      // main switch: --xml-only
+    bool        m_xmlFlat;      // main switch: --xml-flat
 
     int         m_buildJobs;    // main switch: -j
     int         m_convergeLimit;// main switch: --converge-limit
