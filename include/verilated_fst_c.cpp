@@ -230,6 +230,7 @@ void VerilatedFst::dump(vluint64_t timeui) {
         return;
     }
     m_minNextDumpTime = timeui + 1;
+    fstWriterEmitTimeChange(m_fst, timeui);
     if (VL_UNLIKELY(m_fullDump)) {
         m_fullDump = false;  // No more need for next dump to be full
         for (vluint32_t ent = 0; ent < m_callbacks.size(); ++ent) {
@@ -238,7 +239,6 @@ void VerilatedFst::dump(vluint64_t timeui) {
         }
         return;
     }
-    fstWriterEmitTimeChange(m_fst, timeui);
     for (vluint32_t ent = 0; ent < m_callbacks.size(); ++ent) {
         VerilatedFstCallInfo* cip = m_callbacks[ent];
         (cip->m_changecb)(this, cip->m_userthis, cip->m_code);
