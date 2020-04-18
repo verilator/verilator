@@ -2015,6 +2015,7 @@ sub files_identical {
                     && !/^- [a-z.0-9]+:\d+:[^\n]+\n/
                     && !/^-node:/
                     && !/^dot [^\n]+\n/
+                    && !/^In file: \/.*\/systemc-\d\.\d\.\d\/.*:\d+/
             } @l1;
             @l1 = map {
                 s/(Internal Error: [^\n]+\.cpp):[0-9]+:/$1:#:/;
