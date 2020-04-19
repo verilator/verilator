@@ -1,12 +1,12 @@
 $date
-	Sat Apr 18 22:19:21 2020
+	Sun Apr 19 04:13:00 2020
 
 $end
 $version
 	fstWriter
 $end
 $timescale
-	1ns
+	1ps
 $end
 $scope module topa $end
 $var wire 1 ! clk $end
