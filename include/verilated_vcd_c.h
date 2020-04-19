@@ -55,7 +55,7 @@ public:
 class VerilatedVcd : public VerilatedTrace<VerilatedVcd> {
 private:
     // Give the superclass access to private bits (to avoid virtual functions)
-    friend VerilatedTrace<VerilatedVcd>;
+    friend class VerilatedTrace<VerilatedVcd>;
 
     //=========================================================================
     // VCD specific internals

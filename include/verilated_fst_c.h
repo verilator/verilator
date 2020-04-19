@@ -38,7 +38,7 @@
 class VerilatedFst : public VerilatedTrace<VerilatedFst> {
 private:
     // Give the superclass access to private bits (to avoid virtual functions)
-    friend VerilatedTrace<VerilatedFst>;
+    friend class VerilatedTrace<VerilatedFst>;
 
     //=========================================================================
     // FST specific internals
