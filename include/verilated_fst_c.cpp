@@ -100,6 +100,7 @@ void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
     m_assertOne.check();
     m_fst = fstWriterCreate(filename, 1);
     fstWriterSetPackType(m_fst, FST_WR_PT_LZ4);
+    fstWriterSetTimescaleFromString(m_fst, m_timeRes.c_str());
 #ifdef VL_TRACE_THREADED
     fstWriterSetParallelMode(m_fst, 1);
 #endif

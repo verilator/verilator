@@ -65,6 +65,8 @@ private:
     // helpers
     std::vector<char> m_valueStrBuffer;
 
+    std::string m_timeRes;
+
 public:
     explicit VerilatedFst(void* fst = NULL);
     ~VerilatedFst();
@@ -77,11 +79,11 @@ public:
         fstWriterClose(m_fst);
         m_fst = NULL;
     }
-    void set_time_unit(const char* unitp) { fstWriterSetTimescaleFromString(m_fst, unitp); }
+    void set_time_unit(const char*) {}
     void set_time_unit(const std::string& unit) { set_time_unit(unit.c_str()); }
 
-    void set_time_resolution(const char*) {}
-    void set_time_resolution(const std::string& unit) { set_time_resolution(unit.c_str()); }
+    void set_time_resolution(const char* unitp) { m_timeRes = unitp; }
+    void set_time_resolution(const std::string& unit) { m_timeRes = unit; }
 
     // double timescaleToDouble(const char* unitp);
     // std::string doubleToTimescale(double value);
