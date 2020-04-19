@@ -294,12 +294,18 @@ void VerilatedVcd::close() {
     // This function is on the flush() call path
     m_assertOne.check();
     if (!isOpen()) return;
+    VerilatedTrace<VerilatedVcd>::close();
     if (m_evcd) {
         printStr("$vcdclose ");
         printQuad(timeLastDump());
         printStr(" $end\n");
     }
     closePrev();
+}
+
+void VerilatedVcd::flush() {
+    VerilatedTrace<VerilatedVcd>::flush();
+    bufferFlush();
 }
 
 void VerilatedVcd::printStr(const char* str) {

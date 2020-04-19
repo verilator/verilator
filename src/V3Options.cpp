@@ -1061,8 +1061,16 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 addLdLibs("-lz");
             } else if (!strcmp(sw, "-trace-fst-thread")) {
                 m_trace = true;
-                m_traceFormat = TraceFormat::FST_THREAD;
+                m_traceFormat = TraceFormat::FST;
                 addLdLibs("-lz");
+                fl->v3warn(DEPRECATED, "Option --trace-fst-thread is deprecated. "
+                                       "Use --trace-fst with --trace-threads > 0.");
+                if (m_traceThreads == 0) m_traceThreads = 1;
+            } else if (!strcmp(sw, "-trace-threads")) {
+                shift;
+                m_trace = true;
+                m_traceThreads = atoi(argv[i]);
+                if (m_traceThreads < 0) fl->v3fatal("--trace-threads must be >= 0: " << argv[i]);
             } else if (!strcmp(sw, "-trace-depth") && (i + 1) < argc) {
                 shift;
                 m_traceDepth = atoi(argv[i]);
@@ -1566,6 +1574,7 @@ V3Options::V3Options() {
     m_traceParams = true;
     m_traceStructs = false;
     m_traceUnderscore = false;
+    m_traceThreads = 0;
     m_underlineZero = false;
     m_verilate = true;
     m_vpi = false;

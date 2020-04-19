@@ -23,8 +23,7 @@
 #include "verilated.h"
 #include "verilated_fst_c.h"
 
-// GTKWave configuration
-#ifdef VL_TRACE_THREADED
+#ifdef VL_TRACE_FST_WRITER_THREAD
 # define HAVE_LIBPTHREAD
 # define FST_WRITER_PARALLEL
 #endif
@@ -76,9 +75,10 @@ void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
     m_fst = fstWriterCreate(filename, 1);
     fstWriterSetPackType(m_fst, FST_WR_PT_LZ4);
     fstWriterSetTimescaleFromString(m_fst, timeResStr().c_str());  // lintok-begin-on-ref
-#ifdef VL_TRACE_THREADED
+#ifdef VL_TRACE_FST_WRITER_THREAD
     fstWriterSetParallelMode(m_fst, 1);
 #endif
+
     m_curScope.clear();
 
     VerilatedTrace<VerilatedFst>::traceInit();
@@ -99,6 +99,18 @@ void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
         }
     }
     m_code2symbol.clear();
+}
+
+void VerilatedFst::close() {
+    m_assertOne.check();
+    VerilatedTrace<VerilatedFst>::close();
+    fstWriterClose(m_fst);
+    m_fst = NULL;
+}
+
+void VerilatedFst::flush() {
+    VerilatedTrace<VerilatedFst>::flush();
+    fstWriterFlushContext(m_fst);
 }
 
 void VerilatedFst::emitTimeChange(vluint64_t timeui) { fstWriterEmitTimeChange(m_fst, timeui); }

@@ -46,8 +46,12 @@ public:
         of.puts("# See " + v3Global.opt.prefix() + ".mk" + " for the caller.\n");
 
         of.puts("\n### Switches...\n");
-        of.puts("# C11 constructs required?  0/1 (from --threads or use of classes)\n");
-        of.puts("VM_C11 = " + cvtToStr(v3Global.needC11() || v3Global.opt.threads()) + "\n");
+        of.puts("# C11 constructs required?  0/1 (from --threads, "
+                "--trace-threads or use of classes)\n");
+        of.puts("VM_C11 = ");
+        of.puts(v3Global.needC11() || v3Global.opt.threads() || v3Global.opt.traceThreads() ? "1"
+                                                                                            : "0");
+        of.puts("\n");
         of.puts("# Coverage output mode?  0/1 (from --coverage)\n");
         of.puts("VM_COVERAGE = ");
         of.puts(v3Global.opt.coverage() ? "1" : "0");
@@ -60,13 +64,19 @@ public:
         of.puts("VM_THREADS = ");
         of.puts(cvtToStr(v3Global.opt.threads()));
         of.puts("\n");
-        of.puts("# Tracing output mode?  0/1 (from --trace)\n");
+        of.puts("# Tracing output mode?  0/1 (from --trace/--trace-fst)\n");
         of.puts("VM_TRACE = ");
         of.puts(v3Global.opt.trace() ? "1" : "0");
         of.puts("\n");
-        of.puts("# Tracing threaded output mode?  0/1 (from --trace-fst-thread)\n");
-        of.puts("VM_TRACE_THREADED = ");
-        of.puts(v3Global.opt.traceFormat().threaded() ? "1" : "0");
+        of.puts("# Tracing threaded output mode?  0/1/N threads (from --trace-thread)\n");
+        of.puts("VM_TRACE_THREADS = ");
+        of.puts(!v3Global.opt.traceThreads()
+                    ? "0"
+                    : cvtToStr(v3Global.opt.traceThreads() - v3Global.opt.traceFormat().fst()));
+        of.puts("\n");
+        of.puts("# Separate FST writer thread? 0/1 (from --trace-fst with --trace-thread > 0)\n");
+        of.puts("VM_TRACE_FST_WRITER_THREAD = ");
+        of.puts(v3Global.opt.traceThreads() && v3Global.opt.traceFormat().fst() ? "1" : "0");
         of.puts("\n");
 
         of.puts("\n### Object file lists...\n");
