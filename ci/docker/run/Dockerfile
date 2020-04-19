@@ -16,7 +16,7 @@ RUN apt-get update \
                         build-essential=12.4ubuntu1 \
                         ca-certificates=20180409 \
                         flex=2.6.4-6 \
-                        git=1:2.17.1-1ubuntu0.5 \
+                        git=1:2.17.1-1ubuntu0.6 \
                         libfl-dev=2.6.4-6 \
                         perl=5.26.1-6ubuntu0.3 \
                         python3=3.6.7-1~18.04 \
