@@ -15,9 +15,11 @@ RUN apt-get update \
                         bison=2:3.0.4.dfsg-1build1 \
                         build-essential=12.4ubuntu1 \
                         ca-certificates=20180409 \
+                        ccache \
                         flex=2.6.4-6 \
                         git=1:2.17.1-1ubuntu0.6 \
                         libfl-dev=2.6.4-6 \
+                        libgoogle-perftools-dev \
                         perl=5.26.1-6ubuntu0.3 \
                         python3=3.6.7-1~18.04 \
     && apt-get clean \
