@@ -73,7 +73,7 @@ static std::string doubleToTimescale(double value) {
 // the callback routines to be executed.
 class VerilatedTraceCallInfo {
 public:  // This is in .cpp file so is not widely visible
-    typedef typename VerilatedTrace<VL_DERIVED_T>::callback_t callback_t;
+    typedef VerilatedTrace<VL_DERIVED_T>::callback_t callback_t;
 
     callback_t m_initcb;  ///< Initialization Callback function
     callback_t m_fullcb;  ///< Full Dumping Callback function
