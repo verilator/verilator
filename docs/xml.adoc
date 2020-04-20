@@ -17,11 +17,13 @@ instance hierarchy, logic and data types. There is no formal schema since part
 of the structure of the XML document matches the compiled code which would
 require the schema to describe legal SystemVerilog structure. The intended
 usage is to enable other downstream tools to take advantage of Verilator's
-parser.
+parser. The flags `--xml-flat` and `--xml-output` can be used in conjunction
+with `--xml-only` to produce a flattened version of the netlist and set the
+output file name respectively.
 
 == Structure
 
-The XML document is consists of 4 sections within the top level `verilator_xml`
+The XML document consists of 4 sections within the top level `verilator_xml`
 element:
 
 `<files>`...`</files>`::

@@ -409,7 +409,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --x-initial-edge            Enable initial X->0 and X->1 edge triggers
     --xml-only                  Create XML parser output
     --xml-output                XML output filename
-    --xml-flat                  Flatten the netlist before outputting
+    --xml-flat                  Flatten the netlist before outputting XML
      -y <dir>                   Directory to search for modules
 
 This is a short summary of the arguments to simulation runtime Verilated
@@ -1745,6 +1745,15 @@ B<Note.> Some users have reported that using this option can affect
 convergence, and that it may be necessary to use --converge-limit to
 increase the number of convergence iterations. This may be another
 indication of problems with the modeled design that should be addressed.
+
+=item --xml-flat
+
+Create XML output of the flattened netlist only, do not create any other
+output. This option is similar to --xml-only, except the design's hierarchy is
+flattened, with all modules, tasks and functions inlined. The result is a
+single module and scope, containing all of the design's logic.
+
+Using this option automatically sets --xml-only.
 
 =item --xml-only
 

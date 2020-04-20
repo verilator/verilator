@@ -12,6 +12,8 @@ scenarios(vlt => 1);
 
 my $out_filename = "$Self->{obj_dir}/V$Self->{name}.xml";
 
+top_filename("t/t_xml_first.v");
+
 compile(
     verilator_flags2 => ['--xml-only', '--xml-flat'],
     verilator_make_gmake => 0,
