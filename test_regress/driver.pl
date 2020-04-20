@@ -833,8 +833,7 @@ sub compile_vlt_flags {
                           @{$param{verilator_flags3}});
     $self->{sc} = 1 if ($checkflags =~ /-sc\b/);
     $self->{trace} = ($opt_trace || $checkflags =~ /-trace\b/
-                      || $checkflags =~ /-trace-fst\b/
-                      || $checkflags =~ /-trace-fst-thread\b/);
+                      || $checkflags =~ /-trace-fst\b/);
     $self->{trace_format} = (($checkflags =~ /-trace-fst/ && 'fst-c')
                              || ($self->{sc} && 'vcd-sc')
                              || (!$self->{sc} && 'vcd-c'));
@@ -849,7 +848,8 @@ sub compile_vlt_flags {
     unshift @verilator_flags, "--trace" if $opt_trace;
     my $threads = ::calc_threads($Vltmt_threads);
     unshift @verilator_flags, "--threads $threads" if $param{vltmt} && $checkflags !~ /-threads /;
-    unshift @verilator_flags, "--trace-fst-thread" if $param{vltmt} && $checkflags =~ /-trace-fst/;
+    unshift @verilator_flags, "--trace-threads 1" if $param{vltmt} && $checkflags =~ /-trace /;
+    unshift @verilator_flags, "--trace-threads 2" if $param{vltmt} && $checkflags =~ /-trace-fst /;
     unshift @verilator_flags, "--debug-partition" if $param{vltmt};
     unshift @verilator_flags, "--make gmake" if $param{verilator_make_gmake};
     unshift @verilator_flags, "--make cmake" if $param{verilator_make_cmake};
