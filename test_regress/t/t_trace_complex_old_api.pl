@@ -10,7 +10,7 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 
 # Same test as t_trace_complex, but exercising the old VCD tracing API
 
-scenarios(simulator => 1);
+scenarios(vlt => 1);
 
 top_filename("t/t_trace_complex.v");
 
