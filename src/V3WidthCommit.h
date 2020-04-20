@@ -148,7 +148,7 @@ private:
         if (nodep->user1SetOnce()) return;  // Process once
         nodep->widthMinFromWidth();
         // Too late to any unspecified sign to be anything but unsigned
-        if (nodep->numeric().isNosign()) nodep->numeric(AstNumeric::UNSIGNED);
+        if (nodep->numeric().isNosign()) nodep->numeric(VSigning::UNSIGNED);
         iterateChildren(nodep);
         nodep->virtRefDTypep(editOneDType(nodep->virtRefDTypep()));
         nodep->virtRefDType2p(editOneDType(nodep->virtRefDType2p()));

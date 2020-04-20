@@ -1340,7 +1340,7 @@ private:
                             VL_DO_DANGLING(oldrhsp->deleteTree(), oldrhsp);
                             m_assignp->dtypeChgWidthSigned(m_assignp->width() + assignp->width(),
                                                            m_assignp->width() + assignp->width(),
-                                                           AstNumeric::SIGNED);
+                                                           VSigning::SIGNED);
                             // don't need to delete, will be handled
                             // assignp->unlinkFrBack(); VL_DO_DANGLING(assignp->deleteTree(),
                             // assignp);

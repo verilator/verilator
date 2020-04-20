@@ -371,10 +371,11 @@ private:
             } else {
                 nodep->v3fatalSrc("Width mismatch; V3Width should have errored out.");
             }
-        } else if (AstArraySel* arrselp = VN_CAST(nodep->exprp(), ArraySel)) {
+        }  // end expanding ranged cell
+        else if (AstArraySel* arrselp = VN_CAST(nodep->exprp(), ArraySel)) {
             if (AstUnpackArrayDType* arrp = VN_CAST(arrselp->lhsp()->dtypep(), UnpackArrayDType)) {
                 if (!VN_IS(arrp->subDTypep(), IfaceRefDType)) return;
-
+                // Interface pin attaches to one element of arrayed interface
                 V3Const::constifyParamsEdit(arrselp->rhsp());
                 const AstConst* constp = VN_CAST(arrselp->rhsp(), Const);
                 if (!constp) {
@@ -395,6 +396,7 @@ private:
             AstVar* pinVarp = nodep->modVarp();
             AstUnpackArrayDType* pinArrp = VN_CAST(pinVarp->dtypep(), UnpackArrayDType);
             if (!pinArrp || !VN_IS(pinArrp->subDTypep(), IfaceRefDType)) return;
+            // Arrayed pin/var attaches to arrayed submodule lower port/var, expand it
             AstNode* prevp = NULL;
             AstNode* prevPinp = NULL;
             // Clone the var referenced by the pin, and clone each var referenced by the varref
@@ -432,8 +434,16 @@ private:
                 newp->modVarp(varNewp);
                 newp->name(newp->name() + "__BRA__" + cvtToStr(i) + "__KET__");
                 // And replace exprp with a new varxref
+                int offset = 0;
                 const AstVarRef* varrefp = VN_CAST(newp->exprp(), VarRef);
-                string newname = varrefp->name() + "__BRA__" + cvtToStr(i) + "__KET__";
+                if (varrefp) {
+                } else if (AstSliceSel* slicep = VN_CAST(newp->exprp(), SliceSel)) {
+                    varrefp = VN_CAST(slicep->fromp(), VarRef);
+                    UASSERT(VN_IS(slicep->rhsp(), Const), "Slices should be constant");
+                    offset = VN_CAST(slicep->rhsp(), Const)->toSInt();
+                }
+                if (!varrefp) { newp->exprp()->v3error("Unexpected connection to arrayed port"); }
+                string newname = varrefp->name() + "__BRA__" + cvtToStr(i + offset) + "__KET__";
                 AstVarXRef* newVarXRefp = new AstVarXRef(nodep->fileline(), newname, "", true);
                 newVarXRefp->varp(newp->modVarp());
                 newVarXRefp->dtypep(newp->modVarp()->dtypep());

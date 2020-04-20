@@ -110,11 +110,14 @@ private:
 
     // TYPES
     typedef std::map<std::pair<AstScope*, AstVar*>, AstVarScope*> VarToScopeMap;
+    typedef std::vector<AstInitial*> Initials;
     // MEMBERS
     VarToScopeMap m_varToScopeMap;  // Map for Var -> VarScope mappings
     AstAssignW* m_assignwp;  // Current assignment
+    AstNodeFTask* m_ctorp;  // Class constructor
     V3Graph m_callGraph;  // Task call graph
     TaskBaseVertex* m_curVxp;  // Current vertex we're adding to
+    Initials m_initialps;  // Initial blocks to move
 
 public:
     // METHODS
@@ -202,7 +205,10 @@ private:
         m_curVxp = getFTaskVertex(nodep);
         if (nodep->dpiImport()) m_curVxp->noInline(true);
         if (nodep->classMethod()) m_curVxp->noInline(true);  // Until V3Task supports it
-        if (nodep->isConstructor()) m_curVxp->noInline(true);
+        if (nodep->isConstructor()) {
+            m_curVxp->noInline(true);
+            m_ctorp = nodep;
+        }
         iterateChildren(nodep);
         m_curVxp = lastVxp;
     }
@@ -225,13 +231,41 @@ private:
             if (m_curVxp->pure() && !nodep->varp()->isXTemp()) m_curVxp->impure(nodep);
         }
     }
+    virtual void visit(AstClass* nodep) VL_OVERRIDE {
+        // Move initial statements into the constructor
+        m_initialps.clear();
+        m_ctorp = NULL;
+        {  // Find m_initialps, m_ctor
+            iterateChildren(nodep);
+        }
+        UASSERT_OBJ(m_ctorp, nodep, "class constructor missing");  // LinkDot always makes it
+        for (Initials::iterator it = m_initialps.begin(); it != m_initialps.end(); ++it) {
+            AstInitial* initialp = *it;
+            if (AstNode* newp = initialp->bodysp()) {
+                newp->unlinkFrBackWithNext();
+                if (!m_ctorp->stmtsp()) {
+                    m_ctorp->addStmtsp(newp);
+                } else {
+                    m_ctorp->stmtsp()->addHereThisAsNext(newp);
+                }
+            }
+            VL_DO_DANGLING(pushDeletep(initialp->unlinkFrBack()), initialp);
+        }
+        m_initialps.clear();
+        m_ctorp = NULL;
+    }
+    virtual void visit(AstInitial* nodep) VL_OVERRIDE {
+        m_initialps.push_back(nodep);
+        iterateChildren(nodep);
+    }
     //--------------------
     virtual void visit(AstNode* nodep) VL_OVERRIDE { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit TaskStateVisitor(AstNetlist* nodep) {
-        m_assignwp = NULL;
+    explicit TaskStateVisitor(AstNetlist* nodep)
+        : m_assignwp(NULL)
+        , m_ctorp(NULL) {
         m_curVxp = new TaskCodeVertex(&m_callGraph);
         AstNode::user3ClearTree();
         AstNode::user4ClearTree();

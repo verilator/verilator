@@ -94,16 +94,7 @@ inline std::ostream& operator<<(std::ostream& os, const AstType& rhs) { return o
 
 //######################################################################
 
-enum VSignedState {
-    // This can't be in the fancy class as the lexer union will get upset
-    signedst_UNSIGNED = 0,
-    signedst_SIGNED = 1,
-    signedst_NOSIGN = 2
-};
-
-//######################################################################
-
-class AstNumeric {
+class VSigning {
 public:
     enum en {
         UNSIGNED,
@@ -116,35 +107,25 @@ public:
         static const char* const names[] = {"UNSIGNED", "SIGNED", "NOSIGN"};
         return names[m_e];
     }
-    inline AstNumeric()
+    inline VSigning()
         : m_e(UNSIGNED) {}
     // cppcheck-suppress noExplicitConstructor
-    inline AstNumeric(en _e)
+    inline VSigning(en _e)
         : m_e(_e) {}
-    // cppcheck-suppress noExplicitConstructor
-    inline AstNumeric(VSignedState signst) {
-        if (signst == signedst_UNSIGNED) {
-            m_e = UNSIGNED;
-        } else if (signst == signedst_SIGNED) {
-            m_e = SIGNED;
-        } else {
-            m_e = NOSIGN;
-        }
+    static inline VSigning fromBool(bool isSigned) {  // Factory method
+        return isSigned ? VSigning(SIGNED) : VSigning(UNSIGNED);
     }
-    static inline AstNumeric fromBool(bool isSigned) {  // Factory method
-        return isSigned ? AstNumeric(SIGNED) : AstNumeric(UNSIGNED);
-    }
-    explicit inline AstNumeric(int _e)
+    explicit inline VSigning(int _e)
         : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     inline bool isSigned() const { return m_e == SIGNED; }
     inline bool isNosign() const { return m_e == NOSIGN; }
     // No isUnsigned() as it's ambiguous if NOSIGN should be included or not.
 };
-inline bool operator==(const AstNumeric& lhs, const AstNumeric& rhs) { return lhs.m_e == rhs.m_e; }
-inline bool operator==(const AstNumeric& lhs, AstNumeric::en rhs) { return lhs.m_e == rhs; }
-inline bool operator==(AstNumeric::en lhs, const AstNumeric& rhs) { return lhs == rhs.m_e; }
-inline std::ostream& operator<<(std::ostream& os, const AstNumeric& rhs) {
+inline bool operator==(const VSigning& lhs, const VSigning& rhs) { return lhs.m_e == rhs.m_e; }
+inline bool operator==(const VSigning& lhs, VSigning::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(VSigning::en lhs, const VSigning& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VSigning& rhs) {
     return os << rhs.ascii();
 }
 
@@ -998,7 +979,7 @@ class VBasicTypeKey {
 public:
     int m_width;  // From AstNodeDType: Bit width of operation
     int m_widthMin;  // From AstNodeDType: If unsized, bitwidth of minimum implementation
-    AstNumeric m_numeric;  // From AstNodeDType: Node is signed
+    VSigning m_numeric;  // From AstNodeDType: Node is signed
     AstBasicDTypeKwd m_keyword;  // From AstBasicDType: What keyword created basic type
     VNumRange m_nrange;  // From AstBasicDType: Numeric msb/lsb (if non-opaque keyword)
     inline bool operator==(const VBasicTypeKey& rhs) const {
@@ -1018,7 +999,7 @@ public:
         if (!(m_nrange == rhs.m_nrange)) return false;  // lhs > rhs
         return false;
     }
-    VBasicTypeKey(int width, int widthMin, AstNumeric numeric, AstBasicDTypeKwd kwd,
+    VBasicTypeKey(int width, int widthMin, VSigning numeric, AstBasicDTypeKwd kwd,
                   const VNumRange& nrange)
         : m_width(width)
         , m_widthMin(widthMin)
@@ -1638,17 +1619,17 @@ public:
     }
     void dtypeChgSigned(bool flag = true);
     void dtypeChgWidth(int width, int widthMin);
-    void dtypeChgWidthSigned(int width, int widthMin, AstNumeric numeric);
-    void dtypeSetBitUnsized(int width, int widthMin, AstNumeric numeric) {
+    void dtypeChgWidthSigned(int width, int widthMin, VSigning numeric);
+    void dtypeSetBitUnsized(int width, int widthMin, VSigning numeric) {
         dtypep(findBitDType(width, widthMin, numeric));
     }
-    void dtypeSetBitSized(int width, AstNumeric numeric) {
+    void dtypeSetBitSized(int width, VSigning numeric) {
         dtypep(findBitDType(width, width, numeric));  // Since sized, widthMin is width
     }
-    void dtypeSetLogicUnsized(int width, int widthMin, AstNumeric numeric) {
+    void dtypeSetLogicUnsized(int width, int widthMin, VSigning numeric) {
         dtypep(findLogicDType(width, widthMin, numeric));
     }
-    void dtypeSetLogicSized(int width, AstNumeric numeric) {
+    void dtypeSetLogicSized(int width, VSigning numeric) {
         dtypep(findLogicDType(width, width, numeric));  // Since sized, widthMin is width
     }
     void dtypeSetLogicBool() { dtypep(findLogicBoolDType()); }
@@ -1667,12 +1648,11 @@ public:
     AstNodeDType* findUInt32DType() { return findBasicDType(AstBasicDTypeKwd::UINT32); }
     AstNodeDType* findUInt64DType() { return findBasicDType(AstBasicDTypeKwd::UINT64); }
     AstNodeDType* findVoidDType() const;
-    AstNodeDType* findBitDType(int width, int widthMin, AstNumeric numeric) const;
-    AstNodeDType* findLogicDType(int width, int widthMin, AstNumeric numeric) const;
+    AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
+    AstNodeDType* findLogicDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicRangeDType(const VNumRange& range, int widthMin,
-                                      AstNumeric numeric) const;
-    AstNodeDType* findBitRangeDType(const VNumRange& range, int widthMin,
-                                    AstNumeric numeric) const;
+                                      VSigning numeric) const;
+    AstNodeDType* findBitRangeDType(const VNumRange& range, int widthMin, VSigning numeric) const;
     AstNodeDType* findBasicDType(AstBasicDTypeKwd kwd) const;
     AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
@@ -2224,7 +2204,7 @@ class AstNodeDType : public AstNode {
 private:
     int m_width;  // (also in AstTypeTable::Key) Bit width of operation
     int m_widthMin;  // (also in AstTypeTable::Key) If unsized, bitwidth of minimum implementation
-    AstNumeric m_numeric;  // (also in AstTypeTable::Key) Node is signed
+    VSigning m_numeric;  // (also in AstTypeTable::Key) Node is signed
     // Other members
     bool m_generic;  // Simple globally referenced type, don't garbage collect
     // Unique number assigned to each dtype during creation for IEEE matching
@@ -2287,10 +2267,10 @@ public:
     }
     //
     int width() const { return m_width; }
-    void numeric(AstNumeric flag) { m_numeric = flag; }
+    void numeric(VSigning flag) { m_numeric = flag; }
     bool isSigned() const { return m_numeric.isSigned(); }
     bool isNosign() const { return m_numeric.isNosign(); }
-    AstNumeric numeric() const { return m_numeric; }
+    VSigning numeric() const { return m_numeric; }
     int widthWords() const { return VL_WORDS_I(width()); }
     int widthMin() const {  // If sized, the size, if unsized the min digits to represent it
         return m_widthMin ? m_widthMin : m_width;
@@ -2321,12 +2301,12 @@ private:
     MemberNameMap m_members;
 
 public:
-    AstNodeUOrStructDType(AstType t, FileLine* fl, AstNumeric numericUnpack)
+    AstNodeUOrStructDType(AstType t, FileLine* fl, VSigning numericUnpack)
         : AstNodeDType(t, fl) {
-        // AstNumeric::NOSIGN overloaded to indicate not packed
-        m_packed = (numericUnpack != AstNumeric::NOSIGN);
+        // VSigning::NOSIGN overloaded to indicate not packed
+        m_packed = (numericUnpack != VSigning::NOSIGN);
         m_isFourstate = false;  // V3Width computes
-        numeric(AstNumeric::fromBool(numericUnpack.isSigned()));
+        numeric(VSigning::fromBool(numericUnpack.isSigned()));
     }
     ASTNODE_BASE_FUNCS(NodeUOrStructDType)
     virtual const char* broken() const;
@@ -2458,7 +2438,7 @@ class AstNodeStream : public AstNodeBiop {
 public:
     AstNodeStream(AstType t, FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : AstNodeBiop(t, fl, lhsp, rhsp) {
-        if (lhsp->dtypep()) { dtypeSetLogicSized(lhsp->dtypep()->width(), AstNumeric::UNSIGNED); }
+        if (lhsp->dtypep()) { dtypeSetLogicSized(lhsp->dtypep()->width(), VSigning::UNSIGNED); }
     }
     ASTNODE_BASE_FUNCS(NodeStream)
 };

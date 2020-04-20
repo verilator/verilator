@@ -1549,13 +1549,13 @@ non_integer_type<bdtypep>:	// ==IEEE: non_integer_type
 	;
 
 signingE<signstate>:		// IEEE: signing - plus empty
-		/*empty*/ 				{ $$ = signedst_NOSIGN; }
+		/*empty*/ 				{ $$ = VSigning::NOSIGN; }
 	|	signing					{ $$ = $1; }
 	;
 
 signing<signstate>:		// ==IEEE: signing
-		ySIGNED					{ $<fl>$ = $<fl>1; $$ = signedst_SIGNED; }
-	|	yUNSIGNED				{ $<fl>$ = $<fl>1; $$ = signedst_UNSIGNED; }
+		ySIGNED					{ $<fl>$ = $<fl>1; $$ = VSigning::SIGNED; }
+	|	yUNSIGNED				{ $<fl>$ = $<fl>1; $$ = VSigning::UNSIGNED; }
 	;
 
 //************************************************
@@ -1784,9 +1784,9 @@ taggedE:
 	;
 
 packedSigningE<signstate>:
-	//			// AstNumeric::NOSIGN overloaded to indicate not packed
-		/*empty*/				{ $$ = signedst_NOSIGN; }
-	|	yPACKED signingE			{ $$ = $2; if ($$ == signedst_NOSIGN) $$ = signedst_UNSIGNED; }
+	//			// VSigning::NOSIGN overloaded to indicate not packed
+		/*empty*/				{ $$ = VSigning::NOSIGN; }
+	|	yPACKED signingE			{ $$ = $2; if ($$ == VSigning::NOSIGN) $$ = VSigning::UNSIGNED; }
 	;
 
 //************************************************

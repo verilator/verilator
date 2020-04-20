@@ -100,7 +100,8 @@ private:
     }
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
-        if (m_classp) nodep->varType(AstVarType::MEMBER);
+        if (m_classp && !nodep->isParam()) nodep->varType(AstVarType::MEMBER);
+        if (m_classp && nodep->isParam()) nodep->v3error("Unsupported: class parameter");
         if (m_ftaskp) nodep->funcLocal(true);
         if (nodep->isSigModPublic()) {
             nodep->sigModPublic(false);  // We're done with this attribute

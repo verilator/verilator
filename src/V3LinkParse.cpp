@@ -221,17 +221,16 @@ private:
             if (nodep->isParam() || (m_ftaskp && nodep->isNonOutput())) {
                 // 1. Parameters and function inputs: It's a default to use if not overridden
             } else if (VN_IS(m_modp, Class)) {
-                // We make a AstVar initial value, but then do not set it in the constructor
-                // V3Emit::emitVarRecurse only does non-value inits.
-                // Perhaps these should still become a new form of
-                // AstInitial, and we propagate the initial to the class
-                // constructor
-                nodep->valuep()->v3error("Unsupported: initial value on member");
+                // 2. Class member init become initials (as might call functions)
+                // later move into class constructor
+                nodep->addNextHere(
+                    new AstInitial(fl, new AstAssign(fl, new AstVarRef(fl, nodep->name(), true),
+                                                     nodep->valuep()->unlinkFrBack())));
             } else if (!m_ftaskp && nodep->isNonOutput()) {
                 nodep->v3error(
                     "Unsupported: Default value on module input: " << nodep->prettyNameQ());
                 nodep->valuep()->unlinkFrBack()->deleteTree();
-            }  // 2. Under modules, it's an initial value to be loaded at time 0 via an AstInitial
+            }  // 3. Under modules, it's an initial value to be loaded at time 0 via an AstInitial
             else if (m_valueModp) {
                 // Making an AstAssign (vs AstAssignW) to a wire is an error, suppress it
                 FileLine* newfl = new FileLine(fl);
@@ -239,7 +238,7 @@ private:
                 nodep->addNextHere(new AstInitial(
                     newfl, new AstAssign(newfl, new AstVarRef(newfl, nodep->name(), true),
                                          nodep->valuep()->unlinkFrBack())));
-            }  // 3. Under blocks, it's an initial value to be under an assign
+            }  // 4. Under blocks, it's an initial value to be under an assign
             else {
                 nodep->addNextHere(new AstAssign(fl, new AstVarRef(fl, nodep->name(), true),
                                                  nodep->valuep()->unlinkFrBack()));

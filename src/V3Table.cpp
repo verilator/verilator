@@ -182,7 +182,7 @@ private:
         // Change it variable
         FileLine* fl = nodep->fileline();
         AstNodeArrayDType* dtypep = new AstUnpackArrayDType(
-            fl, nodep->findBitDType(m_outVarps.size(), m_outVarps.size(), AstNumeric::UNSIGNED),
+            fl, nodep->findBitDType(m_outVarps.size(), m_outVarps.size(), VSigning::UNSIGNED),
             new AstRange(fl, VL_MASK_I(m_inWidth), 0));
         v3Global.rootp()->typeTablep()->addTypesp(dtypep);
         AstVar* chgVarp = new AstVar(fl, AstVarType::MODULETEMP,

@@ -1210,7 +1210,7 @@ void AstNode::v3errorEnd(std::ostringstream& str) const {
 
 void AstNode::dtypeChgSigned(bool flag) {
     UASSERT_OBJ(dtypep(), this, "No dtype when changing to (un)signed");
-    dtypeChgWidthSigned(dtypep()->width(), dtypep()->widthMin(), AstNumeric::fromBool(flag));
+    dtypeChgWidthSigned(dtypep()->width(), dtypep()->widthMin(), VSigning::fromBool(flag));
 }
 void AstNode::dtypeChgWidth(int width, int widthMin) {
     UASSERT_OBJ(dtypep(), this,
@@ -1218,7 +1218,7 @@ void AstNode::dtypeChgWidth(int width, int widthMin) {
     dtypeChgWidthSigned(width, widthMin, dtypep()->numeric());
 }
 
-void AstNode::dtypeChgWidthSigned(int width, int widthMin, AstNumeric numeric) {
+void AstNode::dtypeChgWidthSigned(int width, int widthMin, VSigning numeric) {
     if (!dtypep()) {
         // We allow dtypep() to be null, as before/during widthing dtypes are not resolved
         dtypeSetLogicUnsized(width, widthMin, numeric);
@@ -1240,21 +1240,21 @@ AstNodeDType* AstNode::findBasicDType(AstBasicDTypeKwd kwd) const {
     // More advanced types land under the module/task/etc
     return v3Global.rootp()->typeTablep()->findBasicDType(fileline(), kwd);
 }
-AstNodeDType* AstNode::findBitDType(int width, int widthMin, AstNumeric numeric) const {
+AstNodeDType* AstNode::findBitDType(int width, int widthMin, VSigning numeric) const {
     return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), AstBasicDTypeKwd::BIT,
                                                              width, widthMin, numeric);
 }
-AstNodeDType* AstNode::findLogicDType(int width, int widthMin, AstNumeric numeric) const {
+AstNodeDType* AstNode::findLogicDType(int width, int widthMin, VSigning numeric) const {
     return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), AstBasicDTypeKwd::LOGIC,
                                                              width, widthMin, numeric);
 }
 AstNodeDType* AstNode::findLogicRangeDType(const VNumRange& range, int widthMin,
-                                           AstNumeric numeric) const {
+                                           VSigning numeric) const {
     return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), AstBasicDTypeKwd::LOGIC,
                                                              range, widthMin, numeric);
 }
 AstNodeDType* AstNode::findBitRangeDType(const VNumRange& range, int widthMin,
-                                         AstNumeric numeric) const {
+                                         VSigning numeric) const {
     return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), AstBasicDTypeKwd::BIT,
                                                              range, widthMin, numeric);
 }

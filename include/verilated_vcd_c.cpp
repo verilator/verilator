@@ -61,6 +61,13 @@
 #define VL_TRACE_SUFFIX_ENTRY_SIZE 8  ///< Size of a suffix entry
 
 //=============================================================================
+// Specialization of the generics for this trace format
+
+#define VL_DERIVED_T VerilatedVcd
+#include "verilated_trace_imp.cpp"
+#undef VL_DERIVED_T
+
+//=============================================================================
 // VerilatedVcdImp
 /// Base class to hold some static state
 /// This is an internally used class
@@ -102,33 +109,6 @@ public:
 };
 
 //=============================================================================
-// VerilatedVcdCallInfo
-/// Internal callback routines for each module being traced.
-////
-/// Each module that wishes to be traced registers a set of
-/// callbacks stored in this class.  When the trace file is being
-/// constructed, this class provides the callback routines to be executed.
-
-class VerilatedVcdCallInfo {
-protected:
-    friend class VerilatedVcd;
-    VerilatedVcdCallback_t m_initcb;  ///< Initialization Callback function
-    VerilatedVcdCallback_t m_fullcb;  ///< Full Dumping Callback function
-    VerilatedVcdCallback_t m_changecb;  ///< Incremental Dumping Callback function
-    void* m_userthis;  ///< Fake "this" for caller
-    vluint32_t m_code;  ///< Starting code number (set later by traceInit)
-    // CONSTRUCTORS
-    VerilatedVcdCallInfo(VerilatedVcdCallback_t icb, VerilatedVcdCallback_t fcb,
-                         VerilatedVcdCallback_t changecb, void* ut)
-        : m_initcb(icb)
-        , m_fullcb(fcb)
-        , m_changecb(changecb)
-        , m_userthis(ut)
-        , m_code(1) {}
-    ~VerilatedVcdCallInfo() {}
-};
-
-//=============================================================================
 //=============================================================================
 //=============================================================================
 // VerilatedVcdFile
@@ -153,26 +133,18 @@ ssize_t VerilatedVcdFile::write(const char* bufp, ssize_t len) VL_MT_UNSAFE {
 VerilatedVcd::VerilatedVcd(VerilatedVcdFile* filep)
     : m_isOpen(false)
     , m_rolloverMB(0)
-    , m_modDepth(0)
-    , m_nextCode(1) {
+    , m_modDepth(0) {
     // Not in header to avoid link issue if header is included without this .cpp file
     m_fileNewed = (filep == NULL);
     m_filep = m_fileNewed ? new VerilatedVcdFile : filep;
     m_namemapp = NULL;
-    m_timeLastDump = 0;
-    m_sigs_oldvalp = NULL;
     m_evcd = false;
-    m_scopeEscape = '.';  // Backward compatibility
-    m_fullDump = true;
     m_wrChunkSize = 8 * 1024;
     m_wrBufp = new char[m_wrChunkSize * 8];
     m_wrFlushp = m_wrBufp + m_wrChunkSize * 6;
     m_writep = m_wrBufp;
     m_wroteBytes = 0;
     m_suffixesp = NULL;
-    m_timeRes = m_timeUnit = 1e-9;
-    set_time_unit(Verilated::timeunitString());
-    set_time_resolution(Verilated::timeprecisionString());
 }
 
 void VerilatedVcd::open(const char* filename) {
@@ -193,16 +165,11 @@ void VerilatedVcd::open(const char* filename) {
 
     dumpHeader();
 
-    // Allocate space now we know the number of codes
-    if (!m_sigs_oldvalp) m_sigs_oldvalp = new vluint32_t[m_nextCode + 10];
-
     // Get the direct access pointer to the code strings
     m_suffixesp = &m_suffixes[0];  // Note: C++11 m_suffixes.data();
 
-    if (m_rolloverMB) {
-        openNext(true);
-        if (!isOpen()) return;
-    }
+    // When using rollover, the first chunk contains the header only.
+    if (m_rolloverMB) openNext(true);
 }
 
 void VerilatedVcd::openNext(bool incFilename) {
@@ -245,21 +212,27 @@ void VerilatedVcd::openNext(bool incFilename) {
         }
     }
     m_isOpen = true;
-    m_fullDump = true;  // First dump must be full
+    fullDump(true);  // First dump must be full
     m_wroteBytes = 0;
+}
+
+bool VerilatedVcd::preChangeDump() {
+    if (VL_UNLIKELY(m_rolloverMB && m_wroteBytes > m_rolloverMB)) { openNext(true); }
+    return isOpen();
+}
+
+void VerilatedVcd::emitTimeChange(vluint64_t timeui) {
+    printStr("#");
+    printQuad(timeui);
+    printStr("\n");
 }
 
 void VerilatedVcd::makeNameMap() {
     // Take signal information from each module and build m_namemapp
     deleteNameMap();
-    m_nextCode = 1;
     m_namemapp = new NameMap;
-    for (vluint32_t ent = 0; ent < m_callbacks.size(); ent++) {
-        VerilatedVcdCallInfo* cip = m_callbacks[ent];
-        cip->m_code = m_nextCode;
-        // Initialize; callbacks will call decl* which update m_nextCode
-        (cip->m_initcb)(this, cip->m_userthis, cip->m_code);
-    }
+
+    VerilatedTrace<VerilatedVcd>::traceInit();
 
     // Though not speced, it's illegal to generate a vcd with signals
     // not under any module - it crashes at least two viewers.
@@ -292,13 +265,8 @@ void VerilatedVcd::deleteNameMap() {
 VerilatedVcd::~VerilatedVcd() {
     close();
     if (m_wrBufp) VL_DO_CLEAR(delete[] m_wrBufp, m_wrBufp = NULL);
-    if (m_sigs_oldvalp) VL_DO_CLEAR(delete[] m_sigs_oldvalp, m_sigs_oldvalp = NULL);
     deleteNameMap();
     if (m_filep && m_fileNewed) VL_DO_CLEAR(delete m_filep, m_filep = NULL);
-    for (CallbackVec::const_iterator it = m_callbacks.begin(); it != m_callbacks.end(); ++it) {
-        delete *it;
-    }
-    m_callbacks.clear();
     VerilatedVcdSingleton::removeVcd(this);
 }
 
@@ -328,7 +296,7 @@ void VerilatedVcd::close() {
     if (!isOpen()) return;
     if (m_evcd) {
         printStr("$vcdclose ");
-        printTime(m_timeLastDump);
+        printQuad(timeLastDump());
         printStr(" $end\n");
     }
     closePrev();
@@ -346,21 +314,6 @@ void VerilatedVcd::printQuad(vluint64_t n) {
     char buf[100];
     sprintf(buf, "%" VL_PRI64 "u", n);
     printStr(buf);
-}
-
-void VerilatedVcd::printTime(vluint64_t timeui) {
-    // VCD file format specification does not allow non-integers for timestamps
-    // Dinotrace doesn't mind, but Cadence Vision seems to choke
-    if (VL_UNLIKELY(timeui < m_timeLastDump)) {
-        timeui = m_timeLastDump;
-        static VL_THREAD_LOCAL bool backTime = false;
-        if (!backTime) {
-            backTime = true;
-            VL_PRINTF_MT("%%Warning: VCD time is moving backwards, wave file may be incorrect.\n");
-        }
-    }
-    m_timeLastDump = timeui;
-    printQuad(timeui);
 }
 
 void VerilatedVcd::bufferResize(vluint64_t minsize) {
@@ -409,56 +362,6 @@ void VerilatedVcd::bufferFlush() VL_MT_UNSAFE_ONE {
 }
 
 //=============================================================================
-// Simple methods
-
-void VerilatedVcd::set_time_unit(const char* unitp) {
-    // cout<<" set_time_unit("<<unitp<<") == "<<timescaleToDouble(unitp)
-    //    <<" == "<<doubleToTimescale(timescaleToDouble(unitp))<<endl;
-    m_timeUnit = timescaleToDouble(unitp);
-}
-
-void VerilatedVcd::set_time_resolution(const char* unitp) {
-    // cout<<"set_time_resolution("<<unitp<<") == "<<timescaleToDouble(unitp)
-    //    <<" == "<<doubleToTimescale(timescaleToDouble(unitp))<<endl;
-    m_timeRes = timescaleToDouble(unitp);
-}
-
-double VerilatedVcd::timescaleToDouble(const char* unitp) {
-    char* endp;
-    double value = strtod(unitp, &endp);
-    // On error so we allow just "ns" to return 1e-9.
-    if (value == 0.0 && endp == unitp) value = 1;
-    unitp = endp;
-    for (; *unitp && isspace(*unitp); unitp++) {}
-    switch (*unitp) {
-    case 's': value *= 1e1; break;
-    case 'm': value *= 1e-3; break;
-    case 'u': value *= 1e-6; break;
-    case 'n': value *= 1e-9; break;
-    case 'p': value *= 1e-12; break;
-    case 'f': value *= 1e-15; break;
-    case 'a': value *= 1e-18; break;
-    }
-    return value;
-}
-
-std::string VerilatedVcd::doubleToTimescale(double value) {
-    const char* suffixp = "s";
-    // clang-format off
-    if      (value >= 1e0)   { suffixp = "s"; value *= 1e0; }
-    else if (value >= 1e-3 ) { suffixp = "ms"; value *= 1e3; }
-    else if (value >= 1e-6 ) { suffixp = "us"; value *= 1e6; }
-    else if (value >= 1e-9 ) { suffixp = "ns"; value *= 1e9; }
-    else if (value >= 1e-12) { suffixp = "ps"; value *= 1e12; }
-    else if (value >= 1e-15) { suffixp = "fs"; value *= 1e15; }
-    else if (value >= 1e-18) { suffixp = "as"; value *= 1e18; }
-    // clang-format on
-    char valuestr[100];
-    sprintf(valuestr, "%3.0f%s", value, suffixp);
-    return valuestr;  // Gets converted to string, so no ref to stack
-}
-
-//=============================================================================
 // VCD string code
 
 char* VerilatedVcd::writeCode(char* writep, vluint32_t code) {
@@ -490,8 +393,7 @@ void VerilatedVcd::dumpHeader() {
     printStr(" $end\n");
 
     printStr("$timescale ");
-    const std::string& timeResStr = doubleToTimescale(m_timeRes);
-    printStr(timeResStr.c_str());
+    printStr(timeResStr().c_str());  // lintok-begin-on-ref
     printStr(" $end\n");
 
     makeNameMap();
@@ -571,36 +473,18 @@ void VerilatedVcd::dumpHeader() {
     deleteNameMap();
 }
 
-void VerilatedVcd::module(const std::string& name) {
-    m_assertOne.check();
-    m_modName = name;
-}
-
 void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep, bool array,
                            int arraynum, bool tri, bool bussed, int msb, int lsb) {
-    if (!code) {
-        VL_FATAL_MT(__FILE__, __LINE__, "", "Internal: internal trace problem, code 0 is illegal");
-    }
+    const int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
 
-    int bits = ((msb > lsb) ? (msb - lsb) : (lsb - msb)) + 1;
-    int codesNeeded = 1 + int(bits / 32);
-    if (tri) codesNeeded *= 2;  // Space in change array for __en signals
+    VerilatedTrace<VerilatedVcd>::declCode(code, bits, tri);
 
-    // Make sure array is large enough
-    m_nextCode = std::max(m_nextCode, code + codesNeeded);
-    if (m_sigs.capacity() <= m_nextCode) {
-        m_sigs.reserve(m_nextCode * 2);  // Power-of-2 allocation speeds things up
-    }
-    if (m_suffixes.size() <= m_nextCode * VL_TRACE_SUFFIX_ENTRY_SIZE) {
-        m_suffixes.resize(m_nextCode * VL_TRACE_SUFFIX_ENTRY_SIZE * 2, 0);
+    if (m_suffixes.size() <= nextCode() * VL_TRACE_SUFFIX_ENTRY_SIZE) {
+        m_suffixes.resize(nextCode() * VL_TRACE_SUFFIX_ENTRY_SIZE * 2, 0);
     }
 
     // Make sure write buffer is large enough (one character per bit), plus header
     bufferResize(bits + 1024);
-
-    // Save declaration info
-    VerilatedVcdSig sig = VerilatedVcdSig(code, bits);
-    m_sigs.push_back(sig);
 
     // Split name into basename
     // Spaces and tabs aren't legal in VCD signal names, so:
@@ -609,8 +493,8 @@ void VerilatedVcd::declare(vluint32_t code, const char* name, const char* wirep,
     // Tab sorts before spaces, so signals nicely will print before scopes
     // Note the hiername may be nothing, if so we'll add "\t{name}"
     std::string nameasstr = name;
-    if (!m_modName.empty()) {
-        nameasstr = m_modName + m_scopeEscape + nameasstr;  // Optional ->module prefix
+    if (!moduleName().empty()) {
+        nameasstr = moduleName() + scopeEscape() + nameasstr;  // Optional ->module prefix
     }
     std::string hiername;
     std::string basename;
@@ -693,7 +577,7 @@ void VerilatedVcd::declFloat(vluint32_t code, const char* name, bool array, int 
 void VerilatedVcd::declDouble(vluint32_t code, const char* name, bool array, int arraynum) {
     declare(code, name, "real", array, arraynum, false, false, 63, 0);
 }
-#ifndef VL_TRACE_VCD_OLD_API
+#ifdef VL_TRACE_VCD_OLD_API
 void VerilatedVcd::declTriBit(vluint32_t code, const char* name, bool array, int arraynum) {
     declare(code, name, "wire", array, arraynum, true, false, 0, 0);
 }
@@ -714,14 +598,11 @@ void VerilatedVcd::declTriArray(vluint32_t code, const char* name, bool array, i
 //=============================================================================
 // Trace recording routines
 
-#ifndef VL_TRACE_VCD_OLD_API
-
 //=============================================================================
-// Pointer based variants used by Verilator
+// Emit trace entries
 
 // Emit suffix, write back write pointer, check buffer
-void VerilatedVcd::finishLine(vluint32_t* oldp, char* writep) {
-    const vluint32_t code = oldp - m_sigs_oldvalp;
+void VerilatedVcd::finishLine(vluint32_t code, char* writep) {
     const char* const suffixp = m_suffixesp + code * VL_TRACE_SUFFIX_ENTRY_SIZE;
     // Copy the whole suffix (this avoid having hard to predict branches which
     // helps a lot). Note suffixp could be aligned, so could load it in one go,
@@ -742,20 +623,13 @@ void VerilatedVcd::finishLine(vluint32_t* oldp, char* writep) {
     bufferCheck();
 }
 
-void VerilatedVcd::fullBit(vluint32_t* oldp, vluint32_t newval) {
-    *oldp = newval;
+void VerilatedVcd::emitBit(vluint32_t code, vluint32_t newval) {
     char* wp = m_writep;
     *wp++ = '0' | static_cast<char>(newval);
-    finishLine(oldp, wp);
+    finishLine(code, wp);
 }
 
-// We do want these functions specialized for sizes to avoid hard to predict
-// branches, but we don't want them inlined, so we explicitly create one
-// specialization for each size used here here.
-
-// T_Bits is the number of used bits in the value
-template <int T_Bits> void VerilatedVcd::fullBus(vluint32_t* oldp, vluint32_t newval) {
-    *oldp = newval;
+template <int T_Bits> void VerilatedVcd::emitBus(vluint32_t code, vluint32_t newval) {
     char* wp = m_writep;
     *wp++ = 'b';
     newval <<= 32 - T_Bits;
@@ -764,44 +638,10 @@ template <int T_Bits> void VerilatedVcd::fullBus(vluint32_t* oldp, vluint32_t ne
         *wp++ = '0' | static_cast<char>(newval >> 31);
         newval <<= 1;
     } while (--bits);
-    finishLine(oldp, wp);
+    finishLine(code, wp);
 }
-// Note: No specialization for width 1, covered by 'fullBit'
-template void VerilatedVcd::fullBus<2>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<3>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<4>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<5>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<6>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<7>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<8>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<9>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<10>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<11>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<12>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<13>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<14>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<15>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<16>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<17>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<18>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<19>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<20>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<21>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<22>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<23>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<24>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<25>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<26>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<27>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<28>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<29>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<30>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<31>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedVcd::fullBus<32>(vluint32_t* oldp, vluint32_t newval);
 
-// T_Bits is the number of used bits in the value
-void VerilatedVcd::fullQuad(vluint32_t* oldp, vluint64_t newval, int bits) {
-    *reinterpret_cast<vluint64_t*>(oldp) = newval;
+void VerilatedVcd::emitQuad(vluint32_t code, vluint64_t newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
     newval <<= 64 - bits;
@@ -850,12 +690,11 @@ void VerilatedVcd::fullQuad(vluint32_t* oldp, vluint64_t newval, int bits) {
         *wp++ = '0' | static_cast<char>(newval >> 63);
         newval <<= 1;
     } while (--remaining);
-    finishLine(oldp, wp);
+    finishLine(code, wp);
 }
 
-void VerilatedVcd::fullArray(vluint32_t* oldp, const vluint32_t* newvalp, int bits) {
+void VerilatedVcd::emitArray(vluint32_t code, const vluint32_t* newvalp, int bits) {
     int words = (bits + 31) / 32;
-    for (int i = 0; i < words; ++i) oldp[i] = newvalp[i];
     char* wp = m_writep;
     *wp++ = 'b';
     // Handle the most significant word
@@ -907,41 +746,37 @@ void VerilatedVcd::fullArray(vluint32_t* oldp, const vluint32_t* newvalp, int bi
             val <<= 1;
         } while (--bits);
     }
-    finishLine(oldp, wp);
+    finishLine(code, wp);
 }
 
-void VerilatedVcd::fullFloat(vluint32_t* oldp, float newval) {
-    // cppcheck-suppress invalidPointerCast
-    *reinterpret_cast<float*>(oldp) = newval;
+void VerilatedVcd::emitFloat(vluint32_t code, float newval) {
     char* wp = m_writep;
     // Buffer can't overflow before sprintf; we sized during declaration
     sprintf(wp, "r%.16g", static_cast<double>(newval));
     wp += strlen(wp);
-    finishLine(oldp, wp);
+    finishLine(code, wp);
 }
 
-void VerilatedVcd::fullDouble(vluint32_t* oldp, double newval) {
-    // cppcheck-suppress invalidPointerCast
-    *reinterpret_cast<double*>(oldp) = newval;
+void VerilatedVcd::emitDouble(vluint32_t code, double newval) {
     char* wp = m_writep;
     // Buffer can't overflow before sprintf; we sized during declaration
     sprintf(wp, "r%.16g", newval);
     wp += strlen(wp);
-    finishLine(oldp, wp);
+    finishLine(code, wp);
 }
 
-#else  // VL_TRACE_VCD_OLD_API
+#ifdef VL_TRACE_VCD_OLD_API
 
 void VerilatedVcd::fullBit(vluint32_t code, const vluint32_t newval) {
     // Note the &1, so we don't require clean input -- makes more common no change case faster
-    m_sigs_oldvalp[code] = newval;
+    *oldp(code) = newval;
     *m_writep++ = ('0' + static_cast<char>(newval & 1));
     m_writep = writeCode(m_writep, code);
     *m_writep++ = '\n';
     bufferCheck();
 }
 void VerilatedVcd::fullBus(vluint32_t code, const vluint32_t newval, int bits) {
-    m_sigs_oldvalp[code] = newval;
+    *oldp(code) = newval;
     *m_writep++ = 'b';
     for (int bit = bits - 1; bit >= 0; --bit) {
         *m_writep++ = ((newval & (1L << bit)) ? '1' : '0');
@@ -952,7 +787,7 @@ void VerilatedVcd::fullBus(vluint32_t code, const vluint32_t newval, int bits) {
     bufferCheck();
 }
 void VerilatedVcd::fullQuad(vluint32_t code, const vluint64_t newval, int bits) {
-    (*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code]))) = newval;
+    (*(reinterpret_cast<vluint64_t*>(oldp(code)))) = newval;
     *m_writep++ = 'b';
     for (int bit = bits - 1; bit >= 0; --bit) {
         *m_writep++ = ((newval & (VL_ULL(1) << bit)) ? '1' : '0');
@@ -963,9 +798,7 @@ void VerilatedVcd::fullQuad(vluint32_t code, const vluint64_t newval, int bits) 
     bufferCheck();
 }
 void VerilatedVcd::fullArray(vluint32_t code, const vluint32_t* newval, int bits) {
-    for (int word = 0; word < (((bits - 1) / 32) + 1); ++word) {
-        m_sigs_oldvalp[code + word] = newval[word];
-    }
+    for (int word = 0; word < (((bits - 1) / 32) + 1); ++word) { oldp(code)[word] = newval[word]; }
     *m_writep++ = 'b';
     for (int bit = bits - 1; bit >= 0; --bit) {
         *m_writep++ = ((newval[(bit / 32)] & (1L << (bit & 0x1f))) ? '1' : '0');
@@ -976,9 +809,7 @@ void VerilatedVcd::fullArray(vluint32_t code, const vluint32_t* newval, int bits
     bufferCheck();
 }
 void VerilatedVcd::fullArray(vluint32_t code, const vluint64_t* newval, int bits) {
-    for (int word = 0; word < (((bits - 1) / 64) + 1); ++word) {
-        m_sigs_oldvalp[code + word] = newval[word];
-    }
+    for (int word = 0; word < (((bits - 1) / 64) + 1); ++word) { oldp(code)[word] = newval[word]; }
     *m_writep++ = 'b';
     for (int bit = bits - 1; bit >= 0; --bit) {
         *m_writep++ = ((newval[(bit / 64)] & (VL_ULL(1) << (bit & 0x3f))) ? '1' : '0');
@@ -989,17 +820,17 @@ void VerilatedVcd::fullArray(vluint32_t code, const vluint64_t* newval, int bits
     bufferCheck();
 }
 void VerilatedVcd::fullTriBit(vluint32_t code, const vluint32_t newval, const vluint32_t newtri) {
-    m_sigs_oldvalp[code] = newval;
-    m_sigs_oldvalp[code + 1] = newtri;
-    *m_writep++ = "01zz"[m_sigs_oldvalp[code] | (m_sigs_oldvalp[code + 1] << 1)];
+    oldp(code)[0] = newval;
+    oldp(code)[1] = newtri;
+    *m_writep++ = "01zz"[newval | (newtri << 1)];
     m_writep = writeCode(m_writep, code);
     *m_writep++ = '\n';
     bufferCheck();
 }
 void VerilatedVcd::fullTriBus(vluint32_t code, const vluint32_t newval, const vluint32_t newtri,
                               int bits) {
-    m_sigs_oldvalp[code] = newval;
-    m_sigs_oldvalp[code + 1] = newtri;
+    oldp(code)[0] = newval;
+    oldp(code)[1] = newtri;
     *m_writep++ = 'b';
     for (int bit = bits - 1; bit >= 0; --bit) {
         *m_writep++ = "01zz"[((newval >> bit) & 1) | (((newtri >> bit) & 1) << 1)];
@@ -1011,8 +842,8 @@ void VerilatedVcd::fullTriBus(vluint32_t code, const vluint32_t newval, const vl
 }
 void VerilatedVcd::fullTriQuad(vluint32_t code, const vluint64_t newval, const vluint32_t newtri,
                                int bits) {
-    (*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code]))) = newval;
-    (*(reinterpret_cast<vluint64_t*>(&m_sigs_oldvalp[code + 1]))) = newtri;
+    (*(reinterpret_cast<vluint64_t*>(oldp(code)))) = newval;
+    (*(reinterpret_cast<vluint64_t*>(oldp(code + 1)))) = newtri;
     *m_writep++ = 'b';
     for (int bit = bits - 1; bit >= 0; --bit) {
         *m_writep++
@@ -1026,8 +857,8 @@ void VerilatedVcd::fullTriQuad(vluint32_t code, const vluint64_t newval, const v
 void VerilatedVcd::fullTriArray(vluint32_t code, const vluint32_t* newvalp,
                                 const vluint32_t* newtrip, int bits) {
     for (int word = 0; word < (((bits - 1) / 32) + 1); ++word) {
-        m_sigs_oldvalp[code + word * 2] = newvalp[word];
-        m_sigs_oldvalp[code + word * 2 + 1] = newtrip[word];
+        oldp(code)[word * 2] = newvalp[word];
+        oldp(code)[word * 2 + 1] = newtrip[word];
     }
     *m_writep++ = 'b';
     for (int bit = bits - 1; bit >= 0; --bit) {
@@ -1042,7 +873,7 @@ void VerilatedVcd::fullTriArray(vluint32_t code, const vluint32_t* newvalp,
 }
 void VerilatedVcd::fullDouble(vluint32_t code, const double newval) {
     // cppcheck-suppress invalidPointerCast
-    (*(reinterpret_cast<double*>(&m_sigs_oldvalp[code]))) = newval;
+    (*(reinterpret_cast<double*>(oldp(code)))) = newval;
     // Buffer can't overflow before sprintf; we sized during declaration
     sprintf(m_writep, "r%.16g", newval);
     m_writep += strlen(m_writep);
@@ -1053,7 +884,7 @@ void VerilatedVcd::fullDouble(vluint32_t code, const double newval) {
 }
 void VerilatedVcd::fullFloat(vluint32_t code, const float newval) {
     // cppcheck-suppress invalidPointerCast
-    (*(reinterpret_cast<float*>(&m_sigs_oldvalp[code]))) = newval;
+    (*(reinterpret_cast<float*>(oldp(code)))) = newval;
     // Buffer can't overflow before sprintf; we sized during declaration
     sprintf(m_writep, "r%.16g", static_cast<double>(newval));
     m_writep += strlen(m_writep);
@@ -1080,60 +911,6 @@ void VerilatedVcd::fullQuadX(vluint32_t code, int bits) { fullBusX(code, bits); 
 void VerilatedVcd::fullArrayX(vluint32_t code, int bits) { fullBusX(code, bits); }
 
 #endif  // VL_TRACE_VCD_OLD_API
-
-//=============================================================================
-// Callbacks
-
-void VerilatedVcd::addCallback(VerilatedVcdCallback_t initcb, VerilatedVcdCallback_t fullcb,
-                               VerilatedVcdCallback_t changecb, void* userthis) VL_MT_UNSAFE_ONE {
-    m_assertOne.check();
-    if (VL_UNLIKELY(isOpen())) {
-        std::string msg = std::string("Internal: ") + __FILE__ + "::" + __FUNCTION__
-                          + " called with already open file";
-        VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
-    }
-    VerilatedVcdCallInfo* cip = new VerilatedVcdCallInfo(initcb, fullcb, changecb, userthis);
-    m_callbacks.push_back(cip);
-}
-
-//=============================================================================
-// Dumping
-
-void VerilatedVcd::dumpFull(vluint64_t timeui) {
-    m_assertOne.check();
-    dumpPrep(timeui);
-    Verilated::quiesce();
-    for (vluint32_t ent = 0; ent < m_callbacks.size(); ent++) {
-        VerilatedVcdCallInfo* cip = m_callbacks[ent];
-        (cip->m_fullcb)(this, cip->m_userthis, cip->m_code);
-    }
-}
-
-void VerilatedVcd::dump(vluint64_t timeui) {
-    m_assertOne.check();
-    if (!isOpen()) return;
-    if (VL_UNLIKELY(m_fullDump)) {
-        m_fullDump = false;  // No more need for next dump to be full
-        dumpFull(timeui);
-        return;
-    }
-    if (VL_UNLIKELY(m_rolloverMB && m_wroteBytes > this->m_rolloverMB)) {
-        openNext(true);
-        if (!isOpen()) return;
-    }
-    dumpPrep(timeui);
-    Verilated::quiesce();
-    for (vluint32_t ent = 0; ent < m_callbacks.size(); ++ent) {
-        VerilatedVcdCallInfo* cip = m_callbacks[ent];
-        (cip->m_changecb)(this, cip->m_userthis, cip->m_code);
-    }
-}
-
-void VerilatedVcd::dumpPrep(vluint64_t timeui) {
-    printStr("#");
-    printTime(timeui);
-    printStr("\n");
-}
 
 //======================================================================
 // Static members
