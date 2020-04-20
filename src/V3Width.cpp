@@ -317,10 +317,10 @@ private:
 
     // Widths: out signed/unsigned width = lhs width, input un|signed
     virtual void visit(AstSigned* nodep) VL_OVERRIDE {
-        visit_signed_unsigned(nodep, AstNumeric::SIGNED);
+        visit_signed_unsigned(nodep, VSigning::SIGNED);
     }
     virtual void visit(AstUnsigned* nodep) VL_OVERRIDE {
-        visit_signed_unsigned(nodep, AstNumeric::UNSIGNED);
+        visit_signed_unsigned(nodep, VSigning::UNSIGNED);
     }
 
     // Widths: Output width from lhs, rhs<33 bits
@@ -369,7 +369,7 @@ private:
             // See similar handling in visit_cmp_eq_gt where created
             iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
             iterateCheckSigned32(nodep, "RHS", nodep->rhsp(), BOTH);
-            nodep->dtypeSetBitSized(8, AstNumeric::UNSIGNED);
+            nodep->dtypeSetBitSized(8, VSigning::UNSIGNED);
         }
     }
     virtual void visit(AstGetcRefN* nodep) VL_OVERRIDE {
@@ -379,7 +379,7 @@ private:
             // See similar handling in visit_cmp_eq_gt where created
             iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);
             iterateCheckSigned32(nodep, "RHS", nodep->rhsp(), BOTH);
-            nodep->dtypeSetBitSized(8, AstNumeric::UNSIGNED);
+            nodep->dtypeSetBitSized(8, VSigning::UNSIGNED);
         }
     }
     virtual void visit(AstSubstrN* nodep) VL_OVERRIDE {
@@ -454,7 +454,7 @@ private:
                 int width = std::max(nodep->expr1p()->width(), nodep->expr2p()->width());
                 int mwidth = std::max(nodep->expr1p()->widthMin(), nodep->expr2p()->widthMin());
                 bool issigned = nodep->expr1p()->isSigned() && nodep->expr2p()->isSigned();
-                nodep->dtypeSetLogicUnsized(width, mwidth, AstNumeric::fromBool(issigned));
+                nodep->dtypeSetLogicUnsized(width, mwidth, VSigning::fromBool(issigned));
             }
         }
         if (m_vup->final()) {
@@ -489,7 +489,7 @@ private:
             iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
             nodep->dtypeSetLogicUnsized(nodep->lhsp()->width() + nodep->rhsp()->width(),
                                         nodep->lhsp()->widthMin() + nodep->rhsp()->widthMin(),
-                                        AstNumeric::UNSIGNED);
+                                        VSigning::UNSIGNED);
             // Cleanup zero width Verilog2001 {x,{0{foo}}} now,
             // otherwise having width(0) will cause later assertions to fire
             if (AstReplicate* repp = VN_CAST(nodep->lhsp(), Replicate)) {
@@ -586,7 +586,7 @@ private:
             } else {
                 nodep->dtypeSetLogicUnsized((nodep->lhsp()->width() * times),
                                             (nodep->lhsp()->widthMin() * times),
-                                            AstNumeric::UNSIGNED);
+                                            VSigning::UNSIGNED);
             }
         }
         if (m_vup->final()) {
@@ -647,7 +647,7 @@ private:
                 }
             }
             nodep->dtypeSetLogicUnsized(nodep->lhsp()->width(), nodep->lhsp()->widthMin(),
-                                        AstNumeric::UNSIGNED);
+                                        VSigning::UNSIGNED);
         }
         if (m_vup->final()) {
             if (!nodep->dtypep()->widthSized()) {
@@ -719,7 +719,7 @@ private:
                 nodep->v3error("Unsupported: MSB < LSB of bit extract: "
                                << nodep->msbConst() << "<" << nodep->lsbConst());
                 width = (nodep->lsbConst() - nodep->msbConst() + 1);
-                nodep->dtypeSetLogicSized(width, AstNumeric::UNSIGNED);
+                nodep->dtypeSetLogicSized(width, VSigning::UNSIGNED);
                 nodep->widthp()->replaceWith(new AstConst(nodep->widthp()->fileline(), width));
                 nodep->lsbp()->replaceWith(new AstConst(nodep->lsbp()->fileline(), 0));
             }
@@ -1035,7 +1035,7 @@ private:
     virtual void visit(AstUCFunc* nodep) VL_OVERRIDE {
         // Give it the size the user wants.
         if (m_vup && m_vup->prelim()) {
-            nodep->dtypeSetLogicUnsized(32, 1, AstNumeric::UNSIGNED);  // We don't care
+            nodep->dtypeSetLogicUnsized(32, 1, VSigning::UNSIGNED);  // We don't care
             // All arguments seek their natural sizes
             userIterateChildren(nodep, WidthVP(SELF, BOTH).p());
         }
@@ -1120,8 +1120,8 @@ private:
             iterateCheckSizedSelf(nodep, "LHS", nodep->lhsp(), SELF, BOTH);
             // If it's a 32 bit number, we need a 6 bit number as we need to return '32'.
             int selwidth = V3Number::log2b(nodep->lhsp()->width()) + 1;
-            nodep->dtypeSetLogicSized(
-                selwidth, AstNumeric::UNSIGNED);  // Spec doesn't indicate if an integer
+            nodep->dtypeSetLogicSized(selwidth,
+                                      VSigning::UNSIGNED);  // Spec doesn't indicate if an integer
         }
     }
     virtual void visit(AstCvtPackString* nodep) VL_OVERRIDE {
@@ -1261,7 +1261,7 @@ private:
         }
         default: {
             // Everything else resolved earlier
-            nodep->dtypeSetLogicUnsized(32, 1, AstNumeric::UNSIGNED);  // Approximation, unsized 32
+            nodep->dtypeSetLogicUnsized(32, 1, VSigning::UNSIGNED);  // Approximation, unsized 32
             UINFO(1, "Missing ATTR type case node: " << nodep << endl);
             nodep->v3fatalSrc("Missing ATTR type case");
             break;
@@ -1596,13 +1596,13 @@ private:
                         // not "parameter logic foo" as you can extract
                         // "foo[0]" from a parameter but not a wire
                         nodep->dtypeChgWidthSigned(width, nodep->valuep()->widthMin(),
-                                                   AstNumeric::fromBool(issigned));
+                                                   VSigning::fromBool(issigned));
                         nodep->dtypep(nodep->findLogicRangeDType(VNumRange(0, 0, false),
                                                                  nodep->valuep()->widthMin(),
-                                                                 AstNumeric::fromBool(issigned)));
+                                                                 VSigning::fromBool(issigned)));
                     } else {
                         nodep->dtypeChgWidthSigned(width, nodep->valuep()->widthMin(),
-                                                   AstNumeric::fromBool(issigned));
+                                                   VSigning::fromBool(issigned));
                     }
                     didchk = true;
                 }
@@ -2958,7 +2958,7 @@ private:
                         int mwidth = std::max(subDTypep->widthMin(), condp->widthMin());
                         bool issigned = subDTypep->isSigned() && condp->isSigned();
                         subDTypep
-                            = nodep->findLogicDType(width, mwidth, AstNumeric::fromBool(issigned));
+                            = nodep->findLogicDType(width, mwidth, VSigning::fromBool(issigned));
                     }
                 }
             }
@@ -3245,13 +3245,13 @@ private:
             iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
             // We only support string types, not packed array
             iterateCheckString(nodep, "$ferror string result", nodep->strp(), BOTH);
-            nodep->dtypeSetLogicUnsized(32, 1, AstNumeric::SIGNED);  // Spec says integer return
+            nodep->dtypeSetLogicUnsized(32, 1, VSigning::SIGNED);  // Spec says integer return
         }
     }
     virtual void visit(AstFEof* nodep) VL_OVERRIDE {
         if (m_vup->prelim()) {
             iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
-            nodep->dtypeSetLogicUnsized(32, 1, AstNumeric::SIGNED);  // Spec says integer return
+            nodep->dtypeSetLogicUnsized(32, 1, VSigning::SIGNED);  // Spec says integer return
         }
     }
     virtual void visit(AstFFlush* nodep) VL_OVERRIDE {
@@ -3260,22 +3260,22 @@ private:
     }
     virtual void visit(AstFRewind* nodep) VL_OVERRIDE {
         iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
-        nodep->dtypeSetLogicUnsized(32, 1, AstNumeric::SIGNED);  // Spec says integer return
+        nodep->dtypeSetLogicUnsized(32, 1, VSigning::SIGNED);  // Spec says integer return
     }
     virtual void visit(AstFTell* nodep) VL_OVERRIDE {
         iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
-        nodep->dtypeSetLogicUnsized(32, 1, AstNumeric::SIGNED);  // Spec says integer return
+        nodep->dtypeSetLogicUnsized(32, 1, VSigning::SIGNED);  // Spec says integer return
     }
     virtual void visit(AstFSeek* nodep) VL_OVERRIDE {
         iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
         iterateCheckSigned32(nodep, "$fseek offset", nodep->offset(), BOTH);
         iterateCheckSigned32(nodep, "$fseek operation", nodep->operation(), BOTH);
-        nodep->dtypeSetLogicUnsized(32, 1, AstNumeric::SIGNED);  // Spec says integer return
+        nodep->dtypeSetLogicUnsized(32, 1, VSigning::SIGNED);  // Spec says integer return
     }
     virtual void visit(AstFGetC* nodep) VL_OVERRIDE {
         if (m_vup->prelim()) {
             iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
-            nodep->dtypeSetLogicUnsized(32, 8, AstNumeric::SIGNED);  // Spec says integer return
+            nodep->dtypeSetLogicUnsized(32, 8, VSigning::SIGNED);  // Spec says integer return
         }
     }
     virtual void visit(AstFGetS* nodep) VL_OVERRIDE {
@@ -3289,7 +3289,7 @@ private:
         if (m_vup->prelim()) {
             iterateCheckFileDesc(nodep, nodep->filep(), BOTH);
             iterateCheckSigned32(nodep, "$fungetc character", nodep->charp(), BOTH);
-            nodep->dtypeSetLogicUnsized(32, 8, AstNumeric::SIGNED);  // Spec says integer return
+            nodep->dtypeSetLogicUnsized(32, 8, VSigning::SIGNED);  // Spec says integer return
         }
     }
     virtual void visit(AstFRead* nodep) VL_OVERRIDE {
@@ -3370,7 +3370,7 @@ private:
         if (m_vup->prelim()) {
             userIterateAndNext(nodep->searchp(), WidthVP(SELF, BOTH).p());
             userIterateAndNext(nodep->outp(), WidthVP(SELF, BOTH).p());
-            nodep->dtypeChgWidthSigned(32, 1, AstNumeric::SIGNED);  // Spec says integer return
+            nodep->dtypeChgWidthSigned(32, 1, VSigning::SIGNED);  // Spec says integer return
         }
     }
     virtual void visit(AstTimeFormat* nodep) VL_OVERRIDE {
@@ -3775,7 +3775,7 @@ private:
         // LHS presumed self-determined, then coerced to real
         if (m_vup->prelim()) {  // First stage evaluation
             nodep->dtypeSetDouble();
-            AstNodeDType* subDTypep = nodep->findLogicDType(64, 64, AstNumeric::UNSIGNED);
+            AstNodeDType* subDTypep = nodep->findLogicDType(64, 64, VSigning::UNSIGNED);
             // Self-determined operand
             userIterateAndNext(nodep->lhsp(), WidthVP(SELF, PRELIM).p());
             iterateCheck(nodep, "LHS", nodep->lhsp(), SELF, FINAL, subDTypep, EXTEND_EXP);
@@ -3787,7 +3787,7 @@ private:
         // LHS presumed self-determined, then coerced to real
         if (m_vup->prelim()) {  // First stage evaluation
             nodep->dtypeSetDouble();
-            AstNodeDType* subDTypep = nodep->findLogicDType(32, 32, AstNumeric::SIGNED);
+            AstNodeDType* subDTypep = nodep->findLogicDType(32, 32, VSigning::SIGNED);
             // Self-determined operand
             userIterateAndNext(nodep->lhsp(), WidthVP(SELF, PRELIM).p());
             iterateCheck(nodep, "LHS", nodep->lhsp(), SELF, FINAL, subDTypep, EXTEND_EXP);
@@ -3906,7 +3906,7 @@ private:
                 int width = std::max(nodep->lhsp()->width(), nodep->rhsp()->width());
                 int ewidth = std::max(nodep->lhsp()->widthMin(), nodep->rhsp()->widthMin());
                 AstNodeDType* subDTypep
-                    = nodep->findLogicDType(width, ewidth, AstNumeric::fromBool(signedFl));
+                    = nodep->findLogicDType(width, ewidth, VSigning::fromBool(signedFl));
                 bool warnOn = true;
                 if (!signedFl && width == 32) {
                     // Waive on unsigned < or <= if RHS is narrower, since can't give wrong answer
@@ -4001,7 +4001,7 @@ private:
         }
     }
 
-    void visit_signed_unsigned(AstNodeUniop* nodep, AstNumeric rs_out) {
+    void visit_signed_unsigned(AstNodeUniop* nodep, VSigning rs_out) {
         // CALLER: Signed, Unsigned
         // Width: lhs is self determined width
         // See IEEE-2012 6.24.1:
@@ -4096,7 +4096,7 @@ private:
             int width = std::max(nodep->lhsp()->width(), nodep->rhsp()->width());
             int mwidth = std::max(nodep->lhsp()->widthMin(), nodep->rhsp()->widthMin());
             bool expSigned = (nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned());
-            nodep->dtypeChgWidthSigned(width, mwidth, AstNumeric::fromBool(expSigned));
+            nodep->dtypeChgWidthSigned(width, mwidth, VSigning::fromBool(expSigned));
         }
         if (m_vup->final()) {
             AstNodeDType* expDTypep = m_vup->dtypeOverridep(nodep->dtypep());
@@ -4144,7 +4144,7 @@ private:
                 int width = std::max(nodep->lhsp()->width(), nodep->rhsp()->width());
                 int mwidth = std::max(nodep->lhsp()->widthMin(), nodep->rhsp()->widthMin());
                 bool expSigned = (nodep->lhsp()->isSigned() && nodep->rhsp()->isSigned());
-                nodep->dtypeChgWidthSigned(width, mwidth, AstNumeric::fromBool(expSigned));
+                nodep->dtypeChgWidthSigned(width, mwidth, VSigning::fromBool(expSigned));
             }
         }
         if (m_vup->final()) {
@@ -4304,7 +4304,7 @@ private:
             linker.relink(newp);
             nodep = newp;
         }
-        nodep->dtypeChgWidthSigned(expWidth, expWidth, AstNumeric::fromBool(expSigned));
+        nodep->dtypeChgWidthSigned(expWidth, expWidth, VSigning::fromBool(expSigned));
         UINFO(4, "             _new: " << nodep << endl);
     }
 
@@ -4529,7 +4529,7 @@ private:
                         subDTypep = nodep->findLogicDType(
                             std::max(subDTypep->width(), underp->width()),
                             std::max(subDTypep->widthMin(), underp->widthMin()),
-                            AstNumeric::fromBool(underp->isSigned()));
+                            VSigning::fromBool(underp->isSigned()));
                         UINFO(9, "Assignment of opposite-signed RHS to LHS: " << nodep << endl);
                     }
                     underp = userIterateSubtreeReturnEdits(underp, WidthVP(subDTypep, FINAL).p());
@@ -4674,7 +4674,7 @@ private:
             if (warnOn) nodep->v3warn(REALCVT, "Implicit conversion of real to integer");
             AstNode* newp = new AstRToIRoundS(nodep->fileline(), nodep);
             linker.relink(newp);
-            newp->dtypeSetBitSized(width, AstNumeric::SIGNED);
+            newp->dtypeSetBitSized(width, VSigning::SIGNED);
             return newp;
         } else {
             return nodep;

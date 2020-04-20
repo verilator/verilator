@@ -839,7 +839,7 @@ private:
             // use the lhs to replace the parent concat
             lp->lhsp()->replaceWith(newlp);
             lp->rhsp()->replaceWith(newrp);
-            lp->dtypeChgWidthSigned(newlp->width(), newlp->width(), AstNumeric::UNSIGNED);
+            lp->dtypeChgWidthSigned(newlp->width(), newlp->width(), VSigning::UNSIGNED);
             UINFO(5, "merged " << nodep << endl);
             VL_DO_DANGLING(rp->unlinkFrBack()->deleteTree(), rp);
             nodep->replaceWith(lp->unlinkFrBack());
@@ -1179,7 +1179,7 @@ private:
             AstNode* srcp = nodep->rhsp()->unlinkFrBack();
             // Connect the rhs to the stream operator and update its width
             VN_CAST(streamp, StreamL)->lhsp(srcp);
-            streamp->dtypeSetLogicUnsized(srcp->width(), srcp->widthMin(), AstNumeric::UNSIGNED);
+            streamp->dtypeSetLogicUnsized(srcp->width(), srcp->widthMin(), VSigning::UNSIGNED);
             // Shrink the RHS if necessary
             if (sWidth > dWidth) {
                 streamp = new AstSel(streamp->fileline(), streamp, sWidth - dWidth, dWidth);
@@ -1239,7 +1239,7 @@ private:
         val.opShiftL(andConstp->num(), shiftConstp->num());
         AstAnd* newp = new AstAnd(nodep->fileline(), new AstConst(nodep->fileline(), val), fromp);
         // widthMin no longer applicable if different C-expanded width
-        newp->dtypeSetLogicSized(nodep->width(), AstNumeric::UNSIGNED);
+        newp->dtypeSetLogicSized(nodep->width(), VSigning::UNSIGNED);
         nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         if (debug() >= 9) newp->dumpTree(cout, "       _new: ");

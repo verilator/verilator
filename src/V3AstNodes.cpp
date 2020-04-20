@@ -875,7 +875,7 @@ AstBasicDType* AstTypeTable::findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd) 
 }
 
 AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd, int width,
-                                               int widthMin, AstNumeric numeric) {
+                                               int widthMin, VSigning numeric) {
     AstBasicDType* new1p = new AstBasicDType(fl, kwd, numeric, width, widthMin);
     AstBasicDType* newp = findInsertSameDType(new1p);
     if (newp != new1p) {
@@ -887,7 +887,7 @@ AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kw
 }
 
 AstBasicDType* AstTypeTable::findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd, VNumRange range,
-                                               int widthMin, AstNumeric numeric) {
+                                               int widthMin, VSigning numeric) {
     AstBasicDType* new1p = new AstBasicDType(fl, kwd, numeric, range, widthMin);
     AstBasicDType* newp = findInsertSameDType(new1p);
     if (newp != new1p) {

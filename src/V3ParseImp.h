@@ -55,8 +55,8 @@ struct V3ParseBisonYYSType {
         double cdouble;
         bool cbool;
         V3UniqState uniqstate;
-        VSignedState signstate;
         V3ImportProperty iprop;
+        VSigning::en signstate;
         V3ErrorCode::en errcodeen;
         AstAttrType::en attrtypeen;
 

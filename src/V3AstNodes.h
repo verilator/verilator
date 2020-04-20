@@ -59,7 +59,7 @@ private:
             dtypeSetString();
         } else {
             dtypeSetLogicUnsized(m_num.width(), (m_num.sized() ? 0 : m_num.widthMin()),
-                                 AstNumeric::fromBool(m_num.isSigned()));
+                                 VSigning::fromBool(m_num.isSigned()));
         }
         m_num.nodep(this);
     }
@@ -97,35 +97,35 @@ public:
     AstConst(FileLine* fl, uint32_t num)
         : ASTGEN_SUPER(fl)
         , m_num(this, 32, num) {
-        dtypeSetLogicUnsized(m_num.width(), 0, AstNumeric::UNSIGNED);
+        dtypeSetLogicUnsized(m_num.width(), 0, VSigning::UNSIGNED);
     }
     class Unsized32 {};  // for creator type-overload selection
     AstConst(FileLine* fl, Unsized32, uint32_t num)  // Unsized 32-bit integer of specified value
         : ASTGEN_SUPER(fl)
         , m_num(this, 32, num) {
         m_num.width(32, false);
-        dtypeSetLogicUnsized(32, m_num.widthMin(), AstNumeric::UNSIGNED);
+        dtypeSetLogicUnsized(32, m_num.widthMin(), VSigning::UNSIGNED);
     }
     class Signed32 {};  // for creator type-overload selection
     AstConst(FileLine* fl, Signed32, int32_t num)  // Signed 32-bit integer of specified value
         : ASTGEN_SUPER(fl)
         , m_num(this, 32, num) {
         m_num.width(32, true);
-        dtypeSetLogicUnsized(32, m_num.widthMin(), AstNumeric::SIGNED);
+        dtypeSetLogicUnsized(32, m_num.widthMin(), VSigning::SIGNED);
     }
     class Unsized64 {};  // for creator type-overload selection
     AstConst(FileLine* fl, Unsized64, vluint64_t num)
         : ASTGEN_SUPER(fl)
         , m_num(this, 64, 0) {
         m_num.setQuad(num);
-        dtypeSetLogicSized(64, AstNumeric::UNSIGNED);
+        dtypeSetLogicSized(64, VSigning::UNSIGNED);
     }
     class SizedEData {};  // for creator type-overload selection
     AstConst(FileLine* fl, SizedEData, vluint64_t num)
         : ASTGEN_SUPER(fl)
         , m_num(this, VL_EDATASIZE, 0) {
         m_num.setQuad(num);
-        dtypeSetLogicSized(VL_EDATASIZE, AstNumeric::UNSIGNED);
+        dtypeSetLogicSized(VL_EDATASIZE, VSigning::UNSIGNED);
     }
     class RealDouble {};  // for creator type-overload selection
     AstConst(FileLine* fl, RealDouble, double num)
@@ -735,24 +735,23 @@ private:
     } m;
     // See also in AstNodeDType: m_width, m_widthMin, m_numeric(issigned)
 public:
-    AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, VSignedState signst = signedst_NOSIGN)
+    AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, const VSigning& signst = VSigning::NOSIGN)
         : ASTGEN_SUPER(fl) {
-        init(kwd, AstNumeric(signst), 0, -1, NULL);
+        init(kwd, signst, 0, -1, NULL);
     }
     AstBasicDType(FileLine* fl, VFlagLogicPacked, int wantwidth)
         : ASTGEN_SUPER(fl) {
-        init(AstBasicDTypeKwd::LOGIC, AstNumeric::NOSIGN, wantwidth, -1, NULL);
+        init(AstBasicDTypeKwd::LOGIC, VSigning::NOSIGN, wantwidth, -1, NULL);
     }
     AstBasicDType(FileLine* fl, VFlagBitPacked, int wantwidth)
         : ASTGEN_SUPER(fl) {
-        init(AstBasicDTypeKwd::BIT, AstNumeric::NOSIGN, wantwidth, -1, NULL);
+        init(AstBasicDTypeKwd::BIT, VSigning::NOSIGN, wantwidth, -1, NULL);
     }
-    AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, AstNumeric numer, int wantwidth,
-                  int widthmin)
+    AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, VSigning numer, int wantwidth, int widthmin)
         : ASTGEN_SUPER(fl) {
         init(kwd, numer, wantwidth, widthmin, NULL);
     }
-    AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, AstNumeric numer, VNumRange range,
+    AstBasicDType(FileLine* fl, AstBasicDTypeKwd kwd, VSigning numer, VNumRange range,
                   int widthmin)
         : ASTGEN_SUPER(fl) {
         init(kwd, numer, range.elements(), widthmin, NULL);
@@ -760,7 +759,7 @@ public:
     }
     // See also addRange in verilog.y
 private:
-    void init(AstBasicDTypeKwd kwd, AstNumeric numer, int wantwidth, int wantwidthmin,
+    void init(AstBasicDTypeKwd kwd, VSigning numer, int wantwidth, int wantwidthmin,
               AstRange* rangep) {
         // wantwidth=0 means figure it out, but if a widthmin is >=0
         //    we allow width 0 so that {{0{x}},y} works properly
@@ -771,11 +770,11 @@ private:
         if (keyword() == AstBasicDTypeKwd::LOGIC_IMPLICIT) {
             if (rangep || wantwidth) m.m_keyword = AstBasicDTypeKwd::LOGIC;
         }
-        if (numer == AstNumeric::NOSIGN) {
+        if (numer == VSigning::NOSIGN) {
             if (keyword().isSigned()) {
-                numer = AstNumeric::SIGNED;
+                numer = VSigning::SIGNED;
             } else if (keyword().isUnsigned()) {
-                numer = AstNumeric::UNSIGNED;
+                numer = VSigning::UNSIGNED;
             }
         }
         numeric(numer);
@@ -818,11 +817,11 @@ public:
     }
     AstRange* rangep() const { return VN_CAST(op1p(), Range); }  // op1 = Range of variable
     void rangep(AstRange* nodep) { setNOp1p(nodep); }
-    void setSignedState(VSignedState signst) {
+    void setSignedState(const VSigning& signst) {
         // Note NOSIGN does NOT change the state; this is required by the parser
-        if (signst == signedst_UNSIGNED) {
+        if (signst == VSigning::UNSIGNED) {
             numeric(signst);
-        } else if (signst == signedst_SIGNED) {
+        } else if (signst == VSigning::SIGNED) {
             numeric(signst);
         }
     }
@@ -1187,8 +1186,8 @@ public:
 
 class AstStructDType : public AstNodeUOrStructDType {
 public:
-    // AstNumeric below is mispurposed to indicate if packed or not
-    AstStructDType(FileLine* fl, AstNumeric numericUnpack)
+    // VSigning below is mispurposed to indicate if packed or not
+    AstStructDType(FileLine* fl, VSigning numericUnpack)
         : ASTGEN_SUPER(fl, numericUnpack) {}
     ASTNODE_NODE_FUNCS(StructDType)
     virtual string verilogKwd() const { return "struct"; }
@@ -1197,8 +1196,8 @@ public:
 class AstUnionDType : public AstNodeUOrStructDType {
 public:
     // UNSUP: bool isTagged;
-    // AstNumeric below is mispurposed to indicate if packed or not
-    AstUnionDType(FileLine* fl, AstNumeric numericUnpack)
+    // VSigning below is mispurposed to indicate if packed or not
+    AstUnionDType(FileLine* fl, VSigning numericUnpack)
         : ASTGEN_SUPER(fl, numericUnpack) {}
     ASTNODE_NODE_FUNCS(UnionDType)
     virtual string verilogKwd() const { return "union"; }
@@ -1592,13 +1591,13 @@ public:
         : ASTGEN_SUPER(fl, fromp, lsbp, widthp) {
         m_declElWidth = 1;
         if (VN_IS(widthp, Const)) {
-            dtypeSetLogicSized(VN_CAST(widthp, Const)->toUInt(), AstNumeric::UNSIGNED);
+            dtypeSetLogicSized(VN_CAST(widthp, Const)->toUInt(), VSigning::UNSIGNED);
         }
     }
     AstSel(FileLine* fl, AstNode* fromp, int lsb, int bitwidth)
         : ASTGEN_SUPER(fl, fromp, new AstConst(fl, lsb), new AstConst(fl, bitwidth)) {
         m_declElWidth = 1;
-        dtypeSetLogicSized(bitwidth, AstNumeric::UNSIGNED);
+        dtypeSetLogicSized(bitwidth, VSigning::UNSIGNED);
     }
     ASTNODE_NODE_FUNCS(Sel)
     virtual void dump(std::ostream& str) const;
@@ -1861,7 +1860,7 @@ public:
         , m_origName(name) {
         init();
         combineType(type);
-        dtypeSetLogicSized(wantwidth, AstNumeric::UNSIGNED);
+        dtypeSetLogicSized(wantwidth, VSigning::UNSIGNED);
         m_declKwd = AstBasicDTypeKwd::LOGIC;
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, VFlagBitPacked, int wantwidth)
@@ -1870,7 +1869,7 @@ public:
         , m_origName(name) {
         init();
         combineType(type);
-        dtypeSetBitSized(wantwidth, AstNumeric::UNSIGNED);
+        dtypeSetBitSized(wantwidth, VSigning::UNSIGNED);
         m_declKwd = AstBasicDTypeKwd::BIT;
     }
     AstVar(FileLine* fl, AstVarType type, const string& name, AstVar* examplep)
@@ -5204,7 +5203,7 @@ public:
         : ASTGEN_SUPER(fl, lhsp) {}
     AstExtend(FileLine* fl, AstNode* lhsp, int width)
         : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetLogicSized(width, AstNumeric::UNSIGNED);
+        dtypeSetLogicSized(width, VSigning::UNSIGNED);
     }
     ASTNODE_NODE_FUNCS(Extend)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opAssign(lhs); }
@@ -5225,7 +5224,7 @@ public:
     AstExtendS(FileLine* fl, AstNode* lhsp, int width)
         // Important that widthMin be correct, as opExtend requires it after V3Expand
         : ASTGEN_SUPER(fl, lhsp) {
-        dtypeSetLogicSized(width, AstNumeric::UNSIGNED);
+        dtypeSetLogicSized(width, VSigning::UNSIGNED);
     }
     ASTNODE_NODE_FUNCS(ExtendS)
     virtual void numberOperate(V3Number& out, const V3Number& lhs) {
@@ -5503,7 +5502,7 @@ public:
         m_size = setwidth;
         if (setwidth) {
             if (minwidth == -1) minwidth = setwidth;
-            dtypeSetLogicUnsized(setwidth, minwidth, AstNumeric::UNSIGNED);
+            dtypeSetLogicUnsized(setwidth, minwidth, VSigning::UNSIGNED);
         }
     }
     AstCCast(FileLine* fl, AstNode* lhsp, AstNode* typeFromp)
@@ -6650,7 +6649,7 @@ class AstShiftL : public AstNodeBiop {
 public:
     AstShiftL(FileLine* fl, AstNode* lhsp, AstNode* rhsp, int setwidth = 0)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        if (setwidth) { dtypeSetLogicSized(setwidth, AstNumeric::UNSIGNED); }
+        if (setwidth) { dtypeSetLogicSized(setwidth, VSigning::UNSIGNED); }
     }
     ASTNODE_NODE_FUNCS(ShiftL)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) {
@@ -6672,7 +6671,7 @@ class AstShiftR : public AstNodeBiop {
 public:
     AstShiftR(FileLine* fl, AstNode* lhsp, AstNode* rhsp, int setwidth = 0)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        if (setwidth) { dtypeSetLogicSized(setwidth, AstNumeric::UNSIGNED); }
+        if (setwidth) { dtypeSetLogicSized(setwidth, VSigning::UNSIGNED); }
     }
     ASTNODE_NODE_FUNCS(ShiftR)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) {
@@ -6698,7 +6697,7 @@ public:
     AstShiftRS(FileLine* fl, AstNode* lhsp, AstNode* rhsp, int setwidth = 0)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
         // Important that widthMin be correct, as opExtend requires it after V3Expand
-        if (setwidth) { dtypeSetLogicSized(setwidth, AstNumeric::SIGNED); }
+        if (setwidth) { dtypeSetLogicSized(setwidth, VSigning::SIGNED); }
     }
     ASTNODE_NODE_FUNCS(ShiftRS)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) {
@@ -7206,7 +7205,7 @@ public:
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
         if (lhsp->dtypep() && rhsp->dtypep()) {
             dtypeSetLogicSized(lhsp->dtypep()->width() + rhsp->dtypep()->width(),
-                               AstNumeric::UNSIGNED);
+                               VSigning::UNSIGNED);
         }
     }
     ASTNODE_NODE_FUNCS(Concat)
@@ -7256,7 +7255,7 @@ private:
     void init() {
         if (lhsp()) {
             if (const AstConst* constp = VN_CAST(rhsp(), Const)) {
-                dtypeSetLogicSized(lhsp()->width() * constp->toUInt(), AstNumeric::UNSIGNED);
+                dtypeSetLogicSized(lhsp()->width() * constp->toUInt(), VSigning::UNSIGNED);
             }
         }
     }
@@ -7482,7 +7481,7 @@ class AstGetcN : public AstNodeBiop {
 public:
     AstGetcN(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetBitSized(8, AstNumeric::UNSIGNED);
+        dtypeSetBitSized(8, VSigning::UNSIGNED);
     }
     ASTNODE_NODE_FUNCS(GetcN)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) {
@@ -7508,7 +7507,7 @@ class AstGetcRefN : public AstNodeBiop {
 public:
     AstGetcRefN(FileLine* fl, AstNode* lhsp, AstNode* rhsp)
         : ASTGEN_SUPER(fl, lhsp, rhsp) {
-        dtypeSetBitSized(8, AstNumeric::UNSIGNED);
+        dtypeSetBitSized(8, VSigning::UNSIGNED);
     }
     ASTNODE_NODE_FUNCS(GetcRefN)
     virtual AstNode* cloneType(AstNode* lhsp, AstNode* rhsp) {
@@ -8193,7 +8192,7 @@ public:
         , m_cleanOut(cleanOut)
         , m_pure(true) {
         addNOp1p(new AstText(fl, textStmt, true));
-        if (setwidth) { dtypeSetLogicSized(setwidth, AstNumeric::UNSIGNED); }
+        if (setwidth) { dtypeSetLogicSized(setwidth, VSigning::UNSIGNED); }
     }
     ASTNODE_NODE_FUNCS(CMath)
     virtual bool isGateOptimizable() const { return m_pure; }
@@ -8340,9 +8339,9 @@ public:
     AstVoidDType* findVoidDType(FileLine* fl);
     AstBasicDType* findBasicDType(FileLine* fl, AstBasicDTypeKwd kwd);
     AstBasicDType* findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd, int width, int widthMin,
-                                     AstNumeric numeric);
+                                     VSigning numeric);
     AstBasicDType* findLogicBitDType(FileLine* fl, AstBasicDTypeKwd kwd, VNumRange range,
-                                     int widthMin, AstNumeric numeric);
+                                     int widthMin, VSigning numeric);
     AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
     void clearCache();
     void repairCache();
