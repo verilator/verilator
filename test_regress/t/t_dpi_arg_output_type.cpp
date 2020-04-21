@@ -131,13 +131,13 @@ void i_shortreal(float* o) {
 void i_chandle(void** o) {
     static int n = 0;
     printf("i_chandle %d\n", n);
-    *o = n++ % 2 ? reinterpret_cast<void*>(&i_chandle) : NULL;
+    *o = (n++ % 2) ? reinterpret_cast<void*>(&i_chandle) : NULL;
 }
 
 void i_string(const char** o) {
     static int n = 0;
     printf("i_string %d\n", n);
-    *o = n++ % 2 ? "Hello" : "World";
+    *o = (n++ % 2) ? "Hello" : "World";
 }
 
 void i_bit(svBit* o) {
@@ -247,13 +247,13 @@ void i_shortreal_t(float* o) {
 void i_chandle_t(void** o) {
     static int n = 0;
     printf("i_chandle_t %d\n", n);
-    *o = n++ % 2 ? reinterpret_cast<void*>(&i_chandle) : NULL;
+    *o = (n++ % 2) ? reinterpret_cast<void*>(&i_chandle) : NULL;
 }
 
 void i_string_t(const char** o) {
     static int n = 0;
     printf("i_string_t %d\n", n);
-    *o = n++ % 2 ? "Hello" : "World";
+    *o = (n++ % 2) ? "Hello" : "World";
 }
 
 void i_bit_t(svBit* o) {
