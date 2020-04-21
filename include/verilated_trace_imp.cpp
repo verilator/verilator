@@ -25,6 +25,13 @@
 
 #include "verilated_trace.h"
 
+#if 0
+# include <iostream>
+# define VL_TRACE_THREAD_DEBUG(msg) std::cout << "TRACE THREAD: " << msg << std::endl
+#else
+# define VL_TRACE_THREAD_DEBUG(msg)
+#endif
+
 // clang-format on
 
 //=============================================================================
@@ -101,13 +108,10 @@ template <> VerilatedTraceEntry* VerilatedTrace<VL_DERIVED_T>::getTraceBuffer() 
     if (m_numTraceBuffers < 8) {
         // Allocate a new buffer if none is available
         if (!m_buffersFromWorker.tryGet(bufferp)) {
-            m_numTraceBuffers++;
-
-            // We need to be able to store a new value for each signal, which is
-            // 'nextCode()' entries, plus up to 3 more words of metadata per signal,
-            // Plus fixed overhead of 1 for a termination flag and 2 for a time
-            // stamp update.
-            bufferp = new VerilatedTraceEntry[nextCode() + numSignals() * 3 + 3];
+            ++m_numTraceBuffers;
+            // Note: over allocate a bit so pointer comparison is well defined
+            // if we overflow only by a small amount
+            bufferp = new VerilatedTraceEntry[m_traceBufferSize + 16];
         }
     } else {
         // Block until a buffer becomes available
@@ -117,10 +121,11 @@ template <> VerilatedTraceEntry* VerilatedTrace<VL_DERIVED_T>::getTraceBuffer() 
 }
 
 template <> void VerilatedTrace<VL_DERIVED_T>::waitForBuffer(const VerilatedTraceEntry* buffp) {
-    // Collect buffers from worker and stash them until we get the one we want
+    // Slow path code only called on flush/shutdown, so use a simple algorithm.
+    // Collect buffers from worker and stash them until we get the one we want.
     std::deque<VerilatedTraceEntry*> stash;
     do { stash.push_back(m_buffersFromWorker.get()); } while (stash.back() != buffp);
-    // Now put them back in the queue, in the original order
+    // Now put them back in the queue, in the original order.
     while (!stash.empty()) {
         m_buffersFromWorker.put_front(stash.back());
         stash.pop_back();
@@ -129,12 +134,6 @@ template <> void VerilatedTrace<VL_DERIVED_T>::waitForBuffer(const VerilatedTrac
 
 //=========================================================================
 // Worker thread
-
-#if 0
-#define VL_TRACE_THREAD_DEBUG(msg) std::cout << "TRACE THREAD: " << msg << std::endl
-#else
-#define VL_TRACE_THREAD_DEBUG(msg)
-#endif
 
 template <> void VerilatedTrace<VL_DERIVED_T>::workerThreadMain() {
     while (true) {
@@ -154,7 +153,7 @@ template <> void VerilatedTrace<VL_DERIVED_T>::workerThreadMain() {
             cmd = (readp++)->cmd;
 
             switch (cmd & ~0xFFU) {
-                //==================================================================
+                //===
                 // CHG_* commands
             case VerilatedTraceCommand::CHG_BIT:
                 VL_TRACE_THREAD_DEBUG("Command CHG_BIT");
@@ -226,21 +225,21 @@ template <> void VerilatedTrace<VL_DERIVED_T>::workerThreadMain() {
                 readp += 2;
                 continue;
 
-                //==================================================================
-                // Rare command
-            case TIME_CHANGE:
+                //===
+                // Rare commands
+            case VerilatedTraceCommand::TIME_CHANGE:
                 VL_TRACE_THREAD_DEBUG("Command TIME_CHANGE");
                 emitTimeChange((readp++)->timeui);
                 continue;
 
-                //==================================================================
+                //===
                 // Commands ending this buffer
             case VerilatedTraceCommand::END: VL_TRACE_THREAD_DEBUG("Command END"); break;
             case VerilatedTraceCommand::SHUTDOWN:
                 VL_TRACE_THREAD_DEBUG("Command SHUTDOWN");
                 break;
 
-                //==================================================================
+                //===
                 // Unknown command
             default:
                 VL_PRINTF_MT("Trace command: 0x%08x\n", cmd);
@@ -367,6 +366,13 @@ template <> void VerilatedTrace<VL_DERIVED_T>::traceInit() VL_MT_UNSAFE {
     if (!m_sigs_oldvalp) m_sigs_oldvalp = new vluint32_t[nextCode()];
 
 #ifdef VL_TRACE_THREADED
+    // Compute trace buffer size. we need to be able to store a new value for
+    // each signal, which is 'nextCode()' entries after the init callbacks
+    // above have been run, plus up to 3 more words of metadata per signal,
+    // plus fixed overhead of 1 for a termination flag and 2 for a time stamp
+    // update.
+    m_traceBufferSize = nextCode() + numSignals() * 3 + 3;
+
     // Start the worker thread
     m_workerThread.reset(new std::thread(&VerilatedTrace<VL_DERIVED_T>::workerThreadMain, this));
 #endif
@@ -382,7 +388,7 @@ void VerilatedTrace<VL_DERIVED_T>::declCode(vluint32_t code, vluint32_t bits, bo
     int codesNeeded = (bits + 31) / 32;
     if (tri) codesNeeded *= 2;
     m_nextCode = std::max(m_nextCode, code + codesNeeded);
-    m_numSignals += 1;
+    ++m_numSignals;
 }
 
 //=========================================================================
@@ -438,6 +444,7 @@ template <> void VerilatedTrace<VL_DERIVED_T>::dump(vluint64_t timeui) {
     // Get the trace buffer we are about to fill
     VerilatedTraceEntry* const bufferp = getTraceBuffer();
     m_traceBufferWritep = bufferp;
+    m_traceBufferEndp = bufferp + m_traceBufferSize;
 
     // Currently only incremental dumps run on the worker thread
     if (VL_LIKELY(!m_fullDump)) {
@@ -469,7 +476,10 @@ template <> void VerilatedTrace<VL_DERIVED_T>::dump(vluint64_t timeui) {
 
 #ifdef VL_TRACE_THREADED
     // Mark end of the trace buffer we just filled
-    m_traceBufferWritep[0].cmd = VerilatedTraceCommand::END;
+    (m_traceBufferWritep++)->cmd = VerilatedTraceCommand::END;
+
+    // Assert no buffer overflow
+    assert(m_traceBufferWritep - bufferp <= m_traceBufferSize);
 
     // Pass it to the worker thread
     m_buffersToWorker.put(bufferp);

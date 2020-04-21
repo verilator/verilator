@@ -24,16 +24,94 @@
 
 #include "verilated.h"
 
-#ifdef VL_TRACE_THREADED
-# include "verilated_trace_threaded.h"
-# include <memory>
-# include <thread>
-#endif
-
 #include <string>
 #include <vector>
 
+#ifdef VL_TRACE_THREADED
+# include <condition_variable>
+# include <deque>
+# include <thread>
+#endif
+
 // clang-format on
+
+#ifdef VL_TRACE_THREADED
+//=============================================================================
+// Threaded tracing
+
+// A simple synchronized first in first out queue
+template <class T> class VerilatedThreadQueue {
+private:
+    VerilatedMutex m_mutex;  // Protects m_queue
+    std::condition_variable_any m_cv;
+    std::deque<T> m_queue VL_GUARDED_BY(m_mutex);
+
+public:
+    // Put an element at the back of the queue
+    void put(T value) {
+        VerilatedLockGuard lock(m_mutex);
+        m_queue.push_back(value);
+        m_cv.notify_one();
+    }
+
+    // Put an element at the front of the queue
+    void put_front(T value) {
+        VerilatedLockGuard lock(m_mutex);
+        m_queue.push_front(value);
+        m_cv.notify_one();
+    }
+
+    // Get an element from the front of the queue. Blocks if none available
+    T get() {
+        VerilatedLockGuard lock(m_mutex);
+        m_cv.wait(lock, [this]() VL_REQUIRES(m_mutex) { return !m_queue.empty(); });
+        assert(!m_queue.empty());
+        T value = m_queue.front();
+        m_queue.pop_front();
+        return value;
+    }
+
+    // Non blocking get
+    bool tryGet(T& result) {
+        VerilatedLockGuard lockGuard(m_mutex);
+        if (m_queue.empty()) { return false; }
+        result = m_queue.front();
+        m_queue.pop_front();
+        return true;
+    }
+};
+
+// Commands used by thread tracing. Note that the bottom 8 bits of all these
+// values are empty and are used to store small amounts of additional command
+// parameters. Anonymous enum in class, as we want it scoped, but we also
+// want the automatic conversion to integer types.
+class VerilatedTraceCommand {
+public:
+    enum {
+        CHG_BIT = 0x0000,
+        CHG_BUS = 0x0100,
+        CHG_QUAD = 0x0200,
+        CHG_ARRAY = 0x0300,
+        CHG_FLOAT = 0x0400,
+        CHG_DOUBLE = 0x0500,
+        TIME_CHANGE = 0x8000,
+        END = 0xf000,  // End of buffer
+        SHUTDOWN = 0xf200  // Shutdown worker thread, also marks end of buffer
+    };
+};
+
+typedef union {
+    vluint32_t cmd;  // Command code + params in bottom 8 bits
+    vluint32_t* oldp;  // Pointer to previous value buffer to consult/update
+    // Note: These are 64-bit wide, as this union already has a pointer type in it.
+    vluint64_t params;  // Command parameter
+    // New signal value in various forms
+    vluint64_t newBits;
+    float newFloat;
+    double newDouble;
+    vluint64_t timeui;
+} VerilatedTraceEntry;
+#endif
 
 class VerilatedTraceCallInfo;
 
@@ -67,6 +145,9 @@ private:
     // Number of total trace buffers that have been allocated
     vluint32_t m_numTraceBuffers;
 
+    // Size of trace buffers
+    size_t m_traceBufferSize;
+
     // Buffers handed to worker for processing
     VerilatedThreadQueue<VerilatedTraceEntry*> m_buffersToWorker;
     // Buffers returned from worker after processing
@@ -77,6 +158,9 @@ private:
 
     // Write pointer into current buffer
     VerilatedTraceEntry* m_traceBufferWritep;
+
+    // End of trace buffer
+    VerilatedTraceEntry* m_traceBufferEndp;
 
     // The worker thread itself
     std::unique_ptr<std::thread> m_workerThread;
@@ -200,18 +284,21 @@ public:
         m_traceBufferWritep[0].cmd = VerilatedTraceCommand::CHG_BIT | newval;
         m_traceBufferWritep[1].oldp = oldp;
         m_traceBufferWritep += 2;
+        VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
     }
     template <int T_Bits> inline void chgBus(vluint32_t* oldp, vluint32_t newval) {
         m_traceBufferWritep[0].cmd = VerilatedTraceCommand::CHG_BUS | T_Bits;
         m_traceBufferWritep[1].oldp = oldp;
         m_traceBufferWritep[2].newBits = newval;
         m_traceBufferWritep += 3;
+        VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
     }
     inline void chgQuad(vluint32_t* oldp, vluint64_t newval, int bits) {
         m_traceBufferWritep[0].cmd = VerilatedTraceCommand::CHG_QUAD | bits;
         m_traceBufferWritep[1].oldp = oldp;
         m_traceBufferWritep[2].newBits = newval;
         m_traceBufferWritep += 3;
+        VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
     }
     inline void chgArray(vluint32_t* oldp, const vluint32_t* newvalp, int bits) {
         m_traceBufferWritep[0].cmd = VerilatedTraceCommand::CHG_ARRAY;
@@ -221,18 +308,21 @@ public:
         vluint32_t* const wp = reinterpret_cast<vluint32_t*>(m_traceBufferWritep);
         for (int i = 0; i < (bits + 31) / 32; ++i) { wp[i] = newvalp[i]; }
         m_traceBufferWritep += (bits + 63) / 64;
+        VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
     }
     inline void chgFloat(vluint32_t* oldp, float newval) {
         m_traceBufferWritep[0].cmd = VerilatedTraceCommand::CHG_FLOAT;
         m_traceBufferWritep[1].oldp = oldp;
         m_traceBufferWritep[2].newFloat = newval;
         m_traceBufferWritep += 3;
+        VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
     }
     inline void chgDouble(vluint32_t* oldp, double newval) {
         m_traceBufferWritep[0].cmd = VerilatedTraceCommand::CHG_DOUBLE;
         m_traceBufferWritep[1].oldp = oldp;
         m_traceBufferWritep[2].newDouble = newval;
         m_traceBufferWritep += 3;
+        VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
     }
 
 #define CHG(name) chg##name##Impl

@@ -376,14 +376,14 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --timescale-override <timescale>  Overrides all timescales
     --top-module <topname>      Name of top level input module
     --trace                     Enable waveform creation
-    --trace-depth <levels>      Depth of tracing
     --trace-coverage            Enable tracing of coverage
+    --trace-depth <levels>      Depth of tracing
     --trace-fst                 Enable FST waveform creation
-    --trace-threads <threads>   Enable waveform creation on separate threads
     --trace-max-array <depth>   Maximum bit width for tracing
     --trace-max-width <width>   Maximum array depth for tracing
     --trace-params              Enable tracing of parameters
     --trace-structs             Enable tracing structure names
+    --trace-threads <threads>   Enable waveform creation on separate threads
     --trace-underscore          Enable tracing of _signals
      -U<var>                    Undefine preprocessor define
     --unroll-count <loops>      Tune maximum loop iterations
@@ -1496,15 +1496,6 @@ improve simulation runtime and trace file size.
 Enable FST waveform tracing in the model. This overrides C<--trace>.
 See also C<--trace-threads>.
 
-=item --trace-threads I<threads>
-
-Enable waveform tracing using separate threads. This is typically faster in
-simulation runtime but slower in total compute. This option is indepentend of,
-and works with both C<--trace> and C<--trace-fst>. Different trace formats can
-take advantage of more trace threads to varying degrees. Currently VCD tracing
-can utilize at most --trace-threads 1, and FST tracing can utilize at most
---trace-threads 2.
-
 =item --trace-max-array I<depth>
 
 Rarely needed.  Specify the maximum array depth of a signal that may be
@@ -1527,6 +1518,15 @@ Enable tracing to show the name of packed structure, union, and packed
 array fields, rather than a single combined packed bus.  Due to VCD file
 format constraints this may result in significantly slower trace times and
 larger trace files.
+
+=item --trace-threads I<threads>
+
+Enable waveform tracing using separate threads. This is typically faster in
+simulation runtime but uses more total compute. This option is independend of,
+and works with, both C<--trace> and C<--trace-fst>. Different trace formats can
+take advantage of more trace threads to varying degrees. Currently VCD tracing
+can utilize at most --trace-threads 1, and FST tracing can utilize at most
+--trace-threads 2. This overrides C<--no-threads>.
 
 =item --trace-underscore
 
@@ -2796,7 +2796,8 @@ are the same thread (i.e. the user's top C++ testbench runs on a single
 thread), but this is not required.
 
 The --trace-threads options can be used to produce trace dumps using multiple
-threads. This is orthogonal to --threads.
+threads. If --trace-threads is set without --threads, then --trace-threads will
+imply --threads 1, i.e.: the support libraries will be thread safe.
 
 With --trace-threads 0, trace dumps are produced on the main thread. This again
 gives the highest single thread performance.

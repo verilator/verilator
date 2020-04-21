@@ -131,6 +131,9 @@ endif
 
 ifneq ($(VM_TRACE_THREADS),0)
  ifneq ($(VM_TRACE_THREADS),)
+  ifeq ($(findstring -DVL_THREADED,$(CPPFLAGS)),)
+   $(error VM_TRACE_THREADS requires VM_THREADS)
+  endif
   CPPFLAGS += -DVL_TRACE_THREADED
   VK_C11=1
   VK_LIBS_THREADED=1

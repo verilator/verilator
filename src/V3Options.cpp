@@ -631,6 +631,9 @@ void V3Options::notify() {
             && !v3Global.opt.preprocOnly()  //
             && !v3Global.opt.xmlOnly());
     }
+
+    // --trace-threads implies --threads 1 unless explicitly specified
+    if (traceThreads() && !threads()) { m_threads = 1; }
 }
 
 //######################################################################
