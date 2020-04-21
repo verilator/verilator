@@ -22,6 +22,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    Add --trace-threads for general multithreaded tracing, #2269. [Geza Lore]
 
+***   Add --flatten for use with --xml-only, #2270. [James Hanlon]
+
 ****  Support $ferror, and $fflush without arguments, #1638.
 
 ****  Add error if use SystemC 2.2 and earlier (pre-2011) as is deprecated.

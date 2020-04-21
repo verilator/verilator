@@ -303,6 +303,7 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
      -F <file>                  Parse options from a file, relatively
      -f <file>                  Parse options from a file
      -FI <file>                 Force include of a file
+    --flatten                   Force inlining of all modules, tasks and functions
      -G<name>=<value>           Overwrite toplevel parameter
     --gdb                       Run Verilator under GDB interactively
     --gdbbt                     Run Verilator under GDB for backtrace
@@ -846,6 +847,12 @@ will insert a #include of the specified file before any other includes. The
 specified file might be used to contain define prototypes of custom
 VL_VPRINTF functions, and may need to include verilatedos.h as this file is
 included before any other standard includes.
+
+=item --flatten
+
+Force flattening of the design's hierarchy, with all modules, tasks and
+functions inlined. Typically used with C<--xml-only>. Note flattening
+large designs may require significant CPU time, memory and storage.
 
 =item -GI<name>=I<value>
 

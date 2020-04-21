@@ -160,7 +160,7 @@ static void process() {
     //
     V3Assert::assertAll(v3Global.rootp());
 
-    if (!v3Global.opt.xmlOnly()) {
+    if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
         // Add top level wrapper with instance pointing to old top
         // Move packages to under new top
         // Must do this after we know parameters and dtypes (as don't clone dtype decls)
@@ -170,7 +170,7 @@ static void process() {
     // Propagate constants into expressions
     V3Const::constifyAllLint(v3Global.rootp());
 
-    if (!v3Global.opt.xmlOnly()) {
+    if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
         // Split packed variables into multiple pieces to resolve UNOPTFLAT.
         // should be after constifyAllLint() which flattens to 1D bit vector
         V3SplitVar::splitVariable(v3Global.rootp());
@@ -214,7 +214,7 @@ static void process() {
 
     //--FLATTENING---------------
 
-    if (!v3Global.opt.xmlOnly()) {
+    if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
         // We're going to flatten the hierarchy, so as many optimizations that
         // can be done as possible should be before this....
 
@@ -234,19 +234,25 @@ static void process() {
 
     //--SCOPE BASED OPTIMIZATIONS--------------
 
-    if (!v3Global.opt.xmlOnly()) {
+    if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
         // Cleanup
         V3Const::constifyAll(v3Global.rootp());
         V3Dead::deadifyDTypesScoped(v3Global.rootp());
         v3Global.checkTree();
+    }
 
+    if (!v3Global.opt.xmlOnly()) {
         // Convert case statements to if() blocks.  Must be after V3Unknown
         // Must be before V3Task so don't need to deal with task in case value compares
         V3Case::caseAll(v3Global.rootp());
+    }
 
+    if (!(v3Global.opt.xmlOnly() && !v3Global.opt.flatten())) {
         // Inline all tasks
         V3Task::taskAll(v3Global.rootp());
+    }
 
+    if (!v3Global.opt.xmlOnly()) {
         // Add __PVT's
         // After V3Task so task internal variables will get renamed
         V3Name::nameAll(v3Global.rootp());
