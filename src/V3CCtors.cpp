@@ -145,8 +145,8 @@ void V3CCtors::cctorsAll() {
     for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
          modp = VN_CAST(modp->nextp(), NodeModule)) {
         // Process each module in turn
-        AstCFunc* varResetFuncp;
         {
+            AstCFunc* varResetFuncp;
             V3CCtorsVisitor var_reset(
                 modp, "_ctor_var_reset",
                 (VN_IS(modp, Class) ? EmitCBaseVisitor::symClassVar() : ""),

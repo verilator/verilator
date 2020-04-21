@@ -46,6 +46,7 @@
 
 // Allow user to specify their own include file
 #ifdef VL_VERILATED_INCLUDE
+// cppcheck-suppress preprocessorErrorDirective
 # include VL_VERILATED_INCLUDE
 #endif
 // clang-format on

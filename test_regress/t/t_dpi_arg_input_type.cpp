@@ -618,8 +618,8 @@ void check_exports() {
 #ifndef NO_SHORTREAL
     e_shortreal(1.0f * n + 0.25f);
 #endif
-    e_chandle(n % 2 ? reinterpret_cast<void*>(&e_chandle) : NULL);
-    e_string(n % 2 ? "World" : "Hello");
+    e_chandle((n % 2) ? reinterpret_cast<void*>(&e_chandle) : NULL);
+    e_string((n % 2) ? "World" : "Hello");
     e_bit(n % 2);
     e_logic(!(n % 2));
 
@@ -645,8 +645,8 @@ void check_exports() {
 #ifndef NO_SHORTREAL
     e_shortreal_t(1.0f * (2 * n) + 0.25f);
 #endif
-    e_chandle_t(n % 2 ? NULL : reinterpret_cast<void*>(&e_chandle_t));
-    e_string_t(n % 2 ? "Hello" : "World");
+    e_chandle_t((n % 2) ? NULL : reinterpret_cast<void*>(&e_chandle_t));
+    e_string_t((n % 2) ? "Hello" : "World");
     e_bit_t(n % 2);
     e_logic_t(!(n % 2));
 

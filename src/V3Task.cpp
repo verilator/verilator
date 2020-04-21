@@ -512,7 +512,7 @@ private:
         AstNode* beginp
             = new AstComment(refp->fileline(), string("Function: ") + refp->name(), true);
         AstNodeCCall* ccallp;
-        if (AstNew* mrefp = VN_CAST(refp, New)) {
+        if (VN_IS(refp, New)) {
             AstCNew* cnewp = new AstCNew(refp->fileline(), cfuncp);
             cnewp->dtypep(refp->dtypep());
             ccallp = cnewp;
