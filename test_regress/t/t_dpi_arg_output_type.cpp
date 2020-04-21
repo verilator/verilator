@@ -710,14 +710,14 @@ void check_exports() {
     if (x_chandle != NULL) stop();
 
     e_string(&x_string);
-    if (n % 2 == 0) {
+    if ((n % 2) == 0) {
         if (strcmp(x_string, "Hello") != 0) stop();
     } else {
         if (strcmp(x_string, "World") != 0) stop();
     }
 
     e_bit(&x_bit);
-    if (x_bit != n % 2) stop();
+    if (x_bit != (n % 2)) stop();
 
     e_logic(&x_logic);
     if (x_logic != !(n % 2)) stop();
@@ -771,14 +771,14 @@ void check_exports() {
     if (x_chandle_t != NULL) stop();
 
     e_string_t(&x_string_t);
-    if (n % 2 == 0) {
+    if ((n % 2) == 0) {
         if (strcmp(x_string_t, "Hello") != 0) stop();
     } else {
         if (strcmp(x_string_t, "World") != 0) stop();
     }
 
     e_bit_t(&x_bit_t);
-    if (x_bit_t != n % 2) stop();
+    if (x_bit_t != (n % 2)) stop();
 
     e_logic_t(&x_logic_t);
     if (x_logic_t != !(n % 2)) stop();
@@ -787,7 +787,7 @@ void check_exports() {
 
     // 2-state packed arrays
     e_array_2_state_1(x_array_2_state_1);
-    if (x_array_2_state_1[0] != n % 2) stop();
+    if (x_array_2_state_1[0] != (n % 2)) stop();
 
     e_array_2_state_32(x_array_2_state_32);
     if (x_array_2_state_32[0] != 0xffffffff >> n) stop();
@@ -813,7 +813,7 @@ void check_exports() {
 
     // 2-state packed structures
     e_struct_2_state_1(x_struct_2_state_1);
-    if (x_struct_2_state_1[0] != n % 2) stop();
+    if (x_struct_2_state_1[0] != (n % 2)) stop();
 
     e_struct_2_state_32(x_struct_2_state_32);
     if (x_struct_2_state_32[0] != 0xffffffff >> n) stop();
@@ -839,7 +839,7 @@ void check_exports() {
 
     // 2-state packed unions
     e_union_2_state_1(x_union_2_state_1);
-    if (x_union_2_state_1[0] != n % 2) stop();
+    if (x_union_2_state_1[0] != (n % 2)) stop();
 
     e_union_2_state_32(x_union_2_state_32);
     if (x_union_2_state_32[0] != 0xffffffff >> n) stop();
@@ -865,7 +865,7 @@ void check_exports() {
 
     // 4-state packed arrays
     e_array_4_state_1(x_array_4_state_1);
-    if (x_array_4_state_1[0].aval != n % 2) stop();
+    if (x_array_4_state_1[0].aval != (n % 2)) stop();
 
     e_array_4_state_32(x_array_4_state_32);
     if (x_array_4_state_32[0].aval != 0xffffffff >> n) stop();
@@ -898,7 +898,7 @@ void check_exports() {
 
     // 4-state packed structures
     e_struct_4_state_1(x_struct_4_state_1);
-    if (x_struct_4_state_1[0].aval != n % 2) stop();
+    if (x_struct_4_state_1[0].aval != (n % 2)) stop();
 
     e_struct_4_state_32(x_struct_4_state_32);
     if (x_struct_4_state_32[0].aval != 0xffffffff >> n) stop();
@@ -931,7 +931,7 @@ void check_exports() {
 
     // 4-state packed unions
     e_union_4_state_1(x_union_4_state_1);
-    if (x_union_4_state_1[0].aval != n % 2) stop();
+    if (x_union_4_state_1[0].aval != (n % 2)) stop();
 
     e_union_4_state_32(x_union_4_state_32);
     if (x_union_4_state_32[0].aval != 0xffffffff >> n) stop();

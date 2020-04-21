@@ -160,7 +160,7 @@ void i_chandle(void** x) {
     static int n = 0;
     printf("i_chandle %d\n", n);
     if (*x != NULL) stop();
-    *x = n % 2 ? reinterpret_cast<void*>(&i_chandle) : 0;
+    *x = (n % 2) ? reinterpret_cast<void*>(&i_chandle) : 0;
     n++;
 }
 
@@ -288,7 +288,7 @@ void i_chandle_t(void** x) {
     static int n = 0;
     printf("i_chandle_t %d\n", n);
     if (*x != NULL) stop();
-    *x = n % 2 ? 0 : reinterpret_cast<void*>(&i_chandle_t);
+    *x = (n % 2) ? 0 : reinterpret_cast<void*>(&i_chandle_t);
     n++;
 }
 
@@ -951,7 +951,7 @@ void check_exports() {
     if (x_shortreal != 200.0f + 1.0f * n + 0.25f) stop();
 #endif
 
-    if (n % 2 == 0) {
+    if ((n % 2) == 0) {
         x_chandle = reinterpret_cast<void*>(&e_chandle);
         x_string = "Good";
     } else {
@@ -960,7 +960,7 @@ void check_exports() {
     }
     e_chandle(&x_chandle);
     e_string(&x_string);
-    if (n % 2 == 0) {
+    if ((n % 2) == 0) {
         if (x_chandle != NULL) stop();
         if (strcmp(x_string, "Hello") != 0) stop();
     } else {
@@ -1034,7 +1034,7 @@ void check_exports() {
     if (x_shortreal_t != 222.0f + 1.0f * (2 * n) + 0.25f) stop();
 #endif
 
-    if (n % 2 == 0) {
+    if ((n % 2) == 0) {
         x_chandle_t = NULL;
         x_string_t = "Bye";
     } else {
@@ -1043,7 +1043,7 @@ void check_exports() {
     }
     e_chandle_t(&x_chandle_t);
     e_string_t(&x_string_t);
-    if (n % 2 == 0) {
+    if ((n % 2) == 0) {
         if (x_chandle_t != NULL) stop();
         if (strcmp(x_string_t, "World") != 0) stop();
     } else {

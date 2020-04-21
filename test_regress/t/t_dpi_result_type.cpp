@@ -108,13 +108,13 @@ float i_shortreal() {
 void* i_chandle() {
     static int n = 0;
     printf("i_chandle %d\n", n);
-    return n++ % 2 ? reinterpret_cast<void*>(&i_chandle) : NULL;
+    return (n++ % 2) ? reinterpret_cast<void*>(&i_chandle) : NULL;
 }
 
 const char* i_string() {
     static int n = 0;
     printf("i_string %d\n", n);
-    return n++ % 2 ? "Hello" : "World";
+    return (n++ % 2) ? "Hello" : "World";
 }
 
 svBit i_bit() {
@@ -205,13 +205,13 @@ float i_shortreal_t() {
 void* i_chandle_t() {
     static int n = 0;
     printf("i_chandle_t %d\n", n);
-    return n++ % 2 ? reinterpret_cast<void*>(&i_chandle) : NULL;
+    return (n++ % 2) ? reinterpret_cast<void*>(&i_chandle) : NULL;
 }
 
 const char* i_string_t() {
     static int n = 0;
     printf("i_string_t %d\n", n);
-    return n++ % 2 ? "Hello" : "World";
+    return (n++ % 2) ? "Hello" : "World";
 }
 
 svBit i_bit_t() {
@@ -300,12 +300,12 @@ void check_exports() {
     if (e_shortreal() != 1.0f * n + 0.25f) stop();
 #endif
     if (e_chandle() != NULL) stop();
-    if (n % 2 == 0) {
+    if ((n % 2) == 0) {
         if (strcmp(e_string(), "Hello") != 0) stop();
     } else {
         if (strcmp(e_string(), "World") != 0) stop();
     }
-    if (e_bit() != n % 2) stop();
+    if (e_bit() != (n % 2)) stop();
     if (e_logic() != !(n % 2)) stop();
 
     // Basic types via tyepdef
@@ -324,27 +324,27 @@ void check_exports() {
     if (e_shortreal_t() != 1.0f * (2 * n) + 0.25f) stop();
 #endif
     if (e_chandle_t() != NULL) stop();
-    if (n % 2 == 0) {
+    if ((n % 2) == 0) {
         if (strcmp(e_string_t(), "Hello") != 0) stop();
     } else {
         if (strcmp(e_string_t(), "World") != 0) stop();
     }
-    if (e_bit_t() != n % 2) stop();
+    if (e_bit_t() != (n % 2)) stop();
     if (e_logic_t() != !(n % 2)) stop();
 
 #ifndef NO_ARRAY
     // 2-state packed arrays of width <= 32
-    if (e_array_2_state_1() != n % 2) stop();
+    if (e_array_2_state_1() != (n % 2)) stop();
     if (e_array_2_state_32() != 0xffffffff >> n) stop();
 #endif
 
 #ifndef NO_STRUCT_OR_UNION
     // 2-state packed structures of width <= 32
-    if (e_struct_2_state_1() != n % 2) stop();
+    if (e_struct_2_state_1() != (n % 2)) stop();
     if (e_struct_2_state_32() != 0xffffffff >> n) stop();
 
     // 2-state packed unions of width <= 32
-    if (e_union_2_state_1() != n % 2) stop();
+    if (e_union_2_state_1() != (n % 2)) stop();
     if (e_union_2_state_32() != 0xffffffff >> n) stop();
 #endif
 
