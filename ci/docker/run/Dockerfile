@@ -17,11 +17,11 @@ RUN apt-get update \
                         ca-certificates=20180409 \
                         ccache \
                         flex=2.6.4-6 \
-                        git=1:2.17.1-1ubuntu0.6 \
+                        git \
                         libfl-dev=2.6.4-6 \
                         libgoogle-perftools-dev \
-                        perl=5.26.1-6ubuntu0.3 \
-                        python3=3.6.7-1~18.04 \
+                        perl \
+                        python3 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
