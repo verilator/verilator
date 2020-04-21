@@ -230,6 +230,7 @@ private:
     bool        m_dpiHdrOnly;   // main switch: --dpi-hdr-only
     bool        m_dumpDefines;  // main switch: --dump-defines
     bool        m_exe;          // main switch: --exe
+    bool        m_flatten;      // main switch: --flatten
     bool        m_ignc;         // main switch: --ignc
     bool        m_inhibitSim;   // main switch: --inhibit-sim
     bool        m_lintOnly;     // main switch: --lint-only
@@ -268,7 +269,6 @@ private:
     bool        m_verilate;     // main swith: --verilate
     bool        m_vpi;          // main switch: --vpi
     bool        m_xInitialEdge; // main switch: --x-initial-edge
-    bool        m_xmlFlat;      // main switch: --xml-flat
     bool        m_xmlOnly;      // main switch: --xml-only
 
     int         m_buildJobs;    // main switch: -j
@@ -425,6 +425,7 @@ public:
     bool dpiHdrOnly() const { return m_dpiHdrOnly; }
     bool dumpDefines() const { return m_dumpDefines; }
     bool exe() const { return m_exe; }
+    bool flatten() const { return m_flatten; }
     bool gmake() const { return m_gmake; }
     bool threadsDpiPure() const { return m_threadsDpiPure; }
     bool threadsDpiUnpure() const { return m_threadsDpiUnpure; }
@@ -457,7 +458,6 @@ public:
     bool verilate() const { return m_verilate; }
     bool vpi() const { return m_vpi; }
     bool xInitialEdge() const { return m_xInitialEdge; }
-    bool xmlFlat() const { return m_xmlFlat; }
     bool xmlOnly() const { return m_xmlOnly; }
 
     int buildJobs() const { return m_buildJobs; }

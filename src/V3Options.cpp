@@ -842,6 +842,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-dump-defines", flag/*ref*/)) { m_dumpDefines = flag; }
             else if ( onoff (sw, "-dump-tree", flag/*ref*/))    { m_dumpTree = flag ? 3 : 0; }  // Also see --dump-treei
             else if ( onoff (sw, "-exe", flag/*ref*/))          { m_exe = flag; }
+            else if ( onoff (sw, "-flatten", flag/*ref*/))      { m_flatten = flag; }
             else if ( onoff (sw, "-ignc", flag/*ref*/))         { m_ignc = flag; }
             else if ( onoff (sw, "-inhibit-sim", flag/*ref*/))  { m_inhibitSim = flag; }
             else if ( onoff (sw, "-lint-only", flag/*ref*/))    { m_lintOnly = flag; }
@@ -883,8 +884,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-vpi", flag/*ref*/))               { m_vpi = flag; }
             else if ( onoff (sw, "-Wpedantic", flag/*ref*/))         { m_pedantic = flag; }
             else if ( onoff (sw, "-x-initial-edge", flag/*ref*/))    { m_xInitialEdge = flag; }
-            else if ( onoff (sw, "-xml-flat", flag/*ref*/))          { m_xmlOnly = flag; m_xmlFlat = flag; m_inlineMult = -1; }
-            else if ( onoff (sw, "-xml-only", flag/*ref*/))          { m_xmlOnly = flag; }
+            else if ( onoff (sw, "-xml-only", flag/*ref*/))          { m_xmlOnly = flag; } // Undocumented, still experimental
             else { hadSwitchPart1 = false; }
             // clang-format on
 
@@ -1526,6 +1526,7 @@ V3Options::V3Options() {
     m_dpiHdrOnly = false;
     m_dumpDefines = false;
     m_exe = false;
+    m_flatten = false;
     m_ignc = false;
     m_inhibitSim = false;
     m_lintOnly = false;
@@ -1571,7 +1572,6 @@ V3Options::V3Options() {
     m_verilate = true;
     m_vpi = false;
     m_xInitialEdge = false;
-    m_xmlFlat = false;
     m_xmlOnly = false;
 
     m_buildJobs = 1;

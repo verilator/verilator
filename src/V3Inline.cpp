@@ -194,13 +194,15 @@ private:
             int refs = modp->user3();
 
             // Should we automatically inline this module?
+            // If --flatten is specified, then force everything to be inlined that can be.
             // inlineMult = 2000 by default.
             // If a mod*#refs is < this # nodes, can inline it
             bool doit = ((allowed == CIL_USER)
                          || ((allowed == CIL_MAYBE)
-                             && (refs == 1 || statements < INLINE_MODS_SMALLER
-                                 || v3Global.opt.inlineMult() < 1
-                                 || refs * statements < v3Global.opt.inlineMult())));
+                             && (v3Global.opt.flatten()
+                                 || (refs == 1 || statements < INLINE_MODS_SMALLER
+                                     || v3Global.opt.inlineMult() < 1
+                                     || refs * statements < v3Global.opt.inlineMult()))));
             // Packages aren't really "under" anything so they confuse this algorithm
             if (VN_IS(modp, Package)) doit = false;
             UINFO(4, " Inline=" << doit << " Possible=" << allowed << " Refs=" << refs
