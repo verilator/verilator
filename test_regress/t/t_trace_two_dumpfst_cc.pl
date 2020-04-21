@@ -18,13 +18,13 @@ compile(
     verilator_make_gmake => 0,
     top_filename => 't_trace_two_b.v',
     VM_PREFIX => 'Vt_trace_two_b',
-    verilator_flags2 => ['--trace-fst-thread -DTEST_FST'],
+    verilator_flags2 => ['--trace-fst --trace-threads 1 -DTEST_FST'],
     );
 
 compile(
     make_main => 0,
     top_filename => 't_trace_two_a.v',
-    verilator_flags2 => ['-exe', '--trace-fst-thread',
+    verilator_flags2 => ['-exe', '--trace-fst --trace-threads 1',
                          '-DTEST_FST',
                          "$Self->{t_dir}/t_trace_two_cc.cpp"],
     v_flags2 => ['+define+TEST_DUMP'],

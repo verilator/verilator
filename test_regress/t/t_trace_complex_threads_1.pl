@@ -8,14 +8,13 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 # Version 2.0.
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-# Same test as t_trace_complex, but exercising the old VCD tracing API
-
-scenarios(vlt => 1);
+scenarios(simulator => 1);
 
 top_filename("t/t_trace_complex.v");
+$Self->{golden_filename} = "t/t_trace_complex.out";
 
 compile(
-    verilator_flags2 => ['--cc --trace -CFLAGS -DVL_TRACE_VCD_OLD_API'],
+    verilator_flags2 => ['--cc --trace --trace-threads 1']
     );
 
 execute(
@@ -32,7 +31,7 @@ file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_arru_arru\(/);
 file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_arru_arrp\(/);
 file_grep     ("$Self->{obj_dir}/simx.vcd", qr/ v_arru_strp\(/);
 
-vcd_identical ("$Self->{obj_dir}/simx.vcd", "t/t_trace_complex.out");
+vcd_identical ("$Self->{obj_dir}/simx.vcd", $Self->{golden_filename});
 
 ok(1);
 1;

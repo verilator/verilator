@@ -377,14 +377,14 @@ detailed descriptions in L</"VERILATION ARGUMENTS"> for more information.
     --timescale-override <timescale>  Overrides all timescales
     --top-module <topname>      Name of top level input module
     --trace                     Enable waveform creation
-    --trace-depth <levels>      Depth of tracing
     --trace-coverage            Enable tracing of coverage
+    --trace-depth <levels>      Depth of tracing
     --trace-fst                 Enable FST waveform creation
-    --trace-fst-thread          Enable FST threaded waveform creation
     --trace-max-array <depth>   Maximum bit width for tracing
     --trace-max-width <width>   Maximum array depth for tracing
     --trace-params              Enable tracing of parameters
     --trace-structs             Enable tracing structure names
+    --trace-threads <threads>   Enable waveform creation on separate threads
     --trace-underscore          Enable tracing of _signals
      -U<var>                    Undefine preprocessor define
     --unroll-count <loops>      Tune maximum loop iterations
@@ -1477,6 +1477,8 @@ need to add these to your Makefile manually.
 Having tracing compiled in may result in some small performance losses,
 even when waveforms are not turned on during model execution.
 
+See also C<--trace-threads>.
+
 =item --trace-coverage
 
 With --trace and --coverage-*, enable tracing to include a traced signal
@@ -1498,14 +1500,8 @@ improve simulation runtime and trace file size.
 
 =item --trace-fst
 
-Enable FST waveform tracing in the model. This overrides C<--trace> and
-C<--trace-fst-thread>.  See also C<--trace-fst-thread>.
-
-=item --trace-fst-thread
-
-Enable FST waveform tracing in the model, using a separate thread. This is
-typically faster in simulation runtime but slower in total computes than
-C<--trace-fst>.  This overrides C<--trace> and C<--trace-fst>.
+Enable FST waveform tracing in the model. This overrides C<--trace>.
+See also C<--trace-threads>.
 
 =item --trace-max-array I<depth>
 
@@ -1529,6 +1525,15 @@ Enable tracing to show the name of packed structure, union, and packed
 array fields, rather than a single combined packed bus.  Due to VCD file
 format constraints this may result in significantly slower trace times and
 larger trace files.
+
+=item --trace-threads I<threads>
+
+Enable waveform tracing using separate threads. This is typically faster in
+simulation runtime but uses more total compute. This option is independend of,
+and works with, both C<--trace> and C<--trace-fst>. Different trace formats can
+take advantage of more trace threads to varying degrees. Currently VCD tracing
+can utilize at most --trace-threads 1, and FST tracing can utilize at most
+--trace-threads 2. This overrides C<--no-threads>.
 
 =item --trace-underscore
 
@@ -2773,7 +2778,7 @@ performance.
 With --threads 1, the generated model is single threaded, however the
 support libraries are multithread safe. This allows different
 instantiations of model(s) to potentially each be run under a different
-thread.  All threading is the responsibility of the user's C++ testbench.
+thread. All threading is the responsibility of the user's C++ testbench.
 
 With --threads N, where N is at least 2, the generated model will be
 designed to run in parallel on N threads. The thread calling eval()
@@ -2783,9 +2788,6 @@ oversubscribe the available CPU cores. Under CPU oversubscription, the
 Verilated model should not livelock nor deadlock, however, you can expect
 performance to be far worse than it would be with proper ratio of
 threads and CPU cores.
-
-With --trace-fst-thread, tracing occurs in a separate thread from the main
-simulation thread(s). This option is orthogonal to --threads.
 
 The remainder of this section describe behavior with --threads 1 or
 --threads N (not --no-threads).
@@ -2800,12 +2802,28 @@ be done by a "main thread". In most cases the eval thread and main thread
 are the same thread (i.e. the user's top C++ testbench runs on a single
 thread), but this is not required.
 
+The --trace-threads options can be used to produce trace dumps using multiple
+threads. If --trace-threads is set without --threads, then --trace-threads will
+imply --threads 1, i.e.: the support libraries will be thread safe.
+
+With --trace-threads 0, trace dumps are produced on the main thread. This again
+gives the highest single thread performance.
+
+With --trace-threads N, where N is at least 1, N additional threads will be
+created and managed by the trace files (e.g.: VerilatedVcdC or VerilatedFstC),
+to generate the trace dump. The main thread will be released to proceed with
+execution as soon as possible, though some blocking of the main thread is still
+necessary while capturing the trace. Different trace formats can utilize a
+various number of threads. See the --trace-threads option.
+
 When running a multithreaded model, the default Linux task scheduler often
 works against the model, by assuming threads are short lived, and thus
 often schedules threads using multiple hyperthreads within the same
 physical core. For best performance use the C<numactl> program to (when the
-threading count fits) select unique physical cores on the same socket. For
-example, if a model was Verilated with "--threads 4", we consult
+threading count fits) select unique physical cores on the same socket. The
+same applies for --trace-threads as well.
+
+As an example, if a model was Verilated with "--threads 4", we consult
 
    egrep 'processor|physical id|core id' /proc/cpuinfo
 

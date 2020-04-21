@@ -150,21 +150,20 @@ inline std::ostream& operator<<(std::ostream& os, const VTimescale& rhs) {
 
 class TraceFormat {
 public:
-    enum en { VCD = 0, FST, FST_THREAD } m_e;
+    enum en { VCD = 0, FST } m_e;
     // cppcheck-suppress noExplicitConstructor
     inline TraceFormat(en _e = VCD)
         : m_e(_e) {}
     explicit inline TraceFormat(int _e)
         : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
-    bool fstFlavor() const { return m_e == FST || m_e == FST_THREAD; }
-    bool threaded() const { return m_e == FST_THREAD; }
+    bool fst() const { return m_e == FST; }
     string classBase() const {
-        static const char* const names[] = {"VerilatedVcd", "VerilatedFst", "VerilatedFst"};
+        static const char* const names[] = {"VerilatedVcd", "VerilatedFst"};
         return names[m_e];
     }
     string sourceName() const {
-        static const char* const names[] = {"verilated_vcd", "verilated_fst", "verilated_fst"};
+        static const char* const names[] = {"verilated_vcd", "verilated_fst"};
         return names[m_e];
     }
 };
@@ -295,6 +294,7 @@ private:
     TraceFormat m_traceFormat;  // main switch: --trace or --trace-fst
     int         m_traceMaxArray;// main switch: --trace-max-array
     int         m_traceMaxWidth;// main switch: --trace-max-width
+    int         m_traceThreads; // main switch: --trace-threads
     int         m_unrollCount;  // main switch: --unroll-count
     int         m_unrollStmts;  // main switch: --unroll-stmts
 
@@ -487,6 +487,7 @@ public:
     TraceFormat traceFormat() const { return m_traceFormat; }
     int traceMaxArray() const { return m_traceMaxArray; }
     int traceMaxWidth() const { return m_traceMaxWidth; }
+    int traceThreads() const { return m_traceThreads; }
     int unrollCount() const { return m_unrollCount; }
     int unrollStmts() const { return m_unrollStmts; }
 

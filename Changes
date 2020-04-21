@@ -20,6 +20,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 **    Fix DPI import/export to be standard compliant, #2236. [Geza Lore]
 
+**    Add --trace-threads for general multithreaded tracing, #2269. [Geza Lore]
+
 ***   Add --flatten for use with --xml-only, #2270. [James Hanlon]
 
 ****  Support $ferror, and $fflush without arguments, #1638.

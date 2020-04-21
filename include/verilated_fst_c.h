@@ -85,13 +85,9 @@ public:
     /// Open the file; call isOpen() to see if errors
     void open(const char* filename) VL_MT_UNSAFE;
     /// Close the file
-    void close() VL_MT_UNSAFE {
-        m_assertOne.check();
-        fstWriterClose(m_fst);
-        m_fst = NULL;
-    }
+    void close() VL_MT_UNSAFE;
     /// Flush any remaining data to this file
-    void flush() VL_MT_UNSAFE { fstWriterFlushContext(m_fst); }
+    void flush() VL_MT_UNSAFE;
     /// Is file open?
     bool isOpen() const { return m_fst != NULL; }
 

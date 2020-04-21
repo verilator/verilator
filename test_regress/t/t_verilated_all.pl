@@ -19,6 +19,8 @@ compile(
                          "--trace --vpi ",
                          ($Self->cfg_with_threaded
                           ? "--threads 2 $root/include/verilated_threads.cpp" : ""),
+                         ($Self->cfg_with_threaded
+                          ? "--trace-threads 1" : ""),
                          "$root/include/verilated_save.cpp"],
     );
 
