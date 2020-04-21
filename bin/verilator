@@ -851,7 +851,8 @@ included before any other standard includes.
 =item --flatten
 
 Force flattening of the design's hierarchy, with all modules, tasks and
-functions inlined.
+functions inlined. Typically used with C<--xml-only>. Note flattening
+large designs may require significant CPU time, memory and storage.
 
 =item -GI<name>=I<value>
 
