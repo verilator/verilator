@@ -21,7 +21,7 @@ parser.
 
 == Structure
 
-The XML document is consists of 4 sections within the top level `verilator_xml`
+The XML document consists of 4 sections within the top level `verilator_xml`
 element:
 
 `<files>`...`</files>`::

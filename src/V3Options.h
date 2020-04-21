@@ -230,6 +230,7 @@ private:
     bool        m_dpiHdrOnly;   // main switch: --dpi-hdr-only
     bool        m_dumpDefines;  // main switch: --dump-defines
     bool        m_exe;          // main switch: --exe
+    bool        m_flatten;      // main switch: --flatten
     bool        m_ignc;         // main switch: --ignc
     bool        m_inhibitSim;   // main switch: --inhibit-sim
     bool        m_lintOnly;     // main switch: --lint-only
@@ -424,6 +425,7 @@ public:
     bool dpiHdrOnly() const { return m_dpiHdrOnly; }
     bool dumpDefines() const { return m_dumpDefines; }
     bool exe() const { return m_exe; }
+    bool flatten() const { return m_flatten; }
     bool gmake() const { return m_gmake; }
     bool threadsDpiPure() const { return m_threadsDpiPure; }
     bool threadsDpiUnpure() const { return m_threadsDpiUnpure; }
