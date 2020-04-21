@@ -433,7 +433,7 @@ template <> void VerilatedTrace<VL_DERIVED_T>::dump(vluint64_t timeui) {
 
     Verilated::quiesce();
 
-    // Call hook so for format specific behaviour
+    // Call hook for format specific behaviour
     if (VL_UNLIKELY(m_fullDump)) {
         if (!preFullDump()) return;
     } else {

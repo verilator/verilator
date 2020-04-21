@@ -23,6 +23,7 @@
 #include "verilated.h"
 #include "verilated_fst_c.h"
 
+// GTKWave configuration
 #ifdef VL_TRACE_FST_WRITER_THREAD
 # define HAVE_LIBPTHREAD
 # define FST_WRITER_PARALLEL
