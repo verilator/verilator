@@ -1901,9 +1901,7 @@ void VL_READMEM_N(bool hex,  // Hex format, else binary
                   QData start,  // First array row address to read
                   QData end  // Last row address to read
                   ) VL_MT_SAFE {
-    QData addr_max = array_lsb + depth - 1;
     if (start < static_cast<QData>(array_lsb)) start = array_lsb;
-    if (end > addr_max) end = addr_max;
 
     VlReadMem rmem(hex, bits, filename, start, end);
     if (VL_UNLIKELY(!rmem.isOpen())) return;
