@@ -42,6 +42,7 @@
 #include "V3Descope.h"
 #include "V3EmitC.h"
 #include "V3EmitCMake.h"
+#include "V3EmitCMain.h"
 #include "V3EmitMk.h"
 #include "V3EmitV.h"
 #include "V3EmitXml.h"
@@ -487,12 +488,9 @@ static void process() {
 
     if (!v3Global.opt.lintOnly() && !v3Global.opt.xmlOnly() && !v3Global.opt.dpiHdrOnly()) {
         // Makefile must be after all other emitters
-        if (v3Global.opt.cmake()) {  //
-            V3EmitCMake::emit();
-        }
-        if (v3Global.opt.gmake()) {  //
-            V3EmitMk::emitmk();
-        }
+        if (v3Global.opt.main()) V3EmitCMain::emit();
+        if (v3Global.opt.cmake()) V3EmitCMake::emit();
+        if (v3Global.opt.gmake()) V3EmitMk::emitmk();
     }
 
     // Note early return above when opt.cdc()

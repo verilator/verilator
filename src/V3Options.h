@@ -234,6 +234,7 @@ private:
     bool        m_inhibitSim;   // main switch: --inhibit-sim
     bool        m_lintOnly;     // main switch: --lint-only
     bool        m_gmake;        // main switch: --make gmake
+    bool        m_main;         // main swithc: --main
     bool        m_orderClockDly;// main switch: --order-clock-delay
     bool        m_outFormatOk;  // main switch: --cc, --sc or --sp was specified
     bool        m_pedantic;     // main switch: --Wpedantic
@@ -436,6 +437,7 @@ public:
     bool traceParams() const { return m_traceParams; }
     bool traceStructs() const { return m_traceStructs; }
     bool traceUnderscore() const { return m_traceUnderscore; }
+    bool main() const { return m_main; }
     bool orderClockDly() const { return m_orderClockDly; }
     bool outFormatOk() const { return m_outFormatOk; }
     bool keepTempFiles() const { return (V3Error::debugDefault() != 0); }

@@ -585,6 +585,8 @@ string V3Options::getenvVERILATOR_ROOT() {
 // V3 Options notification methods
 
 void V3Options::notify() {
+    FileLine* cmdfl = new FileLine(FileLine::commandLineFilename());
+
     // Notify that all arguments have been passed and final modification can be made.
     if (!outFormatOk() && !cdc() && !dpiHdrOnly() && !lintOnly() && !preprocOnly() && !xmlOnly()) {
         v3fatal("verilator: Need --cc, --sc, --cdc, --dpi-hdr-only, --lint-only, "
@@ -595,7 +597,6 @@ void V3Options::notify() {
     if (!m_gmake && !m_cmake) m_gmake = true;
 
     if (protectIds()) {
-        FileLine* cmdfl = new FileLine(FileLine::commandLineFilename());
         if (allPublic()) {
             // We always call protect() on names, we don't check if public or not
             // Hence any external references wouldn't be able to find the refed public object.
@@ -633,7 +634,11 @@ void V3Options::notify() {
     }
 
     // --trace-threads implies --threads 1 unless explicitly specified
-    if (traceThreads() && !threads()) { m_threads = 1; }
+    if (traceThreads() && !threads()) m_threads = 1;
+
+    if (v3Global.opt.main() && v3Global.opt.systemC()) {
+        cmdfl->v3error("--main not usable with SystemC. Suggest see examples for sc_main().");
+    }
 }
 
 //######################################################################
@@ -849,6 +854,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             else if ( onoff (sw, "-ignc", flag/*ref*/))         { m_ignc = flag; }
             else if ( onoff (sw, "-inhibit-sim", flag/*ref*/))  { m_inhibitSim = flag; }
             else if ( onoff (sw, "-lint-only", flag/*ref*/))    { m_lintOnly = flag; }
+            else if ( onoff (sw, "-main", flag/*ref*/))         { m_main = flag; }  // Undocumented future
             else if (!strcmp(sw, "-no-pins64"))                 { m_pinsBv = 33; }
             else if ( onoff (sw, "-order-clock-delay", flag/*ref*/)) { m_orderClockDly = flag; }
             else if (!strcmp(sw, "-pins64"))                    { m_pinsBv = 65; }
@@ -1543,6 +1549,7 @@ V3Options::V3Options() {
     m_lintOnly = false;
     m_gmake = false;
     m_makePhony = false;
+    m_main = false;
     m_orderClockDly = true;
     m_outFormatOk = false;
     m_pedantic = false;
