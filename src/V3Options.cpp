@@ -804,7 +804,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
             } else if (!strcmp(sw, "+librescan")) {  // NOP
             } else if (!strcmp(sw, "+notimingchecks")) {  // NOP
             } else {
-                fl->v3fatal("Invalid Option: " << argv[i]);
+                fl->v3fatal("Invalid option: " << argv[i]);
             }
             shift;
         }
@@ -1293,7 +1293,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc, char
                 shift;
                 addIncDirUser(parseFileArg(optdir, string(argv[i])));
             } else {
-                fl->v3fatal("Invalid Option: " << argv[i]);
+                fl->v3fatal("Invalid option: " << argv[i]);
             }
             shift;
         }  // - options
