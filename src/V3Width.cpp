@@ -538,6 +538,10 @@ private:
             }
         }
     }
+    virtual void visit(AstDelay* nodep) VL_OVERRIDE {
+        nodep->v3warn(STMTDLY, "Unsupported: Ignoring delay on this delayed statement.");
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
     virtual void visit(AstToLowerN* nodep) VL_OVERRIDE {
         if (m_vup->prelim()) {
             iterateCheckString(nodep, "LHS", nodep->lhsp(), BOTH);

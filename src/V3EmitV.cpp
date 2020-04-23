@@ -79,6 +79,16 @@ class EmitVBaseVisitor : public EmitCBaseVisitor {
         iterateChildren(nodep);
         puts("end\n");
     }
+    virtual void visit(AstFork* nodep) VL_OVERRIDE {
+        if (nodep->name() == "") {
+            putbs("fork\n");
+        } else {
+            putbs("fork : " + nodep->name() + "\n");
+        }
+        iterateChildren(nodep);
+        puts(nodep->joinType().verilogKwd());
+        puts("\n");
+    }
     virtual void visit(AstFinal* nodep) VL_OVERRIDE {
         putfs(nodep, "final begin\n");
         iterateChildren(nodep);

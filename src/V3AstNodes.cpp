@@ -1493,9 +1493,12 @@ void AstNodeFTask::dump(std::ostream& str) const {
     if (dpiOpenParent()) str << " [DPIOPENPARENT]";
     if ((dpiImport() || dpiExport()) && cname() != name()) str << " [c=" << cname() << "]";
 }
-void AstBegin::dump(std::ostream& str) const {
+void AstNodeBlock::dump(std::ostream& str) const {
     this->AstNode::dump(str);
     if (unnamed()) str << " [UNNAMED]";
+}
+void AstBegin::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
     if (generate()) str << " [GEN]";
     if (genforp()) str << " [GENFOR]";
     if (implied()) str << " [IMPLIED]";
@@ -1517,6 +1520,10 @@ void AstCoverInc::dump(std::ostream& str) const {
     } else {
         str << "%Error:UNLINKED";
     }
+}
+void AstFork::dump(std::ostream& str) const {
+    this->AstNode::dump(str);
+    if (!joinType().join()) str << " [" << joinType() << "]";
 }
 void AstTraceInc::dump(std::ostream& str) const {
     this->AstNode::dump(str);

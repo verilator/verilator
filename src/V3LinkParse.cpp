@@ -491,6 +491,17 @@ private:
         }
         iterateChildren(nodep);
     }
+    virtual void visit(AstFork* nodep) VL_OVERRIDE {
+        if (v3Global.opt.bboxUnsup()) {
+            AstBegin* newp
+                = new AstBegin(nodep->fileline(), nodep->name(), nodep->stmtsp()->unlinkFrBack());
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(nodep->deleteTree(), nodep);
+        } else {
+            nodep->v3error("Unsupported: fork statements");
+            // TBD might support only normal join, if so complain about other join flavors
+        }
+    }
     virtual void visit(AstCase* nodep) VL_OVERRIDE {
         V3Config::applyCase(nodep);
         cleanFileline(nodep);

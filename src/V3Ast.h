@@ -578,6 +578,40 @@ inline std::ostream& operator<<(std::ostream& os, const VBoolOrUnknown& rhs) {
 
 //######################################################################
 
+/// Join type
+class VJoinType {
+public:
+    enum en { JOIN = 0, JOIN_ANY = 1, JOIN_NONE = 2 };
+    enum en m_e;
+    // CONSTRUCTOR - note defaults to *UNKNOWN*
+    inline VJoinType()
+        : m_e(JOIN) {}
+    // cppcheck-suppress noExplicitConstructor
+    inline VJoinType(en _e)
+        : m_e(_e) {}
+    explicit inline VJoinType(int _e)
+        : m_e(static_cast<en>(_e)) {}
+    const char* ascii() const {
+        static const char* const names[] = {"JOIN", "JOIN_ANY", "JOIN_NONE"};
+        return names[m_e];
+    }
+    const char* verilogKwd() const {
+        static const char* const names[] = {"join", "join_any", "join_none"};
+        return names[m_e];
+    }
+    bool join() const { return m_e == JOIN; }
+    bool joinAny() const { return m_e == JOIN_ANY; }
+    bool joinNone() const { return m_e == JOIN_NONE; }
+};
+inline bool operator==(const VJoinType& lhs, const VJoinType& rhs) { return lhs.m_e == rhs.m_e; }
+inline bool operator==(const VJoinType& lhs, VJoinType::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(VJoinType::en lhs, const VJoinType& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VJoinType& rhs) {
+    return os << rhs.ascii();
+}
+
+//######################################################################
+
 class AstVarType {
 public:
     enum en {
@@ -1973,6 +2007,30 @@ public:
     virtual bool sizeMattersThs() const { return false; }
     virtual int instrCount() const { return instrCountBranch(); }
     virtual AstNode* cloneType(AstNode* condp, AstNode* expr1p, AstNode* expr2p) = 0;
+};
+
+class AstNodeBlock : public AstNode {
+    // A Begin/fork block
+    // Parents: statement
+    // Children: statements
+private:
+    string m_name;  // Name of block
+    bool m_unnamed;  // Originally unnamed (name change does not affect this)
+public:
+    AstNodeBlock(AstType t, FileLine* fl, const string& name, AstNode* stmtsp)
+        : AstNode(t, fl)
+        , m_name(name) {
+        addNOp1p(stmtsp);
+        m_unnamed = (name == "");
+    }
+    ASTNODE_BASE_FUNCS(NodeBlock)
+    virtual void dump(std::ostream& str) const;
+    virtual string name() const { return m_name; }  // * = Block name
+    virtual void name(const string& name) { m_name = name; }
+    // op1 = Statements
+    AstNode* stmtsp() const { return op1p(); }  // op1 = List of statements
+    void addStmtsp(AstNode* nodep) { addNOp1p(nodep); }
+    bool unnamed() const { return m_unnamed; }
 };
 
 class AstNodePreSel : public AstNode {

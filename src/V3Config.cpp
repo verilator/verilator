@@ -209,7 +209,7 @@ public:
         }
     }
 
-    void applyBlock(AstBegin* nodep) {
+    void applyBlock(AstNodeBlock* nodep) {
         AstPragmaType pragma = AstPragmaType::COVERAGE_BLOCK_OFF;
         if (!nodep->unnamed()) {
             for (StringSet::const_iterator it = m_coverageOffBlocks.begin();
@@ -311,7 +311,7 @@ public:
         m_waivers.push_back(make_pair(code, match));
     }
 
-    void applyBlock(AstBegin* nodep) {
+    void applyBlock(AstNodeBlock* nodep) {
         // Apply to block at this line
         AstPragmaType pragma = AstPragmaType::COVERAGE_BLOCK_OFF;
         if (lineMatch(nodep->fileline()->lineno(), pragma)) {

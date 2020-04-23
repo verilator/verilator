@@ -38,7 +38,7 @@
 class LinkJumpVisitor : public AstNVisitor {
 private:
     // TYPES
-    typedef std::vector<AstBegin*> BeginStack;
+    typedef std::vector<AstNodeBlock*> BlockStack;
 
     // STATE
     AstNodeModule* m_modp;  // Current module
@@ -46,7 +46,7 @@ private:
     AstWhile* m_loopp;  // Current loop
     bool m_loopInc;  // In loop increment
     int m_modRepeatNum;  // Repeat counter
-    BeginStack m_beginStack;  // All begin blocks above current node
+    BlockStack m_blockStack;  // All begin blocks above current node
 
     // METHODS
     VL_DEBUG_FUNC;  // Declare debug()
@@ -58,8 +58,8 @@ private:
 
         AstNode* underp = NULL;
         bool under_and_next = true;
-        if (VN_IS(nodep, Begin)) {
-            underp = VN_CAST(nodep, Begin)->stmtsp();
+        if (VN_IS(nodep, NodeBlock)) {
+            underp = VN_CAST(nodep, NodeBlock)->stmtsp();
         } else if (VN_IS(nodep, NodeFTask)) {
             underp = VN_CAST(nodep, NodeFTask)->stmtsp();
         } else if (VN_IS(nodep, While)) {
@@ -123,11 +123,11 @@ private:
         iterateChildren(nodep);
         m_ftaskp = NULL;
     }
-    virtual void visit(AstBegin* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeBlock* nodep) VL_OVERRIDE {
         UINFO(8, "  " << nodep << endl);
-        m_beginStack.push_back(nodep);
+        m_blockStack.push_back(nodep);
         iterateChildren(nodep);
-        m_beginStack.pop_back();
+        m_blockStack.pop_back();
     }
     virtual void visit(AstRepeat* nodep) VL_OVERRIDE {
         // So later optimizations don't need to deal with them,
@@ -223,22 +223,24 @@ private:
     virtual void visit(AstDisable* nodep) VL_OVERRIDE {
         UINFO(8, "   DISABLE " << nodep << endl);
         iterateChildren(nodep);
-        AstBegin* beginp = NULL;
-        for (BeginStack::reverse_iterator it = m_beginStack.rbegin(); it != m_beginStack.rend();
+        AstNodeBlock* blockp = NULL;
+        for (BlockStack::reverse_iterator it = m_blockStack.rbegin(); it != m_blockStack.rend();
              ++it) {
             UINFO(9, "    UNDERBLK  " << *it << endl);
             if ((*it)->name() == nodep->name()) {
-                beginp = *it;
+                blockp = *it;
                 break;
             }
         }
-        // if (debug() >= 9) { UINFO(0, "\n"); beginp->dumpTree(cout, "  labeli: "); }
-        if (!beginp) {
+        // if (debug() >= 9) { UINFO(0, "\n"); blockp->dumpTree(cout, "  labeli: "); }
+        if (!blockp) {
             nodep->v3error("disable isn't underneath a begin with name: " << nodep->prettyNameQ());
-        } else {
-            // Jump to the end of the named begin
+        } else if (AstBegin* beginp = VN_CAST(blockp, Begin)) {
+            // Jump to the end of the named block
             AstJumpLabel* labelp = findAddLabel(beginp, false);
             nodep->addNextHere(new AstJumpGo(nodep->fileline(), labelp));
+        } else {
+            nodep->v3error("Unsupported: disable fork");
         }
         nodep->unlinkFrBack();
         VL_DO_DANGLING(pushDeletep(nodep), nodep);

@@ -3402,6 +3402,21 @@ public:
     AstNode* changep() const { return op3p(); }
 };
 
+class AstDelay : public AstNodeStmt {
+    // Delay statement
+public:
+    AstDelay(FileLine* fl, AstNode* lhsp)
+        : ASTGEN_SUPER(fl) {
+        setOp1p(lhsp);
+    }
+    ASTNODE_NODE_FUNCS(Delay)
+    virtual V3Hash sameHash() const { return V3Hash(); }
+    virtual bool same(const AstNode* samep) const { return true; }
+    //
+    AstNode* lhsp() const { return op1p(); }  // op2 = Statements to evaluate
+    void lhsp(AstNode* nodep) { setOp1p(nodep); }
+};
+
 class AstGenCase : public AstNodeCase {
     // Generate Case statement
     // Parents:  {statement list}
@@ -4372,40 +4387,46 @@ public:
     virtual bool same(const AstNode* samep) const { return true; }
 };
 
-class AstBegin : public AstNode {
+class AstBegin : public AstNodeBlock {
     // A Begin/end named block, only exists shortly after parsing until linking
     // Parents: statement
     // Children: statements
 private:
-    string m_name;  // Name of block
-    bool m_unnamed;  // Originally unnamed (name change does not affect this)
     bool m_generate;  // Underneath a generate
     bool m_implied;  // Not inserted by user
 public:
     // Node that simply puts name into the output stream
     AstBegin(FileLine* fl, const string& name, AstNode* stmtsp, bool generate = false,
              bool implied = false)
-        : ASTGEN_SUPER(fl)
-        , m_name(name) {
-        addNOp1p(stmtsp);
-        m_unnamed = (name == "");
+        : ASTGEN_SUPER(fl, name, stmtsp) {
         m_generate = generate;
         m_implied = implied;
     }
     ASTNODE_NODE_FUNCS(Begin)
     virtual void dump(std::ostream& str) const;
-    virtual string name() const { return m_name; }  // * = Block name
-    virtual void name(const string& name) { m_name = name; }
-    // op1 = Statements
-    AstNode* stmtsp() const { return op1p(); }  // op1 = List of statements
-    void addStmtsp(AstNode* nodep) { addNOp1p(nodep); }
+    // op1p is statements in NodeBlock
     AstNode* genforp() const { return op2p(); }  // op2 = GENFOR, if applicable,
     // might NOT be a GenFor, as loop unrolling replaces with Begin
     void addGenforp(AstGenFor* nodep) { addOp2p(nodep); }
-    bool unnamed() const { return m_unnamed; }
     void generate(bool flag) { m_generate = flag; }
     bool generate() const { return m_generate; }
     bool implied() const { return m_implied; }
+};
+
+class AstFork : public AstNodeBlock {
+    // A fork named block
+    // Parents: statement
+    // Children: statements
+private:
+    VJoinType m_joinType;  // Join keyword type
+public:
+    // Node that simply puts name into the output stream
+    AstFork(FileLine* fl, const string& name, AstNode* stmtsp)
+        : ASTGEN_SUPER(fl, name, stmtsp) {}
+    ASTNODE_NODE_FUNCS(Fork)
+    virtual void dump(std::ostream& str) const;
+    VJoinType joinType() const { return m_joinType; }
+    void joinType(const VJoinType& flag) { m_joinType = flag; }
 };
 
 class AstInitial : public AstNode {

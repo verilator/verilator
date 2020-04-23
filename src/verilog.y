@@ -790,6 +790,10 @@ class AstSenTree;
 //  Blank lines for type insertion
 //  Blank lines for type insertion
 //  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
 
 %start source_text
 
@@ -2274,31 +2278,31 @@ assignOne<nodep>:
 
 delayE:
 		/* empty */				{ }
-	|	delay_control				{ $1->v3warn(ASSIGNDLY,"Unsupported: Ignoring delay on this assignment/primitive."); } /* ignored */
+	|	delay_control				{ $1->v3warn(ASSIGNDLY,"Unsupported: Ignoring delay on this assignment/primitive."); DEL($1); } /* ignored */
 	;
 
-delay_control<fl>:	//== IEEE: delay_control
-		'#' delay_value				{ $$ = $1; } /* ignored */
-	|	'#' '(' minTypMax ')'			{ $$ = $1; } /* ignored */
-	|	'#' '(' minTypMax ',' minTypMax ')'			{ $$ = $1; } /* ignored */
-	|	'#' '(' minTypMax ',' minTypMax ',' minTypMax ')'	{ $$ = $1; } /* ignored */
+delay_control<nodep>:	//== IEEE: delay_control
+		'#' delay_value				{ $$ = $2; }
+	|	'#' '(' minTypMax ')'			{ $$ = $3; }
+	|	'#' '(' minTypMax ',' minTypMax ')'			{ $$ = $3; DEL($5); }
+	|	'#' '(' minTypMax ',' minTypMax ',' minTypMax ')'	{ $$ = $3; DEL($5); DEL($7); }
 	;
 
-delay_value:			// ==IEEE:delay_value
+delay_value<nodep>:		// ==IEEE:delay_value
 	//			// IEEE: ps_identifier
-		ps_id_etc				{ }
-	|	yaINTNUM 				{ }
-	|	yaFLOATNUM 				{ }
-	|	timeNumAdjusted				{ DEL($1); }
+		ps_id_etc				{ $$ = $1; }
+	|	yaINTNUM 				{ $$ = new AstConst($<fl>1, *$1); }
+	|	yaFLOATNUM 				{ $$ = new AstConst($<fl>1, AstConst::RealDouble(), $1); }
+	|	timeNumAdjusted				{ $$ = $1; }
 	;
 
-delayExpr:
-		expr					{ DEL($1); }
+delayExpr<nodep>:
+		expr					{ $$ = $1; }
 	;
 
-minTypMax:			// IEEE: mintypmax_expression and constant_mintypmax_expression
-		delayExpr				{ }
-	|	delayExpr ':' delayExpr ':' delayExpr	{ }
+minTypMax<nodep>:		// IEEE: mintypmax_expression and constant_mintypmax_expression
+		delayExpr				{ $$ = $1; }
+	|	delayExpr ':' delayExpr ':' delayExpr	{ $$ = $1; DEL($3); DEL($5); }
 	;
 
 netSigList<varp>:		// IEEE: list_of_port_identifiers
@@ -2657,21 +2661,27 @@ seq_block<nodep>:		// ==IEEE: seq_block
 par_block<nodep>:		// ==IEEE: par_block
 		par_blockFront blockDeclStmtList yJOIN endLabelE
 			{ $$ = $1; $1->addStmtsp($2);
+			  $1->joinType(VJoinType::JOIN);
 			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
 	|	par_blockFront /**/		 yJOIN endLabelE
 			{ $$ = $1;
+			  $1->joinType(VJoinType::JOIN);
 			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>3, $1, $3); }
 	|	par_blockFront blockDeclStmtList yJOIN_ANY endLabelE
 			{ $$ = $1; $1->addStmtsp($2);
+			  $1->joinType(VJoinType::JOIN_ANY);
 			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
 	|	par_blockFront /**/		 yJOIN_ANY endLabelE
 			{ $$ = $1;
+			  $1->joinType(VJoinType::JOIN_ANY);
 			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>3, $1, $3); }
 	|	par_blockFront blockDeclStmtList yJOIN_NONE endLabelE
 			{ $$ = $1; $1->addStmtsp($2);
+			  $1->joinType(VJoinType::JOIN_NONE);
 			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>4, $1, $4); }
 	|	par_blockFront /**/		 yJOIN_NONE endLabelE
 			{ $$ = $1;
+			  $1->joinType(VJoinType::JOIN_NONE);
 			  SYMP->popScope($1); GRAMMARP->endLabel($<fl>3, $1, $3); }
 	;
 
@@ -2680,13 +2690,9 @@ seq_blockFront<beginp>:		// IEEE: part of seq_block
 	|	yBEGIN ':' idAny/*new-block_identifier*/ { $$ = new AstBegin($<fl>3, *$3, NULL); SYMP->pushNew($$); }
 	;
 
-par_blockFront<beginp>:		// IEEE: part of par_block
-		yFORK					{ $$ = new AstBegin($1, "", NULL);  SYMP->pushNew($$);
-							  BBUNSUP($1, "Unsupported: fork statements");
-							  // When support, record or BBUNSUP yJOIN_ANY/yJOIN_NONE
-							  }
-	|	yFORK ':' idAny/*new-block_identifier*/	{ $$ = new AstBegin($<fl>3, *$3, NULL); SYMP->pushNew($$);
-							  BBUNSUP($1, "Unsupported: fork statements"); }
+par_blockFront<forkp>:		// IEEE: part of par_block
+		yFORK					{ $$ = new AstFork($1, "", NULL);  SYMP->pushNew($$); }
+	|	yFORK ':' idAny/*new-block_identifier*/	{ $$ = new AstFork($<fl>3, *$3, NULL); SYMP->pushNew($$); }
 	;
 
 blockDeclStmtList<nodep>:	// IEEE: { block_item_declaration } { statement or null }
@@ -2831,7 +2837,7 @@ statement_item<nodep>:		// IEEE: statement_item
 	//
 	|	par_block				{ $$ = $1; }
 	//			// IEEE: procedural_timing_control_statement + procedural_timing_control
-	|	delay_control stmtBlock			{ $$ = $2; $1->v3warn(STMTDLY,"Unsupported: Ignoring delay on this delayed statement."); }
+	|	delay_control stmtBlock			{ $$ = new AstDelay($1->fileline(), $1); $$->addNextNull($2); }
 	//UNSUP	event_control stmtBlock			{ UNSUP }
 	//UNSUP	cycle_delay stmtBlock			{ UNSUP }
 	//
@@ -5521,8 +5527,8 @@ classImplementsList<nodep>:	// IEEE: part of class_declaration
 // must be included in the rules below.
 // Each of these must end with {symsPackageDone | symsClassDone}
 
-ps_id_etc:		// package_scope + general id
-		package_scopeIdFollowsE id		{ }
+ps_id_etc<varrefp>:		// package_scope + general id
+		package_scopeIdFollowsE varRefBase		{ $$ = $2; $2->packagep($1); }
 	;
 
 ps_type<refdtypep>:		// IEEE: ps_parameter_identifier | ps_type_identifier

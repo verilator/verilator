@@ -127,7 +127,7 @@ private:
     //  AstVar::user2p()                // AstFTask*.     If a function variable, the task
     //                                                    that links to the variable
     //  AstVar::user4()                 // bool.          True if port set for this variable
-    //  AstBegin::user4()               // bool.          Did name processing
+    //  AstNodeBlock::user4()           // bool.          Did name processing
     //  AstNodeModule::user4()          // bool.          Live module
     AstUser1InUse m_inuser1;
     AstUser2InUse m_inuser2;
@@ -689,13 +689,13 @@ class LinkDotFindVisitor : public AstNVisitor {
     VSymEnt* m_modSymp;  // Symbol Entry for current module
     VSymEnt* m_curSymp;  // Symbol Entry for current table, where to lookup/insert
     string m_scope;  // Scope text
-    AstBegin* m_beginp;  // Current Begin/end block
+    AstNodeBlock* m_blockp;  // Current Begin/end block
     AstNodeFTask* m_ftaskp;  // Current function/task
     bool m_inRecursion;  // Inside a recursive module
     int m_paramNum;  // Parameter number, for position based connection
-    int m_beginNum;  // Begin block number, 0=none seen
+    int m_blockNum;  // Begin block number, 0=none seen
     bool m_explicitNew;  // Hit a "new" function
-    int m_modBeginNum;  // Begin block number in module, 0=none seen
+    int m_modBlockNum;  // Begin block number in module, 0=none seen
 
     // METHODS
     int debug() { return LinkDotState::debug(); }
@@ -780,8 +780,8 @@ class LinkDotFindVisitor : public AstNVisitor {
         VSymEnt* oldModSymp = m_modSymp;
         VSymEnt* oldCurSymp = m_curSymp;
         int oldParamNum = m_paramNum;
-        int oldBeginNum = m_beginNum;
-        int oldModBeginNum = m_modBeginNum;
+        int oldBlockNum = m_blockNum;
+        int oldModBlockNum = m_modBlockNum;
         if (doit && nodep->user2()) {
             nodep->v3error("Unsupported: Identically recursive module (module instantiates "
                            "itself, without changing parameters): "
@@ -805,8 +805,8 @@ class LinkDotFindVisitor : public AstNVisitor {
             }
             //
             m_paramNum = 0;
-            m_beginNum = 0;
-            m_modBeginNum = 0;
+            m_blockNum = 0;
+            m_modBlockNum = 0;
             // m_modSymp/m_curSymp for non-packages set by AstCell above this module
             // Iterate
             nodep->user2(true);
@@ -826,8 +826,8 @@ class LinkDotFindVisitor : public AstNVisitor {
         m_modSymp = oldModSymp;
         m_curSymp = oldCurSymp;
         m_paramNum = oldParamNum;
-        m_beginNum = oldBeginNum;
-        m_modBeginNum = oldModBeginNum;
+        m_blockNum = oldBlockNum;
+        m_modBlockNum = oldModBlockNum;
         // Prep for next
         m_packagep = NULL;
     }
@@ -838,8 +838,8 @@ class LinkDotFindVisitor : public AstNVisitor {
         VSymEnt* oldModSymp = m_modSymp;
         VSymEnt* oldCurSymp = m_curSymp;
         int oldParamNum = m_paramNum;
-        int oldBeginNum = m_beginNum;
-        int oldModBeginNum = m_modBeginNum;
+        int oldBlockNum = m_blockNum;
+        int oldModBlockNum = m_modBlockNum;
         {
             UINFO(4, "     Link Class: " << nodep << endl);
             VSymEnt* upperSymp = m_curSymp;
@@ -850,8 +850,8 @@ class LinkDotFindVisitor : public AstNVisitor {
             UINFO(9, "New module scope " << m_curSymp << endl);
             //
             m_paramNum = 0;
-            m_beginNum = 0;
-            m_modBeginNum = 0;
+            m_blockNum = 0;
+            m_modBlockNum = 0;
             m_explicitNew = false;
             // m_modSymp/m_curSymp for non-packages set by AstCell above this module
             // Iterate
@@ -864,8 +864,8 @@ class LinkDotFindVisitor : public AstNVisitor {
         m_modSymp = oldModSymp;
         m_curSymp = oldCurSymp;
         m_paramNum = oldParamNum;
-        m_beginNum = oldBeginNum;
-        m_modBeginNum = oldModBeginNum;
+        m_blockNum = oldBlockNum;
+        m_modBlockNum = oldModBlockNum;
     }
     virtual void visit(AstScope* nodep) VL_OVERRIDE {
         UASSERT_OBJ(m_statep->forScopeCreation(), nodep,
@@ -879,7 +879,7 @@ class LinkDotFindVisitor : public AstNVisitor {
         iterateChildren(nodep);
         // Recurse in, preserving state
         string oldscope = m_scope;
-        AstBegin* oldbeginp = m_beginp;
+        AstNodeBlock* oldblockp = m_blockp;
         VSymEnt* oldModSymp = m_modSymp;
         VSymEnt* oldCurSymp = m_curSymp;
         int oldParamNum = m_paramNum;
@@ -901,13 +901,13 @@ class LinkDotFindVisitor : public AstNVisitor {
         {
             m_scope = m_scope + "." + nodep->name();
             m_curSymp = m_modSymp = m_statep->insertCell(aboveSymp, m_modSymp, nodep, m_scope);
-            m_beginp = NULL;
+            m_blockp = NULL;
             m_inRecursion = nodep->recursive();
             // We don't report NotFoundModule, as may be a unused module in a generate
             if (nodep->modp()) iterate(nodep->modp());
         }
         m_scope = oldscope;
-        m_beginp = oldbeginp;
+        m_blockp = oldblockp;
         m_modSymp = oldModSymp;
         m_curSymp = oldCurSymp;
         m_paramNum = oldParamNum;
@@ -937,13 +937,13 @@ class LinkDotFindVisitor : public AstNVisitor {
         nodep->user1p(m_curSymp);
         iterateChildren(nodep);
     }
-    virtual void visit(AstBegin* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeBlock* nodep) VL_OVERRIDE {
         UINFO(5, "   " << nodep << endl);
         // Rename "genblk"s to include a number
         if (m_statep->forPrimary() && !nodep->user4SetOnce()) {
             if (nodep->name() == "genblk") {
-                ++m_beginNum;
-                nodep->name(nodep->name() + cvtToStr(m_beginNum));
+                ++m_blockNum;
+                nodep->name(nodep->name() + cvtToStr(m_blockNum));
             }
         }
         // All blocks are numbered in the standard, IE we start with "genblk1" even if only one.
@@ -955,8 +955,8 @@ class LinkDotFindVisitor : public AstNVisitor {
             // are common.
             for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
                 if (VN_IS(stmtp, Var)) {
-                    ++m_modBeginNum;
-                    nodep->name("unnamedblk" + cvtToStr(m_modBeginNum));
+                    ++m_modBlockNum;
+                    nodep->name("unnamedblk" + cvtToStr(m_modBlockNum));
                     break;
                 }
             }
@@ -964,20 +964,20 @@ class LinkDotFindVisitor : public AstNVisitor {
         if (nodep->name() == "") {
             iterateChildren(nodep);
         } else {
-            int oldNum = m_beginNum;
-            AstBegin* oldbegin = m_beginp;
+            int oldNum = m_blockNum;
+            AstNodeBlock* oldblockp = m_blockp;
             VSymEnt* oldCurSymp = m_curSymp;
             {
-                m_beginNum = 0;
-                m_beginp = nodep;
+                m_blockNum = 0;
+                m_blockp = nodep;
                 m_curSymp = m_statep->insertBlock(m_curSymp, nodep->name(), nodep, m_packagep);
                 m_curSymp->fallbackp(oldCurSymp);
                 // Iterate
                 iterateChildren(nodep);
             }
             m_curSymp = oldCurSymp;
-            m_beginp = oldbegin;
-            m_beginNum = oldNum;
+            m_blockp = oldblockp;
+            m_blockNum = oldNum;
         }
     }
     virtual void visit(AstNodeFTask* nodep) VL_OVERRIDE {
@@ -1249,13 +1249,13 @@ public:
         m_packagep = NULL;
         m_curSymp = m_modSymp = NULL;
         m_statep = statep;
-        m_beginp = NULL;
+        m_blockp = NULL;
         m_ftaskp = NULL;
         m_inRecursion = false;
         m_paramNum = 0;
-        m_beginNum = 0;
+        m_blockNum = 0;
         m_explicitNew = false;
-        m_modBeginNum = 0;
+        m_modBlockNum = 0;
         //
         iterate(rootp);
     }
@@ -2546,7 +2546,7 @@ private:
         // checkNoDot not appropriate, can be under a dot
         iterateChildren(nodep);
     }
-    virtual void visit(AstBegin* nodep) VL_OVERRIDE {
+    virtual void visit(AstNodeBlock* nodep) VL_OVERRIDE {
         UINFO(5, "   " << nodep << endl);
         checkNoDot(nodep);
         VSymEnt* oldCurSymp = m_curSymp;
