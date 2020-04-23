@@ -241,19 +241,14 @@ public:
         }
 
         if (!v3Global.opt.protectLib().empty()) {
-            of.puts("\n### Library rules... (from --protect-lib)\n");
-            of.puts("# Using -fPIC objects for both static and dynamic libraries "
-                    "(which appears to work)\n");
-            of.puts(v3Global.opt.protectLibName(false) + ": $(VK_OBJS) $(VK_GLOBAL_OBJS)\n");
-            of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -c -o "
-                    + v3Global.opt.protectLib() + ".o " + v3Global.opt.protectLib() + ".cpp\n");
-            of.puts("\tar rc $@ $^ " + v3Global.opt.protectLib() + ".o\n");
+            const string protectLibDeps
+                = "$(VK_OBJS) $(VK_GLOBAL_OBJS) " + v3Global.opt.protectLib() + ".o";
+            of.puts("\n### Library rules from --protect-lib\n");
+            of.puts(v3Global.opt.protectLibName(false) + ": " + protectLibDeps + "\n");
+            of.puts("\tar rc $@ $^\n");
             of.puts("\n");
-
-            of.puts(v3Global.opt.protectLibName(true)
-                    + ": $(VM_PREFIX)__ALL.a $(VK_GLOBAL_OBJS)\n");
-            of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -shared -o $@ "
-                    + v3Global.opt.protectLib() + ".cpp $^\n");
+            of.puts(v3Global.opt.protectLibName(true) + ": " + protectLibDeps + "\n");
+            of.puts("\t$(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(OPT_FAST) -shared -o $@ $^\n");
             of.puts("\n");
 
             of.puts("lib" + v3Global.opt.protectLib() + ": " + v3Global.opt.protectLibName(false)
