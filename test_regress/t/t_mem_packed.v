@@ -18,7 +18,7 @@ module t (/*AUTOARG*/
    //logic [3:3] [2:2] [1:1] log_p; //14
 
    integer cyc; initial cyc = 0;
-`ifdef iverilog
+`ifdef IVERILOG
    reg [7:0] arr [3:0];
    wire [7:0] arr_w [3:0];
 `else
