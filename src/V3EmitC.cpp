@@ -2334,7 +2334,9 @@ void EmitCImp::emitDestructorImp(AstNodeModule* modp) {
     puts("\n");
     puts(prefixNameProtect(modp) + "::~" + prefixNameProtect(modp) + "() {\n");
     if (modp->isTop()) {
-        if (v3Global.opt.mtasks()) puts("delete __Vm_threadPoolp; __Vm_threadPoolp = NULL;\n");
+        if (v3Global.opt.mtasks()) {
+            puts("VL_DO_CLEAR(delete __Vm_threadPoolp, __Vm_threadPoolp = NULL);\n");
+        }
         // Call via function in __Trace.cpp as this .cpp file does not have trace header
         if (v3Global.needTraceDumper()) {
             puts("#ifdef VM_TRACE\n");
@@ -2343,7 +2345,7 @@ void EmitCImp::emitDestructorImp(AstNodeModule* modp) {
         }
     }
     emitTextSection(AstType::atScDtor);
-    if (modp->isTop()) puts("delete __VlSymsp; __VlSymsp=NULL;\n");
+    if (modp->isTop()) puts("VL_DO_CLEAR(delete __VlSymsp, __VlSymsp = NULL);\n");
     puts("}\n");
     splitSizeInc(10);
 }
@@ -3326,7 +3328,7 @@ class EmitCTrace : EmitCStmts {
             puts("void " + topClassName() + "::_traceDumpClose() {\n");
             puts("VerilatedLockGuard lock(__VlSymsp->__Vm_dumperMutex);\n");
             puts("__VlSymsp->__Vm_dumping = false;\n");
-            puts("delete __VlSymsp->__Vm_dumperp; __VlSymsp->__Vm_dumperp = NULL;\n");
+            puts("VL_DO_CLEAR(delete __VlSymsp->__Vm_dumperp, __VlSymsp->__Vm_dumperp = NULL);\n");
             puts("}\n");
             splitSizeInc(10);
         }

@@ -205,6 +205,7 @@
 #  define VL_INCLUDE_UNORDERED_SET <unordered_set>
 # endif
 # define VL_FINAL final
+# define VL_MUTABLE mutable
 # define VL_OVERRIDE override
 #else
 # define VL_EQ_DELETE
@@ -212,6 +213,7 @@
 # define VL_INCLUDE_UNORDERED_MAP "verilated_unordered_set_map.h"
 # define VL_INCLUDE_UNORDERED_SET "verilated_unordered_set_map.h"
 # define VL_FINAL
+# define VL_MUTABLE
 # define VL_OVERRIDE
 #endif
 

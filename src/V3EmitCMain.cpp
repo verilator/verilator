@@ -76,10 +76,15 @@ private:
 
         puts("// Simulate until $finish\n");
         puts("while (!Verilated::gotFinish()) {\n");
-        /**/ puts("// Evaluate model\n");
-        /**/ puts("topp->eval();\n");
-        /**/ puts("// Advance time\n");
-        /**/ puts("++main_time;\n");
+        puts(/**/ "// Evaluate model\n");
+        puts(/**/ "topp->eval();\n");
+        puts(/**/ "// Advance time\n");
+        puts(/**/ "++main_time;\n");
+        puts("}\n");
+        puts("\n");
+
+        puts("if (!Verilated::gotFinish()) {\n");
+        puts(/**/ "VL_DEBUG_IF(VL_PRINTF(\"+ Exiting without $finish; no events left\\n\"););\n");
         puts("}\n");
         puts("\n");
 

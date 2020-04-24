@@ -633,6 +633,10 @@ void V3Options::notify() {
             && !v3Global.opt.xmlOnly());
     }
 
+    if (v3Global.opt.main() && v3Global.opt.systemC()) {
+        cmdfl->v3error("--main not usable with SystemC. Suggest see examples for sc_main().");
+    }
+
     // --trace-threads implies --threads 1 unless explicitly specified
     if (traceThreads() && !threads()) m_threads = 1;
 

@@ -853,9 +853,13 @@ double vl_time_multiplier(int scale);
 
 /// Evaluate expression if debug enabled
 #ifdef VL_DEBUG
-# define VL_DEBUG_IF(text) {if (VL_UNLIKELY(Verilated::debug())) {text}}
+# define VL_DEBUG_IF(text) \
+    do { \
+        if (VL_UNLIKELY(Verilated::debug())) {text} \
+    } while (false)
 #else
-# define VL_DEBUG_IF(text)
+// We intentionally do not compile the text to improve compile speed
+# define VL_DEBUG_IF(text) do {} while (false)
 #endif
 
 /// Collect coverage analysis for this line
