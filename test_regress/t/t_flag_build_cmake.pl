@@ -12,6 +12,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 top_filename("t/t_flag_make_cmake.v");
 
+# This test seems broken as the CMake build invoked by Verilator itself
+# invokes Verilator.. (See #2280). Strangely though it passes when built
+# from clean, so nuke it:
+clean_objs();
+
 compile(  # Don't call cmake nor gmake from driver.pl
     verilator_make_cmake => 0,
     verilator_make_gmake => 0,

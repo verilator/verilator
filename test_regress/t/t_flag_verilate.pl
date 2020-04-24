@@ -12,6 +12,11 @@ if (!$::Driver) { use FindBin; exec("$FindBin::Bin/bootstrap.pl", @ARGV, $0); di
 scenarios(simulator => 1);
 top_filename("t/t_flag_make_cmake.v");
 
+# We expect below that Vt_flag_verilate.mk and others are not in the build
+# tree already when doing --no-verilate, so we must remove them when
+# re-running the test.
+clean_objs();
+
 compile(  # Don't call cmake nor gmake from driver.pl. Nothing should be done here.
     verilator_make_cmake => 0,
     verilator_make_gmake => 0,

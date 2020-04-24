@@ -806,6 +806,11 @@ sub clean {
     }
 }
 
+sub clean_objs {
+    my $self = (ref $_[0] ? shift : $Self);
+    system("rm", "-rf", glob("$self->{obj_dir}/*"));
+}
+
 sub compile_vlt_cmd {
     my $self = (ref $_[0]? shift : $Self);
     my %param = (%{$self}, @_);  # Default arguments are from $self
