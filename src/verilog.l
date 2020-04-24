@@ -938,6 +938,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 <TABLE>{crnl}           { yymore(); }
 <TABLE>";"              { FL; yylval.strp = PARSEP->newString(yytext, yyleng); return yaTABLELINE; }
 <TABLE>"endtable"       { yy_pop_state(); FL; return yENDTABLE; }
+<TABLE>"`line"{ws}+[^\n\r]*{crnl}       { FL_FWD; PARSEP->ppline(yytext); FL_BRK; }
 <TABLE>.                { yymore(); }
 <TABLE><<EOF>>          { FL_FWD; yyerrorf("EOF in TABLE");
                           yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
