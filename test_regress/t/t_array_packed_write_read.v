@@ -27,7 +27,7 @@ module t (/*AUTOARG*/
 
    // msg926
    logic [3:0][31:0] packedArray;
-   initial packedArray <= '0;
+   initial packedArray = '0;
 
    // event counter
    always @ (posedge clk) begin

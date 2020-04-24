@@ -1,0 +1,4 @@
+%Error: t/t_udp_noname.v:15:9: syntax error, unexpected '(', expecting IDENTIFIER
+   15 |    udp (o, a);
+      |         ^
+%Error: Exiting due to

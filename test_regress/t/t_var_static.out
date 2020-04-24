@@ -1,0 +1,22 @@
+%Error: t/t_var_static.v:20:7: Unsupported: Static in this context
+   20 |       static int st = 2; st++; return st;
+      |       ^~~~~~
+%Error: t/t_var_static.v:26:13: Unsupported: Static in this context
+   26 |    function static int f_st_no ();
+      |             ^~~~~~
+%Error: t/t_var_static.v:29:13: Unsupported: Static in this context
+   29 |    function static int f_st_st ();
+      |             ^~~~~~
+%Error: t/t_var_static.v:30:7: Unsupported: Static in this context
+   30 |       static int st = 2; st++; return st;
+      |       ^~~~~~
+%Error: t/t_var_static.v:32:13: Unsupported: Static in this context
+   32 |    function static int f_st_au ();
+      |             ^~~~~~
+%Error: t/t_var_static.v:40:7: Unsupported: Static in this context
+   40 |       static int st = 2; st++; return st;
+      |       ^~~~~~
+%Error: t/t_var_static.v:73:7: Unsupported: Static in this context
+   73 |       static int ist2;
+      |       ^~~~~~
+%Error: Exiting due to
