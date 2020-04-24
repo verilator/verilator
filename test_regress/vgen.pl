@@ -322,7 +322,7 @@ sub rnd_op {
     }
     my $chooseweight = rnd($totweight);
     $totweight = 0;
-    foreach my $opref (values %Ops) {
+    foreach my $opref (sort {$a->{name} cmp $b->{name}} values %Ops) {
         if (_rnd_op_ok($opref,$paramref)) {
             $totweight += $opref->{weight};
             if ($chooseweight < $totweight) {
