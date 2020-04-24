@@ -294,18 +294,17 @@ void VerilatedVcd::close() {
     // This function is on the flush() call path
     m_assertOne.check();
     if (!isOpen()) return;
-    VerilatedTrace<VerilatedVcd>::close();
     if (m_evcd) {
         printStr("$vcdclose ");
         printQuad(timeLastDump());
         printStr(" $end\n");
     }
     closePrev();
-}
-
-void VerilatedVcd::flush() {
-    VerilatedTrace<VerilatedVcd>::flush();
-    bufferFlush();
+    // closePrev() already called VerilatedTrace<VerilatedVcd>::flush() via
+    // bufferFlush(), and there were no opportunities to enqueue further
+    // buffers as this close() is running on the main thread the same as dump()
+    // so just shutting down the trace thread will suffice.
+    VerilatedTrace<VerilatedVcd>::close();
 }
 
 void VerilatedVcd::printStr(const char* str) {
@@ -343,6 +342,7 @@ void VerilatedVcd::bufferFlush() VL_MT_UNSAFE_ONE {
     // This is much faster than using buffered I/O
     m_assertOne.check();
     if (VL_UNLIKELY(!isOpen())) return;
+    VerilatedTrace<VerilatedVcd>::flush();
     char* wp = m_wrBufp;
     while (true) {
         ssize_t remaining = (m_writep - wp);
