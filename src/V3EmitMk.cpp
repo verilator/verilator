@@ -69,9 +69,7 @@ public:
         of.puts("\n");
         of.puts("# Tracing threaded output mode?  0/1/N threads (from --trace-thread)\n");
         of.puts("VM_TRACE_THREADS = ");
-        of.puts(!v3Global.opt.traceThreads()
-                    ? "0"
-                    : cvtToStr(v3Global.opt.traceThreads() - v3Global.opt.traceFormat().fst()));
+        of.puts(cvtToStr(v3Global.opt.trueTraceThreads()));
         of.puts("\n");
         of.puts("# Separate FST writer thread? 0/1 (from --trace-fst with --trace-thread > 0)\n");
         of.puts("VM_TRACE_FST_WRITER_THREAD = ");

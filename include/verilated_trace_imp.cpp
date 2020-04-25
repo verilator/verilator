@@ -101,8 +101,8 @@ public:  // This is in .cpp file so is not widely visible
 //=========================================================================
 // Buffer management
 
-template <> VerilatedTraceEntry* VerilatedTrace<VL_DERIVED_T>::getTraceBuffer() {
-    VerilatedTraceEntry* bufferp;
+template <> vluint32_t* VerilatedTrace<VL_DERIVED_T>::getTraceBuffer() {
+    vluint32_t* bufferp;
     // Some jitter is expected, so some number of alternative trace buffers are
     // required, but don't allocate more than 8 buffers.
     if (m_numTraceBuffers < 8) {
@@ -111,7 +111,7 @@ template <> VerilatedTraceEntry* VerilatedTrace<VL_DERIVED_T>::getTraceBuffer() 
             ++m_numTraceBuffers;
             // Note: over allocate a bit so pointer comparison is well defined
             // if we overflow only by a small amount
-            bufferp = new VerilatedTraceEntry[m_traceBufferSize + 16];
+            bufferp = new vluint32_t[m_traceBufferSize + 16];
         }
     } else {
         // Block until a buffer becomes available
@@ -120,10 +120,10 @@ template <> VerilatedTraceEntry* VerilatedTrace<VL_DERIVED_T>::getTraceBuffer() 
     return bufferp;
 }
 
-template <> void VerilatedTrace<VL_DERIVED_T>::waitForBuffer(const VerilatedTraceEntry* buffp) {
+template <> void VerilatedTrace<VL_DERIVED_T>::waitForBuffer(const vluint32_t* buffp) {
     // Slow path code only called on flush/shutdown, so use a simple algorithm.
     // Collect buffers from worker and stash them until we get the one we want.
-    std::deque<VerilatedTraceEntry*> stash;
+    std::deque<vluint32_t*> stash;
     do { stash.push_back(m_buffersFromWorker.get()); } while (stash.back() != buffp);
     // Now put them back in the queue, in the original order.
     while (!stash.empty()) {
@@ -136,65 +136,71 @@ template <> void VerilatedTrace<VL_DERIVED_T>::waitForBuffer(const VerilatedTrac
 // Worker thread
 
 template <> void VerilatedTrace<VL_DERIVED_T>::workerThreadMain() {
-    while (true) {
-        VerilatedTraceEntry* const bufferp = m_buffersToWorker.get();
+    bool shutdown = false;
+
+    do {
+        vluint32_t* const bufferp = m_buffersToWorker.get();
 
         VL_TRACE_THREAD_DEBUG("");
-        VL_TRACE_THREAD_DEBUG("Got buffer");
+        VL_TRACE_THREAD_DEBUG("Got buffer: " << bufferp);
 
-        const VerilatedTraceEntry* readp = bufferp;
-
-        vluint32_t cmd;
-        unsigned bits;
-        vluint32_t* oldp;
-        vluint64_t newBits;
+        const vluint32_t* readp = bufferp;
 
         while (true) {
-            cmd = (readp++)->cmd;
+            const vluint32_t cmd = readp[0];
+            const vluint32_t top = cmd >> 4;
+            // Always set this up, as it is almost always needed
+            vluint32_t* const oldp = m_sigs_oldvalp + readp[1];
+            // Note this increment needs to be undone on commands which do not
+            // actually contain a code, but those are the rare cases.
+            readp += 2;
 
-            switch (cmd & ~0xFFU) {
+            switch (cmd & 0xF) {
                 //===
                 // CHG_* commands
-            case VerilatedTraceCommand::CHG_BIT:
-                VL_TRACE_THREAD_DEBUG("Command CHG_BIT");
-                chgBitImpl((readp++)->oldp, cmd & 1);
+            case VerilatedTraceCommand::CHG_BIT_0:
+                VL_TRACE_THREAD_DEBUG("Command CHG_BIT_0 " << top);
+                chgBitImpl(oldp, 0);
+                continue;
+            case VerilatedTraceCommand::CHG_BIT_1:
+                VL_TRACE_THREAD_DEBUG("Command CHG_BIT_1 " << top);
+                chgBitImpl(oldp, 1);
                 continue;
             case VerilatedTraceCommand::CHG_BUS:
-                VL_TRACE_THREAD_DEBUG("Command CHG_BUS");
+                VL_TRACE_THREAD_DEBUG("Command CHG_BUS " << top);
                 // Bits stored in bottom byte of command
-                chgBusImpl(readp[0].oldp, readp[1].newBits, cmd & 0xFFULL);
-                readp += 2;
-                VL_TRACE_THREAD_DEBUG("Command CHG_BUS DONE");
+                chgBusImpl(oldp, *readp, top);
+                readp += 1;
                 continue;
             case VerilatedTraceCommand::CHG_QUAD:
-                VL_TRACE_THREAD_DEBUG("Command CHG_QUAD");
+                VL_TRACE_THREAD_DEBUG("Command CHG_QUAD " << top);
                 // Bits stored in bottom byte of command
-                chgQuadImpl(readp[0].oldp, readp[1].newBits, cmd & 0xFFULL);
+                chgQuadImpl(oldp, *reinterpret_cast<const vluint64_t*>(readp), top);
                 readp += 2;
                 continue;
             case VerilatedTraceCommand::CHG_ARRAY:
-                VL_TRACE_THREAD_DEBUG("Command CHG_CHG_ARRAY");
-                oldp = (readp++)->oldp;
-                bits = (readp++)->params;
-                chgArrayImpl(oldp, reinterpret_cast<const vluint32_t*>(readp), bits);
-                readp += (bits + 63) / 64;
+                VL_TRACE_THREAD_DEBUG("Command CHG_ARRAY " << top);
+                chgArrayImpl(oldp, readp, top);
+                readp += (top + 31) / 32;
                 continue;
             case VerilatedTraceCommand::CHG_FLOAT:
-                VL_TRACE_THREAD_DEBUG("Command CHG_FLOAT");
-                chgFloatImpl(readp[0].oldp, readp[1].newFloat);
-                readp += 2;
+                VL_TRACE_THREAD_DEBUG("Command CHG_FLOAT " << top);
+                chgFloatImpl(oldp, *reinterpret_cast<const float*>(readp));
+                readp += 1;
                 continue;
             case VerilatedTraceCommand::CHG_DOUBLE:
-                VL_TRACE_THREAD_DEBUG("Command CHG_DOUBLE");
-                chgDoubleImpl(readp[0].oldp, readp[1].newDouble);
+                VL_TRACE_THREAD_DEBUG("Command CHG_DOUBLE " << top);
+                chgDoubleImpl(oldp, *reinterpret_cast<const double*>(readp));
                 readp += 2;
                 continue;
 
                 //===
                 // Rare commands
             case VerilatedTraceCommand::TIME_CHANGE:
-                VL_TRACE_THREAD_DEBUG("Command TIME_CHANGE");
-                emitTimeChange((readp++)->timeui);
+                VL_TRACE_THREAD_DEBUG("Command TIME_CHANGE " << top);
+                readp -= 1;  // No code in this command, undo increment
+                emitTimeChange(*reinterpret_cast<const vluint64_t*>(readp));
+                readp += 2;
                 continue;
 
                 //===
@@ -202,11 +208,13 @@ template <> void VerilatedTrace<VL_DERIVED_T>::workerThreadMain() {
             case VerilatedTraceCommand::END: VL_TRACE_THREAD_DEBUG("Command END"); break;
             case VerilatedTraceCommand::SHUTDOWN:
                 VL_TRACE_THREAD_DEBUG("Command SHUTDOWN");
+                shutdown = true;
                 break;
 
                 //===
                 // Unknown command
             default:
+                VL_TRACE_THREAD_DEBUG("Command UNKNOWN");
                 VL_PRINTF_MT("Trace command: 0x%08x\n", cmd);
                 VL_FATAL_MT(__FILE__, __LINE__, "", "Unknown trace command");
                 break;
@@ -221,10 +229,7 @@ template <> void VerilatedTrace<VL_DERIVED_T>::workerThreadMain() {
 
         // Return buffer
         m_buffersFromWorker.put(bufferp);
-
-        // Shut down if required
-        if (VL_UNLIKELY(cmd == VerilatedTraceCommand::SHUTDOWN)) return;
-    }
+    } while (VL_LIKELY(!shutdown));
 }
 
 template <> void VerilatedTrace<VL_DERIVED_T>::shutdownWorker() {
@@ -232,8 +237,8 @@ template <> void VerilatedTrace<VL_DERIVED_T>::shutdownWorker() {
     if (!m_workerThread) return;
 
     // Hand an buffer with a shutdown command to the worker thread
-    VerilatedTraceEntry* const bufferp = getTraceBuffer();
-    bufferp[0].cmd = VerilatedTraceCommand::SHUTDOWN;
+    vluint32_t* const bufferp = getTraceBuffer();
+    bufferp[0] = VerilatedTraceCommand::SHUTDOWN;
     m_buffersToWorker.put(bufferp);
     // Wait for it to return
     waitForBuffer(bufferp);
@@ -260,8 +265,8 @@ template <> void VerilatedTrace<VL_DERIVED_T>::close() {
 template <> void VerilatedTrace<VL_DERIVED_T>::flush() {
 #ifdef VL_TRACE_THREADED
     // Hand an empty buffer to the worker thread
-    VerilatedTraceEntry* const bufferp = getTraceBuffer();
-    bufferp[0].cmd = VerilatedTraceCommand::END;
+    vluint32_t* const bufferp = getTraceBuffer();
+    *bufferp = VerilatedTraceCommand::END;
     m_buffersToWorker.put(bufferp);
     // Wait for it to be returned. As the processing is in-order,
     // this ensures all previous buffers have been processed.
@@ -333,10 +338,10 @@ template <> void VerilatedTrace<VL_DERIVED_T>::traceInit() VL_MT_UNSAFE {
 #ifdef VL_TRACE_THREADED
     // Compute trace buffer size. we need to be able to store a new value for
     // each signal, which is 'nextCode()' entries after the init callbacks
-    // above have been run, plus up to 3 more words of metadata per signal,
-    // plus fixed overhead of 1 for a termination flag and 2 for a time stamp
+    // above have been run, plus up to 2 more words of metadata per signal,
+    // plus fixed overhead of 1 for a termination flag and 3 for a time stamp
     // update.
-    m_traceBufferSize = nextCode() + numSignals() * 3 + 3;
+    m_traceBufferSize = nextCode() + numSignals() * 2 + 4;
 
     // Start the worker thread
     m_workerThread.reset(new std::thread(&VerilatedTrace<VL_DERIVED_T>::workerThreadMain, this));
@@ -406,18 +411,21 @@ template <> void VerilatedTrace<VL_DERIVED_T>::dump(vluint64_t timeui) {
     }
 
 #ifdef VL_TRACE_THREADED
-    // Get the trace buffer we are about to fill
-    VerilatedTraceEntry* const bufferp = getTraceBuffer();
-    m_traceBufferWritep = bufferp;
-    m_traceBufferEndp = bufferp + m_traceBufferSize;
-
     // Currently only incremental dumps run on the worker thread
+    vluint32_t* bufferp = nullptr;
     if (VL_LIKELY(!m_fullDump)) {
+        // Get the trace buffer we are about to fill
+        bufferp = getTraceBuffer();
+        m_traceBufferWritep = bufferp;
+        m_traceBufferEndp = bufferp + m_traceBufferSize;
+
         // Tell worker to update time point
-        (m_traceBufferWritep++)->cmd = VerilatedTraceCommand::TIME_CHANGE;
-        (m_traceBufferWritep++)->timeui = timeui;
+        m_traceBufferWritep[0] = VerilatedTraceCommand::TIME_CHANGE;
+        *reinterpret_cast<vluint64_t*>(m_traceBufferWritep + 1) = timeui;
+        m_traceBufferWritep += 3;
     } else {
         // Update time point
+        flush();
         emitTimeChange(timeui);
     }
 #else
@@ -440,14 +448,16 @@ template <> void VerilatedTrace<VL_DERIVED_T>::dump(vluint64_t timeui) {
     }
 
 #ifdef VL_TRACE_THREADED
-    // Mark end of the trace buffer we just filled
-    (m_traceBufferWritep++)->cmd = VerilatedTraceCommand::END;
+    if (VL_LIKELY(bufferp)) {
+        // Mark end of the trace buffer we just filled
+        *m_traceBufferWritep++ = VerilatedTraceCommand::END;
 
-    // Assert no buffer overflow
-    assert(m_traceBufferWritep - bufferp <= m_traceBufferSize);
+        // Assert no buffer overflow
+        assert(m_traceBufferWritep - bufferp <= m_traceBufferSize);
 
-    // Pass it to the worker thread
-    m_buffersToWorker.put(bufferp);
+        // Pass it to the worker thread
+        m_buffersToWorker.put(bufferp);
+    }
 #endif
 }
 

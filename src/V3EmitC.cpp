@@ -3547,29 +3547,30 @@ class EmitCTrace : EmitCStmts {
 
     void emitTraceChangeOne(AstTraceInc* nodep, int arrayindex) {
         iterateAndNextNull(nodep->precondsp());
-        string full = ((m_funcp->funcType() == AstCFuncType::TRACE_FULL
-                        || m_funcp->funcType() == AstCFuncType::TRACE_FULL_SUB)
-                           ? "full"
-                           : "chg");
+        const bool full = (m_funcp->funcType() == AstCFuncType::TRACE_FULL
+                           || m_funcp->funcType() == AstCFuncType::TRACE_FULL_SUB);
+        const string func = full ? "full" : "chg";
         bool emitWidth = false;
         if (nodep->dtypep()->basicp()->isDouble()) {
-            puts("vcdp->" + full + "Double");
+            puts("vcdp->" + func + "Double");
         } else if (nodep->isWide() || emitTraceIsScBv(nodep) || emitTraceIsScBigUint(nodep)) {
-            puts("vcdp->" + full + "Array");
+            puts("vcdp->" + func + "Array");
             emitWidth = true;
         } else if (nodep->isQuad()) {
-            puts("vcdp->" + full + "Quad");
+            puts("vcdp->" + func + "Quad");
             emitWidth = true;
         } else if (nodep->declp()->widthMin() > 1) {
-            puts("vcdp->" + full + "Bus");
+            puts("vcdp->" + func + "Bus");
             emitWidth = true;
         } else {
-            puts("vcdp->" + full + "Bit");
+            puts("vcdp->" + func + "Bit");
         }
 
         const uint32_t offset = (arrayindex < 0) ? 0 : (arrayindex * nodep->declp()->widthWords());
         const uint32_t code = nodep->declp()->code() + offset;
-        puts("(oldp+" + cvtToStr(code - m_baseCode) + ",");
+        puts(v3Global.opt.trueTraceThreads() && !full ? "(base+" : "(oldp+");
+        puts(cvtToStr(code - m_baseCode));
+        puts(",");
         emitTraceValue(nodep, arrayindex);
         if (emitWidth) puts("," + cvtToStr(nodep->declp()->widthMin()));
         puts(");\n");
@@ -3648,8 +3649,14 @@ class EmitCTrace : EmitCStmts {
                     nodep->stmtsp()->v3fatalSrc("Trace sub function should contain AstTraceInc");
                 }
                 m_baseCode = stmtp->declp()->code();
-                puts("vluint32_t* oldp = vcdp->oldp(code+" + cvtToStr(m_baseCode) + ");\n");
-                puts("if (false && vcdp && oldp) {}  // Prevent unused\n");
+                if (v3Global.opt.trueTraceThreads()
+                    && nodep->funcType() == AstCFuncType::TRACE_CHANGE_SUB) {
+                    puts("vluint32_t base = code+" + cvtToStr(m_baseCode) + ";\n");
+                    puts("if (false && vcdp && base) {}  // Prevent unused\n");
+                } else {
+                    puts("vluint32_t* oldp = vcdp->oldp(code+" + cvtToStr(m_baseCode) + ");\n");
+                    puts("if (false && vcdp && oldp) {}  // Prevent unused\n");
+                }
             } else if (nodep->funcType() == AstCFuncType::TRACE_INIT_SUB) {
                 puts("int c = code;\n");
                 puts("if (false && vcdp && c) {}  // Prevent unused\n");
