@@ -161,50 +161,15 @@ template <> void VerilatedTrace<VL_DERIVED_T>::workerThreadMain() {
                 continue;
             case VerilatedTraceCommand::CHG_BUS:
                 VL_TRACE_THREAD_DEBUG("Command CHG_BUS");
-
-                oldp = (readp++)->oldp;
-                newBits = (readp++)->newBits;
-
                 // Bits stored in bottom byte of command
-                switch (cmd & 0xFFU) {
-                case 2: chgBusImpl<2>(oldp, newBits); continue;
-                case 3: chgBusImpl<3>(oldp, newBits); continue;
-                case 4: chgBusImpl<4>(oldp, newBits); continue;
-                case 5: chgBusImpl<5>(oldp, newBits); continue;
-                case 6: chgBusImpl<6>(oldp, newBits); continue;
-                case 7: chgBusImpl<7>(oldp, newBits); continue;
-                case 8: chgBusImpl<8>(oldp, newBits); continue;
-                case 9: chgBusImpl<9>(oldp, newBits); continue;
-                case 10: chgBusImpl<10>(oldp, newBits); continue;
-                case 11: chgBusImpl<11>(oldp, newBits); continue;
-                case 12: chgBusImpl<12>(oldp, newBits); continue;
-                case 13: chgBusImpl<13>(oldp, newBits); continue;
-                case 14: chgBusImpl<14>(oldp, newBits); continue;
-                case 15: chgBusImpl<15>(oldp, newBits); continue;
-                case 16: chgBusImpl<16>(oldp, newBits); continue;
-                case 17: chgBusImpl<17>(oldp, newBits); continue;
-                case 18: chgBusImpl<18>(oldp, newBits); continue;
-                case 19: chgBusImpl<19>(oldp, newBits); continue;
-                case 20: chgBusImpl<20>(oldp, newBits); continue;
-                case 21: chgBusImpl<21>(oldp, newBits); continue;
-                case 22: chgBusImpl<22>(oldp, newBits); continue;
-                case 23: chgBusImpl<23>(oldp, newBits); continue;
-                case 24: chgBusImpl<24>(oldp, newBits); continue;
-                case 25: chgBusImpl<25>(oldp, newBits); continue;
-                case 26: chgBusImpl<26>(oldp, newBits); continue;
-                case 27: chgBusImpl<27>(oldp, newBits); continue;
-                case 28: chgBusImpl<28>(oldp, newBits); continue;
-                case 29: chgBusImpl<29>(oldp, newBits); continue;
-                case 30: chgBusImpl<30>(oldp, newBits); continue;
-                case 31: chgBusImpl<31>(oldp, newBits); continue;
-                case 32: chgBusImpl<32>(oldp, newBits); continue;
-                }
-                VL_FATAL_MT(__FILE__, __LINE__, "", "Bad number of bits in CHG_BUS command");
-                break;
+                chgBusImpl(readp[0].oldp, readp[1].newBits, cmd & 0xFFULL);
+                readp += 2;
+                VL_TRACE_THREAD_DEBUG("Command CHG_BUS DONE");
+                continue;
             case VerilatedTraceCommand::CHG_QUAD:
                 VL_TRACE_THREAD_DEBUG("Command CHG_QUAD");
                 // Bits stored in bottom byte of command
-                chgQuadImpl(readp[0].oldp, readp[1].newBits, cmd & 0xFF);
+                chgQuadImpl(readp[0].oldp, readp[1].newBits, cmd & 0xFFULL);
                 readp += 2;
                 continue;
             case VerilatedTraceCommand::CHG_ARRAY:
@@ -516,48 +481,11 @@ template <> void VerilatedTrace<VL_DERIVED_T>::fullBit(vluint32_t* oldp, vluint3
     self()->emitBit(oldp - m_sigs_oldvalp, newval);
 }
 
-// We want these functions specialized for sizes to avoid hard to predict
-// branches, but we don't want them inlined, so we explicitly instantiate the
-// template for each size used by Verilator.
 template <>
-template <int T_Bits>
-void VerilatedTrace<VL_DERIVED_T>::fullBus(vluint32_t* oldp, vluint32_t newval) {
+void VerilatedTrace<VL_DERIVED_T>::fullBus(vluint32_t* oldp, vluint32_t newval, int bits) {
     *oldp = newval;
-    self()->emitBus<T_Bits>(oldp - m_sigs_oldvalp, newval);
+    self()->emitBus(oldp - m_sigs_oldvalp, newval, bits);
 }
-
-// Note: No specialization for width 1, covered by 'fullBit'
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<2>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<3>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<4>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<5>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<6>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<7>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<8>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<9>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<10>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<11>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<12>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<13>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<14>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<15>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<16>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<17>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<18>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<19>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<20>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<21>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<22>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<23>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<24>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<25>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<26>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<27>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<28>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<29>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<30>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<31>(vluint32_t* oldp, vluint32_t newval);
-template void VerilatedTrace<VL_DERIVED_T>::fullBus<32>(vluint32_t* oldp, vluint32_t newval);
 
 template <>
 void VerilatedTrace<VL_DERIVED_T>::fullQuad(vluint32_t* oldp, vluint64_t newval, int bits) {

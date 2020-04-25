@@ -67,13 +67,14 @@ protected:
     bool preFullDump() VL_OVERRIDE { return isOpen(); }
     bool preChangeDump() VL_OVERRIDE { return isOpen(); }
 
-    // Implementations of duck-typed methods for VerilatedTrace
-    void emitBit(vluint32_t code, vluint32_t newval);
-    template <int T_Bits> void emitBus(vluint32_t code, vluint32_t newval);
-    void emitQuad(vluint32_t code, vluint64_t newval, int bits);
-    void emitArray(vluint32_t code, const vluint32_t* newvalp, int bits);
-    void emitFloat(vluint32_t code, float newval);
-    void emitDouble(vluint32_t code, double newval);
+    // Implementations of duck-typed methods for VerilatedTrace. These are
+    // called from only one place (namely full*) so always inline them.
+    inline void emitBit(vluint32_t code, vluint32_t newval);
+    inline void emitBus(vluint32_t code, vluint32_t newval, int bits);
+    inline void emitQuad(vluint32_t code, vluint64_t newval, int bits);
+    inline void emitArray(vluint32_t code, const vluint32_t* newvalp, int bits);
+    inline void emitFloat(vluint32_t code, float newval);
+    inline void emitDouble(vluint32_t code, double newval);
 
 public:
     //=========================================================================

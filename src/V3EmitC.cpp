@@ -3561,7 +3561,8 @@ class EmitCTrace : EmitCStmts {
             puts("vcdp->" + full + "Quad");
             emitWidth = true;
         } else if (nodep->declp()->widthMin() > 1) {
-            puts("vcdp->" + full + "Bus<" + cvtToStr(nodep->declp()->widthMin()) + ">");
+            puts("vcdp->" + full + "Bus");
+            emitWidth = true;
         } else {
             puts("vcdp->" + full + "Bit");
         }

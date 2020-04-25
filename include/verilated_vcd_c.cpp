@@ -611,15 +611,20 @@ void VerilatedVcd::declTriArray(vluint32_t code, const char* name, bool array, i
 //=============================================================================
 // Emit trace entries
 
+#define VL_VCD_SUFFIXP(code) (m_suffixesp + (code)*VL_TRACE_SUFFIX_ENTRY_SIZE)
+
 // Emit suffix, write back write pointer, check buffer
 void VerilatedVcd::finishLine(vluint32_t code, char* writep) {
-    const char* const suffixp = m_suffixesp + code * VL_TRACE_SUFFIX_ENTRY_SIZE;
+    const char* const suffixp = VL_VCD_SUFFIXP(code);
     // Copy the whole suffix (this avoid having hard to predict branches which
-    // helps a lot). Note suffixp could be aligned, so could load it in one go,
-    // but then we would be endiannes dependent which we don't have a way to
-    // test right now and probably would make little difference...
-    // Note: The maximum length of the suffix is
+    // helps a lot). Note: The maximum length of the suffix is
     // VL_TRACE_MAX_VCD_CODE_SIZE + 2 == 7, but we unroll this here for speed.
+#ifdef __x86_64__
+    // Copy the whole 8 bytes in one go, this works on little-endian machines
+    // supporting unaligned stores.
+    *reinterpret_cast<vluint64_t*>(writep) = *reinterpret_cast<const vluint64_t*>(suffixp);
+#else
+    // Portable variant
     writep[0] = suffixp[0];
     writep[1] = suffixp[1];
     writep[2] = suffixp[2];
@@ -627,139 +632,202 @@ void VerilatedVcd::finishLine(vluint32_t code, char* writep) {
     writep[4] = suffixp[4];
     writep[5] = suffixp[5];
     writep[6] = '\n';  // The 6th index is always '\n' if it's relevant, no need to fetch it.
+#endif
     // Now write back the write pointer incremented by the actual size of the
     // suffix, which was stored in the last byte of the suffix buffer entry.
     m_writep = writep + suffixp[VL_TRACE_SUFFIX_ENTRY_SIZE - 1];
     bufferCheck();
 }
 
+// Note: emit* are only ever called from one place (full* in
+// verilated_trace_imp.cpp, which is included in this file at the top),
+// so always inline them.
+
+VL_ATTR_ALWINLINE
 void VerilatedVcd::emitBit(vluint32_t code, vluint32_t newval) {
+    // Don't prefetch suffix as it's a bit too late;
     char* wp = m_writep;
     *wp++ = '0' | static_cast<char>(newval);
     finishLine(code, wp);
 }
 
-template <int T_Bits> void VerilatedVcd::emitBus(vluint32_t code, vluint32_t newval) {
+VL_ATTR_ALWINLINE
+void VerilatedVcd::emitBus(vluint32_t code, vluint32_t newval, int bits) {
+    VL_PREFETCH_RD(VL_VCD_SUFFIXP(code));
     char* wp = m_writep;
     *wp++ = 'b';
-    newval <<= 32 - T_Bits;
-    int bits = T_Bits;
-    do {
-        *wp++ = '0' | static_cast<char>(newval >> 31);
-        newval <<= 1;
-    } while (--bits);
+    wp += bits;
+    // clang-format off
+    switch (bits) {
+    case 32: wp[-32] = '0' | static_cast<char>((newval >> 31)    ); //FALLTHRU
+    case 31: wp[-31] = '0' | static_cast<char>((newval >> 30) & 1); //FALLTHRU
+    case 30: wp[-30] = '0' | static_cast<char>((newval >> 29) & 1); //FALLTHRU
+    case 29: wp[-29] = '0' | static_cast<char>((newval >> 28) & 1); //FALLTHRU
+    case 28: wp[-28] = '0' | static_cast<char>((newval >> 27) & 1); //FALLTHRU
+    case 27: wp[-27] = '0' | static_cast<char>((newval >> 26) & 1); //FALLTHRU
+    case 26: wp[-26] = '0' | static_cast<char>((newval >> 25) & 1); //FALLTHRU
+    case 25: wp[-25] = '0' | static_cast<char>((newval >> 24) & 1); //FALLTHRU
+    case 24: wp[-24] = '0' | static_cast<char>((newval >> 23) & 1); //FALLTHRU
+    case 23: wp[-23] = '0' | static_cast<char>((newval >> 22) & 1); //FALLTHRU
+    case 22: wp[-22] = '0' | static_cast<char>((newval >> 21) & 1); //FALLTHRU
+    case 21: wp[-21] = '0' | static_cast<char>((newval >> 20) & 1); //FALLTHRU
+    case 20: wp[-20] = '0' | static_cast<char>((newval >> 19) & 1); //FALLTHRU
+    case 19: wp[-19] = '0' | static_cast<char>((newval >> 18) & 1); //FALLTHRU
+    case 18: wp[-18] = '0' | static_cast<char>((newval >> 17) & 1); //FALLTHRU
+    case 17: wp[-17] = '0' | static_cast<char>((newval >> 16) & 1); //FALLTHRU
+    case 16: wp[-16] = '0' | static_cast<char>((newval >> 15) & 1); //FALLTHRU
+    case 15: wp[-15] = '0' | static_cast<char>((newval >> 14) & 1); //FALLTHRU
+    case 14: wp[-14] = '0' | static_cast<char>((newval >> 13) & 1); //FALLTHRU
+    case 13: wp[-13] = '0' | static_cast<char>((newval >> 12) & 1); //FALLTHRU
+    case 12: wp[-12] = '0' | static_cast<char>((newval >> 11) & 1); //FALLTHRU
+    case 11: wp[-11] = '0' | static_cast<char>((newval >> 10) & 1); //FALLTHRU
+    case 10: wp[-10] = '0' | static_cast<char>((newval >>  9) & 1); //FALLTHRU
+    case 9:  wp[ -9] = '0' | static_cast<char>((newval >>  8) & 1); //FALLTHRU
+    case 8:  wp[ -8] = '0' | static_cast<char>((newval >>  7) & 1); //FALLTHRU
+    case 7:  wp[ -7] = '0' | static_cast<char>((newval >>  6) & 1); //FALLTHRU
+    case 6:  wp[ -6] = '0' | static_cast<char>((newval >>  5) & 1); //FALLTHRU
+    case 5:  wp[ -5] = '0' | static_cast<char>((newval >>  4) & 1); //FALLTHRU
+    case 4:  wp[ -4] = '0' | static_cast<char>((newval >>  3) & 1); //FALLTHRU
+    case 3:  wp[ -3] = '0' | static_cast<char>((newval >>  2) & 1); //FALLTHRU
+    case 2:  wp[ -2] = '0' | static_cast<char>((newval >>  1) & 1); //FALLTHRU
+    /*bit*/  wp[ -1] = '0' | static_cast<char>((newval      ) & 1); //FALLTHRU
+    }
+    // clang-format on
     finishLine(code, wp);
 }
 
+VL_ATTR_ALWINLINE
 void VerilatedVcd::emitQuad(vluint32_t code, vluint64_t newval, int bits) {
+    VL_PREFETCH_RD(VL_VCD_SUFFIXP(code));
     char* wp = m_writep;
     *wp++ = 'b';
-    newval <<= 64 - bits;
     // Handle the top 32 bits within the 64 bit input
     const int bitsInTopHalf = bits - 32;
     wp += bitsInTopHalf;
     // clang-format off
     switch (bitsInTopHalf) {
-    case 32: wp[-32] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 31: wp[-31] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 30: wp[-30] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 29: wp[-29] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 28: wp[-28] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 27: wp[-27] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 26: wp[-26] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 25: wp[-25] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 24: wp[-24] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 23: wp[-23] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 22: wp[-22] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 21: wp[-21] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 20: wp[-20] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 19: wp[-19] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 18: wp[-18] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 17: wp[-17] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 16: wp[-16] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 15: wp[-15] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 14: wp[-14] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 13: wp[-13] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 12: wp[-12] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 11: wp[-11] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 10: wp[-10] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 9:  wp[ -9] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 8:  wp[ -8] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 7:  wp[ -7] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 6:  wp[ -6] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 5:  wp[ -5] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 4:  wp[ -4] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 3:  wp[ -3] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 2:  wp[ -2] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
-    case 1:  wp[ -1] = '0' | static_cast<char>(newval >> 63); newval<<=1; //FALLTHRU
+    case 32: wp[-32] = '0' | static_cast<char>((newval >> 63)    ); //FALLTHRU
+    case 31: wp[-31] = '0' | static_cast<char>((newval >> 62) & 1); //FALLTHRU
+    case 30: wp[-30] = '0' | static_cast<char>((newval >> 61) & 1); //FALLTHRU
+    case 29: wp[-29] = '0' | static_cast<char>((newval >> 60) & 1); //FALLTHRU
+    case 28: wp[-28] = '0' | static_cast<char>((newval >> 59) & 1); //FALLTHRU
+    case 27: wp[-27] = '0' | static_cast<char>((newval >> 58) & 1); //FALLTHRU
+    case 26: wp[-26] = '0' | static_cast<char>((newval >> 57) & 1); //FALLTHRU
+    case 25: wp[-25] = '0' | static_cast<char>((newval >> 56) & 1); //FALLTHRU
+    case 24: wp[-24] = '0' | static_cast<char>((newval >> 55) & 1); //FALLTHRU
+    case 23: wp[-23] = '0' | static_cast<char>((newval >> 54) & 1); //FALLTHRU
+    case 22: wp[-22] = '0' | static_cast<char>((newval >> 53) & 1); //FALLTHRU
+    case 21: wp[-21] = '0' | static_cast<char>((newval >> 52) & 1); //FALLTHRU
+    case 20: wp[-20] = '0' | static_cast<char>((newval >> 51) & 1); //FALLTHRU
+    case 19: wp[-19] = '0' | static_cast<char>((newval >> 50) & 1); //FALLTHRU
+    case 18: wp[-18] = '0' | static_cast<char>((newval >> 49) & 1); //FALLTHRU
+    case 17: wp[-17] = '0' | static_cast<char>((newval >> 48) & 1); //FALLTHRU
+    case 16: wp[-16] = '0' | static_cast<char>((newval >> 47) & 1); //FALLTHRU
+    case 15: wp[-15] = '0' | static_cast<char>((newval >> 46) & 1); //FALLTHRU
+    case 14: wp[-14] = '0' | static_cast<char>((newval >> 45) & 1); //FALLTHRU
+    case 13: wp[-13] = '0' | static_cast<char>((newval >> 44) & 1); //FALLTHRU
+    case 12: wp[-12] = '0' | static_cast<char>((newval >> 43) & 1); //FALLTHRU
+    case 11: wp[-11] = '0' | static_cast<char>((newval >> 42) & 1); //FALLTHRU
+    case 10: wp[-10] = '0' | static_cast<char>((newval >> 41) & 1); //FALLTHRU
+    case 9:  wp[ -9] = '0' | static_cast<char>((newval >> 40) & 1); //FALLTHRU
+    case 8:  wp[ -8] = '0' | static_cast<char>((newval >> 39) & 1); //FALLTHRU
+    case 7:  wp[ -7] = '0' | static_cast<char>((newval >> 38) & 1); //FALLTHRU
+    case 6:  wp[ -6] = '0' | static_cast<char>((newval >> 37) & 1); //FALLTHRU
+    case 5:  wp[ -5] = '0' | static_cast<char>((newval >> 36) & 1); //FALLTHRU
+    case 4:  wp[ -4] = '0' | static_cast<char>((newval >> 35) & 1); //FALLTHRU
+    case 3:  wp[ -3] = '0' | static_cast<char>((newval >> 34) & 1); //FALLTHRU
+    case 2:  wp[ -2] = '0' | static_cast<char>((newval >> 33) & 1); //FALLTHRU
+    case 1:  wp[ -1] = '0' | static_cast<char>((newval >> 32) & 1); //FALLTHRU
     }
     // clang-format on
     // Handle the bottom 32 bits within the 64 bit input
-    int remaining = 32;
+    vluint32_t val = static_cast<vluint32_t>(newval);  // Truncate to bottom 32 bits
+    int loops = 4;
     do {
-        *wp++ = '0' | static_cast<char>(newval >> 63);
-        newval <<= 1;
-    } while (--remaining);
+        wp[0] = '0' | static_cast<char>((val >> 31));
+        wp[1] = '0' | static_cast<char>((val >> 30) & 1);
+        wp[2] = '0' | static_cast<char>((val >> 29) & 1);
+        wp[3] = '0' | static_cast<char>((val >> 28) & 1);
+        wp[4] = '0' | static_cast<char>((val >> 27) & 1);
+        wp[5] = '0' | static_cast<char>((val >> 26) & 1);
+        wp[6] = '0' | static_cast<char>((val >> 25) & 1);
+        wp[7] = '0' | static_cast<char>((val >> 24) & 1);
+        wp += 8;
+        val <<= 8;
+    } while (--loops);
+
     finishLine(code, wp);
 }
 
+VL_ATTR_ALWINLINE
 void VerilatedVcd::emitArray(vluint32_t code, const vluint32_t* newvalp, int bits) {
+    VL_PREFETCH_RD(VL_VCD_SUFFIXP(code));
     int words = (bits + 31) / 32;
     char* wp = m_writep;
     *wp++ = 'b';
     // Handle the most significant word
+    vluint32_t val = newvalp[--words];
     const int bitsInMSW = bits % 32 == 0 ? 32 : bits % 32;
-    vluint32_t val = newvalp[--words] << (32 - bitsInMSW);
     wp += bitsInMSW;
     // clang-format off
     switch (bitsInMSW) {
-    case 32: wp[-32] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 31: wp[-31] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 30: wp[-30] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 29: wp[-29] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 28: wp[-28] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 27: wp[-27] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 26: wp[-26] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 25: wp[-25] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 24: wp[-24] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 23: wp[-23] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 22: wp[-22] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 21: wp[-21] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 20: wp[-20] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 19: wp[-19] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 18: wp[-18] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 17: wp[-17] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 16: wp[-16] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 15: wp[-15] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 14: wp[-14] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 13: wp[-13] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 12: wp[-12] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 11: wp[-11] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 10: wp[-10] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 9:  wp[ -9] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 8:  wp[ -8] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 7:  wp[ -7] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 6:  wp[ -6] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 5:  wp[ -5] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 4:  wp[ -4] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 3:  wp[ -3] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 2:  wp[ -2] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
-    case 1:  wp[ -1] = '0' | static_cast<char>(val >> 31); val<<=1; //FALLTHRU
+    case 32: wp[-32] = '0' | static_cast<char>((val >> 31)    ); //FALLTHRU
+    case 31: wp[-31] = '0' | static_cast<char>((val >> 30) & 1); //FALLTHRU
+    case 30: wp[-30] = '0' | static_cast<char>((val >> 29) & 1); //FALLTHRU
+    case 29: wp[-29] = '0' | static_cast<char>((val >> 28) & 1); //FALLTHRU
+    case 28: wp[-28] = '0' | static_cast<char>((val >> 27) & 1); //FALLTHRU
+    case 27: wp[-27] = '0' | static_cast<char>((val >> 26) & 1); //FALLTHRU
+    case 26: wp[-26] = '0' | static_cast<char>((val >> 25) & 1); //FALLTHRU
+    case 25: wp[-25] = '0' | static_cast<char>((val >> 24) & 1); //FALLTHRU
+    case 24: wp[-24] = '0' | static_cast<char>((val >> 23) & 1); //FALLTHRU
+    case 23: wp[-23] = '0' | static_cast<char>((val >> 22) & 1); //FALLTHRU
+    case 22: wp[-22] = '0' | static_cast<char>((val >> 21) & 1); //FALLTHRU
+    case 21: wp[-21] = '0' | static_cast<char>((val >> 20) & 1); //FALLTHRU
+    case 20: wp[-20] = '0' | static_cast<char>((val >> 19) & 1); //FALLTHRU
+    case 19: wp[-19] = '0' | static_cast<char>((val >> 18) & 1); //FALLTHRU
+    case 18: wp[-18] = '0' | static_cast<char>((val >> 17) & 1); //FALLTHRU
+    case 17: wp[-17] = '0' | static_cast<char>((val >> 16) & 1); //FALLTHRU
+    case 16: wp[-16] = '0' | static_cast<char>((val >> 15) & 1); //FALLTHRU
+    case 15: wp[-15] = '0' | static_cast<char>((val >> 14) & 1); //FALLTHRU
+    case 14: wp[-14] = '0' | static_cast<char>((val >> 13) & 1); //FALLTHRU
+    case 13: wp[-13] = '0' | static_cast<char>((val >> 12) & 1); //FALLTHRU
+    case 12: wp[-12] = '0' | static_cast<char>((val >> 11) & 1); //FALLTHRU
+    case 11: wp[-11] = '0' | static_cast<char>((val >> 10) & 1); //FALLTHRU
+    case 10: wp[-10] = '0' | static_cast<char>((val >>  9) & 1); //FALLTHRU
+    case 9:  wp[ -9] = '0' | static_cast<char>((val >>  8) & 1); //FALLTHRU
+    case 8:  wp[ -8] = '0' | static_cast<char>((val >>  7) & 1); //FALLTHRU
+    case 7:  wp[ -7] = '0' | static_cast<char>((val >>  6) & 1); //FALLTHRU
+    case 6:  wp[ -6] = '0' | static_cast<char>((val >>  5) & 1); //FALLTHRU
+    case 5:  wp[ -5] = '0' | static_cast<char>((val >>  4) & 1); //FALLTHRU
+    case 4:  wp[ -4] = '0' | static_cast<char>((val >>  3) & 1); //FALLTHRU
+    case 3:  wp[ -3] = '0' | static_cast<char>((val >>  2) & 1); //FALLTHRU
+    case 2:  wp[ -2] = '0' | static_cast<char>((val >>  1) & 1); //FALLTHRU
+    case 1:  wp[ -1] = '0' | static_cast<char>((val      ) & 1); //FALLTHRU
     }
     // clang-format on
     // Handle the remaining words
     while (words > 0) {
         vluint32_t val = newvalp[--words];
-        int bits = 32;
+        int loops = 4;
         do {
-            *wp++ = '0' | static_cast<char>(val >> 31);
-            val <<= 1;
-        } while (--bits);
+            wp[0] = '0' | static_cast<char>((val >> 31));
+            wp[1] = '0' | static_cast<char>((val >> 30) & 1);
+            wp[2] = '0' | static_cast<char>((val >> 29) & 1);
+            wp[3] = '0' | static_cast<char>((val >> 28) & 1);
+            wp[4] = '0' | static_cast<char>((val >> 27) & 1);
+            wp[5] = '0' | static_cast<char>((val >> 26) & 1);
+            wp[6] = '0' | static_cast<char>((val >> 25) & 1);
+            wp[7] = '0' | static_cast<char>((val >> 24) & 1);
+            wp += 8;
+            val <<= 8;
+        } while (--loops);
     }
     finishLine(code, wp);
 }
 
+VL_ATTR_ALWINLINE
 void VerilatedVcd::emitFloat(vluint32_t code, float newval) {
+    VL_PREFETCH_RD(VL_VCD_SUFFIXP(code));
     char* wp = m_writep;
     // Buffer can't overflow before sprintf; we sized during declaration
     sprintf(wp, "r%.16g", static_cast<double>(newval));
@@ -767,13 +835,17 @@ void VerilatedVcd::emitFloat(vluint32_t code, float newval) {
     finishLine(code, wp);
 }
 
+VL_ATTR_ALWINLINE
 void VerilatedVcd::emitDouble(vluint32_t code, double newval) {
+    VL_PREFETCH_RD(VL_VCD_SUFFIXP(code));
     char* wp = m_writep;
     // Buffer can't overflow before sprintf; we sized during declaration
     sprintf(wp, "r%.16g", newval);
     wp += strlen(wp);
     finishLine(code, wp);
 }
+
+#undef VL_VCD_SUFFIXP
 
 #ifdef VL_TRACE_VCD_OLD_API
 

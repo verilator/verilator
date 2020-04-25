@@ -262,7 +262,7 @@ public:
     // this is very hot code during tracing.
 
     // duck-typed void emitBit(vluint32_t code, vluint32_t newval) = 0;
-    // duck-typed template <int T_Bits> void emitBus(vluint32_t code, vluint32_t newval) = 0;
+    // duck-typed void emitBus(vluint32_t code, vluint32_t newval, int bits) = 0;
     // duck-typed void emitQuad(vluint32_t code, vluint64_t newval, int bits) = 0;
     // duck-typed void emitArray(vluint32_t code, const vluint32_t* newvalp, int bits) = 0;
     // duck-typed void emitFloat(vluint32_t code, float newval) = 0;
@@ -272,7 +272,7 @@ public:
 
     // Write to previous value buffer value and emit trace entry.
     void fullBit(vluint32_t* oldp, vluint32_t newval);
-    template <int T_Bits> void fullBus(vluint32_t* oldp, vluint32_t newval);
+    void fullBus(vluint32_t* oldp, vluint32_t newval, int bits);
     void fullQuad(vluint32_t* oldp, vluint64_t newval, int bits);
     void fullArray(vluint32_t* oldp, const vluint32_t* newvalp, int bits);
     void fullFloat(vluint32_t* oldp, float newval);
@@ -286,8 +286,8 @@ public:
         m_traceBufferWritep += 2;
         VL_DEBUG_IF(assert(m_traceBufferWritep <= m_traceBufferEndp););
     }
-    template <int T_Bits> inline void chgBus(vluint32_t* oldp, vluint32_t newval) {
-        m_traceBufferWritep[0].cmd = VerilatedTraceCommand::CHG_BUS | T_Bits;
+    inline void chgBus(vluint32_t* oldp, vluint32_t newval, int bits) {
+        m_traceBufferWritep[0].cmd = VerilatedTraceCommand::CHG_BUS | bits;
         m_traceBufferWritep[1].oldp = oldp;
         m_traceBufferWritep[2].newBits = newval;
         m_traceBufferWritep += 3;
@@ -339,9 +339,9 @@ public:
         const vluint32_t diff = *oldp ^ newval;
         if (VL_UNLIKELY(diff)) fullBit(oldp, newval);
     }
-    template <int T_Bits> inline void CHG(Bus)(vluint32_t* oldp, vluint32_t newval) {
+    inline void CHG(Bus)(vluint32_t* oldp, vluint32_t newval, int bits) {
         const vluint32_t diff = *oldp ^ newval;
-        if (VL_UNLIKELY(diff)) fullBus<T_Bits>(oldp, newval);
+        if (VL_UNLIKELY(diff)) fullBus(oldp, newval, bits);
     }
     inline void CHG(Quad)(vluint32_t* oldp, vluint64_t newval, int bits) {
         const vluint64_t diff = *reinterpret_cast<vluint64_t*>(oldp) ^ newval;

@@ -208,21 +208,31 @@ void VerilatedFst::declDouble(vluint32_t code, const char* name, int dtypenum, f
     declSymbol(code, name, dtypenum, vardir, vartype, array, arraynum, 2, 64);
 }
 
+// Note: emit* are only ever called from one place (full* in
+// verilated_trace_imp.cpp, which is included in this file at the top),
+// so always inline them.
+
+VL_ATTR_ALWINLINE
 void VerilatedFst::emitBit(vluint32_t code, vluint32_t newval) {
     fstWriterEmitValueChange(m_fst, m_symbolp[code], newval ? "1" : "0");
 }
-template <int T_Bits> void VerilatedFst::emitBus(vluint32_t code, vluint32_t newval) {
-    fstWriterEmitValueChange32(m_fst, m_symbolp[code], T_Bits, newval);
+VL_ATTR_ALWINLINE
+void VerilatedFst::emitBus(vluint32_t code, vluint32_t newval, int bits) {
+    fstWriterEmitValueChange32(m_fst, m_symbolp[code], bits, newval);
 }
+VL_ATTR_ALWINLINE
 void VerilatedFst::emitQuad(vluint32_t code, vluint64_t newval, int bits) {
     fstWriterEmitValueChange64(m_fst, m_symbolp[code], bits, newval);
 }
+VL_ATTR_ALWINLINE
 void VerilatedFst::emitArray(vluint32_t code, const vluint32_t* newvalp, int bits) {
     fstWriterEmitValueChangeVec32(m_fst, m_symbolp[code], bits, newvalp);
 }
+VL_ATTR_ALWINLINE
 void VerilatedFst::emitFloat(vluint32_t code, float newval) {
     fstWriterEmitValueChange(m_fst, m_symbolp[code], &newval);
 }
+VL_ATTR_ALWINLINE
 void VerilatedFst::emitDouble(vluint32_t code, double newval) {
     fstWriterEmitValueChange(m_fst, m_symbolp[code], &newval);
 }
