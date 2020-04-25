@@ -590,6 +590,86 @@ private:
         return false;
     }
 
+    // 'out' will have those bits set, which are known to be set
+    void setBits(V3Number& out, AstNode* nodep) {
+        // @wsnyder Do I need some sizedness test here, or are they already well formed?
+        if (const AstConst* const np = VN_CAST_CONST(nodep, Const)) {
+            out.opAssign(np->num());
+        } else if (const AstOr* const np = VN_CAST_CONST(nodep, Or)) {
+            // @wsnyder Do I need to check operands are sized and have the same width?
+            V3Number lb(nodep, np->lhsp()->widthMin());
+            V3Number rb(nodep, np->rhsp()->widthMin());
+            setBits(lb, np->lhsp());
+            setBits(rb, np->rhsp());
+            out.opOr(lb, rb);
+        } else {
+            // Pretend we don't know anything
+            out.setAllBits0();
+        }
+    }
+
+    // 'out' will have those bits set, which are known to be clear
+    void clrBits(V3Number& out, AstNode* nodep) {
+        // @wsnyder Do I need some sizedness test here, or are they already well formed?
+        if (const AstConst* const np = VN_CAST_CONST(nodep, Const)) {
+            out.opNot(np->num());
+        } else if (const AstOr* const np = VN_CAST_CONST(nodep, Or)) {
+            // @wsnyder Do I need to check operands are sized and have the same width?
+            V3Number lb(nodep, np->lhsp()->widthMin());
+            V3Number rb(nodep, np->rhsp()->widthMin());
+            clrBits(lb, np->lhsp());
+            clrBits(rb, np->rhsp());
+            out.opAnd(lb, rb);
+        } else if (const AstVarRef* const np = VN_CAST_CONST(nodep, VarRef)) {
+            out.setAllBits0();
+            for (int bit = np->varp()->widthMin(); bit < nodep->widthMin(); ++bit) {
+                out.setBit(bit, 1);
+            }
+        } else {
+            // Pretend we don't know anything
+            out.setAllBits0();
+        }
+    }
+
+    bool checkKnownBits(AstNodeBiop* nodep) {
+        // Check if the sides have enough known bits to to determine the result
+        // This mostly helps to squash compiler warnings so we are not doing it
+        // too excessively.
+        const int width = nodep->lhsp()->widthMin();
+        // @wsnyder Is this check necessary, or are they already well formed?
+        if (width == 0 || width != nodep->lhsp()->widthMin()) return false;
+
+        V3Number lb(nodep, width);
+        V3Number rb(nodep, width);
+        V3Number tst(nodep, width);
+
+        // Compare bits clear in LHS with bits set in RHS
+        clrBits(lb, nodep->lhsp());
+        setBits(rb, nodep->rhsp());
+        if (!tst.opAnd(lb, rb).isEqZero()) {
+            if (VN_IS(nodep, Eq)) {
+                replaceZero(nodep);
+            } else {  // Neq
+                replaceNum(nodep, 1);
+            }
+            return true;
+        }
+
+        // Compare bits set in LHS with bits clear in RHS
+        setBits(lb, nodep->lhsp());
+        clrBits(rb, nodep->rhsp());
+        if (!tst.opAnd(lb, rb).isEqZero()) {
+            if (VN_IS(nodep, Eq)) {
+                replaceZero(nodep);
+            } else {  // Neq
+                replaceNum(nodep, 1);
+            }
+            return true;
+        }
+
+        return false;
+    }
+
     //----------------------------------------
     // Constant Replacement functions.
     // These all take a node, delete its tree, and replaces it with a constant
@@ -2426,6 +2506,9 @@ private:
     TREEOP ("AstNeqWild{operandsSame($lhsp,,$rhsp)}",   "replaceZero(nodep)");
     TREEOP ("AstLogAnd {operandsSame($lhsp,,$rhsp), $lhsp.width1}",     "replaceWLhs(nodep)");
     TREEOP ("AstLogOr  {operandsSame($lhsp,,$rhsp), $lhsp.width1}",     "replaceWLhs(nodep)");
+    // Not completely known constants, but the known bit-patterns suffice
+    TREEOP ("AstEq     {checkKnownBits(nodep)}",  "DONE");
+    TREEOP ("AstNeq    {checkKnownBits(nodep)}",  "DONE");
     ///=== Verilog operators
     // Comparison against 1'b0/1'b1; must be careful about widths.
     // These use Not, so must be Verilog only
