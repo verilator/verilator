@@ -591,62 +591,77 @@ private:
     }
 
     // 'out' will have those bits set, which are known to be set
-    void setBits(V3Number& out, AstNode* nodep) {
-        // @wsnyder Do I need some sizedness test here, or are they already well formed?
+    void knownSetBits(V3Number& out, AstNode* nodep) {
+        if (nodep->width() != out.width()) {
+            out.setAllBits0();
+            return;
+        }
+
         if (const AstConst* const np = VN_CAST_CONST(nodep, Const)) {
             out.opAssign(np->num());
         } else if (const AstOr* const np = VN_CAST_CONST(nodep, Or)) {
-            // @wsnyder Do I need to check operands are sized and have the same width?
-            V3Number lb(nodep, np->lhsp()->widthMin());
-            V3Number rb(nodep, np->rhsp()->widthMin());
-            setBits(lb, np->lhsp());
-            setBits(rb, np->rhsp());
+            // Note this recursion only proceeds through an AstOr tree and
+            // will stop at any other node type. A recursion limit might be
+            // needed if more types are handled recursively by 'knownSetBits'.
+            V3Number lb(nodep, out.width());
+            V3Number rb(nodep, out.width());
+            knownSetBits(lb, np->lhsp());
+            knownSetBits(rb, np->rhsp());
             out.opOr(lb, rb);
         } else {
-            // Pretend we don't know anything
+            // We couldn't determine any set bits
             out.setAllBits0();
         }
     }
 
     // 'out' will have those bits set, which are known to be clear
-    void clrBits(V3Number& out, AstNode* nodep) {
-        // @wsnyder Do I need some sizedness test here, or are they already well formed?
+    void knownClrBits(V3Number& out, AstNode* nodep) {
+        if (nodep->width() != out.width()) {
+            out.setAllBits0();
+            return;
+        }
+
         if (const AstConst* const np = VN_CAST_CONST(nodep, Const)) {
             out.opNot(np->num());
         } else if (const AstOr* const np = VN_CAST_CONST(nodep, Or)) {
-            // @wsnyder Do I need to check operands are sized and have the same width?
-            V3Number lb(nodep, np->lhsp()->widthMin());
-            V3Number rb(nodep, np->rhsp()->widthMin());
-            clrBits(lb, np->lhsp());
-            clrBits(rb, np->rhsp());
+            // Note this recursion only proceeds through an AstOr tree and
+            // will stop at any other node type. A recursion limit might be
+            // needed if more types are handled recursively by 'knownClrBits'.
+            V3Number lb(nodep, out.width());
+            V3Number rb(nodep, out.width());
+            knownClrBits(lb, np->lhsp());
+            knownClrBits(rb, np->rhsp());
             out.opAnd(lb, rb);
         } else if (const AstVarRef* const np = VN_CAST_CONST(nodep, VarRef)) {
             out.setAllBits0();
-            for (int bit = np->varp()->widthMin(); bit < nodep->widthMin(); ++bit) {
+            for (int bit = np->varp()->widthMin(); bit < out.width(); ++bit) {
                 out.setBit(bit, 1);
             }
         } else {
-            // Pretend we don't know anything
+            // We couldn't determine any clear bits
             out.setAllBits0();
         }
     }
 
     bool checkKnownBits(AstNodeBiop* nodep) {
-        // Check if the sides have enough known bits to to determine the result
-        // This mostly helps to squash compiler warnings so we are not doing it
-        // too excessively.
-        const int width = nodep->lhsp()->widthMin();
-        // @wsnyder Is this check necessary, or are they already well formed?
-        if (width == 0 || width != nodep->lhsp()->widthMin()) return false;
+        // Check if the sides have enough known bits to determine the result.
+        // This mostly helps to squash compiler warnings so we are not doing
+        // it too excessively.
+        const int width = nodep->lhsp()->width();
+        if (width == 0 || width != nodep->rhsp()->width()) return false;
 
-        V3Number lb(nodep, width);
-        V3Number rb(nodep, width);
+        V3Number lSet(nodep, width);
+        V3Number lClr(nodep, width);
+        V3Number rSet(nodep, width);
+        V3Number rClr(nodep, width);
         V3Number tst(nodep, width);
 
-        // Compare bits clear in LHS with bits set in RHS
-        clrBits(lb, nodep->lhsp());
-        setBits(rb, nodep->rhsp());
-        if (!tst.opAnd(lb, rb).isEqZero()) {
+        // Compare known bits in LHS with known bits in RHS
+        knownSetBits(lSet, nodep->lhsp());
+        knownClrBits(lClr, nodep->lhsp());
+        knownSetBits(rSet, nodep->rhsp());
+        knownClrBits(rClr, nodep->rhsp());
+        if (!tst.opAnd(lClr, rSet).isEqZero() || !tst.opAnd(lSet, rClr).isEqZero()) {
             if (VN_IS(nodep, Eq)) {
                 replaceZero(nodep);
             } else {  // Neq
@@ -654,19 +669,6 @@ private:
             }
             return true;
         }
-
-        // Compare bits set in LHS with bits clear in RHS
-        setBits(lb, nodep->lhsp());
-        clrBits(rb, nodep->rhsp());
-        if (!tst.opAnd(lb, rb).isEqZero()) {
-            if (VN_IS(nodep, Eq)) {
-                replaceZero(nodep);
-            } else {  // Neq
-                replaceNum(nodep, 1);
-            }
-            return true;
-        }
-
         return false;
     }
 
