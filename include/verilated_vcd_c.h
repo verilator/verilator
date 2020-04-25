@@ -149,7 +149,7 @@ public:
     /// Close the file
     void close() VL_MT_UNSAFE_ONE;
     /// Flush any remaining data to this file
-    void flush() VL_MT_UNSAFE_ONE { bufferFlush(); }
+    void flush() VL_MT_UNSAFE_ONE;
     /// Is file open?
     bool isOpen() const { return m_isOpen; }
 
