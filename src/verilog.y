@@ -1623,7 +1623,7 @@ data_typeNoRef<dtypep>:		// ==IEEE: data_type, excluding class_type etc referenc
 										       SYMP,VFlagChildDType(),$1); }
 	|	ySTRING					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::STRING); }
 	|	yCHANDLE				{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::CHANDLE); }
-	|	yEVENT					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::BIT); BBUNSUP($1, "Unsupported: event data types"); }
+	|	yEVENT					{ $$ = new AstBasicDType($1,AstBasicDTypeKwd::EVENTVALUE); }
 	//			// Rules overlap virtual_interface_declaration
 	//			// Parameters here are SV2009
 	//			// IEEE has ['.' modport] but that will conflict with port
@@ -2813,8 +2813,15 @@ statement_item<nodep>:		// IEEE: statement_item
 	|	yDISABLE idAny/*hierarchical_identifier-task_or_block*/ ';'	{ $$ = new AstDisable($1,*$2); }
 	|	yDISABLE yFORK ';'			{ $$ = NULL; BBUNSUP($1, "Unsupported: disable fork statements"); }
 	//			// IEEE: event_trigger
-	//UNSUP	yP_MINUSGT hierarchical_identifier/*event*/ ';'	{ UNSUP }
+	|	yP_MINUSGT idDotted/*hierarchical_identifier-event*/ ';'
+			{ // AssignDly because we don't have stratified queue, and need to
+			  // read events, clear next event, THEN apply this set
+			  $$ = new AstAssignDly($1, $2, new AstConst($1, AstConst::LogicTrue())); }
 	//UNSUP	yP_MINUSGTGT delay_or_event_controlE hierarchical_identifier/*event*/ ';'	{ UNSUP }
+	//			// IEEE remove below
+	|	yP_MINUSGTGT delayE idDotted/*hierarchical_identifier-event*/ ';'
+			{ $$ = new AstAssignDly($1, $3, new AstConst($1, AstConst::LogicTrue())); }
+	//
 	//			// IEEE: loop_statement
 	|	yFOREVER stmtBlock			{ $$ = new AstWhile($1,new AstConst($1,AstConst::LogicTrue()),$2); }
 	|	yREPEAT '(' expr ')' stmtBlock		{ $$ = new AstRepeat($1,$3,$5);}

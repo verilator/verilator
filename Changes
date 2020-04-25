@@ -26,6 +26,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Support $ferror, and $fflush without arguments, #1638.
 
+****  Support event data type (with some restrictions).
+
 ****  Add error if use SystemC 2.2 and earlier (pre-2011) as is deprecated.
 
 ****  Greatly improve FST/VCD dump performance, #2244, #2246, #2250, #2257. [Geza Lore]

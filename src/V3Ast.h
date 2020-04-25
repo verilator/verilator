@@ -372,6 +372,7 @@ public:
         BIT,
         BYTE,
         CHANDLE,
+        EVENTVALUE,  // See comments in t_event_copy as to why this is EVENTVALUE
         INT,
         INTEGER,
         LOGIC,
@@ -396,14 +397,16 @@ public:
     enum en m_e;
     const char* ascii() const {
         static const char* const names[] = {
-            "%E-unk",  "bit",   "byte",     "chandle",        "int",  "integer", "logic",
+            "%E-unk",  //
+            "bit",     "byte",  "chandle",  "event",          "int",  "integer", "logic",
             "longint", "real",  "shortint", "shortreal",      "time", "string",  "VerilatedScope*",
             "char*",   "IData", "QData",    "LOGIC_IMPLICIT", " MAX"};
         return names[m_e];
     }
     const char* dpiType() const {
         static const char* const names[]
-            = {"%E-unk",      "svBit",     "char",        "void*", "int",   "%E-integer",
+            = {"%E-unk",  //
+               "svBit",       "char",      "void*",       "char",  "int",   "%E-integer",
                "svLogic",     "long long", "double",      "short", "float", "%E-time",
                "const char*", "dpiScope",  "const char*", "IData", "QData", "%E-logic-implicit",
                " MAX"};
@@ -428,6 +431,7 @@ public:
         case BIT: return 1;  // scalar, can't bit extract unless ranged
         case BYTE: return 8;
         case CHANDLE: return 64;
+        case EVENTVALUE: return 1;
         case INT: return 32;
         case INTEGER: return 32;
         case LOGIC: return 1;  // scalar, can't bit extract unless ranged
@@ -449,15 +453,16 @@ public:
                || m_e == DOUBLE || m_e == FLOAT;
     }
     bool isUnsigned() const {
-        return m_e == CHANDLE || m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR
-               || m_e == UINT32 || m_e == UINT64;
+        return m_e == CHANDLE || m_e == EVENTVALUE || m_e == STRING || m_e == SCOPEPTR
+               || m_e == CHARPTR || m_e == UINT32 || m_e == UINT64;
     }
     bool isFourstate() const {
         return m_e == INTEGER || m_e == LOGIC || m_e == LOGIC_IMPLICIT || m_e == TIME;
     }
     bool isZeroInit() const {  // Otherwise initializes to X
-        return (m_e == BIT || m_e == BYTE || m_e == CHANDLE || m_e == INT || m_e == LONGINT
-                || m_e == SHORTINT || m_e == STRING || m_e == DOUBLE || m_e == FLOAT);
+        return (m_e == BIT || m_e == BYTE || m_e == CHANDLE || m_e == EVENTVALUE || m_e == INT
+                || m_e == LONGINT || m_e == SHORTINT || m_e == STRING || m_e == DOUBLE
+                || m_e == FLOAT);
     }
     bool isIntNumeric() const {  // Enum increment supported
         return (m_e == BIT || m_e == BYTE || m_e == INT || m_e == INTEGER || m_e == LOGIC
@@ -481,6 +486,7 @@ public:
                 || m_e == FLOAT);
     }
     bool isDouble() const { return m_e == DOUBLE; }
+    bool isEventValue() const { return m_e == EVENTVALUE; }
     bool isString() const { return m_e == STRING; }
 };
 inline bool operator==(const AstBasicDTypeKwd& lhs, const AstBasicDTypeKwd& rhs) {

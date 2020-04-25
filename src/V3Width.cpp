@@ -2025,6 +2025,8 @@ private:
             methodCallClass(nodep, adtypep);
         } else if (AstUnpackArrayDType* adtypep = VN_CAST(fromDtp, UnpackArrayDType)) {
             methodCallUnpack(nodep, adtypep);
+        } else if (basicp && basicp->isEventValue()) {
+            methodCallEvent(nodep, basicp);
         } else if (basicp && basicp->isString()) {
             methodCallString(nodep, basicp);
         } else {
@@ -2429,6 +2431,18 @@ private:
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else {
             nodep->v3error("Unknown built-in array method " << nodep->prettyNameQ());
+        }
+    }
+    void methodCallEvent(AstMethodCall* nodep, AstBasicDType* adtypep) {
+        // Method call on event
+        if (nodep->name() == "triggered") {
+            // We represent events as numbers, so can just return number
+            methodOkArguments(nodep, 0, 0);
+            AstNode* newp = nodep->fromp()->unlinkFrBack();
+            nodep->replaceWith(newp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        } else {
+            nodep->v3error("Unknown built-in event method " << nodep->prettyNameQ());
         }
     }
     void methodCallString(AstMethodCall* nodep, AstBasicDType* adtypep) {
@@ -3035,6 +3049,12 @@ private:
                 = nodep->lhsp()->dtypep();  // Note we use rhsp for context determined
             iterateCheckAssign(nodep, "Assign RHS", nodep->rhsp(), FINAL, lhsDTypep);
             // if (debug()) nodep->dumpTree(cout, "  AssignOut: ");
+        }
+        if (AstBasicDType* basicp = nodep->rhsp()->dtypep()->basicp()) {
+            if (basicp->isEventValue()) {
+                // see t_event_copy.v for commentary on the mess involved
+                nodep->v3error("Unsupported: assignment of event data type");
+            }
         }
         if (AstNewDynamic* dynp = VN_CAST(nodep->rhsp(), NewDynamic)) {
             UINFO(9, "= new[] -> .resize(): " << nodep);

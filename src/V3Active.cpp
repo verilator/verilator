@@ -388,6 +388,16 @@ private:
         iterateChildren(nodep);
     }
     virtual void visit(AstSenItem* nodep) VL_OVERRIDE {
+        if (nodep->varrefp()) {
+            if (AstBasicDType* basicp = nodep->varrefp()->dtypep()->basicp()) {
+                if (basicp->isEventValue()) {
+                    // Events need to be treated as active high so we only activate on event being
+                    // 1
+                    UINFO(8, "Demote event to HIGHEDGE " << nodep << endl);
+                    nodep->edgeType(VEdgeType::ET_HIGHEDGE);
+                }
+            }
+        }
         if (nodep->edgeType() == VEdgeType::ET_ANYEDGE) {
             m_itemCombo = true;
             // Delete the sensitivity

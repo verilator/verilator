@@ -385,6 +385,8 @@ private:
                 nodep->v3warn(BLKLOOPINIT, "Unsupported: Delayed assignment to array inside for "
                                            "loops (non-delayed is ok - see docs)");
             }
+            AstBasicDType* basicp = lhsp->dtypep()->basicp();
+            if (basicp && basicp->isEventValue()) nodep->v3error("Unsupported: event arrays");
             if (newlhsp) {
                 nodep->lhsp(newlhsp);
             } else {
@@ -418,9 +420,18 @@ private:
                 if (!dlyvscp) {  // First use of this delayed variable
                     string newvarname = (string("__Vdly__") + nodep->varp()->shortName());
                     dlyvscp = createVarSc(oldvscp, newvarname, 0, NULL);
-                    AstNodeAssign* prep = new AstAssignPre(
-                        nodep->fileline(), new AstVarRef(nodep->fileline(), dlyvscp, true),
-                        new AstVarRef(nodep->fileline(), oldvscp, false));
+                    AstNodeAssign* prep;
+                    AstBasicDType* basicp = oldvscp->dtypep()->basicp();
+                    if (basicp && basicp->isEventValue()) {
+                        // Events go to zero on next timestep unless reactivated
+                        prep = new AstAssignPre(
+                            nodep->fileline(), new AstVarRef(nodep->fileline(), dlyvscp, true),
+                            new AstConst(nodep->fileline(), AstConst::LogicFalse()));
+                    } else {
+                        prep = new AstAssignPre(nodep->fileline(),
+                                                new AstVarRef(nodep->fileline(), dlyvscp, true),
+                                                new AstVarRef(nodep->fileline(), oldvscp, false));
+                    }
                     AstNodeAssign* postp = new AstAssignPost(
                         nodep->fileline(), new AstVarRef(nodep->fileline(), oldvscp, true),
                         new AstVarRef(nodep->fileline(), dlyvscp, false));

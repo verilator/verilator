@@ -840,6 +840,7 @@ public:
     }
     bool isBitLogic() const { return keyword().isBitLogic(); }
     bool isDouble() const { return keyword().isDouble(); }
+    bool isEventValue() const { return keyword().isEventValue(); }
     bool isOpaque() const { return keyword().isOpaque(); }
     bool isString() const { return keyword().isString(); }
     bool isSloppy() const { return keyword().isSloppy(); }
