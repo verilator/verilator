@@ -50,6 +50,7 @@ public:
     AstVarType	m_varDecl;	// Type for next signal declaration (reg/wire/etc)
     bool        m_varDeclTyped; // Var got reg/wire for dedup check
     VDirection  m_varIO;        // Direction for next signal declaration (reg/wire/etc)
+    VLifetime   m_varLifetime;  // Static/Automatic for next signal
     AstVar*	m_varAttrp;	// Current variable for attribute adding
     AstRange*	m_gateRangep;	// Current range for gate declarations
     AstCase*	m_caseAttrp;	// Current case statement for attribute adding
@@ -194,9 +195,11 @@ int V3ParseGrammar::s_modTypeImpNum = 0;
 #define VARRESET_NONLIST(decl) { GRAMMARP->m_pinNum=0; GRAMMARP->m_pinAnsi=false; \
                                  VARRESET(); VARDECL(decl); }  // Not in a pinlist
 #define VARRESET() { VARDECL(UNKNOWN); VARIO(NONE); VARDTYPE_NDECL(NULL); \
+                     GRAMMARP->m_varLifetime = VLifetime::NONE; \
                      GRAMMARP->m_varDeclTyped = false; }
 #define VARDECL(type) { GRAMMARP->setVarDecl(AstVarType::type); }
 #define VARIO(type) { GRAMMARP->m_varIO = VDirection::type; }
+#define VARLIFE(flag) { GRAMMARP->m_varLifetime = flag; }
 #define VARDTYPE(dtypep) { GRAMMARP->setDType(dtypep); GRAMMARP->m_varDeclTyped = true; }
 #define VARDTYPE_NDECL(dtypep) { GRAMMARP->setDType(dtypep); }  // Port that is range or signed only (not a decl)
 
@@ -794,6 +797,8 @@ class AstSenTree;
 //  Blank lines for type insertion
 //  Blank lines for type insertion
 //  Blank lines for type insertion
+//  Blank lines for type insertion
+//  Blank lines for type insertion
 
 %start source_text
 
@@ -852,6 +857,7 @@ packageFront<modulep>:
 		yPACKAGE lifetimeE idAny ';'
 			{ $$ = new AstPackage($<fl>3, *$3);
 			  $$->inLibrary(true);  // packages are always libraries; don't want to make them a "top"
+			  $$->lifetime($2);
 			  $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
 			  $$->timeunit(PARSEP->timeLastUnit());
 			  PARSEP->rootp()->addModulep($$);
@@ -967,6 +973,7 @@ modFront<modulep>:
 	//			// any formal arguments, as the arguments must land in the new scope.
 		yMODULE lifetimeE idAny
 			{ $$ = new AstModule($<fl>3,*$3);
+			  $$->lifetime($2);
 			  $$->inLibrary(PARSEP->inLibrary() || PARSEP->inCellDefine());
 			  $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
 			  $$->timeunit(PARSEP->timeLastUnit());
@@ -985,6 +992,7 @@ importsAndParametersE<nodep>:	// IEEE: common part of module_declaration, interf
 udpFront<modulep>:
 		yPRIMITIVE lifetimeE idAny
 			{ $$ = new AstPrimitive($<fl>3, *$3); $$->inLibrary(true);
+			  $$->lifetime($2);
 			  $$->modTrace(false);
 			  $$->addStmtp(new AstPragma($<fl>3, AstPragmaType::INLINE_MODULE));
 			  GRAMMARP->m_tracingParse = false;
@@ -1167,6 +1175,7 @@ intFront<modulep>:
 		yINTERFACE lifetimeE idAny/*new_interface*/
 			{ $$ = new AstIface($<fl>3, *$3);
 			  $$->inLibrary(true);
+			  $$->lifetime($2);
 			  PARSEP->rootp()->addModulep($$);
 			  SYMP->pushNew($$); }
 	;
@@ -1253,6 +1262,7 @@ program_declaration:		// IEEE: program_declaration + program_nonansi_header + pr
 pgmFront<modulep>:
 		yPROGRAM lifetimeE idAny/*new_program*/
 			{ $$ = new AstModule($<fl>3,*$3);
+			  $$->lifetime($2);
 			  $$->inLibrary(PARSEP->inLibrary() || PARSEP->inCellDefine());
 			  $$->modTrace(GRAMMARP->allTracingOn($$->fileline()));
 			  $$->timeunit(PARSEP->timeLastUnit());
@@ -1885,19 +1895,33 @@ data_declarationVarFront:	// IEEE: part of data_declaration
 	//
 	//			// Expanded: "constE yVAR lifetimeE data_type"
 	//			// implicit_type expanded into /*empty*/ or "signingE rangeList"
-		/**/ 	    yVAR lifetimeE data_type	{ VARRESET_NONLIST(VAR); VARDTYPE($3); }
-	|	/**/ 	    yVAR lifetimeE		{ VARRESET_NONLIST(VAR); VARDTYPE(new AstBasicDType($<fl>1, LOGIC_IMPLICIT)); }
-	|	/**/ 	    yVAR lifetimeE signingE rangeList { /*VARRESET-in-ddVar*/ VARDTYPE(GRAMMARP->addRange(new AstBasicDType($<fl>1, LOGIC_IMPLICIT, $3), $4,true)); }
+		/**/ 	    yVAR lifetimeE data_type
+			{ VARRESET_NONLIST(VAR); VARLIFE($2); VARDTYPE($3); }
+	|	/**/ 	    yVAR lifetimeE
+			{ VARRESET_NONLIST(VAR); VARLIFE($2);
+			  VARDTYPE(new AstBasicDType($<fl>1, LOGIC_IMPLICIT)); }
+	|	/**/ 	    yVAR lifetimeE signingE rangeList
+			{ /*VARRESET-in-ddVar*/ VARLIFE($2);
+    			  VARDTYPE(GRAMMARP->addRange(new AstBasicDType($<fl>1, LOGIC_IMPLICIT, $3), $4,true)); }
 	//
 	//			// implicit_type expanded into /*empty*/ or "signingE rangeList"
-	|	yCONST__ETC yVAR lifetimeE data_type	{ VARRESET_NONLIST(VAR); VARDTYPE(new AstConstDType($<fl>2, VFlagChildDType(), $4)); }
-	|	yCONST__ETC yVAR lifetimeE		{ VARRESET_NONLIST(VAR); VARDTYPE(new AstConstDType($<fl>2, VFlagChildDType(), new AstBasicDType($<fl>2, LOGIC_IMPLICIT))); }
-	|	yCONST__ETC yVAR lifetimeE signingE rangeList { VARRESET_NONLIST(VAR); VARDTYPE(new AstConstDType($<fl>2, VFlagChildDType(), GRAMMARP->addRange(new AstBasicDType($<fl>2, LOGIC_IMPLICIT, $4), $5,true))); }
+	|	yCONST__ETC yVAR lifetimeE data_type
+			{ VARRESET_NONLIST(VAR); VARLIFE($3);
+			  VARDTYPE(new AstConstDType($<fl>2, VFlagChildDType(), $4)); }
+	|	yCONST__ETC yVAR lifetimeE
+			{ VARRESET_NONLIST(VAR); VARLIFE($3);
+			  VARDTYPE(new AstConstDType($<fl>2, VFlagChildDType(), new AstBasicDType($<fl>2, LOGIC_IMPLICIT))); }
+	|	yCONST__ETC yVAR lifetimeE signingE rangeList
+			{ VARRESET_NONLIST(VAR); VARLIFE($3);
+			 VARDTYPE(new AstConstDType($<fl>2, VFlagChildDType(),
+				  GRAMMARP->addRange(new AstBasicDType($<fl>2, LOGIC_IMPLICIT, $4), $5,true))); }
 	//
 	//			// Expanded: "constE lifetimeE data_type"
 	|	/**/		      data_type		{ VARRESET_NONLIST(VAR); VARDTYPE($1); }
-	|	/**/	    lifetime  data_type		{ VARRESET_NONLIST(VAR); VARDTYPE($2); }
-	|	yCONST__ETC lifetimeE data_type		{ VARRESET_NONLIST(VAR); VARDTYPE(new AstConstDType($<fl>1, VFlagChildDType(), $3)); }
+	|	/**/	    lifetime  data_type		{ VARRESET_NONLIST(VAR); VARLIFE($1); VARDTYPE($2); }
+	|	yCONST__ETC lifetimeE data_type
+			{ VARRESET_NONLIST(VAR); VARLIFE($2);
+			  VARDTYPE(new AstConstDType($<fl>1, VFlagChildDType(), $3)); }
 	//			// = class_new is in variable_decl_assignment
 	;
 
@@ -1905,9 +1929,11 @@ data_declarationVarFrontClass:	// IEEE: part of data_declaration (for class_prop
 	//			// VARRESET called before this rule
 	//			// yCONST is removed, added to memberQual rules
 	//			// implicit_type expanded into /*empty*/ or "signingE rangeList"
-		yVAR lifetimeE data_type	{ VARRESET_NONLIST(VAR); VARDTYPE($3); }
-	|	yVAR lifetimeE			{ VARRESET_NONLIST(VAR); }
-	|	yVAR lifetimeE signingE rangeList { /*VARRESET-in-ddVar*/ VARDTYPE(GRAMMARP->addRange(new AstBasicDType($<fl>1, LOGIC_IMPLICIT, $3), $4,true)); }
+		yVAR lifetimeE data_type	{ VARRESET_NONLIST(VAR); VARLIFE($2); VARDTYPE($3); }
+	|	yVAR lifetimeE			{ VARRESET_NONLIST(VAR); VARLIFE($2); }
+	|	yVAR lifetimeE signingE rangeList
+			{ /*VARRESET-in-ddVar*/ VARDTYPE(GRAMMARP->addRange(new AstBasicDType($<fl>1, LOGIC_IMPLICIT, $3), $4,true));
+			VARLIFE($2); }
 	//
 	//			// Expanded: "constE lifetimeE data_type"
 	|	data_type			{ VARRESET_NONLIST(VAR); VARDTYPE($1); }
@@ -3484,6 +3510,7 @@ list_of_argumentsE<nodep>:	// IEEE: [list_of_arguments]
 task_declaration<ftaskp>:	// ==IEEE: task_declaration
 		yTASK lifetimeE taskId tfGuts yENDTASK endLabelE
 			{ $$ = $3; $$->addStmtsp($4); SYMP->popScope($$);
+			  $$->lifetime($2);
 			  GRAMMARP->endLabel($<fl>6,$$,$6); }
 	;
 
@@ -3495,10 +3522,12 @@ task_prototype<ftaskp>:		// ==IEEE: task_prototype
 function_declaration<ftaskp>:	// IEEE: function_declaration + function_body_declaration
 	 	yFUNCTION lifetimeE funcId funcIsolateE tfGuts yENDFUNCTION endLabelE
 			{ $$ = $3; $3->attrIsolateAssign($4); $$->addStmtsp($5);
+			  $$->lifetime($2);
 			  SYMP->popScope($$);
 			  GRAMMARP->endLabel($<fl>7,$$,$7); }
 	| 	yFUNCTION lifetimeE funcIdNew funcIsolateE tfGuts yENDFUNCTION endLabelE
 			{ $$ = $3; $3->attrIsolateAssign($4); $$->addStmtsp($5);
+			  $$->lifetime($2);
 			  SYMP->popScope($$);
 			  GRAMMARP->endLabel($<fl>7,$$,$7); }
 	;
@@ -3523,15 +3552,15 @@ method_prototype:
 	|	function_prototype			{ }
 	;
 
-lifetimeE:			// IEEE: [lifetime]
-		/* empty */		 		{ }
-	|	lifetime		 		{ }
+lifetimeE<lifetime>:		// IEEE: [lifetime]
+		/* empty */		 		{ $$ = VLifetime::NONE; }
+	|	lifetime		 		{ $$ = $1; }
 	;
 
-lifetime:			// ==IEEE: lifetime
+lifetime<lifetime>:		// ==IEEE: lifetime
 	//			// Note lifetime used by members is instead under memberQual
-		ySTATIC__ETC		 		{ BBUNSUP($1, "Unsupported: Static in this context"); }
-	|	yAUTOMATIC		 		{ }
+		ySTATIC__ETC		 		{ $$ = VLifetime::STATIC; BBUNSUP($1, "Unsupported: Static in this context"); }
+	|	yAUTOMATIC		 		{ $$ = VLifetime::AUTOMATIC; }
 	;
 
 taskId<ftaskp>:
@@ -5481,10 +5510,12 @@ class_declaration<nodep>:	// ==IEEE: part of class_declaration
 classFront<classp>:		// IEEE: part of class_declaration
 		classVirtualE yCLASS lifetimeE idAny/*class_identifier*/
 			{ $$ = new AstClass($2, *$4);
+			  $$->lifetime($3);
 			  SYMP->pushNew($<classp>$); }
 	//			// IEEE: part of interface_class_declaration
 	|	yINTERFACE yCLASS lifetimeE idAny/*class_identifier*/
 			{ $$ = new AstClass($2, *$4);
+			  $$->lifetime($3);
 			  SYMP->pushNew($<classp>$);
 			  BBUNSUP($2, "Unsupported: interface classes");  }
 	;

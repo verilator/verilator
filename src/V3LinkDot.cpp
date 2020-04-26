@@ -1006,6 +1006,7 @@ class LinkDotFindVisitor : public AstNVisitor {
                 AstVar* newvarp = new AstVar(nodep->fileline(), AstVarType::VAR, nodep->name(),
                                              VFlagChildDType(), dtypep);  // Not dtype resolved yet
                 newvarp->direction(VDirection::OUTPUT);
+                newvarp->lifetime(VLifetime::AUTOMATIC);
                 newvarp->funcReturn(true);
                 newvarp->trace(false);  // Not user visible
                 newvarp->attrIsolateAssign(nodep->attrIsolateAssign());

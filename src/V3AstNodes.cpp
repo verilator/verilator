@@ -1437,6 +1437,7 @@ void AstVar::dump(std::ostream& str) const {
     }
     if (isDpiOpenArray()) str << " [DPIOPENA]";
     if (!attrClocker().unknown()) str << " [" << attrClocker().ascii() << "] ";
+    if (!lifetime().isNone()) str << " [" << lifetime().ascii() << "] ";
     str << " " << varType();
 }
 void AstSenTree::dump(std::ostream& str) const {

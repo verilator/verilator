@@ -53,6 +53,7 @@ private:
     AstClass* m_classp;  // Class we're inside
     AstNodeFTask* m_ftaskp;  // Function or task we're inside
     AstNodeCoverOrAssert* m_assertp;  // Current assertion
+    VLifetime m_lifetime;  // Propagating lifetime
     int m_senitemCvtNum;  // Temporary signal counter
 
     // METHODS
@@ -67,14 +68,30 @@ private:
         UINFO(8, "MODULE " << nodep << endl);
         if (nodep->dead()) return;
         AstNodeModule* origModp = m_modp;
+        VLifetime origLifetime = m_lifetime;
         int origSenitemCvtNum = m_senitemCvtNum;
         {
             m_modp = nodep;
             m_senitemCvtNum = 0;
+            m_lifetime = nodep->lifetime();
+            if (m_lifetime.isNone()) m_lifetime = VLifetime::STATIC;
             iterateChildren(nodep);
         }
         m_modp = origModp;
         m_senitemCvtNum = origSenitemCvtNum;
+        m_lifetime = origLifetime;
+    }
+    virtual void visit(AstClass* nodep) VL_OVERRIDE {
+        AstClass* origClassp = m_classp;
+        VLifetime origLifetime = m_lifetime;
+        {
+            m_classp = nodep;
+            m_lifetime = nodep->lifetime();
+            if (m_lifetime.isNone()) m_lifetime = VLifetime::AUTOMATIC;
+            iterateChildren(nodep);
+        }
+        m_classp = origClassp;
+        m_lifetime = origLifetime;
     }
     virtual void visit(AstInitial* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
@@ -90,19 +107,12 @@ private:
         iterateChildren(nodep);
         m_assertp = NULL;
     }
-    virtual void visit(AstClass* nodep) VL_OVERRIDE {
-        AstClass* origClassp = m_classp;
-        {
-            m_classp = nodep;
-            iterateChildren(nodep);
-        }
-        m_classp = origClassp;
-    }
     virtual void visit(AstVar* nodep) VL_OVERRIDE {
         iterateChildren(nodep);
         if (m_classp && !nodep->isParam()) nodep->varType(AstVarType::MEMBER);
         if (m_classp && nodep->isParam()) nodep->v3error("Unsupported: class parameter");
         if (m_ftaskp) nodep->funcLocal(true);
+        if (nodep->lifetime().isNone()) nodep->lifetime(m_lifetime);
         if (nodep->isSigModPublic()) {
             nodep->sigModPublic(false);  // We're done with this attribute
             m_modp->modPublic(true);  // Avoid flattening if signals are exposed
@@ -119,9 +129,15 @@ private:
         // NodeTask: Remember its name for later resolution
         // Remember the existing symbol table scope
         if (m_classp) nodep->classMethod(true);
-        m_ftaskp = nodep;
-        iterateChildren(nodep);
+        VLifetime origLifetime = m_lifetime;
+        {
+            if (!nodep->lifetime().isNone()) m_lifetime = nodep->lifetime();
+            if (m_lifetime.isNone()) m_lifetime = VLifetime::AUTOMATIC;
+            m_ftaskp = nodep;
+            iterateChildren(nodep);
+        }
         m_ftaskp = NULL;
+        m_lifetime = origLifetime;
         if (nodep->dpiExport()) { nodep->scopeNamep(new AstScopeName(nodep->fileline())); }
     }
     virtual void visit(AstNodeFTaskRef* nodep) VL_OVERRIDE {
@@ -472,13 +488,13 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit LinkResolveVisitor(AstNetlist* rootp) {
+    explicit LinkResolveVisitor(AstNetlist* rootp)
+        : m_lifetime(VLifetime::STATIC) {  // Static outside a module/class
         m_classp = NULL;
         m_ftaskp = NULL;
         m_modp = NULL;
         m_assertp = NULL;
         m_senitemCvtNum = 0;
-        //
         iterate(rootp);
     }
     virtual ~LinkResolveVisitor() {}

@@ -1780,7 +1780,7 @@ private:
     bool m_attrSplitVar : 1;  // declared with split_var metacomment
     bool m_fileDescr : 1;  // File descriptor
     bool m_isConst : 1;  // Table contains constant data
-    bool m_isStatic : 1;  // Static variable
+    bool m_isStatic : 1;  // Static C variable (for Verilog see instead isAutomatic)
     bool m_isPulldown : 1;  // Tri0
     bool m_isPullup : 1;  // Tri1
     bool m_isIfaceParent : 1;  // dtype is reference to interface present in this module
@@ -1788,6 +1788,7 @@ private:
     bool m_noReset : 1;  // Do not do automated reset/randomization
     bool m_noSubst : 1;  // Do not substitute out references
     bool m_trace : 1;  // Trace this variable
+    VLifetime m_lifetime;  // Lifetime
     VVarAttrClocker m_attrClocker;
     MTaskIdSet m_mtaskIds;  // MTaskID's that read or write this var
 
@@ -2037,6 +2038,8 @@ public:
     bool attrIsolateAssign() const { return m_attrIsolateAssign; }
     VVarAttrClocker attrClocker() const { return m_attrClocker; }
     virtual string verilogKwd() const;
+    void lifetime(const VLifetime& flag) { m_lifetime = flag; }
+    VLifetime lifetime() const { return m_lifetime; }
     void propagateAttrFrom(AstVar* fromp) {
         // This is getting connected to fromp; keep attributes
         // Note the method below too

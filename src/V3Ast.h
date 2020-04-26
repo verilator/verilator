@@ -94,6 +94,32 @@ inline std::ostream& operator<<(std::ostream& os, const AstType& rhs) { return o
 
 //######################################################################
 
+class VLifetime {
+public:
+    enum en { NONE, AUTOMATIC, STATIC };
+    enum en m_e;
+    const char* ascii() const {
+        static const char* const names[] = {"NONE", "VAUTOM", "VSTATIC"};
+        return names[m_e];
+    }
+    inline VLifetime()
+        : m_e(NONE) {}
+    // cppcheck-suppress noExplicitConstructor
+    inline VLifetime(en _e)
+        : m_e(_e) {}
+    explicit inline VLifetime(int _e)
+        : m_e(static_cast<en>(_e)) {}
+    operator en() const { return m_e; }
+    bool isNone() const { return m_e == NONE; }
+    bool isAutomatic() const { return m_e == AUTOMATIC; }
+    bool isStatic() const { return m_e == STATIC; }
+};
+inline bool operator==(const VLifetime& lhs, const VLifetime& rhs) { return lhs.m_e == rhs.m_e; }
+inline bool operator==(const VLifetime& lhs, VLifetime::en rhs) { return lhs.m_e == rhs; }
+inline bool operator==(VLifetime::en lhs, const VLifetime& rhs) { return lhs == rhs.m_e; }
+
+//######################################################################
+
 class VSigning {
 public:
     enum en {
@@ -2575,6 +2601,7 @@ private:
     bool m_dpiTask : 1;  // DPI import task (vs. void function)
     bool m_isConstructor : 1;  // Class constructor
     bool m_pure : 1;  // DPI import pure (vs. virtual pure)
+    VLifetime m_lifetime;  // Lifetime
 public:
     AstNodeFTask(AstType t, FileLine* fl, const string& name, AstNode* stmtsp)
         : AstNode(t, fl)
@@ -2639,6 +2666,8 @@ public:
     bool isConstructor() const { return m_isConstructor; }
     void pure(bool flag) { m_pure = flag; }
     bool pure() const { return m_pure; }
+    void lifetime(const VLifetime& flag) { m_lifetime = flag; }
+    VLifetime lifetime() const { return m_lifetime; }
 };
 
 class AstNodeFTaskRef : public AstNodeStmt {
@@ -2715,6 +2744,7 @@ private:
     int m_level;  // 1=top module, 2=cell off top module, ...
     int m_varNum;  // Incrementing variable number
     int m_typeNum;  // Incrementing implicit type number
+    VLifetime m_lifetime;  // Lifetime
     VTimescale m_timeunit;  // Global time unit
     VOptionBool m_unconnectedDrive;  // State of `unconnected_drive
 public:
@@ -2766,6 +2796,8 @@ public:
     bool recursive() const { return m_recursive; }
     void recursiveClone(bool flag) { m_recursiveClone = flag; }
     bool recursiveClone() const { return m_recursiveClone; }
+    void lifetime(const VLifetime& flag) { m_lifetime = flag; }
+    VLifetime lifetime() const { return m_lifetime; }
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
     VTimescale timeunit() const { return m_timeunit; }
     void unconnectedDrive(const VOptionBool flag) { m_unconnectedDrive = flag; }

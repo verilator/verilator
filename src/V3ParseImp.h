@@ -59,6 +59,7 @@ struct V3ParseBisonYYSType {
         VSigning::en signstate;
         V3ErrorCode::en errcodeen;
         AstAttrType::en attrtypeen;
+        VLifetime::en lifetime;
 
         AstNode* nodep;
 
