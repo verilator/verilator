@@ -36,6 +36,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix arrayed instances connecting to slices, #2263. [Don/engr248]
 
+****  Fix error on unpacked connecting to packed, #2288. [Joseph Shaker]
+
 
 * Verilator 4.032 2020-04-04
 

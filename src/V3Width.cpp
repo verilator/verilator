@@ -3519,13 +3519,13 @@ private:
                                    << exprSize << ".");
                     UINFO(1, "    Related lo: " << modDTypep->skipRefp() << endl);
                     UINFO(1, "    Related hi: " << exprDTypep->skipRefp() << endl);
-                } else if ((exprArrayp && !modArrayp && pinwidth != conwidth)
-                           || (!exprArrayp && modArrayp && pinwidth != conwidth)) {
+                } else if ((exprArrayp && !modArrayp) || (!exprArrayp && modArrayp)) {
                     nodep->v3error("Illegal " << nodep->prettyOperatorName() << ","
                                               << " mismatch between port which is"
                                               << (modArrayp ? "" : " not") << " an array,"
                                               << " and expression which is"
-                                              << (exprArrayp ? "" : " not") << " an array.");
+                                              << (exprArrayp ? "" : " not")
+                                              << " an array. (IEEE 1800-2017 7.6)");
                     UINFO(1, "    Related lo: " << modDTypep->skipRefp() << endl);
                     UINFO(1, "    Related hi: " << exprDTypep->skipRefp() << endl);
                 }
