@@ -2403,9 +2403,9 @@ public:
     virtual void dump(std::ostream& str) const;
     // For basicp() we reuse the size to indicate a "fake" basic type of same size
     virtual AstBasicDType* basicp() const {
-        return (isFourstate() ? VN_CAST(findLogicRangeDType(VNumRange(width() - 1, 0, false),
-                                                            width(), numeric()),
-                                        BasicDType)
+        return (isFourstate() ? VN_CAST(
+                    findLogicRangeDType(VNumRange(width() - 1, 0, false), width(), numeric()),
+                    BasicDType)
                               : VN_CAST(findBitRangeDType(VNumRange(width() - 1, 0, false),
                                                           width(), numeric()),
                                         BasicDType));

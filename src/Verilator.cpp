@@ -502,9 +502,8 @@ static void verilate(const string& argString) {
     // Can we skip doing everything if times are ok?
     V3File::addSrcDepend(v3Global.opt.bin());
     if (v3Global.opt.skipIdentical().isTrue()
-        && V3File::checkTimes(v3Global.opt.makeDir() + "/" + v3Global.opt.prefix()
-                                  + "__verFiles.dat",
-                              argString)) {
+        && V3File::checkTimes(
+            v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + "__verFiles.dat", argString)) {
         UINFO(1, "--skip-identical: No change to any source files, exiting\n");
         return;
     }

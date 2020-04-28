@@ -90,18 +90,17 @@ To build or run the following are optional but should be installed for
 good performance:
 
    sudo apt-get install ccache  # If present at build, needed for run
-   sudo apt-get install libgoogle-perftools-dev
+   sudo apt-get install libgoogle-perftools-dev numactl
 
 To build Verilator you will need to install these packages; these do not
 need to be present to run Verilator:
 
    sudo apt-get install git
-   sudo apt-get install autoconf
-   sudo apt-get install flex bison
+   sudo apt-get install autoconf flex bison
 
 Those developing Verilator itself may also want these (see internals.adoc):
 
-   sudo apt-get install gdb asciidoctor graphviz cmake
+   sudo apt-get install gdb asciidoctor graphviz cmake clang-format
    cpan install Pod::Perldoc
    cpan install Unix::Processors
    cpan install Parallel::Forker

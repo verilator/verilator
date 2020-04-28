@@ -4689,9 +4689,9 @@ private:
                 // We convert to/from vlsint32 rather than use floor() as want to make sure is
                 // representable in integer's number of bits
                 if (constp->isDouble()
-                    && v3EpsilonEqual(constp->num().toDouble(),
-                                      static_cast<double>(
-                                          static_cast<vlsint32_t>(constp->num().toDouble())))) {
+                    && v3EpsilonEqual(
+                        constp->num().toDouble(),
+                        static_cast<double>(static_cast<vlsint32_t>(constp->num().toDouble())))) {
                     warnOn = false;
                 }
             }
