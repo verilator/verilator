@@ -124,12 +124,14 @@ protected:
 
     // Implementations of duck-typed methods for VerilatedTrace. These are
     // called from only one place (namely full*) so always inline them.
-    inline void emitBit(vluint32_t code, vluint32_t newval);
-    inline void emitBus(vluint32_t code, vluint32_t newval, int bits);
-    inline void emitQuad(vluint32_t code, vluint64_t newval, int bits);
-    inline void emitArray(vluint32_t code, const vluint32_t* newvalp, int bits);
-    inline void emitFloat(vluint32_t code, float newval);
-    inline void emitDouble(vluint32_t code, double newval);
+    inline void emitB(vluint32_t code, CData newval);
+    inline void emitC(vluint32_t code, CData newval, int bits);
+    inline void emitS(vluint32_t code, SData newval, int bits);
+    inline void emitI(vluint32_t code, IData newval, int bits);
+    inline void emitQ(vluint32_t code, QData newval, int bits);
+    inline void emitW(vluint32_t code, const WData* newvalp, int bits);
+    inline void emitF(vluint32_t code, float newval);
+    inline void emitD(vluint32_t code, double newval);
 
 public:
     //=========================================================================
@@ -176,37 +178,44 @@ public:
                      int lsb);
     void declTriArray(vluint32_t code, const char* name, bool array, int arraynum, int msb,
                       int lsb);
-    //=========================================================================
-    // Write back to previous value buffer value and emit
 
-    void fullBit(vluint32_t* oldp, vluint32_t newval) { fullBit(oldp - this->oldp(0), newval); }
-    void fullBus(vluint32_t* oldp, vluint32_t newval, int bits) {
+    void fullB(vluint32_t* oldp, CData newval) { fullBit(oldp - this->oldp(0), newval); }
+    void fullC(vluint32_t* oldp, CData newval, int bits) {
         fullBus(oldp - this->oldp(0), newval, bits);
     }
-    void fullQuad(vluint32_t* oldp, vluint64_t newval, int bits) {
+    void fullS(vluint32_t* oldp, SData newval, int bits) {
+        fullBus(oldp - this->oldp(0), newval, bits);
+    }
+    void fullI(vluint32_t* oldp, IData newval, int bits) {
+        fullBus(oldp - this->oldp(0), newval, bits);
+    }
+    void fullQ(vluint32_t* oldp, QData newval, int bits) {
         fullQuad(oldp - this->oldp(0), newval, bits);
     }
-    void fullArray(vluint32_t* oldp, const vluint32_t* newvalp, int bits) {
+    void fullW(vluint32_t* oldp, const WData* newvalp, int bits) {
         fullArray(oldp - this->oldp(0), newvalp, bits);
     }
-    void fullFloat(vluint32_t* oldp, float newval) { fullFloat(oldp - this->oldp(0), newval); }
-    void fullDouble(vluint32_t* oldp, double newval) { fullDouble(oldp - this->oldp(0), newval); }
+    void fullF(vluint32_t* oldp, float newval) { fullFloat(oldp - this->oldp(0), newval); }
+    void fullD(vluint32_t* oldp, double newval) { fullDouble(oldp - this->oldp(0), newval); }
 
-    //=========================================================================
-    // Check previous value and emit if changed
-
-    void chgBit(vluint32_t* oldp, vluint32_t newval) { chgBit(oldp - this->oldp(0), newval); }
-    void chgBus(vluint32_t* oldp, vluint32_t newval, int bits) {
+    inline void chgB(vluint32_t* oldp, CData newval) { chgBit(oldp - this->oldp(0), newval); }
+    inline void chgC(vluint32_t* oldp, CData newval, int bits) {
         chgBus(oldp - this->oldp(0), newval, bits);
     }
-    void chgQuad(vluint32_t* oldp, vluint64_t newval, int bits) {
+    inline void chgS(vluint32_t* oldp, SData newval, int bits) {
+        chgBus(oldp - this->oldp(0), newval, bits);
+    }
+    inline void chgI(vluint32_t* oldp, IData newval, int bits) {
+        chgBus(oldp - this->oldp(0), newval, bits);
+    }
+    inline void chgQ(vluint32_t* oldp, QData newval, int bits) {
         chgQuad(oldp - this->oldp(0), newval, bits);
     }
-    void chgArray(vluint32_t* oldp, const vluint32_t* newvalp, int bits) {
+    inline void chgW(vluint32_t* oldp, const WData* newvalp, int bits) {
         chgArray(oldp - this->oldp(0), newvalp, bits);
     }
-    void chgFloat(vluint32_t* oldp, float newval) { chgFloat(oldp - this->oldp(0), newval); }
-    void chgDouble(vluint32_t* oldp, double newval) { chgDouble(oldp - this->oldp(0), newval); }
+    inline void chgF(vluint32_t* oldp, float newval) { chgFloat(oldp - this->oldp(0), newval); }
+    inline void chgD(vluint32_t* oldp, double newval) { chgDouble(oldp - this->oldp(0), newval); }
 
     /// Inside dumping routines, dump one signal, faster when not inlined
     /// due to code size reduction.

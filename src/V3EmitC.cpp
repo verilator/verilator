@@ -3550,20 +3550,23 @@ class EmitCTrace : EmitCStmts {
         const bool full = (m_funcp->funcType() == AstCFuncType::TRACE_FULL
                            || m_funcp->funcType() == AstCFuncType::TRACE_FULL_SUB);
         const string func = full ? "full" : "chg";
-        bool emitWidth = false;
+        bool emitWidth = true;
         if (nodep->dtypep()->basicp()->isDouble()) {
-            puts("vcdp->" + func + "Double");
+            puts("vcdp->" + func + "D");
+            emitWidth = false;
         } else if (nodep->isWide() || emitTraceIsScBv(nodep) || emitTraceIsScBigUint(nodep)) {
-            puts("vcdp->" + func + "Array");
-            emitWidth = true;
+            puts("vcdp->" + func + "W");
         } else if (nodep->isQuad()) {
-            puts("vcdp->" + func + "Quad");
-            emitWidth = true;
+            puts("vcdp->" + func + "Q");
+        } else if (nodep->declp()->widthMin() > 16) {
+            puts("vcdp->" + func + "I");
+        } else if (nodep->declp()->widthMin() > 8) {
+            puts("vcdp->" + func + "S");
         } else if (nodep->declp()->widthMin() > 1) {
-            puts("vcdp->" + func + "Bus");
-            emitWidth = true;
+            puts("vcdp->" + func + "C");
         } else {
-            puts("vcdp->" + func + "Bit");
+            puts("vcdp->" + func + "B");
+            emitWidth = false;
         }
 
         const uint32_t offset = (arrayindex < 0) ? 0 : (arrayindex * nodep->declp()->widthWords());
