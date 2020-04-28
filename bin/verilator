@@ -5271,17 +5271,21 @@ be accessing with a /*verilator public*/ comment before the closing
 semicolon.  Then scope into the C++ class to read the value of the signal,
 as you would any other member variable.
 
-Signals are the smallest of 8-bit chars, 16-bit shorts, 32-bit longs, or
-64-bit long longs that fits the width of the signal.  Generally, you can
-use just uint32_t's for 1 to 32 bits, or vluint64_t for 1 to 64 bits, and
-the compiler will properly up-convert smaller entities.
+Signals are the smallest of 8-bit unsigned chars (equivalent to uint8_t),
+16-bit unsigned shorts (uint16_t), 32-bit unsigned longs (uint32_t), or
+64-bit unsigned long longs (uint64_t) that fits the width of the signal.
+Generally, you can use just uint32_t's for 1 to 32 bits, or vluint64_t for
+1 to 64 bits, and the compiler will properly up-convert smaller entities.
+Note even signed ports are declared as unsigned; you must sign extend
+yourself to the appropriate signal width.
 
 Signals wider than 64 bits are stored as an array of 32-bit uint32_t's.
 Thus to read bits 31:0, access signal[0], and for bits 63:32, access
 signal[1].  Unused bits (for example bit numbers 65-96 of a 65-bit vector)
-will always be zero.  if you change the value you must make sure to pack
-zeros in the unused bits or core-dumps may result.  (Because Verilator
-strips array bound checks where it believes them to be unnecessary.)
+will always be zero.  If you change the value you must make sure to pack
+zeros in the unused bits or core-dumps may result, because Verilator strips
+array bound checks where it believes them to be unnecessary to improve
+performance.
 
 In the SYSTEMC example above, if you had in our.v:
 
