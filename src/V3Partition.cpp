@@ -1187,7 +1187,7 @@ public:
                         m_scoreLimit = (m_scoreLimit * 120) / 100;
                         v3Global.rootp()->fileline()->v3warn(
                             UNOPTTHREADS, "Thread scheduler is unable to provide requested "
-                                          "parallelism; consider asking for fewer threads.");
+                                          "parallelism; suggest asking for fewer threads.");
                         UINFO(1, "Critical path limit was=" << oldLimit << " now=" << m_scoreLimit
                                                             << endl);
                         continue;

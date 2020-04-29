@@ -184,11 +184,14 @@ sub run {
             if (($status & 127) == 4  # SIGILL
                 || ($status & 127) == 8  # SIGFPA
                 || ($status & 127) == 11) {  # SIGSEGV
-                warn "%Error: Verilator internal fault, sorry.  Consider trying --debug --gdbbt\n" if !$Debug;
+                warn "%Error: Verilator internal fault, sorry. "
+                    ."Suggest trying --debug --gdbbt\n" if !$Debug;
             } elsif (($status & 127) == 6) {  # SIGABRT
-                warn "%Error: Verilator aborted.  Consider trying --debug --gdbbt\n" if !$Debug;
+                warn "%Error: Verilator aborted. "
+                    ."Suggest trying --debug --gdbbt\n" if !$Debug;
             } else {
-                warn "%Error: Verilator threw signal $status.  Consider trying --debug --gdbbt\n" if !$Debug;
+                warn "%Error: Verilator threw signal $status. "
+                    ."Suggest trying --debug --gdbbt\n" if !$Debug;
             }
         }
         if (!$opt_quiet_exit && ($status != 256 || $Debug)) {  # i.e. not normal exit(1)
