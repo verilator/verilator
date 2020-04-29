@@ -15,7 +15,7 @@ top_filename("t/t_flag_make_cmake.v");
 compile(  # Don't call cmake nor gmake from driver.pl
     verilator_make_cmake => 0,
     verilator_make_gmake => 0,
-    verilator_flags2 => ['--exe --cc --build -j 2 --make gmake',
+    verilator_flags2 => ['--exe --cc --build -j 2',
                          '../' . $Self->{main_filename},
                          '-MAKEFLAGS -p --trace'],
     );
