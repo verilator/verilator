@@ -11,4 +11,6 @@ Thanks for taking the time to report this.
 
 Can you attach an example that shows the issue?  (Must be openly licensed, ideally in test_regress format.)
 
+What 'verilator --version' are you using?  Did you try it with git master version?
+
 May we assist you in trying to fix this yourself?
