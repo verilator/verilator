@@ -51,6 +51,8 @@ private:
     Local2FstDtype m_local2fstdtype;
     std::list<std::string> m_curScope;
     fstHandle* m_symbolp;  ///< same as m_code2symbol, but as an array
+    char* m_strbuf;  ///< String buffer long enough to hold maxBits() chars
+
     // CONSTRUCTORS
     VL_UNCOPYABLE(VerilatedFst);
     void declSymbol(vluint32_t code, const char* name, int dtypenum, fstVarDir vardir,
@@ -69,10 +71,12 @@ protected:
 
     // Implementations of duck-typed methods for VerilatedTrace. These are
     // called from only one place (namely full*) so always inline them.
-    inline void emitBit(vluint32_t code, vluint32_t newval);
-    inline void emitBus(vluint32_t code, vluint32_t newval, int bits);
-    inline void emitQuad(vluint32_t code, vluint64_t newval, int bits);
-    inline void emitArray(vluint32_t code, const vluint32_t* newvalp, int bits);
+    inline void emitBit(vluint32_t code, CData newval);
+    inline void emitCData(vluint32_t code, CData newval, int bits);
+    inline void emitSData(vluint32_t code, SData newval, int bits);
+    inline void emitIData(vluint32_t code, IData newval, int bits);
+    inline void emitQData(vluint32_t code, QData newval, int bits);
+    inline void emitWData(vluint32_t code, const WData* newvalp, int bits);
     inline void emitFloat(vluint32_t code, float newval);
     inline void emitDouble(vluint32_t code, double newval);
 

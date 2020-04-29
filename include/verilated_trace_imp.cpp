@@ -23,6 +23,7 @@
 # error "This file should be included in trace format implementations"
 #endif
 
+#include "verilated_intrinsics.h"
 #include "verilated_trace.h"
 
 #if 0
@@ -166,22 +167,34 @@ template <> void VerilatedTrace<VL_DERIVED_T>::workerThreadMain() {
                 VL_TRACE_THREAD_DEBUG("Command CHG_BIT_1 " << top);
                 chgBitImpl(oldp, 1);
                 continue;
-            case VerilatedTraceCommand::CHG_BUS:
-                VL_TRACE_THREAD_DEBUG("Command CHG_BUS " << top);
+            case VerilatedTraceCommand::CHG_CDATA:
+                VL_TRACE_THREAD_DEBUG("Command CHG_CDATA " << top);
                 // Bits stored in bottom byte of command
-                chgBusImpl(oldp, *readp, top);
+                chgCDataImpl(oldp, *readp, top);
                 readp += 1;
                 continue;
-            case VerilatedTraceCommand::CHG_QUAD:
-                VL_TRACE_THREAD_DEBUG("Command CHG_QUAD " << top);
+            case VerilatedTraceCommand::CHG_SDATA:
+                VL_TRACE_THREAD_DEBUG("Command CHG_SDATA " << top);
                 // Bits stored in bottom byte of command
-                chgQuadImpl(oldp, *reinterpret_cast<const vluint64_t*>(readp), top);
+                chgSDataImpl(oldp, *readp, top);
+                readp += 1;
+                continue;
+            case VerilatedTraceCommand::CHG_IDATA:
+                VL_TRACE_THREAD_DEBUG("Command CHG_IDATA " << top);
+                // Bits stored in bottom byte of command
+                chgIDataImpl(oldp, *readp, top);
+                readp += 1;
+                continue;
+            case VerilatedTraceCommand::CHG_QDATA:
+                VL_TRACE_THREAD_DEBUG("Command CHG_QDATA " << top);
+                // Bits stored in bottom byte of command
+                chgQDataImpl(oldp, *reinterpret_cast<const QData*>(readp), top);
                 readp += 2;
                 continue;
-            case VerilatedTraceCommand::CHG_ARRAY:
-                VL_TRACE_THREAD_DEBUG("Command CHG_ARRAY " << top);
-                chgArrayImpl(oldp, readp, top);
-                readp += (top + 31) / 32;
+            case VerilatedTraceCommand::CHG_WDATA:
+                VL_TRACE_THREAD_DEBUG("Command CHG_WDATA " << top);
+                chgWDataImpl(oldp, readp, top);
+                readp += VL_WORDS_I(top);
                 continue;
             case VerilatedTraceCommand::CHG_FLOAT:
                 VL_TRACE_THREAD_DEBUG("Command CHG_FLOAT " << top);
@@ -284,6 +297,7 @@ VerilatedTrace<VL_DERIVED_T>::VerilatedTrace()
     , m_fullDump(true)
     , m_nextCode(0)
     , m_numSignals(0)
+    , m_maxBits(0)
     , m_scopeEscape('.')
     , m_timeRes(1e-9)
     , m_timeUnit(1e-9)
@@ -318,6 +332,7 @@ template <> void VerilatedTrace<VL_DERIVED_T>::traceInit() VL_MT_UNSAFE {
     const vluint32_t expectedCodes = nextCode();
     m_nextCode = 1;
     m_numSignals = 0;
+    m_maxBits = 0;
 
     // Call all initialize callbacks, which will call decl* for each signal.
     for (vluint32_t ent = 0; ent < m_callbacks.size(); ++ent) {
@@ -355,10 +370,11 @@ void VerilatedTrace<VL_DERIVED_T>::declCode(vluint32_t code, vluint32_t bits, bo
     }
     // Note: The tri-state flag is not used by Verilator, but is here for
     // compatibility with some foreign code.
-    int codesNeeded = (bits + 31) / 32;
+    int codesNeeded = VL_WORDS_I(bits);
     if (tri) codesNeeded *= 2;
     m_nextCode = std::max(m_nextCode, code + codesNeeded);
     ++m_numSignals;
+    m_maxBits = std::max(m_maxBits, bits);
 }
 
 //=========================================================================
@@ -486,35 +502,139 @@ void VerilatedTrace<VL_DERIVED_T>::addCallback(callback_t initcb, callback_t ful
 // that this file must be included in the format specific implementation, so
 // the emit* functions can be inlined for performance.
 
-template <> void VerilatedTrace<VL_DERIVED_T>::fullBit(vluint32_t* oldp, vluint32_t newval) {
+template <> void VerilatedTrace<VL_DERIVED_T>::fullBit(vluint32_t* oldp, CData newval) {
     *oldp = newval;
     self()->emitBit(oldp - m_sigs_oldvalp, newval);
 }
 
 template <>
-void VerilatedTrace<VL_DERIVED_T>::fullBus(vluint32_t* oldp, vluint32_t newval, int bits) {
+void VerilatedTrace<VL_DERIVED_T>::fullCData(vluint32_t* oldp, CData newval, int bits) {
     *oldp = newval;
-    self()->emitBus(oldp - m_sigs_oldvalp, newval, bits);
+    self()->emitCData(oldp - m_sigs_oldvalp, newval, bits);
 }
 
 template <>
-void VerilatedTrace<VL_DERIVED_T>::fullQuad(vluint32_t* oldp, vluint64_t newval, int bits) {
-    *reinterpret_cast<vluint64_t*>(oldp) = newval;
-    self()->emitQuad(oldp - m_sigs_oldvalp, newval, bits);
+void VerilatedTrace<VL_DERIVED_T>::fullSData(vluint32_t* oldp, SData newval, int bits) {
+    *oldp = newval;
+    self()->emitSData(oldp - m_sigs_oldvalp, newval, bits);
 }
+
 template <>
-void VerilatedTrace<VL_DERIVED_T>::fullArray(vluint32_t* oldp, const vluint32_t* newvalp,
-                                             int bits) {
-    for (int i = 0; i < (bits + 31) / 32; ++i) oldp[i] = newvalp[i];
-    self()->emitArray(oldp - m_sigs_oldvalp, newvalp, bits);
+void VerilatedTrace<VL_DERIVED_T>::fullIData(vluint32_t* oldp, IData newval, int bits) {
+    *oldp = newval;
+    self()->emitIData(oldp - m_sigs_oldvalp, newval, bits);
 }
+
+template <>
+void VerilatedTrace<VL_DERIVED_T>::fullQData(vluint32_t* oldp, QData newval, int bits) {
+    *reinterpret_cast<QData*>(oldp) = newval;
+    self()->emitQData(oldp - m_sigs_oldvalp, newval, bits);
+}
+
+template <>
+void VerilatedTrace<VL_DERIVED_T>::fullWData(vluint32_t* oldp, const WData* newvalp, int bits) {
+    for (int i = 0; i < VL_WORDS_I(bits); ++i) oldp[i] = newvalp[i];
+    self()->emitWData(oldp - m_sigs_oldvalp, newvalp, bits);
+}
+
 template <> void VerilatedTrace<VL_DERIVED_T>::fullFloat(vluint32_t* oldp, float newval) {
     // cppcheck-suppress invalidPointerCast
     *reinterpret_cast<float*>(oldp) = newval;
     self()->emitFloat(oldp - m_sigs_oldvalp, newval);
 }
+
 template <> void VerilatedTrace<VL_DERIVED_T>::fullDouble(vluint32_t* oldp, double newval) {
     // cppcheck-suppress invalidPointerCast
     *reinterpret_cast<double*>(oldp) = newval;
     self()->emitDouble(oldp - m_sigs_oldvalp, newval);
 }
+
+//=========================================================================
+// Primitives converting binary values to strings...
+
+// All of these take a destination pointer where the string will be emitted,
+// and a value to convert. There are a couple of variants for efficiency.
+
+inline static void cvtCDataToStr(char* dstp, CData value) {
+#ifdef VL_HAVE_SSE2
+    // Similar to cvtSDataToStr but only the bottom 8 byte lanes are used
+    const __m128i a = _mm_cvtsi32_si128(value);
+    const __m128i b = _mm_unpacklo_epi8(a, a);
+    const __m128i c = _mm_shufflelo_epi16(b, 0);
+    const __m128i m = _mm_set1_epi64x(0x0102040810204080);
+    const __m128i d = _mm_cmpeq_epi8(_mm_and_si128(c, m), m);
+    const __m128i result = _mm_sub_epi8(_mm_set1_epi8('0'), d);
+    _mm_storel_epi64(reinterpret_cast<__m128i*>(dstp), result);
+#else
+    dstp[0] = '0' | static_cast<char>((value >> 7) & 1);
+    dstp[1] = '0' | static_cast<char>((value >> 6) & 1);
+    dstp[2] = '0' | static_cast<char>((value >> 5) & 1);
+    dstp[3] = '0' | static_cast<char>((value >> 4) & 1);
+    dstp[4] = '0' | static_cast<char>((value >> 3) & 1);
+    dstp[5] = '0' | static_cast<char>((value >> 2) & 1);
+    dstp[6] = '0' | static_cast<char>((value >> 1) & 1);
+    dstp[7] = '0' | static_cast<char>(value & 1);
+#endif
+}
+
+inline static void cvtSDataToStr(char* dstp, SData value) {
+#ifdef VL_HAVE_SSE2
+    // We want each bit in the 16-bit input value to end up in a byte lane
+    // within the 128-bit XMM register. Note that x86 is little-endian and we
+    // want the MSB of the input at the low address, so we will bit-reverse
+    // at the same time.
+
+    // Put value in bottom of 128-bit register a[15:0] = value
+    const __m128i a = _mm_cvtsi32_si128(value);
+    // Interleave bytes with themselves
+    // b[15: 0] = {2{a[ 7:0]}} == {2{value[ 7:0]}}
+    // b[31:16] = {2{a[15:8]}} == {2{value[15:8]}}
+    const __m128i b = _mm_unpacklo_epi8(a, a);
+    // Shuffle bottom 64 bits, note swapping high bytes with low bytes
+    // c[31: 0] = {2{b[31:16]}} == {4{value[15:8}}
+    // c[63:32] = {2{b[15: 0]}} == {4{value[ 7:0}}
+    const __m128i c = _mm_shufflelo_epi16(b, 0x05);
+    // Shuffle whole register
+    // d[ 63: 0] = {2{c[31: 0]}} == {8{value[15:8}}
+    // d[126:54] = {2{c[63:32]}} == {8{value[ 7:0}}
+    const __m128i d = _mm_shuffle_epi32(c, 0x50);
+    // Test each bit within the bytes, this sets each byte lane to 0
+    // if the bit for that lane is 0 and to 0xff if the bit is 1.
+    const __m128i m = _mm_set1_epi64x(0x0102040810204080);
+    const __m128i e = _mm_cmpeq_epi8(_mm_and_si128(d, m), m);
+    // Convert to ASCII by subtracting the masks from ASCII '0':
+    // '0' - 0 is '0', '0' - -1 is '1'
+    const __m128i result = _mm_sub_epi8(_mm_set1_epi8('0'), e);
+    // Store the 16 characters to the un-aligned buffer
+    _mm_storeu_si128(reinterpret_cast<__m128i*>(dstp), result);
+#else
+    cvtCDataToStr(dstp, value >> 8);
+    cvtCDataToStr(dstp + 8, value);
+#endif
+}
+
+inline static void cvtIDataToStr(char* dstp, IData value) {
+#ifdef VL_HAVE_AVX2
+    // Similar to cvtSDataToStr but the bottom 16-bits are processed in the
+    // top half of the YMM registerss
+    const __m256i a = _mm256_insert_epi32(_mm256_undefined_si256(), value, 0);
+    const __m256i b = _mm256_permute4x64_epi64(a, 0);
+    const __m256i s = _mm256_set_epi8(0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2,
+                                      2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3);
+    const __m256i c = _mm256_shuffle_epi8(b, s);
+    const __m256i m = _mm256_set1_epi64x(0x0102040810204080);
+    const __m256i d = _mm256_cmpeq_epi8(_mm256_and_si256(c, m), m);
+    const __m256i result = _mm256_sub_epi8(_mm256_set1_epi8('0'), d);
+    _mm256_storeu_si256(reinterpret_cast<__m256i*>(dstp), result);
+#else
+    cvtSDataToStr(dstp, value >> 16);
+    cvtSDataToStr(dstp + 16, value);
+#endif
+}
+
+inline static void cvtQDataToStr(char* dstp, QData value) {
+    cvtIDataToStr(dstp, value >> 32);
+    cvtIDataToStr(dstp + 32, value);
+}
+
+#define cvtEDataToStr cvtIDataToStr

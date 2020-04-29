@@ -64,11 +64,13 @@
 
 VerilatedFst::VerilatedFst(void* fst)
     : m_fst(fst)
-    , m_symbolp(NULL) {}
+    , m_symbolp(NULL)
+    , m_strbuf(NULL) {}
 
 VerilatedFst::~VerilatedFst() {
     if (m_fst) fstWriterClose(m_fst);
     if (m_symbolp) VL_DO_CLEAR(delete[] m_symbolp, m_symbolp = NULL);
+    if (m_strbuf) VL_DO_CLEAR(delete[] m_strbuf, m_strbuf = NULL);
 }
 
 void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
@@ -100,6 +102,9 @@ void VerilatedFst::open(const char* filename) VL_MT_UNSAFE {
         }
     }
     m_code2symbol.clear();
+
+    // Allocate string buffer for arrays
+    if (!m_strbuf) { m_strbuf = new char[maxBits() + 32]; }
 }
 
 void VerilatedFst::close() {
@@ -213,25 +218,59 @@ void VerilatedFst::declDouble(vluint32_t code, const char* name, int dtypenum, f
 // so always inline them.
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitBit(vluint32_t code, vluint32_t newval) {
+void VerilatedFst::emitBit(vluint32_t code, CData newval) {
     fstWriterEmitValueChange(m_fst, m_symbolp[code], newval ? "1" : "0");
 }
+
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitBus(vluint32_t code, vluint32_t newval, int bits) {
-    fstWriterEmitValueChange32(m_fst, m_symbolp[code], bits, newval);
+void VerilatedFst::emitCData(vluint32_t code, CData newval, int bits) {
+    char buf[VL_BYTESIZE];
+    cvtCDataToStr(buf, newval << (VL_BYTESIZE - bits));
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
+
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitQuad(vluint32_t code, vluint64_t newval, int bits) {
-    fstWriterEmitValueChange64(m_fst, m_symbolp[code], bits, newval);
+void VerilatedFst::emitSData(vluint32_t code, SData newval, int bits) {
+    char buf[VL_SHORTSIZE];
+    cvtSDataToStr(buf, newval << (VL_SHORTSIZE - bits));
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
+
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitArray(vluint32_t code, const vluint32_t* newvalp, int bits) {
-    fstWriterEmitValueChangeVec32(m_fst, m_symbolp[code], bits, newvalp);
+void VerilatedFst::emitIData(vluint32_t code, IData newval, int bits) {
+    char buf[VL_IDATASIZE];
+    cvtIDataToStr(buf, newval << (VL_IDATASIZE - bits));
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
+
+VL_ATTR_ALWINLINE
+void VerilatedFst::emitQData(vluint32_t code, QData newval, int bits) {
+    char buf[VL_QUADSIZE];
+    cvtQDataToStr(buf, newval << (VL_QUADSIZE - bits));
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedFst::emitWData(vluint32_t code, const WData* newvalp, int bits) {
+    int words = VL_WORDS_I(bits);
+    char* wp = m_strbuf;
+    // Convert the most significant word
+    const int bitsInMSW = VL_BITBIT_E(bits) ? VL_BITBIT_E(bits) : VL_EDATASIZE;
+    cvtEDataToStr(wp, newvalp[--words] << (VL_EDATASIZE - bitsInMSW));
+    wp += bitsInMSW;
+    // Convert the remaining words
+    while (words > 0) {
+        cvtEDataToStr(wp, newvalp[--words]);
+        wp += VL_EDATASIZE;
+    }
+    fstWriterEmitValueChange(m_fst, m_symbolp[code], m_strbuf);
+}
+
 VL_ATTR_ALWINLINE
 void VerilatedFst::emitFloat(vluint32_t code, float newval) {
     fstWriterEmitValueChange(m_fst, m_symbolp[code], &newval);
 }
+
 VL_ATTR_ALWINLINE
 void VerilatedFst::emitDouble(vluint32_t code, double newval) {
     fstWriterEmitValueChange(m_fst, m_symbolp[code], &newval);
