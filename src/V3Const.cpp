@@ -1954,7 +1954,8 @@ private:
                         || VN_IS(nodep->condp(), LogNot))
                        && nodep->ifsp() && nodep->elsesp()) {
                 UINFO(4, "IF(NOT {x})  => IF(x) swapped if/else" << nodep << endl);
-                AstNode* condp = VN_CAST(nodep->condp(), Not)->lhsp()->unlinkFrBackWithNext();
+                AstNode* condp
+                    = VN_CAST(nodep->condp(), NodeUniop)->lhsp()->unlinkFrBackWithNext();
                 AstNode* ifsp = nodep->ifsp()->unlinkFrBackWithNext();
                 AstNode* elsesp = nodep->elsesp()->unlinkFrBackWithNext();
                 AstIf* ifp = new AstIf(nodep->fileline(), condp, elsesp, ifsp);

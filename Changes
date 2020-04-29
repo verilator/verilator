@@ -38,6 +38,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix error on unpacked connecting to packed, #2288. [Joseph Shaker]
 
+****  Fix logical not optimization with empty begin, #2291. [Baltazar Ortiz]
+
 
 * Verilator 4.032 2020-04-04
 
