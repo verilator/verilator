@@ -3552,20 +3552,20 @@ class EmitCTrace : EmitCStmts {
         const string func = full ? "full" : "chg";
         bool emitWidth = true;
         if (nodep->dtypep()->basicp()->isDouble()) {
-            puts("vcdp->" + func + "D");
+            puts("vcdp->" + func + "Double");
             emitWidth = false;
         } else if (nodep->isWide() || emitTraceIsScBv(nodep) || emitTraceIsScBigUint(nodep)) {
-            puts("vcdp->" + func + "W");
+            puts("vcdp->" + func + "WData");
         } else if (nodep->isQuad()) {
-            puts("vcdp->" + func + "Q");
+            puts("vcdp->" + func + "QData");
         } else if (nodep->declp()->widthMin() > 16) {
-            puts("vcdp->" + func + "I");
+            puts("vcdp->" + func + "IData");
         } else if (nodep->declp()->widthMin() > 8) {
-            puts("vcdp->" + func + "S");
+            puts("vcdp->" + func + "SData");
         } else if (nodep->declp()->widthMin() > 1) {
-            puts("vcdp->" + func + "C");
+            puts("vcdp->" + func + "CData");
         } else {
-            puts("vcdp->" + func + "B");
+            puts("vcdp->" + func + "Bit");
             emitWidth = false;
         }
 

@@ -643,7 +643,7 @@ void VerilatedVcd::finishLine(vluint32_t code, char* writep) {
 // so always inline them.
 
 VL_ATTR_ALWINLINE
-void VerilatedVcd::emitB(vluint32_t code, CData newval) {
+void VerilatedVcd::emitBit(vluint32_t code, CData newval) {
     // Don't prefetch suffix as it's a bit too late;
     char* wp = m_writep;
     *wp++ = '0' | static_cast<char>(newval);
@@ -651,56 +651,56 @@ void VerilatedVcd::emitB(vluint32_t code, CData newval) {
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedVcd::emitC(vluint32_t code, CData newval, int bits) {
+void VerilatedVcd::emitCData(vluint32_t code, CData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
-    cvtCDataToStr(wp, newval << (8 - bits));
+    cvtCDataToStr(wp, newval << (VL_BYTESIZE - bits));
     finishLine(code, wp + bits);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedVcd::emitS(vluint32_t code, SData newval, int bits) {
+void VerilatedVcd::emitSData(vluint32_t code, SData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
-    cvtSDataToStr(wp, newval << (16 - bits));
+    cvtSDataToStr(wp, newval << (VL_SHORTSIZE - bits));
     finishLine(code, wp + bits);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedVcd::emitI(vluint32_t code, IData newval, int bits) {
+void VerilatedVcd::emitIData(vluint32_t code, IData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
-    cvtIDataToStr(wp, newval << (32 - bits));
+    cvtIDataToStr(wp, newval << (VL_IDATASIZE - bits));
     finishLine(code, wp + bits);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedVcd::emitQ(vluint32_t code, QData newval, int bits) {
+void VerilatedVcd::emitQData(vluint32_t code, QData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
-    cvtQDataToStr(wp, newval << (64 - bits));
+    cvtQDataToStr(wp, newval << (VL_QUADSIZE - bits));
     finishLine(code, wp + bits);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedVcd::emitW(vluint32_t code, const WData* newvalp, int bits) {
-    int words = (bits + 31) / 32;
+void VerilatedVcd::emitWData(vluint32_t code, const WData* newvalp, int bits) {
+    int words = VL_WORDS_I(bits);
     char* wp = m_writep;
     *wp++ = 'b';
     // Handle the most significant word
-    const int bitsInMSW = bits % 32 == 0 ? 32 : bits % 32;
-    cvtEDataToStr(wp, newvalp[--words] << (32 - bitsInMSW));
+    const int bitsInMSW = VL_BITBIT_E(bits) ? VL_BITBIT_E(bits) : VL_EDATASIZE;
+    cvtEDataToStr(wp, newvalp[--words] << (VL_EDATASIZE - bitsInMSW));
     wp += bitsInMSW;
     // Handle the remaining words
     while (words > 0) {
         cvtEDataToStr(wp, newvalp[--words]);
-        wp += 32;
+        wp += VL_EDATASIZE;
     }
     finishLine(code, wp);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedVcd::emitF(vluint32_t code, float newval) {
+void VerilatedVcd::emitFloat(vluint32_t code, float newval) {
     char* wp = m_writep;
     // Buffer can't overflow before sprintf; we sized during declaration
     sprintf(wp, "r%.16g", static_cast<double>(newval));
@@ -709,7 +709,7 @@ void VerilatedVcd::emitF(vluint32_t code, float newval) {
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedVcd::emitD(vluint32_t code, double newval) {
+void VerilatedVcd::emitDouble(vluint32_t code, double newval) {
     char* wp = m_writep;
     // Buffer can't overflow before sprintf; we sized during declaration
     sprintf(wp, "r%.16g", newval);

@@ -218,60 +218,60 @@ void VerilatedFst::declDouble(vluint32_t code, const char* name, int dtypenum, f
 // so always inline them.
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitB(vluint32_t code, CData newval) {
+void VerilatedFst::emitBit(vluint32_t code, CData newval) {
     fstWriterEmitValueChange(m_fst, m_symbolp[code], newval ? "1" : "0");
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitC(vluint32_t code, CData newval, int bits) {
-    char buf[8];
-    cvtCDataToStr(buf, newval << (8 - bits));
+void VerilatedFst::emitCData(vluint32_t code, CData newval, int bits) {
+    char buf[VL_BYTESIZE];
+    cvtCDataToStr(buf, newval << (VL_BYTESIZE - bits));
     fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitS(vluint32_t code, SData newval, int bits) {
-    char buf[16];
-    cvtSDataToStr(buf, newval << (16 - bits));
+void VerilatedFst::emitSData(vluint32_t code, SData newval, int bits) {
+    char buf[VL_SHORTSIZE];
+    cvtSDataToStr(buf, newval << (VL_SHORTSIZE - bits));
     fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitI(vluint32_t code, IData newval, int bits) {
-    char buf[32];
-    cvtIDataToStr(buf, newval << (32 - bits));
+void VerilatedFst::emitIData(vluint32_t code, IData newval, int bits) {
+    char buf[VL_IDATASIZE];
+    cvtIDataToStr(buf, newval << (VL_IDATASIZE - bits));
     fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitQ(vluint32_t code, QData newval, int bits) {
-    char buf[64];
-    cvtQDataToStr(buf, newval << (64 - bits));
+void VerilatedFst::emitQData(vluint32_t code, QData newval, int bits) {
+    char buf[VL_QUADSIZE];
+    cvtQDataToStr(buf, newval << (VL_QUADSIZE - bits));
     fstWriterEmitValueChange(m_fst, m_symbolp[code], buf);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitW(vluint32_t code, const WData* newvalp, int bits) {
-    int words = (bits + 31) / 32;
+void VerilatedFst::emitWData(vluint32_t code, const WData* newvalp, int bits) {
+    int words = VL_WORDS_I(bits);
     char* wp = m_strbuf;
     // Convert the most significant word
-    const int bitsInMSW = bits % 32 == 0 ? 32 : bits % 32;
-    cvtEDataToStr(wp, newvalp[--words] << (32 - bitsInMSW));
+    const int bitsInMSW = VL_BITBIT_E(bits) ? VL_BITBIT_E(bits) : VL_EDATASIZE;
+    cvtEDataToStr(wp, newvalp[--words] << (VL_EDATASIZE - bitsInMSW));
     wp += bitsInMSW;
     // Convert the remaining words
     while (words > 0) {
         cvtEDataToStr(wp, newvalp[--words]);
-        wp += 32;
+        wp += VL_EDATASIZE;
     }
     fstWriterEmitValueChange(m_fst, m_symbolp[code], m_strbuf);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitF(vluint32_t code, float newval) {
+void VerilatedFst::emitFloat(vluint32_t code, float newval) {
     fstWriterEmitValueChange(m_fst, m_symbolp[code], &newval);
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedFst::emitD(vluint32_t code, double newval) {
+void VerilatedFst::emitDouble(vluint32_t code, double newval) {
     fstWriterEmitValueChange(m_fst, m_symbolp[code], &newval);
 }

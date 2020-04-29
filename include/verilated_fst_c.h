@@ -71,14 +71,14 @@ protected:
 
     // Implementations of duck-typed methods for VerilatedTrace. These are
     // called from only one place (namely full*) so always inline them.
-    inline void emitB(vluint32_t code, CData newval);
-    inline void emitC(vluint32_t code, CData newval, int bits);
-    inline void emitS(vluint32_t code, SData newval, int bits);
-    inline void emitI(vluint32_t code, IData newval, int bits);
-    inline void emitQ(vluint32_t code, QData newval, int bits);
-    inline void emitW(vluint32_t code, const WData* newvalp, int bits);
-    inline void emitF(vluint32_t code, float newval);
-    inline void emitD(vluint32_t code, double newval);
+    inline void emitBit(vluint32_t code, CData newval);
+    inline void emitCData(vluint32_t code, CData newval, int bits);
+    inline void emitSData(vluint32_t code, SData newval, int bits);
+    inline void emitIData(vluint32_t code, IData newval, int bits);
+    inline void emitQData(vluint32_t code, QData newval, int bits);
+    inline void emitWData(vluint32_t code, const WData* newvalp, int bits);
+    inline void emitFloat(vluint32_t code, float newval);
+    inline void emitDouble(vluint32_t code, double newval);
 
 public:
     //=========================================================================

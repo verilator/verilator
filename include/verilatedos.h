@@ -475,6 +475,16 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 #else
 # define VL_STRCASECMP strcasecmp
 #endif
+
+//=========================================================================
+// Macros controlling target specific optimizations
+
+// Define VL_PORTABLE_ONLY to disable all target specific optimizations
+#ifndef VL_PORTABLE_ONLY
+# ifdef __x86_64__
+#  define VL_X86_64 1
+# endif
+#endif // VL_PORTABLE_ONLY
 // clang-format on
 
 //=========================================================================

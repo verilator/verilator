@@ -24,7 +24,6 @@
 #endif
 
 #include "verilated_intrinsics.h"
-
 #include "verilated_trace.h"
 
 #if 0
@@ -160,51 +159,51 @@ template <> void VerilatedTrace<VL_DERIVED_T>::workerThreadMain() {
             switch (cmd & 0xF) {
                 //===
                 // CHG_* commands
-            case VerilatedTraceCommand::CHG_B_0:
-                VL_TRACE_THREAD_DEBUG("Command CHG_B_0 " << top);
-                chgBImpl(oldp, 0);
+            case VerilatedTraceCommand::CHG_BIT_0:
+                VL_TRACE_THREAD_DEBUG("Command CHG_BIT_0 " << top);
+                chgBitImpl(oldp, 0);
                 continue;
-            case VerilatedTraceCommand::CHG_B_1:
-                VL_TRACE_THREAD_DEBUG("Command CHG_B_1 " << top);
-                chgBImpl(oldp, 1);
+            case VerilatedTraceCommand::CHG_BIT_1:
+                VL_TRACE_THREAD_DEBUG("Command CHG_BIT_1 " << top);
+                chgBitImpl(oldp, 1);
                 continue;
-            case VerilatedTraceCommand::CHG_C:
-                VL_TRACE_THREAD_DEBUG("Command CHG_C " << top);
+            case VerilatedTraceCommand::CHG_CDATA:
+                VL_TRACE_THREAD_DEBUG("Command CHG_CDATA " << top);
                 // Bits stored in bottom byte of command
-                chgCImpl(oldp, *readp, top);
+                chgCDataImpl(oldp, *readp, top);
                 readp += 1;
                 continue;
-            case VerilatedTraceCommand::CHG_S:
-                VL_TRACE_THREAD_DEBUG("Command CHG_S " << top);
+            case VerilatedTraceCommand::CHG_SDATA:
+                VL_TRACE_THREAD_DEBUG("Command CHG_SDATA " << top);
                 // Bits stored in bottom byte of command
-                chgSImpl(oldp, *readp, top);
+                chgSDataImpl(oldp, *readp, top);
                 readp += 1;
                 continue;
-            case VerilatedTraceCommand::CHG_I:
-                VL_TRACE_THREAD_DEBUG("Command CHG_I " << top);
+            case VerilatedTraceCommand::CHG_IDATA:
+                VL_TRACE_THREAD_DEBUG("Command CHG_IDATA " << top);
                 // Bits stored in bottom byte of command
-                chgIImpl(oldp, *readp, top);
+                chgIDataImpl(oldp, *readp, top);
                 readp += 1;
                 continue;
-            case VerilatedTraceCommand::CHG_Q:
-                VL_TRACE_THREAD_DEBUG("Command CHG_Q " << top);
+            case VerilatedTraceCommand::CHG_QDATA:
+                VL_TRACE_THREAD_DEBUG("Command CHG_QDATA " << top);
                 // Bits stored in bottom byte of command
-                chgQImpl(oldp, *reinterpret_cast<const QData*>(readp), top);
+                chgQDataImpl(oldp, *reinterpret_cast<const QData*>(readp), top);
                 readp += 2;
                 continue;
-            case VerilatedTraceCommand::CHG_W:
-                VL_TRACE_THREAD_DEBUG("Command CHG_W " << top);
-                chgWImpl(oldp, readp, top);
-                readp += (top + 31) / 32;
+            case VerilatedTraceCommand::CHG_WDATA:
+                VL_TRACE_THREAD_DEBUG("Command CHG_WDATA " << top);
+                chgWDataImpl(oldp, readp, top);
+                readp += VL_WORDS_I(top);
                 continue;
-            case VerilatedTraceCommand::CHG_F:
-                VL_TRACE_THREAD_DEBUG("Command CHG_F " << top);
-                chgFImpl(oldp, *reinterpret_cast<const float*>(readp));
+            case VerilatedTraceCommand::CHG_FLOAT:
+                VL_TRACE_THREAD_DEBUG("Command CHG_FLOAT " << top);
+                chgFloatImpl(oldp, *reinterpret_cast<const float*>(readp));
                 readp += 1;
                 continue;
-            case VerilatedTraceCommand::CHG_D:
-                VL_TRACE_THREAD_DEBUG("Command CHG_D " << top);
-                chgDImpl(oldp, *reinterpret_cast<const double*>(readp));
+            case VerilatedTraceCommand::CHG_DOUBLE:
+                VL_TRACE_THREAD_DEBUG("Command CHG_DOUBLE " << top);
+                chgDoubleImpl(oldp, *reinterpret_cast<const double*>(readp));
                 readp += 2;
                 continue;
 
@@ -371,7 +370,7 @@ void VerilatedTrace<VL_DERIVED_T>::declCode(vluint32_t code, vluint32_t bits, bo
     }
     // Note: The tri-state flag is not used by Verilator, but is here for
     // compatibility with some foreign code.
-    int codesNeeded = (bits + 31) / 32;
+    int codesNeeded = VL_WORDS_I(bits);
     if (tri) codesNeeded *= 2;
     m_nextCode = std::max(m_nextCode, code + codesNeeded);
     ++m_numSignals;
@@ -503,47 +502,51 @@ void VerilatedTrace<VL_DERIVED_T>::addCallback(callback_t initcb, callback_t ful
 // that this file must be included in the format specific implementation, so
 // the emit* functions can be inlined for performance.
 
-template <> void VerilatedTrace<VL_DERIVED_T>::fullB(vluint32_t* oldp, CData newval) {
+template <> void VerilatedTrace<VL_DERIVED_T>::fullBit(vluint32_t* oldp, CData newval) {
     *oldp = newval;
-    self()->emitB(oldp - m_sigs_oldvalp, newval);
-}
-
-template <> void VerilatedTrace<VL_DERIVED_T>::fullC(vluint32_t* oldp, CData newval, int bits) {
-    *oldp = newval;
-    self()->emitC(oldp - m_sigs_oldvalp, newval, bits);
-}
-
-template <> void VerilatedTrace<VL_DERIVED_T>::fullS(vluint32_t* oldp, SData newval, int bits) {
-    *oldp = newval;
-    self()->emitS(oldp - m_sigs_oldvalp, newval, bits);
-}
-
-template <> void VerilatedTrace<VL_DERIVED_T>::fullI(vluint32_t* oldp, IData newval, int bits) {
-    *oldp = newval;
-    self()->emitI(oldp - m_sigs_oldvalp, newval, bits);
-}
-
-template <> void VerilatedTrace<VL_DERIVED_T>::fullQ(vluint32_t* oldp, QData newval, int bits) {
-    *reinterpret_cast<QData*>(oldp) = newval;
-    self()->emitQ(oldp - m_sigs_oldvalp, newval, bits);
+    self()->emitBit(oldp - m_sigs_oldvalp, newval);
 }
 
 template <>
-void VerilatedTrace<VL_DERIVED_T>::fullW(vluint32_t* oldp, const WData* newvalp, int bits) {
-    for (int i = 0; i < (bits + 31) / 32; ++i) oldp[i] = newvalp[i];
-    self()->emitW(oldp - m_sigs_oldvalp, newvalp, bits);
+void VerilatedTrace<VL_DERIVED_T>::fullCData(vluint32_t* oldp, CData newval, int bits) {
+    *oldp = newval;
+    self()->emitCData(oldp - m_sigs_oldvalp, newval, bits);
 }
 
-template <> void VerilatedTrace<VL_DERIVED_T>::fullF(vluint32_t* oldp, float newval) {
+template <>
+void VerilatedTrace<VL_DERIVED_T>::fullSData(vluint32_t* oldp, SData newval, int bits) {
+    *oldp = newval;
+    self()->emitSData(oldp - m_sigs_oldvalp, newval, bits);
+}
+
+template <>
+void VerilatedTrace<VL_DERIVED_T>::fullIData(vluint32_t* oldp, IData newval, int bits) {
+    *oldp = newval;
+    self()->emitIData(oldp - m_sigs_oldvalp, newval, bits);
+}
+
+template <>
+void VerilatedTrace<VL_DERIVED_T>::fullQData(vluint32_t* oldp, QData newval, int bits) {
+    *reinterpret_cast<QData*>(oldp) = newval;
+    self()->emitQData(oldp - m_sigs_oldvalp, newval, bits);
+}
+
+template <>
+void VerilatedTrace<VL_DERIVED_T>::fullWData(vluint32_t* oldp, const WData* newvalp, int bits) {
+    for (int i = 0; i < VL_WORDS_I(bits); ++i) oldp[i] = newvalp[i];
+    self()->emitWData(oldp - m_sigs_oldvalp, newvalp, bits);
+}
+
+template <> void VerilatedTrace<VL_DERIVED_T>::fullFloat(vluint32_t* oldp, float newval) {
     // cppcheck-suppress invalidPointerCast
     *reinterpret_cast<float*>(oldp) = newval;
-    self()->emitF(oldp - m_sigs_oldvalp, newval);
+    self()->emitFloat(oldp - m_sigs_oldvalp, newval);
 }
 
-template <> void VerilatedTrace<VL_DERIVED_T>::fullD(vluint32_t* oldp, double newval) {
+template <> void VerilatedTrace<VL_DERIVED_T>::fullDouble(vluint32_t* oldp, double newval) {
     // cppcheck-suppress invalidPointerCast
     *reinterpret_cast<double*>(oldp) = newval;
-    self()->emitD(oldp - m_sigs_oldvalp, newval);
+    self()->emitDouble(oldp - m_sigs_oldvalp, newval);
 }
 
 //=========================================================================

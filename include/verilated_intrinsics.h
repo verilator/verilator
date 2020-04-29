@@ -24,22 +24,17 @@
 
 // clang-format off
 
-// Define VL_PORTABLE_ONLY to disable all target specific implementations
-#ifndef VL_PORTABLE_ONLY
-# ifdef __x86_64__
-#  define VL_X86_64 1
-# endif
-# ifdef __SSE2__
+// Use VL_DISABLE_INTRINSICS to disable all intrinsics based optimization
+#if !defined(VL_DISABLE_INTRINSICS) && !defined(VL_PORTABLE_ONLY)
+# if defined(__SSE2__) && !defined(VL_DISABLE_SSE2)
 #  define VL_HAVE_SSE2 1
 #  include <emmintrin.h>
 # endif
-# ifdef __AVX2__
+# if defined(__AVX2__) && defined(VL_HAVE_SSE2) && !defined(VL_DISABLE_AVX2)
 #  define VL_HAVE_AVX2 1
 #  include <immintrin.h>
 # endif
-// Recommended reference for x86 intrinsics:
-// https://software.intel.com/sites/landingpage/IntrinsicsGuide/
-#endif // VL_PORTABLE_ONLY
+#endif
 
 // clang-format on
 
