@@ -1497,7 +1497,7 @@ private:
         vvertexp->iterateCurrentOutEdges(*this, VNUser(&nextState));
         if (vsp->varp()->width() > 1) --m_seen_clk_vectors;
         vsp->user2(false);
-        return VNUser(0);
+        return VNUser(0);  // Unused
     }
 
     virtual VNUser visit(GateLogicVertex* lvertexp, VNUser vu) {
@@ -1506,6 +1506,7 @@ private:
         if (const AstAssignW* assignp = VN_CAST(lvertexp->nodep(), AssignW)) {
             UINFO(9, "CLK DECOMP Logic (off = " << clk_offset << ") - " << lvertexp << " : "
                                                 << m_clk_vsp << endl);
+            // RHS
             if (AstSel* rselp = VN_CAST(assignp->rhsp(), Sel)) {
                 if (VN_IS(rselp->lsbp(), Const) && VN_IS(rselp->widthp(), Const)) {
                     if (clk_offset < rselp->lsbConst() || clk_offset > rselp->msbConst()) {
@@ -1521,11 +1522,17 @@ private:
             } else if (AstConcat* catp = VN_CAST(assignp->rhsp(), Concat)) {
                 UINFO(9, "CLK DECOMP Concat searching - " << assignp->lhsp() << endl);
                 int concat_offset;
-                if (!m_concat_visitor.concatOffset(catp, currState->m_last_vsp, concat_offset)) {
+                if (!m_concat_visitor.concatOffset(catp, currState->m_last_vsp,
+                                                   concat_offset /*ref*/)) {
                     return VNUser(0);
                 }
                 clk_offset += concat_offset;
+            } else if (VN_IS(assignp->rhsp(), VarRef)) {
+                UINFO(9, "CLK DECOMP VarRef searching - " << assignp->lhsp() << endl);
+            } else {
+                return VNUser(0);
             }
+            // LHS
             if (const AstSel* lselp = VN_CAST(assignp->lhsp(), Sel)) {
                 if (VN_IS(lselp->lsbp(), Const) && VN_IS(lselp->widthp(), Const)) {
                     clk_offset += lselp->lsbConst();
@@ -1538,8 +1545,8 @@ private:
                         UINFO(9, "Should only make it here with clk_offset = 0" << endl);
                         return VNUser(0);
                     }
-                    UINFO(9, "CLK DECOMP Connecting - " << assignp->lhsp() << " <-> " << m_clk_vsp
-                                                        << endl);
+                    UINFO(9, "CLK DECOMP Connecting - " << assignp->lhsp() << endl);
+                    UINFO(9, "                   to - " << m_clk_vsp << endl);
                     AstNode* rhsp = assignp->rhsp();
                     rhsp->replaceWith(new AstVarRef(rhsp->fileline(), m_clk_vsp, false));
                     for (V3GraphEdge* edgep = lvertexp->inBeginp(); edgep;) {
@@ -1548,6 +1555,8 @@ private:
                     new V3GraphEdge(m_graphp, m_clk_vvertexp, lvertexp, 1);
                     m_total_decomposed_clk_vectors++;
                 }
+            } else {
+                return VNUser(0);
             }
             GateClkDecompState nextState(clk_offset, currState->m_last_vsp);
             return lvertexp->iterateCurrentOutEdges(*this, VNUser(&nextState));

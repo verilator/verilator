@@ -42,6 +42,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix reduction OR on wide data, broke in v4.026, #2300. [Jack Koenig]
 
+****  Fix clock enables with bit-extends, #2299. [Marco Widmer]
+
 
 * Verilator 4.032 2020-04-04
 
