@@ -259,7 +259,7 @@ Verilated::NonSerialized::~NonSerialized() {
     }
 }
 
-size_t Verilated::serialized2Size() VL_PURE { return sizeof(VerilatedImp::m_ser); }
+size_t Verilated::serialized2Size() VL_PURE { return sizeof(VerilatedImp::s_s.m_ser); }
 void* Verilated::serialized2Ptr() VL_MT_UNSAFE { return &VerilatedImp::s_s.m_ser; }
 
 //===========================================================================
