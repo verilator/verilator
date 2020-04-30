@@ -567,41 +567,28 @@ static void verilate(const string& argString) {
 
 static void execBuildJob() {
     UASSERT(v3Global.opt.build(), "--build is not specified.");
+    UASSERT(v3Global.opt.gmake(), "--build requires GNU Make.");
+    UASSERT(!v3Global.opt.cmake(), "--build cannot use CMake.");
     UINFO(1, "Start Build\n");
 
-    std::stringstream cmd;
     const V3StringList& makeFlags = v3Global.opt.makeFlags();
     const int jobs = v3Global.opt.buildJobs();
     UASSERT(jobs >= 0, "-j option parser in V3Options.cpp filters out negative value");
-    if (v3Global.opt.gmake()) {  // If both gmake and cmake are chosen, use gmake to build.
-        cmd << v3Global.opt.getenvMAKE();
-        cmd << " -C " << v3Global.opt.makeDir();
-        cmd << " -f " << v3Global.opt.prefix() << ".mk";
-        if (jobs == 0) {
-            cmd << " -j";
-        } else if (jobs > 1) {
-            cmd << " -j " << jobs;
-        }
-        for (V3StringList::const_iterator it = makeFlags.begin(); it != makeFlags.end(); ++it) {
-            cmd << ' ' << *it;
-        }
-    } else {
-        UASSERT(v3Global.opt.cmake(), "cmake or gmake must be chosen in V3Options.cpp");
-        cmd << "cd " << v3Global.opt.makeDir() << " && ";
-        cmd << "cmake";
-        for (V3StringList::const_iterator it = makeFlags.begin(); it != makeFlags.end(); ++it) {
-            cmd << ' ' << *it;
-        }
-        cmd << ' ' << V3Os::getcwd() << " && ";
-        cmd << "cmake --build . ";
-        if (jobs == 0) {
-            cmd << " -j";
-        } else if (jobs > 1) {
-            cmd << " -j " << jobs;
-        }
-    }
-    const std::string cmdStr = cmd.str();
 
+    std::stringstream cmd;
+    cmd << v3Global.opt.getenvMAKE();
+    cmd << " -C " << v3Global.opt.makeDir();
+    cmd << " -f " << v3Global.opt.prefix() << ".mk";
+    if (jobs == 0) {
+        cmd << " -j";
+    } else if (jobs > 1) {
+        cmd << " -j " << jobs;
+    }
+    for (V3StringList::const_iterator it = makeFlags.begin(); it != makeFlags.end(); ++it) {
+        cmd << ' ' << *it;
+    }
+
+    const std::string cmdStr = cmd.str();
     const int exit_code = V3Os::system(cmdStr);
     if (exit_code != 0) {
         v3error(cmdStr << " exitted with " << exit_code << std::endl);
