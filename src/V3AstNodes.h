@@ -5089,6 +5089,7 @@ public:
     virtual void numberOperate(V3Number& out, const V3Number& lhs) { out.opNegate(lhs); }
     virtual string emitVerilog() { return "%f(- %l)"; }
     virtual string emitC() { return "VL_NEGATE_%lq(%lW, %P, %li)"; }
+    virtual string emitSimpleOperator() { return "-"; }
     virtual bool cleanOut() const { return false; }
     virtual bool cleanLhs() const { return false; }
     virtual bool sizeMattersLhs() const { return true; }
