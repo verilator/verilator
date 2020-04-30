@@ -40,6 +40,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix logical not optimization with empty begin, #2291. [Baltazar Ortiz]
 
+****  Fix reduction OR on wide data, broke in v4.026, #2300. [Jack Koening]
+
 
 * Verilator 4.032 2020-04-04
 

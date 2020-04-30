@@ -796,7 +796,8 @@ private:
             }
             newp = new AstEq(
                 nodep->fileline(),
-                new AstConst(nodep->fileline(), AstConst::SizedEData(), ~VL_MASK_E(0)), newp);
+                new AstConst(nodep->fileline(), AstConst::SizedEData(), VL_MASK_E(VL_EDATASIZE)),
+                newp);
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         } else {
             UINFO(8, "    REDAND->EQ " << nodep << endl);

@@ -363,7 +363,7 @@ typedef unsigned long long vluint64_t;  ///< 64-bit unsigned type
 #define VL_BYTESIZE 8  ///< Bits in a CData / byte
 #define VL_SHORTSIZE 16  ///< Bits in a SData / short
 #define VL_IDATASIZE 32  ///< Bits in a IData / word
-#define VL_WORDSIZE IDATASIZE  ///< Legacy define
+#define VL_WORDSIZE VL_IDATASIZE  ///< Legacy define
 #define VL_QUADSIZE 64  ///< Bits in a QData / quadword
 #define VL_EDATASIZE 32  ///< Bits in a EData (WData entry)
 #define VL_EDATASIZE_LOG2 5  ///< log2(VL_EDATASIZE)
