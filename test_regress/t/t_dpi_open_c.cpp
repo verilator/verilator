@@ -117,7 +117,7 @@ void _dpii_all(int c, int p, int u, const svOpenArrayHandle i, const svOpenArray
     // NC always returns zero and warns
     (void)svSizeOfArray(i);
 #endif
-#if !defined(VCS) && !defined(MS)  // VCS does not support dimension 0 query
+#if !defined(VCS)
     if (p) {
         int d = 0;
         if (c == 0 || c == 1) {
