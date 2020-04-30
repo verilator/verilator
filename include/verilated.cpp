@@ -2444,7 +2444,7 @@ vluint32_t VerilatedVarProps::entSize() const {
 
 size_t VerilatedVarProps::totalSize() const {
     size_t size = entSize();
-    for (int dim = 1; dim <= dims(); ++dim) size *= m_unpacked[dim].elements();
+    for (int dim = 0; dim <= dims(); ++dim) size *= m_unpacked[dim].elements();
     return size;
 }
 
