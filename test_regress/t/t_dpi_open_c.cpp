@@ -102,8 +102,10 @@ void _dpii_all(int c, int p, int u, const svOpenArrayHandle i, const svOpenArray
            __FILE__, __LINE__, c, p, u, svGetArrayPtr(i));
 #endif
     (void)svGetArrayPtr(i);
+#ifndef NC
     // NC always returns zero and warns
-    //(void)svSizeOfArray(i);
+    (void)svSizeOfArray(i);
+#endif
 #ifndef VCS  // VCS does not support dimension 0 query
     if (p) {
         int d = 0;
