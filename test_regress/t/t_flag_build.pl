@@ -26,7 +26,7 @@ execute(
 
 # If '-MAKEFLAGS --trace' is not properly processed,
 # the log will not contain 'CMAKE_BUILD_TYPE:STRING=Debug'.
-file_grep($Self->{obj_dir} . '/vlt_compile.log', /^Vt_flag_build_make.mk:\d+: update target \'(\w+)\' due to:/, 'Vt_flag_build_make');
+file_grep($Self->{obj_dir} . '/vlt_compile.log', /^Vt_flag_build_make.mk:\d+: update target \'(\w+)\' due to:/, 'Vt_flag_build');
 
 ok(1);
 1;

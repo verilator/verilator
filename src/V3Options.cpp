@@ -594,7 +594,7 @@ void V3Options::notify() {
     }
 
     if (m_build && (m_gmake || m_cmake)) {
-        cmdfl->v3error("--make cannot be used together with --build")
+        cmdfl->v3error("--make cannot be used together with --build. Suggest see manual");
     }
 
     // Make sure at least one make system is enabled
