@@ -168,11 +168,6 @@ endif
 preproc:
 
 #######################################################################
-##### C/H builds
-
-LIBS   += -lm -lstdc++
-
-#######################################################################
 # Overall Objects Linking
 
 VK_CLASSES_FAST_CPP = $(addsuffix .cpp, $(VM_CLASSES_FAST))

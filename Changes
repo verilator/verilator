@@ -44,6 +44,8 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ****  Fix clock enables with bit-extends, #2299. [Marco Widmer]
 
+****  Fix MacOs Homebrew by removing default LIBS, #2298. [Ryan Clarke]
+
 
 * Verilator 4.032 2020-04-04
 
