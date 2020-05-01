@@ -22,8 +22,8 @@
 # include "../vc_hdrs.h"
 #elif defined(NC)
 # define NEED_EXTERNS
-#elif defined(MS)
-# define NEED_EXTERNS
+// #elif defined(MS)
+// # define NEED_EXTERNS
 #else
 # error "Unknown simulator for DPI test"
 #endif
