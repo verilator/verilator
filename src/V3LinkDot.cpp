@@ -587,6 +587,18 @@ public:
                 else if ((cellp && cellp->modp()->origName() == ident)
                          || (inlinep && inlinep->origModName() == ident)) {
                 }
+                // $root we walk up to Netlist
+                else if (ident == "$root") {
+                    lookupSymp = rootEntp();
+                    // We've added TOP module, now everything else is one lower
+                    if (!m_forPrearray) {
+                        VSymEnt* topSymp = lookupSymp->findIdFlat("TOP");
+                        if (!topSymp) {
+                            topSymp->nodep()->v3fatalSrc("TOP not found under netlist for $root");
+                        }
+                        lookupSymp = topSymp;
+                    }
+                }
                 // Move up and check cellname + modname
                 else {
                     bool crossedCell = false;  // Crossed a cell boundary
@@ -2079,6 +2091,7 @@ private:
             bool ok = false;
             if (!foundp) {
             } else if (VN_IS(foundp->nodep(), Cell) || VN_IS(foundp->nodep(), Begin)
+                       || VN_IS(foundp->nodep(), Netlist)  // for $root
                        || VN_IS(foundp->nodep(), Module)) {  // if top
                 if (allowScope) {
                     ok = true;

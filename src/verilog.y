@@ -613,6 +613,7 @@ class AstSenTree;
 %token<fl>		yD_REALTOBITS	"$realtobits"
 %token<fl>		yD_REWIND	"$rewind"
 %token<fl>		yD_RIGHT	"$right"
+%token<fl>		yD_ROOT		"$root"
 %token<fl>		yD_RTOI		"$rtoi"
 %token<fl>		yD_SAMPLED	"$sampled"
 %token<fl>		yD_SFORMAT	"$sformat"
@@ -4008,6 +4009,7 @@ exprScope<nodep>:		// scope and variable for use to inside an expression
 	//			// See also varRefClassBit, which is the non-expr version of most of this
 		yTHIS					{ $$ = new AstConst($1, AstConst::LogicFalse());
 							  BBUNSUP($1, "Unsupported: this"); }
+	|	yD_ROOT					{ $$ = new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "$root"); }
 	|	idArrayed				{ $$ = $1; }
 	|	package_scopeIdFollows idArrayed	{ $$ = AstDot::newIfPkg($2->fileline(), $1, $2); }
 	|	class_scopeIdFollows idArrayed		{ $$ = $2; BBUNSUP($<fl>1, "Unsupported: scoped class reference"); }
@@ -4471,8 +4473,9 @@ idClassSel<nodep>:			// Misc Ref to dotted, and/or arrayed, and/or bit-ranged va
 	;
 
 idDotted<nodep>:
-	//UNSUP	yD_ROOT '.' idDottedMore		{ UNSUP }
-		idDottedMore		 		{ $$ = $1; }
+		yD_ROOT '.' idDottedMore
+			{ $$ = new AstDot($2, new AstParseRef($<fl>1, VParseRefExp::PX_ROOT, "$root"), $3); }
+	|	idDottedMore		 		{ $$ = $1; }
 	;
 
 idDottedMore<nodep>:

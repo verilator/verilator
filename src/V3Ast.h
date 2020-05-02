@@ -900,6 +900,7 @@ class VParseRefExp {
 public:
     enum en {
         PX_NONE,  // Used in V3LinkParse only
+        PX_ROOT,
         PX_TEXT  // Unknown ID component
     };
     enum en m_e;
@@ -912,7 +913,7 @@ public:
         : m_e(static_cast<en>(_e)) {}
     operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[] = {"", "TEXT", "PREDOT"};
+        static const char* const names[] = {"", "$root", "TEXT", "PREDOT"};
         return names[m_e];
     }
 };

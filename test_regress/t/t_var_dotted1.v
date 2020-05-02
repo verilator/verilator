@@ -35,6 +35,8 @@ module t (/*AUTOARG*/
       if (cyc==2) begin
          if (global_cell.globali  != 32'hf00d) $stop;
          if (global_cell2.globali != 32'hf22d) $stop;
+         if ($root.t.global_cell.globali != 32'hf00d) $stop;
+         if ($root.t.global_cell2.globali != 32'hf22d) $stop;
          if (outb0c0 != 32'h00) $stop;
          if (outb0c1 != 32'h01) $stop;
          if (outb1c0 != 32'h10) $stop;

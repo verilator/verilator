@@ -448,6 +448,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "$onehot0"            { FL; return yD_ONEHOT0; }
   "$past"               { FL; return yD_PAST; }
   "$right"              { FL; return yD_RIGHT; }
+  "$root"               { FL; return yD_ROOT; }
   "$size"               { FL; return yD_SIZE; }
   "$unpacked_dimensions" { FL; return yD_UNPACKED_DIMENSIONS; }
   "$warning"            { FL; return yD_WARNING; }
@@ -527,7 +528,6 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "void"                { FL; return yVOID; }
   /*     Generic unsupported warnings */
   /* Note assert_strobe was in SystemVerilog 3.1, but removed for SystemVerilog 2005 */
-  "$root"               { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "before"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "bins"                { ERROR_RSVD_WORD("SystemVerilog 2005"); }
   "binsof"              { ERROR_RSVD_WORD("SystemVerilog 2005"); }

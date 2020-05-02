@@ -24,13 +24,15 @@ The contributors that suggested a given feature are shown in []. Thanks!
 
 ***   Add --flatten for use with --xml-only, #2270. [James Hanlon]
 
+****  Greatly improve FST/VCD dump performance, #2244, #2246, #2250, #2257. [Geza Lore]
+
 ****  Support $ferror, and $fflush without arguments, #1638.
 
 ****  Support event data type (with some restrictions).
 
-****  Add error if use SystemC 2.2 and earlier (pre-2011) as is deprecated.
+****  Support $root, #2150. [Keyi Zhang]
 
-****  Greatly improve FST/VCD dump performance, #2244, #2246, #2250, #2257. [Geza Lore]
+****  Add error if use SystemC 2.2 and earlier (pre-2011) as is deprecated.
 
 ****  Fix build of fast path tracing code to use OPT_FAST, #2245. [Geza Lore]
 

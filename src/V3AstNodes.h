@@ -2812,8 +2812,8 @@ private:
     string m_name;
 
 public:
-    AstParseRef(FileLine* fl, VParseRefExp expect, const string& name, AstNode* lhsp,
-                AstNodeFTaskRef* ftaskrefp)
+    AstParseRef(FileLine* fl, VParseRefExp expect, const string& name, AstNode* lhsp = NULL,
+                AstNodeFTaskRef* ftaskrefp = NULL)
         : ASTGEN_SUPER(fl)
         , m_expect(expect)
         , m_name(name) {
@@ -8401,6 +8401,7 @@ public:
         BROKEN_RTN(m_evalp && !m_evalp->brokeExists());
         return NULL;
     }
+    virtual string name() const { return "$root"; }
     virtual void dump(std::ostream& str) const;
     AstNodeModule* modulesp() const {  // op1 = List of modules
         return VN_CAST(op1p(), NodeModule);
