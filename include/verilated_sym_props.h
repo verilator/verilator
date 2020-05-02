@@ -29,6 +29,8 @@
 
 #include "verilatedos.h"
 
+#include <vector>
+
 //===========================================================================
 /// Verilator range
 /// Thread safety: Assume is constructed only with model, then any number of readers
@@ -78,7 +80,14 @@ class VerilatedVarProps {
     const int m_pdims;  // Packed dimensions
     const int m_udims;  // Unpacked dimensions
     VerilatedRange m_packed;  // Packed array range
-    VerilatedRange m_unpacked[3];  // Unpacked array range
+    std::vector<VerilatedRange> m_unpacked;  // Unpacked array ranges
+    void initUnpacked(const int (*ulims)[2]) {
+        for (int i = 0; i < m_udims; ++i) {
+            const int left = ulims ? ulims[i][0] : 0;
+            const int right = ulims ? ulims[i][1] : 0;
+            m_unpacked.push_back(VerilatedRange(left, right));
+        }
+    }
     // CONSTRUCTORS
 protected:
     friend class VerilatedScope;
@@ -87,7 +96,9 @@ protected:
         , m_vltype(vltype)
         , m_vlflags(vlflags)
         , m_pdims(pdims)
-        , m_udims(udims) {}
+        , m_udims(udims) {
+        initUnpacked(NULL);
+    }
 
 public:
     class Unpacked {};
@@ -98,34 +109,14 @@ public:
         , m_vlflags(VerilatedVarFlags(vlflags))
         , m_pdims(0)
         , m_udims(0) {}
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int u0l, int u0r)
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims,
+                      const int (*ulims)[2])
         : m_magic(MAGIC)
         , m_vltype(vltype)
         , m_vlflags(VerilatedVarFlags(vlflags))
         , m_pdims(0)
-        , m_udims(1) {
-        m_unpacked[0].init(u0l, u0r);
-    }
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int u0l, int u0r, int u1l,
-                      int u1r)
-        : m_magic(MAGIC)
-        , m_vltype(vltype)
-        , m_vlflags(VerilatedVarFlags(vlflags))
-        , m_pdims(0)
-        , m_udims(2) {
-        m_unpacked[0].init(u0l, u0r);
-        m_unpacked[1].init(u1l, u1r);
-    }
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int u0l, int u0r, int u1l,
-                      int u1r, int u2l, int u2r)
-        : m_magic(MAGIC)
-        , m_vltype(vltype)
-        , m_vlflags(VerilatedVarFlags(vlflags))
-        , m_pdims(0)
-        , m_udims(3) {
-        m_unpacked[0].init(u0l, u0r);
-        m_unpacked[1].init(u1l, u1r);
-        m_unpacked[2].init(u2l, u2r);
+        , m_udims(udims) {
+        initUnpacked(ulims);
     }
     // With packed
     class Packed {};
@@ -137,37 +128,14 @@ public:
         , m_udims(0)
         , m_packed(pl, pr) {}
     VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pl, int pr, Unpacked,
-                      int u0l, int u0r)
+                      int udims, const int (*ulims)[2])
         : m_magic(MAGIC)
         , m_vltype(vltype)
         , m_vlflags(VerilatedVarFlags(vlflags))
         , m_pdims(1)
-        , m_udims(1)
+        , m_udims(udims)
         , m_packed(pl, pr) {
-        m_unpacked[0].init(u0l, u0r);
-    }
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pl, int pr, Unpacked,
-                      int u0l, int u0r, int u1l, int u1r)
-        : m_magic(MAGIC)
-        , m_vltype(vltype)
-        , m_vlflags(VerilatedVarFlags(vlflags))
-        , m_pdims(1)
-        , m_udims(2)
-        , m_packed(pl, pr) {
-        m_unpacked[0].init(u0l, u0r);
-        m_unpacked[1].init(u1l, u1r);
-    }
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pl, int pr, Unpacked,
-                      int u0l, int u0r, int u1l, int u1r, int u2l, int u2r)
-        : m_magic(MAGIC)
-        , m_vltype(vltype)
-        , m_vlflags(VerilatedVarFlags(vlflags))
-        , m_pdims(1)
-        , m_udims(3)
-        , m_packed(pl, pr) {
-        m_unpacked[0].init(u0l, u0r);
-        m_unpacked[1].init(u1l, u1r);
-        m_unpacked[2].init(u2l, u2r);
+        initUnpacked(ulims);
     }
 
 public:
@@ -189,27 +157,29 @@ public:
     // DPI accessors
     int left(int dim) const {
         return dim == 0 ? m_packed.left()
-                        : VL_LIKELY(dim >= 1 && dim <= 3) ? m_unpacked[dim - 1].left() : 0;
+                        : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].left() : 0;
     }
     int right(int dim) const {
         return dim == 0 ? m_packed.right()
-                        : VL_LIKELY(dim >= 1 && dim <= 3) ? m_unpacked[dim - 1].right() : 0;
+                        : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].right() : 0;
     }
     int low(int dim) const {
         return dim == 0 ? m_packed.low()
-                        : VL_LIKELY(dim >= 1 && dim <= 3) ? m_unpacked[dim - 1].low() : 0;
+                        : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].low() : 0;
     }
     int high(int dim) const {
         return dim == 0 ? m_packed.high()
-                        : VL_LIKELY(dim >= 1 && dim <= 3) ? m_unpacked[dim - 1].high() : 0;
+                        : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].high() : 0;
     }
     int increment(int dim) const {
-        return dim == 0 ? m_packed.increment()
-                        : VL_LIKELY(dim >= 1 && dim <= 3) ? m_unpacked[dim - 1].increment() : 0;
+        return dim == 0
+                   ? m_packed.increment()
+                   : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].increment() : 0;
     }
     int elements(int dim) const {
-        return dim == 0 ? m_packed.elements()
-                        : VL_LIKELY(dim >= 1 && dim <= 3) ? m_unpacked[dim - 1].elements() : 0;
+        return dim == 0
+                   ? m_packed.elements()
+                   : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].elements() : 0;
     }
     /// Total size in bytes (note DPI limited to 4GB)
     size_t totalSize() const;
